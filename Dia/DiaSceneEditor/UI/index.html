@@ -164,6 +164,9 @@
   .item-badge.dir { border-color: #8a7a3a; color: #c4b86a; background: #2e2a1a; }
   .item-badge.pnt { border-color: #8a5a3a; color: #c4906a; background: #2e1a1a; }
   .item-badge.refs { border-color: var(--pico-border-color, #3c3c3c); color: var(--pico-muted-color, #808080); background: var(--pico-background-color, #1e1e1e); }
+  .item-warning { color: #f44747; font-size: 12px; flex-shrink: 0; margin-left: 4px; }
+  .item.has-warning .item-name { color: #f4a747; }
+  .item.has-warning .item-meta { color: #f4a747; }
 
   /* ── Divider ── */
   .divider { width: 4px; background: var(--pico-muted-border-color, #2d2d2d); cursor: col-resize; flex-shrink: 0; }
@@ -530,7 +533,11 @@
 <div class="dialog-overlay" id="add-item-dialog">
   <div class="dialog">
     <div class="dialog-title" id="add-item-dialog-title">Add Item</div>
-    <div class="dialog-body">Select a template:</div>
+    <div class="dialog-body">
+      <label for="add-item-name" style="display:block;margin-bottom:4px;font-weight:600;">Name:</label>
+      <input type="text" id="add-item-name" class="dialog-input" placeholder="my_entity" style="width:100%;margin-bottom:12px;padding:6px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg-main);color:var(--fg);">
+      <label for="add-item-select" style="display:block;margin-bottom:4px;font-weight:600;">Template:</label>
+    </div>
     <select class="dialog-select" id="add-item-select"></select>
     <div class="dialog-btns">
       <button class="dialog-btn cancel" id="add-item-cancel">Cancel</button>
@@ -1111,6 +1118,7 @@ function buildItemRow(item) {
 
   let meta = '';
   let badge = '';
+  let warning = '';
   if (item._type === 'layer') {
     meta = `sort:${item.sort_order}`;
   } else if (item._type === 'camera') {
@@ -1122,11 +1130,17 @@ function buildItemRow(item) {
     meta = item.entityTemplate || '';
   }
 
+  if (item.entityTemplate_known === false) {
+    warning = '<span class="item-warning" title="Template not found">&#9888;</span>';
+    row.classList.add('has-warning');
+  }
+
   row.innerHTML = `
     <span class="item-icon ${iconCssClass}">${iconChar}</span>
     <span class="item-name">${escHtml(item.id)}</span>
     ${meta ? `<span class="item-meta">${escHtml(meta)}</span>` : ''}
     ${badge}
+    ${warning}
   `;
 
   row.addEventListener('click', () => onSelectItem(item._type, item.id, item));
@@ -1674,6 +1688,7 @@ async function addItem(itemType) {
   const labelMap = { entity:'Entity', camera:'Camera', light:'Light' };
   document.getElementById('add-item-dialog-title').textContent = 'Add ' + (labelMap[itemType] || itemType);
   const sel = document.getElementById('add-item-select');
+  const nameInput = document.getElementById('add-item-name');
   sel.innerHTML = '';
   entityTemplates.forEach(bp => {
     const opt = document.createElement('option');
@@ -1682,24 +1697,38 @@ async function addItem(itemType) {
     sel.appendChild(opt);
   });
 
+  // Pre-fill name from first template selection
+  nameInput.value = sel.value || '';
+  nameInput.dataset.userEdited = '';
+  const onSelChange = () => { if (!nameInput.dataset.userEdited) nameInput.value = sel.value; };
+  const onNameInput = () => { nameInput.dataset.userEdited = nameInput.value ? '1' : ''; };
+  sel.addEventListener('change', onSelChange);
+  nameInput.addEventListener('input', onNameInput);
+
   document.getElementById('add-item-dialog').classList.add('show');
+  nameInput.focus();
 
   await new Promise(resolve => {
     const confirm = document.getElementById('add-item-confirm');
     const cancel  = document.getElementById('add-item-cancel');
-    const finish = (entityTemplateId) => {
+    const finish = (result) => {
       document.getElementById('add-item-dialog').classList.remove('show');
+      nameInput.dataset.userEdited = '';
+      sel.removeEventListener('change', onSelChange);
+      nameInput.removeEventListener('input', onNameInput);
       confirm.removeEventListener('click', onConfirm);
       cancel.removeEventListener('click',  onCancel);
-      resolve(entityTemplateId);
+      resolve(result);
     };
-    const onConfirm = () => finish(document.getElementById('add-item-select').value);
+    const onConfirm = () => finish({ entityTemplateId: sel.value, id: nameInput.value.trim() });
     const onCancel  = () => finish(null);
     confirm.addEventListener('click', onConfirm);
     cancel.addEventListener('click',  onCancel);
-  }).then(async entityTemplateId => {
-    if (!entityTemplateId) return;
-    const result = await bridgeRequest('add_item', { itemType, entityTemplateId });
+  }).then(async (chosen) => {
+    if (!chosen) return;
+    const payload = { itemType, entityTemplateId: chosen.entityTemplateId };
+    if (chosen.id) payload.id = chosen.id;
+    const result = await bridgeRequest('add_item', payload);
     if (result.success) {
       state.hierarchy = result.hierarchy;
       renderHierarchy();

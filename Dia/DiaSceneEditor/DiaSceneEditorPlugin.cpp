@@ -229,6 +229,45 @@ namespace Dia
 			return Json::Value(Json::nullValue);
 		}
 
+		void DiaSceneEditorPlugin::EnrichTemplateKnown(Json::Value& hierarchy)
+		{
+			static const char* kSections[] = { "entities", "cameras", "lights" };
+			static const char* kItemTypes[] = { "entity", "camera", "light" };
+
+			for (int s = 0; s < 3; ++s)
+			{
+				if (!hierarchy.isMember(kSections[s])) continue;
+				Json::Value& arr = hierarchy[kSections[s]];
+				for (unsigned int i = 0; i < arr.size(); ++i)
+				{
+					Json::Value& item = arr[i];
+					if (!item.isMember("entityTemplate")) continue;
+					const char* etId = item["entityTemplate"].asCString();
+					if (etId[0] == '\0')
+					{
+						item["entityTemplate_known"] = true;
+						continue;
+					}
+					Json::Value rec = ResolveTemplateCatalogueRecord(etId, kItemTypes[s]);
+					item["entityTemplate_known"] = !rec.isNull();
+				}
+			}
+		}
+
+		Json::Value DiaSceneEditorPlugin::BuildEnrichedHierarchy(const Json::Value& sceneRoot)
+		{
+			Json::Value h = mHierarchyController.BuildHierarchyJson(sceneRoot);
+			EnrichTemplateKnown(h);
+			return h;
+		}
+
+		Json::Value DiaSceneEditorPlugin::BuildEnrichedHierarchyFiltered(const Json::Value& sceneRoot, const char* filter)
+		{
+			Json::Value h = mHierarchyController.BuildFilteredHierarchyJson(sceneRoot, filter);
+			EnrichTemplateKnown(h);
+			return h;
+		}
+
 		void DiaSceneEditorPlugin::RegisterRequestHandlers()
 		{
 			if (!GetBridge())
@@ -318,7 +357,7 @@ namespace Dia
 					result["success"]   = true;
 					result["stage"]     = matchedStage;
 					result["scene"]     = sceneRoot;
-					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(sceneRoot);
+					result["hierarchy"] = BuildEnrichedHierarchy(sceneRoot);
 					result["dirty"]     = false;
 					return result;
 				});
@@ -334,7 +373,7 @@ namespace Dia
 						? data["filter"].asCString() : nullptr;
 					Json::Value result;
 					result["success"]   = true;
-					result["hierarchy"] = mHierarchyController.BuildFilteredHierarchyJson(mLoadedSceneRoot, filter);
+					result["hierarchy"] = BuildEnrichedHierarchyFiltered(mLoadedSceneRoot, filter);
 					return result;
 				});
 
@@ -374,7 +413,7 @@ namespace Dia
 
 					Json::Value result;
 					result["success"]   = true;
-					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(sceneRoot);
+					result["hierarchy"] = BuildEnrichedHierarchy(sceneRoot);
 					return result;
 				});
 
@@ -625,7 +664,7 @@ namespace Dia
 					AutoSave();
 					Json::Value result;
 					result["success"]   = true;
-					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
+					result["hierarchy"] = BuildEnrichedHierarchy(mLoadedSceneRoot);
 					return result;
 				});
 
@@ -728,7 +767,7 @@ namespace Dia
 					AutoSave();
 					Json::Value result;
 					result["success"]   = true;
-					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
+					result["hierarchy"] = BuildEnrichedHierarchy(mLoadedSceneRoot);
 					return result;
 				});
 
@@ -740,7 +779,7 @@ namespace Dia
 				AutoSave();
 				Json::Value result;
 				result["success"]   = true;
-				result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
+				result["hierarchy"] = BuildEnrichedHierarchy(mLoadedSceneRoot);
 				return result;
 			};
 
@@ -809,7 +848,7 @@ namespace Dia
 					AutoSave();
 					Json::Value result;
 					result["success"]   = true;
-					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
+					result["hierarchy"] = BuildEnrichedHierarchy(mLoadedSceneRoot);
 					return result;
 				});
 
@@ -827,7 +866,7 @@ namespace Dia
 					AutoSave();
 					Json::Value result;
 					result["success"]   = true;
-					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
+					result["hierarchy"] = BuildEnrichedHierarchy(mLoadedSceneRoot);
 					return result;
 				});
 
@@ -1118,7 +1157,7 @@ namespace Dia
 			AutoSave();
 			Json::Value result;
 			result["success"]   = true;
-			result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
+			result["hierarchy"] = BuildEnrichedHierarchy(mLoadedSceneRoot);
 			return result;
 		}
 
@@ -1183,7 +1222,7 @@ namespace Dia
 			AutoSave();
 			Json::Value result;
 			result["success"]   = true;
-			result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
+			result["hierarchy"] = BuildEnrichedHierarchy(mLoadedSceneRoot);
 			return result;
 		}
 
@@ -1205,7 +1244,7 @@ namespace Dia
 			AutoSave();
 			Json::Value result;
 			result["success"]   = true;
-			result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
+			result["hierarchy"] = BuildEnrichedHierarchy(mLoadedSceneRoot);
 			return result;
 		}
 
@@ -1230,7 +1269,7 @@ namespace Dia
 			AutoSave();
 			Json::Value result;
 			result["success"]   = true;
-			result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
+			result["hierarchy"] = BuildEnrichedHierarchy(mLoadedSceneRoot);
 			return result;
 		}
 
@@ -1255,7 +1294,7 @@ namespace Dia
 			Json::Value result;
 			result["success"]   = true;
 			result["scene"]     = sceneRoot;
-			result["hierarchy"] = mHierarchyController.BuildHierarchyJson(sceneRoot);
+			result["hierarchy"] = BuildEnrichedHierarchy(sceneRoot);
 			result["dirty"]     = false;
 			return result;
 		}

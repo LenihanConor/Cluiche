@@ -62,6 +62,11 @@ namespace Dia
 			void ResolveCatalogueIdForLoadedScene();
 			void AutoSave();
 
+			// Build hierarchy JSON and enrich each item with entityTemplate_known.
+			Json::Value BuildEnrichedHierarchy(const Json::Value& sceneRoot);
+			Json::Value BuildEnrichedHierarchyFiltered(const Json::Value& sceneRoot, const char* filter);
+			void EnrichTemplateKnown(Json::Value& hierarchy);
+
 			// Given a bare template name from a .diascene (e.g. "test_entity"), find the
 			// matching catalogue record by suffix-matching the catalogue id or source_path stem.
 			// Returns the record JSON on success (contains "id" and "source_path"), null on failure.
