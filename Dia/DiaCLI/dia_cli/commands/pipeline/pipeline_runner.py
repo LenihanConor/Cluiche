@@ -16,6 +16,33 @@ from .stages import (
     static_analysis_stage,
 )
 
+
+def _checkpoint_path(repo_root: Path, target: str, build_config: str) -> Path:
+    return repo_root / "Cluiche" / "out" / "DiaCLI" / "logs" / "pipeline" / f"checkpoint.{target}.{build_config}.json"
+
+
+def _load_checkpoint(repo_root: Path, target: str, build_config: str) -> set[str]:
+    path = _checkpoint_path(repo_root, target, build_config)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return set(data.get("completed", []))
+    except (OSError, json.JSONDecodeError, AttributeError):
+        return set()
+
+
+def _save_checkpoint(repo_root: Path, target: str, build_config: str, completed: set[str]) -> None:
+    path = _checkpoint_path(repo_root, target, build_config)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"target": target, "config": build_config, "completed": sorted(completed)}), encoding="utf-8")
+
+
+def _clear_checkpoint(repo_root: Path, target: str, build_config: str) -> None:
+    path = _checkpoint_path(repo_root, target, build_config)
+    try:
+        path.unlink()
+    except OSError:
+        pass
+
 _STYLE_HINT  = Style(color="yellow")
 _STYLE_ERROR = Style(color="red")
 _STYLE_DIM   = Style(dim=True)
@@ -95,6 +122,14 @@ def run_pipeline(
     repo_root: Path,
 ) -> int:
     system = "pipeline"
+
+    # On force, discard any existing checkpoint so we start clean.
+    if force:
+        _clear_checkpoint(repo_root, target, build_config)
+
+    checkpoint = _load_checkpoint(repo_root, target, build_config)
+    completed: set[str] = set(checkpoint)  # grows as stages finish
+
     output.run_started(
         system=system,
         target=target,
@@ -109,6 +144,11 @@ def run_pipeline(
         for stage_name in _STAGE_ORDER:
             if stage_name not in stages:
                 output.stage_skipped(system=system, stage=stage_name, reason="not in active stage list")
+                continue
+
+            if stage_name in checkpoint:
+                output.stage_skipped(system=system, stage=stage_name, reason="checkpoint")
+                pass_count += 1
                 continue
 
             output.stage_started(system=system, stage=stage_name)
@@ -131,6 +171,8 @@ def run_pipeline(
 
             if exit_code == 0:
                 output.stage_completed(system=system, stage=stage_name)
+                completed.add(stage_name)
+                _save_checkpoint(repo_root, target, build_config, completed)
                 pass_count += 1
             else:
                 output.stage_failed(system=system, stage=stage_name, error=f"exit {exit_code}")
@@ -142,6 +184,7 @@ def run_pipeline(
         raise
 
     if fail_count == 0:
+        _clear_checkpoint(repo_root, target, build_config)
         output.run_completed(system=system, pass_count=pass_count, fail_count=0)
         return 0
     else:

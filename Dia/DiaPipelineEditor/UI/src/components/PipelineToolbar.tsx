@@ -14,6 +14,7 @@ interface PipelineToolbarProps {
     diagameName: string;
     canLaunch: boolean;
     lastSuccessTimestamp: number | null;
+    resumeStages: string[];
     dispatch: Dispatch<PipelineAction>;
 }
 
@@ -31,6 +32,7 @@ export const PipelineToolbar: FC<PipelineToolbarProps> = ({
     diagameName,
     canLaunch,
     lastSuccessTimestamp,
+    resumeStages,
     dispatch: _dispatch,
 }) => {
     const { request } = useBridgeRequest();
@@ -93,6 +95,11 @@ export const PipelineToolbar: FC<PipelineToolbarProps> = ({
     const handleLaunch = useCallback(() => {
         request('pipeline.launch');
     }, [request]);
+
+    const handleResume = useCallback(() => {
+        if (resumeStages.length === 0) return;
+        request('pipeline.start', { config: selectedConfig, target: diagameName, stages: resumeStages.join(',') });
+    }, [request, selectedConfig, diagameName, resumeStages]);
 
     const handleOpenLogs = useCallback(() => {
         if (!diagameName) return;
@@ -253,6 +260,25 @@ export const PipelineToolbar: FC<PipelineToolbarProps> = ({
                             </div>
                         )}
                     </div>
+                )}
+
+                {/* Resume (only when interrupted with remaining stages) */}
+                {resumeStages.length > 0 && !isRunning && (
+                    <button
+                        onClick={handleResume}
+                        title={`Resume from: ${resumeStages.join(', ')}`}
+                        style={{
+                            background: '#7a5a1a',
+                            color: '#f0c060',
+                            border: '1px solid #a07820',
+                            padding: '4px 10px',
+                            fontSize: 12,
+                            borderRadius: 2,
+                            cursor: 'pointer',
+                        }}
+                    >
+                        ↻ Resume
+                    </button>
                 )}
 
                 {/* Standalone Launch */}

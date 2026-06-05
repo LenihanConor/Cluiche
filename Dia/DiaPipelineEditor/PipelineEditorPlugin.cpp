@@ -5,6 +5,7 @@
 #include "DiaPipelineEditor/Internal/PipelineTargetParser.h"
 #include <DiaEditor/Plugin/EditorPluginRegistrationMacros.h>
 #include <DiaEditor/UI/WebUIBridge.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
 
@@ -41,9 +42,13 @@ PipelineEditorPlugin::PipelineEditorPlugin()
 	, mLastPushedEventIndex(0)
 	, mLastBuildRunning(false)
 	, mLastExitCode(0)
+	, mLaunchProcess(NULL)
+	, mLaunchStdoutRead(NULL)
+	, mLaunchStdoutFile(nullptr)
 {
 	mRepoRoot[0]     = '\0';
 	mDiagamePath[0]  = '\0';
+	mLaunchTarget[0] = '\0';
 }
 
 PipelineEditorPlugin::~PipelineEditorPlugin()
@@ -90,6 +95,8 @@ void PipelineEditorPlugin::OnPluginLoad()
 
 void PipelineEditorPlugin::OnPluginUnload()
 {
+	CleanupLaunchProcess();
+
 	if (mHistoryStore)
 	{
 		mHistoryStore->Shutdown();
@@ -187,6 +194,8 @@ void PipelineEditorPlugin::OnUpdate(float /*deltaTime*/)
 	{
 		mTailer->Poll();
 	}
+
+	PollLaunchProcess();
 
 	// Push build running state to UI only when it changes
 	if (GetBridge() && mBuildManager)
@@ -356,12 +365,41 @@ void PipelineEditorPlugin::RegisterCommands()
 	RegisterHandler(kCmdPipelineLaunch,
 		[this](const Json::Value& /*data*/) -> Json::Value
 		{
+			if (mLaunchProcess != NULL)
+				return MakeErrorResponse("launch already in progress");
+
 			char target[256] = {};
 			if (mDiagamePath[0] != '\0')
 				ExtractTarget(mDiagamePath, target, sizeof(target));
 
 			if (target[0] == '\0')
 				return MakeErrorResponse("no diagame project loaded");
+
+			// Open log file
+			char logDir[1024];
+			snprintf(logDir, sizeof(logDir), "%s/Cluiche/out/DiaCLI/logs/launch", mRepoRoot);
+			CreateDirectoryA(logDir, NULL);
+
+			char logPath[1100];
+			snprintf(logPath, sizeof(logPath), "%s/last-stdout.log", logDir);
+			mLaunchStdoutFile = nullptr;
+			fopen_s(&mLaunchStdoutFile, logPath, "wb");
+			if (!mLaunchStdoutFile)
+				DIA_LOG_WARNING("PipelineEditor", "launch: could not open log file %s", logPath);
+
+			// Pipe for stdout/stderr
+			HANDLE stdoutWrite = NULL;
+			SECURITY_ATTRIBUTES sa = {};
+			sa.nLength = sizeof(sa);
+			sa.bInheritHandle = TRUE;
+			if (!CreatePipe(&mLaunchStdoutRead, &stdoutWrite, &sa, 0))
+			{
+				DWORD err = GetLastError();
+				DIA_LOG_WARNING("PipelineEditor", "launch: CreatePipe failed (error %lu)", err);
+				if (mLaunchStdoutFile) { fclose(mLaunchStdoutFile); mLaunchStdoutFile = nullptr; }
+				return MakeErrorResponse("CreatePipe failed");
+			}
+			SetHandleInformation(mLaunchStdoutRead, HANDLE_FLAG_INHERIT, 0);
 
 			char cmdLine[1024];
 			snprintf(cmdLine, sizeof(cmdLine),
@@ -370,26 +408,38 @@ void PipelineEditorPlugin::RegisterCommands()
 
 			STARTUPINFOA si = {};
 			si.cb = sizeof(si);
-			PROCESS_INFORMATION pi = {};
+			si.dwFlags = STARTF_USESTDHANDLES;
+			si.hStdOutput = stdoutWrite;
+			si.hStdError  = stdoutWrite;
+			si.hStdInput  = NULL;
 
-			BOOL ok = CreateProcessA(
-				nullptr,
-				cmdLine,
-				nullptr, nullptr,
-				FALSE,
-				CREATE_NO_WINDOW,
-				nullptr, nullptr,
-				&si, &pi);
+			char workingDir[512];
+			snprintf(workingDir, sizeof(workingDir), "%s/Dia/DiaCLI", mRepoRoot);
+
+			PROCESS_INFORMATION pi = {};
+			BOOL ok = CreateProcessA(nullptr, cmdLine, nullptr, nullptr,
+				TRUE, CREATE_NO_WINDOW, nullptr, workingDir, &si, &pi);
+
+			CloseHandle(stdoutWrite);
 
 			if (!ok)
 			{
+				DWORD err = GetLastError();
+				DIA_LOG_WARNING("PipelineEditor", "launch: CreateProcessA failed (error %lu) cmd: %s", err, cmdLine);
+				CloseHandle(mLaunchStdoutRead);
+				mLaunchStdoutRead = NULL;
+				if (mLaunchStdoutFile) { fclose(mLaunchStdoutFile); mLaunchStdoutFile = nullptr; }
 				char errMsg[128];
-				snprintf(errMsg, sizeof(errMsg), "CreateProcessA failed (error %lu)", GetLastError());
+				snprintf(errMsg, sizeof(errMsg), "CreateProcessA failed (error %lu)", err);
 				return MakeErrorResponse(errMsg);
 			}
 
-			CloseHandle(pi.hProcess);
+			mLaunchProcess = pi.hProcess;
 			CloseHandle(pi.hThread);
+			strncpy_s(mLaunchTarget, sizeof(mLaunchTarget), target, _TRUNCATE);
+
+			DIA_LOG_INFO("PipelineEditor", "launch: started %s (pid %lu) — log: %s",
+				target, pi.dwProcessId, logPath);
 
 			return MakeSuccessResponse();
 		});
@@ -407,6 +457,62 @@ void PipelineEditorPlugin::RegisterCommands()
 			ShellExecuteA(NULL, "explore", dirPath, NULL, NULL, SW_SHOWDEFAULT);
 			return MakeSuccessResponse();
 		});
+}
+
+void PipelineEditorPlugin::PollLaunchProcess()
+{
+	if (mLaunchProcess == NULL)
+		return;
+
+	DrainLaunchPipe();
+
+	DWORD exitCode = 0;
+	if (GetExitCodeProcess(mLaunchProcess, &exitCode) && exitCode != STILL_ACTIVE)
+	{
+		DrainLaunchPipe();
+		if (exitCode == 0)
+			DIA_LOG_INFO("PipelineEditor", "launch: %s exited cleanly (exit 0)", mLaunchTarget);
+		else
+			DIA_LOG_WARNING("PipelineEditor", "launch: %s exited with code %lu — see Cluiche/out/DiaCLI/logs/launch/last-stdout.log", mLaunchTarget, exitCode);
+		CleanupLaunchProcess();
+	}
+}
+
+void PipelineEditorPlugin::DrainLaunchPipe()
+{
+	if (mLaunchStdoutRead == NULL)
+		return;
+
+	static const DWORD kBufSize = 4096;
+	char buf[kBufSize];
+
+	for (;;)
+	{
+		DWORD available = 0;
+		if (!PeekNamedPipe(mLaunchStdoutRead, NULL, 0, NULL, &available, NULL))
+			break;
+		if (available == 0)
+			break;
+		DWORD toRead = available < kBufSize ? available : kBufSize;
+		DWORD bytesRead = 0;
+		if (!ReadFile(mLaunchStdoutRead, buf, toRead, &bytesRead, NULL) || bytesRead == 0)
+			break;
+		if (mLaunchStdoutFile && bytesRead > 0)
+			fwrite(buf, 1, bytesRead, mLaunchStdoutFile);
+	}
+}
+
+void PipelineEditorPlugin::CleanupLaunchProcess()
+{
+	if (mLaunchProcess != NULL) { CloseHandle(mLaunchProcess); mLaunchProcess = NULL; }
+	if (mLaunchStdoutRead != NULL) { CloseHandle(mLaunchStdoutRead); mLaunchStdoutRead = NULL; }
+	if (mLaunchStdoutFile != nullptr)
+	{
+		fflush(mLaunchStdoutFile);
+		fclose(mLaunchStdoutFile);
+		mLaunchStdoutFile = nullptr;
+	}
+	mLaunchTarget[0] = '\0';
 }
 
 REGISTER_EDITOR_PLUGIN(PipelineEditorPlugin, "DiaPipelineEditor")

@@ -11,12 +11,14 @@ function defaultProps(overrides: Partial<{
     diagameName: string;
     canLaunch: boolean;
     lastSuccessTimestamp: number | null;
+    resumeStages: string[];
 }> = {}) {
     return {
         buildRunning: false,
         diagameName: 'cluichetest',
         canLaunch: false,
         lastSuccessTimestamp: null,
+        resumeStages: [],
         dispatch: noop,
         ...overrides,
     };
@@ -191,5 +193,34 @@ describe('PipelineToolbar', () => {
             return msg?.__diaFromFrame && msg?.payload?.type === 'pipeline.open-logs-folder';
         });
         expect(call).toBeUndefined();
+    });
+
+    // Resume button
+    it('does not render Resume when resumeStages is empty', () => {
+        render(<PipelineToolbar {...defaultProps({ resumeStages: [] })} />);
+        expect(screen.queryByText('↻ Resume')).not.toBeInTheDocument();
+    });
+
+    it('renders Resume button when resumeStages has entries', () => {
+        render(<PipelineToolbar {...defaultProps({ resumeStages: ['deploy'] })} />);
+        expect(screen.getByText('↻ Resume')).toBeInTheDocument();
+    });
+
+    it('Resume button sends pipeline.start with remaining stages', () => {
+        postSpy = vi.spyOn(window.parent, 'postMessage');
+        render(<PipelineToolbar {...defaultProps({ resumeStages: ['deploy', 'static-analysis'] })} />);
+        fireEvent.click(screen.getByText('↻ Resume'));
+        const call = postSpy.mock.calls.find(c => {
+            const msg = c[0] as { __diaFromFrame?: boolean; payload?: { type?: string; data?: { stages?: string } } };
+            return msg?.__diaFromFrame
+                && msg?.payload?.type === 'pipeline.start'
+                && msg?.payload?.data?.stages === 'deploy,static-analysis';
+        });
+        expect(call).toBeDefined();
+    });
+
+    it('does not render Resume when build is running', () => {
+        render(<PipelineToolbar {...defaultProps({ resumeStages: ['deploy'], buildRunning: true })} />);
+        expect(screen.queryByText('↻ Resume')).not.toBeInTheDocument();
     });
 });

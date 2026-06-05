@@ -18,6 +18,12 @@ export const PipelinePanel: FC<PipelinePanelProps> = ({ state, dispatch }) => {
     const viewingHistory = state.viewingHistoryIndex !== null;
     const historyRun = viewingHistory ? state.historyRuns[state.viewingHistoryIndex!] : null;
 
+    // Stages that still need to run after an interrupted build.
+    // Only shown when the last run was interrupted with no failures.
+    const resumeStages = (state.interrupted && state.failCount === 0)
+        ? state.stageManifest.filter(s => !state.stages.some(st => st.name === s && st.status === 'passed'))
+        : [];
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
             {!state.isProjectLoaded && (
@@ -44,6 +50,7 @@ export const PipelinePanel: FC<PipelinePanelProps> = ({ state, dispatch }) => {
                 diagameName={state.diagameName}
                 canLaunch={state.canLaunch}
                 lastSuccessTimestamp={state.lastSuccessTimestamp}
+                resumeStages={resumeStages}
                 dispatch={dispatch}
             />
             <div style={{ flex: 1, overflowY: 'auto' }}>

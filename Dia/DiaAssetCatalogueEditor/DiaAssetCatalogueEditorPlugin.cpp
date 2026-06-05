@@ -171,6 +171,10 @@ namespace Dia
 				if (!GetBridge())
 					return;
 
+				// kZero means "restore default state, no specific record to navigate to"
+				if (instanceId.Value() == 0)
+					return;
+
 				// Verify the record exists before pushing
 				const Dia::AssetCatalogue::AssetRecord* rec = mRegistry.FindById(instanceId);
 				if (!rec)

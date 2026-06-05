@@ -223,6 +223,9 @@ export function pipelineReducer(state: PipelineState, action: PipelineAction): P
                         : st
                 );
             }
+            // Allow launch after an interrupted run if all completed stages passed
+            // (process was killed after work succeeded, just before writing OnRunCompleted).
+            const interruptedButClean = s.interrupted && s.failCount === 0 && s.passCount > 0;
             return {
                 ...state,
                 target: s.target || state.target,
@@ -232,6 +235,7 @@ export function pipelineReducer(state: PipelineState, action: PipelineAction): P
                 totalDurationMs: s.totalDurationMs,
                 interrupted: s.interrupted,
                 runInProgress: s.runInProgress,
+                canLaunch: interruptedButClean ? true : state.canLaunch,
                 stages,
             };
         }

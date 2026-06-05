@@ -1,5 +1,9 @@
 #pragma once
 
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <cstdio>
+
 #include <DiaEditor/Plugin/EditorPluginBase.h>
 #include <DiaCore/Architecture/Observer.h>
 
@@ -30,6 +34,9 @@ namespace Dia
 
 			void PushEventsToUI();
 			void RegisterCommands();
+			void PollLaunchProcess();
+			void DrainLaunchPipe();
+			void CleanupLaunchProcess();
 
 			PipelineLogTailer* mTailer;
 			PipelineBuildManager* mBuildManager;
@@ -38,6 +45,12 @@ namespace Dia
 			bool mLastBuildRunning;
 			int mLastExitCode;
 			char mRepoRoot[512];
+
+			// Launch process tracking
+			HANDLE mLaunchProcess;
+			HANDLE mLaunchStdoutRead;
+			FILE*  mLaunchStdoutFile;
+			char   mLaunchTarget[256];
 
 			static const unsigned int kDiagamePathLength = 512;
 			char mDiagamePath[kDiagamePathLength];

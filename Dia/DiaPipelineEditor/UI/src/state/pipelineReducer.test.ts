@@ -198,6 +198,22 @@ describe('pipelineReducer', () => {
         expect(result.stages[1].status).toBe('passed');
     });
 
+    it('sets canLaunch true when interrupted with passCount>0 and failCount=0', () => {
+        const result = pipelineReducer(initialPipelineState, {
+            type: 'UPDATE_SUMMARY',
+            summary: { target: 'cluichetest', config: 'Debug', passCount: 3, failCount: 0, totalDurationMs: 5000, interrupted: true, runInProgress: false },
+        });
+        expect(result.canLaunch).toBe(true);
+    });
+
+    it('does not set canLaunch when interrupted with failCount>0', () => {
+        const result = pipelineReducer(initialPipelineState, {
+            type: 'UPDATE_SUMMARY',
+            summary: { target: 'cluichetest', config: 'Debug', passCount: 1, failCount: 1, totalDurationMs: 5000, interrupted: true, runInProgress: false },
+        });
+        expect(result.canLaunch).toBe(false);
+    });
+
     // TOGGLE_STAGE
     it('toggles stage expanded state', () => {
         const withStage: PipelineState = {
