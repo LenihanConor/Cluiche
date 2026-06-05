@@ -12,6 +12,7 @@ namespace Dia
 	{
 		using CloseCallback = std::function<void()>;
 		using ResizeCallback = std::function<void(int, int)>;
+		using MoveResizeCallback = std::function<void()>;
 
 		class Win32Window : public IWindow
 		{
@@ -21,6 +22,7 @@ namespace Dia
 
 			void SetCloseCallback(CloseCallback cb);
 			void SetResizeCallback(ResizeCallback cb);
+			void SetMoveResizeCallback(MoveResizeCallback cb);
 
 			void Initialize(const Settings& settings) override;
 			void Close() override;
@@ -46,6 +48,7 @@ namespace Dia
 			bool mIsOpen;
 			CloseCallback mCloseCallback;
 			ResizeCallback mResizeCallback;
+			MoveResizeCallback mMoveResizeCallback;
 
 			static Win32Window* sLastCreated;
 		};

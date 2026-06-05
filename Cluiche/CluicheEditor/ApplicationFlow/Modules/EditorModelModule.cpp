@@ -118,6 +118,9 @@ namespace Cluiche
 		Dia::ApplicationFlow::StartResult EditorModelModule::DoStart()
 		{
 			ParseCommandLine(mProjectPath, kMaxProjectPathLength, mDiagamePath, kMaxProjectPathLength);
+			DIA_LOG_INFO("Editor", "EditorModelModule::DoStart mProjectPath='%s' mDiagamePath='%s'",
+				mProjectPath[0] ? mProjectPath : "<empty>",
+				mDiagamePath[0] ? mDiagamePath : "<empty>");
 
 			// Subscribe to game-project changes to maintain editor_state persistence.
 			mModel.OnDiagameProjectChanged([](const Dia::Editor::ProjectContext& ctx, void* ud)
@@ -127,8 +130,18 @@ namespace Cluiche
 			}, this);
 
 			// Restore last_project from editor_state if no --project arg was supplied.
-			if (mDiagamePath[0] == '\0' && mProjectPath[0] != '\0')
-				ReadEditorState(mProjectPath);
+			if (mDiagamePath[0] == '\0')
+			{
+				const char* projPath = (mProjectPath[0] != '\0') ? mProjectPath : "assets/configs/editor.cluicheproj";
+				DIA_LOG_INFO("Editor", "EditorModelModule::DoStart ReadEditorState path='%s'", projPath);
+				ReadEditorState(projPath);
+			}
+
+			DIA_LOG_INFO("Editor", "EditorModelModule::DoStart window state: hasStoredState=%d x=%d y=%d w=%d h=%d maximized=%d",
+				(int)mWindowState.hasStoredState,
+				mWindowState.x, mWindowState.y,
+				mWindowState.width, mWindowState.height,
+				(int)mWindowState.maximized);
 
 			// Apply --project arg (takes precedence over restored last_project).
 			if (mDiagamePath[0] != '\0')
@@ -162,15 +175,27 @@ namespace Cluiche
 			mRestoredLastProject[0] = '\0';
 
 			std::ifstream file(cluicheprojPath);
-			if (!file.is_open()) return;
+			if (!file.is_open())
+			{
+				DIA_LOG_INFO("Editor", "EditorModelModule::ReadEditorState file not found (first run?): '%s'", cluicheprojPath);
+				return;
+			}
 
 			Json::Value root;
 			Json::CharReaderBuilder builder;
 			std::string errors;
-			if (!Json::parseFromStream(builder, file, &root, &errors)) return;
+			if (!Json::parseFromStream(builder, file, &root, &errors))
+			{
+				DIA_LOG_WARNING("Editor", "EditorModelModule::ReadEditorState JSON parse failed: %s", errors.c_str());
+				return;
+			}
 
 			const Json::Value& state = root["editor_state"];
-			if (!state.isObject()) return;
+			if (!state.isObject())
+			{
+				DIA_LOG_INFO("Editor", "EditorModelModule::ReadEditorState no editor_state object in '%s'", cluicheprojPath);
+				return;
+			}
 
 			if (state.isMember("last_project") && state["last_project"].isString())
 				strncpy_s(mRestoredLastProject, kMaxProjectPathLength, state["last_project"].asCString(), _TRUNCATE);
@@ -201,12 +226,25 @@ namespace Cluiche
 				mWindowState.height = window.get("height", 720).asInt();
 				mWindowState.maximized = window.get("maximized", false).asBool();
 				mWindowState.hasStoredState = true;
+				DIA_LOG_INFO("Editor", "EditorModelModule::ReadEditorState loaded window x=%d y=%d w=%d h=%d maximized=%d",
+					mWindowState.x, mWindowState.y,
+					mWindowState.width, mWindowState.height,
+					(int)mWindowState.maximized);
+			}
+			else
+			{
+				DIA_LOG_INFO("Editor", "EditorModelModule::ReadEditorState no window object in editor_state");
 			}
 		}
 
 		void EditorModelModule::WriteEditorState()
 		{
-			if (mCluicheproj[0] == '\0') return;
+			if (mCluicheproj[0] == '\0')
+			{
+				DIA_LOG_WARNING("Editor", "EditorModelModule::WriteEditorState called but mCluicheproj is empty — skipping");
+				return;
+			}
+			DIA_LOG_INFO("Editor", "EditorModelModule::WriteEditorState writing to '%s'", mCluicheproj);
 
 			// Read existing file so we preserve version/name/manifests.
 			Json::Value root;
@@ -302,6 +340,9 @@ namespace Cluiche
 
 		void EditorModelModule::SaveWindowState(int x, int y, int width, int height, bool maximized)
 		{
+			DIA_LOG_INFO("Editor", "EditorModelModule::SaveWindowState x=%d y=%d w=%d h=%d maximized=%d mCluicheproj='%s'",
+				x, y, width, height, (int)maximized,
+				mCluicheproj[0] ? mCluicheproj : "<empty>");
 			mWindowState.x = x;
 			mWindowState.y = y;
 			mWindowState.width = width;

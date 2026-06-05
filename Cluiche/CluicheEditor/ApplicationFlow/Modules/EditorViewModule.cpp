@@ -15,6 +15,7 @@
 #include <DiaUI/IUISystem.h>
 #include <DiaEditor/UI/WebUIBridge.h>
 #include <DiaObservation/Log/Logger.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Strings/String64.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -126,6 +127,21 @@ namespace Cluiche
 					MoveWindow(child, 0, 0, w, h, TRUE);
 			});
 
+			// Persist window geometry whenever the user finishes a move or resize.
+			Dia::Window::SetNativeMoveResizeCallback(mWindow, [modelModule, win]()
+			{
+				if (!modelModule) return;
+				HWND hwnd = static_cast<HWND>(win->GetSystemHandle());
+				bool maximized = (IsZoomed(hwnd) != 0);
+				WINDOWPLACEMENT wp = {};
+				wp.length = sizeof(WINDOWPLACEMENT);
+				GetWindowPlacement(hwnd, &wp);
+				RECT rc = wp.rcNormalPosition;
+				DIA_LOG_INFO("Editor", "EditorViewModule: window moved/resized rc=(%d,%d,%d,%d) maximized=%d",
+					rc.left, rc.top, rc.right, rc.bottom, (int)maximized);
+				modelModule->SaveWindowState(rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, maximized);
+			});
+
 			return Dia::ApplicationFlow::StartResult::kReady;
 		}
 
@@ -148,21 +164,6 @@ namespace Cluiche
 
 		Dia::ApplicationFlow::StopResult EditorViewModule::DoStop()
 		{
-			// Persist window geometry before tearing down.
-			if (mWindow)
-			{
-				HWND hwnd = static_cast<HWND>(mWindow->GetSystemHandle());
-				bool maximized = (IsZoomed(hwnd) != 0);
-
-				WINDOWPLACEMENT wp = {};
-				wp.length = sizeof(WINDOWPLACEMENT);
-				GetWindowPlacement(hwnd, &wp);
-				RECT rc = wp.rcNormalPosition;
-
-				EditorModelModule* modelModule = mModelRef.Get();
-				if (modelModule)
-					modelModule->SaveWindowState(rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, maximized);
-			}
 
 			// Unregister console sink
 			Dia::Observation::Log::Logger::Instance().UnregisterSink(&mConsoleSink);
