@@ -14,6 +14,7 @@
 
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/PUAffinity.h>
+#include <DiaApplicationFlow/Streams/ServiceStreamWriter.h>
 #include <DiaStreams/IStreamStore.h>
 #include <DiaDebugServer/DebugServer.h>
 #include <DiaDebugServer/IDebugStateProvider.h>
@@ -45,9 +46,13 @@ public:
     // module — may be null before DoStart.
     Dia::DebugServer::DebugServer* GetServer() { return &mServer; }
 
+    // Stream ID for the cross-PU DebugServer service.
+    static constexpr const char* kServiceStreamId = "DebugServerService";
+
 protected:
     // v2 Module lifecycle
     void OnConfigure(const char* configJson) override;
+    void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
     Dia::ApplicationFlow::StartResult DoStart() override;
     void DoUpdate(float deltaTime) override;
     Dia::ApplicationFlow::StopResult DoStop() override;
@@ -74,6 +79,9 @@ private:
     void QueryMemory();
 
     Dia::DebugServer::DebugServer mServer;
+    Dia::DebugServer::DebugServer* mServerPtr = nullptr;
+    Dia::ApplicationFlow::ServiceStreamWriter<Dia::DebugServer::DebugServer*> mServerService{
+        this, Dia::Core::StringCRC(kServiceStreamId)};
 
     // Rolling FPS over a short accumulation window.
     float  mFpsAccMs   = 0.0f;

@@ -3,6 +3,9 @@
 #ifdef DIA_DEBUG
 
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
+#include <DiaApplicationFlow/Application.h>
+#include <DiaApplicationFlow/IApplicationInspectable.h>
+#include <DiaApplicationFlow/Streams/ServiceStreamStore.h>
 #include <DiaEntityInspector/EntityInspectSerializer.h>
 #include <DiaEntity/DebugDataTypes.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
@@ -23,7 +26,26 @@ EntityInspectorModule::~EntityInspectorModule() = default;
 Dia::ApplicationFlow::StartResult EntityInspectorModule::DoStart()
 {
     DIA_LOG_INFO("Application", "EntityInspectorModule::DoStart");
-    RegisterHandlers();
+
+    // Resolve the DebugServer pointer via the cross-PU service stream.
+    auto* app = dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(GetApplication());
+    if (app)
+    {
+        auto* store = app->FindStream(
+            Dia::Core::StringCRC(DebugServerHostModule::kServiceStreamId));
+        auto* typed = dynamic_cast<
+            Dia::ApplicationFlow::ServiceStreamStore<Dia::DebugServer::DebugServer*>*>(store);
+        if (typed)
+            mDebugServer = typed->Get();
+        else
+            DIA_LOG_WARNING("Application", "EntityInspectorModule: DebugServerService stream not found or wrong type");
+    }
+
+    if (mDebugServer)
+        RegisterHandlers();
+    else
+        DIA_LOG_WARNING("Application", "EntityInspectorModule: no DebugServer — handlers not registered");
+
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
@@ -32,8 +54,7 @@ void EntityInspectorModule::DoUpdate(float /*dt*/)
     DIA_TRACE_ZONE("EntityInspectorModule::DoUpdate", Dia::Observation::Trace::Category::kNone);
 
     auto* vd = mVisualDebuggerRef.Get();
-    auto* ds = mDebugServerRef.Get();
-    if (!vd || !ds || !ds->GetServer()) return;
+    if (!vd || !mDebugServer) return;
 
     const uint32_t selectedId = vd->GetLayerManager().GetSelectedEntityId();
     const bool selectionChanged = (selectedId != mLastSelectedId);
@@ -68,8 +89,7 @@ void EntityInspectorModule::PushInspect(uint32_t selectedId)
 {
     DIA_TRACE_ZONE("EntityInspectorModule::PushInspect", Dia::Observation::Trace::Category::kNone);
     auto* entityMod = mEntityRef.Get();
-    auto* ds        = mDebugServerRef.Get();
-    if (!entityMod || !ds || !ds->GetServer()) return;
+    if (!entityMod || !mDebugServer) return;
 
     auto& inspectable = entityMod->GetInspectable();
 
@@ -78,8 +98,7 @@ void EntityInspectorModule::PushInspect(uint32_t selectedId)
         // No entity selected — push empty payload so UI clears.
         DIA_LOG_INFO("Application", "EntityInspectorModule: no entity selected, clearing inspector UI");
         Json::Value empty;
-        ds->GetServer()->NotifySubscribers(
-            Dia::Entity::DebugDataType::kEntityInspect, empty);
+        mDebugServer->NotifySubscribers(Dia::Entity::DebugDataType::kEntityInspect, empty);
         return;
     }
 
@@ -96,16 +115,14 @@ void EntityInspectorModule::PushInspect(uint32_t selectedId)
 
     Json::Value payload = Dia::EntityInspector::SerializeEntityInspect(inspectable, entity);
     DIA_LOG_INFO("Application", "EntityInspectorModule: pushing entity.inspect for entityIndex=%u", entityIndex);
-    ds->GetServer()->NotifySubscribers(
-        Dia::Entity::DebugDataType::kEntityInspect, payload);
+    mDebugServer->NotifySubscribers(Dia::Entity::DebugDataType::kEntityInspect, payload);
 }
 
 void EntityInspectorModule::RegisterHandlers()
 {
-    auto* ds = mDebugServerRef.Get();
-    if (!ds || !ds->GetServer()) return;
+    if (!mDebugServer) return;
 
-    auto& queryReg = ds->GetServer()->GetQueryRegistry();
+    auto& queryReg = mDebugServer->GetQueryRegistry();
 
     // entity.inspect_request — immediate on-demand inspect of specific entity
     queryReg.Register(
@@ -128,8 +145,7 @@ void EntityInspectorModule::RegisterHandlers()
         });
 
     // entity.find_by_name — O(N) scan, returns {index, gen} or {index: -1}
-    auto& cmdDisp = ds->GetServer()->GetCommandDispatcher();
-    (void)cmdDisp;
+    (void)mDebugServer->GetCommandDispatcher();
 
     // Register DiaAPI JSON commands
     {
@@ -215,10 +231,9 @@ void EntityInspectorModule::RegisterHandlers()
 void EntityInspectorModule::UnregisterHandlers()
 {
     DIA_LOG_INFO("Application", "EntityInspectorModule::UnregisterHandlers");
-    auto* ds = mDebugServerRef.Get();
-    if (!ds || !ds->GetServer()) return;
-    ds->GetServer()->GetQueryRegistry().Unregister(
-        Dia::Entity::DebugDataType::kEntityInspectRequest);
+    if (!mDebugServer) return;
+    mDebugServer->GetQueryRegistry().Unregister(Dia::Entity::DebugDataType::kEntityInspectRequest);
+    mDebugServer = nullptr;
 }
 
 } } // namespace Cluiche::AppFlow

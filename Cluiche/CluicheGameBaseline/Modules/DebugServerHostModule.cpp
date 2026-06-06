@@ -36,6 +36,11 @@ DebugServerHostModule::~DebugServerHostModule() = default;
 // v2 lifecycle
 //---------------------------------------------------------------------------
 
+void DebugServerHostModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
+{
+    mServerService.Connect(app);
+}
+
 void DebugServerHostModule::OnConfigure(const char* configJson)
 {
     if (configJson == nullptr || configJson[0] == '\0')
@@ -86,6 +91,8 @@ Dia::ApplicationFlow::StartResult DebugServerHostModule::DoStart()
 
     mServer.SetStateProvider(this);
     mServer.Start();
+    mServerPtr = &mServer;
+    mServerService.Register(mServerPtr);
 
     // Attach $lifecycle tap so stage transitions are forwarded to connected
     // clients as push events.  The tap lives in the host (which owns
@@ -215,6 +222,8 @@ Dia::ApplicationFlow::StopResult DebugServerHostModule::DoStop()
         mLifecycleTapId = 0;
     }
 
+    mServerService.Deregister();
+    mServerPtr = nullptr;
     mServer.Stop();
 
     // Null metric pointers — MetricRegistry owns the objects.

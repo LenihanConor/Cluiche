@@ -10,6 +10,8 @@
 #include "Modules/VisualDebuggerModule.h"
 #include "Modules/DebugServerHostModule.h"
 
+namespace Dia { namespace DebugServer { class DebugServer; } }
+
 namespace Cluiche { namespace AppFlow {
 
 class EntityInspectorModule : public Dia::ApplicationFlow::Module
@@ -34,7 +36,7 @@ private:
 
     Dia::ApplicationFlow::ModuleRef<EntityModule>          mEntityRef{this};
     Dia::ApplicationFlow::ModuleRef<VisualDebuggerModule>  mVisualDebuggerRef{this};
-    Dia::ApplicationFlow::ModuleRef<DebugServerHostModule> mDebugServerRef{this};
+    Dia::DebugServer::DebugServer*                         mDebugServer = nullptr;
 
     uint32_t mLastSelectedId  = 0;
     int      mSlowPollCounter = 0;

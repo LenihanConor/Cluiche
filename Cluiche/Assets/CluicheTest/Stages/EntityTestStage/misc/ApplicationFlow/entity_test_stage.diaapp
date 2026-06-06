@@ -56,7 +56,12 @@
                         "EntityModule",
                         "VisualDebuggerModule"
                     ],
-                    "channels": []
+                    "channels": [
+                        {
+                            "id": "DebugServerService",
+                            "role": "consumes"
+                        }
+                    ]
                 }
             ]
         }
