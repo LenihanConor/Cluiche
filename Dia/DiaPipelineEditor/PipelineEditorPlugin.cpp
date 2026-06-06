@@ -500,10 +500,57 @@ void PipelineEditorPlugin::PollLaunchProcess()
 	if (GetExitCodeProcess(mLaunchProcess, &exitCode) && exitCode != STILL_ACTIVE)
 	{
 		DrainLaunchPipe();
+
+		// Flush log before reading it back
+		if (mLaunchStdoutFile)
+		{
+			fflush(mLaunchStdoutFile);
+			fclose(mLaunchStdoutFile);
+			mLaunchStdoutFile = nullptr;
+		}
+
 		if (exitCode == 0)
+		{
 			DIA_LOG_INFO("PipelineEditor", "launch: %s exited cleanly (exit 0)", mLaunchTarget);
+		}
 		else
+		{
 			DIA_LOG_WARNING("PipelineEditor", "launch: %s exited with code %lu — see Cluiche/out/DiaCLI/logs/launch/last-stdout.log", mLaunchTarget, exitCode);
+		}
+
+		if (GetBridge())
+		{
+			// Read last few lines from stdout log for the toast
+			char logPath[1100];
+			snprintf(logPath, sizeof(logPath), "%s/Cluiche/out/DiaCLI/logs/launch/last-stdout.log", mRepoRoot);
+
+			char lastLines[512] = {};
+			FILE* f = nullptr;
+			fopen_s(&f, logPath, "rb");
+			if (f)
+			{
+				fseek(f, 0, SEEK_END);
+				long sz = ftell(f);
+				long readStart = sz > 480 ? sz - 480 : 0;
+				fseek(f, readStart, SEEK_SET);
+				size_t n = fread(lastLines, 1, sizeof(lastLines) - 1, f);
+				lastLines[n] = '\0';
+				fclose(f);
+				// Strip leading partial line if we didn't start at 0
+				char* lineStart = readStart > 0 ? strchr(lastLines, '\n') : lastLines;
+				if (lineStart && lineStart != lastLines)
+					memmove(lastLines, lineStart + 1, strlen(lineStart));
+			}
+
+			Json::Value status;
+			status["target"]   = mLaunchTarget;
+			status["exitCode"] = static_cast<int>(exitCode);
+			status["output"]   = lastLines;
+			GetBridge()->NotifyUIDataChanged("pipeline.launch-status", status);
+		}
+
+		// Null out file handle — already closed above
+		mLaunchStdoutFile = nullptr;
 		CleanupLaunchProcess();
 	}
 }

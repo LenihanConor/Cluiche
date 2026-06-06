@@ -16,6 +16,7 @@ interface PipelineToolbarProps {
     lastSuccessTimestamp: number | null;
     resumeStages: string[];
     dispatch: Dispatch<PipelineAction>;
+    onToast: (msg: string, kind?: 'error' | 'success', detail?: string) => void;
 }
 
 function formatElapsed(ms: number): string {
@@ -34,6 +35,7 @@ export const PipelineToolbar: FC<PipelineToolbarProps> = ({
     lastSuccessTimestamp,
     resumeStages,
     dispatch: _dispatch,
+    onToast,
 }) => {
     const { request } = useBridgeRequest();
     const [selectedConfig, setSelectedConfig] = useState('Debug');
@@ -74,14 +76,13 @@ export const PipelineToolbar: FC<PipelineToolbarProps> = ({
     const isRunning = localBuildRunning || buildRunning;
     const buildDisabled = isRunning || diagameName === '';
 
-    const handleBuild = useCallback(() => {
+    const handleBuild = useCallback(async () => {
         if (buildDisabled) return;
-        if (buildMode === 'buildAndLaunch') {
-            request('pipeline.start', { config: selectedConfig, target: diagameName, force, launchAfter: true });
-        } else {
-            request('pipeline.start', { config: selectedConfig, target: diagameName, force });
+        const res = await request('pipeline.start', { config: selectedConfig, target: diagameName, force, launchAfter: buildMode === 'buildAndLaunch' }) as { ok?: boolean; error?: string } | null;
+        if (res && !res.ok) {
+            onToast(res.error ?? 'Failed to start build', 'error');
         }
-    }, [request, selectedConfig, diagameName, force, buildDisabled, buildMode]);
+    }, [request, selectedConfig, diagameName, force, buildDisabled, buildMode, onToast]);
 
     const selectBuildAndLaunch = useCallback(() => {
         setBuildMode('buildAndLaunch');
@@ -92,9 +93,16 @@ export const PipelineToolbar: FC<PipelineToolbarProps> = ({
         request('pipeline.cancel');
     }, [request]);
 
-    const handleLaunch = useCallback(() => {
-        request('pipeline.launch');
-    }, [request]);
+    const handleLaunch = useCallback(async () => {
+        const res = await request('pipeline.launch') as { success?: boolean; error?: string } | null;
+        if (!res) {
+            onToast('Launch timed out — no response from plugin', 'error');
+        } else if (!res.success) {
+            onToast(res.error ?? 'Launch failed', 'error');
+        } else {
+            onToast(`Launching ${diagameName}…`, 'success');
+        }
+    }, [request, onToast, diagameName]);
 
     const handleResume = useCallback(() => {
         if (resumeStages.length === 0) return;
