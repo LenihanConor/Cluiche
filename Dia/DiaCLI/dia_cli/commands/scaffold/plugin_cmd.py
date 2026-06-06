@@ -239,6 +239,38 @@ def _vcxproj_filters_content(n: dict) -> str:
 
 
 # ---------------------------------------------------------------------------
+# pipeline.toml injection
+# ---------------------------------------------------------------------------
+
+_PIPELINE_TOML_ANCHOR = '  { src = "Dia/DiaPipelineEditor/UI/dist/*"'
+
+
+def _inject_pipeline_toml(n: dict, repo_root: Path) -> bool:
+    """Insert a deploy rule for the new plugin's UI into pipeline.toml.
+
+    Returns True if the file was modified, False if the rule already exists.
+    Raises FileNotFoundError / IOError on I/O failure.
+    """
+    toml_path = repo_root / "pipeline.toml"
+    text = toml_path.read_text(encoding="utf-8")
+
+    new_rule = f'  {{ src = "Dia/{n["project_name"]}/UI/*", dest = "$(OutDir)plugins/{n["plugin_id_lower"]}/" }},'
+
+    if new_rule in text:
+        return False
+
+    anchor_pos = text.find(_PIPELINE_TOML_ANCHOR)
+    if anchor_pos == -1:
+        raise ValueError("pipeline.toml: could not find insertion anchor for new deploy rule")
+
+    # Back up to the start of that line
+    line_start = text.rfind("\n", 0, anchor_pos) + 1
+    text = text[:line_start] + new_rule + "\n" + text[line_start:]
+    toml_path.write_text(text, encoding="utf-8")
+    return True
+
+
+# ---------------------------------------------------------------------------
 # Click command
 # ---------------------------------------------------------------------------
 
@@ -285,6 +317,7 @@ def plugin(name: str, layout: str, dry_run: bool) -> None:
         click.echo(f"  Create  {rel(ui_path)}")
         click.echo(f"  Create  {rel(vcxproj_path)}")
         click.echo(f"  Create  {rel(filters_path)}")
+        click.echo(f"  Patch   pipeline.toml  (deploy rule for plugins/{n['plugin_id_lower']}/)")
         click.echo(f"\nNext: Add {n['project_name']} to Cluiche.sln and register in PluginLoaderModule.cpp")
         return
 
@@ -310,8 +343,15 @@ def plugin(name: str, layout: str, dry_run: bool) -> None:
     filters_path.write_text(_vcxproj_filters_content(n), encoding="utf-8")
     created.append(rel(filters_path))
 
+    # 6. Patch pipeline.toml with a deploy rule for this plugin's UI
+    patched = _inject_pipeline_toml(n, repo_root)
+
     # Summary
     click.echo("")
     for path_str in created:
         click.echo(f"  Created  {path_str}")
+    if patched:
+        click.echo(f"  Patched  pipeline.toml  (added deploy rule for plugins/{n['plugin_id_lower']}/)")
+    else:
+        click.echo(f"  Skipped  pipeline.toml  (deploy rule already present)")
     click.echo(f"\nNext: Add {n['project_name']} to Cluiche.sln and register in PluginLoaderModule.cpp")

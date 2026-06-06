@@ -107,6 +107,7 @@ files = [
   { src = "Dia/DiaApplicationEditor/Assets/*",            dest = "$(OutDir)plugins/diaapplicationeditor/" },
   { src = "Dia/DiaAssetRuntimeInspector/UI/*",               dest = "$(OutDir)plugins/assetruntimeinspector/" },
   { src = "Dia/DiaAssetCatalogueEditor/UI/*",              dest = "$(OutDir)plugins/assetcatalogue/" },
+  { src = "Dia/DiaEntityInspector/UI/*",                      dest = "$(OutDir)plugins/entityinspector/" },
   { src = "Dia/DiaEntityTemplateEditor/UI/*",                 dest = "$(OutDir)plugins/EntityTemplateEditor/" },
   { src = "Dia/DiaSceneEditor/UI/*",                    dest = "$(OutDir)plugins/sceneeditor/" },
   { src = "Dia/DiaPipelineEditor/UI/dist/*",              dest = "$(OutDir)plugins/diapipelineeditor/" },
