@@ -3,13 +3,13 @@ import { initialPipelineState } from './types';
 
 export type PipelineAction =
     | { type: 'PROCESS_EVENTS'; events: PipelineEventData[] }
-    | { type: 'UPDATE_SUMMARY'; summary: { target: string; config: string; passCount: number; failCount: number; totalDurationMs: number; interrupted: boolean; runInProgress: boolean } }
+    | { type: 'UPDATE_SUMMARY'; summary: { target: string; config: string; passCount: number; failCount: number; totalDurationMs: number; interrupted: boolean; runInProgress: boolean; exeExists?: boolean } }
     | { type: 'TOGGLE_STAGE'; stageName: string }
     | { type: 'SET_HISTORY'; runs: HistoryRun[] }
     | { type: 'VIEW_HISTORY'; index: number }
     | { type: 'CLEAR_HISTORY_VIEW' }
     | { type: 'SET_STAGE_MANIFEST'; stages: string[] }
-    | { type: 'SET_PROJECT_STATE'; isValid: boolean; diagameName: string }
+    | { type: 'SET_PROJECT_STATE'; isValid: boolean; diagameName: string; exeExists?: boolean }
     | { type: 'RECORD_RUN'; run: HistoryRun & { stageDurationsMs: Record<string, number> } };
 
 function findOrCreateStage(stages: StageState[], name: string): StageState[] {
@@ -223,9 +223,10 @@ export function pipelineReducer(state: PipelineState, action: PipelineAction): P
                         : st
                 );
             }
-            // Allow launch after an interrupted run if all completed stages passed
-            // (process was killed after work succeeded, just before writing OnRunCompleted).
+            // canLaunch if: exe present on disk, OR interrupted-but-clean (all stages passed
+            // before the process was killed), OR already enabled from a prior completed run.
             const interruptedButClean = s.interrupted && s.failCount === 0 && s.passCount > 0;
+            const canLaunch = s.exeExists === true || interruptedButClean || state.canLaunch;
             return {
                 ...state,
                 target: s.target || state.target,
@@ -235,7 +236,7 @@ export function pipelineReducer(state: PipelineState, action: PipelineAction): P
                 totalDurationMs: s.totalDurationMs,
                 interrupted: s.interrupted,
                 runInProgress: s.runInProgress,
-                canLaunch: interruptedButClean ? true : state.canLaunch,
+                canLaunch,
                 stages,
             };
         }
@@ -286,7 +287,7 @@ export function pipelineReducer(state: PipelineState, action: PipelineAction): P
                 ...state,
                 isProjectLoaded: action.isValid,
                 diagameName: action.diagameName,
-                canLaunch: false,
+                canLaunch: action.exeExists === true,
                 lastSuccessTimestamp: null,
                 stageManifest: action.isValid ? state.stageManifest : [],
                 stages: action.isValid ? state.stages : [],

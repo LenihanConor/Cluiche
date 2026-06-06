@@ -16,6 +16,31 @@
 
 using namespace Dia::PipelineEditor;
 
+static const char* kExePaths[] = {
+	"Cluiche/bin/CluicheTest/%s/x64/CluicheTest.exe",
+	"Cluiche/bin/GoogleTests/%s/x64/GoogleTests.exe",
+	"Cluiche/bin/CluicheEditor/%s/x64/CluicheEditor.exe",
+};
+static const char* kExeTargets[] = { "cluichetest", "googletest", "cluicheeditor" };
+
+static bool ExeExistsForTarget(const char* repoRoot, const char* target, const char* config)
+{
+	if (!target || target[0] == '\0' || !config || config[0] == '\0')
+		return false;
+	for (int i = 0; i < 3; ++i)
+	{
+		if (_stricmp(target, kExeTargets[i]) == 0)
+		{
+			char path[1024];
+			snprintf(path, sizeof(path), kExePaths[i], config);
+			char full[1024];
+			snprintf(full, sizeof(full), "%s/%s", repoRoot, path);
+			return GetFileAttributesA(full) != INVALID_FILE_ATTRIBUTES;
+		}
+	}
+	return false;
+}
+
 static const Dia::Core::StringCRC kCmdPipelineStart("pipeline.start");
 static const Dia::Core::StringCRC kCmdPipelineCancel("pipeline.cancel");
 static const Dia::Core::StringCRC kCmdPipelineGetTargets("pipeline.get-targets");
@@ -160,6 +185,7 @@ void PipelineEditorPlugin::OnNavigate(const Dia::Core::StringCRC& /*instanceId*/
 	payload["diagamePath"] = mDiagamePath;
 	payload["target"]      = target;
 	payload["diagameName"] = target;
+	payload["exeExists"]   = ExeExistsForTarget(mRepoRoot, target, "Debug");
 	GetBridge()->NotifyUIDataChanged("pipeline.project_changed", payload);
 }
 
@@ -179,6 +205,7 @@ void PipelineEditorPlugin::OnProjectChanged(const Dia::Editor::ProjectContext& c
 		payload["diagamePath"] = ctx.diagamePath;
 		payload["target"]      = target;
 		payload["diagameName"] = target;   // alias: JS reads diagameName
+		payload["exeExists"]   = ExeExistsForTarget(mRepoRoot, target, "Debug");
 		GetBridge()->NotifyUIDataChanged("pipeline.project_changed", payload);
 	}
 }
@@ -269,15 +296,17 @@ void PipelineEditorPlugin::PushEventsToUI()
 	mLastPushedEventIndex = totalEvents;
 
 	const RunSummary& run = mTailer->GetCurrentRunSummary();
+	const char* summaryConfig = run.config.AsChar()[0] ? run.config.AsChar() : "Debug";
 	Json::Value summary;
 	summary["target"] = run.target.AsChar();
-	summary["config"] = run.config.AsChar();
+	summary["config"] = summaryConfig;
 	summary["passCount"] = run.passCount;
 	summary["failCount"] = run.failCount;
 	summary["totalDurationMs"] = run.totalDurationMs;
 	summary["startTimestamp"] = static_cast<double>(run.startTimestamp);
 	summary["interrupted"] = run.interrupted;
 	summary["runInProgress"] = mTailer->IsRunInProgress();
+	summary["exeExists"] = ExeExistsForTarget(mRepoRoot, run.target.AsChar(), summaryConfig);
 
 	Json::Value payload;
 	payload["events"] = eventsArray;
@@ -344,6 +373,7 @@ void PipelineEditorPlugin::RegisterCommands()
 			result["diagamePath"] = mDiagamePath;
 			result["target"]      = target;
 			result["diagameName"] = target;   // alias: JS reads diagameName
+			result["exeExists"]   = ExeExistsForTarget(mRepoRoot, target, "Debug");
 			return result;
 		});
 

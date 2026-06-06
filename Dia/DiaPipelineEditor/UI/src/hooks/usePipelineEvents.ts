@@ -49,8 +49,8 @@ export function usePipelineEvents() {
             }
 
             if (topic === 'pipeline.project_changed') {
-                const payload = data as { isValid: boolean; diagameName: string; target?: string };
-                dispatch({ type: 'SET_PROJECT_STATE', isValid: payload.isValid, diagameName: payload.diagameName });
+                const payload = data as { isValid: boolean; diagameName: string; target?: string; exeExists?: boolean };
+                dispatch({ type: 'SET_PROJECT_STATE', isValid: payload.isValid, diagameName: payload.diagameName, exeExists: payload.exeExists });
                 if (payload.isValid) {
                     request('pipeline.get_target_stages').then((result) => {
                         const stagesData = result as { stages: string[] } | null;
@@ -67,9 +67,9 @@ export function usePipelineEvents() {
 
     useEffect(() => {
         request('pipeline.get_project_state').then((result) => {
-            const data = result as { isValid: boolean; diagameName: string } | null;
+            const data = result as { isValid: boolean; diagameName: string; exeExists?: boolean } | null;
             if (data) {
-                dispatch({ type: 'SET_PROJECT_STATE', isValid: data.isValid, diagameName: data.diagameName });
+                dispatch({ type: 'SET_PROJECT_STATE', isValid: data.isValid, diagameName: data.diagameName, exeExists: data.exeExists });
                 if (data.isValid) {
                     request('pipeline.get_target_stages').then((stagesResult) => {
                         const stagesData = stagesResult as { stages: string[] } | null;
