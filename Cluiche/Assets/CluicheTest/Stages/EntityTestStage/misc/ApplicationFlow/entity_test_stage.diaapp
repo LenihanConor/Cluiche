@@ -45,6 +45,18 @@
                         "PickingModule"
                     ],
                     "channels": []
+                },
+                {
+                    "instance_id": "EntityInspectorModule",
+                    "type_id": "EntityInspectorModule",
+                    "stages": [
+                        "EntityTestStage"
+                    ],
+                    "dependencies": [
+                        "EntityModule",
+                        "VisualDebuggerModule"
+                    ],
+                    "channels": []
                 }
             ]
         }

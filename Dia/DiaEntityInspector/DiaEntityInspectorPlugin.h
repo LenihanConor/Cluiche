@@ -1,6 +1,10 @@
 #pragma once
 
 #include <DiaEditor/Plugin/EditorPluginBase.h>
+#include "DiaEntityInspector/EntityInspectorController.h"
+#include "DiaEntityInspector/QueryBrowserController.h"
+#include "DiaEntityInspector/MailboxMonitorController.h"
+#include "DiaEntityInspector/EntityWatchListController.h"
 
 namespace Dia { namespace Editor {
     class GameConnectionManager;
@@ -30,9 +34,15 @@ protected:
 
 private:
     void HandleConnectionStateChange(bool connected);
+    void DispatchInspectPayload(const Json::Value& payload);
 
     Dia::Editor::GameConnectionManager* mManager = nullptr;
     bool mWasConnected = false;
+
+    EntityInspectorController  mInspectorController;
+    QueryBrowserController     mQueryController;
+    MailboxMonitorController   mMailboxController;
+    EntityWatchListController  mWatchController;
 };
 
 } // namespace Dia::EntityInspector

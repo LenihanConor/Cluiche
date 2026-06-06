@@ -95,6 +95,7 @@ void EntityInspectorModule::PushInspect(uint32_t selectedId)
     }
 
     Json::Value payload = Dia::EntityInspector::SerializeEntityInspect(inspectable, entity);
+    DIA_LOG_INFO("Application", "EntityInspectorModule: pushing entity.inspect for entityIndex=%u", entityIndex);
     ds->GetServer()->NotifySubscribers(
         Dia::Entity::DebugDataType::kEntityInspect, payload);
 }
@@ -159,7 +160,7 @@ void EntityInspectorModule::RegisterHandlers()
             if (!entity.IsValid()) { Json::Value e; e["error"] = "entity not alive"; return e; }
 
             Dia::Core::StringCRC componentTypeId;
-            componentTypeId = crc;
+            static_cast<Dia::Core::CRC&>(componentTypeId) = crc;
 
             if (!entityMod->GetInspectable().WriteField(entity, componentTypeId, field, val))
             {

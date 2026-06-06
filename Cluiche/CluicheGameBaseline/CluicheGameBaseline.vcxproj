@@ -27,6 +27,7 @@
     <ClCompile Include="Modules\VisualDebuggerConsoleModule.cpp" />
     <ClCompile Include="Modules\AssetRuntimeVisualDebuggerModule.cpp" />
     <ClCompile Include="Modules\EntityVisualDebuggerModule.cpp" />
+    <ClCompile Include="Modules\EntityInspectorModule.cpp" />
     <ClCompile Include="Modules\DebugUIModule.cpp" />
     <ClCompile Include="Modules\DebugServerHostModule.cpp" />
     <ClCompile Include="Modules\JobSystemModule.cpp" />
@@ -60,6 +61,7 @@
     <ClInclude Include="Modules\VisualDebuggerConsoleModule.h" />
     <ClInclude Include="Modules\AssetRuntimeVisualDebuggerModule.h" />
     <ClInclude Include="Modules\EntityVisualDebuggerModule.h" />
+    <ClInclude Include="Modules\EntityInspectorModule.h" />
     <ClInclude Include="Modules\DebugUIModule.h" />
     <ClInclude Include="Modules\DebugServerHostModule.h" />
     <ClInclude Include="Modules\JobSystemModule.h" />
@@ -178,6 +180,12 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaEntityVisualDebugger\DiaEntityVisualDebugger.vcxproj">
       <Project>{B3C4D5E6-F7A8-9012-BCDE-F12345678901}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaEntityInspector\DiaEntityInspector.vcxproj">
+      <Project>{A3B4C5D6-E7F8-9012-ABCD-EF1234567890}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaAPI\DiaAPI.vcxproj">
+      <Project>{1E7F6E13-50CF-411C-B34C-66D70121DD03}</Project>
     </ProjectReference>
 
   </ItemGroup>

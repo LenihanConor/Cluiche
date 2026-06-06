@@ -60,6 +60,9 @@
     <ClCompile Include="Modules\EntityVisualDebuggerModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\EntityInspectorModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
     <ClCompile Include="Modules\RenderModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
@@ -138,6 +141,9 @@
       <Filter>Modules</Filter>
     </ClInclude>
     <ClInclude Include="Modules\EntityVisualDebuggerModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\EntityInspectorModule.h">
       <Filter>Modules</Filter>
     </ClInclude>
     <ClInclude Include="Modules\RenderModule.h">

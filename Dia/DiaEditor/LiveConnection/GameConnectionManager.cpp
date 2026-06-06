@@ -268,11 +268,16 @@ namespace Dia
 				Dia::Core::StringCRC topic(envelope["topic"].asCString());
 				const Json::Value& data = envelope["data"];
 
+				unsigned int fired = 0;
 				for (unsigned int i = 0; i < mSubscriptions.Size(); ++i)
 				{
 					if (mSubscriptions[i].topic == topic)
+					{
+						++fired;
 						mSubscriptions[i].callback(data);
+					}
 				}
+				DIA_LOG_INFO("Editor", "GameConnectionManager: topic='%s' dispatched to %u subscriber(s)", envelope["topic"].asCString(), fired);
 			}
 		}
 

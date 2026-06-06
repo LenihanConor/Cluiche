@@ -2,6 +2,7 @@
 #include <DiaEditor/Plugin/EditorPluginRegistrationMacros.h>
 #include <DiaEditor/Plugin/PluginServiceLocator.h>
 #include <DiaEditor/LiveConnection/GameConnectionManager.h>
+#include <DiaEntity/DebugDataTypes.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
@@ -30,6 +31,13 @@ void DiaEntityInspectorPlugin::OnPluginLoad()
             result["connected"] = (mManager != nullptr && mManager->IsConnected());
             return result;
         });
+
+    if (mManager)
+    {
+        mManager->Subscribe(
+            Dia::Entity::DebugDataType::kEntityInspect,
+            [this](const Json::Value& payload) { DispatchInspectPayload(payload); });
+    }
 
     if (mManager && mManager->IsConnected())
         HandleConnectionStateChange(true);
@@ -60,9 +68,39 @@ void DiaEntityInspectorPlugin::HandleConnectionStateChange(bool connected)
     }
 
     if (connected)
+    {
         DIA_LOG_INFO("Editor", "DiaEntityInspectorPlugin: Connected to game");
+        mInspectorController.Activate(GetBridge());
+        mQueryController.Activate(GetBridge());
+        mMailboxController.Activate(GetBridge());
+        mWatchController.Activate(GetBridge());
+        mWatchController.RegisterHandlers();
+        mWatchController.OnConnectionStateChanged(true);
+    }
     else
+    {
         DIA_LOG_INFO("Editor", "DiaEntityInspectorPlugin: Disconnected from game");
+        mWatchController.OnConnectionStateChanged(false);
+        mWatchController.UnregisterHandlers();
+        mInspectorController.Deactivate();
+        mQueryController.Deactivate();
+        mMailboxController.Deactivate();
+        mWatchController.Deactivate();
+    }
+}
+
+void DiaEntityInspectorPlugin::DispatchInspectPayload(const Json::Value& payload)
+{
+    DIA_LOG_INFO("Editor", "DiaEntityInspectorPlugin: entity.inspect received — null=%d keys: entity=%d components=%d entities=%d",
+        payload.isNull() ? 1 : 0,
+        payload.isMember("entity") ? 1 : 0,
+        payload.isMember("components") ? 1 : 0,
+        payload.isMember("entities") ? 1 : 0);
+
+    mInspectorController.OnInspectPayload(payload);
+    mQueryController.OnInspectPayload(payload);
+    mMailboxController.OnInspectPayload(payload);
+    mWatchController.OnInspectPayload(payload);
 }
 
 } // namespace Dia::EntityInspector

@@ -264,6 +264,8 @@ namespace Dia
 			mCallbacks[mCallbackCount].callback = callback;
 			mCallbacks[mCallbackCount].userData = userData;
 			++mCallbackCount;
+			if (mDiagameContext.IsValid())
+				callback(mDiagameContext, userData);
 		}
 
 		unsigned int EditorModel::GetRecentProjectCount() const { return mRecentCount; }

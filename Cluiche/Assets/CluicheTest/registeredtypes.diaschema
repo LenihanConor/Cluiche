@@ -249,6 +249,11 @@
     },
     {
       "allowed_pus": "sim",
+      "description": "Pushes entity.inspect payloads to the debug server; registers entity.write_field and entity.find_by_name commands",
+      "type_id": "EntityInspectorModule"
+    },
+    {
+      "allowed_pus": "sim",
       "description": "Entity debug overlays: labels, hierarchy, stats, picking, inspector",
       "type_id": "EntityVisualDebuggerModule"
     },
@@ -291,6 +296,6 @@
   "processing_units": [],
   "version": {
     "major": 1,
-    "minor": 2
+    "minor": 3
   }
 }

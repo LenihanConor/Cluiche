@@ -18,7 +18,10 @@ void EntityInspectorController::Deactivate()
 
 void EntityInspectorController::OnInspectPayload(const Json::Value& payload)
 {
+    DIA_LOG_INFO("Editor", "EntityInspectorController::OnInspectPayload bridge=%s null=%d",
+        mBridge ? "ok" : "null", payload.isNull() ? 1 : 0);
     if (!mBridge || payload.isNull()) return;
+    DIA_LOG_INFO("Editor", "EntityInspectorController: pushing inspect_data to UI");
     mBridge->NotifyUIDataChanged("entity_inspector.inspect_data", payload);
 }
 
