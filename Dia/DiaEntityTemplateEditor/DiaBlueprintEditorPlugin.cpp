@@ -602,44 +602,6 @@ namespace Dia
 					return MakeSuccessResponse();
 				});
 
-			RegisterHandler(
-				Dia::Core::StringCRC("entity_template_editor.create_from_template"),
-				[this](const Json::Value& data) -> Json::Value
-				{
-					if (!data.isMember("instanceId") || !data["instanceId"].isString()
-					    || !data.isMember("path") || !data["path"].isString())
-					{
-						return MakeErrorResponse("missing instanceId or path");
-					}
-
-					const std::string instanceId = data["instanceId"].asString();
-					const std::string path = data["path"].asString();
-					char resolvedPath[512] = {};
-					ResolvePath(path.c_str(), resolvedPath, sizeof(resolvedPath));
-
-					const char* ext    = strrchr(resolvedPath, '.');
-					const char* topKey = BlueprintFileHandler::TopLevelKeyForExtension(ext ? ext : "");
-
-					Json::Value blueprintRoot;
-					Json::Value& inner = blueprintRoot[topKey];
-					inner["id"]         = instanceId;
-					inner["components"] = Json::Value(Json::arrayValue);
-
-					char err[256] = {};
-					if (!mFileHandler.Save(resolvedPath, blueprintRoot, err, sizeof(err)))
-					{
-						DIA_LOG_WARNING("Editor",
-							"DiaEntityTemplateEditorPlugin: create_from_template — save failed for '%s': %s",
-							path.c_str(), err);
-						return MakeErrorResponse(err[0] ? err : "save failed");
-					}
-
-					DIA_LOG_INFO("Editor",
-						"DiaEntityTemplateEditorPlugin: created template file '%s' for '%s'",
-						path.c_str(), instanceId.c_str());
-					return MakeSuccessResponse();
-				});
-
 		}
 
 	}

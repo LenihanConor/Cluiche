@@ -1,16 +1,19 @@
 // Integration tests for DiaAssetCatalogueEditorPlugin — focused on the
 // get_asset_types handler and the blueprint type registrations added in
-// the editor empty-state work.
+// the editor empty-state work, plus create_asset file-writing coverage.
 
 #include <gtest/gtest.h>
 #include <DiaAssetCatalogueEditor/DiaAssetCatalogueEditorPlugin.h>
+#include <DiaEntityTemplateEditor/DiaEntityTemplateEditorPlugin.h>
 #include <DiaEditor/UI/WebUIBridge.h>
 #include <DiaEditor/MVC/EditorModel.h>
 #include <DiaEditor/Plugin/EditorPluginContext.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
+#include <cstdio>
 
 using namespace Dia::AssetCatalogue::Editor;
+using namespace Dia::EntityTemplateEditor;
 using namespace Dia::Editor;
 using namespace Dia::Core;
 
@@ -34,11 +37,14 @@ protected:
 		ctx.mServices     = nullptr;
 
 		mPlugin.OnLoad(ctx);
+		mBlueprintPlugin.OnLoad(ctx);
 	}
 
 	void TearDown() override
 	{
+		mBlueprintPlugin.OnUnload();
 		mPlugin.OnUnload();
+		CleanTempFiles();
 		delete mModel;
 		delete mBridge;
 	}
@@ -56,9 +62,27 @@ protected:
 		return false;
 	}
 
+	void RegisterTempFile(const char* path)
+	{
+		if (mTempCount < kMaxTempFiles)
+			mTempFiles[mTempCount++] = path;
+	}
+
+	void CleanTempFiles()
+	{
+		for (unsigned int i = 0; i < mTempCount; ++i)
+			std::remove(mTempFiles[i]);
+		mTempCount = 0;
+	}
+
 	DiaAssetCatalogueEditorPlugin  mPlugin;
+	DiaEntityTemplateEditorPlugin  mBlueprintPlugin;
 	WebUIBridge*                   mBridge = nullptr;
 	EditorModel*                   mModel  = nullptr;
+
+	static const unsigned int kMaxTempFiles = 16;
+	const char*  mTempFiles[kMaxTempFiles] = {};
+	unsigned int mTempCount = 0;
 };
 
 // ===========================================================================
@@ -210,4 +234,171 @@ TEST_F(AssetCatalogueEditorPluginTest, OnUnload_RemovesGetStateHandler)
 	ctx.mBridge = mBridge;
 	ctx.mModel  = mModel;
 	mPlugin.OnLoad(ctx);
+}
+
+// ===========================================================================
+// create_asset — handler registered
+// ===========================================================================
+
+TEST_F(AssetCatalogueEditorPluginTest, CreateAsset_HandlerRegistered)
+{
+	Json::Value r = Invoke("asset_catalogue.create_asset");
+	EXPECT_FALSE(r.isNull());
+	EXPECT_TRUE(r.isMember("success"));
+}
+
+// ===========================================================================
+// create_asset — error paths
+// ===========================================================================
+
+TEST_F(AssetCatalogueEditorPluginTest, CreateAsset_MissingParams_ReturnsError)
+{
+	Json::Value r = Invoke("asset_catalogue.create_asset");
+	EXPECT_FALSE(r["success"].asBool());
+	EXPECT_FALSE(r["error"].asString().empty());
+}
+
+TEST_F(AssetCatalogueEditorPluginTest, CreateAsset_MissingPath_ReturnsError)
+{
+	Json::Value data;
+	data["assetType"] = "diaentitytemplate";
+	data["id"]        = "diaentitytemplate.test";
+	Json::Value r = Invoke("asset_catalogue.create_asset", data);
+	EXPECT_FALSE(r["success"].asBool());
+}
+
+TEST_F(AssetCatalogueEditorPluginTest, CreateAsset_MissingId_ReturnsError)
+{
+	Json::Value data;
+	data["assetType"]   = "diaentitytemplate";
+	data["source_path"] = "itmp_create.diaentitytemplate";
+	Json::Value r = Invoke("asset_catalogue.create_asset", data);
+	EXPECT_FALSE(r["success"].asBool());
+}
+
+TEST_F(AssetCatalogueEditorPluginTest, CreateAsset_UnknownAssetType_ReturnsError)
+{
+	Json::Value data;
+	data["assetType"]   = "unknowntype";
+	data["id"]          = "unknowntype.test";
+	data["source_path"] = "itmp_create_unknown.unknowntype";
+	Json::Value r = Invoke("asset_catalogue.create_asset", data);
+	EXPECT_FALSE(r["success"].asBool());
+}
+
+// ===========================================================================
+// create_asset — happy path: entity template
+// ===========================================================================
+
+TEST_F(AssetCatalogueEditorPluginTest, CreateAsset_EntityTemplate_CreatesValidFile)
+{
+	const char* kPath = "itmp_create_entity.diaentitytemplate";
+	RegisterTempFile(kPath);
+
+	Json::Value data;
+	data["assetType"]   = "diaentitytemplate";
+	data["id"]          = "diaentitytemplate.hero";
+	data["source_path"] = kPath;
+	Json::Value r = Invoke("asset_catalogue.create_asset", data);
+
+	ASSERT_TRUE(r["success"].asBool());
+
+	Json::Value loadData;
+	loadData["path"] = kPath;
+	Json::Value loaded = Invoke("entity_template_editor.load", loadData);
+
+	ASSERT_TRUE(loaded["success"].asBool());
+	EXPECT_EQ(loaded["properties"]["components"].size(), 0u);
+}
+
+// ===========================================================================
+// create_asset — happy path: camera blueprint
+// ===========================================================================
+
+TEST_F(AssetCatalogueEditorPluginTest, CreateAsset_Camera_UsesCorrectTopKey)
+{
+	const char* kPath = "itmp_create_camera.diacamera";
+	RegisterTempFile(kPath);
+
+	Json::Value data;
+	data["assetType"]   = "diacamera";
+	data["id"]          = "diacamera.main";
+	data["source_path"] = kPath;
+	Json::Value r = Invoke("asset_catalogue.create_asset", data);
+
+	ASSERT_TRUE(r["success"].asBool());
+
+	Json::Value loadData;
+	loadData["path"] = kPath;
+	Json::Value loaded = Invoke("entity_template_editor.load", loadData);
+
+	ASSERT_TRUE(loaded["success"].asBool());
+	EXPECT_EQ(loaded["properties"]["components"].size(), 0u);
+}
+
+// ===========================================================================
+// create_asset — happy path: light blueprint
+// ===========================================================================
+
+TEST_F(AssetCatalogueEditorPluginTest, CreateAsset_Light_UsesCorrectTopKey)
+{
+	const char* kPath = "itmp_create_light.dialight";
+	RegisterTempFile(kPath);
+
+	Json::Value data;
+	data["assetType"]   = "dialight";
+	data["id"]          = "dialight.sun";
+	data["source_path"] = kPath;
+	Json::Value r = Invoke("asset_catalogue.create_asset", data);
+
+	ASSERT_TRUE(r["success"].asBool());
+
+	Json::Value loadData;
+	loadData["path"] = kPath;
+	Json::Value loaded = Invoke("entity_template_editor.load", loadData);
+
+	ASSERT_TRUE(loaded["success"].asBool());
+	EXPECT_EQ(loaded["properties"]["components"].size(), 0u);
+}
+
+// ===========================================================================
+// create_asset — created file is loadable and editable
+// ===========================================================================
+
+TEST_F(AssetCatalogueEditorPluginTest, CreateAsset_CreatedFileIsLoadableAndEditable)
+{
+	const char* kPath = "itmp_create_editable.diaentitytemplate";
+	RegisterTempFile(kPath);
+
+	Json::Value createData;
+	createData["assetType"]   = "diaentitytemplate";
+	createData["id"]          = "diaentitytemplate.npc";
+	createData["source_path"] = kPath;
+	ASSERT_TRUE(Invoke("asset_catalogue.create_asset", createData)["success"].asBool());
+
+	Json::Value addData;
+	addData["path"]          = kPath;
+	addData["componentType"] = "Transform2D";
+	ASSERT_TRUE(Invoke("entity_template_editor.add_component", addData)["success"].asBool());
+
+	Json::Value loadData;
+	loadData["path"] = kPath;
+	Json::Value loaded = Invoke("entity_template_editor.load", loadData);
+	ASSERT_TRUE(loaded["success"].asBool());
+	EXPECT_EQ(loaded["properties"]["components"].size(), 1u);
+	EXPECT_EQ(loaded["properties"]["components"][0]["type"].asString(), "Transform2D");
+}
+
+// ===========================================================================
+// create_asset — invalid directory returns error
+// ===========================================================================
+
+TEST_F(AssetCatalogueEditorPluginTest, CreateAsset_InvalidDirectory_ReturnsError)
+{
+	Json::Value data;
+	data["assetType"]   = "diaentitytemplate";
+	data["id"]          = "diaentitytemplate.test";
+	data["source_path"] = "nonexistent_dir_xyz/sub/file.diaentitytemplate";
+	Json::Value r = Invoke("asset_catalogue.create_asset", data);
+	EXPECT_FALSE(r["success"].asBool());
 }

@@ -16,7 +16,7 @@
 | 7 | DiaSceneEditor: empty-stage canvas with "Create Scene" CTA | Select sceneless stage → shows prominent action instead of blank hierarchy | Done | haiku | `.no-scene-overlay` div + `btn-create-scene-cta` delegates to `btn-new-scene`. |
 | 8 | DiaEntityTemplateEditor: "+New Template" button | Click button → new `.diaentitytemplate` created + navigated to | Done | sonnet | Toolbar button → prompt name/path → `asset_catalogue.create_asset` → `selectBlueprint` + `loadBlueprintList`. |
 | 9 | DiaEntityTemplateEditor: nav-failure "Create" uses `create_asset` | Navigate to missing template → create → file + record created, editor loads it | Done | haiku | `navFailCreateFile()` now calls `asset_catalogue.create_asset` directly. |
-| 10 | Remove `entity_template_editor.create_from_template` handler | `dia run googletest` passes; grep confirms no remaining callers | Deferred | haiku | 8 integration tests cover the handler directly. UI no longer calls it. Handler retained until tests are migrated to use `create_asset` with catalogue context. |
+| 10 | Remove `entity_template_editor.create_from_template` handler | `dia run googletest` passes; grep confirms no remaining callers | Done | sonnet | 8 tests migrated to `IntegrationTestAssetCatalogueEditorPlugin.cpp` under `create_asset`; handler deleted from `DiaBlueprintEditorPlugin.cpp`. |
 
 ## Dependency Graph
 
