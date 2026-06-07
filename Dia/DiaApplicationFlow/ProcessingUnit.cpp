@@ -8,10 +8,13 @@
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Log/Logger.h>
+#include <DiaObservation/Metric/Gauge.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaObservation/Profile/DiaProfile.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 
 #include <chrono>
+#include <string>
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -34,6 +37,15 @@ namespace Dia { namespace ApplicationFlow {
         DIA_LOG_INFO("Application", "ProcessingUnit '%s' created (%.0fHz, dedicated=%d)",
                      mInstanceId.AsChar(), static_cast<double>(mFrequencyHz),
                      mDedicatedThread ? 1 : 0);
+
+        // Task 34 — register per-PU tick-duration gauge
+        {
+            std::string metricName = "pu.";
+            metricName += mInstanceId.AsChar();
+            metricName += ".last_tick_ms";
+            mMetricLastTickMs = Dia::Observation::Metric::MetricRegistry::Instance()
+                                    .RegisterGauge(Dia::Core::StringCRC(metricName.c_str()));
+        }
     }
 
     //--------------------------------------------------------------------------
@@ -147,6 +159,9 @@ namespace Dia { namespace ApplicationFlow {
         DIA_PROFILE_SCOPE("pu.update", Dia::Observation::Profile::Category::kDiaApplicationFlow);
         DIA_TRACE_ZONE("pu.update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
 
+        // Task 34 — measure tick duration
+        const auto tickStart = std::chrono::high_resolution_clock::now();
+
         // Forward pass: starting/active modules.
         for (unsigned int i = 0; i < mModuleCount; ++i)
         {
@@ -171,6 +186,20 @@ namespace Dia { namespace ApplicationFlow {
 
         if (mPostTickFn)
             mPostTickFn();
+
+        // Task 34 — record elapsed tick time and update gauge
+        const auto tickEnd = std::chrono::high_resolution_clock::now();
+        mLastTickMs = std::chrono::duration<float, std::milli>(tickEnd - tickStart).count();
+        if (mMetricLastTickMs)
+            mMetricLastTickMs->Set(static_cast<double>(mLastTickMs));
+
+        // Task 35 — warn when tick exceeds target period
+        const float targetMs = (mFrequencyHz > 0.0f) ? (1000.0f / mFrequencyHz) : 0.0f;
+        if (targetMs > 0.0f && mLastTickMs > targetMs)
+        {
+            DIA_LOG_WARNING("pu", "pu.over_budget id=%s tick_ms=%.1f target_ms=%.1f",
+                mInstanceId.AsChar(), mLastTickMs, targetMs);
+        }
     }
 
     //--------------------------------------------------------------------------

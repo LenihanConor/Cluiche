@@ -6,6 +6,8 @@
 #include <atomic>
 #include <thread>
 
+namespace Dia { namespace Observation { namespace Metric { class Gauge; } } }
+
 namespace Dia { namespace ApplicationFlow {
 
     // A ProcessingUnit is a scheduler: it owns its Modules and drives their
@@ -84,6 +86,10 @@ namespace Dia { namespace ApplicationFlow {
 
         std::atomic<bool> mStopRequested{false};
         PostTickFn        mPostTickFn;
+
+        // Task 34 — per-tick timing gauge
+        float mLastTickMs = 0.0f;
+        Dia::Observation::Metric::Gauge* mMetricLastTickMs = nullptr;
     };
 
 }} // namespace Dia::ApplicationFlow

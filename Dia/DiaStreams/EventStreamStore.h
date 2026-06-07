@@ -19,6 +19,11 @@
 #include <DiaStreams/Event.h>
 #include <DiaObservation/Profile/DiaProfile.h>
 #include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Metric/Gauge.h>
+#include <DiaObservation/Metric/Counter.h>
+
+#include <string>
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -159,6 +164,10 @@ private:
     unsigned int mTapCount     = 0;
     unsigned int mNextTapId    = 1;
     bool         mInDispatch   = false;  // re-entrance guard
+
+    // Metrics (Task 32/33)
+    Dia::Observation::Metric::Gauge*   mMetricCurrentSize = nullptr;
+    Dia::Observation::Metric::Counter* mMetricDropsTotal  = nullptr;
 };
 
 // ---------------------------------------------------------------------------
@@ -183,6 +192,10 @@ inline EventStreamStore<T>::EventStreamStore(const Dia::Core::StringCRC& id,
     , mNextTapId(1)
     , mInDispatch(false)
 {
+    auto& reg          = Dia::Observation::Metric::MetricRegistry::Instance();
+    const std::string  prefix = std::string("stream.") + mId.AsChar();
+    mMetricCurrentSize = reg.RegisterGauge  (Dia::Core::StringCRC((prefix + ".current_size").c_str()));
+    mMetricDropsTotal  = reg.RegisterCounter(Dia::Core::StringCRC((prefix + ".drops_total" ).c_str()));
 }
 
 template<typename T>
@@ -305,6 +318,7 @@ inline SendResult EventStreamStore<T>::SendInternal(const Event<T>& event)
                     rb.tail = (rb.tail + 1) % rb.capacity;
                     --rb.count;
                     result = SendResult::kDroppedOldest;
+                    if (mMetricDropsTotal) mMetricDropsTotal->Inc();
                     DIA_LOG_WARNING("stream",
                         "stream.overflow stream_id=%s reader=%d policy=kDropOldest",
                         mId.AsChar(), i);
@@ -312,6 +326,7 @@ inline SendResult EventStreamStore<T>::SendInternal(const Event<T>& event)
 
                 case OverflowPolicy::kDropNewest:
                     result = SendResult::kDroppedNewest;
+                    if (mMetricDropsTotal) mMetricDropsTotal->Inc();
                     DIA_LOG_WARNING("stream",
                         "stream.overflow stream_id=%s reader=%d policy=kDropNewest",
                         mId.AsChar(), i);
@@ -323,6 +338,7 @@ inline SendResult EventStreamStore<T>::SendInternal(const Event<T>& event)
                     rb.tail = (rb.tail + 1) % rb.capacity;
                     --rb.count;
                     result = SendResult::kBlockedThenDropped;
+                    if (mMetricDropsTotal) mMetricDropsTotal->Inc();
                     DIA_LOG_WARNING("stream",
                         "stream.overflow stream_id=%s reader=%d policy=kBlock",
                         mId.AsChar(), i);
@@ -344,6 +360,16 @@ inline SendResult EventStreamStore<T>::SendInternal(const Event<T>& event)
         rb.batchStamps[rb.head] = mCurrentBatchId.load(std::memory_order_relaxed);
         rb.head = (rb.head + 1) % rb.capacity;
         ++rb.count;
+    }
+
+    // Update current-size gauge: report the maximum fill level across all active readers.
+    if (mMetricCurrentSize)
+    {
+        unsigned int maxFill = 0;
+        for (int i = 0; i < mReaderCount; ++i)
+            if (mReaders[i].active && mReaders[i].count > maxFill)
+                maxFill = mReaders[i].count;
+        mMetricCurrentSize->Set(static_cast<double>(maxFill));
     }
 
     // Dispatch taps after reader fan-out, before condvar notify (F4).
