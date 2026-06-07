@@ -33,7 +33,7 @@ GPU
 ## Responsibilities
 
 - Define `Mesh3DFrameData` — container for 3D draw commands + camera + lights; mirrors `EntityFrameData`'s shape
-- Define `Camera3D` — view + projection (`Matrix44`-typed) + helper setters
+- Define `Camera3D` — view + projection (`Matrix44`-typed) + helper setters; this is a **render snapshot** distinct from `DiaCamera3D::Camera3D` (the live sim type)
 - Define `DirectionalLight` and `PointLight`
 - Define `Mesh3DDrawCommand` — per-draw command: `meshId`, `materialId`, `transform` (Matrix44), `skinningPaletteIndex`, `layer`
 - Define `FrameData3D : FrameData, Mesh3DFrameData` — the full 2D+3D frame packet used by the 3D renderer; lives here so DiaGraphics (2D) has no 3D dep
@@ -44,6 +44,7 @@ GPU
 ## Non-Responsibilities
 
 - Any maths primitives (`Matrix44`, `Quaternion`, `Transform3D`) — owned by DiaMaths
+- Live camera simulation (position, orientation, behaviours) — owned by DiaCamera3D; frame-building code converts via `ViewportTransform3D` before calling `SetCamera()`
 - Any geometry primitives (`Frustum`, `AABB`) — owned by DiaGeometry3D
 - Material types or shader descriptors — owned by DiaBgfx3D
 - Mesh or skeleton data structures — owned by DiaMesh3D and DiaRig3D respectively

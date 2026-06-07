@@ -175,4 +175,4 @@ namespace Dia::EntityInspector {
 
 ## Status
 
-`Approved`
+`Done` — [Plan](diaentityinspector.plan.md)

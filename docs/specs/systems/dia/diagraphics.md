@@ -73,17 +73,58 @@ namespace Dia::Graphics {
 namespace Dia::Graphics {
     class DebugFrameData {
     public:
+        static constexpr uint32_t kGeometryCapacity = 2048u;
+        static constexpr uint32_t kTextCapacity     = 256u;
+
         void ClearDebugBuffer();
         void CopyDebugBuffer(const DebugFrameData& rhs);
 
-        void RequestDraw(const DebugFrameDataCircle2D& object);
-        void RequestDraw(const DebugFrameDataLine2D& object);
-        // ... one overload per primitive type
+        // Circle2D — outline + optional fill (alpha==0 = no fill)
+        void RequestDraw(const Maths::Vector2D& position, float radius, RGBA outlineColour, RGBA fillColour);
+        void RequestDraw(const Maths::Vector2D& position, float radius, RGBA outlineColour);
+
+        // Line2D
+        void RequestDraw(const Maths::Vector2D& start, const Maths::Vector2D& end, RGBA colour);
+
+        // Point2D
+        void RequestDrawPoint(const Maths::Vector2D& position, RGBA colour);
+
+        // Rect2D — outline + optional fill
+        void RequestDrawRect(const Maths::Vector2D& min, const Maths::Vector2D& max, RGBA outlineColour, RGBA fillColour);
+        void RequestDrawRect(const Maths::Vector2D& min, const Maths::Vector2D& max, RGBA outlineColour);
+
+        // Arc2D — angles in degrees, clockwise from positive X
+        void RequestDrawArc(const Maths::Vector2D& position, float radius, float startAngleDeg, float endAngleDeg, RGBA colour);
+
+        // Ray2D — direction must be a unit vector
+        void RequestDrawRay(const Maths::Vector2D& origin, const Maths::Vector2D& direction, float length, RGBA colour);
+
+        // Triangle2D — outline + optional fill
+        void RequestDraw(const Maths::Vector2D& p1, const Maths::Vector2D& p2, const Maths::Vector2D& p3, RGBA outlineColour, RGBA fillColour);
+        void RequestDraw(const Maths::Vector2D& p1, const Maths::Vector2D& p2, const Maths::Vector2D& p3, RGBA outlineColour);
+
+        // Text2D — world-space label; strings > 63 chars silently truncated.
+        // Stored in a separate text buffer (kTextCapacity), not in the geometry union.
+        void RequestDrawText(const Maths::Vector2D& position, const char* text, float fontSize, RGBA colour);
+
+        // Budget tracking
+        uint32_t DroppedCount()       const;  // geometry primitives dropped this frame
+        bool     IsOverCapacity()     const;
+        uint32_t DroppedTextCount()   const;  // text primitives dropped this frame
+        bool     IsTextOverCapacity() const;
+
+        // Inspection
+        uint32_t              GetDebugPrimitiveCount()          const;
+        const DebugPrimitive& GetDebugPrimitive(uint32_t index) const;
+        uint32_t                    GetTextPrimitiveCount()          const;
+        const DebugPrimitiveText2D& GetTextPrimitive(uint32_t index) const;
 
         void AcceptVisitor(const DebugFrameDataVisitor& visitor) const;
     };
 }
 ```
+
+`DebugPrimitive` is a tagged union over `DebugPrimitiveCircle2D`, `DebugPrimitiveLine2D`, `DebugPrimitivePoint2D`, `DebugPrimitiveRect2D`, `DebugPrimitiveArc2D`, `DebugPrimitiveRay2D`, `DebugPrimitiveTriangle2D`. All carry `entityId` for the picking seam (SD-DBG-007). `DebugPrimitiveText2D` is stored separately in its own buffer and is not part of the union.
 
 ### DebugFrameDataVisitor
 
@@ -104,7 +145,7 @@ namespace Dia::Graphics {
 | Feature | Description | Spec | Status |
 |---------|-------------|------|--------|
 | debug-primitive-tagged-union | Replace per-type debug buffers with a single tagged-union `DebugPrimitive` buffer | [debug-primitive-tagged-union.md](../../features/dia/diagraphics/debug-primitive-tagged-union.md) | Done |
-| texture-handle-stringcrc | Refactor `ITexture` to canonical asset-aware handle (StringCRC asset id + atomic ready state); `SpriteDrawCommand::textureId` (unsigned int) → `texture` (ITexture*); add `Dia::SFML::SfmlTexture` impl; coordinates with async-asset-loading per RB-009 | [texture-handle-stringcrc.md](../../features/dia/diagraphics/texture-handle-stringcrc.md) | Approved |
+| texture-handle-stringcrc | Refactor `ITexture` to canonical asset-aware handle (StringCRC asset id + atomic ready state); `SpriteDrawCommand::textureId` (unsigned int) → `texture` (ITexture*); add `Dia::SFML::SfmlTexture` impl; coordinates with async-asset-loading per RB-009 | [texture-handle-stringcrc.md](../../features/dia/diagraphics/texture-handle-stringcrc.md) | Done |
 | graphics-3d-types | Phase 2 — moved to DiaGraphics3D system (G3D-001); `Camera3D`, lights, `Mesh3DDrawCommand`, `Mesh3DFrameData`, `FrameData3D` now live in `Dia/DiaGraphics3D/` under `Dia::Graphics3D::`. DiaGraphics::FrameData unchanged. | [graphics-3d-types.md](../../features/dia/diagraphics3d/graphics-3d-types.md) | Approved (re-homed) |
 
 ---

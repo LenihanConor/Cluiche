@@ -42,7 +42,14 @@ non_responsibilities:
   - PU/Module integration (application-side)
   - Sub-scene nesting / scene composition
 
-dependent_modules: []
+dependent_modules:
+  - dia.core
+  - dia.maths
+  - dia.geometry2d
+  - dia.camera2d
+  - dia.lighting2d
+  - dia.entity
+  - dia.observation
 
 public_api:
   headers:
@@ -71,5 +78,4 @@ dependencies:
     - dia.graphics
     - dia.bgfx
     - dia.applicationflow
-    - dia.observation
 ---

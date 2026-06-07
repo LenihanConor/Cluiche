@@ -85,7 +85,7 @@ namespace Dia::Scene2D
         Dia::Core::StringCRC id;
         bool active = false;
         Dia::Core::StringCRC blueprint;
-        // instance_data applied via diaentitytemplate reflection (Component.Field → value)
+        Json::Value instanceData;  // opaque — "Component.Field": value map, captured verbatim
     };
 
     struct LightEntry
@@ -94,7 +94,7 @@ namespace Dia::Scene2D
         bool enabled = true;
         Dia::Core::StringCRC blueprint;
         Dia::Core::DynamicArrayC<Dia::Core::StringCRC, 32> affectsLayers;
-        // instance_data applied via diaentitytemplate reflection
+        Json::Value instanceData;  // opaque — captured verbatim
     };
 
     struct EntityInstance
@@ -103,7 +103,7 @@ namespace Dia::Scene2D
         Dia::Core::StringCRC name;  // optional (kEmpty if unset)
         Dia::Core::StringCRC blueprint;
         bool enabled = true;
-        // instance_data applied via diaentitytemplate reflection
+        Json::Value instanceData;  // opaque — "Component.Field": value map, captured verbatim
     };
 
     struct Scene2D
@@ -156,13 +156,21 @@ namespace Dia::Scene2D
         // instance_data field patching
     };
 
-    class SceneLoader2D
+    struct SceneLoadErrors
+    {
+        bool hasErrors = false;
+    };
+
+    class SceneLoader2D : public Dia::Observation::Health::HealthReporterBase
     {
     public:
-        // Load .diascene file, populate all target systems
-        bool Load(const char* filePath, SceneLoadContext& context, LayerTable& outLayers);
+        // Load .diascene file — populates camera registry, light registry, and entity domain.
+        // Returns false on hard errors (parse failure, wrong top-level key, != 1 active camera).
+        // outErrors accumulates soft errors if provided.
+        bool Load(const char* filePath, SceneLoadContext& context, LayerTable& outLayers,
+                  SceneLoadErrors* outErrors = nullptr);
 
-        // Unload — unregister cameras/lights, destroy entities
+        // Unload — unregisters cameras/lights, destroys spawned entities.
         void Unload(SceneLoadContext& context);
     };
 }
@@ -221,7 +229,6 @@ namespace Dia::Scene2D
 - DiaGraphics (no FrameData, no rendering concepts)
 - DiaBgfx (no renderer code)
 - DiaApplicationFlow (no PU/Module coupling)
-- DiaObservation (no logging — caller logs)
 
 ---
 
