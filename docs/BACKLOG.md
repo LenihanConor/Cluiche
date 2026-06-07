@@ -12,15 +12,15 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | System | Spec | Features | Depends On |
 |--------|------|----------|------------|
-| DiaGraphics3D | [diagraphics3d.md](specs/systems/dia/diagraphics3d.md) ✅ | `graphics-3d-types` — Camera3D, lights, Mesh3DDrawCommand, Mesh3DFrameData, FrameData3D; new `Dia/DiaGraphics3D/` module; `Dia::Graphics3D::` namespace. Needs system specs for DiaMesh3D/Rig3D/Animation3D/Skinning3D/Scene3D before Phase 2 implements. | DiaMaths (Matrix44), DiaGeometry3D, DiaGraphics ✅ |
+| ~~DiaGraphics3D~~ | [diagraphics3d.md](specs/systems/dia/diagraphics3d.md) ✅ | **Done** — Camera3D, lights, Mesh3DDrawCommand, Mesh3DFrameData, FrameData3D; `Dia/DiaGraphics3D/` module; `Dia::Graphics3D::` namespace. 19 tests pass. | — |
 | DiaBgfx3D | [diabgfx3d.md](specs/systems/dia/diabgfx3d.md) ✅ | `3d-renderers` — Canvas3D, MeshRenderer, SkinnedMeshRenderer, ShadowRenderer, MaterialRegistry, MeshGpuCache, 6 shaders; `Dia::Bgfx3D::` namespace; Phase 2 ship gate. Blocked on Phase 1 + DiaScene3D chain. | DiaBgfx (Phase 1), DiaScene3D chain, DiaGraphics3D ✅ |
 | DiaMesh3D | TBD — needs `/spec-system` | `mesh-asset-and-loader` feature already Approved (parent currently `render-backend`); needs own system spec. glTF 2.0 static+skinned mesh loading, `Mesh3DAsset`, `IAssetTypeHandler` plug-in. | DiaMaths, DiaGeometry3D, DiaAssetRuntime |
 | DiaRig3D | TBD — needs `/spec-system` | `skeleton-and-pose` feature already Approved; needs own system spec. Bone3D, Skeleton3D, Pose3D, FK, `SkeletonComponent3D`. Mirrors DiaRig2D. | DiaMesh3D |
 | DiaAnimation3D | TBD — needs `/spec-system` | `clip-and-player` feature already Approved; needs own system spec. AnimationClip3D, ClipPlayer3D, glTF loader, STEP/LINEAR/CUBICSPLINE, `AnimationComponent3D`. | DiaRig3D |
 | DiaSkinning3D | TBD — needs `/spec-system` | `skinning-palette` feature already Approved; needs own system spec. SkinningManager, per-frame Matrix34 palettes, `skinningPaletteIndex` on draw commands. | DiaAnimation3D, DiaGraphics3D |
 | DiaScene3D | TBD — needs `/spec-system` | `scene-graph` feature already Approved; needs own system spec. Flat-list scene, Transform3D parent chains, frustum culling, `Submit(scene, frameData3D)`. | DiaSkinning3D, DiaGraphics3D, DiaGeometry3D |
-| DiaSceneEditor | [diasceneeditor.md](specs/systems/dia/diasceneeditor.md) ✅ | 6 features: scene-hierarchy-panel, entity-placement-crud, change-blueprint, layer-authoring, camera-light-authoring, scene-validation. Spatial authoring of `.diascene` files. [Plan](specs/systems/dia/diasceneeditor.plan.md) (22 tasks). | DiaScene2D, DiaEditor, DiaReflect, DiaGame, DiaAssetCatalogue, DiaEntityTemplateEditor (soft) |
-| DiaEntityInspector | [diaentityinspector.md](specs/systems/dia/diaentityinspector.md) ✅ | 4 features: entity-inspector-panel, query-browser-tab, mailbox-traffic-monitor, entity-watch-list. Runtime debug via WebSocket. [Plan](specs/systems/dia/diaentityinspector.plan.md) (18 tasks). | diaentitytemplate, DiaDebugProtocol, DiaDebugServer, DiaEditor, DiaReflect Phase 3 |
+| ~~DiaSceneEditor~~ | [diasceneeditor.md](specs/systems/dia/diasceneeditor.md) ✅ | **Done** — scene-hierarchy-panel, entity-placement-crud, change-blueprint, layer-authoring, camera-light-authoring, scene-validation. 22 tasks. | — |
+| ~~DiaEntityInspector~~ | [diaentityinspector.md](specs/systems/dia/diaentityinspector.md) ✅ | **Done** — entity-inspector-panel, query-browser-tab, mailbox-traffic-monitor, entity-watch-list. 19 tasks. | — |
 | DiaEditorAPI | [diaeditorapi.md](specs/systems/cluicheeditor/diaeditorapi.md) ✅ | Phase 1: C++ action registry + auto-generated Python `dia_editor` module (automation testing). Phase 2: MCP adapter for Ollama at-desk AI workflows. Run `/implement` to start. | DiaAPI, DiaEditor, DiaPython, DiaWebSocket (Ph2) |
 | DiaChatPlugin | [diachatplugin.md](specs/systems/cluicheeditor/diachatplugin.md) ✅ | Dockable AI assistant panel — Ollama/Claude/Gemini via DiaPython orchestrator, direct `ExecuteAction()` tool dispatch, curated knowledge context system, hybrid chat+detail panel UI. Phase 2: multi-step agentic loop. | DiaEditorAPI Phase 1, DiaEditor, DiaPython, DiaUICEF |
 | ~~DiaScene2D~~ | [diascene2d.md](specs/systems/dia/diascene2d.md) ✅ | **Done** — Scene2D struct, LayerTable, SceneLoader2D (camera/light/entity hydration, instanceData patching, validation). 18 tests pass. | — |
@@ -32,7 +32,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | Feature | Spec | System | Notes |
 |---------|------|--------|-------|
-| per-app-bin-layout | [per-app-bin-layout.md](specs/features/dia/diapipeline/per-app-bin-layout.md) | DiaPipeline ✅ | |
+| ~~per-app-bin-layout~~ | [per-app-bin-layout.md](specs/features/dia/diapipeline/per-app-bin-layout.md) | DiaPipeline ✅ | **Done** — `Directory.Build.props` per-app OutDir, path_resolver.py, package_stage.py, clean CluicheEditor layout. |
 | ~~Editor Memory~~ | [editor-memory.md](specs/features/dia/diaeditor/editor-memory.md) | DiaEditor ✅ | **Done** — save/restore layout, plugins, per-plugin project-scoped state. |
 | ~~Toast Notifications~~ | [toast-notifications.md](specs/features/dia/diaeditor/toast-notifications.md) | DiaEditor ✅ | **Done** — framework-level notification service; plugins push toasts, shell renders. |
 

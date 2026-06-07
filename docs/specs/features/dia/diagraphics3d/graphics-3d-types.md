@@ -14,7 +14,7 @@
 > **Amendment note (2026-05-18):** This feature was re-homed from `DiaGraphics` to `DiaGraphics3D` per decisions G3D-001/G3D-002/G3D-003. The types now live in `Dia/DiaGraphics3D/` under namespace `Dia::Graphics3D::`. `FrameData` (in DiaGraphics) does NOT gain a Mesh3D mix-in; instead `FrameData3D : FrameData + Mesh3DFrameData` is the 2D+3D frame packet and lives here. All ACs, maths ownership rules, and capacity constants are unchanged.
 
 ## Status
-`Approved`
+`Done`
 
 ## Summary
 

@@ -264,6 +264,4 @@ public:
 
 ## Status
 
-`Approved` — All 5 spec steps complete. System cannot be marked `Done` until all child feature specs are `Done`. Currently: `graphics-3d-types` is `Approved` (Phase 2, implement after Phase 1 ships per RB-003).
-
-**Amendment required:** `graphics-3d-types` feature spec must be updated to reflect this system as its parent and the DiaGraphics3D module home (G3D-001/G3D-002/G3D-003). File path: `docs/specs/features/dia/diagraphics3d/graphics-3d-types.md` (to be moved from `diagraphics/`).
+`Done` — `graphics-3d-types` feature implemented and all 19 tests pass. Plan: @docs/specs/systems/dia/diagraphics3d.plan.md
