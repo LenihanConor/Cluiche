@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { FC, Dispatch } from 'react';
 import { useBridgeRequest } from '../hooks/useBridgeRequest';
 import type { PipelineAction } from '../state/pipelineReducer';
@@ -40,9 +40,6 @@ export const PipelineToolbar: FC<PipelineToolbarProps> = ({
     const { request } = useBridgeRequest();
     const [selectedConfig, setSelectedConfig] = useState('Debug');
     const [force, setForce] = useState(false);
-    const [splitOpen, setSplitOpen] = useState(false);
-    const [buildMode, setBuildMode] = useState<'build' | 'buildAndLaunch'>('build');
-    const splitRef = useRef<HTMLDivElement>(null);
 
     // Build-status listener
     const [localBuildRunning, setLocalBuildRunning] = useState(buildRunning);
@@ -78,16 +75,11 @@ export const PipelineToolbar: FC<PipelineToolbarProps> = ({
 
     const handleBuild = useCallback(async () => {
         if (buildDisabled) return;
-        const res = await request('pipeline.start', { config: selectedConfig, target: diagameName, force, launchAfter: buildMode === 'buildAndLaunch' }) as { ok?: boolean; error?: string } | null;
+        const res = await request('pipeline.start', { config: selectedConfig, target: diagameName, force }) as { ok?: boolean; error?: string } | null;
         if (res && !res.ok) {
             onToast(res.error ?? 'Failed to start build', 'error');
         }
-    }, [request, selectedConfig, diagameName, force, buildDisabled, buildMode, onToast]);
-
-    const selectBuildAndLaunch = useCallback(() => {
-        setBuildMode('buildAndLaunch');
-        setSplitOpen(false);
-    }, []);
+    }, [request, selectedConfig, diagameName, force, buildDisabled, onToast]);
 
     const handleCancel = useCallback(() => {
         request('pipeline.cancel');
@@ -114,17 +106,6 @@ export const PipelineToolbar: FC<PipelineToolbarProps> = ({
         request('pipeline.open-logs-folder');
     }, [request, diagameName]);
 
-    // Close split dropdown on outside click
-    useEffect(() => {
-        if (!splitOpen) return;
-        const handler = (e: MouseEvent) => {
-            if (splitRef.current && !splitRef.current.contains(e.target as Node)) {
-                setSplitOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, [splitOpen]);
 
     const logsEnabled = diagameName !== '';
 
@@ -200,74 +181,20 @@ export const PipelineToolbar: FC<PipelineToolbarProps> = ({
                         Cancel
                     </button>
                 ) : (
-                    /* Build/Launch split-button */
-                    <div ref={splitRef} style={{ position: 'relative', display: 'flex' }}>
-                        {/* Left: Build / Build & Launch */}
-                        <button
-                            onClick={handleBuild}
-                            disabled={buildDisabled}
-                            title={buildMode === 'buildAndLaunch' ? 'Build & Launch' : 'Build'}
-                            style={{
-                                background: '#2a6', color: '#fff', border: 'none',
-                                borderRight: '1px solid rgba(0,0,0,0.3)',
-                                padding: '4px 10px', fontSize: 12,
-                                borderRadius: '2px 0 0 2px',
-                                cursor: buildDisabled ? 'not-allowed' : 'pointer',
-                                opacity: buildDisabled ? 0.5 : 1,
-                            }}
-                        >
-                            {buildMode === 'buildAndLaunch' ? '▶ Build & Launch' : '▶ Build'}
-                        </button>
-                        {/* Right: dropdown arrow */}
-                        <button
-                            onClick={() => !buildDisabled && setSplitOpen(o => !o)}
-                            disabled={buildDisabled}
-                            title="More build options"
-                            style={{
-                                background: '#2a6', color: '#fff', border: 'none',
-                                padding: '4px 6px', fontSize: 11,
-                                borderRadius: '0 2px 2px 0',
-                                cursor: buildDisabled ? 'not-allowed' : 'pointer',
-                                opacity: buildDisabled ? 0.5 : 1,
-                            }}
-                        >
-                            ▾
-                        </button>
-                        {/* Dropdown */}
-                        {splitOpen && (
-                            <div style={{
-                                position: 'absolute',
-                                top: '100%',
-                                right: 0,
-                                marginTop: 2,
-                                background: '#2c2c2c',
-                                border: '1px solid #444',
-                                borderRadius: 2,
-                                zIndex: 100,
-                                minWidth: 140,
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-                            }}>
-                                <button
-                                    onClick={selectBuildAndLaunch}
-                                    style={{
-                                        display: 'block',
-                                        width: '100%',
-                                        background: 'transparent',
-                                        color: '#ccc',
-                                        border: 'none',
-                                        padding: '6px 12px',
-                                        fontSize: 12,
-                                        textAlign: 'left',
-                                        cursor: 'pointer',
-                                    }}
-                                    onMouseEnter={e => (e.currentTarget.style.background = '#3a3a3a')}
-                                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                                >
-                                    Build &amp; Launch
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                    <button
+                        onClick={handleBuild}
+                        disabled={buildDisabled}
+                        title="Build"
+                        style={{
+                            background: '#2a6', color: '#fff', border: 'none',
+                            padding: '4px 12px', fontSize: 12,
+                            borderRadius: 2,
+                            cursor: buildDisabled ? 'not-allowed' : 'pointer',
+                            opacity: buildDisabled ? 0.5 : 1,
+                        }}
+                    >
+                        ▶ Build
+                    </button>
                 )}
 
                 {/* Resume (only when interrupted with remaining stages) */}

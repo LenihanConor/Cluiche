@@ -2,6 +2,8 @@
 #include <DiaEntity/IEntityInspectable.h>
 #include <DiaEntity/ComponentTypeDesc.h>
 #include <DiaEntity/ComponentRegistry.h>
+#include <DiaEntity/Hierarchy/ParentComponent.h>
+#include <DiaEntity/Hierarchy/ChildBufferComponent.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaObservation/Log/DiaLog.h>
 
@@ -133,11 +135,66 @@ Json::Value SerializeEntityInspect(
     // --- components ---
     result["components"] = SerializeComponents(domain, entity);
 
-    // --- hierarchy (stub — populated from ParentComponent fields if present) ---
+    // --- hierarchy ---
     Json::Value hierarchy;
     hierarchy["parent_index"] = -1;
     hierarchy["parent_gen"]   = 0;
     hierarchy["child_count"]  = 0;
+    hierarchy["children"]     = Json::Value(Json::arrayValue);
+
+    static const Dia::Core::StringCRC kParentTypeId("dia.hierarchy.parent");
+    static const Dia::Core::StringCRC kChildTypeId("dia.hierarchy.children");
+
+    {
+        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32> typeIds;
+        domain.GetComponentTypeIds(entity, typeIds);
+        bool hasParent = false;
+        bool hasChildBuffer = false;
+        for (uint32_t ci = 0; ci < typeIds.Size(); ++ci)
+        {
+            if (typeIds[ci] == kParentTypeId) hasParent = true;
+            if (typeIds[ci] == kChildTypeId) hasChildBuffer = true;
+        }
+
+        if (hasParent)
+        {
+            Json::Value parentIdxVal;
+            if (domain.ReadField(entity, kParentTypeId, "parentIndex", parentIdxVal))
+            {
+                hierarchy["parent_index"] = parentIdxVal.asInt();
+                Json::Value parentGenVal;
+                if (domain.ReadField(entity, kParentTypeId, "parentGen", parentGenVal))
+                    hierarchy["parent_gen"] = parentGenVal.asInt();
+            }
+        }
+        if (hasChildBuffer)
+        {
+            Json::Value childrenArr(Json::arrayValue);
+            Dia::Core::Containers::DynamicArrayC<Dia::Entity::Entity, Dia::Entity::kMaxEntitiesPerDomain> allEntities;
+            domain.GetAllEntities(allEntities);
+            for (uint32_t ei = 0; ei < allEntities.Size(); ++ei)
+            {
+                const Dia::Entity::Entity& candidate = allEntities[ei];
+                Json::Value candParentIdx;
+                if (domain.ReadField(candidate, kParentTypeId, "parentIndex", candParentIdx) &&
+                    candParentIdx.asUInt() == entity.GetIndex())
+                {
+                    Json::Value candParentGen;
+                    if (domain.ReadField(candidate, kParentTypeId, "parentGen", candParentGen) &&
+                        candParentGen.asUInt() == entity.GetGeneration())
+                    {
+                        Json::Value child;
+                        child["index"] = static_cast<int>(candidate.GetIndex());
+                        child["gen"]   = static_cast<int>(candidate.GetGeneration());
+                        childrenArr.append(child);
+                    }
+                }
+            }
+            hierarchy["child_count"] = static_cast<int>(childrenArr.size());
+            hierarchy["children"]    = childrenArr;
+        }
+    }
+
     result["hierarchy"] = hierarchy;
 
     // --- queries ---
@@ -233,7 +290,44 @@ Json::Value SerializeInspectPayload(
         entityJson["i"] = static_cast<int>(info.entity.GetIndex());
         entityJson["g"] = static_cast<int>(info.entity.GetGeneration());
         entityJson["n"] = info.debugName ? info.debugName : "";
-        entityJson["d"] = 0;  // hierarchy depth — flat for now
+
+        static const Dia::Core::StringCRC kParentTypeId("dia.hierarchy.parent");
+        int depth = 0;
+        int parentIdx = -1;
+        int parentGen = 0;
+        {
+            bool hasParent = false;
+            for (uint32_t ti = 0; ti < typeIds.Size(); ++ti)
+            {
+                if (typeIds[ti] == kParentTypeId) { hasParent = true; break; }
+            }
+            if (hasParent)
+            {
+                Json::Value pIdx;
+                if (inspectable.ReadField(info.entity, kParentTypeId, "parentIndex", pIdx))
+                {
+                    parentIdx = pIdx.asInt();
+                    Json::Value pGen;
+                    if (inspectable.ReadField(info.entity, kParentTypeId, "parentGen", pGen))
+                        parentGen = pGen.asInt();
+                    Dia::Entity::Entity walker(static_cast<uint32_t>(parentIdx), static_cast<uint32_t>(parentGen));
+                    while (walker.IsValid() && depth < 16)
+                    {
+                        depth++;
+                        Json::Value wIdx;
+                        if (!inspectable.ReadField(walker, kParentTypeId, "parentIndex", wIdx))
+                            break;
+                        Json::Value wGen;
+                        if (!inspectable.ReadField(walker, kParentTypeId, "parentGen", wGen))
+                            break;
+                        walker = Dia::Entity::Entity(wIdx.asUInt(), wGen.asUInt());
+                    }
+                }
+            }
+        }
+        entityJson["d"]  = depth;
+        entityJson["pi"] = parentIdx;
+        entityJson["pg"] = parentGen;
 
         Json::Value tags(Json::arrayValue);
         Json::Value components(Json::arrayValue);

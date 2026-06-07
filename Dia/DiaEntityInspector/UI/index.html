@@ -189,6 +189,22 @@
   .fedit { color: var(--pico-muted-color, #808080); cursor: pointer; font-size: 11px; padding: 1px 4px; border-radius: 2px; }
   .fedit:hover { background: var(--pico-card-background-color, #252526); color: var(--pico-color, #d4d4d4); }
 
+  /* ── Hierarchy nav ── */
+  .hier-nav {
+    margin: 0 6px 6px; padding: 6px 10px;
+    background: var(--pico-card-background-color, #252526);
+    border: 1px solid var(--pico-border-color, #3c3c3c);
+    border-radius: 4px; font-size: 11px;
+  }
+  .hier-nav .hier-label { color: var(--pico-muted-color, #808080); font-size: 10px; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 4px; }
+  .hier-nav .hier-row { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+  .hier-nav .hier-link {
+    color: var(--pico-primary-hover, #1177bb); cursor: pointer; text-decoration: underline;
+    font-family: var(--pico-font-family-monospace, monospace); font-size: 11px;
+  }
+  .hier-nav .hier-link:hover { color: var(--pico-primary-inverse, #ffffff); }
+  .hier-nav .hier-none { color: var(--pico-muted-color, #808080); font-style: italic; }
+
   /* ── Fields footer ── */
   .fields-footer {
     background: var(--pico-card-background-color, #252526);
@@ -393,6 +409,7 @@
         <span class="big">&#8592;</span>
         <span style="font-size:11px">Select an entity</span>
       </div>
+      <div class="hier-nav" id="hier-nav" style="display:none"></div>
       <div class="is" id="is" style="display:none"></div>
       <div class="fields-footer" id="fields-footer" style="display:none">
         <button class="btn-tier-c" disabled title="Not available in v1">+ Add Component</button>
@@ -481,6 +498,7 @@
   var activeFilter = 'ALL';
   var activeSub    = 'fields';
   var selfOnlyMailbox = true;
+  var expandedComponents = {};  // {entityIdx: {compName: true/false}}
 
   /* ---- POSTMESSAGE BRIDGE ---- */
   function sendRequest(type, data, reqId) {
@@ -592,6 +610,37 @@
   }
 
   /* ---- FIELDS TAB ---- */
+  function buildHierarchyNav(e) {
+    var nav = document.getElementById('hier-nav');
+    if (!e) { nav.style.display = 'none'; return; }
+
+    var hasParent = (e.pi !== undefined && e.pi >= 0);
+    var children = entities.filter(function(c) { return c.pi === e.i; });
+    if (!hasParent && children.length === 0) { nav.style.display = 'none'; return; }
+
+    nav.style.display = 'block';
+    var html = '<div class="hier-label">Hierarchy</div>';
+    if (hasParent) {
+      var parent = entities.find(function(p) { return p.i === e.pi; });
+      var parentName = parent ? parent.n : '[' + e.pi + ']';
+      html += '<div class="hier-row"><span style="color:var(--pico-muted-color,#808080)">Parent:</span> <span class="hier-link" data-nav-idx="' + e.pi + '">' + escHtml(parentName) + '</span></div>';
+    }
+    if (children.length > 0) {
+      html += '<div class="hier-row" style="flex-wrap:wrap"><span style="color:var(--pico-muted-color,#808080)">Children (' + children.length + '):</span> ';
+      children.forEach(function(c) {
+        html += '<span class="hier-link" data-nav-idx="' + c.i + '">' + escHtml(c.n || '[' + c.i + ']') + '</span> ';
+      });
+      html += '</div>';
+    }
+    nav.innerHTML = html;
+    nav.querySelectorAll('.hier-link').forEach(function(link) {
+      link.addEventListener('click', function() {
+        var idx = parseInt(link.dataset.navIdx, 10);
+        selectEntity(idx);
+      });
+    });
+  }
+
   function buildFields() {
     var ns = document.getElementById('fnosel');
     var is = document.getElementById('is');
@@ -600,17 +649,24 @@
       ns.style.display = 'flex';
       is.style.display = 'none';
       if (ff) ff.style.display = 'none';
+      document.getElementById('hier-nav').style.display = 'none';
       return;
     }
     ns.style.display = 'none';
     is.style.display = 'block';
     if (ff) ff.style.display = 'flex';
     var e = entities.find(function(x) { return x.i === selIdx; });
+    buildHierarchyNav(e);
     is.innerHTML = '';
     if (!e || !e.components) return;
+    if (!expandedComponents[selIdx]) {
+      expandedComponents[selIdx] = {};
+    }
+    var expState = expandedComponents[selIdx];
     e.components.forEach(function(comp, ti) {
+      var isOpen = expState[comp.name] !== undefined ? expState[comp.name] : (ti < 2);
       var sec = document.createElement('div');
-      sec.className = 'cs' + (ti < 2 ? ' open' : '');
+      sec.className = 'cs' + (isOpen ? ' open' : '');
       var fields = (comp.fields || []).map(function(f) {
         var vc = f.t === 'bool' ? (f.v === 'true' ? 'ftrue' : 'ffalse') : ('f' + f.t);
         var editHtml = '<span class="fedit" data-comp="' + escHtml(comp.name) + '" data-field="' + escHtml(f.n) + '" data-val="' + escHtml(f.v) + '" title="Edit field">&#9998;</span>';
@@ -618,7 +674,10 @@
       }).join('');
       var tierHtml = comp.tier ? '<span class="ctier">Tier: ' + escHtml(comp.tier) + '</span>' : '';
       sec.innerHTML = '<div class="ch"><span class="chv">&#9658;</span><span class="cname">' + escHtml(comp.name) + '</span>' + tierHtml + '</div><div class="cb"><table class="ftbl">' + fields + '</table></div>';
-      sec.querySelector('.ch').addEventListener('click', function() { sec.classList.toggle('open'); });
+      sec.querySelector('.ch').addEventListener('click', function() {
+        sec.classList.toggle('open');
+        expState[comp.name] = sec.classList.contains('open');
+      });
       sec.querySelectorAll('.fedit').forEach(function(btn) {
         btn.addEventListener('click', function(ev) {
           ev.stopPropagation();

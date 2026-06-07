@@ -77,7 +77,11 @@ Pushed via `kDataUpdate` with `dataType = kEntityInspect`:
   "hierarchy": {
     "parent_index": -1,
     "parent_gen": 0,
-    "child_count": 2
+    "child_count": 2,
+    "children": [
+      { "index": 10, "gen": 1 },
+      { "index": 11, "gen": 1 }
+    ]
   },
   "queries": [
     { "index": 0, "entity_count": 15, "signature": [1234567890, 9876543210] }
@@ -146,6 +150,7 @@ namespace Dia::EntityInspector {
 | query-browser-tab | Query signatures + result counts + entity membership display in Queries tab | [query-browser-tab.md](../../features/dia/diaentityinspector/query-browser-tab.md) | Approved |
 | mailbox-traffic-monitor | Ring-buffer log of dispatched messages, histogram, pause/snapshot in Mailbox tab | [mailbox-traffic-monitor.md](../../features/dia/diaentityinspector/mailbox-traffic-monitor.md) | Approved |
 | entity-watch-list | Persistent (entity, component, field) triple watch list; stable re-bind on reconnect | [entity-watch-list.md](../../features/dia/diaentityinspector/entity-watch-list.md) | Approved |
+| hierarchy-navigation | Live parent/child hierarchy display with clickable navigation links in Fields tab | — | Done |
 
 ## Inherited Binding Decisions
 
