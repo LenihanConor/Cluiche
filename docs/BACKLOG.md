@@ -22,6 +22,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | DiaSceneEditor | [diasceneeditor.md](specs/systems/dia/diasceneeditor.md) ✅ | 6 features: scene-hierarchy-panel, entity-placement-crud, change-blueprint, layer-authoring, camera-light-authoring, scene-validation. Spatial authoring of `.diascene` files. [Plan](specs/systems/dia/diasceneeditor.plan.md) (22 tasks). | DiaScene2D, DiaEditor, DiaReflect, DiaGame, DiaAssetCatalogue, DiaEntityTemplateEditor (soft) |
 | DiaEntityInspector | [diaentityinspector.md](specs/systems/dia/diaentityinspector.md) ✅ | 4 features: entity-inspector-panel, query-browser-tab, mailbox-traffic-monitor, entity-watch-list. Runtime debug via WebSocket. [Plan](specs/systems/dia/diaentityinspector.plan.md) (18 tasks). | diaentitytemplate, DiaDebugProtocol, DiaDebugServer, DiaEditor, DiaReflect Phase 3 |
 | DiaEditorAPI | [diaeditorapi.md](specs/systems/cluicheeditor/diaeditorapi.md) ✅ | Phase 1: C++ action registry + auto-generated Python `dia_editor` module (automation testing). Phase 2: MCP adapter for Ollama at-desk AI workflows. Run `/implement` to start. | DiaAPI, DiaEditor, DiaPython, DiaWebSocket (Ph2) |
+| DiaChatPlugin | [diachatplugin.md](specs/systems/cluicheeditor/diachatplugin.md) ✅ | Dockable AI assistant panel — Ollama/Claude/Gemini via DiaPython orchestrator, direct `ExecuteAction()` tool dispatch, curated knowledge context system, hybrid chat+detail panel UI. Phase 2: multi-step agentic loop. | DiaEditorAPI Phase 1, DiaEditor, DiaPython, DiaUICEF |
 | ~~DiaScene2D~~ | [diascene2d.md](specs/systems/dia/diascene2d.md) ✅ | **Done** — Scene2D struct, LayerTable, SceneLoader2D (camera/light/entity hydration, instanceData patching, validation). 18 tests pass. | — |
 | ~~DiaArchitecture~~ | [diaarchitecture.md](specs/systems/dia/diaarchitecture.md) ✅ | **Done** — Layer fields, refactoring (R1–R6), audit tool (`dia check arch`), SLN sync (`dia check sln-sync`). 1975 violations baselined. | — |
 
@@ -119,6 +120,21 @@ Research complete: [docs/research/static_cpp_bug/](research/static_cpp_bug/). Bu
 Spec: [diaarchitecture.md](specs/systems/dia/diaarchitecture.md). Plan: [diaarchitecture.plan.md](specs/systems/dia/diaarchitecture.plan.md). All phases complete (2026-06-04).
 
 Numbered layers (1.0–3.1), 6 refactors (R1–R6), `dia check arch` audit tool, `dia check sln-sync`, 64/64 vcxprojs documented with `layer:` field. CI gate live: `dia check arch` runs in `dia pipeline --stage static-analysis`.
+
+---
+
+## Debug Infrastructure Improvements
+
+Lessons from the entity-inspector debugging session (2026-06-06). Three bugs compounded silently — no single system reported failure. These items would have surfaced the problem in minutes instead of hours.
+
+| Item | Priority | Notes |
+|------|----------|-------|
+| **WebSocket connection health metrics** | High | Editor should track messages received/dropped/dispatched per topic and surface in status bar. The 4000+ dropped messages were invisible until we added logging manually. A `ws.queue.dropped` counter + UI badge would have made this obvious. |
+| **ObservationBridge subscription gating** | High | Currently broadcasts observation.metric/log/trace to ALL connected clients unconditionally (disabled as of 2026-06-06). Must respect the subscribe protocol — only send to clients that have sent `MESSAGE_TYPE_SUBSCRIBE` for the relevant topic. Re-enable once gated. |
+| **DebugServer per-topic send stats** | Medium | Track bytes/messages sent per topic per connection. When `entity.inspect: 0 delivered` but `observation.metric: 4000 sent` is visible in one glance, the flood diagnosis is instant. Surface via `get_app_state` query. |
+| **WebSocket queue overflow → ERROR level + UI toast** | Medium | `"Incoming queue full"` was a WARNING buried in logs. Should be ERROR level, increment a metric, and fire a toast in the editor shell: "Connection degraded — messages being dropped." Backpressure signal to server (throttle request) is a stretch goal. |
+| **Subscribe handshake verification** | Low | After sending `MESSAGE_TYPE_SUBSCRIBE`, editor should expect an ACK within N seconds. If no ACK and no data arrives, log ERROR. Would have caught the "subscribe never sent" bug immediately. |
+| **End-to-end data flow smoke test** | Low | `dia orchestrate` scenario that launches game + editor, connects, enters EntityTestStage, and asserts `entity_inspector.inspect_data` arrives at the UI bridge within 5 seconds. Regression gate for future transport changes. |
 
 ---
 
