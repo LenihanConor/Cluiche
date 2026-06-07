@@ -90,6 +90,7 @@ namespace Dia { namespace ApplicationFlow {
         // Task 34 — per-tick timing gauge
         float mLastTickMs = 0.0f;
         Dia::Observation::Metric::Gauge* mMetricLastTickMs = nullptr;
+        unsigned int mTickCount = 0;
     };
 
 }} // namespace Dia::ApplicationFlow

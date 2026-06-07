@@ -193,9 +193,11 @@ namespace Dia { namespace ApplicationFlow {
         if (mMetricLastTickMs)
             mMetricLastTickMs->Set(static_cast<double>(mLastTickMs));
 
-        // Task 35 — warn when tick exceeds target period
+        ++mTickCount;
+
+        // Task 35 — warn when tick exceeds target period (skip tick 1: includes module start costs)
         const float targetMs = (mFrequencyHz > 0.0f) ? (1000.0f / mFrequencyHz) : 0.0f;
-        if (targetMs > 0.0f && mLastTickMs > targetMs)
+        if (targetMs > 0.0f && mLastTickMs > targetMs && mTickCount > 1)
         {
             DIA_LOG_WARNING("pu", "pu.over_budget id=%s tick_ms=%.1f target_ms=%.1f",
                 mInstanceId.AsChar(), mLastTickMs, targetMs);

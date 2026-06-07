@@ -6,6 +6,7 @@
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <algorithm>
 #include <string>
 
 namespace Dia
@@ -102,8 +103,11 @@ namespace Dia
 				{
 					const Dia::Core::StringCRC typeId = registry.GetRegisteredTypeId(i);
 
+					std::string typeIdLower(typeId.AsChar());
+					std::transform(typeIdLower.begin(), typeIdLower.end(), typeIdLower.begin(), ::tolower);
+
 					{
-						std::string loadName = std::string("plugin.load.") + typeId.AsChar();
+						std::string loadName = std::string("plugin.load.") + typeIdLower;
 						Dia::API::CommandInfoJson loadCmd;
 						loadCmd.name = Dia::Core::StringCRC(loadName.c_str());
 						loadCmd.description = "Load plugin";
@@ -121,7 +125,7 @@ namespace Dia
 					}
 
 					{
-						std::string unloadName = std::string("plugin.unload.") + typeId.AsChar();
+						std::string unloadName = std::string("plugin.unload.") + typeIdLower;
 						Dia::API::CommandInfoJson unloadCmd;
 						unloadCmd.name = Dia::Core::StringCRC(unloadName.c_str());
 						unloadCmd.description = "Unload plugin";
