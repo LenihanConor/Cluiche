@@ -37,6 +37,16 @@ namespace Dia
 
 	namespace DebugServer
 	{
+		struct TopicStats
+		{
+			Dia::Core::StringCRC topic;
+			int messagesSent;
+			int messagesDropped;
+			float dropRatePercent;
+
+			TopicStats() : messagesSent(0), messagesDropped(0), dropRatePercent(0.0f) {}
+		};
+
 		struct ServerStats
 		{
 			float debugServerOverheadMs;
@@ -54,6 +64,12 @@ namespace Dia
 			int   messagesReceivedTotal;
 			int   uptimeSeconds;
 
+			uint64_t lastDropNotifyTimestampUs; // microsecond timestamp of last editor.notification send
+
+			static constexpr int kMaxTrackedTopics = 32;
+			TopicStats topicStats[kMaxTrackedTopics];
+			int topicStatCount;
+
 			ServerStats()
 				: debugServerOverheadMs(0.0f)
 				, serializationTimeMs(0.0f)
@@ -67,6 +83,8 @@ namespace Dia
 				, messagesSentTotal(0)
 				, messagesReceivedTotal(0)
 				, uptimeSeconds(0)
+				, lastDropNotifyTimestampUs(0)
+				, topicStatCount(0)
 			{}
 		};
 
@@ -177,6 +195,8 @@ namespace Dia
 			void BroadcastProtoMessage(const dia::debug::DebugMessage& msg);
 			void SendJsonToConnection(int connId, const Json::Value& json);
 			void BroadcastJson(const Json::Value& json);
+			void RecordTopicSent(const Dia::Core::StringCRC& topic, bool success);
+			void SendDropNotification(int connId);
 
 			Dia::WebSocket::Server* mServer;
 			IDebugStateProvider*    mStateProvider;

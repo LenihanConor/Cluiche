@@ -49,6 +49,31 @@ struct UnsubscribeRequestDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 UnsubscribeRequestDefaultTypeInternal _UnsubscribeRequest_default_instance_;
 
+inline constexpr SubscribeAck::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : data_type_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        message_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        success_{false},
+        _cached_size_{0} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR SubscribeAck::SubscribeAck(::_pbi::ConstantInitialized)
+    : _impl_(::_pbi::ConstantInitialized()) {}
+struct SubscribeAckDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR SubscribeAckDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~SubscribeAckDefaultTypeInternal() {}
+  union {
+    SubscribeAck _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 SubscribeAckDefaultTypeInternal _SubscribeAck_default_instance_;
+
 inline constexpr Pong::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
       : ts_{::uint64_t{0u}},
@@ -889,6 +914,7 @@ class DebugMessage::_Internal {
   static const ::dia::debug::LogEntry& log(const DebugMessage* msg);
   static const ::dia::debug::LogBatch& log_batch(const DebugMessage* msg);
   static const ::dia::debug::DebugLayerState& debug_layer_state(const DebugMessage* msg);
+  static const ::dia::debug::SubscribeAck& subscribe_ack(const DebugMessage* msg);
 };
 
 const ::dia::debug::HandshakeRequest& DebugMessage::_Internal::handshake_request(const DebugMessage* msg) {
@@ -938,6 +964,9 @@ const ::dia::debug::LogBatch& DebugMessage::_Internal::log_batch(const DebugMess
 }
 const ::dia::debug::DebugLayerState& DebugMessage::_Internal::debug_layer_state(const DebugMessage* msg) {
   return *msg->_impl_.payload_.debug_layer_state_;
+}
+const ::dia::debug::SubscribeAck& DebugMessage::_Internal::subscribe_ack(const DebugMessage* msg) {
+  return *msg->_impl_.payload_.subscribe_ack_;
 }
 void DebugMessage::set_allocated_handshake_request(::dia::debug::HandshakeRequest* handshake_request) {
   ::google::protobuf::Arena* message_arena = GetArena();
@@ -1147,6 +1176,19 @@ void DebugMessage::set_allocated_debug_layer_state(::dia::debug::DebugLayerState
   }
   // @@protoc_insertion_point(field_set_allocated:dia.debug.DebugMessage.debug_layer_state)
 }
+void DebugMessage::set_allocated_subscribe_ack(::dia::debug::SubscribeAck* subscribe_ack) {
+  ::google::protobuf::Arena* message_arena = GetArena();
+  clear_payload();
+  if (subscribe_ack) {
+    ::google::protobuf::Arena* submessage_arena = subscribe_ack->GetArena();
+    if (message_arena != submessage_arena) {
+      subscribe_ack = ::google::protobuf::internal::GetOwnedMessage(message_arena, subscribe_ack, submessage_arena);
+    }
+    set_has_subscribe_ack();
+    _impl_.payload_.subscribe_ack_ = subscribe_ack;
+  }
+  // @@protoc_insertion_point(field_set_allocated:dia.debug.DebugMessage.subscribe_ack)
+}
 DebugMessage::DebugMessage(::google::protobuf::Arena* arena)
     : ::google::protobuf::Message(arena) {
   SharedCtor(arena);
@@ -1225,6 +1267,9 @@ DebugMessage::DebugMessage(
         break;
       case kDebugLayerState:
         _impl_.payload_.debug_layer_state_ = CreateMaybeMessage<::dia::debug::DebugLayerState>(arena, *from._impl_.payload_.debug_layer_state_);
+        break;
+      case kSubscribeAck:
+        _impl_.payload_.subscribe_ack_ = CreateMaybeMessage<::dia::debug::SubscribeAck>(arena, *from._impl_.payload_.subscribe_ack_);
         break;
   }
 
@@ -1356,6 +1401,12 @@ void DebugMessage::clear_payload() {
     case kDebugLayerState: {
       if (GetArena() == nullptr) {
         delete _impl_.payload_.debug_layer_state_;
+      }
+      break;
+    }
+    case kSubscribeAck: {
+      if (GetArena() == nullptr) {
+        delete _impl_.payload_.subscribe_ack_;
       }
       break;
     }
@@ -1605,6 +1656,12 @@ const ::_pbi::TcParseTable<1, 18, 16, 0, 2> DebugMessage::_table_ = {
           _Internal::debug_layer_state(this).GetCachedSize(), target, stream);
       break;
     }
+    case kSubscribeAck: {
+      target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+          26, _Internal::subscribe_ack(this),
+          _Internal::subscribe_ack(this).GetCachedSize(), target, stream);
+      break;
+    }
     default:
       break;
   }
@@ -1734,6 +1791,12 @@ const ::_pbi::TcParseTable<1, 18, 16, 0, 2> DebugMessage::_table_ = {
           2 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.payload_.debug_layer_state_);
       break;
     }
+    // .dia.debug.SubscribeAck subscribe_ack = 26;
+    case kSubscribeAck: {
+      total_size +=
+          2 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.payload_.subscribe_ack_);
+      break;
+    }
     case PAYLOAD_NOT_SET: {
       break;
     }
@@ -1842,6 +1905,11 @@ void DebugMessage::MergeImpl(::google::protobuf::Message& to_msg, const ::google
     case kDebugLayerState: {
       _this->_internal_mutable_debug_layer_state()->::dia::debug::DebugLayerState::MergeFrom(
           from._internal_debug_layer_state());
+      break;
+    }
+    case kSubscribeAck: {
+      _this->_internal_mutable_subscribe_ack()->::dia::debug::SubscribeAck::MergeFrom(
+          from._internal_subscribe_ack());
       break;
     }
     case PAYLOAD_NOT_SET: {
@@ -6291,6 +6359,198 @@ void DebugLayerState::InternalSwap(DebugLayerState* PROTOBUF_RESTRICT other) {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_debug_5fprotocol_2eproto_getter, &descriptor_table_debug_5fprotocol_2eproto_once,
       file_level_metadata_debug_5fprotocol_2eproto[18]);
+}
+// ===================================================================
+
+class SubscribeAck::_Internal {
+ public:
+};
+
+SubscribeAck::SubscribeAck(::google::protobuf::Arena* arena)
+    : ::google::protobuf::Message(arena) {
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:dia.debug.SubscribeAck)
+}
+inline PROTOBUF_NDEBUG_INLINE SubscribeAck::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from)
+      : data_type_(arena, from.data_type_),
+        message_(arena, from.message_),
+        success_{from.success_},
+        _cached_size_{0} {}
+
+SubscribeAck::SubscribeAck(
+    ::google::protobuf::Arena* arena,
+    const SubscribeAck& from)
+    : ::google::protobuf::Message(arena) {
+  SubscribeAck* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_);
+  // @@protoc_insertion_point(copy_constructor:dia.debug.SubscribeAck)
+}
+inline PROTOBUF_NDEBUG_INLINE SubscribeAck::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : data_type_(arena),
+        message_(arena),
+        success_{false},
+        _cached_size_{0} {}
+
+inline void SubscribeAck::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+}
+SubscribeAck::~SubscribeAck() {
+  // @@protoc_insertion_point(destructor:dia.debug.SubscribeAck)
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  SharedDtor();
+}
+inline void SubscribeAck::SharedDtor() {
+  ABSL_DCHECK(GetArena() == nullptr);
+  _impl_.data_type_.Destroy();
+  _impl_.message_.Destroy();
+}
+
+PROTOBUF_NOINLINE void SubscribeAck::Clear() {
+// @@protoc_insertion_point(message_clear_start:dia.debug.SubscribeAck)
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+  _impl_.data_type_.ClearToEmpty();
+  _impl_.message_.ClearToEmpty();
+  _impl_.success_ = false;
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+const char* SubscribeAck::_InternalParse(
+    const char* ptr, ::_pbi::ParseContext* ctx) {
+  // Stub: SubscribeAck parsing is not yet implemented.
+  // This message is server-outbound only; deserialization is not required.
+  (void)ctx;
+  return ptr;
+}
+
+::uint8_t* SubscribeAck::_InternalSerialize(
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:dia.debug.SubscribeAck)
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // string data_type = 1;
+  if (!this->_internal_data_type().empty()) {
+    const std::string& _s = this->_internal_data_type();
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+        _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "dia.debug.SubscribeAck.data_type");
+    target = stream->WriteStringMaybeAliased(1, _s, target);
+  }
+
+  // bool success = 2;
+  if (this->_internal_success() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(
+        2, this->_internal_success(), target);
+  }
+
+  // string message = 3;
+  if (!this->_internal_message().empty()) {
+    const std::string& _s = this->_internal_message();
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+        _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "dia.debug.SubscribeAck.message");
+    target = stream->WriteStringMaybeAliased(3, _s, target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:dia.debug.SubscribeAck)
+  return target;
+}
+
+::size_t SubscribeAck::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:dia.debug.SubscribeAck)
+  ::size_t total_size = 0;
+
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // string data_type = 1;
+  if (!this->_internal_data_type().empty()) {
+    total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->_internal_data_type());
+  }
+
+  // bool success = 2;
+  if (this->_internal_success() != 0) {
+    total_size += 2;
+  }
+
+  // string message = 3;
+  if (!this->_internal_message().empty()) {
+    total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->_internal_message());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::google::protobuf::Message::ClassData SubscribeAck::_class_data_ = {
+    SubscribeAck::MergeImpl,
+    nullptr,  // OnDemandRegisterArenaDtor
+};
+const ::google::protobuf::Message::ClassData* SubscribeAck::GetClassData() const {
+  return &_class_data_;
+}
+
+void SubscribeAck::MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg) {
+  auto* const _this = static_cast<SubscribeAck*>(&to_msg);
+  auto& from = static_cast<const SubscribeAck&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:dia.debug.SubscribeAck)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+  if (!from._internal_data_type().empty()) {
+    _this->_internal_set_data_type(from._internal_data_type());
+  }
+  if (from._internal_success() != 0) {
+    _this->_internal_set_success(from._internal_success());
+  }
+  if (!from._internal_message().empty()) {
+    _this->_internal_set_message(from._internal_message());
+  }
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void SubscribeAck::CopyFrom(const SubscribeAck& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:dia.debug.SubscribeAck)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+PROTOBUF_NOINLINE bool SubscribeAck::IsInitialized() const {
+  return true;
+}
+
+::_pbi::CachedSize* SubscribeAck::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
+void SubscribeAck::InternalSwap(SubscribeAck* PROTOBUF_RESTRICT other) {
+  using std::swap;
+  auto* arena = GetArena();
+  ABSL_DCHECK_EQ(arena, other->GetArena());
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.data_type_, &other->_impl_.data_type_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.message_, &other->_impl_.message_, arena);
+  swap(_impl_.success_, other->_impl_.success_);
+}
+
+::google::protobuf::Metadata SubscribeAck::GetMetadata() const {
+  // SubscribeAck is a stub not yet in the descriptor table.
+  // Return an empty Metadata; descriptor-based reflection is not available.
+  return {};
 }
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace debug

@@ -22,10 +22,10 @@ namespace Dia
 			void Update();
 
 			void Broadcast(const void* data, size_t length, MessageType type = MessageType::kText);
-			void Send(int connectionId, const void* data, size_t length, MessageType type = MessageType::kText);
+			bool Send(int connectionId, const void* data, size_t length, MessageType type = MessageType::kText);
 
 			void BroadcastText(const char* text);
-			void SendText(int connectionId, const char* text);
+			bool SendText(int connectionId, const char* text);
 			void BroadcastBinary(const void* data, size_t length);
 			void SendBinary(int connectionId, const void* data, size_t length);
 

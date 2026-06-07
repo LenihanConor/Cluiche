@@ -132,16 +132,15 @@ Dia::ApplicationFlow::StartResult DebugServerHostModule::DoStart()
         }
     }
 
-    // ObservationBridge disabled: it broadcasts observation.metric/log/trace to
-    // ALL connected clients unconditionally (no subscription gate), flooding the
-    // WebSocket and starving subscription-based channels like entity.inspect.
-    // TODO: Re-enable once ObservationBridge respects the subscribe protocol.
-    // auto sysNow = std::chrono::system_clock::now();
-    // auto steadyNow = std::chrono::steady_clock::now();
-    // int64_t sysNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(
-    //     sysNow.time_since_epoch()).count();
-    // int64_t steadyNanos = static_cast<int64_t>(steadyNow.time_since_epoch().count());
-    // mServer.StartObservationBridge("", sysNanos - steadyNanos);
+    // ObservationBridge: now subscription-gated and batched — safe to enable.
+    // Only sends to clients subscribed to observation.log / .trace / .metric / .health.
+    // Logs batched ≤10/200ms, metrics latest-wins/500ms, traces ≤5/200ms, health immediate.
+    auto sysNow = std::chrono::system_clock::now();
+    auto steadyNow = std::chrono::steady_clock::now();
+    int64_t sysNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        sysNow.time_since_epoch()).count();
+    int64_t steadyNanos = static_cast<int64_t>(steadyNow.time_since_epoch().count());
+    mServer.StartObservationBridge("", sysNanos - steadyNanos);
 
     // Register metrics with the global MetricRegistry.
     {

@@ -212,6 +212,11 @@ namespace Dia
 			mRawMessageCallback = callback;
 		}
 
+		void GameConnectionManager::SetSubscribeSentCallback(SubscribeSentCallback callback)
+		{
+			mSubscribeSentCallback = callback;
+		}
+
 		void GameConnectionManager::SendRaw(const Json::Value& message)
 		{
 			if (!IsConnected())
@@ -346,6 +351,8 @@ namespace Dia
 			{
 				DIA_LOG_INFO("Editor", "GameConnectionManager: SendProtocolSubscribe topic='%s'", topic.AsChar());
 				mClient->SendText(buffer);
+				if (mSubscribeSentCallback)
+					mSubscribeSentCallback(topic.AsChar());
 			}
 		}
 	}

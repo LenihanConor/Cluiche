@@ -258,6 +258,7 @@ Features within the DiaDebugServer system (create with `/spec-feature`):
 | Protocol Command Handling | Handle subscribe, unsubscribe, get_state commands | @docs/specs/features/dia/diadebugserver/protocol-command-handling.md | Approved |
 | Query Registry | Structured remote query dispatch — domain modules register JSON-in/JSON-out handlers; migrates protocol commands | @docs/specs/features/dia/diadebugserver/query-registry.md | Approved |
 | Server Self-Monitoring | Track game/editor performance impact, server health metrics, debugging | @docs/specs/features/dia/diadebugserver/server-self-monitoring.md | Approved |
+| Connection Health | Per-topic stats, subscription-gated ObservationBridge, subscribe ACK, tiered drop warnings in editor UI | @docs/specs/features/dia/diadebugserver/connection-health.md | Approved |
 
 ## AI Review Questions
 

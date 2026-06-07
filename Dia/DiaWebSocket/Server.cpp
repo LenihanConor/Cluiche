@@ -491,12 +491,12 @@ namespace Dia
 			mImpl->mOutgoingQueue.Add(msg);
 		}
 
-		void Server::Send(int connectionId, const void* data, size_t length, MessageType type)
+		bool Server::Send(int connectionId, const void* data, size_t length, MessageType type)
 		{
 			if (length > mImpl->mMaxMessageSize)
 			{
 				DIA_LOG_WARNING("WebSocket", "Server: Send message too large");
-				return;
+				return false;
 			}
 
 			Internal::OutgoingMessage msg;
@@ -520,10 +520,11 @@ namespace Dia
 			if (mImpl->mOutgoingQueue.IsFull())
 			{
 				DIA_LOG_WARNING("WebSocket", "Server: Outgoing queue full - dropping message");
-				return;
+				return false;
 			}
 
 			mImpl->mOutgoingQueue.Add(msg);
+			return true;
 		}
 
 		void Server::BroadcastText(const char* text)
@@ -531,9 +532,9 @@ namespace Dia
 			Broadcast(text, strlen(text), MessageType::kText);
 		}
 
-		void Server::SendText(int connectionId, const char* text)
+		bool Server::SendText(int connectionId, const char* text)
 		{
-			Send(connectionId, text, strlen(text), MessageType::kText);
+			return Send(connectionId, text, strlen(text), MessageType::kText);
 		}
 
 		void Server::BroadcastBinary(const void* data, size_t length)

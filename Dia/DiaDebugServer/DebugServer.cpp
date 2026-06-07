@@ -124,6 +124,23 @@ namespace Dia
 				return;
 
 			mObservationBridge = new ObservationBridge(mServer);
+
+			// Wire subscriber query — provides gated send list per observation topic.
+			// NOTE: The lambda captures `this` and reads mClientTaps which is mutated from
+			// the tick thread; observation sinks fire from their own threads. For v1 we
+			// accept this race (same as the pre-existing broadcast architecture).
+			mObservationBridge->SetSubscriberQuery(
+				[this](const char* topic, Dia::Core::Containers::DynamicArrayC<int, 16>& out)
+				{
+					Dia::Core::StringCRC topicCrc(topic);
+					for (unsigned int i = 0; i < mClientTaps.Size(); ++i)
+					{
+						if (mClientTaps[i].streamId == topicCrc)
+							out.Add(mClientTaps[i].connId);
+					}
+				}
+			);
+
 			mObservationBridge->Start(sessionId, epochOffsetNs);
 		}
 
@@ -135,6 +152,9 @@ namespace Dia
 
 			mLogSink.FlushToServer();
 			mServer->Update();
+
+			if (mObservationBridge)
+				mObservationBridge->Flush(deltaTime);
 
 			mStats.connectionCount   = mServer->GetConnectionCount();
 			mStats.subscriptionCount = static_cast<int>(mClientTaps.Size());
@@ -364,6 +384,7 @@ namespace Dia
 			}
 
 			Dia::Core::StringCRC dataType(sub.data_type().c_str());
+			const char* ackMessage = "subscribed";
 			if (mStateProvider)
 			{
 				auto* store = mStateProvider->FindStream(dataType);
@@ -385,7 +406,10 @@ namespace Dia
 
 						char jsonBuffer[4096];
 						if (mServer && Dia::Proto::ToJson(updateMsg, jsonBuffer, sizeof(jsonBuffer)))
+						{
 							mServer->SendText(connId, jsonBuffer);
+							RecordTopicSent(dataType, true);
+						}
 						mStats.messagesSentTotal++;
 					};
 
@@ -411,6 +435,20 @@ namespace Dia
 					mClientTaps.Add(ct);
 				}
 			}
+			else
+			{
+				ackMessage = "no_state_provider_queued";
+			}
+
+			// Send SUBSCRIBE_ACK back to the client
+			dia::debug::DebugMessage ackMsg;
+			ackMsg.set_type(dia::debug::MESSAGE_TYPE_SUBSCRIBE_ACK);
+			ackMsg.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
+			auto* ack = ackMsg.mutable_subscribe_ack();
+			ack->set_data_type(sub.data_type());
+			ack->set_success(true);
+			ack->set_message(ackMessage);
+			SendProtoMessage(connId, ackMsg);
 		}
 
 		void DebugServer::HandleUnsubscribe(int connId, const dia::debug::DebugMessage& msg)
@@ -555,8 +593,19 @@ namespace Dia
 			{
 				if (mClientTaps[i].streamId == dataType)
 				{
-					mServer->SendText(mClientTaps[i].connId, jsonBuffer);
-					mStats.messagesSentTotal++;
+					if (!mServer->SendText(mClientTaps[i].connId, jsonBuffer))
+					{
+						DIA_LOG_ERROR("DebugServer", "NotifySubscribers — queue full for connId=%d topic='%s', message dropped",
+							mClientTaps[i].connId, dataType.AsChar());
+						mStats.messagesDropped++;
+						RecordTopicSent(dataType, false);
+						SendDropNotification(mClientTaps[i].connId);
+					}
+					else
+					{
+						mStats.messagesSentTotal++;
+						RecordTopicSent(dataType, true);
+					}
 				}
 			}
 		}
@@ -624,6 +673,25 @@ namespace Dia
 					result["server"]["messages_received_total"] = mStats.messagesReceivedTotal;
 					result["server"]["uptime_seconds"]          = mStats.uptimeSeconds;
 
+					// Compute drop rates and serialize topics
+					Json::Value topicsArray(Json::arrayValue);
+					for (int i = 0; i < mStats.topicStatCount; ++i)
+					{
+						TopicStats& ts = mStats.topicStats[i];
+						int total = ts.messagesSent + ts.messagesDropped;
+						ts.dropRatePercent = (total > 0)
+							? static_cast<float>(ts.messagesDropped) * 100.0f / static_cast<float>(total)
+							: 0.0f;
+
+						Json::Value entry;
+						entry["topic"]     = ts.topic.AsChar() ? ts.topic.AsChar() : "";
+						entry["sent"]      = ts.messagesSent;
+						entry["dropped"]   = ts.messagesDropped;
+						entry["drop_rate"] = ts.dropRatePercent;
+						topicsArray.append(entry);
+					}
+					result["topics"] = topicsArray;
+
 					return result;
 				}
 			);
@@ -637,8 +705,18 @@ namespace Dia
 		{
 			char buffer[4096];
 			if (Dia::Proto::ToJson(msg, buffer, sizeof(buffer)))
-				mServer->SendText(connId, buffer);
-			mStats.messagesSentTotal++;
+			{
+				if (!mServer->SendText(connId, buffer))
+				{
+					DIA_LOG_ERROR("DebugServer", "DebugServer::SendProtoMessage — queue full for connId=%d, message dropped", connId);
+					mStats.messagesDropped++;
+					SendDropNotification(connId);
+				}
+				else
+				{
+					mStats.messagesSentTotal++;
+				}
+			}
 		}
 
 		void DebugServer::BroadcastProtoMessage(const dia::debug::DebugMessage& msg)
@@ -661,6 +739,52 @@ namespace Dia
 			std::string str = Json::FastWriter().write(json);
 			mServer->BroadcastText(str.c_str());
 			mStats.messagesSentTotal++;
+		}
+
+		void DebugServer::RecordTopicSent(const Dia::Core::StringCRC& topic, bool success)
+		{
+			// Find existing entry
+			for (int i = 0; i < mStats.topicStatCount; ++i)
+			{
+				if (mStats.topicStats[i].topic == topic)
+				{
+					if (success) mStats.topicStats[i].messagesSent++;
+					else         mStats.topicStats[i].messagesDropped++;
+					return;
+				}
+			}
+			// New topic
+			if (mStats.topicStatCount < ServerStats::kMaxTrackedTopics)
+			{
+				TopicStats& ts = mStats.topicStats[mStats.topicStatCount++];
+				ts.topic = topic;
+				if (success) ts.messagesSent = 1;
+				else         ts.messagesDropped = 1;
+			}
+		}
+
+		void DebugServer::SendDropNotification(int connId)
+		{
+			if (!mServer) return;
+
+			// Rate-limit: max 1 notification per 5 seconds per connection
+			uint64_t nowUs = Dia::DebugProtocol::GetTimestampNow();
+			static const uint64_t kRateLimitUs = 5000000ULL; // 5 seconds in microseconds
+			if (nowUs - mStats.lastDropNotifyTimestampUs < kRateLimitUs)
+				return;
+
+			mStats.lastDropNotifyTimestampUs = nowUs;
+
+			// Send as plain JSON (not proto) since it's a topic-based notification
+			char notifyBuf[256];
+			snprintf(notifyBuf, sizeof(notifyBuf),
+				"{\"topic\":\"editor.notification\","
+				"\"level\":\"error\","
+				"\"title\":\"Connection degraded\","
+				"\"message\":\"Messages being dropped\"}");
+
+			// Try to send — if this also fails we don't recurse (rate limit already updated)
+			mServer->SendText(connId, notifyBuf);
 		}
 	}
 }

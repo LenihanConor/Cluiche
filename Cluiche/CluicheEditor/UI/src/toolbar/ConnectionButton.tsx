@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { EditorBridge } from "../bridge/EditorBridge";
+import { useConnectionHealth } from "./useConnectionHealth";
+import { ConnectionHealthPopover } from "./ConnectionHealthPopover";
 
 interface ConnectionState {
   state: "disconnected" | "connecting" | "connected";
@@ -26,6 +28,7 @@ export function ConnectionButton() {
   const [connection, setConnection] = useState<ConnectionState>(defaultState);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [urlInput, setUrlInput] = useState("ws://localhost:9002");
+  const [healthOpen, setHealthOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Subscribe to live connection state updates
@@ -83,6 +86,7 @@ export function ConnectionButton() {
   const { state } = connection;
   const dotColor = DOT_COLOR[state];
   const label = LABEL[state];
+  const health = useConnectionHealth(state === "connected");
 
   return (
     <div style={{ position: "relative" }} ref={containerRef}>
@@ -103,17 +107,37 @@ export function ConnectionButton() {
           borderRadius: 2,
         }}
       >
-        <span style={{
-          display: "inline-block",
-          width: 8,
-          height: 8,
-          borderRadius: "50%",
-          background: dotColor,
-          flexShrink: 0,
-        }} />
+        <div style={{ position: "relative", width: 8, height: 8, flexShrink: 0 }}>
+          <span style={{
+            display: "inline-block",
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            background: dotColor,
+          }} />
+          {health.badge !== "none" && (
+            <span style={{
+              position: "absolute",
+              top: -3,
+              right: -3,
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              background: health.badge === "red" ? "#f48771" : "#dcdcaa",
+              border: "1px solid #1e1e1e",
+            }} />
+          )}
+        </div>
         <span>{label}</span>
         <span style={{ fontSize: 9, opacity: 0.6 }}>▾</span>
       </button>
+
+      {healthOpen && (
+        <ConnectionHealthPopover
+          health={health}
+          onClose={() => setHealthOpen(false)}
+        />
+      )}
 
       {dropdownOpen && (
         <div style={{
@@ -208,6 +232,38 @@ export function ConnectionButton() {
 
           {state === "connected" && (
             <>
+              {/* Health summary */}
+              <div style={{ padding: "4px 12px 4px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{
+                  fontSize: 10,
+                  fontFamily: "Segoe UI, system-ui, sans-serif",
+                  color: health.badge !== "none" ? "#dcdcaa" : "#89d185",
+                }}>
+                  {health.badge !== "none" ? "⚠ Dropping messages" : (health.summary || "Checking...")}
+                </span>
+              </div>
+              <div style={{ padding: "4px 12px 8px" }}>
+                <button
+                  onClick={() => { setHealthOpen(true); setDropdownOpen(false); }}
+                  style={{
+                    background: "transparent",
+                    color: "#cccccc",
+                    border: "1px solid #3c3c3c",
+                    borderRadius: 2,
+                    cursor: "pointer",
+                    fontSize: 10,
+                    fontFamily: "Segoe UI, system-ui, sans-serif",
+                    padding: "3px 8px",
+                    width: "100%",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#0e639c"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#3c3c3c"; }}
+                >
+                  Connection Health
+                </button>
+              </div>
+              <Separator />
+
               {/* Game info section */}
               <div style={{ padding: "6px 12px" }}>
                 <InfoRow label="Game" value={connection.gameName ?? "—"} />

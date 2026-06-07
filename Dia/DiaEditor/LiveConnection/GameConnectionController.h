@@ -32,6 +32,12 @@ namespace Dia
 				kConnected
 			};
 
+			struct PendingSubscribe
+			{
+				char topic[64];
+				float elapsedSec;
+			};
+
 			GameConnectionController();
 			~GameConnectionController();
 
@@ -121,6 +127,15 @@ namespace Dia
 			static const float kHeartbeatIntervalSeconds;
 			static const float kHandshakeTimeoutSeconds;
 			static const float kPongTimeoutSeconds;
+
+			static constexpr float kSubscribeAckTimeoutSeconds = 3.0f;
+			static constexpr int kMaxPendingSubscribes = 16;
+			PendingSubscribe mPendingSubscribes[kMaxPendingSubscribes];
+			int mPendingSubscribeCount;
+
+			void TrackPendingSubscribe(const char* topic);
+			void ClearPendingSubscribe(const char* topic);
+			void CheckSubscribeTimeouts(float deltaTime);
 		};
 	}
 }

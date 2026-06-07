@@ -27,6 +27,7 @@ namespace Dia
 			using DataCallback = std::function<void(const Json::Value&)>;
 			using ConnectionCallback = std::function<void(bool connected)>;
 			using RawMessageCallback = std::function<void(const char* rawText, unsigned int rawLength, const Json::Value&)>;
+			using SubscribeSentCallback = std::function<void(const char* topic)>;
 
 			GameConnectionManager();
 			~GameConnectionManager();
@@ -58,6 +59,10 @@ namespace Dia
 			// receives, regardless of envelope shape. Used by consumers that speak
 			// a non-topic protocol (e.g. DiaDebugProtocol's {type, ...} frames).
 			void SetRawMessageCallback(RawMessageCallback callback);
+
+			// Notified each time a subscribe message is actually sent to the game.
+			// Used by GameConnectionController to track pending subscribes.
+			void SetSubscribeSentCallback(SubscribeSentCallback callback);
 			void SendRaw(const Json::Value& message);
 			void SendRawText(const char* text);
 			const char* GetLastError() const { return mLastError; }
@@ -90,6 +95,7 @@ namespace Dia
 			Dia::WebSocket::Client* mClient;
 			ConnectionCallback mConnectionCallback;
 			RawMessageCallback mRawMessageCallback;
+			SubscribeSentCallback mSubscribeSentCallback;
 
 			char mHost[128];
 			int mPort;

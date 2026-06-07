@@ -61,6 +61,7 @@ namespace Dia
 			, mLastPingSentTs(0)
 			, mLastPongReceivedTs(0)
 			, mSinceLastPong(0.0f)
+			, mPendingSubscribeCount(0)
 		{
 			mUrl[0] = '\0';
 			mLastError[0] = '\0';
@@ -93,6 +94,7 @@ namespace Dia
 			{
 				mManager->SetConnectionCallback([this](bool connected) { OnManagerConnection(connected); });
 				mManager->SetRawMessageCallback([this](const char* rawText, unsigned int /*rawLength*/, const Json::Value& envelope) { OnManagerRawMessage(rawText, envelope); });
+				mManager->SetSubscribeSentCallback([this](const char* topic) { TrackPendingSubscribe(topic); });
 			}
 
 			RegisterHandlers();
@@ -139,6 +141,7 @@ namespace Dia
 			{
 				mHeartbeatElapsed += deltaTime;
 				mSinceLastPong += deltaTime;
+				CheckSubscribeTimeouts(deltaTime);
 
 				if (mHeartbeatElapsed >= kHeartbeatIntervalSeconds)
 				{
@@ -529,6 +532,15 @@ namespace Dia
 				}
 				break;
 			}
+			case dia::debug::DebugMessage::kSubscribeAck:
+			{
+				const auto& ackMsg = msg.subscribe_ack();
+				DIA_LOG_INFO("Editor",
+					"GameConnectionController: Subscribe ACK for topic '%s' success=%d msg='%s'",
+					ackMsg.data_type().c_str(), ackMsg.success() ? 1 : 0, ackMsg.message().c_str());
+				ClearPendingSubscribe(ackMsg.data_type().c_str());
+				break;
+			}
 			default:
 				break;
 			}
@@ -585,6 +597,7 @@ namespace Dia
 			mConnectingPending = false;
 			mConnectingElapsed = 0.0f;
 			mHeartbeatElapsed = 0.0f;
+			mPendingSubscribeCount = 0;
 
 			if (!mUseStub && mManager != nullptr)
 				mManager->Disconnect();
@@ -686,6 +699,61 @@ namespace Dia
 				return;
 			}
 			strncpy_s(mUrl, kMaxUrlLength, url, _TRUNCATE);
+		}
+
+		void GameConnectionController::TrackPendingSubscribe(const char* topic)
+		{
+			if (mPendingSubscribeCount >= kMaxPendingSubscribes) return;
+			PendingSubscribe& ps = mPendingSubscribes[mPendingSubscribeCount++];
+			strncpy_s(ps.topic, sizeof(ps.topic), topic, _TRUNCATE);
+			ps.elapsedSec = 0.0f;
+		}
+
+		void GameConnectionController::ClearPendingSubscribe(const char* topic)
+		{
+			for (int i = 0; i < mPendingSubscribeCount; ++i)
+			{
+				if (strncmp(mPendingSubscribes[i].topic, topic, sizeof(mPendingSubscribes[i].topic)) == 0)
+				{
+					// Swap with last and shrink
+					mPendingSubscribes[i] = mPendingSubscribes[--mPendingSubscribeCount];
+					return;
+				}
+			}
+		}
+
+		void GameConnectionController::CheckSubscribeTimeouts(float deltaTime)
+		{
+			for (int i = 0; i < mPendingSubscribeCount; )
+			{
+				mPendingSubscribes[i].elapsedSec += deltaTime;
+				if (mPendingSubscribes[i].elapsedSec >= kSubscribeAckTimeoutSeconds)
+				{
+					DIA_LOG_ERROR("Editor",
+						"GameConnectionController: Subscribe ACK timeout for topic '%s' (%.1fs)",
+						mPendingSubscribes[i].topic, mPendingSubscribes[i].elapsedSec);
+
+					// Fire toast via bridge
+					if (mBridge != nullptr)
+					{
+						Json::Value notification;
+						notification["level"]   = "error";
+						notification["title"]   = "Subscribe timeout";
+						char msg[128];
+						snprintf(msg, sizeof(msg), "No ACK for %s (3s)", mPendingSubscribes[i].topic);
+						notification["message"] = msg;
+						mBridge->NotifyUIDataChanged("editor.notification", notification);
+					}
+
+					// Remove by swap
+					mPendingSubscribes[i] = mPendingSubscribes[--mPendingSubscribeCount];
+					// Don't increment i — recheck the swapped-in entry
+				}
+				else
+				{
+					++i;
+				}
+			}
 		}
 	}
 }
