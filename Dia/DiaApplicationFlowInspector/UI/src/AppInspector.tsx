@@ -26,6 +26,8 @@ export default function AppInspector() {
     const updatePUTiming = useInspectorStore((s) => s.updatePUTiming);
     const pushStageEntry = useInspectorStore((s) => s.pushStageEntry);
     const pushEventLogEntry = useInspectorStore((s) => s.pushEventLogEntry);
+    const setAvailableStages = useInspectorStore((s) => s.setAvailableStages);
+    const availableStages = useInspectorStore((s) => s.availableStages);
     const clearAll = useInspectorStore((s) => s.clearAll);
 
     const isConnected = connectionState === 'connected';
@@ -52,6 +54,9 @@ export default function AppInspector() {
                     if (d?.stage) {
                         pushStageEntry({ stageName: d.stage, enteredAtMs: d.timestampMs ?? Date.now() });
                         setActiveStage(d.stage);
+                    }
+                    if (Array.isArray(d?.availableStages)) {
+                        setAvailableStages(d.availableStages);
                     }
                     break;
                 case 'live.modules':
@@ -106,7 +111,7 @@ export default function AppInspector() {
         window.addEventListener('message', onMessage);
         return () => window.removeEventListener('message', onMessage);
     }, [setConnectionState, clearLiveState, clearAll, setActiveStage, pushStageEntry,
-        updateModuleState, updateStreamState, updatePUTiming, pushEventLogEntry]);
+        updateModuleState, updateStreamState, updatePUTiming, pushEventLogEntry, setAvailableStages]);
 
     const TABS: Tab[] = ['modules', 'streams', 'timing', 'log'];
 
@@ -116,7 +121,7 @@ export default function AppInspector() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderBottom: '1px solid #333' }}>
                 <span style={{ fontSize: 12, color: '#888' }}>Application Flow Inspector</span>
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
-                    {isConnected && <LiveTransitionPanel stages={[]} />}
+                    {isConnected && <LiveTransitionPanel stages={availableStages} />}
                     <LiveConnectionButton />
                 </div>
             </div>

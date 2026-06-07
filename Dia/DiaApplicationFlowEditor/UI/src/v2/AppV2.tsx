@@ -61,13 +61,6 @@ export const AppV2: React.FC = () => {
                 case 'validation.result':
                     if (d) setValidationResult(normalizeValidationResult(d));
                     break;
-                case 'live.connected':
-                    setConnectionState('connected');
-                    if (d?.activeStage !== undefined) setActiveStage(d.activeStage);
-                    break;
-                case 'live.disconnected':
-                    clearLiveState();
-                    break;
                 case 'live.connectionStatus':
                     if (d?.connected === true) {
                         setConnectionState('connected');

@@ -3,6 +3,7 @@
 #include <DiaEditor/Plugin/EditorPluginBase.h>
 #include <DiaApplicationFlowInspector/LiveStateStore.h>
 #include "DiaApplicationFlowInspector/InspectorHealthReporter.h"
+#include <DiaObservation/Metric/MetricRegistry.h>
 
 namespace Json { class Value; }
 
@@ -31,8 +32,9 @@ namespace Dia { namespace Editor {
         GameConnectionManager* mGameConnection = nullptr;
         Dia::ApplicationFlow::Editor::LiveStateStore mLiveStore;
         bool mIsLiveConnected = false;
-        bool mIsLiveActive = false;
-        InspectorHealthReporter mHealthReporter{ mIsLiveConnected, mIsLiveActive };
+        float mSecondsSinceLastData = 999.0f;
+        InspectorHealthReporter mHealthReporter{ mIsLiveConnected, mSecondsSinceLastData };
+        Dia::Observation::Metric::Counter* mMetricEventsTotal = nullptr;
     };
 
 }} // namespace Dia::Editor

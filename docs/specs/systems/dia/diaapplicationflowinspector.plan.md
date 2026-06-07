@@ -75,8 +75,8 @@ New test location: `Dia/DiaApplicationFlowInspector/UI/src/**/*.test.ts(x)`
 
 | Location | Zone Name | Category |
 |----------|-----------|----------|
-| `InspectorPlugin::OnUpdate()` | `"inspector.update"` | `kDiaEditor` |
-| `HandleLiveConnect` | `"inspector.connect"` | `kDiaEditor` |
+| `InspectorPlugin::OnUpdate()` | `"inspector.update"` | `kDiaApplicationFlow` |
+| `HandleLiveConnect` | `"inspector.connect"` | `kDiaApplicationFlow` |
 
 ### Metrics (MetricRegistry)
 

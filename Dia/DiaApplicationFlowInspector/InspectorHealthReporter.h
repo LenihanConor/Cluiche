@@ -7,14 +7,16 @@ namespace Dia { namespace Editor {
 class InspectorHealthReporter : public Dia::Observation::Health::IHealthReporter
 {
 public:
-    InspectorHealthReporter(const bool& isConnected, const bool& isActive);
+    static constexpr float kStaleThresholdSec = 5.0f;
+
+    InspectorHealthReporter(const bool& isConnected, const float& secondsSinceLastData);
 
     Dia::Core::StringCRC             GetReporterName() const override;
     Dia::Observation::Health::Health Report()          const override;
 
 private:
-    const bool& mIsConnected;
-    const bool& mIsActive;
+    const bool&  mIsConnected;
+    const float& mSecondsSinceLastData;
 };
 
 }} // namespace Dia::Editor

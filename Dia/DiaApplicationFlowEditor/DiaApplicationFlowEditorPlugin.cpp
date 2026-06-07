@@ -242,6 +242,8 @@ namespace Dia { namespace Editor {
     void DiaApplicationFlowEditorPlugin::OnUpdate(float deltaTime)
     {
         mFileWatcher.Update();
+
+        mIsLiveConnected = (mGameConnection != nullptr && mGameConnection->IsConnected());
     }
 
     void DiaApplicationFlowEditorPlugin::OnProjectChanged(const ProjectContext& context)

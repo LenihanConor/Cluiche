@@ -66,6 +66,9 @@ interface InspectorStoreState {
     // Severity filter (null = show all)
     severityFilter: EventSeverity | null;
 
+    // Available stages from the game manifest
+    availableStages: string[];
+
     // Actions
     pushStageEntry: (entry: StageHistoryEntry) => void;
     updateModuleState: (state: ModuleState) => void;
@@ -74,6 +77,7 @@ interface InspectorStoreState {
     updatePUTiming: (state: PUTimingState) => void;
     pushEventLogEntry: (severity: EventSeverity, message: string, timestampMs: number) => void;
     setSeverityFilter: (filter: EventSeverity | null) => void;
+    setAvailableStages: (stages: string[]) => void;
     clearAll: () => void;
 }
 
@@ -84,6 +88,7 @@ export const useInspectorStore = create<InspectorStoreState>((set) => ({
     puTimings: {},
     eventLog: [],
     severityFilter: null,
+    availableStages: [],
 
     pushStageEntry: (entry) => set((state) => {
         const next = [...state.timeline, entry];
@@ -124,6 +129,8 @@ export const useInspectorStore = create<InspectorStoreState>((set) => ({
 
     setSeverityFilter: (filter) => set({ severityFilter: filter }),
 
+    setAvailableStages: (stages) => set({ availableStages: stages }),
+
     clearAll: () => set({
         timeline: [],
         modules: {},
@@ -131,5 +138,6 @@ export const useInspectorStore = create<InspectorStoreState>((set) => ({
         puTimings: {},
         eventLog: [],
         severityFilter: null,
+        availableStages: [],
     }),
 }));

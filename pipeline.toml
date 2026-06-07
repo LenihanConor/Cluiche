@@ -92,7 +92,7 @@ cef_wrapper = true
 [targets.cluicheeditor.deploy]
 ui_builds = [
   { cwd = "Cluiche/CluicheEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" },
-  { cwd = "Dia/DiaApplicationEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" },
+  { cwd = "Dia/DiaApplicationFlowEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" },
   { cwd = "Dia/DiaPipelineEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" },
   { cwd = "Dia/DiaApplicationFlowInspector/UI", cmd = "node node_modules/vite/bin/vite.js build" }
 ]
@@ -105,9 +105,9 @@ files = [
   { src = "Cluiche/CluicheEditor/UI/dist/assets/*",       dest = "$(OutDir)ui/assets/" },
   { src = "Cluiche/CluicheEditor/UI/theme/*",             dest = "$(OutDir)theme/" },
   { src = "Dia/DiaEditor/Plugin/Assets/**/*",             dest = "$(OutDir)plugins/" },
-  { src = "Dia/DiaApplicationEditor/UI/dist/*",           dest = "$(OutDir)plugins/diaapplicationeditor/" },
-  { src = "Dia/DiaApplicationEditor/UI/dist/assets/*",    dest = "$(OutDir)plugins/diaapplicationeditor/assets/" },
-  { src = "Dia/DiaApplicationEditor/Assets/*",            dest = "$(OutDir)plugins/diaapplicationeditor/" },
+  { src = "Dia/DiaApplicationFlowEditor/UI/dist/*",           dest = "$(OutDir)plugins/diaapplicationfloweditor/" },
+  { src = "Dia/DiaApplicationFlowEditor/UI/dist/assets/*",    dest = "$(OutDir)plugins/diaapplicationfloweditor/assets/" },
+  { src = "Dia/DiaApplicationFlowEditor/Assets/*",            dest = "$(OutDir)plugins/diaapplicationfloweditor/" },
   { src = "Dia/DiaAssetRuntimeInspector/UI/*",               dest = "$(OutDir)plugins/assetruntimeinspector/" },
   { src = "Dia/DiaAssetCatalogueEditor/UI/*",              dest = "$(OutDir)plugins/assetcatalogue/" },
   { src = "Dia/DiaEntityInspector/UI/*",                      dest = "$(OutDir)plugins/entityinspector/" },

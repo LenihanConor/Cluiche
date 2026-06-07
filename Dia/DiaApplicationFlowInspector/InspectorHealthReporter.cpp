@@ -2,9 +2,9 @@
 
 namespace Dia { namespace Editor {
 
-InspectorHealthReporter::InspectorHealthReporter(const bool& isConnected, const bool& isActive)
+InspectorHealthReporter::InspectorHealthReporter(const bool& isConnected, const float& secondsSinceLastData)
     : mIsConnected(isConnected)
-    , mIsActive(isActive)
+    , mSecondsSinceLastData(secondsSinceLastData)
 {}
 
 Dia::Core::StringCRC InspectorHealthReporter::GetReporterName() const
@@ -21,7 +21,7 @@ Dia::Observation::Health::Health InspectorHealthReporter::Report() const
         return Health{ HealthStatus::kFailing, 1u, 0u, Dia::Core::StringCRC("Disconnected") };
     }
 
-    if (!mIsActive)
+    if (mSecondsSinceLastData >= kStaleThresholdSec)
     {
         return Health{ HealthStatus::kDegraded, 0u, 1u, Dia::Core::StringCRC("ConnectedNoData") };
     }

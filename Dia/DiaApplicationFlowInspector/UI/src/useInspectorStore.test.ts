@@ -84,6 +84,19 @@ describe('useInspectorStore — event log', () => {
     });
 });
 
+describe('useInspectorStore — availableStages', () => {
+    it('setAvailableStages stores stages', () => {
+        useInspectorStore.getState().setAvailableStages(['Boot', 'Game', 'Menu']);
+        expect(useInspectorStore.getState().availableStages).toEqual(['Boot', 'Game', 'Menu']);
+    });
+
+    it('clearAll resets availableStages', () => {
+        useInspectorStore.getState().setAvailableStages(['Boot']);
+        useInspectorStore.getState().clearAll();
+        expect(useInspectorStore.getState().availableStages).toEqual([]);
+    });
+});
+
 describe('useInspectorStore — clearAll', () => {
     it('resets all state', () => {
         useInspectorStore.getState().pushStageEntry({ stageName: 'Boot', enteredAtMs: 0 });

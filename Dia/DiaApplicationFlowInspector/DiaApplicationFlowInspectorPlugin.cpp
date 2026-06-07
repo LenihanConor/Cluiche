@@ -6,6 +6,7 @@
 #include <DiaEditor/LiveConnection/GameConnectionManager.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Health/HealthRegistry.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <string>
 
@@ -20,6 +21,8 @@ namespace Dia { namespace Editor {
     static const Dia::Core::StringCRC kTopicAppState("app.state");
     static const Dia::Core::StringCRC kTopicAppModules("app.modules");
     static const Dia::Core::StringCRC kTopicAppStreams("app.streams");
+    static const Dia::Core::StringCRC kTopicAppTimings("app.timings");
+    static const Dia::Core::StringCRC kTopicAppEvent("app.event");
 
     DiaApplicationFlowInspectorPlugin::DiaApplicationFlowInspectorPlugin()
         : EditorPluginBase({
@@ -39,6 +42,9 @@ namespace Dia { namespace Editor {
     {
         mGameConnection = GetServices() ? GetServices()->GetService<GameConnectionManager>() : nullptr;
 
+        auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
+        mMetricEventsTotal = reg.RegisterCounter(Dia::Core::StringCRC("inspector.events_total"));
+
         DIA_LOG_INFO("Inspector", "DiaApplicationFlowInspectorPlugin: loaded");
 
         RegisterHandler(kReqLiveConnect,      [this](const Json::Value& d) { return HandleLiveConnect(d); });
@@ -46,10 +52,14 @@ namespace Dia { namespace Editor {
         RegisterHandler(kReqLiveGetStatus,    [this](const Json::Value& d) { return HandleLiveGetStatus(d); });
         RegisterHandler(kReqLiveTransitionTo, [this](const Json::Value& d) { return HandleLiveTransitionTo(d); });
         RegisterHandler(kReqLiveShutdown,     [this](const Json::Value& d) { return HandleLiveShutdown(d); });
+
+        Dia::Observation::Health::HealthRegistry::Instance().Register(&mHealthReporter);
     }
 
     void DiaApplicationFlowInspectorPlugin::OnPluginUnload()
     {
+        Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealthReporter);
+
         if (mGameConnection != nullptr && mGameConnection->IsConnected())
         {
             mGameConnection->Disconnect();
@@ -63,6 +73,12 @@ namespace Dia { namespace Editor {
     void DiaApplicationFlowInspectorPlugin::OnUpdate(float deltaTime)
     {
         DIA_TRACE_ZONE("inspector.update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
+
+        if (mIsLiveConnected)
+        {
+            mSecondsSinceLastData += deltaTime;
+        }
+
         if (mGameConnection != nullptr)
         {
             mGameConnection->Update(deltaTime);
@@ -110,7 +126,7 @@ namespace Dia { namespace Editor {
 
                     mGameConnection->Subscribe(kTopicAppState, [this](const Json::Value& d)
                     {
-                        mIsLiveActive = true;
+                        mSecondsSinceLastData = 0.0f;
                         Dia::ApplicationFlow::Editor::LiveAppState appState;
                         if (d.isMember("stage"))
                             appState.currentStage = Dia::Core::StringCRC(d["stage"].asCString());
@@ -120,29 +136,52 @@ namespace Dia { namespace Editor {
                         mLiveStore.UpdateAppState(appState);
                         if (GetBridge())
                             GetBridge()->NotifyUIDataChanged("live.state", d);
+                        if (mMetricEventsTotal) mMetricEventsTotal->Inc();
                     });
 
                     mGameConnection->Subscribe(kTopicAppModules, [this](const Json::Value& d)
                     {
+                        mSecondsSinceLastData = 0.0f;
                         if (GetBridge())
                             GetBridge()->NotifyUIDataChanged("live.modules", d);
+                        if (mMetricEventsTotal) mMetricEventsTotal->Inc();
                     });
 
                     mGameConnection->Subscribe(kTopicAppStreams, [this](const Json::Value& d)
                     {
+                        mSecondsSinceLastData = 0.0f;
                         if (GetBridge())
                             GetBridge()->NotifyUIDataChanged("live.streams", d);
+                        if (mMetricEventsTotal) mMetricEventsTotal->Inc();
+                    });
+
+                    mGameConnection->Subscribe(kTopicAppTimings, [this](const Json::Value& d)
+                    {
+                        mSecondsSinceLastData = 0.0f;
+                        if (GetBridge())
+                            GetBridge()->NotifyUIDataChanged("live.timings", d);
+                        if (mMetricEventsTotal) mMetricEventsTotal->Inc();
+                    });
+
+                    mGameConnection->Subscribe(kTopicAppEvent, [this](const Json::Value& d)
+                    {
+                        mSecondsSinceLastData = 0.0f;
+                        if (GetBridge())
+                            GetBridge()->NotifyUIDataChanged("live.event", d);
+                        if (mMetricEventsTotal) mMetricEventsTotal->Inc();
                     });
                 }
                 else
                 {
                     mIsLiveConnected = false;
-                    mIsLiveActive = false;
+                    mSecondsSinceLastData = 999.0f;
                     DIA_LOG_INFO("Inspector", "Game connection lost");
 
                     mGameConnection->Unsubscribe(kTopicAppState);
                     mGameConnection->Unsubscribe(kTopicAppModules);
                     mGameConnection->Unsubscribe(kTopicAppStreams);
+                    mGameConnection->Unsubscribe(kTopicAppTimings);
+                    mGameConnection->Unsubscribe(kTopicAppEvent);
                     mLiveStore.Clear();
 
                     if (GetBridge())

@@ -1293,6 +1293,12 @@
       <Filter>GoogleTest</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="ApplicationFlow\TestPUTiming.cpp">
+    <ClCompile Include="ApplicationFlow\TestStreamTelemetry.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

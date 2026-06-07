@@ -129,7 +129,8 @@
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\DiaObservation\DiaObservation.vcxproj">
-      <Project>{7a8b9c0d-e1f2-3456-7890-abcdef012345}</Project>
+      <Project>{5E6F7A8B-C9D0-E1F2-3456-789ABCDE0123}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\DiaSerializer\DiaSerializer.vcxproj">
       <Project>{B0C1D2E3-F4A5-6789-BCDE-F01234567891}</Project>
