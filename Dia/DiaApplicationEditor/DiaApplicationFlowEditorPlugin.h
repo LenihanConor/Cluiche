@@ -7,7 +7,6 @@
 #include <DiaApplicationEditor/V2/ManifestEditorState.h>
 #include <DiaApplicationEditor/V2/Commands/CommandHistory.h>
 #include <DiaApplicationEditor/V2/TypeDiscoveryService.h>
-#include <DiaApplicationEditor/V2/LiveStateStore.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include "DiaApplicationEditor/EditorHealthReporter.h"
 
@@ -44,18 +43,12 @@ namespace Dia { namespace Editor {
         Json::Value HandleTypesRefresh(const Json::Value& data);
         Json::Value HandleRiskCheck(const Json::Value& data);
         Json::Value HandleRiskConfirm(const Json::Value& data);
-        Json::Value HandleLiveConnect(const Json::Value& data);
-        Json::Value HandleLiveDisconnect(const Json::Value& data);
-        Json::Value HandleLiveGetStatus(const Json::Value& data);
-        Json::Value HandleLiveTransitionTo(const Json::Value& data);
-        Json::Value HandleLiveShutdown(const Json::Value& data);
 
         GameConnectionManager* mGameConnection = nullptr;
 
         Dia::ApplicationFlow::Editor::ManifestEditorState mEditorState;
         Dia::ApplicationFlow::Editor::CommandHistory mCommandHistory;
         Dia::ApplicationFlow::Editor::TypeDiscoveryService mTypeDiscovery;
-        Dia::ApplicationFlow::Editor::LiveStateStore mLiveStore;
 
         Dia::Core::FileWatcher mFileWatcher;
         bool mSuppressFileWatchDuringSave = false;

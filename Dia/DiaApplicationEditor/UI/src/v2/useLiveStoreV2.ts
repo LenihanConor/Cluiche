@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { bridgeRequest } from './bridge';
 
 export type LiveConnectionState = 'disconnected' | 'connecting' | 'connected';
 
@@ -27,8 +26,6 @@ interface LiveStoreV2State {
     updateModuleStates: (modules: LiveModuleState[]) => void;
     updateStreamStates: (streams: LiveStreamState[]) => void;
     clearLiveState: () => void;
-    connect: (host: string, port: number) => Promise<void>;
-    disconnect: () => Promise<void>;
 }
 
 export const useLiveStoreV2 = create<LiveStoreV2State>((set) => ({
@@ -51,19 +48,4 @@ export const useLiveStoreV2 = create<LiveStoreV2State>((set) => ({
         modules: [],
         streams: [],
     }),
-
-    connect: async (host, port) => {
-        await bridgeRequest('live.connect', { host, port });
-        set({ connectionState: 'connecting' });
-    },
-
-    disconnect: async () => {
-        await bridgeRequest('live.disconnect');
-        set({
-            connectionState: 'disconnected',
-            activeStage: null,
-            modules: [],
-            streams: [],
-        });
-    },
 }));

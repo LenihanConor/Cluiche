@@ -326,7 +326,6 @@
     <ClCompile Include="DiaApplicationEditor\TestManifestEditorState.cpp" />
     <ClCompile Include="DiaApplicationEditor\TestCommandHistory.cpp" />
     <ClCompile Include="DiaApplicationEditor\TestTypeDiscoveryService.cpp" />
-    <ClCompile Include="DiaApplicationEditor\TestLiveStateStore.cpp" />
     <ClCompile Include="DiaApplicationEditor\TestManifestLoader.cpp" />
     <ClCompile Include="DiaApplicationEditor\TestManifestSaver.cpp" />
     <ClCompile Include="DiaApplicationEditor\TestManifestValidator.cpp" />

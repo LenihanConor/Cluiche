@@ -623,9 +623,6 @@
     <ClCompile Include="DiaApplicationEditor\TestTypeDiscoveryService.cpp">
       <Filter>DiaApplicationEditor</Filter>
     </ClCompile>
-    <ClCompile Include="DiaApplicationEditor\TestLiveStateStore.cpp">
-      <Filter>DiaApplicationEditor</Filter>
-    </ClCompile>
     <ClCompile Include="DiaApplicationEditor\TestManifestLoader.cpp">
       <Filter>DiaApplicationEditor</Filter>
     </ClCompile>

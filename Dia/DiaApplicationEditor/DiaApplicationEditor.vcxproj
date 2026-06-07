@@ -94,7 +94,6 @@
     <ClInclude Include="DiaApplicationFlowEditorPlugin.h" />
     <ClInclude Include="EditorHealthReporter.h" />
     <ClInclude Include="V2\ManifestEditorState.h" />
-    <ClInclude Include="V2\LiveStateStore.h" />
     <ClInclude Include="V2\TypeDiscoveryService.h" />
     <ClInclude Include="V2\Commands\ICommand.h" />
     <ClInclude Include="V2\Commands\CommandHistory.h" />
@@ -112,7 +111,6 @@
     <ClCompile Include="DiaApplicationFlowEditorPlugin.cpp" />
     <ClCompile Include="EditorHealthReporter.cpp" />
     <ClCompile Include="V2\ManifestEditorState.cpp" />
-    <ClCompile Include="V2\LiveStateStore.cpp" />
     <ClCompile Include="V2\TypeDiscoveryService.cpp" />
     <ClCompile Include="V2\Commands\CommandHistory.cpp" />
     <ClCompile Include="V2\Commands\CompoundCommand.cpp" />

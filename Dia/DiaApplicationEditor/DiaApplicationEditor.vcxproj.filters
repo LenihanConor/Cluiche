@@ -6,9 +6,6 @@
     <ClInclude Include="V2\ManifestEditorState.h">
       <Filter>V2</Filter>
     </ClInclude>
-    <ClInclude Include="V2\LiveStateStore.h">
-      <Filter>V2</Filter>
-    </ClInclude>
     <ClInclude Include="V2\TypeDiscoveryService.h">
       <Filter>V2</Filter>
     </ClInclude>
@@ -50,9 +47,6 @@
     <ClCompile Include="DiaApplicationFlowEditorPlugin.cpp" />
     <ClCompile Include="EditorHealthReporter.cpp" />
     <ClCompile Include="V2\ManifestEditorState.cpp">
-      <Filter>V2</Filter>
-    </ClCompile>
-    <ClCompile Include="V2\LiveStateStore.cpp">
       <Filter>V2</Filter>
     </ClCompile>
     <ClCompile Include="V2\TypeDiscoveryService.cpp">

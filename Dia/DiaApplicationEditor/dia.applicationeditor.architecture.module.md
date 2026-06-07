@@ -27,7 +27,6 @@ public_api:
     - V2/Commands/StageCommands.h
     - V2/RiskAssessor.h
     - V2/TypeDiscoveryService.h
-    - V2/LiveStateStore.h
   namespaces:
     - Dia::ApplicationFlow::Editor
     - Dia::Editor

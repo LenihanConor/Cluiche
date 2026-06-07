@@ -149,15 +149,6 @@ namespace Dia { namespace Editor {
     static const Dia::Core::StringCRC kReqTypesRefresh("types.refresh");
     static const Dia::Core::StringCRC kReqRiskCheck("risk.check");
     static const Dia::Core::StringCRC kReqRiskConfirm("risk.confirm");
-    static const Dia::Core::StringCRC kReqLiveConnect("live.connect");
-    static const Dia::Core::StringCRC kReqLiveDisconnect("live.disconnect");
-    static const Dia::Core::StringCRC kReqLiveGetStatus("live.getStatus");
-    static const Dia::Core::StringCRC kReqLiveTransitionTo("live.transitionTo");
-    static const Dia::Core::StringCRC kReqLiveShutdown("live.shutdown");
-
-    static const Dia::Core::StringCRC kTopicAppState("app.state");
-    static const Dia::Core::StringCRC kTopicAppModules("app.modules");
-    static const Dia::Core::StringCRC kTopicAppStreams("app.streams");
 
     DiaApplicationFlowEditorPlugin::DiaApplicationFlowEditorPlugin()
         : EditorPluginBase({
@@ -219,11 +210,6 @@ namespace Dia { namespace Editor {
         RegisterHandler(kReqTypesRefresh,         [this](const Json::Value& d) { return HandleTypesRefresh(d); });
         RegisterHandler(kReqRiskCheck,            [this](const Json::Value& d) { return HandleRiskCheck(d); });
         RegisterHandler(kReqRiskConfirm,          [this](const Json::Value& d) { return HandleRiskConfirm(d); });
-        RegisterHandler(kReqLiveConnect,          [this](const Json::Value& d) { return HandleLiveConnect(d); });
-        RegisterHandler(kReqLiveDisconnect,       [this](const Json::Value& d) { return HandleLiveDisconnect(d); });
-        RegisterHandler(kReqLiveGetStatus,        [this](const Json::Value& d) { return HandleLiveGetStatus(d); });
-        RegisterHandler(kReqLiveTransitionTo,     [this](const Json::Value& d) { return HandleLiveTransitionTo(d); });
-        RegisterHandler(kReqLiveShutdown,         [this](const Json::Value& d) { return HandleLiveShutdown(d); });
 
         // Register metrics
         {
@@ -256,11 +242,6 @@ namespace Dia { namespace Editor {
     void DiaApplicationFlowEditorPlugin::OnUpdate(float deltaTime)
     {
         mFileWatcher.Update();
-
-        if (mGameConnection != nullptr)
-        {
-            mGameConnection->Update(deltaTime);
-        }
     }
 
     void DiaApplicationFlowEditorPlugin::OnProjectChanged(const ProjectContext& context)
@@ -999,173 +980,6 @@ namespace Dia { namespace Editor {
     Json::Value DiaApplicationFlowEditorPlugin::HandleRiskConfirm(const Json::Value& /*data*/)
     {
         Json::Value result;
-        result["ok"] = true;
-        return result;
-    }
-
-    Json::Value DiaApplicationFlowEditorPlugin::HandleLiveConnect(const Json::Value& data)
-    {
-        Json::Value result;
-
-        if (mGameConnection == nullptr)
-        {
-            result["ok"]    = false;
-            result["error"] = "game connection not available";
-            return result;
-        }
-
-        if (mGameConnection->IsConnected())
-        {
-            result["ok"]    = false;
-            result["error"] = "already connected";
-            return result;
-        }
-
-        const char* host = data.isMember("host") ? data["host"].asCString() : "localhost";
-        const int port   = data.isMember("port") ? data["port"].asInt() : 7000;
-
-        DIA_LOG_INFO("Editor", "Connecting to game at %s:%d", host, port);
-
-        mGameConnection->SetConnectionCallback(
-            [this, hostStr = std::string(host), port](bool connected)
-            {
-                Json::Value status;
-                status["connected"] = connected;
-                status["host"]      = hostStr;
-                status["port"]      = port;
-                if (GetBridge())
-                    GetBridge()->NotifyUIDataChanged("live.connectionStatus", status);
-
-                if (connected)
-                {
-                    mIsLiveConnected = true;
-                    if (mMetricConnectionState) mMetricConnectionState->Set(1.0);
-                    DIA_LOG_INFO("Editor", "Game connection established");
-
-                    mGameConnection->Subscribe(kTopicAppState, [this](const Json::Value& d)
-                    {
-                        Dia::ApplicationFlow::Editor::LiveAppState appState;
-                        if (d.isMember("stage"))
-                            appState.currentStage = Dia::Core::StringCRC(d["stage"].asCString());
-                        appState.isTransitioning = d.isMember("transitioning") && d["transitioning"].asBool();
-                        if (d.isMember("targetStage"))
-                            appState.targetStage = Dia::Core::StringCRC(d["targetStage"].asCString());
-                        mLiveStore.UpdateAppState(appState);
-                        if (GetBridge())
-                            GetBridge()->NotifyUIDataChanged("live.state", d);
-                    });
-
-                    mGameConnection->Subscribe(kTopicAppModules, [this](const Json::Value& d)
-                    {
-                        if (GetBridge())
-                            GetBridge()->NotifyUIDataChanged("live.modules", d);
-                    });
-
-                    mGameConnection->Subscribe(kTopicAppStreams, [this](const Json::Value& d)
-                    {
-                        if (GetBridge())
-                            GetBridge()->NotifyUIDataChanged("live.streams", d);
-                    });
-                }
-                else
-                {
-                    mIsLiveConnected = false;
-                    if (mMetricConnectionState) mMetricConnectionState->Set(0.0);
-                    DIA_LOG_INFO("Editor", "Game connection lost");
-
-                    mGameConnection->Unsubscribe(kTopicAppState);
-                    mGameConnection->Unsubscribe(kTopicAppModules);
-                    mGameConnection->Unsubscribe(kTopicAppStreams);
-                    mLiveStore.Clear();
-
-                    if (GetBridge())
-                        GetBridge()->NotifyUIDataChanged("live.state", Json::Value());
-                }
-            });
-
-        mGameConnection->Connect(host, port);
-
-        result["ok"]         = true;
-        result["connecting"] = true;
-        return result;
-    }
-
-    Json::Value DiaApplicationFlowEditorPlugin::HandleLiveDisconnect(const Json::Value& /*data*/)
-    {
-        Json::Value result;
-
-        if (mGameConnection == nullptr || !mGameConnection->IsConnected())
-        {
-            result["ok"]    = false;
-            result["error"] = "not connected";
-            return result;
-        }
-
-        DIA_LOG_INFO("Editor", "Disconnecting from game");
-        mGameConnection->Disconnect();
-
-        result["ok"] = true;
-        return result;
-    }
-
-    Json::Value DiaApplicationFlowEditorPlugin::HandleLiveGetStatus(const Json::Value& /*data*/)
-    {
-        Json::Value result;
-        result["ok"]        = true;
-        result["connected"] = (mGameConnection != nullptr && mGameConnection->IsConnected());
-        result["liveActive"] = mLiveStore.IsActive();
-        return result;
-    }
-
-    Json::Value DiaApplicationFlowEditorPlugin::HandleLiveTransitionTo(const Json::Value& data)
-    {
-        Json::Value result;
-
-        if (mGameConnection == nullptr || !mGameConnection->IsConnected())
-        {
-            result["ok"]    = false;
-            result["error"] = "not connected";
-            return result;
-        }
-
-        if (!data.isMember("stageName"))
-        {
-            result["ok"]    = false;
-            result["error"] = "stageName required";
-            return result;
-        }
-
-        Json::Value args;
-        args["stage"] = data["stageName"];
-
-        mGameConnection->SendCommandWithResponse("transition_to", args,
-            [this](bool success, const Json::Value& res)
-            {
-                Json::Value notification;
-                notification["success"] = success;
-                notification["result"]  = res;
-                if (GetBridge())
-                    GetBridge()->NotifyUIDataChanged("live.transitionResult", notification);
-            });
-
-        result["ok"]      = true;
-        result["pending"] = true;
-        return result;
-    }
-
-    Json::Value DiaApplicationFlowEditorPlugin::HandleLiveShutdown(const Json::Value& /*data*/)
-    {
-        Json::Value result;
-
-        if (mGameConnection == nullptr || !mGameConnection->IsConnected())
-        {
-            result["ok"]    = false;
-            result["error"] = "not connected";
-            return result;
-        }
-
-        mGameConnection->SendCommand("shutdown", Json::Value());
-
         result["ok"] = true;
         return result;
     }

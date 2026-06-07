@@ -149,30 +149,6 @@ TEST_F(AppFlowEditorPluginTest, OnLoad_HandlerRegistered_RiskConfirm)
 	EXPECT_FALSE(Invoke("risk.confirm").isNull());
 }
 
-TEST_F(AppFlowEditorPluginTest, OnLoad_HandlerRegistered_LiveConnect)
-{
-	EXPECT_FALSE(Invoke("live.connect").isNull());
-}
-
-TEST_F(AppFlowEditorPluginTest, OnLoad_HandlerRegistered_LiveDisconnect)
-{
-	EXPECT_FALSE(Invoke("live.disconnect").isNull());
-}
-
-TEST_F(AppFlowEditorPluginTest, OnLoad_HandlerRegistered_LiveGetStatus)
-{
-	EXPECT_FALSE(Invoke("live.getStatus").isNull());
-}
-
-TEST_F(AppFlowEditorPluginTest, OnLoad_HandlerRegistered_LiveTransitionTo)
-{
-	EXPECT_FALSE(Invoke("live.transitionTo").isNull());
-}
-
-TEST_F(AppFlowEditorPluginTest, OnLoad_HandlerRegistered_LiveShutdown)
-{
-	EXPECT_FALSE(Invoke("live.shutdown").isNull());
-}
 
 // ===========================================================================
 // Lifecycle — OnUnload removes all handlers
@@ -194,11 +170,6 @@ TEST_F(AppFlowEditorPluginTest, OnUnload_RemovesAllHandlers)
 	EXPECT_TRUE(Invoke("types.refresh").isNull());
 	EXPECT_TRUE(Invoke("risk.check").isNull());
 	EXPECT_TRUE(Invoke("risk.confirm").isNull());
-	EXPECT_TRUE(Invoke("live.connect").isNull());
-	EXPECT_TRUE(Invoke("live.disconnect").isNull());
-	EXPECT_TRUE(Invoke("live.getStatus").isNull());
-	EXPECT_TRUE(Invoke("live.transitionTo").isNull());
-	EXPECT_TRUE(Invoke("live.shutdown").isNull());
 
 	// Re-load so TearDown doesn't double-unregister
 	EditorPluginContext ctx;
@@ -268,15 +239,3 @@ TEST_F(AppFlowEditorPluginTest, HistoryGetState_NoManifest_ReturnsShape)
 	EXPECT_FALSE(r["canRedo"].asBool());
 }
 
-// ===========================================================================
-// live.getStatus — returns shape with no connection
-// ===========================================================================
-
-TEST_F(AppFlowEditorPluginTest, LiveGetStatus_NoConnection_ReturnsShape)
-{
-	Json::Value r = Invoke("live.getStatus");
-	EXPECT_FALSE(r.isNull());
-	EXPECT_TRUE(r["ok"].asBool());
-	EXPECT_TRUE(r.isMember("connected"));
-	EXPECT_FALSE(r["connected"].asBool());
-}

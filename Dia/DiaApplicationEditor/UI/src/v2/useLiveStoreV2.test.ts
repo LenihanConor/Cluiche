@@ -1,14 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-
-vi.mock('./bridge', () => ({
-    bridgeRequest: vi.fn(),
-    bridgeEvent: vi.fn(),
-}));
+import { describe, it, expect, beforeEach } from 'vitest';
 
 import { useLiveStoreV2 } from './useLiveStoreV2';
-import { bridgeRequest } from './bridge';
-
-const mockBridgeRequest = bridgeRequest as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
     useLiveStoreV2.setState({
@@ -17,7 +9,6 @@ beforeEach(() => {
         modules: [],
         streams: [],
     });
-    mockBridgeRequest.mockReset();
 });
 
 describe('useLiveStoreV2', () => {
@@ -57,18 +48,9 @@ describe('useLiveStoreV2', () => {
         expect(s.streams).toEqual([]);
     });
 
-    it('connect calls bridgeRequest with live.connect and sets state to connecting', async () => {
-        mockBridgeRequest.mockResolvedValue(undefined);
-        await useLiveStoreV2.getState().connect('localhost', 7777);
-        expect(mockBridgeRequest).toHaveBeenCalledWith('live.connect', { host: 'localhost', port: 7777 });
-        expect(useLiveStoreV2.getState().connectionState).toBe('connecting');
-    });
-
-    it('disconnect calls bridgeRequest with live.disconnect and sets state to disconnected', async () => {
-        useLiveStoreV2.setState({ connectionState: 'connected' });
-        mockBridgeRequest.mockResolvedValue(undefined);
-        await useLiveStoreV2.getState().disconnect();
-        expect(mockBridgeRequest).toHaveBeenCalledWith('live.disconnect');
-        expect(useLiveStoreV2.getState().connectionState).toBe('disconnected');
+    it('store has no connect/disconnect actions', () => {
+        const s = useLiveStoreV2.getState() as Record<string, unknown>;
+        expect(s['connect']).toBeUndefined();
+        expect(s['disconnect']).toBeUndefined();
     });
 });

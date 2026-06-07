@@ -4,6 +4,7 @@ import { useUndoStoreV2 } from './useUndoStoreV2';
 import { useValidationStoreV2, normalizeValidationResult } from './useValidationStoreV2';
 import { useSelectionStoreV2 } from './useSelectionStoreV2';
 import { useLiveStoreV2 } from './useLiveStoreV2';
+import { ConnectionStatusDot } from './ConnectionStatusDot';
 import { GraphView } from './GraphView';
 import { ModulePresenceGrid } from './ModulePresenceGrid';
 import { StreamsTab } from './StreamsTab';
@@ -11,8 +12,6 @@ import { StagesTab } from './StagesTab';
 import { PUInspector } from './PUInspector';
 import { StageConfiguration } from './StageConfiguration';
 import { ValidationBarV2 } from './ValidationBarV2';
-import { LiveConnectionButton } from './LiveConnectionButton';
-import { LiveTransitionPanel } from './LiveTransitionPanel';
 import type { ManifestStateV2 } from './types';
 
 type Tab = 'stages' | 'graph' | 'presence' | 'streams';
@@ -36,7 +35,6 @@ export const AppV2: React.FC = () => {
     const updateModuleStates = useLiveStoreV2((s) => s.updateModuleStates);
     const updateStreamStates = useLiveStoreV2((s) => s.updateStreamStates);
     const clearLiveState = useLiveStoreV2((s) => s.clearLiveState);
-    const connectionState = useLiveStoreV2((s) => s.connectionState);
 
     // Pull state from C++ on mount — handles the case where OnLoad fires before React is ready
     useEffect(() => {
@@ -69,6 +67,13 @@ export const AppV2: React.FC = () => {
                     break;
                 case 'live.disconnected':
                     clearLiveState();
+                    break;
+                case 'live.connectionStatus':
+                    if (d?.connected === true) {
+                        setConnectionState('connected');
+                    } else {
+                        clearLiveState();
+                    }
                     break;
                 case 'live.appState':
                     if (d?.activeStage !== undefined) setActiveStage(d.activeStage);
@@ -104,9 +109,6 @@ export const AppV2: React.FC = () => {
         window.addEventListener('message', onMessage);
         return () => window.removeEventListener('message', onMessage);
     }, [applyStateSnapshot, applyUndoResponse, setValidationResult, setConnectionState, setActiveStage, updateModuleStates, updateStreamStates, clearLiveState, setNavigatedStageId]);
-
-    const stages = manifest?.stages?.map(s => s.name) ?? [];
-    const isLive = connectionState === 'connected';
 
     const handlePUSelect = (puId: string | null) => {
         setPUSelection(puId);
@@ -150,8 +152,7 @@ export const AppV2: React.FC = () => {
                     <span style={{ fontSize: 11, color: '#aaa', marginLeft: 4 }}>{fileBaseName}</span>
                 )}
                 <span style={{ flex: 1 }} />
-                {isLive && <LiveTransitionPanel stages={stages} />}
-                <LiveConnectionButton />
+                <ConnectionStatusDot />
             </div>
 
             {/* Tab bar */}
