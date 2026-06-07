@@ -9,7 +9,7 @@ default_backend = "dx11"   # dx11 | dx12 | vulkan
 [bgfx_shaders]
 backends     = ["dx11", "dx12", "vulkan"]
 source_root  = "Dia/DiaBgfx/Shaders"
-output_root  = "Cluiche/bin/$(AppName)/$(Configuration)/$(Platform)/shaders"
+output_root  = "Cluiche/bin/$(AppName)/$(Configuration)/$(Platform)/assets/shaders"
 shaderc_path = "External/bgfx/tools/shaderc.exe"
 
 [proto]
@@ -64,6 +64,7 @@ files = [
   { src = "External/SFML/Current-x64/bin/sfml-system-3.dll", dest = "$(OutDir)" },
   { src = "External/SFML/Current-x64/bin/sfml-system-d-3.dll", dest = "$(OutDir)" },
   { src = "Dia/DiaUIUltralight/Deploy/*", dest = "$(OutDir)" },
+  { src = "External/Ultralight/resources/*", dest = "$(OutDir)assets/resources/" },
   { src = "Cluiche/Assets/CluicheTest/cluichetest.diagame", dest = "$(OutDir)assets/" },
   { src = "Cluiche/Assets/CluicheTest/registeredtypes.diaschema", dest = "$(OutDir)assets/" },
   { src = "Cluiche/Assets/CluicheTest/cluichetest.diaobservation", dest = "$(OutDir)assets/" },

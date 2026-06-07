@@ -53,6 +53,8 @@ namespace Dia
             if (::ImGui::GetCurrentContext() == nullptr)
                 ::ImGui::CreateContext();
 
+            ::ImGui::GetIO().IniFilename = "assets/config/imgui.ini";
+
             ImGui_ImplWin32_Init(reinterpret_cast<HWND>(mHwnd));
 
             Dia::Bgfx::Win32WndProcChain::Install(mHwnd, &BgfxImGuiBackend::WndProcThunk, this);

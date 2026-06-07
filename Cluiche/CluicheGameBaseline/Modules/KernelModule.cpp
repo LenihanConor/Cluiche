@@ -125,7 +125,7 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
     Dia::Bgfx::CanvasSettings bgfxSettings;
     bgfxSettings.initialSize = Dia::Maths::Vector2D(
         static_cast<float>(mWindowWidth), static_cast<float>(mWindowHeight));
-    bgfxSettings.cookedShaderRoot = "shaders";
+    bgfxSettings.cookedShaderRoot = "assets/shaders";
     bgfxSettings.rendererType = Dia::Bgfx::RendererType::Direct3D11;
 
     mBgfxCanvas = new Dia::Bgfx::Canvas();

@@ -135,6 +135,7 @@ namespace Dia
 
 					::ultralight::Config config;
 					config.cache_path = ".ultralight_cache";
+					config.resource_path_prefix = "assets/resources/";
 					platform.set_config(config);
 
 					mFileSystem = std::make_unique<DiaFileSystem>();
