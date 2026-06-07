@@ -3,6 +3,7 @@
 #include "DiaGraphics3D/Light.h"
 #include "DiaGraphics3D/Mesh3DDrawCommand.h"
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 namespace Dia { namespace Graphics3D {
 
@@ -37,6 +38,8 @@ private:
     Dia::Core::Containers::DynamicArrayC<PointLight,        kMaxLights>            mPointLights;
     uint32_t                                                                       mDroppedMeshes;
     uint32_t                                                                       mDroppedLights;
+    bool                                                                           mMeshOverCapacityLogged  = false;
+    bool                                                                           mLightOverCapacityLogged = false;
 };
 
 } }

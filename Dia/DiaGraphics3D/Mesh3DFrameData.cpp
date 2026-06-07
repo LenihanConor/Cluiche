@@ -14,6 +14,11 @@ void Mesh3DFrameData::RequestDrawMesh(const Mesh3DDrawCommand& cmd)
 {
     if (mMeshDraws.IsFull())
     {
+        if (!mMeshOverCapacityLogged)
+        {
+            DIA_LOG_WARNING("graphics3d", "Mesh3DFrameData: mesh draw budget exceeded (%u). Draw calls will be dropped.", kMaxMeshDraws);
+            mMeshOverCapacityLogged = true;
+        }
         ++mDroppedMeshes;
         return;
     }
@@ -31,6 +36,11 @@ void Mesh3DFrameData::AddDirectionalLight(const DirectionalLight& light)
 {
     if (mDirectionalLights.IsFull())
     {
+        if (!mLightOverCapacityLogged)
+        {
+            DIA_LOG_WARNING("graphics3d", "Mesh3DFrameData: light budget exceeded (%u). Light will be dropped.", kMaxLights);
+            mLightOverCapacityLogged = true;
+        }
         ++mDroppedLights;
         return;
     }
@@ -42,6 +52,11 @@ void Mesh3DFrameData::AddPointLight(const PointLight& light)
 {
     if (mPointLights.IsFull())
     {
+        if (!mLightOverCapacityLogged)
+        {
+            DIA_LOG_WARNING("graphics3d", "Mesh3DFrameData: light budget exceeded (%u). Light will be dropped.", kMaxLights);
+            mLightOverCapacityLogged = true;
+        }
         ++mDroppedLights;
         return;
     }
@@ -51,6 +66,16 @@ void Mesh3DFrameData::AddPointLight(const PointLight& light)
 ////////////////////////////////////////////////////////////
 void Mesh3DFrameData::Clear()
 {
+    if (mMeshOverCapacityLogged)
+    {
+        DIA_LOG_WARNING("graphics3d", "Mesh3DFrameData: mesh draw budget recovered — no drops this frame.");
+        mMeshOverCapacityLogged = false;
+    }
+    if (mLightOverCapacityLogged)
+    {
+        DIA_LOG_WARNING("graphics3d", "Mesh3DFrameData: light budget recovered — no drops this frame.");
+        mLightOverCapacityLogged = false;
+    }
     mMeshDraws.RemoveAll();
     mDirectionalLights.RemoveAll();
     mPointLights.RemoveAll();
