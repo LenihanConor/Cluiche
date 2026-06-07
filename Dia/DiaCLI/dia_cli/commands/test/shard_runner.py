@@ -8,45 +8,20 @@ from typing import Optional
 from .xml_merger import merge_xml
 
 
-def _list_tests(binary: Path, out_dir: Path, filter_pattern: Optional[str]) -> list:
-    """Return list of test names via --gtest_list_tests."""
-    cmd = [str(binary), "--gtest_list_tests"]
+
+def _run_shard(binary: Path, out_dir: Path, shard_index: int, total_shards: int,
+               xml_path: Path, filter_pattern: Optional[str], run_all: bool, verbose: bool) -> int:
+    cmd = [str(binary), f"--gtest_output=xml:{xml_path}"]
     if filter_pattern:
         cmd.append(f"--gtest_filter={filter_pattern}")
-    result = subprocess.run(cmd, cwd=str(out_dir), capture_output=True, text=True)
-    tests = []
-    current_suite = None
-    for line in result.stdout.splitlines():
-        if line.endswith("."):
-            current_suite = line.rstrip(".")
-        elif line.startswith("  ") and current_suite:
-            test_name = line.strip().split(" ")[0]  # strip any trailing comments
-            tests.append(f"{current_suite}.{test_name}")
-    return tests
-
-
-def _split(items: list, n: int) -> list:
-    """Split items into n roughly equal chunks."""
-    if n <= 0:
-        return [items]
-    k, rem = divmod(len(items), n)
-    chunks, start = [], 0
-    for i in range(n):
-        end = start + k + (1 if i < rem else 0)
-        chunks.append(items[start:end])
-        start = end
-    return [c for c in chunks if c]
-
-
-def _run_shard(binary: Path, out_dir: Path, shard_filter: str, xml_path: Path, verbose: bool) -> int:
-    cmd = [
-        str(binary),
-        f"--gtest_filter={shard_filter}",
-        f"--gtest_output=xml:{xml_path}",
-    ]
+    elif not run_all:
+        cmd.append("--gtest_filter=-SLOW_*")
     if verbose:
         cmd.append("--gtest_print_time=1")
-    result = subprocess.run(cmd, cwd=str(out_dir))
+    env = os.environ.copy()
+    env["GTEST_TOTAL_SHARDS"] = str(total_shards)
+    env["GTEST_SHARD_INDEX"] = str(shard_index)
+    result = subprocess.run(cmd, cwd=str(out_dir), env=env)
     return result.returncode
 
 
@@ -59,32 +34,26 @@ def run_shards(
     run_all: bool,
     verbose: bool,
 ) -> int:
-    effective_filter = filter_pattern if filter_pattern else (None if run_all else "-SLOW_*")
-    tests = _list_tests(binary, out_dir, effective_filter)
-    if not tests:
-        print("WARNING: no tests found for sharding; falling back to single run")
-        return 1
-
-    actual_shards = min(num_shards, len(tests))
-    chunks = _split(tests, actual_shards)
-
     out_base = repo_root / "Cluiche" / "out" / "GoogleTests"
     out_base.mkdir(parents=True, exist_ok=True)
 
-    shard_xml_paths = [out_base / f"shard_{i}.xml" for i in range(len(chunks))]
+    shard_xml_paths = [out_base / f"shard_{i}.xml" for i in range(num_shards)]
 
     exit_codes = []
-    with ThreadPoolExecutor(max_workers=len(chunks)) as pool:
+    with ThreadPoolExecutor(max_workers=num_shards) as pool:
         futures = {
             pool.submit(
                 _run_shard,
                 binary,
                 out_dir,
-                ":".join(c),
+                i,
+                num_shards,
                 shard_xml_paths[i],
+                filter_pattern,
+                run_all,
                 verbose,
             ): i
-            for i, c in enumerate(chunks)
+            for i in range(num_shards)
         }
         for future in as_completed(futures):
             exit_codes.append(future.result())

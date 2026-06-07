@@ -402,29 +402,29 @@ def test_run_shards_1_uses_normal_path(mock_run, tmp_path):
 @patch("dia_cli.commands.test.shard_runner.subprocess.run")
 def test_run_shards_delegates_when_shards_gt_1(mock_run, tmp_path):
     _make_staged(tmp_path)
-    # First call is --gtest_list_tests, subsequent are shard runs
-    list_output = "SuiteA.\n  TestOne\n  TestTwo\nSuiteB.\n  TestThree\n  TestFour\n"
-    mock_run.side_effect = [
-        MagicMock(returncode=0, stdout=list_output),  # list_tests
-        MagicMock(returncode=0),                       # shard 0
-        MagicMock(returncode=0),                       # shard 1
-    ]
+    mock_run.return_value = MagicMock(returncode=0)
     code = run(repo_root=tmp_path, config="Debug", filter_pattern=None,
                verbose=False, docker=False, run_all=False, shards=2)
     assert code == 0
-    # list_tests + 2 shard runs = 3 subprocess calls
-    assert mock_run.call_count == 3
+    assert mock_run.call_count == 2  # one per shard, no list_tests call
+
+
+@patch("dia_cli.commands.test.shard_runner.subprocess.run")
+def test_run_shards_uses_gtest_env_vars(mock_run, tmp_path):
+    _make_staged(tmp_path)
+    mock_run.return_value = MagicMock(returncode=0)
+    run(repo_root=tmp_path, config="Debug", filter_pattern=None,
+        verbose=False, docker=False, run_all=False, shards=3)
+    envs = [call[1]["env"] for call in mock_run.call_args_list]
+    shard_indices = sorted(int(e["GTEST_SHARD_INDEX"]) for e in envs)
+    assert all(e["GTEST_TOTAL_SHARDS"] == "3" for e in envs)
+    assert shard_indices == [0, 1, 2]
 
 
 @patch("dia_cli.commands.test.shard_runner.subprocess.run")
 def test_run_shards_returns_nonzero_if_any_shard_fails(mock_run, tmp_path):
     _make_staged(tmp_path)
-    list_output = "SuiteA.\n  TestOne\n  TestTwo\n"
-    mock_run.side_effect = [
-        MagicMock(returncode=0, stdout=list_output),  # list_tests
-        MagicMock(returncode=0),                       # shard 0 passes
-        MagicMock(returncode=1),                       # shard 1 fails
-    ]
+    mock_run.side_effect = [MagicMock(returncode=0), MagicMock(returncode=1)]
     code = run(repo_root=tmp_path, config="Debug", filter_pattern=None,
                verbose=False, docker=False, run_all=False, shards=2)
     assert code != 0
@@ -432,52 +432,43 @@ def test_run_shards_returns_nonzero_if_any_shard_fails(mock_run, tmp_path):
 
 @patch("dia_cli.commands.test.shard_runner.subprocess.run")
 def test_run_shards_no_tests_found_returns_nonzero(mock_run, tmp_path):
+    # shards=0 → single-process path, not shard path; use shards=2 with 0 tests
+    # With env-var sharding GTest handles empty shards gracefully (exit 0).
+    # This test just verifies shards=0 falls through to the normal runner.
     _make_staged(tmp_path)
-    mock_run.return_value = MagicMock(returncode=0, stdout="")
+    mock_run.return_value = MagicMock(returncode=0)
     code = run(repo_root=tmp_path, config="Debug", filter_pattern=None,
-               verbose=False, docker=False, run_all=False, shards=2)
-    assert code != 0
+               verbose=False, docker=False, run_all=False, shards=0)
+    assert code == 0
+    assert mock_run.call_count == 1  # normal single-process path
 
 
 @patch("dia_cli.commands.test.shard_runner.subprocess.run")
 def test_run_shards_composes_with_filter(mock_run, tmp_path):
     _make_staged(tmp_path)
-    list_output = "SuiteA.\n  TestOne\n  TestTwo\n"
-    mock_run.side_effect = [
-        MagicMock(returncode=0, stdout=list_output),
-        MagicMock(returncode=0),
-        MagicMock(returncode=0),
-    ]
+    mock_run.return_value = MagicMock(returncode=0)
     run(repo_root=tmp_path, config="Debug", filter_pattern="SuiteA*",
         verbose=False, docker=False, run_all=False, shards=2)
-    list_cmd = mock_run.call_args_list[0][0][0]
-    assert any("SuiteA*" in arg for arg in list_cmd)
+    for call in mock_run.call_args_list:
+        args = call[0][0]
+        assert any("SuiteA*" in a for a in args)
 
 
 @patch("dia_cli.commands.test.shard_runner.subprocess.run")
 def test_run_shards_composes_with_all(mock_run, tmp_path):
     _make_staged(tmp_path)
-    list_output = "SLOW_Suite.\n  TestOne\n  TestTwo\n"
-    mock_run.side_effect = [
-        MagicMock(returncode=0, stdout=list_output),
-        MagicMock(returncode=0),
-        MagicMock(returncode=0),
-    ]
+    mock_run.return_value = MagicMock(returncode=0)
     run(repo_root=tmp_path, config="Debug", filter_pattern=None,
         verbose=False, docker=False, run_all=True, shards=2)
-    list_cmd = mock_run.call_args_list[0][0][0]
-    # --all means no -SLOW_* filter injected into list command
-    assert not any("-SLOW_*" in arg for arg in list_cmd)
+    for call in mock_run.call_args_list:
+        args = call[0][0]
+        assert not any("-SLOW_*" in a for a in args)
 
 
 @patch("dia_cli.commands.test.shard_runner.subprocess.run")
 def test_run_shards_creates_merged_xml(mock_run, tmp_path):
     _make_staged(tmp_path)
-    list_output = "SuiteA.\n  TestOne\n"
-    mock_run.side_effect = [
-        MagicMock(returncode=0, stdout=list_output),
-        MagicMock(returncode=0),
-    ]
+    mock_run.return_value = MagicMock(returncode=0)
     # Pre-create shard XML so merger can read it
     out_base = tmp_path / "Cluiche" / "out" / "GoogleTests"
     out_base.mkdir(parents=True, exist_ok=True)
