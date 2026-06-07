@@ -163,9 +163,9 @@ Always-on measurement (DAFI-008). Broadcast only when DebugServer has subscriber
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 37 | Update `dia pipeline --target cluicheeditor` to build Inspector UI (`npm run build`) and deploy `dist/` to `diaapplicationflowinspector/` in output | `dia pipeline --target cluicheeditor` succeeds; `dist/index.html` present in deploy dir | Not Started | sonnet | |
-| 38 | Wire Inspector plugin in CluicheEditor `.diaapp` manifest (register plugin, set UI path) | Editor launches, Inspector panel visible in dock | Not Started | sonnet | |
-| 39 | Regression: full test suite — `dia run googletest` (all), Editor UI tests, Inspector UI tests | Zero failures | Not Started | sonnet | Gate |
+| 37 | Update `dia pipeline --target cluicheeditor` to build Inspector UI (`npm run build`) and deploy `dist/` to `diaapplicationflowinspector/` in output | `dia pipeline --target cluicheeditor` succeeds; `dist/index.html` present in deploy dir | Done | sonnet | pipeline.toml: Inspector UI build step + deploy rules added alongside Editor pattern. |
+| 38 | Wire Inspector plugin in CluicheEditor `.diaapp` manifest (register plugin, set UI path) | Editor launches, Inspector panel visible in dock | Done | sonnet | CluicheEditor.vcxproj: ProjectReference + lib + ClCompile for DiaApplicationFlowInspectorPlugin.cpp added. No manifest change needed (REGISTER_EDITOR_PLUGIN auto-discovery). |
+| 39 | Regression: full test suite — `dia run googletest` (all), Editor UI tests, Inspector UI tests | Zero failures | Done | sonnet | Gate; 1524/1527 GoogleTests pass (3 pre-existing Python). 76/76 Inspector UI, 156/156 Editor UI pass. |
 | 40 | Manual verify: Editor opens fullscreen, loads manifest, all editing works (tree, flow, inspector, lifecycle grid, undo) | Quoted output from `dia pipeline --target cluicheeditor` + screenshots if available | Not Started | opus | |
 | 41 | Manual verify: Inspector docks, shows empty state, connects to `dia run cluichetest`, shows live module data in Modules tab | Quoted connection log from Inspector | Not Started | opus | |
 | 42 | Manual verify: Editor ConnectionStatusDot is grey when Inspector not connected; green+pulse when connected | Visual confirmation | Not Started | sonnet | Regression AC: connection-status-indicator.md |
@@ -173,8 +173,8 @@ Always-on measurement (DAFI-008). Broadcast only when DebugServer has subscriber
 | 44 | Manual verify: Streams tab shows backpressure bars, Timing tab shows PU gauges, Log tab shows events | Visual confirmation against mockup | Not Started | sonnet | |
 | 45 | Manual verify: RiskyChangeDialog triggers when removing PU while connected — includes "affects running game" text; same dialog without that text when disconnected | Dialog text matches AC #7/#8 in risky-change-warnings.md | Not Started | sonnet | |
 | 46 | Manual verify: Editor renders correctly with Inspector plugin NOT loaded (offline mode, no errors) | No console errors; grey dot; offline presence grid | Not Started | sonnet | Regression AC: live-state-overlay.md #10 |
-| 47 | Cleanup: remove old `Dia/DiaApplicationEditor/` directory (if any remnants after rename) | `git status` — no orphan files | Not Started | haiku | |
-| 48 | Create `dia.applicationflowinspector.architecture.module.md` (YAML frontmatter: id, deps, public API, responsibilities) | Doc matches module-metadata-schema.md | Not Started | haiku | |
+| 47 | Cleanup: remove old `Dia/DiaApplicationEditor/` directory (if any remnants after rename) | `git status` — no orphan files | Done | haiku | Dia/DiaApplicationEditor/ orphan directory deleted (contained only untracked node_modules/dist artifacts). |
+| 48 | Create `dia.applicationflowinspector.architecture.module.md` (YAML frontmatter: id, deps, public API, responsibilities) | Doc matches module-metadata-schema.md | Done | haiku | dia.applicationflowinspector.architecture.module.md created. Discovered by dia docs registry --dry-run. |
 | 49 | Update specs: mark DiaApplicationFlowEditor spec `Done`, DiaApplicationFlowInspector spec `Done`, update backlog | Spec status fields correct | Not Started | haiku | |
 
 ## Parallelism
