@@ -60,6 +60,10 @@
                         {
                             "id": "DebugServerService",
                             "role": "consumes"
+                        },
+                        {
+                            "id": "EntityInspectPush",
+                            "role": "writes"
                         }
                     ]
                 }

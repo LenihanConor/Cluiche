@@ -22,4 +22,17 @@ namespace Dia::EntityInspector {
     // for all live entities. Used by entity.list queries.
     Json::Value SerializeEntityList(const Dia::Entity::IEntityInspectable& domain);
 
+    // Produces the combined payload the editor UI expects on the entity.inspect topic:
+    //   { frame, entityCount, entities: [{i,g,n,t,d,components:[{name,fields:[{n,v,t}]}]}] }
+    // Includes all live entities with full component/field data.
+    struct EntityDebugInfo {
+        Dia::Entity::Entity entity;
+        const char*         debugName;  // may be nullptr
+    };
+    Json::Value SerializeInspectPayload(
+        const Dia::Entity::IEntityInspectable& inspectable,
+        const EntityDebugInfo* entities,
+        uint32_t entityCount,
+        uint64_t frame);
+
 } // namespace Dia::EntityInspector

@@ -16,9 +16,12 @@
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/Streams/ServiceStreamWriter.h>
 #include <DiaStreams/IStreamStore.h>
+#include <DiaStreams/EventStreamReader.h>
 #include <DiaDebugServer/DebugServer.h>
 #include <DiaDebugServer/IDebugStateProvider.h>
 #include <DiaCore/CRC/StringCRC.h>
+
+#include "Types/EntityInspectEvent.h"
 
 namespace Dia { namespace Observation { namespace Metric {
     class Gauge;
@@ -103,6 +106,11 @@ private:
     // Handle for the $lifecycle tap used to forward stage transitions to the
     // debug server as push notifications.  Attached in DoStart, detached in DoStop.
     unsigned int                         mLifecycleTapId      = 0;
+
+    // EventStream reader for entity inspect events produced by SimPU.
+    // Consumed here (MainPU) so NotifySubscribers is called from the host thread.
+    Dia::ApplicationFlow::EventStreamReader<EntityInspectEvent> mEntityInspectReader{
+        this, Dia::Core::StringCRC("EntityInspectPush")};
 };
 
 } } // namespace Cluiche::AppFlow

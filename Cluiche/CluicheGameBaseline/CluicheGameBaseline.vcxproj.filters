@@ -87,6 +87,9 @@
     <ClCompile Include="Types\SimToMainEvent.cpp">
       <Filter>Types</Filter>
     </ClCompile>
+    <ClCompile Include="Types\EntityInspectEvent.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
     <ClCompile Include="Types\UICommand.cpp">
       <Filter>Types</Filter>
     </ClCompile>
@@ -168,6 +171,9 @@
       <Filter>Types</Filter>
     </ClInclude>
     <ClInclude Include="Types\SimToMainEvent.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\EntityInspectEvent.h">
       <Filter>Types</Filter>
     </ClInclude>
     <ClInclude Include="Types\UICommand.h">

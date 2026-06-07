@@ -5,6 +5,9 @@
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaObservation/Log/DiaLog.h>
 
+#include <string>
+#include <cstdio>
+
 namespace Dia::EntityInspector {
 
 static Json::Value SerializeComponents(
@@ -169,6 +172,111 @@ Json::Value SerializeEntityList(const Dia::Entity::IEntityInspectable& domain)
         list.append(entry);
     }
     return list;
+}
+
+static const char* FieldKindToTypeString(Dia::Entity::FieldKind kind)
+{
+    switch (kind)
+    {
+        case Dia::Entity::FieldKind::Primitive:   return "prim";
+        case Dia::Entity::FieldKind::StringId:    return "str";
+        case Dia::Entity::FieldKind::Math:        return "math";
+        case Dia::Entity::FieldKind::AssetHandle: return "asset";
+        case Dia::Entity::FieldKind::EntityRef:   return "eref";
+        case Dia::Entity::FieldKind::Nested:      return "nest";
+        case Dia::Entity::FieldKind::Container:   return "arr";
+    }
+    return "?";
+}
+
+static std::string ValueToString(const Json::Value& v)
+{
+    if (v.isNull())    return "null";
+    if (v.isBool())    return v.asBool() ? "true" : "false";
+    if (v.isInt())     return std::to_string(v.asInt());
+    if (v.isUInt())    return std::to_string(v.asUInt());
+    if (v.isDouble())  { char buf[32]; snprintf(buf, sizeof(buf), "%.4g", v.asDouble()); return buf; }
+    if (v.isString())  return v.asString();
+    if (v.isArray() || v.isObject())
+    {
+        Json::FastWriter writer;
+        std::string s = writer.write(v);
+        if (!s.empty() && s.back() == '\n') s.pop_back();
+        return s;
+    }
+    return "?";
+}
+
+Json::Value SerializeInspectPayload(
+    const Dia::Entity::IEntityInspectable& inspectable,
+    const EntityDebugInfo* entities,
+    uint32_t entityCount,
+    uint64_t frame)
+{
+    DIA_TRACE_ZONE("SerializeInspectPayload", Dia::Observation::Trace::Category::kNone);
+
+    using StringCRC = Dia::Core::StringCRC;
+    auto& registry = Dia::Entity::ComponentRegistry::Get();
+
+    Json::Value result(Json::objectValue);
+    result["frame"]       = static_cast<Json::UInt64>(frame);
+    result["entityCount"] = static_cast<int>(entityCount);
+
+    Json::Value entitiesJson(Json::arrayValue);
+    for (uint32_t ei = 0; ei < entityCount; ++ei)
+    {
+        const EntityDebugInfo& info = entities[ei];
+        Dia::Core::Containers::DynamicArrayC<StringCRC, 32> typeIds;
+        inspectable.GetComponentTypeIds(info.entity, typeIds);
+
+        Json::Value entityJson(Json::objectValue);
+        entityJson["i"] = static_cast<int>(info.entity.GetIndex());
+        entityJson["g"] = static_cast<int>(info.entity.GetGeneration());
+        entityJson["n"] = info.debugName ? info.debugName : "";
+        entityJson["d"] = 0;  // hierarchy depth — flat for now
+
+        Json::Value tags(Json::arrayValue);
+        Json::Value components(Json::arrayValue);
+        for (uint32_t ci = 0; ci < typeIds.Size(); ++ci)
+        {
+            const StringCRC typeId = typeIds[ci];
+            const Dia::Entity::ComponentTypeDesc* desc = registry.Find(typeId);
+            const char* compName = desc ? desc->debugName : "Unknown";
+
+            if (compName[0] != '\0')
+                tags.append(Json::Value(std::string(1, compName[0])));
+
+            Json::Value comp(Json::objectValue);
+            comp["name"] = compName;
+
+            Json::Value fields(Json::arrayValue);
+            if (desc)
+            {
+                for (uint16_t fi = 0; fi < desc->fieldCount; ++fi)
+                {
+                    const Dia::Entity::FieldDesc& fd = desc->fields[fi];
+                    Json::Value fieldJson(Json::objectValue);
+                    fieldJson["n"] = fd.name;
+                    fieldJson["t"] = FieldKindToTypeString(fd.kind);
+
+                    Json::Value rawValue;
+                    if (inspectable.ReadField(info.entity, typeId, fd.name, rawValue))
+                        fieldJson["v"] = ValueToString(rawValue);
+                    else
+                        fieldJson["v"] = "?";
+
+                    fields.append(fieldJson);
+                }
+            }
+            comp["fields"] = fields;
+            components.append(comp);
+        }
+        entityJson["t"] = tags;
+        entityJson["components"] = components;
+        entitiesJson.append(entityJson);
+    }
+    result["entities"] = entitiesJson;
+    return result;
 }
 
 } // namespace Dia::EntityInspector

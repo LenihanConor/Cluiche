@@ -50,6 +50,7 @@
     <ClCompile Include="Types\MainToRenderFrame.cpp" />
     <ClCompile Include="Types\MainToSimEvent.cpp" />
     <ClCompile Include="Types\SimToMainEvent.cpp" />
+    <ClCompile Include="Types\EntityInspectEvent.cpp" />
     <ClCompile Include="Types\UICommand.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -84,6 +85,7 @@
     <ClInclude Include="Types\MainToRenderFrame.h" />
     <ClInclude Include="Types\MainToSimEvent.h" />
     <ClInclude Include="Types\SimToMainEvent.h" />
+    <ClInclude Include="Types\EntityInspectEvent.h" />
     <ClInclude Include="Types\UICommand.h" />
   </ItemGroup>
   <ItemGroup>

@@ -147,6 +147,20 @@
             "from": "MainPU"
         },
         {
+            "id": "DebugServerService",
+            "kind": "ServiceStream",
+            "payload_type": "DebugServerService",
+            "from": "MainPU"
+        },
+        {
+            "id": "EntityInspectPush",
+            "kind": "EventStream",
+            "payload_type": "EntityInspectEvent",
+            "overflow": "drop-oldest",
+            "from": "SimPU",
+            "to": "MainPU"
+        },
+        {
             "id": "DebugLayerManager",
             "kind": "ServiceStream",
             "payload_type": "DebugLayerManager",
@@ -281,7 +295,16 @@
                         "auto_start": true,
                         "diagame_path": "assets/cluichetest.diagame"
                     },
-                    "channels": []
+                    "channels": [
+                        {
+                            "id": "DebugServerService",
+                            "role": "provides"
+                        },
+                        {
+                            "id": "EntityInspectPush",
+                            "role": "reads"
+                        }
+                    ]
                 },
                 {
                     "instance_id": "AutomationModule",
