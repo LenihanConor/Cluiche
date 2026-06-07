@@ -29,6 +29,7 @@ namespace Dia
 		static const Dia::Core::StringCRC kReqConnect("game_connection.connect");
 		static const Dia::Core::StringCRC kReqDisconnect("game_connection.disconnect");
 		static const Dia::Core::StringCRC kReqGetState("game_connection.get_state");
+		static const Dia::Core::StringCRC kReqGetAckRecords("game_connection.get_ack_records");
 
 		static const char* kTopicState = "game_connection";
 		static const char* kTopicHeartbeat = "game_connection_heartbeat";
@@ -62,6 +63,7 @@ namespace Dia
 			, mLastPongReceivedTs(0)
 			, mSinceLastPong(0.0f)
 			, mPendingSubscribeCount(0)
+			, mAckRecordCount(0)
 		{
 			mUrl[0] = '\0';
 			mLastError[0] = '\0';
@@ -108,6 +110,7 @@ namespace Dia
 				mBridge->UnregisterRequestHandler(kReqConnect);
 				mBridge->UnregisterRequestHandler(kReqDisconnect);
 				mBridge->UnregisterRequestHandler(kReqGetState);
+				mBridge->UnregisterRequestHandler(kReqGetAckRecords);
 				mBridge = nullptr;
 			}
 			mManager = nullptr;
@@ -268,6 +271,12 @@ namespace Dia
 				{
 					return HandleGetStateRequest(data);
 				});
+
+			mBridge->RegisterRequestHandler(kReqGetAckRecords,
+				[this](const Json::Value& data) -> Json::Value
+				{
+					return HandleGetAckRecordsRequest(data);
+				});
 		}
 
 		Json::Value GameConnectionController::HandleConnectRequest(const Json::Value& data)
@@ -323,6 +332,32 @@ namespace Dia
 			DIA_LOG_DEBUG("Editor", "GameConnectionController: HandleGetStateRequest state=%s", kStateToString(mState));
 			Json::Value response;
 			BuildStatePayload(response);
+			return response;
+		}
+
+		Json::Value GameConnectionController::HandleGetAckRecordsRequest(const Json::Value& /*data*/)
+		{
+			Json::Value response;
+			Json::Value records(Json::arrayValue);
+			for (int i = 0; i < mAckRecordCount; ++i)
+			{
+				Json::Value rec;
+				rec["topic"] = mAckRecords[i].topic;
+				rec["latency_ms"] = mAckRecords[i].latencyMs;
+				records.append(rec);
+			}
+			response["records"] = records;
+
+			Json::Value pending(Json::arrayValue);
+			for (int i = 0; i < mPendingSubscribeCount; ++i)
+			{
+				Json::Value p;
+				p["topic"] = mPendingSubscribes[i].topic;
+				p["elapsed_ms"] = mPendingSubscribes[i].elapsedSec * 1000.0f;
+				pending.append(p);
+			}
+			response["pending"] = pending;
+
 			return response;
 		}
 
@@ -598,6 +633,7 @@ namespace Dia
 			mConnectingElapsed = 0.0f;
 			mHeartbeatElapsed = 0.0f;
 			mPendingSubscribeCount = 0;
+			mAckRecordCount = 0;
 
 			if (!mUseStub && mManager != nullptr)
 				mManager->Disconnect();
@@ -715,6 +751,14 @@ namespace Dia
 			{
 				if (strncmp(mPendingSubscribes[i].topic, topic, sizeof(mPendingSubscribes[i].topic)) == 0)
 				{
+					// Record ACK latency
+					if (mAckRecordCount < kMaxAckRecords)
+					{
+						SubscribeAckRecord& rec = mAckRecords[mAckRecordCount++];
+						strncpy_s(rec.topic, sizeof(rec.topic), topic, _TRUNCATE);
+						rec.latencyMs = mPendingSubscribes[i].elapsedSec * 1000.0f;
+					}
+
 					// Swap with last and shrink
 					mPendingSubscribes[i] = mPendingSubscribes[--mPendingSubscribeCount];
 					return;

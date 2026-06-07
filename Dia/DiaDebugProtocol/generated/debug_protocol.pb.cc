@@ -488,7 +488,7 @@ PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 DebugMessageDefaultTypeInternal _DebugMessage_default_instance_;
 }  // namespace debug
 }  // namespace dia
-static ::_pb::Metadata file_level_metadata_debug_5fprotocol_2eproto[19];
+static ::_pb::Metadata file_level_metadata_debug_5fprotocol_2eproto[20];
 static const ::_pb::EnumDescriptor* file_level_enum_descriptors_debug_5fprotocol_2eproto[1];
 static constexpr const ::_pb::ServiceDescriptor**
     file_level_service_descriptors_debug_5fprotocol_2eproto = nullptr;
@@ -504,6 +504,7 @@ const ::uint32_t TableStruct_debug_5fprotocol_2eproto::offsets[] PROTOBUF_SECTIO
     ~0u,  // no sizeof(Split)
     PROTOBUF_FIELD_OFFSET(::dia::debug::DebugMessage, _impl_.type_),
     PROTOBUF_FIELD_OFFSET(::dia::debug::DebugMessage, _impl_.timestamp_),
+    ::_pbi::kInvalidFieldOffsetTag,
     ::_pbi::kInvalidFieldOffsetTag,
     ::_pbi::kInvalidFieldOffsetTag,
     ::_pbi::kInvalidFieldOffsetTag,
@@ -723,29 +724,41 @@ const ::uint32_t TableStruct_debug_5fprotocol_2eproto::offsets[] PROTOBUF_SECTIO
     ~0u,  // no sizeof(Split)
     PROTOBUF_FIELD_OFFSET(::dia::debug::DebugLayerState, _impl_.layers_),
     PROTOBUF_FIELD_OFFSET(::dia::debug::DebugLayerState, _impl_.dropped_count_),
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::dia::debug::SubscribeAck, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::dia::debug::SubscribeAck, _impl_.data_type_),
+    PROTOBUF_FIELD_OFFSET(::dia::debug::SubscribeAck, _impl_.success_),
+    PROTOBUF_FIELD_OFFSET(::dia::debug::SubscribeAck, _impl_.message_),
 };
 
 static const ::_pbi::MigrationSchema
     schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
         {0, -1, -1, sizeof(::dia::debug::DebugMessage)},
-        {27, -1, -1, sizeof(::dia::debug::HandshakeRequest)},
-        {38, -1, -1, sizeof(::dia::debug::HandshakeResponse)},
-        {50, 60, -1, sizeof(::dia::debug::SubscribeRequest)},
-        {62, -1, -1, sizeof(::dia::debug::UnsubscribeRequest)},
-        {71, -1, -1, sizeof(::dia::debug::PUMetrics)},
-        {82, -1, -1, sizeof(::dia::debug::CoreMetrics)},
-        {96, 106, -1, sizeof(::dia::debug::DataUpdate)},
-        {108, 118, -1, sizeof(::dia::debug::Event)},
-        {120, 130, -1, sizeof(::dia::debug::CommandRequest)},
-        {132, 144, -1, sizeof(::dia::debug::CommandResponse)},
-        {148, -1, -1, sizeof(::dia::debug::Error)},
-        {158, -1, -1, sizeof(::dia::debug::GameInfo)},
-        {170, -1, -1, sizeof(::dia::debug::Ping)},
-        {179, -1, -1, sizeof(::dia::debug::Pong)},
-        {188, -1, -1, sizeof(::dia::debug::LogEntry)},
-        {199, -1, -1, sizeof(::dia::debug::LogBatch)},
-        {208, -1, -1, sizeof(::dia::debug::DebugLayerEntry)},
-        {219, -1, -1, sizeof(::dia::debug::DebugLayerState)},
+        {28, -1, -1, sizeof(::dia::debug::HandshakeRequest)},
+        {39, -1, -1, sizeof(::dia::debug::HandshakeResponse)},
+        {51, 61, -1, sizeof(::dia::debug::SubscribeRequest)},
+        {63, -1, -1, sizeof(::dia::debug::UnsubscribeRequest)},
+        {72, -1, -1, sizeof(::dia::debug::PUMetrics)},
+        {83, -1, -1, sizeof(::dia::debug::CoreMetrics)},
+        {97, 107, -1, sizeof(::dia::debug::DataUpdate)},
+        {109, 119, -1, sizeof(::dia::debug::Event)},
+        {121, 131, -1, sizeof(::dia::debug::CommandRequest)},
+        {133, 145, -1, sizeof(::dia::debug::CommandResponse)},
+        {149, -1, -1, sizeof(::dia::debug::Error)},
+        {159, -1, -1, sizeof(::dia::debug::GameInfo)},
+        {171, -1, -1, sizeof(::dia::debug::Ping)},
+        {180, -1, -1, sizeof(::dia::debug::Pong)},
+        {189, -1, -1, sizeof(::dia::debug::LogEntry)},
+        {200, -1, -1, sizeof(::dia::debug::LogBatch)},
+        {209, -1, -1, sizeof(::dia::debug::DebugLayerEntry)},
+        {220, -1, -1, sizeof(::dia::debug::DebugLayerState)},
+        {230, -1, -1, sizeof(::dia::debug::SubscribeAck)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -768,78 +781,91 @@ static const ::_pb::Message* const file_default_instances[] = {
     &::dia::debug::_LogBatch_default_instance_._instance,
     &::dia::debug::_DebugLayerEntry_default_instance_._instance,
     &::dia::debug::_DebugLayerState_default_instance_._instance,
+    &::dia::debug::_SubscribeAck_default_instance_._instance,
 };
 const char descriptor_table_protodef_debug_5fprotocol_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
-    "\n\024debug_protocol.proto\022\tdia.debug\032\034googl"
-    "e/protobuf/struct.proto\"\265\006\n\014DebugMessage"
-    "\022$\n\004type\030\001 \001(\0162\026.dia.debug.MessageType\022\021"
-    "\n\ttimestamp\030\002 \001(\004\0228\n\021handshake_request\030\n"
-    " \001(\0132\033.dia.debug.HandshakeRequestH\000\022:\n\022h"
-    "andshake_response\030\013 \001(\0132\034.dia.debug.Hand"
-    "shakeResponseH\000\0220\n\tsubscribe\030\014 \001(\0132\033.dia"
-    ".debug.SubscribeRequestH\000\0224\n\013unsubscribe"
-    "\030\r \001(\0132\035.dia.debug.UnsubscribeRequestH\000\022"
-    ".\n\014core_metrics\030\016 \001(\0132\026.dia.debug.CoreMe"
-    "tricsH\000\022,\n\013data_update\030\017 \001(\0132\025.dia.debug"
-    ".DataUpdateH\000\022!\n\005event\030\020 \001(\0132\020.dia.debug"
-    ".EventH\000\0224\n\017command_request\030\021 \001(\0132\031.dia."
-    "debug.CommandRequestH\000\0226\n\020command_respon"
-    "se\030\022 \001(\0132\032.dia.debug.CommandResponseH\000\022!"
-    "\n\005error\030\023 \001(\0132\020.dia.debug.ErrorH\000\022(\n\tgam"
-    "e_info\030\024 \001(\0132\023.dia.debug.GameInfoH\000\022\037\n\004p"
-    "ing\030\025 \001(\0132\017.dia.debug.PingH\000\022\037\n\004pong\030\026 \001"
-    "(\0132\017.dia.debug.PongH\000\022\"\n\003log\030\027 \001(\0132\023.dia"
-    ".debug.LogEntryH\000\022(\n\tlog_batch\030\030 \001(\0132\023.d"
-    "ia.debug.LogBatchH\000\0227\n\021debug_layer_state"
-    "\030\031 \001(\0132\032.dia.debug.DebugLayerStateH\000B\t\n\007"
-    "payload\"Y\n\020HandshakeRequest\022\030\n\020protocol_"
-    "version\030\001 \001(\005\022\023\n\013client_name\030\002 \001(\t\022\026\n\016cl"
-    "ient_version\030\003 \001(\t\"l\n\021HandshakeResponse\022"
-    "\030\n\020protocol_version\030\001 \001(\005\022\020\n\010accepted\030\002 "
-    "\001(\010\022\023\n\013server_name\030\003 \001(\t\022\026\n\016server_versi"
-    "on\030\004 \001(\t\"N\n\020SubscribeRequest\022\021\n\tdata_typ"
-    "e\030\001 \001(\t\022\'\n\006filter\030\002 \001(\0132\027.google.protobu"
-    "f.Struct\"\'\n\022UnsubscribeRequest\022\021\n\tdata_t"
-    "ype\030\001 \001(\t\"=\n\tPUMetrics\022\014\n\004name\030\001 \001(\t\022\013\n\003"
-    "fps\030\002 \001(\002\022\025\n\rframe_time_ms\030\003 \001(\002\"\256\001\n\013Cor"
-    "eMetrics\022\013\n\003fps\030\001 \001(\002\022\025\n\rframe_time_ms\030\002"
-    " \001(\002\022\026\n\016memory_used_mb\030\003 \001(\002\022\033\n\023memory_a"
-    "vailable_mb\030\004 \001(\002\022\026\n\016uptime_seconds\030\005 \001("
-    "\002\022.\n\020processing_units\030\006 \003(\0132\024.dia.debug."
-    "PUMetrics\"I\n\nDataUpdate\022\021\n\tdata_type\030\001 \001"
-    "(\t\022(\n\007payload\030\002 \001(\0132\027.google.protobuf.St"
-    "ruct\"E\n\005Event\022\022\n\nevent_type\030\001 \001(\t\022(\n\007pay"
-    "load\030\002 \001(\0132\027.google.protobuf.Struct\"K\n\016C"
-    "ommandRequest\022\017\n\007command\030\001 \001(\t\022(\n\007payloa"
-    "d\030\002 \001(\0132\027.google.protobuf.Struct\"n\n\017Comm"
-    "andResponse\022\017\n\007command\030\001 \001(\t\022\017\n\007success\030"
-    "\002 \001(\010\022\017\n\007message\030\003 \001(\t\022(\n\007payload\030\004 \001(\0132"
-    "\027.google.protobuf.Struct\",\n\005Error\022\022\n\nerr"
-    "or_code\030\001 \001(\t\022\017\n\007message\030\002 \001(\t\"\200\001\n\010GameI"
-    "nfo\022\014\n\004name\030\001 \001(\t\022\r\n\005build\030\002 \001(\t\0222\n\025proc"
-    "essing_unit_count\030\003 \001(\005R\023processingUnitC"
-    "ount\022#\n\rcurrent_phase\030\004 \001(\tR\014currentPhas"
-    "e\"\022\n\004Ping\022\n\n\002ts\030\001 \001(\004\"\022\n\004Pong\022\n\n\002ts\030\001 \001("
-    "\004\";\n\010LogEntry\022\r\n\005level\030\001 \001(\t\022\017\n\007channel\030"
-    "\002 \001(\t\022\017\n\007message\030\003 \001(\t\"0\n\010LogBatch\022$\n\007en"
-    "tries\030\001 \003(\0132\023.dia.debug.LogEntry\"B\n\017Debu"
-    "gLayerEntry\022\014\n\004name\030\001 \001(\t\022\017\n\007enabled\030\002 \001"
-    "(\010\022\020\n\010priority\030\003 \001(\005\"T\n\017DebugLayerState\022"
-    "*\n\006layers\030\001 \003(\0132\032.dia.debug.DebugLayerEn"
-    "try\022\025\n\rdropped_count\030\002 \001(\r*\374\003\n\013MessageTy"
-    "pe\022\030\n\024MESSAGE_TYPE_UNKNOWN\020\000\022\"\n\036MESSAGE_"
-    "TYPE_HANDSHAKE_REQUEST\020\001\022#\n\037MESSAGE_TYPE"
-    "_HANDSHAKE_RESPONSE\020\002\022\032\n\026MESSAGE_TYPE_SU"
-    "BSCRIBE\020\003\022\034\n\030MESSAGE_TYPE_UNSUBSCRIBE\020\004\022"
-    "\035\n\031MESSAGE_TYPE_CORE_METRICS\020\005\022\034\n\030MESSAG"
-    "E_TYPE_DATA_UPDATE\020\006\022\026\n\022MESSAGE_TYPE_EVE"
-    "NT\020\007\022 \n\034MESSAGE_TYPE_COMMAND_REQUEST\020\010\022!"
-    "\n\035MESSAGE_TYPE_COMMAND_RESPONSE\020\t\022\026\n\022MES"
-    "SAGE_TYPE_ERROR\020\n\022\032\n\026MESSAGE_TYPE_GAME_I"
-    "NFO\020\013\022\025\n\021MESSAGE_TYPE_PING\020\014\022\025\n\021MESSAGE_"
-    "TYPE_PONG\020\r\022\024\n\020MESSAGE_TYPE_LOG\020\016\022\032\n\026MES"
-    "SAGE_TYPE_LOG_BATCH\020\017\022\"\n\036MESSAGE_TYPE_DE"
-    "BUG_LAYER_STATE\020\020b\006proto3"
+    "\n\024debug_protocol.proto\022\tdia.debug\032\034google/prot"
+    "obuf/struct.proto\"\347\006\n\014DebugMessage\022$\n\004type"
+    "\030\001 \001(\0162\026.dia.debug.MessageType\022\021\n\ttim"
+    "estamp\030\002 \001(\004\0228\n\021handshake_request\030\n "
+    "\001(\0132\033.dia.debug.HandshakeRequestH\000\022:\n\022han"
+    "dshake_response\030\013 \001(\0132\034.dia.debug.HandshakeRe"
+    "sponseH\000\0220\n\tsubscribe\030\014 \001(\0132\033.dia.deb"
+    "ug.SubscribeRequestH\000\0224\n\013unsubscribe\030\r \001("
+    "\0132\035.dia.debug.UnsubscribeRequestH\000\022.\n\014core_m"
+    "etrics\030\016 \001(\0132\026.dia.debug.CoreMetricsH\000\022"
+    ",\n\013data_update\030\017 \001(\0132\025.dia.debug.DataUpda"
+    "teH\000\022!\n\005event\030\020 \001(\0132\020.dia.debug.Eve"
+    "ntH\000\0224\n\017command_request\030\021 \001(\0132\031.dia"
+    ".debug.CommandRequestH\000\0226\n\020command_response\030"
+    "\022 \001(\0132\032.dia.debug.CommandResponseH\000\022!\n"
+    "\005error\030\023 \001(\0132\020.dia.debug.ErrorH\000\022(\n"
+    "\tgame_info\030\024 \001(\0132\023.dia.debug.GameInfoH\000"
+    "\022\037\n\004ping\030\025 \001(\0132\017.dia.debug.PingH"
+    "\000\022\037\n\004pong\030\026 \001(\0132\017.dia.debug.Pong"
+    "H\000\022\"\n\003log\030\027 \001(\0132\023.dia.debug.LogEnt"
+    "ryH\000\022(\n\tlog_batch\030\030 \001(\0132\023.dia.debug.L"
+    "ogBatchH\000\0227\n\021debug_layer_state\030\031 \001(\0132"
+    "\032.dia.debug.DebugLayerStateH\000\0220\n\rsubscribe_ack"
+    "\030\032 \001(\0132\027.dia.debug.SubscribeAckH\000B\t\n\007"
+    "payload\"Y\n\020HandshakeRequest\022\030\n\020protocol_versi"
+    "on\030\001 \001(\005\022\023\n\013client_name\030\002 \001("
+    "\t\022\026\n\016client_version\030\003 \001(\t\"l\n\021Hands"
+    "hakeResponse\022\030\n\020protocol_version\030\001 \001(\005"
+    "\022\020\n\010accepted\030\002 \001(\010\022\023\n\013server"
+    "_name\030\003 \001(\t\022\026\n\016server_version\030\004 "
+    "\001(\t\"N\n\020SubscribeRequest\022\021\n\tdata_type\030"
+    "\001 \001(\t\022'\n\006filter\030\002 \001(\0132\027.google."
+    "protobuf.Struct\"'\n\022UnsubscribeRequest\022\021\n\tdata_t"
+    "ype\030\001 \001(\t\"=\n\tPUMetrics\022\014\n\004name\030"
+    "\001 \001(\t\022\013\n\003fps\030\002 \001(\002\022\025\n\rf"
+    "rame_time_ms\030\003 \001(\002\"\256\001\n\013CoreMetrics"
+    "\022\013\n\003fps\030\001 \001(\002\022\025\n\rframe_time_ms"
+    "\030\002 \001(\002\022\026\n\016memory_used_mb\030\003 \001("
+    "\002\022\033\n\023memory_available_mb\030\004 \001(\002\022"
+    "\026\n\016uptime_seconds\030\005 \001(\002\022.\n\020process"
+    "ing_units\030\006 \003(\0132\024.dia.debug.PUMetrics\"I\n\nD"
+    "ataUpdate\022\021\n\tdata_type\030\001 \001(\t\022(\n\007pay"
+    "load\030\002 \001(\0132\027.google.protobuf.Struct\"E\n\005E"
+    "vent\022\022\n\nevent_type\030\001 \001(\t\022(\n\007payload"
+    "\030\002 \001(\0132\027.google.protobuf.Struct\"K\n\016Comma"
+    "ndRequest\022\017\n\007command\030\001 \001(\t\022(\n\007pay"
+    "load\030\002 \001(\0132\027.google.protobuf.Struct\"n\n\017C"
+    "ommandResponse\022\017\n\007command\030\001 \001(\t\022\017"
+    "\n\007success\030\002 \001(\010\022\017\n\007message\030\003"
+    " \001(\t\022(\n\007payload\030\004 \001(\0132\027.google.pro"
+    "tobuf.Struct\",\n\005Error\022\022\n\nerror_code\030\001 "
+    "\001(\t\022\017\n\007message\030\002 \001(\t\"\200\001\n\010"
+    "GameInfo\022\014\n\004name\030\001 \001(\t\022\r\n\005build"
+    "\030\002 \001(\t\0222\n\025processing_unit_count\030\003 "
+    "\001(\005R\023processingUnitCount\022#\n\rcurrent_phase\030"
+    "\004 \001(\tR\014currentPhase\"\022\n\004Ping\022\n\n\002ts"
+    "\030\001 \001(\004\"\022\n\004Pong\022\n\n\002ts\030\001 "
+    "\001(\004\";\n\010LogEntry\022\r\n\005level\030\001 \001(\t"
+    "\022\017\n\007channel\030\002 \001(\t\022\017\n\007message"
+    "\030\003 \001(\t\"0\n\010LogBatch\022$\n\007entries\030\001 "
+    "\003(\0132\023.dia.debug.LogEntry\"B\n\017DebugLayerEntry"
+    "\022\014\n\004name\030\001 \001(\t\022\017\n\007enabled\030"
+    "\002 \001(\010\022\020\n\010priority\030\003 \001(\005\"T\n"
+    "\017DebugLayerState\022*\n\006layers\030\001 \003(\0132\032."
+    "dia.debug.DebugLayerEntry\022\025\n\rdropped_count\030\002 "
+    "\001(\r\"C\n\014SubscribeAck\022\021\n\tdata_type\030\001 "
+    "\001(\t\022\017\n\007success\030\002 \001(\010\022\017\n\007"
+    "message\030\003 \001(\t*\234\004\n\013MessageType\022\030\n"
+    "\024MESSAGE_TYPE_UNKNOWN\020\000\022\"\n\036MESSAGE_TYPE_HAN"
+    "DSHAKE_REQUEST\020\001\022#\n\037MESSAGE_TYPE_HANDSHAKE_RESP"
+    "ONSE\020\002\022\032\n\026MESSAGE_TYPE_SUBSCRIBE\020\003\022"
+    "\034\n\030MESSAGE_TYPE_UNSUBSCRIBE\020\004\022\035\n\031MESS"
+    "AGE_TYPE_CORE_METRICS\020\005\022\034\n\030MESSAGE_TYPE_DATA"
+    "_UPDATE\020\006\022\026\n\022MESSAGE_TYPE_EVENT\020\007\022 "
+    "\n\034MESSAGE_TYPE_COMMAND_REQUEST\020\010\022!\n\035MESSAGE"
+    "_TYPE_COMMAND_RESPONSE\020\t\022\026\n\022MESSAGE_TYPE_ERROR"
+    "\020\n\022\032\n\026MESSAGE_TYPE_GAME_INFO\020\013\022\025\n"
+    "\021MESSAGE_TYPE_PING\020\014\022\025\n\021MESSAGE_TYPE_PONG"
+    "\020\r\022\024\n\020MESSAGE_TYPE_LOG\020\016\022\032\n\026ME"
+    "SSAGE_TYPE_LOG_BATCH\020\017\022\"\n\036MESSAGE_TYPE_DEBUG_L"
+    "AYER_STATE\020\020\022\036\n\032MESSAGE_TYPE_SUBSCRIBE_ACK"
+    "\020\021b\006proto3"
 };
 static const ::_pbi::DescriptorTable* const descriptor_table_debug_5fprotocol_2eproto_deps[1] =
     {
@@ -849,13 +875,13 @@ static ::absl::once_flag descriptor_table_debug_5fprotocol_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_debug_5fprotocol_2eproto = {
     false,
     false,
-    2785,
+    2936,
     descriptor_table_protodef_debug_5fprotocol_2eproto,
     "debug_protocol.proto",
     &descriptor_table_debug_5fprotocol_2eproto_once,
     descriptor_table_debug_5fprotocol_2eproto_deps,
     1,
-    19,
+    20,
     schemas,
     file_default_instances,
     TableStruct_debug_5fprotocol_2eproto::offsets,
@@ -6548,9 +6574,9 @@ void SubscribeAck::InternalSwap(SubscribeAck* PROTOBUF_RESTRICT other) {
 }
 
 ::google::protobuf::Metadata SubscribeAck::GetMetadata() const {
-  // SubscribeAck is a stub not yet in the descriptor table.
-  // Return an empty Metadata; descriptor-based reflection is not available.
-  return {};
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_debug_5fprotocol_2eproto_getter, &descriptor_table_debug_5fprotocol_2eproto_once,
+      file_level_metadata_debug_5fprotocol_2eproto[19]);
 }
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace debug

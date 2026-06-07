@@ -10,6 +10,7 @@
 #include <atomic>
 #include <cstdint>
 #include <functional>
+#include <mutex>
 
 namespace Dia { namespace WebSocket { class Server; } }
 
@@ -58,6 +59,9 @@ namespace Dia
 			void FlushLogBatch();
 			void FlushTraceBatch();
 			void FlushMetricBatch();
+			void FlushLogBatchLocked();
+			void FlushTraceBatchLocked();
+			void FlushMetricBatchLocked();
 
 			Dia::WebSocket::Server* mServer;
 			SubscriberQueryFn mSubscriberQuery;
@@ -66,21 +70,21 @@ namespace Dia
 			std::atomic<bool> mActive;
 
 			// Log batch — accumulates up to kMaxLogBatch entries before flushing.
-			// NOTE: Written from observation sink threads without mutex (v1 accepted race).
 			static constexpr int kMaxLogBatch = 10;
+			std::mutex mLogMutex;
 			char  mLogBatch[kMaxLogBatch][2048];
 			int   mLogBatchCount;
 			float mLogBatchElapsedSec;
 
 			// Trace batch — accumulates up to kMaxTraceBatch spans before flushing.
-			// NOTE: Written from observation sink threads without mutex (v1 accepted race).
 			static constexpr int kMaxTraceBatch = 5;
+			std::mutex mTraceMutex;
 			char  mTraceBatch[kMaxTraceBatch][2048];
 			int   mTraceBatchCount;
 			float mTraceBatchElapsedSec;
 
 			// Metric latest-wins (single slot) — only the most recent snapshot is kept.
-			// NOTE: Written from observation sink threads without mutex (v1 accepted race).
+			std::mutex mMetricMutex;
 			char  mLatestMetricBuf[4096];
 			bool  mHasPendingMetric;
 			float mMetricElapsedSec;

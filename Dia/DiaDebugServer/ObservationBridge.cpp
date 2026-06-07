@@ -127,13 +127,14 @@ namespace Dia
 				entry.threadId,
 				escapedMsg);
 
-			// Accumulate into batch (NOTE: no mutex — v1 accepted race from sink threads)
-			if (mLogBatchCount < kMaxLogBatch)
-				strncpy_s(mLogBatch[mLogBatchCount++], sizeof(mLogBatch[0]), buf, _TRUNCATE);
+			{
+				std::lock_guard<std::mutex> lock(mLogMutex);
+				if (mLogBatchCount < kMaxLogBatch)
+					strncpy_s(mLogBatch[mLogBatchCount++], sizeof(mLogBatch[0]), buf, _TRUNCATE);
 
-			// Flush immediately if batch is full
-			if (mLogBatchCount >= kMaxLogBatch)
-				FlushLogBatch();
+				if (mLogBatchCount >= kMaxLogBatch)
+					FlushLogBatchLocked();
+			}
 		}
 
 		void ObservationBridge::OnSpan(const Dia::Observation::Trace::SpanRecord& span)
@@ -178,13 +179,14 @@ namespace Dia
 				span.threadId,
 				stepStr ? stepStr : "");
 
-			// Accumulate into batch (NOTE: no mutex — v1 accepted race from sink threads)
-			if (mTraceBatchCount < kMaxTraceBatch)
-				strncpy_s(mTraceBatch[mTraceBatchCount++], sizeof(mTraceBatch[0]), buf, _TRUNCATE);
+			{
+				std::lock_guard<std::mutex> lock(mTraceMutex);
+				if (mTraceBatchCount < kMaxTraceBatch)
+					strncpy_s(mTraceBatch[mTraceBatchCount++], sizeof(mTraceBatch[0]), buf, _TRUNCATE);
 
-			// Flush immediately if batch is full
-			if (mTraceBatchCount >= kMaxTraceBatch)
-				FlushTraceBatch();
+				if (mTraceBatchCount >= kMaxTraceBatch)
+					FlushTraceBatchLocked();
+			}
 		}
 
 		void ObservationBridge::OnSnapshot(const Dia::Observation::Metric::MetricSnapshot& snapshot)
@@ -200,10 +202,10 @@ namespace Dia
 			if (subscribers.Size() == 0)
 				return;
 
+			std::lock_guard<std::mutex> lock(mMetricMutex);
+
 			int64_t tsUnixNano = static_cast<int64_t>(snapshot.timestampSteadyNs) + mEpochOffsetNs;
 
-			// Latest-wins: overwrite the pending metric buffer each time
-			// (NOTE: no mutex — v1 accepted race from sink threads)
 			int pos = snprintf(mLatestMetricBuf, sizeof(mLatestMetricBuf),
 				"{\"topic\":\"observation.metric\","
 				"\"schema_version\":\"1.0\","
@@ -258,10 +260,72 @@ namespace Dia
 
 		void ObservationBridge::OnFinal(const Dia::Observation::Metric::MetricSnapshot& snapshot)
 		{
-			// Build into the pending buffer like OnSnapshot, then flush immediately
-			// to guarantee delivery at shutdown.
-			OnSnapshot(snapshot);
-			FlushMetricBatch();
+			if (!mActive.load(std::memory_order_acquire) || !mServer)
+				return;
+
+			if (!mSubscriberQuery)
+				return;
+			Dia::Core::Containers::DynamicArrayC<int, 16> subscribers;
+			mSubscriberQuery("observation.metric", subscribers);
+			if (subscribers.Size() == 0)
+				return;
+
+			std::lock_guard<std::mutex> lock(mMetricMutex);
+
+			int64_t tsUnixNano = static_cast<int64_t>(snapshot.timestampSteadyNs) + mEpochOffsetNs;
+
+			int pos = snprintf(mLatestMetricBuf, sizeof(mLatestMetricBuf),
+				"{\"topic\":\"observation.metric\","
+				"\"schema_version\":\"1.0\","
+				"\"record_type\":\"metric_snapshot\","
+				"\"session_id\":\"%s\","
+				"\"ts_unix_nano\":%lld,"
+				"\"interval_ms\":%u,"
+				"\"metrics\":[",
+				mSessionId,
+				static_cast<long long>(tsUnixNano),
+				snapshot.intervalMs);
+
+			for (unsigned int i = 0; i < snapshot.entryCount && pos < static_cast<int>(sizeof(mLatestMetricBuf)) - 256; ++i)
+			{
+				const Dia::Observation::Metric::MetricEntry& entry = snapshot.entries[i];
+				const char* nameStr = entry.name.AsChar();
+
+				if (i > 0) mLatestMetricBuf[pos++] = ',';
+
+				switch (entry.kind)
+				{
+				case Dia::Observation::Metric::MetricEntry::Kind::kCounter:
+					pos += snprintf(mLatestMetricBuf + pos, sizeof(mLatestMetricBuf) - pos,
+						"{\"name\":\"%s\",\"kind\":\"counter\",\"value\":%llu}",
+						nameStr ? nameStr : "",
+						static_cast<unsigned long long>(entry.counterValue));
+					break;
+
+				case Dia::Observation::Metric::MetricEntry::Kind::kGauge:
+					pos += snprintf(mLatestMetricBuf + pos, sizeof(mLatestMetricBuf) - pos,
+						"{\"name\":\"%s\",\"kind\":\"gauge\",\"value\":%.6g}",
+						nameStr ? nameStr : "",
+						entry.gaugeValue);
+					break;
+
+				case Dia::Observation::Metric::MetricEntry::Kind::kHistogram:
+					pos += snprintf(mLatestMetricBuf + pos, sizeof(mLatestMetricBuf) - pos,
+						"{\"name\":\"%s\",\"kind\":\"histogram\","
+						"\"count\":%llu,\"sum\":%.6g,"
+						"\"p50\":%.6g,\"p95\":%.6g,\"p99\":%.6g}",
+						nameStr ? nameStr : "",
+						static_cast<unsigned long long>(entry.histCount),
+						entry.histSum,
+						entry.p50, entry.p95, entry.p99);
+					break;
+				}
+			}
+
+			pos += snprintf(mLatestMetricBuf + pos, sizeof(mLatestMetricBuf) - pos, "]}");
+			mHasPendingMetric = true;
+
+			FlushMetricBatchLocked();
 		}
 
 		void ObservationBridge::OnTransition(
@@ -305,20 +369,23 @@ namespace Dia
 
 		void ObservationBridge::FlushLogBatch()
 		{
+			std::lock_guard<std::mutex> lock(mLogMutex);
 			if (mLogBatchCount == 0 || !mServer || !mSubscriberQuery)
 				return;
 
-			// Build JSON array wrapper: {"topic":"observation.log_batch","entries":[...]}
 			char arrayBuf[kMaxLogBatch * 2048 + 64];
 			int pos = 0;
-			pos += snprintf(arrayBuf + pos, sizeof(arrayBuf) - pos,
+			int remaining = static_cast<int>(sizeof(arrayBuf));
+			pos += snprintf(arrayBuf + pos, remaining - pos,
 				"{\"topic\":\"observation.log_batch\",\"entries\":[");
-			for (int i = 0; i < mLogBatchCount; ++i)
+			for (int i = 0; i < mLogBatchCount && pos < remaining - 4; ++i)
 			{
 				if (i > 0) arrayBuf[pos++] = ',';
-				pos += snprintf(arrayBuf + pos, sizeof(arrayBuf) - pos, "%s", mLogBatch[i]);
+				int written = snprintf(arrayBuf + pos, remaining - pos, "%s", mLogBatch[i]);
+				if (written < 0 || written >= remaining - pos) break;
+				pos += written;
 			}
-			pos += snprintf(arrayBuf + pos, sizeof(arrayBuf) - pos, "]}");
+			snprintf(arrayBuf + pos, remaining - pos, "]}");
 
 			SendToSubscribers("observation.log", arrayBuf);
 			mLogBatchCount = 0;
@@ -327,20 +394,23 @@ namespace Dia
 
 		void ObservationBridge::FlushTraceBatch()
 		{
+			std::lock_guard<std::mutex> lock(mTraceMutex);
 			if (mTraceBatchCount == 0 || !mServer || !mSubscriberQuery)
 				return;
 
-			// Build JSON array wrapper: {"topic":"observation.trace_batch","entries":[...]}
 			char arrayBuf[kMaxTraceBatch * 2048 + 64];
 			int pos = 0;
-			pos += snprintf(arrayBuf + pos, sizeof(arrayBuf) - pos,
+			int remaining = static_cast<int>(sizeof(arrayBuf));
+			pos += snprintf(arrayBuf + pos, remaining - pos,
 				"{\"topic\":\"observation.trace_batch\",\"entries\":[");
-			for (int i = 0; i < mTraceBatchCount; ++i)
+			for (int i = 0; i < mTraceBatchCount && pos < remaining - 4; ++i)
 			{
 				if (i > 0) arrayBuf[pos++] = ',';
-				pos += snprintf(arrayBuf + pos, sizeof(arrayBuf) - pos, "%s", mTraceBatch[i]);
+				int written = snprintf(arrayBuf + pos, remaining - pos, "%s", mTraceBatch[i]);
+				if (written < 0 || written >= remaining - pos) break;
+				pos += written;
 			}
-			pos += snprintf(arrayBuf + pos, sizeof(arrayBuf) - pos, "]}");
+			snprintf(arrayBuf + pos, remaining - pos, "]}");
 
 			SendToSubscribers("observation.trace", arrayBuf);
 			mTraceBatchCount = 0;
@@ -348,6 +418,65 @@ namespace Dia
 		}
 
 		void ObservationBridge::FlushMetricBatch()
+		{
+			std::lock_guard<std::mutex> lock(mMetricMutex);
+			if (!mHasPendingMetric || !mServer || !mSubscriberQuery)
+				return;
+
+			SendToSubscribers("observation.metric", mLatestMetricBuf);
+			mHasPendingMetric = false;
+			mMetricElapsedSec = 0.0f;
+		}
+
+		void ObservationBridge::FlushLogBatchLocked()
+		{
+			if (mLogBatchCount == 0 || !mServer || !mSubscriberQuery)
+				return;
+
+			char arrayBuf[kMaxLogBatch * 2048 + 64];
+			int pos = 0;
+			int remaining = static_cast<int>(sizeof(arrayBuf));
+			pos += snprintf(arrayBuf + pos, remaining - pos,
+				"{\"topic\":\"observation.log_batch\",\"entries\":[");
+			for (int i = 0; i < mLogBatchCount && pos < remaining - 4; ++i)
+			{
+				if (i > 0) arrayBuf[pos++] = ',';
+				int written = snprintf(arrayBuf + pos, remaining - pos, "%s", mLogBatch[i]);
+				if (written < 0 || written >= remaining - pos) break;
+				pos += written;
+			}
+			snprintf(arrayBuf + pos, remaining - pos, "]}");
+
+			SendToSubscribers("observation.log", arrayBuf);
+			mLogBatchCount = 0;
+			mLogBatchElapsedSec = 0.0f;
+		}
+
+		void ObservationBridge::FlushTraceBatchLocked()
+		{
+			if (mTraceBatchCount == 0 || !mServer || !mSubscriberQuery)
+				return;
+
+			char arrayBuf[kMaxTraceBatch * 2048 + 64];
+			int pos = 0;
+			int remaining = static_cast<int>(sizeof(arrayBuf));
+			pos += snprintf(arrayBuf + pos, remaining - pos,
+				"{\"topic\":\"observation.trace_batch\",\"entries\":[");
+			for (int i = 0; i < mTraceBatchCount && pos < remaining - 4; ++i)
+			{
+				if (i > 0) arrayBuf[pos++] = ',';
+				int written = snprintf(arrayBuf + pos, remaining - pos, "%s", mTraceBatch[i]);
+				if (written < 0 || written >= remaining - pos) break;
+				pos += written;
+			}
+			snprintf(arrayBuf + pos, remaining - pos, "]}");
+
+			SendToSubscribers("observation.trace", arrayBuf);
+			mTraceBatchCount = 0;
+			mTraceBatchElapsedSec = 0.0f;
+		}
+
+		void ObservationBridge::FlushMetricBatchLocked()
 		{
 			if (!mHasPendingMetric || !mServer || !mSubscriberQuery)
 				return;

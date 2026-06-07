@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { ConnectionHealth, TopicHealth } from "./useConnectionHealth";
+import { ConnectionHealth, SubscriptionAck, TopicHealth } from "./useConnectionHealth";
 
 interface Props {
   health: ConnectionHealth;
@@ -104,11 +104,11 @@ export function ConnectionHealthPopover({ health, onClose }: Props) {
       {/* Subscriptions section */}
       <div style={{ padding: "4px 12px 10px" }}>
         <div style={{ color: "#888", fontSize: 10, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>Subscriptions</div>
-        {health.topics.length === 0 ? (
+        {health.subscriptions.length === 0 ? (
           <div style={{ color: "#666", fontStyle: "italic" }}>No subscriptions</div>
         ) : (
-          health.topics.map((t) => (
-            <SubscriptionRow key={t.topic} topic={t.topic} />
+          health.subscriptions.map((s) => (
+            <SubscriptionRow key={s.topic} ack={s} />
           ))
         )}
       </div>
@@ -145,13 +145,29 @@ function TopicRow({ topic }: { topic: TopicHealth }) {
   );
 }
 
-function SubscriptionRow({ topic }: { topic: string }) {
-  // Subscription ACK status — v1 shows "Active" for all subscriptions.
-  // Full ACK latency display is a follow-on improvement once C++ threads ack timing through.
+function SubscriptionRow({ ack }: { ack: SubscriptionAck }) {
+  let statusText: string;
+  let statusColor: string;
+
+  switch (ack.status) {
+    case "acked":
+      statusText = `✓ ACK (${Math.round(ack.latencyMs ?? 0)}ms)`;
+      statusColor = "#89d185";
+      break;
+    case "pending":
+      statusText = `⏳ Pending (${Math.round(ack.elapsedMs ?? 0)}ms)`;
+      statusColor = "#dcdcaa";
+      break;
+    case "timeout":
+      statusText = "⚠ No ACK (timeout 3s)";
+      statusColor = "#f48771";
+      break;
+  }
+
   return (
     <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0", color: "#cccccc" }}>
-      <span style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{topic}</span>
-      <span style={{ color: "#89d185", fontSize: 10 }}>✓ Active</span>
+      <span style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ack.topic}</span>
+      <span style={{ color: statusColor, fontSize: 10 }}>{statusText}</span>
     </div>
   );
 }

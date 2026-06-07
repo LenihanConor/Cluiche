@@ -82,8 +82,21 @@ namespace Dia
 
 					char jsonBuffer[4096];
 					if (Dia::Proto::ToJson(msg, jsonBuffer, sizeof(jsonBuffer)))
-						mServer->SendText(mClientTaps[i].connId, jsonBuffer);
-					mStats.messagesSentTotal++;
+					{
+						if (mServer->SendText(mClientTaps[i].connId, jsonBuffer))
+						{
+							mStats.messagesSentTotal++;
+							RecordTopicSent(stageTransitionTopic, true);
+						}
+						else
+						{
+							DIA_LOG_ERROR("DebugServer", "BroadcastStageTransition — queue full for connId=%d, message dropped",
+								mClientTaps[i].connId);
+							mStats.messagesDropped++;
+							RecordTopicSent(stageTransitionTopic, false);
+							SendDropNotification(mClientTaps[i].connId);
+						}
+					}
 				}
 			}
 		}
@@ -407,8 +420,18 @@ namespace Dia
 						char jsonBuffer[4096];
 						if (mServer && Dia::Proto::ToJson(updateMsg, jsonBuffer, sizeof(jsonBuffer)))
 						{
-							mServer->SendText(connId, jsonBuffer);
-							RecordTopicSent(dataType, true);
+							if (mServer->SendText(connId, jsonBuffer))
+							{
+								RecordTopicSent(dataType, true);
+							}
+							else
+							{
+								DIA_LOG_ERROR("DebugServer", "HandleSubscribe tap — queue full for connId=%d topic='%s', message dropped",
+									connId, dataType.AsChar());
+								mStats.messagesDropped++;
+								RecordTopicSent(dataType, false);
+								SendDropNotification(connId);
+							}
 						}
 						mStats.messagesSentTotal++;
 					};
@@ -722,23 +745,37 @@ namespace Dia
 		void DebugServer::BroadcastProtoMessage(const dia::debug::DebugMessage& msg)
 		{
 			char buffer[4096];
-			if (Dia::Proto::ToJson(msg, buffer, sizeof(buffer)))
-				mServer->BroadcastText(buffer);
-			mStats.messagesSentTotal++;
+			if (!Dia::Proto::ToJson(msg, buffer, sizeof(buffer)))
+				return;
+
+			if (!mServer) return;
+			int connCount = mServer->GetConnectionCount();
+			mServer->BroadcastText(buffer);
+			mStats.messagesSentTotal += connCount;
 		}
 
 		void DebugServer::SendJsonToConnection(int connId, const Json::Value& json)
 		{
 			std::string str = Json::FastWriter().write(json);
-			mServer->SendText(connId, str.c_str());
-			mStats.messagesSentTotal++;
+			if (mServer->SendText(connId, str.c_str()))
+			{
+				mStats.messagesSentTotal++;
+			}
+			else
+			{
+				DIA_LOG_ERROR("DebugServer", "SendJsonToConnection — queue full for connId=%d, message dropped", connId);
+				mStats.messagesDropped++;
+				SendDropNotification(connId);
+			}
 		}
 
 		void DebugServer::BroadcastJson(const Json::Value& json)
 		{
 			std::string str = Json::FastWriter().write(json);
+			if (!mServer) return;
+			int connCount = mServer->GetConnectionCount();
 			mServer->BroadcastText(str.c_str());
-			mStats.messagesSentTotal++;
+			mStats.messagesSentTotal += connCount;
 		}
 
 		void DebugServer::RecordTopicSent(const Dia::Core::StringCRC& topic, bool success)
@@ -760,6 +797,11 @@ namespace Dia
 				ts.topic = topic;
 				if (success) ts.messagesSent = 1;
 				else         ts.messagesDropped = 1;
+			}
+			else
+			{
+				DIA_LOG_WARNING("DebugServer", "RecordTopicSent — topic tracking full (%d slots), topic '%s' stats will not be tracked",
+					ServerStats::kMaxTrackedTopics, topic.AsChar());
 			}
 		}
 

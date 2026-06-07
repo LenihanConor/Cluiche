@@ -38,6 +38,12 @@ namespace Dia
 				float elapsedSec;
 			};
 
+			struct SubscribeAckRecord
+			{
+				char topic[64];
+				float latencyMs;
+			};
+
 			GameConnectionController();
 			~GameConnectionController();
 
@@ -84,6 +90,7 @@ namespace Dia
 			Json::Value HandleConnectRequest(const Json::Value& data);
 			Json::Value HandleDisconnectRequest(const Json::Value& data);
 			Json::Value HandleGetStateRequest(const Json::Value& data);
+			Json::Value HandleGetAckRecordsRequest(const Json::Value& data);
 
 			void BuildStatePayload(Json::Value& out) const;
 			void SetLastError(const char* msg);
@@ -132,6 +139,10 @@ namespace Dia
 			static constexpr int kMaxPendingSubscribes = 16;
 			PendingSubscribe mPendingSubscribes[kMaxPendingSubscribes];
 			int mPendingSubscribeCount;
+
+			static constexpr int kMaxAckRecords = 16;
+			SubscribeAckRecord mAckRecords[kMaxAckRecords];
+			int mAckRecordCount;
 
 			void TrackPendingSubscribe(const char* topic);
 			void ClearPendingSubscribe(const char* topic);
