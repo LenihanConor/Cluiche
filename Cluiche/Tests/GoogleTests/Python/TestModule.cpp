@@ -30,6 +30,14 @@ public:
 			Shutdown();
 		}
 	}
+
+protected:
+	void TearDown() override
+	{
+		// Reset module registry between tests so each test starts with a clean slate
+		Shutdown();
+		Initialize("External/Python311/", "External/Python/", false);
+	}
 };
 
 ////////////////////////////////////////////////////////////////////////////////

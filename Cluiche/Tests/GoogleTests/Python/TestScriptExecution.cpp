@@ -54,7 +54,11 @@ protected:
 		// Restore output if redirected
 		RestoreOutput();
 
-		// Cancel all async tasks
+		// Reinitialize Python if a test shut it down, so subsequent tests start initialized
+		if (!IsInitialized())
+		{
+			Initialize("External/Python311/", "External/Python/", false);
+		}
 	}
 };
 

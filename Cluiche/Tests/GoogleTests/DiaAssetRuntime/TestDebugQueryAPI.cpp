@@ -5,6 +5,8 @@
 #include <windows.h>
 #endif
 
+#include <memory>
+
 #include <DiaAssetRuntime/AssetRuntime.h>
 #include <DiaAssetRuntime/AssetState.h>
 #include <DiaAssetRuntime/IAssetTypeHandler.h>
@@ -255,11 +257,12 @@ TEST_F(DebugQueryAPITest, GetStageDependencies_MaxStageCapacity)
     char filePath[512];
     ASSERT_TRUE(WriteTempFileF5("f5_overflow.json", json, filePath, sizeof(filePath)));
 
-    Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(runtime.LoadManifest(MakeF5FilePath("f5_overflow.json")));
+    // Heap-allocate: AssetRuntime embeds large hash tables (~300KB), too big for stack
+    auto runtime = std::make_unique<Dia::AssetRuntime::AssetRuntime>();
+    ASSERT_TRUE(runtime->LoadManifest(MakeF5FilePath("f5_overflow.json")));
 
     QueryResults results;
-    unsigned int total = runtime.GetStageDependencies(Dia::Core::StringCRC("stage.big"), results);
+    unsigned int total = runtime->GetStageDependencies(Dia::Core::StringCRC("stage.big"), results);
 
     EXPECT_EQ(total, kStageCapacity);
     EXPECT_EQ(results.Size(), 128u);
