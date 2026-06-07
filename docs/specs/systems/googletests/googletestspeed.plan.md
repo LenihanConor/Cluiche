@@ -46,7 +46,7 @@
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | slow-suite-tagging: `--all` flag + default `SLOW_*` filter exclusion + post-run WARNING from XML | DiaCLI pytest: `tests/test_dia_test_googletest.py` | Pending | sonnet | Touches `googletest_runner.py`, `run.py`, `launch.py`, `test.py` |
+| 1 | slow-suite-tagging: `--all` flag + default `SLOW_*` filter exclusion + post-run WARNING from XML | DiaCLI pytest: `tests/test_dia_test_googletest.py` | Done | sonnet | 20/20 tests pass. `googletest_runner.py`, `run.py`, `launch.py`, `test.py` |
 | 2 | release-config-ci: `full_suite_config` in `pipeline.toml` + `TargetConfig` + runner wiring | DiaCLI pytest: `test_dia_pipeline.py`, `test_dia_test_googletest.py` | Pending | sonnet | `pipeline_config.py`, `pipeline.toml`, `googletest_runner.py` |
 | 3 | precompiled-header: `pch.h` + `pch.cpp` + `/FI pch.h` in vcxproj for Debug+Release | `dia pipeline --target googletest --stage compile-code` exits 0 | Pending | sonnet | `GoogleTests.vcxproj`, new `pch.h`/`pch.cpp`; do not touch Asan/Ubsan configs |
 | 4 | shard-runner: `shard_runner.py` + `xml_merger.py` + `--shards N` CLI flag + merged XML output | DiaCLI pytest: new shard tests in `test_dia_test_googletest.py` | Pending | sonnet | New files; touches `googletest_runner.py`, `run.py`, `test.py` |
