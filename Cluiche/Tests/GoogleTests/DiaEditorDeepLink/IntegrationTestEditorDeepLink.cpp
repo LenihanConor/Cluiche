@@ -8,7 +8,7 @@
 #include <gtest/gtest.h>
 
 // Plugins under test
-#include <DiaApplicationEditor/DiaApplicationFlowEditorPlugin.h>
+#include <DiaApplicationFlowEditor/DiaApplicationFlowEditorPlugin.h>
 #include <DiaEntityTemplateEditor/DiaEntityTemplateEditorPlugin.h>
 #include <DiaSceneEditor/DiaSceneEditorPlugin.h>
 #include <DiaAssetCatalogueEditor/DiaAssetCatalogueEditorPlugin.h>

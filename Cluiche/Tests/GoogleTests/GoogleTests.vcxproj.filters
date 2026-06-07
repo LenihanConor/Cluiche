@@ -115,7 +115,7 @@
     <Filter Include="PipelineEditor">
       <UniqueIdentifier>{PIPE0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
-    <Filter Include="DiaApplicationEditor">
+    <Filter Include="DiaApplicationFlowEditor">
       <UniqueIdentifier>{DAPPEDTR-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
     <Filter Include="DiaApplicationFlowInspector">
@@ -613,39 +613,39 @@
     <ClCompile Include="DiaSceneEditor\IntegrationTestSceneEditorPlugin.cpp">
       <Filter>DiaSceneEditor</Filter>
     </ClCompile>
-    <!-- DiaApplicationEditor V2 Tests -->
-    <ClCompile Include="DiaApplicationEditor\TestManifestEditorState.cpp">
-      <Filter>DiaApplicationEditor</Filter>
+    <!-- DiaApplicationFlowEditor V2 Tests -->
+    <ClCompile Include="DiaApplicationFlowEditor\TestManifestEditorState.cpp">
+      <Filter>DiaApplicationFlowEditor</Filter>
     </ClCompile>
-    <ClCompile Include="DiaApplicationEditor\TestCommandHistory.cpp">
-      <Filter>DiaApplicationEditor</Filter>
+    <ClCompile Include="DiaApplicationFlowEditor\TestCommandHistory.cpp">
+      <Filter>DiaApplicationFlowEditor</Filter>
     </ClCompile>
-    <ClCompile Include="DiaApplicationEditor\TestTypeDiscoveryService.cpp">
-      <Filter>DiaApplicationEditor</Filter>
+    <ClCompile Include="DiaApplicationFlowEditor\TestTypeDiscoveryService.cpp">
+      <Filter>DiaApplicationFlowEditor</Filter>
     </ClCompile>
-    <ClCompile Include="DiaApplicationEditor\TestManifestLoader.cpp">
-      <Filter>DiaApplicationEditor</Filter>
+    <ClCompile Include="DiaApplicationFlowEditor\TestManifestLoader.cpp">
+      <Filter>DiaApplicationFlowEditor</Filter>
     </ClCompile>
-    <ClCompile Include="DiaApplicationEditor\TestManifestSaver.cpp">
-      <Filter>DiaApplicationEditor</Filter>
+    <ClCompile Include="DiaApplicationFlowEditor\TestManifestSaver.cpp">
+      <Filter>DiaApplicationFlowEditor</Filter>
     </ClCompile>
-    <ClCompile Include="DiaApplicationEditor\TestManifestValidator.cpp">
-      <Filter>DiaApplicationEditor</Filter>
+    <ClCompile Include="DiaApplicationFlowEditor\TestManifestValidator.cpp">
+      <Filter>DiaApplicationFlowEditor</Filter>
     </ClCompile>
-    <ClCompile Include="DiaApplicationEditor\TestCommands_PU.cpp">
-      <Filter>DiaApplicationEditor</Filter>
+    <ClCompile Include="DiaApplicationFlowEditor\TestCommands_PU.cpp">
+      <Filter>DiaApplicationFlowEditor</Filter>
     </ClCompile>
-    <ClCompile Include="DiaApplicationEditor\TestCommands_Module.cpp">
-      <Filter>DiaApplicationEditor</Filter>
+    <ClCompile Include="DiaApplicationFlowEditor\TestCommands_Module.cpp">
+      <Filter>DiaApplicationFlowEditor</Filter>
     </ClCompile>
-    <ClCompile Include="DiaApplicationEditor\TestCommands_Stream.cpp">
-      <Filter>DiaApplicationEditor</Filter>
+    <ClCompile Include="DiaApplicationFlowEditor\TestCommands_Stream.cpp">
+      <Filter>DiaApplicationFlowEditor</Filter>
     </ClCompile>
-    <ClCompile Include="DiaApplicationEditor\TestCommands_Stage.cpp">
-      <Filter>DiaApplicationEditor</Filter>
+    <ClCompile Include="DiaApplicationFlowEditor\TestCommands_Stage.cpp">
+      <Filter>DiaApplicationFlowEditor</Filter>
     </ClCompile>
-    <ClCompile Include="DiaApplicationEditor\TestRiskAssessor.cpp">
-      <Filter>DiaApplicationEditor</Filter>
+    <ClCompile Include="DiaApplicationFlowEditor\TestRiskAssessor.cpp">
+      <Filter>DiaApplicationFlowEditor</Filter>
     </ClCompile>
     <!-- DiaApplicationFlowInspector Tests -->
     <ClCompile Include="DiaApplicationFlowInspector\TestLiveStateStore.cpp">
