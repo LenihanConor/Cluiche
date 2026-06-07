@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Option 4 — Hybrid (Classic Chat + Detail Panel)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 13px;
+    background: #1a1a1a;
+    color: #d4d4d4;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── Panel header ─────────────────────────────────────────── */
+  .panel-header {
+    background: #252526;
+    border-bottom: 1px solid #333;
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #6dbf6d; flex-shrink: 0;
+  }
+  .status-dot.offline { background: #666; }
+  .panel-title {
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: #ccc; flex: 1;
+  }
+  .backend-select {
+    background: #3c3c3c; border: 1px solid #555;
+    color: #d4d4d4; font-size: 11px;
+    padding: 3px 6px; border-radius: 3px; cursor: pointer;
+  }
+  .model-badge {
+    background: #2d4a2d; color: #6dbf6d;
+    font-size: 10px; padding: 2px 7px;
+    border-radius: 10px; border: 1px solid #3a6b3a;
+  }
+  .detail-toggle {
+    background: none; border: 1px solid #444;
+    border-radius: 3px; color: #666;
+    font-size: 10px; padding: 2px 7px; cursor: pointer;
+  }
+  .detail-toggle.active { border-color: #4a7aaa; color: #9cdcfe; background: #1a2a3a; }
+  .detail-toggle:hover:not(.active) { border-color: #666; color: #aaa; }
+
+  /* ── Context bar ──────────────────────────────────────────── */
+  .context-bar {
+    background: #1e1e2e; border-bottom: 1px solid #2a2a3a;
+    padding: 4px 10px;
+    display: flex; align-items: center; gap: 6px;
+    flex-shrink: 0;
+  }
+  .ctx-label { font-size: 10px; color: #555; flex-shrink: 0; }
+  .ctx-chip {
+    background: #252535; border: 1px solid #383860;
+    color: #7070a0; font-size: 10px;
+    padding: 1px 6px; border-radius: 3px; cursor: pointer;
+  }
+  .ctx-chip:hover { color: #aaaacc; border-color: #5555aa; }
+  .ctx-add-btn {
+    background: none; border: 1px dashed #333;
+    color: #555; font-size: 10px;
+    padding: 1px 6px; border-radius: 3px; cursor: pointer;
+  }
+  .ctx-add-btn:hover { color: #888; border-color: #555; }
+  .ctx-tokens { margin-left: auto; font-size: 10px; color: #555; flex-shrink: 0; }
+  .ctx-bar-wrap {
+    width: 60px; height: 3px;
+    background: #2a2a2a; border-radius: 2px; flex-shrink: 0;
+  }
+  .ctx-bar-fill { height: 3px; background: #4a7aaa; border-radius: 2px; width: 35%; }
+
+  /* ── Body split ───────────────────────────────────────────── */
+  .body {
+    flex: 1; display: flex; overflow: hidden;
+  }
+
+  /* ── Chat column ──────────────────────────────────────────── */
+  .chat-col {
+    flex: 1; display: flex; flex-direction: column; overflow: hidden;
+    min-width: 0;
+  }
+
+  .messages {
+    flex: 1; overflow-y: auto;
+    padding: 14px 12px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .messages::-webkit-scrollbar { width: 5px; }
+  .messages::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+  /* Message row */
+  .msg { display: flex; flex-direction: column; gap: 5px; }
+  .msg-header {
+    display: flex; align-items: center; gap: 7px;
+  }
+  .avatar {
+    width: 20px; height: 20px; border-radius: 4px;
+    font-size: 10px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .avatar.user { background: #264f78; color: #9cdcfe; }
+  .avatar.ai   { background: #3a2d5c; color: #c792ea; }
+  .msg-name  { font-size: 11px; font-weight: 600; color: #999; }
+  .msg-time  { font-size: 10px; color: #444; }
+  .msg-body  { margin-left: 27px; color: #ccc; line-height: 1.6; font-size: 13px; }
+  .msg-body code {
+    background: #2a2a2a; border: 1px solid #3a3a3a;
+    border-radius: 3px; padding: 0 4px;
+    font-family: 'Cascadia Code', Consolas, monospace;
+    font-size: 11px; color: #9cdcfe;
+  }
+
+  /* Tool call card — inline in chat, clickable */
+  .tool-card {
+    margin-left: 27px; margin-top: 4px;
+    background: #1a2030;
+    border: 1px solid #2a3a55;
+    border-left: 3px solid #4a7aaa;
+    border-radius: 0 4px 4px 0;
+    padding: 6px 10px;
+    font-family: 'Cascadia Code', Consolas, monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .tool-card:hover      { background: #1e2840; }
+  .tool-card.selected   { background: #1e2840; border-left-color: #6a9aca; outline: 1px solid #2a3a55; }
+
+  .tc-row-top {
+    display: flex; align-items: center; gap: 7px;
+  }
+  .tc-fn     { color: #9cdcfe; font-weight: 600; }
+  .tc-status { margin-left: auto; font-size: 10px; padding: 1px 6px; border-radius: 2px; }
+  .tc-status.ok      { background: #1a3020; color: #6dbf6d; border: 1px solid #2a5030; }
+  .tc-status.running { background: #2a2a1a; color: #d4c060; border: 1px solid #4a4a20;
+                       animation: pulse 1.4s infinite; }
+  .tc-status.err     { background: #301a1a; color: #f47474; border: 1px solid #502a2a; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+  .tc-args   { color: #888; font-size: 10px; margin-top: 3px; }
+  .tc-args span { color: #ce9178; }
+  .tc-result { color: #6dbf6d; font-size: 10px; margin-top: 2px; }
+
+  .tc-hint {
+    font-size: 9px; color: #4a5a6a; margin-top: 4px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-style: italic;
+  }
+
+  /* Thinking */
+  .thinking {
+    margin-left: 27px; color: #555; font-size: 12px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .dot { animation: blink 1.2s infinite; }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
+
+  /* Input area */
+  .input-area {
+    background: #252526; border-top: 1px solid #2e2e2e;
+    padding: 8px 10px; flex-shrink: 0;
+  }
+  .input-row { display: flex; gap: 6px; align-items: flex-end; }
+  .input-box {
+    flex: 1; background: #1e1e1e; border: 1px solid #3a3a3a;
+    border-radius: 5px; color: #d4d4d4; font-size: 13px;
+    font-family: inherit; padding: 7px 10px;
+    resize: none; min-height: 34px; max-height: 100px;
+    outline: none; line-height: 1.4;
+  }
+  .input-box:focus { border-color: #4a7aaa; }
+  .input-box::placeholder { color: #444; }
+  .send-btn {
+    background: #264f78; border: none; border-radius: 4px;
+    color: #9cdcfe; width: 34px; height: 34px; cursor: pointer;
+    font-size: 15px; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .send-btn:hover { background: #2f6098; }
+  .input-hints { display: flex; gap: 6px; margin-top: 5px; }
+  .hint {
+    background: #252525; border: 1px solid #333;
+    border-radius: 10px; color: #666; font-size: 10px;
+    padding: 2px 8px; cursor: pointer;
+  }
+  .hint:hover { color: #aaa; border-color: #555; }
+
+  /* ── Detail panel ─────────────────────────────────────────── */
+  .detail-panel {
+    width: 240px; flex-shrink: 0;
+    border-left: 1px solid #2a2a2a;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    background: #1c1c1c;
+  }
+  .detail-panel.hidden { display: none; }
+
+  .dp-header {
+    background: #1e1e1e; border-bottom: 1px solid #2a2a2a;
+    padding: 6px 10px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .dp-title { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: #555; }
+  .dp-close { background: none; border: none; color: #555; font-size: 13px; cursor: pointer; padding: 0; line-height: 1; }
+  .dp-close:hover { color: #aaa; }
+
+  .dp-scroll { flex: 1; overflow-y: auto; padding: 10px; }
+  .dp-scroll::-webkit-scrollbar { width: 4px; }
+  .dp-scroll::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
+
+  /* Selected tool detail */
+  .dp-card {
+    background: #1a2030; border: 1px solid #2a3a55;
+    border-radius: 4px; padding: 8px 10px; margin-bottom: 10px;
+  }
+  .dp-card-title { font-size: 11px; font-weight: 700; color: #9cdcfe; margin-bottom: 6px;
+                   font-family: 'Cascadia Code', Consolas, monospace; }
+  .dp-row { display: flex; gap: 6px; margin-bottom: 3px; align-items: baseline; }
+  .dp-key { font-size: 10px; color: #555; min-width: 55px; flex-shrink: 0; }
+  .dp-val { font-size: 10px; color: #ce9178; font-family: 'Cascadia Code', Consolas, monospace; word-break: break-all; }
+  .dp-val.ok  { color: #6dbf6d; }
+  .dp-val.dur { color: #888; }
+
+  .dp-section { margin-top: 12px; }
+  .dp-section-title {
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.07em; color: #444; margin-bottom: 6px;
+  }
+
+  /* Context file list in detail panel */
+  .dp-file {
+    display: flex; align-items: center; gap: 6px;
+    padding: 3px 4px; border-radius: 3px; cursor: pointer;
+    margin-bottom: 1px;
+  }
+  .dp-file:hover { background: #222230; }
+  .dp-file-icon { color: #4a7aaa; font-size: 11px; width: 13px; text-align: center; flex-shrink: 0; }
+  .dp-file-name { font-size: 11px; color: #777; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dp-file-tok  { font-size: 10px; color: #444; flex-shrink: 0; }
+  .dp-file-strip { height: 2px; background: #252525; margin: 1px 0 3px 19px; border-radius: 1px; }
+  .dp-file-strip-fill { height: 2px; background: #3a5a7a; border-radius: 1px; }
+
+  .dp-add {
+    display: flex; align-items: center; gap: 4px;
+    padding: 3px 4px; color: #4a7aaa; font-size: 11px;
+    cursor: pointer; border-radius: 3px; margin-top: 3px;
+  }
+  .dp-add:hover { background: #1a2a3a; }
+
+  /* Token budget bar */
+  .budget-box {
+    background: #1e1e1e; border: 1px solid #252525;
+    border-radius: 3px; padding: 6px 8px; margin-top: 8px;
+  }
+  .budget-top { display: flex; justify-content: space-between; font-size: 10px; color: #555; margin-bottom: 4px; }
+  .budget-bar { height: 4px; background: #252525; border-radius: 2px; }
+  .budget-fill { height: 4px; border-radius: 2px; background: #4a7aaa; width: 35%; }
+
+  /* Session info */
+  .dp-session {
+    background: #1e1e1e; border: 1px solid #252525;
+    border-radius: 3px; padding: 6px 8px; margin-top: 8px;
+  }
+  .dp-sess-row { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 2px; }
+  .dp-sess-key { color: #444; }
+  .dp-sess-val { color: #666; }
+
+  .label-option {
+    position: fixed; top: 10px; right: 10px;
+    background: #264f78; color: #9cdcfe;
+    font-size: 11px; font-weight: 700;
+    padding: 4px 10px; border-radius: 3px;
+    letter-spacing: 0.05em;
+    z-index: 100;
+  }
+</style>
+</head>
+<body>
+
+<div class="label-option">OPTION 4 — Hybrid</div>
+
+<!-- Header -->
+<div class="panel-header">
+  <div class="status-dot"></div>
+  <div class="panel-title">AI Assistant</div>
+  <select class="backend-select">
+    <option>Ollama</option>
+    <option>Claude</option>
+    <option>Gemini</option>
+  </select>
+  <div class="model-badge">llama3.2</div>
+  <button class="detail-toggle active" onclick="toggleDetail(this)">Details</button>
+</div>
+
+<!-- Context bar -->
+<div class="context-bar">
+  <div class="ctx-label">Context</div>
+  <div class="ctx-chip">engine_overview.md</div>
+  <div class="ctx-chip">module_apis.md</div>
+  <div class="ctx-chip">editor_actions.md</div>
+  <div class="ctx-chip">coding_conventions.md</div>
+  <button class="ctx-add-btn">+ file</button>
+  <div class="ctx-bar-wrap"><div class="ctx-bar-fill"></div></div>
+  <div class="ctx-tokens">2 840 / 8 192 tok</div>
+</div>
+
+<!-- Body: chat + detail panel -->
+<div class="body">
+
+  <!-- Chat column -->
+  <div class="chat-col">
+    <div class="messages">
+
+      <!-- User 1 -->
+      <div class="msg">
+        <div class="msg-header">
+          <div class="avatar user">U</div>
+          <div class="msg-name">You</div>
+          <div class="msg-time">14:02</div>
+        </div>
+        <div class="msg-body">
+          What modules does EntityTestStage use and how are they wired up?
+        </div>
+      </div>
+
+      <!-- AI 1 -->
+      <div class="msg">
+        <div class="msg-header">
+          <div class="avatar ai">AI</div>
+          <div class="msg-name">Assistant</div>
+          <div class="msg-time">14:02</div>
+        </div>
+        <div class="msg-body">
+          <code>EntityTestStage</code> splits across two ProcessingUnits.
+          <code>MainPU</code> owns <code>EntityInspectorModule</code> and
+          <code>DebugServerHostModule</code>. <code>SimPU</code> owns
+          <code>EntitySimModule</code>, which drives entity logic each frame on the sim thread.<br><br>
+          The two PUs communicate via <code>ServiceStream&lt;T&gt;</code> — SimPU writes
+          entity state each frame; MainPU reads it for inspection and debug output.
+        </div>
+      </div>
+
+      <!-- User 2 -->
+      <div class="msg">
+        <div class="msg-header">
+          <div class="avatar user">U</div>
+          <div class="msg-name">You</div>
+          <div class="msg-time">14:04</div>
+        </div>
+        <div class="msg-body">
+          Can you open the EntityTestStage manifest in the editor?
+        </div>
+      </div>
+
+      <!-- AI 2 + tool call -->
+      <div class="msg">
+        <div class="msg-header">
+          <div class="avatar ai">AI</div>
+          <div class="msg-name">Assistant</div>
+          <div class="msg-time">14:04</div>
+        </div>
+        <div class="tool-card selected" onclick="selectTool(this, 'open_path')">
+          <div class="tc-row-top">
+            <div class="tc-fn">project.open_path</div>
+            <div class="tc-status ok">✓ 38ms</div>
+          </div>
+          <div class="tc-args">path: <span>"Assets/CluicheTest/Stages/EntityTestStage/entity_test_stage.diastage"</span></div>
+          <div class="tc-result">→ Opened in manifest editor panel</div>
+          <div class="tc-hint">Click to inspect ↗</div>
+        </div>
+        <div class="msg-body" style="margin-top:6px;">
+          Done — the EntityTestStage manifest is now open in the manifest editor.
+        </div>
+      </div>
+
+      <!-- User 3 -->
+      <div class="msg">
+        <div class="msg-header">
+          <div class="avatar user">U</div>
+          <div class="msg-name">You</div>
+          <div class="msg-time">14:05</div>
+        </div>
+        <div class="msg-body">
+          Connect to localhost:8080 and tell me which stage is running
+        </div>
+      </div>
+
+      <!-- AI 3 + two tool calls, second in progress -->
+      <div class="msg">
+        <div class="msg-header">
+          <div class="avatar ai">AI</div>
+          <div class="msg-name">Assistant</div>
+          <div class="msg-time">14:05</div>
+        </div>
+        <div class="tool-card" onclick="selectTool(this, 'connect')" style="margin-bottom:4px;">
+          <div class="tc-row-top">
+            <div class="tc-fn">game_connection.connect</div>
+            <div class="tc-status ok">✓ 112ms</div>
+          </div>
+          <div class="tc-args">address: <span>"localhost"</span> &nbsp;port: <span>8080</span></div>
+          <div class="tc-result">→ Connected</div>
+          <div class="tc-hint">Click to inspect ↗</div>
+        </div>
+        <div class="tool-card" onclick="selectTool(this, 'get_state')">
+          <div class="tc-row-top">
+            <div class="tc-fn">game_connection.get_state</div>
+            <div class="tc-status running">⟳ waiting…</div>
+          </div>
+          <div class="tc-args">(no params)</div>
+          <div class="tc-hint">Click to inspect ↗</div>
+        </div>
+        <div class="thinking" style="margin-top:8px;">
+          <span class="dot">●</span><span class="dot">●</span><span class="dot">●</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Input -->
+    <div class="input-area">
+      <div class="input-row">
+        <textarea class="input-box" placeholder="Ask anything about the project…" rows="1"></textarea>
+        <button class="send-btn">↑</button>
+      </div>
+      <div class="input-hints">
+        <div class="hint">Open a file…</div>
+        <div class="hint">Connect to game</div>
+        <div class="hint">Run pipeline</div>
+        <div class="hint">Explain module…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail panel -->
+  <div class="detail-panel" id="detailPanel">
+    <div class="dp-header">
+      <div class="dp-title" id="dpTitle">Tool Detail</div>
+      <button class="dp-close" onclick="toggleDetail(document.querySelector('.detail-toggle'))">✕</button>
+    </div>
+    <div class="dp-scroll">
+
+      <!-- Selected tool card -->
+      <div class="dp-card" id="dpCard">
+        <div class="dp-card-title" id="dpFn">project.open_path</div>
+        <div class="dp-row">
+          <div class="dp-key">status</div>
+          <div class="dp-val ok" id="dpStatus">success</div>
+        </div>
+        <div class="dp-row">
+          <div class="dp-key">duration</div>
+          <div class="dp-val dur" id="dpDur">38 ms</div>
+        </div>
+        <div class="dp-row" id="dpArgRow">
+          <div class="dp-key">path</div>
+          <div class="dp-val" id="dpArg">…/entity_test_stage.diastage</div>
+        </div>
+        <div class="dp-row">
+          <div class="dp-key">result</div>
+          <div class="dp-val ok" id="dpResult">opened</div>
+        </div>
+      </div>
+
+      <!-- Context files -->
+      <div class="dp-section">
+        <div class="dp-section-title">Knowledge Context</div>
+
+        <div class="dp-file">
+          <div class="dp-file-icon">📄</div>
+          <div class="dp-file-name">engine_overview.md</div>
+          <div class="dp-file-tok">620</div>
+        </div>
+        <div class="dp-file-strip"><div class="dp-file-strip-fill" style="width:46%"></div></div>
+
+        <div class="dp-file">
+          <div class="dp-file-icon">📄</div>
+          <div class="dp-file-name">module_apis.md</div>
+          <div class="dp-file-tok">980</div>
+        </div>
+        <div class="dp-file-strip"><div class="dp-file-strip-fill" style="width:72%"></div></div>
+
+        <div class="dp-file">
+          <div class="dp-file-icon">📄</div>
+          <div class="dp-file-name">editor_actions.md</div>
+          <div class="dp-file-tok">740</div>
+        </div>
+        <div class="dp-file-strip"><div class="dp-file-strip-fill" style="width:55%"></div></div>
+
+        <div class="dp-file">
+          <div class="dp-file-icon">📄</div>
+          <div class="dp-file-name">coding_conventions.md</div>
+          <div class="dp-file-tok">500</div>
+        </div>
+        <div class="dp-file-strip"><div class="dp-file-strip-fill" style="width:37%"></div></div>
+
+        <div class="dp-add">＋ add file</div>
+
+        <div class="budget-box">
+          <div class="budget-top">
+            <span>Token budget</span>
+            <span>2 840 / 8 192</span>
+          </div>
+          <div class="budget-bar"><div class="budget-fill"></div></div>
+        </div>
+      </div>
+
+      <!-- Session info -->
+      <div class="dp-section">
+        <div class="dp-section-title">Session</div>
+        <div class="dp-session">
+          <div class="dp-sess-row">
+            <div class="dp-sess-key">project</div>
+            <div class="dp-sess-val">CluicheTest</div>
+          </div>
+          <div class="dp-sess-row">
+            <div class="dp-sess-key">backend</div>
+            <div class="dp-sess-val">Ollama · local</div>
+          </div>
+          <div class="dp-sess-row">
+            <div class="dp-sess-key">messages</div>
+            <div class="dp-sess-val">6</div>
+          </div>
+          <div class="dp-sess-row">
+            <div class="dp-sess-key">tool calls</div>
+            <div class="dp-sess-val">3 (2 ok, 1 pending)</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Toggle detail panel
+  function toggleDetail(btn) {
+    const panel = document.getElementById('detailPanel');
+    const isHidden = panel.classList.contains('hidden');
+    if (isHidden) {
+      panel.classList.remove('hidden');
+      btn.classList.add('active');
+    } else {
+      panel.classList.add('hidden');
+      btn.classList.remove('active');
+    }
+  }
+
+  // Select a tool card and update detail panel
+  const toolData = {
+    open_path: {
+      fn: 'project.open_path',
+      status: 'success', statusClass: 'ok',
+      dur: '38 ms',
+      argKey: 'path', argVal: '…/entity_test_stage.diastage',
+      result: 'opened'
+    },
+    connect: {
+      fn: 'game_connection.connect',
+      status: 'success', statusClass: 'ok',
+      dur: '112 ms',
+      argKey: 'address + port', argVal: '"localhost", 8080',
+      result: 'connected'
+    },
+    get_state: {
+      fn: 'game_connection.get_state',
+      status: 'pending…', statusClass: '',
+      dur: '—',
+      argKey: 'params', argVal: '(none)',
+      result: '—'
+    }
+  };
+
+  function selectTool(card, key) {
+    // Deselect all
+    document.querySelectorAll('.tool-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+
+    const d = toolData[key];
+    document.getElementById('dpTitle').textContent = 'Tool Detail';
+    document.getElementById('dpFn').textContent = d.fn;
+    const statusEl = document.getElementById('dpStatus');
+    statusEl.textContent = d.status;
+    statusEl.className = 'dp-val ' + d.statusClass;
+    document.getElementById('dpDur').textContent = d.dur;
+    document.getElementById('dpArgRow').querySelector('.dp-key').textContent = d.argKey;
+    document.getElementById('dpArg').textContent = d.argVal;
+    document.getElementById('dpResult').textContent = d.result;
+
+    // Ensure detail panel is open
+    const panel = document.getElementById('detailPanel');
+    const btn = document.querySelector('.detail-toggle');
+    if (panel.classList.contains('hidden')) {
+      panel.classList.remove('hidden');
+      btn.classList.add('active');
+    }
+  }
+</script>
+
+</body>
+</html>

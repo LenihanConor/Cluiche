@@ -17,6 +17,8 @@ CluicheEditor manages `.cluicheproj` project files — the top-level project def
 |--------|-------------|------|
 | CluicheEditor ApplicationFlow | Thin application host layer wiring DiaEditor library classes into DiaApplicationFlow v2 (Module subclasses, manifest, bootstrap) | [applicationflow.md](../systems/cluicheeditor/applicationflow.md) |
 | CluicheEditor Plugin Browser | Panel for discovering, loading, and unloading editor plugins; owns the plugin browsing surface, bridge contract, and EditorPluginRegistry query API | [pluginbrowser.md](../systems/cluicheeditor/pluginbrowser.md) |
+| DiaEditorAPI | Three-tier layered registry exposing all scriptable editor actions as auto-generated Python (`dia_editor` module) and MCP tools for Ollama/AI agent workflows | [diaeditorapi.md](../systems/cluicheeditor/diaeditorapi.md) |
+| DiaChatPlugin | Dockable AI assistant panel — connects to Ollama/Claude/Gemini via DiaPython, executes editor actions via DiaEditorAPI, grounds answers in curated engine knowledge files | [diachatplugin.md](../systems/cluicheeditor/diachatplugin.md) |
 
 ## Cross-Cutting Features
 
