@@ -8,10 +8,21 @@ from dia_cli.utils.repo_root import find_repo_root
 _CONFIG_ALIASES = {"Asan": "Debug-Asan", "Ubsan": "Debug-Ubsan"}
 
 
+def _resolve_full_suite_config(repo_root: Path, target: str) -> str:
+    """Return full_suite_config for target from pipeline.toml, or 'Release' on any failure."""
+    try:
+        from dia_cli.commands.pipeline.pipeline_config import load_pipeline_config
+        pipeline_config = load_pipeline_config(repo_root)
+        t = pipeline_config.targets.get(target)
+        return t.full_suite_config if t else "Release"
+    except Exception:
+        return "Release"
+
+
 @click.command()
 @click.argument("target")
-@click.option("--config", default="Debug", metavar="CONFIG",
-              help="Build configuration: Debug, Release, Asan, or Ubsan (default: Debug).")
+@click.option("--config", default=None, metavar="CONFIG",
+              help="Build configuration: Debug, Release, Asan, or Ubsan (default: Debug, or Release with --all).")
 @click.option("--filter", "filter_pattern", default=None, metavar="PATTERN",
               help="For googletest: pass --gtest_filter=PATTERN.")
 @click.option("--verbose", is_flag=True, default=False,
@@ -32,6 +43,12 @@ def cli(ctx, target, config, filter_pattern, verbose, no_build, build_only, forc
 
     Equivalent to: dia pipeline --target TARGET && dia launch TARGET
     """
+    # Resolve config: explicit wins; --all without explicit → full_suite_config; else "Debug"
+    if config is None:
+        if run_all and not no_build:
+            config = _resolve_full_suite_config(find_repo_root(__file__), target) or "Release"
+        else:
+            config = "Debug"
     config = _CONFIG_ALIASES.get(config, config)
     repo_root = find_repo_root(__file__)
 

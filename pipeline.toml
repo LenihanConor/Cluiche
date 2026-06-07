@@ -20,6 +20,7 @@ language = "cpp"
 [targets.googletest]
 project = "Cluiche/Tests/GoogleTests/GoogleTests.vcxproj"
 stages = ["compile-code", "deploy"]
+full_suite_config = "Release"
 
 [targets.googletest.build_deps]
 protobuf      = true

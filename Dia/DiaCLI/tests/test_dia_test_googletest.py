@@ -280,3 +280,37 @@ def test_run_no_warning_when_all_tagged(mock_run, tmp_path, capsys):
     run(repo_root=tmp_path, config="Debug", filter_pattern=None, verbose=False, docker=False, run_all=False)
     captured = capsys.readouterr()
     assert "WARNING" not in captured.out
+
+
+# ---------------------------------------------------------------------------
+# _resolve_full_suite_config
+# ---------------------------------------------------------------------------
+
+def test_run_all_without_explicit_config_uses_full_suite_config(tmp_path):
+    """--all without --config should resolve full_suite_config (Release) from pipeline config."""
+    from dia_cli.cli.run import _resolve_full_suite_config
+    mock_target = MagicMock()
+    mock_target.full_suite_config = "Release"
+    mock_cfg = MagicMock()
+    mock_cfg.targets = {"googletest": mock_target}
+    with patch("dia_cli.commands.pipeline.pipeline_config.load_pipeline_config", return_value=mock_cfg):
+        result = _resolve_full_suite_config(tmp_path, "googletest")
+    assert result == "Release"
+
+
+def test_resolve_full_suite_config_returns_release_on_missing_toml(tmp_path):
+    """_resolve_full_suite_config returns 'Release' when pipeline.toml is missing."""
+    from dia_cli.cli.run import _resolve_full_suite_config
+    # tmp_path has no pipeline.toml → load_pipeline_config raises PipelineConfigError
+    result = _resolve_full_suite_config(tmp_path, "googletest")
+    assert result == "Release"
+
+
+def test_resolve_full_suite_config_returns_release_for_unknown_target(tmp_path):
+    """_resolve_full_suite_config returns 'Release' when target is not in pipeline config."""
+    from dia_cli.cli.run import _resolve_full_suite_config
+    mock_cfg = MagicMock()
+    mock_cfg.targets = {}
+    with patch("dia_cli.commands.pipeline.pipeline_config.load_pipeline_config", return_value=mock_cfg):
+        result = _resolve_full_suite_config(tmp_path, "nonexistent")
+    assert result == "Release"

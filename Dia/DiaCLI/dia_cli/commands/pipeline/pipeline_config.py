@@ -76,6 +76,7 @@ class TargetConfig:
     stages: list[str] = field(default_factory=list)
     deploy: DeployConfig = field(default_factory=DeployConfig)
     build_deps: BuildDepsConfig = field(default_factory=BuildDepsConfig)
+    full_suite_config: str = "Debug"
 
 
 @dataclass
@@ -143,6 +144,7 @@ def load_pipeline_config(repo_root: Path) -> PipelineConfig:
             stages=stages,
             deploy=DeployConfig(files=dep_files, ui_builds=dep_ui_builds),
             build_deps=build_deps,
+            full_suite_config=traw.get("full_suite_config", "Debug"),
         )
 
     return PipelineConfig(global_cfg=global_cfg, proto=proto, targets=targets, bgfx_shaders=bgfx_shaders_cfg)

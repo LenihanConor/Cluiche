@@ -741,3 +741,34 @@ def test_runner_passes_output_and_system_to_handlers(tmp_path):
     _, kwargs = m_compile.call_args
     assert kwargs.get("output") is out
     assert kwargs.get("system") == "pipeline"
+
+
+# ---------------------------------------------------------------------------
+# TargetConfig.full_suite_config
+# ---------------------------------------------------------------------------
+
+def test_pipeline_config_full_suite_config_default(tmp_path):
+    """TargetConfig.full_suite_config defaults to Debug when not in toml."""
+    toml_content = textwrap.dedent("""\
+        [targets.googletest]
+        project = "Cluiche/Tests/GoogleTests/GoogleTests.vcxproj"
+        stages = ["compile-code", "deploy"]
+    """)
+    (tmp_path / "pipeline.toml").write_text(toml_content)
+    from dia_cli.commands.pipeline.pipeline_config import load_pipeline_config
+    cfg = load_pipeline_config(tmp_path)
+    assert cfg.targets["googletest"].full_suite_config == "Debug"
+
+
+def test_pipeline_config_full_suite_config_parses(tmp_path):
+    """TargetConfig.full_suite_config parses Release from toml."""
+    toml_content = textwrap.dedent("""\
+        [targets.googletest]
+        project = "Cluiche/Tests/GoogleTests/GoogleTests.vcxproj"
+        stages = ["compile-code", "deploy"]
+        full_suite_config = "Release"
+    """)
+    (tmp_path / "pipeline.toml").write_text(toml_content)
+    from dia_cli.commands.pipeline.pipeline_config import load_pipeline_config
+    cfg = load_pipeline_config(tmp_path)
+    assert cfg.targets["googletest"].full_suite_config == "Release"
