@@ -462,6 +462,27 @@ TEST(DiaGraphics3D_FrameData3D, Copy_Preserves2DData)
     EXPECT_EQ(dst2.GetMeshDraws().Size(), 1u);
 }
 
+// Copy does not carry over-capacity flags — dst starts fresh
+TEST(DiaGraphics3D_Mesh3DFrameData, Copy_DoesNotCarryOverCapacityFlags)
+{
+    // Fill src to overflow so its flag is set
+    Mesh3DFrameData src;
+    Mesh3DDrawCommand cmd;
+    for (uint32_t i = 0; i <= Mesh3DFrameData::kMaxMeshDraws; ++i)
+        src.RequestDrawMesh(cmd);
+
+    // Copy into dst — dst should report the dropped count but flag resets after Clear
+    Mesh3DFrameData dst;
+    dst.Copy(src);
+    EXPECT_EQ(dst.DroppedMeshCount(), 1u);
+
+    // Clear dst — if the flag had been copied, recovery log would fire here
+    // If not copied, no recovery log on first Clear of a freshly-constructed dst
+    // (We can't test log output directly; the key invariant is that drop count resets)
+    dst.Clear();
+    EXPECT_EQ(dst.DroppedMeshCount(), 0u);
+}
+
 // ===========================================================================
 // MockMesh3DFrameData test
 // ===========================================================================

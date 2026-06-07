@@ -313,7 +313,7 @@ No `Matrix44` source files — that's a DiaMaths concern.
 2. `Dia::Graphics::DirectionalLight` and `PointLight` structs exist with documented fields
 3. `Dia::Graphics::Mesh3DDrawCommand` exists with `meshId`, `materialId`, `transform`, `skinningPaletteIndex`, `layer`
 4. `Dia::Graphics::Mesh3DFrameData` exists; supports `RequestDrawMesh`, `SetCamera`, `AddDirectionalLight`, `AddPointLight`, `Clear`, `Copy`, accessors, and drop-counters
-5. `Dia::Graphics::FrameData` inherits from `Mesh3DFrameData`; `Clear` and `Copy` operate over all four mix-ins (debug + UI + entity + mesh3D)
+5. `Dia::Graphics3D::FrameData3D` inherits from both `Dia::Graphics::FrameData` and `Mesh3DFrameData` (G3D-003 — `FrameData` itself is NOT modified); `Clear` and `Copy` delegate to both bases
 6. `Mesh3DFrameData::kMaxMeshDraws = 4096`, `kMaxLights = 32` constants honoured
 7. All new public APIs PD-004 compliant — no STL types in any header (verified by inspection)
 8. `Mesh3DFrameData` unit tests cover request/clear, capacity overflow drops, camera storage, light storage

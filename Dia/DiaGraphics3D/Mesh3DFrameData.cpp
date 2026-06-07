@@ -1,4 +1,5 @@
 #include "DiaGraphics3D/Mesh3DFrameData.h"
+#include <DiaObservation/Log/DiaLog.h>
 
 namespace Dia { namespace Graphics3D {
 
@@ -36,10 +37,10 @@ void Mesh3DFrameData::AddDirectionalLight(const DirectionalLight& light)
 {
     if (mDirectionalLights.IsFull())
     {
-        if (!mLightOverCapacityLogged)
+        if (!mDirectionalLightOverCapacityLogged)
         {
-            DIA_LOG_WARNING("graphics3d", "Mesh3DFrameData: light budget exceeded (%u). Light will be dropped.", kMaxLights);
-            mLightOverCapacityLogged = true;
+            DIA_LOG_WARNING("graphics3d", "Mesh3DFrameData: directional light budget exceeded (%u). Light will be dropped.", kMaxLights);
+            mDirectionalLightOverCapacityLogged = true;
         }
         ++mDroppedLights;
         return;
@@ -52,10 +53,10 @@ void Mesh3DFrameData::AddPointLight(const PointLight& light)
 {
     if (mPointLights.IsFull())
     {
-        if (!mLightOverCapacityLogged)
+        if (!mPointLightOverCapacityLogged)
         {
-            DIA_LOG_WARNING("graphics3d", "Mesh3DFrameData: light budget exceeded (%u). Light will be dropped.", kMaxLights);
-            mLightOverCapacityLogged = true;
+            DIA_LOG_WARNING("graphics3d", "Mesh3DFrameData: point light budget exceeded (%u). Light will be dropped.", kMaxLights);
+            mPointLightOverCapacityLogged = true;
         }
         ++mDroppedLights;
         return;
@@ -71,10 +72,15 @@ void Mesh3DFrameData::Clear()
         DIA_LOG_WARNING("graphics3d", "Mesh3DFrameData: mesh draw budget recovered — no drops this frame.");
         mMeshOverCapacityLogged = false;
     }
-    if (mLightOverCapacityLogged)
+    if (mDirectionalLightOverCapacityLogged)
     {
-        DIA_LOG_WARNING("graphics3d", "Mesh3DFrameData: light budget recovered — no drops this frame.");
-        mLightOverCapacityLogged = false;
+        DIA_LOG_WARNING("graphics3d", "Mesh3DFrameData: directional light budget recovered — no drops this frame.");
+        mDirectionalLightOverCapacityLogged = false;
+    }
+    if (mPointLightOverCapacityLogged)
+    {
+        DIA_LOG_WARNING("graphics3d", "Mesh3DFrameData: point light budget recovered — no drops this frame.");
+        mPointLightOverCapacityLogged = false;
     }
     mMeshDraws.RemoveAll();
     mDirectionalLights.RemoveAll();
