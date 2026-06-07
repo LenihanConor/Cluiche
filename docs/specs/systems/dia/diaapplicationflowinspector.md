@@ -139,6 +139,6 @@ These are the only changes needed outside of `Dia/DiaApplicationFlowInspector/`:
 
 ## Status
 
-`Approved` — 2026-06-04. Design questions resolved (DAFI-008/009/010). Ready to implement.
+**Status:** Done — 2026-06-07. All 49 plan tasks complete. Inspector extracts live connection lifecycle from Editor; 4-tab UI (Modules/Streams/Timing/Log); framework telemetry; Editor renamed to DiaApplicationFlowEditor.
 
 **Plan:** [diaapplicationflowinspector.plan.md](diaapplicationflowinspector.plan.md)

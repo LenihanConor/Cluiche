@@ -1,7 +1,7 @@
 # Implementation Plan: DiaApplicationFlowInspector + Editor Split
 
 **Spec:** @docs/specs/systems/dia/diaapplicationflowinspector.md
-**Status:** In Progress
+**Status:** Done
 
 ## Scope
 
@@ -175,7 +175,7 @@ Always-on measurement (DAFI-008). Broadcast only when DebugServer has subscriber
 | 46 | Manual verify: Editor renders correctly with Inspector plugin NOT loaded (offline mode, no errors) | No console errors; grey dot; offline presence grid | Not Started | sonnet | Regression AC: live-state-overlay.md #10 |
 | 47 | Cleanup: remove old `Dia/DiaApplicationEditor/` directory (if any remnants after rename) | `git status` — no orphan files | Done | haiku | Dia/DiaApplicationEditor/ orphan directory deleted (contained only untracked node_modules/dist artifacts). |
 | 48 | Create `dia.applicationflowinspector.architecture.module.md` (YAML frontmatter: id, deps, public API, responsibilities) | Doc matches module-metadata-schema.md | Done | haiku | dia.applicationflowinspector.architecture.module.md created. Discovered by dia docs registry --dry-run. |
-| 49 | Update specs: mark DiaApplicationFlowEditor spec `Done`, DiaApplicationFlowInspector spec `Done`, update backlog | Spec status fields correct | Not Started | haiku | |
+| 49 | Update specs: mark DiaApplicationFlowEditor spec `Done`, DiaApplicationFlowInspector spec `Done`, update backlog | Spec status fields correct | Done | haiku | Spec marked Done 2026-06-07. Plan Status set to Done. |
 
 ## Parallelism
 
