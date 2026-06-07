@@ -35,7 +35,7 @@ namespace Dia
 			ConnectionCallback mOnConnection;
 			ErrorCallback mOnError;
 
-			Dia::Core::Containers::DynamicArrayC<Internal::QueuedEvent, 64> mIncomingQueue;
+			Dia::Core::Containers::DynamicArrayC<Internal::QueuedEvent, 512> mIncomingQueue;
 			Dia::Core::Mutex mIncomingMutex;
 
 			Dia::Core::Containers::DynamicArrayC<Internal::OutgoingMessage, 64> mOutgoingQueue;

@@ -4,6 +4,7 @@
 #include <DiaApplicationFlow/IApplicationInspectable.h>
 #include <DiaStreams/IStreamStore.h>
 #include <DiaStreams/StreamTypeRegistry.h>
+#include <DiaStreams/Event.h>
 #include <DiaApplicationFlow/LifecycleEvent.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaCore/Json/external/json/json.h>
@@ -38,7 +39,11 @@ DebugServerHostModule::~DebugServerHostModule() = default;
 
 void DebugServerHostModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 {
+    DIA_LOG_INFO("Application", "DebugServerHostModule::OnConnectStreams entry");
     mServerService.Connect(app);
+    mEntityInspectReader.Connect(app);
+    DIA_LOG_INFO("Application", "DebugServerHostModule::OnConnectStreams reader_connected=%d",
+        mEntityInspectReader.IsConnected() ? 1 : 0);
 }
 
 void DebugServerHostModule::OnConfigure(const char* configJson)
@@ -127,13 +132,16 @@ Dia::ApplicationFlow::StartResult DebugServerHostModule::DoStart()
         }
     }
 
-    // Start observation bridge — epoch offset computed from system/steady clock delta
-    auto sysNow = std::chrono::system_clock::now();
-    auto steadyNow = std::chrono::steady_clock::now();
-    int64_t sysNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(
-        sysNow.time_since_epoch()).count();
-    int64_t steadyNanos = static_cast<int64_t>(steadyNow.time_since_epoch().count());
-    mServer.StartObservationBridge("", sysNanos - steadyNanos);
+    // ObservationBridge disabled: it broadcasts observation.metric/log/trace to
+    // ALL connected clients unconditionally (no subscription gate), flooding the
+    // WebSocket and starving subscription-based channels like entity.inspect.
+    // TODO: Re-enable once ObservationBridge respects the subscribe protocol.
+    // auto sysNow = std::chrono::system_clock::now();
+    // auto steadyNow = std::chrono::steady_clock::now();
+    // int64_t sysNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(
+    //     sysNow.time_since_epoch()).count();
+    // int64_t steadyNanos = static_cast<int64_t>(steadyNow.time_since_epoch().count());
+    // mServer.StartObservationBridge("", sysNanos - steadyNanos);
 
     // Register metrics with the global MetricRegistry.
     {
@@ -178,6 +186,22 @@ void DebugServerHostModule::DoUpdate(float deltaTime)
 
     QueryMemory();
     mServer.Tick(deltaTime);
+
+    // Drain entity inspect events from SimPU and broadcast from this thread (safe).
+    {
+        Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::Event<EntityInspectEvent>, 16> inspectEvents;
+        mEntityInspectReader.Consume(inspectEvents);
+        if (inspectEvents.Size() > 0)
+        {
+            DIA_LOG_INFO("DebugServer", "DebugServerHostModule: drained %u inspect events, subscribers=%u",
+                inspectEvents.Size(), mServer.GetStats().subscriptionCount);
+        }
+        for (unsigned int i = 0; i < inspectEvents.Size(); ++i)
+        {
+            const EntityInspectEvent& evt = inspectEvents[i].payload;
+            mServer.NotifySubscribers(evt.dataType, evt.payload);
+        }
+    }
 
     // Update debug server metrics from current ServerStats.
     const auto& stats = mServer.GetStats();

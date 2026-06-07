@@ -65,6 +65,7 @@ namespace Dia
 		private:
 			void HandleMessage(const char* text, unsigned int length);
 			void HandleConnection(bool connected);
+			void SendProtocolSubscribe(const Dia::Core::StringCRC& topic);
 
 			struct Subscription
 			{

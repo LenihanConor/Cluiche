@@ -349,6 +349,8 @@ namespace Dia
 		void DebugServer::HandleSubscribe(int connId, const dia::debug::DebugMessage& msg)
 		{
 			const auto& sub = msg.subscribe();
+			DIA_LOG_INFO("DebugServer", "HandleSubscribe: connId=%d dataType='%s'",
+				connId, sub.data_type().c_str());
 			if (sub.data_type().empty())
 			{
 				dia::debug::DebugMessage errorMsg;
@@ -523,6 +525,17 @@ namespace Dia
 		{
 			if (!mServer) return;
 
+			unsigned int matchCount = 0;
+			for (unsigned int i = 0; i < mClientTaps.Size(); ++i)
+			{
+				if (mClientTaps[i].streamId == dataType)
+					++matchCount;
+			}
+			DIA_LOG_INFO("DebugServer", "NotifySubscribers: dataType='%s' totalTaps=%u matching=%u payloadNull=%d",
+				dataType.AsChar(), mClientTaps.Size(), matchCount, payload.isNull() ? 1 : 0);
+
+			if (matchCount == 0) return;
+
 			dia::debug::DebugMessage msg;
 			msg.set_type(dia::debug::MESSAGE_TYPE_DATA_UPDATE);
 			msg.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
@@ -530,8 +543,13 @@ namespace Dia
 			update->set_data_type(dataType.AsChar());
 			Dia::Proto::JsonValueToProtoStruct(payload, update->mutable_payload());
 
-			char jsonBuffer[4096];
-			if (!Dia::Proto::ToJson(msg, jsonBuffer, sizeof(jsonBuffer))) return;
+			char jsonBuffer[65536];
+			if (!Dia::Proto::ToJson(msg, jsonBuffer, sizeof(jsonBuffer)))
+			{
+				DIA_LOG_WARNING("DebugServer", "NotifySubscribers: ToJson failed for dataType='%s' — payload too large for buffer",
+					dataType.AsChar());
+				return;
+			}
 
 			for (unsigned int i = 0; i < mClientTaps.Size(); ++i)
 			{

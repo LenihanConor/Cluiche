@@ -119,6 +119,8 @@ namespace Dia
 			sub.topic = topic;
 			sub.callback = callback;
 			mSubscriptions.Add(sub);
+
+			SendProtocolSubscribe(topic);
 		}
 
 		void GameConnectionManager::Unsubscribe(const Dia::Core::StringCRC& topic)
@@ -246,9 +248,40 @@ namespace Dia
 				mRawMessageCallback(text, length, envelope);
 
 			dia::debug::DebugMessage protoMsg;
-			if (Dia::Proto::FromJson(text, &protoMsg))
+			bool protoParsed = Dia::Proto::FromJson(text, &protoMsg);
+			if (protoParsed)
 			{
-				if (protoMsg.payload_case() == dia::debug::DebugMessage::kCommandResponse)
+				auto pcase = static_cast<int>(protoMsg.payload_case());
+				if (pcase == 0 && length < 500)
+				{
+					DIA_LOG_INFO("Editor", "GameConnectionManager: proto payload_case=0, msg='%.200s'", text);
+				}
+				else if (pcase == 0 && length >= 500)
+				{
+					DIA_LOG_INFO("Editor", "GameConnectionManager: proto payload_case=0 LARGE len=%u first200='%.200s'", length, text);
+				}
+				if (protoMsg.payload_case() == dia::debug::DebugMessage::kDataUpdate)
+				{
+					const auto& update = protoMsg.data_update();
+					Dia::Core::StringCRC topic(update.data_type().c_str());
+					Json::Value data = update.has_payload()
+						? Dia::Proto::ProtoStructToJsonValue(update.payload())
+						: Json::Value{};
+
+					unsigned int fired = 0;
+					for (unsigned int i = 0; i < mSubscriptions.Size(); ++i)
+					{
+						if (mSubscriptions[i].topic == topic)
+						{
+							++fired;
+							mSubscriptions[i].callback(data);
+						}
+					}
+					DIA_LOG_INFO("Editor", "GameConnectionManager: data_update topic='%s' dispatched to %u subscriber(s)",
+						update.data_type().c_str(), fired);
+					return;
+				}
+				else if (protoMsg.payload_case() == dia::debug::DebugMessage::kCommandResponse)
 				{
 					const auto& resp = protoMsg.command_response();
 					DIA_LOG_DEBUG("Editor", "GameConnectionManager: received command_response for '%s' success=%d hasPayload=%d",
@@ -261,6 +294,11 @@ namespace Dia
 						responseJson["payload"] = Dia::Proto::ProtoStructToJsonValue(resp.payload());
 					ProcessCommandResponse(responseJson);
 				}
+			}
+			else
+			{
+				DIA_LOG_WARNING("Editor", "GameConnectionManager: FromJson FAILED, length=%u first100='%.100s'",
+					length, text);
 			}
 
 			if (envelope.isMember("topic") && envelope["topic"].isString())
@@ -285,9 +323,30 @@ namespace Dia
 		{
 			DIA_LOG_INFO("Editor", "GameConnectionManager: HandleConnection connected=%d", connected ? 1 : 0);
 			if (connected)
+			{
 				mLastError[0] = '\0';
+				for (unsigned int i = 0; i < mSubscriptions.Size(); ++i)
+					SendProtocolSubscribe(mSubscriptions[i].topic);
+			}
 			if (mConnectionCallback)
 				mConnectionCallback(connected);
+		}
+
+		void GameConnectionManager::SendProtocolSubscribe(const Dia::Core::StringCRC& topic)
+		{
+			if (!IsConnected())
+				return;
+
+			dia::debug::DebugMessage msg;
+			msg.set_type(dia::debug::MESSAGE_TYPE_SUBSCRIBE);
+			msg.mutable_subscribe()->set_data_type(topic.AsChar());
+
+			char buffer[4096];
+			if (Dia::Proto::ToJson(msg, buffer, sizeof(buffer)))
+			{
+				DIA_LOG_INFO("Editor", "GameConnectionManager: SendProtocolSubscribe topic='%s'", topic.AsChar());
+				mClient->SendText(buffer);
+			}
 		}
 	}
 }

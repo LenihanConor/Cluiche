@@ -13,6 +13,8 @@
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 
+#include "Modules/DebugServerHostModule.h"
+
 namespace Cluiche { namespace AppFlow {
 
 const Dia::Core::StringCRC EntityInspectorModule::kTypeId("EntityInspectorModule");
@@ -23,11 +25,18 @@ EntityInspectorModule::EntityInspectorModule(const Dia::Core::StringCRC& instanc
 
 EntityInspectorModule::~EntityInspectorModule() = default;
 
+void EntityInspectorModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
+{
+    mInspectWriter.Connect(app);
+}
+
 Dia::ApplicationFlow::StartResult EntityInspectorModule::DoStart()
 {
     DIA_LOG_INFO("Application", "EntityInspectorModule::DoStart");
 
     // Resolve the DebugServer pointer via the cross-PU service stream.
+    // Used only for one-time query/command handler registration (single-threaded,
+    // safe — DoStart runs sequentially within this PU and MainPU has already started).
     auto* app = dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(GetApplication());
     if (app)
     {
@@ -53,28 +62,11 @@ void EntityInspectorModule::DoUpdate(float /*dt*/)
 {
     DIA_TRACE_ZONE("EntityInspectorModule::DoUpdate", Dia::Observation::Trace::Category::kNone);
 
-    auto* vd = mVisualDebuggerRef.Get();
-    if (!vd || !mDebugServer) return;
-
-    const uint32_t selectedId = vd->GetLayerManager().GetSelectedEntityId();
-    const bool selectionChanged = (selectedId != mLastSelectedId);
-
     ++mSlowPollCounter;
-    const bool slowPollFire = (mSlowPollCounter >= kSlowPollInterval);
-
-    if (selectionChanged || slowPollFire)
+    if (mSlowPollCounter >= kSlowPollInterval)
     {
-        if (selectionChanged)
-        {
-            mLastSelectedId  = selectedId;
-            mSlowPollCounter = 0;
-        }
-        else
-        {
-            mSlowPollCounter = 0;
-        }
-
-        PushInspect(selectedId);
+        mSlowPollCounter = 0;
+        PushInspect(0);
     }
 }
 
@@ -85,37 +77,46 @@ Dia::ApplicationFlow::StopResult EntityInspectorModule::DoStop()
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 
-void EntityInspectorModule::PushInspect(uint32_t selectedId)
+void EntityInspectorModule::PushInspect(uint32_t /*selectedId*/)
 {
     DIA_TRACE_ZONE("EntityInspectorModule::PushInspect", Dia::Observation::Trace::Category::kNone);
     auto* entityMod = mEntityRef.Get();
-    if (!entityMod || !mDebugServer) return;
+    if (!entityMod)
+    {
+        DIA_LOG_WARNING("Application", "EntityInspectorModule::PushInspect — mEntityRef is null, skipping");
+        return;
+    }
 
     auto& inspectable = entityMod->GetInspectable();
-
-    if (selectedId == 0)
-    {
-        // No entity selected — push empty payload so UI clears.
-        DIA_LOG_INFO("Application", "EntityInspectorModule: no entity selected, clearing inspector UI");
-        Json::Value empty;
-        mDebugServer->NotifySubscribers(Dia::Entity::DebugDataType::kEntityInspect, empty);
-        return;
-    }
-
-    // selectedId is stored as (entity.GetIndex() + 1) by the picking system.
-    const uint32_t entityIndex = selectedId - 1;
     auto& domain = entityMod->GetDomain();
-    Dia::Entity::Entity entity = domain.GetAliveEntity(entityIndex);
 
-    if (!entity.IsValid())
+    Dia::Core::Containers::DynamicArrayC<Dia::Entity::Entity, Dia::Entity::kMaxEntitiesPerDomain> allEntities;
+    inspectable.GetAllEntities(allEntities);
+
+    if (allEntities.Size() == 0)
     {
-        DIA_LOG_WARNING("Application", "EntityInspectorModule: selectedId %u maps to dead entity", selectedId);
+        DIA_LOG_WARNING("Application", "EntityInspectorModule::PushInspect — 0 entities alive, skipping");
         return;
     }
 
-    Json::Value payload = Dia::EntityInspector::SerializeEntityInspect(inspectable, entity);
-    DIA_LOG_INFO("Application", "EntityInspectorModule: pushing entity.inspect for entityIndex=%u", entityIndex);
-    mDebugServer->NotifySubscribers(Dia::Entity::DebugDataType::kEntityInspect, payload);
+    Dia::Core::Containers::DynamicArrayC<Dia::EntityInspector::EntityDebugInfo, Dia::Entity::kMaxEntitiesPerDomain> infos;
+    for (uint32_t i = 0; i < allEntities.Size(); ++i)
+    {
+        Dia::EntityInspector::EntityDebugInfo info;
+        info.entity    = allEntities[i];
+        info.debugName = domain.GetDebugName(allEntities[i]);
+        infos.Add(info);
+    }
+
+    ++mFrameCounter;
+    EntityInspectEvent evt;
+    evt.dataType = Dia::Entity::DebugDataType::kEntityInspect;
+    evt.payload  = Dia::EntityInspector::SerializeInspectPayload(
+        inspectable, &infos[0], infos.Size(), mFrameCounter);
+
+    DIA_LOG_INFO("Application", "EntityInspectorModule::PushInspect — frame=%llu entities=%u payloadNull=%d",
+        mFrameCounter, infos.Size(), evt.payload.isNull() ? 1 : 0);
+    mInspectWriter.Send(evt);
 }
 
 void EntityInspectorModule::RegisterHandlers()
@@ -124,7 +125,6 @@ void EntityInspectorModule::RegisterHandlers()
 
     auto& queryReg = mDebugServer->GetQueryRegistry();
 
-    // entity.inspect_request — immediate on-demand inspect of specific entity
     queryReg.Register(
         Dia::Entity::DebugDataType::kEntityInspectRequest,
         [this](const Json::Value& args) -> Json::Value
@@ -144,10 +144,8 @@ void EntityInspectorModule::RegisterHandlers()
                 entityMod->GetInspectable(), entity);
         });
 
-    // entity.find_by_name — O(N) scan, returns {index, gen} or {index: -1}
     (void)mDebugServer->GetCommandDispatcher();
 
-    // Register DiaAPI JSON commands
     {
         Dia::API::CommandInfoJson writeField;
         writeField.name        = Dia::Entity::DebugDataType::kEntityWriteField;
