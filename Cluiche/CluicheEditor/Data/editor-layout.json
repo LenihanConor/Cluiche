@@ -18,7 +18,7 @@
 		},
 		{
 			"name" : "Application Flow Editor",
-			"uiPath" : "dia://plugins/diaapplicationeditor/index.html",
+			"uiPath" : "dia://plugins/DiaApplicationFlowEditor/index.html",
 			"visible" : true
 		}
 	]

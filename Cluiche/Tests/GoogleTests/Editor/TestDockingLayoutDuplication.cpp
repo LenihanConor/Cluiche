@@ -37,12 +37,12 @@ TEST(DockingLayout, RegisterPanel_AllThreeBuiltins_NoDuplication)
     EXPECT_EQ(layout.GetPanelCount(), 3u);
 }
 
-TEST(DockingLayout, RegisterPanel_DuplicateDifferentPath_FirstWins)
+TEST(DockingLayout, RegisterPanel_DuplicateDifferentPath_UpdatesPath)
 {
     DockingLayout layout;
     layout.RegisterPanel("Panel", "dia://original");
     layout.RegisterPanel("Panel", "dia://different");
 
     EXPECT_EQ(layout.GetPanelCount(), 1u);
-    EXPECT_STREQ(layout.GetPanel(0).uiPath, "dia://original");
+    EXPECT_STREQ(layout.GetPanel(0).uiPath, "dia://different");
 }

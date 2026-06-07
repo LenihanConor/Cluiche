@@ -17,10 +17,17 @@ namespace Dia
 		{
 			DIA_ASSERT(name != nullptr, "DockingLayout: panel name must not be null");
 			DIA_ASSERT(uiPath != nullptr, "DockingLayout: panel uiPath must not be null");
-			DIA_ASSERT(!mPanels.IsFull(), "DockingLayout: max panel capacity reached");
 
-			if (IsPanelRegistered(name))
-				return;
+			for (unsigned int i = 0; i < mPanels.Size(); ++i)
+			{
+				if (strcmp(mPanels[i].name, name) == 0)
+				{
+					strncpy_s(mPanels[i].uiPath, sizeof(mPanels[i].uiPath), uiPath, _TRUNCATE);
+					return;
+				}
+			}
+
+			DIA_ASSERT(!mPanels.IsFull(), "DockingLayout: max panel capacity reached");
 
 			PanelInfo info;
 			strncpy_s(info.name, sizeof(info.name), name, _TRUNCATE);
