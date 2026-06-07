@@ -102,7 +102,7 @@ def test_run_invokes_binary(mock_run, tmp_path):
     binary = _make_staged(tmp_path)
     mock_run.return_value = MagicMock(returncode=0)
     code = run(repo_root=tmp_path, config="Debug", filter_pattern=None,
-               verbose=False, docker=False)
+               verbose=False, docker=False, run_all=False)
     assert code == 0
     args = mock_run.call_args[0][0]
     assert str(binary) == args[0]
@@ -113,7 +113,7 @@ def test_run_propagates_nonzero_exit(mock_run, tmp_path):
     _make_staged(tmp_path)
     mock_run.return_value = MagicMock(returncode=1)
     code = run(repo_root=tmp_path, config="Debug", filter_pattern=None,
-               verbose=False, docker=False)
+               verbose=False, docker=False, run_all=False)
     assert code == 1
 
 
@@ -126,7 +126,7 @@ def test_run_uses_binary_dir_as_cwd(mock_run, tmp_path):
     binary = _make_staged(tmp_path)
     mock_run.return_value = MagicMock(returncode=0)
     run(repo_root=tmp_path, config="Debug", filter_pattern=None,
-        verbose=False, docker=False)
+        verbose=False, docker=False, run_all=False)
     cwd = mock_run.call_args[1]["cwd"]
     assert cwd == str(binary.parent)
 
@@ -140,7 +140,7 @@ def test_run_filter_passes_gtest_filter(mock_run, tmp_path):
     _make_staged(tmp_path)
     mock_run.return_value = MagicMock(returncode=0)
     run(repo_root=tmp_path, config="Debug", filter_pattern="TestArray*",
-        verbose=False, docker=False)
+        verbose=False, docker=False, run_all=False)
     args = mock_run.call_args[0][0]
     assert "--gtest_filter=TestArray*" in args
 
@@ -154,7 +154,7 @@ def test_run_config_release_uses_release_binary(mock_run, tmp_path):
     _make_staged(tmp_path, "Release")
     mock_run.return_value = MagicMock(returncode=0)
     run(repo_root=tmp_path, config="Release", filter_pattern=None,
-        verbose=False, docker=False)
+        verbose=False, docker=False, run_all=False)
     args = mock_run.call_args[0][0]
     assert "Release" in args[0]
 
@@ -168,7 +168,7 @@ def test_run_verbose_passes_gtest_verbose(mock_run, tmp_path):
     _make_staged(tmp_path)
     mock_run.return_value = MagicMock(returncode=0)
     run(repo_root=tmp_path, config="Debug", filter_pattern=None,
-        verbose=True, docker=False)
+        verbose=True, docker=False, run_all=False)
     args = mock_run.call_args[0][0]
     assert "--gtest_print_time=1" in args
 
@@ -208,3 +208,75 @@ def test_run_docker_forwards_flags(mock_run, tmp_path):
     assert "--filter" in joined
     assert "Foo*" in joined
     assert "--verbose" in joined
+
+
+# ---------------------------------------------------------------------------
+# SLOW_ suite tagging: default filter injection and --all flag
+# ---------------------------------------------------------------------------
+
+@patch("dia_cli.commands.test.googletest_runner.subprocess.run")
+def test_run_default_injects_slow_filter(mock_run, tmp_path):
+    _make_staged(tmp_path)
+    mock_run.return_value = MagicMock(returncode=0)
+    run(repo_root=tmp_path, config="Debug", filter_pattern=None, verbose=False, docker=False, run_all=False)
+    args = mock_run.call_args[0][0]
+    assert "--gtest_filter=-SLOW_*" in args
+
+
+@patch("dia_cli.commands.test.googletest_runner.subprocess.run")
+def test_run_all_skips_default_filter(mock_run, tmp_path):
+    _make_staged(tmp_path)
+    mock_run.return_value = MagicMock(returncode=0)
+    run(repo_root=tmp_path, config="Debug", filter_pattern=None, verbose=False, docker=False, run_all=True)
+    args = mock_run.call_args[0][0]
+    assert "--gtest_filter=-SLOW_*" not in args
+    assert not any("gtest_filter" in a for a in args)
+
+
+@patch("dia_cli.commands.test.googletest_runner.subprocess.run")
+def test_run_explicit_filter_overrides_default(mock_run, tmp_path):
+    _make_staged(tmp_path)
+    mock_run.return_value = MagicMock(returncode=0)
+    run(repo_root=tmp_path, config="Debug", filter_pattern="TestArray*", verbose=False, docker=False, run_all=False)
+    args = mock_run.call_args[0][0]
+    assert "--gtest_filter=TestArray*" in args
+    assert "--gtest_filter=-SLOW_*" not in args
+
+
+@patch("dia_cli.commands.test.googletest_runner.subprocess.run")
+def test_run_warns_untagged_slow_suites(mock_run, tmp_path, capsys):
+    _make_staged(tmp_path)
+    mock_run.return_value = MagicMock(returncode=0)
+    # Pre-create a fake XML with a slow untagged suite
+    xml_path = tmp_path / "Cluiche" / "out" / "GoogleTests" / "last_run.xml"
+    xml_path.parent.mkdir(parents=True, exist_ok=True)
+    xml_path.write_text(
+        '<?xml version="1.0"?>'
+        '<testsuites>'
+        '<testsuite name="PythonBindings" time="1.2" tests="3" />'
+        '<testsuite name="SLOW_Physics" time="2.0" tests="5" />'
+        '</testsuites>'
+    )
+    # Run (XML already exists; subprocess won't overwrite in this mock scenario)
+    run(repo_root=tmp_path, config="Debug", filter_pattern=None, verbose=False, docker=False, run_all=False)
+    captured = capsys.readouterr()
+    assert "WARNING" in captured.out
+    assert "PythonBindings" in captured.out
+    assert "SLOW_Physics" not in captured.out  # already tagged
+
+
+@patch("dia_cli.commands.test.googletest_runner.subprocess.run")
+def test_run_no_warning_when_all_tagged(mock_run, tmp_path, capsys):
+    _make_staged(tmp_path)
+    mock_run.return_value = MagicMock(returncode=0)
+    xml_path = tmp_path / "Cluiche" / "out" / "GoogleTests" / "last_run.xml"
+    xml_path.parent.mkdir(parents=True, exist_ok=True)
+    xml_path.write_text(
+        '<?xml version="1.0"?>'
+        '<testsuites>'
+        '<testsuite name="SLOW_PythonBindings" time="1.2" tests="3" />'
+        '</testsuites>'
+    )
+    run(repo_root=tmp_path, config="Debug", filter_pattern=None, verbose=False, docker=False, run_all=False)
+    captured = capsys.readouterr()
+    assert "WARNING" not in captured.out

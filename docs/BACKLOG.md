@@ -25,6 +25,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | ~~DiaEntityInspector~~ | [diaentityinspector.md](specs/systems/dia/diaentityinspector.md) ✅ | **Done** — entity-inspector-panel, query-browser-tab, mailbox-traffic-monitor, entity-watch-list. 19 tasks. | — |
 | DiaEditorAPI | [diaeditorapi.md](specs/systems/cluicheeditor/diaeditorapi.md) ✅ | Phase 1: C++ action registry + auto-generated Python `dia_editor` module (automation testing). Phase 2: MCP adapter for Ollama at-desk AI workflows. Run `/implement` to start. | DiaAPI, DiaEditor, DiaPython, DiaWebSocket (Ph2) |
 | DiaChatPlugin | [diachatplugin.md](specs/systems/cluicheeditor/diachatplugin.md) ✅ | Dockable AI assistant panel — Ollama/Claude/Gemini via DiaPython orchestrator, direct `ExecuteAction()` tool dispatch, curated knowledge context system, hybrid chat+detail panel UI. Phase 2: multi-step agentic loop. | DiaEditorAPI Phase 1, DiaEditor, DiaPython, DiaUICEF |
+| GoogleTestSpeed | [googletestspeed.md](specs/systems/googletests/googletestspeed.md) ✅ | 5 features in order: slow-suite-tagging → release-config-ci → precompiled-header → shard-runner → fixture-amortisation. Target: ~5 min → <90s. | DiaCLI, MSBuild, DiaPython |
 | ~~DiaScene2D~~ | [diascene2d.md](specs/systems/dia/diascene2d.md) ✅ | **Done** — Scene2D struct, LayerTable, SceneLoader2D (camera/light/entity hydration, instanceData patching, validation). 18 tests pass. | — |
 | ~~DiaArchitecture~~ | [diaarchitecture.md](specs/systems/dia/diaarchitecture.md) ✅ | **Done** — Layer fields, refactoring (R1–R6), audit tool (`dia check arch`), SLN sync (`dia check sln-sync`). 1975 violations baselined. | — |
 
@@ -56,7 +57,6 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | Item | Spec | What's needed |
 |------|------|---------------|
-| GoogleTests Speed — Quick Wins + Parallelism | TBD | Needs `/spec-system`. Research complete: [docs/research/google_test_suite_speed/summary.md](research/google_test_suite_speed/summary.md). Five tasks in order: C2 slow-suite tag + DiaCLI default filter (S) → C4 Release config CI default (S) → C1 PCH for gtest.h (S) → C3 shard runner `--shards N` in DiaCLI (M) → C6 fixture amortisation Python/WebSocket (M). Target: 5-min run → <90s. |
 | DiaStateMachineEditor system | TBD | Needs `/spec-system` — editor plugin for state machine visual debugging + design-time editing. Depends on DiaStateMachine ✅, DiaEditor |
 | Manifest heap modules | [manifest-heap-modules.md](specs/features/dia/diaapplicationflow/manifest-heap-modules.md) | `ApplicationManifestV3` is ~60 KB on the stack due to `DynamicArrayC<ModuleDeclaration,32>` inline storage. Spec written + plan ready. Blocked on `DynamicArrayC`/`DynamicArray` both using `memcpy` — nesting heap-owning containers is unsafe without fixing copy semantics. Options: reduce cap (32→16, 1-line, safe), or allocate the whole manifest on the heap at the call site. Deferred — low urgency. |
 

@@ -61,12 +61,14 @@ def game_ui(ctx, filter_pattern, watch, docker):
               help="Pass --gtest_verbose to the binary.")
 @click.option("--docker", is_flag=True, default=False,
               help="Re-invoke inside Docker container.")
+@click.option("--all", "run_all", is_flag=True, default=False,
+              help="Include SLOW_* suites (default excludes them).")
 @click.pass_context
-def googletest(ctx, filter_pattern, config, verbose, docker):
+def googletest(ctx, filter_pattern, config, verbose, docker, run_all):
     """Run the GoogleTests C++ test suite."""
     from dia_cli.commands.test.googletest_runner import run
     exit_code = run(repo_root=None, config=config, filter_pattern=filter_pattern,
-                    verbose=verbose, docker=docker)
+                    verbose=verbose, docker=docker, run_all=run_all)
     ctx.exit(exit_code)
 
 

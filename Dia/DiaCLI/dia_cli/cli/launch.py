@@ -23,8 +23,10 @@ _TARGET_EXE_MAP = {
               help="For googletest: pass --gtest_filter=PATTERN.")
 @click.option("--verbose", is_flag=True, default=False,
               help="For googletest: show verbose output.")
+@click.option("--all", "run_all", is_flag=True, default=False,
+              help="For googletest: include SLOW_* suites (default excludes them).")
 @click.pass_context
-def cli(ctx, target, config, filter_pattern, verbose):
+def cli(ctx, target, config, filter_pattern, verbose, run_all):
     """Launch an already-built target executable.
 
     TARGET is one of: googletest, cluichetest, cluicheeditor.
@@ -36,12 +38,13 @@ def cli(ctx, target, config, filter_pattern, verbose):
         config=config,
         filter_pattern=filter_pattern,
         verbose=verbose,
+        run_all=run_all,
     )
     ctx.exit(exit_code)
 
 
 def launch_target(target: str, config: str, filter_pattern: str = None,
-                  verbose: bool = False) -> int:
+                  verbose: bool = False, run_all: bool = False) -> int:
     config = _CONFIG_ALIASES.get(config, config)
     repo_root = find_repo_root(__file__)
 
@@ -62,14 +65,25 @@ def launch_target(target: str, config: str, filter_pattern: str = None,
 
     cmd = [str(exe_path)]
     if target == "googletest":
+        from dia_cli.commands.test.googletest_runner import (
+            _gtest_xml_output_path,
+            _warn_untagged_slow_suites,
+        )
         if filter_pattern:
             cmd.append(f"--gtest_filter={filter_pattern}")
+        elif not run_all:
+            cmd.append("--gtest_filter=-SLOW_*")
         if verbose:
             cmd.append("--gtest_print_time=1")
+        out_xml = _gtest_xml_output_path(repo_root)
+        out_xml.parent.mkdir(parents=True, exist_ok=True)
+        cmd.append(f"--gtest_output=xml:{out_xml}")
 
     out_dir = exe_path.parent
     try:
         result = subprocess.run(cmd, cwd=str(out_dir))
+        if target == "googletest":
+            _warn_untagged_slow_suites(out_xml)
         if result.returncode == 0:
             click.echo(f"[dia] {target}: PASSED (exit 0)")
         else:

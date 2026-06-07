@@ -17,6 +17,7 @@ GoogleTests (also known as Cluiche Test Suite) is the unit testing application f
 | Graphics Tests | Unit tests for DiaGraphics (RGBA, Vertex, Transform, render states) | TBD |
 | Input Tests | Unit tests for DiaInput (input state, action maps, event handling, profiles) | TBD |
 | Dirty Tracking | Pre-build system that tracks file changes and generates test filters | TBD |
+| GoogleTestSpeed | Tooling, build config, and test conventions to drive suite from ~5 min → <90 s | [googletestspeed.md](../systems/googletests/googletestspeed.md) |
 
 ## Application-Specific Architecture
 

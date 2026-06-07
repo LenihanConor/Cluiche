@@ -22,8 +22,10 @@ _CONFIG_ALIASES = {"Asan": "Debug-Asan", "Ubsan": "Debug-Ubsan"}
               help="Run pipeline without launching.")
 @click.option("--force", is_flag=True, default=False,
               help="Force pipeline rebuild even if up to date.")
+@click.option("--all", "run_all", is_flag=True, default=False,
+              help="For googletest: include SLOW_* suites (default excludes them).")
 @click.pass_context
-def cli(ctx, target, config, filter_pattern, verbose, no_build, build_only, force):
+def cli(ctx, target, config, filter_pattern, verbose, no_build, build_only, force, run_all):
     """Run the full pipeline then launch a target.
 
     TARGET is one of: googletest, cluichetest, cluicheeditor.
@@ -49,6 +51,7 @@ def cli(ctx, target, config, filter_pattern, verbose, no_build, build_only, forc
         config=config,
         filter_pattern=filter_pattern,
         verbose=verbose,
+        run_all=run_all,
     )
     ctx.exit(exit_code)
 
