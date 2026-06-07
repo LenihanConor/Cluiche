@@ -1,7 +1,7 @@
 #pragma once
 
 #include <DiaEditor/Plugin/EditorPluginBase.h>
-#include <DiaApplicationEditor/V2/LiveStateStore.h>
+#include <DiaApplicationFlowInspector/LiveStateStore.h>
 
 namespace Json { class Value; }
 
