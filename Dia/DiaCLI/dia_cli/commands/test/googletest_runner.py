@@ -53,12 +53,14 @@ def run(
     verbose: bool,
     docker: bool,
     run_all: bool = False,
+    shards: int = 0,
 ) -> int:
     root = repo_root if repo_root is not None else _REPO_ROOT
 
     if docker:
         return _run_docker(repo_root=root, config=config,
-                           filter_pattern=filter_pattern, verbose=verbose)
+                           filter_pattern=filter_pattern, verbose=verbose,
+                           shards=shards)
 
     binary = find_binary(root, config)
     if binary is None:
@@ -76,6 +78,18 @@ def run(
             f"Run: dia pipeline --stage deploy --target googletest --config {config}"
         )
         return 2
+
+    if shards > 1:
+        from dia_cli.commands.test.shard_runner import run_shards
+        return run_shards(
+            binary=binary,
+            out_dir=out_dir,
+            repo_root=root,
+            num_shards=shards,
+            filter_pattern=filter_pattern,
+            run_all=run_all,
+            verbose=verbose,
+        )
 
     out_xml = _gtest_xml_output_path(root)
     out_xml.parent.mkdir(parents=True, exist_ok=True)
@@ -98,7 +112,8 @@ def run(
         return 1
 
 
-def _run_docker(repo_root: Path, config: str, filter_pattern: Optional[str], verbose: bool) -> int:
+def _run_docker(repo_root: Path, config: str, filter_pattern: Optional[str], verbose: bool,
+                shards: int = 0) -> int:
     check = subprocess.run(
         ["docker", "image", "inspect", _DOCKER_IMAGE],
         capture_output=True,
@@ -115,6 +130,8 @@ def _run_docker(repo_root: Path, config: str, filter_pattern: Optional[str], ver
         forwarded += ["--filter", filter_pattern]
     if verbose:
         forwarded.append("--verbose")
+    if shards > 1:
+        forwarded += ["--shards", str(shards)]
 
     cmd = [
         "docker", "run", "--rm",

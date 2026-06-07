@@ -25,8 +25,10 @@ _TARGET_EXE_MAP = {
               help="For googletest: show verbose output.")
 @click.option("--all", "run_all", is_flag=True, default=False,
               help="For googletest: include SLOW_* suites (default excludes them).")
+@click.option("--shards", default=0, metavar="N", type=int,
+              help="For googletest: run in N parallel shards (0=disabled, omit for cpu_count-1).")
 @click.pass_context
-def cli(ctx, target, config, filter_pattern, verbose, run_all):
+def cli(ctx, target, config, filter_pattern, verbose, run_all, shards):
     """Launch an already-built target executable.
 
     TARGET is one of: googletest, cluichetest, cluicheeditor.
@@ -39,12 +41,13 @@ def cli(ctx, target, config, filter_pattern, verbose, run_all):
         filter_pattern=filter_pattern,
         verbose=verbose,
         run_all=run_all,
+        shards=shards,
     )
     ctx.exit(exit_code)
 
 
 def launch_target(target: str, config: str, filter_pattern: str = None,
-                  verbose: bool = False, run_all: bool = False) -> int:
+                  verbose: bool = False, run_all: bool = False, shards: int = 0) -> int:
     config = _CONFIG_ALIASES.get(config, config)
     repo_root = find_repo_root(__file__)
 
@@ -62,6 +65,18 @@ def launch_target(target: str, config: str, filter_pattern: str = None,
             err=True,
         )
         return 2
+
+    if target == "googletest" and shards > 1:
+        from dia_cli.commands.test.googletest_runner import run as gtest_run
+        return gtest_run(
+            repo_root=repo_root,
+            config=config,
+            filter_pattern=filter_pattern,
+            verbose=verbose,
+            docker=False,
+            run_all=run_all,
+            shards=shards,
+        )
 
     cmd = [str(exe_path)]
     if target == "googletest":
