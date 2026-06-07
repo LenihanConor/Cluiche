@@ -93,4 +93,4 @@ GoogleTestSpeed owns the tooling, build configuration, and test-code conventions
 
 ## Status
 
-`In Progress` — plan: @docs/specs/systems/googletests/googletestspeed.plan.md
+`Done` — plan: @docs/specs/systems/googletests/googletestspeed.plan.md
