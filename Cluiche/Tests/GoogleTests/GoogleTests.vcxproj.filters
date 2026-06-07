@@ -562,6 +562,12 @@
     <ClCompile Include="DebugServer\TestDebugServerAppState.cpp">
       <Filter>DebugServer</Filter>
     </ClCompile>
+    <ClCompile Include="DebugServer\TestDebugServerConnectionHealth.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugServer\TestObservationBridge.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
     <!-- Integration -->
     <ClCompile Include="Integration\TestDebugProtocolEndToEnd.cpp">
       <Filter>Integration</Filter>
@@ -697,6 +703,9 @@
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="Editor\TestGameConnectionControllerMessages.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestGameConnectionControllerAck.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="Editor\TestGameConnectionLifecycle.cpp">
