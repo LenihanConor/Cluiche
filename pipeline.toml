@@ -69,6 +69,7 @@ files = [
   { src = "Cluiche/Assets/CluicheTest/cluichetest.diagame", dest = "$(OutDir)assets/" },
   { src = "Cluiche/Assets/CluicheTest/registeredtypes.diaschema", dest = "$(OutDir)assets/" },
   { src = "Cluiche/Assets/CluicheTest/cluichetest.diaobservation", dest = "$(OutDir)assets/" },
+  { src = "Cluiche/Assets/CluicheTest/assets.catalogue.json", dest = "$(OutDir)assets/" },
   { src = "Cluiche/Assets/CluicheTest/Global/misc/ApplicationFlow/cluiche_main.diaapp", dest = "$(OutDir)assets/global/misc/ApplicationFlow/" },
   { src = "Cluiche/Assets/CluicheTest/Stages/Animation2DTestStage/animation2d_test_stage.diastage", dest = "$(OutDir)assets/stages/Animation2DTestStage/" },
   { src = "Cluiche/Assets/CluicheTest/Stages/Animation2DTestStage/misc/ApplicationFlow/animation2d_test_stage.diaapp", dest = "$(OutDir)assets/stages/Animation2DTestStage/misc/ApplicationFlow/" },
