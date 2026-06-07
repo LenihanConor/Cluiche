@@ -92,10 +92,12 @@
 
   <ItemGroup>
     <ClInclude Include="DiaApplicationFlowInspectorPlugin.h" />
+    <ClInclude Include="InspectorHealthReporter.h" />
     <ClInclude Include="LiveStateStore.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaApplicationFlowInspectorPlugin.cpp" />
+    <ClCompile Include="InspectorHealthReporter.cpp" />
     <ClCompile Include="LiveStateStore.cpp" />
   </ItemGroup>
 

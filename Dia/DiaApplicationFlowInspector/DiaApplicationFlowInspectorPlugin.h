@@ -2,6 +2,7 @@
 
 #include <DiaEditor/Plugin/EditorPluginBase.h>
 #include <DiaApplicationFlowInspector/LiveStateStore.h>
+#include "DiaApplicationFlowInspector/InspectorHealthReporter.h"
 
 namespace Json { class Value; }
 
@@ -30,6 +31,8 @@ namespace Dia { namespace Editor {
         GameConnectionManager* mGameConnection = nullptr;
         Dia::ApplicationFlow::Editor::LiveStateStore mLiveStore;
         bool mIsLiveConnected = false;
+        bool mIsLiveActive = false;
+        InspectorHealthReporter mHealthReporter{ mIsLiveConnected, mIsLiveActive };
     };
 
 }} // namespace Dia::Editor

@@ -5,6 +5,7 @@
 #include <DiaEditor/UI/WebUIBridge.h>
 #include <DiaEditor/LiveConnection/GameConnectionManager.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <string>
 
@@ -61,6 +62,7 @@ namespace Dia { namespace Editor {
 
     void DiaApplicationFlowInspectorPlugin::OnUpdate(float deltaTime)
     {
+        DIA_TRACE_ZONE("inspector.update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
         if (mGameConnection != nullptr)
         {
             mGameConnection->Update(deltaTime);
@@ -69,6 +71,7 @@ namespace Dia { namespace Editor {
 
     Json::Value DiaApplicationFlowInspectorPlugin::HandleLiveConnect(const Json::Value& data)
     {
+        DIA_TRACE_ZONE("inspector.connect", Dia::Observation::Trace::Category::kDiaApplicationFlow);
         Json::Value result;
 
         if (mGameConnection == nullptr)
@@ -88,7 +91,7 @@ namespace Dia { namespace Editor {
         const char* host = data.isMember("host") ? data["host"].asCString() : "localhost";
         const int port   = data.isMember("port") ? data["port"].asInt() : 7000;
 
-        DIA_LOG_INFO("Inspector", "Connecting to game at %s:%d", host, port);
+        DIA_LOG_INFO("Inspector", "inspector.connect host=%s port=%d", host, port);
 
         mGameConnection->SetConnectionCallback(
             [this, hostStr = std::string(host), port](bool connected)
@@ -107,6 +110,7 @@ namespace Dia { namespace Editor {
 
                     mGameConnection->Subscribe(kTopicAppState, [this](const Json::Value& d)
                     {
+                        mIsLiveActive = true;
                         Dia::ApplicationFlow::Editor::LiveAppState appState;
                         if (d.isMember("stage"))
                             appState.currentStage = Dia::Core::StringCRC(d["stage"].asCString());
@@ -133,6 +137,7 @@ namespace Dia { namespace Editor {
                 else
                 {
                     mIsLiveConnected = false;
+                    mIsLiveActive = false;
                     DIA_LOG_INFO("Inspector", "Game connection lost");
 
                     mGameConnection->Unsubscribe(kTopicAppState);
@@ -163,7 +168,7 @@ namespace Dia { namespace Editor {
             return result;
         }
 
-        DIA_LOG_INFO("Inspector", "Disconnecting from game");
+        DIA_LOG_INFO("Inspector", "inspector.disconnect");
         mGameConnection->Disconnect();
 
         result["ok"] = true;
@@ -197,6 +202,8 @@ namespace Dia { namespace Editor {
             return result;
         }
 
+        DIA_LOG_INFO("Inspector", "inspector.transition_to stage=%s", data["stageName"].asCString());
+
         Json::Value args;
         args["stage"] = data["stageName"];
 
@@ -226,6 +233,7 @@ namespace Dia { namespace Editor {
             return result;
         }
 
+        DIA_LOG_WARNING("Inspector", "inspector.shutdown_command");
         mGameConnection->SendCommand("shutdown", Json::Value());
 
         result["ok"] = true;
