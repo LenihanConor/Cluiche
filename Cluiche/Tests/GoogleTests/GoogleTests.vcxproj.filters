@@ -118,6 +118,9 @@
     <Filter Include="DiaApplicationEditor">
       <UniqueIdentifier>{DAPPEDTR-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaApplicationFlowInspector">
+      <UniqueIdentifier>{DAFLINSP-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
     <Filter Include="DiaEntityEditor">
       <UniqueIdentifier>{DIABPED1-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
@@ -646,6 +649,13 @@
     </ClCompile>
     <ClCompile Include="DiaApplicationEditor\TestRiskAssessor.cpp">
       <Filter>DiaApplicationEditor</Filter>
+    </ClCompile>
+    <!-- DiaApplicationFlowInspector Tests -->
+    <ClCompile Include="DiaApplicationFlowInspector\TestLiveStateStore.cpp">
+      <Filter>DiaApplicationFlowInspector</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaApplicationFlowInspector\TestInspectorPlugin.cpp">
+      <Filter>DiaApplicationFlowInspector</Filter>
     </ClCompile>
     <!-- Editor -->
     <ClCompile Include="Editor\TestEditorPluginRegistry.cpp">
