@@ -1,6 +1,6 @@
 # Test Completeness Registry
 
-**Last Updated:** 2026-05-21 (DiaMailbox: added 13 boundary + stress tests; 62 total)
+**Last Updated:** 2026-06-08 (DiaLighting3D: 59 new tests; DiaLighting2D: registered 18 existing; 3,120 total)
 
 Single source of truth for test coverage across all Dia modules. Updated alongside test commits.
 
@@ -241,6 +241,37 @@ Gap markers: **ZERO** = no tests, **LOW** = under-tested relative to API surface
 | IStateMachineInspectable | covered via above | — | — | — | — | Interface tested through all concrete machines |
 
 **StateMachine totals: 7 files, 88 tests** | JSON data-driven loading intentionally excluded (consumers own parsing)
+
+---
+
+## DiaLighting2D
+
+| Component | Tests | Files | Unit | Stress/Boundary | Golden/Regression | Notes |
+|-----------|-------|-------|------|-----------------|-------------------|-------|
+| PointLight2D | 2 | TestLightRegistry.cpp | 2 | 0 | 0 | OK — defaults, copy semantics |
+| LightRegistry2D | 12 | TestLightRegistry.cpp | 10 | 2 (max-capacity, layer-filter) | 0 | GOOD — CRUD, indexed iteration, layer mask, disabled filter |
+| LightBuilder | 4 | TestLightRegistry.cpp | 4 | 0 | 0 | OK — chain, OnLayers, Disabled |
+
+**DiaLighting2D totals: 1 file, 18 tests**
+
+---
+
+## DiaLighting3D
+
+| Component | Tests | Files | Unit | Stress/Boundary | Golden/Regression | Notes |
+|-----------|-------|-------|------|-----------------|-------------------|-------|
+| PointLight3D | 1 | TestLightRegistry3D.cpp | 1 | 0 | 0 | OK — defaults |
+| DirectionalLight3D | 1 | TestLightRegistry3D.cpp | 1 | 0 | 0 | OK — defaults |
+| SpotLight3D | 1 | TestLightRegistry3D.cpp | 1 | 0 | 0 | OK — defaults |
+| AmbientLight3D | 1 | TestLightRegistry3D.cpp | 1 | 0 | 0 | OK — defaults |
+| LightRegistry3D | 29 | TestLightRegistry3D.cpp | 20 | 9 (capacity, dispatch, stress) | 0 | GOOD — CRUD all 3 types, indexed iteration, UpdateAll dispatch, Detach, max-capacity, fill/drain, 1000-tick |
+| LightBuilder3D | 8 | TestLightRegistry3D.cpp | 8 | 0 | 0 | GOOD — all 4 types, Disabled, chain count |
+| LightBehaviourRegistry3D | 7 | TestBehaviours3D.cpp | 7 | 0 | 0 | GOOD — IsRegistered, Create for all 3 types |
+| FlickerBehaviour3D | 3 | TestBehaviours3D.cpp | 1 | 1 (null target) | 1 (invariant: 1000-tick range) | GOOD |
+| PulseBehaviour3D | 4 | TestBehaviours3D.cpp | 2 | 1 (null target) | 2 (phase 0 midpoint, quarter-period max) | GOOD |
+| ColorCycleBehaviour3D | 4 | TestBehaviours3D.cpp | 1 | 1 (single-colour early-return) | 2 (phase 0 = first colour, update no-crash) | GOOD |
+
+**DiaLighting3D totals: 2 files, 59 tests**
 
 ---
 
