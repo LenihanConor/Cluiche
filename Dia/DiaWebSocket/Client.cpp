@@ -358,43 +358,10 @@ namespace Dia
 				mImpl->WorkerThreadMain();
 			});
 
-			float elapsed = 0.0f;
-			while (GetState() == ConnectionState::kConnecting && elapsed < mImpl->mConnectionTimeout)
-			{
-				Dia::Core::ThisThread::SleepMs(100);
-				elapsed += 0.1f;
-			}
-
-			if (GetState() == ConnectionState::kConnected)
-			{
-				return true;
-			}
-			else
-			{
-				DIA_LOG_WARNING("WebSocket", "Client: Connection timeout after %.1fs", elapsed);
-
-				// Clean up: stop worker so next Connect() gets a clean slate.
-				mImpl->mIsRunning = false;
-				if (mImpl->mClient)
-				{
-					try { mImpl->mClient->stop(); } catch (...) {}
-				}
-				if (mImpl->mWorkerThread)
-				{
-					mImpl->mWorkerThread->Join();
-					delete mImpl->mWorkerThread;
-					mImpl->mWorkerThread = nullptr;
-				}
-				mImpl->mConnection.reset();
-				delete mImpl->mClient;
-				mImpl->mClient = nullptr;
-
-				{
-					Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mImpl->mStateMutex);
-					mImpl->mState = ConnectionState::kDisconnected;
-				}
-				return false;
-			}
+			// Non-blocking: return immediately. The controller's Update() loop
+			// drives the handshake timeout via kHandshakeTimeoutSeconds. OnFail /
+			// OnClose queue connection events that Update() delivers to callers.
+			return true;
 		}
 
 		void Client::Disconnect()

@@ -30,6 +30,7 @@ namespace Dia
 		static const Dia::Core::StringCRC kReqDisconnect("game_connection.disconnect");
 		static const Dia::Core::StringCRC kReqGetState("game_connection.get_state");
 		static const Dia::Core::StringCRC kReqGetAckRecords("game_connection.get_ack_records");
+		static const Dia::Core::StringCRC kReqSendCommand("game_connection.send_command");
 
 		static const char* kTopicState = "game_connection";
 		static const char* kTopicHeartbeat = "game_connection_heartbeat";
@@ -111,6 +112,7 @@ namespace Dia
 				mBridge->UnregisterRequestHandler(kReqDisconnect);
 				mBridge->UnregisterRequestHandler(kReqGetState);
 				mBridge->UnregisterRequestHandler(kReqGetAckRecords);
+				mBridge->UnregisterRequestHandler(kReqSendCommand);
 				mBridge = nullptr;
 			}
 			mManager = nullptr;
@@ -277,6 +279,12 @@ namespace Dia
 				{
 					return HandleGetAckRecordsRequest(data);
 				});
+
+			mBridge->RegisterRequestHandler(kReqSendCommand,
+				[this](const Json::Value& data) -> Json::Value
+				{
+					return HandleSendCommandRequest(data);
+				});
 		}
 
 		Json::Value GameConnectionController::HandleConnectRequest(const Json::Value& data)
@@ -358,6 +366,55 @@ namespace Dia
 			}
 			response["pending"] = pending;
 
+			return response;
+		}
+
+		Json::Value GameConnectionController::HandleSendCommandRequest(const Json::Value& data)
+		{
+			Json::Value response;
+
+			if (mState != State::kConnected)
+			{
+				response["ok"] = false;
+				response["error"] = "Not connected";
+				return response;
+			}
+
+			const std::string command = data.get("command", "").asString();
+			if (command.empty())
+			{
+				response["ok"] = false;
+				response["error"] = "command field is required";
+				return response;
+			}
+
+			if (mManager == nullptr)
+			{
+				response["ok"] = false;
+				response["error"] = "Manager not available";
+				return response;
+			}
+
+			const Json::Value& args = data.isMember("args") ? data["args"] : Json::Value(Json::objectValue);
+			const std::string replyTopic = "game_connection.command_response." + command;
+
+			DIA_LOG_INFO("Editor", "GameConnectionController: send_command '%s'", command.c_str());
+
+			WebUIBridge* bridge = mBridge;
+			std::string capturedTopic = replyTopic;
+
+			mManager->SendCommandWithResponse(command.c_str(), args,
+				[bridge, capturedTopic](bool success, const Json::Value& result)
+				{
+					if (bridge == nullptr) return;
+					Json::Value payload;
+					payload["success"] = success;
+					payload["result"] = result;
+					bridge->NotifyUIDataChanged(capturedTopic.c_str(), payload);
+				});
+
+			response["ok"] = true;
+			response["reply_topic"] = replyTopic;
 			return response;
 		}
 

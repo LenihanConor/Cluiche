@@ -18,6 +18,31 @@ static void PumpUpdates(Server& server, Client& client, int iterations = 50)
 	}
 }
 
+// Pump until the client reaches the target state or we exhaust the iteration budget.
+static bool WaitForState(Server& server, Client& client, ConnectionState target, int iterations = 100)
+{
+	for (int i = 0; i < iterations; ++i)
+	{
+		if (client.GetState() == target) return true;
+		server.Update();
+		client.Update();
+		ThisThread::SleepMs(20);
+	}
+	return client.GetState() == target;
+}
+
+// Pump client-only (no server) until the client reaches the target state or times out.
+static bool WaitForStateNoServer(Client& client, ConnectionState target, int iterations = 200)
+{
+	for (int i = 0; i < iterations; ++i)
+	{
+		if (client.GetState() == target) return true;
+		client.Update();
+		ThisThread::SleepMs(20);
+	}
+	return client.GetState() == target;
+}
+
 // ==============================================================================
 // State Machine Edge Cases
 // ==============================================================================
@@ -33,7 +58,8 @@ TEST(WebSocketClientState, Connect_WhileConnecting_ReturnsFalse)
 
 	bool result = client.Connect("ws://127.0.0.1:9540");
 	EXPECT_TRUE(result);
-	EXPECT_EQ(client.GetState(), ConnectionState::kConnected);
+
+	EXPECT_TRUE(WaitForState(server, client, ConnectionState::kConnected));
 
 	// Calling Connect again while already connected should return true
 	bool secondResult = client.Connect("ws://127.0.0.1:9540");
@@ -55,7 +81,7 @@ TEST(WebSocketClientState, Connect_WhileConnected_ReturnsTrue)
 
 	bool result = client.Connect("ws://127.0.0.1:9541");
 	EXPECT_TRUE(result);
-	EXPECT_TRUE(client.IsConnected());
+	EXPECT_TRUE(WaitForState(server, client, ConnectionState::kConnected));
 
 	PumpUpdates(server, client, 20);
 
@@ -87,9 +113,9 @@ TEST(WebSocketClientState, Disconnect_AfterFailedConnect_CleansUp)
 	client.SetConnectionTimeout(1.5f);
 	client.SetReconnectOnDisconnect(false);
 
-	// No server on 9542 so connect should fail
-	bool result = client.Connect("ws://127.0.0.1:9542");
-	EXPECT_FALSE(result);
+	// No server on 9542 so connect should fail; pump until it settles.
+	client.Connect("ws://127.0.0.1:9542");
+	WaitForStateNoServer(client, ConnectionState::kDisconnected);
 
 	// State should be kError or kDisconnected after failed connect
 	ConnectionState stateAfterFail = client.GetState();
@@ -125,6 +151,7 @@ TEST(WebSocketClientState, GetState_AfterConnect_IsConnected)
 
 	bool result = client.Connect("ws://127.0.0.1:9543");
 	EXPECT_TRUE(result);
+	EXPECT_TRUE(WaitForState(server, client, ConnectionState::kConnected));
 
 	EXPECT_EQ(client.GetState(), ConnectionState::kConnected);
 	EXPECT_TRUE(client.IsConnected());
@@ -149,9 +176,9 @@ TEST(WebSocketClientState, Connect_AfterFailedConnect_Succeeds)
 	client.SetConnectionTimeout(1.5f);
 	client.SetReconnectOnDisconnect(false);
 
-	// First attempt: no server on 9544, should fail
-	bool firstResult = client.Connect("ws://127.0.0.1:9544");
-	EXPECT_FALSE(firstResult);
+	// First attempt: no server on 9544 — connect starts but fails; pump until settled.
+	client.Connect("ws://127.0.0.1:9544");
+	WaitForStateNoServer(client, ConnectionState::kDisconnected);
 
 	client.Disconnect();
 	EXPECT_EQ(client.GetState(), ConnectionState::kDisconnected);
@@ -163,7 +190,7 @@ TEST(WebSocketClientState, Connect_AfterFailedConnect_Succeeds)
 	client.SetConnectionTimeout(5.0f);
 	bool secondResult = client.Connect("ws://127.0.0.1:9544");
 	EXPECT_TRUE(secondResult);
-	EXPECT_TRUE(client.IsConnected());
+	EXPECT_TRUE(WaitForState(server, client, ConnectionState::kConnected));
 
 	PumpUpdates(server, client, 20);
 

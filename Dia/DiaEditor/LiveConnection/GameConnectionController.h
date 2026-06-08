@@ -91,6 +91,7 @@ namespace Dia
 			Json::Value HandleDisconnectRequest(const Json::Value& data);
 			Json::Value HandleGetStateRequest(const Json::Value& data);
 			Json::Value HandleGetAckRecordsRequest(const Json::Value& data);
+			Json::Value HandleSendCommandRequest(const Json::Value& data);
 
 			void BuildStatePayload(Json::Value& out) const;
 			void SetLastError(const char* msg);

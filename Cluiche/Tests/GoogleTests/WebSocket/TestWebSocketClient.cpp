@@ -88,9 +88,14 @@ TEST(WebSocketClient, Connect_NoServer_FailsOrTimesOut)
 	client.SetConnectionTimeout(2.0f);
 	client.SetReconnectOnDisconnect(false);
 
-	bool result = client.Connect("ws://127.0.0.1:9200");
+	// Connect is non-blocking; pump until the socket fails or times out.
+	client.Connect("ws://127.0.0.1:9200");
+	for (int i = 0; i < 300 && client.GetState() == ConnectionState::kConnecting; ++i)
+	{
+		client.Update();
+		Dia::Core::ThisThread::SleepMs(20);
+	}
 
-	EXPECT_FALSE(result);
 	EXPECT_FALSE(client.IsConnected());
 
 	client.Disconnect();

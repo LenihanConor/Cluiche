@@ -39,10 +39,10 @@ TEST(WebSocketIntegration, ClientConnectsToServer)
 
 	bool connected = client.Connect("ws://127.0.0.1:9300");
 	EXPECT_TRUE(connected);
-	EXPECT_TRUE(client.IsConnected());
 
 	PumpUpdates(server, client);
 
+	EXPECT_TRUE(client.IsConnected());
 	EXPECT_TRUE(serverSawConnect.load());
 	EXPECT_EQ(server.GetConnectionCount(), 1);
 

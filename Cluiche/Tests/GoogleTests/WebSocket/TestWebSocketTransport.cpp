@@ -57,15 +57,21 @@ TEST(WebSocketTransport, Connect_Timeout_ThenReconnect_Succeeds)
 	client.SetConnectionTimeout(1.5f);
 	client.SetReconnectOnDisconnect(false);
 
-	bool connected = client.Connect("ws://127.0.0.1:9501");
-	EXPECT_FALSE(connected);
+	// No server — connect starts but fails; pump until socket gives up.
+	client.Connect("ws://127.0.0.1:9501");
+	for (int i = 0; i < 200 && client.GetState() == ConnectionState::kConnecting; ++i)
+	{
+		client.Update();
+		Dia::Core::ThisThread::SleepMs(20);
+	}
+	EXPECT_FALSE(client.IsConnected());
 
 	client.Disconnect();
 
 	Server server(9501);
 	server.Start();
 
-	connected = client.Connect("ws://127.0.0.1:9501");
+	bool connected = client.Connect("ws://127.0.0.1:9501");
 	EXPECT_TRUE(connected);
 
 	PumpUpdates(server, client, 20);
@@ -219,8 +225,15 @@ TEST(WebSocketTransport, ClientConnect_ServerNeverCalls_Update_ClientStillConnec
 	client.SetConnectionTimeout(5.0f);
 	client.SetReconnectOnDisconnect(false);
 
+	// The server never calls Update() — verify the client can still connect
+	// by pumping only the client side.
 	bool connected = client.Connect("ws://127.0.0.1:9506");
 	EXPECT_TRUE(connected);
+	for (int i = 0; i < 100 && !client.IsConnected(); ++i)
+	{
+		client.Update();
+		Dia::Core::ThisThread::SleepMs(20);
+	}
 	EXPECT_TRUE(client.IsConnected());
 
 	client.Disconnect();

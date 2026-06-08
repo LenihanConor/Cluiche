@@ -30,6 +30,8 @@ const WINDOW_DURATION_MS = 5000;
 const YELLOW_THRESHOLD = 10;
 const RED_THRESHOLD = 100;
 
+const STATS_REPLY_TOPIC = "game_connection.command_response.get_server_stats";
+
 interface DropSample {
   timestampMs: number;
   drops: number;
@@ -48,13 +50,18 @@ export function useConnectionHealth(connected: boolean): ConnectionHealth {
   const prevTotalDropsRef = useRef<number>(0);
   const firstPollRef = useRef<boolean>(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Latest stats pushed back from the game via send_command reply.
+  const latestStatsRef = useRef<{
+    topics?: Array<{ topic: string; sent: number; dropped: number; drop_rate: number }>;
+    editor_side?: { messages_dropped: number };
+  }>({});
 
   useEffect(() => {
     if (!connected) {
-      // Reset on disconnect
       dropSamplesRef.current = [];
       prevTotalDropsRef.current = 0;
       firstPollRef.current = true;
+      latestStatsRef.current = {};
       setHealth({ badge: "none", summary: "", topics: [], subscriptions: [], totalDropsInWindow: 0 });
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -63,19 +70,26 @@ export function useConnectionHealth(connected: boolean): ConnectionHealth {
       return;
     }
 
+    // Subscribe to async game-side stats replies pushed by the C++ controller.
+    const unsubStats = EditorBridge.subscribe(STATS_REPLY_TOPIC, (data: unknown) => {
+      const d = data as { success?: boolean; result?: typeof latestStatsRef.current } | null;
+      if (d?.success && d.result) {
+        latestStatsRef.current = d.result;
+      }
+    });
+
     const poll = async () => {
       try {
-        const [stats, ackData] = await Promise.all([
-          EditorBridge.request<{
-            topics?: Array<{ topic: string; sent: number; dropped: number; drop_rate: number }>;
-            editor_side?: { messages_dropped: number };
-          }>("get_server_stats", {}),
-          EditorBridge.request<{
-            records?: Array<{ topic: string; latency_ms: number }>;
-            pending?: Array<{ topic: string; elapsed_ms: number }>;
-          }>("game_connection.get_ack_records", {}).catch(() => ({ records: [], pending: [] })),
-        ]);
+        // Fire-and-forget: ask the game for fresh stats. The reply arrives via
+        // the STATS_REPLY_TOPIC subscription above and is stored in latestStatsRef.
+        EditorBridge.request("game_connection.send_command", { command: "get_server_stats" }).catch(() => {});
 
+        const ackData = await EditorBridge.request<{
+          records?: Array<{ topic: string; latency_ms: number }>;
+          pending?: Array<{ topic: string; elapsed_ms: number }>;
+        }>("game_connection.get_ack_records", {}).catch(() => ({ records: [], pending: [] }));
+
+        const stats = latestStatsRef.current;
         const nowMs = Date.now();
         const topics: TopicHealth[] = (stats.topics ?? []).map((t) => ({
           topic: t.topic,
@@ -150,6 +164,7 @@ export function useConnectionHealth(connected: boolean): ConnectionHealth {
     intervalRef.current = setInterval(poll, POLL_INTERVAL_MS);
 
     return () => {
+      unsubStats();
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
