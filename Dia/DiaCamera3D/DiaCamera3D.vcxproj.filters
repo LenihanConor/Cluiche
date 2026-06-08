@@ -53,6 +53,12 @@
     <ClInclude Include="Behaviours\SmoothDamp3D.h">
       <Filter>Behaviours</Filter>
     </ClInclude>
+    <ClInclude Include="Behaviours\Orbit.h">
+      <Filter>Behaviours</Filter>
+    </ClInclude>
+    <ClInclude Include="Behaviours\Flythrough.h">
+      <Filter>Behaviours</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ViewportTransform3D.cpp">
@@ -74,6 +80,12 @@
       <Filter>Behaviours</Filter>
     </ClCompile>
     <ClCompile Include="Behaviours\SmoothDamp3D.cpp">
+      <Filter>Behaviours</Filter>
+    </ClCompile>
+    <ClCompile Include="Behaviours\Orbit.cpp">
+      <Filter>Behaviours</Filter>
+    </ClCompile>
+    <ClCompile Include="Behaviours\Flythrough.cpp">
       <Filter>Behaviours</Filter>
     </ClCompile>
   </ItemGroup>

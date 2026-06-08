@@ -86,6 +86,8 @@
     <ClInclude Include="Behaviours\Follow3D.h" />
     <ClInclude Include="Behaviours\ScreenShake3D.h" />
     <ClInclude Include="Behaviours\SmoothDamp3D.h" />
+    <ClInclude Include="Behaviours\Orbit.h" />
+    <ClInclude Include="Behaviours\Flythrough.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ViewportTransform3D.cpp" />
@@ -95,6 +97,8 @@
     <ClCompile Include="Behaviours\Follow3D.cpp" />
     <ClCompile Include="Behaviours\ScreenShake3D.cpp" />
     <ClCompile Include="Behaviours\SmoothDamp3D.cpp" />
+    <ClCompile Include="Behaviours\Orbit.cpp" />
+    <ClCompile Include="Behaviours\Flythrough.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
