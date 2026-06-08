@@ -1,6 +1,7 @@
 #include "DiaLighting3D/Registry/LightRegistry3D.h"
 
 #include <DiaCore/Core/Assert.h>
+#include <DiaLighting3D/Behaviours/ILightBehaviour3D.h>
 
 namespace Dia { namespace Lighting3D {
 
@@ -169,20 +170,98 @@ const SpotLight3D& LightRegistry3D::GetSpotByIndex(unsigned int i) const
     return mSpotSlots[i].light;
 }
 
-// Implemented in Task 5 after ILightBehaviour3D is defined.
-bool LightRegistry3D::AttachBehaviour(Dia::Core::StringCRC /*lightId*/, ILightBehaviour3D* /*behaviour*/)
+template<typename TSlot, unsigned int N>
+void LightRegistry3D::DetachBehaviourFromSlots(TSlot (&slots)[N], unsigned int count,
+                                               Dia::Core::StringCRC lightId, Dia::Core::StringCRC typeId)
 {
+    for (unsigned int i = 0; i < count; ++i)
+    {
+        if (slots[i].id == lightId)
+        {
+            for (unsigned int b = 0; b < slots[i].behaviourCount; ++b)
+            {
+                if (slots[i].behaviours[b]->GetTypeId() == typeId)
+                {
+                    for (unsigned int k = b; k + 1 < slots[i].behaviourCount; ++k)
+                        slots[i].behaviours[k] = slots[i].behaviours[k + 1];
+                    slots[i].behaviours[--slots[i].behaviourCount] = nullptr;
+                    return;
+                }
+            }
+            return;
+        }
+    }
+}
+
+bool LightRegistry3D::AttachBehaviour(Dia::Core::StringCRC lightId, ILightBehaviour3D* behaviour)
+{
+    {
+        const int idx = FindPointIndex(lightId);
+        if (idx >= 0)
+        {
+            DIA_ASSERT(mPointSlots[idx].behaviourCount < kMaxBehaviours,
+                       "LightRegistry3D::AttachBehaviour — behaviour capacity exceeded");
+            mPointSlots[idx].behaviours[mPointSlots[idx].behaviourCount++] = behaviour;
+            return true;
+        }
+    }
+    {
+        const int idx = FindDirectionalIndex(lightId);
+        if (idx >= 0)
+        {
+            DIA_ASSERT(mDirectionalSlots[idx].behaviourCount < kMaxBehaviours,
+                       "LightRegistry3D::AttachBehaviour — behaviour capacity exceeded");
+            mDirectionalSlots[idx].behaviours[mDirectionalSlots[idx].behaviourCount++] = behaviour;
+            return true;
+        }
+    }
+    {
+        const int idx = FindSpotIndex(lightId);
+        if (idx >= 0)
+        {
+            DIA_ASSERT(mSpotSlots[idx].behaviourCount < kMaxBehaviours,
+                       "LightRegistry3D::AttachBehaviour — behaviour capacity exceeded");
+            mSpotSlots[idx].behaviours[mSpotSlots[idx].behaviourCount++] = behaviour;
+            return true;
+        }
+    }
+    DIA_ASSERT(false, "LightRegistry3D::AttachBehaviour — light not found");
     return false;
 }
 
-// Implemented in Task 5 after ILightBehaviour3D is defined.
-void LightRegistry3D::DetachBehaviour(Dia::Core::StringCRC /*lightId*/, Dia::Core::StringCRC /*behaviourTypeId*/)
+void LightRegistry3D::DetachBehaviour(Dia::Core::StringCRC lightId, Dia::Core::StringCRC behaviourTypeId)
 {
+    if (FindPointIndex(lightId) >= 0)
+    {
+        DetachBehaviourFromSlots(mPointSlots, mPointCount, lightId, behaviourTypeId);
+        return;
+    }
+    if (FindDirectionalIndex(lightId) >= 0)
+    {
+        DetachBehaviourFromSlots(mDirectionalSlots, mDirectionalCount, lightId, behaviourTypeId);
+        return;
+    }
+    if (FindSpotIndex(lightId) >= 0)
+    {
+        DetachBehaviourFromSlots(mSpotSlots, mSpotCount, lightId, behaviourTypeId);
+        return;
+    }
+    DIA_ASSERT(false, "LightRegistry3D::DetachBehaviour — light not found");
 }
 
-// Implemented in Task 5 after ILightBehaviour3D is defined.
-void LightRegistry3D::UpdateAll(float /*dt*/)
+void LightRegistry3D::UpdateAll(float dt)
 {
+    for (unsigned int i = 0; i < mPointCount; ++i)
+        for (unsigned int b = 0; b < mPointSlots[i].behaviourCount; ++b)
+            mPointSlots[i].behaviours[b]->Update(dt);
+
+    for (unsigned int i = 0; i < mDirectionalCount; ++i)
+        for (unsigned int b = 0; b < mDirectionalSlots[i].behaviourCount; ++b)
+            mDirectionalSlots[i].behaviours[b]->Update(dt);
+
+    for (unsigned int i = 0; i < mSpotCount; ++i)
+        for (unsigned int b = 0; b < mSpotSlots[i].behaviourCount; ++b)
+            mSpotSlots[i].behaviours[b]->Update(dt);
 }
 
 int LightRegistry3D::FindPointIndex(Dia::Core::StringCRC id) const

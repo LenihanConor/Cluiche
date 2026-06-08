@@ -21,6 +21,12 @@
     <ClInclude Include="AmbientLight3D.h">
       <Filter>Light</Filter>
     </ClInclude>
+    <ClInclude Include="Behaviours\ILightBehaviour3D.h">
+      <Filter>Behaviours</Filter>
+    </ClInclude>
+    <ClInclude Include="Behaviours\LightBehaviourRegistry3D.h">
+      <Filter>Behaviours</Filter>
+    </ClInclude>
     <ClInclude Include="DirectionalLight3D.h">
       <Filter>Light</Filter>
     </ClInclude>
@@ -35,6 +41,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Behaviours\LightBehaviourRegistry3D.cpp">
+      <Filter>Behaviours</Filter>
+    </ClCompile>
     <ClCompile Include="Registry\LightRegistry3D.cpp">
       <Filter>Registry</Filter>
     </ClCompile>
