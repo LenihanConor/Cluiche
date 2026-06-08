@@ -77,6 +77,9 @@
     <None Include="dia.camera3d.architecture.module.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Camera3D.h" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
       <Project>{8d41cbe3-c493-428d-95f3-627e56500667}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

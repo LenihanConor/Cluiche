@@ -25,4 +25,9 @@
       <Filter>Docs</Filter>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Camera3D.h">
+      <Filter>Camera</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>
