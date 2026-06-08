@@ -1295,6 +1295,9 @@
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="ApplicationFlow\TestPUTiming.cpp">
     <ClCompile Include="ApplicationFlow\TestStreamTelemetry.cpp">
+    <ClCompile Include="Integration\TestLiveConnectionPluginBase.cpp">
+      <Filter>Integration</Filter>
+    </ClCompile>
       <Filter>ApplicationFlow</Filter>
     </ClCompile>
       <Filter>ApplicationFlow</Filter>

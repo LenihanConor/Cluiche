@@ -30,7 +30,7 @@ namespace Dia
 			using SubscribeSentCallback = std::function<void(const char* topic)>;
 
 			GameConnectionManager();
-			~GameConnectionManager();
+			virtual ~GameConnectionManager();
 
 			void Initialize();
 			void Shutdown();
@@ -38,15 +38,15 @@ namespace Dia
 
 			void Connect(const char* host, int port);
 			void Disconnect();
-			bool IsConnected() const;
+			virtual bool IsConnected() const;
 
 			void SetAutoReconnect(bool enable);
 			void SetAutoReconnectDelay(float seconds);
 			void SetAutoReconnectMaxAttempts(int maxAttempts);
 			bool GetAutoReconnect() const { return mAutoReconnect; }
 
-			void Subscribe(const Dia::Core::StringCRC& topic, DataCallback callback);
-			void Unsubscribe(const Dia::Core::StringCRC& topic);
+			virtual void Subscribe(const Dia::Core::StringCRC& topic, DataCallback callback);
+			virtual void Unsubscribe(const Dia::Core::StringCRC& topic);
 			void Publish(const Dia::Core::StringCRC& topic, const Json::Value& data);
 
 			using CommandResponseCallback = std::function<void(bool success, const Json::Value& result)>;
