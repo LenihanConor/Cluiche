@@ -233,7 +233,9 @@ namespace Dia
 				[this](const Json::Value& /*data*/) -> Json::Value
 				{
 					Json::Value result;
-					mDockingLayout->Serialize(result);
+					const Json::Value& tree = mDockingLayout->GetMosaicTree();
+					if (!tree.isNull())
+						result["tree"] = tree;
 					return result;
 				});
 
@@ -252,10 +254,8 @@ namespace Dia
 			mWebUIBridge->RegisterEventHandler(kEventSaveLayout,
 				[this](const Json::Value& data)
 				{
-					const Json::Value& layout = data.isMember("layout") ? data["layout"] : data;
-					Json::Value copy = layout;
-					mDockingLayout->ValidateLayout(copy);
-					mDockingLayout->Deserialize(copy);
+					const Json::Value& tree = data.isMember("tree") ? data["tree"] : data;
+					mDockingLayout->SetMosaicTree(tree);
 					SaveLayoutToDisk();
 				});
 

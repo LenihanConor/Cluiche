@@ -66,7 +66,13 @@ def _copy_files(
                 else:
                     dest_file = dest_dir / src_path.name
                 dest_file.parent.mkdir(parents=True, exist_ok=True)
-                if force or not dest_file.exists() or src_path.stat().st_mtime > dest_file.stat().st_mtime:
+                needs_copy = (
+                    force
+                    or not dest_file.exists()
+                    or src_path.stat().st_mtime > dest_file.stat().st_mtime
+                    or src_path.stat().st_size != dest_file.stat().st_size
+                )
+                if needs_copy:
                     shutil.copy2(src_path, dest_file)
                     logger.info(f"  copied {src_path.name} -> {dest_file}")
                 else:

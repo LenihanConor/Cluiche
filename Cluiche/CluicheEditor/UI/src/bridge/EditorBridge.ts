@@ -176,7 +176,7 @@ export const EditorBridge = {
     sendRequest<object>("load_layout"),
 
   saveLayout: (layout: object) => {
-    sendEvent("save_layout", { layout });
+    sendEvent("save_layout", layout);
     return Promise.resolve({});
   },
 

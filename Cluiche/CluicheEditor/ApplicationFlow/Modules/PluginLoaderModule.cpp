@@ -97,7 +97,9 @@ namespace Cluiche
 					Dia::Editor::DockingLayout* layout = mView->GetDockingLayout();
 					if (layout != nullptr)
 					{
-						layout->Deserialize(memory.GetLayoutTree());
+						const Json::Value& tree = memory.GetLayoutTree();
+						if (tree.isMember("tree") && !tree["tree"].isNull())
+							layout->SetMosaicTree(tree["tree"]);
 						DIA_LOG_INFO("Application", "PluginLoaderModule: Restored layout from memory");
 					}
 				}
@@ -180,7 +182,9 @@ namespace Cluiche
 				if (layout != nullptr)
 				{
 					Json::Value layoutTree;
-					layout->Serialize(layoutTree);
+					const Json::Value& mosaicTree = layout->GetMosaicTree();
+					if (!mosaicTree.isNull())
+						layoutTree["tree"] = mosaicTree;
 					memory.SetLayoutTree(layoutTree);
 				}
 			}

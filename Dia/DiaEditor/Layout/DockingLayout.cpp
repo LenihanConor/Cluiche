@@ -144,10 +144,22 @@ namespace Dia
 			layout["panels"] = validPanels;
 		}
 
+		void DockingLayout::SetMosaicTree(const Json::Value& tree)
+		{
+			mMosaicTree = tree;
+		}
+
+		const Json::Value& DockingLayout::GetMosaicTree() const
+		{
+			return mMosaicTree;
+		}
+
 		bool DockingLayout::SaveToDisk(const char* path) const
 		{
 			Json::Value root;
 			Serialize(root);
+			if (!mMosaicTree.isNull())
+				root["tree"] = mMosaicTree;
 
 			Json::StreamWriterBuilder writer;
 			std::ofstream file(path);
@@ -171,6 +183,8 @@ namespace Dia
 				return false;
 
 			Deserialize(root);
+			if (root.isMember("tree") && !root["tree"].isNull())
+				mMosaicTree = root["tree"];
 			return true;
 		}
 	}

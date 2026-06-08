@@ -37,6 +37,9 @@ namespace Dia
 			void Serialize(Json::Value& out) const;
 			void Deserialize(const Json::Value& in);
 
+			void SetMosaicTree(const Json::Value& tree);
+			const Json::Value& GetMosaicTree() const;
+
 			void ValidateLayout(Json::Value& layout) const;
 
 			bool SaveToDisk(const char* path) const;
@@ -45,6 +48,7 @@ namespace Dia
 		private:
 			static const unsigned int kMaxPanels = 32;
 			Dia::Core::Containers::DynamicArrayC<PanelInfo, kMaxPanels> mPanels;
+			Json::Value mMosaicTree;
 		};
 	}
 }

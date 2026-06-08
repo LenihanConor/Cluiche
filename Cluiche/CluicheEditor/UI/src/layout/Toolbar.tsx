@@ -106,6 +106,28 @@ export function Toolbar({ panels }: ToolbarProps) {
         gap: 6,
       }}
     >
+      {/* Plugin Browser button — far left, always visible */}
+      <button
+        onClick={() => handleToggle("Plugin Browser")}
+        title="Plugin Browser"
+        style={{
+          height: 22,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: panels.find(p => p.name === "Plugin Browser")?.visible ? "#0e639c" : "transparent",
+          color: panels.find(p => p.name === "Plugin Browser")?.visible ? "#fff" : "#808080",
+          border: panels.find(p => p.name === "Plugin Browser")?.visible ? "none" : "1px solid #3c3c3c",
+          cursor: "pointer",
+          fontSize: 13,
+          borderRadius: 2,
+          padding: "0 7px",
+          flexShrink: 0,
+        }}
+      >
+        ⊞
+      </button>
+
       {/* Pill zone — flex:1 so it fills available space, overflow hidden to clip pills */}
       <div
         ref={pillZoneRef}
