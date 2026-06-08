@@ -18,6 +18,20 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AmbientLight3D.h">
+      <Filter>Light</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectionalLight3D.h">
+      <Filter>Light</Filter>
+    </ClInclude>
+    <ClInclude Include="PointLight3D.h">
+      <Filter>Light</Filter>
+    </ClInclude>
+    <ClInclude Include="SpotLight3D.h">
+      <Filter>Light</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
     <None Include="dia.lighting3d.architecture.module.md">
       <Filter>Docs</Filter>
     </None>

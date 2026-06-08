@@ -74,6 +74,12 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="AmbientLight3D.h" />
+    <ClInclude Include="DirectionalLight3D.h" />
+    <ClInclude Include="PointLight3D.h" />
+    <ClInclude Include="SpotLight3D.h" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="dia.lighting3d.architecture.module.md" />
   </ItemGroup>
   <ItemGroup>
