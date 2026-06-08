@@ -67,7 +67,10 @@ namespace Dia { namespace Editor {
         {
             mSecondsSinceLastData = 0.0f;
             if (GetBridge())
-                GetBridge()->NotifyUIDataChanged("live.modules", d);
+            {
+                const Json::Value& arr = d.isMember("modules") ? d["modules"] : d;
+                GetBridge()->NotifyUIDataChanged("live.modules", arr);
+            }
             if (mMetricEventsTotal) mMetricEventsTotal->Inc();
         });
 
@@ -75,7 +78,10 @@ namespace Dia { namespace Editor {
         {
             mSecondsSinceLastData = 0.0f;
             if (GetBridge())
-                GetBridge()->NotifyUIDataChanged("live.streams", d);
+            {
+                const Json::Value& arr = d.isMember("streams") ? d["streams"] : d;
+                GetBridge()->NotifyUIDataChanged("live.streams", arr);
+            }
             if (mMetricEventsTotal) mMetricEventsTotal->Inc();
         });
 
@@ -83,7 +89,10 @@ namespace Dia { namespace Editor {
         {
             mSecondsSinceLastData = 0.0f;
             if (GetBridge())
-                GetBridge()->NotifyUIDataChanged("live.timings", d);
+            {
+                const Json::Value& arr = d.isMember("timings") ? d["timings"] : d;
+                GetBridge()->NotifyUIDataChanged("live.timings", arr);
+            }
             if (mMetricEventsTotal) mMetricEventsTotal->Inc();
         });
 

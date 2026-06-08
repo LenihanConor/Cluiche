@@ -8,6 +8,10 @@
 // v2 IApplicationInspectable interface into the narrow shape DebugServer
 // consumes.
 //
+// Inspector data sources (module state, stream state, timing, lifecycle
+// events) are managed as IInspectorDataSource instances — see
+// InspectorSources/ for implementations.
+//
 // This adapter lives in CluicheGameBaseline so that Dia/DiaDebugServer
 // itself has zero dependency on DiaApplicationFlow.
 ////////////////////////////////////////////////////////////////////////////////
@@ -19,7 +23,9 @@
 #include <DiaStreams/EventStreamReader.h>
 #include <DiaDebugServer/DebugServer.h>
 #include <DiaDebugServer/IDebugStateProvider.h>
+#include <DiaDebugServer/IInspectorDataSource.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <memory>
 
 #include "Types/EntityInspectEvent.h"
 
@@ -103,9 +109,9 @@ private:
     Dia::Observation::Metric::Histogram* mMetricTickMs        = nullptr;
     int                                  mPrevMessagesSent    = 0;
 
-    // Handle for the $lifecycle tap used to forward stage transitions to the
-    // debug server as push notifications.  Attached in DoStart, detached in DoStop.
-    unsigned int                         mLifecycleTapId      = 0;
+    // Inspector data sources — created in DoStart, activated, ticked, deactivated.
+    static constexpr unsigned int kSourceCount = 4;
+    std::unique_ptr<Dia::DebugServer::IInspectorDataSource> mSources[kSourceCount];
 
     // EventStream reader for entity inspect events produced by SimPU.
     // Consumed here (MainPU) so NotifySubscribers is called from the host thread.

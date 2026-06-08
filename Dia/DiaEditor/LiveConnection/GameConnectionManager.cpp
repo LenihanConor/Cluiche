@@ -259,11 +259,11 @@ namespace Dia
 				auto pcase = static_cast<int>(protoMsg.payload_case());
 				if (pcase == 0 && length < 500)
 				{
-					DIA_LOG_INFO("Editor", "GameConnectionManager: proto payload_case=0, msg='%.200s'", text);
+					DIA_LOG_DEBUG("Editor", "GameConnectionManager: proto payload_case=0, msg='%.200s'", text);
 				}
 				else if (pcase == 0 && length >= 500)
 				{
-					DIA_LOG_INFO("Editor", "GameConnectionManager: proto payload_case=0 LARGE len=%u first200='%.200s'", length, text);
+					DIA_LOG_DEBUG("Editor", "GameConnectionManager: proto payload_case=0 LARGE len=%u first200='%.200s'", length, text);
 				}
 				if (protoMsg.payload_case() == dia::debug::DebugMessage::kDataUpdate)
 				{
@@ -282,7 +282,7 @@ namespace Dia
 							mSubscriptions[i].callback(data);
 						}
 					}
-					DIA_LOG_INFO("Editor", "GameConnectionManager: data_update topic='%s' dispatched to %u subscriber(s)",
+					DIA_LOG_DEBUG("Editor", "GameConnectionManager: data_update topic='%s' dispatched to %u subscriber(s)",
 						update.data_type().c_str(), fired);
 					return;
 				}
@@ -320,7 +320,7 @@ namespace Dia
 						mSubscriptions[i].callback(data);
 					}
 				}
-				DIA_LOG_INFO("Editor", "GameConnectionManager: topic='%s' dispatched to %u subscriber(s)", envelope["topic"].asCString(), fired);
+				DIA_LOG_DEBUG("Editor", "GameConnectionManager: topic='%s' dispatched to %u subscriber(s)", envelope["topic"].asCString(), fired);
 			}
 		}
 

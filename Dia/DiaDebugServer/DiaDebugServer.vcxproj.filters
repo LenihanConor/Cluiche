@@ -8,6 +8,12 @@
     <ClInclude Include="StateSerializer.h" />
     <ClInclude Include="CommandDispatcher.h" />
     <ClInclude Include="QueryRegistry.h" />
+    <ClInclude Include="IInspectorDataSource.h">
+    <ClInclude Include="InspectorDataSourceBase.h">
+      <Filter>DiaDebugServer</Filter>
+    </ClInclude>
+      <Filter>DiaDebugServer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugServer.cpp" />

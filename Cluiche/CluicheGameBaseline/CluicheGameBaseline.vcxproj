@@ -52,6 +52,10 @@
     <ClCompile Include="Types\SimToMainEvent.cpp" />
     <ClCompile Include="Types\EntityInspectEvent.cpp" />
     <ClCompile Include="Types\UICommand.cpp" />
+    <ClCompile Include="Modules\InspectorSources\ModuleStateSource.cpp" />
+    <ClCompile Include="Modules\InspectorSources\StreamStateSource.cpp" />
+    <ClCompile Include="Modules\InspectorSources\TimingAggregateSource.cpp" />
+    <ClCompile Include="Modules\InspectorSources\LifecycleEventSource.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\AutomationModule.h" />
@@ -87,6 +91,10 @@
     <ClInclude Include="Types\SimToMainEvent.h" />
     <ClInclude Include="Types\EntityInspectEvent.h" />
     <ClInclude Include="Types\UICommand.h" />
+    <ClInclude Include="Modules\InspectorSources\ModuleStateSource.h" />
+    <ClInclude Include="Modules\InspectorSources\StreamStateSource.h" />
+    <ClInclude Include="Modules\InspectorSources\TimingAggregateSource.h" />
+    <ClInclude Include="Modules\InspectorSources\LifecycleEventSource.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">

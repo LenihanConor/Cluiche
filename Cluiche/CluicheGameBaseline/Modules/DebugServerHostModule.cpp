@@ -5,7 +5,6 @@
 #include <DiaStreams/IStreamStore.h>
 #include <DiaStreams/StreamTypeRegistry.h>
 #include <DiaStreams/Event.h>
-#include <DiaApplicationFlow/LifecycleEvent.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaObservation/Log/LogLevel.h>
@@ -13,7 +12,14 @@
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaObservation/Metric/Gauge.h>
 
+#include "Modules/InspectorSources/ModuleStateSource.h"
+#include "Modules/InspectorSources/StreamStateSource.h"
+#include "Modules/InspectorSources/TimingAggregateSource.h"
+#include "Modules/InspectorSources/LifecycleEventSource.h"
+
 #include <chrono>
+#include <memory>
+#include <string>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -99,37 +105,18 @@ Dia::ApplicationFlow::StartResult DebugServerHostModule::DoStart()
     mServerPtr = &mServer;
     mServerService.Register(mServerPtr);
 
-    // Attach $lifecycle tap so stage transitions are forwarded to connected
-    // clients as push events.  The tap lives in the host (which owns
-    // DiaApplicationFlow) so DiaDebugServer itself has no dependency on it.
+    // Create and activate inspector data sources.
     {
         auto* ctrl = GetApplication();
         auto* app = dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(ctrl);
-        if (app)
-        {
-            auto* lifecycleStore = app->FindStream(Dia::Core::StringCRC("$lifecycle"));
-            if (lifecycleStore)
-            {
-                auto handle = lifecycleStore->AttachTap(
-                    [this](const void* bytes, unsigned int size,
-                           const Dia::Core::StringCRC& /*streamId*/)
-                    {
-                        if (!bytes || size < sizeof(Dia::ApplicationFlow::LifecycleEvent)) return;
-                        const auto* evt = static_cast<const Dia::ApplicationFlow::LifecycleEvent*>(bytes);
-                        if (evt->kind != Dia::ApplicationFlow::LifecycleEventKind::kStageTransitionCommitted) return;
-                        mServer.BroadcastStageTransition(evt->fromStage, evt->toStage);
-                    });
-                mLifecycleTapId = handle.id;
-                if (mLifecycleTapId == 0)
-                {
-                    DIA_LOG_WARNING("DebugServer", "DebugServerHostModule::DoStart - $lifecycle tap attach failed");
-                }
-            }
-            else
-            {
-                DIA_LOG_WARNING("DebugServer", "DebugServerHostModule::DoStart - $lifecycle stream not found, stage transitions degraded");
-            }
-        }
+
+        mSources[0] = std::make_unique<ModuleStateSource>(app);
+        mSources[1] = std::make_unique<StreamStateSource>(app);
+        mSources[2] = std::make_unique<TimingAggregateSource>(app);
+        mSources[3] = std::make_unique<LifecycleEventSource>(app, &mUptimeSecs);
+
+        for (auto& src : mSources)
+            src->Activate(&mServer);
     }
 
     // ObservationBridge: now subscription-gated and batched — safe to enable.
@@ -186,6 +173,15 @@ void DebugServerHostModule::DoUpdate(float deltaTime)
     QueryMemory();
     mServer.Tick(deltaTime);
 
+    // Tick all inspector data sources.
+    {
+        const auto& stats = mServer.GetStats();
+        int connCount = static_cast<int>(mServer.GetConnectionCount());
+        int subCount  = static_cast<int>(stats.subscriptionCount);
+        for (auto& src : mSources)
+            if (src) src->Tick(deltaTime, connCount, subCount);
+    }
+
     // Drain entity inspect events from SimPU and broadcast from this thread (safe).
     {
         Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::Event<EntityInspectEvent>, 16> inspectEvents;
@@ -231,18 +227,11 @@ void DebugServerHostModule::QueryMemory()
 
 Dia::ApplicationFlow::StopResult DebugServerHostModule::DoStop()
 {
-    // Detach the $lifecycle tap before stopping the server.
-    if (mLifecycleTapId != 0)
+    // Deactivate and destroy inspector data sources before stopping the server.
+    for (auto& src : mSources)
     {
-        auto* ctrl = GetApplication();
-        auto* app = dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(ctrl);
-        if (app)
-        {
-            auto* lifecycleStore = app->FindStream(Dia::Core::StringCRC("$lifecycle"));
-            if (lifecycleStore)
-                lifecycleStore->DetachTap(Dia::ApplicationFlow::TapHandle{mLifecycleTapId});
-        }
-        mLifecycleTapId = 0;
+        if (src) src->Deactivate();
+        src.reset();
     }
 
     mServerService.Deregister();
@@ -267,10 +256,6 @@ Dia::ApplicationFlow::StopResult DebugServerHostModule::DoStop()
 //---------------------------------------------------------------------------
 
 namespace {
-    // Module::GetApplication() returns IApplicationControl*.  Application
-    // implements both IApplicationControl and IApplicationInspectable, so
-    // we dynamic_cast across.  Returns null if the module isn't attached
-    // yet or the Application disappears.
     const Dia::ApplicationFlow::IApplicationInspectable* Inspect(
         const Dia::ApplicationFlow::Module& m)
     {

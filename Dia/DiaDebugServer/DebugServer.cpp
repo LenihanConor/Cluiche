@@ -592,7 +592,7 @@ namespace Dia
 				if (mClientTaps[i].streamId == dataType)
 					++matchCount;
 			}
-			DIA_LOG_INFO("DebugServer", "NotifySubscribers: dataType='%s' totalTaps=%u matching=%u payloadNull=%d",
+			DIA_LOG_DEBUG("DebugServer", "NotifySubscribers: dataType='%s' totalTaps=%u matching=%u payloadNull=%d",
 				dataType.AsChar(), mClientTaps.Size(), matchCount, payload.isNull() ? 1 : 0);
 
 			if (matchCount == 0) return;

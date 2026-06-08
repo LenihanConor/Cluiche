@@ -27,6 +27,8 @@
     <ClInclude Include="CommandDispatcher.h" />
     <ClInclude Include="QueryRegistry.h" />
     <ClInclude Include="ObservationBridge.h" />
+    <ClInclude Include="IInspectorDataSource.h" />
+    <ClInclude Include="InspectorDataSourceBase.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugServer.cpp" />
