@@ -3,7 +3,7 @@
 ## Parent Application
 @docs/specs/applications/dia.md
 
-**Status:** `Draft`
+**Status:** `Approved`
 
 ---
 
@@ -258,4 +258,4 @@ Note: DiaGraphics3D has no `SpotLight` or `AmbientLight` snapshot type yet. Thos
 
 ## Status
 
-`Approved`
+`In Progress` — plan: @docs/specs/systems/dia/dialighting3d.plan.md

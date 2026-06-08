@@ -93,6 +93,7 @@
     <ClInclude Include="Architecture\Events\EventQueue.h" />
     <ClInclude Include="Architecture\Events\Delegate.h" />
     <ClInclude Include="Architecture\Events\EventDispatcher.h" />
+    <ClInclude Include="Colour\RGBA.h" />
     <ClInclude Include="Containers\Graphs\DirectedGraph.h" />
     <ClInclude Include="Containers\Graphs\DirectedGraphEdge.h" />
     <ClInclude Include="Containers\Graphs\DirectedGraphNode.h" />
@@ -222,6 +223,7 @@
     <ClCompile Include="CRC\CRC.cpp" />
     <ClCompile Include="CRC\StringCRC.cpp" />
     <ClCompile Include="CRC\StripStringCRC.cpp" />
+    <ClCompile Include="Colour\RGBA.cpp" />
     <ClCompile Include="Containers\HashTables\HashTableHashFunctionData.cpp" />
     <ClCompile Include="Containers\Strings\StringReader.cpp" />
     <ClCompile Include="Containers\Strings\StringWriter.cpp" />
