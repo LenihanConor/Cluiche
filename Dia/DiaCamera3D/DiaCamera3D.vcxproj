@@ -78,6 +78,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera3D.h" />
+    <ClInclude Include="ViewportTransform3D.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ViewportTransform3D.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
