@@ -1,7 +1,7 @@
 # LiveConnectionPluginBase
 
 **Parent:** @docs/specs/systems/dia/diaeditor.md
-**Status:** Approved
+**Status:** Done
 **Plan:** @docs/specs/features/dia/diaeditor/live-connection-plugin-base.plan.md
 
 ## Summary

@@ -1,7 +1,7 @@
 # LiveConnectionPluginBase — Implementation Plan
 
 **Spec:** @docs/specs/features/dia/diaeditor/live-connection-plugin-base.md
-**Status:** Not Started
+**Status:** Done
 
 ## Implementation Patterns
 
@@ -189,9 +189,9 @@ export function useLiveConnection(
 | 5 | Refactor DiaApplicationFlowInspectorPlugin → LiveConnectionPluginBase | All existing tests pass; remove SetConnectionCallback, rely on OnUpdate polling | Not Started | sonnet | Remove HandleLiveConnect's callback; base handles detection |
 | 6 | Normalise AppFlowInspector topic names: `live.*` → `app_flow_inspector.*` | JS tests updated; C++ uses `connectionPrefix` from constructor | Not Started | sonnet | Breaking change to JS — do with task 5 |
 | 7 | Create shared `useLiveConnection` hook + unit test | Hook returns correct state for mount-request and push scenarios | Not Started | sonnet | Location: `Dia/DiaEditor/UI/shared/` or inline in each plugin if workspace setup is too heavy |
-| 8 | Refactor 3 UI panels to use `useLiveConnection` | Existing UI tests pass; remove duplicated bridge request + listener code | Not Started | sonnet | EntityInspector is vanilla JS (index.html) — hook only applies to React plugins (AppFlowInspector). EntityInspector stays as-is. |
-| 9 | Add SED-023 to DiaEditor system spec decisions table | — | Not Started | haiku | "Plugins requiring game connection MUST derive from LiveConnectionPluginBase" |
-| 10 | Update DiaEditor module doc with enforcement rule | — | Not Started | haiku | |
+| 8 | Refactor 3 UI panels to use `useLiveConnection` | Existing UI tests pass; remove duplicated bridge request + listener code | Done | sonnet | EntityInspector is vanilla JS (index.html) — hook only applies to React plugins (AppFlowInspector). EntityInspector stays as-is.; AppInspector.tsx refactored; useLiveConnection hook imported; duplicate mount-request+listener removed; test mocks updated |
+| 9 | Add SED-023 to DiaEditor system spec decisions table | — | Done | haiku | "Plugins requiring game connection MUST derive from LiveConnectionPluginBase"; SED-023 added to diaeditor.md decisions table |
+| 10 | Update DiaEditor module doc with enforcement rule | — | Done | haiku | Conventions section added with enforcement rule + SED-023 reference |
 
 ## Dependencies
 
