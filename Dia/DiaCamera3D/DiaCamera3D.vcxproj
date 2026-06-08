@@ -82,14 +82,18 @@
     <ClInclude Include="Registry\ICameraBehaviour3D.h" />
     <ClInclude Include="Registry\CameraBehaviourRegistry3D.h" />
     <ClInclude Include="Registry\CameraRegistry3D.h" />
+    <ClInclude Include="Behaviours\BoundsClamp3D.h" />
     <ClInclude Include="Behaviours\Follow3D.h" />
+    <ClInclude Include="Behaviours\ScreenShake3D.h" />
     <ClInclude Include="Behaviours\SmoothDamp3D.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ViewportTransform3D.cpp" />
     <ClCompile Include="Registry\CameraBehaviourRegistry3D.cpp" />
     <ClCompile Include="Registry\CameraRegistry3D.cpp" />
+    <ClCompile Include="Behaviours\BoundsClamp3D.cpp" />
     <ClCompile Include="Behaviours\Follow3D.cpp" />
+    <ClCompile Include="Behaviours\ScreenShake3D.cpp" />
     <ClCompile Include="Behaviours\SmoothDamp3D.cpp" />
   </ItemGroup>
   <ItemGroup>

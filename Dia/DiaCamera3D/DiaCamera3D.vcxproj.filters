@@ -41,7 +41,13 @@
     <ClInclude Include="Registry\CameraRegistry3D.h">
       <Filter>Registry</Filter>
     </ClInclude>
+    <ClInclude Include="Behaviours\BoundsClamp3D.h">
+      <Filter>Behaviours</Filter>
+    </ClInclude>
     <ClInclude Include="Behaviours\Follow3D.h">
+      <Filter>Behaviours</Filter>
+    </ClInclude>
+    <ClInclude Include="Behaviours\ScreenShake3D.h">
       <Filter>Behaviours</Filter>
     </ClInclude>
     <ClInclude Include="Behaviours\SmoothDamp3D.h">
@@ -58,7 +64,13 @@
     <ClCompile Include="Registry\CameraRegistry3D.cpp">
       <Filter>Registry</Filter>
     </ClCompile>
+    <ClCompile Include="Behaviours\BoundsClamp3D.cpp">
+      <Filter>Behaviours</Filter>
+    </ClCompile>
     <ClCompile Include="Behaviours\Follow3D.cpp">
+      <Filter>Behaviours</Filter>
+    </ClCompile>
+    <ClCompile Include="Behaviours\ScreenShake3D.cpp">
       <Filter>Behaviours</Filter>
     </ClCompile>
     <ClCompile Include="Behaviours\SmoothDamp3D.cpp">
