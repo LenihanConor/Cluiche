@@ -4,7 +4,6 @@ import { useUndoStoreV2 } from './useUndoStoreV2';
 import { useValidationStoreV2, normalizeValidationResult } from './useValidationStoreV2';
 import { useSelectionStoreV2 } from './useSelectionStoreV2';
 import { useLiveStoreV2 } from './useLiveStoreV2';
-import { ConnectionStatusDot } from './ConnectionStatusDot';
 import { GraphView } from './GraphView';
 import { ModulePresenceGrid } from './ModulePresenceGrid';
 import { StreamsTab } from './StreamsTab';
@@ -145,7 +144,6 @@ export const AppV2: React.FC = () => {
                     <span style={{ fontSize: 11, color: '#aaa', marginLeft: 4 }}>{fileBaseName}</span>
                 )}
                 <span style={{ flex: 1 }} />
-                <ConnectionStatusDot />
             </div>
 
             {/* Tab bar */}

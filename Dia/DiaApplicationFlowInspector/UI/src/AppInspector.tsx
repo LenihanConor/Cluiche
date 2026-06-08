@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LiveConnectionButton } from './LiveConnectionButton';
+import { bridgeRequest } from './bridge';
 import { LiveTransitionPanel } from './LiveTransitionPanel';
 import { StageBreadcrumb } from './StageBreadcrumb';
 import { ModuleLifecycleCard } from './ModuleLifecycleCard';
@@ -8,13 +8,14 @@ import { PUFrameBudgetGauge } from './PUFrameBudgetGauge';
 import { EventLog } from './EventLog';
 import { useLiveStoreV2 } from './useLiveStoreV2';
 import { useInspectorStore } from './useInspectorStore';
+import { useLiveConnection } from './useLiveConnection';
 
 type Tab = 'modules' | 'streams' | 'timing' | 'log';
 
 export default function AppInspector() {
     const [activeTab, setActiveTab] = useState<Tab>('modules');
-    const connectionState = useLiveStoreV2((s) => s.connectionState);
-    const setConnectionState = useLiveStoreV2((s) => s.setConnectionState);
+    const liveConnectionState = useLiveConnection('app_flow_inspector', bridgeRequest);
+    const isConnected = liveConnectionState === 'connected';
     const setActiveStage = useLiveStoreV2((s) => s.setActiveStage);
     const clearLiveState = useLiveStoreV2((s) => s.clearLiveState);
 
@@ -30,7 +31,6 @@ export default function AppInspector() {
     const availableStages = useInspectorStore((s) => s.availableStages);
     const clearAll = useInspectorStore((s) => s.clearAll);
 
-    const isConnected = connectionState === 'connected';
     const moduleList = Object.values(modules);
     const streamList = Object.values(streams);
     const timingList = Object.values(puTimings);
@@ -38,18 +38,18 @@ export default function AppInspector() {
     const blockedCount = moduleList.filter((m) => m.blockedByDep !== null).length;
     const failedCount = moduleList.filter((m) => m.lifecycleState === 'Failed').length;
 
+    // When the connection drops, clear all live state so the UI resets.
+    useEffect(() => {
+        if (!isConnected) {
+            clearLiveState();
+            clearAll();
+        }
+    }, [isConnected, clearLiveState, clearAll]);
+
     useEffect(() => {
         const dispatch = (topic: string, data: unknown) => {
             const d = data as any;
             switch (topic) {
-                case 'live.connectionStatus':
-                    if (d?.connected === true) {
-                        setConnectionState('connected');
-                    } else {
-                        clearLiveState();
-                        clearAll();
-                    }
-                    break;
                 case 'live.state':
                     if (d?.stage) {
                         pushStageEntry({ stageName: d.stage, enteredAtMs: d.timestampMs ?? Date.now() });
@@ -110,7 +110,7 @@ export default function AppInspector() {
         };
         window.addEventListener('message', onMessage);
         return () => window.removeEventListener('message', onMessage);
-    }, [setConnectionState, clearLiveState, clearAll, setActiveStage, pushStageEntry,
+    }, [setActiveStage, pushStageEntry,
         updateModuleState, updateStreamState, updatePUTiming, pushEventLogEntry, setAvailableStages]);
 
     const TABS: Tab[] = ['modules', 'streams', 'timing', 'log'];
@@ -122,7 +122,6 @@ export default function AppInspector() {
                 <span style={{ fontSize: 12, color: '#888' }}>Application Flow Inspector</span>
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
                     {isConnected && <LiveTransitionPanel stages={availableStages} />}
-                    <LiveConnectionButton />
                 </div>
             </div>
 
@@ -130,8 +129,9 @@ export default function AppInspector() {
             {isConnected && <StageBreadcrumb />}
 
             {!isConnected ? (
-                <div data-testid="empty-state" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555', fontSize: 13 }}>
-                    Not connected — use the connection button to connect to a running game.
+                <div data-testid="empty-state" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, color: '#555', fontSize: 13 }}>
+                    <span>No game connected</span>
+                    <span style={{ fontSize: 11, color: '#444' }}>Use the Game Connection panel in the toolbar to connect.</span>
                 </div>
             ) : (
                 <>

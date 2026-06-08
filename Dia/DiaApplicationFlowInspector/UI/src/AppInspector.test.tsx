@@ -1,12 +1,26 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { act } from 'react';
+import { vi, beforeEach } from 'vitest';
 import AppInspector from './AppInspector';
 import { useLiveStoreV2 } from './useLiveStoreV2';
 import { useInspectorStore } from './useInspectorStore';
 
+vi.mock('./useLiveConnection', () => ({
+    useLiveConnection: vi.fn(() => 'disconnected'),
+}));
+
+import { useLiveConnection } from './useLiveConnection';
+
+const mockUseLiveConnection = useLiveConnection as ReturnType<typeof vi.fn>;
+
+function setConnected(state: 'connected' | 'disconnected') {
+    mockUseLiveConnection.mockReturnValue(state);
+}
+
 beforeEach(() => {
     useLiveStoreV2.getState().clearLiveState();
     useInspectorStore.getState().clearAll();
+    mockUseLiveConnection.mockReturnValue('disconnected');
 });
 
 describe('AppInspector', () => {
@@ -17,19 +31,19 @@ describe('AppInspector', () => {
     });
 
     it('shows connected content when connected', () => {
-        act(() => useLiveStoreV2.getState().setConnectionState('connected'));
+        setConnected('connected');
         render(<AppInspector />);
         expect(screen.getByTestId('connected-content')).toBeInTheDocument();
         expect(screen.queryByTestId('empty-state')).toBeNull();
     });
 
-    it('renders LiveConnectionButton in header', () => {
+    it('shows disconnect message in empty state', () => {
         render(<AppInspector />);
-        expect(screen.getByTestId('live-connection-indicator')).toBeInTheDocument();
+        expect(screen.getByText('No game connected')).toBeInTheDocument();
     });
 
     it('tab switching renders correct content', () => {
-        act(() => useLiveStoreV2.getState().setConnectionState('connected'));
+        setConnected('connected');
         render(<AppInspector />);
         fireEvent.click(screen.getByTestId('tab-streams'));
         expect(screen.getByTestId('tab-content-streams')).toBeInTheDocument();
@@ -40,8 +54,8 @@ describe('AppInspector', () => {
     });
 
     it('footer shows module count', () => {
+        setConnected('connected');
         act(() => {
-            useLiveStoreV2.getState().setConnectionState('connected');
             useInspectorStore.getState().updateModuleState({
                 moduleId: 'mod1', puId: 'pu1', lifecycleState: 'Running',
                 timeInStateMs: 0, timeoutMs: null, blockedByDep: null, errorMessage: null,
@@ -52,8 +66,8 @@ describe('AppInspector', () => {
     });
 
     it('footer shows failed count when modules failed', () => {
+        setConnected('connected');
         act(() => {
-            useLiveStoreV2.getState().setConnectionState('connected');
             useInspectorStore.getState().updateModuleState({
                 moduleId: 'mod1', puId: 'pu1', lifecycleState: 'Failed',
                 timeInStateMs: 0, timeoutMs: null, blockedByDep: null, errorMessage: 'crash',
@@ -64,7 +78,7 @@ describe('AppInspector', () => {
     });
 
     it('footer shows shutdown button when connected', () => {
-        act(() => useLiveStoreV2.getState().setConnectionState('connected'));
+        setConnected('connected');
         render(<AppInspector />);
         expect(screen.getByTestId('shutdown-btn')).toBeInTheDocument();
     });

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <DiaEditor/Plugin/EditorPluginBase.h>
+#include <DiaEditor/Plugin/LiveConnectionPluginBase.h>
 #include <DiaApplicationFlowInspector/LiveStateStore.h>
 #include "DiaApplicationFlowInspector/InspectorHealthReporter.h"
 #include <DiaObservation/Metric/MetricRegistry.h>
@@ -8,19 +8,17 @@
 namespace Json { class Value; }
 
 namespace Dia { namespace Editor {
-    class GameConnectionManager;
-}}
 
-namespace Dia { namespace Editor {
-
-    class DiaApplicationFlowInspectorPlugin : public EditorPluginBase
+    class DiaApplicationFlowInspectorPlugin : public LiveConnectionPluginBase
     {
     public:
         DiaApplicationFlowInspectorPlugin();
 
-        void OnPluginLoad() override;
-        void OnPluginUnload() override;
-        void OnUpdate(float deltaTime) override;
+    protected:
+        void OnLivePluginLoad() override;
+        void OnLivePluginUnload() override;
+        void OnGameConnected() override;
+        void OnGameDisconnected() override;
 
     private:
         Json::Value HandleLiveConnect(const Json::Value& data);
@@ -29,7 +27,6 @@ namespace Dia { namespace Editor {
         Json::Value HandleLiveTransitionTo(const Json::Value& data);
         Json::Value HandleLiveShutdown(const Json::Value& data);
 
-        GameConnectionManager* mGameConnection = nullptr;
         Dia::ApplicationFlow::Editor::LiveStateStore mLiveStore;
         bool mIsLiveConnected = false;
         float mSecondsSinceLastData = 999.0f;

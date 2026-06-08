@@ -1,22 +1,18 @@
 #pragma once
 
-#include <DiaEditor/Plugin/EditorPluginBase.h>
+#include <DiaEditor/Plugin/LiveConnectionPluginBase.h>
 #include "DiaEntityInspector/EntityInspectorController.h"
 #include "DiaEntityInspector/QueryBrowserController.h"
 #include "DiaEntityInspector/MailboxMonitorController.h"
 #include "DiaEntityInspector/EntityWatchListController.h"
 
-namespace Dia { namespace Editor {
-    class GameConnectionManager;
-} }
-
 namespace Dia::EntityInspector {
 
-class DiaEntityInspectorPlugin final : public Dia::Editor::EditorPluginBase
+class DiaEntityInspectorPlugin final : public Dia::Editor::LiveConnectionPluginBase
 {
 public:
     DiaEntityInspectorPlugin()
-        : EditorPluginBase({
+        : LiveConnectionPluginBase({
             "DiaEntityInspector",
             "1.0.0",
             "Live runtime inspection and field editing of diaentitytemplate state",
@@ -25,19 +21,17 @@ public:
             nullptr,
             nullptr,
             false
-        })
+        }, "entity_inspector")
     {}
 
 protected:
-    void OnPluginLoad() override;
-    void OnUpdate(float deltaTime) override;
+    void OnLivePluginLoad() override;
+    void OnLivePluginUnload() override;
+    void OnGameConnected() override;
+    void OnGameDisconnected() override;
 
 private:
-    void HandleConnectionStateChange(bool connected);
     void DispatchInspectPayload(const Json::Value& payload);
-
-    Dia::Editor::GameConnectionManager* mManager = nullptr;
-    bool mWasConnected = false;
 
     EntityInspectorController  mInspectorController;
     QueryBrowserController     mQueryController;

@@ -2,8 +2,6 @@
 #include "DiaAssetRuntimeInspector/SharedPluginState.h"
 
 #include <DiaEditor/Plugin/EditorPluginRegistrationMacros.h>
-#include <DiaEditor/Plugin/PluginServiceLocator.h>
-#include <DiaEditor/LiveConnection/GameConnectionManager.h>
 #include <DiaEditor/MVC/EditorModel.h>
 #include <DiaObservation/Log/DiaLog.h>
 
@@ -23,9 +21,9 @@ namespace Dia
 				          ctx.IsValid() ? ctx.diagamePath : "", _TRUNCATE);
 			}
 
-			void DiaAssetRuntimeInspectorPlugin::OnPluginLoad()
+			void DiaAssetRuntimeInspectorPlugin::OnLivePluginLoad()
 			{
-				DIA_LOG_INFO("Editor", "DiaAssetRuntimeInspectorPlugin: OnPluginLoad");
+				DIA_LOG_INFO("Editor", "DiaAssetRuntimeInspectorPlugin: OnLivePluginLoad");
 
 				if (GetModel() != nullptr)
 				{
@@ -36,34 +34,19 @@ namespace Dia
 
 				mState = std::make_unique<SharedPluginState>();
 
-				if (GetServices())
-					mManager = GetServices()->GetService<Dia::Editor::GameConnectionManager>();
-
-				if (!mManager)
-					DIA_LOG_WARNING("Editor", "DiaAssetRuntimeInspectorPlugin: GameConnectionManager service not available");
-
 				mSessionContext.Load(kDefaultOutputDir);
 
-				mAssetStateTable.Activate(GetBridge(), mManager, mState.get());
+				mAssetStateTable.Activate(GetBridge(), GetGameConnection(), mState.get());
 				mAssetStateTable.SetPollInterval(mSessionContext.GetPollInterval());
-				mStageAssetTree.Activate(GetBridge(), mManager, mState.get(), &mAssetStateTable);
-				mRefCountInspector.Activate(GetBridge(), mManager, mState.get(), &mAssetStateTable);
-				mTransitionLog.Activate(GetBridge(), mManager, mState.get());
+				mStageAssetTree.Activate(GetBridge(), GetGameConnection(), mState.get(), &mAssetStateTable);
+				mRefCountInspector.Activate(GetBridge(), GetGameConnection(), mState.get(), &mAssetStateTable);
+				mTransitionLog.Activate(GetBridge(), GetGameConnection(), mState.get());
 				mTransitionLog.SetMaxEntries(mSessionContext.GetMaxLogEntries());
 
 				if (mSessionContext.GetStateFilter())
 					strncpy_s(mCurrentStateFilter, mSessionContext.GetStateFilter(), _TRUNCATE);
 				if (mSessionContext.GetIdSearchText())
 					strncpy_s(mCurrentIdSearch, mSessionContext.GetIdSearchText(), _TRUNCATE);
-
-				RegisterHandler(
-					Dia::Core::StringCRC("asset_runtime_inspector.get_connection_state"),
-					[this](const Json::Value& /*data*/) -> Json::Value
-					{
-						Json::Value result;
-						result["connected"] = (mManager != nullptr && mManager->IsConnected());
-						return result;
-					});
 
 				RegisterHandler(
 					Dia::Core::StringCRC("asset_runtime_inspector.update_filters"),
@@ -77,9 +60,6 @@ namespace Dia
 					});
 
 				PushSavedFiltersToUI();
-
-				if (mManager && mManager->IsConnected())
-					HandleConnectionStateChange(true);
 
 				DIA_LOG_INFO("Editor", "DiaAssetRuntimeInspectorPlugin: Initialized");
 			}
@@ -101,9 +81,9 @@ namespace Dia
 				}
 			}
 
-			void DiaAssetRuntimeInspectorPlugin::OnPluginUnload()
+			void DiaAssetRuntimeInspectorPlugin::OnLivePluginUnload()
 			{
-				DIA_LOG_INFO("Editor", "DiaAssetRuntimeInspectorPlugin: OnPluginUnload");
+				DIA_LOG_INFO("Editor", "DiaAssetRuntimeInspectorPlugin: OnLivePluginUnload");
 
 				mSessionContext.SetPollInterval(mAssetStateTable.GetPollInterval());
 				mSessionContext.SetMaxLogEntries(mTransitionLog.GetMaxEntries());
@@ -116,21 +96,10 @@ namespace Dia
 				mAssetStateTable.Deactivate();
 
 				mState.reset();
-				mManager = nullptr;
 			}
 
-			void DiaAssetRuntimeInspectorPlugin::OnUpdate(float deltaTime)
+			void DiaAssetRuntimeInspectorPlugin::OnLiveUpdate(float deltaTime)
 			{
-				if (mManager)
-				{
-					bool isConnected = mManager->IsConnected();
-					if (isConnected != mWasConnected)
-					{
-						mWasConnected = isConnected;
-						HandleConnectionStateChange(isConnected);
-					}
-				}
-
 				mAssetStateTable.Update(deltaTime);
 				mStageAssetTree.Update(deltaTime);
 				mRefCountInspector.Update(deltaTime);
@@ -148,27 +117,30 @@ namespace Dia
 				mSessionContext.SetIdSearchText(mCurrentIdSearch);
 			}
 
-			void DiaAssetRuntimeInspectorPlugin::HandleConnectionStateChange(bool connected)
+			void DiaAssetRuntimeInspectorPlugin::OnGameConnected()
 			{
 				if (mState)
-					mState->mConnected = connected;
+					mState->mConnected = true;
 
-				mAssetStateTable.OnConnectionStateChanged(connected);
-				mStageAssetTree.OnConnectionStateChanged(connected);
-				mRefCountInspector.OnConnectionStateChanged(connected);
-				mTransitionLog.OnConnectionStateChanged(connected);
+				mAssetStateTable.OnConnectionStateChanged(true);
+				mStageAssetTree.OnConnectionStateChanged(true);
+				mRefCountInspector.OnConnectionStateChanged(true);
+				mTransitionLog.OnConnectionStateChanged(true);
 
-				if (GetBridge())
-				{
-					Json::Value data;
-					data["connected"] = connected;
-					GetBridge()->NotifyUIDataChanged("asset_runtime_inspector.connection_state", data);
-				}
+				DIA_LOG_INFO("Editor", "DiaAssetRuntimeInspectorPlugin: Connected to game");
+			}
 
-				if (connected)
-					DIA_LOG_INFO("Editor", "DiaAssetRuntimeInspectorPlugin: Connected to game");
-				else
-					DIA_LOG_INFO("Editor", "DiaAssetRuntimeInspectorPlugin: Disconnected from game");
+			void DiaAssetRuntimeInspectorPlugin::OnGameDisconnected()
+			{
+				if (mState)
+					mState->mConnected = false;
+
+				mAssetStateTable.OnConnectionStateChanged(false);
+				mStageAssetTree.OnConnectionStateChanged(false);
+				mRefCountInspector.OnConnectionStateChanged(false);
+				mTransitionLog.OnConnectionStateChanged(false);
+
+				DIA_LOG_INFO("Editor", "DiaAssetRuntimeInspectorPlugin: Disconnected from game");
 			}
 		}
 	}

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <DiaEditor/Plugin/EditorPluginBase.h>
+#include <DiaEditor/Plugin/LiveConnectionPluginBase.h>
 #include <DiaCore/Json/external/json/json.h>
 
 #include <memory>
@@ -13,22 +13,17 @@
 
 namespace Dia
 {
-	namespace Editor
-	{
-		class GameConnectionManager;
-	}
-
 	namespace AssetRuntime
 	{
 		namespace Inspector
 		{
 			struct SharedPluginState;
 
-			class DiaAssetRuntimeInspectorPlugin : public Dia::Editor::EditorPluginBase
+			class DiaAssetRuntimeInspectorPlugin : public Dia::Editor::LiveConnectionPluginBase
 			{
 			public:
 				DiaAssetRuntimeInspectorPlugin()
-					: EditorPluginBase({
+					: LiveConnectionPluginBase({
 						"DiaAssetRuntimeInspector",
 						"1.0.0",
 						"Live asset runtime state inspector",
@@ -37,25 +32,24 @@ namespace Dia
 						nullptr,
 						nullptr,
 						true
-					})
+					}, "asset_runtime_inspector")
 				{}
 
 				SharedPluginState* GetPluginData();
 
 			protected:
-				void OnPluginLoad() override;
-				void OnPluginUnload() override;
-				void OnUpdate(float deltaTime) override;
+				void OnLivePluginLoad() override;
+				void OnLivePluginUnload() override;
+				void OnLiveUpdate(float deltaTime) override;
+				void OnGameConnected() override;
+				void OnGameDisconnected() override;
 				void OnProjectChanged(const Dia::Editor::ProjectContext& ctx) override;
 
 			private:
-				void HandleConnectionStateChange(bool connected);
 				void PushSavedFiltersToUI();
 				void SaveCurrentFilters();
 
-				Dia::Editor::GameConnectionManager* mManager = nullptr;
 				std::unique_ptr<SharedPluginState> mState;
-				bool mWasConnected = false;
 
 				AssetStateTablePanel mAssetStateTable;
 				StageAssetTreePanel mStageAssetTree;

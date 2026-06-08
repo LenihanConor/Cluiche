@@ -99,6 +99,9 @@
       <Filter>Memory</Filter>
     </ClInclude>
     <ClInclude Include="Notification\NotificationService.h">
+    <ClInclude Include="Plugin\LiveConnectionPluginBase.h">
+      <Filter>Plugin</Filter>
+    </ClInclude>
       <Filter>Notification</Filter>
     </ClInclude>
   </ItemGroup>
@@ -130,6 +133,9 @@
       <Filter>Memory</Filter>
     </ClCompile>
     <ClCompile Include="Notification\NotificationService.cpp">
+    <ClCompile Include="Plugin\LiveConnectionPluginBase.cpp">
+      <Filter>Plugin</Filter>
+    </ClCompile>
       <Filter>Notification</Filter>
     </ClCompile>
   </ItemGroup>

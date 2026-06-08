@@ -25,7 +25,7 @@ export interface ConnectionHealth {
   totalDropsInWindow: number;
 }
 
-const POLL_INTERVAL_MS = 2000;
+const POLL_INTERVAL_MS = 10000;
 const WINDOW_DURATION_MS = 5000;
 const YELLOW_THRESHOLD = 10;
 const RED_THRESHOLD = 100;

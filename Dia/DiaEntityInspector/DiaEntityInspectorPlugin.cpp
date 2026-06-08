@@ -1,7 +1,5 @@
 #include "DiaEntityInspector/DiaEntityInspectorPlugin.h"
 #include <DiaEditor/Plugin/EditorPluginRegistrationMacros.h>
-#include <DiaEditor/Plugin/PluginServiceLocator.h>
-#include <DiaEditor/LiveConnection/GameConnectionManager.h>
 #include <DiaEntity/DebugDataTypes.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaObservation/Log/DiaLog.h>
@@ -13,80 +11,45 @@ REGISTER_EDITOR_PLUGIN(DiaEntityInspectorPlugin, "DiaEntityInspector")
 
 namespace Dia::EntityInspector {
 
-void DiaEntityInspectorPlugin::OnPluginLoad()
+void DiaEntityInspectorPlugin::OnLivePluginLoad()
 {
-    DIA_LOG_INFO("Editor", "DiaEntityInspectorPlugin: OnPluginLoad");
+    DIA_LOG_INFO("Editor", "DiaEntityInspectorPlugin: OnLivePluginLoad");
 
-    if (GetServices())
-        mManager = GetServices()->GetService<Dia::Editor::GameConnectionManager>();
+    RegisterGameTopic(
+        Dia::Entity::DebugDataType::kEntityInspect,
+        [this](const Json::Value& payload) { DispatchInspectPayload(payload); });
 
-    if (!mManager)
-        DIA_LOG_WARNING("Editor", "DiaEntityInspectorPlugin: GameConnectionManager not available");
-
-    RegisterHandler(
-        Dia::Core::StringCRC("entity_inspector.get_connection_state"),
-        [this](const Json::Value& /*data*/) -> Json::Value
-        {
-            Json::Value result;
-            result["connected"] = (mManager != nullptr && mManager->IsConnected());
-            return result;
-        });
-
-    if (mManager)
-    {
-        mManager->Subscribe(
-            Dia::Entity::DebugDataType::kEntityInspect,
-            [this](const Json::Value& payload) { DispatchInspectPayload(payload); });
-    }
-
-    if (mManager && mManager->IsConnected())
-        HandleConnectionStateChange(true);
-
-    DIA_LOG_INFO("Editor", "DiaEntityInspectorPlugin: OnPluginLoad complete");
+    DIA_LOG_INFO("Editor", "DiaEntityInspectorPlugin: OnLivePluginLoad complete");
 }
 
-void DiaEntityInspectorPlugin::OnUpdate(float /*deltaTime*/)
+void DiaEntityInspectorPlugin::OnLivePluginUnload()
 {
-    if (mManager)
-    {
-        bool isConnected = mManager->IsConnected();
-        if (isConnected != mWasConnected)
-        {
-            mWasConnected = isConnected;
-            HandleConnectionStateChange(isConnected);
-        }
-    }
+    mInspectorController.Deactivate();
+    mQueryController.Deactivate();
+    mMailboxController.Deactivate();
+    mWatchController.Deactivate();
 }
 
-void DiaEntityInspectorPlugin::HandleConnectionStateChange(bool connected)
+void DiaEntityInspectorPlugin::OnGameConnected()
 {
-    if (GetBridge())
-    {
-        Json::Value data;
-        data["connected"] = connected;
-        GetBridge()->NotifyUIDataChanged("entity_inspector.connection_state", data);
-    }
+    DIA_LOG_INFO("Editor", "DiaEntityInspectorPlugin: Connected to game");
+    mInspectorController.Activate(GetBridge());
+    mQueryController.Activate(GetBridge());
+    mMailboxController.Activate(GetBridge());
+    mWatchController.Activate(GetBridge());
+    mWatchController.RegisterHandlers();
+    mWatchController.OnConnectionStateChanged(true);
+}
 
-    if (connected)
-    {
-        DIA_LOG_INFO("Editor", "DiaEntityInspectorPlugin: Connected to game");
-        mInspectorController.Activate(GetBridge());
-        mQueryController.Activate(GetBridge());
-        mMailboxController.Activate(GetBridge());
-        mWatchController.Activate(GetBridge());
-        mWatchController.RegisterHandlers();
-        mWatchController.OnConnectionStateChanged(true);
-    }
-    else
-    {
-        DIA_LOG_INFO("Editor", "DiaEntityInspectorPlugin: Disconnected from game");
-        mWatchController.OnConnectionStateChanged(false);
-        mWatchController.UnregisterHandlers();
-        mInspectorController.Deactivate();
-        mQueryController.Deactivate();
-        mMailboxController.Deactivate();
-        mWatchController.Deactivate();
-    }
+void DiaEntityInspectorPlugin::OnGameDisconnected()
+{
+    DIA_LOG_INFO("Editor", "DiaEntityInspectorPlugin: Disconnected from game");
+    mWatchController.OnConnectionStateChanged(false);
+    mWatchController.UnregisterHandlers();
+    mInspectorController.Deactivate();
+    mQueryController.Deactivate();
+    mMailboxController.Deactivate();
+    mWatchController.Deactivate();
 }
 
 void DiaEntityInspectorPlugin::DispatchInspectPayload(const Json::Value& payload)
