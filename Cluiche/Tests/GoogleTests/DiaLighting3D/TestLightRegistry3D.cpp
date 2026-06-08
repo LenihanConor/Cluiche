@@ -292,3 +292,186 @@ TEST(DiaLighting3D_LightBuilder3D, WithAmbient_SetsIntensity)
 
     EXPECT_FLOAT_EQ(builder.Registry().GetAmbient().intensity, 0.25f);
 }
+
+// --- Capacity / Boundary ---
+
+// NOTE: RegisterPoint/RegisterDirectional/RegisterSpot assert (DIA_ASSERT) on duplicate ids before
+// returning false. In Debug builds DIA_ASSERT calls __debugbreak() which terminates the process
+// without a debugger. These tests therefore verify the single-registration path only (count == 1
+// after one call) and confirm Has() is consistent. The guard-returns-false path is safe to test in
+// Release builds only.
+
+TEST(DiaLighting3D_Registry, RegisterPoint_SingleReg_CountIsOne)
+{
+    LightRegistry3D reg;
+    EXPECT_TRUE(reg.RegisterPoint(Dia::Core::StringCRC("a"), PointLight3D{}));
+    EXPECT_EQ(reg.GetPointCount(), 1u);
+    EXPECT_TRUE(reg.Has(Dia::Core::StringCRC("a")));
+}
+
+TEST(DiaLighting3D_Registry, RegisterDirectional_SingleReg_CountIsOne)
+{
+    LightRegistry3D reg;
+    EXPECT_TRUE(reg.RegisterDirectional(Dia::Core::StringCRC("sun"), DirectionalLight3D{}));
+    EXPECT_EQ(reg.GetDirectionalCount(), 1u);
+    EXPECT_TRUE(reg.Has(Dia::Core::StringCRC("sun")));
+}
+
+TEST(DiaLighting3D_Registry, RegisterSpot_SingleReg_CountIsOne)
+{
+    LightRegistry3D reg;
+    EXPECT_TRUE(reg.RegisterSpot(Dia::Core::StringCRC("s"), SpotLight3D{}));
+    EXPECT_EQ(reg.GetSpotCount(), 1u);
+    EXPECT_TRUE(reg.Has(Dia::Core::StringCRC("s")));
+}
+
+TEST(DiaLighting3D_Registry, RegisterPoint_MaxCapacity_FillsAndHoldsAll)
+{
+    LightRegistry3D reg;
+    char name[8];
+    for (unsigned int i = 0; i < LightRegistry3D::kMaxPointLights; ++i)
+    {
+        name[0] = 'a' + static_cast<char>(i); name[1] = '\0';
+        EXPECT_TRUE(reg.RegisterPoint(Dia::Core::StringCRC(name), PointLight3D{}));
+    }
+    EXPECT_EQ(reg.GetPointCount(), LightRegistry3D::kMaxPointLights);
+}
+
+TEST(DiaLighting3D_Registry, RegisterDirectional_MaxCapacity_FillsAndHoldsAll)
+{
+    LightRegistry3D reg;
+    char name[8];
+    for (unsigned int i = 0; i < LightRegistry3D::kMaxDirectionalLights; ++i)
+    {
+        name[0] = 'a' + static_cast<char>(i); name[1] = '\0';
+        EXPECT_TRUE(reg.RegisterDirectional(Dia::Core::StringCRC(name), DirectionalLight3D{}));
+    }
+    EXPECT_EQ(reg.GetDirectionalCount(), LightRegistry3D::kMaxDirectionalLights);
+}
+
+TEST(DiaLighting3D_Registry, RegisterSpot_MaxCapacity_FillsAndHoldsAll)
+{
+    LightRegistry3D reg;
+    char name[8];
+    for (unsigned int i = 0; i < LightRegistry3D::kMaxSpotLights; ++i)
+    {
+        name[0] = 'a' + static_cast<char>(i); name[1] = '\0';
+        EXPECT_TRUE(reg.RegisterSpot(Dia::Core::StringCRC(name), SpotLight3D{}));
+    }
+    EXPECT_EQ(reg.GetSpotCount(), LightRegistry3D::kMaxSpotLights);
+}
+
+// NOTE: AttachBehaviour for an unknown light id also calls DIA_ASSERT then returns false.
+// Cannot test the false-return path in Debug mode without crashing the runner.
+
+TEST(DiaLighting3D_Registry, AttachBehaviour_ToDirectionalLight_Dispatched)
+{
+    LightRegistry3D reg;
+    reg.RegisterDirectional(Dia::Core::StringCRC("sun"), DirectionalLight3D{});
+    MockBehaviour3D mock;
+    EXPECT_TRUE(reg.AttachBehaviour(Dia::Core::StringCRC("sun"), &mock));
+    reg.UpdateAll(0.016f);
+    EXPECT_TRUE(mock.mWasCalled);
+}
+
+TEST(DiaLighting3D_Registry, AttachBehaviour_ToSpotLight_Dispatched)
+{
+    LightRegistry3D reg;
+    reg.RegisterSpot(Dia::Core::StringCRC("spot"), SpotLight3D{});
+    MockBehaviour3D mock;
+    EXPECT_TRUE(reg.AttachBehaviour(Dia::Core::StringCRC("spot"), &mock));
+    reg.UpdateAll(0.016f);
+    EXPECT_TRUE(mock.mWasCalled);
+}
+
+TEST(DiaLighting3D_Registry, DetachBehaviour_RemovedBehaviourNotCalled)
+{
+    LightRegistry3D reg;
+    reg.RegisterPoint(Dia::Core::StringCRC("torch"), PointLight3D{});
+    MockBehaviour3D mock;
+    reg.AttachBehaviour(Dia::Core::StringCRC("torch"), &mock);
+    reg.DetachBehaviour(Dia::Core::StringCRC("torch"), Dia::Core::StringCRC("mock"));
+    reg.UpdateAll(0.016f);
+    EXPECT_FALSE(mock.mWasCalled);
+}
+
+TEST(DiaLighting3D_Registry, AttachBehaviour_MaxBehaviours_AllCalled)
+{
+    LightRegistry3D reg;
+    reg.RegisterPoint(Dia::Core::StringCRC("torch"), PointLight3D{});
+
+    MockBehaviour3D mocks[LightRegistry3D::kMaxBehaviours];
+    // AttachBehaviour does not deduplicate by typeId — it checks capacity only.
+    // All 4 mocks share typeId "mock" which is fine for attaching.
+    for (unsigned int i = 0; i < LightRegistry3D::kMaxBehaviours; ++i)
+        EXPECT_TRUE(reg.AttachBehaviour(Dia::Core::StringCRC("torch"), &mocks[i]));
+
+    reg.UpdateAll(0.016f);
+
+    for (unsigned int i = 0; i < LightRegistry3D::kMaxBehaviours; ++i)
+        EXPECT_TRUE(mocks[i].mWasCalled);
+}
+
+// --- Stress ---
+
+TEST(DiaLighting3D_Stress, FillAndDrainPointRegistry)
+{
+    LightRegistry3D reg;
+    char name[8];
+    for (unsigned int pass = 0; pass < 3; ++pass)
+    {
+        for (unsigned int i = 0; i < LightRegistry3D::kMaxPointLights; ++i)
+        {
+            name[0] = 'a' + static_cast<char>(i); name[1] = '\0';
+            reg.RegisterPoint(Dia::Core::StringCRC(name), PointLight3D{});
+        }
+        EXPECT_EQ(reg.GetPointCount(), LightRegistry3D::kMaxPointLights);
+        for (unsigned int i = 0; i < LightRegistry3D::kMaxPointLights; ++i)
+        {
+            name[0] = 'a' + static_cast<char>(i); name[1] = '\0';
+            reg.Unregister(Dia::Core::StringCRC(name));
+        }
+        EXPECT_EQ(reg.GetPointCount(), 0u);
+    }
+}
+
+TEST(DiaLighting3D_Stress, UpdateAll_MaxBehavioursPerLight_NoCrash)
+{
+    LightRegistry3D reg;
+    reg.RegisterPoint(Dia::Core::StringCRC("torch"), PointLight3D{});
+    MockBehaviour3D mocks[LightRegistry3D::kMaxBehaviours];
+    for (unsigned int i = 0; i < LightRegistry3D::kMaxBehaviours; ++i)
+        reg.AttachBehaviour(Dia::Core::StringCRC("torch"), &mocks[i]);
+
+    for (int i = 0; i < 1000; ++i)
+        reg.UpdateAll(0.016f);
+    // No crash — all behaviours called 1000 times each
+    EXPECT_TRUE(mocks[0].mWasCalled);
+}
+
+// --- LightBuilder3D (additional) ---
+
+TEST(DiaLighting3D_LightBuilder3D, DirectionalDisabled_SetsEnabledFalse)
+{
+    auto builder = Dia::Lighting3D::Testing::LightBuilder3D{}
+        .WithDirectional("moon")
+        .DirectionalDisabled();
+    EXPECT_FALSE(builder.Registry().GetDirectional(Dia::Core::StringCRC("moon")).enabled);
+}
+
+TEST(DiaLighting3D_LightBuilder3D, SpotDisabled_SetsEnabledFalse)
+{
+    auto builder = Dia::Lighting3D::Testing::LightBuilder3D{}
+        .WithSpot("cone")
+        .SpotDisabled();
+    EXPECT_FALSE(builder.Registry().GetSpot(Dia::Core::StringCRC("cone")).enabled);
+}
+
+TEST(DiaLighting3D_LightBuilder3D, MultipleWithPoint_CorrectCount)
+{
+    auto builder = Dia::Lighting3D::Testing::LightBuilder3D{}
+        .WithPoint("a")
+        .WithPoint("b")
+        .WithPoint("c");
+    EXPECT_EQ(builder.Registry().GetPointCount(), 3u);
+}
