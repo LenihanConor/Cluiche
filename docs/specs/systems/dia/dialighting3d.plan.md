@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/systems/dia/dialighting3d.md
-**Status:** In Progress
+**Status:** Done
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
@@ -11,4 +11,4 @@
 | 6 | Implement 3 engine behaviours: `FlickerBehaviour3D`, `PulseBehaviour3D`, `ColorCycleBehaviour3D` — each in `Behaviours/`; self-register on startup | `TestBehaviours3D.cpp` — Update mutates intensity/colour as expected | Done | sonnet | 6107 tests pass |
 | 7 | Implement `LightBuilder3D` test helper in `Dia/DiaLighting3D/Testing/LightBuilder3D.h` | Used inline in test assertions | Done | haiku | 6107 tests pass |
 | 8 | Write GoogleTest suite `Cluiche/Tests/GoogleTests/DiaLighting3D/TestLightRegistry3D.cpp`, `TestBehaviours3D.cpp`; add to GoogleTests.vcxproj; add `DiaLighting3D.lib` to GoogleTests linker deps and ProjectReference | `dia run googletest --filter="DiaLighting3D*"` all pass | Done | sonnet | 35 new tests; 6142 total pass |
-| 9 | Run `dia docs registry` to regenerate module-registry.md; run `dia docs precommit` to verify all invariants | No violations reported | Pending | haiku | |
+| 9 | Run `dia docs registry` to regenerate module-registry.md; run `dia docs precommit` to verify all invariants | No violations reported | Done | haiku | All checks pass |

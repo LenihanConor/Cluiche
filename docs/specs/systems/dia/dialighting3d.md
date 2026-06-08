@@ -258,4 +258,4 @@ Note: DiaGraphics3D has no `SpotLight` or `AmbientLight` snapshot type yet. Thos
 
 ## Status
 
-`In Progress` — plan: @docs/specs/systems/dia/dialighting3d.plan.md
+`Done` — plan: @docs/specs/systems/dia/dialighting3d.plan.md
