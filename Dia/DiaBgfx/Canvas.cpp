@@ -30,7 +30,7 @@ namespace Dia
             : Dia::Graphics::ICanvas::Settings()
             , rendererType(RendererType::Direct3D11)
             , initialSize(1400.0f, 1000.0f)
-            , cookedShaderRoot("Cluiche/out/cluichetest/shaders")
+            , cookedShaderRoot("assets/shaders")
         {}
 
         // ---------- bgfx backend name helpers ----------
@@ -137,7 +137,7 @@ namespace Dia
             const CanvasSettings* cs = static_cast<const CanvasSettings*>(&settings);
             const RendererType rendererType = cs ? cs->rendererType : RendererType::Direct3D11;
             const Dia::Maths::Vector2D initSize = cs ? cs->initialSize : mSize;
-            const char* shaderRoot = cs ? cs->cookedShaderRoot : "Cluiche/out/cluichetest/shaders";
+            const char* shaderRoot = cs ? cs->cookedShaderRoot : "assets/shaders";
 
             if (initSize.X() > 0.0f && initSize.Y() > 0.0f)
                 mSize = initSize;
