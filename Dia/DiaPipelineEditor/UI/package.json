@@ -12,6 +12,7 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
+    "@dia/editor-ui": "file:../../DiaEditorUI",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

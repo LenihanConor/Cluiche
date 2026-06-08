@@ -172,7 +172,10 @@ export const PipelinePanel: FC<PipelinePanelProps> = ({ state, dispatch }) => {
                         />
                     </>
                 ) : (
-                    <EmptyState />
+                    <EmptyState
+                        message="No pipeline run yet"
+                        hint="Trigger a build or wait for pipeline output"
+                    />
                 )}
             </div>
             <HistoryDrawer

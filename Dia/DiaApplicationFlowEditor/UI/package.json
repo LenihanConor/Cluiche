@@ -15,6 +15,7 @@
     "@codemirror/lang-json": "^6.0.1",
     "@codemirror/lint": "^6.8.4",
     "@dagrejs/dagre": "^1.0.4",
+    "@dia/editor-ui": "file:../../DiaEditorUI",
     "@uiw/react-codemirror": "^4.23.7",
     "react": "^18.2.0",
     "react-arborist": "^3.4.0",
