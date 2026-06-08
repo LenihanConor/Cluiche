@@ -30,6 +30,8 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | DiaAssetRuntimeEditor | [diaassetruntimeeditor.md](specs/systems/dia/diaassetruntimeeditor.md) | 2026-05-05 | 4 features, all Done; 58 editor tests; gap analysis performed and fixes applied |
 | DiaAssetCatalogueEditor | [diaassetcatalogueeditor.md](specs/systems/dia/diaassetcatalogueeditor.md) | 2026-05-06 | 8 features, all Done; 73+ exhaustive tests; manual override system (mManualOverrideFlags), GetRule API, type-based graph coloring, expand no-op |
 | DiaApplicationFlow — Flow Tree | [diaapplication.md](specs/systems/dia/diaapplication.md) | 2026-05-06 | 4 features Done: manifest-imports (A), pu-parent-child-tree (B), stage-manifests (C), diagame-file-format; 20 PU tree tests; CluicheTest migrated to tree ownership |
+| DiaLighting3D | [dialighting3d.md](specs/systems/dia/dialighting3d.md) ✅ | 2026-06-08 | All 9 tasks complete. 59 tests (35 unit + 24 boundary/stress/golden/invariant). RGBA moved to DiaCore as prerequisite. |
+| DiaScene3D | [diascene3d.md](specs/systems/dia/diascene3d.md) ✅ | 2026-06-08 | All 9 tasks complete. 59 tests (35 unit + 24 boundary/stress/golden/invariant). RGBA moved to DiaCore as prerequisite. |
 
 ---
 
