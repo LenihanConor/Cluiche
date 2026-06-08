@@ -84,6 +84,7 @@
     <ClInclude Include="PointLight3D.h" />
     <ClInclude Include="Registry\LightRegistry3D.h" />
     <ClInclude Include="SpotLight3D.h" />
+    <ClInclude Include="Testing\LightBuilder3D.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Behaviours\ColorCycleBehaviour3D.cpp" />

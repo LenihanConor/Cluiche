@@ -48,6 +48,9 @@
     <ClInclude Include="Registry\LightRegistry3D.h">
       <Filter>Registry</Filter>
     </ClInclude>
+    <ClInclude Include="Testing\LightBuilder3D.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Behaviours\ColorCycleBehaviour3D.cpp">
