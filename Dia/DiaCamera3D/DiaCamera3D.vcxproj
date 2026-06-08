@@ -81,10 +81,12 @@
     <ClInclude Include="ViewportTransform3D.h" />
     <ClInclude Include="Registry\ICameraBehaviour3D.h" />
     <ClInclude Include="Registry\CameraBehaviourRegistry3D.h" />
+    <ClInclude Include="Registry\CameraRegistry3D.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ViewportTransform3D.cpp" />
     <ClCompile Include="Registry\CameraBehaviourRegistry3D.cpp" />
+    <ClCompile Include="Registry\CameraRegistry3D.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

@@ -38,12 +38,18 @@
     <ClInclude Include="Registry\CameraBehaviourRegistry3D.h">
       <Filter>Registry</Filter>
     </ClInclude>
+    <ClInclude Include="Registry\CameraRegistry3D.h">
+      <Filter>Registry</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ViewportTransform3D.cpp">
       <Filter>Camera</Filter>
     </ClCompile>
     <ClCompile Include="Registry\CameraBehaviourRegistry3D.cpp">
+      <Filter>Registry</Filter>
+    </ClCompile>
+    <ClCompile Include="Registry\CameraRegistry3D.cpp">
       <Filter>Registry</Filter>
     </ClCompile>
   </ItemGroup>
