@@ -30,6 +30,14 @@
     <ClInclude Include="SpotLight3D.h">
       <Filter>Light</Filter>
     </ClInclude>
+    <ClInclude Include="Registry\LightRegistry3D.h">
+      <Filter>Registry</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Registry\LightRegistry3D.cpp">
+      <Filter>Registry</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.lighting3d.architecture.module.md">
