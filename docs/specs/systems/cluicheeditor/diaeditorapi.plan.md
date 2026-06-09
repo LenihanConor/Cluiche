@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/systems/cluicheeditor/diaeditorapi.md
-**Status:** In Progress
+**Status:** Done (Phase 1)
 
 # Phase 1 — Automation Testing
 

@@ -1,7 +1,7 @@
 # Feature Spec: app-editor-actions
 
 **Parent:** @docs/specs/systems/cluicheeditor/diaeditorapi.md
-**Status:** Approved
+**Status:** Done
 
 ## Summary
 
