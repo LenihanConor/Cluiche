@@ -361,6 +361,7 @@
     <ClCompile Include="Editor\TestGameConnectionController.cpp" />
     <ClCompile Include="Editor\TestProjectContextController.cpp" />
     <ClCompile Include="Editor\TestAppEditorController.cpp" />
+    <ClCompile Include="Editor\TestEditorActionManifest.cpp" />
     <ClCompile Include="Editor\TestGameConnectionControllerMessages.cpp" />
     <ClCompile Include="Editor\TestGameConnectionControllerAck.cpp" />
     <ClCompile Include="Editor\TestGameConnectionLifecycle.cpp" />

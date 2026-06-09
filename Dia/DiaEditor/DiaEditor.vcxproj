@@ -91,6 +91,8 @@
   </ItemDefinitionGroup>
 
   <ItemGroup>
+    <ClInclude Include="EditorAPI\EditorActionDescriptor.h" />
+    <ClInclude Include="EditorAPI\EditorActionManifest.h" />
     <ClInclude Include="Plugin\IEditorPlugin.h" />
     <ClInclude Include="Plugin\EditorPluginBase.h" />
     <ClInclude Include="Plugin\HandlerTracker.h" />
@@ -127,6 +129,7 @@
     <ClInclude Include="Plugin\LiveConnectionPluginBase.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="EditorAPI\EditorActionManifest.cpp" />
     <ClCompile Include="Plugin\EditorPluginBase.cpp" />
     <ClCompile Include="Plugin\EditorPluginRegistry.cpp" />
     <ClCompile Include="AppEditor\AppEditorController.cpp" />
