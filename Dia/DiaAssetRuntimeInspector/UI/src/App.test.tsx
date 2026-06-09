@@ -11,6 +11,9 @@ vi.mock('@dia/editor-ui', () => ({
         textDim: '#ccc',
     },
     injectThemeVars: vi.fn(),
+    EmptyState: ({ message }: any) => (
+        <div data-testid="empty-state">{message}</div>
+    ),
     ConnectionStatus: ({ state }: any) => (
         <span data-testid="conn-status" data-state={state} />
     ),

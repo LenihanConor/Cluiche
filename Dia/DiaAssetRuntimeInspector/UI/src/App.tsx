@@ -3,6 +3,10 @@ import { theme, ConnectionStatus, TabBar } from '@dia/editor-ui';
 import type { Tab } from '@dia/editor-ui';
 import { useAssetRuntimeStore } from './store';
 import type { ActiveTab } from './store';
+import { AssetStateTable } from './components/AssetStateTable';
+import { StageAssetTree } from './components/StageAssetTree';
+import { RefCountInspector } from './components/RefCountInspector';
+import { StateTransitionLog } from './components/StateTransitionLog';
 
 const TABS: Tab[] = [
     { id: 'table',     label: 'Asset State Table' },
@@ -142,16 +146,24 @@ export default function App() {
             {/* Tab content (placeholders — replaced in Tasks 5–8) */}
             <div style={{ flex: 1, overflow: 'hidden' }}>
                 {activeTab === 'table' && (
-                    <div data-testid="tab-table">Asset State Table</div>
+                    <div data-testid="tab-table" style={{ height: '100%' }}>
+                        <AssetStateTable />
+                    </div>
                 )}
                 {activeTab === 'tree' && (
-                    <div data-testid="tab-tree">Stage Tree</div>
+                    <div data-testid="tab-tree" style={{ height: '100%' }}>
+                        <StageAssetTree />
+                    </div>
                 )}
                 {activeTab === 'inspector' && (
-                    <div data-testid="tab-inspector">Ref Count Inspector</div>
+                    <div data-testid="tab-inspector" style={{ height: '100%' }}>
+                        <RefCountInspector />
+                    </div>
                 )}
                 {activeTab === 'log' && (
-                    <div data-testid="tab-log">Transition Log</div>
+                    <div data-testid="tab-log" style={{ height: '100%' }}>
+                        <StateTransitionLog />
+                    </div>
                 )}
             </div>
         </div>
