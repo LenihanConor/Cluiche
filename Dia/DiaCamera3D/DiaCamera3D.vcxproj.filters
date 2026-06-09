@@ -59,6 +59,9 @@
     <ClInclude Include="Behaviours\Flythrough.h">
       <Filter>Behaviours</Filter>
     </ClInclude>
+    <ClInclude Include="Health\CameraRegistryHealth3D.h">
+      <Filter>Health</Filter>
+    </ClInclude>
     <ClInclude Include="Testing\CameraBuilder3D.h">
       <Filter>Testing</Filter>
     </ClInclude>
@@ -90,6 +93,9 @@
     </ClCompile>
     <ClCompile Include="Behaviours\Flythrough.cpp">
       <Filter>Behaviours</Filter>
+    </ClCompile>
+    <ClCompile Include="Health\CameraRegistryHealth3D.cpp">
+      <Filter>Health</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -7,6 +7,8 @@
 #include "DiaCamera3D/Registry/ICameraBehaviour3D.h"
 #include <DiaCore/CRC/StringCRC.h>
 
+namespace Dia { namespace Observation { namespace Metric { class Gauge; class Counter; } } }
+
 namespace Dia
 {
 	namespace Camera3D
@@ -54,7 +56,8 @@ namespace Dia
 			// Tick all cameras' behaviours in attachment order
 			void UpdateAll(float dt);
 
-			unsigned int GetCount() const { return mCount; }
+			unsigned int GetCount()       const { return mCount; }
+			bool         HasActiveCamera() const { return mActiveIndex >= 0; }
 
 		private:
 			int FindIndex(Dia::Core::StringCRC id) const;
@@ -71,6 +74,9 @@ namespace Dia
 			CameraSlot   mSlots[kMaxCameras];
 			unsigned int mCount       = 0;
 			int          mActiveIndex = -1;
+
+			Dia::Observation::Metric::Gauge*   mMetricCameraCount    = nullptr;
+			Dia::Observation::Metric::Counter* mMetricBehaviourTicks = nullptr;
 		};
 
 	} // namespace Camera3D

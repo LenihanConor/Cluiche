@@ -88,6 +88,7 @@
     <ClInclude Include="Behaviours\SmoothDamp3D.h" />
     <ClInclude Include="Behaviours\Orbit.h" />
     <ClInclude Include="Behaviours\Flythrough.h" />
+    <ClInclude Include="Health\CameraRegistryHealth3D.h" />
     <ClInclude Include="Testing\CameraBuilder3D.h" />
   </ItemGroup>
   <ItemGroup>
@@ -100,6 +101,7 @@
     <ClCompile Include="Behaviours\SmoothDamp3D.cpp" />
     <ClCompile Include="Behaviours\Orbit.cpp" />
     <ClCompile Include="Behaviours\Flythrough.cpp" />
+    <ClCompile Include="Health\CameraRegistryHealth3D.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

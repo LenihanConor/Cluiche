@@ -7,6 +7,7 @@
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
 
 namespace Dia
 {
@@ -21,6 +22,10 @@ namespace Dia
 				for (unsigned int b = 0; b < kMaxBehaviours; ++b)
 					mSlots[i].behaviours[b] = nullptr;
 			}
+
+			auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
+			mMetricCameraCount    = reg.RegisterGauge(Dia::Core::StringCRC("dia.camera3d.count"));
+			mMetricBehaviourTicks = reg.RegisterCounter(Dia::Core::StringCRC("dia.camera3d.behaviour_ticks"));
 		}
 
 		////////////////////////////////////////////////////////////
@@ -44,6 +49,9 @@ namespace Dia
 			mSlots[mCount].camera         = camera;
 			mSlots[mCount].behaviourCount = 0;
 			++mCount;
+
+			if (mMetricCameraCount)
+				mMetricCameraCount->Set(static_cast<double>(mCount));
 
 			return true;
 		}
@@ -73,6 +81,9 @@ namespace Dia
 
 			mSlots[last].behaviourCount = 0;
 			--mCount;
+
+			if (mMetricCameraCount)
+				mMetricCameraCount->Set(static_cast<double>(mCount));
 		}
 
 		////////////////////////////////////////////////////////////
@@ -177,12 +188,18 @@ namespace Dia
 			DIA_TRACE_ZONE("camera3d.update_all", Dia::Observation::Trace::Category::kDiaGraphics);
 			DIA_PROFILE_SCOPE("camera3d.update_all", Dia::Observation::Profile::Category::kDiaGraphics);
 
+			unsigned int totalTicks = 0;
 			for (unsigned int i = 0; i < mCount; ++i)
 			{
 				CameraSlot& slot = mSlots[i];
 				for (unsigned int b = 0; b < slot.behaviourCount; ++b)
+				{
 					slot.behaviours[b]->Update(slot.camera, dt);
+					++totalTicks;
+				}
 			}
+
+			if (mMetricBehaviourTicks) mMetricBehaviourTicks->Inc(totalTicks);
 		}
 
 		////////////////////////////////////////////////////////////
