@@ -17,3 +17,7 @@ export type { ConnectionState, ConnectionStatusProps } from './ConnectionStatus'
 
 export { useBridgeSubscribe, useBridgeRequest } from './useBridge';
 export type { BridgeSubscription } from './useBridge';
+
+export { useToast, useToastStore } from './notifications/useToast';
+export type { Toast, ToastSeverity } from './notifications/useToast';
+export { ToastRenderer } from './notifications/ToastRenderer';
