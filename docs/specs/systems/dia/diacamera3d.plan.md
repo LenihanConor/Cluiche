@@ -1,7 +1,7 @@
 # DiaCamera3D — Implementation Plan
 
 **Spec:** @docs/specs/systems/dia/diacamera3d.md
-**Status:** In Progress
+**Status:** Done
 
 ---
 
@@ -79,5 +79,5 @@ Both expose setters only (`SetInput(yaw, pitch, radiusDelta)` / `SetLookInput`, 
 | 8 | Implement `Orbit` (yaw/pitch/radius, SetInput) + `Flythrough` (SetLookInput/SetMoveInput free-look) behaviours | Tests — orbit wraps yaw, pitch clamped, flythrough position integrates | Done | sonnet | 6192 tests pass (2 pre-existing unrelated failures) |
 | 9 | Create `Testing/CameraBuilder3D.h` fluent helper (`WithPosition`, `WithQuaternion`, `Perspective`, `Orthographic`, `Build`) | Used by registry and behaviour tests | Done | haiku | 6193 tests pass |
 | 10 | Write full GoogleTest suite: `TestCamera3D.cpp`, `TestViewportTransform3D.cpp`, `TestCameraRegistry3D.cpp`, `TestBehaviours3D.cpp`; add files + `DiaCamera3D.lib` linker dep + ProjectReference to `GoogleTests.vcxproj` | `dia run googletest --filter="DiaCamera3D*"` all pass | Done | sonnet | 53 new tests; 6228 total pass |
-| 11 | Implement `CameraRegistryHealth3D` (Degraded if no active camera, Failing if UpdateAll ticked with zero cameras); add DiaObservation logs + traces + metrics (`dia.camera3d.count`, `dia.camera3d.behaviour_ticks`) | Health state transitions correct in tests | Not Started | sonnet | |
-| 12 | Run `dia docs registry` to regenerate module-registry.md; run `dia docs precommit` to verify all invariants | No violations reported | Not Started | haiku | |
+| 11 | Implement `CameraRegistryHealth3D` (Degraded if no active camera, Failing if UpdateAll ticked with zero cameras); add DiaObservation logs + traces + metrics (`dia.camera3d.count`, `dia.camera3d.behaviour_ticks`) | Health state transitions correct in tests | Done | sonnet | 6228 tests pass |
+| 12 | Run `dia docs registry` to regenerate module-registry.md; run `dia docs precommit` to verify all invariants | No violations reported | Done | haiku | PASS |

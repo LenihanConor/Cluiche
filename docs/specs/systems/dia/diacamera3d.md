@@ -3,7 +3,7 @@
 ## Parent Application
 @docs/specs/applications/dia.md
 
-**Status:** `Draft`
+**Status:** `Done`
 
 ---
 
@@ -264,4 +264,4 @@ Orbit and Flythrough have no 2D analogues. Both expose setter methods for applic
 
 ## Status
 
-`Approved`
+`Approved` — plan: @docs/specs/systems/dia/diacamera3d.plan.md
