@@ -16,6 +16,6 @@
 | 11 | Create `UsagePanel.tsx` + `UsagePanel.test.tsx` — right panel: scene usage list or EmptyState | `npm test` — UsagePanel tests pass | Done | sonnet | 5 tests passing |
 | 12 | Create `NavigateFailedModal.tsx` + `NavigateFailedModal.test.tsx` — create/remove/dismiss using navigateFailedUtils from @dia/editor-ui | `npm test` — NavigateFailedModal tests pass | Done | sonnet | 7 tests passing |
 | 13 | Create `ConfirmDialog.tsx` + `ConfirmDialog.test.tsx` — local generic confirm modal (add cascade + remove cascade) | `npm test` — ConfirmDialog tests pass | Done | sonnet | 9 tests; 87 total across 10 files |
-| 14 | Integration wiring — connect App to all children, full npm run build + npm test | `npm run build` produces dist/; `npm test` all pass | Todo | sonnet | Final assembly; verify dist/index.html loads in browser |
-| 15 | Verify — `dia run googletest --filter="*BlueprintEditor*"` passes; manual smoke in CluicheEditor | C++ tests pass; UI loads and basic CRUD works | Todo | sonnet | No C++ changes so tests should pass unchanged |
-| 16 | Cleanup — delete old UI/index.html + UI/mockup-navigate-failed.html | Build still works; no dead file references | Todo | haiku | — |
+| 14 | Integration wiring — connect App to all children, full npm run build + npm test | `npm run build` produces dist/; `npm test` all pass | Done | sonnet | 88 tests; build 173KB bundle |
+| 15 | Verify — `dia run googletest --filter="*EntityTemplateEditor*"` passes; manual smoke in CluicheEditor | C++ tests pass; UI loads and basic CRUD works | Done | sonnet | 47/47 C++ tests pass |
+| 16 | Cleanup — delete old UI/index.html + UI/mockup-navigate-failed.html | Build still works; no dead file references | Done | haiku | 1207 lines deleted |
