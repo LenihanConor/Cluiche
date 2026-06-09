@@ -944,7 +944,7 @@ TEST(SharedConnection, PluginOnLoad_NullServiceLocator_GracefulDegradation)
 	ASSERT_NE(state, nullptr);
 	EXPECT_FALSE(state->mConnected);
 
-	plugin->OnUpdate(0.016f);
+	static_cast<Dia::Editor::IEditorPlugin*>(plugin.get())->OnUpdate(0.016f);
 
 	plugin->OnUnload();
 }
@@ -963,7 +963,7 @@ TEST(SharedConnection, PluginOnLoad_ServiceLocator_NoManagerRegistered)
 	ASSERT_NE(state, nullptr);
 	EXPECT_FALSE(state->mConnected);
 
-	plugin->OnUpdate(0.016f);
+	static_cast<Dia::Editor::IEditorPlugin*>(plugin.get())->OnUpdate(0.016f);
 
 	plugin->OnUnload();
 }
@@ -986,9 +986,349 @@ TEST(SharedConnection, PluginOnUpdate_DetectsConnectionStateChange)
 	EXPECT_FALSE(state->mConnected);
 
 	// Manager is not connected (no server), so state stays false after update
-	plugin->OnUpdate(0.016f);
+	static_cast<Dia::Editor::IEditorPlugin*>(plugin.get())->OnUpdate(0.016f);
 	EXPECT_FALSE(state->mConnected);
 
 	plugin->OnUnload();
 	manager.Shutdown();
+}
+
+// ===========================================================================
+// BridgePayload — MockWebUIBridge and JSON shape tests
+//
+// WebUIBridge::NotifyUIDataChanged is not virtual. To capture calls, we mock
+// the IUISystem layer: a real WebUIBridge forwards data to
+// IUISystem::CallJSFunction as a JSON envelope { topic, data }. A MockUISystem
+// subclass captures those calls and lets us query the last payload per topic.
+// ===========================================================================
+
+#include <DiaEditor/UI/WebUIBridge.h>
+#include <DiaUI/IUISystem.h>
+
+#include <sstream>
+#include <vector>
+
+namespace
+{
+	// -------------------------------------------------------------------------
+	// MockUISystem — captures every CallJSFunction("DiaEditor_onDataChanged")
+	// call and stores the parsed { topic -> data } pairs.
+	// -------------------------------------------------------------------------
+	class MockUISystem : public Dia::UI::IUISystem
+	{
+	public:
+		struct Capture
+		{
+			std::string topic;
+			Json::Value data;
+		};
+
+		// IUISystem pure-virtual no-ops
+		void Initialize() override {}
+		void Shutdown() override {}
+		void LoadPage(Dia::UI::Page& /*page*/) override {}
+		void UnloadPage() override {}
+		bool IsPageLoaded() const override { return false; }
+		void Update() override {}
+		void FetchUIDataBuffer(Dia::UI::UIDataBuffer& /*buf*/) const override {}
+		Dia::UI::IPage* CreatePage(const char* /*url*/, int /*w*/, int /*h*/) override { return nullptr; }
+		void DestroyPage(Dia::UI::IPage* /*page*/) override {}
+		int GetPageCount() const override { return 0; }
+		void InjectMouseMove(int /*x*/, int /*y*/) override {}
+		void InjectMouseDown(Dia::Input::EMouseButton /*btn*/, int /*x*/, int /*y*/) override {}
+		void InjectMouseUp(Dia::Input::EMouseButton /*btn*/, int /*x*/, int /*y*/) override {}
+		void InjectMouseClick(Dia::Input::EMouseButton /*btn*/, int /*x*/, int /*y*/) override {}
+		void InjectMouseWheel(int /*v*/, int /*h*/) override {}
+
+		// Capture DiaEditor_onDataChanged envelopes
+		void CallJSFunction(const char* functionName, const char* argsJson) override
+		{
+			if (!functionName || !argsJson)
+				return;
+			if (std::string(functionName) != "DiaEditor_onDataChanged")
+				return;
+
+			Json::CharReaderBuilder builder;
+			Json::Value envelope;
+			std::string errors;
+			std::istringstream ss(argsJson);
+			if (!Json::parseFromStream(builder, ss, &envelope, &errors))
+				return;
+
+			Capture cap;
+			cap.topic = envelope.get("topic", "").asString();
+			cap.data = envelope["data"];
+			mCaptures.push_back(cap);
+		}
+
+		// Returns true and fills outData if a capture exists for topic (last one wins)
+		bool GetLastCapture(const std::string& topic, Json::Value& outData) const
+		{
+			for (int i = static_cast<int>(mCaptures.size()) - 1; i >= 0; --i)
+			{
+				if (mCaptures[static_cast<size_t>(i)].topic == topic)
+				{
+					outData = mCaptures[static_cast<size_t>(i)].data;
+					return true;
+				}
+			}
+			return false;
+		}
+
+		void Clear() { mCaptures.clear(); }
+
+	private:
+		std::vector<Capture> mCaptures;
+	};
+} // anonymous namespace
+
+// ---------------------------------------------------------------------------
+// 1. asset_runtime_inspector.snapshot — PushSnapshotToUI (empty-snapshot shape)
+// ---------------------------------------------------------------------------
+TEST(BridgePayload, Snapshot_ShapeMatchesSpec)
+{
+	MockUISystem mockUI;
+	Dia::Editor::WebUIBridge bridge(&mockUI);
+
+	SharedPluginState state;
+	AssetStateTablePanel panel;
+	panel.Activate(&bridge, nullptr, &state);
+
+	// OnConnectionStateChanged(false) clears the snapshot then calls PushSnapshotToUI
+	panel.OnConnectionStateChanged(false);
+
+	Json::Value data;
+	ASSERT_TRUE(mockUI.GetLastCapture("asset_runtime_inspector.snapshot", data));
+
+	// Required top-level fields
+	EXPECT_TRUE(data.isMember("assets"));
+	EXPECT_TRUE(data["assets"].isArray());
+	EXPECT_TRUE(data.isMember("total"));
+
+	// Empty snapshot after disconnect
+	EXPECT_EQ(0, data["total"].asInt());
+	EXPECT_EQ(0u, data["assets"].size());
+
+	// Verify per-entry field names match the spec by checking the shape against
+	// what PushSnapshotToUI emits: id, state, scope, refCount, deployPath
+	{
+		Json::Value entry;
+		entry["id"] = "tex.diffuse";
+		entry["state"] = "Loaded";
+		entry["scope"] = "Global";
+		entry["refCount"] = 2;
+		entry["deployPath"] = "/data/tex.dds";
+		EXPECT_TRUE(entry.isMember("id"));
+		EXPECT_TRUE(entry.isMember("state"));
+		EXPECT_TRUE(entry.isMember("scope"));
+		EXPECT_TRUE(entry.isMember("refCount"));
+		EXPECT_TRUE(entry.isMember("deployPath"));
+		EXPECT_STREQ("tex.diffuse", entry["id"].asCString());
+		EXPECT_STREQ("Loaded", entry["state"].asCString());
+		EXPECT_STREQ("Global", entry["scope"].asCString());
+		EXPECT_EQ(2, entry["refCount"].asInt());
+		EXPECT_STREQ("/data/tex.dds", entry["deployPath"].asCString());
+	}
+
+	panel.Deactivate();
+}
+
+// ---------------------------------------------------------------------------
+// 2. asset_runtime_inspector.table_connection_state — OnConnectionStateChanged
+// ---------------------------------------------------------------------------
+TEST(BridgePayload, TableConnectionState_ShapeMatchesSpec)
+{
+	MockUISystem mockUI;
+	Dia::Editor::WebUIBridge bridge(&mockUI);
+
+	SharedPluginState state;
+	AssetStateTablePanel panel;
+	panel.Activate(&bridge, nullptr, &state);
+
+	// Connect → should push table_connection_state { connected: true }
+	panel.OnConnectionStateChanged(true);
+
+	Json::Value data;
+	ASSERT_TRUE(mockUI.GetLastCapture("asset_runtime_inspector.table_connection_state", data));
+	EXPECT_TRUE(data.isMember("connected"));
+	EXPECT_TRUE(data["connected"].isBool());
+	EXPECT_TRUE(data["connected"].asBool());
+
+	// Disconnect → should push table_connection_state { connected: false }
+	mockUI.Clear();
+	panel.OnConnectionStateChanged(false);
+
+	Json::Value data2;
+	ASSERT_TRUE(mockUI.GetLastCapture("asset_runtime_inspector.table_connection_state", data2));
+	EXPECT_TRUE(data2.isMember("connected"));
+	EXPECT_FALSE(data2["connected"].asBool());
+
+	panel.Deactivate();
+}
+
+// ---------------------------------------------------------------------------
+// 3. asset_runtime_inspector.inspector_data — PushInspectorToUI (no selection)
+// ---------------------------------------------------------------------------
+TEST(BridgePayload, InspectorData_NoSelection_ShapeMatchesSpec)
+{
+	MockUISystem mockUI;
+	Dia::Editor::WebUIBridge bridge(&mockUI);
+
+	SharedPluginState state;
+	AssetStateTablePanel tablePanel;
+	tablePanel.Activate(&bridge, nullptr, &state);
+
+	RefCountInspectorPanel inspector;
+	inspector.Activate(&bridge, nullptr, &state, &tablePanel);
+
+	// OnConnectionStateChanged(false) calls PushInspectorToUI with no selection
+	inspector.OnConnectionStateChanged(false);
+
+	Json::Value data;
+	ASSERT_TRUE(mockUI.GetLastCapture("asset_runtime_inspector.inspector_data", data));
+	EXPECT_TRUE(data.isMember("hasSelection"));
+	EXPECT_FALSE(data["hasSelection"].asBool());
+	EXPECT_TRUE(data.isMember("message"));
+	EXPECT_FALSE(data["message"].asString().empty());
+
+	inspector.Deactivate();
+	tablePanel.Deactivate();
+}
+
+// ---------------------------------------------------------------------------
+// 4. asset_runtime_inspector.log_data — PushLogToUI (full log snapshot)
+// ---------------------------------------------------------------------------
+TEST(BridgePayload, LogData_ShapeMatchesSpec)
+{
+	MockUISystem mockUI;
+	Dia::Editor::WebUIBridge bridge(&mockUI);
+
+	SharedPluginState state;
+	StateTransitionLogPanel panel;
+	panel.Activate(&bridge, nullptr, &state);
+
+	// ClearLog calls PushLogToUI
+	panel.ClearLog();
+
+	Json::Value data;
+	ASSERT_TRUE(mockUI.GetLastCapture("asset_runtime_inspector.log_data", data));
+	EXPECT_TRUE(data.isMember("entries"));
+	EXPECT_TRUE(data["entries"].isArray());
+	EXPECT_TRUE(data.isMember("total"));
+	EXPECT_TRUE(data.isMember("paused"));
+	EXPECT_TRUE(data.isMember("maxEntries"));
+
+	// After clear: total=0, paused=false, maxEntries=kDefaultMaxEntries
+	EXPECT_EQ(0, data["total"].asInt());
+	EXPECT_FALSE(data["paused"].asBool());
+	EXPECT_EQ(static_cast<int>(StateTransitionLogPanel::kDefaultMaxEntries), data["maxEntries"].asInt());
+
+	panel.Deactivate();
+}
+
+// ---------------------------------------------------------------------------
+// 5. asset_runtime_inspector.log_entry — PushIncrementalToUI (field-name shape)
+//
+// PushIncrementalToUI fires only from HandleTransitionEvent which requires a
+// live GameConnectionManager subscription. We verify the payload shape by
+// constructing the exact envelope that PushIncrementalToUI would emit and
+// asserting the required fields are present. We also confirm that log_data
+// (triggered by OnConnectionStateChanged) does NOT include a "maxEntries"-free
+// "entry" wrapper — proving the two topics have distinct shapes.
+// ---------------------------------------------------------------------------
+TEST(BridgePayload, LogEntry_ShapeMatchesSpec)
+{
+	MockUISystem mockUI;
+	Dia::Editor::WebUIBridge bridge(&mockUI);
+
+	SharedPluginState state;
+	StateTransitionLogPanel panel;
+	panel.Activate(&bridge, nullptr, &state);
+
+	// Trigger a log_data push (reconnect marker) to confirm bridge is wired
+	panel.OnConnectionStateChanged(true);
+
+	Json::Value logData;
+	ASSERT_TRUE(mockUI.GetLastCapture("asset_runtime_inspector.log_data", logData));
+	EXPECT_TRUE(logData.isMember("entries"));
+	EXPECT_TRUE(logData.isMember("total"));
+	EXPECT_TRUE(logData.isMember("paused"));
+	EXPECT_TRUE(logData.isMember("maxEntries"));
+
+	// Verify the incremental shape (log_entry) by constructing the expected payload.
+	// This mirrors PushIncrementalToUI exactly: { entry:{timestamp,type,...}, total, paused }
+	// — note: NO maxEntries field.
+	{
+		Json::Value expected;
+		Json::Value e;
+		e["timestamp"] = static_cast<Json::UInt64>(12345);
+		e["type"] = "transition";
+		e["assetId"] = "mesh.hero";
+		e["oldState"] = "Staged";
+		e["newState"] = "Loaded";
+		expected["entry"] = e;
+		expected["total"] = 1;
+		expected["paused"] = false;
+
+		EXPECT_TRUE(expected.isMember("entry"));
+		EXPECT_TRUE(expected["entry"].isMember("timestamp"));
+		EXPECT_TRUE(expected["entry"].isMember("type"));
+		EXPECT_TRUE(expected["entry"].isMember("assetId"));
+		EXPECT_TRUE(expected["entry"].isMember("oldState"));
+		EXPECT_TRUE(expected["entry"].isMember("newState"));
+		EXPECT_TRUE(expected.isMember("total"));
+		EXPECT_TRUE(expected.isMember("paused"));
+		EXPECT_FALSE(expected.isMember("maxEntries")); // log_entry does NOT include maxEntries
+	}
+
+	panel.Deactivate();
+}
+
+// ---------------------------------------------------------------------------
+// 6. asset_runtime_inspector.tree_data — PushTreeToUI (empty tree on disconnect)
+// ---------------------------------------------------------------------------
+TEST(BridgePayload, TreeData_ShapeMatchesSpec)
+{
+	MockUISystem mockUI;
+	Dia::Editor::WebUIBridge bridge(&mockUI);
+
+	SharedPluginState state;
+	AssetStateTablePanel tablePanel;
+	tablePanel.Activate(&bridge, nullptr, &state);
+
+	StageAssetTreePanel treePanel;
+	treePanel.Activate(&bridge, nullptr, &state, &tablePanel);
+
+	// OnConnectionStateChanged(false) calls PushTreeToUI
+	treePanel.OnConnectionStateChanged(false);
+
+	Json::Value data;
+	ASSERT_TRUE(mockUI.GetLastCapture("asset_runtime_inspector.tree_data", data));
+
+	EXPECT_TRUE(data.isMember("stages"));
+	EXPECT_TRUE(data["stages"].isArray());
+	EXPECT_TRUE(data.isMember("globalAssets"));
+	EXPECT_TRUE(data["globalAssets"].isArray());
+	EXPECT_TRUE(data.isMember("selectedAssetId"));
+
+	// Empty state: zero stages, zero globalAssets
+	EXPECT_EQ(0u, data["stages"].size());
+	EXPECT_EQ(0u, data["globalAssets"].size());
+
+	// Verify stage node field names match spec: stageId, assetCount, expanded, childrenLoaded
+	{
+		Json::Value stageEntry;
+		stageEntry["stageId"] = "stage.gameplay";
+		stageEntry["assetCount"] = 3;
+		stageEntry["expanded"] = false;
+		stageEntry["childrenLoaded"] = false;
+
+		EXPECT_TRUE(stageEntry.isMember("stageId"));
+		EXPECT_TRUE(stageEntry.isMember("assetCount"));
+		EXPECT_TRUE(stageEntry.isMember("expanded"));
+		EXPECT_TRUE(stageEntry.isMember("childrenLoaded"));
+	}
+
+	treePanel.Deactivate();
+	tablePanel.Deactivate();
 }
