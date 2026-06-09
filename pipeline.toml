@@ -95,7 +95,8 @@ ui_builds = [
   { cwd = "Cluiche/CluicheEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" },
   { cwd = "Dia/DiaApplicationFlowEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" },
   { cwd = "Dia/DiaPipelineEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" },
-  { cwd = "Dia/DiaApplicationFlowInspector/UI", cmd = "node node_modules/vite/bin/vite.js build" }
+  { cwd = "Dia/DiaApplicationFlowInspector/UI", cmd = "node node_modules/vite/bin/vite.js build" },
+  { cwd = "Dia/DiaEntityInspector/UI", cmd = "npm run build" }
 ]
 files = [
   { src = "External/CEF/Resources/*",                     dest = "$(OutDir)" },
@@ -111,7 +112,8 @@ files = [
   { src = "Dia/DiaApplicationFlowEditor/Assets/*",            dest = "$(OutDir)plugins/diaapplicationfloweditor/" },
   { src = "Dia/DiaAssetRuntimeInspector/UI/*",               dest = "$(OutDir)plugins/assetruntimeinspector/" },
   { src = "Dia/DiaAssetCatalogueEditor/UI/*",              dest = "$(OutDir)plugins/assetcatalogue/" },
-  { src = "Dia/DiaEntityInspector/UI/*",                      dest = "$(OutDir)plugins/entityinspector/" },
+  { src = "Dia/DiaEntityInspector/UI/dist/*",           dest = "$(OutDir)plugins/entityinspector/" },
+  { src = "Dia/DiaEntityInspector/UI/dist/assets/*",    dest = "$(OutDir)plugins/entityinspector/assets/" },
   { src = "Dia/DiaEntityTemplateEditor/UI/*",                 dest = "$(OutDir)plugins/EntityTemplateEditor/" },
   { src = "Dia/DiaSceneEditor/UI/*",                    dest = "$(OutDir)plugins/sceneeditor/" },
   { src = "Dia/DiaPipelineEditor/UI/dist/*",              dest = "$(OutDir)plugins/diapipelineeditor/" },

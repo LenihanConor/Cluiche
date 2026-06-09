@@ -93,7 +93,7 @@ export function useBridgeRequest<T = unknown>(): (topic: string, payload?: unkno
 
             if (mainFrame?.request) {
                 // Main-frame path: delegate directly
-                return mainFrame.request<T>(topic, payload) as Promise<T>;
+                return (mainFrame.request(topic, payload) as Promise<T>);
             }
 
             // Iframe path: postMessage relay
