@@ -177,7 +177,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <AdditionalDependencies>$(LibOutDir)DiaAssetCatalogueEditor.lib;$(LibOutDir)DiaEntityTemplateEditor.lib;$(LibOutDir)DiaSceneEditor.lib;$(LibOutDir)DiaEntity.lib;$(LibOutDir)DiaAssetRuntimeInspector.lib;$(LibOutDir)DiaEntityInspector.lib;$(LibOutDir)DiaApplicationFlowEditor.lib;$(LibOutDir)DiaApplicationFlowInspector.lib;$(LibOutDir)DiaPipelineEditor.lib;$(LibOutDir)DiaEditor.lib;$(LibOutDir)DiaUICEF.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaObservation.lib;libcef.lib;libcef_dll_wrapper.lib;comdlg32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(RepoRoot)External/CEF/lib/Debug/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(RepoRoot)External/CEF/lib/Debug/;$(RepoRoot)External/Python311/libs/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>cd "$(RepoRoot)Dia\DiaCLI" &amp;&amp; ".venv\Scripts\python.exe" -m dia_cli pipeline deploy cluicheeditor --config $(Configuration) --out-dir "$(BinRoot)$(MSBuildProjectName)\$(Configuration)\$(Platform)\"</Command>
@@ -202,7 +202,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Windows</SubSystem>
       <AdditionalDependencies>$(LibOutDir)DiaAssetCatalogueEditor.lib;$(LibOutDir)DiaEntityTemplateEditor.lib;$(LibOutDir)DiaSceneEditor.lib;$(LibOutDir)DiaEntity.lib;$(LibOutDir)DiaAssetRuntimeInspector.lib;$(LibOutDir)DiaEntityInspector.lib;$(LibOutDir)DiaApplicationFlowEditor.lib;$(LibOutDir)DiaApplicationFlowInspector.lib;$(LibOutDir)DiaPipelineEditor.lib;$(LibOutDir)DiaEditor.lib;$(LibOutDir)DiaUICEF.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaObservation.lib;libcef.lib;libcef_dll_wrapper.lib;comdlg32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(RepoRoot)External/CEF/lib/Release/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(RepoRoot)External/CEF/lib/Release/;$(RepoRoot)External/Python311/libs/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>LIBCMT;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>
     <PostBuildEvent>
