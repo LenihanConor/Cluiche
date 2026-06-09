@@ -11,3 +11,9 @@ export type { EmptyStateProps } from './EmptyState';
 
 export { TabBar } from './TabBar';
 export type { Tab, TabBarProps } from './TabBar';
+
+export { ConnectionStatus } from './ConnectionStatus';
+export type { ConnectionState, ConnectionStatusProps } from './ConnectionStatus';
+
+export { useBridgeSubscribe, useBridgeRequest } from './useBridge';
+export type { BridgeSubscription } from './useBridge';
