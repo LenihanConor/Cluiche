@@ -71,4 +71,36 @@ describe('ConnectionStatus', () => {
     await userEvent.click(screen.getByTestId('connect-btn'));
     expect(onConnect).toHaveBeenCalledOnce();
   });
+
+  it('clicking onDisconnect button fires the callback', async () => {
+    const onDisconnect = vi.fn();
+    render(<ConnectionStatus state="connected" onDisconnect={onDisconnect} />);
+    await userEvent.click(screen.getByTestId('disconnect-btn'));
+    expect(onDisconnect).toHaveBeenCalledOnce();
+  });
+
+  it('compact={true} with onConnect provided: connect button does NOT render', () => {
+    render(<ConnectionStatus state="disconnected" compact onConnect={vi.fn()} />);
+    expect(screen.queryByTestId('connect-btn')).toBeNull();
+  });
+
+  it('compact={true} with onDisconnect provided: disconnect button does NOT render', () => {
+    render(<ConnectionStatus state="connected" compact onDisconnect={vi.fn()} />);
+    expect(screen.queryByTestId('disconnect-btn')).toBeNull();
+  });
+
+  it('connected state background is the dark green (#1a3a1a / rgb(26,58,26))', () => {
+    render(<ConnectionStatus state="connected" />);
+    const el = screen.getByTestId('connection-status') as HTMLElement;
+    const bg = el.style.background;
+    // jsdom may normalise hex to rgb — accept either form
+    expect(bg === '#1a3a1a' || bg === 'rgb(26, 58, 26)').toBe(true);
+  });
+
+  it('error state background is the dark red (#3a1a1a / rgb(58,26,26))', () => {
+    render(<ConnectionStatus state="error" />);
+    const el = screen.getByTestId('connection-status') as HTMLElement;
+    const bg = el.style.background;
+    expect(bg === '#3a1a1a' || bg === 'rgb(58, 26, 26)').toBe(true);
+  });
 });

@@ -53,6 +53,8 @@ describe('injectThemeVars', () => {
     document.documentElement.removeAttribute('data-dia-theme-injected');
     // Clear any previously set CSS custom properties
     document.documentElement.style.removeProperty('--dia-bg');
+    document.documentElement.style.removeProperty('font-family');
+    document.documentElement.style.removeProperty('font-size');
   });
 
   it('sets --dia-bg to theme.bg (#1e1e1e)', () => {
@@ -68,5 +70,33 @@ describe('injectThemeVars', () => {
     expect(
       document.documentElement.style.getPropertyValue('--dia-bg'),
     ).toBe(theme.bg);
+  });
+
+  it('sets font-family on document.documentElement.style', () => {
+    injectThemeVars();
+    expect(document.documentElement.style.getPropertyValue('font-family')).toBeTruthy();
+  });
+
+  it('sets font-size: 12px on document.documentElement.style', () => {
+    injectThemeVars();
+    expect(document.documentElement.style.getPropertyValue('font-size')).toBe('12px');
+  });
+});
+
+describe('inputStyle — field completeness', () => {
+  it('with no arguments returns an object with border, padding, fontSize, outline, and fontFamily', () => {
+    const style = inputStyle();
+    expect(style.border).toBeTruthy();
+    expect(style.padding).toBeTruthy();
+    expect(style.fontSize).toBeTruthy();
+    expect(style.outline).toBeDefined();
+    expect(style.fontFamily).toBeTruthy();
+  });
+});
+
+describe('buttonStyle — ghost border', () => {
+  it('ghost variant has border containing "transparent"', () => {
+    const style = buttonStyle('ghost');
+    expect(style.border).toContain('transparent');
   });
 });

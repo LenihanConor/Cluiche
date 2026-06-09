@@ -59,4 +59,18 @@ describe('TrafficLightDot', () => {
     expect(divWrapper.style.alignItems).toBe('center');
     expect(divWrapper.style.gap).toBe('5px');
   });
+
+  it('title prop sets the HTML title attribute on the dot span', () => {
+    render(<TrafficLightDot state="green" title="Service online" />);
+    const dot = screen.getByTestId('traffic-light-dot');
+    expect(dot.getAttribute('title')).toBe('Service online');
+  });
+
+  it('title prop absent — dot has no title attribute or empty string', () => {
+    render(<TrafficLightDot state="grey" />);
+    const dot = screen.getByTestId('traffic-light-dot');
+    const title = dot.getAttribute('title');
+    // Either null (attribute absent) or empty string are both acceptable
+    expect(!title).toBe(true);
+  });
 });

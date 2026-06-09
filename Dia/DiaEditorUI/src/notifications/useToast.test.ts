@@ -194,4 +194,24 @@ describe('useToast — max visible and queue', () => {
     expect(visible[visible.length - 1].message).toBe('toast 5');
     expect(useToastStore.getState().queue[0].message).toBe('toast 6');
   });
+
+  it('dismissAll clears all visible toasts AND the queue', () => {
+    const { result } = renderHook(() => useToast());
+    act(() => {
+      // Push 7 toasts so both visible (5) and queue (2) are populated
+      for (let i = 0; i < 7; i++) {
+        result.current.push(`toast ${i}`);
+      }
+    });
+
+    expect(useToastStore.getState().toasts).toHaveLength(5);
+    expect(useToastStore.getState().queue).toHaveLength(2);
+
+    act(() => {
+      useToastStore.getState().dismissAll();
+    });
+
+    expect(useToastStore.getState().toasts).toHaveLength(0);
+    expect(useToastStore.getState().queue).toHaveLength(0);
+  });
 });

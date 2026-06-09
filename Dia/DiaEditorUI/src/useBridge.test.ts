@@ -344,4 +344,149 @@ describe('useBridgeRequest — iframe (postMessage)', () => {
         expect(res).toEqual({ canUndo: true });
         postMessageSpy.mockRestore();
     });
+
+    it('two concurrent requests resolve independently with their own results', async () => {
+        const postMessageSpy = vi.spyOn(window.parent, 'postMessage');
+        const { result } = renderHook(() => useBridgeRequest());
+
+        let promiseA!: Promise<unknown>;
+        let promiseB!: Promise<unknown>;
+
+        // Fire two requests concurrently
+        act(() => {
+            promiseA = result.current('topic.a', { id: 1 });
+            promiseB = result.current('topic.b', { id: 2 });
+        });
+
+        // Extract the reqIds from the two postMessage calls
+        const reqIdA = (postMessageSpy.mock.calls[0][0] as any).payload.reqId;
+        const reqIdB = (postMessageSpy.mock.calls[1][0] as any).payload.reqId;
+
+        expect(reqIdA).not.toBe(reqIdB);
+
+        // Dispatch responses in reverse order: B first, then A
+        act(() => {
+            window.dispatchEvent(
+                new MessageEvent('message', {
+                    data: { __diaResponse: true, reqId: reqIdB, result: { from: 'b' } },
+                })
+            );
+            window.dispatchEvent(
+                new MessageEvent('message', {
+                    data: { __diaResponse: true, reqId: reqIdA, result: { from: 'a' } },
+                })
+            );
+        });
+
+        const [resA, resB] = await Promise.all([promiseA, promiseB]);
+        expect(resA).toEqual({ from: 'a' });
+        expect(resB).toEqual({ from: 'b' });
+        postMessageSpy.mockRestore();
+    });
+
+    it('response with mismatched reqId is ignored and does not resolve the pending request', async () => {
+        const postMessageSpy = vi.spyOn(window.parent, 'postMessage');
+        const { result } = renderHook(() => useBridgeRequest());
+
+        let promise!: Promise<unknown>;
+        act(() => {
+            promise = result.current('some.topic');
+        });
+
+        const reqIdReal = (postMessageSpy.mock.calls[0][0] as any).payload.reqId;
+
+        // Dispatch a response with a completely different reqId
+        act(() => {
+            window.dispatchEvent(
+                new MessageEvent('message', {
+                    data: { __diaResponse: true, reqId: 'req_totally_wrong_id', result: { bad: true } },
+                })
+            );
+        });
+
+        // Promise should still be pending — advance timers to force it to reject via timeout
+        act(() => {
+            vi.advanceTimersByTime(5001);
+        });
+
+        await expect(promise).rejects.toThrow("useBridgeRequest: 'some.topic' timed out after 5000ms");
+
+        // Confirm the correct reqId was used in the original post
+        expect(reqIdReal).toMatch(/^req_/);
+        postMessageSpy.mockRestore();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// useBridgeSubscribe — edge cases (main frame)
+// ---------------------------------------------------------------------------
+
+describe('useBridgeSubscribe — edge cases (main frame)', () => {
+    let bridge: ReturnType<typeof makeMainFrameBridge>['bridge'];
+
+    beforeEach(() => {
+        const result = makeMainFrameBridge();
+        bridge = result.bridge;
+        (window as any).CluicheEditor = bridge;
+    });
+
+    afterEach(() => {
+        delete (window as any).CluicheEditor;
+        vi.clearAllMocks();
+    });
+
+    it('fires both handlers when the same topic appears twice in the subscriptions array', () => {
+        const handler1 = vi.fn();
+        const handler2 = vi.fn();
+        const subs: BridgeSubscription[] = [
+            { topic: 'a', handler: handler1 },
+            { topic: 'a', handler: handler2 },
+        ];
+        renderHook(() => useBridgeSubscribe(subs));
+
+        act(() => bridge.emit('a', { value: 99 }));
+
+        expect(handler1).toHaveBeenCalledWith({ value: 99 });
+        expect(handler2).toHaveBeenCalledWith({ value: 99 });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// useBridgeSubscribe — edge cases (iframe)
+// ---------------------------------------------------------------------------
+
+describe('useBridgeSubscribe — edge cases (iframe)', () => {
+    beforeEach(() => {
+        delete (window as any).CluicheEditor;
+    });
+
+    it('does not throw when message event data is null', () => {
+        const handler = vi.fn();
+        const subs: BridgeSubscription[] = [{ topic: 'live.state', handler }];
+        renderHook(() => useBridgeSubscribe(subs));
+
+        expect(() => {
+            act(() => {
+                window.dispatchEvent(new MessageEvent('message', { data: null }));
+            });
+        }).not.toThrow();
+
+        expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('silently ignores a message that has neither __dia nor CluicheEditor', () => {
+        const handler = vi.fn();
+        const subs: BridgeSubscription[] = [{ topic: 'live.state', handler }];
+        renderHook(() => useBridgeSubscribe(subs));
+
+        act(() => {
+            window.dispatchEvent(
+                new MessageEvent('message', {
+                    data: { someOtherFlag: true, topic: 'live.state', data: 'payload' },
+                })
+            );
+        });
+
+        expect(handler).not.toHaveBeenCalled();
+    });
 });

@@ -42,10 +42,12 @@ export function useBridgeSubscribe(subscriptions: BridgeSubscription[]): void {
             // ----------------------------------------------------------------
             // Main-frame path: CluicheEditor.subscribe returns an unsubscribe fn
             // ----------------------------------------------------------------
-            const unsubscribers = subs.map((sub) =>
+            const unsubscribers = subs.map((sub, idx) =>
                 mainFrame.subscribe(sub.topic, (data: unknown) => {
-                    // Delegate to the latest handler via ref (avoids stale closure)
-                    const current = handlersRef.current.find((s) => s.topic === sub.topic);
+                    // Delegate to the latest handler via ref (avoids stale closure).
+                    // Use the original index so that duplicate topics each invoke
+                    // their own handler independently.
+                    const current = handlersRef.current[idx];
                     if (current) current.handler(data);
                 })
             );
@@ -59,8 +61,10 @@ export function useBridgeSubscribe(subscriptions: BridgeSubscription[]): void {
             const onMessage = (e: MessageEvent) => {
                 const env = e.data;
                 if (env && env.__dia === true && typeof env.topic === 'string') {
-                    const current = handlersRef.current.find((s) => s.topic === env.topic);
-                    if (current) current.handler(env.data);
+                    // Fire all handlers whose topic matches (supports duplicate topics).
+                    handlersRef.current
+                        .filter((s) => s.topic === env.topic)
+                        .forEach((s) => s.handler(env.data));
                 }
             };
             window.addEventListener('message', onMessage);

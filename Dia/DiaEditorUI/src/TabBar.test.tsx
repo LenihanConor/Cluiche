@@ -63,4 +63,43 @@ describe('TabBar', () => {
     render(<TabBar tabs={TABS} activeTab="alpha" onTabChange={vi.fn()} />);
     expect(screen.getByRole('tablist')).toBeTruthy();
   });
+
+  it('hover state: mouseEnter on inactive tab changes color; mouseLeave reverts', () => {
+    const { container } = render(<TabBar tabs={TABS} activeTab="alpha" onTabChange={vi.fn()} />);
+    const betaBtn = screen.getByRole('tab', { name: 'Beta' }) as HTMLElement;
+
+    // Before hover, inactive tab should have muted color
+    const colorBefore = betaBtn.style.color;
+
+    fireEvent.mouseEnter(betaBtn);
+    const colorHovered = betaBtn.style.color;
+
+    fireEvent.mouseLeave(betaBtn);
+    const colorAfterLeave = betaBtn.style.color;
+
+    // Hovered color should differ from muted (pre-hover) color
+    expect(colorHovered).not.toBe(colorBefore);
+    // After mouse leave, color should revert to the muted value
+    expect(colorAfterLeave).toBe(colorBefore);
+    // Suppress unused variable warning
+    void container;
+  });
+
+  it('active tab button has borderBottom containing "2px solid"', () => {
+    render(<TabBar tabs={TABS} activeTab="beta" onTabChange={vi.fn()} />);
+    const activeBtn = screen.getByRole('tab', { name: 'Beta' }) as HTMLElement;
+    expect(activeBtn.style.borderBottom).toContain('2px solid');
+  });
+
+  it('count={0} renders as "Label (0)"', () => {
+    const tabs: Tab[] = [{ id: 'zero', label: 'Zero', count: 0 }];
+    render(<TabBar tabs={tabs} activeTab="zero" onTabChange={vi.fn()} />);
+    expect(screen.getByText('Zero (0)')).toBeTruthy();
+  });
+
+  it('empty tabs=[] renders the container with no buttons', () => {
+    render(<TabBar tabs={[]} activeTab="" onTabChange={vi.fn()} />);
+    expect(screen.getByTestId('tab-bar')).toBeTruthy();
+    expect(screen.queryAllByRole('tab')).toHaveLength(0);
+  });
 });
