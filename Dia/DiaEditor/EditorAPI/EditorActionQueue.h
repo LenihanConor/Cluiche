@@ -7,6 +7,7 @@
 #include <queue>
 #include <future>
 #include <functional>
+#include <thread>
 
 namespace Dia
 {
@@ -29,6 +30,8 @@ namespace Dia
 			};
 
 			// Push an action and block until DoUpdate() resolves it.
+			// If called from the main thread, executes inline to avoid deadlock
+			// (main thread can't drain the queue while it's blocked on it).
 			// Returns {"success":false,"reason":"timeout"} if DoUpdate() does not
 			// resolve within kTimeoutSeconds.
 			Json::Value DispatchAndWait(Dia::Core::StringCRC name, const Json::Value& params);
@@ -44,6 +47,8 @@ namespace Dia
 		private:
 			mutable std::mutex                   mMutex;
 			std::queue<PendingAction*>            mQueue;
+			EditorActionRegistry*                 mRegistry = nullptr;
+			std::thread::id                       mMainThreadId;
 		};
 
 	} // namespace Editor

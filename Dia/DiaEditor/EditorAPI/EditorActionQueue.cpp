@@ -10,6 +10,31 @@ namespace Dia
 
 		Json::Value EditorActionQueue::DispatchAndWait(Dia::Core::StringCRC name, const Json::Value& params)
 		{
+			// If called from the main thread, execute inline — pushing to the queue
+			// would deadlock because DoUpdate() (the queue drainer) also runs on the
+			// main thread and can't run while we're blocking here.
+			if (std::this_thread::get_id() == mMainThreadId && mRegistry != nullptr)
+			{
+				try
+				{
+					return mRegistry->ExecuteAction(name, params);
+				}
+				catch (const std::exception& e)
+				{
+					Json::Value err;
+					err["success"] = false;
+					err["reason"]  = e.what();
+					return err;
+				}
+				catch (...)
+				{
+					Json::Value err;
+					err["success"] = false;
+					err["reason"]  = "unknown_exception";
+					return err;
+				}
+			}
+
 			PendingAction* item = new PendingAction();
 			item->name   = name;
 			item->params = params;
@@ -36,6 +61,14 @@ namespace Dia
 
 		void EditorActionQueue::DoUpdate(EditorActionRegistry* registry, float /*deltaTime*/)
 		{
+			// Capture main thread identity and registry on first call so DispatchAndWait
+			// can execute inline when called from the main thread.
+			if (mMainThreadId == std::thread::id{})
+			{
+				mMainThreadId = std::this_thread::get_id();
+				mRegistry     = registry;
+			}
+
 			std::queue<PendingAction*> local;
 			{
 				std::lock_guard<std::mutex> lock(mMutex);

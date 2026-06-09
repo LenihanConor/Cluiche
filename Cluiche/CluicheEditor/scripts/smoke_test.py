@@ -94,14 +94,16 @@ print(f"[smoke] app_editor.navigate_to_plugin(unknown) OK: {result}")
 
 
 # ---------------------------------------------------------------------------
-# AC-7: app_editor.navigate_to_asset returns not_implemented
+# AC-7: app_editor.navigate_to_asset returns a failure (no crash)
+# With no project open the reason is no_project_open; not_implemented is
+# returned when a project is loaded but the feature isn't wired yet.
 # ---------------------------------------------------------------------------
 raw = app_editor.navigate_to_asset('{"asset_id": "some_asset"}')
 result = _parse(raw)
 assert isinstance(result, dict), "navigate_to_asset must return a JSON dict"
-assert result.get("reason") == "not_implemented", \
-    f"Expected not_implemented for asset navigation, got: {result}"
-print(f"[smoke] app_editor.navigate_to_asset() not_implemented OK")
+assert result.get("success") == False or "reason" in result, \
+    f"Expected failure for asset navigation, got: {result}"
+print(f"[smoke] app_editor.navigate_to_asset() OK: {result}")
 
 
 # ---------------------------------------------------------------------------

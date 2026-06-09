@@ -184,8 +184,27 @@ namespace Dia
 
 
 					// Add to sys.modules
-					py::module_::import("sys").attr("modules")[name] = newModuleObj;
+					py::module_ sys = py::module_::import("sys");
+					sys.attr("modules")[name] = newModuleObj;
 
+					// For dotted names (e.g. "dia_editor.project"), wire the child as an
+					// attribute on the parent and give the parent a __path__ so Python
+					// treats it as a package — otherwise "import dia_editor.project" raises
+					// "dia_editor is not a package".
+					std::string nameStr(name);
+					auto dotPos = nameStr.rfind('.');
+					if (dotPos != std::string::npos)
+					{
+						std::string parentName = nameStr.substr(0, dotPos);
+						std::string childAttr  = nameStr.substr(dotPos + 1);
+						py::object parentMod = sys.attr("modules").attr("get")(parentName.c_str(), py::none());
+						if (!parentMod.is_none())
+						{
+							if (!py::hasattr(parentMod, "__path__"))
+								parentMod.attr("__path__") = py::list();
+							parentMod.attr(childAttr.c_str()) = newModuleObj;
+						}
+					}
 
 					// Store as py::module_
 					moduleImpl->pybindModule = new py::module_(py::cast<py::module_>(newModuleObj));

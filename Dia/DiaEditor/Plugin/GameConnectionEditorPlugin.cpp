@@ -3,6 +3,8 @@
 #include "DiaEditor/Plugin/EditorPluginContext.h"
 #include "DiaEditor/Plugin/PluginServiceLocator.h"
 #include "DiaEditor/MVC/EditorModel.h"
+#include "DiaEditor/EditorAPI/EditorActionRegistryService.h"
+#include "DiaEditor/EditorAPI/EditorActionRegistry.h"
 
 #include <DiaObservation/Log/DiaLog.h>
 
@@ -14,14 +16,24 @@ namespace Dia
 		{
 			DIA_LOG_INFO("Editor", "GameConnectionEditorPlugin: OnLoad");
 			mServices = context.mServices;
+
+			Dia::Editor::EditorActionRegistry* api = nullptr;
+			if (mServices != nullptr)
+			{
+				Dia::Editor::EditorActionRegistryService* regSvc =
+					mServices->GetService<Dia::Editor::EditorActionRegistryService>();
+				if (regSvc != nullptr)
+					api = regSvc->GetRegistry();
+			}
+
 			mManager.Initialize();
 			mController.SetPersistencePath("assets/configs/editor-connection.json");
 			mController.LoadPersistedUrl();
 			mController.SetEditorContext(context.mModel);
-			mController.Initialize(context.mBridge, &mManager, context.mView);
+			mController.Initialize(context.mBridge, &mManager, context.mView, api);
 			mController.AutoConnect("ws://localhost:9002");
 
-			mProjectController.Initialize(context.mBridge, context.mModel);
+			mProjectController.Initialize(context.mBridge, context.mModel, api);
 
 			if (mServices)
 				mServices->RegisterService(&mManager);
