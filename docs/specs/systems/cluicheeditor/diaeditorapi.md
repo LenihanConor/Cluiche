@@ -26,6 +26,7 @@ DiaAPI remains engine-layer plumbing (dispatch, JSON envelope, Python infrastruc
 - Own the MCP server (Phase 2): `tools/list` and `tools/call` endpoints
 - Manage a thread-safe marshal queue: script calls arriving on non-UI threads are dispatched to the correct thread per action's declared policy
 - Manage action deregistration tied to plugin lifecycle (no stale commands after plugin unload)
+- Enforce the Action Manifest authoring contract (EAPI-009): every action's `description`, param schema, and return shape must be spec'd before implementation begins
 
 ## Not Responsible For
 
@@ -236,6 +237,22 @@ void StopMCPServer();
 |----|----------|-----------|-------|--------|---------|
 | EAPI-007 | MCP server binds to a fixed port with a default of `7777`, overridable in `editor.diaapp` | Ollama requires a known address; dynamic port adds sidecar/stdout complexity with no benefit for single-editor desktop use. If a second editor instance fails to bind it logs a clear error. | AI surface (Phase 2) | Accepted | Yes |
 | EAPI-008 | No version field on `EditorActionDescriptor`; breaking param changes require a renamed action (e.g. `project.open_path_v2`) | A version integer defers the breaking-change decision; renaming forces it explicitly and gives callers a clear "action not found" error rather than silent misbehaviour. Same pattern as REST. | Action contract | Accepted | Yes |
+| EAPI-009 | Every feature spec that registers DiaEditorAPI actions must include an **Action Manifest** section defining, for each action: `description` (rich, AI-readable, ~2–4 sentences), `category`, `owner`, `dispatch`, `params` (name, type, required, description), and `returns`. Descriptions are the source of truth — copied verbatim into `EditorActionDescriptor` at implementation time. | Descriptions written at spec time are richer and more intentional than those written during coding. They flow into MCP `tools/list`, Python `.pyi` docstrings, and generated documentation without any extra work. Leaving them to implementers produces terse, inconsistent strings that degrade AI tool-calling quality. | All DiaEditorAPI feature specs | Accepted | Yes |
+
+## Features
+
+| Feature | Description | Spec | Status |
+|---------|-------------|------|--------|
+| app-editor-actions | `app_editor.*` namespace — `get_active_context` + 4 navigate actions; single code path via `AppEditorController`; C++ internal navigation rerouted through `ExecuteAction()` | [app-editor-actions.md](../../features/cluicheeditor/diaeditorapi/app-editor-actions.md) | Approved |
+| asset-catalogue-migration | Migrate all 35 `asset_catalogue.*` WebUIBridge handlers to dual-registration | TBD | — |
+| entity-template-migration | Migrate all 9 `entity_template_editor.*` WebUIBridge handlers to dual-registration | TBD | — |
+| scene-editor-scriptable | Migrate existing `scene_editor.*` handlers + new `get_entities`, `place_entity`, `remove_entity` | TBD | — |
+| live-inspector-migration | Migrate `live.connect/disconnect/getStatus/transitionTo/shutdown` from DiaApplicationFlowInspectorPlugin | TBD | — |
+| app-flow-editor-migration | Migrate `manifest.*`, `history.*`, `validation.*`, `types.*`, `risk.*` from DiaApplicationFlowEditorPlugin | TBD | — |
+| asset-runtime-inspector-migration | Migrate `asset_runtime_inspector.*` from DiaAssetRuntimeInspectorPlugin | TBD | — |
+| entity-inspector-migration | Migrate `entity_inspector.*` handlers from DiaEntityInspectorPlugin controllers | TBD | — |
+| plugin-browser-migration | Migrate `plugin_browser.get_available/load/unload` from PluginBrowserEditorPlugin | TBD | — |
+| pipeline-migration | Migrate `pipeline.*` from DiaPipelineEditorPlugin (Phase 2) | TBD | — |
 
 ## Status
 
