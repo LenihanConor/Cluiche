@@ -96,9 +96,10 @@ ui_builds = [
   { cwd = "Dia/DiaApplicationFlowEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" },
   { cwd = "Dia/DiaPipelineEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" },
   { cwd = "Dia/DiaApplicationFlowInspector/UI", cmd = "node node_modules/vite/bin/vite.js build" },
-  { cwd = "Dia/DiaEntityInspector/UI", cmd = "npm run build" }
+  { cwd = "Dia/DiaEntityInspector/UI", cmd = "node node_modules/typescript/bin/tsc && node node_modules/vite/bin/vite.js build" }
 ]
 files = [
+  { src = "External/Python311/python311.dll",             dest = "$(OutDir)" },
   { src = "External/CEF/Resources/*",                     dest = "$(OutDir)" },
   { src = "External/CEF/Resources/locales/**",            dest = "$(OutDir)locales/" },
   { src = "External/CEF/bin/$(Configuration)/*",          dest = "$(OutDir)" },
