@@ -13,48 +13,38 @@ vi.mock('@dia/editor-ui', () => ({
 }));
 
 describe('StatusBar', () => {
-    it('shows "Live" when connected', () => {
-        render(<StatusBar connected={true} frame={10} entityCount={5} selectedName="Player" watchCount={2} />);
-        expect(screen.getByText('● Live')).toBeInTheDocument();
-    });
-
-    it('shows "Disconnected" when not connected', () => {
-        render(<StatusBar connected={false} frame={0} entityCount={0} selectedName={null} watchCount={0} />);
-        expect(screen.getByText('● Disconnected')).toBeInTheDocument();
-    });
-
     it('shows frame number when frame > 0', () => {
-        render(<StatusBar connected={true} frame={42} entityCount={10} selectedName={null} watchCount={0} />);
+        render(<StatusBar frame={42} entityCount={10} selectedName={null} watchCount={0} />);
         expect(screen.getByText('#42')).toBeInTheDocument();
     });
 
     it('shows dash when frame is 0', () => {
-        render(<StatusBar connected={true} frame={0} entityCount={0} selectedName={null} watchCount={0} />);
+        render(<StatusBar frame={0} entityCount={0} selectedName={null} watchCount={0} />);
         expect(screen.getByText('-')).toBeInTheDocument();
     });
 
     it('shows entity count when > 0', () => {
-        render(<StatusBar connected={true} frame={1} entityCount={99} selectedName={null} watchCount={0} />);
+        render(<StatusBar frame={1} entityCount={99} selectedName={null} watchCount={0} />);
         expect(screen.getByText('99')).toBeInTheDocument();
     });
 
     it('hides entity count when entityCount is 0', () => {
-        render(<StatusBar connected={true} frame={1} entityCount={0} selectedName={null} watchCount={0} />);
+        render(<StatusBar frame={1} entityCount={0} selectedName={null} watchCount={0} />);
         expect(screen.queryByText('entities')).toBeNull();
     });
 
     it('shows selected entity name', () => {
-        render(<StatusBar connected={true} frame={1} entityCount={5} selectedName="Dragon" watchCount={0} />);
+        render(<StatusBar frame={1} entityCount={5} selectedName="Dragon" watchCount={0} />);
         expect(screen.getByText('Dragon')).toBeInTheDocument();
     });
 
     it('shows dash for selected name when null', () => {
-        render(<StatusBar connected={true} frame={1} entityCount={5} selectedName={null} watchCount={0} />);
+        render(<StatusBar frame={1} entityCount={5} selectedName={null} watchCount={0} />);
         expect(screen.getByText('—')).toBeInTheDocument();
     });
 
     it('shows watch count', () => {
-        render(<StatusBar connected={true} frame={1} entityCount={5} selectedName={null} watchCount={7} />);
+        render(<StatusBar frame={1} entityCount={5} selectedName={null} watchCount={7} />);
         expect(screen.getByText('7')).toBeInTheDocument();
     });
 });

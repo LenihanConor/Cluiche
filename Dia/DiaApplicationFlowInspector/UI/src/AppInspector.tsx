@@ -9,7 +9,7 @@ import { EventLog } from './EventLog';
 import { useLiveStoreV2 } from './useLiveStoreV2';
 import { useInspectorStore } from './useInspectorStore';
 import { useLiveConnection } from './useLiveConnection';
-import { TabBar } from '@dia/editor-ui';
+import { TabBar, theme, ConnectionStatus } from '@dia/editor-ui';
 import type { Tab } from '@dia/editor-ui';
 
 type InspectorTab = 'modules' | 'streams' | 'timing' | 'log';
@@ -124,10 +124,11 @@ export default function AppInspector() {
     ];
 
     return (
-        <div style={{ fontFamily: 'monospace', background: '#1a1a1a', color: '#ccc', height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", background: theme.bg, color: theme.text, height: '100%', display: 'flex', flexDirection: 'column', fontSize: 12 }}>
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderBottom: '1px solid #333' }}>
-                <span style={{ fontSize: 12, color: '#888' }}>Application Flow Inspector</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 10px', background: theme.bgPanel, borderBottom: `1px solid ${theme.border}`, flexShrink: 0, userSelect: 'none' }}>
+                <ConnectionStatus state={isConnected ? 'connected' : 'disconnected'} compact />
+                <span style={{ fontWeight: 600, color: theme.text }}>Application Flow Inspector</span>
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
                     {isConnected && <LiveTransitionPanel stages={availableStages} />}
                 </div>
@@ -137,9 +138,9 @@ export default function AppInspector() {
             {isConnected && <StageBreadcrumb />}
 
             {!isConnected ? (
-                <div data-testid="empty-state" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, color: '#555', fontSize: 13 }}>
-                    <span>No game connected</span>
-                    <span style={{ fontSize: 11, color: '#444' }}>Use the Game Connection panel in the toolbar to connect.</span>
+                <div data-testid="empty-state" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, color: theme.borderMuted, fontSize: 13 }}>
+                    <span style={{ color: '#f44747' }}>No game connected</span>
+                    <span style={{ fontSize: 11, color: theme.textMuted }}>Use the Game Connection panel in the toolbar to connect.</span>
                 </div>
             ) : (
                 <>
@@ -155,7 +156,7 @@ export default function AppInspector() {
                         {activeTab === 'modules' && (
                             <div data-testid="tab-content-modules" style={{ padding: 8 }}>
                                 {moduleList.length === 0
-                                    ? <div style={{ color: '#555', fontSize: 12 }}>No module data</div>
+                                    ? <div style={{ color: theme.textMuted, fontSize: 12 }}>No module data</div>
                                     : moduleList.map((m) => <ModuleLifecycleCard key={m.moduleId} module={m} />)
                                 }
                             </div>
@@ -163,7 +164,7 @@ export default function AppInspector() {
                         {activeTab === 'streams' && (
                             <div data-testid="tab-content-streams">
                                 {streamList.length === 0
-                                    ? <div style={{ padding: 8, color: '#555', fontSize: 12 }}>No stream data</div>
+                                    ? <div style={{ padding: 8, color: theme.textMuted, fontSize: 12 }}>No stream data</div>
                                     : streamList.map((s) => <StreamBackpressureRow key={s.streamId} stream={s} />)
                                 }
                             </div>
@@ -171,7 +172,7 @@ export default function AppInspector() {
                         {activeTab === 'timing' && (
                             <div data-testid="tab-content-timing">
                                 {timingList.length === 0
-                                    ? <div style={{ padding: 8, color: '#555', fontSize: 12 }}>No timing data</div>
+                                    ? <div style={{ padding: 8, color: theme.textMuted, fontSize: 12 }}>No timing data</div>
                                     : timingList.map((t) => <PUFrameBudgetGauge key={t.puId} timing={t} />)
                                 }
                             </div>
@@ -184,10 +185,10 @@ export default function AppInspector() {
                     </div>
 
                     {/* Footer */}
-                    <div data-testid="inspector-footer" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '4px 10px', borderTop: '1px solid #333', fontSize: 11, color: '#666' }}>
+                    <div data-testid="inspector-footer" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '2px 10px', background: theme.bgPanel, borderTop: `1px solid ${theme.border}`, fontSize: 10, color: theme.textMuted, flexShrink: 0 }}>
                         <span data-testid="footer-module-count">{moduleList.length} modules</span>
-                        {blockedCount > 0 && <span data-testid="footer-blocked-count" style={{ color: '#ff9800' }}>{blockedCount} blocked</span>}
-                        {failedCount > 0 && <span data-testid="footer-failed-count" style={{ color: '#f44336' }}>{failedCount} failed</span>}
+                        {blockedCount > 0 && <span data-testid="footer-blocked-count" style={{ color: theme.warning }}>{blockedCount} blocked</span>}
+                        {failedCount > 0 && <span data-testid="footer-failed-count" style={{ color: theme.error }}>{failedCount} failed</span>}
                         <span style={{ marginLeft: 'auto' }} />
                         <button
                             data-testid="shutdown-btn"
@@ -195,7 +196,7 @@ export default function AppInspector() {
                                 const { bridgeRequest } = await import('./bridge');
                                 bridgeRequest('live.shutdown', {});
                             }}
-                            style={{ background: '#3a0000', color: '#f44336', border: '1px solid #f4433644', borderRadius: 3, padding: '2px 8px', cursor: 'pointer', fontSize: 11 }}
+                            style={{ background: '#3a0000', color: theme.error, border: `1px solid ${theme.error}44`, borderRadius: 3, padding: '2px 8px', cursor: 'pointer', fontSize: 11 }}
                         >
                             Shutdown
                         </button>

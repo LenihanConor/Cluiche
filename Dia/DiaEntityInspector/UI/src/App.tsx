@@ -167,7 +167,7 @@ export default function App() {
             {/* Title bar */}
             <div style={{ background: theme.bgPanel, borderBottom: `1px solid ${theme.border}`, padding: '5px 10px', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, userSelect: 'none' }}>
                 <ConnectionStatus state={connected ? 'connected' : 'disconnected'} compact />
-                <span style={{ fontWeight: 600, color: theme.text }}>DiaEntityInspector</span>
+                <span style={{ fontWeight: 600, color: theme.text }}>Entity Inspector</span>
                 <span style={{ marginLeft: 'auto', fontSize: 11, color: theme.textMuted }}>
                     {connected && frame > 0 ? `frame #${frame} · ${entityCount} entities` : ''}
                 </span>
@@ -251,7 +251,6 @@ export default function App() {
 
             {/* Status bar */}
             <StatusBar
-                connected={connected}
                 frame={frame}
                 entityCount={entityCount}
                 selectedName={selectedEntityName}

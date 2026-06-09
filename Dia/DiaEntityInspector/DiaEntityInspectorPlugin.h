@@ -13,7 +13,7 @@ class DiaEntityInspectorPlugin final : public Dia::Editor::LiveConnectionPluginB
 public:
     DiaEntityInspectorPlugin()
         : LiveConnectionPluginBase({
-            "DiaEntityInspector",
+            "Entity Inspector",
             "1.0.0",
             "Live runtime inspection and field editing of diaentitytemplate state",
             "dia://plugins/entityinspector/index.html",
