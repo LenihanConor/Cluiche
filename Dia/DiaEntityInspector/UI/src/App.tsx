@@ -1,8 +1,7 @@
 import { useEffect, useState, useCallback, CSSProperties } from 'react';
-import { theme, ConnectionStatus, TabBar } from '@dia/editor-ui';
+import { theme, ConnectionStatus, TabBar, useResizableDivider } from '@dia/editor-ui';
 import type { Tab } from '@dia/editor-ui';
 import { useInspectorStore } from './store';
-import { useResizableDivider } from './useResizableDivider';
 import { EntityList } from './components/EntityList';
 import { ContextStrip } from './components/ContextStrip';
 import { FieldsTab } from './components/FieldsTab';

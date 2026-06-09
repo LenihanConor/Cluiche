@@ -21,3 +21,9 @@ export type { BridgeSubscription } from './useBridge';
 export { useToast, useToastStore } from './notifications/useToast';
 export type { Toast, ToastSeverity } from './notifications/useToast';
 export { ToastRenderer } from './notifications/ToastRenderer';
+
+export { useResizableDivider } from './useResizableDivider';
+export type { UseResizableDividerResult } from './useResizableDivider';
+
+export { deriveExpectedPath, buildNavigateFailedContext } from './navigateFailedUtils';
+export type { NavigateFailedContext } from './navigateFailedUtils';

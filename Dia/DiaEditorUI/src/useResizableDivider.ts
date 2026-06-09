@@ -4,7 +4,7 @@ interface DividerProps {
     onMouseDown: (e: React.MouseEvent) => void;
 }
 
-interface UseResizableDividerResult {
+export interface UseResizableDividerResult {
     leftWidth: number;
     dividerProps: DividerProps;
 }

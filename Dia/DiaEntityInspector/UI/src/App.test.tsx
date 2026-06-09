@@ -29,6 +29,7 @@ vi.mock('@dia/editor-ui', () => ({
     EmptyState: ({ message }: any) => <div data-testid="empty-state">{message}</div>,
     useBridgeSubscribe: vi.fn(),
     useBridgeRequest: () => vi.fn().mockResolvedValue({}),
+    useResizableDivider: () => ({ leftWidth: 280, dividerProps: { onMouseDown: vi.fn() } }),
 }));
 
 const initialState = {
