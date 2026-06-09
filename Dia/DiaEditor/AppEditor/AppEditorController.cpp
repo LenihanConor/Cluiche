@@ -2,6 +2,8 @@
 #include "DiaEditor/MVC/IEditorContext.h"
 #include "DiaEditor/UI/WebUIBridge.h"
 #include "DiaEditor/Project/ProjectContext.h"
+#include "DiaEditor/Plugin/IPluginLoader.h"
+#include <DiaObservation/Log/DiaLog.h>
 
 namespace Dia
 {
@@ -26,10 +28,11 @@ namespace Dia
 		{
 		}
 
-		void AppEditorController::Initialize(WebUIBridge* bridge, IEditorContext* context)
+		void AppEditorController::Initialize(WebUIBridge* bridge, IEditorContext* context, IPluginLoader* pluginLoader)
 		{
-			mBridge  = bridge;
-			mContext = context;
+			mBridge       = bridge;
+			mContext      = context;
+			mPluginLoader = pluginLoader;
 
 			if (mBridge == nullptr || mContext == nullptr)
 				return;
@@ -45,7 +48,8 @@ namespace Dia
 				mBridge->UnregisterRequestHandler(kReqGetActiveContext);
 				mBridge = nullptr;
 			}
-			mContext = nullptr;
+			mContext      = nullptr;
+			mPluginLoader = nullptr;
 		}
 
 		void AppEditorController::SetFocus(Dia::Core::StringCRC pluginId, const char* panel)
@@ -185,6 +189,64 @@ namespace Dia
 				result["selection"] = selection;
 			}
 
+			return result;
+		}
+
+		Json::Value AppEditorController::HandleNavigateTo(Dia::Core::StringCRC type, Dia::Core::StringCRC id)
+		{
+			// Check project open
+			if (mContext == nullptr || !mContext->GetDiagameProject().IsValid())
+			{
+				DIA_LOG_WARNING("AppEditor", "app_editor.navigate_to: no project open");
+				Json::Value r; r["success"] = false; r["reason"] = "no_project_open"; return r;
+			}
+			if (mBridge == nullptr)
+			{
+				Json::Value r; r["success"] = false; r["reason"] = "no_project_open"; return r;
+			}
+
+			// Empty id
+			static const Dia::Core::StringCRC kEmpty;
+			if (id == kEmpty)
+			{
+				DIA_LOG_WARNING("AppEditor", "app_editor.navigate_to: empty id");
+				Json::Value r; r["success"] = false; r["reason"] = "not_found"; return r;
+			}
+
+			// Type-specific resolution
+			if (type == Dia::Core::StringCRC("plugin"))
+			{
+				if (mPluginLoader == nullptr || !mPluginLoader->IsPluginTypeLoaded(id))
+				{
+					DIA_LOG_WARNING("AppEditor", "app_editor.navigate_to_plugin: plugin not loaded");
+					Json::Value r; r["success"] = false; r["reason"] = "plugin_not_loaded"; return r;
+				}
+			}
+			else if (type == Dia::Core::StringCRC("stage"))
+			{
+				// Stage validation deferred to JS for Phase 1:
+				// full HasStage() check requires manifest query API not yet available.
+			}
+			else if (type == Dia::Core::StringCRC("entity"))
+			{
+				// Entity validation deferred to JS for Phase 1.
+			}
+			else if (type == Dia::Core::StringCRC("asset"))
+			{
+				DIA_LOG_WARNING("AppEditor", "app_editor.navigate_to_asset: not_implemented in Phase 1");
+				Json::Value r; r["success"] = false; r["reason"] = "not_implemented"; return r;
+			}
+
+			// Push to JS
+			Json::Value payload;
+			payload["type"] = type.AsChar();
+			payload["id"]   = id.AsChar();
+			mBridge->NotifyUIDataChanged("app_editor.navigate_to", payload);
+
+			DIA_LOG_INFO("AppEditor", "app_editor.navigate_to: navigating to %s '%s'", type.AsChar(), id.AsChar());
+
+			Json::Value result;
+			result["success"] = true;
 			return result;
 		}
 

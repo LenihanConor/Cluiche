@@ -2,6 +2,7 @@
 
 #include <DiaEditor/MVC/IEditorContext.h>
 #include <DiaEditor/UI/WebUIBridge.h>
+#include <DiaEditor/Plugin/IPluginLoader.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
 
@@ -18,9 +19,8 @@ namespace Dia
 
 			AppEditorController();
 
-			// Call after DiaEditorAPI is initialized. bridge and context must outlive this object.
-			// api parameter is forward-declared for now (will be used in Task 3).
-			void Initialize(WebUIBridge* bridge, IEditorContext* context);
+			// Call after DiaEditorAPI is initialized. bridge, context, and pluginLoader must outlive this object.
+			void Initialize(WebUIBridge* bridge, IEditorContext* context, IPluginLoader* pluginLoader);
 			void Shutdown();
 
 			// Called by plugins to update tracked state. All must be called from main thread only.
@@ -34,12 +34,14 @@ namespace Dia
 
 			// Called by Task 2/3 once DiaEditorAPI exists — internal, not public API
 			Json::Value HandleGetActiveContext(const Json::Value& params);
+			Json::Value HandleNavigateTo(Dia::Core::StringCRC type, Dia::Core::StringCRC id);
 
 		private:
 			static const unsigned int kMaxNameLength = 128;
 
-			WebUIBridge*    mBridge  = nullptr;
-			IEditorContext* mContext = nullptr;
+			WebUIBridge*    mBridge       = nullptr;
+			IEditorContext* mContext      = nullptr;
+			IPluginLoader*  mPluginLoader = nullptr;
 
 			Dia::Core::StringCRC mFocusPluginId;
 			char                 mFocusPanel[kMaxNameLength];

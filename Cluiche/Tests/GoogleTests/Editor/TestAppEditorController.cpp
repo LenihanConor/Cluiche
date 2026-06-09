@@ -3,6 +3,7 @@
 #include <DiaEditor/Project/ProjectContext.h>
 #include <DiaEditor/MVC/IEditorContext.h>
 #include <DiaEditor/UI/WebUIBridge.h>
+#include <DiaEditor/Plugin/IPluginLoader.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
 
@@ -44,6 +45,26 @@ namespace
 
         const char* GetRecentProject(unsigned int /*index*/) const override { return nullptr; }
     };
+
+    // -----------------------------------------------------------------------
+    // Mock IPluginLoader
+    // -----------------------------------------------------------------------
+
+    struct MockPluginLoader : IPluginLoader
+    {
+        StringCRC loadedTypeId;
+
+        void LoadPlugin(const StringCRC& /*typeId*/, const StringCRC& /*instanceId*/) override {}
+
+        bool UnloadPlugin(const StringCRC& /*typeId*/) override { return true; }
+
+        bool IsPluginTypeLoaded(const StringCRC& typeId) const override
+        {
+            return typeId == loadedTypeId;
+        }
+
+        bool IsPluginPinned(const StringCRC& /*typeId*/) const override { return false; }
+    };
 }
 
 // ---------------------------------------------------------------------------
@@ -56,9 +77,10 @@ namespace
     {
         WebUIBridge          bridge{nullptr};
         MockEditorContext    mockCtx;
+        MockPluginLoader     mockPluginLoader;
         AppEditorController  ctrl;
 
-        Fixture() { ctrl.Initialize(&bridge, &mockCtx); }
+        Fixture() { ctrl.Initialize(&bridge, &mockCtx, &mockPluginLoader); }
         ~Fixture() { ctrl.Shutdown(); }
 
         Json::Value GetActiveContext()
@@ -216,4 +238,76 @@ TEST(AppEditorController, ProjectContext_InvalidPath_ProjectIsNull)
     Json::Value result = f.GetActiveContext();
 
     EXPECT_TRUE(result["project"].isNull());
+}
+
+// ---------------------------------------------------------------------------
+// HandleNavigateTo
+// ---------------------------------------------------------------------------
+
+TEST(AppEditorController, HandleNavigateTo_NoProject_ReturnsNoProjectOpen)
+{
+    // Initialize with no project loaded (context invalid)
+    WebUIBridge         bridge{nullptr};
+    MockEditorContext   ctx;
+    MockPluginLoader    loader;
+    AppEditorController ctrl;
+    ctrl.Initialize(&bridge, &ctx, &loader);
+
+    Json::Value result = ctrl.HandleNavigateTo(StringCRC("plugin"), StringCRC("x"));
+
+    EXPECT_FALSE(result["success"].asBool());
+    EXPECT_STREQ(result["reason"].asCString(), "no_project_open");
+
+    ctrl.Shutdown();
+}
+
+TEST(AppEditorController, HandleNavigateTo_EmptyId_ReturnsNotFound)
+{
+    Fixture f;
+    f.mockCtx.LoadDiagameProject("C:/proj/cluichetest.diagame");
+
+    Json::Value result = f.ctrl.HandleNavigateTo(StringCRC("stage"), StringCRC());
+
+    EXPECT_FALSE(result["success"].asBool());
+    EXPECT_STREQ(result["reason"].asCString(), "not_found");
+}
+
+TEST(AppEditorController, HandleNavigateTo_AssetType_ReturnsNotImplemented)
+{
+    Fixture f;
+    f.mockCtx.LoadDiagameProject("C:/proj/cluichetest.diagame");
+
+    Json::Value result = f.ctrl.HandleNavigateTo(StringCRC("asset"), StringCRC("some_asset"));
+
+    EXPECT_FALSE(result["success"].asBool());
+    EXPECT_STREQ(result["reason"].asCString(), "not_implemented");
+}
+
+TEST(AppEditorController, HandleNavigateTo_ValidStage_ReturnsSuccess)
+{
+    Fixture f;
+    f.mockCtx.LoadDiagameProject("C:/proj/cluichetest.diagame");
+
+    // Stage validation is deferred to JS in Phase 1 — any non-empty id succeeds in C++
+    Json::Value result = f.ctrl.HandleNavigateTo(StringCRC("stage"), StringCRC("boot"));
+
+    EXPECT_TRUE(result["success"].asBool());
+}
+
+TEST(AppEditorController, HandleNavigateTo_ValidPlugin_NotLoaded_ReturnsPluginNotLoaded)
+{
+    // Use a controller with a null pluginLoader to exercise the nullptr path
+    WebUIBridge         bridge{nullptr};
+    MockEditorContext   ctx;
+    AppEditorController ctrl;
+    ctrl.Initialize(&bridge, &ctx, nullptr);
+
+    ctx.LoadDiagameProject("C:/proj/cluichetest.diagame");
+
+    Json::Value result = ctrl.HandleNavigateTo(StringCRC("plugin"), StringCRC("scene_editor"));
+
+    EXPECT_FALSE(result["success"].asBool());
+    EXPECT_STREQ(result["reason"].asCString(), "plugin_not_loaded");
+
+    ctrl.Shutdown();
 }
