@@ -10,7 +10,7 @@ vi.mock('@dia/editor-ui', () => ({
 }));
 
 vi.mock('./ComponentAccordion', () => ({
-    ComponentAccordion: ({ component, onRemove, children }: any) => (
+    default: ({ component, onRemove, children }: any) => (
         <div data-testid={`accordion-${component.type}`}>
             <button data-testid={`remove-${component.type}`} onClick={() => onRemove(component.type)} />
             {children}

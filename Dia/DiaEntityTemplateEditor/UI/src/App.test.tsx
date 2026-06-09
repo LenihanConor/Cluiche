@@ -10,6 +10,31 @@ vi.mock('@dia/editor-ui', () => ({
     useBridgeSubscribe: vi.fn(),
     useBridgeRequest: vi.fn(() => vi.fn().mockResolvedValue({})),
     useResizableDivider: vi.fn(() => ({ leftWidth: 240, dividerProps: { onMouseDown: vi.fn() } })),
+    useToast: vi.fn(() => ({ push: vi.fn(), dismiss: vi.fn() })),
+}));
+
+vi.mock('./components/BlueprintList', () => ({
+    default: () => <div data-testid="blueprint-list" />,
+}));
+
+vi.mock('./components/PropertyPanel', () => ({
+    default: () => <div data-testid="property-panel" />,
+}));
+
+vi.mock('./components/UsagePanel', () => ({
+    default: () => <div data-testid="usage-panel" />,
+}));
+
+vi.mock('./components/ComponentPicker', () => ({
+    default: () => null,
+}));
+
+vi.mock('./components/NavigateFailedModal', () => ({
+    NavigateFailedModal: () => null,
+}));
+
+vi.mock('./components/ConfirmDialog', () => ({
+    ConfirmDialog: () => null,
 }));
 
 // Import mocked module for spy access
@@ -67,7 +92,7 @@ describe('App', () => {
         const calls = vi.mocked(useBridgeSubscribe).mock.calls;
         expect(calls.length).toBeGreaterThan(0);
         const subs = calls[calls.length - 1][0];
-        const projectChangedSub = subs.find((s: { topic: string }) => s.topic === 'entity_template_editor.project_changed');
+        const projectChangedSub = subs.find((s: { topic: string }) => s.topic === 'entity_template_editor.project_changed')!;
         expect(projectChangedSub).toBeDefined();
 
         await act(async () => {
@@ -83,7 +108,7 @@ describe('App', () => {
 
         const calls = vi.mocked(useBridgeSubscribe).mock.calls;
         const subs = calls[calls.length - 1][0];
-        const navigateFailedSub = subs.find((s: { topic: string }) => s.topic === 'entity_template_editor.navigate_failed');
+        const navigateFailedSub = subs.find((s: { topic: string }) => s.topic === 'entity_template_editor.navigate_failed')!;
         expect(navigateFailedSub).toBeDefined();
 
         const failData = {
@@ -120,5 +145,27 @@ describe('App', () => {
         });
 
         expect(mockRequest).toHaveBeenCalledWith('entity_template_editor.get_list');
+    });
+
+    it('navigated handler calls selectBlueprint (setSelected + load + usage + available_components)', async () => {
+        const mockRequest = vi.fn().mockResolvedValue({});
+        vi.mocked(useBridgeRequest).mockReturnValue(mockRequest);
+
+        await act(async () => {
+            render(<App />);
+        });
+
+        const calls = vi.mocked(useBridgeSubscribe).mock.calls;
+        const subs = calls[calls.length - 1][0];
+        const navigatedSub = subs.find((s: { topic: string }) => s.topic === 'entity_template_editor.navigated')!;
+        expect(navigatedSub).toBeDefined();
+
+        await act(async () => {
+            navigatedSub.handler({ id: 'bp-1', path: 'Assets/hero.diaentitytemplate' });
+        });
+
+        expect(mockRequest).toHaveBeenCalledWith('entity_template_editor.load', { path: 'Assets/hero.diaentitytemplate' });
+        expect(useTemplateEditorStore.getState().selectedId).toBe('bp-1');
+        expect(useTemplateEditorStore.getState().selectedPath).toBe('Assets/hero.diaentitytemplate');
     });
 });

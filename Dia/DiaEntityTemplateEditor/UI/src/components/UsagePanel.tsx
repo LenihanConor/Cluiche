@@ -1,4 +1,4 @@
-import React, { CSSProperties } from 'react';
+import { CSSProperties } from 'react';
 import { theme, EmptyState } from '@dia/editor-ui';
 import type { UsageEntry } from '../types';
 

@@ -1,4 +1,4 @@
-import React, { CSSProperties } from 'react';
+import { CSSProperties } from 'react';
 import { theme, buttonStyle, buildNavigateFailedContext } from '@dia/editor-ui';
 import type { NavigateFailedContext } from '@dia/editor-ui';
 import type { NavigateFailedData } from '../types';

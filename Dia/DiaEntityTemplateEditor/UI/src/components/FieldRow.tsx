@@ -1,4 +1,4 @@
-import React, { CSSProperties, useState, useEffect } from 'react';
+import { CSSProperties, useState, useEffect, ChangeEvent, FocusEvent } from 'react';
 import { theme, inputStyle } from '@dia/editor-ui';
 import type { FieldEntry } from '../types';
 
@@ -64,12 +64,12 @@ export function FieldRow({ componentType, field, onChange }: FieldRowProps) {
 
     const computedInputStyle = inputStyle({ flex: 1, minWidth: 0, ...overrideStyle });
 
-    function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    function handleChange(e: ChangeEvent<HTMLInputElement>) {
         const raw = e.target.value;
         setInputVal(raw);
     }
 
-    function handleBlur(e: React.FocusEvent<HTMLInputElement>) {
+    function handleBlur(e: FocusEvent<HTMLInputElement>) {
         const raw = e.target.value;
         commit(raw);
     }

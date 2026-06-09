@@ -1,7 +1,7 @@
-import React, { CSSProperties } from 'react';
+import { CSSProperties } from 'react';
 import { theme, buttonStyle, EmptyState } from '@dia/editor-ui';
 import type { BlueprintProperties, ComponentEntry, FieldEntry } from '../types';
-import { ComponentAccordion } from './ComponentAccordion';
+import ComponentAccordion from './ComponentAccordion';
 import { FieldRow } from './FieldRow';
 
 interface PropertyPanelProps {
@@ -72,8 +72,9 @@ export function PropertyPanel({
                         {component.fields.map((field: FieldEntry) => (
                             <FieldRow
                                 key={field.name}
+                                componentType={component.type}
                                 field={field}
-                                onChange={(value) => onFieldChange(component.type, field.name, value)}
+                                onChange={(compType, fieldName, value) => onFieldChange(compType, fieldName, value)}
                             />
                         ))}
                     </ComponentAccordion>

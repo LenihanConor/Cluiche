@@ -1,4 +1,4 @@
-import React, { CSSProperties, useState } from 'react';
+import { CSSProperties, useState } from 'react';
 import { theme, inputStyle, EmptyState } from '@dia/editor-ui';
 import type { BlueprintGroup } from '../types';
 

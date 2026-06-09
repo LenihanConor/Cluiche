@@ -1,11 +1,11 @@
-import { useState, CSSProperties } from 'react';
+import { useState, CSSProperties, ReactNode } from 'react';
 import { theme, buttonStyle } from '@dia/editor-ui';
 import type { ComponentEntry } from '../types';
 
 interface ComponentAccordionProps {
     component: ComponentEntry;
     onRemove: (type: string) => void;
-    children?: React.ReactNode;
+    children?: ReactNode;
 }
 
 export default function ComponentAccordion({ component, onRemove, children }: ComponentAccordionProps) {

@@ -1,4 +1,4 @@
-import React, { CSSProperties } from 'react';
+import { CSSProperties } from 'react';
 import { theme, buttonStyle } from '@dia/editor-ui';
 
 export interface ConfirmDialogProps {
