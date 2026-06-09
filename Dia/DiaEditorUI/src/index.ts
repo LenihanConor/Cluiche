@@ -8,3 +8,6 @@ export type { DotState, TrafficLightDotProps } from './TrafficLightDot';
 
 export { EmptyState } from './EmptyState';
 export type { EmptyStateProps } from './EmptyState';
+
+export { TabBar } from './TabBar';
+export type { Tab, TabBarProps } from './TabBar';

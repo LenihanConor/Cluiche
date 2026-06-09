@@ -12,11 +12,20 @@ import { PUInspector } from './PUInspector';
 import { StageConfiguration } from './StageConfiguration';
 import { ValidationBarV2 } from './ValidationBarV2';
 import type { ManifestStateV2 } from './types';
+import { TabBar } from '@dia/editor-ui';
+import type { Tab } from '@dia/editor-ui';
 
-type Tab = 'stages' | 'graph' | 'presence' | 'streams';
+type AppTab = 'stages' | 'graph' | 'presence' | 'streams';
+
+const APP_TABS: Tab[] = [
+    { id: 'stages',   label: 'Stages' },
+    { id: 'graph',    label: 'Process Units' },
+    { id: 'presence', label: 'Modules' },
+    { id: 'streams',  label: 'Streams' },
+];
 
 export const AppV2: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<Tab>('stages');
+    const [activeTab, setActiveTab] = useState<AppTab>('stages');
     const [navigatedStageId, setNavigatedStageId] = useState<string | null>(null);
     const selectedPuId = useSelectionStoreV2((s) => s.puId);
     const setPUSelection = useSelectionStoreV2((s) => s.setPU);
@@ -147,26 +156,11 @@ export const AppV2: React.FC = () => {
             </div>
 
             {/* Tab bar */}
-            <div style={{ display: 'flex', background: '#252526', borderBottom: '1px solid #444' }}>
-                {(['stages', 'graph', 'presence', 'streams'] as Tab[]).map(tab => (
-                    <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        style={{
-                            padding: '6px 16px',
-                            background: activeTab === tab ? '#1e1e1e' : 'transparent',
-                            border: 'none',
-                            borderBottom: activeTab === tab ? '2px solid #007acc' : '2px solid transparent',
-                            color: activeTab === tab ? '#fff' : '#ccc',
-                            cursor: 'pointer',
-                            fontSize: 12,
-                            textTransform: 'capitalize',
-                        }}
-                    >
-                        {tab === 'stages' ? 'Stages' : tab === 'graph' ? 'Process Units' : tab === 'presence' ? 'Modules' : 'Streams'}
-                    </button>
-                ))}
-            </div>
+            <TabBar
+                tabs={APP_TABS}
+                activeTab={activeTab}
+                onTabChange={(id) => setActiveTab(id as AppTab)}
+            />
 
             {/* Main content + sidebar */}
             <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>

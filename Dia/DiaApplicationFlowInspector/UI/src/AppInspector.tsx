@@ -9,11 +9,13 @@ import { EventLog } from './EventLog';
 import { useLiveStoreV2 } from './useLiveStoreV2';
 import { useInspectorStore } from './useInspectorStore';
 import { useLiveConnection } from './useLiveConnection';
+import { TabBar } from '@dia/editor-ui';
+import type { Tab } from '@dia/editor-ui';
 
-type Tab = 'modules' | 'streams' | 'timing' | 'log';
+type InspectorTab = 'modules' | 'streams' | 'timing' | 'log';
 
 export default function AppInspector() {
-    const [activeTab, setActiveTab] = useState<Tab>('modules');
+    const [activeTab, setActiveTab] = useState<InspectorTab>('modules');
     const liveConnectionState = useLiveConnection('app_flow_inspector', bridgeRequest);
     const isConnected = liveConnectionState === 'connected';
     const setActiveStage = useLiveStoreV2((s) => s.setActiveStage);
@@ -113,7 +115,13 @@ export default function AppInspector() {
     }, [setActiveStage, pushStageEntry,
         updateModuleState, updateStreamState, updatePUTiming, pushEventLogEntry, setAvailableStages]);
 
-    const TABS: Tab[] = ['modules', 'streams', 'timing', 'log'];
+    const issueCount = blockedCount + failedCount;
+    const INSPECTOR_TABS: Tab[] = [
+        { id: 'modules', label: 'Modules', count: issueCount > 0 ? issueCount : undefined },
+        { id: 'streams', label: 'Streams' },
+        { id: 'timing',  label: 'Timing' },
+        { id: 'log',     label: 'Log' },
+    ];
 
     return (
         <div style={{ fontFamily: 'monospace', background: '#1a1a1a', color: '#ccc', height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -136,27 +144,11 @@ export default function AppInspector() {
             ) : (
                 <>
                     {/* Tab bar */}
-                    <div style={{ display: 'flex', background: '#252526', borderBottom: '1px solid #333' }}>
-                        {TABS.map((tab) => (
-                            <button
-                                key={tab}
-                                data-testid={`tab-${tab}`}
-                                onClick={() => setActiveTab(tab)}
-                                style={{
-                                    padding: '5px 14px',
-                                    background: activeTab === tab ? '#1a1a1a' : 'transparent',
-                                    border: 'none',
-                                    borderBottom: activeTab === tab ? '2px solid #007acc' : '2px solid transparent',
-                                    color: activeTab === tab ? '#fff' : '#aaa',
-                                    cursor: 'pointer',
-                                    fontSize: 12,
-                                    textTransform: 'capitalize',
-                                }}
-                            >
-                                {tab}
-                            </button>
-                        ))}
-                    </div>
+                    <TabBar
+                        tabs={INSPECTOR_TABS}
+                        activeTab={activeTab}
+                        onTabChange={(id) => setActiveTab(id as InspectorTab)}
+                    />
 
                     {/* Tab content */}
                     <div data-testid="connected-content" style={{ flex: 1, overflow: 'auto' }}>

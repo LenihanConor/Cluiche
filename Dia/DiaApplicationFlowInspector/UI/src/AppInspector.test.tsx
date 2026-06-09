@@ -45,11 +45,11 @@ describe('AppInspector', () => {
     it('tab switching renders correct content', () => {
         setConnected('connected');
         render(<AppInspector />);
-        fireEvent.click(screen.getByTestId('tab-streams'));
+        fireEvent.click(screen.getByRole('tab', { name: 'Streams' }));
         expect(screen.getByTestId('tab-content-streams')).toBeInTheDocument();
-        fireEvent.click(screen.getByTestId('tab-timing'));
+        fireEvent.click(screen.getByRole('tab', { name: 'Timing' }));
         expect(screen.getByTestId('tab-content-timing')).toBeInTheDocument();
-        fireEvent.click(screen.getByTestId('tab-log'));
+        fireEvent.click(screen.getByRole('tab', { name: 'Log' }));
         expect(screen.getByTestId('tab-content-log')).toBeInTheDocument();
     });
 
