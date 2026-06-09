@@ -47,6 +47,17 @@ namespace Cluiche
 				mRegistryService = new Dia::Editor::EditorActionRegistryService(actionModule->GetRegistry());
 				mServiceLocator.RegisterService(mRegistryService);
 			}
+
+			// Initialize AppEditorController — needs bridge, context, plugin loader, and registry.
+			// Context comes from EditorModelModule; registry from EditorActionModule (may be null).
+			if (!mServiceLocator.HasService<Dia::Editor::AppEditorController>())
+			{
+				EditorModelModule* modelModule = mModelRef.Get();
+				Dia::Editor::IEditorContext* ctx = (modelModule != nullptr) ? &modelModule->GetModel() : nullptr;
+				Dia::Editor::EditorActionRegistry* api = (actionModule != nullptr) ? actionModule->GetRegistry() : nullptr;
+				mAppEditorController.Initialize(bridge, ctx, this, api);
+				mServiceLocator.RegisterService(&mAppEditorController);
+			}
 		}
 
 		Dia::ApplicationFlow::StartResult PluginLoaderModule::DoStart()
@@ -236,6 +247,12 @@ namespace Cluiche
 				delete mLoadedPlugins[i].plugin;
 			}
 			mLoadedPlugins.RemoveAll();
+
+			if (mServiceLocator.HasService<Dia::Editor::AppEditorController>())
+			{
+				mServiceLocator.UnregisterService<Dia::Editor::AppEditorController>();
+				mAppEditorController.Shutdown();
+			}
 
 			if (mRegistryService != nullptr)
 			{

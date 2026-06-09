@@ -8,6 +8,7 @@
 #include <DiaEditor/Plugin/PluginServiceLocator.h>
 #include <DiaEditor/Notification/NotificationService.h>
 #include <DiaEditor/EditorAPI/EditorActionRegistryService.h>
+#include <DiaEditor/AppEditor/AppEditorController.h>
 
 namespace Dia { namespace Editor { class IEditorPlugin; class EditorView; class WebUIBridge; } }
 
@@ -64,6 +65,9 @@ namespace Cluiche
 
 			// Service wrapper — registered on mServiceLocator in SetBridge if EditorActionModule is present.
 			Dia::Editor::EditorActionRegistryService* mRegistryService = nullptr;
+
+			// Cross-cutting context controller — wired in SetBridge, registered on service locator.
+			Dia::Editor::AppEditorController mAppEditorController;
 		};
 	}
 }
