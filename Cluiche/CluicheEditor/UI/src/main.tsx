@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { injectThemeVars } from "@dia/editor-ui";
 import { DockingManager } from "./layout/DockingManager";
 import { CommandPalette } from "./components/CommandPalette";
 import { SplashScreen } from "./components/SplashScreen";
 import { EditorBridge } from "./bridge/EditorBridge";
 import { ToastRenderer } from "./notifications/ToastRenderer";
 import "./notifications/useNotifications"; // side-effect: wires setToastDispatch
+
+injectThemeVars();
 
 function App() {
   const [paletteOpen, setPaletteOpen] = useState(false);
