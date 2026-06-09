@@ -3,6 +3,7 @@
 #include <DiaApplicationFlow/Module.h>
 #include <DiaEditor/EditorAPI/EditorActionRegistry.h>
 #include <DiaEditor/EditorAPI/EditorActionQueue.h>
+#include <DiaEditor/EditorAPI/EditorAPIHealthReporter.h>
 #include <DiaObservation/Metric/Gauge.h>
 #include <DiaObservation/Metric/Histogram.h>
 
@@ -29,8 +30,9 @@ namespace Cluiche
 			Dia::ApplicationFlow::StopResult  DoStop() override;
 
 		private:
-			Dia::Editor::EditorActionRegistry mRegistry;
-			Dia::Editor::EditorActionQueue    mQueue;
+			Dia::Editor::EditorActionRegistry      mRegistry;
+			Dia::Editor::EditorActionQueue         mQueue;
+			Dia::Editor::EditorAPIHealthReporter   mHealthReporter{ &mRegistry, &mQueue };
 
 			Dia::Observation::Metric::Gauge*     mQueueDepthGauge       = nullptr;
 			Dia::Observation::Metric::Histogram* mDispatchMsHistogram   = nullptr;

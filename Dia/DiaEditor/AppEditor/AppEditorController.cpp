@@ -3,6 +3,8 @@
 #include "DiaEditor/UI/WebUIBridge.h"
 #include "DiaEditor/Project/ProjectContext.h"
 #include "DiaEditor/Plugin/IPluginLoader.h"
+#include "DiaEditor/EditorAPI/EditorActionRegistry.h"
+#include "DiaEditor/EditorAPI/EditorActionDescriptor.h"
 #include <DiaObservation/Log/DiaLog.h>
 
 namespace Dia
@@ -28,21 +30,102 @@ namespace Dia
 		{
 		}
 
-		void AppEditorController::Initialize(WebUIBridge* bridge, IEditorContext* context, IPluginLoader* pluginLoader)
+		void AppEditorController::Initialize(WebUIBridge* bridge, IEditorContext* context,
+		                                      IPluginLoader* pluginLoader, EditorActionRegistry* api)
 		{
 			mBridge       = bridge;
 			mContext      = context;
 			mPluginLoader = pluginLoader;
+			mApi          = api;
 
 			if (mBridge == nullptr || mContext == nullptr)
 				return;
 
 			mBridge->RegisterRequestHandler(kReqGetActiveContext,
 				[this](const Json::Value& d) { return HandleGetActiveContext(d); });
+
+			if (mApi == nullptr)
+				return;
+
+			// All 5 app_editor actions — kMainThread: state fields written on main thread,
+			// reading from a caller thread without sync would be a data race.
+			{
+				EditorActionDescriptor d;
+				d.name           = Dia::Core::StringCRC("app_editor.get_active_context");
+				d.description    = "Return the current cross-cutting editor context as a JSON object. Fields: project (id, state), focus (plugin_id, panel), edit_target (type, id, name, dirty), selection (type, id, name). Null fields indicate nothing is currently active. Safe to call at any time; returns a snapshot of main-thread state.";
+				d.category       = "app_editor";
+				d.owner          = "AppEditorController";
+				d.dispatchThread = DispatchThread::kMainThread;
+				d.handler        = [this](const Json::Value& p) { return HandleGetActiveContext(p); };
+				mApi->RegisterAction(d);
+			}
+			{
+				EditorActionDescriptor d;
+				d.name           = Dia::Core::StringCRC("app_editor.navigate_to_plugin");
+				d.description    = "Navigate the editor UI to a loaded plugin panel. Required param: plugin_id (string, e.g. 'AppFlowEditorPlugin'). Returns { success: true } if the plugin is loaded and the navigate event was fired. Returns { success: false, reason: 'plugin_not_loaded' } if no plugin with that typeId is currently loaded, or { success: false, reason: 'no_project_open' } if no project is open.";
+				d.category       = "app_editor";
+				d.owner          = "AppEditorController";
+				d.dispatchThread = DispatchThread::kMainThread;
+				d.handler        = [this](const Json::Value& p) -> Json::Value {
+					const char* id = p.isMember("plugin_id") ? p["plugin_id"].asCString() : nullptr;
+					return HandleNavigateTo(Dia::Core::StringCRC("plugin"),
+					                        Dia::Core::StringCRC(id != nullptr ? id : ""));
+				};
+				mApi->RegisterAction(d);
+			}
+			{
+				EditorActionDescriptor d;
+				d.name           = Dia::Core::StringCRC("app_editor.navigate_to_stage");
+				d.description    = "Navigate the editor UI to a stage by its StringCRC id. Required param: stage_id (string). Returns { success: true } if the navigate event was fired. Stage existence is validated by the JS layer in Phase 1. Returns { success: false, reason: 'no_project_open' } if no project is loaded, or { success: false, reason: 'not_found' } if the id is empty.";
+				d.category       = "app_editor";
+				d.owner          = "AppEditorController";
+				d.dispatchThread = DispatchThread::kMainThread;
+				d.handler        = [this](const Json::Value& p) -> Json::Value {
+					const char* id = p.isMember("stage_id") ? p["stage_id"].asCString() : nullptr;
+					return HandleNavigateTo(Dia::Core::StringCRC("stage"),
+					                        Dia::Core::StringCRC(id != nullptr ? id : ""));
+				};
+				mApi->RegisterAction(d);
+			}
+			{
+				EditorActionDescriptor d;
+				d.name           = Dia::Core::StringCRC("app_editor.navigate_to_entity");
+				d.description    = "Navigate the editor UI to an entity template by its StringCRC id. Required param: entity_id (string). Returns { success: true } after firing the navigate event. Entity existence validated by JS in Phase 1. Returns { success: false, reason: 'no_project_open' | 'not_found' } on failure.";
+				d.category       = "app_editor";
+				d.owner          = "AppEditorController";
+				d.dispatchThread = DispatchThread::kMainThread;
+				d.handler        = [this](const Json::Value& p) -> Json::Value {
+					const char* id = p.isMember("entity_id") ? p["entity_id"].asCString() : nullptr;
+					return HandleNavigateTo(Dia::Core::StringCRC("entity"),
+					                        Dia::Core::StringCRC(id != nullptr ? id : ""));
+				};
+				mApi->RegisterAction(d);
+			}
+			{
+				EditorActionDescriptor d;
+				d.name           = Dia::Core::StringCRC("app_editor.navigate_to_asset");
+				d.description    = "Navigate the editor UI to an asset by its StringCRC id. Required param: asset_id (string). Phase 1: always returns { success: false, reason: 'not_implemented' } — asset navigation requires the plugin-to-asset-type registry which is deferred to Phase 2.";
+				d.category       = "app_editor";
+				d.owner          = "AppEditorController";
+				d.dispatchThread = DispatchThread::kMainThread;
+				d.handler        = [this](const Json::Value& p) -> Json::Value {
+					const char* id = p.isMember("asset_id") ? p["asset_id"].asCString() : nullptr;
+					return HandleNavigateTo(Dia::Core::StringCRC("asset"),
+					                        Dia::Core::StringCRC(id != nullptr ? id : ""));
+				};
+				mApi->RegisterAction(d);
+			}
+
+			DIA_LOG_INFO("AppEditor", "AppEditorController: registered 5 app_editor actions");
 		}
 
 		void AppEditorController::Shutdown()
 		{
+			if (mApi != nullptr)
+			{
+				mApi->DeregisterActionsForOwner(Dia::Core::StringCRC("AppEditorController"));
+				mApi = nullptr;
+			}
 			if (mBridge != nullptr)
 			{
 				mBridge->UnregisterRequestHandler(kReqGetActiveContext);

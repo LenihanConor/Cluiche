@@ -1,6 +1,7 @@
 #include "EditorActionModule.h"
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Health/HealthRegistry.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <chrono>
@@ -28,12 +29,16 @@ namespace Cluiche
 				Dia::Core::StringCRC("editor.action_dispatch_ms"),
 				kDispatchBuckets, 6);
 
+			Dia::Observation::Health::HealthRegistry::Instance().Register(&mHealthReporter);
+
 			return Dia::ApplicationFlow::StartResult::kReady;
 		}
 
 		void EditorActionModule::DoUpdate(float deltaTime)
 		{
 			DIA_TRACE_ZONE("editor.action_queue_drain", Dia::Observation::Trace::Category::kDiaApplicationFlow);
+
+			mHealthReporter.Tick();
 
 			if (mQueueDepthGauge)
 				mQueueDepthGauge->Set(static_cast<double>(mQueue.GetDepth()));
@@ -51,6 +56,7 @@ namespace Cluiche
 
 		Dia::ApplicationFlow::StopResult EditorActionModule::DoStop()
 		{
+			Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealthReporter);
 			mRegistry.Shutdown();
 			return Dia::ApplicationFlow::StopResult::kDone;
 		}

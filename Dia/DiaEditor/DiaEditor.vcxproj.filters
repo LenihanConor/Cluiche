@@ -103,6 +103,12 @@
     <ClInclude Include="EditorAPI\EditorActionRegistry.h">
     <ClInclude Include="EditorAPI\EditorActionQueue.h">
     <ClInclude Include="EditorAPI\EditorActionRegistryService.h">
+    <ClInclude Include="EditorAPI\EditorActionPythonModule.h">
+    <ClInclude Include="EditorAPI\EditorAPIHealthReporter.h">
+      <Filter>EditorAPI</Filter>
+    </ClInclude>
+      <Filter>EditorAPI</Filter>
+    </ClInclude>
       <Filter>EditorAPI</Filter>
     </ClInclude>
       <Filter>EditorAPI</Filter>
@@ -146,6 +152,12 @@
     <ClCompile Include="EditorAPI\EditorActionRegistry.cpp">
     <ClCompile Include="EditorAPI\EditorActionQueue.cpp">
     <ClCompile Include="EditorAPI\EditorActionRegistryService.cpp">
+    <ClCompile Include="EditorAPI\EditorActionPythonModule.cpp">
+    <ClCompile Include="EditorAPI\EditorAPIHealthReporter.cpp">
+      <Filter>EditorAPI</Filter>
+    </ClCompile>
+      <Filter>EditorAPI</Filter>
+    </ClCompile>
       <Filter>EditorAPI</Filter>
     </ClCompile>
       <Filter>EditorAPI</Filter>

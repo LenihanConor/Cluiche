@@ -11,6 +11,7 @@
 #include <DiaEditor/MVC/EditorView.h>
 #include <DiaEditor/Layout/DockingLayout.h>
 #include <DiaEditor/Memory/EditorMemory.h>
+#include <DiaEditor/EditorAPI/EditorActionPythonModule.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <string>
@@ -154,6 +155,19 @@ namespace Cluiche
 				{
 					DIA_LOG_INFO("Application", "PluginLoaderModule: No project path set, skipping project load");
 				}
+			}
+
+			// Generate the dia_editor Python module now that all plugins have registered actions.
+			EditorActionModule* actionModule = mActionModuleRef.Get();
+			if (actionModule != nullptr)
+			{
+				Dia::Editor::GeneratePythonModule(
+					actionModule->GetRegistry(),
+					actionModule->GetQueue());
+
+				Dia::Editor::EmitPythonStubs(
+					actionModule->GetRegistry(),
+					"../../../../out/CluicheEditor/scripts/dia_editor.pyi");
 			}
 
 			return Dia::ApplicationFlow::StartResult::kReady;

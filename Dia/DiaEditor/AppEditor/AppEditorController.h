@@ -10,6 +10,8 @@ namespace Dia
 {
 	namespace Editor
 	{
+		class EditorActionRegistry;
+
 		// Tracks cross-cutting editor state (focus, edit target, selection) and
 		// exposes it to the UI via the "app_editor.get_active_context" request handler.
 		class AppEditorController
@@ -20,7 +22,9 @@ namespace Dia
 			AppEditorController();
 
 			// Call after DiaEditorAPI is initialized. bridge, context, and pluginLoader must outlive this object.
-			void Initialize(WebUIBridge* bridge, IEditorContext* context, IPluginLoader* pluginLoader);
+			// api is optional — if non-null, all 5 app_editor actions are registered.
+			void Initialize(WebUIBridge* bridge, IEditorContext* context, IPluginLoader* pluginLoader,
+			                EditorActionRegistry* api = nullptr);
 			void Shutdown();
 
 			// Called by plugins to update tracked state. All must be called from main thread only.
@@ -41,7 +45,8 @@ namespace Dia
 
 			WebUIBridge*    mBridge       = nullptr;
 			IEditorContext* mContext      = nullptr;
-			IPluginLoader*  mPluginLoader = nullptr;
+			IPluginLoader*        mPluginLoader = nullptr;
+			EditorActionRegistry* mApi          = nullptr;
 
 			Dia::Core::StringCRC mFocusPluginId;
 			char                 mFocusPanel[kMaxNameLength];
