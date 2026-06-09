@@ -73,7 +73,7 @@ export function QueriesTab({ queries, selectedEntityName }: QueriesTabProps) {
                         </div>
                         {open && (
                             <div style={{ padding: 8, background: theme.bg }}>
-                                <div style={{ fontSize: 10, color: '#33334a', marginBottom: 4 }}>Members:</div>
+                                <div style={{ fontSize: 10, color: theme.textMuted, marginBottom: 4 }}>Members:</div>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
                                     {(q.members ?? []).map((m) => (
                                         <span

@@ -16,7 +16,7 @@ public:
             "DiaEntityInspector",
             "1.0.0",
             "Live runtime inspection and field editing of diaentitytemplate state",
-            "dia://plugins/entityinspector/dist/index.html",
+            "dia://plugins/entityinspector/index.html",
             Dia::Editor::LayoutMode::kDockable,
             nullptr,
             nullptr,

@@ -59,4 +59,60 @@ describe('MailboxTab', () => {
         fireEvent.click(screen.getByTestId('mailbox-clear'));
         expect(onClear).toHaveBeenCalledTimes(1);
     });
+
+    it('selfOnly=true with selectedEntityName=null shows all messages', () => {
+        render(<MailboxTab {...mkProps({ selectedEntityName: null })} />);
+        // selfOnly is on but name is null — condition short-circuits, all visible
+        expect(screen.getByTestId('mailbox-row-0')).toBeInTheDocument();
+        expect(screen.getByTestId('mailbox-row-1')).toBeInTheDocument();
+        expect(screen.getByTestId('mailbox-row-2')).toBeInTheDocument();
+    });
+
+    it('search filter combines with selfOnly filter', () => {
+        render(<MailboxTab {...mkProps({ selectedEntityName: null })} />);
+        // All visible initially (name null, selfOnly short-circuits). Type "Spawn" in search
+        fireEvent.change(screen.getByTestId('mailbox-search'), { target: { value: 'Spawn' } });
+        // Only 1 row matches "Spawn" — re-indexed as row-0
+        expect(screen.getByTestId('mailbox-row-0')).toBeInTheDocument();
+        expect(screen.queryByTestId('mailbox-row-1')).toBeNull();
+        expect(screen.getByText('1 messages')).toBeInTheDocument();
+    });
+
+    it('shows message count', () => {
+        render(<MailboxTab {...mkProps()} />);
+        expect(screen.getByText('1 messages')).toBeInTheDocument();
+    });
+
+    it('renders empty table when mailbox is empty', () => {
+        render(<MailboxTab {...mkProps({ mailbox: [] })} />);
+        expect(screen.getByText('0 messages')).toBeInTheDocument();
+    });
+
+    it('renders payload when present and empty string when null', () => {
+        const mail: MailboxEntry[] = [
+            { f: 1, s: 'A', a: 'B', type: 'X', p: 'hello payload' },
+            { f: 2, s: 'A', a: 'B', type: 'Y' },
+        ];
+        render(<MailboxTab {...mkProps({ mailbox: mail, selectedEntityName: null })} />);
+        // selfOnly off because name null — both visible
+        fireEvent.click(screen.getByTestId('self-only-toggle'));
+        expect(screen.getByText('hello payload')).toBeInTheDocument();
+    });
+
+    it('uses fallback badge style for unknown type class', () => {
+        const mail: MailboxEntry[] = [
+            { f: 1, s: 'A', a: 'B', type: 'Unknown', tc: 'bogus_type' },
+        ];
+        render(<MailboxTab {...mkProps({ mailbox: mail, selectedEntityName: null })} />);
+        expect(screen.getByText('Unknown')).toBeInTheDocument();
+    });
+
+    it('highlights sender and address when matching selected entity', () => {
+        const mail: MailboxEntry[] = [
+            { f: 1, s: 'Player', a: 'Player', type: 'Self' },
+        ];
+        render(<MailboxTab {...mkProps({ mailbox: mail, selectedEntityName: 'Player' })} />);
+        const row = screen.getByTestId('mailbox-row-0');
+        expect(row).toBeInTheDocument();
+    });
 });

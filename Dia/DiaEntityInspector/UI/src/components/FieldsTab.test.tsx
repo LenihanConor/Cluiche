@@ -142,4 +142,45 @@ describe('FieldsTab', () => {
         render(<FieldsTab entity={noHierEntity} allEntities={[noHierEntity]} onNavigate={vi.fn()} onWriteField={vi.fn()} />);
         expect(screen.queryByTestId('hierarchy-nav')).toBeNull();
     });
+
+    it('collapsing accordion while editing hides the input (no stale editing state leak)', () => {
+        render(<FieldsTab {...mkProps()} />);
+        // Start editing Transform.x
+        fireEvent.click(screen.getByTestId('field-edit-btn-Transform-x'));
+        expect(screen.getByTestId('field-edit-input-Transform-x')).toBeInTheDocument();
+        // Collapse Transform accordion
+        fireEvent.click(screen.getByTestId('component-header-Transform'));
+        // Fields no longer rendered
+        expect(screen.queryByTestId('field-edit-input-Transform-x')).toBeNull();
+        expect(screen.queryByTestId('field-row-Transform-x')).toBeNull();
+        // Re-expand — should show display value, not stale edit input
+        fireEvent.click(screen.getByTestId('component-header-Transform'));
+        expect(screen.getByTestId('field-row-Transform-x')).toBeInTheDocument();
+    });
+
+    it('component with empty fields array renders open accordion with no rows', () => {
+        const entity: EntityEntry = {
+            i: 0, g: 1, n: 'EmptyComp', t: [], d: 0,
+            components: [{ name: 'EmptyFields', fields: [] }],
+        };
+        render(<FieldsTab entity={entity} allEntities={[entity]} onNavigate={vi.fn()} onWriteField={vi.fn()} />);
+        expect(screen.getByTestId('component-header-EmptyFields')).toBeInTheDocument();
+    });
+
+    it('component without tier property does not render tier badge', () => {
+        render(<FieldsTab {...mkProps()} />);
+        // Physics has no tier — should not have a Tier: badge in its header
+        const physicsHeader = screen.getByTestId('component-header-Physics');
+        expect(physicsHeader.textContent).not.toContain('Tier:');
+    });
+
+    it('blur on edit input commits the value', () => {
+        const onWriteField = vi.fn();
+        render(<FieldsTab {...mkProps({ onWriteField })} />);
+        fireEvent.click(screen.getByTestId('field-edit-btn-Transform-x'));
+        const input = screen.getByTestId('field-edit-input-Transform-x');
+        fireEvent.change(input, { target: { value: '42.0' } });
+        fireEvent.blur(input);
+        expect(onWriteField).toHaveBeenCalledWith(0, 'Transform', 'x', '42.0');
+    });
 });

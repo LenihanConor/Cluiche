@@ -148,7 +148,7 @@ export function MailboxTab({ mailbox, selectedEntityName, onClear }: MailboxTabP
                                     <td style={tdStyle}>
                                         <span style={badgeStyle(m.tc)}>{m.type}</span>
                                     </td>
-                                    <td style={{ ...tdStyle, color: '#33334a', fontSize: 10 }}>{m.p ?? ''}</td>
+                                    <td style={{ ...tdStyle, color: theme.textMuted, fontSize: 10 }}>{m.p ?? ''}</td>
                                 </tr>
                             );
                         })}

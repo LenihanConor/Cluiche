@@ -84,4 +84,53 @@ describe('WatchTab', () => {
         const rows = screen.getAllByText('Player');
         expect(rows.length).toBeGreaterThanOrEqual(1);
     });
+
+    it('selecting entity resets component and field selects', () => {
+        render(<WatchTab {...mkProps()} />);
+        fireEvent.change(screen.getByTestId('watch-entity-select'), { target: { value: 'Player' } });
+        fireEvent.change(screen.getByTestId('watch-comp-select'), { target: { value: 'Transform' } });
+        fireEvent.change(screen.getByTestId('watch-field-select'), { target: { value: 'x' } });
+        // Change entity — comp and field should reset
+        fireEvent.change(screen.getByTestId('watch-entity-select'), { target: { value: '' } });
+        expect((screen.getByTestId('watch-comp-select') as HTMLSelectElement).value).toBe('');
+        expect((screen.getByTestId('watch-field-select') as HTMLSelectElement).value).toBe('');
+    });
+
+    it('selecting component resets field select', () => {
+        render(<WatchTab {...mkProps()} />);
+        fireEvent.change(screen.getByTestId('watch-entity-select'), { target: { value: 'Player' } });
+        fireEvent.change(screen.getByTestId('watch-comp-select'), { target: { value: 'Transform' } });
+        fireEvent.change(screen.getByTestId('watch-field-select'), { target: { value: 'x' } });
+        // Change comp — only field should reset
+        fireEvent.change(screen.getByTestId('watch-comp-select'), { target: { value: '' } });
+        expect((screen.getByTestId('watch-field-select') as HTMLSelectElement).value).toBe('');
+    });
+
+    it('successful add clears form state', () => {
+        const onWatchAdd = vi.fn();
+        render(<WatchTab {...mkProps({ onWatchAdd })} />);
+        fireEvent.change(screen.getByTestId('watch-entity-select'), { target: { value: 'Player' } });
+        fireEvent.change(screen.getByTestId('watch-comp-select'), { target: { value: 'Transform' } });
+        fireEvent.change(screen.getByTestId('watch-field-select'), { target: { value: 'x' } });
+        fireEvent.click(screen.getByTestId('watch-add-btn'));
+        expect(onWatchAdd).toHaveBeenCalledWith('Player', 'Transform', 'x');
+        expect((screen.getByTestId('watch-entity-select') as HTMLSelectElement).value).toBe('');
+    });
+
+    it('renders delta symbols correctly', () => {
+        render(<WatchTab {...mkProps()} />);
+        expect(screen.getByText('▲')).toBeInTheDocument();
+        expect(screen.getByText('—')).toBeInTheDocument();
+    });
+
+    it('handles watch items with null value and undefined delta', () => {
+        const items: WatchItem[] = [{ e: 'X', c: 'Y', f: 'z', v: null }];
+        render(<WatchTab {...mkProps({ watchItems: items })} />);
+        expect(screen.getByTestId('watch-row-0')).toBeInTheDocument();
+    });
+
+    it('shows empty table when no watch items', () => {
+        render(<WatchTab {...mkProps({ watchItems: [] })} />);
+        expect(screen.queryByTestId('watch-row-0')).toBeNull();
+    });
 });
