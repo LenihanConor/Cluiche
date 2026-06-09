@@ -24,6 +24,7 @@ namespace Dia
 
 		protected:
 			void OnPluginLoad() override;
+			void OnPluginUnload() override;
 		};
 	}
 }

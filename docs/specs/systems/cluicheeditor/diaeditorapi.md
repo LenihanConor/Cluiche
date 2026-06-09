@@ -244,15 +244,15 @@ void StopMCPServer();
 | Feature | Description | Spec | Status |
 |---------|-------------|------|--------|
 | app-editor-actions | `app_editor.*` namespace — `get_active_context` + 4 navigate actions; single code path via `AppEditorController`; C++ internal navigation rerouted through `ExecuteAction()` | [app-editor-actions.md](../../features/cluicheeditor/diaeditorapi/app-editor-actions.md) | Approved |
-| asset-catalogue-migration | Migrate all 35 `asset_catalogue.*` WebUIBridge handlers to dual-registration | TBD | — |
-| entity-template-migration | Migrate all 9 `entity_template_editor.*` WebUIBridge handlers to dual-registration | TBD | — |
-| scene-editor-scriptable | Migrate existing `scene_editor.*` handlers + new `get_entities`, `place_entity`, `remove_entity` | TBD | — |
+| asset-catalogue-migration | Dual-register all 33 `asset_catalogue.*` WebUIBridge handlers + new `get_available` action | [asset-catalogue-migration.md](../../features/cluicheeditor/diaeditorapi/asset-catalogue-migration.md) | Approved |
+| entity-template-migration | Dual-register all 9 `entity_template_editor.*` WebUIBridge handlers | [entity-template-migration.md](../../features/cluicheeditor/diaeditorapi/entity-template-migration.md) | Approved |
+| scene-editor-scriptable | Dual-register 35 `scene_editor.*` handlers + 5 new actions (`get_entities`, `place_entity`, `remove_entity`, `create_scene`, `create_asset`) | [scene-editor-scriptable.md](../../features/cluicheeditor/diaeditorapi/scene-editor-scriptable.md) | Approved |
+| plugin-browser-migration | Register missing `plugin_browser.get_available`; fix deregistration; audit existing descriptors | [plugin-browser-migration.md](../../features/cluicheeditor/diaeditorapi/plugin-browser-migration.md) | Approved |
 | live-inspector-migration | Migrate `live.connect/disconnect/getStatus/transitionTo/shutdown` from DiaApplicationFlowInspectorPlugin | TBD | — |
 | app-flow-editor-migration | Migrate `manifest.*`, `history.*`, `validation.*`, `types.*`, `risk.*` from DiaApplicationFlowEditorPlugin | TBD | — |
 | asset-runtime-inspector-migration | Migrate `asset_runtime_inspector.*` from DiaAssetRuntimeInspectorPlugin | TBD | — |
 | entity-inspector-migration | Migrate `entity_inspector.*` handlers from DiaEntityInspectorPlugin controllers | TBD | — |
-| plugin-browser-migration | Migrate `plugin_browser.get_available/load/unload` from PluginBrowserEditorPlugin | TBD | — |
-| pipeline-migration | Migrate `pipeline.*` from DiaPipelineEditorPlugin (Phase 2) | TBD | — |
+| pipeline-migration | Migrate `pipeline.*` from DiaPipelineEditorPlugin — deferred; callable via DiaCLI from Python already | TBD | Deferred |
 
 ## Status
 

@@ -17,6 +17,7 @@ try:
     import dia_editor.project as project
     import dia_editor.game_connection as game_connection
     import dia_editor.app_editor as app_editor
+    import dia_editor.plugin_browser as plugin_browser
 except ImportError as e:
     raise ImportError(
         f"dia_editor sub-modules not available: {e}. "
@@ -104,6 +105,22 @@ assert isinstance(result, dict), "navigate_to_asset must return a JSON dict"
 assert result.get("success") == False or "reason" in result, \
     f"Expected failure for asset navigation, got: {result}"
 print(f"[smoke] app_editor.navigate_to_asset() OK: {result}")
+
+
+# ---------------------------------------------------------------------------
+# plugin_browser.get_available returns a list with correct field shape
+# ---------------------------------------------------------------------------
+raw = plugin_browser.get_available()
+assert isinstance(raw, str), f"plugin_browser.get_available() should return str, got {type(raw)}"
+result = _parse(raw)
+assert isinstance(result, dict), "plugin_browser.get_available() must return a JSON dict"
+assert "plugins" in result, "plugin_browser.get_available() must have 'plugins' key"
+assert isinstance(result["plugins"], list), "'plugins' must be a list"
+assert len(result["plugins"]) > 0, "plugin list must be non-empty"
+entry = result["plugins"][0]
+for field in ("name", "version", "description", "typeId", "loaded", "pinned"):
+    assert field in entry, f"plugin entry missing field '{field}'"
+print(f"[smoke] plugin_browser.get_available() OK: {len(result['plugins'])} plugins")
 
 
 # ---------------------------------------------------------------------------

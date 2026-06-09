@@ -113,10 +113,18 @@ namespace Dia
 
 					Dia::Editor::EditorActionDescriptor load;
 					load.name           = Dia::Core::StringCRC("plugin_browser.load");
-					load.description    = "Load an editor plugin by typeId string. Required param: typeId (string, e.g. 'SceneEditorPlugin'). Returns { ok: true } on success or { ok: false, error: string } if the plugin is already loaded, not registered, or the loader is unavailable. Fires DIA_LOG_INFO on load.";
-					load.category       = "plugin";
+					load.description    = "Loads a plugin by type ID, creating a new instance in the editor. Returns an error if the plugin is already loaded, if the type ID is not registered, or if no plugin loader is available. Use get_available to enumerate valid typeId values.";
+					load.category       = "plugin_browser";
 					load.owner          = "PluginBrowserEditorPlugin";
 					load.dispatchThread = Dia::Editor::DispatchThread::kMainThread;
+					{
+						Dia::Editor::EditorActionParam typeIdParam;
+						typeIdParam.name        = "typeId";
+						typeIdParam.type        = "string";
+						typeIdParam.required    = true;
+						typeIdParam.description = "Plugin type ID as returned by get_available, e.g. 'DiaSceneEditorPlugin'.";
+						load.params.params.Add(typeIdParam);
+					}
 					load.handler        = [this](const Json::Value& data) -> Json::Value {
 						const char* typeIdStr = data.isMember("typeId") ? data["typeId"].asCString() : nullptr;
 						if (typeIdStr == nullptr || typeIdStr[0] == '\0')
@@ -134,10 +142,18 @@ namespace Dia
 
 					Dia::Editor::EditorActionDescriptor unload;
 					unload.name           = Dia::Core::StringCRC("plugin_browser.unload");
-					unload.description    = "Unload a currently loaded editor plugin by typeId string. Required param: typeId (string). Returns { ok: true } on success or { ok: false, error: string } if the plugin is not loaded, is pinned, or unload fails. Fires DIA_LOG_INFO on unload.";
-					unload.category       = "plugin";
+					unload.description    = "Unloads a currently-loaded plugin by type ID. Returns an error if the plugin is not loaded, if it is pinned (built-in plugins cannot be unloaded), or if unload fails. Use get_available to check loaded and pinned flags before calling.";
+					unload.category       = "plugin_browser";
 					unload.owner          = "PluginBrowserEditorPlugin";
 					unload.dispatchThread = Dia::Editor::DispatchThread::kMainThread;
+					{
+						Dia::Editor::EditorActionParam typeIdParam;
+						typeIdParam.name        = "typeId";
+						typeIdParam.type        = "string";
+						typeIdParam.required    = true;
+						typeIdParam.description = "Plugin type ID to unload.";
+						unload.params.params.Add(typeIdParam);
+					}
 					unload.handler        = [this](const Json::Value& data) -> Json::Value {
 						const char* typeIdStr = data.isMember("typeId") ? data["typeId"].asCString() : nullptr;
 						if (typeIdStr == nullptr || typeIdStr[0] == '\0')
@@ -153,7 +169,41 @@ namespace Dia
 					};
 					api->RegisterAction(unload);
 
-					DIA_LOG_INFO("Editor", "PluginBrowserEditorPlugin: Dual-registered load/unload actions in EditorActionRegistry");
+					Dia::Editor::EditorActionDescriptor getAvailable;
+					getAvailable.name           = Dia::Core::StringCRC("plugin_browser.get_available");
+					getAvailable.description    = "Returns the list of all registered editor plugin types with their current load state. Each entry includes the plugin's name, version, description, type ID, whether it is currently loaded, and whether it is pinned (pinned plugins cannot be unloaded). Call this to discover valid typeId values for plugin_browser.load and plugin_browser.unload.";
+					getAvailable.category       = "plugin_browser";
+					getAvailable.owner          = "PluginBrowserEditorPlugin";
+					getAvailable.dispatchThread = Dia::Editor::DispatchThread::kCallerThread;
+					getAvailable.handler        = [this](const Json::Value& /*data*/) -> Json::Value
+					{
+						Json::Value result;
+						result["plugins"] = Json::arrayValue;
+
+						EditorPluginRegistry& registry = EditorPluginRegistry::Instance();
+						for (unsigned int i = 0; i < registry.GetRegisteredCount(); ++i)
+						{
+							const Dia::Core::StringCRC& typeId = registry.GetRegisteredTypeId(i);
+							if (!registry.IsInScopeFilter(typeId))
+								continue;
+							EditorPluginInfo info = registry.GetFactory(i)->GetPluginInfo();
+
+							Json::Value entry;
+							entry["name"] = info.name;
+							entry["version"] = info.version;
+							entry["description"] = info.description;
+							entry["typeId"] = typeId.AsChar();
+							entry["loaded"] = (GetPluginLoader() != nullptr) ? GetPluginLoader()->IsPluginTypeLoaded(typeId) : false;
+							entry["pinned"] = (GetPluginLoader() != nullptr) ? GetPluginLoader()->IsPluginPinned(typeId) : false;
+
+							result["plugins"].append(entry);
+						}
+
+						return result;
+					};
+					api->RegisterAction(getAvailable);
+
+					DIA_LOG_INFO("Editor", "PluginBrowserEditorPlugin: Dual-registered load/unload/get_available actions in EditorActionRegistry");
 				}
 			}
 
@@ -204,6 +254,21 @@ namespace Dia
 				}
 				DIA_LOG_INFO("Editor", "PluginBrowserEditorPlugin: Registered plugin load/unload commands");
 			}
+		}
+
+		void PluginBrowserEditorPlugin::OnPluginUnload()
+		{
+			if (GetServices() != nullptr)
+			{
+				Dia::Editor::EditorActionRegistryService* regSvc =
+					GetServices()->GetService<Dia::Editor::EditorActionRegistryService>();
+				if (regSvc != nullptr && regSvc->GetRegistry() != nullptr)
+				{
+					regSvc->GetRegistry()->DeregisterActionsForOwner(
+						Dia::Core::StringCRC("PluginBrowserEditorPlugin"));
+				}
+			}
+			DIA_LOG_INFO("Editor", "PluginBrowserEditorPlugin: OnPluginUnload");
 		}
 	}
 }
