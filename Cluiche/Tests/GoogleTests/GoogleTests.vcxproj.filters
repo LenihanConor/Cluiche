@@ -1297,6 +1297,9 @@
     <ClCompile Include="ApplicationFlow\TestStreamTelemetry.cpp">
     <ClCompile Include="Integration\TestLiveConnectionPluginBase.cpp">
     <ClCompile Include="Editor\TestEditorActionRegistry.cpp">
+    <ClCompile Include="Editor\TestEditorActionQueue.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
       <Filter>Editor</Filter>
     </ClCompile>
       <Filter>Integration</Filter>

@@ -38,6 +38,9 @@
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
     <ClCompile Include="ApplicationFlow\Modules\ObservationModule.cpp">
+    <ClCompile Include="ApplicationFlow\Modules\EditorActionModule.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
   </ItemGroup>
@@ -61,6 +64,9 @@
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
     <ClInclude Include="ApplicationFlow\Modules\ObservationModule.h">
+    <ClInclude Include="ApplicationFlow\Modules\EditorActionModule.h">
+      <Filter>ApplicationFlow</Filter>
+    </ClInclude>
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
   </ItemGroup>

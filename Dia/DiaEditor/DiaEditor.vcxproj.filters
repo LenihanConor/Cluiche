@@ -101,6 +101,9 @@
     <ClInclude Include="Notification\NotificationService.h">
     <ClInclude Include="Plugin\LiveConnectionPluginBase.h">
     <ClInclude Include="EditorAPI\EditorActionRegistry.h">
+    <ClInclude Include="EditorAPI\EditorActionQueue.h">
+      <Filter>EditorAPI</Filter>
+    </ClInclude>
       <Filter>EditorAPI</Filter>
     </ClInclude>
       <Filter>Plugin</Filter>
@@ -138,6 +141,9 @@
     <ClCompile Include="Notification\NotificationService.cpp">
     <ClCompile Include="Plugin\LiveConnectionPluginBase.cpp">
     <ClCompile Include="EditorAPI\EditorActionRegistry.cpp">
+    <ClCompile Include="EditorAPI\EditorActionQueue.cpp">
+      <Filter>EditorAPI</Filter>
+    </ClCompile>
       <Filter>EditorAPI</Filter>
     </ClCompile>
       <Filter>Plugin</Filter>
