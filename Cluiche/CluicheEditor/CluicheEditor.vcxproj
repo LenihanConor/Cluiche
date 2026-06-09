@@ -34,6 +34,7 @@
     <ClCompile Include="..\..\Dia\DiaApplicationFlowInspector\DiaApplicationFlowInspectorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaPipelineEditor\PipelineEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaEntityInspector\DiaEntityInspectorPlugin.cpp" />
+    <ClCompile Include="..\..\Dia\DiaPythonConsoleEditor\DiaPythonConsolePlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\HelloEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\HomeEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\OutputConsoleEditorPlugin.cpp" />
@@ -81,6 +82,9 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaEntityInspector\DiaEntityInspector.vcxproj">
       <Project>{A3B4C5D6-E7F8-9012-ABCD-EF1234567890}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaPythonConsoleEditor\DiaPythonConsoleEditor.vcxproj">
+      <Project>{B1C2D3E4-F5A6-7890-BCDE-F12345678901}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlowEditor\DiaApplicationFlowEditor.vcxproj">
       <Project>{b1c2d3e4-f5a6-7890-bcde-f01234567890}</Project>
@@ -176,7 +180,7 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
-      <AdditionalDependencies>$(LibOutDir)DiaAssetCatalogueEditor.lib;$(LibOutDir)DiaEntityTemplateEditor.lib;$(LibOutDir)DiaSceneEditor.lib;$(LibOutDir)DiaEntity.lib;$(LibOutDir)DiaAssetRuntimeInspector.lib;$(LibOutDir)DiaEntityInspector.lib;$(LibOutDir)DiaApplicationFlowEditor.lib;$(LibOutDir)DiaApplicationFlowInspector.lib;$(LibOutDir)DiaPipelineEditor.lib;$(LibOutDir)DiaEditor.lib;$(LibOutDir)DiaUICEF.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaObservation.lib;libcef.lib;libcef_dll_wrapper.lib;comdlg32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(LibOutDir)DiaAssetCatalogueEditor.lib;$(LibOutDir)DiaEntityTemplateEditor.lib;$(LibOutDir)DiaSceneEditor.lib;$(LibOutDir)DiaEntity.lib;$(LibOutDir)DiaAssetRuntimeInspector.lib;$(LibOutDir)DiaEntityInspector.lib;$(LibOutDir)DiaPythonConsoleEditor.lib;$(LibOutDir)DiaApplicationFlowEditor.lib;$(LibOutDir)DiaApplicationFlowInspector.lib;$(LibOutDir)DiaPipelineEditor.lib;$(LibOutDir)DiaEditor.lib;$(LibOutDir)DiaUICEF.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaObservation.lib;libcef.lib;libcef_dll_wrapper.lib;comdlg32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(RepoRoot)External/CEF/lib/Debug/;$(RepoRoot)External/Python311/libs/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
@@ -201,7 +205,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Windows</SubSystem>
-      <AdditionalDependencies>$(LibOutDir)DiaAssetCatalogueEditor.lib;$(LibOutDir)DiaEntityTemplateEditor.lib;$(LibOutDir)DiaSceneEditor.lib;$(LibOutDir)DiaEntity.lib;$(LibOutDir)DiaAssetRuntimeInspector.lib;$(LibOutDir)DiaEntityInspector.lib;$(LibOutDir)DiaApplicationFlowEditor.lib;$(LibOutDir)DiaApplicationFlowInspector.lib;$(LibOutDir)DiaPipelineEditor.lib;$(LibOutDir)DiaEditor.lib;$(LibOutDir)DiaUICEF.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaObservation.lib;libcef.lib;libcef_dll_wrapper.lib;comdlg32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(LibOutDir)DiaAssetCatalogueEditor.lib;$(LibOutDir)DiaEntityTemplateEditor.lib;$(LibOutDir)DiaSceneEditor.lib;$(LibOutDir)DiaEntity.lib;$(LibOutDir)DiaAssetRuntimeInspector.lib;$(LibOutDir)DiaEntityInspector.lib;$(LibOutDir)DiaPythonConsoleEditor.lib;$(LibOutDir)DiaApplicationFlowEditor.lib;$(LibOutDir)DiaApplicationFlowInspector.lib;$(LibOutDir)DiaPipelineEditor.lib;$(LibOutDir)DiaEditor.lib;$(LibOutDir)DiaUICEF.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaObservation.lib;libcef.lib;libcef_dll_wrapper.lib;comdlg32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(RepoRoot)External/CEF/lib/Release/;$(RepoRoot)External/Python311/libs/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>LIBCMT;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>
