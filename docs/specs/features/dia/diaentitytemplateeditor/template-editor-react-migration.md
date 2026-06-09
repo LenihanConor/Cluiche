@@ -2,7 +2,7 @@
 
 **System:** DiaEntityTemplateEditor
 **App:** Dia
-**Status:** Approved
+**Status:** Done
 
 ## Parent
 @docs/specs/systems/dia/diablueprinteditor.md

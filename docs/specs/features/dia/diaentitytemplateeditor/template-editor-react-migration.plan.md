@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/features/dia/diaentitytemplateeditor/template-editor-react-migration.md
-**Status:** In Progress
+**Status:** Done
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
