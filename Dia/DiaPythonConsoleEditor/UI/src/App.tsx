@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback, useEffect, KeyboardEvent } from 'react';
 import { theme, useBridgeRequest } from '@dia/editor-ui';
 
-// --- Types ---
 type OutputKind = 'stdout' | 'stderr' | 'echo' | 'system';
 
 interface OutputLine {
@@ -9,13 +8,14 @@ interface OutputLine {
     text: string;
 }
 
-// --- Color mapping ---
 const kindColor: Record<OutputKind, string> = {
-    stdout: theme.text,      // white/grey
-    stderr: theme.error,     // red
-    echo:   theme.textMuted, // grey
-    system: theme.warning,   // yellow
+    stdout: theme.text,
+    stderr: theme.error,
+    echo:   theme.textMuted,
+    system: theme.warning,
 };
+
+const MAX_OUTPUT_LINES = 2000;
 
 export const App = () => {
     const [input, setInput] = useState('');
@@ -24,16 +24,20 @@ export const App = () => {
     ]);
     const [busy, setBusy] = useState(false);
     const outputEndRef = useRef<HTMLDivElement>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
     const sendRequest = useBridgeRequest<Record<string, unknown>>();
 
-    // Auto-scroll to bottom on new output
     useEffect(() => {
         outputEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [output]);
 
     const appendLines = useCallback((lines: OutputLine[]) => {
-        setOutput(prev => [...prev, ...lines]);
+        setOutput(prev => {
+            const combined = [...prev, ...lines];
+            if (combined.length > MAX_OUTPUT_LINES) {
+                return combined.slice(combined.length - MAX_OUTPUT_LINES);
+            }
+            return combined;
+        });
     }, []);
 
     const handleExecute = useCallback(async () => {
@@ -44,9 +48,10 @@ export const App = () => {
         appendLines([{ kind: 'echo', text: `>>> ${code}` }]);
         try {
             const result = await sendRequest('python_console.execute', { code });
+            const out = (result as any)?.data ?? result;
             const lines: OutputLine[] = [];
-            if (result?.stdout) lines.push({ kind: 'stdout', text: String(result.stdout) });
-            if (result?.stderr) lines.push({ kind: 'stderr', text: String(result.stderr) });
+            if (out?.stdout) lines.push({ kind: 'stdout', text: String(out.stdout) });
+            if (out?.stderr) lines.push({ kind: 'stderr', text: String(out.stderr) });
             if (lines.length === 0) lines.push({ kind: 'system', text: '(no output)' });
             appendLines(lines);
         } catch (e) {
@@ -60,21 +65,26 @@ export const App = () => {
         if (e.key === 'Enter') handleExecute();
     }, [handleExecute]);
 
-    const handleRunFile = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file || busy) return;
-        // Reset the input so the same file can be re-selected
-        e.target.value = '';
-        setBusy(true);
-        appendLines([{ kind: 'system', text: `Running file: ${file.name}` }]);
+    const handleRunFile = useCallback(async () => {
+        if (busy) return;
         try {
-            // Use the file path if available (desktop/CEF env), otherwise use name as hint
-            const path = (file as File & { path?: string }).path ?? file.name;
+            const dialogResult = await sendRequest('editor.open_file_dialog', {
+                title: 'Select Python Script',
+                filters: [{ name: 'Python Files', ext: '*.py' }],
+                default_ext: 'py',
+            });
+            if (!dialogResult?.success) return;
+            const path = String(dialogResult.path);
+            if (!path) return;
+
+            setBusy(true);
+            appendLines([{ kind: 'system', text: `Running file: ${path}` }]);
             const result = await sendRequest('python_console.run_file', { path });
+            const out = (result as any)?.data ?? result;
             const lines: OutputLine[] = [];
-            if (result?.stdout) lines.push({ kind: 'stdout', text: String(result.stdout) });
-            if (result?.stderr) lines.push({ kind: 'stderr', text: String(result.stderr) });
-            const exitCode = (result?.exitCode as number) ?? 0;
+            if (out?.stdout) lines.push({ kind: 'stdout', text: String(out.stdout) });
+            if (out?.stderr) lines.push({ kind: 'stderr', text: String(out.stderr) });
+            const exitCode = (out?.exitCode as number) ?? -1;
             lines.push({ kind: exitCode === 0 ? 'system' : 'stderr', text: `Exit code: ${exitCode}` });
             appendLines(lines);
         } catch (e) {
@@ -88,13 +98,12 @@ export const App = () => {
         setOutput([]);
     }, []);
 
-    // --- Render ---
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: theme.bg, color: theme.text, fontFamily: "'Consolas', 'Courier New', monospace", fontSize: 12 }}>
             {/* Toolbar */}
             <div style={{ display: 'flex', gap: 6, padding: '4px 8px', borderBottom: `1px solid ${theme.border}`, flexShrink: 0, background: theme.bgPanel }}>
                 <button
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={handleRunFile}
                     disabled={busy}
                     style={{ padding: '2px 10px', background: theme.accent, color: '#fff', border: 'none', borderRadius: 3, cursor: busy ? 'not-allowed' : 'pointer', fontSize: 12 }}
                 >
@@ -107,14 +116,6 @@ export const App = () => {
                     Clear
                 </button>
                 {busy && <span style={{ color: theme.textMuted, alignSelf: 'center' }}>Running…</span>}
-                {/* Hidden file input */}
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".py"
-                    style={{ display: 'none' }}
-                    onChange={handleRunFile}
-                />
             </div>
 
             {/* Output area */}
