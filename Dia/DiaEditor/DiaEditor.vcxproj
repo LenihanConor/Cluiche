@@ -104,6 +104,7 @@
     <ClInclude Include="Plugin\PluginBrowserEditorPlugin.h" />
     <ClInclude Include="Plugin\IPluginLoader.h" />
     <ClInclude Include="Plugin\PluginServiceLocator.h" />
+    <ClInclude Include="AppEditor\AppEditorController.h" />
     <ClInclude Include="Command\IEditorCommand.h" />
     <ClInclude Include="Command\CompoundCommand.h" />
     <ClInclude Include="Command\CommandHistory.h" />
@@ -128,6 +129,7 @@
   <ItemGroup>
     <ClCompile Include="Plugin\EditorPluginBase.cpp" />
     <ClCompile Include="Plugin\EditorPluginRegistry.cpp" />
+    <ClCompile Include="AppEditor\AppEditorController.cpp" />
     <ClCompile Include="Command\CompoundCommand.cpp" />
     <ClCompile Include="Command\CommandHistory.cpp" />
     <ClCompile Include="Project\ProjectContextController.cpp" />
