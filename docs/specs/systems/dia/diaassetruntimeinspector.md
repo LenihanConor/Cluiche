@@ -105,6 +105,7 @@ No dependency on DiaAssetCatalogue, DiaAssetPipeline, DiaApplicationFlow, or any
 | 3 | Ref Count Inspector | S | Selected global asset shows ref count and which Stages hold references. | [ref-count-inspector.md](../../features/dia/diaassetruntimeeditor/ref-count-inspector.md) | Approved |
 | 4 | State Transition Log | S | Scrollable log of state transitions via `asset_runtime.subscribe_transitions`. Pause, resume, filter, clear. | [state-transition-log.md](../../features/dia/diaassetruntimeeditor/state-transition-log.md) | Approved |
 | 5 | Shared Connection | S | Consume shared GameConnectionManager via PluginServiceLocator instead of owning a private instance. Remove connect UI, add disconnected overlay. | [shared-connection.md](../../features/dia/diaassetruntimeeditor/shared-connection.md) | Done |
+| 6 | React+Vite Migration | M | Replace multi-iframe plain HTML/JS UI with a single React+Vite app consuming `@dia/editor-ui`. 4 panels become tab components. No behaviour changes. | [asset-runtime-inspector-react-migration.md](../../features/dia/diaassetruntimeinspector/asset-runtime-inspector-react-migration.md) | Approved |
 
 **Build order:** 1 → 2 → 3 → 4 (table first — provides the data foundation; tree and inspector add views on top; log is independent but benefits from the table existing)
 
