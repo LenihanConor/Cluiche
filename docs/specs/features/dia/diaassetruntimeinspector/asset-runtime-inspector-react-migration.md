@@ -200,4 +200,4 @@ Gate command: `dia run googletest --filter="AssetStateRow*:AssetStateTablePanel*
 
 ## Status
 
-`Approved`
+`Done` — plan: @docs/specs/features/dia/diaassetruntimeinspector/asset-runtime-inspector-react-migration.plan.md

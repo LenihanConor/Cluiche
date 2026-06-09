@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/features/dia/diaassetruntimeinspector/asset-runtime-inspector-react-migration.md
-**Status:** In Progress
+**Status:** Done
 
 ## Implementation Patterns
 
@@ -44,4 +44,4 @@ Mock bridge calls by directly calling the store setters.
 | 6 | StageAssetTree component — expand/collapse, state dots, global node, ref badge, asset click | `npm run test` passes StageAssetTree.test.tsx (≥ 6 tests) | Done | sonnet | 10 tests; sendBridgeRequest uses direct postMessage |
 | 7 | RefCountInspector component — empty state, stage-scoped message, global refs list, missing asset message | `npm run test` passes RefCountInspector.test.tsx (≥ 4 tests) | Done | sonnet | 6 tests; uses EmptyState from @dia/editor-ui |
 | 8 | StateTransitionLog component — pause/resume, clear, asset filter, transition filter, marker rendering | `npm run test` passes StateTransitionLog.test.tsx (≥ 6 tests) | Done | sonnet | 10 tests; PAUSED badge; italic markers; 70/70 total |
-| 9 | Delete old plain HTML/JS/CSS files; run full pipeline verification | `dia pipeline --target diaassetruntimeinspector` passes; `dia run googletest --filter="AssetStateRow*:AssetStateTablePanel*:SharedPluginState*:TransitionLogEntry*:StateTransitionLogPanel*:SessionContext*:StageAssetTreePanel*:RefCountInspectorPanel*:SharedConnection*"` 60 tests pass | Pending | haiku | |
+| 9 | Delete old plain HTML/JS/CSS files; run full pipeline verification | `dia pipeline --target diaassetruntimeinspector` passes; `dia run googletest --filter="AssetStateRow*:AssetStateTablePanel*:SharedPluginState*:TransitionLogEntry*:StateTransitionLogPanel*:SessionContext*:StageAssetTreePanel*:RefCountInspectorPanel*:SharedConnection*"` 60 tests pass | Done | haiku | 14 files deleted; 70 Vitest + 70 C++ pass; dist/index.html 172KB |
