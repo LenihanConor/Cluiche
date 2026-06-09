@@ -74,17 +74,17 @@ export default function App() {
         (request as (topic: string, payload?: unknown) => Promise<LoadResponse>)
             ('entity_template_editor.load', { path })
             .then((r) => { if (r?.properties) setProperties(r.properties); })
-            .catch(() => {});
+            .catch(() => { toast.push('Failed to load blueprint', 'error'); });
 
         (request as (topic: string, payload?: unknown) => Promise<UsageResponse>)
             ('entity_template_editor.get_usage', { assetId: id })
             .then((r) => { setUsage(r?.usage?.usages ?? []); })
-            .catch(() => {});
+            .catch(() => { toast.push('Failed to load usage', 'error'); });
 
         (request as (topic: string, payload?: unknown) => Promise<AvailableComponentsResponse>)
             ('entity_template_editor.get_available_components', { path })
             .then((r) => { setAvailableComponents(r?.components?.filter(c => !c.statusMessage) ?? []); })
-            .catch(() => {});
+            .catch(() => { toast.push('Failed to load components', 'error'); });
     };
 
     const onFieldChange = (componentType: string, fieldName: string, value: string | number | null) => {
@@ -156,7 +156,7 @@ export default function App() {
                 selectBlueprint(context.instanceId, r?.absPath || context.expectedPath);
                 refreshList();
             })
-            .catch(() => {});
+            .catch(() => { toast.push('Failed to create asset file', 'error'); });
     };
 
     const onRemoveEntry = (context: NavigateFailedContext) => {
@@ -167,7 +167,7 @@ export default function App() {
                 toast.push(`Removed entry ${context.instanceId}`, 'success');
                 refreshList();
             })
-            .catch(() => {});
+            .catch(() => { toast.push('Failed to remove catalogue entry', 'error'); });
     };
 
     // On mount: poll project state + load list
@@ -281,7 +281,6 @@ export default function App() {
                 <div data-testid="panel-center" style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
                     <PropertyPanel
                         properties={properties}
-                        selectedPath={selectedPath}
                         onFieldChange={onFieldChange}
                         onRemoveComponent={(type) => setRemoveTarget(type)}
                         onAddComponentClick={() => setPickerOpen(true)}

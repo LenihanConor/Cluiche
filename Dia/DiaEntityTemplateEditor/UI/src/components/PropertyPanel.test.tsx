@@ -44,7 +44,6 @@ const sampleProperties: BlueprintProperties = {
 function makeProps(overrides?: Partial<Parameters<typeof PropertyPanel>[0]>) {
     return {
         properties: sampleProperties,
-        selectedPath: null,
         onFieldChange: vi.fn(),
         onRemoveComponent: vi.fn(),
         onAddComponentClick: vi.fn(),

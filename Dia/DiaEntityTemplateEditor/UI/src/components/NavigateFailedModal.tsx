@@ -1,4 +1,4 @@
-import { CSSProperties } from 'react';
+import { CSSProperties, useEffect } from 'react';
 import { theme, buttonStyle, buildNavigateFailedContext } from '@dia/editor-ui';
 import type { NavigateFailedContext } from '@dia/editor-ui';
 import type { NavigateFailedData } from '../types';
@@ -70,6 +70,13 @@ export function NavigateFailedModal({
     onRemoveEntry,
     onDismiss,
 }: NavigateFailedModalProps) {
+    useEffect(() => {
+        if (data === null) return;
+        const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onDismiss(); };
+        document.addEventListener('keydown', handleKey);
+        return () => document.removeEventListener('keydown', handleKey);
+    }, [data, onDismiss]);
+
     if (data === null) {
         return null;
     }

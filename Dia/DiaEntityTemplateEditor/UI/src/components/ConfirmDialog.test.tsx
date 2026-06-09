@@ -64,4 +64,28 @@ describe('ConfirmDialog', () => {
         render(<ConfirmDialog {...baseProps} />);
         expect(screen.getByTestId('confirm-dialog')).toBeTruthy();
     });
+
+    it('Escape key calls onCancel', () => {
+        const onCancel = vi.fn();
+        render(<ConfirmDialog {...baseProps} onCancel={onCancel} />);
+        fireEvent.keyDown(document, { key: 'Escape' });
+        expect(onCancel).toHaveBeenCalledTimes(1);
+    });
+
+    it('Escape key does nothing when isOpen=false', () => {
+        const onCancel = vi.fn();
+        render(<ConfirmDialog {...baseProps} isOpen={false} onCancel={onCancel} />);
+        fireEvent.keyDown(document, { key: 'Escape' });
+        expect(onCancel).not.toHaveBeenCalled();
+    });
+
+    it('shows default "Confirm" label when confirmLabel not provided', () => {
+        render(<ConfirmDialog {...baseProps} />);
+        expect(screen.getByTestId('confirm-btn').textContent).toBe('Confirm');
+    });
+
+    it('shows default "Cancel" label when cancelLabel not provided', () => {
+        render(<ConfirmDialog {...baseProps} />);
+        expect(screen.getByTestId('cancel-btn').textContent).toBe('Cancel');
+    });
 });

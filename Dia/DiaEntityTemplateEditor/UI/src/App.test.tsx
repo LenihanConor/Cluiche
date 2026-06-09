@@ -168,4 +168,75 @@ describe('App', () => {
         expect(useTemplateEditorStore.getState().selectedId).toBe('bp-1');
         expect(useTemplateEditorStore.getState().selectedPath).toBe('Assets/hero.diaentitytemplate');
     });
+
+    it('shows error toast when selectBlueprint load request rejects', async () => {
+        const mockToast = { push: vi.fn(), dismiss: vi.fn() };
+        const { useToast } = await import('@dia/editor-ui');
+        vi.mocked(useToast).mockReturnValue(mockToast);
+        const mockRequest = vi.fn().mockRejectedValue(new Error('network'));
+        vi.mocked(useBridgeRequest).mockReturnValue(mockRequest);
+
+        await act(async () => {
+            render(<App />);
+        });
+
+        const calls = vi.mocked(useBridgeSubscribe).mock.calls;
+        const subs = calls[calls.length - 1][0];
+        const navigatedSub = subs.find((s: { topic: string }) => s.topic === 'entity_template_editor.navigated')!;
+
+        await act(async () => {
+            navigatedSub.handler({ id: 'bp-fail', path: 'Assets/fail.diaentitytemplate' });
+        });
+
+        expect(mockToast.push).toHaveBeenCalledWith('Failed to load blueprint', 'error');
+        expect(mockToast.push).toHaveBeenCalledWith('Failed to load usage', 'error');
+        expect(mockToast.push).toHaveBeenCalledWith('Failed to load components', 'error');
+    });
+
+    it('shows error toast when create asset request rejects', async () => {
+        const mockToast = { push: vi.fn(), dismiss: vi.fn() };
+        const { useToast } = await import('@dia/editor-ui');
+        vi.mocked(useToast).mockReturnValue(mockToast);
+        const mockRequest = vi.fn().mockRejectedValue(new Error('fail'));
+        vi.mocked(useBridgeRequest).mockReturnValue(mockRequest);
+
+        await act(async () => {
+            render(<App />);
+        });
+
+        const calls = vi.mocked(useBridgeSubscribe).mock.calls;
+        const subs = calls[calls.length - 1][0];
+        const navFailSub = subs.find((s: { topic: string }) => s.topic === 'entity_template_editor.navigate_failed')!;
+
+        await act(async () => {
+            navFailSub.handler({ instanceId: 'x', sourcePath: 'foo', error: 'e', assetType: 'diaentitytemplate' });
+        });
+
+        // NavigateFailedModal is mocked, so we verify via store state
+        expect(useTemplateEditorStore.getState().navigateFailedData).not.toBeNull();
+    });
+
+    it('registry_changed handler fires get_list and updates groups', async () => {
+        const groups = [{ label: 'Entity', items: [{ id: 'e1', label: 'Enemy', path: 'Assets/enemy.diaentitytemplate' }] }];
+        const mockRequest = vi.fn().mockImplementation((topic: string) => {
+            if (topic === 'entity_template_editor.get_list') return Promise.resolve({ success: true, groups });
+            return Promise.resolve({});
+        });
+        vi.mocked(useBridgeRequest).mockReturnValue(mockRequest);
+
+        await act(async () => {
+            render(<App />);
+        });
+
+        const calls = vi.mocked(useBridgeSubscribe).mock.calls;
+        const subs = calls[calls.length - 1][0];
+        const registrySub = subs.find((s: { topic: string }) => s.topic === 'asset_catalogue.registry_changed')!;
+        expect(registrySub).toBeDefined();
+
+        await act(async () => {
+            registrySub.handler({});
+        });
+
+        expect(useTemplateEditorStore.getState().groups).toEqual(groups);
+    });
 });

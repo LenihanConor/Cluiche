@@ -155,4 +155,34 @@ describe('FieldRow', () => {
         fireEvent.blur(input);
         expect(onChange).toHaveBeenCalledWith(COMP, 'speed', null);
     });
+
+    it('non-parseable numeric input ("abc") calls onChange with null', () => {
+        const onChange = vi.fn();
+        render(
+            <FieldRow
+                componentType={COMP}
+                field={makeField({ name: 'mass', kind: 'primitive', codeDefault: 1 })}
+                onChange={onChange}
+            />
+        );
+        const input = screen.getByTestId('field-input-mass');
+        fireEvent.change(input, { target: { value: 'abc' } });
+        fireEvent.blur(input);
+        expect(onChange).toHaveBeenCalledWith(COMP, 'mass', null);
+    });
+
+    it('entering codeDefault value calls onChange with null (clears override)', () => {
+        const onChange = vi.fn();
+        render(
+            <FieldRow
+                componentType={COMP}
+                field={makeField({ name: 'speed', kind: 'primitive', codeDefault: 10 })}
+                onChange={onChange}
+            />
+        );
+        const input = screen.getByTestId('field-input-speed');
+        fireEvent.change(input, { target: { value: '10' } });
+        fireEvent.blur(input);
+        expect(onChange).toHaveBeenCalledWith(COMP, 'speed', null);
+    });
 });

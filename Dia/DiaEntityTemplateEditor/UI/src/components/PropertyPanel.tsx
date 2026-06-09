@@ -6,7 +6,6 @@ import { FieldRow } from './FieldRow';
 
 interface PropertyPanelProps {
     properties: BlueprintProperties | null;
-    selectedPath: string | null;
     onFieldChange: (componentType: string, fieldName: string, value: string | number | null) => void;
     onRemoveComponent: (type: string) => void;
     onAddComponentClick: () => void;
@@ -47,7 +46,7 @@ export function PropertyPanel({
     onFieldChange,
     onRemoveComponent,
     onAddComponentClick,
-}: PropertyPanelProps) {
+}: Readonly<PropertyPanelProps>) {
     if (properties === null) {
         return (
             <EmptyState

@@ -138,4 +138,30 @@ describe('NavigateFailedModal', () => {
         );
         expect(container.firstChild).toBeNull();
     });
+
+    it('Escape key calls onDismiss when data is provided', () => {
+        render(
+            <NavigateFailedModal
+                data={sampleData}
+                onCreateFile={onCreateFile}
+                onRemoveEntry={onRemoveEntry}
+                onDismiss={onDismiss}
+            />
+        );
+        fireEvent.keyDown(document, { key: 'Escape' });
+        expect(onDismiss).toHaveBeenCalledTimes(1);
+    });
+
+    it('Escape key does nothing when data is null', () => {
+        render(
+            <NavigateFailedModal
+                data={null}
+                onCreateFile={onCreateFile}
+                onRemoveEntry={onRemoveEntry}
+                onDismiss={onDismiss}
+            />
+        );
+        fireEvent.keyDown(document, { key: 'Escape' });
+        expect(onDismiss).not.toHaveBeenCalled();
+    });
 });

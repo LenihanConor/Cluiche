@@ -53,8 +53,7 @@ No C++ changes. No protocol changes. No behaviour changes. The bridge topics (`e
   - `entity_template_editor.get_project_state`
   - `entity_template_editor.get_list`
   - `entity_template_editor.load`
-  - `entity_template_editor.save`
-  - `entity_template_editor.update_field`
+  - `entity_template_editor.update_field` (replaces bulk save — field-level persistence)
   - `entity_template_editor.add_component`
   - `entity_template_editor.remove_component`
   - `entity_template_editor.get_available_components`
@@ -78,7 +77,7 @@ No C++ changes. No protocol changes. No behaviour changes. The bridge topics (`e
 - **Component picker**: Search, keyboard navigation (arrow/Enter), count display, cascade warning modal
 - **Navigate-failed modal**: Create file / Remove entry / Dismiss
 - **Project overlay**: Shown when no project loaded, hidden on project load
-- **Toolbar**: Blueprint path display, "New Template" button
+- **Toolbar**: Deferred — no C++ `create_template` endpoint exists; will be added by a future feature spec when the backend supports it
 
 ### Cleanup
 - Old `UI/index.html` deleted

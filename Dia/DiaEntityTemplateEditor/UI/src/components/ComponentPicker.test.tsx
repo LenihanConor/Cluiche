@@ -121,4 +121,38 @@ describe('ComponentPicker', () => {
         expect(onAdd).toHaveBeenCalledOnce();
         expect(onAdd).toHaveBeenCalledWith('PhysicsComponent');
     });
+
+    it('ArrowDown/Up with empty filtered list does not crash', () => {
+        render(<ComponentPicker {...makeProps()} />);
+        const input = screen.getByRole('textbox', { name: /search/i });
+        fireEvent.change(input, { target: { value: 'zzz_nomatch' } });
+        // No items shown — keyboard nav must not throw
+        expect(() => {
+            fireEvent.keyDown(document, { key: 'ArrowDown' });
+            fireEvent.keyDown(document, { key: 'ArrowUp' });
+            fireEvent.keyDown(document, { key: 'Enter' });
+        }).not.toThrow();
+    });
+
+    it('Escape key calls onClose', () => {
+        const onClose = vi.fn();
+        render(<ComponentPicker {...makeProps({ onClose })} />);
+        fireEvent.keyDown(document, { key: 'Escape' });
+        expect(onClose).toHaveBeenCalledOnce();
+    });
+
+    it('ArrowDown navigates down through items', () => {
+        render(<ComponentPicker {...makeProps()} />);
+        fireEvent.keyDown(document, { key: 'ArrowDown' });
+        // First ArrowDown selects index 0, enabling Add button
+        expect(screen.getByTestId('add-btn')).not.toBeDisabled();
+    });
+
+    it('search by description field matches correctly', () => {
+        render(<ComponentPicker {...makeProps()} />);
+        const input = screen.getByRole('textbox', { name: /search/i });
+        fireEvent.change(input, { target: { value: 'rigid body' } });
+        expect(screen.getByTestId('picker-item-0')).toBeInTheDocument();
+        expect(screen.queryByTestId('picker-item-1')).not.toBeInTheDocument();
+    });
 });
