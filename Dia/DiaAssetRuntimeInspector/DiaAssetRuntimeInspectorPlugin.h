@@ -27,7 +27,7 @@ namespace Dia
 						"DiaAssetRuntimeInspector",
 						"1.0.0",
 						"Live asset runtime state inspector",
-						"dia://plugins/assetruntimeinspector/index.html",
+						"dia://plugins/assetruntimeinspector/dist/index.html",
 						Dia::Editor::LayoutMode::kDockable,
 						nullptr,
 						nullptr,
