@@ -18,6 +18,7 @@ try:
     import dia_editor.game_connection as game_connection
     import dia_editor.app_editor as app_editor
     import dia_editor.plugin_browser as plugin_browser
+    import dia_editor.entity_template_editor as entity_template_editor
 except ImportError as e:
     raise ImportError(
         f"dia_editor sub-modules not available: {e}. "
@@ -121,6 +122,18 @@ entry = result["plugins"][0]
 for field in ("name", "version", "description", "typeId", "loaded", "pinned"):
     assert field in entry, f"plugin entry missing field '{field}'"
 print(f"[smoke] plugin_browser.get_available() OK: {len(result['plugins'])} plugins")
+
+
+# ---------------------------------------------------------------------------
+# entity_template_editor.get_project_state returns dict with required keys
+# ---------------------------------------------------------------------------
+raw = entity_template_editor.get_project_state()
+assert isinstance(raw, str), f"entity_template_editor.get_project_state() should return str, got {type(raw)}"
+state = _parse(raw)
+assert isinstance(state, dict), "entity_template_editor.get_project_state() must return a JSON dict"
+assert "isValid" in state, "get_project_state() missing 'isValid'"
+assert "diagamePath" in state, "get_project_state() missing 'diagamePath'"
+print(f"[smoke] entity_template_editor.get_project_state() OK: {state}")
 
 
 # ---------------------------------------------------------------------------

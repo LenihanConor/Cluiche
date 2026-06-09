@@ -31,6 +31,7 @@ namespace Dia
 			void RegisterPropertyHandlers();
 			void RegisterFileHandlers();
 			void RegisterAssetTypesWithCatalogue();
+			void DualRegisterActions();
 
 			// Query the shared catalogue registry for blueprint assets of a given type.
 			// Returns the "records" array from asset_catalogue.query_by_type, or empty array on failure.
