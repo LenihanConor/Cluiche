@@ -648,6 +648,7 @@
     <ClCompile Include="Integration\TestLiveConnectionPluginBase.cpp" />
     <ClCompile Include="Editor\TestEditorActionRegistry.cpp" />
     <ClCompile Include="Editor\TestEditorActionQueue.cpp" />
+    <ClCompile Include="DiaEntityInspector\TestControllers.cpp" />
     <!-- Google Test Source Files - Compiled directly into project -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
       <AdditionalIncludeDirectories>$(ProjectDir)../../../External/googletest/googletest/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
