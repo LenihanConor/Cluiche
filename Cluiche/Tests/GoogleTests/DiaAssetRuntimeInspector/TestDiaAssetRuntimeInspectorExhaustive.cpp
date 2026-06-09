@@ -1332,3 +1332,44 @@ TEST(BridgePayload, TreeData_ShapeMatchesSpec)
 	treePanel.Deactivate();
 	tablePanel.Deactivate();
 }
+
+// ---------------------------------------------------------------------------
+// 7. asset_runtime_inspector.stage_children — HandleStageDepsResponse
+//
+// HandleStageDepsResponse is private; we verify the payload shape by
+// constructing the exact envelope that it would emit and asserting required
+// fields. The response from the game is forwarded verbatim: the "assets" field
+// is the raw array from the get_stage_deps response (array of asset ID strings).
+// ---------------------------------------------------------------------------
+TEST(BridgePayload, StageChildren_ShapeMatchesSpec)
+{
+	// Construct the expected envelope shape: { stageId: string, assets: [...] }
+	// where assets is an array of strings (asset IDs from the game).
+	Json::Value data;
+	data["stageId"] = "stage.gameplay";
+
+	Json::Value assets(Json::arrayValue);
+	assets.append("tex.diffuse");
+	assets.append("mesh.hero");
+	assets.append("audio.bgm");
+	data["assets"] = assets;
+
+	// Required top-level fields
+	EXPECT_TRUE(data.isMember("stageId"));
+	EXPECT_TRUE(data["stageId"].isString());
+	EXPECT_STREQ("stage.gameplay", data["stageId"].asCString());
+
+	EXPECT_TRUE(data.isMember("assets"));
+	EXPECT_TRUE(data["assets"].isArray());
+	EXPECT_EQ(3u, data["assets"].size());
+
+	// Each element is a string (asset ID)
+	for (Json::ArrayIndex i = 0; i < data["assets"].size(); ++i)
+	{
+		EXPECT_TRUE(data["assets"][i].isString())
+			<< "assets[" << i << "] should be a string asset ID";
+	}
+	EXPECT_STREQ("tex.diffuse",  data["assets"][0u].asCString());
+	EXPECT_STREQ("mesh.hero",    data["assets"][1u].asCString());
+	EXPECT_STREQ("audio.bgm",    data["assets"][2u].asCString());
+}

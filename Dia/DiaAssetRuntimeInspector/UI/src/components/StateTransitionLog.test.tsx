@@ -230,6 +230,68 @@ describe('StateTransitionLog — marker rendering', () => {
     });
 });
 
+// ─── Test 8b: log_set_max fires on slider change ─────────────────────────────
+
+describe('StateTransitionLog — log_set_max bridge request', () => {
+    it('moving the max entries slider fires log_set_max with the new value', () => {
+        act(() => {
+            useAssetRuntimeStore.setState({ logMaxEntries: 500 });
+        });
+        render(<StateTransitionLog />);
+
+        const slider = screen.getByRole('slider', { name: /Max entries/i });
+        fireEvent.change(slider, { target: { value: '1000' } });
+
+        expect(parentPostMessage).toHaveBeenCalledWith(
+            expect.objectContaining({
+                __diaFromFrame: true,
+                payload: expect.objectContaining({
+                    type: 'asset_runtime_inspector.log_set_max',
+                    data: expect.objectContaining({ max: 1000 }),
+                }),
+            }),
+            '*'
+        );
+    });
+});
+
+// ─── Test 8c: combined asset ID + transition filter ───────────────────────────
+
+describe('StateTransitionLog — combined filter', () => {
+    it('combined assetId + transition filter shows only matching entries', () => {
+        const entries: LogEntry[] = [
+            { timestamp: 1700000000000, type: 'transition', assetId: 'tex/hero.png', oldState: 'Loading', newState: 'Loaded' },
+            { timestamp: 1700000001000, type: 'transition', assetId: 'tex/hero.png', oldState: 'Loading', newState: 'Failed' },
+            { timestamp: 1700000002000, type: 'transition', assetId: 'audio/sfx.wav', oldState: 'Loading', newState: 'Failed' },
+        ];
+        act(() => {
+            useAssetRuntimeStore.setState({ logEntries: entries });
+        });
+
+        render(<StateTransitionLog />);
+
+        // Filter by assetId "hero" AND transition "Any→Failed"
+        fireEvent.change(screen.getByRole('textbox', { name: /Filter by asset ID/i }), {
+            target: { value: 'hero' },
+        });
+        fireEvent.change(screen.getByRole('combobox', { name: /Transition filter/i }), {
+            target: { value: 'Any→Failed' },
+        });
+
+        // Only tex/hero.png Loading→Failed matches both filters
+        expect(screen.getByText(/tex\/hero\.png/)).toBeInTheDocument();
+        // audio/sfx.wav matches transition but not assetId filter
+        expect(screen.queryByText(/audio\/sfx\.wav/)).toBeNull();
+        // tex/hero.png Loading→Loaded matches assetId but not transition filter
+        // Both entries share the same assetId text so we check by counting rendered rows
+        const rows = screen.getAllByTestId
+            ? screen.queryAllByText(/tex\/hero\.png/)
+            : [];
+        // At most one tex/hero.png row should be visible (the Failed one)
+        expect(rows.length).toBe(1);
+    });
+});
+
 // ─── Test 8: PAUSED badge shown when logPaused === true ──────────────────────
 
 describe('StateTransitionLog — PAUSED badge', () => {

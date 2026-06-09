@@ -261,3 +261,85 @@ describe('AssetStateTable — refresh button', () => {
         );
     });
 });
+
+describe('AssetStateTable — update_filters bridge request', () => {
+    it('changing state filter fires update_filters with stateFilter and idSearch', () => {
+        act(() => {
+            useAssetRuntimeStore.setState({ assets: SAMPLE_ASSETS, total: SAMPLE_ASSETS.length });
+        });
+        render(<AssetStateTable />);
+
+        fireEvent.change(screen.getByTestId('state-filter'), { target: { value: 'Loaded' } });
+
+        expect(window.postMessage).toHaveBeenCalledWith(
+            expect.objectContaining({
+                __diaFromFrame: true,
+                payload: expect.objectContaining({
+                    type: 'asset_runtime_inspector.update_filters',
+                    data: expect.objectContaining({ stateFilter: 'Loaded', idSearch: '' }),
+                }),
+            }),
+            '*'
+        );
+    });
+
+    it('changing ID search fires update_filters with stateFilter and idSearch', () => {
+        act(() => {
+            useAssetRuntimeStore.setState({ assets: SAMPLE_ASSETS, total: SAMPLE_ASSETS.length });
+        });
+        render(<AssetStateTable />);
+
+        fireEvent.change(screen.getByTestId('id-search'), { target: { value: 'hero' } });
+
+        expect(window.postMessage).toHaveBeenCalledWith(
+            expect.objectContaining({
+                __diaFromFrame: true,
+                payload: expect.objectContaining({
+                    type: 'asset_runtime_inspector.update_filters',
+                    data: expect.objectContaining({ idSearch: 'hero' }),
+                }),
+            }),
+            '*'
+        );
+    });
+});
+
+describe('AssetStateTable — set_poll_interval bridge request', () => {
+    it('blurring poll interval input fires set_poll_interval with clamped interval', () => {
+        render(<AssetStateTable />);
+
+        const pollInput = screen.getByTestId('poll-interval');
+        fireEvent.change(pollInput, { target: { value: '2.5' } });
+        fireEvent.blur(pollInput, { target: { value: '2.5' } });
+
+        expect(window.postMessage).toHaveBeenCalledWith(
+            expect.objectContaining({
+                __diaFromFrame: true,
+                payload: expect.objectContaining({
+                    type: 'asset_runtime_inspector.set_poll_interval',
+                    data: expect.objectContaining({ interval: 2.5 }),
+                }),
+            }),
+            '*'
+        );
+    });
+
+    it('poll interval below 0.1 is clamped to 0.1', () => {
+        render(<AssetStateTable />);
+
+        const pollInput = screen.getByTestId('poll-interval');
+        fireEvent.change(pollInput, { target: { value: '0.05' } });
+        fireEvent.blur(pollInput, { target: { value: '0.05' } });
+
+        expect(window.postMessage).toHaveBeenCalledWith(
+            expect.objectContaining({
+                __diaFromFrame: true,
+                payload: expect.objectContaining({
+                    type: 'asset_runtime_inspector.set_poll_interval',
+                    data: expect.objectContaining({ interval: 0.1 }),
+                }),
+            }),
+            '*'
+        );
+    });
+});
