@@ -2,7 +2,9 @@
 
 **Parent:** [diaeditor.md](../../../systems/dia/diaeditor.md)
 
-**Status:** Approved
+**Status:** Done
+
+**Plan:** @docs/specs/features/dia/diaeditor/python-console.plan.md
 
 ## Summary
 
