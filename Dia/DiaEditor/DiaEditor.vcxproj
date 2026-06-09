@@ -129,6 +129,7 @@
     <ClInclude Include="Plugin\LiveConnectionPluginBase.h" />
     <ClInclude Include="EditorAPI\EditorActionRegistry.h" />
     <ClInclude Include="EditorAPI\EditorActionQueue.h" />
+    <ClInclude Include="EditorAPI\EditorActionRegistryService.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="EditorAPI\EditorActionManifest.cpp" />
@@ -153,6 +154,7 @@
     <ClCompile Include="Plugin\LiveConnectionPluginBase.cpp" />
     <ClCompile Include="EditorAPI\EditorActionRegistry.cpp" />
     <ClCompile Include="EditorAPI\EditorActionQueue.cpp" />
+    <ClCompile Include="EditorAPI\EditorActionRegistryService.cpp" />
   </ItemGroup>
 
   <ItemGroup>

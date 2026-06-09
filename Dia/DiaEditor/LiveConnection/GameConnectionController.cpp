@@ -1,4 +1,6 @@
 #include "DiaEditor/LiveConnection/GameConnectionController.h"
+#include "DiaEditor/EditorAPI/EditorActionRegistry.h"
+#include "DiaEditor/EditorAPI/EditorActionDescriptor.h"
 
 #include <DiaDebugProtocol/DiaDebugProtocol.h>
 
@@ -86,12 +88,14 @@ namespace Dia
 			mEditorContext = context;
 		}
 
-		void GameConnectionController::Initialize(WebUIBridge* bridge, GameConnectionManager* manager, EditorView* editorView)
+		void GameConnectionController::Initialize(WebUIBridge* bridge, GameConnectionManager* manager,
+		                                          EditorView* editorView, EditorActionRegistry* api)
 		{
 			DIA_LOG_INFO("Editor", "GameConnectionController: Initialize bridge=%p manager=%p", bridge, manager);
 			mBridge = bridge;
 			mManager = manager;
 			mEditorView = editorView;
+			mApi = api;
 
 			if (mManager != nullptr)
 			{
@@ -101,11 +105,46 @@ namespace Dia
 			}
 
 			RegisterHandlers();
+
+			if (mApi != nullptr)
+			{
+				EditorActionDescriptor connect;
+				connect.name           = kReqConnect;
+				connect.description    = "Initiate a WebSocket connection to a running game instance. Required param: url (string, ws://host:port). Returns { ok: bool } or { ok: false, error: string } if already connected or url is missing.";
+				connect.category       = "game_connection";
+				connect.owner          = "GameConnectionController";
+				connect.dispatchThread = DispatchThread::kMainThread;
+				connect.handler        = [this](const Json::Value& d) { return HandleConnectRequest(d); };
+				mApi->RegisterAction(connect);
+
+				EditorActionDescriptor disconnect;
+				disconnect.name           = kReqDisconnect;
+				disconnect.description    = "Disconnect from the currently connected game instance. No params required. Returns { ok: true }. Logs DIA_LOG_INFO on state transition.";
+				disconnect.category       = "game_connection";
+				disconnect.owner          = "GameConnectionController";
+				disconnect.dispatchThread = DispatchThread::kMainThread;
+				disconnect.handler        = [this](const Json::Value& d) { return HandleDisconnectRequest(d); };
+				mApi->RegisterAction(disconnect);
+
+				EditorActionDescriptor getState;
+				getState.name           = kReqGetState;
+				getState.description    = "Return the current game connection state as a JSON object with fields: connected (bool), state ('disconnected'|'connecting'|'connected'), url (string), lastError (string). Use to check liveness before driving automation.";
+				getState.category       = "game_connection";
+				getState.owner          = "GameConnectionController";
+				getState.dispatchThread = DispatchThread::kMainThread;
+				getState.handler        = [this](const Json::Value& d) { return HandleGetStateRequest(d); };
+				mApi->RegisterAction(getState);
+			}
 		}
 
 		void GameConnectionController::Shutdown()
 		{
 			DIA_LOG_INFO("Editor", "GameConnectionController: Shutdown");
+			if (mApi != nullptr)
+			{
+				mApi->DeregisterActionsForOwner(Dia::Core::StringCRC("GameConnectionController"));
+				mApi = nullptr;
+			}
 			if (mBridge != nullptr)
 			{
 				mBridge->UnregisterRequestHandler(kReqConnect);

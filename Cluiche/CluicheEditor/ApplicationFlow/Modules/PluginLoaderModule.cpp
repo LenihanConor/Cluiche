@@ -1,6 +1,7 @@
 #include "PluginLoaderModule.h"
 #include "EditorModelModule.h"
 #include "EditorViewModule.h"
+#include "EditorActionModule.h"
 
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
@@ -25,6 +26,7 @@ namespace Cluiche
 			, mView(nullptr)
 			, mModelRef(this, EditorModelModule::kTypeId)
 			, mViewRef(this, EditorViewModule::kTypeId)
+			, mActionModuleRef(this, EditorActionModule::kTypeId)
 		{
 			mContext.mPluginLoader = this;
 			mContext.mServices = &mServiceLocator;
@@ -36,6 +38,14 @@ namespace Cluiche
 			mNotificationService.Initialize(bridge);
 			if (!mServiceLocator.HasService<Dia::Editor::NotificationService>())
 				mServiceLocator.RegisterService(&mNotificationService);
+
+			// Register EditorActionRegistry on the service locator if EditorActionModule is present.
+			EditorActionModule* actionModule = mActionModuleRef.Get();
+			if (actionModule != nullptr && !mServiceLocator.HasService<Dia::Editor::EditorActionRegistryService>())
+			{
+				mRegistryService = new Dia::Editor::EditorActionRegistryService(actionModule->GetRegistry());
+				mServiceLocator.RegisterService(mRegistryService);
+			}
 		}
 
 		Dia::ApplicationFlow::StartResult PluginLoaderModule::DoStart()
@@ -212,6 +222,14 @@ namespace Cluiche
 				delete mLoadedPlugins[i].plugin;
 			}
 			mLoadedPlugins.RemoveAll();
+
+			if (mRegistryService != nullptr)
+			{
+				mServiceLocator.UnregisterService<Dia::Editor::EditorActionRegistryService>();
+				delete mRegistryService;
+				mRegistryService = nullptr;
+			}
+
 			return Dia::ApplicationFlow::StopResult::kDone;
 		}
 

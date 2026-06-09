@@ -13,6 +13,7 @@ namespace Dia
 		class WebUIBridge;
 		class GameConnectionManager;
 		class EditorView;
+		class EditorActionRegistry;
 
 		// Drives the Game Connection panel: owns the editor-side UI state
 		// machine (disconnected / connecting / connected), registers the
@@ -47,7 +48,9 @@ namespace Dia
 			GameConnectionController();
 			~GameConnectionController();
 
-			void Initialize(WebUIBridge* bridge, GameConnectionManager* manager, EditorView* editorView = nullptr);
+			void Initialize(WebUIBridge* bridge, GameConnectionManager* manager,
+			               EditorView* editorView = nullptr,
+			               EditorActionRegistry* api = nullptr);
 			void SetEditorContext(IEditorContext* context);
 			void Shutdown();
 
@@ -99,10 +102,11 @@ namespace Dia
 
 			void PushGameConsoleEntry(const char* level, const char* message);
 
-			WebUIBridge* mBridge;
+			WebUIBridge*          mBridge;
 			GameConnectionManager* mManager;
-			EditorView* mEditorView;
-			IEditorContext* mEditorContext;
+			EditorView*            mEditorView;
+			IEditorContext*        mEditorContext;
+			EditorActionRegistry*  mApi = nullptr;
 
 			State mState;
 

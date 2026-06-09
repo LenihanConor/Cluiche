@@ -1,4 +1,6 @@
 #include "DiaEditor/Project/ProjectContextController.h"
+#include "DiaEditor/EditorAPI/EditorActionRegistry.h"
+#include "DiaEditor/EditorAPI/EditorActionDescriptor.h"
 #include "DiaEditor/MVC/IEditorContext.h"
 #include "DiaEditor/UI/WebUIBridge.h"
 #include "DiaEditor/UI/DataPath.h"
@@ -26,10 +28,12 @@ namespace Dia
 		{
 		}
 
-		void ProjectContextController::Initialize(WebUIBridge* bridge, IEditorContext* context)
+		void ProjectContextController::Initialize(WebUIBridge* bridge, IEditorContext* context,
+		                                          EditorActionRegistry* api)
 		{
 			mBridge  = bridge;
 			mContext = context;
+			mApi     = api;
 
 			if (mBridge == nullptr || mContext == nullptr)
 				return;
@@ -40,6 +44,38 @@ namespace Dia
 			mBridge->RegisterRequestHandler(kReqOpen,     [this](const Json::Value& d) { return HandleOpen(d); });
 			mBridge->RegisterRequestHandler(kReqGetState, [this](const Json::Value& d) { return HandleGetState(d); });
 
+			// Dual-register P0 actions in EditorActionRegistry so Python/DiaAPI can reach
+			// the same handlers without going through WebUIBridge.
+			if (mApi != nullptr)
+			{
+				EditorActionDescriptor openPath;
+				openPath.name           = kReqOpenPath;
+				openPath.description    = "Open a .diagame project by absolute file path. Loads the project into the editor context and fires a project_changed push. Required param: path (string). Returns { ok: bool, path: string } or { ok: false, error: string }.";
+				openPath.category       = "project";
+				openPath.owner          = "ProjectContextController";
+				openPath.dispatchThread = DispatchThread::kMainThread;
+				openPath.handler        = [this](const Json::Value& d) { return HandleOpenPath(d); };
+				mApi->RegisterAction(openPath);
+
+				EditorActionDescriptor close;
+				close.name           = kReqClose;
+				close.description    = "Close the currently open .diagame project. Clears the editor context and fires a project_changed push. No params required. Returns { ok: true }.";
+				close.category       = "project";
+				close.owner          = "ProjectContextController";
+				close.dispatchThread = DispatchThread::kMainThread;
+				close.handler        = [this](const Json::Value& d) { return HandleClose(d); };
+				mApi->RegisterAction(close);
+
+				EditorActionDescriptor getState;
+				getState.name           = kReqGetState;
+				getState.description    = "Return the current project state as a JSON object with fields: name (string), diagamePath (string), source ('live'|'manual'). All fields are empty strings when no project is open.";
+				getState.category       = "project";
+				getState.owner          = "ProjectContextController";
+				getState.dispatchThread = DispatchThread::kMainThread;
+				getState.handler        = [this](const Json::Value& d) { return HandleGetState(d); };
+				mApi->RegisterAction(getState);
+			}
+
 			mContext->OnDiagameProjectChanged(&ProjectContextController::OnProjectChangedStatic, this);
 
 			PushProjectChanged();
@@ -47,6 +83,11 @@ namespace Dia
 
 		void ProjectContextController::Shutdown()
 		{
+			if (mApi != nullptr)
+			{
+				mApi->DeregisterActionsForOwner(Dia::Core::StringCRC("ProjectContextController"));
+				mApi = nullptr;
+			}
 			if (mBridge != nullptr)
 			{
 				mBridge->UnregisterRequestHandler(kReqOpenPath);

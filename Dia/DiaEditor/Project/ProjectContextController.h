@@ -9,15 +9,19 @@ namespace Dia
 	{
 		class IEditorContext;
 		class WebUIBridge;
+		class EditorActionRegistry;
 
 		// Registers project.* WebUIBridge request handlers and pushes
 		// "project_changed" topic updates when the game-project context changes.
+		// If api is non-null, also dual-registers the P0 actions via EditorActionRegistry
+		// so they are reachable from Python/DiaAPI in addition to the JS path.
 		class ProjectContextController
 		{
 		public:
 			ProjectContextController();
 
-			void Initialize(WebUIBridge* bridge, IEditorContext* context);
+			void Initialize(WebUIBridge* bridge, IEditorContext* context,
+			                EditorActionRegistry* api = nullptr);
 			void Shutdown();
 
 		private:
@@ -31,8 +35,9 @@ namespace Dia
 
 			static void OnProjectChangedStatic(const ProjectContext& ctx, void* ud);
 
-			WebUIBridge*    mBridge;
-			IEditorContext* mContext;
+			WebUIBridge*          mBridge;
+			IEditorContext*       mContext;
+			EditorActionRegistry* mApi = nullptr;
 		};
 	}
 }

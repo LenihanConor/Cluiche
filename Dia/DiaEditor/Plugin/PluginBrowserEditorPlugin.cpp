@@ -2,6 +2,10 @@
 #include "DiaEditor/Plugin/EditorPluginRegistrationMacros.h"
 #include "DiaEditor/Plugin/EditorPluginRegistry.h"
 #include "DiaEditor/Plugin/IPluginLoader.h"
+#include "DiaEditor/Plugin/EditorPluginBase.h"
+#include "DiaEditor/Plugin/PluginServiceLocator.h"
+#include "DiaEditor/EditorAPI/EditorActionRegistryService.h"
+#include "DiaEditor/EditorAPI/EditorActionDescriptor.h"
 
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaCore/Json/external/json/json.h>
@@ -95,6 +99,63 @@ namespace Dia
 				});
 
 			DIA_LOG_INFO("Editor", "PluginBrowserEditorPlugin: Registered request handlers");
+
+			// Dual-register the generic load/unload actions in EditorActionRegistry so they
+			// appear in the manifest and can be called via Python / DiaAPI without going through
+			// the WebUIBridge. The handlers are identical to the WebUIBridge path above.
+			if (GetServices() != nullptr)
+			{
+				Dia::Editor::EditorActionRegistryService* regSvc =
+					GetServices()->GetService<Dia::Editor::EditorActionRegistryService>();
+				if (regSvc != nullptr && regSvc->GetRegistry() != nullptr)
+				{
+					Dia::Editor::EditorActionRegistry* api = regSvc->GetRegistry();
+
+					Dia::Editor::EditorActionDescriptor load;
+					load.name           = Dia::Core::StringCRC("plugin_browser.load");
+					load.description    = "Load an editor plugin by typeId string. Required param: typeId (string, e.g. 'SceneEditorPlugin'). Returns { ok: true } on success or { ok: false, error: string } if the plugin is already loaded, not registered, or the loader is unavailable. Fires DIA_LOG_INFO on load.";
+					load.category       = "plugin";
+					load.owner          = "PluginBrowserEditorPlugin";
+					load.dispatchThread = Dia::Editor::DispatchThread::kMainThread;
+					load.handler        = [this](const Json::Value& data) -> Json::Value {
+						const char* typeIdStr = data.isMember("typeId") ? data["typeId"].asCString() : nullptr;
+						if (typeIdStr == nullptr || typeIdStr[0] == '\0')
+							return MakeErrorResponse("typeId is required");
+						Dia::Core::StringCRC typeId(typeIdStr);
+						if (GetPluginLoader() == nullptr) return MakeErrorResponse("plugin loader not available");
+						if (GetPluginLoader()->IsPluginTypeLoaded(typeId)) return MakeErrorResponse("plugin is already loaded");
+						if (!EditorPluginRegistry::Instance().IsPluginRegistered(typeId)) return MakeErrorResponse("plugin type not registered");
+						DIA_LOG_INFO("Editor", "PluginBrowserEditorPlugin: loading plugin via action");
+						Dia::Core::StringCRC instanceId((std::string(typeIdStr) + "_action").c_str());
+						GetPluginLoader()->LoadPlugin(typeId, instanceId);
+						return MakeSuccessResponse();
+					};
+					api->RegisterAction(load);
+
+					Dia::Editor::EditorActionDescriptor unload;
+					unload.name           = Dia::Core::StringCRC("plugin_browser.unload");
+					unload.description    = "Unload a currently loaded editor plugin by typeId string. Required param: typeId (string). Returns { ok: true } on success or { ok: false, error: string } if the plugin is not loaded, is pinned, or unload fails. Fires DIA_LOG_INFO on unload.";
+					unload.category       = "plugin";
+					unload.owner          = "PluginBrowserEditorPlugin";
+					unload.dispatchThread = Dia::Editor::DispatchThread::kMainThread;
+					unload.handler        = [this](const Json::Value& data) -> Json::Value {
+						const char* typeIdStr = data.isMember("typeId") ? data["typeId"].asCString() : nullptr;
+						if (typeIdStr == nullptr || typeIdStr[0] == '\0')
+							return MakeErrorResponse("typeId is required");
+						Dia::Core::StringCRC typeId(typeIdStr);
+						if (GetPluginLoader() == nullptr) return MakeErrorResponse("plugin loader not available");
+						if (!GetPluginLoader()->IsPluginTypeLoaded(typeId)) return MakeErrorResponse("plugin is not loaded");
+						if (GetPluginLoader()->IsPluginPinned(typeId)) return MakeErrorResponse("plugin is pinned and cannot be unloaded");
+						DIA_LOG_INFO("Editor", "PluginBrowserEditorPlugin: unloading plugin via action");
+						bool success = GetPluginLoader()->UnloadPlugin(typeId);
+						if (!success) return MakeErrorResponse("failed to unload plugin");
+						return MakeSuccessResponse();
+					};
+					api->RegisterAction(unload);
+
+					DIA_LOG_INFO("Editor", "PluginBrowserEditorPlugin: Dual-registered load/unload actions in EditorActionRegistry");
+				}
+			}
 
 			{
 				EditorPluginRegistry& registry = EditorPluginRegistry::Instance();

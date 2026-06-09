@@ -7,6 +7,7 @@
 #include <DiaEditor/Plugin/IPluginLoader.h>
 #include <DiaEditor/Plugin/PluginServiceLocator.h>
 #include <DiaEditor/Notification/NotificationService.h>
+#include <DiaEditor/EditorAPI/EditorActionRegistryService.h>
 
 namespace Dia { namespace Editor { class IEditorPlugin; class EditorView; class WebUIBridge; } }
 
@@ -16,6 +17,7 @@ namespace Cluiche
 	{
 		class EditorModelModule;
 		class EditorViewModule;
+		class EditorActionModule;
 
 		class PluginLoaderModule : public Dia::ApplicationFlow::Module, public Dia::Editor::IPluginLoader
 		{
@@ -56,8 +58,12 @@ namespace Cluiche
 			static const unsigned int kMaxPlugins = 16;
 			Dia::Core::Containers::DynamicArrayC<LoadedPluginEntry, kMaxPlugins> mLoadedPlugins;
 
-			Dia::ApplicationFlow::ModuleRef<EditorModelModule> mModelRef;
-			Dia::ApplicationFlow::ModuleRef<EditorViewModule>  mViewRef;
+			Dia::ApplicationFlow::ModuleRef<EditorModelModule>  mModelRef;
+			Dia::ApplicationFlow::ModuleRef<EditorViewModule>   mViewRef;
+			Dia::ApplicationFlow::ModuleRef<EditorActionModule> mActionModuleRef;
+
+			// Service wrapper — registered on mServiceLocator in SetBridge if EditorActionModule is present.
+			Dia::Editor::EditorActionRegistryService* mRegistryService = nullptr;
 		};
 	}
 }
