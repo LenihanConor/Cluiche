@@ -146,3 +146,100 @@ TEST(DiaCamera3D_ViewportTransform3D, OrthoCamera_WorldToScreen_ReturnsTrue)
     const bool result = vp.WorldToScreen(Dia::Maths::Vector3D(0.0f, 0.0f, 0.0f), screen);
     EXPECT_TRUE(result);
 }
+
+TEST(DiaCamera3D_ViewportTransform3D, WorldToScreen_ScreenToWorldRay_RoundTrip)
+{
+    // Project a world point to screen, then cast a ray from that pixel.
+    // The ray must pass through (or very close to) the original world point.
+    Camera3D cam;
+    cam.position = Dia::Maths::Vector3D(0.0f, 0.0f, 10.0f);
+    // Identity orientation → looking down -Z
+
+    const Dia::Maths::Vector2D windowSize(800.0f, 600.0f);
+    ViewportTransform3D vp(cam, windowSize);
+
+    const Dia::Maths::Vector3D worldPt(1.0f, 2.0f, -5.0f);
+
+    Dia::Maths::Vector2D screenPt;
+    ASSERT_TRUE(vp.WorldToScreen(worldPt, screenPt));
+
+    Dia::Maths::Vector3D origin, dir;
+    vp.ScreenToWorldRay(screenPt, origin, dir);
+
+    // The ray origin is the near plane. The vector from origin to worldPt
+    // must be parallel to dir (within tolerance).
+    const Dia::Maths::Vector3D toTarget(
+        worldPt.x - origin.x,
+        worldPt.y - origin.y,
+        worldPt.z - origin.z);
+
+    // Dot product of normalised toTarget with dir must be ~1 (parallel)
+    const float len = std::sqrt(toTarget.x*toTarget.x + toTarget.y*toTarget.y + toTarget.z*toTarget.z);
+    ASSERT_GT(len, 0.001f);
+    const float dot = (toTarget.x/len)*dir.x + (toTarget.y/len)*dir.y + (toTarget.z/len)*dir.z;
+    EXPECT_NEAR(dot, 1.0f, 0.01f);
+}
+
+TEST(DiaCamera3D_ViewportTransform3D, ScreenToWorldRay_TopLeftCorner_IsNormalised)
+{
+    Camera3D cam;
+    cam.position = Dia::Maths::Vector3D(0.0f, 0.0f, 5.0f);
+    const Dia::Maths::Vector2D windowSize(800.0f, 600.0f);
+    ViewportTransform3D vp(cam, windowSize);
+
+    Dia::Maths::Vector3D origin, dir;
+    vp.ScreenToWorldRay(Dia::Maths::Vector2D(0.0f, 0.0f), origin, dir);
+
+    const float mag = std::sqrt(dir.x*dir.x + dir.y*dir.y + dir.z*dir.z);
+    EXPECT_NEAR(mag, 1.0f, 0.001f);
+}
+
+TEST(DiaCamera3D_ViewportTransform3D, ScreenToWorldRay_BottomRightCorner_IsNormalised)
+{
+    Camera3D cam;
+    cam.position = Dia::Maths::Vector3D(0.0f, 0.0f, 5.0f);
+    const Dia::Maths::Vector2D windowSize(800.0f, 600.0f);
+    ViewportTransform3D vp(cam, windowSize);
+
+    Dia::Maths::Vector3D origin, dir;
+    vp.ScreenToWorldRay(Dia::Maths::Vector2D(800.0f, 600.0f), origin, dir);
+
+    const float mag = std::sqrt(dir.x*dir.x + dir.y*dir.y + dir.z*dir.z);
+    EXPECT_NEAR(mag, 1.0f, 0.001f);
+}
+
+TEST(DiaCamera3D_ViewportTransform3D, DifferentAspectRatio_DifferentProjectionMatrix)
+{
+    Camera3D cam;
+    ViewportTransform3D vp169(cam, Dia::Maths::Vector2D(1920.0f, 1080.0f));
+    ViewportTransform3D vp43 (cam, Dia::Maths::Vector2D(800.0f,  600.0f));
+
+    // At least one matrix element must differ between the two aspect ratios
+    const Dia::Maths::Matrix44& p169 = vp169.GetProjectionMatrix();
+    const Dia::Maths::Matrix44& p43  = vp43.GetProjectionMatrix();
+    bool differs = false;
+    for (int r = 0; r < 4 && !differs; ++r)
+        for (int c = 0; c < 4 && !differs; ++c)
+            if (std::abs(p169.m[r][c] - p43.m[r][c]) > 0.0001f)
+                differs = true;
+    EXPECT_TRUE(differs);
+}
+
+TEST(DiaCamera3D_ViewportTransform3D, OrthoCamera_ScreenToWorldRay_IsNormalised)
+{
+    Camera3D cam;
+    cam.position = Dia::Maths::Vector3D(0.0f, 0.0f, 10.0f);
+    cam.projectionType = ProjectionType::Orthographic;
+    cam.ortho.width  = 20.0f;
+    cam.ortho.height = 15.0f;
+    cam.ortho.nearZ  = 0.1f;
+    cam.ortho.farZ   = 100.0f;
+
+    ViewportTransform3D vp(cam, Dia::Maths::Vector2D(800.0f, 600.0f));
+
+    Dia::Maths::Vector3D origin, dir;
+    vp.ScreenToWorldRay(Dia::Maths::Vector2D(400.0f, 300.0f), origin, dir);
+
+    const float mag = std::sqrt(dir.x*dir.x + dir.y*dir.y + dir.z*dir.z);
+    EXPECT_NEAR(mag, 1.0f, 0.001f);
+}

@@ -26,6 +26,7 @@ namespace Dia
 			auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
 			mMetricCameraCount    = reg.RegisterGauge(Dia::Core::StringCRC("dia.camera3d.count"));
 			mMetricBehaviourTicks = reg.RegisterCounter(Dia::Core::StringCRC("dia.camera3d.behaviour_ticks"));
+			mMetricActiveChanges  = reg.RegisterCounter(Dia::Core::StringCRC("dia.camera3d.active_changes"));
 		}
 
 		////////////////////////////////////////////////////////////
@@ -49,6 +50,7 @@ namespace Dia
 			mSlots[mCount].camera         = camera;
 			mSlots[mCount].behaviourCount = 0;
 			++mCount;
+			DIA_LOG_DEBUG("DiaCamera3D", "CameraRegistry3D::Register — camera registered");
 
 			if (mMetricCameraCount)
 				mMetricCameraCount->Set(static_cast<double>(mCount));
@@ -81,6 +83,7 @@ namespace Dia
 
 			mSlots[last].behaviourCount = 0;
 			--mCount;
+			DIA_LOG_DEBUG("DiaCamera3D", "CameraRegistry3D::Unregister — camera unregistered");
 
 			if (mMetricCameraCount)
 				mMetricCameraCount->Set(static_cast<double>(mCount));
@@ -143,6 +146,8 @@ namespace Dia
 			const int idx = FindIndex(id);
 			DIA_ASSERT(idx >= 0, "CameraRegistry3D::SetActive — camera not found");
 			mActiveIndex = idx;
+			if (mMetricActiveChanges) mMetricActiveChanges->Inc(1);
+			DIA_LOG_DEBUG("DiaCamera3D", "CameraRegistry3D::SetActive — active camera changed");
 		}
 
 		////////////////////////////////////////////////////////////

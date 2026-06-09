@@ -75,3 +75,44 @@ TEST(DiaCamera3D_BehaviourRegistry, Create_Unknown_ReturnsNull)
         Dia::Core::StringCRC("no_such_behaviour_abc"));
     EXPECT_EQ(b, nullptr);
 }
+
+// Create all 6 engine behaviour types via factory
+TEST(DiaCamera3D_BehaviourRegistry, Create_SmoothDamp3D_ReturnsNonNull)
+{
+    ICameraBehaviour3D* b = CameraBehaviourRegistry3D::Get().Create(
+        Dia::Core::StringCRC(SmoothDamp3D::kTypeIdStr));
+    ASSERT_NE(b, nullptr);
+    delete b;
+}
+
+TEST(DiaCamera3D_BehaviourRegistry, Create_BoundsClamp3D_ReturnsNonNull)
+{
+    ICameraBehaviour3D* b = CameraBehaviourRegistry3D::Get().Create(
+        Dia::Core::StringCRC(BoundsClamp3D::kTypeIdStr));
+    ASSERT_NE(b, nullptr);
+    delete b;
+}
+
+TEST(DiaCamera3D_BehaviourRegistry, Create_ScreenShake3D_ReturnsNonNull)
+{
+    ICameraBehaviour3D* b = CameraBehaviourRegistry3D::Get().Create(
+        Dia::Core::StringCRC(ScreenShake3D::kTypeIdStr));
+    ASSERT_NE(b, nullptr);
+    delete b;
+}
+
+TEST(DiaCamera3D_BehaviourRegistry, Create_Orbit_ReturnsNonNull)
+{
+    ICameraBehaviour3D* b = CameraBehaviourRegistry3D::Get().Create(
+        Dia::Core::StringCRC(Orbit::kTypeIdStr));
+    ASSERT_NE(b, nullptr);
+    delete b;
+}
+
+TEST(DiaCamera3D_BehaviourRegistry, Create_Flythrough_ReturnsNonNull)
+{
+    ICameraBehaviour3D* b = CameraBehaviourRegistry3D::Get().Create(
+        Dia::Core::StringCRC(Flythrough::kTypeIdStr));
+    ASSERT_NE(b, nullptr);
+    delete b;
+}

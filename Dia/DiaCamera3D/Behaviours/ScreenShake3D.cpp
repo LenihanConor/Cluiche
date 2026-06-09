@@ -9,6 +9,7 @@
 #include <DiaMaths/Vector/Vector3D.h>
 #include <DiaMaths/Core/Angle.h>
 #include <cmath>
+#include <DiaObservation/Metric/MetricRegistry.h>
 
 namespace Dia
 {
@@ -27,6 +28,8 @@ namespace Dia
 			, mMaxAngleOffset(maxAngleOffset)
 			, mTraumaDecay(traumaDecay)
 		{
+			auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
+			mMetricTrauma = reg.RegisterGauge(Dia::Core::StringCRC("dia.camera3d.screenshake_trauma"));
 		}
 
 		////////////////////////////////////////////////////////////
@@ -69,6 +72,7 @@ namespace Dia
 
 			mTrauma -= mTraumaDecay * dt;
 			if (mTrauma < 0.0f) { mTrauma = 0.0f; mTime = 0.0f; }
+			if (mMetricTrauma) mMetricTrauma->Set(static_cast<double>(mTrauma));
 		}
 
 	} // namespace Camera3D

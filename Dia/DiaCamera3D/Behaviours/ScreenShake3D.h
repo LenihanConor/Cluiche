@@ -2,6 +2,7 @@
 // Filename: ScreenShake3D.h
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
+namespace Dia { namespace Observation { namespace Metric { class Gauge; } } }
 #include "DiaCamera3D/Registry/ICameraBehaviour3D.h"
 
 namespace Dia
@@ -34,6 +35,7 @@ namespace Dia
 			float mMaxAngleOffset    = 0.05f;  // radians
 			float mTraumaDecay       = 1.5f;
 			float mTime              = 0.0f;
+			Dia::Observation::Metric::Gauge* mMetricTrauma = nullptr;
 		};
 
 	} // namespace Camera3D

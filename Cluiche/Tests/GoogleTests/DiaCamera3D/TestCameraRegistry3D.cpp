@@ -224,3 +224,138 @@ TEST(DiaCamera3D_Registry, Builder_Orthographic_SetsProjection)
     EXPECT_FLOAT_EQ(cam.ortho.nearZ,  -50.0f);
     EXPECT_FLOAT_EQ(cam.ortho.farZ,    50.0f);
 }
+
+// ---------------------------------------------------------------------------
+// GetActiveId
+// ---------------------------------------------------------------------------
+
+TEST(DiaCamera3D_Registry, GetActiveId_ReturnsCorrectId)
+{
+    CameraRegistry3D reg;
+    reg.Register(Dia::Core::StringCRC("main"), Camera3D{});
+    reg.SetActive(Dia::Core::StringCRC("main"));
+    EXPECT_EQ(reg.GetActiveId(), Dia::Core::StringCRC("main"));
+}
+
+// ---------------------------------------------------------------------------
+// Unregister active camera clears active
+// ---------------------------------------------------------------------------
+
+TEST(DiaCamera3D_Registry, Unregister_ActiveCamera_ClearsActive)
+{
+    CameraRegistry3D reg;
+    reg.Register(Dia::Core::StringCRC("cam"), Camera3D{});
+    reg.SetActive(Dia::Core::StringCRC("cam"));
+    EXPECT_TRUE(reg.HasActiveCamera());
+    reg.Unregister(Dia::Core::StringCRC("cam"));
+    EXPECT_FALSE(reg.HasActiveCamera());
+}
+
+TEST(DiaCamera3D_Registry, Unregister_NonActiveCamera_PreservesActiveIndex)
+{
+    // Unregister a camera with a lower slot index than the active camera.
+    // The active index must be decremented to keep pointing at the same camera.
+    CameraRegistry3D reg;
+    reg.Register(Dia::Core::StringCRC("a"), Camera3D{});
+    reg.Register(Dia::Core::StringCRC("b"), Camera3D{});
+    reg.SetActive(Dia::Core::StringCRC("b"));
+    reg.Unregister(Dia::Core::StringCRC("a")); // swap-with-last shifts b → slot 0
+    EXPECT_TRUE(reg.HasActiveCamera());
+    EXPECT_EQ(reg.GetActiveId(), Dia::Core::StringCRC("b"));
+}
+
+// ---------------------------------------------------------------------------
+// Re-register after unregister
+// ---------------------------------------------------------------------------
+
+TEST(DiaCamera3D_Registry, Reregister_AfterUnregister_Succeeds)
+{
+    CameraRegistry3D reg;
+    reg.Register(Dia::Core::StringCRC("cam"), Camera3D{});
+    reg.Unregister(Dia::Core::StringCRC("cam"));
+    EXPECT_FALSE(reg.Has(Dia::Core::StringCRC("cam")));
+    EXPECT_TRUE(reg.Register(Dia::Core::StringCRC("cam"), Camera3D{}));
+    EXPECT_TRUE(reg.Has(Dia::Core::StringCRC("cam")));
+}
+
+// ---------------------------------------------------------------------------
+// AttachBehaviour error paths
+// ---------------------------------------------------------------------------
+
+TEST(DiaCamera3D_Registry, AttachBehaviour_CameraNotFound_ReturnsFalse)
+{
+    CameraRegistry3D reg;
+    struct DummyBehaviour : public ICameraBehaviour3D
+    {
+        Dia::Core::StringCRC GetTypeId() const override { return Dia::Core::StringCRC("Dummy"); }
+        void Update(Camera3D&, float) override {}
+    };
+    DummyBehaviour* b = new DummyBehaviour();
+    EXPECT_FALSE(reg.AttachBehaviour(Dia::Core::StringCRC("nonexistent"), b));
+    delete b;
+}
+
+TEST(DiaCamera3D_Registry, AttachBehaviour_ExceedsCapacity_ReturnsFalse)
+{
+    struct DummyBehaviour : public ICameraBehaviour3D
+    {
+        int mIndex;
+        explicit DummyBehaviour(int idx) : mIndex(idx) {}
+        Dia::Core::StringCRC GetTypeId() const override
+        {
+            // Unique type id per instance (using index in name is not possible with StringCRC
+            // at compile time, so we use a fixed id — DetachBehaviour is not called here so
+            // duplicates are fine for capacity testing)
+            return Dia::Core::StringCRC("DummyCapacity");
+        }
+        void Update(Camera3D&, float) override {}
+    };
+
+    CameraRegistry3D reg;
+    reg.Register(Dia::Core::StringCRC("cam"), Camera3D{});
+
+    // Fill to capacity
+    for (unsigned int i = 0; i < CameraRegistry3D::kMaxBehaviours; ++i)
+        EXPECT_TRUE(reg.AttachBehaviour(Dia::Core::StringCRC("cam"), new DummyBehaviour(static_cast<int>(i))));
+
+    // One more should fail
+    DummyBehaviour* extra = new DummyBehaviour(99);
+    EXPECT_FALSE(reg.AttachBehaviour(Dia::Core::StringCRC("cam"), extra));
+    delete extra;
+}
+
+// ---------------------------------------------------------------------------
+// Behaviour removal preserves order
+// ---------------------------------------------------------------------------
+
+TEST(DiaCamera3D_Registry, DetachBehaviour_Middle_PreservesOrder)
+{
+    // Attach A, B, C. Detach B. Verify A ticks then C — order preserved.
+    int orderA = -1, orderC = -1;
+    int tick = 0;
+    struct OrderedBehaviour : public ICameraBehaviour3D
+    {
+        int mId;
+        int* mOrder;
+        int* mTick;
+        OrderedBehaviour(int id, int* order, int* tick) : mId(id), mOrder(order), mTick(tick) {}
+        Dia::Core::StringCRC GetTypeId() const override
+        {
+            if (mId == 0) return Dia::Core::StringCRC("BehaviourA");
+            if (mId == 2) return Dia::Core::StringCRC("BehaviourC");
+            return Dia::Core::StringCRC("BehaviourB");
+        }
+        void Update(Camera3D&, float) override { *mOrder = (*mTick)++; }
+    };
+
+    CameraRegistry3D reg;
+    reg.Register(Dia::Core::StringCRC("cam"), Camera3D{});
+    reg.AttachBehaviour(Dia::Core::StringCRC("cam"), new OrderedBehaviour(0, &orderA, &tick));
+    reg.AttachBehaviour(Dia::Core::StringCRC("cam"), new OrderedBehaviour(1, nullptr, &tick));
+    reg.AttachBehaviour(Dia::Core::StringCRC("cam"), new OrderedBehaviour(2, &orderC, &tick));
+
+    reg.DetachBehaviour(Dia::Core::StringCRC("cam"), Dia::Core::StringCRC("BehaviourB"));
+    reg.UpdateAll(0.016f);
+
+    EXPECT_LT(orderA, orderC); // A ticked before C
+}

@@ -321,3 +321,160 @@ TEST(DiaCamera3D_Flythrough, LookInput_ChangesOrientation)
                          (cam.orientation.w != before.w);
     EXPECT_TRUE(changed);
 }
+
+// ---------------------------------------------------------------------------
+// GetTypeId correctness for all 6 behaviours
+// ---------------------------------------------------------------------------
+
+TEST(DiaCamera3D_Follow3D, GetTypeId_ReturnsCorrectCRC)
+{
+    Follow3D b;
+    EXPECT_EQ(b.GetTypeId(), Dia::Core::StringCRC(Follow3D::kTypeIdStr));
+}
+
+TEST(DiaCamera3D_SmoothDamp3D, GetTypeId_ReturnsCorrectCRC)
+{
+    SmoothDamp3D b;
+    EXPECT_EQ(b.GetTypeId(), Dia::Core::StringCRC(SmoothDamp3D::kTypeIdStr));
+}
+
+TEST(DiaCamera3D_BoundsClamp3D, GetTypeId_ReturnsCorrectCRC)
+{
+    BoundsClamp3D b;
+    EXPECT_EQ(b.GetTypeId(), Dia::Core::StringCRC(BoundsClamp3D::kTypeIdStr));
+}
+
+TEST(DiaCamera3D_ScreenShake3D, GetTypeId_ReturnsCorrectCRC)
+{
+    ScreenShake3D b;
+    EXPECT_EQ(b.GetTypeId(), Dia::Core::StringCRC(ScreenShake3D::kTypeIdStr));
+}
+
+TEST(DiaCamera3D_Orbit, GetTypeId_ReturnsCorrectCRC)
+{
+    Orbit b;
+    EXPECT_EQ(b.GetTypeId(), Dia::Core::StringCRC(Orbit::kTypeIdStr));
+}
+
+TEST(DiaCamera3D_Flythrough, GetTypeId_ReturnsCorrectCRC)
+{
+    Flythrough b;
+    EXPECT_EQ(b.GetTypeId(), Dia::Core::StringCRC(Flythrough::kTypeIdStr));
+}
+
+// ---------------------------------------------------------------------------
+// SmoothDamp3D edge cases
+// ---------------------------------------------------------------------------
+
+TEST(DiaCamera3D_SmoothDamp3D, ZeroDt_PositionUnchanged)
+{
+    Camera3D cam;
+    cam.position = Dia::Maths::Vector3D(1.0f, 2.0f, 3.0f);
+
+    SmoothDamp3D smooth;
+    smooth.SetTarget(Dia::Maths::Vector3D(10.0f, 10.0f, 10.0f));
+    smooth.Update(cam, 0.0f);
+
+    EXPECT_FLOAT_EQ(cam.position.x, 1.0f);
+    EXPECT_FLOAT_EQ(cam.position.y, 2.0f);
+    EXPECT_FLOAT_EQ(cam.position.z, 3.0f);
+}
+
+// ---------------------------------------------------------------------------
+// ScreenShake3D edge cases
+// ---------------------------------------------------------------------------
+
+TEST(DiaCamera3D_ScreenShake3D, Trigger_Accumulates_ClampedAt1)
+{
+    ScreenShake3D shake;
+    shake.Trigger(0.7f);
+    shake.Trigger(0.7f);  // total would be 1.4, must clamp to 1.0
+    EXPECT_FLOAT_EQ(shake.GetTrauma(), 1.0f);
+}
+
+TEST(DiaCamera3D_ScreenShake3D, ZeroMaxOffset_PositionUnchanged)
+{
+    Camera3D cam;
+    cam.position = Dia::Maths::Vector3D(3.0f, 3.0f, 3.0f);
+
+    ScreenShake3D shake(0.0f, 0.0f, 1.5f);  // zero offsets
+    shake.Trigger(1.0f);
+    shake.Update(cam, 0.016f);
+
+    EXPECT_FLOAT_EQ(cam.position.x, 3.0f);
+    EXPECT_FLOAT_EQ(cam.position.y, 3.0f);
+    EXPECT_FLOAT_EQ(cam.position.z, 3.0f);
+}
+
+// ---------------------------------------------------------------------------
+// Orbit edge cases
+// ---------------------------------------------------------------------------
+
+TEST(DiaCamera3D_Orbit, MinimumRadius_Clamped)
+{
+    Camera3D cam;
+    Orbit orbit(1.0f, 0.0f, 0.0f);
+    orbit.SetTarget(Dia::Maths::Vector3D(0.0f, 0.0f, 0.0f));
+    orbit.SetInput(0.0f, 0.0f, -100.0f);  // attempt to drive radius negative
+    orbit.Update(cam, 0.016f);
+
+    const float dist = std::sqrt(
+        cam.position.x * cam.position.x +
+        cam.position.y * cam.position.y +
+        cam.position.z * cam.position.z);
+    EXPECT_GE(dist, 0.09f);  // must not go below minimum (0.1)
+}
+
+TEST(DiaCamera3D_Orbit, NegativePitchClamp_NeverExceedsNegativePiOver2)
+{
+    Camera3D cam;
+    Orbit orbit(10.0f, 0.0f, 0.0f);
+    orbit.SetTarget(Dia::Maths::Vector3D(0.0f, 0.0f, 0.0f));
+
+    for (int i = 0; i < 20; ++i)
+    {
+        orbit.SetInput(0.0f, -10.0f, 0.0f);  // extreme downward pitch
+        orbit.Update(cam, 0.016f);
+    }
+
+    const float absY = std::abs(cam.position.y);
+    EXPECT_LT(absY, 10.0f);
+}
+
+// ---------------------------------------------------------------------------
+// BoundsClamp3D edge cases
+// ---------------------------------------------------------------------------
+
+TEST(DiaCamera3D_BoundsClamp3D, AtBoundary_Unchanged)
+{
+    Camera3D cam;
+    cam.position = Dia::Maths::Vector3D(5.0f, -5.0f, 5.0f);  // exactly at corner
+
+    const Dia::Geometry3D::AABB bounds(
+        Dia::Maths::Vector3D(-5.0f, -5.0f, -5.0f),
+        Dia::Maths::Vector3D( 5.0f,  5.0f,  5.0f));
+    BoundsClamp3D clamp(bounds);
+    clamp.Update(cam, 0.016f);
+
+    EXPECT_FLOAT_EQ(cam.position.x,  5.0f);
+    EXPECT_FLOAT_EQ(cam.position.y, -5.0f);
+    EXPECT_FLOAT_EQ(cam.position.z,  5.0f);
+}
+
+// ---------------------------------------------------------------------------
+// Flythrough edge cases
+// ---------------------------------------------------------------------------
+
+TEST(DiaCamera3D_Flythrough, ZeroSpeed_PositionUnchanged)
+{
+    Camera3D cam;
+    cam.position = Dia::Maths::Vector3D(1.0f, 2.0f, 3.0f);
+
+    Flythrough fly(0.0f);  // speed = 0
+    fly.SetMoveInput(Dia::Maths::Vector3D(0.0f, 0.0f, 1.0f));
+    fly.Update(cam, 1.0f);
+
+    EXPECT_FLOAT_EQ(cam.position.x, 1.0f);
+    EXPECT_FLOAT_EQ(cam.position.y, 2.0f);
+    EXPECT_FLOAT_EQ(cam.position.z, 3.0f);
+}

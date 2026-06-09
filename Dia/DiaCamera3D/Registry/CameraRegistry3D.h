@@ -77,6 +77,7 @@ namespace Dia
 
 			Dia::Observation::Metric::Gauge*   mMetricCameraCount    = nullptr;
 			Dia::Observation::Metric::Counter* mMetricBehaviourTicks = nullptr;
+			Dia::Observation::Metric::Counter* mMetricActiveChanges  = nullptr;
 		};
 
 	} // namespace Camera3D

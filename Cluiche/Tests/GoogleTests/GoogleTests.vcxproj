@@ -412,6 +412,7 @@
     <ClCompile Include="DiaCamera3D\TestCameraRegistry3D.cpp" />
     <ClCompile Include="DiaCamera3D\TestCameraBehaviourRegistry3D.cpp" />
     <ClCompile Include="DiaCamera3D\TestBehaviours3D.cpp" />
+    <ClCompile Include="DiaCamera3D\TestCameraRegistryHealth3D.cpp" />
     <!-- DiaScene2D -->
     <ClCompile Include="DiaScene2D\TestScene2DFormat.cpp" />
     <ClCompile Include="DiaScene2D\TestScene2DLoader.cpp" />

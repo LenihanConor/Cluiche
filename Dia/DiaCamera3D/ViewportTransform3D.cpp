@@ -2,12 +2,16 @@
 
 #include "DiaMaths/Core/Angle.h"
 #include "DiaMaths/Vector/Vector4D.h"
+#include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Profile/DiaProfile.h>
 
 namespace Dia::Camera3D
 {
     ViewportTransform3D::ViewportTransform3D(const Camera3D& camera, Dia::Maths::Vector2D windowSize)
         : mWindowSize(windowSize)
     {
+        DIA_TRACE_ZONE("camera3d.viewport_build", Dia::Observation::Trace::Category::kDiaGraphics);
+        DIA_PROFILE_SCOPE("camera3d.viewport_build", Dia::Observation::Profile::Category::kDiaGraphics);
         // Build view matrix: LookAt(eye, target, up)
         const Dia::Maths::Vector3D forward   = camera.orientation.Rotate(Dia::Maths::Vector3D(0.0f, 0.0f, -1.0f));
         const Dia::Maths::Vector3D up        = camera.orientation.Rotate(Dia::Maths::Vector3D(0.0f, 1.0f,  0.0f));
