@@ -196,8 +196,9 @@ namespace Dia { namespace ApplicationFlow {
         ++mTickCount;
 
         // Task 35 — warn when tick exceeds target period (skip tick 1: includes module start costs)
+        // 7% tolerance to avoid noise from minor scheduling jitter (e.g. 17ms on a 60Hz/16.7ms budget)
         const float targetMs = (mFrequencyHz > 0.0f) ? (1000.0f / mFrequencyHz) : 0.0f;
-        if (targetMs > 0.0f && mLastTickMs > targetMs && mTickCount > 1)
+        if (targetMs > 0.0f && mLastTickMs > targetMs * 1.07f && mTickCount > 1)
         {
             DIA_LOG_WARNING("pu", "pu.over_budget id=%s tick_ms=%.1f target_ms=%.1f",
                 mInstanceId.AsChar(), mLastTickMs, targetMs);

@@ -52,6 +52,14 @@ This is a Visual Studio C++ project using MSBuild.
 | `dia check deps` | Cross-check module dependency declarations vs actual #includes. |
 | `dia validate manifest` | Validate .diaapp/.diagame/.diastage against schemas. |
 | `dia env setup/verify` | First-time setup or diagnosing missing dependencies. |
+| `dia docs plan <path> <#> --status <S>` | Update a plan task row (status, notes, model). Validates transitions. |
+| `dia docs registry` | Regenerate module-registry.md from all module YAML files. |
+| `dia docs spec-done <spec.md>` | Mark spec Done + update plan header + strike backlog entry. |
+| `dia docs vcxproj-add <Project> <File>` | Add .h/.cpp to vcxproj + filters. Idempotent. |
+| `dia docs backlog move <name>` | Move backlog entry to BACKLOG-HISTORY.md. |
+| `dia docs spec-scaffold <type> <name>` | Generate spec skeleton (feature or system). |
+| `dia docs test-scaffold <header.h>` | Generate GoogleTest file from header's public methods. |
+| `dia docs precommit` | Run pre-commit checks (forbidden patterns, vcxproj sync, manifests). |
 
 ```bash
 dia run googletest
@@ -73,6 +81,19 @@ dia validate manifest --path Cluiche/Assets/CluicheTest/cluichetest.diagame
 dia env setup
 dia env verify
 dia test cli
+dia docs plan docs/specs/systems/dia/foo.plan.md 3 --status Done --notes "All tests pass"
+dia docs plan foo.plan.md 1 -s "In Progress"
+dia docs registry
+dia docs registry --dry-run
+dia docs spec-done docs/specs/systems/dia/diacamera3d.md
+dia docs vcxproj-add DiaCore "NewModule\\NewModule.h" --filter NewModule
+dia docs vcxproj-add GoogleTests "DiaCore\\TestNewModule.cpp"
+dia docs backlog move DiaCamera3D --notes "All features implemented"
+dia docs spec-scaffold feature camera3d-follow --parent DiaCamera3D
+dia docs spec-scaffold system DiaNewSystem
+dia docs test-scaffold Dia/DiaCore/Containers/Arrays/DynamicArray.h
+dia docs precommit
+dia docs precommit --staged
 ```
 
 ### Raw MSBuild (fallback)

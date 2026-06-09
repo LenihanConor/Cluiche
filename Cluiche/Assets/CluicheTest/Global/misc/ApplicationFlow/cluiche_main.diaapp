@@ -485,7 +485,7 @@
         },
         {
             "instance_id": "RenderPU",
-            "frequency_hz": 60,
+            "frequency_hz": 30,
             "dedicated_thread": true,
             "modules": [
                 {

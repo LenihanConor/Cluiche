@@ -17,11 +17,11 @@ def cli():
               help="Re-invoke inside Docker container.")
 @click.pass_context
 def editor_ui(ctx, filter_pattern, watch, docker):
-    """Run the DiaApplicationEditor (CEF) UI Vitest suite."""
+    """Run the DiaApplicationFlowEditor (CEF) UI Vitest suite."""
     from dia_cli.commands.test.ui_runner import run
     exit_code = run(
         repo_root=None,
-        ui_subpath="Dia/DiaApplicationEditor/UI",
+        ui_subpath="Dia/DiaApplicationFlowEditor/UI",
         docker_subcmd="editor-ui",
         filter_pattern=filter_pattern,
         watch=watch,

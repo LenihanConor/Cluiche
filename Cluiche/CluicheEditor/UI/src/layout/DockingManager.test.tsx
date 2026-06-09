@@ -179,7 +179,7 @@ describe("DockingManager – panel controls", () => {
     );
   });
 
-  it("fullscreen button collapses layout to single panel", async () => {
+  it("fullscreen button replaces mosaic with direct panel view", async () => {
     setupBridge(panelList(["Console", "Inspector"]));
     render(<DockingManager />);
     await waitFor(() => screen.getByTestId("window-Console"));
@@ -188,29 +188,13 @@ describe("DockingManager – panel controls", () => {
     const fsBtn = controls.querySelector('button[title="Fullscreen"]')!;
     await userEvent.click(fsBtn);
 
-    // Only the fullscreened panel should be in the mosaic
+    // Mosaic is replaced by direct fullscreen render
     await waitFor(() =>
-      expect(screen.queryByTestId("tile-Inspector")).not.toBeInTheDocument()
+      expect(screen.queryByTestId("mosaic")).not.toBeInTheDocument()
     );
-    expect(screen.getByTestId("tile-Console")).toBeInTheDocument();
-  });
-
-  it("closing the fullscreen panel also exits fullscreen", async () => {
-    setupBridge(panelList(["Console", "Inspector"]));
-    render(<DockingManager />);
-    await waitFor(() => screen.getByTestId("window-Console"));
-
-    // Enter fullscreen
-    const fsBtn = screen.getByTestId("controls-Console").querySelector('button[title="Fullscreen"]')!;
-    await userEvent.click(fsBtn);
-    await waitFor(() => expect(screen.queryByTestId("tile-Inspector")).not.toBeInTheDocument());
-
-    // Close the fullscreened panel
-    const closeBtn = screen.getByTestId("controls-Console").querySelector('button[title="Hide panel"]')!;
-    await userEvent.click(closeBtn);
-
-    // Both panels gone from layout; fullscreen state cleared
-    await waitFor(() => expect(screen.queryByTestId("tile-Console")).not.toBeInTheDocument());
+    expect(screen.getByTitle("Exit fullscreen")).toBeInTheDocument();
+    // Toolbar remains visible
+    expect(screen.getByTestId("toolbar")).toBeInTheDocument();
   });
 
   it("saveLayout is called when mosaic layout changes", async () => {
@@ -230,7 +214,7 @@ describe("DockingManager – panel controls", () => {
     expect(mockBridge.togglePanelVisibility).toHaveBeenCalledWith("Inspector");
   });
 
-  it("fullscreen exit restores previous layout", async () => {
+  it("fullscreen exit restores previous layout with all panels", async () => {
     setupBridge(panelList(["Console", "Inspector"]));
     render(<DockingManager />);
     await waitFor(() => screen.getByTestId("window-Console"));
@@ -240,15 +224,18 @@ describe("DockingManager – panel controls", () => {
     const fsBtn = controls.querySelector('button[title="Fullscreen"]')!;
     await userEvent.click(fsBtn);
     await waitFor(() =>
-      expect(screen.queryByTestId("tile-Inspector")).not.toBeInTheDocument()
+      expect(screen.queryByTestId("mosaic")).not.toBeInTheDocument()
     );
 
-    // Exit fullscreen – button title changes to "Exit fullscreen"
+    // Exit fullscreen
     const exitBtn = screen.getByTitle("Exit fullscreen");
     await userEvent.click(exitBtn);
+
+    // Mosaic returns with both panels
     await waitFor(() =>
       expect(screen.getByTestId("tile-Inspector")).toBeInTheDocument()
     );
+    expect(screen.getByTestId("tile-Console")).toBeInTheDocument();
   });
 });
 

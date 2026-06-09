@@ -8,7 +8,7 @@
 // .diaapp from disk) are covered by TestManifestLoader.cpp + the pipeline tests.
 
 #include <gtest/gtest.h>
-#include <DiaApplicationEditor/DiaApplicationFlowEditorPlugin.h>
+#include <DiaApplicationFlowEditor/DiaApplicationFlowEditorPlugin.h>
 #include <DiaEditor/UI/WebUIBridge.h>
 #include <DiaEditor/MVC/EditorModel.h>
 #include <DiaEditor/Plugin/EditorPluginContext.h>

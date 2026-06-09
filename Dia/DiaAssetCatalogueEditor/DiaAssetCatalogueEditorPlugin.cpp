@@ -253,7 +253,7 @@ namespace Dia
 				mTypeEditorRegistry.RegisterTypeEditor(
 					Dia::Core::StringCRC("diascene"),  Dia::Core::StringCRC("DiaSceneEditor"));
 				mTypeEditorRegistry.RegisterTypeEditor(
-					Dia::Core::StringCRC("stage"),     Dia::Core::StringCRC("DiaApplicationEditor"));
+					Dia::Core::StringCRC("stage"),     Dia::Core::StringCRC("DiaApplicationFlowEditor"));
 
 				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.load_manifest"),

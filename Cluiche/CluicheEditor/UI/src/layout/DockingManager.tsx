@@ -172,17 +172,16 @@ export function DockingManager({ onReady }: DockingManagerProps) {
       setFullscreenPanel((prev) => {
         if (prev === id) {
           // Exit fullscreen: restore saved layout
-          setLayout(savedLayout);
-          setSavedLayout(null);
+          setSavedLayout((saved) => { setLayout(saved); return null; });
           return null;
         } else {
-          // Enter fullscreen: save current layout and collapse to single panel
-          setLayout((current) => { setSavedLayout(current); return id; });
+          // Enter fullscreen: save current layout
+          setLayout((current) => { setSavedLayout(current); return current; });
           return id;
         }
       });
     },
-    [savedLayout]
+    []
   );
 
   function renderTile(id: PanelId, path: any) {
@@ -252,7 +251,46 @@ export function DockingManager({ onReady }: DockingManagerProps) {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ flex: 1, position: "relative" }}>
-        {layout ? (
+        {fullscreenPanel ? (
+          <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                height: 30,
+                background: "#1e1e1e",
+                borderBottom: "1px solid #3c3c3c",
+                padding: "0 8px",
+                flexShrink: 0,
+              }}
+            >
+              <span style={{ flex: 1, fontSize: 12, color: "#ccc", fontFamily: "Segoe UI, system-ui, sans-serif" }}>
+                {fullscreenPanel}
+              </span>
+              <button
+                onClick={() => handleFullscreen(fullscreenPanel)}
+                title="Exit fullscreen"
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#999",
+                  fontSize: 12,
+                  lineHeight: 1,
+                  padding: "0 4px",
+                }}
+              >
+                ⊡
+              </button>
+            </div>
+            <iframe
+              key={fullscreenPanel}
+              src={panelMap.get(fullscreenPanel)?.uiPath ?? `dia://editor/${fullscreenPanel.toLowerCase().replace(/\s+/g, "-")}/index.html`}
+              style={{ flex: 1, width: "100%", border: "none" }}
+              title={fullscreenPanel}
+            />
+          </div>
+        ) : layout ? (
           <Mosaic<PanelId>
             className="mosaic-blueprint-theme bp4-dark"
             renderTile={renderTile}

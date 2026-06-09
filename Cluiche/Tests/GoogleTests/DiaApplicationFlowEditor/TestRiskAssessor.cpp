@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
-#include <DiaApplicationEditor/V2/RiskAssessor.h>
-#include <DiaApplicationEditor/V2/Commands/PUCommands.h>
-#include <DiaApplicationEditor/V2/Commands/ModuleCommands.h>
-#include <DiaApplicationEditor/V2/Commands/StreamCommands.h>
-#include <DiaApplicationEditor/V2/Commands/StageCommands.h>
-#include <DiaApplicationEditor/V2/ManifestEditorState.h>
+#include <DiaApplicationFlowEditor/V2/RiskAssessor.h>
+#include <DiaApplicationFlowEditor/V2/Commands/PUCommands.h>
+#include <DiaApplicationFlowEditor/V2/Commands/ModuleCommands.h>
+#include <DiaApplicationFlowEditor/V2/Commands/StreamCommands.h>
+#include <DiaApplicationFlowEditor/V2/Commands/StageCommands.h>
+#include <DiaApplicationFlowEditor/V2/ManifestEditorState.h>
 
 using namespace Dia::ApplicationFlow::Editor;
 using namespace Dia::Core;

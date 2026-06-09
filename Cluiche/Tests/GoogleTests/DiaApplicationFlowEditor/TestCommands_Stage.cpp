@@ -3,8 +3,8 @@
 
 #include <gtest/gtest.h>
 
-#include <DiaApplicationEditor/V2/Commands/StageCommands.h>
-#include <DiaApplicationEditor/V2/ManifestEditorState.h>
+#include <DiaApplicationFlowEditor/V2/Commands/StageCommands.h>
+#include <DiaApplicationFlowEditor/V2/ManifestEditorState.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 
 using namespace Dia::ApplicationFlow::Editor;

@@ -605,6 +605,7 @@ Features within the DiaEditor system (create with `/spec-feature`):
 | Editor Memory | Invisible save/restore of layout, loaded plugins, and per-plugin project-scoped state on editor close/open | @docs/specs/features/dia/diaeditor/editor-memory.md | Done |
 | Toast Notifications | Framework-level notification service — plugins push toasts, shell renders them uniformly | @docs/specs/features/dia/diaeditor/toast-notifications.md | Approved |
 | LiveConnectionPluginBase | Shared base class for plugins that observe game connection — enforces consistent lifecycle, topic naming, auto-subscribe/unsubscribe | @docs/specs/features/dia/diaeditor/live-connection-plugin-base.md | Approved |
+| Python Console | Dockable REPL plugin — execute Python interactively, run .py scripts, validate DiaEditorAPI actions | @docs/specs/features/dia/diaeditor/python-console.md | Approved |
 
 ## AI Review Questions
 

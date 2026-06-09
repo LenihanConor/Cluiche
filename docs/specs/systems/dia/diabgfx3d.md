@@ -214,7 +214,9 @@ private:
 
 | Feature | Description | Spec | Status |
 |---------|-------------|------|--------|
-| diabgfx3d-3d-renderers | `Canvas3D`, `MeshRenderer`, `SkinnedMeshRenderer`, `ShadowRenderer`, `MaterialRegistry`, `MeshGpuCache`, six `.sc` shaders; CluicheTest 3D demo scene; **Phase 2 ship gate (RB-002)** | [3d-renderers.md](../../features/dia/diabgfx3d/3d-renderers.md) | Approved |
+| diabgfx3d-gpu-resources | `MaterialRegistry` (StringCRC → shader + base colour) and `MeshGpuCache` (lazy vertex/index upload); no bgfx types in public surface | [gpu-resources.md](../../features/dia/diabgfx3d/gpu-resources.md) | Approved |
+| diabgfx3d-3d-renderers | `MeshRenderer`, `SkinnedMeshRenderer`, `ShadowRenderer`; six `.sc` shader files; lambert + shadow fragment shader | [3d-renderers.md](../../features/dia/diabgfx3d/3d-renderers.md) | Approved |
+| diabgfx3d-canvas3d | `Canvas3D : DiaBgfx::Canvas`; full 2D+3D pass dispatch; `DiaBgfx3D.vcxproj`; CluicheTest 3D demo; **Phase 2 ship gate (RB-002)** | [canvas3d.md](../../features/dia/diabgfx3d/canvas3d.md) | Approved |
 
 *Additional features (instanced rendering, CSM, point-light shadows, compute skinning) will be added as separate feature specs when needed.*
 
@@ -311,6 +313,4 @@ private:
 
 ## Status
 
-`Approved` — All 5 spec steps complete. System cannot be marked `Done` until `diabgfx3d-3d-renderers` feature spec is `Done` (Phase 2 ship gate, RB-002). Phase 2 stays `Approved` (not `In Progress`) until Phase 1 ships (RB-003).
-
-**Amendment required:** `3d-renderers` feature spec must be moved from `docs/specs/features/dia/diabgfx/3d-renderers.md` to `docs/specs/features/dia/diabgfx3d/3d-renderers.md`; parent system and namespace updated to `Dia::Bgfx3D::`. Canvas references updated from `DiaBgfx::Canvas` → `DiaBgfx3D::Canvas3D`.
+`Approved` — All 5 spec steps complete. System cannot be marked `Done` until `diabgfx3d-canvas3d` feature spec is `Done` (Phase 2 ship gate, RB-002). Phase 2 stays `Approved` (not `In Progress`) until Phase 1 ships (RB-003).

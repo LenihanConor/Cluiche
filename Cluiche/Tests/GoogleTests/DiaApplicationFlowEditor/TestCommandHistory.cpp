@@ -3,10 +3,10 @@
 
 #include <gtest/gtest.h>
 
-#include <DiaApplicationEditor/V2/ManifestEditorState.h>
-#include <DiaApplicationEditor/V2/Commands/ICommand.h>
-#include <DiaApplicationEditor/V2/Commands/CommandHistory.h>
-#include <DiaApplicationEditor/V2/Commands/CompoundCommand.h>
+#include <DiaApplicationFlowEditor/V2/ManifestEditorState.h>
+#include <DiaApplicationFlowEditor/V2/Commands/ICommand.h>
+#include <DiaApplicationFlowEditor/V2/Commands/CommandHistory.h>
+#include <DiaApplicationFlowEditor/V2/Commands/CompoundCommand.h>
 
 using namespace Dia::ApplicationFlow::Editor;
 

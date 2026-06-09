@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <DiaApplicationEditor/V2/ManifestLoader.h>
+#include <DiaApplicationFlowEditor/V2/ManifestLoader.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 #include <stdio.h>

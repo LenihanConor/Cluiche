@@ -4,7 +4,7 @@
 // file path, manifest version, and module provenance.
 
 #include <gtest/gtest.h>
-#include <DiaApplicationEditor/V2/ManifestEditorState.h>
+#include <DiaApplicationFlowEditor/V2/ManifestEditorState.h>
 
 using namespace Dia::ApplicationFlow::Editor;
 using namespace Dia::Core;

@@ -1,0 +1,41 @@
+////////////////////////////////////////////////////////////////////////////////
+// Filename: MaterialRegistry.h
+////////////////////////////////////////////////////////////////////////////////
+#pragma once
+
+#include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+
+namespace Dia { namespace Bgfx { class ShaderProgram; } }
+
+namespace Dia
+{
+    namespace Bgfx3D
+    {
+        struct MaterialDescriptor
+        {
+            Dia::Core::StringCRC         id;
+            Dia::Bgfx::ShaderProgram*    program;          // not owned; lives in Canvas3D
+            uint32_t                     baseColourRGBA;   // 0xFFFFFFFF default
+        };
+
+        // Maps StringCRC material IDs to shader programs and base colours.
+        // Backed by DynamicArrayC — no STL in public surface (PD-004, BG3-008).
+        class MaterialRegistry
+        {
+        public:
+            static constexpr unsigned int kMaxMaterials = 256;
+
+            MaterialRegistry();
+
+            void                        Register(const MaterialDescriptor& desc);
+            const MaterialDescriptor*   Resolve(Dia::Core::StringCRC id) const;  // nullptr if not found
+            const MaterialDescriptor&   GetDefault() const;
+
+        private:
+            Dia::Core::Containers::DynamicArrayC<MaterialDescriptor, kMaxMaterials> mMaterials;
+            MaterialDescriptor                                                       mDefault;
+        };
+
+    } // namespace Bgfx3D
+} // namespace Dia
