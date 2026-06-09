@@ -16,6 +16,7 @@ import json
 try:
     import dia_editor.project as project
     import dia_editor.game_connection as game_connection
+    import dia_editor.app_editor as app_editor
 except ImportError as e:
     raise ImportError(
         f"dia_editor sub-modules not available: {e}. "
@@ -66,6 +67,41 @@ result = _parse(raw)
 assert isinstance(result, dict), "project.open_path() must return a JSON dict"
 # A missing file must never crash; success may be false with a reason.
 print(f"[smoke] project.open_path(bad_path) OK: {result}")
+
+
+# ---------------------------------------------------------------------------
+# AC-5: app_editor.get_active_context returns dict with required keys
+# ---------------------------------------------------------------------------
+raw = app_editor.get_active_context()
+assert isinstance(raw, str), f"app_editor.get_active_context() should return str, got {type(raw)}"
+ctx = _parse(raw)
+assert isinstance(ctx, dict), f"app_editor.get_active_context() JSON should decode to dict"
+for key in ("project", "focus", "edit_target", "selection"):
+    assert key in ctx, f"app_editor.get_active_context() missing key '{key}'"
+print(f"[smoke] app_editor.get_active_context() OK: keys present")
+
+
+# ---------------------------------------------------------------------------
+# AC-6: app_editor.navigate_to_plugin with unknown id returns plugin_not_loaded
+# ---------------------------------------------------------------------------
+raw = app_editor.navigate_to_plugin('{"plugin_id": "NonExistentPlugin_XYZ"}')
+result = _parse(raw)
+assert isinstance(result, dict), "navigate_to_plugin must return a JSON dict"
+# Either plugin_not_loaded or no_project_open — both are valid failures (no crash is the ACs)
+assert result.get("success") == False or "reason" in result, \
+    f"Expected failure for unknown plugin, got: {result}"
+print(f"[smoke] app_editor.navigate_to_plugin(unknown) OK: {result}")
+
+
+# ---------------------------------------------------------------------------
+# AC-7: app_editor.navigate_to_asset returns not_implemented
+# ---------------------------------------------------------------------------
+raw = app_editor.navigate_to_asset('{"asset_id": "some_asset"}')
+result = _parse(raw)
+assert isinstance(result, dict), "navigate_to_asset must return a JSON dict"
+assert result.get("reason") == "not_implemented", \
+    f"Expected not_implemented for asset navigation, got: {result}"
+print(f"[smoke] app_editor.navigate_to_asset() not_implemented OK")
 
 
 # ---------------------------------------------------------------------------

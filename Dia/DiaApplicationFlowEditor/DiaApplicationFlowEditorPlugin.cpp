@@ -3,6 +3,7 @@
 #include <DiaEditor/Plugin/EditorPluginContext.h>
 #include <DiaEditor/Plugin/PluginServiceLocator.h>
 #include <DiaEditor/UI/WebUIBridge.h>
+#include <DiaEditor/AppEditor/AppEditorController.h>
 #include <DiaEditor/LiveConnection/GameConnectionManager.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
@@ -316,6 +317,23 @@ namespace Dia { namespace Editor {
         mCommandHistory.SetSavePoint();
 
         GetBridge()->NotifyUIDataChanged("manifest.state", BuildManifestStateJson(mEditorState));
+
+        // Report edit target to AppEditorController so app_editor.get_active_context
+        // reflects the loaded manifest.
+        if (GetServices() != nullptr)
+        {
+            Dia::Editor::AppEditorController* ctrl =
+                GetServices()->GetService<Dia::Editor::AppEditorController>();
+            if (ctrl != nullptr)
+            {
+                ctrl->SetEditTarget(
+                    Dia::Core::StringCRC("manifest"),
+                    Dia::Core::StringCRC(pathCStr),
+                    pathCStr,
+                    false);
+                ctrl->SetFocus(Dia::Core::StringCRC("DiaApplicationFlowEditorPlugin"), "app_flow");
+            }
+        }
 
         result["ok"] = true;
         return result;
@@ -695,6 +713,15 @@ namespace Dia { namespace Editor {
         else
             ClearDirty();
 
+        // Keep AppEditorController dirty flag in sync with the manifest.
+        if (GetServices() != nullptr)
+        {
+            Dia::Editor::AppEditorController* ctrl =
+                GetServices()->GetService<Dia::Editor::AppEditorController>();
+            if (ctrl != nullptr)
+                ctrl->SetDirty(mEditorState.isDirty);
+        }
+
         if (GetBridge())
             GetBridge()->NotifyUIDataChanged("manifest.state", BuildManifestStateJson(mEditorState));
 
@@ -1010,6 +1037,21 @@ namespace Dia { namespace Editor {
 
         DIA_LOG_INFO("Editor", "DiaApplicationFlowEditorPlugin::OnNavigate: navigating to stage '%s'", stageName);
 
+        // Route through AppEditorController so the navigate call is observable, testable,
+        // and callable via the DiaEditorAPI Python interface without duplication.
+        if (GetServices() != nullptr)
+        {
+            Dia::Editor::AppEditorController* ctrl =
+                GetServices()->GetService<Dia::Editor::AppEditorController>();
+            if (ctrl != nullptr)
+            {
+                ctrl->HandleNavigateTo(Dia::Core::StringCRC("stage"),
+                                       Dia::Core::StringCRC(stageName));
+                return;
+            }
+        }
+
+        // Fallback: AppEditorController not available (headless / test context).
         Json::Value payload;
         payload["stageId"] = stageName;
         GetBridge()->NotifyUIDataChanged("app_editor.navigate_to_stage", payload);

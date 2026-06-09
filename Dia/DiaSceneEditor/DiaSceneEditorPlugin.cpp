@@ -1,7 +1,9 @@
 #include "DiaSceneEditor/DiaSceneEditorPlugin.h"
 #include <DiaEditor/Plugin/EditorPluginRegistrationMacros.h>
 #include <DiaEditor/Plugin/IPluginLoader.h>
+#include <DiaEditor/Plugin/PluginServiceLocator.h>
 #include <DiaEditor/MVC/EditorModel.h>
+#include <DiaEditor/AppEditor/AppEditorController.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaCore/Json/external/json/json.h>
@@ -126,6 +128,22 @@ namespace Dia
 			}
 
 			DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin::OnNavigate: loaded scene '%s'", sourcePath.c_str());
+
+			// Report to AppEditorController so app_editor.get_active_context reflects the open scene.
+			if (GetServices() != nullptr)
+			{
+				Dia::Editor::AppEditorController* ctrl =
+					GetServices()->GetService<Dia::Editor::AppEditorController>();
+				if (ctrl != nullptr)
+				{
+					ctrl->SetEditTarget(
+						Dia::Core::StringCRC("scene"),
+						instanceId,
+						sourcePath.c_str(),
+						false);
+					ctrl->SetFocus(Dia::Core::StringCRC("DiaSceneEditorPlugin"), "scene_editor");
+				}
+			}
 		}
 
 		void DiaSceneEditorPlugin::ResolveCatalogueIdForLoadedScene()
@@ -396,6 +414,21 @@ namespace Dia
 					mHierarchyController.SetSelection(
 						data["type"].asCString(),
 						data["id"].asCString());
+
+					// Propagate selection to AppEditorController.
+					if (GetServices() != nullptr)
+					{
+						Dia::Editor::AppEditorController* ctrl =
+							GetServices()->GetService<Dia::Editor::AppEditorController>();
+						if (ctrl != nullptr)
+						{
+							ctrl->SetSelection(
+								Dia::Core::StringCRC(data["type"].asCString()),
+								Dia::Core::StringCRC(data["id"].asCString()),
+								data.get("name", "").asCString());
+						}
+					}
+
 					result["success"]   = true;
 					result["selection"] = mHierarchyController.GetSelectionJson();
 					return result;

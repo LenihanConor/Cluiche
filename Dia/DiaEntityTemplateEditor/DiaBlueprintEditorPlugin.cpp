@@ -2,8 +2,10 @@
 #include "DiaEntityTemplateEditor/BlueprintMutator.h"
 #include <DiaEditor/Plugin/EditorPluginRegistrationMacros.h>
 #include <DiaEditor/Plugin/EditorPluginContext.h>
+#include <DiaEditor/Plugin/PluginServiceLocator.h>
 #include <DiaEditor/MVC/EditorModel.h>
 #include <DiaEditor/UI/WebUIBridge.h>
+#include <DiaEditor/AppEditor/AppEditorController.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaCore/Json/external/json/json.h>
@@ -197,6 +199,22 @@ namespace Dia
 		    GetBridge()->NotifyUIDataChanged("entity_template_editor.navigated", navData);
 
 		    DIA_LOG_INFO("Editor", "DiaEntityTemplateEditorPlugin::OnNavigate: loaded blueprint '%s'", sourcePath.c_str());
+
+		    // Report edit target to AppEditorController.
+		    if (GetServices() != nullptr)
+		    {
+		        Dia::Editor::AppEditorController* ctrl =
+		            GetServices()->GetService<Dia::Editor::AppEditorController>();
+		        if (ctrl != nullptr)
+		        {
+		            ctrl->SetEditTarget(
+		                Dia::Core::StringCRC("entity_template"),
+		                instanceId,
+		                sourcePath.c_str(),
+		                false);
+		            ctrl->SetFocus(Dia::Core::StringCRC("DiaEntityTemplateEditorPlugin"), "entity_template_editor");
+		        }
+		    }
 		}
 
 		// T2 ──────────────────────────────────────────────────────────────────────────────
