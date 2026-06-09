@@ -1296,6 +1296,9 @@
     <ClCompile Include="ApplicationFlow\TestPUTiming.cpp">
     <ClCompile Include="ApplicationFlow\TestStreamTelemetry.cpp">
     <ClCompile Include="Integration\TestLiveConnectionPluginBase.cpp">
+    <ClCompile Include="Editor\TestEditorActionRegistry.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
       <Filter>Integration</Filter>
     </ClCompile>
       <Filter>ApplicationFlow</Filter>

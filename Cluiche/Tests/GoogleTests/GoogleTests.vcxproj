@@ -646,6 +646,7 @@
     <ClCompile Include="ApplicationFlow\TestPUTiming.cpp" />
     <ClCompile Include="ApplicationFlow\TestStreamTelemetry.cpp" />
     <ClCompile Include="Integration\TestLiveConnectionPluginBase.cpp" />
+    <ClCompile Include="Editor\TestEditorActionRegistry.cpp" />
     <!-- Google Test Source Files - Compiled directly into project -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
       <AdditionalIncludeDirectories>$(ProjectDir)../../../External/googletest/googletest/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
