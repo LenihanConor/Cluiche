@@ -92,9 +92,9 @@ export function StageAssetTree(): JSX.Element {
 
                 const handleToggle = () => {
                     if (node.expanded) {
-                        sendBridgeRequest('collapse_stage', { stageId: node.stageId });
+                        sendBridgeRequest('asset_runtime_inspector.collapse_stage', { stageId: node.stageId });
                     } else {
-                        sendBridgeRequest('expand_stage', { stageId: node.stageId });
+                        sendBridgeRequest('asset_runtime_inspector.expand_stage', { stageId: node.stageId });
                     }
                 };
 

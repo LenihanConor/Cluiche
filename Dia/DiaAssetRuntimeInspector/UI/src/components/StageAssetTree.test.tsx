@@ -146,7 +146,7 @@ describe('StageAssetTree', () => {
             expect.objectContaining({
                 __diaFromFrame: true,
                 payload: expect.objectContaining({
-                    type: 'expand_stage',
+                    type: 'asset_runtime_inspector.expand_stage',
                     data: { stageId: 'MyStage' },
                 }),
             }),
@@ -173,7 +173,7 @@ describe('StageAssetTree', () => {
             expect.objectContaining({
                 __diaFromFrame: true,
                 payload: expect.objectContaining({
-                    type: 'collapse_stage',
+                    type: 'asset_runtime_inspector.collapse_stage',
                     data: { stageId: 'MyStage' },
                 }),
             }),
