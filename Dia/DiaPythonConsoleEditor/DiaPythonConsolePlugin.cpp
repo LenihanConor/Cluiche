@@ -60,6 +60,36 @@ void DiaPythonConsolePlugin::OnPluginLoad()
             return MakeSuccessResponse(result);
         }
     );
+
+    RegisterHandler(
+        Dia::Core::StringCRC("python_console.run_file"),
+        [](const Json::Value& params) -> Json::Value
+        {
+            if (!params.isMember("path") || params["path"].asString().empty())
+            {
+                return MakeErrorResponse("path parameter is required");
+            }
+
+            std::string path = params["path"].asString();
+            std::string capturedStdout;
+            std::string capturedStderr;
+
+            Dia::Python::RedirectOutput(
+                [&capturedStdout](const char* text) { capturedStdout += text; },
+                [&capturedStderr](const char* text) { capturedStderr += text; }
+            );
+
+            int exitCode = Dia::Python::ExecuteScript(path.c_str());
+
+            Dia::Python::RestoreOutput();
+
+            Json::Value result;
+            result["stdout"] = capturedStdout;
+            result["stderr"] = capturedStderr;
+            result["exitCode"] = exitCode;
+            return MakeSuccessResponse(result);
+        }
+    );
 }
 
 void DiaPythonConsolePlugin::OnPluginUnload()
