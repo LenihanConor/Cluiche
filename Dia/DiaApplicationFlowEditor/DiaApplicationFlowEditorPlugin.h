@@ -44,6 +44,8 @@ namespace Dia { namespace Editor {
         Json::Value HandleRiskCheck(const Json::Value& data);
         Json::Value HandleRiskConfirm(const Json::Value& data);
 
+        void DualRegisterActions();
+
         GameConnectionManager* mGameConnection = nullptr;
 
         Dia::ApplicationFlow::Editor::ManifestEditorState mEditorState;

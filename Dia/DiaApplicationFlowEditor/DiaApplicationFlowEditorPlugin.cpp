@@ -5,6 +5,8 @@
 #include <DiaEditor/UI/WebUIBridge.h>
 #include <DiaEditor/AppEditor/AppEditorController.h>
 #include <DiaEditor/LiveConnection/GameConnectionManager.h>
+#include <DiaEditor/EditorAPI/EditorActionDescriptor.h>
+#include <DiaEditor/EditorAPI/EditorActionRegistryService.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaCore/Json/external/json/json.h>
@@ -212,6 +214,8 @@ namespace Dia { namespace Editor {
         RegisterHandler(kReqRiskCheck,            [this](const Json::Value& d) { return HandleRiskCheck(d); });
         RegisterHandler(kReqRiskConfirm,          [this](const Json::Value& d) { return HandleRiskConfirm(d); });
 
+        DualRegisterActions();
+
         // Register metrics
         {
             auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
@@ -233,6 +237,17 @@ namespace Dia { namespace Editor {
         if (mGameConnection != nullptr && mGameConnection->IsConnected())
         {
             mGameConnection->Disconnect();
+        }
+
+        if (GetServices() != nullptr)
+        {
+            Dia::Editor::EditorActionRegistryService* regSvc =
+                GetServices()->GetService<Dia::Editor::EditorActionRegistryService>();
+            if (regSvc != nullptr && regSvc->GetRegistry() != nullptr)
+            {
+                regSvc->GetRegistry()->DeregisterActionsForOwner(
+                    Dia::Core::StringCRC("DiaApplicationFlowEditorPlugin"));
+            }
         }
 
         mGameConnection = nullptr;
@@ -1055,6 +1070,16 @@ namespace Dia { namespace Editor {
         Json::Value payload;
         payload["stageId"] = stageName;
         GetBridge()->NotifyUIDataChanged("app_editor.navigate_to_stage", payload);
+    }
+
+    void DiaApplicationFlowEditorPlugin::DualRegisterActions()
+    {
+        if (GetServices() == nullptr) return;
+        Dia::Editor::EditorActionRegistryService* regSvc =
+            GetServices()->GetService<Dia::Editor::EditorActionRegistryService>();
+        if (regSvc == nullptr || regSvc->GetRegistry() == nullptr) return;
+        Dia::Editor::EditorActionRegistry* api = regSvc->GetRegistry();
+        (void)api; // registrations added in subsequent tasks
     }
 
 }} // namespace Dia::Editor
