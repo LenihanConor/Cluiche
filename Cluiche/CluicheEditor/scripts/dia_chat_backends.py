@@ -133,7 +133,10 @@ class OllamaBackend(ILLMBackend):
 
     def stream_chat(self, messages, tools):
         """
-        Stream a chat completion from Ollama's OpenAI-compat endpoint.
+        Stream a chat completion from Ollama's native /api/chat endpoint.
+
+        Uses NDJSON streaming (one JSON object per line) which is simpler
+        and more reliable than the OpenAI-compat SSE endpoint.
 
         Yields TokenChunk, ToolCall, Done, or Error events.
         """
@@ -142,7 +145,7 @@ class OllamaBackend(ILLMBackend):
             yield Error("httpx or requests required for OllamaBackend")
             return
 
-        url = "{0}/v1/chat/completions".format(self.base_url)
+        url = "{0}/api/chat".format(self.base_url)
         payload = {
             "model": self.model,
             "messages": messages,
@@ -152,13 +155,13 @@ class OllamaBackend(ILLMBackend):
             payload["tools"] = tools
 
         try:
-            yield from self._do_stream(lib_name, lib, url, payload)
+            for event in self._do_stream(lib_name, lib, url, payload):
+                yield event
         except Exception as exc:
-            _LOG.error("OllamaBackend.stream_chat error: %s", exc)
-            yield Error(str(exc))
+            yield Error("stream_chat exception: {0}: {1}".format(type(exc).__name__, exc))
 
     def _do_stream(self, lib_name, lib, url, payload):
-        """Inner generator that handles the actual streaming, separated for cleaner error handling."""
+        """Stream NDJSON from Ollama's /api/chat endpoint."""
         headers = {"Content-Type": "application/json"}
 
         if lib_name == "httpx":
@@ -168,8 +171,11 @@ class OllamaBackend(ILLMBackend):
                 headers=headers,
                 timeout=60,
             ) as resp:
+                if resp.status_code != 200:
+                    yield Error("Ollama returned HTTP {0}".format(resp.status_code))
+                    return
                 for line in resp.iter_lines():
-                    event = self._parse_sse_line(line)
+                    event = self._parse_ndjson_line(line)
                     if event is not None:
                         yield event
                         if isinstance(event, Done):
@@ -178,68 +184,80 @@ class OllamaBackend(ILLMBackend):
             resp = lib.post(
                 url, json=payload, headers=headers, stream=True, timeout=60
             )
+            if resp.status_code != 200:
+                body = ""
+                try:
+                    body = resp.text[:200]
+                except Exception:
+                    pass
+                yield Error("Ollama HTTP {0}: {1}".format(resp.status_code, body))
+                return
             resp.encoding = "utf-8"
-            for line in resp.iter_lines(decode_unicode=True):
-                event = self._parse_sse_line(line)
-                if event is not None:
-                    yield event
-                    if isinstance(event, Done):
-                        return
+            had_events = False
+            buf = ""
+            for chunk in resp.iter_content(chunk_size=512, decode_unicode=True):
+                if not chunk:
+                    continue
+                buf += chunk
+                while "\n" in buf:
+                    line, buf = buf.split("\n", 1)
+                    line = line.strip()
+                    if not line:
+                        continue
+                    event = self._parse_ndjson_line(line)
+                    if event is not None:
+                        had_events = True
+                        yield event
+                        if isinstance(event, Done):
+                            return
+            if not had_events:
+                yield Error("Ollama: stream ended with no data (buf={0})".format(repr(buf[:100])))
 
-    def _parse_sse_line(self, line):
+    def _parse_ndjson_line(self, line):
         """
-        Parse a single SSE/NDJSON line from the completion stream.
-        Returns a ChatEvent or None if the line should be skipped.
+        Parse a single NDJSON line from Ollama's /api/chat stream.
+
+        Format: {"message":{"role":"assistant","content":"Hi"},"done":false}
+        Final:  {"message":{"role":"assistant","content":""},"done":true,...}
         """
         if not line:
             return None
 
-        # Strip "data: " prefix if present (SSE format)
         if isinstance(line, bytes):
             line = line.decode("utf-8", errors="replace")
         line = line.strip()
         if not line:
             return None
-        if line == "data: [DONE]":
-            return Done()
-        if line.startswith("data: "):
-            line = line[6:]
 
         try:
             chunk = json.loads(line)
         except (ValueError, TypeError):
             return None
 
-        choices = chunk.get("choices", [])
-        if not choices:
-            return None
-
-        choice = choices[0]
-        finish_reason = choice.get("finish_reason")
-        delta = choice.get("delta", {})
-
-        # Tool calls
-        tool_calls = delta.get("tool_calls", [])
+        # Tool calls (Ollama returns them in message.tool_calls on the done chunk)
+        msg = chunk.get("message", {})
+        tool_calls = msg.get("tool_calls", [])
         if tool_calls:
             for tc in tool_calls:
                 fn_info = tc.get("function", {})
-                call_id = tc.get("id", "")
+                call_id = tc.get("id", "call_{0}".format(fn_info.get("name", "")))
                 fn_name = fn_info.get("name", "")
-                fn_args_raw = fn_info.get("arguments", "{}")
-                try:
-                    fn_params = json.loads(fn_args_raw) if fn_args_raw else {}
-                except (ValueError, TypeError):
-                    fn_params = {}
-                return ToolCall(call_id=call_id, fn=fn_name, params=fn_params)
+                fn_args = fn_info.get("arguments", {})
+                if isinstance(fn_args, str):
+                    try:
+                        fn_args = json.loads(fn_args)
+                    except (ValueError, TypeError):
+                        fn_args = {}
+                return ToolCall(call_id=call_id, fn=fn_name, params=fn_args)
+
+        # Done signal
+        if chunk.get("done", False):
+            return Done()
 
         # Text content
-        content = delta.get("content")
+        content = msg.get("content", "")
         if content:
             return TokenChunk(text=content, done=False)
-
-        # Stop signal
-        if finish_reason == "stop":
-            return Done()
 
         return None
 

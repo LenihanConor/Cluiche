@@ -209,6 +209,24 @@ namespace CluicheEditor
 		}
 
 		// ------------------------------------------------------------------
+		// 4b. Route Python logging -> DIA_LOG via dia_chat_bridge.log_message
+		// ------------------------------------------------------------------
+		Dia::Python::ExecuteString(
+			"import logging, dia_chat_bridge\n"
+			"class _DiaLogHandler(logging.Handler):\n"
+			"    def emit(self, record):\n"
+			"        try:\n"
+			"            dia_chat_bridge.log_message(record.levelno, self.format(record))\n"
+			"        except Exception:\n"
+			"            pass\n"
+			"_h = _DiaLogHandler()\n"
+			"_h.setFormatter(logging.Formatter('%(name)s: %(message)s'))\n"
+			"logging.getLogger('dia_chat').addHandler(_h)\n"
+			"logging.getLogger('dia_chat').setLevel(logging.DEBUG)\n"
+			"logging.getLogger('dia_chat_backends').addHandler(_h)\n"
+			"logging.getLogger('dia_chat_backends').setLevel(logging.DEBUG)\n");
+
+		// ------------------------------------------------------------------
 		// 5. Probe the default backend (Ollama) and push status to UI.
 		// ------------------------------------------------------------------
 		rc = Dia::Python::ExecuteString(
@@ -377,6 +395,26 @@ namespace CluicheEditor
 				return Dia::Python::PythonObject();
 			},
 			"confirm_callback(call_id, fn, params_json, description) -> None");
+
+		// log_message(level: int, message: str) — routes Python logging to DIA_LOG
+		Dia::Python::AddFunction(mod, "log_message",
+			[](const Dia::Python::PythonArgs& args) -> Dia::Python::PythonObject
+			{
+				if (args.GetCount() < 2) return Dia::Python::PythonObject();
+				Dia::Python::PythonObject a0 = args.GetArg(0);
+				Dia::Python::PythonObject a1 = args.GetArg(1);
+				int level = Dia::Python::ToInt(a0);
+				const char* msg = Dia::Python::ToString(a1);
+				if (!msg) msg = "";
+				if (level >= 40)
+					DIA_LOG_ERROR("PyChat", "%s", msg);
+				else if (level >= 30)
+					DIA_LOG_WARNING("PyChat", "%s", msg);
+				else
+					DIA_LOG_INFO("PyChat", "%s", msg);
+				return Dia::Python::PythonObject();
+			},
+			"log_message(level, message) -> None");
 
 		// _notify_bridge_raw(topic: str, payload_json: str) — C++ side
 		// dia_chat.py calls notify_bridge(topic, dict); a Python wrapper (defined in the
