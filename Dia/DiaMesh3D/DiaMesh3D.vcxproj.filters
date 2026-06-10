@@ -18,6 +18,9 @@
     <ClInclude Include="Mesh3DBinaryReader.h" />
     <ClInclude Include="Vertex3D.h" />
     <ClInclude Include="Submesh.h" />
+    <ClInclude Include="Testing\MeshBuilder3D.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Mesh3DAsset.cpp" />
