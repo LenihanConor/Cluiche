@@ -133,7 +133,8 @@ files = [
   { src = "Cluiche/Assets/CluicheEditor/cluicheeditor.diaobservation", dest = "$(OutDir)assets/" },
   { src = "Cluiche/bin/DiaUICEF_TestSubprocess/$(Configuration)/x64/DiaUICEF_TestSubprocess.exe", dest = "$(OutDir)cef/" },
   { src = "Cluiche/bin/DiaUICEF_TestSubprocess/$(Configuration)/x64/DiaUICEF_TestSubprocess.pdb", dest = "$(OutDir)cef/" },
-  { src = "Cluiche/CluicheEditor/scripts/*",                  dest = "$(OutDir)scripts/" }
+  { src = "Cluiche/CluicheEditor/scripts/*",                  dest = "$(OutDir)scripts/" },
+  { src = "Cluiche/Assets/CluicheEditor/ai_context/*",       dest = "$(OutDir)assets/ai_context/" }
 ]
 
 [targets.diasfml]

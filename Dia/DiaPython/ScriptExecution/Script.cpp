@@ -217,6 +217,21 @@ namespace Dia
 			return Internal::ExecuteStringInternal(pythonCode);
 		}
 
+		////////////////////////////////////////////////////////////////////////////////
+		// Execute Python code string from a background thread (acquires GIL)
+		////////////////////////////////////////////////////////////////////////////////
+		int ExecuteStringOnThread(const char* pythonCode)
+		{
+			if (!IsInitialized())
+			{
+				DIA_LOG_ERROR("DiaPython", "ExecuteStringOnThread failed: Python not initialized");
+				return static_cast<int>(ErrorCode::NotInitialized);
+			}
+
+			py::gil_scoped_acquire acquire;
+			return Internal::ExecuteStringInternal(pythonCode);
+		}
+
 
 		////////////////////////////////////////////////////////////////////////////////
 		// Redirect Python stdout/stderr to custom callbacks

@@ -12,6 +12,7 @@
 #include <DiaEditor/Layout/DockingLayout.h>
 #include <DiaEditor/Memory/EditorMemory.h>
 #include <DiaEditor/EditorAPI/EditorActionPythonModule.h>
+#include <DiaEditor/EditorAPI/EditorActionQueueService.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <string>
@@ -40,12 +41,17 @@ namespace Cluiche
 			if (!mServiceLocator.HasService<Dia::Editor::NotificationService>())
 				mServiceLocator.RegisterService(&mNotificationService);
 
-			// Register EditorActionRegistry on the service locator if EditorActionModule is present.
+			// Register EditorActionRegistry and EditorActionQueue on the service locator.
 			EditorActionModule* actionModule = mActionModuleRef.Get();
 			if (actionModule != nullptr && !mServiceLocator.HasService<Dia::Editor::EditorActionRegistryService>())
 			{
 				mRegistryService = new Dia::Editor::EditorActionRegistryService(actionModule->GetRegistry());
 				mServiceLocator.RegisterService(mRegistryService);
+			}
+			if (actionModule != nullptr && !mServiceLocator.HasService<Dia::Editor::EditorActionQueueService>())
+			{
+				mQueueService = new Dia::Editor::EditorActionQueueService(actionModule->GetQueue());
+				mServiceLocator.RegisterService(mQueueService);
 			}
 
 			// Initialize AppEditorController — needs bridge, context, plugin loader, and registry.
@@ -259,6 +265,13 @@ namespace Cluiche
 				mServiceLocator.UnregisterService<Dia::Editor::EditorActionRegistryService>();
 				delete mRegistryService;
 				mRegistryService = nullptr;
+			}
+
+			if (mQueueService != nullptr)
+			{
+				mServiceLocator.UnregisterService<Dia::Editor::EditorActionQueueService>();
+				delete mQueueService;
+				mQueueService = nullptr;
 			}
 
 			return Dia::ApplicationFlow::StopResult::kDone;

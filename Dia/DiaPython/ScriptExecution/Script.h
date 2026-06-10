@@ -45,6 +45,12 @@ namespace Dia
 		// Restore Python stdout/stderr to default behavior
 		void RestoreOutput();
 
+		// Execute Python code string from a non-main thread.
+		// Acquires the GIL before executing and releases it after.
+		// Use this instead of ExecuteString when calling from std::thread.
+		// Returns: exit code (0 = success, non-zero = error)
+		int ExecuteStringOnThread(const char* pythonCode);
+
 		// Events (TODO: implement with Observer pattern)
 		// void OnScriptExecuting(const char* scriptPath);
 		// void OnScriptExecuted(const char* scriptPath, int exitCode, float duration);

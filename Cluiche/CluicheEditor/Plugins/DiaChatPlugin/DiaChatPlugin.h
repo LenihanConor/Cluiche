@@ -3,11 +3,16 @@
 #include <DiaEditor/Plugin/IEditorPlugin.h>
 #include <DiaCore/CRC/StringCRC.h>
 
+#include <atomic>
+#include <string>
+#include <thread>
+
 namespace Dia
 {
 	namespace Editor
 	{
 		class WebUIBridge;
+		class EditorActionQueue;
 	}
 }
 
@@ -19,6 +24,7 @@ namespace CluicheEditor
 	{
 	public:
 		DiaChatPlugin();
+		~DiaChatPlugin();
 
 		static const Dia::Core::StringCRC kPluginId;
 
@@ -33,7 +39,16 @@ namespace CluicheEditor
 		void OnUpdate(float deltaTime) override;
 
 	private:
-		ChatPanelBridge*         mBridge    = nullptr;
-		Dia::Editor::WebUIBridge* mWebBridge = nullptr;
+		void RegisterPythonModule();
+		void RegisterStubHandlers();
+		void DispatchSendMessage(const std::string& text, const std::string& contextMode);
+
+		ChatPanelBridge*              mBridge        = nullptr;
+		Dia::Editor::WebUIBridge*     mWebBridge     = nullptr;
+		Dia::Editor::EditorActionQueue* mActionQueue = nullptr;
+
+		// Background thread for the current LLM stream (at most one at a time).
+		std::thread                   mSendThread;
+		std::atomic<bool>             mSendInFlight  { false };
 	};
 }
