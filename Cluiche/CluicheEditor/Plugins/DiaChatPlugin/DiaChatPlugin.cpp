@@ -305,7 +305,8 @@ namespace CluicheEditor
 		Dia::Python::AddFunction(mod, "token_callback",
 			[bridge](const Dia::Python::PythonArgs& args) -> Dia::Python::PythonObject
 			{
-				const char* text = (args.GetCount() > 0) ? Dia::Python::ToString(args.GetArg(0)) : "";
+				Dia::Python::PythonObject arg0 = (args.GetCount() > 0) ? args.GetArg(0) : Dia::Python::PythonObject();
+				const char* text = Dia::Python::ToString(arg0);
 				bool done = (args.GetCount() > 1) ? Dia::Python::ToBool(args.GetArg(1)) : false;
 				if (bridge) bridge->OnTokenChunk(text, done);
 				return Dia::Python::PythonObject();
@@ -337,8 +338,10 @@ namespace CluicheEditor
 					return Dia::Python::ToPython(SerializeJson(err).c_str());
 				}
 
-				const char* nameStr   = Dia::Python::ToString(args.GetArg(0));
-				const char* paramsStr = Dia::Python::ToString(args.GetArg(1));
+				Dia::Python::PythonObject arg0 = args.GetArg(0);
+				Dia::Python::PythonObject arg1 = args.GetArg(1);
+				const char* nameStr   = Dia::Python::ToString(arg0);
+				const char* paramsStr = Dia::Python::ToString(arg1);
 
 				Dia::Core::StringCRC actionName(nameStr ? nameStr : "");
 				Json::Value params = ParseJson(paramsStr);
@@ -353,10 +356,18 @@ namespace CluicheEditor
 			[bridge](const Dia::Python::PythonArgs& args) -> Dia::Python::PythonObject
 			{
 				if (bridge == nullptr) return Dia::Python::PythonObject();
-				const char* callId      = (args.GetCount() > 0) ? Dia::Python::ToString(args.GetArg(0)) : "";
-				const char* fn          = (args.GetCount() > 1) ? Dia::Python::ToString(args.GetArg(1)) : "";
-				const char* paramsJson  = (args.GetCount() > 2) ? Dia::Python::ToString(args.GetArg(2)) : "{}";
-				const char* description = (args.GetCount() > 3) ? Dia::Python::ToString(args.GetArg(3)) : "";
+				Dia::Python::PythonObject a0 = (args.GetCount() > 0) ? args.GetArg(0) : Dia::Python::PythonObject();
+				Dia::Python::PythonObject a1 = (args.GetCount() > 1) ? args.GetArg(1) : Dia::Python::PythonObject();
+				Dia::Python::PythonObject a2 = (args.GetCount() > 2) ? args.GetArg(2) : Dia::Python::PythonObject();
+				Dia::Python::PythonObject a3 = (args.GetCount() > 3) ? args.GetArg(3) : Dia::Python::PythonObject();
+				const char* callId      = Dia::Python::ToString(a0);
+				const char* fn          = Dia::Python::ToString(a1);
+				const char* paramsJson  = Dia::Python::ToString(a2);
+				const char* description = Dia::Python::ToString(a3);
+				if (!callId) callId = "";
+				if (!fn) fn = "";
+				if (!paramsJson) paramsJson = "{}";
+				if (!description) description = "";
 				bridge->OnConfirmRequired(callId, fn, ParseJson(paramsJson), description);
 				return Dia::Python::PythonObject();
 			},
@@ -369,8 +380,10 @@ namespace CluicheEditor
 			[bridge](const Dia::Python::PythonArgs& args) -> Dia::Python::PythonObject
 			{
 				if (bridge == nullptr || args.GetCount() < 2) return Dia::Python::PythonObject();
-				const char* topic      = Dia::Python::ToString(args.GetArg(0));
-				const char* payloadStr = Dia::Python::ToString(args.GetArg(1));
+				Dia::Python::PythonObject a0 = args.GetArg(0);
+				Dia::Python::PythonObject a1 = args.GetArg(1);
+				const char* topic      = Dia::Python::ToString(a0);
+				const char* payloadStr = Dia::Python::ToString(a1);
 				Json::Value payload = ParseJson(payloadStr);
 
 				// Route to the appropriate ChatPanelBridge method.
