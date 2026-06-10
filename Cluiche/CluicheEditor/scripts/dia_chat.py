@@ -10,12 +10,69 @@ ollama, httpx, google-generativeai) live in Task 3's backend classes.
 
 import json
 import logging
+import os
 import threading
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 _LOG = logging.getLogger("dia_chat")
+
+
+# ---------------------------------------------------------------------------
+# Persistence helpers (DCP-008)
+# ---------------------------------------------------------------------------
+
+def _history_path(project_path):
+    """Return the JSONL path for the given project_path."""
+    slug = os.path.basename(project_path.rstrip('/\\')).lower().replace(' ', '_')
+    return os.path.join('Cluiche', 'out', 'CluicheEditor', 'chat', slug, 'history.jsonl')
+
+
+def _load_history(path):
+    """
+    Load messages from a JSONL file.  Returns [] if the file does not exist.
+    Skips malformed lines silently.
+    """
+    if not os.path.exists(path):
+        return []
+    messages = []
+    try:
+        with open(path, 'r', encoding='utf-8') as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    messages.append(json.loads(line))
+                except Exception:
+                    pass
+    except Exception as e:
+        print("[DiaChat] history error: {0}".format(e))
+    return messages
+
+
+def _save_history(path, messages):
+    """Overwrite the JSONL file with the given message list."""
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w', encoding='utf-8') as fh:
+            for msg in messages:
+                fh.write(json.dumps(msg) + '\n')
+    except Exception as e:
+        print("[DiaChat] history error: {0}".format(e))
+
+
+def _trim_history(messages, max_pairs=50):
+    """
+    Cap the message list to max_pairs exchanges (max_pairs * 2 messages).
+    Drops the oldest messages when over the limit.
+    """
+    limit = max_pairs * 2
+    if len(messages) > limit:
+        return messages[len(messages) - limit:]
+    return messages
+
 
 # ---------------------------------------------------------------------------
 # ChatEvent tagged union
@@ -84,7 +141,7 @@ class ILLMBackend(ABC):
 # ---------------------------------------------------------------------------
 
 class ConversationHistory:
-    """In-memory conversation history (persistence is Task 8)."""
+    """In-memory conversation history with JSONL persistence (DCP-008)."""
 
     def __init__(self):
         self._exchanges = []  # list of {role, content, tool_calls, timestamp}
@@ -105,6 +162,21 @@ class ConversationHistory:
             "timestamp": ts,
         })
 
+    def load_from(self, messages):
+        """
+        Bulk-load a list of {"role", "content"} dicts (e.g. from JSONL file).
+        Each dict is stored directly; missing keys default to empty values.
+        """
+        for msg in messages:
+            if not isinstance(msg, dict):
+                continue
+            self._exchanges.append({
+                "role": msg.get("role", ""),
+                "content": msg.get("content", ""),
+                "tool_calls": msg.get("tool_calls", []),
+                "timestamp": msg.get("timestamp", 0.0),
+            })
+
     def to_messages(self):
         """
         Return a flat list of {role, content} dicts suitable for the messages
@@ -114,6 +186,10 @@ class ConversationHistory:
         for entry in self._exchanges:
             result.append({"role": entry["role"], "content": entry["content"]})
         return result
+
+    def to_list(self):
+        """Return a copy of all exchanges as plain {role, content} dicts."""
+        return [{"role": e["role"], "content": e["content"]} for e in self._exchanges]
 
     def clear(self):
         """Discard all stored history."""
@@ -136,10 +212,21 @@ class ToolDispatcher:
     ----------
     execute_action : callable(name: str, params: dict) -> dict
         The DiaPython binding to DiaEditorAPI::ExecuteAction.
+    notify_bridge : callable(topic: str, payload: dict) | None
+        Optional callback to push error events to the UI.
     """
 
-    def __init__(self, execute_action):
+    def __init__(self, execute_action, notify_bridge=None):
         self._execute_action = execute_action  # callable(name, params) -> dict
+        self._notify_bridge = notify_bridge
+
+    def _push(self, topic, payload):
+        """Push an event to the UI bridge; silently swallows failures."""
+        if self._notify_bridge is not None:
+            try:
+                self._notify_bridge(topic, payload)
+            except Exception:
+                pass
 
     def dispatch(self, name, params):
         try:
@@ -148,6 +235,12 @@ class ToolDispatcher:
                 result = {}
             return result
         except Exception as exc:
+            # Detect DiaEditorAPI not loaded (ImportError or missing dia_editor module)
+            if isinstance(exc, ImportError) or 'dia_editor' in str(exc):
+                self._push('chat.error', {
+                    'error_type': 'editor_api_unavailable',
+                    'message': 'DiaEditorAPI not loaded. Editor actions are disabled.',
+                })
             raise ToolError(str(exc)) from exc
 
 
@@ -286,24 +379,36 @@ class ChatOrchestrator:
         Calls C++ DiaEditorAPI::ExecuteAction.
     confirm_callback : callable(call_id: str, fn: str, params: dict, description: str)
         Triggers the C++ confirmation gate for destructive actions.
+    notify_bridge    : callable(topic: str, payload: dict) | None
+        Pushes error/status events to the React UI.  None disables UI
+        error notifications (used in headless tests).
     max_tool_depth   : int
         Maximum tool calls allowed per send_message exchange (DCP-007, default 8).
     """
 
     def __init__(self, token_callback, manifest_getter, execute_action,
-                 confirm_callback, max_tool_depth=8):
+                 confirm_callback, notify_bridge=None, max_tool_depth=8,
+                 project_path=""):
         self._token_callback = token_callback
         self._manifest_getter = manifest_getter
         self._execute_action = execute_action
         self._confirm_callback = confirm_callback
+        self._notify_bridge = notify_bridge
         self._max_tool_depth = max_tool_depth
 
-        self._dispatcher = ToolDispatcher(execute_action)
+        self._dispatcher = ToolDispatcher(execute_action, notify_bridge=notify_bridge)
 
         self._backend = None
         self._system_prompt = ""
         self._history = ConversationHistory()
         self._context_mode = "full_context"
+
+        # Persistence (DCP-008)
+        self._history_path = _history_path(project_path) if project_path else ""
+        if self._history_path:
+            saved = _load_history(self._history_path)
+            if saved:
+                self._history.load_from(saved)
 
         # Maps call_id -> (fn, params, threading.Event, result_container)
         # result_container is a one-element list so the event-handler can write
@@ -311,12 +416,83 @@ class ChatOrchestrator:
         self.pending_confirm = {}
 
     # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _push(self, topic, payload):
+        """Push an event to the UI bridge; silently swallows failures."""
+        if self._notify_bridge is not None:
+            try:
+                self._notify_bridge(topic, payload)
+            except Exception:
+                pass
+
+    # ------------------------------------------------------------------
     # Configuration
     # ------------------------------------------------------------------
 
     def set_backend(self, backend):
-        """Set the active ILLMBackend implementation."""
+        """
+        Set the active ILLMBackend implementation.
+
+        After switching, checks availability and pushes a
+        chat.backend_status error event to the UI if the backend is not
+        reachable or has no models installed.
+        """
         self._backend = backend
+        self._check_backend_availability(backend)
+
+    def _check_backend_availability(self, backend):
+        """
+        Inspect *backend* and push chat.backend_status error events for
+        the three backend error states: ollama_down, no_models,
+        api_key_missing.
+        """
+        if backend is None:
+            return
+
+        # --- Ollama: check reachability first, then model list ---
+        backend_name = type(backend).__name__.lower()
+        is_ollama = 'ollama' in backend_name
+
+        try:
+            available = backend.is_available()
+        except Exception:
+            available = False
+
+        if is_ollama and not available:
+            self._push('chat.backend_status', {
+                'status': 'error',
+                'error_type': 'ollama_down',
+                'message': 'Ollama is not running. Start Ollama or switch to Claude/Gemini.',
+            })
+            return
+
+        if available:
+            try:
+                models = backend.list_models()
+            except Exception:
+                models = []
+            if is_ollama and not models:
+                self._push('chat.backend_status', {
+                    'status': 'error',
+                    'error_type': 'no_models',
+                    'message': 'No models installed. Run: ollama pull llama3.2',
+                })
+                return
+
+        # --- Cloud backends (non-ollama): check for API key ---
+        if not is_ollama:
+            api_key = getattr(backend, 'api_key', None)
+            # Also accept a truthy _api_key attribute for flexibility.
+            if api_key is None:
+                api_key = getattr(backend, '_api_key', None)
+            if not api_key:
+                self._push('chat.backend_status', {
+                    'status': 'error',
+                    'error_type': 'api_key_missing',
+                    'message': 'API key not set. Set ANTHROPIC_API_KEY / GOOGLE_API_KEY env var.',
+                })
 
     def set_system_prompt(self, text):
         """Set the system prompt (called by KnowledgeLoader in Task 4)."""
@@ -396,15 +572,29 @@ class ChatOrchestrator:
                         return
 
             except Exception as exc:
-                _LOG.error("dia_chat: exception during stream_chat: %s", exc)
+                exc_type = type(exc).__name__
+                if 'ConnectionError' in exc_type or 'ConnectError' in exc_type:
+                    _LOG.error("dia_chat: stream connection dropped: %s", exc)
+                    self._push('chat.error', {
+                        'error_type': 'stream_dropped',
+                        'message': 'Connection lost.',
+                        'retry': True,
+                    })
+                else:
+                    _LOG.error("dia_chat: exception during stream_chat: %s", exc)
                 self._token_callback("[error: {0}]".format(str(exc)), True)
                 return
 
             if pending_tool_call is not None:
                 tool_depth += 1
-                tool_result = self._handle_tool_call(
-                    pending_tool_call, tool_depth, messages, tools
-                )
+                try:
+                    tool_result = self._handle_tool_call(
+                        pending_tool_call, tool_depth, messages, tools
+                    )
+                except ToolError as exc:
+                    _LOG.error("dia_chat: _handle_tool_call raised: %s", exc)
+                    self._token_callback("[error: {0}]".format(str(exc)), True)
+                    return
                 if tool_result is None:
                     # Depth limit reached — already injected the limit message;
                     # break out and let the loop send final tokens.
@@ -432,6 +622,11 @@ class ChatOrchestrator:
         # --- 6. Append to history ---
         assistant_text = "".join(assistant_text_parts)
         self._history.add_exchange(text, assistant_text, all_tool_calls)
+
+        # --- 7. Persist history (DCP-008) ---
+        if self._history_path:
+            trimmed = _trim_history(self._history.to_list())
+            _save_history(self._history_path, trimmed)
 
     # ------------------------------------------------------------------
     # Tool handling helpers
@@ -485,16 +680,52 @@ class ChatOrchestrator:
             description = self._get_action_description(fn, manifest)
             confirmed = self._await_confirmation(call_id, fn, params, description)
             if not confirmed:
+                self._push('chat.error', {
+                    'error_type': 'destructive_cancel',
+                    'message': '{0} was cancelled.'.format(fn),
+                    'inline': True,
+                })
                 return {"error": "User cancelled action"}
 
-        # --- Dispatch ---
-        try:
-            result = self._dispatcher.dispatch(fn, params)
-        except ToolError as exc:
-            _LOG.error("dia_chat: execute_action('%s') raised: %s", fn, exc)
-            result = {"error": str(exc)}
+        # --- Dispatch with timeout guard (5 s) ---
+        _TOOL_TIMEOUT_S = 5.0
+        result_holder = [None]
+        error_holder = [None]
+        done_event = threading.Event()
 
-        return result
+        def _run_tool():
+            try:
+                result_holder[0] = self._dispatcher.dispatch(fn, params)
+            except Exception as exc:
+                error_holder[0] = exc
+            finally:
+                done_event.set()
+
+        t = threading.Thread(target=_run_tool, daemon=True)
+        t.start()
+
+        if not done_event.wait(timeout=_TOOL_TIMEOUT_S):
+            _LOG.error("dia_chat: tool '%s' timed out after %.1fs", fn, _TOOL_TIMEOUT_S)
+            self._push('chat.error', {
+                'error_type': 'tool_timeout',
+                'message': 'Action timed out. Retrying...',
+            })
+            # Single retry — wait another full timeout window for the thread to finish.
+            if not done_event.wait(timeout=_TOOL_TIMEOUT_S):
+                self._push('chat.error', {
+                    'error_type': 'tool_timeout',
+                    'message': 'Action timed out.',
+                })
+                raise ToolError('Tool call timed out after {0}s'.format(_TOOL_TIMEOUT_S))
+
+        if error_holder[0] is not None:
+            exc = error_holder[0]
+            if isinstance(exc, ToolError):
+                _LOG.error("dia_chat: execute_action('%s') raised: %s", fn, exc)
+                return {"error": str(exc)}
+            raise exc
+
+        return result_holder[0]
 
     def _is_destructive(self, fn, manifest):
         """Return True if the named action is marked destructive in the manifest."""
@@ -572,8 +803,13 @@ class ChatOrchestrator:
     # ------------------------------------------------------------------
 
     def clear_history(self):
-        """Clear the conversation history."""
+        """Clear the in-memory conversation history and delete the JSONL file."""
         self._history.clear()
+        if self._history_path and os.path.exists(self._history_path):
+            try:
+                os.remove(self._history_path)
+            except Exception as e:
+                print("[DiaChat] history error: {0}".format(e))
 
 
 # ---------------------------------------------------------------------------
@@ -584,7 +820,8 @@ _orchestrator = None  # type: ChatOrchestrator | None
 
 
 def initialize(token_callback, manifest_getter, execute_action, confirm_callback,
-               ai_context_dir=None, token_budget=4096):
+               notify_bridge=None, ai_context_dir=None, token_budget=4096,
+               project_path=""):
     """
     Create the global ChatOrchestrator instance.
 
@@ -596,11 +833,16 @@ def initialize(token_callback, manifest_getter, execute_action, confirm_callback
     manifest_getter  : callable() -> dict | None
     execute_action   : callable(name: str, params: dict) -> dict
     confirm_callback : callable(call_id, fn, params, description)
+    notify_bridge    : callable(topic: str, payload: dict) | None
+        Callback for pushing error/status events to the React UI.
     ai_context_dir   : str | None
         Path to the ai_context/ directory.  When provided, a KnowledgeLoader
         is created, the system prompt is assembled, and set on the orchestrator.
     token_budget     : int
         Token budget forwarded to KnowledgeLoader (default 4096).
+    project_path     : str
+        Path to the open project directory.  Used to derive the JSONL history
+        path for conversation persistence (DCP-008).
     """
     global _orchestrator
     _orchestrator = ChatOrchestrator(
@@ -608,6 +850,8 @@ def initialize(token_callback, manifest_getter, execute_action, confirm_callback
         manifest_getter=manifest_getter,
         execute_action=execute_action,
         confirm_callback=confirm_callback,
+        notify_bridge=notify_bridge,
+        project_path=project_path,
     )
     if ai_context_dir:
         loader = KnowledgeLoader(ai_context_dir, token_budget=token_budget)
@@ -636,12 +880,15 @@ def set_backend(backend_name, model):
 
     Instantiates the named backend via create_backend() and registers it on
     the orchestrator.  Backend classes live in dia_chat_backends (Task 3).
+    After switching, the orchestrator checks availability and pushes error
+    events (ollama_down / no_models / api_key_missing) to the UI if needed.
     """
     _LOG.info("dia_chat: set_backend: backend=%s model=%s", backend_name, model)
     try:
         from dia_chat_backends import create_backend
         backend = create_backend(backend_name, model)
         if _orchestrator is not None:
+            # set_backend also calls _check_backend_availability internally.
             _orchestrator.set_backend(backend)
         else:
             _LOG.warning(
