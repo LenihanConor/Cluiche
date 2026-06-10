@@ -89,11 +89,13 @@ namespace Dia
 				return;
 			}
 
-			// Refuse to register twice (CreateModule returns nullptr for duplicates).
+			// Create root or get existing — safe to call multiple times (on dynamic plugin load).
 			Dia::Python::Module* root = Dia::Python::CreateModule("dia_editor");
 			if (root == nullptr)
+				root = Dia::Python::GetModule("dia_editor");
+			if (root == nullptr)
 			{
-				DIA_LOG_WARNING("Editor", "EditorActionPythonModule: 'dia_editor' module already exists, skipping");
+				DIA_LOG_ERROR("Editor", "EditorActionPythonModule: failed to create or get 'dia_editor' module");
 				return;
 			}
 
@@ -126,10 +128,13 @@ namespace Dia
 				char subName[128];
 				snprintf(subName, sizeof(subName), "dia_editor.%s", category);
 
+				// Create new sub-module, or get it if already created by an earlier call.
 				Dia::Python::Module* sub = Dia::Python::CreateModule(subName);
 				if (sub == nullptr)
+					sub = Dia::Python::GetModule(subName);
+				if (sub == nullptr)
 				{
-					DIA_LOG_ERROR("Editor", "EditorActionPythonModule: failed to create sub-module '%s'", subName);
+					DIA_LOG_ERROR("Editor", "EditorActionPythonModule: failed to create or get sub-module '%s'", subName);
 					return nullptr;
 				}
 

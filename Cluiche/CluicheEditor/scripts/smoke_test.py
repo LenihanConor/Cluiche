@@ -9,21 +9,19 @@ All checks use assert so any failure raises AssertionError, which DiaPython
 converts to a Python exception and logs as DIA_LOG_ERROR.
 """
 import json
+import importlib
 
 # ---------------------------------------------------------------------------
-# Import guard — fail fast with a clear message if the module is missing.
+# Always-present modules — built-in plugins loaded at startup.
 # ---------------------------------------------------------------------------
 try:
     import dia_editor.project as project
     import dia_editor.game_connection as game_connection
     import dia_editor.app_editor as app_editor
     import dia_editor.plugin_browser as plugin_browser
-    import dia_editor.entity_template_editor as entity_template_editor
-    import dia_editor.asset_catalogue as asset_catalogue
-    import dia_editor.scene_editor as scene_editor
 except ImportError as e:
     raise ImportError(
-        f"dia_editor sub-modules not available: {e}. "
+        f"dia_editor core sub-modules not available: {e}. "
         "Ensure GeneratePythonModule() was called before this script runs."
     ) from e
 
@@ -31,6 +29,22 @@ except ImportError as e:
 def _parse(raw: str) -> dict:
     """Deserialise a JSON string returned by an action callable."""
     return json.loads(raw)
+
+
+def _ensure_plugin(type_id: str, module_name: str):
+    """Load an optional plugin if not already loaded, then import its dia_editor sub-module.
+
+    Calls plugin_browser.load to trigger OnPluginLoad → DualRegisterActions →
+    GeneratePythonModule so the sub-module exists before we import it.
+    Returns the imported module.
+    """
+    load_result = _parse(plugin_browser.load(f'{{"typeId":"{type_id}"}}'))
+    if not load_result.get("success", False):
+        error = load_result.get("error", "unknown")
+        if error != "plugin is already loaded":
+            raise RuntimeError(f"Failed to load plugin '{type_id}': {error}")
+    # Sub-module may now exist — import (or re-import to pick up new functions).
+    return importlib.import_module(f"dia_editor.{module_name}")
 
 
 # ---------------------------------------------------------------------------
@@ -129,6 +143,7 @@ print(f"[smoke] plugin_browser.get_available() OK: {len(result['plugins'])} plug
 # ---------------------------------------------------------------------------
 # entity_template_editor.get_project_state returns dict with required keys
 # ---------------------------------------------------------------------------
+entity_template_editor = _ensure_plugin("DiaEntityTemplateEditor", "entity_template_editor")
 raw = entity_template_editor.get_project_state()
 assert isinstance(raw, str), f"entity_template_editor.get_project_state() should return str, got {type(raw)}"
 state = _parse(raw)
@@ -141,6 +156,7 @@ print(f"[smoke] entity_template_editor.get_project_state() OK: {state}")
 # ---------------------------------------------------------------------------
 # asset_catalogue.get_state returns a dict with required keys
 # ---------------------------------------------------------------------------
+asset_catalogue = _ensure_plugin("DiaAssetCatalogueEditorPlugin", "asset_catalogue")
 raw = asset_catalogue.get_state()
 assert isinstance(raw, str), f"asset_catalogue.get_state() should return str, got {type(raw)}"
 state = _parse(raw)
@@ -175,6 +191,7 @@ print(f"[smoke] asset_catalogue.validate() OK: {vresult}")
 # ---------------------------------------------------------------------------
 # scene_editor.get_project_state returns dict with required keys
 # ---------------------------------------------------------------------------
+scene_editor = _ensure_plugin("DiaSceneEditor", "scene_editor")
 raw = scene_editor.get_project_state()
 assert isinstance(raw, str), f"scene_editor.get_project_state() should return str, got {type(raw)}"
 state = _parse(raw)
