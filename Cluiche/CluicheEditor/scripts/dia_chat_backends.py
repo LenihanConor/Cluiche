@@ -178,6 +178,7 @@ class OllamaBackend(ILLMBackend):
             resp = lib.post(
                 url, json=payload, headers=headers, stream=True, timeout=60
             )
+            resp.encoding = "utf-8"
             for line in resp.iter_lines(decode_unicode=True):
                 event = self._parse_sse_line(line)
                 if event is not None:
