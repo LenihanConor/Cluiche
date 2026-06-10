@@ -1301,6 +1301,9 @@
     <ClCompile Include="DiaEntityInspector\TestControllers.cpp">
     <ClCompile Include="DiaAssetRuntimeInspector\TestDiaAssetRuntimeInspectorExhaustive.cpp">
     <ClCompile Include="DiaSceneEditor\TestSceneEditorNewActions.cpp">
+    <ClCompile Include="DiaApplicationFlowEditor\TestAppFlowEditorRegistryActions.cpp">
+      <Filter>DiaApplicationFlowEditor</Filter>
+    </ClCompile>
       <Filter>DiaSceneEditor</Filter>
     </ClCompile>
       <Filter>DiaAssetRuntimeInspector</Filter>

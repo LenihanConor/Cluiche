@@ -655,6 +655,7 @@
     </ClCompile>
     <ClCompile Include="DiaAssetRuntimeInspector\TestDiaAssetRuntimeInspectorExhaustive.cpp" />
     <ClCompile Include="DiaSceneEditor\TestSceneEditorNewActions.cpp" />
+    <ClCompile Include="DiaApplicationFlowEditor\TestAppFlowEditorRegistryActions.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaLighting2D\DiaLighting2D.vcxproj">
