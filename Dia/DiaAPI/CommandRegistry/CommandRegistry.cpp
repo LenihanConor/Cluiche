@@ -85,7 +85,7 @@ namespace Dia
 				bool isInitialized = false;
 				Dia::Core::Containers::DynamicArrayC<CommandInfo*, 64> commands;
 				Dia::Core::Containers::DynamicArrayC<CommandInfo*, 64> pendingRegistrations;
-				Dia::Core::Containers::DynamicArrayC<CommandInfoJson*, 64> jsonCommands;
+				Dia::Core::Containers::DynamicArrayC<CommandInfoJson*, 256> jsonCommands;
 			};
 
 			RegistryState gRegistryState;

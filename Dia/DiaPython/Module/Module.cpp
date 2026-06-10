@@ -308,13 +308,6 @@ namespace Dia
 					// Register with pybind11
 					moduleImpl->pybindModule->attr(functionName) = wrappedCallback;
 
-
-					// Set docstring if provided
-					if (docstring && docstring[0] != '\0')
-					{
-						wrappedCallback.attr("__doc__") = py::str(docstring);
-					}
-
 					DIA_LOG_INFO("DiaPython", "AddFunction: Registered '%s' in module '%s'", functionName, moduleImpl->name.c_str());
 				}
 				catch (const std::exception& ex)
@@ -390,10 +383,6 @@ namespace Dia
 					}
 
 					moduleImpl->pybindModule->attr(functionName) = wrappedCallback;
-					if (!fullDocstring.empty())
-					{
-						wrappedCallback.attr("__doc__") = py::str(fullDocstring.c_str());
-					}
 
 					DIA_LOG_INFO("DiaPython", "AddFunctionOverload: Registered '%s%s' in module '%s'",
 						functionName, signatureHint ? signatureHint : "", moduleImpl->name.c_str());
