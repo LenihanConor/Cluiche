@@ -467,9 +467,22 @@ def set_backend(backend_name, model):
     """
     Select an LLM backend by name and model.
 
-    Stub for Task 2 — concrete backends are wired in Task 3.
+    Instantiates the named backend via create_backend() and registers it on
+    the orchestrator.  Backend classes live in dia_chat_backends (Task 3).
     """
     _LOG.info("dia_chat: set_backend: backend=%s model=%s", backend_name, model)
+    try:
+        from dia_chat_backends import create_backend
+        backend = create_backend(backend_name, model)
+        if _orchestrator is not None:
+            _orchestrator.set_backend(backend)
+        else:
+            _LOG.warning(
+                "dia_chat: set_backend called before initialize(); "
+                "backend will not be applied until orchestrator is created"
+            )
+    except Exception as exc:
+        _LOG.error("dia_chat: set_backend failed: %s", exc)
 
 
 def set_context_mode(mode):
