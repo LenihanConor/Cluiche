@@ -576,7 +576,7 @@ def create_backend(name, model=None, **kwargs):
         if model is not None:
             kwargs["model"] = model
         else:
-            kwargs.setdefault("model", "llama3.2")
+            kwargs.setdefault("model", "qwen2.5-coder:14b")
         return OllamaBackend(**kwargs)
 
     if name == "claude":

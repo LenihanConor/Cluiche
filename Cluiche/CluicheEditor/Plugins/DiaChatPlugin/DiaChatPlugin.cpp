@@ -230,7 +230,7 @@ namespace CluicheEditor
 		// 5. Probe the default backend (Ollama) and push status to UI.
 		// ------------------------------------------------------------------
 		rc = Dia::Python::ExecuteString(
-			"import dia_chat; dia_chat.set_backend('ollama', 'llama3.2')");
+			"import dia_chat; dia_chat.set_backend('ollama', 'qwen2.5-coder:14b')");
 		if (rc != 0)
 			DIA_LOG_WARNING("Chat", "DiaChatPlugin: set_backend(ollama) probe failed rc=%d", rc);
 
