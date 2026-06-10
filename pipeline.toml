@@ -97,7 +97,8 @@ ui_builds = [
   { cwd = "Dia/DiaPipelineEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" },
   { cwd = "Dia/DiaApplicationFlowInspector/UI", cmd = "node node_modules/vite/bin/vite.js build" },
   { cwd = "Dia/DiaEntityInspector/UI", cmd = "node node_modules/typescript/bin/tsc && node node_modules/vite/bin/vite.js build" },
-  { cwd = "Dia/DiaPythonConsoleEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" }
+  { cwd = "Dia/DiaPythonConsoleEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" },
+  { cwd = "Cluiche/CluicheEditor/Plugins/DiaChatPlugin/UI", cmd = "node node_modules/vite/bin/vite.js build" }
 ]
 files = [
   { src = "External/Python311/python311.dll",             dest = "$(OutDir)" },
@@ -124,6 +125,8 @@ files = [
   { src = "Dia/DiaApplicationFlowInspector/UI/dist/assets/*", dest = "$(OutDir)plugins/diaapplicationflowinspector/assets/" },
   { src = "Dia/DiaPythonConsoleEditor/UI/dist/*",           dest = "$(OutDir)plugins/pythonconsole/" },
   { src = "Dia/DiaPythonConsoleEditor/UI/dist/assets/*",    dest = "$(OutDir)plugins/pythonconsole/assets/" },
+  { src = "Cluiche/CluicheEditor/Plugins/DiaChatPlugin/UI/dist/*",    dest = "$(OutDir)plugins/diachat/" },
+  { src = "Cluiche/CluicheEditor/Plugins/DiaChatPlugin/UI/dist/assets/*", dest = "$(OutDir)plugins/diachat/assets/" },
   { src = "Cluiche/Assets/CluicheEditor/*.ico",            dest = "$(OutDir)assets/icons/" },
   { src = "Cluiche/Assets/CluicheEditor/*.bmp",            dest = "$(OutDir)assets/icons/" },
   { src = "Cluiche/Assets/CluicheEditor/*.png",            dest = "$(OutDir)assets/icons/" },

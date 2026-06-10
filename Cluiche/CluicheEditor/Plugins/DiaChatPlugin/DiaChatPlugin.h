@@ -25,7 +25,7 @@ namespace CluicheEditor
 		const char* GetName()        const override { return "DiaChatPlugin"; }
 		const char* GetVersion()     const override { return "1.0"; }
 		const char* GetDescription() const override { return "Dockable AI assistant for CluicheEditor"; }
-		const char* GetUIPath()      const override { return "dia://chat/"; }
+		const char* GetUIPath()      const override { return "dia://plugins/diachat/index.html"; }
 		Dia::Editor::LayoutMode GetLayoutMode() const override { return Dia::Editor::LayoutMode::kDockable; }
 
 		void OnLoad(const Dia::Editor::EditorPluginContext& context) override;

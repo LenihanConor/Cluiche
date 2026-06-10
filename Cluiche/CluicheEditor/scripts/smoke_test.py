@@ -275,6 +275,32 @@ print(f"[smoke] risk.check() OK: hasRisk={risk_result['hasRisk']}")
 
 
 # ---------------------------------------------------------------------------
+# DiaChatPlugin — module loads; initialize() accepts a project path
+# ---------------------------------------------------------------------------
+import sys, os
+_chat_scripts = os.path.join(os.path.dirname(__file__))
+if _chat_scripts not in sys.path:
+    sys.path.insert(0, _chat_scripts)
+
+import dia_chat as _chat
+
+# initialize() should not raise; it can silently fail if no LLM backend is available
+# but must return without crashing
+try:
+    _chat.initialize(project_path="smoke_test_project", backend="ollama")
+except Exception as e:
+    print(f"[smoke] DiaChatPlugin initialize() non-fatal: {e}")
+
+# _orchestrator should be set after initialize
+assert _chat._orchestrator is not None, "DiaChatPlugin: _orchestrator was not created by initialize()"
+print(f"[smoke] DiaChatPlugin initialize() OK: orchestrator created")
+
+# clear_history() must not raise
+_chat.clear_history()
+print(f"[smoke] DiaChatPlugin clear_history() OK")
+
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 print("[smoke] All EditorAPI smoke checks passed.")
