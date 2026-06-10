@@ -55,6 +55,12 @@ type ContextWarning = {
 
 type ContextMode = 'full_context' | 'tools_only' | 'custom';
 
+type ChatMetrics = {
+    messagesSent: number;
+    toolCalls: number;
+    tokensStreamed: number;
+};
+
 // ---------------------------------------------------------------------------
 // Bridge send helper
 // ---------------------------------------------------------------------------
@@ -330,10 +336,12 @@ function DetailPanel({
     selectedToolCallId,
     messages,
     backendStatus,
+    metrics,
 }: {
     selectedToolCallId: string | null;
     messages: ChatMessage[];
     backendStatus: BackendStatus;
+    metrics: ChatMetrics;
 }) {
     const selectedTool = selectedToolCallId
         ? messages.flatMap(m => m.toolCalls).find(tc => tc.callId === selectedToolCallId) ?? null
@@ -448,13 +456,30 @@ function DetailPanel({
                 ))}
             </div>
 
-            {/* Session info */}
+            {/* Session info + live metrics */}
             <div style={{ padding: '8px 10px' }}>
                 <div style={{ color: C.text, fontWeight: 600, marginBottom: 6, fontSize: 11 }}>Session</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                     <div><span style={{ color: C.textMuted }}>Backend: </span>{backendStatus.backend}</div>
                     <div><span style={{ color: C.textMuted }}>Model: </span>{backendStatus.model}</div>
                     <div><span style={{ color: C.textMuted }}>Messages: </span>{messages.length}</div>
+                </div>
+                <div style={{ marginTop: 10, borderTop: `1px solid ${C.detailBorder}`, paddingTop: 8 }}>
+                    <div style={{ color: C.text, fontWeight: 600, marginBottom: 6, fontSize: 11 }}>Metrics</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: C.textMuted }}>Messages sent</span>
+                            <span style={{ color: C.chipText, fontVariantNumeric: 'tabular-nums' }}>{metrics.messagesSent}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: C.textMuted }}>Tool calls</span>
+                            <span style={{ color: C.chipText, fontVariantNumeric: 'tabular-nums' }}>{metrics.toolCalls}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: C.textMuted }}>Tokens streamed</span>
+                            <span style={{ color: C.chipText, fontVariantNumeric: 'tabular-nums' }}>{metrics.tokensStreamed.toLocaleString()}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -582,6 +607,7 @@ export function ChatPanel() {
     const [contextMode, setContextMode] = useState<ContextMode>('full_context');
     const [inputFocused, setInputFocused] = useState(false);
     const [errorBanner, setErrorBanner] = useState<ErrorBannerState | null>(null);
+    const [metrics, setMetrics] = useState<ChatMetrics>({ messagesSent: 0, toolCalls: 0, tokensStreamed: 0 });
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const streamingTextRef = useRef<string>('');
@@ -729,6 +755,13 @@ export function ChatPanel() {
             handler: (rawData: unknown) => {
                 const data = rawData as { used_tokens: number; budget_tokens: number; pct: number };
                 setContextWarning({ usedTokens: data.used_tokens, budgetTokens: data.budget_tokens, pct: data.pct });
+            },
+        },
+        {
+            topic: 'chat.metrics',
+            handler: (rawData: unknown) => {
+                const d = rawData as { messages_sent: number; tool_calls: number; tokens_streamed: number };
+                setMetrics({ messagesSent: d.messages_sent, toolCalls: d.tool_calls, tokensStreamed: d.tokens_streamed });
             },
         },
     ]);
@@ -1043,6 +1076,7 @@ export function ChatPanel() {
                         selectedToolCallId={selectedToolCallId}
                         messages={messages}
                         backendStatus={backendStatus}
+                        metrics={metrics}
                     />
                 )}
             </div>

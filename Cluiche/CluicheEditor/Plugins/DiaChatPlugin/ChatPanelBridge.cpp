@@ -134,7 +134,7 @@ namespace CluicheEditor
 		mEventQueue.push({ EventType::kContextWarning, std::move(payload) });
 	}
 
-	void ChatPanelBridge::DoUpdate(float /*deltaTime*/)
+	void ChatPanelBridge::DoUpdate(float deltaTime)
 	{
 		DIA_TRACE_ZONE("chat.bridge_drain", Dia::Observation::Trace::Category::kDiaApplicationFlow);
 
@@ -186,6 +186,20 @@ namespace CluicheEditor
 			}
 
 			local.pop();
+		}
+
+		// Push metric snapshot every kMetricsPushInterval seconds.
+		mMetricsPushTimer += deltaTime;
+		if (mMetricsPushTimer >= kMetricsPushInterval)
+		{
+			mMetricsPushTimer = 0.0f;
+
+			Json::Value metrics;
+			metrics["messages_sent"]   = static_cast<Json::UInt64>(mMetricMessagesSent   ? mMetricMessagesSent->Value()   : 0u);
+			metrics["tool_calls"]      = static_cast<Json::UInt64>(mMetricToolCalls      ? mMetricToolCalls->Value()      : 0u);
+			metrics["tokens_streamed"] = static_cast<Json::UInt64>(mMetricTokensStreamed  ? mMetricTokensStreamed->Value()  : 0u);
+
+			mBridge->NotifyUIDataChanged("chat.metrics", metrics);
 		}
 	}
 }

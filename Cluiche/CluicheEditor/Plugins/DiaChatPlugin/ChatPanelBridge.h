@@ -71,9 +71,12 @@ namespace CluicheEditor
 		std::mutex                                  mQueueMutex;
 		std::queue<ChatEvent>                       mEventQueue;
 
-		Dia::Observation::Metric::Counter*          mMetricMessagesSent  = nullptr;
-		Dia::Observation::Metric::Counter*          mMetricToolCalls     = nullptr;
-		Dia::Observation::Metric::Counter*          mMetricTokensStreamed = nullptr;
+		Dia::Observation::Metric::Counter*          mMetricMessagesSent   = nullptr;
+		Dia::Observation::Metric::Counter*          mMetricToolCalls      = nullptr;
+		Dia::Observation::Metric::Counter*          mMetricTokensStreamed  = nullptr;
+
+		float                                       mMetricsPushTimer     = 0.0f;
+		static constexpr float                      kMetricsPushInterval  = 2.0f;
 
 		ChatPanelBridgeHealth                       mHealth;
 	};
