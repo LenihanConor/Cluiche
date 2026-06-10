@@ -1,24 +1,37 @@
 #pragma once
 
 #include <DiaCore/Json/external/json/json.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Health/HealthReporterBase.h>
+#include <DiaCore/CRC/StringCRC.h>
 
 #include <mutex>
 #include <queue>
 
 namespace Dia
 {
-	namespace Editor
-	{
-		class WebUIBridge;
-	}
+	namespace Editor { class WebUIBridge; }
+	namespace Observation { namespace Metric { class Counter; } }
 }
 
 namespace CluicheEditor
 {
+	class ChatPanelBridgeHealth : public Dia::Observation::Health::HealthReporterBase
+	{
+	public:
+		static const Dia::Core::StringCRC kName;
+
+		Dia::Core::StringCRC GetReporterName() const override { return kName; }
+
+		// Called from OnBackendStatus — sets OK or Failing based on availability.
+		void OnBackendAvailability(bool available);
+	};
+
 	class ChatPanelBridge
 	{
 	public:
 		explicit ChatPanelBridge(Dia::Editor::WebUIBridge* bridge);
+		~ChatPanelBridge();
 
 		void Initialize(Dia::Editor::WebUIBridge* bridge);
 
@@ -54,8 +67,14 @@ namespace CluicheEditor
 			Json::Value payload;
 		};
 
-		Dia::Editor::WebUIBridge* mBridge;
-		std::mutex                mQueueMutex;
-		std::queue<ChatEvent>     mEventQueue;
+		Dia::Editor::WebUIBridge*                   mBridge;
+		std::mutex                                  mQueueMutex;
+		std::queue<ChatEvent>                       mEventQueue;
+
+		Dia::Observation::Metric::Counter*          mMetricMessagesSent  = nullptr;
+		Dia::Observation::Metric::Counter*          mMetricToolCalls     = nullptr;
+		Dia::Observation::Metric::Counter*          mMetricTokensStreamed = nullptr;
+
+		ChatPanelBridgeHealth                       mHealth;
 	};
 }

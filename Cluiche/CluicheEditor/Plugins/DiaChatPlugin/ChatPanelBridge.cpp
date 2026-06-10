@@ -2,16 +2,42 @@
 
 #include <DiaEditor/UI/WebUIBridge.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Metric/Counter.h>
+#include <DiaObservation/Health/HealthRegistry.h>
+#include <DiaObservation/Trace/DiaTrace.h>
+
+const Dia::Core::StringCRC CluicheEditor::ChatPanelBridgeHealth::kName("DiaChatPlugin");
 
 namespace CluicheEditor
 {
+	void ChatPanelBridgeHealth::OnBackendAvailability(bool available)
+	{
+		if (available)
+			SetOK();
+		else
+			SetFailing(Dia::Core::StringCRC("backend_unavailable"));
+	}
+
 	ChatPanelBridge::ChatPanelBridge(Dia::Editor::WebUIBridge* bridge)
 		: mBridge(bridge)
-	{}
+	{
+		auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
+		mMetricMessagesSent   = reg.RegisterCounter(Dia::Core::StringCRC("dia.chat.messages_sent"));
+		mMetricToolCalls      = reg.RegisterCounter(Dia::Core::StringCRC("dia.chat.tool_calls"));
+		mMetricTokensStreamed  = reg.RegisterCounter(Dia::Core::StringCRC("dia.chat.tokens_streamed"));
+
+		Dia::Observation::Health::HealthRegistry::Instance().Register(&mHealth);
+	}
 
 	void ChatPanelBridge::Initialize(Dia::Editor::WebUIBridge* bridge)
 	{
 		mBridge = bridge;
+	}
+
+	ChatPanelBridge::~ChatPanelBridge()
+	{
+		Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealth);
 	}
 
 	void ChatPanelBridge::OnTokenChunk(const char* text, bool done)
@@ -19,6 +45,11 @@ namespace CluicheEditor
 		Json::Value payload;
 		payload["text"] = text ? text : "";
 		payload["done"] = done;
+
+		if (text && text[0] != '\0' && mMetricTokensStreamed)
+			mMetricTokensStreamed->Inc();
+		if (done && mMetricMessagesSent)
+			mMetricMessagesSent->Inc();
 
 		std::lock_guard<std::mutex> lock(mQueueMutex);
 		mEventQueue.push({ EventType::kToken, std::move(payload) });
@@ -30,6 +61,8 @@ namespace CluicheEditor
 		payload["call_id"] = callId ? callId : "";
 		payload["fn"]      = fn ? fn : "";
 		payload["params"]  = params;
+
+		if (mMetricToolCalls) mMetricToolCalls->Inc();
 
 		std::lock_guard<std::mutex> lock(mQueueMutex);
 		mEventQueue.push({ EventType::kToolStart, std::move(payload) });
@@ -84,6 +117,8 @@ namespace CluicheEditor
 		payload["model"]     = model ? model : "";
 		payload["available"] = available;
 
+		mHealth.OnBackendAvailability(available);
+
 		std::lock_guard<std::mutex> lock(mQueueMutex);
 		mEventQueue.push({ EventType::kBackendStatus, std::move(payload) });
 	}
@@ -101,6 +136,8 @@ namespace CluicheEditor
 
 	void ChatPanelBridge::DoUpdate(float /*deltaTime*/)
 	{
+		DIA_TRACE_ZONE("chat.bridge_drain", Dia::Observation::Trace::Category::kDiaApplicationFlow);
+
 		if (mBridge == nullptr)
 			return;
 
@@ -109,6 +146,9 @@ namespace CluicheEditor
 			std::lock_guard<std::mutex> lock(mQueueMutex);
 			std::swap(local, mEventQueue);
 		}
+
+		if (!local.empty())
+			DIA_LOG_DEBUG("Chat", "ChatPanelBridge::DoUpdate: draining %u events", static_cast<unsigned>(local.size()));
 
 		while (!local.empty())
 		{

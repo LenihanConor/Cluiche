@@ -542,6 +542,8 @@ class ChatOrchestrator:
         assistant_text_parts = []
         all_tool_calls = []
 
+        _LOG.info("dia_chat: stream started (context_mode=%s)", context_mode)
+
         while True:
             stream_ended = False
             pending_tool_call = None
@@ -618,6 +620,7 @@ class ChatOrchestrator:
 
         # --- 5. Signal end of tokens ---
         self._token_callback("", True)
+        _LOG.info("dia_chat: stream ended (tool_calls=%d)", len(all_tool_calls))
 
         # --- 6. Append to history ---
         assistant_text = "".join(assistant_text_parts)
@@ -659,7 +662,7 @@ class ChatOrchestrator:
         """
         if depth > self._max_tool_depth:
             _LOG.warning(
-                "dia_chat: max tool call depth (%d) reached", self._max_tool_depth
+                "dia_chat: depth guard triggered (depth=%d, max=%d)", depth, self._max_tool_depth
             )
             messages.append({
                 "role": "user",
