@@ -1300,6 +1300,9 @@
     <ClCompile Include="Editor\TestEditorActionQueue.cpp">
     <ClCompile Include="DiaEntityInspector\TestControllers.cpp">
     <ClCompile Include="DiaAssetRuntimeInspector\TestDiaAssetRuntimeInspectorExhaustive.cpp">
+    <ClCompile Include="DiaSceneEditor\TestSceneEditorNewActions.cpp">
+      <Filter>DiaSceneEditor</Filter>
+    </ClCompile>
       <Filter>DiaAssetRuntimeInspector</Filter>
     </ClCompile>
       <Filter>DiaEntityInspector</Filter>
