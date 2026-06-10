@@ -618,10 +618,8 @@ export function ChatPanel() {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, streamingText]);
 
-    // Keep streaming text ref in sync
-    useEffect(() => {
-        streamingTextRef.current = streamingText;
-    }, [streamingText]);
+    // streamingTextRef is updated synchronously in the chat.token handler
+    // (not via useEffect) to avoid stale reads when done arrives in the same batch.
 
     // ---------------------------------------------------------------------------
     // Bridge subscriptions
@@ -633,7 +631,8 @@ export function ChatPanel() {
             handler: (rawData: unknown) => {
                 const data = rawData as { text: string; done: boolean };
                 if (!data.done) {
-                    setStreamingText(prev => prev + data.text);
+                    streamingTextRef.current += data.text;
+                    setStreamingText(streamingTextRef.current);
                     setIsStreaming(true);
                 } else {
                     // Finalize: move accumulated text into messages
@@ -646,6 +645,7 @@ export function ChatPanel() {
                         timestamp: Date.now(),
                     };
                     setMessages(prev => [...prev, newMsg]);
+                    streamingTextRef.current = '';
                     setStreamingText('');
                     setIsStreaming(false);
                 }
