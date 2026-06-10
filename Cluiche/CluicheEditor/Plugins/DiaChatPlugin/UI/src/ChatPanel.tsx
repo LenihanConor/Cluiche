@@ -599,7 +599,7 @@ export function ChatPanel() {
     const [streamingText, setStreamingText] = useState<string>('');
     const [isStreaming, setIsStreaming] = useState(false);
     const [inputText, setInputText] = useState('');
-    const [backendStatus, setBackendStatus] = useState<BackendStatus>({ backend: 'ollama', model: 'llama3.2', available: false });
+    const [backendStatus, setBackendStatus] = useState<BackendStatus>({ backend: 'ollama', model: 'qwen2.5-coder:14b', available: false });
     const [detailOpen, setDetailOpen] = useState(true);
     const [selectedToolCallId, setSelectedToolCallId] = useState<string | null>(null);
     const [contextWarning, setContextWarning] = useState<ContextWarning | null>(null);

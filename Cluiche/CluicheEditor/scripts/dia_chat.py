@@ -547,11 +547,7 @@ class ChatOrchestrator:
             pending_tool_call = None
 
             try:
-                _LOG.info("dia_chat: calling stream_chat on %s", type(self._backend).__name__)
-                event_count = 0
                 for event in self._backend.stream_chat(messages, tools):
-                    event_count += 1
-                    _LOG.info("dia_chat: event[%d] type=%s", event_count, type(event).__name__)
                     if isinstance(event, TokenChunk):
                         if event.text:
                             assistant_text_parts.append(event.text)
@@ -575,8 +571,6 @@ class ChatOrchestrator:
                         )
                         return
 
-                _LOG.info("dia_chat: for-loop exited, event_count=%d stream_ended=%s pending_tool=%s",
-                          event_count, stream_ended, pending_tool_call is not None)
             except Exception as exc:
                 exc_type = type(exc).__name__
                 if 'ConnectionError' in exc_type or 'ConnectError' in exc_type:
