@@ -76,11 +76,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Mesh3DAsset.h" />
+    <ClInclude Include="Mesh3DBinaryReader.h" />
     <ClInclude Include="Vertex3D.h" />
     <ClInclude Include="Submesh.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Mesh3DAsset.cpp" />
+    <ClCompile Include="Mesh3DBinaryReader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.mesh3d.architecture.module.md" />
