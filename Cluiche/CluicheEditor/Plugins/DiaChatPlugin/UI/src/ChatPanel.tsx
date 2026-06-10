@@ -641,6 +641,13 @@ export function ChatPanel() {
         const text = inputText.trim();
         if (!text || isStreaming) return;
 
+        const atFileRegex = /@(\S+\.md)/g;
+        const extraFiles: string[] = [];
+        let match;
+        while ((match = atFileRegex.exec(text)) !== null) {
+            extraFiles.push(match[1]);
+        }
+
         const userMsg: ChatMessage = {
             id: Date.now().toString(),
             role: 'user',
@@ -652,7 +659,7 @@ export function ChatPanel() {
         setInputText('');
         setIsStreaming(true);
 
-        sendEvent('chat.send_message', { text, context_mode: contextMode, extra_files: [] });
+        sendEvent('chat.send_message', { text, context_mode: contextMode, extra_files: extraFiles });
     }, [inputText, isStreaming, contextMode]);
 
     const handleKeyDown = useCallback((e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -766,6 +773,30 @@ export function ChatPanel() {
                 >
                     Details
                 </button>
+
+                {/* Clear history button */}
+                <button
+                    aria-label="New chat"
+                    onClick={() => {
+                        setMessages([]);
+                        setStreamingText('');
+                        setIsStreaming(false);
+                        setPendingConfirm(null);
+                        sendEvent('chat.clear_history', {});
+                    }}
+                    title="New chat"
+                    style={{
+                        background: C.backendSelectBg,
+                        color: C.textMuted,
+                        border: `1px solid ${C.backendSelectBorder}`,
+                        borderRadius: 3,
+                        padding: '2px 8px',
+                        fontSize: 11,
+                        cursor: 'pointer',
+                    }}
+                >
+                    New chat
+                </button>
             </div>
 
             {/* ── Context bar ──────────────────────────────────────────── */}
@@ -809,26 +840,42 @@ export function ChatPanel() {
                     +file
                 </button>
 
-                <div style={{ flex: 1 }} />
+            </div>
 
-                {/* Context mode selector */}
-                <select
-                    value={contextMode}
-                    onChange={e => setContextMode(e.target.value as ContextMode)}
-                    style={{
-                        background: C.backendSelectBg,
-                        color: C.text,
-                        border: `1px solid ${C.backendSelectBorder}`,
-                        borderRadius: 3,
-                        padding: '1px 4px',
-                        fontSize: 10,
-                        cursor: 'pointer',
-                    }}
-                >
-                    <option value="full_context">Full context</option>
-                    <option value="tools_only">Tools only</option>
-                    <option value="custom">Custom</option>
-                </select>
+            {/* ── Context mode toggle bar ───────────────────────────────── */}
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: '3px 10px',
+                background: C.contextBarBg,
+                borderBottom: `1px solid ${C.contextBarBorder}`,
+                flexShrink: 0,
+            }}>
+                {([
+                    { mode: 'full_context' as ContextMode, label: 'Full context' },
+                    { mode: 'tools_only' as ContextMode, label: 'Tools only' },
+                    { mode: 'custom' as ContextMode, label: 'Custom' },
+                ] as { mode: ContextMode; label: string }[]).map(({ mode, label }) => (
+                    <button
+                        key={mode}
+                        onClick={() => {
+                            setContextMode(mode);
+                            sendEvent('chat.set_context_mode', { mode });
+                        }}
+                        style={{
+                            background: contextMode === mode ? '#264f78' : C.backendSelectBg,
+                            color: contextMode === mode ? C.sendText : C.textMuted,
+                            border: `1px solid ${contextMode === mode ? C.toolCardLeft : C.backendSelectBorder}`,
+                            borderRadius: 3,
+                            padding: '2px 8px',
+                            fontSize: 11,
+                            cursor: 'pointer',
+                        }}
+                    >
+                        {label}
+                    </button>
+                ))}
             </div>
 
             {/* ── Body (messages + detail panel) ───────────────────────── */}
