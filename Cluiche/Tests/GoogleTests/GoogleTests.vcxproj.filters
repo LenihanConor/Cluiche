@@ -1302,6 +1302,12 @@
     <ClCompile Include="DiaAssetRuntimeInspector\TestDiaAssetRuntimeInspectorExhaustive.cpp">
     <ClCompile Include="DiaSceneEditor\TestSceneEditorNewActions.cpp">
     <ClCompile Include="DiaApplicationFlowEditor\TestAppFlowEditorRegistryActions.cpp">
+    <ClCompile Include="..\..\..\Cluiche\CluicheEditor\Plugins\DiaChatPlugin\ChatPanelBridge.cpp">
+      <Filter>DiaChatPlugin</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaChatPlugin\TestChatPanelBridge.cpp">
+      <Filter>DiaChatPlugin</Filter>
+    </ClCompile>
       <Filter>DiaApplicationFlowEditor</Filter>
     </ClCompile>
       <Filter>DiaSceneEditor</Filter>
