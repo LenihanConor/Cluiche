@@ -5,6 +5,8 @@
 #include <DiaAssetCatalogue/AssetRegistry.h>
 #include <DiaCore/Json/external/json/json.h>
 
+namespace Dia { namespace Editor { class EditorActionRegistry; } }
+
 #include "DiaSceneEditor/SceneFileHandler.h"
 #include "DiaSceneEditor/SceneHierarchyController.h"
 #include "DiaSceneEditor/PropertyInspectorController.h"
@@ -59,6 +61,13 @@ namespace Dia
 
 		private:
 			void RegisterRequestHandlers();
+			void DualRegisterActions();
+			void RegisterFileActions(Dia::Editor::EditorActionRegistry* api);
+			void RegisterHierarchyCRUDActions(Dia::Editor::EditorActionRegistry* api);
+			void RegisterLayerActions(Dia::Editor::EditorActionRegistry* api);
+			void RegisterOverrideActions(Dia::Editor::EditorActionRegistry* api);
+			void RegisterTemplateActions(Dia::Editor::EditorActionRegistry* api);
+			void RegisterCrossPluginActions(Dia::Editor::EditorActionRegistry* api);
 			void ResolveCatalogueIdForLoadedScene();
 			void AutoSave();
 

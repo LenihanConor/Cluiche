@@ -20,6 +20,7 @@ try:
     import dia_editor.plugin_browser as plugin_browser
     import dia_editor.entity_template_editor as entity_template_editor
     import dia_editor.asset_catalogue as asset_catalogue
+    import dia_editor.scene_editor as scene_editor
 except ImportError as e:
     raise ImportError(
         f"dia_editor sub-modules not available: {e}. "
@@ -169,6 +170,31 @@ vresult = _parse(raw)
 assert isinstance(vresult, dict), "asset_catalogue.validate() must return a JSON dict"
 assert "success" in vresult, "asset_catalogue.validate() missing 'success'"
 print(f"[smoke] asset_catalogue.validate() OK: {vresult}")
+
+
+# ---------------------------------------------------------------------------
+# scene_editor.get_project_state returns dict with required keys
+# ---------------------------------------------------------------------------
+raw = scene_editor.get_project_state()
+assert isinstance(raw, str), f"scene_editor.get_project_state() should return str, got {type(raw)}"
+state = _parse(raw)
+assert isinstance(state, dict), "scene_editor.get_project_state() must return a JSON dict"
+assert "isValid" in state, "get_project_state() missing 'isValid'"
+assert "diagamePath" in state, "get_project_state() missing 'diagamePath'"
+print(f"[smoke] scene_editor.get_project_state() OK: {state}")
+
+
+# ---------------------------------------------------------------------------
+# scene_editor.get_entities returns success + entities list
+# ---------------------------------------------------------------------------
+raw = scene_editor.get_entities()
+assert isinstance(raw, str), f"scene_editor.get_entities() should return str, got {type(raw)}"
+ents = _parse(raw)
+assert isinstance(ents, dict), "scene_editor.get_entities() must return a JSON dict"
+assert "success" in ents, "scene_editor.get_entities() missing 'success'"
+assert "entities" in ents, "scene_editor.get_entities() missing 'entities'"
+assert isinstance(ents["entities"], list), "'entities' must be a list"
+print(f"[smoke] scene_editor.get_entities() OK: {len(ents['entities'])} entities")
 
 
 # ---------------------------------------------------------------------------

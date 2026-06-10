@@ -10,6 +10,8 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <DiaEditor/EditorAPI/EditorActionRegistryService.h>
+#include <DiaEditor/EditorAPI/EditorActionDescriptor.h>
 
 using namespace Dia::SceneEditor;
 
@@ -77,6 +79,7 @@ namespace Dia
 				DIA_LOG_WARNING("Editor", "DiaSceneEditorPlugin: OnPluginLoad — model is null");
 
 			RegisterRequestHandlers();
+			DualRegisterActions();
 
 			DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: OnPluginLoad complete");
 		}
@@ -84,6 +87,14 @@ namespace Dia
 		void DiaSceneEditorPlugin::OnPluginUnload()
 		{
 			DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: OnPluginUnload");
+			if (GetServices() != nullptr)
+			{
+				Dia::Editor::EditorActionRegistryService* regSvc =
+					GetServices()->GetService<Dia::Editor::EditorActionRegistryService>();
+				if (regSvc != nullptr && regSvc->GetRegistry() != nullptr)
+					regSvc->GetRegistry()->DeregisterActionsForOwner(
+						Dia::Core::StringCRC("DiaSceneEditorPlugin"));
+			}
 			mLoadedSceneRoot = Json::Value();
 			mLoadedScenePath[0] = '\0';
 		}
@@ -1173,6 +1184,770 @@ namespace Dia
 					result["success"] = true;
 					return result;
 				});
+		}
+
+		// ═══════════════════════════════════════════════════════════════════════
+		// DualRegisterActions — mirror WebUIBridge handlers into EditorActionRegistry
+		// ═══════════════════════════════════════════════════════════════════════
+
+		void DiaSceneEditorPlugin::DualRegisterActions()
+		{
+			if (GetServices() == nullptr) return;
+			Dia::Editor::EditorActionRegistryService* regSvc =
+				GetServices()->GetService<Dia::Editor::EditorActionRegistryService>();
+			if (regSvc == nullptr || regSvc->GetRegistry() == nullptr) return;
+			Dia::Editor::EditorActionRegistry* api = regSvc->GetRegistry();
+
+			RegisterFileActions(api);
+			RegisterHierarchyCRUDActions(api);
+			RegisterLayerActions(api);
+			RegisterOverrideActions(api);
+			RegisterTemplateActions(api);
+			RegisterCrossPluginActions(api);
+
+			DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: Dual-registered 40 scene_editor.* actions");
+		}
+
+		void DiaSceneEditorPlugin::RegisterFileActions(Dia::Editor::EditorActionRegistry* api)
+		{
+			using DT = Dia::Editor::DispatchThread;
+
+			auto reg = [&](const char* name, const char* description,
+			               Dia::Editor::DispatchThread dispatch,
+			               Dia::Editor::EditorActionParam* paramsArr = nullptr,
+			               unsigned int paramCount = 0)
+			{
+				Dia::Core::StringCRC handlerKey(name);
+				Dia::Editor::EditorActionDescriptor d;
+				d.name           = handlerKey;
+				d.description    = description;
+				d.category       = "scene_editor";
+				d.owner          = "DiaSceneEditorPlugin";
+				d.dispatchThread = dispatch;
+				d.handler        = [this, handlerKey](const Json::Value& data) -> Json::Value {
+					if (!GetBridge()) { Json::Value e; e["success"]=false; e["error"]="bridge not available"; return e; }
+					return GetBridge()->InvokeRequestHandler(handlerKey, data);
+				};
+				for (unsigned int i = 0; i < paramCount; ++i)
+					d.params.params.Add(paramsArr[i]);
+				api->RegisterAction(d);
+			};
+
+			// get_project_state
+			reg("scene_editor.get_project_state",
+			    "Returns the current scene editor project state including whether a .diagame project is loaded and its path.",
+			    DT::kCallerThread);
+
+			// get_stage_list
+			reg("scene_editor.get_stage_list",
+			    "Returns the list of stages defined in the currently loaded .diagame project.",
+			    DT::kCallerThread);
+
+			// load_stage_scene
+			{
+				Dia::Editor::EditorActionParam p;
+				p.name="stagePath"; p.type="string"; p.required=true;
+				p.description="Path to the .diastage file.";
+				reg("scene_editor.load_stage_scene",
+				    "Loads the scene associated with the specified stage into the scene editor.",
+				    DT::kMainThread, &p, 1);
+			}
+
+			// load_scene
+			{
+				Dia::Editor::EditorActionParam p;
+				p.name="path"; p.type="string"; p.required=true;
+				p.description="Absolute path to the .diascene file.";
+				reg("scene_editor.load_scene",
+				    "Loads a .diascene file directly by absolute path into the scene editor.",
+				    DT::kMainThread, &p, 1);
+			}
+
+			// save_scene
+			{
+				Dia::Editor::EditorActionParam params[2];
+				params[0].name="path";  params[0].type="string"; params[0].required=false; params[0].description="Optional save path override.";
+				params[1].name="scene"; params[1].type="object"; params[1].required=false; params[1].description="Optional scene JSON to save.";
+				reg("scene_editor.save_scene",
+				    "Saves the currently loaded scene to disk. Optionally accepts a path or scene override.",
+				    DT::kMainThread, params, 2);
+			}
+
+			// get_dirty_state
+			reg("scene_editor.get_dirty_state",
+			    "Returns whether the currently loaded scene has unsaved changes.",
+			    DT::kCallerThread);
+		}
+
+		void DiaSceneEditorPlugin::RegisterHierarchyCRUDActions(Dia::Editor::EditorActionRegistry* api)
+		{
+			using DT = Dia::Editor::DispatchThread;
+
+			auto reg = [&](const char* name, const char* description,
+			               Dia::Editor::DispatchThread dispatch,
+			               Dia::Editor::EditorActionParam* paramsArr = nullptr,
+			               unsigned int paramCount = 0)
+			{
+				Dia::Core::StringCRC handlerKey(name);
+				Dia::Editor::EditorActionDescriptor d;
+				d.name           = handlerKey;
+				d.description    = description;
+				d.category       = "scene_editor";
+				d.owner          = "DiaSceneEditorPlugin";
+				d.dispatchThread = dispatch;
+				d.handler        = [this, handlerKey](const Json::Value& data) -> Json::Value {
+					if (!GetBridge()) { Json::Value e; e["success"]=false; e["error"]="bridge not available"; return e; }
+					return GetBridge()->InvokeRequestHandler(handlerKey, data);
+				};
+				for (unsigned int i = 0; i < paramCount; ++i)
+					d.params.params.Add(paramsArr[i]);
+				api->RegisterAction(d);
+			};
+
+			// get_hierarchy
+			{
+				Dia::Editor::EditorActionParam p;
+				p.name="path"; p.type="string"; p.required=true;
+				p.description="Path to the .diascene file to load hierarchy from.";
+				reg("scene_editor.get_hierarchy",
+				    "Loads and returns the enriched hierarchy tree for a .diascene file.",
+				    DT::kCallerThread, &p, 1);
+			}
+
+			// get_hierarchy_filtered
+			{
+				Dia::Editor::EditorActionParam p;
+				p.name="filter"; p.type="string"; p.required=false;
+				p.description="Filter string to narrow hierarchy results.";
+				reg("scene_editor.get_hierarchy_filtered",
+				    "Returns the hierarchy of the currently loaded scene filtered by the given string.",
+				    DT::kCallerThread, &p, 1);
+			}
+
+			// get_properties
+			{
+				Dia::Editor::EditorActionParam params[2];
+				params[0].name="selectionType"; params[0].type="string"; params[0].required=true; params[0].description="Item type: 'entity', 'camera', or 'light'.";
+				params[1].name="selectionId";   params[1].type="string"; params[1].required=true; params[1].description="The item ID.";
+				reg("scene_editor.get_properties",
+				    "Returns property data for the selected scene item (entity, camera, or light).",
+				    DT::kCallerThread, params, 2);
+			}
+
+			// set_selection
+			{
+				Dia::Editor::EditorActionParam params[2];
+				params[0].name="type"; params[0].type="string"; params[0].required=false; params[0].description="Item type to select.";
+				params[1].name="id";   params[1].type="string"; params[1].required=false; params[1].description="Item ID to select.";
+				reg("scene_editor.set_selection",
+				    "Sets the current selection in the hierarchy to the specified item type and ID.",
+				    DT::kMainThread, params, 2);
+			}
+
+			// add_item
+			{
+				Dia::Editor::EditorActionParam params[3];
+				params[0].name="itemType";         params[0].type="string"; params[0].required=true;  params[0].description="Item type: 'entity', 'camera', or 'light'.";
+				params[1].name="entityTemplateId"; params[1].type="string"; params[1].required=true;  params[1].description="Template asset ID to instantiate.";
+				params[2].name="id";               params[2].type="string"; params[2].required=false; params[2].description="Optional explicit item ID.";
+				reg("scene_editor.add_item",
+				    "Adds a new item (entity, camera, or light) to the loaded scene using the given template.",
+				    DT::kMainThread, params, 3);
+			}
+
+			// duplicate_item
+			{
+				Dia::Editor::EditorActionParam params[2];
+				params[0].name="itemType"; params[0].type="string"; params[0].required=true; params[0].description="Item type to duplicate.";
+				params[1].name="itemId";   params[1].type="string"; params[1].required=true; params[1].description="ID of the item to duplicate.";
+				reg("scene_editor.duplicate_item",
+				    "Duplicates an existing item in the scene, creating a copy with a new ID.",
+				    DT::kMainThread, params, 2);
+			}
+
+			// delete_item
+			{
+				Dia::Editor::EditorActionParam params[2];
+				params[0].name="itemType"; params[0].type="string"; params[0].required=true; params[0].description="Item type to delete.";
+				params[1].name="itemId";   params[1].type="string"; params[1].required=true; params[1].description="ID of the item to delete.";
+				reg("scene_editor.delete_item",
+				    "Deletes an item (entity, camera, or light) from the loaded scene by ID.",
+				    DT::kMainThread, params, 2);
+			}
+
+			// rename_item
+			{
+				Dia::Editor::EditorActionParam params[3];
+				params[0].name="itemType"; params[0].type="string"; params[0].required=true; params[0].description="Item type to rename.";
+				params[1].name="oldId";    params[1].type="string"; params[1].required=true; params[1].description="Current item ID.";
+				params[2].name="newId";    params[2].type="string"; params[2].required=true; params[2].description="New item ID.";
+				reg("scene_editor.rename_item",
+				    "Renames an item in the loaded scene by changing its ID.",
+				    DT::kMainThread, params, 3);
+			}
+
+			// set_enabled
+			{
+				Dia::Editor::EditorActionParam params[3];
+				params[0].name="itemType"; params[0].type="string"; params[0].required=true; params[0].description="Item type.";
+				params[1].name="itemId";   params[1].type="string"; params[1].required=true; params[1].description="Item ID.";
+				params[2].name="enabled";  params[2].type="bool";   params[2].required=true; params[2].description="True to enable, false to disable.";
+				reg("scene_editor.set_enabled",
+				    "Enables or disables an item in the loaded scene.",
+				    DT::kMainThread, params, 3);
+			}
+
+			// mark_dirty
+			reg("scene_editor.mark_dirty",
+			    "Marks the scene as dirty and triggers an autosave.",
+			    DT::kMainThread);
+
+			// validate
+			reg("scene_editor.validate",
+			    "Validates the currently loaded scene and returns validation results.",
+			    DT::kCallerThread);
+
+			// get_scene_properties
+			reg("scene_editor.get_scene_properties",
+			    "Returns scene-level properties including world bounds, counts of entities/cameras/lights/layers, and validation status.",
+			    DT::kCallerThread);
+
+			// set_world_bounds
+			{
+				Dia::Editor::EditorActionParam p;
+				p.name="world_bounds"; p.type="object"; p.required=true;
+				p.description="World bounds object to set on the scene.";
+				reg("scene_editor.set_world_bounds",
+				    "Sets the world bounds of the currently loaded scene.",
+				    DT::kMainThread, &p, 1);
+			}
+
+			// set_camera_active
+			{
+				Dia::Editor::EditorActionParam p;
+				p.name="cameraId"; p.type="string"; p.required=true;
+				p.description="ID of the camera to make active.";
+				reg("scene_editor.set_camera_active",
+				    "Sets the specified camera as the active camera in the loaded scene.",
+				    DT::kMainThread, &p, 1);
+			}
+
+			// get_entities (new action — custom handler)
+			{
+				Dia::Editor::EditorActionDescriptor d;
+				d.name           = Dia::Core::StringCRC("scene_editor.get_entities");
+				d.description    = "Returns a flat list of all entity entries in the currently loaded scene. "
+				                   "Each entry includes id, templateId, enabled, layerId, and overrides. "
+				                   "Use type param to filter: 'entity', 'camera', or 'light'.";
+				d.category       = "scene_editor";
+				d.owner          = "DiaSceneEditorPlugin";
+				d.dispatchThread = DT::kCallerThread;
+				{
+					Dia::Editor::EditorActionParam p;
+					p.name="type"; p.type="string"; p.required=false;
+					p.description="Item type to filter: 'entity', 'camera', or 'light'. Omit for all.";
+					d.params.params.Add(p);
+				}
+				d.handler = [this](const Json::Value& data) -> Json::Value {
+					if (mLoadedSceneRoot.isNull())
+					{
+						Json::Value r; r["success"]=true; r["entities"]=Json::Value(Json::arrayValue); return r;
+					}
+					const char* typeFilter = (data.isMember("type") && data["type"].isString())
+					                       ? data["type"].asCString() : nullptr;
+					const Json::Value& scene = mLoadedSceneRoot.isMember("scene2d")
+					                         ? mLoadedSceneRoot["scene2d"] : Json::Value::null;
+					Json::Value entities(Json::arrayValue);
+					static const char* kSections[] = { "entities", "cameras", "lights" };
+					for (int s = 0; s < 3; ++s)
+					{
+						const char* sectionType = (s == 0) ? "entity" : (s == 1) ? "camera" : "light";
+						if (typeFilter != nullptr && strcmp(typeFilter, sectionType) != 0) continue;
+						if (scene.isNull() || !scene.isMember(kSections[s])) continue;
+						const Json::Value& arr = scene[kSections[s]];
+						for (unsigned int i = 0; i < arr.size(); ++i)
+						{
+							const Json::Value& item = arr[i];
+							Json::Value entry(Json::objectValue);
+							// id
+							if (item.isMember("id"))
+							{
+								const Json::Value& idVal = item["id"];
+								entry["id"] = idVal.isString() ? idVal : (idVal.isObject() && idVal.isMember("value") ? idVal["value"] : Json::Value(""));
+							}
+							else entry["id"] = "";
+							// templateId (from blueprint field)
+							if (item.isMember("blueprint"))
+							{
+								const Json::Value& bp = item["blueprint"];
+								entry["templateId"] = bp.isString() ? bp : (bp.isObject() && bp.isMember("value") ? bp["value"] : Json::Value(""));
+							}
+							else entry["templateId"] = "";
+							// enabled
+							entry["enabled"] = item.isMember("enabled") ? item["enabled"].asBool() : true;
+							// layerId
+							if (item.isMember("layer_id"))
+								entry["layerId"] = item["layer_id"];
+							else if (item.isMember("layerId"))
+								entry["layerId"] = item["layerId"];
+							else
+								entry["layerId"] = "";
+							// overrides (instance_data)
+							entry["overrides"] = item.isMember("instance_data") ? item["instance_data"] : Json::Value(Json::objectValue);
+							entities.append(entry);
+						}
+					}
+					Json::Value r; r["success"]=true; r["entities"]=entities; return r;
+				};
+				api->RegisterAction(d);
+			}
+		}
+
+		void DiaSceneEditorPlugin::RegisterLayerActions(Dia::Editor::EditorActionRegistry* api)
+		{
+			using DT = Dia::Editor::DispatchThread;
+
+			auto reg = [&](const char* name, const char* description,
+			               Dia::Editor::DispatchThread dispatch,
+			               Dia::Editor::EditorActionParam* paramsArr = nullptr,
+			               unsigned int paramCount = 0)
+			{
+				Dia::Core::StringCRC handlerKey(name);
+				Dia::Editor::EditorActionDescriptor d;
+				d.name           = handlerKey;
+				d.description    = description;
+				d.category       = "scene_editor";
+				d.owner          = "DiaSceneEditorPlugin";
+				d.dispatchThread = dispatch;
+				d.handler        = [this, handlerKey](const Json::Value& data) -> Json::Value {
+					if (!GetBridge()) { Json::Value e; e["success"]=false; e["error"]="bridge not available"; return e; }
+					return GetBridge()->InvokeRequestHandler(handlerKey, data);
+				};
+				for (unsigned int i = 0; i < paramCount; ++i)
+					d.params.params.Add(paramsArr[i]);
+				api->RegisterAction(d);
+			};
+
+			// add_layer
+			{
+				Dia::Editor::EditorActionParam p;
+				p.name="layerId"; p.type="string"; p.required=true;
+				p.description="ID of the new layer to add.";
+				reg("scene_editor.add_layer",
+				    "Adds a new layer to the currently loaded scene.",
+				    DT::kMainThread, &p, 1);
+			}
+
+			// delete_layer
+			{
+				Dia::Editor::EditorActionParam p;
+				p.name="layerId"; p.type="string"; p.required=true;
+				p.description="ID of the layer to delete.";
+				reg("scene_editor.delete_layer",
+				    "Deletes a layer from the currently loaded scene.",
+				    DT::kMainThread, &p, 1);
+			}
+
+			// reorder_layer
+			{
+				Dia::Editor::EditorActionParam params[2];
+				params[0].name="layerId";   params[0].type="string"; params[0].required=true; params[0].description="ID of the layer to reorder.";
+				params[1].name="newIndex";  params[1].type="int";    params[1].required=true; params[1].description="New zero-based index for the layer.";
+				reg("scene_editor.reorder_layer",
+				    "Moves a layer to a new position in the layer stack.",
+				    DT::kMainThread, params, 2);
+			}
+
+			// update_layer
+			{
+				Dia::Editor::EditorActionParam params[2];
+				params[0].name="layerId"; params[0].type="string"; params[0].required=true; params[0].description="ID of the layer to update.";
+				params[1].name="fields";  params[1].type="object"; params[1].required=true; params[1].description="Fields to update on the layer.";
+				reg("scene_editor.update_layer",
+				    "Updates fields on an existing layer in the loaded scene.",
+				    DT::kMainThread, params, 2);
+			}
+		}
+
+		void DiaSceneEditorPlugin::RegisterOverrideActions(Dia::Editor::EditorActionRegistry* api)
+		{
+			using DT = Dia::Editor::DispatchThread;
+
+			auto reg = [&](const char* name, const char* description,
+			               Dia::Editor::DispatchThread dispatch,
+			               Dia::Editor::EditorActionParam* paramsArr = nullptr,
+			               unsigned int paramCount = 0)
+			{
+				Dia::Core::StringCRC handlerKey(name);
+				Dia::Editor::EditorActionDescriptor d;
+				d.name           = handlerKey;
+				d.description    = description;
+				d.category       = "scene_editor";
+				d.owner          = "DiaSceneEditorPlugin";
+				d.dispatchThread = dispatch;
+				d.handler        = [this, handlerKey](const Json::Value& data) -> Json::Value {
+					if (!GetBridge()) { Json::Value e; e["success"]=false; e["error"]="bridge not available"; return e; }
+					return GetBridge()->InvokeRequestHandler(handlerKey, data);
+				};
+				for (unsigned int i = 0; i < paramCount; ++i)
+					d.params.params.Add(paramsArr[i]);
+				api->RegisterAction(d);
+			};
+
+			// add_override
+			{
+				Dia::Editor::EditorActionParam params[4];
+				params[0].name="itemType";     params[0].type="string"; params[0].required=true;  params[0].description="Item type: 'entity', 'camera', or 'light'.";
+				params[1].name="itemId";       params[1].type="string"; params[1].required=true;  params[1].description="Item ID to add the override to.";
+				params[2].name="overrideKey";  params[2].type="string"; params[2].required=true;  params[2].description="Override field path key.";
+				params[3].name="defaultValue"; params[3].type="any";    params[3].required=true;  params[3].description="Default value for the override.";
+				reg("scene_editor.add_override",
+				    "Adds an instance_data override to a scene item.",
+				    DT::kMainThread, params, 4);
+			}
+
+			// remove_override
+			{
+				Dia::Editor::EditorActionParam params[3];
+				params[0].name="itemType";    params[0].type="string"; params[0].required=true; params[0].description="Item type.";
+				params[1].name="itemId";      params[1].type="string"; params[1].required=true; params[1].description="Item ID.";
+				params[2].name="overrideKey"; params[2].type="string"; params[2].required=true; params[2].description="Override key to remove.";
+				reg("scene_editor.remove_override",
+				    "Removes an instance_data override from a scene item.",
+				    DT::kMainThread, params, 3);
+			}
+
+			// update_override
+			{
+				Dia::Editor::EditorActionParam params[4];
+				params[0].name="itemType";    params[0].type="string"; params[0].required=true; params[0].description="Item type.";
+				params[1].name="itemId";      params[1].type="string"; params[1].required=true; params[1].description="Item ID.";
+				params[2].name="overrideKey"; params[2].type="string"; params[2].required=true; params[2].description="Override key to update.";
+				params[3].name="value";       params[3].type="any";    params[3].required=true; params[3].description="New value for the override.";
+				reg("scene_editor.update_override",
+				    "Updates the value of an existing instance_data override on a scene item.",
+				    DT::kMainThread, params, 4);
+			}
+		}
+
+		void DiaSceneEditorPlugin::RegisterTemplateActions(Dia::Editor::EditorActionRegistry* api)
+		{
+			using DT = Dia::Editor::DispatchThread;
+
+			auto reg = [&](const char* name, const char* description,
+			               Dia::Editor::DispatchThread dispatch,
+			               Dia::Editor::EditorActionParam* paramsArr = nullptr,
+			               unsigned int paramCount = 0)
+			{
+				Dia::Core::StringCRC handlerKey(name);
+				Dia::Editor::EditorActionDescriptor d;
+				d.name           = handlerKey;
+				d.description    = description;
+				d.category       = "scene_editor";
+				d.owner          = "DiaSceneEditorPlugin";
+				d.dispatchThread = dispatch;
+				d.handler        = [this, handlerKey](const Json::Value& data) -> Json::Value {
+					if (!GetBridge()) { Json::Value e; e["success"]=false; e["error"]="bridge not available"; return e; }
+					return GetBridge()->InvokeRequestHandler(handlerKey, data);
+				};
+				for (unsigned int i = 0; i < paramCount; ++i)
+					d.params.params.Add(paramsArr[i]);
+				api->RegisterAction(d);
+			};
+
+			// get_entity_template_defaults
+			{
+				Dia::Editor::EditorActionParam params[2];
+				params[0].name="entityTemplateId"; params[0].type="string"; params[0].required=true; params[0].description="Entity template asset ID.";
+				params[1].name="itemType";         params[1].type="string"; params[1].required=true; params[1].description="Item type: 'entity', 'camera', or 'light'.";
+				reg("scene_editor.get_entity_template_defaults",
+				    "Returns the default component values for the given entity template.",
+				    DT::kCallerThread, params, 2);
+			}
+
+			// get_available_entity_templates
+			{
+				Dia::Editor::EditorActionParam p;
+				p.name="itemType"; p.type="string"; p.required=false;
+				p.description="Item type to filter templates by (entity, camera, light).";
+				reg("scene_editor.get_available_entity_templates",
+				    "Returns a list of available entity templates from the asset catalogue, optionally filtered by item type.",
+				    DT::kCallerThread, &p, 1);
+			}
+
+			// analyse_change_entity_template
+			{
+				Dia::Editor::EditorActionParam params[3];
+				params[0].name="itemType";           params[0].type="string"; params[0].required=true; params[0].description="Item type.";
+				params[1].name="itemId";             params[1].type="string"; params[1].required=true; params[1].description="Item ID.";
+				params[2].name="newEntityTemplateId"; params[2].type="string"; params[2].required=true; params[2].description="New template ID to analyse changing to.";
+				reg("scene_editor.analyse_change_entity_template",
+				    "Analyses the impact of changing an item's entity template without applying the change.",
+				    DT::kCallerThread, params, 3);
+			}
+
+			// change_entity_template
+			{
+				Dia::Editor::EditorActionParam params[3];
+				params[0].name="itemType";           params[0].type="string"; params[0].required=true; params[0].description="Item type.";
+				params[1].name="itemId";             params[1].type="string"; params[1].required=true; params[1].description="Item ID.";
+				params[2].name="newEntityTemplateId"; params[2].type="string"; params[2].required=true; params[2].description="New template ID to change to.";
+				reg("scene_editor.change_entity_template",
+				    "Changes the entity template for a scene item and applies the resulting overrides.",
+				    DT::kMainThread, params, 3);
+			}
+		}
+
+		void DiaSceneEditorPlugin::RegisterCrossPluginActions(Dia::Editor::EditorActionRegistry* api)
+		{
+			using DT = Dia::Editor::DispatchThread;
+
+			auto reg = [&](const char* name, const char* description,
+			               Dia::Editor::DispatchThread dispatch,
+			               Dia::Editor::EditorActionParam* paramsArr = nullptr,
+			               unsigned int paramCount = 0)
+			{
+				Dia::Core::StringCRC handlerKey(name);
+				Dia::Editor::EditorActionDescriptor d;
+				d.name           = handlerKey;
+				d.description    = description;
+				d.category       = "scene_editor";
+				d.owner          = "DiaSceneEditorPlugin";
+				d.dispatchThread = dispatch;
+				d.handler        = [this, handlerKey](const Json::Value& data) -> Json::Value {
+					if (!GetBridge()) { Json::Value e; e["success"]=false; e["error"]="bridge not available"; return e; }
+					return GetBridge()->InvokeRequestHandler(handlerKey, data);
+				};
+				for (unsigned int i = 0; i < paramCount; ++i)
+					d.params.params.Add(paramsArr[i]);
+				api->RegisterAction(d);
+			};
+
+			// set_light_affects_layers
+			{
+				Dia::Editor::EditorActionParam params[2];
+				params[0].name="lightId";  params[0].type="string";   params[0].required=true; params[0].description="ID of the light.";
+				params[1].name="layerIds"; params[1].type="string[]";  params[1].required=true; params[1].description="Array of layer IDs the light should affect.";
+				reg("scene_editor.set_light_affects_layers",
+				    "Sets which layers a light affects in the loaded scene.",
+				    DT::kMainThread, params, 2);
+			}
+
+			// set_light_type
+			{
+				Dia::Editor::EditorActionParam params[2];
+				params[0].name="lightId"; params[0].type="string"; params[0].required=true; params[0].description="ID of the light.";
+				params[1].name="type";    params[1].type="string"; params[1].required=true; params[1].description="Light type string.";
+				reg("scene_editor.set_light_type",
+				    "Sets the type of a light in the loaded scene.",
+				    DT::kMainThread, params, 2);
+			}
+
+			// open_entity_template
+			{
+				Dia::Editor::EditorActionParam params[2];
+				params[0].name="entityTemplateId"; params[0].type="string"; params[0].required=true;  params[0].description="Entity template asset ID to open.";
+				params[1].name="itemType";         params[1].type="string"; params[1].required=false; params[1].description="Item type hint for resolving the template.";
+				reg("scene_editor.open_entity_template",
+				    "Opens an entity template in the entity template editor plugin.",
+				    DT::kMainThread, params, 2);
+			}
+
+			// associate_scene_to_stage
+			{
+				Dia::Editor::EditorActionParam params[2];
+				params[0].name="stagePath"; params[0].type="string"; params[0].required=true; params[0].description="Absolute path to the .diastage file.";
+				params[1].name="scenePath"; params[1].type="string"; params[1].required=true; params[1].description="Absolute path to the .diascene file.";
+				reg("scene_editor.associate_scene_to_stage",
+				    "Associates a .diascene file with a .diastage file by writing the relative path into the stage.",
+				    DT::kMainThread, params, 2);
+			}
+
+			// place_entity (new action — custom handler)
+			{
+				Dia::Editor::EditorActionDescriptor d;
+				d.name           = Dia::Core::StringCRC("scene_editor.place_entity");
+				d.description    = "High-level: adds an entity to the scene with optional position and overrides in one call. "
+				                   "Combines add_item and update_override. Auto-saves after inserting.";
+				d.category       = "scene_editor";
+				d.owner          = "DiaSceneEditorPlugin";
+				d.dispatchThread = DT::kMainThread;
+				{
+					Dia::Editor::EditorActionParam params[5];
+					params[0].name="templateId"; params[0].type="string"; params[0].required=true;  params[0].description="Entity template asset ID.";
+					params[1].name="position";   params[1].type="object"; params[1].required=false; params[1].description="Position override, e.g. { 'x': 100, 'y': 200 }.";
+					params[2].name="overrides";  params[2].type="object"; params[2].required=false; params[2].description="Additional instance_data overrides as { fieldPath: value } pairs.";
+					params[3].name="layerId";    params[3].type="string"; params[3].required=false; params[3].description="Layer to place into.";
+					params[4].name="id";         params[4].type="string"; params[4].required=false; params[4].description="Explicit entity ID. Auto-generated if omitted.";
+					for (int pi = 0; pi < 5; ++pi) d.params.params.Add(params[pi]);
+				}
+				d.handler = [this](const Json::Value& data) -> Json::Value {
+					if (!GetBridge()) { Json::Value e; e["success"]=false; e["error"]="bridge not available"; return e; }
+					// Step 1: add_item
+					Json::Value addReq(Json::objectValue);
+					addReq["itemType"] = "entity";
+					if (data.isMember("templateId")) addReq["entityTemplateId"] = data["templateId"];
+					if (data.isMember("id"))         addReq["id"]               = data["id"];
+					if (data.isMember("layerId"))    addReq["layerId"]           = data["layerId"];
+					Json::Value addResult = HandleAddItem(addReq);
+					if (!addResult.get("success", false).asBool())
+						return addResult;
+					// Extract entity ID from hierarchy result
+					std::string entityId;
+					if (data.isMember("id") && data["id"].isString())
+						entityId = data["id"].asString();
+					else
+					{
+						// Find the newly added entity — it should be the last in the entities list
+						const Json::Value& scene = mLoadedSceneRoot.isMember("scene2d")
+						                         ? mLoadedSceneRoot["scene2d"] : Json::Value::null;
+						if (!scene.isNull() && scene.isMember("entities"))
+						{
+							const Json::Value& arr = scene["entities"];
+							if (arr.size() > 0)
+							{
+								const Json::Value& last = arr[arr.size() - 1];
+								if (last.isMember("id"))
+								{
+									const Json::Value& idVal = last["id"];
+									entityId = idVal.isString() ? idVal.asString()
+									         : (idVal.isObject() && idVal.isMember("value") ? idVal["value"].asString() : "");
+								}
+							}
+						}
+					}
+					// Step 2: apply position override if provided
+					if (data.isMember("position") && data["position"].isObject() && !entityId.empty())
+					{
+						const Json::Value& pos = data["position"];
+						Json::Value::Members keys = pos.getMemberNames();
+						for (unsigned int ki = 0; ki < keys.size(); ++ki)
+						{
+							const std::string& fieldPath = keys[ki];
+							Json::Value addOvReq(Json::objectValue);
+							addOvReq["itemType"]     = "entity";
+							addOvReq["itemId"]       = entityId;
+							addOvReq["overrideKey"]  = std::string("Transform.position.") + fieldPath;
+							addOvReq["defaultValue"] = pos[fieldPath];
+							GetBridge()->InvokeRequestHandler(
+								Dia::Core::StringCRC("scene_editor.add_override"), addOvReq);
+						}
+					}
+					// Step 3: apply additional overrides if provided
+					if (data.isMember("overrides") && data["overrides"].isObject() && !entityId.empty())
+					{
+						const Json::Value& ovs = data["overrides"];
+						Json::Value::Members ovKeys = ovs.getMemberNames();
+						for (unsigned int oki = 0; oki < ovKeys.size(); ++oki)
+						{
+							const std::string& fieldPath = ovKeys[oki];
+							Json::Value addOvReq(Json::objectValue);
+							addOvReq["itemType"]     = "entity";
+							addOvReq["itemId"]       = entityId;
+							addOvReq["overrideKey"]  = fieldPath;
+							addOvReq["defaultValue"] = ovs[fieldPath];
+							GetBridge()->InvokeRequestHandler(
+								Dia::Core::StringCRC("scene_editor.add_override"), addOvReq);
+						}
+					}
+					Json::Value r;
+					r["success"]   = true;
+					r["entityId"]  = entityId;
+					r["hierarchy"] = addResult.isMember("hierarchy") ? addResult["hierarchy"] : Json::Value(Json::objectValue);
+					return r;
+				};
+				api->RegisterAction(d);
+			}
+
+			// remove_entity (new action — custom handler)
+			{
+				Dia::Editor::EditorActionDescriptor d;
+				d.name           = Dia::Core::StringCRC("scene_editor.remove_entity");
+				d.description    = "Removes an entity from the scene by ID. Convenience wrapper around delete_item with itemType='entity'. Auto-saves.";
+				d.category       = "scene_editor";
+				d.owner          = "DiaSceneEditorPlugin";
+				d.dispatchThread = DT::kMainThread;
+				{
+					Dia::Editor::EditorActionParam p;
+					p.name="entityId"; p.type="string"; p.required=true;
+					p.description="ID of the entity to remove.";
+					d.params.params.Add(p);
+				}
+				d.handler = [this](const Json::Value& data) -> Json::Value {
+					Json::Value req(Json::objectValue);
+					req["itemType"] = "entity";
+					req["itemId"]   = data.isMember("entityId") ? data["entityId"] : Json::Value("");
+					return HandleDeleteItem(req);
+				};
+				api->RegisterAction(d);
+			}
+
+			// create_scene (new action — custom handler)
+			{
+				Dia::Editor::EditorActionDescriptor d;
+				d.name           = Dia::Core::StringCRC("scene_editor.create_scene");
+				d.description    = "Creates a new scene asset record and stub .diascene file without opening any dialog, "
+				                   "then immediately loads the new scene into the scene editor.";
+				d.category       = "scene_editor";
+				d.owner          = "DiaSceneEditorPlugin";
+				d.dispatchThread = DT::kMainThread;
+				{
+					Dia::Editor::EditorActionParam params[3];
+					params[0].name="id";          params[0].type="string";   params[0].required=true;  params[0].description="Unique scene asset ID.";
+					params[1].name="source_path"; params[1].type="string";   params[1].required=true;  params[1].description="Relative path for the new .diascene file.";
+					params[2].name="tags";        params[2].type="string[]"; params[2].required=false; params[2].description="Tag list.";
+					for (int pi = 0; pi < 3; ++pi) d.params.params.Add(params[pi]);
+				}
+				d.handler = [this](const Json::Value& data) -> Json::Value {
+					if (!GetBridge()) { Json::Value e; e["success"]=false; e["error"]="bridge not available"; return e; }
+					// Build create_scene request for asset_catalogue
+					Json::Value createReq(Json::objectValue);
+					if (data.isMember("id"))          createReq["id"]          = data["id"];
+					if (data.isMember("source_path")) createReq["source_path"] = data["source_path"];
+					if (data.isMember("tags"))        createReq["tags"]        = data["tags"];
+					Json::Value createResult = GetBridge()->InvokeRequestHandler(
+						Dia::Core::StringCRC("asset_catalogue.create_scene"), createReq);
+					if (!createResult.get("success", false).asBool())
+						return createResult;
+					// Load the new scene
+					const std::string absPath = createResult.get("absPath", "").asString();
+					if (!absPath.empty())
+					{
+						Json::Value loadReq(Json::objectValue);
+						loadReq["path"] = absPath;
+						Json::Value loadResult = HandleLoadScene(loadReq);
+						if (!loadResult.get("success", false).asBool())
+							return loadResult;
+					}
+					return createResult;
+				};
+				api->RegisterAction(d);
+			}
+
+			// create_asset (new action — custom handler)
+			{
+				Dia::Editor::EditorActionDescriptor d;
+				d.name           = Dia::Core::StringCRC("scene_editor.create_asset");
+				d.description    = "Creates a new asset record and stub source file of any type without opening any dialog. "
+				                   "Does not auto-load the asset. Use asset_catalogue.open_in_editor to open it.";
+				d.category       = "scene_editor";
+				d.owner          = "DiaSceneEditorPlugin";
+				d.dispatchThread = DT::kMainThread;
+				{
+					Dia::Editor::EditorActionParam params[4];
+					params[0].name="assetType";   params[0].type="string";   params[0].required=true;  params[0].description="Asset type ID.";
+					params[1].name="id";          params[1].type="string";   params[1].required=true;  params[1].description="Unique asset ID.";
+					params[2].name="source_path"; params[2].type="string";   params[2].required=true;  params[2].description="Relative path for the new source file.";
+					params[3].name="tags";        params[3].type="string[]"; params[3].required=false; params[3].description="Tag list.";
+					for (int pi = 0; pi < 4; ++pi) d.params.params.Add(params[pi]);
+				}
+				d.handler = [this](const Json::Value& data) -> Json::Value {
+					if (!GetBridge()) { Json::Value e; e["success"]=false; e["error"]="bridge not available"; return e; }
+					return GetBridge()->InvokeRequestHandler(
+						Dia::Core::StringCRC("asset_catalogue.create_asset"), data);
+				};
+				api->RegisterAction(d);
+			}
 		}
 
 		// ═══════════════════════════════════════════════════════════════════════
