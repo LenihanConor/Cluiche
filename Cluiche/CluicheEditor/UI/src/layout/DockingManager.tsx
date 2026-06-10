@@ -126,26 +126,26 @@ export function DockingManager({ onReady }: DockingManagerProps) {
       if (!d?.panels) return;
 
       const newPanels = d.panels;
-      setPanels(newPanels);
+      setPanels((prevPanels) => {
+        const prevNames = new Set(prevPanels.map((p) => p.name));
+        const newNames = new Set(newPanels.map((p) => p.name));
 
-      setLayout((prev) => {
-        const currentIds = new Set(collectLeaves(prev));
-        const newPanelNames = new Set(newPanels.map((p) => p.name));
+        // Panels just added (not in prev) and visible — add to tree.
+        // Panels just removed (not in new) — remove from tree.
+        // Panels already known — leave the tree untouched (user controls their position).
+        const added = newPanels.filter((p) => !prevNames.has(p.name) && p.visible);
+        const removed = [...prevNames].filter((n) => !newNames.has(n));
 
-        let updated = prev;
-        currentIds.forEach((id) => {
-          if (!newPanelNames.has(id)) {
-            updated = removeFromLayout(updated, id);
-          }
-        });
+        if (added.length > 0 || removed.length > 0) {
+          setLayout((prev) => {
+            let updated = prev;
+            removed.forEach((id) => { updated = removeFromLayout(updated, id); });
+            added.forEach((p) => { updated = addToLayout(updated, p.name); });
+            return updated;
+          });
+        }
 
-        newPanels.forEach((p) => {
-          if (p.visible && !currentIds.has(p.name)) {
-            updated = addToLayout(updated, p.name);
-          }
-        });
-
-        return updated;
+        return newPanels;
       });
     });
   }, []);
