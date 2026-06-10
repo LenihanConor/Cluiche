@@ -15,9 +15,12 @@
 #include <shellapi.h>
 #include <DiaEditor/Plugin/EditorPluginRegistrationMacros.h>
 #include <DiaEditor/Plugin/EditorPluginContext.h>
+#include <DiaEditor/Plugin/PluginServiceLocator.h>
 #include <DiaEditor/MVC/EditorModel.h>
 #include <DiaEditor/MVC/EditorView.h>
 #include <DiaEditor/UI/WebUIBridge.h>
+#include <DiaEditor/EditorAPI/EditorActionRegistryService.h>
+#include <DiaEditor/EditorAPI/EditorActionDescriptor.h>
 #include <DiaAssetCatalogue/BuiltInAssetTypes.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaObservation/Log/DiaLog.h>
@@ -149,6 +152,7 @@ namespace Dia
 
 				SeedAssetTemplates();
 				RegisterRequestHandlers();
+				DualRegisterActions();
 
 				DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: Initialized");
 			}
@@ -156,6 +160,16 @@ namespace Dia
 			void DiaAssetCatalogueEditorPlugin::OnPluginUnload()
 			{
 				DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: OnPluginUnload");
+				if (GetServices() != nullptr)
+				{
+					Dia::Editor::EditorActionRegistryService* regSvc =
+						GetServices()->GetService<Dia::Editor::EditorActionRegistryService>();
+					if (regSvc != nullptr && regSvc->GetRegistry() != nullptr)
+					{
+						regSvc->GetRegistry()->DeregisterActionsForOwner(
+							Dia::Core::StringCRC("DiaAssetCatalogueEditorPlugin"));
+					}
+				}
 				mSessionContext.Save(mOutputDir);
 			}
 
@@ -1825,6 +1839,369 @@ namespace Dia
 						result["edges_skipped"]  = edgesSkipped;
 						return result;
 					});
+			}
+
+			void DiaAssetCatalogueEditorPlugin::DualRegisterActions()
+			{
+				if (GetServices() == nullptr) return;
+				Dia::Editor::EditorActionRegistryService* regSvc =
+					GetServices()->GetService<Dia::Editor::EditorActionRegistryService>();
+				if (regSvc == nullptr || regSvc->GetRegistry() == nullptr) return;
+				Dia::Editor::EditorActionRegistry* api = regSvc->GetRegistry();
+
+				// Helper: register one action, delegate to existing WebUIBridge handler
+				auto reg = [&](const char* name, const char* description,
+				               Dia::Editor::DispatchThread dispatch,
+				               Dia::Editor::EditorActionParam* paramsArr = nullptr,
+				               unsigned int paramCount = 0)
+				{
+					Dia::Core::StringCRC handlerKey(name);
+					Dia::Editor::EditorActionDescriptor d;
+					d.name           = handlerKey;
+					d.description    = description;
+					d.category       = "asset_catalogue";
+					d.owner          = "DiaAssetCatalogueEditorPlugin";
+					d.dispatchThread = dispatch;
+					d.handler        = [this, handlerKey](const Json::Value& data) -> Json::Value {
+						if (!GetBridge()) { Json::Value e; e["success"]=false; e["error"]="bridge not available"; return e; }
+						return GetBridge()->InvokeRequestHandler(handlerKey, data);
+					};
+					for (unsigned int i = 0; i < paramCount; ++i)
+						d.params.params.Add(paramsArr[i]);
+					api->RegisterAction(d);
+				};
+
+				using DT = Dia::Editor::DispatchThread;
+
+				// ── kCallerThread (read-only) ─────────────────────────────────────────────
+
+				reg("asset_catalogue.get_state",
+				    "Returns the full current state of the asset catalogue: the manifest path, dirty flag, "
+				    "and the complete list of records. Use this to snapshot the catalogue before making "
+				    "bulk changes, or to verify the effect of a previous mutation. Returns an empty records "
+				    "array if no manifest is loaded.",
+				    DT::kCallerThread);
+
+				reg("asset_catalogue.get_manifest_dir",
+				    "Returns the directory that contains the currently loaded manifest file. Use this as "
+				    "the base when constructing relative asset source paths.",
+				    DT::kCallerThread);
+
+				{
+					Dia::Editor::EditorActionParam p;
+					p.name="initial_dir"; p.type="string"; p.required=false;
+					p.description="Directory to open the picker in. Defaults to manifest dir.";
+					reg("asset_catalogue.browse_source_file",
+					    "Opens a file-picker dialog and returns the selected file path both as an absolute "
+					    "path and as a path relative to the manifest directory. Use when the user needs to "
+					    "point a record at a source file on disk.",
+					    DT::kCallerThread, &p, 1);
+				}
+
+				{
+					Dia::Editor::EditorActionParam p;
+					p.name="id"; p.type="string"; p.required=true;
+					p.description="The unique asset ID.";
+					reg("asset_catalogue.get_record",
+					    "Returns the full record descriptor for a single asset by ID. Includes type, source "
+					    "path, status, scope, stage, tags, content_hash, and relationship metadata.",
+					    DT::kCallerThread, &p, 1);
+				}
+
+				{
+					Dia::Editor::EditorActionParam p;
+					p.name="id"; p.type="string"; p.required=true;
+					p.description="Source asset ID.";
+					reg("asset_catalogue.get_forward_refs",
+					    "Returns all outbound relationship edges from the given asset — every (rel, target) "
+					    "pair where this asset is the source. Use to find what an asset depends on.",
+					    DT::kCallerThread, &p, 1);
+				}
+
+				{
+					Dia::Editor::EditorActionParam p;
+					p.name="id"; p.type="string"; p.required=true;
+					p.description="Target asset ID.";
+					reg("asset_catalogue.get_reverse_refs",
+					    "Returns all inbound relationship edges to the given asset — every (rel, source) pair "
+					    "where this asset is the target. Use to find what depends on an asset before deleting it.",
+					    DT::kCallerThread, &p, 1);
+				}
+
+				{
+					Dia::Editor::EditorActionParam p;
+					p.name="root_path"; p.type="string"; p.required=true;
+					p.description="Absolute directory path to scan.";
+					reg("asset_catalogue.discover_files",
+					    "Walks the directory tree from root_path and returns every file with a suggested "
+					    "asset type and ID derived from its path. Use as the first step of a bulk-import "
+					    "workflow before calling bulk_create_records.",
+					    DT::kCallerThread, &p, 1);
+				}
+
+				reg("asset_catalogue.dry_run_rules",
+				    "Evaluates all loaded rules against the current catalogue and returns the proposed "
+				    "changes without applying them. Use to preview the effect of apply_rules before "
+				    "committing. The truncated flag is true if the result set was capped.",
+				    DT::kCallerThread);
+
+				reg("asset_catalogue.get_rules",
+				    "Returns the list of currently loaded auto-categorisation rules: name, match criteria, "
+				    "and action for each rule.",
+				    DT::kCallerThread);
+
+				{
+					Dia::Editor::EditorActionParam params[3];
+					params[0].name="prefix"; params[0].type="string"; params[0].required=false; params[0].description="ID prefix to match against.";
+					params[1].name="typeId"; params[1].type="string"; params[1].required=false; params[1].description="Restrict to this asset type.";
+					params[2].name="limit";  params[2].type="uint";   params[2].required=false; params[2].description="Maximum results to return (default: all).";
+					reg("asset_catalogue.query_asset_ids",
+					    "Returns a filtered list of asset IDs. Supports optional prefix match, type filter, "
+					    "and result limit. Use for autocomplete or picking an asset ID without fetching full records.",
+					    DT::kCallerThread, params, 3);
+				}
+
+				reg("asset_catalogue.get_asset_types",
+				    "Returns all registered asset type definitions: their typeId and display name. Use "
+				    "to populate type pickers or to validate a typeId before calling create_record.",
+				    DT::kCallerThread);
+
+				reg("asset_catalogue.validate",
+				    "Validates the current catalogue: checks for missing source files, broken "
+				    "relationships, duplicate IDs, and unknown types. Returns a list of errors and "
+				    "warnings. An empty errors array means the catalogue is clean.",
+				    DT::kCallerThread);
+
+				{
+					Dia::Editor::EditorActionParam p;
+					p.name="typeId"; p.type="string"; p.required=true;
+					p.description="Asset type ID to filter by, e.g. 'entity_template'.";
+					reg("asset_catalogue.query_by_type",
+					    "Returns all records whose type matches the given typeId. Use to enumerate all scenes, "
+					    "all entity templates, etc.",
+					    DT::kCallerThread, &p, 1);
+				}
+
+				{
+					Dia::Editor::EditorActionParam p;
+					p.name="tag"; p.type="string"; p.required=true;
+					p.description="Tag string to filter by.";
+					reg("asset_catalogue.query_by_tag",
+					    "Returns all records that carry the given tag string.",
+					    DT::kCallerThread, &p, 1);
+				}
+
+				// get_available — NEW action (not a WebUIBridge handler)
+				{
+					Dia::Editor::EditorActionDescriptor d;
+					d.name           = Dia::Core::StringCRC("asset_catalogue.get_available");
+					d.description    = "Returns whether the Asset Catalogue plugin is currently loaded and ready. Call this "
+					                   "before any asset_catalogue.* action to confirm the plugin is active. If not loaded, "
+					                   "use plugin_browser.load to activate it first.";
+					d.category       = "asset_catalogue";
+					d.owner          = "DiaAssetCatalogueEditorPlugin";
+					d.dispatchThread = DT::kCallerThread;
+					d.handler        = [](const Json::Value& /*data*/) -> Json::Value {
+						Json::Value r;
+						r["loaded"] = true;  // if this handler runs, the plugin is loaded by definition
+						return r;
+					};
+					api->RegisterAction(d);
+				}
+
+				// ── kMainThread (mutating) ────────────────────────────────────────────────
+
+				{
+					Dia::Editor::EditorActionParam p;
+					p.name="path"; p.type="string"; p.required=true;
+					p.description="Absolute path to the .diacatalogue manifest file.";
+					reg("asset_catalogue.load_manifest",
+					    "Loads an asset catalogue manifest from the given file path. Replaces the current "
+					    "manifest in memory; any unsaved changes are discarded. The path must be an absolute "
+					    "path to a valid .diacatalogue file.",
+					    DT::kMainThread, &p, 1);
+				}
+
+				reg("asset_catalogue.browse_open",
+				    "Opens a file-picker dialog for the user to select an asset catalogue manifest. "
+				    "Equivalent to File > Open in the catalogue UI. Requires an active window; do not "
+				    "call from headless scripts.",
+				    DT::kMainThread);
+
+				{
+					Dia::Editor::EditorActionParam p;
+					p.name="path"; p.type="string"; p.required=false;
+					p.description="Absolute save path. Omit to save to the current path.";
+					reg("asset_catalogue.save_manifest",
+					    "Saves the current in-memory catalogue to disk. If path is provided it saves to that "
+					    "location (Save As); otherwise saves to the currently loaded path. Returns an error "
+					    "if no path is known and none is provided.",
+					    DT::kMainThread, &p, 1);
+				}
+
+				reg("asset_catalogue.new_manifest",
+				    "Clears the in-memory catalogue and creates a fresh empty manifest. Any unsaved "
+				    "changes to the previous manifest are discarded. Call save_manifest with a new path "
+				    "afterwards to persist.",
+				    DT::kMainThread);
+
+				{
+					Dia::Editor::EditorActionParam params[3];
+					params[0].name="from"; params[0].type="string"; params[0].required=true; params[0].description="Source asset ID.";
+					params[1].name="rel";  params[1].type="string"; params[1].required=true; params[1].description="Relationship label.";
+					params[2].name="to";   params[2].type="string"; params[2].required=true; params[2].description="Target asset ID.";
+					reg("asset_catalogue.add_relationship",
+					    "Adds a directed relationship edge between two asset records. Runs AddRelationshipCommand "
+					    "and auto-saves. The rel parameter names the relationship kind (e.g. 'uses', 'spawns').",
+					    DT::kMainThread, params, 3);
+				}
+
+				{
+					Dia::Editor::EditorActionParam params[3];
+					params[0].name="from"; params[0].type="string"; params[0].required=true; params[0].description="Source asset ID.";
+					params[1].name="rel";  params[1].type="string"; params[1].required=true; params[1].description="Relationship label.";
+					params[2].name="to";   params[2].type="string"; params[2].required=true; params[2].description="Target asset ID.";
+					reg("asset_catalogue.remove_relationship",
+					    "Removes an existing directed relationship edge. Runs RemoveRelationshipCommand and auto-saves.",
+					    DT::kMainThread, params, 3);
+				}
+
+				reg("asset_catalogue.browse_rules",
+				    "Opens a file-picker dialog for the user to select a rules file, then loads it. "
+				    "Requires an active window; do not call from headless scripts.",
+				    DT::kMainThread);
+
+				{
+					Dia::Editor::EditorActionParam p;
+					p.name="path"; p.type="string"; p.required=true;
+					p.description="Absolute path to the rules file.";
+					reg("asset_catalogue.load_rules",
+					    "Loads an auto-categorisation rules file from the given path into the rules engine. "
+					    "The rules are used by apply_rules to fill in type, status, and tag fields automatically.",
+					    DT::kMainThread, &p, 1);
+				}
+
+				{
+					Dia::Editor::EditorActionParam params[2];
+					params[0].name="excluded";          params[0].type="string[]"; params[0].required=false; params[0].description="Asset IDs to skip.";
+					params[1].name="overwrite_manuals"; params[1].type="bool";     params[1].required=false; params[1].description="Overwrite manually-set fields (default: false).";
+					reg("asset_catalogue.apply_rules",
+					    "Applies all loaded rules to the catalogue. Records matching a rule's criteria have "
+					    "their type, status, or tags updated automatically. Runs ApplyRulesCommand and "
+					    "auto-saves. Excluded IDs are skipped.",
+					    DT::kMainThread, params, 2);
+				}
+
+				{
+					Dia::Editor::EditorActionParam params[2];
+					params[0].name="assetType";        params[0].type="string"; params[0].required=true; params[0].description="Asset type ID, e.g. 'entity_template'.";
+					params[1].name="editorPluginType"; params[1].type="string"; params[1].required=true; params[1].description="Plugin type ID that handles this asset type.";
+					reg("asset_catalogue.register_type_editor",
+					    "Registers a mapping from an asset type to the editor plugin that handles it. Called "
+					    "by domain plugins at load time so that open_in_editor knows which plugin to activate.",
+					    DT::kMainThread, params, 2);
+				}
+
+				{
+					Dia::Editor::EditorActionParam params[3];
+					params[0].name="id";          params[0].type="string";   params[0].required=true;  params[0].description="Unique scene asset ID.";
+					params[1].name="source_path"; params[1].type="string";   params[1].required=true;  params[1].description="Relative path for the new .diascene file.";
+					params[2].name="tags";        params[2].type="string[]"; params[2].required=false; params[2].description="Tag list.";
+					reg("asset_catalogue.create_scene",
+					    "Creates a new scene asset record and stub .diascene file, then loads DiaSceneEditor "
+					    "to open it. Shorthand for create_asset with type='scene' plus a navigation step.",
+					    DT::kMainThread, params, 3);
+				}
+
+				{
+					Dia::Editor::EditorActionParam params[4];
+					params[0].name="assetType";   params[0].type="string";   params[0].required=true;  params[0].description="Asset type ID.";
+					params[1].name="id";          params[1].type="string";   params[1].required=true;  params[1].description="Unique asset identifier.";
+					params[2].name="source_path"; params[2].type="string";   params[2].required=true;  params[2].description="Relative source file path.";
+					params[3].name="tags";        params[3].type="string[]"; params[3].required=false; params[3].description="Tag list.";
+					reg("asset_catalogue.create_asset",
+					    "Creates a new asset record and writes the blank source file in one step. Runs "
+					    "CreateRecordCommand and auto-saves.",
+					    DT::kMainThread, params, 4);
+				}
+
+				{
+					Dia::Editor::EditorActionParam p;
+					p.name="id"; p.type="string"; p.required=true;
+					p.description="The asset ID to open.";
+					reg("asset_catalogue.open_in_editor",
+					    "Opens the given asset in its registered editor plugin — loads the plugin if not "
+					    "already loaded, then navigates to the asset. Requires register_type_editor to have "
+					    "been called for the asset's type.",
+					    DT::kMainThread, &p, 1);
+				}
+
+				{
+					Dia::Editor::EditorActionParam p;
+					p.name="id"; p.type="string"; p.required=true;
+					p.description="The asset ID whose source file to open.";
+					reg("asset_catalogue.open_in_file",
+					    "Opens the asset's source file in the default OS application. Use to hand off to an "
+					    "external editor. Requires an active desktop session.",
+					    DT::kMainThread, &p, 1);
+				}
+
+				{
+					Dia::Editor::EditorActionParam params[6];
+					params[0].name="id";          params[0].type="string";   params[0].required=true;  params[0].description="Unique asset identifier.";
+					params[1].name="type";        params[1].type="string";   params[1].required=true;  params[1].description="Asset type ID.";
+					params[2].name="source_path"; params[2].type="string";   params[2].required=true;  params[2].description="Relative path from manifest dir to the source file.";
+					params[3].name="status";      params[3].type="string";   params[3].required=true;  params[3].description="Record status, e.g. 'active'.";
+					params[4].name="scope";       params[4].type="string";   params[4].required=true;  params[4].description="Scope, e.g. 'project'.";
+					params[5].name="tags";        params[5].type="string[]"; params[5].required=false; params[5].description="Tag list.";
+					reg("asset_catalogue.create_record",
+					    "Creates a new asset record in the catalogue without writing a source file. For types "
+					    "that have an associated blank file a stub file is also written to source_path. Runs "
+					    "CreateRecordCommand and auto-saves.",
+					    DT::kMainThread, params, 6);
+				}
+
+				{
+					Dia::Editor::EditorActionParam params[6];
+					params[0].name="id";          params[0].type="string";   params[0].required=true;  params[0].description="Existing asset ID to update.";
+					params[1].name="type";        params[1].type="string";   params[1].required=true;  params[1].description="Asset type ID.";
+					params[2].name="source_path"; params[2].type="string";   params[2].required=true;  params[2].description="Relative source file path.";
+					params[3].name="status";      params[3].type="string";   params[3].required=true;  params[3].description="Record status.";
+					params[4].name="scope";       params[4].type="string";   params[4].required=true;  params[4].description="Scope.";
+					params[5].name="tags";        params[5].type="string[]"; params[5].required=false; params[5].description="Tag list.";
+					reg("asset_catalogue.update_record",
+					    "Updates an existing asset record's fields. Recomputes content_hash if source_path "
+					    "changes. Runs UpdateRecordCommand and auto-saves.",
+					    DT::kMainThread, params, 6);
+				}
+
+				{
+					Dia::Editor::EditorActionParam p;
+					p.name="id"; p.type="string"; p.required=true;
+					p.description="The unique asset ID to delete.";
+					reg("asset_catalogue.delete_record",
+					    "Deletes an existing asset record from the catalogue. Runs DeleteRecordCommand and "
+					    "auto-saves. Does not delete the source file on disk.",
+					    DT::kMainThread, &p, 1);
+				}
+
+				{
+					Dia::Editor::EditorActionParam p;
+					p.name="records"; p.type="object[]"; p.required=true;
+					p.description="Array of record descriptors; each has the same shape as create_record params.";
+					reg("asset_catalogue.bulk_create_records",
+					    "Creates multiple asset records in a single atomic command. Wraps N CreateRecordCommand "
+					    "calls in a CompoundCommand so the entire batch is undone together. Auto-saves when done.",
+					    DT::kMainThread, &p, 1);
+				}
+
+				reg("asset_catalogue.infer_relationships",
+				    "Scans all .diascene files in the project, detects entity-template references, and "
+				    "inserts the corresponding relationship edges into the catalogue. Idempotent — skips "
+				    "edges that already exist. Auto-saves when done.",
+				    DT::kMainThread);
+
+				DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: Dual-registered 34 asset_catalogue.* actions");
 			}
 
 		}

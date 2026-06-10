@@ -19,6 +19,7 @@ try:
     import dia_editor.app_editor as app_editor
     import dia_editor.plugin_browser as plugin_browser
     import dia_editor.entity_template_editor as entity_template_editor
+    import dia_editor.asset_catalogue as asset_catalogue
 except ImportError as e:
     raise ImportError(
         f"dia_editor sub-modules not available: {e}. "
@@ -134,6 +135,40 @@ assert isinstance(state, dict), "entity_template_editor.get_project_state() must
 assert "isValid" in state, "get_project_state() missing 'isValid'"
 assert "diagamePath" in state, "get_project_state() missing 'diagamePath'"
 print(f"[smoke] entity_template_editor.get_project_state() OK: {state}")
+
+
+# ---------------------------------------------------------------------------
+# asset_catalogue.get_state returns a dict with required keys
+# ---------------------------------------------------------------------------
+raw = asset_catalogue.get_state()
+assert isinstance(raw, str), f"asset_catalogue.get_state() should return str, got {type(raw)}"
+state = _parse(raw)
+assert isinstance(state, dict), "asset_catalogue.get_state() must return a JSON dict"
+assert "success" in state, "asset_catalogue.get_state() missing 'success'"
+print(f"[smoke] asset_catalogue.get_state() OK: {state}")
+
+
+# ---------------------------------------------------------------------------
+# asset_catalogue.get_available returns loaded=true when plugin is active
+# ---------------------------------------------------------------------------
+raw = asset_catalogue.get_available()
+assert isinstance(raw, str), f"asset_catalogue.get_available() should return str, got {type(raw)}"
+avail = _parse(raw)
+assert isinstance(avail, dict), "asset_catalogue.get_available() must return a JSON dict"
+assert "loaded" in avail, "asset_catalogue.get_available() missing 'loaded' key"
+assert avail["loaded"] == True, f"asset_catalogue.get_available() expected loaded=true, got: {avail}"
+print(f"[smoke] asset_catalogue.get_available() OK: {avail}")
+
+
+# ---------------------------------------------------------------------------
+# asset_catalogue.validate returns success=true with errors array
+# ---------------------------------------------------------------------------
+raw = asset_catalogue.validate()
+assert isinstance(raw, str), f"asset_catalogue.validate() should return str, got {type(raw)}"
+vresult = _parse(raw)
+assert isinstance(vresult, dict), "asset_catalogue.validate() must return a JSON dict"
+assert "success" in vresult, "asset_catalogue.validate() missing 'success'"
+print(f"[smoke] asset_catalogue.validate() OK: {vresult}")
 
 
 # ---------------------------------------------------------------------------

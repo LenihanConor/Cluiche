@@ -56,6 +56,7 @@ namespace Dia
 				void RegisterAssetTypeEditorHandlers();
 				void RegisterRulesHandlers();
 				void RegisterInferrerHandlers();
+				void DualRegisterActions();
 				void SeedAssetTemplates();
 				void PushDirtyState();
 				void PushRegistryState();
