@@ -121,6 +121,153 @@ class ConversationHistory:
 
 
 # ---------------------------------------------------------------------------
+# ToolDispatcher
+# ---------------------------------------------------------------------------
+
+class ToolError(Exception):
+    pass
+
+
+class ToolDispatcher:
+    """
+    Wraps the execute_action callable and raises ToolError on failure.
+
+    Parameters
+    ----------
+    execute_action : callable(name: str, params: dict) -> dict
+        The DiaPython binding to DiaEditorAPI::ExecuteAction.
+    """
+
+    def __init__(self, execute_action):
+        self._execute_action = execute_action  # callable(name, params) -> dict
+
+    def dispatch(self, name, params):
+        try:
+            result = self._execute_action(name, params)
+            if result is None:
+                result = {}
+            return result
+        except Exception as exc:
+            raise ToolError(str(exc)) from exc
+
+
+# ---------------------------------------------------------------------------
+# KnowledgeLoader
+# ---------------------------------------------------------------------------
+
+class KnowledgeLoader:
+    """
+    Reads ai_context/ files and assembles a token-budgeted system prompt.
+
+    Priority order (highest first):
+      1. editor_actions.md  — always generated from manifest (DCP-005; never read from disk)
+      2. data_types.md      — always included if present
+      3. engine_overview.md
+      4. editor_workflows.md
+      5. asset_style_guide.md
+
+    Lower-priority files are trimmed first if the total would exceed token_budget.
+
+    Parameters
+    ----------
+    ai_context_dir : str
+        Path to the directory containing the ai_context .md files.
+    token_budget : int
+        Maximum estimated tokens for the assembled prompt (default 4096).
+    """
+
+    # Files read from disk, in priority order (editor_actions.md handled separately).
+    _DISK_FILES = [
+        ("data_types.md",       "Data Types"),
+        ("engine_overview.md",  "Engine Overview"),
+        ("editor_workflows.md", "Editor Workflows"),
+        ("asset_style_guide.md","Asset Style Guide"),
+    ]
+
+    def __init__(self, ai_context_dir, token_budget=4096):
+        self._ai_context_dir = ai_context_dir
+        self._token_budget = token_budget
+
+    def load(self, manifest=None):
+        """
+        Assemble and return the system prompt string.
+
+        If manifest is provided, regenerate editor_actions.md content inline
+        (DCP-005 — never read editor_actions.md from disk; always generate from manifest).
+
+        Trims lower-priority files first if total exceeds token_budget.
+        Returns the assembled prompt string.
+        """
+        import os
+
+        sections = []  # list of (title, content) in priority order
+
+        # --- Priority 1: editor_actions.md — generated from manifest, never from disk ---
+        if manifest is not None:
+            actions_content = self._generate_actions_content(manifest)
+            if actions_content:
+                sections.append(("Editor Actions", actions_content))
+
+        # --- Priorities 2-5: disk files ---
+        for filename, title in self._DISK_FILES:
+            filepath = os.path.join(self._ai_context_dir, filename)
+            try:
+                with open(filepath, "r", encoding="utf-8") as fh:
+                    content = fh.read().strip()
+                if content:
+                    sections.append((title, content))
+            except OSError:
+                pass  # Missing file — skip silently
+
+        # --- Assemble with budget enforcement ---
+        # Build formatted blocks; trim from the lowest priority (end of list) first.
+        blocks = ["## {0}\n{1}\n".format(title, content) for title, content in sections]
+        while blocks:
+            candidate = "\n".join(blocks)
+            if self.estimate_tokens(candidate) <= self._token_budget:
+                return candidate
+            # Over budget — drop the lowest-priority block and retry.
+            blocks.pop()
+
+        return ""
+
+    @staticmethod
+    def _generate_actions_content(manifest):
+        """Format the manifest actions list into Markdown."""
+        actions = manifest if isinstance(manifest, list) else manifest.get("actions", [])
+        if not actions:
+            return ""
+        lines = []
+        for action in actions:
+            if not isinstance(action, dict):
+                continue
+            name = action.get("name", "")
+            description = action.get("description", "")
+            params = action.get("params", [])
+            lines.append("### {0}".format(name))
+            if description:
+                lines.append(description)
+            if params:
+                param_parts = []
+                for p in params:
+                    if not isinstance(p, dict):
+                        continue
+                    pname = p.get("name", "")
+                    ptype = p.get("type", "")
+                    preq = "required" if p.get("required") else "optional"
+                    pdesc = p.get("description", "")
+                    param_parts.append("{0} ({1}, {2}): {3}".format(pname, ptype, preq, pdesc))
+                lines.append("Params: " + "; ".join(param_parts))
+            lines.append("")
+        return "\n".join(lines).strip()
+
+    @staticmethod
+    def estimate_tokens(text):
+        """word count / 0.75"""
+        return int(len(text.split()) / 0.75)
+
+
+# ---------------------------------------------------------------------------
 # ChatOrchestrator
 # ---------------------------------------------------------------------------
 
@@ -150,6 +297,8 @@ class ChatOrchestrator:
         self._execute_action = execute_action
         self._confirm_callback = confirm_callback
         self._max_tool_depth = max_tool_depth
+
+        self._dispatcher = ToolDispatcher(execute_action)
 
         self._backend = None
         self._system_prompt = ""
@@ -340,8 +489,8 @@ class ChatOrchestrator:
 
         # --- Dispatch ---
         try:
-            result = self._execute_action(fn, params)
-        except Exception as exc:
+            result = self._dispatcher.dispatch(fn, params)
+        except ToolError as exc:
             _LOG.error("dia_chat: execute_action('%s') raised: %s", fn, exc)
             result = {"error": str(exc)}
 
@@ -434,11 +583,24 @@ class ChatOrchestrator:
 _orchestrator = None  # type: ChatOrchestrator | None
 
 
-def initialize(token_callback, manifest_getter, execute_action, confirm_callback):
+def initialize(token_callback, manifest_getter, execute_action, confirm_callback,
+               ai_context_dir=None, token_budget=4096):
     """
     Create the global ChatOrchestrator instance.
 
     Called by C++ (ChatPanelBridge) at plugin startup via DiaPython AddFunction.
+
+    Parameters
+    ----------
+    token_callback   : callable(text: str, done: bool)
+    manifest_getter  : callable() -> dict | None
+    execute_action   : callable(name: str, params: dict) -> dict
+    confirm_callback : callable(call_id, fn, params, description)
+    ai_context_dir   : str | None
+        Path to the ai_context/ directory.  When provided, a KnowledgeLoader
+        is created, the system prompt is assembled, and set on the orchestrator.
+    token_budget     : int
+        Token budget forwarded to KnowledgeLoader (default 4096).
     """
     global _orchestrator
     _orchestrator = ChatOrchestrator(
@@ -447,6 +609,11 @@ def initialize(token_callback, manifest_getter, execute_action, confirm_callback
         execute_action=execute_action,
         confirm_callback=confirm_callback,
     )
+    if ai_context_dir:
+        loader = KnowledgeLoader(ai_context_dir, token_budget=token_budget)
+        manifest = manifest_getter() if manifest_getter else None
+        prompt = loader.load(manifest=manifest)
+        _orchestrator.set_system_prompt(prompt)
     _LOG.info("dia_chat: initialized")
 
 
