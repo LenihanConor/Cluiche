@@ -1079,7 +1079,38 @@ namespace Dia { namespace Editor {
             GetServices()->GetService<Dia::Editor::EditorActionRegistryService>();
         if (regSvc == nullptr || regSvc->GetRegistry() == nullptr) return;
         Dia::Editor::EditorActionRegistry* api = regSvc->GetRegistry();
-        (void)api; // registrations added in subsequent tasks
+
+        // Helper lambda to register a single action descriptor (no params)
+        auto reg = [&](const char* name, const char* description, const char* category,
+                       Dia::Editor::ActionHandler handler)
+        {
+            Dia::Editor::EditorActionDescriptor d;
+            d.name           = Dia::Core::StringCRC(name);
+            d.description    = description;
+            d.category       = category;
+            d.owner          = "DiaApplicationFlowEditorPlugin";
+            d.dispatchThread = Dia::Editor::DispatchThread::kMainThread;
+            d.handler        = std::move(handler);
+            api->RegisterAction(d);
+        };
+
+        // 1. manifest.getState
+        reg("manifest.getState",
+            "Returns the full current manifest state: file path, dirty flag, and the complete manifest structure (stages, processingUnits, streams, initialStage, version). If no manifest is loaded but a pending path exists (set during project open), retries the load before responding. Use this to read the manifest after load or after applying commands.",
+            "manifest",
+            [this](const Json::Value& d) -> Json::Value { return HandleManifestGetState(d); });
+
+        // 2. history.getState
+        reg("history.getState",
+            "Returns the current command history state without modifying it. Use before calling history.undo or history.redo to check whether those operations are available.",
+            "history",
+            [this](const Json::Value& d) -> Json::Value { return HandleHistoryGetState(d); });
+
+        // 3. types.get
+        reg("types.get",
+            "Returns the list of all known module types and processing unit types available to be added to the manifest. Each entry has a typeId and a description. Use typeId values with manifest.applyCommand AddModule and AddPU commands. Types are loaded from registeredtypes.diaschema at plugin load time.",
+            "types",
+            [this](const Json::Value& d) -> Json::Value { return HandleTypesGet(d); });
     }
 
 }} // namespace Dia::Editor
