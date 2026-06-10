@@ -1168,6 +1168,32 @@ namespace Dia { namespace Editor {
             "Validates the loaded manifest against all structural rules — duplicate IDs, missing dependencies, unreachable stages, stream routing errors. Returns the full issue list with severity, target entity, human-readable message, and an optional suggestedCommand that can be passed directly to manifest.applyCommand to auto-fix the issue. Returns ok=false if no manifest is loaded.",
             "validation",
             [this](const Json::Value& d) -> Json::Value { return HandleValidationRun(d); });
+
+        // 8. history.undo
+        reg("history.undo",
+            "Undoes the last manifest.applyCommand operation. Returns ok=false if there is nothing to undo. On success, pushes the updated manifest state to the UI and returns updated canUndo/canRedo/isDirty flags. Call history.getState first to check canUndo.",
+            "history",
+            [this](const Json::Value& d) -> Json::Value { return HandleHistoryUndo(d); });
+
+        // 9. history.redo
+        reg("history.redo",
+            "Redoes the last undone manifest.applyCommand operation. Returns ok=false if there is nothing to redo. On success, pushes the updated manifest state to the UI and returns updated canUndo/canRedo/isDirty flags. Call history.getState first to check canRedo.",
+            "history",
+            [this](const Json::Value& d) -> Json::Value { return HandleHistoryRedo(d); });
+
+        // 10. risk.check
+        {
+            Dia::Editor::EditorActionParam params[1];
+            params[0].name        = "commandType";
+            params[0].type        = "string";
+            params[0].required    = true;
+            params[0].description = "The commandType string you are about to pass to manifest.applyCommand.";
+            regP("risk.check",
+                "Checks whether a given commandType is considered risky when the editor is live-connected to a running game instance. Returns hasRisk=false if not live-connected or if the command is safe. Returns hasRisk=true with a human-readable description of the risk if the command could destabilise the running process. Call this before manifest.applyCommand for any structural change (RemovePU, RemoveModule, SetStreamCapacity, SetStreamMaxReaders, SetPUFrequency, RemoveStage) when automation is driving a live session.",
+                "risk",
+                [this](const Json::Value& d) -> Json::Value { return HandleRiskCheck(d); },
+                params, 1);
+        }
     }
 
 }} // namespace Dia::Editor
