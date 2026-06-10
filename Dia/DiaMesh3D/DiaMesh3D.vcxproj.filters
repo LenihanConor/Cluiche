@@ -14,7 +14,11 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Mesh3DAsset.h" />
     <ClInclude Include="Vertex3D.h" />
     <ClInclude Include="Submesh.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Mesh3DAsset.cpp" />
   </ItemGroup>
 </Project>
