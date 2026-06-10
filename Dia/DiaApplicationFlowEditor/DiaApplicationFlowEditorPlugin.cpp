@@ -1094,6 +1094,23 @@ namespace Dia { namespace Editor {
             api->RegisterAction(d);
         };
 
+        // Helper lambda to register an action descriptor with params
+        auto regP = [&](const char* name, const char* description, const char* category,
+                        Dia::Editor::ActionHandler handler,
+                        const Dia::Editor::EditorActionParam* paramArr, unsigned int paramCount)
+        {
+            Dia::Editor::EditorActionDescriptor d;
+            d.name           = Dia::Core::StringCRC(name);
+            d.description    = description;
+            d.category       = category;
+            d.owner          = "DiaApplicationFlowEditorPlugin";
+            d.dispatchThread = Dia::Editor::DispatchThread::kMainThread;
+            d.handler        = std::move(handler);
+            for (unsigned int i = 0; i < paramCount; ++i)
+                d.params.params.Add(paramArr[i]);
+            api->RegisterAction(d);
+        };
+
         // 1. manifest.getState
         reg("manifest.getState",
             "Returns the full current manifest state: file path, dirty flag, and the complete manifest structure (stages, processingUnits, streams, initialStage, version). If no manifest is loaded but a pending path exists (set during project open), retries the load before responding. Use this to read the manifest after load or after applying commands.",
@@ -1111,6 +1128,46 @@ namespace Dia { namespace Editor {
             "Returns the list of all known module types and processing unit types available to be added to the manifest. Each entry has a typeId and a description. Use typeId values with manifest.applyCommand AddModule and AddPU commands. Types are loaded from registeredtypes.diaschema at plugin load time.",
             "types",
             [this](const Json::Value& d) -> Json::Value { return HandleTypesGet(d); });
+
+        // 4. manifest.load
+        {
+            Dia::Editor::EditorActionParam params[1];
+            params[0].name        = "path";
+            params[0].type        = "string";
+            params[0].required    = true;
+            params[0].description = "Absolute path to the .diaapp manifest file to load.";
+            regP("manifest.load",
+                "Loads a .diaapp manifest from disk into the editor. Parses the file, populates the in-memory manifest state, resets the command history, and starts the file watcher. Call this before any manifest.applyCommand or manifest.save calls. Returns ok=false with an error string if the file is missing, malformed, or fails schema validation.",
+                "manifest",
+                [this](const Json::Value& d) -> Json::Value { return HandleManifestLoad(d); },
+                params, 1);
+        }
+
+        // 5. manifest.save
+        reg("manifest.save",
+            "Saves the current in-memory manifest state to disk. Runs validation first — if there are any validation errors, the save is blocked and the errors are returned. Clears the dirty flag and resets the command history save point on success. No-op if no manifest is loaded.",
+            "manifest",
+            [this](const Json::Value& d) -> Json::Value { return HandleManifestSave(d); });
+
+        // 6. manifest.applyCommand
+        {
+            Dia::Editor::EditorActionParam params[1];
+            params[0].name        = "commandType";
+            params[0].type        = "string";
+            params[0].required    = true;
+            params[0].description = "Command type string — see description for full list.";
+            regP("manifest.applyCommand",
+                "Executes a structural edit command against the loaded manifest and pushes the updated state to the UI. All commands are undoable via history.undo. Returns ok=true with updated canUndo/canRedo/isDirty flags on success. Use types.get to enumerate valid typeId values for AddModule/AddPU. Use risk.check before risky commands when the editor is live-connected to a running game. Supported commandTypes: AddPU, RemovePU, SetPUFrequency, SetPUThread, ReorderPU, AddModule, RemoveModule, AddModuleDep, RemoveModuleDep, SetModuleStages, SetModuleStartTimeout, SetModuleStopTimeout, AddModuleChannel, RemoveModuleChannel, AddStage, RemoveStage, RenameStage, SetStageTrigger, AddStageTransition, RemoveStageTransition, SetInitialStage, ReorderStage, AddStream, RemoveStream, SetStreamKind, SetStreamPayloadType, SetStreamFromPU, SetStreamToPU, SetStreamCapacity, SetStreamMaxReaders, SetStreamOverflow, SetStreamMultiWriter.",
+                "manifest",
+                [this](const Json::Value& d) -> Json::Value { return HandleManifestApplyCommand(d); },
+                params, 1);
+        }
+
+        // 7. validation.run
+        reg("validation.run",
+            "Validates the loaded manifest against all structural rules — duplicate IDs, missing dependencies, unreachable stages, stream routing errors. Returns the full issue list with severity, target entity, human-readable message, and an optional suggestedCommand that can be passed directly to manifest.applyCommand to auto-fix the issue. Returns ok=false if no manifest is loaded.",
+            "validation",
+            [this](const Json::Value& d) -> Json::Value { return HandleValidationRun(d); });
     }
 
 }} // namespace Dia::Editor
