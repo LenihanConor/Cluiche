@@ -477,6 +477,15 @@ namespace Cluiche
 			entry.plugin = plugin;
 			mLoadedPlugins.Add(entry);
 
+			// Regenerate dia_editor Python module so newly registered actions are callable.
+			EditorActionModule* actionModule = mActionModuleRef.Get();
+			if (actionModule != nullptr)
+			{
+				Dia::Editor::GeneratePythonModule(
+					actionModule->GetRegistry(),
+					actionModule->GetQueue());
+			}
+
 			if (mView != nullptr && plugin->GetLayoutMode() != Dia::Editor::LayoutMode::kHeadless)
 			{
 				mView->NotifyPanelsChanged();
