@@ -137,6 +137,11 @@ namespace CluicheEditor
 		}
 		mPluginHealth.SetPythonReady(true);
 
+		// Ensure pip-installed packages (requests, etc.) are importable at runtime.
+		Dia::Python::ExecuteString(
+			"import sys; "
+			"('python_packages/' not in sys.path) and sys.path.append('python_packages/')");
+
 		// ------------------------------------------------------------------
 		// 2. Register the dia_chat C++ module (callbacks Python can call).
 		// ------------------------------------------------------------------

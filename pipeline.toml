@@ -134,6 +134,7 @@ files = [
   { src = "Cluiche/bin/DiaUICEF_TestSubprocess/$(Configuration)/x64/DiaUICEF_TestSubprocess.exe", dest = "$(OutDir)cef/" },
   { src = "Cluiche/bin/DiaUICEF_TestSubprocess/$(Configuration)/x64/DiaUICEF_TestSubprocess.pdb", dest = "$(OutDir)cef/" },
   { src = "Cluiche/CluicheEditor/scripts/*",                  dest = "$(OutDir)scripts/" },
+  { src = "External/Python311/Lib/site-packages/**/*",        dest = "$(OutDir)python_packages/" },
   { src = "Cluiche/Assets/CluicheEditor/ai_context/*",       dest = "$(OutDir)assets/ai_context/" }
 ]
 
