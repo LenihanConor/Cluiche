@@ -78,6 +78,7 @@ Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testin
 
 | Item | Notes |
 |------|-------|
+| DiaChatPlugin — model picker dropdown | Backend selector already exists but model is hardcoded. Query `ollama list` / known Claude+Gemini models at startup, populate a dropdown so the user can switch models without code changes. Persist last selection. |
 | `dia env` Python package management | Add `requirements.txt` to `External/Python311/`, wire `dia env setup` to `pip install --target site-packages`, so fresh clones get `requests` etc. without manual pip. Pipeline deploy already handles runtime copy. |
 | RenderTechnique asset type | Layer-level rendering policy (blend mode, post-process like bloom/distortion). Layers reference a technique by name; renderer resolves at draw time. Needs `/spec-feature` under DiaGraphics or DiaBgfx once the scene system lands. |
 | Camera2D controller (pan/zoom/reset) | Application-side input→Camera2D wiring for CluicheTest stages (keyboard pan, scroll zoom, home-key reset). Unblocked once coord2d-debug-overlay ships Camera2D + renderer integration. |
