@@ -75,6 +75,8 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Vertex3D.h" />
+    <ClInclude Include="Submesh.h" />
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>

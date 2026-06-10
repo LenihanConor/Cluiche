@@ -13,4 +13,8 @@
       <Filter>Docs</Filter>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Vertex3D.h" />
+    <ClInclude Include="Submesh.h" />
+  </ItemGroup>
 </Project>
