@@ -46,6 +46,8 @@ namespace Dia
 					if (pythonHome && pythonHome[0] != '\0')
 					{
 						path.append(pythonHome);
+						std::string sitePackages = std::string(pythonHome) + "Lib/site-packages";
+						path.append(sitePackages);
 						DIA_LOG_INFO("DiaPython", "Added pythonHome to sys.path: %s", pythonHome);
 					}
 
