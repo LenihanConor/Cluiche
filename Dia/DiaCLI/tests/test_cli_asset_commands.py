@@ -272,17 +272,18 @@ def test_force_removes_deploy_directory(tmp_path):
     _write_catalogue(tmp_path)
 
     # Pre-create a deploy directory with a sentinel file
-    deploy_root = tmp_path / "bin" / "CluicheTest" / "Debug" / "x64" / "assets"
+    deploy_root = tmp_path / "Cluiche" / "bin" / "CluicheTest" / "Debug" / "x64" / "assets"
     deploy_root.mkdir(parents=True)
     sentinel = deploy_root / "old_file.dat"
     sentinel.write_bytes(b"stale")
 
     import click
     from dia_cli.commands.asset._common_handler import run_asset_phases
+    from dia_cli.commands.asset.runner import RunResult
 
     ctx = click.Context(click.Command("test"))
     with patch("dia_cli.commands.asset._common_handler.BuildRunner") as MockRunner:
-        MockRunner.return_value.run.return_value = 0
+        MockRunner.return_value.run_with_result.return_value = RunResult(exit_code=0, pass_count=0, fail_count=0)
         run_asset_phases(
             target="cluichetest", config="Debug", platform="x64",
             force=True, phases=["deploy"], ctx=ctx, repo_root=tmp_path,
@@ -295,17 +296,18 @@ def test_no_force_preserves_deploy_directory(tmp_path):
     _write_toml(tmp_path)
     _write_catalogue(tmp_path)
 
-    deploy_root = tmp_path / "bin" / "CluicheTest" / "Debug" / "x64" / "assets"
+    deploy_root = tmp_path / "Cluiche" / "bin" / "CluicheTest" / "Debug" / "x64" / "assets"
     deploy_root.mkdir(parents=True)
     sentinel = deploy_root / "keep_me.dat"
     sentinel.write_bytes(b"keep")
 
     import click
     from dia_cli.commands.asset._common_handler import run_asset_phases
+    from dia_cli.commands.asset.runner import RunResult
 
     ctx = click.Context(click.Command("test"))
     with patch("dia_cli.commands.asset._common_handler.BuildRunner") as MockRunner:
-        MockRunner.return_value.run.return_value = 0
+        MockRunner.return_value.run_with_result.return_value = RunResult(exit_code=0, pass_count=0, fail_count=0)
         run_asset_phases(
             target="cluichetest", config="Debug", platform="x64",
             force=False, phases=["deploy"], ctx=ctx, repo_root=tmp_path,

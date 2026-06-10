@@ -26,6 +26,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | ~~DiaEditorAPI~~ | [diaeditorapi.md](specs/systems/cluicheeditor/diaeditorapi.md) ✅ | Phase 1: C++ action registry + auto-generated Python `dia_editor` module (automation testing). Phase 2: MCP adapter for Ollama at-desk AI workflows. **Features:** `app-editor-actions` (Draft), `asset-catalogue-migration`, `entity-template-migration`, `scene-editor-scriptable`, `live-inspector-migration`, `app-flow-editor-migration`, `asset-runtime-inspector-migration`, `entity-inspector-migration`, `plugin-browser-migration`, `pipeline-migration` (all TBD — need `/spec-feature`). | DiaAPI, DiaEditor, DiaPython, DiaWebSocket (Ph2) |
 | DiaChatPlugin | [diachatplugin.md](specs/systems/cluicheeditor/diachatplugin.md) ✅ | Dockable AI assistant panel — Ollama/Claude/Gemini via DiaPython orchestrator, direct `ExecuteAction()` tool dispatch, curated knowledge context system, hybrid chat+detail panel UI. Phase 2: multi-step agentic loop. | DiaEditorAPI Phase 1, DiaEditor, DiaPython, DiaUICEF |
 | ~~GoogleTestSpeed~~ | [googletestspeed.md](specs/systems/googletests/googletestspeed.md) ✅ | **Done** — SLOW_* tagging + default filter, Release CI config, gtest.h PCH, --shards N parallel runner + XML merger, DiaPython fixture amortisation. | — |
+| ~~DiaApplicationFlowInspector~~ | [diaapplicationflowinspector.md](specs/systems/dia/diaapplicationflowinspector.md) ✅ | **Done** — 4-tab Inspector (Modules/Streams/Timing/Log); framework telemetry; Editor split/renamed to DiaApplicationFlowEditor. 49 tasks complete (2026-06-07). | — |
 | ~~DiaScene2D~~ | [diascene2d.md](specs/systems/dia/diascene2d.md) ✅ | **Done** — Scene2D struct, LayerTable, SceneLoader2D (camera/light/entity hydration, instanceData patching, validation). 18 tests pass. | — |
 | ~~DiaArchitecture~~ | [diaarchitecture.md](specs/systems/dia/diaarchitecture.md) ✅ | **Done** — Layer fields, refactoring (R1–R6), audit tool (`dia check arch`), SLN sync (`dia check sln-sync`). 1975 violations baselined. | — |
 
@@ -38,7 +39,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | ~~per-app-bin-layout~~ | [per-app-bin-layout.md](specs/features/dia/diapipeline/per-app-bin-layout.md) | DiaPipeline ✅ | **Done** — `Directory.Build.props` per-app OutDir, path_resolver.py, package_stage.py, clean CluicheEditor layout. |
 | ~~Editor Memory~~ | [editor-memory.md](specs/features/dia/diaeditor/editor-memory.md) | DiaEditor ✅ | **Done** — save/restore layout, plugins, per-plugin project-scoped state. |
 | ~~Toast Notifications~~ | [toast-notifications.md](specs/features/dia/diaeditor/toast-notifications.md) | DiaEditor ✅ | **Done** — framework-level notification service; plugins push toasts, shell renders. |
-| Python Console | [python-console.md](specs/features/dia/diaeditor/python-console.md) | DiaEditor | Dockable REPL plugin — validate DiaEditorAPI actions interactively, run `smoke_test.py`. 5 tasks. Unblocked. |
+| ~~Python Console~~ | [python-console.md](specs/features/dia/diaeditor/python-console.md) | DiaEditor ✅ | **Done** — Dockable REPL plugin; `python_console.execute` + `python_console.run_file` handlers; colour-coded React UI; dual-registered as DiaEditorAPI actions. |
 
 ---
 
@@ -48,9 +49,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 ## In Progress
 
-| System | Spec | What's happening |
-|--------|------|-----------------|
-| DiaApplicationFlowInspector | [diaapplicationflowinspector.md](specs/systems/dia/diaapplicationflowinspector.md) | Spec **Approved** (2026-06-04). Split from Editor — live runtime inspection (timeline, backpressure, frame budget, event log). [Plan](specs/systems/dia/diaapplicationflowinspector.plan.md) (49 tasks). Also renames DiaApplicationEditor → DiaApplicationFlowEditor. Includes new Editor-side ACs: connection-status-indicator, live-state-overlay (topic model), risky-change-warnings (no Inspector dep). |
+_Nothing here._
 
 ---
 
@@ -59,7 +58,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | Item | Spec | What's needed |
 |------|------|---------------|
 | DiaStateMachineEditor system | TBD | Needs `/spec-system` — editor plugin for state machine visual debugging + design-time editing. Depends on DiaStateMachine ✅, DiaEditor |
-| Manifest heap modules | [manifest-heap-modules.md](specs/features/dia/diaapplicationflow/manifest-heap-modules.md) | `ApplicationManifestV3` is ~60 KB on the stack due to `DynamicArrayC<ModuleDeclaration,32>` inline storage. Spec written + plan ready. Blocked on `DynamicArrayC`/`DynamicArray` both using `memcpy` — nesting heap-owning containers is unsafe without fixing copy semantics. Options: reduce cap (32→16, 1-line, safe), or allocate the whole manifest on the heap at the call site. Deferred — low urgency. |
+
 
 ---
 
@@ -152,8 +151,8 @@ Lessons from the entity-inspector debugging session (2026-06-06). Three bugs com
 | `Dia::Core::Blackboard` — general-purpose key-value store | Identified during DiaStateMachine research; useful for AI, animation, gameplay. Needs `/spec-feature` under DiaCore. |
 | ~~DiaSoftBody2D serializers~~ | **Done** (2026-05-28) — `DiaSoftBody2DSerializers.h` ships `WorldDef`, `RopeDef`, `ClothDef`. Follows `DiaRigidBody2DSerializers.h` pattern exactly. Non-owning anchor/world pointers skipped (same convention as RigidBody2D). |
 | ~~Cross-PU data flow for debug UI~~ | **Folded into service-channel** — Shapes A+B+C all resolved in one feature (composite per PU-pair + ServiceStream). No follow-on features needed. |
-| RigidBody2DStage test failure | Visual debug rendering fixed (circles now visible). Test itself fails — needs investigation. |
-| Stale deploy test mock | `test_force_removes_deploy_directory` uses `.run.return_value` but code now calls `.run_with_result()` — mock never intercepts, sentinel file survives. Fix mock setup in `test_cli_asset_commands.py`. |
+
+
 | ~~Shared asset creation~~ | **Done** — `asset_catalogue.create_asset` unified handler; stage dropdown grey styling; stage↔scene association write-back; Blueprint Editor "+New Template" button. Tasks 1–9 complete. Task 10 (`create_from_template` removal) deferred pending test migration. |
 | ~~Spatial cell inspector~~ | **Done** — `SpatialGridDrawer` + `HexGridDrawer` have selection state, highlight draw, and ImGui inspector. `Geometry2DTestStageModule` owns selection + wires click detection via `SetSelection()`. All ACs met. |
 | ~~Arc/Sector cleanup~~ | **Done** (2026-05-31) — `Arc` deleted (duplicate sector-shaped class); `Sector` kept as the single canonical type. `SectorDrawHelper` rendering fix (duplicate close-back vertex removed). 249 geometry tests pass. |
