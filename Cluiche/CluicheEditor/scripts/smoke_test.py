@@ -215,6 +215,66 @@ print(f"[smoke] scene_editor.get_entities() OK: {len(ents['entities'])} entities
 
 
 # ---------------------------------------------------------------------------
+# app_flow_editor.manifest.getState, history.getState, validation.run, types.get, risk.check
+# ---------------------------------------------------------------------------
+manifest = _ensure_plugin("DiaApplicationFlowEditorPlugin", "manifest")
+# Import the sub-modules that are generated after plugin load
+history = importlib.import_module("dia_editor.history")
+validation = importlib.import_module("dia_editor.validation")
+types = importlib.import_module("dia_editor.types")
+risk = importlib.import_module("dia_editor.risk")
+
+
+# manifest.getState() returns dict with 'ok' key (no crash with no manifest loaded)
+raw = manifest.getState()
+assert isinstance(raw, str), f"manifest.getState() should return str, got {type(raw)}"
+state = _parse(raw)
+assert isinstance(state, dict), "manifest.getState() must return a JSON dict"
+assert "ok" in state, "manifest.getState() missing 'ok' key"
+print(f"[smoke] manifest.getState() OK: {state}")
+
+
+# history.getState() returns dict with required keys (canUndo, canRedo, count, isDirty)
+raw = history.getState()
+assert isinstance(raw, str), f"history.getState() should return str, got {type(raw)}"
+hist_state = _parse(raw)
+assert isinstance(hist_state, dict), "history.getState() must return a JSON dict"
+for key in ("ok", "canUndo", "canRedo", "count", "isDirty"):
+    assert key in hist_state, f"history.getState() missing key '{key}'"
+print(f"[smoke] history.getState() OK: canUndo={hist_state['canUndo']}, canRedo={hist_state['canRedo']}, count={hist_state['count']}, isDirty={hist_state['isDirty']}")
+
+
+# validation.run() returns dict with 'ok' key (no crash with no manifest loaded)
+raw = validation.run()
+assert isinstance(raw, str), f"validation.run() should return str, got {type(raw)}"
+val_result = _parse(raw)
+assert isinstance(val_result, dict), "validation.run() must return a JSON dict"
+assert "ok" in val_result, "validation.run() missing 'ok' key"
+print(f"[smoke] validation.run() OK: {val_result}")
+
+
+# types.get() returns dict with 'ok', 'moduleTypes', 'puTypes' keys
+raw = types.get()
+assert isinstance(raw, str), f"types.get() should return str, got {type(raw)}"
+types_result = _parse(raw)
+assert isinstance(types_result, dict), "types.get() must return a JSON dict"
+assert "ok" in types_result, "types.get() missing 'ok' key"
+assert "moduleTypes" in types_result, "types.get() missing 'moduleTypes' key"
+assert "puTypes" in types_result, "types.get() missing 'puTypes' key"
+print(f"[smoke] types.get() OK: moduleTypes present, puTypes present")
+
+
+# risk.check() returns dict with 'ok' and 'hasRisk' keys
+raw = risk.check('{"commandType": "RemovePU"}')
+assert isinstance(raw, str), f"risk.check() should return str, got {type(raw)}"
+risk_result = _parse(raw)
+assert isinstance(risk_result, dict), "risk.check() must return a JSON dict"
+assert "ok" in risk_result, "risk.check() missing 'ok' key"
+assert "hasRisk" in risk_result, "risk.check() missing 'hasRisk' key"
+print(f"[smoke] risk.check() OK: hasRisk={risk_result['hasRisk']}")
+
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 print("[smoke] All EditorAPI smoke checks passed.")
