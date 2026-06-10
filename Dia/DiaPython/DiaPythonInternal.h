@@ -37,6 +37,7 @@ namespace Dia
 			{
 				bool isInitialized = false;
 				py::scoped_interpreter* interpreter = nullptr;
+				PyThreadState* mainThreadState = nullptr;  // saved when GIL released after init
 			};
 
 			extern InterpreterState gState;

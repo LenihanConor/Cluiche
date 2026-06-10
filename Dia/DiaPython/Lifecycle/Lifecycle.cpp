@@ -35,145 +35,154 @@ namespace Dia
 				// Create Python interpreter (pybind11 RAII handle)
 				gState.interpreter = new py::scoped_interpreter();
 
-				// Configure sys.path
-				py::module_ sys = py::module_::import("sys");
-				py::list path = sys.attr("path");
-
-				// Add pythonHome if provided
-				if (pythonHome && pythonHome[0] != '\0')
+				// Inner scope ensures all py::object temporaries are destroyed while
+				// the GIL is still held (before PyEval_SaveThread releases it).
 				{
-					path.append(pythonHome);
-					DIA_LOG_INFO("DiaPython", "Added pythonHome to sys.path: %s", pythonHome);
-				}
+					// Configure sys.path
+					py::module_ sys = py::module_::import("sys");
+					py::list path = sys.attr("path");
 
-				// Add modulePath if provided
-				if (modulePath && modulePath[0] != '\0')
-				{
-					path.append(modulePath);
-					DIA_LOG_INFO("DiaPython", "Added modulePath to sys.path: %s", modulePath);
-				}
-
-				// Add current directory
-				path.append(".");
-
-				// Capture warnings if requested
-				if (captureWarnings)
-				{
-					py::module_ warnings = py::module_::import("warnings");
-					warnings.attr("simplefilter")("always");
-					DIA_LOG_INFO("DiaPython", "Python warnings capture enabled");
-				}
-
-				// Mark as initialized BEFORE registering modules
-				// (modules may call IsInitialized() during registration)
-				gState.isInitialized = true;
-
-				// Register pending modules (Phase 5: module-api)
-				// Iterate through all modules and register those that are pending
-				auto& moduleRegistry = GetModuleRegistry();
-				for (auto& pair : moduleRegistry)
-				{
-					ModuleImpl* moduleImpl = pair.second;
-					if (moduleImpl && moduleImpl->isPendingRegistration)
+					// Add pythonHome if provided
+					if (pythonHome && pythonHome[0] != '\0')
 					{
-						try
+						path.append(pythonHome);
+						DIA_LOG_INFO("DiaPython", "Added pythonHome to sys.path: %s", pythonHome);
+					}
+
+					// Add modulePath if provided
+					if (modulePath && modulePath[0] != '\0')
+					{
+						path.append(modulePath);
+						DIA_LOG_INFO("DiaPython", "Added modulePath to sys.path: %s", modulePath);
+					}
+
+					// Add current directory
+					path.append(".");
+
+					// Capture warnings if requested
+					if (captureWarnings)
+					{
+						py::module_ warnings = py::module_::import("warnings");
+						warnings.attr("simplefilter")("always");
+						DIA_LOG_INFO("DiaPython", "Python warnings capture enabled");
+					}
+
+					// Mark as initialized BEFORE registering modules
+					// (modules may call IsInitialized() during registration)
+					gState.isInitialized = true;
+
+					// Register pending modules (Phase 5: module-api)
+					// Iterate through all modules and register those that are pending
+					auto& moduleRegistry = GetModuleRegistry();
+					for (auto& pair : moduleRegistry)
+					{
+						ModuleImpl* moduleImpl = pair.second;
+						if (moduleImpl && moduleImpl->isPendingRegistration)
 						{
-							// Create pybind11 module
-							py::module_ newModule = py::module_::create_extension_module(
-								moduleImpl->name.c_str(), nullptr, new py::module_::module_def());
-
-							// Add to sys.modules
-							sys.attr("modules")[moduleImpl->name.c_str()] = newModule;
-
-							moduleImpl->pybindModule = new py::module_(newModule);
-							moduleImpl->isPendingRegistration = false;
-
-							// Register all pending functions
-							for (unsigned int i = 0; i < moduleImpl->pendingFunctions.Size(); i++)
+							try
 							{
-								const FunctionRegistration& func = moduleImpl->pendingFunctions[i];
+								// Create pybind11 module
+								py::module_ newModule = py::module_::create_extension_module(
+									moduleImpl->name.c_str(), nullptr, new py::module_::module_def());
 
-								// Wrap callback to catch C++ exceptions
-								py::object wrappedCallback = py::cpp_function([func](py::args args) -> py::object
+								// Add to sys.modules
+								sys.attr("modules")[moduleImpl->name.c_str()] = newModule;
+
+								moduleImpl->pybindModule = new py::module_(newModule);
+								moduleImpl->isPendingRegistration = false;
+
+								// Register all pending functions
+								for (unsigned int i = 0; i < moduleImpl->pendingFunctions.Size(); i++)
 								{
-									try
+									const FunctionRegistration& func = moduleImpl->pendingFunctions[i];
+
+									// Wrap callback to catch C++ exceptions
+									py::object wrappedCallback = py::cpp_function([func](py::args args) -> py::object
 									{
-										// Convert py::args to PythonArgs
-										PythonArgs pythonArgs;
-										PythonArgsImpl* argsImpl = new PythonArgsImpl();
-
-										// Convert py::args to vector of py::object* (py::args cannot be copied/stored)
-										for (size_t i = 0; i < args.size(); i++)
+										try
 										{
-											argsImpl->args.push_back(new py::object(args[i]));
-										}
+											// Convert py::args to PythonArgs
+											PythonArgs pythonArgs;
+											PythonArgsImpl* argsImpl = new PythonArgsImpl();
 
-										pythonArgs.SetImpl(argsImpl);
+											// Convert py::args to vector of py::object* (py::args cannot be copied/stored)
+											for (size_t i = 0; i < args.size(); i++)
+											{
+												argsImpl->args.push_back(new py::object(args[i]));
+											}
 
-										// Call user callback
-										PythonObject result = func.callback(pythonArgs);
+											pythonArgs.SetImpl(argsImpl);
 
-										// Convert PythonObject to py::object
-										if (result.IsNone())
-										{
+											// Call user callback
+											PythonObject result = func.callback(pythonArgs);
+
+											// Convert PythonObject to py::object
+											if (result.IsNone())
+											{
+												return py::none();
+											}
+
+											PythonObjectImpl* resultImpl = static_cast<PythonObjectImpl*>(result.GetImpl());
+											if (resultImpl && resultImpl->pyObject)
+											{
+												return *resultImpl->pyObject;
+											}
+
 											return py::none();
 										}
-
-										PythonObjectImpl* resultImpl = static_cast<PythonObjectImpl*>(result.GetImpl());
-										if (resultImpl && resultImpl->pyObject)
+										catch (const std::exception& ex)
 										{
-											return *resultImpl->pyObject;
+											std::string errorMsg = std::string("C++ exception in ") + func.name + ": " + ex.what();
+											throw py::type_error(errorMsg.c_str());
 										}
+										catch (...)
+										{
+											std::string errorMsg = std::string("Unknown C++ exception in ") + func.name;
+											throw py::type_error(errorMsg.c_str());
+										}
+									});
 
-										return py::none();
-									}
-									catch (const std::exception& ex)
-									{
-										std::string errorMsg = std::string("C++ exception in ") + func.name + ": " + ex.what();
-										throw py::type_error(errorMsg.c_str());
-									}
-									catch (...)
-									{
-										std::string errorMsg = std::string("Unknown C++ exception in ") + func.name;
-										throw py::type_error(errorMsg.c_str());
-									}
-								});
+									// Register function
+									moduleImpl->pybindModule->attr(func.name.c_str()) = wrappedCallback;
 
-								// Register function
-								moduleImpl->pybindModule->attr(func.name.c_str()) = wrappedCallback;
-
-								// Set docstring if provided
-								if (!func.docstring.empty())
-								{
-									std::string fullDocstring = func.docstring;
-									if (!func.signatureHint.empty())
+									// Set docstring if provided
+									if (!func.docstring.empty())
 									{
-										fullDocstring = func.signatureHint + " - " + fullDocstring;
+										std::string fullDocstring = func.docstring;
+										if (!func.signatureHint.empty())
+										{
+											fullDocstring = func.signatureHint + " - " + fullDocstring;
+										}
+										wrappedCallback.attr("__doc__") = py::str(fullDocstring.c_str());
 									}
-									wrappedCallback.attr("__doc__") = py::str(fullDocstring.c_str());
+
+									DIA_LOG_INFO("DiaPython", "Registered pending function '%s' in module '%s'",
+										func.name.c_str(), moduleImpl->name.c_str());
 								}
 
-								DIA_LOG_INFO("DiaPython", "Registered pending function '%s' in module '%s'",
-									func.name.c_str(), moduleImpl->name.c_str());
+								// Clear pending functions
+								moduleImpl->pendingFunctions.RemoveAll();
+
+								DIA_LOG_INFO("DiaPython", "Registered pending module '%s' with %d functions",
+									moduleImpl->name.c_str(), moduleImpl->pendingFunctions.Size());
 							}
-
-							// Clear pending functions
-							moduleImpl->pendingFunctions.RemoveAll();
-
-							DIA_LOG_INFO("DiaPython", "Registered pending module '%s' with %d functions",
-								moduleImpl->name.c_str(), moduleImpl->pendingFunctions.Size());
-						}
-						catch (const std::exception& ex)
-						{
-							DIA_LOG_ERROR("DiaPython", "Failed to register pending module '%s': %s",
-								moduleImpl->name.c_str(), ex.what());
+							catch (const std::exception& ex)
+							{
+								DIA_LOG_ERROR("DiaPython", "Failed to register pending module '%s': %s",
+									moduleImpl->name.c_str(), ex.what());
+							}
 						}
 					}
-				}
+				} // py::objects destroyed here while GIL is still held
 
 				// TODO: Fire OnPythonInitialized event (requires Observer pattern integration)
 
 				DIA_LOG_INFO("DiaPython", "Python interpreter initialized successfully");
+
+				// Release the GIL so background threads can acquire it.
+				// All subsequent calls (ExecuteString, ExecuteScript) re-acquire via gil_scoped_acquire.
+				gState.mainThreadState = PyEval_SaveThread();
+
 				return true;
 			}
 			catch (const std::exception& ex)
@@ -201,6 +210,13 @@ namespace Dia
 			{
 				DIA_LOG_WARNING("DiaPython", "Shutdown() called but Python is not initialized. Ignoring.");
 				return;
+			}
+
+			// Re-acquire the GIL on the main thread before tearing down the interpreter.
+			if (gState.mainThreadState != nullptr)
+			{
+				PyEval_RestoreThread(gState.mainThreadState);
+				gState.mainThreadState = nullptr;
 			}
 
 			try

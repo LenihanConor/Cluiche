@@ -166,6 +166,7 @@ namespace Dia
 			// If Python initialized, create pybind11 module immediately
 			if (IsInitialized())
 			{
+				py::gil_scoped_acquire acquire;
 
 				try
 				{
@@ -298,6 +299,7 @@ namespace Dia
 			// If module has pybind11 handle, register immediately
 			if (moduleImpl->pybindModule)
 			{
+				py::gil_scoped_acquire acquire;
 
 				try
 				{
@@ -367,6 +369,8 @@ namespace Dia
 			// If module has pybind11 handle, register immediately
 			if (moduleImpl->pybindModule)
 			{
+				py::gil_scoped_acquire acquire;
+
 				try
 				{
 					// Wrap callback to catch C++ exceptions

@@ -202,18 +202,32 @@ namespace Dia
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
-		// Execute Python script file (synchronous)
+		// Execute Python script file (synchronous, acquires GIL)
 		////////////////////////////////////////////////////////////////////////////////
 		int ExecuteScript(const char* scriptPath, const char** args, int argCount)
 		{
+			if (!IsInitialized())
+			{
+				DIA_LOG_ERROR("DiaPython", "ExecuteScript failed: Python not initialized");
+				return static_cast<int>(ErrorCode::NotInitialized);
+			}
+
+			py::gil_scoped_acquire acquire;
 			return Internal::ExecuteScriptInternal(scriptPath, args, argCount);
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
-		// Execute Python code string (synchronous)
+		// Execute Python code string (synchronous, acquires GIL)
 		////////////////////////////////////////////////////////////////////////////////
 		int ExecuteString(const char* pythonCode)
 		{
+			if (!IsInitialized())
+			{
+				DIA_LOG_ERROR("DiaPython", "ExecuteString failed: Python not initialized");
+				return static_cast<int>(ErrorCode::NotInitialized);
+			}
+
+			py::gil_scoped_acquire acquire;
 			return Internal::ExecuteStringInternal(pythonCode);
 		}
 
@@ -248,6 +262,8 @@ namespace Dia
 				DIA_LOG_ERROR("DiaPython", "RedirectOutput failed: Python not initialized");
 				return;
 			}
+
+			py::gil_scoped_acquire acquire;
 
 			try
 			{
@@ -308,6 +324,8 @@ namespace Dia
 				DIA_LOG_WARNING("DiaPython", "RestoreOutput called but output not redirected");
 				return;
 			}
+
+			py::gil_scoped_acquire acquire;
 
 			try
 			{

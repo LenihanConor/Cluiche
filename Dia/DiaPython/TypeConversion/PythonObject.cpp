@@ -4,6 +4,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "PythonObject.h"
 #include "DiaPython/DiaPythonInternal.h"
+#include "DiaPython/Lifecycle/Lifecycle.h"
 
 #include <DiaObservation/Log/DiaLog.h>
 
@@ -17,9 +18,16 @@ namespace Dia
 
 		PythonObject::PythonObject()
 		{
-			// Create None object using py::none()
 			auto* impl = new Internal::PythonObjectImpl();
-			impl->pyObject = new py::object(py::none());
+			if (IsInitialized())
+			{
+				py::gil_scoped_acquire acquire;
+				impl->pyObject = new py::object(py::none());
+			}
+			else
+			{
+				impl->pyObject = nullptr;
+			}
 			mImpl = impl;
 		}
 
@@ -30,7 +38,18 @@ namespace Dia
 				auto* impl = static_cast<Internal::PythonObjectImpl*>(mImpl);
 				if (impl->pyObject)
 				{
-					delete impl->pyObject;
+					if (IsInitialized())
+					{
+						py::gil_scoped_acquire acquire;
+						delete impl->pyObject;
+					}
+					else
+					{
+						// Python shut down — leak the handle to avoid crash.
+						// This is the pybind11-recommended approach for statics/globals
+						// that outlive the interpreter.
+						impl->pyObject = nullptr;
+					}
 				}
 				delete impl;
 				mImpl = nullptr;
@@ -44,9 +63,9 @@ namespace Dia
 				auto* otherImpl = static_cast<Internal::PythonObjectImpl*>(other.mImpl);
 				auto* impl = new Internal::PythonObjectImpl();
 
-				// Copy py::object (reference counted by pybind11)
-				if (otherImpl->pyObject)
+				if (otherImpl->pyObject && IsInitialized())
 				{
+					py::gil_scoped_acquire acquire;
 					impl->pyObject = new py::object(*otherImpl->pyObject);
 				}
 				else
@@ -59,8 +78,6 @@ namespace Dia
 			}
 			else
 			{
-				// Other is uninitialized, create None
-				mImpl = nullptr;
 				auto* impl = new Internal::PythonObjectImpl();
 				impl->pyObject = nullptr;
 				mImpl = impl;
@@ -71,12 +88,13 @@ namespace Dia
 		{
 			if (this != &other)
 			{
-				// Clean up existing
+				// Clean up existing (needs GIL for dec_ref)
 				if (mImpl)
 				{
 					auto* impl = static_cast<Internal::PythonObjectImpl*>(mImpl);
-					if (impl->pyObject)
+					if (impl->pyObject && IsInitialized())
 					{
+						py::gil_scoped_acquire acquire;
 						delete impl->pyObject;
 					}
 					delete impl;
@@ -88,8 +106,9 @@ namespace Dia
 					auto* otherImpl = static_cast<Internal::PythonObjectImpl*>(other.mImpl);
 					auto* impl = new Internal::PythonObjectImpl();
 
-					if (otherImpl->pyObject)
+					if (otherImpl->pyObject && IsInitialized())
 					{
+						py::gil_scoped_acquire acquire;
 						impl->pyObject = new py::object(*otherImpl->pyObject);
 					}
 					else
@@ -102,7 +121,6 @@ namespace Dia
 				}
 				else
 				{
-					// Other is uninitialized
 					auto* impl = new Internal::PythonObjectImpl();
 					impl->pyObject = nullptr;
 					mImpl = impl;
@@ -117,15 +135,15 @@ namespace Dia
 
 			auto* impl = static_cast<Internal::PythonObjectImpl*>(mImpl);
 			if (!impl->pyObject) return true;
+			if (!IsInitialized()) return true;
 
-			//Use pybind11's is_none() method to check if object is Python's None
+			py::gil_scoped_acquire acquire;
 			try
 			{
 				return impl->pyObject->is_none();
 			}
 			catch (...)
 			{
-				// If is_none() throws, treat as None
 				return true;
 			}
 		}
@@ -136,8 +154,9 @@ namespace Dia
 
 			auto* impl = static_cast<Internal::PythonObjectImpl*>(mImpl);
 			if (!impl->pyObject) return false;
+			if (!IsInitialized()) return false;
 
-			// Valid means not None
+			py::gil_scoped_acquire acquire;
 			try
 			{
 				return !impl->pyObject->is_none();
@@ -151,21 +170,18 @@ namespace Dia
 		bool PythonObject::IsInt() const
 		{
 			if (!mImpl || IsNone()) return false;
+			if (!IsInitialized()) return false;
 
+			py::gil_scoped_acquire acquire;
 			try
 			{
 				auto* impl = static_cast<Internal::PythonObjectImpl*>(mImpl);
 				if (!impl->pyObject) return false;
 
-				// Python bool is a subclass of int. We must explicitly exclude bools.
-				// Use PyBool_Check and PyLong_Check from Python C API
 				PyObject* ptr = impl->pyObject->ptr();
 				if (!ptr) return false;
 
-				// Check if it's a bool first (bools are ints in Python)
 				if (PyBool_Check(ptr)) return false;
-
-				// Check if it's an int
 				return PyLong_Check(ptr);
 			}
 			catch (...)
@@ -177,7 +193,9 @@ namespace Dia
 		bool PythonObject::IsFloat() const
 		{
 			if (!mImpl || IsNone()) return false;
+			if (!IsInitialized()) return false;
 
+			py::gil_scoped_acquire acquire;
 			try
 			{
 				auto* impl = static_cast<Internal::PythonObjectImpl*>(mImpl);
@@ -193,7 +211,9 @@ namespace Dia
 		bool PythonObject::IsBool() const
 		{
 			if (!mImpl || IsNone()) return false;
+			if (!IsInitialized()) return false;
 
+			py::gil_scoped_acquire acquire;
 			try
 			{
 				auto* impl = static_cast<Internal::PythonObjectImpl*>(mImpl);
@@ -209,7 +229,9 @@ namespace Dia
 		bool PythonObject::IsString() const
 		{
 			if (!mImpl || IsNone()) return false;
+			if (!IsInitialized()) return false;
 
+			py::gil_scoped_acquire acquire;
 			try
 			{
 				auto* impl = static_cast<Internal::PythonObjectImpl*>(mImpl);
