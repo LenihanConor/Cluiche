@@ -118,6 +118,9 @@ namespace CluicheEditor
 				DIA_LOG_ERROR("Chat", "DiaChatPlugin: Python initialization failed — chat disabled");
 				if (mMetricPythonInitErrors) mMetricPythonInitErrors->Inc();
 				mPluginHealth.SetPythonReady(false);
+				if (mBridge) mBridge->OnChatError(
+					"{\"error_type\":\"python_unavailable\","
+					"\"message\":\"Python failed to initialize. Chat is disabled.\"}");
 				RegisterStubHandlers();
 				return;
 			}
@@ -146,6 +149,9 @@ namespace CluicheEditor
 		if (rc != 0)
 		{
 			DIA_LOG_ERROR("Chat", "DiaChatPlugin: ExecuteScript(dia_chat.py) failed rc=%d", rc);
+			if (mBridge) mBridge->OnChatError(
+				"{\"error_type\":\"python_unavailable\","
+				"\"message\":\"Chat script failed to load. Check editor logs.\"}");
 			RegisterStubHandlers();
 			return;
 		}
@@ -190,7 +196,12 @@ namespace CluicheEditor
 
 		rc = Dia::Python::ExecuteString(initCall);
 		if (rc != 0)
+		{
 			DIA_LOG_WARNING("Chat", "DiaChatPlugin: dia_chat.initialize() failed rc=%d", rc);
+			if (mBridge) mBridge->OnChatError(
+				"{\"error_type\":\"python_unavailable\","
+				"\"message\":\"Chat orchestrator failed to initialize. Check editor logs.\"}");
+		}
 
 		// ------------------------------------------------------------------
 		// 5. Probe the default backend (Ollama) and push status to UI.
@@ -452,8 +463,9 @@ namespace CluicheEditor
 		std::string textCopy  = text;
 		std::string modeCopy  = contextMode;
 		std::atomic<bool>* inFlight = &mSendInFlight;
+		ChatPanelBridge*   bridge   = mBridge;
 
-		mSendThread = std::thread([textCopy, modeCopy, inFlight]()
+		mSendThread = std::thread([textCopy, modeCopy, inFlight, bridge]()
 		{
 			// Register a thread-local log buffer so DIA_LOG_* calls on this thread
 			// are captured by the drain thread and visible in the editor console.
@@ -464,6 +476,9 @@ namespace CluicheEditor
 			if (!Dia::Python::IsInitialized())
 			{
 				DIA_LOG_WARNING("Chat", "DiaChatPlugin: send thread — Python not initialized, aborting");
+				if (bridge) bridge->OnChatError(
+					"{\"error_type\":\"python_unavailable\","
+					"\"message\":\"Python is not available. Chat is disabled.\"}");
 				Dia::Observation::Log::Logger::Instance().UnregisterThreadBuffer();
 				inFlight->store(false);
 				return;
@@ -488,6 +503,15 @@ namespace CluicheEditor
 
 			// ExecuteStringOnThread acquires the GIL before calling into Python.
 			int rc = Dia::Python::ExecuteStringOnThread(cmd);
+			if (rc != 0)
+			{
+				DIA_LOG_ERROR("Chat", "DiaChatPlugin: send thread Python error rc=%d", rc);
+				// bridge is captured by value — safe to call from the background thread;
+				// ChatPanelBridge::OnChatError enqueues the event and DoUpdate flushes it.
+				if (bridge) bridge->OnChatError(
+					"{\"error_type\":\"send_failed\","
+					"\"message\":\"Message failed to send. Check editor logs.\",\"retry\":true}");
+			}
 			DIA_LOG_INFO("Chat", "DiaChatPlugin: send thread done rc=%d", rc);
 
 			Dia::Observation::Log::Logger::Instance().UnregisterThreadBuffer();

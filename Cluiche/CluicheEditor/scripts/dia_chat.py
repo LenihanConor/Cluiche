@@ -221,12 +221,11 @@ class ToolDispatcher:
         self._notify_bridge = notify_bridge
 
     def _push(self, topic, payload):
-        """Push an event to the UI bridge; silently swallows failures."""
         if self._notify_bridge is not None:
             try:
                 self._notify_bridge(topic, payload)
-            except Exception:
-                pass
+            except Exception as exc:
+                _LOG.error("dia_chat: _push(%s) failed: %s", topic, exc)
 
     def dispatch(self, name, params):
         try:
@@ -420,12 +419,11 @@ class ChatOrchestrator:
     # ------------------------------------------------------------------
 
     def _push(self, topic, payload):
-        """Push an event to the UI bridge; silently swallows failures."""
         if self._notify_bridge is not None:
             try:
                 self._notify_bridge(topic, payload)
-            except Exception:
-                pass
+            except Exception as exc:
+                _LOG.error("dia_chat: _push(%s) failed: %s", topic, exc)
 
     # ------------------------------------------------------------------
     # Configuration
@@ -819,7 +817,8 @@ class ChatOrchestrator:
 # Module-level singleton and DiaPython-callable bindings
 # ---------------------------------------------------------------------------
 
-_orchestrator = None  # type: ChatOrchestrator | None
+_orchestrator = None   # type: ChatOrchestrator | None
+_notify_bridge = None  # module-level copy set by initialize() for pre-init error paths
 
 
 def initialize(token_callback, manifest_getter, execute_action, confirm_callback,
@@ -847,7 +846,8 @@ def initialize(token_callback, manifest_getter, execute_action, confirm_callback
         Path to the open project directory.  Used to derive the JSONL history
         path for conversation persistence (DCP-008).
     """
-    global _orchestrator
+    global _orchestrator, _notify_bridge
+    _notify_bridge = notify_bridge
     _orchestrator = ChatOrchestrator(
         token_callback=token_callback,
         manifest_getter=manifest_getter,
@@ -873,6 +873,14 @@ def send_message(text, context_mode="full_context", extra_files=None):
     """
     if _orchestrator is None:
         _LOG.error("dia_chat: send_message called before initialize()")
+        if _notify_bridge is not None:
+            try:
+                _notify_bridge('chat.error', {
+                    'error_type': 'python_unavailable',
+                    'message': 'Chat not initialized — please reload the editor.',
+                })
+            except Exception:
+                pass
         return
     _orchestrator.send_message(text, context_mode=context_mode, extra_files=extra_files)
 
@@ -900,6 +908,12 @@ def set_backend(backend_name, model):
             )
     except Exception as exc:
         _LOG.error("dia_chat: set_backend failed: %s", exc)
+        if _orchestrator is not None:
+            _orchestrator._push('chat.backend_status', {
+                'status': 'error',
+                'error_type': 'backend_init_failed',
+                'message': "Failed to initialise backend '{0}': {1}".format(backend_name, exc),
+            })
 
 
 def set_context_mode(mode):
