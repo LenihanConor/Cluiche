@@ -2,6 +2,7 @@
 
 #include <DiaEditor/Plugin/IEditorPlugin.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaObservation/Health/HealthReporterBase.h>
 
 #include <atomic>
 #include <string>
@@ -14,11 +15,20 @@ namespace Dia
 		class WebUIBridge;
 		class EditorActionQueue;
 	}
+	namespace Observation { namespace Metric { class Counter; } }
 }
 
 namespace CluicheEditor
 {
 	class ChatPanelBridge;
+
+	class DiaChatPluginHealth : public Dia::Observation::Health::HealthReporterBase
+	{
+	public:
+		static const Dia::Core::StringCRC kName;
+		Dia::Core::StringCRC GetReporterName() const override { return kName; }
+		void SetPythonReady(bool ok);
+	};
 
 	class DiaChatPlugin : public Dia::Editor::IEditorPlugin
 	{
@@ -43,12 +53,16 @@ namespace CluicheEditor
 		void RegisterStubHandlers();
 		void DispatchSendMessage(const std::string& text, const std::string& contextMode);
 
-		ChatPanelBridge*              mBridge        = nullptr;
-		Dia::Editor::WebUIBridge*     mWebBridge     = nullptr;
-		Dia::Editor::EditorActionQueue* mActionQueue = nullptr;
+		ChatPanelBridge*                            mBridge        = nullptr;
+		Dia::Editor::WebUIBridge*                   mWebBridge     = nullptr;
+		Dia::Editor::EditorActionQueue*             mActionQueue   = nullptr;
 
-		// Background thread for the current LLM stream (at most one at a time).
-		std::thread                   mSendThread;
-		std::atomic<bool>             mSendInFlight  { false };
+		std::thread                                 mSendThread;
+		std::atomic<bool>                           mSendInFlight  { false };
+
+		DiaChatPluginHealth                         mPluginHealth;
+		Dia::Observation::Metric::Counter*          mMetricPythonInitErrors      = nullptr;
+		Dia::Observation::Metric::Counter*          mMetricMessagesDispatched    = nullptr;
+		Dia::Observation::Metric::Counter*          mMetricActionQueueNullErrors = nullptr;
 	};
 }

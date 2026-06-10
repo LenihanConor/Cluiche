@@ -14,13 +14,31 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Metric/Counter.h>
+#include <DiaObservation/Health/HealthRegistry.h>
 
 #include <string>
 
 const Dia::Core::StringCRC CluicheEditor::DiaChatPlugin::kPluginId("DiaChatPlugin");
+const Dia::Core::StringCRC CluicheEditor::DiaChatPluginHealth::kName("DiaChatPlugin.plugin");
 
 namespace CluicheEditor
 {
+	// ---------------------------------------------------------------------------
+	// DiaChatPluginHealth
+	// ---------------------------------------------------------------------------
+
+	void DiaChatPluginHealth::SetPythonReady(bool ok)
+	{
+		if (ok)
+			SetOK();
+		else
+			SetFailing(Dia::Core::StringCRC("python_not_ready"));
+	}
+
 	// ---------------------------------------------------------------------------
 	// JSON helpers
 	// ---------------------------------------------------------------------------
@@ -48,16 +66,27 @@ namespace CluicheEditor
 	// ---------------------------------------------------------------------------
 
 	DiaChatPlugin::DiaChatPlugin()
-	{}
+	{
+		auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
+		mMetricPythonInitErrors      = reg.RegisterCounter(Dia::Core::StringCRC("dia.chat.python_init_errors"));
+		mMetricMessagesDispatched    = reg.RegisterCounter(Dia::Core::StringCRC("dia.chat.messages_dispatched"));
+		mMetricActionQueueNullErrors = reg.RegisterCounter(Dia::Core::StringCRC("dia.chat.action_queue_null_errors"));
+
+		Dia::Observation::Health::HealthRegistry::Instance().Register(&mPluginHealth);
+	}
 
 	DiaChatPlugin::~DiaChatPlugin()
 	{
 		if (mSendThread.joinable())
 			mSendThread.join();
+
+		Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mPluginHealth);
 	}
 
 	void DiaChatPlugin::OnLoad(const Dia::Editor::EditorPluginContext& context)
 	{
+		DIA_PROFILE_SCOPE("DiaChatPlugin.OnLoad", Dia::Observation::Profile::Category::kDiaApplicationFlow);
+		DIA_TRACE_ZONE("DiaChatPlugin.OnLoad", Dia::Observation::Trace::Category::kDiaApplicationFlow);
 		DIA_LOG_INFO("Chat", "DiaChatPlugin: OnLoad");
 
 		mWebBridge = context.mBridge;
@@ -69,6 +98,8 @@ namespace CluicheEditor
 			if (queueSvc != nullptr)
 				mActionQueue = queueSvc->GetQueue();
 		}
+		if (mActionQueue == nullptr)
+			DIA_LOG_WARNING("Chat", "DiaChatPlugin: EditorActionQueue not found — tool dispatch disabled");
 
 		if (mBridge == nullptr)
 			mBridge = new ChatPanelBridge(mWebBridge);
@@ -84,9 +115,12 @@ namespace CluicheEditor
 			if (!ok)
 			{
 				DIA_LOG_ERROR("Chat", "DiaChatPlugin: Python initialization failed — chat disabled");
+				if (mMetricPythonInitErrors) mMetricPythonInitErrors->Inc();
+				mPluginHealth.SetPythonReady(false);
 				RegisterStubHandlers();
 				return;
 			}
+			DIA_LOG_INFO("Chat", "DiaChatPlugin: Python initialized by DiaChatPlugin");
 		}
 		else
 		{
@@ -95,7 +129,9 @@ namespace CluicheEditor
 			Dia::Python::ExecuteString(
 				"import sys; "
 				"('scripts/' not in sys.path) and sys.path.append('scripts/')");
+			DIA_LOG_INFO("Chat", "DiaChatPlugin: Python already initialized — sys.path patched");
 		}
+		mPluginHealth.SetPythonReady(true);
 
 		// ------------------------------------------------------------------
 		// 2. Register the dia_chat C++ module (callbacks Python can call).
@@ -158,16 +194,16 @@ namespace CluicheEditor
 		// ------------------------------------------------------------------
 		// 5. Probe the default backend (Ollama) and push status to UI.
 		// ------------------------------------------------------------------
-		Dia::Python::ExecuteString(
+		rc = Dia::Python::ExecuteString(
 			"import dia_chat; dia_chat.set_backend('ollama', 'llama3.2')");
+		if (rc != 0)
+			DIA_LOG_WARNING("Chat", "DiaChatPlugin: set_backend(ollama) probe failed rc=%d", rc);
 
 		// ------------------------------------------------------------------
 		// 6. Register WebUIBridge event handlers.
 		// ------------------------------------------------------------------
 		if (mWebBridge != nullptr)
 		{
-			ChatPanelBridge* bridge = mBridge;
-
 			mWebBridge->RegisterEventHandler(
 				Dia::Core::StringCRC("chat.send_message"),
 				[this](const Json::Value& data)
@@ -175,13 +211,14 @@ namespace CluicheEditor
 					DIA_LOG_INFO("Chat", "chat.send_message received");
 					std::string text = data.get("text", "").asString();
 					std::string mode = data.get("context_mode", "full_context").asString();
-						DispatchSendMessage(text, mode);
+					DispatchSendMessage(text, mode);
 				});
 
 			mWebBridge->RegisterEventHandler(
 				Dia::Core::StringCRC("chat.set_backend"),
 				[](const Json::Value& data)
 				{
+					DIA_LOG_INFO("Chat", "chat.set_backend received");
 					std::string backend = data.get("backend", "ollama").asString();
 					std::string model   = data.get("model", "llama3.2").asString();
 					char cmd[256];
@@ -214,6 +251,7 @@ namespace CluicheEditor
 				Dia::Core::StringCRC("chat.clear_history"),
 				[](const Json::Value& /*data*/)
 				{
+					DIA_LOG_INFO("Chat", "chat.clear_history received");
 					Dia::Python::ExecuteString("import dia_chat; dia_chat.clear_history()");
 				});
 
@@ -221,6 +259,7 @@ namespace CluicheEditor
 				Dia::Core::StringCRC("chat.confirm_response"),
 				[](const Json::Value& data)
 				{
+					DIA_LOG_INFO("Chat", "chat.confirm_response received");
 					std::string callId    = data.get("call_id", "").asString();
 					bool        confirmed = data.get("confirmed", false).asBool();
 					char cmd[256];
@@ -244,9 +283,11 @@ namespace CluicheEditor
 			DIA_LOG_ERROR("Chat", "DiaChatPlugin: failed to create dia_chat_bridge module");
 			return;
 		}
+		DIA_LOG_INFO("Chat", "DiaChatPlugin: dia_chat_bridge module ready");
 
 		ChatPanelBridge* bridge = mBridge;
 		Dia::Editor::EditorActionQueue* queue = mActionQueue;
+		Dia::Observation::Metric::Counter* actionQueueNullErrors = mMetricActionQueueNullErrors;
 
 		// token_callback(text: str, done: bool)
 		Dia::Python::AddFunction(mod, "token_callback",
@@ -272,10 +313,12 @@ namespace CluicheEditor
 
 		// execute_action(name: str, params_json: str) -> str (JSON result)
 		Dia::Python::AddFunction(mod, "execute_action",
-			[queue](const Dia::Python::PythonArgs& args) -> Dia::Python::PythonObject
+			[queue, actionQueueNullErrors](const Dia::Python::PythonArgs& args) -> Dia::Python::PythonObject
 			{
 				if (queue == nullptr || args.GetCount() < 2)
 				{
+					DIA_LOG_WARNING("Chat", "execute_action: no action queue — dispatch skipped");
+					if (actionQueueNullErrors) actionQueueNullErrors->Inc();
 					Json::Value err;
 					err["success"] = false;
 					err["reason"]  = "no_queue";
@@ -401,6 +444,7 @@ namespace CluicheEditor
 			mSendThread.join();
 
 		mSendInFlight.store(true);
+		if (mMetricMessagesDispatched) mMetricMessagesDispatched->Inc();
 
 		// Capture by value — the lambda must not reference plugin members that
 		// could be destroyed before the thread finishes.
@@ -410,8 +454,11 @@ namespace CluicheEditor
 
 		mSendThread = std::thread([textCopy, modeCopy, inFlight]()
 		{
+			DIA_LOG_INFO("Chat", "DiaChatPlugin: send thread starting");
+
 			if (!Dia::Python::IsInitialized())
 			{
+				DIA_LOG_WARNING("Chat", "DiaChatPlugin: send thread — Python not initialized, aborting");
 				inFlight->store(false);
 				return;
 			}
@@ -419,7 +466,9 @@ namespace CluicheEditor
 			// Serialize text as a JSON string so arbitrary user input (quotes, newlines)
 			// is safely embedded in the Python call.
 			Json::Value textVal = textCopy;
-			std::string textJson = SerializeJson(textVal);  // e.g. "\"hello\""
+			Json::StreamWriterBuilder b;
+			b["indentation"] = "";
+			std::string textJson = Json::writeString(b, textVal);  // e.g. "\"hello\""
 
 			char cmd[4096];
 			snprintf(cmd, sizeof(cmd),
@@ -428,7 +477,8 @@ namespace CluicheEditor
 				textJson.c_str(), modeCopy.c_str());
 
 			// ExecuteStringOnThread acquires the GIL before calling into Python.
-			Dia::Python::ExecuteStringOnThread(cmd);
+			int rc = Dia::Python::ExecuteStringOnThread(cmd);
+			DIA_LOG_INFO("Chat", "DiaChatPlugin: send thread done rc=%d", rc);
 			inFlight->store(false);
 		});
 	}
