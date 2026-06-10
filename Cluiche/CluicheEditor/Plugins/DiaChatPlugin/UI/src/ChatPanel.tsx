@@ -22,10 +22,16 @@ type ToolCallInfo = {
 
 type ChatMessage = {
     id: string;
-    role: 'user' | 'assistant';
+    role: 'user' | 'assistant' | 'system';
     content: string;
     toolCalls: ToolCallInfo[];
     timestamp: number;
+};
+
+type ErrorBannerState = {
+    type: string;
+    message: string;
+    retry?: boolean;
 };
 
 type PendingConfirm = {
@@ -182,6 +188,25 @@ function MessageBubble({
     msg: ChatMessage;
     onToolSelect: (id: string) => void;
 }) {
+    if (msg.role === 'system') {
+        return (
+            <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                marginBottom: 8,
+            }}>
+                <span style={{
+                    color: C.textMuted,
+                    fontSize: 11,
+                    fontStyle: 'italic',
+                    textAlign: 'center',
+                }}>
+                    {msg.content}
+                </span>
+            </div>
+        );
+    }
+
     const isUser = msg.role === 'user';
     return (
         <div style={{
@@ -437,6 +462,62 @@ function DetailPanel({
 }
 
 // ---------------------------------------------------------------------------
+// Error banner
+// ---------------------------------------------------------------------------
+
+function ErrorBanner({ banner, onRetry, onDismiss }: {
+    banner: ErrorBannerState;
+    onRetry: () => void;
+    onDismiss: () => void;
+}) {
+    // destructive_cancel is shown as a system message in the conversation, not a banner
+    if (banner.type === 'destructive_cancel') return null;
+    return (
+        <div style={{
+            background: '#4b1515',
+            color: '#f48771',
+            padding: '8px 12px',
+            fontSize: 12,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            flexShrink: 0,
+        }}>
+            <span style={{ flex: 1 }}>{banner.message}</span>
+            {banner.retry && (
+                <button
+                    onClick={onRetry}
+                    style={{
+                        background: '#264f78',
+                        color: '#d4d4d4',
+                        border: 'none',
+                        padding: '2px 8px',
+                        cursor: 'pointer',
+                        fontSize: 12,
+                        borderRadius: 3,
+                    }}
+                >
+                    Retry
+                </button>
+            )}
+            <button
+                onClick={onDismiss}
+                style={{
+                    background: 'none',
+                    color: '#888',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: 14,
+                    padding: '0 2px',
+                }}
+            >
+                ×
+            </button>
+        </div>
+    );
+}
+
+// ---------------------------------------------------------------------------
 // Empty state
 // ---------------------------------------------------------------------------
 
@@ -500,9 +581,11 @@ export function ChatPanel() {
     const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | null>(null);
     const [contextMode, setContextMode] = useState<ContextMode>('full_context');
     const [inputFocused, setInputFocused] = useState(false);
+    const [errorBanner, setErrorBanner] = useState<ErrorBannerState | null>(null);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const streamingTextRef = useRef<string>('');
+    const lastMessageRef = useRef<string>('');
 
     // Auto-scroll on new messages / streaming
     useEffect(() => {
@@ -605,23 +688,40 @@ export function ChatPanel() {
         {
             topic: 'chat.error',
             handler: (rawData: unknown) => {
-                const data = rawData as { message: string };
-                const errMsg: ChatMessage = {
-                    id: Date.now().toString(),
-                    role: 'assistant',
-                    content: `[Error: ${data.message}]`,
-                    toolCalls: [],
-                    timestamp: Date.now(),
-                };
-                setMessages(prev => [...prev, errMsg]);
+                const data = rawData as { error_type?: string; message: string; retry?: boolean };
                 setIsStreaming(false);
+                if (data.error_type === 'destructive_cancel') {
+                    // Show inline as a system message in the conversation
+                    setMessages(prev => [...prev, {
+                        id: Date.now().toString(),
+                        role: 'system' as const,
+                        content: data.message,
+                        toolCalls: [],
+                        timestamp: Date.now(),
+                    }]);
+                } else if (data.error_type) {
+                    setErrorBanner({ type: data.error_type, message: data.message, retry: data.retry === true });
+                } else {
+                    // Legacy path: no error_type — show as assistant error message
+                    setMessages(prev => [...prev, {
+                        id: Date.now().toString(),
+                        role: 'assistant' as const,
+                        content: `[Error: ${data.message}]`,
+                        toolCalls: [],
+                        timestamp: Date.now(),
+                    }]);
+                }
             },
         },
         {
             topic: 'chat.backend_status',
             handler: (rawData: unknown) => {
-                const data = rawData as { backend: string; model: string; available: boolean };
-                setBackendStatus({ backend: data.backend, model: data.model, available: data.available });
+                const data = rawData as { backend?: string; model?: string; available?: boolean; status?: string; error_type?: string; message?: string };
+                if (data.status === 'error' && data.error_type && data.message) {
+                    setErrorBanner({ type: data.error_type, message: data.message });
+                } else if (data.backend !== undefined && data.model !== undefined && data.available !== undefined) {
+                    setBackendStatus({ backend: data.backend, model: data.model, available: data.available });
+                }
             },
         },
         {
@@ -637,8 +737,8 @@ export function ChatPanel() {
     // Handlers
     // ---------------------------------------------------------------------------
 
-    const handleSend = useCallback(() => {
-        const text = inputText.trim();
+    const handleSend = useCallback((overrideText?: string) => {
+        const text = (overrideText ?? inputText).trim();
         if (!text || isStreaming) return;
 
         const atFileRegex = /@(\S+\.md)/g;
@@ -648,6 +748,8 @@ export function ChatPanel() {
             extraFiles.push(match[1]);
         }
 
+        lastMessageRef.current = text;
+
         const userMsg: ChatMessage = {
             id: Date.now().toString(),
             role: 'user',
@@ -656,7 +758,7 @@ export function ChatPanel() {
             timestamp: Date.now(),
         };
         setMessages(prev => [...prev, userMsg]);
-        setInputText('');
+        if (!overrideText) setInputText('');
         setIsStreaming(true);
 
         sendEvent('chat.send_message', { text, context_mode: contextMode, extra_files: extraFiles });
@@ -782,6 +884,7 @@ export function ChatPanel() {
                         setStreamingText('');
                         setIsStreaming(false);
                         setPendingConfirm(null);
+                        setErrorBanner(null);
                         sendEvent('chat.clear_history', {});
                     }}
                     title="New chat"
@@ -877,6 +980,18 @@ export function ChatPanel() {
                     </button>
                 ))}
             </div>
+
+            {/* ── Error banner ─────────────────────────────────────────── */}
+            {errorBanner && (
+                <ErrorBanner
+                    banner={errorBanner}
+                    onRetry={() => {
+                        setErrorBanner(null);
+                        handleSend(lastMessageRef.current || undefined);
+                    }}
+                    onDismiss={() => setErrorBanner(null)}
+                />
+            )}
 
             {/* ── Body (messages + detail panel) ───────────────────────── */}
             <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
