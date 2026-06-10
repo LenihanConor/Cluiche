@@ -1,0 +1,15 @@
+**Spec:** @docs/specs/systems/cluicheeditor/diachatplugin.md
+**Status:** In Progress
+
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| 1 | C++ plugin scaffold — `DiaChatPlugin.h/cpp` (IEditorPlugin subclass, REGISTER_EDITOR_PLUGIN), `ChatPanelBridge.h/cpp` (streaming token queue, DoUpdate drain, WebUIBridge handler registrations), vcxproj entries | `dia run cluicheeditor` builds without error; plugin loads (log confirms OnLoad) | Pending | sonnet | |
+| 2 | Python `dia_chat.py` — `ChatOrchestrator`: message loop, single tool call round (max depth 8), streaming callback to C++, `ConversationHistory` | Run smoke_test.py; orchestrator module loads without error | Pending | sonnet | |
+| 3 | Python backends — `ILLMBackend` ABC, `OllamaBackend` (httpx streaming, model discovery), `ClaudeBackend` (anthropic SDK), `GeminiBackend` (google-generativeai SDK) | OllamaBackend.is_available() returns sensible result; unit-level class instantiation without import errors | Pending | sonnet | |
+| 4 | Python `ToolDispatcher` + `KnowledgeLoader` — `execute_action()` DiaPython binding, destructive flag detection, `editor_actions.md` auto-gen from manifest, token budget assembly | Dispatcher calls ExecuteAction via dia_editor Python module; KnowledgeLoader assembles system prompt within budget | Pending | sonnet | |
+| 5 | React `ChatPanel.tsx` — hybrid layout per mockup_c4_hybrid.html: message list, streaming token display, tool call cards (start/result/error), empty state, context window indicator | npm test passes; visual matches mockup | Pending | opus | |
+| 6 | React context controls — backend/model selector, context mode toggle (full/tools_only/custom), chip toggles, @file per-message injection, confirm/cancel dialog for destructive actions | npm test passes for context controls | Pending | sonnet | |
+| 7 | Knowledge context files — hand-authored `ai_context/engine_overview.md`, `editor_workflows.md`, `asset_style_guide.md`; stub `data_types.md`; authoring guide at `docs/reference/ai-guides/knowledge-authoring.md` | Files present; total word count within token budget guidelines | Pending | haiku | `data_types.md` auto-gen requires data-type-registry (not yet in DiaEditorAPI); hand-authored stub acceptable for Phase 1 |
+| 8 | Conversation persistence — `history.jsonl` read/write in `ChatOrchestrator`; per-project path `Cluiche/out/CluicheEditor/chat/<project-slug>/`; load on startup, clear on new conversation action | History file written after exchange; reloads on next startup | Pending | sonnet | |
+| 9 | Graceful degradation — all 7 panel states (Ollama down, no models, missing API key, DiaEditorAPI unavailable, tool timeout, mid-stream drop + retry, destructive cancel) | All error paths render expected banner/card in UI | Pending | sonnet | |
+| 10 | Integration — `editor.diaapp` manifest entry for DiaChatPlugin, smoke test assertions, vcxproj final audit via `dia docs precommit` | `dia run cluicheeditor` smoke passes; precommit clean | Pending | haiku | |

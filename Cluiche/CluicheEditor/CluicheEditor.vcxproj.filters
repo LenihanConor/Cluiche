@@ -39,6 +39,12 @@
     </ClCompile>
     <ClCompile Include="ApplicationFlow\Modules\ObservationModule.cpp">
     <ClCompile Include="ApplicationFlow\Modules\EditorActionModule.cpp">
+    <ClCompile Include="Plugins\DiaChatPlugin\DiaChatPlugin.cpp">
+    <ClCompile Include="Plugins\DiaChatPlugin\ChatPanelBridge.cpp">
+      <Filter>Plugins\DiaChatPlugin</Filter>
+    </ClCompile>
+      <Filter>Plugins\DiaChatPlugin</Filter>
+    </ClCompile>
       <Filter>ApplicationFlow</Filter>
     </ClCompile>
       <Filter>ApplicationFlow\Modules</Filter>
@@ -65,6 +71,12 @@
     </ClInclude>
     <ClInclude Include="ApplicationFlow\Modules\ObservationModule.h">
     <ClInclude Include="ApplicationFlow\Modules\EditorActionModule.h">
+    <ClInclude Include="Plugins\DiaChatPlugin\DiaChatPlugin.h">
+    <ClInclude Include="Plugins\DiaChatPlugin\ChatPanelBridge.h">
+      <Filter>Plugins\DiaChatPlugin</Filter>
+    </ClInclude>
+      <Filter>Plugins\DiaChatPlugin</Filter>
+    </ClInclude>
       <Filter>ApplicationFlow</Filter>
     </ClInclude>
       <Filter>ApplicationFlow\Modules</Filter>
