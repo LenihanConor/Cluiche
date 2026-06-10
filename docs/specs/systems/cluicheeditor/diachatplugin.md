@@ -118,9 +118,10 @@ Reads `ai_context/` files at plugin startup. Assembles a system prompt by concat
 
 Priority order (highest first):
 1. `editor_actions.md` — live tool definitions (always included; regenerated from DiaEditorAPI manifest at startup)
-2. `engine_overview.md` — platform and architecture summary
-3. `module_apis.md` — public API reference for Dia modules
-4. `coding_conventions.md` — naming, patterns, constraints
+2. `data_types.md` — asset and component schemas (always included; regenerated from DiaEditorAPI data type registry at startup)
+3. `engine_overview.md` — platform and architecture summary
+4. `editor_workflows.md` — common action sequences, typical task flows
+5. `asset_style_guide.md` — field/asset naming conventions, JSON shape conventions
 
 Token counting uses a simple word-based estimate (÷ 0.75) — sufficient for budget management; no tokeniser dependency.
 
@@ -165,14 +166,48 @@ Each line is one completed exchange: `{role, content, tool_calls[], timestamp}`.
 
 **Files** live at `Cluiche/Assets/CluicheEditor/ai_context/`:
 
-| File | Content | Target token size |
-|------|---------|-------------------|
-| `engine_overview.md` | Platform summary, application list, threading model, key patterns | ~600 tok |
-| `module_apis.md` | Public API reference for all Dia modules (header paths, key classes, common usage) | ~1 000 tok |
-| `editor_actions.md` | Auto-generated from DiaEditorAPI manifest at startup — not hand-authored | ~400 tok |
-| `coding_conventions.md` | Naming conventions, PD-001–PD-007 constraints, forbidden patterns | ~500 tok |
+| File | Content | Authored | Target token size |
+|------|---------|----------|-------------------|
+| `editor_actions.md` | Auto-generated from DiaEditorAPI action registry at startup | Auto-gen | ~400 tok |
+| `data_types.md` | Auto-generated from DiaEditorAPI data type registry at startup — asset descriptors, component field schemas, JSON payload shapes for all plugin-owned types | Auto-gen | ~600 tok |
+| `engine_overview.md` | Platform summary, application list, threading model, key patterns | Hand-authored | ~600 tok |
+| `editor_workflows.md` | Common action sequences and typical task flows (e.g. open project → load scene → place entity) | Hand-authored | ~400 tok |
+| `asset_style_guide.md` | Field/asset naming conventions, JSON shape conventions | Hand-authored | ~200 tok |
 
 **Authoring guide:** `docs/reference/ai-guides/knowledge-authoring.md` — defines format rules (dense, factual, no padding), update triggers (when module API changes, when new actions are registered), token budget per file, and validation checklist.
+
+### Destructive Action Confirmation
+
+Any action with `EditorActionDescriptor::destructive = true` requires explicit user confirmation before dispatch. The AI cannot proceed without it.
+
+Flow:
+```
+AI decides to call a destructive action
+  → ChatOrchestrator detects destructive = true in manifest
+  → pauses tool call dispatch
+  → pushes chat.confirm_required event to UI
+    { call_id, fn, params, description }
+
+User clicks Confirm or Cancel in panel
+  → chat.confirm_response { call_id, confirmed: bool }
+  → if confirmed: dispatch proceeds, result fed back to AI
+  → if cancelled: AI receives { error: "User cancelled action" }, reports to user
+```
+
+The confirmation card shows the action name, a plain-English description, and the resolved parameter values — not raw JSON.
+
+### Context Window Indicator
+
+When the assembled context (system prompt + history) exceeds 75% of the backend's context window, the panel displays a subtle warning: *"Context window near limit — early messages may be trimmed."* At 90%, older history entries are summarised automatically by a lightweight prompt before the next send. The indicator is visible but non-blocking — the user can continue chatting.
+
+### Empty State / First Run
+
+When no conversation history exists for the current project, the panel shows:
+
+> **Hello! Ask me anything about Dia.**
+> *Try: "What scenes are in this project?" or "Place a player entity at the origin."*
+
+The suggested prompts are static but chosen to exercise the two most common workflows (query + action). They disappear on first message.
 
 ### Graceful Degradation
 
@@ -183,6 +218,8 @@ Each line is one completed exchange: `{role, content, tool_calls[], timestamp}`.
 | API key missing (Claude/Gemini) | Warning: "ANTHROPIC_API_KEY / GOOGLE_API_KEY not set." |
 | DiaEditorAPI Phase 1 not loaded | Tools unavailable; chat works in knowledge-only mode |
 | Tool call timeout (>5s) | Inline error card in conversation; AI receives error result and reports to user |
+| Backend drops mid-stream | Partial reply shown with "[connection lost]" suffix; retry button re-sends the last user message |
+| Destructive action cancelled | Inline card: "Action cancelled by user"; AI acknowledges and continues conversation |
 
 ## Public API
 
@@ -199,11 +236,16 @@ class DiaChatPlugin : public Dia::Editor::IEditorPlugin;
 
 // WebUIBridge push events (C++ → JS)
 // "chat.token"           { text, done }
-// "chat.tool_start"      { call_id, fn, params }
-// "chat.tool_result"     { call_id, result, duration_ms }
-// "chat.tool_error"      { call_id, error }
-// "chat.error"           { message }
-// "chat.backend_status"  { backend, model, available }
+// "chat.tool_start"        { call_id, fn, params }
+// "chat.tool_result"       { call_id, result, duration_ms }
+// "chat.tool_error"        { call_id, error }
+// "chat.confirm_required"  { call_id, fn, params, description }
+// "chat.error"             { message }
+// "chat.backend_status"    { backend, model, available }
+// "chat.context_warning"   { used_tokens, budget_tokens, pct }
+
+// WebUIBridge handlers (JS → C++) — confirmation response
+// "chat.confirm_response"  { call_id, confirmed: bool }
 ```
 
 ## Phased Delivery
@@ -213,26 +255,24 @@ class DiaChatPlugin : public Dia::Editor::IEditorPlugin;
 2. `ChatPanelBridge` streaming token queue + DoUpdate drain
 3. `ChatOrchestrator` (`dia_chat.py`) — message loop, single tool call round
 4. `OllamaBackend` — OpenAI-compat streaming, model discovery
-5. `ToolDispatcher` — `DiaEditorAPI::ExecuteAction()` binding
+5. `ToolDispatcher` — `DiaEditorAPI::ExecuteAction()` binding + destructive confirmation gate
 6. `KnowledgeLoader` — system prompt assembly, token budget management
-7. React chat panel UI — hybrid layout per `mockup_c4_hybrid.html`
+7. React chat panel UI — hybrid layout per `mockup_c4_hybrid.html`; empty state; context window indicator
 8. Context controls — chips, @file injection, mode toggle
 9. `ClaudeBackend` + `GeminiBackend` adapters
 10. Knowledge context files (`ai_context/`) + authoring guide
 11. Conversation persistence (history.jsonl per project)
-12. Graceful degradation states
+12. Graceful degradation states (including mid-stream retry, destructive cancel)
 
 ### Phase 2 — Multi-Step Agentic Loop (future spec)
 - Tool call chaining (up to configurable `max_steps`)
-- Per-action destructive flag + user approval gate before destructive actions
 - Step log view in detail panel
-- Requires DiaEditorAPI `destructive` flag on `EditorActionDescriptor`
 
 ## Dependencies
 
 | Module | Role |
 |--------|------|
-| DiaEditorAPI | `ExecuteAction()` for tool dispatch; `GetManifest()` for tool definitions; requires Phase 1 |
+| DiaEditorAPI | `ExecuteAction()` for tool dispatch; `GetManifest()` for tool definitions; `GetDataTypeRegistry()` for `data_types.md` generation; requires Phase 1 + data-type-registry feature |
 | DiaEditor / IEditorPlugin | Plugin base class, `OnLoad` / `OnUnload`, WebUIBridge push |
 | DiaPython | Hosts `dia_chat.py`; provides `AddFunction()` binding for `execute_action` |
 | DiaUICEF / React | Chat panel UI rendered in CEF; receives streamed tokens via WebUIBridge push |
@@ -272,6 +312,7 @@ class DiaChatPlugin : public Dia::Editor::IEditorPlugin;
 | DCP-006 | Streaming tokens bridge via `ChatPanelBridge::DoUpdate()` on the main thread — no direct CEF call from Python thread | CEF JS calls must come from the browser process thread; bridging via the frame-drain queue is the established pattern in this codebase | Streaming | Accepted | Yes |
 | DCP-007 | Max tool call depth per message is 8 (configurable) | Guards against LLM tool-call loops without requiring multi-step planning logic; 8 is sufficient for any realistic single-turn action sequence | Safety | Accepted | Yes |
 | DCP-008 | Conversation history persisted as JSONL under `Cluiche/out/CluicheEditor/chat/` per PD-009 | Keeps history out of the repo; parallel to other generated output; per-project subdirectory gives clean separation | Persistence | Accepted | Yes |
+| DCP-009 | Destructive actions require explicit user confirmation in Phase 1 — not deferred to Phase 2 | The AI can call `scene_editor.remove_entity` and similar actions in Phase 1; a silent destructive dispatch is unacceptable even before multi-step chaining; the confirmation card is a small UI addition that prevents data loss | Safety | Accepted | Yes |
 
 ## Open Design Questions
 
@@ -281,6 +322,12 @@ class DiaChatPlugin : public Dia::Editor::IEditorPlugin;
 
 3. **Tool definition filtering** — DiaEditorAPI `GetManifest()` returns all registered actions. Some may be irrelevant to a chat context (e.g. internal pipeline plumbing). Should DiaChatPlugin filter by category, or expose everything and let the LLM ignore what it doesn't need?
 
+4. **Project name resolution** — `project.open_path` requires a full file path. When a user says "open cluichetest" the AI has a name, not a path. Requires a `project.list` action (returns all discovered `.diagame` files with names and full paths) so the AI can resolve the name at runtime before calling `open_path`. This is the correct pattern — same as `asset_catalogue.get_available` for assets. Static path conventions in a knowledge file are fragile and unverifiable. `project.list` must be added to DiaEditorAPI before conversational project switching is reliable.
+
+5. **AI memory** — The AI has no write-back mechanism; it cannot persist corrections, user preferences, or project conventions across sessions. A writable `user_notes.md` (appended via a `chat.save_note` action, stored alongside `history.jsonl`) would close this gap. Deferred to Phase 2.
+
 ## Status
 
-`Approved`
+**Status:** Done
+
+**Plan:** @docs/specs/systems/cluicheeditor/diachatplugin.plan.md
