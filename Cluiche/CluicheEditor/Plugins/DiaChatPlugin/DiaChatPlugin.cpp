@@ -14,6 +14,7 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Log/Logger.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaObservation/Profile/DiaProfile.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
@@ -454,11 +455,16 @@ namespace CluicheEditor
 
 		mSendThread = std::thread([textCopy, modeCopy, inFlight]()
 		{
+			// Register a thread-local log buffer so DIA_LOG_* calls on this thread
+			// are captured by the drain thread and visible in the editor console.
+			Dia::Observation::Log::Logger::Instance().RegisterThreadBuffer();
+
 			DIA_LOG_INFO("Chat", "DiaChatPlugin: send thread starting");
 
 			if (!Dia::Python::IsInitialized())
 			{
 				DIA_LOG_WARNING("Chat", "DiaChatPlugin: send thread — Python not initialized, aborting");
+				Dia::Observation::Log::Logger::Instance().UnregisterThreadBuffer();
 				inFlight->store(false);
 				return;
 			}
@@ -470,15 +476,21 @@ namespace CluicheEditor
 			b["indentation"] = "";
 			std::string textJson = Json::writeString(b, textVal);  // e.g. "\"hello\""
 
+			// textJson is a JSON string literal e.g. "\"hello\"" — assign it as a Python
+			// string expression, then pass directly to send_message without json.loads.
+			// (json.loads("hello") fails; "hello" as a Python expression evaluates correctly.)
 			char cmd[4096];
 			snprintf(cmd, sizeof(cmd),
-				"import dia_chat, json; "
-				"dia_chat.send_message(json.loads(%s), context_mode='%s')",
+				"import dia_chat\n"
+				"_dia_chat_msg = %s\n"
+				"dia_chat.send_message(_dia_chat_msg, context_mode='%s')",
 				textJson.c_str(), modeCopy.c_str());
 
 			// ExecuteStringOnThread acquires the GIL before calling into Python.
 			int rc = Dia::Python::ExecuteStringOnThread(cmd);
 			DIA_LOG_INFO("Chat", "DiaChatPlugin: send thread done rc=%d", rc);
+
+			Dia::Observation::Log::Logger::Instance().UnregisterThreadBuffer();
 			inFlight->store(false);
 		});
 	}
