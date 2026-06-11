@@ -74,6 +74,19 @@ Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testin
 
 ---
 
+## DiaMesh3D End-to-End Gaps
+
+The runtime handler exists (DiaMesh3D ✅) but the full source→cook→load pipeline is incomplete. Four pieces must land in dependency order:
+
+| # | Item | Depends On | Notes |
+|---|------|-----------|-------|
+| 1 | **DiaAssetPipeline — glTF handler** | — | Python pipeline handler: reads `.gltf`/`.glb` (via `pygltflib` or `cgltf` subprocess), emits cooked `.mesh3d` flat binary alongside `.rig3d` if skinned. Needs `/spec-feature` under DiaAssetPipeline. |
+| 2 | **assets.rules.json — mesh3d type rule** | — | Add `tag_mesh3d_as_visual` rule (type `mesh3d` → tag `visual`) to `Cluiche/Assets/CluicheTest/assets.rules.json`. Independent of the pipeline handler — rules just classify already-registered assets. |
+| 3 | **Source `.gltf` file in `/Assets`** | Gap 1 (pipeline handler must exist to verify cook output) | Place a test `.gltf` (e.g. `box.gltf` or `suzanne.gltf`) in `Stages/<Stage>/World/Meshes/`. Confirms the pipeline handler can read it and produce a valid `.mesh3d`. |
+| 4 | **assets.catalogue.json — mesh3d entry** | Gap 1 + Gap 3 (need a `.gltf` source file and a working cook step before the catalogue entry is meaningful) | Add entry with `type: mesh3d`, `source_path` pointing at the `.gltf`, and `id: mesh3d.<name>`. Register it under the appropriate stage's `references`. |
+
+---
+
 ## Loose Ends (non-spec items)
 
 | Item | Notes |
