@@ -3,7 +3,7 @@
 ## Parent System
 @docs/specs/systems/dia/diamesh3d.md
 
-**Status:** `Approved`
+**Status:** `Done`
 
 ---
 
