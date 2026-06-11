@@ -34,6 +34,8 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | DiaScene3D | [diascene3d.md](specs/systems/dia/diascene3d.md) ✅ | 2026-06-08 | All 9 tasks complete. 59 tests (35 unit + 24 boundary/stress/golden/invariant). RGBA moved to DiaCore as prerequisite. |
 | diacamera3d | [spec](specs/) | 2026-06-08 | Marked done by `dia docs spec-done` |
 | app-editor-actions | [spec](specs/) | 2026-06-08 | Marked done by `dia docs spec-done` |
+| diachatplugin | [spec](specs/) | 2026-06-10 | Marked done by `dia docs spec-done` |
+| diamesh3d | [spec](specs/) | 2026-06-10 | Marked done by `dia docs spec-done` |
 
 ---
 

@@ -10,6 +10,7 @@ dependent_modules:
   - dia.maths
   - dia.geometry3d
   - dia.assetruntime
+  - dia.observation
 
 public_api:
   entry_points:

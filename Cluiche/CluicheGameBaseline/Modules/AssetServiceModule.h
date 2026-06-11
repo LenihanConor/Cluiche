@@ -14,7 +14,9 @@
 #include <DiaStreams/ServiceStreamWriter.h>
 #include <DiaAssetRuntime/Handlers/TextureHandler.h>
 #include <DiaAssetRuntime/Handlers/JsonPassthroughHandler.h>
+#include <DiaMesh3D/Mesh3DAssetHandler.h>
 #include "Modules/UIModule.h"
+#include "Modules/JobSystemModule.h"
 #include "Types/AssetLoadStatus.h"
 
 namespace Dia { namespace Observation { namespace Metric {
@@ -92,9 +94,10 @@ private:
     Dia::AssetRuntime::AssetRuntime mRuntime;
     Dia::Core::StringCRC mCurrentLoadStageId;         // AssetRuntime stage id
     Dia::Core::StringCRC mCurrentAppFlowStage;         // last app-flow stage we reacted to
-    bool mTextureHandlerRegistered = false;
-    bool mUIHandlerRegistered      = false;
-    bool mJsonHandlerRegistered    = false;
+    bool mTextureHandlerRegistered  = false;
+    bool mUIHandlerRegistered       = false;
+    bool mJsonHandlerRegistered     = false;
+    bool mMesh3DHandlerRegistered   = false;
 
     Dia::Core::Containers::DynamicArrayC<PathAliasEntry, 16>  mStageAliases;
     Dia::Core::Containers::DynamicArrayC<StagePathEntry,  16> mStagePathMap;
@@ -120,7 +123,9 @@ private:
     Dia::ApplicationFlow::ServiceStreamWriter<AssetLoadStatus>                     mAssetLoadStatusService{this, "AssetLoadStatus"};
     AssetLoadStatus                                                                 mAssetLoadStatus;
     Dia::ApplicationFlow::ModuleRef<UIModule>                                      mUI{this};
+    Dia::ApplicationFlow::ModuleRef<JobSystemModule>                               mJobSystemRef{this};
     Dia::AssetRuntime::JsonPassthroughHandler                                      mJsonHandler;
+    Dia::Mesh3D::Mesh3DAssetHandler                                                mMesh3DHandler;
 
     // Metric primitives — owned by MetricRegistry, pointers nulled on DoStop.
     Dia::Observation::Metric::Gauge*     mMetricAssetsLoaded  = nullptr;

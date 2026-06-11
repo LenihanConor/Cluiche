@@ -1318,6 +1318,9 @@
     <ClCompile Include="DiaMesh3D\TestMesh3DBinaryReader.cpp">
       <Filter>DiaMesh3D</Filter>
     </ClCompile>
+    <ClCompile Include="DiaMesh3D\TestMesh3DAssetHandler.cpp">
+      <Filter>DiaMesh3D</Filter>
+    </ClCompile>
       <Filter>DiaApplicationFlowEditor</Filter>
     </ClCompile>
       <Filter>DiaSceneEditor</Filter>

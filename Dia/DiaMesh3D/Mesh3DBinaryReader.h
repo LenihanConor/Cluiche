@@ -22,9 +22,12 @@ struct ReadResult
     Dia::Geometry3D::AABB bounds;
 };
 
-// Reads a .mesh3d file from disk into result. The file path must be a
-// null-terminated UTF-8 string. All validation is performed before any
-// data is written to result.
+// Reads a .mesh3d file directly into a pre-allocated ReadResult.
+// Avoids ~4MB stack allocation by writing into caller-owned memory.
+void ReadMesh3DFile(const char* filePath, ReadResult* outResult);
+
+// Convenience overload — allocates ReadResult on the stack (only safe
+// when calling from a thread with sufficient stack size).
 ReadResult ReadMesh3DFile(const char* filePath);
 
 } }

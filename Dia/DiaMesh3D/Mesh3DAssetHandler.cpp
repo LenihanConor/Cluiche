@@ -2,6 +2,12 @@
 
 #include <DiaMesh3D/Mesh3DBinaryReader.h>
 #include <DiaCore/Core/Assert.h>
+#include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Profile/ProfileCategory.h>
+#include <DiaObservation/Trace/TraceCategory.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
 
 #include <cstring>
 
@@ -24,7 +30,12 @@ struct Mesh3DAssetHandler::PendingResult
 //-----------------------------------------------------------------------------
 
 Mesh3DAssetHandler::Mesh3DAssetHandler()
-{}
+{
+    Dia::Observation::Metric::MetricRegistry::Instance().RegisterGauge(
+        Dia::Core::StringCRC("dia.mesh3d.loaded_count"));
+    Dia::Observation::Metric::MetricRegistry::Instance().RegisterCounter(
+        Dia::Core::StringCRC("dia.mesh3d.failed_count"));
+}
 
 Mesh3DAssetHandler::~Mesh3DAssetHandler()
 {
@@ -123,9 +134,10 @@ void Mesh3DAssetHandler::Load(const Dia::Core::StringCRC& assetId,
 
     result->job = mJobSystem->Submit([result, pathStr]()
     {
-        result->readResult = new ReadResult(
-            ReadMesh3DFile(pathStr.c_str())
-        );
+        DIA_TRACE_ZONE("mesh3d.load", Dia::Observation::Trace::Category::kDiaAssetRuntime);
+
+        result->readResult = new ReadResult();
+        ReadMesh3DFile(pathStr.c_str(), result->readResult);
 
         if (result->readResult->status == ReadResult::Status::OK)
         {
@@ -181,6 +193,8 @@ void Mesh3DAssetHandler::Unload(const Dia::Core::StringCRC& assetId)
 
 void Mesh3DAssetHandler::Tick()
 {
+    DIA_PROFILE_SCOPE("mesh3d.tick", Dia::Observation::Profile::Category::kDiaAssetRuntime);
+
     // Lock-swap: grab all pending work without holding the mutex during processing.
     std::vector<PendingResult*> toProcess;
     {
@@ -197,6 +211,17 @@ void Mesh3DAssetHandler::Tick()
             r->job = Dia::Core::JobHandle();
         }
 
+        // Guard against Unload() having removed the asset while load was in-flight.
+        {
+            std::shared_lock<std::shared_mutex> lock(mMeshMutex);
+            if (mMeshMap.find(r->assetId.Value()) == mMeshMap.end())
+            {
+                delete r->readResult;
+                delete r;
+                continue;
+            }
+        }
+
         if (r->success && r->readResult != nullptr)
         {
             r->asset->Populate(
@@ -206,11 +231,23 @@ void Mesh3DAssetHandler::Tick()
                 r->readResult->bounds
             );
             r->callback->OnLoadComplete(r->assetId);
+
+            auto* gauge = Dia::Observation::Metric::MetricRegistry::Instance().FindGauge(
+                Dia::Core::StringCRC("dia.mesh3d.loaded_count"));
+            if (gauge)
+                gauge->Set(static_cast<double>(GetLoadedCount()));
         }
         else
         {
-            r->asset->MarkFailed(r->failReason[0] != '\0' ? r->failReason : "mesh load failed");
-            r->callback->OnLoadFailed(r->assetId, r->failReason[0] != '\0' ? r->failReason : "mesh load failed");
+            const char* reason = r->failReason[0] != '\0' ? r->failReason : "mesh load failed";
+            DIA_LOG_ERROR("DiaMesh3D", "Mesh3DAssetHandler: load failed for asset — %s", reason);
+            r->asset->MarkFailed(reason);
+            r->callback->OnLoadFailed(r->assetId, reason);
+
+            auto* counter = Dia::Observation::Metric::MetricRegistry::Instance().FindCounter(
+                Dia::Core::StringCRC("dia.mesh3d.failed_count"));
+            if (counter)
+                counter->Inc();
         }
 
         delete r->readResult;

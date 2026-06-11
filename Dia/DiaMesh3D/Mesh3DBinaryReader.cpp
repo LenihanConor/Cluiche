@@ -1,5 +1,6 @@
 #include <DiaMesh3D/Mesh3DBinaryReader.h>
 #include <DiaMaths/Vector/Vector3D.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -10,10 +11,8 @@ static const unsigned char kMagic[4] = { 'M', 'E', 'S', 'H' };
 static const unsigned char kVersion  = 1;
 static const unsigned int  kHeaderSize = 41;
 
-ReadResult ReadMesh3DFile(const char* filePath)
+void ReadMesh3DFile(const char* filePath, ReadResult* outResult)
 {
-    ReadResult result;
-
 #if defined(_MSC_VER)
     FILE* fp = nullptr;
     fopen_s(&fp, filePath, "rb");
@@ -23,34 +22,40 @@ ReadResult ReadMesh3DFile(const char* filePath)
 
     if (!fp)
     {
-        result.status = ReadResult::Status::ReadError;
-        return result;
+        DIA_LOG_ERROR("DiaMesh3D", "ReadMesh3DFile: failed to open '%s'", filePath);
+        outResult->status = ReadResult::Status::ReadError;
+        return;
     }
 
     // Read 41-byte header
     unsigned char buf[kHeaderSize];
     if (fread(buf, 1, kHeaderSize, fp) != kHeaderSize)
     {
+        DIA_LOG_ERROR("DiaMesh3D", "ReadMesh3DFile: incomplete header in '%s'", filePath);
         fclose(fp);
-        result.status = ReadResult::Status::ReadError;
-        return result;
+        outResult->status = ReadResult::Status::ReadError;
+        return;
     }
 
     // Validate magic bytes
     if (buf[0] != kMagic[0] || buf[1] != kMagic[1] ||
         buf[2] != kMagic[2] || buf[3] != kMagic[3])
     {
+        DIA_LOG_ERROR("DiaMesh3D", "ReadMesh3DFile: bad magic in '%s' (got 0x%02X%02X%02X%02X)",
+                      filePath, buf[0], buf[1], buf[2], buf[3]);
         fclose(fp);
-        result.status = ReadResult::Status::BadMagic;
-        return result;
+        outResult->status = ReadResult::Status::BadMagic;
+        return;
     }
 
     // Validate version
     if (buf[4] != kVersion)
     {
+        DIA_LOG_ERROR("DiaMesh3D", "ReadMesh3DFile: unsupported version %u in '%s'",
+                      static_cast<unsigned>(buf[4]), filePath);
         fclose(fp);
-        result.status = ReadResult::Status::BadVersion;
-        return result;
+        outResult->status = ReadResult::Status::BadVersion;
+        return;
     }
 
     // Read counts
@@ -76,20 +81,23 @@ ReadResult ReadMesh3DFile(const char* filePath)
         indexCount   > Mesh3DAsset::kMaxIndices   ||
         submeshCount > Mesh3DAsset::kMaxSubmeshes)
     {
+        DIA_LOG_ERROR("DiaMesh3D", "ReadMesh3DFile: count overflow in '%s' (v=%u i=%u s=%u)",
+                      filePath, vertexCount, indexCount, submeshCount);
         fclose(fp);
-        result.status = ReadResult::Status::CountOverflow;
-        return result;
+        outResult->status = ReadResult::Status::CountOverflow;
+        return;
     }
 
     // Read vertex data
     if (vertexCount > 0)
     {
         size_t bytesToRead = vertexCount * sizeof(Vertex3D);
-        if (fread(result.vertices, 1, bytesToRead, fp) != bytesToRead)
+        if (fread(outResult->vertices, 1, bytesToRead, fp) != bytesToRead)
         {
+            DIA_LOG_ERROR("DiaMesh3D", "ReadMesh3DFile: truncated vertex data in '%s'", filePath);
             fclose(fp);
-            result.status = ReadResult::Status::ReadError;
-            return result;
+            outResult->status = ReadResult::Status::ReadError;
+            return;
         }
     }
 
@@ -97,11 +105,12 @@ ReadResult ReadMesh3DFile(const char* filePath)
     if (indexCount > 0)
     {
         size_t bytesToRead = indexCount * sizeof(uint16_t);
-        if (fread(result.indices, 1, bytesToRead, fp) != bytesToRead)
+        if (fread(outResult->indices, 1, bytesToRead, fp) != bytesToRead)
         {
+            DIA_LOG_ERROR("DiaMesh3D", "ReadMesh3DFile: truncated index data in '%s'", filePath);
             fclose(fp);
-            result.status = ReadResult::Status::ReadError;
-            return result;
+            outResult->status = ReadResult::Status::ReadError;
+            return;
         }
     }
 
@@ -109,24 +118,30 @@ ReadResult ReadMesh3DFile(const char* filePath)
     if (submeshCount > 0)
     {
         size_t bytesToRead = submeshCount * sizeof(Submesh);
-        if (fread(result.submeshes, 1, bytesToRead, fp) != bytesToRead)
+        if (fread(outResult->submeshes, 1, bytesToRead, fp) != bytesToRead)
         {
+            DIA_LOG_ERROR("DiaMesh3D", "ReadMesh3DFile: truncated submesh data in '%s'", filePath);
             fclose(fp);
-            result.status = ReadResult::Status::ReadError;
-            return result;
+            outResult->status = ReadResult::Status::ReadError;
+            return;
         }
     }
 
     fclose(fp);
 
-    result.vertexCount  = vertexCount;
-    result.indexCount   = indexCount;
-    result.submeshCount = submeshCount;
-    result.bounds       = Dia::Geometry3D::AABB(
+    outResult->vertexCount  = vertexCount;
+    outResult->indexCount   = indexCount;
+    outResult->submeshCount = submeshCount;
+    outResult->bounds       = Dia::Geometry3D::AABB(
                               Dia::Maths::Vector3D(aabbMinX, aabbMinY, aabbMinZ),
                               Dia::Maths::Vector3D(aabbMaxX, aabbMaxY, aabbMaxZ));
-    result.status       = ReadResult::Status::OK;
+    outResult->status       = ReadResult::Status::OK;
+}
 
+ReadResult ReadMesh3DFile(const char* filePath)
+{
+    ReadResult result;
+    ReadMesh3DFile(filePath, &result);
     return result;
 }
 

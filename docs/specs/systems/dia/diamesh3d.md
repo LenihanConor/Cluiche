@@ -3,7 +3,7 @@
 ## Parent Application
 @docs/specs/applications/dia.md
 
-**Status:** `Approved`
+**Status:** `Done`
 
 ---
 
@@ -191,7 +191,7 @@ The `cgltf` library lives only in DiaAssetPipeline — DiaMesh3D has no glTF dep
 
 | Feature | Description | Spec |
 |---|---|---|
-| `mesh-asset-and-loader` | `Mesh3DAsset`, `Vertex3D`, `Submesh`, `Mesh3DAssetHandler`, cooked `.mesh3d` binary loader | [mesh-asset-and-loader.md](../../features/dia/diamesh3d/mesh-asset-and-loader.md) ⚠️ needs revision — currently specifies runtime glTF parse (RB-015); must be updated to reflect build-time cooking and skinning-attribute removal from `Vertex3D` |
+| `mesh-asset-and-loader` | `Mesh3DAsset`, `Vertex3D`, `Submesh`, `Mesh3DAssetHandler`, cooked `.mesh3d` binary loader | [mesh-asset-and-loader.md](../../features/dia/diamesh3d/mesh-asset-and-loader.md) ✅ Done |
 
 ---
 
@@ -217,6 +217,16 @@ The `cgltf` library lives only in DiaAssetPipeline — DiaMesh3D has no glTF dep
 2. **Skinning attributes** — ✅ Resolved. `Vertex3D` is pure geometry (52 bytes, no joint data). Skin binding data (per-vertex `uint32_t jointIndices` + `Vector4D jointWeights`) lives in DiaRig3D's `Rig3DAsset` as a parallel array index-matched to the mesh's vertex array. Skeleton hierarchy and skin binding are always authored together in the same glTF `skin` node and ship as one `Rig3DAsset` with a single asset ID (e.g. `"rig3d.dragon"`). The `mesh-asset-and-loader` feature spec must be revised to remove skinning attributes from `Vertex3D` before implementation starts.
 
 3. **`.mesh3d` asset type prefix** — ✅ Resolved. `"mesh3d."` is the registered type prefix for `Mesh3DAssetHandler`. Asset IDs follow the convention `"mesh3d.<name>"` (e.g. `"mesh3d.character_dragon"`, `"mesh3d.terrain_cliff"`). Consistent with the module name and `Dia::Mesh3D::` namespace; avoids ambiguity with any future `DiaMesh2D`.
+
+4. **Mesh-to-material binding** — ✅ Resolved. `Submesh.materialId` (`StringCRC`) is the binding point — set at cook time, resolved at render time. The mesh never holds shader handles or texture handles; it only claims a material by name. `DiaBgfx3D`'s `MaterialRegistry` resolves the name to GPU resources. This keeps DiaMesh3D free of any renderer dependency.
+
+5. **Material descriptor format** — ✅ Resolved. Materials start as JSON descriptors owned by DiaBgfx3D — no cook step, no pipeline handler, human-authored. A descriptor lists shader ID and texture asset IDs per sampler slot. DiaBgfx3D parses the JSON at load, kicks off async texture loads, and marks the material Ready when all dependencies land. A cooked binary format is a future optimisation if JSON parse becomes a bottleneck.
+
+6. **No DiaMaterials module** — ✅ Resolved. Material data (descriptor, resolved GPU handles, `MaterialRegistry`) lives entirely in DiaBgfx3D. No other system needs to read material data at runtime — only the renderer resolves `materialId` to GPU resources. The trigger to promote materials to their own module would be a second renderer backend or a non-rendering system needing to inspect material properties; neither applies now.
+
+7. **Thin surface properties** — ✅ Resolved. Non-rendering systems (audio, scene culling, decals) that need surface characteristics (transparency flag, surface type tag, decal acceptance) receive a thin property extracted from the material — not a reference to the material itself. These properties live on the entity component (e.g. `MeshRenderer`) or a dedicated `SurfaceProperties` component. They are promoted to a shared module only if two or more non-rendering systems share the same data. `DiaBgfx3D` populates them when it loads the JSON descriptor.
+
+8. **Load ordering** — ✅ Resolved. `MeshRenderer::Tick()` in DiaBgfx3D polls asset state each frame — mesh Ready, all submesh materials Ready, all material textures Ready — before submitting draw calls. No new coordination system. A `MeshRenderer` component has three states: `Pending` (waiting on any dep), `Ready` (all deps loaded), `Failed` (any dep failed).
 
 ---
 

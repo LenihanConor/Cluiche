@@ -1,5 +1,7 @@
 #include <DiaMesh3D/Mesh3DAsset.h>
 
+#include <cstring>
+
 namespace Dia { namespace Mesh3D {
 
 Mesh3DAsset::Mesh3DAsset(Dia::Core::StringCRC assetId)
@@ -16,12 +18,17 @@ Dia::Core::StringCRC Mesh3DAsset::GetAssetId() const
 
 Mesh3DAsset::State Mesh3DAsset::GetState() const
 {
-    return mState;
+    return mState.load(std::memory_order_acquire);
 }
 
 bool Mesh3DAsset::IsReady() const
 {
-    return mState == State::Ready;
+    return mState.load(std::memory_order_acquire) == State::Ready;
+}
+
+const char* Mesh3DAsset::GetFailReason() const
+{
+    return mFailReason;
 }
 
 const Dia::Core::Containers::DynamicArrayC<Vertex3D, Mesh3DAsset::kMaxVertices>& Mesh3DAsset::GetVertices() const
@@ -53,12 +60,17 @@ void Mesh3DAsset::Populate(const Vertex3D* vertices, uint32_t vertexCount,
     mIndices.Assign(indices, indexCount);
     mSubmeshes.Assign(submeshes, submeshCount);
     mBounds = bounds;
-    mState  = State::Ready;
+    mState.store(State::Ready, std::memory_order_release);
 }
 
-void Mesh3DAsset::MarkFailed(const char* /*reason*/)
+void Mesh3DAsset::MarkFailed(const char* reason)
 {
-    mState = State::Failed;
+    if (reason)
+    {
+        std::strncpy(mFailReason, reason, kMaxFailReasonLength - 1);
+        mFailReason[kMaxFailReasonLength - 1] = '\0';
+    }
+    mState.store(State::Failed, std::memory_order_release);
 }
 
 } }

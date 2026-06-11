@@ -7,6 +7,7 @@
 #include <DiaGeometry3D/Shapes/AABB.h>
 
 #include <stdint.h>
+#include <atomic>
 
 namespace Dia { namespace Mesh3D {
 
@@ -18,12 +19,14 @@ public:
     static constexpr uint32_t kMaxVertices  = 65535;
     static constexpr uint32_t kMaxIndices   = 196608;
     static constexpr uint32_t kMaxSubmeshes = 32;
+    static constexpr uint32_t kMaxFailReasonLength = 128;
 
     explicit Mesh3DAsset(Dia::Core::StringCRC assetId);
 
-    Dia::Core::StringCRC GetAssetId() const;
-    State                GetState()   const;
-    bool                 IsReady()    const;
+    Dia::Core::StringCRC GetAssetId()     const;
+    State                GetState()       const;
+    bool                 IsReady()        const;
+    const char*          GetFailReason()  const;
 
     const Dia::Core::Containers::DynamicArrayC<Vertex3D, kMaxVertices>&  GetVertices()  const;
     const Dia::Core::Containers::DynamicArrayC<uint16_t, kMaxIndices>&   GetIndices()   const;
@@ -38,13 +41,14 @@ public:
     void MarkFailed(const char* reason);
 
 private:
-    Dia::Core::StringCRC mAssetId;
-    State                mState;
+    Dia::Core::StringCRC    mAssetId;
+    std::atomic<State>      mState;
 
     Dia::Core::Containers::DynamicArrayC<Vertex3D, kMaxVertices>  mVertices;
     Dia::Core::Containers::DynamicArrayC<uint16_t, kMaxIndices>   mIndices;
     Dia::Core::Containers::DynamicArrayC<Submesh,  kMaxSubmeshes> mSubmeshes;
     Dia::Geometry3D::AABB                                         mBounds;
+    char                    mFailReason[kMaxFailReasonLength] = {};
 };
 
 } }

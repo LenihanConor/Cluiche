@@ -95,6 +95,10 @@ Dia::ApplicationFlow::StartResult AssetServiceModule::DoStart()
     Dia::Core::Containers::String512 diagamePath("%scluichetest.diagame", deployRoot);
     ParseDiagame(diagamePath.AsCStr());
 
+    // Wire Mesh3DAssetHandler to the JobSystem before any loads can be dispatched.
+    DIA_ASSERT(mJobSystemRef.Get() != nullptr, "Mesh3DAssetHandler requires JobSystemModule to be initialized first");
+    mMesh3DHandler.SetJobSystem(&mJobSystemRef->GetJobSystem());
+
     // Try to register handlers up front (requires KernelModule+UIModule).
     // Safe to retry later via EnsureHandlersRegistered if UI hasn't started.
     EnsureHandlersRegistered();
@@ -224,10 +228,10 @@ void AssetServiceModule::DoUpdate(float /*dt*/)
         }
     }
 
-    // 2. Pump main-thread texture upload completions.
-    // TextureHandler::Tick() drains decoded images -> GPU upload -> fires callbacks.
+    // 2. Pump main-thread asset handler completions.
     if (mTextureHandlerService.IsAvailable())
         mTextureHandlerService.Get().Tick();
+    mMesh3DHandler.Tick();
 
     // 3. Recompute terminal states for any kLoading stage.
     for (unsigned int i = 0; i < mStageStateCount; ++i)
@@ -392,7 +396,8 @@ Dia::ApplicationFlow::StopResult AssetServiceModule::DoStop()
     mAssetLoadStatus = AssetLoadStatus{};
     UnregisterStageAliases();
     mRuntime.Reset();
-    mJsonHandlerRegistered = false;
+    mJsonHandlerRegistered   = false;
+    mMesh3DHandlerRegistered = false;
 
     // Null metric pointers — MetricRegistry owns the objects.
     mMetricAssetsLoaded  = nullptr;
@@ -505,10 +510,17 @@ void AssetServiceModule::EnsureHandlersRegistered()
         justRegistered = true;
     }
 
-    if (justRegistered && mTextureHandlerRegistered && mUIHandlerRegistered)
+    if (!mMesh3DHandlerRegistered)
+    {
+        mRuntime.RegisterTypeHandler("mesh3d", &mMesh3DHandler);
+        mMesh3DHandlerRegistered = true;
+        justRegistered = true;
+    }
+
+    if (justRegistered && mTextureHandlerRegistered && mUIHandlerRegistered && mMesh3DHandlerRegistered)
     {
         DIA_LOG_INFO("AssetRuntime",
-            "AssetServiceModule: texture + ui + json type handlers registered");
+            "AssetServiceModule: texture + ui + json + mesh3d type handlers registered");
     }
 }
 

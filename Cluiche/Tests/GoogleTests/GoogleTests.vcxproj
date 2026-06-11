@@ -661,6 +661,7 @@
     <!-- DiaMesh3D -->
     <ClCompile Include="DiaMesh3D\TestMesh3DAsset.cpp" />
     <ClCompile Include="DiaMesh3D\TestMesh3DBinaryReader.cpp" />
+    <ClCompile Include="DiaMesh3D\TestMesh3DAssetHandler.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaLighting2D\DiaLighting2D.vcxproj">
