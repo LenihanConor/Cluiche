@@ -178,6 +178,9 @@
     <Filter Include="DiaBgfx">
       <UniqueIdentifier>{DBGFX001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaMesh3D">
+      <UniqueIdentifier>{DME3D001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -1307,6 +1310,13 @@
     </ClCompile>
     <ClCompile Include="DiaChatPlugin\TestChatPanelBridge.cpp">
       <Filter>DiaChatPlugin</Filter>
+    </ClCompile>
+    <!-- DiaMesh3D -->
+    <ClCompile Include="DiaMesh3D\TestMesh3DAsset.cpp">
+      <Filter>DiaMesh3D</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMesh3D\TestMesh3DBinaryReader.cpp">
+      <Filter>DiaMesh3D</Filter>
     </ClCompile>
       <Filter>DiaApplicationFlowEditor</Filter>
     </ClCompile>
