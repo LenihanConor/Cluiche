@@ -29,6 +29,29 @@ def _history_path(project_path):
     return os.path.join('Cluiche', 'out', 'CluicheEditor', 'chat', slug, 'history.jsonl')
 
 
+_SETTINGS_PATH = os.path.join('Cluiche', 'out', 'CluicheEditor', 'chat', 'settings.json')
+
+
+def _load_backend_settings():
+    """Return (backend_name, model) from persisted settings, or defaults."""
+    try:
+        with open(_SETTINGS_PATH, 'r', encoding='utf-8') as fh:
+            data = json.load(fh)
+            return data.get('backend', 'ollama'), data.get('model', 'qwen2.5-coder:14b')
+    except Exception:
+        return 'ollama', 'qwen2.5-coder:14b'
+
+
+def _save_backend_settings(backend_name, model):
+    """Persist the active backend and model to disk."""
+    try:
+        os.makedirs(os.path.dirname(_SETTINGS_PATH), exist_ok=True)
+        with open(_SETTINGS_PATH, 'w', encoding='utf-8') as fh:
+            json.dump({'backend': backend_name, 'model': model}, fh)
+    except Exception as exc:
+        _LOG.warning("dia_chat: _save_backend_settings failed: %s", exc)
+
+
 def _load_history(path):
     """
     Load messages from a JSONL file.  Returns [] if the file does not exist.
@@ -429,29 +452,27 @@ class ChatOrchestrator:
     # Configuration
     # ------------------------------------------------------------------
 
-    def set_backend(self, backend):
+    def set_backend(self, backend, backend_name_hint=""):
         """
         Set the active ILLMBackend implementation.
 
-        After switching, checks availability and pushes a
-        chat.backend_status error event to the UI if the backend is not
-        reachable or has no models installed.
+        After switching, checks availability and pushes a chat.backend_status
+        event to the UI (error or success with model list).
         """
         self._backend = backend
-        self._check_backend_availability(backend)
+        self._check_backend_availability(backend, backend_name_hint=backend_name_hint)
 
-    def _check_backend_availability(self, backend):
+    def _check_backend_availability(self, backend, backend_name_hint=""):
         """
-        Inspect *backend* and push chat.backend_status error events for
-        the three backend error states: ollama_down, no_models,
-        api_key_missing.
+        Inspect *backend* and push chat.backend_status events.
+        Pushes an error event for: ollama_down, no_models, api_key_missing.
+        Pushes a success event (with model list) when available.
         """
         if backend is None:
             return
 
-        # --- Ollama: check reachability first, then model list ---
-        backend_name = type(backend).__name__.lower()
-        is_ollama = 'ollama' in backend_name
+        class_name = type(backend).__name__.lower()
+        is_ollama = 'ollama' in class_name
 
         try:
             available = backend.is_available()
@@ -466,31 +487,40 @@ class ChatOrchestrator:
             })
             return
 
-        if available:
-            try:
-                models = backend.list_models()
-            except Exception:
-                models = []
-            if is_ollama and not models:
-                self._push('chat.backend_status', {
-                    'status': 'error',
-                    'error_type': 'no_models',
-                    'message': 'No models installed. Run: ollama pull llama3.2',
-                })
-                return
+        try:
+            models = backend.list_models() if available else []
+        except Exception:
+            models = []
 
-        # --- Cloud backends (non-ollama): check for API key ---
+        if is_ollama and available and not models:
+            self._push('chat.backend_status', {
+                'status': 'error',
+                'error_type': 'no_models',
+                'message': 'No models installed. Run: ollama pull llama3.2',
+            })
+            return
+
+        # --- Cloud backends: check for API key ---
         if not is_ollama:
-            api_key = getattr(backend, 'api_key', None)
-            # Also accept a truthy _api_key attribute for flexibility.
-            if api_key is None:
-                api_key = getattr(backend, '_api_key', None)
+            api_key = getattr(backend, 'api_key', None) or getattr(backend, '_api_key', None)
             if not api_key:
                 self._push('chat.backend_status', {
                     'status': 'error',
                     'error_type': 'api_key_missing',
                     'message': 'API key not set. Set ANTHROPIC_API_KEY / GOOGLE_API_KEY env var.',
                 })
+                return
+
+        # --- Success: push model list so UI can populate the dropdown ---
+        current_model = getattr(backend, 'model', '')
+        bname = backend_name_hint or class_name.replace('backend', '')
+        self._push('chat.backend_status', {
+            'status': 'ok',
+            'backend': bname,
+            'model': current_model,
+            'models': models,
+            'available': True,
+        })
 
     def set_system_prompt(self, text):
         """Set the system prompt (called by KnowledgeLoader in Task 4)."""
@@ -887,20 +917,20 @@ def send_message(text, context_mode="full_context", extra_files=None):
 
 def set_backend(backend_name, model):
     """
-    Select an LLM backend by name and model.
+    Select an LLM backend by name and model.  Persists the selection to disk.
 
     Instantiates the named backend via create_backend() and registers it on
-    the orchestrator.  Backend classes live in dia_chat_backends (Task 3).
-    After switching, the orchestrator checks availability and pushes error
-    events (ollama_down / no_models / api_key_missing) to the UI if needed.
+    the orchestrator.  Backend classes live in dia_chat_backends.
+    After switching, the orchestrator checks availability and pushes
+    chat.backend_status events (error or success with model list) to the UI.
     """
     _LOG.info("dia_chat: set_backend: backend=%s model=%s", backend_name, model)
     try:
         from dia_chat_backends import create_backend
         backend = create_backend(backend_name, model)
         if _orchestrator is not None:
-            # set_backend also calls _check_backend_availability internally.
-            _orchestrator.set_backend(backend)
+            _orchestrator.set_backend(backend, backend_name_hint=backend_name)
+            _save_backend_settings(backend_name, model)
         else:
             _LOG.warning(
                 "dia_chat: set_backend called before initialize(); "
@@ -914,6 +944,44 @@ def set_backend(backend_name, model):
                 'error_type': 'backend_init_failed',
                 'message': "Failed to initialise backend '{0}': {1}".format(backend_name, exc),
             })
+
+
+def startup_probe():
+    """
+    Load persisted backend/model and call set_backend().
+
+    Called by C++ at plugin startup instead of the hardcoded set_backend().
+    Falls back to ollama/qwen2.5-coder:14b if no settings file exists.
+    """
+    backend_name, model = _load_backend_settings()
+    _LOG.info("dia_chat: startup_probe: loaded backend=%s model=%s", backend_name, model)
+    set_backend(backend_name, model)
+
+
+def query_model_list(backend_name):
+    """
+    Query available models for the given backend and push the list to the UI.
+
+    Called by C++ when the user changes the backend selector so the model
+    dropdown can be refreshed without switching the active backend.
+    Pushes chat.backend_status { status: 'model_list', backend, models }.
+    """
+    try:
+        from dia_chat_backends import create_backend
+        backend = create_backend(backend_name)
+        models = backend.list_models()
+    except Exception as exc:
+        _LOG.warning("dia_chat: query_model_list(%s) failed: %s", backend_name, exc)
+        models = []
+    if _notify_bridge is not None:
+        try:
+            _notify_bridge('chat.backend_status', {
+                'status': 'model_list',
+                'backend': backend_name,
+                'models': models,
+            })
+        except Exception as exc:
+            _LOG.warning("dia_chat: query_model_list notify failed: %s", exc)
 
 
 def set_context_mode(mode):

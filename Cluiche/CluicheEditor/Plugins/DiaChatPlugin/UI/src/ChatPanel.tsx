@@ -600,6 +600,7 @@ export function ChatPanel() {
     const [isStreaming, setIsStreaming] = useState(false);
     const [inputText, setInputText] = useState('');
     const [backendStatus, setBackendStatus] = useState<BackendStatus>({ backend: 'ollama', model: 'qwen2.5-coder:14b', available: false });
+    const [modelList, setModelList] = useState<string[]>([]);
     const [detailOpen, setDetailOpen] = useState(true);
     const [selectedToolCallId, setSelectedToolCallId] = useState<string | null>(null);
     const [contextWarning, setContextWarning] = useState<ContextWarning | null>(null);
@@ -742,9 +743,15 @@ export function ChatPanel() {
         {
             topic: 'chat.backend_status',
             handler: (rawData: unknown) => {
-                const data = rawData as { backend?: string; model?: string; available?: boolean; status?: string; error_type?: string; message?: string };
+                const data = rawData as { backend?: string; model?: string; available?: boolean; status?: string; error_type?: string; message?: string; models?: string[] };
                 if (data.status === 'error' && data.error_type && data.message) {
                     setErrorBanner({ type: data.error_type, message: data.message });
+                } else if (data.status === 'ok') {
+                    setBackendStatus({ backend: data.backend ?? 'ollama', model: data.model ?? '', available: true });
+                    setModelList(data.models ?? []);
+                    setErrorBanner(null);
+                } else if (data.status === 'model_list') {
+                    setModelList(data.models ?? []);
                 } else if (data.backend !== undefined && data.model !== undefined && data.available !== undefined) {
                     setBackendStatus({ backend: data.backend, model: data.model, available: data.available });
                 }
@@ -864,7 +871,8 @@ export function ChatPanel() {
                     onChange={e => {
                         const b = e.target.value;
                         setBackendStatus(prev => ({ ...prev, backend: b }));
-                        sendEvent('chat.set_backend', { backend: b });
+                        setModelList([]);
+                        sendEvent('chat.query_model_list', { backend: b });
                     }}
                     style={{
                         background: C.backendSelectBg,
@@ -877,21 +885,37 @@ export function ChatPanel() {
                     }}
                 >
                     <option value="ollama">Ollama</option>
-                    <option value="anthropic">Anthropic</option>
-                    <option value="openai">OpenAI</option>
+                    <option value="claude">Claude</option>
+                    <option value="gemini">Gemini</option>
                 </select>
 
-                {/* Model badge */}
-                <span style={{
-                    background: C.modelBadgeBg,
-                    color: C.modelBadgeText,
-                    borderRadius: 3,
-                    padding: '1px 6px',
-                    fontSize: 10,
-                    fontWeight: 600,
-                }}>
-                    {backendStatus.model}
-                </span>
+                {/* Model dropdown */}
+                <select
+                    value={backendStatus.model}
+                    onChange={e => {
+                        const m = e.target.value;
+                        setBackendStatus(prev => ({ ...prev, model: m }));
+                        sendEvent('chat.set_backend', { backend: backendStatus.backend, model: m });
+                    }}
+                    disabled={modelList.length === 0}
+                    style={{
+                        background: C.modelBadgeBg,
+                        color: C.modelBadgeText,
+                        border: 'none',
+                        borderRadius: 3,
+                        padding: '1px 4px',
+                        fontSize: 10,
+                        fontWeight: 600,
+                        cursor: modelList.length > 0 ? 'pointer' : 'default',
+                        minWidth: 80,
+                        maxWidth: 160,
+                    }}
+                >
+                    {modelList.length > 0
+                        ? modelList.map(m => <option key={m} value={m}>{m}</option>)
+                        : <option value={backendStatus.model}>{backendStatus.model}</option>
+                    }
+                </select>
 
                 {/* Details toggle */}
                 <button

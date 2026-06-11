@@ -227,12 +227,12 @@ namespace CluicheEditor
 			"logging.getLogger('dia_chat_backends').setLevel(logging.DEBUG)\n");
 
 		// ------------------------------------------------------------------
-		// 5. Probe the default backend (Ollama) and push status to UI.
+		// 5. Load persisted backend/model (or default to Ollama) and probe.
 		// ------------------------------------------------------------------
 		rc = Dia::Python::ExecuteString(
-			"import dia_chat; dia_chat.set_backend('ollama', 'qwen2.5-coder:14b')");
+			"import dia_chat; dia_chat.startup_probe()");
 		if (rc != 0)
-			DIA_LOG_WARNING("Chat", "DiaChatPlugin: set_backend(ollama) probe failed rc=%d", rc);
+			DIA_LOG_WARNING("Chat", "DiaChatPlugin: startup_probe() failed rc=%d", rc);
 
 		// ------------------------------------------------------------------
 		// 6. Register WebUIBridge event handlers.
@@ -259,6 +259,17 @@ namespace CluicheEditor
 					char cmd[256];
 					snprintf(cmd, sizeof(cmd), "import dia_chat; dia_chat.set_backend('%s', '%s')",
 						backend.c_str(), model.c_str());
+					Dia::Python::ExecuteString(cmd);
+				});
+
+			mWebBridge->RegisterEventHandler(
+				Dia::Core::StringCRC("chat.query_model_list"),
+				[](const Json::Value& data)
+				{
+					std::string backend = data.get("backend", "ollama").asString();
+					char cmd[256];
+					snprintf(cmd, sizeof(cmd), "import dia_chat; dia_chat.query_model_list('%s')",
+						backend.c_str());
 					Dia::Python::ExecuteString(cmd);
 				});
 
