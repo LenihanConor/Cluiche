@@ -97,6 +97,21 @@ def _trim_history(messages, max_pairs=50):
     return messages
 
 
+def _context_window_history_cap(backend):
+    """
+    Return the max exchange pairs to include based on backend type.
+
+    Local models (Ollama) have limited context windows — sending 50 exchanges
+    pushes out the system prompt. Cloud backends can handle much more.
+    """
+    if backend is None:
+        return 8
+    class_name = type(backend).__name__.lower()
+    if 'ollama' in class_name:
+        return 8
+    return 40
+
+
 # ---------------------------------------------------------------------------
 # ChatEvent tagged union
 # ---------------------------------------------------------------------------
@@ -291,24 +306,46 @@ class KnowledgeLoader:
         Maximum estimated tokens for the assembled prompt (default 4096).
     """
 
+    _GROUNDING_PREAMBLE = (
+        "You are the Dia Engine assistant for CluicheEditor. "
+        "Answer ONLY using the context provided below. "
+        "If the answer is not contained in the context, say "
+        "\"I don't have that information in my current context.\" "
+        "Never infer, guess, or fabricate details beyond what is written. "
+        "When answering, name the section you are drawing from."
+    )
+
     # Files read from disk, in priority order (editor_actions.md handled separately).
+    # Each entry: (filename, title, keywords for relevance matching).
     _DISK_FILES = [
-        ("data_types.md",       "Data Types"),
-        ("engine_overview.md",  "Engine Overview"),
-        ("editor_workflows.md", "Editor Workflows"),
-        ("asset_style_guide.md","Asset Style Guide"),
+        ("data_types.md",       "Data Types",
+         {"entity", "component", "stringcrc", "manifest", "diastage", "diagame",
+          "serialize", "factory", "type", "template", "asset"}),
+        ("engine_overview.md",  "Engine Overview",
+         {"module", "layer", "processing", "phase", "namespace", "architecture",
+          "diacore", "diamaths", "diagraphics", "diaphysics", "build", "engine"}),
+        ("editor_workflows.md", "Editor Workflows",
+         {"plugin", "panel", "webui", "bridge", "action", "register", "build",
+          "run", "editor", "shortcut", "menu", "dock", "workflow"}),
+        ("asset_style_guide.md","Asset Style Guide",
+         {"name", "naming", "convention", "directory", "file", "sprite", "audio",
+          "animation", "yaml", "stage", "validate", "style", "asset", "path"}),
     ]
 
     def __init__(self, ai_context_dir, token_budget=4096):
         self._ai_context_dir = ai_context_dir
         self._token_budget = token_budget
 
-    def load(self, manifest=None):
+    def load(self, manifest=None, user_message=None):
         """
         Assemble and return the system prompt string.
 
         If manifest is provided, regenerate editor_actions.md content inline
         (DCP-005 — never read editor_actions.md from disk; always generate from manifest).
+
+        If user_message is provided, only include context files whose keywords
+        overlap with the message (relevance filtering). Falls back to all files
+        when no keywords match or user_message is None.
 
         Trims lower-priority files first if total exceeds token_budget.
         Returns the assembled prompt string.
@@ -323,8 +360,11 @@ class KnowledgeLoader:
             if actions_content:
                 sections.append(("Editor Actions", actions_content))
 
-        # --- Priorities 2-5: disk files ---
-        for filename, title in self._DISK_FILES:
+        # --- Determine which disk files are relevant to the user's query ---
+        relevant_files = self._select_relevant_files(user_message)
+
+        # --- Priorities 2-5: disk files (filtered by relevance) ---
+        for filename, title, _keywords in relevant_files:
             filepath = os.path.join(self._ai_context_dir, filename)
             try:
                 with open(filepath, "r", encoding="utf-8") as fh:
@@ -335,16 +375,38 @@ class KnowledgeLoader:
                 pass  # Missing file — skip silently
 
         # --- Assemble with budget enforcement ---
-        # Build formatted blocks; trim from the lowest priority (end of list) first.
+        # Preamble always included; trim context blocks from lowest priority first.
+        preamble_block = self._GROUNDING_PREAMBLE + "\n\n"
+
         blocks = ["## {0}\n{1}\n".format(title, content) for title, content in sections]
         while blocks:
-            candidate = "\n".join(blocks)
+            candidate = preamble_block + "\n".join(blocks)
             if self.estimate_tokens(candidate) <= self._token_budget:
                 return candidate
-            # Over budget — drop the lowest-priority block and retry.
             blocks.pop()
 
-        return ""
+        return preamble_block.strip()
+
+    def _select_relevant_files(self, user_message):
+        """
+        Return the subset of _DISK_FILES relevant to user_message.
+
+        Uses simple keyword overlap: tokenizes the message into lowercase words
+        and checks intersection with each file's keyword set. Files with any
+        overlap are included. If no files match (or user_message is None),
+        returns all files (fallback to full context).
+        """
+        if not user_message:
+            return self._DISK_FILES
+
+        msg_words = set(user_message.lower().split())
+        matched = []
+        for entry in self._DISK_FILES:
+            _filename, _title, keywords = entry
+            if msg_words & keywords:
+                matched.append(entry)
+
+        return matched if matched else self._DISK_FILES
 
     @staticmethod
     def _generate_actions_content(manifest):
@@ -422,6 +484,7 @@ class ChatOrchestrator:
 
         self._backend = None
         self._system_prompt = ""
+        self._knowledge_loader = None
         self._history = ConversationHistory()
         self._context_mode = "full_context"
 
@@ -522,9 +585,29 @@ class ChatOrchestrator:
             'available': True,
         })
 
-    def set_system_prompt(self, text):
-        """Set the system prompt (called by KnowledgeLoader in Task 4)."""
+    def set_system_prompt(self, text, loader=None):
+        """Set the system prompt and optionally retain the loader for per-message relevance filtering."""
         self._system_prompt = text
+        self._knowledge_loader = loader
+
+    def _resolve_system_prompt(self, user_message):
+        """
+        Return the system prompt for this message.
+
+        For local backends (Ollama): rebuild per-message with relevance filtering
+        so only context files matching the user's query are included.
+        For cloud backends: return the cached full prompt (they have large windows).
+        """
+        if not self._knowledge_loader:
+            return self._system_prompt
+
+        is_local = self._backend is not None and 'ollama' in type(self._backend).__name__.lower()
+        if not is_local:
+            return self._system_prompt
+
+        raw_manifest = self._manifest_getter() if self._manifest_getter else None
+        manifest = ChatOrchestrator._parse_manifest(raw_manifest)
+        return self._knowledge_loader.load(manifest=manifest, user_message=user_message)
 
     # ------------------------------------------------------------------
     # Public entry point
@@ -557,9 +640,14 @@ class ChatOrchestrator:
 
         # --- 1. Assemble messages ---
         messages = []
-        if self._system_prompt and context_mode != "tools_only":
-            messages.append({"role": "system", "content": self._system_prompt})
-        messages.extend(self._history.to_messages())
+        if context_mode != "tools_only":
+            system_prompt = self._resolve_system_prompt(text)
+            if system_prompt:
+                messages.append({"role": "system", "content": system_prompt})
+        history_cap = _context_window_history_cap(self._backend)
+        history_msgs = self._history.to_messages()
+        capped = history_msgs[-(history_cap * 2):] if len(history_msgs) > history_cap * 2 else history_msgs
+        messages.extend(capped)
         messages.append({"role": "user", "content": text})
 
         # --- 2. Fetch tools ---
@@ -912,7 +1000,7 @@ def initialize(token_callback, manifest_getter, execute_action, confirm_callback
         raw_manifest = manifest_getter() if manifest_getter else None
         manifest = ChatOrchestrator._parse_manifest(raw_manifest)
         prompt = loader.load(manifest=manifest)
-        _orchestrator.set_system_prompt(prompt)
+        _orchestrator.set_system_prompt(prompt, loader=loader)
     _LOG.info("dia_chat: initialized")
 
 

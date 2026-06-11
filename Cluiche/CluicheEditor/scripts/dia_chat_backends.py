@@ -150,6 +150,12 @@ class OllamaBackend(ILLMBackend):
             "model": self.model,
             "messages": messages,
             "stream": True,
+            "options": {
+                "temperature": 0.1,
+                "top_p": 0.9,
+                "repeat_penalty": 1.1,
+                "num_ctx": 8192,
+            },
         }
         if tools:
             payload["tools"] = tools
