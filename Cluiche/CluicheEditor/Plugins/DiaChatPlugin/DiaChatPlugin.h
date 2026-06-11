@@ -14,6 +14,7 @@ namespace Dia
 	{
 		class WebUIBridge;
 		class EditorActionQueue;
+		class EditorActionRegistry;
 	}
 	namespace Observation { namespace Metric { class Counter; } }
 }
@@ -56,6 +57,7 @@ namespace CluicheEditor
 		ChatPanelBridge*                            mBridge        = nullptr;
 		Dia::Editor::WebUIBridge*                   mWebBridge     = nullptr;
 		Dia::Editor::EditorActionQueue*             mActionQueue   = nullptr;
+		Dia::Editor::EditorActionRegistry*          mRegistry      = nullptr;
 
 		std::thread                                 mSendThread;
 		std::atomic<bool>                           mSendInFlight  { false };

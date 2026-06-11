@@ -92,15 +92,21 @@ namespace CluicheEditor
 
 		mWebBridge = context.mBridge;
 
-		// Grab the action queue from the service locator (registered by PluginLoaderModule).
+		// Grab the action queue and registry from the service locator.
 		if (context.mServices != nullptr)
 		{
 			auto* queueSvc = context.mServices->GetService<Dia::Editor::EditorActionQueueService>();
 			if (queueSvc != nullptr)
 				mActionQueue = queueSvc->GetQueue();
+
+			auto* regSvc = context.mServices->GetService<Dia::Editor::EditorActionRegistryService>();
+			if (regSvc != nullptr)
+				mRegistry = regSvc->GetRegistry();
 		}
 		if (mActionQueue == nullptr)
 			DIA_LOG_WARNING("Chat", "DiaChatPlugin: EditorActionQueue not found — tool dispatch disabled");
+		if (mRegistry == nullptr)
+			DIA_LOG_WARNING("Chat", "DiaChatPlugin: EditorActionRegistry not found — manifest_getter will return None");
 
 		if (mBridge == nullptr)
 			mBridge = new ChatPanelBridge(mWebBridge);
@@ -347,16 +353,51 @@ namespace CluicheEditor
 			},
 			"token_callback(text, done) -> None");
 
-		// manifest_getter() -> str (JSON)  — returns the DiaEditorAPI manifest as JSON string
+		// manifest_getter() -> str (JSON)  — serialises the live EditorActionRegistry manifest.
+		// Returns a JSON array of {name, description, category, params:[{name,type,required,description}]}.
+		// Returns None if the registry is not available (knowledge-only mode).
+		Dia::Editor::EditorActionRegistry* registry = mRegistry;
 		Dia::Python::AddFunction(mod, "manifest_getter",
-			[](const Dia::Python::PythonArgs& /*args*/) -> Dia::Python::PythonObject
+			[registry](const Dia::Python::PythonArgs& /*args*/) -> Dia::Python::PythonObject
 			{
-				// The dia_editor module already exists with all registered actions.
-				// Return None here — dia_chat.py handles the None case gracefully
-				// (knowledge-only mode). Full manifest integration is Phase 3.
-				return Dia::Python::PythonObject();  // None
+				if (registry == nullptr)
+					return Dia::Python::PythonObject();  // None — knowledge-only mode
+
+				const Dia::Editor::EditorActionManifest& manifest = registry->GetManifest();
+				const unsigned int count = manifest.GetCount();
+
+				Json::Value actions(Json::arrayValue);
+				for (unsigned int i = 0; i < count; ++i)
+				{
+					const Dia::Editor::EditorActionEntry& e = manifest.GetAt(i);
+					if (e.name.AsChar() == nullptr)
+						continue;
+
+					Json::Value action(Json::objectValue);
+					action["name"]        = e.name.AsChar();
+					action["description"] = e.description ? e.description : "";
+					action["category"]    = e.category    ? e.category    : "";
+
+					Json::Value params(Json::arrayValue);
+					for (unsigned int p = 0; p < e.params.params.Size(); ++p)
+					{
+						const Dia::Editor::EditorActionParam& param = e.params.params[p];
+						if (param.name == nullptr)
+							continue;
+						Json::Value pj(Json::objectValue);
+						pj["name"]        = param.name;
+						pj["type"]        = param.type        ? param.type        : "string";
+						pj["required"]    = param.required;
+						pj["description"] = param.description ? param.description : "";
+						params.append(pj);
+					}
+					action["params"] = params;
+					actions.append(action);
+				}
+
+				return Dia::Python::ToPython(SerializeJson(actions).c_str());
 			},
-			"manifest_getter() -> None (manifest integration deferred)");
+			"manifest_getter() -> str (JSON array of action descriptors)");
 
 		// execute_action(name: str, params_json: str) -> str (JSON result)
 		Dia::Python::AddFunction(mod, "execute_action",

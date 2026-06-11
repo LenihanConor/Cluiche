@@ -663,22 +663,43 @@ class ChatOrchestrator:
     # Tool handling helpers
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _parse_manifest(raw):
+        """
+        Normalise the value returned by manifest_getter() to a list of action dicts.
+
+        manifest_getter() returns:
+          - None        → registry not available
+          - str         → JSON-encoded array (new C++ implementation)
+          - list        → already a list of action dicts
+          - dict        → legacy shape with 'actions' or 'tools' key
+        """
+        if raw is None:
+            return None
+        if isinstance(raw, str):
+            try:
+                parsed = json.loads(raw)
+            except (ValueError, TypeError):
+                _LOG.warning("dia_chat: manifest_getter returned invalid JSON string")
+                return None
+            return parsed if isinstance(parsed, list) else None
+        if isinstance(raw, list):
+            return raw
+        if isinstance(raw, dict):
+            return raw.get("actions", raw.get("tools", []))
+        return None
+
     def _get_tools(self, context_mode):
         """Return the tools list appropriate for the given context_mode."""
         if context_mode == "tools_only" or context_mode == "full_context" or context_mode == "custom":
-            manifest = self._manifest_getter()
+            manifest = self._parse_manifest(self._manifest_getter())
             if manifest is None:
                 _LOG.warning(
                     "dia_chat: manifest_getter returned None — "
                     "DiaEditorAPI not loaded; continuing in knowledge-only mode"
                 )
                 return []
-            # The manifest dict is expected to carry an 'actions' or 'tools' key.
-            # Return whatever the backend expects; pass through as-is.
-            if isinstance(manifest, list):
-                return manifest
-            if isinstance(manifest, dict):
-                return manifest.get("actions", manifest.get("tools", []))
+            return manifest
         return []
 
     def _handle_tool_call(self, tool_call, depth, messages, tools):
@@ -706,7 +727,7 @@ class ChatOrchestrator:
         call_id = tool_call.call_id
 
         # --- Destructive action gate ---
-        manifest = self._manifest_getter()
+        manifest = self._parse_manifest(self._manifest_getter())
         if self._is_destructive(fn, manifest):
             description = self._get_action_description(fn, manifest)
             confirmed = self._await_confirmation(call_id, fn, params, description)
@@ -888,7 +909,8 @@ def initialize(token_callback, manifest_getter, execute_action, confirm_callback
     )
     if ai_context_dir:
         loader = KnowledgeLoader(ai_context_dir, token_budget=token_budget)
-        manifest = manifest_getter() if manifest_getter else None
+        raw_manifest = manifest_getter() if manifest_getter else None
+        manifest = ChatOrchestrator._parse_manifest(raw_manifest)
         prompt = loader.load(manifest=manifest)
         _orchestrator.set_system_prompt(prompt)
     _LOG.info("dia_chat: initialized")
