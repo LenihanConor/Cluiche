@@ -1752,3 +1752,74 @@ class TestDeployPathAndWriteErrors:
         assert any(e.phase == "transform" for e in result.errors)
         assert any("write" in e.message.lower() or "disk full" in e.message.lower()
                    for e in result.errors)
+
+
+# ---------------------------------------------------------------------------
+# Tests: real Khronos sample assets (not hand-built fixtures).
+#
+# These cook genuine exporter output checked into the CluicheTest stage,
+# guarding against regressions that synthetic fixtures can't catch. See the
+# stage's World/Meshes/ATTRIBUTION.md for sources and licenses.
+# ---------------------------------------------------------------------------
+
+_REAL_MESH_DIR = (
+    Path(__file__).resolve().parents[3]
+    / "Cluiche" / "Assets" / "CluicheTest" / "Stages"
+    / "Mesh3DTestTestStage" / "World" / "Meshes"
+)
+
+_avocado_present = (_REAL_MESH_DIR / "Avocado.gltf").exists()
+_box_gltf_present = (_REAL_MESH_DIR / "Box.gltf").exists()
+_box_glb_present = (_REAL_MESH_DIR / "Box.glb").exists()
+
+
+class TestRealKhronosAssets:
+    """Cook real Khronos sample models from the CluicheTest stage."""
+
+    def _ctx(self, tmp_path):
+        return BuildContext(
+            catalogue={}, config="Debug", platform="x64", app_name="CluicheTest",
+            deploy_root=tmp_path / "assets", asset_stages=[],
+            output=MagicMock(), source_root=_REAL_MESH_DIR,
+        )
+
+    @pytest.mark.skipif(not _avocado_present, reason="Avocado.gltf not present")
+    def test_avocado_validates_clean(self, tmp_path):
+        ctx = self._ctx(tmp_path)
+        record = _make_record("mesh3d.avocado", source_path="Avocado.gltf")
+        assert Mesh3DHandler().validate(record, ctx) == []
+
+    @pytest.mark.skipif(not _avocado_present, reason="Avocado.gltf not present")
+    def test_avocado_cooks_to_valid_mesh3d(self, tmp_path):
+        """Real PBR model (has TANGENT) → parseable .mesh3d with exact size."""
+        ctx = self._ctx(tmp_path)
+        record = _make_record("mesh3d.avocado", source_path="Avocado.gltf")
+        result = Mesh3DHandler().transform(record, ctx)
+        assert result.success is True, getattr(result, "errors", None)
+        data = Path(result.output_path).read_bytes()
+        assert data[:4] == b"MESH"
+        assert data[4] == 1
+        vc, ic, sc = struct.unpack_from("<3I", data, 5)
+        assert vc == 406 and ic == 2046 and sc == 1
+        assert len(data) == 41 + vc * 52 + ic * 2 + sc * 12
+
+    @pytest.mark.skipif(not _box_gltf_present, reason="Box.gltf not present")
+    def test_box_rejected_missing_tangent_and_uv(self, tmp_path):
+        """Real minimal Box (POSITION/NORMAL only) is correctly rejected."""
+        ctx = self._ctx(tmp_path)
+        record = _make_record("mesh3d.box", source_path="Box.gltf")
+        errors = Mesh3DHandler().validate(record, ctx)
+        msgs = " ".join(e.message for e in errors)
+        assert "TANGENT" in msgs
+        assert "TEXCOORD_0" in msgs
+
+    @pytest.mark.skipif(not _box_glb_present, reason="Box.glb not present")
+    def test_box_glb_buffer_resolves_from_binary_chunk(self, tmp_path):
+        """A genuine .glb (buffer in binary chunk, uri=null) resolves its bytes."""
+        import pygltflib
+        from dia_cli.commands.asset.handlers.mesh3d import _read_buffer_bytes
+        glb_path = _REAL_MESH_DIR / "Box.glb"
+        gltf = pygltflib.GLTF2().load(str(glb_path))
+        assert gltf.buffers[0].uri is None  # GLB stores data in the binary chunk
+        blob = _read_buffer_bytes(gltf, 0, glb_path)
+        assert len(blob) > 0
