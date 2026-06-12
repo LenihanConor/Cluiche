@@ -27,16 +27,17 @@ def deps(ctx, dep_id, force, quiet):
 @click.option("--submodules", is_flag=True, default=False, help="Run submodule init step only.")
 @click.option("--claude", is_flag=True, default=False, help="Run AI context wiring step only.")
 @click.option("--local-llm", "local_llm", is_flag=True, default=False, help="Install aider + local LLM tooling only.")
+@click.option("--python-packages", "python_packages", is_flag=True, default=False, help="Install Python packages from External/Python311/requirements.txt only.")
 @click.option("--force", is_flag=True, default=False, help="Re-run all steps even if sentinels present.")
 @click.option("--fail-fast", "fail_fast", is_flag=True, default=False, help="Abort on first step failure.")
 @click.option("--quiet", is_flag=True, default=False, help="Suppress progress output.")
 @click.pass_context
-def setup(ctx, toolchain, deps_only, dep_id, submodules, claude, local_llm, force, fail_fast, quiet):
+def setup(ctx, toolchain, deps_only, dep_id, submodules, claude, local_llm, python_packages, force, fail_fast, quiet):
     """Provision a fresh developer machine end-to-end."""
     from dia_cli.commands.env.setup_orchestrator import run
     exit_code = run(repo_root=None, toolchain=toolchain, deps_only=deps_only,
                     dep_id=dep_id, submodules=submodules, claude=claude, local_llm=local_llm,
-                    force=force, fail_fast=fail_fast, quiet=quiet)
+                    python_packages=python_packages, force=force, fail_fast=fail_fast, quiet=quiet)
     ctx.exit(exit_code)
 
 

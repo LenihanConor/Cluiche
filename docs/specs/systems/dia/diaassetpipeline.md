@@ -138,8 +138,9 @@ class AssetHandlerRegistry:
 | 2 | Built-in Type Handlers | S-M | Default handlers for all 8 taxonomy types — validate required fields, copy-as-is transform, deploy per scope/tag rules. Folder assets (`*.folder/`) deploy the entire directory tree recursively, preserving internal structure (SD-CAT-013). | @docs/specs/features/dia/diaassetpipeline/built-in-type-handlers.md | Approved |
 | 3 | Deploy Layout Engine | S | Resolve scope (`global`/`stage`) and category tag to output path; create directories; copy files | @docs/specs/features/dia/diaassetpipeline/deploy-layout-engine.md | Approved |
 | 4 | CLI Command Surface | S | `dia asset build`, `dia asset validate`, `dia asset deploy` with `--target`, `--config`, `--force` flags | @docs/specs/features/dia/diaassetpipeline/cli-command-surface.md | Approved |
+| 5 | glTF Mesh Handler | M | First real transform handler — cooks `.gltf`/`.glb` into the `.mesh3d` flat binary consumed by DiaMesh3D's `Mesh3DAssetHandler`. Static meshes only (skinned rejected); strict validation; `transform` writes the cooked binary to its deploy path, `deploy` is a no-op. Adds `pygltflib` via `dia env`. | @docs/specs/features/dia/diaassetpipeline/gltf-mesh-handler.md | Draft |
 
-**Build order:** 1 → 3 → 2 → 4 (registry and layout engine first; handlers depend on both; CLI wraps all)
+**Build order:** 1 → 3 → 2 → 4 (registry and layout engine first; handlers depend on both; CLI wraps all). Feature 5 builds on 1–4 (all Approved).
 
 ## Design Constraints
 
