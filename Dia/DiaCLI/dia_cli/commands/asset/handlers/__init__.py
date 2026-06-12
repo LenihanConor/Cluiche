@@ -4,6 +4,7 @@ from .config import ConfigHandler
 from .default import DefaultAssetHandler
 from .entity import EntityHandler
 from .folder import FolderHandler
+from .mesh3d import Mesh3DHandler
 from .sprite import SpriteHandler
 from .stage import StageHandler
 from .texture import TextureHandler
@@ -19,6 +20,7 @@ __all__ = [
     "StageHandler",
     "UIHandler",
     "FolderHandler",
+    "Mesh3DHandler",
     "register_built_in_handlers",
 ]
 
@@ -31,10 +33,11 @@ _BUILT_IN_HANDLERS = [
     StageHandler,
     UIHandler,
     FolderHandler,
+    Mesh3DHandler,
 ]
 
 
 def register_built_in_handlers(registry: AssetHandlerRegistry) -> None:
-    """Register all 8 built-in type handlers with the given registry."""
+    """Register all 9 built-in type handlers with the given registry."""
     for handler_cls in _BUILT_IN_HANDLERS:
         registry.register(handler_cls())
