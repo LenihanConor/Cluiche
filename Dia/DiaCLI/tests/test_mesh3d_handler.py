@@ -1058,3 +1058,167 @@ class TestRoundTrip:
         idx_start, idx_count, mat_id = struct.unpack_from("<3I", data, sub_offset)
         expected_id = zlib.crc32(b"Rock") & 0xFFFFFFFF
         assert mat_id == expected_id
+
+
+# ---------------------------------------------------------------------------
+# Tests: Mesh3DHandler.transform and .deploy (AC-3, AC-8)
+# ---------------------------------------------------------------------------
+
+class TestMesh3DHandlerTransformDeploy:
+    """Tests for transform (AC-3) and deploy (AC-8)."""
+
+    def _write_valid_gltf(self, tmp_path: Path, name: str = "box.gltf") -> Path:
+        data = _build_triangle_gltf()
+        return _write_gltf(tmp_path, name, data)
+
+    # ------------------------------------------------------------------
+    # transform — happy path
+    # ------------------------------------------------------------------
+
+    def test_transform_returns_success(self, tmp_path):
+        gltf_path = self._write_valid_gltf(tmp_path)
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.box", source_path=str(gltf_path))
+        result = Mesh3DHandler().transform(record, ctx)
+        assert result.success is True
+
+    def test_transform_output_path_set(self, tmp_path):
+        gltf_path = self._write_valid_gltf(tmp_path)
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.box", source_path=str(gltf_path))
+        result = Mesh3DHandler().transform(record, ctx)
+        assert result.output_path is not None and result.output_path != ""
+
+    def test_transform_file_exists_at_output_path(self, tmp_path):
+        gltf_path = self._write_valid_gltf(tmp_path)
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.box", source_path=str(gltf_path))
+        result = Mesh3DHandler().transform(record, ctx)
+        assert Path(result.output_path).exists(), \
+            f".mesh3d file not found at {result.output_path}"
+
+    def test_transform_output_has_correct_size(self, tmp_path):
+        """Minimum size > 41 bytes (header alone is 41; any data is on top of that)."""
+        gltf_path = self._write_valid_gltf(tmp_path)
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.box", source_path=str(gltf_path))
+        result = Mesh3DHandler().transform(record, ctx)
+        size = Path(result.output_path).stat().st_size
+        assert size > 41, f"Expected > 41 bytes, got {size}"
+
+    def test_transform_output_extension_is_mesh3d(self, tmp_path):
+        gltf_path = self._write_valid_gltf(tmp_path, "mymodel.gltf")
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.mymodel", source_path=str(gltf_path))
+        result = Mesh3DHandler().transform(record, ctx)
+        assert Path(result.output_path).suffix == ".mesh3d"
+
+    def test_transform_output_stem_matches_source(self, tmp_path):
+        """Output filename stem must equal the source file stem."""
+        gltf_path = self._write_valid_gltf(tmp_path, "teapot.gltf")
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.teapot", source_path=str(gltf_path))
+        result = Mesh3DHandler().transform(record, ctx)
+        assert Path(result.output_path).stem == "teapot"
+
+    def test_transform_relative_source_path(self, tmp_path):
+        """Relative source_path is resolved against context.source_root."""
+        gltf_path = self._write_valid_gltf(tmp_path, "relative.gltf")
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.relative", source_path="relative.gltf")
+        result = Mesh3DHandler().transform(record, ctx)
+        assert result.success is True
+        assert Path(result.output_path).exists()
+
+    def test_transform_creates_parent_dirs(self, tmp_path):
+        """Output parent directories are created if they don't exist."""
+        gltf_path = self._write_valid_gltf(tmp_path)
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.box", source_path=str(gltf_path))
+        result = Mesh3DHandler().transform(record, ctx)
+        assert Path(result.output_path).parent.is_dir()
+
+    def test_transform_output_path_matches_resolved_deploy_path(self, tmp_path):
+        """output_path from transform must equal _resolve_mesh3d_deploy_path."""
+        from dia_cli.commands.asset.handlers.mesh3d import _resolve_mesh3d_deploy_path
+        gltf_path = self._write_valid_gltf(tmp_path, "box.gltf")
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.box", source_path=str(gltf_path))
+        result = Mesh3DHandler().transform(record, ctx)
+        expected = str(_resolve_mesh3d_deploy_path(record, ctx))
+        assert result.output_path == expected
+
+    # ------------------------------------------------------------------
+    # transform — error paths
+    # ------------------------------------------------------------------
+
+    def test_transform_material_collision_returns_failure(self, tmp_path):
+        """If _extract_buffers raises ValueError (CRC collision), transform returns success=False."""
+        import dia_cli.commands.asset.handlers.mesh3d as mesh3d_mod
+
+        ctx = _make_context(tmp_path)
+
+        original = mesh3d_mod._material_id
+
+        def _always_collide(name: str) -> int:
+            return 0xDEADBEEF
+
+        mesh3d_mod._material_id = _always_collide
+        try:
+            # Two primitives with *distinct* material names — collision guard fires when
+            # _always_collide maps both distinct names to the same id.
+            pos_a = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
+            pos_b = [(2.0, 0.0, 0.0), (3.0, 0.0, 0.0), (2.0, 1.0, 0.0)]
+            two_prim_data = _build_two_prim_gltf_dict(pos_a, pos_b, "DistinctA", "DistinctB")
+            two_prim_path = _write_gltf(tmp_path, "collision.gltf", two_prim_data)
+            rec2 = _make_record("mesh3d.collision", source_path=str(two_prim_path))
+            result = Mesh3DHandler().transform(rec2, ctx)
+        finally:
+            mesh3d_mod._material_id = original
+
+        assert result.success is False
+        assert len(result.errors) >= 1
+        assert result.errors[0].phase == "transform"
+
+    def test_transform_missing_file_returns_failure(self, tmp_path):
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.missing", source_path=str(tmp_path / "nope.gltf"))
+        result = Mesh3DHandler().transform(record, ctx)
+        assert result.success is False
+
+    # ------------------------------------------------------------------
+    # deploy — AC-8
+    # ------------------------------------------------------------------
+
+    def test_deploy_returns_success(self, tmp_path):
+        gltf_path = self._write_valid_gltf(tmp_path)
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.box", source_path=str(gltf_path))
+        Mesh3DHandler().transform(record, ctx)  # produce the binary first
+        result = Mesh3DHandler().deploy(record, ctx)
+        assert result.success is True
+
+    def test_deploy_path_matches_transform_output(self, tmp_path):
+        gltf_path = self._write_valid_gltf(tmp_path, "box.gltf")
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.box", source_path=str(gltf_path))
+        transform_result = Mesh3DHandler().transform(record, ctx)
+        deploy_result = Mesh3DHandler().deploy(record, ctx)
+        assert deploy_result.deploy_path == transform_result.output_path
+
+    def test_deploy_does_not_write_new_files(self, tmp_path):
+        """deploy() must not create any files that weren't already there after transform()."""
+        gltf_path = self._write_valid_gltf(tmp_path, "box.gltf")
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.box", source_path=str(gltf_path))
+        Mesh3DHandler().transform(record, ctx)
+
+        # Snapshot the deploy_root after transform
+        deploy_root = ctx.deploy_root
+        files_before = set(deploy_root.rglob("*")) if deploy_root.exists() else set()
+
+        Mesh3DHandler().deploy(record, ctx)
+
+        files_after = set(deploy_root.rglob("*")) if deploy_root.exists() else set()
+        assert files_before == files_after, \
+            f"deploy() created unexpected files: {files_after - files_before}"

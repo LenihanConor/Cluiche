@@ -214,7 +214,11 @@ def _pack_mesh3d(
 
 
 def _resolve_mesh3d_deploy_path(record: dict, context: "BuildContext") -> Path:
-    ...  # implement in Task 4
+    """Resolve deploy path: same scope/tag directory as layout engine, but extension = .mesh3d."""
+    from dia_cli.commands.asset.layout import resolve_deploy_path
+    layout_path = resolve_deploy_path(record, context)
+    source_stem = Path(record.get("source_path", "")).stem
+    return layout_path.parent / f"{source_stem}.mesh3d"
 
 
 class Mesh3DHandler(AssetHandler):
@@ -376,7 +380,54 @@ class Mesh3DHandler(AssetHandler):
         return errors
 
     def transform(self, record: dict, context: "BuildContext") -> TransformResult:
-        ...  # implement in Task 3/4
+        """Cook .gltf/.glb to .mesh3d and write to deploy path. deploy() is a no-op."""
+        asset_id: str = record["asset_id"] if "asset_id" in record else record.get("id", "")
+
+        # 1. Resolve source path (relative to context.source_root if not absolute)
+        raw_path: str = record.get("source_path", "")
+        source_path = Path(raw_path)
+        if not source_path.is_absolute():
+            source_path = context.source_root / source_path
+
+        # 2. Load glTF
+        try:
+            import pygltflib
+            gltf = pygltflib.GLTF2().load(str(source_path))
+        except Exception as exc:
+            return TransformResult(
+                success=False,
+                errors=[AssetError(asset_id=asset_id, phase="transform",
+                                   message=f"Failed to load glTF: {exc}")],
+            )
+
+        # 3. Extract buffers — catch ValueError (material collision) → failure result
+        try:
+            vertices, indices, submeshes, aabb = _extract_buffers(gltf, source_path)
+        except ValueError as exc:
+            return TransformResult(
+                success=False,
+                errors=[AssetError(asset_id=asset_id, phase="transform", message=str(exc))],
+            )
+
+        # 4. Pack to binary
+        mesh_bytes = _pack_mesh3d(vertices, indices, submeshes, aabb)
+
+        # 5. Resolve deploy path and write
+        deploy_path = _resolve_mesh3d_deploy_path(record, context)
+        try:
+            deploy_path.parent.mkdir(parents=True, exist_ok=True)
+            deploy_path.write_bytes(mesh_bytes)
+        except OSError as exc:
+            return TransformResult(
+                success=False,
+                errors=[AssetError(asset_id=asset_id, phase="transform",
+                                   message=f"Failed to write .mesh3d: {exc}")],
+            )
+
+        # 6. Return success
+        return TransformResult(success=True, output_path=str(deploy_path))
 
     def deploy(self, record: dict, context: "BuildContext") -> DeployResult:
-        ...  # implement in Task 4
+        """No-op — transform already wrote the cooked binary to its deploy path."""
+        deploy_path = _resolve_mesh3d_deploy_path(record, context)
+        return DeployResult(success=True, deploy_path=str(deploy_path))
