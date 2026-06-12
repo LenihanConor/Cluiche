@@ -8,7 +8,7 @@ default_backend = "dx11"   # dx11 | dx12 | vulkan
 
 [bgfx_shaders]
 backends     = ["dx11", "dx12", "vulkan"]
-source_root  = "Dia/DiaBgfx/Shaders"
+source_roots = ["Dia/DiaBgfx/Shaders", "Dia/DiaBgfx3D/Shaders"]
 output_root  = "Cluiche/bin/$(AppName)/$(Configuration)/$(Platform)/assets/shaders"
 shaderc_path = "External/bgfx/tools/shaderc.exe"
 

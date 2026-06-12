@@ -75,20 +75,19 @@ def cook_bgfx_shaders(
             output.step_failed(system=system, stage=stage, step="bgfx-shaders", error=err)
         return 1
 
-    source_root = repo_root / cfg.source_root
-    if not source_root.exists():
-        msg = f"no .sc files under {cfg.source_root}; skipping"
-        logger.info(f"compile-code: {msg}")
-        if output:
-            output.log(system=system, level="info", message=msg, stage=stage)
-        return 0
+    # Build a list of (sc_path, source_root) pairs across all configured source roots.
+    sc_entries: list[tuple[Path, Path]] = []
+    for source_root_str in cfg.source_roots:
+        source_root = repo_root / source_root_str
+        if not source_root.exists():
+            logger.info(f"compile-code: source root {source_root_str} does not exist, skipping")
+            continue
+        found = [f for f in source_root.rglob("*.sc") if f.name != "varying.def.sc"]
+        for f in found:
+            sc_entries.append((f, source_root))
 
-    sc_files = list(source_root.rglob("*.sc"))
-    # Exclude varying.def.sc files — those are inputs, not shaders to cook.
-    sc_files = [f for f in sc_files if f.name != "varying.def.sc"]
-
-    if not sc_files:
-        msg = f"no .sc files under {cfg.source_root}; skipping"
+    if not sc_entries:
+        msg = "no .sc files found in any configured source root; skipping"
         logger.info(f"compile-code: {msg}")
         if output:
             output.log(system=system, level="info", message=msg, stage=stage)
@@ -107,7 +106,7 @@ def cook_bgfx_shaders(
     cooked = 0
     skipped = 0
 
-    for sc_path in sorted(sc_files):
+    for sc_path, source_root in sorted(sc_entries, key=lambda x: x[0]):
         shader_type = _shader_type(sc_path)
         if shader_type is None:
             logger.warning(

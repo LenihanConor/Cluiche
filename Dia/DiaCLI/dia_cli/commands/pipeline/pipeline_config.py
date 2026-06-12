@@ -11,7 +11,7 @@ VALID_STAGES = {"compile-code", "reflect", "build-assets", "deploy", "static-ana
 TOML_FILENAME = "pipeline.toml"
 
 _DEFAULT_BGFX_BACKENDS = ["dx11", "dx12", "vulkan"]
-_DEFAULT_BGFX_SOURCE_ROOT = "Dia/DiaBgfx/Shaders"
+_DEFAULT_BGFX_SOURCE_ROOTS = ["Dia/DiaBgfx/Shaders"]
 _DEFAULT_BGFX_OUTPUT_ROOT = "Cluiche/out/$(AppName)/shaders"
 _DEFAULT_BGFX_SHADERC_PATH = "External/bgfx/tools/shaderc.exe"
 
@@ -23,7 +23,9 @@ class PipelineConfigError(Exception):
 @dataclass
 class BgfxShadersConfig:
     backends: list[str] = field(default_factory=lambda: list(_DEFAULT_BGFX_BACKENDS))
-    source_root: str = _DEFAULT_BGFX_SOURCE_ROOT
+    source_roots: list[str] = field(default_factory=lambda: list(_DEFAULT_BGFX_SOURCE_ROOTS))
+    # Deprecated: kept for backward compat; loader maps source_root -> source_roots
+    source_root: str = ""
     output_root: str = _DEFAULT_BGFX_OUTPUT_ROOT
     shaderc_path: str = _DEFAULT_BGFX_SHADERC_PATH
 
@@ -114,9 +116,14 @@ def load_pipeline_config(repo_root: Path) -> PipelineConfig:
     )
 
     bs = raw.get("bgfx_shaders", {})
+    # Backward-compatible: prefer source_roots list, fall back to source_root string
+    raw_roots = bs.get("source_roots")
+    if raw_roots is None:
+        legacy = bs.get("source_root")
+        raw_roots = [legacy] if legacy else list(_DEFAULT_BGFX_SOURCE_ROOTS)
     bgfx_shaders_cfg = BgfxShadersConfig(
         backends=bs.get("backends", list(_DEFAULT_BGFX_BACKENDS)),
-        source_root=bs.get("source_root", _DEFAULT_BGFX_SOURCE_ROOT),
+        source_roots=raw_roots,
         output_root=bs.get("output_root", _DEFAULT_BGFX_OUTPUT_ROOT),
         shaderc_path=bs.get("shaderc_path", _DEFAULT_BGFX_SHADERC_PATH),
     )
