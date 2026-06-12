@@ -48,6 +48,9 @@
     <ProjectReference Include="..\DiaMesh3D\DiaMesh3D.vcxproj">
       <Project>{F1E2D3C4-B5A6-7890-FEDC-BA9876543210}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\DiaObservation\DiaObservation.vcxproj">
+      <Project>{5E6F7A8B-C9D0-E1F2-3456-789ABCDE0123}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{D2E3F4A5-B6C7-8901-DEF0-123456789ABC}</ProjectGuid>

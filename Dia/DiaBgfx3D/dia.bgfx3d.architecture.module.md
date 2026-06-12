@@ -40,12 +40,15 @@ public_api:
   headers:
     - Dia/DiaBgfx3D/Canvas3D.h
     - Dia/DiaBgfx3D/Resources/MaterialRegistry.h
+    - Dia/DiaBgfx3D/Resources/MeshGpuCache.h
   namespaces:
     - Dia::Bgfx3D
   entry_points:
     - Canvas3D
     - MaterialRegistry
     - MaterialDescriptor
+    - MeshGpuCache
+    - GpuMesh
 
 dependencies:
   required:
@@ -56,5 +59,7 @@ dependencies:
     - dia.core.core
     - dia.core.crc
     - dia.maths.vector
+    - dia.mesh3d
+    - dia.observation
   forbidden: []
 ---

@@ -2,6 +2,7 @@
 // Filename: MaterialRegistry.cpp
 ////////////////////////////////////////////////////////////////////////////////
 #include "DiaBgfx3D/Resources/MaterialRegistry.h"
+#include <DiaObservation/Log/DiaLog.h>
 
 namespace Dia
 {
@@ -26,7 +27,14 @@ namespace Dia
                 }
             }
             if (!mMaterials.IsFull())
+            {
                 mMaterials.Add(desc);
+            }
+            else
+            {
+                DIA_LOG_WARNING("DiaBgfx3D", "MaterialRegistry full (%u); dropping material '%s'",
+                    kMaxMaterials, desc.id.AsChar());
+            }
         }
 
         const MaterialDescriptor* MaterialRegistry::Resolve(Dia::Core::StringCRC id) const

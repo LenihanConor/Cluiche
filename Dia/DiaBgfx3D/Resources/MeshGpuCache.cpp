@@ -8,6 +8,7 @@
 
 #include <DiaMesh3D/Mesh3DAsset.h>
 #include <DiaMesh3D/Vertex3D.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 #include <unordered_map>
 
@@ -96,19 +97,27 @@ namespace Dia
                 layout
             );
 
-            // -----------------------------------------------------------------------
-            // Upload index buffer (uint16_t indices, 16-bit default).
-            // -----------------------------------------------------------------------
+            if (!bgfx::isValid(vbh))
+            {
+                DIA_LOG_ERROR("DiaBgfx3D", "MeshGpuCache: createVertexBuffer failed for asset 0x%08X", key);
+                return nullptr;
+            }
+
             const auto& indices   = asset.GetIndices();
             const uint32_t iCount = indices.Size();
             const uint32_t iBytes = iCount * static_cast<uint32_t>(sizeof(uint16_t));
 
             bgfx::IndexBufferHandle ibh = bgfx::createIndexBuffer(
                 bgfx::makeRef(&indices[0], iBytes)
-                // BGFX_BUFFER_INDEX32 not set — indices are uint16_t.
             );
 
-            // Store and return.
+            if (!bgfx::isValid(ibh))
+            {
+                DIA_LOG_ERROR("DiaBgfx3D", "MeshGpuCache: createIndexBuffer failed for asset 0x%08X", key);
+                bgfx::destroy(vbh);
+                return nullptr;
+            }
+
             GpuMesh entry{ vbh.idx, ibh.idx, iCount };
             auto result = mImpl->cache.emplace(key, entry);
             return &result.first->second;
