@@ -9,6 +9,7 @@
 #include <DiaMesh3D/Mesh3DAsset.h>
 #include <DiaMesh3D/Vertex3D.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Profile/DiaProfile.h>
 
 #include <unordered_map>
 
@@ -71,6 +72,7 @@ namespace Dia
             //   uv0       Vector2D  2×float   8 bytes
             //   colour    uint32_t  RGBA8     4 bytes
             // -----------------------------------------------------------------------
+            DIA_PROFILE_SCOPE("mesh_gpu_cache.upload", ::Dia::Observation::Profile::Category::kDiaGraphics);
             bgfx::VertexLayout layout;
             layout.begin()
                 .add(bgfx::Attrib::Position,  3, bgfx::AttribType::Float)

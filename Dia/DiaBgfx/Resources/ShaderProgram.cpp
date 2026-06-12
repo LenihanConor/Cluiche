@@ -144,6 +144,7 @@ namespace Dia
             mVS      = vs.idx;
             mFS      = fs.idx;
             mProgram = prog.idx;
+            DIA_LOG_INFO("DiaBgfx", "ShaderProgram::LoadFromPath: loaded %s / %s", vsRelBin, fsRelBin);
             return true;
         }
 

@@ -4,6 +4,7 @@
 #include "DiaBgfx3D/Renderers/ShadowRenderer.h"
 #include "DiaBgfx3D/Resources/MeshGpuCache.h"
 #include <DiaBgfx/Resources/ShaderProgram.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 
 #include <DiaGraphics3D/Mesh3DFrameData.h>
 #include <DiaGraphics3D/Mesh3DDrawCommand.h>
@@ -70,6 +71,7 @@ ShadowRenderer::~ShadowRenderer()
 void ShadowRenderer::RenderShadowMap(const Dia::Graphics3D::Mesh3DFrameData& frameData,
                                       Dia::Mesh3D::Mesh3DAssetHandler* meshHandler)
 {
+    DIA_TRACE_ZONE("shadow_renderer.render_shadow_map", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const auto& dirLights = frameData.GetDirectionalLights();
     if (dirLights.Size() == 0)
     {

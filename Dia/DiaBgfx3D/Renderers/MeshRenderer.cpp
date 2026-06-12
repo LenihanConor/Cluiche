@@ -4,6 +4,8 @@
 #include "DiaBgfx3D/Renderers/MeshRenderer.h"
 
 #include <bgfx/bgfx.h>
+#include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Profile/DiaProfile.h>
 
 #include "DiaBgfx3D/Resources/MeshGpuCache.h"
 #include "DiaBgfx3D/Resources/MaterialRegistry.h"
@@ -30,6 +32,7 @@ namespace Dia
 
         void MeshRenderer::Draw(const Dia::Graphics3D::Mesh3DFrameData& frameData)
         {
+            DIA_TRACE_ZONE("mesh_renderer.draw", ::Dia::Observation::Trace::Category::kDiaGraphics);
             const auto& draws = frameData.GetMeshDraws();
             for (unsigned int i = 0; i < draws.Size(); ++i)
             {
