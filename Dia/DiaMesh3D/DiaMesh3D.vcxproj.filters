@@ -7,6 +7,9 @@
     <Filter Include="Testing">
       <UniqueIdentifier>{A7B8C9D0-E1F2-3456-7890-12345A678901}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Primitives">
+      <UniqueIdentifier>{B8C9D0E1-F2A3-4567-8901-23456B789012}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.mesh3d.architecture.module.md">
@@ -21,6 +24,9 @@
     <ClInclude Include="Submesh.h" />
     <ClInclude Include="Testing\MeshBuilder3D.h">
       <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Primitives\UnitCube.h">
+      <Filter>Primitives</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -1318,7 +1318,19 @@
     <ClCompile Include="DiaMesh3D\TestMesh3DBinaryReader.cpp">
       <Filter>DiaMesh3D</Filter>
     </ClCompile>
+    <ClCompile Include="DiaMesh3D\TestUnitCube.cpp">
+      <Filter>DiaMesh3D</Filter>
+    </ClCompile>
     <ClCompile Include="DiaMesh3D\TestMesh3DAssetHandler.cpp">
+    <ClCompile Include="RigidBody2D\TestGravitySettle.cpp">
+    <ClCompile Include="RigidBody2D\TestCircleVsPolyContact.cpp">
+    <ClCompile Include="RigidBody2D\\TestRestingContact.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
       <Filter>DiaMesh3D</Filter>
     </ClCompile>
       <Filter>DiaApplicationFlowEditor</Filter>

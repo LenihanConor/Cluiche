@@ -255,4 +255,26 @@ void Mesh3DAssetHandler::Tick()
     }
 }
 
+
+//-----------------------------------------------------------------------------
+// RegisterMesh — insert a pre-built asset (owner thread or any thread)
+//-----------------------------------------------------------------------------
+
+void Mesh3DAssetHandler::RegisterMesh(Mesh3DAsset* asset)
+{
+    DIA_ASSERT(asset != nullptr, "Mesh3DAssetHandler::RegisterMesh: null asset");
+    std::unique_lock<std::shared_mutex> lock(mMeshMutex);
+    unsigned int key = asset->GetAssetId().Value();
+    auto it = mMeshMap.find(key);
+    if (it != mMeshMap.end())
+    {
+        delete it->second;
+        it->second = asset;
+    }
+    else
+    {
+        mMeshMap[key] = asset;
+    }
+}
+
 } }

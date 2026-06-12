@@ -81,6 +81,7 @@
     <ClInclude Include="Vertex3D.h" />
     <ClInclude Include="Submesh.h" />
     <ClInclude Include="Testing\MeshBuilder3D.h" />
+    <ClInclude Include="Primitives\UnitCube.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Mesh3DAsset.cpp" />

@@ -662,9 +662,13 @@
     <ClCompile Include="DiaMesh3D\TestMesh3DAsset.cpp" />
     <ClCompile Include="DiaMesh3D\TestMesh3DBinaryReader.cpp" />
     <ClCompile Include="DiaMesh3D\TestMesh3DAssetHandler.cpp" />
+    <ClCompile Include="DiaMesh3D\TestUnitCube.cpp" />
     <!-- DiaBgfx3D -->
     <ClCompile Include="DiaBgfx3D\TestMaterialRegistry.cpp" />
     <ClCompile Include="DiaBgfx3D\TestMeshGpuCache.cpp" />
+    <ClCompile Include="RigidBody2D\TestGravitySettle.cpp" />
+    <ClCompile Include="RigidBody2D\TestCircleVsPolyContact.cpp" />
+    <ClCompile Include="RigidBody2D\\TestRestingContact.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaLighting2D\DiaLighting2D.vcxproj">

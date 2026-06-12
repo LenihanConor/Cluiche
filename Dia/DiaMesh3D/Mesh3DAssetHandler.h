@@ -35,6 +35,10 @@ public:
     Mesh3DAsset* LookupMesh(Dia::Core::StringCRC assetId) const;
     unsigned int GetLoadedCount() const;
 
+    // Register a pre-built asset (ownership transferred to handler).
+    // Replaces any existing asset with the same ID. Thread-safe.
+    void RegisterMesh(Mesh3DAsset* asset);
+
     // IAssetTypeHandler
     void Load(const Dia::Core::StringCRC& assetId,
               const Dia::Core::Containers::String512& resolvedPath,
