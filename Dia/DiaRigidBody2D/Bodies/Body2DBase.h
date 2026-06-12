@@ -58,8 +58,16 @@ public:
 
     void Wake()
     {
+        // Reset the sleep countdown only on a genuine sleeping->awake transition.
+        // Nudging an already-awake body (e.g. a resting contact impulse the solver
+        // applies every step to hold a body against gravity) must NOT restart the
+        // countdown, or such bodies could never accumulate the time needed to
+        // sleep. Whether an awake body stays awake is governed by its velocity in
+        // UpdateSleepTimers, which zeroes the timer whenever speed exceeds the
+        // threshold.
+        if (mSleepState == SleepState::kSleeping)
+            mSleepTimer = 0.0f;
         mSleepState = SleepState::kAwake;
-        mSleepTimer = 0.0f;
     }
 
     void Sleep()

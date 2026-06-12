@@ -280,7 +280,7 @@ void PhysicsWorld::StepOnce()
 
     UpdateBroadPhase();
     DetectCollisions(mPointBodies, mRigidBodies, mDef.broadPhase, mLastContacts);
-    ResolveCollisions(mLastContacts, mDef.responseConfig, dt);
+    ResolveCollisions(mLastContacts, mDef.responseConfig, dt, mDef.gravity);
     SolveConstraints(mConstraints, mDef.constraintConfig, dt);
 
     IntegrateLinearVelocities(mPointBodies, dt);

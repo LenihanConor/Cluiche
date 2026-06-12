@@ -78,10 +78,9 @@ static float Cross2D(const Dia::Maths::Vector2D& a, const Dia::Maths::Vector2D& 
 void ResolveCollisions(
     const Dia::Core::Containers::DynamicArrayC<Contact, kMaxContacts>& contacts,
     const ResponseConfig&                                               config,
-    float                                                               dt)
+    float                                                               dt,
+    const Dia::Maths::Vector2D&                                         gravity)
 {
-    (void)dt;
-
     for (unsigned int ci = 0; ci < contacts.Size(); ++ci)
     {
         const Contact& contact = contacts[ci];
@@ -115,7 +114,12 @@ void ResolveCollisions(
         if (contactVel > 0.0f) continue;
 
         float e = (sA.restitution < sB.restitution) ? sA.restitution : sB.restitution;
-        if (contactVel > -config.restitutionVelocitySlop) e = 0.0f;
+        // Bias the suppression threshold by the approach velocity this step's
+        // gravity injects along the contact normal, so resting contacts settle
+        // (see header). |gravity . n| * dt is the per-step gravity-induced approach.
+        float gravityApproach = std::abs(gravity.x * n.x + gravity.y * n.y) * dt;
+        float effectiveSlop   = config.restitutionVelocitySlop + gravityApproach;
+        if (contactVel > -effectiveSlop) e = 0.0f;
 
         float rACrossN = Cross2D(rA, n);
         float rBCrossN = Cross2D(rB, n);

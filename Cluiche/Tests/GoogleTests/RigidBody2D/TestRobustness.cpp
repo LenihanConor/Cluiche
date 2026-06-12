@@ -118,6 +118,13 @@ TEST(RigidBody2D_Robustness, MultipleConstraintTypes_SameBody)
     RigidBody2D* mid    = f.MakeBody(1, 3.0f, 0.0f);
     RigidBody2D* end    = f.MakeBody(2, 6.0f, 0.0f);
 
+    // This test exercises constraint interaction only. Put the bodies on
+    // mutually-exclusive collision layers so the swinging chain cannot generate
+    // contacts (mid and end pass within 2r during the swing) — otherwise
+    // collision response perturbs the distance the constraint is meant to hold.
+    mid->SetLayer(1u << 1); mid->SetMask(1u << 1);
+    end->SetLayer(1u << 2); end->SetMask(1u << 2);
+
     // Pin mid to anchor, distance from mid to end
     f.world->AddConstraint(new PinJoint(anchor, Vector2D::Zero(), mid, Vector2D::Zero()));
     f.world->AddConstraint(
