@@ -21,7 +21,7 @@ Physics2DModule::Physics2DModule(const Dia::Core::StringCRC& instanceId)
     mWorldDef.gravity = Dia::Maths::Vector2D(0.0f, -9.81f);
     mWorldDef.fixedTimestep = 1.0f / 30.0f;
     mWorldDef.maxSubSteps = 4;
-    mWorldDef.broadPhase = nullptr;
+    mWorldDef.broadPhase = nullptr;   // assigned in DoStart once the grid exists
 }
 
 Physics2DModule::~Physics2DModule() = default;
@@ -29,8 +29,20 @@ Physics2DModule::~Physics2DModule() = default;
 Dia::ApplicationFlow::StartResult Physics2DModule::DoStart()
 {
     DIA_LOG_INFO("Application", "Physics2DModule::DoStart entry");
+
+    // Build the broadphase grid before the world so bodies register in it on
+    // AddRigidBody. Bounds cover the test/game working area; cellSize is chosen
+    // to keep cell count well under SpatialGrid's internal cap (40x40 = 1600).
+    BroadPhaseGrid::Def gridDef;
+    gridDef.worldBounds = Dia::Geometry2D::AARect(
+        Dia::Maths::Vector2D(-2000.0f, -2000.0f),
+        Dia::Maths::Vector2D( 2000.0f,  2000.0f));
+    gridDef.cellSize = 100.0f;
+    mBroadPhase = std::make_unique<BroadPhaseGrid>(gridDef);
+    mWorldDef.broadPhase = mBroadPhase.get();
+
     mWorld = new Dia::RigidBody2D::PhysicsWorld(mWorldDef);
-    DIA_LOG_INFO("Application", "Physics2DModule::DoStart exit");
+    DIA_LOG_INFO("Application", "Physics2DModule::DoStart exit (broadphase active)");
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
@@ -69,8 +81,11 @@ Dia::ApplicationFlow::StopResult Physics2DModule::DoStop()
     }
 #endif
 
+    // World holds handles into the grid — destroy it first, then the grid.
     delete mWorld;
     mWorld = nullptr;
+    mWorldDef.broadPhase = nullptr;
+    mBroadPhase.reset();
     DIA_LOG_INFO("Application", "Physics2DModule::DoStop exit");
     return Dia::ApplicationFlow::StopResult::kDone;
 }

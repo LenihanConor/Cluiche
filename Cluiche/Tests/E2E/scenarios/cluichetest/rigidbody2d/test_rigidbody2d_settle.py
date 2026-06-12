@@ -1,29 +1,41 @@
-"""RigidBody2D Test Stage — validate multi-body settle under real timing."""
+"""RigidBody2D Test Stage — validate the full physics integration scene.
+
+The stage drops circles + a thrown body onto a polygon ground, swings a
+distance-joint pendulum, fires collision/trigger events and runs a raycast.
+It reports four checkpoints; all must pass for the stage to be considered good.
+"""
+
+_CHECKPOINTS = [
+    "test.rigid_body.all_settled",
+    "test.rigid_body.collision_events",
+    "test.rigid_body.trigger_overlap",
+    "test.rigid_body.raycast_hit",
+]
 
 
-_CHECKPOINT = "test.rigid_body.all_settled"
-
-
-def test_rigidbody2d_all_bodies_settle(dia_client):
-    """Navigate to RigidBody2DTestStage, wait for all bodies to settle."""
+def test_rigidbody2d_full_scene(dia_client):
+    """Navigate to the stage and wait for every checkpoint to pass."""
     dia_client.navigate_to("RigidBody2DTestStage")
 
-    result = dia_client.poll_checkpoint(_CHECKPOINT, timeout_s=12.0)
-    assert result["passed"], f"Bodies did not settle: {result['message']}"
+    for cp in _CHECKPOINTS:
+        result = dia_client.poll_checkpoint(cp, timeout_s=15.0)
+        assert result["passed"], f"{cp} failed: {result['message']}"
 
     dia_client.navigate_to("Boot")
 
 
 def test_rigidbody2d_determinism(dia_client):
-    """Run the stage twice and verify the settle message is identical (both reached rest)."""
+    """Run the stage twice; the settle message must be identical both runs."""
+    cp = "test.rigid_body.all_settled"
+
     dia_client.navigate_to("RigidBody2DTestStage")
-    result1 = dia_client.poll_checkpoint(_CHECKPOINT, timeout_s=12.0)
+    result1 = dia_client.poll_checkpoint(cp, timeout_s=15.0)
     assert result1["passed"], f"First run failed: {result1['message']}"
     msg1 = result1["message"]
     dia_client.navigate_to("Boot")
 
     dia_client.navigate_to("RigidBody2DTestStage")
-    result2 = dia_client.poll_checkpoint(_CHECKPOINT, timeout_s=12.0)
+    result2 = dia_client.poll_checkpoint(cp, timeout_s=15.0)
     assert result2["passed"], f"Second run failed: {result2['message']}"
     msg2 = result2["message"]
     dia_client.navigate_to("Boot")

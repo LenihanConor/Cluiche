@@ -3,13 +3,14 @@
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaRigidBody2D/World/WorldDef.h>
+#include <DiaGeometry2D/Spatial/SpatialGrid.h>
+#include <memory>
 
 #ifdef DIA_DEBUG
 #include "Modules/VisualDebuggerModule.h"
-#include <memory>
 #endif
 
-namespace Dia::RigidBody2D { class PhysicsWorld; }
+namespace Dia::RigidBody2D { class PhysicsWorld; class Body2DBase; }
 
 #ifdef DIA_DEBUG
 namespace Dia::RigidBody2D
@@ -38,6 +39,12 @@ protected:
     Dia::ApplicationFlow::StopResult  DoStop()           override;
 
 private:
+    // Broadphase acceleration structure for collision/query/trigger detection.
+    // Owned here and assigned (non-owning) into mWorldDef.broadPhase, so it must
+    // outlive mWorld. Without it the world falls back to an O(n^2) pair sweep.
+    using BroadPhaseGrid = Dia::Geometry2D::SpatialGrid<Dia::RigidBody2D::Body2DBase*>;
+    std::unique_ptr<BroadPhaseGrid> mBroadPhase;
+
     Dia::RigidBody2D::PhysicsWorld* mWorld = nullptr;
     Dia::RigidBody2D::WorldDef mWorldDef;
 

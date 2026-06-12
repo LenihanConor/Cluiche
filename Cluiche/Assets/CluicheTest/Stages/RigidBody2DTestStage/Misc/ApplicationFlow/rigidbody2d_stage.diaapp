@@ -16,7 +16,7 @@
                     "instance_id": "RigidBody2DTestModule",
                     "type_id": "RigidBody2DTestModule",
                     "stages": [ "RigidBody2DTestStage" ],
-                    "dependencies": [ "Physics2DModule" ],
+                    "dependencies": [ "Physics2DModule", "VisualDebuggerModule" ],
                     "channels": [
                         {
                             "id": "AutomationService",
