@@ -33,6 +33,29 @@ DiaMesh3D's runtime loader exists and reads a cooked `.mesh3d` binary, but nothi
 9. `pygltflib` is available to the pipeline after `dia env setup`: it is listed in a `requirements.txt` under `External/Python311/` and a `deps` (or dedicated python-packages) step in the env setup orchestrator installs it. If `pygltflib` is missing at handler import/use, the handler raises an actionable error naming the install command.
 10. Indices are written as uint16; a mesh whose index values exceed 65535 (i.e. > 65535 vertices) is rejected at validate (AC-2), so 16-bit indices are always sufficient.
 
+## Post-Implementation Hardening (2026-06-11)
+
+A gap analysis after the initial Done found that every fixture used one narrow
+encoding, hiding real bugs against actual exporter output. The buffer-reading
+layer was hardened (behaviour beyond the original strict ACs, added as a
+follow-up — ACs above remain the frozen contract):
+
+- **`.glb` binary chunk** — AC-2 allowed `.glb` but the reader only handled
+  data-URIs, so every `.glb` passed validate then failed transform. Now reads
+  `gltf.binary_blob()` when `buffer.uri is None`.
+- **External sidecar buffers** — `.gltf` + relative `.bin` now resolved
+  (relative to the source dir); a missing sidecar is a clean transform error.
+- **Index component types** — UBYTE (5121) / USHORT (5123) / UINT (5125) all
+  read correctly and downcast to uint16; rebased index > 65535 is rejected
+  (AC-10 intent). Illegal index componentType (e.g. FLOAT) rejected at validate.
+- **Normalized integer attributes** — normalized BYTE/SHORT/UBYTE/USHORT
+  attributes are un-normalized per the glTF spec; non-normalized ints cast to float.
+- **Interleaved `byteStride`** — strided buffer views read at the correct stride.
+- **Zero-vertex mesh** — rejected at validate (would have packed `inf` AABB).
+
+Still out of scope (unchanged): vertex `COLOR_0` (always white), tangent
+generation, triangulation, multi-mesh, skinning.
+
 ## Out of Scope
 
 - **Skinning / `.rig3d` emission** — deferred to DiaRig3D. Skinned input is rejected, not partially cooked.

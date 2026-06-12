@@ -23,34 +23,119 @@ def _material_id(name: str) -> int:
     return zlib.crc32(name.encode("utf-8")) & 0xFFFFFFFF
 
 
-def _read_accessor_floats(gltf, acc_idx: int, n_components: int) -> list[list[float]]:
-    """Read float data from a glTF accessor into a list of component lists."""
-    import base64
-    acc = gltf.accessors[acc_idx]
-    bv = gltf.bufferViews[acc.bufferView]
-    buf = gltf.buffers[bv.buffer]
-    uri: str = buf.uri or ""
-    if not uri.startswith("data:"):
-        raise ValueError("external buffer files not supported")
-    raw = base64.b64decode(uri.split(",", 1)[1])
-    offset = (bv.byteOffset or 0) + (acc.byteOffset or 0)
-    fmt = f"<{acc.count * n_components}f"
-    data = struct.unpack_from(fmt, raw, offset)
-    return [list(data[i * n_components:(i + 1) * n_components]) for i in range(acc.count)]
+# glTF componentType -> (struct format char, byte size). Covers every type the
+# spec permits for vertex attributes and indices.
+_COMPONENT_FORMAT = {
+    5120: ("b", 1),  # BYTE
+    5121: ("B", 1),  # UNSIGNED_BYTE
+    5122: ("h", 2),  # SHORT
+    5123: ("H", 2),  # UNSIGNED_SHORT
+    5125: ("I", 4),  # UNSIGNED_INT
+    5126: ("f", 4),  # FLOAT
+}
+
+# Divisor for un-normalizing integer components (glTF normalized=true). The two
+# signed entries clamp to -1.0 per the glTF spec.
+_NORMALIZE_DIVISOR = {
+    5120: 127.0,    # BYTE   (signed)
+    5121: 255.0,    # UNSIGNED_BYTE
+    5122: 32767.0,  # SHORT  (signed)
+    5123: 65535.0,  # UNSIGNED_SHORT
+}
+_SIGNED_COMPONENTS = (5120, 5122)
+
+# Valid index component types (glTF 2.0 §3.7.2.1).
+_INDEX_COMPONENT_TYPES = (5121, 5123, 5125)
 
 
-def _read_accessor_uint16(gltf, acc_idx: int) -> list[int]:
-    """Read uint16 scalar data from a glTF accessor into a flat list of ints."""
+def _read_buffer_bytes(gltf, buffer_index: int, source_path: Path) -> bytes:
+    """Resolve a glTF buffer's bytes across all three storage forms.
+
+    - Embedded data-URI (``uri = "data:...;base64,..."``)
+    - GLB binary chunk (``uri = None`` -> ``gltf.binary_blob()``)
+    - External file (``uri`` is a relative path next to the source ``.gltf``)
+
+    Raises ValueError if a buffer cannot be resolved (missing GLB blob or
+    missing external file) so callers report a clean, actionable error.
+    """
     import base64
+    from urllib.parse import unquote
+
+    buf = gltf.buffers[buffer_index]
+    uri = buf.uri
+
+    if uri is None:
+        blob = gltf.binary_blob()
+        if blob is None:
+            raise ValueError(
+                f"buffer {buffer_index} has no uri and no GLB binary blob"
+            )
+        return blob
+
+    if uri.startswith("data:"):
+        return base64.b64decode(uri.split(",", 1)[1])
+
+    ext_path = source_path.parent / unquote(uri)
+    if not ext_path.exists():
+        raise ValueError(f"external buffer file not found: {ext_path}")
+    return ext_path.read_bytes()
+
+
+def _read_accessor_elements(
+    gltf, acc_idx: int, n_components: int, source_path: Path
+) -> "tuple[list[tuple], object]":
+    """Read an accessor into a list of raw numeric tuples.
+
+    Honours ``componentType`` (any of _COMPONENT_FORMAT) and interleaved
+    ``bufferView.byteStride``. Returns (elements, accessor).
+    """
     acc = gltf.accessors[acc_idx]
     bv = gltf.bufferViews[acc.bufferView]
-    buf = gltf.buffers[bv.buffer]
-    uri: str = buf.uri or ""
-    if not uri.startswith("data:"):
-        raise ValueError("external buffer files not supported")
-    raw = base64.b64decode(uri.split(",", 1)[1])
-    offset = (bv.byteOffset or 0) + (acc.byteOffset or 0)
-    return list(struct.unpack_from(f"<{acc.count}H", raw, offset))
+    raw = _read_buffer_bytes(gltf, bv.buffer, source_path)
+
+    char, comp_size = _COMPONENT_FORMAT[acc.componentType]
+    element_size = comp_size * n_components
+    stride = bv.byteStride or element_size  # None -> tightly packed
+    base = (bv.byteOffset or 0) + (acc.byteOffset or 0)
+    fmt = f"<{n_components}{char}"
+
+    elements = [
+        struct.unpack_from(fmt, raw, base + i * stride)
+        for i in range(acc.count)
+    ]
+    return elements, acc
+
+
+def _read_accessor_floats(
+    gltf, acc_idx: int, n_components: int, source_path: Path
+) -> list[list[float]]:
+    """Read a vertex attribute accessor as floats.
+
+    FLOAT passes through; normalized integer types are un-normalized per the
+    glTF spec; non-normalized integers are cast to float.
+    """
+    elements, acc = _read_accessor_elements(gltf, acc_idx, n_components, source_path)
+
+    if acc.componentType == 5126:  # FLOAT
+        return [list(e) for e in elements]
+
+    if acc.normalized:
+        divisor = _NORMALIZE_DIVISOR.get(acc.componentType)
+        if divisor is None:
+            raise ValueError(
+                f"unsupported normalized componentType {acc.componentType}"
+            )
+        if acc.componentType in _SIGNED_COMPONENTS:
+            return [[max(c / divisor, -1.0) for c in e] for e in elements]
+        return [[c / divisor for c in e] for e in elements]
+
+    return [[float(c) for c in e] for e in elements]
+
+
+def _read_indices(gltf, acc_idx: int, source_path: Path) -> list[int]:
+    """Read an index accessor (UBYTE/USHORT/UINT) into a flat list of ints."""
+    elements, _acc = _read_accessor_elements(gltf, acc_idx, 1, source_path)
+    return [e[0] for e in elements]
 
 
 def _extract_buffers(
@@ -84,16 +169,16 @@ def _extract_buffers(
         vertex_base = len(all_vertices)
 
         # ----- positions -----
-        positions = _read_accessor_floats(gltf, attrs.POSITION, 3)
+        positions = _read_accessor_floats(gltf, attrs.POSITION, 3, source_path)
 
         # ----- normals -----
-        normals = _read_accessor_floats(gltf, attrs.NORMAL, 3)
+        normals = _read_accessor_floats(gltf, attrs.NORMAL, 3, source_path)
 
         # ----- tangents (VEC4) -----
-        tangents = _read_accessor_floats(gltf, attrs.TANGENT, 4)
+        tangents = _read_accessor_floats(gltf, attrs.TANGENT, 4, source_path)
 
         # ----- UVs -----
-        uvs = _read_accessor_floats(gltf, attrs.TEXCOORD_0, 2)
+        uvs = _read_accessor_floats(gltf, attrs.TEXCOORD_0, 2, source_path)
 
         # ----- assemble vertex dicts -----
         for pos, nor, tan, uv in zip(positions, normals, tangents, uvs):
@@ -111,10 +196,18 @@ def _extract_buffers(
                     aabb_max[axis] = pos[axis]
 
         # ----- indices (rebased) -----
-        raw_indices = _read_accessor_uint16(gltf, prim.indices)
+        # Source indices may be UBYTE/USHORT/UINT; we always emit uint16, so a
+        # rebased index that exceeds 65535 cannot be represented (AC-10).
+        raw_indices = _read_indices(gltf, prim.indices, source_path)
         index_start = len(all_indices)
         for idx in raw_indices:
-            all_indices.append(idx + vertex_base)
+            rebased = idx + vertex_base
+            if rebased > _MAX_VERTICES:
+                raise ValueError(
+                    f"index {rebased} exceeds uint16 max {_MAX_VERTICES}; "
+                    f"mesh too large for 16-bit indices"
+                )
+            all_indices.append(rebased)
 
         # ----- material id -----
         if prim.material is not None and prim.material < len(gltf.materials):
@@ -353,7 +446,18 @@ class Mesh3DHandler(AssetHandler):
                         message=f"{label}: skinning attribute '{skin_attr}' found; only static meshes are supported",
                     ))
 
-            # 6d. Accumulate vertex / index counts for limit checks
+            # 6d. Index accessor must use a glTF-legal index component type.
+            if prim.indices is not None and prim.indices < len(gltf.accessors):
+                idx_ct = gltf.accessors[prim.indices].componentType
+                if idx_ct not in _INDEX_COMPONENT_TYPES:
+                    errors.append(AssetError(
+                        asset_id=asset_id,
+                        phase="validate",
+                        message=f"{label}: index componentType {idx_ct} is not a valid "
+                                f"glTF index type (must be 5121/5123/5125)",
+                    ))
+
+            # 6e. Accumulate vertex / index counts for limit checks
             if attrs.POSITION is not None and attrs.POSITION < len(gltf.accessors):
                 total_vertices += gltf.accessors[attrs.POSITION].count
 
@@ -363,6 +467,13 @@ class Mesh3DHandler(AssetHandler):
         # ------------------------------------------------------------------ #
         # 7. Format limits
         # ------------------------------------------------------------------ #
+        if total_vertices == 0:
+            errors.append(AssetError(
+                asset_id=asset_id,
+                phase="validate",
+                message="Mesh has zero vertices; an empty mesh cannot be cooked",
+            ))
+
         if total_vertices > _MAX_VERTICES:
             errors.append(AssetError(
                 asset_id=asset_id,

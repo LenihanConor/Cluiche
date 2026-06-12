@@ -1448,3 +1448,307 @@ class TestEndToEnd:
             f"MAT_A='{self._MAT_A}' (CRC={zlib.crc32(self._MAT_A.encode()) & 0xFFFFFFFF:#010x}), "
             f"MAT_B='{self._MAT_B}' (CRC={zlib.crc32(self._MAT_B.encode()) & 0xFFFFFFFF:#010x})"
         )
+
+
+# ---------------------------------------------------------------------------
+# Tests: source-format robustness — GLB, external buffers, index component
+# types, normalized attributes, interleaved byteStride, empty mesh.
+#
+# Every fixture above uses the same narrow encoding (data-URI buffer, uint16
+# indices, float attributes, tightly packed). These builders exercise the rest
+# of the glTF spec the cooker must handle for real exporter output.
+# ---------------------------------------------------------------------------
+
+# Component sizes for the configurable builder.
+_CT_FORMAT = {5121: ("B", 1), 5123: ("H", 2), 5125: ("I", 4)}
+
+
+def _build_configurable_gltf_dict(
+    *,
+    positions=None,
+    index_component_type: int = 5123,
+    normal_normalized: bool = False,
+    interleaved: bool = False,
+    external_buffer_name: str | None = None,
+) -> "tuple[dict, bytes]":
+    """Build a single-mesh single-primitive glTF dict plus its raw buffer bytes.
+
+    Returns (gltf_dict, raw_buffer_bytes). The caller decides whether to embed
+    the bytes as a data-URI, write them to a sidecar file, or save as GLB.
+
+    - index_component_type: 5121 (ubyte), 5123 (ushort), or 5125 (uint)
+    - normal_normalized: encode NORMAL as normalized SHORT (componentType 5122)
+    - interleaved: pack POSITION+NORMAL+TANGENT+TEXCOORD into one strided view
+    - external_buffer_name: if set, buffer.uri is this filename (sidecar .bin)
+    """
+    if positions is None:
+        positions = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
+    n = len(positions)
+
+    norm_vals = [(0.0, 0.0, 1.0)] * n
+    tang_vals = [(1.0, 0.0, 0.0, 1.0)] * n
+    uv_vals = [(0.0, 0.0)] * n
+
+    idx_char = _CT_FORMAT[index_component_type][0]
+    idx_bytes = struct.pack(f"<{n}{idx_char}", *range(n))
+
+    accessors: list[dict] = []
+    bufferViews: list[dict] = []
+    parts: list[bytes] = []
+
+    def _append_view(data: bytes, byte_stride: int | None = None) -> int:
+        offset = sum(len(p) for p in parts)
+        view = {"buffer": 0, "byteOffset": offset, "byteLength": len(data)}
+        if byte_stride is not None:
+            view["byteStride"] = byte_stride
+        bufferViews.append(view)
+        parts.append(data)
+        return len(bufferViews) - 1
+
+    if interleaved:
+        # POSITION(3f) NORMAL(3f) TANGENT(4f) TEXCOORD_0(2f) per vertex = 48 bytes.
+        stride = (3 + 3 + 4 + 2) * 4
+        interleaved_bytes = b"".join(
+            struct.pack("<3f3f4f2f", *positions[i], *norm_vals[i],
+                        *tang_vals[i], *uv_vals[i])
+            for i in range(n)
+        )
+        bv = _append_view(interleaved_bytes, byte_stride=stride)
+        accessors.append({"bufferView": bv, "byteOffset": 0, "componentType": 5126, "count": n, "type": "VEC3"})
+        accessors.append({"bufferView": bv, "byteOffset": 12, "componentType": 5126, "count": n, "type": "VEC3"})
+        accessors.append({"bufferView": bv, "byteOffset": 24, "componentType": 5126, "count": n, "type": "VEC4"})
+        accessors.append({"bufferView": bv, "byteOffset": 40, "componentType": 5126, "count": n, "type": "VEC2"})
+        pos_a, nor_a, tan_a, uv_a = 0, 1, 2, 3
+    else:
+        pos_bytes = b"".join(struct.pack("<3f", *p) for p in positions)
+        if normal_normalized:
+            # Encode (0,0,1) as normalized SHORT: 1.0 -> 32767.
+            nor_bytes = b"".join(struct.pack("<3h", 0, 0, 32767) for _ in range(n))
+            nor_ct, nor_norm = 5122, True
+        else:
+            nor_bytes = b"".join(struct.pack("<3f", *nv) for nv in norm_vals)
+            nor_ct, nor_norm = 5126, False
+        tan_bytes = b"".join(struct.pack("<4f", *tv) for tv in tang_vals)
+        uv_bytes = b"".join(struct.pack("<2f", *uvv) for uvv in uv_vals)
+
+        pos_a = _append_view(pos_bytes); accessors.append(
+            {"bufferView": pos_a, "componentType": 5126, "count": n, "type": "VEC3"})
+        nor_a = _append_view(nor_bytes); accessors.append(
+            {"bufferView": nor_a, "componentType": nor_ct, "count": n, "type": "VEC3",
+             "normalized": nor_norm})
+        tan_a = _append_view(tan_bytes); accessors.append(
+            {"bufferView": tan_a, "componentType": 5126, "count": n, "type": "VEC4"})
+        uv_a = _append_view(uv_bytes); accessors.append(
+            {"bufferView": uv_a, "componentType": 5126, "count": n, "type": "VEC2"})
+
+    idx_a = _append_view(idx_bytes)
+    accessors.append({"bufferView": idx_a, "componentType": index_component_type,
+                      "count": n, "type": "SCALAR"})
+    idx_acc = len(accessors) - 1
+
+    raw = b"".join(parts)
+    while len(raw) % 4 != 0:
+        raw += b"\x00"
+
+    if external_buffer_name is not None:
+        buffer = {"byteLength": len(raw), "uri": external_buffer_name}
+    else:
+        b64 = base64.b64encode(raw).decode()
+        buffer = {"byteLength": len(raw), "uri": f"data:application/octet-stream;base64,{b64}"}
+
+    gltf = {
+        "asset": {"version": "2.0"},
+        "meshes": [{"name": "Mesh", "primitives": [{
+            "attributes": {"POSITION": pos_a, "NORMAL": nor_a,
+                           "TANGENT": tan_a, "TEXCOORD_0": uv_a},
+            "indices": idx_acc, "mode": 4, "material": 0,
+        }]}],
+        "materials": [{"name": "Material"}],
+        "accessors": accessors,
+        "bufferViews": bufferViews,
+        "buffers": [buffer],
+    }
+    return gltf, raw
+
+
+def _save_as_glb(gltf_dict: dict, raw: bytes, path: Path) -> Path:
+    """Write the dict + buffer as a binary .glb via pygltflib."""
+    import pygltflib
+    # GLB stores the buffer in the binary chunk; drop the data-URI.
+    d = json.loads(json.dumps(gltf_dict))
+    d["buffers"][0].pop("uri", None)
+    g = pygltflib.GLTF2.from_json(json.dumps(d))
+    g.set_binary_blob(raw)
+    g.save(str(path))  # extension .glb -> binary GLB
+    return path
+
+
+class TestSourceFormatRobustness:
+    """GLB, external buffers, index/attribute component types, byteStride."""
+
+    # --- GLB (binary chunk, uri=None) -------------------------------------
+
+    def test_glb_transform_succeeds(self, tmp_path):
+        gltf_dict, raw = _build_configurable_gltf_dict()
+        glb_path = _save_as_glb(gltf_dict, raw, tmp_path / "box.glb")
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.box", source_path=str(glb_path))
+        result = Mesh3DHandler().transform(record, ctx)
+        assert result.success is True, getattr(result, "errors", None)
+        assert Path(result.output_path).exists()
+
+    def test_glb_extract_reads_binary_blob(self, tmp_path):
+        import pygltflib
+        gltf_dict, raw = _build_configurable_gltf_dict()
+        glb_path = _save_as_glb(gltf_dict, raw, tmp_path / "box.glb")
+        gltf = pygltflib.GLTF2().load(str(glb_path))
+        verts, indices, submeshes, aabb = _extract_buffers(gltf, glb_path)
+        assert len(verts) == 3
+        assert indices == [0, 1, 2]
+
+    # --- External sidecar .bin --------------------------------------------
+
+    def test_external_buffer_resolves(self, tmp_path):
+        gltf_dict, raw = _build_configurable_gltf_dict(external_buffer_name="box.bin")
+        (tmp_path / "box.bin").write_bytes(raw)
+        gltf_path = _write_gltf(tmp_path, "box.gltf", gltf_dict)
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.box", source_path=str(gltf_path))
+        result = Mesh3DHandler().transform(record, ctx)
+        assert result.success is True, getattr(result, "errors", None)
+
+    def test_missing_external_buffer_fails_transform(self, tmp_path):
+        gltf_dict, _raw = _build_configurable_gltf_dict(external_buffer_name="absent.bin")
+        gltf_path = _write_gltf(tmp_path, "box.gltf", gltf_dict)
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.box", source_path=str(gltf_path))
+        result = Mesh3DHandler().transform(record, ctx)
+        assert result.success is False
+        assert any("buffer" in e.message.lower() for e in result.errors)
+
+    # --- Index component types --------------------------------------------
+
+    def test_uint32_indices_read_correctly(self, tmp_path):
+        gltf_dict, _raw = _build_configurable_gltf_dict(index_component_type=5125)
+        gltf = _load_gltf_from_dict(gltf_dict)
+        verts, indices, submeshes, aabb = _extract_buffers(gltf, tmp_path / "x.gltf")
+        assert indices == [0, 1, 2]
+
+    def test_uint8_indices_read_correctly(self, tmp_path):
+        gltf_dict, _raw = _build_configurable_gltf_dict(index_component_type=5121)
+        gltf = _load_gltf_from_dict(gltf_dict)
+        verts, indices, submeshes, aabb = _extract_buffers(gltf, tmp_path / "x.gltf")
+        assert indices == [0, 1, 2]
+
+    def test_uint32_indices_end_to_end(self, tmp_path):
+        """uint32-indexed source produces a valid uint16 .mesh3d."""
+        gltf_dict, _raw = _build_configurable_gltf_dict(index_component_type=5125)
+        gltf_path = _write_gltf(tmp_path, "u32.gltf", gltf_dict)
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.u32", source_path=str(gltf_path))
+        assert Mesh3DHandler().validate(record, ctx) == []
+        result = Mesh3DHandler().transform(record, ctx)
+        assert result.success is True
+        data = Path(result.output_path).read_bytes()
+        idx_count = struct.unpack_from("<I", data, 9)[0]
+        assert idx_count == 3
+
+    def test_invalid_index_component_type_rejected(self, tmp_path):
+        """A float index componentType (5126) is not a legal glTF index type."""
+        gltf_dict, _raw = _build_configurable_gltf_dict()
+        gltf_dict["accessors"][-1]["componentType"] = 5126  # FLOAT — illegal for indices
+        gltf_path = _write_gltf(tmp_path, "badidx.gltf", gltf_dict)
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.badidx", source_path=str(gltf_path))
+        errors = Mesh3DHandler().validate(record, ctx)
+        assert any("index componentType" in e.message for e in errors)
+
+    # --- Normalized integer attributes ------------------------------------
+
+    def test_normalized_short_normal_unnormalized(self, tmp_path):
+        """A normalized SHORT NORMAL of (0,0,32767) decodes to (0,0,1.0)."""
+        gltf_dict, _raw = _build_configurable_gltf_dict(normal_normalized=True)
+        gltf = _load_gltf_from_dict(gltf_dict)
+        verts, indices, submeshes, aabb = _extract_buffers(gltf, tmp_path / "x.gltf")
+        nx, ny, nz = verts[0]["normal"]
+        assert nz == pytest.approx(1.0)
+        assert nx == pytest.approx(0.0)
+        assert ny == pytest.approx(0.0)
+
+    # --- Interleaved byteStride -------------------------------------------
+
+    def test_interleaved_attributes_read_correctly(self, tmp_path):
+        positions = [(1.0, 2.0, 3.0), (4.0, 5.0, 6.0), (7.0, 8.0, 9.0)]
+        gltf_dict, _raw = _build_configurable_gltf_dict(positions=positions, interleaved=True)
+        gltf = _load_gltf_from_dict(gltf_dict)
+        verts, indices, submeshes, aabb = _extract_buffers(gltf, tmp_path / "x.gltf")
+        assert verts[0]["position"] == pytest.approx([1.0, 2.0, 3.0])
+        assert verts[1]["position"] == pytest.approx([4.0, 5.0, 6.0])
+        assert verts[2]["position"] == pytest.approx([7.0, 8.0, 9.0])
+        # Normal/tangent/uv must still come through from the strided view.
+        assert verts[0]["normal"] == pytest.approx([0.0, 0.0, 1.0])
+        assert verts[0]["tangent"] == pytest.approx([1.0, 0.0, 0.0, 1.0])
+
+    # --- Empty mesh --------------------------------------------------------
+
+    def test_zero_vertex_mesh_rejected(self, tmp_path):
+        gltf_dict, _raw = _build_configurable_gltf_dict()
+        # Zero out POSITION (and indices) accessor counts.
+        for acc in gltf_dict["accessors"]:
+            acc["count"] = 0
+        gltf_path = _write_gltf(tmp_path, "empty.gltf", gltf_dict)
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.empty", source_path=str(gltf_path))
+        errors = Mesh3DHandler().validate(record, ctx)
+        assert any("zero vertices" in e.message for e in errors)
+
+
+class TestDeployPathAndWriteErrors:
+    """Coverage for stage-scope deploy paths and the transform write-error branch."""
+
+    def _write_valid_gltf(self, tmp_path: Path, name: str = "box.gltf") -> Path:
+        return _write_gltf(tmp_path, name, _build_triangle_gltf())
+
+    def test_stage_scope_deploy_path_layout(self, tmp_path):
+        """Stage-scoped asset with a category tag deploys under stages/<name>/<category>/."""
+        from dia_cli.commands.asset.handlers.mesh3d import _resolve_mesh3d_deploy_path
+        self._write_valid_gltf(tmp_path, "box.gltf")
+        ctx = _make_context(tmp_path)
+        record = {
+            "id": "mesh3d.box", "type": "mesh3d", "source_path": "box.gltf",
+            "scope": "stage", "stage_name": "Level1", "tags": ["environments"],
+        }
+        path = _resolve_mesh3d_deploy_path(record, ctx)
+        parts = path.parts
+        assert "stages" in parts
+        assert "Level1" in parts
+        assert "environments" in parts
+        assert path.name == "box.mesh3d"
+
+    def test_stage_scope_transform_writes_to_stage_dir(self, tmp_path):
+        self._write_valid_gltf(tmp_path, "box.gltf")
+        ctx = _make_context(tmp_path)
+        record = {
+            "id": "mesh3d.box", "type": "mesh3d", "source_path": "box.gltf",
+            "scope": "stage", "stage_name": "Level1", "tags": ["environments"],
+        }
+        result = Mesh3DHandler().transform(record, ctx)
+        assert result.success is True
+        assert Path(result.output_path).exists()
+        assert "Level1" in Path(result.output_path).parts
+
+    def test_write_failure_returns_transform_error(self, tmp_path, monkeypatch):
+        """An OSError while writing the .mesh3d is reported as a transform failure."""
+        gltf_path = self._write_valid_gltf(tmp_path, "box.gltf")
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.box", source_path=str(gltf_path))
+
+        def _boom(self, *args, **kwargs):
+            raise OSError("disk full")
+
+        monkeypatch.setattr(Path, "write_bytes", _boom)
+        result = Mesh3DHandler().transform(record, ctx)
+        assert result.success is False
+        assert any(e.phase == "transform" for e in result.errors)
+        assert any("write" in e.message.lower() or "disk full" in e.message.lower()
+                   for e in result.errors)
