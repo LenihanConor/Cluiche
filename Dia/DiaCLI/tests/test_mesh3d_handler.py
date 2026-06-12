@@ -1222,3 +1222,179 @@ class TestMesh3DHandlerTransformDeploy:
         files_after = set(deploy_root.rglob("*")) if deploy_root.exists() else set()
         assert files_before == files_after, \
             f"deploy() created unexpected files: {files_after - files_before}"
+
+
+# ---------------------------------------------------------------------------
+# Tests: End-to-end pipeline (validate → transform → deploy → parse binary)
+# ---------------------------------------------------------------------------
+
+class TestEndToEnd:
+    """Full pipeline test: fixture .gltf → validate → transform → deploy → binary parse."""
+
+    # Two well-known material names used throughout this test class
+    _MAT_A = "RedMat"
+    _MAT_B = "BlueMat"
+
+    def _write_two_prim_gltf(self, tmp_path: Path, name: str = "fixture.gltf") -> Path:
+        """Write a two-primitive glTF with distinct named materials to tmp_path."""
+        pos_a = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
+        pos_b = [(2.0, 0.0, 0.0), (3.0, 0.0, 0.0), (2.0, 1.0, 0.0)]
+        data = _build_two_prim_gltf_dict(pos_a, pos_b, self._MAT_A, self._MAT_B)
+        return _write_gltf(tmp_path, name, data)
+
+    def test_validate_no_errors(self, tmp_path):
+        """validate() must return no errors for the two-primitive fixture."""
+        gltf_path = self._write_two_prim_gltf(tmp_path)
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.fixture", source_path=str(gltf_path))
+        errors = Mesh3DHandler().validate(record, ctx)
+        assert errors == [], f"Expected no validation errors, got: {_error_messages(errors)}"
+
+    def test_transform_succeeds(self, tmp_path):
+        """transform() must succeed for the two-primitive fixture."""
+        gltf_path = self._write_two_prim_gltf(tmp_path)
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.fixture", source_path=str(gltf_path))
+        result = Mesh3DHandler().transform(record, ctx)
+        assert result.success is True, f"transform() failed: {[e.message for e in result.errors]}"
+
+    def test_deploy_succeeds(self, tmp_path):
+        """deploy() must succeed after transform() for the two-primitive fixture."""
+        gltf_path = self._write_two_prim_gltf(tmp_path)
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.fixture", source_path=str(gltf_path))
+        Mesh3DHandler().transform(record, ctx)
+        result = Mesh3DHandler().deploy(record, ctx)
+        assert result.success is True, f"deploy() failed: {[e.message for e in result.errors]}"
+
+    def test_output_file_has_mesh3d_extension(self, tmp_path):
+        """Deployed file must have the .mesh3d extension."""
+        gltf_path = self._write_two_prim_gltf(tmp_path)
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.fixture", source_path=str(gltf_path))
+        Mesh3DHandler().transform(record, ctx)
+        result = Mesh3DHandler().deploy(record, ctx)
+        assert Path(result.deploy_path).suffix == ".mesh3d"
+
+    def test_output_file_stem_matches_source(self, tmp_path):
+        """Deployed file stem must equal the source .gltf stem."""
+        gltf_path = self._write_two_prim_gltf(tmp_path, name="fixture.gltf")
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.fixture", source_path=str(gltf_path))
+        Mesh3DHandler().transform(record, ctx)
+        result = Mesh3DHandler().deploy(record, ctx)
+        assert Path(result.deploy_path).stem == "fixture"
+
+    def test_binary_header_magic(self, tmp_path):
+        """Binary header magic bytes must be b'MESH'."""
+        gltf_path = self._write_two_prim_gltf(tmp_path)
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.fixture", source_path=str(gltf_path))
+        Mesh3DHandler().transform(record, ctx)
+        deploy_result = Mesh3DHandler().deploy(record, ctx)
+        data = Path(deploy_result.deploy_path).read_bytes()
+        (magic,) = struct.unpack_from("<4s", data, 0)
+        assert magic == b"MESH"
+
+    def test_binary_header_version(self, tmp_path):
+        """Binary header version byte must be 1."""
+        gltf_path = self._write_two_prim_gltf(tmp_path)
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.fixture", source_path=str(gltf_path))
+        Mesh3DHandler().transform(record, ctx)
+        deploy_result = Mesh3DHandler().deploy(record, ctx)
+        data = Path(deploy_result.deploy_path).read_bytes()
+        (version,) = struct.unpack_from("<B", data, 4)
+        assert version == 1
+
+    def test_binary_header_submesh_count(self, tmp_path):
+        """Binary header submeshCount must equal 2 (one per primitive)."""
+        gltf_path = self._write_two_prim_gltf(tmp_path)
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.fixture", source_path=str(gltf_path))
+        Mesh3DHandler().transform(record, ctx)
+        deploy_result = Mesh3DHandler().deploy(record, ctx)
+        data = Path(deploy_result.deploy_path).read_bytes()
+        hdr = _parse_header(data)
+        assert hdr["submesh_count"] == 2
+
+    def test_binary_header_vertex_count_positive(self, tmp_path):
+        """Binary header vertexCount must be > 0."""
+        gltf_path = self._write_two_prim_gltf(tmp_path)
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.fixture", source_path=str(gltf_path))
+        Mesh3DHandler().transform(record, ctx)
+        deploy_result = Mesh3DHandler().deploy(record, ctx)
+        data = Path(deploy_result.deploy_path).read_bytes()
+        hdr = _parse_header(data)
+        assert hdr["vertex_count"] > 0
+
+    def test_binary_total_size(self, tmp_path):
+        """Binary file size must equal 41 + vertexCount*52 + indexCount*2 + submeshCount*12."""
+        gltf_path = self._write_two_prim_gltf(tmp_path)
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.fixture", source_path=str(gltf_path))
+        Mesh3DHandler().transform(record, ctx)
+        deploy_result = Mesh3DHandler().deploy(record, ctx)
+        data = Path(deploy_result.deploy_path).read_bytes()
+        hdr = _parse_header(data)
+        expected_size = (
+            _HEADER_SIZE
+            + hdr["vertex_count"] * _VERTEX_SIZE
+            + hdr["index_count"] * _INDEX_SIZE
+            + hdr["submesh_count"] * _SUBMESH_SIZE
+        )
+        assert len(data) == expected_size, (
+            f"Expected {expected_size} bytes, got {len(data)}. "
+            f"Header: vertexCount={hdr['vertex_count']}, indexCount={hdr['index_count']}, "
+            f"submeshCount={hdr['submesh_count']}"
+        )
+
+    def test_binary_aabb_min_le_max(self, tmp_path):
+        """AABB min values must be <= AABB max values on all three axes."""
+        gltf_path = self._write_two_prim_gltf(tmp_path)
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.fixture", source_path=str(gltf_path))
+        Mesh3DHandler().transform(record, ctx)
+        deploy_result = Mesh3DHandler().deploy(record, ctx)
+        data = Path(deploy_result.deploy_path).read_bytes()
+        hdr = _parse_header(data)
+        min_x, min_y, min_z, max_x, max_y, max_z = hdr["aabb"]
+        assert min_x <= max_x, f"AABB min_x ({min_x}) > max_x ({max_x})"
+        assert min_y <= max_y, f"AABB min_y ({min_y}) > max_y ({max_y})"
+        assert min_z <= max_z, f"AABB min_z ({min_z}) > max_z ({max_z})"
+
+    def test_binary_submesh_material_ids(self, tmp_path):
+        """Each submesh's materialId must be CRC32 of its material name."""
+        gltf_path = self._write_two_prim_gltf(tmp_path)
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.fixture", source_path=str(gltf_path))
+        Mesh3DHandler().transform(record, ctx)
+        deploy_result = Mesh3DHandler().deploy(record, ctx)
+        data = Path(deploy_result.deploy_path).read_bytes()
+        hdr = _parse_header(data)
+
+        # Submesh block starts immediately after vertex and index data
+        sub_block_offset = (
+            _HEADER_SIZE
+            + hdr["vertex_count"] * _VERTEX_SIZE
+            + hdr["index_count"] * _INDEX_SIZE
+        )
+
+        expected_ids = {
+            zlib.crc32(self._MAT_A.encode("utf-8")) & 0xFFFFFFFF,
+            zlib.crc32(self._MAT_B.encode("utf-8")) & 0xFFFFFFFF,
+        }
+
+        actual_ids = set()
+        for i in range(hdr["submesh_count"]):
+            offset = sub_block_offset + i * _SUBMESH_SIZE
+            _idx_start, _idx_count, mat_id = struct.unpack_from("<3I", data, offset)
+            actual_ids.add(mat_id)
+
+        assert actual_ids == expected_ids, (
+            f"Submesh material IDs mismatch. "
+            f"Expected {expected_ids}, got {actual_ids}. "
+            f"MAT_A='{self._MAT_A}' (CRC={zlib.crc32(self._MAT_A.encode()) & 0xFFFFFFFF:#010x}), "
+            f"MAT_B='{self._MAT_B}' (CRC={zlib.crc32(self._MAT_B.encode()) & 0xFFFFFFFF:#010x})"
+        )
