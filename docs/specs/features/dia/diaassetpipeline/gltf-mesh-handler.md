@@ -162,4 +162,4 @@ Only the parent decisions that actually constrain this feature:
 
 ## Status
 
-`In Progress` — Plan: @docs/specs/features/dia/diaassetpipeline/gltf-mesh-handler.plan.md
+`Done` — Plan: @docs/specs/features/dia/diaassetpipeline/gltf-mesh-handler.plan.md

@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/features/dia/diaassetpipeline/gltf-mesh-handler.md
-**Status:** In Progress
+**Status:** Done
 
 ## Implementation Patterns
 
@@ -33,9 +33,9 @@
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | Add `pygltflib` to `External/Python311/requirements.txt` and wire python-packages install step into `dia env setup` orchestrator | `dia env verify` reports pygltflib present | Pending | sonnet | Closes "dia env Python package management" backlog loose-end |
-| 2 | Implement `Mesh3DHandler.validate` — source exists, single mesh, triangle-only, required attributes, skinned rejected, limit checks; collect all errors | Unit: each failure mode → expected `AssetError`; valid glTF → `[]` | Pending | sonnet | TDD: RED first with fixture glTF |
-| 3 | Implement glTF→buffers extraction + binary packer — concatenate primitive vertices, rebase indices, build submeshes, compute AABB, `struct.pack` 41-byte header + payload; `_material_id` via `zlib.crc32`; collision guard | Unit: packed bytes round-trip; CRC parity vs known values | Pending | sonnet | Correctness core |
-| 4 | Implement `transform` + no-op `deploy`; `_resolve_mesh3d_deploy_path` extension override | Unit: transform writes to expected path; deploy returns it | Pending | sonnet | |
-| 5 | Register `Mesh3DHandler` in `handlers/__init__.py` | Unit: registry resolves `mesh3d` to `Mesh3DHandler` | Pending | haiku | |
-| 6 | End-to-end test: fixture `.gltf` through validate→transform→deploy yields parseable `.mesh3d` | Integration: assert header counts + AABB + submesh materialIds | Pending | sonnet | |
+| 1 | Add `pygltflib` to `External/Python311/requirements.txt` and wire python-packages install step into `dia env setup` orchestrator | `dia env verify` reports pygltflib present | Done | sonnet | requirements.txt lives at Dia/DiaCLI/requirements.txt (External/Python311 is gitignored) |
+| 2 | Implement `Mesh3DHandler.validate` — source exists, single mesh, triangle-only, required attributes, skinned rejected, limit checks; collect all errors | Unit: each failure mode → expected `AssetError`; valid glTF → `[]` | Done | sonnet | 22 tests green; fixtures built programmatically in tests via pygltflib |
+| 3 | Implement glTF→buffers extraction + binary packer — concatenate primitive vertices, rebase indices, build submeshes, compute AABB, `struct.pack` 41-byte header + payload; `_material_id` via `zlib.crc32`; collision guard | Unit: packed bytes round-trip; CRC parity vs known values | Done | sonnet | 50 tests green; _extract_buffers + _pack_mesh3d |
+| 4 | Implement `transform` + no-op `deploy`; `_resolve_mesh3d_deploy_path` extension override | Unit: transform writes to expected path; deploy returns it | Done | sonnet | 64 tests green |
+| 5 | Register `Mesh3DHandler` in `handlers/__init__.py` | Unit: registry resolves `mesh3d` to `Mesh3DHandler` | Done | haiku | 98 tests green |
+| 6 | End-to-end test: fixture `.gltf` through validate→transform→deploy yields parseable `.mesh3d` | Integration: assert header counts + AABB + submesh materialIds | Done | sonnet | 76 tests green |
