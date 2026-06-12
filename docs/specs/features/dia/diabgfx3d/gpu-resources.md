@@ -1,7 +1,7 @@
 # Feature Spec: gpu-resources
 
 **Parent:** [diabgfx3d.md](../../../systems/dia/diabgfx3d.md)
-**Status:** Approved
+**Status:** Done
 
 ## Summary
 
