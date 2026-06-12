@@ -23,6 +23,196 @@ def _material_id(name: str) -> int:
     return zlib.crc32(name.encode("utf-8")) & 0xFFFFFFFF
 
 
+def _read_accessor_floats(gltf, acc_idx: int, n_components: int) -> list[list[float]]:
+    """Read float data from a glTF accessor into a list of component lists."""
+    import base64
+    acc = gltf.accessors[acc_idx]
+    bv = gltf.bufferViews[acc.bufferView]
+    buf = gltf.buffers[bv.buffer]
+    uri: str = buf.uri or ""
+    if not uri.startswith("data:"):
+        raise ValueError("external buffer files not supported")
+    raw = base64.b64decode(uri.split(",", 1)[1])
+    offset = (bv.byteOffset or 0) + (acc.byteOffset or 0)
+    fmt = f"<{acc.count * n_components}f"
+    data = struct.unpack_from(fmt, raw, offset)
+    return [list(data[i * n_components:(i + 1) * n_components]) for i in range(acc.count)]
+
+
+def _read_accessor_uint16(gltf, acc_idx: int) -> list[int]:
+    """Read uint16 scalar data from a glTF accessor into a flat list of ints."""
+    import base64
+    acc = gltf.accessors[acc_idx]
+    bv = gltf.bufferViews[acc.bufferView]
+    buf = gltf.buffers[bv.buffer]
+    uri: str = buf.uri or ""
+    if not uri.startswith("data:"):
+        raise ValueError("external buffer files not supported")
+    raw = base64.b64decode(uri.split(",", 1)[1])
+    offset = (bv.byteOffset or 0) + (acc.byteOffset or 0)
+    return list(struct.unpack_from(f"<{acc.count}H", raw, offset))
+
+
+def _extract_buffers(
+    gltf,
+    source_path: Path,
+) -> "tuple[list[dict], list[int], list[dict], tuple]":
+    """Extract vertex/index/submesh data from a validated single-mesh glTF.
+
+    Returns (vertices, indices, submeshes, aabb) where:
+      vertices : list of dicts with keys: position, normal, tangent, uv0
+      indices  : flat list of ints (rebased to combined buffer)
+      submeshes: list of dicts with keys: index_start, index_count, material_id
+      aabb     : (min_x, min_y, min_z, max_x, max_y, max_z) floats
+
+    Raises ValueError on material-name CRC collision (AC-5a).
+    """
+    mesh = gltf.meshes[0]
+
+    all_vertices: list[dict] = []
+    all_indices: list[int] = []
+    all_submeshes: list[dict] = []
+
+    # Track materialId → first material name that produced it (for collision detection).
+    seen_ids: dict[int, str] = {}
+
+    aabb_min = [float("inf"), float("inf"), float("inf")]
+    aabb_max = [float("-inf"), float("-inf"), float("-inf")]
+
+    for prim in mesh.primitives:
+        attrs = prim.attributes
+        vertex_base = len(all_vertices)
+
+        # ----- positions -----
+        positions = _read_accessor_floats(gltf, attrs.POSITION, 3)
+
+        # ----- normals -----
+        normals = _read_accessor_floats(gltf, attrs.NORMAL, 3)
+
+        # ----- tangents (VEC4) -----
+        tangents = _read_accessor_floats(gltf, attrs.TANGENT, 4)
+
+        # ----- UVs -----
+        uvs = _read_accessor_floats(gltf, attrs.TEXCOORD_0, 2)
+
+        # ----- assemble vertex dicts -----
+        for pos, nor, tan, uv in zip(positions, normals, tangents, uvs):
+            all_vertices.append({
+                "position": pos,
+                "normal": nor,
+                "tangent": tan,
+                "uv0": uv,
+            })
+            # AABB accumulation
+            for axis in range(3):
+                if pos[axis] < aabb_min[axis]:
+                    aabb_min[axis] = pos[axis]
+                if pos[axis] > aabb_max[axis]:
+                    aabb_max[axis] = pos[axis]
+
+        # ----- indices (rebased) -----
+        raw_indices = _read_accessor_uint16(gltf, prim.indices)
+        index_start = len(all_indices)
+        for idx in raw_indices:
+            all_indices.append(idx + vertex_base)
+
+        # ----- material id -----
+        if prim.material is not None and prim.material < len(gltf.materials):
+            mat_name: str = gltf.materials[prim.material].name or ""
+        else:
+            mat_name = ""
+
+        mat_id = _material_id(mat_name)
+
+        # AC-5a: collision guard
+        if mat_id in seen_ids:
+            existing_name = seen_ids[mat_id]
+            if existing_name != mat_name:
+                raise ValueError(
+                    f"Material CRC collision: '{mat_name}' and '{existing_name}' "
+                    f"both hash to materialId {mat_id:#010x}"
+                )
+        else:
+            seen_ids[mat_id] = mat_name
+
+        all_submeshes.append({
+            "index_start": index_start,
+            "index_count": len(raw_indices),
+            "material_id": mat_id,
+        })
+
+    aabb = (
+        aabb_min[0], aabb_min[1], aabb_min[2],
+        aabb_max[0], aabb_max[1], aabb_max[2],
+    )
+    return all_vertices, all_indices, all_submeshes, aabb
+
+
+def _pack_mesh3d(
+    vertices: list[dict],
+    indices: list[int],
+    submeshes: list[dict],
+    aabb: tuple,
+) -> bytes:
+    """Pack vertex/index/submesh data into the .mesh3d flat binary.
+
+    Binary layout (matches Mesh3DBinaryReader exactly):
+      Header  : 41 bytes — magic(4s) version(B) vertCount(I) idxCount(I) subCount(I) aabb(6f)
+      Vertices: vertCount × 52 bytes each
+      Indices : idxCount × 2 bytes (uint16 LE)
+      Submeshes: subCount × 12 bytes (indexStart, indexCount, materialId — 3×uint32 LE)
+    """
+    vertex_count = len(vertices)
+    index_count = len(indices)
+    submesh_count = len(submeshes)
+
+    min_x, min_y, min_z, max_x, max_y, max_z = aabb
+
+    # ---- header ----
+    header = struct.pack(
+        "<4sB3I6f",
+        _MAGIC,
+        _VERSION,
+        vertex_count,
+        index_count,
+        submesh_count,
+        min_x, min_y, min_z,
+        max_x, max_y, max_z,
+    )
+
+    # ---- vertices ----
+    vertex_buf = bytearray()
+    for v in vertices:
+        px, py, pz = v["position"]
+        nx, ny, nz = v["normal"]
+        tx, ty, tz, tw = v["tangent"]
+        u, uv = v["uv0"]
+        colour = 0xFFFFFFFF  # AC-5b: always white
+        vertex_buf += struct.pack(
+            "<3f3f4f2fI",
+            px, py, pz,
+            nx, ny, nz,
+            tx, ty, tz, tw,
+            u, uv,
+            colour,
+        )
+
+    # ---- indices ----
+    index_buf = struct.pack(f"<{index_count}H", *indices)
+
+    # ---- submeshes ----
+    submesh_buf = bytearray()
+    for s in submeshes:
+        submesh_buf += struct.pack(
+            "<3I",
+            s["index_start"],
+            s["index_count"],
+            s["material_id"],
+        )
+
+    return header + bytes(vertex_buf) + index_buf + bytes(submesh_buf)
+
+
 def _resolve_mesh3d_deploy_path(record: dict, context: "BuildContext") -> Path:
     ...  # implement in Task 4
 

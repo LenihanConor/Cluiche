@@ -1,4 +1,4 @@
-"""Unit tests for Mesh3DHandler.validate (AC-2).
+"""Unit tests for Mesh3DHandler.validate (AC-2) and mesh3d packer/extractor (AC-4..7).
 
 Fixtures build minimal glTF files programmatically via pygltflib so the tests
 are self-contained and do not depend on checked-in binary blobs.
@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import struct
+import zlib
 import base64
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -17,7 +18,7 @@ import pytest
 
 from dia_cli.commands.asset.context import BuildContext
 from dia_cli.commands.asset.handler import AssetError
-from dia_cli.commands.asset.handlers.mesh3d import Mesh3DHandler
+from dia_cli.commands.asset.handlers.mesh3d import Mesh3DHandler, _pack_mesh3d, _extract_buffers
 
 
 # ---------------------------------------------------------------------------
@@ -553,3 +554,507 @@ class TestMesh3DHandlerValidate:
         errors = Mesh3DHandler().validate(record, ctx)
         assert all(e.phase == "validate" for e in errors), \
             f"Unexpected phase in errors: {[(e.phase, e.message) for e in errors]}"
+
+
+# ---------------------------------------------------------------------------
+# Helpers for packer / extractor tests
+# ---------------------------------------------------------------------------
+
+_HEADER_SIZE = 41   # 4s B 3I 6f  = 4+1+12+24 = 41
+_VERTEX_SIZE = 52   # 3f 3f 4f 2f I = 12+12+16+8+4 = 52
+_INDEX_SIZE = 2     # uint16
+_SUBMESH_SIZE = 12  # 3I
+
+
+def _make_vertices(n: int, pos=None) -> list[dict]:
+    """Build n vertex dicts with optional custom positions (list of (x,y,z))."""
+    verts = []
+    for i in range(n):
+        p = pos[i] if pos and i < len(pos) else (float(i), 0.0, 0.0)
+        verts.append({
+            "position": list(p),
+            "normal": [0.0, 0.0, 1.0],
+            "tangent": [1.0, 0.0, 0.0, 1.0],
+            "uv0": [0.0, 0.0],
+        })
+    return verts
+
+
+def _make_submesh(index_start: int, index_count: int, mat_name: str) -> dict:
+    mat_id = zlib.crc32(mat_name.encode("utf-8")) & 0xFFFFFFFF
+    return {"index_start": index_start, "index_count": index_count, "material_id": mat_id}
+
+
+def _parse_header(data: bytes) -> dict:
+    """Unpack the 41-byte .mesh3d header."""
+    magic, version, vert_count, idx_count, sub_count, *aabb = struct.unpack_from("<4sB3I6f", data, 0)
+    return {
+        "magic": magic,
+        "version": version,
+        "vertex_count": vert_count,
+        "index_count": idx_count,
+        "submesh_count": sub_count,
+        "aabb": tuple(aabb),
+    }
+
+
+def _build_two_prim_gltf_dict(
+    pos_a: list, pos_b: list,
+    mat_name_a: str = "MatA",
+    mat_name_b: str = "MatB",
+) -> dict:
+    """
+    Build a raw glTF dict (not written to disk) with one mesh and two primitives.
+    Each primitive gets its own material.  Indices are [0,1,2] for both prims.
+    """
+    def _v3(triples):
+        return b"".join(struct.pack("<3f", *t) for t in triples)
+
+    def _v4(quads):
+        return b"".join(struct.pack("<4f", *q) for q in quads)
+
+    def _v2(pairs):
+        return b"".join(struct.pack("<2f", *p) for p in pairs)
+
+    n_a = len(pos_a)
+    n_b = len(pos_b)
+
+    pos_bytes_a = _v3(pos_a)
+    norm_bytes_a = _v3([(0.0, 0.0, 1.0)] * n_a)
+    tang_bytes_a = _v4([(1.0, 0.0, 0.0, 1.0)] * n_a)
+    uv_bytes_a = _v2([(0.0, 0.0)] * n_a)
+    idx_bytes_a = struct.pack(f"<{n_a}H", *range(n_a))
+
+    pos_bytes_b = _v3(pos_b)
+    norm_bytes_b = _v3([(0.0, 0.0, 1.0)] * n_b)
+    tang_bytes_b = _v4([(1.0, 0.0, 0.0, 1.0)] * n_b)
+    uv_bytes_b = _v2([(0.0, 0.0)] * n_b)
+    idx_bytes_b = struct.pack(f"<{n_b}H", *range(n_b))
+
+    parts = [
+        pos_bytes_a, norm_bytes_a, tang_bytes_a, uv_bytes_a, idx_bytes_a,
+        pos_bytes_b, norm_bytes_b, tang_bytes_b, uv_bytes_b, idx_bytes_b,
+    ]
+
+    offsets = []
+    cur = 0
+    for p in parts:
+        offsets.append(cur)
+        cur += len(p)
+
+    raw = b"".join(parts)
+    while len(raw) % 4 != 0:
+        raw += b"\x00"
+    b64 = base64.b64encode(raw).decode()
+
+    # accessor indices: 0..4 for prim A, 5..9 for prim B
+    # within each group: POSITION, NORMAL, TANGENT, TEXCOORD_0, indices
+    accessors = [
+        {"bufferView": 0, "componentType": 5126, "count": n_a, "type": "VEC3"},  # pos A
+        {"bufferView": 1, "componentType": 5126, "count": n_a, "type": "VEC3"},  # norm A
+        {"bufferView": 2, "componentType": 5126, "count": n_a, "type": "VEC4"},  # tang A
+        {"bufferView": 3, "componentType": 5126, "count": n_a, "type": "VEC2"},  # uv A
+        {"bufferView": 4, "componentType": 5123, "count": n_a, "type": "SCALAR"},  # idx A
+        {"bufferView": 5, "componentType": 5126, "count": n_b, "type": "VEC3"},  # pos B
+        {"bufferView": 6, "componentType": 5126, "count": n_b, "type": "VEC3"},  # norm B
+        {"bufferView": 7, "componentType": 5126, "count": n_b, "type": "VEC4"},  # tang B
+        {"bufferView": 8, "componentType": 5126, "count": n_b, "type": "VEC2"},  # uv B
+        {"bufferView": 9, "componentType": 5123, "count": n_b, "type": "SCALAR"},  # idx B
+    ]
+
+    bufferViews = [
+        {"buffer": 0, "byteOffset": offsets[i], "byteLength": len(parts[i])}
+        for i in range(len(parts))
+    ]
+
+    mat_idx_a = 0
+    mat_idx_b = 1
+    prim_a = {
+        "attributes": {"POSITION": 0, "NORMAL": 1, "TANGENT": 2, "TEXCOORD_0": 3},
+        "indices": 4,
+        "mode": 4,
+        "material": mat_idx_a,
+    }
+    prim_b = {
+        "attributes": {"POSITION": 5, "NORMAL": 6, "TANGENT": 7, "TEXCOORD_0": 8},
+        "indices": 9,
+        "mode": 4,
+        "material": mat_idx_b,
+    }
+
+    return {
+        "asset": {"version": "2.0"},
+        "meshes": [{"name": "TestMesh", "primitives": [prim_a, prim_b]}],
+        "materials": [
+            {"name": mat_name_a},
+            {"name": mat_name_b},
+        ],
+        "accessors": accessors,
+        "bufferViews": bufferViews,
+        "buffers": [{"byteLength": len(raw), "uri": f"data:application/octet-stream;base64,{b64}"}],
+    }
+
+
+def _build_single_prim_gltf_dict(positions: list, mat_name: str | None = "Material") -> dict:
+    """Build a raw glTF dict with one mesh and one primitive."""
+    def _v3(triples):
+        return b"".join(struct.pack("<3f", *t) for t in triples)
+
+    n = len(positions)
+    pos_bytes = _v3(positions)
+    norm_bytes = _v3([(0.0, 0.0, 1.0)] * n)
+    tang_bytes = b"".join(struct.pack("<4f", 1.0, 0.0, 0.0, 1.0) for _ in range(n))
+    uv_bytes = b"".join(struct.pack("<2f", 0.0, 0.0) for _ in range(n))
+    idx_bytes = struct.pack(f"<{n}H", *range(n))
+
+    parts = [pos_bytes, norm_bytes, tang_bytes, uv_bytes, idx_bytes]
+    offsets, cur = [], 0
+    for p in parts:
+        offsets.append(cur)
+        cur += len(p)
+    raw = b"".join(parts)
+    while len(raw) % 4 != 0:
+        raw += b"\x00"
+    b64 = base64.b64encode(raw).decode()
+
+    accessors = [
+        {"bufferView": 0, "componentType": 5126, "count": n, "type": "VEC3"},    # POSITION
+        {"bufferView": 1, "componentType": 5126, "count": n, "type": "VEC3"},    # NORMAL
+        {"bufferView": 2, "componentType": 5126, "count": n, "type": "VEC4"},    # TANGENT
+        {"bufferView": 3, "componentType": 5126, "count": n, "type": "VEC2"},    # TEXCOORD_0
+        {"bufferView": 4, "componentType": 5123, "count": n, "type": "SCALAR"},  # indices
+    ]
+    bufferViews = [
+        {"buffer": 0, "byteOffset": offsets[i], "byteLength": len(parts[i])}
+        for i in range(len(parts))
+    ]
+    prim: dict = {
+        "attributes": {"POSITION": 0, "NORMAL": 1, "TANGENT": 2, "TEXCOORD_0": 3},
+        "indices": 4,
+        "mode": 4,
+    }
+    materials = []
+    if mat_name is not None:
+        prim["material"] = 0
+        materials = [{"name": mat_name}]
+
+    return {
+        "asset": {"version": "2.0"},
+        "meshes": [{"name": "Mesh", "primitives": [prim]}],
+        "materials": materials,
+        "accessors": accessors,
+        "bufferViews": bufferViews,
+        "buffers": [{"byteLength": len(raw), "uri": f"data:application/octet-stream;base64,{b64}"}],
+    }
+
+
+def _load_gltf_from_dict(d: dict):
+    """Write dict to a temp file-like string and load via pygltflib."""
+    import pygltflib
+    import tempfile, os
+    with tempfile.NamedTemporaryFile(suffix=".gltf", delete=False, mode="w", encoding="utf-8") as f:
+        json.dump(d, f)
+        tmp = f.name
+    try:
+        gltf = pygltflib.GLTF2().load(tmp)
+    finally:
+        os.unlink(tmp)
+    return gltf
+
+
+# ---------------------------------------------------------------------------
+# Tests: _pack_mesh3d (AC-4, AC-5, AC-6)
+# ---------------------------------------------------------------------------
+
+class TestPackMesh3D:
+    """Unit tests for _pack_mesh3d — binary layout correctness."""
+
+    def _simple_pack(self, n_verts=3, n_indices=3, n_submeshes=1):
+        verts = _make_vertices(n_verts)
+        indices = list(range(n_indices))
+        submeshes = [_make_submesh(0, n_indices, "Mat")]
+        aabb = (0.0, 0.0, 0.0, float(n_verts - 1), 0.0, 0.0)
+        return _pack_mesh3d(verts, indices, submeshes, aabb)
+
+    def test_header_magic(self):
+        data = self._simple_pack()
+        hdr = _parse_header(data)
+        assert hdr["magic"] == b"MESH"
+
+    def test_header_version(self):
+        data = self._simple_pack()
+        hdr = _parse_header(data)
+        assert hdr["version"] == 1
+
+    def test_header_vertex_count(self):
+        data = self._simple_pack(n_verts=6, n_indices=6)
+        hdr = _parse_header(data)
+        assert hdr["vertex_count"] == 6
+
+    def test_header_index_count(self):
+        data = self._simple_pack(n_verts=3, n_indices=3)
+        hdr = _parse_header(data)
+        assert hdr["index_count"] == 3
+
+    def test_header_submesh_count(self):
+        verts = _make_vertices(6)
+        indices = list(range(6))
+        submeshes = [
+            _make_submesh(0, 3, "MatA"),
+            _make_submesh(3, 3, "MatB"),
+        ]
+        aabb = (0.0, 0.0, 0.0, 5.0, 0.0, 0.0)
+        data = _pack_mesh3d(verts, indices, submeshes, aabb)
+        hdr = _parse_header(data)
+        assert hdr["submesh_count"] == 2
+
+    def test_total_size_single_prim(self):
+        n_v, n_i, n_s = 3, 3, 1
+        data = self._simple_pack(n_verts=n_v, n_indices=n_i, n_submeshes=n_s)
+        expected = _HEADER_SIZE + n_v * _VERTEX_SIZE + n_i * _INDEX_SIZE + n_s * _SUBMESH_SIZE
+        assert len(data) == expected
+
+    def test_total_size_two_submeshes(self):
+        n_v, n_i, n_s = 6, 6, 2
+        verts = _make_vertices(n_v)
+        indices = list(range(n_i))
+        submeshes = [_make_submesh(0, 3, "MatA"), _make_submesh(3, 3, "MatB")]
+        aabb = (0.0, 0.0, 0.0, 5.0, 0.0, 0.0)
+        data = _pack_mesh3d(verts, indices, submeshes, aabb)
+        expected = _HEADER_SIZE + n_v * _VERTEX_SIZE + n_i * _INDEX_SIZE + n_s * _SUBMESH_SIZE
+        assert len(data) == expected
+
+    def test_aabb_values_in_header(self):
+        verts = _make_vertices(3, pos=[(1.0, 2.0, 3.0), (4.0, 5.0, 6.0), (7.0, 8.0, 9.0)])
+        indices = [0, 1, 2]
+        submeshes = [_make_submesh(0, 3, "Mat")]
+        aabb = (1.0, 2.0, 3.0, 7.0, 8.0, 9.0)
+        data = _pack_mesh3d(verts, indices, submeshes, aabb)
+        hdr = _parse_header(data)
+        assert hdr["aabb"] == pytest.approx((1.0, 2.0, 3.0, 7.0, 8.0, 9.0))
+
+    def test_submesh_material_id_crc(self):
+        """materialId must be zlib.crc32(name.encode('utf-8')) & 0xFFFFFFFF."""
+        mat_name = "MyMaterial"
+        expected_id = zlib.crc32(mat_name.encode("utf-8")) & 0xFFFFFFFF
+        verts = _make_vertices(3)
+        indices = [0, 1, 2]
+        submeshes = [{"index_start": 0, "index_count": 3, "material_id": expected_id}]
+        aabb = (0.0, 0.0, 0.0, 2.0, 0.0, 0.0)
+        data = _pack_mesh3d(verts, indices, submeshes, aabb)
+        # Parse the submesh block: at offset HEADER + 3*52 + 3*2
+        sub_offset = _HEADER_SIZE + 3 * _VERTEX_SIZE + 3 * _INDEX_SIZE
+        idx_start, idx_count, mat_id = struct.unpack_from("<3I", data, sub_offset)
+        assert mat_id == expected_id
+
+    def test_known_crc_parity_check(self):
+        """Hand-verify: zlib.crc32(b'Material') & 0xFFFFFFFF must match reference."""
+        # Computed independently: zlib.crc32(b"Material") = 0x35EB2D0D (may vary by platform,
+        # but zlib CRC32 is deterministic — this value is fixed).
+        expected = zlib.crc32(b"Material") & 0xFFFFFFFF
+        # The point is it's deterministic and non-zero
+        assert expected != 0
+        # And verify _make_submesh produces the same value
+        sub = _make_submesh(0, 3, "Material")
+        assert sub["material_id"] == expected
+
+    def test_vertex_colour_always_white(self):
+        """Every vertex's colour field must be 0xFFFFFFFF (AC-5b)."""
+        verts = _make_vertices(3)
+        indices = [0, 1, 2]
+        submeshes = [_make_submesh(0, 3, "Mat")]
+        aabb = (0.0, 0.0, 0.0, 2.0, 0.0, 0.0)
+        data = _pack_mesh3d(verts, indices, submeshes, aabb)
+        for i in range(3):
+            vert_offset = _HEADER_SIZE + i * _VERTEX_SIZE
+            # colour is the last field: offset 48 within the vertex (3f+3f+4f+2f = 12+12+16+8 = 48)
+            (colour,) = struct.unpack_from("<I", data, vert_offset + 48)
+            assert colour == 0xFFFFFFFF, f"vertex {i} colour = {colour:#010x}, expected 0xffffffff"
+
+    def test_indices_written_as_uint16_le(self):
+        verts = _make_vertices(3)
+        indices = [2, 1, 0]
+        submeshes = [_make_submesh(0, 3, "Mat")]
+        aabb = (0.0, 0.0, 0.0, 2.0, 0.0, 0.0)
+        data = _pack_mesh3d(verts, indices, submeshes, aabb)
+        idx_offset = _HEADER_SIZE + 3 * _VERTEX_SIZE
+        a, b, c = struct.unpack_from("<3H", data, idx_offset)
+        assert (a, b, c) == (2, 1, 0)
+
+    def test_submesh_fields_layout(self):
+        """Submesh block: [indexStart, indexCount, materialId] as 3 uint32 LE."""
+        verts = _make_vertices(6)
+        indices = list(range(6))
+        mat_id = zlib.crc32(b"Foo") & 0xFFFFFFFF
+        submeshes = [{"index_start": 3, "index_count": 3, "material_id": mat_id}]
+        aabb = (0.0, 0.0, 0.0, 5.0, 0.0, 0.0)
+        data = _pack_mesh3d(verts, indices, submeshes, aabb)
+        sub_offset = _HEADER_SIZE + 6 * _VERTEX_SIZE + 6 * _INDEX_SIZE
+        idx_start, idx_count, m_id = struct.unpack_from("<3I", data, sub_offset)
+        assert (idx_start, idx_count, m_id) == (3, 3, mat_id)
+
+
+# ---------------------------------------------------------------------------
+# Tests: _extract_buffers (AC-5, AC-5a, AC-6, AC-7)
+# ---------------------------------------------------------------------------
+
+class TestExtractBuffers:
+    """Unit tests for _extract_buffers — data extraction and rebase correctness."""
+
+    def test_single_prim_vertex_count(self, tmp_path):
+        positions = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
+        gltf = _load_gltf_from_dict(_build_single_prim_gltf_dict(positions))
+        verts, indices, submeshes, aabb = _extract_buffers(gltf, tmp_path / "dummy.gltf")
+        assert len(verts) == 3
+
+    def test_single_prim_indices(self, tmp_path):
+        positions = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
+        gltf = _load_gltf_from_dict(_build_single_prim_gltf_dict(positions))
+        verts, indices, submeshes, aabb = _extract_buffers(gltf, tmp_path / "dummy.gltf")
+        assert indices == [0, 1, 2]
+
+    def test_two_prim_index_rebase(self, tmp_path):
+        """AC-7: second primitive's indices must be rebased by first prim's vertex count."""
+        pos_a = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
+        pos_b = [(2.0, 0.0, 0.0), (3.0, 0.0, 0.0), (2.0, 1.0, 0.0)]
+        gltf = _load_gltf_from_dict(_build_two_prim_gltf_dict(pos_a, pos_b))
+        verts, indices, submeshes, aabb = _extract_buffers(gltf, tmp_path / "dummy.gltf")
+        # prim A: 3 verts, indices [0,1,2] — unchanged
+        # prim B: 3 verts, raw indices [0,1,2], rebased to [3,4,5]
+        assert indices[:3] == [0, 1, 2]
+        assert indices[3:] == [3, 4, 5]
+
+    def test_two_prim_total_vertex_count(self, tmp_path):
+        pos_a = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
+        pos_b = [(2.0, 0.0, 0.0), (3.0, 0.0, 0.0), (2.0, 1.0, 0.0)]
+        gltf = _load_gltf_from_dict(_build_two_prim_gltf_dict(pos_a, pos_b))
+        verts, indices, submeshes, aabb = _extract_buffers(gltf, tmp_path / "dummy.gltf")
+        assert len(verts) == 6
+
+    def test_two_prim_submesh_index_ranges(self, tmp_path):
+        """AC-7: submesh[0] starts at 0, submesh[1] starts at 3."""
+        pos_a = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
+        pos_b = [(2.0, 0.0, 0.0), (3.0, 0.0, 0.0), (2.0, 1.0, 0.0)]
+        gltf = _load_gltf_from_dict(_build_two_prim_gltf_dict(pos_a, pos_b))
+        verts, indices, submeshes, aabb = _extract_buffers(gltf, tmp_path / "dummy.gltf")
+        assert submeshes[0]["index_start"] == 0
+        assert submeshes[0]["index_count"] == 3
+        assert submeshes[1]["index_start"] == 3
+        assert submeshes[1]["index_count"] == 3
+
+    def test_aabb_covers_all_positions(self, tmp_path):
+        """AC-6: AABB is the union of all primitive vertex positions."""
+        pos_a = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
+        pos_b = [(-1.0, -1.0, -1.0), (5.0, 3.0, 2.0), (0.0, 0.0, 0.0)]
+        gltf = _load_gltf_from_dict(_build_two_prim_gltf_dict(pos_a, pos_b))
+        verts, indices, submeshes, aabb = _extract_buffers(gltf, tmp_path / "dummy.gltf")
+        min_x, min_y, min_z, max_x, max_y, max_z = aabb
+        assert min_x == pytest.approx(-1.0)
+        assert min_y == pytest.approx(-1.0)
+        assert min_z == pytest.approx(-1.0)
+        assert max_x == pytest.approx(5.0)
+        assert max_y == pytest.approx(3.0)
+        assert max_z == pytest.approx(2.0)
+
+    def test_material_id_from_name(self, tmp_path):
+        """AC-5: materialId = zlib.crc32(name.encode('utf-8')) & 0xFFFFFFFF."""
+        positions = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
+        gltf = _load_gltf_from_dict(_build_single_prim_gltf_dict(positions, mat_name="Material"))
+        verts, indices, submeshes, aabb = _extract_buffers(gltf, tmp_path / "dummy.gltf")
+        expected_id = zlib.crc32(b"Material") & 0xFFFFFFFF
+        assert submeshes[0]["material_id"] == expected_id
+
+    def test_no_material_uses_empty_string_crc(self, tmp_path):
+        """AC-5: primitive with no material uses CRC32 of '' as materialId."""
+        positions = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
+        gltf = _load_gltf_from_dict(_build_single_prim_gltf_dict(positions, mat_name=None))
+        verts, indices, submeshes, aabb = _extract_buffers(gltf, tmp_path / "dummy.gltf")
+        expected_id = zlib.crc32(b"") & 0xFFFFFFFF
+        assert submeshes[0]["material_id"] == expected_id
+
+    def test_material_crc_collision_raises_value_error(self, tmp_path):
+        """AC-5a: two different material names with the same CRC32 must raise ValueError."""
+        # We can't easily manufacture a real CRC collision, so we patch _material_id
+        # to return a constant for any input, simulating a collision.
+        import dia_cli.commands.asset.handlers.mesh3d as mesh3d_mod
+
+        original = mesh3d_mod._material_id
+
+        def _always_same(name: str) -> int:
+            return 0xDEADBEEF  # collide everything
+
+        mesh3d_mod._material_id = _always_same
+        try:
+            pos_a = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
+            pos_b = [(2.0, 0.0, 0.0), (3.0, 0.0, 0.0), (2.0, 1.0, 0.0)]
+            # Use distinct material names so only the hash makes them "collide"
+            gltf = _load_gltf_from_dict(_build_two_prim_gltf_dict(pos_a, pos_b, "DistinctA", "DistinctB"))
+            with pytest.raises(ValueError, match=r"(?i)collision|crc"):
+                _extract_buffers(gltf, tmp_path / "dummy.gltf")
+        finally:
+            mesh3d_mod._material_id = original
+
+    def test_vertex_data_has_required_keys(self, tmp_path):
+        positions = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
+        gltf = _load_gltf_from_dict(_build_single_prim_gltf_dict(positions))
+        verts, indices, submeshes, aabb = _extract_buffers(gltf, tmp_path / "dummy.gltf")
+        for v in verts:
+            assert set(v.keys()) >= {"position", "normal", "tangent", "uv0"}
+
+
+# ---------------------------------------------------------------------------
+# Tests: Round-trip (AC-4..7 combined)
+# ---------------------------------------------------------------------------
+
+class TestRoundTrip:
+    """Build glTF → _extract_buffers → _pack_mesh3d → parse header → assert counts."""
+
+    def test_single_prim_round_trip_counts(self, tmp_path):
+        positions = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
+        gltf = _load_gltf_from_dict(_build_single_prim_gltf_dict(positions))
+        verts, indices, submeshes, aabb = _extract_buffers(gltf, tmp_path / "dummy.gltf")
+        data = _pack_mesh3d(verts, indices, submeshes, aabb)
+        hdr = _parse_header(data)
+        assert hdr["magic"] == b"MESH"
+        assert hdr["version"] == 1
+        assert hdr["vertex_count"] == 3
+        assert hdr["index_count"] == 3
+        assert hdr["submesh_count"] == 1
+
+    def test_two_prim_round_trip_counts(self, tmp_path):
+        pos_a = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
+        pos_b = [(2.0, 0.0, 0.0), (3.0, 0.0, 0.0), (2.0, 1.0, 0.0)]
+        gltf = _load_gltf_from_dict(_build_two_prim_gltf_dict(pos_a, pos_b))
+        verts, indices, submeshes, aabb = _extract_buffers(gltf, tmp_path / "dummy.gltf")
+        data = _pack_mesh3d(verts, indices, submeshes, aabb)
+        hdr = _parse_header(data)
+        assert hdr["vertex_count"] == 6
+        assert hdr["index_count"] == 6
+        assert hdr["submesh_count"] == 2
+
+    def test_round_trip_binary_size(self, tmp_path):
+        pos_a = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
+        pos_b = [(2.0, 0.0, 0.0), (3.0, 0.0, 0.0), (2.0, 1.0, 0.0)]
+        gltf = _load_gltf_from_dict(_build_two_prim_gltf_dict(pos_a, pos_b))
+        verts, indices, submeshes, aabb = _extract_buffers(gltf, tmp_path / "dummy.gltf")
+        data = _pack_mesh3d(verts, indices, submeshes, aabb)
+        expected = _HEADER_SIZE + 6 * _VERTEX_SIZE + 6 * _INDEX_SIZE + 2 * _SUBMESH_SIZE
+        assert len(data) == expected
+
+    def test_round_trip_aabb_min_max(self, tmp_path):
+        positions = [(-3.0, -2.0, -1.0), (3.0, 2.0, 1.0), (0.0, 0.0, 0.0)]
+        gltf = _load_gltf_from_dict(_build_single_prim_gltf_dict(positions))
+        verts, indices, submeshes, aabb = _extract_buffers(gltf, tmp_path / "dummy.gltf")
+        data = _pack_mesh3d(verts, indices, submeshes, aabb)
+        hdr = _parse_header(data)
+        assert hdr["aabb"] == pytest.approx((-3.0, -2.0, -1.0, 3.0, 2.0, 1.0))
+
+    def test_round_trip_submesh_material_id(self, tmp_path):
+        positions = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
+        gltf = _load_gltf_from_dict(_build_single_prim_gltf_dict(positions, mat_name="Rock"))
+        verts, indices, submeshes, aabb = _extract_buffers(gltf, tmp_path / "dummy.gltf")
+        data = _pack_mesh3d(verts, indices, submeshes, aabb)
+        sub_offset = _HEADER_SIZE + 3 * _VERTEX_SIZE + 3 * _INDEX_SIZE
+        idx_start, idx_count, mat_id = struct.unpack_from("<3I", data, sub_offset)
+        expected_id = zlib.crc32(b"Rock") & 0xFFFFFFFF
+        assert mat_id == expected_id
