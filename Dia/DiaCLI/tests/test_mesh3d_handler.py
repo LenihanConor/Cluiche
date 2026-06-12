@@ -1223,6 +1223,56 @@ class TestMesh3DHandlerTransformDeploy:
         assert files_before == files_after, \
             f"deploy() created unexpected files: {files_after - files_before}"
 
+    # ------------------------------------------------------------------
+    # transform — OnMesh3DCookCompleted event (observation gap)
+    # ------------------------------------------------------------------
+
+    def test_transform_emits_cook_completed_event(self, tmp_path):
+        gltf_path = self._write_valid_gltf(tmp_path)
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.box", source_path=str(gltf_path))
+        Mesh3DHandler().transform(record, ctx)
+        events = [c[0][0] for c in ctx.output.emit.call_args_list
+                  if c[0][0].get("event") == "OnMesh3DCookCompleted"]
+        assert len(events) == 1
+
+    def test_transform_cook_event_has_correct_asset_id(self, tmp_path):
+        gltf_path = self._write_valid_gltf(tmp_path)
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.box", source_path=str(gltf_path))
+        Mesh3DHandler().transform(record, ctx)
+        event = next(c[0][0] for c in ctx.output.emit.call_args_list
+                     if c[0][0].get("event") == "OnMesh3DCookCompleted")
+        assert event["assetId"] == "mesh3d.box"
+
+    def test_transform_cook_event_counts_positive(self, tmp_path):
+        gltf_path = self._write_valid_gltf(tmp_path)
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.box", source_path=str(gltf_path))
+        Mesh3DHandler().transform(record, ctx)
+        event = next(c[0][0] for c in ctx.output.emit.call_args_list
+                     if c[0][0].get("event") == "OnMesh3DCookCompleted")
+        assert event["vertexCount"] > 0
+        assert event["indexCount"] > 0
+        assert event["submeshCount"] == 1
+
+    def test_transform_cook_event_file_size_matches_disk(self, tmp_path):
+        gltf_path = self._write_valid_gltf(tmp_path)
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.box", source_path=str(gltf_path))
+        result = Mesh3DHandler().transform(record, ctx)
+        event = next(c[0][0] for c in ctx.output.emit.call_args_list
+                     if c[0][0].get("event") == "OnMesh3DCookCompleted")
+        assert event["fileSizeBytes"] == Path(result.output_path).stat().st_size
+
+    def test_transform_no_cook_event_on_failure(self, tmp_path):
+        ctx = _make_context(tmp_path)
+        record = _make_record("mesh3d.missing", source_path=str(tmp_path / "nope.gltf"))
+        Mesh3DHandler().transform(record, ctx)
+        events = [c[0][0] for c in ctx.output.emit.call_args_list
+                  if c[0][0].get("event") == "OnMesh3DCookCompleted"]
+        assert len(events) == 0
+
 
 # ---------------------------------------------------------------------------
 # Tests: End-to-end pipeline (validate → transform → deploy → parse binary)
