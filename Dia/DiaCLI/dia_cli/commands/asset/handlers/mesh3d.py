@@ -424,7 +424,18 @@ class Mesh3DHandler(AssetHandler):
                                    message=f"Failed to write .mesh3d: {exc}")],
             )
 
-        # 6. Return success
+        # 6. Emit cook stats — vertex/index/submesh counts not visible to the runner
+        context.output.emit({
+            "event": "OnMesh3DCookCompleted",
+            "system": "mesh3d-handler",
+            "assetId": asset_id,
+            "outputPath": str(deploy_path),
+            "vertexCount": len(vertices),
+            "indexCount": len(indices),
+            "submeshCount": len(submeshes),
+            "fileSizeBytes": len(mesh_bytes),
+        })
+
         return TransformResult(success=True, output_path=str(deploy_path))
 
     def deploy(self, record: dict, context: "BuildContext") -> DeployResult:
