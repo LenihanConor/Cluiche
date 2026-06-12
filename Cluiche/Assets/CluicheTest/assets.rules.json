@@ -13,6 +13,12 @@
       "tag": "visual"
     },
     {
+      "name": "tag_mesh3d_as_visual",
+      "match": { "type": "mesh3d" },
+      "action": "assign_tag",
+      "tag": "visual"
+    },
+    {
       "name": "tag_manifests_as_config",
       "match": { "type": "manifest" },
       "action": "assign_tag",

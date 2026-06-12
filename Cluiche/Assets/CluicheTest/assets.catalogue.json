@@ -629,6 +629,10 @@
                 {
                     "type": "contains",
                     "target": "manifest.mesh3dtest_test_stage"
+                },
+                {
+                    "type": "contains",
+                    "target": "mesh3d.avocado"
                 }
             ]
         },
@@ -640,6 +644,16 @@
             "stage_name": "Mesh3DTestTestStage",
             "tags": [
                 "misc/ApplicationFlow"
+            ]
+        },
+        {
+            "id": "mesh3d.avocado",
+            "type": "mesh3d",
+            "source_path": "Stages/Mesh3DTestTestStage/World/Meshes/Avocado.gltf",
+            "scope": "stage",
+            "stage_name": "Mesh3DTestTestStage",
+            "tags": [
+                "visual"
             ]
         }
     ],
