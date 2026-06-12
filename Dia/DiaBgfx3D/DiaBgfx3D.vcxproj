@@ -22,10 +22,12 @@
   <ItemGroup>
     <ClInclude Include="Canvas3D.h" />
     <ClInclude Include="Resources\MaterialRegistry.h" />
+    <ClInclude Include="Resources\MeshGpuCache.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Canvas3D.cpp" />
     <ClCompile Include="Resources\MaterialRegistry.cpp" />
+    <ClCompile Include="Resources\MeshGpuCache.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
@@ -42,6 +44,9 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaBgfx\DiaBgfx.vcxproj">
       <Project>{A1B2C3D4-E5F6-7890-1234-ABCDEF012345}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaMesh3D\DiaMesh3D.vcxproj">
+      <Project>{F1E2D3C4-B5A6-7890-FEDC-BA9876543210}</Project>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">

@@ -1,0 +1,137 @@
+////////////////////////////////////////////////////////////////////////////////
+// Filename: MeshGpuCache.cpp
+////////////////////////////////////////////////////////////////////////////////
+#include "DiaBgfx3D/Resources/MeshGpuCache.h"
+
+// bgfx is included only in the .cpp — never in the public header (BG3-005).
+#include <bgfx/bgfx.h>
+
+#include <DiaMesh3D/Mesh3DAsset.h>
+#include <DiaMesh3D/Vertex3D.h>
+
+#include <unordered_map>
+
+namespace Dia
+{
+    namespace Bgfx3D
+    {
+        // -----------------------------------------------------------------------
+        // Pimpl
+        // -----------------------------------------------------------------------
+        struct MeshGpuCache::Impl
+        {
+            // Keyed by StringCRC value (uint32_t) — BG3-009 permits STL internally.
+            std::unordered_map<uint32_t, GpuMesh> cache;
+        };
+
+        // -----------------------------------------------------------------------
+        // Construction / destruction
+        // -----------------------------------------------------------------------
+        MeshGpuCache::MeshGpuCache()
+            : mImpl(new Impl())
+        {
+        }
+
+        MeshGpuCache::~MeshGpuCache()
+        {
+            // DestroyAll must be called explicitly before shutdown; this is a
+            // safety net for any remaining entries (handles may already be invalid
+            // if bgfx has shut down, so we only free the Impl allocation here).
+            delete mImpl;
+            mImpl = nullptr;
+        }
+
+        // -----------------------------------------------------------------------
+        // GetOrUpload
+        // -----------------------------------------------------------------------
+        const GpuMesh* MeshGpuCache::GetOrUpload(const Dia::Mesh3D::Mesh3DAsset& asset)
+        {
+            // AC-5: return nullptr for non-Ready assets; renderer skips the draw.
+            if (!asset.IsReady())
+            {
+                return nullptr;
+            }
+
+            const uint32_t key = asset.GetAssetId().Value();
+
+            // Cache hit — return existing entry.
+            auto it = mImpl->cache.find(key);
+            if (it != mImpl->cache.end())
+            {
+                return &it->second;
+            }
+
+            // -----------------------------------------------------------------------
+            // Build vertex layout matching Vertex3D (52 bytes).
+            // Order must match the struct layout in Vertex3D.h exactly:
+            //   position  Vector3D  3×float  12 bytes
+            //   normal    Vector3D  3×float  12 bytes
+            //   tangent   Vector4D  4×float  16 bytes
+            //   uv0       Vector2D  2×float   8 bytes
+            //   colour    uint32_t  RGBA8     4 bytes
+            // -----------------------------------------------------------------------
+            bgfx::VertexLayout layout;
+            layout.begin()
+                .add(bgfx::Attrib::Position,  3, bgfx::AttribType::Float)
+                .add(bgfx::Attrib::Normal,    3, bgfx::AttribType::Float)
+                .add(bgfx::Attrib::Tangent,   4, bgfx::AttribType::Float)
+                .add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float)
+                .add(bgfx::Attrib::Color0,    4, bgfx::AttribType::Uint8, true /*normalized*/)
+            .end();
+
+            // -----------------------------------------------------------------------
+            // Upload vertex buffer.
+            // SAFETY: bgfx::makeRef does NOT copy the data — it holds a pointer to
+            // the asset's internal DynamicArrayC storage. The Mesh3DAsset is owner-
+            // thread-resident and long-lived (kept alive by DiaAssetRuntime for the
+            // duration of the scene), so the pointer is valid for all bgfx frames
+            // that reference this mesh.
+            // -----------------------------------------------------------------------
+            const auto& vertices  = asset.GetVertices();
+            const uint32_t vCount = vertices.Size();
+            const uint32_t vBytes = vCount * static_cast<uint32_t>(sizeof(Dia::Mesh3D::Vertex3D));
+
+            bgfx::VertexBufferHandle vbh = bgfx::createVertexBuffer(
+                bgfx::makeRef(&vertices[0], vBytes),
+                layout
+            );
+
+            // -----------------------------------------------------------------------
+            // Upload index buffer (uint16_t indices, 16-bit default).
+            // -----------------------------------------------------------------------
+            const auto& indices   = asset.GetIndices();
+            const uint32_t iCount = indices.Size();
+            const uint32_t iBytes = iCount * static_cast<uint32_t>(sizeof(uint16_t));
+
+            bgfx::IndexBufferHandle ibh = bgfx::createIndexBuffer(
+                bgfx::makeRef(&indices[0], iBytes)
+                // BGFX_BUFFER_INDEX32 not set — indices are uint16_t.
+            );
+
+            // Store and return.
+            GpuMesh entry{ vbh.idx, ibh.idx, iCount };
+            auto result = mImpl->cache.emplace(key, entry);
+            return &result.first->second;
+        }
+
+        // -----------------------------------------------------------------------
+        // DestroyAll
+        // -----------------------------------------------------------------------
+        void MeshGpuCache::DestroyAll()
+        {
+            for (auto& pair : mImpl->cache)
+            {
+                const GpuMesh& m = pair.second;
+
+                bgfx::VertexBufferHandle vbh{ m.vertexBuffer };
+                bgfx::destroy(vbh);
+
+                bgfx::IndexBufferHandle ibh{ m.indexBuffer };
+                bgfx::destroy(ibh);
+            }
+
+            mImpl->cache.clear();
+        }
+
+    } // namespace Bgfx3D
+} // namespace Dia
