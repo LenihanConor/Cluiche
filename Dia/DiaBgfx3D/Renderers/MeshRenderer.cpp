@@ -55,6 +55,21 @@ namespace Dia
             if (!gpu)
                 return;
 
+            // Resolve material; use default if not found.
+            const MaterialDescriptor* mat = mMaterials->Resolve(cmd.materialId);
+            if (!mat)
+                mat = &mMaterials->GetDefault();
+
+            // Resolve + validate the shader program BEFORE setting any per-draw
+            // state. The invalid sentinel is bgfx::kInvalidHandle (0xffff), NOT 0
+            // — handle 0 is a real, valid handle (the first program created), so
+            // falling back to 0 would submit the draw with the wrong shader.
+            // Bail out here if there is no usable program, leaving no dangling
+            // transform/vertex/index state to bleed into the next draw.
+            if (!mat->program || !mat->program->IsValid())
+                return;
+            bgfx::ProgramHandle prog{ mat->program->GetProgramHandle() };
+
             // Set transform (row-major → column-major for bgfx)
             float mtx[16];
             cmd.transform.GetColumnMajor(mtx);
@@ -72,14 +87,6 @@ namespace Dia
                                  | BGFX_STATE_CULL_CW;
             bgfx::setState(state);
 
-            // Resolve material; use default if not found
-            const MaterialDescriptor* mat = mMaterials->Resolve(cmd.materialId);
-            if (!mat)
-                mat = &mMaterials->GetDefault();
-
-            // Submit — extract program handle from material's ShaderProgram
-            unsigned short progIdx = mat->program ? mat->program->GetProgramHandle() : 0;
-            bgfx::ProgramHandle prog{ progIdx };
             bgfx::submit(mViewId, prog);
         }
 

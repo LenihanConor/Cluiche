@@ -377,3 +377,34 @@ TEST_F(Mesh3DAssetHandlerTest, RegisterMesh_ThenUnloadRemoves)
     EXPECT_EQ(mHandler.LookupMesh(assetId), nullptr);
     EXPECT_EQ(mHandler.GetLoadedCount(), 0u);
 }
+
+// Regression: RegisterMesh() replacing an asset whose Load() is still in-flight
+// must not leave Tick() dereferencing the freed (replaced) pointer. The pending
+// load captured the original asset pointer; RegisterMesh frees it and installs a
+// new one. Tick() must detect the swap (live entry != captured pointer), discard
+// the stale result, and leave the registered asset intact.
+TEST_F(Mesh3DAssetHandlerTest, RegisterMesh_ReplacingInFlightLoad_TickDoesNotUseFreedAsset)
+{
+    char path[512];
+    BuildTempFilePath(path, sizeof(path), "handler_test_register_race.mesh3d");
+    ASSERT_TRUE(WriteUnitCube(path));
+
+    Dia::Core::StringCRC assetId("mesh3d.register_race");
+    Dia::Core::Containers::String512 resolvedPath(path);
+    TestCallback callback;
+
+    // Kick off an async load (creates + maps the original asset, queues a job).
+    mHandler.Load(assetId, resolvedPath, &callback);
+
+    // Before Tick() drains the load, replace the same id with a pre-built asset.
+    // This frees the original pointer the pending load still holds.
+    Dia::Mesh3D::Mesh3DAsset* replacement = new Dia::Mesh3D::Mesh3DAsset(assetId);
+    mHandler.RegisterMesh(replacement);
+
+    // Tick() must NOT touch the freed original — it discards the stale result.
+    mHandler.Tick();
+
+    // The registered replacement survives and is what lookups return.
+    EXPECT_EQ(mHandler.LookupMesh(assetId), replacement);
+    EXPECT_EQ(mHandler.GetLoadedCount(), 1u);
+}

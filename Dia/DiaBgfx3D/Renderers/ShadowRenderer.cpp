@@ -78,6 +78,17 @@ void ShadowRenderer::RenderShadowMap(const Dia::Graphics3D::Mesh3DFrameData& fra
         return; // No directional light, no shadow source
     }
 
+    // The shadow program is invariant across the whole pass — validate it once.
+    // The invalid sentinel is bgfx::kInvalidHandle (0xffff), NOT 0; handle 0 is a
+    // real handle (the first program created), so a 0 fallback would render the
+    // shadow pass with the wrong shader. If there is no valid program, skip the
+    // entire pass rather than submit garbage.
+    if (mShadowProgram == nullptr || !mShadowProgram->IsValid())
+    {
+        return;
+    }
+    const bgfx::ProgramHandle shadowProgram{ mShadowProgram->GetProgramHandle() };
+
     // Build light-space view-projection for first directional light
     const Dia::Graphics3D::DirectionalLight& light = dirLights[0];
     Dia::Maths::Vector3D lightDir = light.direction;
@@ -128,12 +139,8 @@ void ShadowRenderer::RenderShadowMap(const Dia::Graphics3D::Mesh3DFrameData& fra
         bgfx::setVertexBuffer(0, vbh);
         bgfx::setIndexBuffer(ibh);
 
-        // Submit with shadow program (wired via SetProgram after Init3DPrograms)
-        bgfx::ProgramHandle program;
-        program.idx = (mShadowProgram && mShadowProgram->IsValid())
-                      ? mShadowProgram->GetProgramHandle()
-                      : static_cast<unsigned short>(0);
-        bgfx::submit(mViewId, program);
+        // Submit with the shadow program validated once at the top of the pass.
+        bgfx::submit(mViewId, shadowProgram);
     }
 }
 

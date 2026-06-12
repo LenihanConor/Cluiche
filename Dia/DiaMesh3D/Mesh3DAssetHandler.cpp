@@ -211,10 +211,17 @@ void Mesh3DAssetHandler::Tick()
             r->job = Dia::Core::JobHandle();
         }
 
-        // Guard against Unload() having removed the asset while load was in-flight.
+        // Guard against the captured asset pointer having become stale while the
+        // load was in-flight. Two cases invalidate r->asset, and BOTH free it:
+        //   - Unload(id)        : entry erased from the map, asset deleted
+        //   - RegisterMesh(id)  : entry replaced with a new asset, old one deleted
+        // Comparing the live map entry to the captured pointer (not just checking
+        // the id is present) catches the replace case too — otherwise we would
+        // Populate()/MarkFailed() through a dangling pointer (use-after-free).
         {
             std::shared_lock<std::shared_mutex> lock(mMeshMutex);
-            if (mMeshMap.find(r->assetId.Value()) == mMeshMap.end())
+            auto it = mMeshMap.find(r->assetId.Value());
+            if (it == mMeshMap.end() || it->second != r->asset)
             {
                 delete r->readResult;
                 delete r;
