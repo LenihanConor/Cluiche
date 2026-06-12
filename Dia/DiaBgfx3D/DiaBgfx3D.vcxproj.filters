@@ -10,6 +10,14 @@
     <ClInclude Include="Resources\MeshGpuCache.h">
       <Filter>Resources</Filter>
     </ClInclude>
+    <ClInclude Include="Renderers\MeshRenderer.h">
+      <Filter>Renderers</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderers\ShadowRenderer.h">
+      <Filter>Renderers</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="Canvas3D.cpp">
       <Filter>Source</Filter>
     </ClCompile>
@@ -18,6 +26,12 @@
     </ClCompile>
     <ClCompile Include="Resources\MeshGpuCache.cpp">
       <Filter>Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderers\MeshRenderer.cpp">
+      <Filter>Renderers</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderers\ShadowRenderer.cpp">
+      <Filter>Renderers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -29,6 +43,9 @@
     </Filter>
     <Filter Include="Resources">
       <UniqueIdentifier>{44444444-4444-4444-4444-244444444444}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Renderers">
+      <UniqueIdentifier>{55555555-5555-5555-5555-255555555555}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

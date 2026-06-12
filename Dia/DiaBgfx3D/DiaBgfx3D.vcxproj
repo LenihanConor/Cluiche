@@ -23,11 +23,15 @@
     <ClInclude Include="Canvas3D.h" />
     <ClInclude Include="Resources\MaterialRegistry.h" />
     <ClInclude Include="Resources\MeshGpuCache.h" />
+    <ClInclude Include="Renderers\MeshRenderer.h" />
+    <ClInclude Include="Renderers\ShadowRenderer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Canvas3D.cpp" />
     <ClCompile Include="Resources\MaterialRegistry.cpp" />
     <ClCompile Include="Resources\MeshGpuCache.cpp" />
+    <ClCompile Include="Renderers\MeshRenderer.cpp" />
+    <ClCompile Include="Renderers\ShadowRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
