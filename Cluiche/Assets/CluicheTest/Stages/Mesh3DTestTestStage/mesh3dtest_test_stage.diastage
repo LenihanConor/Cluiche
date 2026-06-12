@@ -1,0 +1,9 @@
+{
+    "name": "Mesh3DTestTestStage",
+    "manifest": "Stages/Mesh3DTestTestStage/misc/ApplicationFlow/mesh3dtest_test_stage.diaapp",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

@@ -17,6 +17,8 @@
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 
 #include <DiaBgfx/Canvas.h>
+#include <DiaBgfx3D/Canvas3D.h>
+#include <DiaMesh3D/Mesh3DAssetHandler.h>
 #include <DiaWindow/SystemHandle.h>
 #include <DiaCore/Json/external/json/json.h>
 
@@ -105,10 +107,12 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
 
     mWindow = mWindowFactory.Create(windowSetting);
 
-    // Wire the JobSystem into TextureHandler for async asset loading.
-    DIA_ASSERT(mJobSystemRef.Get() != nullptr, "TextureHandler requires JobSystemModule to be initialized first");
+    // Wire the JobSystem into TextureHandler and Mesh3DAssetHandler for async asset loading.
+    DIA_ASSERT(mJobSystemRef.Get() != nullptr, "Asset handlers require JobSystemModule to be initialized first");
     mTextureHandler.SetJobSystem(&mJobSystemRef->GetJobSystem());
     mTextureHandlerService.Register(mTextureHandler);
+    mMeshHandler.SetJobSystem(&mJobSystemRef->GetJobSystem());
+    mMeshHandlerService.Register(mMeshHandler);
 
     {
         Dia::Core::BitArray8 inputMask;
@@ -128,11 +132,12 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
     bgfxSettings.cookedShaderRoot = "assets/shaders";
     bgfxSettings.rendererType = Dia::Bgfx::RendererType::Direct3D11;
 
-    mBgfxCanvas = new Dia::Bgfx::Canvas();
+    mBgfxCanvas = new Dia::Bgfx3D::Canvas3D();
 
     Dia::Window::SystemHandle hwnd = mWindow->GetSystemHandle();
     mBgfxCanvas->AttachToNativeWindow(hwnd, bgfxSettings.initialSize);
     mBgfxCanvas->Initialize(bgfxSettings);
+    mBgfxCanvas->SetMeshHandler(&mMeshHandler);
 
     mCanvas = mBgfxCanvas;
     Dia::Observation::SessionManager::SetActiveCaptureCanvas(mCanvas);
@@ -231,6 +236,7 @@ void KernelModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
     mInputWriter.Connect(app);
     mCanvasService.Connect(app);
     mTextureHandlerService.Connect(app);
+    mMeshHandlerService.Connect(app);
 }
 
 } } // namespace Cluiche::AppFlow

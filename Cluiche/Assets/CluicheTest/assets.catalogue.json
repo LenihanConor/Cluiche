@@ -1,552 +1,647 @@
 {
-   "assets" : [
-      {
-         "content_hash" : 0,
-         "id" : "stage.global",
-         "references" : [
-            {
-               "target" : "manifest.cluiche_main",
-               "type" : "contains"
-            },
-            {
-               "target" : "shader.ui_frag",
-               "type" : "contains"
-            },
-            {
-               "target" : "folder.webix_5_2_1",
-               "type" : "contains"
-            },
-            {
-               "target" : "folder.ultralight_resources",
-               "type" : "contains"
-            }
-         ],
-         "scope" : "global",
-         "source_path" : "Global/global.stage.json",
-         "stage_name" : "",
-         "status" : "active",
-         "tags" : [ "misc" ],
-         "type" : "stage"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "stage.dummy_stage",
-         "references" : [
-            {
-               "target" : "manifest.dummy_stage",
-               "type" : "contains"
-            },
-            {
-               "target" : "ui.dummy_stage_page",
-               "type" : "contains"
-            },
-            {
-               "target" : "texture.test_red",
-               "type" : "contains"
-            },
-            {
-               "target" : "texture.test_blue",
-               "type" : "contains"
-            },
-            {
-               "target" : "texture.test_green",
-               "type" : "contains"
-            }
-         ],
-         "scope" : "global",
-         "source_path" : "Stages/DummyStage/dummy_stage.stage.json",
-         "stage_name" : "",
-         "status" : "active",
-         "tags" : [ "misc" ],
-         "type" : "stage"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "stage.rigid_body2d_test_stage",
-         "references" : [
-            {
-               "target" : "manifest.rigid_body2d_test_stage",
-               "type" : "contains"
-            }
-         ],
-         "scope" : "global",
-         "source_path" : "Stages/RigidBody2DTestStage/rigidbody2d_stage.stage.json",
-         "stage_name" : "",
-         "status" : "active",
-         "tags" : [ "misc" ],
-         "type" : "stage"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "manifest.cluiche_main",
-         "references" : [],
-         "scope" : "global",
-         "source_path" : "Global/misc/ApplicationFlow/cluiche_main.diaapp",
-         "stage_name" : "",
-         "status" : "active",
-         "tags" : [ "misc/ApplicationFlow" ],
-         "type" : "manifest"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "shader.ui_frag",
-         "references" : [],
-         "scope" : "global",
-         "source_path" : "Global/Presentation/ui.frag",
-         "stage_name" : "",
-         "status" : "active",
-         "tags" : [ "Presentation" ],
-         "type" : "shader"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "folder.webix_5_2_1",
-         "references" : [],
-         "scope" : "global",
-         "source_path" : "Global/Presentation/UI/Webix",
-         "stage_name" : "",
-         "status" : "active",
-         "tags" : [ "Presentation/UI" ],
-         "type" : "folder"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "folder.ultralight_resources",
-         "references" : [],
-         "scope" : "global",
-         "source_path" : "Global/Misc/Resources",
-         "stage_name" : "",
-         "status" : "active",
-         "tags" : [ "misc" ],
-         "type" : "folder"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "manifest.dummy_stage",
-         "references" : [],
-         "scope" : "stage",
-         "source_path" : "Stages/DummyStage/Misc/ApplicationFlow/dummy_stage.diaapp",
-         "stage_name" : "DummyStage",
-         "status" : "active",
-         "tags" : [ "misc/ApplicationFlow" ],
-         "type" : "manifest"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "ui.dummy_stage_page",
-         "references" : [],
-         "scope" : "stage",
-         "source_path" : "Stages/DummyStage/Presentation/UI/dummyStage.html",
-         "stage_name" : "DummyStage",
-         "status" : "active",
-         "tags" : [ "Presentation/UI" ],
-         "type" : "ui"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "texture.test_red",
-         "references" : [],
-         "scope" : "stage",
-         "source_path" : "Stages/DummyStage/World/Textures/test_red.png",
-         "stage_name" : "DummyStage",
-         "status" : "active",
-         "tags" : [ "World" ],
-         "type" : "texture"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "texture.test_blue",
-         "references" : [],
-         "scope" : "stage",
-         "source_path" : "Stages/DummyStage/World/Textures/test_blue.png",
-         "stage_name" : "DummyStage",
-         "status" : "active",
-         "tags" : [ "World" ],
-         "type" : "texture"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "texture.test_green",
-         "references" : [],
-         "scope" : "stage",
-         "source_path" : "Stages/DummyStage/World/Textures/test_green.png",
-         "stage_name" : "DummyStage",
-         "status" : "active",
-         "tags" : [ "World" ],
-         "type" : "texture"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "manifest.rigid_body2d_test_stage",
-         "references" : [],
-         "scope" : "stage",
-         "source_path" : "Stages/RigidBody2DTestStage/Misc/ApplicationFlow/rigidbody2d_stage.diaapp",
-         "stage_name" : "RigidBody2DTestStage",
-         "status" : "active",
-         "tags" : [ "misc/ApplicationFlow" ],
-         "type" : "manifest"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "stage.asset_runtime_test_stage",
-         "references" : [
-            {
-               "target" : "manifest.asset_runtime_test_stage",
-               "type" : "contains"
-            },
-            {
-               "target" : "texture.ar_tex1",
-               "type" : "contains"
-            },
-            {
-               "target" : "texture.ar_tex2",
-               "type" : "contains"
-            },
-            {
-               "target" : "texture.ar_tex3",
-               "type" : "contains"
-            },
-            {
-               "target" : "json.ar_config",
-               "type" : "contains"
-            }
-         ],
-         "scope" : "global",
-         "source_path" : "Stages/AssetRuntimeTestStage/asset_runtime_stage.diastage",
-         "stage_name" : "",
-         "status" : "active",
-         "tags" : [ "misc" ],
-         "type" : "stage"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "manifest.asset_runtime_test_stage",
-         "references" : [],
-         "scope" : "stage",
-         "source_path" : "Stages/AssetRuntimeTestStage/misc/ApplicationFlow/asset_runtime_stage.diaapp",
-         "stage_name" : "AssetRuntimeTestStage",
-         "status" : "active",
-         "tags" : [ "misc/ApplicationFlow" ],
-         "type" : "manifest"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "texture.ar_tex1",
-         "references" : [],
-         "scope" : "stage",
-         "source_path" : "Stages/AssetRuntimeTestStage/assets/test_ar_tex1.png",
-         "stage_name" : "AssetRuntimeTestStage",
-         "status" : "active",
-         "tags" : [ "World" ],
-         "type" : "texture"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "texture.ar_tex2",
-         "references" : [],
-         "scope" : "stage",
-         "source_path" : "Stages/AssetRuntimeTestStage/assets/test_ar_tex2.png",
-         "stage_name" : "AssetRuntimeTestStage",
-         "status" : "active",
-         "tags" : [ "World" ],
-         "type" : "texture"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "texture.ar_tex3",
-         "references" : [],
-         "scope" : "stage",
-         "source_path" : "Stages/AssetRuntimeTestStage/assets/test_ar_tex3.png",
-         "stage_name" : "AssetRuntimeTestStage",
-         "status" : "active",
-         "tags" : [ "World" ],
-         "type" : "texture"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "json.ar_config",
-         "references" : [],
-         "scope" : "stage",
-         "source_path" : "Stages/AssetRuntimeTestStage/assets/test_ar_config.json",
-         "stage_name" : "AssetRuntimeTestStage",
-         "status" : "active",
-         "tags" : [ "World" ],
-         "type" : "json"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "stage.geometry2d_test_stage",
-         "references" : [
-            {
-               "target" : "manifest.geometry2d_test_stage",
-               "type" : "contains"
-            }
-         ],
-         "scope" : "global",
-         "source_path" : "Stages/Geometry2DTestStage/geometry2d_test_stage.diastage",
-         "stage_name" : "",
-         "status" : "active",
-         "tags" : [ "misc" ],
-         "type" : "stage"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "manifest.geometry2d_test_stage",
-         "references" : [],
-         "scope" : "stage",
-         "source_path" : "Stages/Geometry2DTestStage/misc/ApplicationFlow/geometry2d_test_stage.diaapp",
-         "stage_name" : "Geometry2DTestStage",
-         "status" : "active",
-         "tags" : [ "misc/ApplicationFlow" ],
-         "type" : "manifest"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "stage.ui_ultralight_test_stage",
-         "references" : [
-            {
-               "target" : "manifest.ui_ultralight_test_stage",
-               "type" : "contains"
-            },
-            {
-               "target" : "ui.ui_ultralight_test_page",
-               "type" : "contains"
-            }
-         ],
-         "scope" : "global",
-         "source_path" : "Stages/UIUltralightTestStage/ui_ultralight_test_stage.diastage",
-         "stage_name" : "",
-         "status" : "active",
-         "tags" : [ "misc" ],
-         "type" : "stage"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "manifest.ui_ultralight_test_stage",
-         "references" : [],
-         "scope" : "stage",
-         "source_path" : "Stages/UIUltralightTestStage/misc/ApplicationFlow/ui_ultralight_test_stage.diaapp",
-         "stage_name" : "UIUltralightTestStage",
-         "status" : "active",
-         "tags" : [ "misc/ApplicationFlow" ],
-         "type" : "manifest"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "ui.ui_ultralight_test_page",
-         "references" : [],
-         "scope" : "stage",
-         "source_path" : "Stages/UIUltralightTestStage/Presentation/UI/ui_ultralight_test.html",
-         "stage_name" : "UIUltralightTestStage",
-         "status" : "active",
-         "tags" : [ "Presentation/UI" ],
-         "type" : "ui"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "stage.entity_test_stage",
-         "references" : [
-            {
-               "target" : "manifest.entity_test_stage",
-               "type" : "contains"
-            }
-         ],
-         "scope" : "global",
-         "source_path" : "Stages/EntityTestStage/entity_test_stage.diastage",
-         "stage_name" : "",
-         "status" : "active",
-         "tags" : [ "misc" ],
-         "type" : "stage"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "manifest.entity_test_stage",
-         "references" : [],
-         "scope" : "stage",
-         "source_path" : "Stages/EntityTestStage/misc/ApplicationFlow/entity_test_stage.diaapp",
-         "stage_name" : "EntityTestStage",
-         "status" : "active",
-         "tags" : [ "misc/ApplicationFlow" ],
-         "type" : "manifest"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "stage.softbody2d_test_stage",
-         "references" : [
-            {
-               "target" : "manifest.softbody2d_test_stage",
-               "type" : "contains"
-            }
-         ],
-         "scope" : "global",
-         "source_path" : "Stages/SoftBody2DTestStage/softbody2d_test_stage.diastage",
-         "stage_name" : "",
-         "status" : "active",
-         "tags" : [ "misc" ],
-         "type" : "stage"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "manifest.softbody2d_test_stage",
-         "references" : [],
-         "scope" : "stage",
-         "source_path" : "Stages/SoftBody2DTestStage/misc/ApplicationFlow/softbody2d_test_stage.diaapp",
-         "stage_name" : "SoftBody2DTestStage",
-         "status" : "active",
-         "tags" : [ "misc/ApplicationFlow" ],
-         "type" : "manifest"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "stage.animation2d_test_stage",
-         "references" : [
-            {
-               "target" : "manifest.animation2d_test_stage",
-               "type" : "contains"
-            }
-         ],
-         "scope" : "global",
-         "source_path" : "Stages/Animation2DTestStage/animation2d_test_stage.diastage",
-         "stage_name" : "",
-         "status" : "active",
-         "tags" : [ "misc" ],
-         "type" : "stage"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "manifest.animation2d_test_stage",
-         "references" : [],
-         "scope" : "stage",
-         "source_path" : "Stages/Animation2DTestStage/misc/ApplicationFlow/animation2d_test_stage.diaapp",
-         "stage_name" : "Animation2DTestStage",
-         "status" : "active",
-         "tags" : [ "misc/ApplicationFlow" ],
-         "type" : "manifest"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "stage.scene2d_test_stage",
-         "references" : [
-            {
-               "target" : "manifest.scene2d_test_stage",
-               "type" : "contains"
-            },
-            {
-               "target" : "data.scene2d_test_scene",
-               "type" : "contains"
-            }
-         ],
-         "scope" : "global",
-         "source_path" : "Stages/Scene2DTestStage/scene2d_test_stage.diastage",
-         "stage_name" : "",
-         "status" : "active",
-         "tags" : [ "misc" ],
-         "type" : "stage"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "manifest.scene2d_test_stage",
-         "references" : [],
-         "scope" : "stage",
-         "source_path" : "Stages/Scene2DTestStage/misc/ApplicationFlow/scene2d_test_stage.diaapp",
-         "stage_name" : "Scene2DTestStage",
-         "status" : "active",
-         "tags" : [ "misc/ApplicationFlow" ],
-         "type" : "manifest"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "data.scene2d_test_scene",
-         "references" : [],
-         "scope" : "stage",
-         "source_path" : "Stages/Scene2DTestStage/test_scene.diascene",
-         "stage_name" : "Scene2DTestStage",
-         "status" : "active",
-         "tags" : [ "World" ],
-         "type" : "json"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "stage.ik2d_test_stage",
-         "references" : [
-            {
-               "target" : "manifest.ik2d_test_stage",
-               "type" : "contains"
-            }
-         ],
-         "scope" : "global",
-         "source_path" : "Stages/IK2DTestStage/ik2d_test_stage.diastage",
-         "stage_name" : "",
-         "status" : "active",
-         "tags" : [ "misc" ],
-         "type" : "stage"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "manifest.ik2d_test_stage",
-         "references" : [],
-         "scope" : "stage",
-         "source_path" : "Stages/IK2DTestStage/misc/ApplicationFlow/ik2d_test_stage.diaapp",
-         "stage_name" : "IK2DTestStage",
-         "status" : "active",
-         "tags" : [ "misc/ApplicationFlow" ],
-         "type" : "manifest"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "diaentitytemplate.hero",
-         "references" : [],
-         "scope" : "global",
-         "source_path" : "Global/Scene/hero.diaentitytemplate",
-         "stage_name" : "",
-         "status" : "active",
-         "tags" : [],
-         "type" : "diaentitytemplate"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "diaentitytemplate.stinker",
-         "references" : [],
-         "scope" : "global",
-         "source_path" : "Global/Scene/stinker.diaentitytemplate",
-         "stage_name" : "",
-         "status" : "active",
-         "tags" : [],
-         "type" : "diaentitytemplate"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "diacamera.default_camera",
-         "references" : [],
-         "scope" : "global",
-         "source_path" : "C:/GitHub/Cluiche/Cluiche/Assets/CluicheTest/Stages/Scene2DTestStage/default_camera.diacamera",
-         "stage_name" : "",
-         "status" : "active",
-         "tags" : [],
-         "type" : "diacamera"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "dialight.point_light",
-         "references" : [],
-         "scope" : "global",
-         "source_path" : "C:/GitHub/Cluiche/Cluiche/Assets/CluicheTest/Stages/Scene2DTestStage/point_light.dialight",
-         "stage_name" : "",
-         "status" : "active",
-         "tags" : [],
-         "type" : "dialight"
-      },
-      {
-         "content_hash" : 0,
-         "id" : "dialight.directional_light",
-         "references" : [],
-         "scope" : "global",
-         "source_path" : "C:/GitHub/Cluiche/Cluiche/Assets/CluicheTest/Stages/Scene2DTestStage/directional_light.dialight",
-         "stage_name" : "",
-         "status" : "active",
-         "tags" : [],
-         "type" : "dialight"
-      }
-   ],
-   "rules_path" : "assets.rules.json"
+    "assets": [
+        {
+            "content_hash": 0,
+            "id": "stage.global",
+            "references": [
+                {
+                    "target": "manifest.cluiche_main",
+                    "type": "contains"
+                },
+                {
+                    "target": "shader.ui_frag",
+                    "type": "contains"
+                },
+                {
+                    "target": "folder.webix_5_2_1",
+                    "type": "contains"
+                },
+                {
+                    "target": "folder.ultralight_resources",
+                    "type": "contains"
+                }
+            ],
+            "scope": "global",
+            "source_path": "Global/global.stage.json",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "misc"
+            ],
+            "type": "stage"
+        },
+        {
+            "content_hash": 0,
+            "id": "stage.dummy_stage",
+            "references": [
+                {
+                    "target": "manifest.dummy_stage",
+                    "type": "contains"
+                },
+                {
+                    "target": "ui.dummy_stage_page",
+                    "type": "contains"
+                },
+                {
+                    "target": "texture.test_red",
+                    "type": "contains"
+                },
+                {
+                    "target": "texture.test_blue",
+                    "type": "contains"
+                },
+                {
+                    "target": "texture.test_green",
+                    "type": "contains"
+                }
+            ],
+            "scope": "global",
+            "source_path": "Stages/DummyStage/dummy_stage.stage.json",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "misc"
+            ],
+            "type": "stage"
+        },
+        {
+            "content_hash": 0,
+            "id": "stage.rigid_body2d_test_stage",
+            "references": [
+                {
+                    "target": "manifest.rigid_body2d_test_stage",
+                    "type": "contains"
+                }
+            ],
+            "scope": "global",
+            "source_path": "Stages/RigidBody2DTestStage/rigidbody2d_stage.stage.json",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "misc"
+            ],
+            "type": "stage"
+        },
+        {
+            "content_hash": 0,
+            "id": "manifest.cluiche_main",
+            "references": [],
+            "scope": "global",
+            "source_path": "Global/misc/ApplicationFlow/cluiche_main.diaapp",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "misc/ApplicationFlow"
+            ],
+            "type": "manifest"
+        },
+        {
+            "content_hash": 0,
+            "id": "shader.ui_frag",
+            "references": [],
+            "scope": "global",
+            "source_path": "Global/Presentation/ui.frag",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "Presentation"
+            ],
+            "type": "shader"
+        },
+        {
+            "content_hash": 0,
+            "id": "folder.webix_5_2_1",
+            "references": [],
+            "scope": "global",
+            "source_path": "Global/Presentation/UI/Webix",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "Presentation/UI"
+            ],
+            "type": "folder"
+        },
+        {
+            "content_hash": 0,
+            "id": "folder.ultralight_resources",
+            "references": [],
+            "scope": "global",
+            "source_path": "Global/Misc/Resources",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "misc"
+            ],
+            "type": "folder"
+        },
+        {
+            "content_hash": 0,
+            "id": "manifest.dummy_stage",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/DummyStage/Misc/ApplicationFlow/dummy_stage.diaapp",
+            "stage_name": "DummyStage",
+            "status": "active",
+            "tags": [
+                "misc/ApplicationFlow"
+            ],
+            "type": "manifest"
+        },
+        {
+            "content_hash": 0,
+            "id": "ui.dummy_stage_page",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/DummyStage/Presentation/UI/dummyStage.html",
+            "stage_name": "DummyStage",
+            "status": "active",
+            "tags": [
+                "Presentation/UI"
+            ],
+            "type": "ui"
+        },
+        {
+            "content_hash": 0,
+            "id": "texture.test_red",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/DummyStage/World/Textures/test_red.png",
+            "stage_name": "DummyStage",
+            "status": "active",
+            "tags": [
+                "World"
+            ],
+            "type": "texture"
+        },
+        {
+            "content_hash": 0,
+            "id": "texture.test_blue",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/DummyStage/World/Textures/test_blue.png",
+            "stage_name": "DummyStage",
+            "status": "active",
+            "tags": [
+                "World"
+            ],
+            "type": "texture"
+        },
+        {
+            "content_hash": 0,
+            "id": "texture.test_green",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/DummyStage/World/Textures/test_green.png",
+            "stage_name": "DummyStage",
+            "status": "active",
+            "tags": [
+                "World"
+            ],
+            "type": "texture"
+        },
+        {
+            "content_hash": 0,
+            "id": "manifest.rigid_body2d_test_stage",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/RigidBody2DTestStage/Misc/ApplicationFlow/rigidbody2d_stage.diaapp",
+            "stage_name": "RigidBody2DTestStage",
+            "status": "active",
+            "tags": [
+                "misc/ApplicationFlow"
+            ],
+            "type": "manifest"
+        },
+        {
+            "content_hash": 0,
+            "id": "stage.asset_runtime_test_stage",
+            "references": [
+                {
+                    "target": "manifest.asset_runtime_test_stage",
+                    "type": "contains"
+                },
+                {
+                    "target": "texture.ar_tex1",
+                    "type": "contains"
+                },
+                {
+                    "target": "texture.ar_tex2",
+                    "type": "contains"
+                },
+                {
+                    "target": "texture.ar_tex3",
+                    "type": "contains"
+                },
+                {
+                    "target": "json.ar_config",
+                    "type": "contains"
+                }
+            ],
+            "scope": "global",
+            "source_path": "Stages/AssetRuntimeTestStage/asset_runtime_stage.diastage",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "misc"
+            ],
+            "type": "stage"
+        },
+        {
+            "content_hash": 0,
+            "id": "manifest.asset_runtime_test_stage",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/AssetRuntimeTestStage/misc/ApplicationFlow/asset_runtime_stage.diaapp",
+            "stage_name": "AssetRuntimeTestStage",
+            "status": "active",
+            "tags": [
+                "misc/ApplicationFlow"
+            ],
+            "type": "manifest"
+        },
+        {
+            "content_hash": 0,
+            "id": "texture.ar_tex1",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/AssetRuntimeTestStage/assets/test_ar_tex1.png",
+            "stage_name": "AssetRuntimeTestStage",
+            "status": "active",
+            "tags": [
+                "World"
+            ],
+            "type": "texture"
+        },
+        {
+            "content_hash": 0,
+            "id": "texture.ar_tex2",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/AssetRuntimeTestStage/assets/test_ar_tex2.png",
+            "stage_name": "AssetRuntimeTestStage",
+            "status": "active",
+            "tags": [
+                "World"
+            ],
+            "type": "texture"
+        },
+        {
+            "content_hash": 0,
+            "id": "texture.ar_tex3",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/AssetRuntimeTestStage/assets/test_ar_tex3.png",
+            "stage_name": "AssetRuntimeTestStage",
+            "status": "active",
+            "tags": [
+                "World"
+            ],
+            "type": "texture"
+        },
+        {
+            "content_hash": 0,
+            "id": "json.ar_config",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/AssetRuntimeTestStage/assets/test_ar_config.json",
+            "stage_name": "AssetRuntimeTestStage",
+            "status": "active",
+            "tags": [
+                "World"
+            ],
+            "type": "json"
+        },
+        {
+            "content_hash": 0,
+            "id": "stage.geometry2d_test_stage",
+            "references": [
+                {
+                    "target": "manifest.geometry2d_test_stage",
+                    "type": "contains"
+                }
+            ],
+            "scope": "global",
+            "source_path": "Stages/Geometry2DTestStage/geometry2d_test_stage.diastage",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "misc"
+            ],
+            "type": "stage"
+        },
+        {
+            "content_hash": 0,
+            "id": "manifest.geometry2d_test_stage",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/Geometry2DTestStage/misc/ApplicationFlow/geometry2d_test_stage.diaapp",
+            "stage_name": "Geometry2DTestStage",
+            "status": "active",
+            "tags": [
+                "misc/ApplicationFlow"
+            ],
+            "type": "manifest"
+        },
+        {
+            "content_hash": 0,
+            "id": "stage.ui_ultralight_test_stage",
+            "references": [
+                {
+                    "target": "manifest.ui_ultralight_test_stage",
+                    "type": "contains"
+                },
+                {
+                    "target": "ui.ui_ultralight_test_page",
+                    "type": "contains"
+                }
+            ],
+            "scope": "global",
+            "source_path": "Stages/UIUltralightTestStage/ui_ultralight_test_stage.diastage",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "misc"
+            ],
+            "type": "stage"
+        },
+        {
+            "content_hash": 0,
+            "id": "manifest.ui_ultralight_test_stage",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/UIUltralightTestStage/misc/ApplicationFlow/ui_ultralight_test_stage.diaapp",
+            "stage_name": "UIUltralightTestStage",
+            "status": "active",
+            "tags": [
+                "misc/ApplicationFlow"
+            ],
+            "type": "manifest"
+        },
+        {
+            "content_hash": 0,
+            "id": "ui.ui_ultralight_test_page",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/UIUltralightTestStage/Presentation/UI/ui_ultralight_test.html",
+            "stage_name": "UIUltralightTestStage",
+            "status": "active",
+            "tags": [
+                "Presentation/UI"
+            ],
+            "type": "ui"
+        },
+        {
+            "content_hash": 0,
+            "id": "stage.entity_test_stage",
+            "references": [
+                {
+                    "target": "manifest.entity_test_stage",
+                    "type": "contains"
+                }
+            ],
+            "scope": "global",
+            "source_path": "Stages/EntityTestStage/entity_test_stage.diastage",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "misc"
+            ],
+            "type": "stage"
+        },
+        {
+            "content_hash": 0,
+            "id": "manifest.entity_test_stage",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/EntityTestStage/misc/ApplicationFlow/entity_test_stage.diaapp",
+            "stage_name": "EntityTestStage",
+            "status": "active",
+            "tags": [
+                "misc/ApplicationFlow"
+            ],
+            "type": "manifest"
+        },
+        {
+            "content_hash": 0,
+            "id": "stage.softbody2d_test_stage",
+            "references": [
+                {
+                    "target": "manifest.softbody2d_test_stage",
+                    "type": "contains"
+                }
+            ],
+            "scope": "global",
+            "source_path": "Stages/SoftBody2DTestStage/softbody2d_test_stage.diastage",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "misc"
+            ],
+            "type": "stage"
+        },
+        {
+            "content_hash": 0,
+            "id": "manifest.softbody2d_test_stage",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/SoftBody2DTestStage/misc/ApplicationFlow/softbody2d_test_stage.diaapp",
+            "stage_name": "SoftBody2DTestStage",
+            "status": "active",
+            "tags": [
+                "misc/ApplicationFlow"
+            ],
+            "type": "manifest"
+        },
+        {
+            "content_hash": 0,
+            "id": "stage.animation2d_test_stage",
+            "references": [
+                {
+                    "target": "manifest.animation2d_test_stage",
+                    "type": "contains"
+                }
+            ],
+            "scope": "global",
+            "source_path": "Stages/Animation2DTestStage/animation2d_test_stage.diastage",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "misc"
+            ],
+            "type": "stage"
+        },
+        {
+            "content_hash": 0,
+            "id": "manifest.animation2d_test_stage",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/Animation2DTestStage/misc/ApplicationFlow/animation2d_test_stage.diaapp",
+            "stage_name": "Animation2DTestStage",
+            "status": "active",
+            "tags": [
+                "misc/ApplicationFlow"
+            ],
+            "type": "manifest"
+        },
+        {
+            "content_hash": 0,
+            "id": "stage.scene2d_test_stage",
+            "references": [
+                {
+                    "target": "manifest.scene2d_test_stage",
+                    "type": "contains"
+                },
+                {
+                    "target": "data.scene2d_test_scene",
+                    "type": "contains"
+                }
+            ],
+            "scope": "global",
+            "source_path": "Stages/Scene2DTestStage/scene2d_test_stage.diastage",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "misc"
+            ],
+            "type": "stage"
+        },
+        {
+            "content_hash": 0,
+            "id": "manifest.scene2d_test_stage",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/Scene2DTestStage/misc/ApplicationFlow/scene2d_test_stage.diaapp",
+            "stage_name": "Scene2DTestStage",
+            "status": "active",
+            "tags": [
+                "misc/ApplicationFlow"
+            ],
+            "type": "manifest"
+        },
+        {
+            "content_hash": 0,
+            "id": "data.scene2d_test_scene",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/Scene2DTestStage/test_scene.diascene",
+            "stage_name": "Scene2DTestStage",
+            "status": "active",
+            "tags": [
+                "World"
+            ],
+            "type": "json"
+        },
+        {
+            "content_hash": 0,
+            "id": "stage.ik2d_test_stage",
+            "references": [
+                {
+                    "target": "manifest.ik2d_test_stage",
+                    "type": "contains"
+                }
+            ],
+            "scope": "global",
+            "source_path": "Stages/IK2DTestStage/ik2d_test_stage.diastage",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "misc"
+            ],
+            "type": "stage"
+        },
+        {
+            "content_hash": 0,
+            "id": "manifest.ik2d_test_stage",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/IK2DTestStage/misc/ApplicationFlow/ik2d_test_stage.diaapp",
+            "stage_name": "IK2DTestStage",
+            "status": "active",
+            "tags": [
+                "misc/ApplicationFlow"
+            ],
+            "type": "manifest"
+        },
+        {
+            "content_hash": 0,
+            "id": "diaentitytemplate.hero",
+            "references": [],
+            "scope": "global",
+            "source_path": "Global/Scene/hero.diaentitytemplate",
+            "stage_name": "",
+            "status": "active",
+            "tags": [],
+            "type": "diaentitytemplate"
+        },
+        {
+            "content_hash": 0,
+            "id": "diaentitytemplate.stinker",
+            "references": [],
+            "scope": "global",
+            "source_path": "Global/Scene/stinker.diaentitytemplate",
+            "stage_name": "",
+            "status": "active",
+            "tags": [],
+            "type": "diaentitytemplate"
+        },
+        {
+            "content_hash": 0,
+            "id": "diacamera.default_camera",
+            "references": [],
+            "scope": "global",
+            "source_path": "C:/GitHub/Cluiche/Cluiche/Assets/CluicheTest/Stages/Scene2DTestStage/default_camera.diacamera",
+            "stage_name": "",
+            "status": "active",
+            "tags": [],
+            "type": "diacamera"
+        },
+        {
+            "content_hash": 0,
+            "id": "dialight.point_light",
+            "references": [],
+            "scope": "global",
+            "source_path": "C:/GitHub/Cluiche/Cluiche/Assets/CluicheTest/Stages/Scene2DTestStage/point_light.dialight",
+            "stage_name": "",
+            "status": "active",
+            "tags": [],
+            "type": "dialight"
+        },
+        {
+            "content_hash": 0,
+            "id": "dialight.directional_light",
+            "references": [],
+            "scope": "global",
+            "source_path": "C:/GitHub/Cluiche/Cluiche/Assets/CluicheTest/Stages/Scene2DTestStage/directional_light.dialight",
+            "stage_name": "",
+            "status": "active",
+            "tags": [],
+            "type": "dialight"
+        },
+        {
+            "id": "stage.mesh3dtest_test_stage",
+            "type": "stage",
+            "source_path": "Stages/Mesh3DTestTestStage/mesh3dtest_test_stage.diastage",
+            "scope": "global",
+            "tags": [
+                "misc"
+            ],
+            "references": [
+                {
+                    "type": "contains",
+                    "target": "manifest.mesh3dtest_test_stage"
+                }
+            ]
+        },
+        {
+            "id": "manifest.mesh3dtest_test_stage",
+            "type": "manifest",
+            "source_path": "Stages/Mesh3DTestTestStage/misc/ApplicationFlow/mesh3dtest_test_stage.diaapp",
+            "scope": "stage",
+            "stage_name": "Mesh3DTestTestStage",
+            "tags": [
+                "misc/ApplicationFlow"
+            ]
+        }
+    ],
+    "rules_path": "assets.rules.json"
 }

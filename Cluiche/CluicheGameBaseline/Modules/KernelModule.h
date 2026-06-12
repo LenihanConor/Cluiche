@@ -12,10 +12,11 @@
 #include <DiaSDL/WindowFactory.h>
 #include <DiaSDL/Window.h>
 #include <DiaAssetRuntime/Handlers/TextureHandler.h>
+#include <DiaMesh3D/Mesh3DAssetHandler.h>
 #include "Types/MainToSimEvent.h"
 #include "Modules/JobSystemModule.h"
 
-namespace Dia { namespace Bgfx { class Canvas; } }
+namespace Dia { namespace Bgfx3D { class Canvas3D; } }
 
 #ifdef DIA_DEBUG
 namespace Dia { namespace Bgfx { class BgfxImGuiBackend; } }
@@ -66,6 +67,7 @@ private:
     Dia::ApplicationFlow::EventStreamWriter<MainToSimEvent>                      mInputWriter{this, "MainToSim"};
     Dia::ApplicationFlow::ServiceStreamWriter<Dia::Graphics::ICanvas>           mCanvasService{this, "KernelCanvas"};
     Dia::ApplicationFlow::ServiceStreamWriter<Dia::AssetRuntime::TextureHandler> mTextureHandlerService{this, "KernelTextureHandler"};
+    Dia::ApplicationFlow::ServiceStreamWriter<Dia::Mesh3D::Mesh3DAssetHandler>  mMeshHandlerService{this, "KernelMeshHandler"};
     static std::atomic<bool>         sRenderContextReleased;
     static std::atomic<bool>         sRenderContextActive;
     static std::atomic<unsigned int> sWindowWidth;
@@ -81,8 +83,9 @@ private:
     Dia::SDL::WindowFactory         mWindowFactory;
     Dia::Window::IWindow*           mWindow       = nullptr;
     Dia::Graphics::ICanvas*         mCanvas       = nullptr;
-    Dia::Bgfx::Canvas*              mBgfxCanvas   = nullptr;
+    Dia::Bgfx3D::Canvas3D*          mBgfxCanvas   = nullptr;
     Dia::AssetRuntime::TextureHandler mTextureHandler;
+    Dia::Mesh3D::Mesh3DAssetHandler  mMeshHandler;
     Dia::Input::EventData           mFrameEvents;
 
 #ifdef DIA_DEBUG

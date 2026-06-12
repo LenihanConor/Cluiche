@@ -2,6 +2,8 @@
 #include "Modules/KernelModule.h"
 
 #include <DiaAssetRuntime/Handlers/TextureHandler.h>
+#include <DiaBgfx3D/Canvas3D.h>
+#include <DiaGraphics3D/FrameData3D.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Session/SessionManager.h>
 #include <DiaObservation/Capture/CaptureManager.h>
@@ -32,6 +34,9 @@ Dia::ApplicationFlow::StartResult RenderModule::DoStart()
 
     mCanvas = &mCanvasService.Get();
 
+    // Attempt to get Canvas3D — valid when KernelModule created a Canvas3D (3D rendering enabled).
+    mCanvas3D = static_cast<Dia::Bgfx3D::Canvas3D*>(mCanvas);
+
     DIA_LOG_INFO("Application", "RenderModule DoStart: canvas acquired");
 
     // Reset the cross-PU stop fence on every (re-)entry. KernelModule::DoStop
@@ -57,13 +62,31 @@ void RenderModule::DoUpdate(float /*dt*/)
     auto* cm = Dia::Observation::SessionManager::GetActiveCaptureManager();
     if (cm) cm->RenderTick();
 
-    const Dia::Graphics::FrameData* frame = mFrameInput.FetchLatest();
-    if (frame != nullptr)
+    // Try to fetch a 3D frame first
+    bool rendered3D = false;
+    if (mCanvas3D != nullptr && mFrame3DInput.IsConnected())
     {
-        mLastFrame = *frame;
+        const Dia::Graphics3D::FrameData3D* frame3D = mFrame3DInput.FetchLatest();
+        if (frame3D != nullptr)
+        {
+            mLastFrame3D.Copy(*frame3D);
+            // StartFrame and EndFrame take FrameData& — FrameData3D IS-A FrameData
+            mCanvas3D->StartFrame(mLastFrame3D);
+            mCanvas3D->ProcessFrame(mLastFrame3D);
+            mCanvas3D->EndFrame(mLastFrame3D);
+            rendered3D = true;
+        }
     }
 
-    mCanvas->RenderFrame(mLastFrame);
+    if (!rendered3D)
+    {
+        const Dia::Graphics::FrameData* frame = mFrameInput.FetchLatest();
+        if (frame != nullptr)
+        {
+            mLastFrame = *frame;
+        }
+        mCanvas->RenderFrame(mLastFrame);
+    }
 
     Dia::Graphics::RenderFence fence;
     fence.presentedFrame = ++mPresentCount;
@@ -105,6 +128,7 @@ Dia::ApplicationFlow::StopResult RenderModule::DoStop()
 void RenderModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 {
     mFrameInput.Connect(app);
+    mFrame3DInput.Connect(app);
     mFenceOutput.Connect(app);
     mCanvasService.Connect(app);
     mTextureHandlerService.Connect(app);

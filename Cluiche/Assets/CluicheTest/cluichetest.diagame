@@ -61,6 +61,10 @@
         {
             "path": "Stages/IK2DTestStage/ik2d_test_stage.diastage",
             "type": "stage"
+        },
+        {
+            "path": "Stages/Mesh3DTestTestStage/mesh3dtest_test_stage.diastage",
+            "type": "stage"
         }
     ],
     "name": "CluicheTest",

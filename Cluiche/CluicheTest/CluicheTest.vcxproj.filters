@@ -50,6 +50,9 @@
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClCompile>
     <ClCompile Include="Modules\TestStages\TestStageHUDModule.cpp">
+    <ClCompile Include="Modules\TestStages\Mesh3DTestTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
     <ClCompile Include="Modules\TestStages\Animation2DTestStageModule.cpp">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClCompile>
@@ -146,6 +149,9 @@
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
     <ClInclude Include="Modules\TestStages\TestStageHUDModule.h">
+    <ClInclude Include="Modules\TestStages\Mesh3DTestTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
     <ClInclude Include="Modules\TestStages\Animation2DTestStageModule.h">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>

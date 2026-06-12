@@ -161,6 +161,12 @@
     <ProjectReference Include="..\..\Dia\DiaMesh3D\DiaMesh3D.vcxproj">
       <Project>{F1E2D3C4-B5A6-7890-FEDC-BA9876543210}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaBgfx3D\DiaBgfx3D.vcxproj">
+      <Project>{D2E3F4A5-B6C7-8901-DEF0-123456789ABC}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaGraphics3D\DiaGraphics3D.vcxproj">
+      <Project>{C5D6E7F8-A9B0-1234-EF01-234567890123}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaDebugServer\DiaDebugServer.vcxproj">
       <Project>{6aafcccb-71d0-4d8d-a6be-081f5e02093d}</Project>
     </ProjectReference>

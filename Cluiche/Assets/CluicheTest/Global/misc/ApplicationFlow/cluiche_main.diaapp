@@ -13,7 +13,8 @@
                 "SoftBody2DTestStage",
                 "Animation2DTestStage",
                 "Scene2DTestStage",
-                "IK2DTestStage"
+                "IK2DTestStage",
+                "Mesh3DTestTestStage"
             ],
             "auto_advance": false
         },
@@ -76,6 +77,13 @@
         },
         {
             "name": "IK2DTestStage",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "Mesh3DTestTestStage",
             "transitions": [
                 "Boot"
             ],
@@ -453,7 +461,8 @@
                         "SoftBody2DTestStage",
                         "Animation2DTestStage",
                         "Scene2DTestStage",
-                        "IK2DTestStage"
+                        "IK2DTestStage",
+                        "Mesh3DTestTestStage"
                     ],
                     "dependencies": [
                         "Camera2DModule"
@@ -521,7 +530,8 @@
                         "SoftBody2DTestStage",
                         "Animation2DTestStage",
                         "Scene2DTestStage",
-                        "IK2DTestStage"
+                        "IK2DTestStage",
+                        "Mesh3DTestTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"
@@ -544,7 +554,8 @@
                         "SoftBody2DTestStage",
                         "Animation2DTestStage",
                         "Scene2DTestStage",
-                        "IK2DTestStage"
+                        "IK2DTestStage",
+                        "Mesh3DTestTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"

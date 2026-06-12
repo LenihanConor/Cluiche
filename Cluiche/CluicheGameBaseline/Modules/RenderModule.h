@@ -8,7 +8,10 @@
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaGraphics/Frame/RenderFence.h>
 #include <DiaGraphics/Interface/ICanvas.h>
+#include <DiaGraphics3D/FrameData3D.h>
 #include <DiaAssetRuntime/Handlers/TextureHandler.h>
+
+namespace Dia { namespace Bgfx3D { class Canvas3D; } }
 
 namespace Cluiche { namespace AppFlow {
 
@@ -27,11 +30,14 @@ protected:
 
 private:
     Dia::ApplicationFlow::StreamReader<Dia::Graphics::FrameData>               mFrameInput{this, "SimToRender"};
+    Dia::ApplicationFlow::StreamReader<Dia::Graphics3D::FrameData3D>           mFrame3DInput{this, "SimToRender3D"};
     Dia::ApplicationFlow::StreamWriter<Dia::Graphics::RenderFence>             mFenceOutput{this, "RenderToSim"};
     Dia::ApplicationFlow::ServiceStreamReader<Dia::Graphics::ICanvas>          mCanvasService{this, "KernelCanvas"};
     Dia::ApplicationFlow::ServiceStreamReader<Dia::AssetRuntime::TextureHandler> mTextureHandlerService{this, "KernelTextureHandler"};
-    Dia::Graphics::ICanvas*  mCanvas = nullptr;
-    Dia::Graphics::FrameData mLastFrame;
+    Dia::Graphics::ICanvas*      mCanvas    = nullptr;
+    Dia::Bgfx3D::Canvas3D*       mCanvas3D  = nullptr;
+    Dia::Graphics::FrameData     mLastFrame;
+    Dia::Graphics3D::FrameData3D mLastFrame3D;
     uint64_t mPresentCount = 0;
 };
 
