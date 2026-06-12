@@ -15,7 +15,16 @@
                     "dependencies": [
                         "AutomationModule"
                     ],
-                    "channels": []
+                    "channels": [
+                        {
+                            "id": "SimToRender3D",
+                            "role": "writes"
+                        },
+                        {
+                            "id": "KernelMeshHandler",
+                            "role": "consumes"
+                        }
+                    ]
                 }
             ]
         },

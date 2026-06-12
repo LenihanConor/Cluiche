@@ -32,8 +32,11 @@ namespace Dia
             , mShadowProgram(nullptr)
             , m3DInitialised(false)
         {
-            mShadowRenderer = new ShadowRenderer(mShadowViewId, mMeshGpuCache);
-            // MeshRenderer created once a mesh handler is set
+            // GPU resources (ShadowRenderer's depth texture/framebuffer, shader
+            // programs) are deferred to Init3DPrograms(), which runs from the
+            // first StartFrame() once bgfx is initialised. Creating them here
+            // would call bgfx::createTexture2D before bgfx::init (maxTextureSize
+            // reports 0 -> assert). MeshRenderer is created when a handler is set.
         }
 
         Canvas3D::~Canvas3D()
@@ -83,9 +86,12 @@ namespace Dia
             def.baseColourRGBA = 0xCCCCCCFFu;
             mMaterialRegistry->Register(def);
 
-            // Wire shadow renderer with the shadow program
-            if (mShadowRenderer)
-                mShadowRenderer->SetProgram(mShadowProgram);
+            // Create the shadow renderer now that bgfx is initialised — its
+            // constructor allocates a depth texture/framebuffer, which requires
+            // a live bgfx context (see ctor note). Then wire its program.
+            if (!mShadowRenderer)
+                mShadowRenderer = new ShadowRenderer(mShadowViewId, mMeshGpuCache);
+            mShadowRenderer->SetProgram(mShadowProgram);
 
             m3DInitialised = true;
             DIA_LOG_INFO("DiaBgfx3D", "Canvas3D::Init3DPrograms complete (backend=%s)", backend);

@@ -109,6 +109,14 @@
             "multi_writer": true
         },
         {
+            "id": "SimToRender3D",
+            "kind": "FrameStream",
+            "payload_type": "FrameData3D",
+            "from": "SimPU",
+            "to": "RenderPU",
+            "multi_writer": true
+        },
+        {
             "id": "SimToMain",
             "kind": "EventStream",
             "payload_type": "SimToMainEvent",
@@ -140,6 +148,12 @@
             "id": "KernelTextureHandler",
             "kind": "ServiceStream",
             "payload_type": "ITextureHandler",
+            "from": "MainPU"
+        },
+        {
+            "id": "KernelMeshHandler",
+            "kind": "ServiceStream",
+            "payload_type": "Mesh3DAssetHandler",
             "from": "MainPU"
         },
         {
@@ -240,6 +254,10 @@
                         },
                         {
                             "id": "KernelTextureHandler",
+                            "role": "provides"
+                        },
+                        {
+                            "id": "KernelMeshHandler",
                             "role": "provides"
                         }
                     ]
@@ -615,6 +633,10 @@
                     "channels": [
                         {
                             "id": "SimToRender",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "SimToRender3D",
                             "role": "reads"
                         },
                         {
