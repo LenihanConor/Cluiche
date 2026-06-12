@@ -320,3 +320,60 @@ TEST_F(Mesh3DAssetHandlerTest, Load_SubmeshCountOverflow_FiresOnLoadFailed)
     ASSERT_NE(asset, nullptr);
     EXPECT_EQ(asset->GetState(), Dia::Mesh3D::Mesh3DAsset::State::Failed);
 }
+
+// ---------------------------------------------------------------------------
+// RegisterMesh — inject a pre-built asset (no disk load, no JobSystem)
+// ---------------------------------------------------------------------------
+
+TEST_F(Mesh3DAssetHandlerTest, RegisterMesh_LookupReturnsAsset)
+{
+    Dia::Core::StringCRC assetId("mesh3d.register_basic");
+    Dia::Mesh3D::Mesh3DAsset* asset = new Dia::Mesh3D::Mesh3DAsset(assetId);
+
+    mHandler.RegisterMesh(asset);
+
+    EXPECT_EQ(mHandler.LookupMesh(assetId), asset);
+    EXPECT_EQ(mHandler.GetLoadedCount(), 1u);
+    // Handler owns the asset now — freed in TearDown via the handler destructor.
+}
+
+TEST_F(Mesh3DAssetHandlerTest, RegisterMesh_DuplicateIdReplacesPrevious)
+{
+    Dia::Core::StringCRC assetId("mesh3d.register_dup");
+    Dia::Mesh3D::Mesh3DAsset* first  = new Dia::Mesh3D::Mesh3DAsset(assetId);
+    Dia::Mesh3D::Mesh3DAsset* second = new Dia::Mesh3D::Mesh3DAsset(assetId);
+
+    mHandler.RegisterMesh(first);   // handler takes ownership of 'first'
+    mHandler.RegisterMesh(second);  // replaces + frees 'first', now owns 'second'
+
+    // Lookup must return the most recently registered asset, count unchanged.
+    EXPECT_EQ(mHandler.LookupMesh(assetId), second);
+    EXPECT_EQ(mHandler.GetLoadedCount(), 1u);
+}
+
+TEST_F(Mesh3DAssetHandlerTest, RegisterMesh_DistinctIdsCoexist)
+{
+    Dia::Core::StringCRC idA("mesh3d.register_a");
+    Dia::Core::StringCRC idB("mesh3d.register_b");
+    Dia::Mesh3D::Mesh3DAsset* a = new Dia::Mesh3D::Mesh3DAsset(idA);
+    Dia::Mesh3D::Mesh3DAsset* b = new Dia::Mesh3D::Mesh3DAsset(idB);
+
+    mHandler.RegisterMesh(a);
+    mHandler.RegisterMesh(b);
+
+    EXPECT_EQ(mHandler.LookupMesh(idA), a);
+    EXPECT_EQ(mHandler.LookupMesh(idB), b);
+    EXPECT_EQ(mHandler.GetLoadedCount(), 2u);
+}
+
+TEST_F(Mesh3DAssetHandlerTest, RegisterMesh_ThenUnloadRemoves)
+{
+    Dia::Core::StringCRC assetId("mesh3d.register_unload");
+    mHandler.RegisterMesh(new Dia::Mesh3D::Mesh3DAsset(assetId));
+    ASSERT_EQ(mHandler.GetLoadedCount(), 1u);
+
+    mHandler.Unload(assetId);
+
+    EXPECT_EQ(mHandler.LookupMesh(assetId), nullptr);
+    EXPECT_EQ(mHandler.GetLoadedCount(), 0u);
+}

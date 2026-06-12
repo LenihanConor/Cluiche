@@ -1325,6 +1325,12 @@
     <ClCompile Include="RigidBody2D\TestGravitySettle.cpp">
     <ClCompile Include="RigidBody2D\TestCircleVsPolyContact.cpp">
     <ClCompile Include="RigidBody2D\\TestRestingContact.cpp">
+    <ClCompile Include="DiaBgfx\TestShaderProgram.cpp">
+    <ClCompile Include="DiaBgfx3D\TestMeshRenderer.cpp">
+      <Filter>DiaBgfx3D</Filter>
+    </ClCompile>
+      <Filter>DiaBgfx</Filter>
+    </ClCompile>
       <Filter>RigidBody2D</Filter>
     </ClCompile>
       <Filter>RigidBody2D</Filter>

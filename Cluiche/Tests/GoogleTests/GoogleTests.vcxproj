@@ -669,6 +669,8 @@
     <ClCompile Include="RigidBody2D\TestGravitySettle.cpp" />
     <ClCompile Include="RigidBody2D\TestCircleVsPolyContact.cpp" />
     <ClCompile Include="RigidBody2D\\TestRestingContact.cpp" />
+    <ClCompile Include="DiaBgfx\TestShaderProgram.cpp" />
+    <ClCompile Include="DiaBgfx3D\TestMeshRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaLighting2D\DiaLighting2D.vcxproj">
