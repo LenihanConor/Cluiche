@@ -7,8 +7,10 @@
 #include "DiaBgfx3D/Renderers/MeshRenderer.h"
 #include "DiaBgfx3D/Renderers/ShadowRenderer.h"
 
+#include <DiaBgfx/Resources/ShaderProgram.h>
 #include <DiaGraphics3D/FrameData3D.h>
 #include <DiaGraphics/Frame/FrameData.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 namespace Dia
 {
@@ -26,6 +28,9 @@ namespace Dia
             , mMeshRenderer(nullptr)
             , mShadowRenderer(nullptr)
             , mMeshHandler(nullptr)
+            , mMeshProgram(nullptr)
+            , mShadowProgram(nullptr)
+            , m3DInitialised(false)
         {
             mShadowRenderer = new ShadowRenderer(mShadowViewId, mMeshGpuCache);
             // MeshRenderer created once a mesh handler is set
@@ -36,9 +41,54 @@ namespace Dia
             delete mMeshRenderer;
             delete mShadowRenderer;
 
+            delete mMeshProgram;   mMeshProgram   = nullptr;
+            delete mShadowProgram; mShadowProgram = nullptr;
+
             mMeshGpuCache->DestroyAll();
             delete mMeshGpuCache;
             delete mMaterialRegistry;
+        }
+
+        void Canvas3D::StartFrame(const Dia::Graphics::FrameData& frame)
+        {
+            Dia::Bgfx::Canvas::StartFrame(frame);
+            if (!m3DInitialised && IsInitialised())
+                Init3DPrograms();
+        }
+
+        void Canvas3D::Init3DPrograms()
+        {
+            const char* root    = GetShaderRoot();
+            const char* backend = nullptr;
+            switch (GetRendererType())
+            {
+                case Dia::Bgfx::RendererType::Direct3D11: backend = "dx11";   break;
+                case Dia::Bgfx::RendererType::Direct3D12: backend = "dx12";   break;
+                case Dia::Bgfx::RendererType::Vulkan:     backend = "vulkan"; break;
+                default:                                  backend = "dx11";   break;
+            }
+
+            mMeshProgram = new Dia::Bgfx::ShaderProgram();
+            if (!mMeshProgram->LoadFromPath(root, backend, "3d/vs_mesh.bin", "3d/fs_mesh.bin"))
+                DIA_LOG_WARNING("DiaBgfx3D", "Canvas3D::Init3DPrograms — failed to load mesh shader");
+
+            mShadowProgram = new Dia::Bgfx::ShaderProgram();
+            if (!mShadowProgram->LoadFromPath(root, backend, "3d/vs_shadow_caster.bin", "3d/fs_shadow_caster.bin"))
+                DIA_LOG_WARNING("DiaBgfx3D", "Canvas3D::Init3DPrograms — failed to load shadow_caster shader");
+
+            // Register default material
+            Dia::Bgfx3D::MaterialDescriptor def;
+            def.id             = Dia::Core::StringCRC("default_3d");
+            def.program        = mMeshProgram;
+            def.baseColourRGBA = 0xCCCCCCFFu;
+            mMaterialRegistry->Register(def);
+
+            // Wire shadow renderer with the shadow program
+            if (mShadowRenderer)
+                mShadowRenderer->SetProgram(mShadowProgram);
+
+            m3DInitialised = true;
+            DIA_LOG_INFO("DiaBgfx3D", "Canvas3D::Init3DPrograms complete (backend=%s)", backend);
         }
 
         void Canvas3D::ProcessFrame(const Dia::Graphics3D::FrameData3D& frameData)

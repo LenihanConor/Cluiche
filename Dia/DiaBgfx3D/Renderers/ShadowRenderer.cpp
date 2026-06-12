@@ -3,6 +3,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "DiaBgfx3D/Renderers/ShadowRenderer.h"
 #include "DiaBgfx3D/Resources/MeshGpuCache.h"
+#include <DiaBgfx/Resources/ShaderProgram.h>
 
 #include <DiaGraphics3D/Mesh3DFrameData.h>
 #include <DiaGraphics3D/Mesh3DDrawCommand.h>
@@ -24,6 +25,7 @@ ShadowRenderer::ShadowRenderer(unsigned short shadowViewId, MeshGpuCache* cache)
     , mShadowFramebuffer(bgfx::kInvalidHandle)
     , mShadowTexture(bgfx::kInvalidHandle)
     , mCache(cache)
+    , mShadowProgram(nullptr)
 {
     // Create 2048x2048 depth texture
     bgfx::TextureHandle depthTex = bgfx::createTexture2D(
@@ -124,11 +126,18 @@ void ShadowRenderer::RenderShadowMap(const Dia::Graphics3D::Mesh3DFrameData& fra
         bgfx::setVertexBuffer(0, vbh);
         bgfx::setIndexBuffer(ibh);
 
-        // Submit with depth-only program (placeholder program handle 0 — actual shader wired in shader task)
+        // Submit with shadow program (wired via SetProgram after Init3DPrograms)
         bgfx::ProgramHandle program;
-        program.idx = 0;
+        program.idx = (mShadowProgram && mShadowProgram->IsValid())
+                      ? mShadowProgram->GetProgramHandle()
+                      : static_cast<unsigned short>(0);
         bgfx::submit(mViewId, program);
     }
+}
+
+void ShadowRenderer::SetProgram(Dia::Bgfx::ShaderProgram* prog)
+{
+    mShadowProgram = prog;
 }
 
 unsigned short ShadowRenderer::GetShadowFramebuffer() const

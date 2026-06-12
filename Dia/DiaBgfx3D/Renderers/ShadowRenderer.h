@@ -5,6 +5,7 @@
 
 namespace Dia { namespace Graphics3D { class Mesh3DFrameData; } }
 namespace Dia { namespace Mesh3D { class Mesh3DAssetHandler; } }
+namespace Dia { namespace Bgfx { class ShaderProgram; } }
 
 namespace Dia { namespace Bgfx3D {
 
@@ -22,14 +23,17 @@ public:
     void RenderShadowMap(const Dia::Graphics3D::Mesh3DFrameData& frameData,
                          Dia::Mesh3D::Mesh3DAssetHandler* meshHandler);
 
+    void SetProgram(Dia::Bgfx::ShaderProgram* prog);
+
     unsigned short GetShadowFramebuffer() const;
     unsigned short GetShadowViewId() const;
 
 private:
-    unsigned short mViewId;
-    unsigned short mShadowFramebuffer;  // bgfx::FrameBufferHandle::idx
-    unsigned short mShadowTexture;      // bgfx::TextureHandle::idx (depth)
-    MeshGpuCache*  mCache;
+    unsigned short             mViewId;
+    unsigned short             mShadowFramebuffer;  // bgfx::FrameBufferHandle::idx
+    unsigned short             mShadowTexture;      // bgfx::TextureHandle::idx (depth)
+    MeshGpuCache*              mCache;
+    Dia::Bgfx::ShaderProgram*  mShadowProgram;      // not owned
 };
 
 } } // namespace Dia::Bgfx3D

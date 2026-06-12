@@ -108,6 +108,45 @@ namespace Dia
             return true;
         }
 
+        bool ShaderProgram::LoadFromPath(const char* cookedShaderRoot,
+                                         const char* backendSubdir,
+                                         const char* vsRelBin,
+                                         const char* fsRelBin)
+        {
+            DIA_ASSERT(cookedShaderRoot != nullptr, "ShaderProgram::LoadFromPath: cookedShaderRoot is null");
+            DIA_ASSERT(backendSubdir != nullptr,    "ShaderProgram::LoadFromPath: backendSubdir is null");
+            DIA_ASSERT(vsRelBin != nullptr,         "ShaderProgram::LoadFromPath: vsRelBin is null");
+            DIA_ASSERT(fsRelBin != nullptr,         "ShaderProgram::LoadFromPath: fsRelBin is null");
+
+            char vsPath[512];
+            char fsPath[512];
+            snprintf(vsPath, sizeof(vsPath), "%s/%s/%s", cookedShaderRoot, backendSubdir, vsRelBin);
+            snprintf(fsPath, sizeof(fsPath), "%s/%s/%s", cookedShaderRoot, backendSubdir, fsRelBin);
+
+            bgfx::ShaderHandle vs = LoadShaderFile(vsPath);
+            if (!bgfx::isValid(vs))
+                return false;
+
+            bgfx::ShaderHandle fs = LoadShaderFile(fsPath);
+            if (!bgfx::isValid(fs))
+            {
+                bgfx::destroy(vs);
+                return false;
+            }
+
+            bgfx::ProgramHandle prog = bgfx::createProgram(vs, fs, true /* destroyShaders */);
+            if (!bgfx::isValid(prog))
+            {
+                DIA_LOG_ERROR("DiaBgfx", "ShaderProgram::LoadFromPath: bgfx::createProgram failed for %s / %s", vsRelBin, fsRelBin);
+                return false;
+            }
+
+            mVS      = vs.idx;
+            mFS      = fs.idx;
+            mProgram = prog.idx;
+            return true;
+        }
+
         bool ShaderProgram::IsValid() const
         {
             return bgfx::isValid(bgfx::ProgramHandle{ mProgram });

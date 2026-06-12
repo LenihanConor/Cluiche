@@ -22,6 +22,13 @@ namespace Dia
                       const char* vsName,
                       const char* fsName);
 
+            // Load cooked .bin files using explicit relative paths: <root>/<backendDir>/<vsRelBin> + <root>/<backendDir>/<fsRelBin>
+            // Does not prepend vs_/fs_ — caller supplies the full relative path (e.g. "3d/vs_mesh.bin")
+            bool LoadFromPath(const char* cookedShaderRoot,
+                              const char* backendSubdir,
+                              const char* vsRelBin,
+                              const char* fsRelBin);
+
             bool IsValid() const;
             unsigned short GetProgramHandle() const { return mProgram; }
 

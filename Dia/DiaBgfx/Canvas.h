@@ -67,6 +67,10 @@ namespace Dia
             unsigned short GetImGuiViewId() const { return kImGuiViewId; }
             bool IsInitialised() const { return mInitialised; }
 
+        protected:
+            const char*  GetShaderRoot()   const { return mShaderRoot; }
+            RendererType GetRendererType() const { return mRendererType; }
+
         private:
             void DeferredInit();
             void PropagateCanvasSize();
