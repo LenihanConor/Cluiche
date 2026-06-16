@@ -293,6 +293,7 @@ __pycache__/
 # DiaEnv restore sentinels and downloaded JS/CSS deps
 .diaenv/deps/
 .diaenv/shaders/
+.pytest_cache/
 External/Alpine/
 External/DaisyUI/
 External/Tailwind/
