@@ -1,7 +1,7 @@
 # Feature Spec: entity-template-migration
 
 **Parent:** @docs/specs/systems/cluicheeditor/diaeditorapi.md
-**Status:** Approved
+**Status:** Done
 
 ## Summary
 

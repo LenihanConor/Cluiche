@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/features/cluicheeditor/diaeditorapi/entity-template-migration.md
-**Status:** In Progress
+**Status:** Done
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|

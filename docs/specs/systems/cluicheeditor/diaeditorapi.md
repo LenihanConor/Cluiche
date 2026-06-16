@@ -153,6 +153,7 @@ Phase 1 migrates the highest-priority WebUIBridge-only handlers to dual-registra
 | `game_connection.get_state` | WebUIBridge only | P0 |
 | `plugin.load` | DiaAPI JSON | P0 |
 | `plugin.unload` | DiaAPI JSON | P0 |
+| `project.list` | Not yet implemented — required for conversational project name resolution (see DiaChatPlugin ODQ-4) | P1 |
 | `pipeline.build` | DiaPipelineEditor WebUIBridge | P1 |
 | `pipeline.get_status` | DiaPipelineEditor WebUIBridge | P1 |
 | All DiaAPI JSON commands | DiaAPI (already reachable) | P2 — surfaced automatically |
