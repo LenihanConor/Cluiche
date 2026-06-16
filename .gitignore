@@ -245,7 +245,7 @@ Cluiche/Cluiche.VC.db
 
 # MkDocs build output
 .mkdocs-site/
-venv/
+.venv/
 
 # DiaPython - Python runtime files (use via External/Python311/)
 External/Python311/

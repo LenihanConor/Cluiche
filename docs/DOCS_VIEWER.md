@@ -54,7 +54,7 @@ Then open your browser to: **http://127.0.0.1:8000**
 C:\GitHub\Cluiche\
 ├── 📚 View Docs.bat            # ⭐ EASIEST: Click to launch
 ├── mkdocs.yml                  # MkDocs configuration (must be in root)
-├── venv/                       # Python virtual environment (gitignored)
+├── .venv/                       # Python virtual environment (gitignored)
 ├── .mkdocs-site/               # Generated HTML (gitignored)
 │
 └── docs/                       # Documentation folder
@@ -209,7 +209,7 @@ The warnings about missing files are expected - they reference documentation tha
 ## Notes
 
 - **Localhost only**: This runs on your local machine only (not deployed)
-- **Git**: `.mkdocs-site/` and `venv/` are gitignored
+- **Git**: `.mkdocs-site/` and `.venv/` are gitignored
 - **Source files**: Your original `.md` files are unchanged
 - **Portable**: All files relative to repository root
 - **Auto-browser**: The `📚 View Docs.bat` file automatically opens your browser
