@@ -25,31 +25,35 @@ def cli(ctx):
 
 
 @cli.command()
-def list():
+@click.pass_context
+def list(ctx):
     """List all registered DiaAPI commands"""
     bridge = get_bridge()
 
     if not bridge.is_available():
         click.echo("Error: DiaAPI not available", err=True)
-        return 1
+        ctx.exit(1)
+        return
 
     commands = bridge.list_commands()
 
     if not commands:
         click.echo("No DiaAPI commands registered.")
-        return 0
+        ctx.exit(0)
+        return
 
     click.echo(f"Available DiaAPI commands ({len(commands)}):")
     for cmd in sorted(commands):
         click.echo(f"  - {cmd}")
 
-    return 0
+    ctx.exit(0)
 
 
 @cli.command(name='exec', context_settings=dict(ignore_unknown_options=True))
+@click.pass_context
 @click.argument('command_name')
 @click.argument('args', nargs=-1, type=click.UNPROCESSED)
-def execute(command_name, args):
+def execute(ctx, command_name, args):
     """Execute a DiaAPI command with arguments
 
     Example: dia api exec validate-assets --path Assets/
@@ -58,7 +62,8 @@ def execute(command_name, args):
 
     if not bridge.is_available():
         click.echo("Error: DiaAPI not available", err=True)
-        return 1
+        ctx.exit(1)
+        return
 
     logger.debug(f"Executing DiaAPI command: {command_name} with args: {args}")
 
@@ -67,18 +72,20 @@ def execute(command_name, args):
     if exit_code != 0:
         logger.error(f"DiaAPI command '{command_name}' failed with exit code {exit_code}")
 
-    return exit_code
+    ctx.exit(exit_code)
 
 
 @cli.command()
+@click.pass_context
 @click.argument('command_name')
-def help(command_name):
+def help(ctx, command_name):
     """Show help for a specific DiaAPI command"""
     bridge = get_bridge()
 
     if not bridge.is_available():
         click.echo("Error: DiaAPI not available", err=True)
-        return 1
+        ctx.exit(1)
+        return
 
     help_text = bridge.get_command_help(command_name)
 
@@ -87,4 +94,4 @@ def help(command_name):
     else:
         click.echo(f"No help available for command: {command_name}")
 
-    return 0
+    ctx.exit(0)

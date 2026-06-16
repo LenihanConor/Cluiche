@@ -153,9 +153,10 @@ def cli():
 
 
 @cli.command("manifest")
+@click.pass_context
 @click.option("--path", "target_path", default=None, type=click.Path(), help="Validate a specific file.")
 @click.option("--verbose", is_flag=True, default=False, help="Show OK files in output.")
-def manifest(target_path: str | None, verbose: bool) -> None:
+def manifest(ctx: click.Context, target_path: str | None, verbose: bool) -> None:
     """Validate .diaapp/.diagame/.diastage files against their schemas."""
     repo_root = find_repo_root(__file__)
 
@@ -224,4 +225,5 @@ def manifest(target_path: str | None, verbose: bool) -> None:
 
     click.echo(f"\nSummary: {ok_count + error_count} checked, {error_count} error(s)")
     if error_count > 0:
-        raise SystemExit(1)
+        ctx.exit(1)
+        return

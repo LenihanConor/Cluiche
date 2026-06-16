@@ -18,13 +18,14 @@ _SANITIZER_OUTPUT_NAMES = {
 
 
 @click.command()
+@click.pass_context
 @click.option("--tool", default=None, metavar="TOOL",
               help="Check tool to run: cppcheck (default) or sanitizer.")
 @click.option("--config", default="Asan", metavar="CONFIG",
               help="Sanitizer config: Asan or Ubsan (default: Asan). Only used with --tool=sanitizer.")
 @click.option("--accept-baseline", "accept_baseline", is_flag=True, default=False,
               help="Promote current findings.sarif to baseline.sarif.")
-def cli(tool, config, accept_baseline):
+def cli(ctx, tool, config, accept_baseline):
     """Run a code-quality check against the codebase.
 
     With no --tool, runs cppcheck and writes SARIF to Cluiche/out/check/findings.sarif.
@@ -33,21 +34,21 @@ def cli(tool, config, accept_baseline):
     With --accept-baseline, promotes findings.sarif to baseline.sarif.
     """
     if accept_baseline:
-        _accept_baseline()
+        _accept_baseline(ctx)
         return
 
     if tool is None or tool == "cppcheck":
-        _run_cppcheck()
+        _run_cppcheck(ctx)
         return
 
     if tool == "sanitizer":
-        _run_sanitizer(config)
+        _run_sanitizer(config, ctx)
     else:
         click.echo(f"ERROR: unknown tool '{tool}'. Known tools: cppcheck, sanitizer", err=True)
-        raise SystemExit(2)
+        ctx.exit(2); return
 
 
-def _accept_baseline() -> None:
+def _accept_baseline(ctx) -> None:
     repo_root = find_repo_root(__file__)
     out_dir = repo_root / "Cluiche" / "out" / "check"
     findings_path = out_dir / "findings.sarif"
@@ -58,7 +59,7 @@ def _accept_baseline() -> None:
             "ERROR: findings.sarif not found. Run 'dia check' first to generate it.",
             err=True,
         )
-        raise SystemExit(1)
+        ctx.exit(1); return
 
     try:
         data = json.loads(findings_path.read_text(encoding="utf-8"))
@@ -73,14 +74,14 @@ def _accept_baseline() -> None:
     )
 
 
-def _run_cppcheck() -> None:
+def _run_cppcheck(ctx) -> None:
     if not shutil.which("cppcheck"):
         click.echo(
             "ERROR: cppcheck not found on PATH. "
             "Install with: winget install Cppcheck.Cppcheck",
             err=True,
         )
-        raise SystemExit(1)
+        ctx.exit(1); return
 
     repo_root = find_repo_root(__file__)
 
@@ -113,7 +114,7 @@ def _run_cppcheck() -> None:
         )
     except subprocess.TimeoutExpired:
         click.echo("ERROR: cppcheck timed out after 300 seconds", err=True)
-        raise SystemExit(1)
+        ctx.exit(1); return
 
     xml_text = xml_path.read_text(encoding="utf-8", errors="replace") if xml_path.exists() else ""
 
@@ -239,14 +240,14 @@ def _cppcheck_xml_to_sarif(xml_text: str) -> dict:
     }
 
 
-def _run_sanitizer(config: str) -> None:
+def _run_sanitizer(config: str, ctx) -> None:
     normalized = _CONFIG_ALIASES.get(config, config)
     if normalized not in _SANITIZER_OUTPUT_NAMES:
         click.echo(
             f"ERROR: unknown sanitizer config '{config}'. Use Asan or Ubsan.",
             err=True,
         )
-        raise SystemExit(2)
+        ctx.exit(2); return
 
     repo_root = find_repo_root(__file__)
 
@@ -260,7 +261,7 @@ def _run_sanitizer(config: str) -> None:
         click.echo(
             f"[dia check] Build failed (exit {build_result.returncode})", err=True
         )
-        raise SystemExit(build_result.returncode)
+        ctx.exit(build_result.returncode); return
 
     # Step 2: Run and capture stderr
     exe_path = (
@@ -274,7 +275,7 @@ def _run_sanitizer(config: str) -> None:
     )
     if not exe_path.exists():
         click.echo(f"ERROR: {exe_path} not found after build.", err=True)
-        raise SystemExit(1)
+        ctx.exit(1); return
 
     click.echo(f"[dia check] Running {exe_path.name} under {normalized} ...")
     run_result = subprocess.run(
@@ -304,4 +305,4 @@ def _run_sanitizer(config: str) -> None:
         click.echo(f"[dia check] {count} sanitizer finding(s) detected.")
 
     if run_result.returncode != 0:
-        raise SystemExit(run_result.returncode)
+        ctx.exit(run_result.returncode); return
