@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Scene2DTestStage — Visual Mockup</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #1a1a2e;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh;
+    font-family: 'Segoe UI', monospace;
+    font-size: 13px; color: #dcdcdc;
+  }
+
+  .viewport {
+    position: relative;
+    width: 960px; height: 600px;
+    background: #0d0d14;
+    border: 1px solid #333;
+    overflow: hidden;
+  }
+
+  .scene-label {
+    position: absolute; top: 8px; left: 8px;
+    color: #444; font-size: 11px; letter-spacing: 0.05em;
+  }
+
+  /* ── World bounds outline ─────────────────────────── */
+  .world-bounds {
+    position: absolute;
+    top: 40px; left: 320px; right: 20px; bottom: 40px;
+    border: 1px dashed #2a2a4a;
+  }
+  .world-bounds-label {
+    position: absolute; top: -14px; left: 4px;
+    font-size: 9px; color: #3a3a5a; letter-spacing: 0.08em;
+  }
+
+  /* ── Layer bands ──────────────────────────────────── */
+  .layer-band {
+    position: absolute;
+    left: 0; right: 0;
+    border-bottom: 1px solid rgba(60, 60, 100, 0.3);
+  }
+  .layer-band-label {
+    position: absolute; right: 6px; top: 2px;
+    font-size: 9px; color: #3a5a6a; letter-spacing: 0.06em;
+  }
+  .layer-bg { top: 0; height: 33.3%; background: rgba(30, 30, 60, 0.15); }
+  .layer-mid { top: 33.3%; height: 33.3%; background: rgba(40, 40, 70, 0.1); }
+  .layer-fg { top: 66.6%; height: 33.4%; background: rgba(50, 50, 80, 0.08); }
+
+  /* ── Entities ──────────────────────────────────────── */
+  .entity {
+    position: absolute;
+    width: 32px; height: 32px;
+    border: 2px solid #4a8a5a;
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; color: #6ab67a;
+  }
+  .entity.disabled {
+    border-color: #5a3a3a;
+    color: #8a5a5a;
+    opacity: 0.5;
+  }
+  .entity-label {
+    position: absolute; top: -12px; left: 0;
+    font-size: 8px; color: #5a7aaa;
+    white-space: nowrap;
+  }
+
+  /* ── Camera ────────────────────────────────────────── */
+  .camera {
+    position: absolute;
+    width: 40px; height: 28px;
+    border: 2px solid #7a7aee;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; color: #9a9aff;
+  }
+  .camera-fov {
+    position: absolute;
+    width: 100px; height: 70px;
+    border: 1px dashed rgba(122, 122, 238, 0.3);
+    border-radius: 2px;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  /* ── Lights ────────────────────────────────────────── */
+  .light {
+    position: absolute;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px;
+  }
+  .light-warm {
+    background: radial-gradient(circle, rgba(255, 180, 60, 0.4), transparent 70%);
+    border: 1px solid rgba(255, 180, 60, 0.6);
+    color: #ffb43c;
+  }
+  .light-cool {
+    background: radial-gradient(circle, rgba(60, 160, 255, 0.4), transparent 70%);
+    border: 1px solid rgba(60, 160, 255, 0.6);
+    color: #3ca0ff;
+  }
+  .light-radius {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px dashed;
+    opacity: 0.2;
+  }
+  .light-radius-warm { border-color: #ffb43c; width: 80px; height: 80px; top: -30px; left: -30px; }
+  .light-radius-cool { border-color: #3ca0ff; width: 60px; height: 60px; top: -20px; left: -20px; }
+
+  /* ── Debug Console (ImGui style) ───────────────────── */
+  .console {
+    position: absolute; top: 4px; left: 4px;
+    width: 306px; height: 280px;
+    background: rgba(20, 20, 36, 0.94);
+    border: 1px solid #3a3a5a;
+    border-radius: 3px;
+    padding: 4px 6px;
+    font-size: 11px;
+  }
+  .console-title {
+    color: #8a8aaa; font-weight: bold; margin-bottom: 4px;
+    border-bottom: 1px solid #2a2a4a; padding-bottom: 3px;
+  }
+  .console-section {
+    margin: 6px 0;
+  }
+  .console-section-header {
+    color: #6a8aaa; font-size: 10px; cursor: pointer;
+  }
+  .console-row {
+    color: #aaa; font-size: 10px; padding: 1px 0 1px 10px;
+  }
+  .console-val { color: #6ab67a; }
+  .console-key { color: #7a9abb; }
+
+  /* ── Checkpoints panel ─────────────────────────────── */
+  .checkpoints {
+    position: absolute; top: 4px; left: 316px;
+    width: 240px;
+    background: rgba(20, 20, 36, 0.94);
+    border: 1px solid #3a3a5a;
+    border-radius: 3px;
+    padding: 4px 6px;
+    font-size: 10px;
+  }
+  .cp-title {
+    color: #8a8aaa; font-weight: bold; margin-bottom: 4px;
+    border-bottom: 1px solid #2a2a4a; padding-bottom: 3px;
+  }
+  .cp-row { padding: 2px 0; display: flex; justify-content: space-between; }
+  .cp-name { color: #aaa; }
+  .cp-pass { color: #4ae64a; font-weight: bold; }
+
+  /* ── HUD bar ─────────────────────────────────────── */
+  .hud-bar {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 28px;
+    background: rgba(0,0,0,0.72);
+    display: flex; align-items: center; padding: 0 10px; gap: 16px;
+    font-size: 11px; border-top: 1px solid #2a2a3a;
+  }
+  .hud-stage { color: #7a9abb; font-weight: bold; }
+  .hud-checkpoint { color: #4ae64a; }
+  .hud-frame { color: #666; }
+  .hud-status { color: #4ae64a; font-weight: bold; }
+  .hud-exit { color: #aa4a4a; margin-left: auto; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class="viewport">
+  <span class="scene-label">Scene2DTestStage — DiaScene2D load pipeline validation</span>
+
+  <!-- World bounds area -->
+  <div class="world-bounds">
+    <span class="world-bounds-label">WORLD BOUNDS [0,0]→[1920,1080]</span>
+
+    <!-- Layer bands -->
+    <div class="layer-band layer-bg">
+      <span class="layer-band-label">background (sort:-10, parallax:0.5,0.0)</span>
+    </div>
+    <div class="layer-band layer-mid">
+      <span class="layer-band-label">midground (sort:0, parallax:1.0,1.0)</span>
+    </div>
+    <div class="layer-band layer-fg">
+      <span class="layer-band-label">foreground (sort:10, parallax:1.0,1.0)</span>
+    </div>
+
+    <!-- Camera -->
+    <div class="camera" style="top: 45%; left: 45%;">
+      <div class="camera-fov"></div>
+      CAM
+    </div>
+
+    <!-- Lights -->
+    <div class="light light-warm" style="top: 22%; left: 15%;">
+      <div class="light-radius light-radius-warm"></div>
+      A
+    </div>
+    <div class="light light-cool" style="top: 72%; left: 78%;">
+      <div class="light-radius light-radius-cool"></div>
+      B
+    </div>
+
+    <!-- Entities -->
+    <div class="entity" style="top: 30%; left: 10%;">
+      <span class="entity-label">entity_a</span>
+      A
+    </div>
+    <div class="entity" style="top: 45%; left: 35%;">
+      <span class="entity-label">entity_b</span>
+      B
+    </div>
+    <div class="entity" style="top: 55%; left: 58%;">
+      <span class="entity-label">entity_c "named_entity"</span>
+      C
+    </div>
+    <div class="entity disabled" style="top: 68%; left: 80%;">
+      <span class="entity-label">entity_d (disabled)</span>
+      D
+    </div>
+  </div>
+
+  <!-- Debug Console -->
+  <div class="console">
+    <div class="console-title">Debug Console</div>
+    <div class="console-section">
+      <div class="console-section-header">&#x25BC; Scene Info</div>
+      <div class="console-row"><span class="console-key">File:</span> <span class="console-val">test_scene.diascene</span></div>
+      <div class="console-row"><span class="console-key">Load status:</span> <span class="console-val">OK</span></div>
+      <div class="console-row"><span class="console-key">Load time:</span> <span class="console-val">2.1ms</span></div>
+    </div>
+    <div class="console-section">
+      <div class="console-section-header">&#x25BC; Layers</div>
+      <div class="console-row"><span class="console-key">Count:</span> <span class="console-val">3</span></div>
+      <div class="console-row">&nbsp; background (bit 0, sort -10)</div>
+      <div class="console-row">&nbsp; midground (bit 1, sort 0)</div>
+      <div class="console-row">&nbsp; foreground (bit 2, sort 10)</div>
+    </div>
+    <div class="console-section">
+      <div class="console-section-header">&#x25BC; Cameras</div>
+      <div class="console-row"><span class="console-key">Count:</span> <span class="console-val">1</span></div>
+      <div class="console-row">&nbsp; test_camera [ACTIVE] @ (960, 540)</div>
+    </div>
+    <div class="console-section">
+      <div class="console-section-header">&#x25BC; Lights</div>
+      <div class="console-row"><span class="console-key">Count:</span> <span class="console-val">2</span></div>
+      <div class="console-row">&nbsp; light_a → midground|foreground</div>
+      <div class="console-row">&nbsp; light_b → foreground</div>
+    </div>
+    <div class="console-section">
+      <div class="console-section-header">&#x25BC; Entities</div>
+      <div class="console-row"><span class="console-key">Spawned:</span> <span class="console-val">3</span> <span style="color:#666">(1 disabled, skipped)</span></div>
+      <div class="console-row">&nbsp; entity_a @ (200, 300)</div>
+      <div class="console-row">&nbsp; entity_b @ (600, 400)</div>
+      <div class="console-row">&nbsp; entity_c "named_entity" @ (1000, 500)</div>
+    </div>
+  </div>
+
+  <!-- Checkpoints panel -->
+  <div class="checkpoints">
+    <div class="cp-title">Checkpoints</div>
+    <div class="cp-row"><span class="cp-name">scene.loaded</span><span class="cp-pass">PASS</span></div>
+    <div class="cp-row"><span class="cp-name">scene.cameras_hydrated</span><span class="cp-pass">PASS</span></div>
+    <div class="cp-row"><span class="cp-name">scene.lights_hydrated</span><span class="cp-pass">PASS</span></div>
+    <div class="cp-row"><span class="cp-name">scene.entities_spawned</span><span class="cp-pass">PASS</span></div>
+    <div class="cp-row"><span class="cp-name">scene.layers_resolved</span><span class="cp-pass">PASS</span></div>
+  </div>
+
+  <!-- HUD bar -->
+  <div class="hud-bar">
+    <span class="hud-stage">Scene2DTestStage</span>
+    <span class="hud-checkpoint">&#x2713; scene.loaded</span>
+    <span class="hud-frame">042</span>
+    <span class="hud-status">PASS</span>
+    <span class="hud-exit">&#x2715;</span>
+  </div>
+</div>
+
+</body>
+</html>

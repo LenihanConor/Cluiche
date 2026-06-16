@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DiaAssetRuntimeEditor — Mockup</title>
+<style>
+  :root {
+    --bg: #1e1e2e;
+    --surface: #282840;
+    --surface2: #313150;
+    --border: #44446a;
+    --text: #cdd6f4;
+    --text-dim: #7f849c;
+    --accent: #89b4fa;
+    --green: #a6e3a1;
+    --yellow: #f9e2af;
+    --red: #f38ba8;
+    --orange: #fab387;
+    --grey: #585b70;
+    --blue: #74c7ec;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Consolas, monospace; font-size: 13px; background: var(--bg); color: var(--text); }
+
+  /* Layout: 2x2 grid */
+  .editor-shell {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr 1fr;
+    height: 100vh;
+    gap: 1px;
+    background: var(--border);
+  }
+
+  /* Toolbar */
+  .toolbar {
+    grid-column: 1 / -1;
+    background: var(--surface);
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .toolbar .title { font-weight: 600; font-size: 14px; color: var(--accent); }
+  .toolbar .connection {
+    display: flex; align-items: center; gap: 6px;
+    padding: 3px 10px; border-radius: 4px; font-size: 12px;
+  }
+  .toolbar .connection.connected { background: rgba(166,227,161,0.15); color: var(--green); }
+  .toolbar .connection.disconnected { background: rgba(243,139,168,0.15); color: var(--red); }
+  .toolbar .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .toolbar .dot.green { background: var(--green); }
+  .toolbar .dot.red { background: var(--red); }
+  .toolbar .refresh-btn {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    padding: 3px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;
+  }
+  .toolbar .refresh-btn:hover { background: var(--border); }
+  .toolbar .poll-label { color: var(--text-dim); font-size: 11px; }
+
+  /* Panel wrapper */
+  .panel {
+    background: var(--surface);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .panel-header {
+    padding: 6px 10px;
+    background: var(--surface2);
+    font-weight: 600; font-size: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim);
+  }
+  .panel-body { flex: 1; overflow-y: auto; padding: 0; }
+
+  /* Filter bar */
+  .filter-bar {
+    padding: 6px 10px;
+    display: flex; gap: 8px; align-items: center;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .filter-bar input, .filter-bar select {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    padding: 3px 8px; border-radius: 3px; font-size: 12px; font-family: inherit;
+  }
+  .filter-bar input { flex: 1; }
+  .filter-bar select { min-width: 100px; }
+  .filter-bar label { color: var(--text-dim); font-size: 11px; white-space: nowrap; }
+
+  /* Asset State Table */
+  table.asset-table { width: 100%; border-collapse: collapse; }
+  table.asset-table th {
+    text-align: left; padding: 5px 10px; font-size: 11px;
+    color: var(--text-dim); background: var(--surface2);
+    border-bottom: 1px solid var(--border); position: sticky; top: 0;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  table.asset-table td {
+    padding: 5px 10px; border-bottom: 1px solid rgba(68,68,106,0.3);
+    font-size: 12px; white-space: nowrap;
+  }
+  table.asset-table tr:hover { background: rgba(137,180,250,0.06); }
+  table.asset-table tr.selected { background: rgba(137,180,250,0.12); }
+
+  .state-badge {
+    display: inline-block; padding: 1px 7px; border-radius: 3px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
+  }
+  .state-loaded { background: rgba(166,227,161,0.18); color: var(--green); }
+  .state-staged { background: rgba(249,226,175,0.18); color: var(--yellow); }
+  .state-registered { background: rgba(88,91,112,0.3); color: var(--grey); }
+  .state-unloading { background: rgba(243,139,168,0.18); color: var(--red); }
+
+  .scope-badge { color: var(--text-dim); font-size: 11px; }
+  .scope-global { color: var(--blue); }
+  .scope-stage { color: var(--orange); }
+
+  .deploy-path { color: var(--text-dim); font-size: 11px; max-width: 320px; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Tree View */
+  .tree { padding: 6px 0; }
+  .tree-node { padding: 3px 10px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  .tree-node:hover { background: rgba(137,180,250,0.06); }
+  .tree-node.selected { background: rgba(137,180,250,0.12); }
+  .tree-toggle { width: 14px; text-align: center; color: var(--text-dim); font-size: 10px; user-select: none; }
+  .tree-icon { font-size: 11px; }
+  .tree-label { font-size: 12px; }
+  .tree-stage { font-weight: 600; color: var(--accent); }
+  .tree-indent-1 { padding-left: 28px; }
+  .tree-indent-2 { padding-left: 46px; }
+  .tree-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .tree-dot.loaded { background: var(--green); }
+  .tree-dot.staged { background: var(--yellow); }
+  .tree-dot.registered { background: var(--grey); }
+  .tree-count { color: var(--text-dim); font-size: 11px; margin-left: auto; }
+
+  /* Ref Count Inspector */
+  .inspector { padding: 12px; }
+  .inspector-header { margin-bottom: 12px; }
+  .inspector-field { display: flex; gap: 8px; margin-bottom: 6px; font-size: 12px; }
+  .inspector-field .label { color: var(--text-dim); min-width: 80px; }
+  .inspector-field .value { color: var(--text); font-weight: 500; }
+  .inspector-reflist { margin-top: 12px; }
+  .inspector-reflist h4 { font-size: 11px; color: var(--text-dim); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .ref-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 8px; margin-bottom: 2px;
+    background: var(--surface2); border-radius: 3px; font-size: 12px;
+  }
+  .ref-row .stage-name { color: var(--accent); }
+  .ref-row .ref-badge {
+    margin-left: auto; background: rgba(137,180,250,0.15);
+    color: var(--accent); padding: 1px 6px; border-radius: 3px; font-size: 11px;
+  }
+
+  /* Transition Log */
+  .log-controls {
+    padding: 6px 10px; display: flex; gap: 6px; align-items: center;
+    border-bottom: 1px solid var(--border); background: var(--surface);
+  }
+  .log-btn {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    padding: 2px 8px; border-radius: 3px; cursor: pointer; font-size: 11px; font-family: inherit;
+  }
+  .log-btn:hover { background: var(--border); }
+  .log-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .log-entries { padding: 0; }
+  .log-entry {
+    padding: 4px 10px; font-size: 12px; font-family: Consolas, monospace;
+    border-bottom: 1px solid rgba(68,68,106,0.2);
+    display: flex; gap: 12px;
+  }
+  .log-entry:hover { background: rgba(137,180,250,0.04); }
+  .log-time { color: var(--text-dim); min-width: 85px; font-size: 11px; }
+  .log-asset { color: var(--text); min-width: 200px; }
+  .log-transition { display: flex; align-items: center; gap: 4px; }
+  .log-arrow { color: var(--text-dim); }
+  .log-marker {
+    padding: 4px 10px; font-size: 11px; color: var(--text-dim);
+    background: rgba(68,68,106,0.2); text-align: center; font-style: italic;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--grey); }
+
+  /* Disconnected overlay */
+  .disconnected-overlay {
+    display: none;
+    position: absolute; inset: 0;
+    background: rgba(30,30,46,0.85);
+    justify-content: center; align-items: center;
+    flex-direction: column; gap: 8px;
+    z-index: 10;
+  }
+  .disconnected-overlay .msg { color: var(--text-dim); font-size: 13px; }
+  .disconnected-overlay .icon { font-size: 28px; color: var(--red); }
+  .panel { position: relative; }
+
+  /* Toggle for demo */
+  .demo-toggle {
+    margin-left: auto; display: flex; align-items: center; gap: 8px;
+  }
+  .demo-toggle label { color: var(--text-dim); font-size: 11px; cursor: pointer; }
+  .demo-toggle input { cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class="editor-shell">
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <span class="title">DiaAssetRuntimeEditor</span>
+    <div class="connection connected" id="connStatus">
+      <span class="dot green" id="connDot"></span>
+      <span id="connLabel">Connected to CluicheTest (localhost:9090)</span>
+    </div>
+    <button class="refresh-btn" onclick="refreshAll()">Refresh</button>
+    <span class="poll-label">Poll: 1.0s</span>
+    <div class="demo-toggle">
+      <label for="disconnectToggle">Simulate disconnect</label>
+      <input type="checkbox" id="disconnectToggle" onchange="toggleConnection()">
+    </div>
+  </div>
+
+  <!-- Panel 1: Asset State Table (top-left) -->
+  <div class="panel" id="panelTable">
+    <div class="panel-header">
+      <span>Asset State Table</span>
+      <span style="font-size:11px; font-weight:normal; color:var(--text-dim)">12 assets</span>
+    </div>
+    <div class="filter-bar">
+      <label>Filter:</label>
+      <input type="text" placeholder="Search asset ID..." id="searchInput" oninput="filterTable()">
+      <select id="stateFilter" onchange="filterTable()">
+        <option value="">All States</option>
+        <option value="Loaded">Loaded</option>
+        <option value="Staged">Staged</option>
+        <option value="Registered">Registered</option>
+        <option value="Unloading">Unloading</option>
+      </select>
+    </div>
+    <div class="panel-body">
+      <table class="asset-table" id="assetTable">
+        <thead>
+          <tr>
+            <th>Asset ID</th>
+            <th>State</th>
+            <th>Scope</th>
+            <th>Refs</th>
+            <th>Deploy Path</th>
+          </tr>
+        </thead>
+        <tbody id="assetTableBody"></tbody>
+      </table>
+    </div>
+    <div class="disconnected-overlay" id="overlay1">
+      <span class="icon">&#9888;</span>
+      <span class="msg">Not connected — connect to a running game to view asset state</span>
+    </div>
+  </div>
+
+  <!-- Panel 2: Stage/Asset Tree View (top-right) -->
+  <div class="panel" id="panelTree">
+    <div class="panel-header">
+      <span>Stage / Asset Tree</span>
+    </div>
+    <div class="panel-body">
+      <div class="tree" id="treeView"></div>
+    </div>
+    <div class="disconnected-overlay" id="overlay2">
+      <span class="icon">&#9888;</span>
+      <span class="msg">Not connected — connect to a running game to view asset state</span>
+    </div>
+  </div>
+
+  <!-- Panel 3: Ref Count Inspector (bottom-left) -->
+  <div class="panel" id="panelInspector">
+    <div class="panel-header">
+      <span>Ref Count Inspector</span>
+    </div>
+    <div class="panel-body">
+      <div class="inspector" id="inspectorContent">
+        <div class="inspector-header">
+          <div class="inspector-field"><span class="label">Asset ID:</span><span class="value" id="insAssetId">config.ship_stats</span></div>
+          <div class="inspector-field"><span class="label">State:</span><span class="value"><span class="state-badge state-loaded">Loaded</span></span></div>
+          <div class="inspector-field"><span class="label">Scope:</span><span class="value scope-global">Global</span></div>
+          <div class="inspector-field"><span class="label">Ref Count:</span><span class="value" id="insRefCount">2</span></div>
+          <div class="inspector-field"><span class="label">Deploy Path:</span><span class="value deploy-path">global/gameplay/ship_stats.config.json</span></div>
+        </div>
+        <div class="inspector-reflist">
+          <h4>Stage References</h4>
+          <div class="ref-row">
+            <span class="stage-name">stage.gameplay</span>
+            <span class="ref-badge">active</span>
+          </div>
+          <div class="ref-row">
+            <span class="stage-name">stage.main_menu</span>
+            <span class="ref-badge">active</span>
+          </div>
+        </div>
+      </div>
+      <div id="inspectorEmpty" style="display:none; padding:24px; text-align:center; color:var(--text-dim);">
+        Select a global asset to inspect ref counts
+      </div>
+    </div>
+    <div class="disconnected-overlay" id="overlay3">
+      <span class="icon">&#9888;</span>
+      <span class="msg">Not connected — connect to a running game to view asset state</span>
+    </div>
+  </div>
+
+  <!-- Panel 4: State Transition Log (bottom-right) -->
+  <div class="panel" id="panelLog">
+    <div class="panel-header">
+      <span>State Transition Log</span>
+      <span style="font-size:11px; font-weight:normal; color:var(--text-dim)" id="logCount">18 entries</span>
+    </div>
+    <div class="log-controls">
+      <button class="log-btn" id="pauseBtn" onclick="togglePause()">Pause</button>
+      <button class="log-btn" onclick="clearLog()">Clear</button>
+      <input type="text" placeholder="Filter by asset ID..." style="flex:1; background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:2px 8px; border-radius:3px; font-size:11px; font-family:inherit;">
+      <select style="background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:2px 6px; border-radius:3px; font-size:11px; font-family:inherit;">
+        <option>All Transitions</option>
+        <option>Registered &rarr; Staged</option>
+        <option>Staged &rarr; Loaded</option>
+        <option>Loaded &rarr; Unloading</option>
+        <option>Unloading &rarr; Registered</option>
+      </select>
+    </div>
+    <div class="panel-body">
+      <div class="log-entries" id="logEntries"></div>
+    </div>
+    <div class="disconnected-overlay" id="overlay4">
+      <span class="icon">&#9888;</span>
+      <span class="msg">Not connected — connect to a running game to view asset state</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// --- Mock data from the asset journey ---
+const assets = [
+  { id: 'texture.player_ship', state: 'Loaded', scope: 'stage', refs: 1, path: 'stages/Gameplay/characters/player_ship.texture.png' },
+  { id: 'entity.player_ship', state: 'Loaded', scope: 'stage', refs: 1, path: 'stages/Gameplay/characters/player_ship.entity.json' },
+  { id: 'config.ship_stats', state: 'Loaded', scope: 'global', refs: 2, path: 'global/gameplay/ship_stats.config.json' },
+  { id: 'folder.main_ui', state: 'Loaded', scope: 'global', refs: 2, path: 'global/Presentation/UI/main_ui.folder/' },
+  { id: 'texture.menu_bg', state: 'Loaded', scope: 'stage', refs: 1, path: 'stages/MainMenu/Presentation/UI/menu_bg.texture.png' },
+  { id: 'config.menu_layout', state: 'Loaded', scope: 'stage', refs: 1, path: 'stages/MainMenu/Presentation/UI/menu_layout.config.json' },
+  { id: 'audio.click_sfx', state: 'Loaded', scope: 'global', refs: 2, path: 'global/Presentation/UI/click_sfx.audio.wav' },
+  { id: 'texture.enemy_drone', state: 'Staged', scope: 'stage', refs: 1, path: 'stages/Gameplay/characters/enemy_drone.texture.png' },
+  { id: 'entity.enemy_drone', state: 'Staged', scope: 'stage', refs: 1, path: 'stages/Gameplay/characters/enemy_drone.entity.json' },
+  { id: 'config.ai_params', state: 'Registered', scope: 'global', refs: 0, path: 'global/gameplay/ai_params.config.json' },
+  { id: 'texture.explosion', state: 'Registered', scope: 'global', refs: 0, path: 'global/misc/explosion.texture.png' },
+  { id: 'audio.bgm_gameplay', state: 'Unloading', scope: 'stage', refs: 0, path: 'stages/Gameplay/misc/bgm_gameplay.audio.ogg' },
+];
+
+const stages = [
+  {
+    id: 'stage.gameplay', expanded: true,
+    assets: ['texture.player_ship','entity.player_ship','config.ship_stats','folder.main_ui','texture.enemy_drone','entity.enemy_drone','audio.bgm_gameplay']
+  },
+  {
+    id: 'stage.main_menu', expanded: true,
+    assets: ['texture.menu_bg','config.menu_layout','config.ship_stats','folder.main_ui','audio.click_sfx']
+  }
+];
+
+const globalAssets = ['config.ai_params','texture.explosion'];
+
+const logData = [
+  { time: '14:32:01.412', asset: 'audio.bgm_gameplay', from: 'Loaded', to: 'Unloading' },
+  { time: '14:32:01.398', asset: 'entity.enemy_drone', from: 'Registered', to: 'Staged' },
+  { time: '14:32:01.397', asset: 'texture.enemy_drone', from: 'Registered', to: 'Staged' },
+  { time: '14:32:00.221', asset: 'audio.click_sfx', from: 'Staged', to: 'Loaded' },
+  { time: '14:32:00.210', asset: 'folder.main_ui', from: 'Staged', to: 'Loaded' },
+  { time: '14:32:00.195', asset: 'config.ship_stats', from: 'Staged', to: 'Loaded' },
+  { time: '14:32:00.180', asset: 'config.menu_layout', from: 'Staged', to: 'Loaded' },
+  { time: '14:32:00.165', asset: 'texture.menu_bg', from: 'Staged', to: 'Loaded' },
+  { time: '14:31:59.950', asset: 'entity.player_ship', from: 'Staged', to: 'Loaded' },
+  { time: '14:31:59.920', asset: 'texture.player_ship', from: 'Staged', to: 'Loaded' },
+  { time: '14:31:59.510', asset: 'audio.click_sfx', from: 'Registered', to: 'Staged' },
+  { time: '14:31:59.505', asset: 'folder.main_ui', from: 'Registered', to: 'Staged' },
+  { time: '14:31:59.500', asset: 'config.ship_stats', from: 'Registered', to: 'Staged' },
+  { time: '14:31:59.495', asset: 'config.menu_layout', from: 'Registered', to: 'Staged' },
+  { time: '14:31:59.490', asset: 'texture.menu_bg', from: 'Registered', to: 'Staged' },
+  { time: '14:31:59.310', asset: 'entity.player_ship', from: 'Registered', to: 'Staged' },
+  { time: '14:31:59.300', asset: 'texture.player_ship', from: 'Registered', to: 'Staged' },
+  { time: '14:31:59.001', asset: 'audio.bgm_gameplay', from: 'Registered', to: 'Staged' },
+];
+
+function stateClass(s) {
+  return 'state-' + s.toLowerCase();
+}
+
+function scopeClass(s) {
+  return 'scope-' + s;
+}
+
+// --- Render Asset State Table ---
+function renderTable() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const stateF = document.getElementById('stateFilter').value;
+  const tbody = document.getElementById('assetTableBody');
+  tbody.innerHTML = '';
+  const filtered = assets.filter(a => {
+    if (search && !a.id.toLowerCase().includes(search)) return false;
+    if (stateF && a.state !== stateF) return false;
+    return true;
+  });
+  filtered.forEach((a, i) => {
+    const tr = document.createElement('tr');
+    if (a.id === 'config.ship_stats') tr.className = 'selected';
+    tr.innerHTML = `
+      <td>${a.id}</td>
+      <td><span class="state-badge ${stateClass(a.state)}">${a.state}</span></td>
+      <td><span class="scope-badge ${scopeClass(a.scope)}">${a.scope}</span></td>
+      <td style="text-align:center">${a.refs}</td>
+      <td><span class="deploy-path">${a.path}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function filterTable() { renderTable(); }
+
+// --- Render Tree View ---
+function renderTree() {
+  const tree = document.getElementById('treeView');
+  tree.innerHTML = '';
+
+  stages.forEach(stage => {
+    const stageNode = document.createElement('div');
+    stageNode.className = 'tree-node';
+    stageNode.innerHTML = `
+      <span class="tree-toggle">${stage.expanded ? '&#9660;' : '&#9654;'}</span>
+      <span class="tree-icon">&#128230;</span>
+      <span class="tree-label tree-stage">${stage.id}</span>
+      <span class="tree-count">${stage.assets.length} assets</span>
+    `;
+    tree.appendChild(stageNode);
+
+    if (stage.expanded) {
+      stage.assets.forEach(aid => {
+        const a = assets.find(x => x.id === aid);
+        if (!a) return;
+        const node = document.createElement('div');
+        node.className = 'tree-node tree-indent-1' + (a.id === 'config.ship_stats' ? ' selected' : '');
+        node.innerHTML = `
+          <span class="tree-toggle"></span>
+          <span class="tree-dot ${stateClass(a.state).replace('state-','')}" title="${a.state}"></span>
+          <span class="tree-label">${a.id}</span>
+          ${a.scope === 'global' ? '<span class="tree-count" style="color:var(--blue)">global</span>' : ''}
+        `;
+        tree.appendChild(node);
+      });
+    }
+  });
+
+  // Global unassigned
+  if (globalAssets.length > 0) {
+    const gNode = document.createElement('div');
+    gNode.className = 'tree-node';
+    gNode.innerHTML = `
+      <span class="tree-toggle">&#9660;</span>
+      <span class="tree-icon">&#127760;</span>
+      <span class="tree-label tree-stage" style="color:var(--blue)">[Global — no Stage]</span>
+      <span class="tree-count">${globalAssets.length} assets</span>
+    `;
+    tree.appendChild(gNode);
+    globalAssets.forEach(aid => {
+      const a = assets.find(x => x.id === aid);
+      if (!a) return;
+      const node = document.createElement('div');
+      node.className = 'tree-node tree-indent-1';
+      node.innerHTML = `
+        <span class="tree-toggle"></span>
+        <span class="tree-dot ${stateClass(a.state).replace('state-','')}" title="${a.state}"></span>
+        <span class="tree-label">${a.id}</span>
+      `;
+      tree.appendChild(node);
+    });
+  }
+}
+
+// --- Render Transition Log ---
+function renderLog() {
+  const container = document.getElementById('logEntries');
+  container.innerHTML = '';
+  logData.forEach(e => {
+    const div = document.createElement('div');
+    div.className = 'log-entry';
+    div.innerHTML = `
+      <span class="log-time">${e.time}</span>
+      <span class="log-asset">${e.asset}</span>
+      <span class="log-transition">
+        <span class="state-badge ${stateClass(e.from)}" style="font-size:10px">${e.from}</span>
+        <span class="log-arrow">&rarr;</span>
+        <span class="state-badge ${stateClass(e.to)}" style="font-size:10px">${e.to}</span>
+      </span>
+    `;
+    container.appendChild(div);
+  });
+  document.getElementById('logCount').textContent = logData.length + ' entries';
+}
+
+// --- Demo: toggle connection ---
+function toggleConnection() {
+  const checked = document.getElementById('disconnectToggle').checked;
+  const overlays = [1,2,3,4].map(i => document.getElementById('overlay' + i));
+  const status = document.getElementById('connStatus');
+  const dot = document.getElementById('connDot');
+  const label = document.getElementById('connLabel');
+
+  if (checked) {
+    overlays.forEach(o => o.style.display = 'flex');
+    status.className = 'connection disconnected';
+    dot.className = 'dot red';
+    label.textContent = 'Disconnected';
+  } else {
+    overlays.forEach(o => o.style.display = 'none');
+    status.className = 'connection connected';
+    dot.className = 'dot green';
+    label.textContent = 'Connected to CluicheTest (localhost:9090)';
+  }
+}
+
+function togglePause() {
+  const btn = document.getElementById('pauseBtn');
+  if (btn.classList.contains('active')) {
+    btn.classList.remove('active');
+    btn.textContent = 'Pause';
+  } else {
+    btn.classList.add('active');
+    btn.textContent = 'Resume';
+  }
+}
+
+function clearLog() {
+  document.getElementById('logEntries').innerHTML = '';
+  document.getElementById('logCount').textContent = '0 entries';
+}
+
+function refreshAll() {
+  renderTable();
+  renderTree();
+  renderLog();
+}
+
+// Initial render
+renderTable();
+renderTree();
+renderLog();
+</script>
+
+</body>
+</html>
