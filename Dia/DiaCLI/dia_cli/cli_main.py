@@ -178,9 +178,6 @@ class OnlySetupCli(click.MultiCommand):
     def get_command(self, ctx, name):
         # FIXME How will we handle this with packaging??
         setup_module_singleton_list = [str(pp) for pp in Path.cwd().glob("**/dia_cli/cli/setup.py")]
-        print(Path.cwd())
-        # setup_module_singleton_list = list(glob(f"{Path.cwd()}/**/mdk-cli/dia_cli/cli/setup.py"))
-        print(f"SMSL: {setup_module_singleton_list}")
         if not setup_module_singleton_list:
             logger.error("dia_cli/cli/setup.py not found in the folder tree. Cannot run setup.")
             exit(1)
