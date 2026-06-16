@@ -141,3 +141,128 @@ This compiles C++, builds plugin UIs, and deploys to the editor's plugin directo
 - **Ctrl+S** — Save
 - **F5** — Step through phase in debugger
 - **Tab** — Toggle between panels / cycle focus
+
+## DiaEditorAPI Action Catalog
+
+All actions are called via `ExecuteAction(action_id, params)` from Python or `editor.executeAction()` from JS. Actions are dispatched on either `kMainThread` (mutating) or `kCallerThread` (read-only queries).
+
+### project (3 actions)
+| Action | Description | Params |
+|--------|-------------|--------|
+| `project.open_path` | Open .diagame project | `path` (string, required) |
+| `project.close` | Close current project | — |
+| `project.get_state` | Return project state (name, diagamePath, source) | — |
+
+### game_connection (3 actions)
+| Action | Description | Params |
+|--------|-------------|--------|
+| `game_connection.connect` | WebSocket connect to running game | `url` (string, required) |
+| `game_connection.disconnect` | Disconnect from game | — |
+| `game_connection.get_state` | Return connection state | — |
+
+### app_editor (5 actions)
+| Action | Description | Params |
+|--------|-------------|--------|
+| `app_editor.get_active_context` | Cross-cutting editor state (project, focus, selection) | — |
+| `app_editor.navigate_to_plugin` | Navigate to plugin panel | `plugin_id` (string) |
+| `app_editor.navigate_to_stage` | Navigate to stage | `stage_id` (string) |
+| `app_editor.navigate_to_entity` | Navigate to entity template | `entity_id` (string) |
+| `app_editor.navigate_to_asset` | Navigate to asset | — |
+
+### manifest (4 actions)
+| Action | Description | Params |
+|--------|-------------|--------|
+| `manifest.load` | Load .diaapp manifest | `path` (string, required) |
+| `manifest.save` | Save manifest to disk | — |
+| `manifest.getState` | Full manifest state (stages, PUs, streams, initialStage) | — |
+| `manifest.applyCommand` | Execute manifest edit (25+ command types) | `commandType` (string, required) |
+
+### history (3 actions)
+| Action | Description | Params |
+|--------|-------------|--------|
+| `history.undo` | Undo last manifest command | — |
+| `history.redo` | Redo last undone command | — |
+| `history.getState` | Undo/redo state (canUndo, canRedo, count) | — |
+
+### validation (1 action)
+| Action | Description | Params |
+|--------|-------------|--------|
+| `validation.run` | Validate loaded manifest | — |
+
+### types (2 actions)
+| Action | Description | Params |
+|--------|-------------|--------|
+| `types.get` | Available module and PU types | — |
+| `types.refresh` | Reload types from schema | `path` (string, optional) |
+
+### scene_editor (40 actions)
+
+**Read-only (kCallerThread):**
+| Action | Description | Key Params |
+|--------|-------------|------------|
+| `get_project_state` | Project validity | — |
+| `get_stage_list` | Stages from manifest | — |
+| `get_hierarchy` | Entity hierarchy from path | — |
+| `get_hierarchy_filtered` | Filtered hierarchy | `filter` (string) |
+| `get_properties` | Full property set for item | `selectionType`, `selectionId` |
+| `get_entity_template_defaults` | Defaults for template | `entityTemplateId`, `itemType` |
+| `get_available_entity_templates` | Template list | `itemType` (optional) |
+| `get_dirty_state` | Dirty flag | — |
+| `get_entities` | Flat entity list | `type` (optional: entity/camera/light) |
+| `get_scene_properties` | Scene-level properties | — |
+| `validate` | Validate scene | — |
+
+**Mutating (kMainThread):**
+| Action | Description | Key Params |
+|--------|-------------|------------|
+| `load_stage_scene` | Load scene for stage | stage ID |
+| `load_scene` / `save_scene` | Scene I/O | path |
+| `add_item` / `duplicate_item` / `delete_item` | Entity CRUD | item ID |
+| `rename_item` / `set_enabled` | Entity properties | item ID, value |
+| `place_entity` / `remove_entity` | Position-aware add/remove | entity ID, position |
+| `add_layer` / `delete_layer` / `reorder_layer` / `update_layer` | Layer management | layer params |
+| `set_camera_active` | Camera control | camera ID |
+| `add_override` / `remove_override` / `update_override` | Component overrides | entity, component, field |
+| `change_entity_template` | Swap template | entity ID, new template |
+| `create_scene` / `create_asset` | Asset creation | path |
+
+### asset_catalogue (34 actions)
+
+**Read-only (kCallerThread):**
+| Action | Description | Key Params |
+|--------|-------------|------------|
+| `get_state` | Full catalogue (path, dirty, records) | — |
+| `get_record` | Record for asset | `id` (string) |
+| `get_forward_refs` / `get_reverse_refs` | Relationship queries | asset ID |
+| `query_by_type` / `query_by_tag` | Asset queries | type/tag |
+| `discover_files` | Find files by type | — |
+| `validate` | Validate manifest | — |
+| `get_available` | Is catalogue loaded? | — |
+
+**Mutating (kMainThread):**
+| Action | Description | Key Params |
+|--------|-------------|------------|
+| `load_manifest` / `save_manifest` / `new_manifest` | Manifest I/O | path |
+| `create_record` / `update_record` / `delete_record` | Record CRUD | record fields |
+| `bulk_create_records` | Batch creation | records array |
+| `add_relationship` / `remove_relationship` | References | source, target, type |
+| `infer_relationships` | Auto-discover refs | — |
+| `create_scene` / `create_asset` | Asset creation | path |
+| `open_in_editor` / `open_in_file` | Navigation | asset ID |
+
+### entity_template_editor (9 actions)
+| Action | Description | Key Params |
+|--------|-------------|------------|
+| `get_project_state` | Project validity | — |
+| `get_list` | All templates in catalogue | — |
+| `get_available_components` | Addable components | `path` (string) |
+| `get_usage` | Reverse references | `assetId` (string) |
+| `load` / `save` | Blueprint I/O | `path`, `blueprint` |
+| `update_field` | Modify component field | `path`, `componentType`, `fieldName`, `value` |
+| `add_component` / `remove_component` | Component management | `path`, `componentType` |
+
+### plugin_browser (2 actions)
+| Action | Description | Params |
+|--------|-------------|--------|
+| `plugin_browser.load` | Load plugin by type | `typeId` (string) |
+| `plugin_browser.unload` | Unload plugin by type | `typeId` (string) |

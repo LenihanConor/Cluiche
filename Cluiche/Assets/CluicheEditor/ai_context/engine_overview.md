@@ -25,7 +25,7 @@ Dia is organized into layers (lowest to highest):
 
 4. **DiaPhysics** — Physics simulation (rigid bodies, collision)
 
-5. **DiaSFML** — Window management, input, graphics backend (SFML wrapper)
+5. **DiaSDL** — Window management, input, display info (SDL3 backend)
 
 6. **DiaAPI** — High-level engine APIs: animation, rendering, physics queries
 
@@ -104,6 +104,6 @@ Entities contain **components**. Components are typed, composable behaviors:
 
 ## External Dependencies
 
-- **SFML** — graphics, windowing, multimedia library
+- **SDL3** — windowing, input, display management
 - **jsoncpp** — JSON parsing (used for manifests, asset metadata)
 - **Webix, VisJS** — web UI frameworks for editor plugins and debugging

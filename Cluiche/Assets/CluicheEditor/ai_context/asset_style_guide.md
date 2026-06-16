@@ -12,9 +12,9 @@ Cluiche/Assets/<AppName>/
 │   ├── Level1.diastage
 │   └── Level2.diastage
 ├── Sprites/
-│   ├── Player.png
-│   ├── Player_IdleLeft.png
-│   ├── Enemy_Goblin.png
+│   ├── player.png
+│   ├── player_idle_left.png
+│   ├── enemy_goblin.png
 │   └── ...
 ├── Audio/
 │   ├── bgm_main_menu.ogg
