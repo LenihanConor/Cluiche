@@ -318,8 +318,8 @@ C:\GitHub\Cluiche\
 - `CLAUDE.md` - Claude Code instructions
 
 ### Working Files (Archived)
-- `BUG_REPORT.md` → Migrated to [DiaMaths Known Issues](../subsystems/dia-maths/known-issues.md)
-- `THREAD_SAFE_RANDOM.md` → Migrated to [DiaMaths Thread Safety Notes](../subsystems/dia-maths/thread-safety-notes.md)
+- `BUG_REPORT.md` → Migrated to [DiaMaths Known Issues](../architecture/dia-maths-known-issues.md)
+- `THREAD_SAFE_RANDOM.md` → Migrated to [DiaMaths Thread Safety Notes](../architecture/dia-maths-thread-safety.md)
 - `DIACORE_CLEANUP_ANALYSIS.md` → Migrated to [DiaCore Cleanup Analysis](../development/DIACORE_CLEANUP_ANALYSIS.md)
 - Other working files → Moved to `archive/`
 

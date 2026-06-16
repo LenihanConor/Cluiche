@@ -398,7 +398,7 @@ dependencies:
 
 ### Task: Fix a Bug in DiaMaths
 
-1. **Read known issues** → [known-issues.md](../subsystems/dia-maths/known-issues.md)
+1. **Read known issues** → [known-issues.md](../architecture/dia-maths-known-issues.md)
    - Template specialization bugs (InverseLerp, MoveTowards)
    - Dead code in IntersectionTests
 2. **Locate source** → `Dia/DiaMaths/Core/` or `Dia/DiaMaths/Shape/`
@@ -570,7 +570,7 @@ DIA_FUNCTOR(name)                   # Functor helper
 **Status:** Living document (Phase 1 of 10 complete)  
 **Repository:** C:\GitHub\Cluiche
 
-**Progress Tracking:** See [DOCUMENTATION_TODO.md](../../DOCUMENTATION_TODO.md)
+**Progress Tracking:** See [BACKLOG.md](../../BACKLOG.md)
 
 ---
 

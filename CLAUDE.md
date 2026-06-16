@@ -53,11 +53,12 @@ This is a Visual Studio C++ project using MSBuild.
 | `dia check cppcheck` | Run cppcheck static analysis; write SARIF to out/check/findings.sarif. |
 | `dia check sanitizer` | Build and run googletest under ASan/UBSan. |
 | `dia check sln-sync` | Sync Cluiche.sln solution folders to module layer assignments. |
+| `dia check spec-sync` | Check spec Public Interface symbols against Dia headers; write spec-sync-status.md. |
 | `dia validate manifest` | Validate .diaapp/.diagame/.diastage against schemas. |
 | `dia env setup/verify` | First-time setup or diagnosing missing dependencies. |
 | `dia docs plan <path> <#> --status <S>` | Update a plan task row (status, notes, model). Validates transitions. |
 | `dia docs registry` | Regenerate module-registry.md from all module YAML files. |
-| `dia docs spec-done <spec.md>` | Mark spec Done + update plan header + strike backlog entry. |
+| `dia docs spec-done <spec.md>` | Mark spec Done + update plan header + strike backlog entry. Add `--archive-plan` to move .plan.md to docs/archive/plans/. |
 | `dia docs vcxproj-add <Project> <File>` | Add .h/.cpp to vcxproj + filters. Idempotent. |
 | `dia docs backlog move <name>` | Move backlog entry to BACKLOG-HISTORY.md. |
 | `dia docs spec-scaffold <type> <name>` | Generate spec skeleton (feature or system). |
@@ -84,16 +85,18 @@ dia check cppcheck --accept-baseline
 dia check sanitizer --config Asan
 dia check sln-sync
 dia check sln-sync --dry-run
+dia check spec-sync
+dia check spec-sync --verbose
 dia validate manifest
 dia validate manifest --path Cluiche/Assets/CluicheTest/cluichetest.diagame
 dia env setup
 dia env verify
 dia test cli
-dia docs plan docs/specs/systems/dia/foo.plan.md 3 --status Done --notes "All tests pass"
+dia docs plan docs/specs/applications/dia/systems/foo/foo.plan.md 3 --status Done --notes "All tests pass"
 dia docs plan foo.plan.md 1 -s "In Progress"
 dia docs registry
 dia docs registry --dry-run
-dia docs spec-done docs/specs/systems/dia/diacamera3d.md
+dia docs spec-done docs/specs/applications/dia/systems/diacamera3d/diacamera3d.md
 dia docs vcxproj-add DiaCore "NewModule\\NewModule.h" --filter NewModule
 dia docs vcxproj-add GoogleTests "DiaCore\\TestNewModule.cpp"
 dia docs backlog move DiaCamera3D --notes "All features implemented"

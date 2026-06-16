@@ -243,7 +243,7 @@ Comprehensive math library:
 - Random number generation recently fixed for thread safety
 
 **[→ API Documentation](../api/dia/maths-api.md)**  
-**[→ Known Issues](../subsystems/dia-maths/known-issues.md)**
+**[→ Known Issues](../architecture/dia-maths-known-issues.md)**
 
 ##### 5. DiaInput
 

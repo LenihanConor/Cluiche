@@ -516,7 +516,7 @@ If parent transform modified on one thread while child reads on another, can rea
 
 **Status:** ⚠️ Blocked (needs architecture change)
 
-**See [DiaMaths Known Issues](../subsystems/dia-maths/known-issues.md) for performance notes**
+**See [DiaMaths Known Issues](../architecture/dia-maths-known-issues.md) for performance notes**
 
 ---
 
@@ -556,7 +556,7 @@ void TestRandomThreadSafety()
 
 **Status:** ✅ Fixed
 
-**[→ Thread Safety Notes](../subsystems/dia-maths/thread-safety-notes.md)**
+**[→ Thread Safety Notes](../architecture/dia-maths-thread-safety.md)**
 
 ---
 
@@ -707,4 +707,4 @@ void StressTestPhaseTransitions()
 
 **[→ Testing Strategy](test.md)**  
 **[→ Integration Testing](integration-testing.md)**  
-**[→ Thread Safety Notes](../subsystems/dia-maths/thread-safety-notes.md)**
+**[→ Thread Safety Notes](../architecture/dia-maths-thread-safety.md)**

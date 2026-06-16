@@ -94,7 +94,7 @@
     },
     {
       "allowed_pus": "sim",
-      "description": "Test stage that exercises 2D rigid-body physics: collisions, forces, and constraints.",
+      "description": "Test stage exercising 2D rigid-body physics: polygon ground, falling circles, a thrown body, a distance-joint pendulum, a trigger volume, collision events and a raycast.",
       "type_id": "RigidBody2DTestModule"
     },
     {
@@ -116,6 +116,11 @@
       "allowed_pus": "render",
       "description": "Shared HUD overlay for all CluicheTest stages: shows stage name, controls, and test status.",
       "type_id": "TestStageHUDModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Renders a procedural unit cube with a directional light via Canvas3D",
+      "type_id": "Mesh3DTestTestStageModule"
     },
     {
       "allowed_pus": "sim",
@@ -296,6 +301,6 @@
   "processing_units": [],
   "version": {
     "major": 1,
-    "minor": 3
+    "minor": 5
   }
 }

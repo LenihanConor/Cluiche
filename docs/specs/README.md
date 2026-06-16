@@ -142,13 +142,13 @@ Features cannot move to **Approved** status until:
 - [**Cluiche.md**](platform/Cluiche.md) - Cluiche game development platform
 
 ### Application Level
-- [**dia.md**](applications/dia.md) - Dia game engine (shared engine infrastructure)
-- [**cluichetest.md**](applications/cluichetest.md) - CluicheTest demo game and testbed
-- [**googletests.md**](applications/googletests.md) - GoogleTests unit testing suite
+- [**dia.md**](applications/dia/dia.md) - Dia game engine (shared engine infrastructure)
+- [**cluichetest.md**](applications/cluichetest/cluichetest.md) - CluicheTest demo game and testbed
+- [**googletests.md**](applications/googletests/googletests.md) - GoogleTests unit testing suite
 
 ### System Level
-- [**diacli.md**](systems/dia/diacli.md) - DiaAPI system under Dia application
-- [**diapython.md**](systems/dia/diapython.md) - DiaPython system under Dia application
+- [**diacli.md**](applications/dia/systems/diacli/diacli.md) - DiaAPI system under Dia application
+- [**diapython.md**](applications/dia/systems/diapython/diapython.md) - DiaPython system under Dia application
 - **applicationflow.md** - ApplicationFlow system under Cluiche game (TODO)
 - **levels.md** - Levels system under Cluiche game (TODO)
 - More systems to be defined via `/spec-system`
@@ -165,7 +165,7 @@ Features cannot move to **Approved** status until:
 
 ## 📚 Reference
 
-For understanding the existing codebase, see **[`docs/reference/`](../reference/)** - architecture, API docs, design rationale, testing guides.
+For understanding the existing codebase, see **[`docs/reference/`](../reference/README.md)** - architecture, API docs, design rationale, testing guides.
 
 For tech standards and conventions, see:
 - `.claude/steering/tech.md` - Language, frameworks, naming, git workflow

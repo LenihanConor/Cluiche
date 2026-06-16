@@ -253,7 +253,7 @@ Brief description.
 Example code
 ```
 
-**[→ Related Doc](relative/path.md)**
+
 ```
 
 ---

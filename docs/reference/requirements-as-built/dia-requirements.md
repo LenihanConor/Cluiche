@@ -472,7 +472,7 @@ Hierarchical transforms for parent/child relationships.
 
 **Status:** ⚠️ Blocked (performance issue, needs optimization)
 
-**See [DiaMaths Known Issues](../subsystems/dia-maths/known-issues.md) for performance notes**
+**See [DiaMaths Known Issues](../architecture/dia-maths-known-issues.md) for performance notes**
 
 ---
 
@@ -534,7 +534,7 @@ Thread-safe random number generation.
 
 **Status:** ✅ Complete (fixed 2026-03)
 
-**[→ Thread Safety Notes](../subsystems/dia-maths/thread-safety-notes.md)**
+**[→ Thread Safety Notes](../architecture/dia-maths-thread-safety.md)**
 
 ---
 

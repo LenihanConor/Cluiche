@@ -394,7 +394,7 @@ Vector2D MoveTowards(const Vector2D& current, const Vector2D& target, float maxD
 ```
 
 **Known Issue:** Template specialization bugs in InverseLerp/MoveTowards for vectors  
-**[→ Details](../subsystems/dia-maths/known-issues.md)**
+**[→ Details](../architecture/dia-maths-known-issues.md)**
 
 **Random:**
 ```cpp
@@ -507,7 +507,7 @@ private:
 ```
 
 **Known Issue:** `GetWorldMatrix()` traverses hierarchy multiple times (not optimized)  
-**[→ Details](../subsystems/dia-maths/known-issues.md)**
+**[→ Details](../architecture/dia-maths-known-issues.md)**
 
 ---
 
@@ -549,7 +549,7 @@ bool Raycast(const Vector2D& origin, const Vector2D& direction, const Circle& ci
 ```
 
 **Known Issue:** Dead code in IntersectionTests (unreachable branches)  
-**[→ Details](../subsystems/dia-maths/known-issues.md)**
+**[→ Details](../architecture/dia-maths-known-issues.md)**
 
 **[→ DiaMaths API Documentation](../api/dia/maths-api.md)**
 

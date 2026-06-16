@@ -4,7 +4,7 @@
 
 This document defines the log level conventions for all code in the Cluiche platform that uses the DiaLogger system (`DIA_LOG_*` macros). It is the authoritative reference for choosing the correct log level and channel when adding logging to any module.
 
-[-> DiaLogger System Spec](../../specs/systems/dia/dialogger.md) | [-> Coding Standards](../development/coding-standards.md)
+[-> DiaLogger System Spec](../../specs/applications/dia/systems/dialogger/dialogger.md) | [-> Coding Standards](../development/coding-standards.md)
 
 ---
 
@@ -220,7 +220,7 @@ DiaCore **cannot** use `DIA_LOG_*` macros because DiaLogger depends on DiaCore (
 
 ## Cross-References
 
-- [DiaLogger System Spec](../../specs/systems/dia/dialogger.md) — system design, API contracts, binding decisions
-- [Core Logger Feature Spec](../../specs/features/dia/dialogger/core-logger.md) — Logger singleton, DIA_LOG macros, thread-local buffers
-- [Sink System Feature Spec](../../specs/features/dia/dialogger/sink-system.md) — ISink interface, channel filtering, level thresholds
+- [DiaLogger System Spec](../../specs/applications/dia/systems/dialogger/dialogger.md) — system design, API contracts, binding decisions
+- [Core Logger Feature Spec](../../specs/applications/dia/systems/dialogger/core-logger.md) — Logger singleton, DIA_LOG macros, thread-local buffers
+- [Sink System Feature Spec](../../specs/applications/dia/systems/dialogger/sink-system.md) — ISink interface, channel filtering, level thresholds
 - [Coding Standards](../../reference/development/coding-standards.md) — general code style and conventions

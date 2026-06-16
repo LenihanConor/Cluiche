@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+import shutil
 from datetime import date
 from pathlib import Path
 from typing import List
@@ -108,19 +109,32 @@ def _move_backlog_entry(repo_root: Path, spec_name: str) -> bool:
     return True
 
 
+def _archive_plan_file(repo_root: Path, plan_path: Path) -> Path:
+    """Move plan_path to docs/archive/plans/ and return the destination."""
+    archive_dir = repo_root / "docs" / "archive" / "plans"
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    dest = archive_dir / plan_path.name
+    shutil.move(str(plan_path), str(dest))
+    return dest
+
+
 @click.command("spec-done")
 @click.argument("spec_path", type=click.Path(exists=True))
 @click.option("--skip-backlog", is_flag=True, default=False, help="Don't touch BACKLOG.md.")
+@click.option("--archive-plan", is_flag=True, default=False,
+              help="Move the .plan.md to docs/archive/plans/ after marking Done.")
 @click.option("--dry-run", is_flag=True, default=False, help="Show what would change without writing.")
-def spec_done(spec_path: str, skip_backlog: bool, dry_run: bool) -> None:
+def spec_done(spec_path: str, skip_backlog: bool, archive_plan: bool, dry_run: bool) -> None:
     """Mark a spec as Done and update all related files.
 
     Updates: spec status field, plan header status, backlog entry (strike-through + move to history).
+    With --archive-plan, also moves the .plan.md to docs/archive/plans/.
 
     SPEC_PATH is the path to the spec markdown file.
 
     Example:
-        dia docs spec-done docs/specs/systems/dia/diacamera3d.md
+        dia docs spec-done docs/specs/applications/dia/systems/diacamera3d/diacamera3d.md
+        dia docs spec-done docs/specs/applications/dia/systems/diacamera3d/diacamera3d.md --archive-plan
     """
     repo_root = find_repo_root(__file__)
     path = Path(spec_path).resolve()
@@ -134,6 +148,10 @@ def spec_done(spec_path: str, skip_backlog: bool, dry_run: bool) -> None:
         plan = _find_plan_file(path)
         if plan:
             click.echo(f"  Update {plan.name} header → Done")
+            if archive_plan:
+                archive_dir = repo_root / "docs" / "archive" / "plans"
+                dest_rel = (archive_dir / plan.name).relative_to(repo_root)
+                click.echo(f"  Move {plan.name} → {dest_rel}")
         if not skip_backlog:
             click.echo(f"  Strike/move backlog entry for '{spec_name}'")
         return
@@ -144,7 +162,10 @@ def spec_done(spec_path: str, skip_backlog: bool, dry_run: bool) -> None:
     plan = _find_plan_file(path)
     if plan:
         _update_plan_header(plan)
-        actions.append(f"Plan: header → Done")
+        actions.append("Plan: header → Done")
+        if archive_plan:
+            dest = _archive_plan_file(repo_root, plan)
+            actions.append(f"Plan: archived → {dest.relative_to(repo_root)}")
 
     if not skip_backlog:
         moved = _move_backlog_entry(repo_root, spec_name)

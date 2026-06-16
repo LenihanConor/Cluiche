@@ -39,12 +39,16 @@ graph LR
     A --> D[GoogleTests]
     A --> E[Future Games]
     
-    style A fill:#89b4fa,color:#1e1e2e,stroke:#89b4fa
-    style B fill:#a6e3a1,color:#1e1e2e,stroke:#a6e3a1
-    style C fill:#f9e2af,color:#1e1e2e,stroke:#f9e2af
-    style D fill:#94e2d5,color:#1e1e2e,stroke:#94e2d5
-    style E fill:#cba6f7,color:#1e1e2e,stroke:#cba6f7
+    style A fill:#5b7a6e,color:#e8e0d4,stroke:#4a6358
+    style B fill:#8b6f4e,color:#e8e0d4,stroke:#735b3e
+    style C fill:#6b5b4e,color:#e8e0d4,stroke:#5a4a3e
+    style D fill:#4e6b5b,color:#e8e0d4,stroke:#3e5a4a
+    style E fill:#7a5b5b,color:#e8e0d4,stroke:#654a4a
 ```
 
 !!! tip "Backlog"
     Active work is tracked in the [Backlog](BACKLOG.md). Completed items in [History](BACKLOG-HISTORY.md).
+
+---
+
+<small>Docs v2.0 — Catppuccin Mocha theme</small>

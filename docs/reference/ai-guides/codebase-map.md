@@ -347,7 +347,7 @@ DiaMaths/
 
 **Namespaces:** `Dia::Maths::`
 
-**[→ Known Issues](../subsystems/dia-maths/known-issues.md)**
+**[→ Known Issues](../architecture/dia-maths-known-issues.md)**
 
 ---
 

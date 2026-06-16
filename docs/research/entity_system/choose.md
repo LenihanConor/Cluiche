@@ -46,7 +46,7 @@ The layered design means foundation ships first, then communication, then editor
 | 6 | Component update model | Hybrid opt-in (passive default, DoUpdate opt-in) |
 | 7 | Cross-entity references | Typed reference slots (name + required component type on target, validated at resolve) |
 | 8 | Old IComponent removal | Before building diaentitytemplate (clean slate) |
-| 9 | Mailbox format | Typed message structs + structured address. Refined during DiaMailbox spec (2026-05-17): the four address kinds (Entity/All/ComponentType/Self) live in diaentitytemplate's **entity router payload encoding**, not in DiaMailbox itself. DiaMailbox sees opaque `(StringCRC routerId, uint64_t payload)`; the entity router decodes payload into the four kinds. Keeps DiaMailbox a generic primitive. See @docs/specs/systems/dia/diamailbox.md. |
+| 9 | Mailbox format | Typed message structs + structured address. Refined during DiaMailbox spec (2026-05-17): the four address kinds (Entity/All/ComponentType/Self) live in diaentitytemplate's **entity router payload encoding**, not in DiaMailbox itself. DiaMailbox sees opaque `(StringCRC routerId, uint64_t payload)`; the entity router decodes payload into the four kinds. Keeps DiaMailbox a generic primitive. See @docs/specs/applications/dia/systems/diamailbox/diamailbox.md. |
 | 10 | Query cache invalidation | End-of-frame batch rebuild (mutations collected → single rebuild → mailbox delivery) |
 | 11 | Blueprint schema | Versioned JSON with separate references block |
 | 12 | IEntityInspectable signatures | Defer to spec |

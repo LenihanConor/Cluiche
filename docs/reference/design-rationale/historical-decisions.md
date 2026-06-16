@@ -322,7 +322,7 @@ private:
 
 **Lesson:** Always consider threading in design
 
-**[→ Details](../subsystems/dia-maths/thread-safety-notes.md)**
+**[→ Details](../architecture/dia-maths-thread-safety.md)**
 
 ---
 
@@ -339,7 +339,7 @@ float InverseLerp(const Vector2D& a, const Vector2D& b, const Vector2D& value);
 
 **Lesson:** Test template instantiations
 
-**[→ Details](../subsystems/dia-maths/known-issues.md)**
+**[→ Details](../architecture/dia-maths-known-issues.md)**
 
 ---
 

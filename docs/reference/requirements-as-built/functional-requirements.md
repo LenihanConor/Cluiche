@@ -376,7 +376,7 @@ Ensure math operations safe for multi-threaded use.
 
 **Status:** Partially complete (Random fixed, Transform needs work)
 
-**[→ Thread Safety Notes](../subsystems/dia-maths/thread-safety-notes.md)**
+**[→ Thread Safety Notes](../architecture/dia-maths-thread-safety.md)**
 
 ---
 

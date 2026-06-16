@@ -430,13 +430,13 @@ int sharedCounter++;  // RACE CONDITION
    - **Issue:** `GetWorldTransform()` traverses hierarchy multiple times
    - **Impact:** Not thread-safe if hierarchy modified during traversal
    - **Status:** Known bug, not yet fixed
-   - **[→ Details](../subsystems/dia-maths/known-issues.md)**
+   - **[→ Details](../architecture/dia-maths-known-issues.md)**
 
 2. **Random Number Generation**
    - **Issue:** Random generators were NOT thread-safe
    - **Impact:** Concurrent calls could corrupt state
    - **Status:** **FIXED (2026-03)** - Now thread-safe
-   - **[→ Details](../subsystems/dia-maths/thread-safety-notes.md)**
+   - **[→ Details](../architecture/dia-maths-thread-safety.md)**
 
 ### Performance Issues
 

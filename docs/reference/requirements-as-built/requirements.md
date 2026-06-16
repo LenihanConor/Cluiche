@@ -206,7 +206,7 @@ This document tracks functional and non-functional requirements with status, pri
 - Random generators can be called from multiple threads
 - No race conditions in math operations
 
-**Status:** Partially complete, see [known issues](../subsystems/dia-maths/known-issues.md)
+**Status:** Partially complete, see [known issues](../architecture/dia-maths-known-issues.md)
 
 ---
 
@@ -340,7 +340,7 @@ This document tracks functional and non-functional requirements with status, pri
 - Transform hierarchy traversal works (correctness)
 - Performance suboptimal (multiple traversals)
 
-**Status:** Known performance issue, see [known issues](../subsystems/dia-maths/known-issues.md)
+**Status:** Known performance issue, see [known issues](../architecture/dia-maths-known-issues.md)
 
 ---
 
