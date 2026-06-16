@@ -488,10 +488,6 @@ namespace CluicheEditor
 					bridge->OnChatError(SerializeJson(payload).c_str());
 				else if (strcmp(topic, "chat.backend_status") == 0)
 				{
-					std::string backend = payload.get("backend", "").asString();
-					std::string model   = payload.get("model", "").asString();
-					bool available      = payload.get("available", false).asBool();
-
 					// Error-style backend_status (status: error) has no backend/model fields.
 					if (payload.isMember("status") && payload["status"].asString() == "error")
 					{
@@ -501,7 +497,8 @@ namespace CluicheEditor
 					}
 					else
 					{
-						bridge->OnBackendStatus(backend.c_str(), model.c_str(), available);
+						// Forward the full payload (includes models[], status, etc.)
+						bridge->OnBackendStatusRaw(payload);
 					}
 				}
 
@@ -533,6 +530,7 @@ namespace CluicheEditor
 		{
 			mWebBridge->UnregisterEventHandler(Dia::Core::StringCRC("chat.send_message"));
 			mWebBridge->UnregisterEventHandler(Dia::Core::StringCRC("chat.set_backend"));
+			mWebBridge->UnregisterEventHandler(Dia::Core::StringCRC("chat.query_model_list"));
 			mWebBridge->UnregisterEventHandler(Dia::Core::StringCRC("chat.set_context_mode"));
 			mWebBridge->UnregisterEventHandler(Dia::Core::StringCRC("chat.add_context_file"));
 			mWebBridge->UnregisterEventHandler(Dia::Core::StringCRC("chat.clear_history"));

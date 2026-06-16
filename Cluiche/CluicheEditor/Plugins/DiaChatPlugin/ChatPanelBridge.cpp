@@ -123,6 +123,15 @@ namespace CluicheEditor
 		mEventQueue.push({ EventType::kBackendStatus, std::move(payload) });
 	}
 
+	void ChatPanelBridge::OnBackendStatusRaw(const Json::Value& payload)
+	{
+		bool available = payload.get("available", false).asBool();
+		mHealth.OnBackendAvailability(available);
+
+		std::lock_guard<std::mutex> lock(mQueueMutex);
+		mEventQueue.push({ EventType::kBackendStatus, payload });
+	}
+
 	void ChatPanelBridge::OnContextWarning(int usedTokens, int budgetTokens, int pct)
 	{
 		Json::Value payload;

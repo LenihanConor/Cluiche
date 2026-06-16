@@ -151,9 +151,8 @@ class OllamaBackend(ILLMBackend):
             "messages": messages,
             "stream": True,
             "options": {
-                "temperature": 0.1,
+                "temperature": 0.4,
                 "top_p": 0.9,
-                "repeat_penalty": 1.1,
                 "num_ctx": 8192,
             },
         }
@@ -582,7 +581,7 @@ def create_backend(name, model=None, **kwargs):
         if model is not None:
             kwargs["model"] = model
         else:
-            kwargs.setdefault("model", "qwen2.5-coder:14b")
+            kwargs.setdefault("model", "gemma2:27b")
         return OllamaBackend(**kwargs)
 
     if name == "claude":

@@ -43,6 +43,7 @@ namespace CluicheEditor
 		void OnConfirmRequired(const char* callId, const char* fn, const Json::Value& params, const char* description);
 		void OnChatError(const char* message);
 		void OnBackendStatus(const char* backend, const char* model, bool available);
+		void OnBackendStatusRaw(const Json::Value& payload);
 		void OnContextWarning(int usedTokens, int budgetTokens, int pct);
 
 		// Called from main thread (EditorPU update loop) — drains the token queue.

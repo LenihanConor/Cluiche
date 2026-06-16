@@ -337,11 +337,13 @@ function DetailPanel({
     messages,
     backendStatus,
     metrics,
+    contextFiles,
 }: {
     selectedToolCallId: string | null;
     messages: ChatMessage[];
     backendStatus: BackendStatus;
     metrics: ChatMetrics;
+    contextFiles: string[];
 }) {
     const selectedTool = selectedToolCallId
         ? messages.flatMap(m => m.toolCalls).find(tc => tc.callId === selectedToolCallId) ?? null
@@ -428,13 +430,9 @@ function DetailPanel({
             {/* Context files */}
             <div style={{ padding: '8px 10px', borderBottom: `1px solid ${C.detailBorder}` }}>
                 <div style={{ color: C.text, fontWeight: 600, marginBottom: 6, fontSize: 11 }}>Context Files</div>
-                {[
-                    { name: 'engine_overview.md', tokens: 1420 },
-                    { name: 'editor_actions.md', tokens: 890 },
-                ].map(f => (
-                    <div key={f.name} style={{
+                {contextFiles.map(f => (
+                    <div key={f} style={{
                         display: 'flex',
-                        justifyContent: 'space-between',
                         alignItems: 'center',
                         marginBottom: 4,
                     }}>
@@ -444,14 +442,13 @@ function DetailPanel({
                             borderRadius: 3,
                             padding: '1px 6px',
                             fontSize: 10,
-                            maxWidth: 140,
+                            maxWidth: 200,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
                         }}>
-                            {f.name}
+                            {f}
                         </span>
-                        <span style={{ color: C.textMuted, fontSize: 10 }}>{f.tokens}t</span>
                     </div>
                 ))}
             </div>
@@ -599,7 +596,7 @@ export function ChatPanel() {
     const [streamingText, setStreamingText] = useState<string>('');
     const [isStreaming, setIsStreaming] = useState(false);
     const [inputText, setInputText] = useState('');
-    const [backendStatus, setBackendStatus] = useState<BackendStatus>({ backend: 'ollama', model: 'qwen2.5-coder:14b', available: false });
+    const [backendStatus, setBackendStatus] = useState<BackendStatus>({ backend: 'ollama', model: 'gemma2:27b', available: false });
     const [modelList, setModelList] = useState<string[]>([]);
     const [detailOpen, setDetailOpen] = useState(true);
     const [selectedToolCallId, setSelectedToolCallId] = useState<string | null>(null);
@@ -609,10 +606,24 @@ export function ChatPanel() {
     const [inputFocused, setInputFocused] = useState(false);
     const [errorBanner, setErrorBanner] = useState<ErrorBannerState | null>(null);
     const [metrics, setMetrics] = useState<ChatMetrics>({ messagesSent: 0, toolCalls: 0, tokensStreamed: 0 });
+    const [contextFiles, setContextFiles] = useState<string[]>([
+        'engine_overview.md',
+        'editor_actions.md',
+        'data_types.md',
+        'editor_workflows.md',
+        'asset_style_guide.md',
+        'dia_asset_lifecycle.md',
+        'troubleshooting.md',
+    ]);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const streamingTextRef = useRef<string>('');
     const lastMessageRef = useRef<string>('');
+
+    // Request the model list on mount so the dropdown is populated immediately.
+    useEffect(() => {
+        sendEvent('chat.query_model_list', { backend: backendStatus.backend });
+    }, []);
 
     // Auto-scroll on new messages / streaming
     useEffect(() => {
@@ -771,6 +782,13 @@ export function ChatPanel() {
                 setMetrics({ messagesSent: d.messages_sent, toolCalls: d.tool_calls, tokensStreamed: d.tokens_streamed });
             },
         },
+        {
+            topic: 'chat.context_files',
+            handler: (rawData: unknown) => {
+                const d = rawData as { files: string[] };
+                if (Array.isArray(d.files)) setContextFiles(d.files);
+            },
+        },
     ]);
 
     // ---------------------------------------------------------------------------
@@ -885,7 +903,6 @@ export function ChatPanel() {
                     }}
                 >
                     <option value="ollama">Ollama</option>
-                    <option value="claude">Claude</option>
                     <option value="gemini">Gemini</option>
                 </select>
 
@@ -971,7 +988,7 @@ export function ChatPanel() {
                 flexWrap: 'wrap',
             }}>
                 <span style={{ color: C.textMuted, fontSize: 11 }}>Context:</span>
-                {['engine_overview', 'editor_actions'].map(f => (
+                {contextFiles.map(f => (
                     <span
                         key={f}
                         style={{
@@ -982,7 +999,7 @@ export function ChatPanel() {
                             fontSize: 10,
                         }}
                     >
-                        {f}
+                        {f.replace('.md', '')}
                     </span>
                 ))}
                 <button
@@ -1101,6 +1118,7 @@ export function ChatPanel() {
                         messages={messages}
                         backendStatus={backendStatus}
                         metrics={metrics}
+                        contextFiles={contextFiles}
                     />
                 )}
             </div>
@@ -1142,7 +1160,7 @@ export function ChatPanel() {
                         }}
                     />
                     <button
-                        onClick={handleSend}
+                        onClick={() => handleSend()}
                         disabled={!inputText.trim() || isStreaming}
                         title="Send (Enter)"
                         style={{

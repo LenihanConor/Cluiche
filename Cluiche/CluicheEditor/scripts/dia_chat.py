@@ -37,9 +37,9 @@ def _load_backend_settings():
     try:
         with open(_SETTINGS_PATH, 'r', encoding='utf-8') as fh:
             data = json.load(fh)
-            return data.get('backend', 'ollama'), data.get('model', 'qwen2.5-coder:14b')
+            return data.get('backend', 'ollama'), data.get('model', 'gemma2:27b')
     except Exception:
-        return 'ollama', 'qwen2.5-coder:14b'
+        return 'ollama', 'gemma2:27b'
 
 
 def _save_backend_settings(backend_name, model):
@@ -308,11 +308,10 @@ class KnowledgeLoader:
 
     _GROUNDING_PREAMBLE = (
         "You are the Dia Engine assistant for CluicheEditor. "
-        "Answer ONLY using the context provided below. "
-        "If the answer is not contained in the context, say "
-        "\"I don't have that information in my current context.\" "
-        "Never infer, guess, or fabricate details beyond what is written. "
-        "When answering, name the section you are drawing from."
+        "Below are reference sections about the engine. "
+        "Use them to answer the user's question helpfully. "
+        "Be conversational and expressive — explain concepts clearly, "
+        "give examples, and guide the user step by step when appropriate.\n"
     )
 
     # Files read from disk, in priority order (editor_actions.md handled separately).
@@ -330,6 +329,14 @@ class KnowledgeLoader:
         ("asset_style_guide.md","Asset Style Guide",
          {"name", "naming", "convention", "directory", "file", "sprite", "audio",
           "animation", "yaml", "stage", "validate", "style", "asset", "path"}),
+        ("dia_asset_lifecycle.md", "Asset & Entity Lifecycle",
+         {"entity", "component", "lifecycle", "pool", "mutation", "blueprint", "scene",
+          "domain", "attach", "detach", "query", "template", "register", "serialize",
+          "instantiate", "spawn", "ecs", "macro"}),
+        ("troubleshooting.md",    "Troubleshooting & DiaCLI Reference",
+         {"error", "fix", "build", "run", "linker", "manifest", "include", "fail",
+          "debug", "compile", "deploy", "environment", "crash", "symptom", "lnk",
+          "unresolved", "missing", "pipeline", "broken", "failing", "hang", "deadlock"}),
     ]
 
     def __init__(self, ai_context_dir, token_budget=4096):
