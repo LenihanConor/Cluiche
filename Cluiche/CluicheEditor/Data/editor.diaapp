@@ -7,7 +7,7 @@
     "processing_units": [
         {
             "instance_id": "EditorPU",
-            "frequency_hz": 120,
+            "frequency_hz": 20,
             "dedicated_thread": false,
             "modules": [
                 { "instance_id": "ObservationModule",           "type_id": "ObservationModule",           "stages": ["all"],     "dependencies": [],                    "channels": [] },
