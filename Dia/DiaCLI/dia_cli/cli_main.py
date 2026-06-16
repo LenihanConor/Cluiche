@@ -79,14 +79,15 @@ if _prime_config_present:
 
 
 class DiaCLI(click.MultiCommand):
-    """!Custom Click MultiCommand that is the thrust of the mdk cli.
-    It executes a command as follows:
-    1. searches for python files matching the pattern `cli/**/*.py`
-    2. looks for a file whose stem matches the invoked command's name
-    3. loads and executes the file as a module
-    4. calls function called `cli()` in the module
+    """Custom Click MultiCommand that discovers and loads dia CLI plugins.
 
-    See [Click's documentation](https://click.palletsprojects.com/en/7.x/commands/#custom-multi-commands) for more details. # noqa
+    Executes a command as follows:
+    1. Searches for Python files matching the pattern ``cli/**/*.py``.
+    2. Finds the file whose stem matches the invoked command name.
+    3. Loads and executes that file as a module.
+    4. Calls the ``cli()`` function defined in the module.
+
+    See `Click's documentation <https://click.palletsprojects.com/en/7.x/commands/#custom-multi-commands>`_ for details.
     """
 
     def __init__(self, *args, **kwargs):
@@ -121,7 +122,6 @@ class DiaCLI(click.MultiCommand):
             logger.error("Run 'dia --help' for a list of valid commands.")
         try:
             cli_cmd = getattr(mod, 'cli')
-            self.clean_doc_str(ctx, cli_cmd)
             return cli_cmd
         except AttributeError as ae:
             logger.error(f"Error loading '{name}' module from {modules[name]}")
@@ -147,26 +147,6 @@ class DiaCLI(click.MultiCommand):
                 module_name = _remove_cli_cmd_prefix(module_name)
                 self._module_paths[module_name] = path.resolve()
         return self._module_paths
-
-    def clean_doc_str(self, ctx, c):
-        def clean(cmd):
-            doc = cmd.help
-            if doc is None:
-                return
-
-            cmd.help = doc.lstrip("!").lstrip()
-
-        clean(c)
-        # Only process subcommands if this is a group
-        if hasattr(c, 'list_commands') and hasattr(c, 'get_command'):
-            cmd_names = c.list_commands(ctx)
-            for cmd_name in cmd_names:
-                child_cmd = c.get_command(ctx, cmd_name)
-                if hasattr(child_cmd, 'list_commands') and hasattr(child_cmd, 'get_command'):
-                    self.clean_doc_str(ctx, child_cmd)
-                else:
-                    clean(child_cmd)
-
 
 class OnlySetupCli(click.MultiCommand):
     """!A special command containing only `setup`. Used when it looks like no project exists
