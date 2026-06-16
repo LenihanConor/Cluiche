@@ -16,10 +16,12 @@ def cli():
               help="Run only tests whose name matches PATTERN (passed to vitest -t).")
 @click.option("--watch", is_flag=True, default=False,
               help="Run in watch mode (re-runs on file change).")
+@click.option("--coverage", is_flag=True, default=False,
+              help="Generate a coverage report.")
 @click.option("--docker", is_flag=True, default=False,
               help="Re-invoke inside Docker container.")
 @click.pass_context
-def editor_ui(ctx, filter_pattern, watch, docker):
+def editor_ui(ctx, filter_pattern, watch, coverage, docker):
     """Run the DiaApplicationFlowEditor (CEF) UI Vitest suite."""
     from dia_cli.commands.test.ui_runner import run
     exit_code = run(
@@ -28,6 +30,7 @@ def editor_ui(ctx, filter_pattern, watch, docker):
         docker_subcmd="editor-ui",
         filter_pattern=filter_pattern,
         watch=watch,
+        coverage=coverage,
         docker=docker,
     )
     ctx.exit(exit_code)

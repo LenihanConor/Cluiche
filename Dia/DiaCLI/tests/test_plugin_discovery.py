@@ -9,9 +9,9 @@ def test_plugin_discovery_finds_commands():
     runner = CliRunner()
     result = runner.invoke(cli, ['--help'])
     assert result.exit_code == 0
-    # Should find at least: command, setup, show, test
+    # Should find at least: command, env, show, test
     assert 'command' in result.output
-    assert 'setup' in result.output
+    assert 'env' in result.output
     assert 'show' in result.output
     assert 'test' in result.output
 
