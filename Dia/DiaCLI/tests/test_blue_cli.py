@@ -1,8 +1,7 @@
-import importlib.metadata
-import pytest
+"""Smoke test: CLI entry point is importable and the main function exists."""
+from dia_cli.cli_main import main
 
 
-@pytest.mark.skip(reason="mdk-cli is not installed as a package in this dev environment; MDK runs DiaCLI from source")
-def test_version():
-    version = importlib.metadata.version('mdk-cli')
-    assert version == '0.1.0'
+def test_main_is_callable():
+    """The CLI entry point registered in pyproject.toml must be callable."""
+    assert callable(main)
