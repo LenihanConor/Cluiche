@@ -50,6 +50,9 @@ This is a Visual Studio C++ project using MSBuild.
 | `dia scaffold plugin <Name>` | Create a new editor plugin (IEditorPlugin subclass, UI, vcxproj). |
 | `dia scaffold stage <Name>` | Create a new CluicheTest test stage (all 9 touch points). |
 | `dia check deps` | Cross-check module dependency declarations vs actual #includes. |
+| `dia check cppcheck` | Run cppcheck static analysis; write SARIF to out/check/findings.sarif. |
+| `dia check sanitizer` | Build and run googletest under ASan/UBSan. |
+| `dia check sln-sync` | Sync Cluiche.sln solution folders to module layer assignments. |
 | `dia validate manifest` | Validate .diaapp/.diagame/.diastage against schemas. |
 | `dia env setup/verify` | First-time setup or diagnosing missing dependencies. |
 | `dia docs plan <path> <#> --status <S>` | Update a plan task row (status, notes, model). Validates transitions. |
@@ -76,6 +79,11 @@ dia scaffold plugin SceneInspector --layout dockable
 dia scaffold stage RigidBody2D --modules Physics2DModule --budget 900
 dia check deps
 dia check deps --verbose
+dia check cppcheck
+dia check cppcheck --accept-baseline
+dia check sanitizer --config Asan
+dia check sln-sync
+dia check sln-sync --dry-run
 dia validate manifest
 dia validate manifest --path Cluiche/Assets/CluicheTest/cluichetest.diagame
 dia env setup

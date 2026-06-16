@@ -1,10 +1,15 @@
-"""dia check — static analysis and sanitizer checks."""
+"""dia check — validate structural consistency of the codebase."""
+from __future__ import annotations
+
 import json
+import re
 import shutil
 import subprocess
 import xml.etree.ElementTree as ET
-import click
 from pathlib import Path
+from typing import Dict, List, Set, Tuple
+
+import click
 
 from dia_cli.utils.repo_root import find_repo_root
 
@@ -17,36 +22,99 @@ _SANITIZER_OUTPUT_NAMES = {
 }
 
 
-@click.command()
-@click.pass_context
-@click.option("--tool", default=None, metavar="TOOL",
-              help="Check tool to run: cppcheck (default) or sanitizer.")
-@click.option("--config", default="Asan", metavar="CONFIG",
-              help="Sanitizer config: Asan or Ubsan (default: Asan). Only used with --tool=sanitizer.")
-@click.option("--accept-baseline", "accept_baseline", is_flag=True, default=False,
-              help="Promote current findings.sarif to baseline.sarif.")
-def cli(ctx, tool, config, accept_baseline):
-    """Run a code-quality check against the codebase.
+# ---------------------------------------------------------------------------
+# YAML frontmatter parser (no PyYAML dependency)
+# ---------------------------------------------------------------------------
 
-    With no --tool, runs cppcheck and writes SARIF to Cluiche/out/check/findings.sarif.
-    With --tool=sanitizer, builds and runs googletest under ASan or UBSan and
-    writes findings to Cluiche/out/check/sanitizer-{asan|ubsan}.txt.
-    With --accept-baseline, promotes findings.sarif to baseline.sarif.
-    """
-    if accept_baseline:
-        _accept_baseline(ctx)
-        return
+def _parse_frontmatter(text: str) -> dict:
+    """Extract key fields from dia.module.v1 YAML frontmatter."""
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return {}
 
-    if tool is None or tool == "cppcheck":
-        _run_cppcheck(ctx)
-        return
+    end = -1
+    for i in range(1, len(lines)):
+        if lines[i].strip() == "---":
+            end = i
+            break
+    if end == -1:
+        return {}
 
-    if tool == "sanitizer":
-        _run_sanitizer(config, ctx)
-    else:
-        click.echo(f"ERROR: unknown tool '{tool}'. Known tools: cppcheck, sanitizer", err=True)
-        ctx.exit(2); return
+    fm_lines = lines[1:end]
+    result: dict = {"dependent_modules": []}
 
+    in_deps = False
+    for line in fm_lines:
+        if line.startswith("module_id:"):
+            result["module_id"] = line.split(":", 1)[1].strip().strip('"').strip("'")
+            in_deps = False
+        elif line.startswith("path:"):
+            result["path"] = line.split(":", 1)[1].strip().strip('"').strip("'")
+            in_deps = False
+        elif line.startswith("dependent_modules:"):
+            rest = line.split(":", 1)[1].strip()
+            if rest == "[]":
+                result["dependent_modules"] = []
+            in_deps = True
+        elif in_deps and line.startswith("  - "):
+            dep = line[4:].strip().strip('"').strip("'")
+            result["dependent_modules"].append(dep)
+        elif not line.startswith("  ") and not line.startswith("\t"):
+            in_deps = False
+
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Include scanning
+# ---------------------------------------------------------------------------
+
+_INCLUDE_RE = re.compile(r'#include\s+[<"]([^>"]+)[>"]')
+
+
+def _scan_includes(source_file: Path) -> Set[str]:
+    """Return set of include paths from a source file."""
+    includes = set()
+    try:
+        text = source_file.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return includes
+    for match in _INCLUDE_RE.finditer(text):
+        includes.add(match.group(1).replace("\\", "/"))
+    return includes
+
+
+# ---------------------------------------------------------------------------
+# Path-to-module mapping helpers (used by deps subcommand)
+# ---------------------------------------------------------------------------
+
+def _build_path_to_module_map(modules: List[dict]) -> Dict[str, str]:
+    """Map directory prefixes (e.g. 'DiaCore/Containers/') to module_ids."""
+    mapping: Dict[str, str] = {}
+    for mod in modules:
+        path = mod.get("path", "")
+        if path.startswith("Dia/"):
+            path = path[4:]  # Strip leading "Dia/" to match include style
+        path = path.rstrip("/")
+        if path:
+            mapping[path] = mod["module_id"]
+    return mapping
+
+
+def _resolve_include_to_module(include_path: str, path_map: Dict[str, str]) -> str | None:
+    """Given an include like 'DiaCore/Containers/Array.h', find its module_id."""
+    parts = include_path.replace("\\", "/")
+    segments = parts.split("/")
+    for i in range(len(segments), 0, -1):
+        prefix = "/".join(segments[:i])
+        if prefix in path_map:
+            return path_map[prefix]
+    return None
+
+
+# ---------------------------------------------------------------------------
+# cppcheck helpers
+# ---------------------------------------------------------------------------
 
 def _accept_baseline(ctx) -> None:
     repo_root = find_repo_root(__file__)
@@ -56,7 +124,7 @@ def _accept_baseline(ctx) -> None:
 
     if not findings_path.exists():
         click.echo(
-            "ERROR: findings.sarif not found. Run 'dia check' first to generate it.",
+            "ERROR: findings.sarif not found. Run 'dia check cppcheck' first to generate it.",
             err=True,
         )
         ctx.exit(1); return
@@ -190,9 +258,7 @@ def _cppcheck_xml_to_sarif(xml_text: str) -> dict:
         if location_el is not None:
             raw_file = location_el.get("file", "")
             line_str = location_el.get("line", "1")
-            col_str = location_el.get("column", "1")
 
-            # Convert absolute path to forward-slash URI relative to repo root
             try:
                 repo_root = find_repo_root(__file__)
                 uri = Path(raw_file).resolve().relative_to(repo_root.resolve())
@@ -251,7 +317,6 @@ def _run_sanitizer(config: str, ctx) -> None:
 
     repo_root = find_repo_root(__file__)
 
-    # Step 1: Build
     click.echo(f"[dia check] Building googletest with config {normalized} ...")
     build_result = subprocess.run(
         ["dia", "run", "googletest", f"--config={normalized}", "--build-only"],
@@ -263,7 +328,6 @@ def _run_sanitizer(config: str, ctx) -> None:
         )
         ctx.exit(build_result.returncode); return
 
-    # Step 2: Run and capture stderr
     exe_path = (
         repo_root
         / "Cluiche"
@@ -285,13 +349,11 @@ def _run_sanitizer(config: str, ctx) -> None:
         text=True,
     )
 
-    # Step 3: Write captured stderr to output file
     out_dir = repo_root / "Cluiche" / "out" / "check"
     out_dir.mkdir(parents=True, exist_ok=True)
     out_file = out_dir / _SANITIZER_OUTPUT_NAMES[normalized]
     out_file.write_text(run_result.stderr, encoding="utf-8")
 
-    # Step 4: Count and report sanitizer findings
     findings = [
         line for line in run_result.stderr.splitlines()
         if "ERROR:" in line or "runtime error:" in line
@@ -306,3 +368,170 @@ def _run_sanitizer(config: str, ctx) -> None:
 
     if run_result.returncode != 0:
         ctx.exit(run_result.returncode); return
+
+
+# ---------------------------------------------------------------------------
+# Click group + subcommands
+# ---------------------------------------------------------------------------
+
+@click.group()
+def cli():
+    """Validate structural consistency of the codebase."""
+    pass
+
+
+@cli.command("cppcheck")
+@click.option("--accept-baseline", "accept_baseline", is_flag=True, default=False,
+              help="Promote current findings.sarif to baseline.sarif.")
+@click.pass_context
+def cppcheck(ctx, accept_baseline: bool) -> None:
+    """Run cppcheck static analysis and write findings to SARIF."""
+    if accept_baseline:
+        _accept_baseline(ctx)
+        return
+    _run_cppcheck(ctx)
+
+
+@cli.command("sanitizer")
+@click.option("--config", default="Asan", metavar="CONFIG",
+              type=click.Choice(["Asan", "Ubsan"], case_sensitive=True),
+              help="Sanitizer config: Asan or Ubsan (default: Asan).")
+@click.pass_context
+def sanitizer(ctx, config: str) -> None:
+    """Build and run googletest under ASan or UBSan sanitizer."""
+    _run_sanitizer(config, ctx)
+
+
+@cli.command("deps")
+@click.option("--fix", is_flag=True, default=False,
+              help="Auto-add missing deps to module docs.")
+@click.option("--verbose", is_flag=True, default=False,
+              help="Show each module being checked.")
+@click.pass_context
+def deps(ctx, fix: bool, verbose: bool) -> None:
+    """Validate module dependency declarations against actual #includes."""
+    repo_root = find_repo_root(__file__)
+
+    # 1. Find all module.md files (exclude worktrees)
+    module_files = [f for f in repo_root.glob("Dia/**/dia.*.architecture.module.md")
+                    if ".claude" not in str(f)]
+    if not module_files:
+        click.echo("No module files found.")
+        return
+
+    # 2. Parse all modules
+    modules: List[dict] = []
+    for mf in module_files:
+        fm = _parse_frontmatter(mf.read_text(encoding="utf-8", errors="ignore"))
+        if fm.get("module_id") and fm.get("path"):
+            fm["_file"] = mf
+            modules.append(fm)
+
+    click.echo(f"Checking {len(modules)} modules...\n")
+
+    # 3. Build path→module map (skip modules with very short paths like "Dia/")
+    modules = [m for m in modules if len(m.get("path", "").rstrip("/").split("/")) >= 3]
+
+    path_map = _build_path_to_module_map(modules)
+
+    # 4. For each module, scan its sources
+    missing: List[Tuple[str, str, str]] = []  # (module_id, included_module, include_path)
+    stale: List[Tuple[str, str]] = []  # (module_id, declared_dep)
+
+    for mod in modules:
+        module_id = mod["module_id"]
+        mod_path = repo_root / mod["path"]
+        declared_deps = set(mod.get("dependent_modules", []))
+
+        if verbose:
+            click.echo(f"  {module_id} ({mod_path})")
+
+        if not mod_path.exists():
+            continue
+
+        used_modules: Set[str] = set()
+        for ext in ("*.h", "*.cpp"):
+            for src in mod_path.rglob(ext):
+                for inc in _scan_includes(src):
+                    resolved = _resolve_include_to_module(inc, path_map)
+                    if resolved and resolved != module_id:
+                        if not resolved.startswith(module_id + ".") and not module_id.startswith(resolved + "."):
+                            used_modules.add(resolved)
+
+        for used in used_modules:
+            if used not in declared_deps:
+                missing.append((module_id, used, ""))
+
+        for declared in declared_deps:
+            if declared not in used_modules:
+                stale.append((module_id, declared))
+
+    # 5. Report
+    if not missing and not stale:
+        click.echo(f"All {len(modules)} modules OK — dependencies match includes.")
+        return
+
+    if missing:
+        click.echo("MISSING DEPENDENCY:")
+        for mod_id, dep_id, _ in missing:
+            click.echo(f"  {mod_id} → uses {dep_id} but not in dependent_modules")
+
+    if stale:
+        click.echo("\nSTALE DEPENDENCY:")
+        for mod_id, dep_id in stale:
+            click.echo(f"  {mod_id} → declares {dep_id} but no includes found")
+
+    click.echo(f"\nSummary: {len(missing) + len(stale)} issues ({len(missing)} missing, {len(stale)} stale)")
+
+    # 6. Auto-fix if requested
+    if fix and missing:
+        click.echo("\nApplying fixes...")
+        fixes_by_module: Dict[str, List[str]] = {}
+        for mod_id, dep_id, _ in missing:
+            fixes_by_module.setdefault(mod_id, []).append(dep_id)
+
+        for mod in modules:
+            if mod["module_id"] in fixes_by_module:
+                mf = mod["_file"]
+                text = mf.read_text(encoding="utf-8")
+                for dep_to_add in fixes_by_module[mod["module_id"]]:
+                    if "dependent_modules: []" in text:
+                        text = text.replace(
+                            "dependent_modules: []",
+                            f"dependent_modules:\n  - {dep_to_add}"
+                        )
+                    elif "dependent_modules:" in text:
+                        lines = text.splitlines(keepends=True)
+                        result = []
+                        in_deps = False
+                        inserted = False
+                        for line in lines:
+                            result.append(line)
+                            if "dependent_modules:" in line:
+                                in_deps = True
+                            elif in_deps and line.strip().startswith("- "):
+                                pass
+                            elif in_deps and not inserted:
+                                result.insert(-1, f"  - {dep_to_add}\n")
+                                inserted = True
+                                in_deps = False
+                        text = "".join(result)
+                mf.write_text(text, encoding="utf-8")
+                click.echo(f"  Fixed {mod['module_id']}")
+
+
+@cli.command("sln-sync")
+@click.option("--dry-run", is_flag=True, default=False,
+              help="Print planned folder assignments without modifying the .sln.")
+@click.pass_context
+def sln_sync(ctx, dry_run: bool) -> None:
+    """Sync Cluiche.sln solution folders to module layer assignments."""
+    from dia_cli.commands.check.sln_sync import run_sln_sync
+
+    repo_root = find_repo_root(__file__)
+    changes, warnings, exit_code = run_sln_sync(repo_root=repo_root, dry_run=dry_run)
+    for c in changes:
+        click.echo(c)
+    for w in warnings:
+        click.echo(w)
+    ctx.exit(exit_code)

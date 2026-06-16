@@ -8,7 +8,7 @@ import pytest
 from click.testing import CliRunner
 
 from dia_cli.cli_main import cli
-from dia_cli.cli.cli_check import _parse_frontmatter, _scan_includes
+from dia_cli.cli.check import _parse_frontmatter, _scan_includes
 
 
 # ---------------------------------------------------------------------------
@@ -114,6 +114,37 @@ def test_check_deps_help():
     assert "--verbose" in result.output
 
 
+def test_check_group_has_four_subcommands():
+    runner = CliRunner()
+    result = runner.invoke(cli, ["check", "--help"])
+    assert result.exit_code == 0
+    assert "cppcheck" in result.output
+    assert "sanitizer" in result.output
+    assert "deps" in result.output
+    assert "sln-sync" in result.output
+
+
+def test_check_cppcheck_help():
+    runner = CliRunner()
+    result = runner.invoke(cli, ["check", "cppcheck", "--help"])
+    assert result.exit_code == 0
+    assert "--accept-baseline" in result.output
+
+
+def test_check_sanitizer_help():
+    runner = CliRunner()
+    result = runner.invoke(cli, ["check", "sanitizer", "--help"])
+    assert result.exit_code == 0
+    assert "--config" in result.output
+
+
+def test_check_sln_sync_help():
+    runner = CliRunner()
+    result = runner.invoke(cli, ["check", "sln-sync", "--help"])
+    assert result.exit_code == 0
+    assert "--dry-run" in result.output
+
+
 # ---------------------------------------------------------------------------
 # Integration: fake repo
 # ---------------------------------------------------------------------------
@@ -161,7 +192,7 @@ dependent_modules: []
 class TestCheckDepsIntegration:
     def test_finds_missing_dep(self, tmp_path):
         repo = _build_fake_repo(tmp_path)
-        with patch("dia_cli.cli.cli_check.find_repo_root", return_value=repo):
+        with patch("dia_cli.cli.check.find_repo_root", return_value=repo):
             runner = CliRunner()
             result = runner.invoke(cli, ["check", "deps"])
         assert result.exit_code == 0
@@ -171,7 +202,7 @@ class TestCheckDepsIntegration:
 
     def test_verbose_shows_modules(self, tmp_path):
         repo = _build_fake_repo(tmp_path)
-        with patch("dia_cli.cli.cli_check.find_repo_root", return_value=repo):
+        with patch("dia_cli.cli.check.find_repo_root", return_value=repo):
             runner = CliRunner()
             result = runner.invoke(cli, ["check", "deps", "--verbose"])
         assert "dia.core.containers" in result.output
@@ -190,7 +221,7 @@ dependent_modules:
   - dia.core.containers
 ---
 """, encoding="utf-8")
-        with patch("dia_cli.cli.cli_check.find_repo_root", return_value=repo):
+        with patch("dia_cli.cli.check.find_repo_root", return_value=repo):
             runner = CliRunner()
             result = runner.invoke(cli, ["check", "deps"])
         assert "OK" in result.output

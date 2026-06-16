@@ -1,77 +1,9 @@
-import click
+"""dia reflect export-types — scan source for Module/PU subclasses and write types.json."""
 import json
 import os
 import re
-import sys
 
-
-@click.group()
-def cli():
-    """Commands for Dia type definitions."""
-    pass
-
-
-@cli.command()
-@click.option('--game-build', 'game_build', default=None,
-              help='Path to the compiled game binary or its directory. '
-                   'If omitted, searches the default build output directory.')
-@click.option('--output', '-o', default='types.json',
-              show_default=True,
-              help='Output path for the generated types.json file.')
-@click.option('--config', default='Debug',
-              show_default=True,
-              help='Build configuration to scan (Debug or Release).')
-@click.pass_context
-def export(ctx, game_build, output, config):
-    """Export registered module and PU types to types.json.
-
-    Scans the compiled game binary for REGISTER_MODULE / REGISTER_PU macros
-    and generates a types.json file consumable by the DiaApplicationFlowEditor.
-
-    Example:
-        dia types export --output assets/types.json
-    """
-    from dia_cli.utils.dia_cli_config import Config
-    cfg = Config.from_context(ctx)
-
-    # Resolve game build path
-    if game_build is None:
-        # Default: look in bin/CluicheTest/<config>/x64/
-        root = cfg.root_path()
-        candidates = [
-            os.path.join(root, 'Cluiche', 'bin', 'CluicheTest', config, 'x64'),
-            os.path.join(root, 'Cluiche', 'bin', 'CluicheEditor', config, 'x64'),
-        ]
-        game_build = None
-        for c in candidates:
-            if os.path.isdir(c):
-                game_build = c
-                break
-        if game_build is None:
-            click.echo(f'[types export] ERROR: Could not locate game build directory. '
-                       f'Pass --game-build <path> explicitly.', err=True)
-            ctx.exit(1)
-            return
-
-    click.echo(f'[types export] Scanning: {game_build}')
-
-    modules, pus = _scan_build_dir(game_build)
-
-    result = {
-        'version': 1,
-        'modules': [{'type_id': m, 'description': ''} for m in sorted(modules)],
-        'processing_units': [{'type_id': p, 'description': ''} for p in sorted(pus)],
-    }
-
-    output_dir = os.path.dirname(os.path.abspath(output))
-    os.makedirs(output_dir, exist_ok=True)
-
-    with open(output, 'w', encoding='utf-8') as f:
-        json.dump(result, f, indent=2)
-
-    click.echo(f'[types export] Wrote {len(modules)} module type(s) and '
-               f'{len(pus)} PU type(s) to: {output}')
-    ctx.exit(0)
+import click
 
 
 def _scan_build_dir(build_dir):
@@ -140,3 +72,66 @@ def _scan_build_dir(build_dir):
                 pass
 
     return modules, pus
+
+
+@click.command("export-types")
+@click.option('--game-build', 'game_build', default=None,
+              help='Path to the compiled game binary or its directory. '
+                   'If omitted, searches the default build output directory.')
+@click.option('--output', '-o', default='types.json',
+              show_default=True,
+              help='Output path for the generated types.json file.')
+@click.option('--config', default='Debug',
+              show_default=True,
+              help='Build configuration to scan (Debug or Release).')
+@click.pass_context
+def export_types(ctx, game_build, output, config):
+    """Export registered module and PU types to types.json.
+
+    Scans the compiled game binary for REGISTER_MODULE / REGISTER_PU macros
+    and generates a types.json file consumable by the DiaApplicationFlowEditor.
+
+    Example:
+        dia reflect export-types --output assets/types.json
+    """
+    from dia_cli.utils.dia_cli_config import Config
+    cfg = Config.from_context(ctx)
+
+    # Resolve game build path
+    if game_build is None:
+        # Default: look in bin/CluicheTest/<config>/x64/
+        root = cfg.root_path()
+        candidates = [
+            os.path.join(root, 'Cluiche', 'bin', 'CluicheTest', config, 'x64'),
+            os.path.join(root, 'Cluiche', 'bin', 'CluicheEditor', config, 'x64'),
+        ]
+        game_build = None
+        for c in candidates:
+            if os.path.isdir(c):
+                game_build = c
+                break
+        if game_build is None:
+            click.echo(f'[reflect export-types] ERROR: Could not locate game build directory. '
+                       f'Pass --game-build <path> explicitly.', err=True)
+            ctx.exit(1)
+            return
+
+    click.echo(f'[reflect export-types] Scanning: {game_build}')
+
+    modules, pus = _scan_build_dir(game_build)
+
+    result = {
+        'version': 1,
+        'modules': [{'type_id': m, 'description': ''} for m in sorted(modules)],
+        'processing_units': [{'type_id': p, 'description': ''} for p in sorted(pus)],
+    }
+
+    output_dir = os.path.dirname(os.path.abspath(output))
+    os.makedirs(output_dir, exist_ok=True)
+
+    with open(output, 'w', encoding='utf-8') as f:
+        json.dump(result, f, indent=2)
+
+    click.echo(f'[reflect export-types] Wrote {len(modules)} module type(s) and '
+               f'{len(pus)} PU type(s) to: {output}')
+    ctx.exit(0)
