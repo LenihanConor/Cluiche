@@ -1,5 +1,5 @@
-$input a_position, a_normal, a_texcoord0, a_color0
-$output v_worldPos, v_normal, v_texcoord0, v_color0, v_shadowCoord
+$input a_position, a_normal, a_tangent, a_texcoord0, a_color0
+$output v_worldPos, v_normal, v_texcoord0, v_color0, v_shadowCoord, v_tangent, v_bitangent
 
 #include <bgfx_shader.sh>
 
@@ -15,4 +15,9 @@ void main()
     v_texcoord0   = a_texcoord0;
     v_color0      = a_color0;
     v_shadowCoord = mul(u_lightViewProj, worldPos);
+
+    vec3 worldTangent  = normalize(mul(u_model[0], vec4(a_tangent.xyz, 0.0)).xyz);
+    float bitangentSign = a_tangent.w;
+    v_tangent   = worldTangent;
+    v_bitangent = cross(v_normal, worldTangent) * bitangentSign;
 }

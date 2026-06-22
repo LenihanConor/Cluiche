@@ -1,4 +1,4 @@
-$input v_worldPos, v_normal, v_texcoord0, v_color0, v_shadowCoord
+$input v_worldPos, v_normal, v_texcoord0, v_color0, v_shadowCoord, v_tangent, v_bitangent
 
 #include <bgfx_shader.sh>
 
@@ -7,7 +7,9 @@ uniform vec4 u_directionalLightColour; // rgb = colour, a = intensity
 uniform vec4 u_ambient;                // rgb = ambient colour, a = intensity
 uniform vec4 u_baseColour;             // rgba from MaterialDescriptor
 
-SAMPLER2D(s_shadowMap, 0);
+SAMPLER2D(s_albedo,    0);
+SAMPLER2D(s_normalMap, 1);
+SAMPLER2D(s_shadowMap, 2);
 
 float sampleShadow(vec4 shadowCoord)
 {
@@ -29,7 +31,12 @@ float sampleShadow(vec4 shadowCoord)
 
 void main()
 {
-    vec3 normal = normalize(v_normal);
+    vec3 T = normalize(v_tangent);
+    vec3 B = normalize(v_bitangent);
+    vec3 N = normalize(v_normal);
+    vec4 normalSample = texture2D(s_normalMap, v_texcoord0);
+    vec3 tangentNormal = normalSample.rgb * 2.0 - 1.0;
+    vec3 normal = normalize(T * tangentNormal.x + B * tangentNormal.y + N * tangentNormal.z);
     vec3 lightDir = normalize(u_directionalLightDir.xyz);
 
     // Lambert diffuse
@@ -43,9 +50,10 @@ void main()
     float shadow = sampleShadow(v_shadowCoord);
 
     // Final colour
-    vec3 baseCol = u_baseColour.rgb * v_color0.rgb;
+    vec4 albedoSample = texture2D(s_albedo, v_texcoord0);
+    vec3 baseCol = u_baseColour.rgb * v_color0.rgb * albedoSample.rgb;
     vec3 finalColour = baseCol * (ambient + diffuse * shadow);
-    float alpha = u_baseColour.a * v_color0.a;
+    float alpha = u_baseColour.a * v_color0.a * albedoSample.a;
 
     gl_FragColor = vec4(finalColour, alpha);
 }

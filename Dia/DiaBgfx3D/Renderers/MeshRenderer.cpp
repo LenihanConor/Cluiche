@@ -34,6 +34,7 @@ namespace Dia
             , mUBaseColour(bgfx::kInvalidHandle)
             , mULightViewProj(bgfx::kInvalidHandle)
             , mSShadowMap(bgfx::kInvalidHandle)
+            , mFlatNormalTexture(0xFFFFu)
         {
         }
 
@@ -52,6 +53,13 @@ namespace Dia
             destroy(mUBaseColour);
             destroy(mULightViewProj);
             destroy(mSShadowMap);
+
+            if (mFlatNormalTexture != 0xFFFFu)
+            {
+                bgfx::TextureHandle h;
+                h.idx = mFlatNormalTexture;
+                bgfx::destroy(h);
+            }
         }
 
         void MeshRenderer::InitUniforms()
@@ -62,6 +70,13 @@ namespace Dia
             mUBaseColour     = bgfx::createUniform("u_baseColour",             bgfx::UniformType::Vec4).idx;
             mULightViewProj  = bgfx::createUniform("u_lightViewProj",         bgfx::UniformType::Mat4).idx;
             mSShadowMap      = bgfx::createUniform("s_shadowMap",             bgfx::UniformType::Sampler).idx;
+
+            // 1×1 flat-normal default: tangent-space "no perturbation" = (128,128,255,255) RGBA8
+            const uint8_t flatNormalPixels[4] = { 128, 128, 255, 255 };
+            bgfx::TextureHandle flatNormalTex = bgfx::createTexture2D(1, 1, false, 1,
+                bgfx::TextureFormat::RGBA8, 0,
+                bgfx::copy(flatNormalPixels, sizeof(flatNormalPixels)));
+            mFlatNormalTexture = bgfx::isValid(flatNormalTex) ? flatNormalTex.idx : 0xFFFFu;
         }
 
         void MeshRenderer::Draw(const Dia::Graphics3D::Mesh3DFrameData& frameData,
@@ -120,7 +135,7 @@ namespace Dia
                 samplerHandle.idx = mSShadowMap;
                 bgfx::TextureHandle shadowTex;
                 shadowTex.idx = lighting.shadowTexture;
-                bgfx::setTexture(0, samplerHandle, shadowTex);
+                bgfx::setTexture(2, samplerHandle, shadowTex);
             }
 
             const uint64_t state = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A
