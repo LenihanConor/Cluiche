@@ -34,6 +34,8 @@ namespace Dia
             , mUBaseColour(bgfx::kInvalidHandle)
             , mULightViewProj(bgfx::kInvalidHandle)
             , mSShadowMap(bgfx::kInvalidHandle)
+            , mSAlbedo(bgfx::kInvalidHandle)
+            , mSNormalMap(bgfx::kInvalidHandle)
             , mFlatNormalTexture(0xFFFFu)
         {
         }
@@ -53,6 +55,8 @@ namespace Dia
             destroy(mUBaseColour);
             destroy(mULightViewProj);
             destroy(mSShadowMap);
+            destroy(mSAlbedo);
+            destroy(mSNormalMap);
 
             if (mFlatNormalTexture != 0xFFFFu)
             {
@@ -70,6 +74,8 @@ namespace Dia
             mUBaseColour     = bgfx::createUniform("u_baseColour",             bgfx::UniformType::Vec4).idx;
             mULightViewProj  = bgfx::createUniform("u_lightViewProj",         bgfx::UniformType::Mat4).idx;
             mSShadowMap      = bgfx::createUniform("s_shadowMap",             bgfx::UniformType::Sampler).idx;
+            mSAlbedo   = bgfx::createUniform("s_albedo",    bgfx::UniformType::Sampler).idx;
+            mSNormalMap = bgfx::createUniform("s_normalMap", bgfx::UniformType::Sampler).idx;
 
             // 1×1 flat-normal default: tangent-space "no perturbation" = (128,128,255,255) RGBA8
             const uint8_t flatNormalPixels[4] = { 128, 128, 255, 255 };

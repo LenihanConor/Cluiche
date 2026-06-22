@@ -46,6 +46,8 @@ namespace Dia
             unsigned short  mUBaseColour;
             unsigned short  mULightViewProj;
             unsigned short  mSShadowMap;       // bgfx::UniformHandle::idx (sampler)
+            unsigned short  mSAlbedo;          // bgfx::UniformHandle::idx (sampler)
+            unsigned short  mSNormalMap;       // bgfx::UniformHandle::idx (sampler)
             unsigned short  mFlatNormalTexture; // bgfx::TextureHandle::idx (1×1 flat-normal default)
         };
 
