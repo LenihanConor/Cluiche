@@ -9,6 +9,7 @@
 #include "DiaBgfx3D/MeshPassLighting.h"
 
 #include <DiaBgfx/Resources/ShaderProgram.h>
+#include <DiaMesh3D/Mesh3DAssetHandler.h>
 #include <DiaGraphics3D/FrameData3D.h>
 #include <DiaGraphics3D/Mesh3DFrameData.h>
 #include <DiaGraphics3D/Light.h>
@@ -123,9 +124,11 @@ namespace Dia
 
             // Register default material
             Dia::Bgfx3D::MaterialDescriptor def;
-            def.id             = Dia::Core::StringCRC("default_3d");
-            def.program        = mMeshProgram;
-            def.baseColourRGBA = 0xCCCCCCFFu;
+            def.id               = Dia::Core::StringCRC("default_3d");
+            def.program          = mMeshProgram;
+            def.baseColourRGBA   = 0xCCCCCCFFu;
+            def.albedoTexture    = 0xFFFFu;
+            def.normalMapTexture = 0xFFFFu;
             mMaterialRegistry->Register(def);
 
             // Create renderers now that bgfx is initialised — their ctors call
@@ -266,6 +269,15 @@ namespace Dia
             // Init3DPrograms() (called on first StartFrame) creates MeshRenderer
             // using this pointer — if called after bgfx init it would be a data race.
             mMeshHandler = handler;
+
+            if (handler)
+            {
+                MeshGpuCache* cache = mMeshGpuCache;
+                handler->SetEvictCallback([cache](uint32_t assetId)
+                {
+                    cache->Evict(assetId);
+                });
+            }
         }
 
     } // namespace Bgfx3D

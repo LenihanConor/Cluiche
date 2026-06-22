@@ -11,9 +11,11 @@ namespace Dia
     {
         MaterialRegistry::MaterialRegistry()
         {
-            mDefault.id             = Dia::Core::StringCRC("default");
-            mDefault.program        = nullptr;
-            mDefault.baseColourRGBA = 0xFFFFFFFFu;
+            mDefault.id               = Dia::Core::StringCRC("default");
+            mDefault.program          = nullptr;
+            mDefault.baseColourRGBA   = 0xFFFFFFFFu;
+            mDefault.albedoTexture    = 0xFFFFu;
+            mDefault.normalMapTexture = 0xFFFFu;
         }
 
         void MaterialRegistry::Register(const MaterialDescriptor& desc)
