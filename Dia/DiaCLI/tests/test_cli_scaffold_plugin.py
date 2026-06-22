@@ -20,6 +20,10 @@ def _build_fake_repo(tmp_path: Path) -> Path:
     sln_dir = tmp_path / "Cluiche"
     sln_dir.mkdir(parents=True)
     (sln_dir / "Cluiche.sln").write_text("", encoding="utf-8")
+    (tmp_path / "pipeline.toml").write_text(
+        '[deploy]\nrules = [\n  { src = "Dia/DiaPipelineEditor/UI/dist/*", dest = "$(OutDir)plugins/pipelineeditor/" },\n]\n',
+        encoding="utf-8",
+    )
     return tmp_path
 
 

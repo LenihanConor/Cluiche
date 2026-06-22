@@ -27,7 +27,7 @@ def _make_output() -> MagicMock:
     return out
 
 
-def _make_context(catalogue: dict, asset_stages: list[str] | None = None) -> BuildContext:
+def _make_context(catalogue: dict, asset_stages: list[str] | None = None, source_root: Path | None = None) -> BuildContext:
     return BuildContext(
         catalogue=catalogue,
         config="Debug",
@@ -36,8 +36,16 @@ def _make_context(catalogue: dict, asset_stages: list[str] | None = None) -> Bui
         deploy_root=Path("/bin/TestApp/Debug/x64/assets"),
         asset_stages=asset_stages or [],
         output=_make_output(),
-        source_root=Path("/src"),
+        source_root=source_root or Path("/src"),
     )
+
+
+def _seed_source_files(source_root: Path, catalogue: dict) -> None:
+    """Create empty source files so DefaultAssetHandler.validate() finds them."""
+    for record in catalogue.get("assets", []):
+        src = source_root / record["source_path"]
+        src.parent.mkdir(parents=True, exist_ok=True)
+        src.touch()
 
 
 def _make_record(
@@ -188,9 +196,10 @@ def test_run_returns_zero_on_empty_catalogue():
     assert runner.run() == 0
 
 
-def test_run_returns_zero_when_all_pass():
+def test_run_returns_zero_when_all_pass(tmp_path):
     catalogue = {"assets": [_make_record("texture.bg")]}
-    ctx = _make_context(catalogue)
+    _seed_source_files(tmp_path, catalogue)
+    ctx = _make_context(catalogue, source_root=tmp_path)
     runner = BuildRunner(AssetHandlerRegistry(), ctx)
     assert runner.run() == 0
 
@@ -289,9 +298,10 @@ def test_validate_failure_skips_transform_and_deploy():
     assert deploy_called == []
 
 
-def test_run_uses_base_handler_for_unregistered_type():
+def test_run_uses_base_handler_for_unregistered_type(tmp_path):
     catalogue = {"assets": [_make_record("texture.bg")]}
-    ctx = _make_context(catalogue)
+    _seed_source_files(tmp_path, catalogue)
+    ctx = _make_context(catalogue, source_root=tmp_path)
     runner = BuildRunner(AssetHandlerRegistry(), ctx)
     assert runner.run() == 0
 
@@ -328,9 +338,10 @@ def test_run_invalid_phase_raises():
 # NDJSON events
 # ---------------------------------------------------------------------------
 
-def test_events_emitted_for_successful_asset():
+def test_events_emitted_for_successful_asset(tmp_path):
     catalogue = {"assets": [_make_record("texture.bg")]}
-    ctx = _make_context(catalogue)
+    _seed_source_files(tmp_path, catalogue)
+    ctx = _make_context(catalogue, source_root=tmp_path)
     BuildRunner(AssetHandlerRegistry(), ctx).run()
 
     emitted = [call.args[0]["event"] for call in ctx.output.emit.call_args_list]
@@ -356,7 +367,7 @@ def test_on_asset_failed_emitted_on_validate_failure():
     assert "OnAssetFailed" in emitted
 
 
-def test_on_build_completed_has_counts():
+def test_on_build_completed_has_counts(tmp_path):
     class FailHandler(AssetHandler):
         type_id = "texture"
         def validate(self, record, context):
@@ -370,7 +381,8 @@ def test_on_build_completed_has_counts():
             _make_record("config.ok"),  # no handler -> default pass
         ]
     }
-    ctx = _make_context(catalogue)
+    _seed_source_files(tmp_path, catalogue)
+    ctx = _make_context(catalogue, source_root=tmp_path)
     BuildRunner(reg, ctx).run()
 
     completed = next(

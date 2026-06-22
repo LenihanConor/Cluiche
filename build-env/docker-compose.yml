@@ -1,0 +1,13 @@
+version: "3.8"
+
+services:
+  build:
+    build:
+      context: ..
+      dockerfile: build-env/Dockerfile
+    volumes:
+      - type: bind
+        source: ..
+        target: C:\workspace
+    working_dir: C:\workspace
+    command: powershell -Command "msbuild Cluiche/Cluiche.sln /p:Configuration=Release /p:Platform=x64"
