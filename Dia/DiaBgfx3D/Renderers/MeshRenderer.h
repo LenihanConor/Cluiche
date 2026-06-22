@@ -49,6 +49,7 @@ namespace Dia
             unsigned short  mSAlbedo;          // bgfx::UniformHandle::idx (sampler)
             unsigned short  mSNormalMap;       // bgfx::UniformHandle::idx (sampler)
             unsigned short  mFlatNormalTexture; // bgfx::TextureHandle::idx (1×1 flat-normal default)
+            unsigned short  mWhiteTexture;      // bgfx::TextureHandle::idx (1×1 white albedo default)
         };
 
     } // namespace Bgfx3D

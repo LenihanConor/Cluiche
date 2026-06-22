@@ -37,6 +37,7 @@ namespace Dia
             , mSAlbedo(bgfx::kInvalidHandle)
             , mSNormalMap(bgfx::kInvalidHandle)
             , mFlatNormalTexture(0xFFFFu)
+            , mWhiteTexture(0xFFFFu)
         {
         }
 
@@ -64,6 +65,13 @@ namespace Dia
                 h.idx = mFlatNormalTexture;
                 bgfx::destroy(h);
             }
+
+            if (mWhiteTexture != 0xFFFFu)
+            {
+                bgfx::TextureHandle h;
+                h.idx = mWhiteTexture;
+                bgfx::destroy(h);
+            }
         }
 
         void MeshRenderer::InitUniforms()
@@ -83,6 +91,13 @@ namespace Dia
                 bgfx::TextureFormat::RGBA8, 0,
                 bgfx::copy(flatNormalPixels, sizeof(flatNormalPixels)));
             mFlatNormalTexture = bgfx::isValid(flatNormalTex) ? flatNormalTex.idx : 0xFFFFu;
+
+            // 1×1 white default albedo: no tint = pure white RGBA8
+            const uint8_t whitePixels[4] = { 255, 255, 255, 255 };
+            bgfx::TextureHandle whiteTex = bgfx::createTexture2D(1, 1, false, 1,
+                bgfx::TextureFormat::RGBA8, 0,
+                bgfx::copy(whitePixels, sizeof(whitePixels)));
+            mWhiteTexture = bgfx::isValid(whiteTex) ? whiteTex.idx : 0xFFFFu;
         }
 
         void MeshRenderer::Draw(const Dia::Graphics3D::Mesh3DFrameData& frameData,
@@ -180,6 +195,24 @@ namespace Dia
                 bgfx::UniformHandle hBase;
                 hBase.idx = mUBaseColour;
                 bgfx::setUniform(hBase, baseColour);
+
+                // --- Albedo texture (slot 0) ---
+                {
+                    bgfx::UniformHandle sAlbedo;
+                    sAlbedo.idx = mSAlbedo;
+                    bgfx::TextureHandle albedoTex;
+                    albedoTex.idx = (mat->albedoTexture != 0xFFFFu) ? mat->albedoTexture : mWhiteTexture;
+                    bgfx::setTexture(0, sAlbedo, albedoTex);
+                }
+
+                // --- Normal map texture (slot 1) ---
+                {
+                    bgfx::UniformHandle sNormalMap;
+                    sNormalMap.idx = mSNormalMap;
+                    bgfx::TextureHandle normalTex;
+                    normalTex.idx = (mat->normalMapTexture != 0xFFFFu) ? mat->normalMapTexture : mFlatNormalTexture;
+                    bgfx::setTexture(1, sNormalMap, normalTex);
+                }
 
                 bgfx::setVertexBuffer(0, vbh);
                 bgfx::setIndexBuffer(ibh, sub.indexStart, sub.indexCount);
