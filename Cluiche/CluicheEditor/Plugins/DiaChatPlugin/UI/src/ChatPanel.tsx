@@ -903,6 +903,7 @@ export function ChatPanel() {
                     }}
                 >
                     <option value="ollama">Ollama</option>
+                    <option value="claude">Claude</option>
                     <option value="gemini">Gemini</option>
                 </select>
 
