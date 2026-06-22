@@ -1,0 +1,9 @@
+{
+    "name": "Mesh3DRenderSystemTestStage",
+    "manifest": "Stages/Mesh3DRenderSystemTestStage/misc/ApplicationFlow/mesh3drendersystem_test_stage.diaapp",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

@@ -118,6 +118,11 @@
       "type_id": "TestStageHUDModule"
     },
     {
+      "allowed_pus": "main",
+      "description": "TODO: describe what this stage tests",
+      "type_id": "Mesh3DRenderSystemTestStageModule"
+    },
+    {
       "allowed_pus": "sim",
       "description": "Renders a procedural unit cube with a directional light via Canvas3D",
       "type_id": "Mesh3DTestStageModule"
@@ -301,6 +306,6 @@
   "processing_units": [],
   "version": {
     "major": 1,
-    "minor": 5
+    "minor": 6
   }
 }
