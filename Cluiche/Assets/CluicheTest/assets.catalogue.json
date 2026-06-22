@@ -201,6 +201,32 @@
         },
         {
             "content_hash": 0,
+            "id": "texture.avocado_albedo",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/Mesh3DTestStage/World/Textures/Avocado_baseColor.png",
+            "stage_name": "Mesh3DTestStage",
+            "status": "active",
+            "tags": [
+                "visual"
+            ],
+            "type": "texture"
+        },
+        {
+            "content_hash": 0,
+            "id": "texture.avocado_normal",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/Mesh3DTestStage/World/Textures/Avocado_normal.png",
+            "stage_name": "Mesh3DTestStage",
+            "status": "active",
+            "tags": [
+                "visual"
+            ],
+            "type": "texture"
+        },
+        {
+            "content_hash": 0,
             "id": "manifest.rigid_body2d_test_stage",
             "references": [],
             "scope": "stage",
@@ -633,6 +659,14 @@
                 {
                     "type": "contains",
                     "target": "mesh3d.avocado"
+                },
+                {
+                    "type": "contains",
+                    "target": "texture.avocado_albedo"
+                },
+                {
+                    "type": "contains",
+                    "target": "texture.avocado_normal"
                 }
             ]
         },
