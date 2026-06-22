@@ -31,11 +31,12 @@ def run(
     output_json: bool,
     quiet: bool,
     local_llm: bool = False,
+    python_packages: bool = False,
 ) -> int:
     root = repo_root if repo_root is not None else _REPO_ROOT
     use_color = sys.stdout.isatty() and not output_json
 
-    run_all = not any([toolchain, deps_only, submodules, docker_only, claude, local_llm])
+    run_all = not any([toolchain, deps_only, submodules, docker_only, claude, local_llm, python_packages])
     checks = []
 
     if run_all or toolchain or docker_only:
@@ -63,6 +64,9 @@ def run(
 
     if run_all or local_llm:
         checks.extend(_check_local_llm())
+
+    if run_all or python_packages:
+        checks.extend(_check_python_packages(root))
 
     if run_all:
         checks.extend(_check_cppcheck())
@@ -173,6 +177,32 @@ def _check_claude(repo_root: Path) -> list:
         results.append(CheckResult("memory symlink", "claude", "fail",
                                    "not configured",
                                    "dia env claude-setup"))
+    return results
+
+
+def _check_python_packages(repo_root: Path) -> list:
+    from dia_cli.utils.check_result import CheckResult
+    import importlib.util
+
+    req_file = repo_root / "Dia" / "DiaCLI" / "requirements.txt"
+    if not req_file.exists():
+        return [CheckResult("requirements.txt", "python-packages", "fail",
+                            "not found", f"expected at {req_file}")]
+
+    results = []
+    for line in req_file.read_text().splitlines():
+        pkg = line.strip()
+        if not pkg or pkg.startswith("#"):
+            continue
+        # Normalise: strip version specifiers and extras, convert - to _
+        import re
+        name = re.split(r"[>=<!;\[]", pkg)[0].strip().replace("-", "_").lower()
+        if importlib.util.find_spec(name) is not None:
+            results.append(CheckResult(pkg, "python-packages", "pass"))
+        else:
+            results.append(CheckResult(pkg, "python-packages", "fail",
+                                       "not installed",
+                                       "dia env setup --python-packages"))
     return results
 
 

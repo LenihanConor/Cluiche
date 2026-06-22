@@ -1072,6 +1072,7 @@ class TestVerifyOrchestrator:
              patch("dia_cli.utils.submodule_verify.check_submodules", return_value=self._submodules_pass_results()), \
              patch.object(_vo_full, "_check_claude", return_value=[]), \
              patch.object(_vo_full, "_check_local_llm", return_value=[]), \
+             patch.object(_vo_full, "_check_python_packages", return_value=[]), \
              patch.object(_vo_full, "_check_cppcheck", return_value=[]):
             code = run(repo_root=tmp_path, toolchain=False, deps_only=False,
                        submodules=False, docker_only=False, claude=False,
@@ -1090,6 +1091,7 @@ class TestVerifyOrchestrator:
              patch("dia_cli.utils.submodule_verify.check_submodules", return_value=self._submodules_pass_results()), \
              patch.object(_vo_full, "_check_claude", return_value=[]), \
              patch.object(_vo_full, "_check_local_llm", return_value=[]), \
+             patch.object(_vo_full, "_check_python_packages", return_value=[]), \
              patch.object(_vo_full, "_check_cppcheck", return_value=[]):
             run(repo_root=tmp_path, toolchain=False, deps_only=False,
                 submodules=False, docker_only=False, claude=False,
@@ -1135,7 +1137,8 @@ class TestVerifyOrchestrator:
              patch("dia_cli.utils.deps_verify.check_deps", return_value=[]), \
              patch("dia_cli.utils.submodule_verify.check_submodules", return_value=[]), \
              patch.object(_vo_full, "_check_claude", return_value=[]), \
-             patch.object(_vo_full, "_check_local_llm", return_value=[]):
+             patch.object(_vo_full, "_check_local_llm", return_value=[]), \
+             patch.object(_vo_full, "_check_python_packages", return_value=[]):
             code = run(repo_root=tmp_path, toolchain=False, deps_only=False,
                        submodules=False, docker_only=False, claude=False,
                        output_json=False, quiet=True)

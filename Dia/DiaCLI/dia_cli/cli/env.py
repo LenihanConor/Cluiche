@@ -48,15 +48,17 @@ def setup(ctx, toolchain, deps_only, dep_id, submodules, claude, local_llm, pyth
 @click.option("--docker", "docker_only", is_flag=True, default=False)
 @click.option("--claude", is_flag=True, default=False)
 @click.option("--local-llm", "local_llm", is_flag=True, default=False, help="Check aider + ollama + model.")
+@click.option("--python-packages", "python_packages", is_flag=True, default=False, help="Check bundled Python packages from requirements.txt.")
 @click.option("--json", "output_json", is_flag=True, default=False, help="Machine-readable JSON output.")
 @click.option("--quiet", is_flag=True, default=False, help="Print only WARNs and FAILs.")
 @click.pass_context
-def verify(ctx, toolchain, deps_only, submodules, docker_only, claude, local_llm, output_json, quiet):
+def verify(ctx, toolchain, deps_only, submodules, docker_only, claude, local_llm, python_packages, output_json, quiet):
     """Check environment health (read-only, CI-safe)."""
     from dia_cli.commands.env.verify_orchestrator import run
     exit_code = run(repo_root=None, toolchain=toolchain, deps_only=deps_only,
                     submodules=submodules, docker_only=docker_only, claude=claude,
-                    local_llm=local_llm, output_json=output_json, quiet=quiet)
+                    local_llm=local_llm, python_packages=python_packages,
+                    output_json=output_json, quiet=quiet)
     ctx.exit(exit_code)
 
 
