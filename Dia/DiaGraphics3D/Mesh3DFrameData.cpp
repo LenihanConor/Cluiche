@@ -33,6 +33,12 @@ void Mesh3DFrameData::SetCamera(const Camera3D& camera)
 }
 
 ////////////////////////////////////////////////////////////
+void Mesh3DFrameData::SetAmbientLight(const AmbientLight& light)
+{
+    mAmbientLight = light;
+}
+
+////////////////////////////////////////////////////////////
 void Mesh3DFrameData::AddDirectionalLight(const DirectionalLight& light)
 {
     if (mDirectionalLights.IsFull())
@@ -85,6 +91,7 @@ void Mesh3DFrameData::Clear()
     mMeshDraws.RemoveAll();
     mDirectionalLights.RemoveAll();
     mPointLights.RemoveAll();
+    mAmbientLight = AmbientLight{};
     mDroppedMeshes = 0;
     mDroppedLights = 0;
 }
@@ -93,6 +100,7 @@ void Mesh3DFrameData::Clear()
 void Mesh3DFrameData::Copy(const Mesh3DFrameData& rhs)
 {
     mCamera            = rhs.mCamera;
+    mAmbientLight      = rhs.mAmbientLight;
     mMeshDraws.Assign(rhs.mMeshDraws);
     mDirectionalLights.Assign(rhs.mDirectionalLights);
     mPointLights.Assign(rhs.mPointLights);
@@ -104,6 +112,12 @@ void Mesh3DFrameData::Copy(const Mesh3DFrameData& rhs)
 const Camera3D& Mesh3DFrameData::GetCamera() const
 {
     return mCamera;
+}
+
+////////////////////////////////////////////////////////////
+const AmbientLight& Mesh3DFrameData::GetAmbientLight() const
+{
+    return mAmbientLight;
 }
 
 ////////////////////////////////////////////////////////////

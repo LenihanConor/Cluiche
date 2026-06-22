@@ -2,6 +2,7 @@
 // Filename: MaterialRegistry.cpp
 ////////////////////////////////////////////////////////////////////////////////
 #include "DiaBgfx3D/Resources/MaterialRegistry.h"
+#include <DiaCore/CRC/CRC.h>
 #include <DiaObservation/Log/DiaLog.h>
 
 namespace Dia
@@ -42,6 +43,16 @@ namespace Dia
             for (unsigned int i = 0; i < mMaterials.Size(); ++i)
             {
                 if (mMaterials[i].id == id)
+                    return &mMaterials[i];
+            }
+            return nullptr;
+        }
+
+        const MaterialDescriptor* MaterialRegistry::Resolve(Dia::Core::CRC id) const
+        {
+            for (unsigned int i = 0; i < mMaterials.Size(); ++i)
+            {
+                if (mMaterials[i].id.Value() == id.Value())
                     return &mMaterials[i];
             }
             return nullptr;

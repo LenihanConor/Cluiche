@@ -95,10 +95,6 @@ Dia::ApplicationFlow::StartResult AssetServiceModule::DoStart()
     Dia::Core::Containers::String512 diagamePath("%scluichetest.diagame", deployRoot);
     ParseDiagame(diagamePath.AsCStr());
 
-    // Wire Mesh3DAssetHandler to the JobSystem before any loads can be dispatched.
-    DIA_ASSERT(mJobSystemRef.Get() != nullptr, "Mesh3DAssetHandler requires JobSystemModule to be initialized first");
-    mMesh3DHandler.SetJobSystem(&mJobSystemRef->GetJobSystem());
-
     // Try to register handlers up front (requires KernelModule+UIModule).
     // Safe to retry later via EnsureHandlersRegistered if UI hasn't started.
     EnsureHandlersRegistered();
@@ -231,7 +227,8 @@ void AssetServiceModule::DoUpdate(float /*dt*/)
     // 2. Pump main-thread asset handler completions.
     if (mTextureHandlerService.IsAvailable())
         mTextureHandlerService.Get().Tick();
-    mMesh3DHandler.Tick();
+    if (mMeshHandlerService.IsAvailable())
+        mMeshHandlerService.Get().Tick();
 
     // 3. Recompute terminal states for any kLoading stage.
     for (unsigned int i = 0; i < mStageStateCount; ++i)
@@ -412,6 +409,7 @@ Dia::ApplicationFlow::StopResult AssetServiceModule::DoStop()
 void AssetServiceModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 {
     mTextureHandlerService.Connect(app);
+    mMeshHandlerService.Connect(app);
     mAssetLoadStatusService.Connect(app);
 }
 
@@ -510,9 +508,9 @@ void AssetServiceModule::EnsureHandlersRegistered()
         justRegistered = true;
     }
 
-    if (!mMesh3DHandlerRegistered)
+    if (!mMesh3DHandlerRegistered && mMeshHandlerService.IsAvailable())
     {
-        mRuntime.RegisterTypeHandler("mesh3d", &mMesh3DHandler);
+        mRuntime.RegisterTypeHandler("mesh3d", &mMeshHandlerService.Get());
         mMesh3DHandlerRegistered = true;
         justRegistered = true;
     }

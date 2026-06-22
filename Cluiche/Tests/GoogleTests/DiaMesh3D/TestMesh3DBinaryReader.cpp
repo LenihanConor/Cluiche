@@ -244,3 +244,68 @@ TEST(Mesh3DBinaryReaderTest, MissingFile_ReturnsReadError)
 
     EXPECT_EQ(result.status, Dia::Mesh3D::ReadResult::Status::ReadError);
 }
+
+// ---------------------------------------------------------------------------
+// Wire-format contract: sizeof(Submesh) must equal 12 (3 x uint32).
+// This is the exact condition that caused the avocado load failure when
+// materialId was StringCRC (68 bytes) instead of CRC (4 bytes).
+// ---------------------------------------------------------------------------
+
+TEST(Mesh3DBinaryReaderTest, SubmeshSizeMatchesWireFormat)
+{
+    EXPECT_EQ(sizeof(Dia::Mesh3D::Submesh), 12u);
+}
+
+// ---------------------------------------------------------------------------
+// Round-trip: materialId CRC is preserved across write -> read.
+// Catches any future recurrence of the StringCRC vs CRC size mismatch that
+// previously caused truncated submesh reads.
+// ---------------------------------------------------------------------------
+
+TEST(Mesh3DBinaryReaderTest, ValidFile_SubmeshMaterialIdRoundTrips)
+{
+    char path[512];
+    BuildTempFilePath(path, sizeof(path), "mesh3d_test_matid.mesh3d");
+
+    Dia::Mesh3D::Vertex3D vert;
+    uint16_t              idxs[3];
+    Dia::Mesh3D::Submesh  sub;
+    Dia::Geometry3D::AABB bounds;
+    MakeMinimalMesh(&vert, idxs, &sub, bounds);
+
+    // Override the materialId with a known CRC value.
+    const Dia::Core::StringCRC expectedId("mat.round_trip_check");
+    sub.materialId = expectedId;
+
+    ASSERT_TRUE(Dia::Mesh3D::Testing::WriteMesh3DBinary(path, &vert, 1, idxs, 3, &sub, 1, bounds));
+
+    Dia::Mesh3D::ReadResult result = Dia::Mesh3D::ReadMesh3DFile(path);
+
+    ASSERT_EQ(result.status, Dia::Mesh3D::ReadResult::Status::OK);
+    ASSERT_EQ(result.submeshCount, 1u);
+    EXPECT_EQ(result.submeshes[0].materialId.Value(), expectedId.Value());
+}
+
+TEST(Mesh3DBinaryReaderTest, ValidFile_SubmeshIndexRangeRoundTrips)
+{
+    char path[512];
+    BuildTempFilePath(path, sizeof(path), "mesh3d_test_subrange.mesh3d");
+
+    Dia::Mesh3D::Vertex3D vert;
+    uint16_t              idxs[3];
+    Dia::Mesh3D::Submesh  sub;
+    Dia::Geometry3D::AABB bounds;
+    MakeMinimalMesh(&vert, idxs, &sub, bounds);
+
+    sub.indexStart = 0;
+    sub.indexCount = 3;
+
+    ASSERT_TRUE(Dia::Mesh3D::Testing::WriteMesh3DBinary(path, &vert, 1, idxs, 3, &sub, 1, bounds));
+
+    Dia::Mesh3D::ReadResult result = Dia::Mesh3D::ReadMesh3DFile(path);
+
+    ASSERT_EQ(result.status, Dia::Mesh3D::ReadResult::Status::OK);
+    ASSERT_EQ(result.submeshCount, 1u);
+    EXPECT_EQ(result.submeshes[0].indexStart, 0u);
+    EXPECT_EQ(result.submeshes[0].indexCount, 3u);
+}

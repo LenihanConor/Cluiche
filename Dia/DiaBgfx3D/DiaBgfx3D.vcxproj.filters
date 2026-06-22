@@ -14,6 +14,7 @@
       <Filter>Renderers</Filter>
     </ClInclude>
     <ClInclude Include="Renderers\ShadowRenderer.h">
+    <ClInclude Include="MeshPassLighting.h" />
       <Filter>Renderers</Filter>
     </ClInclude>
   </ItemGroup>

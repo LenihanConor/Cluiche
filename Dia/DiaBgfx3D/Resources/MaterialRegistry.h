@@ -3,6 +3,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#include <DiaCore/CRC/CRC.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
@@ -30,6 +31,7 @@ namespace Dia
 
             void                        Register(const MaterialDescriptor& desc);
             const MaterialDescriptor*   Resolve(Dia::Core::StringCRC id) const;  // nullptr if not found
+            const MaterialDescriptor*   Resolve(Dia::Core::CRC id)       const;  // for Submesh::materialId (CRC, not StringCRC)
             const MaterialDescriptor&   GetDefault() const;
 
         private:

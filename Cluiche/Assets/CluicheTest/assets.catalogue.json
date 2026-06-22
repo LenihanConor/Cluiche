@@ -618,9 +618,9 @@
             "type": "dialight"
         },
         {
-            "id": "stage.mesh3dtest_test_stage",
+            "id": "stage.mesh3d_test_stage",
             "type": "stage",
-            "source_path": "Stages/Mesh3DTestTestStage/mesh3dtest_test_stage.diastage",
+            "source_path": "Stages/Mesh3DTestStage/mesh3d_test_stage.diastage",
             "scope": "global",
             "tags": [
                 "misc"
@@ -628,7 +628,7 @@
             "references": [
                 {
                     "type": "contains",
-                    "target": "manifest.mesh3dtest_test_stage"
+                    "target": "manifest.mesh3d_test_stage"
                 },
                 {
                     "type": "contains",
@@ -637,11 +637,11 @@
             ]
         },
         {
-            "id": "manifest.mesh3dtest_test_stage",
+            "id": "manifest.mesh3d_test_stage",
             "type": "manifest",
-            "source_path": "Stages/Mesh3DTestTestStage/misc/ApplicationFlow/mesh3dtest_test_stage.diaapp",
+            "source_path": "Stages/Mesh3DTestStage/misc/ApplicationFlow/mesh3d_test_stage.diaapp",
             "scope": "stage",
-            "stage_name": "Mesh3DTestTestStage",
+            "stage_name": "Mesh3DTestStage",
             "tags": [
                 "misc/ApplicationFlow"
             ]
@@ -649,11 +649,36 @@
         {
             "id": "mesh3d.avocado",
             "type": "mesh3d",
-            "source_path": "Stages/Mesh3DTestTestStage/World/Meshes/Avocado.gltf",
+            "source_path": "Stages/Mesh3DTestStage/World/Meshes/Avocado.gltf",
             "scope": "stage",
-            "stage_name": "Mesh3DTestTestStage",
+            "stage_name": "Mesh3DTestStage",
             "tags": [
                 "visual"
+            ]
+        },
+        {
+            "id": "stage.mesh3drendersystem_test_stage",
+            "type": "stage",
+            "source_path": "Stages/Mesh3DRenderSystemTestStage/mesh3drendersystem_test_stage.diastage",
+            "scope": "global",
+            "tags": [
+                "misc"
+            ],
+            "references": [
+                {
+                    "type": "contains",
+                    "target": "manifest.mesh3drendersystem_test_stage"
+                }
+            ]
+        },
+        {
+            "id": "manifest.mesh3drendersystem_test_stage",
+            "type": "manifest",
+            "source_path": "Stages/Mesh3DRenderSystemTestStage/misc/ApplicationFlow/mesh3drendersystem_test_stage.diaapp",
+            "scope": "stage",
+            "stage_name": "Mesh3DRenderSystemTestStage",
+            "tags": [
+                "misc/ApplicationFlow"
             ]
         }
     ],

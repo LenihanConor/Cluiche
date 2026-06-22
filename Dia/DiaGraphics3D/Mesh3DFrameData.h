@@ -18,11 +18,13 @@ public:
     void SetCamera(const Camera3D& camera);
     void AddDirectionalLight(const DirectionalLight& light);
     void AddPointLight(const PointLight& light);
+    void SetAmbientLight(const AmbientLight& light);
 
     void Clear();
     void Copy(const Mesh3DFrameData& rhs);
 
-    const Camera3D& GetCamera() const;
+    const Camera3D&    GetCamera()       const;
+    const AmbientLight& GetAmbientLight() const;
     const Dia::Core::Containers::DynamicArrayC<Mesh3DDrawCommand, kMaxMeshDraws>& GetMeshDraws()         const;
     const Dia::Core::Containers::DynamicArrayC<DirectionalLight,  kMaxLights>&    GetDirectionalLights() const;
     const Dia::Core::Containers::DynamicArrayC<PointLight,        kMaxLights>&    GetPointLights()       const;
@@ -32,6 +34,7 @@ public:
 
 private:
     Camera3D                                                                       mCamera;
+    AmbientLight                                                                   mAmbientLight;
     Dia::Core::Containers::DynamicArrayC<Mesh3DDrawCommand, kMaxMeshDraws>         mMeshDraws;
     Dia::Core::Containers::DynamicArrayC<DirectionalLight,  kMaxLights>            mDirectionalLights;
     Dia::Core::Containers::DynamicArrayC<PointLight,        kMaxLights>            mPointLights;

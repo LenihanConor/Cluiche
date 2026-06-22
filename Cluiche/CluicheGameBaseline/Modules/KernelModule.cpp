@@ -8,6 +8,7 @@
 #include <DiaInput/Event.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Health/HealthRegistry.h>
 #include <DiaObservation/Session/SessionManager.h>
 #include <DiaObservation/Metric/Gauge.h>
 #include <DiaObservation/Metric/Histogram.h>
@@ -160,6 +161,13 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
             Dia::Core::StringCRC("dia.input.events_per_frame"), kEventBuckets, 6);
         mMetricActiveGamepads = reg.RegisterGauge(Dia::Core::StringCRC("dia.input.active_gamepads"));
         mMetricInputSources->Set(2.0);
+
+        mMetricMeshDrawCalls = reg.RegisterGauge(Dia::Core::StringCRC("dia.render3d.mesh_draw_calls"));
+        mMetricGpuMeshCount  = reg.RegisterGauge(Dia::Core::StringCRC("dia.render3d.gpu_mesh_count"));
+        mBgfxCanvas->SetMetrics(mMetricMeshDrawCalls, mMetricGpuMeshCount);
+
+        Dia::Observation::Health::HealthRegistry::Instance().Register(
+            &mBgfxCanvas->GetHealthReporter());
     }
 
     DIA_LOG_INFO("Application", "KernelModule DoStart exit");
@@ -215,6 +223,8 @@ Dia::ApplicationFlow::StopResult KernelModule::DoStop()
 
     if (mBgfxCanvas != nullptr)
     {
+        Dia::Observation::Health::HealthRegistry::Instance().Unregister(
+            &mBgfxCanvas->GetHealthReporter());
         delete mBgfxCanvas;
         mBgfxCanvas = nullptr;
     }
@@ -226,6 +236,8 @@ Dia::ApplicationFlow::StopResult KernelModule::DoStop()
     mMetricInputSources   = nullptr;
     mMetricEventsPerFrame = nullptr;
     mMetricActiveGamepads = nullptr;
+    mMetricMeshDrawCalls  = nullptr;
+    mMetricGpuMeshCount   = nullptr;
 
     DIA_LOG_INFO("Application", "KernelModule DoStop exit");
     return Dia::ApplicationFlow::StopResult::kDone;

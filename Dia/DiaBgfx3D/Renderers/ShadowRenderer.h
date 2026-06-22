@@ -26,7 +26,12 @@ public:
     void SetProgram(Dia::Bgfx::ShaderProgram* prog);
 
     unsigned short GetShadowFramebuffer() const;
+    unsigned short GetShadowTexture() const;
     unsigned short GetShadowViewId() const;
+
+    // Returns the light view-projection matrix used in the last RenderShadowMap call.
+    // Column-major float[16] (ready for bgfx::setUniform). Identity until first call.
+    void GetLightViewProj(float outMtx16[16]) const;
 
 private:
     unsigned short             mViewId;
@@ -34,6 +39,7 @@ private:
     unsigned short             mShadowTexture;      // bgfx::TextureHandle::idx (depth)
     MeshGpuCache*              mCache;
     Dia::Bgfx::ShaderProgram*  mShadowProgram;      // not owned
+    float                      mLightViewProj[16];  // cached from last RenderShadowMap
 };
 
 } } // namespace Dia::Bgfx3D

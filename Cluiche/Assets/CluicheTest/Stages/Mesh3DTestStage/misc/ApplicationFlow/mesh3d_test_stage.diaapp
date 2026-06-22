@@ -7,10 +7,10 @@
             "dedicated_thread": false,
             "modules": [
                 {
-                    "instance_id": "Mesh3DTestTestStageModule",
-                    "type_id": "Mesh3DTestTestStageModule",
+                    "instance_id": "Mesh3DTestStageModule",
+                    "type_id": "Mesh3DTestStageModule",
                     "stages": [
-                        "Mesh3DTestTestStage"
+                        "Mesh3DTestStage"
                     ],
                     "dependencies": [
                         "AutomationModule"

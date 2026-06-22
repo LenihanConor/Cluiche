@@ -4,6 +4,7 @@
 #include "DiaBgfx3D/Renderers/MeshRenderer.h"
 
 #include <bgfx/bgfx.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaObservation/Profile/DiaProfile.h>
 
@@ -27,10 +28,44 @@ namespace Dia
             , mCache(cache)
             , mMaterials(materials)
             , mMeshHandler(meshHandler)
+            , mUDirLightDir(bgfx::kInvalidHandle)
+            , mUDirLightColour(bgfx::kInvalidHandle)
+            , mUAmbient(bgfx::kInvalidHandle)
+            , mUBaseColour(bgfx::kInvalidHandle)
+            , mULightViewProj(bgfx::kInvalidHandle)
+            , mSShadowMap(bgfx::kInvalidHandle)
         {
         }
 
-        void MeshRenderer::Draw(const Dia::Graphics3D::Mesh3DFrameData& frameData)
+        MeshRenderer::~MeshRenderer()
+        {
+            auto destroy = [](unsigned short idx) {
+                if (idx == bgfx::kInvalidHandle)
+                    return;
+                bgfx::UniformHandle h;
+                h.idx = idx;
+                bgfx::destroy(h);
+            };
+            destroy(mUDirLightDir);
+            destroy(mUDirLightColour);
+            destroy(mUAmbient);
+            destroy(mUBaseColour);
+            destroy(mULightViewProj);
+            destroy(mSShadowMap);
+        }
+
+        void MeshRenderer::InitUniforms()
+        {
+            mUDirLightDir    = bgfx::createUniform("u_directionalLightDir",    bgfx::UniformType::Vec4).idx;
+            mUDirLightColour = bgfx::createUniform("u_directionalLightColour", bgfx::UniformType::Vec4).idx;
+            mUAmbient        = bgfx::createUniform("u_ambient",                bgfx::UniformType::Vec4).idx;
+            mUBaseColour     = bgfx::createUniform("u_baseColour",             bgfx::UniformType::Vec4).idx;
+            mULightViewProj  = bgfx::createUniform("u_lightViewProj",         bgfx::UniformType::Mat4).idx;
+            mSShadowMap      = bgfx::createUniform("s_shadowMap",             bgfx::UniformType::Sampler).idx;
+        }
+
+        void MeshRenderer::Draw(const Dia::Graphics3D::Mesh3DFrameData& frameData,
+                                const MeshPassLighting& lighting)
         {
             DIA_TRACE_ZONE("mesh_renderer.draw", ::Dia::Observation::Trace::Category::kDiaGraphics);
             const auto& draws = frameData.GetMeshDraws();
@@ -39,11 +74,12 @@ namespace Dia
                 const auto& cmd = draws[i];
                 if (cmd.skinningPaletteIndex != 0)
                     continue; // Skip skinned draws
-                DrawCommand(cmd);
+                DrawCommand(cmd, lighting);
             }
         }
 
-        void MeshRenderer::DrawCommand(const Dia::Graphics3D::Mesh3DDrawCommand& cmd)
+        void MeshRenderer::DrawCommand(const Dia::Graphics3D::Mesh3DDrawCommand& cmd,
+                                       const MeshPassLighting& lighting)
         {
             // Look up the mesh asset
             Dia::Mesh3D::Mesh3DAsset* asset = mMeshHandler->LookupMesh(cmd.meshId);
@@ -55,39 +91,80 @@ namespace Dia
             if (!gpu)
                 return;
 
-            // Resolve material; use default if not found.
-            const MaterialDescriptor* mat = mMaterials->Resolve(cmd.materialId);
-            if (!mat)
-                mat = &mMaterials->GetDefault();
-
-            // Resolve + validate the shader program BEFORE setting any per-draw
-            // state. The invalid sentinel is bgfx::kInvalidHandle (0xffff), NOT 0
-            // — handle 0 is a real, valid handle (the first program created), so
-            // falling back to 0 would submit the draw with the wrong shader.
-            // Bail out here if there is no usable program, leaving no dangling
-            // transform/vertex/index state to bleed into the next draw.
-            if (!mat->program || !mat->program->IsValid())
-                return;
-            bgfx::ProgramHandle prog{ mat->program->GetProgramHandle() };
-
-            // Set transform (row-major → column-major for bgfx)
+            // Model transform — set once; shared by all submesh draws below.
             float mtx[16];
             cmd.transform.GetColumnMajor(mtx);
             bgfx::setTransform(mtx);
 
-            // Bind vertex + index buffers
-            bgfx::VertexBufferHandle vbh{ gpu->vertexBuffer };
-            bgfx::IndexBufferHandle  ibh{ gpu->indexBuffer };
-            bgfx::setVertexBuffer(0, vbh);
-            bgfx::setIndexBuffer(ibh);
+            // --- Uniforms shared across all submeshes ---
+            {
+                bgfx::UniformHandle h;
 
-            // Set render state
+                h.idx = mUDirLightDir;
+                bgfx::setUniform(h, lighting.dirLightDir);
+
+                h.idx = mUDirLightColour;
+                bgfx::setUniform(h, lighting.dirLightColour);
+
+                h.idx = mUAmbient;
+                bgfx::setUniform(h, lighting.ambient);
+
+                h.idx = mULightViewProj;
+                bgfx::setUniform(h, lighting.lightViewProj);
+            }
+
+            // --- Shadow map sampler ---
+            if (lighting.shadowTexture != bgfx::kInvalidHandle)
+            {
+                bgfx::UniformHandle samplerHandle;
+                samplerHandle.idx = mSShadowMap;
+                bgfx::TextureHandle shadowTex;
+                shadowTex.idx = lighting.shadowTexture;
+                bgfx::setTexture(0, samplerHandle, shadowTex);
+            }
+
             const uint64_t state = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A
                                  | BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LESS
                                  | BGFX_STATE_CULL_CW;
-            bgfx::setState(state);
 
-            bgfx::submit(mViewId, prog);
+            bgfx::VertexBufferHandle vbh{ gpu->vertexBuffer };
+            bgfx::IndexBufferHandle  ibh{ gpu->indexBuffer };
+
+            // --- Draw each submesh with its own material ---
+            const auto& submeshes = asset->GetSubmeshes();
+            for (unsigned int si = 0; si < submeshes.Size(); ++si)
+            {
+                const Dia::Mesh3D::Submesh& sub = submeshes[si];
+
+                // Resolve submesh material; fall back to command materialId, then default.
+                const MaterialDescriptor* mat = mMaterials->Resolve(sub.materialId);
+                if (!mat)
+                    mat = mMaterials->Resolve(cmd.materialId);
+                if (!mat)
+                    mat = &mMaterials->GetDefault();
+
+                if (!mat->program || !mat->program->IsValid())
+                {
+                    DIA_LOG_DEBUG("DiaBgfx3D", "MeshRenderer: submesh %u skipped — material has no valid program", si);
+                    continue;
+                }
+                bgfx::ProgramHandle prog{ mat->program->GetProgramHandle() };
+
+                // Unpack baseColourRGBA (0xRRGGBBAA) to float4 [0,1]
+                float baseColour[4];
+                baseColour[0] = static_cast<float>((mat->baseColourRGBA >> 24) & 0xFF) / 255.0f;
+                baseColour[1] = static_cast<float>((mat->baseColourRGBA >> 16) & 0xFF) / 255.0f;
+                baseColour[2] = static_cast<float>((mat->baseColourRGBA >>  8) & 0xFF) / 255.0f;
+                baseColour[3] = static_cast<float>((mat->baseColourRGBA      ) & 0xFF) / 255.0f;
+                bgfx::UniformHandle hBase;
+                hBase.idx = mUBaseColour;
+                bgfx::setUniform(hBase, baseColour);
+
+                bgfx::setVertexBuffer(0, vbh);
+                bgfx::setIndexBuffer(ibh, sub.indexStart, sub.indexCount);
+                bgfx::setState(state);
+                bgfx::submit(mViewId, prog);
+            }
         }
 
     } // namespace Bgfx3D

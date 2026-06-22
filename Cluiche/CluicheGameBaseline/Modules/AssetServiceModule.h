@@ -120,12 +120,12 @@ private:
     unsigned int     mStageStateCount = 0;
 
     Dia::ApplicationFlow::ServiceStreamReader<Dia::AssetRuntime::TextureHandler>  mTextureHandlerService{this, "KernelTextureHandler"};
+    Dia::ApplicationFlow::ServiceStreamReader<Dia::Mesh3D::Mesh3DAssetHandler>    mMeshHandlerService{this, "KernelMeshHandler"};
     Dia::ApplicationFlow::ServiceStreamWriter<AssetLoadStatus>                     mAssetLoadStatusService{this, "AssetLoadStatus"};
     AssetLoadStatus                                                                 mAssetLoadStatus;
     Dia::ApplicationFlow::ModuleRef<UIModule>                                      mUI{this};
     Dia::ApplicationFlow::ModuleRef<JobSystemModule>                               mJobSystemRef{this};
     Dia::AssetRuntime::JsonPassthroughHandler                                      mJsonHandler;
-    Dia::Mesh3D::Mesh3DAssetHandler                                                mMesh3DHandler;
 
     // Metric primitives — owned by MetricRegistry, pointers nulled on DoStop.
     Dia::Observation::Metric::Gauge*     mMetricAssetsLoaded  = nullptr;

@@ -1765,7 +1765,7 @@ class TestDeployPathAndWriteErrors:
 _REAL_MESH_DIR = (
     Path(__file__).resolve().parents[3]
     / "Cluiche" / "Assets" / "CluicheTest" / "Stages"
-    / "Mesh3DTestTestStage" / "World" / "Meshes"
+    / "Mesh3DTestStage" / "World" / "Meshes"
 )
 
 _avocado_present = (_REAL_MESH_DIR / "Avocado.gltf").exists()

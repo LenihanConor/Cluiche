@@ -1,4 +1,4 @@
-#include "Modules/TestStages/Mesh3DTestTestStageModule.h"
+#include "Modules/TestStages/Mesh3DTestStageModule.h"
 
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaApplicationFlow/Application.h>
@@ -10,6 +10,7 @@
 #include <DiaMaths/Vector/Vector3D.h>
 #include <DiaGraphics3D/Camera3D.h>
 #include <DiaGraphics3D/Light.h>
+#include <DiaGraphics/Misc/RGBA.h>
 #include <DiaGraphics3D/Mesh3DDrawCommand.h>
 #include <DiaGraphics3D/Mesh3DFrameData.h>
 #include <DiaMesh3D/Mesh3DAssetHandler.h>
@@ -17,23 +18,23 @@
 
 namespace CluicheTest {
 
-const Dia::Core::StringCRC Mesh3DTestTestStageModule::kTypeId("Mesh3DTestTestStageModule");
+const Dia::Core::StringCRC Mesh3DTestStageModule::kTypeId("Mesh3DTestStageModule");
 
-Mesh3DTestTestStageModule::Mesh3DTestTestStageModule(const Dia::Core::StringCRC& instanceId)
+Mesh3DTestStageModule::Mesh3DTestStageModule(const Dia::Core::StringCRC& instanceId)
     : TestStageModuleBase(instanceId)
 {}
 
-bool Mesh3DTestTestStageModule::AreDependenciesReady()
+bool Mesh3DTestStageModule::AreDependenciesReady()
 {
     return mMeshHandlerService.IsAvailable();
 }
 
-Dia::Core::StringCRC Mesh3DTestTestStageModule::GetStageName() const
+Dia::Core::StringCRC Mesh3DTestStageModule::GetStageName() const
 {
-    return Dia::Core::StringCRC("Mesh3DTestTestStage");
+    return Dia::Core::StringCRC("Mesh3DTestStage");
 }
 
-const Dia::Core::StringCRC* Mesh3DTestTestStageModule::GetCheckpointNames(unsigned int& outCount) const
+const Dia::Core::StringCRC* Mesh3DTestStageModule::GetCheckpointNames(unsigned int& outCount) const
 {
     static const Dia::Core::StringCRC names[] = {
         Dia::Core::StringCRC("test.mesh3dtest.passed")
@@ -42,14 +43,14 @@ const Dia::Core::StringCRC* Mesh3DTestTestStageModule::GetCheckpointNames(unsign
     return names;
 }
 
-void Mesh3DTestTestStageModule::OnStart(Dia::Automation::AutomationService* service)
+void Mesh3DTestStageModule::OnStart(Dia::Automation::AutomationService* service)
 {
     // Create and register the procedural unit cube
     mUnitCubeAsset = Dia::Mesh3D::Primitives::CreateUnitCube(Dia::Core::StringCRC("unit_cube"));
     mMeshHandlerService.Get().RegisterMesh(mUnitCubeAsset);
     mUnitCubeAsset = nullptr; // handler owns it now
 
-    DIA_LOG_INFO("Mesh3DTest", "Mesh3DTestTestStageModule: unit cube registered");
+    DIA_LOG_INFO("Mesh3DTest", "Mesh3DTestStageModule: unit cube registered");
 
     service->RegisterCheckpoint(this, Dia::Core::StringCRC("test.mesh3dtest.passed"),
         [this]() -> Dia::Automation::CheckpointResult {
@@ -58,7 +59,7 @@ void Mesh3DTestTestStageModule::OnStart(Dia::Automation::AutomationService* serv
         });
 }
 
-void Mesh3DTestTestStageModule::OnUpdate(float /*deltaTime*/)
+void Mesh3DTestStageModule::OnUpdate(float /*deltaTime*/)
 {
     mFrame.Clear();
 
@@ -71,6 +72,12 @@ void Mesh3DTestTestStageModule::OnUpdate(float /*deltaTime*/)
     camera.SetPerspective(Dia::Maths::Angle::FromDegrees(60.0f), 1.4f, 0.1f, 1000.0f);
     static_cast<Dia::Graphics3D::Mesh3DFrameData&>(mFrame).SetCamera(camera);
 
+    // Ambient: warm-white at 20%
+    Dia::Graphics3D::AmbientLight ambient;
+    ambient.colour    = Dia::Graphics::RGBA(230, 230, 217, 255);
+    ambient.intensity = 0.2f;
+    mFrame.SetAmbientLight(ambient);
+
     // Directional light: direction (0.5,-1,0.3) normalised, white, intensity 1
     Dia::Graphics3D::DirectionalLight light;
     {
@@ -82,14 +89,25 @@ void Mesh3DTestTestStageModule::OnUpdate(float /*deltaTime*/)
     light.intensity = 1.0f;
     mFrame.AddDirectionalLight(light);
 
-    // Draw the unit cube at identity transform
+    // Unit cube at (-1.5, 0, 0)
     Dia::Graphics3D::Mesh3DDrawCommand cmd;
     cmd.meshId               = Dia::Core::StringCRC("unit_cube");
     cmd.materialId           = Dia::Core::StringCRC("default_3d");
-    cmd.transform            = Dia::Maths::Matrix44::Identity();
+    cmd.transform            = Dia::Maths::Matrix44::FromTranslation(Dia::Maths::Vector3D(-1.5f, 0.0f, 0.0f));
     cmd.skinningPaletteIndex = 0;
     cmd.layer                = 0;
     mFrame.RequestDrawMesh(cmd);
+
+    // Avocado at (1.5, 0, 0), scaled up — glTF source is ~0.08m, 15x makes it comparable to the cube.
+    // DrawCommand is safe to submit every frame; MeshRenderer skips it until the asset is Ready.
+    Dia::Graphics3D::Mesh3DDrawCommand avocadoCmd;
+    avocadoCmd.meshId               = Dia::Core::StringCRC("mesh3d.avocado");
+    avocadoCmd.materialId           = Dia::Core::StringCRC("default_3d");
+    avocadoCmd.transform            = Dia::Maths::Matrix44::FromTranslation(Dia::Maths::Vector3D(1.5f, 0.0f, 0.0f))
+                                    * Dia::Maths::Matrix44::FromScale(15.0f);
+    avocadoCmd.skinningPaletteIndex = 0;
+    avocadoCmd.layer                = 0;
+    mFrame.RequestDrawMesh(avocadoCmd);
 
     mRenderOutput.Write(mFrame, Dia::Core::TimeAbsolute::Zero());
 
@@ -100,7 +118,7 @@ void Mesh3DTestTestStageModule::OnUpdate(float /*deltaTime*/)
     }
 }
 
-void Mesh3DTestTestStageModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
+void Mesh3DTestStageModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 {
     TestStageModuleBase::OnConnectStreams(app);
     mRenderOutput.Connect(app);
@@ -109,5 +127,5 @@ void Mesh3DTestTestStageModule::OnConnectStreams(Dia::ApplicationFlow::Applicati
 
 } // namespace CluicheTest
 
-namespace { using Mesh3DTestTestStageModule_ = CluicheTest::Mesh3DTestTestStageModule; }
-DIA_MODULE(Mesh3DTestTestStageModule_);
+namespace { using Mesh3DTestStageModule_ = CluicheTest::Mesh3DTestStageModule; }
+DIA_MODULE(Mesh3DTestStageModule_);

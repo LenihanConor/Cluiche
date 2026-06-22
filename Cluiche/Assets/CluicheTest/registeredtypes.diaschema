@@ -120,7 +120,7 @@
     {
       "allowed_pus": "sim",
       "description": "Renders a procedural unit cube with a directional light via Canvas3D",
-      "type_id": "Mesh3DTestTestStageModule"
+      "type_id": "Mesh3DTestStageModule"
     },
     {
       "allowed_pus": "sim",

@@ -4,6 +4,14 @@
 
 namespace Dia { namespace Graphics3D {
 
+struct AmbientLight
+{
+    Dia::Graphics::RGBA colour;
+    float               intensity;  // HDR-range multiplier
+
+    AmbientLight() : colour(230, 230, 217, 255), intensity(0.2f) {}
+};
+
 struct DirectionalLight
 {
     Dia::Maths::Vector3D direction;  // unit vector, points away from surface

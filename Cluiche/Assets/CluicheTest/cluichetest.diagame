@@ -63,7 +63,11 @@
             "type": "stage"
         },
         {
-            "path": "Stages/Mesh3DTestTestStage/mesh3dtest_test_stage.diastage",
+            "path": "Stages/Mesh3DTestStage/mesh3d_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/Mesh3DRenderSystemTestStage/mesh3drendersystem_test_stage.diastage",
             "type": "stage"
         }
     ],

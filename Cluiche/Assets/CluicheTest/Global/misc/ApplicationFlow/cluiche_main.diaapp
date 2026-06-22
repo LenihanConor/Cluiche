@@ -14,7 +14,8 @@
                 "Animation2DTestStage",
                 "Scene2DTestStage",
                 "IK2DTestStage",
-                "Mesh3DTestTestStage"
+                "Mesh3DTestStage",
+                "Mesh3DRenderSystemTestStage"
             ],
             "auto_advance": false
         },
@@ -83,7 +84,14 @@
             "auto_advance": false
         },
         {
-            "name": "Mesh3DTestTestStage",
+            "name": "Mesh3DTestStage",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "Mesh3DRenderSystemTestStage",
             "transitions": [
                 "Boot"
             ],
@@ -480,7 +488,8 @@
                         "Animation2DTestStage",
                         "Scene2DTestStage",
                         "IK2DTestStage",
-                        "Mesh3DTestTestStage"
+                        "Mesh3DTestStage",
+                        "Mesh3DRenderSystemTestStage"
                     ],
                     "dependencies": [
                         "Camera2DModule"
@@ -549,7 +558,8 @@
                         "Animation2DTestStage",
                         "Scene2DTestStage",
                         "IK2DTestStage",
-                        "Mesh3DTestTestStage"
+                        "Mesh3DTestStage",
+                        "Mesh3DRenderSystemTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"
@@ -573,7 +583,8 @@
                         "Animation2DTestStage",
                         "Scene2DTestStage",
                         "IK2DTestStage",
-                        "Mesh3DTestTestStage"
+                        "Mesh3DTestStage",
+                        "Mesh3DRenderSystemTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"

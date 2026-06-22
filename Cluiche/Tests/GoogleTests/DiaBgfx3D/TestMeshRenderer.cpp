@@ -24,6 +24,7 @@
 using Dia::Bgfx3D::MeshRenderer;
 using Dia::Bgfx3D::MeshGpuCache;
 using Dia::Bgfx3D::MaterialRegistry;
+using Dia::Bgfx3D::MeshPassLighting;
 using Dia::Mesh3D::Mesh3DAssetHandler;
 using Dia::Mesh3D::Mesh3DAsset;
 using Dia::Graphics3D::Mesh3DFrameData;
@@ -38,7 +39,17 @@ namespace
         MaterialRegistry   materials;
         Mesh3DAssetHandler handler;
         MeshRenderer       renderer{ 0, &cache, &materials, &handler };
+        // NOTE: InitUniforms() is NOT called — these tests never reach bgfx submit,
+        // so uniform handles are kInvalidHandle throughout. That matches the guard
+        // paths being tested (null asset, not-ready, skinned, empty frame).
     };
+
+    MeshPassLighting NoOpLighting()
+    {
+        MeshPassLighting l{};
+        l.shadowTexture = 0xFFFF;  // bgfx::kInvalidHandle
+        return l;
+    }
 }
 
 TEST(DiaBgfx3D_MeshRendererTest, ConstructsWithoutBgfxContext)
@@ -53,7 +64,7 @@ TEST(DiaBgfx3D_MeshRendererTest, DrawEmptyFrameDoesNotCrash)
     MeshRendererFixture fx;
     Mesh3DFrameData frame;  // no draws queued
 
-    fx.renderer.Draw(frame);  // must be a no-op, no bgfx calls
+    fx.renderer.Draw(frame, NoOpLighting());  // must be a no-op, no bgfx calls
     SUCCEED();
 }
 
@@ -70,7 +81,7 @@ TEST(DiaBgfx3D_MeshRendererTest, DrawSkippedForUnresolvableMeshId)
     frame.RequestDrawMesh(cmd);
 
     // DrawCommand returns at the null LookupMesh guard, before any bgfx submit.
-    fx.renderer.Draw(frame);
+    fx.renderer.Draw(frame, NoOpLighting());
     SUCCEED();
 }
 
@@ -91,7 +102,7 @@ TEST(DiaBgfx3D_MeshRendererTest, DrawSkipsSkinnedCommands)
     frame.RequestDrawMesh(cmd);
 
     // Draw() filters skinned commands before DrawCommand; asset is never uploaded.
-    fx.renderer.Draw(frame);
+    fx.renderer.Draw(frame, NoOpLighting());
     SUCCEED();
 }
 
@@ -113,6 +124,6 @@ TEST(DiaBgfx3D_MeshRendererTest, DrawSkippedForNotReadyAsset)
     Mesh3DFrameData frame;
     frame.RequestDrawMesh(cmd);
 
-    fx.renderer.Draw(frame);
+    fx.renderer.Draw(frame, NoOpLighting());
     SUCCEED();
 }

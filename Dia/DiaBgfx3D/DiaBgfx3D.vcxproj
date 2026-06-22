@@ -25,6 +25,7 @@
     <ClInclude Include="Resources\MeshGpuCache.h" />
     <ClInclude Include="Renderers\MeshRenderer.h" />
     <ClInclude Include="Renderers\ShadowRenderer.h" />
+    <ClInclude Include="MeshPassLighting.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Canvas3D.cpp" />

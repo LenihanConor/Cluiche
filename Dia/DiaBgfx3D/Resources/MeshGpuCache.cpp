@@ -84,18 +84,16 @@ namespace Dia
 
             // -----------------------------------------------------------------------
             // Upload vertex buffer.
-            // SAFETY: bgfx::makeRef does NOT copy the data — it holds a pointer to
-            // the asset's internal DynamicArrayC storage. The Mesh3DAsset is owner-
-            // thread-resident and long-lived (kept alive by DiaAssetRuntime for the
-            // duration of the scene), so the pointer is valid for all bgfx frames
-            // that reference this mesh.
+            // bgfx::copy is used (not makeRef) so bgfx owns the memory immediately.
+            // This avoids a UAF if AssetRuntime evicts the asset before the bgfx
+            // frame boundary at which makeRef data would have been consumed.
             // -----------------------------------------------------------------------
             const auto& vertices  = asset.GetVertices();
             const uint32_t vCount = vertices.Size();
             const uint32_t vBytes = vCount * static_cast<uint32_t>(sizeof(Dia::Mesh3D::Vertex3D));
 
             bgfx::VertexBufferHandle vbh = bgfx::createVertexBuffer(
-                bgfx::makeRef(&vertices[0], vBytes),
+                bgfx::copy(&vertices[0], vBytes),
                 layout
             );
 
@@ -110,7 +108,7 @@ namespace Dia
             const uint32_t iBytes = iCount * static_cast<uint32_t>(sizeof(uint16_t));
 
             bgfx::IndexBufferHandle ibh = bgfx::createIndexBuffer(
-                bgfx::makeRef(&indices[0], iBytes)
+                bgfx::copy(&indices[0], iBytes)
             );
 
             if (!bgfx::isValid(ibh))
@@ -123,6 +121,14 @@ namespace Dia
             GpuMesh entry{ vbh.idx, ibh.idx, iCount };
             auto result = mImpl->cache.emplace(key, entry);
             return &result.first->second;
+        }
+
+        // -----------------------------------------------------------------------
+        // GetResidentCount
+        // -----------------------------------------------------------------------
+        unsigned int MeshGpuCache::GetResidentCount() const
+        {
+            return static_cast<unsigned int>(mImpl->cache.size());
         }
 
         // -----------------------------------------------------------------------

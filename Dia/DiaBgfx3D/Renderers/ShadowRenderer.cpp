@@ -5,6 +5,7 @@
 #include "DiaBgfx3D/Resources/MeshGpuCache.h"
 #include <DiaBgfx/Resources/ShaderProgram.h>
 #include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Profile/DiaProfile.h>
 
 #include <DiaGraphics3D/Mesh3DFrameData.h>
 #include <DiaGraphics3D/Mesh3DDrawCommand.h>
@@ -27,7 +28,11 @@ ShadowRenderer::ShadowRenderer(unsigned short shadowViewId, MeshGpuCache* cache)
     , mShadowTexture(bgfx::kInvalidHandle)
     , mCache(cache)
     , mShadowProgram(nullptr)
+    , mLightViewProj{}
 {
+    // Identity matrix as safe default (column-major)
+    mLightViewProj[0]  = 1.0f; mLightViewProj[5]  = 1.0f;
+    mLightViewProj[10] = 1.0f; mLightViewProj[15] = 1.0f;
     // Create 2048x2048 depth texture
     bgfx::TextureHandle depthTex = bgfx::createTexture2D(
         kShadowMapSize,
@@ -72,6 +77,7 @@ void ShadowRenderer::RenderShadowMap(const Dia::Graphics3D::Mesh3DFrameData& fra
                                       Dia::Mesh3D::Mesh3DAssetHandler* meshHandler)
 {
     DIA_TRACE_ZONE("shadow_renderer.render_shadow_map", ::Dia::Observation::Trace::Category::kDiaGraphics);
+    DIA_PROFILE_SCOPE("shadow_renderer.render_shadow_map", ::Dia::Observation::Profile::Category::kDiaGraphics);
     const auto& dirLights = frameData.GetDirectionalLights();
     if (dirLights.Size() == 0)
     {
@@ -102,6 +108,11 @@ void ShadowRenderer::RenderShadowMap(const Dia::Graphics3D::Mesh3DFrameData& fra
     lightCam.view.GetColumnMajor(viewMtx);
     lightCam.projection.GetColumnMajor(projMtx);
     bgfx::setViewTransform(mViewId, viewMtx, projMtx);
+
+    // Cache view*proj for the mesh pass to compute shadow coords in the vertex shader uniform.
+    // bgfx requires column-major; store combined as proj * view (applied right-to-left).
+    Dia::Maths::Matrix44 lightVP = lightCam.projection * lightCam.view;
+    lightVP.GetColumnMajor(mLightViewProj);
 
     // Render all visible meshes from light POV
     const auto& meshDraws = frameData.GetMeshDraws();
@@ -154,9 +165,20 @@ unsigned short ShadowRenderer::GetShadowFramebuffer() const
     return mShadowFramebuffer;
 }
 
+unsigned short ShadowRenderer::GetShadowTexture() const
+{
+    return mShadowTexture;
+}
+
 unsigned short ShadowRenderer::GetShadowViewId() const
 {
     return mViewId;
+}
+
+void ShadowRenderer::GetLightViewProj(float outMtx16[16]) const
+{
+    for (int i = 0; i < 16; ++i)
+        outMtx16[i] = mLightViewProj[i];
 }
 
 } } // namespace Dia::Bgfx3D

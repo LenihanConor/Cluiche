@@ -30,7 +30,8 @@
     <ClCompile Include="Modules\TestStages\AssetRuntimeRendererModule.cpp" />
     <ClCompile Include="Modules\TestStages\AssetRuntimeHUDModule.cpp" />
     <ClCompile Include="Modules\TestStages\TestStageHUDModule.cpp" />
-    <ClCompile Include="Modules\TestStages\Mesh3DTestTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\Mesh3DRenderSystemTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\Mesh3DTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\Animation2DTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\SoftBody2DTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\EntityTestStageModule.cpp" />
@@ -64,7 +65,8 @@
     <ClInclude Include="Modules\TestStages\AssetRuntimeRendererModule.h" />
     <ClInclude Include="Modules\TestStages\AssetRuntimeHUDModule.h" />
     <ClInclude Include="Modules\TestStages\TestStageHUDModule.h" />
-    <ClInclude Include="Modules\TestStages\Mesh3DTestTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\Mesh3DRenderSystemTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\Mesh3DTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\Animation2DTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\SoftBody2DTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\EntityTestStageModule.h" />

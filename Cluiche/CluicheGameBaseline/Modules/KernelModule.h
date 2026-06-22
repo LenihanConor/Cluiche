@@ -96,6 +96,8 @@ private:
     Dia::Observation::Metric::Gauge*     mMetricInputSources    = nullptr;
     Dia::Observation::Metric::Histogram* mMetricEventsPerFrame  = nullptr;
     Dia::Observation::Metric::Gauge*     mMetricActiveGamepads  = nullptr;
+    Dia::Observation::Metric::Gauge*     mMetricMeshDrawCalls   = nullptr;
+    Dia::Observation::Metric::Gauge*     mMetricGpuMeshCount    = nullptr;
 };
 
 } } // namespace Cluiche::AppFlow

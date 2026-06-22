@@ -39,6 +39,9 @@ namespace Dia
             // Safe to call on an empty cache. Must be called before bgfx::shutdown().
             void DestroyAll();
 
+            // Number of meshes currently resident on GPU.
+            unsigned int GetResidentCount() const;
+
         private:
             // Pimpl avoids pulling std::unordered_map into the public header (PD-004).
             struct Impl;

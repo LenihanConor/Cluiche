@@ -68,8 +68,9 @@ namespace Dia
             bool IsInitialised() const { return mInitialised; }
 
         protected:
-            const char*  GetShaderRoot()   const { return mShaderRoot; }
-            RendererType GetRendererType() const { return mRendererType; }
+            const char*                  GetShaderRoot()   const { return mShaderRoot; }
+            RendererType                 GetRendererType() const { return mRendererType; }
+            const Dia::Maths::Vector2D&  GetCanvasSize()   const { return mSize; }
 
         private:
             void DeferredInit();

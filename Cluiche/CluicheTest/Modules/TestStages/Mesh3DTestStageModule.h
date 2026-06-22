@@ -11,13 +11,13 @@ namespace Dia { namespace Mesh3D { class Mesh3DAsset; } }
 
 namespace CluicheTest {
 
-class Mesh3DTestTestStageModule : public TestStageModuleBase
+class Mesh3DTestStageModule : public TestStageModuleBase
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kSim;
     static constexpr const char* kDescription = "Renders a procedural unit cube with a directional light via Canvas3D";
-    explicit Mesh3DTestTestStageModule(const Dia::Core::StringCRC& instanceId);
+    explicit Mesh3DTestStageModule(const Dia::Core::StringCRC& instanceId);
 
 protected:
     bool AreDependenciesReady() override;
