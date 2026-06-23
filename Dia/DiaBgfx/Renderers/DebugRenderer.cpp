@@ -348,6 +348,11 @@ namespace Dia
                     case Dia::Graphics::DebugPrimitiveType::Arc2D:      EmitArc(batch, p);      break;
                     case Dia::Graphics::DebugPrimitiveType::Ray2D:      EmitRay(batch, p);      break;
                     case Dia::Graphics::DebugPrimitiveType::Triangle2D: EmitTriangle(batch, p); break;
+                    case Dia::Graphics::DebugPrimitiveType::Line3D:   break;
+                    case Dia::Graphics::DebugPrimitiveType::Ray3D:    break;
+                    case Dia::Graphics::DebugPrimitiveType::Box3D:    break;
+                    case Dia::Graphics::DebugPrimitiveType::Sphere3D: break;
+                    case Dia::Graphics::DebugPrimitiveType::Arrow3D:  break;
                 }
             }
 

@@ -19,8 +19,8 @@
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | Add 5 enum values + 5 POD structs to `DebugPrimitive.h`; add `kDebug3DCapacity`, second `DynamicArrayC`, 5 `RequestDraw*3D`, accessors to `DebugFrameData.h/.cpp` | Build passes; slot counting correct | Pending | sonnet | |
-| 2 | Add silent no-op fallthrough for Line3D/Ray3D/Box3D/Sphere3D/Arrow3D to `DiaBgfx::DebugRenderer::Draw()` | Build passes; existing tests unaffected | Pending | haiku | |
+| 1 | Add 5 enum values + 5 POD structs to `DebugPrimitive.h`; add `kDebug3DCapacity`, second `DynamicArrayC`, 5 `RequestDraw*3D`, accessors to `DebugFrameData.h/.cpp` | Build passes; slot counting correct | Done | sonnet | Build clean |
+| 2 | Add silent no-op fallthrough for Line3D/Ray3D/Box3D/Sphere3D/Arrow3D to `DiaBgfx::DebugRenderer::Draw()` | Build passes; existing tests unaffected | Done | haiku | Build clean |
 | 3 | Write `vs_debug3d.sc` / `fs_debug3d.sc`; compile to `.bin` for dx11/dx12/vulkan | Shader files exist; Canvas3D loads them | Pending | sonnet | |
 | 4 | Implement `DebugGeometry3DRenderer.h/.cpp`; add to `DiaBgfx3D.vcxproj` | Build passes | Pending | sonnet | |
 | 5 | Wire into `Canvas3D`: add member, init, call in `ProcessFrame()` | Build passes; debug geo visible in app | Pending | sonnet | |
