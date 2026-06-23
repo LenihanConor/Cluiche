@@ -52,6 +52,7 @@ private:
 
     unsigned int mFrameCount = 0;
     unsigned int mEntryCount = 0;
+    unsigned int mStartWaitFrames = 0;
     bool mResolved = false;
 
     // Deferred capture: set by ReportPassed/Failed, fired once render confirms the frame.

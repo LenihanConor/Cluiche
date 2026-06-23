@@ -25,10 +25,26 @@ TestStageModuleBase::~TestStageModuleBase()
 Dia::ApplicationFlow::StartResult TestStageModuleBase::DoStart()
 {
     if (!mAutomationServiceStream->IsAvailable())
+    {
+        if (mStartWaitFrames == 0)
+            DIA_LOG_INFO("TestStage", "%s: waiting for AutomationService", GetStageName().AsChar());
+        ++mStartWaitFrames;
         return Dia::ApplicationFlow::StartResult::kLoading;
+    }
 
     if (!AreDependenciesReady())
+    {
+        if (mStartWaitFrames == 0)
+            DIA_LOG_INFO("TestStage", "%s: waiting for dependencies (AreDependenciesReady=false)", GetStageName().AsChar());
+        else if (mStartWaitFrames % 30 == 0)
+            DIA_LOG_WARNING("TestStage", "%s: still waiting for dependencies after %u frames", GetStageName().AsChar(), mStartWaitFrames);
+        ++mStartWaitFrames;
         return Dia::ApplicationFlow::StartResult::kLoading;
+    }
+
+    if (mStartWaitFrames > 0)
+        DIA_LOG_INFO("TestStage", "%s: dependencies ready after %u frames, starting", GetStageName().AsChar(), mStartWaitFrames);
+    mStartWaitFrames = 0;
 
     ++mEntryCount;
     mFrameCount = 0;

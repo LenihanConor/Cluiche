@@ -44,8 +44,7 @@ Mesh3DTestStageModule::Mesh3DTestStageModule(const Dia::Core::StringCRC& instanc
 bool Mesh3DTestStageModule::AreDependenciesReady()
 {
     return mMeshHandlerService.IsAvailable()
-        && mTextureHandlerService.IsAvailable()
-        && mCanvasService.IsAvailable();
+        && mTextureHandlerService.IsAvailable();
 }
 
 Dia::Core::StringCRC Mesh3DTestStageModule::GetStageName() const
