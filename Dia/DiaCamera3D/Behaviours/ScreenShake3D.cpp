@@ -2,7 +2,6 @@
 // Filename: ScreenShake3D.cpp
 ////////////////////////////////////////////////////////////////////////////////
 #include "DiaCamera3D/Behaviours/ScreenShake3D.h"
-#include "DiaCamera3D/Registry/CameraBehaviourRegistry3D.h"
 #include "DiaCamera3D/Camera3D.h"
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaMaths/Quaternion/Quaternion.h>
@@ -15,13 +14,6 @@ namespace Dia
 {
 	namespace Camera3D
 	{
-		static bool sRegistered = [] {
-			CameraBehaviourRegistry3D::Get().Register(
-				Dia::Core::StringCRC(ScreenShake3D::kTypeIdStr),
-				[](const void*) -> ICameraBehaviour3D* { return new ScreenShake3D(); });
-			return true;
-		}();
-
 		////////////////////////////////////////////////////////////
 		ScreenShake3D::ScreenShake3D(float maxPositionOffset, float maxAngleOffset, float traumaDecay)
 			: mMaxPositionOffset(maxPositionOffset)

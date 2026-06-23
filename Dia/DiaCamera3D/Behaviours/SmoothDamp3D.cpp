@@ -2,7 +2,6 @@
 // Filename: SmoothDamp3D.cpp
 ////////////////////////////////////////////////////////////////////////////////
 #include "DiaCamera3D/Behaviours/SmoothDamp3D.h"
-#include "DiaCamera3D/Registry/CameraBehaviourRegistry3D.h"
 #include "DiaCamera3D/Camera3D.h"
 #include <DiaCore/CRC/StringCRC.h>
 #include <cmath>
@@ -11,13 +10,6 @@ namespace Dia
 {
 	namespace Camera3D
 	{
-		static bool sRegistered = [] {
-			CameraBehaviourRegistry3D::Get().Register(
-				Dia::Core::StringCRC(SmoothDamp3D::kTypeIdStr),
-				[](const void*) -> ICameraBehaviour3D* { return new SmoothDamp3D(); });
-			return true;
-		}();
-
 		////////////////////////////////////////////////////////////
 		SmoothDamp3D::SmoothDamp3D(float smoothTime)
 			: mSmoothTime(smoothTime)

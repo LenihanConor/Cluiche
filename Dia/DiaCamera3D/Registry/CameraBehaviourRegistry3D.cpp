@@ -3,6 +3,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "DiaCamera3D/Registry/CameraBehaviourRegistry3D.h"
 
+#include "DiaCamera3D/Behaviours/Follow3D.h"
+#include "DiaCamera3D/Behaviours/SmoothDamp3D.h"
+#include "DiaCamera3D/Behaviours/BoundsClamp3D.h"
+#include "DiaCamera3D/Behaviours/ScreenShake3D.h"
+#include "DiaCamera3D/Behaviours/Orbit.h"
+#include "DiaCamera3D/Behaviours/Flythrough.h"
 #include <DiaCore/Core/Assert.h>
 
 namespace Dia
@@ -13,6 +19,23 @@ namespace Dia
 		CameraBehaviourRegistry3D& CameraBehaviourRegistry3D::Get()
 		{
 			static CameraBehaviourRegistry3D sInstance;
+			static bool sBuiltInsRegistered = false;
+			if (!sBuiltInsRegistered)
+			{
+				sBuiltInsRegistered = true;
+				sInstance.Register(Dia::Core::StringCRC(Follow3D::kTypeIdStr),
+					[](const void*) -> ICameraBehaviour3D* { return new Follow3D(); });
+				sInstance.Register(Dia::Core::StringCRC(SmoothDamp3D::kTypeIdStr),
+					[](const void*) -> ICameraBehaviour3D* { return new SmoothDamp3D(); });
+				sInstance.Register(Dia::Core::StringCRC(BoundsClamp3D::kTypeIdStr),
+					[](const void*) -> ICameraBehaviour3D* { return new BoundsClamp3D(); });
+				sInstance.Register(Dia::Core::StringCRC(ScreenShake3D::kTypeIdStr),
+					[](const void*) -> ICameraBehaviour3D* { return new ScreenShake3D(); });
+				sInstance.Register(Dia::Core::StringCRC(Orbit::kTypeIdStr),
+					[](const void*) -> ICameraBehaviour3D* { return new Orbit(); });
+				sInstance.Register(Dia::Core::StringCRC(Flythrough::kTypeIdStr),
+					[](const void*) -> ICameraBehaviour3D* { return new Flythrough(); });
+			}
 			return sInstance;
 		}
 

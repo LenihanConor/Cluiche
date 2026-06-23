@@ -2,7 +2,6 @@
 // Filename: BoundsClamp3D.cpp
 ////////////////////////////////////////////////////////////////////////////////
 #include "DiaCamera3D/Behaviours/BoundsClamp3D.h"
-#include "DiaCamera3D/Registry/CameraBehaviourRegistry3D.h"
 #include "DiaCamera3D/Camera3D.h"
 #include <DiaCore/CRC/StringCRC.h>
 
@@ -10,13 +9,6 @@ namespace Dia
 {
 	namespace Camera3D
 	{
-		static bool sRegistered = [] {
-			CameraBehaviourRegistry3D::Get().Register(
-				Dia::Core::StringCRC(BoundsClamp3D::kTypeIdStr),
-				[](const void*) -> ICameraBehaviour3D* { return new BoundsClamp3D(); });
-			return true;
-		}();
-
 		////////////////////////////////////////////////////////////
 		BoundsClamp3D::BoundsClamp3D(const Dia::Geometry3D::AABB& bounds)
 			: mBounds(bounds)

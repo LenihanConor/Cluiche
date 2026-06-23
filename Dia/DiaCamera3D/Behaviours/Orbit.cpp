@@ -2,7 +2,6 @@
 // Filename: Orbit.cpp
 ////////////////////////////////////////////////////////////////////////////////
 #include "DiaCamera3D/Behaviours/Orbit.h"
-#include "DiaCamera3D/Registry/CameraBehaviourRegistry3D.h"
 #include "DiaCamera3D/Camera3D.h"
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaMaths/Quaternion/Quaternion.h>
@@ -12,13 +11,6 @@ namespace Dia
 {
     namespace Camera3D
     {
-        static bool sRegistered = [] {
-            CameraBehaviourRegistry3D::Get().Register(
-                Dia::Core::StringCRC(Orbit::kTypeIdStr),
-                [](const void*) -> ICameraBehaviour3D* { return new Orbit(); });
-            return true;
-        }();
-
         ////////////////////////////////////////////////////////////
         Orbit::Orbit(float initialRadius, float initialYaw, float initialPitch)
             : mRadius(initialRadius)
