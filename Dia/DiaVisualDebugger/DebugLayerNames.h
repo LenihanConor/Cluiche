@@ -128,6 +128,12 @@ namespace Dia
             inline const Dia::Core::StringCRC kMesh3DOrigins { "mesh3d.origins" };
             inline const Dia::Core::StringCRC kMesh3DStats   { "mesh3d.stats"   };
 
+            // ----------------------------------------------------------------
+            // Lighting 3D (priority tier 10–19)
+            // ----------------------------------------------------------------
+            inline const Dia::Core::StringCRC kLightWidgets { "light3d.widgets"  };
+            inline const Dia::Core::StringCRC kLightPathArc { "light3d.path_arc" };
+
         } // namespace LayerNames
     } // namespace Debug
 } // namespace Dia

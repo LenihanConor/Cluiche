@@ -1343,6 +1343,9 @@
     <ClCompile Include="DiaLighting3D\TestLightPathBehaviour3D.cpp">
       <Filter>DiaLighting3D</Filter>
     </ClCompile>
+    <ClCompile Include="DiaLighting3D\TestLightWidgetsDrawer.cpp">
+      <Filter>DiaLighting3D</Filter>
+    </ClCompile>
       <Filter>DiaBgfx3D</Filter>
     </ClCompile>
       <Filter>DiaBgfx3D</Filter>
