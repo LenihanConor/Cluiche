@@ -1331,6 +1331,9 @@
     <ClCompile Include="DiaBgfx\TestShaderProgram.cpp">
     <ClCompile Include="DiaBgfx3D\TestMeshRenderer.cpp">
     <ClCompile Include="DiaBgfx3D\TestMeshPassLighting.cpp">
+    <ClCompile Include="DiaLighting3D\TestLightPathBehaviour3D.cpp">
+      <Filter>DiaLighting3D</Filter>
+    </ClCompile>
       <Filter>DiaBgfx3D</Filter>
     </ClCompile>
       <Filter>DiaBgfx3D</Filter>
