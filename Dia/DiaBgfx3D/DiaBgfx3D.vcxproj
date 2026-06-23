@@ -23,6 +23,7 @@
     <ClInclude Include="Canvas3D.h" />
     <ClInclude Include="Resources\MaterialRegistry.h" />
     <ClInclude Include="Resources\MeshGpuCache.h" />
+    <ClInclude Include="Renderers\DebugGeometry3DRenderer.h" />
     <ClInclude Include="Renderers\MeshRenderer.h" />
     <ClInclude Include="Renderers\ShadowRenderer.h" />
     <ClInclude Include="MeshPassLighting.h" />
@@ -31,6 +32,7 @@
     <ClCompile Include="Canvas3D.cpp" />
     <ClCompile Include="Resources\MaterialRegistry.cpp" />
     <ClCompile Include="Resources\MeshGpuCache.cpp" />
+    <ClCompile Include="Renderers\DebugGeometry3DRenderer.cpp" />
     <ClCompile Include="Renderers\MeshRenderer.cpp" />
     <ClCompile Include="Renderers\ShadowRenderer.cpp" />
   </ItemGroup>
