@@ -414,6 +414,7 @@
     <ClCompile Include="DiaLighting3D\TestLightRegistry3D.cpp" />
     <ClCompile Include="DiaLighting3D\TestBehaviours3D.cpp" />
     <ClCompile Include="DiaLighting3D\TestLightWidgetsDrawer.cpp" />
+    <ClCompile Include="DiaLighting3D\TestLightPathArcDrawer.cpp" />
     <!-- DiaCamera3D -->
     <ClCompile Include="DiaCamera3D\TestCamera3D.cpp" />
     <ClCompile Include="DiaCamera3D\TestCameraRegistry3D.cpp" />

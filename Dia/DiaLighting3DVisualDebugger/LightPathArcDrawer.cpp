@@ -30,8 +30,68 @@ Dia::Core::StringCRC LightPathArcDrawer::GetLayerName() const
 
 void LightPathArcDrawer::Draw(Dia::Graphics::FrameData& frameData)
 {
-    (void)frameData;
-    // Implemented in path-arc-preview feature
+    Dia::Graphics::DebugFrameData& dbg = static_cast<Dia::Graphics::DebugFrameData&>(frameData);
+
+    // Sample buffer — max 64 samples + 1 endpoint = 65 points, safe on the stack
+    Dia::Maths::Vector3D points[65];
+    const float invSamples = 1.0f / static_cast<float>(mArcSamples);
+
+    // Point lights (colour: kHealthy / green)
+    {
+        const unsigned int count = mRegistry.GetPointCount();
+        for (unsigned int i = 0; i < count; ++i)
+        {
+            const Dia::Core::StringCRC id = mRegistry.GetPointIdByIndex(i);
+            LightPathBehaviour3D* behaviour = mRegistry.GetPathBehaviour(id);
+            if (behaviour == nullptr)
+                continue;
+
+            const Dia::Geometry3D::Spline3D& spline = behaviour->GetSpline();
+            for (int k = 0; k <= mArcSamples; ++k)
+                points[k] = spline.Evaluate(k * invSamples);
+
+            for (int k = 0; k < mArcSamples; ++k)
+                dbg.RequestDrawLine3D(points[k], points[k + 1], Dia::Debug::DebugColourPalette::kHealthy);
+        }
+    }
+
+    // Spot lights (colour: kHealthy / green)
+    {
+        const unsigned int count = mRegistry.GetSpotCount();
+        for (unsigned int i = 0; i < count; ++i)
+        {
+            const Dia::Core::StringCRC id = mRegistry.GetSpotIdByIndex(i);
+            LightPathBehaviour3D* behaviour = mRegistry.GetPathBehaviour(id);
+            if (behaviour == nullptr)
+                continue;
+
+            const Dia::Geometry3D::Spline3D& spline = behaviour->GetSpline();
+            for (int k = 0; k <= mArcSamples; ++k)
+                points[k] = spline.Evaluate(k * invSamples);
+
+            for (int k = 0; k < mArcSamples; ++k)
+                dbg.RequestDrawLine3D(points[k], points[k + 1], Dia::Debug::DebugColourPalette::kHealthy);
+        }
+    }
+
+    // Directional lights (colour: kGoal / cyan)
+    {
+        const unsigned int count = mRegistry.GetDirectionalCount();
+        for (unsigned int i = 0; i < count; ++i)
+        {
+            const Dia::Core::StringCRC id = mRegistry.GetDirectionalIdByIndex(i);
+            LightPathBehaviour3D* behaviour = mRegistry.GetPathBehaviour(id);
+            if (behaviour == nullptr)
+                continue;
+
+            const Dia::Geometry3D::Spline3D& spline = behaviour->GetSpline();
+            for (int k = 0; k <= mArcSamples; ++k)
+                points[k] = spline.Evaluate(k * invSamples);
+
+            for (int k = 0; k < mArcSamples; ++k)
+                dbg.RequestDrawLine3D(points[k], points[k + 1], Dia::Debug::DebugColourPalette::kGoal);
+        }
+    }
 }
 
 void LightPathArcDrawer::DrawImGui()

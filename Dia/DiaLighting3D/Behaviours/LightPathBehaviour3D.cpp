@@ -117,4 +117,9 @@ LightPathBehaviour3D::LoopMode LightPathBehaviour3D::GetLoopMode() const
     return mLoopMode;
 }
 
+const Dia::Geometry3D::Spline3D& LightPathBehaviour3D::GetSpline() const
+{
+    return mSpline;
+}
+
 } }

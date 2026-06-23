@@ -23,6 +23,8 @@ public:
     void Draw    (Dia::Graphics::FrameData& frameData) override;
     void DrawImGui() override;
 
+    void SetArcSamples(int samples) { mArcSamples = samples; }
+
 private:
     const LightRegistry3D&               mRegistry;
     const Dia::Debug::DebugLayerManager& mManager;

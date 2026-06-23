@@ -35,15 +35,18 @@ public:
 
     unsigned int              GetPointCount()                        const;
     const PointLight3D&       GetPointByIndex(unsigned int i)       const;
+    Dia::Core::StringCRC      GetPointIdByIndex(unsigned int i)     const;
     unsigned int              GetDirectionalCount()                  const;
     const DirectionalLight3D& GetDirectionalByIndex(unsigned int i) const;
+    Dia::Core::StringCRC      GetDirectionalIdByIndex(unsigned int i) const;
     unsigned int              GetSpotCount()                        const;
     const SpotLight3D&        GetSpotByIndex(unsigned int i)        const;
+    Dia::Core::StringCRC      GetSpotIdByIndex(unsigned int i)      const;
 
     bool AttachBehaviour(Dia::Core::StringCRC lightId, ILightBehaviour3D* behaviour);
     void DetachBehaviour(Dia::Core::StringCRC lightId, Dia::Core::StringCRC behaviourTypeId);
 
-    LightPathBehaviour3D* GetPathBehaviour(Dia::Core::StringCRC lightId);
+    LightPathBehaviour3D* GetPathBehaviour(Dia::Core::StringCRC lightId) const;
 
     void UpdateAll(float dt);
 

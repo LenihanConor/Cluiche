@@ -34,6 +34,7 @@ public:
 
     float    GetT()        const;
     LoopMode GetLoopMode() const;
+    const Dia::Geometry3D::Spline3D& GetSpline() const;
 
     static const Dia::Core::StringCRC kTypeId;
 

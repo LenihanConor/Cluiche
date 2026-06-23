@@ -149,6 +149,12 @@ const PointLight3D& LightRegistry3D::GetPointByIndex(unsigned int i) const
     return mPointSlots[i].light;
 }
 
+Dia::Core::StringCRC LightRegistry3D::GetPointIdByIndex(unsigned int i) const
+{
+    DIA_ASSERT(i < mPointCount, "LightRegistry3D::GetPointIdByIndex — index out of range");
+    return mPointSlots[i].id;
+}
+
 unsigned int LightRegistry3D::GetDirectionalCount() const
 {
     return mDirectionalCount;
@@ -160,6 +166,12 @@ const DirectionalLight3D& LightRegistry3D::GetDirectionalByIndex(unsigned int i)
     return mDirectionalSlots[i].light;
 }
 
+Dia::Core::StringCRC LightRegistry3D::GetDirectionalIdByIndex(unsigned int i) const
+{
+    DIA_ASSERT(i < mDirectionalCount, "LightRegistry3D::GetDirectionalIdByIndex — index out of range");
+    return mDirectionalSlots[i].id;
+}
+
 unsigned int LightRegistry3D::GetSpotCount() const
 {
     return mSpotCount;
@@ -169,6 +181,12 @@ const SpotLight3D& LightRegistry3D::GetSpotByIndex(unsigned int i) const
 {
     DIA_ASSERT(i < mSpotCount, "LightRegistry3D::GetSpotByIndex — index out of range");
     return mSpotSlots[i].light;
+}
+
+Dia::Core::StringCRC LightRegistry3D::GetSpotIdByIndex(unsigned int i) const
+{
+    DIA_ASSERT(i < mSpotCount, "LightRegistry3D::GetSpotIdByIndex — index out of range");
+    return mSpotSlots[i].id;
 }
 
 template<typename TSlot, unsigned int N>
@@ -295,7 +313,7 @@ int LightRegistry3D::FindSpotIndex(Dia::Core::StringCRC id) const
     return -1;
 }
 
-LightPathBehaviour3D* LightRegistry3D::GetPathBehaviour(Dia::Core::StringCRC lightId)
+LightPathBehaviour3D* LightRegistry3D::GetPathBehaviour(Dia::Core::StringCRC lightId) const
 {
     {
         const int idx = FindPointIndex(lightId);
