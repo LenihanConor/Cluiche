@@ -8,6 +8,7 @@
 namespace Dia { namespace Lighting3D {
 
 class ILightBehaviour3D;
+class LightPathBehaviour3D;
 
 class LightRegistry3D
 {
@@ -41,6 +42,8 @@ public:
 
     bool AttachBehaviour(Dia::Core::StringCRC lightId, ILightBehaviour3D* behaviour);
     void DetachBehaviour(Dia::Core::StringCRC lightId, Dia::Core::StringCRC behaviourTypeId);
+
+    LightPathBehaviour3D* GetPathBehaviour(Dia::Core::StringCRC lightId);
 
     void UpdateAll(float dt);
 

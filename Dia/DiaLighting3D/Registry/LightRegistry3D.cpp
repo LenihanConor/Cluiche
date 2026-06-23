@@ -2,6 +2,7 @@
 
 #include <DiaCore/Core/Assert.h>
 #include <DiaLighting3D/Behaviours/ILightBehaviour3D.h>
+#include <DiaLighting3D/Behaviours/LightPathBehaviour3D.h>
 
 namespace Dia { namespace Lighting3D {
 
@@ -292,6 +293,35 @@ int LightRegistry3D::FindSpotIndex(Dia::Core::StringCRC id) const
             return static_cast<int>(i);
     }
     return -1;
+}
+
+LightPathBehaviour3D* LightRegistry3D::GetPathBehaviour(Dia::Core::StringCRC lightId)
+{
+    {
+        const int idx = FindPointIndex(lightId);
+        if (idx >= 0)
+        {
+            for (unsigned int b = 0; b < mPointSlots[idx].behaviourCount; ++b)
+            {
+                if (mPointSlots[idx].behaviours[b]->GetTypeId() == LightPathBehaviour3D::kTypeId)
+                    return static_cast<LightPathBehaviour3D*>(mPointSlots[idx].behaviours[b]);
+            }
+            return nullptr;
+        }
+    }
+    {
+        const int idx = FindSpotIndex(lightId);
+        if (idx >= 0)
+        {
+            for (unsigned int b = 0; b < mSpotSlots[idx].behaviourCount; ++b)
+            {
+                if (mSpotSlots[idx].behaviours[b]->GetTypeId() == LightPathBehaviour3D::kTypeId)
+                    return static_cast<LightPathBehaviour3D*>(mSpotSlots[idx].behaviours[b]);
+            }
+            return nullptr;
+        }
+    }
+    return nullptr;
 }
 
 } }

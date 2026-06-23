@@ -49,6 +49,9 @@
       <Filter>Registry</Filter>
     </ClInclude>
     <ClInclude Include="Testing\LightBuilder3D.h">
+    <ClInclude Include="Behaviours\LightPathBehaviour3D.h">
+      <Filter>Behaviours</Filter>
+    </ClInclude>
       <Filter>Testing</Filter>
     </ClInclude>
   </ItemGroup>
@@ -66,6 +69,9 @@
       <Filter>Behaviours</Filter>
     </ClCompile>
     <ClCompile Include="Registry\LightRegistry3D.cpp">
+    <ClCompile Include="Behaviours\LightPathBehaviour3D.cpp">
+      <Filter>Behaviours</Filter>
+    </ClCompile>
       <Filter>Registry</Filter>
     </ClCompile>
   </ItemGroup>

@@ -85,6 +85,7 @@
     <ClInclude Include="Registry\LightRegistry3D.h" />
     <ClInclude Include="SpotLight3D.h" />
     <ClInclude Include="Testing\LightBuilder3D.h" />
+    <ClInclude Include="Behaviours\LightPathBehaviour3D.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Behaviours\ColorCycleBehaviour3D.cpp" />
@@ -92,6 +93,7 @@
     <ClCompile Include="Behaviours\LightBehaviourRegistry3D.cpp" />
     <ClCompile Include="Behaviours\PulseBehaviour3D.cpp" />
     <ClCompile Include="Registry\LightRegistry3D.cpp" />
+    <ClCompile Include="Behaviours\LightPathBehaviour3D.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.lighting3d.architecture.module.md" />
