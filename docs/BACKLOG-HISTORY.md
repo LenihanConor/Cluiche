@@ -37,6 +37,8 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | diachatplugin | [spec](specs/README.md) | 2026-06-10 | Marked done by `dia docs spec-done` |
 | diamesh3d | [spec](specs/README.md) | 2026-06-10 | Marked done by `dia docs spec-done` |
 | spline3d | [spec](specs/) | 2026-06-23 | Marked done by `dia docs spec-done` |
+| light-path-behaviour | [spec](specs/) | 2026-06-23 | Marked done by `dia docs spec-done` |
+| mesh3d-bounds-and-origins | [spec](specs/) | 2026-06-23 | Marked done by `dia docs spec-done` |
 
 ---
 

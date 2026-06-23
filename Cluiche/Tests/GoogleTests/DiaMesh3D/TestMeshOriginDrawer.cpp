@@ -1,0 +1,149 @@
+////////////////////////////////////////////////////////////////////////////////
+// Filename: TestMeshOriginDrawer.cpp
+// Tests for Dia::Mesh3D::MeshOriginDrawer
+////////////////////////////////////////////////////////////////////////////////
+
+#ifndef DIA_DEBUG
+#define DIA_DEBUG
+#endif
+
+#include <gtest/gtest.h>
+
+#include <DiaMesh3DVisualDebugger/MeshOriginDrawer.h>
+#include <DiaGraphics3D/Mesh3DFrameData.h>
+#include <DiaGraphics3D/Mesh3DDrawCommand.h>
+#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaVisualDebugger/DebugLayerNames.h>
+#include <DiaVisualDebugger/DebugColourPalette.h>
+#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaMaths/Vector/Vector3D.h>
+#include <DiaMaths/Matrix/Matrix44.h>
+#include <DiaCore/CRC/StringCRC.h>
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+namespace
+{
+    Dia::Graphics3D::Mesh3DDrawCommand MakeCommand(int16_t layer = 0,
+                                                   uint32_t skinningPaletteIndex = 0)
+    {
+        Dia::Graphics3D::Mesh3DDrawCommand cmd;
+        cmd.meshId               = Dia::Core::StringCRC("mesh.origin");
+        cmd.materialId           = Dia::Core::StringCRC("mat.default");
+        cmd.transform            = Dia::Maths::Matrix44::Identity();
+        cmd.skinningPaletteIndex = skinningPaletteIndex;
+        cmd.layer                = layer;
+        return cmd;
+    }
+} // anonymous namespace
+
+// ---------------------------------------------------------------------------
+// MeshOriginDrawerTest
+// ---------------------------------------------------------------------------
+
+TEST(MeshOriginDrawerTest, LayerName_IsMesh3DOrigins)
+{
+    Dia::Graphics3D::Mesh3DFrameData frameData;
+    Dia::Debug::DebugLayerManager    manager;
+    Dia::Mesh3D::MeshOriginDrawer    drawer(frameData, manager);
+
+    EXPECT_EQ(drawer.GetLayerName(), Dia::Debug::LayerNames::kMesh3DOrigins);
+}
+
+TEST(MeshOriginDrawerTest, Draw_OneCommand_Emits3Rays)
+{
+    Dia::Graphics3D::Mesh3DFrameData frameData;
+    Dia::Debug::DebugLayerManager    manager;
+
+    frameData.RequestDrawMesh(MakeCommand());
+
+    Dia::Mesh3D::MeshOriginDrawer drawer(frameData, manager);
+    Dia::Graphics::FrameData dbg;
+    drawer.Draw(dbg);
+
+    EXPECT_EQ(dbg.GetDebug3DPrimitiveCount(), 3u);
+}
+
+TEST(MeshOriginDrawerTest, Draw_Layer0_IsKActive)
+{
+    // Palette[0] = kActive (layer 0 -> idx = (0 % 5 + 5) % 5 = 0)
+    Dia::Graphics3D::Mesh3DFrameData frameData;
+    Dia::Debug::DebugLayerManager    manager;
+
+    frameData.RequestDrawMesh(MakeCommand(/*layer=*/0));
+
+    Dia::Mesh3D::MeshOriginDrawer drawer(frameData, manager);
+    Dia::Graphics::FrameData dbg;
+    drawer.Draw(dbg);
+
+    ASSERT_GE(dbg.GetDebug3DPrimitiveCount(), 1u);
+    EXPECT_EQ(dbg.GetDebug3DPrimitive(0).ray3D.colour,
+              Dia::Debug::DebugColourPalette::kActive);
+}
+
+TEST(MeshOriginDrawerTest, Draw_Layer1_IsKGoal)
+{
+    // Palette[1] = kGoal (layer 1 -> idx = 1)
+    Dia::Graphics3D::Mesh3DFrameData frameData;
+    Dia::Debug::DebugLayerManager    manager;
+
+    frameData.RequestDrawMesh(MakeCommand(/*layer=*/1));
+
+    Dia::Mesh3D::MeshOriginDrawer drawer(frameData, manager);
+    Dia::Graphics::FrameData dbg;
+    drawer.Draw(dbg);
+
+    ASSERT_GE(dbg.GetDebug3DPrimitiveCount(), 1u);
+    EXPECT_EQ(dbg.GetDebug3DPrimitive(0).ray3D.colour,
+              Dia::Debug::DebugColourPalette::kGoal);
+}
+
+TEST(MeshOriginDrawerTest, Draw_NegativeLayer_CyclesPalette)
+{
+    // layer = -1: idx = ((-1 % 5) + 5) % 5 = (-1 + 5) % 5 = 4
+    // Palette[4] = kHealthy
+    Dia::Graphics3D::Mesh3DFrameData frameData;
+    Dia::Debug::DebugLayerManager    manager;
+
+    frameData.RequestDrawMesh(MakeCommand(/*layer=*/-1));
+
+    Dia::Mesh3D::MeshOriginDrawer drawer(frameData, manager);
+    Dia::Graphics::FrameData dbg;
+    drawer.Draw(dbg);
+
+    ASSERT_GE(dbg.GetDebug3DPrimitiveCount(), 1u);
+    EXPECT_EQ(dbg.GetDebug3DPrimitive(0).ray3D.colour,
+              Dia::Debug::DebugColourPalette::kHealthy);
+}
+
+TEST(MeshOriginDrawerTest, Draw_DebugScale2_DoublesArmLength)
+{
+    // kCrossArmLen = 0.2f; scale 2 => armLen = 0.4f
+    Dia::Graphics3D::Mesh3DFrameData frameData;
+    Dia::Debug::DebugLayerManager    manager;
+    manager.SetDebugScale(2.0f);
+
+    frameData.RequestDrawMesh(MakeCommand());
+
+    Dia::Mesh3D::MeshOriginDrawer drawer(frameData, manager);
+    Dia::Graphics::FrameData dbg;
+    drawer.Draw(dbg);
+
+    ASSERT_GE(dbg.GetDebug3DPrimitiveCount(), 1u);
+    EXPECT_FLOAT_EQ(dbg.GetDebug3DPrimitive(0).ray3D.length, 0.4f);
+}
+
+TEST(MeshOriginDrawerTest, Draw_EmptyFrameData_NoPrimitives)
+{
+    Dia::Graphics3D::Mesh3DFrameData frameData;
+    Dia::Debug::DebugLayerManager    manager;
+    // No draw commands submitted
+
+    Dia::Mesh3D::MeshOriginDrawer drawer(frameData, manager);
+    Dia::Graphics::FrameData dbg;
+    drawer.Draw(dbg);
+
+    EXPECT_EQ(dbg.GetDebug3DPrimitiveCount(), 0u);
+}

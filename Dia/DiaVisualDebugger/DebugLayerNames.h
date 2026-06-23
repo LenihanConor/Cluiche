@@ -121,6 +121,13 @@ namespace Dia
             // Stage tag used to register all entity layers (creates "Entity" console tab)
             inline const Dia::Core::StringCRC kEntityStageTag { "Entity" };
 
+            // ----------------------------------------------------------------
+            // Mesh 3D (priority tier 10–19)
+            // ----------------------------------------------------------------
+            inline const Dia::Core::StringCRC kMesh3DBounds  { "mesh3d.bounds"  };
+            inline const Dia::Core::StringCRC kMesh3DOrigins { "mesh3d.origins" };
+            inline const Dia::Core::StringCRC kMesh3DStats   { "mesh3d.stats"   };
+
         } // namespace LayerNames
     } // namespace Debug
 } // namespace Dia
