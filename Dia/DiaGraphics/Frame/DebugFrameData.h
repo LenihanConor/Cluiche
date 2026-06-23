@@ -6,6 +6,7 @@
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaMaths/Vector/Vector2D.h>
+#include <DiaMaths/Vector/Vector3D.h>
 #include <DiaObservation/Log/DiaLog.h>
 
 #include "DiaGraphics/Frame/DebugPrimitive.h"
@@ -30,6 +31,7 @@ namespace Dia
 
 			// Legacy alias so call-sites that reference kCapacity still compile.
 			static constexpr uint32_t kCapacity = kGeometryCapacity;
+			static constexpr uint32_t kDebug3DCapacity = 2048u;
 
 			DebugFrameData();
 			~DebugFrameData();
@@ -93,6 +95,27 @@ namespace Dia
 				RGBA colour);
 
 			// ----------------------------------------------------------------
+			// 3D debug primitives
+			// ----------------------------------------------------------------
+
+			// Line3D — world-space line segment
+			void RequestDrawLine3D(const Maths::Vector3D& from, const Maths::Vector3D& to, RGBA colour);
+
+			// Ray3D — world-space ray; direction must be a unit vector
+			void RequestDrawRay3D(const Maths::Vector3D& origin, const Maths::Vector3D& direction,
+				float length, RGBA colour);
+
+			// Box3D — world-space AABB; renderer expands to 12 wireframe edges
+			void RequestDrawBox3D(const Maths::Vector3D& min, const Maths::Vector3D& max, RGBA colour);
+
+			// Sphere3D — world-space sphere; renderer emits 3 great circles × 24 segments
+			void RequestDrawSphere3D(const Maths::Vector3D& center, float radius, RGBA colour);
+
+			// Arrow3D — world-space arrow; direction must be a unit vector
+			void RequestDrawArrow3D(const Maths::Vector3D& origin, const Maths::Vector3D& direction,
+				float length, float headSize, RGBA colour);
+
+			// ----------------------------------------------------------------
 			// Budget tracking (debug-budget)
 			// ----------------------------------------------------------------
 
@@ -105,6 +128,11 @@ namespace Dia
 			uint32_t DroppedTextCount()   const { return mTextDroppedCount; }
 			/// True if any text primitives were dropped this frame.
 			bool     IsTextOverCapacity() const { return mTextDroppedCount > 0; }
+
+			/// Number of 3D geometry RequestDraw*3D calls dropped this frame because the 3D buffer was full.
+			uint32_t DroppedDebug3DCount()      const { return mDropped3DCount; }
+			/// True if any 3D primitives were dropped this frame.
+			bool     Is3DOverCapacity()         const { return mDropped3DCount > 0; }
 
 			// ----------------------------------------------------------------
 			// Test / inspection accessors
@@ -119,6 +147,11 @@ namespace Dia
 			uint32_t                    GetTextPrimitiveCount()          const { return mTextBuffer.Size(); }
 			/// Access a stored text primitive by index (0-based).
 			const DebugPrimitiveText2D& GetTextPrimitive(uint32_t index) const { return mTextBuffer[index]; }
+
+			/// Total number of 3D geometry primitives currently stored.
+			uint32_t              GetDebug3DPrimitiveCount()          const { return mDebug3DPrimitiveBuffer.Size(); }
+			/// Access a stored 3D geometry primitive by index (0-based).
+			const DebugPrimitive& GetDebug3DPrimitive(uint32_t index) const { return mDebug3DPrimitiveBuffer[index]; }
 
 			void AcceptVisitor(const DebugFrameDataVisitor& visitor) const;
 
@@ -153,12 +186,30 @@ namespace Dia
 				return true;
 			}
 
+			bool CanAdd3D()
+			{
+				if (mDebug3DPrimitiveBuffer.Size() >= kDebug3DCapacity)
+				{
+					if (!m3DOverCapacityLogged)
+					{
+						DIA_LOG_WARNING("graphics", "DebugFrameData: 3D geometry budget exceeded (%u). Draw calls will be dropped.", kDebug3DCapacity);
+						m3DOverCapacityLogged = true;
+					}
+					++mDropped3DCount;
+					return false;
+				}
+				return true;
+			}
+
 			Core::Containers::DynamicArrayC<DebugPrimitive,     kGeometryCapacity> mDebugPrimitiveBuffer;
 			Core::Containers::DynamicArrayC<DebugPrimitiveText2D, kTextCapacity>   mTextBuffer;
 			uint32_t mDroppedCount             = 0;
 			uint32_t mTextDroppedCount         = 0;
 			bool     mOverCapacityLogged       = false;
 			bool     mTextOverCapacityLogged   = false;
+			Core::Containers::DynamicArrayC<DebugPrimitive, kDebug3DCapacity> mDebug3DPrimitiveBuffer;
+			uint32_t mDropped3DCount         = 0;
+			bool     m3DOverCapacityLogged   = false;
 		};
 	}
 }
