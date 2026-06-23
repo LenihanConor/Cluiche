@@ -3,6 +3,7 @@
 #include <DiaLighting3D/Behaviours/LightBehaviourRegistry3D.h>
 #include <DiaLighting3D/Behaviours/FlickerBehaviour3D.h>
 #include <DiaLighting3D/Behaviours/PulseBehaviour3D.h>
+#include <DiaLighting3D/Behaviours/LightPathBehaviour3D.h>
 #include <DiaLighting3D/Behaviours/ColorCycleBehaviour3D.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Colour/RGBA.h>
@@ -189,4 +190,9 @@ TEST(DiaLighting3D_BehaviourRegistry, Create_ReturnsNonNull_ForColorCycle)
     ILightBehaviour3D* b = LightBehaviourRegistry3D::Get().Create(ColorCycleBehaviour3D::kTypeId);
     ASSERT_NE(b, nullptr);
     delete b;
+}
+
+TEST(DiaLighting3D_BehaviourRegistry, LightPathBehaviour3D_IsRegistered)
+{
+    EXPECT_TRUE(LightBehaviourRegistry3D::Get().IsRegistered(LightPathBehaviour3D::kTypeId));
 }
