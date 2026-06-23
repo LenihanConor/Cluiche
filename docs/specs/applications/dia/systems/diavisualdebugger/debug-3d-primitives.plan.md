@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/applications/dia/systems/diavisualdebugger/debug-3d-primitives.md
-**Status:** In Progress
+**Status:** Done
 
 ---
 
@@ -24,4 +24,4 @@
 | 3 | Write `vs_debug3d.sc` / `fs_debug3d.sc`; compile to `.bin` for dx11/dx12/vulkan | Shader files exist; Canvas3D loads them | Done | sonnet | All 6 .bin files cooked by pipeline |
 | 4 | Implement `DebugGeometry3DRenderer.h/.cpp`; add to `DiaBgfx3D.vcxproj` | Build passes | Done | sonnet | Build clean; Vector3D API confirmed (Dot/Cross/AsNormal) |
 | 5 | Wire into `Canvas3D`: add member, init, call in `ProcessFrame()` | Build passes; debug geo visible in app | Done | sonnet | Build clean; kDebug3DViewId=3 |
-| 6 | Write `TestDebugPrimitive3D.cpp`; add to `GoogleTests.vcxproj` | `dia run googletest --filter="DebugPrimitive3D*"` all pass | Pending | sonnet | |
+| 6 | Write `TestDebugPrimitive3D.cpp`; add to `GoogleTests.vcxproj` | `dia run googletest --filter="DebugPrimitive3D*:DebugFrameData3D*"` all pass | Done | sonnet | 12/12 pass |

@@ -385,6 +385,9 @@
     <ClCompile Include="DiaVisualDebugger\TestDebugLayerManagerStages.cpp">
       <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\TestDebugPrimitive3D.cpp">
+      <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
     <!-- Geometry3D -->
     <ClCompile Include="Geometry3D\TestDiaGeometry3DSerializers.cpp" />
     <ClCompile Include="Geometry3D\TestSpatialGrid3DStress.cpp" />
