@@ -23,6 +23,14 @@
                         {
                             "id": "KernelMeshHandler",
                             "role": "consumes"
+                        },
+                        {
+                            "id": "KernelTextureHandler",
+                            "role": "consumes"
+                        },
+                        {
+                            "id": "KernelCanvas",
+                            "role": "consumes"
                         }
                     ]
                 }

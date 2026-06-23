@@ -132,6 +132,24 @@ namespace Dia
         }
 
         // -----------------------------------------------------------------------
+        // Evict
+        // -----------------------------------------------------------------------
+        void MeshGpuCache::Evict(uint32_t assetId)
+        {
+            auto it = mImpl->cache.find(assetId);
+            if (it == mImpl->cache.end())
+                return;
+
+            const GpuMesh& m = it->second;
+            bgfx::VertexBufferHandle vbh{ m.vertexBuffer };
+            bgfx::destroy(vbh);
+            bgfx::IndexBufferHandle ibh{ m.indexBuffer };
+            bgfx::destroy(ibh);
+
+            mImpl->cache.erase(it);
+        }
+
+        // -----------------------------------------------------------------------
         // DestroyAll
         // -----------------------------------------------------------------------
         void MeshGpuCache::DestroyAll()

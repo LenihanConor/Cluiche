@@ -35,6 +35,10 @@ namespace Dia
             // Returns nullptr if the asset is not yet Ready (renderer should skip draw).
             const GpuMesh* GetOrUpload(const Dia::Mesh3D::Mesh3DAsset& asset);
 
+            // Evicts a single mesh from the GPU cache, destroying its bgfx handles.
+            // No-op if the asset is not resident. Must be called from the render thread.
+            void Evict(uint32_t assetId);
+
             // Destroys all GPU handles and clears the cache.
             // Safe to call on an empty cache. Must be called before bgfx::shutdown().
             void DestroyAll();

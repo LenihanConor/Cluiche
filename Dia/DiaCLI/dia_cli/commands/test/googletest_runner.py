@@ -104,9 +104,12 @@ def run(
     cmd.append(f"--gtest_output=xml:{out_xml}")
 
     try:
-        result = subprocess.run(cmd, cwd=str(out_dir))
+        result = subprocess.run(cmd, cwd=str(out_dir), timeout=300)
         _warn_untagged_slow_suites(out_xml)
         return result.returncode
+    except subprocess.TimeoutExpired:
+        print("ERROR: GoogleTests timed out after 300s — use --filter to isolate the hanging suite")
+        return 1
     except FileNotFoundError as e:
         print(f"ERROR: command not found: {e}")
         return 1

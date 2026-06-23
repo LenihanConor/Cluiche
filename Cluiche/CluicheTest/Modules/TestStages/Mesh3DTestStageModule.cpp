@@ -6,6 +6,8 @@
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaMaths/Core/Angle.h>
+#include <DiaMaths/Core/MathsDefines.h>
+#include <cmath>
 #include <DiaMaths/Matrix/Matrix44.h>
 #include <DiaMaths/Vector/Vector3D.h>
 #include <DiaGraphics3D/Camera3D.h>
@@ -15,8 +17,23 @@
 #include <DiaGraphics3D/Mesh3DFrameData.h>
 #include <DiaMesh3D/Mesh3DAssetHandler.h>
 #include <DiaMesh3D/Primitives/UnitCube.h>
+#include <DiaAssetRuntime/Handlers/TextureHandler.h>
+#include <DiaGraphics/Assets/ITexture.h>
+#include <DiaBgfx3D/Canvas3D.h>
+#include <DiaBgfx3D/Resources/MaterialRegistry.h>
+#include <DiaBgfx/Resources/BgfxTextureHandle.h>
 
 namespace CluicheTest {
+
+namespace {
+    // No-op callback used when polling texture state rather than reacting to events.
+    struct NullTextureCallback : public Dia::AssetRuntime::IAssetLoadCallback
+    {
+        void OnLoadComplete(const Dia::Core::StringCRC& /*assetId*/) override {}
+        void OnLoadFailed(const Dia::Core::StringCRC& /*assetId*/, const char* /*reason*/) override {}
+    };
+    static NullTextureCallback sNullCallback;
+} // anonymous namespace
 
 const Dia::Core::StringCRC Mesh3DTestStageModule::kTypeId("Mesh3DTestStageModule");
 
@@ -26,7 +43,9 @@ Mesh3DTestStageModule::Mesh3DTestStageModule(const Dia::Core::StringCRC& instanc
 
 bool Mesh3DTestStageModule::AreDependenciesReady()
 {
-    return mMeshHandlerService.IsAvailable();
+    return mMeshHandlerService.IsAvailable()
+        && mTextureHandlerService.IsAvailable()
+        && mCanvasService.IsAvailable();
 }
 
 Dia::Core::StringCRC Mesh3DTestStageModule::GetStageName() const
@@ -52,6 +71,18 @@ void Mesh3DTestStageModule::OnStart(Dia::Automation::AutomationService* service)
 
     DIA_LOG_INFO("Mesh3DTest", "Mesh3DTestStageModule: unit cube registered");
 
+    // Request async texture loads — state is polled in OnUpdate via LookupTexture/GetState.
+    auto& textureHandler = mTextureHandlerService.Get();
+    textureHandler.Load(
+        Dia::Core::StringCRC("texture.avocado_albedo"),
+        Dia::Core::Containers::String512("Stages/Mesh3DTestStage/World/Textures/Avocado_baseColor.png"),
+        &sNullCallback);
+    textureHandler.Load(
+        Dia::Core::StringCRC("texture.avocado_normal"),
+        Dia::Core::Containers::String512("Stages/Mesh3DTestStage/World/Textures/Avocado_normal.png"),
+        &sNullCallback);
+    DIA_LOG_INFO("Mesh3DTest", "Mesh3DTestStageModule: texture loads requested");
+
     service->RegisterCheckpoint(this, Dia::Core::StringCRC("test.mesh3dtest.passed"),
         [this]() -> Dia::Automation::CheckpointResult {
             const bool passed = GetFrameCount() >= 30;
@@ -62,6 +93,49 @@ void Mesh3DTestStageModule::OnStart(Dia::Automation::AutomationService* service)
 void Mesh3DTestStageModule::OnUpdate(float /*deltaTime*/)
 {
     mFrame.Clear();
+
+    // Poll texture readiness and register the avocado material once both textures have settled.
+    if (!mTexturesLoaded && mTextureHandlerService.IsAvailable() && mCanvasService.IsAvailable())
+    {
+        auto& textureHandler = mTextureHandlerService.Get();
+        Dia::Graphics::ITexture* albedo = textureHandler.LookupTexture(Dia::Core::StringCRC("texture.avocado_albedo"));
+        Dia::Graphics::ITexture* normal = textureHandler.LookupTexture(Dia::Core::StringCRC("texture.avocado_normal"));
+
+        const bool albedoReady  = albedo && albedo->GetState() == Dia::Graphics::ITexture::State::Ready;
+        const bool normalReady  = normal && normal->GetState() == Dia::Graphics::ITexture::State::Ready;
+        const bool albedoFailed = albedo && albedo->GetState() == Dia::Graphics::ITexture::State::Failed;
+        const bool normalFailed = normal && normal->GetState() == Dia::Graphics::ITexture::State::Failed;
+
+        if (albedoFailed)
+            DIA_LOG_WARNING("Mesh3DTest", "Avocado albedo texture failed to load");
+        if (normalFailed)
+            DIA_LOG_WARNING("Mesh3DTest", "Avocado normal map texture failed to load");
+
+        if ((albedoReady || albedoFailed) && (normalReady || normalFailed))
+        {
+            auto* canvas3D = static_cast<Dia::Bgfx3D::Canvas3D*>(&mCanvasService.Get());
+            Dia::Bgfx3D::MaterialRegistry* registry = canvas3D->GetMaterialRegistry();
+
+            const Dia::Bgfx3D::MaterialDescriptor& defaultMat = registry->GetDefault();
+
+            Dia::Bgfx3D::MaterialDescriptor avocadoMat;
+            avocadoMat.id               = Dia::Core::StringCRC("avocado_material");
+            avocadoMat.program          = defaultMat.program;
+            avocadoMat.baseColourRGBA   = 0xFFFFFFFFu;
+            avocadoMat.albedoTexture    = albedoReady
+                ? static_cast<Dia::Bgfx::BgfxTextureHandle*>(albedo)->GetBgfxHandleIdx()
+                : 0xFFFFu;
+            avocadoMat.normalMapTexture = normalReady
+                ? static_cast<Dia::Bgfx::BgfxTextureHandle*>(normal)->GetBgfxHandleIdx()
+                : 0xFFFFu;
+
+            registry->Register(avocadoMat);
+            mTexturesLoaded = true;
+            DIA_LOG_INFO("Mesh3DTest", "Mesh3DTestStageModule: avocado_material registered (albedo=%s normal=%s)",
+                albedoReady ? "ok" : "fallback",
+                normalReady ? "ok" : "fallback");
+        }
+    }
 
     // Camera: eye at (0,2,-5), target (0,0,0), up (0,1,0)
     Dia::Graphics3D::Camera3D camera;
@@ -78,10 +152,12 @@ void Mesh3DTestStageModule::OnUpdate(float /*deltaTime*/)
     ambient.intensity = 0.2f;
     mFrame.SetAmbientLight(ambient);
 
-    // Directional light: direction (0.5,-1,0.3) normalised, white, intensity 1
+    // Directional light: sweeps left-to-right over 4s (sin wave on X axis).
     Dia::Graphics3D::DirectionalLight light;
     {
-        const float lx = 0.5f, ly = -1.0f, lz = 0.3f;
+        const float t = static_cast<float>(GetFrameCount()) / 30.0f; // seconds at 30Hz
+        const float sweepX = std::sin(t * Dia::Maths::PI / 2.0f);  // ±1 over 4s half-period
+        const float lx = sweepX, ly = -1.0f, lz = 0.3f;
         const float len = Dia::Maths::Vector3D(lx, ly, lz).Magnitude();
         light.direction = Dia::Maths::Vector3D(lx / len, ly / len, lz / len);
     }
@@ -102,7 +178,7 @@ void Mesh3DTestStageModule::OnUpdate(float /*deltaTime*/)
     // DrawCommand is safe to submit every frame; MeshRenderer skips it until the asset is Ready.
     Dia::Graphics3D::Mesh3DDrawCommand avocadoCmd;
     avocadoCmd.meshId               = Dia::Core::StringCRC("mesh3d.avocado");
-    avocadoCmd.materialId           = Dia::Core::StringCRC("default_3d");
+    avocadoCmd.materialId           = Dia::Core::StringCRC("avocado_material");
     avocadoCmd.transform            = Dia::Maths::Matrix44::FromTranslation(Dia::Maths::Vector3D(1.5f, 0.0f, 0.0f))
                                     * Dia::Maths::Matrix44::FromScale(15.0f);
     avocadoCmd.skinningPaletteIndex = 0;
@@ -123,6 +199,8 @@ void Mesh3DTestStageModule::OnConnectStreams(Dia::ApplicationFlow::Application& 
     TestStageModuleBase::OnConnectStreams(app);
     mRenderOutput.Connect(app);
     mMeshHandlerService.Connect(app);
+    mTextureHandlerService.Connect(app);
+    mCanvasService.Connect(app);
 }
 
 } // namespace CluicheTest

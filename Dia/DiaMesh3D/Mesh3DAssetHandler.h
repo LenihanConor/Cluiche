@@ -5,6 +5,7 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaThreading/JobSystem.h>
 
+#include <functional>
 #include <mutex>
 #include <shared_mutex>
 #include <unordered_map>
@@ -30,6 +31,12 @@ public:
     ~Mesh3DAssetHandler();
 
     void SetJobSystem(Dia::Core::JobSystem* jobSystem);
+
+    // Optional callback fired on Unload() so GPU-side caches can evict in sync.
+    // Called from whatever thread Unload() is called on — caller is responsible
+    // for thread safety on the GPU cache side.
+    using EvictCallback = std::function<void(uint32_t assetId)>;
+    void SetEvictCallback(EvictCallback callback);
 
     // Thread-safe lookup. Returns nullptr if not loaded.
     Mesh3DAsset* LookupMesh(Dia::Core::StringCRC assetId) const;
@@ -60,6 +67,7 @@ private:
     std::vector<PendingResult*>                        mPending;   // heap-allocated
 
     Dia::Core::JobSystem* mJobSystem = nullptr;
+    EvictCallback         mEvictCallback;
 };
 
 } }

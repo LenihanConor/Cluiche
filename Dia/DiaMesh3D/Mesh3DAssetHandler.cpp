@@ -70,6 +70,11 @@ void Mesh3DAssetHandler::SetJobSystem(Dia::Core::JobSystem* jobSystem)
     mJobSystem = jobSystem;
 }
 
+void Mesh3DAssetHandler::SetEvictCallback(EvictCallback callback)
+{
+    mEvictCallback = std::move(callback);
+}
+
 //-----------------------------------------------------------------------------
 // Thread-safe queries
 //-----------------------------------------------------------------------------
@@ -185,6 +190,9 @@ void Mesh3DAssetHandler::Unload(const Dia::Core::StringCRC& assetId)
         mMeshMap.erase(it);
     }
     delete toDelete;
+
+    if (mEvictCallback)
+        mEvictCallback(assetId.Value());
 }
 
 //-----------------------------------------------------------------------------

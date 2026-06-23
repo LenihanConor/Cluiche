@@ -21,8 +21,12 @@ def _run_shard(binary: Path, out_dir: Path, shard_index: int, total_shards: int,
     env = os.environ.copy()
     env["GTEST_TOTAL_SHARDS"] = str(total_shards)
     env["GTEST_SHARD_INDEX"] = str(shard_index)
-    result = subprocess.run(cmd, cwd=str(out_dir), env=env)
-    return result.returncode
+    try:
+        result = subprocess.run(cmd, cwd=str(out_dir), env=env, timeout=300)
+        return result.returncode
+    except subprocess.TimeoutExpired:
+        print(f"ERROR: shard {shard_index} timed out after 300s")
+        return 1
 
 
 def run_shards(

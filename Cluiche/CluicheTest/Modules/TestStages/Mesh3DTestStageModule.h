@@ -6,6 +6,8 @@
 #include <DiaStreams/ServiceStreamReader.h>
 #include <DiaGraphics3D/FrameData3D.h>
 #include <DiaMesh3D/Mesh3DAssetHandler.h>
+#include <DiaAssetRuntime/Handlers/TextureHandler.h>
+#include <DiaGraphics/Interface/ICanvas.h>
 
 namespace Dia { namespace Mesh3D { class Mesh3DAsset; } }
 
@@ -31,9 +33,12 @@ protected:
 private:
     Dia::ApplicationFlow::StreamWriter<Dia::Graphics3D::FrameData3D>                mRenderOutput{this, "SimToRender3D"};
     Dia::ApplicationFlow::ServiceStreamReader<Dia::Mesh3D::Mesh3DAssetHandler>      mMeshHandlerService{this, "KernelMeshHandler"};
+    Dia::ApplicationFlow::ServiceStreamReader<Dia::AssetRuntime::TextureHandler>    mTextureHandlerService{this, "KernelTextureHandler"};
+    Dia::ApplicationFlow::ServiceStreamReader<Dia::Graphics::ICanvas>               mCanvasService{this, "KernelCanvas"};
 
     Dia::Graphics3D::FrameData3D  mFrame;
     Dia::Mesh3D::Mesh3DAsset*     mUnitCubeAsset = nullptr;
+    bool                          mTexturesLoaded = false;
 };
 
 } // namespace CluicheTest
