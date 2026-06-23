@@ -6,6 +6,7 @@
 #include "DiaBgfx3D/Resources/MeshGpuCache.h"
 #include "DiaBgfx3D/Renderers/MeshRenderer.h"
 #include "DiaBgfx3D/Renderers/ShadowRenderer.h"
+#include "DiaBgfx3D/Renderers/DebugGeometry3DRenderer.h"
 #include "DiaBgfx3D/MeshPassLighting.h"
 
 #include <DiaBgfx/Resources/ShaderProgram.h>
@@ -23,20 +24,24 @@ namespace Dia
 {
     namespace Bgfx3D
     {
-        static constexpr unsigned short kShadowViewId = 1;
-        static constexpr unsigned short kMeshViewId   = 2;
+        static constexpr unsigned short kShadowViewId  = 1;
+        static constexpr unsigned short kMeshViewId    = 2;
+        static constexpr unsigned short kDebug3DViewId = 3;
 
         Canvas3D::Canvas3D()
             : Dia::Bgfx::Canvas()
             , mMeshViewId(kMeshViewId)
             , mShadowViewId(kShadowViewId)
+            , mDebug3DViewId(kDebug3DViewId)
             , mMaterialRegistry(new MaterialRegistry())
             , mMeshGpuCache(new MeshGpuCache())
             , mMeshRenderer(nullptr)
             , mShadowRenderer(nullptr)
+            , mDebugGeometry3DRenderer(nullptr)
             , mMeshHandler(nullptr)
             , mMeshProgram(nullptr)
             , mShadowProgram(nullptr)
+            , mDebug3DProgram(nullptr)
             , m3DInitialised(false)
         {
             // GPU resources (ShadowRenderer's depth texture/framebuffer, shader
@@ -51,10 +56,12 @@ namespace Dia
             // Shutdown() must have been called before the destructor (it destroys
             // bgfx handles while the context is still live). If somehow it wasn't,
             // nil out the pointers rather than calling bgfx::destroy on a dead context.
-            mMeshRenderer  = nullptr;
-            mShadowRenderer = nullptr;
-            mMeshProgram   = nullptr;
-            mShadowProgram = nullptr;
+            mMeshRenderer            = nullptr;
+            mShadowRenderer          = nullptr;
+            mDebugGeometry3DRenderer = nullptr;
+            mMeshProgram             = nullptr;
+            mShadowProgram           = nullptr;
+            mDebug3DProgram          = nullptr;
 
             delete mMeshGpuCache;
             delete mMaterialRegistry;
@@ -63,11 +70,13 @@ namespace Dia
         void Canvas3D::Shutdown()
         {
             // Destroy 3D bgfx resources BEFORE the base class calls bgfx::shutdown().
-            delete mMeshRenderer;   mMeshRenderer   = nullptr;
-            delete mShadowRenderer; mShadowRenderer = nullptr;
+            delete mMeshRenderer;             mMeshRenderer             = nullptr;
+            delete mShadowRenderer;           mShadowRenderer           = nullptr;
+            delete mDebugGeometry3DRenderer;  mDebugGeometry3DRenderer  = nullptr;
 
-            delete mMeshProgram;   mMeshProgram   = nullptr;
-            delete mShadowProgram; mShadowProgram = nullptr;
+            delete mMeshProgram;    mMeshProgram    = nullptr;
+            delete mShadowProgram;  mShadowProgram  = nullptr;
+            delete mDebug3DProgram; mDebug3DProgram = nullptr;
 
             if (mMeshGpuCache)
                 mMeshGpuCache->DestroyAll();
@@ -143,6 +152,14 @@ namespace Dia
                                                  mMaterialRegistry, mMeshHandler);
                 mMeshRenderer->InitUniforms();
             }
+
+            mDebug3DProgram = new Dia::Bgfx::ShaderProgram();
+            if (!mDebug3DProgram->LoadFromPath(root, backend, "3d/vs_debug3d.bin", "3d/fs_debug3d.bin"))
+            {
+                DIA_LOG_WARNING("DiaBgfx3D", "Canvas3D::Init3DPrograms — failed to load debug3d shader");
+                mHealthReporter.SetDegraded(Dia::Core::StringCRC("debug3d_shader_load_failed"));
+            }
+            mDebugGeometry3DRenderer = new DebugGeometry3DRenderer(mDebug3DViewId, mDebug3DProgram);
 
             m3DInitialised = true;
             mHealthReporter.SetOK();
@@ -248,6 +265,15 @@ namespace Dia
             }
 
             // 3. SkinnedMeshRenderer — wired when DiaSkinning3D ships
+
+            // 3b. 3D debug geometry overlay
+            if (mDebugGeometry3DRenderer)
+            {
+                const Dia::Graphics3D::Camera3D& cam = mesh3d.GetCamera();
+                const Dia::Graphics::DebugFrameData& dbg =
+                    static_cast<const Dia::Graphics::DebugFrameData&>(frameData);
+                mDebugGeometry3DRenderer->Draw(dbg, cam, GetCanvasSize());
+            }
 
             // 4-7. Inherited 2D passes (sprite, debug, UI, ImGui).
             Dia::Bgfx::Canvas::ProcessFrame(static_cast<const Dia::Graphics::FrameData&>(frameData));

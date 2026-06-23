@@ -19,6 +19,7 @@ namespace Dia
         class MeshGpuCache;
         class MeshRenderer;
         class ShadowRenderer;
+        class DebugGeometry3DRenderer;
 
         class Canvas3D : public Dia::Bgfx::Canvas
         {
@@ -44,16 +45,20 @@ namespace Dia
         private:
             void Init3DPrograms();
 
+            // View IDs: 1=shadow  2=mesh  3=debug3d
             unsigned short    mMeshViewId;
             unsigned short    mShadowViewId;
+            unsigned short    mDebug3DViewId;
             MaterialRegistry* mMaterialRegistry;  // owned
             MeshGpuCache*     mMeshGpuCache;      // owned
             MeshRenderer*     mMeshRenderer;      // owned
             ShadowRenderer*   mShadowRenderer;    // owned
+            DebugGeometry3DRenderer* mDebugGeometry3DRenderer;  // owned
             Dia::Mesh3D::Mesh3DAssetHandler* mMeshHandler; // not owned
 
-            Dia::Bgfx::ShaderProgram* mMeshProgram;    // owned
+            Dia::Bgfx::ShaderProgram* mMeshProgram;     // owned
             Dia::Bgfx::ShaderProgram* mShadowProgram;  // owned
+            Dia::Bgfx::ShaderProgram* mDebug3DProgram; // owned
             bool                      m3DInitialised;
 
             Dia::Observation::Metric::Gauge* mMetricMeshDrawCalls = nullptr;
