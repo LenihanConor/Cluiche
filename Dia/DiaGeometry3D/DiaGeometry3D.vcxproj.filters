@@ -48,6 +48,9 @@
     <ClInclude Include="Shapes\Frustum.h">
       <Filter>Shapes</Filter>
     </ClInclude>
+    <ClInclude Include="Shapes\Spline3D.h">
+      <Filter>Shapes</Filter>
+    </ClInclude>
     <ClInclude Include="Intersection\IntersectionTests.h">
       <Filter>Intersection</Filter>
     </ClInclude>
@@ -88,6 +91,9 @@
       <Filter>Shapes</Filter>
     </ClCompile>
     <ClCompile Include="Shapes\Frustum.cpp">
+      <Filter>Shapes</Filter>
+    </ClCompile>
+    <ClCompile Include="Shapes\Spline3D.cpp">
       <Filter>Shapes</Filter>
     </ClCompile>
     <ClCompile Include="Intersection\IntersectionTests.cpp">

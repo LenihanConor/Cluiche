@@ -85,6 +85,7 @@
     <ClInclude Include="Shapes\Ray.h" />
     <ClInclude Include="Shapes\Plane.h" />
     <ClInclude Include="Shapes\Frustum.h" />
+    <ClInclude Include="Shapes\Spline3D.h" />
     <ClInclude Include="Intersection\IntersectionTests.h" />
     <ClInclude Include="Spatial\ISpatialStructure3D.h" />
     <ClInclude Include="Spatial\SpatialGrid3D.h" />
@@ -101,6 +102,7 @@
     <ClCompile Include="Shapes\Ray.cpp" />
     <ClCompile Include="Shapes\Plane.cpp" />
     <ClCompile Include="Shapes\Frustum.cpp" />
+    <ClCompile Include="Shapes\Spline3D.cpp" />
     <ClCompile Include="Intersection\IntersectionTests.cpp" />
   </ItemGroup>
   <ItemGroup>

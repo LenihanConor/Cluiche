@@ -36,6 +36,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | app-editor-actions | [spec](specs/README.md) | 2026-06-08 | Marked done by `dia docs spec-done` |
 | diachatplugin | [spec](specs/README.md) | 2026-06-10 | Marked done by `dia docs spec-done` |
 | diamesh3d | [spec](specs/README.md) | 2026-06-10 | Marked done by `dia docs spec-done` |
+| spline3d | [spec](specs/) | 2026-06-23 | Marked done by `dia docs spec-done` |
 
 ---
 

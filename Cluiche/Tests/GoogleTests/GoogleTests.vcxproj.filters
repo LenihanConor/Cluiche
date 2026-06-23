@@ -773,6 +773,9 @@
     <ClCompile Include="Geometry3D\TestFrustum.cpp">
       <Filter>Geometry3D</Filter>
     </ClCompile>
+    <ClCompile Include="Geometry3D\TestSpline3D.cpp">
+      <Filter>Geometry3D</Filter>
+    </ClCompile>
     <!-- Geometry2D -->
     <ClCompile Include="Geometry2D\TestDiaGeometry2DSerializers.cpp">
       <Filter>Geometry2D</Filter>

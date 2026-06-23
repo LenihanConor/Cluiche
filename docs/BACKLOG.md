@@ -12,12 +12,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | System | Spec | Features | Depends On |
 |--------|------|----------|------------|
-| ~~DiaBgfx3D~~ | [diabgfx3d.md](specs/applications/dia/systems/diabgfx3d/diabgfx3d.md) ✅ | `gpu-resources` — MaterialRegistry + MeshGpuCache (needs DiaMesh3D). `3d-renderers` — MeshRenderer, SkinnedMeshRenderer, ShadowRenderer, 6 shaders (needs DiaMesh3D + DiaSkinning3D). `canvas3d` — Canvas3D shell + MaterialRegistry **done** (tasks 1–3); CluicheTest demo blocked on DiaScene3D chain. | DiaBgfx (Phase 1) ✅, DiaGraphics3D ✅, DiaMesh3D, DiaScene3D chain |
-| ~~DiaMesh3D~~ | [diamesh3d.md](specs/applications/dia/systems/diamesh3d/diamesh3d.md) ✅ | `mesh-asset-and-loader` — `Vertex3D` (52 bytes, no joint data), `Submesh`, `Mesh3DAsset`, `Mesh3DAssetHandler` (cooked `.mesh3d` flat-binary loader, type prefix `"mesh3d."`). glTF import is DiaAssetPipeline build-time only. | DiaMaths, DiaGeometry3D, DiaAssetRuntime |
-| ~~DiaRig3D~~ | TBD — needs `/spec-system` | `skeleton-and-pose` feature already Approved; needs own system spec. Bone3D, Skeleton3D, Pose3D, FK, `SkeletonComponent3D`. Also owns `Rig3DAsset` (skeleton + per-vertex skin binding — joint indices + weights as parallel array to mesh vertices). Mirrors DiaRig2D. | DiaMesh3D |
-| ~~DiaAnimation3D~~ | TBD — needs `/spec-system` | `clip-and-player` feature already Approved; needs own system spec. AnimationClip3D, ClipPlayer3D, STEP/LINEAR/CUBICSPLINE interpolation, `AnimationComponent3D`. glTF animation import is DiaAssetPipeline build-time only (parallel to DiaMesh3D's cooked binary approach). | DiaRig3D |
-| DiaSkinning3D | TBD — needs `/spec-system` | `skinning-palette` feature already Approved; needs own system spec. SkinningManager, per-frame Matrix34 palettes, `skinningPaletteIndex` on draw commands. | DiaAnimation3D, DiaGraphics3D |
-| ~~DiaChatPlugin~~ | [diachatplugin.md](specs/applications/cluicheeditor/systems/diachatplugin/diachatplugin.md) ✅ | Dockable AI assistant panel — Ollama/Claude/Gemini via DiaPython orchestrator, direct `ExecuteAction()` tool dispatch, auto-gen knowledge context (`editor_actions.md`, `data_types.md`) + hand-authored files (`engine_overview.md`, `editor_workflows.md`, `asset_style_guide.md`), hybrid chat+detail UI, destructive action confirmation gate, context window indicator, empty state. Phase 2: multi-step agentic loop. Requires `project.list` action + DiaEditorAPI data-type-registry feature. | DiaEditorAPI Phase 1 + data-type-registry, DiaEditor, DiaPython, DiaUICEF |
+| DiaBgfx3D | [diabgfx3d.md](specs/applications/dia/systems/diabgfx3d/diabgfx3d.md) | `gpu-resources` — MaterialRegistry + MeshGpuCache ✅ done. `3d-renderers` — MeshRenderer ✅, ShadowRenderer ✅; SkinnedMeshRenderer pending DiaSkinning3D. `canvas3d` — Canvas3D ✅ (ProcessFrame, ambient, health, metrics). `mesh-texture-pipeline` — albedo + normal map textures, TBN shading, moving light (**Approved, ready to build**). | DiaBgfx (Phase 1) ✅, DiaGraphics3D ✅, DiaMesh3D ✅ |
 
 
 ---
@@ -26,10 +21,13 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | Feature | Spec | System | Notes |
 |---------|------|--------|-------|
-
----
-
-## Ready to Build (cont.)
+| Mesh3DRenderSystemTestStage | [mesh3d-render-system-stage.md](specs/applications/cluichetest/systems/teststages/mesh3d-render-system-stage.md) | TestStages | 5 tasks: catalogue ID fix (haiku), module impl (sonnet), pytest scenario, visual verify, commit. Task 1 independently fixes the `GetLoadProgress` warning spam. |
+| ~~Spline3D~~ | [spline3d.md](specs/applications/dia/systems/diageometry3d/spline3d.md) | DiaGeometry3D | 2 tasks: implement Spline3D + SplineFactory3D, GoogleTest suite. Prerequisite for LightPathBehaviour3D. |
+| ~~LightPathBehaviour3D~~ | [light-path-behaviour.md](specs/applications/dia/systems/dialighting3d/light-path-behaviour.md) | DiaLighting3D | 3 tasks: add DiaGeometry3D dep, implement behaviour, GoogleTest suite. Depends on Spline3D. |
+| DiaMesh3DVisualDebugger — mesh3d-bounds-and-origins | [mesh3d-bounds-and-origins.md](specs/applications/dia/systems/diamesh3dvisualdebugger/mesh3d-bounds-and-origins.md) | DiaMesh3DVisualDebugger | 6 tasks: layer name constants, vcxproj+sln, module YAML, MeshBoundsDrawer, MeshOriginDrawer, tests. No feature deps. |
+| DiaMesh3DVisualDebugger — mesh3d-stats | [mesh3d-stats.md](specs/applications/dia/systems/diamesh3dvisualdebugger/mesh3d-stats.md) | DiaMesh3DVisualDebugger | 2 tasks: MeshStatsDrawer, tests. Depends on mesh3d-bounds-and-origins. |
+| DiaLighting3DVisualDebugger — debug-widget-config | [debug-widget-config.md](specs/applications/dia/systems/dialighting3dvisualdebugger/debug-widget-config.md) | DiaLighting3DVisualDebugger | 5 tasks: layer name constants, vcxproj+sln, module YAML, LightWidgetsDrawer, tests. No feature deps. |
+| DiaLighting3DVisualDebugger — path-arc-preview | [path-arc-preview.md](specs/applications/dia/systems/dialighting3dvisualdebugger/path-arc-preview.md) | DiaLighting3DVisualDebugger | 4 tasks: GetPathBehaviour(), GetSpline(), LightPathArcDrawer, tests. Depends on debug-widget-config + LightPathBehaviour3D. |
 
 ---
 
@@ -43,25 +41,26 @@ _Nothing here._
 
 | Item | Spec | What's needed |
 |------|------|---------------|
-| DiaStateMachineEditor system | TBD | Needs `/spec-system` — editor plugin for state machine visual debugging + design-time editing. Depends on DiaStateMachine ✅, DiaEditor |
-
+| ~~DiaLighting3DVisualDebugger (new system)~~ | [dialighting3dvisualdebugger.md](specs/applications/dia/systems/dialighting3dvisualdebugger/dialighting3dvisualdebugger.md) | All design questions resolved — needs feature specs authored then approve. 2 features: debug-widget-config (sphere/arrow per light), path-arc-preview (arc line in XZ for directional, spline arc spheres for point/spot). Depends on Spline3D + LightPathBehaviour3D + DiaVisualDebugger. |
+| DiaRenderTest CLI Pipeline | [diarendertest.md](specs/applications/dia/systems/diarendertest/diarendertest.md) | Spec `Draft` — awaiting approval. All design questions resolved. 6 features: png-writer, diff-engine, expectations, python-tools, metrics-writer, cluichetest-integration. Research: [render_offline_test/summary.md](research/render_offline_test/summary.md) |
+| RenderTestPlugin (CluicheEditor) | — | Needs `/spec-system` — visual debugger panel: wipe slider, region grid, expectation authoring, AI triage panel, render targets. Depends on DiaRenderTest CLI Pipeline shipping first. Mockup: [render_test_debugger_mockup.html](research/render_offline_test/render_test_debugger_mockup.html). Research: [render_offline_test/summary.md](research/render_offline_test/summary.md) |
 
 ---
 
-## E2E Orchestration Stack (build in dependency order)
+## E2E Orchestration Stack
 
 Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testing/design-decisions.md](research/e2e_testing/design-decisions.md)**.
-
-
 
 ### Deferred
 
 | # | Item | Notes |
 |---|------|-------|
 | 6b | Extract AutomationModuleBase into DiaAutomation | Evaluate from working code after 2+ apps use it |
-
+| DiaRig3D system | feature spec exists (`skeleton-and-pose.md`) | Needs `/spec-system` — Bone3D, Skeleton3D, Pose3D, FK, `SkeletonComponent3D`, `Rig3DAsset`. Mirrors DiaRig2D. | 
+| DiaAnimation3D system | feature spec exists (`clip-and-player.md`) | Needs `/spec-system` — AnimationClip3D, ClipPlayer3D, STEP/LINEAR/CUBICSPLINE, `AnimationComponent3D`. glTF animation import is build-time only. |
+| DiaStateMachineEditor system | TBD | Needs `/spec-system` — editor plugin for state machine visual debugging + design-time editing. Depends on DiaStateMachine ✅, DiaEditor |
+| DiaSkinning3D | TBD — needs `/spec-system` | `skinning-palette` feature already Approved; needs own system spec. SkinningManager, per-frame Matrix34 palettes, `skinningPaletteIndex` on draw commands. | DiaAnimation3D, DiaGraphics3D |
 ---
-
 
 ### Blocked on Linux/CMake migration
 
@@ -72,29 +71,15 @@ Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testin
 
 ---
 
----
-
-## DiaMesh3D End-to-End Gaps
-
-The runtime handler exists (DiaMesh3D ✅) but the full source→cook→load pipeline is incomplete. Four pieces must land in dependency order:
-
-| # | Item | Depends On | Notes |
-|---|------|-----------|-------|
-| 1 | **DiaAssetPipeline — glTF handler** | — | Python pipeline handler: reads `.gltf`/`.glb` (via `pygltflib` or `cgltf` subprocess), emits cooked `.mesh3d` flat binary alongside `.rig3d` if skinned. Needs `/spec-feature` under DiaAssetPipeline. |
-| 2 | **assets.rules.json — mesh3d type rule** | — | Add `tag_mesh3d_as_visual` rule (type `mesh3d` → tag `visual`) to `Cluiche/Assets/CluicheTest/assets.rules.json`. Independent of the pipeline handler — rules just classify already-registered assets. |
-| 3 | **Source `.gltf` file in `/Assets`** | Gap 1 (pipeline handler must exist to verify cook output) | Place a test `.gltf` (e.g. `box.gltf` or `suzanne.gltf`) in `Stages/<Stage>/World/Meshes/`. Confirms the pipeline handler can read it and produce a valid `.mesh3d`. |
-| 4 | **assets.catalogue.json — mesh3d entry** | Gap 1 + Gap 3 (need a `.gltf` source file and a working cook step before the catalogue entry is meaningful) | Add entry with `type: mesh3d`, `source_path` pointing at the `.gltf`, and `id: mesh3d.<name>`. Register it under the appropriate stage's `references`. |
-
----
-
 ## Loose Ends (non-spec items)
 
 | Item | Notes |
 |------|-------|
-| DiaChatPlugin — model picker dropdown | Backend selector already exists but model is hardcoded. Query `ollama list` / known Claude+Gemini models at startup, populate a dropdown so the user can switch models without code changes. Persist last selection. |
-| `dia env` Python package management | Add `requirements.txt` to `External/Python311/`, wire `dia env setup` to `pip install --target site-packages`, so fresh clones get `requests` etc. without manual pip. Pipeline deploy already handles runtime copy. |
 | RenderTechnique asset type | Layer-level rendering policy (blend mode, post-process like bloom/distortion). Layers reference a technique by name; renderer resolves at draw time. Needs `/spec-feature` under DiaGraphics or DiaBgfx once the scene system lands. |
 | Camera2D controller (pan/zoom/reset) | Application-side input→Camera2D wiring for CluicheTest stages (keyboard pan, scroll zoom, home-key reset). Unblocked once coord2d-debug-overlay ships Camera2D + renderer integration. |
-| DiaAssetRuntime — Hot reload path | Asset Lifecycle Management adds `Failed → Loading` retry but no `Loaded → Loading → Loaded` path. Still need a `ReloadAsset(assetId)` for live iteration (future feature on top of lifecycle management). |
 | `Dia::Core::Blackboard` — general-purpose key-value store | Identified during DiaStateMachine research; useful for AI, animation, gameplay. Needs `/spec-feature` under DiaCore. |
-| Render the Avocado mesh in Mesh3DTestTestStage | The `mesh3d.avocado` asset now cooks + deploys (`Avocado.mesh3d` in `assets.runtime.json`), but nothing in the stage loads or draws it yet. Wire the stage to load the mesh and render it via DiaBgfx3D's MeshRenderer — the first real end-to-end 3D mesh on screen. Blocked on the DiaScene3D chain (DiaRig3D → DiaAnimation3D → DiaSkinning3D) for the full renderer path; a minimal static-mesh draw may be possible sooner. |
+| **DiaBgfx3D — Multiple directional lights** | Shader and frame data only consume `dirLights[0]`. Supporting 2–4 lights requires uniform array upload and a shader loop. Needs `/spec-feature` under DiaBgfx3D. |
+| **DiaBgfx3D — Specular / simple PBR** | Current model is pure Lambert. Blinn-Phong or minimal metallic-roughness BRDF would allow materials to look distinct. Unblocked once `mesh-texture-pipeline` ships. Needs `/spec-feature` under DiaBgfx3D. |
+| RenderTechnique asset type | Layer-level rendering policy (blend mode, post-process like bloom/distortion). Layers reference a technique by name; renderer resolves at draw time. Needs `/spec-feature` under DiaGraphics or DiaBgfx once the scene system lands. |
+| Camera2D controller (pan/zoom/reset) | Application-side input→Camera2D wiring for CluicheTest stages (keyboard pan, scroll zoom, home-key reset). Unblocked once coord2d-debug-overlay ships Camera2D + renderer integration. |
+| `Dia::Core::Blackboard` — general-purpose key-value store | Identified during DiaStateMachine research; useful for AI, animation, gameplay. Needs `/spec-feature` under DiaCore. |

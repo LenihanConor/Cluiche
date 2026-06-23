@@ -400,6 +400,7 @@
     <ClCompile Include="Geometry3D\TestRay3D.cpp" />
     <ClCompile Include="Geometry3D\TestPlane3D.cpp" />
     <ClCompile Include="Geometry3D\TestFrustum.cpp" />
+    <ClCompile Include="Geometry3D\TestSpline3D.cpp" />
     <!-- DiaCamera2D -->
     <ClCompile Include="DiaCamera2D\TestCameraRegistry.cpp" />
     <ClCompile Include="DiaCamera2D\TestCameraBehaviours.cpp" />
