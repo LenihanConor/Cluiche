@@ -3,7 +3,7 @@
 ## Parent Application
 @docs/specs/applications/dia/dia.md
 
-**Status:** `Approved`
+**Status:** `Done`
 
 ---
 
