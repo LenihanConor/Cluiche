@@ -673,6 +673,9 @@
     <ClCompile Include="DiaMesh3D\TestMeshOriginDrawer.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)'=='Debug' or '$(Configuration)'=='Debug-Asan' or '$(Configuration)'=='Debug-Ubsan'">DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="DiaMesh3D\TestMeshStatsDrawer.cpp">
+      <PreprocessorDefinitions Condition="'$(Configuration)'=='Debug' or '$(Configuration)'=='Debug-Asan' or '$(Configuration)'=='Debug-Ubsan'">DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
     <!-- DiaBgfx3D -->
     <ClCompile Include="DiaBgfx3D\TestMaterialRegistry.cpp" />
     <ClCompile Include="DiaBgfx3D\TestMeshGpuCache.cpp" />

@@ -1330,6 +1330,9 @@
     <ClCompile Include="DiaMesh3D\TestMeshOriginDrawer.cpp">
       <Filter>DiaMesh3D</Filter>
     </ClCompile>
+    <ClCompile Include="DiaMesh3D\TestMeshStatsDrawer.cpp">
+      <Filter>DiaMesh3D</Filter>
+    </ClCompile>
     <ClCompile Include="DiaMesh3D\TestMesh3DAssetHandler.cpp">
     <ClCompile Include="RigidBody2D\TestGravitySettle.cpp">
     <ClCompile Include="RigidBody2D\TestCircleVsPolyContact.cpp">
