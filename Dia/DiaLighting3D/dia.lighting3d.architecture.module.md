@@ -67,6 +67,7 @@ dependencies:
     - dia.core
     - dia.maths
     - dia.observation
+    - dia.geometry3d
   forbidden:
     - dia.graphics
     - dia.graphics3d
@@ -74,5 +75,4 @@ dependencies:
     - dia.scene3d
     - dia.applicationflow
     - dia.bgfx
-    - dia.geometry3d
 ---
