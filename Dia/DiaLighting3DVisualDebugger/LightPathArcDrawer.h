@@ -10,6 +10,7 @@
 
 namespace Dia { namespace Lighting3D { class LightRegistry3D;  } }
 namespace Dia { namespace Debug      { class DebugLayerManager; } }
+namespace Dia { namespace Observation { namespace Metric { class Counter; } } }
 
 namespace Dia { namespace Lighting3D {
 
@@ -29,7 +30,8 @@ private:
     const LightRegistry3D&               mRegistry;
     const Dia::Debug::DebugLayerManager& mManager;
 
-    int mArcSamples = 32;
+    int                                          mArcSamples    = 32;
+    Dia::Observation::Metric::Counter*           mActivePathsCounter = nullptr;
 };
 
 } } // namespace Dia::Lighting3D

@@ -211,7 +211,6 @@ TEST(LightWidgetsDrawer, Draw_Disabled_NoPrimitives)
 TEST(LightWidgetsDrawer, Draw_EmptyRegistry_NoPrimitives)
 {
     Dia::Lighting3D::Testing::LightBuilder3D builder;
-    // No lights registered
 
     Dia::Debug::DebugLayerManager       manager;
     Dia::Lighting3D::LightWidgetsDrawer drawer(builder.Registry(), manager);
@@ -220,4 +219,67 @@ TEST(LightWidgetsDrawer, Draw_EmptyRegistry_NoPrimitives)
     drawer.Draw(frameData);
 
     EXPECT_EQ(frameData.GetDebug3DPrimitiveCount(), 0u);
+}
+
+TEST(LightWidgetsDrawer, Draw_SpotLightsDisabled_NoPrimitivesForSpot)
+{
+    Dia::Lighting3D::Testing::LightBuilder3D builder;
+    builder.WithSpot("spot0");
+
+    Dia::Debug::DebugLayerManager       manager;
+    Dia::Lighting3D::LightWidgetsDrawer drawer(builder.Registry(), manager);
+    drawer.SetShowSpotLights(false);
+
+    Dia::Graphics::FrameData frameData;
+    drawer.Draw(frameData);
+
+    EXPECT_EQ(frameData.GetDebug3DPrimitiveCount(), 0u);
+}
+
+TEST(LightWidgetsDrawer, Draw_DirectionalLightsDisabled_NoPrimitivesForDirectional)
+{
+    Dia::Lighting3D::Testing::LightBuilder3D builder;
+    builder.WithDirectional("dir0");
+
+    Dia::Debug::DebugLayerManager       manager;
+    Dia::Lighting3D::LightWidgetsDrawer drawer(builder.Registry(), manager);
+    drawer.SetShowDirectionalLights(false);
+
+    Dia::Graphics::FrameData frameData;
+    drawer.Draw(frameData);
+
+    EXPECT_EQ(frameData.GetDebug3DPrimitiveCount(), 0u);
+}
+
+TEST(LightWidgetsDrawer, Draw_DisabledLight_Skipped)
+{
+    Dia::Lighting3D::Testing::LightBuilder3D builder;
+    builder.WithPoint("enabled_point").WithPoint("disabled_point").PointDisabled();
+
+    Dia::Debug::DebugLayerManager       manager;
+    Dia::Lighting3D::LightWidgetsDrawer drawer(builder.Registry(), manager);
+
+    Dia::Graphics::FrameData frameData;
+    drawer.Draw(frameData);
+
+    // Only 1 of the 2 point lights is enabled — expect exactly 1 sphere
+    const uint32_t sphereCount = CountPrimitivesOfType(frameData,
+        Dia::Graphics::DebugPrimitiveType::Sphere3D);
+    EXPECT_EQ(sphereCount, 1u);
+}
+
+TEST(LightWidgetsDrawer, Draw_MultiplePointLights_EmitsOneSphereEach)
+{
+    Dia::Lighting3D::Testing::LightBuilder3D builder;
+    builder.WithPoint("p0").WithPoint("p1").WithPoint("p2");
+
+    Dia::Debug::DebugLayerManager       manager;
+    Dia::Lighting3D::LightWidgetsDrawer drawer(builder.Registry(), manager);
+
+    Dia::Graphics::FrameData frameData;
+    drawer.Draw(frameData);
+
+    const uint32_t sphereCount = CountPrimitivesOfType(frameData,
+        Dia::Graphics::DebugPrimitiveType::Sphere3D);
+    EXPECT_EQ(sphereCount, 3u);
 }

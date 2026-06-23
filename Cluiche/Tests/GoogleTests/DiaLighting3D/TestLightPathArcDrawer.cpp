@@ -227,3 +227,77 @@ TEST(LightRegistry3D, GetPathBehaviour_NoBehaviour_ReturnsNull)
 
     EXPECT_EQ(registry.GetPathBehaviour(id), nullptr);
 }
+
+TEST(LightPathArcDrawer, Draw_ArcColour_SpotLight_IsHealthy)
+{
+    LightRegistry3D registry;
+    const Dia::Core::StringCRC id("spot.arc");
+    Dia::Lighting3D::SpotLight3D spotLight;
+    registry.RegisterSpot(id, spotLight);
+
+    SpotLight3D* stored = &registry.GetSpot(id);
+    LightPathBehaviour3D::Config cfg;
+    cfg.spline = MakeTestSpline();
+    cfg.speed  = 0.0f;
+    LightPathBehaviour3D behaviour(stored, cfg);
+    registry.AttachBehaviour(id, &behaviour);
+
+    Dia::Debug::DebugLayerManager manager;
+    LightPathArcDrawer            drawer(registry, manager);
+    drawer.SetArcSamples(1);
+
+    Dia::Graphics::FrameData frameData;
+    drawer.Draw(frameData);
+
+    ASSERT_GE(frameData.GetDebug3DPrimitiveCount(), 1u);
+    EXPECT_EQ(frameData.GetDebug3DPrimitive(0).line3D.colour,
+              Dia::Debug::DebugColourPalette::kHealthy);
+}
+
+TEST(LightPathArcDrawer, Draw_ArcSamples_MinBoundary)
+{
+    LightRegistry3D registry;
+    const Dia::Core::StringCRC id("p.min");
+    Dia::Lighting3D::PointLight3D light;
+    registry.RegisterPoint(id, light);
+
+    PointLight3D* stored = &registry.GetPoint(id);
+    LightPathBehaviour3D::Config cfg;
+    cfg.spline = MakeTestSpline();
+    cfg.speed  = 0.0f;
+    LightPathBehaviour3D behaviour(stored, cfg);
+    registry.AttachBehaviour(id, &behaviour);
+
+    Dia::Debug::DebugLayerManager manager;
+    LightPathArcDrawer            drawer(registry, manager);
+    drawer.SetArcSamples(8);
+
+    Dia::Graphics::FrameData frameData;
+    drawer.Draw(frameData);
+
+    EXPECT_EQ(frameData.GetDebug3DPrimitiveCount(), static_cast<uint32_t>(8));
+}
+
+TEST(LightPathArcDrawer, Draw_ArcSamples_MaxBoundary)
+{
+    LightRegistry3D registry;
+    const Dia::Core::StringCRC id("p.max");
+    Dia::Lighting3D::PointLight3D light;
+    registry.RegisterPoint(id, light);
+
+    PointLight3D* stored = &registry.GetPoint(id);
+    LightPathBehaviour3D::Config cfg;
+    cfg.spline = MakeTestSpline();
+    cfg.speed  = 0.0f;
+    LightPathBehaviour3D behaviour(stored, cfg);
+    registry.AttachBehaviour(id, &behaviour);
+
+    Dia::Debug::DebugLayerManager manager;
+    LightPathArcDrawer            drawer(registry, manager);
+    drawer.SetArcSamples(64);
+
+    Dia::Graphics::FrameData frameData;
+    drawer.Draw(frameData);
+
+    EXPECT_EQ(frameData.GetDebug3DPrimitiveCount(), static_cast<uint32_t>(64));
+}
