@@ -3,7 +3,7 @@
 ## Parent System
 @docs/specs/applications/dia/systems/diavisualdebugger/diavisualdebugger.md
 
-**Status:** `Approved`
+**Status:** `Done`
 
 ---
 
