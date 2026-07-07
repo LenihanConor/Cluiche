@@ -15,6 +15,7 @@
     <ClInclude Include="BlackboardComponent.h" />
     <ClInclude Include="GlobalBlackboard.h" />
     <ClInclude Include="Testing\BlackboardTestHelpers.h">
+    <ClInclude Include="BlackboardRegistry.h" />
       <Filter>Testing</Filter>
     </ClInclude>
   </ItemGroup>
@@ -22,6 +23,7 @@
     <ClCompile Include="Blackboard.cpp" />
     <ClCompile Include="BlackboardComponent.cpp" />
     <ClCompile Include="GlobalBlackboard.cpp" />
+    <ClCompile Include="BlackboardRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.blackboard.architecture.module.md">
