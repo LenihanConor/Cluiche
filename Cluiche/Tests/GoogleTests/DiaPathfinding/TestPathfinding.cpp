@@ -204,7 +204,7 @@ TEST(SquarePathGrid, GetNeighbours_BlockedNeighbour_NotIncluded)
     // Blocked cell must not appear
     for (int i = 0; i < neighbours.Size(); ++i)
     {
-        EXPECT_FALSE(neighbours[i] == CellCoord{1, 2})
+        EXPECT_FALSE((neighbours[i] == CellCoord{1, 2}))
             << "Blocked cell (1,2) should not be in neighbours";
     }
     // With one neighbour blocked: 4 - 1 = 3 valid neighbours
@@ -282,8 +282,8 @@ TEST(FindPath, FindPath_SquareGrid_DirectPath_Succeeds)
 
     EXPECT_TRUE(result.success);
     EXPECT_GT(result.cells.Size(), 0u);
-    EXPECT_TRUE(result.cells[0] == CellCoord{0, 0});
-    EXPECT_TRUE(result.cells[result.cells.Size() - 1] == CellCoord{4, 4});
+    EXPECT_TRUE((result.cells[0] == CellCoord{0, 0}));
+    EXPECT_TRUE((result.cells[result.cells.Size() - 1] == CellCoord{4, 4}));
 }
 
 TEST(FindPath, FindPath_SquareGrid_PathAvoidsWall)
@@ -340,7 +340,7 @@ TEST(FindPath, FindPath_SquareGrid_SameStartAndEnd_ReturnsSingleCell)
 
     EXPECT_TRUE(result.success);
     EXPECT_EQ(result.cells.Size(), 1u);
-    EXPECT_TRUE(result.cells[0] == CellCoord{2, 2});
+    EXPECT_TRUE((result.cells[0] == CellCoord{2, 2}));
     EXPECT_FLOAT_EQ(result.totalCost, 0.0f);
 }
 
@@ -372,8 +372,8 @@ TEST(FindPath, FindPath_HexGrid_DirectPath_Succeeds)
 
     EXPECT_TRUE(result.success);
     EXPECT_GT(result.cells.Size(), 0u);
-    EXPECT_TRUE(result.cells[0] == CellCoord{-4, 0});
-    EXPECT_TRUE(result.cells[result.cells.Size() - 1] == CellCoord{4, 0});
+    EXPECT_TRUE((result.cells[0] == CellCoord{-4, 0}));
+    EXPECT_TRUE((result.cells[result.cells.Size() - 1] == CellCoord{4, 0}));
 }
 
 TEST(FindPath, FindPath_CostProvider_ImpassableCostBlocksEdge)
@@ -388,7 +388,7 @@ TEST(FindPath, FindPath_CostProvider_ImpassableCostBlocksEdge)
     EXPECT_TRUE(result.success);
     for (int i = 0; i < result.cells.Size(); ++i)
     {
-        EXPECT_FALSE(result.cells[i] == CellCoord{2, 2})
+        EXPECT_FALSE((result.cells[i] == CellCoord{2, 2}))
             << "Path should avoid the impassable cell (2,2)";
     }
 }
