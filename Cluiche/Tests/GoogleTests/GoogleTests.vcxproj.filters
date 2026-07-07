@@ -181,6 +181,9 @@
     <Filter Include="DiaMesh3D">
       <UniqueIdentifier>{DME3D001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="CluicheGameBaseline">
+      <UniqueIdentifier>{CGBL0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -1348,6 +1351,9 @@
     </ClCompile>
     <ClCompile Include="DiaLighting3D\TestLightPathArcDrawer.cpp">
     <ClCompile Include="DiaBlackboard\TestBlackboard.cpp">
+    <ClCompile Include="CluicheGameBaseline\TestBlackboardInspectorSource.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
     <ClCompile Include="DiaPathfinding\TestPathfindingGolden.cpp">
     <ClCompile Include="DiaPathfinding\TestPathfindingBoundary.cpp">
       <Filter>DiaPathfinding</Filter>

@@ -7,7 +7,7 @@ namespace Cluiche { namespace AppFlow {
 // Broadcasts blackboard.state — full snapshot of every registered board,
 // its slots, and its observers. Fires only when structural hash changes
 // (change-detected strategy).
-class BlackboardInspectorSource final : public Dia::DebugServer::ChangeDetectedSourceBase
+class BlackboardInspectorSource : public Dia::DebugServer::ChangeDetectedSourceBase
 {
 public:
     explicit BlackboardInspectorSource(
