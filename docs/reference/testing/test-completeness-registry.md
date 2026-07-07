@@ -1,6 +1,6 @@
 # Test Completeness Registry
 
-**Last Updated:** 2026-06-08 (DiaLighting3D: 59 new tests; DiaLighting2D: registered 18 existing; 3,120 total)
+**Last Updated:** 2026-07-07 (DiaPathfinding: 79 tests registered; SquarePathGrid OOB fix; ~3,199 total)
 
 Single source of truth for test coverage across all Dia modules. Updated alongside test commits.
 
@@ -272,6 +272,22 @@ Gap markers: **ZERO** = no tests, **LOW** = under-tested relative to API surface
 | ColorCycleBehaviour3D | 4 | TestBehaviours3D.cpp | 1 | 1 (single-colour early-return) | 2 (phase 0 = first colour, update no-crash) | GOOD |
 
 **DiaLighting3D totals: 2 files, 59 tests**
+
+---
+
+## DiaPathfinding
+
+| Component | Tests | Files | Unit | Stress/Boundary | Golden/Regression | Notes |
+|-----------|-------|-------|------|-----------------|-------------------|-------|
+| CellCoord | 2 | TestPathfinding.cpp | 2 | 0 | 0 | OK — equality only; no construction variants |
+| IPathCostProvider / FlatCostProvider | 2 | TestPathfinding.cpp | 2 | 0 | 0 | OK |
+| SquarePathGrid | 18 | TestPathfinding.cpp, TestPathfindingBoundary.cpp | 12 | 6 (OOB, 1×1, all-blocked, corner) | 0 | GOOD |
+| HexPathGrid | 11 | TestPathfinding.cpp, TestPathfindingBoundary.cpp | 7 | 4 (radius-0, all-blocked, OOB set) | 0 | GOOD |
+| FindPath (synchronous) | 30 | TestPathfinding.cpp, TestPathfindingGolden.cpp, TestPathfindingBoundary.cpp | 15 | 9 (OOB, impassable-to, no-path, all-cost-blocked) | 6 (exact cost, length, sequence, optimality) | GOOD |
+| PathfindingSystem (async) | 13 | TestPathfinding.cpp, TestPathfindingBoundary.cpp | 6 | 7 (zero-budget, null-observer, cancel-ghost, reuse, idempotent-update) | 0 | GOOD |
+| Test Utilities (AssertPathFound, AssertPathCells, MockCostProvider) | 4 | TestPathfinding.cpp | 4 | 0 | 0 | OK |
+
+**DiaPathfinding totals: 3 files, 79 tests** | GOOD — golden cost/length/sequence, optimality, OOB, all-blocked, null-observer, system reuse; bug found+fixed: SquarePathGrid::SetPassable lacked OOB guard
 
 ---
 

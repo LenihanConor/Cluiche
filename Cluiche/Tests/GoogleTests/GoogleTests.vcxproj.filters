@@ -1348,6 +1348,12 @@
     </ClCompile>
     <ClCompile Include="DiaLighting3D\TestLightPathArcDrawer.cpp">
     <ClCompile Include="DiaBlackboard\TestBlackboard.cpp">
+    <ClCompile Include="DiaPathfinding\TestPathfindingGolden.cpp">
+    <ClCompile Include="DiaPathfinding\TestPathfindingBoundary.cpp">
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
       <Filter>DiaBlackboard</Filter>
     </ClCompile>
       <Filter>DiaLighting3D</Filter>

@@ -691,6 +691,8 @@
     <ClCompile Include="DiaBlackboard\TestBlackboard.cpp" />
     <ClCompile Include="DiaOrder\TestOrderQueue.cpp" />
     <ClCompile Include="DiaPathfinding\TestPathfinding.cpp" />
+    <ClCompile Include="DiaPathfinding\TestPathfindingGolden.cpp" />
+    <ClCompile Include="DiaPathfinding\TestPathfindingBoundary.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaLighting2D\DiaLighting2D.vcxproj">

@@ -16,7 +16,10 @@ namespace Dia::Pathfinding {
 
     void SquarePathGrid::SetPassable(CellCoord cell, bool passable)
     {
-        mPassable[CellIndex(cell)] = passable;
+        if (IsInBounds(cell))
+        {
+            mPassable[CellIndex(cell)] = passable;
+        }
     }
 
     bool SquarePathGrid::IsPassable(CellCoord cell) const
