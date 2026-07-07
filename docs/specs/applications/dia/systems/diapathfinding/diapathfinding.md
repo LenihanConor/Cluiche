@@ -299,12 +299,14 @@ namespace Dia::Pathfinding {
 | AD-002 | Dia App | No STL containers in public APIs | Reinforces PD-004. Internal A* open/closed sets may use STL priority_queue. |
 | AD-003 | Dia App | Namespace `Dia::<Module>::` | All code in `Dia::Pathfinding::` namespace. |
 
-## Open Design Questions
+## Resolved Design Questions
 
-1. **Heuristic selection** — A* needs a heuristic function. Should `FindPath` accept an injectable `IHeuristic` (same pattern as `IPathCostProvider`), or ship with fixed heuristics (Manhattan for 4-connected, Chebyshev for 8-connected, cube-distance for hex) selected automatically by graph type? Fixed heuristics are simpler and correct for standard cases; injectable heuristics allow admissibility tuning for non-uniform grids.
+1. **Heuristic selection** — Fixed heuristics per graph type: Manhattan for 4-connected, Chebyshev for 8-connected, cube-distance for hex. Selected automatically inside `FindPath<TGraph>` via type dispatch. Rationale: correct for all standard cases; injectable heuristics deferred until a concrete non-standard use case exists (PD-006 anti-premature-optimisation).
 
-2. **`PathfindingSystem` graph ownership** — `PathfindingSystem<TGraph>` holds a `const TGraph&`. If the grid is mutated between `RequestPath()` and `Update()` (a cell becomes impassable mid-search), the in-flight search may return a stale path. Should the system copy the grid at request time, or is it the caller's responsibility to not mutate the grid while requests are pending?
+2. **`PathfindingSystem` graph ownership** — `PathfindingSystem<TGraph>` holds `const TGraph&`; the caller is responsible for not mutating the grid while requests are pending. Rationale: single-threaded SimPU use makes this trivially manageable; copying the grid would be expensive for large grids and is not needed in v1.
 
 ## Status
 
-`Draft`
+`Approved`
+
+**Plan:** @docs/specs/applications/dia/systems/diapathfinding/diapathfinding.plan.md
