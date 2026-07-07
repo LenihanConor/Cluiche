@@ -691,7 +691,7 @@
             ]
         },
         {
-            "id": "stage.mesh3drendersystem_test_stage",
+            "id": "stage.mesh3d_render_system_test_stage",
             "type": "stage",
             "source_path": "Stages/Mesh3DRenderSystemTestStage/mesh3drendersystem_test_stage.diastage",
             "scope": "global",
@@ -701,12 +701,16 @@
             "references": [
                 {
                     "type": "contains",
-                    "target": "manifest.mesh3drendersystem_test_stage"
+                    "target": "manifest.mesh3d_render_system_test_stage"
+                },
+                {
+                    "type": "contains",
+                    "target": "mesh3d.avocado"
                 }
             ]
         },
         {
-            "id": "manifest.mesh3drendersystem_test_stage",
+            "id": "manifest.mesh3d_render_system_test_stage",
             "type": "manifest",
             "source_path": "Stages/Mesh3DRenderSystemTestStage/misc/ApplicationFlow/mesh3drendersystem_test_stage.diaapp",
             "scope": "stage",

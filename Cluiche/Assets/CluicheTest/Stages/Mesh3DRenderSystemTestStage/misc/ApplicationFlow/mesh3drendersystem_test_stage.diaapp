@@ -5,6 +5,12 @@
             "instance_id": "MainPU",
             "frequency_hz": 30,
             "dedicated_thread": false,
+            "modules": []
+        },
+        {
+            "instance_id": "SimPU",
+            "frequency_hz": 30,
+            "dedicated_thread": true,
             "modules": [
                 {
                     "instance_id": "Mesh3DRenderSystemTestStageModule",
@@ -12,9 +18,7 @@
                     "stages": [
                         "Mesh3DRenderSystemTestStage"
                     ],
-                    "dependencies": [
-                        "AutomationModule"
-                    ],
+                    "dependencies": [],
                     "channels": [
                         {
                             "id": "SimToRender3D",
@@ -23,16 +27,18 @@
                         {
                             "id": "KernelMeshHandler",
                             "role": "consumes"
+                        },
+                        {
+                            "id": "AutomationService",
+                            "role": "consumes"
+                        },
+                        {
+                            "id": "RenderToSim",
+                            "role": "reads"
                         }
                     ]
                 }
             ]
-        },
-        {
-            "instance_id": "SimPU",
-            "frequency_hz": 30,
-            "dedicated_thread": true,
-            "modules": []
         }
     ]
 }

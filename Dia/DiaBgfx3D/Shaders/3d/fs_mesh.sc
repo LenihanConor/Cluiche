@@ -37,7 +37,9 @@ void main()
     vec4 normalSample = texture2D(s_normalMap, v_texcoord0);
     vec3 tangentNormal = normalSample.rgb * 2.0 - 1.0;
     vec3 normal = normalize(T * tangentNormal.x + B * tangentNormal.y + N * tangentNormal.z);
-    vec3 lightDir = normalize(u_directionalLightDir.xyz);
+    // u_directionalLightDir is FROM light TO scene (sun-ray direction); negate to get
+    // the vector FROM surface TOWARD the light, which is what Lambert NdotL expects.
+    vec3 lightDir = -normalize(u_directionalLightDir.xyz);
 
     // Lambert diffuse
     float NdotL = max(dot(normal, lightDir), 0.0);
