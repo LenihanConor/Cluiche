@@ -529,6 +529,254 @@ TEST(DiaOrderMessage, UrgentFlagIsStoredCorrectly)
 }
 
 // -------------------------------------------------------------------------
+// EnqueueFront edge cases
+// -------------------------------------------------------------------------
+
+TEST(DiaOrderQueue, EnqueueFrontOnEmptyQueueStartsOnNextUpdate)
+{
+    // No current order, no pending — EnqueueFront should behave like Enqueue.
+    OrderQueue<TestCtx> queue;
+    MockOrder<TestCtx> order(Dia::Core::StringCRC("UrgentOrder"), /*shouldFinish=*/false);
+
+    queue.EnqueueFront(&order);
+
+    TestCtx ctx;
+    queue.Update(ctx, 0.0f);
+
+    ASSERT_NE(queue.GetCurrentOrder(), nullptr);
+    EXPECT_EQ(queue.GetCurrentOrder()->GetOrderId(), Dia::Core::StringCRC("UrgentOrder"));
+    EXPECT_EQ(order.startCount, 1);
+}
+
+TEST(DiaOrderQueue, EnqueueFrontWithCurrentAndPendingPrependsBeforePending)
+{
+    // A is running, B is pending, EnqueueFront C → C then B (A is cancelled)
+    OrderQueue<TestCtx> queue;
+    MockOrder<TestCtx> orderA(Dia::Core::StringCRC("OrderA"), /*shouldFinish=*/false);
+    MockOrder<TestCtx> orderB(Dia::Core::StringCRC("OrderB"), /*shouldFinish=*/false);
+    MockOrder<TestCtx> orderC(Dia::Core::StringCRC("OrderC"), /*shouldFinish=*/false);
+
+    queue.Enqueue(&orderA);
+    queue.Enqueue(&orderB);
+    TestCtx ctx;
+    queue.Update(ctx, 0.0f);  // OrderA current, OrderB pending
+
+    queue.EnqueueFront(&orderC);  // Cancel A, insert C at front of pending (ahead of B)
+
+    queue.Update(ctx, 0.0f);  // C should start
+    ASSERT_NE(queue.GetCurrentOrder(), nullptr);
+    EXPECT_EQ(queue.GetCurrentOrder()->GetOrderId(), Dia::Core::StringCRC("OrderC"));
+    EXPECT_EQ(orderC.startCount, 1);
+    EXPECT_EQ(orderB.startCount, 0);  // B hasn't started yet
+}
+
+TEST(DiaOrderQueue, EnqueueFrontWithCurrentAndPendingBFollowsAfterC)
+{
+    // After C finishes, B should run
+    OrderQueue<TestCtx> queue;
+    MockOrder<TestCtx> orderA(Dia::Core::StringCRC("OrderA"), /*shouldFinish=*/false);
+    MockOrder<TestCtx> orderB(Dia::Core::StringCRC("OrderB"), /*shouldFinish=*/false);
+    MockOrder<TestCtx> orderC(Dia::Core::StringCRC("OrderC"), /*shouldFinish=*/false);
+
+    queue.Enqueue(&orderA);
+    queue.Enqueue(&orderB);
+    TestCtx ctx;
+    queue.Update(ctx, 0.0f);  // A current, B pending
+
+    queue.EnqueueFront(&orderC);  // A cancelled, C at front
+    queue.Update(ctx, 0.0f);      // C starts
+
+    orderC.shouldFinish = true;
+    queue.Update(ctx, 0.0f);      // C finishes, B starts
+
+    ASSERT_NE(queue.GetCurrentOrder(), nullptr);
+    EXPECT_EQ(queue.GetCurrentOrder()->GetOrderId(), Dia::Core::StringCRC("OrderB"));
+    EXPECT_EQ(orderC.finishCount, 1);
+    EXPECT_EQ(orderB.startCount, 1);
+}
+
+// -------------------------------------------------------------------------
+// Cancel with pending orders
+// -------------------------------------------------------------------------
+
+TEST(DiaOrderQueue, CancelWithPendingOrdersDoesNotFireQueueEmpty)
+{
+    // Cancel() drops current but there are still pending orders — no OnQueueEmpty yet
+    OrderQueue<TestCtx> queue;
+    MockOrder<TestCtx> orderA(Dia::Core::StringCRC("OrderA"), /*shouldFinish=*/false);
+    MockOrder<TestCtx> orderB(Dia::Core::StringCRC("OrderB"), /*shouldFinish=*/false);
+    MockOrderQueueObserver<TestCtx> obs;
+
+    queue.AddObserver(obs);
+    queue.Enqueue(&orderA);
+    queue.Enqueue(&orderB);
+    TestCtx ctx;
+    queue.Update(ctx, 0.0f);  // A is current, B is pending
+
+    queue.Cancel();  // A dropped; B still pending
+
+    EXPECT_EQ(obs.emptyCount, 0);
+    EXPECT_FALSE(queue.IsEmpty());  // B still in queue
+}
+
+TEST(DiaOrderQueue, CancelWithPendingOrdersNextUpdateStartsNextOrder)
+{
+    // After Cancel(), the next Update() should start the first pending order
+    OrderQueue<TestCtx> queue;
+    MockOrder<TestCtx> orderA(Dia::Core::StringCRC("OrderA"), /*shouldFinish=*/false);
+    MockOrder<TestCtx> orderB(Dia::Core::StringCRC("OrderB"), /*shouldFinish=*/false);
+
+    queue.Enqueue(&orderA);
+    queue.Enqueue(&orderB);
+    TestCtx ctx;
+    queue.Update(ctx, 0.0f);  // A is current
+
+    queue.Cancel();            // A dropped, B still pending
+    queue.Update(ctx, 0.0f);  // B should now start
+
+    ASSERT_NE(queue.GetCurrentOrder(), nullptr);
+    EXPECT_EQ(queue.GetCurrentOrder()->GetOrderId(), Dia::Core::StringCRC("OrderB"));
+    EXPECT_EQ(orderB.startCount, 1);
+}
+
+// -------------------------------------------------------------------------
+// No-op / robustness cases
+// -------------------------------------------------------------------------
+
+TEST(DiaOrderQueue, UpdateOnEmptyQueueIsNoOp)
+{
+    OrderQueue<TestCtx> queue;
+    TestCtx ctx;
+    queue.Update(ctx, 1.0f);  // should not crash
+    EXPECT_TRUE(queue.IsEmpty());
+    SUCCEED();
+}
+
+TEST(DiaOrderQueue, CancelOnEmptyQueueIsNoOp)
+{
+    OrderQueue<TestCtx> queue;
+    queue.Cancel();  // should not crash
+    EXPECT_TRUE(queue.IsEmpty());
+    SUCCEED();
+}
+
+TEST(DiaOrderQueue, ClearOnEmptyQueueIsNoOp)
+{
+    OrderQueue<TestCtx> queue;
+    queue.Clear();  // should not crash
+    EXPECT_TRUE(queue.IsEmpty());
+    SUCCEED();
+}
+
+// -------------------------------------------------------------------------
+// dt pass-through
+// -------------------------------------------------------------------------
+
+TEST(DiaOrderQueue, DtIsPassedThroughToOrderUpdate)
+{
+    struct DtCapture { float lastDt = 0.0f; };
+
+    class DtOrder : public IOrder<DtCapture> {
+    public:
+        float receivedDt = -1.0f;
+        Dia::Core::StringCRC GetOrderId() const override { return Dia::Core::StringCRC("DtOrder"); }
+        void Start(DtCapture&) override {}
+        bool Update(DtCapture&, float dt) override { receivedDt = dt; return false; }
+        void Finish(DtCapture&) override {}
+        void Cancel(DtCapture&) override {}
+    };
+
+    OrderQueue<DtCapture> queue;
+    DtOrder order;
+    queue.Enqueue(&order);
+
+    DtCapture ctx;
+    queue.Update(ctx, 0.0f);          // start tick
+    queue.Update(ctx, 0.016f);        // dt tick
+
+    EXPECT_FLOAT_EQ(order.receivedDt, 0.016f);
+}
+
+// -------------------------------------------------------------------------
+// Three-order sequential chain
+// -------------------------------------------------------------------------
+
+TEST(DiaOrderQueue, ThreeOrderChainRunsInSequence)
+{
+    OrderQueue<TestCtx> queue;
+    MockOrder<TestCtx> orderA(Dia::Core::StringCRC("OrderA"), /*shouldFinish=*/false);
+    MockOrder<TestCtx> orderB(Dia::Core::StringCRC("OrderB"), /*shouldFinish=*/false);
+    MockOrder<TestCtx> orderC(Dia::Core::StringCRC("OrderC"), /*shouldFinish=*/false);
+
+    queue.Enqueue(&orderA);
+    queue.Enqueue(&orderB);
+    queue.Enqueue(&orderC);
+
+    TestCtx ctx;
+    queue.Update(ctx, 0.0f);  // A starts
+
+    orderA.shouldFinish = true;
+    queue.Update(ctx, 0.0f);  // A finishes, B starts
+
+    orderB.shouldFinish = true;
+    queue.Update(ctx, 0.0f);  // B finishes, C starts
+
+    orderC.shouldFinish = true;
+    queue.Update(ctx, 0.0f);  // C finishes, queue empty
+
+    EXPECT_TRUE(queue.IsEmpty());
+    EXPECT_EQ(orderA.finishCount, 1);
+    EXPECT_EQ(orderB.finishCount, 1);
+    EXPECT_EQ(orderC.finishCount, 1);
+    EXPECT_EQ(orderA.startCount, 1);
+    EXPECT_EQ(orderB.startCount, 1);
+    EXPECT_EQ(orderC.startCount, 1);
+}
+
+// -------------------------------------------------------------------------
+// Clear fires OnOrderCancelled for current
+// -------------------------------------------------------------------------
+
+TEST(DiaOrderQueue, ClearFiresOnOrderCancelledForCurrentOrder)
+{
+    OrderQueue<TestCtx> queue;
+    MockOrder<TestCtx> order(Dia::Core::StringCRC("OrderA"), /*shouldFinish=*/false);
+    MockOrderQueueObserver<TestCtx> obs;
+
+    queue.AddObserver(obs);
+    queue.Enqueue(&order);
+    TestCtx ctx;
+    queue.Update(ctx, 0.0f);  // order is current
+
+    queue.Clear();
+
+    EXPECT_EQ(obs.cancelledCount, 1);
+    EXPECT_EQ(obs.lastCancelled->GetOrderId(), Dia::Core::StringCRC("OrderA"));
+}
+
+TEST(DiaOrderQueue, ClearDropsPendingOrdersSilently)
+{
+    // Pending orders (never started) are dropped without OnOrderCancelled
+    OrderQueue<TestCtx> queue;
+    MockOrder<TestCtx> orderA(Dia::Core::StringCRC("OrderA"), /*shouldFinish=*/false);
+    MockOrder<TestCtx> orderB(Dia::Core::StringCRC("OrderB"), /*shouldFinish=*/false);
+    MockOrderQueueObserver<TestCtx> obs;
+
+    queue.AddObserver(obs);
+    queue.Enqueue(&orderA);
+    queue.Enqueue(&orderB);
+    TestCtx ctx;
+    queue.Update(ctx, 0.0f);  // A current, B still pending (never started)
+
+    queue.Clear();
+
+    EXPECT_TRUE(queue.IsEmpty());
+    // A was cancelled (current), B was never started so no cancel callback for it
+    EXPECT_EQ(obs.cancelledCount, 1);
+    EXPECT_EQ(obs.emptyCount, 1);
+}
+
+// -------------------------------------------------------------------------
 // Boundary / Death tests (debug only)
 // -------------------------------------------------------------------------
 
