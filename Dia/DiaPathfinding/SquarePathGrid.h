@@ -19,6 +19,7 @@ namespace Dia::Pathfinding {
 
         int GetWidth()  const;
         int GetHeight() const;
+        SquareConnectivity GetConnectivity() const;
 
     private:
         bool IsInBounds(CellCoord cell) const;

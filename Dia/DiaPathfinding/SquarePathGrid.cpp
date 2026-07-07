@@ -71,6 +71,11 @@ namespace Dia::Pathfinding {
         return mHeight;
     }
 
+    SquareConnectivity SquarePathGrid::GetConnectivity() const
+    {
+        return mConnectivity;
+    }
+
     bool SquarePathGrid::IsInBounds(CellCoord cell) const
     {
         return cell.x >= 0 && cell.x < mWidth && cell.y >= 0 && cell.y < mHeight;
