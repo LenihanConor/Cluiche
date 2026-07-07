@@ -34,6 +34,15 @@ namespace Dia { namespace Blackboard {
         void AddObserver(IBlackboardObserver& observer);
         void RemoveObserver(IBlackboardObserver& observer);
 
+        // Visitor iteration — used by inspector sources. No STL in signature (PD-004).
+        // fn(Dia::Core::StringCRC key, const void* typeTag, const void* data)
+        template<typename Fn>
+        void VisitSlots(Fn&& fn) const;
+
+        // fn(const IBlackboardObserver* obs)
+        template<typename Fn>
+        void VisitObservers(Fn&& fn) const;
+
     private:
         struct SlotEntry;
 

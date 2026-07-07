@@ -27,6 +27,7 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <memory>
 
+#include <DiaBlackboard/BlackboardRegistry.h>
 #include "Types/EntityInspectEvent.h"
 
 namespace Dia { namespace Observation { namespace Metric {
@@ -54,6 +55,10 @@ public:
     // has started.  Returns the same pointer for the lifetime of the
     // module — may be null before DoStart.
     Dia::DebugServer::DebugServer* GetServer() { return &mServer; }
+
+    // Exposes the blackboard registry owned by this module so game modules
+    // can register/unregister boards without a separate SimPU module.
+    Dia::Blackboard::BlackboardRegistry& GetBlackboardRegistry() { return mBlackboardRegistry; }
 
     // Stream ID for the cross-PU DebugServer service.
     static constexpr const char* kServiceStreamId = "DebugServerService";
@@ -110,13 +115,17 @@ private:
     int                                  mPrevMessagesSent    = 0;
 
     // Inspector data sources — created in DoStart, activated, ticked, deactivated.
-    static constexpr unsigned int kSourceCount = 4;
+    static constexpr unsigned int kSourceCount = 5;
     std::unique_ptr<Dia::DebugServer::IInspectorDataSource> mSources[kSourceCount];
 
     // EventStream reader for entity inspect events produced by SimPU.
     // Consumed here (MainPU) so NotifySubscribers is called from the host thread.
     Dia::ApplicationFlow::EventStreamReader<EntityInspectEvent> mEntityInspectReader{
         this, Dia::Core::StringCRC("EntityInspectPush")};
+
+    // Blackboard registry owned here (MainPU); game modules register/unregister
+    // boards via GetBlackboardRegistry(). mSources[4] polls this directly.
+    Dia::Blackboard::BlackboardRegistry mBlackboardRegistry;
 };
 
 } } // namespace Cluiche::AppFlow

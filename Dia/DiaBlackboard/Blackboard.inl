@@ -96,4 +96,23 @@ namespace Dia { namespace Blackboard {
         return static_cast<const T*>(entry->data);
     }
 
+    template<typename Fn>
+    void Blackboard::VisitSlots(Fn&& fn) const
+    {
+        for (unsigned int i = 0; i < mSlots.Size(); ++i)
+        {
+            const SlotEntry* entry = mSlots[i];
+            fn(entry->key, static_cast<const void*>(entry->typeTag), static_cast<const void*>(entry->data));
+        }
+    }
+
+    template<typename Fn>
+    void Blackboard::VisitObservers(Fn&& fn) const
+    {
+        for (unsigned int i = 0; i < mObservers.Size(); ++i)
+        {
+            fn(static_cast<const IBlackboardObserver*>(mObservers[i]));
+        }
+    }
+
 }}

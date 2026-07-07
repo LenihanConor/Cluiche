@@ -16,6 +16,7 @@
 #include "Modules/InspectorSources/StreamStateSource.h"
 #include "Modules/InspectorSources/TimingAggregateSource.h"
 #include "Modules/InspectorSources/LifecycleEventSource.h"
+#include "Modules/InspectorSources/BlackboardInspectorSource.h"
 
 #include <chrono>
 #include <memory>
@@ -114,6 +115,7 @@ Dia::ApplicationFlow::StartResult DebugServerHostModule::DoStart()
         mSources[1] = std::make_unique<StreamStateSource>(app);
         mSources[2] = std::make_unique<TimingAggregateSource>(app);
         mSources[3] = std::make_unique<LifecycleEventSource>(app, &mUptimeSecs);
+        mSources[4] = std::make_unique<BlackboardInspectorSource>(mBlackboardRegistry);
 
         for (auto& src : mSources)
             src->Activate(&mServer);
