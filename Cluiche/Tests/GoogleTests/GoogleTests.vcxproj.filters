@@ -1347,6 +1347,9 @@
       <Filter>DiaLighting3D</Filter>
     </ClCompile>
     <ClCompile Include="DiaLighting3D\TestLightPathArcDrawer.cpp">
+    <ClCompile Include="DiaBlackboard\TestBlackboard.cpp">
+      <Filter>DiaBlackboard</Filter>
+    </ClCompile>
       <Filter>DiaLighting3D</Filter>
     </ClCompile>
       <Filter>DiaBgfx3D</Filter>
