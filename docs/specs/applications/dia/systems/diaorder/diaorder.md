@@ -234,4 +234,6 @@ namespace Dia::Order {
 
 ## Status
 
-`Draft`
+`Done`
+
+**Plan:** @docs/specs/applications/dia/systems/diaorder/diaorder.plan.md
