@@ -39,6 +39,8 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | spline3d | [spec](specs/) | 2026-06-23 | Marked done by `dia docs spec-done` |
 | light-path-behaviour | [spec](specs/) | 2026-06-23 | Marked done by `dia docs spec-done` |
 | mesh3d-bounds-and-origins | [spec](specs/) | 2026-06-23 | Marked done by `dia docs spec-done` |
+| debug-widget-config | [spec](specs/) | 2026-06-23 | Marked done by `dia docs spec-done` |
+| Mesh3DRenderSystemTestStage | [mesh3d-render-system-stage.md](specs/applications/cluichetest/systems/teststages/mesh3d-render-system-stage.md) | 2026-07-07 | Implemented: 3 cubes + avocado + silent-skip ghost; fixed Lambert NdotL direction bug in fs_mesh.sc |
 
 ---
 
