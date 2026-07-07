@@ -33,13 +33,14 @@ namespace Dia::Order {
 
         // Insert at front of pending queue.
         // DynamicArrayC has no InsertAt; we rebuild by swapping.
+        // If the queue is already full, the last pending entry is evicted to
+        // make room for the urgent order (same semantics as a force-cancel).
         if (mPending.IsEmpty())
         {
             mPending.Add(order);
         }
         else
         {
-            // Swap existing entries into a temporary, then rebuild with order first.
             Dia::Core::Containers::DynamicArrayC<IOrder<TContext>*, kMaxQueueDepth> temp;
             for (unsigned int i = 0; i < mPending.Size(); ++i)
             {
@@ -47,7 +48,12 @@ namespace Dia::Order {
             }
             mPending.RemoveAll();
             mPending.Add(order);
-            for (unsigned int i = 0; i < temp.Size(); ++i)
+            // Copy back up to kMaxQueueDepth-1 existing entries; the rest are
+            // evicted when the pending queue was already at capacity.
+            const unsigned int keepCount = (temp.Size() < kMaxQueueDepth - 1u)
+                                           ? temp.Size()
+                                           : kMaxQueueDepth - 1u;
+            for (unsigned int i = 0; i < keepCount; ++i)
             {
                 mPending.Add(temp[i]);
             }
@@ -57,6 +63,8 @@ namespace Dia::Order {
     template<typename TContext>
     void OrderQueue<TContext>::Clear()
     {
+        const bool wasNonEmpty = (mCurrent != nullptr) || !mPending.IsEmpty();
+
         if (mCurrent != nullptr)
         {
             NotifyAndDropCurrent();
@@ -64,9 +72,12 @@ namespace Dia::Order {
 
         mPending.RemoveAll();
 
-        for (unsigned int i = 0; i < mObservers.Size(); ++i)
+        if (wasNonEmpty)
         {
-            mObservers[i]->OnQueueEmpty();
+            for (unsigned int i = 0; i < mObservers.Size(); ++i)
+            {
+                mObservers[i]->OnQueueEmpty();
+            }
         }
     }
 

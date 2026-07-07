@@ -777,6 +777,147 @@ TEST(DiaOrderQueue, ClearDropsPendingOrdersSilently)
 }
 
 // -------------------------------------------------------------------------
+// EnqueueFront with pending but no current
+// -------------------------------------------------------------------------
+
+TEST(DiaOrderQueue, EnqueueFrontWithPendingButNoCurrentPrependsBeforePending)
+{
+    // Two orders enqueued, no Update yet (nothing is current). EnqueueFront
+    // should insert the urgent order before the existing pending ones.
+    OrderQueue<TestCtx> queue;
+    MockOrder<TestCtx> orderA(Dia::Core::StringCRC("OrderA"), /*shouldFinish=*/false);
+    MockOrder<TestCtx> orderB(Dia::Core::StringCRC("OrderB"), /*shouldFinish=*/false);
+    MockOrder<TestCtx> orderC(Dia::Core::StringCRC("OrderC"), /*shouldFinish=*/false);
+
+    queue.Enqueue(&orderA);
+    queue.Enqueue(&orderB);
+    // No Update — nothing is current yet.
+    queue.EnqueueFront(&orderC);  // C should become first in pending
+
+    TestCtx ctx;
+    queue.Update(ctx, 0.0f);  // C should start first
+
+    ASSERT_NE(queue.GetCurrentOrder(), nullptr);
+    EXPECT_EQ(queue.GetCurrentOrder()->GetOrderId(), Dia::Core::StringCRC("OrderC"));
+    EXPECT_EQ(orderC.startCount, 1);
+    EXPECT_EQ(orderA.startCount, 0);
+    EXPECT_EQ(orderB.startCount, 0);
+}
+
+// -------------------------------------------------------------------------
+// EnqueueFront at full capacity evicts last entry
+// -------------------------------------------------------------------------
+
+TEST(DiaOrderQueue, EnqueueFrontAtFullCapacityEvictsLastEntry)
+{
+    // Fill pending to 15 (current=null, no Update yet), then EnqueueFront
+    // one more. The urgent order fits at front; the 15th entry is evicted.
+    OrderQueue<TestCtx> queue;
+
+    MockOrder<TestCtx> orders[15] = {
+        MockOrder<TestCtx>(Dia::Core::StringCRC("O00")),
+        MockOrder<TestCtx>(Dia::Core::StringCRC("O01")),
+        MockOrder<TestCtx>(Dia::Core::StringCRC("O02")),
+        MockOrder<TestCtx>(Dia::Core::StringCRC("O03")),
+        MockOrder<TestCtx>(Dia::Core::StringCRC("O04")),
+        MockOrder<TestCtx>(Dia::Core::StringCRC("O05")),
+        MockOrder<TestCtx>(Dia::Core::StringCRC("O06")),
+        MockOrder<TestCtx>(Dia::Core::StringCRC("O07")),
+        MockOrder<TestCtx>(Dia::Core::StringCRC("O08")),
+        MockOrder<TestCtx>(Dia::Core::StringCRC("O09")),
+        MockOrder<TestCtx>(Dia::Core::StringCRC("O10")),
+        MockOrder<TestCtx>(Dia::Core::StringCRC("O11")),
+        MockOrder<TestCtx>(Dia::Core::StringCRC("O12")),
+        MockOrder<TestCtx>(Dia::Core::StringCRC("O13")),
+        MockOrder<TestCtx>(Dia::Core::StringCRC("O14")),
+    };
+    for (int i = 0; i < 15; ++i)
+        queue.Enqueue(&orders[i]);
+
+    EXPECT_EQ(queue.GetQueueDepth(), 15);
+
+    MockOrder<TestCtx> urgent(Dia::Core::StringCRC("Urgent"), /*shouldFinish=*/false);
+    queue.EnqueueFront(&urgent);  // should NOT crash; evicts O14 (last)
+
+    EXPECT_EQ(queue.GetQueueDepth(), 16);  // still at capacity
+
+    TestCtx ctx;
+    queue.Update(ctx, 0.0f);  // Urgent starts first
+
+    ASSERT_NE(queue.GetCurrentOrder(), nullptr);
+    EXPECT_EQ(queue.GetCurrentOrder()->GetOrderId(), Dia::Core::StringCRC("Urgent"));
+}
+
+// -------------------------------------------------------------------------
+// Clear on empty queue does not fire OnQueueEmpty
+// -------------------------------------------------------------------------
+
+TEST(DiaOrderQueue, ClearOnEmptyQueueDoesNotFireOnQueueEmpty)
+{
+    OrderQueue<TestCtx> queue;
+    MockOrderQueueObserver<TestCtx> obs;
+    queue.AddObserver(obs);
+
+    queue.Clear();
+
+    EXPECT_EQ(obs.emptyCount, 0);
+}
+
+// -------------------------------------------------------------------------
+// Multiple observers all receive finished / cancelled / empty callbacks
+// -------------------------------------------------------------------------
+
+TEST(DiaOrderQueue, MultipleObserversAllReceiveOnOrderFinished)
+{
+    OrderQueue<TestCtx> queue;
+    MockOrder<TestCtx> order(Dia::Core::StringCRC("OrderA"), /*shouldFinish=*/true);
+    MockOrderQueueObserver<TestCtx> obs1, obs2;
+
+    queue.AddObserver(obs1);
+    queue.AddObserver(obs2);
+    queue.Enqueue(&order);
+    TestCtx ctx;
+    queue.Update(ctx, 0.0f);
+
+    EXPECT_EQ(obs1.finishedCount, 1);
+    EXPECT_EQ(obs2.finishedCount, 1);
+}
+
+TEST(DiaOrderQueue, MultipleObserversAllReceiveOnOrderCancelled)
+{
+    OrderQueue<TestCtx> queue;
+    MockOrder<TestCtx> orderA(Dia::Core::StringCRC("OrderA"), /*shouldFinish=*/false);
+    MockOrder<TestCtx> orderB(Dia::Core::StringCRC("OrderB"), /*shouldFinish=*/false);
+    MockOrderQueueObserver<TestCtx> obs1, obs2;
+
+    queue.AddObserver(obs1);
+    queue.AddObserver(obs2);
+    queue.Enqueue(&orderA);
+    TestCtx ctx;
+    queue.Update(ctx, 0.0f);
+    queue.EnqueueFront(&orderB);
+
+    EXPECT_EQ(obs1.cancelledCount, 1);
+    EXPECT_EQ(obs2.cancelledCount, 1);
+}
+
+TEST(DiaOrderQueue, MultipleObserversAllReceiveOnQueueEmpty)
+{
+    OrderQueue<TestCtx> queue;
+    MockOrder<TestCtx> order(Dia::Core::StringCRC("OrderA"), /*shouldFinish=*/true);
+    MockOrderQueueObserver<TestCtx> obs1, obs2;
+
+    queue.AddObserver(obs1);
+    queue.AddObserver(obs2);
+    queue.Enqueue(&order);
+    TestCtx ctx;
+    queue.Update(ctx, 0.0f);
+
+    EXPECT_EQ(obs1.emptyCount, 1);
+    EXPECT_EQ(obs2.emptyCount, 1);
+}
+
+// -------------------------------------------------------------------------
 // Boundary / Death tests (debug only)
 // -------------------------------------------------------------------------
 
