@@ -23,6 +23,8 @@ namespace Dia { namespace Blackboard { namespace Testing {
         int registerCount   = 0;
         int unregisterCount = 0;
 
+        Dia::Core::StringCRC GetId() const override { return Dia::Core::StringCRC{"MockObserver"}; }
+
         void OnSlotRegistered(Dia::Core::StringCRC key) override
         {
             lastRegistered = key;
