@@ -226,15 +226,15 @@ namespace Dia::Pathfinding {
 
 | Feature | Description | Spec | Status |
 |---------|-------------|------|--------|
-| CPathGraph Concept | C++20 concept constraining graph types to `GetNeighbours` + `IsPassable`. Zero-overhead static polymorphism — no vtable on the hot path. | inline | Draft |
-| SquarePathGrid | Rectangular grid, 4 or 8-connected, per-cell passability. Satisfies `CPathGraph`. | inline | Draft |
-| HexPathGrid | Hexagonal grid (axial coordinates), 6-connected, per-cell passability. Satisfies `CPathGraph`. | inline | Draft |
-| IPathCostProvider | Virtual cost injection interface. `FlatCostProvider` (1.0f uniform) ships as default. `kImpassableCost` sentinel blocks edges. | inline | Draft |
-| Synchronous FindPath | `FindPath<TGraph>()` — A* returning `PathResult` immediately. No allocation beyond output array. | inline | Draft |
-| PathResult | `success` + `totalCost` + `DynamicArrayC<CellCoord>` + `ToWorldPositions()` helper. | inline | Draft |
-| Asynchronous PathfindingSystem | `RequestPath()` queues request; `Update(budgetMs)` time-slices work; `IPathResultObserver` delivers result. `CancelRequest()` drops pending work. | inline | Draft |
-| Lifecycle Logging | `DIA_LOG_INFO` on request submit, path found, and path failed. | inline | Draft |
-| Test Utilities | `DiaPathfinding/Testing/` — `AssertPathFound`, `AssertPathCells`, `MockCostProvider`. Ships with library; consumer opt-in via include. | inline | Draft |
+| CPathGraph Concept | C++20 concept constraining graph types to `GetNeighbours` + `IsPassable`. Zero-overhead static polymorphism — no vtable on the hot path. | inline | Done |
+| SquarePathGrid | Rectangular grid, 4 or 8-connected, per-cell passability. Satisfies `CPathGraph`. | inline | Done |
+| HexPathGrid | Hexagonal grid (axial coordinates), 6-connected, per-cell passability. Satisfies `CPathGraph`. | inline | Done |
+| IPathCostProvider | Virtual cost injection interface. `FlatCostProvider` (1.0f uniform) ships as default. `kImpassableCost` sentinel blocks edges. | inline | Done |
+| Synchronous FindPath | `FindPath<TGraph>()` — A* returning `PathResult` immediately. No allocation beyond output array. | inline | Done |
+| PathResult | `success` + `totalCost` + `DynamicArrayC<CellCoord>` + `ToWorldPositions()` helper. | inline | Done |
+| Asynchronous PathfindingSystem | `RequestPath()` queues request; `Update(budgetMs)` time-slices work; `IPathResultObserver` delivers result. `CancelRequest()` drops pending work. | inline | Done |
+| Lifecycle Logging | `DIA_LOG_INFO` on request submit, path found, and path failed. | inline | Done |
+| Test Utilities | `DiaPathfinding/Testing/` — `AssertPathFound`, `AssertPathCells`, `MockCostProvider`. Ships with library; consumer opt-in via include. | inline | Done |
 
 ## Dependencies on Other Systems
 
@@ -307,6 +307,6 @@ namespace Dia::Pathfinding {
 
 ## Status
 
-`Approved`
+`Done`
 
 **Plan:** @docs/specs/applications/dia/systems/diapathfinding/diapathfinding.plan.md
