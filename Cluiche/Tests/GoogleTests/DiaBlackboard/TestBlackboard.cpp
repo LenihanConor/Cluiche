@@ -607,4 +607,193 @@ TEST(SLOW_DiaBlackboardRegistry_Boundary, RegisterSerializer_AtCapacity_Asserts)
     EXPECT_DEATH(registry.RegisterSerializer<S32>(noopFn), "");
 }
 
+TEST(SLOW_DiaBlackboard_Boundary, VisitSlots_AtCapacity_AllVisited)
+{
+    Blackboard board;
+    const unsigned int kCapacity = 32;
+    char keyBuf[16];
+
+    for (unsigned int i = 0; i < kCapacity; ++i)
+    {
+        snprintf(keyBuf, sizeof(keyBuf), "Slot%u", i);
+        board.Register<HealthBoard>(Dia::Core::StringCRC(keyBuf));
+    }
+
+    int count = 0;
+    board.VisitSlots([&](Dia::Core::StringCRC /*key*/, const void* /*typeTag*/, const void* /*data*/)
+    {
+        ++count;
+    });
+
+    EXPECT_EQ(count, 32);
+}
+
 #endif // _DEBUG
+
+// =========================================================================
+// VisitSlots tests
+// =========================================================================
+
+TEST(DiaBlackboard, VisitSlots_EnumeratesAllSlots)
+{
+    Blackboard board;
+    board.Register<HealthBoard>(Dia::Core::StringCRC("Health"));
+    board.Register<ThreatBoard>(Dia::Core::StringCRC("Threat"));
+
+    struct SlotRecord
+    {
+        Dia::Core::StringCRC key;
+        const void*          typeTag;
+        const void*          data;
+    };
+
+    SlotRecord records[2];
+    int count = 0;
+
+    board.VisitSlots([&](Dia::Core::StringCRC key, const void* typeTag, const void* data)
+    {
+        if (count < 2)
+        {
+            records[count] = { key, typeTag, data };
+        }
+        ++count;
+    });
+
+    EXPECT_EQ(count, 2);
+
+    // Find Health entry
+    bool foundHealth = false;
+    bool foundThreat = false;
+    for (int i = 0; i < 2; ++i)
+    {
+        if (records[i].key == Dia::Core::StringCRC("Health"))
+        {
+            EXPECT_EQ(records[i].typeTag, Dia::Blackboard::Detail::TypeTag<HealthBoard>());
+            EXPECT_NE(records[i].data, nullptr);
+            foundHealth = true;
+        }
+        if (records[i].key == Dia::Core::StringCRC("Threat"))
+        {
+            EXPECT_EQ(records[i].typeTag, Dia::Blackboard::Detail::TypeTag<ThreatBoard>());
+            EXPECT_NE(records[i].data, nullptr);
+            foundThreat = true;
+        }
+    }
+    EXPECT_TRUE(foundHealth);
+    EXPECT_TRUE(foundThreat);
+}
+
+TEST(DiaBlackboard, VisitSlots_EmptyBoard_NeverFires)
+{
+    Blackboard board;
+
+    int count = 0;
+    board.VisitSlots([&](Dia::Core::StringCRC /*key*/, const void* /*typeTag*/, const void* /*data*/)
+    {
+        ++count;
+    });
+
+    EXPECT_EQ(count, 0);
+}
+
+TEST(DiaBlackboard, VisitObservers_EnumeratesAllObservers)
+{
+    Blackboard board;
+    MockBlackboardObserver obs1, obs2;
+    board.AddObserver(obs1);
+    board.AddObserver(obs2);
+
+    const IBlackboardObserver* pointers[2] = { nullptr, nullptr };
+    int count = 0;
+
+    board.VisitObservers([&](const IBlackboardObserver* obs)
+    {
+        if (count < 2)
+            pointers[count] = obs;
+        ++count;
+    });
+
+    EXPECT_EQ(count, 2);
+
+    bool foundObs1 = (pointers[0] == &obs1 || pointers[1] == &obs1);
+    bool foundObs2 = (pointers[0] == &obs2 || pointers[1] == &obs2);
+    EXPECT_TRUE(foundObs1);
+    EXPECT_TRUE(foundObs2);
+}
+
+TEST(DiaBlackboard, VisitObservers_EmptyBoard_NeverFires)
+{
+    Blackboard board;
+
+    int count = 0;
+    board.VisitObservers([&](const IBlackboardObserver* /*obs*/)
+    {
+        ++count;
+    });
+
+    EXPECT_EQ(count, 0);
+}
+
+// =========================================================================
+// BlackboardRegistry additional tests
+// =========================================================================
+
+TEST(DiaBlackboardRegistry, Register_MultipleBoards_AllPresent)
+{
+    BlackboardRegistry registry;
+    Blackboard boardA, boardB, boardC;
+
+    registry.Register(Dia::Core::StringCRC{"A"}, "Alpha", boardA);
+    registry.Register(Dia::Core::StringCRC{"B"}, "Beta",  boardB);
+    registry.Register(Dia::Core::StringCRC{"C"}, "Gamma", boardC);
+
+    EXPECT_EQ(registry.GetCount(), 3);
+
+    const auto& all = registry.GetAll();
+    ASSERT_EQ(static_cast<int>(all.Size()), 3);
+    EXPECT_EQ(all[0].id, Dia::Core::StringCRC{"A"});
+    EXPECT_EQ(all[1].id, Dia::Core::StringCRC{"B"});
+    EXPECT_EQ(all[2].id, Dia::Core::StringCRC{"C"});
+}
+
+TEST(DiaBlackboardRegistry, Serialize_UnregisteredType_DoesNotModifyOutput)
+{
+    BlackboardRegistry registry;
+    // No serializers registered
+
+    ThreatBoard tb;
+    Json::Value out; // starts as null
+
+    // Should not crash and should not populate 'out'
+    registry.Serialize(Dia::Blackboard::Detail::TypeTag<ThreatBoard>(), &tb, out);
+
+    EXPECT_TRUE(out.isNull());
+}
+
+TEST(DiaBlackboardRegistry, Unregister_MiddleEntry_RemainingEntriesPreserved)
+{
+    BlackboardRegistry registry;
+    Blackboard boardA, boardB, boardC;
+
+    registry.Register(Dia::Core::StringCRC{"A"}, "Alpha", boardA);
+    registry.Register(Dia::Core::StringCRC{"B"}, "Beta",  boardB);
+    registry.Register(Dia::Core::StringCRC{"C"}, "Gamma", boardC);
+
+    registry.Unregister(Dia::Core::StringCRC{"B"});
+
+    EXPECT_EQ(registry.GetCount(), 2);
+
+    const auto& all = registry.GetAll();
+    bool foundA = false;
+    bool foundB = false;
+    bool foundC = false;
+    for (unsigned int i = 0; i < all.Size(); ++i)
+    {
+        if (all[i].id == Dia::Core::StringCRC{"A"}) foundA = true;
+        if (all[i].id == Dia::Core::StringCRC{"B"}) foundB = true;
+        if (all[i].id == Dia::Core::StringCRC{"C"}) foundC = true;
+    }
+    EXPECT_TRUE(foundA);
+    EXPECT_FALSE(foundB);
+    EXPECT_TRUE(foundC);
+}
