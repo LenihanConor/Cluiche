@@ -14,7 +14,7 @@
 #include <DiaGeometry2DVisualDebugger/ShapeDrawer.h>
 #include <DiaGeometry2D/Shapes/Circle.h>
 #include <DiaGeometry2D/Shapes/AARect.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGraphics/Misc/RGBA.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <imgui.h>
@@ -48,7 +48,7 @@ Dia::Core::StringCRC SceneOverviewDrawer::GetLayerName() const
 
 #pragma warning(push)
 #pragma warning(disable: 6262)
-void SceneOverviewDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void SceneOverviewDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     if (!IsEnabled()) return;
 
@@ -106,7 +106,7 @@ void SceneOverviewDrawer::Draw(Dia::Graphics::FrameData& frameData)
         drawer.SubmitCircle(radiusCircle, Dia::Graphics::RGBA(colour.R(), colour.G(), colour.B(), 40));
     }
 
-    drawer.Draw(frameData);
+    drawer.Draw(draw);
 }
 #pragma warning(pop)
 

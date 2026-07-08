@@ -8,7 +8,7 @@
 
 #include <DiaCore/Core/Assert.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGraphics/Frame/DebugFrameDataVisitor.h>
 #include <DiaGraphics/Camera/Camera2D.h>
 #include <DiaGraphics/Camera/ViewportTransform.h>
@@ -188,7 +188,7 @@ namespace Dia
         // Draw
         // --------------------------------------------------------------------
 
-        void DebugLayerManager::Draw(Dia::Graphics::FrameData& frameData)
+        void DebugLayerManager::Draw(Dia::Core::IDebugDraw& draw)
         {
             if (mSortDirty)
                 SortByPriority();
@@ -199,11 +199,11 @@ namespace Dia
                     continue;
                 IVisualDebugger* d = mLayers[i].debugger;
                 if (d->IsEnabled())
-                    d->Draw(frameData);
+                    d->Draw(draw);
             }
 
-            // Cache dropped count — FrameData inherits from DebugFrameData
-            const uint32_t droppedNow = frameData.DroppedCount();
+            // Cache dropped count — IDebugDraw exposes DroppedCount
+            const uint32_t droppedNow = draw.DroppedCount();
             if (droppedNow != mLastDroppedCount)
             {
                 mLastDroppedCount = droppedNow;

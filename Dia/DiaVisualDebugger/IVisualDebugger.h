@@ -8,15 +8,8 @@
 #ifdef DIA_DEBUG
 
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <atomic>
-
-namespace Dia
-{
-    namespace Graphics
-    {
-        class FrameData;
-    }
-}
 
 namespace Dia
 {
@@ -40,7 +33,8 @@ namespace Dia
             virtual Dia::Core::StringCRC GetLayerName() const = 0;
 
             // Called each frame by DebugLayerManager::Draw() if this layer is enabled.
-            virtual void Draw(Dia::Graphics::FrameData& frameData) = 0;
+            // draw: IDebugDraw interface for submitting debug primitives.
+            virtual void Draw(Dia::Core::IDebugDraw& draw) = 0;
 
             // Called each frame by VisualDebuggerConsoleModule to render per-drawer ImGui controls.
             // Default is a no-op — override to expose sliders, toggles, stats, etc.

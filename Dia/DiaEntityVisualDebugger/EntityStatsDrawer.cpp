@@ -5,7 +5,7 @@
 #include <DiaEntity/Entity.h>
 #include <DiaEntity/ComponentRegistry.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <imgui.h>
 
 namespace Dia::EntityVisualDebugger
@@ -21,7 +21,7 @@ Dia::Core::StringCRC EntityStatsDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kEntityStats;
 }
 
-void EntityStatsDrawer::Draw(Dia::Graphics::FrameData&)
+void EntityStatsDrawer::Draw(Dia::Core::IDebugDraw& /*draw*/)
 {
 }
 

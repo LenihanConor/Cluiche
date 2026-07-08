@@ -5,7 +5,7 @@
 #include <DiaEntity/IEntityInspectable.h>
 #include <DiaEntity/Domain.h>
 #include <DiaEntity/Entity.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGraphics/Misc/RGBA.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
@@ -33,7 +33,7 @@ Dia::Core::StringCRC EntityPickingDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kEntityPicking;
 }
 
-void EntityPickingDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void EntityPickingDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     uint32_t selectedId = mManager.GetSelectedEntityId();
     if (selectedId == 0)
@@ -45,7 +45,7 @@ void EntityPickingDrawer::Draw(Dia::Graphics::FrameData& frameData)
 
     const float scale = mManager.GetDebugScale();
     Dia::Maths::Vector2D pos = EntityPositionHelper::GetPosition(mInspectable, entity, mPositionTypeId);
-    frameData.RequestDraw(pos, mHighlightRadius * scale, kSelectionColour);
+    draw.RequestDraw(pos, mHighlightRadius * scale, kSelectionColour);
 }
 
 void EntityPickingDrawer::DrawImGui()

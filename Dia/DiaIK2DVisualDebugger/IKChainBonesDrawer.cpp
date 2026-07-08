@@ -8,7 +8,7 @@
 #include <DiaVisualDebugger/DebugColourPalette.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaRig2D/Skeleton.h>
 #include <DiaIK2D/IKSolver.h>
 #include <DiaObservation/Trace/DiaTrace.h>
@@ -32,7 +32,7 @@ Dia::Core::StringCRC IKChainBonesDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kIKBones;
 }
 
-void IKChainBonesDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void IKChainBonesDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     DIA_TRACE_ZONE("ik.bones", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const int chainCount = mSolver.GetChainCount();
@@ -49,7 +49,7 @@ void IKChainBonesDrawer::Draw(Dia::Graphics::FrameData& frameData)
             if (parentIdx < 0)
                 continue;
 
-            frameData.RequestDraw(
+            draw.RequestDraw(
                 worldTransforms[parentIdx].position,
                 worldTransforms[i].position,
                 Dia::Debug::DebugColourPalette::kGoal);

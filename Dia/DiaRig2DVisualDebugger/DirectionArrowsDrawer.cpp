@@ -8,7 +8,7 @@
 #include <DiaVisualDebugger/DebugColourPalette.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <imgui.h>
 
@@ -32,7 +32,7 @@ Dia::Core::StringCRC DirectionArrowsDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kRigArrows;
 }
 
-void DirectionArrowsDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void DirectionArrowsDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     DIA_TRACE_ZONE("rig.arrows", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const float scale     = mManager.GetDebugScale();
@@ -52,7 +52,7 @@ void DirectionArrowsDrawer::Draw(Dia::Graphics::FrameData& frameData)
             ? bone.length * scale * mLengthMultiplier
             : 4.0f * scale * mLengthMultiplier;
 
-        frameData.RequestDrawRay(
+        draw.RequestDrawRay(
             wt.position,
             direction,
             length,

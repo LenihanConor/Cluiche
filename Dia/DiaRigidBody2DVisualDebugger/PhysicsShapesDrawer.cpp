@@ -11,7 +11,7 @@
 #include "DiaGeometry2D/Transform/Transform.h"
 #include "DiaGeometry2D/Shapes/Circle.h"
 #include "DiaGeometry2D/Shapes/ConvexPolygon.h"
-#include "DiaGraphics/Frame/FrameData.h"
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include "DiaVisualDebugger/DebugLayerManager.h"
 #include "DiaVisualDebugger/DebugColourPalette.h"
 #include "DiaVisualDebugger/DebugLayerNames.h"
@@ -43,7 +43,7 @@ static Dia::Graphics::RGBA BodyColour(const Body2DBase* body)
     return Dia::Debug::DebugColourPalette::kActive;
 }
 
-static void DrawBody(const Body2DBase* body, Dia::Graphics::FrameData& frameData, bool showSleeping)
+static void DrawBody(const Body2DBase* body, Dia::Core::IDebugDraw& draw, bool showSleeping)
 {
     if (!showSleeping && !body->IsAwake()) return;
     const Dia::Geometry2D::Transform* t = body->GetTransform();
@@ -59,7 +59,7 @@ static void DrawBody(const Body2DBase* body, Dia::Graphics::FrameData& frameData
         {
             const Dia::Geometry2D::Circle* c = body->GetCircleShape();
             if (c)
-                frameData.RequestDraw(pos, c->GetRadius(), col);
+                draw.RequestDraw(pos, c->GetRadius(), col);
             break;
         }
         case ShapeKind::kPoly:
@@ -74,13 +74,13 @@ static void DrawBody(const Body2DBase* body, Dia::Graphics::FrameData& frameData
                     const Dia::Maths::Vector2D lv1 = poly->GetVertex((i + 1) % n);
                     const Dia::Maths::Vector2D wv0 = pos + RotateVec(lv0, rot);
                     const Dia::Maths::Vector2D wv1 = pos + RotateVec(lv1, rot);
-                    frameData.RequestDraw(wv0, wv1, col);
+                    draw.RequestDraw(wv0, wv1, col);
                 }
             }
             break;
         }
         default:
-            frameData.RequestDrawPoint(pos, col);
+            draw.RequestDrawPoint(pos, col);
             break;
     }
 }
@@ -98,17 +98,17 @@ Dia::Core::StringCRC PhysicsShapesDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kPhysicsShapes;
 }
 
-void PhysicsShapesDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void PhysicsShapesDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     DIA_TRACE_ZONE("physics.shapes", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const auto& pointBodies = mWorld.GetPointBodies();
     const auto& rigidBodies = mWorld.GetRigidBodies();
 
     for (unsigned int i = 0; i < pointBodies.Size(); ++i)
-        DrawBody(pointBodies[i], frameData, mShowSleeping);
+        DrawBody(pointBodies[i], draw, mShowSleeping);
 
     for (unsigned int i = 0; i < rigidBodies.Size(); ++i)
-        DrawBody(rigidBodies[i], frameData, mShowSleeping);
+        DrawBody(rigidBodies[i], draw, mShowSleeping);
 }
 
 void PhysicsShapesDrawer::DrawImGui()

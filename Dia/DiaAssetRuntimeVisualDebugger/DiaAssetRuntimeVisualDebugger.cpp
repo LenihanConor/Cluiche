@@ -18,7 +18,7 @@ Dia::Core::StringCRC DiaAssetRuntimeVisualDebugger::GetLayerName() const
     return Dia::Debug::LayerNames::kAssetRuntime;
 }
 
-void DiaAssetRuntimeVisualDebugger::Draw(Dia::Graphics::FrameData& /*frameData*/)
+void DiaAssetRuntimeVisualDebugger::Draw(Dia::Core::IDebugDraw& /*draw*/)
 {
     DIA_TRACE_ZONE("asset.runtime", ::Dia::Observation::Trace::Category::kDiaGraphics);
 }

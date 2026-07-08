@@ -9,7 +9,7 @@
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaRig2D/Pose.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <imgui.h>
 
@@ -31,7 +31,7 @@ Dia::Core::StringCRC RestPoseDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kRigRestPose;
 }
 
-void RestPoseDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void RestPoseDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     DIA_TRACE_ZONE("rig.rest_pose", ::Dia::Observation::Trace::Category::kDiaGraphics);
     // Build rest-pose world transforms (stack allocation — ~2.5 KB for 128 bones)
@@ -57,7 +57,7 @@ void RestPoseDrawer::Draw(Dia::Graphics::FrameData& frameData)
         const BoneTransform& boneRest   = restTransforms[i];
         const BoneTransform& parentRest = restTransforms[bone.parentIndex];
 
-        frameData.RequestDraw(
+        draw.RequestDraw(
             parentRest.position,
             boneRest.position,
             Dia::Debug::DebugColourPalette::kInactive);

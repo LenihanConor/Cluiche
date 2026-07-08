@@ -5,7 +5,7 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGraphics/Camera/ViewportTransform.h>
 #include <DiaGeometry2D/Shapes/AARect.h>
 #include <DiaMaths/Vector/Vector2D.h>
@@ -26,7 +26,7 @@ Dia::Core::StringCRC Coord2DAxesDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kCoord2DAxes;
 }
 
-void Coord2DAxesDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void Coord2DAxesDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     DIA_TRACE_ZONE("coord2d.axes", ::Dia::Observation::Trace::Category::kDiaGraphics);
 
@@ -40,7 +40,7 @@ void Coord2DAxesDrawer::Draw(Dia::Graphics::FrameData& frameData)
     const bool originYVisible = (0.0f >= bl.y && 0.0f <= tr.y);
     if (originYVisible)
     {
-        frameData.RequestDraw(
+        draw.RequestDraw(
             Dia::Maths::Vector2D(bl.x, 0.0f),
             Dia::Maths::Vector2D(tr.x, 0.0f),
             Dia::Debug::DebugColourPalette::kError);
@@ -50,7 +50,7 @@ void Coord2DAxesDrawer::Draw(Dia::Graphics::FrameData& frameData)
     const bool originXVisible = (0.0f >= bl.x && 0.0f <= tr.x);
     if (originXVisible)
     {
-        frameData.RequestDraw(
+        draw.RequestDraw(
             Dia::Maths::Vector2D(0.0f, bl.y),
             Dia::Maths::Vector2D(0.0f, tr.y),
             Dia::Debug::DebugColourPalette::kHealthy);

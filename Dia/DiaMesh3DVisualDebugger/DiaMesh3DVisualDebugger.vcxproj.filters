@@ -23,12 +23,18 @@
     <ClInclude Include="MeshOriginDrawer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="MeshStatsDrawer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MeshBoundsDrawer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MeshOriginDrawer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MeshStatsDrawer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

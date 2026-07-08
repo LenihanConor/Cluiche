@@ -5,7 +5,7 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGraphics/Frame/DebugFrameData.h>
 #include <DiaLighting3D/PointLight3D.h>
 #include <DiaLighting3D/SpotLight3D.h>
@@ -35,9 +35,9 @@ Dia::Core::StringCRC LightWidgetsDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kLightWidgets;
 }
 
-void LightWidgetsDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void LightWidgetsDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
-    Dia::Graphics::DebugFrameData& dbg = static_cast<Dia::Graphics::DebugFrameData&>(frameData);
+    Dia::Graphics::DebugFrameData& dbg = static_cast<Dia::Graphics::DebugFrameData&>(draw);
 
     const float scale = mManager.GetDebugScale() * mWidgetScale;
 

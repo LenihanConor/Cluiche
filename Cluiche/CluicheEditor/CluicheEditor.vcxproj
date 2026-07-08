@@ -45,6 +45,7 @@
     <ClCompile Include="ApplicationFlow\Modules\EditorActionModule.cpp" />
     <ClCompile Include="Plugins\DiaChatPlugin\DiaChatPlugin.cpp" />
     <ClCompile Include="Plugins\DiaChatPlugin\ChatPanelBridge.cpp" />
+    <ClCompile Include="Plugins\DiaVisualDebuggerPlugin\DebugLayerPanelPlugin.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationFlow\Modules\EditorModelModule.h" />
@@ -57,6 +58,7 @@
     <ClInclude Include="ApplicationFlow\Modules\EditorActionModule.h" />
     <ClInclude Include="Plugins\DiaChatPlugin\DiaChatPlugin.h" />
     <ClInclude Include="Plugins\DiaChatPlugin\ChatPanelBridge.h" />
+    <ClInclude Include="Plugins\DiaVisualDebuggerPlugin\DebugLayerPanelPlugin.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CluicheEditor.rc" />

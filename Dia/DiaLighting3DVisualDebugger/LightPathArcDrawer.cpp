@@ -5,7 +5,7 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGraphics/Frame/DebugFrameData.h>
 #include <DiaLighting3D/Registry/LightRegistry3D.h>
 #include <DiaLighting3D/Behaviours/LightPathBehaviour3D.h>
@@ -32,9 +32,9 @@ Dia::Core::StringCRC LightPathArcDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kLightPathArc;
 }
 
-void LightPathArcDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void LightPathArcDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
-    Dia::Graphics::DebugFrameData& dbg = static_cast<Dia::Graphics::DebugFrameData&>(frameData);
+    Dia::Graphics::DebugFrameData& dbg = static_cast<Dia::Graphics::DebugFrameData&>(draw);
 
     // Sample buffer — max 64 samples + 1 endpoint = 65 points, safe on the stack
     Dia::Maths::Vector3D points[65];

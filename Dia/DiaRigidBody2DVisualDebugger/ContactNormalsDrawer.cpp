@@ -10,7 +10,7 @@
 
 #include "DiaRigidBody2D/World/PhysicsWorld.h"
 #include "DiaRigidBody2D/Detection/Contact.h"
-#include "DiaGraphics/Frame/FrameData.h"
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include "DiaVisualDebugger/DebugLayerManager.h"
 #include "DiaVisualDebugger/DebugColourPalette.h"
 #include "DiaVisualDebugger/DebugLayerNames.h"
@@ -30,7 +30,7 @@ Dia::Core::StringCRC ContactNormalsDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kPhysicsContacts;
 }
 
-void ContactNormalsDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void ContactNormalsDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     DIA_TRACE_ZONE("physics.contacts", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const float scale    = mManager.GetDebugScale();
@@ -39,7 +39,7 @@ void ContactNormalsDrawer::Draw(Dia::Graphics::FrameData& frameData)
     for (unsigned int i = 0; i < contacts.Size(); ++i)
     {
         const Contact& c = contacts[i];
-        frameData.RequestDrawRay(
+        draw.RequestDrawRay(
             c.point,
             c.normal,
             mNormalLength * scale,

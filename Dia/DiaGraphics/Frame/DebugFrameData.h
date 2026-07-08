@@ -5,6 +5,7 @@
 
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Core/Assert.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaMaths/Vector/Vector2D.h>
 #include <DiaMaths/Vector/Vector3D.h>
 #include <DiaObservation/Log/DiaLog.h>
@@ -22,7 +23,7 @@ namespace Dia
 		/// DebugFrameData - Stores all debug geometry for a single frame.
 		/// Add new shape types by adding an enum value + union member to DebugPrimitive — no changes needed here.
 		///
-		class DebugFrameData
+		class DebugFrameData : public Dia::Core::IDebugDraw
 		{
 		public:
 			// Compile-time budget knobs — increase if primitives are dropped (SD-DBG).

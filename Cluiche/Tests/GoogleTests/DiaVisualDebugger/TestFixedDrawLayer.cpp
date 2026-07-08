@@ -80,7 +80,7 @@ namespace
     public:
         explicit StubDynLayer(const char* name) : mName(name) {}
         Dia::Core::StringCRC GetLayerName() const override { return mName; }
-        void Draw(Dia::Graphics::FrameData& /*fd*/) override {}
+        void Draw(Dia::Core::IDebugDraw& /*draw*/) override {}
     private:
         Dia::Core::StringCRC mName;
     };

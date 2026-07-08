@@ -10,7 +10,7 @@
 #include "DiaSoftBody2D/Rope.h"
 #include "DiaSoftBody2D/Cloth.h"
 #include "DiaSoftBody2D/Particle.h"
-#include "DiaGraphics/Frame/FrameData.h"
+#include "DiaCore/DebugDraw/IDebugDraw.h"
 #include "DiaVisualDebugger/DebugLayerManager.h"
 #include "DiaVisualDebugger/DebugColourPalette.h"
 #include "DiaVisualDebugger/DebugLayerNames.h"
@@ -35,7 +35,7 @@ Dia::Core::StringCRC SoftVelocityDrawer::GetLayerName() const
 }
 
 static void DrawParticleVelocity(const Particle& p, float scale,
-                                  Dia::Graphics::FrameData& frameData)
+                                  Dia::Core::IDebugDraw& draw)
 {
     if (p.invMass == 0.0f) return;
 
@@ -44,29 +44,29 @@ static void DrawParticleVelocity(const Particle& p, float scale,
     const float magnitude = std::sqrt(delta.x * delta.x + delta.y * delta.y);
     if (magnitude < 1e-4f) return;
 
-    frameData.RequestDraw(p.position, p.position + delta * scale,
+    draw.RequestDraw(p.position, p.position + delta * scale,
                           Dia::Debug::DebugColourPalette::kHealthy);
 }
 
 static void DrawVelocityFromRope(const Rope* rope, float scale,
-                                  Dia::Graphics::FrameData& frameData)
+                                  Dia::Core::IDebugDraw& draw)
 {
     const int count = rope->GetParticleCount();
     for (int i = 0; i < count; ++i)
-        DrawParticleVelocity(rope->GetParticle(i), scale, frameData);
+        DrawParticleVelocity(rope->GetParticle(i), scale, draw);
 }
 
 static void DrawVelocityFromCloth(const Cloth* cloth, float scale,
-                                   Dia::Graphics::FrameData& frameData)
+                                   Dia::Core::IDebugDraw& draw)
 {
     const int resX = cloth->GetResX();
     const int resY = cloth->GetResY();
     for (int y = 0; y < resY; ++y)
         for (int x = 0; x < resX; ++x)
-            DrawParticleVelocity(cloth->GetParticle(x, y), scale, frameData);
+            DrawParticleVelocity(cloth->GetParticle(x, y), scale, draw);
 }
 
-void SoftVelocityDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void SoftVelocityDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     DIA_TRACE_ZONE("soft.velocity", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const float scale = mManager.GetDebugScale() * mVelocityScale;
@@ -80,10 +80,10 @@ void SoftVelocityDrawer::Draw(Dia::Graphics::FrameData& frameData)
         switch (body->GetBodyType())
         {
             case BodyType::kRope:
-                DrawVelocityFromRope(static_cast<const Rope*>(body), scale, frameData);
+                DrawVelocityFromRope(static_cast<const Rope*>(body), scale, draw);
                 break;
             case BodyType::kCloth:
-                DrawVelocityFromCloth(static_cast<const Cloth*>(body), scale, frameData);
+                DrawVelocityFromCloth(static_cast<const Cloth*>(body), scale, draw);
                 break;
         }
     }

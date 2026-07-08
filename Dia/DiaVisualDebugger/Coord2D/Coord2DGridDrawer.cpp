@@ -5,7 +5,7 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGraphics/Camera/ViewportTransform.h>
 #include <DiaGeometry2D/Shapes/AARect.h>
 #include <DiaMaths/Vector/Vector2D.h>
@@ -29,7 +29,7 @@ Dia::Core::StringCRC Coord2DGridDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kCoord2DGrid;
 }
 
-void Coord2DGridDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void Coord2DGridDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     DIA_TRACE_ZONE("coord2d.grid", ::Dia::Observation::Trace::Category::kDiaGraphics);
 
@@ -73,7 +73,7 @@ void Coord2DGridDrawer::Draw(Dia::Graphics::FrameData& frameData)
         if (x < bl.x || x > tr.x)
             continue;
 
-        frameData.RequestDraw(
+        draw.RequestDraw(
             Dia::Maths::Vector2D(x, bl.y),
             Dia::Maths::Vector2D(x, tr.y),
             Dia::Debug::DebugColourPalette::kInactive);
@@ -93,7 +93,7 @@ void Coord2DGridDrawer::Draw(Dia::Graphics::FrameData& frameData)
         else
             snprintf(buf, sizeof(buf), "%.1f", x);
 
-        frameData.RequestDrawText(
+        draw.RequestDrawText(
             Dia::Maths::Vector2D(x, labelY),
             buf,
             12.0f,
@@ -109,7 +109,7 @@ void Coord2DGridDrawer::Draw(Dia::Graphics::FrameData& frameData)
         if (y < bl.y || y > tr.y)
             continue;
 
-        frameData.RequestDraw(
+        draw.RequestDraw(
             Dia::Maths::Vector2D(bl.x, y),
             Dia::Maths::Vector2D(tr.x, y),
             Dia::Debug::DebugColourPalette::kInactive);
@@ -129,7 +129,7 @@ void Coord2DGridDrawer::Draw(Dia::Graphics::FrameData& frameData)
         else
             snprintf(buf, sizeof(buf), "%.1f", y);
 
-        frameData.RequestDrawText(
+        draw.RequestDrawText(
             Dia::Maths::Vector2D(labelX, y),
             buf,
             12.0f,

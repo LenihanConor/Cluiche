@@ -47,7 +47,7 @@ public:
 
     // IVisualDebugger
     Dia::Core::StringCRC GetLayerName() const override;
-    void Draw(Dia::Graphics::FrameData& frameData) override;
+    void Draw(Dia::Core::IDebugDraw& draw) override;
 
     // Submit shapes before Draw() each frame. Drops silently if buffer full.
     void SubmitCircle    (const Dia::Geometry2D::Circle&       shape, Dia::Graphics::RGBA colour);

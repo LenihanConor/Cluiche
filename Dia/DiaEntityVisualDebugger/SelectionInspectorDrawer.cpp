@@ -6,7 +6,7 @@
 #include <DiaEntity/Entity.h>
 #include <DiaEntity/ComponentRegistry.h>
 #include <DiaEntity/ComponentTypeDesc.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <imgui.h>
@@ -29,7 +29,7 @@ Dia::Core::StringCRC SelectionInspectorDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kEntityInspector;
 }
 
-void SelectionInspectorDrawer::Draw(Dia::Graphics::FrameData&)
+void SelectionInspectorDrawer::Draw(Dia::Core::IDebugDraw& /*draw*/)
 {
 }
 

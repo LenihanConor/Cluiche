@@ -5,7 +5,7 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGraphics/Frame/DebugFrameData.h>
 #include <DiaGraphics3D/Mesh3DFrameData.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
@@ -29,7 +29,7 @@ Dia::Core::StringCRC MeshOriginDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kMesh3DOrigins;
 }
 
-void MeshOriginDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void MeshOriginDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     static const Dia::Graphics::RGBA kPalette[5] = {
         Dia::Debug::DebugColourPalette::kActive,
@@ -39,7 +39,7 @@ void MeshOriginDrawer::Draw(Dia::Graphics::FrameData& frameData)
         Dia::Debug::DebugColourPalette::kHealthy
     };
 
-    Dia::Graphics::DebugFrameData& dbg = static_cast<Dia::Graphics::DebugFrameData&>(frameData);
+    Dia::Graphics::DebugFrameData& dbg = static_cast<Dia::Graphics::DebugFrameData&>(draw);
 
     const float armLen = kCrossArmLen * mManager.GetDebugScale();
 

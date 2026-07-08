@@ -6,7 +6,7 @@
 #include <DiaEntity/Domain.h>
 #include <DiaEntity/Entity.h>
 #include <DiaEntity/ComponentRegistry.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugColourPalette.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
@@ -37,7 +37,7 @@ void ComponentFilterHighlightDrawer::SetFilterTypeId(Dia::Core::StringCRC typeId
     mFilterTypeId = typeId;
 }
 
-void ComponentFilterHighlightDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void ComponentFilterHighlightDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     if (mFilterTypeId == Dia::Core::StringCRC())
         return;
@@ -55,7 +55,7 @@ void ComponentFilterHighlightDrawer::Draw(Dia::Graphics::FrameData& frameData)
             continue;
 
         Dia::Maths::Vector2D pos = EntityPositionHelper::GetPosition(mInspectable, entity, mPositionTypeId);
-        frameData.RequestDraw(pos, radius, Dia::Debug::DebugColourPalette::kPinned);
+        draw.RequestDraw(pos, radius, Dia::Debug::DebugColourPalette::kPinned);
     }
 }
 

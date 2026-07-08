@@ -8,7 +8,7 @@
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaRig2D/BoneTransform.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <imgui.h>
 #include <cmath>
 
@@ -84,7 +84,7 @@ BuildScreenTransforms(
     return out;
 }
 
-void IK2DTestDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void IK2DTestDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     const float scale = (mPhase < 2) ? kLimbScale : kDragScale;
     auto screenTransforms = BuildScreenTransforms(*mSolver, scale);
@@ -92,8 +92,8 @@ void IK2DTestDrawer::Draw(Dia::Graphics::FrameData& frameData)
     // Bone lines + joint circles work the same for all phases
     Dia::Rig2D::BoneLinesDrawer    boneLines   (*mSkeleton, screenTransforms, mManager);
     Dia::Rig2D::JointCirclesDrawer jointCircles(*mSkeleton, screenTransforms, mManager);
-    boneLines.Draw(frameData);
-    jointCircles.Draw(frameData);
+    boneLines.Draw(draw);
+    jointCircles.Draw(draw);
 
     if (mPhase < 2)
     {
@@ -112,7 +112,7 @@ void IK2DTestDrawer::Draw(Dia::Graphics::FrameData& frameData)
                 float len = std::sqrt(dx * dx + dy * dy);
                 if (len < 0.001f) continue;
                 Dia::Maths::Vector2D dir(dx / len, dy / len);
-                frameData.RequestDrawRay(from, dir, len * 0.7f, Dia::Debug::DebugColourPalette::kGoal);
+                draw.RequestDrawRay(from, dir, len * 0.7f, Dia::Debug::DebugColourPalette::kGoal);
             }
 
             // Reach circle at chain root
@@ -120,14 +120,14 @@ void IK2DTestDrawer::Draw(Dia::Graphics::FrameData& frameData)
             for (int i = startIdx; i < endIdx; ++i)
                 reachRadius += mSkeleton->GetBone(i).length;
             if (reachRadius > 0.0f)
-                frameData.RequestDraw(screenTransforms[startIdx].position,
+                draw.RequestDraw(screenTransforms[startIdx].position,
                     reachRadius * scale, Dia::Debug::DebugColourPalette::kInactive);
         }
 
         // Target marker
         Dia::Maths::Vector2D ts(kOriginX + mCurrentTarget.X() * scale,
                                 kOriginY - mCurrentTarget.Y() * scale);
-        frameData.RequestDraw(ts, 8.0f, Dia::Debug::DebugColourPalette::kGoal);
+        draw.RequestDraw(ts, 8.0f, Dia::Debug::DebugColourPalette::kGoal);
     }
     else
     {
@@ -137,9 +137,9 @@ void IK2DTestDrawer::Draw(Dia::Graphics::FrameData& frameData)
         {
             Dia::Maths::Vector2D targetScreen(kOriginX + mCurrentTarget.X() * scale,
                                               kOriginY - mCurrentTarget.Y() * scale);
-            frameData.RequestDraw(screenTransforms[headIdx].position, targetScreen,
+            draw.RequestDraw(screenTransforms[headIdx].position, targetScreen,
                 Dia::Debug::DebugColourPalette::kGoal);
-            frameData.RequestDraw(targetScreen, 8.0f, Dia::Debug::DebugColourPalette::kGoal);
+            draw.RequestDraw(targetScreen, 8.0f, Dia::Debug::DebugColourPalette::kGoal);
         }
     }
 }

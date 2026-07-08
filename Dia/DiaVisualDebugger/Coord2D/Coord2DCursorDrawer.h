@@ -20,7 +20,7 @@ public:
     explicit Coord2DCursorDrawer(const Dia::Debug::DebugLayerManager& manager);
 
     Dia::Core::StringCRC GetLayerName() const override;
-    void Draw(Dia::Graphics::FrameData& frameData) override;
+    void Draw(Dia::Core::IDebugDraw& draw) override;
 
 private:
     const Dia::Debug::DebugLayerManager& mManager;

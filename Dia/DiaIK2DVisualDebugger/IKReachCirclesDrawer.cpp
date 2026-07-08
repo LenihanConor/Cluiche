@@ -8,7 +8,7 @@
 #include <DiaVisualDebugger/DebugColourPalette.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaRig2D/Skeleton.h>
 #include <DiaIK2D/IKSolver.h>
 #include <DiaObservation/Trace/DiaTrace.h>
@@ -32,7 +32,7 @@ Dia::Core::StringCRC IKReachCirclesDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kIKReach;
 }
 
-void IKReachCirclesDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void IKReachCirclesDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     DIA_TRACE_ZONE("ik.reach", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const float scale      = mManager.GetDebugScale();
@@ -54,7 +54,7 @@ void IKReachCirclesDrawer::Draw(Dia::Graphics::FrameData& frameData)
         if (reachRadius > 0.0f)
         {
             const Dia::Maths::Vector2D& screenPos = worldTransforms[startIdx].position;
-            frameData.RequestDraw(
+            draw.RequestDraw(
                 screenPos,
                 reachRadius * scale,
                 Dia::Debug::DebugColourPalette::kInactive);

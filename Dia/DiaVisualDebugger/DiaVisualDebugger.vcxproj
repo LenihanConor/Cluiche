@@ -78,7 +78,6 @@
     <ClInclude Include="DebugLayerManager.h" />
     <ClInclude Include="DebugColourPalette.h" />
     <ClInclude Include="DebugLayerNames.h" />
-    <ClInclude Include="DebugLayerPanelPlugin.h" />
     <ClInclude Include="IObjectRenderer.h" />
     <ClInclude Include="IFixedPrimitiveBuffer.h" />
     <ClInclude Include="FixedPrimitiveBuffer.h" />
@@ -130,10 +129,6 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaDebugServer\DiaDebugServer.vcxproj">
       <Project>{6AAFCCCB-71D0-4D8D-A6BE-081F5E02093D}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\DiaEditor\DiaEditor.vcxproj">
-      <Project>{F1A2B3C4-D5E6-7890-ABCD-EF1234567890}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\DiaDebugDraw\DiaDebugDraw.vcxproj">

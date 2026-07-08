@@ -43,6 +43,9 @@
     <ClCompile Include="Plugins\DiaChatPlugin\ChatPanelBridge.cpp">
       <Filter>Plugins\DiaChatPlugin</Filter>
     </ClCompile>
+    <ClCompile Include="Plugins\DiaVisualDebuggerPlugin\DebugLayerPanelPlugin.cpp">
+      <Filter>Plugins\DiaVisualDebuggerPlugin</Filter>
+    </ClCompile>
       <Filter>Plugins\DiaChatPlugin</Filter>
     </ClCompile>
       <Filter>ApplicationFlow</Filter>
@@ -74,6 +77,9 @@
     <ClInclude Include="Plugins\DiaChatPlugin\DiaChatPlugin.h">
     <ClInclude Include="Plugins\DiaChatPlugin\ChatPanelBridge.h">
       <Filter>Plugins\DiaChatPlugin</Filter>
+    </ClInclude>
+    <ClInclude Include="Plugins\DiaVisualDebuggerPlugin\DebugLayerPanelPlugin.h">
+      <Filter>Plugins\DiaVisualDebuggerPlugin</Filter>
     </ClInclude>
       <Filter>Plugins\DiaChatPlugin</Filter>
     </ClInclude>

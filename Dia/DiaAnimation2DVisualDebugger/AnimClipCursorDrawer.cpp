@@ -10,7 +10,7 @@
 #include <DiaVisualDebugger/DebugColourPalette.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <imgui.h>
@@ -35,7 +35,7 @@ Dia::Core::StringCRC AnimClipCursorDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kAnimClipCursor;
 }
 
-void AnimClipCursorDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void AnimClipCursorDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     DIA_TRACE_ZONE("anim.clip_cursor", ::Dia::Observation::Trace::Category::kDiaGraphics);
     if (mWorldTransforms.Size() == 0) return;
@@ -72,7 +72,7 @@ void AnimClipCursorDrawer::Draw(Dia::Graphics::FrameData& frameData)
             colour = Dia::Debug::DebugColourPalette::kInactive;
         }
 
-        frameData.RequestDrawText(labelPos, labelText, fontSize, colour);
+        draw.RequestDrawText(labelPos, labelText, fontSize, colour);
     }
 }
 

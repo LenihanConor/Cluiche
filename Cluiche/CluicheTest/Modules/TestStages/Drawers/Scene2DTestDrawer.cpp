@@ -6,7 +6,7 @@
 #include <DiaScene2DVisualDebugger/SceneOverviewDrawer.h>
 #include <DiaGeometry2DVisualDebugger/ShapeDrawer.h>
 #include <DiaGeometry2D/Shapes/Circle.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGraphics/Misc/RGBA.h>
 #include <imgui.h>
 
@@ -34,12 +34,12 @@ Dia::Core::StringCRC Scene2DTestDrawer::GetLayerName() const
 
 #pragma warning(push)
 #pragma warning(disable: 6262)
-void Scene2DTestDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void Scene2DTestDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     // Engine-side: cameras, lights, layer bands
     Dia::Scene2DVisualDebugger::SceneOverviewDrawer overview(
         mCameraRegistry, mLightRegistry, mLayerTable, mManager);
-    overview.Draw(frameData);
+    overview.Draw(draw);
 
     // Test-specific: entities via TransformComponent (CluicheTest-only)
     Dia::Geometry2DVisualDebugger::ShapeDrawer entityDrawer(mManager);
@@ -56,7 +56,7 @@ void Scene2DTestDrawer::Draw(Dia::Graphics::FrameData& frameData)
         Dia::Geometry2D::Circle entityCircle(18.0f, Dia::Maths::Vector2D(vx, vy));
         entityDrawer.SubmitCircle(entityCircle, kEntityColour);
     }
-    entityDrawer.Draw(frameData);
+    entityDrawer.Draw(draw);
 }
 #pragma warning(pop)
 

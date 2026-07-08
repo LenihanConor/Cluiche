@@ -23,7 +23,6 @@ namespace Dia
 {
     namespace Graphics
     {
-        class FrameData;
         class DebugFrameDataVisitor;
     }
 
@@ -134,7 +133,7 @@ namespace Dia
 
             // Call once per frame after simulation update, before rendering.
             // Lazily sorts by priority if dirty, then calls Draw() on each enabled layer.
-            void Draw(Dia::Graphics::FrameData& frameData);
+            void Draw(Dia::Core::IDebugDraw& draw);
 
             // Renders all enabled fixed layers into visitor.
             // Call from render loop after Draw().

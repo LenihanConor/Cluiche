@@ -38,7 +38,7 @@ public:
     {}
 
     Dia::Core::StringCRC GetLayerName() const override;
-    void Draw(Dia::Graphics::FrameData& frameData) override;
+    void Draw(Dia::Core::IDebugDraw& draw) override;
     void DrawImGui() override;
 
     // Called by the owning stage module each frame with the externally-owned

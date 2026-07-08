@@ -8,7 +8,7 @@
 #include <DiaVisualDebugger/DebugColourPalette.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <imgui.h>
 
@@ -32,7 +32,7 @@ Dia::Core::StringCRC BoneLabelsDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kRigLabels;
 }
 
-void BoneLabelsDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void BoneLabelsDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     DIA_TRACE_ZONE("rig.labels", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const float scale     = mManager.GetDebugScale();
@@ -47,7 +47,7 @@ void BoneLabelsDrawer::Draw(Dia::Graphics::FrameData& frameData)
             wt.position.x + 4.0f * scale,
             wt.position.y - 4.0f * scale);
 
-        frameData.RequestDrawText(
+        draw.RequestDrawText(
             labelPos,
             bone.name.AsChar(),
             fontSize,

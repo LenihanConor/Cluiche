@@ -6,7 +6,7 @@
 #include <DiaEntity/Domain.h>
 #include <DiaEntity/Entity.h>
 #include <DiaEntity/Hierarchy/ChildBufferComponent.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugColourPalette.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
@@ -32,7 +32,7 @@ Dia::Core::StringCRC HierarchyLinesDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kEntityHierarchy;
 }
 
-void HierarchyLinesDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void HierarchyLinesDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     Dia::Core::Containers::DynamicArrayC<Dia::Entity::Entity, Dia::Entity::kMaxEntitiesPerDomain> entities;
     mInspectable.GetAllEntities(entities);
@@ -52,7 +52,7 @@ void HierarchyLinesDrawer::Draw(Dia::Graphics::FrameData& frameData)
             if (!mDomain.IsAlive(child)) continue;
 
             Dia::Maths::Vector2D childPos = EntityPositionHelper::GetPosition(mInspectable, child, mPositionTypeId);
-            frameData.RequestDraw(parentPos, childPos, Dia::Debug::DebugColourPalette::kGoal);
+            draw.RequestDraw(parentPos, childPos, Dia::Debug::DebugColourPalette::kGoal);
         }
     }
 }

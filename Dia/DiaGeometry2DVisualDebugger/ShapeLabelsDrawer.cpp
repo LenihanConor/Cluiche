@@ -6,7 +6,7 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGraphics/Misc/RGBA.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <imgui.h>
@@ -32,7 +32,7 @@ void ShapeLabelsDrawer::SubmitLabel(Dia::Maths::Vector2D position, const char* t
     mPending.Add(e);
 }
 
-void ShapeLabelsDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void ShapeLabelsDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     Dia::Core::Containers::DynamicArrayC<LabelEntry, kMaxLabels> pending;
     pending.Swap(mPending);
@@ -43,7 +43,7 @@ void ShapeLabelsDrawer::Draw(Dia::Graphics::FrameData& frameData)
     for (unsigned int i = 0; i < pending.Size(); ++i)
     {
         const LabelEntry& e = pending[i];
-        frameData.RequestDrawText(
+        draw.RequestDrawText(
             Dia::Maths::Vector2D(e.x, e.y),
             e.text,
             fontSize,

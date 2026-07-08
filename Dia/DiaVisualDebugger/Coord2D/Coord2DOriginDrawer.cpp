@@ -5,7 +5,7 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGraphics/Camera/ViewportTransform.h>
 #include <DiaGeometry2D/Shapes/AARect.h>
 #include <DiaMaths/Vector/Vector2D.h>
@@ -26,7 +26,7 @@ Dia::Core::StringCRC Coord2DOriginDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kCoord2DOrigin;
 }
 
-void Coord2DOriginDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void Coord2DOriginDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     DIA_TRACE_ZONE("coord2d.origin", ::Dia::Observation::Trace::Category::kDiaGraphics);
 
@@ -41,19 +41,19 @@ void Coord2DOriginDrawer::Draw(Dia::Graphics::FrameData& frameData)
     const float armLength = narrowAxis * 0.02f;
 
     // Horizontal arm
-    frameData.RequestDraw(
+    draw.RequestDraw(
         Dia::Maths::Vector2D(-armLength, 0.0f),
         Dia::Maths::Vector2D( armLength, 0.0f),
         Dia::Debug::DebugColourPalette::kActive);
 
     // Vertical arm
-    frameData.RequestDraw(
+    draw.RequestDraw(
         Dia::Maths::Vector2D(0.0f, -armLength),
         Dia::Maths::Vector2D(0.0f,  armLength),
         Dia::Debug::DebugColourPalette::kActive);
 
     // Dot at origin
-    frameData.RequestDrawPoint(
+    draw.RequestDrawPoint(
         Dia::Maths::Vector2D(0.0f, 0.0f),
         Dia::Debug::DebugColourPalette::kGoal);
 }

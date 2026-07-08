@@ -135,6 +135,9 @@
     <ClInclude Include="Core\System.h">
       <Filter>Core</Filter>
     </ClInclude>
+    <ClInclude Include="Debug\IDebugDraw.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Core\Debug\DebugConsole.h">
       <Filter>Core\Debug</Filter>
     </ClInclude>

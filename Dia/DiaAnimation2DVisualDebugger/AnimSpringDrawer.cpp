@@ -11,7 +11,7 @@
 #include <DiaVisualDebugger/DebugColourPalette.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <imgui.h>
@@ -35,7 +35,7 @@ Dia::Core::StringCRC AnimSpringDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kAnimSpring;
 }
 
-void AnimSpringDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void AnimSpringDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     DIA_TRACE_ZONE("anim.spring", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const float scale = mManager.GetDebugScale();
@@ -67,7 +67,7 @@ void AnimSpringDrawer::Draw(Dia::Graphics::FrameData& frameData)
             else
                 colour = Dia::Debug::DebugColourPalette::kError;
 
-            frameData.RequestDraw(pos, circleRadius, colour);
+            draw.RequestDraw(pos, circleRadius, colour);
         }
 
         // Gravity indicator: draw ray from chain root bone in gravity direction
@@ -81,7 +81,7 @@ void AnimSpringDrawer::Draw(Dia::Graphics::FrameData& frameData)
                 const Dia::Maths::Vector2D gravDir = chain->GetGravityDirection();
 
                 // gravDir is already normalised by SpringChain (enforced in constructor/SetGravity)
-                frameData.RequestDrawRay(
+                draw.RequestDrawRay(
                     rootPos,
                     gravDir,
                     gravityRayLength,

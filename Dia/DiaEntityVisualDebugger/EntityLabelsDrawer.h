@@ -21,7 +21,7 @@ public:
         Dia::Core::StringCRC positionComponentTypeId);
 
     Dia::Core::StringCRC GetLayerName() const override;
-    void Draw(Dia::Graphics::FrameData& frameData) override;
+    void Draw(Dia::Core::IDebugDraw& draw) override;
     void DrawImGui() override;
 
     void SetFilter(const char* pattern);

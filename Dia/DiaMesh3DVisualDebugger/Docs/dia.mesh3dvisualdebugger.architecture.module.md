@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.mesh3dvisualdebugger
 name: DiaMesh3DVisualDebugger
 owner_team: TBD
-layer: tools
+layer: domain/visual/tools
 status: active
 maturity: dev
 

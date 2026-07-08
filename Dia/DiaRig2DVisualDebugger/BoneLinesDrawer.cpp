@@ -8,7 +8,7 @@
 #include <DiaVisualDebugger/DebugColourPalette.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <imgui.h>
 
@@ -30,7 +30,7 @@ Dia::Core::StringCRC BoneLinesDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kRigBones;
 }
 
-void BoneLinesDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void BoneLinesDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     DIA_TRACE_ZONE("rig.bones", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const int boneCount = mSkeleton.GetBoneCount();
@@ -43,7 +43,7 @@ void BoneLinesDrawer::Draw(Dia::Graphics::FrameData& frameData)
         const BoneTransform& boneWt   = mWorldTransforms[i];
         const BoneTransform& parentWt = mWorldTransforms[bone.parentIndex];
 
-        frameData.RequestDraw(
+        draw.RequestDraw(
             parentWt.position,
             boneWt.position,
             Dia::Debug::DebugColourPalette::kActive);

@@ -34,7 +34,6 @@ dependent_modules:
   - dia.maths
   - dia.rig2d
   - dia.animation2d
-  - dia.graphics
   - dia.diavisualdebugger
 
 public_api:
@@ -55,7 +54,6 @@ dependencies:
     - dia.maths
     - dia.rig2d
     - dia.animation2d
-    - dia.graphics
     - dia.diavisualdebugger
   forbidden: []
 ---

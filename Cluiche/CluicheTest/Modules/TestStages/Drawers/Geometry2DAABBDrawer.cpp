@@ -3,7 +3,7 @@
 #include "Modules/TestStages/Drawers/Geometry2DAABBDrawer.h"
 
 #include <DiaGeometry2DVisualDebugger/AABBOverlayDrawer.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 
 namespace CluicheTest {
 
@@ -34,7 +34,7 @@ Dia::Core::StringCRC Geometry2DAABBDrawer::GetLayerName() const
 
 #pragma warning(push)
 #pragma warning(disable: 6262)
-void Geometry2DAABBDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void Geometry2DAABBDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     Dia::Geometry2DVisualDebugger::AABBOverlayDrawer drawer(mManager);
 
@@ -46,7 +46,7 @@ void Geometry2DAABBDrawer::Draw(Dia::Graphics::FrameData& frameData)
     drawer.SubmitConvexPoly(mConvexPoly);
     drawer.SubmitCapsule   (mCapsule);
 
-    drawer.Draw(frameData);
+    drawer.Draw(draw);
 }
 #pragma warning(pop)
 

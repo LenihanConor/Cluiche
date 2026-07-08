@@ -7,7 +7,7 @@
 
 #include <cstdio>
 
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGraphics/Camera/ViewportTransform.h>
 #include <DiaGeometry2D/Shapes/AARect.h>
 #include <DiaMaths/Vector/Vector2D.h>
@@ -28,11 +28,11 @@ Dia::Core::StringCRC Coord2DCursorDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kCoord2DCursor;
 }
 
-void Coord2DCursorDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void Coord2DCursorDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     DIA_TRACE_ZONE("coord2d.cursor", ::Dia::Observation::Trace::Category::kDiaGraphics);
 
-    const Dia::Maths::Vector2D& pixel = frameData.GetMousePixel();
+    const Dia::Maths::Vector2D& pixel = draw.GetMousePixel();
 
     // Skip if mouse pixel has not been set this frame
     if (pixel.x == 0.0f && pixel.y == 0.0f)
@@ -50,12 +50,12 @@ void Coord2DCursorDrawer::Draw(Dia::Graphics::FrameData& frameData)
     const float narrowAxis = (worldWidth < worldHeight) ? worldWidth : worldHeight;
     const float armLength = narrowAxis * 0.015f;
 
-    frameData.RequestDraw(
+    draw.RequestDraw(
         Dia::Maths::Vector2D(worldPos.x - armLength, worldPos.y),
         Dia::Maths::Vector2D(worldPos.x + armLength, worldPos.y),
         Dia::Debug::DebugColourPalette::kGoal);
 
-    frameData.RequestDraw(
+    draw.RequestDraw(
         Dia::Maths::Vector2D(worldPos.x, worldPos.y - armLength),
         Dia::Maths::Vector2D(worldPos.x, worldPos.y + armLength),
         Dia::Debug::DebugColourPalette::kGoal);
@@ -64,7 +64,7 @@ void Coord2DCursorDrawer::Draw(Dia::Graphics::FrameData& frameData)
     char buf[64];
     snprintf(buf, sizeof(buf), "(%.1f, %.1f)", worldPos.x, worldPos.y);
 
-    frameData.RequestDrawText(worldPos, buf, 12.0f, Dia::Debug::DebugColourPalette::kGoal);
+    draw.RequestDrawText(worldPos, buf, 12.0f, Dia::Debug::DebugColourPalette::kGoal);
 }
 
 } // namespace Dia::Debug

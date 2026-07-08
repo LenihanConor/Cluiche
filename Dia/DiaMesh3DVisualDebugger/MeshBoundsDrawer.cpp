@@ -5,7 +5,7 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGraphics/Frame/DebugFrameData.h>
 #include <DiaGraphics3D/Mesh3DFrameData.h>
 #include <DiaMesh3D/Mesh3DAssetHandler.h>
@@ -27,9 +27,9 @@ Dia::Core::StringCRC MeshBoundsDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kMesh3DBounds;
 }
 
-void MeshBoundsDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void MeshBoundsDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
-    Dia::Graphics::DebugFrameData& dbg = static_cast<Dia::Graphics::DebugFrameData&>(frameData);
+    Dia::Graphics::DebugFrameData& dbg = static_cast<Dia::Graphics::DebugFrameData&>(draw);
 
     // Unit-cube bounds used as placeholder when asset is unavailable
     static const Dia::Maths::Vector3D kUnitMin(-0.5f, -0.5f, -0.5f);

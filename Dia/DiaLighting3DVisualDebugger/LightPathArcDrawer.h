@@ -21,7 +21,7 @@ public:
                        const Dia::Debug::DebugLayerManager& manager);
 
     Dia::Core::StringCRC GetLayerName() const override;
-    void Draw    (Dia::Graphics::FrameData& frameData) override;
+    void Draw    (Dia::Core::IDebugDraw& draw) override;
     void DrawImGui() override;
 
     void SetArcSamples(int samples) { mArcSamples = samples; }

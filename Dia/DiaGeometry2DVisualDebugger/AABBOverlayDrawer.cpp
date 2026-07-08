@@ -13,7 +13,7 @@
 #include <DiaGeometry2D/Shapes/Triangle.h>
 #include <DiaGeometry2D/Shapes/ConvexPolygon.h>
 #include <DiaGeometry2D/Shapes/Capsule.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaGraphics/Misc/RGBA.h>
 #include <DiaMaths/Vector/Vector2D.h>
@@ -113,7 +113,7 @@ void AABBOverlayDrawer::SubmitCapsule(const Dia::Geometry2D::Capsule& shape)
 
 #pragma warning(push)
 #pragma warning(disable: 6262)
-void AABBOverlayDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void AABBOverlayDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     Dia::Core::Containers::DynamicArrayC<AABBEntry, kMaxAABBs> pending;
     pending.Swap(mPending);
@@ -123,7 +123,7 @@ void AABBOverlayDrawer::Draw(Dia::Graphics::FrameData& frameData)
     for (unsigned int i = 0; i < pending.Size(); ++i)
     {
         const AABBEntry& e = pending[i];
-        frameData.RequestDrawRect(
+        draw.RequestDrawRect(
             Dia::Maths::Vector2D(e.minX, e.minY),
             Dia::Maths::Vector2D(e.maxX, e.maxY),
             kAABBColour);

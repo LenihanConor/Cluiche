@@ -5,7 +5,7 @@
 #include <DiaEntity/IEntityInspectable.h>
 #include <DiaEntity/Domain.h>
 #include <DiaEntity/Entity.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugColourPalette.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
@@ -31,7 +31,7 @@ Dia::Core::StringCRC EntityLabelsDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kEntityLabels;
 }
 
-void EntityLabelsDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void EntityLabelsDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     Dia::Core::Containers::DynamicArrayC<Dia::Entity::Entity, Dia::Entity::kMaxEntitiesPerDomain> entities;
     mInspectable.GetAllEntities(entities);
@@ -49,7 +49,7 @@ void EntityLabelsDrawer::Draw(Dia::Graphics::FrameData& frameData)
             continue;
 
         Dia::Maths::Vector2D pos = EntityPositionHelper::GetPosition(mInspectable, entity, mPositionTypeId);
-        frameData.RequestDrawText(pos, name, fontSize, Dia::Debug::DebugColourPalette::kActive);
+        draw.RequestDrawText(pos, name, fontSize, Dia::Debug::DebugColourPalette::kActive);
     }
 }
 

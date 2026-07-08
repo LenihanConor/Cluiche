@@ -10,6 +10,7 @@
 #define DIA_DEBUG
 #endif
 #include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaCore/CRC/StringCRC.h>
 
@@ -30,7 +31,7 @@ struct MockLayer : public IVisualDebugger
 
     StringCRC GetLayerName() const override { return mName; }
 
-    void Draw(Dia::Graphics::FrameData& /*frameData*/) override
+    void Draw(Dia::Core::IDebugDraw& /*draw*/) override
     {
         drawCalled = true;
     }

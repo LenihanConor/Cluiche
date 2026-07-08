@@ -34,7 +34,7 @@ public:
         const Dia::Debug::DebugLayerManager&  mgr);
 
     Dia::Core::StringCRC GetLayerName() const override;
-    void Draw(Dia::Graphics::FrameData& frameData) override;
+    void Draw(Dia::Core::IDebugDraw& draw) override;
 
 private:
     const Dia::Geometry2D::Circle&        mCircle;

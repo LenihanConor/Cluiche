@@ -10,7 +10,7 @@
 
 #include "DiaRigidBody2D/World/PhysicsWorld.h"
 #include "DiaRigidBody2D/Constraints/IConstraint.h"
-#include "DiaGraphics/Frame/FrameData.h"
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include "DiaVisualDebugger/DebugLayerManager.h"
 #include "DiaVisualDebugger/DebugColourPalette.h"
 #include "DiaVisualDebugger/DebugLayerNames.h"
@@ -29,7 +29,7 @@ Dia::Core::StringCRC ConstraintLinesDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kPhysicsConstraints;
 }
 
-void ConstraintLinesDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void ConstraintLinesDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     DIA_TRACE_ZONE("physics.constraints", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const auto& constraints = mWorld.GetConstraints();
@@ -39,7 +39,7 @@ void ConstraintLinesDrawer::Draw(Dia::Graphics::FrameData& frameData)
         const IConstraint* c       = constraints[i];
         const Dia::Maths::Vector2D anchorA = c->GetWorldAnchorA();
         const Dia::Maths::Vector2D anchorB = c->GetWorldAnchorB();
-        frameData.RequestDraw(anchorA, anchorB, Dia::Debug::DebugColourPalette::kGoal);
+        draw.RequestDraw(anchorA, anchorB, Dia::Debug::DebugColourPalette::kGoal);
     }
 }
 

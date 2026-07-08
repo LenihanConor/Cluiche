@@ -4,7 +4,7 @@
 #include <DiaRig2DVisualDebugger/BoneLinesDrawer.h>
 #include <DiaRig2DVisualDebugger/JointCirclesDrawer.h>
 #include <DiaRig2D/BoneTransform.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <imgui.h>
 
@@ -38,7 +38,7 @@ Dia::Core::StringCRC Animation2DTestDrawer::GetLayerName() const
     return Dia::Core::StringCRC("animation2d.dragon");
 }
 
-void Animation2DTestDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void Animation2DTestDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     // Compute raw world transforms
     Dia::Core::Containers::DynamicArrayC<Dia::Rig2D::BoneTransform, Dia::Rig2D::kMaxBones> rawTransforms;
@@ -60,8 +60,8 @@ void Animation2DTestDrawer::Draw(Dia::Graphics::FrameData& frameData)
     Dia::Rig2D::BoneLinesDrawer    boneLines   (mSkeleton, screenTransforms, mLayerManager);
     Dia::Rig2D::JointCirclesDrawer jointCircles(mSkeleton, screenTransforms, mLayerManager);
 
-    boneLines.Draw(frameData);
-    jointCircles.Draw(frameData);
+    boneLines.Draw(draw);
+    jointCircles.Draw(draw);
 }
 
 void Animation2DTestDrawer::DrawImGui()

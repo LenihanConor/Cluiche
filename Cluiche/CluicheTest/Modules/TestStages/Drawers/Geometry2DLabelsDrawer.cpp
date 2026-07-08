@@ -4,7 +4,7 @@
 
 #include <DiaGeometry2DVisualDebugger/ShapeLabelsDrawer.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGeometry2D/Shapes/Spline.h>
 
 namespace CluicheTest {
@@ -36,7 +36,7 @@ Dia::Core::StringCRC Geometry2DLabelsDrawer::GetLayerName() const
     return Dia::Core::StringCRC("geometry2d.labels");
 }
 
-void Geometry2DLabelsDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void Geometry2DLabelsDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     Dia::Geometry2DVisualDebugger::ShapeLabelsDrawer drawer(mManager);
 
@@ -65,7 +65,7 @@ void Geometry2DLabelsDrawer::Draw(Dia::Graphics::FrameData& frameData)
     drawer.SubmitLabel({ mSector.GetCenter().x,   mSector.GetCenter().y   + kLabelOffsetY }, "sector*");
     drawer.SubmitLabel({ splineMid.x,             splineMid.y             + kLabelOffsetY }, "spline");
 
-    drawer.Draw(frameData);
+    drawer.Draw(draw);
 }
 
 void Geometry2DLabelsDrawer::DrawImGui()

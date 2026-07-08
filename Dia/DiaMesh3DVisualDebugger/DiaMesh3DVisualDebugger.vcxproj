@@ -76,10 +76,12 @@
   <ItemGroup>
     <ClInclude Include="MeshBoundsDrawer.h" />
     <ClInclude Include="MeshOriginDrawer.h" />
+    <ClInclude Include="MeshStatsDrawer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MeshBoundsDrawer.cpp" />
     <ClCompile Include="MeshOriginDrawer.cpp" />
+    <ClCompile Include="MeshStatsDrawer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.mesh3dvisualdebugger.architecture.module.md" />

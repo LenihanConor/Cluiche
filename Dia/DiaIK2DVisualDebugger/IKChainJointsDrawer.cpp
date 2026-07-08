@@ -8,7 +8,7 @@
 #include <DiaVisualDebugger/DebugColourPalette.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaRig2D/Skeleton.h>
 #include <DiaIK2D/IKSolver.h>
 #include <DiaObservation/Trace/DiaTrace.h>
@@ -32,7 +32,7 @@ Dia::Core::StringCRC IKChainJointsDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kIKJoints;
 }
 
-void IKChainJointsDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void IKChainJointsDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     DIA_TRACE_ZONE("ik.joints", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const float scale      = mManager.GetDebugScale();
@@ -50,17 +50,17 @@ void IKChainJointsDrawer::Draw(Dia::Graphics::FrameData& frameData)
 
             if (i == endIdx)
             {
-                frameData.RequestDraw(pos, 9.0f * mRadiusMultiplier,
+                draw.RequestDraw(pos, 9.0f * mRadiusMultiplier,
                     Dia::Debug::DebugColourPalette::kHealthy);
             }
             else if (i == startIdx)
             {
-                frameData.RequestDraw(pos, 7.0f * mRadiusMultiplier,
+                draw.RequestDraw(pos, 7.0f * mRadiusMultiplier,
                     Dia::Debug::DebugColourPalette::kGoal);
             }
             else
             {
-                frameData.RequestDraw(pos, 5.0f * mRadiusMultiplier,
+                draw.RequestDraw(pos, 5.0f * mRadiusMultiplier,
                     Dia::Debug::DebugColourPalette::kGoal);
             }
         }

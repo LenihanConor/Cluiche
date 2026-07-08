@@ -34,7 +34,6 @@ dependent_modules:
   - dia.maths
   - dia.geometry2d
   - dia.rigidbody2d
-  - dia.graphics
   - dia.softbody2d
   - dia.diavisualdebugger
 
@@ -58,7 +57,6 @@ dependencies:
     - dia.maths
     - dia.geometry2d
     - dia.rigidbody2d
-    - dia.graphics
     - dia.softbody2d
     - dia.diavisualdebugger
   forbidden: []

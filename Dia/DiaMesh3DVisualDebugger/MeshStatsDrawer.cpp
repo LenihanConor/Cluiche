@@ -5,7 +5,7 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGraphics3D/Mesh3DFrameData.h>
 #include <DiaMesh3D/Mesh3DAssetHandler.h>
 #include <DiaMesh3D/Mesh3DAsset.h>
@@ -29,7 +29,7 @@ Dia::Core::StringCRC MeshStatsDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kMesh3DStats;
 }
 
-void MeshStatsDrawer::Draw(Dia::Graphics::FrameData& /*frameData*/)
+void MeshStatsDrawer::Draw(Dia::Core::IDebugDraw& /*draw*/)
 {
 }
 

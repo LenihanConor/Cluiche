@@ -4,7 +4,7 @@
 
 #include <DiaGeometry2DVisualDebugger/ShapeDrawer.h>
 #include <DiaGraphics/Misc/RGBA.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 
 namespace CluicheTest {
 
@@ -42,7 +42,7 @@ Dia::Core::StringCRC Geometry2DIntersectionsDrawer::GetLayerName() const
 
 #pragma warning(push)
 #pragma warning(disable: 6262)  // ShapeDrawer::mPending is intentionally stack-allocated
-void Geometry2DIntersectionsDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void Geometry2DIntersectionsDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     Dia::Geometry2DVisualDebugger::ShapeDrawer drawer(mManager);
 
@@ -80,7 +80,7 @@ void Geometry2DIntersectionsDrawer::Draw(Dia::Graphics::FrameData& frameData)
         }
     }
 
-    drawer.Draw(frameData);
+    drawer.Draw(draw);
 
     // Draw labels below each pair
     // Use the intersection band Y from the module setup (kY = 0.0f, kStartX = -300, kSpacing = 120)
@@ -94,11 +94,11 @@ void Geometry2DIntersectionsDrawer::Draw(Dia::Graphics::FrameData& frameData)
         const float px = kStartX + kSpacing * static_cast<float>(i);
         const Dia::Graphics::RGBA hitMissColour = pair.hit ? kHitColour : kMissColour;
 
-        frameData.RequestDrawText(
+        draw.RequestDrawText(
             Dia::Maths::Vector2D(px, kBandY + kLabelOffsetY),
             pair.hit ? "HIT" : "MISS", kLabelFontSize, hitMissColour);
 
-        frameData.RequestDrawText(
+        draw.RequestDrawText(
             Dia::Maths::Vector2D(px, kBandY + kLabelOffsetY + 16.0f),
             KindLabel(pair.kind), kLabelFontSize - 2.0f, kLabelColour);
     }

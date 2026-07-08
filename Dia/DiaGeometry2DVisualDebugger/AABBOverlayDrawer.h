@@ -43,7 +43,7 @@ public:
     explicit AABBOverlayDrawer(const Dia::Debug::DebugLayerManager& manager);
 
     Dia::Core::StringCRC GetLayerName() const override;
-    void Draw(Dia::Graphics::FrameData& frameData) override;
+    void Draw(Dia::Core::IDebugDraw& draw) override;
     void DrawImGui() override;
 
     void SubmitCircle    (const Dia::Geometry2D::Circle&       shape);

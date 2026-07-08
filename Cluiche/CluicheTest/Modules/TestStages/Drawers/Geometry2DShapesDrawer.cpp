@@ -8,7 +8,7 @@
 #include <DiaGeometry2DVisualDebugger/OORectDrawHelper.h>
 #include <DiaGeometry2DVisualDebugger/CapsuleDrawHelper.h>
 #include <DiaGraphics/Misc/RGBA.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <imgui.h>
 
 namespace CluicheTest {
@@ -46,7 +46,7 @@ Dia::Core::StringCRC Geometry2DShapesDrawer::GetLayerName() const
 
 #pragma warning(push)
 #pragma warning(disable: 6262)  // ShapeDrawer::mPending is intentionally stack-allocated
-void Geometry2DShapesDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void Geometry2DShapesDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     Dia::Geometry2DVisualDebugger::ShapeDrawer drawer(mManager);
 
@@ -68,7 +68,7 @@ void Geometry2DShapesDrawer::Draw(Dia::Graphics::FrameData& frameData)
     for (unsigned int i = 0; i < mSpatialScatter.Size(); ++i)
         drawer.SubmitAARect(mSpatialScatter[i], kScatterColour);
 
-    drawer.Draw(frameData);
+    drawer.Draw(draw);
 }
 #pragma warning(pop)
 

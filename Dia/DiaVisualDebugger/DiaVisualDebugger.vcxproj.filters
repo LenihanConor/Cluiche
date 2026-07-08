@@ -38,9 +38,6 @@
     <ClInclude Include="DebugLayerNames.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DebugLayerPanelPlugin.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="IObjectRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -86,9 +83,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="DebugColourPalette.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="DebugLayerPanelPlugin.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FixedPrimitiveBuffer.cpp">

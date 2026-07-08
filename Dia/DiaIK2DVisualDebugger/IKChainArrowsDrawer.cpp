@@ -8,7 +8,7 @@
 #include <DiaVisualDebugger/DebugColourPalette.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaRig2D/Skeleton.h>
 #include <DiaIK2D/IKSolver.h>
 #include <DiaObservation/Trace/DiaTrace.h>
@@ -34,7 +34,7 @@ Dia::Core::StringCRC IKChainArrowsDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kIKArrows;
 }
 
-void IKChainArrowsDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void IKChainArrowsDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     DIA_TRACE_ZONE("ik.arrows", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const float scale      = mManager.GetDebugScale();
@@ -59,7 +59,7 @@ void IKChainArrowsDrawer::Draw(Dia::Graphics::FrameData& frameData)
                 ? bone.length * scale * mLengthMultiplier
                 : 4.0f * scale * mLengthMultiplier;
 
-            frameData.RequestDrawRay(
+            draw.RequestDrawRay(
                 wt.position,
                 direction,
                 length,

@@ -12,7 +12,7 @@
 #include "DiaRigidBody2D/Bodies/Body2DBase.h"
 #include "DiaRigidBody2D/Bodies/BodyType.h"
 #include "DiaGeometry2D/Transform/Transform.h"
-#include "DiaGraphics/Frame/FrameData.h"
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include "DiaVisualDebugger/DebugLayerManager.h"
 #include "DiaVisualDebugger/DebugColourPalette.h"
 #include "DiaVisualDebugger/DebugLayerNames.h"
@@ -37,7 +37,7 @@ Dia::Core::StringCRC VelocityArrowsDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kPhysicsVelocity;
 }
 
-void VelocityArrowsDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void VelocityArrowsDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     DIA_TRACE_ZONE("physics.velocity", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const float debugScale = mManager.GetDebugScale();
@@ -60,7 +60,7 @@ void VelocityArrowsDrawer::Draw(Dia::Graphics::FrameData& frameData)
         len *= debugScale;
 
         const Dia::Maths::Vector2D dir{ vel.x / speed, vel.y / speed };
-        frameData.RequestDrawRay(pos, dir, len, Dia::Debug::DebugColourPalette::kWarning);
+        draw.RequestDrawRay(pos, dir, len, Dia::Debug::DebugColourPalette::kWarning);
     };
 
     const auto& pointBodies = mWorld.GetPointBodies();

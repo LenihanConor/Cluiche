@@ -8,7 +8,7 @@
 #include <DiaVisualDebugger/DebugColourPalette.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <imgui.h>
 
@@ -30,7 +30,7 @@ Dia::Core::StringCRC JointCirclesDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kRigJoints;
 }
 
-void JointCirclesDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void JointCirclesDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     DIA_TRACE_ZONE("rig.joints", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const float scale      = mManager.GetDebugScale();
@@ -57,17 +57,17 @@ void JointCirclesDrawer::Draw(Dia::Graphics::FrameData& frameData)
         // Fixed pixel radii — positions are expected to be pre-scaled to screen space.
         if (bone.parentIndex < 0)
         {
-            frameData.RequestDraw(wt.position, 7.0f * mRadiusMultiplier,
+            draw.RequestDraw(wt.position, 7.0f * mRadiusMultiplier,
                 Dia::Debug::DebugColourPalette::kHealthy);
         }
         else if (isLeaf[i])
         {
-            frameData.RequestDraw(wt.position, 5.0f * mRadiusMultiplier,
+            draw.RequestDraw(wt.position, 5.0f * mRadiusMultiplier,
                 Dia::Debug::DebugColourPalette::kWarning);
         }
         else
         {
-            frameData.RequestDraw(wt.position, 5.0f * mRadiusMultiplier,
+            draw.RequestDraw(wt.position, 5.0f * mRadiusMultiplier,
                 Dia::Debug::DebugColourPalette::kActive);
         }
     }

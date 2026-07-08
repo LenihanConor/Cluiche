@@ -24,7 +24,7 @@ public:
                          float arrowMaxLen = 10.0f);
 
     Dia::Core::StringCRC GetLayerName() const override;
-    void Draw(Dia::Graphics::FrameData& frameData) override;
+    void Draw(Dia::Core::IDebugDraw& draw) override;
     void DrawImGui() override;
 
 private:

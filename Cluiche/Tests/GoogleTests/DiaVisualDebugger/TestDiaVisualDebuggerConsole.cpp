@@ -50,7 +50,7 @@ namespace
         {}
 
         Dia::Core::StringCRC GetLayerName() const override { return mName; }
-        void Draw(Dia::Graphics::FrameData& /*frameData*/) override {}
+        void Draw(Dia::Core::IDebugDraw& /*draw*/) override {}
 
     private:
         Dia::Core::StringCRC mName;
