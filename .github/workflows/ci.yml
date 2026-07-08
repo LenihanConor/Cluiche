@@ -19,7 +19,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install DiaCLI
-        run: pip install -e Dia/DiaCLI
+        run: pip install Dia/DiaCLI
 
       - name: Check dependency declarations
         run: dia check deps
@@ -51,7 +51,7 @@ jobs:
           java-version: "21"
 
       - name: Install DiaCLI
-        run: pip install -e Dia/DiaCLI
+        run: pip install Dia/DiaCLI
 
       - name: Restore deps (includes PMD)
         run: dia env setup --dep pmd
