@@ -2,7 +2,7 @@
 #include "DiaObservation/Log/ThreadLogBuffer.h"
 #include "DiaObservation/Log/ISink.h"
 #include "DiaObservation/Log/LogEntry.h"
-#include "DiaObservation/Session/ScenarioStepStack.h"
+#include "DiaObservation/ScenarioStepStack.h"
 
 #include <stdarg.h>
 #include <stdio.h>

@@ -31,7 +31,7 @@
     <ClCompile Include="Config\ObservationConfigCli.cpp" />
     <ClCompile Include="Session\SessionManager.cpp" />
     <ClCompile Include="Session\SessionIdGenerator.cpp" />
-    <ClCompile Include="Session\ScenarioStepStack.cpp" />
+    <ClCompile Include="ScenarioStepStack.cpp" />
     <ClCompile Include="Trace\Tracer.cpp" />
     <ClCompile Include="Trace\ScopedZone.cpp" />
     <ClCompile Include="Trace\TraceFileSink.cpp" />
@@ -66,7 +66,7 @@
     <ClInclude Include="Config\ObservationConfigCli.h" />
     <ClInclude Include="Session\SessionManager.h" />
     <ClInclude Include="Session\SessionIdGenerator.h" />
-    <ClInclude Include="Session\ScenarioStepStack.h" />
+    <ClInclude Include="ScenarioStepStack.h" />
     <ClInclude Include="Trace\SpanRecord.h" />
     <ClInclude Include="Trace\TraceCategory.h" />
     <ClInclude Include="Trace\Tracer.h" />
@@ -101,6 +101,7 @@
     <ClInclude Include="Capture\DiaCapture.h" />
     <ClInclude Include="Capture\ThirdParty\lodepng.h" />
     <ClInclude Include="Capture\CaptureManager.h" />
+    <ClInclude Include="Capture\IFrameCaptureSource.h" />
     <ClInclude Include="Metric\JobSystemMetricsAdapter.h" />
   </ItemGroup>
   <ItemGroup>

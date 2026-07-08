@@ -5,6 +5,7 @@
 
 #include "DiaGraphics/Frame/FrameData.h"
 #include "DiaGraphics/Interface/FrameCapture.h"
+#include <DiaObservation/Capture/IFrameCaptureSource.h>
 
 #include <DiaCore/Core/EnumClass.h>
 #include <DiaMaths/Vector/Vector2D.h>
@@ -17,7 +18,7 @@ namespace Dia
 		////////////////////////////////////////////////////////////////////////////////
 		// Enum name: ICanvas
 		////////////////////////////////////////////////////////////////////////////////
-		class ICanvas
+		class ICanvas : public Dia::Observation::Capture::IFrameCaptureSource
 		{
 		public:
 			class Settings

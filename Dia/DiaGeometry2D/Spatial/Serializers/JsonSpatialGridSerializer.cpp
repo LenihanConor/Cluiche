@@ -1,5 +1,5 @@
-#include "JsonSpatialGridSerializer.h"
-#include "ISpatialGridSerializer.h"
+#include <DiaGeometry2D/Spatial/Serializers/JsonSpatialGridSerializer.h>
+#include <DiaGeometry2D/Spatial/Serializers/ISpatialGridSerializer.h>
 
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaObservation/Log/DiaLog.h>

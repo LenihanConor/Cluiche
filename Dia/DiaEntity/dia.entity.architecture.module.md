@@ -3,6 +3,7 @@ module: dia.entity
 version: 1
 layer: assets/core
 namespace: Dia::Entity
+path: Dia/DiaEntity
 project: Dia/diaentitytemplate/diaentitytemplate.vcxproj
 dependent_modules:
   - dia.core

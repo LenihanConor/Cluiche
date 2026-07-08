@@ -11,7 +11,7 @@
 #include "DiaRigidBody2D/World/PhysicsWorld.h"
 #include "DiaRigidBody2D/WorldShapeUtil.h"
 #include <DiaCore/DebugDraw/IDebugDraw.h>
-#include "DiaGraphics/Misc/RGBA.h"
+#include <DiaCore/Colour/RGBA.h>
 #include "DiaGeometry2D/Shapes/AARect.h"
 #include <DiaCore/DebugDraw/IDebugContext.h>
 #include <DiaCore/DebugDraw/DebugColourPalette.h>
@@ -48,7 +48,7 @@ void PhysicsAABBDrawer::Draw(Dia::Core::IDebugDraw& draw)
                 aabb.GetBottomLeft(),
                 aabb.GetTopRight(),
                 Dia::Debug::DebugColourPalette::kWarning,
-                Dia::Graphics::RGBA(255, 220, 0, 40));
+                Dia::Core::RGBA(255, 220, 0, 40));
         }
         else
         {

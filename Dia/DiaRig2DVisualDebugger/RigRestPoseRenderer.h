@@ -9,9 +9,9 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/IObjectRenderer.h>
-#include <DiaVisualDebugger/IFixedPrimitiveBuffer.h>
-#include <DiaVisualDebugger/DebugColourPalette.h>
+#include <DiaCore/DebugDraw/IObjectRenderer.h>
+#include <DiaCore/DebugDraw/IFixedPrimitiveBuffer.h>
+#include <DiaCore/DebugDraw/DebugColourPalette.h>
 #include <DiaRig2D/Skeleton.h>
 #include <DiaRig2D/Pose.h>
 #include <DiaRig2D/BoneTransform.h>

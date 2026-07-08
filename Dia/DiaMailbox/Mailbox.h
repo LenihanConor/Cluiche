@@ -1,12 +1,12 @@
 #pragma once
 #include <stdio.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Metric/Counter.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Containers/Handle.h>
 #include <DiaCore/Containers/HandlePool.h>
 #include <DiaCore/Core/Assert.h>
-#include <DiaObservation/Log/DiaLog.h>
-#include <DiaObservation/Metric/Counter.h>
 #include <DiaMailbox/MailboxTypes.h>
 #include <DiaMailbox/Subscription.h>
 #include <DiaMailbox/IMailboxRouter.h>

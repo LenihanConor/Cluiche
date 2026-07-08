@@ -141,7 +141,7 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
     mBgfxCanvas->SetMeshHandler(&mMeshHandler);
 
     mCanvas = mBgfxCanvas;
-    Dia::Observation::SessionManager::SetActiveCaptureCanvas(mCanvas);
+    Dia::Observation::SessionManager::SetActiveCaptureSource(mCanvas);
 
 #ifdef DIA_DEBUG
     mBgfxImGuiBackend = new Dia::Bgfx::BgfxImGuiBackend();

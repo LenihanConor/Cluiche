@@ -6,7 +6,7 @@
 #include <DiaEntity/Domain.h>
 #include <DiaEntity/Entity.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
-#include <DiaGraphics/Misc/RGBA.h>
+#include <DiaCore/Colour/RGBA.h>
 #include <DiaCore/DebugDraw/DebugLayerNames.h>
 #include <DiaCore/DebugDraw/IDebugContext.h>
 #include <imgui.h>
@@ -14,7 +14,7 @@
 namespace Dia::EntityVisualDebugger
 {
 
-static const Dia::Graphics::RGBA kSelectionColour(255, 255, 0, 255);
+static const Dia::Core::RGBA kSelectionColour(255, 255, 0, 255);
 
 EntityPickingDrawer::EntityPickingDrawer(
     Dia::Entity::IEntityInspectable& inspectable,

@@ -1,4 +1,4 @@
-#include "DiaObservation/Session/ScenarioStepStack.h"
+#include "DiaObservation/ScenarioStepStack.h"
 
 namespace Dia
 {

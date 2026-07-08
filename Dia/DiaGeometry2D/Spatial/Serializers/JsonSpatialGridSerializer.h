@@ -1,6 +1,6 @@
 #pragma once
 
-#include <DiaGeometry2D/Spatial/ISpatialGridSerializer.h>
+#include <DiaGeometry2D/Spatial/Serializers/ISpatialGridSerializer.h>
 
 namespace Dia
 {

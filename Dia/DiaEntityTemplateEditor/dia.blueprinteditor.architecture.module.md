@@ -2,7 +2,7 @@
 schema: dia.module.v1
 module_id: dia.EntityTemplateEditor
 name: DiaEntityTemplateEditor
-layer: assets/tools
+layer: domain/visual/tools
 path: Dia/DiaEntityTemplateEditor
 
 dependencies:

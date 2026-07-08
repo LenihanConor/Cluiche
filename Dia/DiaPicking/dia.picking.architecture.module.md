@@ -2,7 +2,7 @@
 schema: dia.module.v1
 module_id: dia.picking
 name: DiaPicking
-layer: foundation/core
+layer: foundation/services
 path: Dia/DiaPicking
 status: active
 maturity: dev

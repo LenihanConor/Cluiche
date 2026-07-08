@@ -12,7 +12,6 @@
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaObservation/Profile/DiaProfile.h>
 #include <DiaObservation/Health/HealthRegistry.h>
-#include <DiaGraphics/Interface/ICanvas.h>
 
 #include <cstdio>
 #include <cstring>
@@ -25,7 +24,7 @@ namespace Dia
         namespace Capture
         {
             CaptureManager::CaptureManager()
-                : mCanvas(nullptr)
+                : mCaptureSource(nullptr)
                 , mSession(nullptr)
                 , mPendingCount(0)
                 , mInFlightCount(0)
@@ -45,14 +44,14 @@ namespace Dia
                 Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealthReporter);
             }
 
-            void CaptureManager::SetCanvas(Dia::Graphics::ICanvas* canvas)
+            void CaptureManager::SetCaptureSource(IFrameCaptureSource* captureSource)
             {
-                mCanvas = canvas;
+                mCaptureSource = captureSource;
             }
 
-            void CaptureManager::Initialize(Dia::Graphics::ICanvas* canvas, SessionManager* session)
+            void CaptureManager::Initialize(IFrameCaptureSource* captureSource, SessionManager* session)
             {
-                mCanvas = canvas;
+                mCaptureSource = captureSource;
                 mSession = session;
                 mInFlightCount = 0;
                 mCapturesDirCreated = false;
@@ -74,7 +73,7 @@ namespace Dia
 
             CaptureRequestStatus CaptureManager::RequestCapture(const CaptureMetadata& metadata)
             {
-                if (mCanvas == nullptr)
+                if (mCaptureSource == nullptr)
                 {
                     if (mCapturesRejectedCounter) mCapturesRejectedCounter->Inc();
                     return CaptureRequestStatus::kRejected_NoCanvas;
@@ -119,7 +118,7 @@ namespace Dia
                         continue;
                     }
 
-                    Dia::Graphics::FrameCaptureToken token = mCanvas->RequestFrameCapture();
+                    Dia::Graphics::FrameCaptureToken token = mCaptureSource->RequestFrameCapture();
                     if (!token.IsValid())
                     {
                         if (mCapturesRejectedCounter) mCapturesRejectedCounter->Inc();
@@ -141,7 +140,7 @@ namespace Dia
                 DIA_TRACE_ZONE("capture.tick", ::Dia::Observation::Trace::Category::kDiaGraphics);
                 for (unsigned int i = 0; i < mInFlightCount; )
                 {
-                    Dia::Graphics::FrameCaptureResult result = mCanvas->PollFrameCapture(mInFlight[i].token);
+                    Dia::Graphics::FrameCaptureResult result = mCaptureSource->PollFrameCapture(mInFlight[i].token);
 
                     switch (result.status)
                     {
@@ -337,7 +336,7 @@ namespace Dia
                 h.reason   = Dia::Core::StringCRC{};
                 h.status   = Dia::Observation::Health::HealthStatus::kOK;
 
-                if (mOwner.mCanvas == nullptr)
+                if (mOwner.mCaptureSource == nullptr)
                 {
                     h.status = Dia::Observation::Health::HealthStatus::kDegraded;
                     h.reason = Dia::Core::StringCRC("no_canvas");

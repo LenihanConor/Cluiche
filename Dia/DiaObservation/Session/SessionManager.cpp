@@ -1,6 +1,6 @@
 #include "DiaObservation/Session/SessionManager.h"
 #include "DiaObservation/Session/SessionIdGenerator.h"
-#include "DiaObservation/Session/ScenarioStepStack.h"
+#include "DiaObservation/ScenarioStepStack.h"
 #include "DiaObservation/Log/ObservationFileSink.h"
 #include "DiaObservation/Log/Logger.h"
 #include "DiaObservation/Log/DiaLog.h"
@@ -336,12 +336,12 @@ namespace Dia
 			++mFrameCount;
 		}
 
-		void SessionManager::SetCaptureCanvas(Dia::Graphics::ICanvas* canvas)
+		void SessionManager::SetCaptureSource(Capture::IFrameCaptureSource* source)
 		{
 			if (mCaptureManager)
 			{
-				mCaptureManager->SetCanvas(canvas);
-				DIA_LOG_INFO("Capture", "SessionManager::SetCaptureCanvas — canvas wired, CaptureManager now operational");
+				mCaptureManager->SetCaptureSource(source);
+				DIA_LOG_INFO("Capture", "SessionManager::SetCaptureSource — capture source wired, CaptureManager now operational");
 			}
 		}
 
@@ -355,10 +355,10 @@ namespace Dia
 			return sActiveInstance ? sActiveInstance->mCaptureManager : nullptr;
 		}
 
-		void SessionManager::SetActiveCaptureCanvas(Dia::Graphics::ICanvas* canvas)
+		void SessionManager::SetActiveCaptureSource(Capture::IFrameCaptureSource* source)
 		{
 			if (sActiveInstance)
-				sActiveInstance->SetCaptureCanvas(canvas);
+				sActiveInstance->SetCaptureSource(source);
 		}
 
 		void SessionManager::OnRetainableEntry(const Log::LogEntry& entry)

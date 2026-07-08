@@ -4,13 +4,13 @@
 #pragma once
 
 #include <DiaObservation/Capture/CaptureTypes.h>
-#include <DiaGraphics/Interface/FrameCapture.h>
+#include <DiaObservation/Capture/IFrameCaptureSource.h>
+#include <DiaCore/Capture/FrameCapture.h>
 #include <DiaObservation/Health/HealthReporterBase.h>
 
 #include <cstdint>
 #include <mutex>
 
-namespace Dia { namespace Graphics { class ICanvas; } }
 namespace Dia { namespace Observation { class SessionManager; } }
 namespace Dia { namespace Observation { namespace Metric { class Counter; class Histogram; } } }
 
@@ -26,8 +26,8 @@ namespace Dia
                 CaptureManager();
                 ~CaptureManager();
 
-                void Initialize(Dia::Graphics::ICanvas* canvas, SessionManager* session);
-                void SetCanvas(Dia::Graphics::ICanvas* canvas);
+                void Initialize(IFrameCaptureSource* captureSource, SessionManager* session);
+                void SetCaptureSource(IFrameCaptureSource* captureSource);
 
                 // Call from any thread to queue a capture request.
                 CaptureRequestStatus RequestCapture(const CaptureMetadata& metadata);
@@ -67,7 +67,7 @@ namespace Dia
                     CaptureManager& mOwner;
                 };
 
-                Dia::Graphics::ICanvas* mCanvas;
+                IFrameCaptureSource*    mCaptureSource;
                 SessionManager*         mSession;
 
                 // Pending queue: written from any thread, drained on render thread

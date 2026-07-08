@@ -1,7 +1,7 @@
 #include "DiaObservation/Trace/Tracer.h"
 #include "DiaObservation/Trace/TraceFileSink.h"
 #include "DiaObservation/Trace/ITraceSink.h"
-#include "DiaObservation/Session/ScenarioStepStack.h"
+#include "DiaObservation/ScenarioStepStack.h"
 #include "DiaObservation/Log/DiaLog.h"
 
 #include <chrono>

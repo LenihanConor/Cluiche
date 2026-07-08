@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.statemachine
 name: DiaStateMachine
 owner_team: TBD
-layer: foundation/core
+layer: foundation/services
 status: active
 maturity: dev
 

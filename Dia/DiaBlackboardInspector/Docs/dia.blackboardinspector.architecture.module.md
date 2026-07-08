@@ -2,7 +2,7 @@
 schema: dia.module.v1
 module_id: dia.blackboardinspector
 name: DiaBlackboardInspector
-layer: assets/tools
+layer: domain/visual/tools
 path: Dia/DiaBlackboardInspector
 dependencies:
   required:

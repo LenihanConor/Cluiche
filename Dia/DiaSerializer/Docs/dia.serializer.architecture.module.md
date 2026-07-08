@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.serializer
 name: DiaSerializer
 owner_team: TBD
-layer: foundation/core
+layer: foundation/services
 status: active
 maturity: dev
 

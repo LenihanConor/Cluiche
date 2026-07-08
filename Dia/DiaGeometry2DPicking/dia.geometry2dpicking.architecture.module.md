@@ -2,7 +2,7 @@
 schema: dia.module.v1
 module_id: dia.geometry2dpicking
 name: DiaGeometry2DPicking
-layer: foundation/maths
+layer: foundation/platform
 path: Dia/DiaGeometry2DPicking
 status: active
 maturity: dev

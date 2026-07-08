@@ -99,8 +99,8 @@
     <ClInclude Include="Spatial\BVH.h" />
     <ClInclude Include="Spatial\HexGrid.h" />
     <ClInclude Include="Spatial\SpatialGridDef.h" />
-    <ClInclude Include="Spatial\ISpatialGridSerializer.h" />
-    <ClInclude Include="Spatial\JsonSpatialGridSerializer.h" />
+    <ClInclude Include="Spatial\Serializers\ISpatialGridSerializer.h" />
+    <ClInclude Include="Spatial\Serializers\JsonSpatialGridSerializer.h" />
     <ClInclude Include="Random\Random.h" />
     <ClInclude Include="DiaGeometry2DSerializers.h" />
   </ItemGroup>
@@ -127,7 +127,7 @@
     <ClCompile Include="Spatial\Quadtree.cpp" />
     <ClCompile Include="Spatial\BVH.cpp" />
     <ClCompile Include="Spatial\HexGrid.cpp" />
-    <ClCompile Include="Spatial\JsonSpatialGridSerializer.cpp" />
+    <ClCompile Include="Spatial\Serializers\JsonSpatialGridSerializer.cpp" />
     <ClCompile Include="Random\Random.cpp" />
   </ItemGroup>
   <ItemGroup>

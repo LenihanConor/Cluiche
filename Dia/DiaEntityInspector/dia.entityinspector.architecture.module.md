@@ -2,7 +2,7 @@
 schema: dia.module.v1
 module_id: dia.entityinspector
 name: DiaEntityInspector
-layer: assets/tools
+layer: domain/visual/tools
 path: Dia/DiaEntityInspector
 dependencies:
   required:

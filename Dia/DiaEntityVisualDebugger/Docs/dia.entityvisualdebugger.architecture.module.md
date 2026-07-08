@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.entityvisualdebugger
 name: DiaEntityVisualDebugger
 owner_team: TBD
-layer: assets/tools
+layer: domain/visual/tools
 status: active
 maturity: dev
 

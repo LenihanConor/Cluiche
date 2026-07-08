@@ -66,8 +66,8 @@
     <ClCompile Include="Session\SessionIdGenerator.cpp">
       <Filter>Session</Filter>
     </ClCompile>
-    <ClCompile Include="Session\ScenarioStepStack.cpp">
-      <Filter>Session</Filter>
+    <ClCompile Include="ScenarioStepStack.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Metric\Counter.cpp">
       <Filter>Metric</Filter>
@@ -158,8 +158,8 @@
     <ClInclude Include="Session\SessionIdGenerator.h">
       <Filter>Session</Filter>
     </ClInclude>
-    <ClInclude Include="Session\ScenarioStepStack.h">
-      <Filter>Session</Filter>
+    <ClInclude Include="ScenarioStepStack.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Metric\Counter.h">
       <Filter>Metric</Filter>
@@ -269,10 +269,13 @@
       <Filter>Capture\ThirdParty</Filter>
     </ClInclude>
     <ClInclude Include="Capture\CaptureManager.h">
+      <Filter>Capture</Filter>
+    </ClInclude>
+    <ClInclude Include="Capture\IFrameCaptureSource.h">
+      <Filter>Capture</Filter>
+    </ClInclude>
     <ClInclude Include="Metric\JobSystemMetricsAdapter.h">
       <Filter>Metric</Filter>
-    </ClInclude>
-      <Filter>Capture</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
