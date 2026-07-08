@@ -169,6 +169,17 @@
       ]
     },
     {
+      "id": "pmd",
+      "version": "7.6.0",
+      "url": "https://github.com/pmd/pmd/releases/download/pmd_releases/7.6.0/pmd-dist-7.6.0-bin.zip",
+      "mirrors": [],
+      "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
+      "install_type": "zip",
+      "unzip_to": "External/pmd",
+      "strip_root": true,
+      "sentinel_inputs": ["External/pmd/bin/pmd.bat"]
+    },
+    {
       "id": "sdl3",
       "version": "3.x-main",
       "install_type": "cmake_build",
