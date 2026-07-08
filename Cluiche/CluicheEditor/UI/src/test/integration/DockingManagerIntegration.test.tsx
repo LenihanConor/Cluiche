@@ -39,12 +39,15 @@ vi.mock("react-mosaic-component", () => ({
       </div>
     );
   },
-  MosaicWindow: ({ children, title, toolbarControls }: any) => (
-    <div data-testid={`window-${title}`}>
-      <div data-testid={`controls-${title}`}>{toolbarControls}</div>
-      {children}
-    </div>
-  ),
+  MosaicWindow: ({ children, title, toolbarControls }: any) => {
+    const titleText = typeof title === "string" ? title : title?.props?.children ?? "";
+    return (
+      <div data-testid={`window-${titleText}`}>
+        <div data-testid={`controls-${titleText}`}>{toolbarControls}</div>
+        {children}
+      </div>
+    );
+  },
 }));
 
 import { EditorBridge } from "../../bridge/EditorBridge";
@@ -150,6 +153,8 @@ describe("DockingManager + Toolbar – integration", () => {
     await waitFor(() =>
       expect(screen.queryByTestId("tile-Inspector")).not.toBeInTheDocument()
     );
-    expect(screen.getByTestId("tile-Console")).toBeInTheDocument();
+    // Fullscreen replaces the mosaic with a plain iframe — no tile wrapper
+    expect(screen.queryByTestId("mosaic")).not.toBeInTheDocument();
+    expect(screen.getByTitle("Exit fullscreen")).toBeInTheDocument();
   });
 });

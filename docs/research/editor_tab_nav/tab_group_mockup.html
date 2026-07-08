@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CluicheEditor — Tab Group Mockup (Option A)</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:         #1e1e1e;
+    --titlebar:   #252526;
+    --panel:      #2d2d2d;
+    --border:     #3c3c3c;
+    --text:       #cccccc;
+    --text-dim:   #858585;
+    --accent:     #007acc;
+    --accent-dim: #1c4a6e;
+    --tab-hover:  #2a2d2e;
+    --tab-active-bg: #1e1e1e;
+    --dropdown-bg: #252526;
+    --dropdown-hover: #04395e;
+    --menu-bg:    #252526;
+    --menu-hover: #094771;
+    --splitter:   #3c3c3c;
+    --font: 'Segoe UI', system-ui, sans-serif;
+    --font-mono: 'Cascadia Code', 'Consolas', monospace;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* ── Menubar ── */
+  .menubar {
+    height: 30px;
+    background: #323233;
+    border-bottom: 1px solid #222;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .menubar-item {
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    color: var(--text-dim);
+    cursor: pointer;
+  }
+  .menubar-item:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+  .menubar-title {
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.3px;
+  }
+
+  /* ── Main layout ── */
+  .editor-body {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* ── Splitter ── */
+  .h-splitter {
+    width: 4px;
+    background: var(--splitter);
+    cursor: col-resize;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  .h-splitter:hover { background: var(--accent); }
+
+  .v-splitter {
+    height: 4px;
+    background: var(--splitter);
+    cursor: row-resize;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  .v-splitter:hover { background: var(--accent); }
+
+  /* ── Column ── */
+  .col-left  { width: 42%; display: flex; flex-direction: column; }
+  .col-right { flex: 1;    display: flex; flex-direction: column; }
+
+  /* ── Generic panel ── */
+  .panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .panel-titlebar {
+    height: 30px;
+    background: var(--titlebar);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    gap: 6px;
+    cursor: grab;
+    flex-shrink: 0;
+  }
+  .panel-titlebar:active { cursor: grabbing; }
+
+  .drag-dots {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    opacity: 0.35;
+    flex-shrink: 0;
+  }
+  .drag-dots span {
+    display: flex;
+    gap: 2px;
+  }
+  .drag-dots span::before,
+  .drag-dots span::after {
+    content: '';
+    width: 2px;
+    height: 2px;
+    border-radius: 50%;
+    background: var(--text);
+  }
+
+  .panel-title {
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.2px;
+    flex: 1;
+  }
+
+  .titlebar-controls {
+    display: flex;
+    gap: 2px;
+    margin-left: auto;
+  }
+  .ctrl-btn {
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.1s, color 0.1s;
+  }
+  .ctrl-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+  .ctrl-btn.close:hover { background: #c0392b; color: #fff; }
+
+  .panel-body {
+    flex: 1;
+    background: var(--panel);
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .panel-placeholder {
+    color: var(--text-dim);
+    font-size: 12px;
+    font-family: var(--font-mono);
+    opacity: 0.5;
+    text-align: center;
+    line-height: 1.8;
+  }
+
+  /* ── Tab group panel ── */
+  .tab-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--accent);
+  }
+
+  .tab-bar {
+    height: 30px;
+    background: var(--titlebar);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: stretch;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .tab-list {
+    display: flex;
+    align-items: stretch;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px 0 10px;
+    font-size: 12px;
+    color: var(--text-dim);
+    cursor: pointer;
+    border-right: 1px solid var(--border);
+    position: relative;
+    white-space: nowrap;
+    transition: background 0.1s, color 0.1s;
+    min-width: 0;
+  }
+  .tab:hover { background: var(--tab-hover); color: var(--text); }
+
+  .tab.active {
+    background: var(--tab-active-bg);
+    color: var(--text);
+  }
+  .tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  .tab-close {
+    width: 16px;
+    height: 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.1s, background 0.1s;
+    flex-shrink: 0;
+  }
+  .tab:hover .tab-close,
+  .tab.active .tab-close { opacity: 1; }
+  .tab-close:hover { background: rgba(255,255,255,0.15); color: var(--text); }
+
+  .tab-add-wrapper {
+    display: flex;
+    align-items: center;
+    padding: 0 4px;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .tab-add-btn {
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.1s, color 0.1s;
+    line-height: 1;
+  }
+  .tab-add-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+  .tab-add-btn.open { background: var(--accent-dim); color: var(--text); }
+
+  /* ── Add-panel dropdown ── */
+  .add-dropdown {
+    position: absolute;
+    top: calc(100% + 2px);
+    right: 0;
+    background: var(--dropdown-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    min-width: 160px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    z-index: 100;
+    overflow: hidden;
+    display: none;
+  }
+  .add-dropdown.visible { display: block; }
+
+  .dropdown-header {
+    padding: 5px 10px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .dropdown-item {
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.1s;
+  }
+  .dropdown-item:hover { background: var(--dropdown-hover); }
+  .dropdown-item .di-icon {
+    width: 14px;
+    height: 14px;
+    opacity: 0.6;
+    flex-shrink: 0;
+  }
+  .dropdown-empty {
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  .tab-content-area {
+    flex: 1;
+    background: var(--panel);
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ── Context menu ── */
+  .ctx-menu {
+    position: fixed;
+    background: var(--menu-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    min-width: 230px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+    z-index: 200;
+    overflow: hidden;
+    animation: menuIn 0.08s ease;
+  }
+  @keyframes menuIn {
+    from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+    to   { opacity: 1; transform: scale(1)    translateY(0);    }
+  }
+
+  .ctx-menu-section {
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .ctx-menu-section:last-child { border-bottom: none; }
+
+  .ctx-item {
+    padding: 6px 14px;
+    font-size: 12px;
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.1s;
+    position: relative;
+  }
+  .ctx-item:hover { background: var(--menu-hover); }
+
+  .ctx-item-label { flex: 1; }
+  .ctx-item-icon  { opacity: 0.55; font-size: 13px; flex-shrink: 0; }
+
+  .ctx-separator { height: 1px; background: var(--border); margin: 2px 0; }
+
+  .ctx-badge {
+    font-size: 10px;
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-radius: 2px;
+    padding: 1px 5px;
+    letter-spacing: 0.3px;
+  }
+
+  /* ── Status bar ── */
+  .statusbar {
+    height: 22px;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+  .status-item {
+    font-size: 11px;
+    color: rgba(255,255,255,0.85);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .status-item.right { margin-left: auto; }
+
+  /* ── Toast notification ── */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    right: 16px;
+    background: #37373d;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--text);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    z-index: 300;
+    max-width: 280px;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast-title { font-weight: 600; margin-bottom: 2px; }
+  .toast-body  { color: var(--text-dim); }
+
+  /* ── Annotation overlays ── */
+  .annotation {
+    position: fixed;
+    font-size: 11px;
+    color: #f9ca24;
+    background: rgba(249,202,36,0.12);
+    border: 1px solid rgba(249,202,36,0.4);
+    border-radius: 3px;
+    padding: 3px 8px;
+    pointer-events: none;
+    z-index: 400;
+    letter-spacing: 0.2px;
+  }
+  .annotation-line {
+    position: fixed;
+    border-left: 1px dashed rgba(249,202,36,0.5);
+    pointer-events: none;
+    z-index: 399;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Menubar ── -->
+<div class="menubar">
+  <div class="menubar-item">File</div>
+  <div class="menubar-item">Edit</div>
+  <div class="menubar-item">View</div>
+  <div class="menubar-item">Panels</div>
+  <div class="menubar-item">Help</div>
+  <div class="menubar-title">CluicheEditor — Option A: Virtual Tab Groups</div>
+</div>
+
+<!-- ── Editor body ── -->
+<div class="editor-body">
+
+  <!-- Left column: Blackboard Inspector (single panel) -->
+  <div class="col-left">
+    <div class="panel" style="flex:1; border-top:none; border-left:none;">
+      <div class="panel-titlebar" id="bb-titlebar" oncontextmenu="showCtxMenu(event)">
+        <div class="drag-dots"><span></span><span></span><span></span></div>
+        <span class="panel-title">Blackboard Inspector</span>
+        <div class="titlebar-controls">
+          <button class="ctrl-btn" title="Fullscreen">⊞</button>
+          <button class="ctrl-btn close" title="Close">×</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="panel-placeholder">
+          &lt;BlackboardInspector /&gt;<br>
+          <span style="opacity:0.5">Right-click title bar for panel options</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Splitter -->
+  <div class="h-splitter"></div>
+
+  <!-- Right column -->
+  <div class="col-right">
+
+    <!-- Top-right: Tab group -->
+    <div class="tab-group" id="tab-group-main" style="flex:1.2">
+      <div class="tab-bar">
+        <div class="tab-list" id="tab-list">
+          <!-- tabs injected by JS -->
+        </div>
+        <div class="tab-add-wrapper" id="add-wrapper">
+          <button class="tab-add-btn" id="add-btn" title="Add panel to this group" onclick="toggleAddDropdown(event)">+</button>
+          <div class="add-dropdown" id="add-dropdown">
+            <div class="dropdown-header">Add panel to group</div>
+            <!-- items injected by JS -->
+          </div>
+        </div>
+      </div>
+      <div class="tab-content-area" id="tab-content">
+        <!-- content injected by JS -->
+      </div>
+    </div>
+
+    <!-- Splitter -->
+    <div class="v-splitter"></div>
+
+    <!-- Bottom-right: Scene Hierarchy -->
+    <div class="panel" style="flex:0.8; border-bottom:none; border-right:none;">
+      <div class="panel-titlebar" oncontextmenu="showCtxMenu(event)">
+        <div class="drag-dots"><span></span><span></span><span></span></div>
+        <span class="panel-title">Scene Hierarchy</span>
+        <div class="titlebar-controls">
+          <button class="ctrl-btn" title="Fullscreen">⊞</button>
+          <button class="ctrl-btn close" title="Close">×</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="panel-placeholder">&lt;SceneHierarchy /&gt;</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Status bar -->
+<div class="statusbar">
+  <div class="status-item">⚙ Debug | x64</div>
+  <div class="status-item">◉ 3 panels active</div>
+  <div class="status-item" style="margin-left:auto; opacity:0.7">Tab groups: 1 active · 2 panels grouped</div>
+</div>
+
+<!-- Context menu (shown by default) -->
+<div class="ctx-menu" id="ctx-menu" style="top:68px; left:12px;">
+  <div class="ctx-menu-section">
+    <div class="ctx-item" onclick="mergeTo('Output Console')">
+      <span class="ctx-item-icon">⇥</span>
+      <span class="ctx-item-label">Move to tab group with <strong>Output Console</strong></span>
+    </div>
+    <div class="ctx-item" onclick="mergeTo('Scene Hierarchy')">
+      <span class="ctx-item-icon">⇥</span>
+      <span class="ctx-item-label">Move to tab group with <strong>Scene Hierarchy</strong></span>
+    </div>
+  </div>
+  <div class="ctx-menu-section">
+    <div class="ctx-item" onclick="newTabGroup()">
+      <span class="ctx-item-icon">⊞</span>
+      <span class="ctx-item-label">New tab group here</span>
+      <span class="ctx-badge">new</span>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <div class="toast-title" id="toast-title"></div>
+  <div class="toast-body"  id="toast-body"></div>
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+const state = {
+  tabs: [
+    { id: 'Output Console',  content: '&lt;OutputConsole /&gt;\n&nbsp;&nbsp;&nbsp;live log stream' },
+    { id: 'Chat Plugin',     content: '&lt;ChatPlugin /&gt;\n&nbsp;&nbsp;&nbsp;AI assistant panel' },
+  ],
+  activeTab: 'Output Console',
+  loose: ['Properties', 'Asset Browser'],  // not yet in the group
+};
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render() {
+  renderTabs();
+  renderDropdown();
+  renderContent();
+  updateStatusbar();
+}
+
+function renderTabs() {
+  const list = document.getElementById('tab-list');
+  list.innerHTML = '';
+  state.tabs.forEach(tab => {
+    const el = document.createElement('div');
+    el.className = 'tab' + (tab.id === state.activeTab ? ' active' : '');
+    el.dataset.id = tab.id;
+    el.innerHTML = `
+      <span>${tab.id}</span>
+      <button class="tab-close" title="Close tab" data-tabid="${tab.id}">×</button>
+    `;
+    el.addEventListener('click', (e) => {
+      if (e.target.classList.contains('tab-close')) {
+        closeTab(e.target.dataset.tabid);
+      } else {
+        activateTab(tab.id);
+      }
+    });
+    list.appendChild(el);
+  });
+}
+
+function renderDropdown() {
+  const dd = document.getElementById('add-dropdown');
+  const items = dd.querySelectorAll('.dropdown-item, .dropdown-empty');
+  items.forEach(el => el.remove());
+
+  if (state.loose.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'dropdown-empty';
+    empty.textContent = 'All panels are grouped';
+    dd.appendChild(empty);
+  } else {
+    state.loose.forEach(name => {
+      const item = document.createElement('div');
+      item.className = 'dropdown-item';
+      item.innerHTML = `<span class="di-icon">⊡</span>${name}`;
+      item.addEventListener('click', () => addPanelToGroup(name));
+      dd.appendChild(item);
+    });
+  }
+}
+
+function renderContent() {
+  const area = document.getElementById('tab-content');
+  const tab = state.tabs.find(t => t.id === state.activeTab);
+  area.innerHTML = tab
+    ? `<div class="panel-placeholder">${tab.content}</div>`
+    : `<div class="panel-placeholder" style="opacity:0.3">empty group</div>`;
+}
+
+function updateStatusbar() {
+  const grouped = state.tabs.length;
+  const items = document.querySelectorAll('.status-item');
+  items[2].textContent = `Tab groups: 1 active · ${grouped} panel${grouped !== 1 ? 's' : ''} grouped`;
+}
+
+// ── Tab actions ───────────────────────────────────────────────────────────────
+function activateTab(id) {
+  state.activeTab = id;
+  render();
+}
+
+function closeTab(id) {
+  const idx = state.tabs.findIndex(t => t.id === id);
+  if (idx === -1) return;
+  state.loose.push(id);
+  state.tabs.splice(idx, 1);
+  if (state.activeTab === id) {
+    state.activeTab = state.tabs[Math.max(0, idx - 1)]?.id ?? null;
+  }
+  render();
+  showToast('Tab closed', `"${id}" moved back to loose panels`);
+}
+
+function addPanelToGroup(name) {
+  const idx = state.loose.indexOf(name);
+  if (idx === -1) return;
+  state.loose.splice(idx, 1);
+  state.tabs.push({ id: name, content: `&lt;${name.replace(' ', '')} /&gt;` });
+  state.activeTab = name;
+  hideAddDropdown();
+  render();
+  showToast('Panel added', `"${name}" merged into the tab group`);
+}
+
+// ── Add dropdown ──────────────────────────────────────────────────────────────
+function toggleAddDropdown(e) {
+  e.stopPropagation();
+  const dd  = document.getElementById('add-dropdown');
+  const btn = document.getElementById('add-btn');
+  const isVisible = dd.classList.contains('visible');
+  hideAddDropdown();
+  if (!isVisible) {
+    dd.classList.add('visible');
+    btn.classList.add('open');
+  }
+}
+
+function hideAddDropdown() {
+  document.getElementById('add-dropdown').classList.remove('visible');
+  document.getElementById('add-btn').classList.remove('open');
+}
+
+// ── Context menu ──────────────────────────────────────────────────────────────
+let ctxMenuOpen = true;
+
+function showCtxMenu(e) {
+  e.preventDefault();
+  const menu = document.getElementById('ctx-menu');
+  menu.style.left = e.clientX + 'px';
+  menu.style.top  = e.clientY + 'px';
+  menu.style.display = 'block';
+  ctxMenuOpen = true;
+}
+
+function hideCtxMenu() {
+  const menu = document.getElementById('ctx-menu');
+  menu.style.display = 'none';
+  ctxMenuOpen = false;
+}
+
+function mergeTo(groupName) {
+  hideCtxMenu();
+  showToast('Panel merged', `"Blackboard Inspector" added to group with "${groupName}"`);
+}
+
+function newTabGroup() {
+  hideCtxMenu();
+  showToast('New tab group', '"Blackboard Inspector" is now its own tab group');
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+let toastTimer = null;
+
+function showToast(title, body) {
+  const el = document.getElementById('toast');
+  document.getElementById('toast-title').textContent = title;
+  document.getElementById('toast-body').textContent  = body;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ── Global click to dismiss ───────────────────────────────────────────────────
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#ctx-menu'))  hideCtxMenu();
+  if (!e.target.closest('#add-wrapper')) hideAddDropdown();
+});
+
+document.addEventListener('contextmenu', (e) => {
+  if (!e.target.closest('.panel-titlebar')) {
+    e.preventDefault();
+    hideCtxMenu();
+  }
+});
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
