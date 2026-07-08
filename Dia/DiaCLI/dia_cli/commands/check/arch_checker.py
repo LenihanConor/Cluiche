@@ -49,6 +49,15 @@ def run_arch_check(
     else:
         targets = module_map
 
+    # Pre-compute all registered module directories so broad-path modules (e.g.
+    # dia.root with path "Dia") don't claim files that belong to a more-specific
+    # child module (e.g. DiaWebSocket, DiaWindow).
+    all_module_dirs = {
+        repo_root / info.path
+        for info in module_map.values()
+        if info.path
+    }
+
     for module_id, module_info in sorted(targets.items()):
         if not module_info.path:
             continue
@@ -57,7 +66,17 @@ def run_arch_check(
         if not module_dir.is_dir():
             continue
 
-        source_files = list(module_dir.rglob("*.h")) + list(module_dir.rglob("*.cpp"))
+        # Directories of modules that are proper subdirectories of this one.
+        child_module_dirs = {
+            p for p in all_module_dirs
+            if p != module_dir and module_dir in p.parents
+        }
+
+        raw_files = list(module_dir.rglob("*.h")) + list(module_dir.rglob("*.cpp"))
+        source_files = (
+            [f for f in raw_files if not any(cd in f.parents for cd in child_module_dirs)]
+            if child_module_dirs else raw_files
+        )
 
         for src in sorted(source_files):
             rel_src = src.relative_to(repo_root).as_posix()
