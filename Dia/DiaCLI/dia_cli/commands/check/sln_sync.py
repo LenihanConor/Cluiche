@@ -26,6 +26,7 @@ _LAYER_TO_FOLDER: dict[str, str] = {
     "foundation/services":    "1.1-Services",
     "foundation/platform":    "1.2-Platform",
     "foundation/application": "1.2-Application",
+    "foundation/assets":      "2.0-Assets",
     "assets/core":            "2.0-Assets",
     "assets/tools":           "2.1-Assets-Tools",
     "domain/visual/core":     "3.0-Visual",

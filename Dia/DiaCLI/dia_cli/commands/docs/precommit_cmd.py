@@ -195,3 +195,6 @@ def precommit(scope: str, staged: bool) -> None:
         click.echo(f"Result: PASS ({warnings} warning(s))")
     else:
         click.echo("Result: PASS")
+
+    click.echo("")
+    click.echo("CI also runs: dia check deps   dia check arch   dia validate manifest")

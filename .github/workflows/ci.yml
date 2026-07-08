@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [master, Development]
+  pull_request:
+    branches: [master, Development]
+
+jobs:
+  architecture-gates:
+    name: Architecture Gates
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install DiaCLI
+        run: pip install -e Dia/DiaCLI
+
+      - name: Check dependency declarations
+        run: dia check deps
+
+      - name: Check architecture layer rules
+        run: dia check arch
+
+      - name: Validate manifests
+        run: dia validate manifest
+
+      - name: Pre-commit checks
+        run: dia docs precommit
+
+  advisory:
+    name: Advisory Checks
+    runs-on: windows-latest
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install DiaCLI
+        run: pip install -e Dia/DiaCLI
+
+      - name: Restore deps (includes PMD)
+        run: dia env setup --dep pmd
+
+      - name: Clone detection
+        run: dia check clones
+        continue-on-error: true
+
+      - name: Static analysis (cppcheck)
+        run: dia check cppcheck
+        continue-on-error: true

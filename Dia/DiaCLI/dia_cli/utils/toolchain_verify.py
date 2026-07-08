@@ -187,6 +187,20 @@ def check_llvm_clangcl() -> CheckResult:
                        "Install 'C++ Clang Compiler for Windows' component in VS 2022, or: winget install LLVM.LLVM")
 
 
+def check_java() -> CheckResult:
+    try:
+        result = subprocess.run(["java", "-version"], capture_output=True, text=True)
+        # java -version writes to stderr on most JVMs
+        ver_text = (result.stderr or result.stdout).strip().splitlines()[0] if (result.stderr or result.stdout) else ""
+        if result.returncode == 0 and ver_text:
+            return CheckResult("Java", "toolchain", "pass", ver_text)
+    except (FileNotFoundError, OSError):
+        pass
+    return CheckResult("Java", "toolchain", "warn",
+                       "not installed — required for PMD clone detection",
+                       "dia env setup --toolchain  (or: winget install Microsoft.OpenJDK.21)")
+
+
 def check_all_toolchain() -> list:
     results = []
     results.extend(check_vs2022())
@@ -197,4 +211,5 @@ def check_all_toolchain() -> list:
     results.extend(check_docker())
     results.append(check_msvc_asan())
     results.append(check_llvm_clangcl())
+    results.append(check_java())
     return results

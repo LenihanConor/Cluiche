@@ -70,6 +70,7 @@ def run(
 
     if run_all:
         checks.extend(_check_cppcheck())
+        checks.extend(_check_pmd())
 
     pass_count = sum(1 for c in checks if c.status == "pass")
     warn_count = sum(1 for c in checks if c.status == "warn")
@@ -220,6 +221,35 @@ def _check_cppcheck() -> list:
         results.append(CheckResult("Cppcheck", "static-analysis", "warn",
                                    "not installed",
                                    "dia env setup --toolchain  (or: winget install Cppcheck.Cppcheck)"))
+    return results
+
+
+def _check_pmd() -> list:
+    from dia_cli.utils.check_result import CheckResult
+    repo_root = _REPO_ROOT
+
+    # Prefer repo-local install
+    local_cpd = repo_root / "External" / "pmd" / "bin" / "pmd.bat"
+    if local_cpd.exists():
+        results = [CheckResult("PMD CPD", "static-analysis", "pass", f"External/pmd (local)")]
+    elif shutil.which("cpd") or shutil.which("pmd"):
+        results = [CheckResult("PMD CPD", "static-analysis", "pass", "system PATH")]
+    else:
+        results = [CheckResult("PMD CPD", "static-analysis", "warn",
+                               "not installed — clone detection unavailable",
+                               "dia env setup --deps  (installs PMD to External/pmd/)")]
+
+    # Java is required to run PMD
+    try:
+        r = _sp.run(["java", "-version"], capture_output=True, text=True, timeout=10)
+        if r.returncode != 0:
+            results.append(CheckResult("Java (for PMD)", "static-analysis", "warn",
+                                       "java not on PATH — PMD will not run",
+                                       "dia env setup --toolchain  (or: winget install Microsoft.OpenJDK.21)"))
+    except (FileNotFoundError, _sp.TimeoutExpired):
+        results.append(CheckResult("Java (for PMD)", "static-analysis", "warn",
+                                   "java not found",
+                                   "dia env setup --toolchain  (or: winget install Microsoft.OpenJDK.21)"))
     return results
 
 

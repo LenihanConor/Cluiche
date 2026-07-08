@@ -519,6 +519,78 @@ def deps(ctx, fix: bool, verbose: bool) -> None:
                 mf.write_text(text, encoding="utf-8")
                 click.echo(f"  Fixed {mod['module_id']}")
 
+    ctx.exit(1 if (missing or stale) else 0)
+
+
+@cli.command("arch")
+@click.option("--module", "module_filter", default=None, metavar="MODULE_ID",
+              help="Limit scan to a specific module subtree (e.g. dia.core).")
+@click.option("--summary", "summary_only", is_flag=True, default=False,
+              help="Print totals only, no per-file detail.")
+@click.pass_context
+def arch(ctx, module_filter: str | None, summary_only: bool) -> None:
+    """Check architecture layer rules and forbidden dependencies."""
+    from dia_cli.commands.check.arch_checker import run_arch_check, format_violations
+
+    repo_root = find_repo_root(__file__)
+    violations, warnings, exit_code = run_arch_check(
+        repo_root, module_filter=module_filter, summary_only=summary_only
+    )
+    output = format_violations(violations, warnings, summary_only=summary_only)
+    if output:
+        click.echo(output)
+    ctx.exit(exit_code)
+
+
+@cli.command("clones")
+@click.option("--tokens", "minimum_tokens", default=100, metavar="N",
+              help="Minimum token count to flag as a duplicate (default: 100).")
+@click.option("--accept-baseline", "accept_baseline", is_flag=True, default=False,
+              help="Save current findings as baseline and exit 0.")
+@click.pass_context
+def clones(ctx, minimum_tokens: int, accept_baseline: bool) -> None:
+    """Detect copy-paste duplication via PMD CPD.
+
+    Exits 1 if new duplicates are found beyond the baseline.
+    Run with --accept-baseline to promote current findings to the baseline.
+    Requires Java + PMD on PATH (see https://pmd.github.io/).
+    """
+    from dia_cli.commands.check.clone_checker import run_clone_check, _find_cpd_executable
+
+    repo_root = find_repo_root(__file__)
+
+    if not _find_cpd_executable(repo_root):
+        click.echo(
+            "ERROR: PMD CPD not found on PATH.\n"
+            "Install PMD from https://pmd.github.io/ and ensure 'cpd' or 'pmd' is on PATH.",
+            err=True,
+        )
+        ctx.exit(1)
+        return
+
+    click.echo(f"[dia check] Running clone detection (minimum-tokens={minimum_tokens})...")
+    new_dups, exit_code = run_clone_check(
+        repo_root,
+        minimum_tokens=minimum_tokens,
+        accept_baseline=accept_baseline,
+    )
+
+    if accept_baseline:
+        click.echo("[dia check] Baseline accepted.")
+        return
+
+    if not new_dups:
+        click.echo("[dia check] No new duplicates found.")
+    else:
+        click.echo(f"[dia check] {len(new_dups)} new duplicate block(s) found:")
+        for dup in new_dups:
+            files = ", ".join(f"{f['path']}:{f['line']}" for f in dup["files"])
+            click.echo(f"  {dup['lines']} lines / {dup['tokens']} tokens — {files}")
+
+    out_sarif = repo_root / "Cluiche" / "out" / "check" / "clones.sarif"
+    click.echo(f"[dia check] Results written to {out_sarif}")
+    ctx.exit(exit_code)
+
 
 @cli.command("sln-sync")
 @click.option("--dry-run", is_flag=True, default=False,
