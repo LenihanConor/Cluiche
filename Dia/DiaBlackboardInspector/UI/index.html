@@ -195,12 +195,13 @@
   <div class="empty-state" id="empty-state">No blackboards registered</div>
 </div>
 
+<script src="../dia-live-connection.js"></script>
 <script>
-  // ── State ──────────────────────────────────────────────────────────────
+  // ── State ─────────────────────────────────────────────────────────────
   var currentBoards = [];
   var filterText = '';
 
-  // ── Toggle a single board open/closed ──────────────────────────────────
+  // ── Toggle a single board open/closed ─────────────────────────────────
   function toggleBoard(hdr) {
     var body = hdr.nextElementSibling;
     var isOpen = !hdr.classList.contains('closed');
@@ -213,7 +214,7 @@
     }
   }
 
-  // ── Value renderer: converts a JSON value to syntax-highlighted HTML ───
+  // ── Value renderer ────────────────────────────────────────────────────
   function renderValue(val) {
     if (val === '[no serializer]') {
       return '<span class="prop-value no-ser">[no serializer]</span>';
@@ -230,22 +231,13 @@
   }
 
   function jsonToHtml(val) {
-    if (val === null) {
-      return '<span class="vn">null</span>';
-    }
-    if (typeof val === 'boolean') {
-      return '<span class="vn">' + val + '</span>';
-    }
-    if (typeof val === 'number') {
-      return '<span class="vn">' + val + '</span>';
-    }
-    if (typeof val === 'string') {
-      return '<span class="vs">&quot;' + escapeHtml(val) + '&quot;</span>';
-    }
+    if (val === null)            return '<span class="vn">null</span>';
+    if (typeof val === 'boolean') return '<span class="vn">' + val + '</span>';
+    if (typeof val === 'number')  return '<span class="vn">' + val + '</span>';
+    if (typeof val === 'string')  return '<span class="vs">&quot;' + escapeHtml(val) + '&quot;</span>';
     if (Array.isArray(val)) {
       if (val.length === 0) return '[]';
-      var items = val.map(function(v) { return jsonToHtml(v); });
-      return '[ ' + items.join(',&nbsp;') + ' ]';
+      return '[ ' + val.map(jsonToHtml).join(',&nbsp;') + ' ]';
     }
     if (typeof val === 'object') {
       var keys = Object.keys(val);
@@ -260,42 +252,37 @@
 
   // ── Build HTML for a single board ─────────────────────────────────────
   function buildBoardHtml(board, expanded) {
-    var slotCount = board.slots ? board.slots.length : 0;
+    var slotCount = board.slots    ? board.slots.length    : 0;
     var obsCount  = board.observers ? board.observers.length : 0;
-    var slotLabel = slotCount === 1 ? '1 slot' : slotCount + ' slots';
-    var obsLabel  = obsCount  === 1 ? '1 observer' : obsCount + ' observers';
+    var slotLabel = slotCount === 1 ? '1 slot'     : slotCount + ' slots';
+    var obsLabel  = obsCount  === 1 ? '1 observer' : obsCount  + ' observers';
     var closedClass = expanded ? '' : ' closed';
 
     var html = '<div class="comp-group">';
-
-    // Header
     html += '<div class="comp-hdr' + closedClass + '" onclick="toggleBoard(this)">';
     html += '<span class="comp-chv">&#9658;</span>';
     html += '<span class="comp-name">' + escapeHtml(board.label || board.id) + '</span>';
-    html += '<span class="comp-id">' + escapeHtml(board.id) + '</span>';
-    html += '<span class="badge">' + escapeHtml(slotLabel) + '</span>';
-    html += '<span class="badge">' + escapeHtml(obsLabel) + '</span>';
+    html += '<span class="comp-id">'   + escapeHtml(board.id)                + '</span>';
+    html += '<span class="badge">'     + escapeHtml(slotLabel)               + '</span>';
+    html += '<span class="badge">'     + escapeHtml(obsLabel)                + '</span>';
     html += '</div>';
 
-    // Body
     var bodyDisplay = expanded ? '' : ' style="display:none;"';
     html += '<div class="comp-body"' + bodyDisplay + '>';
 
-    // Slots section
     html += '<div class="section-lbl">Slots</div>';
     if (slotCount === 0) {
       html += '<div class="prop-row"><span class="prop-key" style="color:var(--pico-muted-color);font-style:italic;">—</span></div>';
     } else {
       board.slots.forEach(function(slot) {
         html += '<div class="prop-row">';
-        html += '<span class="prop-key">' + escapeHtml(slot.key) + '</span>';
+        html += '<span class="prop-key">'  + escapeHtml(slot.key)  + '</span>';
         html += '<span class="prop-type">' + escapeHtml(slot.type) + '</span>';
         html += renderValue(slot.value);
         html += '</div>';
       });
     }
 
-    // Observers section
     html += '<div class="section-lbl section-observers">Observers</div>';
     html += '<div class="observer-list">';
     if (obsCount === 0) {
@@ -306,14 +293,11 @@
       });
     }
     html += '</div>';
-
-    html += '</div>'; // comp-body
-    html += '</div>'; // comp-group
-
+    html += '</div></div>';
     return html;
   }
 
-  // ── Rebuild the board list from currentBoards + filterText ────────────
+  // ── Rebuild list from currentBoards + filterText ──────────────────────
   function rebuildUI() {
     var scrollArea = document.getElementById('scroll-area');
     var emptyState = document.getElementById('empty-state');
@@ -326,22 +310,17 @@
       return label.indexOf(query) !== -1 || id.indexOf(query) !== -1;
     });
 
-    // Remove all existing comp-group elements (leave empty-state in place)
-    var groups = scrollArea.querySelectorAll('.comp-group');
-    groups.forEach(function(g) { g.remove(); });
+    scrollArea.querySelectorAll('.comp-group').forEach(function(g) { g.remove(); });
 
     if (visible.length === 0) {
-      if (currentBoards.length === 0) {
-        emptyState.textContent = 'No blackboards registered';
-      } else {
-        emptyState.textContent = 'No boards match "' + filterText + '"';
-      }
+      emptyState.textContent = currentBoards.length === 0
+        ? 'No blackboards registered'
+        : 'No boards match "' + filterText + '"';
       emptyState.style.display = '';
       return;
     }
 
     emptyState.style.display = 'none';
-
     var fragment = document.createDocumentFragment();
     visible.forEach(function(board) {
       var wrapper = document.createElement('div');
@@ -351,41 +330,43 @@
     scrollArea.appendChild(fragment);
   }
 
-  // ── Render boards from a full state payload ────────────────────────────
   function renderBoards(payload) {
     currentBoards = (payload && Array.isArray(payload.boards)) ? payload.boards : [];
     rebuildUI();
   }
 
-  // ── Expand / collapse all ──────────────────────────────────────────────
+  // ── Expand / collapse all ─────────────────────────────────────────────
   document.getElementById('btn-expand-all').addEventListener('click', function() {
     document.querySelectorAll('.comp-hdr').forEach(function(hdr) {
       hdr.classList.remove('closed');
-      var body = hdr.nextElementSibling;
-      if (body) body.style.display = '';
+      if (hdr.nextElementSibling) hdr.nextElementSibling.style.display = '';
     });
   });
 
   document.getElementById('btn-collapse-all').addEventListener('click', function() {
     document.querySelectorAll('.comp-hdr').forEach(function(hdr) {
       hdr.classList.add('closed');
-      var body = hdr.nextElementSibling;
-      if (body) body.style.display = 'none';
+      if (hdr.nextElementSibling) hdr.nextElementSibling.style.display = 'none';
     });
   });
 
-  // ── Filter input ───────────────────────────────────────────────────────
+  // ── Filter input ──────────────────────────────────────────────────────
   document.getElementById('filter-input').addEventListener('input', function(e) {
     filterText = e.target.value;
     rebuildUI();
   });
 
-  // ── DiaEditor JS bridge ────────────────────────────────────────────────
-  window.DiaEditor_onDataChanged = function(key, value) {
-    if (key === 'blackboard_inspector.state') {
-      renderBoards(JSON.parse(value));
+  // ── Wire live connection via shared helper ────────────────────────────
+  DiaLiveConnection.init({
+    prefix: 'blackboard_inspector',
+    onDisconnected: function() {
+      currentBoards = [];
+      rebuildUI();
+    },
+    onData: function(topic, data) {
+      if (topic === 'blackboard_inspector.state') renderBoards(data);
     }
-  };
+  });
 </script>
 </body>
 </html>

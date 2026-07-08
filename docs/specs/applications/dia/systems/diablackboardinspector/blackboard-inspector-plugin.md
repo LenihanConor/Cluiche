@@ -77,21 +77,22 @@ GetBridge()->NotifyUIDataChanged("blackboard_inspector.state", payload);
 
 The JS side receives this via the standard `window.DiaEditor_onDataChanged` hook.
 
-### HTML/JS panel
+### React/Vite UI panel
 
-**File:** `Dia/DiaBlackboardInspector/UI/index.html`
+**Files:** `Dia/DiaBlackboardInspector/UI/` (React + Vite + TypeScript + Zustand)
 
-Uses the established DiaEditorUI style guide (no external CSS — `--pico-*` variables with hardcoded fallbacks, `.comp-group` / `.comp-hdr` / `.prop-row` patterns). See mockup at `mockup/blackboard-inspector.html`.
+Follows the same React/Vite pattern as all other `LiveConnectionPluginBase` inspectors. Built output is deployed from `dist/`. Uses `@dia/editor-ui` shared component library (`ConnectionStatus`, `EmptyState`, `theme`).
 
 **Panel behaviour:**
-- On `blackboard_inspector.state` data push: rebuild the board list from `payload.boards`
-- Board row: `.comp-group` with `.comp-hdr` showing `label`, `id`, slot count badge, observer count badge; chevron toggles `.comp-body`
-- Slot rows: `.prop-row` with `key` (`.prop-key`, `#9cdcfe`), `type` (`.prop-type`, `#4ec9b0`), `value` (`.prop-value`, monospace; `#555 italic` when `"[no serializer]"`)
-- Observer chips: `.obs-chip` per observer name; `.obs-chip.none` when empty
-- Filter input: client-side text filter applied to board `label` and `id` fields; hides non-matching boards
-- Expand/collapse all buttons: toggle all `.comp-hdr` states
+- On `blackboard_inspector.state` data push: update board list in Zustand store; UI re-renders from store
+- On `blackboard_inspector.connection_state` push: `setConnected(true/false)` — shows/hides disconnected overlay
+- Board card: collapsible with label, id, slot count badge, observer count badge; chevron toggles expanded state
+- Slot rows: `key` (`#9cdcfe`), `type` (`#4ec9b0`), `value` (monospace; dim italic when `"[no serializer]"`) with recursive JSON syntax highlighting
+- Observer chips: teal chips per observer name; muted `none` chip when empty
+- Filter input: client-side text filter applied to board `label` and `id` fields
+- Expand/collapse all buttons: propagate `expandOverride` prop to all `BoardCard` instances
 
-**Connection state:** Handled by `LiveConnectionPluginBase` — no bespoke disconnected overlay needed; the host frame provides the standard disconnected state.
+**Connection state:** Disconnected overlay rendered by the React app itself (absolute-positioned, `data-testid="disconnect-overlay"`) — consistent with `DiaEntityInspector`, `DiaAssetRuntimeInspector`, and `DiaApplicationFlowInspector`.
 
 ### Files
 
@@ -99,7 +100,19 @@ Uses the established DiaEditorUI style guide (no external CSS — `--pico-*` var
 |------|---------|
 | `Dia/DiaBlackboardInspector/DiaBlackboardInspectorPlugin.h` | Plugin class declaration |
 | `Dia/DiaBlackboardInspector/DiaBlackboardInspectorPlugin.cpp` | Implementation + `REGISTER_EDITOR_PLUGIN` macro |
-| `Dia/DiaBlackboardInspector/UI/index.html` | Dockable panel HTML/JS |
+| `Dia/DiaBlackboardInspector/UI/package.json` | React/Vite/Zustand/TypeScript dependencies |
+| `Dia/DiaBlackboardInspector/UI/vite.config.ts` | Vite build config (root=src, outDir=../dist) |
+| `Dia/DiaBlackboardInspector/UI/tsconfig.json` | TypeScript compiler options |
+| `Dia/DiaBlackboardInspector/UI/src/index.html` | Minimal HTML shell |
+| `Dia/DiaBlackboardInspector/UI/src/main.tsx` | React entry point + `injectThemeVars()` |
+| `Dia/DiaBlackboardInspector/UI/src/App.tsx` | EIRM-003 bridge wiring, disconnect overlay, board list |
+| `Dia/DiaBlackboardInspector/UI/src/store.ts` | Zustand store (connected, boards, filterText) |
+| `Dia/DiaBlackboardInspector/UI/src/types.ts` | BoardEntry, SlotEntry, ObserverEntry |
+| `Dia/DiaBlackboardInspector/UI/src/components/BoardCard.tsx` | Collapsible board card |
+| `Dia/DiaBlackboardInspector/UI/src/components/SlotTable.tsx` | Slot rows with JSON syntax highlighting |
+| `Dia/DiaBlackboardInspector/UI/src/components/ObserverList.tsx` | Observer chips |
+| `Dia/DiaBlackboardInspector/UI/src/App.test.tsx` | Vitest + RTL tests |
+| `Dia/DiaBlackboardInspector/UI/src/test/setup.ts` | Vitest/jsdom setup |
 | `Dia/DiaBlackboardInspector/DiaBlackboardInspector.vcxproj` | Static library; Debug/Release/Asan/Ubsan x64 |
 | `Dia/DiaBlackboardInspector/DiaBlackboardInspector.vcxproj.filters` | IDE filter file |
 | `Dia/DiaBlackboardInspector/Docs/dia.blackboardinspector.architecture.module.md` | YAML module doc |
@@ -120,10 +133,10 @@ Uses the established DiaEditorUI style guide (no external CSS — `--pico-*` var
 | 7 | Observer chips appear below slots for each board; `none` chip shown when observers list is empty | Manual |
 | 8 | Filter input hides boards whose `label` and `id` do not match the filter string (client-side) | Manual |
 | 9 | Expand-all and collapse-all buttons correctly toggle all board rows | Manual |
-| 10 | Panel uses `.comp-group` / `.comp-hdr` / `.prop-row` / `--pico-*` conventions matching existing panels | Code review against style guide |
+| 10 | Panel is a React/Vite app using `@dia/editor-ui` (`ConnectionStatus`, `EmptyState`, `theme`) — consistent with `DiaEntityInspector`, `DiaAssetRuntimeInspector`, `DiaApplicationFlowInspector` | Code review |
 | 11 | `DiaBlackboardInspector.vcxproj` does not override `OutDir`, `IntDir`, `PlatformToolset`, `WindowsTargetPlatformVersion`, or `LanguageStandard` | Code review |
 | 12 | `dia pipeline --target cluicheeditor` passes — plugin compiles into the editor | Build verification |
-| 13 | Panel URL `"dia://plugins/blackboardinspector/index.html"` resolves correctly in the editor frame | Manual: open panel in editor, no 404 |
+| 13 | Panel URL `"dia://plugins/blackboardinspector/index.html"` (Vite build output) resolves correctly in the editor frame | Manual: open panel in editor, no 404 |
 | 14 | `dia.blackboardinspector.architecture.module.md` exists with `layer`, `deps`, and `public_api` sections | Code review |
 
 ---

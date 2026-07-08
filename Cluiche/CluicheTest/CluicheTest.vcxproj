@@ -143,6 +143,9 @@
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">
       <Project>{7b4a5c2e-3f1d-4a8b-9c6e-12d5f8b3a7e1}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaBlackboard\DiaBlackboard.vcxproj">
+      <Project>{186D9CD5-3D3E-46F1-9C35-67F6F11E829A}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaRigidBody2D\DiaRigidBody2D.vcxproj">
       <Project>{C1D2E3F4-A5B6-7890-CDEF-012345678902}</Project>
     </ProjectReference>
@@ -206,6 +209,9 @@
     <ProjectReference Include="..\..\Dia\DiaMesh3D\DiaMesh3D.vcxproj">
       <Project>{F1E2D3C4-B5A6-7890-FEDC-BA9876543210}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaMesh3DVisualDebugger\DiaMesh3DVisualDebugger.vcxproj">
+      <Project>{E3F4A5B6-C7D8-9012-EF01-234567890ABC}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{CEC960D4-B8B3-463B-9F68-716C5C3C4315}</ProjectGuid>
@@ -258,7 +264,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
       <ImportLibrary>$(IntDir)$(TargetName).lib</ImportLibrary>
-      <AdditionalDependencies>$(LibOutDir)CluicheGameBaseline.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaGraphics3D.lib;$(LibOutDir)DiaBgfx3D.lib;$(LibOutDir)DiaMesh3D.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaPicking.lib;$(LibOutDir)DiaGeometry2DPicking.lib;$(LibOutDir)DiaMailbox.lib;$(LibOutDir)DiaImGui.lib;$(LibOutDir)DiaEntity.lib;$(LibOutDir)DiaVisualDebugger.lib;$(LibOutDir)DiaVisualDebuggerConsole.lib;$(LibOutDir)DiaRigidBody2DVisualDebugger.lib;$(LibOutDir)DiaGeometry2DVisualDebugger.lib;$(LibOutDir)DiaSDL.lib;SDL3-static.lib;setupapi.lib;winmm.lib;imm32.lib;version.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(LibOutDir)CluicheGameBaseline.lib;$(LibOutDir)DiaBlackboard.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaGraphics3D.lib;$(LibOutDir)DiaBgfx3D.lib;$(LibOutDir)DiaMesh3D.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaPicking.lib;$(LibOutDir)DiaGeometry2DPicking.lib;$(LibOutDir)DiaMailbox.lib;$(LibOutDir)DiaImGui.lib;$(LibOutDir)DiaEntity.lib;$(LibOutDir)DiaVisualDebugger.lib;$(LibOutDir)DiaVisualDebuggerConsole.lib;$(LibOutDir)DiaRigidBody2DVisualDebugger.lib;$(LibOutDir)DiaGeometry2DVisualDebugger.lib;$(LibOutDir)DiaSDL.lib;SDL3-static.lib;setupapi.lib;winmm.lib;imm32.lib;version.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)..\..\External\SDL3\lib\Debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/WHOLEARCHIVE:DiaDebugServer.lib /WHOLEARCHIVE:CluicheGameBaseline.lib %(AdditionalOptions)</AdditionalOptions>
       <IgnoreSpecificDefaultLibraries>LIBCMT;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -281,7 +287,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(LibOutDir)CluicheGameBaseline.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaGraphics3D.lib;$(LibOutDir)DiaBgfx3D.lib;$(LibOutDir)DiaMesh3D.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaDebugProtocol.lib;$(LibOutDir)DiaProtobuf.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaEntity.lib;$(LibOutDir)DiaSDL.lib;SDL3-static.lib;setupapi.lib;imm32.lib;version.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(LibOutDir)CluicheGameBaseline.lib;$(LibOutDir)DiaBlackboard.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaGraphics3D.lib;$(LibOutDir)DiaBgfx3D.lib;$(LibOutDir)DiaMesh3D.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaDebugProtocol.lib;$(LibOutDir)DiaProtobuf.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaEntity.lib;$(LibOutDir)DiaSDL.lib;SDL3-static.lib;setupapi.lib;imm32.lib;version.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)..\..\External\SDL3\lib\Release\;$(ProjectDir)..\..\External\protobuf\Current-x64\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/WHOLEARCHIVE:DiaDebugServer.lib /WHOLEARCHIVE:CluicheGameBaseline.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>

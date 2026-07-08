@@ -25,7 +25,7 @@ DiaBlackboardInspectorPlugin (Dia/DiaBlackboardInspector — depends on DiaEdito
 - Amend `IBlackboardObserver` to add `virtual Dia::Core::StringCRC GetId() const = 0;` — allows the inspector source to emit observer names rather than counts
 - Implement `BlackboardInspectorSource` in `CluicheGameBaseline` — inherits `ChangeDetectedSourceBase`; topic `StringCRC{"blackboard.state"}`; runs on SimPU; pushes `BlackboardInspectEvent` to a named `EventStream`; `DebugServerHostModule` (MainPU) drains the stream and calls `NotifySubscribers`
 - Implement `DiaBlackboardInspectorPlugin` in `Dia/DiaBlackboardInspector/` — inherits `LiveConnectionPluginBase`; subscribes to `"blackboard.state"`; dockable panel rendering board list with collapsible rows, slot keys + field values, and observer name list
-- Provide a dockable HTML/JS panel UI under `Dia/DiaBlackboardInspector/UI/index.html`
+- Provide a dockable React/Vite panel under `Dia/DiaBlackboardInspector/UI/` — same tech stack as all other `LiveConnectionPluginBase` inspectors (React 18 + Zustand + `@dia/editor-ui`); built to `dist/` by the pipeline
 - Provide `REGISTER_EDITOR_PLUGIN(DiaBlackboardInspectorPlugin, "DiaBlackboardInspector")` registration
 - Provide `DiaBlackboardInspector.vcxproj` static library registered in `Cluiche.sln`
 - Provide `dia.blackboardinspector.architecture.module.md` YAML module doc
@@ -195,7 +195,8 @@ The panel has three visual states:
 | PD-006 | Platform | Visual Studio project files are source of truth | `DiaBlackboardInspector.vcxproj` + `.filters` created and maintained; registered in `Cluiche.sln` |
 | PD-007 | Platform | C++20 required | Compiled under `/std:c++20`; template `RegisterSerializer<T>` uses C++20 concepts if needed |
 | PD-008 | Platform | `Directory.Build.props` owns OutDir/IntDir/toolchain | `DiaBlackboardInspector.vcxproj` must NOT override `OutDir`, `IntDir`, `PlatformToolset`, `WindowsTargetPlatformVersion`, or `LanguageStandard` |
-| PD-009 | Platform | Generated output under `Cluiche/out/` | Plugin HTML/JS assets copied to `Cluiche/out/CluicheEditor/` by the editor pipeline |
+| PD-009 | Platform | Generated output under `Cluiche/out/` | Plugin `dist/` assets copied to `Cluiche/out/CluicheEditor/` by the editor pipeline |
+| ED-REACT | Editor | React + Vite + `@dia/editor-ui` required for all `LiveConnectionPluginBase` UIs | Consistent with `DiaEntityInspector`, `DiaAssetRuntimeInspector`, `DiaApplicationFlowInspector`; disconnected overlay is a React component, not the host frame |
 | AD-001 | Dia App | Module system with YAML frontmatter | `dia.blackboardinspector.architecture.module.md` required with full public API, responsibilities, and dependency declarations |
 | AD-002 | Dia App | No STL containers in public APIs | Reinforces PD-004; `std::function` for `SerializeFn` is private; no `std::vector` or `std::map` in any public header |
 | AD-003 | Dia App | Namespace `Dia::<Module>::` | `BlackboardRegistry` in `Dia::Blackboard::`; plugin in `Dia::Editor::` (matches existing plugin convention) |

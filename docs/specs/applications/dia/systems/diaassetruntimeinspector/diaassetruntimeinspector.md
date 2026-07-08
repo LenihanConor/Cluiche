@@ -138,6 +138,7 @@ No dependency on DiaAssetCatalogue, DiaAssetPipeline, DiaApplicationFlow, or any
 | PD-007 | C++20 required | Platform | Compliant. |
 | PD-008 | Directory.Build.props owns OutDir | Platform | DiaAssetRuntimeInspector.vcxproj inherits centralized build settings. |
 | PD-009 | Generated output under Cluiche/out/ | Platform | Session context and logs written to `Cluiche/out/CluicheEditor/DiaAssetRuntimeInspector/` per SD-ARED-004. |
+| ED-REACT | React + Vite + `@dia/editor-ui` required for all `LiveConnectionPluginBase` UIs | Editor | This spec compliant (Feature 6 React+Vite Migration is Done). Disconnected overlay is a React component, not the host frame. |
 | AD-001 | Module system with YAML frontmatter | Application | `dia.assetruntimeeditor.architecture.module.md` created with this system. |
 | AD-002 | No STL in public APIs | Application | Same as PD-004. |
 | AD-003 | Namespace: Dia::\<Module\>:: | Application | All code under `Dia::AssetRuntime::Editor::` namespace. |

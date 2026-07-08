@@ -136,6 +136,7 @@ These are the only changes needed outside of `Dia/DiaApplicationFlowInspector/`:
 | PD-001 | Platform | StringCRC for all IDs | Module/stream/stage IDs arrive as CRC strings |
 | ED-007 | Editor | React + CEF frontend | Consistent with CluicheEditor |
 | ED-008 | Editor | Single TrafficLightDot primitive | Reuse same visual vocabulary |
+| ED-REACT | Editor | React + Vite + `@dia/editor-ui` required for all `LiveConnectionPluginBase` UIs | This spec compliant. Applies equally to all `LiveConnectionPluginBase` inspector plugins. Disconnected overlay is a React component, not the host frame. |
 
 ## Status
 

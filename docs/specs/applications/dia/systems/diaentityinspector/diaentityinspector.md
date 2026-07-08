@@ -163,6 +163,7 @@ namespace Dia::EntityInspector {
 | PD-006 | Visual Studio project files are source of truth | New `DiaEntityInspector.vcxproj` follows existing project file conventions. Compliant. |
 | PD-007 | C++20 required | All new code compiled under `/std:c++20`. Compliant. |
 | PD-008 | `Directory.Build.props` owns output paths | No per-project output overrides. Compliant. |
+| ED-REACT | React + Vite + `@dia/editor-ui` required for all `LiveConnectionPluginBase` UIs | This spec compliant — panel is React/Vite. Applies equally to all `LiveConnectionPluginBase` inspector plugins. Disconnected overlay is a React component, not the host frame. |
 
 ## AI Review Questions
 
