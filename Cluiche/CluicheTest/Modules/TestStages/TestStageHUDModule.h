@@ -4,9 +4,11 @@
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaStreams/StreamReader.h>
+#include <DiaStreams/EventStreamWriter.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include "Modules/DebugUIModule.h"
 #include "Types/MainToRenderFrame.h"
+#include "Types/RenderToSimNavRequest.h"
 
 namespace CluicheTest {
 
@@ -27,8 +29,9 @@ protected:
 private:
     void RenderBottomBar(const Cluiche::AppFlow::MainToRenderFrame& frame);
 
-    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::DebugUIModule>           mDebugUI{this, Dia::Core::StringCRC("DebugUI")};
-    Dia::ApplicationFlow::StreamReader<Cluiche::AppFlow::MainToRenderFrame>    mMainStateInput{this, "MainToRender"};
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::DebugUIModule>                        mDebugUI{this, Dia::Core::StringCRC("DebugUI")};
+    Dia::ApplicationFlow::StreamReader<Cluiche::AppFlow::MainToRenderFrame>                mMainStateInput{this, "MainToRender"};
+    Dia::ApplicationFlow::EventStreamWriter<Cluiche::AppFlow::RenderToSimNavRequest>       mNavRequest{this, "HUDNavRequest"};
 };
 
 } // namespace CluicheTest

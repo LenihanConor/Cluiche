@@ -57,6 +57,7 @@
     <ClCompile Include="Modules\InspectorSources\TimingAggregateSource.cpp" />
     <ClCompile Include="Modules\InspectorSources\LifecycleEventSource.cpp" />
     <ClCompile Include="Modules\InspectorSources\BlackboardInspectorSource.cpp" />
+    <ClCompile Include="Modules\SimNavigationHandlerModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\AutomationModule.h" />
@@ -98,6 +99,8 @@
     <ClInclude Include="Modules\InspectorSources\LifecycleEventSource.h" />
     <ClInclude Include="Types\BlackboardInspectEvent.h" />
     <ClInclude Include="Modules\InspectorSources\BlackboardInspectorSource.h" />
+    <ClInclude Include="Types\RenderToSimNavRequest.h" />
+    <ClInclude Include="Modules\SimNavigationHandlerModule.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">

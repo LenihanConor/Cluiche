@@ -202,6 +202,22 @@
             "payload_type": "RenderFence",
             "from": "RenderPU",
             "to": "SimPU"
+        },
+        {
+            "id": "BootMenuNavRequest",
+            "kind": "EventStream",
+            "payload_type": "RenderToSimNavRequest",
+            "overflow": "drop-oldest",
+            "from": "RenderPU",
+            "to": "SimPU"
+        },
+        {
+            "id": "HUDNavRequest",
+            "kind": "EventStream",
+            "payload_type": "RenderToSimNavRequest",
+            "overflow": "drop-oldest",
+            "from": "RenderPU",
+            "to": "SimPU"
         }
     ],
     "processing_units": [
@@ -516,6 +532,24 @@
                         "VisualDebuggerModule"
                     ],
                     "channels": []
+                },
+                {
+                    "instance_id": "SimNavigationHandlerModule",
+                    "type_id": "SimNavigationHandlerModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [],
+                    "channels": [
+                        {
+                            "id": "BootMenuNavRequest",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "HUDNavRequest",
+                            "role": "reads"
+                        }
+                    ]
                 }
             ]
         },
@@ -542,7 +576,12 @@
                     "dependencies": [
                         "DebugUI"
                     ],
-                    "channels": []
+                    "channels": [
+                        {
+                            "id": "BootMenuNavRequest",
+                            "role": "writes"
+                        }
+                    ]
                 },
                 {
                     "instance_id": "TestStageHUDModule",
@@ -568,6 +607,10 @@
                         {
                             "id": "MainToRender",
                             "role": "reads"
+                        },
+                        {
+                            "id": "HUDNavRequest",
+                            "role": "writes"
                         }
                     ]
                 },
@@ -660,6 +703,10 @@
                         },
                         {
                             "id": "KernelTextureHandler",
+                            "role": "consumes"
+                        },
+                        {
+                            "id": "KernelMeshHandler",
                             "role": "consumes"
                         }
                     ]

@@ -96,6 +96,9 @@
     <ClCompile Include="Modules\InspectorSources\TimingAggregateSource.cpp">
     <ClCompile Include="Modules\InspectorSources\LifecycleEventSource.cpp">
     <ClCompile Include="Modules\InspectorSources\BlackboardInspectorSource.cpp">
+    <ClCompile Include="Modules\SimNavigationHandlerModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
       <Filter>Modules</Filter>
     </ClCompile>
       <Filter>Modules\InspectorSources</Filter>
@@ -198,6 +201,12 @@
     <ClInclude Include="Modules\InspectorSources\LifecycleEventSource.h">
     <ClInclude Include="Types\BlackboardInspectEvent.h">
     <ClInclude Include="Modules\InspectorSources\BlackboardInspectorSource.h">
+    <ClInclude Include="Types\RenderToSimNavRequest.h">
+    <ClInclude Include="Modules\SimNavigationHandlerModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+      <Filter>Types</Filter>
+    </ClInclude>
       <Filter>Modules</Filter>
     </ClInclude>
       <Filter>Types</Filter>

@@ -13,6 +13,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | System | Spec | Features | Depends On |
 |--------|------|----------|------------|
 | DiaBgfx3D | [diabgfx3d.md](specs/applications/dia/systems/diabgfx3d/diabgfx3d.md) | `gpu-resources` — MaterialRegistry + MeshGpuCache ✅ done. `3d-renderers` — MeshRenderer ✅, ShadowRenderer ✅; SkinnedMeshRenderer pending DiaSkinning3D. `canvas3d` — Canvas3D ✅ (ProcessFrame, ambient, health, metrics). `mesh-texture-pipeline` — albedo + normal map textures, TBN shading, moving light (**Approved, ready to build**). | DiaBgfx (Phase 1) ✅, DiaGraphics3D ✅, DiaMesh3D ✅ |
+| DiaBlackboardInspector | [diablackboardinspector.md](specs/applications/dia/systems/diablackboardinspector/diablackboardinspector.md) | `blackboard-registry` — BlackboardRegistry + RegisterSerializer<T> + IBlackboardObserver::GetId() (**Approved**). `blackboard-inspector-source` — ChangeDetectedSourceBase, EventStream push to DebugServerHostModule (**Approved**). `blackboard-inspector-plugin` — LiveConnectionPluginBase, dockable HTML panel (**Approved**). | DiaBlackboard ✅, DiaDebugServer, DiaEditor |
 
 
 ---
@@ -33,6 +34,10 @@ _Nothing here._
 
 | Item | Spec | What's needed |
 |------|------|---------------|
+| DiaAIBudget | [diaaibudget.md](specs/applications/dia/systems/diaaibudget/diaaibudget.md) | Spec `Draft` — awaiting approval. Frame-budget AI scheduler: `AIBudgetScheduler` (priority-ordered work queue, Critical/Normal/Background tiers, microsecond flush), `AIBudgetModule` (IModule wrapper on SimPU), DiaMetrics counters. Hard dependency of DiaUtilityAI. |
+| DiaCondition | [diacondition.md](specs/applications/dia/systems/diacondition/diacondition.md) | Spec `Draft` — awaiting approval. Shared expression evaluator: `ConditionRegistry` (float/bool accessor registration), `ConditionExpr` (JSON-loadable boolean expression tree), `ConditionGuardAdapter` (zero-change DiaStateMachine integration). Foundation for DiaRules + DiaUtilityAI. Depends on DiaBlackboard ✅. |
+| DiaRules | [diarules.md](specs/applications/dia/systems/diarules/diarules.md) | Spec `Draft` — awaiting approval. Forward-chaining rule engine: `RuleActionRegistry` (open handler registration by StringCRC), `RuleSet` (all-matching condition→action evaluation), JSON loader, `RuleSetComponent`. Depends on DiaCondition. |
+| DiaUtilityAI | [diautilityai.md](specs/applications/dia/systems/diautilityai/diautilityai.md) | Spec `Draft` — awaiting approval. Score-based action selection: `ResponseCurve` (easing-shaped scorers), `ActionDef` (prerequisites + scorers + cooldown + max_concurrent), `GroupConsiderationContext` (squad coordination), `UtilitySet` (sync + async eval), DiaVisualDebugger score overlay. Depends on DiaAIBudget + DiaCondition. |
 | DiaRenderTest CLI Pipeline | [diarendertest.md](specs/applications/dia/systems/diarendertest/diarendertest.md) | Spec `Draft` — awaiting approval. All design questions resolved. 6 features: png-writer, diff-engine, expectations, python-tools, metrics-writer, cluichetest-integration. Research: [render_offline_test/summary.md](research/render_offline_test/summary.md) |
 | RenderTestPlugin (CluicheEditor) | — | Needs `/spec-system` — visual debugger panel: wipe slider, region grid, expectation authoring, AI triage panel, render targets. Depends on DiaRenderTest CLI Pipeline shipping first. Mockup: [render_test_debugger_mockup.html](research/render_offline_test/render_test_debugger_mockup.html). Research: [render_offline_test/summary.md](research/render_offline_test/summary.md) |
 

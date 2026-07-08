@@ -8,7 +8,6 @@
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaDebugServer/DebugServer.h>
-#include <DiaAPI/CommandRegistry/CommandRegistry.h>
 
 #include <imgui.h>
 
@@ -182,17 +181,7 @@ void BootMenuModule::DrawMenu()
         const Dia::Core::StringCRC& target = mNavigableStages[mSelectedIndex];
         DIA_LOG_INFO("Application", "BootMenuModule: Launch button -> navigate_to('%s')", target.AsChar());
         mLaunchCounter->Inc();
-
-        Json::Value params;
-        params["target"] = target.AsChar();
-        Json::Value result = Dia::API::ExecuteCommandJson(
-            Dia::Core::StringCRC("dia.automation.navigate_to"), params);
-
-        if (!result["success"].asBool())
-        {
-            DIA_LOG_ERROR("Application", "BootMenuModule: navigate_to('%s') failed: %s",
-                          target.AsChar(), result["error"].asCString());
-        }
+        mNavRequest.Send({target});
     }
 
     if (!canLaunch)
@@ -261,6 +250,11 @@ bool BootMenuModule::IsLoadedThisSession(unsigned int index) const
 void BootMenuModule::MarkLoaded(unsigned int index)
 {
     mLoadedBitfield |= (1u << index);
+}
+
+void BootMenuModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
+{
+    mNavRequest.Connect(app);
 }
 
 } } // namespace Cluiche::AppFlow

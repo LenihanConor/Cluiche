@@ -3,7 +3,6 @@
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
-#include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -134,9 +133,7 @@ void TestStageHUDModule::RenderBottomBar(const Cluiche::AppFlow::MainToRenderFra
     {
         DIA_LOG_INFO("CluicheTest", "HUD exit clicked — stage '%s' state %d — navigating to Boot",
             hud.activeStageName.AsChar(), static_cast<int>(hud.stageState));
-        Json::Value params;
-        params["target"] = "Boot";
-        Dia::API::ExecuteCommandJson(Dia::Core::StringCRC("dia.automation.navigate_to"), params);
+        mNavRequest.Send({Dia::Core::StringCRC("Boot")});
     }
     ImGui::PopStyleColor(3);
 
@@ -151,6 +148,7 @@ Dia::ApplicationFlow::StopResult TestStageHUDModule::DoStop()
 void TestStageHUDModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 {
     mMainStateInput.Connect(app);
+    mNavRequest.Connect(app);
 }
 
 } // namespace CluicheTest
