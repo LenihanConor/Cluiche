@@ -30,6 +30,7 @@
     <ClCompile Include="ProcessingUnit.cpp" />
     <ClCompile Include="TypeRegistry.cpp" />
     <ClCompile Include="Metrics\MetricsCollectorModule.cpp" />
+    <ClCompile Include="Observation\ObservationModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
@@ -51,6 +52,7 @@
     <ClInclude Include="TypeRegistry.h" />
     <ClInclude Include="DebugDataTypes.h" />
     <ClInclude Include="Metrics\MetricsCollectorModule.h" />
+    <ClInclude Include="Observation\ObservationModule.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{DD3D58EF-028B-42CB-B837-0042BA30D96F}</ProjectGuid>

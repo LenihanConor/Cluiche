@@ -27,6 +27,9 @@
       <Filter>Manifest</Filter>
     </ClCompile>
     <ClCompile Include="Manifest\ManifestValidatorV2.cpp">
+    <ClCompile Include="Observation\ObservationModule.cpp">
+      <Filter>Observation</Filter>
+    </ClCompile>
       <Filter>Manifest</Filter>
     </ClCompile>
   </ItemGroup>
@@ -58,6 +61,9 @@
       <Filter>Manifest</Filter>
     </ClInclude>
     <ClInclude Include="Manifest\TypedImport.h">
+    <ClInclude Include="Observation\ObservationModule.h">
+      <Filter>Observation</Filter>
+    </ClInclude>
       <Filter>Manifest</Filter>
     </ClInclude>
   </ItemGroup>
