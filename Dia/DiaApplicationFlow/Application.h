@@ -13,6 +13,7 @@ namespace Json { class Value; }
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaStreams/IStreamStore.h>
+#include <DiaStreams/IStreamConnector.h>
 #include <DiaStreams/EventStreamStore.h>
 #include <DiaApplicationFlow/LifecycleEvent.h>
 #include <DiaApplicationFlow/IApplicationInspectable.h>
@@ -40,6 +41,7 @@ namespace Dia { namespace ApplicationFlow {
     // ---------------------------------------------------------------------------
     class Application : public IApplicationInspectable
                       , public IApplicationControl
+                      , public IStreamConnector
     {
     public:
         Application(const ApplicationManifestV3& manifest,

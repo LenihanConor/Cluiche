@@ -3,6 +3,7 @@
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaThreading/JobSystem.h>
+#include <DiaObservation/Metric/JobSystemMetricsAdapter.h>
 
 namespace Cluiche { namespace AppFlow {
 
@@ -22,7 +23,8 @@ protected:
     Dia::ApplicationFlow::StopResult  DoStop()          override;
 
 private:
-    Dia::Threading::JobSystem mJobSystem;
+    Dia::Observation::Metric::JobSystemMetricsAdapter mMetricsAdapter;
+    Dia::Threading::JobSystem                         mJobSystem;
 };
 
 } } // namespace Cluiche::AppFlow

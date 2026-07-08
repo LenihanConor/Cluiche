@@ -5,7 +5,7 @@
 #include <DiaCore/Memory/UniquePtr.h>
 #include <DiaStreams/EventStreamStore.h>
 #include <DiaStreams/Event.h>
-#include <DiaApplicationFlow/Application.h>
+#include <DiaStreams/IStreamConnector.h>
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -35,7 +35,7 @@ public:
     bool IsConnected() const;
 
     // Called from the owning module's OnConnectStreams() override.
-    void Connect(Application& app);
+    void Connect(IStreamConnector& connector);
 
 private:
     Module*               mOwner;
@@ -80,9 +80,9 @@ inline bool EventStreamReader<T>::IsConnected() const
 }
 
 template<typename T>
-inline void EventStreamReader<T>::Connect(Application& app)
+inline void EventStreamReader<T>::Connect(IStreamConnector& connector)
 {
-    IStreamStore* istore = app.RegisterOrFindStreamStore(
+    IStreamStore* istore = connector.RegisterOrFindStreamStore(
         Dia::Core::UniquePtr<IStreamStore>(new EventStreamStore<T>(mStreamId)));
     if (istore)
     {

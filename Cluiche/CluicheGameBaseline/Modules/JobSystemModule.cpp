@@ -15,7 +15,7 @@ JobSystemModule::JobSystemModule(const Dia::Core::StringCRC& instanceId)
 Dia::ApplicationFlow::StartResult JobSystemModule::DoStart()
 {
     DIA_LOG_INFO("Application", "JobSystemModule DoStart entry");
-    mJobSystem.Initialize(0);
+    mJobSystem.Initialize(0, &mMetricsAdapter);
     DIA_LOG_INFO("Application", "JobSystemModule DoStart ready");
     return Dia::ApplicationFlow::StartResult::kReady;
 }

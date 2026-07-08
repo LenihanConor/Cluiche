@@ -4,7 +4,7 @@
 #include <DiaCore/Memory/UniquePtr.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaStreams/ServiceStreamStore.h>
-#include <DiaApplicationFlow/Application.h>
+#include <DiaStreams/IStreamConnector.h>
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -28,7 +28,7 @@ public:
     ServiceStreamReader(Module* owner, const Dia::Core::StringCRC& streamId);
 
     // Called from the owning module's OnConnectStreams() override.
-    void Connect(Application& app);
+    void Connect(IStreamConnector& connector);
 
     // Returns the registered handle. Asserts that Connect() was called and
     // the store has been committed by the framework.
@@ -57,9 +57,9 @@ inline ServiceStreamReader<T>::ServiceStreamReader(Module* owner, const Dia::Cor
 }
 
 template<typename T>
-inline void ServiceStreamReader<T>::Connect(Application& app)
+inline void ServiceStreamReader<T>::Connect(IStreamConnector& connector)
 {
-    IStreamStore* istore = app.RegisterOrFindStreamStore(
+    IStreamStore* istore = connector.RegisterOrFindStreamStore(
         Dia::Core::UniquePtr<IStreamStore>(
             new ServiceStreamStore<T>(mStreamId, Dia::Core::StringCRC::kZero)));
     mStore = static_cast<ServiceStreamStore<T>*>(istore);

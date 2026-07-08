@@ -4,7 +4,7 @@
 #include <DiaCore/Memory/UniquePtr.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaStreams/ServiceStreamStore.h>
-#include <DiaApplicationFlow/Application.h>
+#include <DiaStreams/IStreamConnector.h>
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -27,7 +27,7 @@ public:
     ServiceStreamWriter(Module* owner, const Dia::Core::StringCRC& streamId);
 
     // Called from the owning module's OnConnectStreams() override.
-    void Connect(Application& app);
+    void Connect(IStreamConnector& connector);
 
     // Called from the owning module's DoStart() once the handle is ready.
     // Asserts that Connect() was called first.
@@ -59,9 +59,9 @@ inline ServiceStreamWriter<T>::ServiceStreamWriter(Module* owner, const Dia::Cor
 }
 
 template<typename T>
-inline void ServiceStreamWriter<T>::Connect(Application& app)
+inline void ServiceStreamWriter<T>::Connect(IStreamConnector& connector)
 {
-    IStreamStore* istore = app.RegisterOrFindStreamStore(
+    IStreamStore* istore = connector.RegisterOrFindStreamStore(
         Dia::Core::UniquePtr<IStreamStore>(
             new ServiceStreamStore<T>(mStreamId, Dia::Core::StringCRC::kZero)));
     mStore = static_cast<ServiceStreamStore<T>*>(istore);

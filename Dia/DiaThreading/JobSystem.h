@@ -1,13 +1,9 @@
 #pragma once
 
+#include <DiaThreading/IJobMetrics.h>
 #include <functional>
 #include <memory>
 #include <cstdint>
-
-namespace Dia { namespace Observation { namespace Metric {
-    class Counter;
-    class Gauge;
-} } }
 
 namespace Dia
 {
@@ -68,8 +64,9 @@ namespace Dia
 			~JobSystem();
 
 			// numThreads = 0 means use hardware concurrency.
+			// metrics may be null — pass a JobSystemMetricsAdapter to enable instrumentation.
 			// Calling Initialize twice without an intervening Shutdown asserts.
-			void       Initialize(unsigned int numThreads = 0);
+			void       Initialize(unsigned int numThreads = 0, IJobMetrics* metrics = nullptr);
 
 			// Drains pending tasks then joins all workers. Idempotent.
 			void       Shutdown();
@@ -93,14 +90,9 @@ namespace Dia
 
 		private:
 			Dia::Core::ThreadPool* mThreadPool;
-
-			// Metrics registered on Initialize(); owned by MetricRegistry.
-			Dia::Observation::Metric::Gauge*   mMetricQueueDepth    = nullptr;
-			Dia::Observation::Metric::Gauge*   mMetricActiveWorkers = nullptr;
-			Dia::Observation::Metric::Counter* mMetricSubmitted     = nullptr;
-			Dia::Observation::Metric::Counter* mMetricCompleted     = nullptr;
-			[[maybe_unused]] uint64_t                           mPrevSubmitted       = 0;
-			[[maybe_unused]] uint64_t                           mPrevCompleted       = 0;
+			IJobMetrics*           mMetrics = nullptr;
+			[[maybe_unused]] uint64_t mPrevSubmitted = 0;
+			[[maybe_unused]] uint64_t mPrevCompleted = 0;
 		};
 
 	} // namespace Threading

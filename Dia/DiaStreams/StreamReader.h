@@ -4,7 +4,7 @@
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaCore/Memory/UniquePtr.h>
 #include <DiaStreams/FrameStreamStore.h>
-#include <DiaApplicationFlow/Application.h>
+#include <DiaStreams/IStreamConnector.h>
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -31,7 +31,7 @@ public:
     // Called from the owning module's OnConnectStreams() override.
     // Registers or finds the FrameStreamStore<T> with this ID in app.
     // The stream ID must be declared in the application manifest.
-    void Connect(Application& app);
+    void Connect(IStreamConnector& connector);
 
 private:
     Module*               mOwner;
@@ -70,9 +70,9 @@ inline bool StreamReader<T>::IsConnected() const
 }
 
 template<typename T>
-inline void StreamReader<T>::Connect(Application& app)
+inline void StreamReader<T>::Connect(IStreamConnector& connector)
 {
-    IStreamStore* istore = app.RegisterOrFindStreamStore(
+    IStreamStore* istore = connector.RegisterOrFindStreamStore(
         Dia::Core::UniquePtr<IStreamStore>(new FrameStreamStore<T>(mStreamId)));
     mStore = static_cast<FrameStreamStore<T>*>(istore);
 }

@@ -101,6 +101,7 @@
     <ClInclude Include="Capture\DiaCapture.h" />
     <ClInclude Include="Capture\ThirdParty\lodepng.h" />
     <ClInclude Include="Capture\CaptureManager.h" />
+    <ClInclude Include="Metric\JobSystemMetricsAdapter.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

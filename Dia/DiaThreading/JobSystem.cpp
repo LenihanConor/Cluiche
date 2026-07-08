@@ -3,9 +3,6 @@
 #include "DiaCore/Threading/Thread.h"
 #include "DiaCore/Core/Assert.h"
 #include "DiaCore/Memory/Memory.h"
-#include "DiaObservation/Metric/MetricRegistry.h"
-#include "DiaObservation/Metric/Gauge.h"
-#include "DiaObservation/Metric/Counter.h"
 
 #include <atomic>
 
@@ -50,18 +47,13 @@ namespace Dia
 
 		JobSystem::~JobSystem() { Shutdown(); }
 
-		void JobSystem::Initialize(unsigned int numThreads)
+		void JobSystem::Initialize(unsigned int numThreads, IJobMetrics* metrics)
 		{
 			DIA_ASSERT(mThreadPool == nullptr, "JobSystem::Initialize called twice without an intervening Shutdown");
 			if (mThreadPool)
 				return;
 			mThreadPool = DIA_NEW(Dia::Core::ThreadPool(numThreads));
-
-			auto& reg            = Dia::Observation::Metric::MetricRegistry::Instance();
-			mMetricQueueDepth    = reg.RegisterGauge  (Dia::Core::StringCRC("dia.jobs.queue_depth"));
-			mMetricActiveWorkers = reg.RegisterGauge  (Dia::Core::StringCRC("dia.jobs.active_workers"));
-			mMetricSubmitted     = reg.RegisterCounter(Dia::Core::StringCRC("dia.jobs.submitted"));
-			mMetricCompleted     = reg.RegisterCounter(Dia::Core::StringCRC("dia.jobs.completed"));
+			mMetrics    = metrics;
 		}
 
 		void JobSystem::Shutdown()
@@ -71,10 +63,7 @@ namespace Dia
 				DIA_DELETE(mThreadPool);
 				mThreadPool = nullptr;
 			}
-			mMetricQueueDepth    = nullptr;
-			mMetricActiveWorkers = nullptr;
-			mMetricSubmitted     = nullptr;
-			mMetricCompleted     = nullptr;
+			mMetrics = nullptr;
 		}
 
 		JobHandle JobSystem::Submit(JobFn fn)
@@ -85,22 +74,26 @@ namespace Dia
 
 			auto jobPtr = std::make_shared<Job>();
 
-			// Capture metric pointers by value so the lambda is self-contained.
-			auto* metricCompleted     = mMetricCompleted;
-			auto* metricActiveWorkers = mMetricActiveWorkers;
-			auto* metricQueueDepth    = mMetricQueueDepth;
+			// Capture metrics and pool by value so the lambda is self-contained.
+			auto* metrics = mMetrics;
 			mThreadPool->Enqueue([fn = std::move(fn), jobPtr,
-			                      metricCompleted, metricActiveWorkers, metricQueueDepth,
+			                      metrics,
 			                      pool = mThreadPool]() {
 				if (fn) fn();
 				jobPtr->unfinishedJobs.store(0, std::memory_order_release);
-				if (metricCompleted)     metricCompleted->Inc();
-				if (metricActiveWorkers) metricActiveWorkers->Set(static_cast<double>(pool->GetActiveTaskCount()));
-				if (metricQueueDepth)    metricQueueDepth->Set   (static_cast<double>(pool->GetQueueDepth()));
+				if (metrics)
+				{
+					metrics->OnJobCompleted();
+					metrics->OnActiveWorkersChanged(static_cast<double>(pool->GetActiveTaskCount()));
+					metrics->OnQueueDepthChanged   (static_cast<double>(pool->GetQueueDepth()));
+				}
 			});
 
-			if (mMetricSubmitted)  mMetricSubmitted->Inc();
-			if (mMetricQueueDepth) mMetricQueueDepth->Set(static_cast<double>(mThreadPool->GetQueueDepth()));
+			if (mMetrics)
+			{
+				mMetrics->OnJobSubmitted();
+				mMetrics->OnQueueDepthChanged(static_cast<double>(mThreadPool->GetQueueDepth()));
+			}
 
 			JobHandle handle;
 			handle.mPtr = jobPtr;

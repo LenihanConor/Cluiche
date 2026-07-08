@@ -75,6 +75,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="JobSystem.h" />
+    <ClInclude Include="IJobMetrics.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="JobSystem.cpp" />

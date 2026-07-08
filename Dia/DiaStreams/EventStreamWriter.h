@@ -5,7 +5,7 @@
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaStreams/EventStreamStore.h>
 #include <DiaStreams/SendResult.h>
-#include <DiaApplicationFlow/Application.h>
+#include <DiaStreams/IStreamConnector.h>
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -31,7 +31,7 @@ public:
     bool IsConnected() const;
 
     // Called from the owning module's OnConnectStreams() override.
-    void Connect(Application& app);
+    void Connect(IStreamConnector& connector);
 
     // Framework-internal: directly wire to an already-created store.
     // Used by Application to wire the $lifecycle writer without going through
@@ -80,9 +80,9 @@ inline bool EventStreamWriter<T>::IsConnected() const
 }
 
 template<typename T>
-inline void EventStreamWriter<T>::Connect(Application& app)
+inline void EventStreamWriter<T>::Connect(IStreamConnector& connector)
 {
-    IStreamStore* istore = app.RegisterOrFindStreamStore(
+    IStreamStore* istore = connector.RegisterOrFindStreamStore(
         Dia::Core::UniquePtr<IStreamStore>(new EventStreamStore<T>(mStreamId)));
     mStore = static_cast<EventStreamStore<T>*>(istore);
 }

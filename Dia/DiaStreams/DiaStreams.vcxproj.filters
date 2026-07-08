@@ -21,6 +21,9 @@
     <ClInclude Include="StreamReader.h" />
     <ClInclude Include="StreamTypeRegistry.h" />
     <ClInclude Include="StreamWriter.h" />
+    <ClInclude Include="IStreamConnector.h">
+      <Filter>IStreamConnector</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FrameStreamDiagnostics.cpp" />
