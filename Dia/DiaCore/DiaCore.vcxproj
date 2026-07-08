@@ -95,6 +95,10 @@
     <ClInclude Include="Architecture\Events\EventDispatcher.h" />
     <ClInclude Include="Colour\RGBA.h" />
     <ClInclude Include="Debug\IDebugDraw.h" />
+    <ClInclude Include="DebugDraw\IVisualDebugger.h" />
+    <ClInclude Include="DebugDraw\IDebugContext.h" />
+    <ClInclude Include="DebugDraw\DebugColourPalette.h" />
+    <ClInclude Include="DebugDraw\DebugLayerNames.h" />
     <ClInclude Include="Containers\Graphs\DirectedGraph.h" />
     <ClInclude Include="Containers\Graphs\DirectedGraphEdge.h" />
     <ClInclude Include="Containers\Graphs\DirectedGraphNode.h" />

@@ -8,12 +8,12 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/IVisualDebugger.h>
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
 
 namespace Dia::Camera2D  { class CameraRegistry2D; }
 namespace Dia::Lighting2D { class LightRegistry2D; }
 namespace Dia::Scene2D   { class LayerTable; }
-namespace Dia::Debug     { class DebugLayerManager; }
+namespace Dia::Core      { class IDebugContext; }
 
 namespace Dia::Scene2DVisualDebugger
 {
@@ -38,7 +38,7 @@ public:
         const Dia::Camera2D::CameraRegistry2D&  cameraRegistry,
         const Dia::Lighting2D::LightRegistry2D& lightRegistry,
         const Dia::Scene2D::LayerTable&         layerTable,
-        const Dia::Debug::DebugLayerManager&    manager);
+        const Dia::Core::IDebugContext&    manager);
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Core::IDebugDraw& draw) override;
@@ -48,7 +48,7 @@ private:
     const Dia::Camera2D::CameraRegistry2D&  mCameraRegistry;
     const Dia::Lighting2D::LightRegistry2D& mLightRegistry;
     const Dia::Scene2D::LayerTable&         mLayerTable;
-    const Dia::Debug::DebugLayerManager&    mManager;
+    const Dia::Core::IDebugContext&    mManager;
 };
 
 } // namespace Dia::Scene2DVisualDebugger

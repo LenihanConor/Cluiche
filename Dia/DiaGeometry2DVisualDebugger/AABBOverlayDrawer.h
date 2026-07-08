@@ -8,7 +8,7 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/IVisualDebugger.h>
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
 namespace Dia::Geometry2D
@@ -22,7 +22,7 @@ namespace Dia::Geometry2D
     class Capsule;
 }
 
-namespace Dia::Debug { class DebugLayerManager; }
+namespace Dia::Core  { class IDebugContext; }
 
 namespace Dia::Geometry2DVisualDebugger
 {
@@ -40,7 +40,7 @@ class AABBOverlayDrawer : public Dia::Debug::IVisualDebugger
 public:
     static constexpr int kMaxAABBs = 64;
 
-    explicit AABBOverlayDrawer(const Dia::Debug::DebugLayerManager& manager);
+    explicit AABBOverlayDrawer(const Dia::Core::IDebugContext& manager);
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Core::IDebugDraw& draw) override;
@@ -60,7 +60,7 @@ private:
     void Submit(float minX, float minY, float maxX, float maxY);
 
     Dia::Core::Containers::DynamicArrayC<AABBEntry, kMaxAABBs> mPending;
-    const Dia::Debug::DebugLayerManager& mManager;
+    const Dia::Core::IDebugContext& mManager;
 };
 
 } // namespace Dia::Geometry2DVisualDebugger

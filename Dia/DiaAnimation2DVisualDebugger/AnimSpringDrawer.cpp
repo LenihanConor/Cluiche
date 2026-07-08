@@ -8,9 +8,9 @@
 #include <DiaAnimation2D/AnimationEvaluator.h>
 #include <DiaAnimation2D/SpringChain.h>
 #include <DiaRig2D/Skeleton.h>
-#include <DiaVisualDebugger/DebugColourPalette.h>
-#include <DiaVisualDebugger/DebugLayerNames.h>
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaCore/DebugDraw/DebugColourPalette.h>
+#include <DiaCore/DebugDraw/DebugLayerNames.h>
+#include <DiaCore/DebugDraw/IDebugContext.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 
 #include <DiaObservation/Trace/DiaTrace.h>
@@ -23,7 +23,7 @@ AnimSpringDrawer::AnimSpringDrawer(
     const AnimationEvaluator&                                                    evaluator,
     const Dia::Rig2D::Skeleton&                                                  skeleton,
     const Dia::Core::Containers::DynamicArrayC<Dia::Rig2D::BoneTransform, 128>& worldTransforms,
-    const Dia::Debug::DebugLayerManager&                                         manager)
+    const Dia::Core::IDebugContext&                                              manager)
     : mEvaluator(evaluator)
     , mSkeleton(skeleton)
     , mWorldTransforms(worldTransforms)

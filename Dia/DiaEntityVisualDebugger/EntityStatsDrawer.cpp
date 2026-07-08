@@ -4,7 +4,7 @@
 #include <DiaEntity/IEntityInspectable.h>
 #include <DiaEntity/Entity.h>
 #include <DiaEntity/ComponentRegistry.h>
-#include <DiaVisualDebugger/DebugLayerNames.h>
+#include <DiaCore/DebugDraw/DebugLayerNames.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <imgui.h>
 

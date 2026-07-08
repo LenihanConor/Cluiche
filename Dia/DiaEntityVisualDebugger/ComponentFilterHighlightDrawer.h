@@ -2,11 +2,11 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/IVisualDebugger.h>
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 namespace Dia::Entity { class IEntityInspectable; class Domain; }
-namespace Dia::Debug { class DebugLayerManager; }
+namespace Dia::Core  { class IDebugContext; }
 
 namespace Dia::EntityVisualDebugger
 {
@@ -17,7 +17,7 @@ public:
     ComponentFilterHighlightDrawer(
         Dia::Entity::IEntityInspectable& inspectable,
         Dia::Entity::Domain& domain,
-        const Dia::Debug::DebugLayerManager& manager,
+        const Dia::Core::IDebugContext& manager,
         Dia::Core::StringCRC positionComponentTypeId);
 
     Dia::Core::StringCRC GetLayerName() const override;
@@ -29,7 +29,7 @@ public:
 private:
     Dia::Entity::IEntityInspectable& mInspectable;
     Dia::Entity::Domain& mDomain;
-    const Dia::Debug::DebugLayerManager& mManager;
+    const Dia::Core::IDebugContext& mManager;
     Dia::Core::StringCRC mPositionTypeId;
     Dia::Core::StringCRC mFilterTypeId;
     float mHighlightRadius = 8.0f;

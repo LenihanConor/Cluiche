@@ -7,8 +7,8 @@
 #include <DiaEntity/Entity.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGraphics/Misc/RGBA.h>
-#include <DiaVisualDebugger/DebugLayerNames.h>
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaCore/DebugDraw/DebugLayerNames.h>
+#include <DiaCore/DebugDraw/IDebugContext.h>
 #include <imgui.h>
 
 namespace Dia::EntityVisualDebugger
@@ -19,7 +19,7 @@ static const Dia::Graphics::RGBA kSelectionColour(255, 255, 0, 255);
 EntityPickingDrawer::EntityPickingDrawer(
     Dia::Entity::IEntityInspectable& inspectable,
     Dia::Entity::Domain& domain,
-    const Dia::Debug::DebugLayerManager& manager,
+    const Dia::Core::IDebugContext& manager,
     Dia::Core::StringCRC positionComponentTypeId)
     : mInspectable(inspectable)
     , mDomain(domain)
@@ -71,7 +71,7 @@ void EntityPickingDrawer::DrawImGui()
 
         if (ImGui::Button("Clear selection"))
         {
-            const_cast<Dia::Debug::DebugLayerManager&>(mManager).SetSelectedEntityId(0);
+            const_cast<Dia::Core::IDebugContext&>(mManager).SetSelectedEntityId(0);
         }
     }
 

@@ -16,14 +16,14 @@
 #include <DiaGeometry2D/Shapes/Spline.h>
 #include <DiaGeometry2D/Shapes/SplineFactory.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
-#include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaVisualDebugger/DebugLayerNames.h>
+#include <DiaCore/DebugDraw/IDebugContext.h>
+#include <DiaCore/DebugDraw/DebugLayerNames.h>
 #include <DiaMaths/Vector/Vector2D.h>
 
 namespace Dia::Geometry2DVisualDebugger
 {
 
-ShapeDrawer::ShapeDrawer(const Dia::Debug::DebugLayerManager& manager)
+ShapeDrawer::ShapeDrawer(const Dia::Core::IDebugContext& manager)
     : mManager(manager)
 {}
 

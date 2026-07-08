@@ -14,7 +14,7 @@
 #include <DiaGeometry2D/Shapes/ConvexPolygon.h>
 #include <DiaGeometry2D/Shapes/Capsule.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
-#include <DiaVisualDebugger/DebugLayerNames.h>
+#include <DiaCore/DebugDraw/DebugLayerNames.h>
 #include <DiaGraphics/Misc/RGBA.h>
 #include <DiaMaths/Vector/Vector2D.h>
 #include <imgui.h>
@@ -25,7 +25,7 @@ namespace Dia::Geometry2DVisualDebugger
 
 static const Dia::Graphics::RGBA kAABBColour(255, 200, 50, 180);
 
-AABBOverlayDrawer::AABBOverlayDrawer(const Dia::Debug::DebugLayerManager& manager)
+AABBOverlayDrawer::AABBOverlayDrawer(const Dia::Core::IDebugContext& manager)
     : mManager(manager)
 {}
 

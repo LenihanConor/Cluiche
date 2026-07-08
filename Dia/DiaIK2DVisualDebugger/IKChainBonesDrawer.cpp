@@ -5,9 +5,9 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/DebugColourPalette.h>
-#include <DiaVisualDebugger/DebugLayerNames.h>
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaCore/DebugDraw/DebugColourPalette.h>
+#include <DiaCore/DebugDraw/DebugLayerNames.h>
+#include <DiaCore/DebugDraw/IDebugContext.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaRig2D/Skeleton.h>
 #include <DiaIK2D/IKSolver.h>
@@ -20,7 +20,7 @@ namespace Dia::IK2D
 IKChainBonesDrawer::IKChainBonesDrawer(
     const IKSolver&                      solver,
     const Dia::Rig2D::Skeleton&          skeleton,
-    const Dia::Debug::DebugLayerManager& manager)
+    const Dia::Core::IDebugContext&      manager)
     : mSolver(solver)
     , mSkeleton(skeleton)
     , mManager(manager)

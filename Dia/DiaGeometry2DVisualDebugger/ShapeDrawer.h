@@ -9,7 +9,7 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/IVisualDebugger.h>
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaGraphics/Misc/RGBA.h>
 
@@ -25,7 +25,7 @@ namespace Dia::Geometry2D
     class Spline;
 }
 
-namespace Dia::Debug  { class DebugLayerManager; }
+namespace Dia::Core   { class IDebugContext; }
 
 namespace Dia::Geometry2DVisualDebugger
 {
@@ -43,7 +43,7 @@ class ShapeDrawer : public Dia::Debug::IVisualDebugger
 public:
     static constexpr int kMaxShapes = 128; // ~16 KB stack budget (ConvexPolygon is largest)
 
-    explicit ShapeDrawer(const Dia::Debug::DebugLayerManager& manager);
+    explicit ShapeDrawer(const Dia::Core::IDebugContext& manager);
 
     // IVisualDebugger
     Dia::Core::StringCRC GetLayerName() const override;
@@ -114,7 +114,7 @@ private:
     };
 
     Dia::Core::Containers::DynamicArrayC<ShapeEntry, kMaxShapes> mPending;
-    const Dia::Debug::DebugLayerManager&                         mManager;
+    const Dia::Core::IDebugContext&                         mManager;
 };
 
 } // namespace Dia::Geometry2DVisualDebugger

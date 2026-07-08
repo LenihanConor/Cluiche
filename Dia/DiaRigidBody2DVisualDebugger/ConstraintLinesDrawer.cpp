@@ -11,15 +11,15 @@
 #include "DiaRigidBody2D/World/PhysicsWorld.h"
 #include "DiaRigidBody2D/Constraints/IConstraint.h"
 #include <DiaCore/DebugDraw/IDebugDraw.h>
-#include "DiaVisualDebugger/DebugLayerManager.h"
-#include "DiaVisualDebugger/DebugColourPalette.h"
-#include "DiaVisualDebugger/DebugLayerNames.h"
+#include <DiaCore/DebugDraw/IDebugContext.h>
+#include <DiaCore/DebugDraw/DebugColourPalette.h>
+#include <DiaCore/DebugDraw/DebugLayerNames.h>
 
 namespace Dia::RigidBody2D
 {
 
-ConstraintLinesDrawer::ConstraintLinesDrawer(const PhysicsWorld&                world,
-                                             const Dia::Debug::DebugLayerManager& manager)
+ConstraintLinesDrawer::ConstraintLinesDrawer(const PhysicsWorld&             world,
+                                             const Dia::Core::IDebugContext& manager)
     : mWorld(world)
     , mManager(manager)
 {}

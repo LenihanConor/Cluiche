@@ -2,7 +2,7 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/IVisualDebugger.h>
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 namespace Dia

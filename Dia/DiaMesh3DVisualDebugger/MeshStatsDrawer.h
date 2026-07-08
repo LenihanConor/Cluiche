@@ -10,12 +10,12 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/IVisualDebugger.h>
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 namespace Dia { namespace Graphics3D { class Mesh3DFrameData; } }
 namespace Dia { namespace Mesh3D     { class Mesh3DAssetHandler; } }
-namespace Dia { namespace Debug      { class DebugLayerManager; } }
+namespace Dia { namespace Core       { class IDebugContext; } }
 
 namespace Dia { namespace Mesh3D {
 
@@ -31,7 +31,7 @@ class MeshStatsDrawer : public Dia::Debug::IVisualDebugger
 public:
     MeshStatsDrawer(const Dia::Graphics3D::Mesh3DFrameData& frameData,
                     const Dia::Mesh3D::Mesh3DAssetHandler&  assetHandler,
-                    const Dia::Debug::DebugLayerManager&    manager);
+                    const Dia::Core::IDebugContext&         manager);
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw    (Dia::Core::IDebugDraw& draw) override;
@@ -40,7 +40,7 @@ public:
 private:
     const Dia::Graphics3D::Mesh3DFrameData& mFrameData;
     const Dia::Mesh3D::Mesh3DAssetHandler&  mAssetHandler;
-    const Dia::Debug::DebugLayerManager&    mManager;
+    const Dia::Core::IDebugContext&         mManager;
 };
 
 } } // namespace Dia::Mesh3D

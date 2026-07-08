@@ -8,11 +8,11 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/IVisualDebugger.h>
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaMaths/Vector/Vector2D.h>
 
-namespace Dia::Debug { class DebugLayerManager; }
+namespace Dia::Core  { class IDebugContext; }
 
 namespace Dia::Geometry2DVisualDebugger
 {
@@ -31,7 +31,7 @@ public:
     static constexpr int   kMaxLabels   = 64;
     static constexpr float kDefaultFontSize = 12.0f;
 
-    explicit ShapeLabelsDrawer(const Dia::Debug::DebugLayerManager& manager);
+    explicit ShapeLabelsDrawer(const Dia::Core::IDebugContext& manager);
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Core::IDebugDraw& draw) override;
@@ -47,7 +47,7 @@ private:
     };
 
     Dia::Core::Containers::DynamicArrayC<LabelEntry, kMaxLabels> mPending;
-    const Dia::Debug::DebugLayerManager& mManager;
+    const Dia::Core::IDebugContext& mManager;
     float mFontScale = 1.0f;
 };
 

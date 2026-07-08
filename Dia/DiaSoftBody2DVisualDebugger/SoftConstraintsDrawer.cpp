@@ -12,9 +12,9 @@
 #include "DiaSoftBody2D/Particle.h"
 #include "DiaSoftBody2D/Constraints/DistanceConstraint.h"
 #include "DiaCore/DebugDraw/IDebugDraw.h"
-#include "DiaVisualDebugger/DebugLayerManager.h"
-#include "DiaVisualDebugger/DebugColourPalette.h"
-#include "DiaVisualDebugger/DebugLayerNames.h"
+#include "DiaCore/DebugDraw/IDebugContext.h"
+#include "DiaCore/DebugDraw/DebugColourPalette.h"
+#include "DiaCore/DebugDraw/DebugLayerNames.h"
 #include "DiaCore/Core/Assert.h"
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <imgui.h>
@@ -22,8 +22,8 @@
 namespace Dia::SoftBody2D
 {
 
-SoftConstraintsDrawer::SoftConstraintsDrawer(const SoftBodyWorld&                world,
-                                             const Dia::Debug::DebugLayerManager& manager)
+SoftConstraintsDrawer::SoftConstraintsDrawer(const SoftBodyWorld&            world,
+                                             const Dia::Core::IDebugContext& manager)
     : mWorld(world)
     , mManager(manager)
 {}

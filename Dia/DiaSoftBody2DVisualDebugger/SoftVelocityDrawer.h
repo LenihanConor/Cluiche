@@ -8,10 +8,10 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/IVisualDebugger.h>
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
 
 namespace Dia::SoftBody2D { class SoftBodyWorld; }
-namespace Dia::Debug       { class DebugLayerManager; }
+namespace Dia::Core        { class IDebugContext; }
 
 namespace Dia::SoftBody2D
 {
@@ -19,8 +19,8 @@ namespace Dia::SoftBody2D
 class SoftVelocityDrawer : public Dia::Debug::IVisualDebugger
 {
 public:
-    SoftVelocityDrawer(const SoftBodyWorld&                world,
-                       const Dia::Debug::DebugLayerManager& manager);
+    SoftVelocityDrawer(const SoftBodyWorld&            world,
+                       const Dia::Core::IDebugContext& manager);
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Core::IDebugDraw& draw) override;
@@ -28,7 +28,7 @@ public:
 
 private:
     const SoftBodyWorld&                 mWorld;
-    const Dia::Debug::DebugLayerManager& mManager;
+    const Dia::Core::IDebugContext& mManager;
     float                                mVelocityScale = 1.0f;
 };
 

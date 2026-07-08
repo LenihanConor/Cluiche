@@ -11,9 +11,9 @@
 #include <DiaLighting3D/SpotLight3D.h>
 #include <DiaLighting3D/DirectionalLight3D.h>
 #include <DiaLighting3D/Registry/LightRegistry3D.h>
-#include <DiaVisualDebugger/DebugLayerNames.h>
-#include <DiaVisualDebugger/DebugColourPalette.h>
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaCore/DebugDraw/DebugLayerNames.h>
+#include <DiaCore/DebugDraw/DebugColourPalette.h>
+#include <DiaCore/DebugDraw/IDebugContext.h>
 
 #include <imgui.h>
 
@@ -25,7 +25,7 @@ static constexpr float kBaseSpotArrowLen = 0.5f;
 static constexpr float kBaseDirArrowLen  = 2.0f;
 
 LightWidgetsDrawer::LightWidgetsDrawer(const LightRegistry3D&               registry,
-                                       const Dia::Debug::DebugLayerManager& manager)
+                                       const Dia::Core::IDebugContext& manager)
     : mRegistry(registry)
     , mManager(manager)
 {}

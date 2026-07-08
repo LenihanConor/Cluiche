@@ -5,7 +5,7 @@
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaObservation/Metric/Gauge.h>
 #include <DiaObservation/Trace/DiaTrace.h>
-#include <DiaVisualDebugger/DebugLayerNames.h>
+#include <DiaCore/DebugDraw/DebugLayerNames.h>
 #include <imgui.h>
 
 namespace Dia

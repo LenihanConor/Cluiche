@@ -9,9 +9,9 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/IVisualDebugger.h>
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
 
-namespace Dia::Debug { class DebugLayerManager; }
+namespace Dia::Core  { class IDebugContext; }
 namespace Dia::IK2D  { class IKSolver; }
 namespace Dia::Rig2D { class Skeleton; }
 
@@ -34,7 +34,7 @@ public:
     IKChainArrowsDrawer(
         const IKSolver&                      solver,
         const Dia::Rig2D::Skeleton&          skeleton,
-        const Dia::Debug::DebugLayerManager& manager);
+        const Dia::Core::IDebugContext& manager);
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Core::IDebugDraw& draw) override;
@@ -44,7 +44,7 @@ private:
     float mLengthMultiplier = 1.0f;
     const IKSolver&                      mSolver;
     const Dia::Rig2D::Skeleton&          mSkeleton;
-    const Dia::Debug::DebugLayerManager& mManager;
+    const Dia::Core::IDebugContext& mManager;
 };
 
 } // namespace Dia::IK2D

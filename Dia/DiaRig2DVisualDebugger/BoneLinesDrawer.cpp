@@ -5,9 +5,9 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/DebugColourPalette.h>
-#include <DiaVisualDebugger/DebugLayerNames.h>
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaCore/DebugDraw/DebugColourPalette.h>
+#include <DiaCore/DebugDraw/DebugLayerNames.h>
+#include <DiaCore/DebugDraw/IDebugContext.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <imgui.h>
@@ -18,7 +18,7 @@ namespace Dia::Rig2D
 BoneLinesDrawer::BoneLinesDrawer(
     const Skeleton& skeleton,
     const Dia::Core::Containers::DynamicArrayC<BoneTransform, kMaxBones>& worldTransforms,
-    const Dia::Debug::DebugLayerManager& manager)
+    const Dia::Core::IDebugContext& manager)
     : mSkeleton(skeleton)
     , mWorldTransforms(worldTransforms)
     , mManager(manager)

@@ -8,7 +8,7 @@
 
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGraphics/Misc/RGBA.h>
-#include <DiaVisualDebugger/DebugLayerNames.h>
+#include <DiaCore/DebugDraw/DebugLayerNames.h>
 #include <imgui.h>
 
 namespace Dia::Geometry2DVisualDebugger
@@ -16,7 +16,7 @@ namespace Dia::Geometry2DVisualDebugger
 
 static const Dia::Graphics::RGBA kLabelColour(90, 122, 170, 255);
 
-ShapeLabelsDrawer::ShapeLabelsDrawer(const Dia::Debug::DebugLayerManager& manager)
+ShapeLabelsDrawer::ShapeLabelsDrawer(const Dia::Core::IDebugContext& manager)
     : mManager(manager)
 {}
 

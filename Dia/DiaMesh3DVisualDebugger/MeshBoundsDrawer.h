@@ -10,7 +10,7 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/IVisualDebugger.h>
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 namespace Dia { namespace Graphics3D { class Mesh3DFrameData; } }

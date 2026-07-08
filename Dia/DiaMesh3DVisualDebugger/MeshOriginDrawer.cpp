@@ -8,9 +8,9 @@
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGraphics/Frame/DebugFrameData.h>
 #include <DiaGraphics3D/Mesh3DFrameData.h>
-#include <DiaVisualDebugger/DebugLayerNames.h>
-#include <DiaVisualDebugger/DebugColourPalette.h>
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaCore/DebugDraw/DebugLayerNames.h>
+#include <DiaCore/DebugDraw/DebugColourPalette.h>
+#include <DiaCore/DebugDraw/IDebugContext.h>
 #include <DiaMaths/Vector/Vector3D.h>
 #include <imgui.h>
 
@@ -19,7 +19,7 @@ namespace Dia { namespace Mesh3D {
 static constexpr float kCrossArmLen = 0.2f;
 
 MeshOriginDrawer::MeshOriginDrawer(const Dia::Graphics3D::Mesh3DFrameData& frameData,
-                                   const Dia::Debug::DebugLayerManager& manager)
+                                   const Dia::Core::IDebugContext& manager)
     : mFrameData(frameData)
     , mManager(manager)
 {}

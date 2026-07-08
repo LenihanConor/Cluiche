@@ -8,10 +8,10 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/IVisualDebugger.h>
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
 #include <DiaGeometry2D/Spatial/HexGrid.h>
 
-namespace Dia::Debug { class DebugLayerManager; }
+namespace Dia::Core  { class IDebugContext; }
 
 namespace Dia::Geometry2DVisualDebugger
 {
@@ -32,7 +32,7 @@ class HexGridDrawer : public Dia::Debug::IVisualDebugger
 {
 public:
     HexGridDrawer(const Dia::Geometry2D::HexGrid<T, MaxObjects>& grid,
-                  const Dia::Debug::DebugLayerManager&           manager)
+                  const Dia::Core::IDebugContext&           manager)
         : mGrid(grid)
         , mManager(manager)
     {}
@@ -51,7 +51,7 @@ public:
 
 private:
     const Dia::Geometry2D::HexGrid<T, MaxObjects>& mGrid;
-    const Dia::Debug::DebugLayerManager&           mManager;
+    const Dia::Core::IDebugContext&           mManager;
     bool                                           mShowLabels{ false };
     const Dia::Geometry2D::HexCoord*               mSelected{ nullptr };
 };

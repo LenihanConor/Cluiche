@@ -12,6 +12,7 @@
 
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaCore/DebugDraw/IDebugContext.h>
 #include <DiaGraphics/Camera/Camera2D.h>
 #include <DiaGraphics/Camera/ViewportTransform.h>
 #include <DiaMaths/Vector/Vector2D.h>
@@ -47,7 +48,7 @@ namespace Dia
         //   lambda becomes a dangling capture. RegisterDiaAPICommands() should be called
         //   once during application startup (e.g. from a Module::DoStart()).
         ////////////////////////////////////////////////////////////////////////////////
-        class DebugLayerManager
+        class DebugLayerManager : public Dia::Core::IDebugContext
         {
         public:
             static const unsigned int kMaxLayers = 64;
@@ -113,7 +114,7 @@ namespace Dia
             // Draw classes read this before submitting size/length values.
             // ----------------------------------------------------------------
             void  SetDebugScale(float scale);
-            float GetDebugScale() const;
+            float GetDebugScale() const override;
 
             // ----------------------------------------------------------------
             // Viewport / coordinate transform (used by coord2d overlay layers)
@@ -124,8 +125,8 @@ namespace Dia
             // ----------------------------------------------------------------
             // Picking seam — no-op stubs until scene editor (SD-DBG-008)
             // ----------------------------------------------------------------
-            void     SetSelectedEntityId(uint32_t id);
-            uint32_t GetSelectedEntityId() const;
+            void     SetSelectedEntityId(uint32_t id) override;
+            uint32_t GetSelectedEntityId() const override;
 
             // ----------------------------------------------------------------
             // Draw

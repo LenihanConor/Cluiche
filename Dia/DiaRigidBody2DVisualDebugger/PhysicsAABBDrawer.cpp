@@ -13,15 +13,15 @@
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include "DiaGraphics/Misc/RGBA.h"
 #include "DiaGeometry2D/Shapes/AARect.h"
-#include "DiaVisualDebugger/DebugLayerManager.h"
-#include "DiaVisualDebugger/DebugColourPalette.h"
-#include "DiaVisualDebugger/DebugLayerNames.h"
+#include <DiaCore/DebugDraw/IDebugContext.h>
+#include <DiaCore/DebugDraw/DebugColourPalette.h>
+#include <DiaCore/DebugDraw/DebugLayerNames.h>
 
 namespace Dia::RigidBody2D
 {
 
-PhysicsAABBDrawer::PhysicsAABBDrawer(const PhysicsWorld&                world,
-                                     const Dia::Debug::DebugLayerManager& manager)
+PhysicsAABBDrawer::PhysicsAABBDrawer(const PhysicsWorld&             world,
+                                     const Dia::Core::IDebugContext& manager)
     : mWorld(world)
     , mManager(manager)
 {}

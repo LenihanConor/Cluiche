@@ -11,16 +11,16 @@
 #include "DiaRigidBody2D/World/PhysicsWorld.h"
 #include "DiaRigidBody2D/Detection/Contact.h"
 #include <DiaCore/DebugDraw/IDebugDraw.h>
-#include "DiaVisualDebugger/DebugLayerManager.h"
-#include "DiaVisualDebugger/DebugColourPalette.h"
-#include "DiaVisualDebugger/DebugLayerNames.h"
+#include <DiaCore/DebugDraw/IDebugContext.h>
+#include <DiaCore/DebugDraw/DebugColourPalette.h>
+#include <DiaCore/DebugDraw/DebugLayerNames.h>
 
 namespace Dia::RigidBody2D
 {
 
 
-ContactNormalsDrawer::ContactNormalsDrawer(const PhysicsWorld&                world,
-                                           const Dia::Debug::DebugLayerManager& manager)
+ContactNormalsDrawer::ContactNormalsDrawer(const PhysicsWorld&             world,
+                                           const Dia::Core::IDebugContext& manager)
     : mWorld(world)
     , mManager(manager)
 {}

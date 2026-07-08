@@ -9,16 +9,16 @@
 #include <DiaGraphics3D/Mesh3DFrameData.h>
 #include <DiaMesh3D/Mesh3DAssetHandler.h>
 #include <DiaMesh3D/Mesh3DAsset.h>
-#include <DiaVisualDebugger/DebugLayerNames.h>
-#include <DiaVisualDebugger/DebugColourPalette.h>
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaCore/DebugDraw/DebugLayerNames.h>
+#include <DiaCore/DebugDraw/DebugColourPalette.h>
+#include <DiaCore/DebugDraw/IDebugContext.h>
 #include <imgui.h>
 
 namespace Dia { namespace Mesh3D {
 
 MeshStatsDrawer::MeshStatsDrawer(const Dia::Graphics3D::Mesh3DFrameData& frameData,
                                  const Dia::Mesh3D::Mesh3DAssetHandler&  assetHandler,
-                                 const Dia::Debug::DebugLayerManager&    manager)
+                                 const Dia::Core::IDebugContext&         manager)
     : mFrameData(frameData)
     , mAssetHandler(assetHandler)
     , mManager(manager)

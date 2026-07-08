@@ -8,10 +8,10 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/IVisualDebugger.h>
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
 
 namespace Dia::RigidBody2D { class PhysicsWorld; }
-namespace Dia::Debug       { class DebugLayerManager; }
+namespace Dia::Core        { class IDebugContext; }
 
 namespace Dia::RigidBody2D
 {
@@ -19,8 +19,8 @@ namespace Dia::RigidBody2D
 class PhysicsShapesDrawer : public Dia::Debug::IVisualDebugger
 {
 public:
-    PhysicsShapesDrawer(const PhysicsWorld&                world,
-                        const Dia::Debug::DebugLayerManager& manager);
+    PhysicsShapesDrawer(const PhysicsWorld&             world,
+                        const Dia::Core::IDebugContext& manager);
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Core::IDebugDraw& draw) override;
@@ -30,7 +30,7 @@ public:
 
 private:
     const PhysicsWorld&                  mWorld;
-    [[maybe_unused]] const Dia::Debug::DebugLayerManager& mManager;
+    [[maybe_unused]] const Dia::Core::IDebugContext& mManager;
     bool                                 mShowSleeping = true;
 };
 

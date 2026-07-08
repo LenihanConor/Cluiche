@@ -8,10 +8,10 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/IVisualDebugger.h>
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
 
 namespace Dia::RigidBody2D { class PhysicsWorld; }
-namespace Dia::Debug       { class DebugLayerManager; }
+namespace Dia::Core        { class IDebugContext; }
 
 namespace Dia::RigidBody2D
 {
@@ -19,8 +19,8 @@ namespace Dia::RigidBody2D
 class ContactNormalsDrawer : public Dia::Debug::IVisualDebugger
 {
 public:
-    ContactNormalsDrawer(const PhysicsWorld&                world,
-                         const Dia::Debug::DebugLayerManager& manager);
+    ContactNormalsDrawer(const PhysicsWorld&             world,
+                         const Dia::Core::IDebugContext& manager);
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Core::IDebugDraw& draw) override;
@@ -28,7 +28,7 @@ public:
 
 private:
     const PhysicsWorld&                  mWorld;
-    const Dia::Debug::DebugLayerManager& mManager;
+    const Dia::Core::IDebugContext& mManager;
     float                                mNormalLength = 0.3f;
 };
 

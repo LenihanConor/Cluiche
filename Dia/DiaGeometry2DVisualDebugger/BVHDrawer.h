@@ -9,10 +9,10 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/IVisualDebugger.h>
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
 #include <DiaGeometry2D/Spatial/BVH.h>
 
-namespace Dia::Debug { class DebugLayerManager; }
+namespace Dia::Core  { class IDebugContext; }
 
 namespace Dia::Geometry2DVisualDebugger
 {
@@ -31,7 +31,7 @@ class BVHDrawer : public Dia::Debug::IVisualDebugger
 {
 public:
     BVHDrawer(const Dia::Geometry2D::BVH<T, MaxObjects>& bvh,
-              const Dia::Debug::DebugLayerManager&        manager)
+              const Dia::Core::IDebugContext&        manager)
         : mBVH(bvh)
         , mManager(manager)
     {}
@@ -41,7 +41,7 @@ public:
 
 private:
     const Dia::Geometry2D::BVH<T, MaxObjects>& mBVH;
-    const Dia::Debug::DebugLayerManager&       mManager;
+    const Dia::Core::IDebugContext&       mManager;
 };
 
 } // namespace Dia::Geometry2DVisualDebugger

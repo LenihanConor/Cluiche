@@ -12,9 +12,9 @@
 #include "DiaGeometry2D/Shapes/Circle.h"
 #include "DiaGeometry2D/Shapes/ConvexPolygon.h"
 #include <DiaCore/DebugDraw/IDebugDraw.h>
-#include "DiaVisualDebugger/DebugLayerManager.h"
-#include "DiaVisualDebugger/DebugColourPalette.h"
-#include "DiaVisualDebugger/DebugLayerNames.h"
+#include <DiaCore/DebugDraw/IDebugContext.h>
+#include <DiaCore/DebugDraw/DebugColourPalette.h>
+#include <DiaCore/DebugDraw/DebugLayerNames.h>
 
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <imgui.h>
@@ -87,8 +87,8 @@ static void DrawBody(const Body2DBase* body, Dia::Core::IDebugDraw& draw, bool s
 
 // ---------------------------------------------------------------------------
 
-PhysicsShapesDrawer::PhysicsShapesDrawer(const PhysicsWorld&                world,
-                                         const Dia::Debug::DebugLayerManager& manager)
+PhysicsShapesDrawer::PhysicsShapesDrawer(const PhysicsWorld&             world,
+                                         const Dia::Core::IDebugContext& manager)
     : mWorld(world)
     , mManager(manager)
 {}

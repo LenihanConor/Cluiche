@@ -7,9 +7,9 @@
 #include <DiaEntity/Entity.h>
 #include <DiaEntity/Hierarchy/ChildBufferComponent.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
-#include <DiaVisualDebugger/DebugLayerNames.h>
-#include <DiaVisualDebugger/DebugColourPalette.h>
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaCore/DebugDraw/DebugLayerNames.h>
+#include <DiaCore/DebugDraw/DebugColourPalette.h>
+#include <DiaCore/DebugDraw/IDebugContext.h>
 #include <imgui.h>
 
 namespace Dia::EntityVisualDebugger
@@ -18,7 +18,7 @@ namespace Dia::EntityVisualDebugger
 HierarchyLinesDrawer::HierarchyLinesDrawer(
     Dia::Entity::IEntityInspectable& inspectable,
     Dia::Entity::Domain& domain,
-    const Dia::Debug::DebugLayerManager& manager,
+    const Dia::Core::IDebugContext& manager,
     Dia::Core::StringCRC positionComponentTypeId)
     : mInspectable(inspectable)
     , mDomain(domain)

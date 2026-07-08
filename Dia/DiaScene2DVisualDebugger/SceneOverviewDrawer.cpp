@@ -16,7 +16,7 @@
 #include <DiaGeometry2D/Shapes/AARect.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGraphics/Misc/RGBA.h>
-#include <DiaVisualDebugger/DebugLayerNames.h>
+#include <DiaCore/DebugDraw/DebugLayerNames.h>
 #include <imgui.h>
 
 namespace Dia::Scene2DVisualDebugger
@@ -34,7 +34,7 @@ SceneOverviewDrawer::SceneOverviewDrawer(
     const Dia::Camera2D::CameraRegistry2D&  cameraRegistry,
     const Dia::Lighting2D::LightRegistry2D& lightRegistry,
     const Dia::Scene2D::LayerTable&         layerTable,
-    const Dia::Debug::DebugLayerManager&    manager)
+    const Dia::Core::IDebugContext&         manager)
     : mCameraRegistry(cameraRegistry)
     , mLightRegistry(lightRegistry)
     , mLayerTable(layerTable)

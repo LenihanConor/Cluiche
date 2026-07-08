@@ -7,10 +7,10 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/IVisualDebugger.h>
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
 
 namespace Dia::RigidBody2D { class PhysicsWorld; }
-namespace Dia::Debug       { class DebugLayerManager; }
+namespace Dia::Core        { class IDebugContext; }
 
 namespace Dia::RigidBody2D
 {
@@ -18,8 +18,8 @@ namespace Dia::RigidBody2D
 class VelocityArrowsDrawer : public Dia::Debug::IVisualDebugger
 {
 public:
-    VelocityArrowsDrawer(const PhysicsWorld&                world,
-                         const Dia::Debug::DebugLayerManager& manager,
+    VelocityArrowsDrawer(const PhysicsWorld&             world,
+                         const Dia::Core::IDebugContext& manager,
                          float arrowScale  = 0.1f,
                          float arrowMaxLen = 10.0f);
 
@@ -29,7 +29,7 @@ public:
 
 private:
     const PhysicsWorld&                  mWorld;
-    const Dia::Debug::DebugLayerManager& mManager;
+    const Dia::Core::IDebugContext& mManager;
     float                                mArrowScale;
     float                                mArrowMaxLen;
 };

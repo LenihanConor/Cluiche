@@ -7,8 +7,8 @@
 #include <DiaEntity/ComponentRegistry.h>
 #include <DiaEntity/ComponentTypeDesc.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
-#include <DiaVisualDebugger/DebugLayerNames.h>
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaCore/DebugDraw/DebugLayerNames.h>
+#include <DiaCore/DebugDraw/IDebugContext.h>
 #include <imgui.h>
 
 namespace Dia::EntityVisualDebugger
@@ -17,7 +17,7 @@ namespace Dia::EntityVisualDebugger
 SelectionInspectorDrawer::SelectionInspectorDrawer(
     Dia::Entity::IEntityInspectable& inspectable,
     Dia::Entity::Domain& domain,
-    const Dia::Debug::DebugLayerManager& manager)
+    const Dia::Core::IDebugContext& manager)
     : mInspectable(inspectable)
     , mDomain(domain)
     , mManager(manager)

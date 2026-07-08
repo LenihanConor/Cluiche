@@ -8,10 +8,10 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/IVisualDebugger.h>
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
 
 namespace Dia::SoftBody2D { class SoftBodyWorld; }
-namespace Dia::Debug       { class DebugLayerManager; }
+namespace Dia::Core        { class IDebugContext; }
 
 namespace Dia::SoftBody2D
 {
@@ -19,8 +19,8 @@ namespace Dia::SoftBody2D
 class SoftAnchorLinksDrawer : public Dia::Debug::IVisualDebugger
 {
 public:
-    SoftAnchorLinksDrawer(const SoftBodyWorld&                world,
-                          const Dia::Debug::DebugLayerManager& manager);
+    SoftAnchorLinksDrawer(const SoftBodyWorld&             world,
+                          const Dia::Core::IDebugContext&  manager);
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Core::IDebugDraw& draw) override;
@@ -28,7 +28,7 @@ public:
 
 private:
     const SoftBodyWorld&                 mWorld;
-    [[maybe_unused]] const Dia::Debug::DebugLayerManager& mManager;
+    [[maybe_unused]] const Dia::Core::IDebugContext& mManager;
 };
 
 } // namespace Dia::SoftBody2D

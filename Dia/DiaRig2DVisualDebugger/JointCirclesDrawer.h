@@ -8,12 +8,12 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/IVisualDebugger.h>
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
 #include <DiaRig2D/Skeleton.h>
 #include <DiaRig2D/BoneTransform.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
-namespace Dia::Debug { class DebugLayerManager; }
+namespace Dia::Core { class IDebugContext; }
 
 namespace Dia::Rig2D
 {
@@ -36,7 +36,7 @@ public:
     JointCirclesDrawer(
         const Skeleton& skeleton,
         const Dia::Core::Containers::DynamicArrayC<BoneTransform, kMaxBones>& worldTransforms,
-        const Dia::Debug::DebugLayerManager& manager);
+        const Dia::Core::IDebugContext& manager);
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Core::IDebugDraw& draw) override;
@@ -46,7 +46,7 @@ private:
     float mRadiusMultiplier = 1.0f;
     const Skeleton&                                                              mSkeleton;
     const Dia::Core::Containers::DynamicArrayC<BoneTransform, kMaxBones>&       mWorldTransforms;
-    const Dia::Debug::DebugLayerManager&                                         mManager;
+    const Dia::Core::IDebugContext&                                              mManager;
 };
 
 } // namespace Dia::Rig2D

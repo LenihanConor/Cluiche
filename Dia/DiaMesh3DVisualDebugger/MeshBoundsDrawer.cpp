@@ -11,8 +11,8 @@
 #include <DiaMesh3D/Mesh3DAssetHandler.h>
 #include <DiaMesh3D/Mesh3DAsset.h>
 #include <DiaGeometry3D/Shapes/AABB.h>
-#include <DiaVisualDebugger/DebugLayerNames.h>
-#include <DiaVisualDebugger/DebugColourPalette.h>
+#include <DiaCore/DebugDraw/DebugLayerNames.h>
+#include <DiaCore/DebugDraw/DebugColourPalette.h>
 
 namespace Dia { namespace Mesh3D {
 

@@ -11,9 +11,9 @@
 #include "DiaSoftBody2D/Cloth.h"
 #include "DiaSoftBody2D/Particle.h"
 #include "DiaCore/DebugDraw/IDebugDraw.h"
-#include "DiaVisualDebugger/DebugLayerManager.h"
-#include "DiaVisualDebugger/DebugColourPalette.h"
-#include "DiaVisualDebugger/DebugLayerNames.h"
+#include "DiaCore/DebugDraw/IDebugContext.h"
+#include "DiaCore/DebugDraw/DebugColourPalette.h"
+#include "DiaCore/DebugDraw/DebugLayerNames.h"
 #include "DiaCore/Core/Assert.h"
 
 #include <DiaObservation/Trace/DiaTrace.h>
@@ -23,8 +23,8 @@
 namespace Dia::SoftBody2D
 {
 
-SoftVelocityDrawer::SoftVelocityDrawer(const SoftBodyWorld&                world,
-                                       const Dia::Debug::DebugLayerManager& manager)
+SoftVelocityDrawer::SoftVelocityDrawer(const SoftBodyWorld&            world,
+                                       const Dia::Core::IDebugContext& manager)
     : mWorld(world)
     , mManager(manager)
 {}
