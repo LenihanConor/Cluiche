@@ -100,6 +100,7 @@
     <ClInclude Include="Transform\Transform3D.h" />
     <ClInclude Include="Quaternion\Quaternion.h" />
     <ClInclude Include="DiaMathsSerializers.h" />
+    <ClInclude Include="Core\SplineBasis.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Vector\Vector2D.cpp" />

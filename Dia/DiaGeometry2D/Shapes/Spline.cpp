@@ -1,5 +1,6 @@
 #include "DiaGeometry2D/Shapes/Spline.h"
 
+#include <DiaMaths/Core/SplineBasis.h>
 #include <DiaCore/Core/Assert.h>
 #include <cmath>
 
@@ -8,14 +9,9 @@ namespace Dia
 	namespace Geometry2D
 	{
 		// ---------------------------------------------------------------------------
-		// Basis helpers — static, file-local
+		// Segment helpers — static, file-local
 		// ---------------------------------------------------------------------------
 
-		// Uniform cubic B-Spline basis matrix (row-vector form: [t^3 t^2 t 1] * M * P)
-		// M_bs = (1/6) * [[-1  3 -3  1]
-		//                 [ 3 -6  3  0]
-		//                 [-3  0  3  0]
-		//                 [ 1  4  1  0]]
 		static Dia::Maths::Vector2D EvalBSplineSegment(
 			const Dia::Maths::Vector2D& p0,
 			const Dia::Maths::Vector2D& p1,
@@ -23,14 +19,8 @@ namespace Dia
 			const Dia::Maths::Vector2D& p3,
 			float u)
 		{
-			const float u2 = u * u;
-			const float u3 = u2 * u;
-
-			const float b0 = (1.0f / 6.0f) * (-u3 + 3.0f*u2 - 3.0f*u + 1.0f);
-			const float b1 = (1.0f / 6.0f) * (3.0f*u3 - 6.0f*u2 + 4.0f);
-			const float b2 = (1.0f / 6.0f) * (-3.0f*u3 + 3.0f*u2 + 3.0f*u + 1.0f);
-			const float b3 = (1.0f / 6.0f) * u3;
-
+			float b0, b1, b2, b3;
+			Dia::Maths::CubicBSplineBasis(u, b0, b1, b2, b3);
 			return Dia::Maths::Vector2D(
 				b0*p0.x + b1*p1.x + b2*p2.x + b3*p3.x,
 				b0*p0.y + b1*p1.y + b2*p2.y + b3*p3.y);
@@ -43,23 +33,13 @@ namespace Dia
 			const Dia::Maths::Vector2D& p3,
 			float u)
 		{
-			const float u2 = u * u;
-
-			const float b0 = (1.0f / 6.0f) * (-3.0f*u2 + 6.0f*u - 3.0f);
-			const float b1 = (1.0f / 6.0f) * (9.0f*u2 - 12.0f*u);
-			const float b2 = (1.0f / 6.0f) * (-9.0f*u2 + 6.0f*u + 3.0f);
-			const float b3 = (1.0f / 6.0f) * (3.0f*u2);
-
+			float b0, b1, b2, b3;
+			Dia::Maths::CubicBSplineBasisTangent(u, b0, b1, b2, b3);
 			return Dia::Maths::Vector2D(
 				b0*p0.x + b1*p1.x + b2*p2.x + b3*p3.x,
 				b0*p0.y + b1*p1.y + b2*p2.y + b3*p3.y);
 		}
 
-		// Catmull-Rom basis (tension = 0.5)
-		// M_cr = 0.5 * [[-1  3 -3  1]
-		//               [ 2 -5  4 -1]
-		//               [-1  0  1  0]
-		//               [ 0  2  0  0]]
 		static Dia::Maths::Vector2D EvalCatmullRomSegment(
 			const Dia::Maths::Vector2D& p0,
 			const Dia::Maths::Vector2D& p1,
@@ -67,14 +47,8 @@ namespace Dia
 			const Dia::Maths::Vector2D& p3,
 			float u)
 		{
-			const float u2 = u * u;
-			const float u3 = u2 * u;
-
-			const float b0 = 0.5f * (-u3 + 2.0f*u2 - u);
-			const float b1 = 0.5f * (3.0f*u3 - 5.0f*u2 + 2.0f);
-			const float b2 = 0.5f * (-3.0f*u3 + 4.0f*u2 + u);
-			const float b3 = 0.5f * (u3 - u2);
-
+			float b0, b1, b2, b3;
+			Dia::Maths::CatmullRomBasis(u, b0, b1, b2, b3);
 			return Dia::Maths::Vector2D(
 				b0*p0.x + b1*p1.x + b2*p2.x + b3*p3.x,
 				b0*p0.y + b1*p1.y + b2*p2.y + b3*p3.y);
@@ -87,13 +61,8 @@ namespace Dia
 			const Dia::Maths::Vector2D& p3,
 			float u)
 		{
-			const float u2 = u * u;
-
-			const float b0 = 0.5f * (-3.0f*u2 + 4.0f*u - 1.0f);
-			const float b1 = 0.5f * (9.0f*u2 - 10.0f*u);
-			const float b2 = 0.5f * (-9.0f*u2 + 8.0f*u + 1.0f);
-			const float b3 = 0.5f * (3.0f*u2 - 2.0f*u);
-
+			float b0, b1, b2, b3;
+			Dia::Maths::CatmullRomBasisTangent(u, b0, b1, b2, b3);
 			return Dia::Maths::Vector2D(
 				b0*p0.x + b1*p1.x + b2*p2.x + b3*p3.x,
 				b0*p0.y + b1*p1.y + b2*p2.y + b3*p3.y);

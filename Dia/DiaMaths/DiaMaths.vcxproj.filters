@@ -109,6 +109,9 @@
       <Filter>Quaternion</Filter>
     </ClInclude>
     <ClInclude Include="DiaMathsSerializers.h" />
+    <ClInclude Include="Core\SplineBasis.h">
+      <Filter>Core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Vector\Vector2D.cpp">
