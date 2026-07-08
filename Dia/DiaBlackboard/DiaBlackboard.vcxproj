@@ -83,12 +83,14 @@
       <Filter>Testing</Filter>
     </ClInclude>
     <ClInclude Include="BlackboardRegistry.h" />
+    <ClInclude Include="Health\BlackboardRegistryHealth.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Blackboard.cpp" />
     <ClCompile Include="BlackboardComponent.cpp" />
     <ClCompile Include="GlobalBlackboard.cpp" />
     <ClCompile Include="BlackboardRegistry.cpp" />
+    <ClCompile Include="Health\BlackboardRegistryHealth.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.blackboard.architecture.module.md" />
