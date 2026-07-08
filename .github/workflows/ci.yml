@@ -21,6 +21,9 @@ jobs:
       - name: Install DiaCLI
         run: pip install Dia/DiaCLI
 
+      - name: Set DIA_CLI_CONFIG
+        run: echo "DIA_CLI_CONFIG=${{ github.workspace }}/Dia/DiaCLI/dia_cli_prime_config.json" >> $env:GITHUB_ENV
+
       - name: Check dependency declarations
         run: dia check deps
 
@@ -52,6 +55,9 @@ jobs:
 
       - name: Install DiaCLI
         run: pip install Dia/DiaCLI
+
+      - name: Set DIA_CLI_CONFIG
+        run: echo "DIA_CLI_CONFIG=${{ github.workspace }}/Dia/DiaCLI/dia_cli_prime_config.json" >> $env:GITHUB_ENV
 
       - name: Restore deps (includes PMD)
         run: dia env setup --dep pmd
