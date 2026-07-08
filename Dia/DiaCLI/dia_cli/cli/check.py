@@ -569,11 +569,16 @@ def clones(ctx, minimum_tokens: int, accept_baseline: bool) -> None:
         return
 
     click.echo(f"[dia check] Running clone detection (minimum-tokens={minimum_tokens})...")
-    new_dups, exit_code = run_clone_check(
-        repo_root,
-        minimum_tokens=minimum_tokens,
-        accept_baseline=accept_baseline,
-    )
+    try:
+        new_dups, exit_code = run_clone_check(
+            repo_root,
+            minimum_tokens=minimum_tokens,
+            accept_baseline=accept_baseline,
+        )
+    except RuntimeError as e:
+        click.echo(f"ERROR: {e}", err=True)
+        ctx.exit(1)
+        return
 
     if accept_baseline:
         click.echo("[dia check] Baseline accepted.")

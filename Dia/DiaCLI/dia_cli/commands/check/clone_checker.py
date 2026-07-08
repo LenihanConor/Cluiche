@@ -2,10 +2,41 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
+import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
+
+
+def _find_java_home() -> str | None:
+    """Return a Java bin directory, checking JAVA_HOME then common install paths."""
+    # Already on PATH — nothing to do.
+    if shutil.which("java"):
+        return None
+
+    # JAVA_HOME set but bin not on PATH.
+    java_home = os.environ.get("JAVA_HOME")
+    if java_home and Path(java_home, "bin", "java.exe" if sys.platform == "win32" else "java").exists():
+        return str(Path(java_home) / "bin")
+
+    if sys.platform == "win32":
+        # Common Windows JDK install roots.
+        candidates = [
+            Path(os.environ.get("PROGRAMFILES", r"C:\Program Files")) / "Microsoft",
+            Path(os.environ.get("PROGRAMFILES", r"C:\Program Files")) / "Java",
+            Path(os.environ.get("PROGRAMFILES", r"C:\Program Files")) / "Eclipse Adoptium",
+            Path(os.environ.get("PROGRAMFILES", r"C:\Program Files")) / "Amazon Corretto",
+        ]
+        for root in candidates:
+            if not root.exists():
+                continue
+            for entry in sorted(root.iterdir(), reverse=True):  # newest version first
+                java_bin = entry / "bin" / "java.exe"
+                if java_bin.exists():
+                    return str(entry / "bin")
+    return None
 
 
 def _find_cpd_executable(repo_root: Path | None = None) -> str | None:
@@ -53,7 +84,7 @@ def _run_cpd(
         "\n".join(str(f) for f in source_files), encoding="utf-8"
     )
 
-    # PMD 7.x: `pmd cpd --minimum-tokens=N ...`
+    # PMD 7.x: `pmd cpd --minimum-tokens=N ...` (writes XML to stdout, no --report-file)
     # Older standalone cpd.bat (pre-7): `cpd --minimum-tokens=N ...`
     exe_name = Path(cpd_exe).stem.lower().rstrip(".")
     is_pmd_launcher = exe_name in ("pmd",)
@@ -64,16 +95,43 @@ def _run_cpd(
         f"--minimum-tokens={minimum_tokens}",
         "--language=cpp",
         "--format=xml",
-        f"--filelist={filelist_path}",
-        f"--reportfile={out_xml}",
+        "--no-fail-on-error",
+        f"--file-list={filelist_path}",
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    # On Windows, .bat files need cmd /c. When launched from Git Bash / MSYS2,
+    # System32 is stripped from PATH, so findstr and where are missing inside the
+    # batch. Also auto-discover Java if it isn't already on PATH.
+    env = None
+    if sys.platform == "win32" and Path(cpd_exe).suffix.lower() == ".bat":
+        cmd = ["cmd", "/c"] + cmd
+        windir = os.environ.get("WINDIR", r"C:\Windows")
+        sys32 = os.path.join(windir, "System32")
+        syswow = os.path.join(windir, "SysWOW64")
+        existing = os.environ.get("PATH", "")
+        extra = [p for p in (sys32, syswow) if p not in existing]
+        java_bin = _find_java_home()
+        if java_bin:
+            extra.append(java_bin)
+        env = {**os.environ, "PATH": ";".join(extra + [existing]) if extra else existing}
+
+    result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+    # CPD exit codes: 0 = clean, 4 = duplicates found. --no-fail-on-error suppresses
+    # exit 5 (lexical errors). Anything else is a hard failure.
+    if result.returncode not in (0, 4):
+        err = (result.stderr or result.stdout).strip()
+        raise RuntimeError(f"CPD failed (exit {result.returncode}): {err}")
+    if result.stdout.strip():
+        out_xml.write_text(result.stdout, encoding="utf-8")
     return result.returncode
 
 
 def _parse_cpd_xml(xml_path: Path) -> list[dict]:
-    """Parse CPD XML output into a list of duplication records."""
+    """Parse CPD XML output into a list of duplication records.
+
+    PMD 7.x uses a namespace on the root element; strip it so findall() works
+    regardless of PMD version.
+    """
     if not xml_path.exists():
         return []
     try:
@@ -81,13 +139,21 @@ def _parse_cpd_xml(xml_path: Path) -> list[dict]:
     except ET.ParseError:
         return []
 
+    # Strip namespace prefix from all tags so we can use plain names.
+    ns_prefix = ""
+    if root.tag.startswith("{"):
+        ns_prefix = root.tag.split("}")[0] + "}"
+
+    def _find(el, tag):
+        return el.findall(f"{ns_prefix}{tag}")
+
     duplicates = []
-    for dup in root.findall("duplication"):
+    for dup in _find(root, "duplication"):
         tokens = int(dup.get("tokens", "0"))
         lines = int(dup.get("lines", "0"))
         files = [
             {"path": f.get("path", ""), "line": int(f.get("line", "1"))}
-            for f in dup.findall("file")
+            for f in _find(dup, "file")
         ]
         duplicates.append({"tokens": tokens, "lines": lines, "files": files})
     return duplicates
