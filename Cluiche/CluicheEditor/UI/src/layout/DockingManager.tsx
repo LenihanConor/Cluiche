@@ -121,6 +121,18 @@ export function DockingManager({ onReady }: DockingManagerProps) {
   }, []);
 
   useEffect(() => {
+    const onMouseDown = (e: MouseEvent) => {
+      if ((e.target as Element)?.closest(".mosaic-split")) {
+        document.body.classList.add("is-resizing");
+        const cleanup = () => { document.body.classList.remove("is-resizing"); };
+        document.addEventListener("mouseup", cleanup, { once: true });
+      }
+    };
+    document.addEventListener("mousedown", onMouseDown);
+    return () => document.removeEventListener("mousedown", onMouseDown);
+  }, []);
+
+  useEffect(() => {
     return EditorBridge.subscribe("panels_changed", (data: unknown) => {
       const d = data as { panels?: PanelInfo[] } | null;
       if (!d?.panels) return;
@@ -132,15 +144,25 @@ export function DockingManager({ onReady }: DockingManagerProps) {
 
         // Panels just added (not in prev) and visible — add to tree.
         // Panels just removed (not in new) — remove from tree.
-        // Panels already known — leave the tree untouched (user controls their position).
+        // Panels already known — track visibility toggles.
         const added = newPanels.filter((p) => !prevNames.has(p.name) && p.visible);
         const removed = [...prevNames].filter((n) => !newNames.has(n));
+        const toggledOn = newPanels.filter((p) => {
+          const prev = prevPanels.find((pp) => pp.name === p.name);
+          return prev && !prev.visible && p.visible;
+        });
+        const toggledOff = newPanels.filter((p) => {
+          const prev = prevPanels.find((pp) => pp.name === p.name);
+          return prev && prev.visible && !p.visible;
+        });
 
-        if (added.length > 0 || removed.length > 0) {
+        if (added.length > 0 || removed.length > 0 || toggledOn.length > 0 || toggledOff.length > 0) {
           setLayout((prev) => {
             let updated = prev;
             removed.forEach((id) => { updated = removeFromLayout(updated, id); });
+            toggledOff.forEach((p) => { updated = removeFromLayout(updated, p.name); });
             added.forEach((p) => { updated = addToLayout(updated, p.name); });
+            toggledOn.forEach((p) => { updated = addToLayout(updated, p.name); });
             return updated;
           });
         }

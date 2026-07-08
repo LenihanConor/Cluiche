@@ -22,8 +22,10 @@
       .mosaic.mosaic-blueprint-theme.bp4-dark .mosaic-window .mosaic-window-toolbar.draggable:hover { background: var(--pico-secondary-hover, #4a4d51); }
       .mosaic.mosaic-blueprint-theme.bp4-dark .mosaic-window .mosaic-window-toolbar.draggable:hover .mosaic-window-title { color: var(--pico-color, #d4d4d4); }
       .mosaic.mosaic-blueprint-theme.bp4-dark .mosaic-window .mosaic-window-controls .separator { border-color: var(--pico-border-color, #3c3c3c); }
+      /* Prevent iframes from swallowing mouse events during mosaic split-bar drag */
+      body.is-resizing iframe { pointer-events: none; }
     </style>
-    <script type="module" crossorigin src="/assets/index-09a873d9.js"></script>
+    <script type="module" crossorigin src="/assets/index-9c87a71e.js"></script>
     <link rel="stylesheet" href="/assets/index-1edd0671.css">
   </head>
   <body>
