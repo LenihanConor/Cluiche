@@ -58,7 +58,7 @@ void AnimClipCursorDrawer::Draw(Dia::Core::IDebugDraw& draw)
             rootPos.y + ((-8.0f * i) - 4.0f) * scale);
 
         char labelText[64];
-        Dia::Graphics::RGBA colour;
+        Dia::Core::RGBA colour;
 
         if (player->IsPlaying())
         {

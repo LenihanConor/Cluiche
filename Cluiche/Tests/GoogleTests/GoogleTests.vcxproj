@@ -369,14 +369,8 @@
     <ClCompile Include="Editor\TestPluginServiceLocator.cpp" />
     <ClCompile Include="Editor\TestNotificationService.cpp" />
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\PluginBrowserEditorPlugin.cpp" />
-    <ClCompile Include="..\..\..\Dia\DiaVisualDebugger\DebugLayerPanelPlugin.cpp">
-      <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ClCompile>
     <!-- DiaVisualDebugger -->
     <ClCompile Include="DiaVisualDebugger\TestDebugLayerManager.cpp">
-      <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ClCompile>
-    <ClCompile Include="DiaVisualDebugger\TestDebugLayerPanelPlugin.cpp">
       <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ClCompile Include="DiaVisualDebugger\TestFixedDrawLayer.cpp">

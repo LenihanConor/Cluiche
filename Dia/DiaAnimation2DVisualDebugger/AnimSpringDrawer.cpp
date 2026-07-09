@@ -59,7 +59,7 @@ void AnimSpringDrawer::Draw(Dia::Core::IDebugDraw& draw)
             const Dia::Maths::Vector2D pos    = mWorldTransforms[boneIndex].position;
             const float                angVel = std::abs(chain->GetNodeAngularVelocity(n));
 
-            Dia::Graphics::RGBA colour;
+            Dia::Core::RGBA colour;
             if (angVel < mWarnThreshold)
                 colour = Dia::Debug::DebugColourPalette::kHealthy;
             else if (angVel < mErrorThreshold)

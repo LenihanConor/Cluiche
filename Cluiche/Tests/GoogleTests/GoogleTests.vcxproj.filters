@@ -1259,13 +1259,7 @@
       <Filter>DiaAssetCatalogueEditor</Filter>
     </ClCompile>
     <!-- DiaVisualDebugger -->
-    <ClCompile Include="..\..\..\Dia\DiaVisualDebugger\DebugLayerPanelPlugin.cpp">
-      <Filter>DiaVisualDebugger</Filter>
-    </ClCompile>
     <ClCompile Include="DiaVisualDebugger\TestDebugLayerManager.cpp">
-      <Filter>DiaVisualDebugger</Filter>
-    </ClCompile>
-    <ClCompile Include="DiaVisualDebugger\TestDebugLayerPanelPlugin.cpp">
       <Filter>DiaVisualDebugger</Filter>
     </ClCompile>
     <ClCompile Include="DiaVisualDebugger\TestDiaVisualDebuggerConsole.cpp">

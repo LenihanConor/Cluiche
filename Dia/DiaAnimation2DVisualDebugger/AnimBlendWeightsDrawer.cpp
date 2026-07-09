@@ -61,7 +61,7 @@ void AnimBlendWeightsDrawer::Draw(Dia::Core::IDebugDraw& draw)
         char labelText[64];
         std::snprintf(labelText, sizeof(labelText), "%s w=%.2f p=%d", layerId.AsChar(), weight, priority);
 
-        const Dia::Graphics::RGBA colour = (weight > mWeightThreshold)
+        const Dia::Core::RGBA colour = (weight > mWeightThreshold)
             ? Dia::Debug::DebugColourPalette::kActive
             : Dia::Debug::DebugColourPalette::kInactive;
 
