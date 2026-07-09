@@ -3,7 +3,7 @@
 ## Parent Application
 @docs/specs/applications/dia/dia.md
 
-**Status:** `Approved`
+**Status:** `Done`
 
 **Research:** @docs/research/render_offline_test/summary.md
 
@@ -349,4 +349,4 @@ _All questions resolved._
 
 ## Status
 
-`Approved` — In Progress. Plan: @docs/specs/applications/dia/systems/diarendertest/diarendertest.plan.md
+`Done` — All 6 features implemented. Plan: @docs/specs/applications/dia/systems/diarendertest/diarendertest.plan.md
