@@ -78,7 +78,6 @@
     <ClInclude Include="..\DiaVisualDebugger\DebugLayerManager.h" />
     <ClInclude Include="..\DiaVisualDebugger\DebugColourPalette.h" />
     <ClInclude Include="..\DiaVisualDebugger\DebugLayerNames.h" />
-    <ClInclude Include="..\DiaVisualDebugger\DebugLayerPanelPlugin.h" />
     <ClInclude Include="..\DiaVisualDebugger\IObjectRenderer.h" />
     <ClInclude Include="..\DiaVisualDebugger\IFixedPrimitiveBuffer.h" />
     <ClInclude Include="..\DiaVisualDebugger\FixedPrimitiveBuffer.h" />
@@ -87,7 +86,6 @@
   <ItemGroup>
     <ClCompile Include="..\DiaVisualDebugger\DebugLayerManager.cpp" />
     <ClCompile Include="..\DiaVisualDebugger\DebugColourPalette.cpp" />
-    <ClCompile Include="..\DiaVisualDebugger\DebugLayerPanelPlugin.cpp" />
     <ClCompile Include="..\DiaVisualDebugger\FixedPrimitiveBuffer.cpp" />
     <ClCompile Include="..\DiaVisualDebugger\FixedDrawRegistry.cpp" />
   </ItemGroup>

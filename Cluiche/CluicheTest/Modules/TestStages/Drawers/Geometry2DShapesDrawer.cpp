@@ -2,6 +2,7 @@
 
 #include "Modules/TestStages/Drawers/Geometry2DShapesDrawer.h"
 
+#include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaGeometry2DVisualDebugger/ShapeDrawer.h>
 #include <DiaGeometry2DVisualDebugger/SectorDrawHelper.h>
 #include <DiaGeometry2D/Shapes/SplineFactory.h>

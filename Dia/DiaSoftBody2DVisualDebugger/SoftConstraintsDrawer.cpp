@@ -33,7 +33,7 @@ Dia::Core::StringCRC SoftConstraintsDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kSoftConstraints;
 }
 
-static Dia::Graphics::RGBA ConstraintColour(ConstraintType type)
+static Dia::Core::RGBA ConstraintColour(ConstraintType type)
 {
     switch (type)
     {

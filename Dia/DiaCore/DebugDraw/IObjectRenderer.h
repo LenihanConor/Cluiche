@@ -6,8 +6,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#ifdef DIA_DEBUG
-
 #include <DiaCore/Core/Assert.h>
 
 namespace Dia
@@ -54,5 +52,3 @@ namespace Dia
 
     } // namespace Debug
 } // namespace Dia
-
-#endif // DIA_DEBUG

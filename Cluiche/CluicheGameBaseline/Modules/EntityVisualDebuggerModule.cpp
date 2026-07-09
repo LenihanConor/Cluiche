@@ -2,6 +2,7 @@
 
 #ifdef DIA_DEBUG
 
+#include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaEntityVisualDebugger/EntityLabelsDrawer.h>
 #include <DiaEntityVisualDebugger/EntityStatsDrawer.h>

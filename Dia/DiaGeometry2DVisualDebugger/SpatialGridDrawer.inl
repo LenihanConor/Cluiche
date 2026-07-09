@@ -3,7 +3,6 @@
 #ifdef DIA_DEBUG
 
 #include <imgui.h>
-#include <DiaGraphics/Frame/FrameData.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugColourPalette.h>
@@ -21,7 +20,7 @@ Dia::Core::StringCRC SpatialGridDrawer<T, MaxObjects>::GetLayerName() const
 }
 
 template<typename T, unsigned int MaxObjects>
-void SpatialGridDrawer<T, MaxObjects>::Draw(Dia::Graphics::FrameData& frameData)
+void SpatialGridDrawer<T, MaxObjects>::Draw(Dia::Core::IDebugDraw& draw)
 {
     if (!IsEnabled()) return;
 
@@ -32,9 +31,9 @@ void SpatialGridDrawer<T, MaxObjects>::Draw(Dia::Graphics::FrameData& frameData)
     const float blX = worldBounds.GetBottomLeft().x;
     const float blY = worldBounds.GetBottomLeft().y;
 
-    static const Dia::Graphics::RGBA kSelectFill(100, 180, 255, 60);
-    static const Dia::Graphics::RGBA kSelectOutline(100, 180, 255, 200);
-    const Dia::Graphics::RGBA colour = Dia::Debug::DebugColourPalette::kInactive;
+    static const Dia::Core::RGBA kSelectFill(100, 180, 255, 60);
+    static const Dia::Core::RGBA kSelectOutline(100, 180, 255, 200);
+    const Dia::Core::RGBA colour = Dia::Debug::DebugColourPalette::kInactive;
 
     for (int cy = 0; cy < countY; ++cy)
     {
@@ -51,14 +50,14 @@ void SpatialGridDrawer<T, MaxObjects>::Draw(Dia::Graphics::FrameData& frameData)
 
             if (selected)
             {
-                frameData.RequestDrawRect(
+                draw.RequestDrawRect(
                     Dia::Maths::Vector2D(minX, minY),
                     Dia::Maths::Vector2D(maxX, maxY),
                     kSelectOutline, kSelectFill);
             }
             else
             {
-                frameData.RequestDrawRect(
+                draw.RequestDrawRect(
                     Dia::Maths::Vector2D(minX, minY),
                     Dia::Maths::Vector2D(maxX, maxY),
                     colour);
@@ -68,7 +67,7 @@ void SpatialGridDrawer<T, MaxObjects>::Draw(Dia::Graphics::FrameData& frameData)
             {
                 char label[16];
                 std::snprintf(label, sizeof(label), "%d,%d", cx, cy);
-                frameData.RequestDrawText(
+                draw.RequestDrawText(
                     Dia::Maths::Vector2D(minX + cellSize * 0.1f, minY + cellSize * 0.5f),
                     label, 10.0f, colour);
             }

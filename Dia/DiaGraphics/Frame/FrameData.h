@@ -31,7 +31,7 @@ namespace Dia
 			const Dia::Maths::Vector2D& GetWindowSize() const { return mWindowSize; }
 			void SetWindowSize(const Dia::Maths::Vector2D& size) { mWindowSize = size; }
 
-			const Dia::Maths::Vector2D& GetMousePixel() const { return mMousePixel; }
+			const Dia::Maths::Vector2D& GetMousePixel() const override { return mMousePixel; }
 			void SetMousePixel(const Dia::Maths::Vector2D& pixel) { mMousePixel = pixel; }
 
 		private:

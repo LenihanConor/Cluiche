@@ -1,6 +1,7 @@
 #ifdef DIA_DEBUG
 
 #include "Modules/TestStages/Drawers/Animation2DTestDrawer.h"
+#include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaRig2DVisualDebugger/BoneLinesDrawer.h>
 #include <DiaRig2DVisualDebugger/JointCirclesDrawer.h>
 #include <DiaRig2D/BoneTransform.h>

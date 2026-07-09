@@ -7,8 +7,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#ifdef DIA_DEBUG
-
 #include <DiaMaths/Vector/Vector2D.h>
 #include <DiaCore/Colour/RGBA.h>
 
@@ -38,5 +36,3 @@ namespace Dia
 
     } // namespace Debug
 } // namespace Dia
-
-#endif // DIA_DEBUG

@@ -4,6 +4,7 @@
 #include <DiaObservation/Log/DiaLog.h>
 
 #ifdef DIA_DEBUG
+#include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaRigidBody2DVisualDebugger/PhysicsShapesDrawer.h>
 #include <DiaRigidBody2DVisualDebugger/VelocityArrowsDrawer.h>
 #include <DiaRigidBody2DVisualDebugger/ContactNormalsDrawer.h>

@@ -1,5 +1,6 @@
 #include "DummyUIPageModule.h"
 
+#include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>

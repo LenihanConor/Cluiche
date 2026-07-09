@@ -6,8 +6,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#ifdef DIA_DEBUG
-
 #include <DiaCore/Colour/RGBA.h>
 
 namespace Dia
@@ -22,18 +20,16 @@ namespace Dia
         ////////////////////////////////////////////////////////////////////////////////
         struct DebugColourPalette
         {
-            static const Dia::Graphics::RGBA kActive;     ///< white     (255,255,255,255) — dynamic/active
-            static const Dia::Graphics::RGBA kInactive;   ///< grey      (128,128,128,255) — static/sleeping/inactive
-            static const Dia::Graphics::RGBA kHealthy;    ///< green     (0,220,0,255)     — converged/solved/ok
-            static const Dia::Graphics::RGBA kWarning;    ///< yellow    (255,220,0,255)   — best-effort/warning
-            static const Dia::Graphics::RGBA kError;      ///< red       (220,0,0,255)     — failed/torn/error
-            static const Dia::Graphics::RGBA kGoal;       ///< cyan      (0,220,220,255)   — target/goal position
-            static const Dia::Graphics::RGBA kPinned;     ///< magenta   (220,0,220,255)   — pinned/constrained
-            static const Dia::Graphics::RGBA kCapped;     ///< orange    (255,140,0,255)   — capped/limit-hit
-            static const Dia::Graphics::RGBA kDeepSleep;  ///< dark blue (0,0,80,255)      — deep sleep
+            static const Dia::Core::RGBA kActive;     ///< white     (255,255,255,255) — dynamic/active
+            static const Dia::Core::RGBA kInactive;   ///< grey      (128,128,128,255) — static/sleeping/inactive
+            static const Dia::Core::RGBA kHealthy;    ///< green     (0,220,0,255)     — converged/solved/ok
+            static const Dia::Core::RGBA kWarning;    ///< yellow    (255,220,0,255)   — best-effort/warning
+            static const Dia::Core::RGBA kError;      ///< red       (220,0,0,255)     — failed/torn/error
+            static const Dia::Core::RGBA kGoal;       ///< cyan      (0,220,220,255)   — target/goal position
+            static const Dia::Core::RGBA kPinned;     ///< magenta   (220,0,220,255)   — pinned/constrained
+            static const Dia::Core::RGBA kCapped;     ///< orange    (255,140,0,255)   — capped/limit-hit
+            static const Dia::Core::RGBA kDeepSleep;  ///< dark blue (0,0,80,255)      — deep sleep
         };
 
     } // namespace Debug
 } // namespace Dia
-
-#endif // DIA_DEBUG

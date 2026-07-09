@@ -2,7 +2,6 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaGraphics/Frame/FrameData.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugColourPalette.h>
@@ -23,13 +22,13 @@ Dia::Core::StringCRC HexGridDrawer<T, MaxObjects>::GetLayerName() const
 }
 
 template<typename T, unsigned int MaxObjects>
-void HexGridDrawer<T, MaxObjects>::Draw(Dia::Graphics::FrameData& frameData)
+void HexGridDrawer<T, MaxObjects>::Draw(Dia::Core::IDebugDraw& draw)
 {
     if (!IsEnabled()) return;
 
-    static const Dia::Graphics::RGBA kSelectFill(100, 180, 255, 60);
-    static const Dia::Graphics::RGBA kSelectOutline(100, 180, 255, 200);
-    const Dia::Graphics::RGBA colour = Dia::Debug::DebugColourPalette::kInactive;
+    static const Dia::Core::RGBA kSelectFill(100, 180, 255, 60);
+    static const Dia::Core::RGBA kSelectOutline(100, 180, 255, 200);
+    const Dia::Core::RGBA colour = Dia::Debug::DebugColourPalette::kInactive;
 
     // Pointy-top hexagon corner angles (radians): 30, 90, 150, 210, 270, 330 degrees
     static constexpr float kAngles[6] =
@@ -64,24 +63,24 @@ void HexGridDrawer<T, MaxObjects>::Draw(Dia::Graphics::FrameData& frameData)
             }
 
             const bool selected = (mSelected != nullptr) && (coord == *mSelected);
-            const Dia::Graphics::RGBA edgeColour = selected ? kSelectOutline : colour;
+            const Dia::Core::RGBA edgeColour = selected ? kSelectOutline : colour;
 
             for (int k = 0; k < 6; ++k)
-                frameData.RequestDraw(corners[k], corners[(k + 1) % 6], edgeColour);
+                draw.RequestDraw(corners[k], corners[(k + 1) % 6], edgeColour);
 
             // Filled triangle fan for selected hex
             if (selected)
             {
                 for (int k = 0; k < 6; ++k)
-                    frameData.RequestDraw(center, corners[k], corners[(k + 1) % 6],
-                        Dia::Graphics::RGBA(0, 0, 0, 0), kSelectFill);
+                    draw.RequestDraw(center, corners[k], corners[(k + 1) % 6],
+                        Dia::Core::RGBA(0, 0, 0, 0), kSelectFill);
             }
 
             if (mShowLabels)
             {
                 char label[16];
                 std::snprintf(label, sizeof(label), "%d,%d", coord.q, coord.r);
-                frameData.RequestDrawText(
+                draw.RequestDrawText(
                     Dia::Maths::Vector2D(center.x - hexRadius * 0.35f, center.y),
                     label, 10.0f, colour);
             }

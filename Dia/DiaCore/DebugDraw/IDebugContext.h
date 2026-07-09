@@ -6,8 +6,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#ifdef DIA_DEBUG
-
 #include <stdint.h>
 
 namespace Dia
@@ -37,5 +35,3 @@ namespace Dia
 
     } // namespace Core
 } // namespace Dia
-
-#endif // DIA_DEBUG

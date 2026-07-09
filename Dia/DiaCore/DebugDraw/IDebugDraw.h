@@ -6,11 +6,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#ifdef DIA_DEBUG
-
 #include <DiaCore/Colour/RGBA.h>
 #include <DiaMaths/Vector/Vector2D.h>
 #include <DiaMaths/Vector/Vector3D.h>
+#include <stdint.h>
 
 namespace Dia
 {
@@ -95,9 +94,13 @@ namespace Dia
             // Arrow3D — direction must be a unit vector
             virtual void RequestDrawArrow3D(const Maths::Vector3D& origin, const Maths::Vector3D& direction,
                 float length, float headSize, RGBA colour) = 0;
+
+            // Budget monitoring — number of geometry draw calls dropped this frame due to buffer overflow.
+            virtual uint32_t DroppedCount() const = 0;
+
+            // Mouse cursor position in screen pixels for the current frame (world-space origin if not set).
+            virtual const Maths::Vector2D& GetMousePixel() const = 0;
         };
 
     } // namespace Core
 } // namespace Dia
-
-#endif // DIA_DEBUG

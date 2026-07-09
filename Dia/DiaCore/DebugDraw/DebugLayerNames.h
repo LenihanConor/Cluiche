@@ -16,8 +16,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#ifdef DIA_DEBUG
-
 #include <DiaCore/CRC/StringCRC.h>
 
 namespace Dia
@@ -137,5 +135,3 @@ namespace Dia
         } // namespace LayerNames
     } // namespace Debug
 } // namespace Dia
-
-#endif // DIA_DEBUG

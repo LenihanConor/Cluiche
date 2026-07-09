@@ -1,6 +1,7 @@
 #ifdef DIA_DEBUG
 
 #include "Modules/TestStages/Drawers/EntityTestDrawer.h"
+#include <DiaVisualDebugger/DebugLayerManager.h>
 #include "Modules/TestStages/Entity/TransformComponent.h"
 #include "Modules/TestStages/Entity/VisualTestRenderComponent.h"
 #include <DiaGeometry2DVisualDebugger/ShapeDrawer.h>

@@ -1,5 +1,6 @@
 ﻿#include "Modules/DebugServerHostModule.h"
 
+#include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/IApplicationControl.h>
 #include <DiaApplicationFlow/IApplicationInspectable.h>
 #include <DiaStreams/IStreamStore.h>

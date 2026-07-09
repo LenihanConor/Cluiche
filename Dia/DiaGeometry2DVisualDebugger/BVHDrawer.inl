@@ -2,7 +2,6 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaGraphics/Frame/FrameData.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugColourPalette.h>
@@ -17,13 +16,13 @@ Dia::Core::StringCRC BVHDrawer<T, MaxObjects>::GetLayerName() const
 }
 
 template<typename T, unsigned int MaxObjects>
-void BVHDrawer<T, MaxObjects>::Draw(Dia::Graphics::FrameData& frameData)
+void BVHDrawer<T, MaxObjects>::Draw(Dia::Core::IDebugDraw& draw)
 {
     if (!IsEnabled()) return;
     if (!mBVH.IsBuilt()) return;
 
     // Depth colour table: cycles through 4 semantic colours
-    static const Dia::Graphics::RGBA kDepthColours[4] =
+    static const Dia::Core::RGBA kDepthColours[4] =
     {
         Dia::Debug::DebugColourPalette::kActive,   // depth 0
         Dia::Debug::DebugColourPalette::kGoal,     // depth 1
@@ -33,8 +32,8 @@ void BVHDrawer<T, MaxObjects>::Draw(Dia::Graphics::FrameData& frameData)
 
     mBVH.VisitNodes([&](const Dia::Geometry2D::AARect& bounds, int depth)
     {
-        const Dia::Graphics::RGBA colour = kDepthColours[depth % 4];
-        frameData.RequestDrawRect(bounds.GetBottomLeft(), bounds.GetTopRight(), colour);
+        const Dia::Core::RGBA colour = kDepthColours[depth % 4];
+        draw.RequestDrawRect(bounds.GetBottomLeft(), bounds.GetTopRight(), colour);
     });
 }
 

@@ -5,8 +5,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#ifdef DIA_DEBUG
-
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <atomic>
@@ -50,5 +48,3 @@ namespace Dia
 
     } // namespace Debug
 } // namespace Dia
-
-#endif // DIA_DEBUG

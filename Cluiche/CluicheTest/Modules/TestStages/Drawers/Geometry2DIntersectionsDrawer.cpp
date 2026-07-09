@@ -2,6 +2,7 @@
 
 #include "Modules/TestStages/Drawers/Geometry2DIntersectionsDrawer.h"
 
+#include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaGeometry2DVisualDebugger/ShapeDrawer.h>
 #include <DiaGraphics/Misc/RGBA.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>

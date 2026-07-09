@@ -3,6 +3,7 @@
 #include "Modules/TestStages/Drawers/Scene2DTestDrawer.h"
 #include "Modules/TestStages/Entity/TransformComponent.h"
 
+#include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaScene2DVisualDebugger/SceneOverviewDrawer.h>
 #include <DiaGeometry2DVisualDebugger/ShapeDrawer.h>
 #include <DiaGeometry2D/Shapes/Circle.h>

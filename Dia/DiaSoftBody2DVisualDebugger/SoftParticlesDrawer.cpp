@@ -39,7 +39,7 @@ static void DrawParticlesFromRope(const Rope* rope, float scale,
     for (int i = 0; i < count; ++i)
     {
         const Particle& p = rope->GetParticle(i);
-        const Dia::Graphics::RGBA colour = (p.invMass == 0.0f)
+        const Dia::Core::RGBA colour = (p.invMass == 0.0f)
             ? Dia::Debug::DebugColourPalette::kPinned
             : Dia::Debug::DebugColourPalette::kActive;
         draw.RequestDraw(p.position, p.radius * scale, colour);
@@ -56,7 +56,7 @@ static void DrawParticlesFromCloth(const Cloth* cloth, float scale,
         for (int x = 0; x < resX; ++x)
         {
             const Particle& p = cloth->GetParticle(x, y);
-            const Dia::Graphics::RGBA colour = (p.invMass == 0.0f)
+            const Dia::Core::RGBA colour = (p.invMass == 0.0f)
                 ? Dia::Debug::DebugColourPalette::kPinned
                 : Dia::Debug::DebugColourPalette::kActive;
             draw.RequestDraw(p.position, p.radius * scale, colour);

@@ -15,6 +15,7 @@
 #include <DiaCore/DebugDraw/IDebugContext.h>
 #include <DiaCore/DebugDraw/DebugColourPalette.h>
 #include <DiaCore/DebugDraw/DebugLayerNames.h>
+#include <DiaGraphics/Misc/RGBA.h>
 
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <imgui.h>

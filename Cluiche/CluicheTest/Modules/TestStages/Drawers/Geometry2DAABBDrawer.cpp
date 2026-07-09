@@ -2,6 +2,7 @@
 
 #include "Modules/TestStages/Drawers/Geometry2DAABBDrawer.h"
 
+#include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaGeometry2DVisualDebugger/AABBOverlayDrawer.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 
