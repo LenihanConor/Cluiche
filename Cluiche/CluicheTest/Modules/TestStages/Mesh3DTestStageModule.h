@@ -9,7 +9,16 @@
 #include <DiaAssetRuntime/Handlers/TextureHandler.h>
 #include <DiaGraphics/Interface/ICanvas.h>
 
+#ifdef DIA_DEBUG
+#include <DiaApplicationFlow/ModuleRefV2.h>
+#include "Modules/VisualDebuggerModule.h"
+#include <memory>
+#endif
+
 namespace Dia { namespace Mesh3D { class Mesh3DAsset; } }
+#ifdef DIA_DEBUG
+namespace Dia { namespace Mesh3D { class MeshBoundsDrawer; class MeshOriginDrawer; class MeshStatsDrawer; } }
+#endif
 
 namespace CluicheTest {
 
@@ -20,6 +29,9 @@ public:
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kSim;
     static constexpr const char* kDescription = "Renders a procedural unit cube with a directional light via Canvas3D";
     explicit Mesh3DTestStageModule(const Dia::Core::StringCRC& instanceId);
+#ifdef DIA_DEBUG
+    ~Mesh3DTestStageModule() override;
+#endif
 
 protected:
     bool AreDependenciesReady() override;
@@ -28,6 +40,7 @@ protected:
     const Dia::Core::StringCRC* GetCheckpointNames(unsigned int& outCount) const override;
     void OnStart(Dia::Automation::AutomationService* service) override;
     void OnUpdate(float deltaTime) override;
+    void OnStop() override;
     void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 
 private:
@@ -39,6 +52,15 @@ private:
     Dia::Graphics3D::FrameData3D  mFrame;
     Dia::Mesh3D::Mesh3DAsset*     mUnitCubeAsset = nullptr;
     bool                          mTexturesLoaded = false;
+
+#ifdef DIA_DEBUG
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::VisualDebuggerModule> mVisualDebuggerRef{this};
+
+    std::unique_ptr<Dia::Mesh3D::MeshBoundsDrawer>  mBoundsDrawer;
+    std::unique_ptr<Dia::Mesh3D::MeshOriginDrawer>  mOriginsDrawer;
+    std::unique_ptr<Dia::Mesh3D::MeshStatsDrawer>   mStatsDrawer;
+    bool mDebugDrawersRegistered = false;
+#endif
 };
 
 } // namespace CluicheTest

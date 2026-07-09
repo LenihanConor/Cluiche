@@ -23,6 +23,14 @@
 #include <DiaBgfx3D/Resources/MaterialRegistry.h>
 #include <DiaBgfx/Resources/BgfxTextureHandle.h>
 
+#ifdef DIA_DEBUG
+#include <DiaMesh3DVisualDebugger/MeshBoundsDrawer.h>
+#include <DiaMesh3DVisualDebugger/MeshOriginDrawer.h>
+#include <DiaMesh3DVisualDebugger/MeshStatsDrawer.h>
+#include <DiaVisualDebugger/DebugLayerNames.h>
+#include "Modules/VisualDebuggerModule.h"
+#endif
+
 namespace CluicheTest {
 
 namespace {
@@ -40,6 +48,10 @@ const Dia::Core::StringCRC Mesh3DTestStageModule::kTypeId("Mesh3DTestStageModule
 Mesh3DTestStageModule::Mesh3DTestStageModule(const Dia::Core::StringCRC& instanceId)
     : TestStageModuleBase(instanceId)
 {}
+
+#ifdef DIA_DEBUG
+Mesh3DTestStageModule::~Mesh3DTestStageModule() = default;
+#endif
 
 bool Mesh3DTestStageModule::AreDependenciesReady()
 {
@@ -87,6 +99,23 @@ void Mesh3DTestStageModule::OnStart(Dia::Automation::AutomationService* service)
             const bool passed = GetFrameCount() >= 30;
             return { passed, passed ? "rendered 30 frames" : "waiting for 30 frames", static_cast<float>(GetFrameCount()) };
         });
+
+#ifdef DIA_DEBUG
+    if (auto* vd = mVisualDebuggerRef.Get())
+    {
+        auto& lm = vd->GetLayerManager();
+        mBoundsDrawer  = std::make_unique<Dia::Mesh3D::MeshBoundsDrawer>(mFrame, mMeshHandlerService.Get());
+        mOriginsDrawer = std::make_unique<Dia::Mesh3D::MeshOriginDrawer>(mFrame);
+        mStatsDrawer   = std::make_unique<Dia::Mesh3D::MeshStatsDrawer>(mFrame, mMeshHandlerService.Get(), lm);
+
+        static const Dia::Core::StringCRC kMesh3DStageTag("Mesh3DTestStage");
+        lm.Register(mBoundsDrawer.get(),  10, kMesh3DStageTag);
+        lm.Register(mOriginsDrawer.get(), 11, kMesh3DStageTag);
+        lm.Register(mStatsDrawer.get(),   12, kMesh3DStageTag);
+        mDebugDrawersRegistered = true;
+        DIA_LOG_INFO("Mesh3DTest", "Mesh3DTestStageModule: debug drawers registered");
+    }
+#endif
 }
 
 void Mesh3DTestStageModule::OnUpdate(float /*deltaTime*/)
@@ -115,11 +144,16 @@ void Mesh3DTestStageModule::OnUpdate(float /*deltaTime*/)
             auto* canvas3D = static_cast<Dia::Bgfx3D::Canvas3D*>(&mCanvasService.Get());
             Dia::Bgfx3D::MaterialRegistry* registry = canvas3D->GetMaterialRegistry();
 
-            const Dia::Bgfx3D::MaterialDescriptor& defaultMat = registry->GetDefault();
+            const Dia::Bgfx3D::MaterialDescriptor* default3d = registry->Resolve(Dia::Core::StringCRC("default_3d"));
+            if (!default3d)
+            {
+                DIA_LOG_WARNING("Mesh3DTest", "Mesh3DTestStageModule: default_3d material not registered yet — deferring avocado_material");
+                return;
+            }
 
             Dia::Bgfx3D::MaterialDescriptor avocadoMat;
             avocadoMat.id               = Dia::Core::StringCRC("avocado_material");
-            avocadoMat.program          = defaultMat.program;
+            avocadoMat.program          = default3d->program;
             avocadoMat.baseColourRGBA   = 0xFFFFFFFFu;
             avocadoMat.albedoTexture    = albedoReady
                 ? static_cast<Dia::Bgfx::BgfxTextureHandle*>(albedo)->GetBgfxHandleIdx()
@@ -184,6 +218,12 @@ void Mesh3DTestStageModule::OnUpdate(float /*deltaTime*/)
     avocadoCmd.layer                = 0;
     mFrame.RequestDrawMesh(avocadoCmd);
 
+#ifdef DIA_DEBUG
+    if (mBoundsDrawer  && mBoundsDrawer->IsEnabled())  mBoundsDrawer->Draw(mFrame);
+    if (mOriginsDrawer && mOriginsDrawer->IsEnabled()) mOriginsDrawer->Draw(mFrame);
+    if (mStatsDrawer   && mStatsDrawer->IsEnabled())   mStatsDrawer->Draw(mFrame);
+#endif
+
     mRenderOutput.Write(mFrame, Dia::Core::TimeAbsolute::Zero());
 
     // Pass after 30 frames
@@ -191,6 +231,26 @@ void Mesh3DTestStageModule::OnUpdate(float /*deltaTime*/)
     {
         ReportPassed();
     }
+}
+
+void Mesh3DTestStageModule::OnStop()
+{
+#ifdef DIA_DEBUG
+    if (mDebugDrawersRegistered)
+    {
+        if (auto* vd = mVisualDebuggerRef.Get())
+        {
+            auto& lm = vd->GetLayerManager();
+            lm.Unregister(Dia::Debug::LayerNames::kMesh3DBounds);
+            lm.Unregister(Dia::Debug::LayerNames::kMesh3DOrigins);
+            lm.Unregister(Dia::Debug::LayerNames::kMesh3DStats);
+        }
+    }
+    mBoundsDrawer.reset();
+    mOriginsDrawer.reset();
+    mStatsDrawer.reset();
+    mDebugDrawersRegistered = false;
+#endif
 }
 
 void Mesh3DTestStageModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)

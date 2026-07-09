@@ -10,7 +10,6 @@
 #include <DiaGraphics3D/Mesh3DFrameData.h>
 #include <DiaCore/DebugDraw/DebugLayerNames.h>
 #include <DiaCore/DebugDraw/DebugColourPalette.h>
-#include <DiaCore/DebugDraw/IDebugContext.h>
 #include <DiaMaths/Vector/Vector3D.h>
 #include <imgui.h>
 
@@ -18,10 +17,8 @@ namespace Dia { namespace Mesh3D {
 
 static constexpr float kCrossArmLen = 0.2f;
 
-MeshOriginDrawer::MeshOriginDrawer(const Dia::Graphics3D::Mesh3DFrameData& frameData,
-                                   const Dia::Core::IDebugContext& manager)
+MeshOriginDrawer::MeshOriginDrawer(const Dia::Graphics3D::Mesh3DFrameData& frameData)
     : mFrameData(frameData)
-    , mManager(manager)
 {}
 
 Dia::Core::StringCRC MeshOriginDrawer::GetLayerName() const
@@ -41,8 +38,6 @@ void MeshOriginDrawer::Draw(Dia::Core::IDebugDraw& draw)
 
     Dia::Graphics::DebugFrameData& dbg = static_cast<Dia::Graphics::DebugFrameData&>(draw);
 
-    const float armLen = kCrossArmLen * mManager.GetDebugScale();
-
     const auto& draws = mFrameData.GetMeshDraws();
     for (uint32_t i = 0; i < draws.Size(); ++i)
     {
@@ -61,9 +56,9 @@ void MeshOriginDrawer::Draw(Dia::Core::IDebugDraw& draw)
             colour = kPalette[idx];
         }
 
-        dbg.RequestDrawRay3D(worldPos, Dia::Maths::Vector3D(1.0f, 0.0f, 0.0f), armLen, colour);  // +X
-        dbg.RequestDrawRay3D(worldPos, Dia::Maths::Vector3D(0.0f, 1.0f, 0.0f), armLen, colour);  // +Y
-        dbg.RequestDrawRay3D(worldPos, Dia::Maths::Vector3D(0.0f, 0.0f, 1.0f), armLen, colour);  // +Z
+        dbg.RequestDrawRay3D(worldPos, Dia::Maths::Vector3D(1.0f, 0.0f, 0.0f), kCrossArmLen, colour);  // +X
+        dbg.RequestDrawRay3D(worldPos, Dia::Maths::Vector3D(0.0f, 1.0f, 0.0f), kCrossArmLen, colour);  // +Y
+        dbg.RequestDrawRay3D(worldPos, Dia::Maths::Vector3D(0.0f, 0.0f, 1.0f), kCrossArmLen, colour);  // +Z
     }
 }
 
