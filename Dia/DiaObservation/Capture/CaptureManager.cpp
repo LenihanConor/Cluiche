@@ -255,6 +255,28 @@ namespace Dia
                     if (mCapturesWrittenCounter) mCapturesWrittenCounter->Inc();
                     if (mPngSizeHistogram)       mPngSizeHistogram->Observe(static_cast<double>(pngSize));
                     mConsecutiveFailures = 0;
+
+                    // Also write a tag-named copy to the well-known run directory so
+                    // dia check render-diff can find it by stage name without digging
+                    // through session sub-directories.
+                    // Path: <sessionDir>/../../captures/run/<tag>.png
+                    char runDir[768];
+                    snprintf(runDir, sizeof(runDir), "%s/../../captures/run", mSession->GetSessionDirectory());
+                    CreateDirectoryA(runDir, nullptr); // ok if already exists
+                    char runPath[896];
+                    snprintf(runPath, sizeof(runPath), "%s/%s.png", runDir, capture.metadata.tag.AsChar());
+                    FILE* rf = nullptr;
+                    fopen_s(&rf, runPath, "wb");
+                    if (rf != nullptr)
+                    {
+                        fwrite(pngData, 1, pngSize, rf);
+                        fclose(rf);
+                        DIA_LOG_INFO("Capture", "Wrote run capture '%s.png'", capture.metadata.tag.AsChar());
+                    }
+                    else
+                    {
+                        DIA_LOG_WARNING("Capture", "Could not write run capture '%s'", runPath);
+                    }
                 }
                 else
                 {
