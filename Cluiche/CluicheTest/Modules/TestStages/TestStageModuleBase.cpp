@@ -6,6 +6,8 @@
 #include <DiaStreams/ServiceStreamReader.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Capture/DiaCapture.h>
+#include <DiaCaptureTest/MetricsWriter.h>
+#include <filesystem>
 
 // Full instantiation lives here — header only forward-declares.
 template class Dia::ApplicationFlow::ServiceStreamReader<Dia::Automation::AutomationService>;
@@ -145,6 +147,25 @@ void TestStageModuleBase::FireCapture()
         DIA_CAPTURE(GetStageName(), "passed");
     else
         DIA_CAPTURE(GetStageName(), "failed");
+
+    WriteMetrics(mCaptureWasPassed);
+}
+
+void TestStageModuleBase::WriteMetrics(bool passed)
+{
+    const char* tag = GetStageName().AsChar();
+
+    char path[512];
+    snprintf(path, sizeof(path), "out/CluicheTest/captures/metrics/%s_metrics.json", tag);
+
+    std::filesystem::create_directories(std::filesystem::path(path).parent_path());
+
+    Dia::CaptureTest::MetricEntry entries[3];
+    entries[0] = { "frame_count", static_cast<float>(mFrameCount) };
+    entries[1] = { "passed",      passed ? 1.0f : 0.0f };
+    entries[2] = { "entry_count", static_cast<float>(mEntryCount) };
+
+    Dia::CaptureTest::MetricsWriter::Write(path, tag, mFrameCount, entries, 3);
 }
 
 Dia::Automation::AutomationService* TestStageModuleBase::GetAutomationService()

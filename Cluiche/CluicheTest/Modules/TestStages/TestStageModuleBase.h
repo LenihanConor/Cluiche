@@ -44,6 +44,7 @@ protected:
 
 private:
     void FireCapture();
+    void WriteMetrics(bool passed);
 
     // Heap-allocated to avoid pulling AutomationService.h (and Application.h) into
     // every TU that includes this header. Constructed in TestStageModuleBase().

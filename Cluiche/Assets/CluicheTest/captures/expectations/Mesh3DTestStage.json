@@ -1,0 +1,7 @@
+{
+  "tag": "Mesh3DTestStage",
+  "rules": [
+    { "id": "frame_not_black", "type": "brightness", "region": [1,1], "op": ">", "value": 0.02 },
+    { "id": "frame_count", "type": "metric", "key": "frame_count", "op": ">", "value": 0 }
+  ]
+}

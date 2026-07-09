@@ -266,6 +266,9 @@ External/SFML/
 # ImGui source (restored via DiaEnv deps)
 External/imgui/
 
+# PMD static analysis tool (restored via DiaEnv deps)
+External/pmd/
+
 # SDL3 local build artifacts (source is tracked, build output is not)
 External/SDL3/_build*/
 External/SDL3/*.log
@@ -283,7 +286,13 @@ Dia/DiaInput/Events/remove_clone.py
 
 # Generated non-binary output (PD-009)
 Cluiche/out/
+# Render capture output (run captures, reports, metrics — not reference PNGs)
+Cluiche/out/CluicheTest/captures/
 !Cluiche/out/check/baseline.sarif
+!Cluiche/out/check/clones-baseline.xml
+Cluiche/out/check/clones.xml
+Cluiche/out/check/clones.sarif
+Cluiche/out/check/cpd-filelist.txt
 
 # Python bytecode
 *.pyc
