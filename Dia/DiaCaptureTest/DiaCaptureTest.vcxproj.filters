@@ -17,12 +17,18 @@
     <ClInclude Include="CaptureReport.h">
       <Filter>Headers</Filter>
     </ClInclude>
+    <ClInclude Include="MetricsWriter.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FrameDiff.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="CaptureReport.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="MetricsWriter.cpp">
       <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>
