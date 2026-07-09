@@ -24,9 +24,13 @@ namespace Dia
 {
     namespace Bgfx3D
     {
-        static constexpr unsigned short kShadowViewId  = 1;
-        static constexpr unsigned short kMeshViewId    = 2;
-        static constexpr unsigned short kDebug3DViewId = 3;
+        // View ordering (low ID = renders first):
+        //   0=bg-clear  1=shadow  2=mesh  3=debug3D  4=entity  5=debug2D  6=UI  7=ImGui
+        // Canvas base class owns views 4–7; Canvas3D owns 0–3.
+        static constexpr unsigned short kBackgroundClearViewId = 0;
+        static constexpr unsigned short kShadowViewId          = 1;
+        static constexpr unsigned short kMeshViewId            = 2;
+        static constexpr unsigned short kDebug3DViewId         = 3;
 
         Canvas3D::Canvas3D()
             : Dia::Bgfx::Canvas()
@@ -91,6 +95,20 @@ namespace Dia
             Dia::Bgfx::Canvas::StartFrame(frame);
             if (!m3DInitialised && IsInitialised())
                 Init3DPrograms();
+
+            if (IsInitialised())
+            {
+                // bg-clear view: clears colour+depth so 3D content composites onto a clean slate.
+                const uint16_t w = static_cast<uint16_t>(GetCanvasSize().X() > 0 ? GetCanvasSize().X() : 1280);
+                const uint16_t h = static_cast<uint16_t>(GetCanvasSize().Y() > 0 ? GetCanvasSize().Y() : 720);
+                bgfx::setViewRect(kBackgroundClearViewId, 0, 0, w, h);
+                bgfx::setViewClear(kBackgroundClearViewId, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x303030FF, 1.0f, 0);
+                bgfx::touch(kBackgroundClearViewId);
+
+                // Entity view (kEntityViewId, now view 4) must not clear again or it
+                // would wipe 3D geometry. Canvas base DeferredInit sets it once; reset it here.
+                bgfx::setViewClear(kEntityViewId, BGFX_CLEAR_NONE);
+            }
         }
 
         void Canvas3D::SetMetrics(Dia::Observation::Metric::Gauge* meshDrawCalls,
@@ -196,9 +214,8 @@ namespace Dia
                 if (w == 0) w = 1280;
                 if (h == 0) h = 720;
                 bgfx::setViewRect(mMeshViewId, 0, 0, w, h);
-                bgfx::setViewClear(mMeshViewId,
-                                   BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH,
-                                   0x303030FF, 1.0f, 0);
+                // Color already cleared by kBackgroundClearViewId (view 0). Only reset depth.
+                bgfx::setViewClear(mMeshViewId, BGFX_CLEAR_DEPTH, 0x303030FF, 1.0f, 0);
             }
 
             // 1. Shadow pass

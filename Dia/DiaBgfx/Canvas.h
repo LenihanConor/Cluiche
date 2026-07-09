@@ -72,6 +72,13 @@ namespace Dia
             RendererType                 GetRendererType() const { return mRendererType; }
             const Dia::Maths::Vector2D&  GetCanvasSize()   const { return mSize; }
 
+            // View IDs for 2D passes. Canvas3D (when present) owns 0–3 and places
+            // all 3D rendering before these so ImGui at kImGuiViewId renders last.
+            static constexpr unsigned short kEntityViewId = 4;
+            static constexpr unsigned short kDebugViewId  = 5;
+            static constexpr unsigned short kUIViewId     = 6;
+            static constexpr unsigned short kImGuiViewId  = 7;
+
         private:
             void DeferredInit();
             void PropagateCanvasSize();
@@ -83,11 +90,6 @@ namespace Dia
             bool                      mConfigured;
 
             const char*               mShaderRoot;
-
-            static constexpr unsigned short kEntityViewId = 0;
-            static constexpr unsigned short kDebugViewId  = 1;
-            static constexpr unsigned short kUIViewId     = 2;
-            static constexpr unsigned short kImGuiViewId  = 3;
 
             ShaderProgram*     mSpriteProgram;    // owned
             ShaderProgram*     mDebugProgram;     // owned

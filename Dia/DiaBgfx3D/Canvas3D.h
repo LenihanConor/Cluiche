@@ -45,7 +45,7 @@ namespace Dia
         private:
             void Init3DPrograms();
 
-            // View IDs: 1=shadow  2=mesh  3=debug3d
+            // View IDs: 0=bg-clear  1=shadow  2=mesh  3=debug3D  (4–7 Canvas base: entity/debug2D/UI/ImGui)
             unsigned short    mMeshViewId;
             unsigned short    mShadowViewId;
             unsigned short    mDebug3DViewId;
