@@ -218,6 +218,10 @@ private:
 | diabgfx3d-3d-renderers | `MeshRenderer`, `SkinnedMeshRenderer`, `ShadowRenderer`; six `.sc` shader files; lambert + shadow fragment shader | [3d-renderers.md](3d-renderers.md) | Approved |
 | diabgfx3d-canvas3d | `Canvas3D : DiaBgfx::Canvas`; full 2D+3D pass dispatch; `DiaBgfx3D.vcxproj`; CluicheTest 3D demo; **Phase 2 ship gate (RB-002)** | [canvas3d.md](canvas3d.md) | Approved |
 
+| diabgfx3d-mesh-texture-pipeline | Albedo + normal-map texture sampling in `MeshRenderer`; `MaterialDescriptor` texture handles; `TextureHandler` loading via asset catalogue; TBN shader path; moving light in `Mesh3DTestStage` | [mesh-texture-pipeline.md](../../../features/dia/diabgfx3d/mesh-texture-pipeline.md) | Approved |
+| diabgfx3d-pbr-shading | GGX microfacet BRDF replacing Lambert; ORM texture slot (sampler 3); `u_cameraPos` + `u_pbrParams` uniforms; `MaterialDescriptor` metallic/roughness scalars; `Avocado_roughnessMetallic.png` sourced | [pbr-shading.md](../../../features/dia/diabgfx3d/pbr-shading.md) | Done |
+| diabgfx3d-multiple-directional-lights | Expand shader + renderer from 1 to 8 simultaneous directional lights; array uniforms; zero-padded inactive slots; shadows remain on `dirLights[0]` only | [multiple-directional-lights.md](../../../features/dia/diabgfx3d/multiple-directional-lights.md) | Approved |
+
 *Additional features (instanced rendering, CSM, point-light shadows, compute skinning) will be added as separate feature specs when needed.*
 
 ---

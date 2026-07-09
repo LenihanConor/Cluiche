@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/features/dia/diabgfx3d/pbr-shading.md
-**Status:** In Progress
+**Status:** Done
 
 ## Implementation Patterns
 
