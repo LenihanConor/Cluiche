@@ -38,6 +38,10 @@ namespace Dia
             , mSNormalMap(bgfx::kInvalidHandle)
             , mFlatNormalTexture(0xFFFFu)
             , mWhiteTexture(0xFFFFu)
+            , mUCameraPos(bgfx::kInvalidHandle)
+            , mUPbrParams(bgfx::kInvalidHandle)
+            , mSOrm(bgfx::kInvalidHandle)
+            , mDefaultOrmTexture(0xFFFFu)
         {
         }
 
@@ -58,6 +62,16 @@ namespace Dia
             destroy(mSShadowMap);
             destroy(mSAlbedo);
             destroy(mSNormalMap);
+            destroy(mUCameraPos);
+            destroy(mUPbrParams);
+            destroy(mSOrm);
+
+            if (mDefaultOrmTexture != 0xFFFFu)
+            {
+                bgfx::TextureHandle h;
+                h.idx = mDefaultOrmTexture;
+                bgfx::destroy(h);
+            }
 
             if (mFlatNormalTexture != 0xFFFFu)
             {
@@ -84,6 +98,16 @@ namespace Dia
             mSShadowMap      = bgfx::createUniform("s_shadowMap",             bgfx::UniformType::Sampler).idx;
             mSAlbedo   = bgfx::createUniform("s_albedo",    bgfx::UniformType::Sampler).idx;
             mSNormalMap = bgfx::createUniform("s_normalMap", bgfx::UniformType::Sampler).idx;
+            mUCameraPos  = bgfx::createUniform("u_cameraPos",  bgfx::UniformType::Vec4).idx;
+            mUPbrParams  = bgfx::createUniform("u_pbrParams",  bgfx::UniformType::Vec4).idx;
+            mSOrm        = bgfx::createUniform("s_orm",        bgfx::UniformType::Sampler).idx;
+
+            // 1×1 default ORM: G=128 (roughness≈0.5), B=0 (metallic=0), R=0 (occlusion unused)
+            const uint8_t defaultOrmPixels[4] = { 0, 128, 0, 255 };
+            bgfx::TextureHandle defaultOrmTex = bgfx::createTexture2D(1, 1, false, 1,
+                bgfx::TextureFormat::RGBA8, 0,
+                bgfx::copy(defaultOrmPixels, sizeof(defaultOrmPixels)));
+            mDefaultOrmTexture = bgfx::isValid(defaultOrmTex) ? defaultOrmTex.idx : 0xFFFFu;
 
             // 1×1 flat-normal default: tangent-space "no perturbation" = (128,128,255,255) RGBA8
             const uint8_t flatNormalPixels[4] = { 128, 128, 255, 255 };
@@ -119,8 +143,16 @@ namespace Dia
         {
             // Look up the mesh asset
             Dia::Mesh3D::Mesh3DAsset* asset = mMeshHandler->LookupMesh(cmd.meshId);
-            if (!asset || !asset->IsReady())
+            if (!asset)
+            {
+                DIA_LOG_WARNING("DiaBgfx3D", "MeshRenderer: LookupMesh returned null for id=0x%08X", cmd.meshId.Value());
                 return;
+            }
+            if (!asset->IsReady())
+            {
+                DIA_LOG_WARNING("DiaBgfx3D", "MeshRenderer: asset 0x%08X not ready (state=%d)", cmd.meshId.Value(), static_cast<int>(asset->GetState()));
+                return;
+            }
 
             // Get GPU buffers
             const GpuMesh* gpu = mCache->GetOrUpload(*asset);
@@ -159,9 +191,10 @@ namespace Dia
                 bgfx::setTexture(2, samplerHandle, shadowTex);
             }
 
+            // TODO: verify winding order matches glTF (CCW) vs procedural meshes (CW).
+            // Culling disabled temporarily to diagnose invisible avocado.
             const uint64_t state = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A
-                                 | BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LESS
-                                 | BGFX_STATE_CULL_CW;
+                                 | BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LESS;
 
             bgfx::VertexBufferHandle vbh{ gpu->vertexBuffer };
             bgfx::IndexBufferHandle  ibh{ gpu->indexBuffer };
@@ -181,7 +214,7 @@ namespace Dia
 
                 if (!mat->program || !mat->program->IsValid())
                 {
-                    DIA_LOG_DEBUG("DiaBgfx3D", "MeshRenderer: submesh %u skipped — material has no valid program", si);
+                    DIA_LOG_WARNING("DiaBgfx3D", "MeshRenderer: submesh %u skipped — material has no valid program (matId=0x%08X)", si, mat->id.Value());
                     continue;
                 }
                 bgfx::ProgramHandle prog{ mat->program->GetProgramHandle() };

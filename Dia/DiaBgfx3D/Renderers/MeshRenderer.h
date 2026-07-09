@@ -50,6 +50,10 @@ namespace Dia
             unsigned short  mSNormalMap;       // bgfx::UniformHandle::idx (sampler)
             unsigned short  mFlatNormalTexture; // bgfx::TextureHandle::idx (1×1 flat-normal default)
             unsigned short  mWhiteTexture;      // bgfx::TextureHandle::idx (1×1 white albedo default)
+            unsigned short  mUCameraPos;        // bgfx::UniformHandle::idx — u_cameraPos vec4
+            unsigned short  mUPbrParams;        // bgfx::UniformHandle::idx — u_pbrParams vec4
+            unsigned short  mSOrm;              // bgfx::UniformHandle::idx (sampler) — s_orm
+            unsigned short  mDefaultOrmTexture; // bgfx::TextureHandle::idx — 1×1 ORM default
         };
 
     } // namespace Bgfx3D
