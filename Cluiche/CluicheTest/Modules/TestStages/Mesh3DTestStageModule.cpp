@@ -27,6 +27,7 @@
 #include <DiaMesh3DVisualDebugger/MeshBoundsDrawer.h>
 #include <DiaMesh3DVisualDebugger/MeshOriginDrawer.h>
 #include <DiaMesh3DVisualDebugger/MeshStatsDrawer.h>
+#include <DiaLighting3DVisualDebugger/LightWidgetsDrawer.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include "Modules/VisualDebuggerModule.h"
 #endif
@@ -104,17 +105,16 @@ void Mesh3DTestStageModule::OnStart(Dia::Automation::AutomationService* service)
     if (auto* vd = mVisualDebuggerRef.Get())
     {
         auto& lm = vd->GetLayerManager();
-        mBoundsDrawer  = std::make_unique<Dia::Mesh3D::MeshBoundsDrawer>(mFrame, mMeshHandlerService.Get());
-        mOriginsDrawer = std::make_unique<Dia::Mesh3D::MeshOriginDrawer>(mFrame);
-        mStatsDrawer   = std::make_unique<Dia::Mesh3D::MeshStatsDrawer>(mFrame, mMeshHandlerService.Get(), lm);
+        mBoundsDrawer       = std::make_unique<Dia::Mesh3D::MeshBoundsDrawer>(mFrame, mMeshHandlerService.Get());
+        mOriginsDrawer      = std::make_unique<Dia::Mesh3D::MeshOriginDrawer>(mFrame);
+        mStatsDrawer        = std::make_unique<Dia::Mesh3D::MeshStatsDrawer>(mFrame, mMeshHandlerService.Get(), lm);
+        mLightWidgetsDrawer = std::make_unique<Dia::Lighting3D::LightWidgetsDrawer>(mLightRegistry);
 
         static const Dia::Core::StringCRC kMesh3DStageTag("Mesh3DTestStage");
-        lm.RegisterWithoutDraw(mBoundsDrawer.get(),  10, kMesh3DStageTag);
-        lm.RegisterWithoutDraw(mOriginsDrawer.get(), 11, kMesh3DStageTag);
-        lm.RegisterWithoutDraw(mStatsDrawer.get(),   12, kMesh3DStageTag);
-        // RegisterWithoutDraw: console panel, IsEnabled() toggling, and ImGui work normally.
-        // Draw() is driven directly in OnUpdate with the live FrameData3D — the 2D frame
-        // written by VisualDebuggerModule::DoUpdate has no 3D render path.
+        lm.Register(mBoundsDrawer.get(),       10, kMesh3DStageTag);
+        lm.Register(mOriginsDrawer.get(),      11, kMesh3DStageTag);
+        lm.Register(mStatsDrawer.get(),        12, kMesh3DStageTag);
+        lm.Register(mLightWidgetsDrawer.get(), 13, kMesh3DStageTag);
         mDebugDrawersRegistered = true;
         DIA_LOG_INFO("Mesh3DTest", "Mesh3DTestStageModule: debug drawers registered");
     }
@@ -201,6 +201,21 @@ void Mesh3DTestStageModule::OnUpdate(float /*deltaTime*/)
     light.intensity = 1.0f;
     mFrame.AddDirectionalLight(light);
 
+#ifdef DIA_DEBUG
+    {
+        static const Dia::Core::StringCRC kSunId("sun");
+        Dia::Lighting3D::DirectionalLight3D sun;
+        sun.direction = light.direction;
+        sun.colour    = light.colour;
+        sun.intensity = light.intensity;
+        sun.enabled   = true;
+        if (!mLightRegistry.Has(kSunId))
+            mLightRegistry.RegisterDirectional(kSunId, sun);
+        else
+            mLightRegistry.GetDirectional(kSunId) = sun;
+    }
+#endif
+
     // Unit cube at (-1.5, 0, 0)
     Dia::Graphics3D::Mesh3DDrawCommand cmd;
     cmd.meshId               = Dia::Core::StringCRC("unit_cube");
@@ -222,9 +237,10 @@ void Mesh3DTestStageModule::OnUpdate(float /*deltaTime*/)
     mFrame.RequestDrawMesh(avocadoCmd);
 
 #ifdef DIA_DEBUG
-    if (mBoundsDrawer  && mBoundsDrawer->IsEnabled())  mBoundsDrawer->Draw(mFrame);
-    if (mOriginsDrawer && mOriginsDrawer->IsEnabled()) mOriginsDrawer->Draw(mFrame);
-    if (mStatsDrawer   && mStatsDrawer->IsEnabled())   mStatsDrawer->Draw(mFrame);
+    if (mBoundsDrawer       && mBoundsDrawer->IsEnabled())       mBoundsDrawer->Draw(mFrame);
+    if (mOriginsDrawer      && mOriginsDrawer->IsEnabled())      mOriginsDrawer->Draw(mFrame);
+    if (mStatsDrawer        && mStatsDrawer->IsEnabled())        mStatsDrawer->Draw(mFrame);
+    if (mLightWidgetsDrawer && mLightWidgetsDrawer->IsEnabled()) mLightWidgetsDrawer->Draw(mFrame);
 #endif
 
     mRenderOutput.Write(mFrame, Dia::Core::TimeAbsolute::Zero());
@@ -247,11 +263,13 @@ void Mesh3DTestStageModule::OnStop()
             lm.Unregister(Dia::Debug::LayerNames::kMesh3DBounds);
             lm.Unregister(Dia::Debug::LayerNames::kMesh3DOrigins);
             lm.Unregister(Dia::Debug::LayerNames::kMesh3DStats);
+            lm.Unregister(Dia::Debug::LayerNames::kLightWidgets);
         }
     }
     mBoundsDrawer.reset();
     mOriginsDrawer.reset();
     mStatsDrawer.reset();
+    mLightWidgetsDrawer.reset();
     mDebugDrawersRegistered = false;
 #endif
 }

@@ -12,12 +12,14 @@
 #ifdef DIA_DEBUG
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include "Modules/VisualDebuggerModule.h"
+#include <DiaLighting3D/Registry/LightRegistry3D.h>
 #include <memory>
 #endif
 
 namespace Dia { namespace Mesh3D { class Mesh3DAsset; } }
 #ifdef DIA_DEBUG
-namespace Dia { namespace Mesh3D { class MeshBoundsDrawer; class MeshOriginDrawer; class MeshStatsDrawer; } }
+namespace Dia { namespace Mesh3D      { class MeshBoundsDrawer; class MeshOriginDrawer; class MeshStatsDrawer; } }
+namespace Dia { namespace Lighting3D  { class LightWidgetsDrawer; } }
 #endif
 
 namespace CluicheTest {
@@ -56,9 +58,11 @@ private:
 #ifdef DIA_DEBUG
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::VisualDebuggerModule> mVisualDebuggerRef{this};
 
-    std::unique_ptr<Dia::Mesh3D::MeshBoundsDrawer>  mBoundsDrawer;
-    std::unique_ptr<Dia::Mesh3D::MeshOriginDrawer>  mOriginsDrawer;
-    std::unique_ptr<Dia::Mesh3D::MeshStatsDrawer>   mStatsDrawer;
+    Dia::Lighting3D::LightRegistry3D                        mLightRegistry;
+    std::unique_ptr<Dia::Mesh3D::MeshBoundsDrawer>          mBoundsDrawer;
+    std::unique_ptr<Dia::Mesh3D::MeshOriginDrawer>          mOriginsDrawer;
+    std::unique_ptr<Dia::Mesh3D::MeshStatsDrawer>           mStatsDrawer;
+    std::unique_ptr<Dia::Lighting3D::LightWidgetsDrawer>    mLightWidgetsDrawer;
     bool mDebugDrawersRegistered = false;
 #endif
 };

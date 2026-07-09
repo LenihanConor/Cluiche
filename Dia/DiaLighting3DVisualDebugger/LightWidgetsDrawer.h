@@ -14,8 +14,7 @@
 #include <DiaCore/DebugDraw/IVisualDebugger.h>
 #include <DiaCore/CRC/StringCRC.h>
 
-namespace Dia { namespace Lighting3D { class LightRegistry3D;  } }
-namespace Dia { namespace Core       { class IDebugContext; } }
+namespace Dia { namespace Lighting3D { class LightRegistry3D; } }
 
 namespace Dia { namespace Lighting3D {
 
@@ -29,25 +28,25 @@ namespace Dia { namespace Lighting3D {
 class LightWidgetsDrawer : public Dia::Debug::IVisualDebugger
 {
 public:
-    LightWidgetsDrawer(const LightRegistry3D&               registry,
-                       const Dia::Core::IDebugContext& manager);
+    explicit LightWidgetsDrawer(const LightRegistry3D& registry);
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw    (Dia::Core::IDebugDraw& draw) override;
     void DrawImGui() override;
 
-    void SetShowPointLights      (bool show) { mShowPointLights       = show; }
-    void SetShowSpotLights       (bool show) { mShowSpotLights        = show; }
-    void SetShowDirectionalLights(bool show) { mShowDirectionalLights = show; }
+    void SetShowPointLights      (bool show)  { mShowPointLights       = show; }
+    void SetShowSpotLights       (bool show)  { mShowSpotLights        = show; }
+    void SetShowDirectionalLights(bool show)  { mShowDirectionalLights = show; }
+    void SetDirLightAnchorHeight (float h)    { mDirLightAnchorHeight  = h; }
 
 private:
-    const LightRegistry3D&               mRegistry;
-    const Dia::Core::IDebugContext& mManager;
+    const LightRegistry3D& mRegistry;
 
     bool  mShowPointLights       = true;
     bool  mShowSpotLights        = true;
     bool  mShowDirectionalLights = true;
     float mWidgetScale           = 1.0f;
+    float mDirLightAnchorHeight  = 3.0f;
 };
 
 } } // namespace Dia::Lighting3D

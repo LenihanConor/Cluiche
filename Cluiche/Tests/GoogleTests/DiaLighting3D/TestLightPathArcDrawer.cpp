@@ -49,8 +49,7 @@ namespace
 TEST(LightPathArcDrawer, LayerName_IsLightPathArc)
 {
     Dia::Lighting3D::Testing::LightBuilder3D builder;
-    Dia::Debug::DebugLayerManager            manager;
-    LightPathArcDrawer                       drawer(builder.Registry(), manager);
+    LightPathArcDrawer                       drawer(builder.Registry());
 
     EXPECT_EQ(drawer.GetLayerName(), Dia::Debug::LayerNames::kLightPathArc);
 }
@@ -70,8 +69,7 @@ TEST(LightPathArcDrawer, Draw_LightWithPath_EmitsArcLines)
     LightPathBehaviour3D behaviour(stored, cfg);
     registry.AttachBehaviour(id, &behaviour);
 
-    Dia::Debug::DebugLayerManager manager;
-    LightPathArcDrawer            drawer(registry, manager);
+    LightPathArcDrawer drawer(registry);
 
     Dia::Graphics::FrameData frameData;
     drawer.Draw(frameData);
@@ -86,8 +84,7 @@ TEST(LightPathArcDrawer, Draw_LightNoBehaviour_NoPrimitives)
     Dia::Lighting3D::Testing::LightBuilder3D builder;
     builder.WithSpot("spot0").WithDirectional("dir0");
 
-    Dia::Debug::DebugLayerManager manager;
-    LightPathArcDrawer            drawer(builder.Registry(), manager);
+    LightPathArcDrawer drawer(builder.Registry());
 
     Dia::Graphics::FrameData frameData;
     drawer.Draw(frameData);
@@ -109,8 +106,7 @@ TEST(LightPathArcDrawer, Draw_ArcColour_PointLight_IsHealthy)
     LightPathBehaviour3D behaviour(stored, cfg);
     registry.AttachBehaviour(id, &behaviour);
 
-    Dia::Debug::DebugLayerManager manager;
-    LightPathArcDrawer            drawer(registry, manager);
+    LightPathArcDrawer drawer(registry);
 
     Dia::Graphics::FrameData frameData;
     drawer.Draw(frameData);
@@ -135,8 +131,7 @@ TEST(LightPathArcDrawer, Draw_ArcSamples_MatchesSliderValue)
     LightPathBehaviour3D behaviour(stored, cfg);
     registry.AttachBehaviour(id, &behaviour);
 
-    Dia::Debug::DebugLayerManager manager;
-    LightPathArcDrawer            drawer(registry, manager);
+    LightPathArcDrawer drawer(registry);
     drawer.SetArcSamples(16);
 
     Dia::Graphics::FrameData frameData;
@@ -159,8 +154,7 @@ TEST(LightPathArcDrawer, Draw_Disabled_NoPrimitives)
     LightPathBehaviour3D behaviour(stored, cfg);
     registry.AttachBehaviour(id, &behaviour);
 
-    Dia::Debug::DebugLayerManager manager;
-    LightPathArcDrawer            drawer(registry, manager);
+    LightPathArcDrawer drawer(registry);
     drawer.SetEnabled(false);
 
     Dia::Graphics::FrameData frameData;
@@ -180,8 +174,7 @@ TEST(LightPathArcDrawer, Draw_EmptyRegistry_NoPrimitives)
     Dia::Lighting3D::Testing::LightBuilder3D builder;
     // No lights registered
 
-    Dia::Debug::DebugLayerManager manager;
-    LightPathArcDrawer            drawer(builder.Registry(), manager);
+    LightPathArcDrawer drawer(builder.Registry());
 
     Dia::Graphics::FrameData frameData;
     drawer.Draw(frameData);
@@ -242,8 +235,7 @@ TEST(LightPathArcDrawer, Draw_ArcColour_SpotLight_IsHealthy)
     LightPathBehaviour3D behaviour(stored, cfg);
     registry.AttachBehaviour(id, &behaviour);
 
-    Dia::Debug::DebugLayerManager manager;
-    LightPathArcDrawer            drawer(registry, manager);
+    LightPathArcDrawer drawer(registry);
     drawer.SetArcSamples(1);
 
     Dia::Graphics::FrameData frameData;
@@ -268,8 +260,7 @@ TEST(LightPathArcDrawer, Draw_ArcSamples_MinBoundary)
     LightPathBehaviour3D behaviour(stored, cfg);
     registry.AttachBehaviour(id, &behaviour);
 
-    Dia::Debug::DebugLayerManager manager;
-    LightPathArcDrawer            drawer(registry, manager);
+    LightPathArcDrawer drawer(registry);
     drawer.SetArcSamples(8);
 
     Dia::Graphics::FrameData frameData;
@@ -292,8 +283,7 @@ TEST(LightPathArcDrawer, Draw_ArcSamples_MaxBoundary)
     LightPathBehaviour3D behaviour(stored, cfg);
     registry.AttachBehaviour(id, &behaviour);
 
-    Dia::Debug::DebugLayerManager manager;
-    LightPathArcDrawer            drawer(registry, manager);
+    LightPathArcDrawer drawer(registry);
     drawer.SetArcSamples(64);
 
     Dia::Graphics::FrameData frameData;

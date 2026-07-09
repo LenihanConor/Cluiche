@@ -13,8 +13,6 @@
 #include <DiaLighting3D/Registry/LightRegistry3D.h>
 #include <DiaCore/DebugDraw/DebugLayerNames.h>
 #include <DiaCore/DebugDraw/DebugColourPalette.h>
-#include <DiaCore/DebugDraw/IDebugContext.h>
-
 #include <imgui.h>
 
 namespace Dia { namespace Lighting3D {
@@ -24,10 +22,8 @@ static constexpr float kBaseSpotRadius   = 0.15f;
 static constexpr float kBaseSpotArrowLen = 0.5f;
 static constexpr float kBaseDirArrowLen  = 2.0f;
 
-LightWidgetsDrawer::LightWidgetsDrawer(const LightRegistry3D&               registry,
-                                       const Dia::Core::IDebugContext& manager)
+LightWidgetsDrawer::LightWidgetsDrawer(const LightRegistry3D& registry)
     : mRegistry(registry)
-    , mManager(manager)
 {}
 
 Dia::Core::StringCRC LightWidgetsDrawer::GetLayerName() const
@@ -39,7 +35,7 @@ void LightWidgetsDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
     Dia::Graphics::DebugFrameData& dbg = static_cast<Dia::Graphics::DebugFrameData&>(draw);
 
-    const float scale = mManager.GetDebugScale() * mWidgetScale;
+    const float scale = mWidgetScale;
 
     if (mShowPointLights)
     {
@@ -78,7 +74,7 @@ void LightWidgetsDrawer::Draw(Dia::Core::IDebugDraw& draw)
 
     if (mShowDirectionalLights)
     {
-        static const Dia::Maths::Vector3D kWorldOrigin(0.0f, 0.0f, 0.0f);
+        const Dia::Maths::Vector3D anchor(0.0f, mDirLightAnchorHeight, 0.0f);
 
         const unsigned int count = mRegistry.GetDirectionalCount();
         for (unsigned int i = 0; i < count; ++i)
@@ -87,7 +83,10 @@ void LightWidgetsDrawer::Draw(Dia::Core::IDebugDraw& draw)
             if (!light.enabled)
                 continue;
 
-            dbg.RequestDrawRay3D(kWorldOrigin,
+            dbg.RequestDrawSphere3D(anchor,
+                                    kBasePointRadius * scale,
+                                    Dia::Debug::DebugColourPalette::kGoal);
+            dbg.RequestDrawRay3D(anchor,
                                  light.direction,
                                  kBaseDirArrowLen * scale,
                                  Dia::Debug::DebugColourPalette::kGoal);
@@ -97,10 +96,11 @@ void LightWidgetsDrawer::Draw(Dia::Core::IDebugDraw& draw)
 
 void LightWidgetsDrawer::DrawImGui()
 {
-    ImGui::Checkbox("Point lights",       &mShowPointLights);
-    ImGui::Checkbox("Spot lights",        &mShowSpotLights);
-    ImGui::Checkbox("Directional lights", &mShowDirectionalLights);
-    ImGui::SliderFloat("Widget scale",    &mWidgetScale, 0.1f, 5.0f);
+    ImGui::Checkbox("Point lights",          &mShowPointLights);
+    ImGui::Checkbox("Spot lights",           &mShowSpotLights);
+    ImGui::Checkbox("Directional lights",    &mShowDirectionalLights);
+    ImGui::SliderFloat("Widget scale",       &mWidgetScale,          0.1f, 5.0f);
+    ImGui::SliderFloat("Dir anchor height",  &mDirLightAnchorHeight, 0.0f, 10.0f);
 }
 
 } } // namespace Dia::Lighting3D
