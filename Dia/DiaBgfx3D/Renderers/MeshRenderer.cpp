@@ -28,8 +28,8 @@ namespace Dia
             , mCache(cache)
             , mMaterials(materials)
             , mMeshHandler(meshHandler)
-            , mUDirLightDir(bgfx::kInvalidHandle)
-            , mUDirLightColour(bgfx::kInvalidHandle)
+            , mUDirLightDir(bgfx::kInvalidHandle)   // array[kMaxDirLights]
+            , mUDirLightColour(bgfx::kInvalidHandle) // array[kMaxDirLights]
             , mUAmbient(bgfx::kInvalidHandle)
             , mUBaseColour(bgfx::kInvalidHandle)
             , mULightViewProj(bgfx::kInvalidHandle)
@@ -90,8 +90,8 @@ namespace Dia
 
         void MeshRenderer::InitUniforms()
         {
-            mUDirLightDir    = bgfx::createUniform("u_directionalLightDir",    bgfx::UniformType::Vec4).idx;
-            mUDirLightColour = bgfx::createUniform("u_directionalLightColour", bgfx::UniformType::Vec4).idx;
+            mUDirLightDir    = bgfx::createUniform("u_dirLightDir",    bgfx::UniformType::Vec4, MeshPassLighting::kMaxDirLights).idx;
+            mUDirLightColour = bgfx::createUniform("u_dirLightColour", bgfx::UniformType::Vec4, MeshPassLighting::kMaxDirLights).idx;
             mUAmbient        = bgfx::createUniform("u_ambient",                bgfx::UniformType::Vec4).idx;
             mUBaseColour     = bgfx::createUniform("u_baseColour",             bgfx::UniformType::Vec4).idx;
             mULightViewProj  = bgfx::createUniform("u_lightViewProj",         bgfx::UniformType::Mat4).idx;
@@ -169,10 +169,10 @@ namespace Dia
                 bgfx::UniformHandle h;
 
                 h.idx = mUDirLightDir;
-                bgfx::setUniform(h, lighting.dirLightDir);
+                bgfx::setUniform(h, lighting.dirLightDir, MeshPassLighting::kMaxDirLights);
 
                 h.idx = mUDirLightColour;
-                bgfx::setUniform(h, lighting.dirLightColour);
+                bgfx::setUniform(h, lighting.dirLightColour, MeshPassLighting::kMaxDirLights);
 
                 h.idx = mUAmbient;
                 bgfx::setUniform(h, lighting.ambient);

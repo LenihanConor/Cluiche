@@ -8,6 +8,7 @@
 #include <DiaMesh3D/Mesh3DAssetHandler.h>
 #include <DiaAssetRuntime/Handlers/TextureHandler.h>
 #include <DiaGraphics/Interface/ICanvas.h>
+#include <DiaGeometry3D/Shapes/Spline3D.h>
 
 #ifdef DIA_DEBUG
 #include <DiaApplicationFlow/ModuleRefV2.h>
@@ -54,6 +55,10 @@ private:
     Dia::Graphics3D::FrameData3D  mFrame;
     Dia::Mesh3D::Mesh3DAsset*     mUnitCubeAsset = nullptr;
     bool                          mTexturesLoaded = false;
+
+    Dia::Geometry3D::Spline3D     mSunSpline;
+    Dia::Geometry3D::Spline3D     mFillSpline;
+    Dia::Geometry3D::Spline3D     mRimSpline;
 
 #ifdef DIA_DEBUG
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::VisualDebuggerModule> mVisualDebuggerRef{this};

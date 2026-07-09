@@ -2,9 +2,9 @@ $input v_worldPos, v_normal, v_texcoord0, v_color0, v_shadowCoord, v_tangent, v_
 
 #include <bgfx_shader.sh>
 
-uniform vec4 u_directionalLightDir;    // xyz = normalized direction (toward light)
-uniform vec4 u_directionalLightColour; // rgb = colour, a = intensity
-uniform vec4 u_ambient;                // rgb = ambient colour, a = intensity
+uniform vec4 u_dirLightDir[8];    // xyz = normalized direction (toward light), w = 0
+uniform vec4 u_dirLightColour[8]; // rgb = colour, a = intensity; zeroed slots contribute nothing
+uniform vec4 u_ambient;           // rgb = ambient colour, a = intensity
 uniform vec4 u_baseColour;             // rgba from MaterialDescriptor
 uniform vec4 u_cameraPos;             // xyz = camera world position
 uniform vec4 u_pbrParams;             // x = metallic fallback, y = roughness fallback
@@ -86,36 +86,41 @@ void main()
     // F0 reflectance at normal incidence
     vec3 F0 = mix(vec3(0.04, 0.04, 0.04), baseCol, metallic);
 
-    // Vectors
-    vec3 V = normalize(u_cameraPos.xyz - v_worldPos.xyz);
-    vec3 L = normalize(-u_directionalLightDir.xyz);
-    vec3 H = normalize(V + L);
-
-    // Dot products (clamped to avoid divide-by-zero)
-    float NdotL = max(dot(normal, L), 0.001);
+    // Camera view vector (shared across all lights)
+    vec3 V    = normalize(u_cameraPos.xyz - v_worldPos.xyz);
     float NdotV = max(dot(normal, V), 0.001);
 
-    // Cook-Torrance BRDF
-    vec3 F = FresnelSchlick(max(dot(H, V), 0.0), F0);
-    float D = DistributionGGX(normal, H, roughness);
-    float G = GeometrySmith(NdotV, NdotL, roughness);
+    // Shadow attenuation — tied to dirLights[0] (primary/sun light) only
+    float shadow = sampleShadow(v_shadowCoord);
 
-    vec3 specular = (D * F * G) / max(4.0 * NdotV * NdotL, 0.001);
+    // Accumulate Cook-Torrance BRDF contribution from all active lights.
+    // Inactive slots have colour.a == 0 so they contribute nothing without branching.
+    vec3 litResult = vec3_splat(0.0);
+    for (int i = 0; i < 8; i++)
+    {
+        vec3  L    = normalize(-u_dirLightDir[i].xyz);
+        vec3  H    = normalize(V + L);
+        float NdotL = max(dot(normal, L), 0.001);
 
-    // Diffuse (energy-conserving Lambertian)
-    vec3 diffuse = (vec3(1.0, 1.0, 1.0) - F) * (1.0 - metallic) * baseCol / 3.14159265;
+        vec3  F = FresnelSchlick(max(dot(H, V), 0.0), F0);
+        float D = DistributionGGX(normal, H, roughness);
+        float G = GeometrySmith(NdotV, NdotL, roughness);
 
-    // Light radiance
-    vec3 lightRadiance = u_directionalLightColour.rgb * u_directionalLightColour.a * NdotL;
+        vec3 specular = (D * F * G) / max(4.0 * NdotV * NdotL, 0.001);
+        vec3 diffuse  = (vec3(1.0, 1.0, 1.0) - F) * (1.0 - metallic) * baseCol / 3.14159265;
+
+        vec3 radiance = u_dirLightColour[i].rgb * u_dirLightColour[i].a * NdotL;
+
+        // Shadow only attenuates the primary light (slot 0)
+        float shadowFactor = (i == 0) ? shadow : 1.0;
+        litResult += (diffuse + specular) * radiance * shadowFactor;
+    }
 
     // Ambient
     vec3 ambient = u_ambient.rgb * u_ambient.a * baseCol;
 
-    // Shadow
-    float shadow = sampleShadow(v_shadowCoord);
-
     // Final composition
-    vec3 finalColour = ambient + (diffuse + specular) * lightRadiance * shadow;
+    vec3 finalColour = ambient + litResult;
     float alpha = u_baseColour.a * v_color0.a * albedoSample.a;
 
     gl_FragColor = vec4(finalColour, alpha);

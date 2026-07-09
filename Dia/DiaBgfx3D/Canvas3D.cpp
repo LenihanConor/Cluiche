@@ -238,22 +238,34 @@ namespace Dia
                 }
 
                 const auto& dirLights = mesh3d.GetDirectionalLights();
-                if (dirLights.Size() > 0)
+                const unsigned int lightCount = dirLights.Size();
+                if (lightCount > 0)
                 {
-                    const auto& dl = dirLights[0];
-                    lighting.dirLightDir[0] = dl.direction.X();
-                    lighting.dirLightDir[1] = dl.direction.Y();
-                    lighting.dirLightDir[2] = dl.direction.Z();
-                    lighting.dirLightDir[3] = 0.0f;
+                    if (lightCount > static_cast<unsigned int>(MeshPassLighting::kMaxDirLights))
+                        DIA_LOG_WARNING("DiaBgfx3D", "Canvas3D: %u directional lights submitted but max is %d — excess ignored", lightCount, MeshPassLighting::kMaxDirLights);
 
-                    lighting.dirLightColour[0] = static_cast<float>(dl.colour.R()) / 255.0f;
-                    lighting.dirLightColour[1] = static_cast<float>(dl.colour.G()) / 255.0f;
-                    lighting.dirLightColour[2] = static_cast<float>(dl.colour.B()) / 255.0f;
-                    lighting.dirLightColour[3] = dl.intensity;
+                    const unsigned int packCount = lightCount < static_cast<unsigned int>(MeshPassLighting::kMaxDirLights)
+                        ? lightCount : static_cast<unsigned int>(MeshPassLighting::kMaxDirLights);
+
+                    for (unsigned int li = 0; li < packCount; ++li)
+                    {
+                        const auto& dl   = dirLights[li];
+                        const int   base = static_cast<int>(li) * 4;
+
+                        lighting.dirLightDir[base + 0] = dl.direction.X();
+                        lighting.dirLightDir[base + 1] = dl.direction.Y();
+                        lighting.dirLightDir[base + 2] = dl.direction.Z();
+                        lighting.dirLightDir[base + 3] = 0.0f;
+
+                        lighting.dirLightColour[base + 0] = static_cast<float>(dl.colour.R()) / 255.0f;
+                        lighting.dirLightColour[base + 1] = static_cast<float>(dl.colour.G()) / 255.0f;
+                        lighting.dirLightColour[base + 2] = static_cast<float>(dl.colour.B()) / 255.0f;
+                        lighting.dirLightColour[base + 3] = dl.intensity;
+                    }
                 }
                 else
                 {
-                    // No light in scene — use a default overhead sun.
+                    // No light in scene — use a default overhead sun in slot 0; rest stay zeroed.
                     lighting.dirLightDir[0]    = 0.0f;
                     lighting.dirLightDir[1]    = 1.0f; // pointing up == coming from above
                     lighting.dirLightDir[2]    = 0.0f;

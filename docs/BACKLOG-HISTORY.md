@@ -4,6 +4,14 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 
 ---
 
+## Completed Tooling
+
+| Item | Completed | Notes |
+|------|-----------|-------|
+| CI Architecture Gates | 2026-07-09 | `dia check deps` exit code fixed, `dia check arch` wired, `dia check clones` (PMD CPD) added, `.github/workflows/ci.yml` with hard-gate + advisory jobs. |
+
+---
+
 ## Completed Systems
 
 | System | Spec | Completed | Notes |
@@ -41,6 +49,9 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | mesh3d-bounds-and-origins | [spec](specs/) | 2026-06-23 | Marked done by `dia docs spec-done` |
 | debug-widget-config | [spec](specs/) | 2026-06-23 | Marked done by `dia docs spec-done` |
 | Mesh3DRenderSystemTestStage | [mesh3d-render-system-stage.md](specs/applications/cluichetest/systems/teststages/mesh3d-render-system-stage.md) | 2026-07-07 | Implemented: 3 cubes + avocado + silent-skip ghost; fixed Lambert NdotL direction bug in fs_mesh.sc |
+| ci-architecture-gates | [spec](specs/) | 2026-07-09 | Marked done by `dia docs spec-done` |
+| DiaBlackboardInspector | [diablackboardinspector.md](specs/applications/dia/systems/diablackboardinspector/diablackboardinspector.md) | 2026-07-09 | Moved by `dia docs backlog move` |
+| mesh-texture-pipeline | [spec](specs/) | 2026-07-09 | Marked done by `dia docs spec-done` |
 
 ---
 

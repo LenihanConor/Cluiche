@@ -12,8 +12,9 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | System | Spec | Features | Depends On |
 |--------|------|----------|------------|
-| DiaBgfx3D | [diabgfx3d.md](specs/applications/dia/systems/diabgfx3d/diabgfx3d.md) | `gpu-resources` — MaterialRegistry + MeshGpuCache ✅ done. `3d-renderers` — MeshRenderer ✅, ShadowRenderer ✅; SkinnedMeshRenderer pending DiaSkinning3D. `canvas3d` — Canvas3D ✅ (ProcessFrame, ambient, health, metrics). `mesh-texture-pipeline` — albedo + normal map textures, TBN shading, moving light (**Approved, ready to build**). | DiaBgfx (Phase 1) ✅, DiaGraphics3D ✅, DiaMesh3D ✅ |
-| DiaBlackboardInspector | [diablackboardinspector.md](specs/applications/dia/systems/diablackboardinspector/diablackboardinspector.md) | `blackboard-registry` — BlackboardRegistry + RegisterSerializer<T> + IBlackboardObserver::GetId() (**Approved**). `blackboard-inspector-source` — ChangeDetectedSourceBase, EventStream push to DebugServerHostModule (**Approved**). `blackboard-inspector-plugin` — LiveConnectionPluginBase, dockable HTML panel (**Approved**). | DiaBlackboard ✅, DiaDebugServer, DiaEditor |
+| ~~DiaBgfx3D~~ | [diabgfx3d.md](specs/applications/dia/systems/diabgfx3d/diabgfx3d.md) | `gpu-resources` — MaterialRegistry + MeshGpuCache ✅ done. `3d-renderers` — MeshRenderer ✅, ShadowRenderer ✅; SkinnedMeshRenderer pending DiaSkinning3D. `canvas3d` — Canvas3D ✅ (ProcessFrame, ambient, health, metrics). `mesh-texture-pipeline` — albedo + normal map textures, TBN shading, moving light (**Approved, ready to build**). | DiaBgfx (Phase 1) ✅, DiaGraphics3D ✅, DiaMesh3D ✅ |
+| ~~DiaBlackboardInspector~~ | [diablackboardinspector.md](specs/applications/dia/systems/diablackboardinspector/diablackboardinspector.md) | `blackboard-registry` — BlackboardRegistry + RegisterSerializer<T> + IBlackboardObserver::GetId() (**Approved**). `blackboard-inspector-source` — ChangeDetectedSourceBase, EventStream push to DebugServerHostModule (**Approved**). `blackboard-inspector-plugin` — LiveConnectionPluginBase, dockable HTML panel (**Approved**). | DiaBlackboard ✅, DiaDebugServer, DiaEditor |
+| DiaRenderTest CLI Pipeline | [diarendertest.md](specs/applications/dia/systems/diarendertest/diarendertest.md) | `png-writer` (**Approved**). `diff-engine` (**Approved**). `expectations` (**Approved**). `python-tools` (**Approved**). `metrics-writer` (**Approved**). `cluichetest-integration` (**Approved**). | DiaBgfx ✅, DiaGraphics ✅, DiaCore ✅ |
 
 
 ---
@@ -38,8 +39,9 @@ _Nothing here._
 | DiaCondition | [diacondition.md](specs/applications/dia/systems/diacondition/diacondition.md) | Spec `Draft` — awaiting approval. Shared expression evaluator: `ConditionRegistry` (float/bool accessor registration), `ConditionExpr` (JSON-loadable boolean expression tree), `ConditionGuardAdapter` (zero-change DiaStateMachine integration). Foundation for DiaRules + DiaUtilityAI. Depends on DiaBlackboard ✅. |
 | DiaRules | [diarules.md](specs/applications/dia/systems/diarules/diarules.md) | Spec `Draft` — awaiting approval. Forward-chaining rule engine: `RuleActionRegistry` (open handler registration by StringCRC), `RuleSet` (all-matching condition→action evaluation), JSON loader, `RuleSetComponent`. Depends on DiaCondition. |
 | DiaUtilityAI | [diautilityai.md](specs/applications/dia/systems/diautilityai/diautilityai.md) | Spec `Draft` — awaiting approval. Score-based action selection: `ResponseCurve` (easing-shaped scorers), `ActionDef` (prerequisites + scorers + cooldown + max_concurrent), `GroupConsiderationContext` (squad coordination), `UtilitySet` (sync + async eval), DiaVisualDebugger score overlay. Depends on DiaAIBudget + DiaCondition. |
-| DiaRenderTest CLI Pipeline | [diarendertest.md](specs/applications/dia/systems/diarendertest/diarendertest.md) | Spec `Draft` — awaiting approval. All design questions resolved. 6 features: png-writer, diff-engine, expectations, python-tools, metrics-writer, cluichetest-integration. Research: [render_offline_test/summary.md](research/render_offline_test/summary.md) |
 | RenderTestPlugin (CluicheEditor) | — | Needs `/spec-system` — visual debugger panel: wipe slider, region grid, expectation authoring, AI triage panel, render targets. Depends on DiaRenderTest CLI Pipeline shipping first. Mockup: [render_test_debugger_mockup.html](research/render_offline_test/render_test_debugger_mockup.html). Research: [render_offline_test/summary.md](research/render_offline_test/summary.md) |
+
+---
 
 ---
 
@@ -74,5 +76,5 @@ Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testin
 | RenderTechnique asset type | Layer-level rendering policy (blend mode, post-process like bloom/distortion). Layers reference a technique by name; renderer resolves at draw time. Needs `/spec-feature` under DiaGraphics or DiaBgfx once the scene system lands. |
 | Camera2D controller (pan/zoom/reset) | Application-side input→Camera2D wiring for CluicheTest stages (keyboard pan, scroll zoom, home-key reset). Unblocked once coord2d-debug-overlay ships Camera2D + renderer integration. |
 | `Dia::Core::Blackboard` — general-purpose key-value store | Identified during DiaStateMachine research; useful for AI, animation, gameplay. Needs `/spec-feature` under DiaCore. |
-| **DiaBgfx3D — Multiple directional lights** | Shader and frame data only consume `dirLights[0]`. Supporting 2–4 lights requires uniform array upload and a shader loop. Needs `/spec-feature` under DiaBgfx3D. |
-| **DiaBgfx3D — Specular / simple PBR** | Current model is pure Lambert. Blinn-Phong or minimal metallic-roughness BRDF would allow materials to look distinct. Unblocked once `mesh-texture-pipeline` ships. Needs `/spec-feature` under DiaBgfx3D. |
+| **DiaBgfx3D — Multiple directional lights** | Spec Approved. 8-light array uniforms, static shader loop, zero-padded inactive slots. Ready to build. |
+| ~~**DiaBgfx3D — Specular / simple PBR**~~ | Current model is pure Lambert. Blinn-Phong or minimal metallic-roughness BRDF would allow materials to look distinct. Unblocked once `mesh-texture-pipeline` ships. Needs `/spec-feature` under DiaBgfx3D. |

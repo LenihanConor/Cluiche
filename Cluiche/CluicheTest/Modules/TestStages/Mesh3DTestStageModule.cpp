@@ -22,6 +22,7 @@
 #include <DiaBgfx3D/Canvas3D.h>
 #include <DiaBgfx3D/Resources/MaterialRegistry.h>
 #include <DiaBgfx/Resources/BgfxTextureHandle.h>
+#include <DiaGeometry3D/Shapes/Spline3D.h>
 
 #ifdef DIA_DEBUG
 #include <DiaMesh3DVisualDebugger/MeshBoundsDrawer.h>
@@ -98,6 +99,42 @@ void Mesh3DTestStageModule::OnStart(Dia::Automation::AutomationService* service)
         Dia::Core::Containers::String512("Stages/Mesh3DTestStage/World/Textures/Avocado_roughnessMetallic.png"),
         &sNullCallback);
     DIA_LOG_INFO("Mesh3DTest", "Mesh3DTestStageModule: texture loads requested");
+
+    // Sun: warm white, sweeps left→right across the upper hemisphere (XZ plane arc)
+    {
+        const Dia::Maths::Vector3D sunPts[] = {
+            Dia::Maths::Vector3D(-0.8f, -0.5f,  0.3f),
+            Dia::Maths::Vector3D(-0.4f, -0.9f,  0.3f),
+            Dia::Maths::Vector3D( 0.0f, -1.0f,  0.3f),
+            Dia::Maths::Vector3D( 0.4f, -0.9f,  0.3f),
+            Dia::Maths::Vector3D( 0.8f, -0.5f,  0.3f),
+        };
+        mSunSpline = Dia::Geometry3D::SplineFactory3D::MakeCatmullRom(sunPts, 5);
+    }
+
+    // Fill: cool blue, moves in the opposite arc (right→left, slightly below horizon)
+    {
+        const Dia::Maths::Vector3D fillPts[] = {
+            Dia::Maths::Vector3D( 0.7f, -0.3f, -0.5f),
+            Dia::Maths::Vector3D( 0.3f, -0.6f, -0.5f),
+            Dia::Maths::Vector3D( 0.0f, -0.7f, -0.5f),
+            Dia::Maths::Vector3D(-0.3f, -0.6f, -0.5f),
+            Dia::Maths::Vector3D(-0.7f, -0.3f, -0.5f),
+        };
+        mFillSpline = Dia::Geometry3D::SplineFactory3D::MakeCatmullRom(fillPts, 5);
+    }
+
+    // Rim: amber/orange, orbits around the back at a steeper angle
+    {
+        const Dia::Maths::Vector3D rimPts[] = {
+            Dia::Maths::Vector3D( 0.5f, -0.7f, -0.8f),
+            Dia::Maths::Vector3D( 0.0f, -0.4f, -1.0f),
+            Dia::Maths::Vector3D(-0.5f, -0.7f, -0.8f),
+            Dia::Maths::Vector3D(-0.8f, -0.9f, -0.3f),
+            Dia::Maths::Vector3D( 0.5f, -0.7f, -0.8f), // wrap to start for smooth loop
+        };
+        mRimSpline = Dia::Geometry3D::SplineFactory3D::MakeCatmullRom(rimPts, 5);
+    }
 
     service->RegisterCheckpoint(this, Dia::Core::StringCRC("test.mesh3dtest.passed"),
         [this]() -> Dia::Automation::CheckpointResult {
@@ -203,33 +240,75 @@ void Mesh3DTestStageModule::OnUpdate(float /*deltaTime*/)
     ambient.intensity = 0.2f;
     mFrame.SetAmbientLight(ambient);
 
-    // Directional light: sweeps left-to-right over 4s (sin wave on X axis).
-    Dia::Graphics3D::DirectionalLight light;
+    // Three directional lights on independent spline paths.
+    // t is normalised to [0,1] over each light's period, then ping-ponged so motion reverses.
+    const float seconds = static_cast<float>(GetFrameCount()) / 30.0f;
+
+    // Sun: warm white, 8s period
     {
-        const float t = static_cast<float>(GetFrameCount()) / 30.0f; // seconds at 30Hz
-        const float sweepX = std::sin(t * Dia::Maths::PI / 2.0f);  // ±1 over 4s half-period
-        const float lx = sweepX, ly = -1.0f, lz = 0.3f;
-        const float len = Dia::Maths::Vector3D(lx, ly, lz).Magnitude();
-        light.direction = Dia::Maths::Vector3D(lx / len, ly / len, lz / len);
-    }
-    light.colour    = Dia::Graphics::RGBA(255, 255, 255, 255);
-    light.intensity = 1.0f;
-    mFrame.AddDirectionalLight(light);
+        const float period = 8.0f;
+        const float phase  = std::fmod(seconds / period, 2.0f);
+        const float t      = phase < 1.0f ? phase : 2.0f - phase; // ping-pong [0,1]
+        Dia::Graphics3D::DirectionalLight light;
+        light.direction = mSunSpline.EvaluateTangent(t);
+        light.colour    = Dia::Graphics::RGBA(255, 248, 220, 255); // warm white
+        light.intensity = 1.0f;
+        mFrame.AddDirectionalLight(light);
 
 #ifdef DIA_DEBUG
-    {
-        static const Dia::Core::StringCRC kSunId("sun");
-        Dia::Lighting3D::DirectionalLight3D sun;
-        sun.direction = light.direction;
-        sun.colour    = light.colour;
-        sun.intensity = light.intensity;
-        sun.enabled   = true;
-        if (!mLightRegistry.Has(kSunId))
-            mLightRegistry.RegisterDirectional(kSunId, sun);
-        else
-            mLightRegistry.GetDirectional(kSunId) = sun;
-    }
+        {
+            static const Dia::Core::StringCRC kId("sun");
+            Dia::Lighting3D::DirectionalLight3D dl;
+            dl.direction = light.direction; dl.colour = light.colour; dl.intensity = light.intensity; dl.enabled = true;
+            if (!mLightRegistry.Has(kId)) mLightRegistry.RegisterDirectional(kId, dl);
+            else mLightRegistry.GetDirectional(kId) = dl;
+        }
 #endif
+    }
+
+    // Fill: cool blue, 12s period (offset by a third)
+    {
+        const float period = 12.0f;
+        const float phase  = std::fmod((seconds + 4.0f) / period, 2.0f);
+        const float t      = phase < 1.0f ? phase : 2.0f - phase;
+        Dia::Graphics3D::DirectionalLight light;
+        light.direction = mFillSpline.EvaluateTangent(t);
+        light.colour    = Dia::Graphics::RGBA(160, 200, 255, 255); // cool blue
+        light.intensity = 0.4f;
+        mFrame.AddDirectionalLight(light);
+
+#ifdef DIA_DEBUG
+        {
+            static const Dia::Core::StringCRC kId("fill");
+            Dia::Lighting3D::DirectionalLight3D dl;
+            dl.direction = light.direction; dl.colour = light.colour; dl.intensity = light.intensity; dl.enabled = true;
+            if (!mLightRegistry.Has(kId)) mLightRegistry.RegisterDirectional(kId, dl);
+            else mLightRegistry.GetDirectional(kId) = dl;
+        }
+#endif
+    }
+
+    // Rim: amber/orange, 6s period (offset by two-thirds)
+    {
+        const float period = 6.0f;
+        const float phase  = std::fmod((seconds + 2.0f) / period, 2.0f);
+        const float t      = phase < 1.0f ? phase : 2.0f - phase;
+        Dia::Graphics3D::DirectionalLight light;
+        light.direction = mRimSpline.EvaluateTangent(t);
+        light.colour    = Dia::Graphics::RGBA(255, 180, 80, 255); // amber/orange
+        light.intensity = 0.6f;
+        mFrame.AddDirectionalLight(light);
+
+#ifdef DIA_DEBUG
+        {
+            static const Dia::Core::StringCRC kId("rim");
+            Dia::Lighting3D::DirectionalLight3D dl;
+            dl.direction = light.direction; dl.colour = light.colour; dl.intensity = light.intensity; dl.enabled = true;
+            if (!mLightRegistry.Has(kId)) mLightRegistry.RegisterDirectional(kId, dl);
+            else mLightRegistry.GetDirectional(kId) = dl;
+        }
+#endif
+    }
 
     // Unit cube at (-1.5, 0, 0)
     Dia::Graphics3D::Mesh3DDrawCommand cmd;
