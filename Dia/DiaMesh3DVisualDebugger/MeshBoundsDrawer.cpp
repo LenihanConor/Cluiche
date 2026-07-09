@@ -11,6 +11,7 @@
 #include <DiaMesh3D/Mesh3DAssetHandler.h>
 #include <DiaMesh3D/Mesh3DAsset.h>
 #include <DiaGeometry3D/Shapes/AABB.h>
+#include <DiaMaths/Matrix/Matrix44.h>
 #include <DiaCore/DebugDraw/DebugLayerNames.h>
 #include <DiaCore/DebugDraw/DebugColourPalette.h>
 
@@ -42,10 +43,7 @@ void MeshBoundsDrawer::Draw(Dia::Core::IDebugDraw& draw)
     {
         const Dia::Graphics3D::Mesh3DDrawCommand& cmd = draws[i];
 
-        // Translation-only world placement (SD-MVD-002)
-        const Dia::Maths::Vector3D worldPos = cmd.transform.GetTranslation();
-
-        // Determine bounds and colour from asset load state
+        // Determine local bounds and colour from asset load state
         Dia::Maths::Vector3D localMin = kUnitMin;
         Dia::Maths::Vector3D localMax = kUnitMax;
         Dia::Graphics::RGBA  colour   = Dia::Debug::DebugColourPalette::kInactive;
@@ -78,25 +76,17 @@ void MeshBoundsDrawer::Draw(Dia::Core::IDebugDraw& draw)
             }
         }
 
-        // Build 8 AABB corners in world space.
-        // Corner index = bit pattern (xBit | yBit<<1 | zBit<<2):
-        //   bit0=x (0=min, 1=max), bit1=y, bit2=z
-        const float xMin = worldPos.X() + localMin.X();
-        const float yMin = worldPos.Y() + localMin.Y();
-        const float zMin = worldPos.Z() + localMin.Z();
-        const float xMax = worldPos.X() + localMax.X();
-        const float yMax = worldPos.Y() + localMax.Y();
-        const float zMax = worldPos.Z() + localMax.Z();
-
-        // c[0..7]: each corner as Vector3D
-        const Dia::Maths::Vector3D c0(xMin, yMin, zMin); // 000
-        const Dia::Maths::Vector3D c1(xMax, yMin, zMin); // 100
-        const Dia::Maths::Vector3D c2(xMin, yMax, zMin); // 010
-        const Dia::Maths::Vector3D c3(xMax, yMax, zMin); // 110
-        const Dia::Maths::Vector3D c4(xMin, yMin, zMax); // 001
-        const Dia::Maths::Vector3D c5(xMax, yMin, zMax); // 101
-        const Dia::Maths::Vector3D c6(xMin, yMax, zMax); // 011
-        const Dia::Maths::Vector3D c7(xMax, yMax, zMax); // 111
+        // Transform all 8 local AABB corners through the full world matrix.
+        // This correctly handles scale, rotation, and translation.
+        const Dia::Maths::Matrix44& m = cmd.transform;
+        const Dia::Maths::Vector3D c0 = m.TransformPoint(Dia::Maths::Vector3D(localMin.X(), localMin.Y(), localMin.Z()));
+        const Dia::Maths::Vector3D c1 = m.TransformPoint(Dia::Maths::Vector3D(localMax.X(), localMin.Y(), localMin.Z()));
+        const Dia::Maths::Vector3D c2 = m.TransformPoint(Dia::Maths::Vector3D(localMin.X(), localMax.Y(), localMin.Z()));
+        const Dia::Maths::Vector3D c3 = m.TransformPoint(Dia::Maths::Vector3D(localMax.X(), localMax.Y(), localMin.Z()));
+        const Dia::Maths::Vector3D c4 = m.TransformPoint(Dia::Maths::Vector3D(localMin.X(), localMin.Y(), localMax.Z()));
+        const Dia::Maths::Vector3D c5 = m.TransformPoint(Dia::Maths::Vector3D(localMax.X(), localMin.Y(), localMax.Z()));
+        const Dia::Maths::Vector3D c6 = m.TransformPoint(Dia::Maths::Vector3D(localMin.X(), localMax.Y(), localMax.Z()));
+        const Dia::Maths::Vector3D c7 = m.TransformPoint(Dia::Maths::Vector3D(localMax.X(), localMax.Y(), localMax.Z()));
 
         // 4 bottom edges (z = min)
         dbg.RequestDrawLine3D(c0, c1, colour);

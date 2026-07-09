@@ -184,7 +184,7 @@ TEST(MeshBoundsDrawerTest, Draw_UnknownMeshId_Colour_IsInactive)
               Dia::Debug::DebugColourPalette::kInactive);
 }
 
-TEST(MeshBoundsDrawerTest, Draw_BoxOffset_MatchesWorldPosition)
+TEST(MeshBoundsDrawerTest, Draw_TranslationOnly_BoxMatchesWorldPosition)
 {
     Dia::Graphics3D::Mesh3DFrameData frameData;
     Dia::Mesh3D::Mesh3DAssetHandler  handler;
@@ -194,7 +194,7 @@ TEST(MeshBoundsDrawerTest, Draw_BoxOffset_MatchesWorldPosition)
         Dia::Maths::Vector3D( 1.0f,  1.0f,  1.0f));
     RegisterReadyAsset(handler, "cube.offset", bounds);
 
-    // Translate the mesh to world position (5, 0, 0)
+    // Translate to (5, 0, 0): all box X coords must lie in [4, 6]
     Dia::Maths::Matrix44 transform = Dia::Maths::Matrix44::FromTranslation(
         Dia::Maths::Vector3D(5.0f, 0.0f, 0.0f));
     frameData.RequestDrawMesh(MakeCommand("cube.offset", transform));
@@ -204,12 +204,39 @@ TEST(MeshBoundsDrawerTest, Draw_BoxOffset_MatchesWorldPosition)
     drawer.Draw(dbg);
 
     ASSERT_GE(dbg.GetDebug3DPrimitiveCount(), 1u);
-
-    // The first line starts at c0 = (worldPos.x + localMin.x, ...) = (5 - 1, ...) = (4, -1, -1)
-    // All X coordinates of the box should lie in the range [4, 6]
     const float fromX = dbg.GetDebug3DPrimitive(0).line3D.from.X();
     EXPECT_GE(fromX, 4.0f);
     EXPECT_LE(fromX, 6.0f);
+}
+
+TEST(MeshBoundsDrawerTest, Draw_UniformScale_BoxScalesWithTransform)
+{
+    Dia::Graphics3D::Mesh3DFrameData frameData;
+    Dia::Mesh3D::Mesh3DAssetHandler  handler;
+
+    // Unit [-0.5, 0.5] bounds; scale 10 -> world box spans [-5, 5] on all axes
+    Dia::Geometry3D::AABB bounds(
+        Dia::Maths::Vector3D(-0.5f, -0.5f, -0.5f),
+        Dia::Maths::Vector3D( 0.5f,  0.5f,  0.5f));
+    RegisterReadyAsset(handler, "cube.scaled", bounds);
+
+    Dia::Maths::Matrix44 transform = Dia::Maths::Matrix44::FromScale(10.0f);
+    frameData.RequestDrawMesh(MakeCommand("cube.scaled", transform));
+
+    Dia::Mesh3D::MeshBoundsDrawer drawer(frameData, handler);
+    Dia::Graphics::FrameData dbg;
+    drawer.Draw(dbg);
+
+    ASSERT_EQ(dbg.GetDebug3DPrimitiveCount(), 12u);
+
+    // Every corner X must lie in [-5, 5]
+    for (uint32_t i = 0; i < dbg.GetDebug3DPrimitiveCount(); ++i)
+    {
+        EXPECT_GE(dbg.GetDebug3DPrimitive(i).line3D.from.X(), -5.0f);
+        EXPECT_LE(dbg.GetDebug3DPrimitive(i).line3D.from.X(),  5.0f);
+        EXPECT_GE(dbg.GetDebug3DPrimitive(i).line3D.to.X(),   -5.0f);
+        EXPECT_LE(dbg.GetDebug3DPrimitive(i).line3D.to.X(),    5.0f);
+    }
 }
 
 TEST(MeshBoundsDrawerTest, Draw_TwoCommands_Emits24Lines)
