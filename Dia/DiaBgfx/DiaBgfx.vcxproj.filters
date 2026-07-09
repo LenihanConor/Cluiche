@@ -7,6 +7,9 @@
     <ClInclude Include="Capture\FrameCaptureRingBuffer.h">
       <Filter>Capture</Filter>
     </ClInclude>
+    <ClInclude Include="Capture\FrameCaptureWriter.h">
+      <Filter>Capture</Filter>
+    </ClInclude>
     <ClInclude Include="Renderers\SpriteRenderer.h">
       <Filter>Renderers</Filter>
     </ClInclude>
@@ -34,7 +37,16 @@
     <ClCompile Include="Canvas.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="StbImageImpl.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="StbImageWriteImpl.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
     <ClCompile Include="Capture\FrameCaptureRingBuffer.cpp">
+      <Filter>Capture</Filter>
+    </ClCompile>
+    <ClCompile Include="Capture\FrameCaptureWriter.cpp">
       <Filter>Capture</Filter>
     </ClCompile>
     <ClCompile Include="Renderers\SpriteRenderer.cpp">

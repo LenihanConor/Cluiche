@@ -22,6 +22,7 @@
   <ItemGroup>
     <ClInclude Include="Canvas.h" />
     <ClInclude Include="Capture\FrameCaptureRingBuffer.h" />
+    <ClInclude Include="Capture\FrameCaptureWriter.h" />
     <ClInclude Include="Renderers\SpriteRenderer.h" />
     <ClInclude Include="Renderers\DebugRenderer.h" />
     <ClInclude Include="Renderers\UIOverlayRenderer.h" />
@@ -34,12 +35,14 @@
   <ItemGroup>
     <ClCompile Include="Canvas.cpp" />
     <ClCompile Include="Capture\FrameCaptureRingBuffer.cpp" />
+    <ClCompile Include="Capture\FrameCaptureWriter.cpp" />
     <ClCompile Include="Renderers\SpriteRenderer.cpp" />
     <ClCompile Include="Renderers\DebugRenderer.cpp" />
     <ClCompile Include="Renderers\UIOverlayRenderer.cpp" />
     <ClCompile Include="Resources\ShaderProgram.cpp" />
     <ClCompile Include="Resources\BgfxTextureHandle.cpp" />
     <ClCompile Include="StbImageImpl.cpp" />
+    <ClCompile Include="StbImageWriteImpl.cpp" />
     <ClCompile Include="Imgui\BgfxImGuiBackend.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)'=='Release'">true</ExcludedFromBuild>
     </ClCompile>
