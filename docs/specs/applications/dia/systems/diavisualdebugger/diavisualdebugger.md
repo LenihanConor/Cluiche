@@ -253,6 +253,7 @@ struct DebugPrimitiveText2D {
 | fixed-draw-layer | `FixedDrawRegistry`, `IObjectRenderer`, `IFixedPrimitiveBuffer` — render-thread-owned primitive buffers for fixed-topology objects; default renderers for `SpatialGrid`, `Quadtree`, `BVH`, `HexGrid` | [fixed-draw-layer.md](fixed-draw-layer.md) | Approved |
 | coord2d-debug-overlay | Camera2D + ViewportTransform in DiaGraphics; "Coord2D" console tab with origin/axes/grid/bounds/cursor overlay layers; DiaBgfx renderer integration | [coord2d-debug-overlay.md](coord2d-debug-overlay.md) | Done |
 | debug-3d-primitives | Line3D, Ray3D, Box3D, Sphere3D, Arrow3D primitives in `DebugFrameData`; `DebugGeometry3DRenderer` in DiaBgfx3D renders them using the 3D camera | [debug-3d-primitives.md](debug-3d-primitives.md) | Approved |
+| coord3d-debug-overlay | "Coord3D" console tab with origin/axes/grid/camera-info overlay layers for 3D stages; globally registered by `VisualDebuggerModule` | [coord3d-debug-overlay.md](coord3d-debug-overlay.md) | Done |
 
 **Natural build order:** debug-budget → debug-text-primitive → debug-layer-manager → rig2d-visual-debugger-stack → rigidbody2d-visual-debugger-stack → softbody2d-visual-debugger-stack → ik2d-visual-debugger-stack → geometry2d-visual-debugger-stack → debug-console → debug-editor-panel → animation2d-visual-debugger-stack (when unblocked) → fixed-draw-layer (depends on debug-layer-manager)
 
