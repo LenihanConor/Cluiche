@@ -100,38 +100,41 @@ void Mesh3DTestStageModule::OnStart(Dia::Automation::AutomationService* service)
         &sNullCallback);
     DIA_LOG_INFO("Mesh3DTest", "Mesh3DTestStageModule: texture loads requested");
 
-    // Sun: warm white, sweeps left→right across the upper hemisphere (XZ plane arc)
+    // Red key: sweeps left↔right across the top (XY plane arc).
+    // Lights the top face of the cube — should tint it red as it sweeps through.
     {
         const Dia::Maths::Vector3D sunPts[] = {
-            Dia::Maths::Vector3D(-0.8f, -0.5f,  0.3f),
-            Dia::Maths::Vector3D(-0.4f, -0.9f,  0.3f),
-            Dia::Maths::Vector3D( 0.0f, -1.0f,  0.3f),
-            Dia::Maths::Vector3D( 0.4f, -0.9f,  0.3f),
-            Dia::Maths::Vector3D( 0.8f, -0.5f,  0.3f),
+            Dia::Maths::Vector3D(-1.0f, -0.2f,  0.1f),
+            Dia::Maths::Vector3D(-0.7f, -0.7f,  0.1f),
+            Dia::Maths::Vector3D( 0.0f, -1.0f,  0.1f),
+            Dia::Maths::Vector3D( 0.7f, -0.7f,  0.1f),
+            Dia::Maths::Vector3D( 1.0f, -0.2f,  0.1f),
         };
         mSunSpline = Dia::Geometry3D::SplineFactory3D::MakeCatmullRom(sunPts, 5);
     }
 
-    // Fill: cool blue, moves in the opposite arc (right→left, slightly below horizon)
+    // Blue fill: sweeps up↔down from the left side (YZ plane on +X axis).
+    // Lights the left face of the cube — should tint it blue as it sweeps.
     {
         const Dia::Maths::Vector3D fillPts[] = {
-            Dia::Maths::Vector3D( 0.7f, -0.3f, -0.5f),
-            Dia::Maths::Vector3D( 0.3f, -0.6f, -0.5f),
-            Dia::Maths::Vector3D( 0.0f, -0.7f, -0.5f),
-            Dia::Maths::Vector3D(-0.3f, -0.6f, -0.5f),
-            Dia::Maths::Vector3D(-0.7f, -0.3f, -0.5f),
+            Dia::Maths::Vector3D( 1.0f, -0.1f,  0.1f),
+            Dia::Maths::Vector3D( 0.9f, -0.4f,  0.2f),
+            Dia::Maths::Vector3D( 0.7f, -0.7f,  0.2f),
+            Dia::Maths::Vector3D( 0.4f, -0.9f,  0.1f),
+            Dia::Maths::Vector3D( 0.1f, -1.0f,  0.1f),
         };
         mFillSpline = Dia::Geometry3D::SplineFactory3D::MakeCatmullRom(fillPts, 5);
     }
 
-    // Rim: amber/orange, orbits around the back at a steeper angle
+    // Green rim: sweeps front↔back from the right side (XZ plane on -X axis).
+    // Lights the front/right face of the cube — should tint it green.
     {
         const Dia::Maths::Vector3D rimPts[] = {
-            Dia::Maths::Vector3D( 0.5f, -0.7f, -0.8f),
-            Dia::Maths::Vector3D( 0.0f, -0.4f, -1.0f),
-            Dia::Maths::Vector3D(-0.5f, -0.7f, -0.8f),
-            Dia::Maths::Vector3D(-0.8f, -0.9f, -0.3f),
-            Dia::Maths::Vector3D( 0.5f, -0.7f, -0.8f), // wrap to start for smooth loop
+            Dia::Maths::Vector3D(-0.1f, -0.4f,  0.9f),
+            Dia::Maths::Vector3D(-0.3f, -0.5f,  0.8f),
+            Dia::Maths::Vector3D(-0.7f, -0.5f,  0.5f),
+            Dia::Maths::Vector3D(-0.9f, -0.4f,  0.1f),
+            Dia::Maths::Vector3D(-1.0f, -0.2f,  0.0f),
         };
         mRimSpline = Dia::Geometry3D::SplineFactory3D::MakeCatmullRom(rimPts, 5);
     }
@@ -250,9 +253,9 @@ void Mesh3DTestStageModule::OnUpdate(float /*deltaTime*/)
         const float phase  = std::fmod(seconds / period, 2.0f);
         const float t      = phase < 1.0f ? phase : 2.0f - phase; // ping-pong [0,1]
         Dia::Graphics3D::DirectionalLight light;
-        light.direction = mSunSpline.EvaluateTangent(t);
-        light.colour    = Dia::Graphics::RGBA(255, 248, 220, 255); // warm white
-        light.intensity = 1.0f;
+        light.direction = mSunSpline.Evaluate(t).AsNormal();
+        light.colour    = Dia::Graphics::RGBA(255, 245, 210, 255); // warm white
+        light.intensity = 0.9f;
         mFrame.AddDirectionalLight(light);
 
 #ifdef DIA_DEBUG
@@ -272,9 +275,9 @@ void Mesh3DTestStageModule::OnUpdate(float /*deltaTime*/)
         const float phase  = std::fmod((seconds + 4.0f) / period, 2.0f);
         const float t      = phase < 1.0f ? phase : 2.0f - phase;
         Dia::Graphics3D::DirectionalLight light;
-        light.direction = mFillSpline.EvaluateTangent(t);
-        light.colour    = Dia::Graphics::RGBA(160, 200, 255, 255); // cool blue
-        light.intensity = 0.4f;
+        light.direction = mFillSpline.Evaluate(t).AsNormal();
+        light.colour    = Dia::Graphics::RGBA(140, 190, 255, 255); // cool blue
+        light.intensity = 0.7f;
         mFrame.AddDirectionalLight(light);
 
 #ifdef DIA_DEBUG
@@ -294,9 +297,9 @@ void Mesh3DTestStageModule::OnUpdate(float /*deltaTime*/)
         const float phase  = std::fmod((seconds + 2.0f) / period, 2.0f);
         const float t      = phase < 1.0f ? phase : 2.0f - phase;
         Dia::Graphics3D::DirectionalLight light;
-        light.direction = mRimSpline.EvaluateTangent(t);
-        light.colour    = Dia::Graphics::RGBA(255, 180, 80, 255); // amber/orange
-        light.intensity = 0.6f;
+        light.direction = mRimSpline.Evaluate(t).AsNormal();
+        light.colour    = Dia::Graphics::RGBA(255, 170, 60, 255); // amber
+        light.intensity = 0.7f;
         mFrame.AddDirectionalLight(light);
 
 #ifdef DIA_DEBUG

@@ -94,11 +94,16 @@ void main()
     float shadow = sampleShadow(v_shadowCoord);
 
     // Accumulate Cook-Torrance BRDF contribution from all active lights.
-    // Inactive slots have colour.a == 0 so they contribute nothing without branching.
+    // Branchless: inactive slots (intensity==0 or dir==0) contribute zero naturally.
+    // Avoid normalize(vec3(0)) by using a safe fallback direction for zero-dir slots.
     vec3 litResult = vec3_splat(0.0);
     for (int i = 0; i < 8; i++)
     {
-        vec3  L    = normalize(-u_dirLightDir[i].xyz);
+        // Zero-dir slot: substitute a unit vector so normalize doesn't produce NaN.
+        // Intensity will be 0 so the contribution is zero regardless.
+        vec3 safeDir = (dot(u_dirLightDir[i].xyz, u_dirLightDir[i].xyz) > 0.0001)
+            ? u_dirLightDir[i].xyz : vec3(0.0, 1.0, 0.0);
+        vec3  L    = normalize(-safeDir);
         vec3  H    = normalize(V + L);
         float NdotL = max(dot(normal, L), 0.001);
 
