@@ -548,6 +548,10 @@
                         {
                             "id": "HUDNavRequest",
                             "role": "reads"
+                        },
+                        {
+                            "id": "AutomationService",
+                            "role": "consumes"
                         }
                     ]
                 }
