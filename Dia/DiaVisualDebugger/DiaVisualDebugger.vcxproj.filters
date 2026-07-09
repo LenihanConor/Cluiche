@@ -24,6 +24,12 @@
     <Filter Include="Source Files\Coord2D">
       <UniqueIdentifier>{A1B2C3D4-0001-0001-0001-000000000021}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Coord3D">
+      <UniqueIdentifier>{A1B2C3D4-0001-0001-0001-000000000030}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Coord3D">
+      <UniqueIdentifier>{A1B2C3D4-0001-0001-0001-000000000031}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IVisualDebugger.h">
@@ -77,6 +83,18 @@
     <ClInclude Include="Coord2D\Coord2DCursorDrawer.h">
       <Filter>Header Files\Coord2D</Filter>
     </ClInclude>
+    <ClInclude Include="Coord3D\Coord3DOriginDrawer.h">
+      <Filter>Header Files\Coord3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Coord3D\Coord3DAxesDrawer.h">
+      <Filter>Header Files\Coord3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Coord3D\Coord3DGridDrawer.h">
+      <Filter>Header Files\Coord3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Coord3D\Coord3DCameraDrawer.h">
+      <Filter>Header Files\Coord3D</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugLayerManager.cpp">
@@ -105,6 +123,18 @@
     </ClCompile>
     <ClCompile Include="Coord2D\Coord2DCursorDrawer.cpp">
       <Filter>Source Files\Coord2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Coord3D\Coord3DOriginDrawer.cpp">
+      <Filter>Source Files\Coord3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Coord3D\Coord3DAxesDrawer.cpp">
+      <Filter>Source Files\Coord3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Coord3D\Coord3DGridDrawer.cpp">
+      <Filter>Source Files\Coord3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Coord3D\Coord3DCameraDrawer.cpp">
+      <Filter>Source Files\Coord3D</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

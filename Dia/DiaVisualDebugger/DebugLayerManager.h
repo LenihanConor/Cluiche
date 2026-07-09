@@ -15,6 +15,7 @@
 #include <DiaCore/DebugDraw/IDebugContext.h>
 #include <DiaGraphics/Camera/Camera2D.h>
 #include <DiaGraphics/Camera/ViewportTransform.h>
+#include <DiaGraphics3D/Camera3D.h>
 #include <DiaMaths/Vector/Vector2D.h>
 #include "IVisualDebugger.h"
 #include "IObjectRenderer.h"
@@ -25,11 +26,6 @@ namespace Dia
     namespace Graphics
     {
         class DebugFrameDataVisitor;
-    }
-
-    namespace Graphics3D
-    {
-        struct Camera3D;
     }
 
     namespace DebugServer

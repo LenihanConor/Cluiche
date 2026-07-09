@@ -241,6 +241,12 @@ void Mesh3DTestStageModule::OnUpdate(float /*deltaTime*/)
     if (mOriginsDrawer      && mOriginsDrawer->IsEnabled())      mOriginsDrawer->Draw(mFrame);
     if (mStatsDrawer        && mStatsDrawer->IsEnabled())        mStatsDrawer->Draw(mFrame);
     if (mLightWidgetsDrawer && mLightWidgetsDrawer->IsEnabled()) mLightWidgetsDrawer->Draw(mFrame);
+
+    if (auto* vd = mVisualDebuggerRef.Get())
+    {
+        vd->SetCamera3D(camera);
+        vd->DrawCoord3D(mFrame);
+    }
 #endif
 
     mRenderOutput.Write(mFrame, Dia::Core::TimeAbsolute::Zero());

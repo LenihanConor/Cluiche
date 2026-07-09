@@ -12,7 +12,6 @@
 #include <DiaGraphics/Frame/DebugFrameDataVisitor.h>
 #include <DiaGraphics/Camera/Camera2D.h>
 #include <DiaGraphics/Camera/ViewportTransform.h>
-#include <DiaGraphics3D/Camera3D.h>
 #include <DiaDebugServer/DebugServer.h>
 #include <DiaDebugProtocol/DiaDebugProtocol.h>
 #include <DiaProtobuf/ProtoJsonCodec.h>

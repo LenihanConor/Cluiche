@@ -11,6 +11,10 @@
 #include <DiaVisualDebugger/Coord2D/Coord2DGridDrawer.h>
 #include <DiaVisualDebugger/Coord2D/Coord2DBoundsDrawer.h>
 #include <DiaVisualDebugger/Coord2D/Coord2DCursorDrawer.h>
+#include <DiaVisualDebugger/Coord3D/Coord3DOriginDrawer.h>
+#include <DiaVisualDebugger/Coord3D/Coord3DAxesDrawer.h>
+#include <DiaVisualDebugger/Coord3D/Coord3DGridDrawer.h>
+#include <DiaVisualDebugger/Coord3D/Coord3DCameraDrawer.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 
 namespace Cluiche { namespace AppFlow {
@@ -27,6 +31,7 @@ Dia::ApplicationFlow::StartResult VisualDebuggerModule::DoStart()
     mLayerManager.SetDebugScale(50.0f);
     mLayerManager.RegisterDiaAPICommands();
     RegisterCoord2DDrawers();
+    RegisterCoord3DDrawers();
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
@@ -71,6 +76,7 @@ Dia::ApplicationFlow::StopResult VisualDebuggerModule::DoStop()
 {
     mLayerManager.ClearDynamicLayers();
     UnregisterCoord2DDrawers();
+    UnregisterCoord3DDrawers();
     mLastKnownStage = Dia::Core::StringCRC();
     mFrame.Clear();
     mRenderOutput.Write(mFrame, Dia::Core::TimeAbsolute::Zero());
@@ -111,6 +117,49 @@ void VisualDebuggerModule::UnregisterCoord2DDrawers()
     mCoord2DGridDrawer.reset();
     mCoord2DBoundsDrawer.reset();
     mCoord2DCursorDrawer.reset();
+}
+
+void VisualDebuggerModule::RegisterCoord3DDrawers()
+{
+    mCoord3DOriginDrawer = std::make_unique<Dia::Debug::Coord3DOriginDrawer>(mLayerManager);
+    mCoord3DAxesDrawer   = std::make_unique<Dia::Debug::Coord3DAxesDrawer>(mLayerManager);
+    mCoord3DGridDrawer   = std::make_unique<Dia::Debug::Coord3DGridDrawer>(mLayerManager);
+    mCoord3DCameraDrawer = std::make_unique<Dia::Debug::Coord3DCameraDrawer>(mLayerManager);
+
+    mLayerManager.RegisterWithoutDraw(mCoord3DOriginDrawer.get(), 50, Dia::Debug::LayerNames::kCoord3DStageTag);
+    mLayerManager.RegisterWithoutDraw(mCoord3DAxesDrawer.get(),   51, Dia::Debug::LayerNames::kCoord3DStageTag);
+    mLayerManager.RegisterWithoutDraw(mCoord3DGridDrawer.get(),   52, Dia::Debug::LayerNames::kCoord3DStageTag);
+    mLayerManager.RegisterWithoutDraw(mCoord3DCameraDrawer.get(), 53, Dia::Debug::LayerNames::kCoord3DStageTag);
+
+    mLayerManager.DisableLayer(Dia::Debug::LayerNames::kCoord3DOrigin);
+    mLayerManager.DisableLayer(Dia::Debug::LayerNames::kCoord3DAxes);
+    mLayerManager.DisableLayer(Dia::Debug::LayerNames::kCoord3DGrid);
+    mLayerManager.DisableLayer(Dia::Debug::LayerNames::kCoord3DCamera);
+}
+
+void VisualDebuggerModule::UnregisterCoord3DDrawers()
+{
+    mCoord3DOriginDrawer.reset();
+    mCoord3DAxesDrawer.reset();
+    mCoord3DGridDrawer.reset();
+    mCoord3DCameraDrawer.reset();
+}
+
+void VisualDebuggerModule::SetCamera3D(const Dia::Graphics3D::Camera3D& camera)
+{
+    mLayerManager.SetCamera3D(camera);
+}
+
+void VisualDebuggerModule::DrawCoord3D(Dia::Graphics3D::FrameData3D& frame)
+{
+    if (mCoord3DOriginDrawer && mLayerManager.IsLayerEnabled(Dia::Debug::LayerNames::kCoord3DOrigin))
+        mCoord3DOriginDrawer->Draw(frame);
+    if (mCoord3DAxesDrawer && mLayerManager.IsLayerEnabled(Dia::Debug::LayerNames::kCoord3DAxes))
+        mCoord3DAxesDrawer->Draw(frame);
+    if (mCoord3DGridDrawer && mLayerManager.IsLayerEnabled(Dia::Debug::LayerNames::kCoord3DGrid))
+        mCoord3DGridDrawer->Draw(frame);
+    if (mCoord3DCameraDrawer && mLayerManager.IsLayerEnabled(Dia::Debug::LayerNames::kCoord3DCamera))
+        mCoord3DCameraDrawer->Draw(frame);
 }
 
 } } // namespace Cluiche::AppFlow

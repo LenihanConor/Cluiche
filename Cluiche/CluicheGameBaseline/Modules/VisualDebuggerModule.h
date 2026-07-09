@@ -9,6 +9,7 @@
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaGraphics/Frame/FrameData.h>
+#include <DiaGraphics3D/FrameData3D.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include "Modules/InputStreamModule.h"
 #include "Modules/Camera2DModule.h"
@@ -21,6 +22,15 @@ namespace Dia::Debug
     class Coord2DGridDrawer;
     class Coord2DBoundsDrawer;
     class Coord2DCursorDrawer;
+    class Coord3DOriginDrawer;
+    class Coord3DAxesDrawer;
+    class Coord3DGridDrawer;
+    class Coord3DCameraDrawer;
+}
+
+namespace Dia::Graphics3D
+{
+    struct Camera3D;
 }
 
 namespace Cluiche { namespace AppFlow {
@@ -35,6 +45,9 @@ public:
 
     Dia::Debug::DebugLayerManager& GetLayerManager() { return mLayerManager; }
 
+    void SetCamera3D(const Dia::Graphics3D::Camera3D& camera);
+    void DrawCoord3D(Dia::Graphics3D::FrameData3D& frame);
+
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
     void DoUpdate(float dt) override;
@@ -44,6 +57,8 @@ protected:
 private:
     void RegisterCoord2DDrawers();
     void UnregisterCoord2DDrawers();
+    void RegisterCoord3DDrawers();
+    void UnregisterCoord3DDrawers();
 
     Dia::Debug::DebugLayerManager mLayerManager;
     Dia::ApplicationFlow::StreamWriter<Dia::Graphics::FrameData> mRenderOutput{this, "SimToRender"};
@@ -59,6 +74,11 @@ private:
     std::unique_ptr<Dia::Debug::Coord2DGridDrawer>   mCoord2DGridDrawer;
     std::unique_ptr<Dia::Debug::Coord2DBoundsDrawer> mCoord2DBoundsDrawer;
     std::unique_ptr<Dia::Debug::Coord2DCursorDrawer> mCoord2DCursorDrawer;
+
+    std::unique_ptr<Dia::Debug::Coord3DOriginDrawer> mCoord3DOriginDrawer;
+    std::unique_ptr<Dia::Debug::Coord3DAxesDrawer>   mCoord3DAxesDrawer;
+    std::unique_ptr<Dia::Debug::Coord3DGridDrawer>   mCoord3DGridDrawer;
+    std::unique_ptr<Dia::Debug::Coord3DCameraDrawer> mCoord3DCameraDrawer;
 };
 
 } } // namespace Cluiche::AppFlow

@@ -52,7 +52,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64' Or '$(Configuration)|$(Platform)'=='Debug-Asan|x64' Or '$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)..\..\External\jsoncpp-master\include;$(ProjectDir)..\..\External\protobuf\Current-x64\include;$(ProjectDir)..\..\External\websocketpp;$(ProjectDir)..\..\External\asio\asio\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)..\..\External\jsoncpp-master\include;$(ProjectDir)..\..\External\protobuf\Current-x64\include;$(ProjectDir)..\..\External\websocketpp;$(ProjectDir)..\..\External\asio\asio\include;$(ProjectDir)..\..\External\imgui\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;DIA_DEBUG;ASIO_STANDALONE;_WEBSOCKETPP_CPP11_STL_;_WEBSOCKETPP_CPP11_THREAD_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
@@ -66,7 +66,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)..\..\External\jsoncpp-master\include;$(ProjectDir)..\..\External\protobuf\Current-x64\include;$(ProjectDir)..\..\External\websocketpp;$(ProjectDir)..\..\External\asio\asio\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)..\..\External\jsoncpp-master\include;$(ProjectDir)..\..\External\protobuf\Current-x64\include;$(ProjectDir)..\..\External\websocketpp;$(ProjectDir)..\..\External\asio\asio\include;$(ProjectDir)..\..\External\imgui\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;DIA_DEBUG;ASIO_STANDALONE;_WEBSOCKETPP_CPP11_STL_;_WEBSOCKETPP_CPP11_THREAD_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
@@ -91,6 +91,10 @@
     <ClInclude Include="Coord2D\Coord2DGridDrawer.h" />
     <ClInclude Include="Coord2D\Coord2DBoundsDrawer.h" />
     <ClInclude Include="Coord2D\Coord2DCursorDrawer.h" />
+    <ClInclude Include="Coord3D\Coord3DOriginDrawer.h" />
+    <ClInclude Include="Coord3D\Coord3DAxesDrawer.h" />
+    <ClInclude Include="Coord3D\Coord3DGridDrawer.h" />
+    <ClInclude Include="Coord3D\Coord3DCameraDrawer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Coord2D\Coord2DOriginDrawer.cpp" />
@@ -98,6 +102,10 @@
     <ClCompile Include="Coord2D\Coord2DGridDrawer.cpp" />
     <ClCompile Include="Coord2D\Coord2DBoundsDrawer.cpp" />
     <ClCompile Include="Coord2D\Coord2DCursorDrawer.cpp" />
+    <ClCompile Include="Coord3D\Coord3DOriginDrawer.cpp" />
+    <ClCompile Include="Coord3D\Coord3DAxesDrawer.cpp" />
+    <ClCompile Include="Coord3D\Coord3DGridDrawer.cpp" />
+    <ClCompile Include="Coord3D\Coord3DCameraDrawer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.debug.architecture.module.md" />
