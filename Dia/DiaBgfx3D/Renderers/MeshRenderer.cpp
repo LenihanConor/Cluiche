@@ -179,6 +179,9 @@ namespace Dia
 
                 h.idx = mULightViewProj;
                 bgfx::setUniform(h, lighting.lightViewProj);
+
+                h.idx = mUCameraPos;
+                bgfx::setUniform(h, lighting.cameraPos);
             }
 
             // --- Shadow map sampler ---
@@ -245,6 +248,20 @@ namespace Dia
                     bgfx::TextureHandle normalTex;
                     normalTex.idx = (mat->normalMapTexture != 0xFFFFu) ? mat->normalMapTexture : mFlatNormalTexture;
                     bgfx::setTexture(1, sNormalMap, normalTex);
+                }
+
+                // --- ORM texture (slot 3) + PBR params ---
+                {
+                    bgfx::UniformHandle sOrm;
+                    sOrm.idx = mSOrm;
+                    bgfx::TextureHandle ormTex;
+                    ormTex.idx = (mat->ormTexture != 0xFFFFu) ? mat->ormTexture : mDefaultOrmTexture;
+                    bgfx::setTexture(3, sOrm, ormTex);
+
+                    float pbrParams[4] = { mat->metallic, mat->roughness, 0.0f, 0.0f };
+                    bgfx::UniformHandle hPbr;
+                    hPbr.idx = mUPbrParams;
+                    bgfx::setUniform(hPbr, pbrParams);
                 }
 
                 bgfx::setVertexBuffer(0, vbh);
