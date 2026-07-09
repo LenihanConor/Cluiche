@@ -41,6 +41,23 @@ private:
     const Dia::Graphics3D::Mesh3DFrameData& mFrameData;
     const Dia::Mesh3D::Mesh3DAssetHandler&  mAssetHandler;
     const Dia::Core::IDebugContext&         mManager;
+
+    // Cached per-frame stats — written by Draw() on SimPU, read by DrawImGui() on RenderPU.
+    // Accessing live mFrameData from DrawImGui() is a cross-PU race; cache eliminates it.
+    static constexpr int kMaxTrackedLayers = 32;
+    struct LayerBucket { int16_t layer; uint32_t count; };
+
+    uint32_t    mCachedDrawCount     = 0;
+    uint32_t    mCachedDroppedCount  = 0;
+    uint32_t    mCachedLoadedCount   = 0;
+    uint32_t    mCachedStaticCount   = 0;
+    uint32_t    mCachedSkinnedCount  = 0;
+    LayerBucket mCachedLayers[kMaxTrackedLayers] = {};
+    int         mCachedLayerCount    = 0;
+    uint32_t    mCachedStateReady    = 0;
+    uint32_t    mCachedStatePending  = 0;
+    uint32_t    mCachedStateFailed   = 0;
+    uint32_t    mCachedStateNotFound = 0;
 };
 
 } } // namespace Dia::Mesh3D
