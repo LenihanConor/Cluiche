@@ -683,6 +683,7 @@
     <ClCompile Include="CaptureTest\TestFrameDiff.cpp" />
     <ClCompile Include="CaptureTest\TestCaptureReportWriter.cpp" />
     <ClCompile Include="CaptureTest\TestMetricsWriter.cpp" />
+    <ClCompile Include="CaptureTest\TestExpectationEvaluator.cpp" />
     <ClCompile Include="DiaBgfx3D\TestMeshRenderer.cpp" />
     <ClCompile Include="DiaBgfx3D\TestMeshPassLighting.cpp" />
     <ClCompile Include="DiaLighting3D\TestLightPathBehaviour3D.cpp" />

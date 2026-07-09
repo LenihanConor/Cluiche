@@ -77,11 +77,13 @@
     <ClInclude Include="FrameDiff.h" />
     <ClInclude Include="CaptureReport.h" />
     <ClInclude Include="MetricsWriter.h" />
+    <ClInclude Include="ExpectationEvaluator.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FrameDiff.cpp" />
     <ClCompile Include="CaptureReport.cpp" />
     <ClCompile Include="MetricsWriter.cpp" />
+    <ClCompile Include="ExpectationEvaluator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
