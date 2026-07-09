@@ -5,6 +5,7 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Dict, List, Set, Tuple
@@ -777,3 +778,42 @@ def spec_sync(ctx, verbose: bool) -> None:
         f"[dia check] Done. {specs_with_symbols} specs had symbols; "
         f"{total_missing} missing symbol(s). Written to {out_path}"
     )
+
+
+@cli.command("render-diff")
+@click.option("--run-dir", default=None,
+              help="Directory containing run captures (default: Cluiche/out/CluicheTest/captures/run/).")
+@click.option("--ref-dir", default=None,
+              help="Directory containing reference captures (default: Cluiche/Assets/CluicheTest/captures/reference/).")
+@click.option("--report-dir", default=None,
+              help="Output directory for diff reports.")
+@click.option("--threshold", default=4, type=int, show_default=True,
+              help="Per-pixel difference threshold (0-255).")
+@click.option("--ssim-threshold", "ssim_threshold", default=0.95, type=float, show_default=True,
+              help="Minimum SSIM score for a pair to be considered passing.")
+@click.pass_context
+def render_diff(ctx, run_dir, ref_dir, report_dir, threshold, ssim_threshold) -> None:
+    """Run offline render diff analysis on captured frames."""
+    import subprocess
+    repo_root = find_repo_root(__file__)
+
+    run_path = Path(run_dir) if run_dir else repo_root / "Cluiche" / "out" / "CluicheTest" / "captures" / "run"
+    ref_path = Path(ref_dir) if ref_dir else repo_root / "Cluiche" / "Assets" / "CluicheTest" / "captures" / "reference"
+    rep_path = Path(report_dir) if report_dir else run_path.parent / "reports"
+
+    script = repo_root / "Tools" / "render_diff.py"
+    if not script.exists():
+        click.echo(f"[dia check render-diff] ERROR: {script} not found.")
+        ctx.exit(1)
+        return
+
+    cmd = [
+        sys.executable, str(script),
+        "--run", str(run_path),
+        "--ref", str(ref_path),
+        "--report-dir", str(rep_path),
+        "--threshold", str(threshold),
+        "--ssim-threshold", str(ssim_threshold),
+    ]
+    result = subprocess.run(cmd)
+    ctx.exit(result.returncode)
