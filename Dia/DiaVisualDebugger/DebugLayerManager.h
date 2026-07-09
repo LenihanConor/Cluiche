@@ -27,6 +27,11 @@ namespace Dia
         class DebugFrameDataVisitor;
     }
 
+    namespace Graphics3D
+    {
+        struct Camera3D;
+    }
+
     namespace DebugServer
     {
         class DebugServer;  // Forward declaration — no header included; caller passes nullptr if absent
@@ -128,6 +133,12 @@ namespace Dia
             Dia::Graphics::ViewportTransform GetViewportTransform() const;
 
             // ----------------------------------------------------------------
+            // 3D camera — stored for use by Coord3D overlay drawers
+            // ----------------------------------------------------------------
+            void SetCamera3D(const Dia::Graphics3D::Camera3D& camera);
+            const Dia::Graphics3D::Camera3D& GetCamera3D() const;
+
+            // ----------------------------------------------------------------
             // Picking seam — no-op stubs until scene editor (SD-DBG-008)
             // ----------------------------------------------------------------
             void     SetSelectedEntityId(uint32_t id) override;
@@ -212,6 +223,9 @@ namespace Dia
             // Viewport state — stored as inputs; ViewportTransform constructed on demand
             Dia::Graphics::Camera2D      mViewportCamera;
             Dia::Maths::Vector2D         mViewportWindowSize;
+
+            // 3D camera — stored for Coord3D overlay drawers
+            Dia::Graphics3D::Camera3D    mCamera3D;
 
             // Broadcast state tracking (debug-editor-panel)
             uint32_t mLastDroppedCount = 0;  // cached from FrameData at end of Draw()

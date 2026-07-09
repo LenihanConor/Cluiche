@@ -12,6 +12,7 @@
 #include <DiaGraphics/Frame/DebugFrameDataVisitor.h>
 #include <DiaGraphics/Camera/Camera2D.h>
 #include <DiaGraphics/Camera/ViewportTransform.h>
+#include <DiaGraphics3D/Camera3D.h>
 #include <DiaDebugServer/DebugServer.h>
 #include <DiaDebugProtocol/DiaDebugProtocol.h>
 #include <DiaProtobuf/ProtoJsonCodec.h>
@@ -177,6 +178,20 @@ namespace Dia
         Dia::Graphics::ViewportTransform DebugLayerManager::GetViewportTransform() const
         {
             return Dia::Graphics::ViewportTransform(mViewportCamera, mViewportWindowSize);
+        }
+
+        // --------------------------------------------------------------------
+        // 3D camera
+        // --------------------------------------------------------------------
+
+        void DebugLayerManager::SetCamera3D(const Dia::Graphics3D::Camera3D& camera)
+        {
+            mCamera3D = camera;
+        }
+
+        const Dia::Graphics3D::Camera3D& DebugLayerManager::GetCamera3D() const
+        {
+            return mCamera3D;
         }
 
         // --------------------------------------------------------------------
