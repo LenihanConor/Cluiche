@@ -14,9 +14,9 @@ struct AmbientLight
 
 struct DirectionalLight
 {
-    Dia::Maths::Vector3D direction;  // unit vector, points away from surface
+    Dia::Maths::Vector3D direction;             // unit vector, points away from surface
     Dia::Graphics::RGBA  colour;
-    float                intensity;  // HDR-range multiplier
+    float                intensity = 1.0f;  // HDR-range multiplier
 };
 
 struct PointLight

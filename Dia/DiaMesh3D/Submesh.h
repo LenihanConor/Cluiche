@@ -11,8 +11,8 @@ namespace Dia { namespace Mesh3D {
 // matches the cook tool's 12-byte submesh record exactly.
 struct Submesh
 {
-    uint32_t       indexStart;  // first index in the mesh's index buffer
-    uint32_t       indexCount;  // number of indices for this submesh
+    uint32_t       indexStart = 0;  // first index in the mesh's index buffer
+    uint32_t       indexCount = 0;  // number of indices for this submesh
     Dia::Core::CRC materialId;  // CRC of source material name; resolved by DiaBgfx3D
 };
 

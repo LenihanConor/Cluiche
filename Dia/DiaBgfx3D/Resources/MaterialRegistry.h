@@ -16,10 +16,10 @@ namespace Dia
         struct MaterialDescriptor
         {
             Dia::Core::StringCRC         id;
-            Dia::Bgfx::ShaderProgram*    program;          // not owned; lives in Canvas3D
-            uint32_t                     baseColourRGBA;   // 0xFFFFFFFF default
-            unsigned short               albedoTexture;    // bgfx::TextureHandle::idx; 0xFFFF = none
-            unsigned short               normalMapTexture; // bgfx::TextureHandle::idx; 0xFFFF = none
+            Dia::Bgfx::ShaderProgram*    program          = nullptr;       // not owned; lives in Canvas3D
+            uint32_t                     baseColourRGBA   = 0xFFFFFFFFu;  // 0xFFFFFFFF default
+            unsigned short               albedoTexture    = 0xFFFF;       // bgfx::TextureHandle::idx; 0xFFFF = none
+            unsigned short               normalMapTexture = 0xFFFF;       // bgfx::TextureHandle::idx; 0xFFFF = none
         };
 
         // Maps StringCRC material IDs to shader programs and base colours.

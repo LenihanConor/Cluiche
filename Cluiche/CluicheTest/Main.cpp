@@ -53,7 +53,7 @@ std::string PUAffinityToString(Dia::ApplicationFlow::PUAffinity affinity)
     const uint8_t val = static_cast<uint8_t>(affinity);
 
     if (val == static_cast<uint8_t>(PUAffinity::kNone)) return "none";
-    if (val == static_cast<uint8_t>(PUAffinity::kAny))  return "any";
+    if ((affinity & PUAffinity::kAny) == PUAffinity::kAny)  return "any";
 
     std::string result;
     auto append = [&](const char* tag) {
