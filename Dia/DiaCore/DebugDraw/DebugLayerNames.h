@@ -107,6 +107,17 @@ namespace Dia
             inline const Dia::Core::StringCRC kCoord2DStageTag { "Coord2D" };
 
             // ----------------------------------------------------------------
+            // Coord3D
+            // ----------------------------------------------------------------
+            inline const Dia::Core::StringCRC kCoord3DOrigin { "coord3d.origin" };
+            inline const Dia::Core::StringCRC kCoord3DAxes   { "coord3d.axes"   };
+            inline const Dia::Core::StringCRC kCoord3DGrid   { "coord3d.grid"   };
+            inline const Dia::Core::StringCRC kCoord3DCamera { "coord3d.camera" };
+
+            // Stage tag used to register all coord3d layers (creates "Coord3D" console tab)
+            inline const Dia::Core::StringCRC kCoord3DStageTag { "Coord3D" };
+
+            // ----------------------------------------------------------------
             // Entity
             // ----------------------------------------------------------------
             inline const Dia::Core::StringCRC kEntityLabels    { "entity.labels"    };
