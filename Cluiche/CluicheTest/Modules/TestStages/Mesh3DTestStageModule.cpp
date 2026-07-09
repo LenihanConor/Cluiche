@@ -93,6 +93,10 @@ void Mesh3DTestStageModule::OnStart(Dia::Automation::AutomationService* service)
         Dia::Core::StringCRC("texture.avocado_normal"),
         Dia::Core::Containers::String512("Stages/Mesh3DTestStage/World/Textures/Avocado_normal.png"),
         &sNullCallback);
+    textureHandler.Load(
+        Dia::Core::StringCRC("texture.avocado_orm"),
+        Dia::Core::Containers::String512("Stages/Mesh3DTestStage/World/Textures/Avocado_roughnessMetallic.png"),
+        &sNullCallback);
     DIA_LOG_INFO("Mesh3DTest", "Mesh3DTestStageModule: texture loads requested");
 
     service->RegisterCheckpoint(this, Dia::Core::StringCRC("test.mesh3dtest.passed"),
@@ -131,18 +135,23 @@ void Mesh3DTestStageModule::OnUpdate(float /*deltaTime*/)
         auto& textureHandler = mTextureHandlerService.Get();
         Dia::Graphics::ITexture* albedo = textureHandler.LookupTexture(Dia::Core::StringCRC("texture.avocado_albedo"));
         Dia::Graphics::ITexture* normal = textureHandler.LookupTexture(Dia::Core::StringCRC("texture.avocado_normal"));
+        Dia::Graphics::ITexture* orm    = textureHandler.LookupTexture(Dia::Core::StringCRC("texture.avocado_orm"));
 
         const bool albedoReady  = albedo && albedo->GetState() == Dia::Graphics::ITexture::State::Ready;
         const bool normalReady  = normal && normal->GetState() == Dia::Graphics::ITexture::State::Ready;
+        const bool ormReady     = orm    && orm->GetState()    == Dia::Graphics::ITexture::State::Ready;
         const bool albedoFailed = albedo && albedo->GetState() == Dia::Graphics::ITexture::State::Failed;
         const bool normalFailed = normal && normal->GetState() == Dia::Graphics::ITexture::State::Failed;
+        const bool ormFailed    = orm    && orm->GetState()    == Dia::Graphics::ITexture::State::Failed;
 
         if (albedoFailed)
             DIA_LOG_WARNING("Mesh3DTest", "Avocado albedo texture failed to load");
         if (normalFailed)
             DIA_LOG_WARNING("Mesh3DTest", "Avocado normal map texture failed to load");
+        if (ormFailed)
+            DIA_LOG_WARNING("Mesh3DTest", "Avocado ORM texture failed to load");
 
-        if ((albedoReady || albedoFailed) && (normalReady || normalFailed))
+        if ((albedoReady || albedoFailed) && (normalReady || normalFailed) && (ormReady || ormFailed))
         {
             auto* canvas3D = static_cast<Dia::Bgfx3D::Canvas3D*>(&mCanvasService.Get());
             Dia::Bgfx3D::MaterialRegistry* registry = canvas3D->GetMaterialRegistry();
@@ -164,12 +173,18 @@ void Mesh3DTestStageModule::OnUpdate(float /*deltaTime*/)
             avocadoMat.normalMapTexture = normalReady
                 ? static_cast<Dia::Bgfx::BgfxTextureHandle*>(normal)->GetBgfxHandleIdx()
                 : 0xFFFFu;
+            avocadoMat.ormTexture       = ormReady
+                ? static_cast<Dia::Bgfx::BgfxTextureHandle*>(orm)->GetBgfxHandleIdx()
+                : 0xFFFFu;
+            avocadoMat.metallic         = 0.0f;
+            avocadoMat.roughness        = 0.6f;
 
             registry->Register(avocadoMat);
             mTexturesLoaded = true;
-            DIA_LOG_INFO("Mesh3DTest", "Mesh3DTestStageModule: avocado_material registered (albedo=%s normal=%s)",
+            DIA_LOG_INFO("Mesh3DTest", "Mesh3DTestStageModule: avocado_material registered (albedo=%s normal=%s orm=%s)",
                 albedoReady ? "ok" : "fallback",
-                normalReady ? "ok" : "fallback");
+                normalReady ? "ok" : "fallback",
+                ormReady    ? "ok" : "fallback");
         }
     }
 
