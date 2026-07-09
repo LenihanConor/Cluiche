@@ -156,6 +156,7 @@ namespace Dia
             def.baseColourRGBA   = 0xCCCCCCFFu;
             def.albedoTexture    = 0xFFFFu;
             def.normalMapTexture = 0xFFFFu;
+            def.ormTexture       = 0xFFFFu;
             mMaterialRegistry->Register(def);
 
             // Create renderers now that bgfx is initialised — their ctors call
@@ -271,6 +272,16 @@ namespace Dia
                 else
                 {
                     lighting.shadowTexture = bgfx::kInvalidHandle;
+                }
+
+                // Extract camera world position from the view matrix (row-major rigid-body).
+                // view = [R | -R*eye], so eye = -(R^T * t) where t = view.m[3][0..2].
+                {
+                    const Dia::Maths::Matrix44& view = mesh3d.GetCamera().view;
+                    lighting.cameraPos[0] = -(view.m[0][0] * view.m[3][0] + view.m[1][0] * view.m[3][1] + view.m[2][0] * view.m[3][2]);
+                    lighting.cameraPos[1] = -(view.m[0][1] * view.m[3][0] + view.m[1][1] * view.m[3][1] + view.m[2][1] * view.m[3][2]);
+                    lighting.cameraPos[2] = -(view.m[0][2] * view.m[3][0] + view.m[1][2] * view.m[3][1] + view.m[2][2] * view.m[3][2]);
+                    lighting.cameraPos[3] = 0.0f;
                 }
 
                 mMeshRenderer->Draw(mesh3d, lighting);

@@ -20,6 +20,9 @@ namespace Dia
             uint32_t                     baseColourRGBA   = 0xFFFFFFFFu;  // 0xFFFFFFFF default
             unsigned short               albedoTexture    = 0xFFFF;       // bgfx::TextureHandle::idx; 0xFFFF = none
             unsigned short               normalMapTexture = 0xFFFF;       // bgfx::TextureHandle::idx; 0xFFFF = none
+            unsigned short               ormTexture       = 0xFFFF;       // bgfx::TextureHandle::idx; 0xFFFF = none (R=occlusion, G=roughness, B=metallic)
+            float                        metallic         = 0.0f;         // fallback scalar when ormTexture is 0xFFFF
+            float                        roughness        = 0.5f;         // fallback scalar when ormTexture is 0xFFFF
         };
 
         // Maps StringCRC material IDs to shader programs and base colours.

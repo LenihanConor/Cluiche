@@ -15,6 +15,7 @@ struct MeshPassLighting
     float          ambient[4];        // rgb = colour, a = intensity
     float          lightViewProj[16]; // column-major, for u_lightViewProj in vs_mesh
     unsigned short shadowTexture;     // bgfx::TextureHandle::idx (shadow depth)
+    float          cameraPos[4];      // xyz = camera world position, w = 0
 };
 
 } } // namespace Dia::Bgfx3D
