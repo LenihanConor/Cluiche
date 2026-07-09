@@ -109,9 +109,12 @@ void Mesh3DTestStageModule::OnStart(Dia::Automation::AutomationService* service)
         mStatsDrawer   = std::make_unique<Dia::Mesh3D::MeshStatsDrawer>(mFrame, mMeshHandlerService.Get(), lm);
 
         static const Dia::Core::StringCRC kMesh3DStageTag("Mesh3DTestStage");
-        lm.Register(mBoundsDrawer.get(),  10, kMesh3DStageTag);
-        lm.Register(mOriginsDrawer.get(), 11, kMesh3DStageTag);
-        lm.Register(mStatsDrawer.get(),   12, kMesh3DStageTag);
+        lm.RegisterWithoutDraw(mBoundsDrawer.get(),  10, kMesh3DStageTag);
+        lm.RegisterWithoutDraw(mOriginsDrawer.get(), 11, kMesh3DStageTag);
+        lm.RegisterWithoutDraw(mStatsDrawer.get(),   12, kMesh3DStageTag);
+        // RegisterWithoutDraw: console panel, IsEnabled() toggling, and ImGui work normally.
+        // Draw() is driven directly in OnUpdate with the live FrameData3D — the 2D frame
+        // written by VisualDebuggerModule::DoUpdate has no 3D render path.
         mDebugDrawersRegistered = true;
         DIA_LOG_INFO("Mesh3DTest", "Mesh3DTestStageModule: debug drawers registered");
     }

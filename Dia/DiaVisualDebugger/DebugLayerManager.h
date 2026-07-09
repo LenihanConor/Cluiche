@@ -66,6 +66,11 @@ namespace Dia
             // (reactivates the layer). Same name + different pointer = DIA_ASSERT (SD-DBG-006).
             void Register(IVisualDebugger* debugger, int priority, const Dia::Core::StringCRC& stageTag);
 
+            // Like Register(), but Draw() will never call IVisualDebugger::Draw() on this entry.
+            // Use when a drawer's Draw() targets a different frame type than what this manager
+            // provides (e.g. a 3D drawer registered for console/ImGui access only).
+            void RegisterWithoutDraw(IVisualDebugger* debugger, int priority, const Dia::Core::StringCRC& stageTag);
+
             // Unregister a layer by name. No-op if the name is not registered.
             void Unregister(Dia::Core::StringCRC layerName);
 
@@ -190,10 +195,11 @@ namespace Dia
         private:
             struct LayerEntry
             {
-                IVisualDebugger*     debugger = nullptr;
-                int                  priority = 0;
-                Dia::Core::StringCRC stageTag;   // empty = always active (global layer)
-                bool                 active   = true;  // false = skip Draw, show grayed in console
+                IVisualDebugger*     debugger  = nullptr;
+                int                  priority  = 0;
+                Dia::Core::StringCRC stageTag;           // empty = always active (global layer)
+                bool                 active    = true;   // false = skip Draw, show grayed in console
+                bool                 skipDraw  = false;  // true = skip Draw() but keep ImGui/toggle
             };
 
             Dia::Core::Containers::DynamicArrayC<LayerEntry, kMaxLayers> mLayers;

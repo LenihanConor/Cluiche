@@ -62,6 +62,15 @@ namespace Dia
             mLayersDirty = true;
         }
 
+        void DebugLayerManager::RegisterWithoutDraw(IVisualDebugger* debugger, int priority,
+                                                     const Dia::Core::StringCRC& stageTag)
+        {
+            Register(debugger, priority, stageTag);
+            int index = FindLayerIndex(debugger->GetLayerName());
+            if (index >= 0)
+                mLayers[static_cast<unsigned int>(index)].skipDraw = true;
+        }
+
         void DebugLayerManager::ClearDynamicLayers()
         {
             mLayers.RemoveAll();
@@ -196,6 +205,8 @@ namespace Dia
             for (unsigned int i = 0; i < mLayers.Size(); ++i)
             {
                 if (!mLayers[i].active)
+                    continue;
+                if (mLayers[i].skipDraw)
                     continue;
                 IVisualDebugger* d = mLayers[i].debugger;
                 if (d->IsEnabled())

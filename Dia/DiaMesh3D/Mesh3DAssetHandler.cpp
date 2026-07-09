@@ -161,8 +161,7 @@ void Mesh3DAssetHandler::Load(const Dia::Core::StringCRC& assetId,
                 case ReadResult::Status::ReadError:   reason = "file read error";       break;
                 default: break;
             }
-            std::strncpy(result->failReason, reason, sizeof(result->failReason) - 1);
-            result->failReason[sizeof(result->failReason) - 1] = '\0';
+            strncpy_s(result->failReason, sizeof(result->failReason), reason, sizeof(result->failReason) - 1);
         }
 
         // ReadResult is large (~4 MB); keep the heap pointer, don't copy it back.

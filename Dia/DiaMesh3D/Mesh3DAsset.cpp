@@ -67,8 +67,7 @@ void Mesh3DAsset::MarkFailed(const char* reason)
 {
     if (reason)
     {
-        std::strncpy(mFailReason, reason, kMaxFailReasonLength - 1);
-        mFailReason[kMaxFailReasonLength - 1] = '\0';
+        strncpy_s(mFailReason, kMaxFailReasonLength, reason, kMaxFailReasonLength - 1);
     }
     mState.store(State::Failed, std::memory_order_release);
 }
