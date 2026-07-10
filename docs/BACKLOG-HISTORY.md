@@ -16,6 +16,9 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 
 | System | Spec | Completed | Notes |
 |--------|------|-----------|-------|
+| DiaBgfx3D | [diabgfx3d.md](specs/applications/dia/systems/diabgfx3d/diabgfx3d.md) | 2026-07-09 | Phase 2 3D rendering ship gate. gpu-resources (MaterialRegistry + MeshGpuCache), 3d-renderers (MeshRenderer + ShadowRenderer + shaders), canvas3d (Canvas3D ProcessFrame 2D+3D dispatch), mesh-texture-pipeline (albedo + normal maps + TBN), pbr-shading (GGX BRDF + ORM), multiple-directional-lights (8-light array uniforms). |
+| DiaBlackboardInspector | [diablackboardinspector.md](specs/applications/dia/systems/diablackboardinspector/diablackboardinspector.md) | 2026-07-09 | Live runtime blackboard visibility in CluicheEditor. blackboard-registry (BlackboardRegistry + serializer opt-in + IBlackboardObserver::GetId), blackboard-inspector-source (ChangeDetectedSourceBase + EventStream → DebugServer), blackboard-inspector-plugin (LiveConnectionPluginBase + dockable HTML panel). |
+| DiaRenderTest CLI Pipeline | [diarendertest.md](specs/applications/dia/systems/diarendertest/diarendertest.md) | 2026-07-09 | Offline render regression pipeline. png-writer, diff-engine, expectations, python-tools, metrics-writer, cluichetest-integration all shipped. Unblocks RenderTestPlugin (CluicheEditor). |
 | DiaEntityInspector | [diaentityinspector.md](specs/applications/dia/systems/diaentityinspector/diaentityinspector.md) | 2026-06-06 | 4 features: entity-inspector-panel, query-browser-tab, mailbox-traffic-monitor, entity-watch-list. Runtime debug via WebSocket. Entity list, fields tab with type-aware widgets + editing, queries tab, mailbox ring-buffer tab, watch list with reconnect persistence. 27 tests (15 integration + 12 serializer). |
 | DiaSceneEditor | [diasceneeditor.md](specs/applications/dia/systems/diasceneeditor/diasceneeditor.md) | 2026-06-06 | 6 features: scene-hierarchy-panel, entity-placement-crud, change-blueprint, layer-authoring, camera-light-authoring, scene-validation. Spatial authoring of `.diascene` files. Full CRUD (add/duplicate/delete/rename/enable), change-blueprint analysis + transfer, layer reorder, active camera enforcement, light affects-layers, scene validation (6 rules), world bounds editor. 22 tasks. |
 | DiaEntityTemplateEditor | DiaEntityTemplateEditor | 2026-06-03 | Blueprint list panel (grouped by type), component accordion + field editing, `.diaentitytemplate`/`.diacamera`/`.dialight` I/O, searchable component picker, C++ code defaults from schema, blueprint-level field overrides (green border + clear), cross-scene usage panel, cascade warnings on add/remove. `registered-types-schema` pipeline (`dia reflect`) generates `registeredtypes.diaschema` from game binary. |
@@ -53,6 +56,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | DiaBlackboardInspector | [diablackboardinspector.md](specs/applications/dia/systems/diablackboardinspector/diablackboardinspector.md) | 2026-07-09 | Moved by `dia docs backlog move` |
 | mesh-texture-pipeline | [spec](specs/) | 2026-07-09 | Marked done by `dia docs spec-done` |
 | diarendertest | [spec](specs/) | 2026-07-09 | Marked done by `dia docs spec-done` |
+| diabgfx3d | [spec](specs/) | 2026-07-09 | Marked done by `dia docs spec-done` |
 
 ---
 
