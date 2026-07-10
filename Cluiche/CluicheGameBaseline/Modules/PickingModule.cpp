@@ -85,6 +85,7 @@ void PickingModule::DoUpdate(float /*dt*/)
 
 Dia::ApplicationFlow::StopResult PickingModule::DoStop()
 {
+    mService.Clear();
     DIA_LOG_INFO("picking", "PickingModule stopped");
     return Dia::ApplicationFlow::StopResult::kDone;
 }
