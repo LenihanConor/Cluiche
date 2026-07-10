@@ -85,19 +85,23 @@ void Mesh3DTestStageModule::OnStart(Dia::Automation::AutomationService* service)
     DIA_LOG_INFO("Mesh3DTest", "Mesh3DTestStageModule: unit cube registered");
 
     // Request async texture loads — state is polled in OnUpdate via LookupTexture/GetState.
+    // Albedo is sRGB-encoded per glTF spec; normal map and ORM are linear data.
     auto& textureHandler = mTextureHandlerService.Get();
     textureHandler.Load(
         Dia::Core::StringCRC("texture.avocado_albedo"),
         Dia::Core::Containers::String512("Stages/Mesh3DTestStage/World/Textures/Avocado_baseColor.png"),
-        &sNullCallback);
+        &sNullCallback,
+        Dia::AssetRuntime::TextureHandler::kFlagSRGB);
     textureHandler.Load(
         Dia::Core::StringCRC("texture.avocado_normal"),
         Dia::Core::Containers::String512("Stages/Mesh3DTestStage/World/Textures/Avocado_normal.png"),
-        &sNullCallback);
+        &sNullCallback,
+        0);
     textureHandler.Load(
         Dia::Core::StringCRC("texture.avocado_orm"),
         Dia::Core::Containers::String512("Stages/Mesh3DTestStage/World/Textures/Avocado_roughnessMetallic.png"),
-        &sNullCallback);
+        &sNullCallback,
+        0);
     DIA_LOG_INFO("Mesh3DTest", "Mesh3DTestStageModule: texture loads requested");
 
     // Red key: sweeps left↔right across the top (XY plane arc).

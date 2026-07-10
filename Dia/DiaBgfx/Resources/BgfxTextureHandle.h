@@ -27,12 +27,15 @@ namespace Dia
             State                  GetState()   const override { return mState.load(std::memory_order_acquire); }
 
             // Called from TextureHandler::Tick on the render thread after image decode.
-            // Allocates a bgfx texture and uploads RGBA pixels.
-            bool UploadFromMemory(const unsigned char* rgbaPixels, unsigned int width, unsigned int height);
+            // bgfxFlags: BGFX_TEXTURE_* flags (e.g. BGFX_TEXTURE_SRGB for albedo; 0 for linear).
+            bool UploadFromMemory(const unsigned char* rgbaPixels, unsigned int width, unsigned int height,
+                                  uint64_t bgfxFlags = 0);
 
-            // Decodes encoded image file bytes (PNG/JPG/etc.) via bimg and uploads to bgfx.
+            // Decodes encoded image file bytes (PNG/JPG/etc.) via stb_image and uploads to bgfx.
+            // bgfxFlags: forwarded to UploadFromMemory (e.g. BGFX_TEXTURE_SRGB for albedo textures).
             // Returns false on decode failure; outFailureReason receives a static string.
             bool UploadFromEncodedMemory(const unsigned char* fileBytes, unsigned int byteCount,
+                                         uint64_t bgfxFlags = 0,
                                          const char** outFailureReason = nullptr);
 
             void MarkFailed(const char* reason);

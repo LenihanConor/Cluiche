@@ -50,6 +50,17 @@ namespace Dia
 			                  const Dia::Core::Containers::String512& resolvedPath,
 			                  Dia::AssetRuntime::IAssetLoadCallback* callback) override;
 
+			// Overload with explicit bgfx texture flags.
+			// Use kFlagSRGB for albedo/baseColor textures; 0 for linear data (normal maps, ORM).
+			void Load(const Dia::Core::StringCRC& assetId,
+			          const Dia::Core::Containers::String512& resolvedPath,
+			          Dia::AssetRuntime::IAssetLoadCallback* callback,
+			          uint64_t bgfxFlags);
+
+			// Pass as bgfxFlags for sRGB-encoded source textures (albedo / baseColor).
+			// Value equals BGFX_TEXTURE_SRGB without requiring bgfx/bgfx.h in callers.
+			static constexpr uint64_t kFlagSRGB = UINT64_C(0x0000001000000000);
+
 			virtual void Unload(const Dia::Core::StringCRC& assetId) override;
 
 			// Drains decoded images -> bgfx GPU upload + processes deferred deletions.

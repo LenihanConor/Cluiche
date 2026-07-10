@@ -19,6 +19,7 @@ namespace Dia
 			std::vector<uint8_t> fileBytes;
 			Dia::AssetRuntime::IAssetLoadCallback* callback = nullptr;
 			Dia::Core::JobHandle job;
+			uint64_t bgfxFlags = 0;
 			bool success = false;
 			const char* failureReason = nullptr;
 		};
@@ -54,6 +55,14 @@ namespace Dia
 		                          const Dia::Core::Containers::String512& resolvedPath,
 		                          Dia::AssetRuntime::IAssetLoadCallback* callback)
 		{
+			Load(assetId, resolvedPath, callback, 0);
+		}
+
+		void TextureHandler::Load(const Dia::Core::StringCRC& assetId,
+		                          const Dia::Core::Containers::String512& resolvedPath,
+		                          Dia::AssetRuntime::IAssetLoadCallback* callback,
+		                          uint64_t bgfxFlags)
+		{
 			{
 				std::shared_lock<std::shared_mutex> lock(mMutex);
 				if (mAssetIdToTexture.find(assetId.Value()) != mAssetIdToTexture.end())
@@ -70,6 +79,7 @@ namespace Dia
 			upload->assetId = assetId;
 			upload->resolvedPath = resolvedPath;
 			upload->callback = callback;
+			upload->bgfxFlags = bgfxFlags;
 
 			upload->job = mJobSystem->Submit([upload]()
 			{
@@ -141,6 +151,7 @@ namespace Dia
 						if (!tex->UploadFromEncodedMemory(
 								entry->fileBytes.data(),
 								static_cast<unsigned int>(entry->fileBytes.size()),
+								entry->bgfxFlags,
 								&failReason))
 						{
 							DIA_DELETE(tex);

@@ -36,7 +36,8 @@ namespace Dia
 
         bool BgfxTextureHandle::UploadFromMemory(const unsigned char* rgbaPixels,
                                                   unsigned int width,
-                                                  unsigned int height)
+                                                  unsigned int height,
+                                                  uint64_t bgfxFlags)
         {
             DIA_ASSERT(rgbaPixels != nullptr, "BgfxTextureHandle::UploadFromMemory: null pixels");
             DIA_ASSERT(width > 0 && height > 0, "BgfxTextureHandle::UploadFromMemory: zero dimensions");
@@ -50,7 +51,7 @@ namespace Dia
                 false,   // hasMips
                 1,       // numLayers
                 bgfx::TextureFormat::RGBA8,
-                BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE,
+                bgfxFlags | BGFX_SAMPLER_NONE,
                 mem
             );
 
@@ -70,6 +71,7 @@ namespace Dia
 
         bool BgfxTextureHandle::UploadFromEncodedMemory(const unsigned char* fileBytes,
                                                          unsigned int byteCount,
+                                                         uint64_t bgfxFlags,
                                                          const char** outFailureReason)
         {
             DIA_ASSERT(fileBytes != nullptr && byteCount > 0, "UploadFromEncodedMemory: null/empty input");
@@ -88,7 +90,7 @@ namespace Dia
                 return false;
             }
 
-            bool ok = UploadFromMemory(pixels, static_cast<unsigned int>(w), static_cast<unsigned int>(h));
+            bool ok = UploadFromMemory(pixels, static_cast<unsigned int>(w), static_cast<unsigned int>(h), bgfxFlags);
             stbi_image_free(pixels);
 
             if (!ok && outFailureReason)
