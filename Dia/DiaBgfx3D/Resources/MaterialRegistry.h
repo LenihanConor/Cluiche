@@ -35,6 +35,7 @@ namespace Dia
             MaterialRegistry();
 
             void                        Register(const MaterialDescriptor& desc);
+            void                        Unregister(Dia::Core::StringCRC id);     // no-op if not found
             const MaterialDescriptor*   Resolve(Dia::Core::StringCRC id) const;  // nullptr if not found
             const MaterialDescriptor*   Resolve(Dia::Core::CRC id)       const;  // for Submesh::materialId (CRC, not StringCRC)
             const MaterialDescriptor&   GetDefault() const;

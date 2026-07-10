@@ -361,6 +361,17 @@ void Mesh3DTestStageModule::OnUpdate(float /*deltaTime*/)
 
 void Mesh3DTestStageModule::OnStop()
 {
+    // Remove the material we registered: it holds raw bgfx texture handle indices that
+    // become invalid once TextureHandler::Unload destroys the textures on stage exit.
+    // Leaving it in the registry causes a bgfx ASSERT when a subsequent stage renders
+    // a mesh whose submesh materialId resolves to this stale entry.
+    if (mTexturesLoaded && mCanvasService.IsAvailable())
+    {
+        auto* canvas3D = static_cast<Dia::Bgfx3D::Canvas3D*>(&mCanvasService.Get());
+        canvas3D->GetMaterialRegistry()->Unregister(Dia::Core::StringCRC("avocado_material"));
+        mTexturesLoaded = false;
+    }
+
 #ifdef DIA_DEBUG
     if (mDebugDrawersRegistered)
     {

@@ -40,6 +40,18 @@ namespace Dia
             }
         }
 
+        void MaterialRegistry::Unregister(Dia::Core::StringCRC id)
+        {
+            for (unsigned int i = 0; i < mMaterials.Size(); ++i)
+            {
+                if (mMaterials[i].id == id)
+                {
+                    mMaterials.RemoveAt(i);
+                    return;
+                }
+            }
+        }
+
         const MaterialDescriptor* MaterialRegistry::Resolve(Dia::Core::StringCRC id) const
         {
             for (unsigned int i = 0; i < mMaterials.Size(); ++i)
