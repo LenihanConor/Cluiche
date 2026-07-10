@@ -10,9 +10,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 ### Systems
 
-| System | Features | Depends On |
-|--------|----------|------------|
-| RenderTestPlugin (CluicheEditor) | F-00 Titlebar, F-01 Run History, F-02 Frame Inspector, F-03 Region Grid, F-04 Expectations, F-05 AI Triage, F-06 Metrics, F-07 Render Targets, F-08 Capture Actions | DiaRenderTest CLI Pipeline ✅ |
+_Nothing here._
 
 ---
 
@@ -36,8 +34,7 @@ _Nothing here._
 | DiaCondition | [diacondition.md](specs/applications/dia/systems/diacondition/diacondition.md) | Spec `Draft` — awaiting approval. Shared expression evaluator: `ConditionRegistry` (float/bool accessor registration), `ConditionExpr` (JSON-loadable boolean expression tree), `ConditionGuardAdapter` (zero-change DiaStateMachine integration). Foundation for DiaRules + DiaUtilityAI. Depends on DiaBlackboard ✅. |
 | DiaRules | [diarules.md](specs/applications/dia/systems/diarules/diarules.md) | Spec `Draft` — awaiting approval. Forward-chaining rule engine: `RuleActionRegistry` (open handler registration by StringCRC), `RuleSet` (all-matching condition→action evaluation), JSON loader, `RuleSetComponent`. Depends on DiaCondition. |
 | DiaUtilityAI | [diautilityai.md](specs/applications/dia/systems/diautilityai/diautilityai.md) | Spec `Draft` — awaiting approval. Score-based action selection: `ResponseCurve` (easing-shaped scorers), `ActionDef` (prerequisites + scorers + cooldown + max_concurrent), `GroupConsiderationContext` (squad coordination), `UtilitySet` (sync + async eval), DiaVisualDebugger score overlay. Depends on DiaAIBudget + DiaCondition. |
-
----
+| RenderTestPlugin (CluicheEditor) | — | Needs `/spec-system` — visual debugger panel: wipe slider, region grid, expectation authoring, AI triage panel, render targets. DiaRenderTest CLI Pipeline ✅ unblocked. Mockup: [render_test_debugger_mockup.html](research/render_offline_test/render_test_debugger_mockup.html). Research: [render_offline_test/summary.md](research/render_offline_test/summary.md) |
 
 ---
 
