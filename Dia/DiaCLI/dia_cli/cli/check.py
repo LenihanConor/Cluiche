@@ -807,8 +807,12 @@ def render_diff(ctx, run_dir, ref_dir, report_dir, threshold, ssim_threshold) ->
         ctx.exit(1)
         return
 
+    # render_diff.py requires Pillow + scikit-image which need 64-bit Python.
+    # Prefer the system python3 over sys.executable (DiaCLI venv may be 32-bit).
+    python_exe = _find_64bit_python() or sys.executable
+
     cmd = [
-        sys.executable, str(script),
+        python_exe, str(script),
         "--run", str(run_path),
         "--ref", str(ref_path),
         "--report-dir", str(rep_path),
@@ -817,3 +821,37 @@ def render_diff(ctx, run_dir, ref_dir, report_dir, threshold, ssim_threshold) ->
     ]
     result = subprocess.run(cmd)
     ctx.exit(result.returncode)
+
+
+def _find_64bit_python() -> str | None:
+    """Return a Python executable that has PIL and skimage, preferring 64-bit."""
+    import subprocess as _sp
+    import shutil as _sh
+
+    candidates = []
+    for name in ("python3", "python"):
+        found = _sh.which(name)
+        if found:
+            candidates.append(found)
+
+    # Also probe well-known 64-bit install paths on Windows
+    import os
+    local_prog = os.path.expandvars(r"%LOCALAPPDATA%\Programs\Python")
+    if os.path.isdir(local_prog):
+        for entry in sorted(os.listdir(local_prog), reverse=True):
+            exe = os.path.join(local_prog, entry, "python.exe")
+            if os.path.isfile(exe):
+                candidates.append(exe)
+
+    for exe in candidates:
+        try:
+            r = _sp.run(
+                [exe, "-c",
+                 "import platform, PIL, skimage; print(platform.architecture()[0])"],
+                capture_output=True, text=True, timeout=5,
+            )
+            if r.returncode == 0 and "64bit" in r.stdout:
+                return exe
+        except Exception:
+            continue
+    return None

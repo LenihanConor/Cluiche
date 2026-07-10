@@ -8,6 +8,7 @@
 #include <DiaObservation/Capture/DiaCapture.h>
 #include <DiaCaptureTest/MetricsWriter.h>
 #include <filesystem>
+#include <windows.h>
 
 // Full instantiation lives here — header only forward-declares.
 template class Dia::ApplicationFlow::ServiceStreamReader<Dia::Automation::AutomationService>;
@@ -155,8 +156,16 @@ void TestStageModuleBase::WriteMetrics(bool passed)
 {
     const char* tag = GetStageName().AsChar();
 
-    char path[512];
-    snprintf(path, sizeof(path), "out/CluicheTest/captures/metrics/%s_metrics.json", tag);
+    // Build absolute path from exe location: <exeDir>/../../../../out/CluicheTest/captures/metrics/
+    char exePath[512] = {};
+    GetModuleFileNameA(nullptr, exePath, sizeof(exePath) - 1);
+    char* lastSlash = strrchr(exePath, '\\');
+    if (!lastSlash) lastSlash = strrchr(exePath, '/');
+    if (lastSlash) *(lastSlash + 1) = '\0';
+
+    char path[768];
+    snprintf(path, sizeof(path), "%s../../../../out/CluicheTest/captures/metrics/%s_metrics.json",
+        exePath, tag);
 
     std::filesystem::create_directories(std::filesystem::path(path).parent_path());
 

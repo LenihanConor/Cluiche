@@ -260,8 +260,11 @@ namespace Dia
                     // dia check render-diff can find it by stage name without digging
                     // through session sub-directories.
                     // Path: <sessionDir>/../../captures/run/<tag>.png
+                    char capturesParentDir[768];
+                    snprintf(capturesParentDir, sizeof(capturesParentDir), "%s/../../captures", mSession->GetSessionDirectory());
+                    CreateDirectoryA(capturesParentDir, nullptr); // ok if already exists
                     char runDir[768];
-                    snprintf(runDir, sizeof(runDir), "%s/../../captures/run", mSession->GetSessionDirectory());
+                    snprintf(runDir, sizeof(runDir), "%s/run", capturesParentDir);
                     CreateDirectoryA(runDir, nullptr); // ok if already exists
                     char runPath[896];
                     snprintf(runPath, sizeof(runPath), "%s/%s.png", runDir, capture.metadata.tag.AsChar());
