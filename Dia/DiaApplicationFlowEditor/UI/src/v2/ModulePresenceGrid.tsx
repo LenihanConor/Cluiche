@@ -209,12 +209,21 @@ export const ModulePresenceGrid: React.FC<ModulePresenceGridProps> = ({ containe
                 overflow: 'hidden',
             }}
         >
+            <div style={{
+                flex: 1,
+                overflowX: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+                minWidth: 0,
+            }}>
             {/* Fixed header */}
             <div style={{
                 display: 'flex',
                 background: '#2d2d2d',
                 height: ROW_HEIGHT,
                 minHeight: ROW_HEIGHT,
+                minWidth: totalWidth,
+                flexShrink: 0,
                 alignItems: 'center',
                 borderBottom: '1px solid #3a3a3a',
             }}>
@@ -288,12 +297,15 @@ export const ModulePresenceGrid: React.FC<ModulePresenceGridProps> = ({ containe
                 style={{
                     flex: 1,
                     overflowY: 'auto',
+                    overflowX: 'visible',
                     position: 'relative',
+                    minWidth: totalWidth,
                 }}
             >
                 <div style={{ height: totalHeight, position: 'relative' }}>
                     {visibleRows}
                 </div>
+            </div>
             </div>
         </div>
     );
