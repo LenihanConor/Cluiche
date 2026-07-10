@@ -11,6 +11,7 @@
         { "PackageIdentifier": "OpenJS.NodeJS.LTS" },
         { "PackageIdentifier": "Docker.DockerDesktop" },
         { "PackageIdentifier": "Cppcheck.Cppcheck" },
+        { "PackageIdentifier": "Microsoft.OpenJDK.21" },
         { "PackageIdentifier": "LLVM.LLVM" }
       ],
       "SourceDetails": {

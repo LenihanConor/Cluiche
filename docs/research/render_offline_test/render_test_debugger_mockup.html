@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CluicheEditor — RenderTest Debugger</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg0: #0e0e0f;
+  --bg1: #141416;
+  --bg2: #1a1a1d;
+  --bg3: #222226;
+  --bg4: #2a2a2f;
+  --border: #2e2e34;
+  --border-bright: #3e3e46;
+  --text0: #e8e8ec;
+  --text1: #a8a8b0;
+  --text2: #6a6a72;
+  --pass: #3ecf6a;
+  --pass-dim: #1a3d28;
+  --fail: #e85454;
+  --fail-dim: #3d1a1a;
+  --warn: #e8a534;
+  --accent: #5b8af0;
+  --accent-dim: #1a2550;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+}
+
+html, body { height: 100%; overflow: hidden; background: var(--bg0); color: var(--text0); font-family: var(--sans); font-size: 12px; }
+
+/* ── TITLEBAR ── */
+.titlebar {
+  height: 32px; background: var(--bg1); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 12px; gap: 8px;
+  font-family: var(--mono); font-size: 11px; color: var(--text2); flex-shrink: 0;
+}
+.titlebar .title { color: var(--text1); font-weight: 500; margin-right: 8px; }
+.titlebar .badge { padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; }
+.badge-pass { background: var(--pass-dim); color: var(--pass); }
+.badge-fail { background: var(--fail-dim); color: var(--fail); }
+.badge-run { background: var(--accent-dim); color: var(--accent); }
+.titlebar-right { margin-left: auto; display: flex; gap: 6px; }
+.tb-btn {
+  padding: 3px 10px; border-radius: 3px; border: 1px solid var(--border-bright);
+  background: var(--bg3); color: var(--text1); font-family: var(--mono); font-size: 10px;
+  cursor: pointer; transition: all 0.1s;
+}
+.tb-btn:hover { background: var(--bg4); color: var(--text0); }
+.tb-btn.primary { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+.tb-btn.primary:hover { background: var(--accent); color: #fff; }
+
+/* ── LAYOUT ── */
+.layout {
+  display: grid;
+  grid-template-columns: 220px 1fr 230px;
+  grid-template-rows: 1fr 220px;
+  height: calc(100vh - 32px);
+  gap: 1px; background: var(--border);
+}
+.panel { background: var(--bg1); overflow: hidden; display: flex; flex-direction: column; }
+.panel-header {
+  height: 28px; background: var(--bg2); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 10px; gap: 6px; flex-shrink: 0;
+  font-family: var(--mono); font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.08em;
+}
+.panel-header .ph-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border-bright); }
+.panel-header .ph-title { color: var(--text1); }
+.panel-content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 8px; }
+.panel-content::-webkit-scrollbar { width: 4px; }
+.panel-content::-webkit-scrollbar-track { background: transparent; }
+.panel-content::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+
+/* ── LEFT: RUN HISTORY ── */
+.run-item {
+  padding: 7px 8px; border-radius: 4px; cursor: pointer; margin-bottom: 2px;
+  border: 1px solid transparent; transition: all 0.1s;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.run-item:hover { background: var(--bg3); }
+.run-item.selected { background: var(--bg3); border-color: var(--border-bright); }
+.run-item-top { display: flex; align-items: center; gap: 6px; }
+.run-tag { font-family: var(--mono); font-size: 10px; color: var(--text0); font-weight: 500; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.run-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.run-dot.pass { background: var(--pass); box-shadow: 0 0 4px var(--pass); }
+.run-dot.fail { background: var(--fail); box-shadow: 0 0 4px var(--fail); }
+.run-meta { font-family: var(--mono); font-size: 9px; color: var(--text2); }
+.bless-row { display: flex; justify-content: flex-end; margin-top: 4px; }
+.bless-btn {
+  padding: 2px 8px; border-radius: 3px; border: 1px solid var(--warn);
+  background: transparent; color: var(--warn); font-family: var(--mono); font-size: 9px;
+  cursor: pointer; transition: all 0.1s; letter-spacing: 0.05em;
+}
+.bless-btn:hover { background: var(--warn); color: var(--bg0); }
+.run-divider { height: 1px; background: var(--border); margin: 6px 0; }
+
+/* ── CENTER: FRAME INSPECTOR ── */
+.frame-inspector { grid-column: 2; grid-row: 1; }
+.frames-row { display: flex; gap: 6px; padding: 8px; flex: 1; min-height: 0; }
+.frame-slot { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.frame-label { font-family: var(--mono); font-size: 9px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.08em; text-align: center; }
+.frame-canvas { flex: 1; border-radius: 4px; border: 1px solid var(--border); overflow: hidden; position: relative; min-height: 120px; }
+.frame-canvas canvas { width: 100%; height: 100%; display: block; }
+
+.inspector-controls {
+  padding: 6px 8px; border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+}
+.ctrl-group { display: flex; align-items: center; gap: 4px; }
+.ctrl-label { font-family: var(--mono); font-size: 9px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; margin-right: 4px; }
+.chan-btn {
+  width: 28px; height: 20px; border-radius: 3px; border: 1px solid var(--border);
+  background: var(--bg2); color: var(--text2); font-family: var(--mono); font-size: 9px; font-weight: 600;
+  cursor: pointer; transition: all 0.1s; letter-spacing: 0.05em;
+}
+.chan-btn:hover { border-color: var(--border-bright); color: var(--text1); }
+.chan-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+.chan-btn.r.active { background: #3d1a1a; border-color: #e85454; color: #e85454; }
+.chan-btn.g.active { background: var(--pass-dim); border-color: var(--pass); color: var(--pass); }
+.chan-btn.b.active { background: #1a2550; border-color: #5b8af0; color: #5b8af0; }
+.chan-btn.a.active { background: #2a2a2f; border-color: #a8a8b0; color: #a8a8b0; }
+
+.wipe-group { display: flex; align-items: center; gap: 6px; flex: 1; max-width: 200px; }
+.wipe-slider { flex: 1; accent-color: var(--accent); cursor: pointer; }
+.hint-text { font-family: var(--mono); font-size: 9px; color: var(--text2); margin-left: auto; }
+
+/* ── RIGHT: DIFF ANALYSIS ── */
+.diff-panel { grid-column: 3; grid-row: 1; }
+.region-grid-wrap { padding: 8px; }
+.region-grid-label { font-family: var(--mono); font-size: 9px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+.region-thumb { position: relative; width: 100%; aspect-ratio: 16/9; border-radius: 4px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 8px; }
+.region-thumb canvas { width: 100%; height: 100%; display: block; }
+.region-overlay { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); }
+.region-cell {
+  border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 8px; color: rgba(255,255,255,0.5); font-weight: 500;
+  transition: background 0.2s;
+}
+.region-cell.hot { background: rgba(232,84,84,0.35); color: #e85454; border-color: rgba(232,84,84,0.6); }
+.region-cell.warm { background: rgba(232,165,52,0.2); color: var(--warn); }
+
+.diff-controls { padding: 0 8px 8px; display: flex; flex-direction: column; gap: 8px; }
+.diff-row { display: flex; align-items: center; gap: 8px; }
+.diff-row-label { font-family: var(--mono); font-size: 9px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; width: 64px; flex-shrink: 0; }
+.thresh-slider { flex: 1; accent-color: var(--fail); cursor: pointer; }
+.thresh-val { font-family: var(--mono); font-size: 10px; color: var(--text0); width: 20px; text-align: right; }
+.heatmap-btn {
+  padding: 3px 10px; border-radius: 3px; border: 1px solid var(--border);
+  background: var(--bg2); color: var(--text1); font-family: var(--mono); font-size: 9px;
+  cursor: pointer; transition: all 0.1s; letter-spacing: 0.04em;
+}
+.heatmap-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+.worst-callout {
+  margin: 0 8px 8px; padding: 6px 8px; border-radius: 4px;
+  background: var(--fail-dim); border: 1px solid rgba(232,84,84,0.3);
+}
+.worst-callout-label { font-family: var(--mono); font-size: 9px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; }
+.worst-callout-val { font-family: var(--mono); font-size: 11px; color: var(--fail); font-weight: 600; }
+
+/* ── BOTTOM: TABBED PANEL ── */
+.bottom-panel { grid-column: 1 / 4; grid-row: 2; display: flex; flex-direction: column; }
+.tab-bar {
+  display: flex; border-bottom: 1px solid var(--border); background: var(--bg2); flex-shrink: 0;
+}
+.tab-btn {
+  padding: 0 16px; height: 32px; border: none; background: transparent;
+  color: var(--text2); font-family: var(--mono); font-size: 10px; font-weight: 500;
+  cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.1s;
+  letter-spacing: 0.05em; text-transform: uppercase;
+}
+.tab-btn:hover { color: var(--text1); }
+.tab-btn.active { color: var(--text0); border-bottom-color: var(--accent); }
+.tab-content { flex: 1; overflow: hidden; display: none; }
+.tab-content.active { display: flex; }
+
+/* Tab 1: Expectations */
+.expectations-tab { padding: 10px; display: flex; flex-direction: column; gap: 6px; width: 100%; overflow-y: auto; }
+.rule-item {
+  display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 4px;
+  background: var(--bg2); border: 1px solid var(--border);
+}
+.rule-icon { width: 14px; height: 14px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; flex-shrink: 0; }
+.rule-icon.pass { background: var(--pass-dim); color: var(--pass); }
+.rule-icon.fail { background: var(--fail-dim); color: var(--fail); }
+.rule-text { font-family: var(--mono); font-size: 10px; color: var(--text0); flex: 1; }
+.rule-status { font-family: var(--mono); font-size: 9px; font-weight: 600; }
+.rule-status.pass { color: var(--pass); }
+.rule-status.fail { color: var(--fail); }
+.add-rule-btn {
+  padding: 4px 12px; border-radius: 3px; border: 1px dashed var(--border-bright);
+  background: transparent; color: var(--text2); font-family: var(--mono); font-size: 9px;
+  cursor: pointer; transition: all 0.1s; align-self: flex-start; letter-spacing: 0.04em;
+}
+.add-rule-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Tab 2: AI Triage */
+.ai-tab { padding: 10px; display: flex; gap: 10px; width: 100%; overflow: hidden; }
+.ai-left { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ai-right { width: 340px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; }
+.json-block {
+  flex: 1; background: var(--bg0); border: 1px solid var(--border); border-radius: 4px;
+  padding: 8px; overflow-y: auto; font-family: var(--mono); font-size: 9px; line-height: 1.6;
+  color: var(--text1);
+}
+.json-key { color: #7eb8f7; }
+.json-str { color: #8fe0a0; }
+.json-num { color: #f7c07e; }
+.json-bool-pass { color: var(--fail); }
+.ask-claude-btn {
+  padding: 6px 16px; border-radius: 4px; border: 1px solid var(--accent);
+  background: var(--accent-dim); color: var(--accent); font-family: var(--mono); font-size: 10px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s; letter-spacing: 0.05em; align-self: flex-start;
+}
+.ask-claude-btn:hover { background: var(--accent); color: #fff; }
+.ai-response {
+  flex: 1; background: var(--bg0); border: 1px solid var(--border); border-radius: 4px;
+  padding: 8px; font-family: var(--sans); font-size: 11px; line-height: 1.6; color: var(--text1);
+  overflow-y: auto;
+}
+.ai-response .ai-label { font-family: var(--mono); font-size: 9px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+.ai-response .region-ref { color: var(--fail); font-family: var(--mono); font-weight: 600; }
+.save-verdict-btn {
+  padding: 4px 12px; border-radius: 3px; border: 1px solid var(--border-bright);
+  background: var(--bg3); color: var(--text1); font-family: var(--mono); font-size: 9px;
+  cursor: pointer; transition: all 0.1s; align-self: flex-start;
+}
+.save-verdict-btn:hover { background: var(--bg4); color: var(--text0); }
+
+/* Tab 3: Metrics */
+.metrics-tab { padding: 10px; display: flex; gap: 10px; width: 100%; overflow-x: auto; }
+.stat-card {
+  min-width: 130px; background: var(--bg2); border: 1px solid var(--border); border-radius: 5px;
+  padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;
+}
+.stat-name { font-family: var(--mono); font-size: 9px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.08em; }
+.stat-val { font-family: var(--mono); font-size: 18px; font-weight: 600; color: var(--text0); line-height: 1; }
+.stat-val span { font-size: 11px; color: var(--text2); }
+.stat-status { font-family: var(--mono); font-size: 9px; font-weight: 600; }
+.stat-status.pass { color: var(--pass); }
+.stat-sparkline { margin-top: 4px; display: flex; align-items: flex-end; gap: 2px; height: 20px; }
+.spark-bar { flex: 1; background: var(--accent); border-radius: 1px; opacity: 0.7; min-height: 2px; transition: opacity 0.1s; }
+.spark-bar:hover { opacity: 1; }
+.spark-bar.current { background: var(--pass); opacity: 1; }
+
+/* Tab 4: Render Targets */
+.targets-tab { padding: 10px; display: flex; gap: 10px; width: 100%; overflow-x: auto; }
+.rt-card { min-width: 180px; display: flex; flex-direction: column; gap: 4px; }
+.rt-thumb { width: 100%; aspect-ratio: 16/9; border-radius: 4px; border: 1px solid var(--border); overflow: hidden; position: relative; }
+.rt-thumb canvas { width: 100%; height: 100%; display: block; }
+.rt-label { font-family: var(--mono); font-size: 9px; color: var(--text1); text-transform: uppercase; letter-spacing: 0.06em; }
+.rt-controls { display: flex; gap: 3px; }
+.rt-chan-btn {
+  padding: 2px 5px; border-radius: 2px; border: 1px solid var(--border);
+  background: var(--bg2); color: var(--text2); font-family: var(--mono); font-size: 8px;
+  cursor: pointer; transition: all 0.1s;
+}
+.rt-chan-btn:hover { color: var(--text1); border-color: var(--border-bright); }
+.rt-chan-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+/* scrollbar for bottom panels */
+.expectations-tab::-webkit-scrollbar,
+.json-block::-webkit-scrollbar,
+.ai-response::-webkit-scrollbar { width: 3px; }
+.expectations-tab::-webkit-scrollbar-thumb,
+.json-block::-webkit-scrollbar-thumb,
+.ai-response::-webkit-scrollbar-thumb { background: var(--border-bright); }
+</style>
+</head>
+<body>
+
+<!-- TITLEBAR -->
+<div class="titlebar">
+  <span class="title">RenderTest Debugger</span>
+  <span class="badge badge-fail">1 FAIL</span>
+  <span style="color:var(--border-bright)">|</span>
+  <span>mesh3d_render_system</span>
+  <span style="color:var(--border-bright)">·</span>
+  <span>frame 60</span>
+  <span style="color:var(--border-bright)">·</span>
+  <span>dx11</span>
+  <span style="color:var(--border-bright)">·</span>
+  <span>856e56ec</span>
+  <div class="titlebar-right">
+    <button class="tb-btn">dia check render-diff</button>
+    <button class="tb-btn primary">⊕ New Capture</button>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- LEFT: RUN HISTORY -->
+  <div class="panel" style="grid-column:1; grid-row:1;">
+    <div class="panel-header"><div class="ph-dot"></div><span class="ph-title">Run History</span></div>
+    <div class="panel-content">
+
+      <div class="run-item selected">
+        <div class="run-item-top">
+          <div class="run-dot fail"></div>
+          <span class="run-tag">mesh3d_render_system</span>
+        </div>
+        <div class="run-meta">2026-06-22 · 14:32:08</div>
+        <div class="bless-row"><button class="bless-btn">✦ BLESS</button></div>
+      </div>
+
+      <div class="run-item">
+        <div class="run-item-top">
+          <div class="run-dot pass"></div>
+          <span class="run-tag">mesh3d_render_system</span>
+        </div>
+        <div class="run-meta">2026-06-22 · 11:14:53</div>
+      </div>
+
+      <div class="run-divider"></div>
+
+      <div class="run-item">
+        <div class="run-item-top">
+          <div class="run-dot pass"></div>
+          <span class="run-tag">mesh3d_basic</span>
+        </div>
+        <div class="run-meta">2026-06-22 · 11:14:51</div>
+      </div>
+
+      <div class="run-item">
+        <div class="run-item-top">
+          <div class="run-dot pass"></div>
+          <span class="run-tag">mesh3d_basic</span>
+        </div>
+        <div class="run-meta">2026-06-21 · 18:02:33</div>
+      </div>
+
+      <div class="run-item">
+        <div class="run-item-top">
+          <div class="run-dot fail"></div>
+          <span class="run-tag">mesh3d_basic</span>
+        </div>
+        <div class="run-meta">2026-06-21 · 17:55:10</div>
+      </div>
+
+      <div class="run-divider"></div>
+
+      <div class="run-item">
+        <div class="run-item-top">
+          <div class="run-dot pass"></div>
+          <span class="run-tag">shadow_caster</span>
+        </div>
+        <div class="run-meta">2026-06-21 · 16:40:22</div>
+      </div>
+
+      <div class="run-item">
+        <div class="run-item-top">
+          <div class="run-dot pass"></div>
+          <span class="run-tag">shadow_caster</span>
+        </div>
+        <div class="run-meta">2026-06-20 · 09:18:05</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER: FRAME INSPECTOR -->
+  <div class="panel frame-inspector" style="grid-column:2; grid-row:1; display:flex; flex-direction:column;">
+    <div class="panel-header"><div class="ph-dot"></div><span class="ph-title">Frame Inspector</span></div>
+    <div class="frames-row">
+      <div class="frame-slot">
+        <div class="frame-label">Reference</div>
+        <div class="frame-canvas"><canvas id="cvRef"></canvas></div>
+      </div>
+      <div class="frame-slot">
+        <div class="frame-label">Run</div>
+        <div class="frame-canvas"><canvas id="cvRun"></canvas></div>
+      </div>
+      <div class="frame-slot">
+        <div class="frame-label">Diff</div>
+        <div class="frame-canvas"><canvas id="cvDiff"></canvas></div>
+      </div>
+    </div>
+    <div class="inspector-controls">
+      <div class="ctrl-group">
+        <span class="ctrl-label">Wipe</span>
+        <input type="range" class="wipe-slider" id="wipeSlider" min="0" max="100" value="50">
+      </div>
+      <div class="ctrl-group">
+        <span class="ctrl-label">Ch</span>
+        <button class="chan-btn active" data-chan="rgb">RGB</button>
+        <button class="chan-btn r" data-chan="r">R</button>
+        <button class="chan-btn g" data-chan="g">G</button>
+        <button class="chan-btn b" data-chan="b">B</button>
+        <button class="chan-btn a" data-chan="a">A</button>
+        <button class="chan-btn" data-chan="d">Depth</button>
+      </div>
+      <span class="hint-text">scroll to zoom · drag to pan</span>
+    </div>
+  </div>
+
+  <!-- RIGHT: DIFF ANALYSIS -->
+  <div class="panel diff-panel" style="grid-column:3; grid-row:1;">
+    <div class="panel-header"><div class="ph-dot"></div><span class="ph-title">Diff Analysis</span></div>
+    <div class="region-grid-wrap">
+      <div class="region-grid-label">Region Grid (4×4)</div>
+      <div class="region-thumb">
+        <canvas id="cvRegion"></canvas>
+        <div class="region-overlay" id="regionOverlay"></div>
+      </div>
+    </div>
+    <div class="worst-callout">
+      <div class="worst-callout-label">Worst Region</div>
+      <div class="worst-callout-val">[1,2] — 3.1% diff · Δ12</div>
+    </div>
+    <div class="diff-controls">
+      <div class="diff-row">
+        <span class="diff-row-label">Threshold</span>
+        <input type="range" class="thresh-slider" id="threshSlider" min="0" max="10" value="4">
+        <span class="thresh-val" id="threshVal">4</span>
+      </div>
+      <div class="diff-row">
+        <span class="diff-row-label">Heat Map</span>
+        <button class="heatmap-btn" id="heatmapBtn">Toggle</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM: TABBED -->
+  <div class="bottom-panel" style="grid-column:1/4; grid-row:2;">
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="expectations">Expectations</button>
+      <button class="tab-btn" data-tab="ai">AI Triage</button>
+      <button class="tab-btn" data-tab="metrics">Metrics</button>
+      <button class="tab-btn" data-tab="targets">Render Targets</button>
+    </div>
+
+    <!-- TAB 1: Expectations -->
+    <div class="tab-content active" id="tab-expectations">
+      <div class="expectations-tab">
+        <div class="rule-item">
+          <div class="rule-icon pass">✓</div>
+          <span class="rule-text">region[0,0] near clear-colour (Δ ≤ 5)</span>
+          <span class="rule-status pass">PASS</span>
+        </div>
+        <div class="rule-item">
+          <div class="rule-icon pass">✓</div>
+          <span class="rule-text">region[2,2] brightness &gt; 0.3 (cube centre lit)</span>
+          <span class="rule-status pass">PASS</span>
+        </div>
+        <div class="rule-item" style="border-color: rgba(232,84,84,0.4); background: var(--fail-dim);">
+          <div class="rule-icon fail">✗</div>
+          <span class="rule-text">region[1,2] shadow_edge Δ ≤ 4</span>
+          <span class="rule-status fail">FAIL · Δ12</span>
+        </div>
+        <div class="rule-item">
+          <div class="rule-icon pass">✓</div>
+          <span class="rule-text">draw_calls == 3</span>
+          <span class="rule-status pass">PASS</span>
+        </div>
+        <div class="rule-item">
+          <div class="rule-icon pass">✓</div>
+          <span class="rule-text">gpu_mesh_count == 4</span>
+          <span class="rule-status pass">PASS</span>
+        </div>
+        <div class="rule-item">
+          <div class="rule-icon pass">✓</div>
+          <span class="rule-text">frame not all-black (mean brightness &gt; 0.02)</span>
+          <span class="rule-status pass">PASS</span>
+        </div>
+        <button class="add-rule-btn">+ Add Rule</button>
+      </div>
+    </div>
+
+    <!-- TAB 2: AI Triage -->
+    <div class="tab-content" id="tab-ai">
+      <div class="ai-tab">
+        <div class="ai-left">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:0.08em;">JSON Report</div>
+          <div class="json-block">
+<span class="json-key">"tag"</span>: <span class="json-str">"mesh3d_render_system"</span>,<br>
+<span class="json-key">"frame"</span>: <span class="json-num">60</span>,<br>
+<span class="json-key">"backend"</span>: <span class="json-str">"dx11"</span>,<br>
+<span class="json-key">"commit"</span>: <span class="json-str">"856e56ec"</span>,<br>
+<span class="json-key">"pass"</span>: <span class="json-bool-pass">false</span>,<br>
+<span class="json-key">"diff"</span>: {<br>
+&nbsp;&nbsp;<span class="json-key">"total_pixels"</span>: <span class="json-num">921600</span>,<br>
+&nbsp;&nbsp;<span class="json-key">"differing_pixels"</span>: <span class="json-num">4200</span>,<br>
+&nbsp;&nbsp;<span class="json-key">"differing_pct"</span>: <span class="json-num">0.46</span>,<br>
+&nbsp;&nbsp;<span class="json-key">"max_delta"</span>: <span class="json-num">12</span>,<br>
+&nbsp;&nbsp;<span class="json-key">"threshold"</span>: <span class="json-num">4</span>,<br>
+&nbsp;&nbsp;<span class="json-key">"regions"</span>: [<br>
+&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="json-key">"row"</span>: <span class="json-num">1</span>, <span class="json-key">"col"</span>: <span class="json-num">2</span>, <span class="json-key">"differing_pct"</span>: <span class="json-num">3.1</span>, <span class="json-key">"max_delta"</span>: <span class="json-num">12</span> }<br>
+&nbsp;&nbsp;]<br>
+}
+          </div>
+        </div>
+        <div class="ai-right">
+          <button class="ask-claude-btn">⬡ Ask Claude</button>
+          <div class="ai-response">
+            <div class="ai-label">Claude · verdict</div>
+            <p><span class="region-ref">[1,2]</span> shows a shadow edge discontinuity consistent with a light view-projection matrix precision error. The delta of 12 on the shadow boundary suggests the shadow map lookup is off by approximately half a texel — typical of a missing bias term or a change in the light's near-plane distance.</p>
+            <br>
+            <p>All other regions are within threshold. The cube geometry and base colour are correct. This is isolated to the shadow pass.</p>
+            <br>
+            <p style="color:var(--text2);font-size:10px;font-family:var(--mono);">Suggested fix: check <code style="color:var(--accent)">ShadowRenderer::ComputeLightMatrix()</code> near-plane value and shadow bias uniform in <code style="color:var(--accent)">fs_mesh.sc</code>.</p>
+          </div>
+          <button class="save-verdict-btn">↓ Save verdict to report</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: Metrics -->
+    <div class="tab-content" id="tab-metrics">
+      <div class="metrics-tab">
+        <div class="stat-card">
+          <div class="stat-name">Draw Calls</div>
+          <div class="stat-val">3 <span>/ 3</span></div>
+          <div class="stat-status pass">✓ MATCH</div>
+          <div class="stat-sparkline" id="spark-dc"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-name">GPU Meshes</div>
+          <div class="stat-val">4</div>
+          <div class="stat-status pass">✓ EXPECTED</div>
+          <div class="stat-sparkline" id="spark-gm"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-name">Frame Time</div>
+          <div class="stat-val">8.2 <span>ms</span></div>
+          <div class="stat-status pass">✓ &lt; 16ms</div>
+          <div class="stat-sparkline" id="spark-ft"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-name">Shadow Map</div>
+          <div class="stat-val" style="font-size:13px;">2048<span>×</span>2048</div>
+          <div class="stat-status pass">✓ EXPECTED</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-name">GPU Upload</div>
+          <div class="stat-val">0 <span>this frame</span></div>
+          <div class="stat-status pass">✓ CACHED</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: Render Targets -->
+    <div class="tab-content" id="tab-targets">
+      <div class="targets-tab">
+        <div class="rt-card">
+          <div class="rt-thumb"><canvas id="rt0"></canvas></div>
+          <div class="rt-label">Final Composite</div>
+          <div class="rt-controls">
+            <button class="rt-chan-btn active">RGB</button>
+            <button class="rt-chan-btn">R</button>
+            <button class="rt-chan-btn">G</button>
+            <button class="rt-chan-btn">B</button>
+            <button class="rt-chan-btn">A</button>
+          </div>
+        </div>
+        <div class="rt-card">
+          <div class="rt-thumb"><canvas id="rt1"></canvas></div>
+          <div class="rt-label">Shadow Map (depth)</div>
+          <div class="rt-controls">
+            <button class="rt-chan-btn active">Remap</button>
+            <button class="rt-chan-btn">Raw</button>
+          </div>
+        </div>
+        <div class="rt-card">
+          <div class="rt-thumb"><canvas id="rt2"></canvas></div>
+          <div class="rt-label">Depth Buffer</div>
+          <div class="rt-controls">
+            <button class="rt-chan-btn active">Linear</button>
+            <button class="rt-chan-btn">Raw</button>
+            <button class="rt-chan-btn">Inv</button>
+          </div>
+        </div>
+        <div class="rt-card">
+          <div class="rt-thumb"><canvas id="rt3"></canvas></div>
+          <div class="rt-label">Albedo</div>
+          <div class="rt-controls">
+            <button class="rt-chan-btn active">RGB</button>
+            <button class="rt-chan-btn">R</button>
+            <button class="rt-chan-btn">G</button>
+            <button class="rt-chan-btn">B</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end bottom panel -->
+</div><!-- end layout -->
+
+<script>
+// ── CANVAS DRAWING ──
+function drawSceneRef(canvas, variant) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.offsetWidth || 300;
+  const h = canvas.height = canvas.offsetHeight || 200;
+  ctx.fillStyle = '#1a1c22'; ctx.fillRect(0,0,w,h);
+  // ground plane suggestion
+  ctx.fillStyle = '#252830';
+  ctx.beginPath(); ctx.moveTo(0,h*0.65); ctx.lineTo(w,h*0.55); ctx.lineTo(w,h); ctx.lineTo(0,h); ctx.fill();
+  // shadow (slightly off in run variant)
+  const sx = variant === 'run' ? w*0.52 : w*0.5;
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.beginPath(); ctx.ellipse(sx, h*0.72, w*0.12, h*0.04, 0, 0, Math.PI*2); ctx.fill();
+  // cube face left
+  ctx.fillStyle = variant === 'run' ? '#374060' : '#3a4268';
+  ctx.beginPath();
+  ctx.moveTo(w*0.35,h*0.35); ctx.lineTo(w*0.5,h*0.28); ctx.lineTo(w*0.5,h*0.62); ctx.lineTo(w*0.35,h*0.68); ctx.fill();
+  // cube face top
+  ctx.fillStyle = variant === 'run' ? '#5a6a90' : '#6070a0';
+  ctx.beginPath();
+  ctx.moveTo(w*0.35,h*0.35); ctx.lineTo(w*0.5,h*0.28); ctx.lineTo(w*0.65,h*0.35); ctx.lineTo(w*0.5,h*0.42); ctx.fill();
+  // cube face right
+  ctx.fillStyle = variant === 'run' ? '#263050' : '#2a3458';
+  ctx.beginPath();
+  ctx.moveTo(w*0.5,h*0.42); ctx.lineTo(w*0.65,h*0.35); ctx.lineTo(w*0.65,h*0.68); ctx.lineTo(w*0.5,h*0.62); ctx.fill();
+  // ambient light gradient
+  const gr = ctx.createRadialGradient(w*0.5,h*0.2,0,w*0.5,h*0.2,w*0.4);
+  gr.addColorStop(0,'rgba(80,100,160,0.15)'); gr.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=gr; ctx.fillRect(0,0,w,h);
+}
+
+function drawDiff(canvas) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.offsetWidth || 300;
+  const h = canvas.height = canvas.offsetHeight || 200;
+  ctx.fillStyle = '#0a0a0c'; ctx.fillRect(0,0,w,h);
+  // hot spot in region [1,2] (row 1, col 2 of a 4x4 grid)
+  const rx = (2/4)*w, ry = (1/4)*h, rw = w/4, rh = h/4;
+  const gr = ctx.createRadialGradient(rx+rw*0.5,ry+rh*0.5,2,rx+rw*0.5,ry+rh*0.5,rw*0.7);
+  gr.addColorStop(0,'rgba(232,84,84,0.9)'); gr.addColorStop(0.5,'rgba(232,84,84,0.4)'); gr.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=gr; ctx.fillRect(0,0,w,h);
+  // tiny warm scatter
+  ctx.fillStyle='rgba(232,165,52,0.15)';
+  ctx.fillRect(w*0.1,h*0.55,w*0.08,h*0.12);
+}
+
+function drawRegionThumb(canvas) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.offsetWidth || 200;
+  const h = canvas.height = canvas.offsetHeight || 112;
+  ctx.fillStyle = '#0a0a0c'; ctx.fillRect(0,0,w,h);
+  const gr = ctx.createRadialGradient(w*0.625,h*0.375,2,w*0.625,h*0.375,w*0.2);
+  gr.addColorStop(0,'rgba(232,84,84,0.85)'); gr.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=gr; ctx.fillRect(0,0,w,h);
+}
+
+function drawShadowMap(canvas) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.offsetWidth || 180;
+  const h = canvas.height = canvas.offsetHeight || 101;
+  const gr = ctx.createLinearGradient(0,0,w,h);
+  gr.addColorStop(0,'#8898b0'); gr.addColorStop(0.4,'#4a5568'); gr.addColorStop(1,'#1a2030');
+  ctx.fillStyle=gr; ctx.fillRect(0,0,w,h);
+  ctx.fillStyle='rgba(10,12,18,0.7)';
+  ctx.fillRect(w*0.25,h*0.2,w*0.5,h*0.6);
+}
+
+function drawDepthBuffer(canvas) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.offsetWidth || 180;
+  const h = canvas.height = canvas.offsetHeight || 101;
+  ctx.fillStyle = '#e0e4f0'; ctx.fillRect(0,0,w,h);
+  ctx.fillStyle = '#8090b8';
+  ctx.beginPath(); ctx.moveTo(w*0.35,h*0.35); ctx.lineTo(w*0.65,h*0.35); ctx.lineTo(w*0.65,h*0.68); ctx.lineTo(w*0.35,h*0.68); ctx.fill();
+  ctx.fillStyle = '#a0aac8';
+  ctx.beginPath(); ctx.moveTo(w*0.35,h*0.35); ctx.lineTo(w*0.5,h*0.28); ctx.lineTo(w*0.65,h*0.35); ctx.lineTo(w*0.5,h*0.42); ctx.fill();
+}
+
+function drawAlbedo(canvas) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.offsetWidth || 180;
+  const h = canvas.height = canvas.offsetHeight || 101;
+  ctx.fillStyle = '#1a1c22'; ctx.fillRect(0,0,w,h);
+  ctx.fillStyle = '#5b6fa8';
+  ctx.beginPath(); ctx.moveTo(w*0.35,h*0.35); ctx.lineTo(w*0.5,h*0.28); ctx.lineTo(w*0.5,h*0.62); ctx.lineTo(w*0.35,h*0.68); ctx.fill();
+  ctx.fillStyle = '#6b80c0';
+  ctx.beginPath(); ctx.moveTo(w*0.35,h*0.35); ctx.lineTo(w*0.5,h*0.28); ctx.lineTo(w*0.65,h*0.35); ctx.lineTo(w*0.5,h*0.42); ctx.fill();
+  ctx.fillStyle = '#4a5888';
+  ctx.beginPath(); ctx.moveTo(w*0.5,h*0.42); ctx.lineTo(w*0.65,h*0.35); ctx.lineTo(w*0.65,h*0.68); ctx.lineTo(w*0.5,h*0.62); ctx.fill();
+}
+
+function initCanvases() {
+  drawSceneRef(document.getElementById('cvRef'), 'ref');
+  drawSceneRef(document.getElementById('cvRun'), 'run');
+  drawDiff(document.getElementById('cvDiff'));
+  drawRegionThumb(document.getElementById('cvRegion'));
+  drawShadowMap(document.getElementById('rt1'));
+  drawDepthBuffer(document.getElementById('rt2'));
+  drawAlbedo(document.getElementById('rt3'));
+  // rt0 = final composite (same as ref)
+  drawSceneRef(document.getElementById('rt0'), 'run');
+}
+
+// ── REGION GRID ──
+const regionData = [
+  [0.0, 0.0, 0.0, 0.1],
+  [0.0, 0.1, 3.1, 0.2],
+  [0.1, 0.4, 0.8, 0.1],
+  [0.0, 0.2, 0.1, 0.0]
+];
+function buildRegionGrid() {
+  const overlay = document.getElementById('regionOverlay');
+  overlay.innerHTML = '';
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      const v = regionData[r][c];
+      const cell = document.createElement('div');
+      cell.className = 'region-cell' + (v > 2 ? ' hot' : v > 0.3 ? ' warm' : '');
+      cell.textContent = v.toFixed(1);
+      overlay.appendChild(cell);
+    }
+  }
+}
+
+// ── SPARKLINES ──
+function buildSparkline(id, data) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const max = Math.max(...data);
+  data.forEach((v, i) => {
+    const bar = document.createElement('div');
+    bar.className = 'spark-bar' + (i === data.length - 1 ? ' current' : '');
+    bar.style.height = Math.max(2, (v / max) * 20) + 'px';
+    el.appendChild(bar);
+  });
+}
+
+// ── TABS ──
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ── CHANNEL TOGGLES ──
+document.querySelectorAll('.chan-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.chan-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+// ── RT CHANNEL TOGGLES ──
+document.querySelectorAll('.rt-controls').forEach(group => {
+  group.querySelectorAll('.rt-chan-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      group.querySelectorAll('.rt-chan-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+});
+
+// ── THRESHOLD SLIDER ──
+document.getElementById('threshSlider').addEventListener('input', function() {
+  document.getElementById('threshVal').textContent = this.value;
+});
+
+// ── HEATMAP TOGGLE ──
+document.getElementById('heatmapBtn').addEventListener('click', function() {
+  this.classList.toggle('active');
+});
+
+// ── RUN ITEM SELECTION ──
+document.querySelectorAll('.run-item').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.run-item').forEach(i => i.classList.remove('selected'));
+    item.classList.add('selected');
+  });
+});
+
+// ── INIT ──
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    initCanvases();
+    buildRegionGrid();
+    buildSparkline('spark-dc', [3,3,3,3,3,3,3,3,3,3]);
+    buildSparkline('spark-gm', [4,4,4,4,4,4,4,4,4,4]);
+    buildSparkline('spark-ft', [7.8,8.1,7.9,8.4,8.2,8.0,8.3,8.1,8.5,8.2]);
+  }, 100);
+});
+
+window.addEventListener('resize', () => { initCanvases(); });
+</script>
+</body>
+</html>

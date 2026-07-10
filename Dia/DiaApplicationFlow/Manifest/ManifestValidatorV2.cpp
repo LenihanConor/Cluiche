@@ -202,7 +202,7 @@ namespace Dia { namespace ApplicationFlow {
     //-----------------------------------------------------------------------------
     void ManifestValidatorV2::CheckDuplicateStreamIds(const ApplicationManifestV3& manifest)
     {
-        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> seenIds;
+        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32> seenIds;
 
         for (unsigned int i = 0; i < manifest.streams.Size(); ++i)
         {
@@ -291,7 +291,7 @@ namespace Dia { namespace ApplicationFlow {
     void ManifestValidatorV2::CheckPUModules(const ApplicationManifestV3& manifest)
     {
         // Build flat array of valid stream ids
-        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> streamIds;
+        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32> streamIds;
         for (unsigned int i = 0; i < manifest.streams.Size(); ++i)
         {
             streamIds.Add(manifest.streams[i].id);
@@ -798,7 +798,7 @@ namespace Dia { namespace ApplicationFlow {
         static const Dia::Core::StringCRC kServiceKind("ServiceStream");
 
         // Build flat set of declared stream ids
-        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> declaredIds;
+        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32> declaredIds;
         for (unsigned int i = 0; i < manifest.streams.Size(); ++i)
         {
             declaredIds.Add(manifest.streams[i].id);

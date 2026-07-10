@@ -52,6 +52,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | ci-architecture-gates | [spec](specs/) | 2026-07-09 | Marked done by `dia docs spec-done` |
 | DiaBlackboardInspector | [diablackboardinspector.md](specs/applications/dia/systems/diablackboardinspector/diablackboardinspector.md) | 2026-07-09 | Moved by `dia docs backlog move` |
 | mesh-texture-pipeline | [spec](specs/) | 2026-07-09 | Marked done by `dia docs spec-done` |
+| diarendertest | [spec](specs/) | 2026-07-09 | Marked done by `dia docs spec-done` |
 
 ---
 

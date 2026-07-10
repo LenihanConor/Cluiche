@@ -10,6 +10,7 @@
 #include <DiaGraphics/Interface/ICanvas.h>
 #include <DiaGraphics3D/FrameData3D.h>
 #include <DiaAssetRuntime/Handlers/TextureHandler.h>
+#include <DiaMesh3D/Mesh3DAssetHandler.h>
 
 namespace Dia { namespace Bgfx3D { class Canvas3D; } }
 
@@ -33,7 +34,8 @@ private:
     Dia::ApplicationFlow::StreamReader<Dia::Graphics3D::FrameData3D>           mFrame3DInput{this, "SimToRender3D"};
     Dia::ApplicationFlow::StreamWriter<Dia::Graphics::RenderFence>             mFenceOutput{this, "RenderToSim"};
     Dia::ApplicationFlow::ServiceStreamReader<Dia::Graphics::ICanvas>          mCanvasService{this, "KernelCanvas"};
-    Dia::ApplicationFlow::ServiceStreamReader<Dia::AssetRuntime::TextureHandler> mTextureHandlerService{this, "KernelTextureHandler"};
+    Dia::ApplicationFlow::ServiceStreamReader<Dia::AssetRuntime::TextureHandler>  mTextureHandlerService{this, "KernelTextureHandler"};
+    Dia::ApplicationFlow::ServiceStreamReader<Dia::Mesh3D::Mesh3DAssetHandler>   mMeshHandlerService{this, "KernelMeshHandler"};
     Dia::Graphics::ICanvas*      mCanvas    = nullptr;
     Dia::Bgfx3D::Canvas3D*       mCanvas3D  = nullptr;
     Dia::Graphics::FrameData     mLastFrame;

@@ -37,6 +37,9 @@ Dia::ApplicationFlow::StartResult RenderModule::DoStart()
     // Attempt to get Canvas3D — valid when KernelModule created a Canvas3D (3D rendering enabled).
     mCanvas3D = static_cast<Dia::Bgfx3D::Canvas3D*>(mCanvas);
 
+    if (mCanvas3D && mMeshHandlerService.IsAvailable())
+        mCanvas3D->SetMeshHandler(&mMeshHandlerService.Get());
+
     DIA_LOG_INFO("Application", "RenderModule DoStart: canvas acquired");
 
     // Reset the cross-PU stop fence on every (re-)entry. KernelModule::DoStop
@@ -132,6 +135,7 @@ void RenderModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
     mFenceOutput.Connect(app);
     mCanvasService.Connect(app);
     mTextureHandlerService.Connect(app);
+    mMeshHandlerService.Connect(app);
 }
 
 } } // namespace Cluiche::AppFlow

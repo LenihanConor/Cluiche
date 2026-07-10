@@ -3,6 +3,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "Modules/PickingModule.h"
 
+#include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaPicking/PickAddress.h>

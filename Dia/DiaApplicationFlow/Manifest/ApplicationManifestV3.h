@@ -86,7 +86,7 @@ namespace Dia { namespace ApplicationFlow {
         Dia::Core::Containers::DynamicArrayC<StageDeclaration, 16>          stages;
         Dia::Core::StringCRC                                                 initialStage;
 
-        Dia::Core::Containers::DynamicArrayC<StreamDeclaration, 16>         streams;
+        Dia::Core::Containers::DynamicArrayC<StreamDeclaration, 32>         streams;
         Dia::Core::Containers::DynamicArrayC<ProcessingUnitDeclaration, 4>  processingUnits;
 
         // Full "config" block from the .diagame file — heap-allocated, owned here.

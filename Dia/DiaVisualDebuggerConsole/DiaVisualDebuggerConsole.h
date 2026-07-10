@@ -88,6 +88,8 @@ namespace Dia
 
             char mCommandBuffer[256];
 
+            Dia::Core::StringCRC mLastAutoSelectedStageId;
+
             Dia::Observation::Log::ISink*  mOutputSink  = nullptr;
             Dia::Observation::Log::ISink*  mWarningSink = nullptr;
             Dia::Observation::Log::Logger* mAttachedLogger = nullptr;

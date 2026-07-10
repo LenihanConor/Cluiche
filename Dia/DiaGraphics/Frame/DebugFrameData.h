@@ -156,6 +156,10 @@ namespace Dia
 
 			void AcceptVisitor(const DebugFrameDataVisitor& visitor) const;
 
+			// IDebugDraw
+			const Maths::Vector2D& GetMousePixel() const override { return mMousePixel; }
+			void SetMousePixel(const Maths::Vector2D& pos) { mMousePixel = pos; }
+
 		private:
 			bool CanAdd()
 			{
@@ -202,6 +206,7 @@ namespace Dia
 				return true;
 			}
 
+			Maths::Vector2D mMousePixel;
 			Core::Containers::DynamicArrayC<DebugPrimitive,     kGeometryCapacity> mDebugPrimitiveBuffer;
 			Core::Containers::DynamicArrayC<DebugPrimitiveText2D, kTextCapacity>   mTextBuffer;
 			uint32_t mDroppedCount             = 0;

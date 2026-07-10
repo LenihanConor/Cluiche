@@ -187,6 +187,11 @@ namespace Dia
                 }
 
                 // One tab per stage that has registered layers
+                // Auto-select the current stage tab only when the stage changes, not every frame.
+                bool stageChanged = (currentStageId != mLastAutoSelectedStageId);
+                if (stageChanged)
+                    mLastAutoSelectedStageId = currentStageId;
+
                 for (unsigned int i = 0; i < stageTags.Size(); ++i)
                 {
                     const Dia::Core::StringCRC& tag = stageTags[i];
@@ -200,7 +205,7 @@ namespace Dia
                     bool open = ImGui::BeginTabItem(
                         tag.AsChar(),
                         nullptr,
-                        isCurrent ? ImGuiTabItemFlags_SetSelected : 0);
+                        (isCurrent && stageChanged) ? ImGuiTabItemFlags_SetSelected : 0);
 
                     if (!isActive)
                         ImGui::PopStyleColor();
