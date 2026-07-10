@@ -145,7 +145,17 @@ namespace Dia
             Dia::Mesh3D::Mesh3DAsset* asset = mMeshHandler->LookupMesh(cmd.meshId);
             if (!asset)
             {
-                DIA_LOG_WARNING("DiaBgfx3D", "MeshRenderer: LookupMesh returned null for id=0x%08X", cmd.meshId.Value());
+                bool alreadyWarned = false;
+                for (unsigned int i = 0; i < mWarnedMissingCount; ++i)
+                {
+                    if (mWarnedMissing[i] == cmd.meshId) { alreadyWarned = true; break; }
+                }
+                if (!alreadyWarned)
+                {
+                    DIA_LOG_WARNING("DiaBgfx3D", "MeshRenderer: LookupMesh returned null for id=0x%08X (%s)", cmd.meshId.Value(), cmd.meshId.AsChar());
+                    if (mWarnedMissingCount < kMaxWarnedIds)
+                        mWarnedMissing[mWarnedMissingCount++] = cmd.meshId;
+                }
                 return;
             }
             if (!asset->IsReady())

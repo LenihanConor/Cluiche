@@ -3,6 +3,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#include <DiaCore/CRC/StringCRC.h>
+
 namespace Dia { namespace Graphics3D { class Mesh3DFrameData; struct Mesh3DDrawCommand; } }
 namespace Dia { namespace Mesh3D { class Mesh3DAssetHandler; } }
 
@@ -54,6 +56,10 @@ namespace Dia
             unsigned short  mUPbrParams;        // bgfx::UniformHandle::idx — u_pbrParams vec4
             unsigned short  mSOrm;              // bgfx::UniformHandle::idx (sampler) — s_orm
             unsigned short  mDefaultOrmTexture; // bgfx::TextureHandle::idx — 1×1 ORM default
+
+            static constexpr unsigned int kMaxWarnedIds = 16;
+            Dia::Core::StringCRC mWarnedMissing[kMaxWarnedIds];
+            unsigned int         mWarnedMissingCount = 0;
         };
 
     } // namespace Bgfx3D
