@@ -10,7 +10,7 @@
 - `skinning-palette` — `SkinningManager` produces per-frame `Matrix34` palettes
 - `scene-graph` — produces the populated `Mesh3DFrameData`
 
-**Status:** Approved
+**Status:** Done
 
 ## Summary
 

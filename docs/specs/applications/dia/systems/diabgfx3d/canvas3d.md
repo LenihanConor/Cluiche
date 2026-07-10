@@ -11,7 +11,7 @@
 - `graphics-3d-types` — `FrameData3D` is the 2D+3D frame packet (G3D-002)
 - `scene-graph` (DiaScene3D) — populates `FrameData3D` for CluicheTest demo
 
-**Status:** Approved
+**Status:** Done
 
 ## Summary
 

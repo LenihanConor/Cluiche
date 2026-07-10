@@ -72,4 +72,3 @@ Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testin
 | RenderTechnique asset type | Layer-level rendering policy (blend mode, post-process like bloom/distortion). Layers reference a technique by name; renderer resolves at draw time. Needs `/spec-feature` under DiaGraphics or DiaBgfx once the scene system lands. |
 | Camera2D controller (pan/zoom/reset) | Application-side input→Camera2D wiring for CluicheTest stages (keyboard pan, scroll zoom, home-key reset). Unblocked once coord2d-debug-overlay ships Camera2D + renderer integration. |
 | `Dia::Core::Blackboard` — general-purpose key-value store | Identified during DiaStateMachine research; useful for AI, animation, gameplay. Needs `/spec-feature` under DiaCore. |
-| **DiaBgfx3D — Specular / simple PBR follow-up** | GGX/Blinn-Phong BRDF next iteration. PBR foundation shipped; further tuning/extension. Needs `/spec-feature` under DiaBgfx3D. |

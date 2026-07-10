@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/applications/dia/systems/diabgfx3d/3d-renderers.md
-**Status:** In Progress
+**Status:** Done
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|

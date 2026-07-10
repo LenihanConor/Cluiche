@@ -1395,7 +1395,8 @@
       "PowerShell(& \"C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaCLI\\\\.venv\\\\Scripts\\\\pip.exe\" install scipy scikit-image --only-binary \":all:\" 2>&1 | Select-Object -Last 10)",
       "PowerShell(& \"C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaCLI\\\\.venv\\\\Scripts\\\\python.exe\" -c \"import platform; print\\(platform.python_version\\(\\), platform.architecture\\(\\)\\)\")",
       "PowerShell(& \"C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaCLI\\\\.venv\\\\Scripts\\\\pip.exe\" install scipy --dry-run 2>&1)",
-      "PowerShell(python --version; python -c \"import platform; print\\(platform.architecture\\(\\)\\)\")"
+      "PowerShell(python --version; python -c \"import platform; print\\(platform.architecture\\(\\)\\)\")",
+      "Bash(GIT_TRACE=1 git commit -m \"test\")"
     ],
     "defaultMode": "auto"
   }

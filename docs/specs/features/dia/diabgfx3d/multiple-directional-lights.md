@@ -3,7 +3,7 @@
 ## Parent System
 @docs/specs/applications/dia/systems/diabgfx3d/diabgfx3d.md
 
-**Status:** `Approved`
+**Status:** `Done`
 
 ---
 
