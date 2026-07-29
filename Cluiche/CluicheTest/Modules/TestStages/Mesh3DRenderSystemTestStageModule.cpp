@@ -132,6 +132,10 @@ void Mesh3DRenderSystemTestStageModule::OnUpdate(float /*deltaTime*/)
 void Mesh3DRenderSystemTestStageModule::OnStop()
 {
     DIA_LOG_INFO("Mesh3DRenderSystem", "Mesh3DRenderSystemTestStageModule: OnStop");
+
+    // Flush stale draw commands so the RenderPU does not render meshes after assets unload.
+    mFrame.Clear();
+    mRenderOutput.Write(mFrame, Dia::Core::TimeAbsolute::Zero());
 }
 
 void Mesh3DRenderSystemTestStageModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)

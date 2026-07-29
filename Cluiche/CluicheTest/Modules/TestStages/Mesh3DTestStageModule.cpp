@@ -361,6 +361,11 @@ void Mesh3DTestStageModule::OnUpdate(float /*deltaTime*/)
 
 void Mesh3DTestStageModule::OnStop()
 {
+    // Flush any stale draw commands from the stream so the RenderPU does not
+    // attempt to render meshes/debug lines after assets have been unloaded.
+    mFrame.Clear();
+    mRenderOutput.Write(mFrame, Dia::Core::TimeAbsolute::Zero());
+
     // Remove the material we registered: it holds raw bgfx texture handle indices that
     // become invalid once TextureHandler::Unload destroys the textures on stage exit.
     // Leaving it in the registry causes a bgfx ASSERT when a subsequent stage renders
