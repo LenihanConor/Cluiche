@@ -219,7 +219,7 @@ void Geometry2DTestStageModule::OnUpdate(float /*deltaTime*/)
     }
 #endif
 
-    if (!IsResolved())
+    if (!IsResolved() && GetFrameCount() >= 300)
         ReportPassed();
 }
 

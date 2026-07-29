@@ -55,7 +55,7 @@ public:
 
 protected:
     Dia::Core::StringCRC GetStageName() const override;
-    unsigned int GetBudgetFrames() const override { return 60; }
+    unsigned int GetBudgetFrames() const override { return 360; }
     const Dia::Core::StringCRC* GetCheckpointNames(unsigned int& outCount) const override;
     void OnStart(Dia::Automation::AutomationService* service) override;
     void OnUpdate(float deltaTime) override;
