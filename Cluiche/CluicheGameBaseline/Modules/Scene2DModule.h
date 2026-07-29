@@ -36,6 +36,11 @@ private:
     Dia::ApplicationFlow::ModuleRef<EntityModule>   mEntityRef{this};
     Dia::ApplicationFlow::ModuleRef<Camera2DModule> mCameraRef{this};
     Dia::ApplicationFlow::ModuleRef<Light2DModule>  mLightRef{this};
+
+    // Cached at DoStart so DoStop can call Unload after sibling modules leave kActive.
+    Dia::Camera2D::CameraRegistry2D*   mCachedCameraRegistry = nullptr;
+    Dia::Lighting2D::LightRegistry2D*  mCachedLightRegistry  = nullptr;
+    Dia::Entity::Domain*               mCachedEntityDomain   = nullptr;
 };
 
 } } // namespace Cluiche::AppFlow

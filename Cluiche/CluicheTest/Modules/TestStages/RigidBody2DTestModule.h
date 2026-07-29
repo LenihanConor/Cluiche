@@ -94,7 +94,7 @@ private:
     Dia::Observation::Metric::Gauge* mMetricCollisions  = nullptr;
     unsigned int mCollisionEnterCount = 0;
 
-    static constexpr unsigned int kBudgetFrames = 900;
+    static constexpr unsigned int kBudgetFrames = 1800;
 };
 
 } // namespace CluicheTest

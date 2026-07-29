@@ -16,12 +16,13 @@ _CHECKPOINTS = [
 def test_rigidbody2d_full_scene(dia_client):
     """Navigate to the stage and wait for every checkpoint to pass."""
     dia_client.navigate_to("RigidBody2DTestStage")
-
-    for cp in _CHECKPOINTS:
-        result = dia_client.poll_checkpoint(cp, timeout_s=15.0)
-        assert result["passed"], f"{cp} failed: {result['message']}"
-
-    dia_client.navigate_to("Boot")
+    try:
+        for cp in _CHECKPOINTS:
+            result = dia_client.poll_checkpoint(cp, timeout_s=100.0)
+            assert result["passed"], f"{cp} failed: {result['message']}"
+    finally:
+        dia_client.abort_stage()
+        dia_client.navigate_to("Boot")
 
 
 def test_rigidbody2d_determinism(dia_client):
@@ -29,15 +30,21 @@ def test_rigidbody2d_determinism(dia_client):
     cp = "test.rigid_body.all_settled"
 
     dia_client.navigate_to("RigidBody2DTestStage")
-    result1 = dia_client.poll_checkpoint(cp, timeout_s=15.0)
-    assert result1["passed"], f"First run failed: {result1['message']}"
-    msg1 = result1["message"]
-    dia_client.navigate_to("Boot")
+    try:
+        result1 = dia_client.poll_checkpoint(cp, timeout_s=100.0)
+        assert result1["passed"], f"First run failed: {result1['message']}"
+        msg1 = result1["message"]
+    finally:
+        dia_client.abort_stage()
+        dia_client.navigate_to("Boot")
 
     dia_client.navigate_to("RigidBody2DTestStage")
-    result2 = dia_client.poll_checkpoint(cp, timeout_s=15.0)
-    assert result2["passed"], f"Second run failed: {result2['message']}"
-    msg2 = result2["message"]
-    dia_client.navigate_to("Boot")
+    try:
+        result2 = dia_client.poll_checkpoint(cp, timeout_s=100.0)
+        assert result2["passed"], f"Second run failed: {result2['message']}"
+        msg2 = result2["message"]
+    finally:
+        dia_client.abort_stage()
+        dia_client.navigate_to("Boot")
 
     assert msg1 == msg2, f"Settle results differ: '{msg1}' vs '{msg2}'"

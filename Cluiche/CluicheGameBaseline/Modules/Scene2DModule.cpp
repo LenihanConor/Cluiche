@@ -48,10 +48,14 @@ Dia::ApplicationFlow::StartResult Scene2DModule::DoStart()
 
     const char* scenePath = Dia::Core::PathStore::ResolvePathToCString(sceneAlias);
 
+    mCachedCameraRegistry = &cameraModule->GetRegistry();
+    mCachedLightRegistry  = &lightModule->GetRegistry();
+    mCachedEntityDomain   = &entityModule->GetDomain();
+
     Dia::Scene2D::SceneLoadContext context{
-        cameraModule->GetRegistry(),
-        lightModule->GetRegistry(),
-        entityModule->GetDomain()
+        *mCachedCameraRegistry,
+        *mCachedLightRegistry,
+        *mCachedEntityDomain
     };
     Dia::Scene2D::SceneLoadErrors errors;
 
@@ -71,20 +75,19 @@ Dia::ApplicationFlow::StopResult Scene2DModule::DoStop()
 {
     DIA_LOG_INFO("Application", "Scene2DModule::DoStop");
 
-    auto* entityModule = mEntityRef.Get();
-    auto* cameraModule = mCameraRef.Get();
-    auto* lightModule  = mLightRef.Get();
-
-    if (entityModule && cameraModule && lightModule)
+    if (mLoaded && mCachedCameraRegistry && mCachedLightRegistry && mCachedEntityDomain)
     {
         Dia::Scene2D::SceneLoadContext context{
-            cameraModule->GetRegistry(),
-            lightModule->GetRegistry(),
-            entityModule->GetDomain()
+            *mCachedCameraRegistry,
+            *mCachedLightRegistry,
+            *mCachedEntityDomain
         };
         mSceneLoader.Unload(context);
     }
 
+    mCachedCameraRegistry = nullptr;
+    mCachedLightRegistry  = nullptr;
+    mCachedEntityDomain   = nullptr;
     mLoaded = false;
     return Dia::ApplicationFlow::StopResult::kDone;
 }

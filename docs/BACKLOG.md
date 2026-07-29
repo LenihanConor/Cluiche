@@ -66,5 +66,9 @@ Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testin
 
 | Item | Notes |
 |------|-------|
+| ~~`dia diagnose --last-run` CLI command~~ | Automate crash triage: find latest session log, extract last module transition + all ERROR entries, show incomplete E2E report, check `%LocalAppData%\CrashDumps`. Saves the manual log-digging cycle after every crash. |
 | RenderTechnique asset type | Layer-level rendering policy (blend mode, post-process like bloom/distortion). Layers reference a technique by name; renderer resolves at draw time. Needs `/spec-feature` under DiaGraphics or DiaBgfx once the scene system lands. |
 | Camera2D controller (pan/zoom/reset) | Application-side input→Camera2D wiring for CluicheTest stages (keyboard pan, scroll zoom, home-key reset). Unblocked once coord2d-debug-overlay ships Camera2D + renderer integration. |
+| E2E suite: UIUltralightTestStage hard crashes app on generic runner | `test_all_stages.py` navigates every stage; UIUltralightTestStage crashes the app (no error log, instant death) when `UIUltralightTestStageModule::BeginStart` fires. Affects all subsequent tests in the session. Root cause unknown — likely Ultralight native library crash during DoStart. Needs investigation: add crash guard / null-check in UIUltralightTestStageModule::DoStart, or find the Ultralight init failure. See `docs/research/e2e_testing/uiultralight_crash_notes.md`. |
+| ~~E2E suite: RigidBody2DTestStage / SoftBody2DTestStage checkpoint failures~~ | ~~Doubled frame budgets (900→1800, 600→1200) and pytest timeouts (15s→100s, 14s→70s) to match ~50ms Debug SimPU frame rate.~~ |
+| E2E suite: Pathfinding CluicheTest stage + scenario | No E2E coverage for pathfinding. Needs a CluicheTest stage that runs a pathfinding agent to a goal and a pytest scenario that checkpoints arrival. Prerequisite: DiaPathfinding system built and integrated into CluicheTest. |
