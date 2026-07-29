@@ -45,6 +45,7 @@ namespace Dia
 
 			// Active camera
 			void          SetActive(Dia::Core::StringCRC id);
+			bool          HasActive() const { return mActiveIndex >= 0; }
 			Camera2D&     GetActive();
 			const Camera2D& GetActive() const;
 			Dia::Core::StringCRC GetActiveId() const;

@@ -33,6 +33,7 @@ public:
     const Dia::Camera2D::CameraRegistry2D& GetRegistry() const { return mRegistry; }
 
     // Convenience: active camera (single-camera common case)
+    bool                           HasActiveCamera()   const { return mRegistry.HasActive(); }
     const Dia::Camera2D::Camera2D& GetActiveCamera()  const { return mRegistry.GetActive(); }
     Dia::Camera2D::Camera2D&       GetActiveCamera()        { return mRegistry.GetActive(); }
 

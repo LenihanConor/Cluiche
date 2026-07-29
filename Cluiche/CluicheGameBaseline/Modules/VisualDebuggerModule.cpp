@@ -52,8 +52,9 @@ void VisualDebuggerModule::DoUpdate(float /*dt*/)
         }
     }
 
-    const Dia::Camera2D::Camera2D&  camera     = mCameraRef ? mCameraRef->GetActiveCamera() : Dia::Camera2D::Camera2D{};
-    const Dia::Maths::Vector2D&     windowSize = mCameraRef ? mCameraRef->GetWindowSize()   : Dia::Maths::Vector2D{1400.0f, 1000.0f};
+    const bool hasCam = mCameraRef && mCameraRef->HasActiveCamera();
+    const Dia::Camera2D::Camera2D&  camera     = hasCam ? mCameraRef->GetActiveCamera() : Dia::Camera2D::Camera2D{};
+    const Dia::Maths::Vector2D&     windowSize = hasCam ? mCameraRef->GetWindowSize()   : Dia::Maths::Vector2D{1400.0f, 1000.0f};
 
     mLayerManager.SetViewport(camera, windowSize);
 
