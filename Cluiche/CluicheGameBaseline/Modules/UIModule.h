@@ -31,6 +31,7 @@ public:
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kMain;
     static constexpr const char* kDescription = "Ultralight UI page lifecycle and JS bridge";
     explicit UIModule(const Dia::Core::StringCRC& instanceId);
+    ~UIModule();
 
     // Accessors for page-owner modules and for AssetServiceModule (type handler).
     Dia::UI::IUISystem* GetUISystem() { return reinterpret_cast<Dia::UI::IUISystem*>(mUISystem); }

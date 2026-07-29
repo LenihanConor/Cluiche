@@ -20,6 +20,12 @@ UIModule::UIModule(const Dia::Core::StringCRC& instanceId)
     : Module(instanceId)
 {}
 
+UIModule::~UIModule()
+{
+    delete mUISystem;
+    mUISystem = nullptr;
+}
+
 Dia::ApplicationFlow::StartResult UIModule::DoStart()
 {
     DIA_LOG_INFO("Application", "UIModule DoStart entry");
@@ -34,8 +40,14 @@ Dia::ApplicationFlow::StartResult UIModule::DoStart()
         return Dia::ApplicationFlow::StartResult::kFailed;
     }
 
-    mUISystem = new Dia::UI::Ultralight::UISystem(kernel->GetWindow());
-    mUISystem->Initialize();
+    // Ultralight/WebCore has process-lifetime globals that cannot be torn down
+    // and re-initialized within a process. Allocate once and reuse across stage
+    // transitions; only the destructor frees it.
+    if (mUISystem == nullptr)
+    {
+        mUISystem = new Dia::UI::Ultralight::UISystem(kernel->GetWindow());
+        mUISystem->Initialize();
+    }
 
     mHasStarted = true;
 
@@ -92,8 +104,8 @@ Dia::ApplicationFlow::StopResult UIModule::DoStop()
         if (mUISystem->IsPageLoaded())
             mUISystem->UnloadPage();
         mUISystem->Shutdown();
-        delete mUISystem;
-        mUISystem = nullptr;
+        // Do NOT delete mUISystem here — Ultralight/WebCore process-lifetime
+        // globals crash on re-initialization. It is freed in the destructor.
     }
 
     // Flush an empty buffer so downstream consumers (RenderModule) don't keep
