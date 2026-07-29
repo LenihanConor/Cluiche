@@ -122,6 +122,7 @@ void TestAssetRuntimeStageModule::OnUpdate(float /*deltaTime*/)
 
 void TestAssetRuntimeStageModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 {
+    TestStageModuleBase::OnConnectStreams(app);
     mAssetLoadStatusStream.Connect(app);
 }
 
