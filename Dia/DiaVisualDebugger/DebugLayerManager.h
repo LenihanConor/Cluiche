@@ -226,6 +226,7 @@ namespace Dia
             // Broadcast state tracking (debug-editor-panel)
             uint32_t mLastDroppedCount = 0;  // cached from FrameData at end of Draw()
             bool     mLayersDirty      = false;  // set on Register/Unregister/Enable/Disable
+            bool     mAPICommandsRegistered = false;
 
             // Insertion sort — stable, O(N²) acceptable for kMaxLayers = 64
             void SortByPriority();

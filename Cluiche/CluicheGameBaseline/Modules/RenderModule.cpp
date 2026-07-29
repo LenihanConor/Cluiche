@@ -65,12 +65,16 @@ void RenderModule::DoUpdate(float /*dt*/)
     auto* cm = Dia::Observation::SessionManager::GetActiveCaptureManager();
     if (cm) cm->RenderTick();
 
-    // Try to fetch a 3D frame first
+    // Try to fetch a 3D frame first.
+    // Guard on GetMeshDraws().Size() > 0: FrameStreamStore never clears hasData,
+    // so after a 3D stage stops it writes a cleared flush frame (0 draws) and
+    // FetchLatest() keeps returning it forever.  Without this guard rendered3D
+    // stays true and the 2D path below is never taken.
     bool rendered3D = false;
     if (mCanvas3D != nullptr && mFrame3DInput.IsConnected())
     {
         const Dia::Graphics3D::FrameData3D* frame3D = mFrame3DInput.FetchLatest();
-        if (frame3D != nullptr)
+        if (frame3D != nullptr && frame3D->GetMeshDraws().Size() > 0)
         {
             mLastFrame3D.Copy(*frame3D);
             // StartFrame and EndFrame take FrameData& — FrameData3D IS-A FrameData

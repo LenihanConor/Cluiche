@@ -7,6 +7,7 @@
 #ifdef DIA_DEBUG
 
 #include <DiaCore/Core/Assert.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGraphics/Frame/DebugFrameDataVisitor.h>
@@ -243,6 +244,10 @@ namespace Dia
 
         void DebugLayerManager::RegisterDiaAPICommands()
         {
+            if (mAPICommandsRegistered)
+                return;
+            mAPICommandsRegistered = true;
+
             // debug.layer.enable <layer-name>
             Dia::API::RegisterCommand({
                 Dia::Core::StringCRC("debug.layer.enable"),

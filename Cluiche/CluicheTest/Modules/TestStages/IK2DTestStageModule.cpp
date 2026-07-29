@@ -178,8 +178,6 @@ void IK2DTestStageModule::OnUpdate(float /*deltaTime*/)
         auto* vd = mVisualDebuggerRef.Get();
         if (vd)
         {
-            // Expose the active solver to the drawer:
-            // phases 0+1 → limb solver, phase 2 → dragon solver
             const Dia::IK2D::IKSolver& activeSolver =
                 (mPhase < 2) ? *mLimbSolver : *mDragonSolver;
             const Dia::Rig2D::Skeleton& activeSkeleton =
@@ -215,6 +213,10 @@ void IK2DTestStageModule::OnStop()
     mFABRIKError       = 3.402823466e+38f;
     mLookAtError       = 3.402823466e+38f;
     mLingerFrames      = 0;
+
+#ifdef DIA_DEBUG
+    mDrawer.reset();
+#endif
 
     DIA_LOG_INFO("CluicheTest", "IK2DTestStageModule — stopped");
 }
