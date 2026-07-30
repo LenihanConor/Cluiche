@@ -190,6 +190,9 @@
     <Filter Include="DiaRules">
       <UniqueIdentifier>{DRLS0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaUtilityAI">
+      <UniqueIdentifier>{A2B3C4D5-E6F7-8901-2345-678901234567}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -1371,6 +1374,10 @@
     </ClCompile>
     <ClCompile Include="DiaRules\TestRulesTestHelpers.cpp">
       <Filter>DiaRules</Filter>
+    </ClCompile>
+    <!-- DiaUtilityAI -->
+    <ClCompile Include="DiaUtilityAI\TestResponseCurve.cpp">
+      <Filter>DiaUtilityAI</Filter>
     </ClCompile>
     <ClCompile Include="DiaBlackboard\TestBlackboard.cpp">
     <ClCompile Include="CluicheGameBaseline\TestBlackboardInspectorSource.cpp">

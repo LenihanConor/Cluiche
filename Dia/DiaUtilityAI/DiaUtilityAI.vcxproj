@@ -77,8 +77,10 @@
     <None Include="Docs\dia.diautilityai.architecture.module.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ResponseCurve.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ResponseCurve.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

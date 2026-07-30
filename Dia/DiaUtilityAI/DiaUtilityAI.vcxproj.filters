@@ -13,4 +13,10 @@
       <Filter>Docs</Filter>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ResponseCurve.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ResponseCurve.cpp" />
+  </ItemGroup>
 </Project>
