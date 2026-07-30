@@ -57,6 +57,16 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | mesh-texture-pipeline | [spec](specs/) | 2026-07-09 | Marked done by `dia docs spec-done` |
 | diarendertest | [spec](specs/) | 2026-07-09 | Marked done by `dia docs spec-done` |
 | diabgfx3d | [spec](specs/) | 2026-07-09 | Marked done by `dia docs spec-done` |
+| `dia diagnose --last-run` CLI command | Automate crash triage: find latest session log, extract last module transition + all ERROR entries, show incomplete E2E report, check `%LocalAppData%\CrashDumps`. Saves the manual log-digging cycle after every crash. | 2026-07-10 | Implemented in dia_cli/cli/diagnose.py; surfaces truncated log, last stage/module, errors, E2E report, crash dumps in one command |
+| DiaAIBudget | IAIBudgetedSystem, AIBudgetScheduler, AIBudgetModule, Budget Metrics | 2026-07-29 | All features implemented and tested (46 tests) |
+| DiaUtilityAI | ResponseCurve, ActionDef, UtilitySet, AsyncEvaluation, GroupConsideration, UtilitySetComponent, ScoreOverlay, TestUtilities | 2026-07-29 | All features implemented and tested (46 tests) |
+| DiaHTN | [diahtn.md](specs/applications/dia/systems/diahtn/diahtn.md) | 2026-07-29 | All features implemented and tested (46 tests) |
+| DiaAIDecisionInspector | — | 2026-07-29 | All features implemented and tested (46 tests) |
+| AIDecisionTestStage + scenario | Integration proof that DiaCondition + DiaRules + DiaUtilityAI + DiaAIBudget all wire together correctly. Single entity with BlackboardComponent + RuleSetComponent + UtilitySetComponent. Checkpoints: `ai.condition.health_low_passes`, `ai.condition.enemy_visible_passes`, `ai.rules.call_for_help_fired`, `ai.utility.flee_wins`, `ai.budget.work_item_completed`. Prerequisite: all four AI systems built. | 2026-07-29 | All features implemented and tested (46 tests) |
+| DiaRules | RuleActionRegistry, RuleSet, RuleSetComponent, Test Utilities | 2026-07-30 | All features implemented; 85 GoogleTests pass (20 ActionRegistry + 39 RuleSet + 13 Component + 13 TestHelpers); spec marked Done 2026-07-30 |
+| DiaUtilityAI | ResponseCurve, ActionDef, UtilitySet, AsyncEvaluation, GroupConsideration, UtilitySetComponent, ScoreOverlay, TestUtilities | 2026-07-30 | All features implemented; 85 GoogleTests pass (20 ActionRegistry + 39 RuleSet + 13 Component + 13 TestHelpers); spec marked Done 2026-07-30 |
+| DiaHTN | OperatorRegistry, RuleActionBridge, HTNDomain, HTNPlan, SyncPlanner, AsyncPlanning, HTNPlannerComponent, TestUtilities | 2026-07-30 | All features implemented; 85 GoogleTests pass (20 ActionRegistry + 39 RuleSet + 13 Component + 13 TestHelpers); spec marked Done 2026-07-30 |
+| DiaAIDecisionInspector | — | 2026-07-30 | All features implemented; 85 GoogleTests pass (20 ActionRegistry + 39 RuleSet + 13 Component + 13 TestHelpers); spec marked Done 2026-07-30 |
 
 ---
 
