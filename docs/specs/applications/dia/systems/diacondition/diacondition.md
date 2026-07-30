@@ -285,4 +285,6 @@ namespace Dia::Condition::Testing {
 
 ## Status
 
-`Approved`
+`Done`
+
+**Plan:** @docs/specs/applications/dia/systems/diacondition/diacondition.plan.md

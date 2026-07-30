@@ -1,6 +1,6 @@
 # Test Completeness Registry
 
-**Last Updated:** 2026-07-29 (DiaAIBudget: 46 tests added; ~3,245 total)
+**Last Updated:** 2026-07-29 (DiaCondition: 97 tests added; ~3,342 total)
 
 Single source of truth for test coverage across all Dia modules. Updated alongside test commits.
 
@@ -300,6 +300,20 @@ Gap markers: **ZERO** = no tests, **LOW** = under-tested relative to API surface
 | AIBudgetModule | 15 | TestAIBudgetModule.cpp | 15 | 0 | 0 | GOOD — OnConfigure defaults/values/malformed, GetScheduler, integration, kInstanceId |
 
 **DiaAIBudget totals: 3 files, 46 tests** | GOOD — all major paths covered; no golden-value tests (N/A for a scheduler); DoStart/DoStop metric lifecycle not tested (requires ProcessingUnit fixture)
+
+---
+
+## DiaCondition
+
+| Component | Tests | Files | Unit | Stress/Boundary | Golden/Regression | Notes |
+|-----------|-------|-------|------|-----------------|-------------------|-------|
+| IConditionContext | — | — | — | — | — | Interface; tested via MockConditionContext |
+| ConditionRegistry | 24 | TestConditionRegistry.cpp, TestConditionRegistryBoundary.cpp | 15 | 9 (overwrite, coexist, no-collision, missing-key, 100-accessor stress, polymorphic) | 0 | GOOD |
+| ConditionExpr | 66 | TestConditionExpr.cpp, TestConditionExprBoundary.cpp | 44 | 19 (boundary: neg threshold, empty array, unknown op, string value, deep nesting, double-NOT, multi-error) + 3 (stress: 1000-eval, 10-child OR/AND) | 0 | GOOD |
+| ConditionGuardAdapter | 9 | TestConditionGuardAdapter.cpp, TestConditionGuardAdapterExtended.cpp | 5 | 4 (live-update ptr semantics, isolation, composite expr, bool toggle) | 0 | GOOD |
+| Testing/MockConditionContext | covered above | ConditionTestHelpers.h | — | — | — | Header-only, exercised by all suites |
+
+**DiaCondition totals: 6 files, 97 tests** | GOOD — all ops, composites, boundary, stress, pointer-lifetime tested; no golden-value tests (N/A for boolean evaluator); GuardAdapter slot table capped at 16 (11 consumed by tests)
 
 ---
 
