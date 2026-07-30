@@ -692,8 +692,11 @@
     <ClCompile Include="DiaAIBudget\TestAIBudgetSchedulerExtended.cpp" />
     <ClCompile Include="DiaAIBudget\TestAIBudgetModule.cpp" />
     <ClCompile Include="DiaCondition\TestConditionRegistry.cpp" />
+    <ClCompile Include="DiaCondition\TestConditionRegistryBoundary.cpp" />
     <ClCompile Include="DiaCondition\TestConditionExpr.cpp" />
+    <ClCompile Include="DiaCondition\TestConditionExprBoundary.cpp" />
     <ClCompile Include="DiaCondition\TestConditionGuardAdapter.cpp" />
+    <ClCompile Include="DiaCondition\TestConditionGuardAdapterExtended.cpp" />
     <ClCompile Include="DiaOrder\TestOrderQueue.cpp" />
     <ClCompile Include="DiaPathfinding\TestPathfinding.cpp" />
     <ClCompile Include="DiaPathfinding\TestPathfindingGolden.cpp" />
