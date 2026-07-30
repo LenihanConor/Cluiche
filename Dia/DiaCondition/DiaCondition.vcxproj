@@ -77,10 +77,12 @@
     <ClInclude Include="IConditionContext.h" />
     <ClInclude Include="ConditionRegistry.h" />
     <ClInclude Include="ConditionExpr.h" />
+    <ClInclude Include="ConditionGuardAdapter.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ConditionRegistry.cpp" />
     <ClCompile Include="ConditionExpr.cpp" />
+    <ClCompile Include="ConditionGuardAdapter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diacondition.architecture.module.md" />
