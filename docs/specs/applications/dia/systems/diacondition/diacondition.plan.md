@@ -4,7 +4,7 @@
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
 | 1 | Project scaffold: DiaCondition.vcxproj, .vcxproj.filters, Docs/module.md, register in Cluiche.sln | Build compiles clean | Done | sonnet | GUID collision fixed; GUID={D4E5F6A7-B8C9-4012-DEFA-123456789012} |
-| 2 | IConditionContext + ConditionRegistry: headers + cpp, add to vcxproj | Unit: Register/GetFloat/GetBool | Pending | sonnet | |
+| 2 | IConditionContext + ConditionRegistry: headers + cpp, add to vcxproj | Unit: Register/GetFloat/GetBool | Done | sonnet | pimpl for STL isolation; destructor added post-review |
 | 3 | ConditionExpr: JSON loading, AND/OR/NOT tree evaluation, Validate, IsValid | Unit: leaf ops, composites, malformed JSON | Pending | sonnet | |
 | 4 | ConditionGuardAdapter: RegisterAsGuard free function, add DiaStateMachine reference | Unit: guard fires correctly via CallbackRegistry | Pending | haiku | |
 | 5 | Test Utilities: Testing/ConditionTestHelpers.h (MockConditionContext, AssertExprResult) | Consumed by task 6 tests | Pending | haiku | |
