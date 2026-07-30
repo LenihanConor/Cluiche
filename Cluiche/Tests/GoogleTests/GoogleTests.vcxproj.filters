@@ -181,6 +181,9 @@
     <Filter Include="DiaMesh3D">
       <UniqueIdentifier>{DME3D001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaAIBudget">
+      <UniqueIdentifier>{AIBUDGET1-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
     <Filter Include="CluicheGameBaseline">
       <UniqueIdentifier>{CGBL0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
@@ -1344,6 +1347,9 @@
       <Filter>DiaLighting3D</Filter>
     </ClCompile>
     <ClCompile Include="DiaLighting3D\TestLightPathArcDrawer.cpp">
+    <ClCompile Include="DiaAIBudget\TestAIBudgetScheduler.cpp">
+      <Filter>DiaAIBudget</Filter>
+    </ClCompile>
     <ClCompile Include="DiaBlackboard\TestBlackboard.cpp">
     <ClCompile Include="CluicheGameBaseline\TestBlackboardInspectorSource.cpp">
       <Filter>CluicheGameBaseline</Filter>

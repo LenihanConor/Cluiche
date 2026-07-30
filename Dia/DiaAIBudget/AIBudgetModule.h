@@ -1,0 +1,61 @@
+#pragma once
+
+#include <DiaApplicationFlow/Module.h>
+#include <DiaAIBudget/AIBudgetScheduler.h>
+
+// Forward declarations — avoids pulling full metric headers into every translation unit.
+namespace Dia { namespace Observation { namespace Metric {
+	class Gauge;
+	class Counter;
+} } }
+
+namespace Dia
+{
+	namespace AIBudget
+	{
+		//-------------------------------------------------------------------------------------------
+		// AIBudgetModule
+		//
+		// ApplicationFlow::Module that owns an AIBudgetScheduler and drives it each frame.
+		// Place on SimPU.  Configure via manifest JSON: { "budgetUs": 1000 }
+		//
+		// Registers three DiaObservation metrics on Start:
+		//   ai.budget.used_us        (Gauge)   — wall-clock microseconds consumed by AI systems
+		//   ai.budget.systems_run    (Counter) — systems that executed this frame
+		//   ai.budget.systems_deferred (Counter) — systems skipped due to budget exhaustion
+		//-------------------------------------------------------------------------------------------
+		class AIBudgetModule : public Dia::ApplicationFlow::Module
+		{
+		public:
+			static const Dia::Core::StringCRC kInstanceId;
+
+			AIBudgetModule();
+
+			// Access the scheduler to register/unregister IAIBudgetedSystem instances.
+			AIBudgetScheduler&       GetScheduler();
+			const AIBudgetScheduler& GetScheduler() const;
+
+		protected:
+			// Reads "budgetUs" integer from JSON config.  Default: 1000 µs (= 1 ms).
+			void        OnConfigure(const char* configJson) override;
+
+			// Registers DiaObservation metrics.
+			Dia::ApplicationFlow::StartResult DoStart() override;
+
+			// Calls mScheduler.Update(mBudgetMs) and updates metrics.
+			void        DoUpdate(float deltaTime) override;
+
+			// Nulls all metric pointers.
+			Dia::ApplicationFlow::StopResult  DoStop() override;
+
+		private:
+			AIBudgetScheduler mScheduler;
+			float             mBudgetMs;   // converted from budgetUs in OnConfigure; default 1.0f
+
+			Dia::Observation::Metric::Gauge*   mUsedUsGauge;
+			Dia::Observation::Metric::Counter* mSystemsRunCounter;
+			Dia::Observation::Metric::Counter* mSystemsDeferredCounter;
+		};
+
+	} // namespace AIBudget
+} // namespace Dia
