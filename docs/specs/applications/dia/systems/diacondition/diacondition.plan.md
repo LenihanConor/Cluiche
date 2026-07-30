@@ -1,0 +1,11 @@
+**Spec:** @docs/specs/applications/dia/systems/diacondition/diacondition.md
+**Status:** In Progress
+
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| 1 | Project scaffold: DiaCondition.vcxproj, .vcxproj.filters, Docs/module.md, register in Cluiche.sln | Build compiles clean | Pending | sonnet | |
+| 2 | IConditionContext + ConditionRegistry: headers + cpp, add to vcxproj | Unit: Register/GetFloat/GetBool | Pending | sonnet | |
+| 3 | ConditionExpr: JSON loading, AND/OR/NOT tree evaluation, Validate, IsValid | Unit: leaf ops, composites, malformed JSON | Pending | sonnet | |
+| 4 | ConditionGuardAdapter: RegisterAsGuard free function, add DiaStateMachine reference | Unit: guard fires correctly via CallbackRegistry | Pending | haiku | |
+| 5 | Test Utilities: Testing/ConditionTestHelpers.h (MockConditionContext, AssertExprResult) | Consumed by task 6 tests | Pending | haiku | |
+| 6 | GoogleTests: TestConditionRegistry, TestConditionExpr, TestConditionGuardAdapter — TDD, add to GoogleTests.vcxproj | dia run googletest --filter="DiaCondition*" | Pending | sonnet | |
