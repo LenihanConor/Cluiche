@@ -704,6 +704,7 @@
     <ClCompile Include="DiaRules\TestRulesTestHelpers.cpp" />
     <!-- DiaUtilityAI -->
     <ClCompile Include="DiaUtilityAI\TestResponseCurve.cpp" />
+    <ClCompile Include="DiaUtilityAI\TestGroupConsiderationContext.cpp" />
     <ClCompile Include="DiaOrder\TestOrderQueue.cpp" />
     <ClCompile Include="DiaPathfinding\TestPathfinding.cpp" />
     <ClCompile Include="DiaPathfinding\TestPathfindingGolden.cpp" />
