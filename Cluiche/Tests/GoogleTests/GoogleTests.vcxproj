@@ -689,6 +689,8 @@
     <ClCompile Include="DiaLighting3D\TestLightPathBehaviour3D.cpp" />
     <ClCompile Include="DiaBlackboard\TestBlackboard.cpp" />
     <ClCompile Include="DiaAIBudget\TestAIBudgetScheduler.cpp" />
+    <ClCompile Include="DiaAIBudget\TestAIBudgetSchedulerExtended.cpp" />
+    <ClCompile Include="DiaAIBudget\TestAIBudgetModule.cpp" />
     <ClCompile Include="DiaOrder\TestOrderQueue.cpp" />
     <ClCompile Include="DiaPathfinding\TestPathfinding.cpp" />
     <ClCompile Include="DiaPathfinding\TestPathfindingGolden.cpp" />

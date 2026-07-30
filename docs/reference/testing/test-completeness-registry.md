@@ -1,6 +1,6 @@
 # Test Completeness Registry
 
-**Last Updated:** 2026-07-07 (DiaPathfinding: 79 tests registered; SquarePathGrid OOB fix; ~3,199 total)
+**Last Updated:** 2026-07-29 (DiaAIBudget: 46 tests added; ~3,245 total)
 
 Single source of truth for test coverage across all Dia modules. Updated alongside test commits.
 
@@ -16,8 +16,8 @@ Single source of truth for test coverage across all Dia modules. Updated alongsi
 
 | Metric | Count |
 |--------|-------|
-| Test files | 197 |
-| Total tests (TEST + TEST_F + TEST_P) | 3,043 |
+| Test files | 200 |
+| Total tests (TEST + TEST_F + TEST_P) | 3,089 |
 | Death tests (EXPECT_DEATH / ASSERT_DEATH) | 149 |
 | Float assertions (EXPECT_NEAR / EXPECT_FLOAT_EQ) | 1,340+ |
 | Fixtures (TEST_F) | ~504 |
@@ -288,6 +288,18 @@ Gap markers: **ZERO** = no tests, **LOW** = under-tested relative to API surface
 | Test Utilities (AssertPathFound, AssertPathCells, MockCostProvider) | 4 | TestPathfinding.cpp | 4 | 0 | 0 | OK |
 
 **DiaPathfinding totals: 3 files, 79 tests** | GOOD — golden cost/length/sequence, optimality, OOB, all-blocked, null-observer, system reuse; bug found+fixed: SquarePathGrid::SetPassable lacked OOB guard
+
+---
+
+## DiaAIBudget
+
+| Component | Tests | Files | Unit | Stress/Boundary | Golden/Regression | Notes |
+|-----------|-------|-------|------|-----------------|-------------------|-------|
+| AIBudgetScheduler (core) | 16 | TestAIBudgetScheduler.cpp | 15 | 1 (capacity death) | 0 | GOOD — register/unregister/count, zero/large budget, call order, budget slicing |
+| AIBudgetScheduler (extended) | 16 | TestAIBudgetSchedulerExtended.cpp | 12 | 1 (null death) + 3 stress | 0 | GOOD — negative budget, unregister pos variants, double-unregister, consecutive updates, run+deferred invariant |
+| AIBudgetModule | 15 | TestAIBudgetModule.cpp | 15 | 0 | 0 | GOOD — OnConfigure defaults/values/malformed, GetScheduler, integration, kInstanceId |
+
+**DiaAIBudget totals: 3 files, 46 tests** | GOOD — all major paths covered; no golden-value tests (N/A for a scheduler); DoStart/DoStop metric lifecycle not tested (requires ProcessingUnit fixture)
 
 ---
 

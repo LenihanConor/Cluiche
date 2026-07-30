@@ -1350,6 +1350,12 @@
     <ClCompile Include="DiaAIBudget\TestAIBudgetScheduler.cpp">
       <Filter>DiaAIBudget</Filter>
     </ClCompile>
+    <ClCompile Include="DiaAIBudget\TestAIBudgetSchedulerExtended.cpp">
+      <Filter>DiaAIBudget</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAIBudget\TestAIBudgetModule.cpp">
+      <Filter>DiaAIBudget</Filter>
+    </ClCompile>
     <ClCompile Include="DiaBlackboard\TestBlackboard.cpp">
     <ClCompile Include="CluicheGameBaseline\TestBlackboardInspectorSource.cpp">
       <Filter>CluicheGameBaseline</Filter>
