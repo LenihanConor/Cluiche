@@ -2,17 +2,67 @@
 #include <DiaUtilityAI/ResponseCurve.h>
 #include <DiaCondition/ConditionExpr.h>
 #include <DiaRules/RuleActionRegistry.h>
+#include <DiaAIBudget/IAIBudgetedSystem.h>
+#include <DiaAIBudget/AIBudgetScheduler.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <vector>
+#include <list>
 #include <algorithm>
 
 namespace Dia
 {
     namespace UtilityAI
     {
+        // ---------------------------------------------------------------------------
+        // UtilityEvalWorkItem — one-shot IAIBudgetedSystem submitted by EvaluateAsync.
+        // Stored in a std::list (stable addresses) inside Impl.
+        // ---------------------------------------------------------------------------
+        struct UtilityEvalWorkItem : public Dia::AIBudget::IAIBudgetedSystem
+        {
+            const UtilitySet*                     set;
+            Dia::Condition::IConditionContext*    ctx;
+            const Dia::Rules::RuleActionRegistry* registry;
+            void*                                 actionContext;
+            GroupConsiderationContext*            group;
+            UtilityResultCallback                 callback;
+            void*                                 callbackUserData;
+            Dia::AIBudget::AIBudgetScheduler*     scheduler;
+            bool                                  mFired;
+
+            UtilityEvalWorkItem()
+                : set(nullptr), ctx(nullptr), registry(nullptr)
+                , actionContext(nullptr), group(nullptr)
+                , callback(nullptr), callbackUserData(nullptr)
+                , scheduler(nullptr), mFired(false)
+            {}
+
+            Dia::Core::StringCRC GetSystemId() const override
+            {
+                return Dia::Core::StringCRC("UtilityEvalWorkItem");
+            }
+
+            void UpdateBudgeted(float /*budgetMs*/) override
+            {
+                if (mFired)
+                    return;
+
+                mFired = true;
+
+                // Run sync evaluation (dispatches winner via registry).
+                UtilitySelection result = set->Evaluate(*ctx, *registry, actionContext, group);
+
+                // Unregister before firing callback so re-entrant calls are safe.
+                scheduler->Unregister(this);
+
+                if (callback)
+                    callback(result, callbackUserData);
+            }
+        };
+
         struct UtilitySet::Impl
         {
             std::vector<ActionDef> actions;
+            std::list<UtilityEvalWorkItem> pendingWorkItems;
 
 #ifdef DIA_DEBUG
             mutable std::vector<Dia::Core::StringCRC> lastScoreIds;
@@ -27,7 +77,17 @@ namespace Dia
 
         UtilitySet::~UtilitySet()
         {
-            delete mImpl;
+            if (mImpl)
+            {
+                // Unregister any pending (unfired) work items so the scheduler
+                // does not hold dangling pointers after this UtilitySet is destroyed.
+                for (UtilityEvalWorkItem& item : mImpl->pendingWorkItems)
+                {
+                    if (!item.mFired)
+                        item.scheduler->Unregister(&item);
+                }
+                delete mImpl;
+            }
         }
 
         UtilitySet::UtilitySet(UtilitySet&& other) noexcept
@@ -155,6 +215,41 @@ namespace Dia
             }
 
             return winner;
+        }
+
+        void UtilitySet::EvaluateAsync(
+            Dia::Condition::IConditionContext& ctx,
+            const Dia::Rules::RuleActionRegistry& registry,
+            void* actionContext,
+            Dia::AIBudget::AIBudgetScheduler& scheduler,
+            UtilityResultCallback callback,
+            void* callbackUserData,
+            GroupConsiderationContext* group)
+        {
+            // Prune fired items before adding new ones to keep the list bounded.
+            for (auto it = mImpl->pendingWorkItems.begin(); it != mImpl->pendingWorkItems.end(); )
+            {
+                if (it->mFired)
+                    it = mImpl->pendingWorkItems.erase(it);
+                else
+                    ++it;
+            }
+
+            // Allocate a new work item in the list (stable address while in list).
+            mImpl->pendingWorkItems.emplace_back();
+            UtilityEvalWorkItem& item = mImpl->pendingWorkItems.back();
+
+            item.set              = this;
+            item.ctx              = &ctx;
+            item.registry         = &registry;
+            item.actionContext    = actionContext;
+            item.group            = group;
+            item.callback         = callback;
+            item.callbackUserData = callbackUserData;
+            item.scheduler        = &scheduler;
+            item.mFired           = false;
+
+            scheduler.Register(&item);
         }
 
         UtilitySet UtilitySet::LoadFromJson(const Json::Value& root)
