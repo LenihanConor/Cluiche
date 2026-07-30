@@ -243,4 +243,4 @@ namespace Dia::Rules::Testing {
 
 ## Status
 
-`In Progress` — plan: [diarules.plan.md](diarules.plan.md)
+`Done` — plan: [diarules.plan.md](diarules.plan.md)
