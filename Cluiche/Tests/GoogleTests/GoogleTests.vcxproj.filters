@@ -1366,6 +1366,9 @@
     <ClCompile Include="DiaRules\TestRuleSet.cpp">
       <Filter>DiaRules</Filter>
     </ClCompile>
+    <ClCompile Include="DiaRules\TestRuleSetComponent.cpp">
+      <Filter>DiaRules</Filter>
+    </ClCompile>
     <ClCompile Include="DiaBlackboard\TestBlackboard.cpp">
     <ClCompile Include="CluicheGameBaseline\TestBlackboardInspectorSource.cpp">
       <Filter>CluicheGameBaseline</Filter>

@@ -80,10 +80,12 @@
     <ClInclude Include="RuleActionRegistry.h" />
     <ClInclude Include="RuleDef.h" />
     <ClInclude Include="RuleSet.h" />
+    <ClInclude Include="RuleSetComponent.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RuleActionRegistry.cpp" />
     <ClCompile Include="RuleSet.cpp" />
+    <ClCompile Include="RuleSetComponent.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
