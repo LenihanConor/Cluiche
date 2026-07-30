@@ -300,3 +300,501 @@ TEST(DiaRules_RuleSet, Evaluate_ActionContextPassedThroughToCallback)
     rs.Evaluate(ctx, registry, &written);
     EXPECT_EQ(written, 42);
 }
+
+// ---------------------------------------------------------------------------
+// DiaRules_RuleSet — LoadFromJson edge cases
+// ---------------------------------------------------------------------------
+
+TEST(DiaRules_RuleSet, LoadFromJson_EmptyRulesArray_ReturnsZeroRules)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({ "rules": [] })");
+    EXPECT_EQ(rs.GetRuleCount(), 0);
+}
+
+TEST(DiaRules_RuleSet, LoadFromJson_RulesValueIsString_ReturnsZeroRules)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({ "rules": "not_an_array" })");
+    EXPECT_EQ(rs.GetRuleCount(), 0);
+}
+
+TEST(DiaRules_RuleSet, LoadFromJson_RuleWithNoGuard_GuardEvalsFalse)
+{
+    // Rule has actions but no "guard" key — default-constructed guard evaluates false
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "actions": ["SomeAction"]
+            }
+        ]
+    })");
+
+    Dia::Rules::RuleActionRegistry registry;
+    registry.Register(Dia::Core::StringCRC("SomeAction"), [](void*) {});
+
+    Dia::Condition::Testing::MockConditionContext ctx;
+    ctx.SetFloat(Dia::Core::StringCRC("health"), Dia::Core::StringCRC("value"), 80.0f);
+
+    int fired = rs.Evaluate(ctx, registry, nullptr);
+    EXPECT_EQ(fired, 0);
+}
+
+TEST(DiaRules_RuleSet, LoadFromJson_RuleWithNoActionsKey_HasEmptyActions)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "id": "NoActions",
+                "guard": { "op": ">=", "slot": "health", "field": "value", "value": 50.0 }
+            }
+        ]
+    })");
+
+    EXPECT_EQ(rs.GetRuleCount(), 1);
+    const Dia::Rules::RuleDef* rule = rs.GetRuleAt(0);
+    ASSERT_NE(rule, nullptr);
+    EXPECT_EQ(rule->actions.Size(), 0u);
+
+    Dia::Core::Containers::DynamicArrayC<const char*, 32> errors;
+    EXPECT_FALSE(rs.Validate(errors));
+}
+
+TEST(DiaRules_RuleSet, LoadFromJson_ActionsValueIsString_ZeroActionsLoaded)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "guard": { "op": ">=", "slot": "health", "field": "value", "value": 50.0 },
+                "actions": "Flee"
+            }
+        ]
+    })");
+
+    ASSERT_EQ(rs.GetRuleCount(), 1);
+    const Dia::Rules::RuleDef* rule = rs.GetRuleAt(0);
+    ASSERT_NE(rule, nullptr);
+    EXPECT_EQ(rule->actions.Size(), 0u);
+
+    Dia::Core::Containers::DynamicArrayC<const char*, 32> errors;
+    EXPECT_FALSE(rs.Validate(errors));
+}
+
+TEST(DiaRules_RuleSet, LoadFromJson_ActionsOverflowCapacity8_DropsExtra)
+{
+    // 9 actions — capacity is 8, 9th must be dropped silently
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "guard": { "op": ">=", "slot": "health", "field": "value", "value": 50.0 },
+                "actions": ["A0","A1","A2","A3","A4","A5","A6","A7","A8"]
+            }
+        ]
+    })");
+
+    ASSERT_EQ(rs.GetRuleCount(), 1);
+    const Dia::Rules::RuleDef* rule = rs.GetRuleAt(0);
+    ASSERT_NE(rule, nullptr);
+    EXPECT_EQ(rule->actions.Size(), 8u);
+}
+
+TEST(DiaRules_RuleSet, LoadFromJson_EmptyStringAction_Skipped)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "guard": { "op": ">=", "slot": "health", "field": "value", "value": 50.0 },
+                "actions": ["", "ValidAction", ""]
+            }
+        ]
+    })");
+
+    ASSERT_EQ(rs.GetRuleCount(), 1);
+    const Dia::Rules::RuleDef* rule = rs.GetRuleAt(0);
+    ASSERT_NE(rule, nullptr);
+    EXPECT_EQ(rule->actions.Size(), 1u);
+}
+
+TEST(DiaRules_RuleSet, LoadFromJson_NonStringActionEntries_Skipped)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "guard": { "op": ">=", "slot": "health", "field": "value", "value": 50.0 },
+                "actions": [42, null, "Good"]
+            }
+        ]
+    })");
+
+    ASSERT_EQ(rs.GetRuleCount(), 1);
+    const Dia::Rules::RuleDef* rule = rs.GetRuleAt(0);
+    ASSERT_NE(rule, nullptr);
+    EXPECT_EQ(rule->actions.Size(), 1u);
+}
+
+TEST(DiaRules_RuleSet, LoadFromJson_EmptyStringId_TreatedAsUnnamed)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "id": "",
+                "guard": { "op": ">=", "slot": "health", "field": "value", "value": 50.0 },
+                "actions": ["SomeAction"]
+            }
+        ]
+    })");
+
+    ASSERT_EQ(rs.GetRuleCount(), 1);
+    const Dia::Rules::RuleDef* rule = rs.GetRuleAt(0);
+    ASSERT_NE(rule, nullptr);
+    // Empty string id -> left as default (kZero)
+    EXPECT_EQ(rule->id.Value(), Dia::Core::StringCRC().Value());
+}
+
+TEST(DiaRules_RuleSet, LoadFromJson_GuardLoadError_SilentlyDefaultsToFalse)
+{
+    // Malformed guard: missing "op" key — guard defaults and evaluates false
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "guard": { "field": "health" },
+                "actions": ["SomeAction"]
+            }
+        ]
+    })");
+
+    Dia::Rules::RuleActionRegistry registry;
+    registry.Register(Dia::Core::StringCRC("SomeAction"), [](void*) {});
+
+    Dia::Condition::Testing::MockConditionContext ctx;
+    ctx.SetFloat(Dia::Core::StringCRC("health"), Dia::Core::StringCRC("value"), 80.0f);
+
+    int fired = rs.Evaluate(ctx, registry, nullptr);
+    EXPECT_EQ(fired, 0);  // invalid guard evaluates false, no crash
+}
+
+TEST(DiaRules_RuleSet, LoadFromJson_RuleArrayEntryIsNotObject_LoadsEmptyRule)
+{
+    // Non-object entries in rules array each yield an empty RuleDef
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({ "rules": [42, "text"] })");
+
+    EXPECT_EQ(rs.GetRuleCount(), 2);
+
+    const Dia::Rules::RuleDef* rule0 = rs.GetRuleAt(0);
+    const Dia::Rules::RuleDef* rule1 = rs.GetRuleAt(1);
+    ASSERT_NE(rule0, nullptr);
+    ASSERT_NE(rule1, nullptr);
+    EXPECT_EQ(rule0->actions.Size(), 0u);
+    EXPECT_EQ(rule1->actions.Size(), 0u);
+
+    Dia::Core::Containers::DynamicArrayC<const char*, 32> errors;
+    EXPECT_FALSE(rs.Validate(errors));
+}
+
+// ---------------------------------------------------------------------------
+// DiaRules_RuleSet — Validate edge cases
+// ---------------------------------------------------------------------------
+
+TEST(DiaRules_RuleSet, Validate_MultipleErrorTypes_BothReported)
+{
+    // Rule 0: empty actions (error 1)
+    // Rules 1 & 2: duplicate id "SharedId" (error 2)
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "id": "BadRule",
+                "guard": { "op": ">=", "slot": "health", "field": "value", "value": 50.0 },
+                "actions": []
+            },
+            {
+                "id": "SharedId",
+                "guard": { "op": ">=", "slot": "health", "field": "value", "value": 50.0 },
+                "actions": ["ActionA"]
+            },
+            {
+                "id": "SharedId",
+                "guard": { "op": "<", "slot": "health", "field": "value", "value": 10.0 },
+                "actions": ["ActionB"]
+            }
+        ]
+    })");
+
+    Dia::Core::Containers::DynamicArrayC<const char*, 32> errors;
+    EXPECT_FALSE(rs.Validate(errors));
+    EXPECT_GE(errors.Size(), 2u);
+}
+
+TEST(DiaRules_RuleSet, Validate_EmptyRuleSet_ReturnsTrue)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({ "rules": [] })");
+
+    Dia::Core::Containers::DynamicArrayC<const char*, 32> errors;
+    EXPECT_TRUE(rs.Validate(errors));
+    EXPECT_EQ(errors.Size(), 0u);
+}
+
+TEST(DiaRules_RuleSet, Validate_ErrorCountIsExact)
+{
+    // Only one error: one rule with empty actions
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "guard": { "op": ">=", "slot": "health", "field": "value", "value": 50.0 },
+                "actions": []
+            }
+        ]
+    })");
+
+    Dia::Core::Containers::DynamicArrayC<const char*, 32> errors;
+    EXPECT_FALSE(rs.Validate(errors));
+    EXPECT_EQ(errors.Size(), 1u);
+}
+
+TEST(DiaRules_RuleSet, Validate_OutErrorsFullOnEntry_StillReturnsFalse)
+{
+    // Pre-fill errors array to capacity
+    Dia::Core::Containers::DynamicArrayC<const char*, 32> errors;
+    for (int i = 0; i < 32; ++i)
+        errors.Add("pre-existing error");
+
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "id": "Dup",
+                "guard": { "op": ">=", "slot": "health", "field": "value", "value": 50.0 },
+                "actions": ["A"]
+            },
+            {
+                "id": "Dup",
+                "guard": { "op": "<", "slot": "health", "field": "value", "value": 10.0 },
+                "actions": ["B"]
+            }
+        ]
+    })");
+
+    EXPECT_FALSE(rs.Validate(errors));
+    EXPECT_EQ(errors.Size(), 32u);  // buffer full — no new entries added
+}
+
+// ---------------------------------------------------------------------------
+// DiaRules_RuleSet — Evaluate edge cases
+// ---------------------------------------------------------------------------
+
+TEST(DiaRules_RuleSet, Evaluate_OneRuleMultipleActions_RuleCountIsOne)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "guard": { "op": ">=", "slot": "hero", "field": "health", "value": 50.0 },
+                "actions": ["StartAttack", "SetAggressive"]
+            }
+        ]
+    })");
+
+    Dia::Rules::RuleActionRegistry registry;
+    int callCount = 0;
+    registry.Register(Dia::Core::StringCRC("StartAttack"),  [](void* ctx) { ++(*static_cast<int*>(ctx)); });
+    registry.Register(Dia::Core::StringCRC("SetAggressive"), [](void* ctx) { ++(*static_cast<int*>(ctx)); });
+
+    Dia::Condition::Testing::MockConditionContext ctx;
+    ctx.SetFloat(Dia::Core::StringCRC("hero"), Dia::Core::StringCRC("health"), 80.0f);
+
+    int fired = rs.Evaluate(ctx, registry, &callCount);
+    EXPECT_EQ(fired, 1);      // SD-007: count is rules, not actions
+    EXPECT_EQ(callCount, 2);
+}
+
+TEST(DiaRules_RuleSet, Evaluate_GuardAtExactBoundary_Fires)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "guard": { "op": ">=", "slot": "hero", "field": "health", "value": 50.0 },
+                "actions": ["AttackAction"]
+            }
+        ]
+    })");
+
+    Dia::Rules::RuleActionRegistry registry;
+    registry.Register(Dia::Core::StringCRC("AttackAction"), [](void* ctx) { ++(*static_cast<int*>(ctx)); });
+
+    Dia::Condition::Testing::MockConditionContext ctx;
+    ctx.SetFloat(Dia::Core::StringCRC("hero"), Dia::Core::StringCRC("health"), 50.0f);
+
+    int callCount = 0;
+    int fired = rs.Evaluate(ctx, registry, &callCount);
+    EXPECT_EQ(fired, 1);
+}
+
+TEST(DiaRules_RuleSet, Evaluate_GuardJustBelowBoundary_NoFire)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "guard": { "op": ">=", "slot": "hero", "field": "health", "value": 50.0 },
+                "actions": ["AttackAction"]
+            }
+        ]
+    })");
+
+    Dia::Rules::RuleActionRegistry registry;
+    registry.Register(Dia::Core::StringCRC("AttackAction"), [](void*) {});
+
+    Dia::Condition::Testing::MockConditionContext ctx;
+    ctx.SetFloat(Dia::Core::StringCRC("hero"), Dia::Core::StringCRC("health"), 49.0f);
+
+    int fired = rs.Evaluate(ctx, registry, nullptr);
+    EXPECT_EQ(fired, 0);
+}
+
+TEST(DiaRules_RuleSet, Evaluate_ZeroRules_ReturnsZero)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({ "rules": [] })");
+
+    Dia::Rules::RuleActionRegistry registry;
+    Dia::Condition::Testing::MockConditionContext ctx;
+
+    int fired = rs.Evaluate(ctx, registry, nullptr);
+    EXPECT_EQ(fired, 0);
+}
+
+TEST(DiaRules_RuleSet, Evaluate_MixedRegisteredActions_UnregisteredSkipped_RuleStillCounts)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "guard": { "op": ">=", "slot": "hero", "field": "health", "value": 50.0 },
+                "actions": ["Known", "Unknown"]
+            }
+        ]
+    })");
+
+    Dia::Rules::RuleActionRegistry registry;
+    int knownCallCount = 0;
+    registry.Register(Dia::Core::StringCRC("Known"), [](void* ctx) { ++(*static_cast<int*>(ctx)); });
+    // "Unknown" is NOT registered
+
+    Dia::Condition::Testing::MockConditionContext ctx;
+    ctx.SetFloat(Dia::Core::StringCRC("hero"), Dia::Core::StringCRC("health"), 80.0f);
+
+    int fired = rs.Evaluate(ctx, registry, &knownCallCount);
+    EXPECT_EQ(fired, 1);
+    EXPECT_EQ(knownCallCount, 1);
+}
+
+// ---------------------------------------------------------------------------
+// DiaRules_RuleSet — GetRuleAt edge cases
+// ---------------------------------------------------------------------------
+
+TEST(DiaRules_RuleSet, GetRuleAt_NegativeIndex_ReturnsNull)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "guard": { "op": ">=", "slot": "hero", "field": "health", "value": 50.0 },
+                "actions": ["A"]
+            }
+        ]
+    })");
+
+    EXPECT_EQ(rs.GetRuleAt(-1), nullptr);
+}
+
+TEST(DiaRules_RuleSet, GetRuleAt_OnePastEnd_ReturnsNull)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "guard": { "op": ">=", "slot": "hero", "field": "health", "value": 50.0 },
+                "actions": ["A"]
+            },
+            {
+                "guard": { "op": "<", "slot": "hero", "field": "health", "value": 10.0 },
+                "actions": ["B"]
+            }
+        ]
+    })");
+
+    EXPECT_EQ(rs.GetRuleCount(), 2);
+    EXPECT_EQ(rs.GetRuleAt(2), nullptr);
+}
+
+TEST(DiaRules_RuleSet, GetRuleAt_EmptyRuleSet_IndexZero_ReturnsNull)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({ "rules": [] })");
+    EXPECT_EQ(rs.GetRuleAt(0), nullptr);
+}
+
+TEST(DiaRules_RuleSet, GetRuleAt_ValidIndex_ReturnsCorrectData)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "id": "MyRule",
+                "guard": { "op": ">=", "slot": "hero", "field": "health", "value": 50.0 },
+                "actions": ["A", "B"]
+            }
+        ]
+    })");
+
+    const Dia::Rules::RuleDef* rule = rs.GetRuleAt(0);
+    ASSERT_NE(rule, nullptr);
+    EXPECT_EQ(rule->id.Value(), Dia::Core::StringCRC("MyRule").Value());
+    EXPECT_EQ(rule->actions.Size(), 2u);
+}
+
+// ---------------------------------------------------------------------------
+// DiaRules_RuleSet — Move semantics
+// ---------------------------------------------------------------------------
+
+TEST(DiaRules_RuleSet, MoveConstructor_ProducesValidState)
+{
+    Dia::Rules::RuleSet a = LoadRuleSet(R"({
+        "rules": [
+            { "guard": { "op": ">=", "slot": "hero", "field": "health", "value": 50.0 }, "actions": ["A"] },
+            { "guard": { "op": "<",  "slot": "hero", "field": "health", "value": 10.0 }, "actions": ["B"] }
+        ]
+    })");
+
+    Dia::Rules::RuleSet b = std::move(a);
+
+    EXPECT_EQ(b.GetRuleCount(), 2);
+    EXPECT_EQ(a.GetRuleCount(), 0);  // moved-from returns 0 via null guard
+}
+
+TEST(DiaRules_RuleSet, MoveAssignment_ReplacesRules)
+{
+    Dia::Rules::RuleSet a = LoadRuleSet(R"({
+        "rules": [
+            { "guard": { "op": ">=", "slot": "hero", "field": "health", "value": 50.0 }, "actions": ["A"] }
+        ]
+    })");
+
+    Dia::Rules::RuleSet b = LoadRuleSet(R"({
+        "rules": [
+            { "guard": { "op": ">=", "slot": "hero", "field": "health", "value": 50.0 }, "actions": ["X"] },
+            { "guard": { "op": "<",  "slot": "hero", "field": "health", "value": 10.0 }, "actions": ["Y"] }
+        ]
+    })");
+
+    a = std::move(b);
+
+    EXPECT_EQ(a.GetRuleCount(), 2);
+}
+
+TEST(DiaRules_RuleSet, MovedFrom_EvaluateIsSafe)
+{
+    Dia::Rules::RuleSet a = LoadRuleSet(R"({
+        "rules": [
+            { "guard": { "op": ">=", "slot": "hero", "field": "health", "value": 50.0 }, "actions": ["A"] }
+        ]
+    })");
+
+    Dia::Rules::RuleSet b = std::move(a);
+
+    Dia::Rules::RuleActionRegistry registry;
+    Dia::Condition::Testing::MockConditionContext ctx;
+    ctx.SetFloat(Dia::Core::StringCRC("hero"), Dia::Core::StringCRC("health"), 80.0f);
+
+    // Calling Evaluate on moved-from RuleSet must not crash; returns 0
+    int fired = a.Evaluate(ctx, registry, nullptr);
+    EXPECT_EQ(fired, 0);
+}

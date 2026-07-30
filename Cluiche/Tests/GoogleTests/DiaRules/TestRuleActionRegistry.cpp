@@ -2,6 +2,8 @@
 
 #include <DiaRules/RuleActionRegistry.h>
 
+#include <cstdio>
+
 // ---------------------------------------------------------------------------
 // DiaRules_ActionRegistry
 //
@@ -226,4 +228,68 @@ TEST(DiaRules_ActionRegistry, TwoRegistries_RegisterInOne_OtherHasNothing)
 
     EXPECT_TRUE (regA.Has(Dia::Core::StringCRC("act")));
     EXPECT_FALSE(regB.Has(Dia::Core::StringCRC("act")));
+}
+
+// ---------------------------------------------------------------------------
+// Register null, then re-register with a real handler
+// ---------------------------------------------------------------------------
+
+TEST(DiaRules_ActionRegistry, RegisterNullThenReRegister_FindReturnsNewHandler)
+{
+    Dia::Rules::RuleActionRegistry registry;
+
+    auto handler1 = [](void*) {};
+    auto handler2 = [](void*) {};
+
+    registry.Register(Dia::Core::StringCRC("slot"), handler1);
+    registry.Register(Dia::Core::StringCRC("slot"), nullptr);
+    registry.Register(Dia::Core::StringCRC("slot"), handler2);
+
+    EXPECT_TRUE(registry.Has(Dia::Core::StringCRC("slot")));
+    EXPECT_EQ(registry.Find(Dia::Core::StringCRC("slot")), handler2);
+}
+
+// ---------------------------------------------------------------------------
+// Large number of entries
+// ---------------------------------------------------------------------------
+
+TEST(DiaRules_ActionRegistry, LargeNumberOfEntries_AllFindable)
+{
+    Dia::Rules::RuleActionRegistry registry;
+
+    // Register 50 distinct keys using sprintf-style names "action_00" .. "action_49"
+    static const int kCount = 50;
+    auto handler = [](void*) {};
+
+    char buf[16];
+    for (int i = 0; i < kCount; ++i)
+    {
+        std::snprintf(buf, sizeof(buf), "action_%02d", i);
+        registry.Register(Dia::Core::StringCRC(buf), handler);
+    }
+
+    for (int i = 0; i < kCount; ++i)
+    {
+        std::snprintf(buf, sizeof(buf), "action_%02d", i);
+        Dia::Core::StringCRC key(buf);
+        EXPECT_TRUE(registry.Has(key))  << "Has failed for " << buf;
+        EXPECT_EQ(registry.Find(key), handler) << "Find failed for " << buf;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Has vs Find with null handler: slot exists but is not callable
+// ---------------------------------------------------------------------------
+
+TEST(DiaRules_ActionRegistry, HasVsFindNullHandlerContract_SlotExistsButNotCallable)
+{
+    Dia::Rules::RuleActionRegistry registry;
+
+    registry.Register(Dia::Core::StringCRC("empty_slot"), nullptr);
+
+    // Has reports the slot exists
+    EXPECT_TRUE(registry.Has(Dia::Core::StringCRC("empty_slot")));
+
+    // Find returns nullptr — handler is not callable
+    EXPECT_EQ(registry.Find(Dia::Core::StringCRC("empty_slot")), nullptr);
 }

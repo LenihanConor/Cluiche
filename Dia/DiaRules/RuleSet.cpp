@@ -67,6 +67,13 @@ namespace Dia
 
                 RuleDef def;
 
+                // Non-object entries (e.g. numbers, strings) produce an empty RuleDef
+                if (!ruleNode.isObject())
+                {
+                    rs.mImpl->rules.push_back(std::move(def));
+                    continue;
+                }
+
                 // Optional id
                 if (ruleNode.isMember("id") && ruleNode["id"].isString())
                 {
@@ -108,6 +115,8 @@ namespace Dia
         // -----------------------------------------------------------------------
         bool RuleSet::Validate(Dia::Core::Containers::DynamicArrayC<const char*, 32>& outErrors) const
         {
+            if (!mImpl) return true;  // moved-from / empty — treat as valid
+
             bool valid = true;
 
             // Check for empty action lists
@@ -147,6 +156,8 @@ namespace Dia
                               const RuleActionRegistry& registry,
                               void* actionContext) const
         {
+            if (!mImpl) return 0;
+
             int fired = 0;
 
             for (const RuleDef& rule : mImpl->rules)
@@ -172,6 +183,7 @@ namespace Dia
         // -----------------------------------------------------------------------
         int RuleSet::GetRuleCount() const
         {
+            if (!mImpl) return 0;
             return static_cast<int>(mImpl->rules.size());
         }
 
@@ -180,7 +192,7 @@ namespace Dia
         // -----------------------------------------------------------------------
         const RuleDef* RuleSet::GetRuleAt(int index) const
         {
-            if (index < 0 || index >= static_cast<int>(mImpl->rules.size()))
+            if (!mImpl || index < 0 || index >= static_cast<int>(mImpl->rules.size()))
                 return nullptr;
             return &mImpl->rules[static_cast<std::size_t>(index)];
         }

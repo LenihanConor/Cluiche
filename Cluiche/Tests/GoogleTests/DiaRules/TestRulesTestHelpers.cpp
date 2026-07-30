@@ -161,3 +161,97 @@ TEST(DiaRules_TestHelpers, AssertActionNotFired_ActionPresent_TriggersNonfatalFa
     };
     EXPECT_NONFATAL_FAILURE(doAssert(), "");
 }
+
+// ---------------------------------------------------------------------------
+// DiaRules_TestHelpers — additional coverage
+// ---------------------------------------------------------------------------
+
+TEST(DiaRules_TestHelpers, FireRuleSet_OneRuleTwoActions_FiredCountOneActionCountTwo)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "guard": { "op": ">=", "slot": "hero", "field": "health", "value": 50.0 },
+                "actions": ["A", "B"]
+            }
+        ]
+    })");
+
+    Dia::Condition::Testing::MockConditionContext ctx;
+    ctx.SetFloat(Dia::Core::StringCRC("hero"), Dia::Core::StringCRC("health"), 80.0f);
+
+    Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 64> firedActions;
+    int count = Dia::Rules::Testing::FireRuleSet(rs, ctx, firedActions);
+
+    EXPECT_EQ(count, 1);
+    EXPECT_EQ(firedActions.Size(), 2u);
+}
+
+TEST(DiaRules_TestHelpers, FireRuleSet_EmptyRuleSet_ReturnsZero)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({ "rules": [] })");
+
+    Dia::Condition::Testing::MockConditionContext ctx;
+
+    Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 64> firedActions;
+    int count = Dia::Rules::Testing::FireRuleSet(rs, ctx, firedActions);
+
+    EXPECT_EQ(count, 0);
+    EXPECT_EQ(firedActions.Size(), 0u);
+}
+
+TEST(DiaRules_TestHelpers, FireRuleSet_AppendsToExistingBuffer)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "guard": { "op": ">=", "slot": "hero", "field": "health", "value": 50.0 },
+                "actions": ["AttackAction"]
+            }
+        ]
+    })");
+
+    Dia::Condition::Testing::MockConditionContext ctx;
+    ctx.SetFloat(Dia::Core::StringCRC("hero"), Dia::Core::StringCRC("health"), 80.0f);
+
+    // Pre-populate with one entry
+    Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 64> firedActions;
+    firedActions.Add(Dia::Core::StringCRC("PreExisting"));
+
+    Dia::Rules::Testing::FireRuleSet(rs, ctx, firedActions);
+
+    // Should now have 2 entries: the pre-existing one plus the newly fired one
+    EXPECT_EQ(firedActions.Size(), 2u);
+}
+
+TEST(DiaRules_TestHelpers, AssertActionsFired_EmptyExpected_NoFailure)
+{
+    Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 64> firedActions;
+    firedActions.Add(Dia::Core::StringCRC("AttackAction"));
+
+    // Empty expected list — vacuous truth, no failure
+    Dia::Rules::Testing::AssertActionsFired(firedActions, {});
+}
+
+TEST(DiaRules_TestHelpers, AssertActionsFired_ExtraFiredActions_SubsetCheckPasses)
+{
+    Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 64> firedActions;
+    firedActions.Add(Dia::Core::StringCRC("AttackAction"));
+    firedActions.Add(Dia::Core::StringCRC("FleeAction"));
+
+    const Dia::Core::StringCRC attackId("AttackAction");
+
+    // Subset semantics: only assert AttackAction is present — FleeAction being extra is fine
+    Dia::Rules::Testing::AssertActionsFired(firedActions, {attackId});
+}
+
+TEST(DiaRules_TestHelpers, AssertActionNotFired_EmptyFiredActions_NoFailure)
+{
+    Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 64> firedActions;
+    // firedActions is empty
+
+    const Dia::Core::StringCRC someId("SomeAction");
+
+    // Nothing in firedActions — action definitely did not fire, no failure
+    Dia::Rules::Testing::AssertActionNotFired(firedActions, someId);
+}

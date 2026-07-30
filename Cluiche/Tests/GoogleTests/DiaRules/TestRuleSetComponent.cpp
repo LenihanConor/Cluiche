@@ -163,3 +163,147 @@ TEST(DiaRules_Component, Evaluate_NoRuleSet_ReturnsZero)
     int fired = comp.Evaluate(ctx, nullptr);
     EXPECT_EQ(fired, 0);
 }
+
+// ---------------------------------------------------------------------------
+// DiaRules_Component — additional coverage
+// ---------------------------------------------------------------------------
+
+TEST(DiaRules_Component, SetRuleSet_CalledTwice_SecondReplacesFirst)
+{
+    Dia::Rules::RuleSetComponent comp;
+
+    // rs1: health >= 50 fires AttackAction
+    Dia::Rules::RuleSet rs1 = LoadRuleSet(R"({
+        "rules": [
+            {
+                "guard": { "op": ">=", "slot": "hero", "field": "health", "value": 50.0 },
+                "actions": ["AttackAction"]
+            }
+        ]
+    })");
+
+    // rs2: health < 10 fires FleeAction
+    Dia::Rules::RuleSet rs2 = LoadRuleSet(R"({
+        "rules": [
+            {
+                "guard": { "op": "<", "slot": "hero", "field": "health", "value": 10.0 },
+                "actions": ["FleeAction"]
+            }
+        ]
+    })");
+
+    comp.SetRuleSet(std::move(rs1));
+    comp.SetRuleSet(std::move(rs2));
+
+    Dia::Rules::RuleActionRegistry reg;
+    reg.Register(Dia::Core::StringCRC("AttackAction"), [](void* ctx) { ++(*static_cast<int*>(ctx)); });
+    reg.Register(Dia::Core::StringCRC("FleeAction"),   [](void* ctx) { ++(*static_cast<int*>(ctx)); });
+    comp.SetRegistry(&reg);
+
+    Dia::Condition::Testing::MockConditionContext ctx;
+    ctx.SetFloat(Dia::Core::StringCRC("hero"), Dia::Core::StringCRC("health"), 80.0f);
+
+    // health=80 does NOT pass health < 10, so rs2's only rule does not fire
+    int callCount = 0;
+    int fired = comp.Evaluate(ctx, &callCount);
+    EXPECT_EQ(fired, 0);
+    EXPECT_EQ(callCount, 0);
+}
+
+TEST(DiaRules_Component, SetRegistry_NullAfterValid_EvaluateReturnsZero)
+{
+    Dia::Rules::RuleSetComponent comp;
+
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "guard": { "op": ">=", "slot": "hero", "field": "health", "value": 50.0 },
+                "actions": ["AttackAction"]
+            }
+        ]
+    })");
+    comp.SetRuleSet(std::move(rs));
+
+    Dia::Rules::RuleActionRegistry reg;
+    int callCount = 0;
+    reg.Register(Dia::Core::StringCRC("AttackAction"), [](void* ctx) { ++(*static_cast<int*>(ctx)); });
+    comp.SetRegistry(&reg);
+
+    Dia::Condition::Testing::MockConditionContext ctx;
+    ctx.SetFloat(Dia::Core::StringCRC("hero"), Dia::Core::StringCRC("health"), 80.0f);
+
+    // First evaluate — should fire
+    int fired1 = comp.Evaluate(ctx, &callCount);
+    EXPECT_GT(fired1, 0);
+
+    // Set registry to null
+    comp.SetRegistry(nullptr);
+
+    // Second evaluate — must return 0
+    int fired2 = comp.Evaluate(ctx, &callCount);
+    EXPECT_EQ(fired2, 0);
+}
+
+TEST(DiaRules_Component, SetRegistry_CalledTwice_SecondRegistryUsed)
+{
+    Dia::Rules::RuleSetComponent comp;
+
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "guard": { "op": ">=", "slot": "hero", "field": "health", "value": 50.0 },
+                "actions": ["AttackAction"]
+            }
+        ]
+    })");
+    comp.SetRuleSet(std::move(rs));
+
+    // regA has AttackAction
+    Dia::Rules::RuleActionRegistry regA;
+    int attackCallCount = 0;
+    regA.Register(Dia::Core::StringCRC("AttackAction"), [](void* ctx) { ++(*static_cast<int*>(ctx)); });
+
+    // regB does NOT have AttackAction
+    Dia::Rules::RuleActionRegistry regB;
+
+    comp.SetRegistry(&regA);
+    comp.SetRegistry(&regB);  // second call replaces first
+
+    Dia::Condition::Testing::MockConditionContext ctx;
+    ctx.SetFloat(Dia::Core::StringCRC("hero"), Dia::Core::StringCRC("health"), 80.0f);
+
+    // Guard passes (health=80 >= 50), rule fires, but regB has no AttackAction so action is skipped
+    int fired = comp.Evaluate(ctx, &attackCallCount);
+    EXPECT_EQ(fired, 1);          // rule fired (guard passed)
+    EXPECT_EQ(attackCallCount, 0); // AttackAction not in regB — not called
+}
+
+TEST(DiaRules_Component, Evaluate_MultipleMatchingRules_ReturnsExactCount)
+{
+    Dia::Rules::RuleSetComponent comp;
+
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "guard": { "op": ">=", "slot": "hero", "field": "health", "value": 50.0 },
+                "actions": ["AttackAction"]
+            },
+            {
+                "guard": { "op": ">=", "slot": "hero", "field": "health", "value": 10.0 },
+                "actions": ["SetAggressive"]
+            }
+        ]
+    })");
+    comp.SetRuleSet(std::move(rs));
+
+    Dia::Rules::RuleActionRegistry reg;
+    reg.Register(Dia::Core::StringCRC("AttackAction"),  [](void*) {});
+    reg.Register(Dia::Core::StringCRC("SetAggressive"), [](void*) {});
+    comp.SetRegistry(&reg);
+
+    Dia::Condition::Testing::MockConditionContext ctx;
+    ctx.SetFloat(Dia::Core::StringCRC("hero"), Dia::Core::StringCRC("health"), 80.0f);
+
+    int fired = comp.Evaluate(ctx, nullptr);
+    EXPECT_EQ(fired, 2);
+}
