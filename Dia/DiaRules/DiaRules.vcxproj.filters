@@ -13,4 +13,10 @@
       <Filter>Docs</Filter>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="RuleActionRegistry.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="RuleActionRegistry.cpp" />
+  </ItemGroup>
 </Project>

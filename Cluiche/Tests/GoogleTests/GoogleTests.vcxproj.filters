@@ -187,6 +187,9 @@
     <Filter Include="CluicheGameBaseline">
       <UniqueIdentifier>{CGBL0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaRules">
+      <UniqueIdentifier>{DRLS0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -1355,6 +1358,10 @@
     </ClCompile>
     <ClCompile Include="DiaAIBudget\TestAIBudgetModule.cpp">
       <Filter>DiaAIBudget</Filter>
+    </ClCompile>
+    <!-- DiaRules -->
+    <ClCompile Include="DiaRules\TestRuleActionRegistry.cpp">
+      <Filter>DiaRules</Filter>
     </ClCompile>
     <ClCompile Include="DiaBlackboard\TestBlackboard.cpp">
     <ClCompile Include="CluicheGameBaseline\TestBlackboardInspectorSource.cpp">
