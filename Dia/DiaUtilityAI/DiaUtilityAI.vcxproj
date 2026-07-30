@@ -81,10 +81,12 @@
     <ClInclude Include="ScorerDef.h" />
     <ClInclude Include="ActionDef.h" />
     <ClInclude Include="GroupConsiderationContext.h" />
+    <ClInclude Include="UtilitySet.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ResponseCurve.cpp" />
     <ClCompile Include="GroupConsiderationContext.cpp" />
+    <ClCompile Include="UtilitySet.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
