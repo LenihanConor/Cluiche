@@ -74,8 +74,11 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="IConditionContext.h" />
+    <ClInclude Include="ConditionRegistry.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ConditionRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diacondition.architecture.module.md" />
