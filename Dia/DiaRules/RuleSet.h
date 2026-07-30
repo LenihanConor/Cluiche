@@ -1,6 +1,7 @@
 #pragma once
 
 #include <DiaRules/RuleActionRegistry.h>
+#include <DiaRules/RuleDef.h>
 #include <DiaCondition/IConditionContext.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Json/external/json/json.h>
@@ -54,6 +55,10 @@ namespace Dia
                          void* actionContext) const;
 
             int GetRuleCount() const;
+
+            // Accessor for test utilities (Testing/RulesTestHelpers.h).
+            // Returns pointer to the RuleDef at the given index, or nullptr if out of range.
+            const RuleDef* GetRuleAt(int index) const;
 
         private:
             // Pimpl to keep STL (std::vector<RuleDef>) out of the public header.

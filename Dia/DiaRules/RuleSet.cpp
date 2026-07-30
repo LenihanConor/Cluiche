@@ -175,5 +175,15 @@ namespace Dia
             return static_cast<int>(mImpl->rules.size());
         }
 
+        // -----------------------------------------------------------------------
+        // GetRuleAt
+        // -----------------------------------------------------------------------
+        const RuleDef* RuleSet::GetRuleAt(int index) const
+        {
+            if (index < 0 || index >= static_cast<int>(mImpl->rules.size()))
+                return nullptr;
+            return &mImpl->rules[static_cast<std::size_t>(index)];
+        }
+
     } // namespace Rules
 } // namespace Dia

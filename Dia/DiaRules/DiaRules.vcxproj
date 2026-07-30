@@ -81,6 +81,7 @@
     <ClInclude Include="RuleDef.h" />
     <ClInclude Include="RuleSet.h" />
     <ClInclude Include="RuleSetComponent.h" />
+    <ClInclude Include="Testing\RulesTestHelpers.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RuleActionRegistry.cpp" />

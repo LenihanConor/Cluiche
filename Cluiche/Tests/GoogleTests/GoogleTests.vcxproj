@@ -701,6 +701,7 @@
     <ClCompile Include="DiaRules\TestRuleActionRegistry.cpp" />
     <ClCompile Include="DiaRules\TestRuleSet.cpp" />
     <ClCompile Include="DiaRules\TestRuleSetComponent.cpp" />
+    <ClCompile Include="DiaRules\TestRulesTestHelpers.cpp" />
     <ClCompile Include="DiaOrder\TestOrderQueue.cpp" />
     <ClCompile Include="DiaPathfinding\TestPathfinding.cpp" />
     <ClCompile Include="DiaPathfinding\TestPathfindingGolden.cpp" />

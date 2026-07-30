@@ -15,6 +15,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RuleActionRegistry.h" />
+    <ClInclude Include="Testing\RulesTestHelpers.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RuleActionRegistry.cpp" />
