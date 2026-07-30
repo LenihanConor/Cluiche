@@ -699,6 +699,7 @@
     <ClCompile Include="DiaCondition\TestConditionGuardAdapterExtended.cpp" />
     <!-- DiaRules -->
     <ClCompile Include="DiaRules\TestRuleActionRegistry.cpp" />
+    <ClCompile Include="DiaRules\TestRuleSet.cpp" />
     <ClCompile Include="DiaOrder\TestOrderQueue.cpp" />
     <ClCompile Include="DiaPathfinding\TestPathfinding.cpp" />
     <ClCompile Include="DiaPathfinding\TestPathfindingGolden.cpp" />
