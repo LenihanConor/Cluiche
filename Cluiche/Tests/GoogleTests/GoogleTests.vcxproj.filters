@@ -1391,6 +1391,9 @@
     <ClCompile Include="DiaUtilityAI\TestUtilitySetComponent.cpp">
       <Filter>DiaUtilityAI</Filter>
     </ClCompile>
+    <ClCompile Include="DiaUtilityAI\TestUtilityTestHelpers.cpp">
+      <Filter>DiaUtilityAI</Filter>
+    </ClCompile>
     <ClCompile Include="DiaBlackboard\TestBlackboard.cpp">
     <ClCompile Include="CluicheGameBaseline\TestBlackboardInspectorSource.cpp">
       <Filter>CluicheGameBaseline</Filter>

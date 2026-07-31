@@ -708,6 +708,7 @@
     <ClCompile Include="DiaUtilityAI\TestUtilitySet.cpp" />
     <ClCompile Include="DiaUtilityAI\TestUtilitySetAsync.cpp" />
     <ClCompile Include="DiaUtilityAI\TestUtilitySetComponent.cpp" />
+    <ClCompile Include="DiaUtilityAI\TestUtilityTestHelpers.cpp" />
     <ClCompile Include="DiaOrder\TestOrderQueue.cpp" />
     <ClCompile Include="DiaPathfinding\TestPathfinding.cpp" />
     <ClCompile Include="DiaPathfinding\TestPathfindingGolden.cpp" />
