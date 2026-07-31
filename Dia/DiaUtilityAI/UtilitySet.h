@@ -2,6 +2,7 @@
 
 #include <DiaUtilityAI/ActionDef.h>
 #include <DiaUtilityAI/GroupConsiderationContext.h>
+#include <DiaUtilityAI/PersonalityProfile.h>
 #include <DiaCondition/IConditionContext.h>
 #include <DiaCondition/ConditionRegistry.h>
 #include <DiaRules/RuleActionRegistry.h>
@@ -46,7 +47,8 @@ namespace Dia
                 Dia::Condition::IConditionContext& ctx,
                 const Dia::Rules::RuleActionRegistry& registry,
                 void* actionContext,
-                GroupConsiderationContext* group = nullptr) const;
+                GroupConsiderationContext* group = nullptr,
+                const PersonalityProfile* personality = nullptr) const;
 
             // Async evaluation: submits a one-shot work item to scheduler.
             // All parameters are captured by pointer/value at submission time.
@@ -62,7 +64,8 @@ namespace Dia
                 Dia::AIBudget::AIBudgetScheduler& scheduler,
                 UtilityResultCallback callback,
                 void* callbackUserData,
-                GroupConsiderationContext* group = nullptr);
+                GroupConsiderationContext* group = nullptr,
+                const PersonalityProfile* personality = nullptr);
 
             // JSON loading. See class doc for schema.
             static UtilitySet LoadFromJson(const Json::Value& root);
@@ -83,7 +86,8 @@ namespace Dia
             // to check cooldown before committing to dispatch.
             UtilitySelection SelectWinner(
                 Dia::Condition::IConditionContext& ctx,
-                GroupConsiderationContext* group = nullptr) const;
+                GroupConsiderationContext* group = nullptr,
+                const PersonalityProfile* personality = nullptr) const;
 
             // Last-frame scores — only populated after at least one Evaluate() call.
             // Only stores scores when DIA_DEBUG is defined; otherwise always empty.

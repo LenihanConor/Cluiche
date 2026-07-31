@@ -709,6 +709,10 @@
     <ClCompile Include="DiaUtilityAI\TestUtilitySetAsync.cpp" />
     <ClCompile Include="DiaUtilityAI\TestUtilitySetComponent.cpp" />
     <ClCompile Include="DiaUtilityAI\TestUtilityTestHelpers.cpp" />
+    <ClCompile Include="DiaUtilityAI\TestPersonalityProfile.cpp" />
+    <ClCompile Include="DiaUtilityAI\TestResponseCurveExtended.cpp" />
+    <ClCompile Include="DiaUtilityAI\TestUtilitySetExtended.cpp" />
+    <ClCompile Include="DiaUtilityAI\TestUtilityIntegration.cpp" />
     <ClCompile Include="DiaOrder\TestOrderQueue.cpp" />
     <ClCompile Include="DiaPathfinding\TestPathfinding.cpp" />
     <ClCompile Include="DiaPathfinding\TestPathfindingGolden.cpp" />

@@ -81,6 +81,7 @@
     <ClInclude Include="ScorerDef.h" />
     <ClInclude Include="ActionDef.h" />
     <ClInclude Include="GroupConsiderationContext.h" />
+    <ClInclude Include="PersonalityProfile.h" />
     <ClInclude Include="UtilitySet.h" />
     <ClInclude Include="UtilitySetComponent.h" />
     <ClInclude Include="Testing\UtilityTestHelpers.h" />
@@ -88,6 +89,7 @@
   <ItemGroup>
     <ClCompile Include="ResponseCurve.cpp" />
     <ClCompile Include="GroupConsiderationContext.cpp" />
+    <ClCompile Include="PersonalityProfile.cpp" />
     <ClCompile Include="UtilitySet.cpp" />
     <ClCompile Include="UtilitySetComponent.cpp" />
   </ItemGroup>

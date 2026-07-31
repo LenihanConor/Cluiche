@@ -1394,6 +1394,18 @@
     <ClCompile Include="DiaUtilityAI\TestUtilityTestHelpers.cpp">
       <Filter>DiaUtilityAI</Filter>
     </ClCompile>
+    <ClCompile Include="DiaUtilityAI\TestPersonalityProfile.cpp">
+      <Filter>DiaUtilityAI</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaUtilityAI\TestResponseCurveExtended.cpp">
+      <Filter>DiaUtilityAI</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaUtilityAI\TestUtilitySetExtended.cpp">
+      <Filter>DiaUtilityAI</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaUtilityAI\TestUtilityIntegration.cpp">
+      <Filter>DiaUtilityAI</Filter>
+    </ClCompile>
     <ClCompile Include="DiaBlackboard\TestBlackboard.cpp">
     <ClCompile Include="CluicheGameBaseline\TestBlackboardInspectorSource.cpp">
       <Filter>CluicheGameBaseline</Filter>

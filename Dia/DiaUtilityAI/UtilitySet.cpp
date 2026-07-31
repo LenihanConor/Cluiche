@@ -1,4 +1,5 @@
 ﻿#include <DiaUtilityAI/UtilitySet.h>
+#include <DiaUtilityAI/PersonalityProfile.h>
 #include <DiaUtilityAI/ResponseCurve.h>
 #include <DiaCondition/ConditionExpr.h>
 #include <DiaRules/RuleActionRegistry.h>
@@ -24,6 +25,7 @@ namespace Dia
             const Dia::Rules::RuleActionRegistry* registry;
             void*                                 actionContext;
             GroupConsiderationContext*            group;
+            const PersonalityProfile*             personality;
             UtilityResultCallback                 callback;
             void*                                 callbackUserData;
             Dia::AIBudget::AIBudgetScheduler*     scheduler;
@@ -31,7 +33,7 @@ namespace Dia
 
             UtilityEvalWorkItem()
                 : set(nullptr), ctx(nullptr), registry(nullptr)
-                , actionContext(nullptr), group(nullptr)
+                , actionContext(nullptr), group(nullptr), personality(nullptr)
                 , callback(nullptr), callbackUserData(nullptr)
                 , scheduler(nullptr), mFired(false)
             {}
@@ -49,7 +51,7 @@ namespace Dia
                 mFired = true;
 
                 // Run sync evaluation (dispatches winner via registry).
-                UtilitySelection result = set->Evaluate(*ctx, *registry, actionContext, group);
+                UtilitySelection result = set->Evaluate(*ctx, *registry, actionContext, group, personality);
 
                 // Unregister before firing callback so re-entrant calls are safe.
                 scheduler->Unregister(this);
@@ -109,7 +111,8 @@ namespace Dia
 
         UtilitySelection UtilitySet::SelectWinner(
             Dia::Condition::IConditionContext& ctx,
-            GroupConsiderationContext* group) const
+            GroupConsiderationContext* group,
+            const PersonalityProfile* personality) const
         {
             UtilitySelection winner;
 
@@ -161,6 +164,10 @@ namespace Dia
                     if (score <= 0.0f) { score = 0.0f; break; }
                 }
 
+                // Apply personality bias multiplier if present
+                if (personality != nullptr)
+                    score *= personality->GetScoreMultiplier(def.actionId);
+
 #ifdef DIA_DEBUG
                 mImpl->lastScoreIds.push_back(def.actionId);
                 mImpl->lastScores.push_back(score);
@@ -180,9 +187,10 @@ namespace Dia
             Dia::Condition::IConditionContext& ctx,
             const Dia::Rules::RuleActionRegistry& registry,
             void* actionContext,
-            GroupConsiderationContext* group) const
+            GroupConsiderationContext* group,
+            const PersonalityProfile* personality) const
         {
-            UtilitySelection winner = SelectWinner(ctx, group);
+            UtilitySelection winner = SelectWinner(ctx, group, personality);
 
             if (winner.score > 0.0f)
             {
@@ -201,7 +209,8 @@ namespace Dia
             Dia::AIBudget::AIBudgetScheduler& scheduler,
             UtilityResultCallback callback,
             void* callbackUserData,
-            GroupConsiderationContext* group)
+            GroupConsiderationContext* group,
+            const PersonalityProfile* personality)
         {
             // Prune fired items before adding new ones to keep the list bounded.
             for (auto it = mImpl->pendingWorkItems.begin(); it != mImpl->pendingWorkItems.end(); )
@@ -221,6 +230,7 @@ namespace Dia
             item.registry         = &registry;
             item.actionContext    = actionContext;
             item.group            = group;
+            item.personality      = personality;
             item.callback         = callback;
             item.callbackUserData = callbackUserData;
             item.scheduler        = &scheduler;

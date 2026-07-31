@@ -2,6 +2,7 @@
 #include <DiaEntity/IComponent.h>
 #include <DiaEntity/ComponentMacros.h>
 #include <DiaUtilityAI/UtilitySet.h>
+#include <DiaUtilityAI/PersonalityProfile.h>
 #include <DiaRules/RuleActionRegistry.h>
 #include <DiaCondition/IConditionContext.h>
 
@@ -43,10 +44,16 @@ namespace Dia
             // Optional group cap context. Caller retains ownership. Pass nullptr to disable.
             void SetGroupContext(GroupConsiderationContext* group);
 
+            // Optional personality profile. Pass nullptr to clear.
+            // Caller retains ownership; profile must outlive the component.
+            void SetPersonality(const PersonalityProfile* profile);
+            const PersonalityProfile* GetPersonality() const;
+
             // Evaluate with optional delta-time for cooldown advancement.
             // dt defaults to 0 — pass the frame delta to advance cooldown timers.
             // Returns no-selection (score == 0) if no UtilitySet or registry is set,
             // or if the winning action is currently in cooldown.
+            // If personality has eval_period_ticks > 1, skipped ticks return UtilitySelection{}.
             UtilitySelection Evaluate(
                 Dia::Condition::IConditionContext& ctx,
                 void* actionContext,
@@ -58,7 +65,9 @@ namespace Dia
             UtilitySet                            mUtilitySet;
             const Dia::Rules::RuleActionRegistry* mRegistry    = nullptr;
             GroupConsiderationContext*             mGroupContext = nullptr;
+            const PersonalityProfile*             mPersonality  = nullptr;
             bool                                  mHasUtilitySet = false;
+            mutable int                           mEvalCounter   = 0;
 
             // Per-action cooldown state. Pimpl keeps STL out of the public header.
             struct CooldownState;

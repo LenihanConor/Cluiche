@@ -49,6 +49,17 @@ void UtilitySetComponent::SetGroupContext(GroupConsiderationContext* group)
     mGroupContext = group;
 }
 
+void UtilitySetComponent::SetPersonality(const PersonalityProfile* profile)
+{
+    mPersonality = profile;
+    mEvalCounter = 0;  // reset counter when personality changes
+}
+
+const PersonalityProfile* UtilitySetComponent::GetPersonality() const
+{
+    return mPersonality;
+}
+
 UtilitySelection UtilitySetComponent::Evaluate(
     Dia::Condition::IConditionContext& ctx,
     void* actionContext,
@@ -57,6 +68,14 @@ UtilitySelection UtilitySetComponent::Evaluate(
     if (!mHasUtilitySet || mRegistry == nullptr)
     {
         return UtilitySelection{};
+    }
+
+    // Eval period throttle: skip ticks when personality has eval_period_ticks > 1
+    if (mPersonality != nullptr)
+    {
+        ++mEvalCounter;
+        if (mEvalCounter % mPersonality->GetEvalPeriodTicks() != 0)
+            return UtilitySelection{};
     }
 
     // Advance cooldown timers
@@ -71,7 +90,7 @@ UtilitySelection UtilitySetComponent::Evaluate(
     }
 
     // Score only (no dispatch) so we can enforce cooldown before committing
-    UtilitySelection result = mUtilitySet.SelectWinner(ctx, mGroupContext);
+    UtilitySelection result = mUtilitySet.SelectWinner(ctx, mGroupContext, mPersonality);
 
     if (result.score > 0.0f)
     {
