@@ -1,4 +1,4 @@
-#include <DiaUtilityAI/UtilitySet.h>
+﻿#include <DiaUtilityAI/UtilitySet.h>
 #include <DiaUtilityAI/ResponseCurve.h>
 #include <DiaCondition/ConditionExpr.h>
 #include <DiaRules/RuleActionRegistry.h>
@@ -107,10 +107,8 @@ namespace Dia
             return *this;
         }
 
-        UtilitySelection UtilitySet::Evaluate(
+        UtilitySelection UtilitySet::SelectWinner(
             Dia::Condition::IConditionContext& ctx,
-            const Dia::Rules::RuleActionRegistry& registry,
-            void* actionContext,
             GroupConsiderationContext* group) const
         {
             UtilitySelection winner;
@@ -122,7 +120,7 @@ namespace Dia
 
             for (const ActionDef& def : mImpl->actions)
             {
-                // 1. Check prerequisite
+                // 1. Check prerequisite (invalid/default = always pass)
                 if (def.prerequisite.IsValid())
                 {
                     if (!def.prerequisite.Evaluate(ctx))
@@ -134,7 +132,6 @@ namespace Dia
                         continue;
                     }
                 }
-                // If prerequisite is not valid (default-constructed), treat as always pass
 
                 // 2. Check maxConcurrent
                 if (group != nullptr && def.maxConcurrent > 0)
@@ -152,43 +149,16 @@ namespace Dia
                 // 3. Compute score = product of all scorer outputs
                 float score = 1.0f;
 
-                if (def.scorers.Size() == 0)
+                for (unsigned int i = 0; i < def.scorers.Size(); ++i)
                 {
-                    // No scorers: default to fully eligible (score = 1.0f)
-                    score = 1.0f;
-                }
-                else
-                {
-                    for (unsigned int i = 0; i < def.scorers.Size(); ++i)
-                    {
-                        const ScorerDef& scorer = def.scorers[i];
-
-                        float rawValue = ctx.GetFloat(scorer.slot, scorer.field);
-
-                        // Normalise to [0,1]
-                        float normInput = 0.0f;
-                        float range = scorer.inputMax - scorer.inputMin;
-                        if (range > 1e-7f)
-                        {
-                            normInput = (rawValue - scorer.inputMin) / range;
-                        }
-
-                        // Clamp to [0,1]
-                        if (normInput < 0.0f) normInput = 0.0f;
-                        if (normInput > 1.0f) normInput = 1.0f;
-
-                        // Evaluate curve
-                        float scorerOutput = scorer.curve.Evaluate(normInput);
-
-                        score *= scorerOutput;
-
-                        // Early out: product already at zero
-                        if (score <= 0.0f)
-                        {
-                            score = 0.0f;
-                            break;
-                        }
-                    }
+                    const ScorerDef& scorer = def.scorers[i];
+                    float rawValue  = ctx.GetFloat(scorer.slot, scorer.field);
+                    float range     = scorer.inputMax - scorer.inputMin;
+                    float normInput = (range > 1e-7f) ? (rawValue - scorer.inputMin) / range : 0.0f;
+                    if (normInput < 0.0f) normInput = 0.0f;
+                    if (normInput > 1.0f) normInput = 1.0f;
+                    score *= scorer.curve.Evaluate(normInput);
+                    if (score <= 0.0f) { score = 0.0f; break; }
                 }
 
 #ifdef DIA_DEBUG
@@ -196,7 +166,6 @@ namespace Dia
                 mImpl->lastScores.push_back(score);
 #endif
 
-                // 5. Track winner
                 if (score > winner.score)
                 {
                     winner.score    = score;
@@ -204,14 +173,22 @@ namespace Dia
                 }
             }
 
-            // Dispatch winner if eligible
+            return winner;
+        }
+
+        UtilitySelection UtilitySet::Evaluate(
+            Dia::Condition::IConditionContext& ctx,
+            const Dia::Rules::RuleActionRegistry& registry,
+            void* actionContext,
+            GroupConsiderationContext* group) const
+        {
+            UtilitySelection winner = SelectWinner(ctx, group);
+
             if (winner.score > 0.0f)
             {
                 Dia::Rules::RuleActionFn fn = registry.Find(winner.actionId);
                 if (fn != nullptr)
-                {
                     fn(actionContext);
-                }
             }
 
             return winner;
@@ -390,6 +367,16 @@ namespace Dia
         int UtilitySet::GetActionCount() const
         {
             return static_cast<int>(mImpl->actions.size());
+        }
+
+        float UtilitySet::GetCooldownForAction(Dia::Core::StringCRC actionId) const
+        {
+            for (const ActionDef& def : mImpl->actions)
+            {
+                if (def.actionId == actionId)
+                    return def.cooldownSeconds;
+            }
+            return 0.0f;
         }
 
         void UtilitySet::GetLastFrameScores(

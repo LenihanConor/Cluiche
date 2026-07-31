@@ -75,6 +75,16 @@ namespace Dia
 
             int GetActionCount() const;
 
+            // Returns the cooldown duration in seconds for a given action ID.
+            // Returns 0.0f if the action is not found.
+            float GetCooldownForAction(Dia::Core::StringCRC actionId) const;
+
+            // Score-only: selects winner without dispatching. Used by UtilitySetComponent
+            // to check cooldown before committing to dispatch.
+            UtilitySelection SelectWinner(
+                Dia::Condition::IConditionContext& ctx,
+                GroupConsiderationContext* group = nullptr) const;
+
             // Last-frame scores — only populated after at least one Evaluate() call.
             // Only stores scores when DIA_DEBUG is defined; otherwise always empty.
             void GetLastFrameScores(
