@@ -3,6 +3,8 @@
 ## Parent Application
 @docs/specs/applications/dia/dia.md
 
+**Gameplay Domains:** physics, collision, movement
+
 ## Purpose
 
 DiaRigidBody2D is the 2D rigid body physics simulation system for the Dia engine. It provides a fixed-timestep deterministic simulation loop covering velocity integration, force and torque accumulation, collision detection (broad-phase via injected spatial structure + narrow-phase via DiaGeometry2D), and collision response (impulse-based resolution). It emits collision events via an Observer-based event system.

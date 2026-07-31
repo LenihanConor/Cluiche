@@ -82,6 +82,10 @@ files = [
   { src = "Cluiche/Assets/CluicheTest/Stages/IK2DTestStage/skeleton/dragon.diarig", dest = "$(OutDir)assets/stages/IK2DTestStage/skeleton/" },
   { src = "Cluiche/Assets/CluicheTest/Stages/Mesh3DTestStage/misc/ApplicationFlow/mesh3d_test_stage.diaapp", dest = "$(OutDir)assets/stages/Mesh3DTestStage/misc/ApplicationFlow/" },
   { src = "Cluiche/Assets/CluicheTest/Stages/Mesh3DTestStage/mesh3d_test_stage.diastage", dest = "$(OutDir)assets/stages/Mesh3DTestStage/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/AIDecisionTestStage/ai_decision_test_stage.diastage", dest = "$(OutDir)assets/stages/AIDecisionTestStage/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/AIDecisionTestStage/misc/ApplicationFlow/ai_decision_test_stage.diaapp", dest = "$(OutDir)assets/stages/AIDecisionTestStage/misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/AIHTNTestStage/ai_htn_test_stage.diastage", dest = "$(OutDir)assets/stages/AIHTNTestStage/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/AIHTNTestStage/misc/ApplicationFlow/ai_htn_test_stage.diaapp", dest = "$(OutDir)assets/stages/AIHTNTestStage/misc/ApplicationFlow/" },
 ]
 
 [targets.cluicheeditor]

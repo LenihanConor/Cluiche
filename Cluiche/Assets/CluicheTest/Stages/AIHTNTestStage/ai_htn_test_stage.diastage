@@ -1,0 +1,9 @@
+{
+    "name": "AIHTNTestStage",
+    "manifest": "Stages/AIHTNTestStage/misc/ApplicationFlow/ai_htn_test_stage.diaapp",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

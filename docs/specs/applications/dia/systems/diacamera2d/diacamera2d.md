@@ -4,6 +4,7 @@
 @docs/specs/applications/dia/dia.md
 
 **Status:** `Done`
+**Gameplay Domains:** camera
 
 **Research:** @docs/research/diascene2d/design-decisions.md (sections 5, 9)
 

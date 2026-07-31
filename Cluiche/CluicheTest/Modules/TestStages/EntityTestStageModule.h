@@ -32,7 +32,9 @@ public:
 
 protected:
     Dia::Core::StringCRC GetStageName() const override;
-    unsigned int GetBudgetFrames() const override { return 120; }
+    unsigned int GetBudgetFrames() const override { return 240; }
+
+    static constexpr unsigned int kMinDisplayFrames = 150; // 5 s at 30 Hz — keep stage visible for manual inspection
     const Dia::Core::StringCRC* GetCheckpointNames(unsigned int& outCount) const override;
     bool AreDependenciesReady() override;
     void OnStart(Dia::Automation::AutomationService* service) override;

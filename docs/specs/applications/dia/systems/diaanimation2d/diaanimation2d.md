@@ -4,6 +4,7 @@
 @docs/specs/applications/dia/dia.md
 
 **Status:** `Done`
+**Gameplay Domains:** animation
 
 ---
 

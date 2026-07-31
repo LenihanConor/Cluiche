@@ -31,6 +31,7 @@ public:
         const Dia::Geometry2D::AARect& worldRect,
         Dia::Picking::PickLayerMask mask = static_cast<unsigned int>(Dia::Picking::PickLayer::kAll)) const;
 
+    void         Clear() { mPickables.RemoveAll(); }
     unsigned int GetPickableCount() const { return mPickables.Size(); }
 
 private:

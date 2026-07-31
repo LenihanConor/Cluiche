@@ -66,15 +66,22 @@ def dia_client(app_launcher, request):
     """Connected DiaClient. Connects, resets to Boot, disconnects on teardown."""
     plan = request.config._dia_plan
     port = plan.get("port", 9002)
+
+    # If the managed process has already exited, skip immediately rather than
+    # hanging for 60s trying to connect to a dead socket.
+    if app_launcher is not None and app_launcher.poll() is not None:
+        pytest.skip(f"app process exited (returncode={app_launcher.returncode}) — skipping remaining tests")
+
     client = DiaClient(port=port)
     client.connect(timeout=60.0)
     # Reset to known state before each test so prior test failures don't cascade
     try:
         current = client.report().get("stage")
         if current != "Boot":
-            client.navigate_to("Boot")
-    except Exception:
-        pass
+            client.navigate_to("Boot", timeout_s=30.0)
+    except Exception as e:
+        client.disconnect()
+        pytest.fail(f"Could not reset to Boot before test: {e}")
     # Record how many log lines exist before this test runs (high-water mark)
     request.node._dia_log_hwm = _count_log_lines(request.config, plan)
     yield client
@@ -107,6 +114,7 @@ def assert_metric(dia_client):
             pytest.fail(f"Unknown operator: '{op}'")
         if not ops[op](value, threshold):
             pytest.fail(f"Metric '{name}' = {value}, expected {op} {threshold}")
+        return value
 
     return _assert
 

@@ -1,0 +1,9 @@
+{
+    "name": "AIDecisionTestStage",
+    "manifest": "Stages/AIDecisionTestStage/misc/ApplicationFlow/ai_decision_test_stage.diaapp",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

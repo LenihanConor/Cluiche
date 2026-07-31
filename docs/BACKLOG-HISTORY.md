@@ -68,6 +68,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | DiaHTN | OperatorRegistry, RuleActionBridge, HTNDomain, HTNPlan, SyncPlanner, AsyncPlanning, HTNPlannerComponent, TestUtilities | 2026-07-30 | All features implemented; 85 GoogleTests pass (20 ActionRegistry + 39 RuleSet + 13 Component + 13 TestHelpers); spec marked Done 2026-07-30 |
 | DiaAIDecisionInspector | — | 2026-07-30 | All features implemented; 85 GoogleTests pass (20 ActionRegistry + 39 RuleSet + 13 Component + 13 TestHelpers); spec marked Done 2026-07-30 |
 | diautilityai | [spec](specs/) | 2026-07-31 | Marked done by `dia docs spec-done` |
+| diahtn | [spec](specs/) | 2026-07-31 | Marked done by `dia docs spec-done` |
 
 ---
 
@@ -101,6 +102,15 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | DiaCore — DirectedGraph + RelationshipIndex refactor | [directed-graph.md](specs/applications/dia/systems/diacore/directed-graph.md) | DiaCore | 2026-05-05 — `DirectedGraph<..., IDType>` with 3 policies + 7th IDType template param; RelationshipIndex rebuilt on DirectedGraph with CRC keys (~47KB stack); 78 graph tests + 92 asset catalogue tests passing |
 | DiaMetrics Registry (standalone) | [metrics-registry.md](specs/applications/dia/systems/diaobservation/metrics-registry.md) · [diametrics.md](specs/applications/dia/systems/diametrics/diametrics.md) | DiaMetrics | 2026-05-18 — New `Dia/DiaMetrics/` static lib: `Counter` (per-thread lock-free shards), `Gauge` (atomic\<double\>), `Histogram` (fixed buckets, p50/p95/p99), `MetricRegistry` Meyer's singleton, `IMetricSink`, `MetricSnapshot`. 24 tests. `MetricsCollectorModule` rewritten to v2 Module API, registers 4 engine gauges. Tasks 11–13 (MetricsFileSink, SessionManager wiring) deferred to DiaObservation #5. |
 | DiaObservation #1 — Skeleton + DiaLogger Fold + Async Drain | [skeleton-and-logger-fold.md](specs/applications/dia/systems/diaobservation/skeleton-and-logger-fold.md) | DiaObservation | 2026-05-18 — Created `Dia/DiaObservation/` module; folded all DiaLogger source into `Log/` subsystem (git mv, blame preserved); hard-switched namespace `Dia::Logger::` → `Dia::Observation::Log::` across 107 callers; deleted `Dia/DiaLogger/`; added async drain thread (lazy-start via `std::call_once` on first `RegisterSink`, 1ms loop, `Stop()` joins on shutdown); `LoggerModule::DoStop` calls `Stop()` before `UnregisterSink` to avoid use-after-free; added `MockSink.h` in `Testing/`; 5 new async drain tests (AC14/AC17/AC18/AC20/AC22); all 3 pipelines (googletest + cluichetest + cluicheeditor) green. |
+
+---
+
+## Completed E2E Stages
+
+| Item | Completed | Notes |
+|------|-----------|-------|
+| AIDecisionTestStage + scenario | 2026-07-31 | 5 checkpoints: Condition eval (health<50, enemy.visible), Rules (CallForHelp fires), UtilityAI sync (Flee wins at health=30), AIBudget async (EvaluateAsync callback). `scenarios/cluichetest/ai_decision/test_ai_decision.py`. BlackboardComponent + ConditionRegistry inline bridge + RuleSetComponent + UtilitySetComponent + AIBudgetScheduler. |
+| AIHTNTestStage + scenario | 2026-07-31 | 6 checkpoints: sync plan built, plan complete, diverged+replanned after health mutation, RuleActionBridge operator fired, async plan completed, async plan correct. `scenarios/cluichetest/ai_htn/test_ai_htn.py`. Phase state machine (7 phases) driving HTNPlannerComponent + HTNPlanner direct async path. |
 
 ---
 

@@ -87,7 +87,7 @@
     <ClCompile Include="Types\SimToMainEvent.cpp">
       <Filter>Types</Filter>
     </ClCompile>
-    <ClCompile Include="Types\EntityInspectEvent.cpp">
+    <ClCompile Include="Types\DebugServerPushEvent.cpp">
       <Filter>Types</Filter>
     </ClCompile>
     <ClCompile Include="Types\UICommand.cpp">
@@ -101,9 +101,6 @@
     </ClCompile>
     <ClCompile Include="Modules\AIInspectorModule.cpp">
       <Filter>Modules</Filter>
-    </ClCompile>
-    <ClCompile Include="Types\AIInspectEvent.cpp">
-      <Filter>Types</Filter>
     </ClCompile>
       <Filter>Modules</Filter>
     </ClCompile>
@@ -197,7 +194,7 @@
     <ClInclude Include="Types\SimToMainEvent.h">
       <Filter>Types</Filter>
     </ClInclude>
-    <ClInclude Include="Types\EntityInspectEvent.h">
+    <ClInclude Include="Types\DebugServerPushEvent.h">
       <Filter>Types</Filter>
     </ClInclude>
     <ClInclude Include="Types\UICommand.h">
@@ -213,9 +210,6 @@
     </ClInclude>
     <ClInclude Include="Modules\AIInspectorModule.h">
       <Filter>Modules</Filter>
-    </ClInclude>
-    <ClInclude Include="Types\AIInspectEvent.h">
-      <Filter>Types</Filter>
     </ClInclude>
       <Filter>Types</Filter>
     </ClInclude>

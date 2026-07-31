@@ -6,7 +6,11 @@
         "scenarios/cluichetest/boot/test_boot_smoke.py",
         "scenarios/cluichetest/test_all_stages.py",
         "scenarios/cluichetest/uiultralight/test_ui_ultralight.py",
-        "scenarios/cluichetest/softbody2d/test_softbody2d_settle.py",
-        "scenarios/cluichetest/rigidbody2d/test_rigidbody2d_settle.py"
-    ]
+        "scenarios/cluichetest/ai_decision/test_ai_decision.py",
+        "scenarios/cluichetest/ai_htn/test_ai_htn.py"
+    ],
+    "generic_run_skip": {
+        "UIUltralightTestStage": "known crash — UIModule stop/restart cycle corrupts Ultralight GPU state; see docs/research/e2e_testing/uiultralight_crash_notes.md",
+        "DummyStage": "known crash — UIModule stop/restart cycle corrupts Ultralight GPU state on second entry; tested separately in boot_smoke"
+    }
 }

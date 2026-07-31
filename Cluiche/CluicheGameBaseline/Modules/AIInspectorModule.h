@@ -8,7 +8,7 @@
 #include <DiaStreams/EventStreamWriter.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include "Modules/EntityModule.h"
-#include "Types/AIInspectEvent.h"
+#include "Types/DebugServerPushEvent.h"
 
 namespace Dia { namespace DebugServer { class DebugServer; } }
 namespace Dia { namespace AIBudget    { class AIBudgetModule; } }
@@ -43,8 +43,8 @@ private:
     // so cannot use ModuleRef<T> default. Resolved manually via PU module search.
     Dia::AIBudget::AIBudgetModule* mBudgetModule = nullptr;
 
-    Dia::ApplicationFlow::EventStreamWriter<AIInspectEvent> mAIInspectWriter{
-        this, Dia::Core::StringCRC("AIInspectPush")};
+    Dia::ApplicationFlow::EventStreamWriter<DebugServerPushEvent> mAIInspectWriter{
+        this, Dia::Core::StringCRC("DebugServerPush")};
 
     Dia::DebugServer::DebugServer* mDebugServer = nullptr;
 

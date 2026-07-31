@@ -3,6 +3,8 @@
 ## Parent Application
 @docs/specs/applications/dia/dia.md
 
+**Gameplay Domains:** persistence
+
 ## Purpose
 
 DiaSerializer is the shared serialization primitives library for the Dia engine. It consolidates types and interfaces that every domain serializer needs — typed metadata, structured error results, and a base contract for versioned file I/O — so that each system's JSON (or future XML/binary) serializer builds on a common, consistent foundation rather than duplicating them.

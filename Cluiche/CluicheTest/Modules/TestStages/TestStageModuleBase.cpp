@@ -52,17 +52,34 @@ Dia::ApplicationFlow::StartResult TestStageModuleBase::DoStart()
     ++mEntryCount;
     mFrameCount = 0;
     mResolved = false;
+    mStarted = false;
+    mNavigationReleased = false;
     mAwaitingCapture = false;
     mCaptureWasPassed = false;
     mCaptureFrameTarget = 0;
+    mAbortRequested.store(false, std::memory_order_relaxed);
 
     unsigned int checkpointCount = 0;
     const auto* checkpointNames = GetCheckpointNames(checkpointCount);
     TestResultsRegistry::GetInstance().SetRunning(
         GetStageName(), GetBudgetFrames(), checkpointNames, checkpointCount);
 
+    // Attach $lifecycle tap now — only one stage is active at a time, so we
+    // stay safely within kMaxTaps. Detach in DoStop.
+    if (mLifecycleStore && mLifecycleTap.id == 0)
+    {
+        mLifecycleTap = mLifecycleStore->AttachTap(
+            [this](const void* payload, unsigned int /*size*/, const Dia::Core::StringCRC& /*id*/)
+            {
+                const auto* ev = static_cast<const Dia::ApplicationFlow::LifecycleEvent*>(payload);
+                if (ev->kind == Dia::ApplicationFlow::LifecycleEventKind::kAutomationAbortRequested)
+                    mAbortRequested.store(true, std::memory_order_release);
+            });
+    }
+
     OnStart(&mAutomationServiceStream->Get());
 
+    mStarted = true;
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
@@ -72,6 +89,19 @@ void TestStageModuleBase::DoUpdate(float deltaTime)
     {
         ++mFrameCount;
         TestResultsRegistry::GetInstance().SetActiveFrameCount(mFrameCount);
+    }
+
+    // Check abort flag set by the $lifecycle tap on MainPU. atomic load with
+    // acquire pairs with the release store in the tap callback.
+    // Guard on mStarted: stale abort from the previous stage's _try_return_boot
+    // can arrive before DoStart completes. Releasing navigation hold mid-start
+    // triggers a transition while the module is still loading, which crashes.
+    if (mStarted && !mResolved && mAbortRequested.load(std::memory_order_acquire))
+    {
+        mAbortRequested.store(false, std::memory_order_relaxed);
+        DIA_LOG_INFO("TestStage", "%s: abort requested — reporting failed at frame %u",
+            GetStageName().AsChar(), mFrameCount);
+        ReportFailed();
     }
 
     OnUpdate(deltaTime);
@@ -94,10 +124,32 @@ void TestStageModuleBase::DoUpdate(float deltaTime)
             mAwaitingCapture = false;
         }
     }
+
+    // Single release point for all paths (pass / fail / abort / timeout).
+    // Fires after capture is done so the screenshot lands before Boot loads.
+    if (mResolved && !mAwaitingCapture && !mNavigationReleased)
+    {
+        mNavigationReleased = true;
+        auto* svc = GetAutomationService();
+        if (svc)
+        {
+            bool ok = false;
+            svc->ReleaseNavigationHold(Dia::Core::StringCRC("Boot"), &ok, nullptr);
+        }
+    }
 }
 
 Dia::ApplicationFlow::StopResult TestStageModuleBase::DoStop()
 {
+    // Detach $lifecycle tap before tearing down — prevents the callback firing
+    // on a partially-destroyed module during shutdown.
+    if (mLifecycleTap.id != 0 && mLifecycleStore)
+    {
+        mLifecycleStore->DetachTap(mLifecycleTap);
+        mLifecycleTap = Dia::ApplicationFlow::TapHandle{0};
+    }
+    mAbortRequested.store(false, std::memory_order_relaxed);
+
     // Fallback: if stage is force-stopped before the fence arrives, capture what's current.
     if (mAwaitingCapture)
     {
@@ -112,6 +164,7 @@ Dia::ApplicationFlow::StopResult TestStageModuleBase::DoStop()
 
     mFrameCount = 0;
     mResolved = false;
+    mStarted = false;
 
     return Dia::ApplicationFlow::StopResult::kDone;
 }
@@ -186,6 +239,15 @@ void TestStageModuleBase::OnConnectStreams(Dia::ApplicationFlow::Application& ap
 {
     mAutomationServiceStream->Connect(app);
     mRenderFence.Connect(app);
+
+    // Store the $lifecycle store pointer for use in DoStart/DoStop.
+    // We do NOT attach a tap here — OnConnectStreams fires for every stage module
+    // at startup, and kMaxTaps is 8. Instead we attach in DoStart and detach in
+    // DoStop so only the active stage holds a tap slot.
+    using namespace Dia::ApplicationFlow;
+    IStreamStore* istore = app.FindStream(Reserved::LifecycleStreamId());
+    if (istore)
+        mLifecycleStore = static_cast<EventStreamStore<LifecycleEvent>*>(istore);
 }
 
 } // namespace CluicheTest

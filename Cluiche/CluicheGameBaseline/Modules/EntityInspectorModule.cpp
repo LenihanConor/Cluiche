@@ -109,7 +109,7 @@ void EntityInspectorModule::PushInspect(uint32_t /*selectedId*/)
     }
 
     ++mFrameCounter;
-    EntityInspectEvent evt;
+    DebugServerPushEvent evt;
     evt.dataType = Dia::Entity::DebugDataType::kEntityInspect;
     evt.payload  = Dia::EntityInspector::SerializeInspectPayload(
         inspectable, &infos[0], infos.Size(), mFrameCounter);

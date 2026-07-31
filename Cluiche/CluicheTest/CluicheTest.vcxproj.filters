@@ -123,6 +123,12 @@
       <Filter>ApplicationFlow\Modules\Dummy</Filter>
     </ClCompile>
     <ClCompile Include="Modules\dummy\DummyUIPage.cpp">
+    <ClCompile Include="Modules\TestStages\AIDecisionTestStageModule.cpp">
+    <ClCompile Include="Modules\TestStages\AIHTNTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
       <Filter>ApplicationFlow\Modules\Dummy</Filter>
     </ClCompile>
   </ItemGroup>
@@ -225,6 +231,12 @@
       <Filter>ApplicationFlow\Modules\Dummy</Filter>
     </ClInclude>
     <ClInclude Include="Modules\dummy\DummyUIPage.h">
+    <ClInclude Include="Modules\TestStages\AIDecisionTestStageModule.h">
+    <ClInclude Include="Modules\TestStages\AIHTNTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
       <Filter>ApplicationFlow\Modules\Dummy</Filter>
     </ClInclude>
   </ItemGroup>

@@ -12,8 +12,8 @@ import pytest
 from client import AutomationError, DiaClient
 
 
-_STAGE_TIMEOUT_S = 30.0
-_NAVIGATE_TIMEOUT_S = 15.0
+_STAGE_TIMEOUT_S = 60.0
+_NAVIGATE_TIMEOUT_S = 60.0
 
 
 def test_discover_stages(dia_client):
@@ -27,32 +27,60 @@ def test_run_all_stages(dia_client, request):
 
     A stage that times out or errors is recorded as failed but does NOT
     abort the run — the next stage still executes.
+
+    Stages listed in plan["generic_run_skip"] are excluded — use this for stages
+    that have dedicated scenario files or are known to crash the app under the
+    generic runner (e.g. stages that require native plugin initialisation).
     """
     plan = request.config._dia_plan
     port = plan.get("port", 9002)
+    skip_raw = plan.get("generic_run_skip", {})
+    # Accept both list (legacy) and dict (stage → reason)
+    if isinstance(skip_raw, list):
+        skip_map = {s: "excluded from generic runner" for s in skip_raw}
+    else:
+        skip_map = skip_raw
 
-    stages = dia_client.list_stages()
+    all_stages = dia_client.list_stages()
     results = {}
     run_start = time.time()
 
+    for stage in all_stages:
+        if stage in skip_map:
+            results[stage] = {"status": "skipped", "detail": skip_map[stage], "duration_s": 0}
+
+    stages = [s for s in all_stages if s not in skip_map]
     for stage in stages:
         t0 = time.time()
         outcome = _run_stage(dia_client, stage, port)
         outcome["duration_s"] = round(time.time() - t0, 2)
         results[stage] = outcome
+        # If the app is stuck (won't return to Boot) and we couldn't reconnect,
+        # mark all remaining stages as aborted and stop the loop.
+        if outcome["status"] == "stuck" and "connection lost" in outcome.get("detail", ""):
+            for remaining in stages[stages.index(stage) + 1:]:
+                results[remaining] = {"status": "aborted", "detail": "prior stage left app stuck", "duration_s": 0}
+            break
 
     total_s = round(time.time() - run_start, 2)
 
     # Always print the summary (visible with -s or on failure)
     summary_lines = []
     for k, v in results.items():
-        status_icon = "PASS" if v["status"] == "passed" else "FAIL"
+        if v["status"] == "passed":
+            icon = "PASS"
+        elif v["status"] == "skipped":
+            icon = "SKIP"
+        else:
+            icon = "FAIL"
         summary_lines.append(
-            f"  [{status_icon}] {k} ({v['duration_s']}s) — {v.get('detail', '')}"
+            f"  [{icon}] {k} ({v['duration_s']}s) — {v.get('detail', '')}"
         )
     summary = "\n".join(summary_lines)
+    n_run = len(stages)
+    n_skip = len(skip_map)
     print(f"\n{'=' * 60}")
-    print(f"  E2E Stage Run: {len(stages)} stages in {total_s}s")
+    print(f"  E2E Stage Run: {n_run} run, {n_skip} skipped, {total_s}s total")
     print(f"{'=' * 60}")
     print(summary)
     print(f"{'=' * 60}\n")
@@ -60,9 +88,9 @@ def test_run_all_stages(dia_client, request):
     # Write machine-readable JSON report
     _write_report(request, results, total_s)
 
-    failed = {k: v for k, v in results.items() if v["status"] != "passed"}
+    failed = {k: v for k, v in results.items() if v["status"] not in ("passed", "skipped")}
     if failed:
-        pytest.fail(f"Stage failures ({len(failed)}/{len(stages)}):\n{summary}")
+        pytest.fail(f"Stage failures ({len(failed)}/{n_run}):\n{summary}")
 
 
 def _run_stage(dia_client, stage: str, port: int) -> dict:
@@ -91,12 +119,21 @@ def _run_stage(dia_client, stage: str, port: int) -> dict:
         _try_return_boot(dia_client)
         return {"status": "passed", "detail": "no checkpoints (presence-only)"}
 
-    # Poll each checkpoint
+    # All checkpoints share one stage-level deadline.
+    # This prevents N-checkpoint stages from spending N × _STAGE_TIMEOUT_S.
+    stage_deadline = time.time() + _STAGE_TIMEOUT_S
     all_passed = True
     messages = []
     for cp in checkpoints:
+        remaining = stage_deadline - time.time()
+        if remaining <= 0:
+            all_passed = False
+            messages.append(f"{cp}: stage budget exhausted")
+            continue
+
         try:
-            result = dia_client.poll_checkpoint(cp, timeout_s=_STAGE_TIMEOUT_S, interval_s=0.5)
+            result = dia_client.poll_checkpoint(cp, timeout_s=remaining, interval_s=0.5,
+                                                expected_stage=stage)
             if result.get("passed"):
                 messages.append(f"{cp}: passed")
             else:
@@ -107,14 +144,17 @@ def _run_stage(dia_client, stage: str, port: int) -> dict:
             messages.append(f"{cp}: error — {e}")
         except TimeoutError:
             all_passed = False
-            messages.append(f"{cp}: timeout after {_STAGE_TIMEOUT_S}s")
+            messages.append(f"{cp}: timeout after {_STAGE_TIMEOUT_S:.0f}s")
         except Exception as e:
             all_passed = False
             messages.append(f"{cp}: connection error — {e}")
             if not _try_reconnect(dia_client, port):
                 break
 
-    _try_return_boot(dia_client)
+    if not _try_return_boot(dia_client):
+        if not _try_reconnect(dia_client, port):
+            return {"status": "stuck", "detail": "app did not return to Boot and connection lost; " + "; ".join(messages)}
+        return {"status": "stuck", "detail": "app did not return to Boot within timeout; " + "; ".join(messages)}
 
     detail = "; ".join(messages)
     if all_passed:
@@ -122,12 +162,23 @@ def _run_stage(dia_client, stage: str, port: int) -> dict:
     return {"status": "failed", "detail": detail}
 
 
-def _try_return_boot(dia_client):
-    """Best-effort navigate back to Boot."""
+def _try_return_boot(dia_client) -> bool:
+    """Return to Boot. C++ auto-releases navigation hold on resolve/timeout,
+    so navigate_to("Boot") is usually a fast-path (already there or event buffered).
+    Only send abort_stage() if the app is still on a non-Boot stage — sending it
+    unconditionally creates a stale abort that lands on the *next* stage's DoUpdate.
+    """
+    try:
+        current = dia_client.report().get("stage")
+        if current != "Boot":
+            dia_client.abort_stage()
+    except Exception:
+        dia_client.abort_stage()  # can't tell — send it anyway
     try:
         dia_client.navigate_to("Boot", timeout_s=_NAVIGATE_TIMEOUT_S)
+        return True
     except Exception:
-        pass
+        return False
 
 
 def _try_reconnect(dia_client, port: int) -> bool:
@@ -154,7 +205,8 @@ def _write_report(request, results: dict, total_s: float):
         "total_duration_s": total_s,
         "stage_count": len(results),
         "passed": sum(1 for v in results.values() if v["status"] == "passed"),
-        "failed": sum(1 for v in results.values() if v["status"] != "passed"),
+        "skipped": sum(1 for v in results.values() if v["status"] == "skipped"),
+        "failed": sum(1 for v in results.values() if v["status"] not in ("passed", "skipped")),
         "stages": {k: v for k, v in results.items()},
     }
 

@@ -1,6 +1,7 @@
 """'dia docs' Click group — deterministic documentation management commands."""
 import click
 
+from .capabilities_cmd import capabilities
 from .plan_cmd import plan
 from .registry_cmd import registry
 from .spec_done_cmd import spec_done
@@ -16,6 +17,7 @@ def docs_group():
     """Deterministic documentation and plan management (zero AI tokens)."""
 
 
+docs_group.add_command(capabilities)
 docs_group.add_command(plan)
 docs_group.add_command(registry)
 docs_group.add_command(spec_done, "spec-done")

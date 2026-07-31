@@ -49,10 +49,9 @@ void DebugServerHostModule::OnConnectStreams(Dia::ApplicationFlow::Application& 
 {
     DIA_LOG_INFO("Application", "DebugServerHostModule::OnConnectStreams entry");
     mServerService.Connect(app);
-    mEntityInspectReader.Connect(app);
-    mAIInspectReader.Connect(app);
+    mDebugPushReader.Connect(app);
     DIA_LOG_INFO("Application", "DebugServerHostModule::OnConnectStreams reader_connected=%d",
-        mEntityInspectReader.IsConnected() ? 1 : 0);
+        mDebugPushReader.IsConnected() ? 1 : 0);
 }
 
 void DebugServerHostModule::OnConfigure(const char* configJson)
@@ -186,29 +185,18 @@ void DebugServerHostModule::DoUpdate(float deltaTime)
             if (src) src->Tick(deltaTime, connCount, subCount);
     }
 
-    // Drain entity inspect events from SimPU and broadcast from this thread (safe).
+    // Drain all SimPU→MainPU debug push events and forward to subscribers.
     {
-        Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::Event<EntityInspectEvent>, 16> inspectEvents;
-        mEntityInspectReader.Consume(inspectEvents);
-        if (inspectEvents.Size() > 0)
+        Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::Event<DebugServerPushEvent>, 32> pushEvents;
+        mDebugPushReader.Consume(pushEvents);
+        if (pushEvents.Size() > 0)
         {
-            DIA_LOG_INFO("DebugServer", "DebugServerHostModule: drained %u inspect events, subscribers=%u",
-                inspectEvents.Size(), mServer.GetStats().subscriptionCount);
+            DIA_LOG_INFO("DebugServer", "DebugServerHostModule: drained %u push events, subscribers=%u",
+                pushEvents.Size(), mServer.GetStats().subscriptionCount);
         }
-        for (unsigned int i = 0; i < inspectEvents.Size(); ++i)
+        for (unsigned int i = 0; i < pushEvents.Size(); ++i)
         {
-            const EntityInspectEvent& evt = inspectEvents[i].payload;
-            mServer.NotifySubscribers(evt.dataType, evt.payload);
-        }
-    }
-
-    // Drain AI inspector events (budget/utility/rules/HTN) from SimPU.
-    {
-        Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::Event<AIInspectEvent>, 16> aiEvents;
-        mAIInspectReader.Consume(aiEvents);
-        for (unsigned int i = 0; i < aiEvents.Size(); ++i)
-        {
-            const AIInspectEvent& evt = aiEvents[i].payload;
+            const DebugServerPushEvent& evt = pushEvents[i].payload;
             mServer.NotifySubscribers(evt.dataType, evt.payload);
         }
     }

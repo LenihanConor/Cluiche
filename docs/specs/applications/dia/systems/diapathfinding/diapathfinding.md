@@ -3,6 +3,8 @@
 ## Parent Application
 @docs/specs/applications/dia/dia.md
 
+**Gameplay Domains:** pathfinding, ai
+
 ## Purpose
 
 DiaPathfinding is the grid-based pathfinding system for the Dia engine. It provides A* pathfinding over concept-constrained graph types — `SquarePathGrid` (4/8-connected) and `HexPathGrid` (6-connected axial) — with an injected cost provider interface so terrain costs, influence maps, and unit-type modifiers can be applied without coupling pathfinding to any specific data source.

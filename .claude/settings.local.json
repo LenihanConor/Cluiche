@@ -1396,7 +1396,15 @@
       "PowerShell(& \"C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaCLI\\\\.venv\\\\Scripts\\\\python.exe\" -c \"import platform; print\\(platform.python_version\\(\\), platform.architecture\\(\\)\\)\")",
       "PowerShell(& \"C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaCLI\\\\.venv\\\\Scripts\\\\pip.exe\" install scipy --dry-run 2>&1)",
       "PowerShell(python --version; python -c \"import platform; print\\(platform.architecture\\(\\)\\)\")",
-      "Bash(GIT_TRACE=1 git commit -m \"test\")"
+      "Bash(GIT_TRACE=1 git commit -m \"test\")",
+      "Bash(netstat -ano)",
+      "PowerShell(Get-ChildItem \"C:\\\\GitHub\\\\Cluiche\\\\Cluiche\\\\out\\\\CluicheTest\\\\sessions\" | Sort-Object Name -Descending | Select-Object -First 1 | ForEach-Object { Get-Content \"$\\($_.FullName\\)\\\\log.jsonl\" | Select-Object -Last 50 })",
+      "PowerShell(Get-ChildItem \"C:\\\\GitHub\\\\Cluiche\\\\Cluiche\\\\out\\\\e2e_reports\" | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | ForEach-Object { Get-Content $_.FullName })",
+      "PowerShell(Get-ChildItem \"C:\\\\GitHub\\\\Cluiche\\\\Cluiche\\\\out\\\\CluicheTest\\\\sessions\" | Sort-Object Name -Descending | Select-Object -First 1 | ForEach-Object { Get-Content \"$\\($_.FullName\\)\\\\log.jsonl\" | Where-Object { $_ -match '\"level\":\"error\"' } | Select-Object -Last 20 })",
+      "PowerShell(Get-ChildItem \"C:\\\\GitHub\\\\Cluiche\\\\Cluiche\\\\out\\\\CluicheTest\\\\sessions\" | Sort-Object Name -Descending | Select-Object -First 1 | ForEach-Object { Get-Content \"$\\($_.FullName\\)\\\\log.jsonl\" } | ConvertFrom-Json | Where-Object { $_.channel -match \"Application|crash|assert|fatal\" -or $_.level -eq \"error\" } | Select-Object -Last 30 | ConvertTo-Json)",
+      "Bash(.venv\\\\Scripts\\\\python.exe -m dia_cli run googletest --filter=\"DiaRules_ActionRegistry*\")",
+      "PowerShell(cd C:\\\\GitHub\\\\Cluiche && python Dia/DiaCLI/dia_cli/__main__.py run googletest 2>&1 | Where-Object { $_ -match \"PASSED|FAILED|pipeline\" } | Select-Object -Last 5)",
+      "Bash(Read \"C:\\\\Users\\\\clenihan\\\\AppData\\\\Local\\\\Temp\\\\1\\\\claude\\\\C--GitHub-Cluiche\\\\5a3f4b93-27e5-42cc-8682-f04c75ecdcda\\\\tasks\\\\bf3gs6lsh.output\")"
     ],
     "defaultMode": "auto"
   }

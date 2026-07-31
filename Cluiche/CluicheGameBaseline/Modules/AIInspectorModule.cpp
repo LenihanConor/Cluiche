@@ -176,7 +176,7 @@ void AIInspectorModule::PushBudget(float deltaTime)
         frames.append(entry);
     }
 
-    AIInspectEvent evt;
+    DebugServerPushEvent evt;
     evt.dataType = Dia::Core::StringCRC("ai.budget");
     evt.payload["frames"]       = frames;
     evt.payload["frameCount"]   = count;
@@ -264,7 +264,7 @@ void AIInspectorModule::PushUtilityAI()
         return;
     mUtilityAILastHash = newHash;
 
-    AIInspectEvent evt;
+    DebugServerPushEvent evt;
     evt.dataType            = Dia::Core::StringCRC("ai.utility");
     evt.payload["entities"] = entities;
     evt.payload["frame"]    = static_cast<Json::UInt64>(mFrameCounter);
@@ -344,7 +344,7 @@ void AIInspectorModule::PushRules()
         return;
     mRulesLastHash = hashAccum;
 
-    AIInspectEvent evt;
+    DebugServerPushEvent evt;
     evt.dataType              = Dia::Core::StringCRC("ai.rules");
     evt.payload["frame"]      = static_cast<Json::UInt64>(mFrameCounter);
     evt.payload["debug_only"] = true;
@@ -492,7 +492,7 @@ void AIInspectorModule::PushHTN()
         return;
     mHTNLastHash = newHash;
 
-    AIInspectEvent evt;
+    DebugServerPushEvent evt;
     evt.dataType            = Dia::Core::StringCRC("ai.htn");
     evt.payload["frame"]    = static_cast<Json::UInt64>(mFrameCounter);
     evt.payload["entities"] = entities;

@@ -93,7 +93,8 @@ Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testin
 
 | Item | Notes |
 |------|-------|
-| ~~AIDecisionTestStage + scenario~~ | Integration proof that DiaCondition + DiaRules + DiaUtilityAI + DiaAIBudget all wire together correctly. Single entity with BlackboardComponent + RuleSetComponent + UtilitySetComponent. Checkpoints: `ai.condition.health_low_passes`, `ai.condition.enemy_visible_passes`, `ai.rules.call_for_help_fired`, `ai.utility.flee_wins`, `ai.budget.work_item_completed`. Prerequisite: all four AI systems built. |
+| ~~AIDecisionTestStage + scenario~~ | ~~Integration proof: DiaCondition + DiaRules + DiaUtilityAI + DiaAIBudget. Built 2026-07-31.~~ |
+| ~~AIHTNTestStage + scenario~~ | ~~Integration proof: HTN sync + diverge/replan + async + RuleActionBridge + AIBudget. Built 2026-07-31.~~ |
 | E2E suite: Pathfinding CluicheTest stage + scenario | No E2E coverage for pathfinding. Needs a CluicheTest stage that runs a pathfinding agent to a goal and a pytest scenario that checkpoints arrival. Prerequisite: DiaPathfinding system built and integrated into CluicheTest. |
 
 ---

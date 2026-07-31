@@ -78,6 +78,27 @@
       "description": "Stores up to kMaxChildren child entity handles for a parent entity in the hierarchy.",
       "fields": [],
       "type_id": "dia.hierarchy.children"
+    },
+    {
+      "debug_name": "RuleSetComponent",
+      "default_values": {},
+      "description": "",
+      "fields": [],
+      "type_id": "rule-set-component"
+    },
+    {
+      "debug_name": "UtilitySetComponent",
+      "default_values": {},
+      "description": "",
+      "fields": [],
+      "type_id": "utility-set-component"
+    },
+    {
+      "debug_name": "HTNPlannerComponent",
+      "default_values": {},
+      "description": "",
+      "fields": [],
+      "type_id": "htn-planner-component"
     }
   ],
   "game": "cluichetest",
@@ -171,6 +192,16 @@
       "allowed_pus": "any",
       "description": "Stub UI page module used as a placeholder during prototype and test stages.",
       "type_id": "DummyUIPageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Integration stage: Condition + Rules + UtilityAI (sync/async) + AIBudget",
+      "type_id": "AIDecisionTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Integration stage: HTN (sync + diverge/replan + async) + AIBudget + RuleActionBridge",
+      "type_id": "AIHTNTestStageModule"
     },
     {
       "allowed_pus": "sim",
@@ -311,6 +342,6 @@
   "processing_units": [],
   "version": {
     "major": 1,
-    "minor": 8
+    "minor": 10
   }
 }

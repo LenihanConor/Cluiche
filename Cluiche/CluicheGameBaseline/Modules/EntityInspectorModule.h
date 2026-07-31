@@ -8,7 +8,7 @@
 #include <DiaStreams/EventStreamWriter.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include "Modules/EntityModule.h"
-#include "Types/EntityInspectEvent.h"
+#include "Types/DebugServerPushEvent.h"
 
 namespace Dia { namespace DebugServer { class DebugServer; } }
 
@@ -37,8 +37,8 @@ private:
 
     Dia::ApplicationFlow::ModuleRef<EntityModule> mEntityRef{this};
 
-    Dia::ApplicationFlow::EventStreamWriter<EntityInspectEvent> mInspectWriter{
-        this, Dia::Core::StringCRC("EntityInspectPush")};
+    Dia::ApplicationFlow::EventStreamWriter<DebugServerPushEvent> mInspectWriter{
+        this, Dia::Core::StringCRC("DebugServerPush")};
 
     Dia::DebugServer::DebugServer* mDebugServer = nullptr;
 

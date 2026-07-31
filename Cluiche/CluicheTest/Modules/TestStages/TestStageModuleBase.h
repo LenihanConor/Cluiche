@@ -1,8 +1,11 @@
 ﻿#pragma once
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/LifecycleEvent.h>
 #include <DiaStreams/StreamReader.h>
+#include <DiaStreams/EventStreamStore.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaGraphics/Frame/RenderFence.h>
+#include <atomic>
 #include <cstdint>
 
 namespace Dia { namespace Automation { class AutomationService; } }
@@ -51,10 +54,18 @@ private:
     Dia::ApplicationFlow::ServiceStreamReader<Dia::Automation::AutomationService>* mAutomationServiceStream = nullptr;
     Dia::ApplicationFlow::StreamReader<Dia::Graphics::RenderFence> mRenderFence{this, "RenderToSim"};
 
+    // Set by a $lifecycle tap (fires on MainPU), read by DoUpdate on SimPU.
+    // atomic<bool> is the correct primitive for this single flag handoff.
+    std::atomic<bool> mAbortRequested{false};
+    Dia::ApplicationFlow::TapHandle mLifecycleTap;
+    Dia::ApplicationFlow::EventStreamStore<Dia::ApplicationFlow::LifecycleEvent>* mLifecycleStore = nullptr;
+
     unsigned int mFrameCount = 0;
     unsigned int mEntryCount = 0;
     unsigned int mStartWaitFrames = 0;
     bool mResolved = false;
+    bool mStarted = false;
+    bool mNavigationReleased = false;
 
     // Deferred capture: set by ReportPassed/Failed, fired once render confirms the frame.
     bool mAwaitingCapture = false;

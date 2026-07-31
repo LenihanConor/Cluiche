@@ -4,6 +4,7 @@
 @docs/specs/applications/dia/dia.md
 
 **Status:** `Done`
+**Gameplay Domains:** lighting, rendering
 
 **Research:** @docs/research/diascene2d/design-decisions.md (section 6)
 

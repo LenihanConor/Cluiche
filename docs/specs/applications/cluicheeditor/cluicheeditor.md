@@ -19,6 +19,7 @@ CluicheEditor manages `.cluicheproj` project files — the top-level project def
 | CluicheEditor Plugin Browser | Panel for discovering, loading, and unloading editor plugins; owns the plugin browsing surface, bridge contract, and EditorPluginRegistry query API | [pluginbrowser.md](systems/pluginbrowser/pluginbrowser.md) |
 | DiaEditorAPI | Three-tier layered registry exposing all scriptable editor actions as auto-generated Python (`dia_editor` module) and MCP tools for Ollama/AI agent workflows | [diaeditorapi.md](systems/diaeditorapi/diaeditorapi.md) |
 | DiaChatPlugin | Dockable AI assistant panel — connects to Ollama/Claude/Gemini via DiaPython, executes editor actions via DiaEditorAPI, grounds answers in curated engine knowledge files | [diachatplugin.md](systems/diachatplugin/diachatplugin.md) |
+| RenderTestPlugin | Offline dockable panel for inspecting render test pipeline output — three-up frame inspector, 4×4 region diff grid, expectations editor, AI triage via DiaChatPlugin, metrics, and render target browser | [rendertestplugin.md](systems/rendertestplugin/rendertestplugin.md) |
 
 ## Cross-Cutting Features
 

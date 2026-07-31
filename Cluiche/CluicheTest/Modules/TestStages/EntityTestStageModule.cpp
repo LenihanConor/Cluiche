@@ -286,8 +286,8 @@ void EntityTestStageModule::OnUpdate(float /*deltaTime*/)
     if (mMetricAliveCount) mMetricAliveCount->Set(static_cast<double>(domain.GetEntityCount()));
     if (mMetricMailboxCount) mMetricMailboxCount->Set(static_cast<double>(mMailboxReceiveCount));
 
-    // Report pass
-    if (AllCheckpointsPassed() && !IsResolved())
+    // Report pass — hold for kMinDisplayFrames so the stage is visible long enough for manual inspection
+    if (AllCheckpointsPassed() && !IsResolved() && GetFrameCount() >= kMinDisplayFrames)
         ReportPassed();
 
 #ifdef DIA_DEBUG
@@ -317,7 +317,14 @@ void EntityTestStageModule::OnStop()
         mDrawer.reset();
     }
 
-    // Unregister picking service from domain (component OnDetach will no-op if service gone)
+    // Clear all raw pickable pointers before tearing down the domain.
+    // Domain teardown calls OnDetach on components which try to unregister from the
+    // service — if the service is already gone, those calls are no-ops. But
+    // PickingModule::DoUpdate may still be mid-frame when teardown begins; clear
+    // the service list first so it can't dereference freed component pointers.
+    if (auto* picking = mPickingRef.Get())
+        picking->GetService().Clear();
+
     if (auto* em = mEntityModule.Get())
         em->GetDomain().UnregisterService<Dia::Geometry2DPicking::PickingService2D>();
 #endif

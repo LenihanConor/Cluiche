@@ -500,6 +500,25 @@ namespace Dia { namespace Automation {
             };
             Dia::API::RegisterCommandJson(cmd);
         }
+        // dia.automation.abort_stage
+        {
+            Dia::API::CommandInfoJson cmd;
+            cmd.name        = Dia::Core::StringCRC("dia.automation.abort_stage");
+            cmd.description = "Ask the current test stage to exit immediately via $lifecycle event";
+            cmd.category    = Dia::Core::StringCRC("dia.automation");
+            cmd.owner       = "DiaAutomation";
+            cmd.callback    = [this](const Json::Value&) -> Json::Value {
+                ResetHeartbeat();
+                Dia::ApplicationFlow::LifecycleEvent ev;
+                ev.kind = Dia::ApplicationFlow::LifecycleEventKind::kAutomationAbortRequested;
+                mApp.EmitLifecycleEvent(ev);
+                DIA_LOG_INFO("Automation", "automation.abort_stage emitted on $lifecycle");
+                Json::Value data;
+                data["aborted"] = true;
+                return data;
+            };
+            Dia::API::RegisterCommandJson(cmd);
+        }
     }
 
 }} // namespace Dia::Automation

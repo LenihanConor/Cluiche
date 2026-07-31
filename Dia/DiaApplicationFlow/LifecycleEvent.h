@@ -30,6 +30,7 @@ enum class LifecycleEventKind : unsigned int
     kAutomationResumed          = 10,
     kAutomationDisconnect       = 11,
     kAutomationHeartbeatTimeout = 12,
+    kAutomationAbortRequested   = 13,
 };
 
 struct LifecycleEvent

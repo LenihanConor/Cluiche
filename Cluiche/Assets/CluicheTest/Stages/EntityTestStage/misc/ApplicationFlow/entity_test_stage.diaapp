@@ -62,7 +62,7 @@
                             "role": "consumes"
                         },
                         {
-                            "id": "EntityInspectPush",
+                            "id": "DebugServerPush",
                             "role": "writes"
                         }
                     ]

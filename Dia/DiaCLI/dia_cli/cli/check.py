@@ -823,6 +823,155 @@ def render_diff(ctx, run_dir, ref_dir, report_dir, threshold, ssim_threshold) ->
     ctx.exit(result.returncode)
 
 
+# ---------------------------------------------------------------------------
+# GDD sync helpers
+# ---------------------------------------------------------------------------
+
+_VALID_DOMAINS = {
+    "movement", "physics", "collision", "animation", "rendering",
+    "lighting", "camera", "ai", "pathfinding", "input", "audio",
+    "ui", "scene", "persistence", "debug",
+}
+
+_VALID_STATUSES = {"built", "partial", "not-started", "out-of-scope"}
+
+# Matches table rows: | id | ... | [Text](link) or — | `status` | notes |
+# Captures: spec_link (may be empty "—"), status cell, gap notes cell
+_GDD_ROW_RE = re.compile(
+    r'^\|[^|]+\|[^|]+\|[^|]+\|'           # #, requirement, capability columns
+    r'\s*(?:\[.*?\]\((.*?)\)|—)\s*\|'      # spec link (group 1) or dash
+    r'\s*`?([a-z-]+)`?\s*\|'              # status (group 2)
+    r'([^|]*)\|',                          # gap notes (group 3)
+    re.MULTILINE,
+)
+
+
+def _resolve_spec_path(spec_link: str, gdd_path: Path, repo_root: Path) -> Path | None:
+    """Return the resolved Path for a spec link, or None if it doesn't exist."""
+    resolved = (gdd_path.parent / spec_link).resolve()
+    if resolved.exists():
+        return resolved
+    resolved_root = (repo_root / spec_link).resolve()
+    if resolved_root.exists():
+        return resolved_root
+    return None
+
+
+def _read_spec_status(spec_path: Path) -> str:
+    """Read the **Status:** field from a spec file, returning 'Unknown' if absent."""
+    try:
+        text = spec_path.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return "Unknown"
+    m = _SPEC_STATUS_RE.search(text)
+    return m.group(1).strip() if m else "Unknown"
+
+
+# Maps GDD row status -> spec statuses that are consistent with it.
+# Any spec status NOT in the allowed set triggers a status-drift warning.
+_GDD_TO_SPEC_STATUSES: dict[str, set[str]] = {
+    "built":       {"Done"},
+    "partial":     {"Done", "In Progress"},
+    "not-started": {"Draft", "Approved", "Unknown"},
+    # out-of-scope rows carry no spec link, so no check is needed
+}
+
+
+def _check_gdd_file(
+    gdd_path: Path,
+    repo_root: Path,
+    verbose: bool,
+) -> list[dict]:
+    """Parse one GDD cross-reference file and return a list of issue dicts."""
+    issues = []
+    try:
+        text = gdd_path.read_text(encoding="utf-8", errors="ignore")
+    except OSError as exc:
+        return [{"file": str(gdd_path), "row": "—", "kind": "io-error", "detail": str(exc)}]
+
+    rel = gdd_path.relative_to(repo_root)
+
+    for match in _GDD_ROW_RE.finditer(text):
+        spec_link = (match.group(1) or "").strip()
+        status = (match.group(2) or "").strip()
+        notes = (match.group(3) or "").strip()
+
+        row_label = text[:match.start()].count("\n") + 1
+
+        # 1. Status must be a valid value
+        if status and status not in _VALID_STATUSES:
+            issues.append({
+                "file": str(rel), "row": row_label,
+                "kind": "invalid-status",
+                "detail": f"'{status}' is not a valid status value",
+            })
+
+        # 2. partial rows must have a non-empty Gap / Notes
+        if status == "partial" and not notes:
+            issues.append({
+                "file": str(rel), "row": row_label,
+                "kind": "missing-gap-note",
+                "detail": "status is 'partial' but Gap / Notes is empty",
+            })
+
+        # 3. Spec link must resolve to a real file
+        resolved_spec = None
+        if spec_link:
+            resolved_spec = _resolve_spec_path(spec_link, gdd_path, repo_root)
+            if resolved_spec is None:
+                issues.append({
+                    "file": str(rel), "row": row_label,
+                    "kind": "broken-link",
+                    "detail": f"spec link does not exist: {spec_link}",
+                })
+
+        # 4. GDD status must be consistent with the spec's actual status
+        if resolved_spec and status in _GDD_TO_SPEC_STATUSES:
+            spec_status = _read_spec_status(resolved_spec)
+            allowed = _GDD_TO_SPEC_STATUSES[status]
+            if spec_status not in allowed:
+                issues.append({
+                    "file": str(rel), "row": row_label,
+                    "kind": "status-drift",
+                    "detail": (
+                        f"GDD says '{status}' but spec is '{spec_status}' "
+                        f"(expected one of: {', '.join(sorted(allowed))})"
+                    ),
+                })
+
+    return issues
+
+
+def _render_gdd_sync_report(
+    all_issues: list[dict],
+    files_checked: int,
+) -> str:
+    lines = [
+        "# GDD Sync Status",
+        "",
+        "_Refresh by running `dia check gdd-sync`._",
+        "",
+        f"Files checked: {files_checked}",
+        f"Issues found: {len(all_issues)}",
+        "",
+    ]
+    if not all_issues:
+        lines += ["All GDD cross-reference files are valid. ✅", ""]
+        return "\n".join(lines)
+
+    lines += [
+        "| File | Line | Kind | Detail |",
+        "|------|------|------|--------|",
+    ]
+    for issue in all_issues:
+        lines.append(
+            f"| {issue['file']} | {issue['row']} "
+            f"| {issue['kind']} | {issue['detail']} |"
+        )
+    lines.append("")
+    return "\n".join(lines)
+
+
 def _find_64bit_python() -> str | None:
     """Return a Python executable that has PIL and skimage, preferring 64-bit."""
     import subprocess as _sp
@@ -855,3 +1004,66 @@ def _find_64bit_python() -> str | None:
         except Exception:
             continue
     return None
+
+
+@cli.command("gdd-sync")
+@click.option("--verbose", is_flag=True, default=False,
+              help="Print each GDD file being processed.")
+@click.pass_context
+def gdd_sync(ctx, verbose: bool) -> None:
+    """Validate GDD cross-reference files in docs/gdd/.
+
+    Checks each *.md file (except README.md) for:
+      - Broken spec links (linked file does not exist)
+      - Invalid status values (must be built/partial/not-started/out-of-scope)
+      - Partial rows missing a Gap / Notes entry
+
+    Writes results to docs/reference/registry/gdd-sync-status.md.
+    Exits non-zero if any issues are found.
+    """
+    repo_root = find_repo_root(__file__)
+    gdd_dir = repo_root / "docs" / "gdd"
+    out_path = repo_root / "docs" / "reference" / "registry" / "gdd-sync-status.md"
+
+    if not gdd_dir.exists():
+        click.echo("ERROR: docs/gdd/ not found.", err=True)
+        ctx.exit(1)
+        return
+
+    gdd_files = [
+        f for f in sorted(gdd_dir.glob("*.md"))
+        if f.name.lower() != "readme.md"
+    ]
+
+    if not gdd_files:
+        click.echo("[dia check] No GDD cross-reference files found in docs/gdd/.")
+        ctx.exit(0)
+        return
+
+    click.echo(f"[dia check] Scanning {len(gdd_files)} GDD cross-reference file(s)...")
+
+    all_issues = []
+    for gdd_path in gdd_files:
+        if verbose:
+            click.echo(f"  {gdd_path.relative_to(repo_root)}")
+        issues = _check_gdd_file(gdd_path, repo_root, verbose)
+        all_issues.extend(issues)
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(
+        _render_gdd_sync_report(all_issues, len(gdd_files)),
+        encoding="utf-8",
+    )
+
+    if all_issues:
+        click.echo(
+            f"[dia check] {len(all_issues)} issue(s) found. "
+            f"See {out_path.relative_to(repo_root)}",
+            err=True,
+        )
+        ctx.exit(1)
+    else:
+        click.echo(
+            f"[dia check] All {len(gdd_files)} file(s) valid. "
+            f"Written to {out_path.relative_to(repo_root)}"
+        )

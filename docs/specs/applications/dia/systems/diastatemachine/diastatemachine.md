@@ -3,6 +3,8 @@
 ## Parent Application
 @docs/specs/applications/dia/dia.md
 
+**Gameplay Domains:** ai, animation, ui
+
 ## Purpose
 
 DiaStateMachine is the generic state machine library for the Dia engine. It provides reusable state machine infrastructure for gameplay, AI, animation, UI flows, and any other system that needs explicit stateful behavior — replacing ad-hoc state management with a shared, inspectable, debuggable abstraction.

@@ -54,6 +54,8 @@
     <ClCompile Include="Modules\dummy\DummyLevelModule.cpp" />
     <ClCompile Include="Modules\dummy\DummyUIPageModule.cpp" />
     <ClCompile Include="Modules\dummy\DummyUIPage.cpp" />
+    <ClCompile Include="Modules\TestStages\AIDecisionTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\AIHTNTestStageModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\BootMenuModule.h" />
@@ -89,6 +91,8 @@
     <ClInclude Include="Modules\dummy\DummyLevelModule.h" />
     <ClInclude Include="Modules\dummy\DummyUIPageModule.h" />
     <ClInclude Include="Modules\dummy\DummyUIPage.h" />
+    <ClInclude Include="Modules\TestStages\AIDecisionTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\AIHTNTestStageModule.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">
@@ -145,6 +149,21 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaBlackboard\DiaBlackboard.vcxproj">
       <Project>{186D9CD5-3D3E-46F1-9C35-67F6F11E829A}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaCondition\DiaCondition.vcxproj">
+      <Project>{D4E5F6A7-B8C9-4012-DEFA-123456789012}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaRules\DiaRules.vcxproj">
+      <Project>{C7D8E9F0-A1B2-3456-CDEF-012345678901}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaUtilityAI\DiaUtilityAI.vcxproj">
+      <Project>{E2F3A4B5-C6D7-8901-EF23-456789012345}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaAIBudget\DiaAIBudget.vcxproj">
+      <Project>{C9D0E1F2-A3B4-5678-90AB-CDEF01234567}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaHTN\DiaHTN.vcxproj">
+      <Project>{F4B5C6D7-E8F9-0123-A456-789012345678}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaRigidBody2D\DiaRigidBody2D.vcxproj">
       <Project>{C1D2E3F4-A5B6-7890-CDEF-012345678902}</Project>
