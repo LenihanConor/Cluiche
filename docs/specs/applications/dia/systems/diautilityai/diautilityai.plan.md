@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/applications/dia/systems/diautilityai/diautilityai.md
-**Status:** In Progress
+**Status:** Done
 
 ## Design Resolutions
 
@@ -17,4 +17,4 @@
 | 6 | `UtilitySetComponent` — `IComponent` via `DIA_COMPONENT` macro; `SetUtilitySet`/`SetRegistry`/`SetGroupContext`/`Evaluate`/`GetUtilitySet`; cooldown state (`std::unordered_map<StringCRC, float>` last-fire timestamps); add to `DiaUtilityAI.vcxproj` | GoogleTest: component attaches, evaluates, cooldown blocks repeat dispatch within window | Done | sonnet | 8 tests pass; added SelectWinner() to UtilitySet for pre-dispatch cooldown check |
 | 7 | Test utilities — `DiaUtilityAI/Testing/UtilityTestHelpers.h`; `AssertWinner`, `AssertNoSelection`, `AssertCurveOutput`; add to `DiaUtilityAI.vcxproj` | Used in tasks 4/5/6 tests | Done | haiku | 3 meta-tests pass |
 | 8 | `PersonalityProfile` + integration — `PersonalityProfile.h/.cpp`; `LoadFromJson`, `GetScoreMultiplier`, `GetEvalPeriodTicks`, `IsValid`; update `UtilitySet::Evaluate()` + `EvaluateAsync()` with optional `const PersonalityProfile*`; post-bias scores in `GetLastFrameScores`; `UtilitySetComponent::SetPersonality`/`GetPersonality` + tick counter eval-period skip; `AssertPersonalityChangesWinner` test utility | GoogleTest: same set + same ctx, no profile vs Aggressive → different winner; period=3 skips; period=1 always runs | Done | sonnet | Feature spec: `ai-personality.md`; 121 tests pass (76 original + 45 extended); PersonalityProfile, eval-period throttle, SetPersonality reset, async personality, full integration scenarios |
-| 9 | `DiaUtilityAIVisualDebugger` — `UtilityScoreDrawer.h/.cpp`; implements `IVisualDebugger`; reads `GetLastFrameScores()`; draws score bars; `DrawImGui()` score table; `#ifdef DIA_DEBUG` guard; register debugger vcxproj in sln | No automated test (visual-only) | Pending | sonnet | Separate static library |
+| 9 | `DiaUtilityAIVisualDebugger` — `UtilityScoreDrawer.h/.cpp`; implements `IVisualDebugger`; reads `GetLastFrameScores()`; draws score bars; `DrawImGui()` score table; `#ifdef DIA_DEBUG` guard; register debugger vcxproj in sln | No automated test (visual-only) | Done | sonnet | UtilityScoreDrawer.h/.cpp created; DIA_DEBUG+imgui added to vcxproj; kUtilityAIScores added to DebugLayerNames.h; Draw() is no-op, DrawImGui() renders ImGui::Table with ProgressBar per action; 121 tests pass |

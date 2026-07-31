@@ -15,7 +15,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | ~~DiaAIBudget~~ | IAIBudgetedSystem, AIBudgetScheduler, AIBudgetModule, Budget Metrics | DiaApplicationFlow ✅, DiaMetrics ✅, DiaCore ✅ |
 | ~~DiaCondition~~ | IConditionContext, ConditionRegistry, ConditionExpr, ConditionGuardAdapter, Test Utilities | DiaCore ✅, DiaStateMachine ✅ |
 | ~~DiaRules~~ | RuleActionRegistry, RuleSet, RuleSetComponent, Test Utilities | DiaCondition ✅ |
-| DiaUtilityAI | ResponseCurve, ActionDef, UtilitySet, AsyncEvaluation, GroupConsideration, UtilitySetComponent, ScoreOverlay, TestUtilities | DiaCondition ✅, DiaRules ✅, DiaAIBudget ✅ |
+| ~~DiaUtilityAI~~ | ResponseCurve, ActionDef, UtilitySet, AsyncEvaluation, GroupConsideration, UtilitySetComponent, ScoreOverlay, TestUtilities | DiaCondition ✅, DiaRules ✅, DiaAIBudget ✅ |
 | DiaHTN | OperatorRegistry, RuleActionBridge, HTNDomain, HTNPlan, SyncPlanner, AsyncPlanning, HTNPlannerComponent, TestUtilities | DiaCondition ✅, DiaRules ✅, DiaAIBudget ✅ |
 
 ---
@@ -24,7 +24,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | Feature | System | Depends On |
 |---------|--------|------------|
-| AI Personality | DiaUtilityAI | DiaUtilityAI core built first |
+| ~~AI Personality~~ | DiaUtilityAI | DiaUtilityAI core built first |
 
 ---
 

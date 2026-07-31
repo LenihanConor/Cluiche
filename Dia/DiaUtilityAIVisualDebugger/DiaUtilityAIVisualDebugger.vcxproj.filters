@@ -13,4 +13,10 @@
       <Filter>Docs</Filter>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="UtilityScoreDrawer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="UtilityScoreDrawer.cpp" />
+  </ItemGroup>
 </Project>

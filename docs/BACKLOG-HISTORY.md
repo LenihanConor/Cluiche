@@ -67,6 +67,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | DiaUtilityAI | ResponseCurve, ActionDef, UtilitySet, AsyncEvaluation, GroupConsideration, UtilitySetComponent, ScoreOverlay, TestUtilities | 2026-07-30 | All features implemented; 85 GoogleTests pass (20 ActionRegistry + 39 RuleSet + 13 Component + 13 TestHelpers); spec marked Done 2026-07-30 |
 | DiaHTN | OperatorRegistry, RuleActionBridge, HTNDomain, HTNPlan, SyncPlanner, AsyncPlanning, HTNPlannerComponent, TestUtilities | 2026-07-30 | All features implemented; 85 GoogleTests pass (20 ActionRegistry + 39 RuleSet + 13 Component + 13 TestHelpers); spec marked Done 2026-07-30 |
 | DiaAIDecisionInspector | — | 2026-07-30 | All features implemented; 85 GoogleTests pass (20 ActionRegistry + 39 RuleSet + 13 Component + 13 TestHelpers); spec marked Done 2026-07-30 |
+| diautilityai | [spec](specs/) | 2026-07-31 | Marked done by `dia docs spec-done` |
 
 ---
 

@@ -143,6 +143,11 @@ namespace Dia
             inline const Dia::Core::StringCRC kLightWidgets { "light3d.widgets"  };
             inline const Dia::Core::StringCRC kLightPathArc { "light3d.path_arc" };
 
+            // ----------------------------------------------------------------
+            // Utility AI (priority tier 50+)
+            // ----------------------------------------------------------------
+            inline const Dia::Core::StringCRC kUtilityAIScores { "utility_ai.scores" };
+
         } // namespace LayerNames
     } // namespace Debug
 } // namespace Dia

@@ -370,4 +370,6 @@ namespace Dia::UtilityAI::Testing {
 
 ## Status
 
-`Approved`
+**Status:** `Done`
+
+**Plan:** @docs/specs/applications/dia/systems/diautilityai/diautilityai.plan.md
