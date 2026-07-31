@@ -50,6 +50,7 @@ void DebugServerHostModule::OnConnectStreams(Dia::ApplicationFlow::Application& 
     DIA_LOG_INFO("Application", "DebugServerHostModule::OnConnectStreams entry");
     mServerService.Connect(app);
     mEntityInspectReader.Connect(app);
+    mAIInspectReader.Connect(app);
     DIA_LOG_INFO("Application", "DebugServerHostModule::OnConnectStreams reader_connected=%d",
         mEntityInspectReader.IsConnected() ? 1 : 0);
 }
@@ -197,6 +198,17 @@ void DebugServerHostModule::DoUpdate(float deltaTime)
         for (unsigned int i = 0; i < inspectEvents.Size(); ++i)
         {
             const EntityInspectEvent& evt = inspectEvents[i].payload;
+            mServer.NotifySubscribers(evt.dataType, evt.payload);
+        }
+    }
+
+    // Drain AI inspector events (budget/utility/rules/HTN) from SimPU.
+    {
+        Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::Event<AIInspectEvent>, 16> aiEvents;
+        mAIInspectReader.Consume(aiEvents);
+        for (unsigned int i = 0; i < aiEvents.Size(); ++i)
+        {
+            const AIInspectEvent& evt = aiEvents[i].payload;
             mServer.NotifySubscribers(evt.dataType, evt.payload);
         }
     }

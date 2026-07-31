@@ -29,6 +29,7 @@
 
 #include <DiaBlackboard/BlackboardRegistry.h>
 #include "Types/EntityInspectEvent.h"
+#include "Types/AIInspectEvent.h"
 
 namespace Dia { namespace Observation { namespace Metric {
     class Gauge;
@@ -122,6 +123,10 @@ private:
     // Consumed here (MainPU) so NotifySubscribers is called from the host thread.
     Dia::ApplicationFlow::EventStreamReader<EntityInspectEvent> mEntityInspectReader{
         this, Dia::Core::StringCRC("EntityInspectPush")};
+
+    // EventStream reader for AI inspector events (budget/utility/rules/HTN) from SimPU.
+    Dia::ApplicationFlow::EventStreamReader<AIInspectEvent> mAIInspectReader{
+        this, Dia::Core::StringCRC("AIInspectPush")};
 
     // Blackboard registry owned here (MainPU); game modules register/unregister
     // boards via GetBlackboardRegistry(). mSources[4] polls this directly.
