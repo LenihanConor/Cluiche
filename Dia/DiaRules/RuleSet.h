@@ -60,6 +60,24 @@ namespace Dia
             // Returns pointer to the RuleDef at the given index, or nullptr if out of range.
             const RuleDef* GetRuleAt(int index) const;
 
+#ifdef DIA_DEBUG
+            // -----------------------------------------------------------------------
+            // Debug-only fire report (SD-003, SD-001 DiaRulesVisualDebugger)
+            //
+            // Populated after the most recent Evaluate() call.
+            // Returns count of rules that fired; populates outEntries with one
+            // RuleFireEntry per fired rule.
+            // -----------------------------------------------------------------------
+            struct RuleFireEntry
+            {
+                Dia::Core::StringCRC ruleId;                                              // kZero if rule has no id
+                Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 8> actions;
+            };
+
+            int GetLastFireReport(
+                Dia::Core::Containers::DynamicArrayC<RuleFireEntry, 16>& outEntries) const;
+#endif // DIA_DEBUG
+
         private:
             // Pimpl to keep STL (std::vector<RuleDef>) out of the public header.
             struct Impl;

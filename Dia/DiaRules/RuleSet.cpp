@@ -18,6 +18,10 @@ namespace Dia
         struct RuleSet::Impl
         {
             std::vector<RuleDef> rules;
+
+#ifdef DIA_DEBUG
+            mutable std::vector<RuleFireEntry> lastFireReport;
+#endif // DIA_DEBUG
         };
 
         // -----------------------------------------------------------------------
@@ -160,6 +164,10 @@ namespace Dia
 
             int fired = 0;
 
+#ifdef DIA_DEBUG
+            mImpl->lastFireReport.clear();
+#endif // DIA_DEBUG
+
             for (const RuleDef& rule : mImpl->rules)
             {
                 if (rule.guard.Evaluate(context))
@@ -171,6 +179,15 @@ namespace Dia
                         if (fn != nullptr)
                             fn(actionContext);
                     }
+
+#ifdef DIA_DEBUG
+                    RuleFireEntry entry;
+                    entry.ruleId = rule.id;
+                    for (unsigned int i = 0; i < rule.actions.Size() && !entry.actions.IsFull(); ++i)
+                        entry.actions.Add(rule.actions[i]);
+                    mImpl->lastFireReport.push_back(std::move(entry));
+#endif // DIA_DEBUG
+
                     ++fired;
                 }
             }
@@ -196,6 +213,26 @@ namespace Dia
                 return nullptr;
             return &mImpl->rules[static_cast<std::size_t>(index)];
         }
+
+#ifdef DIA_DEBUG
+        // -----------------------------------------------------------------------
+        // GetLastFireReport
+        // -----------------------------------------------------------------------
+        int RuleSet::GetLastFireReport(
+            Dia::Core::Containers::DynamicArrayC<RuleFireEntry, 16>& outEntries) const
+        {
+            if (!mImpl) return 0;
+
+            int count = 0;
+            for (const RuleFireEntry& entry : mImpl->lastFireReport)
+            {
+                if (!outEntries.IsFull())
+                    outEntries.Add(entry);
+                ++count;
+            }
+            return count;
+        }
+#endif // DIA_DEBUG
 
     } // namespace Rules
 } // namespace Dia

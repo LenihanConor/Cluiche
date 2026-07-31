@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DiaAIInspector — Mock</title>
+<style>
+  :root {
+    --bg: #1a1a1a;
+    --bg2: #212121;
+    --bg3: #2a2a2a;
+    --bg4: #333;
+    --bg5: #3c3c3c;
+    --border: #3a3a3a;
+    --text: #d4d4d4;
+    --text-dim: #777;
+    --text-header: #9cdcfe;
+    --accent: #569cd6;
+    --green: #4ec9b0;
+    --green-bg: #102820;
+    --yellow: #dcdcaa;
+    --warn: #ce9178;
+    --warn-bg: #3d2b1e;
+    --red: #f48771;
+    --purple: #c586c0;
+    --tab-h: 34px;
+    --font: 'Segoe UI', system-ui, sans-serif;
+    --mono: 'Consolas', 'Cascadia Code', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 13px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* titlebar */
+  .titlebar { height: 36px; background: #0f0f0f; display: flex; align-items: center; padding: 0 16px; gap: 12px; border-bottom: 1px solid #111; flex-shrink: 0; }
+  .titlebar-name { font-size: 13px; font-weight: 600; color: var(--text-header); }
+  .titlebar-sub  { font-size: 11px; color: var(--text-dim); }
+  .conn-badge { margin-left: auto; padding: 2px 10px; border-radius: 10px; font-size: 11px; font-family: var(--mono); }
+  .conn-badge.connected { background: #103820; color: var(--green); border: 1px solid #1e5030; }
+
+  /* tabs */
+  .tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--bg3); flex-shrink: 0; }
+  .tab { height: var(--tab-h); padding: 0 20px; display: flex; align-items: center; gap: 7px; cursor: pointer; font-size: 13px; color: var(--text-dim); border-right: 1px solid var(--border); user-select: none; white-space: nowrap; }
+  .tab:hover { background: var(--bg4); color: var(--text); }
+  .tab.active { background: var(--bg); color: var(--text); border-bottom: 2px solid var(--accent); }
+  .tab-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-dim); }
+  .tab.active .tab-dot { background: var(--accent); }
+  .tab-dot.warn { background: var(--warn) !important; }
+  .tab-dot.green { background: var(--green) !important; }
+
+  /* page */
+  .page { flex: 1; display: none; flex-direction: column; overflow: hidden; }
+  .page.active { display: flex; }
+
+  /* entity bar */
+  .entity-bar { display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--bg2); border-bottom: 1px solid var(--border); flex-shrink: 0; overflow-x: auto; }
+  .entity-label { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+  .entity-chip { padding: 3px 12px; border-radius: 12px; border: 1px solid var(--border); font-size: 12px; cursor: pointer; white-space: nowrap; user-select: none; color: var(--text-dim); }
+  .entity-chip:hover { border-color: var(--accent); color: var(--text); }
+  .entity-chip.active { border-color: var(--accent); color: var(--text); background: #0d2a3f; }
+
+  /* stat tiles */
+  .stat-row { display: flex; gap: 1px; background: var(--border); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .stat-tile { flex: 1; background: var(--bg2); padding: 10px 16px; display: flex; flex-direction: column; gap: 3px; }
+  .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); }
+  .stat-value { font-size: 22px; font-family: var(--mono); color: var(--text); line-height: 1; }
+  .stat-value.accent { color: var(--accent); }
+  .stat-value.green  { color: var(--green); }
+  .stat-value.warn   { color: var(--warn); }
+  .stat-sub { font-size: 11px; color: var(--text-dim); font-family: var(--mono); }
+
+  /* sparkline */
+  .sparkline-wrap { padding: 12px 16px; background: var(--bg2); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .sparkline-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); margin-bottom: 6px; }
+  .sparkline-svg { display: block; width: 100%; }
+
+  /* section head */
+  .section-head { padding: 8px 16px 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); background: var(--bg2); border-bottom: 1px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; }
+  .section-note { font-size: 10px; color: var(--text-dim); font-style: italic; text-transform: none; letter-spacing: 0; }
+  .section-note.server { color: var(--accent); }
+  .section-note.client { color: var(--purple); }
+
+  /* scroll body */
+  .scroll { flex: 1; overflow-y: auto; }
+
+  /* divider between live + history within a scroll area */
+  .history-divider { padding: 6px 16px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); background: var(--bg3); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+  .history-divider .pill { padding: 1px 7px; border-radius: 8px; font-size: 10px; text-transform: none; letter-spacing: 0; }
+  .pill.server { background: #0d2038; color: var(--accent); border: 1px solid #1a3a5a; }
+  .pill.client { background: #2a1a38; color: var(--purple); border: 1px solid #4a2a60; }
+
+  /* ── UTILITY AI ── */
+  .action-list { padding: 8px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .action-row { display: flex; flex-direction: column; gap: 4px; }
+  .action-header { display: flex; align-items: center; gap: 8px; font-size: 12px; font-family: var(--mono); }
+  .action-name { flex: 0 0 130px; }
+  .action-score { flex: 0 0 42px; text-align: right; color: var(--text-dim); font-size: 12px; }
+  .action-badge { padding: 1px 7px; border-radius: 8px; font-size: 10px; white-space: nowrap; }
+  .action-badge.winner    { background: #0d2f0d; color: var(--green);  border: 1px solid #1a5020; }
+  .action-badge.ineligible{ background: var(--bg4); color: var(--text-dim); }
+  .action-badge.cooldown  { background: #2a2010; color: #c8a060; border: 1px solid #4a3820; }
+  .bar-row { display: flex; align-items: center; gap: 8px; flex: 1; }
+  .bar-track { height: 10px; background: var(--bg4); border-radius: 4px; overflow: hidden; flex: 1; }
+  .bar-fill { height: 100%; border-radius: 4px; background: var(--accent); }
+  .bar-fill.winner { background: var(--green); }
+  .bar-fill.ineligible { background: var(--bg5); opacity: 0.4; }
+
+  /* winner history timeline */
+  .winner-history { padding: 10px 16px; display: flex; flex-direction: column; gap: 0; }
+  .winner-row { display: flex; align-items: center; gap: 0; font-size: 12px; font-family: var(--mono); padding: 5px 0; border-bottom: 1px solid var(--border); }
+  .winner-row:last-child { border-bottom: none; }
+  .winner-frame { width: 70px; color: var(--text-dim); font-size: 11px; }
+  .winner-arrow { width: 24px; text-align: center; color: var(--border); font-size: 16px; }
+  .winner-name { flex: 1; }
+  .winner-name.current { color: var(--green); font-weight: 600; }
+  .winner-score { width: 52px; text-align: right; color: var(--text-dim); font-size: 11px; }
+  .winner-delta { width: 54px; text-align: right; font-size: 11px; }
+  .winner-delta.up   { color: var(--green); }
+  .winner-delta.down { color: var(--red); }
+
+  /* ── RULES ── */
+  table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: var(--mono); }
+  thead tr { background: var(--bg3); }
+  thead th { padding: 6px 16px; text-align: left; border-bottom: 1px solid var(--border); font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); }
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:hover { background: var(--bg4); }
+  tbody tr.fired-row { background: var(--green-bg); }
+  tbody tr.skip-row { opacity: 0.45; }
+  td { padding: 6px 16px; }
+  .rule-chip { display: inline-block; padding: 1px 7px; border-radius: 8px; font-size: 11px; margin-right: 4px; }
+  .rule-chip.fired { background: var(--green-bg); color: var(--green); border: 1px solid #1e5030; }
+  .rule-chip.skip  { background: var(--bg4); color: var(--text-dim); }
+  .action-tag { display: inline-block; padding: 1px 6px; border-radius: 6px; font-size: 11px; background: #112030; color: var(--accent); border: 1px solid #1e3a50; margin-right: 4px; }
+  .rate-bar-track { height: 6px; background: var(--bg4); border-radius: 3px; overflow: hidden; width: 80px; display: inline-block; vertical-align: middle; }
+  .rate-bar-fill { height: 100%; background: var(--accent); border-radius: 3px; }
+
+  /* ── HTN ── */
+  .warn-banner { margin: 10px 16px 4px; padding: 7px 12px; background: var(--warn-bg); border: 1px solid #7a3b1e; border-radius: 4px; color: var(--warn); font-size: 12px; flex-shrink: 0; }
+  .warn-banner::before { content: '⚠ '; }
+  .htn-meta { display: flex; gap: 16px; padding: 8px 16px; font-size: 12px; color: var(--text-dim); border-bottom: 1px solid var(--border); flex-shrink: 0; font-family: var(--mono); }
+  .htn-meta b { color: var(--text); }
+  .plan-table tbody tr.done-task { opacity: 0.4; }
+  .plan-table tbody tr.curr-task { background: #0a2d4a; color: #fff; font-weight: 600; }
+  .plan-task-num { width: 36px; text-align: right; color: var(--text-dim); }
+  .plan-task-num.curr { color: var(--accent); }
+  .plan-task-params { color: var(--text-dim); font-size: 11px; }
+
+  /* plan history */
+  .plan-history-list { padding: 8px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .plan-history-entry { border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+  .plan-history-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 7px 12px;
+    background: var(--bg3);
+    cursor: pointer;
+    user-select: none;
+    font-size: 12px;
+    font-family: var(--mono);
+  }
+  .plan-history-header:hover { background: var(--bg4); }
+  .ph-index { color: var(--text-dim); width: 24px; }
+  .ph-reason { padding: 1px 7px; border-radius: 8px; font-size: 11px; }
+  .ph-reason.initial  { background: #0d2038; color: var(--accent);  border: 1px solid #1a3a5a; }
+  .ph-reason.diverged { background: var(--warn-bg); color: var(--warn); border: 1px solid #7a3b1e; }
+  .ph-reason.replan   { background: #2a1a10; color: #c8a060; border: 1px solid #4a3020; }
+  .ph-frames { color: var(--text-dim); font-size: 11px; }
+  .ph-frames b { color: var(--text); }
+  .ph-count { margin-left: auto; color: var(--text-dim); font-size: 11px; }
+  .ph-toggle { color: var(--text-dim); font-size: 11px; margin-left: 6px; }
+
+  .plan-history-body { padding: 8px 12px; background: var(--bg2); display: none; }
+  .plan-history-body.open { display: block; }
+  .op-tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; background: var(--bg3); color: var(--text); border: 1px solid var(--border); margin: 2px 3px 2px 0; font-family: var(--mono); }
+  .op-tag.current { background: #0a2d4a; border-color: var(--accent); color: var(--accent); }
+
+  /* statusbar */
+  .statusbar { background: var(--bg3); border-top: 1px solid var(--border); padding: 3px 16px; font-size: 11px; color: var(--text-dim); display: flex; gap: 14px; flex-shrink: 0; font-family: var(--mono); }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+  <span class="titlebar-name">AI Inspector</span>
+  <span class="titlebar-sub">DiaAIInspectorPlugin v1.0</span>
+  <span class="conn-badge connected">● Connected — localhost:7771</span>
+</div>
+
+<div class="tabs">
+  <div class="tab" onclick="showTab('budget')"><div class="tab-dot green"></div>Budget</div>
+  <div class="tab active" onclick="showTab('utility')"><div class="tab-dot green"></div>Utility AI</div>
+  <div class="tab" onclick="showTab('rules')"><div class="tab-dot green"></div>Rules</div>
+  <div class="tab" onclick="showTab('htn')"><div class="tab-dot warn"></div>HTN</div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- BUDGET TAB                                -->
+<!-- ══════════════════════════════════════════ -->
+<div class="page" id="tab-budget">
+  <div class="stat-row">
+    <div class="stat-tile"><div class="stat-label">Budget limit</div><div class="stat-value accent">1000</div><div class="stat-sub">µs / frame</div></div>
+    <div class="stat-tile"><div class="stat-label">Used this frame</div><div class="stat-value green">312</div><div class="stat-sub">µs · 31.2%</div></div>
+    <div class="stat-tile"><div class="stat-label">Systems run</div><div class="stat-value">4</div><div class="stat-sub">this frame</div></div>
+    <div class="stat-tile"><div class="stat-label">Systems deferred</div><div class="stat-value warn">1</div><div class="stat-sub">queued for next</div></div>
+  </div>
+  <div class="sparkline-wrap">
+    <div class="sparkline-label">used_µs — last 60 frames (server-supplied)</div>
+    <svg class="sparkline-svg" viewBox="0 0 600 60" preserveAspectRatio="none" height="60">
+      <rect width="600" height="60" fill="var(--bg3)" rx="3"/>
+      <line x1="0" y1="6" x2="600" y2="6" stroke="#3a3a3a" stroke-width="1" stroke-dasharray="4 3"/>
+      <text x="4" y="13" fill="#555" font-size="9" font-family="Consolas">1000µs</text>
+      <polyline fill="none" stroke="var(--green)" stroke-width="1.5"
+        points="0,42 10,40 20,38 30,41 40,43 50,39 60,37 70,42 80,40 90,38 100,35 110,37 120,39 130,36 140,38 150,40 160,37 170,35 180,38 190,40 200,38 210,36 220,39 230,41 240,37 250,35 260,33 270,36 280,38 290,36 300,34 310,37 320,39 330,36 340,38 350,40 360,38 370,36 380,34 390,37 400,39 410,36 420,34 430,32 440,35 450,37 460,35 470,33 480,36 490,38 500,35 510,33 520,31 530,34 540,36 550,34 560,32 570,35 580,37 590,35 600,34"/>
+      <line x1="597" y1="0" x2="597" y2="60" stroke="#444" stroke-width="1"/>
+      <circle cx="597" cy="34" r="3" fill="var(--green)"/>
+    </svg>
+  </div>
+  <div class="section-head">Registered Systems</div>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>System</th><th>Budget %</th><th>Last Run</th></tr></thead>
+      <tbody>
+        <tr><td>UtilityAI</td><td>12.4%</td><td>frame 4821</td></tr>
+        <tr><td>HTNPlanner</td><td>9.8%</td><td>frame 4819</td></tr>
+        <tr><td>RuleSet</td><td>5.2%</td><td>frame 4821</td></tr>
+        <tr><td>NavSteering</td><td>3.8%</td><td>frame 4820</td></tr>
+        <tr style="opacity:0.5"><td>PathfindAsync</td><td>—</td><td>deferred</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- UTILITY AI TAB                            -->
+<!-- ══════════════════════════════════════════ -->
+<div class="page active" id="tab-utility">
+  <div class="entity-bar">
+    <span class="entity-label">Entity:</span>
+    <div class="entity-chip active">Soldier_3</div>
+    <div class="entity-chip">Soldier_7</div>
+    <div class="entity-chip">Archer_2</div>
+    <div class="entity-chip">Commander_1</div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-tile"><div class="stat-label">Winner</div><div class="stat-value green" style="font-size:16px;margin-top:2px">Attack</div><div class="stat-sub">score 0.823</div></div>
+    <div class="stat-tile"><div class="stat-label">Actions evaluated</div><div class="stat-value">5</div><div class="stat-sub">3 eligible · 2 skipped</div></div>
+    <div class="stat-tile"><div class="stat-label">Last evaluated</div><div class="stat-value accent" style="font-size:16px;margin-top:2px">4821</div><div class="stat-sub">frame</div></div>
+  </div>
+
+  <div class="scroll">
+    <!-- live scores -->
+    <div class="section-head">Action Scores — Frame 4821</div>
+    <div class="action-list">
+      <div class="action-row">
+        <div class="action-header">
+          <span class="action-name" style="font-weight:600;color:var(--green)">Attack</span>
+          <span class="action-score">0.823</span>
+          <div class="bar-row"><div class="bar-track"><div class="bar-fill winner" style="width:82.3%"></div></div></div>
+          <span class="action-badge winner">winner</span>
+        </div>
+      </div>
+      <div class="action-row">
+        <div class="action-header">
+          <span class="action-name">Flee</span>
+          <span class="action-score">0.412</span>
+          <div class="bar-row"><div class="bar-track"><div class="bar-fill" style="width:41.2%"></div></div></div>
+        </div>
+      </div>
+      <div class="action-row">
+        <div class="action-header">
+          <span class="action-name">Flank</span>
+          <span class="action-score">0.290</span>
+          <div class="bar-row"><div class="bar-track"><div class="bar-fill" style="width:29.0%"></div></div></div>
+        </div>
+      </div>
+      <div class="action-row" style="opacity:0.5">
+        <div class="action-header">
+          <span class="action-name" style="color:var(--text-dim)">Patrol</span>
+          <span class="action-score">—</span>
+          <div class="bar-row"><div class="bar-track"><div class="bar-fill ineligible" style="width:0%"></div></div></div>
+          <span class="action-badge cooldown">cooldown 0.3s</span>
+        </div>
+      </div>
+      <div class="action-row" style="opacity:0.5">
+        <div class="action-header">
+          <span class="action-name" style="color:var(--text-dim)">Reinforce</span>
+          <span class="action-score">—</span>
+          <div class="bar-row"><div class="bar-track"><div class="bar-fill ineligible" style="width:0%"></div></div></div>
+          <span class="action-badge ineligible">prerequisite failed</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- winner history (client-side) -->
+    <div class="history-divider">
+      Winner transitions
+      <span class="pill client">client-side · resets on reconnect</span>
+    </div>
+    <div class="winner-history">
+      <!-- newest first -->
+      <div class="winner-row">
+        <span class="winner-frame">f 4821</span>
+        <span class="winner-arrow"></span>
+        <span class="winner-name current">Attack</span>
+        <span class="winner-score">0.823</span>
+        <span class="winner-delta up">▲ +0.11</span>
+      </div>
+      <div class="winner-row">
+        <span class="winner-frame">f 4800</span>
+        <span class="winner-arrow">←</span>
+        <span class="winner-name">Flank</span>
+        <span class="winner-score">0.714</span>
+        <span class="winner-delta down">▼ −0.08</span>
+      </div>
+      <div class="winner-row">
+        <span class="winner-frame">f 4760</span>
+        <span class="winner-arrow">←</span>
+        <span class="winner-name">Attack</span>
+        <span class="winner-score">0.791</span>
+        <span class="winner-delta up">▲ +0.23</span>
+      </div>
+      <div class="winner-row">
+        <span class="winner-frame">f 4701</span>
+        <span class="winner-arrow">←</span>
+        <span class="winner-name">Patrol</span>
+        <span class="winner-score">0.562</span>
+        <span class="winner-delta" style="color:var(--text-dim)">— first</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- RULES TAB                                 -->
+<!-- ══════════════════════════════════════════ -->
+<div class="page" id="tab-rules">
+  <div class="entity-bar">
+    <span class="entity-label">Entity:</span>
+    <div class="entity-chip active">Soldier_3</div>
+    <div class="entity-chip">Soldier_7</div>
+    <div class="entity-chip">Archer_2</div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-tile"><div class="stat-label">Fired this frame</div><div class="stat-value green">3</div><div class="stat-sub">of 5 rules</div></div>
+    <div class="stat-tile"><div class="stat-label">Actions dispatched</div><div class="stat-value accent">4</div><div class="stat-sub">this frame</div></div>
+    <div class="stat-tile"><div class="stat-label">Frames seen</div><div class="stat-value">121</div><div class="stat-sub">since connected</div></div>
+  </div>
+
+  <div class="scroll">
+    <!-- current frame -->
+    <div class="section-head">Rule Evaluation — Frame 4821</div>
+    <table>
+      <thead><tr><th>Rule</th><th style="width:80px">Status</th><th>Actions Dispatched</th></tr></thead>
+      <tbody>
+        <tr class="fired-row">
+          <td style="color:var(--yellow)">AttackRule</td>
+          <td><span class="rule-chip fired">fired</span></td>
+          <td><span class="action-tag">FireArrow</span><span class="action-tag">FaceTarget</span></td>
+        </tr>
+        <tr class="fired-row">
+          <td style="color:var(--yellow)">FlankRule</td>
+          <td><span class="rule-chip fired">fired</span></td>
+          <td><span class="action-tag">MoveToFlank</span></td>
+        </tr>
+        <tr class="fired-row">
+          <td style="color:var(--text-dim);font-style:italic">(unnamed)</td>
+          <td><span class="rule-chip fired">fired</span></td>
+          <td><span class="action-tag">RaiseAlarm</span></td>
+        </tr>
+        <tr class="skip-row">
+          <td>RetreatRule</td>
+          <td><span class="rule-chip skip">skip</span></td>
+          <td style="color:var(--text-dim)">—</td>
+        </tr>
+        <tr class="skip-row">
+          <td>IdleRule</td>
+          <td><span class="rule-chip skip">skip</span></td>
+          <td style="color:var(--text-dim)">—</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- fire rate history (client-side) -->
+    <div class="history-divider">
+      Fire rate — last 121 frames
+      <span class="pill client">client-side · resets on reconnect</span>
+    </div>
+    <table>
+      <thead><tr><th>Rule</th><th style="width:60px">Fired</th><th style="width:65px">Rate</th><th>Frequency</th></tr></thead>
+      <tbody>
+        <tr>
+          <td style="color:var(--yellow)">AttackRule</td>
+          <td>119</td>
+          <td style="color:var(--green)">98%</td>
+          <td><div class="rate-bar-track"><div class="rate-bar-fill" style="width:98%;background:var(--green)"></div></div></td>
+        </tr>
+        <tr>
+          <td style="color:var(--yellow)">FlankRule</td>
+          <td>47</td>
+          <td>39%</td>
+          <td><div class="rate-bar-track"><div class="rate-bar-fill" style="width:39%"></div></div></td>
+        </tr>
+        <tr>
+          <td style="color:var(--text-dim);font-style:italic">(unnamed)</td>
+          <td>12</td>
+          <td>10%</td>
+          <td><div class="rate-bar-track"><div class="rate-bar-fill" style="width:10%"></div></div></td>
+        </tr>
+        <tr>
+          <td>RetreatRule</td>
+          <td>3</td>
+          <td style="color:var(--warn)">2%</td>
+          <td><div class="rate-bar-track"><div class="rate-bar-fill" style="width:2%;background:var(--warn)"></div></div></td>
+        </tr>
+        <tr>
+          <td>IdleRule</td>
+          <td>0</td>
+          <td style="color:var(--text-dim)">0%</td>
+          <td><div class="rate-bar-track"><div class="rate-bar-fill" style="width:0%"></div></div></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- HTN TAB                                   -->
+<!-- ══════════════════════════════════════════ -->
+<div class="page" id="tab-htn">
+  <div class="entity-bar">
+    <span class="entity-label">Entity:</span>
+    <div class="entity-chip active">Soldier_3</div>
+    <div class="entity-chip">Soldier_7</div>
+    <div class="entity-chip">Commander_1</div>
+  </div>
+
+  <div class="warn-banner">Plan diverged — re-plan needed</div>
+
+  <div class="htn-meta">
+    <div>Tasks: <b>7 total</b></div>
+    <div>Remaining: <b>4</b></div>
+    <div>Current: <b style="color:var(--accent)">AttackTarget</b></div>
+    <div style="margin-left:auto;color:var(--text-dim)">Plan #2 · started f 4741</div>
+  </div>
+
+  <div class="scroll">
+    <!-- current plan -->
+    <div class="section-head">Active Plan</div>
+    <table class="plan-table">
+      <thead><tr><th style="width:40px">#</th><th>Operator</th><th>Parameters</th></tr></thead>
+      <tbody>
+        <tr class="done-task"><td class="plan-task-num">1</td><td>MoveToPosition</td><td class="plan-task-params">staging_point_A</td></tr>
+        <tr class="done-task"><td class="plan-task-num">2</td><td>AssembleUnit</td><td class="plan-task-params">archer</td></tr>
+        <tr class="done-task"><td class="plan-task-num">3</td><td>AssembleUnit</td><td class="plan-task-params">swordsman, swordsman</td></tr>
+        <tr class="curr-task"><td class="plan-task-num curr">▶ 4</td><td>AttackTarget</td><td class="plan-task-params">enemy_base_1</td></tr>
+        <tr><td class="plan-task-num">5</td><td>HoldPosition</td><td class="plan-task-params">enemy_base_1</td></tr>
+        <tr><td class="plan-task-num">6</td><td>Reinforce</td><td class="plan-task-params">flank_route_B</td></tr>
+        <tr><td class="plan-task-num">7</td><td>ReportStatus</td><td class="plan-task-params">—</td></tr>
+      </tbody>
+    </table>
+
+    <!-- plan history (server-side ring buffer) -->
+    <div class="history-divider">
+      Plan history — 2 plans
+      <span class="pill server">server-side · preserved before connect</span>
+    </div>
+    <div class="plan-history-list">
+
+      <!-- Plan #1 (completed) -->
+      <div class="plan-history-entry">
+        <div class="plan-history-header" onclick="togglePlan(this)">
+          <span class="ph-index">#1</span>
+          <span class="ph-reason initial">initial</span>
+          <span class="ph-frames">f <b>4612</b> → f <b>4740</b> &nbsp;(128 frames)</span>
+          <span class="ph-count">4 tasks</span>
+          <span class="ph-toggle">▶</span>
+        </div>
+        <div class="plan-history-body">
+          <span class="op-tag">Scout</span>
+          <span class="op-tag">MoveToStaging</span>
+          <span class="op-tag">AssembleUnit</span>
+          <span class="op-tag">AttackTarget</span>
+        </div>
+      </div>
+
+      <!-- Plan #2 (current, diverged) -->
+      <div class="plan-history-entry">
+        <div class="plan-history-header" onclick="togglePlan(this)">
+          <span class="ph-index">#2</span>
+          <span class="ph-reason diverged">diverged</span>
+          <span class="ph-frames">f <b>4741</b> → now</span>
+          <span class="ph-count">7 tasks</span>
+          <span class="ph-toggle">▶</span>
+        </div>
+        <div class="plan-history-body">
+          <span class="op-tag">MoveToPosition</span>
+          <span class="op-tag">AssembleUnit</span>
+          <span class="op-tag">AssembleUnit</span>
+          <span class="op-tag current">AttackTarget ◀</span>
+          <span class="op-tag">HoldPosition</span>
+          <span class="op-tag">Reinforce</span>
+          <span class="op-tag">ReportStatus</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="statusbar">
+  <span>Frame 4821</span>
+  <span>|</span>
+  <span>4 topics active</span>
+  <span>|</span>
+  <span>budget: 1Hz · utility_ai: change · rules: change · htn: change</span>
+  <span style="margin-left:auto">DIA_DEBUG build</span>
+</div>
+
+<script>
+function showTab(name) {
+  const names = ['budget','utility','rules','htn'];
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', names[i] === name));
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
+}
+function togglePlan(header) {
+  const body = header.nextElementSibling;
+  const open = body.classList.toggle('open');
+  header.querySelector('.ph-toggle').textContent = open ? '▼' : '▶';
+}
+</script>
+</body>
+</html>
