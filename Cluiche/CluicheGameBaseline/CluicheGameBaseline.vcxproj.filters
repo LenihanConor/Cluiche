@@ -99,6 +99,12 @@
     <ClCompile Include="Modules\SimNavigationHandlerModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\AIInspectorModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\AIInspectEvent.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
       <Filter>Modules</Filter>
     </ClCompile>
       <Filter>Modules\InspectorSources</Filter>
@@ -204,6 +210,12 @@
     <ClInclude Include="Types\RenderToSimNavRequest.h">
     <ClInclude Include="Modules\SimNavigationHandlerModule.h">
       <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\AIInspectorModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\AIInspectEvent.h">
+      <Filter>Types</Filter>
     </ClInclude>
       <Filter>Types</Filter>
     </ClInclude>

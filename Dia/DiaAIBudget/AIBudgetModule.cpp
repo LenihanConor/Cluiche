@@ -64,23 +64,33 @@ namespace Dia
 
 		void AIBudgetModule::DoUpdate(float /*deltaTime*/)
 		{
-			const AIBudgetResult result = mScheduler.Update(mBudgetMs);
+			mLastResult = mScheduler.Update(mBudgetMs);
 
 			if (mUsedUsGauge)
 			{
 				// Convert ms back to microseconds for the gauge (metric key is "used_us")
-				mUsedUsGauge->Set(static_cast<double>(result.usedMs) * 1000.0);
+				mUsedUsGauge->Set(static_cast<double>(mLastResult.usedMs) * 1000.0);
 			}
 
 			if (mSystemsRunCounter)
 			{
-				mSystemsRunCounter->Inc(static_cast<uint64_t>(result.systemsRun));
+				mSystemsRunCounter->Inc(static_cast<uint64_t>(mLastResult.systemsRun));
 			}
 
 			if (mSystemsDeferredCounter)
 			{
-				mSystemsDeferredCounter->Inc(static_cast<uint64_t>(result.systemsDeferred));
+				mSystemsDeferredCounter->Inc(static_cast<uint64_t>(mLastResult.systemsDeferred));
 			}
+		}
+
+		const AIBudgetResult& AIBudgetModule::GetLastResult() const
+		{
+			return mLastResult;
+		}
+
+		float AIBudgetModule::GetBudgetMs() const
+		{
+			return mBudgetMs;
 		}
 
 		Dia::ApplicationFlow::StopResult AIBudgetModule::DoStop()

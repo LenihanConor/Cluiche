@@ -58,6 +58,8 @@
     <ClCompile Include="Modules\InspectorSources\LifecycleEventSource.cpp" />
     <ClCompile Include="Modules\InspectorSources\BlackboardInspectorSource.cpp" />
     <ClCompile Include="Modules\SimNavigationHandlerModule.cpp" />
+    <ClCompile Include="Modules\AIInspectorModule.cpp" />
+    <ClCompile Include="Types\AIInspectEvent.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\AutomationModule.h" />
@@ -101,6 +103,8 @@
     <ClInclude Include="Modules\InspectorSources\BlackboardInspectorSource.h" />
     <ClInclude Include="Types\RenderToSimNavRequest.h" />
     <ClInclude Include="Modules\SimNavigationHandlerModule.h" />
+    <ClInclude Include="Modules\AIInspectorModule.h" />
+    <ClInclude Include="Types\AIInspectEvent.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">
@@ -211,6 +215,12 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaAPI\DiaAPI.vcxproj">
       <Project>{1E7F6E13-50CF-411C-B34C-66D70121DD03}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaAIBudget\DiaAIBudget.vcxproj">
+      <Project>{C9D0E1F2-A3B4-5678-90AB-CDEF01234567}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaUtilityAI\DiaUtilityAI.vcxproj">
+      <Project>{E2F3A4B5-C6D7-8901-EF23-456789012345}</Project>
     </ProjectReference>
 
   </ItemGroup>

@@ -35,6 +35,13 @@ namespace Dia
 			AIBudgetScheduler&       GetScheduler();
 			const AIBudgetScheduler& GetScheduler() const;
 
+			// Returns the result from the most recent DoUpdate() call.
+			// Zero-initialised until the first frame runs.
+			const AIBudgetResult& GetLastResult() const;
+
+			// Returns the configured time budget in milliseconds.
+			float GetBudgetMs() const;
+
 		protected:
 			// Reads "budgetUs" integer from JSON config.  Default: 1000 µs (= 1 ms).
 			void        OnConfigure(const char* configJson) override;
@@ -51,6 +58,8 @@ namespace Dia
 		private:
 			AIBudgetScheduler mScheduler;
 			float             mBudgetMs;   // converted from budgetUs in OnConfigure; default 1.0f
+
+			mutable AIBudgetResult mLastResult{};  // cached from most recent DoUpdate()
 
 			Dia::Observation::Metric::Gauge*   mUsedUsGauge;
 			Dia::Observation::Metric::Counter* mSystemsRunCounter;
