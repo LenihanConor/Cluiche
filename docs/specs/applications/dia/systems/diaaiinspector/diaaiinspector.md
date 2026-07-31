@@ -375,6 +375,6 @@ private:
 
 ## Status
 
-**Status:** `In Progress`
+**Status:** `Done`
 
 **Plan:** @docs/specs/applications/dia/systems/diaaiinspector/diaaiinspector.plan.md

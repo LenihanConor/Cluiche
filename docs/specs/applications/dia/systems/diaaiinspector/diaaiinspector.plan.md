@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/applications/dia/systems/diaaiinspector/diaaiinspector.md
-**Status:** In Progress
+**Status:** Done
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
