@@ -14,11 +14,46 @@
 #include <DiaAIBudget/AIBudgetScheduler.h>
 #include <DiaUtilityAI/UtilitySetComponent.h>
 #include <DiaUtilityAI/UtilitySet.h>
+#include <DiaRules/RuleSetComponent.h>
+#include <DiaRules/RuleSet.h>
+#include <DiaHTN/HTNPlannerComponent.h>
+#include <DiaHTN/HTNPlan.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaEntity/Entity.h>
 
+#include <deque>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
 #include "Modules/DebugServerHostModule.h"
 #include "Modules/EntityModule.h"
+
+// ---------------------------------------------------------------------------
+// Server-side HTN plan history (PD-004: STL allowed in .cpp)
+// ---------------------------------------------------------------------------
+namespace {
+
+struct PlanHistoryEntry
+{
+    int              planIndex   = 0;
+    int              startFrame  = 0;
+    int              endFrame    = -1;  // -1 means current / still active
+    std::string      reason;            // "initial" or "replan"
+    std::vector<uint32_t> taskOperatorCRCs;
+};
+
+struct EntityHTNState
+{
+    std::deque<PlanHistoryEntry> history;   // ring-capped at kMaxDepth
+    unsigned int                 lastPlanHash  = 0;
+    int                          nextPlanIndex = 0;
+    static constexpr int         kMaxDepth     = 8;
+};
+
+std::unordered_map<uint32_t, EntityHTNState> sHTNHistory;
+
+} // anonymous namespace
 
 namespace Cluiche { namespace AppFlow {
 
@@ -238,19 +273,231 @@ void AIInspectorModule::PushUtilityAI()
 }
 
 // ---------------------------------------------------------------------------
-// PushRules — stub (Task 5)
+// PushRules — every frame, change-detected via hash (Task 5)
 // ---------------------------------------------------------------------------
 void AIInspectorModule::PushRules()
 {
-    // TODO: Task 5 — implement Rules inspector source
+    auto* entityMod = mEntityRef.Get();
+    if (!entityMod)
+        return;
+
+    auto& domain = entityMod->GetDomain();
+
+    Json::Value entities(Json::arrayValue);
+    unsigned int hashAccum = 0;
+
+    for (uint32_t i = 0; i < Dia::Entity::kMaxEntitiesPerDomain; ++i)
+    {
+        Dia::Entity::Entity entity = domain.GetAliveEntity(i);
+        if (!entity.IsValid())
+            continue;
+
+        const Dia::Rules::RuleSetComponent* comp =
+            domain.GetComponent<Dia::Rules::RuleSetComponent>(entity);
+        if (!comp)
+            continue;
+
+        const Dia::Rules::RuleSet* ruleSet = comp->GetRuleSet();
+        if (!ruleSet)
+            continue;
+
+#ifdef DIA_DEBUG
+        Dia::Core::Containers::DynamicArrayC<Dia::Rules::RuleSet::RuleFireEntry, 16> entries;
+        const int firedCount = ruleSet->GetLastFireReport(entries);
+
+        hashAccum ^= static_cast<unsigned int>(entity.GetIndex()) * 2654435761u;
+        hashAccum ^= static_cast<unsigned int>(firedCount) * 1234567891u;
+
+        Json::Value entityEntry;
+        entityEntry["id"]          = static_cast<Json::UInt>(entity.GetIndex());
+        const char* dbgName        = domain.GetDebugName(entity);
+        entityEntry["name"]        = dbgName ? dbgName : "";
+        entityEntry["rules_fired"] = firedCount;
+
+        Json::Value rulesArr(Json::arrayValue);
+        for (uint32_t e = 0; e < entries.Size(); ++e)
+        {
+            const Dia::Rules::RuleSet::RuleFireEntry& entry = entries[e];
+
+            Json::Value ruleEntry;
+            ruleEntry["id"]   = static_cast<Json::UInt>(entry.ruleId.Value());
+            ruleEntry["fired"] = true;
+
+            Json::Value actionsArr(Json::arrayValue);
+            for (uint32_t a = 0; a < entry.actions.Size(); ++a)
+                actionsArr.append(static_cast<Json::UInt>(entry.actions[a].Value()));
+            ruleEntry["actions"] = actionsArr;
+
+            rulesArr.append(ruleEntry);
+        }
+        entityEntry["rules"] = rulesArr;
+        entities.append(entityEntry);
+#else
+        // Release: no fire data, but still count entity for hash stability
+        hashAccum ^= static_cast<unsigned int>(entity.GetIndex()) * 2654435761u;
+#endif // DIA_DEBUG
+    }
+
+    hashAccum ^= static_cast<unsigned int>(entities.size()) * 987654321u;
+
+    if (hashAccum == mRulesLastHash)
+        return;
+    mRulesLastHash = hashAccum;
+
+    AIInspectEvent evt;
+    evt.dataType              = Dia::Core::StringCRC("ai.rules");
+    evt.payload["frame"]      = static_cast<Json::UInt64>(mFrameCounter);
+    evt.payload["debug_only"] = true;
+    evt.payload["entities"]   = entities;
+
+    mAIInspectWriter.Send(evt);
 }
 
 // ---------------------------------------------------------------------------
-// PushHTN — stub (Task 5)
+// PushHTN — every frame, change-detected via hash (Task 6)
 // ---------------------------------------------------------------------------
 void AIInspectorModule::PushHTN()
 {
-    // TODO: Task 5 — implement HTN inspector source
+    auto* entityMod = mEntityRef.Get();
+    if (!entityMod)
+        return;
+
+    auto& domain = entityMod->GetDomain();
+
+    Json::Value  entities(Json::arrayValue);
+    unsigned int hashAccum = 0;
+
+    for (uint32_t i = 0; i < Dia::Entity::kMaxEntitiesPerDomain; ++i)
+    {
+        Dia::Entity::Entity entity = domain.GetAliveEntity(i);
+        if (!entity.IsValid())
+            continue;
+
+        const Dia::HTN::HTNPlannerComponent* comp =
+            domain.GetComponent<Dia::HTN::HTNPlannerComponent>(entity);
+        if (!comp)
+            continue;
+
+        const uint32_t entityIdx = entity.GetIndex();
+        EntityHTNState& state    = sHTNHistory[entityIdx];
+
+        const bool hasPlan = comp->HasActivePlan();
+
+        if (hasPlan)
+        {
+            const Dia::HTN::HTNPlan* plan = comp->GetActivePlan();
+            const int  taskCount     = plan->GetTaskCount();
+            const bool isComplete    = plan->IsComplete();
+            const uint32_t currentOpCRC = isComplete
+                ? 0u
+                : plan->CurrentTask().operatorId.Value();
+
+            const unsigned int planHash =
+                static_cast<unsigned int>(taskCount) * 2654435761u
+                ^ currentOpCRC * 1234567891u;
+
+            if (planHash != state.lastPlanHash)
+            {
+                // Archive the current (open) entry if one exists
+                if (!state.history.empty() && state.history.back().endFrame == -1)
+                    state.history.back().endFrame = static_cast<int>(mFrameCounter);
+
+                PlanHistoryEntry entry;
+                entry.planIndex  = state.nextPlanIndex++;
+                entry.startFrame = static_cast<int>(mFrameCounter);
+                entry.endFrame   = -1;
+                entry.reason     = state.history.empty() ? "initial" : "replan";
+                entry.taskOperatorCRCs.push_back(currentOpCRC);
+
+                state.history.push_back(std::move(entry));
+                if (static_cast<int>(state.history.size()) > EntityHTNState::kMaxDepth)
+                    state.history.pop_front();
+
+                state.lastPlanHash = planHash;
+            }
+
+            hashAccum ^= entityIdx * 2654435761u ^ planHash;
+
+            // Build entity JSON
+            Json::Value entityEntry;
+            entityEntry["id"]           = static_cast<Json::UInt>(entityIdx);
+            const char* dbgName         = domain.GetDebugName(entity);
+            entityEntry["name"]         = dbgName ? dbgName : "";
+            entityEntry["has_plan"]     = true;
+            entityEntry["task_count"]   = taskCount;
+            entityEntry["current_task"] = static_cast<Json::UInt>(currentOpCRC);
+            entityEntry["is_complete"]  = isComplete;
+            // TODO: diverged requires IConditionContext — not available from inspector;
+            //       emit false until HTNPlannerComponent caches diverged state.
+            entityEntry["diverged"]     = false;
+
+            Json::Value historyArr(Json::arrayValue);
+            for (const PlanHistoryEntry& he : state.history)
+            {
+                Json::Value h;
+                h["plan_index"]  = he.planIndex;
+                h["start_frame"] = he.startFrame;
+                h["end_frame"]   = he.endFrame;
+                h["reason"]      = he.reason;
+                h["task_count"]  = static_cast<int>(he.taskOperatorCRCs.size());
+
+                Json::Value tasks(Json::arrayValue);
+                for (uint32_t crc : he.taskOperatorCRCs)
+                    tasks.append(static_cast<Json::UInt>(crc));
+                h["tasks"] = tasks;
+
+                historyArr.append(h);
+            }
+            entityEntry["plan_history"] = historyArr;
+            entities.append(entityEntry);
+        }
+        else
+        {
+            // No active plan — close the open history entry if present
+            if (!state.history.empty() && state.history.back().endFrame == -1)
+                state.history.back().endFrame = static_cast<int>(mFrameCounter);
+
+            hashAccum ^= entityIdx * 2654435761u;
+
+            Json::Value entityEntry;
+            entityEntry["id"]       = static_cast<Json::UInt>(entityIdx);
+            const char* dbgName     = domain.GetDebugName(entity);
+            entityEntry["name"]     = dbgName ? dbgName : "";
+            entityEntry["has_plan"] = false;
+
+            Json::Value historyArr(Json::arrayValue);
+            for (const PlanHistoryEntry& he : state.history)
+            {
+                Json::Value h;
+                h["plan_index"]  = he.planIndex;
+                h["start_frame"] = he.startFrame;
+                h["end_frame"]   = he.endFrame;
+                h["reason"]      = he.reason;
+                h["task_count"]  = static_cast<int>(he.taskOperatorCRCs.size());
+
+                Json::Value tasks(Json::arrayValue);
+                for (uint32_t crc : he.taskOperatorCRCs)
+                    tasks.append(static_cast<Json::UInt>(crc));
+                h["tasks"] = tasks;
+
+                historyArr.append(h);
+            }
+            entityEntry["plan_history"] = historyArr;
+            entities.append(entityEntry);
+        }
+    }
+
+    const unsigned int newHash = hashAccum ^ static_cast<unsigned int>(entities.size());
+    if (newHash == mHTNLastHash)
+        return;
+    mHTNLastHash = newHash;
+
+    AIInspectEvent evt;
+    evt.dataType            = Dia::Core::StringCRC("ai.htn");
+    evt.payload["frame"]    = static_cast<Json::UInt64>(mFrameCounter);
+    evt.payload["entities"] = entities;
+
+    mAIInspectWriter.Send(evt);
 }
 
 } } // namespace Cluiche::AppFlow

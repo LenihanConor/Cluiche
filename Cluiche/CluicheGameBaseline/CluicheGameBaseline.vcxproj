@@ -222,6 +222,12 @@
     <ProjectReference Include="..\..\Dia\DiaUtilityAI\DiaUtilityAI.vcxproj">
       <Project>{E2F3A4B5-C6D7-8901-EF23-456789012345}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaRules\DiaRules.vcxproj">
+      <Project>{C7D8E9F0-A1B2-3456-CDEF-012345678901}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaHTN\DiaHTN.vcxproj">
+      <Project>{F4B5C6D7-E8F9-0123-A456-789012345678}</Project>
+    </ProjectReference>
 
   </ItemGroup>
   <PropertyGroup Label="Globals">
