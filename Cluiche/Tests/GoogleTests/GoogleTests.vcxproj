@@ -714,10 +714,19 @@
     <ClCompile Include="DiaUtilityAI\TestUtilitySetExtended.cpp" />
     <ClCompile Include="DiaUtilityAI\TestUtilityIntegration.cpp" />
     <ClCompile Include="DiaOrder\TestOrderQueue.cpp" />
+    <!-- DiaHTN -->
+    <ClCompile Include="DiaHTN\TestOperatorRegistry.cpp" />
+    <ClCompile Include="DiaHTN\TestHTNDomain.cpp" />
+    <ClCompile Include="DiaHTN\TestHTNPlan.cpp" />
+    <ClCompile Include="DiaHTN\TestHTNPlanner.cpp" />
+    <ClCompile Include="DiaHTN\TestHTNPlannerComponent.cpp" />
+    <ClCompile Include="DiaHTN\TestHTNTestHelpers.cpp" />
     <ClCompile Include="DiaPathfinding\TestPathfinding.cpp" />
     <ClCompile Include="DiaPathfinding\TestPathfindingGolden.cpp" />
     <ClCompile Include="DiaPathfinding\TestPathfindingBoundary.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestBlackboardInspectorSource.cpp" />
+    <ClCompile Include="DiaHTN\TestRuleActionBridge.cpp" />
+    <ClCompile Include="DiaHTN\TestHTNIntegration.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
@@ -896,6 +905,10 @@
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaUtilityAI\DiaUtilityAI.vcxproj">
       <Project>{E2F3A4B5-C6D7-8901-EF23-456789012345}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaHTN\DiaHTN.vcxproj">
+      <Project>{F4B5C6D7-E8F9-0123-A456-789012345678}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaOrder\DiaOrder.vcxproj">

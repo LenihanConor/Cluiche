@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{A3B4C5D6-E7F8-9012-B456-789012345679}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{B4C5D6E7-F8A9-0123-C567-890123456780}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.diahtn.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="TaskResult.h" />
+    <ClInclude Include="OperatorRegistry.h" />
+    <ClInclude Include="RuleActionBridge.h" />
+    <ClInclude Include="HTNDomain.h" />
+    <ClInclude Include="HTNPlan.h" />
+    <ClInclude Include="HTNPlanner.h" />
+    <ClInclude Include="HTNPlannerComponent.h" />
+    <ClInclude Include="Testing\HTNTestHelpers.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="OperatorRegistry.cpp" />
+    <ClCompile Include="RuleActionBridge.cpp" />
+    <ClCompile Include="HTNDomain.cpp" />
+    <ClCompile Include="HTNPlan.cpp" />
+    <ClCompile Include="HTNPlanner.cpp" />
+    <ClCompile Include="HTNPlannerComponent.cpp" />
+  </ItemGroup>
+</Project>

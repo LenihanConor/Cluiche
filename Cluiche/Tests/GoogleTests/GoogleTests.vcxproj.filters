@@ -193,6 +193,9 @@
     <Filter Include="DiaUtilityAI">
       <UniqueIdentifier>{A2B3C4D5-E6F7-8901-2345-678901234567}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaHTN">
+      <UniqueIdentifier>{C5D6E7F8-A9B0-1234-D678-901234567890}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -1406,12 +1409,37 @@
     <ClCompile Include="DiaUtilityAI\TestUtilityIntegration.cpp">
       <Filter>DiaUtilityAI</Filter>
     </ClCompile>
+    <!-- DiaHTN -->
+    <ClCompile Include="DiaHTN\TestOperatorRegistry.cpp">
+      <Filter>DiaHTN</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaHTN\TestHTNDomain.cpp">
+      <Filter>DiaHTN</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaHTN\TestHTNPlan.cpp">
+      <Filter>DiaHTN</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaHTN\TestHTNPlanner.cpp">
+      <Filter>DiaHTN</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaHTN\TestHTNPlannerComponent.cpp">
+      <Filter>DiaHTN</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaHTN\TestHTNTestHelpers.cpp">
+      <Filter>DiaHTN</Filter>
+    </ClCompile>
     <ClCompile Include="DiaBlackboard\TestBlackboard.cpp">
     <ClCompile Include="CluicheGameBaseline\TestBlackboardInspectorSource.cpp">
       <Filter>CluicheGameBaseline</Filter>
     </ClCompile>
     <ClCompile Include="DiaPathfinding\TestPathfindingGolden.cpp">
     <ClCompile Include="DiaPathfinding\TestPathfindingBoundary.cpp">
+    <ClCompile Include="DiaHTN\TestRuleActionBridge.cpp">
+    <ClCompile Include="DiaHTN\TestHTNIntegration.cpp">
+      <Filter>DiaHTN</Filter>
+    </ClCompile>
+      <Filter>DiaHTN</Filter>
+    </ClCompile>
       <Filter>DiaPathfinding</Filter>
     </ClCompile>
       <Filter>DiaPathfinding</Filter>

@@ -16,7 +16,9 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | ~~DiaCondition~~ | IConditionContext, ConditionRegistry, ConditionExpr, ConditionGuardAdapter, Test Utilities | DiaCore ✅, DiaStateMachine ✅ |
 | ~~DiaRules~~ | RuleActionRegistry, RuleSet, RuleSetComponent, Test Utilities | DiaCondition ✅ |
 | ~~DiaUtilityAI~~ | ResponseCurve, ActionDef, UtilitySet, AsyncEvaluation, GroupConsideration, UtilitySetComponent, ScoreOverlay, TestUtilities | DiaCondition ✅, DiaRules ✅, DiaAIBudget ✅ |
-| DiaHTN | OperatorRegistry, RuleActionBridge, HTNDomain, HTNPlan, SyncPlanner, AsyncPlanning, HTNPlannerComponent, TestUtilities | DiaCondition ✅, DiaRules ✅, DiaAIBudget ✅ |
+| ~~DiaHTN~~ | OperatorRegistry, RuleActionBridge, HTNDomain, HTNPlan, SyncPlanner, AsyncPlanning, HTNPlannerComponent, TestUtilities | DiaCondition ✅, DiaRules ✅, DiaAIBudget ✅ |
+| DiaFlowField | CFlowFieldGraph concept, SquareFlowAdapter + HexFlowAdapter, FlowField (per-cell direction array), ComputeFlowField (sync Dijkstra), FlowFieldCache (named dirty-flag store, Invalidate / InvalidateAll / InvalidateRegion), Test Utilities | DiaPathfinding ✅, DiaCore ✅, DiaMaths ✅ |
+| DiaSteering | Seek/Flee/Arrive/Wander/Pursue/Evade/ObstacleAvoidance/Separation free functions, SteeringPipeline (priority groups + weighted blend), SteeringSystem (agent registry + output cache), Test Utilities | DiaMaths ✅, DiaCore ✅ |
 
 ---
 
