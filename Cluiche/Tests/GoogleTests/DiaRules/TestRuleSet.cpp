@@ -798,3 +798,282 @@ TEST(DiaRules_RuleSet, MovedFrom_EvaluateIsSafe)
     int fired = a.Evaluate(ctx, registry, nullptr);
     EXPECT_EQ(fired, 0);
 }
+
+// ---------------------------------------------------------------------------
+// DiaRules_RuleSet — GetLastFireReport (DIA_DEBUG only)
+// ---------------------------------------------------------------------------
+
+#ifdef DIA_DEBUG
+
+TEST(DiaRules_RuleSet, GetLastFireReport_BeforeEvaluate_ReturnsZero_NoEntries)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "id": "AttackRule",
+                "guard": { "op": ">=", "slot": "hero", "field": "health", "value": 50.0 },
+                "actions": ["Attack"]
+            }
+        ]
+    })");
+
+    Dia::Core::Containers::DynamicArrayC<Dia::Rules::RuleSet::RuleFireEntry, 16> entries;
+    int count = rs.GetLastFireReport(entries);
+    EXPECT_EQ(count, 0);
+    EXPECT_EQ(entries.Size(), 0u);
+}
+
+TEST(DiaRules_RuleSet, GetLastFireReport_OneRuleFires_EntryHasCorrectRuleIdAndActions)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "id": "AttackRule",
+                "guard": { "op": ">=", "slot": "hero", "field": "health", "value": 50.0 },
+                "actions": ["AttackAction", "SetAggressive"]
+            }
+        ]
+    })");
+
+    Dia::Rules::RuleActionRegistry registry;
+    registry.Register(Dia::Core::StringCRC("AttackAction"),  [](void*) {});
+    registry.Register(Dia::Core::StringCRC("SetAggressive"), [](void*) {});
+
+    Dia::Condition::Testing::MockConditionContext ctx;
+    ctx.SetFloat(Dia::Core::StringCRC("hero"), Dia::Core::StringCRC("health"), 80.0f);
+
+    rs.Evaluate(ctx, registry, nullptr);
+
+    Dia::Core::Containers::DynamicArrayC<Dia::Rules::RuleSet::RuleFireEntry, 16> entries;
+    int count = rs.GetLastFireReport(entries);
+
+    EXPECT_EQ(count, 1);
+    ASSERT_EQ(entries.Size(), 1u);
+    EXPECT_EQ(entries[0].ruleId.Value(), Dia::Core::StringCRC("AttackRule").Value());
+    EXPECT_EQ(entries[0].actions.Size(), 2u);
+    EXPECT_EQ(entries[0].actions[0].Value(), Dia::Core::StringCRC("AttackAction").Value());
+    EXPECT_EQ(entries[0].actions[1].Value(), Dia::Core::StringCRC("SetAggressive").Value());
+}
+
+TEST(DiaRules_RuleSet, GetLastFireReport_MultipleRulesFire_AllEntriesPresent)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "id": "RuleA",
+                "guard": { "op": ">=", "slot": "hero", "field": "health", "value": 50.0 },
+                "actions": ["ActionA"]
+            },
+            {
+                "id": "RuleB",
+                "guard": { "op": "==", "slot": "enemy", "field": "visible", "value": true },
+                "actions": ["ActionB"]
+            }
+        ]
+    })");
+
+    Dia::Rules::RuleActionRegistry registry;
+    registry.Register(Dia::Core::StringCRC("ActionA"), [](void*) {});
+    registry.Register(Dia::Core::StringCRC("ActionB"), [](void*) {});
+
+    Dia::Condition::Testing::MockConditionContext ctx;
+    ctx.SetFloat(Dia::Core::StringCRC("hero"),  Dia::Core::StringCRC("health"),  80.0f);
+    ctx.SetBool (Dia::Core::StringCRC("enemy"), Dia::Core::StringCRC("visible"), true);
+
+    rs.Evaluate(ctx, registry, nullptr);
+
+    Dia::Core::Containers::DynamicArrayC<Dia::Rules::RuleSet::RuleFireEntry, 16> entries;
+    int count = rs.GetLastFireReport(entries);
+
+    EXPECT_EQ(count, 2);
+    EXPECT_EQ(entries.Size(), 2u);
+    EXPECT_EQ(entries[0].ruleId.Value(), Dia::Core::StringCRC("RuleA").Value());
+    EXPECT_EQ(entries[1].ruleId.Value(), Dia::Core::StringCRC("RuleB").Value());
+}
+
+TEST(DiaRules_RuleSet, GetLastFireReport_PartialFire_OnlyFiredRulesInReport)
+{
+    // Rule 0: health >= 50 → passes (health=80)
+    // Rule 1: health < 10 → fails (health=80)
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "id": "AttackRule",
+                "guard": { "op": ">=", "slot": "hero", "field": "health", "value": 50.0 },
+                "actions": ["AttackAction"]
+            },
+            {
+                "id": "FleeRule",
+                "guard": { "op": "<", "slot": "hero", "field": "health", "value": 10.0 },
+                "actions": ["FleeAction"]
+            }
+        ]
+    })");
+
+    Dia::Rules::RuleActionRegistry registry;
+    registry.Register(Dia::Core::StringCRC("AttackAction"), [](void*) {});
+    registry.Register(Dia::Core::StringCRC("FleeAction"),   [](void*) {});
+
+    Dia::Condition::Testing::MockConditionContext ctx;
+    ctx.SetFloat(Dia::Core::StringCRC("hero"), Dia::Core::StringCRC("health"), 80.0f);
+
+    rs.Evaluate(ctx, registry, nullptr);
+
+    Dia::Core::Containers::DynamicArrayC<Dia::Rules::RuleSet::RuleFireEntry, 16> entries;
+    int count = rs.GetLastFireReport(entries);
+
+    EXPECT_EQ(count, 1);
+    ASSERT_EQ(entries.Size(), 1u);
+    EXPECT_EQ(entries[0].ruleId.Value(), Dia::Core::StringCRC("AttackRule").Value());
+}
+
+TEST(DiaRules_RuleSet, GetLastFireReport_ClearedBetweenEvaluateCalls)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "id": "Rule1",
+                "guard": { "op": ">=", "slot": "hero", "field": "health", "value": 50.0 },
+                "actions": ["A1"]
+            },
+            {
+                "id": "Rule2",
+                "guard": { "op": "<", "slot": "hero", "field": "health", "value": 30.0 },
+                "actions": ["A2"]
+            }
+        ]
+    })");
+
+    Dia::Rules::RuleActionRegistry registry;
+    registry.Register(Dia::Core::StringCRC("A1"), [](void*) {});
+    registry.Register(Dia::Core::StringCRC("A2"), [](void*) {});
+
+    // First evaluate: health=80 → Rule1 fires, Rule2 does not
+    Dia::Condition::Testing::MockConditionContext ctx1;
+    ctx1.SetFloat(Dia::Core::StringCRC("hero"), Dia::Core::StringCRC("health"), 80.0f);
+    rs.Evaluate(ctx1, registry, nullptr);
+
+    Dia::Core::Containers::DynamicArrayC<Dia::Rules::RuleSet::RuleFireEntry, 16> entries1;
+    EXPECT_EQ(rs.GetLastFireReport(entries1), 1);
+
+    // Second evaluate: health=20 → Rule2 fires, Rule1 does not
+    Dia::Condition::Testing::MockConditionContext ctx2;
+    ctx2.SetFloat(Dia::Core::StringCRC("hero"), Dia::Core::StringCRC("health"), 20.0f);
+    rs.Evaluate(ctx2, registry, nullptr);
+
+    Dia::Core::Containers::DynamicArrayC<Dia::Rules::RuleSet::RuleFireEntry, 16> entries2;
+    int count2 = rs.GetLastFireReport(entries2);
+
+    // Report should only contain Rule2 (Rule1 did not fire in second Evaluate)
+    EXPECT_EQ(count2, 1);
+    ASSERT_EQ(entries2.Size(), 1u);
+    EXPECT_EQ(entries2[0].ruleId.Value(), Dia::Core::StringCRC("Rule2").Value());
+}
+
+TEST(DiaRules_RuleSet, GetLastFireReport_AnonymousRule_RuleIdIsZero)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "guard": { "op": ">=", "slot": "hero", "field": "health", "value": 50.0 },
+                "actions": ["SomeAction"]
+            }
+        ]
+    })");
+
+    Dia::Rules::RuleActionRegistry registry;
+    registry.Register(Dia::Core::StringCRC("SomeAction"), [](void*) {});
+
+    Dia::Condition::Testing::MockConditionContext ctx;
+    ctx.SetFloat(Dia::Core::StringCRC("hero"), Dia::Core::StringCRC("health"), 80.0f);
+
+    rs.Evaluate(ctx, registry, nullptr);
+
+    Dia::Core::Containers::DynamicArrayC<Dia::Rules::RuleSet::RuleFireEntry, 16> entries;
+    int count = rs.GetLastFireReport(entries);
+
+    EXPECT_EQ(count, 1);
+    ASSERT_EQ(entries.Size(), 1u);
+    EXPECT_EQ(entries[0].ruleId.Value(), Dia::Core::StringCRC().Value());  // kZero
+}
+
+TEST(DiaRules_RuleSet, GetLastFireReport_NoRulesFire_ReturnsZero_EmptyEntries)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "id": "NeverFire",
+                "guard": { "op": "<", "slot": "hero", "field": "health", "value": 0.0 },
+                "actions": ["SomeAction"]
+            }
+        ]
+    })");
+
+    Dia::Rules::RuleActionRegistry registry;
+    registry.Register(Dia::Core::StringCRC("SomeAction"), [](void*) {});
+
+    Dia::Condition::Testing::MockConditionContext ctx;
+    ctx.SetFloat(Dia::Core::StringCRC("hero"), Dia::Core::StringCRC("health"), 50.0f);
+
+    rs.Evaluate(ctx, registry, nullptr);
+
+    Dia::Core::Containers::DynamicArrayC<Dia::Rules::RuleSet::RuleFireEntry, 16> entries;
+    int count = rs.GetLastFireReport(entries);
+
+    EXPECT_EQ(count, 0);
+    EXPECT_EQ(entries.Size(), 0u);
+}
+
+TEST(DiaRules_RuleSet, GetLastFireReport_RuleWithMultipleActions_ActionsAllPresent)
+{
+    Dia::Rules::RuleSet rs = LoadRuleSet(R"({
+        "rules": [
+            {
+                "id": "MultiAction",
+                "guard": { "op": ">=", "slot": "hero", "field": "health", "value": 50.0 },
+                "actions": ["A", "B", "C"]
+            }
+        ]
+    })");
+
+    Dia::Rules::RuleActionRegistry registry;
+    registry.Register(Dia::Core::StringCRC("A"), [](void*) {});
+    registry.Register(Dia::Core::StringCRC("B"), [](void*) {});
+    registry.Register(Dia::Core::StringCRC("C"), [](void*) {});
+
+    Dia::Condition::Testing::MockConditionContext ctx;
+    ctx.SetFloat(Dia::Core::StringCRC("hero"), Dia::Core::StringCRC("health"), 80.0f);
+
+    rs.Evaluate(ctx, registry, nullptr);
+
+    Dia::Core::Containers::DynamicArrayC<Dia::Rules::RuleSet::RuleFireEntry, 16> entries;
+    rs.GetLastFireReport(entries);
+
+    ASSERT_EQ(entries.Size(), 1u);
+    EXPECT_EQ(entries[0].actions.Size(), 3u);
+    EXPECT_EQ(entries[0].actions[0].Value(), Dia::Core::StringCRC("A").Value());
+    EXPECT_EQ(entries[0].actions[1].Value(), Dia::Core::StringCRC("B").Value());
+    EXPECT_EQ(entries[0].actions[2].Value(), Dia::Core::StringCRC("C").Value());
+}
+
+TEST(DiaRules_RuleSet, GetLastFireReport_MovedFrom_ReturnsZero)
+{
+    Dia::Rules::RuleSet a = LoadRuleSet(R"({
+        "rules": [
+            {
+                "id": "Rule",
+                "guard": { "op": ">=", "slot": "hero", "field": "health", "value": 50.0 },
+                "actions": ["A"]
+            }
+        ]
+    })");
+
+    Dia::Rules::RuleSet b = std::move(a);
+
+    Dia::Core::Containers::DynamicArrayC<Dia::Rules::RuleSet::RuleFireEntry, 16> entries;
+    int count = a.GetLastFireReport(entries);
+    EXPECT_EQ(count, 0);
+    EXPECT_EQ(entries.Size(), 0u);
+}
+
+#endif // DIA_DEBUG

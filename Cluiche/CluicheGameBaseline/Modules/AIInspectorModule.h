@@ -32,21 +32,12 @@ protected:
     Dia::ApplicationFlow::StopResult  DoStop()           override;
 
 private:
+protected:
     void PushBudget(float deltaTime);
-    void PushUtilityAI();
-    void PushRules();
-    void PushHTN();
-
-    Dia::ApplicationFlow::ModuleRef<EntityModule> mEntityRef{this};
 
     // AIBudgetModule resolved at DoStart() — uses kInstanceId, not kTypeId,
     // so cannot use ModuleRef<T> default. Resolved manually via PU module search.
     Dia::AIBudget::AIBudgetModule* mBudgetModule = nullptr;
-
-    Dia::ApplicationFlow::EventStreamWriter<DebugServerPushEvent> mAIInspectWriter{
-        this, Dia::Core::StringCRC("DebugServerPush")};
-
-    Dia::DebugServer::DebugServer* mDebugServer = nullptr;
 
     // Budget: 1 Hz periodic push with 60-frame rolling history
     static constexpr int   kBudgetHistoryDepth = 60;
@@ -66,6 +57,18 @@ private:
     int   mBudgetHistoryCount = 0;
     float mBudgetAccSec       = 0.0f;
     int   mBudgetFrameIdx     = 0;
+
+private:
+    void PushUtilityAI();
+    void PushRules();
+    void PushHTN();
+
+    Dia::ApplicationFlow::ModuleRef<EntityModule> mEntityRef{this};
+
+    Dia::ApplicationFlow::EventStreamWriter<DebugServerPushEvent> mAIInspectWriter{
+        this, Dia::Core::StringCRC("DebugServerPush")};
+
+    Dia::DebugServer::DebugServer* mDebugServer = nullptr;
 
     // UtilityAI/Rules/HTN: last hash for change detection
     unsigned int mUtilityAILastHash = 0;
