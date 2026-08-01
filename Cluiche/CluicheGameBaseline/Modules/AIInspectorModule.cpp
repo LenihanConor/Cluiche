@@ -141,6 +141,11 @@ void AIInspectorModule::PushBudget(float deltaTime)
     const Dia::AIBudget::AIBudgetResult& result = budgetMod->GetLastResult();
     const float budgetMs = budgetMod->GetBudgetMs();
 
+    DIA_ASSERT(mBudgetHistoryHead >= 0 && mBudgetHistoryHead < kBudgetHistoryDepth,
+        "AIInspectorModule::PushBudget — mBudgetHistoryHead out of range (%d)", mBudgetHistoryHead);
+    DIA_ASSERT(mBudgetHistoryCount >= 0 && mBudgetHistoryCount <= kBudgetHistoryDepth,
+        "AIInspectorModule::PushBudget — mBudgetHistoryCount out of range (%d)", mBudgetHistoryCount);
+
     BudgetFrame& slot = mBudgetHistory[mBudgetHistoryHead];
     slot.frameIndex      = mBudgetFrameIdx++;
     slot.usedMs          = result.usedMs;

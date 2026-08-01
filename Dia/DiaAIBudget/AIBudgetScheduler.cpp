@@ -13,8 +13,27 @@ namespace Dia
 		bool AIBudgetScheduler::Register(IAIBudgetedSystem* system)
 		{
 			DIA_ASSERT(system != nullptr, "AIBudgetScheduler::Register — system pointer must not be null");
-			DIA_ASSERT(!mSystems.IsFull(), "AIBudgetScheduler::Register — scheduler is at capacity (%d systems)", kMaxSystems);
+			if (system == nullptr)
+			{
+				DIA_LOG_ERROR("AIBudget", "Register failed: null system pointer");
+				return false;
+			}
 
+			// Duplicate registration is always a caller bug — a system double-budgeted will
+			// run twice per frame and its elapsed time will be counted twice.
+			for (unsigned int i = 0; i < mSystems.Size(); ++i)
+			{
+				DIA_ASSERT(mSystems[i] != system,
+					"AIBudgetScheduler::Register — system '%s' is already registered",
+					system->GetSystemId().AsChar());
+				if (mSystems[i] == system)
+				{
+					DIA_LOG_ERROR("AIBudget", "Register failed: system '%s' already registered", system->GetSystemId().AsChar());
+					return false;
+				}
+			}
+
+			DIA_ASSERT(!mSystems.IsFull(), "AIBudgetScheduler::Register — scheduler is at capacity (%d systems)", kMaxSystems);
 			if (mSystems.IsFull())
 			{
 				DIA_LOG_ERROR("AIBudget", "Register failed: scheduler is at capacity (%d systems)", kMaxSystems);
@@ -28,6 +47,10 @@ namespace Dia
 
 		void AIBudgetScheduler::Unregister(IAIBudgetedSystem* system)
 		{
+			DIA_ASSERT(system != nullptr, "AIBudgetScheduler::Unregister — system pointer must not be null");
+			if (system == nullptr)
+				return;
+
 			for (unsigned int i = 0; i < mSystems.Size(); ++i)
 			{
 				if (mSystems[i] == system)
@@ -42,12 +65,21 @@ namespace Dia
 
 		AIBudgetResult AIBudgetScheduler::Update(float totalBudgetMs)
 		{
+			DIA_ASSERT(totalBudgetMs >= 0.0f, "AIBudgetScheduler::Update — totalBudgetMs must not be negative (got %.4f)", totalBudgetMs);
+
 			float elapsedSoFarMs = 0.0f;
 			int systemsRun      = 0;
 			int systemsDeferred = 0;
 
 			for (unsigned int i = 0; i < mSystems.Size(); ++i)
 			{
+				DIA_ASSERT(mSystems[i] != nullptr, "AIBudgetScheduler::Update — null system pointer at index %u (use Unregister before destroying a system)", i);
+				if (mSystems[i] == nullptr)
+				{
+					++systemsDeferred;
+					continue;
+				}
+
 				const float remaining = totalBudgetMs - elapsedSoFarMs;
 
 				if (remaining <= 0.0f)

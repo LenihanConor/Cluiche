@@ -46,7 +46,9 @@ namespace Dia
 				if (root.isMember("budgetUs") && root["budgetUs"].isInt())
 				{
 					const int budgetUs = root["budgetUs"].asInt();
-					mBudgetMs = static_cast<float>(budgetUs) / 1000.0f;
+					DIA_ASSERT(budgetUs >= 0, "AIBudgetModule::OnConfigure — budgetUs must not be negative (got %d); using default 1000 us", budgetUs);
+					if (budgetUs >= 0)
+						mBudgetMs = static_cast<float>(budgetUs) / 1000.0f;
 				}
 			}
 		}

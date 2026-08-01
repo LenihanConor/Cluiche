@@ -35,10 +35,10 @@ struct MockBudgetedSystemExt : public Dia::AIBudget::IAIBudgetedSystem
 int* MockBudgetedSystemExt::sCallSequenceCounter = nullptr;
 
 // -------------------------------------------------------------------------
-// Unit — negative budget
+// Unit — zero budget (valid edge case: all systems deferred, no crash)
 // -------------------------------------------------------------------------
 
-TEST(DiaAIBudget_Scheduler, Update_NegativeBudget_AllSystemsDeferred)
+TEST(DiaAIBudget_Scheduler, Update_ZeroBudget_AllSystemsDeferred_NoCrash)
 {
     Dia::AIBudget::AIBudgetScheduler scheduler;
     MockBudgetedSystemExt sysA("SysA");
@@ -47,7 +47,7 @@ TEST(DiaAIBudget_Scheduler, Update_NegativeBudget_AllSystemsDeferred)
     scheduler.Register(&sysA);
     scheduler.Register(&sysB);
 
-    Dia::AIBudget::AIBudgetResult result = scheduler.Update(-1.0f);
+    Dia::AIBudget::AIBudgetResult result = scheduler.Update(0.0f);
 
     EXPECT_EQ(result.systemsRun, 0);
     EXPECT_EQ(result.systemsDeferred, 2);
