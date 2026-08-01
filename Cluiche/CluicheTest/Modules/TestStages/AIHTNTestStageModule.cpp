@@ -182,6 +182,26 @@ void AIHTNTestStageModule::OnUpdate(float /*deltaTime*/)
 
     auto& bb = mBlackboard.GetBlackboard();
 
+    mLiveHealth = bb.Get<float>(Dia::Core::StringCRC("health"));
+
+#ifdef DIA_DEBUG
+    if (!mDrawer)
+    {
+        auto* vd = mVisualDebuggerRef.Get();
+        if (vd)
+        {
+            mDrawer = std::make_unique<AIHTNTestDrawer>(
+                mLiveHealth, mPhase, mHTNComponent,
+                mRetreatFireCount, mAttackFireCount, mCallForHelpFireCount,
+                mPlanBuilt, mPlanComplete, mDivergedAndReplanned,
+                mRuleBridgeFired, mAsyncPlanCompleted, mAsyncPlanCorrect,
+                mAllPassed,
+                vd->GetLayerManager());
+            vd->GetLayerManager().Register(mDrawer.get(), 20, Dia::Core::StringCRC("AIHTN"));
+        }
+    }
+#endif
+
     switch (mPhase)
     {
     case Phase::kFirstPlan:
@@ -280,8 +300,12 @@ void AIHTNTestStageModule::OnUpdate(float /*deltaTime*/)
         break;
     }
 
-    if (AllCheckpointsPassed() && !IsResolved())
-        ReportPassed();
+    if (AllCheckpointsPassed())
+    {
+        mAllPassed = true;
+        if (!IsResolved() && GetFrameCount() >= kMinDisplayFrames)
+            ReportPassed();
+    }
 }
 
 /*static*/ void AIHTNTestStageModule::OnStandaloneAsyncPlan(Dia::HTN::HTNPlan plan, void* userData)
@@ -293,20 +317,31 @@ void AIHTNTestStageModule::OnUpdate(float /*deltaTime*/)
 
 void AIHTNTestStageModule::OnStop()
 {
+#ifdef DIA_DEBUG
+    if (mDrawer)
+    {
+        if (auto* vd = mVisualDebuggerRef.Get())
+            vd->GetLayerManager().Unregister(mDrawer->GetLayerName());
+        mDrawer.reset();
+    }
+#endif
+
     mConditionRegistry.reset();
-    mAIReady             = false;
-    mAsyncSubmitted      = false;
-    mPhase               = Phase::kFirstPlan;
-    mRetreatFireCount    = 0;
-    mAttackFireCount     = 0;
+    mAIReady              = false;
+    mAsyncSubmitted       = false;
+    mAllPassed            = false;
+    mLiveHealth           = 0.0f;
+    mPhase                = Phase::kFirstPlan;
+    mRetreatFireCount     = 0;
+    mAttackFireCount      = 0;
     mCallForHelpFireCount = 0;
-    mPlanBuilt           = false;
-    mPlanComplete        = false;
+    mPlanBuilt            = false;
+    mPlanComplete         = false;
     mDivergedAndReplanned = false;
-    mRuleBridgeFired     = false;
-    mAsyncPlanCompleted  = false;
-    mAsyncPlanCorrect    = false;
-    mAsyncCallbackFired  = false;
+    mRuleBridgeFired      = false;
+    mAsyncPlanCompleted   = false;
+    mAsyncPlanCorrect     = false;
+    mAsyncCallbackFired   = false;
 }
 
 } // namespace CluicheTest

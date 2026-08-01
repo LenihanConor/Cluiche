@@ -735,6 +735,56 @@
             "tags": [
                 "misc/ApplicationFlow"
             ]
+        },
+        {
+            "id": "stage.ai_decision_test_stage",
+            "type": "stage",
+            "source_path": "Stages/AIDecisionTestStage/ai_decision_test_stage.diastage",
+            "scope": "global",
+            "tags": [
+                "misc"
+            ],
+            "references": [
+                {
+                    "type": "contains",
+                    "target": "manifest.ai_decision_test_stage"
+                }
+            ]
+        },
+        {
+            "id": "manifest.ai_decision_test_stage",
+            "type": "manifest",
+            "source_path": "Stages/AIDecisionTestStage/misc/ApplicationFlow/ai_decision_test_stage.diaapp",
+            "scope": "stage",
+            "stage_name": "AIDecisionTestStage",
+            "tags": [
+                "misc/ApplicationFlow"
+            ]
+        },
+        {
+            "id": "stage.ai_htn_test_stage",
+            "type": "stage",
+            "source_path": "Stages/AIHTNTestStage/ai_htn_test_stage.diastage",
+            "scope": "global",
+            "tags": [
+                "misc"
+            ],
+            "references": [
+                {
+                    "type": "contains",
+                    "target": "manifest.ai_htn_test_stage"
+                }
+            ]
+        },
+        {
+            "id": "manifest.ai_htn_test_stage",
+            "type": "manifest",
+            "source_path": "Stages/AIHTNTestStage/misc/ApplicationFlow/ai_htn_test_stage.diaapp",
+            "scope": "stage",
+            "stage_name": "AIHTNTestStage",
+            "tags": [
+                "misc/ApplicationFlow"
+            ]
         }
     ],
     "rules_path": "assets.rules.json"

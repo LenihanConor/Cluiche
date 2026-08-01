@@ -1,6 +1,7 @@
 #pragma once
 #include "Modules/TestStages/TestStageModuleBase.h"
 #include <DiaApplicationFlow/PUAffinity.h>
+#include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaBlackboard/BlackboardComponent.h>
 #include <DiaCondition/ConditionRegistry.h>
@@ -12,6 +13,11 @@
 #include <DiaAIBudget/AIBudgetScheduler.h>
 #include <memory>
 
+#ifdef DIA_DEBUG
+#include "Modules/VisualDebuggerModule.h"
+#include "Modules/TestStages/Drawers/AIHTNTestDrawer.h"
+#endif
+
 namespace CluicheTest {
 
 class AIHTNTestStageModule : public TestStageModuleBase
@@ -20,6 +26,7 @@ public:
     static const Dia::Core::StringCRC kTypeId;
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kSim;
     static constexpr const char* kDescription = "Integration stage: HTN (sync + diverge/replan + async) + AIBudget + RuleActionBridge";
+    static constexpr unsigned int kMinDisplayFrames = 150; // 5 s at 30 Hz
 
     explicit AIHTNTestStageModule(const Dia::Core::StringCRC& instanceId);
     ~AIHTNTestStageModule() override;
@@ -67,14 +74,27 @@ private:
     bool mAsyncPlanCompleted    = false;
     bool mAsyncPlanCorrect      = false;
 
-    // State machine
+    // State machine — use drawer's Phase enum so the drawer can read it directly
+#ifdef DIA_DEBUG
+    using Phase = AIHTNTestDrawer::Phase;
+#else
     enum class Phase { kFirstPlan, kExecuting, kMutating, kSecondPlan, kAsyncSubmit, kAsyncWait, kDone };
+#endif
     Phase mPhase               = Phase::kFirstPlan;
     bool  mAIReady             = false;
     bool  mAsyncSubmitted      = false;
+    bool  mAllPassed           = false;
+
+    // Live blackboard mirror for the drawer
+    float mLiveHealth          = 0.0f;
 
     // Expected operator count for async plan (health=80 → Attack only, 1 operator)
     int mAsyncPlanExpectedCount = 1;
+
+#ifdef DIA_DEBUG
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::VisualDebuggerModule> mVisualDebuggerRef{this};
+    std::unique_ptr<AIHTNTestDrawer> mDrawer;
+#endif
 };
 
 } // namespace CluicheTest

@@ -198,11 +198,34 @@ bool AIDecisionTestStageModule::AllCheckpointsPassed() const
         && mRulesCallForHelpFired && mUtilityFleeWins && mBudgetAsyncCompleted;
 }
 
+
 void AIDecisionTestStageModule::OnUpdate(float /*deltaTime*/)
 {
     if (!mAIReady) return;
 
     auto& bb = mBlackboard.GetBlackboard();
+
+    // Mirror live blackboard values for the drawer
+    mLiveHealth        = bb.Get<float>(Dia::Core::StringCRC("health"));
+    mLiveEnemyVisible  = bb.Get<bool>(Dia::Core::StringCRC("visible"));
+    mLiveEnemyDistance = bb.Get<float>(Dia::Core::StringCRC("distance"));
+
+#ifdef DIA_DEBUG
+    if (!mDrawer)
+    {
+        auto* vd = mVisualDebuggerRef.Get();
+        if (vd)
+        {
+            mDrawer = std::make_unique<AIDecisionTestDrawer>(
+                mLiveHealth, mLiveEnemyVisible, mLiveEnemyDistance,
+                mConditionHealthLow, mConditionEnemyVisible,
+                mRulesCallForHelpFired, mUtilityFleeWins, mBudgetAsyncCompleted,
+                mAllPassed,
+                vd->GetLayerManager());
+            vd->GetLayerManager().Register(mDrawer.get(), 20, Dia::Core::StringCRC("AIDecision"));
+        }
+    }
+#endif
 
     // Frame 1: evaluate conditions, rules, utility (sync), then submit async
     if (GetFrameCount() == 1)
@@ -243,20 +266,37 @@ void AIDecisionTestStageModule::OnUpdate(float /*deltaTime*/)
     if (GetFrameCount() >= 3 && !mBudgetAsyncCompleted)
         mScheduler.Update(10.0f);
 
-    if (AllCheckpointsPassed() && !IsResolved())
-        ReportPassed();
+    if (AllCheckpointsPassed())
+    {
+        mAllPassed = true;
+        if (!IsResolved() && GetFrameCount() >= kMinDisplayFrames)
+            ReportPassed();
+    }
 }
 
 void AIDecisionTestStageModule::OnStop()
 {
+#ifdef DIA_DEBUG
+    if (mDrawer)
+    {
+        if (auto* vd = mVisualDebuggerRef.Get())
+            vd->GetLayerManager().Unregister(mDrawer->GetLayerName());
+        mDrawer.reset();
+    }
+#endif
+
     mConditionRegistry.reset();
-    mAIReady             = false;
-    mAsyncSubmitted      = false;
-    mConditionHealthLow  = false;
+    mAIReady               = false;
+    mAsyncSubmitted        = false;
+    mAllPassed             = false;
+    mLiveHealth            = 0.0f;
+    mLiveEnemyVisible      = false;
+    mLiveEnemyDistance     = 0.0f;
+    mConditionHealthLow    = false;
     mConditionEnemyVisible = false;
     mRulesCallForHelpFired = false;
-    mUtilityFleeWins     = false;
-    mBudgetAsyncCompleted = false;
+    mUtilityFleeWins       = false;
+    mBudgetAsyncCompleted  = false;
 }
 
 } // namespace CluicheTest

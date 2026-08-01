@@ -56,6 +56,8 @@
     <ClCompile Include="Modules\dummy\DummyUIPage.cpp" />
     <ClCompile Include="Modules\TestStages\AIDecisionTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\AIHTNTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\AIDecisionTestDrawer.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\AIHTNTestDrawer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\BootMenuModule.h" />
@@ -93,6 +95,8 @@
     <ClInclude Include="Modules\dummy\DummyUIPage.h" />
     <ClInclude Include="Modules\TestStages\AIDecisionTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\AIHTNTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\AIDecisionTestDrawer.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\AIHTNTestDrawer.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">

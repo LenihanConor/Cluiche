@@ -15,7 +15,9 @@
                 "Scene2DTestStage",
                 "IK2DTestStage",
                 "Mesh3DTestStage",
-                "Mesh3DRenderSystemTestStage"
+                "Mesh3DRenderSystemTestStage",
+                "AIDecisionTestStage",
+                "AIHTNTestStage"
             ],
             "auto_advance": false
         },
@@ -92,6 +94,20 @@
         },
         {
             "name": "Mesh3DRenderSystemTestStage",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "AIDecisionTestStage",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "AIHTNTestStage",
             "transitions": [
                 "Boot"
             ],
@@ -505,7 +521,9 @@
                         "Scene2DTestStage",
                         "IK2DTestStage",
                         "Mesh3DTestStage",
-                        "Mesh3DRenderSystemTestStage"
+                        "Mesh3DRenderSystemTestStage",
+                        "AIDecisionTestStage",
+                        "AIHTNTestStage"
                     ],
                     "dependencies": [
                         "Camera2DModule"
@@ -602,7 +620,9 @@
                         "Scene2DTestStage",
                         "IK2DTestStage",
                         "Mesh3DTestStage",
-                        "Mesh3DRenderSystemTestStage"
+                        "Mesh3DRenderSystemTestStage",
+                        "AIDecisionTestStage",
+                        "AIHTNTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"
@@ -631,7 +651,9 @@
                         "Scene2DTestStage",
                         "IK2DTestStage",
                         "Mesh3DTestStage",
-                        "Mesh3DRenderSystemTestStage"
+                        "Mesh3DRenderSystemTestStage",
+                        "AIDecisionTestStage",
+                        "AIHTNTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"

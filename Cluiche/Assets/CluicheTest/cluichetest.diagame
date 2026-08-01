@@ -69,6 +69,14 @@
         {
             "path": "Stages/Mesh3DRenderSystemTestStage/mesh3drendersystem_test_stage.diastage",
             "type": "stage"
+        },
+        {
+            "path": "Stages/AIDecisionTestStage/ai_decision_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/AIHTNTestStage/ai_htn_test_stage.diastage",
+            "type": "stage"
         }
     ],
     "name": "CluicheTest",

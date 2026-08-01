@@ -205,6 +205,11 @@
     },
     {
       "allowed_pus": "sim",
+      "description": "Pushes AI inspector payloads (budget/utility/rules/HTN) to the debug server",
+      "type_id": "AIInspectorModule"
+    },
+    {
+      "allowed_pus": "sim",
       "description": "Executes navigation requests sent by RenderPU modules on the sim thread.",
       "type_id": "SimNavigationHandlerModule"
     },
@@ -342,6 +347,6 @@
   "processing_units": [],
   "version": {
     "major": 1,
-    "minor": 10
+    "minor": 11
   }
 }
