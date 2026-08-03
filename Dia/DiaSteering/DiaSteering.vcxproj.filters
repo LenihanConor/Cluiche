@@ -12,12 +12,14 @@
     <ClInclude Include="SteeringAgent.h" />
     <ClInclude Include="SteeringLogChannel.h" />
     <ClInclude Include="Behaviours.h" />
+    <ClInclude Include="SteeringPipeline.h" />
     <ClInclude Include="Testing\SteeringTestHelpers.h">
       <Filter>Testing</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Behaviours.cpp" />
+    <ClCompile Include="SteeringPipeline.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.steering.architecture.module.md">
