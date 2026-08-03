@@ -81,5 +81,99 @@ namespace Dia
             Dia::Maths::Vector2D predictedPos = threatPos + threatVelocity * predictionTime;
             return Flee(agent, predictedPos);
         }
+
+        Dia::Maths::Vector2D ObstacleAvoidance(const SteeringAgent& agent,
+                                               const Dia::Core::Containers::DynamicArrayC<Dia::Maths::Vector2D, 64>& obstaclePositions,
+                                               const Dia::Core::Containers::DynamicArrayC<float, 64>& obstacleRadii,
+                                               float detectionBoxLength)
+        {
+            static const float kHalfBoxWidth = 0.5f;
+
+            Dia::Maths::Vector2D heading = agent.velocity.AsNormalSafe();
+            // Lateral axis: 90 degrees CCW from heading
+            Dia::Maths::Vector2D lateral(-heading.Y(), heading.X());
+
+            unsigned int count = obstaclePositions.Size();
+
+            // Find the nearest obstacle that intersects the detection box
+            float nearestFwdDist = detectionBoxLength + 1.0f; // sentinel: beyond box
+            int   nearestIndex   = -1;
+            float nearestLateral = 0.0f;
+
+            for (unsigned int i = 0; i < count; ++i)
+            {
+                Dia::Maths::Vector2D toObstacle = obstaclePositions[i] - agent.position;
+
+                // Project onto heading (forward) and lateral axes
+                float fwdDist  = toObstacle.Dot(heading);
+                float latDist  = toObstacle.Dot(lateral);
+
+                // Check: obstacle centre must be ahead within [0, detectionBoxLength]
+                if (fwdDist < 0.0f || fwdDist > detectionBoxLength)
+                {
+                    continue;
+                }
+
+                // Check: lateral distance must be within half-box-width + obstacle radius
+                float combinedWidth = obstacleRadii[i] + kHalfBoxWidth;
+                float absLatDist = latDist < 0.0f ? -latDist : latDist;
+                if (absLatDist >= combinedWidth)
+                {
+                    continue;
+                }
+
+                // Keep the nearest (smallest forward distance)
+                if (fwdDist < nearestFwdDist)
+                {
+                    nearestFwdDist = fwdDist;
+                    nearestIndex   = static_cast<int>(i);
+                    nearestLateral = latDist;
+                }
+            }
+
+            if (nearestIndex < 0)
+            {
+                return Dia::Maths::Vector2D(0.0f, 0.0f);
+            }
+
+            // Steer laterally away from the nearest obstacle (opposite sign of lateral offset)
+            // Closer obstacle → stronger force (scale by remaining box fraction)
+            float strength = agent.maxSpeed * (1.0f - nearestFwdDist / detectionBoxLength);
+            if (strength < 0.0f) { strength = 0.0f; }
+
+            float direction = (nearestLateral >= 0.0f) ? -1.0f : 1.0f;
+            return lateral * (direction * strength);
+        }
+
+        Dia::Maths::Vector2D Separation(const SteeringAgent& agent,
+                                        const Dia::Core::Containers::DynamicArrayC<Dia::Maths::Vector2D, 64>& neighbourPositions,
+                                        float desiredSeparation)
+        {
+            Dia::Maths::Vector2D accumulated(0.0f, 0.0f);
+            unsigned int count = neighbourPositions.Size();
+
+            for (unsigned int i = 0; i < count; ++i)
+            {
+                Dia::Maths::Vector2D away = agent.position - neighbourPositions[i];
+                float distance = away.Magnitude();
+
+                // Skip neighbours at the same position (avoid divide-by-zero)
+                // and neighbours outside the desired separation radius
+                if (distance < 0.001f || distance >= desiredSeparation)
+                {
+                    continue;
+                }
+
+                // Inverse-distance weighted push
+                accumulated = accumulated + away.AsNormalSafe() * (1.0f / distance);
+            }
+
+            if (accumulated.Magnitude() < 0.001f)
+            {
+                return Dia::Maths::Vector2D(0.0f, 0.0f);
+            }
+
+            return accumulated.AsNormalSafe() * agent.maxSpeed;
+        }
     }
 }

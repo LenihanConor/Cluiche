@@ -2,6 +2,7 @@
 
 #include <DiaSteering/SteeringAgent.h>
 #include <DiaMaths/Vector/Vector2D.h>
+#include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
 namespace Dia
 {
@@ -41,5 +42,20 @@ namespace Dia
                                    Dia::Maths::Vector2D threatPos,
                                    Dia::Maths::Vector2D threatVelocity,
                                    float predictionTime = 0.0f);
+
+        // Returns a lateral avoidance force steering away from the nearest obstacle that
+        // intersects the detection box projected ahead of the agent.
+        // Returns zero vector if no obstacles are in range.
+        Dia::Maths::Vector2D ObstacleAvoidance(const SteeringAgent& agent,
+                                               const Dia::Core::Containers::DynamicArrayC<Dia::Maths::Vector2D, 64>& obstaclePositions,
+                                               const Dia::Core::Containers::DynamicArrayC<float, 64>& obstacleRadii,
+                                               float detectionBoxLength);
+
+        // Returns a separation force pushing the agent away from nearby neighbours within
+        // desiredSeparation radius. Uses inverse-distance weighting; returns zero if no
+        // neighbours are in range.
+        Dia::Maths::Vector2D Separation(const SteeringAgent& agent,
+                                        const Dia::Core::Containers::DynamicArrayC<Dia::Maths::Vector2D, 64>& neighbourPositions,
+                                        float desiredSeparation);
     }
 }
