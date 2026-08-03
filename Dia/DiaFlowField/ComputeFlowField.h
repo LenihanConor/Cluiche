@@ -114,8 +114,13 @@ namespace Dia::FlowField {
         // Build per-cell direction vectors from the parent map.
         // Direction is the unit vector (in grid-space) pointing from this cell
         // toward its parent (i.e. the next step toward the goal).
+        // Cells outside [0,width)x[0,height) are skipped — hex grids use negative
+        // axial coords that fall outside the FlowField's flat storage bounds.
         for (auto& [cell, p] : parent)
         {
+            if (cell.x < 0 || cell.x >= width || cell.y < 0 || cell.y >= height)
+                continue;
+
             float dx  = static_cast<float>(p.x - cell.x);
             float dy  = static_cast<float>(p.y - cell.y);
             float len = std::sqrtf(dx * dx + dy * dy);
@@ -126,8 +131,10 @@ namespace Dia::FlowField {
             fc.reachable   = true;
         }
 
-        // Goal cell itself: reachable, direction is zero vector (agent has arrived)
-        field.AccessCell(goalCell).reachable = true;
+        // Goal cell itself: reachable, direction is zero vector (agent has arrived).
+        // Only mark if goal falls within the field's storage bounds.
+        if (goalCell.x >= 0 && goalCell.x < width && goalCell.y >= 0 && goalCell.y < height)
+            field.AccessCell(goalCell).reachable = true;
 
         auto t1 = std::chrono::steady_clock::now();
         int elapsedMs = static_cast<int>(
