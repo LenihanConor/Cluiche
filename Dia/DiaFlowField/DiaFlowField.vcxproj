@@ -61,7 +61,11 @@
     <ClInclude Include="ComputeFlowField.h" />
     <ClInclude Include="FlowCell.h" />
     <ClInclude Include="FlowField.h" />
+    <ClInclude Include="FlowFieldCache.h" />
     <ClInclude Include="FlowFieldLogChannel.h" />
+    <ClInclude Include="HexFlowAdapter.h" />
+    <ClInclude Include="SquareFlowAdapter.h" />
+    <ClInclude Include="Testing\FlowFieldTestHelpers.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FlowField.cpp" />

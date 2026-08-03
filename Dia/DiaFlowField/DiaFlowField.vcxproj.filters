@@ -9,6 +9,14 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ComputeFlowField.h" />
+    <ClInclude Include="HexFlowAdapter.h" />
+    <ClInclude Include="SquareFlowAdapter.h" />
+    <ClInclude Include="Testing\FlowFieldTestHelpers.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
     <None Include="Docs\dia.flowfield.architecture.module.md">
       <Filter>Docs</Filter>
     </None>
