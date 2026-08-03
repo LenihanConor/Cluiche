@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/applications/dia/systems/diascalarfield/diascalarfield.md
-**Status:** In Progress
+**Status:** Done
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
@@ -12,4 +12,4 @@
 | 7 | Test utilities — `DiaScalarField/Testing/ScalarFieldTestHelpers.h`: `AssertCellValue`, `AssertGradientDirection`, `MockPropagationPolicy`, static_assert | Tests for test utilities themselves | Done | sonnet | Templated AssertCellValue/GradientDirection; MockPropagationPolicy stores last call |
 | 8 | Optional adaptors — `Adaptors/RulesPropagationPolicy.h` (header-only, no vcxproj dep on DiaRules); `ScalarFieldOverlay` adaptor (DiaVisualDebugger) | Compile-only: include in isolation without DiaRules / without DiaVisualDebugger | Done | sonnet | None includes in vcxproj; ScalarFieldOverlay Draw() is stub pending ForEachCell |
 | 9 | GoogleTests suite — `Cluiche/Tests/GoogleTests/DiaScalarField/` covering all public API, test utilities, golden paths, boundary, invariant, stress | `dia run googletest --filter="ScalarField*"` all pass | Done | sonnet | 53 tests across 8 files; not yet wired in vcxproj |
-| 10 | Wire GoogleTests.vcxproj — add `DiaScalarField.lib` to linker deps (Debug + Release), add all test `.cpp` files to project | `dia pipeline --target googletest` builds and passes | Pending | haiku | |
+| 10 | Wire GoogleTests.vcxproj — add `DiaScalarField.lib` to linker deps (Debug + Release), add all test `.cpp` files to project | `dia pipeline --target googletest` builds and passes | Done | haiku | Header-only lib; 8 ClCompile entries added; 54/54 pass |
