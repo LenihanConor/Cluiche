@@ -227,4 +227,6 @@ namespace Dia::FlowField {
 
 ## Status
 
-`Approved`
+**Status:** `Done`
+
+**Plan:** @docs/specs/applications/dia/systems/diaflowfield/diaflowfield.plan.md
