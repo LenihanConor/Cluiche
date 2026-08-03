@@ -69,6 +69,8 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | DiaAIDecisionInspector | — | 2026-07-30 | All features implemented; 85 GoogleTests pass (20 ActionRegistry + 39 RuleSet + 13 Component + 13 TestHelpers); spec marked Done 2026-07-30 |
 | diautilityai | [spec](specs/) | 2026-07-31 | Marked done by `dia docs spec-done` |
 | diahtn | [spec](specs/) | 2026-07-31 | Marked done by `dia docs spec-done` |
+| diaflowfield | [spec](specs/) | 2026-08-03 | Marked done by `dia docs spec-done` |
+| diasteering | [spec](specs/) | 2026-08-03 | Marked done by `dia docs spec-done` |
 
 ---
 

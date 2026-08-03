@@ -18,7 +18,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | ~~DiaUtilityAI~~ | ResponseCurve, ActionDef, UtilitySet, AsyncEvaluation, GroupConsideration, UtilitySetComponent, ScoreOverlay, TestUtilities | DiaCondition ✅, DiaRules ✅, DiaAIBudget ✅ |
 | ~~DiaHTN~~ | OperatorRegistry, RuleActionBridge, HTNDomain, HTNPlan, SyncPlanner, AsyncPlanning, HTNPlannerComponent, TestUtilities | DiaCondition ✅, DiaRules ✅, DiaAIBudget ✅ |
 | ~~DiaFlowField~~ | CFlowFieldGraph concept, SquareFlowAdapter + HexFlowAdapter, FlowField (per-cell direction array), ComputeFlowField (sync Dijkstra), FlowFieldCache (named dirty-flag store, Invalidate / InvalidateAll / InvalidateRegion), Test Utilities | DiaPathfinding ✅, DiaCore ✅, DiaMaths ✅ |
-| DiaSteering | Seek/Flee/Arrive/Wander/Pursue/Evade/ObstacleAvoidance/Separation free functions, SteeringPipeline (priority groups + weighted blend), SteeringSystem (agent registry + output cache), Test Utilities | DiaMaths ✅, DiaCore ✅ |
+| DiaScalarField | CFieldTopology concept, SquareFieldTopology + HexFieldTopology, UniformDecayPolicy, RulesPropagationPolicy (header-only adaptor), blocked cell mask, static modifier map, double-buffering, value clamping, write shapes (point/radial/box), gradient query, spatial queries (FindLocalMaxima/FindCellsAboveThreshold), multi-field weighted combine, ScalarFieldOverlay (optional adaptor), Test Utilities | DiaCore ✅, DiaMaths ✅; optional: DiaRules ✅ (RulesPropagationPolicy adaptor), DiaVisualDebugger ✅ (ScalarFieldOverlay adaptor) |
 
 ---
 
@@ -41,6 +41,8 @@ _Nothing here._
 | Item | Spec | What's needed |
 |------|------|---------------|
 | ~~DiaAIDecisionInspector~~ | — | Needs `/spec-system` — CluicheEditor panel showing per-entity AI decision state: blackboard slots → condition results → fired rules → utility scores in one vertical read. Depends on DiaAIBudget, DiaCondition, DiaRules, DiaUtilityAI all built + at least one CluicheTest entity running all four systems. DiaEntityInspector (stub) is a soft prerequisite for entity selection. |
+| DiaSpatialEntityIndex | — | Needs `/spec-feature` under DiaGeometry2D — bridge between `ISpatialStructure<Entity>` (SpatialGrid/Quadtree/BVH) and DiaEntity's Domain. Maintains a per-frame-updated spatial index of entities by reading a transform component; exposes `QueryCircle(point, radius)`, `QueryRegion(rect)`, `QueryKNearest(point, k)` returning `Entity` handles. Prerequisite for: DiaSteering, DiaGridVisibility, DiaTargeting, DiaSensor, DiaSignal, AoE resolution. |
+| DiaGridVisibility | — | Needs `/spec-system` — per-cell fog-of-war on a grid. Each cell carries a per-faction state (unexplored / revealed / visible). Entities have a sight radius; cells within radius are marked visible each frame, fading to revealed when out of range. LOS blocking against terrain cells (walls, elevation). Shared vision within factions. Publishes visibility-change events via DiaStreams (unit spotted, unit lost). Prerequisite for: minimap data layer, cover/LOS combat modifiers. Depends on DiaGeometry2D ✅, DiaStreams ✅, DiaSpatialEntityIndex. |
 | RenderTestPlugin (CluicheEditor) | — | Needs `/spec-system` — visual debugger panel: wipe slider, region grid, expectation authoring, AI triage panel, render targets. DiaRenderTest CLI Pipeline ✅ unblocked. Mockup: [render_test_debugger_mockup.html](research/render_offline_test/render_test_debugger_mockup.html). Research: [render_offline_test/summary.md](research/render_offline_test/summary.md) |
 
 ---
