@@ -737,6 +737,15 @@
     <ClCompile Include="DiaFlowField\TestFlowFieldGolden.cpp" />
     <ClCompile Include="DiaFlowField\TestFlowFieldInvariant.cpp" />
     <ClCompile Include="DiaFlowField\TestFlowFieldStress.cpp" />
+    <!-- DiaScalarField -->
+    <ClCompile Include="DiaScalarField\TestScalarFieldTypes.cpp" />
+    <ClCompile Include="DiaScalarField\TestScalarFieldCore.cpp" />
+    <ClCompile Include="DiaScalarField\TestScalarFieldWriteShapes.cpp" />
+    <ClCompile Include="DiaScalarField\TestScalarFieldGradient.cpp" />
+    <ClCompile Include="DiaScalarField\TestScalarFieldSpatialQueries.cpp" />
+    <ClCompile Include="DiaScalarField\TestScalarFieldCombine.cpp" />
+    <ClCompile Include="DiaScalarField\TestScalarFieldInvariant.cpp" />
+    <ClCompile Include="DiaScalarField\TestScalarFieldTestHelpers.cpp" />
     <!-- DiaSteering -->
     <ClCompile Include="DiaSteering\TestSteeringBehaviours.cpp" />
     <ClCompile Include="DiaSteering\TestSteeringPipeline.cpp" />

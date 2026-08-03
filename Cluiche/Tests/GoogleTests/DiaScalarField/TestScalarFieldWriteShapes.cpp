@@ -84,7 +84,8 @@ TEST(ScalarFieldWriteShapes, WriteRadial_LinearFalloff_PeakAtCenter)
     const float centerVal = field.GetValue(center);
     const float farVal    = field.GetValue(CellIndex{ 3, 6 }); // dist ~3 > radius
     EXPECT_GT(centerVal, 0.8f)  << "Center should be near peak value";
-    EXPECT_LT(centerVal, field.GetValue(CellIndex{ 3, 2 }) + 0.01f);
+    // Adjacent cell (3,2) is 1 unit away — center is the peak so its value >= neighbour
+    EXPECT_GE(centerVal, field.GetValue(CellIndex{ 3, 2 }) - 0.01f);
     // cell at (3,4) is 1 unit away; should be less than center
     EXPECT_LT(field.GetValue(CellIndex{ 3, 4 }), centerVal + 1e-4f);
     (void)farVal;

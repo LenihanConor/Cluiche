@@ -39,7 +39,7 @@ TEST(ScalarFieldCombine, Combine_SingleField_Weight1_CopiesValues)
     SquareScalarField result = MakeNoDecayField(5, 5);
 
     WeightedFieldArray inputs;
-    inputs.PushBack(SquareScalarField::WeightedField{ &fieldA, 1.0f });
+    inputs.Add(SquareScalarField::WeightedField{ &fieldA, 1.0f });
 
     SquareScalarField::Combine(result, inputs);
 
@@ -56,7 +56,7 @@ TEST(ScalarFieldCombine, Combine_NegativeWeight_Subtracts)
     SquareScalarField result = MakeNoDecayField(5, 5);
 
     WeightedFieldArray inputs;
-    inputs.PushBack(SquareScalarField::WeightedField{ &fieldA, -0.5f });
+    inputs.Add(SquareScalarField::WeightedField{ &fieldA, -0.5f });
 
     SquareScalarField::Combine(result, inputs);
 
@@ -77,8 +77,8 @@ TEST(ScalarFieldCombine, Combine_TwoFields_WeightedSum_Correct)
     SquareScalarField result = MakeNoDecayField(5, 5);
 
     WeightedFieldArray inputs;
-    inputs.PushBack(SquareScalarField::WeightedField{ &fieldA, 0.5f });
-    inputs.PushBack(SquareScalarField::WeightedField{ &fieldB, 0.5f });
+    inputs.Add(SquareScalarField::WeightedField{ &fieldA, 0.5f });
+    inputs.Add(SquareScalarField::WeightedField{ &fieldB, 0.5f });
 
     SquareScalarField::Combine(result, inputs);
 
@@ -97,7 +97,7 @@ TEST(ScalarFieldCombine, Combine_ClampsResult_RespectsBounds)
     result.SetClampRange(0.0f, 0.3f);
 
     WeightedFieldArray inputs;
-    inputs.PushBack(SquareScalarField::WeightedField{ &fieldA, 1.0f });
+    inputs.Add(SquareScalarField::WeightedField{ &fieldA, 1.0f });
 
     SquareScalarField::Combine(result, inputs);
 

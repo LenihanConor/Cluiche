@@ -199,10 +199,11 @@ namespace Dia
 
             void Tick()
             {
-                // 1. Flush pending writes into the write buffer.
+                // 1. Flush pending writes into the read buffer so propagation
+                //    sees them this tick.
                 for (const auto& [idx, value] : mPendingWrites)
                 {
-                    mBufferB[idx] = value;
+                    mBufferA[idx] = value;
                 }
                 mPendingWrites.clear();
 
@@ -311,7 +312,7 @@ namespace Dia
                     });
 
                     if (isMax)
-                        outCells.PushBack(c);
+                        outCells.Add(c);
                 }
             }
 
@@ -328,7 +329,7 @@ namespace Dia
                     if (c.y < regionTopLeft.y || c.y >= regionTopLeft.y + height)  continue;
 
                     if (mBufferA[i] > threshold)
-                        outCells.PushBack(c);
+                        outCells.Add(c);
                 }
             }
 

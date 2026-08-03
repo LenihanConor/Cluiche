@@ -26,7 +26,7 @@ namespace Dia
         // after ComputeCell returns.
         struct UniformDecayPolicy
         {
-            explicit UniformDecayPolicy(UniformDecayParams params = {})
+            UniformDecayPolicy(UniformDecayParams params = {})
                 : mParams(params)
             {}
 
