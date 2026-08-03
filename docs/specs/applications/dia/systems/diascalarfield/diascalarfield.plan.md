@@ -1,0 +1,15 @@
+**Spec:** @docs/specs/applications/dia/systems/diascalarfield/diascalarfield.md
+**Status:** In Progress
+
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| 1 | Project scaffold — `DiaScalarField.vcxproj`, `.vcxproj.filters`, `Cluiche.sln` entry under 3.0-Gameplay, `Docs/` folder, module doc `dia.scalarfield.architecture.module.md` | `dia pipeline --target googletest` builds | Pending | haiku | |
+| 2 | Core types — `CellIndex`, `CFieldTopology` concept, `SquareFieldTopology`, `HexFieldTopology`, `ScalarFieldLogChannel.h` | static_assert concept tests | Pending | sonnet | |
+| 3 | `UniformDecayPolicy` + `DiaScalarField<T, P>` template skeleton — double-buffered float arrays, blocked cell bitset, static modifier map, value clamping, `Tick()` | Unit tests: construction, Tick propagates, blocked cells stop propagation | Pending | sonnet | |
+| 4 | Write Shape API — `WritePoint`, `WriteRadial` (FalloffCurve), `WriteBox`; queued writes flushed before `Tick()` | Unit tests: shapes written then ticked produce correct values | Pending | sonnet | |
+| 5 | Query API — `GetGradient()`, `FindLocalMaxima()`, `FindCellsAboveThreshold()` | Unit tests: gradient direction correct, spatial queries return expected cells | Pending | sonnet | |
+| 6 | `Combine()` static utility + type aliases `SquareScalarField` / `HexScalarField` | Unit tests: weighted combine, negative weights | Pending | sonnet | |
+| 7 | Test utilities — `DiaScalarField/Testing/ScalarFieldTestHelpers.h`: `AssertCellValue`, `AssertGradientDirection`, `MockPropagationPolicy`, static_assert | Tests for test utilities themselves | Pending | sonnet | |
+| 8 | Optional adaptors — `Adaptors/RulesPropagationPolicy.h` (header-only, no vcxproj dep on DiaRules); `ScalarFieldOverlay` adaptor (DiaVisualDebugger) | Compile-only: include in isolation without DiaRules / without DiaVisualDebugger | Pending | sonnet | |
+| 9 | GoogleTests suite — `Cluiche/Tests/GoogleTests/DiaScalarField/` covering all public API, test utilities, golden paths, boundary, invariant, stress | `dia run googletest --filter="ScalarField*"` all pass | Pending | sonnet | |
+| 10 | Wire GoogleTests.vcxproj — add `DiaScalarField.lib` to linker deps (Debug + Release), add all test `.cpp` files to project | `dia pipeline --target googletest` builds and passes | Pending | haiku | |
