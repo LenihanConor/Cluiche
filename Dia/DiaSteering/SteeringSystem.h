@@ -2,11 +2,14 @@
 
 #include <DiaSteering/SteeringAgent.h>
 #include <DiaSteering/SteeringPipeline.h>
+#include <DiaSteering/Health/SteeringSystemHealth.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
 #include <unordered_map>
 #include <utility>
+
+namespace Dia { namespace Observation { namespace Metric { class Gauge; class Counter; } } }
 
 namespace Dia { namespace Steering {
 
@@ -39,9 +42,20 @@ namespace Dia { namespace Steering {
 
         int GetAgentCount() const;
 
+        // Call once at module start to register metrics and health.
+        void RegisterObservability();
+        // Call once at module stop.
+        void UnregisterObservability();
+
     private:
         std::unordered_map<Dia::Core::StringCRC, SteeringAgent>          mAgents;
         std::unordered_map<Dia::Core::StringCRC, Dia::Maths::Vector2D>   mOutputs;
+
+        // Observability
+        Dia::Observation::Metric::Gauge*   mMetricAgentCount    = nullptr;
+        Dia::Observation::Metric::Counter* mMetricUpdates       = nullptr;
+        Dia::Observation::Metric::Counter* mMetricZeroOutputs   = nullptr;
+        SteeringSystemHealth               mHealthReporter{*this};
     };
 
 } }

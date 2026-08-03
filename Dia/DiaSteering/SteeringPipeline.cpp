@@ -1,5 +1,6 @@
 #include <DiaSteering/SteeringPipeline.h>
 
+#include <DiaObservation/Profile/DiaProfile.h>
 #include <algorithm>
 #include <vector>
 
@@ -45,6 +46,8 @@ namespace Dia { namespace Steering {
 
     Dia::Maths::Vector2D SteeringPipeline::Evaluate() const
     {
+        DIA_PROFILE_SCOPE("steering.pipeline.evaluate", ::Dia::Observation::Profile::Category::kNone);
+
         // Work on a sorted copy so the original insertion order is preserved
         std::vector<const GroupEntry*> sortedGroups;
         sortedGroups.reserve(mGroups.size());

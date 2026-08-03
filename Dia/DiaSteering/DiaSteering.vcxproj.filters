@@ -7,6 +7,9 @@
     <Filter Include="Docs">
       <UniqueIdentifier>{C2D3E4F5-A6B7-8901-2345-6789ABCDEF01}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Health">
+      <UniqueIdentifier>{D3E4F5A6-B7C8-9012-3456-789ABCDEF012}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SteeringAgent.h" />
@@ -17,11 +20,17 @@
     <ClInclude Include="Testing\SteeringTestHelpers.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="Health\SteeringSystemHealth.h">
+      <Filter>Health</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Behaviours.cpp" />
     <ClCompile Include="SteeringPipeline.cpp" />
     <ClCompile Include="SteeringSystem.cpp" />
+    <ClCompile Include="Health\SteeringSystemHealth.cpp">
+      <Filter>Health</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.steering.architecture.module.md">

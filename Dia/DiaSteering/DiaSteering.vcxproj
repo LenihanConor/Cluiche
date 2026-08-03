@@ -62,11 +62,13 @@
     <ClInclude Include="Behaviours.h" />
     <ClInclude Include="SteeringPipeline.h" />
     <ClInclude Include="SteeringSystem.h" />
+    <ClInclude Include="Health\SteeringSystemHealth.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Behaviours.cpp" />
     <ClCompile Include="SteeringPipeline.cpp" />
     <ClCompile Include="SteeringSystem.cpp" />
+    <ClCompile Include="Health\SteeringSystemHealth.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.steering.architecture.module.md" />
