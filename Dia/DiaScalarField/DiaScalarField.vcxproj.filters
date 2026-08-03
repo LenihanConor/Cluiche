@@ -11,4 +11,11 @@
       <UniqueIdentifier>{F4A5B6C7-D8E9-0123-4567-89ABCDEF0123}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CellIndex.h" />
+    <ClInclude Include="CFieldTopology.h" />
+    <ClInclude Include="HexFieldTopology.h" />
+    <ClInclude Include="ScalarFieldLogChannel.h" />
+    <ClInclude Include="SquareFieldTopology.h" />
+  </ItemGroup>
 </Project>

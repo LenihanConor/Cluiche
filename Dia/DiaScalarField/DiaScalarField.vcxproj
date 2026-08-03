@@ -57,6 +57,13 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CellIndex.h" />
+    <ClInclude Include="CFieldTopology.h" />
+    <ClInclude Include="HexFieldTopology.h" />
+    <ClInclude Include="ScalarFieldLogChannel.h" />
+    <ClInclude Include="SquareFieldTopology.h" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="Docs\dia.scalarfield.architecture.module.md" />
   </ItemGroup>
   <ItemGroup>
