@@ -5,6 +5,8 @@
 #include <DiaScalarField/ScalarFieldLogChannel.h>
 #include <DiaScalarField/UniformDecayPolicy.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaMaths/Vector/Vector2D.h>
+#include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
 #include <vector>
 #include <unordered_map>
@@ -252,6 +254,80 @@ namespace Dia
             const Topology& GetTopology() const
             {
                 return mTopology;
+            }
+
+            // Return the normalized direction of steepest ascent at `cell`.
+            // Uses central-difference over the 4 (square) or 6 (hex) neighbours.
+            // Returns zero vector if all neighbours are equal, cell is at a
+            // boundary with no neighbours, or magnitude < 1e-6f.
+            // Missing neighbours (boundary) are treated as value 0.
+            Dia::Maths::Vector2D GetGradient(CellIndex cell) const
+            {
+                float posX = 0.0f, negX = 0.0f;
+                float posY = 0.0f, negY = 0.0f;
+                int   cntX = 0,    cntY = 0;
+
+                mTopology.ForEachNeighbour(cell, [&](CellIndex nb)
+                {
+                    const float nbVal = mBufferA[CellToIndex(nb)];
+                    if (nb.x > cell.x)      { posX += nbVal; ++cntX; }
+                    else if (nb.x < cell.x) { negX += nbVal; ++cntX; }
+
+                    if (nb.y > cell.y)      { posY += nbVal; ++cntY; }
+                    else if (nb.y < cell.y) { negY += nbVal; ++cntY; }
+                });
+
+                const float dx = (posX - negX) / (cntX > 0 ? static_cast<float>(cntX) : 1.0f);
+                const float dy = (posY - negY) / (cntY > 0 ? static_cast<float>(cntY) : 1.0f);
+
+                const float mag = std::sqrt(dx * dx + dy * dy);
+                if (mag < 1e-6f)
+                    return Dia::Maths::Vector2D(0.0f, 0.0f);
+
+                return Dia::Maths::Vector2D(dx / mag, dy / mag);
+            }
+
+            // Append to `outCells` every cell in the region that is a strict
+            // local maximum (value > every neighbour's value).
+            void FindLocalMaxima(CellIndex regionTopLeft, int width, int height,
+                                 Dia::Core::Containers::DynamicArrayC<CellIndex, 1024>& outCells) const
+            {
+                const int count = static_cast<int>(mCells.size());
+                for (int i = 0; i < count; ++i)
+                {
+                    const CellIndex& c = mCells[i];
+                    if (c.x < regionTopLeft.x || c.x >= regionTopLeft.x + width)  continue;
+                    if (c.y < regionTopLeft.y || c.y >= regionTopLeft.y + height)  continue;
+
+                    const float val = mBufferA[i];
+                    bool isMax = true;
+                    mTopology.ForEachNeighbour(c, [&](CellIndex nb)
+                    {
+                        if (!isMax) return;
+                        if (mBufferA[CellToIndex(nb)] >= val)
+                            isMax = false;
+                    });
+
+                    if (isMax)
+                        outCells.PushBack(c);
+                }
+            }
+
+            // Append to `outCells` every cell in the region whose value > `threshold`.
+            void FindCellsAboveThreshold(float threshold,
+                                         CellIndex regionTopLeft, int width, int height,
+                                         Dia::Core::Containers::DynamicArrayC<CellIndex, 1024>& outCells) const
+            {
+                const int count = static_cast<int>(mCells.size());
+                for (int i = 0; i < count; ++i)
+                {
+                    const CellIndex& c = mCells[i];
+                    if (c.x < regionTopLeft.x || c.x >= regionTopLeft.x + width)  continue;
+                    if (c.y < regionTopLeft.y || c.y >= regionTopLeft.y + height)  continue;
+
+                    if (mBufferA[i] > threshold)
+                        outCells.PushBack(c);
+                }
             }
 
         private:
