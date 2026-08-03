@@ -50,6 +50,7 @@ non_responsibilities:
 dependent_modules:
   - dia.core
   - dia.maths
+  - dia.observation
 
 public_api:
   headers:
@@ -67,6 +68,7 @@ dependencies:
   required:
     - dia.core
     - dia.maths
+    - dia.observation
   optional:
     - dia.rules (RulesPropagationPolicy adaptor only)
     - dia.visualdebugger (ScalarFieldOverlay adaptor only)

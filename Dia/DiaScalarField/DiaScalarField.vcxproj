@@ -59,9 +59,11 @@
   <ItemGroup>
     <ClInclude Include="CellIndex.h" />
     <ClInclude Include="CFieldTopology.h" />
+    <ClInclude Include="DiaScalarField.h" />
     <ClInclude Include="HexFieldTopology.h" />
     <ClInclude Include="ScalarFieldLogChannel.h" />
     <ClInclude Include="SquareFieldTopology.h" />
+    <ClInclude Include="UniformDecayPolicy.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.scalarfield.architecture.module.md" />
@@ -73,6 +75,10 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaMaths\DiaMaths.vcxproj">
       <Project>{2BBA0AD3-D449-4C0E-8C84-ACFA8BCA456B}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaObservation\DiaObservation.vcxproj">
+      <Project>{5E6F7A8B-C9D0-E1F2-3456-789ABCDE0123}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

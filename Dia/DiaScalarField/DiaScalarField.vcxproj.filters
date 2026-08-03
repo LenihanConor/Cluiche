@@ -14,8 +14,10 @@
   <ItemGroup>
     <ClInclude Include="CellIndex.h" />
     <ClInclude Include="CFieldTopology.h" />
+    <ClInclude Include="DiaScalarField.h" />
     <ClInclude Include="HexFieldTopology.h" />
     <ClInclude Include="ScalarFieldLogChannel.h" />
     <ClInclude Include="SquareFieldTopology.h" />
+    <ClInclude Include="UniformDecayPolicy.h" />
   </ItemGroup>
 </Project>
