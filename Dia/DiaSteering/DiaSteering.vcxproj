@@ -57,8 +57,12 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="SteeringAgent.h" />
+    <ClInclude Include="SteeringLogChannel.h" />
+    <ClInclude Include="Behaviours.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Behaviours.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.steering.architecture.module.md" />
