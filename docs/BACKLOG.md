@@ -75,7 +75,7 @@ Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testin
 
 | Item | Notes |
 |------|-------|
-| Add RigidBody2D + SoftBody2D scenarios to default.json | `scenarios/cluichetest/rigidbody2d/test_rigidbody2d_settle.py` and `softbody2d/test_softbody2d_settle.py` exist on disk but are missing from `plans/cluichetest/default.json`. Add both entries. |
+| ~~Add RigidBody2D + SoftBody2D scenarios to default.json~~ | ~~`scenarios/cluichetest/rigidbody2d/test_rigidbody2d_settle.py` and `softbody2d/test_softbody2d_settle.py` exist on disk but are missing from `plans/cluichetest/default.json`. Add both entries.~~ |
 | Dedicated scenario: EntityTestStage | 6 checkpoints (spawn_complete, query_correct, hierarchy_valid, destroy_cascade, mailbox_received, lifecycle_complete) — richest stage, generic runner only. Write `scenarios/cluichetest/entity/test_entity_stage.py`. |
 | Dedicated scenario: Scene2DTestStage | 5 checkpoints (scene.loaded, cameras_hydrated, lights_hydrated, entities_spawned, layers_resolved). Write `scenarios/cluichetest/scene2d/test_scene2d_stage.py`. |
 | Dedicated scenario: Animation2DTestStage | 2 checkpoints (animation2d.clips_completed, pose_correct). Write `scenarios/cluichetest/animation2d/test_animation2d_stage.py`. |
@@ -87,7 +87,7 @@ Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testin
 
 | Item | Notes |
 |------|-------|
-| E2E suite: UIUltralightTestStage hard crashes app on generic runner | `test_all_stages.py` navigates every stage; UIUltralightTestStage crashes the app (no error log, instant death) when `UIUltralightTestStageModule::BeginStart` fires. Affects all subsequent tests in the session. Root cause unknown — likely Ultralight native library crash during DoStart. Needs investigation: add crash guard / null-check in UIUltralightTestStageModule::DoStart, or find the Ultralight init failure. See `docs/research/e2e_testing/uiultralight_crash_notes.md`. |
+| ~~E2E suite: UIUltralightTestStage hard crashes app on generic runner~~ | ~~Fixed in commit `6d78c890` — UIModule no longer destroys UISystem on DoStop; Ultralight process-lifetime globals survive stage transitions.~~ |
 
 ### Needs new C++ stage
 
