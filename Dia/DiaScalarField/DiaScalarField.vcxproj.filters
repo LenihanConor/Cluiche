@@ -12,6 +12,14 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Adaptors\RulesPropagationPolicy.h">
+      <Filter>Adaptors</Filter>
+    </None>
+    <None Include="Adaptors\ScalarFieldOverlay.h">
+      <Filter>Adaptors</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="CellIndex.h" />
     <ClInclude Include="CFieldTopology.h" />
     <ClInclude Include="DiaScalarField.h" />

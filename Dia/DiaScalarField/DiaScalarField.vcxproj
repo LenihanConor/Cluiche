@@ -67,6 +67,8 @@
     <ClInclude Include="UniformDecayPolicy.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Adaptors\RulesPropagationPolicy.h" />
+    <None Include="Adaptors\ScalarFieldOverlay.h" />
     <None Include="Docs\dia.scalarfield.architecture.module.md" />
   </ItemGroup>
   <ItemGroup>
