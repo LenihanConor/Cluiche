@@ -7,6 +7,11 @@
 #include <DiaScalarField/SquareFieldTopology.h>
 #include <DiaScalarField/UniformDecayPolicy.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Metric/Counter.h>
+#include <DiaObservation/Metric/Gauge.h>
 #include <DiaMaths/Vector/Vector2D.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
@@ -145,6 +150,14 @@ namespace Dia
             // falloff-attenuated write derived from `peakValue`.
             void WriteRadial(CellIndex center, float radius, float peakValue, FalloffCurve curve)
             {
+                // Guard: radius <= 0 means only the centre cell gets peak value.
+                // Avoids division-by-zero in the attenuation formulas below.
+                if (radius <= 0.0f)
+                {
+                    mPendingWrites.emplace_back(CellToIndex(center), peakValue);
+                    return;
+                }
+
                 const int count = static_cast<int>(mCells.size());
                 for (int i = 0; i < count; ++i)
                 {
@@ -199,6 +212,12 @@ namespace Dia
 
             void Tick()
             {
+                DIA_TRACE_ZONE  ("scalarfield.tick", ::Dia::Observation::Trace::Category::kNone);
+                DIA_PROFILE_SCOPE("scalarfield.tick", ::Dia::Observation::Profile::Category::kNone);
+
+                // Capture flush count before clearing — used for the debug log below.
+                const int flushCount = static_cast<int>(mPendingWrites.size());
+
                 // 1. Flush pending writes into the read buffer so propagation
                 //    sees them this tick.
                 for (const auto& [idx, value] : mPendingWrites)
@@ -237,6 +256,29 @@ namespace Dia
 
                 // 3. Swap buffers so B (just written) becomes the new read buffer.
                 mBufferA.swap(mBufferB);
+
+                DIA_LOG_DEBUG(kLogChannel, "scalarfield.tick: cells=%d writes_flushed=%d",
+                    static_cast<int>(mCells.size()),
+                    flushCount);
+
+                if (mTickCounter)  mTickCounter->Inc();
+                if (mCellsGauge)   mCellsGauge->Set(static_cast<double>(mCells.size()));
+            }
+
+            // -----------------------------------------------------------------
+            // Metrics registration
+            // -----------------------------------------------------------------
+
+            // Register per-instance metrics with the global MetricRegistry.
+            // Call from your Module's DoStart().  Safe to call multiple times (idempotent).
+            // Provide distinct StringCRC names per instance so multiple field
+            // instances don't collide (e.g. StringCRC("influence.danger.ticks")).
+            void RegisterMetrics(Dia::Core::StringCRC tickCounterName,
+                                  Dia::Core::StringCRC cellsGaugeName)
+            {
+                auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
+                mTickCounter = reg.RegisterCounter(tickCounterName);
+                mCellsGauge  = reg.RegisterGauge(cellsGaugeName);
             }
 
             // -----------------------------------------------------------------
@@ -476,6 +518,10 @@ namespace Dia
             // Pending write queue.  Flushed at the start of Tick() before
             // propagation.  Write-shape API (Task 4) will push entries here.
             std::vector<std::pair<int, float>> mPendingWrites;
+
+            // Optional metric handles.  Null until RegisterMetrics() is called.
+            Dia::Observation::Metric::Counter* mTickCounter = nullptr;
+            Dia::Observation::Metric::Gauge*   mCellsGauge  = nullptr;
         };
 
         // --------------------------------------------------------------------
