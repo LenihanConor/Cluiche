@@ -733,6 +733,10 @@
     <ClCompile Include="DiaFlowField\TestComputeFlowField.cpp" />
     <ClCompile Include="DiaFlowField\TestFlowFieldCache.cpp" />
     <ClCompile Include="DiaFlowField\TestFlowFieldAdapters.cpp" />
+    <ClCompile Include="DiaFlowField\TestFlowFieldBoundary.cpp" />
+    <ClCompile Include="DiaFlowField\TestFlowFieldGolden.cpp" />
+    <ClCompile Include="DiaFlowField\TestFlowFieldInvariant.cpp" />
+    <ClCompile Include="DiaFlowField\TestFlowFieldStress.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

@@ -43,6 +43,8 @@ namespace Dia::FlowField {
                 auto [inserted_it, ok] = mEntries.emplace(key, std::move(entry));
                 DIA_LOG_INFO("FlowField", "FlowFieldCache: computed new field key=%s goal=(%d,%d)",
                              key.AsChar(), goalCell.x, goalCell.y);
+                ++mMisses;
+                ++mRecomputes;
                 return inserted_it->second.field;
             }
             if (it->second.dirty)
@@ -53,7 +55,11 @@ namespace Dia::FlowField {
                 it->second.dirty    = false;
                 DIA_LOG_INFO("FlowField", "FlowFieldCache: recomputed dirty field key=%s goal=(%d,%d)",
                              key.AsChar(), goalCell.x, goalCell.y);
+                ++mMisses;
+                ++mRecomputes;
+                return it->second.field;
             }
+            ++mHits;
             return it->second.field;
         }
 
@@ -94,7 +100,10 @@ namespace Dia::FlowField {
                          topLeft.x, topLeft.y, bottomRight.x, bottomRight.y, count);
         }
 
-        int GetCachedCount() const { return (int)mEntries.size(); }
+        int GetCachedCount()   const { return (int)mEntries.size(); }
+        int GetCacheHits()     const { return mHits; }
+        int GetCacheMisses()   const { return mMisses; }
+        int GetRecomputeCount() const { return mRecomputes; }
 
     private:
         struct CacheEntry
@@ -110,6 +119,9 @@ namespace Dia::FlowField {
         Dia::Pathfinding::IPathCostProvider&   mCosts;
         int                                    mWidth;
         int                                    mHeight;
+        int                                    mHits      = 0;
+        int                                    mMisses    = 0;
+        int                                    mRecomputes = 0;
         // std::hash<Dia::Core::StringCRC> is already specialised in StringCRC.h
         std::unordered_map<FlowFieldKey, CacheEntry> mEntries;
     };

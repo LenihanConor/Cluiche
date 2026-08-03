@@ -1,6 +1,6 @@
 # Test Completeness Registry
 
-**Last Updated:** 2026-07-29 (DiaCondition: 97 tests added; ~3,342 total)
+**Last Updated:** 2026-08-03 (DiaFlowField: +30 tests added; FlowFieldCache metrics counters; ~3,372 total)
 
 Single source of truth for test coverage across all Dia modules. Updated alongside test commits.
 
@@ -16,9 +16,9 @@ Single source of truth for test coverage across all Dia modules. Updated alongsi
 
 | Metric | Count |
 |--------|-------|
-| Test files | 200 |
-| Total tests (TEST + TEST_F + TEST_P) | 3,089 |
-| Death tests (EXPECT_DEATH / ASSERT_DEATH) | 149 |
+| Test files | 208 |
+| Total tests (TEST + TEST_F + TEST_P) | 3,119 |
+| Death tests (EXPECT_DEATH / ASSERT_DEATH) | 154 |
 | Float assertions (EXPECT_NEAR / EXPECT_FLOAT_EQ) | 1,340+ |
 | Fixtures (TEST_F) | ~504 |
 | Parameterized (TEST_P / TYPED_TEST) | 0 |
@@ -288,6 +288,29 @@ Gap markers: **ZERO** = no tests, **LOW** = under-tested relative to API surface
 | Test Utilities (AssertPathFound, AssertPathCells, MockCostProvider) | 4 | TestPathfinding.cpp | 4 | 0 | 0 | OK |
 
 **DiaPathfinding totals: 3 files, 79 tests** | GOOD — golden cost/length/sequence, optimality, OOB, all-blocked, null-observer, system reuse; bug found+fixed: SquarePathGrid::SetPassable lacked OOB guard
+
+---
+
+## DiaFlowField
+
+| Component | Tests | Files | Unit | Stress/Boundary | Golden/Regression | Invariant | Determinism | Notes |
+|-----------|-------|-------|------|-----------------|-------------------|-----------|-------------|-------|
+| FlowCell | 1 | TestFlowField.cpp | 1 | 0 | 0 | 0 | 0 | GOOD |
+| FlowField (Sample, SampleWorld, IsComplete, GetCellCount) | 6 | TestFlowField.cpp | 6 | 0 | 0 | 0 | 0 | GOOD |
+| CFlowFieldGraph (concept) | 1 | TestFlowField.cpp | 1 | 0 | 0 | 0 | 0 | GOOD — static_assert proof |
+| ComputeFlowField (Dijkstra sweep) | 6 | TestComputeFlowField.cpp | 6 | 0 | 0 | 0 | 0 | GOOD — goal, all-reachable, blocked, direction, corner, zero-dir |
+| FlowFieldCache (GetOrCompute, Invalidate, InvalidateAll, InvalidateRegion) | 6 | TestFlowFieldCache.cpp | 6 | 0 | 0 | 0 | 0 | GOOD |
+| FlowFieldCache (metrics: GetCacheHits, GetCacheMisses, GetRecomputeCount) | 5 | TestFlowFieldBoundary.cpp | 0 | 5 | 0 | 0 | 0 | GOOD |
+| SquareFlowAdapter + HexFlowAdapter | 8 | TestFlowFieldAdapters.cpp | 8 | 0 | 0 | 0 | 0 | GOOD — concept, world-space, passability, compute |
+| SLOW_FlowField_Boundary (DIA_ASSERT death tests) | 5 | TestFlowFieldBoundary.cpp | 0 | 5 (death) | 0 | 0 | 0 | GOOD — constructor overflow, AccessCell OOB (neg+OOB x and y) |
+| FlowField_Boundary (edge cases) | 2 | TestFlowFieldBoundary.cpp | 0 | 2 | 0 | 0 | 0 | GOOD — 1×1 grid, SampleWorld large cellSize |
+| FlowFieldCache_Boundary | 3 | TestFlowFieldBoundary.cpp | 0 | 3 | 0 | 0 | 0 | GOOD — Invalidate no-op, InvalidateRegion empty + full coverage |
+| FlowFieldGolden (exact direction vectors) | 7 | TestFlowFieldGolden.cpp | 0 | 0 | 7 | 0 | 0 | GOOD — 4×4 grid goal at corner, single cell, horizontal/vertical corridors |
+| FlowFieldInvariant (unit-vector, goal invariant, blocking monotonicity) | 3 | TestFlowFieldInvariant.cpp | 0 | 0 | 0 | 3 | 0 | GOOD — 100-trial random goal sweep |
+| FlowFieldDeterminism (bit-identical runs, distinct goals differ) | 2 | TestFlowFieldInvariant.cpp | 0 | 0 | 0 | 0 | 2 | GOOD |
+| FlowFieldStress (64×63 grid, 20 cache entries, 50 invalidation cycles, InvalidateAll+recompute) | 4 | TestFlowFieldStress.cpp | 0 | 4 | 0 | 0 | 0 | GOOD |
+
+**DiaFlowField totals: 8 files, 59 tests** | GOOD — all test types covered; no conservation law tests (N/A for flow fields); no variable-cost tests (IPathCostProvider weight variation not tested)
 
 ---
 
@@ -601,11 +624,11 @@ Gap markers: **ZERO** = no tests, **LOW** = under-tested relative to API surface
 | Type | Present? | Where | Gaps |
 |------|----------|-------|------|
 | Unit | Yes (2,700+) | All modules | Graph, Observer, FilePath, Allocator, Easing, Interpolation, FrameData, BVH, Quadtree, StateObject, ProtoJsonCodec |
-| Boundary (EXPECT_DEATH) | Yes (149) | Core/Containers (88), Maths (32), Time (4), Architecture (4), IK2D (11), Rig2D (10) | Missing in physics (RigidBody2D), geometry, application |
-| Stress | Partial | SoftBody2D (10), RigidBody2D Robustness (12), Rig2D (7), IK2D (6) | Missing for containers at scale, threading, RigidBody2D 100+ bodies |
-| Golden-value | Partial | Rig2D (8), IK2D (9) | Needed for maths (matrices, easing), geometry intersections, physics traces |
-| Determinism | Partial | Rig2D (3), IK2D (3) | Needed for RigidBody2D, SoftBody2D |
+| Boundary (EXPECT_DEATH) | Yes (154) | Core/Containers (88), Maths (32), Time (4), Architecture (4), IK2D (11), Rig2D (10), FlowField (5) | Missing in physics (RigidBody2D), geometry, application |
+| Stress | Partial | SoftBody2D (10), RigidBody2D Robustness (12), Rig2D (7), IK2D (6), FlowField (4) | Missing for containers at scale, threading, RigidBody2D 100+ bodies |
+| Golden-value | Partial | Rig2D (8), IK2D (9), FlowField (7) | Needed for maths (matrices, easing), geometry intersections, physics traces |
+| Determinism | Partial | Rig2D (3), IK2D (3), FlowField (2) | Needed for RigidBody2D, SoftBody2D |
 | Conservation law | No | — | Needed for physics (momentum, energy) |
-| Property/invariant | Partial | Rig2D (6), IK2D (7) | Needed for maths (commutativity, normalization), containers (size invariants) |
+| Property/invariant | Partial | Rig2D (6), IK2D (7), FlowField (3) | Needed for maths (commutativity, normalization), containers (size invariants) |
 | Parameterized (TYPED_TEST) | No | — | BitArray (4 types), containers, protocol messages |
 | Integration | Partial (90+) | Integration/ directory, Rig2D (4), IK2D (4) | Missing Physics-Geometry, Module lifecycle, Input-Application |
