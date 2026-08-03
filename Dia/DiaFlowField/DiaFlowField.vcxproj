@@ -57,10 +57,14 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <!-- headers go here -->
+    <ClInclude Include="CFlowFieldGraph.h" />
+    <ClInclude Include="ComputeFlowField.h" />
+    <ClInclude Include="FlowCell.h" />
+    <ClInclude Include="FlowField.h" />
+    <ClInclude Include="FlowFieldLogChannel.h" />
   </ItemGroup>
   <ItemGroup>
-    <!-- .cpp files go here -->
+    <ClCompile Include="FlowField.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.flowfield.architecture.module.md" />
