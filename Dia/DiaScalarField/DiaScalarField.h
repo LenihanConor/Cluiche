@@ -2,7 +2,9 @@
 
 #include <DiaScalarField/CFieldTopology.h>
 #include <DiaScalarField/CellIndex.h>
+#include <DiaScalarField/HexFieldTopology.h>
 #include <DiaScalarField/ScalarFieldLogChannel.h>
+#include <DiaScalarField/SquareFieldTopology.h>
 #include <DiaScalarField/UniformDecayPolicy.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaMaths/Vector/Vector2D.h>
@@ -330,6 +332,42 @@ namespace Dia
                 }
             }
 
+            // -----------------------------------------------------------------
+            // Multi-field combination
+            // -----------------------------------------------------------------
+
+            // A single weighted input to Combine().
+            // A negative weight subtracts the field's contribution.
+            struct WeightedField
+            {
+                const DiaScalarField* field;
+                float                 weight;
+            };
+
+            // Write a weighted sum of multiple fields directly into `result.mBufferA`
+            // (the read buffer).  This is a direct write — not queued through Tick().
+            //
+            // For each cell index c in [0, result.GetCellCount()):
+            //   combined = sum(inputs[i].field->GetValue(result.mCells[c]) * inputs[i].weight)
+            //   result.mBufferA[c] = Clamp(combined, result.mMinClamp, result.mMaxClamp)
+            //
+            // `Combine` is static so it can access the private state of `result`.
+            static void Combine(DiaScalarField& result,
+                                 Dia::Core::Containers::DynamicArrayC<WeightedField, 32> inputs)
+            {
+                const int count = result.GetCellCount();
+                for (int c = 0; c < count; ++c)
+                {
+                    const CellIndex& cell = result.mCells[c];
+                    float combined = 0.0f;
+                    for (int i = 0; i < inputs.Size(); ++i)
+                    {
+                        combined += inputs[i].field->GetValue(cell) * inputs[i].weight;
+                    }
+                    result.mBufferA[c] = Clamp(combined, result.mMinClamp, result.mMaxClamp);
+                }
+            }
+
         private:
             // -----------------------------------------------------------------
             // Index helpers
@@ -438,6 +476,12 @@ namespace Dia
             // propagation.  Write-shape API (Task 4) will push entries here.
             std::vector<std::pair<int, float>> mPendingWrites;
         };
+
+        // --------------------------------------------------------------------
+        // Convenience type aliases
+        // --------------------------------------------------------------------
+        using SquareScalarField = DiaScalarField<SquareFieldTopology, UniformDecayPolicy>;
+        using HexScalarField    = DiaScalarField<HexFieldTopology,    UniformDecayPolicy>;
 
     } // namespace ScalarField
 } // namespace Dia
