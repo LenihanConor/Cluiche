@@ -737,6 +737,10 @@
     <ClCompile Include="DiaFlowField\TestFlowFieldGolden.cpp" />
     <ClCompile Include="DiaFlowField\TestFlowFieldInvariant.cpp" />
     <ClCompile Include="DiaFlowField\TestFlowFieldStress.cpp" />
+    <!-- DiaSteering -->
+    <ClCompile Include="DiaSteering\TestSteeringBehaviours.cpp" />
+    <ClCompile Include="DiaSteering\TestSteeringPipeline.cpp" />
+    <ClCompile Include="DiaSteering\TestSteeringSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

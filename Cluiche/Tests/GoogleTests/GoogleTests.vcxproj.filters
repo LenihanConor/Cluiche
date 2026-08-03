@@ -196,6 +196,9 @@
     <Filter Include="DiaHTN">
       <UniqueIdentifier>{C5D6E7F8-A9B0-1234-D678-901234567890}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaSteering">
+      <UniqueIdentifier>{D6E7F8A9-B0C1-2345-E789-012345678901}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -1439,6 +1442,16 @@
       <Filter>DiaHTN</Filter>
     </ClCompile>
       <Filter>DiaHTN</Filter>
+    </ClCompile>
+    <!-- DiaSteering -->
+    <ClCompile Include="DiaSteering\TestSteeringBehaviours.cpp">
+      <Filter>DiaSteering</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaSteering\TestSteeringPipeline.cpp">
+      <Filter>DiaSteering</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaSteering\TestSteeringSystem.cpp">
+      <Filter>DiaSteering</Filter>
     </ClCompile>
       <Filter>DiaPathfinding</Filter>
     </ClCompile>
