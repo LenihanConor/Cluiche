@@ -11,5 +11,5 @@
 | 6 | Implement SteeringSystem (AddAgent/RemoveAgent/UpdateAgentState/GetOutput/Update) + lifecycle logging | Unit tests for agent registry + output cache | Done | sonnet | |
 | 7 | Implement test utilities in DiaSteering/Testing/ (AssertSeekDirection, AssertArriveDeceleration, AssertSeparationDirection, MockObstacleSet) | Utility self-tests | Done | sonnet | |
 | 8 | Write GoogleTests (DiaSteering folder) — behaviours, pipeline, system, boundary, golden, stress | All tests pass via dia run googletest --filter="Steering*" | Done | sonnet | 45 tests, all pass |
-| 9 | Write dia.steering.architecture.module.md YAML module doc | dia docs registry --dry-run clean | Pending | haiku | |
-| 10 | Update module registry + backlog + mark spec Done | dia docs spec-done | Pending | haiku | |
+| 9 | Write dia.steering.architecture.module.md YAML module doc | dia docs registry --dry-run clean | Done | haiku | |
+| 10 | Update module registry + backlog + mark spec Done | dia docs spec-done | Done | haiku | |
