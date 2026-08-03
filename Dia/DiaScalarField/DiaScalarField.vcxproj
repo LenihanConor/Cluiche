@@ -63,6 +63,7 @@
     <ClInclude Include="HexFieldTopology.h" />
     <ClInclude Include="ScalarFieldLogChannel.h" />
     <ClInclude Include="SquareFieldTopology.h" />
+    <ClInclude Include="Testing\ScalarFieldTestHelpers.h" />
     <ClInclude Include="UniformDecayPolicy.h" />
   </ItemGroup>
   <ItemGroup>

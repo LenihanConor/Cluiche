@@ -19,5 +19,8 @@
     <ClInclude Include="ScalarFieldLogChannel.h" />
     <ClInclude Include="SquareFieldTopology.h" />
     <ClInclude Include="UniformDecayPolicy.h" />
+    <ClInclude Include="Testing\ScalarFieldTestHelpers.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
