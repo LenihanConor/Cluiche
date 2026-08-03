@@ -11,6 +11,7 @@
 #include <utility>
 #include <algorithm>
 #include <cfloat>
+#include <cmath>
 
 namespace Dia
 {
@@ -31,6 +32,16 @@ namespace Dia
                     (static_cast<unsigned>(c.x) << 16u) |
                     (static_cast<unsigned>(c.y) & 0xFFFFu));
             }
+        };
+
+        // --------------------------------------------------------------------
+        // FalloffCurve — controls how WriteRadial attenuates with distance.
+        // --------------------------------------------------------------------
+        enum class FalloffCurve
+        {
+            kLinear,     // value = peakValue * (1 - dist/radius)
+            kQuadratic,  // value = peakValue * (1 - (dist/radius)^2)
+            kInverse     // value = peakValue / (1 + dist)  [dist in cell units]
         };
 
         // --------------------------------------------------------------------
@@ -117,6 +128,65 @@ namespace Dia
             void QueueWrite(CellIndex cell, float value)
             {
                 mPendingWrites.emplace_back(CellToIndex(cell), value);
+            }
+
+            // Write a single cell immediately into the pending write queue.
+            void WritePoint(CellIndex cell, float value)
+            {
+                QueueWrite(cell, value);
+            }
+
+            // Write a radial gradient centred on `center` with the given `radius`
+            // (in cell units).  Each cell within the radius receives a
+            // falloff-attenuated write derived from `peakValue`.
+            void WriteRadial(CellIndex center, float radius, float peakValue, FalloffCurve curve)
+            {
+                const int count = static_cast<int>(mCells.size());
+                for (int i = 0; i < count; ++i)
+                {
+                    const CellIndex& cell = mCells[i];
+                    const float dx = static_cast<float>(cell.x - center.x);
+                    const float dy = static_cast<float>(cell.y - center.y);
+                    const float dist = std::sqrt(dx * dx + dy * dy);
+
+                    if (dist > radius)
+                        continue;
+
+                    float attenuation = 0.0f;
+                    switch (curve)
+                    {
+                        case FalloffCurve::kLinear:
+                            attenuation = 1.0f - (dist / radius);
+                            break;
+                        case FalloffCurve::kQuadratic:
+                        {
+                            const float t = dist / radius;
+                            attenuation = 1.0f - (t * t);
+                            break;
+                        }
+                        case FalloffCurve::kInverse:
+                            attenuation = 1.0f / (1.0f + dist);
+                            break;
+                    }
+
+                    mPendingWrites.emplace_back(i, peakValue * attenuation);
+                }
+            }
+
+            // Write a constant value to all cells whose x/y coordinates fall
+            // within the axis-aligned box [topLeft, topLeft + (width, height)).
+            void WriteBox(CellIndex topLeft, int width, int height, float value)
+            {
+                const int count = static_cast<int>(mCells.size());
+                for (int i = 0; i < count; ++i)
+                {
+                    const CellIndex& cell = mCells[i];
+                    if (cell.x >= topLeft.x && cell.x < topLeft.x + width &&
+                        cell.y >= topLeft.y && cell.y < topLeft.y + height)
+                    {
+                        mPendingWrites.emplace_back(i, value);
+                    }
+                }
             }
 
             // -----------------------------------------------------------------
