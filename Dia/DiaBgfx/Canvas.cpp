@@ -189,21 +189,34 @@ namespace Dia
             const char* backend = BackendSubdir(mRendererType);
 
             mSpriteProgram = new ShaderProgram();
-            if (!mSpriteProgram->Load(mShaderRoot, backend, "sprite", "sprite"))
+            const bool spriteOk = mSpriteProgram->Load(mShaderRoot, backend, "sprite", "sprite");
+            if (!spriteOk)
             {
                 DIA_LOG_ERROR("DiaBgfx", "Canvas::DeferredInit — failed to load sprite shader");
             }
 
             mDebugProgram = new ShaderProgram();
-            if (!mDebugProgram->Load(mShaderRoot, backend, "debug", "debug"))
+            const bool debugOk = mDebugProgram->Load(mShaderRoot, backend, "debug", "debug");
+            if (!debugOk)
             {
                 DIA_LOG_ERROR("DiaBgfx", "Canvas::DeferredInit — failed to load debug shader");
             }
 
             mUIProgram = new ShaderProgram();
-            if (!mUIProgram->Load(mShaderRoot, backend, "ui_overlay", "ui_overlay"))
+            const bool uiOk = mUIProgram->Load(mShaderRoot, backend, "ui_overlay", "ui_overlay");
+            if (!uiOk)
             {
                 DIA_LOG_ERROR("DiaBgfx", "Canvas::DeferredInit — failed to load ui_overlay shader");
+            }
+
+            if (!spriteOk || !debugOk || !uiOk)
+            {
+                DIA_LOG_WARNING("DiaBgfx", "Canvas::DeferredInit — one or more shaders missing (sprite=%s debug=%s ui=%s). "
+                    "Rendering will be degraded. Run 'dia pipeline --target cluichetest' to cook shaders into '%s/%s/'.",
+                    spriteOk ? "ok" : "MISSING",
+                    debugOk  ? "ok" : "MISSING",
+                    uiOk     ? "ok" : "MISSING",
+                    mShaderRoot, backend);
             }
 
             mSpriteRenderer    = new SpriteRenderer(kEntityViewId, mSpriteProgram);

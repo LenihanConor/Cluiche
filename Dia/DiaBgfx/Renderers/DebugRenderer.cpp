@@ -308,7 +308,15 @@ namespace Dia
                 return;
 
             if (!mDebugProgram || !mDebugProgram->IsValid())
+            {
+                static bool sWarnedOnce = false;
+                if (!sWarnedOnce)
+                {
+                    sWarnedOnce = true;
+                    DIA_LOG_WARNING("DiaBgfx", "DebugRenderer::Draw — debug shader not loaded; all debug geometry will be silently dropped. Run 'dia pipeline --target cluichetest' to cook shaders.");
+                }
                 return;
+            }
 
             const float cw = mCanvasSize.X();
             const float ch = mCanvasSize.Y();
