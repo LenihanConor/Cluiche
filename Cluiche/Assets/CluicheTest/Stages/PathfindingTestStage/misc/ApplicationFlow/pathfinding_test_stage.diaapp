@@ -19,7 +19,6 @@
                     "dependencies": [],
                     "channels": [
                         { "id": "AutomationService", "role": "consumes" },
-                        { "id": "VisualDebugService", "role": "consumes" },
                         { "id": "RenderToSim",        "role": "reads" }
                     ]
                 }

@@ -86,6 +86,8 @@ files = [
   { src = "Cluiche/Assets/CluicheTest/Stages/AIDecisionTestStage/misc/ApplicationFlow/ai_decision_test_stage.diaapp", dest = "$(OutDir)assets/stages/AIDecisionTestStage/misc/ApplicationFlow/" },
   { src = "Cluiche/Assets/CluicheTest/Stages/AIHTNTestStage/ai_htn_test_stage.diastage", dest = "$(OutDir)assets/stages/AIHTNTestStage/" },
   { src = "Cluiche/Assets/CluicheTest/Stages/AIHTNTestStage/misc/ApplicationFlow/ai_htn_test_stage.diaapp", dest = "$(OutDir)assets/stages/AIHTNTestStage/misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/PathfindingTestStage/pathfinding_test_stage.diastage", dest = "$(OutDir)assets/stages/PathfindingTestStage/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/PathfindingTestStage/misc/ApplicationFlow/pathfinding_test_stage.diaapp", dest = "$(OutDir)assets/stages/PathfindingTestStage/misc/ApplicationFlow/" },
 ]
 
 [targets.cluicheeditor]
