@@ -100,7 +100,7 @@ namespace Dia { namespace ApplicationFlow {
     void ManifestValidatorV2::CheckStageReferences(const ApplicationManifestV3& manifest)
     {
         // Build a flat array of valid stage names from manifest.stages
-        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> validStages;
+        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32> validStages;
         for (unsigned int i = 0; i < manifest.stages.Size(); ++i)
         {
             validStages.Add(manifest.stages[i].name);
@@ -432,7 +432,7 @@ namespace Dia { namespace ApplicationFlow {
     void ManifestValidatorV2::CheckOrphanModules(const ApplicationManifestV3& manifest)
     {
         // Build flat array of valid stage names
-        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> validStages;
+        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32> validStages;
         for (unsigned int i = 0; i < manifest.stages.Size(); ++i)
         {
             validStages.Add(manifest.stages[i].name);
@@ -1121,7 +1121,7 @@ namespace Dia { namespace ApplicationFlow {
     //-----------------------------------------------------------------------------
     void ManifestValidatorV2::CheckTransitionTargets(const ApplicationManifestV3& manifest)
     {
-        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> validStages;
+        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32> validStages;
         for (unsigned int i = 0; i < manifest.stages.Size(); ++i)
             validStages.Add(manifest.stages[i].name);
 
@@ -1203,7 +1203,7 @@ namespace Dia { namespace ApplicationFlow {
     void ManifestValidatorV2::CheckStageReachability(const ApplicationManifestV3& manifest)
     {
         // Build the union set of all stages that appear as a transition target
-        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> referenced;
+        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32> referenced;
         for (unsigned int i = 0; i < manifest.stages.Size(); ++i)
         {
             const StageDeclaration& stage = manifest.stages[i];

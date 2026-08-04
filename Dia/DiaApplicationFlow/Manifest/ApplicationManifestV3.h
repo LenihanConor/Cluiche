@@ -45,7 +45,7 @@ namespace Dia { namespace ApplicationFlow {
         Dia::Core::StringCRC typeId;
 
         // Stage names this module is active in. Use StringCRC("all") as a sentinel meaning always active.
-        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> stages;
+        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32> stages;
 
         Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 8>  dependencies;
         Dia::Core::Containers::DynamicArrayC<ChannelBinding, 8>        channels;
@@ -74,7 +74,7 @@ namespace Dia { namespace ApplicationFlow {
         Dia::Core::Containers::String256        manifestPath;
 
         // v3 fields: per-stage transition targets and auto-advance flag
-        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16>  transitions;
+        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>  transitions;
         bool                                                            autoAdvance = false;
     };
 
@@ -83,7 +83,7 @@ namespace Dia { namespace ApplicationFlow {
     {
         int version = 3;
 
-        Dia::Core::Containers::DynamicArrayC<StageDeclaration, 16>          stages;
+        Dia::Core::Containers::DynamicArrayC<StageDeclaration, 32>          stages;
         Dia::Core::StringCRC                                                 initialStage;
 
         Dia::Core::Containers::DynamicArrayC<StreamDeclaration, 32>         streams;
