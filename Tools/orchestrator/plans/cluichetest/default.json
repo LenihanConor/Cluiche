@@ -1,6 +1,0 @@
-{
-    "scenarios": [
-        "cluichetest/assetruntime/test_asset_lifecycle",
-        "cluichetest/animation2d/test_anim2d_playback"
-    ]
-}

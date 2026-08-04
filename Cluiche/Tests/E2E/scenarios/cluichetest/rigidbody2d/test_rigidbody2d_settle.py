@@ -18,7 +18,7 @@ def test_rigidbody2d_full_scene(dia_client):
     dia_client.navigate_to("RigidBody2DTestStage")
     try:
         for cp in _CHECKPOINTS:
-            result = dia_client.poll_checkpoint(cp, timeout_s=100.0)
+            result = dia_client.poll_checkpoint(cp, timeout_s=15.0)
             assert result["passed"], f"{cp} failed: {result['message']}"
     finally:
         dia_client.abort_stage()
@@ -31,7 +31,7 @@ def test_rigidbody2d_determinism(dia_client):
 
     dia_client.navigate_to("RigidBody2DTestStage")
     try:
-        result1 = dia_client.poll_checkpoint(cp, timeout_s=100.0)
+        result1 = dia_client.poll_checkpoint(cp, timeout_s=15.0)
         assert result1["passed"], f"First run failed: {result1['message']}"
         msg1 = result1["message"]
     finally:
@@ -40,7 +40,7 @@ def test_rigidbody2d_determinism(dia_client):
 
     dia_client.navigate_to("RigidBody2DTestStage")
     try:
-        result2 = dia_client.poll_checkpoint(cp, timeout_s=100.0)
+        result2 = dia_client.poll_checkpoint(cp, timeout_s=15.0)
         assert result2["passed"], f"Second run failed: {result2['message']}"
         msg2 = result2["message"]
     finally:

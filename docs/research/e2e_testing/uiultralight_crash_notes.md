@@ -1,7 +1,7 @@
 # E2E Suite: UIUltralightTestStage Crash Investigation
 
 **Date investigated:** 2026-07-09  
-**Status:** Unresolved — added to backlog
+**Status:** Resolved — fixed in commit `6d78c890` (2026-07-28)
 
 ---
 

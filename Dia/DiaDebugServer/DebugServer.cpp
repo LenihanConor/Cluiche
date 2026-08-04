@@ -2,6 +2,7 @@
 #include "DiaDebugServer/StateSerializer.h"
 #include "DiaDebugServer/IStreamTapTarget.h"
 
+#include <DiaProtobuf/ProtoJsonCodec.h>
 #include <DiaProtobuf/ProtoStructConverter.h>
 #include <DiaWebSocket/Server.h>
 #include <DiaDebugProtocol/DiaDebugProtocol.h>
@@ -726,10 +727,10 @@ namespace Dia
 
 		void DebugServer::SendProtoMessage(int connId, const dia::debug::DebugMessage& msg)
 		{
-			char buffer[4096];
-			if (Dia::Proto::ToJson(msg, buffer, sizeof(buffer)))
+			std::string buffer;
+			if (Dia::Proto::ToJson(msg, buffer))
 			{
-				if (!mServer->SendText(connId, buffer))
+				if (!mServer->SendText(connId, buffer.c_str()))
 				{
 					DIA_LOG_ERROR("DebugServer", "DebugServer::SendProtoMessage — queue full for connId=%d, message dropped", connId);
 					mStats.messagesDropped++;
@@ -744,13 +745,13 @@ namespace Dia
 
 		void DebugServer::BroadcastProtoMessage(const dia::debug::DebugMessage& msg)
 		{
-			char buffer[4096];
-			if (!Dia::Proto::ToJson(msg, buffer, sizeof(buffer)))
+			std::string buffer;
+			if (!Dia::Proto::ToJson(msg, buffer))
 				return;
 
 			if (!mServer) return;
 			int connCount = mServer->GetConnectionCount();
-			mServer->BroadcastText(buffer);
+			mServer->BroadcastText(buffer.c_str());
 			mStats.messagesSentTotal += connCount;
 		}
 

@@ -71,6 +71,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | diahtn | [spec](specs/) | 2026-07-31 | Marked done by `dia docs spec-done` |
 | diaflowfield | [spec](specs/) | 2026-08-03 | Marked done by `dia docs spec-done` |
 | diasteering | [spec](specs/) | 2026-08-03 | Marked done by `dia docs spec-done` |
+| diascalarfield | [spec](specs/) | 2026-08-03 | Marked done by `dia docs spec-done` |
 
 ---
 

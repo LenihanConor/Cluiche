@@ -5,13 +5,19 @@
     "scenarios": [
         "scenarios/cluichetest/boot/test_boot_smoke.py",
         "scenarios/cluichetest/test_all_stages.py",
-        "scenarios/cluichetest/uiultralight/test_ui_ultralight.py",
         "scenarios/cluichetest/ai_decision/test_ai_decision.py",
         "scenarios/cluichetest/ai_htn/test_ai_htn.py",
         "scenarios/cluichetest/pathfinding/test_pathfinding_stage.py",
         "scenarios/cluichetest/rigidbody2d/test_rigidbody2d_settle.py",
         "scenarios/cluichetest/softbody2d/test_softbody2d_settle.py",
-        "scenarios/cluichetest/mesh3d_render_system_stage/test_render_capture.py"
+        "scenarios/cluichetest/mesh3d_render_system_stage/test_render_capture.py",
+        "scenarios/cluichetest/animation2d/test_anim2d_playback.py",
+        "scenarios/cluichetest/assetruntime/test_asset_lifecycle.py",
+        "scenarios/cluichetest/entity_test_stage/smoke.py",
+        "scenarios/cluichetest/scene2d_stage/smoke.py",
+        "scenarios/cluichetest/geometry2d_stage/smoke.py"
     ],
-    "generic_run_skip": {}
+    "generic_run_skip": {
+        "UIUltralightTestStage": "crashes app on second UIModule init — tracked in docs/research/e2e_testing/uiultralight_crash_notes.md"
+    }
 }

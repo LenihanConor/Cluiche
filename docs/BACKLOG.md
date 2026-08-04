@@ -35,6 +35,8 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | Item | Spec | What's needed |
 |------|------|---------------|
 | ~~DiaAIDecisionInspector~~ | — | Needs `/spec-system` — CluicheEditor panel showing per-entity AI decision state: blackboard slots → condition results → fired rules → utility scores in one vertical read. Depends on DiaAIBudget, DiaCondition, DiaRules, DiaUtilityAI all built + at least one CluicheTest entity running all four systems. DiaEntityInspector (stub) is a soft prerequisite for entity selection. |
+| DiaScalarFieldVisualDebugger | `diascalarfieldvisualdebugger.md` | Gradient arrow overlay needs arrowhead triangle + hex axial-to-world fix. Heatmap + layer names already implemented. |
+| DiaScalarFieldInspector | `diascalarfieldinspector.md` | Spec Approved. Ready to build. Depends on DiaScalarField ✅, DiaEditor. |
 | DiaSpatialEntityIndex | — | Needs `/spec-feature` under DiaGeometry2D — bridge between `ISpatialStructure<Entity>` (SpatialGrid/Quadtree/BVH) and DiaEntity's Domain. Maintains a per-frame-updated spatial index of entities by reading a transform component; exposes `QueryCircle(point, radius)`, `QueryRegion(rect)`, `QueryKNearest(point, k)` returning `Entity` handles. Prerequisite for: DiaSteering, DiaGridVisibility, DiaTargeting, DiaSensor, DiaSignal, AoE resolution. |
 | DiaGridVisibility | — | Needs `/spec-system` — per-cell fog-of-war on a grid. Each cell carries a per-faction state (unexplored / revealed / visible). Entities have a sight radius; cells within radius are marked visible each frame, fading to revealed when out of range. LOS blocking against terrain cells (walls, elevation). Shared vision within factions. Publishes visibility-change events via DiaStreams (unit spotted, unit lost). Prerequisite for: minimap data layer, cover/LOS combat modifiers. Depends on DiaGeometry2D ✅, DiaStreams ✅, DiaSpatialEntityIndex. |
 | DiaBehaviourTree | — | Needs `/spec-system` — data-driven behaviour tree evaluator. Nodes: Sequence, Selector, Parallel, Decorator (inverter, repeater, cooldown, guard), Leaf (action/condition). Trees defined in JSON, loaded at runtime. Leaf nodes reference DiaBlackboard keys for conditions and DiaOrder for execution. Supports tree sharing (many entities, one tree definition, different blackboard instances). Time-sliced: trees pause mid-evaluation and resume next tick. Depends on DiaBlackboard ✅, DiaOrder ✅, DiaCore/Timer ✅, DiaStreams ✅. |
@@ -72,34 +74,6 @@ Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testin
 | TSan (ThreadSanitizer) | Linux target (WSL2 CI) | Only reliable race detector for Main/Render/Sim threading model; TSan doesn't run on Windows |
 
 ---
-
-## E2E Test Coverage Gaps
-
-### Quick wins (no new C++ work needed)
-
-| Item | Notes |
-|------|-------|
-| ~~Add RigidBody2D + SoftBody2D scenarios to default.json~~ | ~~`scenarios/cluichetest/rigidbody2d/test_rigidbody2d_settle.py` and `softbody2d/test_softbody2d_settle.py` exist on disk but are missing from `plans/cluichetest/default.json`. Add both entries.~~ |
-| Dedicated scenario: EntityTestStage | 6 checkpoints (spawn_complete, query_correct, hierarchy_valid, destroy_cascade, mailbox_received, lifecycle_complete) — richest stage, generic runner only. Write `scenarios/cluichetest/entity/test_entity_stage.py`. |
-| Dedicated scenario: Scene2DTestStage | 5 checkpoints (scene.loaded, cameras_hydrated, lights_hydrated, entities_spawned, layers_resolved). Write `scenarios/cluichetest/scene2d/test_scene2d_stage.py`. |
-| Dedicated scenario: Animation2DTestStage | 2 checkpoints (animation2d.clips_completed, pose_correct). Write `scenarios/cluichetest/animation2d/test_animation2d_stage.py`. |
-| Dedicated scenario: IK2DTestStage | 3 checkpoints (ik2d.two_bone_converged, fabrik_converged, look_at_accurate). Write `scenarios/cluichetest/ik2d/test_ik2d_stage.py`. |
-| Dedicated scenario: Geometry2DTestStage | 1 checkpoint. Write `scenarios/cluichetest/geometry2d/test_geometry2d_stage.py`. |
-| Dedicated scenario: TestAssetRuntimeStage | 2 checkpoints (all_loaded, clean_reload). Write `scenarios/cluichetest/asset_runtime/test_asset_runtime_stage.py`. |
-
-### Needs investigation
-
-| Item | Notes |
-|------|-------|
-| ~~E2E suite: UIUltralightTestStage hard crashes app on generic runner~~ | ~~Fixed in commit `6d78c890` — UIModule no longer destroys UISystem on DoStop; Ultralight process-lifetime globals survive stage transitions.~~ |
-
-### Needs new C++ stage
-
-| Item | Notes |
-|------|-------|
-| ~~AIDecisionTestStage + scenario~~ | ~~Integration proof: DiaCondition + DiaRules + DiaUtilityAI + DiaAIBudget. Built 2026-07-31.~~ |
-| ~~AIHTNTestStage + scenario~~ | ~~Integration proof: HTN sync + diverge/replan + async + RuleActionBridge + AIBudget. Built 2026-07-31.~~ |
-| PathfindingTestStage + scenario | Spec drafted (pathfinding-test-stage.md). Full nav stack: A* + FlowField + Steering; 3 agents, dynamic obstacle re-route, gradient arrows, trails; 5 checkpoints + pytest scenario. |
 
 ---
 
