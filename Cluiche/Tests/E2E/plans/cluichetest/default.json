@@ -8,6 +8,7 @@
         "scenarios/cluichetest/uiultralight/test_ui_ultralight.py",
         "scenarios/cluichetest/ai_decision/test_ai_decision.py",
         "scenarios/cluichetest/ai_htn/test_ai_htn.py",
+        "scenarios/cluichetest/pathfinding/test_pathfinding_stage.py",
         "scenarios/cluichetest/rigidbody2d/test_rigidbody2d_settle.py",
         "scenarios/cluichetest/softbody2d/test_softbody2d_settle.py",
         "scenarios/cluichetest/mesh3d_render_system_stage/test_render_capture.py"

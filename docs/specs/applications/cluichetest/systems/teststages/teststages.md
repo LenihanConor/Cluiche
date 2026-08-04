@@ -121,6 +121,7 @@ Pytest scenarios can assert on metrics via the metric threshold fixture (item #8
 | Scene2D Stage | Scene load pipeline — .diascene parse, camera/light registry hydration, entity spawn with instance_data, LayerTable resolution; 5 checkpoints | @docs/specs/applications/cluichetest/systems/teststages/scene2d-stage.md | Approved |
 | IK2D Stage | Three IK solvers (two-bone right wing, FABRIK left wing, look-at head) on dragon skeleton; 3 convergence checkpoints; IK2DVisualDebugger drawers wired | @docs/specs/applications/cluichetest/systems/teststages/ik2d-stage.md | Done |
 | Mesh3DRenderSystem Stage | Multiple draw commands per frame (3 cubes + 1 glTF), unknown mesh ID silently skipped, 60-frame pass checkpoint | @docs/specs/applications/cluichetest/systems/teststages/mesh3d-render-system-stage.md | Approved |
+| PathfindingTestStage | Full navigation stack integration: A* + FlowField + Steering; 3 agents, dynamic obstacle re-route, gradient flow arrows, agent trails, goal pulse; 5 checkpoints | @docs/specs/applications/cluichetest/systems/teststages/pathfinding-test-stage.md | Approved |
 
 ## Platform Primitives Used
 

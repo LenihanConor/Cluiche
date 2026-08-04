@@ -77,6 +77,10 @@
         {
             "path": "Stages/AIHTNTestStage/ai_htn_test_stage.diastage",
             "type": "stage"
+        },
+        {
+            "path": "Stages/PathfindingTestStage/pathfinding_test_stage.diastage",
+            "type": "stage"
         }
     ],
     "name": "CluicheTest",

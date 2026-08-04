@@ -1,5 +1,13 @@
 #pragma once
 
+// Prevent Windows.h min/max macros from breaking std::max / std::min
+#ifdef max
+#  undef max
+#endif
+#ifdef min
+#  undef min
+#endif
+
 #include "DiaPathfinding/CPathGraph.h"
 #include "DiaPathfinding/PathResult.h"
 #include "DiaPathfinding/IPathCostProvider.h"
