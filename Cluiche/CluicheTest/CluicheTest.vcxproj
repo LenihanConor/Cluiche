@@ -60,6 +60,8 @@
     <ClCompile Include="Modules\TestStages\Drawers\AIDecisionTestDrawer.cpp" />
     <ClCompile Include="Modules\TestStages\Drawers\AIHTNTestDrawer.cpp" />
     <ClCompile Include="Modules\TestStages\Drawers\PathfindingTestDrawer.cpp" />
+    <ClCompile Include="Modules\TestStages\ScalarFieldTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\ScalarFieldTestDrawer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\BootMenuModule.h" />
@@ -101,6 +103,8 @@
     <ClInclude Include="Modules\TestStages\Drawers\AIDecisionTestDrawer.h" />
     <ClInclude Include="Modules\TestStages\Drawers\AIHTNTestDrawer.h" />
     <ClInclude Include="Modules\TestStages\Drawers\PathfindingTestDrawer.h" />
+    <ClInclude Include="Modules\TestStages\ScalarFieldTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\ScalarFieldTestDrawer.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">

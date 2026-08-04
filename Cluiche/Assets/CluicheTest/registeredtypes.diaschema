@@ -210,6 +210,11 @@
     },
     {
       "allowed_pus": "sim",
+      "description": "Tactical influence maps: Blue + Red faction fields, spatial queries, overlays",
+      "type_id": "ScalarFieldTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
       "description": "Pushes AI inspector payloads (budget/utility/rules/HTN) to the debug server",
       "type_id": "AIInspectorModule"
     },
@@ -352,6 +357,6 @@
   "processing_units": [],
   "version": {
     "major": 1,
-    "minor": 12
+    "minor": 13
   }
 }

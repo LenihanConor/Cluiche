@@ -148,6 +148,12 @@ namespace Dia
             // ----------------------------------------------------------------
             inline const Dia::Core::StringCRC kUtilityAIScores { "utility_ai.scores" };
 
+            // ----------------------------------------------------------------
+            // Scalar Field (priority tier 0 — background/spatial data)
+            // ----------------------------------------------------------------
+            inline const Dia::Core::StringCRC kScalarFieldHeatmap  { "scalarfield.heatmap"  };
+            inline const Dia::Core::StringCRC kScalarFieldGradient { "scalarfield.gradient" };
+
         } // namespace LayerNames
     } // namespace Debug
 } // namespace Dia

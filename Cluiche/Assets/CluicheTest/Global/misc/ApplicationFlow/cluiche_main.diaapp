@@ -18,7 +18,8 @@
                 "Mesh3DRenderSystemTestStage",
                 "AIDecisionTestStage",
                 "AIHTNTestStage",
-                "PathfindingTestStage"
+                "PathfindingTestStage",
+                "ScalarFieldTestStage"
             ],
             "auto_advance": false
         },
@@ -116,6 +117,13 @@
         },
         {
             "name": "PathfindingTestStage",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "ScalarFieldTestStage",
             "transitions": [
                 "Boot"
             ],
@@ -532,7 +540,8 @@
                         "Mesh3DRenderSystemTestStage",
                         "AIDecisionTestStage",
                         "AIHTNTestStage",
-                        "PathfindingTestStage"
+                        "PathfindingTestStage",
+                        "ScalarFieldTestStage"
                     ],
                     "dependencies": [
                         "Camera2DModule"
@@ -632,7 +641,8 @@
                         "Mesh3DRenderSystemTestStage",
                         "AIDecisionTestStage",
                         "AIHTNTestStage",
-                        "PathfindingTestStage"
+                        "PathfindingTestStage",
+                        "ScalarFieldTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"
@@ -664,7 +674,8 @@
                         "Mesh3DRenderSystemTestStage",
                         "AIDecisionTestStage",
                         "AIHTNTestStage",
-                        "PathfindingTestStage"
+                        "PathfindingTestStage",
+                        "ScalarFieldTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"

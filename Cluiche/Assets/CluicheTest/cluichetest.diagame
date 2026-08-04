@@ -81,6 +81,10 @@
         {
             "path": "Stages/PathfindingTestStage/pathfinding_test_stage.diastage",
             "type": "stage"
+        },
+        {
+            "path": "Stages/ScalarFieldTestStage/scalarfield_test_stage.diastage",
+            "type": "stage"
         }
     ],
     "name": "CluicheTest",

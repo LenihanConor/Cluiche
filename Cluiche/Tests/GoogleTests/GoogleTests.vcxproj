@@ -748,6 +748,7 @@
     <ClCompile Include="DiaScalarField\TestScalarFieldTestHelpers.cpp" />
     <ClCompile Include="DiaScalarField\TestScalarFieldObservation.cpp" />
     <ClCompile Include="DiaScalarField\TestScalarFieldEdgeCases.cpp" />
+    <ClCompile Include="DiaScalarField\TestScalarFieldVisualDebugger.cpp" />
     <!-- DiaSteering -->
     <ClCompile Include="DiaSteering\TestSteeringBehaviours.cpp" />
     <ClCompile Include="DiaSteering\TestSteeringPipeline.cpp" />

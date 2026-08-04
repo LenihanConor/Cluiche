@@ -1,0 +1,9 @@
+{
+    "name": "ScalarFieldTestStage",
+    "manifest": "Stages/ScalarFieldTestStage/misc/ApplicationFlow/scalarfield_test_stage.diaapp",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

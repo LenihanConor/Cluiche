@@ -785,6 +785,56 @@
             "tags": [
                 "misc/ApplicationFlow"
             ]
+        },
+        {
+            "id": "stage.pathfinding_test_stage",
+            "type": "stage",
+            "source_path": "Stages/PathfindingTestStage/pathfinding_test_stage.diastage",
+            "scope": "global",
+            "tags": [
+                "misc"
+            ],
+            "references": [
+                {
+                    "type": "contains",
+                    "target": "manifest.pathfinding_test_stage"
+                }
+            ]
+        },
+        {
+            "id": "manifest.pathfinding_test_stage",
+            "type": "manifest",
+            "source_path": "Stages/PathfindingTestStage/misc/ApplicationFlow/pathfinding_test_stage.diaapp",
+            "scope": "stage",
+            "stage_name": "PathfindingTestStage",
+            "tags": [
+                "misc/ApplicationFlow"
+            ]
+        },
+        {
+            "id": "stage.scalarfield_test_stage",
+            "type": "stage",
+            "source_path": "Stages/ScalarFieldTestStage/scalarfield_test_stage.diastage",
+            "scope": "global",
+            "tags": [
+                "misc"
+            ],
+            "references": [
+                {
+                    "type": "contains",
+                    "target": "manifest.scalarfield_test_stage"
+                }
+            ]
+        },
+        {
+            "id": "manifest.scalarfield_test_stage",
+            "type": "manifest",
+            "source_path": "Stages/ScalarFieldTestStage/misc/ApplicationFlow/scalarfield_test_stage.diaapp",
+            "scope": "stage",
+            "stage_name": "ScalarFieldTestStage",
+            "tags": [
+                "misc/ApplicationFlow"
+            ]
         }
     ],
     "rules_path": "assets.rules.json"

@@ -127,6 +127,12 @@
     <ClCompile Include="Modules\TestStages\AIHTNTestStageModule.cpp">
     <ClCompile Include="Modules\TestStages\Drawers\AIDecisionTestDrawer.cpp">
     <ClCompile Include="Modules\TestStages\Drawers\AIHTNTestDrawer.cpp">
+    <ClCompile Include="Modules\TestStages\ScalarFieldTestStageModule.cpp">
+    <ClCompile Include="Modules\TestStages\Drawers\ScalarFieldTestDrawer.cpp">
+      <Filter>TestStages\Drawers</Filter>
+    </ClCompile>
+      <Filter>TestStages</Filter>
+    </ClCompile>
       <Filter>Modules\TestStages\Drawers</Filter>
     </ClCompile>
       <Filter>Modules\TestStages\Drawers</Filter>
@@ -241,6 +247,12 @@
     <ClInclude Include="Modules\TestStages\AIHTNTestStageModule.h">
     <ClInclude Include="Modules\TestStages\Drawers\AIDecisionTestDrawer.h">
     <ClInclude Include="Modules\TestStages\Drawers\AIHTNTestDrawer.h">
+    <ClInclude Include="Modules\TestStages\ScalarFieldTestStageModule.h">
+    <ClInclude Include="Modules\TestStages\Drawers\ScalarFieldTestDrawer.h">
+      <Filter>TestStages\Drawers</Filter>
+    </ClInclude>
+      <Filter>TestStages</Filter>
+    </ClInclude>
       <Filter>Modules\TestStages\Drawers</Filter>
     </ClInclude>
       <Filter>Modules\TestStages\Drawers</Filter>
