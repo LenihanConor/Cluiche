@@ -42,7 +42,7 @@ namespace Dia { namespace ApplicationFlow {
 
         // Read-only: what stages can the given stage transition to.
         virtual void GetStageTransitions(const Dia::Core::StringCRC& stage,
-            Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16>& out) const = 0;
+            Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>& out) const = 0;
 
         // Register a transition guard tied to `owner`.  The guard is called each
         // frame while a transition is pending.  Returns false if registry is full

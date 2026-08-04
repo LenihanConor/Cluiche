@@ -36,7 +36,7 @@ private:
     Dia::ApplicationFlow::ModuleRef<DebugServerHostModule> mDebugServer{this, Dia::Core::StringCRC("DebugServerHostModule")};
     Dia::ApplicationFlow::EventStreamWriter<Cluiche::AppFlow::RenderToSimNavRequest> mNavRequest{this, "BootMenuNavRequest"};
 
-    static constexpr unsigned int kMaxStages = 16;
+    static constexpr unsigned int kMaxStages = 32;
     Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, kMaxStages> mNavigableStages;
     unsigned int mLoadedBitfield = 0;
     int mSelectedIndex = -1;

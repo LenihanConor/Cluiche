@@ -55,7 +55,7 @@ namespace Dia { namespace ApplicationFlow {
         virtual TransitionInfo GetTransitionInfo() const = 0;
 
         virtual void GetAllStages(
-            Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16>& out) const = 0;
+            Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>& out) const = 0;
 
         virtual void GetProcessingUnits(
             Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 4>& out) const = 0;

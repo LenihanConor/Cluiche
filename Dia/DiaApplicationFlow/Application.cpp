@@ -584,7 +584,7 @@ namespace Dia { namespace ApplicationFlow {
     //--------------------------------------------------------------------------
 
     void Application::GetAllStages(
-        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16>& out) const
+        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>& out) const
     {
         for (unsigned int i = 0; i < mManifest.stages.Size() && !out.IsFull(); ++i)
             out.Add(mManifest.stages[i].name);
@@ -595,7 +595,7 @@ namespace Dia { namespace ApplicationFlow {
     //--------------------------------------------------------------------------
 
     void Application::GetStageTransitions(const Dia::Core::StringCRC& stage,
-        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16>& out) const
+        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>& out) const
     {
         for (unsigned int i = 0; i < mManifest.stages.Size(); ++i)
         {
@@ -1150,7 +1150,7 @@ namespace Dia { namespace ApplicationFlow {
                 Json::Value result;
                 Json::Value stagesArr(Json::arrayValue);
 
-                Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> targets;
+                Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32> targets;
                 GetStageTransitions(Dia::Core::StringCRC("Boot"), targets);
                 for (unsigned int i = 0; i < targets.Size(); ++i)
                     stagesArr.append(targets[i].AsChar());

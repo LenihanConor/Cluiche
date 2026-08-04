@@ -201,7 +201,7 @@ namespace Dia { namespace Automation {
         }
 
         // Validate target stage
-        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> stages;
+        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32> stages;
         mApp.GetAllStages(stages);
         bool found = false;
         for (unsigned int i = 0; i < stages.Size(); ++i)

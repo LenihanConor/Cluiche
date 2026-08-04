@@ -71,7 +71,7 @@ namespace Dia { namespace ApplicationFlow {
 
         // IApplicationControl — read-only stage graph query.
         void GetStageTransitions(const Dia::Core::StringCRC& stage,
-            Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16>& out) const override;
+            Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>& out) const override;
 
         // IApplicationControl — main-thread-only; register/unregister transition guards.
         bool RegisterTransitionGuard(Module* owner, TransitionGuardFn fn) override;
@@ -84,7 +84,7 @@ namespace Dia { namespace ApplicationFlow {
         [[nodiscard]] Dia::Core::StringCRC GetCurrentStage() const override;
         [[nodiscard]] bool IsTransitioning() const override;
         [[nodiscard]] TransitionInfo GetTransitionInfo() const override;
-        void GetAllStages(Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16>& out) const override;
+        void GetAllStages(Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>& out) const override;
         void GetProcessingUnits(Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 4>& out) const override;
         void GetActiveModules(const Dia::Core::StringCRC& puId,
                               Dia::Core::Containers::DynamicArrayC<ModuleStateInfo, 64>& out) const override;
