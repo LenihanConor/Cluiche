@@ -15,6 +15,12 @@
     <ClInclude Include="DamageReceivedComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="DamageSensorComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ProximitySensorComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="SensorResults.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -30,6 +36,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DamageReceivedComponent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DamageSensorComponent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProximitySensorComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SensorResultsComponent.cpp">
