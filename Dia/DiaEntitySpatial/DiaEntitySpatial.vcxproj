@@ -74,8 +74,10 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="SpatialComponent.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="SpatialComponent.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.entityspatial.architecture.module.md" />

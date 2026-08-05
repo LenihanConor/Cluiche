@@ -18,6 +18,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="SpatialComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="SpatialComponent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
     <None Include="Docs\dia.entityspatial.architecture.module.md">
       <Filter>Docs</Filter>
     </None>
