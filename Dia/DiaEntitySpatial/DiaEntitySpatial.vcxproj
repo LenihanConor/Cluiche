@@ -74,6 +74,7 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="EntitySpatialIndex.h" />
     <ClInclude Include="SpatialComponent.h" />
   </ItemGroup>
   <ItemGroup>
