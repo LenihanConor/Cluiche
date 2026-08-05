@@ -78,6 +78,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | DiaScalarField | CFieldTopology concept, topologies, decay/propagation policies, double-buffering, write shapes, gradient/spatial queries, multi-field combine, ScalarFieldOverlay, Test Utilities | 2026-08-05 | Moved from backlog — already implemented |
 | DiaAIDecisionInspector | CluicheEditor panel: blackboard slots → condition results → fired rules → utility scores | 2026-08-05 | Moved from backlog — already implemented |
 | diaentityspatial | [spec](specs/) | 2026-08-05 | Marked done by `dia docs spec-done` |
+| EntitySpatialTestStage | TestStages | 2026-08-05 | Moved by `dia docs backlog move` |
 
 ---
 

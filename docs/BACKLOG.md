@@ -23,7 +23,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | Feature | System | Depends On |
 |---------|--------|------------|
-| EntitySpatialTestStage | TestStages | DiaEntitySpatial ✅ |
+| ~~EntitySpatialTestStage~~ | TestStages | DiaEntitySpatial ✅ |
 
 ---
 
