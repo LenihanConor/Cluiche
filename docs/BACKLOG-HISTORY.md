@@ -72,6 +72,21 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | diaflowfield | [spec](specs/) | 2026-08-03 | Marked done by `dia docs spec-done` |
 | diasteering | [spec](specs/) | 2026-08-03 | Marked done by `dia docs spec-done` |
 | diascalarfield | [spec](specs/) | 2026-08-03 | Marked done by `dia docs spec-done` |
+| DiaAIBudget | IAIBudgetedSystem, AIBudgetScheduler, AIBudgetModule, Budget Metrics | 2026-08-05 | Moved from backlog — already implemented |
+| DiaCondition | IConditionContext, ConditionRegistry, ConditionExpr, ConditionGuardAdapter, Test Utilities | 2026-08-05 | Moved from backlog — already implemented |
+| DiaFlowField | CFlowFieldGraph concept, SquareFlowAdapter + HexFlowAdapter, FlowField, ComputeFlowField, FlowFieldCache, Test Utilities | 2026-08-05 | Moved from backlog — already implemented |
+| DiaScalarField | CFieldTopology concept, topologies, decay/propagation policies, double-buffering, write shapes, gradient/spatial queries, multi-field combine, ScalarFieldOverlay, Test Utilities | 2026-08-05 | Moved from backlog — already implemented |
+| DiaAIDecisionInspector | CluicheEditor panel: blackboard slots → condition results → fired rules → utility scores | 2026-08-05 | Moved from backlog — already implemented |
+| diaentityspatial | [spec](specs/) | 2026-08-05 | Marked done by `dia docs spec-done` |
+
+---
+
+## Completed Standalone Features (continued — from backlog cleanup)
+
+| Feature | System | Completed | Notes |
+|---------|--------|-----------|-------|
+| AI Personality | DiaUtilityAI | 2026-08-05 | Moved from backlog — already implemented |
+| E2E suite: RigidBody2DTestStage / SoftBody2DTestStage checkpoint failures | TestStages | 2026-08-05 | Doubled frame budgets (900→1800, 600→1200) and pytest timeouts (15s→100s, 14s→70s) to match ~50ms Debug SimPU frame rate |
 
 ---
 
