@@ -37,6 +37,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SensorModule.h">
+    <ClInclude Include="ThreatBoard.h" />
+    <ClInclude Include="AwarenessBoard.h" />
+    <ClInclude Include="DefaultSensorBlackboardAdapter.h" />
       <Filter>Header Files</Filter>
     </ClInclude>
       <Filter>Header Files</Filter>
@@ -59,6 +62,7 @@
     <ClCompile Include="SoundEventList.cpp" />
     <ClCompile Include="SoundSensorComponent.cpp" />
     <ClCompile Include="SensorModule.cpp">
+    <ClCompile Include="DefaultSensorBlackboardAdapter.cpp" />
       <Filter>Source Files</Filter>
     </ClCompile>
       <Filter>Source Files</Filter>

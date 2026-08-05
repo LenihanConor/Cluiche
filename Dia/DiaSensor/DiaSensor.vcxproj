@@ -85,6 +85,9 @@
     <ClInclude Include="SoundSensorComponent.h" />
     <ClInclude Include="SensorBlackboardAdapter.h" />
     <ClInclude Include="SensorModule.h" />
+    <ClInclude Include="ThreatBoard.h" />
+    <ClInclude Include="AwarenessBoard.h" />
+    <ClInclude Include="DefaultSensorBlackboardAdapter.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DamageReceivedComponent.cpp" />
@@ -95,6 +98,7 @@
     <ClCompile Include="SoundEventList.cpp" />
     <ClCompile Include="SoundSensorComponent.cpp" />
     <ClCompile Include="SensorModule.cpp" />
+    <ClCompile Include="DefaultSensorBlackboardAdapter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.sensor.architecture.module.md" />
