@@ -99,13 +99,13 @@ private:
     bool mJsonHandlerRegistered     = false;
     bool mMesh3DHandlerRegistered   = false;
 
-    Dia::Core::Containers::DynamicArrayC<PathAliasEntry, 16>  mStageAliases;
-    Dia::Core::Containers::DynamicArrayC<StagePathEntry,  16> mStagePathMap;
+    Dia::Core::Containers::DynamicArrayC<PathAliasEntry, 32>  mStageAliases;
+    Dia::Core::Containers::DynamicArrayC<StagePathEntry,  32> mStagePathMap;
     Dia::Core::Containers::String512 mDeployRoot;
 
     // Per-stage load state tracking: plain C array avoids DynamicArrayC copy
     // issues with non-copyable std::atomic members.
-    static const unsigned int kMaxTrackedStages = 8;
+    static const unsigned int kMaxTrackedStages = 32;
     struct StageStateEntry
     {
         Dia::Core::StringCRC appStageId;
@@ -116,7 +116,7 @@ private:
         StageStateEntry(const StageStateEntry&) = delete;
         StageStateEntry& operator=(const StageStateEntry&) = delete;
     };
-    StageStateEntry  mStageStates[kMaxTrackedStages];
+    StageStateEntry  mStageStates[32];
     unsigned int     mStageStateCount = 0;
 
     Dia::ApplicationFlow::ServiceStreamReader<Dia::AssetRuntime::TextureHandler>  mTextureHandlerService{this, "KernelTextureHandler"};

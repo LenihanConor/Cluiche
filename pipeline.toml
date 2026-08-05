@@ -88,6 +88,10 @@ files = [
   { src = "Cluiche/Assets/CluicheTest/Stages/AIHTNTestStage/misc/ApplicationFlow/ai_htn_test_stage.diaapp", dest = "$(OutDir)assets/stages/AIHTNTestStage/misc/ApplicationFlow/" },
   { src = "Cluiche/Assets/CluicheTest/Stages/PathfindingTestStage/pathfinding_test_stage.diastage", dest = "$(OutDir)assets/stages/PathfindingTestStage/" },
   { src = "Cluiche/Assets/CluicheTest/Stages/PathfindingTestStage/misc/ApplicationFlow/pathfinding_test_stage.diaapp", dest = "$(OutDir)assets/stages/PathfindingTestStage/misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/ScalarFieldTestStage/scalarfield_test_stage.diastage", dest = "$(OutDir)assets/stages/ScalarFieldTestStage/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/ScalarFieldTestStage/misc/ApplicationFlow/scalarfield_test_stage.diaapp", dest = "$(OutDir)assets/stages/ScalarFieldTestStage/misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/EntitySpatialTestStage/entityspatial_test_stage.diastage", dest = "$(OutDir)assets/stages/EntitySpatialTestStage/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/EntitySpatialTestStage/misc/ApplicationFlow/entityspatial_test_stage.diaapp", dest = "$(OutDir)assets/stages/EntitySpatialTestStage/misc/ApplicationFlow/" },
 ]
 
 [targets.cluicheeditor]

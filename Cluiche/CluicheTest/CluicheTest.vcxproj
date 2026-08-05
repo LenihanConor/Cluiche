@@ -206,6 +206,9 @@
     <ProjectReference Include="..\..\Dia\DiaEntity\DiaEntity.vcxproj">
       <Project>{D9E0F1A2-B3C4-5678-9DEF-012345678903}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaEntitySpatial\DiaEntitySpatial.vcxproj">
+      <Project>{E5F6A7B8-C9D0-1234-ABCD-567890EF0123}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaVisualDebuggerConsole\DiaVisualDebuggerConsole.vcxproj">
       <Project>{07B8C9D0-E1F2-3456-BCDE-678901ABCDE2}</Project>
     </ProjectReference>

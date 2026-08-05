@@ -17,6 +17,7 @@
 
 #ifdef DIA_DEBUG
 #include "Modules/VisualDebuggerModule.h"
+#include <DiaEntitySpatial/Adaptors/EntitySpatialOverlay.h>
 #endif
 
 namespace Dia::Observation::Metric { class Gauge; }
@@ -88,6 +89,10 @@ private:
 
 #ifdef DIA_DEBUG
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::VisualDebuggerModule> mVisualDebuggerRef{this};
+
+    std::unique_ptr<Dia::EntitySpatial::Adaptors::EntitySpatialGridOverlay>   mGridOverlay;
+    std::unique_ptr<Dia::EntitySpatial::Adaptors::EntitySpatialEntityOverlay> mEntityOverlay;
+    std::unique_ptr<Dia::EntitySpatial::Adaptors::EntitySpatialQueryOverlay>  mQueryOverlay;
 #endif
 };
 
