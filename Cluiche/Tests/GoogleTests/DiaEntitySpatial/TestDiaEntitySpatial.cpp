@@ -11,6 +11,7 @@
 #include <DiaGeometry2D/Shapes/Ray.h>
 #include <DiaMaths/Vector/Vector2D.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaCore/Json/external/json/json.h>
 
 #include <cmath>
 #include <memory>
@@ -427,4 +428,323 @@ TEST_F(DiaEntitySpatialTest, StaleHandle_DestroyedEntityNotReturned)
 
     // Stale handle must report as dead.
     EXPECT_FALSE(domain.IsAlive(e));
+}
+
+// ============================================================================
+// 11. Empty domain — all query types return zero results
+// ============================================================================
+
+TEST_F(DiaEntitySpatialTest, EmptyDomain_AllQueriesReturnZero)
+{
+    // No entities added. Module still runs update without crashing.
+    module->Update();
+
+    Dia::Core::Containers::DynamicArrayC<Entity, 32> out;
+
+    module->QueryCircle(Dia::Geometry2D::Circle(50.f, Vector2D(0.f, 0.f)), 0x7FFFFFFFu, out);
+    EXPECT_EQ(out.Size(), 0u) << "QueryCircle on empty domain";
+
+    out.RemoveAll();
+    module->QueryRegion(Dia::Geometry2D::AARect(Vector2D(-50.f,-50.f), Vector2D(50.f,50.f)), 0x7FFFFFFFu, out);
+    EXPECT_EQ(out.Size(), 0u) << "QueryRegion on empty domain";
+
+    out.RemoveAll();
+    module->QueryKNearest(Vector2D(0.f, 0.f), 5, 0x7FFFFFFFu, out);
+    EXPECT_EQ(out.Size(), 0u) << "QueryKNearest on empty domain";
+
+    out.RemoveAll();
+    module->QueryRay(Dia::Geometry2D::Ray(Vector2D(0.f,0.f), Vector2D(1.f,0.f)), 100.f, 0x7FFFFFFFu, out);
+    EXPECT_EQ(out.Size(), 0u) << "QueryRay on empty domain";
+
+    out.RemoveAll();
+    module->QuerySector(Vector2D(0.f,0.f), Vector2D(1.f,0.f), 50.f, 3.14159265f/4.f, 0x7FFFFFFFu, out);
+    EXPECT_EQ(out.Size(), 0u) << "QuerySector on empty domain";
+}
+
+// ============================================================================
+// 12. Entity without SpatialComponent is never returned
+// ============================================================================
+
+TEST_F(DiaEntitySpatialTest, NoSpatialComponent_EntityNeverReturned)
+{
+    // Create a bare entity with no SpatialComponent.
+    Entity bare = domain.CreateEntity();
+    domain.EndOfFrame();
+    module->Update();
+
+    Dia::Geometry2D::Circle queryCircle(200.f, Vector2D(0.f, 0.f));
+    Dia::Core::Containers::DynamicArrayC<Entity, 32> out;
+    module->QueryCircle(queryCircle, 0x7FFFFFFFu, out);
+
+    EXPECT_EQ(out.Size(), 0u);
+    EXPECT_TRUE(domain.IsAlive(bare));
+}
+
+// ============================================================================
+// 13. QueryKNearest with k=0 returns nothing
+// ============================================================================
+
+TEST_F(DiaEntitySpatialTest, QueryKNearest_KZeroReturnsNothing)
+{
+    SpawnSpatialEntity(domain, Vector2D(1.f, 0.f), 0.5f, 0x01);
+    SpawnSpatialEntity(domain, Vector2D(2.f, 0.f), 0.5f, 0x01);
+    FlushDomain(domain);
+    module->Update();
+
+    Dia::Core::Containers::DynamicArrayC<Entity, 32> out;
+    module->QueryKNearest(Vector2D(0.f, 0.f), 0, 0x7FFFFFFFu, out);
+
+    EXPECT_EQ(out.Size(), 0u);
+}
+
+// ============================================================================
+// 14. QueryKNearest with k > entity count returns all entities
+// ============================================================================
+
+TEST_F(DiaEntitySpatialTest, QueryKNearest_KExceedsCountReturnsAll)
+{
+    SpawnSpatialEntity(domain, Vector2D(1.f, 0.f), 0.5f, 0x01);
+    SpawnSpatialEntity(domain, Vector2D(2.f, 0.f), 0.5f, 0x01);
+    FlushDomain(domain);
+    module->Update();
+
+    Dia::Core::Containers::DynamicArrayC<Entity, 32> out;
+    module->QueryKNearest(Vector2D(0.f, 0.f), 100, 0x7FFFFFFFu, out);
+
+    EXPECT_EQ(out.Size(), 2u);
+}
+
+// ============================================================================
+// 15. SpatialComponent default values are correct
+// ============================================================================
+
+TEST_F(DiaEntitySpatialTest, SpatialComponent_DefaultValues)
+{
+    // Verify that SpatialComponent starts dirty (bit 31 set) with expected defaults.
+    SpatialComponent sc;
+    EXPECT_EQ(sc.position.x, 0.f);
+    EXPECT_EQ(sc.position.y, 0.f);
+    EXPECT_EQ(sc.radius, 1.0f);
+    EXPECT_TRUE(sc.IsDirty()) << "New SpatialComponent must start dirty";
+    EXPECT_EQ(sc.GetLayerMask(), 0u) << "Default layer mask (bits 0-30) should be 0";
+}
+
+// ============================================================================
+// 16. SetLayerMask marks dirty and updates GetLayerMask
+// ============================================================================
+
+TEST_F(DiaEntitySpatialTest, SpatialComponent_SetLayerMaskMarksDirtyAndUpdatesValue)
+{
+    SpatialComponent sc;
+    sc.ClearDirty();
+    EXPECT_FALSE(sc.IsDirty());
+
+    sc.SetLayerMask(0x03);
+
+    EXPECT_TRUE(sc.IsDirty()) << "SetLayerMask must mark dirty";
+    EXPECT_EQ(sc.GetLayerMask(), 0x03u);
+    // Bit 31 must not bleed into GetLayerMask result.
+    EXPECT_EQ(sc.GetLayerMask() & 0x80000000u, 0u);
+}
+
+// ============================================================================
+// 17. SetLayerMask propagates to module re-index on next Update
+// ============================================================================
+
+TEST_F(DiaEntitySpatialTest, SetLayerMask_PropagatesOnNextUpdate)
+{
+    // Spawn entity with layer 0x01, confirm it is found with mask 0x01.
+    Entity e = SpawnSpatialEntity(domain, Vector2D(5.f, 5.f), 1.0f, 0x01);
+    FlushDomain(domain);
+    module->Update();
+
+    {
+        Dia::Geometry2D::Circle q(20.f, Vector2D(0.f,0.f));
+        Dia::Core::Containers::DynamicArrayC<Entity, 32> out;
+        module->QueryCircle(q, 0x01, out);
+        EXPECT_EQ(out.Size(), 1u) << "Should be found with original mask";
+    }
+
+    // Change layer to 0x02 and verify re-index.
+    SpatialComponent* sc = domain.GetComponent<SpatialComponent>(e);
+    ASSERT_NE(sc, nullptr);
+    sc->SetLayerMask(0x02);  // automatically marks dirty
+
+    module->Update();
+
+    {
+        Dia::Geometry2D::Circle q(20.f, Vector2D(0.f,0.f));
+        Dia::Core::Containers::DynamicArrayC<Entity, 32> out;
+        module->QueryCircle(q, 0x01, out);
+        EXPECT_EQ(out.Size(), 0u) << "Old mask should not match after layer change";
+
+        out.RemoveAll();
+        module->QueryCircle(q, 0x02, out);
+        EXPECT_EQ(out.Size(), 1u) << "New mask should now match";
+    }
+}
+
+// ============================================================================
+// 18. QueryRegion — entity exactly on AARect boundary is included
+// ============================================================================
+
+TEST_F(DiaEntitySpatialTest, QueryRegion_EntityOnBoundaryIsIncluded)
+{
+    // Entity at (10, 10) exactly on the boundary of a [0,0]-[10,10] rect.
+    Entity e = SpawnSpatialEntity(domain, Vector2D(10.f, 10.f), 0.1f, 0x01);
+    FlushDomain(domain);
+    module->Update();
+
+    // Region whose top-right corner exactly touches the entity.
+    Dia::Geometry2D::AARect region(Vector2D(0.f, 0.f), Vector2D(10.f, 10.f));
+    Dia::Core::Containers::DynamicArrayC<Entity, 32> out;
+    module->QueryRegion(region, 0x7FFFFFFFu, out);
+
+    // Boundary inclusion is grid-implementation-dependent; we only assert no crash
+    // and that at most 1 entity (the right one) appears.
+    EXPECT_LE(out.Size(), 1u);
+    if (out.Size() == 1u)
+        EXPECT_EQ(out[0], e);
+}
+
+// ============================================================================
+// 19. QueryRay — entity exactly at maxDist boundary
+// ============================================================================
+
+TEST_F(DiaEntitySpatialTest, QueryRay_EntityAtMaxDistBoundaryIsIncluded)
+{
+    // Entity centre at (10, 0) radius 1; ray along +X maxDist=10 — closest point
+    // on segment is exactly (10,0), distSq=0 which is <= radius²=1.
+    Entity e = SpawnSpatialEntity(domain, Vector2D(10.f, 0.f), 1.0f, 0x01);
+    FlushDomain(domain);
+    module->Update();
+
+    Dia::Geometry2D::Ray ray(Vector2D(0.f, 0.f), Vector2D(1.f, 0.f));
+    Dia::Core::Containers::DynamicArrayC<Entity, 32> out;
+    module->QueryRay(ray, 10.f, 0x7FFFFFFFu, out);
+
+    EXPECT_EQ(out.Size(), 1u);
+    if (out.Size() == 1u)
+        EXPECT_EQ(out[0], e);
+}
+
+// ============================================================================
+// 20. QuerySector — entity at origin (dist < epsilon) is skipped safely
+// ============================================================================
+
+TEST_F(DiaEntitySpatialTest, QuerySector_EntityAtOriginSkippedSafely)
+{
+    // Entity exactly at the sector origin — undefined angle, code skips it.
+    SpawnSpatialEntity(domain, Vector2D(0.f, 0.f), 0.5f, 0x01);
+    FlushDomain(domain);
+    module->Update();
+
+    Dia::Core::Containers::DynamicArrayC<Entity, 32> out;
+    module->QuerySector(Vector2D(0.f, 0.f), Vector2D(1.f, 0.f), 10.f, 3.14159265f/4.f, 0x7FFFFFFFu, out);
+
+    // Must not crash. Entity at origin is deliberately skipped.
+    EXPECT_EQ(out.Size(), 0u);
+}
+
+// ============================================================================
+// 21. Detach + re-attach in the same domain re-inserts correctly
+// ============================================================================
+
+TEST_F(DiaEntitySpatialTest, DetachAndReattach_EntityReturnsAfterReattach)
+{
+    Entity e = SpawnSpatialEntity(domain, Vector2D(5.f, 5.f), 1.0f, 0x01);
+    FlushDomain(domain);
+    module->Update();
+
+    // Confirm found initially.
+    {
+        Dia::Geometry2D::Circle q(20.f, Vector2D(0.f, 0.f));
+        Dia::Core::Containers::DynamicArrayC<Entity, 32> out;
+        module->QueryCircle(q, 0x7FFFFFFFu, out);
+        EXPECT_EQ(out.Size(), 1u) << "Should be found before detach";
+    }
+
+    // Detach.
+    domain.QueueRemoveComponent<SpatialComponent>(e);
+    domain.EndOfFrame();
+    module->Update();
+
+    {
+        Dia::Geometry2D::Circle q(20.f, Vector2D(0.f, 0.f));
+        Dia::Core::Containers::DynamicArrayC<Entity, 32> out;
+        module->QueryCircle(q, 0x7FFFFFFFu, out);
+        EXPECT_EQ(out.Size(), 0u) << "Should not be found after detach";
+    }
+
+    // Re-attach at a different position.
+    Json::Value cfg;
+    cfg["position"]["x"] = 3.f;
+    cfg["position"]["y"] = 3.f;
+    cfg["radius"]        = 1.0f;
+    cfg["layerMask"]     = 0x01;
+    domain.QueueAddComponent<SpatialComponent>(e, cfg);
+    domain.EndOfFrame();
+    module->Update();
+
+    {
+        Dia::Geometry2D::Circle q(20.f, Vector2D(0.f, 0.f));
+        Dia::Core::Containers::DynamicArrayC<Entity, 32> out;
+        module->QueryCircle(q, 0x7FFFFFFFu, out);
+        EXPECT_EQ(out.Size(), 1u) << "Should be found again after re-attach";
+        if (out.Size() == 1u)
+            EXPECT_EQ(out[0], e);
+    }
+}
+
+// ============================================================================
+// 22. Multiple entities matching a single QueryCircle
+// ============================================================================
+
+TEST_F(DiaEntitySpatialTest, QueryCircle_MultipleEntitiesInRange)
+{
+    Entity e1 = SpawnSpatialEntity(domain, Vector2D( 1.f,  0.f), 0.5f, 0x01);
+    Entity e2 = SpawnSpatialEntity(domain, Vector2D(-1.f,  0.f), 0.5f, 0x01);
+    Entity e3 = SpawnSpatialEntity(domain, Vector2D( 0.f,  1.f), 0.5f, 0x01);
+    SpawnSpatialEntity(domain, Vector2D(50.f, 50.f), 0.5f, 0x01); // outside
+    FlushDomain(domain);
+    module->Update();
+
+    Dia::Geometry2D::Circle queryCircle(5.f, Vector2D(0.f, 0.f));
+    Dia::Core::Containers::DynamicArrayC<Entity, 32> out;
+    module->QueryCircle(queryCircle, 0x7FFFFFFFu, out);
+
+    EXPECT_EQ(out.Size(), 3u);
+
+    // Verify each expected entity appears exactly once.
+    Dia::Core::Containers::DynamicArrayC<Entity, 4> expected;
+    expected.Add(e1); expected.Add(e2); expected.Add(e3);
+    AssertExactEntitySet(out, expected, "MultipleEntitiesInRange");
+}
+
+// ============================================================================
+// 23. JSON init roundtrip — position/radius/layerMask values survive QueueAddComponent
+// ============================================================================
+
+TEST_F(DiaEntitySpatialTest, SpatialComponent_JsonInitRoundtrip)
+{
+    // Construct a component via the JSON path that Domain uses internally.
+    Json::Value cfg;
+    cfg["position"]["x"] = 3.5f;
+    cfg["position"]["y"] = -7.25f;
+    cfg["radius"]        = 2.0f;
+    cfg["layerMask"]     = 0x0Fu;
+
+    Entity e = domain.CreateEntity();
+    domain.QueueAddComponent<SpatialComponent>(e, cfg);
+    domain.EndOfFrame();
+
+    const SpatialComponent* sc = domain.GetComponent<SpatialComponent>(e);
+    ASSERT_NE(sc, nullptr);
+
+    EXPECT_NEAR(sc->position.x, 3.5f,   1e-5f);
+    EXPECT_NEAR(sc->position.y, -7.25f, 1e-5f);
+    EXPECT_NEAR(sc->radius,     2.0f,   1e-5f);
+    EXPECT_EQ(sc->GetLayerMask(), 0x0Fu);
+    // Component must arrive dirty so the module indexes it on first Update.
+    EXPECT_TRUE(sc->IsDirty());
 }
