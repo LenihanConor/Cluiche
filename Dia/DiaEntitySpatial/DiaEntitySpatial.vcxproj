@@ -75,9 +75,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="EntitySpatialIndex.h" />
+    <ClInclude Include="EntitySpatialModule.h" />
     <ClInclude Include="SpatialComponent.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="EntitySpatialModule.cpp" />
     <ClCompile Include="SpatialComponent.cpp" />
   </ItemGroup>
   <ItemGroup>

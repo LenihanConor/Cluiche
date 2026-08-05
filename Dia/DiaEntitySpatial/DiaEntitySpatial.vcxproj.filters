@@ -21,11 +21,17 @@
     <ClInclude Include="EntitySpatialIndex.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="EntitySpatialModule.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="SpatialComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="EntitySpatialModule.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="SpatialComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
