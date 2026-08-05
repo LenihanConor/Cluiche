@@ -497,6 +497,7 @@
     <ClCompile Include="DiaEntity\DataFlowContractTests.cpp" />
     <!-- DiaEntitySpatial -->
     <ClCompile Include="DiaEntitySpatial\TestDiaEntitySpatial.cpp" />
+    <ClCompile Include="DiaEntitySpatial\TestEntitySpatialVisualDebugger.cpp" />
     <!-- DiaObservation -->
     <ClCompile Include="DiaObservation\Log\TestLogLevel.cpp" />
     <ClCompile Include="DiaObservation\Log\TestThreadLogBuffer.cpp" />

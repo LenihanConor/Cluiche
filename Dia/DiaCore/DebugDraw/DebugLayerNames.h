@@ -154,6 +154,13 @@ namespace Dia
             inline const Dia::Core::StringCRC kScalarFieldHeatmap  { "scalarfield.heatmap"  };
             inline const Dia::Core::StringCRC kScalarFieldGradient { "scalarfield.gradient" };
 
+            // ----------------------------------------------------------------
+            // EntitySpatial (priority tier 1 — entity/game data)
+            // ----------------------------------------------------------------
+            inline const Dia::Core::StringCRC kEntitySpatialGrid     { "entityspatial.grid"     };
+            inline const Dia::Core::StringCRC kEntitySpatialEntities { "entityspatial.entities" };
+            inline const Dia::Core::StringCRC kEntitySpatialQuery    { "entityspatial.query"    };
+
         } // namespace LayerNames
     } // namespace Debug
 } // namespace Dia
