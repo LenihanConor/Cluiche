@@ -383,4 +383,4 @@ def test_entityspatial_stage(dia_client):
 
 ## Status
 
-`Approved`
+**Status:** `Done`
