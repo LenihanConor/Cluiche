@@ -85,6 +85,10 @@
         {
             "path": "Stages/ScalarFieldTestStage/scalarfield_test_stage.diastage",
             "type": "stage"
+        },
+        {
+            "path": "Stages/EntitySpatialTestStage/entityspatial_test_stage.diastage",
+            "type": "stage"
         }
     ],
     "name": "CluicheTest",

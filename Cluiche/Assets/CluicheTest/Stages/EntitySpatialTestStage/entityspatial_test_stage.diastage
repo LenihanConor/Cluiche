@@ -1,0 +1,9 @@
+{
+    "name": "EntitySpatialTestStage",
+    "manifest": "Stages/EntitySpatialTestStage/misc/ApplicationFlow/entityspatial_test_stage.diaapp",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}
