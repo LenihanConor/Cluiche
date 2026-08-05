@@ -33,6 +33,12 @@
     <ClInclude Include="SoundType.h">
     <ClInclude Include="SoundEventList.h" />
     <ClInclude Include="SoundSensorComponent.h" />
+    <ClInclude Include="SensorBlackboardAdapter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SensorModule.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -52,6 +58,9 @@
     <ClCompile Include="SightSensorComponent.cpp">
     <ClCompile Include="SoundEventList.cpp" />
     <ClCompile Include="SoundSensorComponent.cpp" />
+    <ClCompile Include="SensorModule.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

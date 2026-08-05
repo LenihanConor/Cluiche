@@ -83,6 +83,8 @@
     <ClInclude Include="DamageSensorComponent.h" />
     <ClInclude Include="SoundEventList.h" />
     <ClInclude Include="SoundSensorComponent.h" />
+    <ClInclude Include="SensorBlackboardAdapter.h" />
+    <ClInclude Include="SensorModule.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DamageReceivedComponent.cpp" />
@@ -92,6 +94,7 @@
     <ClCompile Include="DamageSensorComponent.cpp" />
     <ClCompile Include="SoundEventList.cpp" />
     <ClCompile Include="SoundSensorComponent.cpp" />
+    <ClCompile Include="SensorModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.sensor.architecture.module.md" />
@@ -119,6 +122,10 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaObservation\DiaObservation.vcxproj">
       <Project>{5E6F7A8B-C9D0-E1F2-3456-789ABCDE0123}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaApplicationFlow\DiaApplicationFlow.vcxproj">
+      <Project>{DD3D58EF-028B-42CB-B837-0042BA30D96F}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>
