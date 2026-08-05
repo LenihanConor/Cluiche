@@ -77,11 +77,13 @@
     <ClInclude Include="DamageReceivedComponent.h" />
     <ClInclude Include="SensorResults.h" />
     <ClInclude Include="SensorResultsComponent.h" />
+    <ClInclude Include="SightSensorComponent.h" />
     <ClInclude Include="SoundType.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DamageReceivedComponent.cpp" />
     <ClCompile Include="SensorResultsComponent.cpp" />
+    <ClCompile Include="SightSensorComponent.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.sensor.architecture.module.md" />
