@@ -31,6 +31,8 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SoundType.h">
+    <ClInclude Include="SoundEventList.h" />
+    <ClInclude Include="SoundSensorComponent.h" />
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -48,6 +50,8 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SightSensorComponent.cpp">
+    <ClCompile Include="SoundEventList.cpp" />
+    <ClCompile Include="SoundSensorComponent.cpp" />
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

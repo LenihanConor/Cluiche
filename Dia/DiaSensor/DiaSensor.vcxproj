@@ -81,6 +81,8 @@
     <ClInclude Include="SightSensorComponent.h" />
     <ClInclude Include="SoundType.h" />
     <ClInclude Include="DamageSensorComponent.h" />
+    <ClInclude Include="SoundEventList.h" />
+    <ClInclude Include="SoundSensorComponent.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DamageReceivedComponent.cpp" />
@@ -88,6 +90,8 @@
     <ClCompile Include="ProximitySensorComponent.cpp" />
     <ClCompile Include="SightSensorComponent.cpp" />
     <ClCompile Include="DamageSensorComponent.cpp" />
+    <ClCompile Include="SoundEventList.cpp" />
+    <ClCompile Include="SoundSensorComponent.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.sensor.architecture.module.md" />
