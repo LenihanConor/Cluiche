@@ -27,6 +27,8 @@ using namespace Dia::Maths;
 // Mock IDebugDraw — counts calls per draw type and captures last circle fill
 // ---------------------------------------------------------------------------
 
+namespace {
+
 struct MockDebugDraw : Dia::Core::IDebugDraw
 {
     int             circleCount        = 0;
@@ -98,6 +100,8 @@ struct MockDebugDraw : Dia::Core::IDebugDraw
     uint32_t DroppedCount() const override { return 0; }
     const Dia::Maths::Vector2D& GetMousePixel() const override { return mousePixel; }
 };
+
+} // namespace
 
 // ---------------------------------------------------------------------------
 // Layer name constants for tests (literal StringCRC, no DebugLayerNames.h)

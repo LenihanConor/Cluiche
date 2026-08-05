@@ -251,7 +251,19 @@ namespace Dia
 
                     const Dia::Maths::Vector2D centre = Detail::CellCentre(cell, mCellWorldSize, mWorldOrigin);
 
-                    draw.RequestDrawRay(centre, normDir, mCellWorldSize * mArrowScale, mArrowColour);
+                    const float shaftLength = mCellWorldSize * mArrowScale;
+                    draw.RequestDrawRay(centre, normDir, shaftLength, mArrowColour);
+
+                    // Arrowhead: filled triangle at the tip of the shaft.
+                    const Dia::Maths::Vector2D tip  = centre + normDir * shaftLength;
+                    const float headLen   = shaftLength * 0.3f;
+                    const float headWidth = shaftLength * 0.2f;
+                    const Dia::Maths::Vector2D perp(-normDir.y, normDir.x);
+                    const Dia::Maths::Vector2D base = tip - normDir * headLen;
+                    const Dia::Maths::Vector2D p1   = tip;
+                    const Dia::Maths::Vector2D p2   = base + perp * headWidth;
+                    const Dia::Maths::Vector2D p3   = base - perp * headWidth;
+                    draw.RequestDraw(p1, p2, p3, mArrowColour, mArrowColour);
                 }
 
             private:
