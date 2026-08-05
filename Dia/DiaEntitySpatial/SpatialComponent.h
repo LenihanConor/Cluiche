@@ -26,7 +26,7 @@ class SpatialComponent : public Dia::Entity::IComponent {
     DIA_COMPONENT(SpatialComponent, "spatial-component", 1)
     DIA_READONLY
 
-    FIELD(Dia::Maths::Vector2D, position, {})
+    FIELD(Dia::Maths::Vector2D, position, Dia::Maths::Vector2D(0.f, 0.f))
     FIELD(float, radius, 1.0f)
 
 public:

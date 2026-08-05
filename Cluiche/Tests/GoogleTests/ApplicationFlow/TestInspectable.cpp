@@ -122,7 +122,7 @@ TEST(Inspectable, GetAllStagesReturnsAllDeclaredStages)
     Application app(manifest, reg);
     ASSERT_TRUE(app.Start());
 
-    DynamicArrayC<StringCRC, 16> stages;
+    DynamicArrayC<StringCRC, 32> stages;
     app.GetAllStages(stages);
 
     ASSERT_EQ(stages.Size(), 2u);
