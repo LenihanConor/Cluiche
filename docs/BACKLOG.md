@@ -31,7 +31,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | Item | Spec | What's needed |
 |------|------|---------------|
-| DiaScalarFieldVisualDebugger | `diascalarfieldvisualdebugger.md` | Gradient arrow overlay needs arrowhead triangle + hex axial-to-world fix. Heatmap + layer names already implemented. |
+| ~~DiaScalarFieldVisualDebugger~~ | `diascalarfieldvisualdebugger.md` | Gradient arrow overlay needs arrowhead triangle + hex axial-to-world fix. Heatmap + layer names already implemented. |
 | DiaScalarFieldInspector | `diascalarfieldinspector.md` | Spec Approved. Ready to build. Depends on DiaScalarField ✅, DiaEditor. |
 | ~~DiaGridVisibility~~ | — | Needs `/spec-system` — per-cell fog-of-war on a grid. Each cell carries a per-faction state (unexplored / revealed / visible). Entities have a sight radius; cells within radius are marked visible each frame, fading to revealed when out of range. LOS blocking against terrain cells (walls, elevation). Shared vision within factions. Publishes visibility-change events via DiaStreams (unit spotted, unit lost). Prerequisite for: minimap data layer, cover/LOS combat modifiers. Depends on DiaGeometry2D ✅, DiaStreams ✅, DiaEntitySpatial. |
 | DiaBehaviourTree | — | Needs `/spec-system` — data-driven behaviour tree evaluator. Nodes: Sequence, Selector, Parallel, Decorator (inverter, repeater, cooldown, guard), Leaf (action/condition). Trees defined in JSON, loaded at runtime. Leaf nodes reference DiaBlackboard keys for conditions and DiaOrder for execution. Supports tree sharing (many entities, one tree definition, different blackboard instances). Time-sliced: trees pause mid-evaluation and resume next tick. Depends on DiaBlackboard ✅, DiaOrder ✅, DiaCore/Timer ✅, DiaStreams ✅. |
