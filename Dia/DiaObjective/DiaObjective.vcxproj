@@ -81,6 +81,7 @@
     <ClInclude Include="ObjectiveDef.h" />
     <ClInclude Include="ObjectiveSet.h" />
     <ClInclude Include="ObjectiveSetComponent.h" />
+    <ClInclude Include="Testing\ObjectiveTestHelpers.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ObjectiveSet.cpp" />
