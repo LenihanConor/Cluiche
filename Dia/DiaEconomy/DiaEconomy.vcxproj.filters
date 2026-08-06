@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{DIAEC001-A1B2-C3D4-E5F6-789012345678}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{DIAEC002-A1B2-C3D4-E5F6-789012345678}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="EconomySchema.h" />
+    <ClInclude Include="EconomyInstance.h" />
+    <ClInclude Include="EconomySystem.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="EconomySchema.cpp" />
+    <ClCompile Include="EconomyInstance.cpp" />
+    <ClCompile Include="EconomySystem.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.economy.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+</Project>
