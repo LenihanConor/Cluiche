@@ -6,6 +6,7 @@
 #include <DiaEntity/IBlueprintLoader.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 
 namespace Dia::EntitySpawner {
 
@@ -54,18 +55,20 @@ EmitterState& EntitySpawnerImpl::GetOrCreateEmitterState(Dia::Entity::Entity emi
 // ---------------------------------------------------------------------------
 Dia::Entity::SpawnResult EntitySpawnerImpl::Spawn(const Dia::Entity::SpawnRequest& request)
 {
+    DIA_TRACE_ZONE("spawner.spawn", ::Dia::Observation::Trace::Category::kNone);
+
     if (!mLoader)
     {
-        DIA_LOG_WARNING("DiaEntitySpawner", "Spawn: no IBlueprintLoader set — cannot load blueprint '%s'",
-                        request.blueprintId.AsChar());
+        DIA_LOG_ERROR("DiaEntitySpawner", "Spawn: no IBlueprintLoader set — cannot load blueprint '%s'",
+                      request.blueprintId.AsChar());
         return Dia::Entity::SpawnResult{ Dia::Entity::Entity{}, Dia::Entity::SpawnError::BlueprintNotFound };
     }
 
     Dia::Entity::Entity entity = mDomain.CreateEntity();
     if (!entity.IsValid())
     {
-        DIA_LOG_WARNING("DiaEntitySpawner", "Spawn: Domain is full — cannot create entity for blueprint '%s'",
-                        request.blueprintId.AsChar());
+        DIA_LOG_ERROR("DiaEntitySpawner", "Spawn: Domain is full — cannot create entity for blueprint '%s'",
+                      request.blueprintId.AsChar());
         return Dia::Entity::SpawnResult{ Dia::Entity::Entity{}, Dia::Entity::SpawnError::DomainFull };
     }
 
@@ -114,6 +117,9 @@ Dia::Entity::SpawnResult EntitySpawnerImpl::Spawn(const Dia::Entity::SpawnReques
             }
         }
     }
+
+    DIA_LOG_INFO("DiaEntitySpawner", "Spawned entity index=%u blueprint=%s",
+                 entity.GetIndex(), request.blueprintId.AsChar());
 
     return Dia::Entity::SpawnResult{ entity, Dia::Entity::SpawnError::None };
 }
@@ -315,6 +321,9 @@ void EntitySpawnerImpl::DespawnInternal(Dia::Entity::Entity entity,
             break;
         }
     }
+
+    DIA_LOG_INFO("DiaEntitySpawner", "Despawned entity index=%u reason=%d",
+                 entity.GetIndex(), static_cast<int>(reason));
 
     // Fire event callback before destroying in domain.
     if (mDespawnCallback)

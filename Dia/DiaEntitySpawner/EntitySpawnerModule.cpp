@@ -7,6 +7,10 @@
 #include <DiaApplicationFlow/Application.h>
 #include <DiaMailbox/Mailbox.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Health/HealthRegistry.h>
 #include <tuple>
 
 namespace Dia::EntitySpawner {
@@ -31,6 +35,14 @@ EntitySpawnerModule::EntitySpawnerModule(Dia::Entity::Domain& domain,
 Dia::Entity::IEntitySpawner& EntitySpawnerModule::GetSpawner()
 {
     return mSpawner;
+}
+
+// ---------------------------------------------------------------------------
+// HasBlueprintLoader
+// ---------------------------------------------------------------------------
+bool EntitySpawnerModule::HasBlueprintLoader() const
+{
+    return mSpawner.HasBlueprintLoader();
 }
 
 // ---------------------------------------------------------------------------
@@ -65,6 +77,18 @@ Dia::ApplicationFlow::StartResult EntitySpawnerModule::DoStart()
     // Wire the despawn callback so the impl can notify us when it despawns.
     mSpawner.SetDespawnCallback(&EntitySpawnerModule::OnDespawnCallback, this);
 
+    // Register metrics.
+    auto& registry = Dia::Observation::Metric::MetricRegistry::Instance();
+    mMetricActiveCount     = registry.RegisterGauge(Dia::Core::StringCRC("spawner.active_count"));
+    mMetricSpawnRate       = registry.RegisterCounter(Dia::Core::StringCRC("spawner.spawn_rate"));
+    mMetricDespawnLifetime = registry.RegisterCounter(Dia::Core::StringCRC("spawner.despawn_reason.lifetime"));
+    mMetricDespawnRadius   = registry.RegisterCounter(Dia::Core::StringCRC("spawner.despawn_reason.radius"));
+    mMetricDespawnCap      = registry.RegisterCounter(Dia::Core::StringCRC("spawner.despawn_reason.cap"));
+    mMetricDespawnExplicit = registry.RegisterCounter(Dia::Core::StringCRC("spawner.despawn_reason.explicit"));
+
+    // Register health reporter.
+    Dia::Observation::Health::HealthRegistry::Instance().Register(&mHealthReporter);
+
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
@@ -73,6 +97,9 @@ Dia::ApplicationFlow::StartResult EntitySpawnerModule::DoStart()
 // ---------------------------------------------------------------------------
 void EntitySpawnerModule::DoUpdate(float deltaTime)
 {
+    DIA_PROFILE_SCOPE("spawner.update", ::Dia::Observation::Profile::Category::kNone);
+    DIA_TRACE_ZONE   ("spawner.update", ::Dia::Observation::Trace::Category::kNone);
+
     // 1. Drain EntityDestroyedMessage — handle external destroys first.
     mDomain.GetMailbox().Drain<Dia::Entity::EntityDestroyedMessage>(
         [this](const Dia::Mailbox::Address& /*addr*/,
@@ -104,6 +131,17 @@ Dia::ApplicationFlow::StopResult EntitySpawnerModule::DoStop()
 
     // Clear the callback to avoid dangling pointer after module lifetime ends.
     mSpawner.SetDespawnCallback(nullptr, nullptr);
+
+    // Unregister health reporter.
+    Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealthReporter);
+
+    // Null out metric pointers (registry owns the objects).
+    mMetricActiveCount     = nullptr;
+    mMetricSpawnRate       = nullptr;
+    mMetricDespawnLifetime = nullptr;
+    mMetricDespawnRadius   = nullptr;
+    mMetricDespawnCap      = nullptr;
+    mMetricDespawnExplicit = nullptr;
 
     return Dia::ApplicationFlow::StopResult::kDone;
 }
@@ -180,6 +218,10 @@ void EntitySpawnerModule::TrySpawnFromEmitter(Dia::Entity::Entity emitterEntity,
         ev.blueprintId = comp.blueprintId;
         ev.tag         = comp.blueprintId;
         mSpawnedWriter.Send(ev);
+
+        // Update metrics.
+        if (mMetricSpawnRate)   mMetricSpawnRate->Inc(1);
+        if (mMetricActiveCount) mMetricActiveCount->Set(static_cast<double>(mSpawner.GetTrackedChildCount()));
     }
 }
 
@@ -208,6 +250,26 @@ void EntitySpawnerModule::OnDespawnCallback(void* ctx,
     ev.entity = entity;
     ev.reason = reason;
     self->mDespawnedWriter.Send(ev);
+
+    // Update metrics.
+    if (self->mMetricActiveCount)
+        self->mMetricActiveCount->Set(static_cast<double>(self->mSpawner.GetTrackedChildCount()));
+
+    switch (reason)
+    {
+        case Dia::Entity::DespawnReason::Lifetime:
+            if (self->mMetricDespawnLifetime) self->mMetricDespawnLifetime->Inc(1);
+            break;
+        case Dia::Entity::DespawnReason::Radius:
+            if (self->mMetricDespawnRadius)   self->mMetricDespawnRadius->Inc(1);
+            break;
+        case Dia::Entity::DespawnReason::Cap:
+            if (self->mMetricDespawnCap)      self->mMetricDespawnCap->Inc(1);
+            break;
+        case Dia::Entity::DespawnReason::Explicit:
+            if (self->mMetricDespawnExplicit) self->mMetricDespawnExplicit->Inc(1);
+            break;
+    }
 }
 
 } // namespace Dia::EntitySpawner

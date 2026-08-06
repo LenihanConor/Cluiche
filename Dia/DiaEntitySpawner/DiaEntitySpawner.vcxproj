@@ -78,12 +78,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EntitySpawnerModule.h" />
+    <ClInclude Include="Health\EntitySpawnerHealth.h" />
     <ClInclude Include="SpawnEmitterComponent.h" />
     <ClInclude Include="SpawnerTypes.h" />
     <ClInclude Include="EntitySpawnerImpl.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="EntitySpawnerModule.cpp" />
+    <ClCompile Include="Health\EntitySpawnerHealth.cpp" />
     <ClCompile Include="SpawnEmitterComponent.cpp" />
     <ClCompile Include="EntitySpawnerImpl.cpp" />
   </ItemGroup>

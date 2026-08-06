@@ -101,6 +101,12 @@ public:
     // No-op if either the child or its emitter lacks a SpatialComponent, or despawnRadius == 0.
     void TickChildRadii();
 
+    // Returns true if a blueprint loader is currently set.
+    bool HasBlueprintLoader() const { return mLoader != nullptr; }
+
+    // Returns the number of currently tracked child entities.
+    unsigned int GetTrackedChildCount() const { return mTrackedChildrenList.Size(); }
+
 private:
     // Internal despawn that lets the caller choose whether to actually destroy
     // the entity in the domain (external destroy skips this step).

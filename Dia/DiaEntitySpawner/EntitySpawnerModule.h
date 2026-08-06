@@ -5,10 +5,13 @@
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/Streams/EventStreamWriter.h>
 #include <DiaEntitySpawner/EntitySpawnerImpl.h>
+#include <DiaEntitySpawner/Health/EntitySpawnerHealth.h>
 #include <DiaEntitySpawner/SpawnEmitterComponent.h>
 #include <DiaEntitySpawner/SpawnerTypes.h>
 #include <DiaMailbox/Mailbox.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaObservation/Metric/Counter.h>
+#include <DiaObservation/Metric/Gauge.h>
 
 namespace Dia { namespace Entity {
     class Domain;
@@ -41,6 +44,9 @@ public:
 
     // Exposes the underlying IEntitySpawner for caller-driven Spawn/Despawn.
     Dia::Entity::IEntitySpawner& GetSpawner();
+
+    // Returns true if the spawner has a blueprint loader wired up.
+    bool HasBlueprintLoader() const;
 
 protected:
     // Called once before dedicated threads start; wires stream handles.
@@ -79,6 +85,17 @@ private:
 
     // Subscription for EntityDestroyedMessage from the domain mailbox.
     Dia::Mailbox::SubscriptionHandle mDestroyedSub;
+
+    // Metrics — registered in DoStart, nulled in DoStop.
+    Dia::Observation::Metric::Gauge*   mMetricActiveCount       = nullptr;
+    Dia::Observation::Metric::Counter* mMetricSpawnRate         = nullptr;
+    Dia::Observation::Metric::Counter* mMetricDespawnLifetime   = nullptr;
+    Dia::Observation::Metric::Counter* mMetricDespawnRadius     = nullptr;
+    Dia::Observation::Metric::Counter* mMetricDespawnCap        = nullptr;
+    Dia::Observation::Metric::Counter* mMetricDespawnExplicit   = nullptr;
+
+    // Health reporter — registered in DoStart, unregistered in DoStop.
+    EntitySpawnerHealth mHealthReporter{*this};
 };
 
 } // namespace Dia::EntitySpawner

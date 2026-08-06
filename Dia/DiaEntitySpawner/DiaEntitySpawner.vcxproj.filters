@@ -10,10 +10,16 @@
     <Filter Include="Docs">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Health">
+      <UniqueIdentifier>{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EntitySpawnerModule.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Health\EntitySpawnerHealth.h">
+      <Filter>Health</Filter>
     </ClInclude>
     <ClInclude Include="SpawnEmitterComponent.h">
       <Filter>Header Files</Filter>
@@ -28,6 +34,9 @@
   <ItemGroup>
     <ClCompile Include="EntitySpawnerModule.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Health\EntitySpawnerHealth.cpp">
+      <Filter>Health</Filter>
     </ClCompile>
     <ClCompile Include="SpawnEmitterComponent.cpp">
       <Filter>Source Files</Filter>
