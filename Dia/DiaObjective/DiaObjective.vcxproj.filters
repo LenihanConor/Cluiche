@@ -14,6 +14,8 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="IObjectiveObserver.h" />
+    <ClInclude Include="ObjectiveDef.h" />
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>

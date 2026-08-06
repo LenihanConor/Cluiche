@@ -77,6 +77,8 @@
     <None Include="Docs\dia.diaobjective.architecture.module.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="IObjectiveObserver.h" />
+    <ClInclude Include="ObjectiveDef.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
