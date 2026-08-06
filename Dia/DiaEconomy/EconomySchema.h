@@ -76,6 +76,10 @@ namespace Dia { namespace Economy {
         // if the file cannot be opened or parsed.
         [[nodiscard]] static EconomySchema LoadFromJson(const char* json_path);
 
+        // Load from an already-parsed Json::Value (for tests and in-memory pipelines).
+        // Returns an empty (invalid) schema if the value is null or cannot be parsed.
+        [[nodiscard]] static EconomySchema LoadFromJsonValue(const Json::Value& root);
+
         // --- resource queries ---
         const ResourceDefinition* FindResource(Dia::Core::StringCRC resource_name) const;
         unsigned int              GetResourceCount() const;

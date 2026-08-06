@@ -199,6 +199,9 @@
     <Filter Include="DiaSteering">
       <UniqueIdentifier>{D6E7F8A9-B0C1-2345-E789-012345678901}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaEconomy">
+      <UniqueIdentifier>{EC0N0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -1454,6 +1457,10 @@
     <ClCompile Include="DiaScalarField\TestScalarFieldVisualDebugger.cpp">
     <ClCompile Include="DiaSensor\TestDiaSensor.cpp">
       <Filter>DiaSensor</Filter>
+    </ClCompile>
+    <!-- DiaEconomy -->
+    <ClCompile Include="DiaEconomy\TestDiaEconomy.cpp">
+      <Filter>DiaEconomy</Filter>
     </ClCompile>
       <Filter>DiaScalarField</Filter>
     </ClCompile>

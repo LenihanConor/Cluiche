@@ -33,12 +33,38 @@ namespace Dia { namespace Economy {
     // -----------------------------------------------------------------------
     EconomySchema::EconomySchema(const EconomySchema& other)
         : mSchemaName(other.mSchemaName)
-        , mResources(other.mResources)          // ResourceDefinition is POD — safe
-        , mIncomeRules(other.mIncomeRules)      // IncomeRule is POD — safe
-        , mCostTables()                         // handled below
-        , mModifiers(other.mModifiers)          // ModifierDef is POD — safe
+        , mResources()
+        , mIncomeRules()
+        , mCostTables()
+        , mModifiers()
         , mIsValid(other.mIsValid)
     {
+        // DynamicArray copy-ctor calls At(0) which asserts on empty arrays.
+        // Use Reserve+Add for all arrays to safely handle the zero-size case.
+        const unsigned int resCount = other.mResources.Size();
+        if (resCount > 0)
+        {
+            mResources.Reserve(resCount);
+            for (unsigned int i = 0; i < resCount; ++i)
+                mResources.Add(other.mResources[i]);
+        }
+
+        const unsigned int ruleCount = other.mIncomeRules.Size();
+        if (ruleCount > 0)
+        {
+            mIncomeRules.Reserve(ruleCount);
+            for (unsigned int i = 0; i < ruleCount; ++i)
+                mIncomeRules.Add(other.mIncomeRules[i]);
+        }
+
+        const unsigned int modCount = other.mModifiers.Size();
+        if (modCount > 0)
+        {
+            mModifiers.Reserve(modCount);
+            for (unsigned int i = 0; i < modCount; ++i)
+                mModifiers.Add(other.mModifiers[i]);
+        }
+
         const unsigned int tableCount = other.mCostTables.Size();
         if (tableCount > 0)
         {
@@ -78,12 +104,35 @@ namespace Dia { namespace Economy {
         mSchemaName  = tmp.mSchemaName;
         mIsValid     = tmp.mIsValid;
 
-        // For POD arrays the operator= is safe (bitwise over pre-allocated data)
-        // but DynamicArray doesn't reallocate — use move pattern via explicit swap.
-        // Since DynamicArray has no Swap/move we reconstruct.
-        mResources   = tmp.mResources;
-        mIncomeRules = tmp.mIncomeRules;
-        mModifiers   = tmp.mModifiers;
+        // Use Reserve+Add to safely handle empty arrays (DynamicArray::operator=
+        // dereferences mData even for zero-size, which is UB when mData is null).
+        mResources.RemoveAll();
+        {
+            const unsigned int n = tmp.mResources.Size();
+            if (n > 0)
+            {
+                if (mResources.Capacity() < n) mResources.Reserve(n);
+                for (unsigned int i = 0; i < n; ++i) mResources.Add(tmp.mResources[i]);
+            }
+        }
+        mIncomeRules.RemoveAll();
+        {
+            const unsigned int n = tmp.mIncomeRules.Size();
+            if (n > 0)
+            {
+                if (mIncomeRules.Capacity() < n) mIncomeRules.Reserve(n);
+                for (unsigned int i = 0; i < n; ++i) mIncomeRules.Add(tmp.mIncomeRules[i]);
+            }
+        }
+        mModifiers.RemoveAll();
+        {
+            const unsigned int n = tmp.mModifiers.Size();
+            if (n > 0)
+            {
+                if (mModifiers.Capacity() < n) mModifiers.Reserve(n);
+                for (unsigned int i = 0; i < n; ++i) mModifiers.Add(tmp.mModifiers[i]);
+            }
+        }
 
         // Cost tables need the same in-place approach as the copy constructor
         mCostTables.RemoveAll();
@@ -301,6 +350,29 @@ namespace Dia { namespace Economy {
         schema.mIsValid = true;
 
         DIA_LOG_INFO("Economy", "EconomySchema loaded: %s", schema.mSchemaName.AsChar());
+
+        return schema;
+    }
+
+    // -----------------------------------------------------------------------
+    // LoadFromJsonValue
+    // -----------------------------------------------------------------------
+    EconomySchema EconomySchema::LoadFromJsonValue(const Json::Value& root)
+    {
+        if (root.isNull() || !root.isObject())
+            return EconomySchema{};
+
+        EconomySchema schema;
+
+        if (root.isMember("schema_name") && root["schema_name"].isString())
+            schema.mSchemaName = Dia::Core::StringCRC(root["schema_name"].asCString());
+
+        ParseResources  (schema, root);
+        ParseIncomeRules(schema, root);
+        ParseCostTables (schema, root);
+        ParseModifiers  (schema, root);
+
+        schema.mIsValid = true;
 
         return schema;
     }
