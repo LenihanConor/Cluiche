@@ -351,8 +351,6 @@ namespace Dia::TriggerScript::Testing {
 
 3. **Action parameter type safety** — `ActionDef::params` is a raw `Json::Value` passed verbatim to the handler. This is flexible but unvalidated at load time. Consider adding an optional `ValidateParams(Json::Value&, outErrors)` method to `ITriggerActionHandler` so the module can validate action params at `LoadFromJson()` time rather than at fire time. Revisit after the first handler implementations land.
 
-## Status
-
-`Approved`
+**Status:** `Done`
 
 **Plan:** @docs/specs/applications/dia/systems/diatriggerscript/diatriggerscript.plan.md

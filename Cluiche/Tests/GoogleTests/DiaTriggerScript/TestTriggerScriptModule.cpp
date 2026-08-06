@@ -483,3 +483,311 @@ TEST(DiaTriggerScript_Module, IsActive_BeforeFire_ReturnsTrue)
     EXPECT_TRUE (module.IsActive(Dia::Core::StringCRC("t")));
     EXPECT_FALSE(module.IsFired (Dia::Core::StringCRC("t")));
 }
+
+// ---------------------------------------------------------------------------
+// DiaTriggerScript_Module — checkIntervalMs throttle (SD-002)
+// ---------------------------------------------------------------------------
+
+TEST(DiaTriggerScript_Module, StateTrigger_CheckInterval_SkipsBeforeInterval)
+{
+    Dia::TriggerScript::TriggerScriptModule module;
+    Dia::TriggerScript::TriggerActionRegistry registry;
+    Dia::TriggerScript::Testing::MockActionHandler handler;
+    registry.Register(Dia::Core::StringCRC("FireEvent"), &handler);
+
+    float health = 5.0f;
+    Dia::Condition::ConditionRegistry condReg(&health);
+    condReg.RegisterFloat(
+        Dia::Core::StringCRC("player"), Dia::Core::StringCRC("health"),
+        [](void* d) { return *static_cast<float*>(d); });
+
+    Dia::Core::Containers::DynamicArrayC<const char*, 32> errors;
+    Json::Value root = ParseJson(R"({
+        "triggers": [{
+            "id": "throttled",
+            "type": "state",
+            "one_shot": false,
+            "check_interval_ms": 500,
+            "condition": { "op": "<", "slot": "player", "field": "health", "value": 20.0 },
+            "actions": [{ "type": "FireEvent", "params": {} }]
+        }]
+    })");
+
+    module.LoadFromJson(root, condReg, errors);
+    module.SetActionRegistry(&registry);
+    module.SetConditionContext(&condReg);
+
+    // 0.3s elapsed — below 500ms threshold, should not fire
+    module.Tick(0.3f);
+
+    EXPECT_EQ(handler.GetCalls().Size(), 0u);
+}
+
+TEST(DiaTriggerScript_Module, StateTrigger_CheckInterval_FiresAfterInterval)
+{
+    Dia::TriggerScript::TriggerScriptModule module;
+    Dia::TriggerScript::TriggerActionRegistry registry;
+    Dia::TriggerScript::Testing::MockActionHandler handler;
+    registry.Register(Dia::Core::StringCRC("FireEvent"), &handler);
+
+    float health = 5.0f;
+    Dia::Condition::ConditionRegistry condReg(&health);
+    condReg.RegisterFloat(
+        Dia::Core::StringCRC("player"), Dia::Core::StringCRC("health"),
+        [](void* d) { return *static_cast<float*>(d); });
+
+    Dia::Core::Containers::DynamicArrayC<const char*, 32> errors;
+    Json::Value root = ParseJson(R"({
+        "triggers": [{
+            "id": "throttled",
+            "type": "state",
+            "one_shot": false,
+            "check_interval_ms": 500,
+            "condition": { "op": "<", "slot": "player", "field": "health", "value": 20.0 },
+            "actions": [{ "type": "FireEvent", "params": {} }]
+        }]
+    })");
+
+    module.LoadFromJson(root, condReg, errors);
+    module.SetActionRegistry(&registry);
+    module.SetConditionContext(&condReg);
+
+    // 0.3s + 0.3s = 0.6s elapsed — past 500ms, fires once
+    module.Tick(0.3f);
+    module.Tick(0.3f);
+
+    EXPECT_EQ(handler.GetCalls().Size(), 1u);
+}
+
+TEST(DiaTriggerScript_Module, CountTrigger_CheckInterval_SkipsBeforeInterval)
+{
+    Dia::TriggerScript::TriggerScriptModule module;
+    Dia::TriggerScript::TriggerActionRegistry registry;
+    Dia::TriggerScript::Testing::MockActionHandler handler;
+    registry.Register(Dia::Core::StringCRC("FireEvent"), &handler);
+
+    Dia::Condition::ConditionRegistry validationReg = MakeEmptyRegistry();
+    Dia::Core::Containers::DynamicArrayC<const char*, 32> errors;
+
+    Json::Value root = ParseJson(R"({
+        "triggers": [{
+            "id": "throttled-count",
+            "type": "count",
+            "one_shot": false,
+            "check_interval_ms": 1000,
+            "entity_tag": "enemy",
+            "threshold": 1,
+            "actions": [{ "type": "FireEvent", "params": {} }]
+        }]
+    })");
+
+    module.LoadFromJson(root, validationReg, errors);
+    module.SetActionRegistry(&registry);
+    module.IncrementCount(Dia::Core::StringCRC("enemy"), 5);
+
+    // Only 0.5s elapsed — below 1000ms check interval, should not fire
+    module.Tick(0.5f);
+
+    EXPECT_EQ(handler.GetCalls().Size(), 0u);
+}
+
+// ---------------------------------------------------------------------------
+// DiaTriggerScript_Module — repeating state and count
+// ---------------------------------------------------------------------------
+
+TEST(DiaTriggerScript_Module, StateTrigger_Repeating_FiresMultipleTimes)
+{
+    Dia::TriggerScript::TriggerScriptModule module;
+    Dia::TriggerScript::TriggerActionRegistry registry;
+    Dia::TriggerScript::Testing::MockActionHandler handler;
+    registry.Register(Dia::Core::StringCRC("FireEvent"), &handler);
+
+    float health = 5.0f;
+    Dia::Condition::ConditionRegistry condReg(&health);
+    condReg.RegisterFloat(
+        Dia::Core::StringCRC("player"), Dia::Core::StringCRC("health"),
+        [](void* d) { return *static_cast<float*>(d); });
+
+    Dia::Core::Containers::DynamicArrayC<const char*, 32> errors;
+    Json::Value root = ParseJson(R"({
+        "triggers": [{
+            "id": "rep-state",
+            "type": "state",
+            "one_shot": false,
+            "check_interval_ms": 0,
+            "condition": { "op": "<", "slot": "player", "field": "health", "value": 20.0 },
+            "actions": [{ "type": "FireEvent", "params": {} }]
+        }]
+    })");
+
+    module.LoadFromJson(root, condReg, errors);
+    module.SetActionRegistry(&registry);
+    module.SetConditionContext(&condReg);
+
+    module.Tick(0.016f);
+    module.Tick(0.016f);
+    module.Tick(0.016f);
+
+    EXPECT_EQ(handler.GetCalls().Size(), 3u);
+    EXPECT_TRUE(module.IsActive(Dia::Core::StringCRC("rep-state")));
+}
+
+TEST(DiaTriggerScript_Module, CountTrigger_Repeating_FiresEveryCheckWhenMet)
+{
+    Dia::TriggerScript::TriggerScriptModule module;
+    Dia::TriggerScript::TriggerActionRegistry registry;
+    Dia::TriggerScript::Testing::MockActionHandler handler;
+    registry.Register(Dia::Core::StringCRC("FireEvent"), &handler);
+
+    Dia::Condition::ConditionRegistry validationReg = MakeEmptyRegistry();
+    Dia::Core::Containers::DynamicArrayC<const char*, 32> errors;
+
+    Json::Value root = ParseJson(R"({
+        "triggers": [{
+            "id": "rep-count",
+            "type": "count",
+            "one_shot": false,
+            "check_interval_ms": 0,
+            "entity_tag": "enemy",
+            "threshold": 3,
+            "actions": [{ "type": "FireEvent", "params": {} }]
+        }]
+    })");
+
+    module.LoadFromJson(root, validationReg, errors);
+    module.SetActionRegistry(&registry);
+    module.IncrementCount(Dia::Core::StringCRC("enemy"), 5);
+
+    module.Tick(0.016f);
+    module.Tick(0.016f);
+
+    EXPECT_EQ(handler.GetCalls().Size(), 2u);
+    EXPECT_TRUE(module.IsActive(Dia::Core::StringCRC("rep-count")));
+}
+
+// ---------------------------------------------------------------------------
+// DiaTriggerScript_Module — multiple actions dispatched in order
+// ---------------------------------------------------------------------------
+
+TEST(DiaTriggerScript_Module, MultipleActions_AllDispatchedInOrder)
+{
+    Dia::TriggerScript::TriggerScriptModule module;
+    Dia::TriggerScript::TriggerActionRegistry registry;
+    Dia::TriggerScript::Testing::MockActionHandler handlerA;
+    Dia::TriggerScript::Testing::MockActionHandler handlerB;
+    registry.Register(Dia::Core::StringCRC("ActionA"), &handlerA);
+    registry.Register(Dia::Core::StringCRC("ActionB"), &handlerB);
+
+    Dia::Condition::ConditionRegistry validationReg = MakeEmptyRegistry();
+    Dia::Core::Containers::DynamicArrayC<const char*, 32> errors;
+
+    Json::Value root = ParseJson(R"({
+        "triggers": [{
+            "id": "multi",
+            "type": "temporal",
+            "one_shot": true,
+            "interval_s": 0.0,
+            "actions": [
+                { "type": "ActionA", "params": {} },
+                { "type": "ActionB", "params": {} }
+            ]
+        }]
+    })");
+
+    module.LoadFromJson(root, validationReg, errors);
+    module.SetActionRegistry(&registry);
+
+    module.Tick(0.016f);
+
+    EXPECT_EQ(handlerA.GetCalls().Size(), 1u);
+    EXPECT_EQ(handlerB.GetCalls().Size(), 1u);
+}
+
+// ---------------------------------------------------------------------------
+// DiaTriggerScript_Module — null conditionContext is a safe no-op
+// ---------------------------------------------------------------------------
+
+TEST(DiaTriggerScript_Module, StateTrigger_NoConditionContext_DoesNotFire)
+{
+    Dia::TriggerScript::TriggerScriptModule module;
+    Dia::TriggerScript::TriggerActionRegistry registry;
+    Dia::TriggerScript::Testing::MockActionHandler handler;
+    registry.Register(Dia::Core::StringCRC("FireEvent"), &handler);
+
+    Dia::Condition::ConditionRegistry validationReg = MakeEmptyRegistry();
+    Dia::Core::Containers::DynamicArrayC<const char*, 32> errors;
+
+    Json::Value root = ParseJson(R"({
+        "triggers": [{
+            "id": "no-ctx",
+            "type": "state",
+            "one_shot": true,
+            "check_interval_ms": 0,
+            "condition": { "op": "<", "slot": "player", "field": "health", "value": 20.0 },
+            "actions": [{ "type": "FireEvent", "params": {} }]
+        }]
+    })");
+
+    // Intentionally skip SetConditionContext — should silently skip evaluation
+    module.LoadFromJson(root, validationReg, errors);
+    module.SetActionRegistry(&registry);
+
+    module.Tick(0.016f);
+
+    EXPECT_EQ(handler.GetCalls().Size(), 0u);
+}
+
+// ---------------------------------------------------------------------------
+// DiaTriggerScript_Module — LoadFromJson error paths
+// ---------------------------------------------------------------------------
+
+TEST(DiaTriggerScript_Module, LoadFromJson_UnknownTriggerType_ReturnsFalse)
+{
+    Dia::TriggerScript::TriggerScriptModule module;
+    Dia::Condition::ConditionRegistry validationReg = MakeEmptyRegistry();
+    Dia::Core::Containers::DynamicArrayC<const char*, 32> errors;
+
+    Json::Value root = ParseJson(R"({
+        "triggers": [{ "id": "bad", "type": "laser_beam", "actions": [] }]
+    })");
+
+    bool ok = module.LoadFromJson(root, validationReg, errors);
+
+    EXPECT_FALSE(ok);
+    EXPECT_GT(errors.Size(), 0u);
+}
+
+// ---------------------------------------------------------------------------
+// DiaTriggerScript_Module — IsFired on repeating trigger returns false
+// ---------------------------------------------------------------------------
+
+TEST(DiaTriggerScript_Module, IsFired_RepeatingTrigger_ReturnsFalse)
+{
+    Dia::TriggerScript::TriggerScriptModule module;
+    Dia::TriggerScript::TriggerActionRegistry registry;
+    Dia::TriggerScript::Testing::MockActionHandler handler;
+    registry.Register(Dia::Core::StringCRC("FireEvent"), &handler);
+
+    Dia::Condition::ConditionRegistry validationReg = MakeEmptyRegistry();
+    Dia::Core::Containers::DynamicArrayC<const char*, 32> errors;
+
+    Json::Value root = ParseJson(R"({
+        "triggers": [{
+            "id": "rep",
+            "type": "temporal",
+            "one_shot": false,
+            "interval_s": 0.0,
+            "actions": [{ "type": "FireEvent", "params": {} }]
+        }]
+    })");
+
+    module.LoadFromJson(root, validationReg, errors);
+    module.SetActionRegistry(&registry);
+
+    module.Tick(0.016f);
+
+    // Repeating trigger has fired but is not disabled — IsFired must be false
+    EXPECT_GT(handler.GetCalls().Size(), 0u);
+    EXPECT_FALSE(module.IsFired(Dia::Core::StringCRC("rep")));
+    EXPECT_TRUE (module.IsActive(Dia::Core::StringCRC("rep")));
+}
