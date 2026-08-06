@@ -48,7 +48,7 @@ private:
     static constexpr float kBaseX         =    0.f;
     static constexpr float kConsumerX     =  250.f;
     static constexpr float kSceneY        =   50.f;
-    static constexpr float kGathererSpeed =  120.f; // units/s
+    static constexpr float kGathererSpeed =  240.f; // units/s
     static constexpr float kCarryCapacity =   50.f;
     static constexpr float kTreasuryMax   = 2000.f;
 
