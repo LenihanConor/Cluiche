@@ -1,7 +1,7 @@
 # System Spec: DiaSensor
 
 **Parent:** @docs/specs/applications/dia/dia.md  
-**Status:** Approved
+**Status:** Done
 
 ---
 
