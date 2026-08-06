@@ -374,6 +374,8 @@ namespace Dia { namespace Economy {
 
         schema.mIsValid = true;
 
+        DIA_LOG_INFO("Economy", "EconomySchema loaded: %s", schema.mSchemaName.AsChar());
+
         return schema;
     }
 
