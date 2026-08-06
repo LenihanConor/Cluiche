@@ -1,7 +1,7 @@
 # DiaEntitySpawner — Implementation Plan
 
 **Spec:** @docs/specs/applications/dia/systems/diaentityspawner/diaentityspawner.md
-**Status:** In Progress
+**Status:** Done
 
 ---
 
@@ -98,4 +98,4 @@ Single file `GoogleTests/DiaEntity/TestEntitySpawner.cpp`. Test fixture owns a `
 | 7 | GoogleTest suite — exhaustive `TestEntitySpawner.cpp` per spec test table | `dia run googletest --filter="EntitySpawner*"` all green | Done | sonnet | MockBlueprintLoader stub; manual `Update(dt)` stepping; 22 tests across 5 suites (ImplAPI x9, LifetimeDespawn x2, RadiusDespawn x2, EmitterModule x6, Events x3); MockBlueprintLoader stub; TestableEntitySpawnerModule wrapper for DoStart/DoUpdate/DoStop; rate/burst/cap/lifetime/radius/lifecycle/callback all verified; 7746 tests pass |
 | 8 | CluicheTest SpawnerStage — 4 emitters, VelocityComponent, DiaVisualDebugger overlay, 4 DiaAutomation checkpoints | `dia run cluichetest` reaches SpawnerStage; visual + checkpoint pass | Done | sonnet | `dia scaffold stage Spawner`; confirms E2E integration; SpawnerTestStage: 4 emitters (Rate/Burst/Cap/Explicit), 4 DiaAutomation checkpoints (t=1/3/5/8s), DespawnCallback counts lifetime reason; TestableSpawnerModule inner class exposes DoStart/DoUpdate/DoStop; DiaEntitySpawner ProjectReference added to CluicheTest.vcxproj; build clean 7746 tests pass |
 | 9 | Module doc + registry — finalise `dia.entity.entityspawner.architecture.module.md` YAML frontmatter; `dia docs registry` | `dia check deps` clean | Done | haiku | Fill deps, public headers, layer assignment; module.md YAML updated: status Active, dia.entityspatial added to deps, both namespaces listed, all 4 public headers; dia docs registry regenerated; dia check deps shows 0 entityspawner issues (25 pre-existing in other modules) |
-| 10 | Spec-done — `dia docs spec-done`; update plan status to Done | — | Not Started | haiku | Final housekeeping commit |
+| 10 | Spec-done — `dia docs spec-done`; update plan status to Done | — | Done | haiku | Final housekeeping commit; dia docs spec-done: spec → Done, plan header → Done, backlog entry struck |

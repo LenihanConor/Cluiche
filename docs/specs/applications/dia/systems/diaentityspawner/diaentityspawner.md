@@ -3,7 +3,7 @@
 ## Parent Application
 @docs/specs/applications/dia/dia.md
 
-**Status:** Approved
+**Status:** Done
 **Plan:** @docs/specs/applications/dia/systems/diaentityspawner/diaentityspawner.plan.md
 **Gameplay Domains:** entity, simulation
 

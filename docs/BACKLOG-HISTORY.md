@@ -90,6 +90,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | DiaEconomy | Named resource pools, earn/spend/transfer/tick, rate-of-change metrics | 2026-08-06 | Moved from backlog — already implemented |
 | diaobjective | [spec](specs/) | 2026-08-06 | Marked done by `dia docs spec-done` |
 | DiaTriggerScript | Data-driven level events — spatial/temporal/state/count triggers, four action types, ITriggerActionHandler extension point, TriggerFiredEvent on DiaStreams | 2026-08-06 | Moved by `dia docs backlog move` |
+| diaentityspawner | [spec](specs/) | 2026-08-06 | Marked done by `dia docs spec-done` |
 
 ---
 
