@@ -40,6 +40,9 @@
     <ClInclude Include="ThreatBoard.h" />
     <ClInclude Include="AwarenessBoard.h" />
     <ClInclude Include="DefaultSensorBlackboardAdapter.h" />
+    <ClInclude Include="Testing\SensorTestHelpers.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
       <Filter>Header Files</Filter>
     </ClInclude>
       <Filter>Header Files</Filter>
@@ -63,6 +66,7 @@
     <ClCompile Include="SoundSensorComponent.cpp" />
     <ClCompile Include="SensorModule.cpp">
     <ClCompile Include="DefaultSensorBlackboardAdapter.cpp" />
+    <ClCompile Include="SensorBlackboardAdapter.cpp" />
       <Filter>Source Files</Filter>
     </ClCompile>
       <Filter>Source Files</Filter>

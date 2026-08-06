@@ -1451,6 +1451,12 @@
       <Filter>DiaSteering</Filter>
     </ClCompile>
     <ClCompile Include="DiaSteering\TestSteeringSystem.cpp">
+    <ClCompile Include="DiaScalarField\TestScalarFieldVisualDebugger.cpp">
+    <ClCompile Include="DiaSensor\TestDiaSensor.cpp">
+      <Filter>DiaSensor</Filter>
+    </ClCompile>
+      <Filter>DiaScalarField</Filter>
+    </ClCompile>
       <Filter>DiaSteering</Filter>
     </ClCompile>
       <Filter>DiaPathfinding</Filter>
