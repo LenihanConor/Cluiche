@@ -1,5 +1,10 @@
 #include <DiaSensor/SensorModule.h>
 
+#include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Metric/Counter.h>
+
 #include <DiaEntity/Domain.h>
 #include <DiaEntitySpatial/EntitySpatialModule.h>
 #include <DiaEntitySpatial/SpatialComponent.h>
@@ -38,6 +43,15 @@ Dia::ApplicationFlow::StartResult SensorModule::DoStart()
     {
         mCountdowns.AddDefault();
     }
+
+    auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
+    mSightTicksCounter     = reg.RegisterCounter(Dia::Core::StringCRC("sensor.ticks.sight_per_frame"));
+    mProximityTicksCounter = reg.RegisterCounter(Dia::Core::StringCRC("sensor.ticks.proximity_per_frame"));
+    mDamageTicksCounter    = reg.RegisterCounter(Dia::Core::StringCRC("sensor.ticks.damage_per_frame"));
+    mSoundTicksCounter     = reg.RegisterCounter(Dia::Core::StringCRC("sensor.ticks.sound_per_frame"));
+    mAdaptersCounter       = reg.RegisterCounter(Dia::Core::StringCRC("sensor.adapters.distilled_per_frame"));
+
+    DIA_LOG_INFO("sensor", "SensorModule started — tracking up to %u entity slots", kMaxTrackedEntities);
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
@@ -46,15 +60,29 @@ void SensorModule::DoUpdate(float /*deltaTime*/)
     ++mFrameNumber;
     Update(mFrameNumber);
     RunAdapters(mFrameNumber);
+    DIA_LOG_DEBUG("sensor", "frame %d — ticks: sight=%d prox=%d dmg=%d snd=%d adapters=%d",
+        mFrameNumber, mLastSightTicks, mLastProximityTicks, mLastDamageTicks, mLastSoundTicks, mLastAdapterRuns);
 }
 
 Dia::ApplicationFlow::StopResult SensorModule::DoStop()
 {
+    mSightTicksCounter = mProximityTicksCounter = mDamageTicksCounter =
+    mSoundTicksCounter = mAdaptersCounter = nullptr;
+
+    DIA_LOG_INFO("sensor", "SensorModule stopped");
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 
 void SensorModule::Update(int frameNumber)
 {
+    DIA_TRACE_ZONE("sensor.update", Dia::Observation::Trace::Category::kNone);
+
+    // Reset per-frame tick counts.
+    mLastSightTicks     = 0;
+    mLastProximityTicks = 0;
+    mLastDamageTicks    = 0;
+    mLastSoundTicks     = 0;
+
     // AC-10: clear the sound event list BEFORE any sensor ticks this frame.
     mSoundEventList.Clear();
 
@@ -91,6 +119,7 @@ void SensorModule::Update(int frameNumber)
                 sight->Tick(mSpatialModule, mDomain, ownerPosition, kDefaultForward,
                             results, frameNumber);
                 cd.sight = sight->tickInterval;
+                ++mLastSightTicks;
             }
         }
 
@@ -105,6 +134,7 @@ void SensorModule::Update(int frameNumber)
                 proximity->Tick(mSpatialModule, mDomain, ownerPosition,
                                 results, frameNumber);
                 cd.proximity = proximity->tickInterval;
+                ++mLastProximityTicks;
             }
         }
 
@@ -123,6 +153,7 @@ void SensorModule::Update(int frameNumber)
                     damage->Tick(*damageReceived, results, frameNumber);
                 }
                 cd.damage = damage->tickInterval;
+                ++mLastDamageTicks;
             }
         }
 
@@ -136,13 +167,27 @@ void SensorModule::Update(int frameNumber)
             {
                 sound->Tick(mSoundEventList, ownerPosition, results);
                 cd.sound = sound->tickInterval;
+                ++mLastSoundTicks;
             }
         }
     }
+
+    if (mSightTicksCounter)
+        mSightTicksCounter->Inc(static_cast<uint64_t>(mLastSightTicks));
+    if (mProximityTicksCounter)
+        mProximityTicksCounter->Inc(static_cast<uint64_t>(mLastProximityTicks));
+    if (mDamageTicksCounter)
+        mDamageTicksCounter->Inc(static_cast<uint64_t>(mLastDamageTicks));
+    if (mSoundTicksCounter)
+        mSoundTicksCounter->Inc(static_cast<uint64_t>(mLastSoundTicks));
 }
 
 void SensorModule::RunAdapters(int frameNumber)
 {
+    DIA_TRACE_ZONE("sensor.run_adapters", Dia::Observation::Trace::Category::kNone);
+
+    mLastAdapterRuns = 0;
+
     // AC-8: SensorBlackboardAdapter::Distil() is called by this method ONLY —
     //       never from sensor component Tick methods.
     //
@@ -154,7 +199,11 @@ void SensorModule::RunAdapters(int frameNumber)
         SensorBlackboardAdapter*      adapter = std::get<1>(entry.components);
 
         adapter->Distil(results, adapter->GetBlackboard(), frameNumber);
+        ++mLastAdapterRuns;
     }
+
+    if (mAdaptersCounter)
+        mAdaptersCounter->Inc(static_cast<uint64_t>(mLastAdapterRuns));
 }
 
 } // namespace Dia::Sensor

@@ -11,6 +11,9 @@
 
 namespace Dia { namespace Entity { class Domain; } }
 namespace Dia { namespace EntitySpatial { class EntitySpatialModule; } }
+namespace Dia { namespace Observation { namespace Metric {
+    class Counter;
+} } }
 
 namespace Dia::Sensor {
 
@@ -70,6 +73,20 @@ private:
     Dia::EntitySpatial::EntitySpatialModule& mSpatialModule;
     SoundEventList                           mSoundEventList;
     int                                      mFrameNumber = 0;
+
+    // Per-frame tick counts (updated in Update/RunAdapters, read for log + metrics)
+    int mLastSightTicks     = 0;
+    int mLastProximityTicks = 0;
+    int mLastDamageTicks    = 0;
+    int mLastSoundTicks     = 0;
+    int mLastAdapterRuns    = 0;
+
+    // DiaObservation metric pointers (valid between DoStart/DoStop)
+    Dia::Observation::Metric::Counter* mSightTicksCounter     = nullptr;
+    Dia::Observation::Metric::Counter* mProximityTicksCounter = nullptr;
+    Dia::Observation::Metric::Counter* mDamageTicksCounter    = nullptr;
+    Dia::Observation::Metric::Counter* mSoundTicksCounter     = nullptr;
+    Dia::Observation::Metric::Counter* mAdaptersCounter       = nullptr;
 };
 
 } // namespace Dia::Sensor
