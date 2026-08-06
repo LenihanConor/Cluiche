@@ -17,8 +17,10 @@
     <ClInclude Include="IObjectiveObserver.h" />
     <ClInclude Include="ObjectiveDef.h" />
     <ClInclude Include="ObjectiveSet.h" />
+    <ClInclude Include="ObjectiveSetComponent.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ObjectiveSet.cpp" />
+    <ClCompile Include="ObjectiveSetComponent.cpp" />
   </ItemGroup>
 </Project>
