@@ -1,0 +1,1 @@
+#include <DiaEntitySpawner/EntitySpawnerImpl.h>

@@ -82,6 +82,14 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | diascalarfieldvisualdebugger | [spec](specs/) | 2026-08-05 | Marked done by `dia docs spec-done` |
 | diasensor | [spec](specs/) | 2026-08-05 | Marked done by `dia docs spec-done` |
 | diaeconomy | [spec](specs/) | 2026-08-06 | Marked done by `dia docs spec-done` |
+| DiaEntitySpatial | SpatialComponent, EntitySpatialIndex, EntitySpatialModule, Test Utilities | 2026-08-06 | Moved from backlog — already implemented |
+| DiaAICallout | Callout (emit/query/claim/release), CalloutHandle, CalloutRegistry, TTL expiry, Test Utilities | 2026-08-06 | Moved from backlog — already implemented |
+| EntitySpatialTestStage | TestStages | 2026-08-06 | Moved from backlog — already implemented |
+| DiaScalarFieldVisualDebugger | Gradient arrow overlay (arrowhead triangle + hex axial-to-world fix), heatmap, layer names | 2026-08-06 | Moved from backlog — already implemented || DiaSensor | SensorResultsComponent, SightSensorComponent, ProximitySensorComponent, DamageSensorComponent, SoundSensorComponent, SensorBlackboardAdapter, SensorModule, Test Utilities | 2026-08-06 | Moved from backlog — already implemented |
+| DiaSensorVisualDebugger | World-space overlay: sight cones + proximity circles; IVisualDebugger impl; reads SensorResultsComponent | 2026-08-06 | Moved from backlog — already implemented |
+| DiaEconomy | Named resource pools, earn/spend/transfer/tick, rate-of-change metrics | 2026-08-06 | Moved from backlog — already implemented |
+| diaobjective | [spec](specs/) | 2026-08-06 | Marked done by `dia docs spec-done` |
+| DiaTriggerScript | Data-driven level events — spatial/temporal/state/count triggers, four action types, ITriggerActionHandler extension point, TriggerFiredEvent on DiaStreams | 2026-08-06 | Moved by `dia docs backlog move` |
 
 ---
 
