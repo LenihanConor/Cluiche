@@ -1,6 +1,6 @@
 # Test Completeness Registry
 
-**Last Updated:** 2026-08-03 (DiaFlowField: +30 tests added; FlowFieldCache metrics counters; ~3,372 total)
+**Last Updated:** 2026-08-06 (DiaObjective: +56 tests; observability wired)
 
 Single source of truth for test coverage across all Dia modules. Updated alongside test commits.
 
@@ -288,6 +288,24 @@ Gap markers: **ZERO** = no tests, **LOW** = under-tested relative to API surface
 | Test Utilities (AssertPathFound, AssertPathCells, MockCostProvider) | 4 | TestPathfinding.cpp | 4 | 0 | 0 | OK |
 
 **DiaPathfinding totals: 3 files, 79 tests** | GOOD — golden cost/length/sequence, optimality, OOB, all-blocked, null-observer, system reuse; bug found+fixed: SquarePathGrid::SetPassable lacked OOB guard
+
+---
+
+## DiaObjective
+
+| Component | Tests | Files | Unit | Stress/Boundary | Integration | Notes |
+|-----------|-------|-------|------|-----------------|-------------|-------|
+| IObjectiveObserver / RewardPayload | — | — | — | — | — | Interface; tested via CapturingObserver |
+| ObjectiveDef (struct) | covered below | — | — | — | — | Tested via ObjectiveSet.GetAt() |
+| ObjectiveSet (LoadFromJson) | 10 | TestObjectiveSet.cpp | 10 | 0 | 0 | GOOD — valid, missing key, missing completion, 3 classifications, prereqs, reward, initial state x2 |
+| ObjectiveSet (Evaluate) | 8 | TestObjectiveSet.cpp | 8 | 0 | 0 | GOOD — complete, stays active, latch, failure, completion-beats-failure, prereq chain, AllPrimaryComplete, AnyPrimaryFailed |
+| ObjectiveSet (Observer) | 4 | TestObjectiveSet.cpp | 4 | 0 | 0 | GOOD — Completed, Failed, Activated (prereq path), RemoveObserver |
+| ObjectiveSet (Boundary) | 17 | TestObjectiveSetBoundary.cpp | 0 | 17 | 0 | GOOD — OOB GetAt, unknown id, non-array/non-object/empty JSON, unknown classification, empty set, inactive-not-evaluated, vacuous AllPrimary/AnyPrimary, failed latch, move construct/assign, Validate pass/fail |
+| ObjectiveSet (Stress) | 5 | TestObjectiveSetStress.cpp | 0 | 5 | 0 | GOOD — 20-obj batch, 5-chain prereqs, 8 observers, 100-tick latch, 100-cycle observer add/remove |
+| ObjectiveSetComponent | 6 | TestObjectiveSetComponent.cpp | 6 | 0 | 0 | GOOD — evaluate false/complete, GetState, AllPrimaryComplete, AnyPrimaryFailed, observer delegation |
+| Testing/CapturingObserver | 6 | TestCapturingObserver.cpp | 6 | 0 | 0 | GOOD — initial state, 3 event types, Clear, order |
+
+**DiaObjective totals: 5 files, 56 tests** | GOOD — all public API covered; observability wired (DIA_LOG_*, DIA_TRACE_ZONE, DIA_PROFILE_SCOPE, MetricRegistry); InitMetrics not independently tested (counter wiring tested via integration if needed)
 
 ---
 
