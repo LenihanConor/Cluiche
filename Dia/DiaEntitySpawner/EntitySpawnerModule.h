@@ -3,25 +3,82 @@
 #define DIA_ENTITYSPAWNER_ENTITYSPAWNERMODULE_H
 
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/Streams/EventStreamWriter.h>
+#include <DiaEntitySpawner/EntitySpawnerImpl.h>
+#include <DiaEntitySpawner/SpawnEmitterComponent.h>
+#include <DiaEntitySpawner/SpawnerTypes.h>
+#include <DiaMailbox/Mailbox.h>
 #include <DiaCore/CRC/StringCRC.h>
 
-namespace Dia::Entity { class Domain; }
+namespace Dia { namespace Entity {
+    class Domain;
+    class IBlueprintLoader;
+} }
+
+namespace Dia { namespace ApplicationFlow { class Application; } }
 
 namespace Dia::EntitySpawner {
 
+// ---------------------------------------------------------------------------
+// EntitySpawnerModule
+//
+// ApplicationFlow::Module that drives EntitySpawnerImpl each frame.
+// Responsibilities:
+//   - Tick SpawnEmitterComponent token accumulation and burst logic.
+//   - Evaluate lifetime and radius despawn conditions each Update.
+//   - Publish EntitySpawnedEvent and EntityDespawnedEvent on sim-thread streams.
+//   - Subscribe to EntityDestroyedMessage to stay consistent with domain destroys.
+//   - Expose IEntitySpawner& via GetSpawner() for game code.
+// ---------------------------------------------------------------------------
 class EntitySpawnerModule : public Dia::ApplicationFlow::Module
 {
 public:
     static const Dia::Core::StringCRC kInstanceId;
-    explicit EntitySpawnerModule(Dia::Entity::Domain& domain);
+
+    // Both Domain& and IBlueprintLoader& must outlive this module.
+    EntitySpawnerModule(Dia::Entity::Domain& domain,
+                        Dia::Entity::IBlueprintLoader& loader);
+
+    // Exposes the underlying IEntitySpawner for caller-driven Spawn/Despawn.
+    Dia::Entity::IEntitySpawner& GetSpawner();
 
 protected:
+    // Called once before dedicated threads start; wires stream handles.
+    void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
+
     Dia::ApplicationFlow::StartResult DoStart() override;
     void                              DoUpdate(float deltaTime) override;
     Dia::ApplicationFlow::StopResult  DoStop() override;
 
 private:
-    Dia::Entity::Domain& mDomain;
+    // Run token accumulation + burst for all active SpawnEmitterComponents.
+    void TickEmitters(float dt);
+
+    // Try to spawn one entity from an emitter, enforcing cap via FIFO overflow.
+    void TrySpawnFromEmitter(Dia::Entity::Entity emitterEntity,
+                             const SpawnEmitterComponent& comp,
+                             EmitterState& state);
+
+    // Tick lifetime + radius despawn conditions for all tracked children.
+    void TickDespawnConditions(float dt);
+
+    // Static callback forwarded to EntitySpawnerImpl::SetDespawnCallback.
+    static void OnDespawnCallback(void* ctx,
+                                  Dia::Entity::Entity entity,
+                                  Dia::Entity::DespawnReason reason);
+
+    Dia::Entity::Domain&      mDomain;
+    EntitySpawnerImpl         mSpawner;
+
+    // Event stream writers — connected in OnConnectStreams.
+    Dia::ApplicationFlow::EventStreamWriter<Dia::Entity::EntitySpawnedEvent>
+        mSpawnedWriter{this, Dia::Core::StringCRC("spawner.entity-spawned")};
+
+    Dia::ApplicationFlow::EventStreamWriter<Dia::Entity::EntityDespawnedEvent>
+        mDespawnedWriter{this, Dia::Core::StringCRC("spawner.entity-despawned")};
+
+    // Subscription for EntityDestroyedMessage from the domain mailbox.
+    Dia::Mailbox::SubscriptionHandle mDestroyedSub;
 };
 
 } // namespace Dia::EntitySpawner
