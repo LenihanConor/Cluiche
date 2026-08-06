@@ -1,6 +1,11 @@
 #include <DiaObjective/ObjectiveSet.h>
 
 #include <DiaCore/Core/Assert.h>
+#include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Metric/Counter.h>
 
 #include <algorithm>
 #include <vector>
@@ -17,6 +22,10 @@ namespace Dia
             std::vector<ObjectiveDef>        defs;
             std::vector<ObjectiveState>      states;   // parallel to defs
             std::vector<IObjectiveObserver*> observers;
+
+            Dia::Observation::Metric::Counter* activationsCounter = nullptr;
+            Dia::Observation::Metric::Counter* completionsCounter = nullptr;
+            Dia::Observation::Metric::Counter* failuresCounter    = nullptr;
         };
 
         //-------------------------------------------------------------------------------------------
@@ -48,6 +57,18 @@ namespace Dia
                 other.mImpl = nullptr;
             }
             return *this;
+        }
+
+        //-------------------------------------------------------------------------------------------
+        // InitMetrics
+        //-------------------------------------------------------------------------------------------
+        void ObjectiveSet::InitMetrics()
+        {
+            if (!mImpl) return;
+            auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
+            mImpl->activationsCounter = reg.RegisterCounter(Dia::Core::StringCRC("objective.activations"));
+            mImpl->completionsCounter = reg.RegisterCounter(Dia::Core::StringCRC("objective.completions"));
+            mImpl->failuresCounter    = reg.RegisterCounter(Dia::Core::StringCRC("objective.failures"));
         }
 
         //-------------------------------------------------------------------------------------------
@@ -204,6 +225,8 @@ namespace Dia
         //-------------------------------------------------------------------------------------------
         int ObjectiveSet::Evaluate(Dia::Condition::IConditionContext& ctx)
         {
+            DIA_TRACE_ZONE("ObjectiveSet::Evaluate", Dia::Observation::Trace::Category::kNone);
+            DIA_PROFILE_SCOPE("ObjectiveSet::Evaluate", Dia::Observation::Profile::Category::kNone);
             int transitions = 0;
             const int count = static_cast<int>(mImpl->defs.size());
 
@@ -234,6 +257,8 @@ namespace Dia
                     {
                         obs->OnObjectiveActivated(def.id);
                     }
+                    DIA_LOG_DEBUG("Objective", "objective activated: id=%u", def.id.Value());
+                    if (mImpl->activationsCounter) mImpl->activationsCounter->Inc();
                     ++transitions;
                 }
             }
@@ -255,6 +280,8 @@ namespace Dia
                     {
                         obs->OnObjectiveCompleted(def.id, def.reward);
                     }
+                    DIA_LOG_INFO("Objective", "objective completed: id=%u", def.id.Value());
+                    if (mImpl->completionsCounter) mImpl->completionsCounter->Inc();
                     ++transitions;
                 }
                 else if (def.failure.IsValid() && def.failure.Evaluate(ctx))
@@ -264,6 +291,8 @@ namespace Dia
                     {
                         obs->OnObjectiveFailed(def.id);
                     }
+                    DIA_LOG_INFO("Objective", "objective failed: id=%u", def.id.Value());
+                    if (mImpl->failuresCounter) mImpl->failuresCounter->Inc();
                     ++transitions;
                 }
             }

@@ -709,6 +709,10 @@
     <ClCompile Include="DiaObjective\TestObjectiveSet.cpp" />
     <ClCompile Include="DiaObjective\TestObjectiveSetComponent.cpp" />
     <ClCompile Include="DiaObjective\TestCapturingObserver.cpp" />
+    <ClCompile Include="DiaObjective\TestObjectiveSetBoundary.cpp" />
+    <ClCompile Include="DiaObjective\TestObjectiveSetStress.cpp" />
+    <ClCompile Include="DiaObjective\TestObjectiveSetBoundary.cpp" />
+    <ClCompile Include="DiaObjective\TestObjectiveSetStress.cpp" />
     <!-- DiaUtilityAI -->
     <ClCompile Include="DiaUtilityAI\TestResponseCurve.cpp" />
     <ClCompile Include="DiaUtilityAI\TestGroupConsiderationContext.cpp" />

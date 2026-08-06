@@ -35,6 +35,10 @@ namespace Dia
             void AddObserver   (IObjectiveObserver* observer);
             void RemoveObserver(IObjectiveObserver* observer);
 
+            // Register objective transition metrics with MetricRegistry.
+            // Call once after loading. Idempotent if already registered.
+            void InitMetrics();
+
             ObjectiveState      GetState  (Dia::Core::StringCRC objectiveId) const;
             int                 GetCount  () const;
             const ObjectiveDef* GetAt     (int index) const;

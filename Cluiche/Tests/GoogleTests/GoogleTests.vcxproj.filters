@@ -1475,6 +1475,18 @@
     <ClCompile Include="DiaObjective\TestCapturingObserver.cpp">
       <Filter>DiaObjective</Filter>
     </ClCompile>
+    <ClCompile Include="DiaObjective\TestObjectiveSetBoundary.cpp">
+      <Filter>DiaObjective</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObjective\TestObjectiveSetStress.cpp">
+      <Filter>DiaObjective</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObjective\TestObjectiveSetBoundary.cpp">
+      <Filter>DiaObjective</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObjective\TestObjectiveSetStress.cpp">
+      <Filter>DiaObjective</Filter>
+    </ClCompile>
       <Filter>DiaScalarField</Filter>
     </ClCompile>
       <Filter>DiaSteering</Filter>
