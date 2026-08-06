@@ -29,6 +29,9 @@ namespace Dia { namespace Economy {
         EconomyInstance();
         ~EconomyInstance();
 
+        EconomyInstance(const EconomyInstance& other);
+        EconomyInstance& operator=(const EconomyInstance& other);
+
         // Factory methods — create an instance from a schema, optionally
         // applying per-resource starting_value overrides from a JSON file.
         [[nodiscard]] static EconomyInstance CreateFromSchema(const EconomySchema& schema);

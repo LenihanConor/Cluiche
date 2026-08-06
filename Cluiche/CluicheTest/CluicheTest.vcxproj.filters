@@ -263,5 +263,17 @@
     </ClInclude>
       <Filter>ApplicationFlow\Modules\Dummy</Filter>
     </ClInclude>
+    <ClCompile Include="Modules\TestStages\EconomyTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\Drawers\EconomyDrawer.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClCompile>
+    <ClInclude Include="Modules\TestStages\EconomyTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\Drawers\EconomyDrawer.h">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

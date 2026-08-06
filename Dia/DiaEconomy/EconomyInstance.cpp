@@ -21,6 +21,38 @@ namespace Dia { namespace Economy {
     EconomyInstance::~EconomyInstance()
     {}
 
+    EconomyInstance::EconomyInstance(const EconomyInstance& other)
+        : mPools()
+        , mInstanceName(other.mInstanceName)
+        , mSchema(other.mSchema)
+    {
+        const unsigned int count = other.mPools.Size();
+        if (count > 0)
+        {
+            mPools.Reserve(count);
+            for (unsigned int i = 0; i < count; ++i)
+                mPools.Add(other.mPools[i]);
+        }
+    }
+
+    EconomyInstance& EconomyInstance::operator=(const EconomyInstance& other)
+    {
+        if (this == &other)
+            return *this;
+        mInstanceName = other.mInstanceName;
+        mSchema       = other.mSchema;
+        const unsigned int count = other.mPools.Size();
+        mPools.RemoveAll();
+        if (count > 0)
+        {
+            if (mPools.Capacity() < count)
+                mPools.Reserve(count);
+            for (unsigned int i = 0; i < count; ++i)
+                mPools.Add(other.mPools[i]);
+        }
+        return *this;
+    }
+
     // -----------------------------------------------------------------------
     // CreateFromSchema
     // -----------------------------------------------------------------------

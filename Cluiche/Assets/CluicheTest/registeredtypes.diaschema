@@ -99,6 +99,30 @@
       "description": "",
       "fields": [],
       "type_id": "htn-planner-component"
+    },
+    {
+      "debug_name": "SpatialComponent",
+      "default_values": {
+        "layerMask": 0,
+        "position": null,
+        "radius": 0
+      },
+      "description": "",
+      "fields": [
+        {
+          "kind": "nested",
+          "name": "position"
+        },
+        {
+          "kind": "primitive",
+          "name": "radius"
+        },
+        {
+          "kind": "primitive",
+          "name": "mLayerMask"
+        }
+      ],
+      "type_id": "spatial-component"
     }
   ],
   "game": "cluichetest",
@@ -200,6 +224,11 @@
     },
     {
       "allowed_pus": "sim",
+      "description": "Integration stage: DiaEconomy -- gatherers mine gold, deposit to treasury, consumer drains, market modifier",
+      "type_id": "EconomyTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
       "description": "Integration stage: HTN (sync + diverge/replan + async) + AIBudget + RuleActionBridge",
       "type_id": "AIHTNTestStageModule"
     },
@@ -212,6 +241,11 @@
       "allowed_pus": "sim",
       "description": "Tactical influence maps: Blue + Red faction fields, spatial queries, overlays",
       "type_id": "ScalarFieldTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Entity spatial queries: 5 query shapes, layer masks, dirty-flag re-index, destroy sweep",
+      "type_id": "EntitySpatialTestStageModule"
     },
     {
       "allowed_pus": "sim",
@@ -357,6 +391,6 @@
   "processing_units": [],
   "version": {
     "major": 1,
-    "minor": 13
+    "minor": 16
   }
 }

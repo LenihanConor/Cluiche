@@ -89,6 +89,10 @@
         {
             "path": "Stages/EntitySpatialTestStage/entityspatial_test_stage.diastage",
             "type": "stage"
+        },
+        {
+            "path": "Stages/EconomyTestStage/economy_test_stage.diastage",
+            "type": "stage"
         }
     ],
     "name": "CluicheTest",

@@ -20,7 +20,8 @@
                 "AIHTNTestStage",
                 "PathfindingTestStage",
                 "ScalarFieldTestStage",
-                "EntitySpatialTestStage"
+                "EntitySpatialTestStage",
+                "EconomyTestStage"
             ],
             "auto_advance": false
         },
@@ -132,6 +133,11 @@
         },
         {
             "name": "EntitySpatialTestStage",
+            "transitions": ["Boot"],
+            "auto_advance": false
+        },
+        {
+            "name": "EconomyTestStage",
             "transitions": ["Boot"],
             "auto_advance": false
         }
@@ -548,7 +554,8 @@
                         "AIHTNTestStage",
                         "PathfindingTestStage",
                         "ScalarFieldTestStage",
-                        "EntitySpatialTestStage"
+                        "EntitySpatialTestStage",
+                        "EconomyTestStage"
                     ],
                     "dependencies": [
                         "Camera2DModule"
@@ -650,7 +657,8 @@
                         "AIHTNTestStage",
                         "PathfindingTestStage",
                         "ScalarFieldTestStage",
-                        "EntitySpatialTestStage"
+                        "EntitySpatialTestStage",
+                        "EconomyTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"
@@ -684,7 +692,8 @@
                         "AIHTNTestStage",
                         "PathfindingTestStage",
                         "ScalarFieldTestStage",
-                        "EntitySpatialTestStage"
+                        "EntitySpatialTestStage",
+                        "EconomyTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"
