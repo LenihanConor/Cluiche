@@ -21,7 +21,8 @@
                 "PathfindingTestStage",
                 "ScalarFieldTestStage",
                 "EntitySpatialTestStage",
-                "EconomyTestStage"
+                "EconomyTestStage",
+                "SpawnerTestStage"
             ],
             "auto_advance": false
         },
@@ -133,12 +134,23 @@
         },
         {
             "name": "EntitySpatialTestStage",
-            "transitions": ["Boot"],
+            "transitions": [
+                "Boot"
+            ],
             "auto_advance": false
         },
         {
             "name": "EconomyTestStage",
-            "transitions": ["Boot"],
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "SpawnerTestStage",
+            "transitions": [
+                "Boot"
+            ],
             "auto_advance": false
         }
     ],
@@ -555,7 +567,8 @@
                         "PathfindingTestStage",
                         "ScalarFieldTestStage",
                         "EntitySpatialTestStage",
-                        "EconomyTestStage"
+                        "EconomyTestStage",
+                        "SpawnerTestStage"
                     ],
                     "dependencies": [
                         "Camera2DModule"
@@ -658,7 +671,8 @@
                         "PathfindingTestStage",
                         "ScalarFieldTestStage",
                         "EntitySpatialTestStage",
-                        "EconomyTestStage"
+                        "EconomyTestStage",
+                        "SpawnerTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"
@@ -693,7 +707,8 @@
                         "PathfindingTestStage",
                         "ScalarFieldTestStage",
                         "EntitySpatialTestStage",
-                        "EconomyTestStage"
+                        "EconomyTestStage",
+                        "SpawnerTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"

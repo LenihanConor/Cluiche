@@ -93,6 +93,10 @@
         {
             "path": "Stages/EconomyTestStage/economy_test_stage.diastage",
             "type": "stage"
+        },
+        {
+            "path": "Stages/SpawnerTestStage/spawner_test_stage.diastage",
+            "type": "stage"
         }
     ],
     "name": "CluicheTest",

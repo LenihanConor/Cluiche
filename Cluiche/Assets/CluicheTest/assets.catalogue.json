@@ -860,6 +860,31 @@
             "tags": [
                 "misc/ApplicationFlow"
             ]
+        },
+        {
+            "id": "stage.spawner_test_stage",
+            "type": "stage",
+            "source_path": "Stages/SpawnerTestStage/spawner_test_stage.diastage",
+            "scope": "global",
+            "tags": [
+                "misc"
+            ],
+            "references": [
+                {
+                    "type": "contains",
+                    "target": "manifest.spawner_test_stage"
+                }
+            ]
+        },
+        {
+            "id": "manifest.spawner_test_stage",
+            "type": "manifest",
+            "source_path": "Stages/SpawnerTestStage/misc/ApplicationFlow/spawner_test_stage.diaapp",
+            "scope": "stage",
+            "stage_name": "SpawnerTestStage",
+            "tags": [
+                "misc/ApplicationFlow"
+            ]
         }
     ],
     "rules_path": "assets.rules.json"
