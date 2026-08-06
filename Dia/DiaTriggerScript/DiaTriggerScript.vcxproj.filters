@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{C7D8E9F0-A1B2-3456-CDEF-012345678902}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{D8E9F0A1-B2C3-4567-DEF0-123456789013}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.diatriggerscript.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ITriggerActionHandler.h" />
+    <ClInclude Include="TriggerActionRegistry.h" />
+    <ClInclude Include="TriggerScriptModule.h" />
+    <ClInclude Include="Testing\TriggerScriptTestHelpers.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="TriggerDef.h" />
+    <ClInclude Include="TriggerFiredEvent.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="TriggerActionRegistry.cpp" />
+    <ClCompile Include="TriggerScriptModule.cpp" />
+  </ItemGroup>
+</Project>
