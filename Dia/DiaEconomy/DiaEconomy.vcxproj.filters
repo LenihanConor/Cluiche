@@ -12,6 +12,9 @@
     <ClInclude Include="EconomySchema.h" />
     <ClInclude Include="EconomyInstance.h" />
     <ClInclude Include="EconomySystem.h" />
+    <ClInclude Include="Testing\EconomyTestHelpers.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="EconomySchema.cpp" />

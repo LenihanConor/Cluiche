@@ -189,6 +189,33 @@ namespace Dia { namespace Economy {
     }
 
     // -----------------------------------------------------------------------
+    // RegisterDerivedResource
+    // -----------------------------------------------------------------------
+    void EconomySystem::RegisterDerivedResource(Dia::Core::StringCRC resource_name, DerivedResourceFn fn)
+    {
+        DerivedEntry entry;
+        entry.key = resource_name;
+        entry.fn  = fn;
+        mDerivedResources.Add(entry);
+    }
+
+    // -----------------------------------------------------------------------
+    // QueryDerived
+    // -----------------------------------------------------------------------
+    float EconomySystem::QueryDerived(const EconomyInstance& instance,
+                                      Dia::Core::StringCRC resource_name) const
+    {
+        for (unsigned int i = 0; i < mDerivedResources.Size(); ++i)
+        {
+            if (mDerivedResources[i].key == resource_name)
+                return mDerivedResources[i].fn(instance);
+        }
+        DIA_LOG_WARNING("Economy", "EconomySystem::QueryDerived: unregistered derived resource '%s'",
+                        resource_name.AsChar());
+        return 0.0f;
+    }
+
+    // -----------------------------------------------------------------------
     // Tick
     // -----------------------------------------------------------------------
     void EconomySystem::Tick(EconomyInstance& instance, float delta_seconds)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include "DiaEconomy/EconomyObserverSubject.h"
 #include "DiaEconomy/IEconomyConditionAdaptor.h"
 
@@ -9,6 +10,11 @@ namespace Dia { namespace Economy {
     // Forward declarations
     class EconomyInstance;
     struct ModifierDef;
+
+    // -----------------------------------------------------------------------
+    // DerivedResourceFn
+    // -----------------------------------------------------------------------
+    using DerivedResourceFn = float(*)(const EconomyInstance&);
 
     // -----------------------------------------------------------------------
     // TransactionResult
@@ -60,7 +66,12 @@ namespace Dia { namespace Economy {
         // When null, any modifier whose when_condition is non-empty is skipped.
         void SetConditionAdaptor(IEconomyConditionAdaptor* adaptor) { mConditionAdaptor = adaptor; }
 
-        // TODO Task 7: RegisterDerivedResource goes here
+        // Registers a derived (computed) resource with a C++ callback function.
+        void RegisterDerivedResource(Dia::Core::StringCRC resource_name, DerivedResourceFn fn);
+
+        // Queries a derived resource; invokes the registered callback.
+        // If unregistered, logs a warning and returns 0.0f.
+        float QueryDerived(const EconomyInstance& instance, Dia::Core::StringCRC resource_name) const;
 
     private:
         // Returns true if the modifier should be applied this tick.
@@ -68,8 +79,16 @@ namespace Dia { namespace Economy {
         // Conditional modifiers return false when no adaptor is installed.
         bool IsModifierConditionMet(const ModifierDef& mod) const;
 
-        EconomyObserverSubject      mObserverSubject;
-        IEconomyConditionAdaptor*   mConditionAdaptor = nullptr;
+        // Derived resource registry entry.
+        struct DerivedEntry
+        {
+            Dia::Core::StringCRC key;
+            DerivedResourceFn    fn;
+        };
+
+        EconomyObserverSubject                                      mObserverSubject;
+        IEconomyConditionAdaptor*                                   mConditionAdaptor = nullptr;
+        Dia::Core::Containers::DynamicArrayC<DerivedEntry, 32>     mDerivedResources;
     };
 
 }} // namespace Dia::Economy

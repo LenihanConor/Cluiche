@@ -80,6 +80,9 @@
     <ClInclude Include="IEconomyConditionAdaptor.h" />
     <ClInclude Include="IEconomyObserver.h" />
     <ClInclude Include="EconomyObserverSubject.h" />
+    <ClInclude Include="Testing\EconomyTestHelpers.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="EconomySchema.cpp" />
