@@ -205,6 +205,9 @@
     <Filter Include="DiaObjective">
       <UniqueIdentifier>{D5E6F7A8-B9C0-1234-EF01-678901234CDE}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaEntitySpawner">
+      <UniqueIdentifier>{B2C3D4E5-F6A7-8901-BCDE-F01234567890}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -1464,6 +1467,10 @@
     <!-- DiaEconomy -->
     <ClCompile Include="DiaEconomy\TestDiaEconomy.cpp">
       <Filter>DiaEconomy</Filter>
+    </ClCompile>
+    <!-- DiaEntitySpawner -->
+    <ClCompile Include="DiaEntitySpawner\TestEntitySpawner.cpp">
+      <Filter>DiaEntitySpawner</Filter>
     </ClCompile>
     <!-- DiaObjective -->
     <ClCompile Include="DiaObjective\TestObjectiveSet.cpp">
