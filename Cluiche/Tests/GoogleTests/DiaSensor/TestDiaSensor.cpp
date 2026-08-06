@@ -809,3 +809,124 @@ TEST_F(DiaSensorTest, Integration_SoundSensor_DirectTick_WithinRange)
     soundSensor.Tick(soundList, spatial->position, *results);
     EXPECT_EQ(results->soundEvents.Size(), 1u) << "Sound within range heard";
 }
+
+// ============================================================================
+// Additional coverage: tick-skip direct proof, sound via module, capacity cap
+// ============================================================================
+
+// Gap 1 — Direct proof that a skipped frame does not re-query the spatial index.
+// Sensor fires on frame 1 (countdown=0→fires→reset to 3).
+// A second target is added before frame 2.
+// Frame 2 countdown=3→2 so the sensor does NOT fire — result count stays at frame-1 value.
+TEST_F(DiaSensorTest, TickRate_SightSensor_SkippedFrame_NoRequery)
+{
+    Entity observer = SpawnObserver(Vector2D(0.f, 0.f));
+    AddSightSensor(observer, 20.f, 1.5707963f, 3);  // wide cone, fires every 3 frames
+
+    // Spawn first target in cone and flush.
+    SpawnSpatialEntity(domain, Vector2D(5.f, 0.f));
+    domain.EndOfFrame();
+    spatialModule->Update();
+
+    SensorResultsComponent* results = domain.GetComponent<SensorResultsComponent>(observer);
+    ASSERT_NE(results, nullptr);
+
+    // Frame 1: countdown=0 → fires → sees first target → reset to 3.
+    sensorModule->Tick();
+    unsigned int size1 = results->sightResults.Size();
+    EXPECT_GE(size1, 1u) << "Frame 1 must fire and see the first target";
+
+    // Spawn a second target in the same cone — if the sensor re-queries, size would grow.
+    SpawnSpatialEntity(domain, Vector2D(4.f, 0.f));
+    domain.EndOfFrame();
+    spatialModule->Update();
+
+    // Frame 2: countdown=3→2 — sensor does NOT fire, results are stale from frame 1.
+    sensorModule->Tick();
+
+    EXPECT_EQ(results->sightResults.Size(), size1)
+        << "Skipped frame must not re-query: result count must remain at frame-1 value";
+}
+
+// Gap 2a — Sound emitted via SensorModule::EmitSound() is readable by SoundSensorComponent::Tick().
+// EmitSound() is designed to be called by other SimPU modules that run BEFORE SensorModule::DoUpdate().
+// The sensor reads the list populated by EmitSound(); Update() clears it at the START of the next frame.
+// We test the wiring by emitting and then directly ticking the sensor against the module's live sound list.
+TEST_F(DiaSensorTest, SoundSensor_ViaModule_EmitAndSensorReadsModuleList)
+{
+    Entity observer = SpawnObserver(Vector2D(0.f, 0.f));
+
+    SensorResultsComponent* results = domain.GetComponent<SensorResultsComponent>(observer);
+    ASSERT_NE(results, nullptr);
+    SpatialComponent* spatial = domain.GetComponent<SpatialComponent>(observer);
+    ASSERT_NE(spatial, nullptr);
+
+    // Emit sound via module — this is what other game systems call before SensorModule runs.
+    sensorModule->EmitSound(Vector2D(3.f, 0.f), SoundType::kFootstep, 15.f);
+
+    // The sound is now in the module's SoundEventList.
+    EXPECT_EQ(sensorModule->GetSoundEventList().GetEvents().Size(), 1u)
+        << "EmitSound must add to the module's SoundEventList";
+
+    // Simulate what SensorModule::Update() does for a SoundSensorComponent tick:
+    // read directly from the module's list (same reference the module passes to Tick()).
+    SoundSensorComponent soundSensor;
+    soundSensor.hearingRadius = 10.f;
+    soundSensor.tickInterval  = 1;
+    results->soundEvents.RemoveAll();
+    soundSensor.Tick(sensorModule->GetSoundEventList(), spatial->position, *results);
+
+    EXPECT_GE(results->soundEvents.Size(), 1u)
+        << "SoundSensorComponent reading the module's list must receive the emitted sound";
+}
+
+// Gap 2b — Sound emitted beyond the hearing radius is not received by SoundSensorComponent.
+TEST_F(DiaSensorTest, SoundSensor_ViaModule_OutOfRange_NotReceived)
+{
+    Entity observer = SpawnObserver(Vector2D(0.f, 0.f));
+
+    SensorResultsComponent* results = domain.GetComponent<SensorResultsComponent>(observer);
+    ASSERT_NE(results, nullptr);
+    SpatialComponent* spatial = domain.GetComponent<SpatialComponent>(observer);
+    ASSERT_NE(spatial, nullptr);
+
+    // Sound at distance 50, large emission radius — entity is within broadcast range
+    // but beyond its own hearing radius of 5.
+    sensorModule->EmitSound(Vector2D(50.f, 0.f), SoundType::kExplosion, 100.f);
+
+    SoundSensorComponent soundSensor;
+    soundSensor.hearingRadius = 5.f;
+    soundSensor.tickInterval  = 1;
+    results->soundEvents.RemoveAll();
+    soundSensor.Tick(sensorModule->GetSoundEventList(), spatial->position, *results);
+
+    EXPECT_EQ(results->soundEvents.Size(), 0u)
+        << "Sound beyond hearing radius must not appear in soundEvents";
+}
+
+// Gap 3 — Spawning more targets than the sightResults capacity (8) must not crash
+//          and the result array must be capped at 8.
+TEST_F(DiaSensorTest, SightSensor_CapacityFull_NoCrash_CappedAt8)
+{
+    Entity observer = SpawnObserver(Vector2D(0.f, 0.f));
+    AddSightSensor(observer, 50.f, 3.14159f, 1);  // full 180-degree cone, range 50
+
+    // Spawn 10 targets all along +X axis inside the cone.
+    for (int i = 1; i <= 10; ++i)
+    {
+        SpawnSpatialEntity(domain, Vector2D(static_cast<float>(i) * 2.f, 0.f));
+    }
+    domain.EndOfFrame();
+    spatialModule->Update();
+
+    // Must not crash even though 10 entities are in view and capacity is 8.
+    sensorModule->Tick();
+
+    SensorResultsComponent* results = domain.GetComponent<SensorResultsComponent>(observer);
+    ASSERT_NE(results, nullptr);
+
+    EXPECT_LE(results->sightResults.Size(), 8u)
+        << "sightResults must be capped at DynamicArrayC capacity (8)";
+    EXPECT_GE(results->sightResults.Size(), 1u)
+        << "At least some targets must be found";
+}

@@ -53,7 +53,8 @@ void SightSensorComponent::Tick(
     int frameNumber) const
 {
     // Query spatial index for entities in the cone.
-    Dia::Core::Containers::DynamicArrayC<Dia::Entity::Entity, 8> rawOut;
+    // Buffer is larger than the results capacity so QuerySector never truncates-asserts.
+    Dia::Core::Containers::DynamicArrayC<Dia::Entity::Entity, 32> rawOut;
     spatialModule.QuerySector(ownerPosition, forwardDir, range, halfAngle, layerMask, rawOut);
 
     // Overwrite results on every tick (AC-2).
