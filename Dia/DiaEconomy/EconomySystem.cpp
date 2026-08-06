@@ -20,15 +20,37 @@ namespace Dia { namespace Economy {
             return TransactionResult::UnknownResource;
         }
 
-        const float oldVal = instance.GetValue(resource_name);
-        const float maxVal = instance.GetMaximum(resource_name);
-        const float newVal = oldVal + amount;
+        const float oldVal  = instance.GetValue(resource_name);
+        const float maxVal  = instance.GetMaximum(resource_name);
+        const float newVal  = oldVal + amount;
         const bool  clamped = newVal > maxVal;
 
         instance.SetValue_Internal(resource_name, newVal); // SetValue_Internal clamps internally
 
-        // TODO Task 5: fire OnPoolChanged(instance, resource_name, instance.GetValue(resource_name), delta)
-        // TODO Task 5: if clamped fire OnPoolReachedMaximum; fire OnTransactionClamped
+        const float actual = instance.GetValue(resource_name);
+        const float delta  = actual - oldVal;
+
+        PoolChangedEvent pce;
+        pce.instance      = &instance;
+        pce.resource_name = resource_name;
+        pce.new_value     = actual;
+        pce.delta         = delta;
+        mObserverSubject.NotifyPoolChanged(pce);
+
+        if (clamped)
+        {
+            TransactionClampedEvent tce;
+            tce.instance          = &instance;
+            tce.resource_name     = resource_name;
+            tce.requested_amount  = amount;
+            tce.actual_amount     = delta;
+            mObserverSubject.NotifyTransactionClamped(tce);
+
+            if (oldVal < maxVal) // only fire on transition (wasn't already at max)
+            {
+                mObserverSubject.NotifyPoolReachedMaximum(instance, resource_name);
+            }
+        }
 
         return clamped ? TransactionResult::Clamped : TransactionResult::Success;
     }
@@ -46,15 +68,37 @@ namespace Dia { namespace Economy {
             return TransactionResult::UnknownResource;
         }
 
-        const float oldVal = instance.GetValue(resource_name);
-        const float minVal = instance.GetMinimum(resource_name);
-        const float newVal = oldVal - amount;
+        const float oldVal  = instance.GetValue(resource_name);
+        const float minVal  = instance.GetMinimum(resource_name);
+        const float newVal  = oldVal - amount;
         const bool  clamped = newVal < minVal;
 
         instance.SetValue_Internal(resource_name, newVal); // SetValue_Internal clamps internally
 
-        // TODO Task 5: fire OnPoolChanged(instance, resource_name, instance.GetValue(resource_name), delta)
-        // TODO Task 5: if clamped fire OnPoolReachedMinimum; fire OnTransactionClamped
+        const float actual = instance.GetValue(resource_name);
+        const float delta  = actual - oldVal;
+
+        PoolChangedEvent pce;
+        pce.instance      = &instance;
+        pce.resource_name = resource_name;
+        pce.new_value     = actual;
+        pce.delta         = delta;
+        mObserverSubject.NotifyPoolChanged(pce);
+
+        if (clamped)
+        {
+            TransactionClampedEvent tce;
+            tce.instance          = &instance;
+            tce.resource_name     = resource_name;
+            tce.requested_amount  = amount;
+            tce.actual_amount     = delta;
+            mObserverSubject.NotifyTransactionClamped(tce);
+
+            if (oldVal > minVal) // only fire on transition (wasn't already at min)
+            {
+                mObserverSubject.NotifyPoolReachedMinimum(instance, resource_name);
+            }
+        }
 
         return clamped ? TransactionResult::Clamped : TransactionResult::Success;
     }
@@ -75,7 +119,12 @@ namespace Dia { namespace Economy {
 
         Earn(to, resource_name, amount);
 
-        // TODO Task 5: fire OnTransferCompleted(from, to, resource_name, amount)
+        TransferCompletedEvent te;
+        te.from_instance  = &from;
+        te.to_instance    = &to;
+        te.resource_name  = resource_name;
+        te.amount         = amount;
+        mObserverSubject.NotifyTransferCompleted(te);
 
         return spendResult; // returns result of the deduct phase
     }
@@ -93,14 +142,32 @@ namespace Dia { namespace Economy {
             return TransactionResult::UnknownResource;
         }
 
+        const float oldVal    = instance.GetValue(resource_name);
         const float minVal    = instance.GetMinimum(resource_name);
         const float maxVal    = instance.GetMaximum(resource_name);
         const bool  clamped   = value < minVal || value > maxVal;
 
         instance.SetValue_Internal(resource_name, value); // SetValue_Internal clamps internally
 
-        // TODO Task 5: fire OnPoolChanged(instance, resource_name, instance.GetValue(resource_name), delta)
-        // TODO Task 5: if clamped fire OnTransactionClamped
+        const float actual = instance.GetValue(resource_name);
+        const float delta  = actual - oldVal;
+
+        PoolChangedEvent pce;
+        pce.instance      = &instance;
+        pce.resource_name = resource_name;
+        pce.new_value     = actual;
+        pce.delta         = delta;
+        mObserverSubject.NotifyPoolChanged(pce);
+
+        if (clamped)
+        {
+            TransactionClampedEvent tce;
+            tce.instance          = &instance;
+            tce.resource_name     = resource_name;
+            tce.requested_amount  = value;
+            tce.actual_amount     = actual;
+            mObserverSubject.NotifyTransactionClamped(tce);
+        }
 
         return clamped ? TransactionResult::Clamped : TransactionResult::Success;
     }

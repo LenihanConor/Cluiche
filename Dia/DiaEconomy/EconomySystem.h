@@ -1,6 +1,7 @@
 #pragma once
 
 #include <DiaCore/CRC/StringCRC.h>
+#include "DiaEconomy/EconomyObserverSubject.h"
 
 namespace Dia { namespace Economy {
 
@@ -50,7 +51,13 @@ namespace Dia { namespace Economy {
                                                  Dia::Core::StringCRC resource_name,
                                                  float value);
 
+        // Observer subscription point — game code calls Subscribe/Unsubscribe here.
+        EconomyObserverSubject& GetObserverSubject() { return mObserverSubject; }
+
         // TODO Task 7: RegisterDerivedResource goes here
+
+    private:
+        EconomyObserverSubject mObserverSubject;
     };
 
 }} // namespace Dia::Economy

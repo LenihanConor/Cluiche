@@ -77,11 +77,14 @@
     <ClInclude Include="EconomySchema.h" />
     <ClInclude Include="EconomyInstance.h" />
     <ClInclude Include="EconomySystem.h" />
+    <ClInclude Include="IEconomyObserver.h" />
+    <ClInclude Include="EconomyObserverSubject.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="EconomySchema.cpp" />
     <ClCompile Include="EconomyInstance.cpp" />
     <ClCompile Include="EconomySystem.cpp" />
+    <ClCompile Include="EconomyObserverSubject.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.economy.architecture.module.md" />
