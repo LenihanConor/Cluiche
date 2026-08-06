@@ -79,6 +79,10 @@
   <ItemGroup>
     <ClInclude Include="IObjectiveObserver.h" />
     <ClInclude Include="ObjectiveDef.h" />
+    <ClInclude Include="ObjectiveSet.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ObjectiveSet.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
