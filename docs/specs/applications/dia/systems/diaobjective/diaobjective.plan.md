@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/applications/dia/systems/diaobjective/diaobjective.md
-**Status:** In Progress
+**Status:** Done
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
