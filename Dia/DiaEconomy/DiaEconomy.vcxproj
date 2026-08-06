@@ -77,6 +77,7 @@
     <ClInclude Include="EconomySchema.h" />
     <ClInclude Include="EconomyInstance.h" />
     <ClInclude Include="EconomySystem.h" />
+    <ClInclude Include="IEconomyConditionAdaptor.h" />
     <ClInclude Include="IEconomyObserver.h" />
     <ClInclude Include="EconomyObserverSubject.h" />
   </ItemGroup>

@@ -173,6 +173,22 @@ namespace Dia { namespace Economy {
     }
 
     // -----------------------------------------------------------------------
+    // IsModifierConditionMet
+    // -----------------------------------------------------------------------
+    bool EconomySystem::IsModifierConditionMet(const ModifierDef& mod) const
+    {
+        if (mod.when_condition[0] == '\0')
+        {
+            return true;   // always-on modifier
+        }
+        if (!mConditionAdaptor)
+        {
+            return false;  // conditional modifier but no adaptor installed — skip
+        }
+        return mConditionAdaptor->Evaluate(mod.when_condition);
+    }
+
+    // -----------------------------------------------------------------------
     // Tick
     // -----------------------------------------------------------------------
     void EconomySystem::Tick(EconomyInstance& instance, float delta_seconds)
@@ -183,19 +199,76 @@ namespace Dia { namespace Economy {
             return;
         }
 
+        const unsigned int modCount = schema->GetModifierCount();
+
+        // --- Income rules with multiply_income modifiers applied ---
         const unsigned int ruleCount = schema->GetIncomeRuleCount();
         for (unsigned int i = 0; i < ruleCount; ++i)
         {
-            const IncomeRule& rule        = schema->GetIncomeRuleByIndex(i);
-            const float       earned      = rule.amount_per_second * delta_seconds;
-            const float       accumulated = instance.GetIncomeAccumulator(rule.resource_name) + earned;
-            const float       whole       = floorf(accumulated);
+            const IncomeRule& rule = schema->GetIncomeRuleByIndex(i);
+
+            // Accumulate the product of all active multiply_income modifiers for
+            // this resource.  Start at 1.0 (no modifier = identity).
+            float incomeMultiplier = 1.0f;
+            for (unsigned int m = 0; m < modCount; ++m)
+            {
+                const ModifierDef& mod = schema->GetModifierByIndex(m);
+                if (!(mod.resource_name == rule.resource_name))                               continue;
+                if (!(mod.operation     == Dia::Core::StringCRC("multiply_income")))          continue;
+                if (!IsModifierConditionMet(mod))                                             continue;
+                incomeMultiplier *= mod.value;
+            }
+
+            const float earned      = rule.amount_per_second * delta_seconds * incomeMultiplier;
+            const float accumulated = instance.GetIncomeAccumulator(rule.resource_name) + earned;
+            const float whole       = floorf(accumulated);
 
             instance.SetIncomeAccumulator_Internal(rule.resource_name, accumulated - whole);
 
             if (whole >= 1.0f)
             {
                 Earn(instance, rule.resource_name, whole);
+            }
+        }
+
+        // --- Flat income modifiers ---
+        // Each active flat_income modifier adds a fixed amount per second to the
+        // pool, using the same whole-unit accumulator as income rules.
+        for (unsigned int m = 0; m < modCount; ++m)
+        {
+            const ModifierDef& mod = schema->GetModifierByIndex(m);
+            if (!(mod.operation == Dia::Core::StringCRC("flat_income"))) continue;
+            if (!IsModifierConditionMet(mod))                            continue;
+
+            const float earned      = mod.value * delta_seconds;
+            const float accumulated = instance.GetIncomeAccumulator(mod.resource_name) + earned;
+            const float whole       = floorf(accumulated);
+
+            instance.SetIncomeAccumulator_Internal(mod.resource_name, accumulated - whole);
+
+            if (whole >= 1.0f)
+            {
+                Earn(instance, mod.resource_name, whole);
+            }
+        }
+
+        // --- multiply_cap modifiers ---
+        // If a pool's current value exceeds the cap-modified maximum, clamp it
+        // down.  This handles cases where a cap-reducing modifier becomes active
+        // mid-game and the pool is above the new limit.
+        for (unsigned int m = 0; m < modCount; ++m)
+        {
+            const ModifierDef& mod = schema->GetModifierByIndex(m);
+            if (!(mod.operation == Dia::Core::StringCRC("multiply_cap"))) continue;
+            if (!IsModifierConditionMet(mod))                             continue;
+
+            const float baseCap      = instance.GetMaximum(mod.resource_name);
+            const float effectiveCap = baseCap * mod.value;
+            const float curVal       = instance.GetValue(mod.resource_name);
+
+            if (curVal > effectiveCap)
+            {
+                instance.SetValue_Internal(mod.resource_name, effectiveCap);
             }
         }
     }

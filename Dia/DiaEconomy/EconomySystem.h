@@ -2,11 +2,13 @@
 
 #include <DiaCore/CRC/StringCRC.h>
 #include "DiaEconomy/EconomyObserverSubject.h"
+#include "DiaEconomy/IEconomyConditionAdaptor.h"
 
 namespace Dia { namespace Economy {
 
     // Forward declarations
     class EconomyInstance;
+    struct ModifierDef;
 
     // -----------------------------------------------------------------------
     // TransactionResult
@@ -54,10 +56,20 @@ namespace Dia { namespace Economy {
         // Observer subscription point — game code calls Subscribe/Unsubscribe here.
         EconomyObserverSubject& GetObserverSubject() { return mObserverSubject; }
 
+        // Optional condition adaptor for evaluating `when` fields on ModifierDefs.
+        // When null, any modifier whose when_condition is non-empty is skipped.
+        void SetConditionAdaptor(IEconomyConditionAdaptor* adaptor) { mConditionAdaptor = adaptor; }
+
         // TODO Task 7: RegisterDerivedResource goes here
 
     private:
-        EconomyObserverSubject mObserverSubject;
+        // Returns true if the modifier should be applied this tick.
+        // Always-on modifiers (empty when_condition) return true.
+        // Conditional modifiers return false when no adaptor is installed.
+        bool IsModifierConditionMet(const ModifierDef& mod) const;
+
+        EconomyObserverSubject      mObserverSubject;
+        IEconomyConditionAdaptor*   mConditionAdaptor = nullptr;
     };
 
 }} // namespace Dia::Economy
