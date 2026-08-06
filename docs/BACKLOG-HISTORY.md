@@ -79,6 +79,9 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | DiaAIDecisionInspector | CluicheEditor panel: blackboard slots → condition results → fired rules → utility scores | 2026-08-05 | Moved from backlog — already implemented |
 | diaentityspatial | [spec](specs/) | 2026-08-05 | Marked done by `dia docs spec-done` |
 | EntitySpatialTestStage | TestStages | 2026-08-05 | Moved by `dia docs backlog move` |
+| diascalarfieldvisualdebugger | [spec](specs/) | 2026-08-05 | Marked done by `dia docs spec-done` |
+| diasensor | [spec](specs/) | 2026-08-05 | Marked done by `dia docs spec-done` |
+| diaeconomy | [spec](specs/) | 2026-08-06 | Marked done by `dia docs spec-done` |
 
 ---
 
