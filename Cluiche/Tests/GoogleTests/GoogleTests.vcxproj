@@ -711,8 +711,6 @@
     <ClCompile Include="DiaObjective\TestCapturingObserver.cpp" />
     <ClCompile Include="DiaObjective\TestObjectiveSetBoundary.cpp" />
     <ClCompile Include="DiaObjective\TestObjectiveSetStress.cpp" />
-    <ClCompile Include="DiaObjective\TestObjectiveSetBoundary.cpp" />
-    <ClCompile Include="DiaObjective\TestObjectiveSetStress.cpp" />
     <!-- DiaTriggerScript -->
     <ClCompile Include="DiaTriggerScript\TestTriggerActionRegistry.cpp" />
     <ClCompile Include="DiaTriggerScript\TestTriggerScriptModule.cpp" />
