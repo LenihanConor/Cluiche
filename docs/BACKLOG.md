@@ -69,5 +69,6 @@ Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testin
 
 | Item | Notes |
 |------|-------|
+| DiaTriggerScript E2E visual stage (CluicheTest) | CluicheTest stage that visually exercises all four trigger types in a running scene: temporal timer fires an event, state trigger reacts to a blackboard value crossing a threshold, count trigger fires after N kills, spatial trigger fires when an entity enters a region. Visible on-screen feedback per trigger (text overlay or colour flash). Verifies the full DoStart → Tick → TriggerFiredEvent → DiaStreams path that unit tests cannot cover. Needs `/spec-feature` under DiaTriggerScript. Depends on DiaTriggerScript ✅, DiaEntitySpatial ✅, DiaBlackboard ✅, CluicheTest stage scaffold. |
 | RenderTechnique asset type | Layer-level rendering policy (blend mode, post-process like bloom/distortion). Layers reference a technique by name; renderer resolves at draw time. Needs `/spec-feature` under DiaGraphics or DiaBgfx once the scene system lands. |
 | Camera2D controller (pan/zoom/reset) | Application-side input→Camera2D wiring for CluicheTest stages (keyboard pan, scroll zoom, home-key reset). Unblocked once coord2d-debug-overlay ships Camera2D + renderer integration. |
