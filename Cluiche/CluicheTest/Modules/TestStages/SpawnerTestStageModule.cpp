@@ -1,5 +1,9 @@
 #include "Modules/TestStages/SpawnerTestStageModule.h"
 
+#ifdef DIA_DEBUG
+#include "Modules/TestStages/Drawers/SpawnerTestDrawer.h"
+#endif
+
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaAutomation/AutomationService.h>
 #include <DiaObservation/Log/DiaLog.h>
@@ -96,7 +100,7 @@ const Dia::Core::StringCRC* SpawnerTestStageModule::GetCheckpointNames(unsigned 
 // ---------------------------------------------------------------------------
 
 void SpawnerTestStageModule::OnDespawn(void* ctx,
-                                       Dia::Entity::Entity /*entity*/,
+                                       Dia::Entity::Entity entity,
                                        Dia::Entity::DespawnReason reason)
 {
     SpawnerTestStageModule* self = static_cast<SpawnerTestStageModule*>(ctx);
@@ -104,6 +108,10 @@ void SpawnerTestStageModule::OnDespawn(void* ctx,
     {
         ++self->mLifetimeDespawnCount;
     }
+#ifdef DIA_DEBUG
+    if (self->mDrawer)
+        self->mDrawer->OnChildDespawned(entity);
+#endif
 }
 
 // ---------------------------------------------------------------------------
@@ -113,17 +121,18 @@ void SpawnerTestStageModule::OnDespawn(void* ctx,
 void SpawnerTestStageModule::OnStart(Dia::Automation::AutomationService* service)
 {
     // Reset all state for re-entry.
-    mElapsed              = 0.0f;
-    mPrevTrackedCount     = 0u;
-    mTotalSpawnedEver     = 0u;
-    mLifetimeDespawnCount = 0u;
-    mCapNeverExceeded     = true;
-    mExplicitFired        = false;
-    mAllPassed            = false;
-    mCheckpoint1          = false;
-    mCheckpoint2          = false;
-    mCheckpoint3          = false;
-    mCheckpoint4          = false;
+    mElapsed                 = 0.0f;
+    mPrevTrackedCount        = 0u;
+    mTotalSpawnedEver        = 0u;
+    mLifetimeDespawnCount    = 0u;
+    mSpawnCounterForDrawer   = 0u;
+    mCapNeverExceeded        = true;
+    mExplicitFired           = false;
+    mAllPassed               = false;
+    mCheckpoint1             = false;
+    mCheckpoint2             = false;
+    mCheckpoint3             = false;
+    mCheckpoint4             = false;
 
     // Register component pool.
     mDomain.RegisterPool(new Dia::Entity::ComponentPool<Dia::EntitySpawner::SpawnEmitterComponent>(
@@ -213,7 +222,32 @@ void SpawnerTestStageModule::OnUpdate(float deltaTime)
     const unsigned int currentCount = impl.GetTrackedChildCount();
     if (currentCount > mPrevTrackedCount)
     {
-        mTotalSpawnedEver += (currentCount - mPrevTrackedCount);
+        unsigned int newCount = currentCount - mPrevTrackedCount;
+        mTotalSpawnedEver += newCount;
+
+#ifdef DIA_DEBUG
+        // Notify the drawer about each newly born child.
+        // We can't identify exactly which entities are new without iterating the table,
+        // so we walk all emitter states and notify for children we haven't seen yet.
+        if (mDrawer)
+        {
+            auto notifyNew = [&](Dia::Entity::Entity emitter)
+            {
+                Dia::EntitySpawner::EmitterState& es = impl.GetOrCreateEmitterState(emitter);
+                for (unsigned int i = 0; i < es.children.Size(); ++i)
+                {
+                    Dia::Entity::Entity child = es.children[i];
+                    // OnChildSpawned is idempotent — the drawer uses the entity index
+                    // as key, so a duplicate call is handled safely via unordered_map insert.
+                    mDrawer->OnChildSpawned(child, emitter, mSpawnCounterForDrawer++);
+                }
+            };
+            notifyNew(mRateEmitter);
+            notifyNew(mBurstEmitter);
+            notifyNew(mCapEmitter);
+            notifyNew(mExplicitEmitter);
+        }
+#endif
     }
     mPrevTrackedCount = currentCount;
 
@@ -263,13 +297,29 @@ void SpawnerTestStageModule::OnUpdate(float deltaTime)
         DIA_LOG_INFO("CluicheTest", "SpawnerTestStageModule: checkpoint 4 passed (all children despawned)");
     }
 
-    // All 4 checkpoints done → report passed.
-    if (!mAllPassed && mCheckpoint1 && mCheckpoint2 && mCheckpoint3 && mCheckpoint4)
+#ifdef DIA_DEBUG
+    // Lazy-init the visual drawer.
+    if (!mDrawer)
     {
-        mAllPassed = true;
-        if (!IsResolved())
-            ReportPassed();
+        auto* vd = mVisualDebuggerRef.Get();
+        if (vd)
+        {
+            mDrawer = std::make_unique<SpawnerTestDrawer>(
+                impl,
+                mRateEmitter, mBurstEmitter, mCapEmitter, mExplicitEmitter,
+                mElapsed,
+                vd->GetLayerManager());
+            vd->GetLayerManager().Register(mDrawer.get(), 20, Dia::Core::StringCRC("Spawner"));
+        }
     }
+#endif
+
+    // All 4 checkpoints done → hold until kMinDisplayFrames so the visual is watchable.
+    if (mCheckpoint1 && mCheckpoint2 && mCheckpoint3 && mCheckpoint4)
+        mAllPassed = true;
+
+    if (mAllPassed && !IsResolved() && GetFrameCount() >= kMinDisplayFrames)
+        ReportPassed();
 }
 
 // ---------------------------------------------------------------------------
@@ -278,6 +328,15 @@ void SpawnerTestStageModule::OnUpdate(float deltaTime)
 
 void SpawnerTestStageModule::OnStop()
 {
+#ifdef DIA_DEBUG
+    if (mDrawer)
+    {
+        if (auto* vd = mVisualDebuggerRef.Get())
+            vd->GetLayerManager().Unregister(mDrawer->GetLayerName());
+        mDrawer.reset();
+    }
+#endif
+
     if (mSpawner)
     {
         mSpawner->Stop();
@@ -288,17 +347,18 @@ void SpawnerTestStageModule::OnStop()
     mLoader = nullptr;
 
     // Reset flags
-    mElapsed              = 0.0f;
-    mPrevTrackedCount     = 0u;
-    mTotalSpawnedEver     = 0u;
-    mLifetimeDespawnCount = 0u;
-    mCapNeverExceeded     = true;
-    mExplicitFired        = false;
-    mAllPassed            = false;
-    mCheckpoint1          = false;
-    mCheckpoint2          = false;
-    mCheckpoint3          = false;
-    mCheckpoint4          = false;
+    mElapsed                 = 0.0f;
+    mPrevTrackedCount        = 0u;
+    mTotalSpawnedEver        = 0u;
+    mLifetimeDespawnCount    = 0u;
+    mSpawnCounterForDrawer   = 0u;
+    mCapNeverExceeded        = true;
+    mExplicitFired           = false;
+    mAllPassed               = false;
+    mCheckpoint1             = false;
+    mCheckpoint2             = false;
+    mCheckpoint3             = false;
+    mCheckpoint4             = false;
 
     DIA_LOG_INFO("CluicheTest", "SpawnerTestStageModule::OnStop");
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include "Modules/TestStages/TestStageModuleBase.h"
 #include <DiaApplicationFlow/PUAffinity.h>
+#include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaEntity/Domain.h>
 #include <DiaEntity/Entity.h>
@@ -9,6 +10,11 @@
 
 namespace Dia { namespace Automation { class AutomationService; } }
 namespace Dia { namespace Entity { class IBlueprintLoader; } }
+
+#ifdef DIA_DEBUG
+#include "Modules/VisualDebuggerModule.h"
+namespace CluicheTest { class SpawnerTestDrawer; }
+#endif
 
 namespace CluicheTest {
 
@@ -23,7 +29,8 @@ public:
 
 protected:
     Dia::Core::StringCRC GetStageName() const override;
-    unsigned int GetBudgetFrames() const override { return 600; }
+    unsigned int GetBudgetFrames() const override { return 420; }
+    static constexpr unsigned int kMinDisplayFrames = 300; // 10 s at 30 Hz
     const Dia::Core::StringCRC* GetCheckpointNames(unsigned int& outCount) const override;
     void OnStart(Dia::Automation::AutomationService* service) override;
     void OnUpdate(float deltaTime) override;
@@ -70,6 +77,14 @@ private:
     Dia::Entity::Entity mBurstEmitter;
     Dia::Entity::Entity mCapEmitter;
     Dia::Entity::Entity mExplicitEmitter;
+
+    // Sequential spawn counter forwarded to the drawer for direction spreading.
+    unsigned int mSpawnCounterForDrawer = 0u;
+
+#ifdef DIA_DEBUG
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::VisualDebuggerModule> mVisualDebuggerRef{this};
+    std::unique_ptr<SpawnerTestDrawer> mDrawer;
+#endif
 };
 
 } // namespace CluicheTest

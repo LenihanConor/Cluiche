@@ -17,6 +17,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | ~~DiaObjective~~ | Data-driven gameplay goal tracking — completion conditions, progress, per-faction objectives, chained objectives | DiaCondition ✅, DiaCore ✅, diaentitytemplate ✅ |
 | ~~DiaEntitySpawner~~ | `SpawnRequest` API, `SpawnEmitterComponent` (rate/burst/cap/lifetime/radius), `EntitySpawnerModule` on SimPU, DiaObservation coverage, GoogleTest suite, CluicheTest E2E visual stage — **plan ready (10 tasks)** | diaentity ✅, DiaReflect ✅, DiaSerializer ✅ |
 | DiaSaveGame | ISaveable contract, SaveRegistry, SaveConfig + slot management, SaveContext/LoadContext, SaveManifest, async I/O, versioning + migration, Observer events, test utilities | DiaSerializer ✅, DiaCore ✅ |
+| ArenaTestStage (CluicheTest) | Multi-system E2E stage: all 4 DiaTriggerScript trigger types, DiaObjective 3-wave prerequisite chain, per-enemy StateMachine + UtilityAI + Rules, DiaBlackboard shared state bus, ImGui arena visuals, pytest scenario with determinism check; 11 tasks | DiaTriggerScript ✅, DiaObjective ✅, DiaBlackboard ✅, DiaStateMachine ✅, DiaUtilityAI ✅, DiaRules ✅ |
 | ~~DiaTriggerScript~~ | Data-driven level events — spatial/temporal/state/count triggers, four action types, ITriggerActionHandler extension point, TriggerFiredEvent on DiaStreams | DiaCondition ✅, DiaGeometry2D ✅, DiaEntitySpatial ✅, DiaStreams ✅, DiaObjective (ChangeObjectiveState action only) |
 
 ---
@@ -69,6 +70,6 @@ Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testin
 
 | Item | Notes |
 |------|-------|
-| DiaTriggerScript E2E visual stage (CluicheTest) | CluicheTest stage that visually exercises all four trigger types in a running scene: temporal timer fires an event, state trigger reacts to a blackboard value crossing a threshold, count trigger fires after N kills, spatial trigger fires when an entity enters a region. Visible on-screen feedback per trigger (text overlay or colour flash). Verifies the full DoStart → Tick → TriggerFiredEvent → DiaStreams path that unit tests cannot cover. Needs `/spec-feature` under DiaTriggerScript. Depends on DiaTriggerScript ✅, DiaEntitySpatial ✅, DiaBlackboard ✅, CluicheTest stage scaffold. |
+| ArenaTestStage spec → backlog | Promoted from loose end to Approved spec + backlog entry 2026-08-07. See Ready to Build above. |
 | RenderTechnique asset type | Layer-level rendering policy (blend mode, post-process like bloom/distortion). Layers reference a technique by name; renderer resolves at draw time. Needs `/spec-feature` under DiaGraphics or DiaBgfx once the scene system lands. |
 | Camera2D controller (pan/zoom/reset) | Application-side input→Camera2D wiring for CluicheTest stages (keyboard pan, scroll zoom, home-key reset). Unblocked once coord2d-debug-overlay ships Camera2D + renderer integration. |

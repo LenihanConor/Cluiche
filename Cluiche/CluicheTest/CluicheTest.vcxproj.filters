@@ -273,12 +273,18 @@
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClCompile>
     <ClCompile Include="Modules\TestStages\Drawers\EconomyDrawer.cpp">
+    <ClCompile Include="Modules\TestStages\Drawers\SpawnerTestDrawer.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClCompile>
       <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
     </ClCompile>
     <ClInclude Include="Modules\TestStages\EconomyTestStageModule.h">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
     <ClInclude Include="Modules\TestStages\Drawers\EconomyDrawer.h">
+    <ClInclude Include="Modules\TestStages\Drawers\SpawnerTestDrawer.h">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClInclude>
       <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
     </ClInclude>
   </ItemGroup>

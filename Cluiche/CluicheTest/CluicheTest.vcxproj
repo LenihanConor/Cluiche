@@ -66,6 +66,7 @@
     <ClCompile Include="Modules\TestStages\ScalarFieldTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\Drawers\ScalarFieldTestDrawer.cpp" />
     <ClCompile Include="Modules\TestStages\EntitySpatialTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\SpawnerTestDrawer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\BootMenuModule.h" />
@@ -113,6 +114,7 @@
     <ClInclude Include="Modules\TestStages\ScalarFieldTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\Drawers\ScalarFieldTestDrawer.h" />
     <ClInclude Include="Modules\TestStages\EntitySpatialTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\SpawnerTestDrawer.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">

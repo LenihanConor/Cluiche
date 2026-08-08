@@ -80,6 +80,50 @@
       "type_id": "dia.hierarchy.children"
     },
     {
+      "debug_name": "SpawnEmitterComponent",
+      "default_values": {
+        "active": false,
+        "blueprintId": null,
+        "burstCount": 0,
+        "cap": 0,
+        "despawnRadius": 0,
+        "lifetime": 0,
+        "rate": 0
+      },
+      "description": "",
+      "fields": [
+        {
+          "kind": "string_id",
+          "name": "blueprintId"
+        },
+        {
+          "kind": "primitive",
+          "name": "rate"
+        },
+        {
+          "kind": "primitive",
+          "name": "burstCount"
+        },
+        {
+          "kind": "primitive",
+          "name": "cap"
+        },
+        {
+          "kind": "primitive",
+          "name": "lifetime"
+        },
+        {
+          "kind": "primitive",
+          "name": "despawnRadius"
+        },
+        {
+          "kind": "primitive",
+          "name": "active"
+        }
+      ],
+      "type_id": "spawn-emitter-component"
+    },
+    {
       "debug_name": "RuleSetComponent",
       "default_values": {},
       "description": "",
@@ -161,6 +205,11 @@
       "allowed_pus": "render",
       "description": "Shared HUD overlay for all CluicheTest stages: shows stage name, controls, and test status.",
       "type_id": "TestStageHUDModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Spawner integration stage: rate/burst/cap/explicit despawn emitters",
+      "type_id": "SpawnerTestStageModule"
     },
     {
       "allowed_pus": "sim",
@@ -391,6 +440,6 @@
   "processing_units": [],
   "version": {
     "major": 1,
-    "minor": 16
+    "minor": 17
   }
 }
