@@ -5,6 +5,7 @@
 #include <DiaEntity/ComponentPool.h>
 #include <DiaEntitySpatial/SpatialComponent.h>
 #include <DiaCore/Json/external/json/json.h>
+#include <DiaStateMachine/StateMachineBuilder.h>
 
 // ---------------------------------------------------------------------------
 // Inline JSON assets
@@ -170,6 +171,145 @@ static constexpr const char* kObjectivesJson = R"(
   ]
 }
 )";
+
+// ---------------------------------------------------------------------------
+// Inline JSON assets for per-enemy UtilitySet and RuleSet
+// ---------------------------------------------------------------------------
+static constexpr const char* kEnemyUtilitySetJson = R"(
+{
+  "actions": [
+    {
+      "id": "AttackPlayer",
+      "scorers": [
+        {
+          "slot": "self", "field": "health",
+          "input_min": 0.0, "input_max": 1.0,
+          "curve": { "shape": "linear", "invert": false }
+        },
+        {
+          "slot": "self", "field": "player_distance",
+          "input_min": 0.0, "input_max": 6.0,
+          "curve": { "shape": "linear", "invert": true }
+        }
+      ]
+    },
+    {
+      "id": "FleePlayer",
+      "scorers": [
+        {
+          "slot": "self", "field": "health",
+          "input_min": 0.0, "input_max": 1.0,
+          "curve": { "shape": "linear", "invert": true }
+        },
+        {
+          "slot": "self", "field": "player_distance",
+          "input_min": 0.0, "input_max": 6.0,
+          "curve": { "shape": "linear", "invert": false }
+        }
+      ]
+    }
+  ]
+}
+)";
+
+static constexpr const char* kEnemyRuleSetJson = R"(
+{
+  "rules": [
+    {
+      "id": "DespCharge",
+      "guard": { "slot": "self", "field": "health", "op": "<", "value": 0.2 },
+      "actions": ["DespCharge"]
+    }
+  ]
+}
+)";
+
+// ---------------------------------------------------------------------------
+// Static FSM callbacks — cast void* to EnemyAgent* to access blackboard.
+// These must be free functions (no captures) to satisfy void(*)(void*).
+// ---------------------------------------------------------------------------
+static void EnemyFsm_OnEnterIdle(void* ctx)
+{
+    auto* e = static_cast<CluicheTest::EnemyAgent*>(ctx);
+    e->blackboard.Get<int>(Dia::Core::StringCRC("fsm_state")) = 0;
+}
+
+static void EnemyFsm_OnEnterPursue(void* ctx)
+{
+    auto* e = static_cast<CluicheTest::EnemyAgent*>(ctx);
+    e->blackboard.Get<int>(Dia::Core::StringCRC("fsm_state")) = 1;
+}
+
+static void EnemyFsm_OnEnterAttack(void* ctx)
+{
+    auto* e = static_cast<CluicheTest::EnemyAgent*>(ctx);
+    e->blackboard.Get<int>(Dia::Core::StringCRC("fsm_state")) = 2;
+}
+
+static void EnemyFsm_OnEnterDead(void* ctx)
+{
+    auto* e = static_cast<CluicheTest::EnemyAgent*>(ctx);
+    e->blackboard.Get<int>(Dia::Core::StringCRC("fsm_state")) = 3;
+}
+
+// Guard: Idle → Pursue: player_distance < 6.0
+static bool EnemyGuard_IdleToPursue(const void* ctx)
+{
+    const auto* e = static_cast<const CluicheTest::EnemyAgent*>(ctx);
+    return e->blackboard.Get<float>(Dia::Core::StringCRC("player_distance")) < 6.0f;
+}
+
+// Guard: Pursue → Attack: player_distance < 1.0
+static bool EnemyGuard_PursueToAttack(const void* ctx)
+{
+    const auto* e = static_cast<const CluicheTest::EnemyAgent*>(ctx);
+    return e->blackboard.Get<float>(Dia::Core::StringCRC("player_distance")) < 1.0f;
+}
+
+// Guard: Attack → Dead: health <= 0.0
+static bool EnemyGuard_AttackToDead(const void* ctx)
+{
+    const auto* e = static_cast<const CluicheTest::EnemyAgent*>(ctx);
+    return e->health <= 0.0f;
+}
+
+// Guard: Attack → Pursue: player_distance >= 1.0
+static bool EnemyGuard_AttackToPursue(const void* ctx)
+{
+    const auto* e = static_cast<const CluicheTest::EnemyAgent*>(ctx);
+    return e->blackboard.Get<float>(Dia::Core::StringCRC("player_distance")) >= 1.0f;
+}
+
+// ---------------------------------------------------------------------------
+// Static DespCharge action callback.
+// actionContext is EnemyAgent* (passed as void* to RuleSet::Evaluate).
+// ---------------------------------------------------------------------------
+static void EnemyAction_DespCharge(void* actionContext)
+{
+    auto* e = static_cast<CluicheTest::EnemyAgent*>(actionContext);
+    if (!e->desperateChargeFired && e->modulePtr)
+    {
+        e->desperateChargeFired = true;
+        e->modulePtr->NotifyDespChargeFired();
+        DIA_LOG_INFO("CluicheTest", "Arena: DespCharge fired for enemy");
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Static ConditionRegistry accessors for per-enemy blackboard.
+// void* data is EnemyAgent*.
+// ---------------------------------------------------------------------------
+static float EnemyCondition_Health(void* d)
+{
+    return static_cast<CluicheTest::EnemyAgent*>(d)->blackboard.Get<float>(
+        Dia::Core::StringCRC("health"));
+}
+
+static float EnemyCondition_PlayerDistance(void* d)
+{
+    return static_cast<CluicheTest::EnemyAgent*>(d)->blackboard.Get<float>(
+        Dia::Core::StringCRC("player_distance"));
+}
 
 namespace CluicheTest {
 
@@ -469,7 +609,7 @@ void ArenaTestStageModule::OnStart(Dia::Automation::AutomationService* /*service
     mAllPassed           = false;
     mWave1ClearDelay     = -1.f;
     mWave2ClearDelay     = -1.f;
-    mEnemies.RemoveAll();
+    mEnemyCount = 0;
 
     // Register global blackboard slots.
     // Register<T> returns T& so we can set the initial value inline.
@@ -532,8 +672,22 @@ void ArenaTestStageModule::OnStop()
     mGlobalBlackboard.Unregister(Dia::Core::StringCRC("wave3_cleared"));
     mGlobalBlackboard.Unregister(Dia::Core::StringCRC("powerup_collected"));
 
-    // Clear enemy pool.
-    mEnemies.RemoveAll();
+    // Clear enemy pool — reset per-enemy state for the active slots.
+    for (unsigned int i = 0; i < mEnemyCount; ++i)
+    {
+        EnemyAgent& e = mEnemies[i];
+        e.fsm.reset();
+        e.conditionRegistry.reset();
+        e.blackboard.Unregister(Dia::Core::StringCRC("health"));
+        e.blackboard.Unregister(Dia::Core::StringCRC("player_distance"));
+        e.blackboard.Unregister(Dia::Core::StringCRC("fsm_state"));
+        e.blackboard.Unregister(Dia::Core::StringCRC("chosen_action"));
+        e.health              = 1.0f;
+        e.alive               = true;
+        e.desperateChargeFired = false;
+        e.modulePtr           = nullptr;
+    }
+    mEnemyCount = 0;
 
     // Reset counters and flags.
     mTotalKills          = 0;
@@ -553,9 +707,112 @@ void ArenaTestStageModule::OnStop()
 // Private helpers — stubs for Tasks 4-8
 // ---------------------------------------------------------------------------
 
-void ArenaTestStageModule::SpawnWave(Dia::Core::StringCRC /*tag*/, int /*count*/)
+void ArenaTestStageModule::SpawnWave(Dia::Core::StringCRC tag, int count)
 {
-    // TODO: implement in Task 4 (EnemyAgent init)
+    DIA_LOG_INFO("CluicheTest", "Arena: SpawnWave count=%d", count);
+
+    // Determine base spawn position for this wave tag.
+    const Dia::Core::StringCRC kWave1Tag("enemy_wave1");
+    const Dia::Core::StringCRC kWave2Tag("enemy_wave2");
+    const Dia::Core::StringCRC kWave3Tag("enemy_wave3");
+
+    float baseX = -8.f;
+    float baseY =  8.f;
+    if (tag == kWave3Tag)
+    {
+        baseX = 8.f;
+        baseY = 8.f;
+    }
+
+    // Per-enemy UtilitySet and RuleSet are loaded from the same JSON per spawn.
+    for (int i = 0; i < count; ++i)
+    {
+        // Access the pre-constructed slot directly; unique_ptr members cannot be copy-assigned.
+        DIA_ASSERT(mEnemyCount < kMaxEnemies, "Enemy pool full");
+        EnemyAgent& enemy = mEnemies[mEnemyCount++];
+
+        // --- Position ---
+        enemy.position = Dia::Maths::Vector2D(
+            baseX + static_cast<float>(i) * 0.5f,
+            baseY + static_cast<float>(i) * 0.3f);
+        enemy.health  = 1.0f;
+        enemy.waveTag = tag;
+        enemy.alive   = true;
+        enemy.desperateChargeFired = false;
+        enemy.modulePtr = this;
+
+        // --- Blackboard ---
+        enemy.blackboard.Register<float>(Dia::Core::StringCRC("health"))          = 1.0f;
+        enemy.blackboard.Register<float>(Dia::Core::StringCRC("player_distance")) = 99.f;
+        enemy.blackboard.Register<int>  (Dia::Core::StringCRC("fsm_state"))       = 0;
+        enemy.blackboard.Register<Dia::Core::StringCRC>(Dia::Core::StringCRC("chosen_action")) =
+            Dia::Core::StringCRC("none");
+
+        // --- ConditionRegistry ---
+        // void* data = &enemy; accessors cast it back to EnemyAgent*.
+        enemy.conditionRegistry = std::make_unique<Dia::Condition::ConditionRegistry>(&enemy);
+
+        const Dia::Core::StringCRC slotSelf("self");
+        enemy.conditionRegistry->RegisterFloat(
+            slotSelf, Dia::Core::StringCRC("health"), EnemyCondition_Health);
+        enemy.conditionRegistry->RegisterFloat(
+            slotSelf, Dia::Core::StringCRC("player_distance"), EnemyCondition_PlayerDistance);
+
+        // --- UtilitySet ---
+        {
+            Json::Value root;
+            Json::Reader reader;
+            reader.parse(kEnemyUtilitySetJson, root);
+            enemy.utilitySet = Dia::UtilityAI::UtilitySet::LoadFromJson(root);
+        }
+
+        // --- RuleSet ---
+        {
+            Json::Value root;
+            Json::Reader reader;
+            reader.parse(kEnemyRuleSetJson, root);
+            enemy.ruleSet = Dia::Rules::RuleSet::LoadFromJson(root);
+        }
+
+        // --- RuleActionRegistry ---
+        // Static callback; actionContext passed at Evaluate() time will be &enemy.
+        enemy.ruleActionRegistry.Register(Dia::Core::StringCRC("DespCharge"), EnemyAction_DespCharge);
+
+        // --- FlatStateMachine ---
+        // Transitions use trigger IDs that match string "check" — the FSM is driven by
+        // explicit Fire() calls in UpdateEnemyAI (Task 6). Guards evaluated on Fire().
+        //
+        // Trigger naming convention: "check_<transition>" — unique per arc so multiple
+        // transitions from the same source can be fired selectively.
+        Dia::StateMachine::StateMachineDefinition def =
+            Dia::StateMachine::StateMachineBuilder()
+                .State(Dia::Core::StringCRC("Idle"))
+                    .OnEnter(EnemyFsm_OnEnterIdle)
+                    .Transition(Dia::Core::StringCRC("Pursue"), Dia::Core::StringCRC("check_idle"))
+                        .Guard(EnemyGuard_IdleToPursue)
+                .State(Dia::Core::StringCRC("Pursue"))
+                    .OnEnter(EnemyFsm_OnEnterPursue)
+                    .Transition(Dia::Core::StringCRC("Attack"), Dia::Core::StringCRC("check_pursue"))
+                        .Guard(EnemyGuard_PursueToAttack)
+                .State(Dia::Core::StringCRC("Attack"))
+                    .OnEnter(EnemyFsm_OnEnterAttack)
+                    .Transition(Dia::Core::StringCRC("Dead"),   Dia::Core::StringCRC("check_attack"))
+                        .Guard(EnemyGuard_AttackToDead)
+                    .Transition(Dia::Core::StringCRC("Pursue"), Dia::Core::StringCRC("check_attack_retreat"))
+                        .Guard(EnemyGuard_AttackToPursue)
+                .State(Dia::Core::StringCRC("Dead"))
+                    .OnEnter(EnemyFsm_OnEnterDead)
+                .InitialState(Dia::Core::StringCRC("Idle"))
+                .Build();
+
+        enemy.fsm = std::make_unique<Dia::StateMachine::FlatStateMachine<EnemyAgent>>(
+            Dia::Core::StringCRC("ArenaEnemy"),
+            static_cast<Dia::StateMachine::StateMachineDefinition&&>(def),
+            enemy);
+    }
+
+    // Update global blackboard wave_num.
+    mGlobalBlackboard.Get<int>(Dia::Core::StringCRC("wave_num")) = mWavesCompleted + 1;
 }
 
 void ArenaTestStageModule::OnFireEvent(Dia::Core::StringCRC /*eventId*/)

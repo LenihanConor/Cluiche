@@ -30,6 +30,10 @@
 
 namespace CluicheTest {
 
+// Forward declaration — EnemyAgent stores a back-pointer to its owning module so
+// that static (non-capturing) FSM and action callbacks can reach module state.
+class ArenaTestStageModule;
+
 // ---------------------------------------------------------------------------
 // EnemyAgent
 //
@@ -55,6 +59,10 @@ struct EnemyAgent
     Dia::Maths::Vector2D position;
     float                health    = 1.0f;
     Dia::Core::StringCRC waveTag;              // "enemy_wave1", "enemy_wave2", "enemy_wave3"
+
+    // Back-pointer to the owning ArenaTestStageModule. Set in SpawnWave.
+    // Used by static (non-capturing) FSM/action callbacks to reach module-level state.
+    ArenaTestStageModule* modulePtr = nullptr;
 
     // Heap-allocated: not default-constructible; also stores TContext& back to this struct.
     std::unique_ptr<Dia::StateMachine::FlatStateMachine<EnemyAgent>> fsm;
@@ -88,6 +96,14 @@ public:
 
     explicit ArenaTestStageModule(const Dia::Core::StringCRC& instanceId);
     ~ArenaTestStageModule() override;
+
+    // Called by the static EnemyAction_DespCharge free function (cannot access private members
+    // of ArenaTestStageModule; the only caller is the static callback in the .cpp).
+    void NotifyDespChargeFired()
+    {
+        ++mDespChargesFired;
+        mDespChargeTriggered = true;
+    }
 
     // -----------------------------------------------------------------------
     // ArenaActionHandler
@@ -163,9 +179,13 @@ private:
     std::unique_ptr<Dia::EntitySpatial::EntitySpatialModule> mEntitySpatialModule;
 
     // --- Enemy pool ---
-    // All 32 slots are default-constructed when the module is constructed (DynamicArrayC uses
-    // static in-place storage). Use AddDefault() + direct slot modification — never Add(value).
-    Dia::Core::Containers::DynamicArrayC<EnemyAgent, 32> mEnemies;
+    // Fixed-size buffer of 32 EnemyAgents. All slots are default-constructed at module
+    // construction time. mEnemyCount tracks how many have been activated via SpawnWave().
+    // DynamicArrayC<EnemyAgent> cannot be used here because EnemyAgent's unique_ptr members
+    // delete the copy-assign operator that AddDefault() requires.
+    static constexpr unsigned int kMaxEnemies = 32;
+    EnemyAgent   mEnemies[kMaxEnemies];
+    unsigned int mEnemyCount = 0;
 
     // --- Wave / progression tracking ---
     float mWave1ClearDelay     = -1.f; // countdown in seconds; -1 = not yet started
