@@ -60,7 +60,7 @@ namespace Dia { namespace ApplicationFlow {
         void SetPostTickFn(PostTickFn fn);
 
     private:
-        static constexpr unsigned int kMaxModules = 32;
+        static constexpr unsigned int kMaxModules = 64;
 
         struct ModuleEntry {
             Dia::Core::UniquePtr<Module> module;

@@ -313,7 +313,7 @@ namespace Dia { namespace ApplicationFlow {
             const ProcessingUnitDeclaration& pu = manifest.processingUnits[p];
 
             // --- Duplicate module instance_ids within this PU ---
-            Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32> seenModuleIds;
+            Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 64> seenModuleIds;
             for (unsigned int m = 0; m < pu.modules.Size(); ++m)
             {
                 const ModuleDeclaration& mod = pu.modules[m];
@@ -683,7 +683,7 @@ namespace Dia { namespace ApplicationFlow {
         }
 
         // In-degree array indexed parallel to pu.modules
-        Dia::Core::Containers::DynamicArrayC<unsigned int, 32> inDegree;
+        Dia::Core::Containers::DynamicArrayC<unsigned int, 64> inDegree;
         for (unsigned int i = 0; i < moduleCount; ++i)
         {
             inDegree.Add(0u);
@@ -715,7 +715,7 @@ namespace Dia { namespace ApplicationFlow {
 
         // Queue (implemented as a DynamicArrayC acting as a simple FIFO via
         // a read-head index — avoids RemoveAt shifts)
-        Dia::Core::Containers::DynamicArrayC<unsigned int, 32> queue;
+        Dia::Core::Containers::DynamicArrayC<unsigned int, 64> queue;
         unsigned int queueHead = 0;
 
         for (unsigned int i = 0; i < moduleCount; ++i)

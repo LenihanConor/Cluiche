@@ -64,7 +64,7 @@ namespace Dia { namespace ApplicationFlow {
         float frequencyHz    = 30.0f;
         bool  dedicatedThread = false;
 
-        Dia::Core::Containers::DynamicArrayC<ModuleDeclaration, 32> modules;
+        Dia::Core::Containers::DynamicArrayC<ModuleDeclaration, 64> modules;
     };
 
     // Describes a stage entry (from .diastage format)
