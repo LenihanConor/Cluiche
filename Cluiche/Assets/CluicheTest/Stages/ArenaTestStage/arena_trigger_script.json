@@ -1,0 +1,82 @@
+{
+    "triggers": [
+        {
+            "id": "wave1_start",
+            "type": "temporal",
+            "one_shot": true,
+            "interval_s": 3.0,
+            "actions": [
+                { "type": "SpawnEntities", "params": { "tag": "enemy_wave1", "count": 5 } }
+            ]
+        },
+        {
+            "id": "wave1_cleared",
+            "type": "count",
+            "one_shot": true,
+            "check_interval_ms": 0,
+            "entity_tag": "enemy_wave1",
+            "threshold": 5,
+            "actions": [
+                { "type": "FireEvent", "params": { "event_id": "wave1_done" } },
+                { "type": "ChangeObjectiveState", "params": { "objective_id": "survive_wave1", "state": "Complete" } }
+            ]
+        },
+        {
+            "id": "wave2_start",
+            "type": "state",
+            "one_shot": true,
+            "check_interval_ms": 0,
+            "condition": { "op": "==", "slot": "global", "field": "wave1_cleared", "value": 1.0 },
+            "actions": [
+                { "type": "SpawnEntities", "params": { "tag": "enemy_wave2", "count": 8 } }
+            ]
+        },
+        {
+            "id": "wave2_cleared",
+            "type": "count",
+            "one_shot": true,
+            "check_interval_ms": 0,
+            "entity_tag": "enemy_wave2",
+            "threshold": 8,
+            "actions": [
+                { "type": "FireEvent", "params": { "event_id": "wave2_done" } },
+                { "type": "ChangeObjectiveState", "params": { "objective_id": "survive_wave2", "state": "Complete" } }
+            ]
+        },
+        {
+            "id": "wave3_start",
+            "type": "state",
+            "one_shot": true,
+            "check_interval_ms": 0,
+            "condition": { "op": "==", "slot": "global", "field": "wave2_cleared", "value": 1.0 },
+            "actions": [
+                { "type": "SpawnEntities", "params": { "tag": "enemy_wave3", "count": 10 } }
+            ]
+        },
+        {
+            "id": "wave3_cleared",
+            "type": "count",
+            "one_shot": true,
+            "check_interval_ms": 0,
+            "entity_tag": "enemy_wave3",
+            "threshold": 10,
+            "actions": [
+                { "type": "FireEvent", "params": { "event_id": "wave3_done" } },
+                { "type": "ChangeObjectiveState", "params": { "objective_id": "survive_wave3", "state": "Complete" } },
+                { "type": "FireEvent", "params": { "event_id": "arena_victory" } }
+            ]
+        },
+        {
+            "id": "powerup_zone",
+            "type": "spatial",
+            "one_shot": true,
+            "check_interval_ms": 0,
+            "region": { "min": [-1.0, -1.0], "max": [1.0, 1.0] },
+            "entity_tag": "player",
+            "actions": [
+                { "type": "GiveResources", "params": { "resource": "shield", "amount": 1 } },
+                { "type": "ChangeObjectiveState", "params": { "objective_id": "collect_powerup", "state": "Complete" } }
+            ]
+        }
+    ]
+}
