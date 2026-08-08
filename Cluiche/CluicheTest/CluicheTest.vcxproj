@@ -31,6 +31,7 @@
     <ClCompile Include="Modules\TestStages\AssetRuntimeHUDModule.cpp" />
     <ClCompile Include="Modules\TestStages\TestStageHUDModule.cpp" />
     <ClCompile Include="Modules\TestStages\SpawnerTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\ArenaTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\Mesh3DRenderSystemTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\Mesh3DTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\Animation2DTestStageModule.cpp" />
@@ -79,6 +80,7 @@
     <ClInclude Include="Modules\TestStages\AssetRuntimeHUDModule.h" />
     <ClInclude Include="Modules\TestStages\TestStageHUDModule.h" />
     <ClInclude Include="Modules\TestStages\SpawnerTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\ArenaTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\Mesh3DRenderSystemTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\Mesh3DTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\Animation2DTestStageModule.h" />
@@ -280,6 +282,15 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaEntitySpawner\DiaEntitySpawner.vcxproj">
       <Project>{F4A5B6C7-D8E9-0123-ABCD-EF0123456789}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaTriggerScript\DiaTriggerScript.vcxproj">
+      <Project>{B6C7D8E9-F0A1-2345-6789-ABCDEF012345}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaObjective\DiaObjective.vcxproj">
+      <Project>{A5B6C7D8-E9F0-1234-5678-901234567890}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaStateMachine\DiaStateMachine.vcxproj">
+      <Project>{E3F4A5B6-C7D8-9012-EFAB-334455667788}</Project>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">

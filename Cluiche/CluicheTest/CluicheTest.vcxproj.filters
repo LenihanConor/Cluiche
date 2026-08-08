@@ -53,6 +53,9 @@
     <ClCompile Include="Modules\TestStages\SpawnerTestStageModule.cpp">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\TestStages\ArenaTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
     <ClCompile Include="Modules\TestStages\Mesh3DRenderSystemTestStageModule.cpp">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClCompile>
@@ -174,6 +177,9 @@
     </ClInclude>
     <ClInclude Include="Modules\TestStages\TestStageHUDModule.h">
     <ClInclude Include="Modules\TestStages\SpawnerTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\ArenaTestStageModule.h">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
     <ClInclude Include="Modules\TestStages\Mesh3DRenderSystemTestStageModule.h">

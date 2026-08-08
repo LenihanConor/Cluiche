@@ -885,6 +885,26 @@
             "tags": [
                 "misc/ApplicationFlow"
             ]
+        },
+        {
+            "id": "stage.arena_test_stage",
+            "type": "stage",
+            "source_path": "Stages/ArenaTestStage/arena_test_stage.diastage",
+            "scope": "global",
+            "stage_name": "",
+            "tags": [],
+            "references": [
+                { "type": "contains", "target": "manifest.arena_test_stage" }
+            ]
+        },
+        {
+            "id": "manifest.arena_test_stage",
+            "type": "manifest",
+            "source_path": "Stages/ArenaTestStage/misc/ApplicationFlow/arena_test_stage.diaapp",
+            "scope": "stage",
+            "stage_name": "ArenaTestStage",
+            "tags": ["misc/ApplicationFlow"],
+            "references": []
         }
     ],
     "rules_path": "assets.rules.json"

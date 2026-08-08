@@ -22,7 +22,8 @@
                 "ScalarFieldTestStage",
                 "EntitySpatialTestStage",
                 "EconomyTestStage",
-                "SpawnerTestStage"
+                "SpawnerTestStage",
+                "ArenaTestStage"
             ],
             "auto_advance": false
         },
@@ -148,6 +149,13 @@
         },
         {
             "name": "SpawnerTestStage",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "ArenaTestStage",
             "transitions": [
                 "Boot"
             ],
@@ -568,7 +576,8 @@
                         "ScalarFieldTestStage",
                         "EntitySpatialTestStage",
                         "EconomyTestStage",
-                        "SpawnerTestStage"
+                        "SpawnerTestStage",
+                        "ArenaTestStage"
                     ],
                     "dependencies": [
                         "Camera2DModule"
@@ -672,7 +681,8 @@
                         "ScalarFieldTestStage",
                         "EntitySpatialTestStage",
                         "EconomyTestStage",
-                        "SpawnerTestStage"
+                        "SpawnerTestStage",
+                        "ArenaTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"
@@ -708,7 +718,8 @@
                         "ScalarFieldTestStage",
                         "EntitySpatialTestStage",
                         "EconomyTestStage",
-                        "SpawnerTestStage"
+                        "SpawnerTestStage",
+                        "ArenaTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"

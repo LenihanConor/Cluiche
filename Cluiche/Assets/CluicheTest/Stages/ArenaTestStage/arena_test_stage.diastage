@@ -1,0 +1,7 @@
+{
+    "name": "ArenaTestStage",
+    "manifest": "Stages/ArenaTestStage/misc/ApplicationFlow/arena_test_stage.diaapp",
+    "config": {
+        "path_aliases": { "stage_root": "." }
+    }
+}

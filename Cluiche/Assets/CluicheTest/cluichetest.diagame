@@ -97,6 +97,10 @@
         {
             "path": "Stages/SpawnerTestStage/spawner_test_stage.diastage",
             "type": "stage"
+        },
+        {
+            "path": "Stages/ArenaTestStage/arena_test_stage.diastage",
+            "type": "stage"
         }
     ],
     "name": "CluicheTest",
