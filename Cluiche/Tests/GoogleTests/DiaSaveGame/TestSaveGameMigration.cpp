@@ -225,3 +225,81 @@ TEST(DiaSaveGame_Migration, MissingMigrationReturnsError)
 
     remove("temp/savegame_migration_tests/slot_mig_gap.sav");
 }
+
+// ---------------------------------------------------------------------------
+// TEST 4 — MigrationTransformsData
+//   LoadContext is read-only (wraps const Json::Value&), so a migration
+//   cannot push new data into it.  The correct pattern is a lambda capture
+//   side-channel: the migration callback reads the old value into a captured
+//   variable; Deserialize reads from both the context (for v2 keys) and the
+//   capture (for migrated keys).
+//
+//   Here: save value=10 at v1.  Migration v1->v2 reads "value" and doubles
+//   it into a captured int.  The v2 Deserialize reads from the capture.
+//   Assert that the deserialized result is 20.
+// ---------------------------------------------------------------------------
+
+TEST(DiaSaveGame_Migration, MigrationTransformsData)
+{
+    EnsureTestDir();
+
+    // -- SAVE at version 1, value = 10 --
+    MockSaveable saveParticipant;
+    saveParticipant.version = 1;
+    saveParticipant.value   = 10;
+
+    SaveRegistry saveReg;
+    saveReg.Register(StringCRC("transform"), &saveParticipant);
+
+    SaveManager saveMgr;
+    SaveConfig  cfg = MakeConfig();
+    saveMgr.Init(cfg, saveReg);
+
+    SaveResult sr = saveMgr.Save(StringCRC("mig_transform"));
+    ASSERT_TRUE(sr.Ok()) << "Save failed: " << static_cast<int>(sr.code);
+
+    // -- LOAD at version 2 with a migration that doubles the value via capture --
+    int32_t migratedValue = 0;  // side-channel filled by migration callback
+
+    struct V2Saveable : ISaveable
+    {
+        int32_t  value   = 0;
+        uint32_t version = 2;
+        int32_t* migrated;  // points to the capture set by the migration
+
+        void Serialize(SaveContext& ctx) const override
+        {
+            ctx.Write(StringCRC("value"), value);
+        }
+        void Deserialize(LoadContext&) override
+        {
+            // Migration already decoded the old data into *migrated
+            value = *migrated;
+        }
+        uint32_t GetVersion() const override { return version; }
+    };
+
+    V2Saveable loadParticipant;
+    loadParticipant.migrated = &migratedValue;
+
+    SaveRegistry loadReg;
+    loadReg.Register(StringCRC("transform"), &loadParticipant);
+
+    // Migration v1->v2: read old "value", double it, store in side-channel
+    loadReg.RegisterMigration(StringCRC("transform"), 1, [&migratedValue](LoadContext& ctx) {
+        int32_t oldValue = 0;
+        ctx.Read(StringCRC("value"), oldValue);
+        migratedValue = oldValue * 2;
+    });
+
+    SaveManager loadMgr;
+    loadMgr.Init(cfg, loadReg);
+
+    LoadResult lr = loadMgr.Load(StringCRC("mig_transform"));
+    ASSERT_TRUE(lr.Ok()) << "Load failed: " << static_cast<int>(lr.code);
+
+    EXPECT_EQ(20, loadParticipant.value)
+        << "Expected doubled value 20 after migration, got " << loadParticipant.value;
+
+    remove("temp/savegame_migration_tests/slot_mig_transform.sav");
+}
