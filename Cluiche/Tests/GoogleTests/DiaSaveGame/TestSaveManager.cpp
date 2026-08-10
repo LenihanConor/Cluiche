@@ -136,6 +136,50 @@ TEST(DiaSaveGame_Manager, LoadMissingSlotReturnsError)
     EXPECT_EQ(LoadResultCode::SlotNotFound, lr.code);
 }
 
+TEST(DiaSaveGame_Manager, LoadSkipsParticipantAbsentFromLiveRegistry)
+{
+    // Save a file that contains two participants (player + world).
+    // Load it with a registry that only has "player".
+    // The load must succeed and "player" must deserialize correctly —
+    // the absent "world" participant must be silently skipped.
+    EnsureTestDir();
+
+    PlayerSaveable player;
+    player.data = { 55, 1.0f, true };
+
+    WorldSaveable world;
+    world.data = { 3 };
+
+    SaveRegistry saveReg;
+    saveReg.Register(StringCRC("player"), &player);
+    saveReg.Register(StringCRC("world"),  &world);
+
+    SaveManager saveMgr;
+    SaveConfig  cfg = MakeConfig();
+    saveMgr.Init(cfg, saveReg);
+
+    SaveResult sr = saveMgr.Save(StringCRC("slot_fwd"));
+    ASSERT_TRUE(sr.Ok()) << "Save failed with code " << static_cast<int>(sr.code);
+
+    // Load registry only knows "player" — "world" is gone
+    PlayerSaveable loadedPlayer;
+
+    SaveRegistry loadReg;
+    loadReg.Register(StringCRC("player"), &loadedPlayer);
+
+    SaveManager loadMgr;
+    loadMgr.Init(cfg, loadReg);
+
+    LoadResult lr = loadMgr.Load(StringCRC("slot_fwd"));
+    ASSERT_TRUE(lr.Ok()) << "Load should succeed even when a saved participant is not in the live registry";
+
+    EXPECT_EQ(55,   loadedPlayer.data.hp);
+    EXPECT_NEAR(1.0f, loadedPlayer.data.speed, 0.0001f);
+    EXPECT_TRUE(loadedPlayer.data.alive);
+
+    remove("temp/savegame_tests/slot_slot_fwd.sav");
+}
+
 TEST(DiaSaveGame_Manager, LoadEngineMismatchReturnsError)
 {
     EnsureTestDir();

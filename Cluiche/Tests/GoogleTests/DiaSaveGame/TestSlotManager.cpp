@@ -115,6 +115,34 @@ TEST(DiaSaveGame_SlotManager, Enumerate_ReturnsOnDiskSlots)
 }
 
 // ---------------------------------------------------------------------------
+// Rename_MovesFile
+// ---------------------------------------------------------------------------
+
+TEST(DiaSaveGame_SlotManager, Rename_MovesFile)
+{
+    EnsureSmTestDir();
+
+    remove("temp/sm_tests/slot_ren_src.sav");
+    remove("temp/sm_tests/slot_ren_dst.sav");
+
+    SaveConfig cfg = MakeSmConfig();
+    SlotManager sm;
+    sm.Init(cfg);
+
+    WriteFile("temp/sm_tests/slot_ren_src.sav");
+
+    ASSERT_TRUE(sm.SlotExists(StringCRC("ren_src"))) << "Source file should exist before rename";
+    ASSERT_FALSE(sm.SlotExists(StringCRC("ren_dst"))) << "Destination should not exist before rename";
+
+    sm.RenameSlot(StringCRC("ren_src"), StringCRC("ren_dst"));
+
+    EXPECT_FALSE(sm.SlotExists(StringCRC("ren_src"))) << "Source should be gone after rename";
+    EXPECT_TRUE(sm.SlotExists(StringCRC("ren_dst")))  << "Destination should exist after rename";
+
+    remove("temp/sm_tests/slot_ren_dst.sav");
+}
+
+// ---------------------------------------------------------------------------
 // MaxSlotCap_RejectsOverflow
 // ---------------------------------------------------------------------------
 

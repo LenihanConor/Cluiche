@@ -204,3 +204,61 @@ TEST(DiaSaveGame_Context, BeginObjectOnWrongType)
     LoadContext load(root);
     EXPECT_FALSE(load.BeginObject(StringCRC("x")));
 }
+
+// ---------------------------------------------------------------------------
+// LoadContext::Write — mutation round-trips (float, bool, string overloads)
+// ---------------------------------------------------------------------------
+
+TEST(DiaSaveGame_Context, Write_Float_MutatesAndReadsBack)
+{
+    Json::Value root(Json::objectValue);
+    LoadContext ctx(root);
+
+    ctx.Write(StringCRC("speed"), 2.5f);
+
+    float speed = 0.0f;
+    EXPECT_TRUE(ctx.Read(StringCRC("speed"), speed));
+    EXPECT_NEAR(2.5f, speed, 0.0001f);
+}
+
+TEST(DiaSaveGame_Context, Write_Bool_MutatesAndReadsBack)
+{
+    Json::Value root(Json::objectValue);
+    LoadContext ctx(root);
+
+    ctx.Write(StringCRC("active"), true);
+    ctx.Write(StringCRC("dead"), false);
+
+    bool active = false;
+    bool dead   = true;
+    EXPECT_TRUE(ctx.Read(StringCRC("active"), active));
+    EXPECT_TRUE(ctx.Read(StringCRC("dead"),   dead));
+    EXPECT_TRUE(active);
+    EXPECT_FALSE(dead);
+}
+
+TEST(DiaSaveGame_Context, Write_String_MutatesAndReadsBack)
+{
+    Json::Value root(Json::objectValue);
+    LoadContext ctx(root);
+
+    ctx.Write(StringCRC("name"), "Cluiche");
+
+    char name[32] = {};
+    EXPECT_TRUE(ctx.Read(StringCRC("name"), name, sizeof(name)));
+    EXPECT_STREQ("Cluiche", name);
+}
+
+TEST(DiaSaveGame_Context, Write_OverwritesExistingValue)
+{
+    // Seed the root with an old value so Write must overwrite, not just insert.
+    Json::Value root(Json::objectValue);
+    root["hp"] = 10;
+
+    LoadContext ctx(root);
+    ctx.Write(StringCRC("hp"), int32_t(99));
+
+    int32_t hp = 0;
+    EXPECT_TRUE(ctx.Read(StringCRC("hp"), hp));
+    EXPECT_EQ(99, hp);
+}
