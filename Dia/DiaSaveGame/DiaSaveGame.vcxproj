@@ -85,12 +85,14 @@
     <ClInclude Include="SaveRegistry.h" />
     <ClInclude Include="SaveContext.h" />
     <ClInclude Include="LoadContext.h" />
+    <ClInclude Include="SaveManifest.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SlotManager.cpp" />
     <ClCompile Include="SaveRegistry.cpp" />
     <ClCompile Include="SaveContext.cpp" />
     <ClCompile Include="LoadContext.cpp" />
+    <ClCompile Include="SaveManifest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

@@ -36,9 +36,10 @@ public:
     // Returns false if the buffer is too small.
     bool Flush(char* outBuffer, unsigned int bufferSize) const;
 
-    // Access the root for SaveManifest to embed participant data.
+    // Direct access to the root and current node (used by SaveManifest to append array elements).
     Json::Value& Root();
     const Json::Value& Root() const;
+    Json::Value& CurrentNode();
 
 private:
     Json::Value* mRoot;

@@ -772,6 +772,7 @@
     <!-- DiaEconomy -->
     <ClCompile Include="DiaEconomy\TestDiaEconomy.cpp" />
     <ClCompile Include="DiaSaveGame\TestSaveLoadContext.cpp" />
+    <ClCompile Include="DiaSaveGame\TestSaveManifest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

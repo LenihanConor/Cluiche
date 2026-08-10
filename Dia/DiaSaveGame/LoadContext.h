@@ -35,6 +35,7 @@ public:
     void SetArrayIndex(uint32_t index);
 
     const Json::Value& Root() const;
+    const Json::Value& CurrentNode() const;
 
 private:
     const Json::Value* mRoot;

@@ -30,6 +30,11 @@ const Json::Value& LoadContext::Root() const
     return *mRoot;
 }
 
+const Json::Value& LoadContext::CurrentNode() const
+{
+    return Current();
+}
+
 bool LoadContext::Read(Dia::Core::StringCRC key, int32_t& out) const
 {
     const Json::Value& node = Current();

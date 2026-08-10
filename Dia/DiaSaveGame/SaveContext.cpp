@@ -37,6 +37,11 @@ const Json::Value& SaveContext::Root() const
     return *mRoot;
 }
 
+Json::Value& SaveContext::CurrentNode()
+{
+    return Current();
+}
+
 void SaveContext::Write(Dia::Core::StringCRC key, int32_t value)
 {
     Current()[key.AsChar()] = value;
