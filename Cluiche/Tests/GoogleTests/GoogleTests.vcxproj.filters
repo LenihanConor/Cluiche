@@ -1494,6 +1494,9 @@
     <ClCompile Include="DiaObjective\TestObjectiveSetStress.cpp">
     <ClCompile Include="DiaSaveGame\TestSaveLoadContext.cpp">
     <ClCompile Include="DiaSaveGame\TestSaveManifest.cpp">
+    <ClCompile Include="DiaSaveGame\TestSaveManager.cpp">
+      <Filter>DiaSaveGame</Filter>
+    </ClCompile>
       <Filter>DiaSaveGame</Filter>
     </ClCompile>
       <Filter>DiaSaveGame</Filter>

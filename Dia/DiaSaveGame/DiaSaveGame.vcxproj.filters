@@ -23,6 +23,8 @@
     <ClInclude Include="SaveContext.h" />
     <ClInclude Include="LoadContext.h" />
     <ClInclude Include="SaveManifest.h" />
+    <ClInclude Include="SaveResult.h" />
+    <ClInclude Include="SaveManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SlotManager.cpp" />
@@ -30,5 +32,6 @@
     <ClCompile Include="SaveContext.cpp" />
     <ClCompile Include="LoadContext.cpp" />
     <ClCompile Include="SaveManifest.cpp" />
+    <ClCompile Include="SaveManager.cpp" />
   </ItemGroup>
 </Project>
