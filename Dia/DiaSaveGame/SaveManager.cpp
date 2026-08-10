@@ -146,7 +146,18 @@ LoadResult SaveManager::Load(Dia::Core::StringCRC slotId)
         return LoadResult::Fail(LoadResultCode::EngineMismatch);
     }
 
-    // Deserialize participants in registration order
+    // Helper: find the saved version for a participant id by scanning the manifest.
+    // Returns UINT32_MAX when the participant is not in the manifest (new participant — no migration needed).
+    auto FindSavedVersion = [&manifest](Dia::Core::StringCRC id) -> uint32_t {
+        for (uint32_t m = 0; m < manifest.GetParticipantCount(); ++m)
+        {
+            if (manifest.GetParticipantAt(m).id == id)
+                return manifest.GetParticipantAt(m).version;
+        }
+        return UINT32_MAX;
+    };
+
+    // Deserialize participants in registration order, applying migrations as needed.
     for (uint32_t i = 0; i < mRegistry->GetParticipantCount(); ++i)
     {
         ISaveable* p = mRegistry->GetParticipantAt(i);
@@ -160,6 +171,31 @@ LoadResult SaveManager::Load(Dia::Core::StringCRC slotId)
 
         // Wrap the participant's sub-object in a child LoadContext
         LoadContext pCtx(root[id.AsChar()]);
+
+        // Apply migration chain when the saved version is behind the live version
+        const uint32_t savedVersion = FindSavedVersion(id);
+        const uint32_t liveVersion  = p->GetVersion();
+
+        if (savedVersion != UINT32_MAX && savedVersion < liveVersion)
+        {
+            for (uint32_t fromVer = savedVersion; fromVer < liveVersion; ++fromVer)
+            {
+                if (!mRegistry->HasMigration(id, fromVer))
+                {
+                    DIA_LOG_ERROR("savegame",
+                        "Load: missing migration for '%s' v%u->v%u — aborting",
+                        id.AsChar(), fromVer, fromVer + 1);
+                    return LoadResult::Fail(LoadResultCode::MigrationError);
+                }
+
+                DIA_LOG_INFO("savegame",
+                    "Load: applying migration for '%s' v%u->v%u",
+                    id.AsChar(), fromVer, fromVer + 1);
+
+                mRegistry->ApplyMigration(id, fromVer, pCtx);
+            }
+        }
+
         p->Deserialize(pCtx);
     }
 
