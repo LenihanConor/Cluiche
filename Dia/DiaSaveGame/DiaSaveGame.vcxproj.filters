@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{A1B2C3D4-E5F6-7890-ABCD-111122223333}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{B2C3D4E5-F6A7-8901-BCDE-222233334444}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.diasavegame.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="SaveFormat.h" />
+    <ClInclude Include="SaveConfig.h" />
+    <ClInclude Include="SlotInfo.h" />
+    <ClInclude Include="SlotManager.h" />
+    <ClInclude Include="ISaveable.h" />
+    <ClInclude Include="SaveRegistry.h" />
+    <ClInclude Include="SaveContext.h" />
+    <ClInclude Include="LoadContext.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="SlotManager.cpp" />
+    <ClCompile Include="SaveRegistry.cpp" />
+    <ClCompile Include="SaveContext.cpp" />
+    <ClCompile Include="LoadContext.cpp" />
+  </ItemGroup>
+</Project>

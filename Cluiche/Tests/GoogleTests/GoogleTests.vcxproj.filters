@@ -1492,6 +1492,9 @@
       <Filter>DiaObjective</Filter>
     </ClCompile>
     <ClCompile Include="DiaObjective\TestObjectiveSetStress.cpp">
+    <ClCompile Include="DiaSaveGame\TestSaveLoadContext.cpp">
+      <Filter>DiaSaveGame</Filter>
+    </ClCompile>
       <Filter>DiaObjective</Filter>
     </ClCompile>
       <Filter>DiaScalarField</Filter>
