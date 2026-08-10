@@ -1,6 +1,5 @@
 #include "DiaSaveGame/LoadContext.h"
 
-#include <DiaCore/Json/external/json/json.h>
 #include <DiaCore/Core/Assert.h>
 
 #include <cstring>
@@ -8,10 +7,10 @@
 namespace Dia::SaveGame {
 
 LoadContext::LoadContext(const Json::Value& root)
-    : mRoot(&root)
+    : mData(root)
 {
     StackEntry entry;
-    entry.node       = mRoot;
+    entry.node       = &mData;
     entry.arrayIndex = -1;
     mStack.Add(entry);
 }
@@ -25,15 +24,26 @@ const Json::Value& LoadContext::Current() const
     return *top.node;
 }
 
+Json::Value& LoadContext::MutableCurrent()
+{
+    DIA_ASSERT(mStack.Size() > 0, "LoadContext stack underflow");
+    StackEntry& top = mStack[mStack.Size() - 1];
+    if (top.arrayIndex >= 0)
+        return (*top.node)[static_cast<Json::ArrayIndex>(top.arrayIndex)];
+    return *top.node;
+}
+
 const Json::Value& LoadContext::Root() const
 {
-    return *mRoot;
+    return mData;
 }
 
 const Json::Value& LoadContext::CurrentNode() const
 {
     return Current();
 }
+
+// --- Read ---
 
 bool LoadContext::Read(Dia::Core::StringCRC key, int32_t& out) const
 {
@@ -76,10 +86,34 @@ bool LoadContext::Read(Dia::Core::StringCRC key, char* outBuffer, unsigned int b
     return true;
 }
 
+// --- Write ---
+
+void LoadContext::Write(Dia::Core::StringCRC key, int32_t value)
+{
+    MutableCurrent()[key.AsChar()] = value;
+}
+
+void LoadContext::Write(Dia::Core::StringCRC key, float value)
+{
+    MutableCurrent()[key.AsChar()] = value;
+}
+
+void LoadContext::Write(Dia::Core::StringCRC key, bool value)
+{
+    MutableCurrent()[key.AsChar()] = value;
+}
+
+void LoadContext::Write(Dia::Core::StringCRC key, const char* value)
+{
+    MutableCurrent()[key.AsChar()] = value;
+}
+
+// --- Navigation ---
+
 bool LoadContext::BeginObject(Dia::Core::StringCRC key)
 {
     DIA_ASSERT(!mStack.IsFull(), "LoadContext: nesting depth exceeded");
-    const Json::Value& node = Current();
+    Json::Value& node = MutableCurrent();
     if (!node.isMember(key.AsChar()) || !node[key.AsChar()].isObject())
         return false;
 
@@ -99,7 +133,7 @@ void LoadContext::EndObject()
 bool LoadContext::BeginArray(Dia::Core::StringCRC key, uint32_t& countOut)
 {
     DIA_ASSERT(!mStack.IsFull(), "LoadContext: nesting depth exceeded");
-    const Json::Value& node = Current();
+    Json::Value& node = MutableCurrent();
     if (!node.isMember(key.AsChar()) || !node[key.AsChar()].isArray())
         return false;
 
