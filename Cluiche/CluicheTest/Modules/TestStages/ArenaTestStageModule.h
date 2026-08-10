@@ -19,9 +19,12 @@
 #include <DiaEntity/Domain.h>
 #include <DiaEntity/Entity.h>
 #include <DiaMaths/Vector/Vector2D.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
 
 #include <functional>
 #include <memory>
+
+namespace Dia::Observation::Metric { class Gauge; }
 
 #ifdef DIA_DEBUG
 #include <DiaApplicationFlow/ModuleRefV2.h>
@@ -201,10 +204,18 @@ private:
     // --- Frame counter ---
     unsigned int mFrameCount = 0;
 
+    // --- Metrics ---
+    Dia::Observation::Metric::Gauge* mMetricTotalKills          = nullptr;
+    Dia::Observation::Metric::Gauge* mMetricWavesCompleted      = nullptr;
+    Dia::Observation::Metric::Gauge* mMetricPowerupCollected     = nullptr;
+    Dia::Observation::Metric::Gauge* mMetricDespChargesFired     = nullptr;
+    Dia::Observation::Metric::Gauge* mMetricTotalFrames          = nullptr;
+
     // --- Private helpers: setup ---
     void LoadTriggerScript();
     void LoadObjectives();
     void RegisterCheckpoints();
+    void RegisterMetrics();
 
     // --- Private helpers: per-frame ---
     void UpdateEnemyAI(float deltaTime);

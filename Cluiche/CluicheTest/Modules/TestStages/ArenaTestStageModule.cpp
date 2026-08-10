@@ -594,6 +594,24 @@ void ArenaTestStageModule::RegisterCheckpoints()
 }
 
 // ---------------------------------------------------------------------------
+// RegisterMetrics
+// ---------------------------------------------------------------------------
+void ArenaTestStageModule::RegisterMetrics()
+{
+    auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
+    if (!mMetricTotalKills)
+        mMetricTotalKills = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.arena.total_kills"));
+    if (!mMetricWavesCompleted)
+        mMetricWavesCompleted = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.arena.waves_completed"));
+    if (!mMetricPowerupCollected)
+        mMetricPowerupCollected = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.arena.powerup_collected"));
+    if (!mMetricDespChargesFired)
+        mMetricDespChargesFired = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.arena.desperate_charges_fired"));
+    if (!mMetricTotalFrames)
+        mMetricTotalFrames = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.arena.total_frames"));
+}
+
+// ---------------------------------------------------------------------------
 // OnStart
 // ---------------------------------------------------------------------------
 void ArenaTestStageModule::OnStart(Dia::Automation::AutomationService* /*service*/)
@@ -624,6 +642,7 @@ void ArenaTestStageModule::OnStart(Dia::Automation::AutomationService* /*service
     LoadTriggerScript();
     LoadObjectives();
     RegisterCheckpoints();
+    RegisterMetrics();
 
     DIA_LOG_INFO("CluicheTest", "ArenaTestStageModule::OnStart");
 }
@@ -659,6 +678,12 @@ void ArenaTestStageModule::OnUpdate(float deltaTime)
     }
 
     mSpatialDomain.EndOfFrame();
+
+    if (mMetricTotalKills)        mMetricTotalKills->Set(static_cast<double>(mTotalKills));
+    if (mMetricWavesCompleted)    mMetricWavesCompleted->Set(static_cast<double>(mWavesCompleted));
+    if (mMetricPowerupCollected)  mMetricPowerupCollected->Set(mPowerupCollected ? 1.0 : 0.0);
+    if (mMetricDespChargesFired)  mMetricDespChargesFired->Set(static_cast<double>(mDespChargesFired));
+    if (mMetricTotalFrames)       mMetricTotalFrames->Set(static_cast<double>(mFrameCount + 1));
 
     ++mFrameCount;
 }
