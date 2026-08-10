@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Controllers"><UniqueIdentifier>{C3333333-3333-3333-3333-333333333333}</UniqueIdentifier></Filter>
+    <Filter Include="Docs"><UniqueIdentifier>{D4444444-4444-4444-4444-444444444444}</UniqueIdentifier></Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="DiaEconomyInspectorPlugin.h" />
+    <ClInclude Include="Controllers\EconomyInstancesController.h"><Filter>Controllers</Filter></ClInclude>
+    <ClInclude Include="Controllers\EconomyModifiersController.h"><Filter>Controllers</Filter></ClInclude>
+    <ClInclude Include="Controllers\EconomyEventsController.h"><Filter>Controllers</Filter></ClInclude>
+    <ClInclude Include="Controllers\EconomySchemaController.h"><Filter>Controllers</Filter></ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DiaEconomyInspectorPlugin.cpp" />
+    <ClCompile Include="Controllers\EconomyInstancesController.cpp"><Filter>Controllers</Filter></ClCompile>
+    <ClCompile Include="Controllers\EconomyModifiersController.cpp"><Filter>Controllers</Filter></ClCompile>
+    <ClCompile Include="Controllers\EconomyEventsController.cpp"><Filter>Controllers</Filter></ClCompile>
+    <ClCompile Include="Controllers\EconomySchemaController.cpp"><Filter>Controllers</Filter></ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.diaeconomyinspector.architecture.module.md"><Filter>Docs</Filter></None>
+  </ItemGroup>
+</Project>
