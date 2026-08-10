@@ -88,6 +88,7 @@
     <ClInclude Include="SaveManifest.h" />
     <ClInclude Include="SaveResult.h" />
     <ClInclude Include="SaveManager.h" />
+    <ClInclude Include="Testing\SaveTestHelpers.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SlotManager.cpp" />

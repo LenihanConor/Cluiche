@@ -1496,6 +1496,12 @@
     <ClCompile Include="DiaSaveGame\TestSaveManifest.cpp">
     <ClCompile Include="DiaSaveGame\TestSaveManager.cpp">
     <ClCompile Include="DiaSaveGame\TestSaveGameMigration.cpp">
+    <ClCompile Include="DiaSaveGame\TestSaveManagerAsync.cpp">
+    <ClCompile Include="DiaSaveGame\TestSaveManagerEvents.cpp">
+      <Filter>DiaSaveGame</Filter>
+    </ClCompile>
+      <Filter>DiaSaveGame</Filter>
+    </ClCompile>
       <Filter>DiaSaveGame</Filter>
     </ClCompile>
       <Filter>DiaSaveGame</Filter>

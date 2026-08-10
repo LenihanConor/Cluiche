@@ -775,6 +775,8 @@
     <ClCompile Include="DiaSaveGame\TestSaveManifest.cpp" />
     <ClCompile Include="DiaSaveGame\TestSaveManager.cpp" />
     <ClCompile Include="DiaSaveGame\TestSaveGameMigration.cpp" />
+    <ClCompile Include="DiaSaveGame\TestSaveManagerAsync.cpp" />
+    <ClCompile Include="DiaSaveGame\TestSaveManagerEvents.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

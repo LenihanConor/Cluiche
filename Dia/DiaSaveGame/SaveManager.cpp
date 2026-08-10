@@ -12,6 +12,8 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <thread>
+#include <memory>
 
 namespace Dia::SaveGame {
 
@@ -40,6 +42,7 @@ SaveResult SaveManager::Save(Dia::Core::StringCRC slotId)
     }
 
     DIA_LOG_INFO("savegame", "Save: starting slot '%s'", slotId.AsChar());
+    mOnSaveStarted.NotifyObservers(static_cast<int>(SaveEvent::SaveStarted));
 
     // Build manifest
     SaveManifest manifest;
@@ -58,35 +61,39 @@ SaveResult SaveManager::Save(Dia::Core::StringCRC slotId)
         ctx.EndObject();
     }
 
-    // Flush to buffer
-    static char sBuffer[kBufferSize];
-    if (!ctx.Flush(sBuffer, kBufferSize))
+    // Serialize to heap buffer on the calling (sim) thread — no disk stall here.
+    auto writeBuffer = std::make_unique<char[]>(kBufferSize);
+    if (!ctx.Flush(writeBuffer.get(), kBufferSize))
     {
         DIA_LOG_ERROR("savegame", "Save: serialize buffer overflow for slot '%s'", slotId.AsChar());
         return SaveResult::Fail(SaveResultCode::SerializeError);
     }
 
-    // Write to disk
+    // Flush buffer to disk off-thread, then join (result is synchronous post-flush).
     char path[kMaxPathLen];
     mSlotManager.BuildPath(slotId, path, kMaxPathLen);
 
-    FILE* f = fopen(path, "wb");
-    if (!f)
+    bool writeOk = false;
+    const size_t len = strlen(writeBuffer.get());
     {
-        DIA_LOG_ERROR("savegame", "Save: cannot open '%s' for writing", path);
-        return SaveResult::Fail(SaveResultCode::FileWriteError);
+        char* rawBuf = writeBuffer.get();
+        std::thread writer([&writeOk, rawBuf, len, &path]() {
+            FILE* f = fopen(path, "wb");
+            if (!f) { writeOk = false; return; }
+            writeOk = (fwrite(rawBuf, 1, len, f) == len);
+            fclose(f);
+        });
+        writer.join();
     }
-    const size_t len = strlen(sBuffer);
-    const size_t written = fwrite(sBuffer, 1, len, f);
-    fclose(f);
 
-    if (written != len)
+    if (!writeOk)
     {
-        DIA_LOG_ERROR("savegame", "Save: write incomplete for '%s'", path);
+        DIA_LOG_ERROR("savegame", "Save: file write failed for '%s'", path);
         return SaveResult::Fail(SaveResultCode::FileWriteError);
     }
 
     DIA_LOG_INFO("savegame", "Save: completed slot '%s' (%zu bytes)", slotId.AsChar(), len);
+    mOnSaveCompleted.NotifyObservers(static_cast<int>(SaveEvent::SaveCompleted));
     return SaveResult::Success();
 }
 
@@ -96,6 +103,7 @@ LoadResult SaveManager::Load(Dia::Core::StringCRC slotId)
     DIA_ASSERT(mRegistry != nullptr, "SaveManager::Load called before Init");
 
     DIA_LOG_INFO("savegame", "Load: starting slot '%s'", slotId.AsChar());
+    mOnLoadStarted.NotifyObservers(static_cast<int>(SaveEvent::LoadStarted));
 
     // Check slot exists on disk
     if (!mSlotManager.SlotExists(slotId))
@@ -104,25 +112,36 @@ LoadResult SaveManager::Load(Dia::Core::StringCRC slotId)
         return LoadResult::Fail(LoadResultCode::SlotNotFound);
     }
 
-    // Read file
+    // Read file on a background thread into a heap buffer; join before parsing.
     char path[kMaxPathLen];
     mSlotManager.BuildPath(slotId, path, kMaxPathLen);
 
-    static char sBuffer[kBufferSize];
-    FILE* f = fopen(path, "rb");
-    if (!f)
+    auto readBuffer = std::make_unique<char[]>(kBufferSize);
+    bool readOk = false;
+    size_t readBytes = 0;
+    {
+        char* rawBuf = readBuffer.get();
+        std::thread reader([&readOk, &readBytes, rawBuf, &path]() {
+            FILE* f = fopen(path, "rb");
+            if (!f) { readOk = false; return; }
+            readBytes = fread(rawBuf, 1, kBufferSize - 1, f);
+            fclose(f);
+            rawBuf[readBytes] = '\0';
+            readOk = true;
+        });
+        reader.join();
+    }
+
+    if (!readOk)
     {
         DIA_LOG_ERROR("savegame", "Load: cannot open '%s'", path);
         return LoadResult::Fail(LoadResultCode::FileReadError);
     }
-    const size_t read = fread(sBuffer, 1, kBufferSize - 1, f);
-    fclose(f);
-    sBuffer[read] = '\0';
 
-    // Parse JSON
+    // Parse JSON on the calling thread
     Json::Value root;
-    Json::Reader reader;
-    if (!reader.parse(sBuffer, root))
+    Json::Reader jsonReader;
+    if (!jsonReader.parse(readBuffer.get(), root))
     {
         DIA_LOG_ERROR("savegame", "Load: JSON parse error for slot '%s'", slotId.AsChar());
         return LoadResult::Fail(LoadResultCode::ParseError);
@@ -193,6 +212,7 @@ LoadResult SaveManager::Load(Dia::Core::StringCRC slotId)
                     id.AsChar(), fromVer, fromVer + 1);
 
                 mRegistry->ApplyMigration(id, fromVer, pCtx);
+                mOnMigrationApplied.NotifyObservers(static_cast<int>(SaveEvent::MigrationApplied));
             }
         }
 
@@ -200,6 +220,7 @@ LoadResult SaveManager::Load(Dia::Core::StringCRC slotId)
     }
 
     DIA_LOG_INFO("savegame", "Load: completed slot '%s'", slotId.AsChar());
+    mOnLoadCompleted.NotifyObservers(static_cast<int>(SaveEvent::LoadCompleted));
     return LoadResult::Success();
 }
 
