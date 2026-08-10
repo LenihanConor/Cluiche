@@ -57,6 +57,10 @@
     <ClCompile Include="Modules\InspectorSources\TimingAggregateSource.cpp" />
     <ClCompile Include="Modules\InspectorSources\LifecycleEventSource.cpp" />
     <ClCompile Include="Modules\InspectorSources\BlackboardInspectorSource.cpp" />
+    <ClCompile Include="Modules\InspectorSources\EconomySchemaSource.cpp" />
+    <ClCompile Include="Modules\InspectorSources\EconomyInstancesSource.cpp" />
+    <ClCompile Include="Modules\InspectorSources\EconomyModifiersSource.cpp" />
+    <ClCompile Include="Modules\InspectorSources\EconomyEventsSource.cpp" />
     <ClCompile Include="Modules\SimNavigationHandlerModule.cpp" />
     <ClCompile Include="Modules\AIInspectorModule.cpp" />
   </ItemGroup>
@@ -100,6 +104,10 @@
     <ClInclude Include="Modules\InspectorSources\LifecycleEventSource.h" />
     <ClInclude Include="Types\BlackboardInspectEvent.h" />
     <ClInclude Include="Modules\InspectorSources\BlackboardInspectorSource.h" />
+    <ClInclude Include="Modules\InspectorSources\EconomySchemaSource.h" />
+    <ClInclude Include="Modules\InspectorSources\EconomyInstancesSource.h" />
+    <ClInclude Include="Modules\InspectorSources\EconomyModifiersSource.h" />
+    <ClInclude Include="Modules\InspectorSources\EconomyEventsSource.h" />
     <ClInclude Include="Types\RenderToSimNavRequest.h" />
     <ClInclude Include="Modules\SimNavigationHandlerModule.h" />
     <ClInclude Include="Modules\AIInspectorModule.h" />
@@ -225,6 +233,9 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaHTN\DiaHTN.vcxproj">
       <Project>{F4B5C6D7-E8F9-0123-A456-789012345678}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaEconomy\DiaEconomy.vcxproj">
+      <Project>{6E2AFB11-772C-4552-B065-D50083E5787D}</Project>
     </ProjectReference>
 
   </ItemGroup>
