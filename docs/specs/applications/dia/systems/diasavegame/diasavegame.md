@@ -203,5 +203,5 @@ _None — all resolved._
 
 ## Status
 
-**Status:** `Approved`
+**Status:** `Done`
 **Plan:** @docs/specs/applications/dia/systems/diasavegame/diasavegame.plan.md

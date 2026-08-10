@@ -16,8 +16,8 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | DiaScalarFieldInspector | Dockable editor panel for scalar field inspection | DiaScalarField ✅, DiaEditor |
 | ~~DiaObjective~~ | Data-driven gameplay goal tracking — completion conditions, progress, per-faction objectives, chained objectives | DiaCondition ✅, DiaCore ✅, diaentitytemplate ✅ |
 | ~~DiaEntitySpawner~~ | `SpawnRequest` API, `SpawnEmitterComponent` (rate/burst/cap/lifetime/radius), `EntitySpawnerModule` on SimPU, DiaObservation coverage, GoogleTest suite, CluicheTest E2E visual stage — **plan ready (10 tasks)** | diaentity ✅, DiaReflect ✅, DiaSerializer ✅ |
-| DiaSaveGame | ISaveable contract, SaveRegistry, SaveConfig + slot management, SaveContext/LoadContext, SaveManifest, async I/O, versioning + migration, Observer events, test utilities | DiaSerializer ✅, DiaCore ✅ |
-| ArenaTestStage (CluicheTest) | Multi-system E2E stage: all 4 DiaTriggerScript trigger types, DiaObjective 3-wave prerequisite chain, per-enemy StateMachine + UtilityAI + Rules, DiaBlackboard shared state bus, ImGui arena visuals, pytest scenario with determinism check; 11 tasks | DiaTriggerScript ✅, DiaObjective ✅, DiaBlackboard ✅, DiaStateMachine ✅, DiaUtilityAI ✅, DiaRules ✅ |
+| ~~DiaSaveGame~~ | ISaveable contract, SaveRegistry, SaveConfig + slot management, SaveContext/LoadContext, SaveManifest, async I/O, versioning + migration, Observer events, test utilities | DiaSerializer ✅, DiaCore ✅ |
+| ArenaTestStage (CluicheTest) | **In Progress (5/11 tasks done)** — scaffold + JSON assets + header + OnStart/LoadTriggerScript + SpawnWave/EnemyAgent done; remaining: DoUpdate frame loop (T6), metrics (T7), ImGui visuals (T8), DoStop (T9), pytest (T10), E2E verify (T11) | DiaTriggerScript ✅, DiaObjective ✅, DiaBlackboard ✅, DiaStateMachine ✅, DiaUtilityAI ✅, DiaRules ✅ |
 | ~~DiaTriggerScript~~ | Data-driven level events — spatial/temporal/state/count triggers, four action types, ITriggerActionHandler extension point, TriggerFiredEvent on DiaStreams | DiaCondition ✅, DiaGeometry2D ✅, DiaEntitySpatial ✅, DiaStreams ✅, DiaObjective (ChangeObjectiveState action only) |
 
 ---
