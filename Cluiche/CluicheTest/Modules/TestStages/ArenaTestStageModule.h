@@ -198,6 +198,9 @@ private:
     bool  mVictory             = false;
     bool  mAllPassed           = false;
 
+    // --- Frame counter ---
+    unsigned int mFrameCount = 0;
+
     // --- Private helpers: setup ---
     void LoadTriggerScript();
     void LoadObjectives();

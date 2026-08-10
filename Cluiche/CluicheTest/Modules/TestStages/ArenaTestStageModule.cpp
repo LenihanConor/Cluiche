@@ -609,7 +609,8 @@ void ArenaTestStageModule::OnStart(Dia::Automation::AutomationService* /*service
     mAllPassed           = false;
     mWave1ClearDelay     = -1.f;
     mWave2ClearDelay     = -1.f;
-    mEnemyCount = 0;
+    mEnemyCount          = 0;
+    mFrameCount          = 0;
 
     // Register global blackboard slots.
     // Register<T> returns T& so we can set the initial value inline.
@@ -628,11 +629,38 @@ void ArenaTestStageModule::OnStart(Dia::Automation::AutomationService* /*service
 }
 
 // ---------------------------------------------------------------------------
-// OnUpdate — stub; fully implemented in Tasks 5-8
+// OnUpdate
 // ---------------------------------------------------------------------------
-void ArenaTestStageModule::OnUpdate(float /*deltaTime*/)
+void ArenaTestStageModule::OnUpdate(float deltaTime)
 {
-    // TODO: implement in Tasks 5-8
+    mTriggerScript.Tick(deltaTime);
+
+    if (mGlobalConditionRegistry)
+        mObjectives.Evaluate(*mGlobalConditionRegistry);
+
+    UpdateEnemyAI(deltaTime);
+
+    // Advance player northward from (0,-3) until y >= 0.
+    static const Dia::Core::StringCRC kPlayerTag("player");
+    if (mPlayerPosition.y < 0.f)
+    {
+        mPlayerPosition.y += 1.0f * deltaTime;
+        if (mPlayerPosition.y > 0.f)
+            mPlayerPosition.y = 0.f;
+
+        // Update spatial component so the trigger system sees the new position.
+        Dia::EntitySpatial::SpatialComponent* sc =
+            mSpatialDomain.GetComponent<Dia::EntitySpatial::SpatialComponent>(mPlayerEntity);
+        if (sc)
+        {
+            sc->position = mPlayerPosition;
+            sc->MarkDirty();
+        }
+    }
+
+    mSpatialDomain.EndOfFrame();
+
+    ++mFrameCount;
 }
 
 // ---------------------------------------------------------------------------
@@ -815,22 +843,130 @@ void ArenaTestStageModule::SpawnWave(Dia::Core::StringCRC tag, int count)
     mGlobalBlackboard.Get<int>(Dia::Core::StringCRC("wave_num")) = mWavesCompleted + 1;
 }
 
-void ArenaTestStageModule::OnFireEvent(Dia::Core::StringCRC /*eventId*/)
+void ArenaTestStageModule::OnFireEvent(Dia::Core::StringCRC eventId)
 {
-    // TODO: implement in Task 6
-    // wave1_done/wave2_done/wave3_done -> set blackboard flags + increment mWavesCompleted
-    // arena_victory -> set mVictory
+    static const Dia::Core::StringCRC kWave1Done("wave1_done");
+    static const Dia::Core::StringCRC kWave2Done("wave2_done");
+    static const Dia::Core::StringCRC kWave3Done("wave3_done");
+    static const Dia::Core::StringCRC kArenaVictory("arena_victory");
+
+    if (eventId == kWave1Done)
+    {
+        mGlobalBlackboard.Get<int>(Dia::Core::StringCRC("wave1_cleared")) = 1;
+        ++mWavesCompleted;
+    }
+    else if (eventId == kWave2Done)
+    {
+        mGlobalBlackboard.Get<int>(Dia::Core::StringCRC("wave2_cleared")) = 1;
+        ++mWavesCompleted;
+    }
+    else if (eventId == kWave3Done)
+    {
+        mGlobalBlackboard.Get<int>(Dia::Core::StringCRC("wave3_cleared")) = 1;
+        ++mWavesCompleted;
+    }
+    else if (eventId == kArenaVictory)
+    {
+        mVictory = true;
+    }
+    // "desperate_charge" action is handled by EnemyAction_DespCharge -> NotifyDespChargeFired()
 }
 
 void ArenaTestStageModule::OnChangeObjectiveState(Dia::Core::StringCRC /*objectiveId*/,
                                                   Dia::Core::StringCRC /*state*/)
 {
-    // TODO: implement in Task 6
+    // ObjectiveSet has no direct SetState mutation — state is driven by condition
+    // evaluation on the blackboard each frame via mObjectives.Evaluate().
 }
 
-void ArenaTestStageModule::UpdateEnemyAI(float /*deltaTime*/)
+void ArenaTestStageModule::UpdateEnemyAI(float deltaTime)
 {
-    // TODO: implement in Task 5
+    static const Dia::Core::StringCRC kIdle  ("Idle");
+    static const Dia::Core::StringCRC kPursue("Pursue");
+    static const Dia::Core::StringCRC kAttack("Attack");
+
+    static const Dia::Core::StringCRC kTrigCheckIdle          ("check_idle");
+    static const Dia::Core::StringCRC kTrigCheckPursue        ("check_pursue");
+    static const Dia::Core::StringCRC kTrigCheckAttack        ("check_attack");
+    static const Dia::Core::StringCRC kTrigCheckAttackRetreat ("check_attack_retreat");
+
+    static const Dia::Core::StringCRC kSlotHealth        ("health");
+    static const Dia::Core::StringCRC kSlotPlayerDist    ("player_distance");
+    static const Dia::Core::StringCRC kSlotChosenAction  ("chosen_action");
+
+    for (unsigned int i = 0; i < mEnemyCount; ++i)
+    {
+        EnemyAgent& enemy = mEnemies[i];
+        if (!enemy.alive)
+            continue;
+
+        // a. Distance to player
+        Dia::Maths::Vector2D diff = enemy.position - mPlayerPosition;
+        float playerDist = diff.Magnitude();
+
+        // b. Update blackboard
+        enemy.blackboard.Get<float>(kSlotHealth)     = enemy.health;
+        enemy.blackboard.Get<float>(kSlotPlayerDist) = playerDist;
+
+        // c. Fire FSM trigger based on current state
+        Dia::Core::StringCRC curState = enemy.fsm->GetCurrentStateId();
+        if (curState == kIdle)
+        {
+            enemy.fsm->Fire(kTrigCheckIdle);
+        }
+        else if (curState == kPursue)
+        {
+            enemy.fsm->Fire(kTrigCheckPursue);
+        }
+        else if (curState == kAttack)
+        {
+            enemy.fsm->Fire(kTrigCheckAttack);
+            enemy.fsm->Fire(kTrigCheckAttackRetreat);
+        }
+
+        // d. Drive FSM update (OnUpdate callbacks, advances time)
+        enemy.fsm->Update(deltaTime);
+
+        // e. Utility evaluation — score-only to avoid unintended dispatches
+        if (enemy.conditionRegistry)
+        {
+            Dia::UtilityAI::UtilitySelection sel =
+                enemy.utilitySet.SelectWinner(*enemy.conditionRegistry);
+            enemy.blackboard.Get<Dia::Core::StringCRC>(kSlotChosenAction) = sel.actionId;
+        }
+
+        // f. Rule evaluation — DespCharge fires if health < 0.2
+        if (enemy.conditionRegistry)
+        {
+            enemy.ruleSet.Evaluate(*enemy.conditionRegistry,
+                                   enemy.ruleActionRegistry,
+                                   static_cast<void*>(&enemy));
+        }
+
+        // g. Move toward player if alive
+        Dia::Maths::Vector2D dir = mPlayerPosition - enemy.position;
+        if (dir.Magnitude() > 0.001f)
+        {
+            dir.NormalizeSafe();
+            enemy.position += dir * (1.5f * deltaTime);
+        }
+
+        // h. Deal damage to player while in Attack state
+        Dia::Core::StringCRC stateAfterFsm = enemy.fsm->GetCurrentStateId();
+        if (stateAfterFsm == kAttack)
+            enemy.health -= 0.15f * deltaTime;
+
+        // i. Kill enemy when health depleted
+        if (enemy.health <= 0.f && enemy.alive)
+        {
+            enemy.alive  = false;
+            enemy.health = 0.f;
+            ++mTotalKills;
+            mGlobalBlackboard.Get<int>(Dia::Core::StringCRC("total_kills")) = mTotalKills;
+            mTriggerScript.IncrementCount(enemy.waveTag, 1);
+            enemy.blackboard.Get<float>(kSlotHealth) = 0.f;
+        }
+    }
 }
 
 bool ArenaTestStageModule::AllCheckpointsPassed() const
