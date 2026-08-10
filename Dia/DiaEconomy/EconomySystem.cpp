@@ -32,6 +32,11 @@ namespace Dia { namespace Economy {
         const float actual = instance.GetValue(resource_name);
         const float delta  = actual - oldVal;
 
+        if (delta > 0.0f)
+        {
+            instance.AddLastTickIncome_Internal(resource_name, delta);
+        }
+
         PoolChangedEvent pce;
         pce.instance      = &instance;
         pce.resource_name = resource_name;
@@ -82,6 +87,11 @@ namespace Dia { namespace Economy {
 
         const float actual = instance.GetValue(resource_name);
         const float delta  = actual - oldVal;
+
+        if (delta < 0.0f)
+        {
+            instance.AddLastTickSpend_Internal(resource_name, -delta);
+        }
 
         PoolChangedEvent pce;
         pce.instance      = &instance;
@@ -224,6 +234,79 @@ namespace Dia { namespace Economy {
     }
 
     // -----------------------------------------------------------------------
+    // Instance registry
+    // -----------------------------------------------------------------------
+    void EconomySystem::RegisterInstance(EconomyInstance& instance)
+    {
+        mInstances.Add(&instance);
+    }
+
+    void EconomySystem::UnregisterInstance(EconomyInstance& instance)
+    {
+        for (unsigned int i = 0; i < mInstances.Size(); ++i)
+        {
+            if (mInstances[i] == &instance)
+            {
+                mInstances.RemoveAt(i);
+                return;
+            }
+        }
+    }
+
+    unsigned int EconomySystem::GetInstanceCount() const
+    {
+        return mInstances.Size();
+    }
+
+    EconomyInstance& EconomySystem::GetInstanceByIndex(unsigned int i)
+    {
+        return *mInstances[i];
+    }
+
+    const EconomyInstance& EconomySystem::GetInstanceByIndex(unsigned int i) const
+    {
+        return *mInstances[i];
+    }
+
+    // -----------------------------------------------------------------------
+    // GetModifierStack
+    // -----------------------------------------------------------------------
+    unsigned int EconomySystem::GetModifierStack(const EconomyInstance& instance,
+                                                  Dia::Core::StringCRC resource_name,
+                                                  ModifierStackEntry* outEntries,
+                                                  unsigned int maxEntries) const
+    {
+        const EconomySchema* schema = instance.GetSchema();
+        if (!schema || !outEntries || maxEntries == 0)
+            return 0;
+        unsigned int written = 0;
+        const unsigned int modCount = schema->GetModifierCount();
+        for (unsigned int i = 0; i < modCount && written < maxEntries; ++i)
+        {
+            const ModifierDef& mod = schema->GetModifierByIndex(i);
+            if (!(mod.resource_name == resource_name))
+                continue;
+            outEntries[written].modifier = &mod;
+            outEntries[written].active   = IsModifierConditionMet(mod);
+            ++written;
+        }
+        return written;
+    }
+
+    // -----------------------------------------------------------------------
+    // IsDerivedResource
+    // -----------------------------------------------------------------------
+    bool EconomySystem::IsDerivedResource(Dia::Core::StringCRC resource_name) const
+    {
+        for (unsigned int i = 0; i < mDerivedResources.Size(); ++i)
+        {
+            if (mDerivedResources[i].key == resource_name)
+                return true;
+        }
+        return false;
+    }
+
+    // -----------------------------------------------------------------------
     // Tick
     // -----------------------------------------------------------------------
     void EconomySystem::Tick(EconomyInstance& instance, float delta_seconds)
@@ -235,6 +318,8 @@ namespace Dia { namespace Economy {
         {
             return;
         }
+
+        instance.ResetLastTickRates_Internal();
 
         const unsigned int modCount = schema->GetModifierCount();
 

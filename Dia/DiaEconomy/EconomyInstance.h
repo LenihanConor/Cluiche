@@ -18,6 +18,8 @@ namespace Dia { namespace Economy {
         float                minimum;
         float                maximum;
         float                income_accumulator;
+        float                last_tick_income;   // gross income applied since last Tick() reset
+        float                last_tick_spend;    // gross spend applied since last Tick() reset
     };
 
     // -----------------------------------------------------------------------
@@ -48,12 +50,19 @@ namespace Dia { namespace Economy {
         // --- income accumulator (fractional carry-over) ---
         float GetIncomeAccumulator(Dia::Core::StringCRC resource_name) const;
 
+        // --- tick rate tracking ---
+        float GetLastTickIncome(Dia::Core::StringCRC resource_name) const;
+        float GetLastTickSpend(Dia::Core::StringCRC resource_name) const;
+
         // --- schema access ---
         const EconomySchema* GetSchema() const;
 
         // --- package-internal mutators (called by EconomySystem) ---
         void SetValue_Internal(Dia::Core::StringCRC resource_name, float value);
         void SetIncomeAccumulator_Internal(Dia::Core::StringCRC resource_name, float value);
+        void AddLastTickIncome_Internal(Dia::Core::StringCRC resource_name, float amount);
+        void AddLastTickSpend_Internal(Dia::Core::StringCRC resource_name, float amount);
+        void ResetLastTickRates_Internal();
 
     private:
         Dia::Core::Containers::DynamicArray<ResourcePool> mPools;

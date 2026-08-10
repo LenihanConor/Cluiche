@@ -251,7 +251,16 @@ namespace Dia { namespace Economy {
             if (entryCount == 0)
                 continue;
 
-            tableDef.entries.Reserve(entryCount);
+            // Count total resource sub-entries so we can reserve the right amount
+            unsigned int totalSubEntries = 0;
+            for (unsigned int j = 0; j < entryCount; ++j)
+            {
+                const Json::Value& ev = tableItem[entryNames[j]];
+                if (ev.isObject())
+                    totalSubEntries += static_cast<unsigned int>(ev.getMemberNames().size());
+            }
+            if (totalSubEntries > 0)
+                tableDef.entries.Reserve(totalSubEntries);
 
             for (unsigned int j = 0; j < entryCount; ++j)
             {
@@ -423,6 +432,17 @@ namespace Dia { namespace Economy {
             }
         }
         return 0.0f; // table not found
+    }
+
+    unsigned int EconomySchema::GetCostTableCount() const
+    {
+        return mCostTables.Size();
+    }
+
+    const CostTableDef& EconomySchema::GetCostTableByIndex(unsigned int index) const
+    {
+        DIA_ASSERT(index < mCostTables.Size(), "EconomySchema::GetCostTableByIndex: out of range");
+        return mCostTables[index];
     }
 
     // -----------------------------------------------------------------------

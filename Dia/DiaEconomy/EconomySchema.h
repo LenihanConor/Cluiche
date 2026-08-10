@@ -89,6 +89,8 @@ namespace Dia { namespace Economy {
         // Returns 0.0f if the table or resource is not found.
         float GetCost(Dia::Core::StringCRC table_name,
                       Dia::Core::StringCRC resource_name) const;
+        unsigned int        GetCostTableCount() const;
+        const CostTableDef& GetCostTableByIndex(unsigned int index) const;
 
         // --- income rule queries ---
         unsigned int       GetIncomeRuleCount() const;

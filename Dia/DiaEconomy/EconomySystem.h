@@ -12,6 +12,15 @@ namespace Dia { namespace Economy {
     struct ModifierDef;
 
     // -----------------------------------------------------------------------
+    // ModifierStackEntry — returned by GetModifierStack()
+    // -----------------------------------------------------------------------
+    struct ModifierStackEntry
+    {
+        const ModifierDef* modifier;  // pointer into schema's modifier list — do not free
+        bool               active;    // true if condition is met right now
+    };
+
+    // -----------------------------------------------------------------------
     // DerivedResourceFn
     // -----------------------------------------------------------------------
     using DerivedResourceFn = float(*)(const EconomyInstance&);
@@ -73,6 +82,23 @@ namespace Dia { namespace Economy {
         // If unregistered, logs a warning and returns 0.0f.
         float QueryDerived(const EconomyInstance& instance, Dia::Core::StringCRC resource_name) const;
 
+        // ---- instance registry ----
+        void              RegisterInstance(EconomyInstance& instance);
+        void              UnregisterInstance(EconomyInstance& instance);
+        unsigned int      GetInstanceCount() const;
+        EconomyInstance&  GetInstanceByIndex(unsigned int index);
+        const EconomyInstance& GetInstanceByIndex(unsigned int index) const;
+
+        // Fills outEntries with all modifiers for the given resource from the instance's schema.
+        // Returns number of entries written. Pass maxEntries = schema modifier count to get all.
+        unsigned int GetModifierStack(const EconomyInstance& instance,
+                                      Dia::Core::StringCRC resource_name,
+                                      ModifierStackEntry* outEntries,
+                                      unsigned int maxEntries) const;
+
+        // Returns true if resource_name has been registered as a derived resource.
+        bool IsDerivedResource(Dia::Core::StringCRC resource_name) const;
+
     private:
         // Returns true if the modifier should be applied this tick.
         // Always-on modifiers (empty when_condition) return true.
@@ -86,9 +112,10 @@ namespace Dia { namespace Economy {
             DerivedResourceFn    fn;
         };
 
-        EconomyObserverSubject                                      mObserverSubject;
-        IEconomyConditionAdaptor*                                   mConditionAdaptor = nullptr;
-        Dia::Core::Containers::DynamicArrayC<DerivedEntry, 32>     mDerivedResources;
+        EconomyObserverSubject                                              mObserverSubject;
+        IEconomyConditionAdaptor*                                           mConditionAdaptor = nullptr;
+        Dia::Core::Containers::DynamicArrayC<DerivedEntry, 32>             mDerivedResources;
+        Dia::Core::Containers::DynamicArrayC<EconomyInstance*, 32>         mInstances;
     };
 
 }} // namespace Dia::Economy

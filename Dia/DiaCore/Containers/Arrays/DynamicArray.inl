@@ -23,10 +23,10 @@ namespace Dia
 			//------------------------------------------------------------------------------------	
 			template <class T>
 			DynamicArray<T>::~DynamicArray ()
-			{	
+			{
 				if (mData != NULL)
 				{
-					DIA_DELETE(mData);
+					DIA_DELETE_ARRAY(mData);
 
 					mCapacity = 0;
 					mSize = 0;
@@ -258,7 +258,10 @@ namespace Dia
 				}
 
 				mSize = x;
-				MemoryCopy(mData, &rhs.Front(), sizeof(T)*x);
+				if (x > 0)
+				{
+					MemoryCopy(mData, &rhs.Front(), sizeof(T)*x);
+				}
 
 				return *this;
 			}
@@ -318,10 +321,13 @@ namespace Dia
 				else
 				{
 					T* temp = DIA_NEW_ARRAY(Capacity(), T); //(T*)malloc(mCapacity * sizeof(T));//DIA_NEW_ARRAY(Capacity(), T);
-					MemoryCopy(temp, mData, Capacity());
-					DIA_DELETE(mData);
+					if (mSize > 0)
+					{
+						MemoryCopy(temp, mData, sizeof(T) * mSize);
+					}
+					DIA_DELETE_ARRAY(mData);
 					mData = temp;
-				}		
+				}
 			}
 
 			//-----------------------------------------------------------------------------

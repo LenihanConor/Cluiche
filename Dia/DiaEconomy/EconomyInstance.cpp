@@ -74,6 +74,8 @@ namespace Dia { namespace Economy {
                 pool.minimum            = def.minimum_value;
                 pool.maximum            = def.maximum_value;
                 pool.income_accumulator = 0.0f;
+                pool.last_tick_income   = 0.0f;
+                pool.last_tick_spend    = 0.0f;
                 instance.mPools.Add(pool);
             }
         }
@@ -235,6 +237,65 @@ namespace Dia { namespace Economy {
                 mPools[i].income_accumulator = value;
                 return;
             }
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Tick rate tracking — getters
+    // -----------------------------------------------------------------------
+    float EconomyInstance::GetLastTickIncome(Dia::Core::StringCRC resource_name) const
+    {
+        for (unsigned int i = 0; i < mPools.Size(); ++i)
+        {
+            if (mPools[i].resource_name == resource_name)
+                return mPools[i].last_tick_income;
+        }
+        return 0.0f;
+    }
+
+    float EconomyInstance::GetLastTickSpend(Dia::Core::StringCRC resource_name) const
+    {
+        for (unsigned int i = 0; i < mPools.Size(); ++i)
+        {
+            if (mPools[i].resource_name == resource_name)
+                return mPools[i].last_tick_spend;
+        }
+        return 0.0f;
+    }
+
+    // -----------------------------------------------------------------------
+    // Tick rate tracking — internal mutators
+    // -----------------------------------------------------------------------
+    void EconomyInstance::AddLastTickIncome_Internal(Dia::Core::StringCRC resource_name, float amount)
+    {
+        for (unsigned int i = 0; i < mPools.Size(); ++i)
+        {
+            if (mPools[i].resource_name == resource_name)
+            {
+                mPools[i].last_tick_income += amount;
+                return;
+            }
+        }
+    }
+
+    void EconomyInstance::AddLastTickSpend_Internal(Dia::Core::StringCRC resource_name, float amount)
+    {
+        for (unsigned int i = 0; i < mPools.Size(); ++i)
+        {
+            if (mPools[i].resource_name == resource_name)
+            {
+                mPools[i].last_tick_spend += amount;
+                return;
+            }
+        }
+    }
+
+    void EconomyInstance::ResetLastTickRates_Internal()
+    {
+        for (unsigned int i = 0; i < mPools.Size(); ++i)
+        {
+            mPools[i].last_tick_income = 0.0f;
+            mPools[i].last_tick_spend  = 0.0f;
         }
     }
 

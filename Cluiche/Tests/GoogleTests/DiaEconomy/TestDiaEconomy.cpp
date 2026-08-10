@@ -1105,3 +1105,289 @@ TEST(DiaEconomy, HealthReporter_GetReporterName_MatchesConstructorArg)
     Dia::Economy::EconomyInstanceHealthReporter reporter(StringCRC("my.reporter"), inst);
     EXPECT_EQ(reporter.GetReporterName(), StringCRC("my.reporter"));
 }
+
+// ===========================================================================
+// Inspector API tests — shared schema
+// ===========================================================================
+
+static const char* kInspectorTestSchemaJson = R"({
+  "schema_name": "InspectorTest",
+  "resources": [
+    { "resource_name": "Gold", "minimum_value": 0, "maximum_value": 1000, "starting_value": 100 },
+    { "resource_name": "Wood", "minimum_value": 0, "maximum_value": 500,  "starting_value": 50  }
+  ],
+  "income_rules": [
+    { "rule_name": "gold_income", "resource_name": "Gold", "amount_per_second": 10.0 }
+  ],
+  "modifiers": [
+    { "modifier_name": "gold_bonus",    "resource_name": "Gold", "operation": "multiply_income", "value": 2.0, "when_condition": "" },
+    { "modifier_name": "gold_trade",    "resource_name": "Gold", "operation": "multiply_income", "value": 1.5, "when_condition": "market_active" }
+  ],
+  "cost_tables": {
+    "units": {
+      "Archer": { "Gold": 50, "Wood": 10 },
+      "Swordsman": { "Gold": 80, "Wood": 0 }
+    },
+    "buildings": {
+      "Barracks": { "Gold": 150, "Wood": 100 }
+    }
+  }
+})";
+
+// ===========================================================================
+// A. Instance registry
+// ===========================================================================
+
+TEST(EconomySystemRegistry, Register_ThenGetCount_ReturnsOne)
+{
+    EconomySystem sys;
+    Json::Value root; Json::Reader().parse(kInspectorTestSchemaJson, root);
+    EconomySchema schema = EconomySchema::LoadFromJsonValue(root);
+    EconomyInstance inst = EconomyInstance::CreateFromSchema(schema);
+    sys.RegisterInstance(inst);
+    EXPECT_EQ(sys.GetInstanceCount(), 1u);
+}
+
+TEST(EconomySystemRegistry, GetInstanceByIndex_ReturnsSameInstance)
+{
+    EconomySystem sys;
+    Json::Value root; Json::Reader().parse(kInspectorTestSchemaJson, root);
+    EconomySchema schema = EconomySchema::LoadFromJsonValue(root);
+    EconomyInstance inst = EconomyInstance::CreateFromSchema(schema);
+    sys.RegisterInstance(inst);
+    EXPECT_EQ(&sys.GetInstanceByIndex(0), &inst);
+}
+
+TEST(EconomySystemRegistry, Unregister_ThenGetCount_ReturnsZero)
+{
+    EconomySystem sys;
+    Json::Value root; Json::Reader().parse(kInspectorTestSchemaJson, root);
+    EconomySchema schema = EconomySchema::LoadFromJsonValue(root);
+    EconomyInstance inst = EconomyInstance::CreateFromSchema(schema);
+    sys.RegisterInstance(inst);
+    sys.UnregisterInstance(inst);
+    EXPECT_EQ(sys.GetInstanceCount(), 0u);
+}
+
+TEST(EconomySystemRegistry, MultipleInstances_IndependentlyTracked)
+{
+    EconomySystem sys;
+    Json::Value root; Json::Reader().parse(kInspectorTestSchemaJson, root);
+    EconomySchema schema = EconomySchema::LoadFromJsonValue(root);
+    EconomyInstance a = EconomyInstance::CreateFromSchema(schema);
+    EconomyInstance b = EconomyInstance::CreateFromSchema(schema);
+    sys.RegisterInstance(a);
+    sys.RegisterInstance(b);
+    EXPECT_EQ(sys.GetInstanceCount(), 2u);
+    EXPECT_EQ(&sys.GetInstanceByIndex(0), &a);
+    EXPECT_EQ(&sys.GetInstanceByIndex(1), &b);
+    sys.UnregisterInstance(a);
+    EXPECT_EQ(sys.GetInstanceCount(), 1u);
+    EXPECT_EQ(&sys.GetInstanceByIndex(0), &b);
+}
+
+// ===========================================================================
+// B. Tick rate tracking
+// ===========================================================================
+
+TEST(EconomyTickRates, AfterTick_LastTickIncome_ReflectsAppliedIncome)
+{
+    EconomySystem sys;
+    Json::Value root; Json::Reader().parse(kInspectorTestSchemaJson, root);
+    EconomySchema schema = EconomySchema::LoadFromJsonValue(root);
+    EconomyInstance inst = EconomyInstance::CreateFromSchema(schema);
+    // 10 gold/s income rule × 2.0 always-on multiplier = 20 gold/s
+    // at delta=1.0s: 20 whole gold earned
+    sys.Tick(inst, 1.0f);
+    EXPECT_GT(inst.GetLastTickIncome(StringCRC("Gold")), 0.0f);
+}
+
+TEST(EconomyTickRates, BeforeTick_LastTickIncome_IsZero)
+{
+    Json::Value root; Json::Reader().parse(kInspectorTestSchemaJson, root);
+    EconomySchema schema = EconomySchema::LoadFromJsonValue(root);
+    EconomyInstance inst = EconomyInstance::CreateFromSchema(schema);
+    EXPECT_EQ(inst.GetLastTickIncome(StringCRC("Gold")), 0.0f);
+}
+
+TEST(EconomyTickRates, AfterSpend_LastTickSpend_Tracks)
+{
+    EconomySystem sys;
+    Json::Value root; Json::Reader().parse(kInspectorTestSchemaJson, root);
+    EconomySchema schema = EconomySchema::LoadFromJsonValue(root);
+    EconomyInstance inst = EconomyInstance::CreateFromSchema(schema);
+    sys.Spend(inst, StringCRC("Gold"), 30.0f);
+    EXPECT_NEAR(inst.GetLastTickSpend(StringCRC("Gold")), 30.0f, 0.001f);
+}
+
+TEST(EconomyTickRates, NewTick_ResetsRates)
+{
+    EconomySystem sys;
+    Json::Value root; Json::Reader().parse(kInspectorTestSchemaJson, root);
+    EconomySchema schema = EconomySchema::LoadFromJsonValue(root);
+    EconomyInstance inst = EconomyInstance::CreateFromSchema(schema);
+    sys.Spend(inst, StringCRC("Gold"), 30.0f);
+    EXPECT_GT(inst.GetLastTickSpend(StringCRC("Gold")), 0.0f);
+    // Tick resets accumulators at its start
+    sys.Tick(inst, 0.0f);
+    EXPECT_EQ(inst.GetLastTickSpend(StringCRC("Gold")), 0.0f);
+}
+
+TEST(EconomyTickRates, UnrelatedResource_TickIncome_IsZero)
+{
+    EconomySystem sys;
+    Json::Value root; Json::Reader().parse(kInspectorTestSchemaJson, root);
+    EconomySchema schema = EconomySchema::LoadFromJsonValue(root);
+    EconomyInstance inst = EconomyInstance::CreateFromSchema(schema);
+    sys.Tick(inst, 1.0f);
+    // Wood has no income rule
+    EXPECT_EQ(inst.GetLastTickIncome(StringCRC("Wood")), 0.0f);
+}
+
+// ===========================================================================
+// C. GetModifierStack
+// ===========================================================================
+
+TEST(EconomyModifierStack, GetModifierStack_AlwaysOn_ReturnsActive)
+{
+    EconomySystem sys;
+    Json::Value root; Json::Reader().parse(kInspectorTestSchemaJson, root);
+    EconomySchema schema = EconomySchema::LoadFromJsonValue(root);
+    EconomyInstance inst = EconomyInstance::CreateFromSchema(schema);
+    ModifierStackEntry entries[8];
+    unsigned int count = sys.GetModifierStack(inst, StringCRC("Gold"), entries, 8);
+    EXPECT_EQ(count, 2u);  // gold_bonus (always-on) + gold_trade (conditional)
+    // gold_bonus has empty when_condition => active=true
+    bool foundAlwaysOn = false;
+    for (unsigned int i = 0; i < count; ++i)
+    {
+        if (entries[i].modifier->modifier_name == StringCRC("gold_bonus"))
+        {
+            EXPECT_TRUE(entries[i].active);
+            foundAlwaysOn = true;
+        }
+    }
+    EXPECT_TRUE(foundAlwaysOn);
+}
+
+TEST(EconomyModifierStack, GetModifierStack_ConditionalNoAdaptor_ReturnedAsInactive)
+{
+    EconomySystem sys;  // no adaptor set
+    Json::Value root; Json::Reader().parse(kInspectorTestSchemaJson, root);
+    EconomySchema schema = EconomySchema::LoadFromJsonValue(root);
+    EconomyInstance inst = EconomyInstance::CreateFromSchema(schema);
+    ModifierStackEntry entries[8];
+    unsigned int count = sys.GetModifierStack(inst, StringCRC("Gold"), entries, 8);
+    bool foundConditional = false;
+    for (unsigned int i = 0; i < count; ++i)
+    {
+        if (entries[i].modifier->modifier_name == StringCRC("gold_trade"))
+        {
+            EXPECT_FALSE(entries[i].active);  // no adaptor => inactive
+            foundConditional = true;
+        }
+    }
+    EXPECT_TRUE(foundConditional);
+}
+
+TEST(EconomyModifierStack, GetModifierStack_AdaptorTrue_ConditionalActive)
+{
+    struct AlwaysTrueAdaptor : IEconomyConditionAdaptor {
+        bool Evaluate(const char*) const override { return true; }
+    } adaptor;
+    EconomySystem sys;
+    sys.SetConditionAdaptor(&adaptor);
+    Json::Value root; Json::Reader().parse(kInspectorTestSchemaJson, root);
+    EconomySchema schema = EconomySchema::LoadFromJsonValue(root);
+    EconomyInstance inst = EconomyInstance::CreateFromSchema(schema);
+    ModifierStackEntry entries[8];
+    unsigned int count = sys.GetModifierStack(inst, StringCRC("Gold"), entries, 8);
+    for (unsigned int i = 0; i < count; ++i)
+    {
+        if (entries[i].modifier->modifier_name == StringCRC("gold_trade"))
+        {
+            EXPECT_TRUE(entries[i].active);
+        }
+    }
+}
+
+TEST(EconomyModifierStack, GetModifierStack_WrongResource_ReturnsZero)
+{
+    EconomySystem sys;
+    Json::Value root; Json::Reader().parse(kInspectorTestSchemaJson, root);
+    EconomySchema schema = EconomySchema::LoadFromJsonValue(root);
+    EconomyInstance inst = EconomyInstance::CreateFromSchema(schema);
+    ModifierStackEntry entries[8];
+    // Wood has no modifiers in the test schema
+    unsigned int count = sys.GetModifierStack(inst, StringCRC("Wood"), entries, 8);
+    EXPECT_EQ(count, 0u);
+}
+
+// ===========================================================================
+// D. Cost table enumeration
+// ===========================================================================
+
+TEST(EconomySchemaCostTableEnumeration, GetCostTableCount_ReturnsTwo)
+{
+    Json::Value root; Json::Reader().parse(kInspectorTestSchemaJson, root);
+    EconomySchema schema = EconomySchema::LoadFromJsonValue(root);
+    EXPECT_EQ(schema.GetCostTableCount(), 2u);  // "units" + "buildings"
+}
+
+TEST(EconomySchemaCostTableEnumeration, GetCostTableByIndex_TableNameCorrect)
+{
+    Json::Value root; Json::Reader().parse(kInspectorTestSchemaJson, root);
+    EconomySchema schema = EconomySchema::LoadFromJsonValue(root);
+    bool foundUnits = false, foundBuildings = false;
+    for (unsigned int i = 0; i < schema.GetCostTableCount(); ++i)
+    {
+        const CostTableDef& table = schema.GetCostTableByIndex(i);
+        if (table.table_name == StringCRC("units"))     foundUnits     = true;
+        if (table.table_name == StringCRC("buildings")) foundBuildings = true;
+    }
+    EXPECT_TRUE(foundUnits);
+    EXPECT_TRUE(foundBuildings);
+}
+
+TEST(EconomySchemaCostTableEnumeration, GetCostTableByIndex_EntriesAccessible)
+{
+    Json::Value root; Json::Reader().parse(kInspectorTestSchemaJson, root);
+    EconomySchema schema = EconomySchema::LoadFromJsonValue(root);
+    for (unsigned int i = 0; i < schema.GetCostTableCount(); ++i)
+    {
+        const CostTableDef& table = schema.GetCostTableByIndex(i);
+        if (table.table_name == StringCRC("units"))
+        {
+            EXPECT_GE(table.entries.Size(), 2u);  // Archer + Swordsman
+        }
+    }
+}
+
+// ===========================================================================
+// E. IsDerivedResource
+// ===========================================================================
+
+TEST(EconomyDerivedResource, NotRegistered_IsDerivedResource_ReturnsFalse)
+{
+    EconomySystem sys;
+    EXPECT_FALSE(sys.IsDerivedResource(StringCRC("Gold")));
+}
+
+TEST(EconomyDerivedResource, AfterRegister_IsDerivedResource_ReturnsTrue)
+{
+    EconomySystem sys;
+    sys.RegisterDerivedResource(StringCRC("CombatPower"),
+                                 [](const EconomyInstance&) { return 0.0f; });
+    EXPECT_TRUE(sys.IsDerivedResource(StringCRC("CombatPower")));
+}
+
+TEST(EconomyDerivedResource, SchemaResourceNotRegistered_IsNotDerived)
+{
+    EconomySystem sys;
+    Json::Value root; Json::Reader().parse(kInspectorTestSchemaJson, root);
+    EconomySchema schema = EconomySchema::LoadFromJsonValue(root);
+    EconomyInstance inst = EconomyInstance::CreateFromSchema(schema);
+    (void)inst;
+    // Gold is in schema but not registered as derived
+    EXPECT_FALSE(sys.IsDerivedResource(StringCRC("Gold")));
+}
