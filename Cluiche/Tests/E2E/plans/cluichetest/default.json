@@ -17,7 +17,8 @@
         "scenarios/cluichetest/scene2d_stage/smoke.py",
         "scenarios/cluichetest/geometry2d_stage/smoke.py",
         "scenarios/cluichetest/scalarfield_stage/smoke.py",
-        "scenarios/cluichetest/entityspatial_stage/smoke.py"
+        "scenarios/cluichetest/entityspatial_stage/smoke.py",
+        "scenarios/cluichetest/arena/test_arena_e2e.py"
     ],
     "generic_run_skip": {
         "UIUltralightTestStage": "crashes app on second UIModule init — tracked in docs/research/e2e_testing/uiultralight_crash_notes.md"

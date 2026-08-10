@@ -23,12 +23,15 @@
 
 #include <functional>
 #include <memory>
+#include <string>
 
 namespace Dia::Observation::Metric { class Gauge; }
 
 #ifdef DIA_DEBUG
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include "Modules/VisualDebuggerModule.h"
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #endif
 
 namespace CluicheTest {
@@ -204,6 +207,9 @@ private:
     // --- Frame counter ---
     unsigned int mFrameCount = 0;
 
+    // --- Last trigger that fired (displayed in ImGui sidebar) ---
+    std::string mLastTriggerLabel;
+
     // --- Metrics ---
     Dia::Observation::Metric::Gauge* mMetricTotalKills          = nullptr;
     Dia::Observation::Metric::Gauge* mMetricWavesCompleted      = nullptr;
@@ -227,7 +233,25 @@ private:
     void OnChangeObjectiveState(Dia::Core::StringCRC objectiveId, Dia::Core::StringCRC state);
 
 #ifdef DIA_DEBUG
-    void DrawDebugImGui();
+    friend class ArenaDebugLayer;
+
+    class ArenaDebugLayer : public Dia::Debug::IVisualDebugger
+    {
+    public:
+        explicit ArenaDebugLayer(const ArenaTestStageModule* module) : mModule(module) {}
+
+        Dia::Core::StringCRC GetLayerName() const override
+        {
+            return Dia::Core::StringCRC("CluicheTest.Arena");
+        }
+
+        void Draw(Dia::Core::IDebugDraw& draw) override;
+        void DrawImGui() override;
+
+    private:
+        const ArenaTestStageModule* mModule = nullptr;
+    };
+    ArenaDebugLayer mDebugLayer{this};
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::VisualDebuggerModule> mVisualDebuggerRef{this};
 #endif
 };

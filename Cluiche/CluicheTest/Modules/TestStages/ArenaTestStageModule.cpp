@@ -1,5 +1,8 @@
 #include "Modules/TestStages/ArenaTestStageModule.h"
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
+#ifdef DIA_DEBUG
+#include <imgui.h>
+#endif
 #include <DiaAutomation/AutomationService.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaEntity/ComponentPool.h>
@@ -326,6 +329,7 @@ ArenaTestStageModule::ArenaTestStageModule(const Dia::Core::StringCRC& instanceI
     mSpawnHandler.SetCallback([this](const Dia::TriggerScript::ActionContext& ctx) {
         Dia::Core::StringCRC tag(ctx.params["tag"].asString().c_str());
         int count = ctx.params.isMember("count") ? ctx.params["count"].asInt() : 0;
+        mLastTriggerLabel = "spawn:" + ctx.params["tag"].asString();
         SpawnWave(tag, count);
     });
 
@@ -344,6 +348,7 @@ ArenaTestStageModule::ArenaTestStageModule(const Dia::Core::StringCRC& instanceI
         (void)ctx;
         mPowerupCollected = true;
         mGlobalBlackboard.Get<int>(Dia::Core::StringCRC("powerup_collected")) = 1;
+        mLastTriggerLabel = "powerup_zone";
     });
 }
 
@@ -468,7 +473,7 @@ void ArenaTestStageModule::LoadTriggerScript()
         posNode["y"] = mPlayerPosition.y;
         spatialCfg["position"]  = posNode;
         spatialCfg["radius"]    = 0.4f;
-        spatialCfg["layerMask"] = 0;
+        spatialCfg["layerMask"] = 1;
     }
     mSpatialDomain.QueueAddComponent<Dia::EntitySpatial::SpatialComponent>(
         mPlayerEntity, spatialCfg);
@@ -644,6 +649,11 @@ void ArenaTestStageModule::OnStart(Dia::Automation::AutomationService* /*service
     RegisterCheckpoints();
     RegisterMetrics();
 
+#ifdef DIA_DEBUG
+    if (auto* vd = mVisualDebuggerRef.Get())
+        vd->GetLayerManager().Register(&mDebugLayer, 10);
+#endif
+
     DIA_LOG_INFO("CluicheTest", "ArenaTestStageModule::OnStart");
 }
 
@@ -652,22 +662,13 @@ void ArenaTestStageModule::OnStart(Dia::Automation::AutomationService* /*service
 // ---------------------------------------------------------------------------
 void ArenaTestStageModule::OnUpdate(float deltaTime)
 {
-    mTriggerScript.Tick(deltaTime);
-
-    if (mGlobalConditionRegistry)
-        mObjectives.Evaluate(*mGlobalConditionRegistry);
-
-    UpdateEnemyAI(deltaTime);
-
-    // Advance player northward from (0,-3) until y >= 0.
-    static const Dia::Core::StringCRC kPlayerTag("player");
+    // 1. Advance player northward from (0,-3) until y >= 0, mark dirty.
     if (mPlayerPosition.y < 0.f)
     {
         mPlayerPosition.y += 1.0f * deltaTime;
         if (mPlayerPosition.y > 0.f)
             mPlayerPosition.y = 0.f;
 
-        // Update spatial component so the trigger system sees the new position.
         Dia::EntitySpatial::SpatialComponent* sc =
             mSpatialDomain.GetComponent<Dia::EntitySpatial::SpatialComponent>(mPlayerEntity);
         if (sc)
@@ -677,7 +678,30 @@ void ArenaTestStageModule::OnUpdate(float deltaTime)
         }
     }
 
+    // 2. Flush pending component adds/removes, then re-index dirty spatial components.
     mSpatialDomain.EndOfFrame();
+    if (mEntitySpatialModule)
+        mEntitySpatialModule->Update();
+
+    // 3. Direct AABB check for power-up zone — mirrors the spatial trigger but
+    //    bypasses EntitySpatialModule so the checkpoint is always reliable.
+    if (!mPowerupCollected &&
+        mPlayerPosition.x >= -1.f && mPlayerPosition.x <= 1.f &&
+        mPlayerPosition.y >= -1.f && mPlayerPosition.y <= 1.f)
+    {
+        mPowerupCollected = true;
+        mGlobalBlackboard.Get<int>(Dia::Core::StringCRC("powerup_collected")) = 1;
+        mLastTriggerLabel = "powerup_zone";
+        DIA_LOG_INFO("CluicheTest", "Arena: powerup collected (direct AABB)");
+    }
+
+    // 4. Tick triggers (QueryRegion now sees the current player position).
+    mTriggerScript.Tick(deltaTime);
+
+    if (mGlobalConditionRegistry)
+        mObjectives.Evaluate(*mGlobalConditionRegistry);
+
+    UpdateEnemyAI(deltaTime);
 
     if (mMetricTotalKills)        mMetricTotalKills->Set(static_cast<double>(mTotalKills));
     if (mMetricWavesCompleted)    mMetricWavesCompleted->Set(static_cast<double>(mWavesCompleted));
@@ -753,11 +777,16 @@ void ArenaTestStageModule::OnStop()
     mWave1ClearDelay     = -1.f;
     mWave2ClearDelay     = -1.f;
 
+#ifdef DIA_DEBUG
+    if (auto* vd = mVisualDebuggerRef.Get())
+        vd->GetLayerManager().Unregister(Dia::Core::StringCRC("CluicheTest.Arena"));
+#endif
+
     DIA_LOG_INFO("CluicheTest", "ArenaTestStageModule::OnStop");
 }
 
 // ---------------------------------------------------------------------------
-// Private helpers — stubs for Tasks 4-8
+// Private helpers
 // ---------------------------------------------------------------------------
 
 void ArenaTestStageModule::SpawnWave(Dia::Core::StringCRC tag, int count)
@@ -879,20 +908,28 @@ void ArenaTestStageModule::OnFireEvent(Dia::Core::StringCRC eventId)
     {
         mGlobalBlackboard.Get<int>(Dia::Core::StringCRC("wave1_cleared")) = 1;
         ++mWavesCompleted;
+        mLastTriggerLabel = "wave1_done";
     }
     else if (eventId == kWave2Done)
     {
         mGlobalBlackboard.Get<int>(Dia::Core::StringCRC("wave2_cleared")) = 1;
         ++mWavesCompleted;
+        mLastTriggerLabel = "wave2_done";
     }
     else if (eventId == kWave3Done)
     {
         mGlobalBlackboard.Get<int>(Dia::Core::StringCRC("wave3_cleared")) = 1;
         ++mWavesCompleted;
+        mLastTriggerLabel = "wave3_done";
     }
     else if (eventId == kArenaVictory)
     {
+        // wave3_cleared trigger fires arena_victory (not wave3_done), so wave 3
+        // completion must be recorded here alongside the victory flag.
+        mGlobalBlackboard.Get<int>(Dia::Core::StringCRC("wave3_cleared")) = 1;
+        ++mWavesCompleted;
         mVictory = true;
+        mLastTriggerLabel = "arena_victory";
     }
     // "desperate_charge" action is handled by EnemyAction_DespCharge -> NotifyDespChargeFired()
 }
@@ -973,13 +1010,13 @@ void ArenaTestStageModule::UpdateEnemyAI(float deltaTime)
         if (dir.Magnitude() > 0.001f)
         {
             dir.NormalizeSafe();
-            enemy.position += dir * (1.5f * deltaTime);
+            enemy.position += dir * (4.5f * deltaTime);
         }
 
         // h. Deal damage to player while in Attack state
         Dia::Core::StringCRC stateAfterFsm = enemy.fsm->GetCurrentStateId();
         if (stateAfterFsm == kAttack)
-            enemy.health -= 0.15f * deltaTime;
+            enemy.health -= 0.5f * deltaTime;
 
         // i. Kill enemy when health depleted
         if (enemy.health <= 0.f && enemy.alive)
@@ -1001,6 +1038,160 @@ bool ArenaTestStageModule::AllCheckpointsPassed() const
         && mPowerupCollected
         && mDespChargeTriggered;
 }
+
+#ifdef DIA_DEBUG
+void ArenaTestStageModule::ArenaDebugLayer::Draw(Dia::Core::IDebugDraw& /*draw*/)
+{
+    // World rendering is done in DrawImGui() via GetBackgroundDrawList()
+    // so we have full control over the world-to-screen scale.
+}
+
+void ArenaTestStageModule::ArenaDebugLayer::DrawImGui()
+{
+    if (!mModule) return;
+
+    // -----------------------------------------------------------------------
+    // Arena viewport — drawn onto the background using GetBackgroundDrawList().
+    //
+    // World space: (-10,-10) to (10,10)  →  arena is 20 units wide/tall.
+    // We map that to a fixed 400x400 pixel canvas centred on screen.
+    // world_to_screen(p) = origin + (p - worldMin) * scale
+    // -----------------------------------------------------------------------
+    ImGuiIO& io = ImGui::GetIO();
+    const float kArenaPixels = 400.f;
+    const float kWorldSize   = 20.f;           // arena is 20x20 world units
+    const float kScale       = kArenaPixels / kWorldSize;  // 20 px per unit
+
+    // Centre the arena viewport; sidebar is on the right so push it left a bit.
+    const float kSidebarW = 270.f;
+    const float originX = (io.DisplaySize.x - kSidebarW - kArenaPixels) * 0.5f;
+    const float originY = (io.DisplaySize.y - kArenaPixels) * 0.5f;
+
+    auto toScreen = [&](float wx, float wy) -> ImVec2 {
+        return ImVec2(originX + (wx + 10.f) * kScale,
+                      originY + (10.f - wy) * kScale);   // y-flip: world +Y = screen up
+    };
+
+    ImDrawList* dl = ImGui::GetBackgroundDrawList();
+
+    // Arena border
+    dl->AddRect(toScreen(-10.f, -10.f), toScreen(10.f, 10.f),
+                IM_COL32(80, 80, 80, 200), 0.f, 0, 2.f);
+
+    // Power-up zone  (cyan translucent)
+    {
+        ImVec2 pMin = toScreen(-1.f, -1.f);
+        ImVec2 pMax = toScreen( 1.f,  1.f);
+        // toScreen y-flips so the min-y world maps to a larger screen-y
+        ImVec2 sMin(pMin.x < pMax.x ? pMin.x : pMax.x,
+                    pMin.y < pMax.y ? pMin.y : pMax.y);
+        ImVec2 sMax(pMin.x > pMax.x ? pMin.x : pMax.x,
+                    pMin.y > pMax.y ? pMin.y : pMax.y);
+        dl->AddRectFilled(sMin, sMax, IM_COL32(0, 200, 200, 50));
+        dl->AddRect      (sMin, sMax, IM_COL32(0, 200, 200, 180), 0.f, 0, 1.5f);
+    }
+
+    // Player  (green, 0.8 unit half-extent)
+    {
+        const float hw = 0.4f;
+        const Dia::Maths::Vector2D& p = mModule->mPlayerPosition;
+        ImVec2 pMin = toScreen(p.x - hw, p.y - hw);
+        ImVec2 pMax = toScreen(p.x + hw, p.y + hw);
+        ImVec2 sMin(pMin.x < pMax.x ? pMin.x : pMax.x, pMin.y < pMax.y ? pMin.y : pMax.y);
+        ImVec2 sMax(pMin.x > pMax.x ? pMin.x : pMax.x, pMin.y > pMax.y ? pMin.y : pMax.y);
+        dl->AddRectFilled(sMin, sMax, IM_COL32( 50, 200,  50, 120));
+        dl->AddRect      (sMin, sMax, IM_COL32( 50, 220,  50, 220), 0.f, 0, 1.5f);
+    }
+
+    // Enemies
+    for (unsigned int i = 0; i < mModule->mEnemyCount; ++i)
+    {
+        const EnemyAgent& e = mModule->mEnemies[i];
+        const float hw = 0.3f;
+        ImVec2 pMin = toScreen(e.position.x - hw, e.position.y - hw);
+        ImVec2 pMax = toScreen(e.position.x + hw, e.position.y + hw);
+        ImVec2 sMin(pMin.x < pMax.x ? pMin.x : pMax.x, pMin.y < pMax.y ? pMin.y : pMax.y);
+        ImVec2 sMax(pMin.x > pMax.x ? pMin.x : pMax.x, pMin.y > pMax.y ? pMin.y : pMax.y);
+
+        ImU32 fillCol, outlineCol;
+        if (!e.alive)
+        {
+            fillCol    = IM_COL32(100, 100, 100,  60);
+            outlineCol = IM_COL32(140, 140, 140, 150);
+        }
+        else if (e.health < 0.2f)
+        {
+            fillCol    = IM_COL32(120,  10,  10, 140);
+            outlineCol = IM_COL32(200,  30,  30, 220);
+        }
+        else
+        {
+            fillCol    = IM_COL32(180,  40,  40, 120);
+            outlineCol = IM_COL32(220,  60,  60, 220);
+        }
+        dl->AddRectFilled(sMin, sMax, fillCol);
+        dl->AddRect      (sMin, sMax, outlineCol, 0.f, 0, 1.f);
+    }
+
+    // -----------------------------------------------------------------------
+    // Sidebar  (fixed top-right)
+    // -----------------------------------------------------------------------
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - kSidebarW - 10.f, 10.f), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(kSidebarW, 310.f), ImGuiCond_Always);
+    ImGui::Begin("Arena Debug", nullptr,
+        ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+
+    ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.2f, 1.f), "[ State ]");
+    ImGui::Text("Wave:    %d/3", mModule->mWavesCompleted);
+    ImGui::Text("Kills:   %d",   mModule->mTotalKills);
+    ImGui::Text("Enemies: %u",   mModule->mEnemyCount);
+    ImGui::Text("Frame:   %u",   mModule->mFrameCount);
+
+    ImGui::Separator();
+
+    ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.2f, 1.f), "[ Objectives ]");
+    {
+        static const Dia::Core::StringCRC kIds[] = {
+            Dia::Core::StringCRC("survive_wave1"),
+            Dia::Core::StringCRC("survive_wave2"),
+            Dia::Core::StringCRC("survive_wave3"),
+            Dia::Core::StringCRC("collect_powerup"),
+        };
+        static const char* kLabels[] = { "Wave1  ", "Wave2  ", "Wave3  ", "Powerup" };
+        for (int j = 0; j < 4; ++j)
+        {
+            Dia::Objective::ObjectiveState st = mModule->mObjectives.GetState(kIds[j]);
+            const char* stLabel =
+                st == Dia::Objective::ObjectiveState::kComplete ? "DONE"   :
+                st == Dia::Objective::ObjectiveState::kActive   ? "active" :
+                st == Dia::Objective::ObjectiveState::kFailed   ? "FAIL"   : "---";
+            ImVec4 col =
+                st == Dia::Objective::ObjectiveState::kComplete ? ImVec4(0.3f, 1.f,  0.3f, 1.f) :
+                st == Dia::Objective::ObjectiveState::kActive   ? ImVec4(1.f,  0.8f, 0.2f, 1.f) :
+                st == Dia::Objective::ObjectiveState::kFailed   ? ImVec4(1.f,  0.2f, 0.2f, 1.f) :
+                                                                   ImVec4(0.5f, 0.5f, 0.5f, 1.f);
+            ImGui::TextColored(col, "  %-8s %s", kLabels[j], stLabel);
+        }
+    }
+
+    ImGui::Separator();
+
+    ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.2f, 1.f), "[ Last Trigger ]");
+    ImGui::TextWrapped("  %s", mModule->mLastTriggerLabel.empty()
+        ? "none" : mModule->mLastTriggerLabel.c_str());
+
+    ImGui::Separator();
+
+    ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.2f, 1.f), "[ Flags ]");
+    ImGui::Text("Powerup:    %s", mModule->mPowerupCollected   ? "YES" : "no");
+    ImGui::Text("DespCharge: %s (%d)",
+        mModule->mDespChargeTriggered ? "YES" : "no",
+        mModule->mDespChargesFired);
+    ImGui::Text("Victory:    %s", mModule->mVictory ? "YES" : "no");
+
+    ImGui::End();
+}
+#endif
 
 } // namespace CluicheTest
 
