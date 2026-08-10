@@ -213,6 +213,11 @@
     },
     {
       "allowed_pus": "sim",
+      "description": "Multi-system AI/progression E2E: TriggerScript + Objective + Blackboard + StateMachine + UtilityAI + Rules",
+      "type_id": "ArenaTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
       "description": "Tests MeshRenderer with multiple draw commands per frame including an unknown mesh ID",
       "type_id": "Mesh3DRenderSystemTestStageModule"
     },
@@ -440,6 +445,6 @@
   "processing_units": [],
   "version": {
     "major": 1,
-    "minor": 17
+    "minor": 18
   }
 }

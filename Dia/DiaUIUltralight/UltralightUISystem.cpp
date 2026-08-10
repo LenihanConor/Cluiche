@@ -119,8 +119,25 @@ namespace Dia
 
 				~UISystemImpl()
 				{
+					Shutdown();
+				}
+
+				void Shutdown()
+				{
+					if (!mIsInitialized)
+						return;
+
 					mView = nullptr;
 					mRenderer = nullptr;
+
+					auto& platform = ::ultralight::Platform::instance();
+					platform.set_file_system(nullptr);
+					platform.set_logger(nullptr);
+
+					mFileSystem.reset();
+					mLogger.reset();
+
+					mIsInitialized = false;
 				}
 
 				void Initialize()
@@ -550,6 +567,7 @@ namespace Dia
 			{
 				DIA_ASSERT(mUISystemImpl, "mUISystemImpl is NULL");
 				std::lock_guard<std::mutex> lock(mSystemMutex);
+				mUISystemImpl->Shutdown();
 				mIsPageLoaded = false;
 			}
 

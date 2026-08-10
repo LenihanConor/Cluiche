@@ -1404,7 +1404,23 @@
       "PowerShell(Get-ChildItem \"C:\\\\GitHub\\\\Cluiche\\\\Cluiche\\\\out\\\\CluicheTest\\\\sessions\" | Sort-Object Name -Descending | Select-Object -First 1 | ForEach-Object { Get-Content \"$\\($_.FullName\\)\\\\log.jsonl\" } | ConvertFrom-Json | Where-Object { $_.channel -match \"Application|crash|assert|fatal\" -or $_.level -eq \"error\" } | Select-Object -Last 30 | ConvertTo-Json)",
       "Bash(.venv\\\\Scripts\\\\python.exe -m dia_cli run googletest --filter=\"DiaRules_ActionRegistry*\")",
       "PowerShell(cd C:\\\\GitHub\\\\Cluiche && python Dia/DiaCLI/dia_cli/__main__.py run googletest 2>&1 | Where-Object { $_ -match \"PASSED|FAILED|pipeline\" } | Select-Object -Last 5)",
-      "Bash(Read \"C:\\\\Users\\\\clenihan\\\\AppData\\\\Local\\\\Temp\\\\1\\\\claude\\\\C--GitHub-Cluiche\\\\5a3f4b93-27e5-42cc-8682-f04c75ecdcda\\\\tasks\\\\bf3gs6lsh.output\")"
+      "Bash(Read \"C:\\\\Users\\\\clenihan\\\\AppData\\\\Local\\\\Temp\\\\1\\\\claude\\\\C--GitHub-Cluiche\\\\5a3f4b93-27e5-42cc-8682-f04c75ecdcda\\\\tasks\\\\bf3gs6lsh.output\")",
+      "PowerShell(& \"C:\\\\Program Files\\\\Microsoft Visual Studio\\\\2022\\\\Enterprise\\\\MSBuild\\\\Current\\\\Bin\\\\MSBuild.exe\" \"C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaFlowField\\\\DiaFlowField.vcxproj\" /p:Configuration=Debug /p:Platform=x64 /t:Build /nologo /v:minimal 2>&1 | Select-Object -Last 20)",
+      "PowerShell(& \"C:\\\\Program Files\\\\Microsoft Visual Studio\\\\2022\\\\Professional\\\\MSBuild\\\\Current\\\\Bin\\\\MSBuild.exe\" \"C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaFlowField\\\\DiaFlowField.vcxproj\" /p:Configuration=Debug /p:Platform=x64 /t:Build /nologo /v:minimal 2>&1 | Select-Object -Last 20)",
+      "PowerShell(& \"C:\\\\Program Files\\\\Microsoft Visual Studio\\\\2022\\\\Professional\\\\MSBuild\\\\Current\\\\Bin\\\\MSBuild.exe\" \"C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaFlowField\\\\DiaFlowField.vcxproj\" /p:Configuration=Debug /p:Platform=x64 /t:Build /nologo /v:minimal 2>&1 | Select-Object -Last 5)",
+      "PowerShell(& \"C:\\\\Program Files\\\\Microsoft Visual Studio\\\\2022\\\\Professional\\\\MSBuild\\\\Current\\\\Bin\\\\MSBuild.exe\" \"C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaFlowField\\\\DiaFlowField.vcxproj\" /p:Configuration=Debug /p:Platform=x64 /t:Build /nologo 2>&1 | Where-Object { $_ -match \"error|warning|Build succeeded|FAILED\" } | Select-Object -Last 10)",
+      "PowerShell(cd C:\\\\GitHub\\\\Cluiche && dia pipeline --target cluichetest 2>&1 | Where-Object { $_ -match \"error|warning C\" } | Select-Object -First 40)",
+      "PowerShell(cd C:\\\\GitHub\\\\Cluiche && dia pipeline --target cluichetest 2>&1 | Where-Object { $_ -match \"error|PASSED|FAILED|passed |failed \" } | Select-Object -First 40)",
+      "PowerShell(cd C:\\\\GitHub\\\\Cluiche && dia pipeline --target cluichetest 2>&1 | Where-Object { $_ -match \"LNK20\" } | Select-Object -First 40)",
+      "Bash(\".venv\\\\Scripts\\\\python.exe\" -m dia_cli run googletest --filter=\"ScalarField*\")",
+      "PowerShell(ls *)",
+      "Bash(echo \"---exit:$?---\")",
+      "Bash(echo \"schema json valid: $?\")",
+      "Bash(command -v dia)",
+      "PowerShell(dia validate *)",
+      "Bash(wait %1)",
+      "PowerShell([System.Guid]::NewGuid\\(\\).ToString\\(\"B\"\\).ToUpper\\(\\))",
+      "Bash(xargs -I{} bash -c 'ls \"C:/GitHub/Cluiche/sessions/{}\"')"
     ],
     "defaultMode": "auto"
   }

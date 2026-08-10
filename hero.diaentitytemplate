@@ -1,0 +1,6 @@
+{
+    "entity_template": {
+        "id": "diaentitytemplate.hero",
+        "components": []
+    }
+}
