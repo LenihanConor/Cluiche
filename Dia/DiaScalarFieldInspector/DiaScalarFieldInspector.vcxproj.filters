@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Docs"><UniqueIdentifier>{D2E3F4A5-B6C7-8901-DEF0-123456789012}</UniqueIdentifier></Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.diascalarfieldinspector.architecture.module.md"><Filter>Docs</Filter></None>
+  </ItemGroup>
+</Project>
