@@ -11,6 +11,7 @@
 #include <DiaMaths/Vector/Vector2D.h>
 
 #ifdef DIA_DEBUG
+#include "Modules/EconomyInspectorModule.h"
 #include "Modules/TestStages/Drawers/EconomyDrawer.h"
 #include "Modules/VisualDebuggerModule.h"
 #include <memory>
@@ -113,6 +114,7 @@ private:
 #ifdef DIA_DEBUG
     GathererDrawData mDrawData[kEconomyDrawerGathererCount];
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::VisualDebuggerModule> mVisualDebuggerRef{this};
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::EconomyInspectorModule> mEconomyInspectorRef{this};
     std::unique_ptr<EconomyDrawer> mDrawer;
 #endif
 };

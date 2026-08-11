@@ -114,12 +114,16 @@ void EconomyTestStageModule::OnStart(Dia::Automation::AutomationService* service
             vd->GetLayerManager());
         vd->GetLayerManager().Register(mDrawer.get(), 30, Dia::Core::StringCRC("Economy"));
     }
+    if (auto* insp = mEconomyInspectorRef.Get())
+        insp->Bind(mSystem, mTreasurySchema);
 #endif
 }
 
 void EconomyTestStageModule::OnStop()
 {
 #ifdef DIA_DEBUG
+    if (auto* insp = mEconomyInspectorRef.Get())
+        insp->Unbind();
     auto* vd = mVisualDebuggerRef.Get();
     if (vd && mDrawer)
         vd->GetLayerManager().Unregister(mDrawer->GetLayerName());

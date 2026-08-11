@@ -33,6 +33,7 @@ class DiaClient:
         self._ws = None
         self._cmd_queue = queue.Queue()
         self._event_queue = queue.Queue()
+        self._topic_queues: dict = {}
         self._reader_thread = None
         self._reader_stop = threading.Event()
 
@@ -99,6 +100,12 @@ class DiaClient:
                     q.get_nowait()
                 except queue.Empty:
                     break
+        for q in self._topic_queues.values():
+            while not q.empty():
+                try:
+                    q.get_nowait()
+                except queue.Empty:
+                    break
         self._reader_thread = threading.Thread(
             target=self._read_loop, daemon=True, name="DiaClient-reader"
         )
@@ -126,6 +133,33 @@ class DiaClient:
             ev = msg.get("event", {})
             if ev.get("event_type") == "stage_transition":
                 self._event_queue.put(ev.get("payload", {}))
+        elif msg_type == "MESSAGE_TYPE_DATA_UPDATE":
+            update = msg.get("data_update", {})
+            topic = update.get("data_type", "")
+            if topic and topic in self._topic_queues:
+                payload = update.get("payload", {})
+                self._topic_queues[topic].put(payload)
+
+    def subscribe_topic(self, topic: str):
+        """Subscribe to a data topic. Call before wait_for_topic()."""
+        if topic not in self._topic_queues:
+            self._topic_queues[topic] = queue.Queue()
+        sub = {"type": "MESSAGE_TYPE_SUBSCRIBE", "subscribe": {"data_type": topic}}
+        self._ws.send(json.dumps(sub))
+        time.sleep(0.2)  # give server time to register the subscription
+
+    def wait_for_topic(self, topic: str, timeout_s: float = 5.0) -> dict:
+        """Block until a DATA_UPDATE message arrives for the given topic."""
+        if topic not in self._topic_queues:
+            self._topic_queues[topic] = queue.Queue()
+        deadline = time.time() + timeout_s
+        while time.time() < deadline:
+            remaining = deadline - time.time()
+            try:
+                return self._topic_queues[topic].get(timeout=min(0.5, remaining))
+            except queue.Empty:
+                continue
+        raise TimeoutError(f"No data received for topic '{topic}' within {timeout_s}s")
 
     def disconnect(self):
         self._reader_stop.set()
