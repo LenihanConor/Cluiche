@@ -18,6 +18,8 @@
     <None Include="Adaptors\ScalarFieldOverlay.h">
       <Filter>Adaptors</Filter>
     </None>
+    <None Include="DiaScalarFieldAdapter.h" />
+    <None Include="IDiaScalarField.h" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CellIndex.h" />

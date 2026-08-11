@@ -69,7 +69,9 @@
   <ItemGroup>
     <None Include="Adaptors\RulesPropagationPolicy.h" />
     <None Include="Adaptors\ScalarFieldOverlay.h" />
+    <None Include="DiaScalarFieldAdapter.h" />
     <None Include="Docs\dia.scalarfield.architecture.module.md" />
+    <None Include="IDiaScalarField.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
