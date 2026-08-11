@@ -16,8 +16,16 @@ summary: >
   IVisualDebugger, IDebugContext, DebugLayerNames, DebugColourPalette. Requires
   DiaMaths (Vector2D/3D) so it lives at foundation/services, not foundation/core.
 
+dependent_modules:
+  - dia.maths.vector
+  - dia.core.crc
+  - dia.core.core
+
 dependencies:
   required:
     - dia.core
     - dia.maths
+    - dia.maths.vector
+    - dia.core.crc
+    - dia.core.core
 ---

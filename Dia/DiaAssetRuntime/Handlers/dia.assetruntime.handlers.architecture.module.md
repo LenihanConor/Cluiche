@@ -15,10 +15,18 @@ summary: >
   Domain-specific asset type handlers for DiaAssetRuntime. TextureHandler depends
   on DiaBgfx and DiaGraphics, placing it in the visual domain tier.
 
+dependent_modules:
+  - dia.core.memory
+  - dia.core.crc
+  - dia.core.core
+
 dependencies:
   required:
     - dia.assetruntime
     - dia.graphics
     - dia.bgfx
     - dia.threading
+    - dia.core.memory
+    - dia.core.crc
+    - dia.core.core
 ---

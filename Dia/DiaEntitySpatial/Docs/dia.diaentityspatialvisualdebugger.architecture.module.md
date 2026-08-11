@@ -35,12 +35,10 @@ non_responsibilities:
   - Persistent configuration storage
 
 dependent_modules:
-  - dia.core
-  - dia.maths
-  - dia.geometry2d
-  - dia.entity
-  - dia.entityspatial
-  - dia.diavisualdebugger
+  - dia.core.containers.arrays
+  - dia.maths.vector
+  - dia.core.crc
+  - dia.core.debugdraw
 
 public_api:
   headers:
@@ -62,6 +60,10 @@ dependencies:
     - dia.entity
     - dia.entityspatial
     - dia.diavisualdebugger
+    - dia.core.containers.arrays
+    - dia.maths.vector
+    - dia.core.crc
+    - dia.core.debugdraw
   forbidden: []
 
 vcxproj: none

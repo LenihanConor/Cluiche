@@ -32,6 +32,7 @@ dependent_modules:
   - dia.maths.vector
   - dia.core.containers.arrays
   - dia.graphics.misc
+  - dia.core.debugdraw
 
 public_api:
   headers:
@@ -60,5 +61,6 @@ dependencies:
     - dia.graphics.misc
     - dia.maths.vector
     - dia.ui
+    - dia.core.debugdraw
   forbidden: []
 ---

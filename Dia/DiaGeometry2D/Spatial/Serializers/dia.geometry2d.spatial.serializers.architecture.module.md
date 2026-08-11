@@ -16,9 +16,13 @@ summary: >
   Sits at foundation/platform so it can depend on both dia.geometry2d (maths) and
   dia.serializer (services) without cross-group violations.
 
+dependent_modules:
+  - dia.core.json.external.json
+
 dependencies:
   required:
     - dia.geometry2d
     - dia.serializer
     - dia.observation
+    - dia.core.json.external.json
 ---

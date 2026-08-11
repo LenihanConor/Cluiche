@@ -35,10 +35,9 @@ non_responsibilities:
   - Interactive picking or selection
 
 dependent_modules:
-  - dia.core
-  - dia.maths
-  - dia.scalarfield
-  - dia.visualdebugger
+  - dia.maths.vector
+  - dia.core.crc
+  - dia.core.debugdraw
 
 public_api:
   headers:
@@ -55,6 +54,9 @@ dependencies:
     - dia.core
     - dia.maths
     - dia.scalarfield
+    - dia.maths.vector
+    - dia.core.crc
+    - dia.core.debugdraw
   optional:
     - dia.visualdebugger
   forbidden: []
