@@ -1444,6 +1444,9 @@
     <ClCompile Include="CluicheGameBaseline\TestBlackboardInspectorSource.cpp">
       <Filter>CluicheGameBaseline</Filter>
     </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestEconomyInspectorSources.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
     <ClCompile Include="DiaPathfinding\TestPathfindingGolden.cpp">
     <ClCompile Include="DiaPathfinding\TestPathfindingBoundary.cpp">
     <ClCompile Include="DiaHTN\TestRuleActionBridge.cpp">

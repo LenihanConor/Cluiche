@@ -14,7 +14,7 @@ namespace Cluiche { namespace AppFlow {
 //
 // Thread safety: assumes single-threaded tick (SimPU).  Observer callbacks fire on
 // the same thread; no additional synchronisation is applied in v1.
-class EconomyEventsSource final
+class EconomyEventsSource
     : public Dia::DebugServer::IInspectorDataSource
     , public Dia::Economy::IEconomyObserver
 {
@@ -33,12 +33,14 @@ public:
     void OnTransactionClamped(const Dia::Economy::TransactionClampedEvent&) override;
     void OnTransferCompleted (const Dia::Economy::TransferCompletedEvent&)  override;
 
+protected:
+    virtual void SendFullRing();
+    virtual void SendDelta(const Json::Value& ev);
+
 private:
     static constexpr unsigned int kRingDepth = 500;
 
-    void PushToRing  (const Json::Value& ev);
-    void SendFullRing();
-    void SendDelta   (const Json::Value& ev);
+    void PushToRing(const Json::Value& ev);
 
     Dia::Economy::EconomySystem&   mSystem;
     Dia::DebugServer::DebugServer* mServer       = nullptr;

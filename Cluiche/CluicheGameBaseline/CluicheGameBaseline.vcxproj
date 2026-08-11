@@ -63,6 +63,7 @@
     <ClCompile Include="Modules\InspectorSources\EconomyEventsSource.cpp" />
     <ClCompile Include="Modules\SimNavigationHandlerModule.cpp" />
     <ClCompile Include="Modules\AIInspectorModule.cpp" />
+    <ClCompile Include="Modules\EconomyInspectorModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\AutomationModule.h" />
@@ -111,6 +112,7 @@
     <ClInclude Include="Types\RenderToSimNavRequest.h" />
     <ClInclude Include="Modules\SimNavigationHandlerModule.h" />
     <ClInclude Include="Modules\AIInspectorModule.h" />
+    <ClInclude Include="Modules\EconomyInspectorModule.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">

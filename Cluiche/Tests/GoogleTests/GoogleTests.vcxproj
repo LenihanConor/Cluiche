@@ -741,6 +741,7 @@
     <ClCompile Include="DiaPathfinding\TestPathfindingBoundary.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestBlackboardInspectorSource.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestAIInspectorModule.cpp" />
+    <ClCompile Include="CluicheGameBaseline\TestEconomyInspectorSources.cpp" />
     <ClCompile Include="DiaHTN\TestRuleActionBridge.cpp" />
     <ClCompile Include="DiaHTN\TestHTNIntegration.cpp" />
     <!-- DiaFlowField -->
