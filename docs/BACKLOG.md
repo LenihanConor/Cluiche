@@ -12,14 +12,9 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | System | Features | Depends On |
 |--------|----------|------------|
-| DiaMessageBus | core-bus, entity-router-registration, flush-adapters, frame-ledger, schema-browser, eventdispatcher-removal, module-and-build — **Task 0: audit existing observer/event usage before implementing** | DiaMailbox ✅, DiaStreams ✅, DiaApplicationFlow ✅, DiaObservation ✅ |
-| ~~DiaEconomyInspector~~ | EconomyInstancesSource, EconomyModifiersSource, EconomyEventsSource, EconomySchemaSource, dockable editor plugin | DiaEconomy ✅, DiaEditor |
-| DiaScalarFieldInspector | Dockable editor panel for scalar field inspection | DiaScalarField ✅, DiaEditor |
-| ~~DiaObjective~~ | Data-driven gameplay goal tracking — completion conditions, progress, per-faction objectives, chained objectives | DiaCondition ✅, DiaCore ✅, diaentitytemplate ✅ |
-| ~~DiaEntitySpawner~~ | `SpawnRequest` API, `SpawnEmitterComponent` (rate/burst/cap/lifetime/radius), `EntitySpawnerModule` on SimPU, DiaObservation coverage, GoogleTest suite, CluicheTest E2E visual stage — **plan ready (10 tasks)** | diaentity ✅, DiaReflect ✅, DiaSerializer ✅ |
-| ~~DiaSaveGame~~ | ISaveable contract, SaveRegistry, SaveConfig + slot management, SaveContext/LoadContext, SaveManifest, async I/O, versioning + migration, Observer events, test utilities | DiaSerializer ✅, DiaCore ✅ |
-| ~~ArenaTestStage (CluicheTest)~~ | **In Progress (5/11 tasks done)** — scaffold + JSON assets + header + OnStart/LoadTriggerScript + SpawnWave/EnemyAgent done; remaining: DoUpdate frame loop (T6), metrics (T7), ImGui visuals (T8), DoStop (T9), pytest (T10), E2E verify (T11) | DiaTriggerScript ✅, DiaObjective ✅, DiaBlackboard ✅, DiaStateMachine ✅, DiaUtilityAI ✅, DiaRules ✅ |
-| ~~DiaTriggerScript~~ | Data-driven level events — spatial/temporal/state/count triggers, four action types, ITriggerActionHandler extension point, TriggerFiredEvent on DiaStreams | DiaCondition ✅, DiaGeometry2D ✅, DiaEntitySpatial ✅, DiaStreams ✅, DiaObjective (ChangeObjectiveState action only) |
+| DiaMessageBus | core-bus, entity-router-registration, flush-adapters, frame-ledger, schema-browser, eventdispatcher-removal, module-and-build | DiaMailbox ✅, DiaStreams ✅, DiaApplicationFlow ✅, DiaObservation ✅ |
+| DiaAICallout | Callout Emit, Callout Query, Claim/Release, TTL Expiry, Test Utilities | DiaEntitySpatial ✅, DiaGeometry2D ✅, DiaCore ✅ |
+| ~~DiaScalarFieldInspector~~ | Dockable editor panel for scalar field inspection | DiaScalarField ✅, DiaEditor |
 
 ---
 
@@ -31,11 +26,29 @@ _Nothing here._
 
 ## Spec Work Needed (Draft or unset — review/approve before building)
 
+### Visual Debugger Domains (all depend on [DiaDebugDomain](../specs/applications/dia/systems/diadebugdomain/diadebugdomain.md) first)
+
+These are new `DiaXxxVisualDebugger` system specs — each is its own module implementing `IDebugDomain`. Build order is flexible; highest-value ones first. Research + audit: `docs/research/visual_debugger_redesign/`.
+
+| Item | Group | Value | Notes |
+|------|-------|-------|-------|
+| DiaSteeringVisualDebugger | Navigation | High | World-space: per-agent velocity + desired-velocity arrows, separation radii, detection boxes. All data in `SteeringSystem::GetOutput()` — no API gaps. |
+| DiaPathfindingVisualDebugger | Navigation | High | World-space: path polyline via `PathResult::ToWorldPositions()`, grid passability overlay, start/goal markers. Reuses hex/square draw patterns from EntitySpatial. |
+| DiaFlowFieldVisualDebugger | Navigation | High | World-space: per-cell direction arrows via `FlowField::Sample()`. Direct analogue of existing `ScalarFieldGradientOverlay`. |
+| DiaStateMachineVisualDebugger | AI / Behavior | High | Panel: `IStateMachineInspectable` was designed for this — all states, transitions, history, guard pass/fail. Low effort. |
+| DiaRulesVisualDebugger | AI / Behavior | Medium | Panel: `RuleSet::GetLastFireReport()` already populated every frame. Ready to consume. |
+| DiaHTNVisualDebugger | AI / Behavior | Medium | Panel: plan task sequence + cursor + diverged/pending state. Needs one `GetCurrentIndex()` accessor added to `HTNPlannerComponent`. |
+| DiaAIBudgetVisualDebugger | AI / Behavior | Medium | Panel: budget bar + systems run/deferred. Needs per-system timing added to `AIBudgetResult` first. |
+| DiaBlackboardVisualDebugger | AI / Behavior | Low–Med | Panel: slot table via `VisitSlots()`. Would benefit from per-type display format callbacks (not blocking, shows hex otherwise). |
+| DiaMailboxVisualDebugger | AI / Behavior | Low–Med | Panel: per-type queue fill + drop counters. Needs type-erased descriptor list added to `Mailbox` internals first. |
+
+---
+
+### Other Spec Work
+
 | Item | Spec | What's needed |
 |------|------|---------------|
 | DiaBehaviourTree | — | Needs `/spec-system` — data-driven behaviour tree evaluator. Nodes: Sequence, Selector, Parallel, Decorator (inverter, repeater, cooldown, guard), Leaf (action/condition). Trees defined in JSON, loaded at runtime. Leaf nodes reference DiaBlackboard keys for conditions and DiaOrder for execution. Supports tree sharing (many entities, one tree definition, different blackboard instances). Time-sliced: trees pause mid-evaluation and resume next tick. Depends on DiaBlackboard ✅, DiaOrder ✅, DiaCore/Timer ✅, DiaStreams ✅. |
-| ~~DiaEntitySpawnerVisualDebugger~~ | — | Needs `/spec-system` — editor overlay for DiaEntitySpawner: spawn radius, spawn rate, live count, despawn reason per emitter. Follow-up to DiaEntitySpawner. Depends on DiaEntitySpawner, DiaEditor. |
-| ~~DiaTriggerScript~~ | — | Needs `/spec-system` — data-driven scripted game events. Trigger types: spatial (entity enters region), temporal (time elapsed), state (blackboard condition met), count (N entities killed). Actions: spawn entities, give resources, change objective state, fire events. Per-map JSON definitions. One-shot and repeating triggers. Depends on DiaCondition ✅, DiaGeometry2D ✅, DiaStreams ✅, DiaObjective. |
 | DiaGridVisibility | — | Needs `/spec-system` — per-cell fog-of-war on a grid. Each cell carries a per-faction state (unexplored / revealed / visible). Entities have a sight radius; cells within radius are marked visible each frame, fading to revealed when out of range. LOS blocking against terrain cells (walls, elevation). Shared vision within factions. Publishes visibility-change events via DiaStreams (unit spotted, unit lost). Prerequisite for: minimap data layer, cover/LOS combat modifiers. Depends on DiaGeometry2D ✅, DiaStreams ✅, DiaEntitySpatial ✅. |
 | DiaSensorInspector | — | Needs `/spec-system` — dockable ImGui panel per entity; shows all four `SensorResultsComponent` arrays (sight, proximity, damage, sound) with per-entry distance/angle/timestamp, tick-countdown and stale/fresh state per sensor component, and the resulting blackboard slots (`ThreatBoard`, `AwarenessBoard`). Answers "why didn't this entity react?" for AI debugging. Depends on DiaSensor ✅, DiaEditor. |
 | RenderTestPlugin (CluicheEditor) | — | Needs `/spec-system` — visual debugger panel: wipe slider, region grid, expectation authoring, AI triage panel, render targets. DiaRenderTest CLI Pipeline ✅ unblocked. Mockup: [render_test_debugger_mockup.html](research/render_offline_test/render_test_debugger_mockup.html). Research: [render_offline_test/summary.md](research/render_offline_test/summary.md) |
@@ -71,6 +84,5 @@ Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testin
 
 | Item | Notes |
 |------|-------|
-| ~~ArenaTestStage spec → backlog~~ | Promoted from loose end to Approved spec + backlog entry 2026-08-07. See Ready to Build above. |
 | RenderTechnique asset type | Layer-level rendering policy (blend mode, post-process like bloom/distortion). Layers reference a technique by name; renderer resolves at draw time. Needs `/spec-feature` under DiaGraphics or DiaBgfx once the scene system lands. |
 | Camera2D controller (pan/zoom/reset) | Application-side input→Camera2D wiring for CluicheTest stages (keyboard pan, scroll zoom, home-key reset). Unblocked once coord2d-debug-overlay ships Camera2D + renderer integration. |

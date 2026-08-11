@@ -166,6 +166,6 @@ Published by game-side broadcaster (future `DiaScalarFieldBroadcaster`):
 
 ## Status
 
-**Status:** `Approved`
+**Status:** `Done`
 
 **Plan:** @docs/specs/applications/dia/systems/diascalarfieldinspector/diascalarfieldinspector.plan.md
