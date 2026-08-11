@@ -57,13 +57,22 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="DiaScalarFieldInspectorPlugin.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DiaScalarFieldInspectorPlugin.cpp" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="Docs\dia.diascalarfieldinspector.architecture.module.md" />
+    <None Include="UI\index.html" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaEditor\DiaEditor.vcxproj"><Project>{F1A2B3C4-D5E6-7890-ABCD-EF1234567890}</Project></ProjectReference>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj"><Project>{8D41CBE3-C493-428D-95F3-627E56500667}</Project></ProjectReference>
     <ProjectReference Include="..\DiaScalarField\DiaScalarField.vcxproj"><Project>{B1C2D3E4-F5A6-7890-ABCD-EF0123456789}</Project></ProjectReference>
     <ProjectReference Include="..\DiaMaths\DiaMaths.vcxproj"><Project>{2BBA0AD3-D449-4C0E-8C84-ACFA8BCA456B}</Project><ReferenceOutputAssembly>false</ReferenceOutputAssembly></ProjectReference>
+    <ProjectReference Include="..\DiaJson\DiaJson.vcxproj"><Project>{B2C3D4E5-F6A7-8901-BCDE-F23456789012}</Project><ReferenceOutputAssembly>false</ReferenceOutputAssembly></ProjectReference>
+    <ProjectReference Include="..\DiaObservation\DiaObservation.vcxproj"><Project>{5E6F7A8B-C9D0-E1F2-3456-789ABCDE0123}</Project></ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets"></ImportGroup>
