@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ScalarField Inspector</title>
+<style>
+  :root {
+    --pico-background-color: #1e1e1e;
+    --pico-card-background-color: #252526;
+    --pico-form-element-background-color: #252526;
+    --pico-color: #d4d4d4;
+    --pico-border-color: #3c3c3c;
+    --pico-muted-border-color: #2d2d2d;
+    --pico-muted-color: #808080;
+    --pico-primary: #0e639c;
+    --pico-primary-hover: #1177bb;
+    --pico-primary-inverse: #ffffff;
+    --pico-secondary: #3a3d41;
+    --pico-secondary-hover: #4a4d51;
+    --pico-h2-color: #9cdcfe;
+    --pico-ins-color: #89d185;
+    --pico-del-color: #f44747;
+    --pico-form-element-color: #d4d4d4;
+    --pico-form-element-border-color: #3c3c3c;
+    --pico-form-element-active-border-color: #0e639c;
+    --pico-font-family: 'Segoe UI', sans-serif;
+    --pico-font-size: 12px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%; overflow: hidden;
+    font-family: var(--pico-font-family);
+    font-size: var(--pico-font-size);
+    background: var(--pico-background-color);
+    color: var(--pico-color);
+    display: flex; flex-direction: column; position: relative;
+  }
+
+  /* ── Panel title ──────────────────────────────────────────────────── */
+  .panel-title {
+    padding: 5px 10px;
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    color: #9cdcfe;
+    background: var(--pico-card-background-color);
+    border-bottom: 1px solid var(--pico-border-color);
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .conn-badge {
+    font-size: 10px; font-weight: 400; text-transform: none; letter-spacing: 0;
+    padding: 1px 7px; border-radius: 8px;
+    background: #1a3d1a; color: var(--pico-ins-color);
+    border: 1px solid #2a5c2a;
+  }
+  .conn-badge.disconnected {
+    background: #3d1a1a; color: var(--pico-del-color);
+    border-color: #5c2a2a;
+  }
+
+  /* ── Main layout: sidebar + content ──────────────────────────────── */
+  .main-layout {
+    flex: 1; display: flex; overflow: hidden;
+  }
+
+  /* ── Sidebar ──────────────────────────────────────────────────────── */
+  .sidebar {
+    width: 160px; flex-shrink: 0;
+    background: var(--pico-card-background-color);
+    border-right: 1px solid var(--pico-border-color);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .sidebar-title {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--pico-muted-color);
+    padding: 5px 8px 4px;
+    border-bottom: 1px solid var(--pico-muted-border-color);
+    flex-shrink: 0;
+  }
+  .sidebar-list {
+    flex: 1; overflow-y: auto; padding: 4px 0;
+  }
+  .field-item {
+    padding: 5px 8px; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    border-left: 2px solid transparent;
+  }
+  .field-item:hover { background: var(--pico-secondary); }
+  .field-item.selected {
+    background: #0e3a5c;
+    border-left-color: var(--pico-primary);
+  }
+  .field-name {
+    flex: 1; font-size: 11px; color: var(--pico-color);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .field-badge {
+    font-size: 10px; padding: 1px 5px; border-radius: 8px;
+    background: #2d2d2d; color: var(--pico-muted-color);
+    border: 1px solid var(--pico-border-color);
+    white-space: nowrap; flex-shrink: 0;
+  }
+
+  /* ── Content area ─────────────────────────────────────────────────── */
+  .content-area {
+    flex: 1; display: flex; flex-direction: column; overflow: hidden;
+  }
+
+  /* ── Empty / placeholder ──────────────────────────────────────────── */
+  .empty-state {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    color: var(--pico-muted-color); font-size: 12px; font-style: italic;
+  }
+
+  /* ── Stats bar ────────────────────────────────────────────────────── */
+  .stats-bar {
+    background: var(--pico-card-background-color);
+    border-bottom: 1px solid var(--pico-border-color);
+    padding: 4px 10px;
+    display: flex; align-items: center; gap: 16px;
+    flex-shrink: 0; font-size: 11px; font-family: monospace;
+  }
+  .stat-item { color: var(--pico-muted-color); }
+  .stat-item span { color: #b5cea8; }
+
+  /* ── Heatmap scroll container ─────────────────────────────────────── */
+  .heatmap-scroll {
+    flex: 1; overflow: auto; padding: 8px;
+  }
+  #heatmap-table {
+    border-collapse: collapse; display: block;
+  }
+  #heatmap-table td {
+    width: 12px; height: 12px;
+    padding: 0; border: none;
+    cursor: crosshair;
+  }
+
+  /* ── Tooltip ──────────────────────────────────────────────────────── */
+  #tooltip {
+    position: fixed; display: none;
+    background: #1a1a2e; border: 1px solid var(--pico-primary);
+    color: var(--pico-color); font-size: 11px; font-family: monospace;
+    padding: 3px 8px; border-radius: 3px; pointer-events: none;
+    z-index: 9999; white-space: nowrap;
+  }
+
+  /* ── Scrub bar ────────────────────────────────────────────────────── */
+  .scrub-bar {
+    background: var(--pico-card-background-color);
+    border-top: 1px solid var(--pico-border-color);
+    padding: 5px 10px;
+    display: flex; align-items: center; gap: 8px;
+    flex-shrink: 0;
+  }
+  .scrub-bar input[type=range] { flex: 1; accent-color: var(--pico-primary); }
+  .scrub-label { font-size: 11px; color: var(--pico-muted-color); white-space: nowrap; min-width: 90px; text-align: right; }
+
+  /* ── Write panels ─────────────────────────────────────────────────── */
+  .write-area {
+    overflow-y: auto; flex-shrink: 0; max-height: 220px;
+    border-top: 1px solid var(--pico-border-color);
+    background: var(--pico-background-color);
+  }
+  details {
+    border-bottom: 1px solid var(--pico-muted-border-color);
+  }
+  summary {
+    padding: 5px 10px; cursor: pointer;
+    font-size: 11px; font-weight: 600; color: #9cdcfe;
+    background: var(--pico-card-background-color);
+    user-select: none; list-style: none;
+    display: flex; align-items: center; gap: 6px;
+  }
+  summary::before { content: '▶'; font-size: 9px; color: var(--pico-muted-color); transition: transform .15s; }
+  details[open] > summary::before { transform: rotate(90deg); }
+  .write-body { padding: 6px 10px 8px; }
+  .write-row {
+    display: flex; align-items: center; gap: 6px; margin-bottom: 5px;
+  }
+  .write-label {
+    width: 70px; flex-shrink: 0; font-size: 11px; color: var(--pico-muted-color); text-align: right;
+  }
+  .write-row input[type=range] { flex: 1; accent-color: var(--pico-primary); }
+  .write-val {
+    width: 42px; flex-shrink: 0; font-size: 11px; font-family: monospace;
+    color: #b5cea8; text-align: left;
+  }
+  .write-field-name {
+    font-size: 11px; font-family: monospace; color: #9cdcfe;
+    padding: 2px 0;
+  }
+  select {
+    background: #2d2d2d; border: 1px solid var(--pico-border-color);
+    border-radius: 3px; color: var(--pico-color); font-size: 11px;
+    padding: 2px 5px; font-family: var(--pico-font-family);
+  }
+  .apply-btn {
+    margin-top: 4px;
+    background: var(--pico-primary); border: none; border-radius: 3px;
+    color: var(--pico-primary-inverse); font-size: 11px; padding: 3px 12px;
+    cursor: pointer;
+  }
+  .apply-btn:hover { background: var(--pico-primary-hover); }
+  .apply-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── Disconnect overlay ───────────────────────────────────────────── */
+  #disconnect-overlay {
+    position: absolute; inset: 0;
+    background: rgba(30,30,30,0.82);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+    font-size: 13px; color: var(--pico-muted-color); font-style: italic;
+  }
+
+  /* ── Scrollbars ───────────────────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--pico-background-color); }
+  ::-webkit-scrollbar-thumb { background: var(--pico-secondary); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--pico-secondary-hover); }
+</style>
+</head>
+<body>
+
+<div class="panel-title">
+  ScalarField Inspector
+  <span class="conn-badge disconnected" id="conn-badge">disconnected</span>
+</div>
+
+<div class="main-layout">
+
+  <!-- Sidebar: field selector -->
+  <div class="sidebar">
+    <div class="sidebar-title">Fields</div>
+    <div class="sidebar-list" id="field-list"></div>
+  </div>
+
+  <!-- Content: stats + heatmap + scrub + write panels -->
+  <div class="content-area" id="content-area">
+    <div class="empty-state" id="placeholder">Select a field</div>
+
+    <div id="field-view" style="display:none; flex:1; display:none; flex-direction:column; overflow:hidden;">
+      <!-- Stats bar -->
+      <div class="stats-bar" id="stats-bar">
+        <span class="stat-item">Min: <span id="stat-min">—</span></span>
+        <span class="stat-item">Max: <span id="stat-max">—</span></span>
+        <span class="stat-item">Mean: <span id="stat-mean">—</span></span>
+      </div>
+
+      <!-- Heatmap -->
+      <div class="heatmap-scroll">
+        <table id="heatmap-table"></table>
+      </div>
+
+      <!-- Scrub slider -->
+      <div class="scrub-bar">
+        <input type="range" id="scrub-slider" min="0" max="59" value="59">
+        <span class="scrub-label" id="scrub-label">Frame: Live</span>
+      </div>
+
+      <!-- Write panels -->
+      <div class="write-area">
+        <!-- Write Point -->
+        <details id="details-point">
+          <summary>Write: Point</summary>
+          <div class="write-body">
+            <div class="write-row"><span class="write-label">Field:</span> <span class="write-field-name" id="wp-field-name">—</span></div>
+            <div class="write-row">
+              <span class="write-label">X:</span>
+              <input type="range" id="wp-x" min="0" max="19" step="1" value="0">
+              <span class="write-val" id="wp-x-val">0</span>
+            </div>
+            <div class="write-row">
+              <span class="write-label">Y:</span>
+              <input type="range" id="wp-y" min="0" max="19" step="1" value="0">
+              <span class="write-val" id="wp-y-val">0</span>
+            </div>
+            <div class="write-row">
+              <span class="write-label">Value:</span>
+              <input type="range" id="wp-val" min="0" max="1" step="0.01" value="0.5">
+              <span class="write-val" id="wp-val-val">0.50</span>
+            </div>
+            <button class="apply-btn" id="wp-apply">Apply</button>
+          </div>
+        </details>
+
+        <!-- Write Radial -->
+        <details id="details-radial">
+          <summary>Write: Radial</summary>
+          <div class="write-body">
+            <div class="write-row"><span class="write-label">Field:</span> <span class="write-field-name" id="wr-field-name">—</span></div>
+            <div class="write-row">
+              <span class="write-label">Center X:</span>
+              <input type="range" id="wr-cx" min="0" max="19" step="1" value="9">
+              <span class="write-val" id="wr-cx-val">9</span>
+            </div>
+            <div class="write-row">
+              <span class="write-label">Center Y:</span>
+              <input type="range" id="wr-cy" min="0" max="19" step="1" value="9">
+              <span class="write-val" id="wr-cy-val">9</span>
+            </div>
+            <div class="write-row">
+              <span class="write-label">Radius:</span>
+              <input type="range" id="wr-radius" min="0.5" max="20" step="0.5" value="5">
+              <span class="write-val" id="wr-radius-val">5.0</span>
+            </div>
+            <div class="write-row">
+              <span class="write-label">Peak:</span>
+              <input type="range" id="wr-peak" min="0" max="1" step="0.01" value="1">
+              <span class="write-val" id="wr-peak-val">1.00</span>
+            </div>
+            <div class="write-row">
+              <span class="write-label">Falloff:</span>
+              <select id="wr-falloff">
+                <option value="linear">linear</option>
+                <option value="quadratic">quadratic</option>
+                <option value="inverse">inverse</option>
+              </select>
+            </div>
+            <button class="apply-btn" id="wr-apply">Apply</button>
+          </div>
+        </details>
+
+        <!-- Write Box -->
+        <details id="details-box">
+          <summary>Write: Box</summary>
+          <div class="write-body">
+            <div class="write-row"><span class="write-label">Field:</span> <span class="write-field-name" id="wb-field-name">—</span></div>
+            <div class="write-row">
+              <span class="write-label">Top-left X:</span>
+              <input type="range" id="wb-x" min="0" max="19" step="1" value="0">
+              <span class="write-val" id="wb-x-val">0</span>
+            </div>
+            <div class="write-row">
+              <span class="write-label">Top-left Y:</span>
+              <input type="range" id="wb-y" min="0" max="19" step="1" value="0">
+              <span class="write-val" id="wb-y-val">0</span>
+            </div>
+            <div class="write-row">
+              <span class="write-label">Width:</span>
+              <input type="range" id="wb-w" min="1" max="20" step="1" value="5">
+              <span class="write-val" id="wb-w-val">5</span>
+            </div>
+            <div class="write-row">
+              <span class="write-label">Height:</span>
+              <input type="range" id="wb-h" min="1" max="20" step="1" value="5">
+              <span class="write-val" id="wb-h-val">5</span>
+            </div>
+            <div class="write-row">
+              <span class="write-label">Value:</span>
+              <input type="range" id="wb-val" min="0" max="1" step="0.01" value="0.5">
+              <span class="write-val" id="wb-val-val">0.50</span>
+            </div>
+            <button class="apply-btn" id="wb-apply">Apply</button>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Tooltip (Feature 4) -->
+<div id="tooltip"></div>
+
+<!-- Disconnect overlay (Feature 7) -->
+<div id="disconnect-overlay">No game connected</div>
+
+<script src="../dia-live-connection.js"></script>
+<script>
+  // ── State ─────────────────────────────────────────────────────────────────
+  var currentFields   = [];   // latest live fields array
+  var history         = [];   // ring of up to 60 fields arrays (Feature 5)
+  var selectedField   = null; // field object from the currently-rendered snapshot
+  var selectedName    = null; // name of selected field (survives snapshot changes)
+  var sliderLive      = true; // whether slider is pinned to live
+  var sliderValue     = 59;
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function fmt4(n) { return (typeof n === 'number') ? n.toFixed(4) : '—'; }
+
+  // ── Colour mapping: 0→blue, 1→red ────────────────────────────────────────
+  function cellColor(t) {
+    var clamped = Math.max(0, Math.min(1, t));
+    var r = Math.round(255 * clamped);
+    var b = Math.round(255 * (1 - clamped));
+    return 'rgba(' + r + ',0,' + b + ',' + (220/255).toFixed(3) + ')';
+  }
+
+  // ── Field lookup in a snapshot ────────────────────────────────────────────
+  function findField(fields, name) {
+    if (!fields) return null;
+    for (var i = 0; i < fields.length; i++) {
+      if (fields[i].name === name) return fields[i];
+    }
+    return null;
+  }
+
+  // ── Rebuild sidebar field list ────────────────────────────────────────────
+  function rebuildSidebar(fields) {
+    var list = document.getElementById('field-list');
+    list.innerHTML = '';
+    if (!fields || fields.length === 0) return;
+    fields.forEach(function(f) {
+      var item = document.createElement('div');
+      item.className = 'field-item' + (f.name === selectedName ? ' selected' : '');
+      item.innerHTML =
+        '<span class="field-name">' + escapeHtml(f.name) + '</span>' +
+        '<span class="field-badge">' + escapeHtml(String(f.cellCount)) + '</span>';
+      item.addEventListener('click', function() {
+        selectedName = f.name;
+        rebuildUI();
+      });
+      list.appendChild(item);
+    });
+  }
+
+  // ── Compute stats ─────────────────────────────────────────────────────────
+  function computeStats(cells) {
+    if (!cells || cells.length === 0) return { min: 0, max: 0, mean: 0 };
+    var min = Infinity, max = -Infinity, sum = 0;
+    for (var i = 0; i < cells.length; i++) {
+      var v = cells[i];
+      if (v < min) min = v;
+      if (v > max) max = v;
+      sum += v;
+    }
+    return { min: min, max: max, mean: sum / cells.length };
+  }
+
+  // ── Render heatmap ────────────────────────────────────────────────────────
+  function renderHeatmap(field) {
+    var table = document.getElementById('heatmap-table');
+    table.innerHTML = '';
+    if (!field) return;
+
+    var srcW = field.width;
+    var srcH = field.height;
+    var cells = field.cells;
+
+    // Clamp display size to 40×40
+    var dispW = Math.min(srcW, 40);
+    var dispH = Math.min(srcH, 40);
+
+    var fragment = document.createDocumentFragment();
+    for (var row = 0; row < dispH; row++) {
+      var tr = document.createElement('tr');
+      for (var col = 0; col < dispW; col++) {
+        var srcX = Math.floor(col * (srcW / dispW));
+        var srcY = Math.floor(row * (srcH / dispH));
+        var idx  = srcY * srcW + srcX;
+        var val  = (cells && idx < cells.length) ? cells[idx] : 0;
+        var td   = document.createElement('td');
+        td.style.backgroundColor = cellColor(val);
+        td.dataset.col = col;
+        td.dataset.row = row;
+        td.dataset.val = val;
+        tr.appendChild(td);
+      }
+      fragment.appendChild(tr);
+    }
+    table.appendChild(fragment);
+  }
+
+  // ── Tooltip wiring ────────────────────────────────────────────────────────
+  var tooltip = document.getElementById('tooltip');
+  document.getElementById('heatmap-table').addEventListener('mouseover', function(e) {
+    var td = e.target;
+    if (td.tagName !== 'TD') { tooltip.style.display = 'none'; return; }
+    var col = td.dataset.col;
+    var row = td.dataset.row;
+    var val = parseFloat(td.dataset.val);
+    tooltip.textContent = '[' + col + ', ' + row + '] = ' + val.toFixed(4);
+    tooltip.style.display = 'block';
+  });
+  document.getElementById('heatmap-table').addEventListener('mouseleave', function() {
+    tooltip.style.display = 'none';
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (tooltip.style.display === 'block') {
+      tooltip.style.left = (e.clientX + 14) + 'px';
+      tooltip.style.top  = (e.clientY - 6) + 'px';
+    }
+  });
+
+  // ── Get fields snapshot for a given slider position ───────────────────────
+  function getSnapshotFields() {
+    if (history.length === 0) return currentFields;
+    if (sliderLive) return history[history.length - 1];
+    var idx = Math.min(sliderValue, history.length - 1);
+    return history[idx];
+  }
+
+  // ── Scrub slider ──────────────────────────────────────────────────────────
+  var scrubSlider = document.getElementById('scrub-slider');
+  var scrubLabel  = document.getElementById('scrub-label');
+
+  scrubSlider.addEventListener('input', function() {
+    sliderValue = parseInt(this.value, 10);
+    var maxIdx  = Math.max(0, history.length - 1);
+    sliderLive  = (sliderValue >= maxIdx);
+    updateScrubLabel();
+    var fields = getSnapshotFields();
+    selectedField = findField(fields, selectedName);
+    renderFieldView();
+  });
+
+  function updateScrubLabel() {
+    var maxIdx = Math.max(0, history.length - 1);
+    scrubSlider.max = Math.max(59, maxIdx);
+    if (sliderLive || history.length === 0) {
+      scrubLabel.textContent = 'Frame: Live';
+    } else {
+      var shown = Math.min(sliderValue, maxIdx);
+      scrubLabel.textContent = 'Frame: ' + shown + ' / ' + maxIdx;
+    }
+  }
+
+  // ── Render stats + heatmap for currently selected field ───────────────────
+  function renderFieldView() {
+    var placeholder = document.getElementById('placeholder');
+    var fieldView   = document.getElementById('field-view');
+
+    if (!selectedField) {
+      placeholder.style.display = '';
+      fieldView.style.display   = 'none';
+      return;
+    }
+
+    placeholder.style.display = 'none';
+    fieldView.style.display   = 'flex';
+    fieldView.style.flexDirection = 'column';
+
+    // Stats
+    var stats = computeStats(selectedField.cells);
+    document.getElementById('stat-min').textContent  = fmt4(stats.min);
+    document.getElementById('stat-max').textContent  = fmt4(stats.max);
+    document.getElementById('stat-mean').textContent = fmt4(stats.mean);
+
+    // Heatmap
+    renderHeatmap(selectedField);
+
+    // Update write panel field labels + slider ranges
+    updateWritePanels(selectedField);
+  }
+
+  // ── Update write panels when field changes ────────────────────────────────
+  function updateWritePanels(field) {
+    if (!field) return;
+    var name = field.name;
+    var w = field.width  || 20;
+    var h = field.height || 20;
+
+    // Point
+    document.getElementById('wp-field-name').textContent = name;
+    var wpX = document.getElementById('wp-x');
+    var wpY = document.getElementById('wp-y');
+    wpX.max = w - 1; if (parseInt(wpX.value,10) > w-1) wpX.value = 0;
+    wpY.max = h - 1; if (parseInt(wpY.value,10) > h-1) wpY.value = 0;
+    document.getElementById('wp-x-val').textContent = wpX.value;
+    document.getElementById('wp-y-val').textContent = wpY.value;
+
+    // Radial
+    document.getElementById('wr-field-name').textContent = name;
+    var wrCx = document.getElementById('wr-cx');
+    var wrCy = document.getElementById('wr-cy');
+    wrCx.max = w - 1; if (parseInt(wrCx.value,10) > w-1) wrCx.value = Math.floor((w-1)/2);
+    wrCy.max = h - 1; if (parseInt(wrCy.value,10) > h-1) wrCy.value = Math.floor((h-1)/2);
+    document.getElementById('wr-cx-val').textContent = wrCx.value;
+    document.getElementById('wr-cy-val').textContent = wrCy.value;
+
+    // Box
+    document.getElementById('wb-field-name').textContent = name;
+    var wbX = document.getElementById('wb-x');
+    var wbY = document.getElementById('wb-y');
+    var wbW = document.getElementById('wb-w');
+    var wbH = document.getElementById('wb-h');
+    wbX.max = w - 1; if (parseInt(wbX.value,10) > w-1) wbX.value = 0;
+    wbY.max = h - 1; if (parseInt(wbY.value,10) > h-1) wbY.value = 0;
+    wbW.max = w;     if (parseInt(wbW.value,10) > w)   wbW.value = Math.min(5, w);
+    wbH.max = h;     if (parseInt(wbH.value,10) > h)   wbH.value = Math.min(5, h);
+    document.getElementById('wb-x-val').textContent = wbX.value;
+    document.getElementById('wb-y-val').textContent = wbY.value;
+    document.getElementById('wb-w-val').textContent = wbW.value;
+    document.getElementById('wb-h-val').textContent = wbH.value;
+  }
+
+  // ── Master UI rebuild ─────────────────────────────────────────────────────
+  function rebuildUI() {
+    var fields = getSnapshotFields();
+    rebuildSidebar(currentFields); // sidebar always shows live names
+    selectedField = findField(fields, selectedName);
+    updateScrubLabel();
+    renderFieldView();
+  }
+
+  // ── New state from C++ ────────────────────────────────────────────────────
+  function onStateUpdate(data) {
+    var fields = (data && Array.isArray(data.fields)) ? data.fields : [];
+    currentFields = fields;
+
+    // Push to history ring
+    history.push(fields);
+    if (history.length > 60) history.shift();
+
+    // If slider was live, keep it live
+    if (sliderLive) {
+      sliderValue = history.length - 1;
+    }
+
+    rebuildUI();
+  }
+
+  // ── Live value displays for write sliders ─────────────────────────────────
+  function bindSliderDisplay(sliderId, displayId, fixed) {
+    var slider  = document.getElementById(sliderId);
+    var display = document.getElementById(displayId);
+    slider.addEventListener('input', function() {
+      display.textContent = fixed ? parseFloat(this.value).toFixed(fixed) : this.value;
+    });
+  }
+  bindSliderDisplay('wp-x',     'wp-x-val',     0);
+  bindSliderDisplay('wp-y',     'wp-y-val',     0);
+  bindSliderDisplay('wp-val',   'wp-val-val',   2);
+  bindSliderDisplay('wr-cx',    'wr-cx-val',    0);
+  bindSliderDisplay('wr-cy',    'wr-cy-val',    0);
+  bindSliderDisplay('wr-radius','wr-radius-val',1);
+  bindSliderDisplay('wr-peak',  'wr-peak-val',  2);
+  bindSliderDisplay('wb-x',     'wb-x-val',     0);
+  bindSliderDisplay('wb-y',     'wb-y-val',     0);
+  bindSliderDisplay('wb-w',     'wb-w-val',     0);
+  bindSliderDisplay('wb-h',     'wb-h-val',     0);
+  bindSliderDisplay('wb-val',   'wb-val-val',   2);
+
+  // ── postMessage helper ────────────────────────────────────────────────────
+  function postRequest(payload) {
+    window.parent.postMessage({ __diaFromFrame: true, payload: payload }, '*');
+  }
+
+  // ── Apply: Write Point ────────────────────────────────────────────────────
+  document.getElementById('wp-apply').addEventListener('click', function() {
+    if (!selectedField) return;
+    postRequest({
+      type:  'scalarfield_inspector.write_point',
+      reqId: 'wp_' + Date.now(),
+      data: {
+        field: selectedField.name,
+        x:     parseInt(document.getElementById('wp-x').value,   10),
+        y:     parseInt(document.getElementById('wp-y').value,   10),
+        value: parseFloat(document.getElementById('wp-val').value)
+      }
+    });
+  });
+
+  // ── Apply: Write Radial ───────────────────────────────────────────────────
+  document.getElementById('wr-apply').addEventListener('click', function() {
+    if (!selectedField) return;
+    postRequest({
+      type:  'scalarfield_inspector.write_radial',
+      reqId: 'wr_' + Date.now(),
+      data: {
+        field:   selectedField.name,
+        cx:      parseInt(document.getElementById('wr-cx').value,    10),
+        cy:      parseInt(document.getElementById('wr-cy').value,    10),
+        radius:  parseFloat(document.getElementById('wr-radius').value),
+        peak:    parseFloat(document.getElementById('wr-peak').value),
+        falloff: document.getElementById('wr-falloff').value
+      }
+    });
+  });
+
+  // ── Apply: Write Box ──────────────────────────────────────────────────────
+  document.getElementById('wb-apply').addEventListener('click', function() {
+    if (!selectedField) return;
+    postRequest({
+      type:  'scalarfield_inspector.write_box',
+      reqId: 'wb_' + Date.now(),
+      data: {
+        field: selectedField.name,
+        x:     parseInt(document.getElementById('wb-x').value,   10),
+        y:     parseInt(document.getElementById('wb-y').value,   10),
+        w:     parseInt(document.getElementById('wb-w').value,   10),
+        h:     parseInt(document.getElementById('wb-h').value,   10),
+        value: parseFloat(document.getElementById('wb-val').value)
+      }
+    });
+  });
+
+  // ── Wire live connection ──────────────────────────────────────────────────
+  DiaLiveConnection.init({
+    prefix: 'scalarfield_inspector',
+    onDisconnected: function() {
+      currentFields = [];
+      history       = [];
+      sliderLive    = true;
+      sliderValue   = 59;
+      document.getElementById('disconnect-overlay').style.display = '';
+      document.getElementById('conn-badge').textContent = 'disconnected';
+      document.getElementById('conn-badge').classList.add('disconnected');
+      rebuildUI();
+    },
+    onData: function(topic, data) {
+      if (topic === 'scalarfield_inspector.state') {
+        document.getElementById('disconnect-overlay').style.display = 'none';
+        document.getElementById('conn-badge').textContent = 'connected';
+        document.getElementById('conn-badge').classList.remove('disconnected');
+        onStateUpdate(data);
+      }
+    }
+  });
+</script>
+</body>
+</html>

@@ -1464,6 +1464,9 @@
     </ClCompile>
     <ClCompile Include="DiaSteering\TestSteeringSystem.cpp">
     <ClCompile Include="DiaScalarField\TestScalarFieldVisualDebugger.cpp">
+    <ClCompile Include="DiaScalarField\TestDiaScalarFieldAdapter.cpp">
+      <Filter>DiaScalarField</Filter>
+    </ClCompile>
     <ClCompile Include="DiaSensor\TestDiaSensor.cpp">
       <Filter>DiaSensor</Filter>
     </ClCompile>
