@@ -266,3 +266,139 @@ TEST(ScalarFieldAdapter, CaptureSnapshot_StoresFieldStateAtCaptureTime)
     // Live value is now 0.0.
     EXPECT_FLOAT_EQ(adapter.GetValue(cell), 0.0f);
 }
+
+// ---------------------------------------------------------------------------
+// 7. WriteRadial — adapter delegates to the underlying field
+// ---------------------------------------------------------------------------
+
+TEST(ScalarFieldAdapter, WriteRadial_CenterCellGetsPeakValue_Linear)
+{
+    // 5x5 grid, radial at (2,2) r=2 peak=1 linear.
+    // Centre cell: dist=0, attenuation=1.0 → value=1.0.
+    auto field = MakeField(5, 5);
+    DiaScalarFieldAdapter<SquareFieldTopology> adapter(field, "f");
+
+    const CellIndex center{ 2, 2 };
+    adapter.WriteRadial(center, 2.0f, 1.0f, FalloffCurve::kLinear);
+    field.Tick();
+
+    EXPECT_FLOAT_EQ(adapter.GetValue(center), 1.0f);
+}
+
+TEST(ScalarFieldAdapter, WriteRadial_CellBeyondRadius_StaysZero_Linear)
+{
+    // 5x5 grid, radial at (2,2) r=1 peak=1 linear.
+    // Cell (0,0): dist = sqrt(8) ≈ 2.83 > 1 → not touched → stays 0.
+    auto field = MakeField(5, 5);
+    DiaScalarFieldAdapter<SquareFieldTopology> adapter(field, "f");
+
+    adapter.WriteRadial({2, 2}, 1.0f, 1.0f, FalloffCurve::kLinear);
+    field.Tick();
+
+    EXPECT_FLOAT_EQ(adapter.GetValue({0, 0}), 0.0f);
+}
+
+TEST(ScalarFieldAdapter, WriteRadial_IntermediateCell_LinearAttenuation)
+{
+    // 5x5 grid, radial at (2,2) r=2 peak=1 linear.
+    // Cell (2,1): dist=1, attenuation = 1 - 1/2 = 0.5 → value=0.5.
+    auto field = MakeField(5, 5);
+    DiaScalarFieldAdapter<SquareFieldTopology> adapter(field, "f");
+
+    adapter.WriteRadial({2, 2}, 2.0f, 1.0f, FalloffCurve::kLinear);
+    field.Tick();
+
+    EXPECT_FLOAT_EQ(adapter.GetValue({2, 1}), 0.5f);
+}
+
+TEST(ScalarFieldAdapter, WriteRadial_IntermediateCell_QuadraticAttenuation)
+{
+    // 5x5 grid, radial at (2,2) r=2 peak=1 quadratic.
+    // Cell (2,1): dist=1, t=0.5, attenuation = 1 - 0.25 = 0.75 → value=0.75.
+    auto field = MakeField(5, 5);
+    DiaScalarFieldAdapter<SquareFieldTopology> adapter(field, "f");
+
+    adapter.WriteRadial({2, 2}, 2.0f, 1.0f, FalloffCurve::kQuadratic);
+    field.Tick();
+
+    EXPECT_FLOAT_EQ(adapter.GetValue({2, 1}), 0.75f);
+}
+
+TEST(ScalarFieldAdapter, WriteRadial_ViaInterface_DelegatesToField)
+{
+    // Access through IDiaScalarField* to confirm interface dispatch.
+    auto field = MakeField(5, 5);
+    DiaScalarFieldAdapter<SquareFieldTopology> adapter(field, "f");
+    IDiaScalarField* iface = &adapter;
+
+    iface->WriteRadial({2, 2}, 2.0f, 0.8f, FalloffCurve::kLinear);
+    field.Tick();
+
+    // Centre cell: dist=0 → attenuation=1.0 → 0.8 * 1.0 = 0.8.
+    EXPECT_FLOAT_EQ(adapter.GetValue({2, 2}), 0.8f);
+}
+
+// ---------------------------------------------------------------------------
+// 8. WriteBox — adapter delegates to the underlying field
+// ---------------------------------------------------------------------------
+
+TEST(ScalarFieldAdapter, WriteBox_AllCellsInBoxGetValue)
+{
+    // 5x5 grid, box at (1,1) w=3 h=2.
+    // Expected to hit: (1,1),(2,1),(3,1),(1,2),(2,2),(3,2) → 6 cells.
+    auto field = MakeField(5, 5);
+    DiaScalarFieldAdapter<SquareFieldTopology> adapter(field, "f");
+
+    adapter.WriteBox({1, 1}, 3, 2, 0.7f);
+    field.Tick();
+
+    EXPECT_FLOAT_EQ(adapter.GetValue({1, 1}), 0.7f);
+    EXPECT_FLOAT_EQ(adapter.GetValue({2, 1}), 0.7f);
+    EXPECT_FLOAT_EQ(adapter.GetValue({3, 1}), 0.7f);
+    EXPECT_FLOAT_EQ(adapter.GetValue({1, 2}), 0.7f);
+    EXPECT_FLOAT_EQ(adapter.GetValue({2, 2}), 0.7f);
+    EXPECT_FLOAT_EQ(adapter.GetValue({3, 2}), 0.7f);
+}
+
+TEST(ScalarFieldAdapter, WriteBox_CellsOutsideBox_StayZero)
+{
+    // 5x5 grid, box at (1,1) w=3 h=3. Corners (0,0) and (4,4) untouched.
+    auto field = MakeField(5, 5);
+    DiaScalarFieldAdapter<SquareFieldTopology> adapter(field, "f");
+
+    adapter.WriteBox({1, 1}, 3, 3, 0.5f);
+    field.Tick();
+
+    EXPECT_FLOAT_EQ(adapter.GetValue({0, 0}), 0.0f);
+    EXPECT_FLOAT_EQ(adapter.GetValue({4, 4}), 0.0f);
+    EXPECT_FLOAT_EQ(adapter.GetValue({4, 0}), 0.0f);
+    EXPECT_FLOAT_EQ(adapter.GetValue({0, 4}), 0.0f);
+}
+
+TEST(ScalarFieldAdapter, WriteBox_1x1_OnlyTargetCellChanged)
+{
+    // A 1x1 box is equivalent to WritePoint.
+    auto field = MakeField(3, 3);
+    DiaScalarFieldAdapter<SquareFieldTopology> adapter(field, "f");
+
+    adapter.WriteBox({1, 1}, 1, 1, 0.9f);
+    field.Tick();
+
+    EXPECT_FLOAT_EQ(adapter.GetValue({1, 1}), 0.9f);
+    EXPECT_FLOAT_EQ(adapter.GetValue({0, 0}), 0.0f);
+    EXPECT_FLOAT_EQ(adapter.GetValue({2, 2}), 0.0f);
+}
+
+TEST(ScalarFieldAdapter, WriteBox_ViaInterface_DelegatesToField)
+{
+    auto field = MakeField(4, 4);
+    DiaScalarFieldAdapter<SquareFieldTopology> adapter(field, "f");
+    IDiaScalarField* iface = &adapter;
+
+    iface->WriteBox({0, 0}, 2, 2, 0.6f);
+    field.Tick();
+
+    EXPECT_FLOAT_EQ(adapter.GetValue({0, 0}), 0.6f);
+    EXPECT_FLOAT_EQ(adapter.GetValue({1, 1}), 0.6f);
+    EXPECT_FLOAT_EQ(adapter.GetValue({2, 2}), 0.0f);
+}

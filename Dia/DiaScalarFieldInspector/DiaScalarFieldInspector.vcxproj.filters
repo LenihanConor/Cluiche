@@ -13,5 +13,6 @@
   <ItemGroup>
     <None Include="Docs\dia.diascalarfieldinspector.architecture.module.md"><Filter>Docs</Filter></None>
     <None Include="UI\index.html"><Filter>UI</Filter></None>
+    <None Include="UI\index.test.html"><Filter>UI</Filter></None>
   </ItemGroup>
 </Project>

@@ -65,6 +65,7 @@
   <ItemGroup>
     <None Include="Docs\dia.diascalarfieldinspector.architecture.module.md" />
     <None Include="UI\index.html" />
+    <None Include="UI\index.test.html" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaEditor\DiaEditor.vcxproj"><Project>{F1A2B3C4-D5E6-7890-ABCD-EF1234567890}</Project></ProjectReference>
