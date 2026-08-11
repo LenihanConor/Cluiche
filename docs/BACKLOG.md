@@ -12,12 +12,13 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | System | Features | Depends On |
 |--------|----------|------------|
-| DiaEconomyInspector | EconomyInstancesSource, EconomyModifiersSource, EconomyEventsSource, EconomySchemaSource, dockable editor plugin | DiaEconomy ✅, DiaEditor |
+| DiaMessageBus | core-bus, entity-router-registration, flush-adapters, frame-ledger, schema-browser, eventdispatcher-removal, module-and-build — **Task 0: audit existing observer/event usage before implementing** | DiaMailbox ✅, DiaStreams ✅, DiaApplicationFlow ✅, DiaObservation ✅ |
+| ~~DiaEconomyInspector~~ | EconomyInstancesSource, EconomyModifiersSource, EconomyEventsSource, EconomySchemaSource, dockable editor plugin | DiaEconomy ✅, DiaEditor |
 | DiaScalarFieldInspector | Dockable editor panel for scalar field inspection | DiaScalarField ✅, DiaEditor |
 | ~~DiaObjective~~ | Data-driven gameplay goal tracking — completion conditions, progress, per-faction objectives, chained objectives | DiaCondition ✅, DiaCore ✅, diaentitytemplate ✅ |
 | ~~DiaEntitySpawner~~ | `SpawnRequest` API, `SpawnEmitterComponent` (rate/burst/cap/lifetime/radius), `EntitySpawnerModule` on SimPU, DiaObservation coverage, GoogleTest suite, CluicheTest E2E visual stage — **plan ready (10 tasks)** | diaentity ✅, DiaReflect ✅, DiaSerializer ✅ |
 | ~~DiaSaveGame~~ | ISaveable contract, SaveRegistry, SaveConfig + slot management, SaveContext/LoadContext, SaveManifest, async I/O, versioning + migration, Observer events, test utilities | DiaSerializer ✅, DiaCore ✅ |
-| ArenaTestStage (CluicheTest) | **In Progress (5/11 tasks done)** — scaffold + JSON assets + header + OnStart/LoadTriggerScript + SpawnWave/EnemyAgent done; remaining: DoUpdate frame loop (T6), metrics (T7), ImGui visuals (T8), DoStop (T9), pytest (T10), E2E verify (T11) | DiaTriggerScript ✅, DiaObjective ✅, DiaBlackboard ✅, DiaStateMachine ✅, DiaUtilityAI ✅, DiaRules ✅ |
+| ~~ArenaTestStage (CluicheTest)~~ | **In Progress (5/11 tasks done)** — scaffold + JSON assets + header + OnStart/LoadTriggerScript + SpawnWave/EnemyAgent done; remaining: DoUpdate frame loop (T6), metrics (T7), ImGui visuals (T8), DoStop (T9), pytest (T10), E2E verify (T11) | DiaTriggerScript ✅, DiaObjective ✅, DiaBlackboard ✅, DiaStateMachine ✅, DiaUtilityAI ✅, DiaRules ✅ |
 | ~~DiaTriggerScript~~ | Data-driven level events — spatial/temporal/state/count triggers, four action types, ITriggerActionHandler extension point, TriggerFiredEvent on DiaStreams | DiaCondition ✅, DiaGeometry2D ✅, DiaEntitySpatial ✅, DiaStreams ✅, DiaObjective (ChangeObjectiveState action only) |
 
 ---
@@ -70,6 +71,6 @@ Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testin
 
 | Item | Notes |
 |------|-------|
-| ArenaTestStage spec → backlog | Promoted from loose end to Approved spec + backlog entry 2026-08-07. See Ready to Build above. |
+| ~~ArenaTestStage spec → backlog~~ | Promoted from loose end to Approved spec + backlog entry 2026-08-07. See Ready to Build above. |
 | RenderTechnique asset type | Layer-level rendering policy (blend mode, post-process like bloom/distortion). Layers reference a technique by name; renderer resolves at draw time. Needs `/spec-feature` under DiaGraphics or DiaBgfx once the scene system lands. |
 | Camera2D controller (pan/zoom/reset) | Application-side input→Camera2D wiring for CluicheTest stages (keyboard pan, scroll zoom, home-key reset). Unblocked once coord2d-debug-overlay ships Camera2D + renderer integration. |
