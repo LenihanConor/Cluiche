@@ -1506,6 +1506,9 @@
     <ClCompile Include="DiaSaveGame\TestSaveManagerEvents.cpp">
     <ClCompile Include="DiaSaveGame\TestSlotManager.cpp">
     <ClCompile Include="DiaSaveGame\TestSaveRegistry.cpp">
+    <ClCompile Include="DiaVisualDebugger\\TestDiaDebugDomainRegistry.cpp">
+      <Filter>DiaVisualDebugger</Filter>
+    </ClCompile>
       <Filter>DiaSaveGame</Filter>
     </ClCompile>
       <Filter>DiaSaveGame</Filter>

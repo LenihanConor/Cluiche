@@ -95,6 +95,9 @@
     <ClInclude Include="Coord3D\Coord3DCameraDrawer.h">
     <ClInclude Include="Domain\\IDebugDomain.h">
     <ClInclude Include="Domain\\DebugGroupAccents.h">
+    <ClInclude Include="Domain\\DiaDebugDomainRegistry.h">
+      <Filter>Domain</Filter>
+    </ClInclude>
       <Filter>Domain</Filter>
     </ClInclude>
       <Filter>Domain</Filter>
@@ -141,6 +144,9 @@
     </ClCompile>
     <ClCompile Include="Coord3D\Coord3DCameraDrawer.cpp">
     <ClCompile Include="Domain\\DebugGroupAccents.cpp">
+    <ClCompile Include="Domain\\DiaDebugDomainRegistry.cpp">
+      <Filter>Domain</Filter>
+    </ClCompile>
       <Filter>Domain</Filter>
     </ClCompile>
       <Filter>Source Files\Coord3D</Filter>
