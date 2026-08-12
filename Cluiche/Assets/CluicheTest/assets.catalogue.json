@@ -19,6 +19,10 @@
                 {
                     "target": "folder.ultralight_resources",
                     "type": "contains"
+                },
+                {
+                    "target": "ui.debug_panel_page",
+                    "type": "contains"
                 }
             ],
             "scope": "global",
@@ -107,6 +111,19 @@
                 "Presentation"
             ],
             "type": "shader"
+        },
+        {
+            "content_hash": 0,
+            "id": "ui.debug_panel_page",
+            "references": [],
+            "scope": "global",
+            "source_path": "Global/Presentation/UI/debug-panel.html",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "Presentation/UI"
+            ],
+            "type": "ui"
         },
         {
             "content_hash": 0,

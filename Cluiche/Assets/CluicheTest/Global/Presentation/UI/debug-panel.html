@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dia Debug Panel</title>
+<!--
+  DiaDebugPanel — Phase 1.
+
+  Rendered by Ultralight as an overlay on the left side of the game viewport
+  (SD-007). Styling is lifted verbatim from the approved UX mockup at
+  docs/research/visual_debugger_redesign/mockup.html.
+
+  No CDN / external assets: Ultralight runs fully offline.
+
+  C++ -> JS   updateDomainState(data)      pushed once per frame
+  JS   -> C++ app.onCommand(domainId, cmd, argsJson)
+
+  Phase 2 (needs keyboard injection, not built here): search bar, command
+  strip, entity-lock field, log tabs.
+-->
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: transparent;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 12px;
+  color: #d4d4d4;
+  height: 100vh;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ─────────────────────────────── PANEL ─── */
+#panel {
+  position: fixed;
+  top: 0; left: 0;
+  width: 520px;
+  height: 100vh;
+  background: #181818;
+  border-right: 1px solid #2a2a2a;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Panel header ── */
+.panel-header {
+  background: #1f1f1f;
+  border-bottom: 1px solid #2d2d2d;
+  padding: 7px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.panel-title {
+  font-size: 10px;
+  color: #7a7a7a;
+  letter-spacing: 2px;
+  font-weight: 700;
+  flex: 1;
+}
+.scale-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: #555;
+}
+.scale-row input[type=range] {
+  width: 55px; height: 3px;
+  accent-color: #5a9fd4; cursor: pointer;
+}
+#scale-display { color: #9a9a9a; width: 22px; text-align: right; }
+
+/* ── Groups list ── */
+.groups-list {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #2d2d2d transparent;
+}
+
+/* ── Empty state ── */
+.empty-state {
+  padding: 18px 12px;
+  font-size: 11px;
+  color: #3a3a3a;
+  font-style: italic;
+  text-align: center;
+}
+
+/* ── Group ── */
+.group { border-top: 1px solid #1f1f1f; }
+
+.group-hdr {
+  display: flex;
+  align-items: center;
+  padding: 5px 10px;
+  cursor: pointer;
+  gap: 6px;
+  background: #181818;
+}
+.group-hdr:hover { background: #1e1e1e; }
+
+.group-arrow { width: 10px; font-size: 9px; color: #3a3a3a; flex-shrink: 0; }
+.group.open  .group-arrow::after { content: '▼'; }
+.group.closed .group-arrow::after { content: '▶'; }
+
+.group-label {
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  font-weight: 700;
+  text-transform: uppercase;
+  flex: 1;
+  color: var(--accent);
+  opacity: 0.85;
+}
+
+.group-meta { font-size: 10px; color: #333; margin-right: 4px; }
+
+.btn-all {
+  font-family: inherit; font-size: 9px;
+  padding: 1px 5px;
+  border: 1px solid;
+  cursor: pointer; background: transparent;
+  line-height: 1.5;
+}
+.btn-all.on  { border-color: #1e3a1e; color: #3a7a3a; }
+.btn-all.on:hover  { background: #111d11; color: #5aaa5a; }
+.btn-all.off { border-color: #3a1e1e; color: #7a3a3a; }
+.btn-all.off:hover { background: #1d1111; color: #aa5a5a; }
+
+.group-body {
+  padding: 4px 8px 6px 8px;
+  background: #131313;
+}
+.group.closed .group-body { display: none; }
+
+/* ── Domain Card ── */
+.domain {
+  margin-bottom: 3px;
+  border: 1px solid #222;
+  background: #1b1b1b;
+}
+.domain.enabled  { border-left: 2px solid var(--accent); }
+.domain.disabled { border-left: 2px solid #2a2a2a; opacity: 0.55; }
+
+.domain-hdr {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  gap: 6px;
+  cursor: pointer;
+}
+.domain-hdr:hover { background: #202020; }
+
+.tog {
+  width: 13px; height: 13px;
+  border: 1px solid #444;
+  flex-shrink: 0; display: flex;
+  align-items: center; justify-content: center;
+  font-size: 8px; cursor: pointer;
+}
+.tog.on  { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
+.tog.on::after  { content: '✓'; }
+.tog.off::after { content: ''; }
+
+.domain-name {
+  flex: 1; font-size: 12px; font-weight: 600; color: #aaa;
+}
+.domain.enabled .domain-name { color: var(--accent); }
+
+.domain-stat { font-size: 10px; color: #3a3a3a; }
+.domain.enabled .domain-stat { color: #555; }
+
+.expand-btn { width: 12px; font-size: 9px; color: #333; flex-shrink: 0; text-align: center; }
+.domain.open   .expand-btn::after { content: '▼'; }
+.domain.closed .expand-btn::after { content: '▶'; }
+
+.domain-body {
+  padding: 6px 10px 8px 10px;
+  border-top: 1px solid #202020;
+}
+.domain.closed .domain-body { display: none; }
+
+/* Drawers */
+.drawers {
+  display: flex; flex-wrap: wrap; gap: 5px 10px; margin-bottom: 6px;
+}
+.dr {
+  display: flex; align-items: center; gap: 4px;
+  cursor: pointer; font-size: 11px; color: #555;
+}
+.dr.on { color: #b0b0b0; }
+.dr-box {
+  width: 11px; height: 11px;
+  border: 1px solid #3a3a3a; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 8px;
+}
+.dr.on .dr-box { background: var(--accent); border-color: var(--accent); color: #000; }
+.dr.on .dr-box::after { content: '✓'; }
+
+/* Stats */
+.stats {
+  display: flex; flex-wrap: wrap; gap: 0 12px;
+  padding: 4px 0; margin-bottom: 5px;
+  border-top: 1px solid #1e1e1e; border-bottom: 1px solid #1e1e1e;
+}
+.stats:empty { display: none; }
+.s { font-size: 10px; color: #444; }
+.s .v { color: #777; }
+.s .v.w { color: #c8882a; }
+.s .v.e { color: #c03030; }
+.s .v.g { color: #3a9a5a; }
+
+/* Controls */
+.controls { display: flex; flex-direction: column; gap: 3px; margin-top: 5px; }
+.controls:empty { display: none; }
+.ctrl {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 10px; color: #444;
+}
+.ctrl span.ctrl-label { width: 96px; flex-shrink: 0; }
+.ctrl input[type=range] {
+  flex: 1; height: 3px;
+  accent-color: var(--accent); cursor: pointer;
+}
+.ctrl .cv { width: 30px; text-align: right; color: #666; }
+
+/* Desc */
+.desc { font-size: 10px; color: #383838; margin-bottom: 5px; font-style: italic; }
+
+/* ── Group accent colours (fallback; C++ also pushes _accent per domain) ── */
+.group[data-g="physics"]    { --accent: #f59e0b; }
+.group[data-g="animation"]  { --accent: #10b981; }
+.group[data-g="navigation"] { --accent: #3b82f6; }
+.group[data-g="rendering"]  { --accent: #8b5cf6; }
+.group[data-g="spatial"]    { --accent: #06b6d4; }
+.group[data-g="entity"]     { --accent: #eab308; }
+.group[data-g="aibehavior"] { --accent: #ef4444; }
+.group[data-g="coredebug"]  { --accent: #6b7280; }
+
+/* ── Misc ── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #252525; }
+::-webkit-scrollbar-thumb:hover { background: #333; }
+</style>
+</head>
+<body>
+
+<div id="panel">
+
+  <div class="panel-header">
+    <span class="panel-title">DIA&nbsp;&nbsp;DEBUG</span>
+    <div class="scale-row">
+      <span>Scale</span>
+      <input type="range" min="10" max="200" value="50" id="scale-range">
+      <span id="scale-display">50</span>
+    </div>
+  </div>
+
+  <div class="groups-list" id="groups-list">
+    <div class="empty-state" id="empty-state">No domains registered</div>
+  </div>
+
+</div>
+
+<script>
+'use strict';
+
+// ── Canonical group order + display labels (DiaDebugDomain spec) ───────────
+var GROUP_ORDER = [
+  { key: 'CoreDebug',  label: 'Core Debug',       css: 'coredebug'  },
+  { key: 'Physics',    label: 'Physics',          css: 'physics'    },
+  { key: 'Animation',  label: 'Animation',        css: 'animation'  },
+  { key: 'Navigation', label: 'Navigation',       css: 'navigation' },
+  { key: 'Rendering',  label: 'Rendering',        css: 'rendering'  },
+  { key: 'Spatial',    label: 'Spatial/Geometry', css: 'spatial'    },
+  { key: 'Entity',     label: 'Entity',           css: 'entity'     },
+  { key: 'AIBehavior', label: 'AI/Behavior',      css: 'aibehavior' }
+];
+
+// ── Local UI state (survives per-frame refreshes) ──────────────────────────
+var ui = {
+  groupOpen:   {},   // groupKey  -> bool
+  domainOpen:  {},   // domainId  -> bool
+  structureSig: null,
+  activeSlider: null // control element currently being dragged
+};
+
+var latest = {};     // last pushed domain state, keyed by display name
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+
+// Ultralight marshals every JS string argument through Dia String64, which
+// truncates at 63 characters. Keep argsJson compact and warn if it overflows.
+var MAX_ARG_JSON = 63;
+
+function sendCommand(domainId, cmd, args) {
+  if (typeof app === 'undefined' || !app || !app.onCommand) return;
+  var json = JSON.stringify(args || {});
+  if (json.length > MAX_ARG_JSON) {
+    json = '{}';
+  }
+  app.onCommand(String(domainId), String(cmd), json);
+}
+
+function domainsOf(data) {
+  var out = [];
+  for (var name in data) {
+    if (!Object.prototype.hasOwnProperty.call(data, name)) continue;
+    var d = data[name];
+    if (!d || typeof d !== 'object') continue;
+    out.push({
+      id:      d._displayName || name,
+      group:   d._group || 'CoreDebug',
+      desc:    d._description || '',
+      accent:  d._accent || '',
+      drawers: Array.isArray(d.drawers) ? d.drawers : [],
+      stats:   (d.stats && typeof d.stats === 'object') ? d.stats : {},
+      controls: Array.isArray(d.controls) ? d.controls : []
+    });
+  }
+  out.sort(function (a, b) { return a.id < b.id ? -1 : (a.id > b.id ? 1 : 0); });
+  return out;
+}
+
+function isDomainEnabled(domain) {
+  for (var i = 0; i < domain.drawers.length; ++i) {
+    if (domain.drawers[i] && domain.drawers[i].enabled) return true;
+  }
+  return false;
+}
+
+function headlineStat(domain) {
+  for (var k in domain.stats) {
+    if (Object.prototype.hasOwnProperty.call(domain.stats, k)) {
+      return k + ': ' + domain.stats[k];
+    }
+  }
+  return '';
+}
+
+// Structure signature — a rebuild only happens when the domain/drawer/control
+// inventory changes, so accordion state and slider drags are never clobbered.
+function structureSignature(domains) {
+  var parts = [];
+  for (var i = 0; i < domains.length; ++i) {
+    var d = domains[i];
+    var drawers = d.drawers.map(function (x) { return x && x.name ? x.name : '?'; }).join(',');
+    var ctrls   = d.controls.map(function (c) { return c && c.key ? c.key : '?'; }).join(',');
+    parts.push(d.group + '/' + d.id + '[' + drawers + '][' + ctrls + ']');
+  }
+  return parts.join('|');
+}
+
+// ── Build (structure changed) ─────────────────────────────────────────────
+
+function rebuild(domains) {
+  var list = document.getElementById('groups-list');
+  list.innerHTML = '';
+
+  if (domains.length === 0) {
+    var empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.id = 'empty-state';
+    empty.textContent = 'No domains registered';
+    list.appendChild(empty);
+    return;
+  }
+
+  for (var g = 0; g < GROUP_ORDER.length; ++g) {
+    var groupDef = GROUP_ORDER[g];
+    var members = domains.filter(function (d) { return d.group === groupDef.key; });
+    if (members.length === 0) continue;
+
+    if (!(groupDef.key in ui.groupOpen)) ui.groupOpen[groupDef.key] = true;
+
+    var group = document.createElement('div');
+    group.className = 'group ' + (ui.groupOpen[groupDef.key] ? 'open' : 'closed');
+    group.setAttribute('data-g', groupDef.css);
+    group.setAttribute('data-group-key', groupDef.key);
+    if (members[0].accent) group.style.setProperty('--accent', members[0].accent);
+
+    var hdr = document.createElement('div');
+    hdr.className = 'group-hdr';
+    hdr.appendChild(el('span', 'group-arrow'));
+    hdr.appendChild(el('span', 'group-label', groupDef.label));
+    var meta = el('span', 'group-meta', members.length + (members.length === 1 ? ' domain' : ' domains'));
+    hdr.appendChild(meta);
+
+    var allOn = document.createElement('button');
+    allOn.className = 'btn-all on';
+    allOn.textContent = 'All On';
+    var allOff = document.createElement('button');
+    allOff.className = 'btn-all off';
+    allOff.textContent = 'All Off';
+    hdr.appendChild(allOn);
+    hdr.appendChild(allOff);
+
+    (function (groupKey, groupEl) {
+      hdr.addEventListener('click', function () {
+        ui.groupOpen[groupKey] = !ui.groupOpen[groupKey];
+        groupEl.classList.toggle('open',   ui.groupOpen[groupKey]);
+        groupEl.classList.toggle('closed', !ui.groupOpen[groupKey]);
+      });
+      allOn.addEventListener('click', function (e) { e.stopPropagation(); setGroupAll(groupKey, true); });
+      allOff.addEventListener('click', function (e) { e.stopPropagation(); setGroupAll(groupKey, false); });
+    })(groupDef.key, group);
+
+    group.appendChild(hdr);
+
+    var body = el('div', 'group-body');
+    for (var m = 0; m < members.length; ++m) {
+      body.appendChild(buildDomainCard(members[m]));
+    }
+    group.appendChild(body);
+
+    list.appendChild(group);
+  }
+}
+
+function el(tag, cls, text) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function buildDomainCard(domain) {
+  if (!(domain.id in ui.domainOpen)) ui.domainOpen[domain.id] = false;
+
+  var enabled = isDomainEnabled(domain);
+
+  var card = document.createElement('div');
+  card.className = 'domain ' + (enabled ? 'enabled ' : 'disabled ') +
+                   (ui.domainOpen[domain.id] ? 'open' : 'closed');
+  card.setAttribute('data-domain', domain.id);
+  if (domain.accent) card.style.setProperty('--accent', domain.accent);
+
+  // Header
+  var hdr = el('div', 'domain-hdr');
+  var tog = el('div', 'tog ' + (enabled ? 'on' : 'off'));
+  tog.setAttribute('data-role', 'domain-toggle');
+  hdr.appendChild(tog);
+  hdr.appendChild(el('span', 'domain-name', domain.id));
+  var stat = el('span', 'domain-stat', headlineStat(domain));
+  stat.setAttribute('data-role', 'headline');
+  hdr.appendChild(stat);
+  hdr.appendChild(el('span', 'expand-btn'));
+
+  hdr.addEventListener('click', function () {
+    ui.domainOpen[domain.id] = !ui.domainOpen[domain.id];
+    card.classList.toggle('open',   ui.domainOpen[domain.id]);
+    card.classList.toggle('closed', !ui.domainOpen[domain.id]);
+  });
+  tog.addEventListener('click', function (e) {
+    e.stopPropagation();
+    setDomainAll(domain.id, !tog.classList.contains('on'));
+  });
+  card.appendChild(hdr);
+
+  // Body
+  var body = el('div', 'domain-body');
+  if (domain.desc) body.appendChild(el('div', 'desc', domain.desc));
+
+  var drawers = el('div', 'drawers');
+  for (var i = 0; i < domain.drawers.length; ++i) {
+    var dw = domain.drawers[i];
+    if (!dw || !dw.name) continue;
+    var row = el('div', 'dr ' + (dw.enabled ? 'on' : 'off'));
+    row.setAttribute('data-drawer', dw.name);
+    row.appendChild(el('span', 'dr-box'));
+    row.appendChild(document.createTextNode(' ' + dw.name));
+    (function (name) {
+      row.addEventListener('click', function (e) {
+        e.stopPropagation();
+        sendCommand(domain.id, 'toggle', { drawer: name });
+      });
+    })(dw.name);
+    drawers.appendChild(row);
+  }
+  body.appendChild(drawers);
+
+  var stats = el('div', 'stats');
+  stats.setAttribute('data-role', 'stats');
+  body.appendChild(stats);
+
+  var controls = el('div', 'controls');
+  for (var c = 0; c < domain.controls.length; ++c) {
+    var ctrlDef = domain.controls[c];
+    if (!ctrlDef || !ctrlDef.key) continue;
+    controls.appendChild(buildControl(domain.id, ctrlDef));
+  }
+  body.appendChild(controls);
+
+  card.appendChild(body);
+  return card;
+}
+
+function buildControl(domainId, def) {
+  var ctrl = el('div', 'ctrl');
+  ctrl.setAttribute('data-control', def.key);
+
+  ctrl.appendChild(el('span', 'ctrl-label', def.label || def.key));
+
+  var range = document.createElement('input');
+  range.type  = 'range';
+  range.min   = (def.min  !== undefined) ? def.min  : 0;
+  range.max   = (def.max  !== undefined) ? def.max  : 1;
+  range.step  = (def.step !== undefined) ? def.step : 0.01;
+  range.value = (def.value !== undefined) ? def.value : 0;
+
+  var display = el('span', 'cv', formatValue(range.value));
+
+  range.addEventListener('input', function () {
+    ui.activeSlider = range;
+    display.textContent = formatValue(range.value);
+  });
+  range.addEventListener('change', function () {
+    ui.activeSlider = null;
+    display.textContent = formatValue(range.value);
+    sendCommand(domainId, 'setScale', { key: def.key, value: parseFloat(range.value) });
+  });
+
+  ctrl.appendChild(range);
+  ctrl.appendChild(display);
+  return ctrl;
+}
+
+function formatValue(v) {
+  var n = parseFloat(v);
+  if (!isFinite(n)) return String(v);
+  return (Math.abs(n) >= 10 || n === Math.floor(n)) ? String(n) : n.toFixed(2);
+}
+
+// ── Refresh (structure unchanged — update text + classes only) ────────────
+
+function refresh(domains) {
+  for (var i = 0; i < domains.length; ++i) {
+    var domain = domains[i];
+    var card = document.querySelector('.domain[data-domain="' + cssEscape(domain.id) + '"]');
+    if (!card) continue;
+
+    var enabled = isDomainEnabled(domain);
+    card.classList.toggle('enabled',  enabled);
+    card.classList.toggle('disabled', !enabled);
+
+    var tog = card.querySelector('.tog');
+    if (tog) {
+      tog.classList.toggle('on',  enabled);
+      tog.classList.toggle('off', !enabled);
+    }
+
+    var headline = card.querySelector('[data-role="headline"]');
+    if (headline) headline.textContent = headlineStat(domain);
+
+    for (var d = 0; d < domain.drawers.length; ++d) {
+      var dw = domain.drawers[d];
+      if (!dw || !dw.name) continue;
+      var row = card.querySelector('.dr[data-drawer="' + cssEscape(dw.name) + '"]');
+      if (!row) continue;
+      row.classList.toggle('on',  !!dw.enabled);
+      row.classList.toggle('off', !dw.enabled);
+    }
+
+    var statsEl = card.querySelector('[data-role="stats"]');
+    if (statsEl) renderStats(statsEl, domain.stats);
+
+    for (var c = 0; c < domain.controls.length; ++c) {
+      var def = domain.controls[c];
+      if (!def || !def.key || def.value === undefined) continue;
+      var ctrl = card.querySelector('.ctrl[data-control="' + cssEscape(def.key) + '"]');
+      if (!ctrl) continue;
+      var range = ctrl.querySelector('input[type=range]');
+      if (!range || range === ui.activeSlider) continue;
+      range.value = def.value;
+      var cv = ctrl.querySelector('.cv');
+      if (cv) cv.textContent = formatValue(def.value);
+    }
+  }
+}
+
+function renderStats(container, stats) {
+  var html = '';
+  for (var k in stats) {
+    if (!Object.prototype.hasOwnProperty.call(stats, k)) continue;
+    html += '<span class="s">' + escapeHtml(k) +
+            ' <span class="v">' + escapeHtml(String(stats[k])) + '</span></span>';
+  }
+  if (container.innerHTML !== html) container.innerHTML = html;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function cssEscape(s) {
+  return String(s).replace(/["\\]/g, '\\$&');
+}
+
+// ── Bulk toggles ─────────────────────────────────────────────────────────
+
+function setDomainAll(domainId, target) {
+  var domain = null;
+  var all = domainsOf(latest);
+  for (var i = 0; i < all.length; ++i) { if (all[i].id === domainId) { domain = all[i]; break; } }
+  if (!domain) return;
+
+  for (var d = 0; d < domain.drawers.length; ++d) {
+    var dw = domain.drawers[d];
+    if (!dw || !dw.name) continue;
+    if (!!dw.enabled !== target) sendCommand(domainId, 'toggle', { drawer: dw.name });
+  }
+}
+
+function setGroupAll(groupKey, target) {
+  var all = domainsOf(latest);
+  for (var i = 0; i < all.length; ++i) {
+    if (all[i].group === groupKey) setDomainAll(all[i].id, target);
+  }
+}
+
+// ── C++ -> JS entry point ────────────────────────────────────────────────
+// CallJSFunction evaluates `updateDomainState(<json>)`, so the argument
+// arrives as a live object. A JSON string is also accepted for robustness.
+function updateDomainState(data) {
+  if (typeof data === 'string') {
+    try { data = JSON.parse(data); } catch (e) { return; }
+  }
+  if (!data || typeof data !== 'object') return;
+
+  latest = data;
+  var domains = domainsOf(data);
+  var sig = structureSignature(domains);
+
+  if (sig !== ui.structureSig) {
+    ui.structureSig = sig;
+    rebuild(domains);
+  }
+  refresh(domains);
+}
+window.updateDomainState = updateDomainState;
+
+// ── Global scale slider ──────────────────────────────────────────────────
+(function () {
+  var range   = document.getElementById('scale-range');
+  var display = document.getElementById('scale-display');
+  range.addEventListener('input', function () {
+    display.textContent = range.value;
+  });
+  range.addEventListener('change', function () {
+    display.textContent = range.value;
+    sendCommand('__global__', 'setScale', { key: 'debugScale', value: parseFloat(range.value) });
+  });
+})();
+</script>
+</body>
+</html>

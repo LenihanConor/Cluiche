@@ -44,6 +44,7 @@ void VisualDebuggerModule::DoUpdate(float /*dt*/)
 {
     DIA_TRACE_ZONE("VisualDebuggerModule.Update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
 
+    DrainPanelCommandStream();
     DrainPendingCommands();
 
     auto* app = GetApplication();
@@ -78,7 +79,6 @@ void VisualDebuggerModule::DoUpdate(float /*dt*/)
 
     mLayerManager.Draw(mFrame);
     mRenderOutput.Write(mFrame, Dia::Core::TimeAbsolute::Zero());
-    PushDomainStatesToPanel();
 }
 
 Dia::ApplicationFlow::StopResult VisualDebuggerModule::DoStop()
@@ -97,6 +97,7 @@ void VisualDebuggerModule::OnConnectStreams(Dia::ApplicationFlow::Application& a
     mRenderOutput.Connect(app);
     mLayerManagerService.Connect(app);
     mDomainRegistryService.Connect(app);
+    mPanelCommands.Connect(app);
 }
 
 void VisualDebuggerModule::RegisterCoord2DDrawers()
@@ -212,10 +213,20 @@ void VisualDebuggerModule::DrainPendingCommands()
     }
 }
 
-void VisualDebuggerModule::PushDomainStatesToPanel()
+void VisualDebuggerModule::DrainPanelCommandStream()
 {
-    // TODO (Task 3): Panel page reads mDomainRegistry service stream
-    // and calls UltralightUISystem::CallJSFunction("updateDomainState", json)
+    // DiaDebugPanel runs on the Main PU (Ultralight). ModuleRef cannot cross a
+    // PU boundary, so its commands arrive here as events and are funnelled
+    // through the same mutex-protected queue used by in-PU callers.
+    Dia::Core::Containers::DynamicArrayC<
+        Dia::ApplicationFlow::Event<DebugPanelCommandEvent>, kCommandQueueCapacity> events;
+    mPanelCommands.Consume(events);
+
+    for (unsigned int i = 0; i < events.Size(); ++i)
+    {
+        const DebugPanelCommandEvent& payload = events[i].payload;
+        EnqueueCommand(payload.domainId, payload.cmd, payload.argsJson);
+    }
 }
 
 void VisualDebuggerModule::SetCamera3D(const Dia::Graphics3D::Camera3D& camera)

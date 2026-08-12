@@ -103,6 +103,12 @@
       <Filter>Modules</Filter>
     </ClCompile>
     <ClCompile Include="Modules\EconomyInspectorModule.cpp">
+    <ClCompile Include="Modules\DebugPanelPage.cpp">
+    <ClCompile Include="Modules\DebugPanelPageModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+      <Filter>Modules</Filter>
+    </ClCompile>
       <Filter>Modules</Filter>
     </ClCompile>
       <Filter>Modules</Filter>
@@ -215,6 +221,15 @@
       <Filter>Modules</Filter>
     </ClInclude>
     <ClInclude Include="Modules\EconomyInspectorModule.h">
+    <ClInclude Include="Types\DebugPanelCommandEvent.h">
+    <ClInclude Include="Modules\DebugPanelPage.h">
+    <ClInclude Include="Modules\DebugPanelPageModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+      <Filter>Modules</Filter>
+    </ClInclude>
+      <Filter>Types</Filter>
+    </ClInclude>
       <Filter>Modules</Filter>
     </ClInclude>
       <Filter>Types</Filter>

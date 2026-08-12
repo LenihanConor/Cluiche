@@ -6,6 +6,7 @@
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaStreams/StreamWriter.h>
 #include <DiaStreams/ServiceStreamWriter.h>
+#include <DiaStreams/EventStreamReader.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaGraphics/Frame/FrameData.h>
@@ -13,6 +14,7 @@
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include "Modules/InputStreamModule.h"
 #include "Modules/Camera2DModule.h"
+#include "Types/DebugPanelCommandEvent.h"
 #include <DiaVisualDebugger/Domain/IDebugDomain.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
 #include <memory>
@@ -83,13 +85,16 @@ private:
 
     // Drain pending panel commands (enqueued from Render PU)
     void DrainPendingCommands();
-    void PushDomainStatesToPanel();
+    // Drain DiaDebugPanel commands arriving from the Main PU over the
+    // DebugPanelCommand EventStream and funnel them into the command queue.
+    void DrainPanelCommandStream();
 
     Dia::Debug::DebugLayerManager mLayerManager;
     Dia::ApplicationFlow::StreamWriter<Dia::Graphics::FrameData> mRenderOutput{this, "SimToRender"};
     Dia::ApplicationFlow::ServiceStreamWriter<Dia::Debug::DebugLayerManager> mLayerManagerService{this, "DebugLayerManager"};
     Dia::VisualDebugger::DiaDebugDomainRegistry mDomainRegistry;
     Dia::ApplicationFlow::ServiceStreamWriter<Dia::VisualDebugger::DiaDebugDomainRegistry> mDomainRegistryService{this, "DomainRegistry"};
+    Dia::ApplicationFlow::EventStreamReader<DebugPanelCommandEvent> mPanelCommands{this, "DebugPanelCommand"};
     Dia::Core::Containers::DynamicArrayC<PendingCommand, kCommandQueueCapacity> mCommandQueue;
     std::mutex mCommandQueueMutex;
     Dia::Graphics::FrameData mFrame;

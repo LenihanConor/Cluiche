@@ -253,7 +253,7 @@
     },
     {
       "allowed_pus": "main",
-      "description": "Test stage for the Ultralight UI system: page loading, JS bridge, and layout testing.",
+      "description": "Test stage for the Ultralight UI system: page loading, JS bridge, keyboard injection, and input routing.",
       "type_id": "UIUltralightTestStageModule"
     },
     {
@@ -300,6 +300,16 @@
       "allowed_pus": "sim",
       "description": "Entity spatial queries: 5 query shapes, layer masks, dirty-flag re-index, destroy sweep",
       "type_id": "EntitySpatialTestStageModule"
+    },
+    {
+      "allowed_pus": "main",
+      "description": "Ultralight HTML debug panel overlay: domain accordions, drawer toggles, live stats, scale sliders.",
+      "type_id": "DebugPanelPageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Pushes economy inspector payloads (instances/modifiers/events/schema) to the debug server",
+      "type_id": "EconomyInspectorModule"
     },
     {
       "allowed_pus": "sim",
@@ -445,6 +455,6 @@
   "processing_units": [],
   "version": {
     "major": 1,
-    "minor": 18
+    "minor": 20
   }
 }

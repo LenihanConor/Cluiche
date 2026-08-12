@@ -64,6 +64,8 @@
     <ClCompile Include="Modules\SimNavigationHandlerModule.cpp" />
     <ClCompile Include="Modules\AIInspectorModule.cpp" />
     <ClCompile Include="Modules\EconomyInspectorModule.cpp" />
+    <ClCompile Include="Modules\DebugPanelPage.cpp" />
+    <ClCompile Include="Modules\DebugPanelPageModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\AutomationModule.h" />
@@ -113,6 +115,9 @@
     <ClInclude Include="Modules\SimNavigationHandlerModule.h" />
     <ClInclude Include="Modules\AIInspectorModule.h" />
     <ClInclude Include="Modules\EconomyInspectorModule.h" />
+    <ClInclude Include="Types\DebugPanelCommandEvent.h" />
+    <ClInclude Include="Modules\DebugPanelPage.h" />
+    <ClInclude Include="Modules\DebugPanelPageModule.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">

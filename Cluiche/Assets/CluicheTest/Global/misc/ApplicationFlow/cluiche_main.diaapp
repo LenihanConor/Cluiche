@@ -261,6 +261,20 @@
             "from": "SimPU"
         },
         {
+            "id": "DomainRegistry",
+            "kind": "ServiceStream",
+            "payload_type": "DiaDebugDomainRegistry",
+            "from": "SimPU"
+        },
+        {
+            "id": "DebugPanelCommand",
+            "kind": "EventStream",
+            "payload_type": "DebugPanelCommandEvent",
+            "overflow": "drop-oldest",
+            "from": "MainPU",
+            "to": "SimPU"
+        },
+        {
             "id": "RenderToSim",
             "kind": "FrameStream",
             "payload_type": "RenderFence",
@@ -355,7 +369,10 @@
                     "type_id": "UIModule",
                     "stages": [
                         "DummyStage",
-                        "UIUltralightTestStage"
+                        "UIUltralightTestStage",
+                        "RigidBody2DTestStage",
+                        "EntityTestStage",
+                        "Animation2DTestStage"
                     ],
                     "dependencies": [
                         "ObservationModule",
@@ -434,6 +451,29 @@
                         {
                             "id": "AutomationService",
                             "role": "provides"
+                        }
+                    ]
+                },
+                {
+                    "instance_id": "DebugPanelPageModule",
+                    "type_id": "DebugPanelPageModule",
+                    "stages": [
+                        "RigidBody2DTestStage",
+                        "EntityTestStage",
+                        "Animation2DTestStage"
+                    ],
+                    "dependencies": [
+                        "ObservationModule",
+                        "UIModule"
+                    ],
+                    "channels": [
+                        {
+                            "id": "DomainRegistry",
+                            "role": "consumes"
+                        },
+                        {
+                            "id": "DebugPanelCommand",
+                            "role": "writes"
                         }
                     ]
                 },
@@ -527,7 +567,10 @@
                     "instance_id": "UICompositeModule",
                     "type_id": "UICompositeModule",
                     "stages": [
-                        "UIUltralightTestStage"
+                        "UIUltralightTestStage",
+                        "RigidBody2DTestStage",
+                        "EntityTestStage",
+                        "Animation2DTestStage"
                     ],
                     "dependencies": [],
                     "channels": [
@@ -590,6 +633,14 @@
                         {
                             "id": "DebugLayerManager",
                             "role": "provides"
+                        },
+                        {
+                            "id": "DomainRegistry",
+                            "role": "provides"
+                        },
+                        {
+                            "id": "DebugPanelCommand",
+                            "role": "reads"
                         }
                     ]
                 },
