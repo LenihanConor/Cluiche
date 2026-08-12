@@ -13,7 +13,10 @@
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include "Modules/InputStreamModule.h"
 #include "Modules/Camera2DModule.h"
+#include <DiaVisualDebugger/Domain/IDebugDomain.h>
+#include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
 #include <memory>
+#include <mutex>
 
 namespace Dia::Debug
 {
@@ -45,6 +48,15 @@ public:
 
     Dia::Debug::DebugLayerManager& GetLayerManager() { return mLayerManager; }
 
+    void RegisterDomain(Dia::VisualDebugger::IDebugDomain& domain);
+    void UnregisterDomain(Dia::VisualDebugger::IDebugDomain& domain);
+    const Dia::VisualDebugger::DiaDebugDomainRegistry& GetDomainRegistry() const { return mDomainRegistry; }
+
+    // Called from Render PU (panel JS callback) — thread-safe
+    void EnqueueCommand(Dia::Core::StringCRC domainId,
+                        Dia::Core::StringCRC cmd,
+                        const char* argsJson);
+
     void SetCamera3D(const Dia::Graphics3D::Camera3D& camera);
     void DrawCoord3D(Dia::Graphics3D::FrameData3D& frame);
 
@@ -55,14 +67,31 @@ protected:
     void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 
 private:
+    struct PendingCommand
+    {
+        Dia::Core::StringCRC domainId;
+        Dia::Core::StringCRC cmd;
+        // args serialized as a JSON string; parsed back on sim thread
+        char argsJson[512];
+    };
+    static constexpr int kCommandQueueCapacity = 32;
+
     void RegisterCoord2DDrawers();
     void UnregisterCoord2DDrawers();
     void RegisterCoord3DDrawers();
     void UnregisterCoord3DDrawers();
 
+    // Drain pending panel commands (enqueued from Render PU)
+    void DrainPendingCommands();
+    void PushDomainStatesToPanel();
+
     Dia::Debug::DebugLayerManager mLayerManager;
     Dia::ApplicationFlow::StreamWriter<Dia::Graphics::FrameData> mRenderOutput{this, "SimToRender"};
     Dia::ApplicationFlow::ServiceStreamWriter<Dia::Debug::DebugLayerManager> mLayerManagerService{this, "DebugLayerManager"};
+    Dia::VisualDebugger::DiaDebugDomainRegistry mDomainRegistry;
+    Dia::ApplicationFlow::ServiceStreamWriter<Dia::VisualDebugger::DiaDebugDomainRegistry> mDomainRegistryService{this, "DomainRegistry"};
+    Dia::Core::Containers::DynamicArrayC<PendingCommand, kCommandQueueCapacity> mCommandQueue;
+    std::mutex mCommandQueueMutex;
     Dia::Graphics::FrameData mFrame;
     Dia::Core::StringCRC mLastKnownStage;
 

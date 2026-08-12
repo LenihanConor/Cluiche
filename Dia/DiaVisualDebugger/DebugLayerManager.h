@@ -52,7 +52,7 @@ namespace Dia
         class DebugLayerManager : public Dia::Core::IDebugContext
         {
         public:
-            static const unsigned int kMaxLayers = 64;
+            static const unsigned int kMaxLayers = 128;
 
             // ----------------------------------------------------------------
             // Registration (dynamic layers)
@@ -228,7 +228,7 @@ namespace Dia
             bool     mLayersDirty      = false;  // set on Register/Unregister/Enable/Disable
             bool     mAPICommandsRegistered = false;
 
-            // Insertion sort — stable, O(N²) acceptable for kMaxLayers = 64
+            // Insertion sort — stable, O(N²) acceptable for kMaxLayers = 128
             void SortByPriority();
 
             // Returns the index of the layer with the given name, or -1 if not found.

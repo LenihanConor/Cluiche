@@ -4,8 +4,12 @@
 
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
+#include <DiaCore/Json/external/json/json.h>
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaVisualDebugger/Domain/IDebugDomain.h>
+#include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
+#include <mutex>
 #include <DiaVisualDebugger/Coord2D/Coord2DOriginDrawer.h>
 #include <DiaVisualDebugger/Coord2D/Coord2DAxesDrawer.h>
 #include <DiaVisualDebugger/Coord2D/Coord2DGridDrawer.h>
@@ -28,6 +32,7 @@ VisualDebuggerModule::VisualDebuggerModule(const Dia::Core::StringCRC& instanceI
 Dia::ApplicationFlow::StartResult VisualDebuggerModule::DoStart()
 {
     mLayerManagerService.Register(mLayerManager);
+    mDomainRegistryService.Register(mDomainRegistry);
     mLayerManager.SetDebugScale(50.0f);
     mLayerManager.RegisterDiaAPICommands();
     RegisterCoord2DDrawers();
@@ -38,6 +43,8 @@ Dia::ApplicationFlow::StartResult VisualDebuggerModule::DoStart()
 void VisualDebuggerModule::DoUpdate(float /*dt*/)
 {
     DIA_TRACE_ZONE("VisualDebuggerModule.Update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
+
+    DrainPendingCommands();
 
     auto* app = GetApplication();
     if (app)
@@ -71,6 +78,7 @@ void VisualDebuggerModule::DoUpdate(float /*dt*/)
 
     mLayerManager.Draw(mFrame);
     mRenderOutput.Write(mFrame, Dia::Core::TimeAbsolute::Zero());
+    PushDomainStatesToPanel();
 }
 
 Dia::ApplicationFlow::StopResult VisualDebuggerModule::DoStop()
@@ -88,6 +96,7 @@ void VisualDebuggerModule::OnConnectStreams(Dia::ApplicationFlow::Application& a
 {
     mRenderOutput.Connect(app);
     mLayerManagerService.Connect(app);
+    mDomainRegistryService.Connect(app);
 }
 
 void VisualDebuggerModule::RegisterCoord2DDrawers()
@@ -144,6 +153,69 @@ void VisualDebuggerModule::UnregisterCoord3DDrawers()
     mCoord3DAxesDrawer.reset();
     mCoord3DGridDrawer.reset();
     mCoord3DCameraDrawer.reset();
+}
+
+void VisualDebuggerModule::RegisterDomain(Dia::VisualDebugger::IDebugDomain& domain)
+{
+    mDomainRegistry.Register(domain);
+    if (domain.HasWorldDrawers())
+        domain.Register(mLayerManager);
+}
+
+void VisualDebuggerModule::UnregisterDomain(Dia::VisualDebugger::IDebugDomain& domain)
+{
+    if (domain.HasWorldDrawers())
+        domain.Unregister(mLayerManager);
+    mDomainRegistry.Unregister(domain);
+}
+
+void VisualDebuggerModule::EnqueueCommand(Dia::Core::StringCRC domainId,
+                                          Dia::Core::StringCRC cmd,
+                                          const char* argsJson)
+{
+    std::lock_guard<std::mutex> lock(mCommandQueueMutex);
+    if (!mCommandQueue.IsFull())
+    {
+        PendingCommand pending{};
+        pending.domainId = domainId;
+        pending.cmd      = cmd;
+        if (argsJson)
+        {
+            strncpy(pending.argsJson, argsJson, sizeof(pending.argsJson) - 1);
+            pending.argsJson[sizeof(pending.argsJson) - 1] = '\0';
+        }
+        mCommandQueue.Add(pending);
+    }
+}
+
+void VisualDebuggerModule::DrainPendingCommands()
+{
+    Dia::Core::Containers::DynamicArrayC<PendingCommand, kCommandQueueCapacity> localQueue;
+    {
+        std::lock_guard<std::mutex> lock(mCommandQueueMutex);
+        for (unsigned int i = 0; i < mCommandQueue.Size(); ++i)
+            localQueue.Add(mCommandQueue[i]);
+        mCommandQueue.RemoveAll();
+    }
+
+    for (unsigned int i = 0; i < localQueue.Size(); ++i)
+    {
+        const PendingCommand& pending = localQueue[i];
+        Dia::VisualDebugger::IDebugDomain* domain = mDomainRegistry.FindDomain(pending.domainId);
+        if (!domain)
+            continue;
+
+        Json::Value args;
+        Json::Reader reader;
+        reader.parse(std::string(pending.argsJson), args);
+        domain->OnCommand(pending.cmd, args);
+    }
+}
+
+void VisualDebuggerModule::PushDomainStatesToPanel()
+{
+    // TODO (Task 3): Panel page reads mDomainRegistry service stream
+    // and calls UltralightUISystem::CallJSFunction("updateDomainState", json)
 }
 
 void VisualDebuggerModule::SetCamera3D(const Dia::Graphics3D::Camera3D& camera)

@@ -340,8 +340,8 @@ TEST(DebugColourPalette_Values, DebugColourPalette_AllNineDistinct)
 TEST(DebugLayerManager_Registration, MaxCapacity_NoAssert)
 {
     DebugLayerManager mgr;
-    // kMaxLayers = 64 — build distinct names on the stack and register all of them
-    char nameBuf[64][32];
+    // kMaxLayers = 128 — build distinct names on the stack and register all of them
+    char nameBuf[DebugLayerManager::kMaxLayers][32];
     TestLayer* layers[DebugLayerManager::kMaxLayers];
     for (unsigned int i = 0; i < DebugLayerManager::kMaxLayers; ++i)
     {
