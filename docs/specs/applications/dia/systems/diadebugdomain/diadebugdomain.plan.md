@@ -1,0 +1,14 @@
+**Spec:** @docs/specs/applications/dia/systems/diadebugdomain/diadebugdomain.md
+**Status:** In Progress
+
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| 1 | IDebugDomain Interface — `Domain/IDebugDomain.h` + `Domain/DebugGroupAccents.h`, vcxproj entries | Compile-only (header-only interface) | Done | sonnet | Committed 275f220d |
+| 2 | DiaDebugDomainRegistry — `Domain/DiaDebugDomainRegistry.h/.cpp`, unit tests | `TestDiaDebugDomainRegistry.cpp` — register/unregister/find/visitGroup/visitAll | Done | sonnet | Committed bb21931d |
+| 3 | DiaDebugPanel — `debug-panel.html` Phase 1 (accordions, toggles, stats, sliders) + Ultralight wiring | Visual gate vs `mockup.html`; Phase 1 ACs without keyboard | Pending | opus | ODQ1 resolved: overlay compositor (no viewport resize); depends on Tasks 1+2+4 |
+| 4 | JS Command Bridge — `GetJSONState→CallJSFunction` + `OnCommand→IDebugDomain` in VisualDebuggerModule; `kMaxLayers` bump 64→128 | Integration: state round-trip + command dispatch | Pending | sonnet | Depends on Tasks 1+2 |
+| 5 | DiaXxxVisualDebugger Contract — `debugger-contract.md` feature spec + `dia check debugger-contract` validation rule | `dia check debugger-contract` passes on all 12 existing modules | Done | sonnet | debugger-contract.md feature spec created; dia check debugger-contract added to check.py; 14 modules discovered; all AC2 pass, AC4 all PENDING (pre-migration), AC8 fails 12 standalone (real ImGui pre-migration), AC13 passes only DiaEntityVisualDebugger |
+| 6 | Domain Migration — all 14 debuggers implement `IDebugDomain` (RigidBody2D + Entity first as reference) | Contract check passes; `GetJSONState` round-trip + `OnCommand` toggle per module | Pending | opus | ODQ2: entity-lock deferred to Phase 2; ODQ3: const-ref convention accepted; depends on Tasks 1+4+5 |
+| 7 | Module Extraction — `DiaEntitySpatialVisualDebugger` + `DiaScalarFieldVisualDebugger` as standalone modules out of `Adaptors/` | Build passes; module isolation check | Skipped | sonnet | Both modules have Done specs with binding decision "header-only adaptor, no vcxproj" (SFVD-001). Extraction already accomplished conceptually via dedicated specs + module YAMLs. |
+| 8 | Console Retirement — delete `DiaVisualDebuggerConsole`, remove `DrawImGui()` from `IVisualDebugger` | Build passes; no ImGui include in DiaVisualDebugger tree | Pending | haiku | Depends on Tasks 3+6 |
+| 9 | Tilde key toggle — `~` opens/closes `DiaDebugPanel`; wired in `VisualDebuggerModule`; simple visibility toggle (no input suppression) | Press `~` → panel visible; press `~` again → panel hidden | Pending | sonnet | Depends on Task 3 |

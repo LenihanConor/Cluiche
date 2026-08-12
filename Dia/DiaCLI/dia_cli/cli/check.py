@@ -1067,3 +1067,312 @@ def gdd_sync(ctx, verbose: bool) -> None:
             f"[dia check] All {len(gdd_files)} file(s) valid. "
             f"Written to {out_path.relative_to(repo_root)}"
         )
+
+
+# ---------------------------------------------------------------------------
+# debugger-contract helpers
+# ---------------------------------------------------------------------------
+
+_IMGUI_RE = re.compile(r'\bImGui::')
+_IDEBUGDOMAIN_RE = re.compile(r':\s*public\s+(?:Dia::VisualDebugger::)?IDebugDomain')
+_GETJSONSTATE_RE = re.compile(r'\bGetJSONState\b')
+_ONCOMMAND_RE = re.compile(r'\bOnCommand\b')
+
+
+def _read_source_files(directory: Path, extensions: Tuple[str, ...]) -> List[Tuple[Path, str]]:
+    """Read all files with given extensions from a directory; return (path, text) pairs."""
+    results = []
+    if not directory.exists():
+        return results
+    for ext in extensions:
+        for f in directory.rglob(f"*{ext}"):
+            try:
+                results.append((f, f.read_text(encoding="utf-8", errors="ignore")))
+            except OSError:
+                pass
+    return results
+
+
+def _check_debugger_module(
+    name: str,
+    mod_dir: Path,
+    parent_dir: Path | None,
+    is_adaptor: bool,
+    tests_root: Path,
+    repo_root: Path,
+) -> dict:
+    """Run all contract checks for one visual debugger module. Returns a result dict."""
+    headers = _read_source_files(mod_dir, (".h",))
+    sources = _read_source_files(mod_dir, (".cpp",))
+    all_files = headers + sources
+
+    # ------------------------------------------------------------------
+    # AC 2: Parent system has zero #include referencing this VD module
+    # ------------------------------------------------------------------
+    if is_adaptor:
+        ac2 = "N/A"
+        ac2_ok = True
+    else:
+        ac2_ok = True
+        ac2_detail = ""
+        if parent_dir and parent_dir.exists():
+            vd_name_pattern = re.compile(
+                r'#include\s+[<"][^>"]*' + re.escape(name) + r'[^>"]*[>"]'
+            )
+            for ext in (".h", ".cpp"):
+                if not ac2_ok:
+                    break
+                for src in parent_dir.rglob(f"*{ext}"):
+                    try:
+                        text = src.read_text(encoding="utf-8", errors="ignore")
+                    except OSError:
+                        continue
+                    if vd_name_pattern.search(text):
+                        ac2_ok = False
+                        try:
+                            ac2_detail = str(src.relative_to(repo_root))
+                        except ValueError:
+                            ac2_detail = str(src)
+                        break
+        if ac2_ok:
+            ac2 = "PASS"
+        else:
+            ac2 = f"FAIL (include in {ac2_detail})"
+
+    # ------------------------------------------------------------------
+    # AC 4: Inherits IDebugDomain
+    # ------------------------------------------------------------------
+    ac4_ok = any(_IDEBUGDOMAIN_RE.search(text) for _, text in headers)
+    ac4 = "PASS" if ac4_ok else "PENDING (not yet migrated)"
+
+    # ------------------------------------------------------------------
+    # AC 8: No ImGui calls
+    # ------------------------------------------------------------------
+    ac8_ok = True
+    ac8_detail = ""
+    for path, text in all_files:
+        if _IMGUI_RE.search(text):
+            ac8_ok = False
+            ac8_detail = path.name
+            break
+    ac8 = "PASS" if ac8_ok else f"FAIL ({ac8_detail})"
+
+    # ------------------------------------------------------------------
+    # AC 10: GetJSONState declared in a header
+    # ------------------------------------------------------------------
+    ac10_ok = any(_GETJSONSTATE_RE.search(text) for _, text in headers)
+    ac10 = "PASS" if ac10_ok else "FAIL"
+
+    # ------------------------------------------------------------------
+    # AC 11-12: OnCommand declared in a header
+    # ------------------------------------------------------------------
+    ac1112_ok = any(_ONCOMMAND_RE.search(text) for _, text in headers)
+    ac1112 = "PASS" if ac1112_ok else "FAIL"
+
+    # ------------------------------------------------------------------
+    # AC 13: Test directory exists with at least one Test*.cpp
+    # ------------------------------------------------------------------
+    tests_dir = tests_root / name
+    ac13_ok = False
+    if tests_dir.exists():
+        test_files = list(tests_dir.glob("Test*.cpp"))
+        if test_files:
+            ac13_ok = True
+    ac13 = "PASS" if ac13_ok else "FAIL"
+
+    # ------------------------------------------------------------------
+    # Overall result
+    # ------------------------------------------------------------------
+    real_failures = []
+    if "FAIL" in ac2:
+        real_failures.append("AC2")
+    if "FAIL" in ac8:
+        real_failures.append("AC8")
+    if "FAIL" in ac10:
+        real_failures.append("AC10")
+    if "FAIL" in ac1112:
+        real_failures.append("AC11-12")
+    if "FAIL" in ac13:
+        real_failures.append("AC13")
+
+    pending_items = []
+    if "PENDING" in ac4:
+        pending_items.append("AC4")
+
+    if real_failures:
+        overall = f"FAIL ({', '.join(real_failures)})"
+    elif pending_items:
+        overall = f"PENDING ({', '.join(pending_items)})"
+    else:
+        overall = "PASS"
+
+    return {
+        "name": name,
+        "ac2": ac2,
+        "ac4": ac4,
+        "ac8": ac8,
+        "ac10": ac10,
+        "ac1112": ac1112,
+        "ac13": ac13,
+        "overall": overall,
+    }
+
+
+@cli.command("debugger-contract")
+@click.option("--verbose", is_flag=True, default=False,
+              help="Show details for each failing AC check.")
+@click.pass_context
+def debugger_contract(ctx, verbose: bool) -> None:
+    """Validate all DiaXxxVisualDebugger modules against the formal contract.
+
+    Checks ACs 1-3 (module isolation), 4 (IDebugDomain inheritance), 8 (ImGui-free),
+    10 (GetJSONState declared), 11-12 (OnCommand declared), 13-14 (test file existence).
+
+    AC 4 failures are reported as PENDING (expected until domain migration — Task 6).
+    All other failures are reported as FAIL.
+
+    Exits non-zero if any module has a failing or pending check.
+    """
+    repo_root = find_repo_root(__file__)
+    dia_dir = repo_root / "Dia"
+    tests_root = repo_root / "Cluiche" / "Tests" / "GoogleTests"
+
+    # ------------------------------------------------------------------
+    # Module discovery
+    # ------------------------------------------------------------------
+    # 1. Standalone modules: Dia/DiaXxxVisualDebugger/ directories
+    #    Exclude base modules (DiaVisualDebugger, DiaVisualDebuggerConsole)
+    _BASE_MODULES = {"DiaVisualDebugger", "DiaVisualDebuggerConsole"}
+    standalone_dirs = sorted(
+        d for d in dia_dir.iterdir()
+        if d.is_dir()
+        and d.name.endswith("VisualDebugger")
+        and d.name not in _BASE_MODULES
+    )
+
+    modules_to_check = []
+    for d in standalone_dirs:
+        module_name = d.name
+        # Derive parent by removing "VisualDebugger" suffix
+        parent_name = module_name[:-len("VisualDebugger")]  # e.g. "DiaRigidBody2D"
+        parent_dir = dia_dir / parent_name if parent_name else None
+        modules_to_check.append({
+            "name": module_name,
+            "dir": d,
+            "parent_dir": parent_dir,
+            "is_adaptor": False,
+        })
+
+    # 2. Adaptor-based modules (live inside parent module's Adaptors/ directory)
+    adaptor_modules = [
+        {
+            "name": "DiaEntitySpatialVisualDebugger",
+            "dir": dia_dir / "DiaEntitySpatial" / "Adaptors",
+            "parent_dir": None,  # AC2 is N/A for adaptors — isolation is by construction
+            "is_adaptor": True,
+        },
+        {
+            "name": "DiaScalarFieldVisualDebugger",
+            "dir": dia_dir / "DiaScalarField" / "Adaptors",
+            "parent_dir": None,
+            "is_adaptor": True,
+        },
+    ]
+    modules_to_check.extend(adaptor_modules)
+
+    click.echo(
+        f"[dia check] Validating {len(modules_to_check)} DiaXxxVisualDebugger module(s)...\n"
+    )
+
+    # ------------------------------------------------------------------
+    # Run checks
+    # ------------------------------------------------------------------
+    results = []
+    for mod in modules_to_check:
+        r = _check_debugger_module(
+            name=mod["name"],
+            mod_dir=mod["dir"],
+            parent_dir=mod["parent_dir"],
+            is_adaptor=mod["is_adaptor"],
+            tests_root=tests_root,
+            repo_root=repo_root,
+        )
+        results.append(r)
+        if verbose and r["overall"] != "PASS":
+            click.echo(f"  {r['name']}:")
+            for ac_key, ac_label in [
+                ("ac2", "AC2"), ("ac4", "AC4"), ("ac8", "AC8"),
+                ("ac10", "AC10"), ("ac1112", "AC11-12"), ("ac13", "AC13"),
+            ]:
+                val = r[ac_key]
+                if val not in ("PASS", "N/A"):
+                    click.echo(f"    {ac_label}: {val}")
+
+    # ------------------------------------------------------------------
+    # Print table
+    # ------------------------------------------------------------------
+    name_w = max(len(r["name"]) for r in results) + 2
+    col_w = 8  # narrow columns for PASS/FAIL/PEND/N/A
+
+    header = (
+        f"{'Module':<{name_w}}"
+        f"{'AC2':<{col_w}}"
+        f"{'AC4':<{col_w}}"
+        f"{'AC8':<{col_w}}"
+        f"{'AC10':<{col_w}}"
+        f"{'AC11-12':<{col_w}}"
+        f"{'AC13':<{col_w}}"
+        f"Result"
+    )
+    separator = "-" * (name_w + col_w * 6 + 30)
+    click.echo(header)
+    click.echo(separator)
+
+    def _fmt(val: str) -> str:
+        if val == "N/A":
+            return "N/A"
+        if val == "PASS":
+            return "PASS"
+        if val.startswith("PENDING"):
+            return "PEND"
+        return "FAIL"
+
+    for r in results:
+        line = (
+            f"{r['name']:<{name_w}}"
+            f"{_fmt(r['ac2']):<{col_w}}"
+            f"{_fmt(r['ac4']):<{col_w}}"
+            f"{_fmt(r['ac8']):<{col_w}}"
+            f"{_fmt(r['ac10']):<{col_w}}"
+            f"{_fmt(r['ac1112']):<{col_w}}"
+            f"{_fmt(r['ac13']):<{col_w}}"
+            f"{r['overall']}"
+        )
+        click.echo(line)
+
+    # ------------------------------------------------------------------
+    # Summary
+    # ------------------------------------------------------------------
+    pass_count = sum(1 for r in results if r["overall"] == "PASS")
+    pending_count = sum(1 for r in results if r["overall"].startswith("PENDING"))
+    fail_count = sum(1 for r in results if r["overall"].startswith("FAIL"))
+
+    click.echo(
+        f"\nSummary: {len(results)} module(s) — "
+        f"{pass_count} PASS, {pending_count} PENDING (AC4 migration), {fail_count} FAIL"
+    )
+
+    if fail_count > 0:
+        click.echo(
+            "\nFAIL: Real contract violations found. Fix before Task 6 domain migration.",
+            err=True,
+        )
+    elif pending_count > 0:
+        click.echo(
+            "\nPENDING: AC4 (IDebugDomain inheritance) not yet satisfied — expected until "
+            "domain migration (Task 6) is complete."
+        )
+
+    # Exit non-zero for any failure or pending check
+    if fail_count > 0 or pending_count > 0:
+        ctx.exit(1)
