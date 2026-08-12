@@ -12,6 +12,7 @@
 
 namespace Dia { namespace UI { class IUISystem; class Page; } }
 namespace Dia { namespace UI { namespace Ultralight { class UISystem; } } }
+namespace Dia { namespace Observation { namespace Metric { class Gauge; } } }
 
 namespace Cluiche { namespace AppFlow {
 
@@ -61,7 +62,10 @@ private:
 
     Dia::UI::Ultralight::UISystem* mUISystem = nullptr;
     Dia::Input::InputRouter mInputRouter;
+    Dia::Input::EInputRouting mLastRoutingMode = Dia::Input::EInputRouting::kGameOnly;
     bool mHasStarted = false;
+
+    Dia::Observation::Metric::Gauge* mMetricKeysInjected = nullptr;
 };
 
 } } // namespace Cluiche::AppFlow

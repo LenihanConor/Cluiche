@@ -476,11 +476,16 @@ namespace Dia
 				void SetInputRouter(Dia::Input::InputRouter* router)
 				{
 					mInputRouter = router;
+					if (router)
+						DIA_LOG_INFO("UI", "UISystem: InputRouter connected");
+					else
+						DIA_LOG_INFO("UI", "UISystem: InputRouter disconnected");
 				}
 
 				void CallJSFunction(const char* fnName, const char* argsJson)
 				{
 					if (!mView || !mIsInitialized || !fnName) return;
+					DIA_LOG_DEBUG("UI", "UISystem: CallJSFunction('%s')", fnName);
 					auto jsCtx = mView->LockJSContext();
 					::ultralight::SetJSContext(jsCtx->ctx());
 					std::string script(fnName);
@@ -606,6 +611,7 @@ namespace Dia
 					// Auto-bind app.PushInputMode / app.PopInputMode if InputRouter is wired.
 					if (mInputRouter != nullptr)
 					{
+						DIA_LOG_INFO("UI", "UISystem: registering app.PushInputMode / app.PopInputMode JS bindings");
 						Dia::Input::InputRouter* router = mInputRouter;
 						appObj["PushInputMode"] = ::ultralight::JSCallbackWithRetval(
 							[router](const ::ultralight::JSObject& /*thisObj*/,
@@ -621,6 +627,8 @@ namespace Dia
 										router->PushInputMode(Dia::Input::EInputRouting::kGameOnly);
 									else if (modeStr == "game_and_ui")
 										router->PushInputMode(Dia::Input::EInputRouting::kGameAndUI);
+									else
+										DIA_LOG_WARNING("UI", "UISystem: app.PushInputMode received unknown mode string '%s'", modeStr.c_str());
 								}
 								return ::ultralight::JSValue();
 							});

@@ -17,6 +17,7 @@ namespace Dia
             void PushInputMode(EInputRouting mode)
             {
                 std::lock_guard<std::mutex> lock(mMutex);
+                DIA_ASSERT(!mStack.IsFull(), "InputRouter: mode stack overflow (capacity 8), push ignored");
                 if (!mStack.IsFull())
                     mStack.Add(mode);
             }

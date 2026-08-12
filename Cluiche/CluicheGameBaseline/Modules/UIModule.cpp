@@ -1,6 +1,8 @@
 ﻿#include "Modules/UIModule.h"
 
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaStreams/Event.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
@@ -51,6 +53,11 @@ Dia::ApplicationFlow::StartResult UIModule::DoStart()
     }
 
     mUISystem->SetInputRouter(&mInputRouter);
+    DIA_LOG_INFO("UI", "UIModule: InputRouter wired to UISystem");
+
+    auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
+    if (!mMetricKeysInjected)
+        mMetricKeysInjected = reg.RegisterGauge(Dia::Core::StringCRC("ui.keys_injected_per_frame"));
 
     mHasStarted = true;
 
@@ -60,6 +67,8 @@ Dia::ApplicationFlow::StartResult UIModule::DoStart()
 
 void UIModule::DoUpdate(float /*dt*/)
 {
+    DIA_TRACE_ZONE("UIModule::DoUpdate", Dia::Observation::Trace::Category::kNone);
+
     if (mUISystem == nullptr)
         return;
 
@@ -68,7 +77,19 @@ void UIModule::DoUpdate(float /*dt*/)
     {
         const Dia::Input::EventData& events = kernel->GetFrameInputEvents();
         const Dia::Input::EInputRouting routing = mInputRouter.GetCurrentInputMode();
+
+        if (routing != mLastRoutingMode)
+        {
+            static const char* kModeNames[] = { "kGameOnly", "kUIOnly", "kGameAndUI" };
+            const int prev = static_cast<int>(mLastRoutingMode);
+            const int curr = static_cast<int>(routing);
+            DIA_LOG_INFO("UI", "UIModule: input routing mode changed: %s → %s",
+                kModeNames[prev], kModeNames[curr]);
+            mLastRoutingMode = routing;
+        }
+
         const bool injectKeyToUI = (routing != Dia::Input::EInputRouting::kGameOnly);
+        int keysInjectedThisFrame = 0;
 
         for (unsigned int i = 0; i < events.Size(); ++i)
         {
@@ -91,6 +112,7 @@ void UIModule::DoUpdate(float /*dt*/)
                     if (ev.key.alt)     mods |= Dia::Input::kModAlt;
                     if (ev.key.system)  mods |= Dia::Input::kModSystem;
                     mUISystem->InjectKeyDown(ev.key.AsKey(), mods);
+                    ++keysInjectedThisFrame;
                 }
                 else if (ev.type == Dia::Input::Event::EType::kKeyReleased)
                 {
@@ -100,13 +122,18 @@ void UIModule::DoUpdate(float /*dt*/)
                     if (ev.key.alt)     mods |= Dia::Input::kModAlt;
                     if (ev.key.system)  mods |= Dia::Input::kModSystem;
                     mUISystem->InjectKeyUp(ev.key.AsKey(), mods);
+                    ++keysInjectedThisFrame;
                 }
                 else if (ev.type == Dia::Input::Event::EType::kTextEntered)
                 {
                     mUISystem->InjectCharacterInput(ev.text.unicode);
+                    ++keysInjectedThisFrame;
                 }
             }
         }
+
+        if (mMetricKeysInjected)
+            mMetricKeysInjected->Set(static_cast<double>(keysInjectedThisFrame));
     }
 
     // Drain HUD commands from Sim (FPS, Score, etc.).
@@ -129,6 +156,7 @@ Dia::ApplicationFlow::StopResult UIModule::DoStop()
     DIA_LOG_INFO("Application", "UIModule DoStop entry");
 
     mHasStarted = false;
+    mMetricKeysInjected = nullptr;
 
     if (mUISystem != nullptr)
     {
