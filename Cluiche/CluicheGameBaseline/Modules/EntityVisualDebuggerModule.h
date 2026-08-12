@@ -7,20 +7,11 @@
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaMailbox/MailboxTypes.h>
+#include <DiaEntityVisualDebugger/EntityDebugDomain.h>
 #include "Modules/EntityModule.h"
 #include "Modules/VisualDebuggerModule.h"
 #include "Modules/PickingModule.h"
 #include <memory>
-
-namespace Dia::EntityVisualDebugger
-{
-    class EntityLabelsDrawer;
-    class EntityStatsDrawer;
-    class HierarchyLinesDrawer;
-    class ComponentFilterHighlightDrawer;
-    class EntityPickingDrawer;
-    class SelectionInspectorDrawer;
-}
 
 namespace Cluiche { namespace AppFlow {
 
@@ -41,8 +32,8 @@ protected:
     Dia::ApplicationFlow::StopResult DoStop() override;
 
 private:
-    void RegisterDrawers();
-    void UnregisterDrawers();
+    void RegisterDebugDomain();
+    void UnregisterDebugDomain();
 
     Dia::ApplicationFlow::ModuleRef<EntityModule>          mEntityRef{this};
     Dia::ApplicationFlow::ModuleRef<VisualDebuggerModule>  mVisualDebuggerRef{this};
@@ -50,12 +41,7 @@ private:
 
     Dia::Core::StringCRC mPositionTypeId;
 
-    std::unique_ptr<Dia::EntityVisualDebugger::EntityLabelsDrawer>            mLabelsDrawer;
-    std::unique_ptr<Dia::EntityVisualDebugger::EntityStatsDrawer>             mStatsDrawer;
-    std::unique_ptr<Dia::EntityVisualDebugger::HierarchyLinesDrawer>          mHierarchyDrawer;
-    std::unique_ptr<Dia::EntityVisualDebugger::ComponentFilterHighlightDrawer> mHighlightDrawer;
-    std::unique_ptr<Dia::EntityVisualDebugger::EntityPickingDrawer>           mPickingDrawer;
-    std::unique_ptr<Dia::EntityVisualDebugger::SelectionInspectorDrawer>      mInspectorDrawer;
+    std::unique_ptr<Dia::EntityVisualDebugger::EntityDebugDomain> mDebugDomain;
 
     Dia::Mailbox::SubscriberId mPickSubscriberId{};
     bool mPickingSubscribed = false;

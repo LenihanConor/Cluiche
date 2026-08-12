@@ -26,6 +26,7 @@ responsibilities:
   - Draw contact normal lines from the most recent simulation step
   - Draw constraint anchor-to-anchor lines via IConstraint::GetWorldAnchorA/B
   - Provide an enable/disable toggle that gates all draw output
+  - Expose the drawers as a single IDebugDomain (RigidBody2DDebugDomain) for DiaDebugPanel
 
 non_responsibilities:
   - Modifying physics simulation state — strictly read-only
@@ -39,14 +40,17 @@ dependent_modules:
   - dia.geometry2d
   - dia.rigidbody2d
   - dia.graphics
+  - dia.visualdebugger
 
 public_api:
   headers:
     - DiaRigidBody2DVisualDebugger/DiaRigidBodyVisualDebugger.h
+    - DiaRigidBody2DVisualDebugger/RigidBody2DDebugDomain.h
   namespaces:
     - Dia::RigidBody2D
   entry_points:
     - DiaRigidBodyVisualDebugger
+    - RigidBody2DDebugDomain
 
 dependencies:
   required:
@@ -55,6 +59,7 @@ dependencies:
     - dia.geometry2d
     - dia.maths
     - dia.core
+    - dia.visualdebugger
   forbidden:
     - dia.application
     - dia.logger

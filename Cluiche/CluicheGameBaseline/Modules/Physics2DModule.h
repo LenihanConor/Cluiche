@@ -8,20 +8,10 @@
 
 #ifdef DIA_DEBUG
 #include "Modules/VisualDebuggerModule.h"
+#include <DiaRigidBody2DVisualDebugger/RigidBody2DDebugDomain.h>
 #endif
 
 namespace Dia::RigidBody2D { class PhysicsWorld; class Body2DBase; }
-
-#ifdef DIA_DEBUG
-namespace Dia::RigidBody2D
-{
-    class PhysicsShapesDrawer;
-    class VelocityArrowsDrawer;
-    class ContactNormalsDrawer;
-    class PhysicsAABBDrawer;
-    class ConstraintLinesDrawer;
-}
-#endif
 
 namespace Cluiche { namespace AppFlow {
 
@@ -51,13 +41,10 @@ private:
 #ifdef DIA_DEBUG
     Dia::ApplicationFlow::ModuleRef<VisualDebuggerModule> mVisualDebuggerRef{this};
 
-    void RegisterDrawers();
+    // Registers the physics debug domain once VisualDebuggerModule is available.
+    void RegisterDebugDomain();
 
-    std::unique_ptr<Dia::RigidBody2D::PhysicsShapesDrawer>   mShapesDrawer;
-    std::unique_ptr<Dia::RigidBody2D::VelocityArrowsDrawer>  mVelocityDrawer;
-    std::unique_ptr<Dia::RigidBody2D::ContactNormalsDrawer>  mContactsDrawer;
-    std::unique_ptr<Dia::RigidBody2D::PhysicsAABBDrawer>     mAABBDrawer;
-    std::unique_ptr<Dia::RigidBody2D::ConstraintLinesDrawer> mConstraintsDrawer;
+    std::unique_ptr<Dia::RigidBody2D::RigidBody2DDebugDomain> mDebugDomain;
 #endif
 };
 

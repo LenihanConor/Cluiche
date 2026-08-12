@@ -783,6 +783,7 @@
     <ClCompile Include="DiaSaveGame\TestSlotManager.cpp" />
     <ClCompile Include="DiaSaveGame\TestSaveRegistry.cpp" />
     <ClCompile Include="DiaVisualDebugger\\TestDiaDebugDomainRegistry.cpp" />
+    <ClCompile Include="DiaRigidBody2DVisualDebugger\TestRigidBody2DDebugDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

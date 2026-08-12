@@ -4,13 +4,6 @@
 
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
-#include <DiaEntityVisualDebugger/EntityLabelsDrawer.h>
-#include <DiaEntityVisualDebugger/EntityStatsDrawer.h>
-#include <DiaEntityVisualDebugger/HierarchyLinesDrawer.h>
-#include <DiaEntityVisualDebugger/ComponentFilterHighlightDrawer.h>
-#include <DiaEntityVisualDebugger/EntityPickingDrawer.h>
-#include <DiaEntityVisualDebugger/SelectionInspectorDrawer.h>
-#include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaGeometry2DPicking/PickHit2D.h>
 #include <DiaPicking/PickEvent.h>
 #include <DiaPicking/PickTrigger.h>
@@ -52,7 +45,7 @@ Dia::ApplicationFlow::StartResult EntityVisualDebuggerModule::DoStart()
         }
     }
 
-    RegisterDrawers();
+    RegisterDebugDomain();
 
     if (auto* picking = mPickingRef.Get())
     {
@@ -109,54 +102,31 @@ Dia::ApplicationFlow::StopResult EntityVisualDebuggerModule::DoStop()
         mPickingSubscribed = false;
     }
 
-    UnregisterDrawers();
+    UnregisterDebugDomain();
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 
-void EntityVisualDebuggerModule::RegisterDrawers()
+void EntityVisualDebuggerModule::RegisterDebugDomain()
 {
     auto* entityMod = mEntityRef.Get();
     auto* vdMod = mVisualDebuggerRef.Get();
     if (!entityMod || !vdMod) return;
 
-    auto& domain = entityMod->GetDomain();
-    auto& inspectable = entityMod->GetInspectable();
-    auto& layerManager = vdMod->GetLayerManager();
+    mDebugDomain = std::make_unique<Dia::EntityVisualDebugger::EntityDebugDomain>(
+        entityMod->GetInspectable(), entityMod->GetDomain(), mPositionTypeId);
 
-    mLabelsDrawer    = std::make_unique<Dia::EntityVisualDebugger::EntityLabelsDrawer>(inspectable, domain, layerManager, mPositionTypeId);
-    mStatsDrawer     = std::make_unique<Dia::EntityVisualDebugger::EntityStatsDrawer>(inspectable);
-    mHierarchyDrawer = std::make_unique<Dia::EntityVisualDebugger::HierarchyLinesDrawer>(inspectable, domain, layerManager, mPositionTypeId);
-    mHighlightDrawer = std::make_unique<Dia::EntityVisualDebugger::ComponentFilterHighlightDrawer>(inspectable, domain, layerManager, mPositionTypeId);
-    mPickingDrawer   = std::make_unique<Dia::EntityVisualDebugger::EntityPickingDrawer>(inspectable, domain, layerManager, mPositionTypeId);
-    mInspectorDrawer = std::make_unique<Dia::EntityVisualDebugger::SelectionInspectorDrawer>(inspectable, domain, layerManager);
-
-    layerManager.Register(mLabelsDrawer.get(),    55, Dia::Debug::LayerNames::kEntityStageTag);
-    layerManager.Register(mHierarchyDrawer.get(), 56, Dia::Debug::LayerNames::kEntityStageTag);
-    layerManager.Register(mHighlightDrawer.get(), 57, Dia::Debug::LayerNames::kEntityStageTag);
-    layerManager.Register(mPickingDrawer.get(),   58, Dia::Debug::LayerNames::kEntityStageTag);
-    layerManager.Register(mStatsDrawer.get(),     59, Dia::Debug::LayerNames::kEntityStageTag);
-    layerManager.Register(mInspectorDrawer.get(), 60, Dia::Debug::LayerNames::kEntityStageTag);
+    vdMod->RegisterDomain(*mDebugDomain);
 }
 
-void EntityVisualDebuggerModule::UnregisterDrawers()
+void EntityVisualDebuggerModule::UnregisterDebugDomain()
 {
-    if (auto* vdMod = mVisualDebuggerRef.Get())
-    {
-        auto& lm = vdMod->GetLayerManager();
-        lm.Unregister(Dia::Debug::LayerNames::kEntityLabels);
-        lm.Unregister(Dia::Debug::LayerNames::kEntityHierarchy);
-        lm.Unregister(Dia::Debug::LayerNames::kEntityHighlight);
-        lm.Unregister(Dia::Debug::LayerNames::kEntityPicking);
-        lm.Unregister(Dia::Debug::LayerNames::kEntityStats);
-        lm.Unregister(Dia::Debug::LayerNames::kEntityInspector);
-    }
+    if (!mDebugDomain) return;
 
-    mLabelsDrawer.reset();
-    mStatsDrawer.reset();
-    mHierarchyDrawer.reset();
-    mHighlightDrawer.reset();
-    mPickingDrawer.reset();
-    mInspectorDrawer.reset();
+    // Only unregister if VisualDebuggerModule is still active (concurrent stop).
+    if (auto* vdMod = mVisualDebuggerRef.Get())
+        vdMod->UnregisterDomain(*mDebugDomain);
+
+    mDebugDomain.reset();
 }
 
 } } // namespace Cluiche::AppFlow

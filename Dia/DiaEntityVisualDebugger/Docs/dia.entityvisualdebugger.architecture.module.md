@@ -29,6 +29,7 @@ responsibilities:
   - Draw selection feedback (highlight ring) for the currently picked entity
   - Show live ImGui panel of component fields for the selected entity
   - Show ImGui stats panel with entity count, pool capacity, mutations/frame
+  - Expose the drawers as a single IDebugDomain (EntityDebugDomain) for DiaDebugPanel
 
 non_responsibilities:
   - Hit-testing / picking logic — delegated to PickingModule and PickingService2D
@@ -52,6 +53,7 @@ public_api:
     - DiaEntityVisualDebugger/ComponentFilterHighlightDrawer.h
     - DiaEntityVisualDebugger/EntityPickingDrawer.h
     - DiaEntityVisualDebugger/SelectionInspectorDrawer.h
+    - DiaEntityVisualDebugger/EntityDebugDomain.h
   namespaces:
     - Dia::EntityVisualDebugger
   entry_points:
@@ -61,6 +63,7 @@ public_api:
     - ComponentFilterHighlightDrawer
     - EntityPickingDrawer
     - SelectionInspectorDrawer
+    - EntityDebugDomain
 
 dependencies:
   required:

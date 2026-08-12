@@ -81,6 +81,7 @@
     <ClInclude Include="ComponentFilterHighlightDrawer.h" />
     <ClInclude Include="EntityPickingDrawer.h" />
     <ClInclude Include="SelectionInspectorDrawer.h" />
+    <ClInclude Include="EntityDebugDomain.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="EntityPositionHelper.cpp" />
@@ -90,6 +91,7 @@
     <ClCompile Include="ComponentFilterHighlightDrawer.cpp" />
     <ClCompile Include="EntityPickingDrawer.cpp" />
     <ClCompile Include="SelectionInspectorDrawer.cpp" />
+    <ClCompile Include="EntityDebugDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.entityvisualdebugger.architecture.module.md" />
