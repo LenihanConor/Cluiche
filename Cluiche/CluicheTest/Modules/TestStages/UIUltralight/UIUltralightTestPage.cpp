@@ -42,6 +42,9 @@ void UIUltralightTestPage::InitializePage()
 
     BindMethod(Dia::UI::BoundMethod::CreateBoundMethod("OnKeyInUiOnlyReceived",
         Dia::UI::BoundMethod::MethodPtr(this, &UIUltralightTestPage::OnKeyInUiOnlyReceived_JS)));
+
+    BindMethod(Dia::UI::BoundMethod::CreateBoundMethod("OnKeyInGameAndUiReceived",
+        Dia::UI::BoundMethod::MethodPtr(this, &UIUltralightTestPage::OnKeyInGameAndUiReceived_JS)));
 }
 
 Dia::UI::BoundMethodValue UIUltralightTestPage::GetTestValue(const Dia::UI::BoundMethodArgs& /*args*/)
@@ -102,6 +105,12 @@ void UIUltralightTestPage::OnKeyInUiOnlyReceived_JS(const Dia::UI::BoundMethodAr
 {
     if (mCallbacks)
         mCallbacks->OnKeyInUiOnlyReceived(args);
+}
+
+void UIUltralightTestPage::OnKeyInGameAndUiReceived_JS(const Dia::UI::BoundMethodArgs& args)
+{
+    if (mCallbacks)
+        mCallbacks->OnKeyInGameAndUiReceived(args);
 }
 
 } // namespace CluicheTest

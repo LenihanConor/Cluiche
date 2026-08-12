@@ -37,8 +37,9 @@ const Dia::Core::StringCRC* UIUltralightTestStageModule::GetCheckpointNames(unsi
         Dia::Core::StringCRC("ui.key_event_handled"),
         Dia::Core::StringCRC("ui.mode_stack_transitions"),
         Dia::Core::StringCRC("ui.keyboard_suppressed_in_ui_only"),
+        Dia::Core::StringCRC("ui.game_and_ui_injection"),
     };
-    outCount = 10;
+    outCount = 11;
     return names;
 }
 
@@ -63,14 +64,16 @@ void UIUltralightTestStageModule::OnStart(Dia::Automation::AutomationService* se
     mRoundTripCount      = 0;
     mSliderValue         = 50;
 
-    mCallJsObserved             = false;
-    mKeyEventHandled            = false;
-    mModeTransitionsOk          = false;
-    mKeyboardSuppressedInUiOnly = false;
-    mCallJsTriggered            = false;
-    mKeyInjected                = false;
-    mModeTransitionsTested      = false;
-    mUiOnlyKeyInjected          = false;
+    mCallJsObserved              = false;
+    mKeyEventHandled             = false;
+    mModeTransitionsOk           = false;
+    mKeyboardSuppressedInUiOnly  = false;
+    mGameAndUiInjectionOk        = false;
+    mCallJsTriggered             = false;
+    mKeyInjected                 = false;
+    mModeTransitionsTested       = false;
+    mUiOnlyKeyInjected           = false;
+    mGameAndUiKeyInjected        = false;
 
     mPage.InitializePage();
     mUI->LoadPage(mPage);
@@ -135,6 +138,11 @@ void UIUltralightTestStageModule::OnStart(Dia::Automation::AutomationService* se
     service->RegisterCheckpoint(this, Dia::Core::StringCRC("ui.keyboard_suppressed_in_ui_only"),
         [this]() -> Dia::Automation::CheckpointResult {
             return { mKeyboardSuppressedInUiOnly, mKeyboardSuppressedInUiOnly ? "keyboard reached UI in kUIOnly mode" : "pending", 0.0f };
+        });
+
+    service->RegisterCheckpoint(this, Dia::Core::StringCRC("ui.game_and_ui_injection"),
+        [this]() -> Dia::Automation::CheckpointResult {
+            return { mGameAndUiInjectionOk, mGameAndUiInjectionOk ? "keyboard reached UI in kGameAndUI mode" : "pending", 0.0f };
         });
 }
 
@@ -223,6 +231,14 @@ void UIUltralightTestStageModule::OnUpdate(float /*deltaTime*/)
         mUiOnlyKeyInjected = true;
     }
 
+    // Keyboard-in-GameAndUI test — push kGameAndUI, inject Space, JS should fire OnKeyInGameAndUiReceived
+    if (mKeyboardSuppressedInUiOnly && !mGameAndUiKeyInjected)
+    {
+        ui->PushInputMode(Dia::Input::EInputRouting::kGameAndUI);
+        sys->InjectKeyDown(Dia::Input::EKey(Dia::Input::EKey::Space), 0);
+        mGameAndUiKeyInjected = true;
+    }
+
     // Update metrics
     if (mMetricRoundTripCount)
         mMetricRoundTripCount->Set(static_cast<double>(mRoundTripCount));
@@ -238,7 +254,8 @@ void UIUltralightTestStageModule::OnUpdate(float /*deltaTime*/)
         && mCallJsObserved
         && mKeyEventHandled
         && mModeTransitionsOk
-        && mKeyboardSuppressedInUiOnly)
+        && mKeyboardSuppressedInUiOnly
+        && mGameAndUiInjectionOk)
     {
         if (mRun1FramesUntilLoaded == 0)
         {
@@ -256,8 +273,10 @@ void UIUltralightTestStageModule::OnStop()
 {
     DIA_LOG_INFO("CluicheTest", "UIUltralightTestStageModule::OnStop");
 
-    // Pop any routing mode pushed during testing
+    // Pop any routing modes pushed during testing
     auto* ui = mUI.Get();
+    if (ui && mGameAndUiKeyInjected)
+        ui->PopInputMode();
     if (ui && mUiOnlyKeyInjected)
         ui->PopInputMode();
 
@@ -323,6 +342,17 @@ void UIUltralightTestStageModule::OnKeyInUiOnlyReceived(const Dia::UI::BoundMeth
     mUiOnlyKeyInjected = false; // prevent double pop in OnStop
 }
 
+void UIUltralightTestStageModule::OnKeyInGameAndUiReceived(const Dia::UI::BoundMethodArgs& /*args*/)
+{
+    auto* ui = mUI.Get();
+    if (ui && ui->GetCurrentInputMode() == Dia::Input::EInputRouting::kGameAndUI)
+        mGameAndUiInjectionOk = true;
+    // Pop the GameAndUI mode pushed in OnUpdate
+    if (ui)
+        ui->PopInputMode();
+    mGameAndUiKeyInjected = false; // prevent double pop in OnStop
+}
+
 int UIUltralightTestStageModule::GetStatusFlags()
 {
     int flags = 0;
@@ -336,6 +366,7 @@ int UIUltralightTestStageModule::GetStatusFlags()
     if (mKeyEventHandled)             flags |= (1 << 7);
     if (mModeTransitionsOk)           flags |= (1 << 8);
     if (mKeyboardSuppressedInUiOnly)  flags |= (1 << 9);
+    if (mGameAndUiInjectionOk)        flags |= (1 << 10);
     return flags;
 }
 

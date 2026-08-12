@@ -235,6 +235,7 @@
     <ClCompile Include="Graphics\TestDebugTextPrimitive.cpp" />
     <ClCompile Include="Graphics\TestCamera2D.cpp" />
     <ClCompile Include="DiaBgfx\TestFrameCaptureRingBuffer.cpp" />
+    <ClCompile Include="Input\TestInputRouter.cpp" />
     <ClCompile Include="Input\TestInputState.cpp" />
     <ClCompile Include="Input\TestActionMap.cpp" />
     <ClCompile Include="Input\TestActionContext.cpp" />

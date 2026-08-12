@@ -119,7 +119,7 @@
     <div class="section-title">Checkpoints</div>
     <table id="cp-table"></table>
     <div class="bar-track"><div class="bar-fill" id="bar" style="width:0%"></div></div>
-    <div class="bar-label"><span id="bar-text">0 / 10</span></div>
+    <div class="bar-label"><span id="bar-text">0 / 11</span></div>
   </div>
 </div>
 
@@ -174,7 +174,8 @@
     'page_loaded', 'page_ready', 'button_clicked',
     'round_trip', 'pixel_buffer', 'mouse_click',
     'call_js_observed', 'key_event_handled',
-    'mode_transitions', 'keyboard_ui_only'
+    'mode_transitions', 'keyboard_ui_only',
+    'game_and_ui_injection'
   ];
   var CP_COUNT = CP_NAMES.length;
 
@@ -201,6 +202,10 @@
     if (e.key === 'Tab') {
       e.preventDefault();
       app.OnKeyInUiOnlyReceived(e.key);
+    }
+    if (e.key === ' ') {
+      e.preventDefault();
+      app.OnKeyInGameAndUiReceived(e.key);
     }
   });
 
@@ -259,8 +264,8 @@
     setDot('dot-all',    passed === CP_COUNT);
     setDot('dot-bridge', !!(flags & 0x06));   // bits 1+2: page_ready + button_clicked
     setDot('dot-pixel',  !!(flags & 0x10));   // bit 4: pixel_buffer
-    // bits 6-9: call_js + key_event + mode_transitions + keyboard_ui_only
-    setDot('dot-input',  (flags & 0x3C0) === 0x3C0);
+    // bits 6-10: call_js + key_event + mode_transitions + keyboard_ui_only + game_and_ui
+    setDot('dot-input',  (flags & 0x7C0) === 0x7C0);
 
     var bridgeEl  = document.getElementById('telem-bridge');
     var pixelEl   = document.getElementById('telem-pixel');
@@ -269,8 +274,8 @@
     bridgeEl.className   = (flags & 0x06) === 0x06 ? 'ok'  : 'dim';
     pixelEl.textContent  = (flags & 0x10) ? 'ok' : 'pending';
     pixelEl.className    = (flags & 0x10) ? 'ok'  : 'dim';
-    inputEl.textContent  = (flags & 0x3C0) === 0x3C0 ? 'ok' : 'pending';
-    inputEl.className    = (flags & 0x3C0) === 0x3C0 ? 'ok' : 'dim';
+    inputEl.textContent  = (flags & 0x7C0) === 0x7C0 ? 'ok' : 'pending';
+    inputEl.className    = (flags & 0x7C0) === 0x7C0 ? 'ok' : 'dim';
 
     var raw = app.GetLiveMetrics();
     var m = parseMetrics(raw);

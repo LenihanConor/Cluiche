@@ -32,6 +32,7 @@ public:
     void OnCallJsTest() override;
     void OnKeyReceived(const Dia::UI::BoundMethodArgs& args) override;
     void OnKeyInUiOnlyReceived(const Dia::UI::BoundMethodArgs& args) override;
+    void OnKeyInGameAndUiReceived(const Dia::UI::BoundMethodArgs& args) override;
 
 protected:
     Dia::Core::StringCRC GetStageName() const override;
@@ -57,16 +58,18 @@ private:
     bool mMouseInjected       = false;
 
     // Game Input Bridge checkpoints
-    bool mCallJsObserved            = false;
-    bool mKeyEventHandled           = false;
-    bool mModeTransitionsOk         = false;
+    bool mCallJsObserved             = false;
+    bool mKeyEventHandled            = false;
+    bool mModeTransitionsOk          = false;
     bool mKeyboardSuppressedInUiOnly = false;
+    bool mGameAndUiInjectionOk       = false;
 
     // Sequencing flags
-    bool mCallJsTriggered       = false;
-    bool mKeyInjected           = false;
-    bool mModeTransitionsTested = false;
-    bool mUiOnlyKeyInjected     = false;
+    bool mCallJsTriggered         = false;
+    bool mKeyInjected             = false;
+    bool mModeTransitionsTested   = false;
+    bool mUiOnlyKeyInjected       = false;
+    bool mGameAndUiKeyInjected    = false;
 
     unsigned int mFramesUntilLoaded = 0;
     unsigned int mRoundTripCount    = 0;

@@ -24,6 +24,7 @@ public:
     virtual void OnCallJsTest() = 0;
     virtual void OnKeyReceived(const Dia::UI::BoundMethodArgs& args) = 0;
     virtual void OnKeyInUiOnlyReceived(const Dia::UI::BoundMethodArgs& args) = 0;
+    virtual void OnKeyInGameAndUiReceived(const Dia::UI::BoundMethodArgs& args) = 0;
 };
 
 class UIUltralightTestPage : public Dia::UI::Page
@@ -47,6 +48,7 @@ private:
     void OnCallJsTest_JS(const Dia::UI::BoundMethodArgs& args);
     void OnKeyReceived_JS(const Dia::UI::BoundMethodArgs& args);
     void OnKeyInUiOnlyReceived_JS(const Dia::UI::BoundMethodArgs& args);
+    void OnKeyInGameAndUiReceived_JS(const Dia::UI::BoundMethodArgs& args);
 
     IUIUltralightTestCallbacks* mCallbacks;
 };
