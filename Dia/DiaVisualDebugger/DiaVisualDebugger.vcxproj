@@ -95,6 +95,8 @@
     <ClInclude Include="Coord3D\Coord3DAxesDrawer.h" />
     <ClInclude Include="Coord3D\Coord3DGridDrawer.h" />
     <ClInclude Include="Coord3D\Coord3DCameraDrawer.h" />
+    <ClInclude Include="Domain\\IDebugDomain.h" />
+    <ClInclude Include="Domain\\DebugGroupAccents.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Coord2D\Coord2DOriginDrawer.cpp" />
@@ -106,6 +108,7 @@
     <ClCompile Include="Coord3D\Coord3DAxesDrawer.cpp" />
     <ClCompile Include="Coord3D\Coord3DGridDrawer.cpp" />
     <ClCompile Include="Coord3D\Coord3DCameraDrawer.cpp" />
+    <ClCompile Include="Domain\\DebugGroupAccents.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.debug.architecture.module.md" />
