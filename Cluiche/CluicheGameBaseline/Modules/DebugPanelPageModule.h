@@ -7,12 +7,14 @@
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaStreams/EventStreamWriter.h>
+#include <DiaStreams/EventStreamReader.h>
 #include <DiaStreams/ServiceStreamReader.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
 
 #include "Modules/DebugPanelPage.h"
 #include "Modules/UIModule.h"
 #include "Types/DebugPanelCommandEvent.h"
+#include "Types/DebugPanelToggleEvent.h"
 
 namespace Cluiche { namespace AppFlow {
 
@@ -51,9 +53,11 @@ protected:
 
 private:
     void PushDomainStatesToPanel();
+    void DrainToggleEvents();
 
     DebugPanelPage mPage{this};
-    bool           mLoaded = false;
+    bool           mPanelVisible    = false;
+    bool           mPageInitialized = false;
 
     Dia::ApplicationFlow::ModuleRef<UIModule> mUI{this};
 
@@ -62,6 +66,9 @@ private:
 
     Dia::ApplicationFlow::EventStreamWriter<DebugPanelCommandEvent>
         mPanelCommands{this, "DebugPanelCommand"};
+
+    Dia::ApplicationFlow::EventStreamReader<DebugPanelToggleEvent>
+        mPanelToggle{this, "DebugPanelToggle"};
 };
 
 } } // namespace Cluiche::AppFlow

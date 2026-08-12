@@ -6,6 +6,7 @@
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaCore/Time/TimeAbsolute.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaVisualDebugger/Domain/IDebugDomain.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
@@ -75,6 +76,13 @@ void VisualDebuggerModule::DoUpdate(float /*dt*/)
         mFrame.SetMousePixel(Dia::Maths::Vector2D(
             static_cast<float>(mInputRef->GetMouseX()),
             static_cast<float>(mInputRef->GetMouseY())));
+
+        // Tilde key: toggle DiaDebugPanel visibility
+        if (mInputRef->WasKeyPressed(Dia::Input::EKey::Tilde))
+        {
+            mPanelToggle.Send(DebugPanelToggleEvent{});
+            DIA_LOG_INFO("Debug", "VisualDebuggerModule: DiaDebugPanel toggle fired");
+        }
     }
 
     mLayerManager.Draw(mFrame);
@@ -98,6 +106,7 @@ void VisualDebuggerModule::OnConnectStreams(Dia::ApplicationFlow::Application& a
     mLayerManagerService.Connect(app);
     mDomainRegistryService.Connect(app);
     mPanelCommands.Connect(app);
+    mPanelToggle.Connect(app);
 }
 
 void VisualDebuggerModule::RegisterCoord2DDrawers()

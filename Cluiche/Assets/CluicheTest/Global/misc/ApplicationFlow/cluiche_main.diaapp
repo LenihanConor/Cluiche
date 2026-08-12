@@ -275,6 +275,14 @@
             "to": "SimPU"
         },
         {
+            "id": "DebugPanelToggle",
+            "kind": "EventStream",
+            "payload_type": "DebugPanelToggleEvent",
+            "overflow": "drop-oldest",
+            "from": "SimPU",
+            "to": "MainPU"
+        },
+        {
             "id": "RenderToSim",
             "kind": "FrameStream",
             "payload_type": "RenderFence",
@@ -474,6 +482,10 @@
                         {
                             "id": "DebugPanelCommand",
                             "role": "writes"
+                        },
+                        {
+                            "id": "DebugPanelToggle",
+                            "role": "consumes"
                         }
                     ]
                 },
@@ -641,6 +653,10 @@
                         {
                             "id": "DebugPanelCommand",
                             "role": "reads"
+                        },
+                        {
+                            "id": "DebugPanelToggle",
+                            "role": "provides"
                         }
                     ]
                 },

@@ -71,12 +71,10 @@ Dia::ApplicationFlow::StartResult DebugPanelPageModule::DoStart()
     if (ui == nullptr || !ui->HasStarted())
         return Dia::ApplicationFlow::StartResult::kLoading;
 
-    if (!mLoaded)
+    if (!mPageInitialized)
     {
         mPage.InitializePage();
-        ui->LoadPage(mPage);
-        mLoaded = true;
-        DIA_LOG_INFO("Debug", "DebugPanelPageModule loaded debug-panel.html");
+        mPageInitialized = true;
     }
 
     return Dia::ApplicationFlow::StartResult::kReady;
@@ -86,18 +84,20 @@ void DebugPanelPageModule::DoUpdate(float /*dt*/)
 {
     DIA_TRACE_ZONE("DebugPanelPageModule.Update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
 
+    DrainToggleEvents();
     PushDomainStatesToPanel();
 }
 
 Dia::ApplicationFlow::StopResult DebugPanelPageModule::DoStop()
 {
-    if (mLoaded)
+    if (mPanelVisible)
     {
         if (UIModule* ui = mUI.Get())
             ui->UnloadPage();
-        mLoaded = false;
+        mPanelVisible = false;
         DIA_LOG_INFO("Debug", "DebugPanelPageModule unloaded debug-panel.html");
     }
+    mPageInitialized = false;
 
     return Dia::ApplicationFlow::StopResult::kDone;
 }
@@ -106,6 +106,7 @@ void DebugPanelPageModule::OnConnectStreams(Dia::ApplicationFlow::Application& a
 {
     mDomainRegistry.Connect(app);
     mPanelCommands.Connect(app);
+    mPanelToggle.Connect(app);
 }
 
 void DebugPanelPageModule::OnCommand(const char* domainId, const char* cmd, const char* argsJson)
@@ -127,10 +128,32 @@ void DebugPanelPageModule::OnCommand(const char* domainId, const char* cmd, cons
     mPanelCommands.Send(event);
 }
 
+void DebugPanelPageModule::DrainToggleEvents()
+{
+    Dia::Core::Containers::DynamicArrayC<
+        Dia::ApplicationFlow::Event<DebugPanelToggleEvent>, 8> events;
+    mPanelToggle.Consume(events);
+
+    for (unsigned int i = 0; i < events.Size(); ++i)
+    {
+        mPanelVisible = !mPanelVisible;
+        if (mPanelVisible)
+        {
+            mUI.Get()->LoadPage(mPage);
+            DIA_LOG_INFO("Debug", "DiaDebugPanel: shown");
+        }
+        else
+        {
+            mUI.Get()->UnloadPage();
+            DIA_LOG_INFO("Debug", "DiaDebugPanel: hidden");
+        }
+    }
+}
+
 void DebugPanelPageModule::PushDomainStatesToPanel()
 {
     UIModule* ui = mUI.Get();
-    if (ui == nullptr || !mLoaded)
+    if (ui == nullptr || !mPanelVisible)
         return;
 
     Dia::UI::IUISystem* uiSystem = ui->GetUISystem();

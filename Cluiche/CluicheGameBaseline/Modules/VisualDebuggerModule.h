@@ -7,7 +7,9 @@
 #include <DiaStreams/StreamWriter.h>
 #include <DiaStreams/ServiceStreamWriter.h>
 #include <DiaStreams/EventStreamReader.h>
+#include <DiaStreams/EventStreamWriter.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
+#include <DiaInput/EKey.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaGraphics3D/FrameData3D.h>
@@ -15,6 +17,7 @@
 #include "Modules/InputStreamModule.h"
 #include "Modules/Camera2DModule.h"
 #include "Types/DebugPanelCommandEvent.h"
+#include "Types/DebugPanelToggleEvent.h"
 #include <DiaVisualDebugger/Domain/IDebugDomain.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
 #include <memory>
@@ -95,6 +98,7 @@ private:
     Dia::VisualDebugger::DiaDebugDomainRegistry mDomainRegistry;
     Dia::ApplicationFlow::ServiceStreamWriter<Dia::VisualDebugger::DiaDebugDomainRegistry> mDomainRegistryService{this, "DomainRegistry"};
     Dia::ApplicationFlow::EventStreamReader<DebugPanelCommandEvent> mPanelCommands{this, "DebugPanelCommand"};
+    Dia::ApplicationFlow::EventStreamWriter<DebugPanelToggleEvent>  mPanelToggle{this, "DebugPanelToggle"};
     Dia::Core::Containers::DynamicArrayC<PendingCommand, kCommandQueueCapacity> mCommandQueue;
     std::mutex mCommandQueueMutex;
     Dia::Graphics::FrameData mFrame;
