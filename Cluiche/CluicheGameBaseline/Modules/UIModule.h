@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -6,6 +6,7 @@
 #include <DiaStreams/StreamWriter.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaUI/UIDataBuffer.h>
+#include <DiaInput/InputRouter.h>
 #include "Types/SimToMainEvent.h"
 #include "Modules/KernelModule.h"
 
@@ -41,6 +42,12 @@ public:
     void LoadPage(Dia::UI::Page& page);
     void UnloadPage();
 
+    // Input routing — stage modules (DiaDebugPanel, DiaChatPlugin) call these
+    // to claim or release keyboard from the game.
+    void PushInputMode(Dia::Input::EInputRouting mode) { mInputRouter.PushInputMode(mode); }
+    void PopInputMode()                                { mInputRouter.PopInputMode(); }
+    Dia::Input::EInputRouting GetCurrentInputMode() const { return mInputRouter.GetCurrentInputMode(); }
+
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
     void DoUpdate(float dt) override;
@@ -53,6 +60,7 @@ private:
     Dia::ApplicationFlow::ModuleRef<KernelModule> mKernel{this};
 
     Dia::UI::Ultralight::UISystem* mUISystem = nullptr;
+    Dia::Input::InputRouter mInputRouter;
     bool mHasStarted = false;
 };
 

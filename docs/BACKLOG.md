@@ -14,6 +14,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 |--------|----------|------------|
 | DiaMessageBus | core-bus, entity-router-registration, flush-adapters, frame-ledger, schema-browser, eventdispatcher-removal, module-and-build | DiaMailbox ✅, DiaStreams ✅, DiaApplicationFlow ✅, DiaObservation ✅ |
 | DiaAICallout | Callout Emit, Callout Query, Claim/Release, TTL Expiry, Test Utilities | DiaEntitySpatial ✅, DiaGeometry2D ✅, DiaCore ✅ |
+| DiaUIUltralight — Game Input Bridge | CallJSFunction, keyboard injection, InputRouter mode stack | DiaInput ✅, DiaUI ✅, DiaUIUltralight ✅ |
 | ~~DiaScalarFieldInspector~~ | Dockable editor panel for scalar field inspection | DiaScalarField ✅, DiaEditor |
 
 ---
@@ -70,6 +71,12 @@ Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testin
 | DiaSkinning3D | TBD — needs `/spec-system` | `skinning-palette` feature already Approved; needs own system spec. SkinningManager, per-frame Matrix34 palettes, `skinningPaletteIndex` on draw commands. | DiaAnimation3D, DiaGraphics3D |
 
 ---
+
+### Blocked on Game Input Bridge
+
+| Item | Blocked by | Notes |
+|------|-----------|-------|
+| DiaDebugDomain | DiaUIUltralight Game Input Bridge | DiaDebugPanel (Phase 1) needs CallJSFunction; keyboard features (search, command strip, entity lock) need keyboard injection + InputRouter. Game Input Bridge is Ready to Build. |
 
 ### Blocked on Linux/CMake migration
 

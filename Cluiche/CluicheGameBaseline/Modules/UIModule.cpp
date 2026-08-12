@@ -13,6 +13,7 @@
 #include <DiaUIUltralight/UltralightUISystem.h>
 #include <DiaInput/Event.h>
 #include <DiaInput/EventData.h>
+#include <DiaInput/EKeyModifiers.h>
 
 namespace Cluiche { namespace AppFlow {
 
@@ -49,6 +50,8 @@ Dia::ApplicationFlow::StartResult UIModule::DoStart()
         mUISystem->Initialize();
     }
 
+    mUISystem->SetInputRouter(&mInputRouter);
+
     mHasStarted = true;
 
     DIA_LOG_INFO("Application", "UIModule DoStart exit");
@@ -64,6 +67,9 @@ void UIModule::DoUpdate(float /*dt*/)
     if (KernelModule* kernel = mKernel.Get())
     {
         const Dia::Input::EventData& events = kernel->GetFrameInputEvents();
+        const Dia::Input::EInputRouting routing = mInputRouter.GetCurrentInputMode();
+        const bool injectKeyToUI = (routing != Dia::Input::EInputRouting::kGameOnly);
+
         for (unsigned int i = 0; i < events.Size(); ++i)
         {
             const Dia::Input::Event& ev = events[i];
@@ -74,6 +80,31 @@ void UIModule::DoUpdate(float /*dt*/)
             else if (ev.type == Dia::Input::Event::EType::kMouseButtonReleased)
             {
                 mUISystem->InjectMouseClick(ev.mouseButton.AsMouseButton(), ev.mouseButton.x, ev.mouseButton.y);
+            }
+            else if (injectKeyToUI)
+            {
+                if (ev.type == Dia::Input::Event::EType::kKeyPressed)
+                {
+                    int mods = 0;
+                    if (ev.key.shift)   mods |= Dia::Input::kModShift;
+                    if (ev.key.control) mods |= Dia::Input::kModControl;
+                    if (ev.key.alt)     mods |= Dia::Input::kModAlt;
+                    if (ev.key.system)  mods |= Dia::Input::kModSystem;
+                    mUISystem->InjectKeyDown(ev.key.AsKey(), mods);
+                }
+                else if (ev.type == Dia::Input::Event::EType::kKeyReleased)
+                {
+                    int mods = 0;
+                    if (ev.key.shift)   mods |= Dia::Input::kModShift;
+                    if (ev.key.control) mods |= Dia::Input::kModControl;
+                    if (ev.key.alt)     mods |= Dia::Input::kModAlt;
+                    if (ev.key.system)  mods |= Dia::Input::kModSystem;
+                    mUISystem->InjectKeyUp(ev.key.AsKey(), mods);
+                }
+                else if (ev.type == Dia::Input::Event::EType::kTextEntered)
+                {
+                    mUISystem->InjectCharacterInput(ev.text.unicode);
+                }
             }
         }
     }

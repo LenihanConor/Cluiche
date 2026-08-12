@@ -18,7 +18,7 @@ class UIUltralightTestStageModule
 public:
     static const Dia::Core::StringCRC kTypeId;
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kMain;
-    static constexpr const char* kDescription = "Validates DiaUIUltralight: page load, JS-C++ round-trip, pixel buffer, mouse input";
+    static constexpr const char* kDescription = "Validates DiaUIUltralight: page load, JS-C++ round-trip, pixel buffer, mouse input, keyboard injection, input routing";
 
     explicit UIUltralightTestStageModule(const Dia::Core::StringCRC& instanceId);
 
@@ -29,6 +29,9 @@ public:
     void OnSliderChanged(const Dia::UI::BoundMethodArgs& args) override;
     int  GetStatusFlags() override;
     Dia::Core::Containers::String64 GetLiveMetrics() override;
+    void OnCallJsTest() override;
+    void OnKeyReceived(const Dia::UI::BoundMethodArgs& args) override;
+    void OnKeyInUiOnlyReceived(const Dia::UI::BoundMethodArgs& args) override;
 
 protected:
     Dia::Core::StringCRC GetStageName() const override;
@@ -44,6 +47,7 @@ private:
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::UIModule> mUI{this};
     UIUltralightTestPage mPage{this};
 
+    // Existing checkpoints
     bool mPageLoaded          = false;
     bool mPageReadyFired      = false;
     bool mButtonClickedFired  = false;
@@ -51,6 +55,18 @@ private:
     bool mPixelBufferNonEmpty = false;
     bool mMouseClickHandled   = false;
     bool mMouseInjected       = false;
+
+    // Game Input Bridge checkpoints
+    bool mCallJsObserved            = false;
+    bool mKeyEventHandled           = false;
+    bool mModeTransitionsOk         = false;
+    bool mKeyboardSuppressedInUiOnly = false;
+
+    // Sequencing flags
+    bool mCallJsTriggered       = false;
+    bool mKeyInjected           = false;
+    bool mModeTransitionsTested = false;
+    bool mUiOnlyKeyInjected     = false;
 
     unsigned int mFramesUntilLoaded = 0;
     unsigned int mRoundTripCount    = 0;

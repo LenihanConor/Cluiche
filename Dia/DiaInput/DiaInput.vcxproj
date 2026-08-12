@@ -26,7 +26,9 @@
     <ClInclude Include="ConsoleGamepadManager.h" />
     <ClInclude Include="EJoystick.h" />
     <ClInclude Include="EKey.h" />
+    <ClInclude Include="EKeyModifiers.h" />
     <ClInclude Include="EMouseButton.h" />
+    <ClInclude Include="InputRouter.h" />
     <ClInclude Include="Event.h" />
     <ClInclude Include="EventData.h" />
     <ClInclude Include="EventStream.h" />

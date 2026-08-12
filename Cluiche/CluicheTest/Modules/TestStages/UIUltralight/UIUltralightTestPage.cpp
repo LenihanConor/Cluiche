@@ -33,6 +33,15 @@ void UIUltralightTestPage::InitializePage()
 
     BindMethod(Dia::UI::BoundMethod::CreateBoundMethodWithRetVal("GetLiveMetrics",
         Dia::UI::BoundMethod::MethodPtrWithRetVal(this, &UIUltralightTestPage::GetLiveMetrics_JS)));
+
+    BindMethod(Dia::UI::BoundMethod::CreateBoundMethod("OnCallJsTest",
+        Dia::UI::BoundMethod::MethodPtr(this, &UIUltralightTestPage::OnCallJsTest_JS)));
+
+    BindMethod(Dia::UI::BoundMethod::CreateBoundMethod("OnKeyReceived",
+        Dia::UI::BoundMethod::MethodPtr(this, &UIUltralightTestPage::OnKeyReceived_JS)));
+
+    BindMethod(Dia::UI::BoundMethod::CreateBoundMethod("OnKeyInUiOnlyReceived",
+        Dia::UI::BoundMethod::MethodPtr(this, &UIUltralightTestPage::OnKeyInUiOnlyReceived_JS)));
 }
 
 Dia::UI::BoundMethodValue UIUltralightTestPage::GetTestValue(const Dia::UI::BoundMethodArgs& /*args*/)
@@ -75,6 +84,24 @@ Dia::UI::BoundMethodValue UIUltralightTestPage::GetLiveMetrics_JS(const Dia::UI:
     if (mCallbacks)
         s = mCallbacks->GetLiveMetrics();
     return Dia::UI::BoundMethodValue(s);
+}
+
+void UIUltralightTestPage::OnCallJsTest_JS(const Dia::UI::BoundMethodArgs& /*args*/)
+{
+    if (mCallbacks)
+        mCallbacks->OnCallJsTest();
+}
+
+void UIUltralightTestPage::OnKeyReceived_JS(const Dia::UI::BoundMethodArgs& args)
+{
+    if (mCallbacks)
+        mCallbacks->OnKeyReceived(args);
+}
+
+void UIUltralightTestPage::OnKeyInUiOnlyReceived_JS(const Dia::UI::BoundMethodArgs& args)
+{
+    if (mCallbacks)
+        mCallbacks->OnKeyInUiOnlyReceived(args);
 }
 
 } // namespace CluicheTest
