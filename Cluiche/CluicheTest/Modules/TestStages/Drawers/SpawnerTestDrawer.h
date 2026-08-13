@@ -18,9 +18,9 @@ namespace CluicheTest {
 // Per-child visual state owned by the drawer.
 struct SpawnerChildVisual
 {
-    Dia::Maths::Vector2D direction;   // unit vector, fixed at birth
-    float                speed;       // pixels/sec
-    float                birthTime;   // absolute elapsed seconds at spawn
+    Dia::Maths::Vector2D direction;            // unit vector, fixed at birth
+    float                speed     = 0.0f;    // pixels/sec
+    float                birthTime = 0.0f;    // absolute elapsed seconds at spawn
 };
 
 class SpawnerTestDrawer : public Dia::Debug::IVisualDebugger
@@ -52,7 +52,7 @@ private:
         Dia::Entity::Entity      entity;
         Dia::Maths::Vector2D     screenPos;
         Dia::Core::RGBA          colour;
-        const char*              label;
+        const char*              label = nullptr;
     };
 
     void DrawEmitter(Dia::Core::IDebugDraw& draw, const EmitterDesc& desc);

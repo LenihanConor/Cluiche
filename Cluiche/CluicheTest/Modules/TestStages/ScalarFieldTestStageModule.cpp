@@ -373,21 +373,21 @@ void ScalarFieldTestStageModule::RunSpatialQueries()
     // local_maxima_found: Blue field should have exactly 2 local maxima over full grid
     if (!mLocalMaximaFound && mBlueSteadyState)
     {
-        Dia::Core::Containers::DynamicArrayC<Dia::ScalarField::CellIndex, 1024> maxima;
+        mCellQueryBuffer.RemoveAll();
         mBlueField.FindLocalMaxima(
-            Dia::ScalarField::CellIndex{0, 0}, kGridW, kGridH, maxima);
-        if (maxima.Size() == 2)
+            Dia::ScalarField::CellIndex{0, 0}, kGridW, kGridH, mCellQueryBuffer);
+        if (mCellQueryBuffer.Size() == 2)
             mLocalMaximaFound = true;
     }
 
     // contested_zone_stable: FindCellsAboveThreshold(0.4) on Combined returns >= 10 cells
     if (!mContestedZoneStable && mBlueSteadyState && mRedSteadyState)
     {
-        Dia::Core::Containers::DynamicArrayC<Dia::ScalarField::CellIndex, 1024> contested;
+        mCellQueryBuffer.RemoveAll();
         mCombinedField.FindCellsAboveThreshold(
             0.4f,
-            Dia::ScalarField::CellIndex{0, 0}, kGridW, kGridH, contested);
-        if (contested.Size() >= 10)
+            Dia::ScalarField::CellIndex{0, 0}, kGridW, kGridH, mCellQueryBuffer);
+        if (mCellQueryBuffer.Size() >= 10)
             mContestedZoneStable = true;
     }
 
@@ -426,31 +426,31 @@ void ScalarFieldTestStageModule::UpdateMetrics()
     // Contested cell count (combined > 0.4)
     if (mMetricContestedCellCount)
     {
-        Dia::Core::Containers::DynamicArrayC<Dia::ScalarField::CellIndex, 1024> contested;
+        mCellQueryBuffer.RemoveAll();
         mCombinedField.FindCellsAboveThreshold(
             0.4f,
-            Dia::ScalarField::CellIndex{0, 0}, kGridW, kGridH, contested);
-        mMetricContestedCellCount->Set(static_cast<double>(contested.Size()));
+            Dia::ScalarField::CellIndex{0, 0}, kGridW, kGridH, mCellQueryBuffer);
+        mMetricContestedCellCount->Set(static_cast<double>(mCellQueryBuffer.Size()));
     }
 
     // Blue cells above 0.5
     if (mMetricBlueCellsAboveHalf)
     {
-        Dia::Core::Containers::DynamicArrayC<Dia::ScalarField::CellIndex, 1024> above;
+        mCellQueryBuffer.RemoveAll();
         mBlueField.FindCellsAboveThreshold(
             0.5f,
-            Dia::ScalarField::CellIndex{0, 0}, kGridW, kGridH, above);
-        mMetricBlueCellsAboveHalf->Set(static_cast<double>(above.Size()));
+            Dia::ScalarField::CellIndex{0, 0}, kGridW, kGridH, mCellQueryBuffer);
+        mMetricBlueCellsAboveHalf->Set(static_cast<double>(mCellQueryBuffer.Size()));
     }
 
     // Red cells above 0.5
     if (mMetricRedCellsAboveHalf)
     {
-        Dia::Core::Containers::DynamicArrayC<Dia::ScalarField::CellIndex, 1024> above;
+        mCellQueryBuffer.RemoveAll();
         mRedField.FindCellsAboveThreshold(
             0.5f,
-            Dia::ScalarField::CellIndex{0, 0}, kGridW, kGridH, above);
-        mMetricRedCellsAboveHalf->Set(static_cast<double>(above.Size()));
+            Dia::ScalarField::CellIndex{0, 0}, kGridW, kGridH, mCellQueryBuffer);
+        mMetricRedCellsAboveHalf->Set(static_cast<double>(mCellQueryBuffer.Size()));
     }
 
     // Gradient probe magnitude at (10,7)

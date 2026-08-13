@@ -123,6 +123,9 @@ private:
     // -------------------------------------------------------------------------
     // Metrics
     // -------------------------------------------------------------------------
+    // Reusable scratch buffer for spatial queries — avoids large stack allocations.
+    Dia::Core::Containers::DynamicArrayC<Dia::ScalarField::CellIndex, 1024> mCellQueryBuffer;
+
     Dia::Observation::Metric::Gauge* mMetricBluePeak           = nullptr;
     Dia::Observation::Metric::Gauge* mMetricRedPeak            = nullptr;
     Dia::Observation::Metric::Gauge* mMetricContestedCellCount = nullptr;
