@@ -12,7 +12,6 @@
 #include <DiaRig2D/Skeleton.h>
 #include <DiaIK2D/IKSolver.h>
 #include <DiaObservation/Trace/DiaTrace.h>
-#include <imgui.h>
 
 namespace Dia::IK2D
 {
@@ -65,11 +64,6 @@ void IKChainJointsDrawer::Draw(Dia::Core::IDebugDraw& draw)
             }
         }
     }
-}
-
-void IKChainJointsDrawer::DrawImGui()
-{
-    ImGui::SliderFloat("Radius multiplier", &mRadiusMultiplier, 0.1f, 5.0f);
 }
 
 } // namespace Dia::IK2D

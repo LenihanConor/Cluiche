@@ -18,7 +18,6 @@
 #include <DiaGraphics/Misc/RGBA.h>
 
 #include <DiaObservation/Trace/DiaTrace.h>
-#include <imgui.h>
 #include <cmath>
 
 namespace Dia::RigidBody2D
@@ -110,11 +109,6 @@ void PhysicsShapesDrawer::Draw(Dia::Core::IDebugDraw& draw)
 
     for (unsigned int i = 0; i < rigidBodies.Size(); ++i)
         DrawBody(rigidBodies[i], draw, mShowSleeping);
-}
-
-void PhysicsShapesDrawer::DrawImGui()
-{
-    ImGui::Checkbox("Show sleeping bodies", &mShowSleeping);
 }
 
 } // namespace Dia::RigidBody2D

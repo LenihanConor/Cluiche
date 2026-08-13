@@ -17,7 +17,6 @@
 #include "DiaCore/Core/Assert.h"
 
 #include <DiaObservation/Trace/DiaTrace.h>
-#include <imgui.h>
 #include <cmath>
 
 namespace Dia::SoftBody2D
@@ -87,11 +86,6 @@ void SoftVelocityDrawer::Draw(Dia::Core::IDebugDraw& draw)
                 break;
         }
     }
-}
-
-void SoftVelocityDrawer::DrawImGui()
-{
-    ImGui::SliderFloat("Velocity scale", &mVelocityScale, 0.1f, 5.0f);
 }
 
 } // namespace Dia::SoftBody2D

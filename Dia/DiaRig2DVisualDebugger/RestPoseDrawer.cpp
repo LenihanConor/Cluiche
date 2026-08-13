@@ -11,7 +11,6 @@
 #include <DiaRig2D/Pose.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaObservation/Trace/DiaTrace.h>
-#include <imgui.h>
 
 namespace Dia::Rig2D
 {
@@ -62,11 +61,6 @@ void RestPoseDrawer::Draw(Dia::Core::IDebugDraw& draw)
             boneRest.position,
             Dia::Debug::DebugColourPalette::kInactive);
     }
-}
-
-void RestPoseDrawer::DrawImGui()
-{
-    ImGui::TextDisabled("Rest pose (bind pose ghost)");
 }
 
 } // namespace Dia::Rig2D

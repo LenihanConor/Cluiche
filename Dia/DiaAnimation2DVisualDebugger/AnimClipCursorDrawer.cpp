@@ -13,7 +13,6 @@
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 
 #include <DiaObservation/Trace/DiaTrace.h>
-#include <imgui.h>
 #include <algorithm>
 #include <cstdio>
 
@@ -74,11 +73,6 @@ void AnimClipCursorDrawer::Draw(Dia::Core::IDebugDraw& draw)
 
         draw.RequestDrawText(labelPos, labelText, fontSize, colour);
     }
-}
-
-void AnimClipCursorDrawer::DrawImGui()
-{
-    ImGui::Checkbox("Show stopped clips", &mShowStopped);
 }
 
 } // namespace Dia::Animation2D

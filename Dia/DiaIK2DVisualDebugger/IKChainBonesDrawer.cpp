@@ -12,7 +12,6 @@
 #include <DiaRig2D/Skeleton.h>
 #include <DiaIK2D/IKSolver.h>
 #include <DiaObservation/Trace/DiaTrace.h>
-#include <imgui.h>
 
 namespace Dia::IK2D
 {
@@ -55,11 +54,6 @@ void IKChainBonesDrawer::Draw(Dia::Core::IDebugDraw& draw)
                 Dia::Debug::DebugColourPalette::kGoal);
         }
     }
-}
-
-void IKChainBonesDrawer::DrawImGui()
-{
-    ImGui::TextDisabled("Chains: %d", mSolver.GetChainCount());
 }
 
 } // namespace Dia::IK2D

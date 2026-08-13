@@ -766,39 +766,6 @@
                     ]
                 },
                 {
-                    "instance_id": "VisualDebuggerConsoleModule",
-                    "type_id": "VisualDebuggerConsoleModule",
-                    "stages": [
-                        "RigidBody2DTestStage",
-                        "AssetRuntimeTestStage",
-                        "Geometry2DTestStage",
-                        "EntityTestStage",
-                        "SoftBody2DTestStage",
-                        "Animation2DTestStage",
-                        "Scene2DTestStage",
-                        "IK2DTestStage",
-                        "Mesh3DTestStage",
-                        "Mesh3DRenderSystemTestStage",
-                        "AIDecisionTestStage",
-                        "AIHTNTestStage",
-                        "PathfindingTestStage",
-                        "ScalarFieldTestStage",
-                        "EntitySpatialTestStage",
-                        "EconomyTestStage",
-                        "SpawnerTestStage",
-                        "ArenaTestStage"
-                    ],
-                    "dependencies": [
-                        "DebugUI"
-                    ],
-                    "channels": [
-                        {
-                            "id": "DebugLayerManager",
-                            "role": "consumes"
-                        }
-                    ]
-                },
-                {
                     "instance_id": "AssetRuntimeVisualDebuggerModule",
                     "type_id": "AssetRuntimeVisualDebuggerModule",
                     "stages": [
@@ -839,7 +806,6 @@
                     "dependencies": [
                         "DebugUI",
                         "TestStageHUDModule",
-                        "VisualDebuggerConsoleModule",
                         "AssetRuntimeVisualDebuggerModule",
                         "AssetRuntimeHUDModule"
                     ],

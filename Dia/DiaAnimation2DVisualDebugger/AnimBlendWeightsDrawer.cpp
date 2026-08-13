@@ -13,7 +13,6 @@
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 
 #include <DiaObservation/Trace/DiaTrace.h>
-#include <imgui.h>
 #include <algorithm>
 #include <cstdio>
 
@@ -67,11 +66,6 @@ void AnimBlendWeightsDrawer::Draw(Dia::Core::IDebugDraw& draw)
 
         draw.RequestDrawText(labelPos, labelText, fontSize, colour);
     }
-}
-
-void AnimBlendWeightsDrawer::DrawImGui()
-{
-    ImGui::SliderFloat("Weight threshold", &mWeightThreshold, 0.0f, 1.0f);
 }
 
 } // namespace Dia::Animation2D

@@ -9,7 +9,6 @@
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGraphics/Misc/RGBA.h>
 #include <DiaCore/DebugDraw/DebugLayerNames.h>
-#include <imgui.h>
 
 namespace Dia::Geometry2DVisualDebugger
 {
@@ -49,11 +48,6 @@ void ShapeLabelsDrawer::Draw(Dia::Core::IDebugDraw& draw)
             fontSize,
             kLabelColour);
     }
-}
-
-void ShapeLabelsDrawer::DrawImGui()
-{
-    ImGui::SliderFloat("Font scale", &mFontScale, 0.5f, 2.0f);
 }
 
 } // namespace Dia::Geometry2DVisualDebugger

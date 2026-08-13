@@ -38,7 +38,6 @@ public:
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Core::IDebugDraw& draw) override;
-    void DrawImGui() override;
 
 private:
     Dia::Maths::Vector2D CellCenter(int col, int row) const;

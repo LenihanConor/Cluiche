@@ -20,7 +20,6 @@ public:
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Core::IDebugDraw& draw) override;
-    void DrawImGui() override;
 
 private:
     const Dia::Debug::DebugLayerManager& mManager;

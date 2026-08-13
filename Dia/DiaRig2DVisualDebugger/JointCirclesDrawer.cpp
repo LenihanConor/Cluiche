@@ -10,7 +10,6 @@
 #include <DiaCore/DebugDraw/IDebugContext.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaObservation/Trace/DiaTrace.h>
-#include <imgui.h>
 
 namespace Dia::Rig2D
 {
@@ -71,11 +70,6 @@ void JointCirclesDrawer::Draw(Dia::Core::IDebugDraw& draw)
                 Dia::Debug::DebugColourPalette::kActive);
         }
     }
-}
-
-void JointCirclesDrawer::DrawImGui()
-{
-    ImGui::SliderFloat("Radius multiplier", &mRadiusMultiplier, 0.1f, 5.0f);
 }
 
 } // namespace Dia::Rig2D

@@ -12,7 +12,6 @@
 #include <DiaCore/DebugDraw/DebugLayerNames.h>
 #include <DiaCore/DebugDraw/DebugColourPalette.h>
 #include <DiaCore/DebugDraw/IDebugContext.h>
-#include <imgui.h>
 
 namespace Dia { namespace Mesh3D {
 
@@ -84,33 +83,6 @@ void MeshStatsDrawer::Draw(Dia::Core::IDebugDraw& /*draw*/)
             default: break;
         }
     }
-}
-
-void MeshStatsDrawer::DrawImGui()
-{
-    // Reads only the cached snapshot populated by Draw() on SimPU — no cross-PU access.
-    ImGui::TextDisabled("-- Draw commands ------------------");
-    ImGui::Text("  This frame:   %u", mCachedDrawCount);
-    if (mCachedDroppedCount > 0)
-        ImGui::TextColored(ImVec4(220 / 255.0f, 0.0f, 0.0f, 1.0f), "  Dropped:      %u", mCachedDroppedCount);
-    else
-        ImGui::Text("  Dropped:      %u", mCachedDroppedCount);
-    ImGui::Text("  Loaded assets: %u", mCachedLoadedCount);
-
-    ImGui::TextDisabled("-- Instance breakdown -------------");
-    ImGui::Text("  Static:        %u", mCachedStaticCount);
-    ImGui::Text("  Skinned:       %u", mCachedSkinnedCount);
-
-    ImGui::TextDisabled("-- By render layer ----------------");
-    for (int j = 0; j < mCachedLayerCount; ++j)
-        if (mCachedLayers[j].count > 0)
-            ImGui::Text("  Layer %3d:    %u", mCachedLayers[j].layer, mCachedLayers[j].count);
-
-    ImGui::TextDisabled("-- Asset state --------------------");
-    ImGui::Text("  Ready:         %u", mCachedStateReady);
-    ImGui::Text("  Pending:       %u", mCachedStatePending);
-    ImGui::Text("  Failed:        %u", mCachedStateFailed);
-    ImGui::Text("  Not found:     %u", mCachedStateNotFound);
 }
 
 } } // namespace Dia::Mesh3D

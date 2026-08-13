@@ -68,11 +68,6 @@ void Geometry2DLabelsDrawer::Draw(Dia::Core::IDebugDraw& draw)
     drawer.Draw(draw);
 }
 
-void Geometry2DLabelsDrawer::DrawImGui()
-{
-    // Font scale now lives in the engine ShapeLabelsDrawer's own ImGui panel
-}
-
 } // namespace CluicheTest
 
 #endif // DIA_DEBUG

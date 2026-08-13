@@ -10,7 +10,6 @@
 #include <DiaCore/DebugDraw/IDebugContext.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaObservation/Trace/DiaTrace.h>
-#include <imgui.h>
 
 #include <algorithm>
 
@@ -53,11 +52,6 @@ void BoneLabelsDrawer::Draw(Dia::Core::IDebugDraw& draw)
             fontSize,
             Dia::Debug::DebugColourPalette::kActive);
     }
-}
-
-void BoneLabelsDrawer::DrawImGui()
-{
-    ImGui::SliderFloat("Font size", &mFontSizeMultiplier, 0.5f, 3.0f);
 }
 
 } // namespace Dia::Rig2D

@@ -35,7 +35,6 @@ public:
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Core::IDebugDraw& draw) override;
-    void DrawImGui() override;
 
     void SubmitLabel(Dia::Maths::Vector2D position, const char* text);
 

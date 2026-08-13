@@ -5,8 +5,6 @@
 
 #ifdef DIA_DEBUG
 
-#include <imgui.h>
-
 #include <DiaObservation/Trace/DiaTrace.h>
 #include "DiaRigidBody2D/World/PhysicsWorld.h"
 #include "DiaRigidBody2D/WorldShapeUtil.h"
@@ -58,11 +56,6 @@ void PhysicsAABBDrawer::Draw(Dia::Core::IDebugDraw& draw)
                 Dia::Debug::DebugColourPalette::kWarning);
         }
     }
-}
-
-void PhysicsAABBDrawer::DrawImGui()
-{
-    ImGui::Checkbox("Filled", &mFilled);
 }
 
 } // namespace Dia::RigidBody2D

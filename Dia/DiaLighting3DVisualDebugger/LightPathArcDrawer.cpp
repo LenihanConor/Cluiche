@@ -14,7 +14,6 @@
 #include <DiaCore/DebugDraw/DebugColourPalette.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
-#include <imgui.h>
 
 namespace Dia { namespace Lighting3D {
 
@@ -110,11 +109,6 @@ void LightPathArcDrawer::Draw(Dia::Core::IDebugDraw& draw)
 
     if (mActivePathsCounter)
         mActivePathsCounter->Inc(activePaths);
-}
-
-void LightPathArcDrawer::DrawImGui()
-{
-    ImGui::SliderInt("Arc samples", &mArcSamples, 8, 64);
 }
 
 } } // namespace Dia::Lighting3D

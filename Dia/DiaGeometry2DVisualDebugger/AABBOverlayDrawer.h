@@ -44,7 +44,6 @@ public:
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Core::IDebugDraw& draw) override;
-    void DrawImGui() override;
 
     void SubmitCircle    (const Dia::Geometry2D::Circle&       shape);
     void SubmitAARect    (const Dia::Geometry2D::AARect&       shape);

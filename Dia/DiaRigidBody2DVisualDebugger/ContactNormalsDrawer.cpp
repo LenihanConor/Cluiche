@@ -6,7 +6,6 @@
 #ifdef DIA_DEBUG
 
 #include <DiaObservation/Trace/DiaTrace.h>
-#include <imgui.h>
 
 #include "DiaRigidBody2D/World/PhysicsWorld.h"
 #include "DiaRigidBody2D/Detection/Contact.h"
@@ -45,11 +44,6 @@ void ContactNormalsDrawer::Draw(Dia::Core::IDebugDraw& draw)
             mNormalLength * scale,
             Dia::Debug::DebugColourPalette::kError);
     }
-}
-
-void ContactNormalsDrawer::DrawImGui()
-{
-    ImGui::SliderFloat("Normal length", &mNormalLength, 0.05f, 2.0f);
 }
 
 } // namespace Dia::RigidBody2D

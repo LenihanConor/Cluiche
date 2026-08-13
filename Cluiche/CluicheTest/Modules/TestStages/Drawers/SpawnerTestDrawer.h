@@ -37,7 +37,6 @@ public:
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Core::IDebugDraw& draw) override;
-    void DrawImGui() override;
 
     // Called by the stage's OnDespawn callback so we can evict dead children.
     void OnChildDespawned(Dia::Entity::Entity entity);

@@ -422,11 +422,6 @@
       "type_id": "AssetRuntimeVisualDebuggerModule"
     },
     {
-      "allowed_pus": "render",
-      "description": "Renders the in-game visual debugger console and command interface.",
-      "type_id": "VisualDebuggerConsoleModule"
-    },
-    {
       "allowed_pus": "sim",
       "description": "Renders visual debug overlays: coordinate axes, grids, physics shapes, and velocity arrows.",
       "type_id": "VisualDebuggerModule"

@@ -5,7 +5,6 @@
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaEntitySpawner/SpawnEmitterComponent.h>
-#include <imgui.h>
 
 #include <cmath>
 #include <cstdio>
@@ -218,14 +217,6 @@ void SpawnerTestDrawer::DrawChildren(Dia::Core::IDebugDraw& draw, const EmitterD
         draw.RequestDraw(desc.screenPos, pos,
             Dia::Core::RGBA(col.R(), col.G(), col.B(), col.A() / 4));
     }
-}
-
-void SpawnerTestDrawer::DrawImGui()
-{
-    ImGui::Text("Rate emitter:     steady stream, 3s lifetime, fades");
-    ImGui::Text("Burst emitter:    5 children explode out then drift back");
-    ImGui::Text("Cap emitter:      spiral, FIFO pops oldest when cap=3 hit");
-    ImGui::Text("Explicit emitter: 2 children orbit until DespawnAll at t=8s");
 }
 
 } // namespace CluicheTest

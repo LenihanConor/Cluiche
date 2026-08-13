@@ -17,7 +17,6 @@
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGraphics/Misc/RGBA.h>
 #include <DiaCore/DebugDraw/DebugLayerNames.h>
-#include <imgui.h>
 
 namespace Dia::Scene2DVisualDebugger
 {
@@ -109,36 +108,6 @@ void SceneOverviewDrawer::Draw(Dia::Core::IDebugDraw& draw)
     drawer.Draw(draw);
 }
 #pragma warning(pop)
-
-void SceneOverviewDrawer::DrawImGui()
-{
-    ImGui::Text("Scene2D Overview");
-    ImGui::Separator();
-    ImGui::Text("Layers:  %u", mLayerTable.GetCount());
-    for (unsigned int i = 0; i < mLayerTable.GetCount(); ++i)
-    {
-        const auto& layer = mLayerTable.GetByIndex(i);
-        ImGui::BulletText("bit %u  sort:%d  parallax:(%.1f,%.1f)",
-            i, layer.sortOrder, layer.parallax.x, layer.parallax.y);
-    }
-    ImGui::Separator();
-    ImGui::Text("Cameras: %u", mCameraRegistry.GetCount());
-    if (mCameraRegistry.GetCount() > 0)
-    {
-        const auto& cam = mCameraRegistry.GetActive();
-        ImGui::BulletText("active @ (%.0f, %.0f)", cam.GetPosition().x, cam.GetPosition().y);
-    }
-    ImGui::Separator();
-    ImGui::Text("Lights:  %u", mLightRegistry.GetCount());
-    for (unsigned int i = 0; i < mLightRegistry.GetCount(); ++i)
-    {
-        const auto& light = mLightRegistry.GetByIndex(i);
-        ImGui::BulletText("%s @ (%.0f, %.0f) mask:0x%X",
-            light.enabled ? "ON" : "OFF",
-            light.position.x, light.position.y,
-            light.layerMask);
-    }
-}
 
 } // namespace Dia::Scene2DVisualDebugger
 

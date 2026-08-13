@@ -23,8 +23,8 @@ namespace Dia { namespace Mesh3D {
 // MeshStatsDrawer
 //
 // Registered under layer name LayerNames::kMesh3DStats ("mesh3d.stats").
-// Draw() is a strict no-op — all output is via DrawImGui().
-// Stats are computed inline from live refs each frame (no caching).
+// Draw() is a no-op — stats display was removed with the ImGui console.
+// Cached stats are still populated for potential future use.
 ////////////////////////////////////////////////////////////////////////////////
 class MeshStatsDrawer : public Dia::Debug::IVisualDebugger
 {
@@ -35,15 +35,14 @@ public:
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw    (Dia::Core::IDebugDraw& draw) override;
-    void DrawImGui() override;
 
 private:
     const Dia::Graphics3D::Mesh3DFrameData& mFrameData;
     const Dia::Mesh3D::Mesh3DAssetHandler&  mAssetHandler;
     const Dia::Core::IDebugContext&         mManager;
 
-    // Cached per-frame stats — written by Draw() on SimPU, read by DrawImGui() on RenderPU.
-    // Accessing live mFrameData from DrawImGui() is a cross-PU race; cache eliminates it.
+    // Cached per-frame stats — written by Draw() on SimPU.
+    // Kept for potential future use in the new debug panel.
     static constexpr int kMaxTrackedLayers = 32;
     struct LayerBucket { int16_t layer; uint32_t count; };
 

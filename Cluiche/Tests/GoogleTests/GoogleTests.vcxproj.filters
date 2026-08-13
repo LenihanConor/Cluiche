@@ -1286,9 +1286,6 @@
     <ClCompile Include="DiaVisualDebugger\TestDebugLayerManager.cpp">
       <Filter>DiaVisualDebugger</Filter>
     </ClCompile>
-    <ClCompile Include="DiaVisualDebugger\TestDiaVisualDebuggerConsole.cpp">
-      <Filter>DiaVisualDebugger</Filter>
-    </ClCompile>
     <ClCompile Include="DiaVisualDebugger\TestCoord2DDrawers.cpp">
       <Filter>DiaVisualDebugger</Filter>
     </ClCompile>

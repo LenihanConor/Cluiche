@@ -6,7 +6,6 @@
 #ifdef DIA_DEBUG
 
 #include <DiaObservation/Trace/DiaTrace.h>
-#include <imgui.h>
 
 #include "DiaRigidBody2D/World/PhysicsWorld.h"
 #include "DiaRigidBody2D/Bodies/Body2DBase.h"
@@ -70,11 +69,6 @@ void VelocityArrowsDrawer::Draw(Dia::Core::IDebugDraw& draw)
         drawArrow(pointBodies[i]);
     for (unsigned int i = 0; i < rigidBodies.Size(); ++i)
         drawArrow(rigidBodies[i]);
-}
-
-void VelocityArrowsDrawer::DrawImGui()
-{
-    ImGui::SliderFloat("Velocity scale", &mArrowScale, 0.01f, 1.0f);
 }
 
 } // namespace Dia::RigidBody2D

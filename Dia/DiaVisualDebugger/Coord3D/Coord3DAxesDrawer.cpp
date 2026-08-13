@@ -10,7 +10,6 @@
 #include <DiaMaths/Vector/Vector3D.h>
 #include <DiaMaths/Matrix/Matrix44.h>
 #include <DiaObservation/Trace/DiaTrace.h>
-#include <imgui.h>
 #include "DiaVisualDebugger/DebugLayerManager.h"
 #include "DiaVisualDebugger/DebugColourPalette.h"
 #include "DiaVisualDebugger/DebugLayerNames.h"
@@ -75,11 +74,6 @@ void Coord3DAxesDrawer::Draw(Dia::Core::IDebugDraw& draw)
         else
             draw.RequestDrawLine3D(origin, Dia::Maths::Vector3D(0.0f, 0.0f, -N), Dia::Debug::DebugColourPalette::kGoal);
     }
-}
-
-void Coord3DAxesDrawer::DrawImGui()
-{
-    ImGui::SliderFloat("Extent (world units)", &mExtent, 1.0f, 1000.0f);
 }
 
 } // namespace Dia::Debug

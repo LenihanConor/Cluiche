@@ -8,7 +8,6 @@
 #include <DiaGeometry2D/Shapes/Circle.h>
 #include <DiaGraphics/Misc/RGBA.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
-#include <imgui.h>
 
 namespace CluicheTest {
 
@@ -77,11 +76,6 @@ void EntityTestDrawer::Draw(Dia::Core::IDebugDraw& draw)
         submitEntity(mDoomed);
 
     mDrawer.Draw(draw);
-}
-
-void EntityTestDrawer::DrawImGui()
-{
-    // Entity inspection and hierarchy are now provided by EntityVisualDebuggerModule.
 }
 
 } // namespace CluicheTest

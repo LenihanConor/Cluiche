@@ -9,7 +9,6 @@
 #include <DiaRig2D/BoneTransform.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
-#include <imgui.h>
 #include <cmath>
 
 namespace CluicheTest {
@@ -142,26 +141,6 @@ void IK2DTestDrawer::Draw(Dia::Core::IDebugDraw& draw)
             draw.RequestDraw(targetScreen, 8.0f, Dia::Debug::DebugColourPalette::kGoal);
         }
     }
-}
-
-void IK2DTestDrawer::DrawImGui()
-{
-    int phaseIdx = (mPhase < 4) ? mPhase : 3;
-    ImGui::Text("IK2D Test Stage");
-    ImGui::Separator();
-    ImGui::Text("Phase: %s (frame %d)", kPhaseNames[phaseIdx], mPhaseFrame);
-    ImGui::Text("Target: (%.2f, %.2f)", mCurrentTarget.X(), mCurrentTarget.Y());
-    ImGui::Separator();
-
-    auto resultLine = [](const char* label, bool passed, float error, const char* unit) {
-        if (error < 1e+10f)
-            ImGui::Text("%s: %s  err=%.4f%s", label, passed ? "PASS" : "FAIL", error, unit);
-        else
-            ImGui::Text("%s: pending", label);
-    };
-    resultLine("Two-Bone", mTwoBoneConverged, mTwoBoneError, "u");
-    resultLine("FABRIK",   mFABRIKConverged,  mFABRIKError,  "u");
-    resultLine("Look-At",  mLookAtAccurate,   mLookAtError,  "rad");
 }
 
 } // namespace CluicheTest

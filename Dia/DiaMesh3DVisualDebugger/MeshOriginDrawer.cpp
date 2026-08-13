@@ -11,7 +11,6 @@
 #include <DiaCore/DebugDraw/DebugLayerNames.h>
 #include <DiaCore/DebugDraw/DebugColourPalette.h>
 #include <DiaMaths/Vector/Vector3D.h>
-#include <imgui.h>
 
 namespace Dia { namespace Mesh3D {
 
@@ -60,11 +59,6 @@ void MeshOriginDrawer::Draw(Dia::Core::IDebugDraw& draw)
         dbg.RequestDrawRay3D(worldPos, Dia::Maths::Vector3D(0.0f, 1.0f, 0.0f), kCrossArmLen, colour);  // +Y
         dbg.RequestDrawRay3D(worldPos, Dia::Maths::Vector3D(0.0f, 0.0f, 1.0f), kCrossArmLen, colour);  // +Z
     }
-}
-
-void MeshOriginDrawer::DrawImGui()
-{
-    ImGui::Checkbox("Highlight skinned", &mHighlightSkinned);
 }
 
 } } // namespace Dia::Mesh3D

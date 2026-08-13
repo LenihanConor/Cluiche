@@ -7,7 +7,6 @@
 #include <DiaRig2D/BoneTransform.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
-#include <imgui.h>
 
 namespace CluicheTest {
 
@@ -63,45 +62,6 @@ void Animation2DTestDrawer::Draw(Dia::Core::IDebugDraw& draw)
 
     boneLines.Draw(draw);
     jointCircles.Draw(draw);
-}
-
-void Animation2DTestDrawer::DrawImGui()
-{
-    ImGui::Text("Clip:   %s", (mCurrentClipIndex >= 0 && mCurrentClipIndex < 3) ? kClipNames[mCurrentClipIndex] : "none");
-    ImGui::Text("Played: %u / 3", mClipsPlayed);
-    ImGui::Text("Frames: %u / 180", mTotalPlaybackFrames);
-
-    float normTime = mPlayer.GetNormalizedTime();
-    ImGui::ProgressBar(normTime, ImVec2(-1.f, 0.f));
-
-    ImGui::Separator();
-
-    int wingL = mSkeleton.FindBoneIndex(Dia::Core::StringCRC("Wing_L"));
-    int wingR = mSkeleton.FindBoneIndex(Dia::Core::StringCRC("Wing_R"));
-    if (wingL >= 0)
-    {
-        float rot = mPose.GetLocalTransform(wingL).rotation;
-        ImGui::Text("Wing_L: %.3f rad (%.1f\xc2\xb0)", rot, rot * 57.2957f);
-    }
-    if (wingR >= 0)
-    {
-        float rot = mPose.GetLocalTransform(wingR).rotation;
-        ImGui::Text("Wing_R: %.3f rad (%.1f\xc2\xb0)", rot, rot * 57.2957f);
-    }
-
-    ImGui::Separator();
-
-    if (mAllCompleted)
-    {
-        if (mPoseCorrect)
-            ImGui::TextColored(ImVec4(0.2f, 1.f, 0.2f, 1.f), "PASS - pose within tolerance");
-        else
-            ImGui::TextColored(ImVec4(1.f, 0.3f, 0.3f, 1.f), "FAIL - pose mismatch");
-    }
-    else
-    {
-        ImGui::TextDisabled("Playback in progress...");
-    }
 }
 
 } // namespace CluicheTest

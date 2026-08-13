@@ -6,7 +6,6 @@
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaFlowField/FlowCell.h>
 #include <DiaPathfinding/CellCoord.h>
-#include <imgui.h>
 #include <cmath>
 #include <cstdio>
 
@@ -193,63 +192,6 @@ void PathfindingTestDrawer::Draw(Dia::Core::IDebugDraw& draw)
             draw.RequestDrawRay(mAgents[i].position, vdir, 16.0f, kAgentColorsBright[i]);
         }
     }
-}
-
-// ---------------------------------------------------------------------------
-// DrawImGui
-// ---------------------------------------------------------------------------
-void PathfindingTestDrawer::DrawImGui()
-{
-    // --- Nav Stack panel ---
-    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
-    ImGui::SetNextWindowSize(ImVec2(260, 180), ImGuiCond_Always);
-    ImGui::Begin("Navigation Stack", nullptr,
-        ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
-
-    if (ImGui::TreeNodeEx("Path", ImGuiTreeNodeFlags_DefaultOpen))
-    {
-        ImGui::Text("computed: %s", mPathComputed ? "YES" : "pending");
-        ImGui::TreePop();
-    }
-    if (ImGui::TreeNodeEx("Flow Field", ImGuiTreeNodeFlags_DefaultOpen))
-    {
-        ImGui::Text("ready: %s", mFlowFieldReady ? "YES" : "pending");
-        ImGui::Text("recomputes: %d", mRecomputeCount);
-        ImGui::Text("rerouted: %s", mRecomputedAfterBlock ? "YES" : "pending");
-        ImGui::TreePop();
-    }
-    if (ImGui::TreeNodeEx("Agents", ImGuiTreeNodeFlags_DefaultOpen))
-    {
-        static const char* kAgentNames[kAgentCount] = {"Agent0 (blue)", "Agent1 (orange)", "Agent2 (purple)"};
-        for (int i = 0; i < kAgentCount; ++i)
-        {
-            float dx = mAgents[i].position.X() - mGoalWorld.X();
-            float dy = mAgents[i].position.Y() - mGoalWorld.Y();
-            float dist = sqrtf(dx * dx + dy * dy);
-            ImGui::Text("%s  dist:%.1f  %s",
-                kAgentNames[i], dist, mAgentArrived[i] ? "ARRIVED" : "steering");
-        }
-        ImGui::TreePop();
-    }
-    ImGui::End();
-
-    // --- Checkpoints panel ---
-    ImGui::SetNextWindowPos(ImVec2(280, 10), ImGuiCond_Always);
-    ImGui::SetNextWindowSize(ImVec2(260, 160), ImGuiCond_Always);
-    ImGui::Begin("Checkpoints", nullptr,
-        ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
-
-    auto CheckRow = [](const char* name, bool passed) {
-        ImGui::TextColored(
-            passed ? ImVec4(0.2f,1.0f,0.2f,1.0f) : ImVec4(0.8f,0.8f,0.2f,1.0f),
-            "%s  %s", passed ? "[PASS]" : "[ -- ]", name);
-    };
-    CheckRow("path_computed",          mPathComputed);
-    CheckRow("flow_field_ready",       mFlowFieldReady);
-    CheckRow("recomputed_after_block", mRecomputedAfterBlock);
-    CheckRow("first_agent_arrived",    mFirstArrived);
-    CheckRow("all_agents_arrived",     mAllArrived);
-    ImGui::End();
 }
 
 } // namespace CluicheTest

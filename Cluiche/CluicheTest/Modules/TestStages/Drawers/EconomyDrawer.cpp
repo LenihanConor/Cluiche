@@ -5,9 +5,7 @@
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaEconomy/EconomyInstance.h>
-#include <imgui.h>
 #include <cstdio>
-#include <cmath>
 
 namespace CluicheTest {
 
@@ -134,42 +132,6 @@ void EconomyDrawer::Draw(Dia::Core::IDebugDraw& draw)
                              "MARKET BONUS x2!", 14.f,
                              Dia::Core::RGBA(255, 220, 0, 255));
     }
-}
-
-void EconomyDrawer::DrawImGui()
-{
-    static const Dia::Core::StringCRC kGold("gold");
-
-    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Once);
-    ImGui::SetNextWindowSize(ImVec2(260, 210), ImGuiCond_Once);
-    ImGui::Begin("DiaEconomy Stage");
-
-    ImGui::Text("Treasury:   %.1f / %.0f", mTreasury.GetValue(kGold), kTreasuryMax);
-    ImGui::Text("Consumer:   %.1f",        mConsumerWallet.GetValue(kGold));
-    ImGui::Text("Market:     %s",          mMarketActive ? "ON" : "off");
-    ImGui::Text("PoolEvents: %u",          mPoolChangedCount);
-    ImGui::Separator();
-
-    static const char* kStateNames[] = { "->Mine", "Mining", "->Base", "Deposit" };
-    for (int i = 0; i < kEconomyDrawerGathererCount; ++i)
-    {
-        const GathererDrawData& g = mGatherers[i];
-        const char* s = (g.state >= 0 && g.state < 4) ? kStateNames[g.state] : "?";
-        ImGui::Text("G%d [%-7s] carry=%.1f", i+1, s, g.carry);
-    }
-
-    ImGui::Separator();
-    auto chk = [](bool v, const char* label) {
-        ImGui::TextColored(v ? ImVec4(0,1,0,1) : ImVec4(1,1,0,1),
-                           "[%c] %s", v ? 'X' : ' ', label);
-    };
-    chk(mFirstTransferDone,  "first_transfer");
-    chk(mTreasuryAbove500,   "treasury_above_500");
-    chk(mConsumerSpent,      "consumer_spent");
-    chk(mModifierActivated,  "modifier_activates");
-    chk(mEventCountNonZero,  "event_count_nonzero");
-
-    ImGui::End();
 }
 
 } // namespace CluicheTest

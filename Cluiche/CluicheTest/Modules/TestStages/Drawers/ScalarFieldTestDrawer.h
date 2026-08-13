@@ -13,7 +13,7 @@ namespace CluicheTest {
 // ImGui stats panel for the ScalarField test stage.
 // The heatmap and gradient overlays are separate IVisualDebugger instances
 // (ScalarFieldHeatmapOverlay / ScalarFieldGradientOverlay) registered
-// directly with the layer manager.  This drawer handles only DrawImGui().
+// directly with the layer manager.  This drawer's Draw() is a no-op.
 // ---------------------------------------------------------------------------
 class ScalarFieldTestDrawer : public Dia::Debug::IVisualDebugger
 {
@@ -35,7 +35,6 @@ public:
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Core::IDebugDraw& draw) override;
-    void DrawImGui() override;
 
 private:
     const Dia::ScalarField::SquareScalarField& mBlueField;

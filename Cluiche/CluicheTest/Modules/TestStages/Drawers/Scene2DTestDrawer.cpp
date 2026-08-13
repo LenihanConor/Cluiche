@@ -9,7 +9,6 @@
 #include <DiaGeometry2D/Shapes/Circle.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGraphics/Misc/RGBA.h>
-#include <imgui.h>
 
 namespace CluicheTest {
 
@@ -60,16 +59,6 @@ void Scene2DTestDrawer::Draw(Dia::Core::IDebugDraw& draw)
     entityDrawer.Draw(draw);
 }
 #pragma warning(pop)
-
-void Scene2DTestDrawer::DrawImGui()
-{
-    Dia::Scene2DVisualDebugger::SceneOverviewDrawer overview(
-        mCameraRegistry, mLightRegistry, mLayerTable, mManager);
-    overview.DrawImGui();
-
-    ImGui::Separator();
-    ImGui::Text("Entities: %u", mDomain.GetEntityCount());
-}
 
 } // namespace CluicheTest
 

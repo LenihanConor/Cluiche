@@ -17,7 +17,6 @@
 #include <DiaCore/DebugDraw/DebugLayerNames.h>
 #include <DiaGraphics/Misc/RGBA.h>
 #include <DiaMaths/Vector/Vector2D.h>
-#include <imgui.h>
 #include <algorithm>
 
 namespace Dia::Geometry2DVisualDebugger
@@ -130,11 +129,6 @@ void AABBOverlayDrawer::Draw(Dia::Core::IDebugDraw& draw)
     }
 }
 #pragma warning(pop)
-
-void AABBOverlayDrawer::DrawImGui()
-{
-    ImGui::Text("AABB count: %u", mPending.Size());
-}
 
 } // namespace Dia::Geometry2DVisualDebugger
 

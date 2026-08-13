@@ -3,7 +3,6 @@
 #include "Modules/TestStages/Drawers/AIDecisionTestDrawer.h"
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
-#include <imgui.h>
 
 namespace CluicheTest {
 
@@ -35,46 +34,6 @@ Dia::Core::StringCRC AIDecisionTestDrawer::GetLayerName() const
 }
 
 void AIDecisionTestDrawer::Draw(Dia::Core::IDebugDraw& /*draw*/) {}
-
-void AIDecisionTestDrawer::DrawImGui()
-{
-    static const ImVec4 kGreen  { 0.2f, 1.0f, 0.2f, 1.0f };
-    static const ImVec4 kRed    { 1.0f, 0.3f, 0.3f, 1.0f };
-    static const ImVec4 kGrey   { 0.5f, 0.5f, 0.5f, 1.0f };
-    static const ImVec4 kYellow { 1.0f, 1.0f, 0.2f, 1.0f };
-
-    // --- Blackboard ---
-    ImGui::TextColored(kYellow, "Blackboard");
-    ImGui::Separator();
-    ImGui::Text("  self.health:      %.1f", mHealth);
-    ImGui::Text("  enemy.visible:    %s",   mEnemyVisible ? "true" : "false");
-    ImGui::Text("  enemy.distance:   %.1f", mEnemyDistance);
-
-    ImGui::Spacing();
-
-    // --- Checkpoint rows ---
-    ImGui::TextColored(kYellow, "Checkpoints");
-    ImGui::Separator();
-
-    auto row = [&](const char* label, bool passed)
-    {
-        ImGui::TextColored(passed ? kGreen : kGrey, "  [%s]  %s", passed ? "PASS" : "    ", label);
-    };
-
-    row("ConditionExpr  health < 50",           mConditionHealthLow);
-    row("ConditionExpr  enemy.visible == true",  mConditionEnemyVisible);
-    row("RuleSet        CallForHelp fired",       mRulesCallForHelpFired);
-    row("UtilityAI      Flee wins (sync)",        mUtilityFleeWins);
-    row("AIBudget       EvaluateAsync callback",  mBudgetAsyncCompleted);
-
-    ImGui::Spacing();
-    ImGui::Separator();
-
-    if (mAllPassed)
-        ImGui::TextColored(kGreen, "ALL PASSED");
-    else
-        ImGui::TextColored(kGrey, "running...");
-}
 
 } // namespace CluicheTest
 

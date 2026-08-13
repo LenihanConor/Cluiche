@@ -246,7 +246,6 @@ private:
         }
 
         void Draw(Dia::Core::IDebugDraw& draw) override;
-        void DrawImGui() override;
 
     private:
         const ArenaTestStageModule* mModule = nullptr;

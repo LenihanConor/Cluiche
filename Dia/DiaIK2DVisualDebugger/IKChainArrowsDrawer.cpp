@@ -12,7 +12,6 @@
 #include <DiaRig2D/Skeleton.h>
 #include <DiaIK2D/IKSolver.h>
 #include <DiaObservation/Trace/DiaTrace.h>
-#include <imgui.h>
 
 #include <cmath>
 
@@ -66,11 +65,6 @@ void IKChainArrowsDrawer::Draw(Dia::Core::IDebugDraw& draw)
                 Dia::Debug::DebugColourPalette::kGoal);
         }
     }
-}
-
-void IKChainArrowsDrawer::DrawImGui()
-{
-    ImGui::SliderFloat("Length multiplier", &mLengthMultiplier, 0.1f, 5.0f);
 }
 
 } // namespace Dia::IK2D

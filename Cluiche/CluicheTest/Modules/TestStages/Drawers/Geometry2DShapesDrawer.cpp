@@ -10,7 +10,6 @@
 #include <DiaGeometry2DVisualDebugger/CapsuleDrawHelper.h>
 #include <DiaGraphics/Misc/RGBA.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
-#include <imgui.h>
 
 namespace CluicheTest {
 
@@ -72,11 +71,6 @@ void Geometry2DShapesDrawer::Draw(Dia::Core::IDebugDraw& draw)
     drawer.Draw(draw);
 }
 #pragma warning(pop)
-
-void Geometry2DShapesDrawer::DrawImGui()
-{
-    ImGui::Checkbox("extended ray", &mExtendedRay);
-}
 
 } // namespace CluicheTest
 

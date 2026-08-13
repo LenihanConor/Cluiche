@@ -14,7 +14,6 @@
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 
 #include <DiaObservation/Trace/DiaTrace.h>
-#include <imgui.h>
 #include <cmath>
 
 namespace Dia::Animation2D {
@@ -89,12 +88,6 @@ void AnimSpringDrawer::Draw(Dia::Core::IDebugDraw& draw)
             }
         }
     }
-}
-
-void AnimSpringDrawer::DrawImGui()
-{
-    ImGui::SliderFloat("Warn threshold (rad/s)",  &mWarnThreshold,  0.0f, 10.0f);
-    ImGui::SliderFloat("Error threshold (rad/s)", &mErrorThreshold, 0.0f, 20.0f);
 }
 
 } // namespace Dia::Animation2D

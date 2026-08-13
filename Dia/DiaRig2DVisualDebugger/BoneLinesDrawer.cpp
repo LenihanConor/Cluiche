@@ -10,7 +10,6 @@
 #include <DiaCore/DebugDraw/IDebugContext.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaObservation/Trace/DiaTrace.h>
-#include <imgui.h>
 
 namespace Dia::Rig2D
 {
@@ -48,11 +47,6 @@ void BoneLinesDrawer::Draw(Dia::Core::IDebugDraw& draw)
             boneWt.position,
             Dia::Debug::DebugColourPalette::kActive);
     }
-}
-
-void BoneLinesDrawer::DrawImGui()
-{
-    ImGui::TextDisabled("Bones: %d", mSkeleton.GetBoneCount());
 }
 
 } // namespace Dia::Rig2D

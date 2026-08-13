@@ -16,7 +16,6 @@
 #include "DiaCore/DebugDraw/DebugLayerNames.h"
 #include "DiaCore/Core/Assert.h"
 #include <DiaObservation/Trace/DiaTrace.h>
-#include <imgui.h>
 
 namespace Dia::SoftBody2D
 {
@@ -85,12 +84,6 @@ void SoftParticlesDrawer::Draw(Dia::Core::IDebugDraw& draw)
                 break;
         }
     }
-}
-
-void SoftParticlesDrawer::DrawImGui()
-{
-    ImGui::SliderFloat("Radius multiplier", &mRadiusMultiplier, 0.1f, 5.0f);
-    ImGui::TextDisabled("Bodies: %u", mWorld.GetBodies().Size());
 }
 
 } // namespace Dia::SoftBody2D

@@ -16,7 +16,6 @@
 #include "DiaCore/DebugDraw/DebugLayerNames.h"
 #include "DiaCore/Core/Assert.h"
 #include <DiaObservation/Trace/DiaTrace.h>
-#include <imgui.h>
 
 namespace Dia::SoftBody2D
 {
@@ -74,11 +73,6 @@ void SoftAnchorLinksDrawer::Draw(Dia::Core::IDebugDraw& draw)
             }
         }
     }
-}
-
-void SoftAnchorLinksDrawer::DrawImGui()
-{
-    ImGui::TextDisabled("Anchor links (rope endpoints to rigid bodies)");
 }
 
 } // namespace Dia::SoftBody2D

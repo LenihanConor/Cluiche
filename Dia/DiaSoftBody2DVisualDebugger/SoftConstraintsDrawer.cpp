@@ -17,7 +17,6 @@
 #include "DiaCore/DebugDraw/DebugLayerNames.h"
 #include "DiaCore/Core/Assert.h"
 #include <DiaObservation/Trace/DiaTrace.h>
-#include <imgui.h>
 
 namespace Dia::SoftBody2D
 {
@@ -103,11 +102,6 @@ void SoftConstraintsDrawer::Draw(Dia::Core::IDebugDraw& draw)
                 break;
         }
     }
-}
-
-void SoftConstraintsDrawer::DrawImGui()
-{
-    ImGui::TextDisabled("Bodies: %u", mWorld.GetBodies().Size());
 }
 
 } // namespace Dia::SoftBody2D

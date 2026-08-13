@@ -13,7 +13,6 @@
 #include <DiaLighting3D/Registry/LightRegistry3D.h>
 #include <DiaCore/DebugDraw/DebugLayerNames.h>
 #include <DiaCore/DebugDraw/DebugColourPalette.h>
-#include <imgui.h>
 
 namespace Dia { namespace Lighting3D {
 
@@ -92,15 +91,6 @@ void LightWidgetsDrawer::Draw(Dia::Core::IDebugDraw& draw)
                                  Dia::Debug::DebugColourPalette::kGoal);
         }
     }
-}
-
-void LightWidgetsDrawer::DrawImGui()
-{
-    ImGui::Checkbox("Point lights",          &mShowPointLights);
-    ImGui::Checkbox("Spot lights",           &mShowSpotLights);
-    ImGui::Checkbox("Directional lights",    &mShowDirectionalLights);
-    ImGui::SliderFloat("Widget scale",       &mWidgetScale,          0.1f, 5.0f);
-    ImGui::SliderFloat("Dir anchor height",  &mDirLightAnchorHeight, 0.0f, 10.0f);
 }
 
 } } // namespace Dia::Lighting3D

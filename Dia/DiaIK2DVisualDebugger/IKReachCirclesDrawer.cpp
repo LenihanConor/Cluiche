@@ -12,7 +12,6 @@
 #include <DiaRig2D/Skeleton.h>
 #include <DiaIK2D/IKSolver.h>
 #include <DiaObservation/Trace/DiaTrace.h>
-#include <imgui.h>
 
 namespace Dia::IK2D
 {
@@ -60,11 +59,6 @@ void IKReachCirclesDrawer::Draw(Dia::Core::IDebugDraw& draw)
                 Dia::Debug::DebugColourPalette::kInactive);
         }
     }
-}
-
-void IKReachCirclesDrawer::DrawImGui()
-{
-    ImGui::TextDisabled("Reach circles — chain count: %d", mSolver.GetChainCount());
 }
 
 } // namespace Dia::IK2D

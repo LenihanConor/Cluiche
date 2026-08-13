@@ -23,17 +23,12 @@
 #include <memory>
 #include <mutex>
 
+// Forward-declare domain types so their incomplete-type unique_ptr members
+// don't force inclusion of all drawer headers into every consumer.
 namespace Dia::Debug
 {
-    class Coord2DOriginDrawer;
-    class Coord2DAxesDrawer;
-    class Coord2DGridDrawer;
-    class Coord2DBoundsDrawer;
-    class Coord2DCursorDrawer;
-    class Coord3DOriginDrawer;
-    class Coord3DAxesDrawer;
-    class Coord3DGridDrawer;
-    class Coord3DCameraDrawer;
+    class Coord2DDebugDomain;
+    class Coord3DDebugDomain;
 }
 
 namespace Dia::Graphics3D
@@ -50,6 +45,7 @@ public:
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kSim;
     static constexpr const char* kDescription = "Debug layer manager and SimToRender debug draw";
     explicit VisualDebuggerModule(const Dia::Core::StringCRC& instanceId);
+    ~VisualDebuggerModule(); // defined in .cpp — required for unique_ptr of forward-declared types
 
     Dia::Debug::DebugLayerManager& GetLayerManager() { return mLayerManager; }
 
@@ -81,11 +77,6 @@ private:
     };
     static constexpr int kCommandQueueCapacity = 32;
 
-    void RegisterCoord2DDrawers();
-    void UnregisterCoord2DDrawers();
-    void RegisterCoord3DDrawers();
-    void UnregisterCoord3DDrawers();
-
     // Drain pending panel commands (enqueued from Render PU)
     void DrainPendingCommands();
     // Drain DiaDebugPanel commands arriving from the Main PU over the
@@ -107,16 +98,8 @@ private:
     Dia::ApplicationFlow::ModuleRef<InputStreamModule> mInputRef{this};
     Dia::ApplicationFlow::ModuleRef<Camera2DModule>    mCameraRef{this};
 
-    std::unique_ptr<Dia::Debug::Coord2DOriginDrawer> mCoord2DOriginDrawer;
-    std::unique_ptr<Dia::Debug::Coord2DAxesDrawer>   mCoord2DAxesDrawer;
-    std::unique_ptr<Dia::Debug::Coord2DGridDrawer>   mCoord2DGridDrawer;
-    std::unique_ptr<Dia::Debug::Coord2DBoundsDrawer> mCoord2DBoundsDrawer;
-    std::unique_ptr<Dia::Debug::Coord2DCursorDrawer> mCoord2DCursorDrawer;
-
-    std::unique_ptr<Dia::Debug::Coord3DOriginDrawer> mCoord3DOriginDrawer;
-    std::unique_ptr<Dia::Debug::Coord3DAxesDrawer>   mCoord3DAxesDrawer;
-    std::unique_ptr<Dia::Debug::Coord3DGridDrawer>   mCoord3DGridDrawer;
-    std::unique_ptr<Dia::Debug::Coord3DCameraDrawer> mCoord3DCameraDrawer;
+    std::unique_ptr<Dia::Debug::Coord2DDebugDomain>  mCoord2DDomain;
+    std::unique_ptr<Dia::Debug::Coord3DDebugDomain>  mCoord3DDomain;
 };
 
 } } // namespace Cluiche::AppFlow

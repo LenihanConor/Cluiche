@@ -10,7 +10,6 @@
 #include <DiaCore/DebugDraw/IDebugContext.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaObservation/Trace/DiaTrace.h>
-#include <imgui.h>
 
 #include <cmath>
 
@@ -58,11 +57,6 @@ void DirectionArrowsDrawer::Draw(Dia::Core::IDebugDraw& draw)
             length,
             Dia::Debug::DebugColourPalette::kGoal);
     }
-}
-
-void DirectionArrowsDrawer::DrawImGui()
-{
-    ImGui::SliderFloat("Length multiplier", &mLengthMultiplier, 0.1f, 5.0f);
 }
 
 } // namespace Dia::Rig2D
