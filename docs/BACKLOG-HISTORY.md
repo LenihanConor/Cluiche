@@ -95,8 +95,9 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | ArenaTestStage (CluicheTest) | **In Progress (5/11 tasks done)** — scaffold + JSON assets + header + OnStart/LoadTriggerScript + SpawnWave/EnemyAgent done; remaining: DoUpdate frame loop (T6), metrics (T7), ImGui visuals (T8), DoStop (T9), pytest (T10), E2E verify (T11) | 2026-08-10 | Moved by `dia docs backlog move` |
 | ArenaTestStage spec → backlog | Promoted from loose end to Approved spec + backlog entry 2026-08-07. See Ready to Build above. | 2026-08-10 | Moved by `dia docs backlog move` |
 | DiaEconomyInspector | EconomyInstancesSource, EconomyModifiersSource, EconomyEventsSource, EconomySchemaSource, dockable editor plugin | 2026-08-10 | All 9 tasks done: 4 game-side inspector sources, EconomyInspectorModule (SimPU Bind/Unbind), React UI (4 tabs, 44 Vitest tests), 38 GoogleTests, E2E scenario with DiaClient topic subscriptions |
-| diascalarfieldinspector | [spec](specs/) | 2026-08-11 | Marked done by `dia docs spec-done` |
-| diadebugdomain | [spec](specs/) | 2026-08-12 | Marked done by `dia docs spec-done` |
+| DiaScalarFieldInspector | [spec](specs/applications/dia/systems/diascalarfieldinspector/diascalarfieldinspector.md) | 2026-08-11 | Dockable editor panel for scalar field inspection. WriteRadial + WriteBox widgets, C++ tests, JS logic test page. |
+| DiaDebugDomain | [spec](specs/applications/dia/systems/diadebugdomain/diadebugdomain.md) | 2026-08-12 | IDebugDomain interface + DiaDebugDomainRegistry + DiaDebugPanel HTML overlay (Ultralight, tilde toggle) + JS↔C++ command bridge + debugger-contract CLI check + all 14 visual debugger modules migrated to IDebugDomain + DiaVisualDebuggerConsole retired. 8188 tests. |
+| DiaUIUltralight — Game Input Bridge | [spec](specs/applications/dia/systems/diauiultralight/diauiultralight.md) | 2026-08-12 | CallJSFunction, keyboard injection, InputRouter mode stack. Unblocked DiaDebugDomain. |
 
 ---
 
