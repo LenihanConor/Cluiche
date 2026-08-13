@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dia Visual Debug Console — UX Mockup</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #090909;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 12px;
+  color: #d4d4d4;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  user-select: none;
+}
+
+/* ─────────────────────────────── VIEWPORT ─── */
+#viewport {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #0d0d12;
+}
+#viewport svg { width: 100%; height: 100%; }
+
+.vp-label {
+  position: absolute;
+  font-size: 10px;
+  color: #3a3a4a;
+  top: 10px;
+  left: 12px;
+  letter-spacing: 1px;
+}
+
+/* ─────────────────────────────── PANEL ─── */
+#panel {
+  width: 520px;
+  min-width: 520px;
+  height: 100vh;
+  background: #181818;
+  border-right: 1px solid #2a2a2a;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Panel header ── */
+.panel-header {
+  background: #1f1f1f;
+  border-bottom: 1px solid #2d2d2d;
+  padding: 7px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.panel-title {
+  font-size: 10px;
+  color: #7a7a7a;
+  letter-spacing: 2px;
+  font-weight: 700;
+  flex: 1;
+}
+.scale-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: #555;
+}
+.scale-row input[type=range] {
+  width: 55px; height: 3px;
+  accent-color: #5a9fd4; cursor: pointer;
+}
+#scale-display { color: #9a9a9a; width: 22px; text-align: right; }
+
+/* ── Search ── */
+.search-bar {
+  padding: 5px 10px;
+  border-bottom: 1px solid #222;
+  flex-shrink: 0;
+  background: #181818;
+}
+.search-input {
+  width: 100%;
+  background: #0d0d0d;
+  border: 1px solid #2d2d2d;
+  color: #c0c0c0;
+  font-family: inherit;
+  font-size: 11px;
+  padding: 4px 8px;
+  outline: none;
+}
+.search-input:focus { border-color: #5a9fd4; }
+.search-input::placeholder { color: #333; }
+
+/* ── Groups list ── */
+.groups-list {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #2d2d2d transparent;
+}
+
+/* ── Group ── */
+.group { border-top: 1px solid #1f1f1f; }
+
+.group-hdr {
+  display: flex;
+  align-items: center;
+  padding: 5px 10px;
+  cursor: pointer;
+  gap: 6px;
+  background: #181818;
+}
+.group-hdr:hover { background: #1e1e1e; }
+
+.group-arrow { width: 10px; font-size: 9px; color: #3a3a3a; flex-shrink: 0; }
+.group.open  .group-arrow::after { content: '▼'; }
+.group.closed .group-arrow::after { content: '▶'; }
+
+.group-label {
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  font-weight: 700;
+  text-transform: uppercase;
+  flex: 1;
+  color: var(--accent);
+  opacity: 0.85;
+}
+
+.group-meta { font-size: 10px; color: #333; margin-right: 4px; }
+
+.btn-all {
+  font-family: inherit; font-size: 9px;
+  padding: 1px 5px;
+  border: 1px solid;
+  cursor: pointer; background: transparent;
+  line-height: 1.5;
+}
+.btn-all.on  { border-color: #1e3a1e; color: #3a7a3a; }
+.btn-all.on:hover  { background: #111d11; color: #5aaa5a; }
+.btn-all.off { border-color: #3a1e1e; color: #7a3a3a; }
+.btn-all.off:hover { background: #1d1111; color: #aa5a5a; }
+
+.group-body {
+  padding: 4px 8px 6px 8px;
+  background: #131313;
+}
+.group.closed .group-body { display: none; }
+
+/* ── Domain Card ── */
+.domain {
+  margin-bottom: 3px;
+  border: 1px solid #222;
+  background: #1b1b1b;
+}
+.domain.enabled  { border-left: 2px solid var(--accent); }
+.domain.disabled { border-left: 2px solid #2a2a2a; opacity: 0.55; }
+
+.domain-hdr {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  gap: 6px;
+  cursor: pointer;
+}
+.domain-hdr:hover { background: #202020; }
+
+.tog {
+  width: 13px; height: 13px;
+  border: 1px solid #444;
+  flex-shrink: 0; display: flex;
+  align-items: center; justify-content: center;
+  font-size: 8px; cursor: pointer;
+}
+.tog.on  { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
+.tog.on::after  { content: '✓'; }
+.tog.off::after { content: ''; }
+
+.domain-name {
+  flex: 1; font-size: 12px; font-weight: 600; color: #aaa;
+}
+.domain.enabled .domain-name { color: var(--accent); }
+
+.domain-stat { font-size: 10px; color: #3a3a3a; }
+.domain.enabled .domain-stat { color: #555; }
+
+.expand-btn { width: 12px; font-size: 9px; color: #333; flex-shrink: 0; text-align: center; }
+.domain.open   .expand-btn::after { content: '▼'; }
+.domain.closed .expand-btn::after { content: '▶'; }
+
+.domain-body {
+  padding: 6px 10px 8px 10px;
+  border-top: 1px solid #202020;
+}
+.domain.closed .domain-body { display: none; }
+
+/* Drawers */
+.drawers {
+  display: flex; flex-wrap: wrap; gap: 5px 10px; margin-bottom: 6px;
+}
+.dr {
+  display: flex; align-items: center; gap: 4px;
+  cursor: pointer; font-size: 11px; color: #555;
+}
+.dr.on { color: #b0b0b0; }
+.dr-box {
+  width: 11px; height: 11px;
+  border: 1px solid #3a3a3a; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 8px;
+}
+.dr.on .dr-box { background: var(--accent); border-color: var(--accent); color: #000; }
+.dr.on .dr-box::after { content: '✓'; }
+
+/* Stats */
+.stats {
+  display: flex; flex-wrap: wrap; gap: 0 12px;
+  padding: 4px 0; margin-bottom: 5px;
+  border-top: 1px solid #1e1e1e; border-bottom: 1px solid #1e1e1e;
+}
+.s { font-size: 10px; color: #444; }
+.s .v { color: #777; }
+.s .v.w { color: #c8882a; }
+.s .v.e { color: #c03030; }
+.s .v.g { color: #3a9a5a; }
+
+/* Controls */
+.controls { display: flex; flex-direction: column; gap: 3px; margin-top: 5px; }
+.ctrl {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 10px; color: #444;
+}
+.ctrl span { width: 96px; flex-shrink: 0; }
+.ctrl input[type=range] {
+  flex: 1; height: 3px;
+  accent-color: var(--accent); cursor: pointer;
+}
+.ctrl .cv { width: 30px; text-align: right; color: #666; }
+
+/* Score bars (UtilityAI) */
+.score-list { display: flex; flex-direction: column; gap: 3px; margin-top: 4px; }
+.score-row { display: flex; align-items: center; gap: 6px; font-size: 10px; }
+.score-name { width: 110px; color: #666; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.score-bar-bg { flex: 1; height: 7px; background: #111; border: 1px solid #222; }
+.score-bar-fill { height: 100%; background: var(--accent); opacity: 0.6; }
+.score-bar-fill.top { opacity: 1; }
+.score-num { width: 28px; text-align: right; color: #555; }
+
+/* State machine */
+.sm-states { display: flex; flex-direction: column; gap: 1px; margin-top: 4px; }
+.sm-state { display: flex; align-items: center; gap: 6px; font-size: 10px; padding: 2px 4px; }
+.sm-state.active { background: #141f14; }
+.sm-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.sm-state.active .sm-dot { background: #10b981; }
+.sm-state:not(.active) .sm-dot { background: #2a2a2a; }
+.sm-sname { flex: 1; }
+.sm-state.active .sm-sname { color: #10b981; font-weight: 700; }
+.sm-state:not(.active) .sm-sname { color: #3a3a3a; }
+.sm-time { color: #333; font-size: 9px; }
+.sm-state.active .sm-time { color: #555; }
+.sm-hist {
+  margin-top: 5px; padding-top: 4px; border-top: 1px solid #1e1e1e;
+  font-size: 9px; color: #333;
+}
+.sm-hist-row { padding: 1px 0; }
+.sm-hist-row .arrow { color: #2a4a2a; }
+
+/* HTN Plan */
+.htn-plan { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
+.htn-task { font-size: 10px; padding: 2px 6px; display: flex; align-items: center; gap: 6px; }
+.htn-task.done    { color: #2a2a2a; text-decoration: line-through; }
+.htn-task.current { color: #10b981; background: #101a10; font-weight: 600; }
+.htn-task.pending { color: #3a3a3a; }
+.htn-cursor { flex-shrink: 0; font-size: 9px; }
+.htn-status {
+  margin-top: 4px; font-size: 10px;
+  display: flex; gap: 10px;
+}
+.badge {
+  padding: 1px 6px; font-size: 9px; border: 1px solid;
+}
+.badge.ok    { border-color: #1e4a1e; color: #3a8a3a; }
+.badge.warn  { border-color: #4a3a1e; color: #8a6a3a; }
+.badge.info  { border-color: #1e2a4a; color: #3a5a8a; }
+
+/* Rules */
+.rules-list { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
+.rule-row { display: flex; align-items: center; gap: 6px; font-size: 10px; padding: 2px 4px; }
+.rule-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.rule-row.fired .rule-dot { background: var(--accent); }
+.rule-row:not(.fired) .rule-dot { background: #2a2a2a; }
+.rule-row.fired .rule-name { color: #888; }
+.rule-row:not(.fired) .rule-name { color: #333; }
+.rule-name { flex: 1; }
+.rule-actions { color: #444; font-size: 9px; }
+.rule-row.fired .rule-actions { color: #666; }
+
+/* Desc */
+.desc { font-size: 10px; color: #383838; margin-bottom: 5px; font-style: italic; }
+
+/* ── Footer ── */
+.panel-footer {
+  flex-shrink: 0;
+  border-top: 1px solid #222;
+  background: #141414;
+}
+
+.entity-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 10px;
+  border-bottom: 1px solid #1e1e1e;
+}
+.entity-row label { font-size: 10px; color: #444; flex-shrink: 0; }
+.entity-input {
+  background: #0d0d0d; border: 1px solid #2d2d2d;
+  color: #d4d4d4; font-family: inherit; font-size: 11px;
+  padding: 2px 6px; width: 70px; outline: none;
+}
+.entity-input:focus { border-color: #5a9fd4; }
+#lock-status { font-size: 10px; color: #10b981; flex: 1; display: none; }
+#lock-status.on { display: block; }
+.btn-lock {
+  font-family: inherit; font-size: 10px;
+  padding: 2px 8px; border: 1px solid #333;
+  background: transparent; color: #666; cursor: pointer;
+}
+.btn-lock:hover { background: #1e1e1e; color: #aaa; }
+.btn-lock.locked { border-color: #10b981; color: #10b981; }
+
+.cmd-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-bottom: 1px solid #1e1e1e;
+}
+.cmd-prompt { font-size: 11px; color: #5a9fd4; flex-shrink: 0; }
+.cmd-input {
+  flex: 1; background: transparent; border: none;
+  color: #c0c0c0; font-family: inherit; font-size: 11px; outline: none;
+}
+.cmd-input::placeholder { color: #2a2a2a; }
+
+.log-section { height: 82px; display: flex; flex-direction: column; }
+.log-tabs { display: flex; flex-shrink: 0; border-bottom: 1px solid #1e1e1e; }
+.log-tab {
+  font-family: inherit; font-size: 10px;
+  padding: 3px 10px; border: none;
+  background: transparent; color: #444; cursor: pointer;
+  border-right: 1px solid #1e1e1e;
+}
+.log-tab.active { background: #1b1b1b; color: #b0b0b0; }
+.log-content {
+  flex: 1; overflow-y: auto; padding: 3px 10px;
+  scrollbar-width: thin; scrollbar-color: #252525 transparent;
+}
+.ll { font-size: 10px; color: #3a3a3a; padding: 1px 0; }
+.ll.info { color: #505050; }
+.ll.warn { color: #7a5a20; }
+.ll.ok   { color: #2a5a2a; }
+
+/* ── Group accent colours ── */
+.group[data-g="physics"]   { --accent: #f59e0b; }
+.group[data-g="animation"] { --accent: #10b981; }
+.group[data-g="navigation"]{ --accent: #3b82f6; }
+.group[data-g="rendering"] { --accent: #8b5cf6; }
+.group[data-g="spatial"]   { --accent: #06b6d4; }
+.group[data-g="entity"]    { --accent: #eab308; }
+.group[data-g="ai"]        { --accent: #ef4444; }
+.group[data-g="core"]      { --accent: #6b7280; }
+
+/* ── Misc ── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #252525; }
+::-webkit-scrollbar-thumb:hover { background: #333; }
+
+.mockup-note {
+  position: fixed; bottom: 6px; left: 8px;
+  font-size: 9px; color: #222; pointer-events: none;
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════ DEBUG PANEL ═══════════════════════════ -->
+<!-- (moved to left — viewport follows on right) -->
+
+<!-- ═══════════════════════════ GAME VIEWPORT ═══════════════════════════ -->
+<div id="viewport" style="order:2">
+  <span class="vp-label">GAME VIEWPORT (CluicheTest)</span>
+  <svg id="vp-svg" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arr" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+        <path d="M0,0 L6,3 L0,6 Z" fill="#f59e0b" opacity="0.7"/>
+      </marker>
+      <marker id="arr-b" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+        <path d="M0,0 L6,3 L0,6 Z" fill="#3b82f6" opacity="0.9"/>
+      </marker>
+      <marker id="arr-g" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+        <path d="M0,0 L6,3 L0,6 Z" fill="#10b981" opacity="0.8"/>
+      </marker>
+    </defs>
+
+    <!-- Coordinate grid -->
+    <g id="grid" opacity="0.12"></g>
+    <!-- Origin axes -->
+    <line id="ax-x" stroke="#8b5cf6" stroke-width="0.5" opacity="0.3"/>
+    <line id="ax-y" stroke="#8b5cf6" stroke-width="0.5" opacity="0.3"/>
+
+    <!-- Physics: rigid body shapes (Physics domain enabled) -->
+    <g id="physics-layer">
+      <!-- Bodies -->
+      <circle cx="35%" cy="42%" r="22" fill="none" stroke="#f59e0b" stroke-width="1.5" opacity="0.8"/>
+      <circle cx="28%" cy="60%" r="14" fill="none" stroke="#f59e0b" stroke-width="1.5" opacity="0.8"/>
+      <rect   x="45%" y="35%" width="40" height="28" fill="none" stroke="#f59e0b" stroke-width="1.5" opacity="0.8" transform="rotate(15, calc(45%+20), calc(35%+14))"/>
+      <circle cx="55%" cy="62%" r="18" fill="none" stroke="#666" stroke-width="1" opacity="0.5"/><!-- sleeping -->
+      <circle cx="42%" cy="72%" r="10" fill="none" stroke="#f59e0b" stroke-width="1.5" opacity="0.7"/>
+      <!-- Velocity arrows -->
+      <line id="vel1" stroke="#f59e0b" stroke-width="1.2" opacity="0.7" marker-end="url(#arr)"/>
+      <line id="vel2" stroke="#f59e0b" stroke-width="1.2" opacity="0.7" marker-end="url(#arr)"/>
+      <line id="vel3" stroke="#f59e0b" stroke-width="1.2" opacity="0.7" marker-end="url(#arr)"/>
+      <!-- Contact normals -->
+      <line stroke="#c03030" stroke-width="1" opacity="0.6" stroke-dasharray="2,2"
+            x1="35%" y1="42%" x2="28%" y2="60%" id="contact1"/>
+      <circle cx="31.5%" cy="51%" r="3" fill="#c03030" opacity="0.5"/>
+    </g>
+
+    <!-- Animation: Rig2D bone lines -->
+    <g id="rig-layer" opacity="0.9">
+      <!-- Torso to head -->
+      <line stroke="#fff" stroke-width="1.2" opacity="0.6" x1="65%" y1="60%" x2="65%" y2="43%"/>
+      <!-- Torso to hip -->
+      <line stroke="#fff" stroke-width="1.2" opacity="0.6" x1="65%" y1="60%" x2="65%" y2="70%"/>
+      <!-- Left arm -->
+      <line stroke="#fff" stroke-width="1.2" opacity="0.6" x1="65%" y1="52%" x2="56%" y2="58%"/>
+      <line stroke="#fff" stroke-width="1.2" opacity="0.6" x1="56%" y1="58%" x2="50%" y2="63%"/>
+      <!-- Right arm -->
+      <line stroke="#fff" stroke-width="1.2" opacity="0.6" x1="65%" y1="52%" x2="74%" y2="56%"/>
+      <line stroke="#fff" stroke-width="1.2" opacity="0.6" x1="74%" y1="56%" x2="79%" y2="62%"/>
+      <!-- Left leg -->
+      <line stroke="#fff" stroke-width="1.2" opacity="0.6" x1="65%" y1="70%" x2="61%" y2="82%"/>
+      <line stroke="#fff" stroke-width="1.2" opacity="0.6" x1="61%" y1="82%" x2="59%" y2="92%"/>
+      <!-- Right leg -->
+      <line stroke="#fff" stroke-width="1.2" opacity="0.6" x1="65%" y1="70%" x2="69%" y2="82%"/>
+      <line stroke="#fff" stroke-width="1.2" opacity="0.6" x1="69%" y1="82%" x2="71%" y2="92%"/>
+      <!-- Joint circles -->
+      <circle cx="65%" cy="43%" r="3.5" fill="none" stroke="#10b981" stroke-width="1.5" opacity="0.9"/><!-- head -->
+      <circle cx="65%" cy="52%" r="2.5" fill="none" stroke="#f59e0b" stroke-width="1.2" opacity="0.8"/>
+      <circle cx="65%" cy="60%" r="2.5" fill="none" stroke="#f59e0b" stroke-width="1.2" opacity="0.8"/>
+      <circle cx="56%" cy="58%" r="2"   fill="none" stroke="#f59e0b" stroke-width="1.2" opacity="0.7"/>
+      <circle cx="50%" cy="63%" r="2"   fill="none" stroke="#f59e0b" stroke-width="1.2" opacity="0.7"/>
+      <circle cx="74%" cy="56%" r="2"   fill="none" stroke="#f59e0b" stroke-width="1.2" opacity="0.7"/>
+      <circle cx="79%" cy="62%" r="2"   fill="none" stroke="#f59e0b" stroke-width="1.2" opacity="0.7"/>
+      <!-- Direction arrows on bones -->
+      <line stroke="#10b981" stroke-width="1" opacity="0.7" x1="65%" y1="52%" x2="68%" y2="50%" marker-end="url(#arr-g)"/>
+    </g>
+
+    <!-- Navigation: pathfinding polyline -->
+    <g id="nav-layer" opacity="0">
+      <polyline points="" stroke="#3b82f6" stroke-width="1.5" fill="none" opacity="0.9" id="path-line"/>
+      <circle id="path-start" cx="35%" cy="42%" r="5" fill="none" stroke="#3b82f6" stroke-width="1.5" opacity="0.9"/>
+      <circle id="path-goal"  cx="75%" cy="30%" r="5" fill="none" stroke="#06b6d4" stroke-width="1.5" opacity="0.9"/>
+    </g>
+
+    <!-- Entity labels (Entity domain) -->
+    <g id="entity-layer" opacity="0.9">
+      <text x="35%" y="37%" fill="#eab308" font-size="10" font-family="Consolas,monospace" opacity="0.8">entity:14</text>
+      <text x="28%" y="56%" fill="#eab308" font-size="10" font-family="Consolas,monospace" opacity="0.8">entity:22</text>
+      <text x="65%" y="40%" fill="#eab308" font-size="10" font-family="Consolas,monospace" opacity="0.8">entity:7  [locked]</text>
+    </g>
+  </svg>
+</div>
+
+<div id="panel" style="order:1">
+
+  <!-- Header -->
+  <div class="panel-header">
+    <span class="panel-title">DIA  DEBUG</span>
+    <div class="scale-row">
+      <span>Scale</span>
+      <input type="range" min="10" max="200" value="50" id="scale-range"
+             oninput="document.getElementById('scale-display').textContent=this.value">
+      <span id="scale-display">50</span>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-bar">
+    <input class="search-input" type="text" placeholder="&#128269;  Search domains and drawers..." id="search"
+           oninput="filterDomains(this.value)">
+  </div>
+
+  <!-- Groups -->
+  <div class="groups-list" id="groups-list">
+
+    <!-- ════════════ PHYSICS ════════════ -->
+    <div class="group open" data-g="physics">
+      <div class="group-hdr" onclick="toggleGroup(this)">
+        <span class="group-arrow"></span>
+        <span class="group-label">Physics</span>
+        <span class="group-meta">2 domains</span>
+        <button class="btn-all on"  onclick="event.stopPropagation();groupAll(this,'on')">All On</button>
+        <button class="btn-all off" onclick="event.stopPropagation();groupAll(this,'off')">All Off</button>
+      </div>
+      <div class="group-body">
+
+        <!-- RigidBody2D — enabled, open -->
+        <div class="domain enabled open" id="dom-rigidbody2d">
+          <div class="domain-hdr" onclick="toggleDomain(this)">
+            <div class="tog on" onclick="event.stopPropagation();toggleDomainEnabled(this)"></div>
+            <span class="domain-name">RigidBody2D</span>
+            <span class="domain-stat">Bodies: 14</span>
+            <span class="expand-btn"></span>
+          </div>
+          <div class="domain-body">
+            <div class="desc">Rigid body simulation — shapes, contacts, constraints, velocities</div>
+            <div class="drawers">
+              <div class="dr on"  onclick="toggleDrawer(this)"><span class="dr-box"></span> Shapes</div>
+              <div class="dr on"  onclick="toggleDrawer(this)"><span class="dr-box"></span> Velocity</div>
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> AABB</div>
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Contacts</div>
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Constraints</div>
+            </div>
+            <div class="stats">
+              <span class="s">Active <span class="v g">14</span></span>
+              <span class="s">Awake  <span class="v">3</span></span>
+              <span class="s">Sleeping <span class="v">11</span></span>
+              <span class="s">Contacts <span class="v w">2</span></span>
+              <span class="s">Dropped <span class="v">0</span></span>
+            </div>
+            <div class="controls">
+              <div class="ctrl">
+                <span>Velocity scale</span>
+                <input type="range" min="0" max="2" step="0.01" value="0.1"
+                       oninput="this.nextElementSibling.textContent=parseFloat(this.value).toFixed(2)">
+                <span class="cv">0.10</span>
+              </div>
+              <div class="ctrl">
+                <span>Normal length</span>
+                <input type="range" min="0" max="1" step="0.01" value="0.3"
+                       oninput="this.nextElementSibling.textContent=parseFloat(this.value).toFixed(2)">
+                <span class="cv">0.30</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SoftBody2D — disabled, closed -->
+        <div class="domain disabled closed" id="dom-softbody2d">
+          <div class="domain-hdr" onclick="toggleDomain(this)">
+            <div class="tog off" onclick="event.stopPropagation();toggleDomainEnabled(this)"></div>
+            <span class="domain-name">SoftBody2D</span>
+            <span class="domain-stat">Particles: 0</span>
+            <span class="expand-btn"></span>
+          </div>
+          <div class="domain-body">
+            <div class="desc">Verlet soft bodies — particles, distance constraints, anchor links</div>
+            <div class="drawers">
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Particles</div>
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Constraints</div>
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Anchors</div>
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Velocity</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /physics -->
+
+    <!-- ════════════ ANIMATION ════════════ -->
+    <div class="group open" data-g="animation">
+      <div class="group-hdr" onclick="toggleGroup(this)">
+        <span class="group-arrow"></span>
+        <span class="group-label">Animation</span>
+        <span class="group-meta">3 domains</span>
+        <button class="btn-all on"  onclick="event.stopPropagation();groupAll(this,'on')">All On</button>
+        <button class="btn-all off" onclick="event.stopPropagation();groupAll(this,'off')">All Off</button>
+      </div>
+      <div class="group-body">
+
+        <!-- Rig2D — enabled, open -->
+        <div class="domain enabled open" id="dom-rig2d">
+          <div class="domain-hdr" onclick="toggleDomain(this)">
+            <div class="tog on" onclick="event.stopPropagation();toggleDomainEnabled(this)"></div>
+            <span class="domain-name">Rig2D</span>
+            <span class="domain-stat">Bones: 12</span>
+            <span class="expand-btn"></span>
+          </div>
+          <div class="domain-body">
+            <div class="desc">Skeletal rig — bones, joints, direction arrows, rest pose ghost</div>
+            <div class="drawers">
+              <div class="dr on"  onclick="toggleDrawer(this)"><span class="dr-box"></span> Bones</div>
+              <div class="dr on"  onclick="toggleDrawer(this)"><span class="dr-box"></span> Joints</div>
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Labels</div>
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Arrows</div>
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Rest Pose</div>
+            </div>
+            <div class="stats">
+              <span class="s">Bones <span class="v">12</span></span>
+              <span class="s">Root <span class="v">pelvis</span></span>
+              <span class="s">Leaves <span class="v">4</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- IK2D — disabled, closed -->
+        <div class="domain disabled closed" id="dom-ik2d">
+          <div class="domain-hdr" onclick="toggleDomain(this)">
+            <div class="tog off" onclick="event.stopPropagation();toggleDomainEnabled(this)"></div>
+            <span class="domain-name">IK2D</span>
+            <span class="domain-stat">Chains: 2</span>
+            <span class="expand-btn"></span>
+          </div>
+          <div class="domain-body">
+            <div class="desc">Inverse kinematics — chain bones, reach circles, target arrows</div>
+            <div class="drawers">
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Chain Bones</div>
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Joints</div>
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Arrows</div>
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Reach Circles</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Animation2D — disabled, closed -->
+        <div class="domain disabled closed" id="dom-anim2d">
+          <div class="domain-hdr" onclick="toggleDomain(this)">
+            <div class="tog off" onclick="event.stopPropagation();toggleDomainEnabled(this)"></div>
+            <span class="domain-name">Animation2D</span>
+            <span class="domain-stat">Layers: 3</span>
+            <span class="expand-btn"></span>
+          </div>
+          <div class="domain-body">
+            <div class="desc">Clip evaluation — blend weights, clip cursors, spring nodes</div>
+            <div class="drawers">
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Blend Weights</div>
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Clip Cursor</div>
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Spring Nodes</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /animation -->
+
+    <!-- ════════════ NAVIGATION ════════════ -->
+    <div class="group closed" data-g="navigation">
+      <div class="group-hdr" onclick="toggleGroup(this)">
+        <span class="group-arrow"></span>
+        <span class="group-label">Navigation</span>
+        <span class="group-meta">3 domains · none active</span>
+        <button class="btn-all on"  onclick="event.stopPropagation();groupAll(this,'on')">All On</button>
+        <button class="btn-all off" onclick="event.stopPropagation();groupAll(this,'off')">All Off</button>
+      </div>
+      <div class="group-body">
+
+        <!-- Pathfinding — disabled -->
+        <div class="domain disabled closed" id="dom-pathfinding">
+          <div class="domain-hdr" onclick="toggleDomain(this)">
+            <div class="tog off" onclick="event.stopPropagation();toggleDomainEnabled(this)"></div>
+            <span class="domain-name">Pathfinding</span>
+            <span class="domain-stat">Pending: 0</span>
+            <span class="expand-btn"></span>
+          </div>
+          <div class="domain-body">
+            <div class="desc">A* path results — polyline, passability grid, start/goal markers</div>
+            <div class="drawers">
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Path Line</div>
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Grid Overlay</div>
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Cost Labels</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FlowField — disabled -->
+        <div class="domain disabled closed" id="dom-flowfield">
+          <div class="domain-hdr" onclick="toggleDomain(this)">
+            <div class="tog off" onclick="event.stopPropagation();toggleDomainEnabled(this)"></div>
+            <span class="domain-name">FlowField</span>
+            <span class="domain-stat">Cached: 0</span>
+            <span class="expand-btn"></span>
+          </div>
+          <div class="domain-body">
+            <div class="desc">Per-cell direction field — arrows, reachability, goal marker</div>
+            <div class="drawers">
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Direction Arrows</div>
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Reachability</div>
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Goal Cell</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Steering — disabled -->
+        <div class="domain disabled closed" id="dom-steering">
+          <div class="domain-hdr" onclick="toggleDomain(this)">
+            <div class="tog off" onclick="event.stopPropagation();toggleDomainEnabled(this)"></div>
+            <span class="domain-name">Steering</span>
+            <span class="domain-stat">Agents: 0</span>
+            <span class="expand-btn"></span>
+          </div>
+          <div class="domain-body">
+            <div class="desc">Steering behaviours — velocity/desired-velocity arrows, radii, detection boxes</div>
+            <div class="drawers">
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Velocity</div>
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Desired Vel</div>
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Sep. Radii</div>
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Detection Box</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /navigation -->
+
+    <!-- ════════════ AI / BEHAVIOR ════════════ -->
+    <div class="group open" data-g="ai">
+      <div class="group-hdr" onclick="toggleGroup(this)">
+        <span class="group-arrow"></span>
+        <span class="group-label">AI / Behavior</span>
+        <span class="group-meta">7 domains</span>
+        <button class="btn-all on"  onclick="event.stopPropagation();groupAll(this,'on')">All On</button>
+        <button class="btn-all off" onclick="event.stopPropagation();groupAll(this,'off')">All Off</button>
+      </div>
+      <div class="group-body">
+
+        <!-- StateMachine — enabled, open -->
+        <div class="domain enabled open" id="dom-statemachine">
+          <div class="domain-hdr" onclick="toggleDomain(this)">
+            <div class="tog on" onclick="event.stopPropagation();toggleDomainEnabled(this)"></div>
+            <span class="domain-name">StateMachine</span>
+            <span class="domain-stat">State: patrol</span>
+            <span class="expand-btn"></span>
+          </div>
+          <div class="domain-body">
+            <div class="desc">Hierarchical state machine — active states, transitions, guard history</div>
+            <div class="sm-states">
+              <div class="sm-state"><span class="sm-dot"></span><span class="sm-sname">idle</span>         <span class="sm-time"></span></div>
+              <div class="sm-state active"><span class="sm-dot"></span><span class="sm-sname">patrol</span><span class="sm-time">2.4s</span></div>
+              <div class="sm-state"><span class="sm-dot"></span><span class="sm-sname">chase</span>        <span class="sm-time"></span></div>
+              <div class="sm-state"><span class="sm-dot"></span><span class="sm-sname">attack</span>       <span class="sm-time"></span></div>
+              <div class="sm-state"><span class="sm-dot"></span><span class="sm-sname">flee</span>         <span class="sm-time"></span></div>
+            </div>
+            <div class="sm-hist">
+              Transition history (last 5)
+              <div class="sm-hist-row"><span class="arrow">idle → patrol</span>  trigger: OnSpawn   0.1s ago</div>
+              <div class="sm-hist-row"><span class="arrow">patrol → chase</span> trigger: SeenPlayer [guard ✗]</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- UtilityAI — enabled, open -->
+        <div class="domain enabled open" id="dom-utilityai">
+          <div class="domain-hdr" onclick="toggleDomain(this)">
+            <div class="tog on" onclick="event.stopPropagation();toggleDomainEnabled(this)"></div>
+            <span class="domain-name">UtilityAI</span>
+            <span class="domain-stat">Scores: 4</span>
+            <span class="expand-btn"></span>
+          </div>
+          <div class="domain-body">
+            <div class="desc">Utility score table — per-action scores with response curve breakdown</div>
+            <div class="score-list">
+              <div class="score-row">
+                <span class="score-name">patrol_waypoint</span>
+                <div class="score-bar-bg"><div class="score-bar top" style="width:72%"></div></div>
+                <span class="score-num">0.72</span>
+              </div>
+              <div class="score-row">
+                <span class="score-name">seek_health</span>
+                <div class="score-bar-bg"><div class="score-bar" style="width:45%"></div></div>
+                <span class="score-num">0.45</span>
+              </div>
+              <div class="score-row">
+                <span class="score-name">chase_target</span>
+                <div class="score-bar-bg"><div class="score-bar" style="width:31%"></div></div>
+                <span class="score-num">0.31</span>
+              </div>
+              <div class="score-row">
+                <span class="score-name">flee_from_danger</span>
+                <div class="score-bar-bg"><div class="score-bar" style="width:8%"></div></div>
+                <span class="score-num">0.08</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- HTN — enabled, open -->
+        <div class="domain enabled open" id="dom-htn">
+          <div class="domain-hdr" onclick="toggleDomain(this)">
+            <div class="tog on" onclick="event.stopPropagation();toggleDomainEnabled(this)"></div>
+            <span class="domain-name">HTN</span>
+            <span class="domain-stat">Task 2/5</span>
+            <span class="expand-btn"></span>
+          </div>
+          <div class="domain-body">
+            <div class="desc">HTN planner — active plan, task cursor, divergence and replan state</div>
+            <div class="htn-plan">
+              <div class="htn-task done">   <span>1. navigate_to_patrol_point</span></div>
+              <div class="htn-task current"><span class="htn-cursor">▶</span> <span>2. wait_at_point</span></div>
+              <div class="htn-task pending"><span>3. pick_next_waypoint</span></div>
+              <div class="htn-task pending"><span>4. navigate_to_patrol_point</span></div>
+              <div class="htn-task pending"><span>5. report_clear</span></div>
+            </div>
+            <div class="htn-status">
+              <span class="badge ok">Active</span>
+              <span class="badge info">Cost: 14.2</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rules — enabled, open -->
+        <div class="domain enabled open" id="dom-rules">
+          <div class="domain-hdr" onclick="toggleDomain(this)">
+            <div class="tog on" onclick="event.stopPropagation();toggleDomainEnabled(this)"></div>
+            <span class="domain-name">Rules</span>
+            <span class="domain-stat">Rules: 6</span>
+            <span class="expand-btn"></span>
+          </div>
+          <div class="domain-body">
+            <div class="desc">Rule evaluation — fired rules, guard results, dispatched actions</div>
+            <div class="rules-list">
+              <div class="rule-row fired">
+                <span class="rule-dot"></span>
+                <span class="rule-name">on_low_health</span>
+                <span class="rule-actions">→ seek_health, broadcast_danger</span>
+              </div>
+              <div class="rule-row">
+                <span class="rule-dot"></span>
+                <span class="rule-name">on_enemy_nearby</span>
+                <span class="rule-actions">→ enter_combat</span>
+              </div>
+              <div class="rule-row">
+                <span class="rule-dot"></span>
+                <span class="rule-name">on_player_visible</span>
+                <span class="rule-actions">→ alert_squad</span>
+              </div>
+              <div class="rule-row fired">
+                <span class="rule-dot"></span>
+                <span class="rule-name">on_waypoint_reached</span>
+                <span class="rule-actions">→ pick_next_waypoint</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AIBudget — disabled, closed -->
+        <div class="domain disabled closed" id="dom-aibudget">
+          <div class="domain-hdr" onclick="toggleDomain(this)">
+            <div class="tog off" onclick="event.stopPropagation();toggleDomainEnabled(this)"></div>
+            <span class="domain-name">AIBudget</span>
+            <span class="domain-stat">Budget: 4ms</span>
+            <span class="expand-btn"></span>
+          </div>
+          <div class="domain-body">
+            <div class="desc">AI time budget — used / total, per-system breakdown, deferred count</div>
+          </div>
+        </div>
+
+        <!-- Blackboard — disabled, closed -->
+        <div class="domain disabled closed" id="dom-blackboard">
+          <div class="domain-hdr" onclick="toggleDomain(this)">
+            <div class="tog off" onclick="event.stopPropagation();toggleDomainEnabled(this)"></div>
+            <span class="domain-name">Blackboard</span>
+            <span class="domain-stat">Slots: 8</span>
+            <span class="expand-btn"></span>
+          </div>
+          <div class="domain-body">
+            <div class="desc">Key-value slot table — per-slot type, current value, observer count</div>
+          </div>
+        </div>
+
+        <!-- Mailbox — disabled, closed -->
+        <div class="domain disabled closed" id="dom-mailbox">
+          <div class="domain-hdr" onclick="toggleDomain(this)">
+            <div class="tog off" onclick="event.stopPropagation();toggleDomainEnabled(this)"></div>
+            <span class="domain-name">Mailbox</span>
+            <span class="domain-stat">Types: 4</span>
+            <span class="expand-btn"></span>
+          </div>
+          <div class="domain-body">
+            <div class="desc">Message queues — per-type fill level, total sent/dropped counters</div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /ai -->
+
+    <!-- ════════════ RENDERING (collapsed) ════════════ -->
+    <div class="group closed" data-g="rendering">
+      <div class="group-hdr" onclick="toggleGroup(this)">
+        <span class="group-arrow"></span>
+        <span class="group-label">Rendering</span>
+        <span class="group-meta">3 domains</span>
+        <button class="btn-all on"  onclick="event.stopPropagation();groupAll(this,'on')">All On</button>
+        <button class="btn-all off" onclick="event.stopPropagation();groupAll(this,'off')">All Off</button>
+      </div>
+      <div class="group-body">
+        <div class="domain disabled closed" id="dom-mesh3d">
+          <div class="domain-hdr" onclick="toggleDomain(this)">
+            <div class="tog off" onclick="event.stopPropagation();toggleDomainEnabled(this)"></div>
+            <span class="domain-name">Mesh3D</span>
+            <span class="domain-stat">Draws: 0</span>
+            <span class="expand-btn"></span>
+          </div>
+          <div class="domain-body">
+            <div class="desc">3D mesh draw commands — bounds wireframe, origins, load-state stats</div>
+          </div>
+        </div>
+        <div class="domain disabled closed" id="dom-lighting3d">
+          <div class="domain-hdr" onclick="toggleDomain(this)">
+            <div class="tog off" onclick="event.stopPropagation();toggleDomainEnabled(this)"></div>
+            <span class="domain-name">Lighting3D</span>
+            <span class="domain-stat">Lights: 0</span>
+            <span class="expand-btn"></span>
+          </div>
+          <div class="domain-body">
+            <div class="desc">Light registry — position widgets, direction arrows, path arcs</div>
+          </div>
+        </div>
+        <div class="domain disabled closed" id="dom-scene2d">
+          <div class="domain-hdr" onclick="toggleDomain(this)">
+            <div class="tog off" onclick="event.stopPropagation();toggleDomainEnabled(this)"></div>
+            <span class="domain-name">Scene2D</span>
+            <span class="domain-stat">Layers: 0</span>
+            <span class="expand-btn"></span>
+          </div>
+          <div class="domain-body">
+            <div class="desc">Scene overview — world bounds, layer bands, cameras, lights</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ SPATIAL / GEOMETRY (collapsed) ════════════ -->
+    <div class="group closed" data-g="spatial">
+      <div class="group-hdr" onclick="toggleGroup(this)">
+        <span class="group-arrow"></span>
+        <span class="group-label">Spatial / Geometry</span>
+        <span class="group-meta">3 domains</span>
+        <button class="btn-all on"  onclick="event.stopPropagation();groupAll(this,'on')">All On</button>
+        <button class="btn-all off" onclick="event.stopPropagation();groupAll(this,'off')">All Off</button>
+      </div>
+      <div class="group-body">
+        <div class="domain disabled closed"><div class="domain-hdr" onclick="toggleDomain(this)"><div class="tog off" onclick="event.stopPropagation();toggleDomainEnabled(this)"></div><span class="domain-name">Geometry2D</span><span class="domain-stat">Shapes: 0</span><span class="expand-btn"></span></div><div class="domain-body"><div class="desc">Geometry primitives — circles, rects, lines, spatial grids, quadtree, BVH</div></div></div>
+        <div class="domain disabled closed"><div class="domain-hdr" onclick="toggleDomain(this)"><div class="tog off" onclick="event.stopPropagation();toggleDomainEnabled(this)"></div><span class="domain-name">EntitySpatial</span><span class="domain-stat">Cells: 0</span><span class="expand-btn"></span></div><div class="domain-body"><div class="desc">Spatial index — grid cells, entity circles, active query shapes</div></div></div>
+        <div class="domain disabled closed"><div class="domain-hdr" onclick="toggleDomain(this)"><div class="tog off" onclick="event.stopPropagation();toggleDomainEnabled(this)"></div><span class="domain-name">ScalarField</span><span class="domain-stat">Fields: 0</span><span class="expand-btn"></span></div><div class="domain-body"><div class="desc">Scalar field overlays — value heatmap, gradient direction arrows</div></div></div>
+      </div>
+    </div>
+
+    <!-- ════════════ ENTITY (collapsed) ════════════ -->
+    <div class="group closed" data-g="entity">
+      <div class="group-hdr" onclick="toggleGroup(this)">
+        <span class="group-arrow"></span>
+        <span class="group-label">Entity</span>
+        <span class="group-meta">1 domain</span>
+        <button class="btn-all on"  onclick="event.stopPropagation();groupAll(this,'on')">All On</button>
+        <button class="btn-all off" onclick="event.stopPropagation();groupAll(this,'off')">All Off</button>
+      </div>
+      <div class="group-body">
+        <div class="domain enabled closed" id="dom-entity">
+          <div class="domain-hdr" onclick="toggleDomain(this)">
+            <div class="tog on" onclick="event.stopPropagation();toggleDomainEnabled(this)"></div>
+            <span class="domain-name">Entity</span>
+            <span class="domain-stat">Entities: 47</span>
+            <span class="expand-btn"></span>
+          </div>
+          <div class="domain-body">
+            <div class="desc">Entity world overlays — labels, picking, hierarchy lines, component highlight</div>
+            <div class="drawers">
+              <div class="dr on"  onclick="toggleDrawer(this)"><span class="dr-box"></span> Labels</div>
+              <div class="dr on"  onclick="toggleDrawer(this)"><span class="dr-box"></span> Picking</div>
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Hierarchy</div>
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Filter Highlight</div>
+              <div class="dr off" onclick="toggleDrawer(this)"><span class="dr-box"></span> Inspector</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ CORE DEBUG (collapsed) ════════════ -->
+    <div class="group closed" data-g="core">
+      <div class="group-hdr" onclick="toggleGroup(this)">
+        <span class="group-arrow"></span>
+        <span class="group-label">Core Debug</span>
+        <span class="group-meta">3 domains · disabled</span>
+        <button class="btn-all on"  onclick="event.stopPropagation();groupAll(this,'on')">All On</button>
+        <button class="btn-all off" onclick="event.stopPropagation();groupAll(this,'off')">All Off</button>
+      </div>
+      <div class="group-body">
+        <div class="domain disabled closed"><div class="domain-hdr" onclick="toggleDomain(this)"><div class="tog off" onclick="event.stopPropagation();toggleDomainEnabled(this)"></div><span class="domain-name">Coord2D</span><span class="domain-stat"></span><span class="expand-btn"></span></div><div class="domain-body"><div class="desc">2D coordinate overlay — origin, axes, grid, bounds, cursor</div></div></div>
+        <div class="domain disabled closed"><div class="domain-hdr" onclick="toggleDomain(this)"><div class="tog off" onclick="event.stopPropagation();toggleDomainEnabled(this)"></div><span class="domain-name">Coord3D</span><span class="domain-stat"></span><span class="expand-btn"></span></div><div class="domain-body"><div class="desc">3D coordinate overlay — origin cross, XYZ axes, ground-plane grid</div></div></div>
+        <div class="domain disabled closed"><div class="domain-hdr" onclick="toggleDomain(this)"><div class="tog off" onclick="event.stopPropagation();toggleDomainEnabled(this)"></div><span class="domain-name">AssetRuntime</span><span class="domain-stat"></span><span class="expand-btn"></span></div><div class="domain-body"><div class="desc">Asset load state — handles, load times, active counts from MetricRegistry</div></div></div>
+      </div>
+    </div>
+
+  </div><!-- /groups-list -->
+
+  <!-- Footer -->
+  <div class="panel-footer">
+
+    <!-- Entity lock -->
+    <div class="entity-row">
+      <label>Entity Lock:</label>
+      <input class="entity-input" type="text" id="entity-input" placeholder="ID..." value="7">
+      <span id="lock-status">● Locked to entity:7</span>
+      <button class="btn-lock locked" id="lock-btn" onclick="toggleLock()">Unlock</button>
+    </div>
+
+    <!-- Command input -->
+    <div class="cmd-row">
+      <span class="cmd-prompt">›</span>
+      <input class="cmd-input" type="text" placeholder="debug.layer.enable  debug.layer.list  debug.scale ..." id="cmd-input"
+             onkeydown="if(event.key==='Enter')execCmd(this)">
+    </div>
+
+    <!-- Log -->
+    <div class="log-section">
+      <div class="log-tabs">
+        <button class="log-tab active" onclick="switchLog(this,'output')">Output</button>
+        <button class="log-tab" onclick="switchLog(this,'warnings')">Warnings (0)</button>
+      </div>
+      <div class="log-content" id="log-output">
+        <div class="ll ok">  [VisualDebugger] domain registry: 21 domains, 8 groups registered</div>
+        <div class="ll info">[Entity] entity:7 picked at (14.2, -3.8)</div>
+        <div class="ll info">[Physics] RigidBody2D domain activated — 5 drawers registered</div>
+        <div class="ll info">[AI] StateMachine domain activated</div>
+        <div class="ll info">[AI] patrol → patrol (stayed): guard OnSpawn passed</div>
+      </div>
+      <div class="log-content" id="log-warnings" style="display:none">
+        <div class="ll" style="color:#333;font-style:italic">No warnings.</div>
+      </div>
+    </div>
+
+  </div><!-- /footer -->
+
+</div><!-- /panel -->
+
+<div class="mockup-note">Dia Visual Debug Console — UX Mockup · docs/research/visual_debugger_redesign/mockup.html</div>
+
+<script>
+// ── Viewport setup ──────────────────────────────────────────────
+const svg = document.getElementById('vp-svg');
+
+function vpPos(pct, dim) {
+  return (parseFloat(pct) / 100) * dim;
+}
+
+function resizeViewport() {
+  const vp = document.getElementById('viewport');
+  const W = vp.clientWidth, H = vp.clientHeight;
+
+  // Grid
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  const step = 60;
+  for (let x = 0; x < W; x += step) {
+    const l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    l.setAttribute('x1', x); l.setAttribute('y1', 0);
+    l.setAttribute('x2', x); l.setAttribute('y2', H);
+    l.setAttribute('stroke', '#1a1a2a'); l.setAttribute('stroke-width', '1');
+    grid.appendChild(l);
+  }
+  for (let y = 0; y < H; y += step) {
+    const l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    l.setAttribute('x1', 0); l.setAttribute('y1', y);
+    l.setAttribute('x2', W); l.setAttribute('y2', y);
+    l.setAttribute('stroke', '#1a1a2a'); l.setAttribute('stroke-width', '1');
+    grid.appendChild(l);
+  }
+
+  // Axes
+  const axX = document.getElementById('ax-x');
+  axX.setAttribute('x1', 0); axX.setAttribute('y1', H*0.5);
+  axX.setAttribute('x2', W); axX.setAttribute('y2', H*0.5);
+  const axY = document.getElementById('ax-y');
+  axY.setAttribute('x1', W*0.5); axY.setAttribute('y1', 0);
+  axY.setAttribute('x2', W*0.5); axY.setAttribute('y2', H);
+
+  // Velocity arrows (bodies at ~35%,42% and 28%,60% and 42%,72%)
+  const bodies = [
+    { px: W*0.35, py: H*0.42, vx: 18, vy: -8 },
+    { px: W*0.28, py: H*0.60, vx: -10, vy: 6 },
+    { px: W*0.42, py: H*0.72, vx: 14, vy: -4 },
+  ];
+  const vels = ['vel1','vel2','vel3'];
+  bodies.forEach((b,i) => {
+    const l = document.getElementById(vels[i]);
+    l.setAttribute('x1', b.px); l.setAttribute('y1', b.py);
+    l.setAttribute('x2', b.px + b.vx * 2.5); l.setAttribute('y2', b.py + b.vy * 2.5);
+  });
+
+  // Contact indicator (line between overlapping bodies)
+  const c = document.getElementById('contact1');
+  c.setAttribute('x1', W*0.35); c.setAttribute('y1', H*0.42);
+  c.setAttribute('x2', W*0.28); c.setAttribute('y2', H*0.60);
+
+  // Path line (navigation)
+  const pts = [
+    [W*0.35, H*0.42],
+    [W*0.30, H*0.35],
+    [W*0.40, H*0.28],
+    [W*0.55, H*0.26],
+    [W*0.68, H*0.27],
+    [W*0.75, H*0.30],
+  ];
+  document.getElementById('path-line').setAttribute('points',
+    pts.map(p => p.join(',')).join(' '));
+  document.getElementById('path-start').setAttribute('cx', W*0.35);
+  document.getElementById('path-start').setAttribute('cy', H*0.42);
+  document.getElementById('path-goal').setAttribute('cx', W*0.75);
+  document.getElementById('path-goal').setAttribute('cy', H*0.30);
+}
+
+window.addEventListener('resize', resizeViewport);
+resizeViewport();
+
+// ── Toggle group ──────────────────────────────────────────────
+function toggleGroup(hdr) {
+  const group = hdr.closest('.group');
+  group.classList.toggle('open');
+  group.classList.toggle('closed');
+}
+
+// ── Toggle domain expand ──────────────────────────────────────
+function toggleDomain(hdr) {
+  const domain = hdr.closest('.domain');
+  domain.classList.toggle('open');
+  domain.classList.toggle('closed');
+}
+
+// ── Toggle domain enabled ─────────────────────────────────────
+function toggleDomainEnabled(tog) {
+  const domain = tog.closest('.domain');
+  const isOn = tog.classList.contains('on');
+  tog.classList.toggle('on', !isOn);
+  tog.classList.toggle('off', isOn);
+  domain.classList.toggle('enabled', !isOn);
+  domain.classList.toggle('disabled', isOn);
+  logLine(`[domain] ${domain.querySelector('.domain-name').textContent.trim()} ${isOn ? 'disabled' : 'enabled'}`, 'info');
+}
+
+// ── Toggle drawer ─────────────────────────────────────────────
+function toggleDrawer(dr) {
+  const box = dr.querySelector('.dr-box');
+  dr.classList.toggle('on');
+  dr.classList.toggle('off');
+}
+
+// ── Group all ─────────────────────────────────────────────────
+function groupAll(btn, mode) {
+  const group = btn.closest('.group');
+  group.querySelectorAll('.domain').forEach(d => {
+    const tog = d.querySelector('.tog');
+    const isOn = mode === 'on';
+    tog.classList.toggle('on', isOn);
+    tog.classList.toggle('off', !isOn);
+    d.classList.toggle('enabled', isOn);
+    d.classList.toggle('disabled', !isOn);
+  });
+  const gLabel = group.querySelector('.group-label').textContent;
+  logLine(`[group] ${gLabel} all ${mode}`, 'info');
+}
+
+// ── Entity lock ───────────────────────────────────────────────
+let entityLocked = true;
+function toggleLock() {
+  entityLocked = !entityLocked;
+  const btn = document.getElementById('lock-btn');
+  const status = document.getElementById('lock-status');
+  const input = document.getElementById('entity-input');
+  const id = input.value || '?';
+
+  if (entityLocked) {
+    btn.textContent = 'Unlock';
+    btn.classList.add('locked');
+    status.textContent = `● Locked to entity:${id}`;
+    status.classList.add('on');
+    logLine(`[entity] locked to entity:${id}`, 'ok');
+  } else {
+    btn.textContent = 'Lock';
+    btn.classList.remove('locked');
+    status.classList.remove('on');
+    logLine('[entity] lock released', 'info');
+  }
+}
+
+// ── Command execution ─────────────────────────────────────────
+function execCmd(input) {
+  const cmd = input.value.trim();
+  if (!cmd) return;
+  logLine(`> ${cmd}`, 'info');
+  if (cmd.startsWith('debug.scale')) {
+    const v = cmd.split(' ')[1];
+    if (v) {
+      document.getElementById('scale-range').value = v;
+      document.getElementById('scale-display').textContent = v;
+      logLine(`[scale] debug scale set to ${v}`, 'ok');
+    }
+  } else if (cmd.startsWith('debug.layer.list')) {
+    logLine('[layer] 21 domains registered across 8 groups', 'ok');
+  } else if (cmd.startsWith('debug.layer.enable')) {
+    const layer = cmd.split(' ')[1] || '';
+    logLine(`[layer] ${layer} enabled`, 'ok');
+  } else if (cmd.startsWith('debug.layer.disable')) {
+    const layer = cmd.split(' ')[1] || '';
+    logLine(`[layer] ${layer} disabled`, 'ok');
+  } else {
+    logLine(`[cmd] unknown command: ${cmd}`, 'warn');
+  }
+  input.value = '';
+}
+
+// ── Search/filter ─────────────────────────────────────────────
+function filterDomains(q) {
+  const term = q.toLowerCase().trim();
+  document.querySelectorAll('.group').forEach(group => {
+    let groupMatch = false;
+    group.querySelectorAll('.domain').forEach(domain => {
+      const name = domain.querySelector('.domain-name').textContent.toLowerCase();
+      const desc = (domain.querySelector('.desc') || {textContent:''}).textContent.toLowerCase();
+      const drawerText = Array.from(domain.querySelectorAll('.dr'))
+        .map(d => d.textContent.toLowerCase()).join(' ');
+      const match = !term || name.includes(term) || desc.includes(term) || drawerText.includes(term);
+      domain.style.display = match ? '' : 'none';
+      if (match) groupMatch = true;
+    });
+    group.style.display = (!term || groupMatch) ? '' : 'none';
+    if (term && groupMatch) {
+      group.classList.add('open');
+      group.classList.remove('closed');
+    }
+  });
+}
+
+// ── Log ───────────────────────────────────────────────────────
+function logLine(text, cls) {
+  const out = document.getElementById('log-output');
+  const div = document.createElement('div');
+  div.className = `ll ${cls||''}`;
+  div.textContent = text;
+  out.appendChild(div);
+  out.scrollTop = out.scrollHeight;
+}
+
+function switchLog(tab, which) {
+  document.querySelectorAll('.log-tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  document.getElementById('log-output').style.display   = which === 'output'   ? '' : 'none';
+  document.getElementById('log-warnings').style.display = which === 'warnings' ? '' : 'none';
+}
+</script>
+</body>
+</html>

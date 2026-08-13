@@ -96,6 +96,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | ArenaTestStage spec → backlog | Promoted from loose end to Approved spec + backlog entry 2026-08-07. See Ready to Build above. | 2026-08-10 | Moved by `dia docs backlog move` |
 | DiaEconomyInspector | EconomyInstancesSource, EconomyModifiersSource, EconomyEventsSource, EconomySchemaSource, dockable editor plugin | 2026-08-10 | All 9 tasks done: 4 game-side inspector sources, EconomyInspectorModule (SimPU Bind/Unbind), React UI (4 tabs, 44 Vitest tests), 38 GoogleTests, E2E scenario with DiaClient topic subscriptions |
 | diascalarfieldinspector | [spec](specs/) | 2026-08-11 | Marked done by `dia docs spec-done` |
+| diadebugdomain | [spec](specs/) | 2026-08-12 | Marked done by `dia docs spec-done` |
 
 ---
 

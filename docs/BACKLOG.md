@@ -76,7 +76,7 @@ Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testin
 
 | Item | Blocked by | Notes |
 |------|-----------|-------|
-| DiaDebugDomain | DiaUIUltralight Game Input Bridge | DiaDebugPanel (Phase 1) needs CallJSFunction; keyboard features (search, command strip, entity lock) need keyboard injection + InputRouter. Game Input Bridge is Ready to Build. |
+| ~~DiaDebugDomain~~ | DiaUIUltralight Game Input Bridge | DiaDebugPanel (Phase 1) needs CallJSFunction; keyboard features (search, command strip, entity lock) need keyboard injection + InputRouter. Game Input Bridge is Ready to Build. |
 
 ### Blocked on Linux/CMake migration
 
