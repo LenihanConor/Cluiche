@@ -226,6 +226,8 @@ namespace Dia { namespace ApplicationFlow {
 
             mCurrentStage = mManifest.initialStage;
 
+            ValidateCostagingRequirements(mManifest.initialStage);
+
             // Start modules that belong to the initial stage.
             const Dia::Core::StringCRC& stage = mCurrentStage;
             for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
@@ -953,6 +955,8 @@ namespace Dia { namespace ApplicationFlow {
             }
         }
 
+        ValidateCostagingRequirements(newStage);
+
         // Start modules in new stage that are not already started (forward dep order).
         for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
         {
@@ -1219,6 +1223,54 @@ namespace Dia { namespace ApplicationFlow {
             }
         }
         return false;
+    }
+
+    //--------------------------------------------------------------------------
+    // ValidateCostagingRequirements  (private)
+    //--------------------------------------------------------------------------
+
+    void Application::ValidateCostagingRequirements(const Dia::Core::StringCRC& stage)
+    {
+        for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
+        {
+            ProcessingUnit* pu = mProcessingUnits[p].Get();
+            const ProcessingUnitDeclaration& puDecl = mManifest.processingUnits[p];
+            for (unsigned int m = 0; m < puDecl.modules.Size(); ++m)
+            {
+                const ModuleDeclaration& modDecl = puDecl.modules[m];
+                if (!ModuleIsInStage(modDecl, stage))
+                    continue;
+
+                const Module* module = pu->FindModule(modDecl.instanceId);
+                if (!module)
+                    continue;
+
+                unsigned int reqCount = 0;
+                const Dia::Core::StringCRC* reqs = module->GetRequiredModuleTypeIds(reqCount);
+                for (unsigned int r = 0; r < reqCount; ++r)
+                {
+                    const Dia::Core::StringCRC& reqTypeId = reqs[r];
+                    bool found = false;
+
+                    for (unsigned int pp = 0; pp < mProcessingUnitCount && !found; ++pp)
+                    {
+                        const ProcessingUnitDeclaration& puDecl2 = mManifest.processingUnits[pp];
+                        for (unsigned int mm = 0; mm < puDecl2.modules.Size() && !found; ++mm)
+                        {
+                            const ModuleDeclaration& modDecl2 = puDecl2.modules[mm];
+                            if (ModuleIsInStage(modDecl2, stage) && modDecl2.typeId == reqTypeId)
+                                found = true;
+                        }
+                    }
+
+                    DIA_ASSERT(found,
+                        "Module '%s' (type '%s') requires co-staged module of type '%s', "
+                        "which is not active in stage '%s'",
+                        modDecl.instanceId.AsChar(), modDecl.typeId.AsChar(),
+                        reqTypeId.AsChar(), stage.AsChar());
+                }
+            }
+        }
     }
 
     //--------------------------------------------------------------------------

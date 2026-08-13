@@ -189,6 +189,10 @@ namespace Dia { namespace ApplicationFlow {
         static bool ModuleIsInStage(const ModuleDeclaration& decl,
                                     const Dia::Core::StringCRC& stage);
 
+        // Assert that every module active in `stage` has all of its
+        // GetRequiredModuleTypeIds() entries also active in that stage.
+        void ValidateCostagingRequirements(const Dia::Core::StringCRC& stage);
+
         // --- State -------------------------------------------------------------
         const ApplicationManifestV3& mManifest;
         TypeRegistry&                mRegistry;

@@ -59,6 +59,15 @@ namespace Dia { namespace ApplicationFlow {
 
         void TransitionTo(const Dia::Core::StringCRC& stageId);
 
+        // Returns the type IDs of modules that must be co-staged with this one.
+        // ApplicationFlow asserts before BeginStart if any required type is absent
+        // from the incoming stage. Default returns none.
+        virtual const Dia::Core::StringCRC* GetRequiredModuleTypeIds(unsigned int& outCount) const
+        {
+            outCount = 0;
+            return nullptr;
+        }
+
     protected:
         virtual StartResult DoStart() = 0;
         virtual void        DoUpdate(float deltaTime) = 0;

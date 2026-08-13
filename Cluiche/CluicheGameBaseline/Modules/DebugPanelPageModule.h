@@ -43,6 +43,13 @@ public:
 
     explicit DebugPanelPageModule(const Dia::Core::StringCRC& instanceId);
 
+    const Dia::Core::StringCRC* GetRequiredModuleTypeIds(unsigned int& outCount) const override
+    {
+        static const Dia::Core::StringCRC ids[] = { UIModule::kTypeId };
+        outCount = 1;
+        return ids;
+    }
+
     // DebugPanelPage::ICallbacks — invoked from the Ultralight JS bridge.
     void OnCommand(const char* domainId, const char* cmd, const char* argsJson) override;
 
