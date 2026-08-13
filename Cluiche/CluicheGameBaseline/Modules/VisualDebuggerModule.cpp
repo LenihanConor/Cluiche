@@ -4,6 +4,7 @@
 
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
+#include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaObservation/Log/DiaLog.h>
@@ -157,9 +158,67 @@ void VisualDebuggerModule::DrainPendingCommands()
         mCommandQueue.RemoveAll();
     }
 
+    static const Dia::Core::StringCRC kGlobalDomain("__global__");
+    static const Dia::Core::StringCRC kConsoleDomain("__console__");
+    static const Dia::Core::StringCRC kPanelDomain("__panel__");
+    static const Dia::Core::StringCRC kLogDomain("__log__");
+    static const Dia::Core::StringCRC kSetScaleCmd("setScale");
+    static const Dia::Core::StringCRC kExecCmd("exec");
+    static const Dia::Core::StringCRC kLockEntityCmd("lockEntity");
+    static const Dia::Core::StringCRC kInfoCmd("info");
+
     for (unsigned int i = 0; i < localQueue.Size(); ++i)
     {
         const PendingCommand& pending = localQueue[i];
+
+        // JS log bridge: debug-panel.html calls sendCommand('__log__','info',{msg:'...'})
+        if (pending.domainId == kLogDomain && pending.cmd == kInfoCmd)
+        {
+            Json::Value args;
+            Json::Reader reader;
+            reader.parse(std::string(pending.argsJson), args);
+            const std::string msg = args.get("msg", "").asString();
+            DIA_LOG_INFO("DebugPanelJS", "%s", msg.c_str());
+            continue;
+        }
+
+        // Panel-wide: global debug scale slider
+        if (pending.domainId == kGlobalDomain && pending.cmd == kSetScaleCmd)
+        {
+            Json::Value args;
+            Json::Reader reader;
+            reader.parse(std::string(pending.argsJson), args);
+            if (args.isMember("value"))
+                mLayerManager.SetDebugScale(args["value"].asFloat());
+            continue;
+        }
+
+        // Command strip: execute a debug console command
+        if (pending.domainId == kConsoleDomain && pending.cmd == kExecCmd)
+        {
+            Json::Value args;
+            Json::Reader reader;
+            reader.parse(std::string(pending.argsJson), args);
+            const std::string text = args.get("text", "").asString();
+            if (!text.empty())
+                ExecuteConsoleCommand(text.c_str());
+            continue;
+        }
+
+        // Entity-lock: store the locked entity ID for future domain filtering
+        if (pending.domainId == kPanelDomain && pending.cmd == kLockEntityCmd)
+        {
+            Json::Value args;
+            Json::Reader reader;
+            reader.parse(std::string(pending.argsJson), args);
+            const std::string id = args.get("id", "").asString();
+            strncpy_s(mLockedEntityId, id.c_str(), sizeof(mLockedEntityId) - 1);
+            mLockedEntityId[sizeof(mLockedEntityId) - 1] = '\0';
+            DIA_LOG_INFO("Debug", "VisualDebuggerModule: entity lock -> '%s'", mLockedEntityId);
+            continue;
+        }
+
+        // Domain command: dispatch to IDebugDomain
         Dia::VisualDebugger::IDebugDomain* domain = mDomainRegistry.FindDomain(pending.domainId);
         if (!domain)
             continue;
@@ -169,6 +228,43 @@ void VisualDebuggerModule::DrainPendingCommands()
         reader.parse(std::string(pending.argsJson), args);
         domain->OnCommand(pending.cmd, args);
     }
+}
+
+void VisualDebuggerModule::ExecuteConsoleCommand(const char* cmdText)
+{
+    if (cmdText == nullptr || cmdText[0] == '\0')
+        return;
+
+    // Split on spaces: first token = command name, remaining = positional args.
+    // Pointers into buf are valid for the duration of this call (synchronous).
+    char buf[512] = {};
+    strncpy_s(buf, cmdText, sizeof(buf) - 1);
+
+    const char* commandName = nullptr;
+    Dia::API::CommandArgs cmdArgs;
+
+    char* p = buf;
+    while (*p != '\0')
+    {
+        while (*p == ' ') ++p;
+        if (*p == '\0') break;
+        char* token = p;
+        while (*p != '\0' && *p != ' ') ++p;
+        if (*p != '\0') { *p = '\0'; ++p; }
+
+        if (commandName == nullptr)
+            commandName = token;
+        else if (!cmdArgs.positionalArgs.IsFull())
+            cmdArgs.positionalArgs.Add(token);
+    }
+
+    if (commandName == nullptr)
+        return;
+
+    const int exitCode = Dia::API::ExecuteCommand(
+        Dia::Core::StringCRC(commandName), cmdArgs);
+
+    DIA_LOG_INFO("Debug", "VisualDebuggerModule: console '%s' -> %d", cmdText, exitCode);
 }
 
 void VisualDebuggerModule::DrainPanelCommandStream()

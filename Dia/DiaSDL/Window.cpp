@@ -33,6 +33,11 @@ namespace Dia
 			{
 				mIsOpen = true;
 				InputSource::SetWindowContext(mWindowContext);
+				// SDL3 requires an explicit opt-in to receive SDL_EVENT_TEXT_INPUT.
+				// Without this call the event is never generated, so kTextEntered
+				// events never reach UIModule and keyboard input to HTML <input>
+				// fields is silently dropped.
+				SDL_StartTextInput(mWindowContext);
 			}
 		}
 

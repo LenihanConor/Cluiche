@@ -77,10 +77,10 @@ void UIModule::DoUpdate(float /*dt*/)
     {
         const Dia::Input::EventData& events = kernel->GetFrameInputEvents();
         const Dia::Input::EInputRouting routing = mInputRouter.GetCurrentInputMode();
+        static const char* kModeNames[] = { "kGameOnly", "kUIOnly", "kGameAndUI" };
 
         if (routing != mLastRoutingMode)
         {
-            static const char* kModeNames[] = { "kGameOnly", "kUIOnly", "kGameAndUI" };
             const int prev = static_cast<int>(mLastRoutingMode);
             const int curr = static_cast<int>(routing);
             DIA_LOG_INFO("UI", "UIModule: input routing mode changed: %s → %s",
@@ -127,6 +127,7 @@ void UIModule::DoUpdate(float /*dt*/)
                 else if (ev.type == Dia::Input::Event::EType::kTextEntered)
                 {
                     mUISystem->InjectCharacterInput(ev.text.unicode);
+                    DIA_LOG_INFO("UI", "UIModule: InjectCharacterInput U+%04X (routing=%s)", ev.text.unicode, kModeNames[static_cast<int>(routing)]);
                     ++keysInjectedThisFrame;
                 }
             }

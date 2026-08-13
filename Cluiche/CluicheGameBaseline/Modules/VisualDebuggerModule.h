@@ -83,6 +83,8 @@ private:
     // Drain DiaDebugPanel commands arriving from the Main PU over the
     // DebugPanelCommand EventStream and funnel them into the command queue.
     void DrainPanelCommandStream();
+    // Parse and execute a debug console command string (e.g. "debug.layer.enable x").
+    void ExecuteConsoleCommand(const char* cmdText);
 
     Dia::Debug::DebugLayerManager mLayerManager;
     Dia::ApplicationFlow::StreamWriter<Dia::Graphics::FrameData> mRenderOutput{this, "SimDebug"};
@@ -102,6 +104,10 @@ private:
 
     std::unique_ptr<Dia::Debug::Coord2DDebugDomain>  mCoord2DDomain;
     std::unique_ptr<Dia::Debug::Coord3DDebugDomain>  mCoord3DDomain;
+
+    // Entity ID most recently locked from the panel ("" = no lock).
+    // Stored for future domain filtering via IDebugDomain::SetFocusEntity.
+    char mLockedEntityId[64] = {};
 };
 
 } } // namespace Cluiche::AppFlow

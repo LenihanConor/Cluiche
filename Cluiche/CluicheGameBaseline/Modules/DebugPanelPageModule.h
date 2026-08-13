@@ -65,8 +65,9 @@ private:
     void DrainSetVisibilityEvents();
 
     DebugPanelPage mPage{this};
-    bool           mPanelVisible    = false;
-    bool           mPageInitialized = false;
+    bool           mPanelVisible         = false;
+    bool           mPageInitialized      = false;
+    bool           mInputModePushed      = false;
 
     Dia::ApplicationFlow::ModuleRef<UIModule> mUI{this};
 

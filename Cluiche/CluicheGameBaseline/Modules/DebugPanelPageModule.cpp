@@ -8,6 +8,7 @@
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaInput/InputRouter.h>
 #include <DiaUI/IUISystem.h>
 #include <DiaVisualDebugger/Domain/IDebugDomain.h>
 
@@ -82,6 +83,8 @@ Dia::ApplicationFlow::StartResult DebugPanelPageModule::DoStart()
     {
         mPanelVisible = true;
         ui->LoadPage(mPage);
+        ui->PushInputMode(Dia::Input::EInputRouting::kGameAndUI);
+        mInputModePushed = true;
         DIA_LOG_INFO("Debug", "DebugPanelPageModule: AUTO-OPENED panel on DoStart");
     }
 
@@ -105,6 +108,11 @@ Dia::ApplicationFlow::StopResult DebugPanelPageModule::DoStop()
         UIModule* ui = mUI.Get();
         if (ui)
         {
+            if (mInputModePushed)
+            {
+                ui->PopInputMode();
+                mInputModePushed = false;
+            }
             ui->UnloadPage();
             DIA_LOG_INFO("Debug", "DebugPanelPageModule: AUTO-CLOSED panel on DoStop");
         }
@@ -158,9 +166,18 @@ void DebugPanelPageModule::DrainToggleEvents()
         if (mPanelVisible)
         {
             ui->LoadPage(mPage);
+            ui->PushInputMode(Dia::Input::EInputRouting::kGameAndUI);
+            mInputModePushed = true;
+            DIA_LOG_INFO("Debug", "DebugPanelPageModule: TOGGLE open — pushed kGameAndUI");
         }
         else
         {
+            if (mInputModePushed)
+            {
+                ui->PopInputMode();
+                mInputModePushed = false;
+                DIA_LOG_INFO("Debug", "DebugPanelPageModule: TOGGLE close — popped input mode");
+            }
             ui->UnloadPage();
         }
     }
@@ -186,10 +203,17 @@ void DebugPanelPageModule::DrainSetVisibilityEvents()
         if (mPanelVisible)
         {
             ui->LoadPage(mPage);
+            ui->PushInputMode(Dia::Input::EInputRouting::kGameAndUI);
+            mInputModePushed = true;
             DIA_LOG_INFO("Debug", "DebugPanelPageModule: auto-opened panel");
         }
         else
         {
+            if (mInputModePushed)
+            {
+                ui->PopInputMode();
+                mInputModePushed = false;
+            }
             ui->UnloadPage();
             DIA_LOG_INFO("Debug", "DebugPanelPageModule: auto-closed panel");
         }

@@ -15,8 +15,9 @@
   C++ -> JS   updateDomainState(data)      pushed once per frame
   JS   -> C++ app.onCommand(domainId, cmd, argsJson)
 
-  Phase 2 (needs keyboard injection, not built here): search bar, command
-  strip, entity-lock field, log tabs.
+  Phase 2 (built): search bar (domain filter), entity-lock field, command
+  strip (debug.layer.* commands). Domain filtering across modules via
+  IDebugDomain::SetFocusEntity is a follow-up task.
 -->
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -249,6 +250,79 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #252525; }
 ::-webkit-scrollbar-thumb:hover { background: #333; }
+
+/* ── Phase 2: Search ── */
+.search-row {
+  padding: 4px 8px;
+  border-bottom: 1px solid #222;
+  flex-shrink: 0;
+}
+.search-input {
+  width: 100%;
+  background: #111;
+  border: 1px solid #222;
+  color: #9a9a9a;
+  font-family: inherit;
+  font-size: 11px;
+  padding: 3px 6px;
+  outline: none;
+}
+.search-input:focus         { border-color: #3a3a3a; color: #c8c8c8; }
+.search-input::placeholder  { color: #2a2a2a; }
+
+/* ── Phase 2: Entity lock ── */
+.entity-lock-row {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 8px;
+  border-top: 1px solid #222;
+  flex-shrink: 0;
+}
+.entity-lock-label {
+  font-size: 9px; letter-spacing: 0.8px; color: #3a3a3a;
+  text-transform: uppercase; flex-shrink: 0;
+}
+.entity-lock-input {
+  flex: 1; min-width: 0;
+  background: #111; border: 1px solid #222;
+  color: #9a9a9a; font-family: inherit; font-size: 11px;
+  padding: 2px 5px; outline: none;
+}
+.entity-lock-input:focus        { border-color: #3a3a3a; color: #c8c8c8; }
+.entity-lock-input::placeholder { color: #2a2a2a; }
+.btn-lock {
+  font-family: inherit; font-size: 9px; padding: 2px 6px;
+  border: 1px solid #2d2d2d; background: transparent; color: #444; cursor: pointer;
+}
+.btn-lock:hover  { background: #1a1a1a; color: #777; border-color: #3a3a3a; }
+.btn-lock.active { border-color: #eab308; color: #eab308; }
+.btn-unlock {
+  font-family: inherit; font-size: 9px; padding: 2px 5px;
+  border: 1px solid #3a2a00; background: transparent; color: #5a4200; cursor: pointer;
+}
+.btn-unlock:hover { color: #eab308; border-color: #6a5000; }
+
+/* ── Phase 2: Command strip ── */
+.command-strip {
+  border-top: 1px solid #222;
+  padding: 4px 8px;
+  display: flex; align-items: center; gap: 5px;
+  flex-shrink: 0; background: #141414;
+}
+.cmd-prefix { font-size: 10px; color: #2a2a2a; flex-shrink: 0; }
+.cmd-input {
+  flex: 1; min-width: 0;
+  background: #111; border: 1px solid #1e1e1e;
+  color: #9a9a9a; font-family: inherit; font-size: 11px;
+  padding: 2px 5px; outline: none;
+}
+.cmd-input:focus        { border-color: #333; color: #c8c8c8; }
+.cmd-input::placeholder { color: #282828; }
+.cmd-result { font-size: 10px; flex-shrink: 0; color: #333; }
+.cmd-result.ok  { color: #3a7a3a; }
+.cmd-result.err { color: #7a3a3a; }
+
+/* ── Utility ── */
+.hidden { display: none !important; }
 </style>
 </head>
 <body>
@@ -264,8 +338,28 @@ body {
     </div>
   </div>
 
+  <div class="search-row">
+    <input class="search-input" id="search-input" type="text" placeholder="filter domains…"
+           onfocus="pushUIOnlyMode()" onblur="popInputMode()">
+  </div>
+
   <div class="groups-list" id="groups-list">
     <div class="empty-state" id="empty-state">No domains registered</div>
+  </div>
+
+  <div class="entity-lock-row">
+    <span class="entity-lock-label">Entity</span>
+    <input class="entity-lock-input" id="entity-lock-input" type="text" placeholder="entity id"
+           onfocus="pushUIOnlyMode()" onblur="popInputMode()">
+    <button class="btn-lock" id="btn-lock" onclick="onLockClick()">Lock</button>
+    <button class="btn-unlock" id="btn-unlock" style="display:none" onclick="onUnlockClick()">&#x2715;</button>
+  </div>
+
+  <div class="command-strip">
+    <span class="cmd-prefix">&gt;</span>
+    <input class="cmd-input" id="cmd-input" type="text" placeholder="debug.layer.enable…"
+           onfocus="pushUIOnlyMode()" onblur="popInputMode()">
+    <span class="cmd-result" id="cmd-result"></span>
   </div>
 
 </div>
@@ -423,6 +517,7 @@ function rebuild(domains) {
 
     list.appendChild(group);
   }
+  if (currentFilter) applyFilter(currentFilter);
 }
 
 function el(tag, cls, text) {
@@ -646,6 +741,122 @@ function updateDomainState(data) {
   refresh(domains);
 }
 window.updateDomainState = updateDomainState;
+
+// ── Phase 2 state ────────────────────────────────────────────────────────
+var currentFilter  = '';
+var lockedEntityId = '';
+
+// {"text":"..."} + overhead leaves 52 chars for the actual command text
+// before the Ultralight String64 63-char limit is hit.
+var MAX_CMD_TEXT = 52;
+
+// ── JS → C++ log bridge ───────────────────────────────────────────────────
+// Relayed to DIA_LOG_INFO("DebugPanelJS",...) via VisualDebuggerModule on
+// the Sim PU (~1 frame delay). Max payload: 54 chars.
+function jsLog(msg) {
+  var s = String(msg);
+  if (s.length > 54) s = s.substring(0, 54);
+  sendCommand('__log__', 'info', { msg: s });
+}
+
+function pushUIOnlyMode() {
+  jsLog('pushUIOnlyMode called');
+  if (typeof app !== 'undefined' && app && app.PushInputMode) {
+    app.PushInputMode('ui_only');
+    jsLog('PushInputMode ok');
+  } else {
+    jsLog('PushInputMode: app not ready');
+  }
+}
+function popInputMode() {
+  jsLog('popInputMode called');
+  if (typeof app !== 'undefined' && app && app.PopInputMode) app.PopInputMode();
+}
+
+// ── Search filter ─────────────────────────────────────────────────────────
+function applyFilter(filter) {
+  currentFilter = (filter || '').trim().toLowerCase();
+  var logVal = currentFilter.length > 30 ? currentFilter.substring(0, 30) : currentFilter;
+  jsLog('applyFilter: "' + logVal + '"');
+  var list = document.getElementById('groups-list');
+  if (!list) return;
+  var groups = list.querySelectorAll('.group');
+  for (var g = 0; g < groups.length; ++g) {
+    var group  = groups[g];
+    var doms   = group.querySelectorAll('.domain');
+    if (!currentFilter) {
+      group.classList.remove('hidden');
+      for (var d = 0; d < doms.length; ++d) doms[d].classList.remove('hidden');
+      continue;
+    }
+    var lbl        = group.querySelector('.group-label');
+    var groupMatch = !!(lbl && lbl.textContent.toLowerCase().indexOf(currentFilter) !== -1);
+    var anyVisible = false;
+    for (var d = 0; d < doms.length; ++d) {
+      var name = (doms[d].getAttribute('data-domain') || '').toLowerCase();
+      var vis  = groupMatch || name.indexOf(currentFilter) !== -1;
+      doms[d].classList.toggle('hidden', !vis);
+      if (vis) anyVisible = true;
+    }
+    group.classList.toggle('hidden', !groupMatch && !anyVisible);
+  }
+}
+
+(function () {
+  var s = document.getElementById('search-input');
+  if (!s) return;
+  s.addEventListener('input', function () {
+    jsLog('search input event: "' + s.value.substring(0, 20) + '"');
+    applyFilter(s.value);
+  });
+})();
+
+// ── Entity lock ───────────────────────────────────────────────────────────
+function onLockClick() {
+  var input = document.getElementById('entity-lock-input');
+  if (!input) return;
+  var id = input.value.trim();
+  if (!id) return;
+  lockedEntityId = id;
+  updateEntityLockUI();
+  sendCommand('__panel__', 'lockEntity', { id: id });
+}
+
+function onUnlockClick() {
+  lockedEntityId = '';
+  var input = document.getElementById('entity-lock-input');
+  if (input) input.value = '';
+  updateEntityLockUI();
+  sendCommand('__panel__', 'lockEntity', { id: '' });
+}
+
+function updateEntityLockUI() {
+  var btnLock   = document.getElementById('btn-lock');
+  var btnUnlock = document.getElementById('btn-unlock');
+  if (!btnLock || !btnUnlock) return;
+  var locked = lockedEntityId.length > 0;
+  btnLock.style.display   = locked ? 'none' : '';
+  btnUnlock.style.display = locked ? ''     : 'none';
+}
+
+// ── Command strip ─────────────────────────────────────────────────────────
+(function () {
+  var input  = document.getElementById('cmd-input');
+  var result = document.getElementById('cmd-result');
+  if (!input) return;
+  input.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    var text = input.value.trim();
+    if (!text) return;
+    if (text.length > MAX_CMD_TEXT) {
+      if (result) { result.textContent = 'too long'; result.className = 'cmd-result err'; }
+      return;
+    }
+    sendCommand('__console__', 'exec', { text: text });
+    if (result) { result.textContent = '→'; result.className = 'cmd-result'; }
+    input.value = '';
+  });
+})();
 
 // ── Global scale slider ──────────────────────────────────────────────────
 (function () {
