@@ -3,8 +3,6 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaObservation/Log/DiaLog.h>
 
-REGISTER_EDITOR_PLUGIN(Dia::AIInspector::DiaAIInspectorPlugin, "DiaAIInspector")
-
 namespace Dia::AIInspector {
 
 DiaAIInspectorPlugin::DiaAIInspectorPlugin()
@@ -57,3 +55,7 @@ void DiaAIInspectorPlugin::OnGameDisconnected()
 }
 
 } // namespace Dia::AIInspector
+
+using namespace Dia::AIInspector;
+
+REGISTER_EDITOR_PLUGIN(DiaAIInspectorPlugin, "DiaAIInspector")

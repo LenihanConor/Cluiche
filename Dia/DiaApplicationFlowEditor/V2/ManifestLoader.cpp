@@ -4,6 +4,7 @@
 
 #include <cerrno>
 #include <cstring>
+#include <memory>
 #include <stdio.h>
 
 namespace Dia { namespace ApplicationFlow { namespace Editor {
@@ -68,7 +69,10 @@ namespace Dia { namespace ApplicationFlow { namespace Editor {
             return MakeError(LoadStatus::WrongVersion, "expected version 3");
         }
 
-        ApplicationManifestV3 loaded;
+        // Heap-allocate — ApplicationManifestV3 is ~1.25MB (inline fixed-capacity
+        // arrays of StringCRC), far too large for the default 1MB stack.
+        std::unique_ptr<ApplicationManifestV3> loadedOwner(new ApplicationManifestV3());
+        ApplicationManifestV3& loaded = *loadedOwner;
         loaded.version = 3;
 
         if (root.isMember("stages") && root["stages"].isArray())
@@ -140,7 +144,10 @@ namespace Dia { namespace ApplicationFlow { namespace Editor {
             for (unsigned int i = 0; i < pusJson.size(); ++i)
             {
                 const Json::Value& puJson = pusJson[i];
-                ProcessingUnitDeclaration pu;
+                // Heap-allocate — ProcessingUnitDeclaration is ~288KB (64 inline
+                // ModuleDeclarations); too large to sit on the stack alongside `loaded`.
+                std::unique_ptr<ProcessingUnitDeclaration> puOwner(new ProcessingUnitDeclaration());
+                ProcessingUnitDeclaration& pu = *puOwner;
 
                 if (puJson.isMember("instance_id") && puJson["instance_id"].isString())
                     pu.instanceId = Dia::Core::StringCRC(puJson["instance_id"].asCString());

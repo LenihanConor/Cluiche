@@ -1,5 +1,5 @@
 #include "DiaAIInspector/Controllers/HTNController.h"
-#include <DiaEditor/WebUIBridge.h>
+#include <DiaEditor/UI/WebUIBridge.h>
 #include <json/value.h>
 
 namespace Dia::AIInspector {

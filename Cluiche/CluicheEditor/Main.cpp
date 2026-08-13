@@ -23,6 +23,7 @@
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 
 #include <chrono>
+#include <memory>
 #include <thread>
 
 int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPWSTR /*lpCmdLine*/, int /*nCmdShow*/)
@@ -34,7 +35,12 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPWSTR /
     if (exitCode >= 0)
         return exitCode;
 
-    Dia::ApplicationFlow::ApplicationManifestV3 manifest;
+    // Heap-allocate manifest — the struct grows with module/channel count and
+    // can overflow the default 1MB stack (see CluicheTest/Main.cpp for the same
+    // pattern). Application holds it by const reference, so it must outlive app.
+    std::unique_ptr<Dia::ApplicationFlow::ApplicationManifestV3> manifestOwner(
+        new Dia::ApplicationFlow::ApplicationManifestV3());
+    Dia::ApplicationFlow::ApplicationManifestV3& manifest = *manifestOwner;
     Dia::ApplicationFlow::LoadResult loadResult =
         Dia::ApplicationFlow::ApplicationManifestLoaderV2::LoadFromFile("assets/configs/editor.diaapp", manifest);
 
