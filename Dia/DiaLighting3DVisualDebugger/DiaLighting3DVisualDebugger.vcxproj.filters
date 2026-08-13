@@ -21,6 +21,7 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="LightPathArcDrawer.h">
+    <ClInclude Include="Lighting3DDebugDomain.h" />
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -29,6 +30,7 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="LightPathArcDrawer.cpp">
+    <ClCompile Include="Lighting3DDebugDomain.cpp" />
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

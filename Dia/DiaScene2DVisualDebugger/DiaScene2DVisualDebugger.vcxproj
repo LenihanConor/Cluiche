@@ -75,9 +75,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="SceneOverviewDrawer.h" />
+    <ClInclude Include="Scene2DDebugDomain.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SceneOverviewDrawer.cpp" />
+    <ClCompile Include="Scene2DDebugDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.scene2dvisualdebugger.architecture.module.md" />

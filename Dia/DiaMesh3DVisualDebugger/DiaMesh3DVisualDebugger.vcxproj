@@ -77,11 +77,13 @@
     <ClInclude Include="MeshBoundsDrawer.h" />
     <ClInclude Include="MeshOriginDrawer.h" />
     <ClInclude Include="MeshStatsDrawer.h" />
+    <ClInclude Include="Mesh3DDebugDomain.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MeshBoundsDrawer.cpp" />
     <ClCompile Include="MeshOriginDrawer.cpp" />
     <ClCompile Include="MeshStatsDrawer.cpp" />
+    <ClCompile Include="Mesh3DDebugDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.mesh3dvisualdebugger.architecture.module.md" />

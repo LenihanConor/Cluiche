@@ -76,10 +76,12 @@
   <ItemGroup>
     <ClInclude Include="LightWidgetsDrawer.h" />
     <ClInclude Include="LightPathArcDrawer.h" />
+    <ClInclude Include="Lighting3DDebugDomain.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LightWidgetsDrawer.cpp" />
     <ClCompile Include="LightPathArcDrawer.cpp" />
+    <ClCompile Include="Lighting3DDebugDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.lighting3dvisualdebugger.architecture.module.md" />

@@ -24,6 +24,7 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="MeshStatsDrawer.h">
+    <ClInclude Include="Mesh3DDebugDomain.h" />
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -35,6 +36,7 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MeshStatsDrawer.cpp">
+    <ClCompile Include="Mesh3DDebugDomain.cpp" />
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

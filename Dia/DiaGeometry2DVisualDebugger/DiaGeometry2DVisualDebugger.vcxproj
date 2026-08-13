@@ -88,6 +88,7 @@
     <ClInclude Include="Renderers\QuadtreeRenderer.h" />
     <ClInclude Include="Renderers\BVHRenderer.h" />
     <ClInclude Include="Renderers\HexGridRenderer.h" />
+    <ClInclude Include="Geometry2DDebugDomain.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ShapeDrawer.cpp" />
@@ -96,6 +97,7 @@
     <ClCompile Include="SectorDrawHelper.cpp" />
     <ClCompile Include="OORectDrawHelper.cpp" />
     <ClCompile Include="CapsuleDrawHelper.cpp" />
+    <ClCompile Include="Geometry2DDebugDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.geometry2dvisualdebugger.architecture.module.md" />
