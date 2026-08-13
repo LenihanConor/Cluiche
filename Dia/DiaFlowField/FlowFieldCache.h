@@ -7,6 +7,7 @@
 #include <DiaPathfinding/CellCoord.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <memory>
 #include <unordered_map>
 
 namespace Dia::FlowField {
@@ -35,12 +36,12 @@ namespace Dia::FlowField {
             auto it = mEntries.find(key);
             if (it == mEntries.end())
             {
-                // New entry: compute and store
-                CacheEntry entry;
-                entry.goalCell = goalCell;
-                entry.field    = ComputeFlowField(mGraph, goalCell, mCosts, mWidth, mHeight);
-                entry.dirty    = false;
-                auto [inserted_it, ok] = mEntries.emplace(key, std::move(entry));
+                // New entry: compute and store (heap-allocated to avoid C6262 stack pressure)
+                auto entryPtr = std::make_unique<CacheEntry>();
+                entryPtr->goalCell = goalCell;
+                entryPtr->field    = ComputeFlowField(mGraph, goalCell, mCosts, mWidth, mHeight);
+                entryPtr->dirty    = false;
+                auto [inserted_it, ok] = mEntries.emplace(key, std::move(*entryPtr));
                 DIA_LOG_INFO("FlowField", "FlowFieldCache: computed new field key=%s goal=(%d,%d)",
                              key.AsChar(), goalCell.x, goalCell.y);
                 ++mMisses;

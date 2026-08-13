@@ -5,6 +5,7 @@
 #include <DiaPathfinding/IPathCostProvider.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <memory>
 #include <queue>
 #include <unordered_map>
 #include <chrono>
@@ -52,7 +53,8 @@ namespace Dia::FlowField {
         DIA_LOG_INFO("FlowField", "FlowField: compute start goal=(%d,%d)", goalCell.x, goalCell.y);
         auto t0 = std::chrono::steady_clock::now();
 
-        FlowField field(width, height);
+        auto fieldPtr = std::make_unique<FlowField>(width, height);
+        FlowField& field = *fieldPtr;
 
         // Distance map: cell -> best cost from goalCell
         std::unordered_map<Dia::Pathfinding::CellCoord, float, CellCoordHash> dist;
@@ -142,7 +144,7 @@ namespace Dia::FlowField {
 
         DIA_LOG_INFO("FlowField", "FlowField: compute done cells=%d ms=%d", cellsVisited, elapsedMs);
 
-        return field;
+        return std::move(*fieldPtr);
     }
 
 } // namespace Dia::FlowField

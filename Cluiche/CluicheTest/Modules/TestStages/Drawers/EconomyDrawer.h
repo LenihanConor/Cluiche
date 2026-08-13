@@ -22,8 +22,8 @@ namespace CluicheTest {
 struct GathererDrawData
 {
     Dia::Maths::Vector2D pos;
-    float                carry;   // current carry gold value
-    int                  state;   // 0=toMine 1=mining 2=toBase 3=depositing
+    float                carry = 0.f;  // current carry gold value
+    int                  state = 0;    // 0=toMine 1=mining 2=toBase 3=depositing
 };
 
 static constexpr int kEconomyDrawerGathererCount = 2;

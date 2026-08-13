@@ -863,7 +863,7 @@ void ArenaTestStageModule::SpawnWave(Dia::Core::StringCRC tag, int count)
         //
         // Trigger naming convention: "check_<transition>" — unique per arc so multiple
         // transitions from the same source can be fired selectively.
-        Dia::StateMachine::StateMachineDefinition def =
+        auto def = std::make_unique<Dia::StateMachine::StateMachineDefinition>(
             Dia::StateMachine::StateMachineBuilder()
                 .State(Dia::Core::StringCRC("Idle"))
                     .OnEnter(EnemyFsm_OnEnterIdle)
@@ -882,11 +882,11 @@ void ArenaTestStageModule::SpawnWave(Dia::Core::StringCRC tag, int count)
                 .State(Dia::Core::StringCRC("Dead"))
                     .OnEnter(EnemyFsm_OnEnterDead)
                 .InitialState(Dia::Core::StringCRC("Idle"))
-                .Build();
+                .Build());
 
         enemy.fsm = std::make_unique<Dia::StateMachine::FlatStateMachine<EnemyAgent>>(
             Dia::Core::StringCRC("ArenaEnemy"),
-            static_cast<Dia::StateMachine::StateMachineDefinition&&>(def),
+            std::move(*def),
             enemy);
     }
 

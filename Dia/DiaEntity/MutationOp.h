@@ -14,7 +14,7 @@ namespace Dia::Entity {
     };
 
     struct MutationOp {
-        MutationKind         kind;
+        MutationKind         kind = MutationKind::AddComponent;
         Entity               entity;
         Dia::Core::StringCRC componentTypeId; // for AddComponent / RemoveComponent
         Json::Value          config;           // for AddComponent
