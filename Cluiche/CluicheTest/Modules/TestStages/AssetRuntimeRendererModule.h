@@ -24,7 +24,8 @@ protected:
     void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 
 private:
-    Dia::ApplicationFlow::StreamWriter<Dia::Graphics::FrameData>                mRenderOutput{this, "SimToRender"};
+    // Scene geometry goes to SimScene; UICompositeModule composites + writes SimToRender.
+    Dia::ApplicationFlow::StreamWriter<Dia::Graphics::FrameData>                mRenderOutput{this, "SimScene"};
     Dia::ApplicationFlow::ServiceStreamReader<Dia::AssetRuntime::TextureHandler> mTextureHandlerService{this, "KernelTextureHandler"};
 
     Dia::Graphics::FrameData mFrame;

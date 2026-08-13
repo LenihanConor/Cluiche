@@ -117,6 +117,7 @@
     <ClInclude Include="Modules\DebugPanelPage.h" />
     <ClInclude Include="Modules\DebugPanelPageModule.h" />
     <ClInclude Include="Types\DebugPanelToggleEvent.h" />
+    <ClInclude Include="Types\DebugPanelSetVisibilityEvent.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">

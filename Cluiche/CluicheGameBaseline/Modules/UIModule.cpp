@@ -144,10 +144,13 @@ void UIModule::DoUpdate(float /*dt*/)
 
     // Publish the fresh UI buffer so the sim/render path can composite it.
     Dia::UI::UIDataBuffer buffer;
-    if (mUISystem->IsPageLoaded())
+    const bool pageLoaded = mUISystem->IsPageLoaded();
+    if (pageLoaded)
     {
         mUISystem->FetchUIDataBuffer(buffer);
     }
+    // Always write the buffer (empty or not) - RenderModule needs consistent empty
+    // frames to clear preserved UI, not just one empty frame
     mUIBufferOutput.Write(buffer, Dia::Core::TimeAbsolute::Zero());
 }
 

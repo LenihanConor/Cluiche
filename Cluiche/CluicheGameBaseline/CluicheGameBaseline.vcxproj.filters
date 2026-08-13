@@ -225,6 +225,9 @@
     <ClInclude Include="Modules\DebugPanelPage.h">
     <ClInclude Include="Modules\DebugPanelPageModule.h">
     <ClInclude Include="Types\DebugPanelToggleEvent.h">
+    <ClInclude Include="Types\DebugPanelSetVisibilityEvent.h">
+      <Filter>Types</Filter>
+    </ClInclude>
       <Filter>Types</Filter>
     </ClInclude>
       <Filter>Modules</Filter>

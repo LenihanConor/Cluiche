@@ -30,13 +30,6 @@ void LoadingScreenModule::DoUpdate(float dt)
     mElapsed += dt;
     mLoadingFrame.Clear();
 
-    // Composite the latest UI buffer so the bootscreen page is visible
-    // during the Boot stage.
-    if (const Dia::UI::UIDataBuffer* uiBuffer = mUIInput.FetchLatest())
-    {
-        mLoadingFrame.RequestDrawUI(*uiBuffer);
-    }
-
     // Heartbeat debug draw so the Boot stage has visible sim/render activity
     // even before the user hits Launch.
     const float kRadius = 60.0f;
@@ -54,13 +47,16 @@ void LoadingScreenModule::DoUpdate(float dt)
 Dia::ApplicationFlow::StopResult LoadingScreenModule::DoStop()
 {
     DIA_LOG_INFO("Application", "LoadingScreenModule::DoStop entry");
+    // Publish a cleared frame so SimScene does not retain the loading-screen
+    // geometry after Boot exits (FrameStreamStore keeps the last write).
+    mLoadingFrame.Clear();
+    mRenderOutput.Write(mLoadingFrame, Dia::Core::TimeAbsolute::Zero());
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 
 void LoadingScreenModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 {
     mRenderOutput.Connect(app);
-    mUIInput.Connect(app);
 }
 
 } } // namespace Cluiche::AppFlow

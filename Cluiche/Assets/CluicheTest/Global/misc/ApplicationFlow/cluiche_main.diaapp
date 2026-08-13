@@ -178,7 +178,23 @@
             "payload_type": "FrameData",
             "from": "SimPU",
             "to": "RenderPU",
+            "multi_writer": false
+        },
+        {
+            "id": "SimScene",
+            "kind": "FrameStream",
+            "payload_type": "FrameData",
+            "from": "SimPU",
+            "to": "SimPU",
             "multi_writer": true
+        },
+        {
+            "id": "SimDebug",
+            "kind": "FrameStream",
+            "payload_type": "FrameData",
+            "from": "SimPU",
+            "to": "SimPU",
+            "multi_writer": false
         },
         {
             "id": "SimToRender3D",
@@ -285,6 +301,14 @@
             "to": "MainPU"
         },
         {
+            "id": "DebugPanelSetVisibility",
+            "kind": "EventStream",
+            "payload_type": "DebugPanelSetVisibilityEvent",
+            "overflow": "drop-oldest",
+            "from": "SimPU",
+            "to": "MainPU"
+        },
+        {
             "id": "RenderToSim",
             "kind": "FrameStream",
             "payload_type": "RenderFence",
@@ -378,6 +402,7 @@
                     "instance_id": "UIModule",
                     "type_id": "UIModule",
                     "stages": [
+                        "Boot",
                         "DummyStage",
                         "UIUltralightTestStage",
                         "RigidBody2DTestStage",
@@ -518,6 +543,10 @@
                         {
                             "id": "DebugPanelToggle",
                             "role": "reads"
+                        },
+                        {
+                            "id": "DebugPanelSetVisibility",
+                            "role": "reads"
                         }
                     ]
                 },
@@ -580,11 +609,7 @@
                     "dependencies": [],
                     "channels": [
                         {
-                            "id": "UIToSim",
-                            "role": "reads"
-                        },
-                        {
-                            "id": "SimToRender",
+                            "id": "SimScene",
                             "role": "writes"
                         }
                     ]
@@ -611,13 +636,18 @@
                     "instance_id": "UICompositeModule",
                     "type_id": "UICompositeModule",
                     "stages": [
-                        "UIUltralightTestStage",
-                        "RigidBody2DTestStage",
-                        "EntityTestStage",
-                        "Animation2DTestStage"
+                        "all"
                     ],
                     "dependencies": [],
                     "channels": [
+                        {
+                            "id": "SimScene",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "SimDebug",
+                            "role": "reads"
+                        },
                         {
                             "id": "UIToSim",
                             "role": "reads"
@@ -671,7 +701,7 @@
                     ],
                     "channels": [
                         {
-                            "id": "SimToRender",
+                            "id": "SimDebug",
                             "role": "writes"
                         },
                         {
@@ -688,6 +718,10 @@
                         },
                         {
                             "id": "DebugPanelToggle",
+                            "role": "writes"
+                        },
+                        {
+                            "id": "DebugPanelSetVisibility",
                             "role": "writes"
                         }
                     ]

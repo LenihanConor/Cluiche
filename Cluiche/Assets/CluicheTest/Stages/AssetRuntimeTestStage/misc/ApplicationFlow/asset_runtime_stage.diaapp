@@ -29,7 +29,7 @@
                     "stages": [ "AssetRuntimeTestStage" ],
                     "dependencies": [],
                     "channels": [
-                        { "id": "SimToRender",        "role": "writes" },
+                        { "id": "SimScene",           "role": "writes" },
                         { "id": "KernelTextureHandler","role": "consumes" }
                     ]
                 }

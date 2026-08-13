@@ -111,6 +111,7 @@ void VisualDebuggerModule::OnConnectStreams(Dia::ApplicationFlow::Application& a
     mDomainRegistryService.Connect(app);
     mPanelCommands.Connect(app);
     mPanelToggle.Connect(app);
+    mPanelSetVisibility.Connect(app);
 }
 
 void VisualDebuggerModule::RegisterDomain(Dia::VisualDebugger::IDebugDomain& domain)

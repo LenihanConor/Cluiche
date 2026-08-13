@@ -77,6 +77,14 @@ Dia::ApplicationFlow::StartResult DebugPanelPageModule::DoStart()
         mPageInitialized = true;
     }
 
+    // Auto-open panel when entering a test stage
+    if (!mPanelVisible)
+    {
+        mPanelVisible = true;
+        ui->LoadPage(mPage);
+        DIA_LOG_INFO("Debug", "DebugPanelPageModule: AUTO-OPENED panel on DoStart");
+    }
+
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
@@ -90,15 +98,20 @@ void DebugPanelPageModule::DoUpdate(float /*dt*/)
 
 Dia::ApplicationFlow::StopResult DebugPanelPageModule::DoStop()
 {
+    // Auto-close panel when leaving test stage (returning to Boot)
+    // UIModule is in Boot stage so it's still active and reachable here
     if (mPanelVisible)
     {
-        if (UIModule* ui = mUI.Get())
+        UIModule* ui = mUI.Get();
+        if (ui)
+        {
             ui->UnloadPage();
+            DIA_LOG_INFO("Debug", "DebugPanelPageModule: AUTO-CLOSED panel on DoStop");
+        }
         mPanelVisible = false;
-        DIA_LOG_INFO("Debug", "DebugPanelPageModule unloaded debug-panel.html");
     }
-    mPageInitialized = false;
 
+    mPageInitialized = false;
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 
@@ -107,6 +120,7 @@ void DebugPanelPageModule::OnConnectStreams(Dia::ApplicationFlow::Application& a
     mDomainRegistry.Connect(app);
     mPanelCommands.Connect(app);
     mPanelToggle.Connect(app);
+    mPanelSetVisibility.Connect(app);
 }
 
 void DebugPanelPageModule::OnCommand(const char* domainId, const char* cmd, const char* argsJson)
@@ -130,6 +144,10 @@ void DebugPanelPageModule::OnCommand(const char* domainId, const char* cmd, cons
 
 void DebugPanelPageModule::DrainToggleEvents()
 {
+    UIModule* ui = mUI.Get();
+    if (ui == nullptr || !mPageInitialized)
+        return;
+
     Dia::Core::Containers::DynamicArrayC<
         Dia::ApplicationFlow::Event<DebugPanelToggleEvent>, 8> events;
     mPanelToggle.Consume(events);
@@ -139,11 +157,41 @@ void DebugPanelPageModule::DrainToggleEvents()
         mPanelVisible = !mPanelVisible;
         if (mPanelVisible)
         {
-            mUI.Get()->LoadPage(mPage);
+            ui->LoadPage(mPage);
         }
         else
         {
-            mUI.Get()->UnloadPage();
+            ui->UnloadPage();
+        }
+    }
+}
+
+void DebugPanelPageModule::DrainSetVisibilityEvents()
+{
+    UIModule* ui = mUI.Get();
+    if (ui == nullptr || !mPageInitialized)
+        return;
+
+    Dia::Core::Containers::DynamicArrayC<
+        Dia::ApplicationFlow::Event<DebugPanelSetVisibilityEvent>, 8> events;
+    mPanelSetVisibility.Consume(events);
+
+    for (unsigned int i = 0; i < events.Size(); ++i)
+    {
+        const bool desiredVisibility = events[i].payload.visible;
+        if (desiredVisibility == mPanelVisible)
+            continue;
+
+        mPanelVisible = desiredVisibility;
+        if (mPanelVisible)
+        {
+            ui->LoadPage(mPage);
+            DIA_LOG_INFO("Debug", "DebugPanelPageModule: auto-opened panel");
+        }
+        else
+        {
+            ui->UnloadPage();
+            DIA_LOG_INFO("Debug", "DebugPanelPageModule: auto-closed panel");
         }
     }
 }

@@ -15,6 +15,7 @@
 #include "Modules/UIModule.h"
 #include "Types/DebugPanelCommandEvent.h"
 #include "Types/DebugPanelToggleEvent.h"
+#include "Types/DebugPanelSetVisibilityEvent.h"
 
 namespace Cluiche { namespace AppFlow {
 
@@ -54,6 +55,7 @@ protected:
 private:
     void PushDomainStatesToPanel();
     void DrainToggleEvents();
+    void DrainSetVisibilityEvents();
 
     DebugPanelPage mPage{this};
     bool           mPanelVisible    = false;
@@ -69,6 +71,9 @@ private:
 
     Dia::ApplicationFlow::EventStreamReader<DebugPanelToggleEvent>
         mPanelToggle{this, "DebugPanelToggle"};
+
+    Dia::ApplicationFlow::EventStreamReader<DebugPanelSetVisibilityEvent>
+        mPanelSetVisibility{this, "DebugPanelSetVisibility"};
 };
 
 } } // namespace Cluiche::AppFlow

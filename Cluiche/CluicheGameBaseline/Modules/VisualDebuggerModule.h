@@ -18,6 +18,7 @@
 #include "Modules/Camera2DModule.h"
 #include "Types/DebugPanelCommandEvent.h"
 #include "Types/DebugPanelToggleEvent.h"
+#include "Types/DebugPanelSetVisibilityEvent.h"
 #include <DiaVisualDebugger/Domain/IDebugDomain.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
 #include <memory>
@@ -84,12 +85,13 @@ private:
     void DrainPanelCommandStream();
 
     Dia::Debug::DebugLayerManager mLayerManager;
-    Dia::ApplicationFlow::StreamWriter<Dia::Graphics::FrameData> mRenderOutput{this, "SimToRender"};
+    Dia::ApplicationFlow::StreamWriter<Dia::Graphics::FrameData> mRenderOutput{this, "SimDebug"};
     Dia::ApplicationFlow::ServiceStreamWriter<Dia::Debug::DebugLayerManager> mLayerManagerService{this, "DebugLayerManager"};
     Dia::VisualDebugger::DiaDebugDomainRegistry mDomainRegistry;
     Dia::ApplicationFlow::ServiceStreamWriter<Dia::VisualDebugger::DiaDebugDomainRegistry> mDomainRegistryService{this, "DomainRegistry"};
     Dia::ApplicationFlow::EventStreamReader<DebugPanelCommandEvent> mPanelCommands{this, "DebugPanelCommand"};
     Dia::ApplicationFlow::EventStreamWriter<DebugPanelToggleEvent>  mPanelToggle{this, "DebugPanelToggle"};
+    Dia::ApplicationFlow::EventStreamWriter<DebugPanelSetVisibilityEvent> mPanelSetVisibility{this, "DebugPanelSetVisibility"};
     Dia::Core::Containers::DynamicArrayC<PendingCommand, kCommandQueueCapacity> mCommandQueue;
     std::mutex mCommandQueueMutex;
     Dia::Graphics::FrameData mFrame;

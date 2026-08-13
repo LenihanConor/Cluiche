@@ -23,8 +23,9 @@ protected:
     void                              OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 
 private:
-    Dia::ApplicationFlow::StreamWriter<Dia::Graphics::FrameData>  mRenderOutput{this, "SimToRender"};
-    Dia::ApplicationFlow::StreamReader<Dia::UI::UIDataBuffer>     mUIInput{this, "UIToSim"};
+    // Publishes the loading-screen geometry to SimScene. UI compositing is
+    // owned by UICompositeModule (the sole SimToRender writer).
+    Dia::ApplicationFlow::StreamWriter<Dia::Graphics::FrameData>  mRenderOutput{this, "SimScene"};
     Dia::Graphics::FrameData mLoadingFrame;
     float mElapsed = 0.0f;
 };

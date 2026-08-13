@@ -27,10 +27,37 @@ Dia::ApplicationFlow::StartResult UICompositeModule::DoStart()
 void UICompositeModule::DoUpdate(float /*dt*/)
 {
     mFrame.Clear();
-    const Dia::UI::UIDataBuffer* uiBuffer = mUIInput.FetchLatest();
 
+    // Gather this frame's layers. Producers run on the same SimPU thread, so
+    // these fetches are race-free; a producer that ticks after us contributes
+    // its frame one tick late (invisible at 30Hz, and never a partial frame).
+    const Dia::Graphics::FrameData* sceneFrame = mSceneInput.FetchLatest();
+    const Dia::Graphics::FrameData* debugFrame = mDebugInput.FetchLatest();
+
+    // Choose the base frame — it carries camera/window plus its own draw lists.
+    // When both scene geometry and a debug overlay are present (e.g. sprites +
+    // VisualDebugger), use the debug frame as base (camera + debug primitives)
+    // and append the scene's sprites, which live in a disjoint sub-buffer.
+    if (debugFrame != nullptr)
+    {
+        mFrame.Copy(*debugFrame);
+        if (sceneFrame != nullptr)
+        {
+            const Dia::Core::Containers::DynamicArrayC<Dia::Graphics::SpriteDrawCommand, 256>&
+                sprites = sceneFrame->GetSprites();
+            for (unsigned int i = 0; i < sprites.Size(); ++i)
+                mFrame.RequestDrawSprite(sprites[i]);
+        }
+    }
+    else if (sceneFrame != nullptr)
+    {
+        mFrame.Copy(*sceneFrame);
+    }
+
+    // Composite the Ultralight UI buffer on top.
+    const Dia::UI::UIDataBuffer* uiBuffer = mUIInput.FetchLatest();
     static bool sLastHadUI = false;
-    bool hasUI = (uiBuffer && uiBuffer->GetBufferSize() > 0);
+    const bool hasUI = (uiBuffer && uiBuffer->GetBufferSize() > 0);
 
     if (hasUI)
     {
@@ -38,10 +65,9 @@ void UICompositeModule::DoUpdate(float /*dt*/)
         if (mMetricUIFramesWritten)
             mMetricUIFramesWritten->Inc();
     }
-    else
+    else if (mMetricEmptyFramesWritten)
     {
-        if (mMetricEmptyFramesWritten)
-            mMetricEmptyFramesWritten->Inc();
+        mMetricEmptyFramesWritten->Inc();
     }
 
     // Log UI visibility state transitions
@@ -66,6 +92,8 @@ Dia::ApplicationFlow::StopResult UICompositeModule::DoStop()
 void UICompositeModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 {
     mRenderOutput.Connect(app);
+    mSceneInput.Connect(app);
+    mDebugInput.Connect(app);
     mUIInput.Connect(app);
 }
 

@@ -89,12 +89,6 @@ void DummyLevelModule::DoUpdate(float dt)
     // --- Build frame ---
     mFrame.Clear();
 
-    // Composite the latest UI buffer so stage HUD/page is visible.
-    if (const Dia::UI::UIDataBuffer* uiBuffer = mUIInput.FetchLatest())
-    {
-        mFrame.RequestDrawUI(*uiBuffer);
-    }
-
     // Debug-draw: static white circle + animated red circle + line between
     // them. Mirrors v1 SimProcessingUnit's "sim pipeline is alive" marker.
     {
@@ -191,7 +185,6 @@ void DummyLevelModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 {
     mRenderOutput.Connect(app);
     mUIOutput.Connect(app);
-    mUIInput.Connect(app);
     mTextureHandlerService.Connect(app);
     mAssetLoadStatusStream.Connect(app);
 }
