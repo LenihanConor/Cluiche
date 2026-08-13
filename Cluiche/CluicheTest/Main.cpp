@@ -282,10 +282,14 @@ int main(int argc, const char* argv[])
 {
     // Early-exit: --dump-schema writes registered-types JSON to stdout and exits.
     // Must run before any manifest loading, path alias setup, or Application creation.
+    // --automation: passed by the E2E test runner; enables timed auto-exit after stages resolve.
+    bool automationMode = false;
     for (int i = 1; i < argc; ++i)
     {
         if (argv[i] && strcmp(argv[i], "--dump-schema") == 0)
             return DumpSchema();
+        if (argv[i] && strcmp(argv[i], "--automation") == 0)
+            automationMode = true;
     }
 
     const char* kDiagamePath = "assets/cluichetest.diagame";
@@ -324,6 +328,7 @@ int main(int argc, const char* argv[])
 
     // Create session-scoped test results registry
     CluicheTest::TestResultsRegistry::Create();
+    CluicheTest::TestResultsRegistry::SetAutomationMode(automationMode);
 
     // Create and run application
     Dia::ApplicationFlow::Application app(manifest, registry);

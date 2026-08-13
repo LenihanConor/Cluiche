@@ -4,6 +4,11 @@
 
 namespace CluicheTest {
 
+static bool sAutomationMode = false;
+
+void TestResultsRegistry::SetAutomationMode(bool value) { sAutomationMode = value; }
+bool TestResultsRegistry::IsAutomationMode() { return sAutomationMode; }
+
 void TestResultsRegistry::SetRunning(const Dia::Core::StringCRC& stageName, unsigned int budgetFrames)
 {
     SetRunning(stageName, budgetFrames, nullptr, 0);

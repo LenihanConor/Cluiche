@@ -42,6 +42,9 @@ public:
     unsigned int GetActiveFrameCount() const;
     void SetActiveFrameCount(unsigned int frame);
 
+    static void SetAutomationMode(bool value);
+    static bool IsAutomationMode();
+
 private:
     StageResult* FindOrCreate(const Dia::Core::StringCRC& stageName);
     StageResult* Find(const Dia::Core::StringCRC& stageName);

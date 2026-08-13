@@ -35,7 +35,7 @@ def app_launcher(request):
         raise RuntimeError("'dia' not found on PATH — run 'dia env setup' to configure the CLI")
 
     proc = subprocess.Popen(
-        [dia_exe, "launch", app, "--config", config],
+        [dia_exe, "launch", app, "--config", config, "--automation"],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )

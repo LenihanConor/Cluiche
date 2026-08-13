@@ -127,7 +127,10 @@ void TestStageModuleBase::DoUpdate(float deltaTime)
 
     // Single release point for all paths (pass / fail / abort / timeout).
     // Fires after capture is done so the screenshot lands before Boot loads.
-    if (mResolved && !mAwaitingCapture && !mNavigationReleased)
+    // In manual mode (no --automation flag) we hold here so the developer can
+    // inspect the result; they return to Boot via the stage's X button.
+    if (mResolved && !mAwaitingCapture && !mNavigationReleased
+        && TestResultsRegistry::GetInstance().IsAutomationMode())
     {
         mNavigationReleased = true;
         auto* svc = GetAutomationService();

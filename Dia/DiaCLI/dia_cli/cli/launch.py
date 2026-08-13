@@ -27,8 +27,10 @@ _TARGET_EXE_MAP = {
               help="For googletest: include SLOW_* suites (default excludes them).")
 @click.option("--shards", default=0, metavar="N", type=int,
               help="For googletest: run in N parallel shards (0=disabled, omit for cpu_count-1).")
+@click.option("--automation", "automation", is_flag=True, default=False,
+              help="For cluichetest: enable timed auto-exit after each stage resolves (used by E2E runner).")
 @click.pass_context
-def cli(ctx, target, config, filter_pattern, verbose, run_all, shards):
+def cli(ctx, target, config, filter_pattern, verbose, run_all, shards, automation):
     """Launch an already-built target executable.
 
     TARGET is one of: googletest, cluichetest, cluicheeditor.
@@ -42,12 +44,14 @@ def cli(ctx, target, config, filter_pattern, verbose, run_all, shards):
         verbose=verbose,
         run_all=run_all,
         shards=shards,
+        automation=automation,
     )
     ctx.exit(exit_code)
 
 
 def launch_target(target: str, config: str, filter_pattern: str = None,
-                  verbose: bool = False, run_all: bool = False, shards: int = 0) -> int:
+                  verbose: bool = False, run_all: bool = False, shards: int = 0,
+                  automation: bool = False) -> int:
     config = _CONFIG_ALIASES.get(config, config)
     repo_root = find_repo_root(__file__)
 
@@ -79,6 +83,8 @@ def launch_target(target: str, config: str, filter_pattern: str = None,
         )
 
     cmd = [str(exe_path)]
+    if target == "cluichetest" and automation:
+        cmd.append("--automation")
     if target == "googletest":
         from dia_cli.commands.test.googletest_runner import (
             _gtest_xml_output_path,
