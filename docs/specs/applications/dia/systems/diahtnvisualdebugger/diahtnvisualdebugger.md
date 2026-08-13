@@ -7,159 +7,169 @@
 
 ## Purpose
 
-DiaHTNVisualDebugger is a separate debug static library that makes HTN plan state visible in the `DiaVisualDebuggerConsole`. It provides two `IVisualDebugger` implementations:
+DiaHTNVisualDebugger is the `IDebugDomain` implementation that makes HTN plan state visible in `DiaDebugPanel`. It is a panel-only domain (`HasWorldDrawers() = false`) — plan execution has no canonical world-space anchor.
 
-- **`HTNPlanDrawer`** — an ImGui-only inspector that shows the active plan as a numbered task list, highlights the current task, shows the total remaining task count, and flags diverged plans with a warning
-- **`HTNWorldStateDrawer`** — a world-space text label rendered above a 2D entity position showing the current operator name and remaining task count
+The domain card shows: active plan task list with cursor, remaining-task stat, diverged/replan warning badge, and plan cost. All state is surfaced via `GetJSONState()` to the panel's HTN card template in `debug-panel.html`.
 
-Both drawers read exclusively from `HTNPlannerComponent`'s public read API (`GetActivePlan()`, `HasActivePlan()`, `HasDiverged()`) — no write access, no private friendship.
-
-The entire module is `#ifdef DIA_DEBUG` guarded. Following `DiaUtilityAIVisualDebugger` (SD-007), `DiaHTN` has zero dependency on `DiaVisualDebugger`.
+Following the `DiaXxxVisualDebugger` contract (`debugger-contract.md`), `DiaHTN` has zero compile-time dependency on `DiaVisualDebugger`.
 
 ## Responsibilities
 
-- Provide `HTNPlanDrawer` — `IVisualDebugger` with ImGui-only `DrawImGui()`; `Draw()` is a no-op
-- Provide `HTNWorldStateDrawer` — `IVisualDebugger` with a world-space text label in `Draw()`; `DrawImGui()` is a no-op
-- `HTNPlanDrawer::DrawImGui()` renders: numbered operator list, current task highlighted, remaining task count, diverged warning banner
-- `HTNWorldStateDrawer::Draw()` renders: `RequestDrawText()` at entity world position — `"<operator> [N]"` format; diverged appended as `" [DIVERGED]"`
-- Register layer names `htn.plan` and `htn.world_state` in `DebugLayerNames.h` under a new `HTN` section (priority tier 50+)
-- Entire public API guarded by `#ifdef DIA_DEBUG`
+- Implement `IDebugDomain` — all pure virtual methods
+- `HasWorldDrawers()` returns `false` — no world-space drawers; `Register`/`Unregister` are no-ops
+- `GetJSONState()` emits plan list with per-task status, current task index, diverged flag, and cost (see JSON Schema)
+- `OnCommand("toggle", {drawer: "PlanView"})` — enables/disables the plan list section in the panel card
+- `OnCommand("setScale", ...)` — no-op (no world-space sizes)
+- Reads exclusively from `HTNPlannerComponent`'s public read API — no write access
+- Entire module guarded by `#ifdef DIA_DEBUG`
 - Provide `DiaHTNVisualDebugger.vcxproj` static library registered in `Cluiche.sln` under `3.0-Gameplay`
 - Provide `dia.diahtnvisualdebugger.architecture.module.md` YAML module documentation
 
 ## Non-Responsibilities
 
 - HTN plan execution — `HTNPlannerComponent` / caller
-- World state writing or snapshot management — DiaHTN + DiaCondition
-- Entity position tracking — caller provides `Dia::Maths::Vector2` at construction
-- Automatic registration into `DebugLayerManager` — caller registers
+- World-state data writing — DiaHTN + DiaCondition
+- Entity position tracking or world-space labels — deferred (see Open Design Question 1)
+- Automatic domain registration — caller registers with `DiaDebugDomainRegistry`
 - Any runtime behaviour in Release — entire module excluded by `#ifdef DIA_DEBUG`
 
 ## Public Interfaces
 
 ```cpp
-// DiaHTNVisualDebugger/HTNPlanDrawer.h
+// DiaHTNVisualDebugger/HTNVisualDebugger.h
 #ifdef DIA_DEBUG
 
-#include <DiaCore/DebugDraw/IVisualDebugger.h>
+#include <DiaVisualDebugger/Domain/IDebugDomain.h>
 
 namespace Dia::HTN { class HTNPlannerComponent; }
 
 namespace Dia::HTN
 {
-    // ImGui-only inspector for HTN plan state.
-    // Draw() is a no-op — plan state has no world-space anchor.
-    class HTNPlanDrawer : public Dia::Debug::IVisualDebugger
+    class HTNVisualDebugger : public Dia::VisualDebugger::IDebugDomain
     {
     public:
-        explicit HTNPlanDrawer(const HTNPlannerComponent& component);
+        explicit HTNVisualDebugger(const HTNPlannerComponent& component);
 
-        Dia::Core::StringCRC GetLayerName() const override; // "htn.plan"
-        void Draw(Dia::Core::IDebugDraw& draw) override;    // no-op
-        void DrawImGui() override;
+        // IDebugDomain — identity
+        Dia::Core::StringCRC  GetDomainId()      const override; // "htn"
+        const char*           GetDisplayName()   const override; // "HTN"
+        const char*           GetDescription()   const override; // see below
+        Dia::Core::StringCRC  GetGroup()          const override; // "AIBehavior"
+        Dia::Core::ColourRGBA GetAccentColour()   const override; // DebugGroupAccents::kAIBehavior
+
+        bool HasWorldDrawers() const override { return false; }
+
+        void GetJSONState(Dia::Core::JsonWriter& writer) override;
+        void OnCommand(Dia::Core::StringCRC cmd,
+                       const Dia::Core::JsonValue& args) override;
 
     private:
         const HTNPlannerComponent& mComponent;
+        bool mPlanViewEnabled = true;
     };
 }
 #endif // DIA_DEBUG
 ```
 
-```cpp
-// DiaHTNVisualDebugger/HTNWorldStateDrawer.h
-#ifdef DIA_DEBUG
+`GetDescription()` returns: `"HTN planner — active plan, task cursor, divergence and replan state"` (62 chars ≤ 80 ✓)
 
-#include <DiaCore/DebugDraw/IVisualDebugger.h>
-#include <DiaMaths/Core/Vector2.h>
+### JSON State Schema
 
-namespace Dia::HTN { class HTNPlannerComponent; }
+`GetJSONState()` emits the following structure. This is the normative C++↔panel contract for the HTN card template in `debug-panel.html`.
 
-namespace Dia::HTN
+```json
 {
-    // World-space text label: "<current operator> [N remaining]"
-    // Caller provides the entity's world position (updated each frame by reference).
-    class HTNWorldStateDrawer : public Dia::Debug::IVisualDebugger
-    {
-    public:
-        HTNWorldStateDrawer(const HTNPlannerComponent& component,
-                            const Dia::Maths::Vector2& worldPosition);
-
-        Dia::Core::StringCRC GetLayerName() const override; // "htn.world_state"
-        void Draw(Dia::Core::IDebugDraw& draw) override;
-        void DrawImGui() override;                          // no-op
-
-    private:
-        const HTNPlannerComponent& mComponent;
-        const Dia::Maths::Vector2& mWorldPosition;
-    };
+  "drawers": [
+    { "name": "PlanView", "enabled": true }
+  ],
+  "stats": {
+    "current": 2,
+    "total": 5
+  },
+  "plan": [
+    { "index": 1, "name": "navigate_to_patrol_point", "status": "done"    },
+    { "index": 2, "name": "wait_at_point",             "status": "current" },
+    { "index": 3, "name": "pick_next_waypoint",        "status": "pending" },
+    { "index": 4, "name": "navigate_to_patrol_point",  "status": "pending" },
+    { "index": 5, "name": "report_clear",              "status": "pending" }
+  ],
+  "diverged": false,
+  "planCost": 14.2
 }
-#endif // DIA_DEBUG
 ```
 
-### Layer name additions to `DebugLayerNames.h`
+**Status values:** `"done"` — completed; `"current"` — cursor is here; `"pending"` — not yet reached. `"plan"` is an empty array when `!HasActivePlan()`. `"diverged": true` triggers a `⚠ Replan needed` badge in the card header. `"planCost"` is omitted when no plan is active (see Open Design Question 3).
 
-```cpp
-// HTN (priority tier 50+)
-inline const Dia::Core::StringCRC kHTNPlan       { "htn.plan"        };
-inline const Dia::Core::StringCRC kHTNWorldState { "htn.world_state" };
+### Panel Card Specification
 
-// Stage tag used to register all HTN layers (creates "HTN" console tab)
-inline const Dia::Core::StringCRC kHTNStageTag   { "HTN" };
-```
+Per `debugger-contract.md` AC-16 and `docs/research/visual_debugger_redesign/mockup.html`:
 
-### `HTNPlanDrawer::DrawImGui()` behaviour
-
-1. If `!HasActivePlan()` — render `ImGui::TextDisabled("No active plan")`; return
-2. If `HasDiverged()` — render `ImGui::TextColored(ImVec4(1,0.5,0,1), "⚠ Plan diverged — re-plan needed")`
-3. Retrieve `GetActivePlan()` reference
-4. Render header: `"Tasks: N remaining"` (where N = `plan.GetTaskCount() - cursor`)
-5. Render `ImGui::BeginTable("htn_plan", 2, BordersOuter | RowBg)` with columns `"#"` and `"Operator"`
-6. Walk all tasks; highlight current task row with `ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ...)`
-
-### `HTNWorldStateDrawer::Draw()` behaviour
-
-1. If `!HasActivePlan()` — no draw
-2. Build label: `"<currentOperator> [<remaining>]"` — append `" [DIVERGED]"` if `HasDiverged()`
-3. Call `draw.RequestDrawText(mWorldPosition, label, colour)`
+- **Group:** AI / Behavior — accent `DebugGroupAccents::kAIBehavior` (`#ef4444`) via `var(--accent)`
+- **Domain stat line:** `"Task N/M"` where N = current index, M = total
+- **Expanded body:** numbered task list — done rows greyed + strikethrough, current row highlighted with `▶` cursor in accent color, pending rows dimmed; `"diverged": true` adds a `⚠ Replan needed` badge at the bottom
+- **Drawer toggle:** "PlanView" — hides/shows the task list; domain card header always visible
 
 ## Dependencies on Other Systems
 
 **Required:**
 - **DiaHTN** — `HTNPlannerComponent`, `HTNPlan`, `HTNTask`
-- **DiaCore** — `IVisualDebugger`, `IDebugDraw`, `StringCRC`
-- **DiaMaths** — `Vector2` (world position for `HTNWorldStateDrawer`)
+- **DiaVisualDebugger** — `IDebugDomain`, `DebugGroupAccents`
+- **DiaCore** — `StringCRC`, `ColourRGBA`, `JsonWriter`, `JsonValue`
 
 **Explicitly excluded:**
-- **DiaVisualDebugger** — no direct dependency; `DiaHTN` must remain free of it
+- **ImGui** — retired; no `ImGui::*` calls in this module
 - **DiaApplicationFlow**, **DiaEntity**, **DiaCondition**, **DiaAIBudget**
+
+## Contract Compliance
+
+All 16 ACs from `debugger-contract.md` apply to this module:
+
+| AC | Notes |
+|----|-------|
+| AC-1 | Standalone `DiaHTNVisualDebugger.vcxproj` |
+| AC-2 | `DiaHTN` has zero `#include` or link dep on `DiaHTNVisualDebugger` |
+| AC-3 | Deps: `DiaHTN` + `DiaVisualDebugger` + `DiaCore` |
+| AC-4 | Implements all `IDebugDomain` pure virtuals |
+| AC-5 | `GetDescription()` = 62 chars ✓ |
+| AC-6 | No world drawers → palette rule N/A |
+| AC-7 | No world drawers → scale rule N/A |
+| AC-8 | No `ImGui::*` calls |
+| AC-9 | `const HTNPlannerComponent&` — read-only, no shared mutable state |
+| AC-10 | `GetJSONState()` emits `{ "drawers": [...], "stats": {} }` minimum ✓ |
+| AC-11 | `OnCommand("toggle", {drawer: "PlanView"})` handled |
+| AC-12 | `OnCommand("setScale", ...)` handled (no-op) |
+| AC-13/14 | `Tests/GoogleTests/DiaHTNVisualDebugger/TestHTNVisualDebugger.cpp` |
+| AC-15 | Mandatory test shapes: toggle gate, JSON round-trip, OnCommand round-trip |
+| AC-16 | Panel card complies with standard spacing; accent via `var(--accent)` |
 
 ## Decisions
 
 | ID | Decision | Rationale | Status | Binding |
 |----|----------|-----------|--------|---------|
-| SD-001 | Two separate drawers rather than one combined class | Each drawer can be enabled/disabled independently in the console. Matches the multi-drawer pattern in `DiaEntityVisualDebugger`. | Accepted | Yes |
-| SD-002 | `HTNWorldStateDrawer` takes `const Vector2&` (reference, not value) | Entity positions change each frame; binding by reference means the drawer always reads current position without needing an update API. Caller must guarantee lifetime. | Accepted | Yes |
-| SD-003 | No `HTNPlanDrawer` entity selector — one drawer per component instance | Multi-entity view is a `DiaAIInspector` (editor) concern. The visual debugger serves the per-entity debugging use case where the game code knows which entity to inspect. | Accepted | Yes |
-| SD-004 | `Draw()` is a no-op on `HTNPlanDrawer`; `DrawImGui()` is a no-op on `HTNWorldStateDrawer` | Separation of concerns: the caller decides which combination to register. No forced coupling between ImGui and world-space output. | Accepted | Yes |
+| SD-001 | `HasWorldDrawers() = false` — panel-only domain | HTN plan execution has no world-space anchor. The old `HTNWorldStateDrawer` (entity label showing current operator) is deferred — entity world labels belong in `DiaEntityVisualDebugger`. | Accepted | Yes |
+| SD-002 | Single `HTNVisualDebugger` class replaces two-drawer design | The prior two-class split (`HTNPlanDrawer` + `HTNWorldStateDrawer`) mapped to ImGui vs. world-space separation. Under `IDebugDomain` all data flows through `GetJSONState()` to one panel card. | Accepted | Yes |
+| SD-003 | No entity selector — one instance per component | Multi-entity view is a `DiaAIInspector` (editor) concern. The visual debugger serves the per-entity use case where game code knows which entity to inspect. | Accepted | Yes |
 
 ## Inherited Binding Decisions
 
 | ID | Source | Decision | Implication |
 |----|--------|----------|-------------|
-| PD-001 | Platform | StringCRC for all IDs | Layer names are `StringCRC` constants in `DebugLayerNames.h` |
-| PD-004 | Platform | No STL containers in public APIs | All public methods use DiaCore containers or primitives |
+| PD-001 | Platform | StringCRC for all IDs | Domain ID, group, command keys use `StringCRC` |
+| PD-004 | Platform | No STL in public APIs | `JsonWriter` and `DynamicArrayC` used; no `std::vector` return values |
 | PD-005 | Platform | x64 only | `DiaHTNVisualDebugger.vcxproj` targets x64 |
-| PD-006 | Platform | vcxproj is source of truth | `.vcxproj` + `.vcxproj.filters` created and maintained |
+| PD-006 | Platform | vcxproj is source of truth | `.vcxproj` + `.vcxproj.filters` maintained |
 | PD-007 | Platform | C++20 | Compiled under `/std:c++20` |
-| PD-008 | Platform | Directory.Build.props owns toolchain config | vcxproj does not override OutDir/IntDir/toolset |
-| AD-001 | Dia App | Module YAML docs | Provide `dia.diahtnvisualdebugger.architecture.module.md` |
+| PD-008 | Platform | Directory.Build.props owns toolchain | vcxproj does not override OutDir/IntDir/toolset |
+| AD-001 | Dia App | Module YAML docs | `dia.diahtnvisualdebugger.architecture.module.md` updated to reflect new interface |
 | AD-003 | Dia App | `Dia::<Module>::` namespace | All code in `Dia::HTN::` namespace |
 
 ## Open Design Questions
 
-1. **`HTNPlanDrawer` task count display** — `HTNPlan` exposes `GetTaskCount()` (total) and `IsComplete()`. There is no public `GetCurrentTaskIndex()`. Should remaining count be derived as `plan.GetTaskCount() - currentIndex` (requires new accessor), or should the drawer simply show total count with the current task highlighted, leaving the remaining count implicit? Resolve when implementing — add a minimal accessor to `HTNPlan` if needed rather than exposing the full cursor state.
+1. **World-space entity label** — The old `HTNWorldStateDrawer` showed `"<operator> [N]"` above the entity's world position. In the new design this is dropped (`HasWorldDrawers() = false`). If per-entity world labels prove useful during ArenaTestStage work, re-introduce as a second drawer: set `HasWorldDrawers() = true`, add `HTNWorldLabelDrawer` via `GetDrawer()`, wire entity world position at construction.
 
-2. **World-space text colour scheme** — normal plan label, diverged label, and no-plan state each need distinct colours. Should these match the entity inspector accent colours (defined in `DiaCore/DebugDraw/DebugColours.h` if it exists), or are they drawer-local constants? Check existing drawers for the pattern before hardcoding.
+2. **`HTNPlan::GetCurrentTaskIndex()`** — `GetJSONState()` needs to emit the current task index to populate the `"current"` status field. `HTNPlan` currently has `GetTaskCount()` and `IsComplete()` but no `GetCurrentTaskIndex()`. Add a minimal `GetCurrentTaskIndex()` accessor to `HTNPlan` in `DiaHTN` at implementation time.
+
+3. **Plan cost availability** — `"planCost"` in the JSON schema assumes `HTNPlan` exposes a `GetCost()` or equivalent. If no such accessor exists, omit `planCost` from the emitted JSON and remove the `Cost:` badge from the panel card template. Resolve at implementation.
 
 ## Status
 

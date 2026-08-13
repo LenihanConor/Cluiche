@@ -11,6 +11,8 @@
 
 ---
 
+> **IVisualDebugger layer:** This spec defines the world-space draw class stack. The `IDebugDomain` wrapper integrates these drawers with `DiaDebugPanel` and satisfies the contract at `@docs/specs/applications/dia/systems/diadebugdomain/debugger-contract.md`. See domain migration: `@docs/specs/applications/dia/systems/diadebugdomain/domain-migration.md`
+
 ## Summary
 
 Creates a new `DiaGeometry2DVisualDebugger` module with two `IVisualDebugger` draw classes. `ShapeDrawer` draws individual geometry shapes submitted by callers one at a time; `SpatialStructureDrawer` draws the internal cell/node structure of a spatial acceleration structure (`SpatialGrid`, `Quadtree`, `BVH`, or `HexGrid`). Both classes are general-purpose utilities rather than bound to a specific simulation system.

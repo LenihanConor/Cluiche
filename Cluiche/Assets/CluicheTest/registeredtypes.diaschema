@@ -208,6 +208,11 @@
     },
     {
       "allowed_pus": "sim",
+      "description": "Visual gallery stage: registers all 14 IDebugDomain instances simultaneously for DiaDebugPanel validation.",
+      "type_id": "DebugGalleryTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
       "description": "Spawner integration stage: rate/burst/cap/explicit despawn emitters",
       "type_id": "SpawnerTestStageModule"
     },
@@ -450,6 +455,6 @@
   "processing_units": [],
   "version": {
     "major": 1,
-    "minor": 20
+    "minor": 21
   }
 }

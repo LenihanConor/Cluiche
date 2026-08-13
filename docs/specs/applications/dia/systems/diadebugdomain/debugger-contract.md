@@ -47,10 +47,22 @@ Establishes the formal 15-AC contract that all current and future `DiaXxxVisualD
 14. Tests use `RecordingDebugVisitor` or mock `IDebugDraw`.
 15. Mandatory test shapes: enable/disable gate for each drawer, each drawer type emits correct primitive type, scale sensitivity (changing `GetDebugScale()` changes output measurements), `GetJSONState()` round-trip, `OnCommand("toggle", ...)` round-trip.
 
+**Panel card layout compliance:**
+
+16. The domain's card section in `debug-panel.html` must not override the standard panel spacing defined in `docs/research/visual_debugger_redesign/mockup.html`. Required CSS values (or framework equivalents):
+    - Group header rows: `padding: 5px 10px`
+    - Domain header rows: `padding: 4px 8px`
+    - Domain card body: `padding: 6px 10px 8px 10px`
+    - Adjacent domain cards: `margin-bottom: 3px`
+    - Drawer checkbox rows: `gap: 5px 10px` (row-gap / column-gap)
+    - Accent color via `var(--accent)` CSS variable only — no hardcoded hex values in domain-card HTML
+
+    Domain-specific content sections (stats rows, plan lists, score bars, rule tables, etc.) added inside `domain-body` may use custom internal spacing, but must not alter the outer padding or margin values above.
+
 ## `dia check debugger-contract`
 
 Statically validates ACs 1–3 (module isolation), 4 (IDebugDomain inheritance), 8 (ImGui-free), 10 (GetJSONState declared), 11–12 (OnCommand declared), 13–14 (test file existence).
 
-AC 5 (description ≤80 chars), AC 6 (palette), AC 7 (scale), AC 15 (test shapes) are verified by mandatory test shapes — not static analysis.
+AC 5 (description ≤80 chars), AC 6 (palette), AC 7 (scale), AC 15 (test shapes) are verified by mandatory test shapes — not static analysis. AC 16 (panel spacing) is verified visually against the mockup during DiaDebugPanel review.
 
 Modules currently not yet migrated to `IDebugDomain` are reported as **PENDING** (AC 4), not as broken failures. All other checks must pass. Exit code is non-zero if any module has a failing or pending check.

@@ -23,7 +23,8 @@
                 "EntitySpatialTestStage",
                 "EconomyTestStage",
                 "SpawnerTestStage",
-                "ArenaTestStage"
+                "ArenaTestStage",
+                "DebugGalleryTestStage"
             ],
             "auto_advance": false
         },
@@ -156,6 +157,13 @@
         },
         {
             "name": "ArenaTestStage",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "DebugGalleryTestStage",
             "transitions": [
                 "Boot"
             ],
@@ -422,7 +430,8 @@
                         "EntitySpatialTestStage",
                         "EconomyTestStage",
                         "SpawnerTestStage",
-                        "ArenaTestStage"
+                        "ArenaTestStage",
+                        "DebugGalleryTestStage"
                     ],
                     "dependencies": [
                         "ObservationModule",
@@ -525,7 +534,8 @@
                         "EntitySpatialTestStage",
                         "EconomyTestStage",
                         "SpawnerTestStage",
-                        "ArenaTestStage"
+                        "ArenaTestStage",
+                        "DebugGalleryTestStage"
                     ],
                     "dependencies": [
                         "ObservationModule",
@@ -694,7 +704,8 @@
                         "EntitySpatialTestStage",
                         "EconomyTestStage",
                         "SpawnerTestStage",
-                        "ArenaTestStage"
+                        "ArenaTestStage",
+                        "DebugGalleryTestStage"
                     ],
                     "dependencies": [
                         "Camera2DModule"
@@ -815,7 +826,8 @@
                         "EntitySpatialTestStage",
                         "EconomyTestStage",
                         "SpawnerTestStage",
-                        "ArenaTestStage"
+                        "ArenaTestStage",
+                        "DebugGalleryTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"

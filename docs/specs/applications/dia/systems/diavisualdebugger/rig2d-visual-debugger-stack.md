@@ -11,6 +11,8 @@
 
 ---
 
+> **IVisualDebugger layer:** This spec defines the world-space draw class stack. The `IDebugDomain` wrapper integrates these drawers with `DiaDebugPanel` and satisfies the contract at `@docs/specs/applications/dia/systems/diadebugdomain/debugger-contract.md`. See domain migration: `@docs/specs/applications/dia/systems/diadebugdomain/domain-migration.md`
+
 ## Summary
 
 Decomposes the existing monolithic `DiaRig2DVisualDebugger::VisualDebugger` class into a stack of focused `IVisualDebugger` draw classes, each responsible for one concern. The existing single-class API is retired and replaced by five classes registered independently with `DebugLayerManager`. All draw logic is migrated and extended with the full `DebugColourPalette` and `debugScale` support. Bone names (previously a stub flag that drew nothing) are now wired up via `RequestDrawText()`.

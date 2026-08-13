@@ -7,21 +7,22 @@
 
 ## Purpose
 
-DiaRulesVisualDebugger is a separate debug static library that makes rule evaluation visible in the `DiaVisualDebuggerConsole`. It provides one `IVisualDebugger` implementation:
+DiaRulesVisualDebugger is the `IDebugDomain` implementation that makes rule evaluation visible in `DiaDebugPanel`. It is a panel-only domain (`HasWorldDrawers() = false`) — rule evaluation has no world-space anchor.
 
-- **`RulesFireDrawer`** — an ImGui-only inspector showing the last N rule evaluations for a single `RuleSetComponent`: which rules fired, which actions were dispatched, and at which frame
+The domain card shows: a per-rule fired/not-fired table for the current frame's `Evaluate()` call, including dispatched actions per fired rule. Data comes from a prerequisite debug accessor on `RuleSet`.
 
-Because `RuleSet` is currently stateless after `Evaluate()`, a prerequisite `GetLastFireReport()` accessor must be added to `RuleSet` under `#ifdef DIA_DEBUG` before this drawer can be implemented. That accessor stores, per `Evaluate()` call, the list of rule IDs that fired and the actions that were dispatched.
-
-The entire module is `#ifdef DIA_DEBUG` guarded. Following `DiaUtilityAIVisualDebugger` (SD-007), `DiaRules` has zero dependency on `DiaVisualDebugger`.
+Following the `DiaXxxVisualDebugger` contract, `DiaRules` has zero compile-time dependency on `DiaVisualDebugger`.
 
 ## Responsibilities
 
-- **Prerequisite — add to `DiaRules`**: `RuleSet::GetLastFireReport()` accessor (`#ifdef DIA_DEBUG`), populated during `Evaluate()`; see "Prerequisite" section below
-- Provide `RulesFireDrawer` — `IVisualDebugger` with ImGui-only `DrawImGui()`; `Draw()` is a no-op
-- `RulesFireDrawer::DrawImGui()` renders: ring buffer of last 32 evaluations, each row showing frame number, rule ID, and comma-separated actions dispatched; empty state message when `Evaluate()` has not been called
-- Register layer name `rules.fired` in `DebugLayerNames.h` under a new `Rules` section (priority tier 50+)
-- Entire public API guarded by `#ifdef DIA_DEBUG`
+- **Prerequisite — add to `DiaRules`**: `RuleSet::GetLastFireReport()` and `RuleSet::GetAllRuleIds()` accessors (`#ifdef DIA_DEBUG`), populated during `Evaluate()` (see Prerequisite section below)
+- Implement `IDebugDomain` — all pure virtual methods
+- `HasWorldDrawers()` returns `false`
+- `GetJSONState()` emits current-frame rule evaluation state (see JSON Schema)
+- `OnCommand("toggle", {drawer: "FireLog"})` — enables/disables the fire log section
+- `OnCommand("setScale", ...)` — no-op
+- Reads exclusively from `RuleSetComponent` public API
+- Entire module guarded by `#ifdef DIA_DEBUG`
 - Provide `DiaRulesVisualDebugger.vcxproj` static library registered in `Cluiche.sln` under `3.0-Gameplay`
 - Provide `dia.diarulesvisualdebugger.architecture.module.md` YAML module documentation
 
@@ -33,15 +34,16 @@ The entire module is `#ifdef DIA_DEBUG` guarded. Following `DiaUtilityAIVisualDe
 - Entity position or world-space drawing — no world-space anchor for rule evaluation
 - Any runtime behaviour in Release — entire module excluded by `#ifdef DIA_DEBUG`
 
-## Prerequisite: `RuleSet::GetLastFireReport()`
+## Prerequisite: `RuleSet` Debug Accessors
 
-This change lives in `DiaRules`, not in `DiaRulesVisualDebugger`. It must be implemented first.
+These changes live in `DiaRules`, not in `DiaRulesVisualDebugger`. Both must be implemented before this domain can be built.
 
 ```cpp
-// DiaRules/RuleSet.h  (addition, DIA_DEBUG only)
+// DiaRules/RuleSet.h  (additions, DIA_DEBUG only)
 #ifdef DIA_DEBUG
+
 struct RuleFireEntry {
-    Dia::Core::StringCRC ruleId;                          // kInvalidCRC if rule has no ID
+    Dia::Core::StringCRC ruleId;
     Dia::Core::DynamicArrayC<Dia::Core::StringCRC, 8> actions;
 };
 
@@ -49,112 +51,154 @@ struct RuleFireEntry {
 // Returns count of rules that fired.
 int GetLastFireReport(
     Dia::Core::DynamicArrayC<RuleFireEntry, 16>& outEntries) const;
+
+// All rule IDs registered in the set (fired or not).
+// Enables the panel to show the full rule inventory, not just fired rules.
+int GetAllRuleIds(
+    Dia::Core::DynamicArrayC<Dia::Core::StringCRC, 32>& outIds) const;
+
 #endif
 ```
 
-`Evaluate()` clears `mLastFireReport`, appends one `RuleFireEntry` per fired rule (including action IDs), then leaves the report in place until the next call. Storage is in `RuleSet`'s internal pimpl, conditionally compiled.
+`Evaluate()` clears `mLastFireReport`, appends one `RuleFireEntry` per fired rule (including action IDs), then leaves the report in place until the next call. `GetAllRuleIds()` returns all registered rule IDs in definition order.
 
 ## Public Interfaces
 
 ```cpp
-// DiaRulesVisualDebugger/RulesFireDrawer.h
+// DiaRulesVisualDebugger/RulesVisualDebugger.h
 #ifdef DIA_DEBUG
 
-#include <DiaCore/DebugDraw/IVisualDebugger.h>
-#include <DiaCore/CRC/StringCRC.h>
-#include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaVisualDebugger/Domain/IDebugDomain.h>
 
 namespace Dia::Rules { class RuleSetComponent; }
 
 namespace Dia::Rules
 {
-    // ImGui-only fire history inspector.
-    // Draw() is a no-op — rule evaluation has no world-space anchor.
-    class RulesFireDrawer : public Dia::Debug::IVisualDebugger
+    class RulesVisualDebugger : public Dia::VisualDebugger::IDebugDomain
     {
     public:
-        explicit RulesFireDrawer(const RuleSetComponent& component);
+        explicit RulesVisualDebugger(const RuleSetComponent& component);
 
-        Dia::Core::StringCRC GetLayerName() const override; // "rules.fired"
-        void Draw(Dia::Core::IDebugDraw& draw) override;    // no-op
-        void DrawImGui() override;
+        // IDebugDomain — identity
+        Dia::Core::StringCRC  GetDomainId()      const override; // "rules"
+        const char*           GetDisplayName()   const override; // "Rules"
+        const char*           GetDescription()   const override; // see below
+        Dia::Core::StringCRC  GetGroup()          const override; // "AIBehavior"
+        Dia::Core::ColourRGBA GetAccentColour()   const override; // DebugGroupAccents::kAIBehavior
+
+        bool HasWorldDrawers() const override { return false; }
+
+        void GetJSONState(Dia::Core::JsonWriter& writer) override;
+        void OnCommand(Dia::Core::StringCRC cmd,
+                       const Dia::Core::JsonValue& args) override;
 
     private:
-        static constexpr int kHistoryDepth = 32;
-
-        struct HistoryEntry {
-            unsigned int frame;
-            Dia::Core::StringCRC ruleId;
-            Dia::Core::DynamicArrayC<Dia::Core::StringCRC, 8> actions;
-        };
-
         const RuleSetComponent& mComponent;
-        Dia::Core::DynamicArrayC<HistoryEntry, kHistoryDepth> mHistory;
-        unsigned int mCurrentFrame{ 0 };
+        bool mFireLogEnabled = true;
     };
 }
 #endif // DIA_DEBUG
 ```
 
-### Layer name additions to `DebugLayerNames.h`
+`GetDescription()` returns: `"Rule evaluation — fired rules, guard results, dispatched actions"` (60 chars ≤ 80 ✓)
 
-```cpp
-// Rules (priority tier 50+)
-inline const Dia::Core::StringCRC kRulesFired { "rules.fired" };
+### JSON State Schema
 
-// Stage tag used to register all rules layers (creates "Rules" console tab)
-inline const Dia::Core::StringCRC kRulesStageTag { "Rules" };
+`GetJSONState()` emits the following structure. This is the normative C++↔panel contract for the Rules card template in `debug-panel.html`.
+
+```json
+{
+  "drawers": [
+    { "name": "FireLog", "enabled": true }
+  ],
+  "stats": {
+    "ruleCount": 6,
+    "fired": 2
+  },
+  "rules": [
+    { "id": "on_low_health",       "fired": true,  "actions": ["seek_health", "broadcast_danger"] },
+    { "id": "on_enemy_nearby",     "fired": false, "actions": ["enter_combat"]                   },
+    { "id": "on_player_visible",   "fired": false, "actions": ["alert_squad"]                    },
+    { "id": "on_waypoint_reached", "fired": true,  "actions": ["pick_next_waypoint"]              }
+  ]
+}
 ```
 
-### `RulesFireDrawer::DrawImGui()` behaviour
+`"rules"` is the full rule inventory cross-referenced against the last `Evaluate()` result. Unfired rules are included (with `"fired": false`) so the panel shows which rules exist, not just which fired. `"stats.ruleCount"` is total rules in the set; `"stats.fired"` is how many fired this frame.
 
-1. Call `mComponent.GetRuleSet()->GetLastFireReport(entries)` to snapshot the latest evaluation
-2. If entries > 0 and `mCurrentFrame` has advanced (i.e. new evaluation occurred), append to `mHistory` ring buffer (oldest entry overwritten when full), increment `mCurrentFrame`
-3. If `mHistory` is empty — render `ImGui::TextDisabled("No evaluations (Evaluate() not called yet)")`; return
-4. Render `ImGui::BeginTable("rules_fire", 3, BordersOuter | RowBg | ScrollY)` with columns `"Frame"`, `"Rule"`, `"Actions"`
-5. Walk `mHistory` newest-first; for each entry render frame number, rule ID (or `"(unnamed)"` if `kInvalidCRC`), and comma-separated action list
+Rules with no ID (`kInvalidCRC`) are emitted as `{ "id": "(unnamed)", "fired": ..., "actions": [...] }`.
 
-### Frame counter advancement
+### Panel Card Specification
 
-`RulesFireDrawer` does not have access to a global frame counter. Instead, it compares the previous `GetLastFireReport()` snapshot against the current one to detect a new evaluation: if the count or any entry differs, a new evaluation has occurred. `mCurrentFrame` is incremented locally as a display-only counter.
+Per `debugger-contract.md` AC-16 and `docs/research/visual_debugger_redesign/mockup.html`:
+
+- **Group:** AI / Behavior — accent `DebugGroupAccents::kAIBehavior` (`#ef4444`) via `var(--accent)`
+- **Domain stat line:** `"Rules: N"` where N = total rule count
+- **Expanded body:** rule table — fired rules in accent color with a filled dot indicator; unfired rules greyed with an empty dot; dispatched actions inline as `→ action1, action2`
+- **Drawer toggle:** "FireLog" — hides/shows the rule table; domain card header always visible
 
 ## Dependencies on Other Systems
 
 **Required:**
-- **DiaRules** — `RuleSetComponent`, `RuleSet`, `RuleFireEntry` (new type), `GetLastFireReport()`
-- **DiaCore** — `IVisualDebugger`, `IDebugDraw`, `StringCRC`, `DynamicArrayC`
+- **DiaRules** — `RuleSetComponent`, `RuleSet`, `RuleFireEntry` (new type), `GetLastFireReport()`, `GetAllRuleIds()`
+- **DiaVisualDebugger** — `IDebugDomain`, `DebugGroupAccents`
+- **DiaCore** — `StringCRC`, `ColourRGBA`, `JsonWriter`, `JsonValue`, `DynamicArrayC`
 
 **Explicitly excluded:**
-- **DiaVisualDebugger** — no direct dependency; `DiaRules` must remain free of it
+- **ImGui** — retired; no `ImGui::*` calls in this module
 - **DiaApplicationFlow**, **DiaEntity**, **DiaCondition**, **DiaAIBudget**, **DiaHTN**
+
+## Contract Compliance
+
+All 16 ACs from `debugger-contract.md` apply to this module:
+
+| AC | Notes |
+|----|-------|
+| AC-1 | Standalone `DiaRulesVisualDebugger.vcxproj` |
+| AC-2 | `DiaRules` has zero `#include` or link dep on `DiaRulesVisualDebugger` |
+| AC-3 | Deps: `DiaRules` + `DiaVisualDebugger` + `DiaCore` |
+| AC-4 | Implements all `IDebugDomain` pure virtuals |
+| AC-5 | `GetDescription()` = 60 chars ✓ |
+| AC-6 | No world drawers → palette rule N/A |
+| AC-7 | No world drawers → scale rule N/A |
+| AC-8 | No `ImGui::*` calls |
+| AC-9 | `const RuleSetComponent&` — read-only, no shared mutable state |
+| AC-10 | `GetJSONState()` emits `{ "drawers": [...], "stats": {} }` minimum ✓ |
+| AC-11 | `OnCommand("toggle", {drawer: "FireLog"})` handled |
+| AC-12 | `OnCommand("setScale", ...)` handled (no-op) |
+| AC-13/14 | `Tests/GoogleTests/DiaRulesVisualDebugger/TestRulesVisualDebugger.cpp` |
+| AC-15 | Mandatory test shapes: toggle gate, JSON round-trip, OnCommand round-trip |
+| AC-16 | Panel card complies with standard spacing; accent via `var(--accent)` |
 
 ## Decisions
 
 | ID | Decision | Rationale | Status | Binding |
 |----|----------|-----------|--------|---------|
-| SD-001 | `GetLastFireReport()` lives in `DiaRules`, not the visual debugger module | The debugger reads data it doesn't produce. Keeping the report inside `RuleSet` follows `UtilitySet::GetLastFrameScores()` exactly. `DiaRules` already conditionally compiles debug state; one more struct is minimal. | Accepted | Yes |
-| SD-002 | Ring buffer history of 32 evaluations in the drawer, not in `RuleSet` | `RuleSet` is stateless — only one evaluation's result is kept. History accumulation belongs in the drawer, which has display context. 32 entries is enough for frame-by-frame inspection. | Accepted | Yes |
-| SD-003 | `Draw()` is a no-op — no world-space anchor for rules | Rule evaluation happens against an abstract context; there is no canonical entity position to anchor a world-space label. An entity label (if wanted) belongs in `DiaHTNVisualDebugger` or `DiaEntityVisualDebugger`. | Accepted | Yes |
-| SD-004 | Frame advancement via snapshot comparison, not a frame counter dependency | Avoids a dependency on any clock or frame service. Two identical consecutive reports are treated as "no change" — safe because rule evaluation is deterministic for the same world state. | Accepted | Yes |
+| SD-001 | `GetLastFireReport()` lives in `DiaRules`, not the visual debugger module | The debugger reads data it doesn't produce. Matches the `UtilitySet::GetLastFrameScores()` pattern. | Accepted | Yes |
+| SD-002 | Single `RulesVisualDebugger` class replaces `RulesFireDrawer` | The old `RulesFireDrawer` was coupled to ImGui. Under `IDebugDomain` all data flows through `GetJSONState()` to the panel card. | Accepted | Yes |
+| SD-003 | Include unfired rules in `GetJSONState()` (not fired-only) | The panel shows the full rule inventory so developers can see which rules exist and which fired this frame. Fired-only hides the "did it even evaluate?" question. Requires `GetAllRuleIds()` prerequisite. | Accepted | Yes |
+| SD-004 | Current-frame snapshot only — no ring-buffer history in C++ | History accumulation is a panel concern. `GetJSONState()` emits the last `Evaluate()` result; the panel JS can maintain a frame history if needed. Keeps the C++ domain simple. | Accepted | Yes |
 
 ## Inherited Binding Decisions
 
 | ID | Source | Decision | Implication |
 |----|--------|----------|-------------|
-| PD-001 | Platform | StringCRC for all IDs | Layer names and rule/action IDs are `StringCRC` |
-| PD-004 | Platform | No STL containers in public APIs | `DynamicArrayC` used throughout |
+| PD-001 | Platform | StringCRC for all IDs | Domain ID, group, rule IDs, command keys use `StringCRC` |
+| PD-004 | Platform | No STL in public APIs | `DynamicArrayC` used throughout; no `std::vector` return values |
 | PD-005 | Platform | x64 only | `DiaRulesVisualDebugger.vcxproj` targets x64 |
 | PD-006 | Platform | vcxproj is source of truth | `.vcxproj` + `.vcxproj.filters` maintained |
 | PD-007 | Platform | C++20 | Compiled under `/std:c++20` |
-| PD-008 | Platform | Directory.Build.props owns toolchain config | vcxproj does not override OutDir/IntDir/toolset |
-| AD-001 | Dia App | Module YAML docs | Provide `dia.diarulesvisualdebugger.architecture.module.md` |
+| PD-008 | Platform | Directory.Build.props owns toolchain | vcxproj does not override OutDir/IntDir/toolset |
+| AD-001 | Dia App | Module YAML docs | `dia.diarulesvisualdebugger.architecture.module.md` updated to reflect new interface |
 | AD-003 | Dia App | `Dia::<Module>::` namespace | All code in `Dia::Rules::` namespace |
 
 ## Open Design Questions
 
-1. **`RuleFireEntry` location** — the struct is defined in `DiaRules/RuleSet.h` under `#ifdef DIA_DEBUG`. Should it be in a separate `DiaRules/Debug/RuleFireEntry.h` so `DiaRulesVisualDebugger` can include it without pulling in the full `RuleSet` header? Decide at implementation time based on what headers the drawer actually needs.
+1. **`RuleFireEntry` location** — the struct is defined in `DiaRules/RuleSet.h` under `#ifdef DIA_DEBUG`. Should it be in a separate `DiaRules/Debug/RuleFireEntry.h` so `DiaRulesVisualDebugger` can include it without pulling in the full `RuleSet` header? Decide at implementation time based on what headers the domain actually needs.
 
-2. **Unnamed rules display** — rules with no ID (`kInvalidCRC`) show as `"(unnamed)"` in the table. An alternative is to show the guard expression as a summary string. This requires `ConditionExpr` to have a `ToString()` method (it currently doesn't). Keep `"(unnamed)"` for v1; raise a DiaCondition improvement if the unnamed-rule case proves confusing in practice.
+2. **Unnamed rules display** — rules with no ID (`kInvalidCRC`) show as `"(unnamed)"` in the panel table. An alternative is to show the guard expression as a summary string. This requires `ConditionExpr::ToString()` (currently absent). Keep `"(unnamed)"` for v1.
+
+3. **`GetAllRuleIds()` ordering** — the prerequisite spec says "definition order". If `RuleSet` stores rules in a hash table (unordered), definition order may not be recoverable without a separate insertion-order list. Clarify at implementation: either maintain insertion order or accept arbitrary order in the panel (fired rules always highlighted regardless of position).
 
 ## Status
 

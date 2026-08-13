@@ -11,6 +11,8 @@
 
 ---
 
+> **IVisualDebugger layer:** This spec defines the world-space draw class stack. The `IDebugDomain` wrapper integrates these drawers with `DiaDebugPanel` and satisfies the contract at `@docs/specs/applications/dia/systems/diadebugdomain/debugger-contract.md`. See domain migration: `@docs/specs/applications/dia/systems/diadebugdomain/domain-migration.md`
+
 ## Summary
 
 Creates a new `DiaAnimation2DVisualDebugger` module as a stack of three focused `IVisualDebugger` draw classes, and adds the minimum public read accessor surface across `AnimationEvaluator`, `PoseBlendStack`, and `SpringChain` that the draw classes require. The three classes cover: clip playback cursors (active clip name + normalised time), blend layer weights, and spring chain physics state (per-node angular velocity coloured by activity). All data is read from an `AnimationEvaluator` held by const reference, alongside the world transforms maintained by the caller.

@@ -911,7 +911,10 @@
             "stage_name": "",
             "tags": [],
             "references": [
-                { "type": "contains", "target": "manifest.arena_test_stage" }
+                {
+                    "type": "contains",
+                    "target": "manifest.arena_test_stage"
+                }
             ]
         },
         {
@@ -920,8 +923,35 @@
             "source_path": "Stages/ArenaTestStage/misc/ApplicationFlow/arena_test_stage.diaapp",
             "scope": "stage",
             "stage_name": "ArenaTestStage",
-            "tags": ["misc/ApplicationFlow"],
+            "tags": [
+                "misc/ApplicationFlow"
+            ],
             "references": []
+        },
+        {
+            "id": "stage.debug_gallery_test_stage",
+            "type": "stage",
+            "source_path": "Stages/DebugGalleryTestStage/debuggallery_test_stage.diastage",
+            "scope": "global",
+            "tags": [
+                "misc"
+            ],
+            "references": [
+                {
+                    "type": "contains",
+                    "target": "manifest.debug_gallery_test_stage"
+                }
+            ]
+        },
+        {
+            "id": "manifest.debug_gallery_test_stage",
+            "type": "manifest",
+            "source_path": "Stages/DebugGalleryTestStage/misc/ApplicationFlow/debuggallery_test_stage.diaapp",
+            "scope": "stage",
+            "stage_name": "DebugGalleryTestStage",
+            "tags": [
+                "misc/ApplicationFlow"
+            ]
         }
     ],
     "rules_path": "assets.rules.json"

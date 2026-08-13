@@ -14,15 +14,42 @@ from dia_cli.utils.repo_root import find_repo_root
 # Name derivation
 # ---------------------------------------------------------------------------
 
+def _pascal_to_snake(name: str) -> str:
+    """Convert PascalCase to snake_case using the same algorithm as AssetStageIdFromAppStage.
+
+    Rules (matching AssetServiceModule.cpp):
+    - Insert '_' before uppercase C when preceded by a lowercase letter.
+    - Insert '_' before uppercase C when preceded by an uppercase letter that is
+      itself followed by a lowercase letter (handles acronyms like '2DTest' → '2d_test').
+    - Digits are passed through unchanged; no separator is inserted before uppercase
+      immediately following a digit (so '2D' → '2d', not '2_d').
+    """
+    result = []
+    for i, ch in enumerate(name):
+        if ch.isupper():
+            if i > 0:
+                prev = name[i - 1]
+                next_ch = name[i + 1] if i + 1 < len(name) else ''
+                prev_lower = prev.islower()
+                prev_upper = prev.isupper()
+                next_lower = next_ch.islower()
+                if prev_lower or (prev_upper and next_lower):
+                    result.append('_')
+            result.append(ch.lower())
+        else:
+            result.append(ch)
+    return ''.join(result)
+
+
 def _derive_names(name: str) -> dict:
     """Derive all name variants from a PascalCase domain name like 'RigidBody2D'."""
-    snake = name.lower()                          # rigidbody2d
-    stage_name = f"{name}TestStage"               # RigidBody2DTestStage
-    snake_stage = f"{snake}_test_stage"           # rigidbody2d_test_stage
-    stage_id = f"stage.{snake_stage}"             # stage.rigidbody2d_test_stage
-    module_name = f"{name}TestStageModule"        # RigidBody2DTestStageModule
-    diastage_file = f"{snake_stage}.diastage"     # rigidbody2d_test_stage.diastage
-    diaapp_file = f"{snake_stage}.diaapp"         # rigidbody2d_test_stage.diaapp
+    snake = _pascal_to_snake(name)                 # rigid_body2d / debug_gallery
+    stage_name = f"{name}TestStage"                # RigidBody2DTestStage
+    snake_stage = f"{snake}_test_stage"            # rigid_body2d_test_stage
+    stage_id = f"stage.{snake_stage}"              # stage.rigid_body2d_test_stage
+    module_name = f"{name}TestStageModule"         # RigidBody2DTestStageModule
+    diastage_file = f"{snake_stage}.diastage"      # rigid_body2d_test_stage.diastage
+    diaapp_file = f"{snake_stage}.diaapp"          # rigid_body2d_test_stage.diaapp
     return dict(
         name=name,
         snake=snake,
@@ -53,10 +80,6 @@ def _diastage_content(n: dict) -> str:
 
 
 def _diaapp_content(n: dict, extra_modules: List[str]) -> str:
-    # Build dependency list: always include AutomationModule, then extras
-    deps = ["AutomationModule"] + extra_modules
-    deps_json = ", ".join(f'"{d}"' for d in deps)
-
     data = {
         "version": 3,
         "processing_units": [
@@ -64,21 +87,24 @@ def _diaapp_content(n: dict, extra_modules: List[str]) -> str:
                 "instance_id": "MainPU",
                 "frequency_hz": 30,
                 "dedicated_thread": False,
-                "modules": [
-                    {
-                        "instance_id": n["module_name"],
-                        "type_id": n["module_name"],
-                        "stages": [n["stage_name"]],
-                        "dependencies": deps,
-                        "channels": []
-                    }
-                ]
+                "modules": []
             },
             {
                 "instance_id": "SimPU",
                 "frequency_hz": 30,
                 "dedicated_thread": True,
-                "modules": []
+                "modules": [
+                    {
+                        "instance_id": n["module_name"],
+                        "type_id": n["module_name"],
+                        "stages": [n["stage_name"]],
+                        "dependencies": extra_modules,
+                        "channels": [
+                            {"id": "AutomationService", "role": "consumes"},
+                            {"id": "RenderToSim", "role": "reads"}
+                        ]
+                    }
+                ]
             }
         ]
     }
@@ -98,7 +124,7 @@ class {n['module_name']} : public TestStageModuleBase
 {{
 public:
     static const Dia::Core::StringCRC kTypeId;
-    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kMain;
+    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kSim;
     static constexpr const char* kDescription = "TODO: describe what this stage tests";
     explicit {n['module_name']}(const Dia::Core::StringCRC& instanceId);
 
@@ -196,6 +222,8 @@ def _update_cluiche_main_diaapp(path: Path, stage_name: str) -> None:
         "TestStageHUDModule",
         "VisualDebuggerModule",
         "VisualDebuggerConsoleModule",
+        "DebugPanelPageModule",
+        "UIModule",
     }
     for pu in data.get("processing_units", []):
         for mod in pu.get("modules", []):
@@ -299,7 +327,7 @@ def _update_vcxproj_filters(path: Path, module_name: str) -> None:
     "--modules",
     default=None,
     metavar="MODULE1,MODULE2,...",
-    help="Comma-separated extra module type IDs to add as dependencies (AutomationModule always included).",
+    help="Comma-separated extra module type IDs to add as dependencies.",
 )
 @click.option(
     "--dry-run",

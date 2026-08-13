@@ -30,6 +30,7 @@
     <ClCompile Include="Modules\TestStages\AssetRuntimeRendererModule.cpp" />
     <ClCompile Include="Modules\TestStages\AssetRuntimeHUDModule.cpp" />
     <ClCompile Include="Modules\TestStages\TestStageHUDModule.cpp" />
+    <ClCompile Include="Modules\TestStages\DebugGalleryTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\SpawnerTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\ArenaTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\Mesh3DRenderSystemTestStageModule.cpp" />
@@ -79,6 +80,7 @@
     <ClInclude Include="Modules\TestStages\AssetRuntimeRendererModule.h" />
     <ClInclude Include="Modules\TestStages\AssetRuntimeHUDModule.h" />
     <ClInclude Include="Modules\TestStages\TestStageHUDModule.h" />
+    <ClInclude Include="Modules\TestStages\DebugGalleryTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\SpawnerTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\ArenaTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\Mesh3DRenderSystemTestStageModule.h" />
@@ -183,6 +185,9 @@
     <ProjectReference Include="..\..\Dia\DiaUtilityAI\DiaUtilityAI.vcxproj">
       <Project>{E2F3A4B5-C6D7-8901-EF23-456789012345}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaUtilityAIVisualDebugger\DiaUtilityAIVisualDebugger.vcxproj">
+      <Project>{F3A4B5C6-D7E8-9012-F034-567890123456}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaAIBudget\DiaAIBudget.vcxproj">
       <Project>{C9D0E1F2-A3B4-5678-90AB-CDEF01234567}</Project>
     </ProjectReference>
@@ -219,6 +224,9 @@
     <ProjectReference Include="..\..\Dia\DiaEntitySpatial\DiaEntitySpatial.vcxproj">
       <Project>{E5F6A7B8-C9D0-1234-ABCD-567890EF0123}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaEntityVisualDebugger\DiaEntityVisualDebugger.vcxproj">
+      <Project>{B3C4D5E6-F7A8-9012-BCDE-F12345678901}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaRigidBody2DVisualDebugger\DiaRigidBody2DVisualDebugger.vcxproj">
       <Project>{A2B3C4D5-E6F7-8901-BCDE-F01234567891}</Project>
     </ProjectReference>
@@ -236,6 +244,9 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaAnimation2D\DiaAnimation2D.vcxproj">
       <Project>{A6B7C8D9-E0F1-2345-ABCD-678901234567}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaAnimation2DVisualDebugger\DiaAnimation2DVisualDebugger.vcxproj">
+      <Project>{E5F6A7B8-C9D0-1234-EF01-345678901234}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaScene2D\DiaScene2D.vcxproj">
       <Project>{D6E7F8A9-B0C1-2345-DEF0-123456789004}</Project>

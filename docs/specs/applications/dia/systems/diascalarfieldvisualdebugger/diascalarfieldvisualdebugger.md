@@ -135,6 +135,16 @@ inline const Dia::Core::StringCRC kScalarFieldGradient { "scalarfield.gradient" 
 
 2. **Arrowhead size parameters** — `arrowScale` controls the shaft length; arrowhead proportions (headLen, headWidth relative to shaft) are currently implementation constants. Should these be exposed on the constructor, or kept fixed? Fixed proportions (e.g. headLen = shaft * 0.3, headWidth = shaft * 0.2) are simpler and cover the expected debugging use case.
 
+## DiaDebugDomain Migration
+
+This spec describes the `IVisualDebugger` adaptor layer. The DiaDebugDomain migration wraps these two overlay classes in an `IDebugDomain` implementation and integrates them with `DiaDebugPanel`.
+
+Migration scope (per `@docs/specs/applications/dia/systems/diadebugdomain/domain-migration.md`):
+- **Group:** Spatial/Geometry — accent `DebugGroupAccents::kSpatial` (`#06b6d4`)
+- **Drawers:** Heatmap, Gradient (maps to the two existing adaptor classes)
+- **Module extraction:** move from `DiaScalarField/Adaptors/` into a standalone `DiaScalarFieldVisualDebugger/` module directory (resolves the `Adaptors/` isolation violation)
+- **Contract:** all 16 ACs in `@docs/specs/applications/dia/systems/diadebugdomain/debugger-contract.md` must be satisfied by the `IDebugDomain` wrapper
+
 ## Status
 
 **Status:** `Done`

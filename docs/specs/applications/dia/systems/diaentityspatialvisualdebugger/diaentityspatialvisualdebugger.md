@@ -212,3 +212,13 @@ inline const Dia::Core::StringCRC kEntitySpatialQuery    { "entityspatial.query"
 1. **Hex cell outline rendering** — Drawing 6 `RequestDraw(line)` calls per hex cell is correct but verbose. `IDebugDraw` has no native hexagon primitive. Should the adaptor compute and cache the 6 vertex offsets once at construction, or recompute per cell? Recomputing is simpler and likely fast enough for debug use; cache if profiling shows otherwise. Resolve at implementation.
 
 2. **Layer palette default colours** — The 8 default `layerColours` in `EntityOverlayConfig` are placeholder values. Finalise at implementation time to be visually distinct in the context of the existing debug colour vocabulary (avoid conflicting with `kEntityHighlight` yellow, `kPhysicsShapes` colours, etc.).
+
+## DiaDebugDomain Migration
+
+This spec describes the `IVisualDebugger` adaptor layer. The DiaDebugDomain migration wraps these three overlay classes in an `IDebugDomain` implementation (`DiaEntitySpatialVisualDebugger` domain) and integrates them with `DiaDebugPanel`.
+
+Migration scope (per `@docs/specs/applications/dia/systems/diadebugdomain/domain-migration.md`):
+- **Group:** Spatial/Geometry — accent `DebugGroupAccents::kSpatial` (`#06b6d4`)
+- **Drawers:** GridOverlay, EntityOverlay, QueryOverlay (maps to the three existing adaptor classes)
+- **Module extraction:** move from `DiaEntitySpatial/Adaptors/` into a standalone `DiaEntitySpatialVisualDebugger/` module directory (resolves the `Adaptors/` isolation violation)
+- **Contract:** all 16 ACs in `@docs/specs/applications/dia/systems/diadebugdomain/debugger-contract.md` must be satisfied by the `IDebugDomain` wrapper

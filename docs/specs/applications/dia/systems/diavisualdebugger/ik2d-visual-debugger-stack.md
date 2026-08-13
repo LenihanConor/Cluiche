@@ -11,6 +11,8 @@
 
 ---
 
+> **IVisualDebugger layer:** This spec defines the world-space draw class stack. The `IDebugDomain` wrapper integrates these drawers with `DiaDebugPanel` and satisfies the contract at `@docs/specs/applications/dia/systems/diadebugdomain/debugger-contract.md`. See domain migration: `@docs/specs/applications/dia/systems/diadebugdomain/domain-migration.md`
+
 ## Summary
 
 Creates a new `DiaIK2DVisualDebugger` module as a stack of four focused `IVisualDebugger` draw classes, and adds the minimum public accessor surface to `IKSolver` that the draw classes need. There is no existing IK debugger. The four classes cover: chain bone lines, chain joint circles, bone direction arrows, and chain reach circles (the radius within which the end-effector can be placed). All data is read from an `IKSolver` held by reference.

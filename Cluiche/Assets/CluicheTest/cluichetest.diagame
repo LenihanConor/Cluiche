@@ -101,6 +101,10 @@
         {
             "path": "Stages/ArenaTestStage/arena_test_stage.diastage",
             "type": "stage"
+        },
+        {
+            "path": "Stages/DebugGalleryTestStage/debuggallery_test_stage.diastage",
+            "type": "stage"
         }
     ],
     "name": "CluicheTest",

@@ -1,0 +1,9 @@
+{
+    "name": "DebugGalleryTestStage",
+    "manifest": "Stages/DebugGalleryTestStage/misc/ApplicationFlow/debuggallery_test_stage.diaapp",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

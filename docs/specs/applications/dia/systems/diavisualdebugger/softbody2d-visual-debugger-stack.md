@@ -11,6 +11,8 @@
 
 ---
 
+> **IVisualDebugger layer:** This spec defines the world-space draw class stack. The `IDebugDomain` wrapper integrates these drawers with `DiaDebugPanel` and satisfies the contract at `@docs/specs/applications/dia/systems/diadebugdomain/debugger-contract.md`. See domain migration: `@docs/specs/applications/dia/systems/diadebugdomain/domain-migration.md`
+
 ## Summary
 
 Creates a new `DiaSoftBody2DVisualDebugger` module as a stack of focused `IVisualDebugger` draw classes. There is no existing debugger to decompose — this is entirely new. Four draw classes cover particles, constraints, anchor links, and velocity arrows. Constraint lines are colour-coded by `DistanceConstraint::type` (rope, structural, shear, bend), giving developers immediate visual insight into cloth and rope simulation internals.
