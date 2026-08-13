@@ -1241,8 +1241,8 @@ def debugger_contract(ctx, verbose: bool) -> None:
     # Module discovery
     # ------------------------------------------------------------------
     # 1. Standalone modules: Dia/DiaXxxVisualDebugger/ directories
-    #    Exclude base modules (DiaVisualDebugger, DiaVisualDebuggerConsole)
-    _BASE_MODULES = {"DiaVisualDebugger", "DiaVisualDebuggerConsole"}
+    #    Exclude base modules (DiaVisualDebugger)
+    _BASE_MODULES = {"DiaVisualDebugger"}
     standalone_dirs = sorted(
         d for d in dia_dir.iterdir()
         if d.is_dir()

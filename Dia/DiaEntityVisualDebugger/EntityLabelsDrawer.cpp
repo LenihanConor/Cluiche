@@ -9,7 +9,6 @@
 #include <DiaCore/DebugDraw/DebugLayerNames.h>
 #include <DiaCore/DebugDraw/DebugColourPalette.h>
 #include <DiaCore/DebugDraw/IDebugContext.h>
-#include <imgui.h>
 
 namespace Dia::EntityVisualDebugger
 {
@@ -58,12 +57,6 @@ void EntityLabelsDrawer::SetFilter(const char* pattern)
     if (!pattern) return;
     strncpy_s(mFilterPattern, pattern, sizeof(mFilterPattern) - 1);
     mFilterPattern[sizeof(mFilterPattern) - 1] = '\0';
-}
-
-void EntityLabelsDrawer::DrawImGui()
-{
-    ImGui::InputText("Filter", mFilterPattern, sizeof(mFilterPattern));
-    ImGui::SliderFloat("Font size", &mFontSize, 6.0f, 32.0f);
 }
 
 } // namespace Dia::EntityVisualDebugger

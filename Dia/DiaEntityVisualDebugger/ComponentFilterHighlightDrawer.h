@@ -22,7 +22,6 @@ public:
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Core::IDebugDraw& draw) override;
-    void DrawImGui() override;
 
     void SetFilterTypeId(Dia::Core::StringCRC typeId);
 

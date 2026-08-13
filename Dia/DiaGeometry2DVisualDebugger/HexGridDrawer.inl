@@ -8,7 +8,6 @@
 #include <DiaMaths/Core/MathsDefines.h>
 #include <DiaMaths/Vector/Vector2D.h>
 
-#include <imgui.h>
 #include <cmath>
 #include <cstdio>
 
@@ -85,33 +84,6 @@ void HexGridDrawer<T, MaxObjects>::Draw(Dia::Core::IDebugDraw& draw)
                     label, 10.0f, colour);
             }
         }
-    }
-}
-
-template<typename T, unsigned int MaxObjects>
-void HexGridDrawer<T, MaxObjects>::DrawImGui()
-{
-    ImGui::Checkbox("coord labels", &mShowLabels);
-
-    // Inspector panel — read-only, selection is owned by the stage module
-    if (mSelected != nullptr)
-    {
-        ImGui::Separator();
-        ImGui::Text("hex (%d, %d)", mSelected->q, mSelected->r);
-
-        const Dia::Maths::Vector2D center = mGrid.HexToWorld(*mSelected);
-        const float r = mGrid.GetHexRadius();
-        ImGui::Text("center  (%.1f, %.1f)  r=%.1f", center.x, center.y, r);
-
-        Dia::Core::Containers::DynamicArrayC<
-            Dia::Core::Handle<T>,
-            Dia::Geometry2D::kMaxQueryResults> results;
-        mGrid.QueryHex(*mSelected, results);
-
-        ImGui::Text("objects  %u", results.Size());
-        for (unsigned int i = 0; i < results.Size(); ++i)
-            ImGui::Text("  #%u: idx=%u gen=%u", i,
-                results[i].GetIndex(), results[i].GetGeneration());
     }
 }
 

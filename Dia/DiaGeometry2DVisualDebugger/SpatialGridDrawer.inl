@@ -2,7 +2,6 @@
 
 #ifdef DIA_DEBUG
 
-#include <imgui.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugColourPalette.h>
@@ -72,41 +71,6 @@ void SpatialGridDrawer<T, MaxObjects>::Draw(Dia::Core::IDebugDraw& draw)
                     label, 10.0f, colour);
             }
         }
-    }
-}
-
-template<typename T, unsigned int MaxObjects>
-void SpatialGridDrawer<T, MaxObjects>::DrawImGui()
-{
-    ImGui::Checkbox("coord labels", &mShowLabels);
-
-    // Inspector panel — read-only, selection is owned by the stage module
-    if (mSelected != nullptr)
-    {
-        ImGui::Separator();
-        ImGui::Text("cell (%d, %d)", mSelected->x, mSelected->y);
-
-        const float cellSize = mGrid.GetCellSize();
-        const float blX = mGrid.GetWorldBounds().GetBottomLeft().x;
-        const float blY = mGrid.GetWorldBounds().GetBottomLeft().y;
-        const float minX = blX + static_cast<float>(mSelected->x)     * cellSize;
-        const float minY = blY + static_cast<float>(mSelected->y)     * cellSize;
-        const float maxX = blX + static_cast<float>(mSelected->x + 1) * cellSize;
-        const float maxY = blY + static_cast<float>(mSelected->y + 1) * cellSize;
-        ImGui::Text("bounds  [%.0f,%.0f]-[%.0f,%.0f]", minX, minY, maxX, maxY);
-
-        const Dia::Maths::Vector2D cellCentre(
-            (minX + maxX) * 0.5f, (minY + maxY) * 0.5f);
-
-        Dia::Core::Containers::DynamicArrayC<
-            Dia::Core::Handle<T>,
-            Dia::Geometry2D::kMaxQueryResults> results;
-        mGrid.QueryPoint(cellCentre, results);
-
-        ImGui::Text("objects  %u", results.Size());
-        for (unsigned int i = 0; i < results.Size(); ++i)
-            ImGui::Text("  #%u: idx=%u gen=%u", i,
-                results[i].GetIndex(), results[i].GetGeneration());
     }
 }
 

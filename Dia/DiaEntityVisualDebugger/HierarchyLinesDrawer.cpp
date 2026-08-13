@@ -10,7 +10,6 @@
 #include <DiaCore/DebugDraw/DebugLayerNames.h>
 #include <DiaCore/DebugDraw/DebugColourPalette.h>
 #include <DiaCore/DebugDraw/IDebugContext.h>
-#include <imgui.h>
 
 namespace Dia::EntityVisualDebugger
 {
@@ -55,11 +54,6 @@ void HierarchyLinesDrawer::Draw(Dia::Core::IDebugDraw& draw)
             draw.RequestDraw(parentPos, childPos, Dia::Debug::DebugColourPalette::kGoal);
         }
     }
-}
-
-void HierarchyLinesDrawer::DrawImGui()
-{
-    ImGui::Checkbox("Show orphans", &mShowOrphans);
 }
 
 } // namespace Dia::EntityVisualDebugger

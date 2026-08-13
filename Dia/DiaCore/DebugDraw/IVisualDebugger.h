@@ -34,10 +34,6 @@ namespace Dia
             // draw: IDebugDraw interface for submitting debug primitives.
             virtual void Draw(Dia::Core::IDebugDraw& draw) = 0;
 
-            // Called each frame by VisualDebuggerConsoleModule to render per-drawer ImGui controls.
-            // Default is a no-op — override to expose sliders, toggles, stats, etc.
-            virtual void DrawImGui() {}
-
             // Enable/disable this layer. Atomic so MainPU console can toggle SimPU drawers.
             virtual void SetEnabled(bool enabled) { mEnabled.store(enabled, std::memory_order_relaxed); }
             virtual bool IsEnabled() const        { return mEnabled.load(std::memory_order_relaxed); }
