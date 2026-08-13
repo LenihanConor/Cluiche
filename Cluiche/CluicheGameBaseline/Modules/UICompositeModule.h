@@ -7,6 +7,8 @@
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaUI/UIDataBuffer.h>
 
+namespace Dia { namespace Observation { namespace Metric { class Counter; } } }
+
 namespace Cluiche { namespace AppFlow {
 
 // Thin SimPU passthrough: reads the UIToSim pixel buffer produced by UIModule
@@ -31,6 +33,9 @@ private:
     Dia::ApplicationFlow::StreamWriter<Dia::Graphics::FrameData> mRenderOutput{this, "SimToRender"};
     Dia::ApplicationFlow::StreamReader<Dia::UI::UIDataBuffer>    mUIInput{this, "UIToSim"};
     Dia::Graphics::FrameData mFrame;
+
+    Dia::Observation::Metric::Counter* mMetricUIFramesWritten = nullptr;
+    Dia::Observation::Metric::Counter* mMetricEmptyFramesWritten = nullptr;
 };
 
 } } // namespace Cluiche::AppFlow

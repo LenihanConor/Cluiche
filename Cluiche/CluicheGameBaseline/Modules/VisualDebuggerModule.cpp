@@ -95,9 +95,12 @@ Dia::ApplicationFlow::StopResult VisualDebuggerModule::DoStop()
     mLayerManager.ClearDynamicLayers();
     if (mCoord2DDomain) { UnregisterDomain(*mCoord2DDomain); mCoord2DDomain.reset(); }
     if (mCoord3DDomain) { UnregisterDomain(*mCoord3DDomain); mCoord3DDomain.reset(); }
+    mDomainRegistry.Clear();
     mLastKnownStage = Dia::Core::StringCRC();
     mFrame.Clear();
     mRenderOutput.Write(mFrame, Dia::Core::TimeAbsolute::Zero());
+    mLayerManagerService.Deregister();
+    mDomainRegistryService.Deregister();
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 

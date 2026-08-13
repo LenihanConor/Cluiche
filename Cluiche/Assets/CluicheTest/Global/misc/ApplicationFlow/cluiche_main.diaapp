@@ -262,9 +262,11 @@
         },
         {
             "id": "DomainRegistry",
-            "kind": "ServiceStream",
+            "kind": "EventStream",
             "payload_type": "DiaDebugDomainRegistry",
-            "from": "SimPU"
+            "overflow": "drop-oldest",
+            "from": "SimPU",
+            "to": "MainPU"
         },
         {
             "id": "DebugPanelCommand",
@@ -379,8 +381,23 @@
                         "DummyStage",
                         "UIUltralightTestStage",
                         "RigidBody2DTestStage",
+                        "AssetRuntimeTestStage",
+                        "Geometry2DTestStage",
                         "EntityTestStage",
-                        "Animation2DTestStage"
+                        "SoftBody2DTestStage",
+                        "Animation2DTestStage",
+                        "Scene2DTestStage",
+                        "IK2DTestStage",
+                        "Mesh3DTestStage",
+                        "Mesh3DRenderSystemTestStage",
+                        "AIDecisionTestStage",
+                        "AIHTNTestStage",
+                        "PathfindingTestStage",
+                        "ScalarFieldTestStage",
+                        "EntitySpatialTestStage",
+                        "EconomyTestStage",
+                        "SpawnerTestStage",
+                        "ArenaTestStage"
                     ],
                     "dependencies": [
                         "ObservationModule",
@@ -467,8 +484,23 @@
                     "type_id": "DebugPanelPageModule",
                     "stages": [
                         "RigidBody2DTestStage",
+                        "AssetRuntimeTestStage",
+                        "Geometry2DTestStage",
                         "EntityTestStage",
-                        "Animation2DTestStage"
+                        "SoftBody2DTestStage",
+                        "Animation2DTestStage",
+                        "Scene2DTestStage",
+                        "IK2DTestStage",
+                        "Mesh3DTestStage",
+                        "Mesh3DRenderSystemTestStage",
+                        "AIDecisionTestStage",
+                        "AIHTNTestStage",
+                        "PathfindingTestStage",
+                        "ScalarFieldTestStage",
+                        "EntitySpatialTestStage",
+                        "EconomyTestStage",
+                        "SpawnerTestStage",
+                        "ArenaTestStage"
                     ],
                     "dependencies": [
                         "ObservationModule",
@@ -477,7 +509,7 @@
                     "channels": [
                         {
                             "id": "DomainRegistry",
-                            "role": "consumes"
+                            "role": "reads"
                         },
                         {
                             "id": "DebugPanelCommand",
@@ -485,7 +517,7 @@
                         },
                         {
                             "id": "DebugPanelToggle",
-                            "role": "consumes"
+                            "role": "reads"
                         }
                     ]
                 },
@@ -648,7 +680,7 @@
                         },
                         {
                             "id": "DomainRegistry",
-                            "role": "provides"
+                            "role": "writes"
                         },
                         {
                             "id": "DebugPanelCommand",
@@ -656,7 +688,7 @@
                         },
                         {
                             "id": "DebugPanelToggle",
-                            "role": "provides"
+                            "role": "writes"
                         }
                     ]
                 },

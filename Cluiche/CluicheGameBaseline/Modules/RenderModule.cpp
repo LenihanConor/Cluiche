@@ -5,6 +5,7 @@
 #include <DiaBgfx3D/Canvas3D.h>
 #include <DiaGraphics3D/FrameData3D.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaObservation/Session/SessionManager.h>
 #include <DiaObservation/Capture/CaptureManager.h>
 #include <DiaApplicationFlow/Application.h>
@@ -52,6 +53,11 @@ Dia::ApplicationFlow::StartResult RenderModule::DoStart()
     // VSync is configured via ICanvas::Settings at initialization time (in KernelModule).
     // No runtime SetVSync API exists on ICanvas; VSyncEnum::kEnable is the default.
 
+    // Register metrics for cross-thread UI synchronization telemetry
+    auto& metricReg = Dia::Observation::Metric::MetricRegistry::Instance();
+    if (!mMetricUIPreserved)
+        mMetricUIPreserved = metricReg.RegisterCounter(Dia::Core::StringCRC("render.ui_preserved"));
+
     DIA_LOG_INFO("Application", "RenderModule DoStart exit");
     return Dia::ApplicationFlow::StartResult::kReady;
 }
@@ -90,7 +96,43 @@ void RenderModule::DoUpdate(float /*dt*/)
         const Dia::Graphics::FrameData* frame = mFrameInput.FetchLatest();
         if (frame != nullptr)
         {
+            // Preserve UI buffer from last frame if new frame has empty UI.
+            // Cross-thread timing can cause RenderPU to fetch stale frames from
+            // before SimPU wrote the UI-composited frame, causing UI to flash.
+            const Dia::UI::UIDataBuffer& newUI = frame->GetUIData();
+            int newSize = newUI.GetBufferSize();
+            int oldSize = mLastFrame.GetUIData().GetBufferSize();
+
+            // MUST copy old buffer BEFORE overwriting mLastFrame
+            Dia::UI::UIDataBuffer preservedUI;
+            if (newSize == 0 && oldSize > 0)
+            {
+                preservedUI = mLastFrame.GetUIData();
+            }
+
             mLastFrame = *frame;
+
+            // Track UI visibility state transitions
+            static bool sLastHadUI = false;
+            bool hasUI = (newSize > 0 || oldSize > 0);
+
+            if (newSize == 0 && oldSize > 0)
+            {
+                mLastFrame.RequestDrawUI(preservedUI);
+                DIA_LOG_INFO("Rendering", "RenderModule: Preserved UI buffer (%d bytes) - stale frame from cross-thread timing",
+                             oldSize);
+                if (mMetricUIPreserved)
+                    mMetricUIPreserved->Inc();
+            }
+
+            bool finalHasUI = (mLastFrame.GetUIData().GetBufferSize() > 0);
+            if (finalHasUI != sLastHadUI)
+            {
+                DIA_LOG_INFO("Rendering", "RenderModule: UI visibility %s (size=%d)",
+                             finalHasUI ? "ON" : "OFF",
+                             mLastFrame.GetUIData().GetBufferSize());
+                sLastHadUI = finalHasUI;
+            }
         }
         mCanvas->RenderFrame(mLastFrame);
     }
@@ -103,6 +145,9 @@ void RenderModule::DoUpdate(float /*dt*/)
 Dia::ApplicationFlow::StopResult RenderModule::DoStop()
 {
     DIA_LOG_INFO("Application", "RenderModule DoStop entry");
+
+    // Clear metrics
+    mMetricUIPreserved = nullptr;
 
     // Shutdown TextureHandler on the render thread BEFORE bgfx::shutdown —
     // BgfxTextureHandle destructors call bgfx::destroy() which requires a live context.

@@ -13,6 +13,7 @@
 #include <DiaMesh3D/Mesh3DAssetHandler.h>
 
 namespace Dia { namespace Bgfx3D { class Canvas3D; } }
+namespace Dia { namespace Observation { namespace Metric { class Counter; } } }
 
 namespace Cluiche { namespace AppFlow {
 
@@ -41,6 +42,8 @@ private:
     Dia::Graphics::FrameData     mLastFrame;
     Dia::Graphics3D::FrameData3D mLastFrame3D;
     uint64_t mPresentCount = 0;
+
+    Dia::Observation::Metric::Counter* mMetricUIPreserved = nullptr;
 };
 
 } } // namespace Cluiche::AppFlow

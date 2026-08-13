@@ -77,6 +77,12 @@ namespace Dia
             return static_cast<int>(mById.size());
         }
 
+        void DiaDebugDomainRegistry::Clear()
+        {
+            mById.clear();
+            mByGroup.clear();
+        }
+
     } // namespace VisualDebugger
 } // namespace Dia
 

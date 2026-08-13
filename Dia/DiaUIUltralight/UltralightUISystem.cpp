@@ -299,6 +299,24 @@ namespace Dia
 					mRenderer->Render();
 				}
 
+				void UnloadPage()
+				{
+					if (!mView)
+						return;
+
+					// Clear the view by loading blank HTML
+					mView->LoadHTML(::ultralight::String("<html><body></body></html>"));
+					mPendingBindings.clear();
+
+					// Pump until the blank page loads
+					while (mView->is_loading())
+					{
+						mRenderer->Update();
+						std::this_thread::sleep_for(std::chrono::milliseconds(1));
+					}
+					mRenderer->Render();
+				}
+
 				void Update()
 				{
 					if (mRenderer)
@@ -816,6 +834,7 @@ namespace Dia
 			{
 				DIA_ASSERT(mUISystemImpl, "mUISystemImpl is NULL");
 				std::lock_guard<std::mutex> lock(mSystemMutex);
+				mUISystemImpl->UnloadPage();
 				mIsPageLoaded = false;
 			}
 

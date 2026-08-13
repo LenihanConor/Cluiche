@@ -140,12 +140,10 @@ void DebugPanelPageModule::DrainToggleEvents()
         if (mPanelVisible)
         {
             mUI.Get()->LoadPage(mPage);
-            DIA_LOG_INFO("Debug", "DiaDebugPanel: shown");
         }
         else
         {
             mUI.Get()->UnloadPage();
-            DIA_LOG_INFO("Debug", "DiaDebugPanel: hidden");
         }
     }
 }

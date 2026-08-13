@@ -58,6 +58,9 @@ namespace Dia
             // Total number of registered domains.
             int GetDomainCount() const;
 
+            // Clear all registrations. Called when the owning module stops.
+            void Clear();
+
         private:
             // Fast lookup by domainId.Value()
             std::unordered_map<Dia::Core::StringCRC, IDebugDomain*> mById;
