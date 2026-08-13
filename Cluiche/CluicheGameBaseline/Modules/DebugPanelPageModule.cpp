@@ -120,7 +120,7 @@ void DebugPanelPageModule::OnCommand(const char* domainId, const char* cmd, cons
 
     if (argsJson != nullptr)
     {
-        strncpy(event.argsJson, argsJson, sizeof(event.argsJson) - 1);
+        strncpy_s(event.argsJson, argsJson, sizeof(event.argsJson) - 1);
         event.argsJson[sizeof(event.argsJson) - 1] = '\0';
     }
 

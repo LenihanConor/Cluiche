@@ -403,7 +403,7 @@ namespace Dia
                 {
                     const CellIndex& cell = result.mCells[c];
                     float combined = 0.0f;
-                    for (int i = 0; i < inputs.Size(); ++i)
+                    for (unsigned int i = 0; i < inputs.Size(); ++i)
                     {
                         combined += inputs[i].field->GetValue(cell) * inputs[i].weight;
                     }

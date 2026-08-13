@@ -136,7 +136,7 @@ void VisualDebuggerModule::EnqueueCommand(Dia::Core::StringCRC domainId,
         pending.cmd      = cmd;
         if (argsJson)
         {
-            strncpy(pending.argsJson, argsJson, sizeof(pending.argsJson) - 1);
+            strncpy_s(pending.argsJson, argsJson, sizeof(pending.argsJson) - 1);
             pending.argsJson[sizeof(pending.argsJson) - 1] = '\0';
         }
         mCommandQueue.Add(pending);
