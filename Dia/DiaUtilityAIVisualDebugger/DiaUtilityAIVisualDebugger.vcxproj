@@ -78,9 +78,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="UtilityScoreDrawer.h" />
+    <ClInclude Include="UtilityAIDebugDomain.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="UtilityScoreDrawer.cpp" />
+    <ClCompile Include="UtilityAIDebugDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

@@ -15,18 +15,20 @@ AssetRuntimeVisualDebuggerModule::AssetRuntimeVisualDebuggerModule(const Dia::Co
     : Module(instanceId)
 {}
 
+AssetRuntimeVisualDebuggerModule::~AssetRuntimeVisualDebuggerModule() = default;
+
 Dia::ApplicationFlow::StartResult AssetRuntimeVisualDebuggerModule::DoStart()
 {
     if (!mDebugUI.Get())
         return Dia::ApplicationFlow::StartResult::kLoading;
 
-    if (!mRegistered)
-    {
-        if (!mLayerManagerStream.IsAvailable())
-            return Dia::ApplicationFlow::StartResult::kLoading;
+    if (!mLayerManagerStream.IsAvailable())
+        return Dia::ApplicationFlow::StartResult::kLoading;
 
-        mLayerManagerStream.Get().Register(&mDebugger, 50, Dia::Core::StringCRC("AssetRuntimeTestStage"));
-        mRegistered = true;
+    if (!mDebugDomain)
+    {
+        mDebugDomain = std::make_unique<Dia::AssetRuntime::AssetRuntimeDebugDomain>();
+        mDebugDomain->Register(mLayerManagerStream.Get());
     }
 
     return Dia::ApplicationFlow::StartResult::kReady;
@@ -38,10 +40,9 @@ void AssetRuntimeVisualDebuggerModule::DoUpdate(float /*dt*/)
 
 Dia::ApplicationFlow::StopResult AssetRuntimeVisualDebuggerModule::DoStop()
 {
-    if (mRegistered && mLayerManagerStream.IsAvailable())
-        mLayerManagerStream.Get().Unregister(mDebugger.GetLayerName());
-
-    mRegistered = false;
+    if (mDebugDomain && mLayerManagerStream.IsAvailable())
+        mDebugDomain->Unregister(mLayerManagerStream.Get());
+    mDebugDomain.reset();
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 

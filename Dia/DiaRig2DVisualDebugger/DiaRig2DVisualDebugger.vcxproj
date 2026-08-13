@@ -80,6 +80,7 @@
     <ClInclude Include="RestPoseDrawer.h" />
     <ClInclude Include="BoneLabelsDrawer.h" />
     <ClInclude Include="RigRestPoseRenderer.h" />
+    <ClInclude Include="Rig2DDebugDomain.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BoneLinesDrawer.cpp" />
@@ -87,6 +88,7 @@
     <ClCompile Include="DirectionArrowsDrawer.cpp" />
     <ClCompile Include="RestPoseDrawer.cpp" />
     <ClCompile Include="BoneLabelsDrawer.cpp" />
+    <ClCompile Include="Rig2DDebugDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.rig2dvisualdebugger.architecture.module.md" />

@@ -1508,6 +1508,24 @@
     <ClCompile Include="DiaSaveGame\TestSaveRegistry.cpp">
     <ClCompile Include="DiaVisualDebugger\\TestDiaDebugDomainRegistry.cpp">
     <ClCompile Include="DiaRigidBody2DVisualDebugger\TestRigidBody2DDebugDomain.cpp">
+    <ClCompile Include="DiaSoftBody2DVisualDebugger\TestSoftBody2DDebugDomain.cpp">
+    <ClCompile Include="DiaAnimation2DVisualDebugger\TestAnimation2DDebugDomain.cpp">
+    <ClCompile Include="DiaRig2DVisualDebugger\TestRig2DDebugDomain.cpp">
+    <ClCompile Include="DiaIK2DVisualDebugger\TestIK2DDebugDomain.cpp">
+    <ClCompile Include="DiaUtilityAIVisualDebugger\TestUtilityAIDebugDomain.cpp">
+    <ClCompile Include="DiaAssetRuntimeVisualDebugger\TestAssetRuntimeDebugDomain.cpp">
+      <Filter>DiaAssetRuntimeVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaUtilityAIVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaIK2DVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaRig2DVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaAnimation2DVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaSoftBody2DVisualDebugger</Filter>
+    </ClCompile>
       <Filter>DiaRigidBody2DVisualDebugger</Filter>
     </ClCompile>
       <Filter>DiaVisualDebugger</Filter>

@@ -10,12 +10,14 @@
     <ClInclude Include="SoftConstraintsDrawer.h" />
     <ClInclude Include="SoftAnchorLinksDrawer.h" />
     <ClInclude Include="SoftVelocityDrawer.h" />
+    <ClInclude Include="SoftBody2DDebugDomain.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SoftParticlesDrawer.cpp" />
     <ClCompile Include="SoftConstraintsDrawer.cpp" />
     <ClCompile Include="SoftAnchorLinksDrawer.cpp" />
     <ClCompile Include="SoftVelocityDrawer.cpp" />
+    <ClCompile Include="SoftBody2DDebugDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.softbody2dvisualdebugger.architecture.module.md">

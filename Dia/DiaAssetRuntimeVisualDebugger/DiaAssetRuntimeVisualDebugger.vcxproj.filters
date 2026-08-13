@@ -2,8 +2,10 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClInclude Include="DiaAssetRuntimeVisualDebugger.h" />
+    <ClInclude Include="AssetRuntimeDebugDomain.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaAssetRuntimeVisualDebugger.cpp" />
+    <ClCompile Include="AssetRuntimeDebugDomain.cpp" />
   </ItemGroup>
 </Project>

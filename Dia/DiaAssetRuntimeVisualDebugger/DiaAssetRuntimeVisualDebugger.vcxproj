@@ -75,9 +75,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="DiaAssetRuntimeVisualDebugger.h" />
+    <ClInclude Include="AssetRuntimeDebugDomain.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaAssetRuntimeVisualDebugger.cpp" />
+    <ClCompile Include="AssetRuntimeDebugDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

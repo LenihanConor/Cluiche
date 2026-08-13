@@ -10,12 +10,14 @@
     <ClInclude Include="IKChainJointsDrawer.h" />
     <ClInclude Include="IKChainArrowsDrawer.h" />
     <ClInclude Include="IKReachCirclesDrawer.h" />
+    <ClInclude Include="IK2DDebugDomain.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="IKChainBonesDrawer.cpp" />
     <ClCompile Include="IKChainJointsDrawer.cpp" />
     <ClCompile Include="IKChainArrowsDrawer.cpp" />
     <ClCompile Include="IKReachCirclesDrawer.cpp" />
+    <ClCompile Include="IK2DDebugDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.ik2dvisualdebugger.architecture.module.md">
