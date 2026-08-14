@@ -41,5 +41,8 @@ namespace Dia
         // red, semi-transparent — impassable grid cell fill
         const Dia::Core::RGBA DebugColourPalette::kGridCellImpassable (180,   0,   0,  60);
 
+        // sky blue, opaque — flow field direction arrow
+        const Dia::Core::RGBA DebugColourPalette::kFlowDirection      (100, 200, 255, 255);
+
     } // namespace Debug
 } // namespace Dia

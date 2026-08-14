@@ -32,6 +32,8 @@ namespace Dia
 
             static const Dia::Core::RGBA kGridCellPassable;   ///< green, semi-transparent — passable grid cell fill
             static const Dia::Core::RGBA kGridCellImpassable; ///< red, semi-transparent   — impassable grid cell fill
+
+            static const Dia::Core::RGBA kFlowDirection;      ///< sky blue, opaque        — flow field direction arrow
         };
 
     } // namespace Debug

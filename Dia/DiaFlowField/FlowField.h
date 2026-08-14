@@ -42,6 +42,10 @@ namespace Dia
             // Total number of cells (width * height).
             int GetCellCount() const;
 
+            // Grid dimensions — needed to convert flat index to (col, row) for world-position.
+            int GetWidth()  const { return mWidth; }
+            int GetHeight() const { return mHeight; }
+
             // --- Internal API (used by ComputeFlowField only) ---
 
             // Construct an empty field of the given dimensions.

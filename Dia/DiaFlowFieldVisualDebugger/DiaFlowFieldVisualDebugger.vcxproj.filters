@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{D1E2F3A4-B5C6-7890-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.diaflowfieldvisualdebugger.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="FlowFieldVisualDebugger.h" />
+    <ClInclude Include="DirectionArrowsDrawer.h" />
+    <ClInclude Include="ReachabilityOverlayDrawer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="FlowFieldVisualDebugger.cpp" />
+    <ClCompile Include="DirectionArrowsDrawer.cpp" />
+    <ClCompile Include="ReachabilityOverlayDrawer.cpp" />
+  </ItemGroup>
+</Project>

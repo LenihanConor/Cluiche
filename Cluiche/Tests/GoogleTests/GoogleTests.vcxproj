@@ -776,6 +776,7 @@
     <ClCompile Include="DiaRulesVisualDebugger\TestRulesVisualDebugger.cpp" />
     <ClCompile Include="DiaSteeringVisualDebugger\TestSteeringVisualDebugger.cpp" />
     <ClCompile Include="DiaPathfindingVisualDebugger\TestPathfindingVisualDebugger.cpp" />
+    <ClCompile Include="DiaFlowFieldVisualDebugger\TestFlowFieldVisualDebugger.cpp" />
     <ClCompile Include="DiaEntitySpatialVisualDebugger\TestEntitySpatialVisualDebugger.cpp">
       <ObjectFileName>$(IntDir)DiaEntitySpatialVisualDebugger\</ObjectFileName>
     </ClCompile>
@@ -1043,6 +1044,10 @@
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaFlowField\DiaFlowField.vcxproj">
       <Project>{A5B6C7D8-E9F0-1234-5678-90ABCDEF1234}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaFlowFieldVisualDebugger\DiaFlowFieldVisualDebugger.vcxproj">
+      <Project>{C2D3E4F5-A6B7-8901-CDEF-123456789AB0}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaSteering\DiaSteering.vcxproj">
