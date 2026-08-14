@@ -379,3 +379,4 @@ namespace Dia::BehaviourTree::Testing {
 ## Status
 
 **Status:** `Approved`
+**Plan:** @docs/specs/applications/dia/systems/diabehaviourtree/diabehaviourtree.plan.md

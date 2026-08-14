@@ -1,0 +1,37 @@
+**Spec:** @docs/specs/applications/dia/systems/diabehaviourtree/diabehaviourtree.md
+**Status:** Not Started
+
+## Design Resolutions
+
+**ODQ #1 — Condition leaf custom callbacks:** Deferred. Condition leaves read a single `bool` blackboard key in v1. Pre-compute complex predicates in DiaSensor/game code and write as blackboard keys. Revisit after the first `BehaviourTreeTestStage` consumer exists.
+
+**ODQ #2 — Parallel partial completion and cancellation:** Deferred. Still-running children under `require_one` run to natural completion; no explicit cancellation in v1. Add `CancelFn` only when a concrete use case demands it.
+
+**ODQ #3 — Multiple trees per entity:** Deferred. One `BehaviourTreeComponent` per entity in v1. Model orthogonal trees via a Parallel root or multiple components. Revisit after `BehaviourTreeTestStage`.
+
+## Tasks
+
+### Phase 1 — Foundation
+
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| 1 | Scaffold — `DiaBehaviourTree/` directory; `DiaBehaviourTree.vcxproj` + `.vcxproj.filters`; add project references to DiaBlackboard, DiaAIBudget, DiaCore; register in `Cluiche.sln` under `3.0-Gameplay`; `dia.diabehaviourtree.architecture.module.md` YAML (deps: DiaBlackboard, DiaAIBudget, DiaCore) | `dia check deps` clean | Done | haiku | googletest pipeline 2 passed, 0 failed; 134 modules deps OK |
+| 2 | Foundation types — `NodeResult.h` (`kRunning`/`kSuccess`/`kFailure`); `ActionRegistry.h/.cpp` (`Register`/`Find`/`Has`); `IDecoratorNode.h` (`ShouldTickChild`/`Evaluate`/`OnReset`/`GetTypeId`); `DecoratorContext.h` (`deltaTime`, `counter&`, `accumulator&`); `DecoratorRegistry.h/.cpp` (`Register`/`Find`) | GoogleTest: Register/Find/Has round-trips on ActionRegistry and DecoratorRegistry; unknown CRC returns nullptr | Not Started | haiku | |
+| 3 | `BehaviourTreeAsset` — `BehaviourTreeAsset.h/.cpp`; `LoadFromJson(Json::Value&, outErrors)` builds internal node descriptor table; `Validate()` (root node present, no duplicate node IDs, no cycles via DFS); `IsValid()`; `GetRootNodeId()`; `GetNodeCount()` | GoogleTest: load patrol tree from spec JSON → IsValid; missing root reports error; duplicate node ID reports error; cycle (A→B→A) reports error; GetNodeCount correct | Not Started | sonnet | |
+
+### Phase 2 — Execution Engine
+
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| 4 | `BehaviourTreeComponent` skeleton — `BehaviourTreeComponent.h/.cpp`; `IComponent` (`kUniqueId`); `SetAsset`/`SetBlackboard`/`SetActionRegistry`/`SetActionContext`/`SetDecoratorRegistry`; execution cursor: per-entity running-node stack (`DynamicArrayC<StringCRC>`) + per-node decorator state map (counter + accumulator keyed by StringCRC); `Reset()` clears cursor and decorator state; `IsComplete()`; `LastResult()`; `HasAsset()`; stub `Tick()` returning `kFailure` when no asset bound | GoogleTest: HasAsset false/true; IsComplete false before first Tick; Reset clears stack; Tick with no asset returns kFailure | Not Started | sonnet | |
+| 5 | Leaf node execution — condition leaf reads `Blackboard` bool slot by CRC key (kSuccess if true, kFailure if false; kFailure if key absent); action leaf dispatches to `ActionFn` via `ActionRegistry` with `actionContext` and `params`; propagates `kRunning` for multi-tick; returns kFailure if action not registered; integrate both into `Tick()` dispatcher | GoogleTest: condition true key → kSuccess; condition false key → kFailure; condition absent key → kFailure; action dispatches with params; action returns kRunning then kSuccess on second tick; unregistered action → kFailure | Not Started | sonnet | |
+| 6 | Control-flow node execution — Sequence (kFailure on first child failure; kSuccess when all children succeed; resumes kRunning child cursor on next Tick()); Selector (kSuccess on first child success; kFailure when all children fail; resumes kRunning child); Parallel (runs all children; `require_all` fails on first failure, succeeds when all succeed; `require_one` succeeds on first success, fails when all fail; `require_none` always succeeds; resumes running children) | GoogleTest: Sequence fail-fast; Sequence kRunning resume; Selector first-success; Selector kRunning resume; Parallel require_all pass/fail; Parallel require_one pass/fail; Parallel require_none; Parallel mid-execution resume | Not Started | sonnet | |
+| 7 | Decorator node execution — Inverter (flips Success↔Failure, passes kRunning through); Repeater (`repeat_count=0` = infinite, positive N = N times; `break_on_failure` halts on child kFailure; uses `counter` from `DecoratorContext`); Cooldown (gates child via `accumulator` as elapsed timer against `cooldown_seconds`; returns kFailure while cooling; accumulator advances each Tick()`deltaTime`); Guard (reads blackboard bool key; returns kFailure immediately if false, else ticks child); `IDecoratorNode` custom type dispatch via `DecoratorRegistry`; `Reset()` must zero per-node decorator state | GoogleTest: Inverter flips Success/Failure; Repeater N=3 stops after 3; Repeater infinite until failure; Cooldown blocks within window; Cooldown passes after elapsed; Guard false → kFailure; Guard true → ticks child; custom IDecoratorNode dispatched from DecoratorRegistry; Reset() zeroes counter and accumulator | Not Started | sonnet | |
+
+### Phase 3 — Integration
+
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| 8 | `IBehaviourTreeEventListener` — `IBehaviourTreeEventListener.h` interface; `AddEventListener`/`RemoveEventListener` on component; fire `OnNodeEntered(nodeId)` on each node entry in `Tick()`, `OnNodeCompleted(nodeId, result)` after each node, `OnTreeCompleted(result)` when root returns kSuccess or kFailure; multiple listeners; removing a listener mid-tick is safe (deferred removal) | GoogleTest: OnNodeEntered fires per visited node in correct order; OnNodeCompleted fires with correct result; OnTreeCompleted fires on Success and Failure; second listener receives same events; removed listener stops receiving | Not Started | haiku | |
+| 9 | `BehaviourTreeSystem` — `BehaviourTreeSystem.h/.cpp`; `IAIBudgetedSystem` (`kUniqueId`); `Register`/`Unregister`; `Update(budgetMs, deltaTime)` ticks registered components in round-robin order, tracks elapsed ms per-component-tick (via `DiaCore/Timer`), stops advancing when budget is exhausted (never interrupts mid-node); `GetRegisteredCount()`; skips components where `!HasAsset()` | GoogleTest: Register/Unregister; GetRegisteredCount; Update ticks all when budget ample; Update stops early when budget exhausted; unregistered component not ticked; component with no asset skipped | Not Started | sonnet | |
+| 10 | Test utilities — `DiaBehaviourTree/Testing/BTTestHelpers.h`; `SpyAction` (`SetResult`/`GetCallCount`/`LastParams`/`RegisterIn`); `AssertNodeVisited` (attaches a scoped listener to the component before Tick, checks visited-node set); `AssertLastResult`; add files to `DiaBehaviourTree.vcxproj` | GoogleTest: SpyAction records call count; SpyAction forwards params; SpyAction SetResult honoured; AssertNodeVisited passes when node entered, fails when not; AssertLastResult matches/mismatches | Not Started | haiku | |
