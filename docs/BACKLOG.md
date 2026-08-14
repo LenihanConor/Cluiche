@@ -24,7 +24,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | Item | Notes | Depends On |
 |------|-------|-----------|
 | ~~Visual Debugger Panel Stats~~ | ~~Done. All 13 domains wired (asset domain task 12 blocked → moved to backlog). 338/338 tests green. Plan: [debugger-impl.plan.md](specs/applications/dia/systems/diadebugdomain/debugger-impl.plan.md)~~ | ~~DiaDebugDomain ✅~~ |
-| Visual Debugger Domain Stats Tests | Add TDD RED stats-field assertions to all 13 domain test files (extend existing `*_JSONState` suites — do not create new files). Each test targets the specific `stats.xxx` fields each `debugger-impl.plan.md` task populates. Also add drawer-name assertions for tasks 13–15 (Scene2D split → 3 drawers, LightRangesDrawer, IK2D/Lighting3D label renames). Run gate: `dia run googletest --filter="*DebugDomain*_JSONState_Stats*"`. Add these after the impl work lands to avoid conflicts. Full plan: `.claude/plans/deep-stargazing-aurora.md`. | Visual Debugger Panel Stats impl done |
+| ~~Visual Debugger Domain Stats Tests~~ | Add TDD RED stats-field assertions to all 13 domain test files (extend existing `*_JSONState` suites — do not create new files). Each test targets the specific `stats.xxx` fields each `debugger-impl.plan.md` task populates. Also add drawer-name assertions for tasks 13–15 (Scene2D split → 3 drawers, LightRangesDrawer, IK2D/Lighting3D label renames). Run gate: `dia run googletest --filter="*DebugDomain*_JSONState_Stats*"`. Add these after the impl work lands to avoid conflicts. Full plan: `.claude/plans/deep-stargazing-aurora.md`. | Visual Debugger Panel Stats impl done |
 
 ---
 
