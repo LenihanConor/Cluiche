@@ -105,7 +105,7 @@ TEST(Lighting3DDebugDomain_Lifecycle, DrawersOnlyExistAfterRegister)
     EXPECT_EQ(domain.GetDrawer(Lighting3DDebugDomain::kDrawerCount), nullptr);
 }
 
-TEST(Lighting3DDebugDomain_Lifecycle, RegisterAddsAllTwoLayers)
+TEST(Lighting3DDebugDomain_Lifecycle, RegisterAddsAllThreeLayers)
 {
     Dia::Lighting3D::Testing::LightBuilder3D builder;
     Dia::Debug::DebugLayerManager             mgr;
@@ -115,6 +115,7 @@ TEST(Lighting3DDebugDomain_Lifecycle, RegisterAddsAllTwoLayers)
     EXPECT_EQ(mgr.GetLayerCount(), Lighting3DDebugDomain::kDrawerCount);
     EXPECT_TRUE(mgr.HasLayer(Dia::Debug::LayerNames::kLightWidgets));
     EXPECT_TRUE(mgr.HasLayer(Dia::Debug::LayerNames::kLightPathArc));
+    EXPECT_TRUE(mgr.HasLayer(Dia::Debug::LayerNames::kLightRanges));
 }
 
 TEST(Lighting3DDebugDomain_Lifecycle, LayersCarryTheLighting3DStageTag)
@@ -170,6 +171,7 @@ TEST(Lighting3DDebugDomain_DrawerGate, DisabledWidgetsDrawerEmitsNoSpheres)
 
     mgr.DisableLayer(Dia::Debug::LayerNames::kLightWidgets);
     mgr.DisableLayer(Dia::Debug::LayerNames::kLightPathArc);
+    mgr.DisableLayer(Dia::Debug::LayerNames::kLightRanges);
 
     Dia::Graphics::FrameData disabled;
     mgr.Draw(disabled);
@@ -190,6 +192,7 @@ TEST(Lighting3DDebugDomain_Primitives, WidgetsDrawerEmitsSphereForPointLight)
 
     // Isolate widgets drawer.
     mgr.DisableLayer(Dia::Debug::LayerNames::kLightPathArc);
+    mgr.DisableLayer(Dia::Debug::LayerNames::kLightRanges);
 
     Dia::Graphics::FrameData fd;
     mgr.Draw(fd);
@@ -281,7 +284,7 @@ TEST(Lighting3DDebugDomain_JSONState, EnabledFlagTracksLayerManager)
 
     Json::Value state;
     domain.GetJSONState(state);
-    EXPECT_STREQ(state["drawers"][0u]["name"].asCString(), "Widgets");
+    EXPECT_STREQ(state["drawers"][0u]["name"].asCString(), "PositionWidgets");
     EXPECT_FALSE(state["drawers"][0u]["enabled"].asBool());
     EXPECT_TRUE(state["drawers"][1u]["enabled"].asBool());
 }
@@ -294,7 +297,7 @@ TEST(Lighting3DDebugDomain_JSONState, BeforeRegisterAllDrawersReportDisabled)
     Json::Value state;
     domain.GetJSONState(state);
 
-    ASSERT_EQ(state["drawers"].size(), 2u);
+    ASSERT_EQ(state["drawers"].size(), 3u);
     for (Json::ArrayIndex i = 0; i < state["drawers"].size(); ++i)
         EXPECT_FALSE(state["drawers"][i]["enabled"].asBool());
 }
@@ -313,10 +316,10 @@ TEST(Lighting3DDebugDomain_OnCommand, TogglePanelLabelFlipsLayerTwice)
     const Dia::Core::StringCRC widgets = Dia::Debug::LayerNames::kLightWidgets;
     ASSERT_TRUE(mgr.IsLayerEnabled(widgets));
 
-    domain.OnCommand(Dia::Core::StringCRC("toggle"), ToggleArgs("Widgets"));
+    domain.OnCommand(Dia::Core::StringCRC("toggle"), ToggleArgs("PositionWidgets"));
     EXPECT_FALSE(mgr.IsLayerEnabled(widgets));
 
-    domain.OnCommand(Dia::Core::StringCRC("toggle"), ToggleArgs("Widgets"));
+    domain.OnCommand(Dia::Core::StringCRC("toggle"), ToggleArgs("PositionWidgets"));
     EXPECT_TRUE(mgr.IsLayerEnabled(widgets));
 }
 
@@ -338,7 +341,7 @@ TEST(Lighting3DDebugDomain_OnCommand, ToggleTouchesOnlyTheNamedDrawer)
     Lighting3DDebugDomain domain(builder.Registry());
     domain.Register(mgr);
 
-    domain.OnCommand(Dia::Core::StringCRC("toggle"), ToggleArgs("PathArc"));
+    domain.OnCommand(Dia::Core::StringCRC("toggle"), ToggleArgs("PathArcs"));
 
     EXPECT_FALSE(mgr.IsLayerEnabled(Dia::Debug::LayerNames::kLightPathArc));
     EXPECT_TRUE(mgr.IsLayerEnabled(Dia::Debug::LayerNames::kLightWidgets));

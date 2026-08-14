@@ -72,7 +72,7 @@ TEST(UtilityAIDebugDomain_Identity, IdsAndGroupAreCanonical)
     EXPECT_EQ(domain.GetDomainId(), Dia::Core::StringCRC("UtilityAI"));
     EXPECT_STREQ(domain.GetDisplayName(), "UtilityAI");
     EXPECT_EQ(domain.GetGroup(), Dia::Core::StringCRC("AIBehavior"));
-    EXPECT_TRUE(domain.HasWorldDrawers());
+    EXPECT_FALSE(domain.HasWorldDrawers());
 }
 
 TEST(UtilityAIDebugDomain_Identity, DescriptionWithin80Chars)

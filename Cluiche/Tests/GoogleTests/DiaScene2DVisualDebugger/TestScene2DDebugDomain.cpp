@@ -115,8 +115,10 @@ TEST(Scene2DDebugDomain_Lifecycle, RegisterAddsOverviewLayer)
     auto domain = f.MakeDomain();
     domain.Register(mgr);
 
-    EXPECT_EQ(mgr.GetLayerCount(), 1);
-    EXPECT_TRUE(mgr.HasLayer(Dia::Debug::LayerNames::kScene2DOverview));
+    EXPECT_EQ(mgr.GetLayerCount(), 3);
+    EXPECT_TRUE(mgr.HasLayer(Dia::Debug::LayerNames::kScene2DCameras));
+    EXPECT_TRUE(mgr.HasLayer(Dia::Debug::LayerNames::kScene2DLights));
+    EXPECT_TRUE(mgr.HasLayer(Dia::Debug::LayerNames::kScene2DLayerBounds));
 }
 
 TEST(Scene2DDebugDomain_Lifecycle, LayersCarryTheScene2DStageTag)
@@ -139,7 +141,7 @@ TEST(Scene2DDebugDomain_Lifecycle, UnregisterRemovesAllLayersAndDrawers)
 
     EXPECT_EQ(mgr.GetLayerCount(), 0);
     EXPECT_EQ(domain.GetDrawerCount(), 0);
-    EXPECT_FALSE(mgr.HasLayer(Dia::Debug::LayerNames::kScene2DOverview));
+    EXPECT_FALSE(mgr.HasLayer(Dia::Debug::LayerNames::kScene2DCameras));
 }
 
 TEST(Scene2DDebugDomain_Lifecycle, DoubleRegisterIsIdempotent)
@@ -164,11 +166,11 @@ TEST(Scene2DDebugDomain_DrawerGate, DisablingOverviewLayerDoesNotCrash)
     auto domain = f.MakeDomain();
     domain.Register(mgr);
 
-    mgr.DisableLayer(Dia::Debug::LayerNames::kScene2DOverview);
+    mgr.DisableLayer(Dia::Debug::LayerNames::kScene2DCameras);
     Dia::Graphics::FrameData fd;
     mgr.Draw(fd);  // must not crash with disabled layer
 
-    EXPECT_FALSE(mgr.IsLayerEnabled(Dia::Debug::LayerNames::kScene2DOverview));
+    EXPECT_FALSE(mgr.IsLayerEnabled(Dia::Debug::LayerNames::kScene2DCameras));
 }
 
 TEST(Scene2DDebugDomain_DrawerGate, LayerEnabledByDefault)
@@ -178,7 +180,7 @@ TEST(Scene2DDebugDomain_DrawerGate, LayerEnabledByDefault)
     auto domain = f.MakeDomain();
     domain.Register(mgr);
 
-    EXPECT_TRUE(mgr.IsLayerEnabled(Dia::Debug::LayerNames::kScene2DOverview));
+    EXPECT_TRUE(mgr.IsLayerEnabled(Dia::Debug::LayerNames::kScene2DCameras));
 }
 
 // ===========================================================================
@@ -204,7 +206,7 @@ TEST(Scene2DDebugDomain_Primitives, DisabledLayerEmitsNothing)
     auto domain = f.MakeDomain();
     domain.Register(mgr);
 
-    mgr.DisableLayer(Dia::Debug::LayerNames::kScene2DOverview);
+    mgr.DisableLayer(Dia::Debug::LayerNames::kScene2DCameras);
     Dia::Graphics::FrameData fd;
     mgr.Draw(fd);
     // When disabled, whatever the drawer would have emitted is suppressed.
@@ -265,7 +267,7 @@ TEST(Scene2DDebugDomain_JSONState, ReportsOneDrawerAndAStatsObject)
     ASSERT_TRUE(state.isMember("stats"));
     EXPECT_TRUE(state["stats"].isObject());
 
-    EXPECT_STREQ(state["drawers"][0u]["name"].asCString(), "Overview");
+    EXPECT_STREQ(state["drawers"][0u]["name"].asCString(), "Cameras");
     EXPECT_TRUE(state["drawers"][0u]["enabled"].asBool()) << "drawer starts enabled";
 }
 
@@ -276,7 +278,7 @@ TEST(Scene2DDebugDomain_JSONState, EnabledFlagTracksLayerManager)
     auto domain = f.MakeDomain();
     domain.Register(mgr);
 
-    mgr.DisableLayer(Dia::Debug::LayerNames::kScene2DOverview);
+    mgr.DisableLayer(Dia::Debug::LayerNames::kScene2DCameras);
 
     Json::Value state;
     domain.GetJSONState(state);
@@ -291,7 +293,7 @@ TEST(Scene2DDebugDomain_JSONState, BeforeRegisterDrawerReportsDisabled)
     Json::Value state;
     domain.GetJSONState(state);
 
-    ASSERT_EQ(state["drawers"].size(), 1u);
+    ASSERT_EQ(state["drawers"].size(), 3u);
     EXPECT_FALSE(state["drawers"][0u]["enabled"].asBool());
 }
 
@@ -306,14 +308,14 @@ TEST(Scene2DDebugDomain_OnCommand, TogglePanelLabelFlipsLayerTwice)
     auto domain = f.MakeDomain();
     domain.Register(mgr);
 
-    const Dia::Core::StringCRC overview = Dia::Debug::LayerNames::kScene2DOverview;
-    ASSERT_TRUE(mgr.IsLayerEnabled(overview));
+    const Dia::Core::StringCRC cameras = Dia::Debug::LayerNames::kScene2DCameras;
+    ASSERT_TRUE(mgr.IsLayerEnabled(cameras));
 
-    domain.OnCommand(Dia::Core::StringCRC("toggle"), ToggleArgs("Overview"));
-    EXPECT_FALSE(mgr.IsLayerEnabled(overview));
+    domain.OnCommand(Dia::Core::StringCRC("toggle"), ToggleArgs("Cameras"));
+    EXPECT_FALSE(mgr.IsLayerEnabled(cameras));
 
-    domain.OnCommand(Dia::Core::StringCRC("toggle"), ToggleArgs("Overview"));
-    EXPECT_TRUE(mgr.IsLayerEnabled(overview));
+    domain.OnCommand(Dia::Core::StringCRC("toggle"), ToggleArgs("Cameras"));
+    EXPECT_TRUE(mgr.IsLayerEnabled(cameras));
 }
 
 TEST(Scene2DDebugDomain_OnCommand, ToggleAcceptsRawLayerName)
@@ -323,8 +325,8 @@ TEST(Scene2DDebugDomain_OnCommand, ToggleAcceptsRawLayerName)
     auto domain = f.MakeDomain();
     domain.Register(mgr);
 
-    domain.OnCommand(Dia::Core::StringCRC("toggle"), ToggleArgs("scene2d.overview"));
-    EXPECT_FALSE(mgr.IsLayerEnabled(Dia::Debug::LayerNames::kScene2DOverview));
+    domain.OnCommand(Dia::Core::StringCRC("toggle"), ToggleArgs("scene2d.cameras"));
+    EXPECT_FALSE(mgr.IsLayerEnabled(Dia::Debug::LayerNames::kScene2DCameras));
 }
 
 TEST(Scene2DDebugDomain_OnCommand, UnknownDrawerNameIsIgnored)
@@ -336,7 +338,7 @@ TEST(Scene2DDebugDomain_OnCommand, UnknownDrawerNameIsIgnored)
 
     domain.OnCommand(Dia::Core::StringCRC("toggle"), ToggleArgs("NoSuchDrawer"));
 
-    EXPECT_TRUE(mgr.IsLayerEnabled(Dia::Debug::LayerNames::kScene2DOverview));
+    EXPECT_TRUE(mgr.IsLayerEnabled(Dia::Debug::LayerNames::kScene2DCameras));
 }
 
 TEST(Scene2DDebugDomain_OnCommand, MalformedCommandsAreIgnored)
@@ -350,7 +352,7 @@ TEST(Scene2DDebugDomain_OnCommand, MalformedCommandsAreIgnored)
     domain.OnCommand(Dia::Core::StringCRC("toggle"), empty);
     domain.OnCommand(Dia::Core::StringCRC("notACommand"), empty);
 
-    EXPECT_TRUE(mgr.IsLayerEnabled(Dia::Debug::LayerNames::kScene2DOverview));
+    EXPECT_TRUE(mgr.IsLayerEnabled(Dia::Debug::LayerNames::kScene2DCameras));
     EXPECT_FLOAT_EQ(mgr.GetDebugScale(), 1.0f);
 }
 
@@ -360,7 +362,7 @@ TEST(Scene2DDebugDomain_OnCommand, BeforeRegisterCommandsAreNoOps)
     Dia::Debug::DebugLayerManager mgr;
     auto domain = f.MakeDomain();
 
-    domain.OnCommand(Dia::Core::StringCRC("toggle"), ToggleArgs("Overview"));
+    domain.OnCommand(Dia::Core::StringCRC("toggle"), ToggleArgs("Cameras"));
     EXPECT_EQ(mgr.GetLayerCount(), 0);
 }
 
