@@ -8,6 +8,10 @@
 
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaAnimation2D/AnimationEvaluator.h>
+#include <DiaAnimation2D/AnimClipPlayer.h>
+#include <DiaAnimation2D/SpringChain.h>
+#include <DiaAnimation2D/AnimClip.h>
 
 namespace Dia::Animation2D
 {
@@ -84,7 +88,68 @@ void Animation2DDebugDomain::GetJSONState(Json::Value& out)
         drawers.append(entry);
     }
     out["drawers"] = drawers;
-    out["stats"]   = Json::Value(Json::objectValue);
+
+    const Dia::Animation2D::PoseBlendStack& stack = mEvaluator.GetBlendStack();
+    const int layerCount = stack.GetLayerCount();
+
+    Json::Value layers(Json::arrayValue);
+    for (int i = 0; i < layerCount; ++i)
+    {
+        const Dia::Core::StringCRC id = stack.GetLayerId(i);
+        Json::Value layer(Json::objectValue);
+        layer["id"]       = id.AsChar();
+        layer["weight"]   = stack.GetLayerWeight(id);
+        layer["priority"] = stack.GetLayerPriority(id);
+        layers.append(layer);
+    }
+
+    const char* activeClipName = "";
+    float normalizedTime = 0.0f;
+    for (int i = 0; i < layerCount; ++i)
+    {
+        const Dia::Core::StringCRC id = stack.GetLayerId(i);
+        const Dia::Animation2D::AnimClipPlayer* player = mEvaluator.GetClipPlayer(id);
+        if (player != nullptr && player->IsPlaying())
+        {
+            const Dia::Animation2D::AnimClip* clip = player->GetCurrentClip();
+            if (clip != nullptr)
+            {
+                activeClipName = clip->GetId().AsChar();
+                normalizedTime = player->GetNormalizedTime();
+            }
+            break;
+        }
+    }
+
+    const int sourceCount = mEvaluator.GetSourceCount();
+    int springChainCount = 0;
+    float maxAngularVelocity = 0.0f;
+    for (int i = 0; i < sourceCount; ++i)
+    {
+        const Dia::Core::StringCRC srcId = mEvaluator.GetSourceId(i);
+        const Dia::Animation2D::SpringChain* chain = mEvaluator.GetSpringChain(srcId);
+        if (chain == nullptr) continue;
+        ++springChainCount;
+        const int nodeCount = chain->GetNodeCount();
+        for (int n = 0; n < nodeCount; ++n)
+        {
+            const float av = chain->GetNodeAngularVelocity(n);
+            const float absAv = av < 0.0f ? -av : av;
+            if (absAv > maxAngularVelocity) maxAngularVelocity = absAv;
+        }
+    }
+
+    Json::Value springs(Json::objectValue);
+    springs["chainCount"]         = springChainCount;
+    springs["maxAngularVelocity"] = maxAngularVelocity;
+
+    Json::Value stats(Json::objectValue);
+    stats["layerCount"]     = layerCount;
+    stats["activeClip"]     = activeClipName;
+    stats["normalizedTime"] = normalizedTime;
+    stats["layers"]         = layers;
+    stats["springs"]        = springs;
+    out["stats"] = stats;
 }
 
 void Animation2DDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value& args)
