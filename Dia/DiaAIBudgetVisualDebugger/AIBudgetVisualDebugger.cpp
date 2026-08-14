@@ -47,9 +47,66 @@ namespace Dia
 
         void AIBudgetVisualDebugger::GetJSONState(Json::Value& out)
         {
-            // TODO: implement in next task
-            out["drawers"] = Json::Value(Json::arrayValue);
-            out["stats"]   = Json::Value(Json::objectValue);
+            const bool budgetBarEnabled     = mBudgetBarEnabled.load();
+            const bool systemTimingsEnabled = mSystemTimingsEnabled.load();
+
+            // --- drawers ---
+            Json::Value drawers(Json::arrayValue);
+            {
+                Json::Value entry(Json::objectValue);
+                entry["name"]    = "BudgetBar";
+                entry["enabled"] = budgetBarEnabled;
+                drawers.append(entry);
+            }
+            {
+                Json::Value entry(Json::objectValue);
+                entry["name"]    = "SystemTimings";
+                entry["enabled"] = systemTimingsEnabled;
+                drawers.append(entry);
+            }
+            out["drawers"] = drawers;
+
+            // --- stats ---
+            const float usedMs   = mResult.usedMs;
+            const float budgetMs = mScheduler.GetLastBudgetMs();
+
+            Json::Value stats(Json::objectValue);
+            stats["usedMs"]           = usedMs;
+            stats["budgetMs"]         = budgetMs;
+            stats["systemsRun"]       = mResult.systemsRun;
+            stats["systemsDeferred"]  = mResult.systemsDeferred;
+            stats["registeredCount"]  = mScheduler.GetRegisteredCount();
+
+            if (budgetBarEnabled)
+            {
+                int fillPct = 0;
+                if (budgetMs > 0.0f)
+                {
+                    const int raw = static_cast<int>(usedMs / budgetMs * 100.0f + 0.5f);
+                    fillPct = raw < 0 ? 0 : (raw > 100 ? 100 : raw);
+                }
+                stats["fillPct"] = fillPct;
+            }
+
+            out["stats"] = stats;
+
+            // --- systems (only when SystemTimings drawer is enabled) ---
+#ifdef DIA_DEBUG
+            if (systemTimingsEnabled)
+            {
+                Json::Value systems(Json::arrayValue);
+                for (unsigned int i = 0; i < mResult.perSystem.Size(); ++i)
+                {
+                    const auto& entry = mResult.perSystem[i];
+                    Json::Value sys(Json::objectValue);
+                    sys["id"]     = entry.systemId.AsChar();
+                    sys["timeMs"] = entry.timeMs;
+                    sys["ran"]    = entry.ran;
+                    systems.append(sys);
+                }
+                out["systems"] = systems;
+            }
+#endif
         }
 
         void AIBudgetVisualDebugger::OnCommand(Dia::Core::StringCRC cmd, const Json::Value& args)
