@@ -81,7 +81,33 @@ void Mesh3DDebugDomain::GetJSONState(Json::Value& out)
         drawers.append(entry);
     }
     out["drawers"] = drawers;
-    out["stats"]   = Json::Value(Json::objectValue);
+
+    Json::Value stats(Json::objectValue);
+    if (mStatsDrawer)
+    {
+        stats["draws"]    = mStatsDrawer->GetCachedDrawCount();
+        stats["dropped"]  = mStatsDrawer->GetCachedDroppedCount();
+        stats["loaded"]   = mStatsDrawer->GetCachedLoadedCount();
+        stats["skinned"]  = mStatsDrawer->GetCachedSkinnedCount();
+        stats["static"]   = mStatsDrawer->GetCachedStaticCount();
+        stats["ready"]    = mStatsDrawer->GetCachedStateReady();
+        stats["pending"]  = mStatsDrawer->GetCachedStatePending();
+        stats["failed"]   = mStatsDrawer->GetCachedStateFailed();
+        stats["notFound"] = mStatsDrawer->GetCachedStateNotFound();
+
+        Json::Value layers(Json::arrayValue);
+        const int layerCount = mStatsDrawer->GetCachedLayerCount();
+        for (int i = 0; i < layerCount; ++i)
+        {
+            const Dia::Mesh3D::MeshStatsDrawer::LayerBucket bucket = mStatsDrawer->GetCachedLayer(i);
+            Json::Value entry(Json::objectValue);
+            entry["index"]     = static_cast<int>(bucket.layer);
+            entry["drawCount"] = bucket.count;
+            layers.append(entry);
+        }
+        stats["layers"] = layers;
+    }
+    out["stats"] = stats;
 }
 
 void Mesh3DDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value& args)
