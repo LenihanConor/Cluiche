@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{F0A1B2C3-D4E5-6789-0123-F4A5B6C7D8E9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.diapathfindingvisualdebugger.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="PathfindingVisualDebugger.h" />
+    <ClInclude Include="PathPolylineDrawer.h" />
+    <ClInclude Include="GridPassabilityDrawer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="PathfindingVisualDebugger.cpp" />
+    <ClCompile Include="PathPolylineDrawer.cpp" />
+    <ClCompile Include="GridPassabilityDrawer.cpp" />
+  </ItemGroup>
+</Project>

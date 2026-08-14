@@ -35,5 +35,11 @@ namespace Dia
         // dark blue — deep sleep
         const Dia::Core::RGBA DebugColourPalette::kDeepSleep (  0,   0,  80, 255);
 
+        // green, semi-transparent — passable grid cell fill
+        const Dia::Core::RGBA DebugColourPalette::kGridCellPassable   (  0, 180,   0,  60);
+
+        // red, semi-transparent — impassable grid cell fill
+        const Dia::Core::RGBA DebugColourPalette::kGridCellImpassable (180,   0,   0,  60);
+
     } // namespace Debug
 } // namespace Dia

@@ -29,6 +29,9 @@ namespace Dia
             static const Dia::Core::RGBA kPinned;     ///< magenta   (220,0,220,255)   — pinned/constrained
             static const Dia::Core::RGBA kCapped;     ///< orange    (255,140,0,255)   — capped/limit-hit
             static const Dia::Core::RGBA kDeepSleep;  ///< dark blue (0,0,80,255)      — deep sleep
+
+            static const Dia::Core::RGBA kGridCellPassable;   ///< green, semi-transparent — passable grid cell fill
+            static const Dia::Core::RGBA kGridCellImpassable; ///< red, semi-transparent   — impassable grid cell fill
         };
 
     } // namespace Debug

@@ -21,6 +21,19 @@ namespace Dia::Pathfinding {
         int GetHeight() const;
         SquareConnectivity GetConnectivity() const;
 
+#ifdef DIA_DEBUG
+        template<typename Fn>
+        void VisitCells(Fn&& fn) const
+        {
+            for (int y = 0; y < mHeight; ++y)
+                for (int x = 0; x < mWidth; ++x)
+                {
+                    CellCoord coord{ x, y };
+                    fn(coord, IsPassable(coord));
+                }
+        }
+#endif
+
     private:
         bool IsInBounds(CellCoord cell) const;
         int  CellIndex(CellCoord cell) const;
