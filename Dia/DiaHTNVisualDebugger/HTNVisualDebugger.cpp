@@ -6,6 +6,12 @@
 #include <DiaHTN/HTNPlannerComponent.h>
 #include <DiaHTN/HTNPlan.h>
 
+namespace
+{
+    const Dia::Core::StringCRC kCmdToggle("toggle");
+    const Dia::Core::StringCRC kDrawerPlanView("PlanView");
+}
+
 namespace Dia::HTN
 {
 
@@ -72,9 +78,15 @@ void HTNVisualDebugger::GetJSONState(Json::Value& out)
     }
 }
 
-void HTNVisualDebugger::OnCommand(Dia::Core::StringCRC /*cmd*/, const Json::Value& /*args*/)
+void HTNVisualDebugger::OnCommand(Dia::Core::StringCRC cmd, const Json::Value& args)
 {
-    // Stub — implemented in Task 4
+    if (cmd == kCmdToggle)
+    {
+        if (!args.isMember("drawer") || !args["drawer"].isString()) return;
+        if (Dia::Core::StringCRC(args["drawer"].asCString()) == kDrawerPlanView)
+            mPlanViewEnabled = !mPlanViewEnabled.load();
+    }
+    // "setScale" — no-op for panel-only domain
 }
 
 } // namespace Dia::HTN
