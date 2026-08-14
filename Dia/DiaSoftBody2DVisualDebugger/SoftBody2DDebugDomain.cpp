@@ -9,6 +9,9 @@
 
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaSoftBody2D/SoftBodyWorld.h>
+#include <DiaSoftBody2D/Rope.h>
+#include <DiaSoftBody2D/Cloth.h>
 
 namespace Dia::SoftBody2D
 {
@@ -83,7 +86,38 @@ void SoftBody2DDebugDomain::GetJSONState(Json::Value& out)
         drawers.append(entry);
     }
     out["drawers"] = drawers;
-    out["stats"]   = Json::Value(Json::objectValue);
+
+    const auto& bodies = mWorld.GetBodies();
+    const unsigned int bodyCount = bodies.Size();
+    int particleCount   = 0;
+    int constraintCount = 0;
+    int anchorCount     = 0;
+
+    for (unsigned int i = 0; i < bodyCount; ++i)
+    {
+        const SoftBody* body = bodies[i];
+        if (body->GetBodyType() == BodyType::kRope)
+        {
+            const Rope* rope = static_cast<const Rope*>(body);
+            particleCount   += rope->GetParticleCount();
+            constraintCount += rope->GetConstraintCount();
+            if (rope->GetStartAnchor() != nullptr) ++anchorCount;
+            if (rope->GetEndAnchor()   != nullptr) ++anchorCount;
+        }
+        else if (body->GetBodyType() == BodyType::kCloth)
+        {
+            const Cloth* cloth = static_cast<const Cloth*>(body);
+            particleCount   += cloth->GetParticleCount();
+            constraintCount += cloth->GetConstraintCount();
+        }
+    }
+
+    Json::Value stats(Json::objectValue);
+    stats["bodyCount"]       = static_cast<int>(bodyCount);
+    stats["particleCount"]   = particleCount;
+    stats["constraintCount"] = constraintCount;
+    stats["anchorCount"]     = anchorCount;
+    out["stats"] = stats;
 }
 
 void SoftBody2DDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value& args)
