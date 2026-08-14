@@ -245,6 +245,48 @@ manager.Draw(frameData);
 
 ---
 
+## Domain Panel Specification
+
+The `IDebugDomain` wrapper (`Geometry2DDebugDomain`) integrates these drawers with `DiaDebugPanel`.
+
+| Property | Value |
+|----------|-------|
+| Domain ID | `"Geometry2D"` |
+| Display name | `"Geometry2D"` |
+| Description | `"Geometry shapes and spatial structures — submit-per-frame overlays"` |
+| Group | `"Spatial"` |
+| Accent | `DebugGroupAccents::kSpatial` (`#06b6d4`) |
+| `HasWorldDrawers()` | `true` |
+
+**JSON State Schema:**
+
+```json
+{
+  "drawers": [
+    { "name": "Shapes", "enabled": true  },
+    { "name": "AABB",   "enabled": false },
+    { "name": "Labels", "enabled": false }
+  ],
+  "stats": {
+    "shapesThisFrame": 14,
+    "circles": 6, "polygons": 5, "lines": 3
+  }
+}
+```
+
+**Panel card:**
+- Stat line: "Shapes: N"
+- Expanded: 3 drawer toggles, per-type breakdown (Circles · Polygons · Lines), Scale slider
+- Caller-registered spatial structure drawers appear as additional entries in `drawers[]` when registered
+
+**Domain ACs (beyond `debugger-contract.md`):**
+- `stats.shapesThisFrame` = total shape submissions received by `ShapeDrawer` this frame; resets to 0 each frame
+- `stats.circles`, `stats.polygons`, `stats.lines` = per-type counts from the same frame's submissions
+- Caller-registered spatial structure drawers appear in `drawers[]` alongside the three default drawers
+- Panel card layout complies with AC-16 spacing: group header `padding: 5px 10px`, domain header `padding: 4px 8px`, domain body `padding: 6px 10px 8px 10px`, `margin-bottom: 3px`, drawer rows `gap: 5px 10px`; accent via `var(--accent)`
+
+---
+
 ## Status
 
 `Approved`

@@ -31,14 +31,18 @@ When working in 2D, developers have no quick way to see where the origin is, wha
 | AC1 | `Camera2D` class in `DiaGraphics/Camera/` — stores position, zoom, rotation |
 | AC2 | `ViewportTransform` class in `DiaGraphics/Camera/` — screen→world and world→screen conversion given Camera2D + window dimensions |
 | AC2b | DiaBgfx renderers (DebugRenderer, SpriteRenderer) apply Camera2D to their projection — panning/zooming the camera moves the rendered world |
-| AC3 | A "Coord2D" domain tab appears in DiaVisualDebuggerConsole with layer toggles |
+| AC3 | A "Coord2D" domain card appears in DiaDebugPanel with drawer toggles for Origin, Axes, Grid, Bounds, Cursor |
 | AC4 | Toggle "Origin" draws a crosshair at (0,0) |
 | AC5 | Toggle "Axes" draws colored axis lines (red=X, green=Y) spanning the visible viewport |
 | AC6 | Toggle "Grid" draws a world-space grid with coordinate labels at adaptive intervals |
 | AC7 | Toggle "Bounds" draws corner labels showing min/max world coordinates of the viewport |
-| AC8 | Toggle "Cursor" displays live world coords at mouse position |
+| AC8 | "Cursor" drawer: when enabled, `GetJSONState()` emits the mouse world position as `cursor.{x, y}`; panel stat row shows "Cursor: (X.xx, Y.xx)" updated each frame |
 | AC9 | All overlay layers use `DebugColourPalette` colours (SD-DBG-010) |
 | AC10 | Layers register at priority 50+ (overlay tier) in DebugLayerManager |
+| AC11 | `GetJSONState()` emits: `drawers[]` (5 entries with name/enabled), `grid.spacing` (current adaptive interval in world units), `cursor.{x, y}` (mouse world pos when Cursor drawer enabled) |
+| AC12 | `OnCommand("setScale", {value: N})` adjusts debug draw line widths and marker sizes; panel shows a Scale slider bound to this command |
+| AC13 | Panel stat row shows viewport world bounds as "(Xmin, Ymin) → (Xmax, Ymax)" when Bounds drawer is enabled |
+| AC14 | Panel card layout complies with the spacing contract in `debugger-contract.md` AC-16: group header `padding: 5px 10px`, domain header `padding: 4px 8px`, domain body `padding: 6px 10px 8px 10px`, `margin-bottom: 3px` between cards, drawer rows `gap: 5px 10px`; accent via `var(--accent)` |
 
 ---
 

@@ -251,6 +251,51 @@ Test setup: a `Skeleton` + `Pose` with a 3-bone chain, one IK chain registered (
 
 ---
 
+## Domain Panel Specification
+
+The `IDebugDomain` wrapper (`IK2DDebugDomain`) integrates these drawers with `DiaDebugPanel`.
+
+| Property | Value |
+|----------|-------|
+| Domain ID | `"IK2D"` |
+| Display name | `"IK2D"` |
+| Description | `"Inverse kinematics — chain bones, joints, arrows, reach circles"` |
+| Group | `"Animation"` |
+| Accent | `DebugGroupAccents::kAnimation` (`#10b981`) |
+| `HasWorldDrawers()` | `true` |
+
+**JSON State Schema:**
+
+```json
+{
+  "drawers": [
+    { "name": "ChainBones",   "enabled": true  },
+    { "name": "ChainJoints",  "enabled": true  },
+    { "name": "ChainArrows",  "enabled": false },
+    { "name": "ReachCircles", "enabled": false }
+  ],
+  "stats": { "chainCount": 3 },
+  "chains": [
+    { "index": 0, "solved": true,  "iterations": 4,  "endEffectorError": 0.002 },
+    { "index": 1, "solved": false, "iterations": 10, "endEffectorError": 0.45  }
+  ]
+}
+```
+
+**Panel card:**
+- Stat line: "Chains: N"
+- Expanded: 4 drawer toggles, Scale slider, per-chain table (index · iterations · solved ✓/✗ · error distance)
+- Unsolved chains (iterations = max) highlighted in Animation accent (`#10b981`)
+
+**Domain ACs (beyond `debugger-contract.md`):**
+- `stats.chainCount` = number of IK chains in the attached `IKSolver`
+- Per-chain `solved` = true when `IKSolver::IsSolved(i)` returns true after the last solve pass
+- Per-chain `iterations` = actual iterations used (not the configured maximum)
+- Per-chain `endEffectorError` = distance from current end-effector to target in world units
+- Panel card layout complies with AC-16 spacing: group header `padding: 5px 10px`, domain header `padding: 4px 8px`, domain body `padding: 6px 10px 8px 10px`, `margin-bottom: 3px`, drawer rows `gap: 5px 10px`; accent via `var(--accent)`
+
+---
+
 ## Status
 
 `Done`

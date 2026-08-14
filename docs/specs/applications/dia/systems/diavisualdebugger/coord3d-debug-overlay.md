@@ -28,16 +28,19 @@ Developers working in 3D test stages have no shared world-space coordinate refer
 
 | # | Criterion |
 |---|-----------|
-| AC1 | A "Coord3D" tab appears in DiaVisualDebuggerConsole when the debug console is open |
+| AC1 | A "Coord3D" domain card appears in DiaDebugPanel when the debug console is open |
 | AC2 | `Coord3DOriginDrawer` draws an RGB crosshair at world (0,0,0) — X=red (`kError`), Y=green (`kHealthy`), Z=blue (`kGoal`) — via `RequestDrawRay3D` × 3 |
 | AC3 | `Coord3DAxesDrawer` draws full X/Y/Z axis lines extending ±N world units from origin; each arm only drawn if its axis origin vertex is in front of the near clip plane |
 | AC4 | `Coord3DGridDrawer` draws an XZ ground-plane grid with power-of-10 line spacing driven by camera distance; up to 200 lines |
-| AC5 | `Coord3DCameraDrawer` exposes camera eye position, look direction, and near/far clip distances as ImGui text in `DrawImGui()` — no scene geometry |
-| AC6 | All four layers are off by default; each toggled independently via the console checkbox |
+| AC5 | `Coord3DCameraDrawer` emits camera eye position, look direction, FOV (degrees), and near/far clip distances via `GetJSONState()` as `camera.{eye[3], dir[3], fov_deg, near, far}`; panel stat rows show these values — no world-space geometry; `DrawImGui()` is retired |
+| AC6 | All four layers are off by default; each toggled independently via the panel card |
 | AC7 | Layers are registered globally by `VisualDebuggerModule::RegisterCoord3DDrawers()` — no per-stage wiring required |
 | AC8 | The feature works in `Mesh3DTestStage` and any future 3D stage without additional code |
 | AC9 | All geometry layers use `DebugColourPalette` colours (SD-DBG-010) |
 | AC10 | Layers register at priority 50–53 (overlay tier) in `DebugLayerManager` |
+| AC11 | `GetJSONState()` emits: `drawers[]` (4 entries: Origin/Axes/Grid/Camera with enabled flag), `camera.eye[3]`, `camera.dir[3]`, `camera.fov_deg`, `camera.near`, `camera.far` |
+| AC12 | Camera stats are emitted every frame (live stat row updates); the Camera drawer toggle controls whether the expanded card section shows the full stats table |
+| AC13 | Panel card layout complies with the spacing contract in `debugger-contract.md` AC-16: group header `padding: 5px 10px`, domain header `padding: 4px 8px`, domain body `padding: 6px 10px 8px 10px`, `margin-bottom: 3px` between cards, drawer rows `gap: 5px 10px`; accent via `var(--accent)` |
 
 ---
 
@@ -50,7 +53,7 @@ Developers working in 3D test stages have no shared world-space coordinate refer
 | 3 | `Coord3DOriginDrawer` | RGB crosshair at (0,0,0); arm length configurable via `DebugLayerManager::GetDebugScale()`; `RequestDrawRay3D` × 3 |
 | 4 | `Coord3DAxesDrawer` | ±N axis lines; skip any arm whose origin vertex is behind the camera near plane; N = configurable via `DrawImGui()` slider (default 100 world units) |
 | 5 | `Coord3DGridDrawer` | XZ ground-plane grid; spacing = largest power-of-10 where ≥ 4 lines fit in camera view distance; `RequestDrawLine3D` × up to 200 |
-| 6 | `Coord3DCameraDrawer` | `DrawImGui()`-only drawer: shows eye position, look direction, near/far as `ImGui::Text` rows; no geometry |
+| 6 | `Coord3DCameraDrawer` | Override `GetJSONState()` to emit camera stats (eye, dir, fov_deg, near, far) from the `Camera3D` set via `SetCamera3D()`; `Draw()` is a no-op — panel stats only; `DrawImGui()` is retired |
 | 7 | `VisualDebuggerModule` wiring | Add `RegisterCoord3DDrawers()`; call `mLayerManager.SetCamera3D(camera)` each frame in `DoUpdate()`; expose `SetCamera3D(const Camera3D&)` on `VisualDebuggerModule` for stage modules to call |
 | 8 | vcxproj updates | Add `Coord3D/` drawer files to `DiaVisualDebugger.vcxproj` + `.vcxproj.filters` |
 

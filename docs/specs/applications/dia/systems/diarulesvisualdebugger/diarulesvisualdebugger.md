@@ -23,7 +23,7 @@ Following the `DiaXxxVisualDebugger` contract, `DiaRules` has zero compile-time 
 - `OnCommand("setScale", ...)` — no-op
 - Reads exclusively from `RuleSetComponent` public API
 - Entire module guarded by `#ifdef DIA_DEBUG`
-- Provide `DiaRulesVisualDebugger.vcxproj` static library registered in `Cluiche.sln` under `3.0-Gameplay`
+- Provide `DiaRulesVisualDebugger.vcxproj` static library registered in `Cluiche.sln` under `3.1-Gameplay-Tools`
 - Provide `dia.diarulesvisualdebugger.architecture.module.md` YAML module documentation
 
 ## Non-Responsibilities

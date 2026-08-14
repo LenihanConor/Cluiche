@@ -22,7 +22,7 @@ Following the `DiaXxxVisualDebugger` contract (`debugger-contract.md`), `DiaHTN`
 - `OnCommand("setScale", ...)` — no-op (no world-space sizes)
 - Reads exclusively from `HTNPlannerComponent`'s public read API — no write access
 - Entire module guarded by `#ifdef DIA_DEBUG`
-- Provide `DiaHTNVisualDebugger.vcxproj` static library registered in `Cluiche.sln` under `3.0-Gameplay`
+- Provide `DiaHTNVisualDebugger.vcxproj` static library registered in `Cluiche.sln` under `3.1-Gameplay-Tools`
 - Provide `dia.diahtnvisualdebugger.architecture.module.md` YAML module documentation
 
 ## Non-Responsibilities

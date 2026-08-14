@@ -98,6 +98,9 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | DiaScalarFieldInspector | [spec](specs/applications/dia/systems/diascalarfieldinspector/diascalarfieldinspector.md) | 2026-08-11 | Dockable editor panel for scalar field inspection. WriteRadial + WriteBox widgets, C++ tests, JS logic test page. |
 | DiaDebugDomain | [spec](specs/applications/dia/systems/diadebugdomain/diadebugdomain.md) | 2026-08-12 | IDebugDomain interface + DiaDebugDomainRegistry + DiaDebugPanel HTML overlay (Ultralight, tilde toggle) + JS↔C++ command bridge + debugger-contract CLI check + all 14 visual debugger modules migrated to IDebugDomain + DiaVisualDebuggerConsole retired. 8188 tests. |
 | DiaUIUltralight — Game Input Bridge | [spec](specs/applications/dia/systems/diauiultralight/diauiultralight.md) | 2026-08-12 | CallJSFunction, keyboard injection, InputRouter mode stack. Unblocked DiaDebugDomain. |
+| DiaSensorInspector | — | 2026-08-13 | Dropped — not wanted |
+| Clang-Tidy analysis | CMake migration (compile_commands.json) | 2026-08-13 | Dropped — not wanted |
+| TSan (ThreadSanitizer) | Linux target (WSL2 CI) | 2026-08-13 | Dropped — not wanted |
 
 ---
 

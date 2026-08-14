@@ -14,12 +14,17 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 |--------|----------|------------|
 | DiaMessageBus | core-bus, entity-router-registration, flush-adapters, frame-ledger, schema-browser, eventdispatcher-removal, module-and-build | DiaMailbox ✅, DiaStreams ✅, DiaApplicationFlow ✅, DiaObservation ✅ |
 | DiaAICallout | Callout Emit, Callout Query, Claim/Release, TTL Expiry, Test Utilities | DiaEntitySpatial ✅, DiaGeometry2D ✅, DiaCore ✅ |
+| DiaGridVisibility | VisibilityGroupId+VisibilityState, GridVisibilitySystem, Update pass (shadowcasting + dirty flags + chunkSize), CanSee, GetCellState, GetVisibleEntities, IVisibilityChangeObserver, Test Utilities | DiaPathfinding ✅, DiaEntitySpatial ✅, diaentitytemplate ✅, DiaCore ✅ |
+| DiaGridVisibilityVisualDebugger | GridVisibilityDebugDomain (template), Cell State Drawer, Sight Radii Drawer, Shadowcast Boundary Drawer, GetJSONState + group selector. Plan: [diagridvisibilityvisualdebugger.plan.md](specs/applications/dia/systems/diagridvisibilityvisualdebugger/diagridvisibilityvisualdebugger.plan.md) | DiaGridVisibility ✅, DiaDebugDomain ✅, DiaVisualDebugger ✅, DiaEntitySpatial ✅, DiaCore ✅ |
 
 ---
 
 ### Standalone Features (system Done, feature Approved)
 
-_Nothing here._
+| Item | Notes | Depends On |
+|------|-------|-----------|
+| Visual Debugger Panel Stats | **In Progress** — tasks 1–15 coded (all domains wired, Scene2D split 3 drawers, LightRangesDrawer added, label renames done). **Remaining:** fix 15 failing unit tests (task 16), HTML drawer compliance (task 17), commit all work (task 18). Asset domain (task 12) still Blocked. Plan: [debugger-impl.plan.md](specs/applications/dia/systems/diadebugdomain/debugger-impl.plan.md) | DiaDebugDomain ✅, all 14 domain modules ✅, all draw classes ✅ |
+| Visual Debugger Domain Stats Tests | Add TDD RED stats-field assertions to all 13 domain test files (extend existing `*_JSONState` suites — do not create new files). Each test targets the specific `stats.xxx` fields each `debugger-impl.plan.md` task populates. Also add drawer-name assertions for tasks 13–15 (Scene2D split → 3 drawers, LightRangesDrawer, IK2D/Lighting3D label renames). Run gate: `dia run googletest --filter="*DebugDomain*_JSONState_Stats*"`. Add these after the impl work lands to avoid conflicts. Full plan: `.claude/plans/deep-stargazing-aurora.md`. | Visual Debugger Panel Stats impl done |
 
 ---
 
@@ -29,17 +34,26 @@ _Nothing here._
 
 These are new `DiaXxxVisualDebugger` system specs — each is its own module implementing `IDebugDomain` (Done ✅). Build order is flexible; highest-value ones first. Research + audit: `docs/research/visual_debugger_redesign/`.
 
-| Item | Group | Value | Notes |
-|------|-------|-------|-------|
-| DiaSteeringVisualDebugger | Navigation | High | World-space: per-agent velocity + desired-velocity arrows, separation radii, detection boxes. All data in `SteeringSystem::GetOutput()` — no API gaps. |
-| DiaPathfindingVisualDebugger | Navigation | High | World-space: path polyline via `PathResult::ToWorldPositions()`, grid passability overlay, start/goal markers. Reuses hex/square draw patterns from EntitySpatial. |
-| DiaFlowFieldVisualDebugger | Navigation | High | World-space: per-cell direction arrows via `FlowField::Sample()`. Direct analogue of existing `ScalarFieldGradientOverlay`. |
-| DiaStateMachineVisualDebugger | AI / Behavior | High | Panel: `IStateMachineInspectable` was designed for this — all states, transitions, history, guard pass/fail. Low effort. |
-| DiaRulesVisualDebugger | AI / Behavior | Medium | Panel: `RuleSet::GetLastFireReport()` already populated every frame. Ready to consume. |
-| DiaHTNVisualDebugger | AI / Behavior | Medium | Panel: plan task sequence + cursor + diverged/pending state. Needs one `GetCurrentIndex()` accessor added to `HTNPlannerComponent`. |
-| DiaAIBudgetVisualDebugger | AI / Behavior | Medium | Panel: budget bar + systems run/deferred. Needs per-system timing added to `AIBudgetResult` first. |
-| DiaBlackboardVisualDebugger | AI / Behavior | Low–Med | Panel: slot table via `VisitSlots()`. Would benefit from per-type display format callbacks (not blocking, shows hex otherwise). |
-| DiaMailboxVisualDebugger | AI / Behavior | Low–Med | Panel: per-type queue fill + drop counters. Needs type-erased descriptor list added to `Mailbox` internals first. |
+| Item | Group | Value | Spec | Notes |
+|------|-------|-------|------|-------|
+| DiaSteeringVisualDebugger | Navigation | High | Approved ✅ | Prereq: `SteeringSystem::VisitAgents()` debug accessor. World-space: velocity arrows, separation radius, detection boxes. |
+| DiaPathfindingVisualDebugger | Navigation | High | Approved ✅ | Prereq: confirm `PathGrid::VisitCells()`/`GetWidth()`/`GetHeight()`. World-space: path polyline, start/goal markers, grid passability. |
+| DiaFlowFieldVisualDebugger | Navigation | High | Approved ✅ | Prereq: `FlowField::GetWidth()`/`GetHeight()`. World-space: per-cell direction arrows, reachability overlay. |
+| DiaStateMachineVisualDebugger | AI / Behavior | High | Approved ✅ | No prereqs. Panel: states, transition history, guard pass/fail via `ITransitionListener`. |
+| DiaRulesVisualDebugger | AI / Behavior | Medium | Approved ✅ | No prereqs outstanding. |
+| DiaHTNVisualDebugger | AI / Behavior | Medium | Approved ✅ | Prereq: `HTNPlan::GetCurrentTaskIndex()`. |
+| DiaAIBudgetVisualDebugger | AI / Behavior | Medium | Approved ✅ | Prereq: `AIBudgetResult.perSystem` timing array + `AIBudgetScheduler::GetLastBudgetMs()`. |
+| DiaBlackboardVisualDebugger | AI / Behavior | Low–Med | Approved ✅ | No prereqs. Panel: slot table via `VisitSlots()`, hex fallback, optional per-type formatters. |
+| DiaMailboxVisualDebugger | AI / Behavior | Low–Med | Approved ✅ | Prereq: `Mailbox::GetTypeStatsByIndex(int)`. Panel: per-type queue fill, drop counters. |
+| DiaBehaviourTreeVisualDebugger | AI / Behavior | Medium | — | Needs `/spec-system`. Panel: active node highlight, per-node tick result (Running/Success/Failure), per-entity tree cursor, time-slice resume state. Prereq: DiaBehaviourTree ✅. |
+
+---
+
+### Extend DebugGalleryTestStage
+
+| Item | Plan | What's Needed |
+|------|------|---------------|
+| Add 9 new domains to DebugGalleryTestStageModule | [debug-gallery-extension.plan.md](specs/applications/cluichetest/systems/teststages/debug-gallery-extension.plan.md) | All 9 debugger plans Done; then extend existing stage (.h + .cpp + vcxproj) — 6 tasks, no new spec needed. Panel goes from 14 → 23 domain cards. |
 
 ---
 
@@ -47,9 +61,10 @@ These are new `DiaXxxVisualDebugger` system specs — each is its own module imp
 
 | Item | Spec | What's needed |
 |------|------|---------------|
-| DiaBehaviourTree | — | Needs `/spec-system` — data-driven behaviour tree evaluator. Nodes: Sequence, Selector, Parallel, Decorator (inverter, repeater, cooldown, guard), Leaf (action/condition). Trees defined in JSON, loaded at runtime. Leaf nodes reference DiaBlackboard keys for conditions and DiaOrder for execution. Supports tree sharing (many entities, one tree definition, different blackboard instances). Time-sliced: trees pause mid-evaluation and resume next tick. Depends on DiaBlackboard ✅, DiaOrder ✅, DiaCore/Timer ✅, DiaStreams ✅. |
-| DiaGridVisibility | — | Needs `/spec-system` — per-cell fog-of-war on a grid. Each cell carries a per-faction state (unexplored / revealed / visible). Entities have a sight radius; cells within radius are marked visible each frame, fading to revealed when out of range. LOS blocking against terrain cells (walls, elevation). Shared vision within factions. Publishes visibility-change events via DiaStreams (unit spotted, unit lost). Prerequisite for: minimap data layer, cover/LOS combat modifiers. Depends on DiaGeometry2D ✅, DiaStreams ✅, DiaEntitySpatial ✅. |
-| DiaSensorInspector | — | Needs `/spec-system` — dockable ImGui panel per entity; shows all four `SensorResultsComponent` arrays (sight, proximity, damage, sound) with per-entry distance/angle/timestamp, tick-countdown and stale/fresh state per sensor component, and the resulting blackboard slots (`ThreatBoard`, `AwarenessBoard`). Answers "why didn't this entity react?" for AI debugging. Depends on DiaSensor ✅, DiaEditor. |
+| DiaBehaviourTree | Approved ✅ | All features Draft — ready to move to Ready to Build once features are individually Approved. Spec: [diabehaviourtree.md](specs/applications/dia/systems/diabehaviourtree/diabehaviourtree.md). Depends on DiaBlackboard ✅, DiaAIBudget ✅, DiaCore/Timer ✅. |
+| BehaviourTreeTestStage | — | Needs `/spec-feature` — CluicheTest e2e stage for DiaBehaviourTree. Entities driven by a shared tree definition with different blackboard instances; demonstrates Sequence, Selector, Parallel, and Decorator nodes in-world. Conditions read blackboard keys; actions dispatch via DiaOrder. Paused/resumed trees visible via DiaHTNVisualDebugger-style panel. Prerequisite: DiaBehaviourTree ✅. |
+| GridVisibilityTestStage | — | Needs `/spec-feature` — visually appealing CluicheTest e2e stage for DiaGridVisibility. Two groups of entities moving through a terrain grid with walls. Per-cell colour overlay: black=Unexplored, grey=Revealed, white=Visible (per group, togglable). Entities colour-coded by group; enemy entities hidden in non-Visible cells. Observer sight radii shown as debug circles. Demonstrates CanSee, GetCellState, shared group vision, and LOS blocking in real time. Prerequisite: DiaGridVisibility ✅, DiaGridVisibilityVisualDebugger ✅. |
+| ~~DiaSensorInspector~~ | — | Needs `/spec-system` — dockable ImGui panel per entity; shows all four `SensorResultsComponent` arrays (sight, proximity, damage, sound) with per-entry distance/angle/timestamp, tick-countdown and stale/fresh state per sensor component, and the resulting blackboard slots (`ThreatBoard`, `AwarenessBoard`). Answers "why didn't this entity react?" for AI debugging. Depends on DiaSensor ✅, DiaEditor. |
 | RenderTestPlugin (CluicheEditor) | — | Needs `/spec-system` — visual debugger panel: wipe slider, region grid, expectation authoring, AI triage panel, render targets. DiaRenderTest CLI Pipeline ✅ unblocked. Mockup: [render_test_debugger_mockup.html](research/render_offline_test/render_test_debugger_mockup.html). Research: [render_offline_test/summary.md](research/render_offline_test/summary.md) |
 
 ---
@@ -74,8 +89,8 @@ Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testin
 
 | Item | Blocked by | Notes |
 |------|-----------|-------|
-| Clang-Tidy analysis | CMake migration (compile_commands.json) | Unblocked by C2 (Foundation CMake pilot) — see DiaArchitecture system below |
-| TSan (ThreadSanitizer) | Linux target (WSL2 CI) | Only reliable race detector for Main/Render/Sim threading model; TSan doesn't run on Windows |
+| ~~Clang-Tidy analysis~~ | CMake migration (compile_commands.json) | Unblocked by C2 (Foundation CMake pilot) — see DiaArchitecture system below |
+| ~~TSan (ThreadSanitizer)~~ | Linux target (WSL2 CI) | Only reliable race detector for Main/Render/Sim threading model; TSan doesn't run on Windows |
 
 ---
 

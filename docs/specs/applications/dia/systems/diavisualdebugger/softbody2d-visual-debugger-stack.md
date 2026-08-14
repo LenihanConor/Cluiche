@@ -237,6 +237,50 @@ Test setup: a `SoftBodyWorld` containing a 3-particle rope (start anchor, middle
 
 ---
 
+## Domain Panel Specification
+
+The `IDebugDomain` wrapper (`SoftBody2DDebugDomain`) integrates these drawers with `DiaDebugPanel`.
+
+| Property | Value |
+|----------|-------|
+| Domain ID | `"SoftBody2D"` |
+| Display name | `"SoftBody2D"` |
+| Description | `"Soft body simulation — particles, constraints, anchors, velocities"` |
+| Group | `"Physics"` |
+| Accent | `DebugGroupAccents::kPhysics` (`#f59e0b`) |
+| `HasWorldDrawers()` | `true` |
+
+**JSON State Schema:**
+
+```json
+{
+  "drawers": [
+    { "name": "SoftParticles",   "enabled": true  },
+    { "name": "SoftConstraints", "enabled": true  },
+    { "name": "SoftAnchorLinks", "enabled": false },
+    { "name": "SoftVelocity",    "enabled": false }
+  ],
+  "stats": {
+    "bodyCount": 3, "particleCount": 48,
+    "constraintCount": 92, "anchorCount": 6, "sleeping": 1
+  }
+}
+```
+
+**Panel card:**
+- Stat line: "Bodies: N (P particles)"
+- Expanded: 4 drawer toggles, Scale slider, stats table (Bodies · Particles · Constraints · Anchors · Sleeping)
+
+**Domain ACs (beyond `debugger-contract.md`):**
+- `stats.bodyCount` = `SoftBodyWorld::GetBodyCount()`
+- `stats.particleCount` = sum of particles across all bodies
+- `stats.constraintCount` = sum of distance constraints across all bodies
+- `stats.sleeping` = count of bodies below the sleep velocity threshold
+- `SoftConstraintsDrawer` colors constraint lines where `currentLength / restLength > 0.9` in Physics accent (`#f59e0b`) to indicate near-limit stress; resting constraints use standard palette color
+- Panel card layout complies with AC-16 spacing: group header `padding: 5px 10px`, domain header `padding: 4px 8px`, domain body `padding: 6px 10px 8px 10px`, `margin-bottom: 3px`, drawer rows `gap: 5px 10px`; accent via `var(--accent)`
+
+---
+
 ## Status
 
 `Approved`

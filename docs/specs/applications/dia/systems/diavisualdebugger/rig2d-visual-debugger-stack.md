@@ -259,6 +259,45 @@ Test setup: a 3-bone chain (root → mid → tip) with known positions. World tr
 
 ---
 
+## Domain Panel Specification
+
+The `IDebugDomain` wrapper (`Rig2DDebugDomain`) integrates these drawers with `DiaDebugPanel`.
+
+| Property | Value |
+|----------|-------|
+| Domain ID | `"Rig2D"` |
+| Display name | `"Rig2D"` |
+| Description | `"Rig skeleton — bones, joints, direction arrows, labels, rest pose"` |
+| Group | `"Animation"` |
+| Accent | `DebugGroupAccents::kAnimation` (`#10b981`) |
+| `HasWorldDrawers()` | `true` |
+
+**JSON State Schema:**
+
+```json
+{
+  "drawers": [
+    { "name": "BoneLines",       "enabled": true  },
+    { "name": "JointCircles",    "enabled": true  },
+    { "name": "DirectionArrows", "enabled": false },
+    { "name": "BoneLabels",      "enabled": false },
+    { "name": "RestPose",        "enabled": false }
+  ],
+  "stats": { "boneCount": 24, "ikChainCount": 3 }
+}
+```
+
+**Panel card:**
+- Stat line: "Bones: N"
+- Expanded: 5 drawer toggles, Scale slider, stats row (boneCount · ikChainCount)
+
+**Domain ACs (beyond `debugger-contract.md`):**
+- `stats.boneCount` = `skeleton.GetBoneCount()`
+- `stats.ikChainCount` = number of IK chains registered in the skeleton; 0 if none
+- Panel card layout complies with AC-16 spacing: group header `padding: 5px 10px`, domain header `padding: 4px 8px`, domain body `padding: 6px 10px 8px 10px`, `margin-bottom: 3px`, drawer rows `gap: 5px 10px`; accent via `var(--accent)`
+
+---
+
 ## Status
 
 `Approved`

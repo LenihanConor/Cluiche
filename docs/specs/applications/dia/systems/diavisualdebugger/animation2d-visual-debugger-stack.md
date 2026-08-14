@@ -297,6 +297,54 @@ Test setup: an `AnimationEvaluator` with a 3-bone skeleton, one `AnimClipPlayer`
 
 ---
 
+## Domain Panel Specification
+
+The `IDebugDomain` wrapper (`Animation2DDebugDomain`) integrates these drawers with `DiaDebugPanel`.
+
+| Property | Value |
+|----------|-------|
+| Domain ID | `"Animation2D"` |
+| Display name | `"Animation2D"` |
+| Description | `"Animation evaluation — blend weights, clip cursors, spring damping"` |
+| Group | `"Animation"` |
+| Accent | `DebugGroupAccents::kAnimation` (`#10b981`) |
+| `HasWorldDrawers()` | `true` |
+
+**JSON State Schema:**
+
+```json
+{
+  "drawers": [
+    { "name": "BlendWeights",  "enabled": true  },
+    { "name": "ClipCursor",    "enabled": true  },
+    { "name": "SpringDamping", "enabled": false }
+  ],
+  "stats": {
+    "layerCount":     3,
+    "activeClip":     "run_forward",
+    "normalizedTime": 0.42
+  },
+  "layers": [
+    { "index": 0, "clip": "run_forward", "weight": 0.7, "time": 0.42 },
+    { "index": 1, "clip": "aim_upper",   "weight": 0.3, "time": 0.18 }
+  ],
+  "springs": { "chainCount": 2, "atRest": false, "maxAngularVelocity": 3.14 }
+}
+```
+
+**Panel card:**
+- Stat line: "Active: \<activeClip\> @ T=0.xx"
+- Expanded: 3 drawer toggles, Scale slider, per-layer blend weight bars (clip + weight bar + time), spring badge (`● At Rest` / `⚡ Oscillating`)
+
+**Domain ACs (beyond `debugger-contract.md`):**
+- `stats.activeClip` = layer 0's current clip name; empty string when no active clip; panel stat line shows this value live every frame
+- `stats.normalizedTime` = layer 0's normalised time in [0, 1]; updated every frame
+- `layers[]` has one entry per active blend layer; `weight` is the final resolved weight after `PoseBlendStack` evaluation
+- `springs.atRest` = true when max angular velocity across all spring chains is below the `SpringChain` rest threshold
+- Panel card layout complies with AC-16 spacing: group header `padding: 5px 10px`, domain header `padding: 4px 8px`, domain body `padding: 6px 10px 8px 10px`, `margin-bottom: 3px`, drawer rows `gap: 5px 10px`; accent via `var(--accent)`
+
+---
+
 ## Status
 
 `Done`
