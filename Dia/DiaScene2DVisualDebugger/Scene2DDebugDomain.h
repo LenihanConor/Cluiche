@@ -17,7 +17,12 @@ namespace Dia::Camera2D  { class CameraRegistry2D; }
 namespace Dia::Lighting2D { class LightRegistry2D; }
 namespace Dia::Scene2D   { class LayerTable; }
 
-namespace Dia::Scene2DVisualDebugger { class SceneOverviewDrawer; }
+namespace Dia::Scene2DVisualDebugger
+{
+    class CamerasDrawer;
+    class LightsDrawer;
+    class LayerBoundsDrawer;
+}
 
 namespace Dia::Scene2DVisualDebugger
 {
@@ -25,13 +30,14 @@ namespace Dia::Scene2DVisualDebugger
 ////////////////////////////////////////////////////////////////////////////////
 // Scene2DDebugDomain
 //
-// Constructor stores const refs to the three scene registries. SceneOverviewDrawer
-// is created lazily inside Register() once the DebugLayerManager is available.
+// Constructor stores const refs to the three scene registries. Three focused
+// drawers (CamerasDrawer, LightsDrawer, LayerBoundsDrawer) are created lazily
+// inside Register() once the DebugLayerManager is available.
 ////////////////////////////////////////////////////////////////////////////////
 class Scene2DDebugDomain : public Dia::VisualDebugger::IDebugDomain
 {
 public:
-    static const int kDrawerCount = 1;
+    static const int kDrawerCount = 3;
 
     Scene2DDebugDomain(const Dia::Camera2D::CameraRegistry2D&  cameraRegistry,
                        const Dia::Lighting2D::LightRegistry2D& lightRegistry,
@@ -66,7 +72,9 @@ private:
     const Dia::Scene2D::LayerTable&         mLayerTable;
     Dia::Debug::DebugLayerManager*          mLayerManager = nullptr;
 
-    std::unique_ptr<SceneOverviewDrawer> mOverviewDrawer;
+    std::unique_ptr<CamerasDrawer>     mCamerasDrawer;
+    std::unique_ptr<LightsDrawer>      mLightsDrawer;
+    std::unique_ptr<LayerBoundsDrawer> mLayerBoundsDrawer;
 };
 
 } // namespace Dia::Scene2DVisualDebugger

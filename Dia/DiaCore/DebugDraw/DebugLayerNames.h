@@ -92,7 +92,10 @@ namespace Dia
             // ----------------------------------------------------------------
             // Scene2D
             // ----------------------------------------------------------------
-            inline const Dia::Core::StringCRC kScene2DOverview { "scene2d.overview" };
+            inline const Dia::Core::StringCRC kScene2DOverview    { "scene2d.overview"     };
+            inline const Dia::Core::StringCRC kScene2DCameras     { "scene2d.cameras"      };
+            inline const Dia::Core::StringCRC kScene2DLights      { "scene2d.lights"       };
+            inline const Dia::Core::StringCRC kScene2DLayerBounds { "scene2d.layer_bounds" };
 
             // ----------------------------------------------------------------
             // Coord2D
@@ -140,8 +143,9 @@ namespace Dia
             // ----------------------------------------------------------------
             // Lighting 3D (priority tier 10–19)
             // ----------------------------------------------------------------
-            inline const Dia::Core::StringCRC kLightWidgets { "light3d.widgets"  };
-            inline const Dia::Core::StringCRC kLightPathArc { "light3d.path_arc" };
+            inline const Dia::Core::StringCRC kLightWidgets  { "light3d.widgets"   };
+            inline const Dia::Core::StringCRC kLightPathArc  { "light3d.path_arc"  };
+            inline const Dia::Core::StringCRC kLightRanges   { "light3d.ranges"    };
 
             // ----------------------------------------------------------------
             // Utility AI (priority tier 50+)

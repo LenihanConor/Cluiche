@@ -2,10 +2,15 @@
 
 #ifdef DIA_DEBUG
 
-#include "SceneOverviewDrawer.h"
+#include "CamerasDrawer.h"
+#include "LightsDrawer.h"
+#include "LayerBoundsDrawer.h"
 
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaCamera2D/Registry/CameraRegistry2D.h>
+#include <DiaLighting2D/Registry/LightRegistry2D.h>
+#include <DiaScene2D/LayerTable.h>
 
 namespace Dia::Scene2DVisualDebugger
 {
@@ -14,12 +19,14 @@ namespace
 {
     const char* const kDrawerLabels[Scene2DDebugDomain::kDrawerCount] =
     {
-        "Overview",
+        "Cameras",
+        "Lights",
+        "LayerBounds",
     };
 
     const int kDrawerPriorities[Scene2DDebugDomain::kDrawerCount] =
     {
-        5
+        5, 6, 7
     };
 
     const Dia::Core::StringCRC kStageTag("Scene2D");
@@ -50,7 +57,9 @@ Dia::Core::RGBA Scene2DDebugDomain::GetAccentColour() const   { return Dia::Visu
 void Scene2DDebugDomain::Register(Dia::Debug::DebugLayerManager& mgr)
 {
     if (mLayerManager != nullptr) return;
-    mOverviewDrawer = std::make_unique<SceneOverviewDrawer>(mCameraRegistry, mLightRegistry, mLayerTable, mgr);
+    mCamerasDrawer    = std::make_unique<CamerasDrawer>(mCameraRegistry, mgr);
+    mLightsDrawer     = std::make_unique<LightsDrawer>(mLightRegistry, mgr);
+    mLayerBoundsDrawer = std::make_unique<LayerBoundsDrawer>(mLayerTable, mgr);
     for (int i = 0; i < kDrawerCount; ++i)
         mgr.Register(GetDrawer(i), kDrawerPriorities[i], kStageTag);
     mLayerManager = &mgr;
@@ -60,7 +69,7 @@ void Scene2DDebugDomain::Unregister(Dia::Debug::DebugLayerManager& mgr)
 {
     for (int i = 0; i < kDrawerCount; ++i)
         if (Dia::Debug::IVisualDebugger* d = GetDrawer(i)) mgr.Unregister(d->GetLayerName());
-    mOverviewDrawer.reset();
+    mCamerasDrawer.reset(); mLightsDrawer.reset(); mLayerBoundsDrawer.reset();
     mLayerManager = nullptr;
 }
 
@@ -79,7 +88,12 @@ void Scene2DDebugDomain::GetJSONState(Json::Value& out)
         drawers.append(entry);
     }
     out["drawers"] = drawers;
-    out["stats"]   = Json::Value(Json::objectValue);
+
+    Json::Value stats(Json::objectValue);
+    stats["cameraCount"] = static_cast<int>(mCameraRegistry.GetCount());
+    stats["lightCount"]  = static_cast<int>(mLightRegistry.GetCount());
+    stats["layerCount"]  = static_cast<int>(mLayerTable.GetCount());
+    out["stats"] = stats;
 }
 
 void Scene2DDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value& args)
@@ -106,13 +120,15 @@ void Scene2DDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value& 
 }
 
 // Drawer access
-int Scene2DDebugDomain::GetDrawerCount() const { return mOverviewDrawer ? kDrawerCount : 0; }
+int Scene2DDebugDomain::GetDrawerCount() const { return mCamerasDrawer ? kDrawerCount : 0; }
 
 Dia::Debug::IVisualDebugger* Scene2DDebugDomain::GetDrawer(int index)
 {
     switch (index)
     {
-    case 0: return mOverviewDrawer.get();
+    case 0: return mCamerasDrawer.get();
+    case 1: return mLightsDrawer.get();
+    case 2: return mLayerBoundsDrawer.get();
     default: return nullptr;
     }
 }

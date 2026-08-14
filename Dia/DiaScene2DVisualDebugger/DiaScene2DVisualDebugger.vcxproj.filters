@@ -8,10 +8,28 @@
   <ItemGroup>
     <ClInclude Include="SceneOverviewDrawer.h" />
     <ClInclude Include="Scene2DDebugDomain.h" />
+    <ClInclude Include="CamerasDrawer.h">
+    <ClInclude Include="LightsDrawer.h">
+    <ClInclude Include="LayerBoundsDrawer.h">
+      <Filter>LayerBoundsDrawer</Filter>
+    </ClInclude>
+      <Filter>LightsDrawer</Filter>
+    </ClInclude>
+      <Filter>CamerasDrawer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SceneOverviewDrawer.cpp" />
     <ClCompile Include="Scene2DDebugDomain.cpp" />
+    <ClCompile Include="CamerasDrawer.cpp">
+    <ClCompile Include="LightsDrawer.cpp">
+    <ClCompile Include="LayerBoundsDrawer.cpp">
+      <Filter>LayerBoundsDrawer</Filter>
+    </ClCompile>
+      <Filter>LightsDrawer</Filter>
+    </ClCompile>
+      <Filter>CamerasDrawer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.scene2dvisualdebugger.architecture.module.md">

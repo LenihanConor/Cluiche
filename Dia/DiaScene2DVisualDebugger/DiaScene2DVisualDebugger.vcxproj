@@ -76,10 +76,16 @@
   <ItemGroup>
     <ClInclude Include="SceneOverviewDrawer.h" />
     <ClInclude Include="Scene2DDebugDomain.h" />
+    <ClInclude Include="CamerasDrawer.h" />
+    <ClInclude Include="LightsDrawer.h" />
+    <ClInclude Include="LayerBoundsDrawer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SceneOverviewDrawer.cpp" />
     <ClCompile Include="Scene2DDebugDomain.cpp" />
+    <ClCompile Include="CamerasDrawer.cpp" />
+    <ClCompile Include="LightsDrawer.cpp" />
+    <ClCompile Include="LayerBoundsDrawer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.scene2dvisualdebugger.architecture.module.md" />
