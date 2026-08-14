@@ -106,6 +106,11 @@ namespace Dia
             return static_cast<int>(mImpl->tasks.size());
         }
 
+        int HTNPlan::GetCurrentTaskIndex() const
+        {
+            return mCursor;
+        }
+
         // -----------------------------------------------------------------------
         // HasDiverged
         //

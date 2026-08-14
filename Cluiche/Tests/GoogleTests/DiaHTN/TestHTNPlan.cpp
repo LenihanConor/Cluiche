@@ -233,3 +233,20 @@ TEST(DiaHTN_Plan, HasDiverged_BoolChanges_ReturnsTrue)
     ctx.SetBool(Dia::Core::StringCRC("unit"), Dia::Core::StringCRC("alive"), false);
     EXPECT_TRUE(plan.HasDiverged(ctx));
 }
+
+TEST(DiaHTN_Plan, GetCurrentTaskIndex_AtCursor)
+{
+    auto domain = LoadDomain(kLinearDomain);
+    Dia::HTN::Testing::MockHTNContext ctx;
+    Dia::HTN::HTNPlanner planner;
+
+    auto plan = planner.Plan(Dia::Core::StringCRC("Root"), domain, ctx);
+    ASSERT_EQ(plan.GetTaskCount(), 3);
+
+    // Cursor starts at 0
+    EXPECT_EQ(plan.GetCurrentTaskIndex(), 0);
+
+    // After first Advance, cursor is at 1
+    plan.Advance();
+    EXPECT_EQ(plan.GetCurrentTaskIndex(), 1);
+}

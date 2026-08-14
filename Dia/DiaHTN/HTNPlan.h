@@ -46,6 +46,7 @@ namespace Dia
             bool HasDiverged(Dia::Condition::IConditionContext& ctx) const;
 
             int GetTaskCount() const;
+            int GetCurrentTaskIndex() const;
 
         private:
             // Internal mutation helpers called by HTNPlanner (defined in HTNPlan.cpp,
