@@ -89,7 +89,10 @@ void Rig2DDebugDomain::GetJSONState(Json::Value& out)
         drawers.append(entry);
     }
     out["drawers"] = drawers;
-    out["stats"]   = Json::Value(Json::objectValue);
+
+    Json::Value stats(Json::objectValue);
+    stats["boneCount"] = mSkeleton.GetBoneCount();
+    out["stats"] = stats;
 }
 
 void Rig2DDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value& args)
