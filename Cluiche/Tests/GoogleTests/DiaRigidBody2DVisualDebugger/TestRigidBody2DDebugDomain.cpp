@@ -520,4 +520,24 @@ TEST(RigidBody2DDebugDomain_JSONState_Stats, TotalEqualsActivePlusSleepingPlusSt
     EXPECT_EQ(total, computed);
 }
 
+TEST(RigidBody2DDebugDomain_JSONState_Stats, BodyCountsReflectFixturePopulation)
+{
+    // DomainWorld: 1 dynamic (awake) body, 1 static body, 1 constraint, 0 contacts.
+    DomainWorld dw;
+    Dia::Debug::DebugLayerManager mgr;
+    RigidBody2DDebugDomain domain(*dw.world);
+    domain.Register(mgr);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    const Json::Value& stats = state["stats"];
+    EXPECT_EQ(stats["active"].asInt(),      1);
+    EXPECT_EQ(stats["sleeping"].asInt(),    0);
+    EXPECT_EQ(stats["static"].asInt(),      1);
+    EXPECT_EQ(stats["total"].asInt(),       2);
+    EXPECT_EQ(stats["constraints"].asInt(), 1);
+    EXPECT_EQ(stats["contacts"].asInt(),    0);
+}
+
 #endif // DIA_DEBUG

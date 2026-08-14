@@ -399,4 +399,18 @@ TEST(Coord2DDebugDomain_JSONState_Stats, CursorFieldPresent)
     EXPECT_TRUE(stats["cursor"]["y"].isNumeric());
 }
 
+TEST(Coord2DDebugDomain_JSONState_Stats, DefaultCursorIsAtOrigin)
+{
+    // DebugLayerManager default-initialises cursor to (0, 0).
+    DebugLayerManager  mgr;
+    Coord2DDebugDomain domain;
+    domain.Register(mgr);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    EXPECT_FLOAT_EQ(state["stats"]["cursor"]["x"].asFloat(), 0.0f);
+    EXPECT_FLOAT_EQ(state["stats"]["cursor"]["y"].asFloat(), 0.0f);
+}
+
 #endif // DIA_DEBUG

@@ -500,4 +500,22 @@ TEST(SoftBody2DDebugDomain_JSONState_Stats, BodyCountFieldsPresent)
     EXPECT_TRUE(stats["anchorCount"].isInt());
 }
 
+TEST(SoftBody2DDebugDomain_JSONState_Stats, RopeBodyCountsMatchFixture)
+{
+    // DomainWorld: one 3-particle rope, 2 spring constraints (N-1), no anchors.
+    DomainWorld dw;
+    Dia::Debug::DebugLayerManager mgr;
+    SoftBody2DDebugDomain domain(*dw.world);
+    domain.Register(mgr);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    const Json::Value& stats = state["stats"];
+    EXPECT_EQ(stats["bodyCount"].asInt(),       1);
+    EXPECT_EQ(stats["particleCount"].asInt(),   3);
+    EXPECT_EQ(stats["constraintCount"].asInt(), 2);
+    EXPECT_EQ(stats["anchorCount"].asInt(),     0);
+}
+
 #endif // DIA_DEBUG

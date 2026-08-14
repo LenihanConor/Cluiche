@@ -491,4 +491,33 @@ TEST(Animation2DDebugDomain_JSONState_Stats, AnimationStatFieldsPresent)
     EXPECT_TRUE(stats["springs"].isMember("maxAngularVelocity")) << "stats.springs.maxAngularVelocity missing";
 }
 
+TEST(Animation2DDebugDomain_JSONState_Stats, LayerCountMatchesLayersArraySize)
+{
+    DomainAnim da;
+    Dia::Debug::DebugLayerManager mgr;
+    Animation2DDebugDomain domain(*da.evaluator, da.skeleton, da.worldTransforms);
+    domain.Register(mgr);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    const int layerCount = state["stats"]["layerCount"].asInt();
+    EXPECT_EQ(state["stats"]["layers"].size(), static_cast<Json::ArrayIndex>(layerCount));
+}
+
+TEST(Animation2DDebugDomain_JSONState_Stats, SpringsChainCountIsZeroWithNoSprings)
+{
+    // DomainAnim has no spring sources — springs.chainCount == 0, maxAngularVelocity == 0.
+    DomainAnim da;
+    Dia::Debug::DebugLayerManager mgr;
+    Animation2DDebugDomain domain(*da.evaluator, da.skeleton, da.worldTransforms);
+    domain.Register(mgr);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    EXPECT_EQ(state["stats"]["springs"]["chainCount"].asInt(), 0);
+    EXPECT_FLOAT_EQ(state["stats"]["springs"]["maxAngularVelocity"].asFloat(), 0.0f);
+}
+
 #endif // DIA_DEBUG

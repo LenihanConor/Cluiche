@@ -877,3 +877,19 @@ TEST(EntityDebugDomain_JSONState_Stats, EntityCountFieldsPresent)
     EXPECT_TRUE(stats["selection"].isMember("id"))           << "stats.selection.id missing";
     EXPECT_TRUE(stats["selection"].isMember("hasSelection")) << "stats.selection.hasSelection missing";
 }
+
+TEST(EntityDebugDomain_JSONState_Stats, AliveCountIsZeroWithEmptyDomain)
+{
+    // Empty domain (no entities created) — alive == 0, no selection active.
+    Domain domain;
+    RegisterPosPool(domain);
+    Dia::Debug::DebugLayerManager mgr;
+    EntityDebugDomain dbg(domain, domain, kPosTypeId);
+    dbg.Register(mgr);
+
+    Json::Value state;
+    dbg.GetJSONState(state);
+
+    EXPECT_EQ(state["stats"]["alive"].asInt(), 0);
+    EXPECT_FALSE(state["stats"]["selection"]["hasSelection"].asBool());
+}

@@ -498,4 +498,18 @@ TEST(Rig2DDebugDomain_JSONState_Stats, BoneCountFieldPresent)
     EXPECT_TRUE(stats["boneCount"].isInt());
 }
 
+TEST(Rig2DDebugDomain_JSONState_Stats, BoneCountMatchesThreeBoneSkeleton)
+{
+    // DomainRig uses MakeSimpleChain(3) — skeleton has 3 bones.
+    DomainRig dr;
+    Dia::Debug::DebugLayerManager mgr;
+    Rig2DDebugDomain domain(dr.skeleton, dr.worldTransforms);
+    domain.Register(mgr);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    EXPECT_EQ(state["stats"]["boneCount"].asInt(), 3);
+}
+
 #endif // DIA_DEBUG

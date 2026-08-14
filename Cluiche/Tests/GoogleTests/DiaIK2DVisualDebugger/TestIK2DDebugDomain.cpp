@@ -501,4 +501,41 @@ TEST(IK2DDebugDomain_JSONState_Stats, ChainCountFieldPresent)
               static_cast<Json::ArrayIndex>(stats["chainCount"].asInt()));
 }
 
+TEST(IK2DDebugDomain_JSONState_Stats, DrawerNamesAreChainBonesToReachCircles)
+{
+    DomainIK di;
+    Dia::Debug::DebugLayerManager mgr;
+    IK2DDebugDomain domain(di.solver, di.skeleton);
+    domain.Register(mgr);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    ASSERT_EQ(state["drawers"].size(), static_cast<Json::ArrayIndex>(IK2DDebugDomain::kDrawerCount));
+    EXPECT_STREQ(state["drawers"][0u]["name"].asCString(), "ChainBones");
+    EXPECT_STREQ(state["drawers"][1u]["name"].asCString(), "ChainJoints");
+    EXPECT_STREQ(state["drawers"][2u]["name"].asCString(), "ChainArrows");
+    EXPECT_STREQ(state["drawers"][3u]["name"].asCString(), "ReachCircles");
+}
+
+TEST(IK2DDebugDomain_JSONState_Stats, ChainEntryHasAllSubfields)
+{
+    // DomainIK registers one chain "arm" — chains[0] must have all 5 sub-fields.
+    DomainIK di;
+    Dia::Debug::DebugLayerManager mgr;
+    IK2DDebugDomain domain(di.solver, di.skeleton);
+    domain.Register(mgr);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    ASSERT_EQ(state["stats"]["chainCount"].asInt(), 1);
+    const Json::Value& chain0 = state["stats"]["chains"][0u];
+    EXPECT_EQ(chain0["index"].asInt(), 0);
+    EXPECT_STREQ(chain0["id"].asCString(), "arm");
+    EXPECT_TRUE(chain0.isMember("solved"))           << "chains[0].solved missing";
+    EXPECT_TRUE(chain0.isMember("iterations"))       << "chains[0].iterations missing";
+    EXPECT_TRUE(chain0.isMember("endEffectorError")) << "chains[0].endEffectorError missing";
+}
+
 #endif // DIA_DEBUG

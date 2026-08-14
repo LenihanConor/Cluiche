@@ -390,4 +390,23 @@ TEST(Coord3DDebugDomain_JSONState_Stats, CameraFieldsPresent)
     EXPECT_TRUE(stats["farZ"].isNumeric());
 }
 
+TEST(Coord3DDebugDomain_JSONState_Stats, DefaultCameraIsAllZeros)
+{
+    // Camera3D default-constructs with zero eye/dir/fov/near/far.
+    DebugLayerManager  mgr;
+    Coord3DDebugDomain domain;
+    domain.Register(mgr);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    const Json::Value& stats = state["stats"];
+    EXPECT_FLOAT_EQ(stats["eye"][0u].asFloat(), 0.0f);
+    EXPECT_FLOAT_EQ(stats["eye"][1u].asFloat(), 0.0f);
+    EXPECT_FLOAT_EQ(stats["eye"][2u].asFloat(), 0.0f);
+    EXPECT_FLOAT_EQ(stats["fovDeg"].asFloat(),  0.0f);
+    EXPECT_FLOAT_EQ(stats["nearZ"].asFloat(),   0.0f);
+    EXPECT_FLOAT_EQ(stats["farZ"].asFloat(),    0.0f);
+}
+
 #endif // DIA_DEBUG

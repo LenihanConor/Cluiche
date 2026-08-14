@@ -390,4 +390,36 @@ TEST(Scene2DDebugDomain_JSONState_Stats, SceneCountFieldsPresent)
     EXPECT_TRUE(stats["layerCount"].isInt());
 }
 
+TEST(Scene2DDebugDomain_JSONState_Stats, DrawerNamesAreCamerasLightsLayerBounds)
+{
+    SceneFixture f;
+    Dia::Debug::DebugLayerManager mgr;
+    auto domain = f.MakeDomain();
+    domain.Register(mgr);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    ASSERT_EQ(state["drawers"].size(), static_cast<Json::ArrayIndex>(Scene2DDebugDomain::kDrawerCount));
+    EXPECT_STREQ(state["drawers"][0u]["name"].asCString(), "Cameras");
+    EXPECT_STREQ(state["drawers"][1u]["name"].asCString(), "Lights");
+    EXPECT_STREQ(state["drawers"][2u]["name"].asCString(), "LayerBounds");
+}
+
+TEST(Scene2DDebugDomain_JSONState_Stats, EmptyRegistriesReportZeroCounts)
+{
+    // SceneFixture uses empty registries and an empty LayerTable.
+    SceneFixture f;
+    Dia::Debug::DebugLayerManager mgr;
+    auto domain = f.MakeDomain();
+    domain.Register(mgr);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    EXPECT_EQ(state["stats"]["cameraCount"].asInt(), 0);
+    EXPECT_EQ(state["stats"]["lightCount"].asInt(),  0);
+    EXPECT_EQ(state["stats"]["layerCount"].asInt(),  0);
+}
+
 #endif // DIA_DEBUG

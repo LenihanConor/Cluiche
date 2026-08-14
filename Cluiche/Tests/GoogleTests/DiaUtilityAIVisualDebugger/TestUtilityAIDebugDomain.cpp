@@ -439,4 +439,20 @@ TEST(UtilityAIDebugDomain_JSONState_Stats, ActionStatFieldsPresent)
               static_cast<Json::ArrayIndex>(stats["actionCount"].asInt()));
 }
 
+TEST(UtilityAIDebugDomain_JSONState_Stats, EmptyUtilitySetReportsZeroActions)
+{
+    // No actions registered, no Evaluate() called — all counts zero.
+    DomainUtilityAI du;
+    Dia::Debug::DebugLayerManager mgr;
+    UtilityAIDebugDomain domain(du.utilitySet);
+    domain.Register(mgr);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    EXPECT_EQ(state["stats"]["actionCount"].asInt(),       0);
+    EXPECT_FLOAT_EQ(state["stats"]["winnerScore"].asFloat(), 0.0f);
+    EXPECT_EQ(state["stats"]["actions"].size(),            0u);
+}
+
 #endif // DIA_DEBUG

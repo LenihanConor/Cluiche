@@ -437,4 +437,23 @@ TEST(Mesh3DDebugDomain_JSONState_Stats, DrawStatFieldsPresent)
     EXPECT_TRUE(stats["layers"].isArray())  << "stats.layers must be array";
 }
 
+TEST(Mesh3DDebugDomain_JSONState_Stats, EmptyFrameDataReportsAllZeros)
+{
+    // No meshes queued — all counts zero, layers array empty.
+    Dia::Graphics3D::Mesh3DFrameData frameData;
+    Dia::Mesh3D::Mesh3DAssetHandler  handler;
+    Dia::Debug::DebugLayerManager    mgr;
+    Mesh3DDebugDomain domain(frameData, handler);
+    domain.Register(mgr);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    const Json::Value& stats = state["stats"];
+    EXPECT_EQ(stats["draws"].asInt(),    0);
+    EXPECT_EQ(stats["dropped"].asInt(),  0);
+    EXPECT_EQ(stats["loaded"].asInt(),   0);
+    EXPECT_EQ(stats["layers"].size(),    0u);
+}
+
 #endif // DIA_DEBUG
