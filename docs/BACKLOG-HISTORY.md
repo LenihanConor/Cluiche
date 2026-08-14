@@ -102,6 +102,9 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | Clang-Tidy analysis | CMake migration (compile_commands.json) | 2026-08-13 | Dropped — not wanted |
 | TSan (ThreadSanitizer) | Linux target (WSL2 CI) | 2026-08-13 | Dropped — not wanted |
 | Visual Debugger Domain Stats Tests | Add TDD RED stats-field assertions to all 13 domain test files (extend existing `*_JSONState` suites — do not create new files). Each test targets the specific `stats.xxx` fields each `debugger-impl.plan.md` task populates. Also add drawer-name assertions for tasks 13–15 (Scene2D split → 3 drawers, LightRangesDrawer, IK2D/Lighting3D label renames). Run gate: `dia run googletest --filter="*DebugDomain*_JSONState_Stats*"`. Add these after the impl work lands to avoid conflicts. Full plan: `.claude/plans/deep-stargazing-aurora.md`. | 2026-08-14 | 42 tests across 12 _JSONState_Stats suites (28 pass 1 + 14 pass 2); 366/366 green |
+| diarulesvisualdebugger | [spec](specs/) | 2026-08-14 | Marked done by `dia docs spec-done` |
+| diablackboardvisualdebugger | [spec](specs/) | 2026-08-14 | Marked done by `dia docs spec-done` |
+| diaaibudgetvisualdebugger | [spec](specs/) | 2026-08-14 | Marked done by `dia docs spec-done` |
 
 ---
 

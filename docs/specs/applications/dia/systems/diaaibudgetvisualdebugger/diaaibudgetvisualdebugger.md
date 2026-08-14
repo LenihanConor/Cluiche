@@ -237,4 +237,4 @@ All 16 ACs from `debugger-contract.md` apply.
 
 ## Status
 
-**Status:** Approved
+**Status:** Done

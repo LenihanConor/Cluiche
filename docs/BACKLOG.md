@@ -40,10 +40,10 @@ These are new `DiaXxxVisualDebugger` system specs — each is its own module imp
 | DiaPathfindingVisualDebugger | Navigation | High | Approved ✅ | Prereq: confirm `PathGrid::VisitCells()`/`GetWidth()`/`GetHeight()`. World-space: path polyline, start/goal markers, grid passability. |
 | DiaFlowFieldVisualDebugger | Navigation | High | Approved ✅ | Prereq: `FlowField::GetWidth()`/`GetHeight()`. World-space: per-cell direction arrows, reachability overlay. |
 | DiaStateMachineVisualDebugger | AI / Behavior | High | Approved ✅ | No prereqs. Panel: states, transition history, guard pass/fail via `ITransitionListener`. |
-| DiaRulesVisualDebugger | AI / Behavior | Medium | Approved ✅ | No prereqs outstanding. |
+| ~~DiaRulesVisualDebugger~~ | AI / Behavior | Medium | Approved ✅ | No prereqs outstanding. |
 | DiaHTNVisualDebugger | AI / Behavior | Medium | Approved ✅ | Prereq: `HTNPlan::GetCurrentTaskIndex()`. |
-| DiaAIBudgetVisualDebugger | AI / Behavior | Medium | Approved ✅ | Prereq: `AIBudgetResult.perSystem` timing array + `AIBudgetScheduler::GetLastBudgetMs()`. |
-| DiaBlackboardVisualDebugger | AI / Behavior | Low–Med | Approved ✅ | No prereqs. Panel: slot table via `VisitSlots()`, hex fallback, optional per-type formatters. |
+| ~~DiaAIBudgetVisualDebugger~~ | AI / Behavior | Medium | Approved ✅ | Prereq: `AIBudgetResult.perSystem` timing array + `AIBudgetScheduler::GetLastBudgetMs()`. |
+| ~~DiaBlackboardVisualDebugger~~ | AI / Behavior | Low–Med | Approved ✅ | No prereqs. Panel: slot table via `VisitSlots()`, hex fallback, optional per-type formatters. |
 | DiaMailboxVisualDebugger | AI / Behavior | Low–Med | Approved ✅ | Prereq: `Mailbox::GetTypeStatsByIndex(int)`. Panel: per-type queue fill, drop counters. |
 | DiaBehaviourTreeVisualDebugger | AI / Behavior | Medium | — | Needs `/spec-system`. Panel: active node highlight, per-node tick result (Running/Success/Failure), per-entity tree cursor, time-slice resume state. Prereq: DiaBehaviourTree ✅. |
 
