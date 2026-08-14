@@ -4,9 +4,11 @@
 
 #include "LightWidgetsDrawer.h"
 #include "LightPathArcDrawer.h"
+#include "LightRangesDrawer.h"
 
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaLighting3D/Registry/LightRegistry3D.h>
 
 namespace Dia { namespace Lighting3D {
 
@@ -14,13 +16,14 @@ namespace
 {
     const char* const kDrawerLabels[Lighting3DDebugDomain::kDrawerCount] =
     {
-        "Widgets",
-        "PathArc",
+        "PositionWidgets",
+        "PathArcs",
+        "Ranges",
     };
 
     const int kDrawerPriorities[Lighting3DDebugDomain::kDrawerCount] =
     {
-        10, 11
+        10, 11, 12
     };
 
     const Dia::Core::StringCRC kStageTag("Lighting3D");
@@ -48,6 +51,7 @@ void Lighting3DDebugDomain::Register(Dia::Debug::DebugLayerManager& mgr)
     if (mLayerManager != nullptr) return;
     mWidgetsDrawer = std::make_unique<LightWidgetsDrawer>(mRegistry);
     mPathArcDrawer = std::make_unique<LightPathArcDrawer>(mRegistry);
+    mRangesDrawer  = std::make_unique<LightRangesDrawer>(mRegistry);
     for (int i = 0; i < kDrawerCount; ++i)
         mgr.Register(GetDrawer(i), kDrawerPriorities[i], kStageTag);
     mLayerManager = &mgr;
@@ -57,7 +61,7 @@ void Lighting3DDebugDomain::Unregister(Dia::Debug::DebugLayerManager& mgr)
 {
     for (int i = 0; i < kDrawerCount; ++i)
         if (Dia::Debug::IVisualDebugger* d = GetDrawer(i)) mgr.Unregister(d->GetLayerName());
-    mWidgetsDrawer.reset(); mPathArcDrawer.reset();
+    mWidgetsDrawer.reset(); mPathArcDrawer.reset(); mRangesDrawer.reset();
     mLayerManager = nullptr;
 }
 
@@ -76,7 +80,12 @@ void Lighting3DDebugDomain::GetJSONState(Json::Value& out)
         drawers.append(entry);
     }
     out["drawers"] = drawers;
-    out["stats"]   = Json::Value(Json::objectValue);
+
+    Json::Value stats(Json::objectValue);
+    stats["pointLightCount"]       = static_cast<int>(mRegistry.GetPointCount());
+    stats["directionalLightCount"] = static_cast<int>(mRegistry.GetDirectionalCount());
+    stats["spotLightCount"]        = static_cast<int>(mRegistry.GetSpotCount());
+    out["stats"] = stats;
 }
 
 void Lighting3DDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value& args)
@@ -111,6 +120,7 @@ Dia::Debug::IVisualDebugger* Lighting3DDebugDomain::GetDrawer(int index)
     {
     case 0: return mWidgetsDrawer.get();
     case 1: return mPathArcDrawer.get();
+    case 2: return mRangesDrawer.get();
     default: return nullptr;
     }
 }

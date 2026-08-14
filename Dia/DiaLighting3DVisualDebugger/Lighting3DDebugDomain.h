@@ -18,6 +18,7 @@ namespace Dia { namespace Lighting3D {
     class LightRegistry3D;
     class LightWidgetsDrawer;
     class LightPathArcDrawer;
+    class LightRangesDrawer;
 } }
 
 namespace Dia { namespace Lighting3D {
@@ -31,7 +32,7 @@ namespace Dia { namespace Lighting3D {
 class Lighting3DDebugDomain : public Dia::VisualDebugger::IDebugDomain
 {
 public:
-    static const int kDrawerCount = 2;
+    static const int kDrawerCount = 3;
 
     explicit Lighting3DDebugDomain(const LightRegistry3D& registry);
     ~Lighting3DDebugDomain() override;
@@ -64,6 +65,7 @@ private:
 
     std::unique_ptr<LightWidgetsDrawer>  mWidgetsDrawer;
     std::unique_ptr<LightPathArcDrawer>  mPathArcDrawer;
+    std::unique_ptr<LightRangesDrawer>   mRangesDrawer;
 };
 
 } } // namespace Dia::Lighting3D
