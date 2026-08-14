@@ -211,6 +211,9 @@
     <Filter Include="DiaEntitySpawner">
       <UniqueIdentifier>{B2C3D4E5-F6A7-8901-BCDE-F01234567890}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaMailboxVisualDebugger">
+      <UniqueIdentifier>{DMVD0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -1577,6 +1580,9 @@
       <Filter>DiaSaveGame</Filter>
     </ClCompile>
       <Filter>DiaObjective</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMailboxVisualDebugger\TestMailboxVisualDebugger.cpp">
+      <Filter>DiaMailboxVisualDebugger</Filter>
     </ClCompile>
       <Filter>DiaScalarField</Filter>
     </ClCompile>

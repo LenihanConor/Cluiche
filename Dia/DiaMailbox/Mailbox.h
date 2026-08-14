@@ -97,6 +97,10 @@ namespace Dia::Mailbox {
         template <class T>
         TypeStats GetTypeStats() const;
 
+        // Type-erased stats by registration index. Returns zeroed TypeStats if
+        // typeIndex is out of [0, GetRegisteredTypeCount()).
+        TypeStats GetTypeStatsByIndex(int typeIndex) const;
+
         // Number of registered types (0..kMaxTypes).
         uint32_t GetRegisteredTypeCount() const;
 

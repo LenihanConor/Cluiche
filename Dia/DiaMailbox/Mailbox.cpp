@@ -54,6 +54,21 @@ namespace Dia::Mailbox {
         }
     }
 
+    Mailbox::TypeStats Mailbox::GetTypeStatsByIndex(int typeIndex) const {
+        if (typeIndex < 0 || static_cast<uint32_t>(typeIndex) >= mRegistry.Size()) {
+            return TypeStats{};
+        }
+        const TypedQueueDescriptor* desc = mRegistry[static_cast<uint32_t>(typeIndex)];
+        TypeStats s;
+        s.typeKey      = desc->typeKey;
+        s.capacity     = desc->capacity;
+        s.currentCount = desc->count;
+        s.totalSent    = desc->totalSent;
+        s.totalDropped = desc->totalDropped;
+        s.totalDrained = desc->totalDrained;
+        return s;
+    }
+
     uint32_t Mailbox::GetRegisteredTypeCount() const {
         return mRegistry.Size();
     }
