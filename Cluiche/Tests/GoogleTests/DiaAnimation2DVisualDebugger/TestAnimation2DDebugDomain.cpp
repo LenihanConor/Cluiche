@@ -461,4 +461,34 @@ TEST(Animation2DDebugDomain_OnCommand, SetScaleWithUnknownKeyIsIgnored)
     EXPECT_FLOAT_EQ(mgr.GetDebugScale(), 1.0f);
 }
 
+// ===========================================================================
+// Stats fields — GetJSONState() animation state assertions
+// ===========================================================================
+
+TEST(Animation2DDebugDomain_JSONState_Stats, AnimationStatFieldsPresent)
+{
+    DomainAnim da;
+    Dia::Debug::DebugLayerManager mgr;
+    Animation2DDebugDomain domain(*da.evaluator, da.skeleton, da.worldTransforms);
+    domain.Register(mgr);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    const Json::Value& stats = state["stats"];
+    ASSERT_TRUE(stats.isObject());
+    EXPECT_TRUE(stats.isMember("layerCount"))     << "stats.layerCount missing";
+    EXPECT_TRUE(stats["layerCount"].isInt());
+    EXPECT_TRUE(stats.isMember("activeClip"))     << "stats.activeClip missing";
+    EXPECT_TRUE(stats["activeClip"].isString());
+    EXPECT_TRUE(stats.isMember("normalizedTime")) << "stats.normalizedTime missing";
+    EXPECT_TRUE(stats["normalizedTime"].isNumeric());
+    EXPECT_TRUE(stats.isMember("layers"))         << "stats.layers missing";
+    EXPECT_TRUE(stats["layers"].isArray());
+    EXPECT_TRUE(stats.isMember("springs"))        << "stats.springs missing";
+    EXPECT_TRUE(stats["springs"].isObject());
+    EXPECT_TRUE(stats["springs"].isMember("chainCount"))         << "stats.springs.chainCount missing";
+    EXPECT_TRUE(stats["springs"].isMember("maxAngularVelocity")) << "stats.springs.maxAngularVelocity missing";
+}
+
 #endif // DIA_DEBUG

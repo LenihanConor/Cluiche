@@ -366,4 +366,28 @@ TEST(Scene2DDebugDomain_OnCommand, BeforeRegisterCommandsAreNoOps)
     EXPECT_EQ(mgr.GetLayerCount(), 0);
 }
 
+// ===========================================================================
+// Stats fields — GetJSONState() scene count assertions
+// ===========================================================================
+
+TEST(Scene2DDebugDomain_JSONState_Stats, SceneCountFieldsPresent)
+{
+    SceneFixture f;
+    Dia::Debug::DebugLayerManager mgr;
+    auto domain = f.MakeDomain();
+    domain.Register(mgr);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    const Json::Value& stats = state["stats"];
+    ASSERT_TRUE(stats.isObject());
+    EXPECT_TRUE(stats.isMember("cameraCount")) << "stats.cameraCount missing";
+    EXPECT_TRUE(stats["cameraCount"].isInt());
+    EXPECT_TRUE(stats.isMember("lightCount"))  << "stats.lightCount missing";
+    EXPECT_TRUE(stats["lightCount"].isInt());
+    EXPECT_TRUE(stats.isMember("layerCount"))  << "stats.layerCount missing";
+    EXPECT_TRUE(stats["layerCount"].isInt());
+}
+
 #endif // DIA_DEBUG

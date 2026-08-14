@@ -376,4 +376,27 @@ TEST(Coord2DDebugDomain_OnCommand, BeforeRegisterCommandsAreNoOps)
     EXPECT_EQ(mgr.GetLayerCount(), 0);
 }
 
+// ===========================================================================
+// Stats fields — GetJSONState() cursor position assertions
+// ===========================================================================
+
+TEST(Coord2DDebugDomain_JSONState_Stats, CursorFieldPresent)
+{
+    DebugLayerManager  mgr;
+    Coord2DDebugDomain domain;
+    domain.Register(mgr);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    const Json::Value& stats = state["stats"];
+    ASSERT_TRUE(stats.isObject());
+    EXPECT_TRUE(stats.isMember("cursor"))      << "stats.cursor missing";
+    EXPECT_TRUE(stats["cursor"].isObject())    << "stats.cursor must be object";
+    EXPECT_TRUE(stats["cursor"].isMember("x")) << "stats.cursor.x missing";
+    EXPECT_TRUE(stats["cursor"].isMember("y")) << "stats.cursor.y missing";
+    EXPECT_TRUE(stats["cursor"]["x"].isNumeric());
+    EXPECT_TRUE(stats["cursor"]["y"].isNumeric());
+}
+
 #endif // DIA_DEBUG

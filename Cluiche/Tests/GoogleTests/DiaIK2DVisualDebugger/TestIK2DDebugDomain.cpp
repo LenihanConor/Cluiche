@@ -477,4 +477,28 @@ TEST(IK2DDebugDomain_OnCommand, SetScaleWithUnknownKeyIsIgnored)
     EXPECT_FLOAT_EQ(mgr.GetDebugScale(), 1.0f);
 }
 
+// ===========================================================================
+// Stats fields — GetJSONState() IK chain assertions
+// ===========================================================================
+
+TEST(IK2DDebugDomain_JSONState_Stats, ChainCountFieldPresent)
+{
+    DomainIK di;
+    Dia::Debug::DebugLayerManager mgr;
+    IK2DDebugDomain domain(di.solver, di.skeleton);
+    domain.Register(mgr);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    const Json::Value& stats = state["stats"];
+    ASSERT_TRUE(stats.isObject());
+    EXPECT_TRUE(stats.isMember("chainCount")) << "stats.chainCount missing";
+    EXPECT_TRUE(stats["chainCount"].isInt());
+    EXPECT_TRUE(stats.isMember("chains"))     << "stats.chains missing";
+    EXPECT_TRUE(stats["chains"].isArray());
+    EXPECT_EQ(stats["chains"].size(),
+              static_cast<Json::ArrayIndex>(stats["chainCount"].asInt()));
+}
+
 #endif // DIA_DEBUG

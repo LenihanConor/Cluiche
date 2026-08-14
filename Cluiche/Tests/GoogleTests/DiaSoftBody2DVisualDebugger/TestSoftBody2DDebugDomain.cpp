@@ -474,4 +474,30 @@ TEST(SoftBody2DDebugDomain_OnCommand, SetScaleWithUnknownKeyIsIgnored)
     EXPECT_FLOAT_EQ(mgr.GetDebugScale(), 1.0f);
 }
 
+// ===========================================================================
+// Stats fields — GetJSONState() soft body count assertions
+// ===========================================================================
+
+TEST(SoftBody2DDebugDomain_JSONState_Stats, BodyCountFieldsPresent)
+{
+    DomainWorld dw;
+    Dia::Debug::DebugLayerManager mgr;
+    SoftBody2DDebugDomain domain(*dw.world);
+    domain.Register(mgr);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    const Json::Value& stats = state["stats"];
+    ASSERT_TRUE(stats.isObject());
+    EXPECT_TRUE(stats.isMember("bodyCount"))       << "stats.bodyCount missing";
+    EXPECT_TRUE(stats["bodyCount"].isInt());
+    EXPECT_TRUE(stats.isMember("particleCount"))   << "stats.particleCount missing";
+    EXPECT_TRUE(stats["particleCount"].isInt());
+    EXPECT_TRUE(stats.isMember("constraintCount")) << "stats.constraintCount missing";
+    EXPECT_TRUE(stats["constraintCount"].isInt());
+    EXPECT_TRUE(stats.isMember("anchorCount"))     << "stats.anchorCount missing";
+    EXPECT_TRUE(stats["anchorCount"].isInt());
+}
+
 #endif // DIA_DEBUG

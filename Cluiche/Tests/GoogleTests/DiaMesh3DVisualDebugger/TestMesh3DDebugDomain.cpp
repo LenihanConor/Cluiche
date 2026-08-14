@@ -407,4 +407,34 @@ TEST(Mesh3DDebugDomain_OnCommand, BeforeRegisterCommandsAreNoOps)
     EXPECT_EQ(mgr.GetLayerCount(), 0);
 }
 
+// ===========================================================================
+// Stats fields — GetJSONState() mesh draw stat assertions
+// ===========================================================================
+
+TEST(Mesh3DDebugDomain_JSONState_Stats, DrawStatFieldsPresent)
+{
+    Dia::Graphics3D::Mesh3DFrameData frameData;
+    Dia::Mesh3D::Mesh3DAssetHandler  handler;
+    Dia::Debug::DebugLayerManager    mgr;
+    Mesh3DDebugDomain domain(frameData, handler);
+    domain.Register(mgr);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    const Json::Value& stats = state["stats"];
+    ASSERT_TRUE(stats.isObject());
+    EXPECT_TRUE(stats.isMember("draws"))    << "stats.draws missing";
+    EXPECT_TRUE(stats.isMember("dropped"))  << "stats.dropped missing";
+    EXPECT_TRUE(stats.isMember("loaded"))   << "stats.loaded missing";
+    EXPECT_TRUE(stats.isMember("skinned"))  << "stats.skinned missing";
+    EXPECT_TRUE(stats.isMember("static"))   << "stats.static missing";
+    EXPECT_TRUE(stats.isMember("ready"))    << "stats.ready missing";
+    EXPECT_TRUE(stats.isMember("pending"))  << "stats.pending missing";
+    EXPECT_TRUE(stats.isMember("failed"))   << "stats.failed missing";
+    EXPECT_TRUE(stats.isMember("notFound")) << "stats.notFound missing";
+    EXPECT_TRUE(stats.isMember("layers"))   << "stats.layers missing";
+    EXPECT_TRUE(stats["layers"].isArray())  << "stats.layers must be array";
+}
+
 #endif // DIA_DEBUG

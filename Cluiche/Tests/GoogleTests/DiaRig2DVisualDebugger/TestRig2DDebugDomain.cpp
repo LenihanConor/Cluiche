@@ -478,4 +478,24 @@ TEST(Rig2DDebugDomain_OnCommand, SetScaleWithUnknownKeyIsIgnored)
     EXPECT_FLOAT_EQ(mgr.GetDebugScale(), 1.0f);
 }
 
+// ===========================================================================
+// Stats fields — GetJSONState() bone count assertions
+// ===========================================================================
+
+TEST(Rig2DDebugDomain_JSONState_Stats, BoneCountFieldPresent)
+{
+    DomainRig dr;
+    Dia::Debug::DebugLayerManager mgr;
+    Rig2DDebugDomain domain(dr.skeleton, dr.worldTransforms);
+    domain.Register(mgr);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    const Json::Value& stats = state["stats"];
+    ASSERT_TRUE(stats.isObject());
+    EXPECT_TRUE(stats.isMember("boneCount")) << "stats.boneCount missing";
+    EXPECT_TRUE(stats["boneCount"].isInt());
+}
+
 #endif // DIA_DEBUG

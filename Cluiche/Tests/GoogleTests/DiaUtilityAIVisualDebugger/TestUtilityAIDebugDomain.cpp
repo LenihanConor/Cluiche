@@ -413,4 +413,30 @@ TEST(UtilityAIDebugDomain_OnCommand, SetScaleWithUnknownKeyIsIgnored)
     EXPECT_FLOAT_EQ(mgr.GetDebugScale(), 1.0f);
 }
 
+// ===========================================================================
+// Stats fields — GetJSONState() utility AI action assertions
+// ===========================================================================
+
+TEST(UtilityAIDebugDomain_JSONState_Stats, ActionStatFieldsPresent)
+{
+    DomainUtilityAI du;
+    Dia::Debug::DebugLayerManager mgr;
+    UtilityAIDebugDomain domain(du.utilitySet);
+    domain.Register(mgr);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    const Json::Value& stats = state["stats"];
+    ASSERT_TRUE(stats.isObject());
+    EXPECT_TRUE(stats.isMember("actionCount")) << "stats.actionCount missing";
+    EXPECT_TRUE(stats["actionCount"].isInt());
+    EXPECT_TRUE(stats.isMember("winnerScore")) << "stats.winnerScore missing";
+    EXPECT_TRUE(stats["winnerScore"].isNumeric());
+    EXPECT_TRUE(stats.isMember("actions"))     << "stats.actions missing";
+    EXPECT_TRUE(stats["actions"].isArray());
+    EXPECT_EQ(stats["actions"].size(),
+              static_cast<Json::ArrayIndex>(stats["actionCount"].asInt()));
+}
+
 #endif // DIA_DEBUG

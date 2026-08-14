@@ -474,4 +474,50 @@ TEST(RigidBody2DDebugDomain_OnCommand, SetScaleWithUnknownKeyIsIgnored)
     EXPECT_FLOAT_EQ(mgr.GetDebugScale(), 1.0f);
 }
 
+// ===========================================================================
+// Stats fields — GetJSONState() body count assertions
+// ===========================================================================
+
+TEST(RigidBody2DDebugDomain_JSONState_Stats, BodyCountFieldsPresent)
+{
+    DomainWorld dw;
+    Dia::Debug::DebugLayerManager mgr;
+    RigidBody2DDebugDomain domain(*dw.world);
+    domain.Register(mgr);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    const Json::Value& stats = state["stats"];
+    ASSERT_TRUE(stats.isObject());
+    EXPECT_TRUE(stats.isMember("active"))      << "stats.active missing";
+    EXPECT_TRUE(stats["active"].isInt());
+    EXPECT_TRUE(stats.isMember("sleeping"))    << "stats.sleeping missing";
+    EXPECT_TRUE(stats["sleeping"].isInt());
+    EXPECT_TRUE(stats.isMember("static"))      << "stats.static missing";
+    EXPECT_TRUE(stats["static"].isInt());
+    EXPECT_TRUE(stats.isMember("total"))       << "stats.total missing";
+    EXPECT_TRUE(stats["total"].isInt());
+    EXPECT_TRUE(stats.isMember("contacts"))    << "stats.contacts missing";
+    EXPECT_TRUE(stats["contacts"].isInt());
+    EXPECT_TRUE(stats.isMember("constraints")) << "stats.constraints missing";
+    EXPECT_TRUE(stats["constraints"].isInt());
+}
+
+TEST(RigidBody2DDebugDomain_JSONState_Stats, TotalEqualsActivePlusSleepingPlusStatic)
+{
+    DomainWorld dw;
+    Dia::Debug::DebugLayerManager mgr;
+    RigidBody2DDebugDomain domain(*dw.world);
+    domain.Register(mgr);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    const Json::Value& stats = state["stats"];
+    const int total    = stats["total"].asInt();
+    const int computed = stats["active"].asInt() + stats["sleeping"].asInt() + stats["static"].asInt();
+    EXPECT_EQ(total, computed);
+}
+
 #endif // DIA_DEBUG

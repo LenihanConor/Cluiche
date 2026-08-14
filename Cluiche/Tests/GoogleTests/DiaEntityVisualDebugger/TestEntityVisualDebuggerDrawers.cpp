@@ -852,3 +852,28 @@ TEST(EntityDebugDomain_OnCommand, SetScaleUpdatesSharedDebugScale)
 
     EXPECT_FLOAT_EQ(mgr.GetDebugScale(), 3.0f);
 }
+
+// ---- Stats fields: GetJSONState() entity count assertions ----------------
+
+TEST(EntityDebugDomain_JSONState_Stats, EntityCountFieldsPresent)
+{
+    Domain domain;
+    RegisterPosPool(domain);
+    Dia::Debug::DebugLayerManager mgr;
+    EntityDebugDomain dbg(domain, domain, kPosTypeId);
+    dbg.Register(mgr);
+
+    Json::Value state;
+    dbg.GetJSONState(state);
+
+    const Json::Value& stats = state["stats"];
+    ASSERT_TRUE(stats.isObject());
+    EXPECT_TRUE(stats.isMember("alive"))       << "stats.alive missing";
+    EXPECT_TRUE(stats["alive"].isInt());
+    EXPECT_TRUE(stats.isMember("queryCount"))  << "stats.queryCount missing";
+    EXPECT_TRUE(stats["queryCount"].isInt());
+    EXPECT_TRUE(stats.isMember("selection"))   << "stats.selection missing";
+    EXPECT_TRUE(stats["selection"].isObject());
+    EXPECT_TRUE(stats["selection"].isMember("id"))           << "stats.selection.id missing";
+    EXPECT_TRUE(stats["selection"].isMember("hasSelection")) << "stats.selection.hasSelection missing";
+}

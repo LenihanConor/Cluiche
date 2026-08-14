@@ -361,4 +361,33 @@ TEST(Coord3DDebugDomain_OnCommand, BeforeRegisterCommandsAreNoOps)
     EXPECT_EQ(mgr.GetLayerCount(), 0);
 }
 
+// ===========================================================================
+// Stats fields — GetJSONState() camera parameter assertions
+// ===========================================================================
+
+TEST(Coord3DDebugDomain_JSONState_Stats, CameraFieldsPresent)
+{
+    DebugLayerManager  mgr;
+    Coord3DDebugDomain domain;
+    domain.Register(mgr);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    const Json::Value& stats = state["stats"];
+    ASSERT_TRUE(stats.isObject());
+    EXPECT_TRUE(stats.isMember("eye"))    << "stats.eye missing";
+    EXPECT_TRUE(stats["eye"].isArray())   << "stats.eye must be array";
+    EXPECT_EQ(stats["eye"].size(), 3u)    << "stats.eye must have 3 components";
+    EXPECT_TRUE(stats.isMember("dir"))    << "stats.dir missing";
+    EXPECT_TRUE(stats["dir"].isArray())   << "stats.dir must be array";
+    EXPECT_EQ(stats["dir"].size(), 3u)    << "stats.dir must have 3 components";
+    EXPECT_TRUE(stats.isMember("fovDeg")) << "stats.fovDeg missing";
+    EXPECT_TRUE(stats["fovDeg"].isNumeric());
+    EXPECT_TRUE(stats.isMember("nearZ"))  << "stats.nearZ missing";
+    EXPECT_TRUE(stats["nearZ"].isNumeric());
+    EXPECT_TRUE(stats.isMember("farZ"))   << "stats.farZ missing";
+    EXPECT_TRUE(stats["farZ"].isNumeric());
+}
+
 #endif // DIA_DEBUG

@@ -370,4 +370,45 @@ TEST(Lighting3DDebugDomain_OnCommand, BeforeRegisterCommandsAreNoOps)
     EXPECT_EQ(mgr.GetLayerCount(), 0);
 }
 
+// ===========================================================================
+// Stats fields — GetJSONState() light count assertions
+// ===========================================================================
+
+TEST(Lighting3DDebugDomain_JSONState_Stats, LightCountFieldsPresent)
+{
+    Dia::Lighting3D::Testing::LightBuilder3D builder;
+    Dia::Debug::DebugLayerManager             mgr;
+    Lighting3DDebugDomain domain(builder.Registry());
+    domain.Register(mgr);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    const Json::Value& stats = state["stats"];
+    ASSERT_TRUE(stats.isObject());
+    EXPECT_TRUE(stats.isMember("pointLightCount"))       << "stats.pointLightCount missing";
+    EXPECT_TRUE(stats["pointLightCount"].isInt());
+    EXPECT_TRUE(stats.isMember("directionalLightCount")) << "stats.directionalLightCount missing";
+    EXPECT_TRUE(stats["directionalLightCount"].isInt());
+    EXPECT_TRUE(stats.isMember("spotLightCount"))        << "stats.spotLightCount missing";
+    EXPECT_TRUE(stats["spotLightCount"].isInt());
+}
+
+TEST(Lighting3DDebugDomain_JSONState_Stats, LightCountsReflectRegistryPopulation)
+{
+    Dia::Lighting3D::Testing::LightBuilder3D builder;
+    builder.WithPoint("p0");
+    builder.WithPoint("p1");
+    Dia::Debug::DebugLayerManager             mgr;
+    Lighting3DDebugDomain domain(builder.Registry());
+    domain.Register(mgr);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    EXPECT_EQ(state["stats"]["pointLightCount"].asInt(), 2);
+    EXPECT_EQ(state["stats"]["directionalLightCount"].asInt(), 0);
+    EXPECT_EQ(state["stats"]["spotLightCount"].asInt(), 0);
+}
+
 #endif // DIA_DEBUG
