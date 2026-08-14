@@ -11,6 +11,7 @@
 #include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 #include <DiaCore/DebugDraw/DebugLayerNames.h>
 #include <DiaGraphics3D/FrameData3D.h>
+#include <DiaGraphics3D/Camera3D.h>
 
 namespace Dia::Debug
 {
@@ -93,7 +94,22 @@ void Coord3DDebugDomain::GetJSONState(Json::Value& out)
         drawers.append(entry);
     }
     out["drawers"] = drawers;
-    out["stats"]   = Json::Value(Json::objectValue);
+
+    Json::Value stats(Json::objectValue);
+    if (mLayerManager != nullptr)
+    {
+        const Dia::Graphics3D::Camera3D& cam = mLayerManager->GetCamera3D();
+        Json::Value eye(Json::arrayValue);
+        eye.append(cam.eye.x); eye.append(cam.eye.y); eye.append(cam.eye.z);
+        Json::Value fwd(Json::arrayValue);
+        fwd.append(cam.forward.x); fwd.append(cam.forward.y); fwd.append(cam.forward.z);
+        stats["eye"]    = eye;
+        stats["dir"]    = fwd;
+        stats["fovDeg"] = cam.fovYDeg;
+        stats["nearZ"]  = cam.nearZ;
+        stats["farZ"]   = cam.farZ;
+    }
+    out["stats"] = stats;
 }
 
 void Coord3DDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value& args)
