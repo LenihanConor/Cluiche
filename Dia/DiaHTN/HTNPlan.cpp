@@ -111,6 +111,14 @@ namespace Dia
             return mCursor;
         }
 
+        const HTNTask& HTNPlan::GetTask(int index) const
+        {
+            DIA_ASSERT(mImpl != nullptr, "HTNPlan::GetTask called on a moved-from plan");
+            DIA_ASSERT(index >= 0 && index < static_cast<int>(mImpl->tasks.size()),
+                       "HTNPlan::GetTask index out of range");
+            return mImpl->tasks[static_cast<std::size_t>(index)];
+        }
+
         // -----------------------------------------------------------------------
         // HasDiverged
         //

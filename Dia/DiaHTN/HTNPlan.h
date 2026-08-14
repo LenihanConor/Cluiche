@@ -47,6 +47,7 @@ namespace Dia
 
             int GetTaskCount() const;
             int GetCurrentTaskIndex() const;
+            const HTNTask& GetTask(int index) const;
 
         private:
             // Internal mutation helpers called by HTNPlanner (defined in HTNPlan.cpp,
