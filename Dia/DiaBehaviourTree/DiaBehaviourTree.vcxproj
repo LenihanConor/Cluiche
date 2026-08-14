@@ -74,6 +74,16 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="NodeResult.h" />
+    <ClInclude Include="ActionRegistry.h" />
+    <ClInclude Include="IDecoratorNode.h" />
+    <ClInclude Include="DecoratorRegistry.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ActionRegistry.cpp" />
+    <ClCompile Include="DecoratorRegistry.cpp" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="Docs\dia.diabehaviourtree.architecture.module.md" />
   </ItemGroup>
   <ItemGroup>

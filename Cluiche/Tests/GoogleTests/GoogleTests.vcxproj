@@ -711,6 +711,8 @@
     <ClCompile Include="DiaUtilityAI\TestUtilitySetExtended.cpp" />
     <ClCompile Include="DiaUtilityAI\TestUtilityIntegration.cpp" />
     <ClCompile Include="DiaOrder\TestOrderQueue.cpp" />
+    <!-- DiaBehaviourTree -->
+    <ClCompile Include="DiaBehaviourTree\TestFoundationTypes.cpp" />
     <!-- DiaHTN -->
     <ClCompile Include="DiaHTN\TestOperatorRegistry.cpp" />
     <ClCompile Include="DiaHTN\TestHTNDomain.cpp" />
@@ -1038,6 +1040,10 @@
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaUtilityAI\DiaUtilityAI.vcxproj">
       <Project>{E2F3A4B5-C6D7-8901-EF23-456789012345}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaBehaviourTree\DiaBehaviourTree.vcxproj">
+      <Project>{C0D1E2F3-A4B5-6789-C0D1-E2F3A4B56789}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaHTN\DiaHTN.vcxproj">
