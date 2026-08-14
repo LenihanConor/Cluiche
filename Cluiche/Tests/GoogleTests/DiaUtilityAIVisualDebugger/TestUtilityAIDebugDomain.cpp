@@ -1,54 +1,61 @@
 ////////////////////////////////////////////////////////////////////////////////
 // TestUtilityAIDebugDomain.cpp
-// AC-15 mandatory test shapes for the UtilityAI IDebugDomain migration:
-//   1. enable/disable gate per drawer
-//   2. each drawer emits its expected primitive type
-//   3. scale sensitivity (GetDebugScale changes output measurements)
-//   4. GetJSONState() round-trip
-//   5. OnCommand("toggle", ...) round-trip
-//
-// Note: UtilityScoreDrawer is ImGui-only — Draw() is a no-op.
-//       Tests 1 and 2 therefore verify 0 world primitives are emitted.
-// Feature spec: docs/specs/applications/dia/systems/diadebugdomain/debugger-contract.md
+// Panel-only IDebugDomain for Utility AI — 20 tests across 4 suites.
+// System spec: docs/specs/applications/dia/systems/diautilityaivisualdebugger/diautilityaivisualdebugger.md
 ////////////////////////////////////////////////////////////////////////////////
 #include <gtest/gtest.h>
 
 #ifdef DIA_DEBUG
 
 #include <DiaUtilityAIVisualDebugger/UtilityAIDebugDomain.h>
-
 #include <DiaUtilityAI/UtilitySet.h>
-#include <DiaGraphics/Frame/FrameData.h>
-#include <DiaGraphics/Testing/MockVisitors.h>
-#include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaCondition/Testing/ConditionTestHelpers.h>
+#include <DiaRules/RuleActionRegistry.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
 
 #include <cstring>
 
 using namespace Dia::UtilityAI;
-using namespace Dia::Graphics;
-using namespace Dia::Graphics::Testing;
 
 namespace
 {
 
-// ---------------------------------------------------------------------------
-// Fixture: empty UtilitySet — UtilityScoreDrawer.Draw() is a no-op.
-// The domain takes const UtilitySet&, so we hold one instance.
-// ---------------------------------------------------------------------------
-struct DomainUtilityAI
+Json::Value ParseJson(const char* src)
 {
-    Dia::UtilityAI::UtilitySet utilitySet;
-};
+    Json::Value root;
+    Json::Reader reader;
+    reader.parse(src, root);
+    return root;
+}
 
-RecordingDebugVisitor Inspect(const FrameData& fd)
+// Two actions with linear scorers reading health.value.
+// With health=80: Attack=0.8, Flee=0.2 (Attack wins).
+const char* kTwoActionsJson = R"({
+    "actions": [
+        {
+            "id": "Flee",
+            "scorers": [
+                { "slot": "health", "field": "value", "input_min": 0.0, "input_max": 100.0, "curve": { "shape": "linear", "invert": true } }
+            ]
+        },
+        {
+            "id": "Attack",
+            "scorers": [
+                { "slot": "health", "field": "value", "input_min": 0.0, "input_max": 100.0, "curve": { "shape": "linear" } }
+            ]
+        }
+    ]
+})";
+
+// Populate a UtilitySet's last-frame scores: Attack=0.8, Flee=0.2.
+void PopulateScores(UtilitySet& set)
 {
-    RecordingDebugVisitor v;
-    static_cast<const Dia::Graphics::DebugFrameData&>(fd).AcceptVisitor(v);
-    return v;
+    Dia::Condition::Testing::MockConditionContext ctx;
+    ctx.SetFloat(Dia::Core::StringCRC("health"), Dia::Core::StringCRC("value"), 80.0f);
+    Dia::Rules::RuleActionRegistry registry;
+    set.Evaluate(ctx, registry, nullptr, nullptr);
 }
 
 Json::Value ToggleArgs(const char* drawerName)
@@ -61,13 +68,13 @@ Json::Value ToggleArgs(const char* drawerName)
 } // namespace
 
 // ===========================================================================
-// Identity (AC-5: description <=80 chars, AC-6: accent from DebugGroupAccents)
+// Identity
 // ===========================================================================
 
 TEST(UtilityAIDebugDomain_Identity, IdsAndGroupAreCanonical)
 {
-    DomainUtilityAI du;
-    UtilityAIDebugDomain domain(du.utilitySet);
+    UtilitySet set;
+    UtilityAIDebugDomain domain(set);
 
     EXPECT_EQ(domain.GetDomainId(), Dia::Core::StringCRC("UtilityAI"));
     EXPECT_STREQ(domain.GetDisplayName(), "UtilityAI");
@@ -77,382 +84,265 @@ TEST(UtilityAIDebugDomain_Identity, IdsAndGroupAreCanonical)
 
 TEST(UtilityAIDebugDomain_Identity, DescriptionWithin80Chars)
 {
-    DomainUtilityAI du;
-    UtilityAIDebugDomain domain(du.utilitySet);
+    UtilitySet set;
+    UtilityAIDebugDomain domain(set);
 
     ASSERT_NE(domain.GetDescription(), nullptr);
     EXPECT_LE(strlen(domain.GetDescription()), 80u);
 }
 
-TEST(UtilityAIDebugDomain_Identity, AccentIsAIBehaviorGroupConstant)
+TEST(UtilityAIDebugDomain_Identity, AccentIsAIBehaviorConstant)
 {
-    DomainUtilityAI du;
-    UtilityAIDebugDomain domain(du.utilitySet);
+    UtilitySet set;
+    UtilityAIDebugDomain domain(set);
 
     EXPECT_EQ(domain.GetAccentColour(), Dia::VisualDebugger::DebugGroupAccents::kAIBehavior);
 }
 
-// ===========================================================================
-// Registration lifecycle
-// ===========================================================================
-
-TEST(UtilityAIDebugDomain_Lifecycle, DrawersOnlyExistAfterRegister)
+TEST(UtilityAIDebugDomain_Identity, GetDrawerCount_ReturnsZero)
 {
-    DomainUtilityAI du;
-    Dia::Debug::DebugLayerManager mgr;
-    UtilityAIDebugDomain domain(du.utilitySet);
+    UtilitySet set;
+    UtilityAIDebugDomain domain(set);
 
     EXPECT_EQ(domain.GetDrawerCount(), 0);
     EXPECT_EQ(domain.GetDrawer(0), nullptr);
-
-    domain.Register(mgr);
-
-    EXPECT_EQ(domain.GetDrawerCount(), UtilityAIDebugDomain::kDrawerCount);
-    for (int i = 0; i < UtilityAIDebugDomain::kDrawerCount; ++i)
-        EXPECT_NE(domain.GetDrawer(i), nullptr) << "drawer index " << i;
-    EXPECT_EQ(domain.GetDrawer(UtilityAIDebugDomain::kDrawerCount), nullptr);
-}
-
-TEST(UtilityAIDebugDomain_Lifecycle, RegisterAddsScoreTableLayer)
-{
-    DomainUtilityAI du;
-    Dia::Debug::DebugLayerManager mgr;
-    UtilityAIDebugDomain domain(du.utilitySet);
-    domain.Register(mgr);
-
-    EXPECT_EQ(mgr.GetLayerCount(), UtilityAIDebugDomain::kDrawerCount);
-    EXPECT_TRUE(mgr.HasLayer(Dia::Debug::LayerNames::kUtilityAIScores));
-}
-
-TEST(UtilityAIDebugDomain_Lifecycle, LayersCarryTheUtilityAIStageTag)
-{
-    DomainUtilityAI du;
-    Dia::Debug::DebugLayerManager mgr;
-    UtilityAIDebugDomain domain(du.utilitySet);
-    domain.Register(mgr);
-
-    EXPECT_TRUE(mgr.IsStageActive(Dia::Core::StringCRC("UtilityAI")));
-}
-
-TEST(UtilityAIDebugDomain_Lifecycle, UnregisterRemovesAllLayersAndDrawers)
-{
-    DomainUtilityAI du;
-    Dia::Debug::DebugLayerManager mgr;
-    UtilityAIDebugDomain domain(du.utilitySet);
-    domain.Register(mgr);
-    domain.Unregister(mgr);
-
-    EXPECT_EQ(mgr.GetLayerCount(), 0);
-    EXPECT_EQ(domain.GetDrawerCount(), 0);
-    EXPECT_FALSE(mgr.HasLayer(Dia::Debug::LayerNames::kUtilityAIScores));
-}
-
-TEST(UtilityAIDebugDomain_Lifecycle, DoubleRegisterIsIdempotent)
-{
-    DomainUtilityAI du;
-    Dia::Debug::DebugLayerManager mgr;
-    UtilityAIDebugDomain domain(du.utilitySet);
-    domain.Register(mgr);
-    domain.Register(mgr);
-
-    EXPECT_EQ(mgr.GetLayerCount(), UtilityAIDebugDomain::kDrawerCount);
 }
 
 // ===========================================================================
-// AC-15 #1 — enable/disable gate
-// (UtilityScoreDrawer is ImGui-only: both enabled and disabled yield 0 world
-//  primitives. The test confirms the gate does not crash and emits nothing.)
+// JSON state
 // ===========================================================================
 
-TEST(UtilityAIDebugDomain_DrawerGate, EnabledDrawerEmitsNoWorldPrimitives)
+TEST(UtilityAIDebugDomain_JSONState, ReportsDrawerAndStats)
 {
-    DomainUtilityAI du;
-    Dia::Debug::DebugLayerManager mgr;
-    UtilityAIDebugDomain domain(du.utilitySet);
-    domain.Register(mgr);
-
-    FrameData enabledFrame;
-    mgr.Draw(enabledFrame);
-    EXPECT_EQ(Inspect(enabledFrame).TotalCount(), 0)
-        << "UtilityScoreDrawer is ImGui-only: no world primitives even when enabled";
-}
-
-TEST(UtilityAIDebugDomain_DrawerGate, DisabledDrawerEmitsNoWorldPrimitives)
-{
-    DomainUtilityAI du;
-    Dia::Debug::DebugLayerManager mgr;
-    UtilityAIDebugDomain domain(du.utilitySet);
-    domain.Register(mgr);
-
-    mgr.DisableLayer(Dia::Debug::LayerNames::kUtilityAIScores);
-
-    FrameData disabledFrame;
-    mgr.Draw(disabledFrame);
-    EXPECT_EQ(Inspect(disabledFrame).TotalCount(), 0);
-}
-
-// ===========================================================================
-// AC-15 #2 — each drawer emits its expected primitive type
-// (ImGui-only: expected type count is 0 for all world-space primitive types.)
-// ===========================================================================
-
-TEST(UtilityAIDebugDomain_Primitives, ScoreTableDrawerEmitsNoWorldPrimitives)
-{
-    DomainUtilityAI du;
-    Dia::Debug::DebugLayerManager mgr;
-    UtilityAIDebugDomain domain(du.utilitySet);
-    domain.Register(mgr);
-
-    FrameData fd;
-    mgr.Draw(fd);
-    auto v = Inspect(fd);
-
-    EXPECT_EQ(v.CircleCount(), 0) << "UtilityScoreDrawer has no world-space circles";
-    EXPECT_EQ(v.LineCount(),   0) << "UtilityScoreDrawer has no world-space lines";
-    EXPECT_EQ(v.RectCount(),   0) << "UtilityScoreDrawer has no world-space rects";
-    EXPECT_EQ(v.RayCount(),    0) << "UtilityScoreDrawer has no world-space rays";
-}
-
-// ===========================================================================
-// AC-15 #3 — scale sensitivity
-// (No geometric output to measure; verify setScale is forwarded without crash.)
-// ===========================================================================
-
-TEST(UtilityAIDebugDomain_Scale, SetScaleUpdatesManagerDebugScale)
-{
-    DomainUtilityAI du;
-    Dia::Debug::DebugLayerManager mgr;
-    UtilityAIDebugDomain domain(du.utilitySet);
-    domain.Register(mgr);
-
-    Json::Value args;
-    args["key"]   = "debugScale";
-    args["value"] = 2.5;
-    domain.OnCommand(Dia::Core::StringCRC("setScale"), args);
-
-    EXPECT_FLOAT_EQ(mgr.GetDebugScale(), 2.5f);
-}
-
-TEST(UtilityAIDebugDomain_Scale, SetScaleWithUnknownKeyIsIgnored)
-{
-    DomainUtilityAI du;
-    Dia::Debug::DebugLayerManager mgr;
-    UtilityAIDebugDomain domain(du.utilitySet);
-    domain.Register(mgr);
-
-    Json::Value args;
-    args["key"]   = "notAKnownKey";
-    args["value"] = 3.0;
-    domain.OnCommand(Dia::Core::StringCRC("setScale"), args);
-
-    EXPECT_FLOAT_EQ(mgr.GetDebugScale(), 1.0f);
-}
-
-// ===========================================================================
-// AC-15 #4 — GetJSONState round-trip
-// ===========================================================================
-
-TEST(UtilityAIDebugDomain_JSONState, ReportsScoreTableDrawerAndStatsObject)
-{
-    DomainUtilityAI du;
-    Dia::Debug::DebugLayerManager mgr;
-    UtilityAIDebugDomain domain(du.utilitySet);
-    domain.Register(mgr);
+    UtilitySet set;
+    UtilityAIDebugDomain domain(set);
 
     Json::Value state;
     domain.GetJSONState(state);
 
     ASSERT_TRUE(state.isMember("drawers"));
     ASSERT_TRUE(state["drawers"].isArray());
-    EXPECT_EQ(state["drawers"].size(),
-              static_cast<Json::ArrayIndex>(UtilityAIDebugDomain::kDrawerCount));
+    EXPECT_EQ(state["drawers"].size(), 1u);
     ASSERT_TRUE(state.isMember("stats"));
     EXPECT_TRUE(state["stats"].isObject());
-
-    for (Json::ArrayIndex i = 0; i < state["drawers"].size(); ++i)
-    {
-        const Json::Value& entry = state["drawers"][i];
-        EXPECT_TRUE(entry.isMember("name"));
-        EXPECT_FALSE(entry["name"].asString().empty());
-        ASSERT_TRUE(entry.isMember("enabled"));
-        EXPECT_TRUE(entry["enabled"].asBool()) << "drawers start enabled";
-    }
+    EXPECT_TRUE(state.isMember("actions"));
 }
 
-TEST(UtilityAIDebugDomain_JSONState, EnabledFlagTracksLayerManager)
+TEST(UtilityAIDebugDomain_JSONState, DrawerName_IsScores)
 {
-    DomainUtilityAI du;
-    Dia::Debug::DebugLayerManager mgr;
-    UtilityAIDebugDomain domain(du.utilitySet);
-    domain.Register(mgr);
-
-    mgr.DisableLayer(Dia::Debug::LayerNames::kUtilityAIScores);
+    UtilitySet set;
+    UtilityAIDebugDomain domain(set);
 
     Json::Value state;
     domain.GetJSONState(state);
-    ASSERT_EQ(state["drawers"].size(), 1u);
-    EXPECT_STREQ(state["drawers"][0u]["name"].asCString(), "ScoreTable");
+
+    ASSERT_GE(state["drawers"].size(), 1u);
+    EXPECT_STREQ(state["drawers"][0u]["name"].asCString(), "Scores");
+    EXPECT_TRUE(state["drawers"][0u]["enabled"].asBool());
+}
+
+TEST(UtilityAIDebugDomain_JSONState, EmptyUtilitySet_ZeroActionsAndWinnerScore)
+{
+    UtilitySet set;
+    UtilityAIDebugDomain domain(set);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    EXPECT_EQ(state["stats"]["actionCount"].asInt(), 0);
+    EXPECT_FLOAT_EQ(state["stats"]["winnerScore"].asFloat(), 0.0f);
+    EXPECT_TRUE(state["actions"].isArray());
+    EXPECT_EQ(state["actions"].size(), 0u);
+}
+
+TEST(UtilityAIDebugDomain_JSONState, ActionsAtTopLevel_NotInsideStats)
+{
+    UtilitySet set = UtilitySet::LoadFromJson(ParseJson(kTwoActionsJson));
+    PopulateScores(set);
+    UtilityAIDebugDomain domain(set);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    // actions must be top-level, not nested under stats
+    EXPECT_TRUE(state.isMember("actions"))           << "actions must be top-level";
+    EXPECT_FALSE(state["stats"].isMember("actions")) << "actions must NOT be in stats";
+    EXPECT_EQ(state["actions"].size(), 2u);
+}
+
+TEST(UtilityAIDebugDomain_JSONState, StatsAlwaysPresent_EvenWhenDrawerDisabled)
+{
+    UtilitySet set = UtilitySet::LoadFromJson(ParseJson(kTwoActionsJson));
+    PopulateScores(set);
+    UtilityAIDebugDomain domain(set);
+
+    domain.OnCommand(Dia::Core::StringCRC("toggle"), ToggleArgs("Scores"));
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    EXPECT_TRUE(state.isMember("stats"));
+    EXPECT_EQ(state["stats"]["actionCount"].asInt(), 2);
+    EXPECT_GT(state["stats"]["winnerScore"].asFloat(), 0.0f);
+    EXPECT_FALSE(state.isMember("actions")) << "actions must be absent when disabled";
+}
+
+TEST(UtilityAIDebugDomain_JSONState, DrawerEnabledFlag_MatchesToggleState)
+{
+    UtilitySet set;
+    UtilityAIDebugDomain domain(set);
+
+    domain.OnCommand(Dia::Core::StringCRC("toggle"), ToggleArgs("Scores"));
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
     EXPECT_FALSE(state["drawers"][0u]["enabled"].asBool());
 }
 
-TEST(UtilityAIDebugDomain_JSONState, BeforeRegisterAllDrawersReportDisabled)
+TEST(UtilityAIDebugDomain_JSONState, BeforeEvaluate_EmptyActionsArray)
 {
-    DomainUtilityAI du;
-    UtilityAIDebugDomain domain(du.utilitySet);
+    UtilitySet set = UtilitySet::LoadFromJson(ParseJson(kTwoActionsJson));
+    UtilityAIDebugDomain domain(set);
 
     Json::Value state;
     domain.GetJSONState(state);
 
-    ASSERT_TRUE(state["drawers"].isArray());
-    EXPECT_EQ(state["drawers"].size(), 1u);
-    for (Json::ArrayIndex i = 0; i < state["drawers"].size(); ++i)
-        EXPECT_FALSE(state["drawers"][i]["enabled"].asBool());
+    // No Evaluate() called — GetLastFrameScores returns nothing
+    EXPECT_EQ(state["stats"]["actionCount"].asInt(), 0);
+    EXPECT_EQ(state["actions"].size(), 0u);
 }
 
 // ===========================================================================
-// AC-15 #5 — OnCommand("toggle") round-trip
+// Actions array content
 // ===========================================================================
 
-TEST(UtilityAIDebugDomain_OnCommand, TogglePanelLabelFlipsLayerTwice)
+TEST(UtilityAIDebugDomain_Actions, SortedDescendingByScore)
 {
-    DomainUtilityAI du;
-    Dia::Debug::DebugLayerManager mgr;
-    UtilityAIDebugDomain domain(du.utilitySet);
-    domain.Register(mgr);
+    UtilitySet set = UtilitySet::LoadFromJson(ParseJson(kTwoActionsJson));
+    PopulateScores(set);
+    UtilityAIDebugDomain domain(set);
 
-    const Dia::Core::StringCRC scores = Dia::Debug::LayerNames::kUtilityAIScores;
-    ASSERT_TRUE(mgr.IsLayerEnabled(scores));
+    Json::Value state;
+    domain.GetJSONState(state);
 
-    domain.OnCommand(Dia::Core::StringCRC("toggle"), ToggleArgs("ScoreTable"));
-    EXPECT_FALSE(mgr.IsLayerEnabled(scores));
-
-    domain.OnCommand(Dia::Core::StringCRC("toggle"), ToggleArgs("ScoreTable"));
-    EXPECT_TRUE(mgr.IsLayerEnabled(scores));
+    ASSERT_GE(state["actions"].size(), 2u);
+    EXPECT_GE(state["actions"][0u]["score"].asFloat(),
+              state["actions"][1u]["score"].asFloat())
+        << "actions must be sorted descending by score";
 }
 
-TEST(UtilityAIDebugDomain_OnCommand, ToggleAcceptsRawLayerName)
+TEST(UtilityAIDebugDomain_Actions, WinnerMarkedOnTopEntry)
 {
-    DomainUtilityAI du;
-    Dia::Debug::DebugLayerManager mgr;
-    UtilityAIDebugDomain domain(du.utilitySet);
-    domain.Register(mgr);
+    UtilitySet set = UtilitySet::LoadFromJson(ParseJson(kTwoActionsJson));
+    PopulateScores(set);
+    UtilityAIDebugDomain domain(set);
 
-    domain.OnCommand(Dia::Core::StringCRC("toggle"), ToggleArgs("utility_ai.scores"));
-    EXPECT_FALSE(mgr.IsLayerEnabled(Dia::Debug::LayerNames::kUtilityAIScores));
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    ASSERT_GE(state["actions"].size(), 1u);
+    EXPECT_TRUE(state["actions"][0u]["winner"].asBool())    << "first action must have winner=true";
+    EXPECT_FALSE(state["actions"][1u]["winner"].asBool())   << "second action must have winner=false";
 }
 
-TEST(UtilityAIDebugDomain_OnCommand, UnknownDrawerNameIsIgnored)
+TEST(UtilityAIDebugDomain_Actions, WinnerScoreMatchesTopAction)
 {
-    DomainUtilityAI du;
-    Dia::Debug::DebugLayerManager mgr;
-    UtilityAIDebugDomain domain(du.utilitySet);
-    domain.Register(mgr);
+    UtilitySet set = UtilitySet::LoadFromJson(ParseJson(kTwoActionsJson));
+    PopulateScores(set);
+    UtilityAIDebugDomain domain(set);
 
-    domain.OnCommand(Dia::Core::StringCRC("toggle"), ToggleArgs("NoSuchDrawer"));
+    Json::Value state;
+    domain.GetJSONState(state);
 
-    for (int i = 0; i < UtilityAIDebugDomain::kDrawerCount; ++i)
-        EXPECT_TRUE(mgr.IsLayerEnabled(domain.GetDrawer(i)->GetLayerName()));
+    ASSERT_GE(state["actions"].size(), 1u);
+    EXPECT_FLOAT_EQ(state["stats"]["winnerScore"].asFloat(),
+                    state["actions"][0u]["score"].asFloat());
 }
 
-TEST(UtilityAIDebugDomain_OnCommand, MalformedAndUnknownCommandsAreIgnored)
+TEST(UtilityAIDebugDomain_Actions, ActionCountMatchesArraySize)
 {
-    DomainUtilityAI du;
-    Dia::Debug::DebugLayerManager mgr;
-    UtilityAIDebugDomain domain(du.utilitySet);
-    domain.Register(mgr);
+    UtilitySet set = UtilitySet::LoadFromJson(ParseJson(kTwoActionsJson));
+    PopulateScores(set);
+    UtilityAIDebugDomain domain(set);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    EXPECT_EQ(static_cast<Json::ArrayIndex>(state["stats"]["actionCount"].asInt()),
+              state["actions"].size());
+}
+
+// ===========================================================================
+// OnCommand
+// ===========================================================================
+
+TEST(UtilityAIDebugDomain_OnCommand, Toggle_Scores_RemovesActionsKey)
+{
+    UtilitySet set;
+    UtilityAIDebugDomain domain(set);
+
+    domain.OnCommand(Dia::Core::StringCRC("toggle"), ToggleArgs("Scores"));
+
+    Json::Value state;
+    domain.GetJSONState(state);
+    EXPECT_FALSE(state.isMember("actions"));
+}
+
+TEST(UtilityAIDebugDomain_OnCommand, Toggle_Scores_Twice_Restores)
+{
+    UtilitySet set;
+    UtilityAIDebugDomain domain(set);
+
+    domain.OnCommand(Dia::Core::StringCRC("toggle"), ToggleArgs("Scores"));
+    domain.OnCommand(Dia::Core::StringCRC("toggle"), ToggleArgs("Scores"));
+
+    Json::Value state;
+    domain.GetJSONState(state);
+    EXPECT_TRUE(state.isMember("actions"));
+    EXPECT_TRUE(state["drawers"][0u]["enabled"].asBool());
+}
+
+TEST(UtilityAIDebugDomain_OnCommand, SetScale_NoOp_NoCrash)
+{
+    UtilitySet set;
+    UtilityAIDebugDomain domain(set);
+
+    Json::Value args;
+    args["key"]   = "debugScale";
+    args["value"] = 2.5;
+    EXPECT_NO_FATAL_FAILURE(
+        domain.OnCommand(Dia::Core::StringCRC("setScale"), args));
+}
+
+TEST(UtilityAIDebugDomain_OnCommand, UnknownCommand_NoOp)
+{
+    UtilitySet set;
+    UtilityAIDebugDomain domain(set);
+
+    Json::Value empty(Json::objectValue);
+    domain.OnCommand(Dia::Core::StringCRC("notACommand"), empty);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+    EXPECT_TRUE(state["drawers"][0u]["enabled"].asBool());
+}
+
+TEST(UtilityAIDebugDomain_OnCommand, MalformedToggle_NoOp)
+{
+    UtilitySet set;
+    UtilityAIDebugDomain domain(set);
 
     Json::Value empty(Json::objectValue);
     domain.OnCommand(Dia::Core::StringCRC("toggle"), empty);
-    domain.OnCommand(Dia::Core::StringCRC("notACommand"), empty);
 
     Json::Value wrongType(Json::objectValue);
     wrongType["drawer"] = 42;
     domain.OnCommand(Dia::Core::StringCRC("toggle"), wrongType);
 
-    EXPECT_TRUE(mgr.IsLayerEnabled(Dia::Debug::LayerNames::kUtilityAIScores));
-    EXPECT_FLOAT_EQ(mgr.GetDebugScale(), 1.0f);
-}
-
-TEST(UtilityAIDebugDomain_OnCommand, BeforeRegisterCommandsAreNoOps)
-{
-    DomainUtilityAI du;
-    Dia::Debug::DebugLayerManager mgr;
-    UtilityAIDebugDomain domain(du.utilitySet);
-
-    domain.OnCommand(Dia::Core::StringCRC("toggle"), ToggleArgs("ScoreTable"));
-    EXPECT_EQ(mgr.GetLayerCount(), 0);
-}
-
-TEST(UtilityAIDebugDomain_OnCommand, SetScaleUpdatesSharedDebugScale)
-{
-    DomainUtilityAI du;
-    Dia::Debug::DebugLayerManager mgr;
-    UtilityAIDebugDomain domain(du.utilitySet);
-    domain.Register(mgr);
-
-    Json::Value args;
-    args["key"]   = "debugScale";
-    args["value"] = 2.5;
-    domain.OnCommand(Dia::Core::StringCRC("setScale"), args);
-
-    EXPECT_FLOAT_EQ(mgr.GetDebugScale(), 2.5f);
-}
-
-TEST(UtilityAIDebugDomain_OnCommand, SetScaleWithUnknownKeyIsIgnored)
-{
-    DomainUtilityAI du;
-    Dia::Debug::DebugLayerManager mgr;
-    UtilityAIDebugDomain domain(du.utilitySet);
-    domain.Register(mgr);
-
-    Json::Value args;
-    args["key"]   = "notAKnownKey";
-    args["value"] = 3.0;
-    domain.OnCommand(Dia::Core::StringCRC("setScale"), args);
-
-    EXPECT_FLOAT_EQ(mgr.GetDebugScale(), 1.0f);
-}
-
-// ===========================================================================
-// Stats fields — GetJSONState() utility AI action assertions
-// ===========================================================================
-
-TEST(UtilityAIDebugDomain_JSONState_Stats, ActionStatFieldsPresent)
-{
-    DomainUtilityAI du;
-    Dia::Debug::DebugLayerManager mgr;
-    UtilityAIDebugDomain domain(du.utilitySet);
-    domain.Register(mgr);
-
     Json::Value state;
     domain.GetJSONState(state);
-
-    const Json::Value& stats = state["stats"];
-    ASSERT_TRUE(stats.isObject());
-    EXPECT_TRUE(stats.isMember("actionCount")) << "stats.actionCount missing";
-    EXPECT_TRUE(stats["actionCount"].isInt());
-    EXPECT_TRUE(stats.isMember("winnerScore")) << "stats.winnerScore missing";
-    EXPECT_TRUE(stats["winnerScore"].isNumeric());
-    EXPECT_TRUE(stats.isMember("actions"))     << "stats.actions missing";
-    EXPECT_TRUE(stats["actions"].isArray());
-    EXPECT_EQ(stats["actions"].size(),
-              static_cast<Json::ArrayIndex>(stats["actionCount"].asInt()));
-}
-
-TEST(UtilityAIDebugDomain_JSONState_Stats, EmptyUtilitySetReportsZeroActions)
-{
-    // No actions registered, no Evaluate() called — all counts zero.
-    DomainUtilityAI du;
-    Dia::Debug::DebugLayerManager mgr;
-    UtilityAIDebugDomain domain(du.utilitySet);
-    domain.Register(mgr);
-
-    Json::Value state;
-    domain.GetJSONState(state);
-
-    EXPECT_EQ(state["stats"]["actionCount"].asInt(),       0);
-    EXPECT_FLOAT_EQ(state["stats"]["winnerScore"].asFloat(), 0.0f);
-    EXPECT_EQ(state["stats"]["actions"].size(),            0u);
+    EXPECT_TRUE(state["drawers"][0u]["enabled"].asBool()) << "drawer must remain enabled after malformed toggle";
 }
 
 #endif // DIA_DEBUG

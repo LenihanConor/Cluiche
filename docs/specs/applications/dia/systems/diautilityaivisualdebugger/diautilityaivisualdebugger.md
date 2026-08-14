@@ -121,4 +121,4 @@ In addition to all 16 ACs in `@docs/specs/applications/dia/systems/diadebugdomai
 
 ## Status
 
-**Status:** Approved
+**Status:** Done
