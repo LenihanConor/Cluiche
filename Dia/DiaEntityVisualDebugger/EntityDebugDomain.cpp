@@ -12,6 +12,7 @@
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaEntity/IEntityInspectable.h>
 
 namespace Dia::EntityVisualDebugger
 {
@@ -147,8 +148,19 @@ void EntityDebugDomain::GetJSONState(Json::Value& out)
     }
 
     out["drawers"] = drawers;
-    // Phase 2 moves the Stats/Inspector text output in here.
-    out["stats"]   = Json::Value(Json::objectValue);
+
+    Json::Value stats(Json::objectValue);
+    stats["alive"]      = static_cast<int>(mInspectable.GetEntityCount());
+    stats["queryCount"] = static_cast<int>(mInspectable.GetQueryCount());
+    if (mLayerManager != nullptr)
+    {
+        const uint32_t selId = mLayerManager->GetSelectedEntityId();
+        Json::Value sel(Json::objectValue);
+        sel["id"]      = static_cast<int>(selId);
+        sel["hasSelection"] = (selId != 0);
+        stats["selection"] = sel;
+    }
+    out["stats"] = stats;
 }
 
 void EntityDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value& args)
