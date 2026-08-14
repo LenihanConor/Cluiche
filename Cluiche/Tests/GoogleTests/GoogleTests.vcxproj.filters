@@ -1510,6 +1510,8 @@
     <ClCompile Include="DiaRig2DVisualDebugger\TestRig2DDebugDomain.cpp">
     <ClCompile Include="DiaIK2DVisualDebugger\TestIK2DDebugDomain.cpp">
     <ClCompile Include="DiaUtilityAIVisualDebugger\TestUtilityAIDebugDomain.cpp">
+    <ClCompile Include="DiaStateMachineVisualDebugger\TestStateMachineVisualDebugger.cpp">
+    <ClCompile Include="DiaBlackboardVisualDebugger\TestBlackboardVisualDebugger.cpp">
     <ClCompile Include="DiaAssetRuntimeVisualDebugger\TestAssetRuntimeDebugDomain.cpp">
     <ClCompile Include="DiaGeometry2DVisualDebugger\TestGeometry2DDebugDomain.cpp">
     <ClCompile Include="DiaScene2DVisualDebugger\TestScene2DDebugDomain.cpp">
@@ -1532,6 +1534,10 @@
       <Filter>DiaAssetRuntimeVisualDebugger</Filter>
     </ClCompile>
       <Filter>DiaUtilityAIVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaStateMachineVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaBlackboardVisualDebugger</Filter>
     </ClCompile>
       <Filter>DiaIK2DVisualDebugger</Filter>
     </ClCompile>

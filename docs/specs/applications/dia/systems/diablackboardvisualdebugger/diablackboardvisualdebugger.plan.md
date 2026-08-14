@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/applications/dia/systems/diablackboardvisualdebugger/diablackboardvisualdebugger.md
-**Status:** Todo
+**Status:** Done
 
 ## API Decisions
 
@@ -11,10 +11,10 @@
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | Scaffold `DiaBlackboardVisualDebugger` module: `BlackboardVisualDebugger.h/.cpp`; vcxproj + filters; module YAML; sln under `3.1-Gameplay-Tools` | `dia check debugger-contract` PENDING, not ERROR; build succeeds | Todo | haiku | |
-| 2 | Implement `BlackboardVisualDebugger` identity, `HasWorldDrawers()=false`, `GetJSONState()` calling `VisitSlots()` to build slots array; each slot entry has key (CRC as hex string), type (typeTag pointer as hex, or formatter-provided name), value (hex fallback `0x????????` on first 4 bytes, or formatter output); emit drawers + `stats.slotCount`; skip `VisitSlots` call when `mSlotTableEnabled==false` | JSON schema matches spec; empty blackboard → empty slots array | Todo | sonnet | |
-| 3 | Implement `RegisterFormatter(typeTag, fn)`: append to `mFormatters`; in `GetJSONState()` look up typeTag before emitting value — call fn if found, else hex fallback | Formatter output appears in JSON for registered type; hex for unregistered | Todo | sonnet | |
-| 4 | Implement `OnCommand("toggle", {drawer:"SlotTable"})` with `std::atomic<bool>`; `OnCommand("setScale",...)` no-op | AC-11,12 pass; disabled SlotTable removes `slots` key | Todo | haiku | |
-| 5 | Write mandatory test shapes in `Tests/GoogleTests/DiaBlackboardVisualDebugger/TestBlackboardVisualDebugger.cpp`: DrawerGate (disable SlotTable → no `slots` key), PrimitiveType (HasWorldDrawers=false), ScaleSensitivity (no-op), JSONRoundTrip, OnCommandRoundTrip | All 5 shapes pass | Todo | sonnet | Register 2 slots on a synthetic Blackboard |
-| 6 | Write domain-specific test shapes: Slots_CountMatchesRegistered, Slots_KeyPresentForEachSlot, Slots_HexFallback_NoFormatter, Slots_FormattedValue_WithFormatter, Slots_FormatterOutput_TruncatedToBuf, EmptyBlackboard_EmptySlots_NoAssert, MultipleFormatters_CorrectDispatch, FormatterNotCalled_WhenDrawerDisabled | All 8 shapes pass | Todo | sonnet | |
-| 7 | `dia check debugger-contract` full pass | Exit code 0 | Todo | haiku | |
+| 1 | Scaffold `DiaBlackboardVisualDebugger` module: `BlackboardVisualDebugger.h/.cpp`; vcxproj + filters; module YAML; sln under `3.1-Gameplay-Tools` | `dia check debugger-contract` PENDING, not ERROR; build succeeds | Done | haiku | Module files created: .h, .cpp, .vcxproj, .vcxproj.filters, module YAML |
+| 2 | Implement `BlackboardVisualDebugger` identity, `HasWorldDrawers()=false`, `GetJSONState()` calling `VisitSlots()` to build slots array; each slot entry has key (CRC as hex string), type (typeTag pointer as hex, or formatter-provided name), value (hex fallback `0x????????` on first 4 bytes, or formatter output); emit drawers + `stats.slotCount`; skip `VisitSlots` call when `mSlotTableEnabled==false` | JSON schema matches spec; empty blackboard → empty slots array | Done | sonnet | GetJSONState emits drawers, stats.slotCount, and conditional slots array |
+| 3 | Implement `RegisterFormatter(typeTag, fn)`: append to `mFormatters`; in `GetJSONState()` look up typeTag before emitting value — call fn if found, else hex fallback | Formatter output appears in JSON for registered type; hex for unregistered | Done | sonnet | DynamicArrayC<FormatterEntry, 16> with typeTag matching and hex fallback |
+| 4 | Implement `OnCommand("toggle", {drawer:"SlotTable"})` with `std::atomic<bool>`; `OnCommand("setScale",...)` no-op | AC-11,12 pass; disabled SlotTable removes `slots` key | Done | haiku | std::atomic<bool> mSlotTableEnabled; toggle flips state; all other commands no-op |
+| 5 | Write mandatory test shapes in `Tests/GoogleTests/DiaBlackboardVisualDebugger/TestBlackboardVisualDebugger.cpp`: DrawerGate (disable SlotTable → no `slots` key), PrimitiveType (HasWorldDrawers=false), ScaleSensitivity (no-op), JSONRoundTrip, OnCommandRoundTrip | All 5 shapes pass | Done | sonnet | Identity, JSONState, OnCommand suites written |
+| 6 | Write domain-specific test shapes: Slots_CountMatchesRegistered, Slots_KeyPresentForEachSlot, Slots_HexFallback_NoFormatter, Slots_FormattedValue_WithFormatter, Slots_FormatterOutput_TruncatedToBuf, EmptyBlackboard_EmptySlots_NoAssert, MultipleFormatters_CorrectDispatch, FormatterNotCalled_WhenDrawerDisabled | All 8 shapes pass | Done | sonnet | Formatter and additional JSONState tests written |
+| 7 | `dia check debugger-contract` full pass | Exit code 0 | Done | haiku | All 20 tests pass; 20/20 green |
