@@ -171,4 +171,348 @@ TEST(AIBudgetVisualDebugger_OnCommand, OnCommandRoundTrip_ToggleBudgetBarOffThen
     EXPECT_TRUE(stateOn["stats"].isMember("fillPct"));
 }
 
+// ===========================================================================
+// Suite: AIBudgetVisualDebugger_Stats
+// ===========================================================================
+
+TEST(AIBudgetVisualDebugger_Stats, Stats_UsedMs_MatchesResult)
+{
+    AIBudgetScheduler scheduler;
+    scheduler.Update(5.0f);
+
+    AIBudgetResult result{};
+    result.systemsRun      = 3;
+    result.systemsDeferred = 1;
+    result.usedMs          = 2.1f;
+
+    AIBudgetVisualDebugger debugger(scheduler, result);
+    Json::Value state = GetState(debugger);
+
+    EXPECT_FLOAT_EQ(state["stats"]["usedMs"].asFloat(), result.usedMs);
+}
+
+TEST(AIBudgetVisualDebugger_Stats, Stats_BudgetMs_MatchesScheduler)
+{
+    AIBudgetScheduler scheduler;
+    scheduler.Update(5.0f);
+
+    AIBudgetResult result{};
+    result.systemsRun      = 3;
+    result.systemsDeferred = 1;
+    result.usedMs          = 2.1f;
+
+    AIBudgetVisualDebugger debugger(scheduler, result);
+    Json::Value state = GetState(debugger);
+
+    EXPECT_FLOAT_EQ(state["stats"]["budgetMs"].asFloat(), scheduler.GetLastBudgetMs());
+}
+
+TEST(AIBudgetVisualDebugger_Stats, Stats_FillPct_Computed)
+{
+    AIBudgetScheduler scheduler;
+    scheduler.Update(5.0f);   // GetLastBudgetMs() returns 5.0f
+
+    AIBudgetResult result{};
+    result.systemsRun      = 3;
+    result.systemsDeferred = 1;
+    result.usedMs          = 2.1f;
+
+    AIBudgetVisualDebugger debugger(scheduler, result);
+    Json::Value state = GetState(debugger);
+
+    // 2.1 / 5.0 * 100 + 0.5 = 42.5 → static_cast<int> = 42
+    EXPECT_NEAR(state["stats"]["fillPct"].asInt(), 42, 1);
+}
+
+TEST(AIBudgetVisualDebugger_Stats, Stats_FillPct_ClampedAt100)
+{
+    AIBudgetScheduler scheduler;
+    scheduler.Update(5.0f);
+
+    AIBudgetResult result{};
+    result.systemsRun      = 1;
+    result.systemsDeferred = 0;
+    result.usedMs          = 7.0f;   // exceeds budget
+
+    AIBudgetVisualDebugger debugger(scheduler, result);
+    Json::Value state = GetState(debugger);
+
+    EXPECT_EQ(state["stats"]["fillPct"].asInt(), 100);
+}
+
+TEST(AIBudgetVisualDebugger_Stats, Stats_SystemsRun_Matches)
+{
+    AIBudgetScheduler scheduler;
+    scheduler.Update(5.0f);
+
+    AIBudgetResult result{};
+    result.systemsRun      = 3;
+    result.systemsDeferred = 1;
+    result.usedMs          = 2.1f;
+
+    AIBudgetVisualDebugger debugger(scheduler, result);
+    Json::Value state = GetState(debugger);
+
+    EXPECT_EQ(state["stats"]["systemsRun"].asInt(), result.systemsRun);
+}
+
+TEST(AIBudgetVisualDebugger_Stats, Stats_SystemsDeferred_Matches)
+{
+    AIBudgetScheduler scheduler;
+    scheduler.Update(5.0f);
+
+    AIBudgetResult result{};
+    result.systemsRun      = 3;
+    result.systemsDeferred = 1;
+    result.usedMs          = 2.1f;
+
+    AIBudgetVisualDebugger debugger(scheduler, result);
+    Json::Value state = GetState(debugger);
+
+    EXPECT_EQ(state["stats"]["systemsDeferred"].asInt(), result.systemsDeferred);
+}
+
+TEST(AIBudgetVisualDebugger_Stats, BudgetZero_NoAssert)
+{
+    AIBudgetScheduler scheduler;
+    scheduler.Update(0.0f);   // budgetMs = 0 → fillPct guard fires → fillPct = 0
+
+    AIBudgetResult result{};
+    result.systemsRun      = 0;
+    result.systemsDeferred = 0;
+    result.usedMs          = 0.0f;
+
+    AIBudgetVisualDebugger debugger(scheduler, result);
+    Json::Value state;
+    EXPECT_NO_FATAL_FAILURE(state = GetState(debugger));
+    EXPECT_EQ(state["stats"]["fillPct"].asInt(), 0);
+}
+
+// ===========================================================================
+// Suite: AIBudgetVisualDebugger_Systems
+// ===========================================================================
+
+TEST(AIBudgetVisualDebugger_Systems, Systems_CountMatchesPerSystem)
+{
+    AIBudgetScheduler scheduler;
+    scheduler.Update(5.0f);
+
+    AIBudgetResult result{};
+    result.systemsRun      = 2;
+    result.systemsDeferred = 1;
+    result.usedMs          = 1.7f;
+
+#ifdef DIA_DEBUG
+    {
+        Dia::AIBudget::SystemTimingEntry e1;
+        e1.systemId = StringCRC("UtilityAI");
+        e1.timeMs   = 0.8f;
+        e1.ran      = true;
+        result.perSystem.Add(e1);
+
+        Dia::AIBudget::SystemTimingEntry e2;
+        e2.systemId = StringCRC("HTNPlanner");
+        e2.timeMs   = 0.9f;
+        e2.ran      = true;
+        result.perSystem.Add(e2);
+
+        Dia::AIBudget::SystemTimingEntry e3;
+        e3.systemId = StringCRC("StateMachine");
+        e3.timeMs   = 0.0f;
+        e3.ran      = false;
+        result.perSystem.Add(e3);
+    }
+#endif
+
+    AIBudgetVisualDebugger debugger(scheduler, result);
+    Json::Value state = GetState(debugger);
+
+#ifdef DIA_DEBUG
+    ASSERT_TRUE(state.isMember("systems"));
+    EXPECT_EQ(state["systems"].size(), static_cast<unsigned int>(result.perSystem.Size()));
+#endif
+}
+
+TEST(AIBudgetVisualDebugger_Systems, Systems_RanFlag_Accurate)
+{
+    AIBudgetScheduler scheduler;
+    scheduler.Update(5.0f);
+
+    AIBudgetResult result{};
+    result.systemsRun      = 2;
+    result.systemsDeferred = 1;
+    result.usedMs          = 1.7f;
+
+#ifdef DIA_DEBUG
+    {
+        Dia::AIBudget::SystemTimingEntry e1;
+        e1.systemId = StringCRC("UtilityAI");
+        e1.timeMs   = 0.8f;
+        e1.ran      = true;
+        result.perSystem.Add(e1);
+
+        Dia::AIBudget::SystemTimingEntry e2;
+        e2.systemId = StringCRC("HTNPlanner");
+        e2.timeMs   = 0.9f;
+        e2.ran      = true;
+        result.perSystem.Add(e2);
+
+        Dia::AIBudget::SystemTimingEntry e3;
+        e3.systemId = StringCRC("StateMachine");
+        e3.timeMs   = 0.0f;
+        e3.ran      = false;
+        result.perSystem.Add(e3);
+    }
+#endif
+
+    AIBudgetVisualDebugger debugger(scheduler, result);
+    Json::Value state = GetState(debugger);
+
+#ifdef DIA_DEBUG
+    ASSERT_TRUE(state.isMember("systems"));
+    ASSERT_EQ(state["systems"].size(), 3u);
+    EXPECT_TRUE(state["systems"][0]["ran"].asBool());
+    EXPECT_TRUE(state["systems"][1]["ran"].asBool());
+    EXPECT_FALSE(state["systems"][2]["ran"].asBool());
+#endif
+}
+
+TEST(AIBudgetVisualDebugger_Systems, Systems_TimeMs_Accurate)
+{
+    AIBudgetScheduler scheduler;
+    scheduler.Update(5.0f);
+
+    AIBudgetResult result{};
+    result.systemsRun      = 2;
+    result.systemsDeferred = 1;
+    result.usedMs          = 1.7f;
+
+#ifdef DIA_DEBUG
+    {
+        Dia::AIBudget::SystemTimingEntry e1;
+        e1.systemId = StringCRC("UtilityAI");
+        e1.timeMs   = 0.8f;
+        e1.ran      = true;
+        result.perSystem.Add(e1);
+
+        Dia::AIBudget::SystemTimingEntry e2;
+        e2.systemId = StringCRC("HTNPlanner");
+        e2.timeMs   = 0.9f;
+        e2.ran      = true;
+        result.perSystem.Add(e2);
+
+        Dia::AIBudget::SystemTimingEntry e3;
+        e3.systemId = StringCRC("StateMachine");
+        e3.timeMs   = 0.0f;
+        e3.ran      = false;
+        result.perSystem.Add(e3);
+    }
+#endif
+
+    AIBudgetVisualDebugger debugger(scheduler, result);
+    Json::Value state = GetState(debugger);
+
+#ifdef DIA_DEBUG
+    ASSERT_TRUE(state.isMember("systems"));
+    ASSERT_EQ(state["systems"].size(), 3u);
+    EXPECT_NEAR(state["systems"][0]["timeMs"].asFloat(), 0.8f, 0.001f);
+    EXPECT_NEAR(state["systems"][1]["timeMs"].asFloat(), 0.9f, 0.001f);
+    EXPECT_NEAR(state["systems"][2]["timeMs"].asFloat(), 0.0f, 0.001f);
+#endif
+}
+
+TEST(AIBudgetVisualDebugger_Systems, DrawerGate_SystemTimings)
+{
+    AIBudgetScheduler scheduler;
+    scheduler.Update(5.0f);
+
+    AIBudgetResult result{};
+    result.systemsRun      = 2;
+    result.systemsDeferred = 1;
+    result.usedMs          = 1.7f;
+
+#ifdef DIA_DEBUG
+    {
+        Dia::AIBudget::SystemTimingEntry e1;
+        e1.systemId = StringCRC("UtilityAI");
+        e1.timeMs   = 0.8f;
+        e1.ran      = true;
+        result.perSystem.Add(e1);
+    }
+#endif
+
+    AIBudgetVisualDebugger debugger(scheduler, result);
+
+    // Toggle SystemTimings off
+    Json::Value toggleArgs(Json::objectValue);
+    toggleArgs["drawer"] = "SystemTimings";
+    debugger.OnCommand(StringCRC("toggle"), toggleArgs);
+
+    Json::Value state = GetState(debugger);
+
+#ifdef DIA_DEBUG
+    EXPECT_FALSE(state.isMember("systems"));
+#endif
+}
+
+TEST(AIBudgetVisualDebugger_Systems, Toggle_SystemTimings)
+{
+    AIBudgetScheduler scheduler;
+    scheduler.Update(5.0f);
+
+    AIBudgetResult result{};
+    result.systemsRun      = 2;
+    result.systemsDeferred = 1;
+    result.usedMs          = 1.7f;
+
+#ifdef DIA_DEBUG
+    {
+        Dia::AIBudget::SystemTimingEntry e1;
+        e1.systemId = StringCRC("UtilityAI");
+        e1.timeMs   = 0.8f;
+        e1.ran      = true;
+        result.perSystem.Add(e1);
+    }
+#endif
+
+    AIBudgetVisualDebugger debugger(scheduler, result);
+
+    Json::Value toggleArgs(Json::objectValue);
+    toggleArgs["drawer"] = "SystemTimings";
+
+    // First toggle: disable
+    debugger.OnCommand(StringCRC("toggle"), toggleArgs);
+    Json::Value stateOff = GetState(debugger);
+
+    // Second toggle: re-enable
+    debugger.OnCommand(StringCRC("toggle"), toggleArgs);
+    Json::Value stateOn = GetState(debugger);
+
+#ifdef DIA_DEBUG
+    EXPECT_FALSE(stateOff.isMember("systems"));
+    EXPECT_TRUE(stateOn.isMember("systems"));
+#endif
+}
+
+TEST(AIBudgetVisualDebugger_Systems, NoSystems_EmptyArray_NoAssert)
+{
+    AIBudgetScheduler scheduler;
+    scheduler.Update(5.0f);
+
+    AIBudgetResult result{};
+    result.systemsRun      = 0;
+    result.systemsDeferred = 0;
+    result.usedMs          = 0.0f;
+    // perSystem left empty
+
+    AIBudgetVisualDebugger debugger(scheduler, result);
+    Json::Value state;
+    EXPECT_NO_FATAL_FAILURE(state = GetState(debugger));
+
+#ifdef DIA_DEBUG
+    ASSERT_TRUE(state.isMember("systems"));
+    EXPECT_EQ(state["systems"].size(), 0u);
+#endif
+}
+
 #endif // DIA_DEBUG
