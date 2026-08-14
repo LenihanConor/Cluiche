@@ -184,6 +184,9 @@
     <Filter Include="DiaAIBudget">
       <UniqueIdentifier>{AIBUDGET1-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaAIBudgetVisualDebugger">
+      <UniqueIdentifier>{A8B9C0D1-E2F3-4567-8901-A2B3C4D5E6F7}</UniqueIdentifier>
+    </Filter>
     <Filter Include="CluicheGameBaseline">
       <UniqueIdentifier>{CGBL0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
@@ -1512,6 +1515,10 @@
     <ClCompile Include="DiaUtilityAIVisualDebugger\TestUtilityAIDebugDomain.cpp">
     <ClCompile Include="DiaStateMachineVisualDebugger\TestStateMachineVisualDebugger.cpp">
     <ClCompile Include="DiaBlackboardVisualDebugger\TestBlackboardVisualDebugger.cpp">
+    <ClCompile Include="DiaAIBudgetVisualDebugger\TestAIBudgetVisualDebugger.cpp">
+      <Filter>DiaAIBudgetVisualDebugger</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaRulesVisualDebugger\TestRulesVisualDebugger.cpp">
     <ClCompile Include="DiaAssetRuntimeVisualDebugger\TestAssetRuntimeDebugDomain.cpp">
     <ClCompile Include="DiaGeometry2DVisualDebugger\TestGeometry2DDebugDomain.cpp">
     <ClCompile Include="DiaScene2DVisualDebugger\TestScene2DDebugDomain.cpp">
@@ -1538,6 +1545,8 @@
       <Filter>DiaStateMachineVisualDebugger</Filter>
     </ClCompile>
       <Filter>DiaBlackboardVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaRulesVisualDebugger</Filter>
     </ClCompile>
       <Filter>DiaIK2DVisualDebugger</Filter>
     </ClCompile>
