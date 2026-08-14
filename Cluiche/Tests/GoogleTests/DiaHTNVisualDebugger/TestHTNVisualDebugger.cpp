@@ -203,4 +203,113 @@ TEST(HTNVisualDebugger_OnCommand, MalformedToggle_NoOp_NoCrash)
     EXPECT_TRUE(state.isMember("plan"));
 }
 
+// ===========================================================================
+// Domain-specific shapes
+// ===========================================================================
+
+TEST(HTNVisualDebugger_JSONState, NoPlan_EmptyArray_NoAssert)
+{
+    // Component with no plan — should not crash and plan should be empty array
+    Dia::HTN::HTNPlannerComponent comp;
+    Dia::HTN::HTNVisualDebugger domain(comp);
+
+    ASSERT_NO_FATAL_FAILURE({
+        const Json::Value state = GetState(domain);
+        EXPECT_TRUE(state.isMember("plan"));
+        EXPECT_TRUE(state["plan"].isArray());
+        EXPECT_EQ(state["plan"].size(), 0u);
+    });
+}
+
+TEST(HTNVisualDebugger_JSONState, Stats_Current_And_Total_Match_NoPlan)
+{
+    Dia::HTN::HTNPlannerComponent comp;
+    Dia::HTN::HTNVisualDebugger domain(comp);
+
+    const Json::Value state = GetState(domain);
+
+    EXPECT_EQ(state["stats"]["current"].asInt(), 0);
+    EXPECT_EQ(state["stats"]["total"].asInt(), 0);
+}
+
+TEST(HTNVisualDebugger_JSONState, Stats_Current_And_Total_Match_WithPlan)
+{
+    auto domainObj = LoadDomain(kLinearDomainJson);
+    Dia::HTN::OperatorRegistry reg;
+    Dia::HTN::Testing::MockHTNContext ctx;
+
+    Dia::HTN::HTNPlannerComponent comp;
+    comp.SetDomain(&domainObj);
+    comp.SetRegistry(&reg);
+    comp.SetRootTask(Dia::Core::StringCRC("Root"));
+    comp.Replan(ctx);
+
+    Dia::HTN::HTNVisualDebugger domain(comp);
+    const Json::Value state = GetState(domain);
+
+    EXPECT_EQ(state["stats"]["total"].asInt(), 3) << "linear domain has 3 tasks";
+    EXPECT_EQ(state["stats"]["current"].asInt(), 0) << "cursor starts at 0";
+}
+
+TEST(HTNVisualDebugger_JSONState, PlanArray_StatusCorrect_InitialCursor)
+{
+    auto domainObj = LoadDomain(kLinearDomainJson);
+    Dia::HTN::OperatorRegistry reg;
+    Dia::HTN::Testing::MockHTNContext ctx;
+
+    Dia::HTN::HTNPlannerComponent comp;
+    comp.SetDomain(&domainObj);
+    comp.SetRegistry(&reg);
+    comp.SetRootTask(Dia::Core::StringCRC("Root"));
+    comp.Replan(ctx);
+
+    Dia::HTN::HTNVisualDebugger domain(comp);
+    const Json::Value state = GetState(domain);
+
+    ASSERT_TRUE(state.isMember("plan"));
+    ASSERT_EQ(state["plan"].size(), 3u);
+
+    // cursor at 0: first is "current", rest are "pending"
+    EXPECT_STREQ(state["plan"][0u]["status"].asCString(), "current");
+    EXPECT_STREQ(state["plan"][1u]["status"].asCString(), "pending");
+    EXPECT_STREQ(state["plan"][2u]["status"].asCString(), "pending");
+
+    // 1-based index
+    EXPECT_EQ(state["plan"][0u]["index"].asInt(), 1);
+    EXPECT_EQ(state["plan"][1u]["index"].asInt(), 2);
+    EXPECT_EQ(state["plan"][2u]["index"].asInt(), 3);
+}
+
+TEST(HTNVisualDebugger_JSONState, Diverged_Flag_AlwaysFalse_NoContext)
+{
+    // HasDiverged() requires IConditionContext which the debugger doesn't hold.
+    // GetJSONState() always emits diverged:false as a safe default.
+    Dia::HTN::HTNPlannerComponent comp;
+    Dia::HTN::HTNVisualDebugger domain(comp);
+
+    const Json::Value state = GetState(domain);
+    EXPECT_FALSE(state["diverged"].asBool());
+}
+
+TEST(HTNVisualDebugger_JSONState, PlanArray_NamesMatchOperatorIds)
+{
+    auto domainObj = LoadDomain(kLinearDomainJson);
+    Dia::HTN::OperatorRegistry reg;
+    Dia::HTN::Testing::MockHTNContext ctx;
+
+    Dia::HTN::HTNPlannerComponent comp;
+    comp.SetDomain(&domainObj);
+    comp.SetRegistry(&reg);
+    comp.SetRootTask(Dia::Core::StringCRC("Root"));
+    comp.Replan(ctx);
+
+    Dia::HTN::HTNVisualDebugger domain(comp);
+    const Json::Value state = GetState(domain);
+
+    ASSERT_EQ(state["plan"].size(), 3u);
+    EXPECT_STREQ(state["plan"][0u]["name"].asCString(), "OpA");
+    EXPECT_STREQ(state["plan"][1u]["name"].asCString(), "OpB");
+    EXPECT_STREQ(state["plan"][2u]["name"].asCString(), "OpC");
+}
+
 #endif // DIA_DEBUG
