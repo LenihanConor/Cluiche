@@ -9,6 +9,8 @@
 #include <DiaGeometry2DVisualDebugger/Geometry2DDebugDomain.h>
 #include <DiaAssetRuntimeVisualDebugger/AssetRuntimeDebugDomain.h>
 #include <DiaUtilityAIVisualDebugger/UtilityAIDebugDomain.h>
+#include <DiaStateMachineVisualDebugger/StateMachineVisualDebugger.h>
+#include <DiaBlackboardVisualDebugger/BlackboardVisualDebugger.h>
 #include <DiaRigidBody2DVisualDebugger/RigidBody2DDebugDomain.h>
 #include <DiaSoftBody2DVisualDebugger/SoftBody2DDebugDomain.h>
 #include <DiaLighting3DVisualDebugger/Lighting3DDebugDomain.h>
@@ -19,6 +21,9 @@
 #include <DiaEntityVisualDebugger/EntityDebugDomain.h>
 #include <DiaMesh3DVisualDebugger/Mesh3DDebugDomain.h>
 // Fixture headers
+#include <DiaStateMachine/FlatStateMachine.h>
+#include <DiaStateMachine/StateMachineBuilder.h>
+#include <DiaBlackboard/Blackboard.h>
 #include <DiaRigidBody2D/World/PhysicsWorld.h>
 #include <DiaRigidBody2D/World/WorldDef.h>
 #include <DiaSoftBody2D/SoftBodyWorld.h>
@@ -36,6 +41,47 @@
 #include <DiaEntity/Domain.h>
 #include <DiaGraphics3D/Mesh3DFrameData.h>
 #include <DiaMesh3D/Mesh3DAssetHandler.h>
+#endif
+
+#ifdef DIA_DEBUG
+namespace
+{
+    struct GalleryMachineCtx {};
+
+    // Owns the context + machine in a single allocation so unique_ptr<IStateMachineInspectable>
+    // in the header can manage the lifetime cleanly.
+    class GalleryStateMachine : public Dia::StateMachine::IStateMachineInspectable
+    {
+    public:
+        GalleryStateMachine()
+            : mMachine(
+                Dia::Core::StringCRC("gallery_sm"),
+                Dia::StateMachine::StateMachineBuilder()
+                    .State(Dia::Core::StringCRC("idle"))
+                    .InitialState(Dia::Core::StringCRC("idle"))
+                    .Transition(Dia::Core::StringCRC("active"), Dia::Core::StringCRC("activate"))
+                    .State(Dia::Core::StringCRC("active"))
+                    .Transition(Dia::Core::StringCRC("idle"), Dia::Core::StringCRC("deactivate"))
+                    .Build(),
+                mCtx)
+        {}
+
+        Dia::Core::StringCRC GetMachineId() const override       { return mMachine.GetMachineId(); }
+        Dia::Core::StringCRC GetCurrentStateId() const override  { return mMachine.GetCurrentStateId(); }
+        void GetAllStates(Dia::Core::Containers::DynamicArrayC<Dia::StateMachine::StateInfo, 64>& out) const override
+            { mMachine.GetAllStates(out); }
+        void GetAllTransitions(Dia::Core::Containers::DynamicArrayC<Dia::StateMachine::TransitionInfo, 64>& out) const override
+            { mMachine.GetAllTransitions(out); }
+        void GetTransitionHistory(Dia::Core::Containers::DynamicArrayC<Dia::StateMachine::TransitionRecord, 32>& out) const override
+            { mMachine.GetTransitionHistory(out); }
+        void SetTransitionListener(Dia::StateMachine::ITransitionListener* listener) override
+            { mMachine.SetTransitionListener(listener); }
+
+    private:
+        GalleryMachineCtx mCtx;
+        Dia::StateMachine::FlatStateMachine<GalleryMachineCtx> mMachine;
+    };
+}
 #endif
 
 namespace CluicheTest {
@@ -108,8 +154,10 @@ void DebugGalleryTestStageModule::OnStart(Dia::Automation::AutomationService* se
     mEntityDomain     = std::make_unique<Dia::Entity::Domain>();
     mMeshFrameData    = std::make_unique<Dia::Graphics3D::Mesh3DFrameData>();
     mMeshAssetHandler = std::make_unique<Dia::Mesh3D::Mesh3DAssetHandler>();
+    mStateMachine     = std::make_unique<GalleryStateMachine>();
+    mBlackboard       = std::make_unique<Dia::Blackboard::Blackboard>();
 
-    // Construct all 12 gallery domains
+    // Construct all 14 gallery domains
     mGeometry2DDomain   = std::make_unique<Dia::Geometry2DVisualDebugger::Geometry2DDebugDomain>();
     mAssetRuntimeDomain = std::make_unique<Dia::AssetRuntime::AssetRuntimeDebugDomain>();
     mUtilityAIDomain    = std::make_unique<Dia::UtilityAI::UtilityAIDebugDomain>(*mUtilitySet);
@@ -125,6 +173,8 @@ void DebugGalleryTestStageModule::OnStart(Dia::Automation::AutomationService* se
     mEntityDebugDomain  = std::make_unique<Dia::EntityVisualDebugger::EntityDebugDomain>(
                               *mEntityDomain, *mEntityDomain, Dia::Core::StringCRC("TransformComponent"));
     mMesh3DDomain       = std::make_unique<Dia::Mesh3D::Mesh3DDebugDomain>(*mMeshFrameData, *mMeshAssetHandler);
+    mStateMachineDomain = std::make_unique<Dia::StateMachine::StateMachineVisualDebugger>(*mStateMachine);
+    mBlackboardDomain   = std::make_unique<Dia::Blackboard::BlackboardVisualDebugger>(*mBlackboard);
 
     DIA_LOG_INFO("CluicheTest", "DebugGalleryTestStageModule — fixtures built; domains register on first update");
 #endif
@@ -150,8 +200,10 @@ void DebugGalleryTestStageModule::OnUpdate(float /*deltaTime*/)
             vd->RegisterDomain(*mScene2DDomain);
             vd->RegisterDomain(*mEntityDebugDomain);
             vd->RegisterDomain(*mMesh3DDomain);
+            vd->RegisterDomain(*mStateMachineDomain);
+            vd->RegisterDomain(*mBlackboardDomain);
             mDomainsRegistered = true;
-            DIA_LOG_INFO("CluicheTest", "DebugGalleryTestStageModule — 12 domains registered");
+            DIA_LOG_INFO("CluicheTest", "DebugGalleryTestStageModule — 14 domains registered");
         }
     }
 #endif
@@ -166,8 +218,10 @@ void DebugGalleryTestStageModule::OnStop()
     auto* vd = mVisualDebuggerRef.Get();
     if (vd)
     {
-        if (mMesh3DDomain)       vd->UnregisterDomain(*mMesh3DDomain);
-        if (mEntityDebugDomain)  vd->UnregisterDomain(*mEntityDebugDomain);
+        if (mBlackboardDomain)    vd->UnregisterDomain(*mBlackboardDomain);
+        if (mStateMachineDomain)  vd->UnregisterDomain(*mStateMachineDomain);
+        if (mMesh3DDomain)        vd->UnregisterDomain(*mMesh3DDomain);
+        if (mEntityDebugDomain)   vd->UnregisterDomain(*mEntityDebugDomain);
         if (mScene2DDomain)      vd->UnregisterDomain(*mScene2DDomain);
         if (mAnimation2DDomain)  vd->UnregisterDomain(*mAnimation2DDomain);
         if (mRig2DDomain)        vd->UnregisterDomain(*mRig2DDomain);
@@ -181,6 +235,8 @@ void DebugGalleryTestStageModule::OnStop()
     }
 
     // Domains first, then the fixtures they reference.
+    mBlackboardDomain.reset();
+    mStateMachineDomain.reset();
     mMesh3DDomain.reset();
     mEntityDebugDomain.reset();
     mScene2DDomain.reset();
@@ -205,12 +261,14 @@ void DebugGalleryTestStageModule::OnStop()
     mPose.reset();
     mSkeleton.reset();
     mLightRegistry3D.reset();
+    mBlackboard.reset();
+    mStateMachine.reset();
     mUtilitySet.reset();
     mSoftBodyWorld.reset();
     mPhysicsWorld.reset();
 
     mDomainsRegistered = false;
-    DIA_LOG_INFO("CluicheTest", "DebugGalleryTestStageModule — 12 domains unregistered");
+    DIA_LOG_INFO("CluicheTest", "DebugGalleryTestStageModule — 14 domains unregistered");
 #endif
 }
 
@@ -219,4 +277,4 @@ void DebugGalleryTestStageModule::OnStop()
 namespace { using DebugGalleryTestStageModule_ = CluicheTest::DebugGalleryTestStageModule; }
 DIA_MODULE(DebugGalleryTestStageModule_);
 DIA_DESCRIBE(DebugGalleryTestStageModule_::kTypeId,
-    "Visual gallery stage: registers all 14 IDebugDomain instances simultaneously for DiaDebugPanel validation.");
+    "Visual gallery stage: registers all 16 IDebugDomain instances simultaneously for DiaDebugPanel validation.");

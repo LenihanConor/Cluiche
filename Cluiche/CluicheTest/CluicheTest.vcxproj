@@ -188,6 +188,12 @@
     <ProjectReference Include="..\..\Dia\DiaUtilityAIVisualDebugger\DiaUtilityAIVisualDebugger.vcxproj">
       <Project>{F3A4B5C6-D7E8-9012-F034-567890123456}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaStateMachineVisualDebugger\DiaStateMachineVisualDebugger.vcxproj">
+      <Project>{C1D2E3F4-A5B6-7890-CD12-EF3456789012}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaBlackboardVisualDebugger\DiaBlackboardVisualDebugger.vcxproj">
+      <Project>{D2E3F4A5-B6C7-8901-DE23-F04567890123}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaAIBudget\DiaAIBudget.vcxproj">
       <Project>{C9D0E1F2-A3B4-5678-90AB-CDEF01234567}</Project>
     </ProjectReference>
