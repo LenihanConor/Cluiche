@@ -23,7 +23,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | Item | Notes | Depends On |
 |------|-------|-----------|
-| Visual Debugger Panel Stats | **In Progress** — tasks 1–15 coded (all domains wired, Scene2D split 3 drawers, LightRangesDrawer added, label renames done). **Remaining:** fix 15 failing unit tests (task 16), HTML drawer compliance (task 17), commit all work (task 18). Asset domain (task 12) still Blocked. Plan: [debugger-impl.plan.md](specs/applications/dia/systems/diadebugdomain/debugger-impl.plan.md) | DiaDebugDomain ✅, all 14 domain modules ✅, all draw classes ✅ |
+| ~~Visual Debugger Panel Stats~~ | ~~Done. All 13 domains wired (asset domain task 12 blocked → moved to backlog). 338/338 tests green. Plan: [debugger-impl.plan.md](specs/applications/dia/systems/diadebugdomain/debugger-impl.plan.md)~~ | ~~DiaDebugDomain ✅~~ |
 | Visual Debugger Domain Stats Tests | Add TDD RED stats-field assertions to all 13 domain test files (extend existing `*_JSONState` suites — do not create new files). Each test targets the specific `stats.xxx` fields each `debugger-impl.plan.md` task populates. Also add drawer-name assertions for tasks 13–15 (Scene2D split → 3 drawers, LightRangesDrawer, IK2D/Lighting3D label renames). Run gate: `dia run googletest --filter="*DebugDomain*_JSONState_Stats*"`. Add these after the impl work lands to avoid conflicts. Full plan: `.claude/plans/deep-stargazing-aurora.md`. | Visual Debugger Panel Stats impl done |
 
 ---
@@ -84,6 +84,12 @@ Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testin
 | DiaSkinning3D | TBD — needs `/spec-system` | `skinning-palette` feature already Approved; needs own system spec. SkinningManager, per-frame Matrix34 palettes, `skinningPaletteIndex` on draw commands. | DiaAnimation3D, DiaGraphics3D |
 
 ---
+
+### Blocked on asset service injection
+
+| Item | Blocked by | Notes |
+|------|-----------|-------|
+| AssetRuntimeDebugDomain stats | `DiaAssetRuntime` service not injected into domain constructor | `GetJSONState()` emits `stats: {}`. Wire a service ref into `AssetRuntimeDebugDomain` then add `assetCount`, `loadedCount`, `pendingCount` stats fields. |
 
 ### Blocked on Linux/CMake migration
 
