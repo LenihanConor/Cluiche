@@ -95,7 +95,17 @@ void Coord2DDebugDomain::GetJSONState(Json::Value& out)
         drawers.append(entry);
     }
     out["drawers"] = drawers;
-    out["stats"]   = Json::Value(Json::objectValue);
+
+    Json::Value stats(Json::objectValue);
+    if (mLayerManager != nullptr)
+    {
+        const Dia::Maths::Vector2D cursor = mLayerManager->GetCursorWorld();
+        Json::Value cur(Json::objectValue);
+        cur["x"] = cursor.x;
+        cur["y"] = cursor.y;
+        stats["cursor"] = cur;
+    }
+    out["stats"] = stats;
 }
 
 void Coord2DDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value& args)

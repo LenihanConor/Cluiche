@@ -194,6 +194,16 @@ namespace Dia
             return mCamera3D;
         }
 
+        void DebugLayerManager::SetCursorWorld(const Dia::Maths::Vector2D& worldPos)
+        {
+            mCursorWorld = worldPos;
+        }
+
+        Dia::Maths::Vector2D DebugLayerManager::GetCursorWorld() const
+        {
+            return mCursorWorld;
+        }
+
         // --------------------------------------------------------------------
         // Picking seam stubs
         // --------------------------------------------------------------------

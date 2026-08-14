@@ -135,6 +135,12 @@ namespace Dia
             const Dia::Graphics3D::Camera3D& GetCamera3D() const;
 
             // ----------------------------------------------------------------
+            // 2D cursor world position — updated by Coord2DCursorDrawer each frame
+            // ----------------------------------------------------------------
+            void SetCursorWorld(const Dia::Maths::Vector2D& worldPos);
+            Dia::Maths::Vector2D GetCursorWorld() const;
+
+            // ----------------------------------------------------------------
             // Picking seam — no-op stubs until scene editor (SD-DBG-008)
             // ----------------------------------------------------------------
             void     SetSelectedEntityId(uint32_t id) override;
@@ -222,6 +228,9 @@ namespace Dia
 
             // 3D camera — stored for Coord3D overlay drawers
             Dia::Graphics3D::Camera3D    mCamera3D;
+
+            // 2D cursor world position — updated by Coord2DCursorDrawer each Draw() call
+            Dia::Maths::Vector2D         mCursorWorld;
 
             // Broadcast state tracking (debug-editor-panel)
             uint32_t mLastDroppedCount = 0;  // cached from FrameData at end of Draw()

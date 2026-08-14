@@ -17,13 +17,13 @@ namespace Dia::Debug
 class Coord2DCursorDrawer : public Dia::Debug::IVisualDebugger
 {
 public:
-    explicit Coord2DCursorDrawer(const Dia::Debug::DebugLayerManager& manager);
+    explicit Coord2DCursorDrawer(Dia::Debug::DebugLayerManager& manager);
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Core::IDebugDraw& draw) override;
 
 private:
-    const Dia::Debug::DebugLayerManager& mManager;
+    Dia::Debug::DebugLayerManager& mManager;
 };
 
 } // namespace Dia::Debug

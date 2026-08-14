@@ -19,7 +19,7 @@
 namespace Dia::Debug
 {
 
-Coord2DCursorDrawer::Coord2DCursorDrawer(const Dia::Debug::DebugLayerManager& manager)
+Coord2DCursorDrawer::Coord2DCursorDrawer(Dia::Debug::DebugLayerManager& manager)
     : mManager(manager)
 {}
 
@@ -42,6 +42,7 @@ void Coord2DCursorDrawer::Draw(Dia::Core::IDebugDraw& draw)
 
     const Dia::Graphics::ViewportTransform vt = mManager.GetViewportTransform();
     const Dia::Maths::Vector2D worldPos = vt.ScreenToWorld(pixel);
+    mManager.SetCursorWorld(worldPos);
 
     // Crosshair arms: 1.5% of the narrower viewport axis
     const Dia::Geometry2D::AARect bounds = vt.GetWorldBounds();
