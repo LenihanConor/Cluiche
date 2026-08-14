@@ -713,6 +713,7 @@
     <ClCompile Include="DiaOrder\TestOrderQueue.cpp" />
     <!-- DiaBehaviourTree -->
     <ClCompile Include="DiaBehaviourTree\TestFoundationTypes.cpp" />
+    <ClCompile Include="DiaBehaviourTree\TestBehaviourTreeAsset.cpp" />
     <!-- DiaHTN -->
     <ClCompile Include="DiaHTN\TestOperatorRegistry.cpp" />
     <ClCompile Include="DiaHTN\TestHTNDomain.cpp" />
