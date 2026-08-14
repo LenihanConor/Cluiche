@@ -67,9 +67,13 @@ namespace Dia
 		{
 			DIA_ASSERT(totalBudgetMs >= 0.0f, "AIBudgetScheduler::Update — totalBudgetMs must not be negative (got %.4f)", totalBudgetMs);
 
+			mLastBudgetMs = totalBudgetMs;
+
 			float elapsedSoFarMs = 0.0f;
 			int systemsRun      = 0;
 			int systemsDeferred = 0;
+
+			AIBudgetResult result{};
 
 			for (unsigned int i = 0; i < mSystems.Size(); ++i)
 			{
@@ -77,6 +81,9 @@ namespace Dia
 				if (mSystems[i] == nullptr)
 				{
 					++systemsDeferred;
+#ifdef DIA_DEBUG
+					result.perSystem.Add(SystemTimingEntry{ Dia::Core::StringCRC(), 0.0f, false });
+#endif
 					continue;
 				}
 
@@ -84,17 +91,29 @@ namespace Dia
 
 				if (remaining <= 0.0f)
 				{
-					// Budget exhausted — skip this system and all remaining ones
+#ifdef DIA_DEBUG
+					// In debug, keep looping so every remaining system gets a perSystem entry.
+					result.perSystem.Add(SystemTimingEntry{ mSystems[i]->GetSystemId(), 0.0f, false });
+					++systemsDeferred;
+					continue;
+#else
+					// Budget exhausted — skip this system and all remaining ones.
 					systemsDeferred = static_cast<int>(mSystems.Size()) - static_cast<int>(i);
 					break;
+#endif
 				}
 
 				auto t0 = std::chrono::steady_clock::now();
 				mSystems[i]->UpdateBudgeted(remaining);
 				auto t1 = std::chrono::steady_clock::now();
 
-				elapsedSoFarMs += std::chrono::duration<float, std::milli>(t1 - t0).count();
+				const float timeMs = std::chrono::duration<float, std::milli>(t1 - t0).count();
+				elapsedSoFarMs += timeMs;
 				++systemsRun;
+
+#ifdef DIA_DEBUG
+				result.perSystem.Add(SystemTimingEntry{ mSystems[i]->GetSystemId(), timeMs, true });
+#endif
 			}
 
 			if (systemsDeferred > 0)
@@ -102,12 +121,20 @@ namespace Dia
 				DIA_LOG_WARNING("AIBudget", "Budget exhausted: %d systems deferred", systemsDeferred);
 			}
 
-			return AIBudgetResult{ systemsRun, systemsDeferred, elapsedSoFarMs };
+			result.systemsRun      = systemsRun;
+			result.systemsDeferred = systemsDeferred;
+			result.usedMs          = elapsedSoFarMs;
+			return result;
 		}
 
 		int AIBudgetScheduler::GetRegisteredCount() const
 		{
 			return static_cast<int>(mSystems.Size());
+		}
+
+		float AIBudgetScheduler::GetLastBudgetMs() const
+		{
+			return mLastBudgetMs;
 		}
 
 	} // namespace AIBudget
