@@ -6,6 +6,7 @@
 
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaUtilityAI/UtilitySet.h>
 
 namespace Dia::UtilityAI
 {
@@ -73,7 +74,45 @@ void UtilityAIDebugDomain::GetJSONState(Json::Value& out)
         drawers.append(entry);
     }
     out["drawers"] = drawers;
-    out["stats"]   = Json::Value(Json::objectValue);
+
+    // Per-action score table — only populated after at least one Evaluate() call.
+    Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32> ids;
+    Dia::Core::Containers::DynamicArrayC<float, 32> scores;
+    mUtilitySet.GetLastFrameScores(ids, scores);
+
+    const int count = static_cast<int>(ids.Size());
+
+    // Sort indices descending by score (insertion sort — count is small).
+    Dia::Core::Containers::DynamicArrayC<int, 32> order;
+    for (int i = 0; i < count; ++i) order.Add(i);
+    for (int i = 1; i < count; ++i)
+    {
+        const int key = order[i];
+        int j = i - 1;
+        while (j >= 0 && scores[order[j]] < scores[key])
+        {
+            order[j + 1] = order[j];
+            --j;
+        }
+        order[j + 1] = key;
+    }
+
+    Json::Value actions(Json::arrayValue);
+    for (int rank = 0; rank < count; ++rank)
+    {
+        const int idx = order[rank];
+        Json::Value a(Json::objectValue);
+        a["id"]     = ids[idx].AsChar();
+        a["score"]  = scores[idx];
+        a["winner"] = (rank == 0);
+        actions.append(a);
+    }
+
+    Json::Value stats(Json::objectValue);
+    stats["actionCount"]  = count;
+    stats["winnerScore"]  = (count > 0) ? scores[order[0]] : 0.0f;
+    stats["actions"]      = actions;
+    out["stats"] = stats;
 }
 
 void UtilityAIDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value& args)

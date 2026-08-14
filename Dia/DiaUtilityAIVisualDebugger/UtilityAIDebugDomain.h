@@ -33,7 +33,7 @@ public:
     const char*          GetDescription()  const override;
     Dia::Core::StringCRC GetGroup()        const override;
     Dia::Core::RGBA      GetAccentColour() const override;
-    bool                 HasWorldDrawers() const override { return true; }
+    bool                 HasWorldDrawers() const override { return false; }
 
     // ---- IDebugDomain: lifecycle ----
     void Register(Dia::Debug::DebugLayerManager& mgr)   override;
