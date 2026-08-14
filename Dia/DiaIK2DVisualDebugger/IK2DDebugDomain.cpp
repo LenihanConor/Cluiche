@@ -9,6 +9,7 @@
 
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaIK2D/IKSolver.h>
 
 namespace Dia::IK2D
 {
@@ -85,7 +86,24 @@ void IK2DDebugDomain::GetJSONState(Json::Value& out)
         drawers.append(entry);
     }
     out["drawers"] = drawers;
-    out["stats"]   = Json::Value(Json::objectValue);
+
+    const int chainCount = mSolver.GetChainCount();
+    Json::Value chains(Json::arrayValue);
+    for (int i = 0; i < chainCount; ++i)
+    {
+        Json::Value c(Json::objectValue);
+        c["index"]              = i;
+        c["id"]                 = mSolver.GetChainId(i).AsChar();
+        c["solved"]             = mSolver.IsSolved(i);
+        c["iterations"]         = mSolver.GetLastIterationCount(i);
+        c["endEffectorError"]   = mSolver.GetEndEffectorError(i);
+        chains.append(c);
+    }
+
+    Json::Value stats(Json::objectValue);
+    stats["chainCount"] = chainCount;
+    stats["chains"]     = chains;
+    out["stats"] = stats;
 }
 
 void IK2DDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value& args)
