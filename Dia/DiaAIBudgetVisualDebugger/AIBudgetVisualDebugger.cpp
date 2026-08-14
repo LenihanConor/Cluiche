@@ -10,6 +10,13 @@
 #include <DiaAIBudget/AIBudgetScheduler.h>
 #include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 
+namespace
+{
+    const Dia::Core::StringCRC kCmdToggle("toggle");
+    const Dia::Core::StringCRC kDrawerBudgetBar("BudgetBar");
+    const Dia::Core::StringCRC kDrawerSystemTimings("SystemTimings");
+}
+
 namespace Dia
 {
     namespace AIBudget
@@ -111,7 +118,17 @@ namespace Dia
 
         void AIBudgetVisualDebugger::OnCommand(Dia::Core::StringCRC cmd, const Json::Value& args)
         {
-            // TODO: implement in next task
+            if (cmd == kCmdToggle)
+            {
+                if (!args.isMember("drawer") || !args["drawer"].isString()) return;
+                const Dia::Core::StringCRC drawerName(args["drawer"].asCString());
+                if (drawerName == kDrawerBudgetBar)
+                    mBudgetBarEnabled.store(!mBudgetBarEnabled.load());
+                else if (drawerName == kDrawerSystemTimings)
+                    mSystemTimingsEnabled.store(!mSystemTimingsEnabled.load());
+                return;
+            }
+            // "setScale" and all other commands — no-op, no crash
         }
 
     } // namespace AIBudget
