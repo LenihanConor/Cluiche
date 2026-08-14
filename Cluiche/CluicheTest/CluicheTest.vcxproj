@@ -309,6 +309,24 @@
     <ProjectReference Include="..\..\Dia\DiaStateMachine\DiaStateMachine.vcxproj">
       <Project>{E3F4A5B6-C7D8-9012-EFAB-334455667788}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaSteeringVisualDebugger\DiaSteeringVisualDebugger.vcxproj">
+      <Project>{F4A5B6C7-D8E9-0123-F045-678901234567}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaPathfindingVisualDebugger\DiaPathfindingVisualDebugger.vcxproj">
+      <Project>{E9F0A1B2-C3D4-5678-EFAB-901234567890}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaFlowFieldVisualDebugger\DiaFlowFieldVisualDebugger.vcxproj">
+      <Project>{C2D3E4F5-A6B7-8901-CDEF-123456789AB0}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaHTNVisualDebugger\DiaHTNVisualDebugger.vcxproj">
+      <Project>{B2C3D4E5-F6A7-8012-BCDE-F01234567891}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaAIBudgetVisualDebugger\DiaAIBudgetVisualDebugger.vcxproj">
+      <Project>{E3F4A5B6-C7D8-9012-EF34-567890123456}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaMailboxVisualDebugger\DiaMailboxVisualDebugger.vcxproj">
+      <Project>{A3B4C5D6-E7F8-9012-A3B4-C5D6E7F89012}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{CEC960D4-B8B3-463B-9F68-716C5C3C4315}</ProjectGuid>

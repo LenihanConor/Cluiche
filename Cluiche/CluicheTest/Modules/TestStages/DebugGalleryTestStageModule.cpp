@@ -21,6 +21,12 @@
 #include <DiaScene2DVisualDebugger/Scene2DDebugDomain.h>
 #include <DiaEntityVisualDebugger/EntityDebugDomain.h>
 #include <DiaMesh3DVisualDebugger/Mesh3DDebugDomain.h>
+#include <DiaSteeringVisualDebugger/SteeringVisualDebugger.h>
+#include <DiaPathfindingVisualDebugger/PathfindingVisualDebugger.h>
+#include <DiaFlowFieldVisualDebugger/FlowFieldVisualDebugger.h>
+#include <DiaHTNVisualDebugger/HTNVisualDebugger.h>
+#include <DiaAIBudgetVisualDebugger/AIBudgetVisualDebugger.h>
+#include <DiaMailboxVisualDebugger/MailboxVisualDebugger.h>
 // Fixture headers
 #include <DiaStateMachine/FlatStateMachine.h>
 #include <DiaStateMachine/StateMachineBuilder.h>
@@ -43,6 +49,13 @@
 #include <DiaEntity/Domain.h>
 #include <DiaGraphics3D/Mesh3DFrameData.h>
 #include <DiaMesh3D/Mesh3DAssetHandler.h>
+#include <DiaSteering/SteeringSystem.h>
+#include <DiaPathfinding/SquarePathGrid.h>
+#include <DiaPathfinding/PathResult.h>
+#include <DiaFlowField/FlowField.h>
+#include <DiaHTN/HTNPlannerComponent.h>
+#include <DiaAIBudget/AIBudgetScheduler.h>
+#include <DiaMailbox/Mailbox.h>
 #endif
 
 #ifdef DIA_DEBUG
@@ -155,8 +168,16 @@ void DebugGalleryTestStageModule::OnStart(Dia::Automation::AutomationService* se
     mLayerTable       = std::make_unique<Dia::Scene2D::LayerTable>();
     mEntityDomain     = std::make_unique<Dia::Entity::Domain>();
     mMeshFrameData    = std::make_unique<Dia::Graphics3D::Mesh3DFrameData>();
-    mMeshAssetHandler = std::make_unique<Dia::Mesh3D::Mesh3DAssetHandler>();
-    mStateMachine     = std::make_unique<GalleryStateMachine>();
+    mMeshAssetHandler  = std::make_unique<Dia::Mesh3D::Mesh3DAssetHandler>();
+    mSteeringSystem    = std::make_unique<Dia::Steering::SteeringSystem>();
+    mPathGrid          = std::make_unique<Dia::Pathfinding::SquarePathGrid>(8, 8);
+    mPathResult        = std::make_unique<Dia::Pathfinding::PathResult>();
+    mFlowField         = std::make_unique<Dia::FlowField::FlowField>(8, 8);
+    mHTNPlanner        = std::make_unique<Dia::HTN::HTNPlannerComponent>();
+    mAIBudgetScheduler = std::make_unique<Dia::AIBudget::AIBudgetScheduler>();
+    mAIBudgetResult    = std::make_unique<Dia::AIBudget::AIBudgetResult>();
+    mMailbox           = std::make_unique<Dia::Mailbox::Mailbox>();
+    mStateMachine      = std::make_unique<GalleryStateMachine>();
     mBlackboard       = std::make_unique<Dia::Blackboard::Blackboard>();
     mRuleSetComponent = std::make_unique<Dia::Rules::RuleSetComponent>();
 
@@ -179,6 +200,12 @@ void DebugGalleryTestStageModule::OnStart(Dia::Automation::AutomationService* se
     mStateMachineDomain = std::make_unique<Dia::StateMachine::StateMachineVisualDebugger>(*mStateMachine);
     mBlackboardDomain   = std::make_unique<Dia::Blackboard::BlackboardVisualDebugger>(*mBlackboard);
     mRulesDomain        = std::make_unique<Dia::Rules::RulesVisualDebugger>(*mRuleSetComponent);
+    mSteeringDomain     = std::make_unique<Dia::Steering::SteeringVisualDebugger>(*mSteeringSystem);
+    mPathfindingDomain  = std::make_unique<Dia::Pathfinding::PathfindingVisualDebugger>(*mPathGrid, *mPathResult, 1.0f);
+    mFlowFieldDomain    = std::make_unique<Dia::FlowField::FlowFieldVisualDebugger>(*mFlowField, 1.0f);
+    mHTNDomain          = std::make_unique<Dia::HTN::HTNVisualDebugger>(*mHTNPlanner);
+    mAIBudgetDomain     = std::make_unique<Dia::AIBudget::AIBudgetVisualDebugger>(*mAIBudgetScheduler, *mAIBudgetResult);
+    mMailboxDomain      = std::make_unique<Dia::Mailbox::MailboxVisualDebugger>(*mMailbox);
 
     DIA_LOG_INFO("CluicheTest", "DebugGalleryTestStageModule — fixtures built; domains register on first update");
 #endif
@@ -207,8 +234,14 @@ void DebugGalleryTestStageModule::OnUpdate(float /*deltaTime*/)
             vd->RegisterDomain(*mStateMachineDomain);
             vd->RegisterDomain(*mBlackboardDomain);
             vd->RegisterDomain(*mRulesDomain);
+            vd->RegisterDomain(*mSteeringDomain);
+            vd->RegisterDomain(*mPathfindingDomain);
+            vd->RegisterDomain(*mFlowFieldDomain);
+            vd->RegisterDomain(*mHTNDomain);
+            vd->RegisterDomain(*mAIBudgetDomain);
+            vd->RegisterDomain(*mMailboxDomain);
             mDomainsRegistered = true;
-            DIA_LOG_INFO("CluicheTest", "DebugGalleryTestStageModule — 15 domains registered");
+            DIA_LOG_INFO("CluicheTest", "DebugGalleryTestStageModule — 21 domains registered");
         }
     }
 #endif
@@ -223,6 +256,12 @@ void DebugGalleryTestStageModule::OnStop()
     auto* vd = mVisualDebuggerRef.Get();
     if (vd)
     {
+        if (mMailboxDomain)       vd->UnregisterDomain(*mMailboxDomain);
+        if (mAIBudgetDomain)      vd->UnregisterDomain(*mAIBudgetDomain);
+        if (mHTNDomain)           vd->UnregisterDomain(*mHTNDomain);
+        if (mFlowFieldDomain)     vd->UnregisterDomain(*mFlowFieldDomain);
+        if (mPathfindingDomain)   vd->UnregisterDomain(*mPathfindingDomain);
+        if (mSteeringDomain)      vd->UnregisterDomain(*mSteeringDomain);
         if (mRulesDomain)         vd->UnregisterDomain(*mRulesDomain);
         if (mBlackboardDomain)    vd->UnregisterDomain(*mBlackboardDomain);
         if (mStateMachineDomain)  vd->UnregisterDomain(*mStateMachineDomain);
@@ -241,6 +280,12 @@ void DebugGalleryTestStageModule::OnStop()
     }
 
     // Domains first, then the fixtures they reference.
+    mMailboxDomain.reset();
+    mAIBudgetDomain.reset();
+    mHTNDomain.reset();
+    mFlowFieldDomain.reset();
+    mPathfindingDomain.reset();
+    mSteeringDomain.reset();
     mRulesDomain.reset();
     mBlackboardDomain.reset();
     mStateMachineDomain.reset();
@@ -274,9 +319,17 @@ void DebugGalleryTestStageModule::OnStop()
     mUtilitySet.reset();
     mSoftBodyWorld.reset();
     mPhysicsWorld.reset();
+    mMailbox.reset();
+    mAIBudgetResult.reset();
+    mAIBudgetScheduler.reset();
+    mHTNPlanner.reset();
+    mFlowField.reset();
+    mPathResult.reset();
+    mPathGrid.reset();
+    mSteeringSystem.reset();
 
     mDomainsRegistered = false;
-    DIA_LOG_INFO("CluicheTest", "DebugGalleryTestStageModule — 15 domains unregistered");
+    DIA_LOG_INFO("CluicheTest", "DebugGalleryTestStageModule — 21 domains unregistered");
 #endif
 }
 
@@ -285,4 +338,4 @@ void DebugGalleryTestStageModule::OnStop()
 namespace { using DebugGalleryTestStageModule_ = CluicheTest::DebugGalleryTestStageModule; }
 DIA_MODULE(DebugGalleryTestStageModule_);
 DIA_DESCRIBE(DebugGalleryTestStageModule_::kTypeId,
-    "Visual gallery stage: registers all 17 IDebugDomain instances simultaneously for DiaDebugPanel validation.");
+    "Visual gallery stage: registers all 23 IDebugDomain instances simultaneously for DiaDebugPanel validation.");

@@ -39,6 +39,12 @@ namespace Dia::Mesh3D                  { class Mesh3DDebugDomain; }
 namespace Dia::StateMachine            { class IStateMachineInspectable; class StateMachineVisualDebugger; }
 namespace Dia::Blackboard              { class Blackboard; class BlackboardVisualDebugger; }
 namespace Dia::Rules                   { class RuleSetComponent; class RulesVisualDebugger; }
+namespace Dia::Steering    { class SteeringSystem; class SteeringVisualDebugger; }
+namespace Dia::Pathfinding { class SquarePathGrid; struct PathResult; class PathfindingVisualDebugger; }
+namespace Dia::FlowField   { class FlowField; class FlowFieldVisualDebugger; }
+namespace Dia::HTN         { class HTNPlannerComponent; class HTNVisualDebugger; }
+namespace Dia::AIBudget    { class AIBudgetScheduler; struct AIBudgetResult; class AIBudgetVisualDebugger; }
+namespace Dia::Mailbox     { class Mailbox; class MailboxVisualDebugger; }
 #endif
 
 namespace CluicheTest {
@@ -49,7 +55,7 @@ public:
     static const Dia::Core::StringCRC kTypeId;
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kSim;
     static constexpr const char* kDescription =
-        "Visual gallery: registers all 17 IDebugDomain instances with synthetic fixture data for panel validation";
+        "Visual gallery: registers all 23 IDebugDomain instances with synthetic fixture data for panel validation";
     explicit DebugGalleryTestStageModule(const Dia::Core::StringCRC& instanceId);
     ~DebugGalleryTestStageModule() override;
 
@@ -81,13 +87,21 @@ private:
     std::unique_ptr<Dia::Entity::Domain>                  mEntityDomain;
     std::unique_ptr<Dia::Graphics3D::Mesh3DFrameData>     mMeshFrameData;
     std::unique_ptr<Dia::Mesh3D::Mesh3DAssetHandler>      mMeshAssetHandler;
+    std::unique_ptr<Dia::Steering::SteeringSystem>        mSteeringSystem;
+    std::unique_ptr<Dia::Pathfinding::SquarePathGrid>     mPathGrid;
+    std::unique_ptr<Dia::Pathfinding::PathResult>         mPathResult;
+    std::unique_ptr<Dia::FlowField::FlowField>            mFlowField;
+    std::unique_ptr<Dia::HTN::HTNPlannerComponent>        mHTNPlanner;
+    std::unique_ptr<Dia::AIBudget::AIBudgetScheduler>     mAIBudgetScheduler;
+    std::unique_ptr<Dia::AIBudget::AIBudgetResult>        mAIBudgetResult;
+    std::unique_ptr<Dia::Mailbox::Mailbox>                mMailbox;
 
     bool mDomainsRegistered = false;
 
-    // 15 gallery domains. Coord2DDebugDomain and Coord3DDebugDomain are excluded
+    // 21 gallery domains. Coord2DDebugDomain and Coord3DDebugDomain are excluded
     // because VisualDebuggerModule already registers them on startup; registering
     // them again would fire a DIA_ASSERT (duplicate domain ID). The panel sees all
-    // 17 domains: 2 from VisualDebuggerModule + 15 from this stage.
+    // 23 domains: 2 from VisualDebuggerModule + 21 from this stage.
     std::unique_ptr<Dia::Geometry2DVisualDebugger::Geometry2DDebugDomain>  mGeometry2DDomain;
     std::unique_ptr<Dia::AssetRuntime::AssetRuntimeDebugDomain>            mAssetRuntimeDomain;
     std::unique_ptr<Dia::UtilityAI::UtilityAIDebugDomain>                  mUtilityAIDomain;
@@ -106,6 +120,12 @@ private:
     std::unique_ptr<Dia::StateMachine::StateMachineVisualDebugger>        mStateMachineDomain;
     std::unique_ptr<Dia::Blackboard::BlackboardVisualDebugger>            mBlackboardDomain;
     std::unique_ptr<Dia::Rules::RulesVisualDebugger>                      mRulesDomain;
+    std::unique_ptr<Dia::Steering::SteeringVisualDebugger>                mSteeringDomain;
+    std::unique_ptr<Dia::Pathfinding::PathfindingVisualDebugger>          mPathfindingDomain;
+    std::unique_ptr<Dia::FlowField::FlowFieldVisualDebugger>              mFlowFieldDomain;
+    std::unique_ptr<Dia::HTN::HTNVisualDebugger>                          mHTNDomain;
+    std::unique_ptr<Dia::AIBudget::AIBudgetVisualDebugger>                mAIBudgetDomain;
+    std::unique_ptr<Dia::Mailbox::MailboxVisualDebugger>                  mMailboxDomain;
 #endif
 };
 
