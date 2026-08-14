@@ -77,6 +77,9 @@ private:
     const PhysicsWorld&            mWorld;
     Dia::Debug::DebugLayerManager* mLayerManager = nullptr;
 
+    float mParamVelocityScale = 1.0f;
+    float mParamNormalLength  = 1.0f;
+
     std::unique_ptr<PhysicsShapesDrawer>   mShapesDrawer;
     std::unique_ptr<VelocityArrowsDrawer>  mVelocityDrawer;
     std::unique_ptr<ContactNormalsDrawer>  mContactsDrawer;

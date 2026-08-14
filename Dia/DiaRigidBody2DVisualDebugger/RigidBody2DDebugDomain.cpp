@@ -10,6 +10,8 @@
 
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaRigidBody2D/World/PhysicsWorld.h>
+#include <DiaRigidBody2D/Bodies/Body2DBase.h>
 
 namespace Dia::RigidBody2D
 {
@@ -140,8 +142,38 @@ void RigidBody2DDebugDomain::GetJSONState(Json::Value& out)
     }
 
     out["drawers"] = drawers;
-    // Phase 2 populates body/contact/constraint counts here.
-    out["stats"]   = Json::Value(Json::objectValue);
+
+    // Body counts — iterate rigid bodies to classify awake/sleeping/static.
+    int active = 0, sleeping = 0, staticCount = 0;
+    const auto& rigidBodies = mWorld.GetRigidBodies();
+    for (unsigned int i = 0; i < rigidBodies.Size(); ++i)
+    {
+        const Dia::RigidBody2D::RigidBody2D* b = rigidBodies[i];
+        if (b == nullptr) continue;
+        if (b->GetBodyType() == Dia::RigidBody2D::BodyType::kStatic)
+            ++staticCount;
+        else if (b->IsAwake())
+            ++active;
+        else
+            ++sleeping;
+    }
+    const int contacts    = static_cast<int>(mWorld.GetLastContacts().Size());
+    const int constraints = static_cast<int>(mWorld.GetConstraints().Size());
+
+    Json::Value stats(Json::objectValue);
+    stats["active"]    = active;
+    stats["sleeping"]  = sleeping;
+    stats["static"]    = staticCount;
+    stats["total"]     = active + sleeping + staticCount;
+    stats["contacts"]  = contacts;
+    stats["constraints"] = constraints;
+
+    Json::Value params(Json::objectValue);
+    params["velocityScale"] = mParamVelocityScale;
+    params["normalLength"]  = mParamNormalLength;
+
+    out["stats"]  = stats;
+    out["params"] = params;
 }
 
 void RigidBody2DDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value& args)
@@ -173,13 +205,16 @@ void RigidBody2DDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Val
         if (!args.isMember("value") || !args["value"].isNumeric())
             return;
 
-        // The physics drawers have no domain-local scale parameters yet, so the
-        // only tunable is the shared debug scale (IDebugContext::GetDebugScale).
         const Dia::Core::StringCRC key = args.isMember("key") && args["key"].isString()
                                        ? Dia::Core::StringCRC(args["key"].asCString())
                                        : kScaleKeyDebugScale;
+        const float val = static_cast<float>(args["value"].asDouble());
         if (key == kScaleKeyDebugScale)
-            mLayerManager->SetDebugScale(static_cast<float>(args["value"].asDouble()));
+            mLayerManager->SetDebugScale(val);
+        else if (key == Dia::Core::StringCRC("velocityScale"))
+            mParamVelocityScale = val;
+        else if (key == Dia::Core::StringCRC("normalLength"))
+            mParamNormalLength = val;
     }
 }
 
