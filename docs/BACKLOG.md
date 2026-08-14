@@ -36,7 +36,7 @@ These are new `DiaXxxVisualDebugger` system specs — each is its own module imp
 
 | Item | Group | Value | Spec | Notes |
 |------|-------|-------|------|-------|
-| DiaSteeringVisualDebugger | Navigation | High | Approved ✅ | Prereq: `SteeringSystem::VisitAgents()` debug accessor. World-space: velocity arrows, separation radius, detection boxes. |
+| ~~DiaSteeringVisualDebugger~~ | Navigation | High | Approved ✅ | Prereq: `SteeringSystem::VisitAgents()` debug accessor. World-space: velocity arrows, separation radius, detection boxes. |
 | DiaPathfindingVisualDebugger | Navigation | High | Approved ✅ | Prereq: confirm `PathGrid::VisitCells()`/`GetWidth()`/`GetHeight()`. World-space: path polyline, start/goal markers, grid passability. |
 | DiaFlowFieldVisualDebugger | Navigation | High | Approved ✅ | Prereq: `FlowField::GetWidth()`/`GetHeight()`. World-space: per-cell direction arrows, reachability overlay. |
 | DiaStateMachineVisualDebugger | AI / Behavior | High | Approved ✅ | No prereqs. Panel: states, transition history, guard pass/fail via `ITransitionListener`. |

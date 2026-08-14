@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/applications/dia/systems/diasteeringvisualdebugger/diasteeringvisualdebugger.md
-**Status:** Todo
+**Status:** Done
 
 ## API Decisions
 

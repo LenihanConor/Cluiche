@@ -47,6 +47,26 @@ namespace Dia { namespace Steering {
         // Call once at module stop.
         void UnregisterObservability();
 
+#ifdef DIA_DEBUG
+        // Iterates all registered agents, calling fn(id, agent, desiredVelocity) for each.
+        // desiredVelocity is the cached output from the most recent Update() call (zero if no Update yet).
+        // Template body defined inline here — only compiled in DIA_DEBUG builds.
+        template<typename Fn>
+        void VisitAgents(Fn&& fn) const
+        {
+            for (const auto& kv : mAgents)
+            {
+                const Dia::Core::StringCRC id  = kv.first;
+                const SteeringAgent& agent     = kv.second;
+                auto outIt = mOutputs.find(id);
+                const Dia::Maths::Vector2D desired = (outIt != mOutputs.end())
+                    ? outIt->second
+                    : Dia::Maths::Vector2D(0.0f, 0.0f);
+                fn(id, agent, desired);
+            }
+        }
+#endif
+
     private:
         std::unordered_map<Dia::Core::StringCRC, SteeringAgent>          mAgents;
         std::unordered_map<Dia::Core::StringCRC, Dia::Maths::Vector2D>   mOutputs;

@@ -105,6 +105,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | diarulesvisualdebugger | [spec](specs/) | 2026-08-14 | Marked done by `dia docs spec-done` |
 | diablackboardvisualdebugger | [spec](specs/) | 2026-08-14 | Marked done by `dia docs spec-done` |
 | diaaibudgetvisualdebugger | [spec](specs/) | 2026-08-14 | Marked done by `dia docs spec-done` |
+| diasteeringvisualdebugger | [spec](specs/) | 2026-08-14 | Marked done by `dia docs spec-done` |
 
 ---
 

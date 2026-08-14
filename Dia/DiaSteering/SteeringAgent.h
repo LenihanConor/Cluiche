@@ -14,6 +14,10 @@ namespace Dia
             Dia::Maths::Vector2D velocity;
             float maxSpeed = 1.0f;
             float maxForce = 1.0f;
+
+            // Debug-hint properties: zero means "not configured / skip drawing".
+            float separationRadius   = 0.0f;  // used by SeparationRadius visual debugger drawer
+            float detectionBoxLength = 0.0f;  // used by DetectionBox visual debugger drawer
         };
     }
 }
