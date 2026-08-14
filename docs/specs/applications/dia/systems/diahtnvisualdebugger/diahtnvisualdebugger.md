@@ -173,4 +173,4 @@ All 16 ACs from `debugger-contract.md` apply to this module:
 
 ## Status
 
-**Status:** `Approved`
+**Status:** `Done`
