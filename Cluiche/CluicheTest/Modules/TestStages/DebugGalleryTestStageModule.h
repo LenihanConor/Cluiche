@@ -38,6 +38,7 @@ namespace Dia::EntityVisualDebugger    { class EntityDebugDomain; }
 namespace Dia::Mesh3D                  { class Mesh3DDebugDomain; }
 namespace Dia::StateMachine            { class IStateMachineInspectable; class StateMachineVisualDebugger; }
 namespace Dia::Blackboard              { class Blackboard; class BlackboardVisualDebugger; }
+namespace Dia::Rules                   { class RuleSetComponent; class RulesVisualDebugger; }
 #endif
 
 namespace CluicheTest {
@@ -48,7 +49,7 @@ public:
     static const Dia::Core::StringCRC kTypeId;
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kSim;
     static constexpr const char* kDescription =
-        "Visual gallery: registers all 16 IDebugDomain instances with synthetic fixture data for panel validation";
+        "Visual gallery: registers all 17 IDebugDomain instances with synthetic fixture data for panel validation";
     explicit DebugGalleryTestStageModule(const Dia::Core::StringCRC& instanceId);
     ~DebugGalleryTestStageModule() override;
 
@@ -83,10 +84,10 @@ private:
 
     bool mDomainsRegistered = false;
 
-    // 14 gallery domains. Coord2DDebugDomain and Coord3DDebugDomain are excluded
+    // 15 gallery domains. Coord2DDebugDomain and Coord3DDebugDomain are excluded
     // because VisualDebuggerModule already registers them on startup; registering
     // them again would fire a DIA_ASSERT (duplicate domain ID). The panel sees all
-    // 16 domains: 2 from VisualDebuggerModule + 14 from this stage.
+    // 17 domains: 2 from VisualDebuggerModule + 15 from this stage.
     std::unique_ptr<Dia::Geometry2DVisualDebugger::Geometry2DDebugDomain>  mGeometry2DDomain;
     std::unique_ptr<Dia::AssetRuntime::AssetRuntimeDebugDomain>            mAssetRuntimeDomain;
     std::unique_ptr<Dia::UtilityAI::UtilityAIDebugDomain>                  mUtilityAIDomain;
@@ -101,8 +102,10 @@ private:
     std::unique_ptr<Dia::Mesh3D::Mesh3DDebugDomain>                       mMesh3DDomain;
     std::unique_ptr<Dia::StateMachine::IStateMachineInspectable>          mStateMachine;
     std::unique_ptr<Dia::Blackboard::Blackboard>                          mBlackboard;
+    std::unique_ptr<Dia::Rules::RuleSetComponent>                         mRuleSetComponent;
     std::unique_ptr<Dia::StateMachine::StateMachineVisualDebugger>        mStateMachineDomain;
     std::unique_ptr<Dia::Blackboard::BlackboardVisualDebugger>            mBlackboardDomain;
+    std::unique_ptr<Dia::Rules::RulesVisualDebugger>                      mRulesDomain;
 #endif
 };
 

@@ -11,6 +11,7 @@
 #include <DiaUtilityAIVisualDebugger/UtilityAIDebugDomain.h>
 #include <DiaStateMachineVisualDebugger/StateMachineVisualDebugger.h>
 #include <DiaBlackboardVisualDebugger/BlackboardVisualDebugger.h>
+#include <DiaRulesVisualDebugger/RulesVisualDebugger.h>
 #include <DiaRigidBody2DVisualDebugger/RigidBody2DDebugDomain.h>
 #include <DiaSoftBody2DVisualDebugger/SoftBody2DDebugDomain.h>
 #include <DiaLighting3DVisualDebugger/Lighting3DDebugDomain.h>
@@ -24,6 +25,7 @@
 #include <DiaStateMachine/FlatStateMachine.h>
 #include <DiaStateMachine/StateMachineBuilder.h>
 #include <DiaBlackboard/Blackboard.h>
+#include <DiaRules/RuleSetComponent.h>
 #include <DiaRigidBody2D/World/PhysicsWorld.h>
 #include <DiaRigidBody2D/World/WorldDef.h>
 #include <DiaSoftBody2D/SoftBodyWorld.h>
@@ -156,8 +158,9 @@ void DebugGalleryTestStageModule::OnStart(Dia::Automation::AutomationService* se
     mMeshAssetHandler = std::make_unique<Dia::Mesh3D::Mesh3DAssetHandler>();
     mStateMachine     = std::make_unique<GalleryStateMachine>();
     mBlackboard       = std::make_unique<Dia::Blackboard::Blackboard>();
+    mRuleSetComponent = std::make_unique<Dia::Rules::RuleSetComponent>();
 
-    // Construct all 14 gallery domains
+    // Construct all 15 gallery domains
     mGeometry2DDomain   = std::make_unique<Dia::Geometry2DVisualDebugger::Geometry2DDebugDomain>();
     mAssetRuntimeDomain = std::make_unique<Dia::AssetRuntime::AssetRuntimeDebugDomain>();
     mUtilityAIDomain    = std::make_unique<Dia::UtilityAI::UtilityAIDebugDomain>(*mUtilitySet);
@@ -175,6 +178,7 @@ void DebugGalleryTestStageModule::OnStart(Dia::Automation::AutomationService* se
     mMesh3DDomain       = std::make_unique<Dia::Mesh3D::Mesh3DDebugDomain>(*mMeshFrameData, *mMeshAssetHandler);
     mStateMachineDomain = std::make_unique<Dia::StateMachine::StateMachineVisualDebugger>(*mStateMachine);
     mBlackboardDomain   = std::make_unique<Dia::Blackboard::BlackboardVisualDebugger>(*mBlackboard);
+    mRulesDomain        = std::make_unique<Dia::Rules::RulesVisualDebugger>(*mRuleSetComponent);
 
     DIA_LOG_INFO("CluicheTest", "DebugGalleryTestStageModule — fixtures built; domains register on first update");
 #endif
@@ -202,8 +206,9 @@ void DebugGalleryTestStageModule::OnUpdate(float /*deltaTime*/)
             vd->RegisterDomain(*mMesh3DDomain);
             vd->RegisterDomain(*mStateMachineDomain);
             vd->RegisterDomain(*mBlackboardDomain);
+            vd->RegisterDomain(*mRulesDomain);
             mDomainsRegistered = true;
-            DIA_LOG_INFO("CluicheTest", "DebugGalleryTestStageModule — 14 domains registered");
+            DIA_LOG_INFO("CluicheTest", "DebugGalleryTestStageModule — 15 domains registered");
         }
     }
 #endif
@@ -218,6 +223,7 @@ void DebugGalleryTestStageModule::OnStop()
     auto* vd = mVisualDebuggerRef.Get();
     if (vd)
     {
+        if (mRulesDomain)         vd->UnregisterDomain(*mRulesDomain);
         if (mBlackboardDomain)    vd->UnregisterDomain(*mBlackboardDomain);
         if (mStateMachineDomain)  vd->UnregisterDomain(*mStateMachineDomain);
         if (mMesh3DDomain)        vd->UnregisterDomain(*mMesh3DDomain);
@@ -235,6 +241,7 @@ void DebugGalleryTestStageModule::OnStop()
     }
 
     // Domains first, then the fixtures they reference.
+    mRulesDomain.reset();
     mBlackboardDomain.reset();
     mStateMachineDomain.reset();
     mMesh3DDomain.reset();
@@ -261,6 +268,7 @@ void DebugGalleryTestStageModule::OnStop()
     mPose.reset();
     mSkeleton.reset();
     mLightRegistry3D.reset();
+    mRuleSetComponent.reset();
     mBlackboard.reset();
     mStateMachine.reset();
     mUtilitySet.reset();
@@ -268,7 +276,7 @@ void DebugGalleryTestStageModule::OnStop()
     mPhysicsWorld.reset();
 
     mDomainsRegistered = false;
-    DIA_LOG_INFO("CluicheTest", "DebugGalleryTestStageModule — 14 domains unregistered");
+    DIA_LOG_INFO("CluicheTest", "DebugGalleryTestStageModule — 15 domains unregistered");
 #endif
 }
 
@@ -277,4 +285,4 @@ void DebugGalleryTestStageModule::OnStop()
 namespace { using DebugGalleryTestStageModule_ = CluicheTest::DebugGalleryTestStageModule; }
 DIA_MODULE(DebugGalleryTestStageModule_);
 DIA_DESCRIBE(DebugGalleryTestStageModule_::kTypeId,
-    "Visual gallery stage: registers all 16 IDebugDomain instances simultaneously for DiaDebugPanel validation.");
+    "Visual gallery stage: registers all 17 IDebugDomain instances simultaneously for DiaDebugPanel validation.");

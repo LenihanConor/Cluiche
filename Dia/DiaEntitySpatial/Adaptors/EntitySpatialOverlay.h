@@ -240,6 +240,8 @@ namespace Dia
                     mQueryHits.Assign(hits);
                 }
 
+                void SetLabelSize(float s) { mConfig.labelSize = s; }
+
                 void Draw(Dia::Core::IDebugDraw& draw) override
                 {
                     if (!IsEnabled())
