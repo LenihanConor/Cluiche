@@ -93,3 +93,28 @@ TEST(CalloutClaimReleaseTests, ReleaseOnExpiredHandleIsNoOp)
     // Release on expired handle — should not crash
     registry.Release(handle, Dia::Core::StringCRC("EntityA"));
 }
+
+TEST(CalloutClaimReleaseTests, ClaimExpiredHandleReturnsFalse)
+{
+    CalloutRegistry registry;
+    const CalloutHandle handle = EmitTestCallout(registry, Dia::Core::StringCRC("alert"),
+                                                  Dia::Maths::Vector2D(0.0f, 0.0f), 100.0f, 1.0f);
+    registry.Update(2.0f);
+    ASSERT_FALSE(handle.IsValid());
+    EXPECT_FALSE(registry.Claim(handle, Dia::Core::StringCRC("entity")));
+}
+
+TEST(CalloutClaimReleaseTests, GetOnClaimedHandleReturnsData)
+{
+    CalloutRegistry registry;
+    const Dia::Core::StringCRC kind("supply");
+    const CalloutHandle handle = EmitTestCallout(registry, kind,
+                                                  Dia::Maths::Vector2D(1.0f, 2.0f));
+    registry.Claim(handle, Dia::Core::StringCRC("entityA"));
+
+    ASSERT_TRUE(handle.IsValid());
+    ASSERT_TRUE(handle.IsClaimed());
+    const Callout* data = handle.Get();
+    ASSERT_NE(data, nullptr);
+    EXPECT_EQ(data->kind, kind);
+}

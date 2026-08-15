@@ -165,3 +165,18 @@ TEST(CalloutQueryTests, QueryDoesNotClearResults)
     registry.Query(filterB, results);
     EXPECT_EQ(results.Size(), 3u);
 }
+
+TEST(CalloutQueryTests, QueryBothFactionAny_Matches)
+{
+    // filter.faction=kZero AND callout.faction=kZero → should match (any×any)
+    CalloutRegistry registry;
+    const Dia::Core::StringCRC kind("signal");
+    const Dia::Maths::Vector2D origin(0.0f, 0.0f);
+
+    const CalloutHandle handle = EmitTestCallout(registry, kind, origin);
+
+    DynamicArrayC<CalloutHandle, 8> results;
+    const QueryFilter filter{kind, origin, 200.0f, Dia::Core::StringCRC::kZero};
+    registry.Query(filter, results);
+    AssertInQueryResults(results, handle);
+}

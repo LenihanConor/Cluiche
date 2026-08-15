@@ -111,3 +111,39 @@ TEST(CalloutTTLTests, UpdateOnlyExpiredNotAffectsOthers)
     EXPECT_FALSE(shortLived.IsValid());
     EXPECT_TRUE(longLived.IsValid());
 }
+
+TEST(CalloutTTLTests, ExpiryWhileClaimed_ClearsClaimState)
+{
+    CalloutRegistry registry;
+    const CalloutHandle handle = EmitTestCallout(registry, Dia::Core::StringCRC("rescue"),
+                                                  Dia::Maths::Vector2D(0.0f, 0.0f), 100.0f, 1.0f);
+    ASSERT_TRUE(registry.Claim(handle, Dia::Core::StringCRC("entityA")));
+    ASSERT_TRUE(handle.IsClaimed());
+
+    registry.Update(2.0f);
+
+    EXPECT_FALSE(handle.IsValid());
+    const CalloutHandle newHandle = EmitTestCallout(registry, Dia::Core::StringCRC("rescue"),
+                                                     Dia::Maths::Vector2D(0.0f, 0.0f));
+    EXPECT_TRUE(newHandle.IsValid());
+    EXPECT_FALSE(newHandle.IsClaimed());
+    EXPECT_EQ(registry.GetLiveCount(), 1);
+}
+
+TEST(CalloutTTLTests, ExpiryWhileClaimed_SlotQueryableAfterReemit)
+{
+    CalloutRegistry registry;
+    const Dia::Core::StringCRC kind("guard");
+    const Dia::Maths::Vector2D pos(0.0f, 0.0f);
+
+    const CalloutHandle h1 = EmitTestCallout(registry, kind, pos, 100.0f, 1.0f);
+    registry.Claim(h1, Dia::Core::StringCRC("entityA"));
+    registry.Update(2.0f);
+
+    const CalloutHandle h2 = EmitTestCallout(registry, kind, pos, 100.0f, 10.0f);
+
+    Dia::Core::Containers::DynamicArrayC<CalloutHandle, 8> results;
+    const QueryFilter filter{kind, pos, 200.0f, Dia::Core::StringCRC::kZero};
+    registry.Query(filter, results);
+    AssertInQueryResults(results, h2);
+}

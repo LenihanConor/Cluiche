@@ -47,3 +47,15 @@ TEST(CalloutEmitTests, GenerationNonZeroAfterEmit)
     CalloutHandle handle = EmitTestCallout(registry, Dia::Core::StringCRC("Retreat"), Dia::Maths::Vector2D(0.0f, 0.0f));
     EXPECT_NE(handle.GetGeneration(), 0u);
 }
+
+TEST(CalloutEmitTests, DefaultHandleIsClaimedFalse)
+{
+    const CalloutHandle handle;
+    EXPECT_FALSE(handle.IsClaimed());
+}
+
+TEST(CalloutEmitTests, DefaultHandleGetReturnsNullptr)
+{
+    const CalloutHandle handle;
+    EXPECT_EQ(handle.Get(), nullptr);
+}
