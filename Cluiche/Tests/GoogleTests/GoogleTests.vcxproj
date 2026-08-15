@@ -714,6 +714,7 @@
     <!-- DiaBehaviourTree -->
     <ClCompile Include="DiaBehaviourTree\TestFoundationTypes.cpp" />
     <ClCompile Include="DiaBehaviourTree\TestBehaviourTreeAsset.cpp" />
+    <ClCompile Include="DiaBehaviourTree\TestBehaviourTreeComponent.cpp" />
     <!-- DiaHTN -->
     <ClCompile Include="DiaHTN\TestOperatorRegistry.cpp" />
     <ClCompile Include="DiaHTN\TestHTNDomain.cpp" />
