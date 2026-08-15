@@ -216,6 +216,6 @@ namespace Dia::AICallout::Testing {
 
 ## Status
 
-`In Progress`
+`Done`
 
 **Plan:** [diaaibroadcast.plan.md](diaaibroadcast.plan.md)
