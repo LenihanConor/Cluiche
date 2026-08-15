@@ -77,6 +77,14 @@
     <None Include="Docs\dia.diaaibroadcastvisualdebugger.architecture.module.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CalloutRadiiDrawer.h" />
+    <ClInclude Include="CalloutRegistryDebugger.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="CalloutRadiiDrawer.cpp" />
+    <ClCompile Include="CalloutRegistryDebugger.cpp" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
       <Project>{8D41CBE3-C493-428D-95F3-627E56500667}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

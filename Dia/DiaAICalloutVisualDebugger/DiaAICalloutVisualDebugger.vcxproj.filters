@@ -4,10 +4,32 @@
     <Filter Include="Docs">
       <UniqueIdentifier>{A5B7C9D1-E3F5-A7B9-C1D3-E5F7A9B1C3D5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{B6C8D0E2-F4A6-B8C0-D2E4-F6A8B0C2D4E6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{C7D9E1F3-A5B7-C9D1-E3F5-A7B9C1D3E5F7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diaaibroadcastvisualdebugger.architecture.module.md">
       <Filter>Docs</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CalloutRadiiDrawer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CalloutRegistryDebugger.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="CalloutRadiiDrawer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CalloutRegistryDebugger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
