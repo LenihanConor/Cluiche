@@ -77,6 +77,13 @@
     <None Include="Docs\dia.diaaibroadcast.architecture.module.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Callout.h" />
+    <ClInclude Include="CalloutHandle.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="CalloutHandle.cpp" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
       <Project>{8D41CBE3-C493-428D-95F3-627E56500667}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

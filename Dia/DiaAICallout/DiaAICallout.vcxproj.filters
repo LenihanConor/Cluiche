@@ -13,4 +13,11 @@
       <Filter>Docs</Filter>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Callout.h" />
+    <ClInclude Include="CalloutHandle.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="CalloutHandle.cpp" />
+  </ItemGroup>
 </Project>
