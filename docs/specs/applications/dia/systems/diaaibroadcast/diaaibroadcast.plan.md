@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/applications/dia/systems/diaaibroadcast/diaaibroadcast.md
-**Status:** In Progress
+**Status:** Done
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
@@ -15,4 +15,4 @@
 | 10 | **[Debugger]** `DiaAICalloutVisualDebugger` project scaffold — `Dia/DiaAICalloutVisualDebugger/` directory, vcxproj, vcxproj.filters, YAML module doc, register in `Cluiche.sln` | Build succeeds (static lib) | Done | haiku | #ifdef DIA_DEBUG guarded; depends on DiaAICallout + DiaVisualDebugger. Committed b58a1c6f. |
 | 11 | **[Debugger]** `CalloutRegistryDebugger` — `IDebugDomain` impl: identity (domainId="aicallout", group="AIBehavior"), `GetJSONState` emits live callout table (kind, position, radius, faction, ttl, claimed), `HasWorldDrawers()=true` with circle drawers for callout radii | Unit: GetJSONState has correct keys, IDebugDomain contract test shapes | Done | sonnet | CalloutRadiiDrawer draws circles (green=unclaimed, red=claimed); fixed Vector2D .x/.y; build exit 0. |
 | 12 | **[Debugger]** Debugger GoogleTests — IDebugDomain contract tests | `dia run googletest --filter="DiaAICalloutDebugger*"` all pass | Done | haiku | 20 tests, 3 suites (Identity/JSONState/OnCommand); DiaAICalloutVisualDebugger.lib wired into GoogleTests. |
-| 13 | **[Debugger]** Debugger vcxproj sync + registry — `dia docs registry`, verify entries, `dia check sln-sync` | Registry entry present, sln clean | Pending | haiku | |
+| 13 | **[Debugger]** Debugger vcxproj sync + registry — `dia docs registry`, verify entries, `dia check sln-sync` | Registry entry present, sln clean | Done | haiku | All 4 vcxproj entries confirmed; registry at 5284 lines; sln in sync. Pre-existing layer mapping warns unchanged. |
