@@ -1582,6 +1582,18 @@
       <Filter>DiaObjective</Filter>
     </ClCompile>
     <ClCompile Include="DiaMailboxVisualDebugger\TestMailboxVisualDebugger.cpp">
+    <ClCompile Include="DiaAICallout\CalloutEmitTests.cpp">
+    <ClCompile Include="DiaAICallout\CalloutQueryTests.cpp">
+    <ClCompile Include="DiaAICallout\CalloutClaimReleaseTests.cpp">
+    <ClCompile Include="DiaAICallout\CalloutTTLTests.cpp">
+      <Filter>DiaAICallout</Filter>
+    </ClCompile>
+      <Filter>DiaAICallout</Filter>
+    </ClCompile>
+      <Filter>DiaAICallout</Filter>
+    </ClCompile>
+      <Filter>DiaAICallout</Filter>
+    </ClCompile>
       <Filter>DiaMailboxVisualDebugger</Filter>
     </ClCompile>
       <Filter>DiaScalarField</Filter>

@@ -30,6 +30,9 @@ namespace Dia::AICallout {
         // Returns the callout data, or nullptr if the handle is invalid.
         const Callout* Get() const;
 
+        uint32_t GetIndex() const;
+        uint32_t GetGeneration() const;
+
     private:
         // Only CalloutRegistry may construct a valid handle.
         CalloutHandle(uint32_t index, uint32_t generation, const CalloutRegistryData* registry);

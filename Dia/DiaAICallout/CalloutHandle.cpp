@@ -50,4 +50,14 @@ const Callout* CalloutHandle::Get() const
     return &mRegistry->mSlots[mIndex].callout;
 }
 
+uint32_t CalloutHandle::GetIndex() const
+{
+    return mIndex;
+}
+
+uint32_t CalloutHandle::GetGeneration() const
+{
+    return mGeneration;
+}
+
 } // namespace Dia::AICallout
