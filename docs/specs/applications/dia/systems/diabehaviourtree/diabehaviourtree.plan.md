@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/applications/dia/systems/diabehaviourtree/diabehaviourtree.md
-**Status:** Not Started
+**Status:** In Progress
 
 ## Design Resolutions
 
