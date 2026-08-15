@@ -84,15 +84,17 @@ TEST(DiaBehaviourTree_Component, Tick_NoAsset_ReturnsFailure)
     EXPECT_EQ(comp.Tick(0.0f), NodeResult::kFailure);
 }
 
-TEST(DiaBehaviourTree_Component, Tick_WithAsset_ReturnsRunning)
+TEST(DiaBehaviourTree_Component, Tick_WithAssetNoRegistries_ReturnsFailure)
 {
+    // With no action registry or blackboard, all leaves fail and the composite
+    // tree evaluates to kFailure (not kRunning — composites are fully implemented).
     BehaviourTreeAsset asset = LoadTestAsset();
     ASSERT_TRUE(asset.IsValid());
 
     BehaviourTreeComponent comp;
     comp.SetAsset(&asset);
 
-    EXPECT_EQ(comp.Tick(0.0f), NodeResult::kRunning);
+    EXPECT_EQ(comp.Tick(0.0f), NodeResult::kFailure);
 }
 
 TEST(DiaBehaviourTree_Component, Reset_ClearsCursor)

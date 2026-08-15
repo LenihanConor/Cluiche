@@ -27,15 +27,30 @@ DIA_COMPONENT_REGISTER(BehaviourTreeComponent, "behaviour-tree-component", false
 struct FrameEntry
 {
     Dia::Core::StringCRC nodeId;
-    int resumeChildIndex = 0;   // sequence/selector: which child to run next
-                                // parallel: bitmask or count (handled in Task 6)
+    int resumeChildIndex = 0;
 };
 
-// Per-node persistent state (for decorator nodes).
+// Per-node persistent state.
 struct NodeState
 {
-    int   counter     = 0;
-    float accumulator = 0.0f;
+    int      counter           = 0;
+    float    accumulator       = 0.0f;
+    int      resumeChildIndex  = 0;      // for Sequence/Selector cursor
+    uint32_t parallelDone      = 0;      // bit i = child i has completed
+    uint32_t parallelFailed    = 0;      // bit i = child i returned kFailure
+};
+
+// ============================================================================
+// EvalContext — bundles all evaluation dependencies for recursive calls
+// ============================================================================
+
+struct EvalContext
+{
+    const BehaviourTreeAsset*                    asset;
+    Dia::Blackboard::Blackboard*                 blackboard;
+    const ActionRegistry*                        actionRegistry;
+    void*                                        actionContext;
+    std::unordered_map<unsigned int, NodeState>* nodeStates;  // owned by Impl
 };
 
 // ============================================================================
@@ -61,55 +76,215 @@ struct BehaviourTreeComponent::Impl
 };
 
 // ============================================================================
-// Leaf node evaluators — internal to this translation unit.
-// Parameters are passed individually to avoid referencing the private Impl type.
+// Utility
+// ============================================================================
+
+static int CountBits(uint32_t v)
+{
+    int c = 0;
+    while (v) { c += static_cast<int>(v & 1u); v >>= 1; }
+    return c;
+}
+
+// ============================================================================
+// Forward declaration — needed because Sequence/Selector/Parallel recurse
+// into EvaluateNode, which is defined after them.
+// ============================================================================
+
+static NodeResult EvaluateNode(const EvalContext& ctx,
+                               Dia::Core::StringCRC nodeId,
+                               float deltaTime);
+
+// ============================================================================
+// Leaf node evaluators
 // ============================================================================
 
 static NodeResult EvaluateCondition(
-    Dia::Blackboard::Blackboard*              blackboard,
+    const EvalContext&                        ctx,
     const BehaviourTreeAsset::NodeDescriptor& node)
 {
-    if (!blackboard) return NodeResult::kFailure;
-    const bool* slot = blackboard->TryGet<bool>(node.blackboardKey);
-    if (!slot) return NodeResult::kFailure;  // key absent
+    if (!ctx.blackboard) return NodeResult::kFailure;
+    const bool* slot = ctx.blackboard->TryGet<bool>(node.blackboardKey);
+    if (!slot) return NodeResult::kFailure;
     return *slot ? NodeResult::kSuccess : NodeResult::kFailure;
 }
 
 static NodeResult EvaluateAction(
-    const ActionRegistry*                     actionRegistry,
-    void*                                     actionContext,
+    const EvalContext&                        ctx,
     const BehaviourTreeAsset::NodeDescriptor& node)
 {
-    if (!actionRegistry) return NodeResult::kFailure;
-    ActionFn fn = actionRegistry->Find(node.actionId);
-    if (!fn) return NodeResult::kFailure;  // unregistered action
+    if (!ctx.actionRegistry) return NodeResult::kFailure;
+    ActionFn fn = ctx.actionRegistry->Find(node.actionId);
+    if (!fn) return NodeResult::kFailure;
 
-    // Build params array from node.params
     Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 8> params;
     for (const Dia::Core::StringCRC& p : node.params)
         params.Add(p);
 
-    return fn(actionContext, params);
+    return fn(ctx.actionContext, params);
 }
 
-static NodeResult EvaluateNode(
-    const BehaviourTreeAsset*    asset,
-    Dia::Blackboard::Blackboard* blackboard,
-    const ActionRegistry*        actionRegistry,
-    void*                        actionContext,
-    Dia::Core::StringCRC         nodeId,
-    float                        /*deltaTime*/)
+// ============================================================================
+// Control-flow evaluators
+// ============================================================================
+
+static NodeResult EvaluateSequence(
+    const EvalContext&                        ctx,
+    const BehaviourTreeAsset::NodeDescriptor& node,
+    float                                     deltaTime)
 {
-    const BehaviourTreeAsset::NodeDescriptor* node = asset->GetNode(nodeId);
+    NodeState& state = (*ctx.nodeStates)[node.id.Value()];
+    const int startIdx = state.resumeChildIndex;
+    const int childCount = static_cast<int>(node.children.size());
+
+    for (int i = startIdx; i < childCount; ++i)
+    {
+        NodeResult result = EvaluateNode(ctx, node.children[i], deltaTime);
+        if (result == NodeResult::kRunning)
+        {
+            state.resumeChildIndex = i;  // resume from this child next tick
+            return NodeResult::kRunning;
+        }
+        if (result == NodeResult::kFailure)
+        {
+            state.resumeChildIndex = 0;  // reset on failure
+            return NodeResult::kFailure;
+        }
+        // kSuccess — advance to next child
+    }
+
+    state.resumeChildIndex = 0;
+    return NodeResult::kSuccess;
+}
+
+static NodeResult EvaluateSelector(
+    const EvalContext&                        ctx,
+    const BehaviourTreeAsset::NodeDescriptor& node,
+    float                                     deltaTime)
+{
+    NodeState& state = (*ctx.nodeStates)[node.id.Value()];
+    const int startIdx = state.resumeChildIndex;
+    const int childCount = static_cast<int>(node.children.size());
+
+    for (int i = startIdx; i < childCount; ++i)
+    {
+        NodeResult result = EvaluateNode(ctx, node.children[i], deltaTime);
+        if (result == NodeResult::kRunning)
+        {
+            state.resumeChildIndex = i;
+            return NodeResult::kRunning;
+        }
+        if (result == NodeResult::kSuccess)
+        {
+            state.resumeChildIndex = 0;
+            return NodeResult::kSuccess;
+        }
+        // kFailure — try next child
+    }
+
+    state.resumeChildIndex = 0;
+    return NodeResult::kFailure;
+}
+
+static NodeResult EvaluateParallel(
+    const EvalContext&                        ctx,
+    const BehaviourTreeAsset::NodeDescriptor& node,
+    float                                     deltaTime)
+{
+    static const Dia::Core::StringCRC kRequireAll {"require_all"};
+    static const Dia::Core::StringCRC kRequireOne {"require_one"};
+    // kRequireNone is the fallback
+
+    NodeState& state = (*ctx.nodeStates)[node.id.Value()];
+    const int totalChildren = static_cast<int>(node.children.size());
+
+    for (int i = 0; i < totalChildren; ++i)
+    {
+        if ((state.parallelDone >> static_cast<unsigned>(i)) & 1u)
+            continue;  // already completed this child
+
+        NodeResult result = EvaluateNode(ctx, node.children[i], deltaTime);
+        if (result != NodeResult::kRunning)
+        {
+            state.parallelDone |= (1u << static_cast<unsigned>(i));
+            if (result == NodeResult::kFailure)
+                state.parallelFailed |= (1u << static_cast<unsigned>(i));
+        }
+    }
+
+    const int doneCount  = CountBits(state.parallelDone);
+    const int failCount  = CountBits(state.parallelFailed);
+    const int succCount  = doneCount - failCount;
+
+    if (node.policy == kRequireAll)
+    {
+        if (failCount > 0)
+        {
+            state.parallelDone   = 0;
+            state.parallelFailed = 0;
+            return NodeResult::kFailure;
+        }
+        if (doneCount == totalChildren)
+        {
+            state.parallelDone   = 0;
+            state.parallelFailed = 0;
+            return NodeResult::kSuccess;
+        }
+        return NodeResult::kRunning;
+    }
+
+    if (node.policy == kRequireOne)
+    {
+        if (succCount > 0)
+        {
+            state.parallelDone   = 0;
+            state.parallelFailed = 0;
+            return NodeResult::kSuccess;
+        }
+        if (doneCount == totalChildren)
+        {
+            state.parallelDone   = 0;
+            state.parallelFailed = 0;
+            return NodeResult::kFailure;
+        }
+        return NodeResult::kRunning;
+    }
+
+    // kRequireNone — succeed when all children have completed (any result)
+    if (doneCount == totalChildren)
+    {
+        state.parallelDone   = 0;
+        state.parallelFailed = 0;
+        return NodeResult::kSuccess;
+    }
+    return NodeResult::kRunning;
+}
+
+// ============================================================================
+// EvaluateNode — dispatches to the appropriate evaluator
+// ============================================================================
+
+static NodeResult EvaluateNode(
+    const EvalContext&   ctx,
+    Dia::Core::StringCRC nodeId,
+    float                deltaTime)
+{
+    const BehaviourTreeAsset::NodeDescriptor* node = ctx.asset->GetNode(nodeId);
     if (!node) return NodeResult::kFailure;
 
     static const Dia::Core::StringCRC kCondition{"condition"};
-    static const Dia::Core::StringCRC kAction{"action"};
+    static const Dia::Core::StringCRC kAction   {"action"};
+    static const Dia::Core::StringCRC kSequence {"sequence"};
+    static const Dia::Core::StringCRC kSelector {"selector"};
+    static const Dia::Core::StringCRC kParallel {"parallel"};
 
-    if (node->type == kCondition) return EvaluateCondition(blackboard, *node);
-    if (node->type == kAction)    return EvaluateAction(actionRegistry, actionContext, *node);
+    if (node->type == kCondition) return EvaluateCondition(ctx, *node);
+    if (node->type == kAction)    return EvaluateAction(ctx, *node);
+    if (node->type == kSequence)  return EvaluateSequence(ctx, *node, deltaTime);
+    if (node->type == kSelector)  return EvaluateSelector(ctx, *node, deltaTime);
+    if (node->type == kParallel)  return EvaluateParallel(ctx, *node, deltaTime);
 
-    // Composite/decorator nodes — implemented in Tasks 6 and 7
+    // Decorator nodes — implemented in Task 7
     return NodeResult::kRunning;
 }
 
@@ -178,13 +353,14 @@ NodeResult BehaviourTreeComponent::Tick(float deltaTime)
     if (!mImpl->asset)
         return NodeResult::kFailure;
 
-    NodeResult result = EvaluateNode(
-        mImpl->asset,
-        mImpl->blackboard,
-        mImpl->actionRegistry,
-        mImpl->actionContext,
-        mImpl->asset->GetRootNodeId(),
-        deltaTime);
+    EvalContext ctx;
+    ctx.asset          = mImpl->asset;
+    ctx.blackboard     = mImpl->blackboard;
+    ctx.actionRegistry = mImpl->actionRegistry;
+    ctx.actionContext  = mImpl->actionContext;
+    ctx.nodeStates     = &mImpl->nodeStates;
+
+    NodeResult result = EvaluateNode(ctx, mImpl->asset->GetRootNodeId(), deltaTime);
 
     mImpl->lastResult = result;
     mImpl->isComplete = (result != NodeResult::kRunning);
