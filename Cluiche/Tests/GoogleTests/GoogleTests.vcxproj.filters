@@ -1586,6 +1586,9 @@
     <ClCompile Include="DiaAICallout\CalloutQueryTests.cpp">
     <ClCompile Include="DiaAICallout\CalloutClaimReleaseTests.cpp">
     <ClCompile Include="DiaAICallout\CalloutTTLTests.cpp">
+    <ClCompile Include="DiaAICalloutVisualDebugger\TestCalloutRegistryDebugger.cpp">
+      <Filter>DiaAICalloutVisualDebugger</Filter>
+    </ClCompile>
       <Filter>DiaAICallout</Filter>
     </ClCompile>
       <Filter>DiaAICallout</Filter>
