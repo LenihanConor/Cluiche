@@ -208,7 +208,7 @@
     },
     {
       "allowed_pus": "sim",
-      "description": "Visual gallery stage: registers all 17 IDebugDomain instances simultaneously for DiaDebugPanel validation.",
+      "description": "Visual gallery stage: registers all 23 IDebugDomain instances simultaneously for DiaDebugPanel validation.",
       "type_id": "DebugGalleryTestStageModule"
     },
     {
@@ -455,6 +455,6 @@
   "processing_units": [],
   "version": {
     "major": 1,
-    "minor": 23
+    "minor": 24
   }
 }
