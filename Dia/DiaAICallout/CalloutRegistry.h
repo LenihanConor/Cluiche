@@ -52,6 +52,15 @@ namespace Dia::AICallout {
         template <unsigned int N>
         void Query(const QueryFilter& filter,
                    Dia::Core::Containers::DynamicArrayC<CalloutHandle, N>& outResults) const;
+
+        // Attempt to exclusively claim a callout (SD-001). Returns false if the
+        // handle is expired or the slot is already claimed by another entity.
+        bool Claim(const CalloutHandle& handle, Dia::Core::StringCRC claimerEntityId);
+
+        // Release a claimed callout back to the unclaimed pool (SD-003).
+        // No-op if the handle is expired, the slot is already unclaimed, or
+        // claimerEntityId does not match the current claimer.
+        void Release(const CalloutHandle& handle, Dia::Core::StringCRC claimerEntityId);
     };
 
     // --- template implementation -----------------------------------------------

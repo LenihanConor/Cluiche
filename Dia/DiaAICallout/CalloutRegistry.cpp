@@ -53,4 +53,46 @@ int CalloutRegistry::GetLiveCount() const
     return count;
 }
 
+bool CalloutRegistry::Claim(const CalloutHandle& handle, Dia::Core::StringCRC claimerEntityId)
+{
+    if (!handle.IsValid())
+    {
+        return false;
+    }
+
+    CalloutSlot& slot = mSlots[handle.GetIndex()];
+
+    if (slot.claimed)
+    {
+        return false; // SD-001: already claimed
+    }
+
+    slot.claimed         = true;
+    slot.claimerEntityId = claimerEntityId;
+    return true;
+}
+
+void CalloutRegistry::Release(const CalloutHandle& handle, Dia::Core::StringCRC claimerEntityId)
+{
+    if (!handle.IsValid())
+    {
+        return; // stale/expired — no-op per spec
+    }
+
+    CalloutSlot& slot = mSlots[handle.GetIndex()];
+
+    if (!slot.claimed)
+    {
+        return; // already unclaimed — no-op
+    }
+
+    if (slot.claimerEntityId != claimerEntityId)
+    {
+        return; // wrong claimer — silent no-op per spec
+    }
+
+    slot.claimed         = false;
+    slot.claimerEntityId = Dia::Core::StringCRC();
+}
+
 } // namespace Dia::AICallout
