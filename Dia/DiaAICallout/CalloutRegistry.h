@@ -61,6 +61,12 @@ namespace Dia::AICallout {
         // No-op if the handle is expired, the slot is already unclaimed, or
         // claimerEntityId does not match the current claimer.
         void Release(const CalloutHandle& handle, Dia::Core::StringCRC claimerEntityId);
+
+        // Advance TTLs and expire stale callouts.
+        // Each live slot has its ttl decremented by dt; when ttl <= 0 the slot
+        // is expired (live=false, claimed=false) so any existing handles
+        // become invalid on their next IsValid() check.
+        void Update(float dt);
     };
 
     // --- template implementation -----------------------------------------------

@@ -95,4 +95,26 @@ void CalloutRegistry::Release(const CalloutHandle& handle, Dia::Core::StringCRC 
     slot.claimerEntityId = Dia::Core::StringCRC();
 }
 
+void CalloutRegistry::Update(float dt)
+{
+    for (uint32_t i = 0u; i < kMaxCallouts; ++i)
+    {
+        CalloutSlot& slot = mSlots[i];
+
+        if (!slot.live)
+        {
+            continue;
+        }
+
+        slot.callout.ttl -= dt;
+
+        if (slot.callout.ttl <= 0.0f)
+        {
+            slot.live            = false;
+            slot.claimed         = false;
+            slot.claimerEntityId = Dia::Core::StringCRC();
+        }
+    }
+}
+
 } // namespace Dia::AICallout

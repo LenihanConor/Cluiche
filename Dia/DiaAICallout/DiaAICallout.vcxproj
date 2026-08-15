@@ -80,6 +80,9 @@
     <ClInclude Include="Callout.h" />
     <ClInclude Include="CalloutHandle.h" />
     <ClInclude Include="CalloutRegistry.h" />
+    <ClInclude Include="Testing\CalloutTestHelpers.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CalloutHandle.cpp" />
