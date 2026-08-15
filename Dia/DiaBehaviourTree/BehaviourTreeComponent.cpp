@@ -61,6 +61,59 @@ struct BehaviourTreeComponent::Impl
 };
 
 // ============================================================================
+// Leaf node evaluators — internal to this translation unit.
+// Parameters are passed individually to avoid referencing the private Impl type.
+// ============================================================================
+
+static NodeResult EvaluateCondition(
+    Dia::Blackboard::Blackboard*              blackboard,
+    const BehaviourTreeAsset::NodeDescriptor& node)
+{
+    if (!blackboard) return NodeResult::kFailure;
+    const bool* slot = blackboard->TryGet<bool>(node.blackboardKey);
+    if (!slot) return NodeResult::kFailure;  // key absent
+    return *slot ? NodeResult::kSuccess : NodeResult::kFailure;
+}
+
+static NodeResult EvaluateAction(
+    const ActionRegistry*                     actionRegistry,
+    void*                                     actionContext,
+    const BehaviourTreeAsset::NodeDescriptor& node)
+{
+    if (!actionRegistry) return NodeResult::kFailure;
+    ActionFn fn = actionRegistry->Find(node.actionId);
+    if (!fn) return NodeResult::kFailure;  // unregistered action
+
+    // Build params array from node.params
+    Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 8> params;
+    for (const Dia::Core::StringCRC& p : node.params)
+        params.Add(p);
+
+    return fn(actionContext, params);
+}
+
+static NodeResult EvaluateNode(
+    const BehaviourTreeAsset*    asset,
+    Dia::Blackboard::Blackboard* blackboard,
+    const ActionRegistry*        actionRegistry,
+    void*                        actionContext,
+    Dia::Core::StringCRC         nodeId,
+    float                        /*deltaTime*/)
+{
+    const BehaviourTreeAsset::NodeDescriptor* node = asset->GetNode(nodeId);
+    if (!node) return NodeResult::kFailure;
+
+    static const Dia::Core::StringCRC kCondition{"condition"};
+    static const Dia::Core::StringCRC kAction{"action"};
+
+    if (node->type == kCondition) return EvaluateCondition(blackboard, *node);
+    if (node->type == kAction)    return EvaluateAction(actionRegistry, actionContext, *node);
+
+    // Composite/decorator nodes — implemented in Tasks 6 and 7
+    return NodeResult::kRunning;
+}
+
+// ============================================================================
 // BehaviourTreeComponent
 // ============================================================================
 
@@ -120,13 +173,22 @@ void BehaviourTreeComponent::RemoveEventListener(IBehaviourTreeEventListener* li
     }
 }
 
-NodeResult BehaviourTreeComponent::Tick(float /*deltaTime*/)
+NodeResult BehaviourTreeComponent::Tick(float deltaTime)
 {
     if (!mImpl->asset)
         return NodeResult::kFailure;
 
-    // Stub: full traversal is implemented in Tasks 5-7.
-    return NodeResult::kRunning;
+    NodeResult result = EvaluateNode(
+        mImpl->asset,
+        mImpl->blackboard,
+        mImpl->actionRegistry,
+        mImpl->actionContext,
+        mImpl->asset->GetRootNodeId(),
+        deltaTime);
+
+    mImpl->lastResult = result;
+    mImpl->isComplete = (result != NodeResult::kRunning);
+    return result;
 }
 
 void BehaviourTreeComponent::Reset()
