@@ -1,5 +1,6 @@
 #include <DiaAICallout/CalloutHandle.h>
 #include <DiaAICallout/Callout.h>
+#include <DiaAICallout/CalloutRegistry.h>
 
 namespace Dia::AICallout {
 
@@ -23,8 +24,12 @@ bool CalloutHandle::IsValid() const
     {
         return false;
     }
-    // TODO: verify generation matches slot generation in mRegistry once CalloutRegistryData is defined
-    return true;
+    if (mIndex >= CalloutRegistryData::kMaxCallouts)
+    {
+        return false;
+    }
+    const CalloutSlot& slot = mRegistry->mSlots[mIndex];
+    return slot.live && slot.generation == mGeneration;
 }
 
 bool CalloutHandle::IsClaimed() const
@@ -33,8 +38,7 @@ bool CalloutHandle::IsClaimed() const
     {
         return false;
     }
-    // TODO: check claimed flag via mRegistry once CalloutRegistryData is defined
-    return false;
+    return mRegistry->mSlots[mIndex].claimed;
 }
 
 const Callout* CalloutHandle::Get() const
@@ -43,8 +47,7 @@ const Callout* CalloutHandle::Get() const
     {
         return nullptr;
     }
-    // TODO: return pointer to Callout slot in mRegistry once CalloutRegistryData is defined
-    return nullptr;
+    return &mRegistry->mSlots[mIndex].callout;
 }
 
 } // namespace Dia::AICallout

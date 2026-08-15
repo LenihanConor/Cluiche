@@ -79,9 +79,11 @@
   <ItemGroup>
     <ClInclude Include="Callout.h" />
     <ClInclude Include="CalloutHandle.h" />
+    <ClInclude Include="CalloutRegistry.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CalloutHandle.cpp" />
+    <ClCompile Include="CalloutRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
