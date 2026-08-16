@@ -51,6 +51,7 @@ struct EvalContext
     const ActionRegistry*                        actionRegistry;
     void*                                        actionContext;
     std::unordered_map<unsigned int, NodeState>* nodeStates;  // owned by Impl
+    const DecoratorRegistry*                     decoratorRegistry;
 };
 
 // ============================================================================
@@ -261,6 +262,105 @@ static NodeResult EvaluateParallel(
 }
 
 // ============================================================================
+// EvaluateDecorator — handles all decorator node types
+// ============================================================================
+
+static NodeResult EvaluateDecorator(
+    const EvalContext&                        ctx,
+    const BehaviourTreeAsset::NodeDescriptor& node,
+    float                                     deltaTime)
+{
+    static const Dia::Core::StringCRC kInverter {"inverter"};
+    static const Dia::Core::StringCRC kRepeater {"repeater"};
+    static const Dia::Core::StringCRC kCooldown {"cooldown"};
+    static const Dia::Core::StringCRC kGuard    {"guard"};
+
+    // ---- Inverter: flip kSuccess↔kFailure, pass kRunning through ----
+    if (node.decoratorType == kInverter)
+    {
+        NodeResult childResult = EvaluateNode(ctx, node.childId, deltaTime);
+        if (childResult == NodeResult::kSuccess) return NodeResult::kFailure;
+        if (childResult == NodeResult::kFailure) return NodeResult::kSuccess;
+        return NodeResult::kRunning;
+    }
+
+    // ---- Repeater ----
+    if (node.decoratorType == kRepeater)
+    {
+        NodeResult childResult = EvaluateNode(ctx, node.childId, deltaTime);
+        if (node.breakOnFailure && childResult == NodeResult::kFailure)
+            return NodeResult::kFailure;
+        if (childResult == NodeResult::kRunning)
+            return NodeResult::kRunning;
+        if (childResult == NodeResult::kSuccess)
+        {
+            // Re-fetch after EvaluateNode (potential map resize)
+            int& counter = (*ctx.nodeStates)[node.id.Value()].counter;
+            ++counter;
+            if (node.repeatCount > 0 && counter >= node.repeatCount)
+            {
+                counter = 0;
+                return NodeResult::kSuccess;
+            }
+        }
+        // Reset child subtree state so it runs fresh on the next tick
+        ctx.nodeStates->erase(node.childId.Value());
+        return NodeResult::kRunning;
+    }
+
+    // ---- Cooldown ----
+    if (node.decoratorType == kCooldown)
+    {
+        // Check and advance accumulator without holding a ref across EvaluateNode
+        const float currentAccum = (*ctx.nodeStates)[node.id.Value()].accumulator;
+        if (currentAccum < node.cooldownSeconds)
+        {
+            (*ctx.nodeStates)[node.id.Value()].accumulator += deltaTime;
+            return NodeResult::kFailure;
+        }
+        NodeResult childResult = EvaluateNode(ctx, node.childId, deltaTime);
+        if (childResult == NodeResult::kSuccess)
+            (*ctx.nodeStates)[node.id.Value()].accumulator = 0.0f;
+        return childResult;
+    }
+
+    // ---- Guard: read blackboard bool; return kFailure if absent or false ----
+    if (node.decoratorType == kGuard)
+    {
+        if (!ctx.blackboard)
+            return NodeResult::kFailure;
+        const bool* slot = ctx.blackboard->TryGet<bool>(node.guardKey);
+        if (!slot || !*slot)
+            return NodeResult::kFailure;
+        return EvaluateNode(ctx, node.childId, deltaTime);
+    }
+
+    // ---- Custom decorator via DecoratorRegistry ----
+    if (ctx.decoratorRegistry)
+    {
+        const IDecoratorNode* decorator = ctx.decoratorRegistry->Find(node.decoratorType);
+        if (decorator)
+        {
+            {
+                NodeState& st = (*ctx.nodeStates)[node.id.Value()];
+                DecoratorContext dctx{deltaTime, st.counter, st.accumulator};
+                if (!decorator->ShouldTickChild(dctx))
+                    return NodeResult::kFailure;
+            }
+            NodeResult childResult = EvaluateNode(ctx, node.childId, deltaTime);
+            {
+                // Fresh lookup after potential map resize in EvaluateNode
+                NodeState& st = (*ctx.nodeStates)[node.id.Value()];
+                DecoratorContext dctx{deltaTime, st.counter, st.accumulator};
+                return decorator->Evaluate(childResult, dctx);
+            }
+        }
+    }
+
+    return NodeResult::kFailure;
+}
+
+// ============================================================================
 // EvaluateNode — dispatches to the appropriate evaluator
 // ============================================================================
 
@@ -277,15 +377,16 @@ static NodeResult EvaluateNode(
     static const Dia::Core::StringCRC kSequence {"sequence"};
     static const Dia::Core::StringCRC kSelector {"selector"};
     static const Dia::Core::StringCRC kParallel {"parallel"};
+    static const Dia::Core::StringCRC kDecorator{"decorator"};
 
     if (node->type == kCondition) return EvaluateCondition(ctx, *node);
     if (node->type == kAction)    return EvaluateAction(ctx, *node);
     if (node->type == kSequence)  return EvaluateSequence(ctx, *node, deltaTime);
     if (node->type == kSelector)  return EvaluateSelector(ctx, *node, deltaTime);
     if (node->type == kParallel)  return EvaluateParallel(ctx, *node, deltaTime);
+    if (node->type == kDecorator) return EvaluateDecorator(ctx, *node, deltaTime);
 
-    // Decorator nodes — implemented in Task 7
-    return NodeResult::kRunning;
+    return NodeResult::kFailure;
 }
 
 // ============================================================================
@@ -354,11 +455,12 @@ NodeResult BehaviourTreeComponent::Tick(float deltaTime)
         return NodeResult::kFailure;
 
     EvalContext ctx;
-    ctx.asset          = mImpl->asset;
-    ctx.blackboard     = mImpl->blackboard;
-    ctx.actionRegistry = mImpl->actionRegistry;
-    ctx.actionContext  = mImpl->actionContext;
-    ctx.nodeStates     = &mImpl->nodeStates;
+    ctx.asset              = mImpl->asset;
+    ctx.blackboard         = mImpl->blackboard;
+    ctx.actionRegistry     = mImpl->actionRegistry;
+    ctx.actionContext      = mImpl->actionContext;
+    ctx.nodeStates         = &mImpl->nodeStates;
+    ctx.decoratorRegistry  = mImpl->decoratorRegistry;
 
     NodeResult result = EvaluateNode(ctx, mImpl->asset->GetRootNodeId(), deltaTime);
 

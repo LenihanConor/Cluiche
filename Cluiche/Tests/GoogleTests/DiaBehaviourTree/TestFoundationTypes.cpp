@@ -94,7 +94,8 @@ TEST_F(DiaBehaviourTree_ActionRegistry, Register_Overwrite_ReplacesPreviousEntry
 // DiaBehaviourTree_DecoratorRegistry
 // ============================================================================
 
-// Mock decorator for testing
+// Mock decorator for testing — in anonymous namespace to avoid ODR conflict with other test files
+namespace {
 class MockDecorator : public IDecoratorNode {
 public:
     bool ShouldTickChild(const DecoratorContext& ctx) const override {
@@ -112,6 +113,7 @@ public:
         return StringCRC("MockDecorator");
     }
 };
+} // anonymous namespace
 
 class DiaBehaviourTree_DecoratorRegistry : public ::testing::Test {
 protected:
