@@ -14,18 +14,8 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 |--------|----------|------------|
 | DiaSimTime | Foundation, SimTimeDomain, SimTimeScheduler, DiaSimTime umbrella (all Approved). Phase 5 SimTimeAnalytical is a deferred follow-on feature spec (Planned). Plan: [diasimtime.plan.md](specs/applications/dia/systems/diasimtime/diasimtime.plan.md) — 19 tasks, 4 phases, 3 blocking open Qs resolved. **Pre-dispatch:** confirm Sim/Render/Main affinity for 7 undeclared modules (Task 1.5a). Hard-cutover migration (~70 files) touches all Module subclasses. | DiaApplicationFlow ✅, DiaCore ✅, DiaAIBudget ✅ (absorbed), DiaStreams ✅, DiaObservation ✅ |
 | DiaMessageBus | core-bus, entity-router-registration, flush-adapters, frame-ledger, schema-browser, eventdispatcher-removal, module-and-build | DiaMailbox ✅, DiaStreams ✅, DiaApplicationFlow ✅, DiaObservation ✅ |
-| DiaAICallout | ~~Scaffold~~, ~~Types~~, ~~Registry core (Emit + GetLiveCount)~~, **Next: Task 4 — Query()**, Claim/Release, TTL Expiry, Test Utilities | DiaEntitySpatial ✅, DiaGeometry2D ✅, DiaCore ✅ |
 | DiaGridVisibility | VisibilityGroupId+VisibilityState, GridVisibilitySystem, Update pass (shadowcasting + dirty flags + chunkSize), CanSee, GetCellState, GetVisibleEntities, IVisibilityChangeObserver, Test Utilities | DiaPathfinding ✅, DiaEntitySpatial ✅, diaentitytemplate ✅, DiaCore ✅ |
 | DiaGridVisibilityVisualDebugger | GridVisibilityDebugDomain (template), Cell State Drawer, Sight Radii Drawer, Shadowcast Boundary Drawer, GetJSONState + group selector. Plan: [diagridvisibilityvisualdebugger.plan.md](specs/applications/dia/systems/diagridvisibilityvisualdebugger/diagridvisibilityvisualdebugger.plan.md) | DiaGridVisibility ✅, DiaDebugDomain ✅, DiaVisualDebugger ✅, DiaEntitySpatial ✅, DiaCore ✅ |
-
----
-
-### Standalone Features (system Done, feature Approved)
-
-| Item | Notes | Depends On |
-|------|-------|-----------|
-| ~~Visual Debugger Panel Stats~~ | ~~Done. All 13 domains wired (asset domain task 12 blocked → moved to backlog). 338/338 tests green. Plan: [debugger-impl.plan.md](specs/applications/dia/systems/diadebugdomain/debugger-impl.plan.md)~~ | ~~DiaDebugDomain ✅~~ |
-| ~~Visual Debugger Domain Stats Tests~~ | Add TDD RED stats-field assertions to all 13 domain test files (extend existing `*_JSONState` suites — do not create new files). Each test targets the specific `stats.xxx` fields each `debugger-impl.plan.md` task populates. Also add drawer-name assertions for tasks 13–15 (Scene2D split → 3 drawers, LightRangesDrawer, IK2D/Lighting3D label renames). Run gate: `dia run googletest --filter="*DebugDomain*_JSONState_Stats*"`. Add these after the impl work lands to avoid conflicts. Full plan: `.claude/plans/deep-stargazing-aurora.md`. | Visual Debugger Panel Stats impl done |
 
 ---
 
@@ -37,16 +27,7 @@ These are new `DiaXxxVisualDebugger` system specs — each is its own module imp
 
 | Item | Group | Value | Spec | Notes |
 |------|-------|-------|------|-------|
-| ~~DiaSteeringVisualDebugger~~ | Navigation | High | Approved ✅ | Prereq: `SteeringSystem::VisitAgents()` debug accessor. World-space: velocity arrows, separation radius, detection boxes. |
-| ~~DiaPathfindingVisualDebugger~~ | Navigation | High | Approved ✅ | Prereq: confirm `PathGrid::VisitCells()`/`GetWidth()`/`GetHeight()`. World-space: path polyline, start/goal markers, grid passability. |
-| ~~DiaFlowFieldVisualDebugger~~ | Navigation | High | Approved ✅ | Prereq: `FlowField::GetWidth()`/`GetHeight()`. World-space: per-cell direction arrows, reachability overlay. |
-| ~~DiaStateMachineVisualDebugger~~ | AI / Behavior | High | Approved ✅ | No prereqs. Panel: states, transition history, guard pass/fail via `ITransitionListener`. |
-| ~~DiaRulesVisualDebugger~~ | AI / Behavior | Medium | Approved ✅ | No prereqs outstanding. |
-| ~~DiaHTNVisualDebugger~~ | AI / Behavior | Medium | Approved ✅ | Prereq: `HTNPlan::GetCurrentTaskIndex()`. |
-| ~~DiaAIBudgetVisualDebugger~~ | AI / Behavior | Medium | Approved ✅ | Prereq: `AIBudgetResult.perSystem` timing array + `AIBudgetScheduler::GetLastBudgetMs()`. |
-| ~~DiaBlackboardVisualDebugger~~ | AI / Behavior | Low–Med | Approved ✅ | No prereqs. Panel: slot table via `VisitSlots()`, hex fallback, optional per-type formatters. |
-| ~~DiaMailboxVisualDebugger~~ | AI / Behavior | Low–Med | Approved ✅ | Prereq: `Mailbox::GetTypeStatsByIndex(int)`. Panel: per-type queue fill, drop counters. |
-| DiaBehaviourTreeVisualDebugger | AI / Behavior | Medium | — | Needs `/spec-system`. Panel: active node highlight, per-node tick result (Running/Success/Failure), per-entity tree cursor, time-slice resume state. Prereq: DiaBehaviourTree ✅. |
+| ~~DiaBehaviourTreeVisualDebugger~~ | AI / Behavior | Medium | Approved ✅ | Panel: active node highlight, per-node tick result (Running/Success/Failure), per-entity tree cursor, resume state. Uses `IBehaviourTreeEventListener` to track node visits in real time. Prereq: DiaBehaviourTree ✅. Spec: [diabehaviourtreevisualdebugger.md](specs/applications/dia/systems/diabehaviourtreevisualdebugger/diabehaviourtreevisualdebugger.md). |
 
 ---
 
@@ -62,10 +43,10 @@ These are new `DiaXxxVisualDebugger` system specs — each is its own module imp
 
 | Item | Spec | What's needed |
 |------|------|---------------|
-| DiaBehaviourTree | Approved ✅ | In Progress — **Next: Task 7 — Decorator execution** (Tasks 1–6 done). Plan: [diabehaviourtree.plan.md](specs/applications/dia/systems/diabehaviourtree/diabehaviourtree.plan.md). |
+| ~~DiaBehaviourTree~~ | Approved ✅ | In Progress — **Next: Task 7 — Decorator execution** (Tasks 1–6 done). Plan: [diabehaviourtree.plan.md](specs/applications/dia/systems/diabehaviourtree/diabehaviourtree.plan.md). |
 | ~~BehaviourTreeTestStage~~ | — | Needs `/spec-feature` — CluicheTest e2e stage for DiaBehaviourTree. Entities driven by a shared tree definition with different blackboard instances; demonstrates Sequence, Selector, Parallel, and Decorator nodes in-world. Conditions read blackboard keys; actions dispatch via DiaOrder. Paused/resumed trees visible via DiaHTNVisualDebugger-style panel. Prerequisite: DiaBehaviourTree ✅. |
+| AICalloutTestStage | — | Approved ✅ — e2e stage for DiaAICallout: 6 emitters, 4 relay responders, full emit/claim/release/TTL lifecycle; DiaAICalloutVisualDebugger panel + radii overlay. 9 tasks. |
 | GridVisibilityTestStage | — | Needs `/spec-feature` — visually appealing CluicheTest e2e stage for DiaGridVisibility. Two groups of entities moving through a terrain grid with walls. Per-cell colour overlay: black=Unexplored, grey=Revealed, white=Visible (per group, togglable). Entities colour-coded by group; enemy entities hidden in non-Visible cells. Observer sight radii shown as debug circles. Demonstrates CanSee, GetCellState, shared group vision, and LOS blocking in real time. Prerequisite: DiaGridVisibility ✅, DiaGridVisibilityVisualDebugger ✅. |
-| ~~DiaSensorInspector~~ | — | Needs `/spec-system` — dockable ImGui panel per entity; shows all four `SensorResultsComponent` arrays (sight, proximity, damage, sound) with per-entry distance/angle/timestamp, tick-countdown and stale/fresh state per sensor component, and the resulting blackboard slots (`ThreatBoard`, `AwarenessBoard`). Answers "why didn't this entity react?" for AI debugging. Depends on DiaSensor ✅, DiaEditor. |
 | RenderTestPlugin (CluicheEditor) | — | Needs `/spec-system` — visual debugger panel: wipe slider, region grid, expectation authoring, AI triage panel, render targets. DiaRenderTest CLI Pipeline ✅ unblocked. Mockup: [render_test_debugger_mockup.html](research/render_offline_test/render_test_debugger_mockup.html). Research: [render_offline_test/summary.md](research/render_offline_test/summary.md) |
 
 ---
@@ -91,13 +72,6 @@ Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testin
 | Item | Blocked by | Notes |
 |------|-----------|-------|
 | AssetRuntimeDebugDomain stats | `DiaAssetRuntime` service not injected into domain constructor | `GetJSONState()` emits `stats: {}`. Wire a service ref into `AssetRuntimeDebugDomain` then add `assetCount`, `loadedCount`, `pendingCount` stats fields. |
-
-### Blocked on Linux/CMake migration
-
-| Item | Blocked by | Notes |
-|------|-----------|-------|
-| ~~Clang-Tidy analysis~~ | CMake migration (compile_commands.json) | Unblocked by C2 (Foundation CMake pilot) — see DiaArchitecture system below |
-| ~~TSan (ThreadSanitizer)~~ | Linux target (WSL2 CI) | Only reliable race detector for Main/Render/Sim threading model; TSan doesn't run on Windows |
 
 ---
 
