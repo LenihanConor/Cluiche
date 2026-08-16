@@ -805,6 +805,7 @@
     <ClCompile Include="DiaAICallout\CalloutTTLTests.cpp" />
     <ClCompile Include="DiaAICalloutVisualDebugger\TestCalloutRegistryDebugger.cpp" />
     <ClCompile Include="DiaBehaviourTree\TestEventListener.cpp" />
+    <ClCompile Include="DiaBehaviourTree\TestBehaviourTreeSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

@@ -1588,6 +1588,9 @@
     <ClCompile Include="DiaAICallout\CalloutTTLTests.cpp">
     <ClCompile Include="DiaAICalloutVisualDebugger\TestCalloutRegistryDebugger.cpp">
     <ClCompile Include="DiaBehaviourTree\TestEventListener.cpp">
+    <ClCompile Include="DiaBehaviourTree\TestBehaviourTreeSystem.cpp">
+      <Filter>DiaBehaviourTree</Filter>
+    </ClCompile>
       <Filter>DiaBehaviourTree</Filter>
     </ClCompile>
       <Filter>DiaAICalloutVisualDebugger</Filter>

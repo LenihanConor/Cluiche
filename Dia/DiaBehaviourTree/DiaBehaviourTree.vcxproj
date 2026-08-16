@@ -81,12 +81,14 @@
     <ClInclude Include="BehaviourTreeAsset.h" />
     <ClInclude Include="BehaviourTreeComponent.h" />
     <ClInclude Include="IBehaviourTreeEventListener.h" />
+    <ClInclude Include="BehaviourTreeSystem.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ActionRegistry.cpp" />
     <ClCompile Include="DecoratorRegistry.cpp" />
     <ClCompile Include="BehaviourTreeAsset.cpp" />
     <ClCompile Include="BehaviourTreeComponent.cpp" />
+    <ClCompile Include="BehaviourTreeSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diabehaviourtree.architecture.module.md" />
