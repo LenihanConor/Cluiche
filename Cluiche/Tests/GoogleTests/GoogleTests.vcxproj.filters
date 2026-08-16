@@ -1590,6 +1590,9 @@
     <ClCompile Include="DiaBehaviourTree\TestEventListener.cpp">
     <ClCompile Include="DiaBehaviourTree\TestBehaviourTreeSystem.cpp">
     <ClCompile Include="DiaBehaviourTree\TestTestHelpers.cpp">
+    <ClCompile Include="DiaBehaviourTree\TestExhaustive.cpp">
+      <Filter>DiaBehaviourTree</Filter>
+    </ClCompile>
       <Filter>DiaBehaviourTree</Filter>
     </ClCompile>
       <Filter>DiaBehaviourTree</Filter>
