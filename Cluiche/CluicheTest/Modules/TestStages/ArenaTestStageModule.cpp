@@ -863,9 +863,9 @@ void ArenaTestStageModule::SpawnWave(Dia::Core::StringCRC tag, int count)
         //
         // Trigger naming convention: "check_<transition>" — unique per arc so multiple
         // transitions from the same source can be fired selectively.
+        auto smBuilder = std::make_unique<Dia::StateMachine::StateMachineBuilder>();
         auto def = std::make_unique<Dia::StateMachine::StateMachineDefinition>(
-            Dia::StateMachine::StateMachineBuilder()
-                .State(Dia::Core::StringCRC("Idle"))
+            smBuilder->State(Dia::Core::StringCRC("Idle"))
                     .OnEnter(EnemyFsm_OnEnterIdle)
                     .Transition(Dia::Core::StringCRC("Pursue"), Dia::Core::StringCRC("check_idle"))
                         .Guard(EnemyGuard_IdleToPursue)

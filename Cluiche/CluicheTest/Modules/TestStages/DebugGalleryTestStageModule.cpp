@@ -70,16 +70,21 @@ namespace
     class GalleryStateMachine : public Dia::StateMachine::IStateMachineInspectable
     {
     public:
+        static Dia::StateMachine::StateMachineDefinition BuildDef()
+        {
+            auto b = std::make_unique<Dia::StateMachine::StateMachineBuilder>();
+            return b->State(Dia::Core::StringCRC("idle"))
+                .InitialState(Dia::Core::StringCRC("idle"))
+                .Transition(Dia::Core::StringCRC("active"), Dia::Core::StringCRC("activate"))
+                .State(Dia::Core::StringCRC("active"))
+                .Transition(Dia::Core::StringCRC("idle"), Dia::Core::StringCRC("deactivate"))
+                .Build();
+        }
+
         GalleryStateMachine()
             : mMachine(
                 Dia::Core::StringCRC("gallery_sm"),
-                Dia::StateMachine::StateMachineBuilder()
-                    .State(Dia::Core::StringCRC("idle"))
-                    .InitialState(Dia::Core::StringCRC("idle"))
-                    .Transition(Dia::Core::StringCRC("active"), Dia::Core::StringCRC("activate"))
-                    .State(Dia::Core::StringCRC("active"))
-                    .Transition(Dia::Core::StringCRC("idle"), Dia::Core::StringCRC("deactivate"))
-                    .Build(),
+                BuildDef(),
                 mCtx)
         {}
 

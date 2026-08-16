@@ -35,9 +35,9 @@ namespace Dia
 		//-------------------------------------------------------------------------------------------
 		struct AIBudgetResult
 		{
-			int   systemsRun;       // systems that received a non-zero budget slice
-			int   systemsDeferred;  // systems skipped because budget exhausted
-			float usedMs;           // total wall-clock time consumed by all systems this tick
+			int   systemsRun = 0;       // systems that received a non-zero budget slice
+			int   systemsDeferred = 0;  // systems skipped because budget exhausted
+			float usedMs = 0.0f;        // total wall-clock time consumed by all systems this tick
 #ifdef DIA_DEBUG
 			Dia::Core::Containers::DynamicArrayC<SystemTimingEntry, kMaxSystems> perSystem;
 #endif
