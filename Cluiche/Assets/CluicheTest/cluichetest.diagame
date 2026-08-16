@@ -105,6 +105,10 @@
         {
             "path": "Stages/DebugGalleryTestStage/debuggallery_test_stage.diastage",
             "type": "stage"
+        },
+        {
+            "path": "Stages/BehaviourTreeTestStage/behaviour_tree_test_stage.diastage",
+            "type": "stage"
         }
     ],
     "name": "CluicheTest",

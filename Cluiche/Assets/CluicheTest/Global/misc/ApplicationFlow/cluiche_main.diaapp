@@ -24,7 +24,8 @@
                 "EconomyTestStage",
                 "SpawnerTestStage",
                 "ArenaTestStage",
-                "DebugGalleryTestStage"
+                "DebugGalleryTestStage",
+                "BehaviourTreeTestStage"
             ],
             "auto_advance": false
         },
@@ -164,6 +165,13 @@
         },
         {
             "name": "DebugGalleryTestStage",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "BehaviourTreeTestStage",
             "transitions": [
                 "Boot"
             ],
@@ -431,7 +439,8 @@
                         "EconomyTestStage",
                         "SpawnerTestStage",
                         "ArenaTestStage",
-                        "DebugGalleryTestStage"
+                        "DebugGalleryTestStage",
+                        "BehaviourTreeTestStage"
                     ],
                     "dependencies": [
                         "ObservationModule",
@@ -535,7 +544,8 @@
                         "EconomyTestStage",
                         "SpawnerTestStage",
                         "ArenaTestStage",
-                        "DebugGalleryTestStage"
+                        "DebugGalleryTestStage",
+                        "BehaviourTreeTestStage"
                     ],
                     "dependencies": [
                         "ObservationModule",
@@ -705,7 +715,8 @@
                         "EconomyTestStage",
                         "SpawnerTestStage",
                         "ArenaTestStage",
-                        "DebugGalleryTestStage"
+                        "DebugGalleryTestStage",
+                        "BehaviourTreeTestStage"
                     ],
                     "dependencies": [
                         "Camera2DModule"
@@ -827,7 +838,8 @@
                         "EconomyTestStage",
                         "SpawnerTestStage",
                         "ArenaTestStage",
-                        "DebugGalleryTestStage"
+                        "DebugGalleryTestStage",
+                        "BehaviourTreeTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"

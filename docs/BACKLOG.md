@@ -31,20 +31,12 @@ These are new `DiaXxxVisualDebugger` system specs — each is its own module imp
 
 ---
 
-### Extend DebugGalleryTestStage
-
-| Item | Plan | What's Needed |
-|------|------|---------------|
-| Add 9 new domains to DebugGalleryTestStageModule | [debug-gallery-extension.plan.md](specs/applications/cluichetest/systems/teststages/debug-gallery-extension.plan.md) | All 9 debugger plans Done; then extend existing stage (.h + .cpp + vcxproj) — 6 tasks, no new spec needed. Panel goes from 14 → 23 domain cards. |
-
----
-
 ### Other Spec Work
 
 | Item | Spec | What's needed |
 |------|------|---------------|
 | ~~DiaBehaviourTree~~ | Approved ✅ | In Progress — **Next: Task 7 — Decorator execution** (Tasks 1–6 done). Plan: [diabehaviourtree.plan.md](specs/applications/dia/systems/diabehaviourtree/diabehaviourtree.plan.md). |
-| ~~BehaviourTreeTestStage~~ | — | Needs `/spec-feature` — CluicheTest e2e stage for DiaBehaviourTree. Entities driven by a shared tree definition with different blackboard instances; demonstrates Sequence, Selector, Parallel, and Decorator nodes in-world. Conditions read blackboard keys; actions dispatch via DiaOrder. Paused/resumed trees visible via DiaHTNVisualDebugger-style panel. Prerequisite: DiaBehaviourTree ✅. |
+| ~~BehaviourTreeTestStage~~ | — | Approved ✅ — 3-guard patrol/alert/chase loop; shared BT asset + independent blackboards; all 5 node types; DiaOrder (`GuardMoveOrder`); debugger panel auto-shown; 5 checkpoints; 10 tasks. Spec: [behaviourtree-test-stage.md](specs/applications/cluichetest/systems/teststages/behaviourtree-test-stage.md). |
 | AICalloutTestStage | — | Approved ✅ — e2e stage for DiaAICallout: 6 emitters, 4 relay responders, full emit/claim/release/TTL lifecycle; DiaAICalloutVisualDebugger panel + radii overlay. 9 tasks. |
 | GridVisibilityTestStage | — | Needs `/spec-feature` — visually appealing CluicheTest e2e stage for DiaGridVisibility. Two groups of entities moving through a terrain grid with walls. Per-cell colour overlay: black=Unexplored, grey=Revealed, white=Visible (per group, togglable). Entities colour-coded by group; enemy entities hidden in non-Visible cells. Observer sight radii shown as debug circles. Demonstrates CanSee, GetCellState, shared group vision, and LOS blocking in real time. Prerequisite: DiaGridVisibility ✅, DiaGridVisibilityVisualDebugger ✅. |
 | RenderTestPlugin (CluicheEditor) | — | Needs `/spec-system` — visual debugger panel: wipe slider, region grid, expectation authoring, AI triage panel, render targets. DiaRenderTest CLI Pipeline ✅ unblocked. Mockup: [render_test_debugger_mockup.html](research/render_offline_test/render_test_debugger_mockup.html). Research: [render_offline_test/summary.md](research/render_offline_test/summary.md) |

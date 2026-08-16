@@ -125,6 +125,7 @@ Pytest scenarios can assert on metrics via the metric threshold fixture (item #8
 | ScalarFieldTestStage | Tactical influence maps: Blue + Red faction fields (UniformDecayPolicy + RulesPropagationPolicy), combined front-line field, WriteRadial/WriteBox/WritePoint, walls, swamp terrain, burst events, FindLocalMaxima, FindCellsAboveThreshold, GetGradient, heatmap + gradient overlays; 8 checkpoints | @docs/specs/applications/cluichetest/systems/teststages/scalarfield-test-stage.md | Approved |
 | EntitySpatialTestStage | 32 moving agents (4 layer categories), live dirty-flag re-index at 30 Hz, all 5 query shapes active per frame, layer-mask toggle at frame 60, entity destruction sweep at frame 90, query shape overlays + agent trails; 8 checkpoints | @docs/specs/applications/cluichetest/systems/teststages/entityspatial-test-stage.md | Approved |
 | ArenaTestStage | Multi-system AI/progression E2E: all 4 DiaTriggerScript trigger types, DiaObjective 3-wave prerequisite chain, DiaBlackboard shared state, per-enemy StateMachine + UtilityAI + Rules; 6 checkpoints | @docs/specs/applications/cluichetest/systems/teststages/arena-test-stage.md | Approved |
+| BehaviourTreeTestStage | Guard patrol/alert/chase loop: shared BT asset + independent per-guard blackboards; all 5 node types (Selector, Sequence, Parallel, Decorator:Repeat, Condition/Action); DiaOrder dispatch; BehaviourTreeVisualDebugger panel live; 5 checkpoints | @docs/specs/applications/cluichetest/systems/teststages/behaviourtree-test-stage.md | Approved |
 
 ## Platform Primitives Used
 

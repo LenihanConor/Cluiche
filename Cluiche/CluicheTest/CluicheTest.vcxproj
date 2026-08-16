@@ -30,6 +30,7 @@
     <ClCompile Include="Modules\TestStages\AssetRuntimeRendererModule.cpp" />
     <ClCompile Include="Modules\TestStages\AssetRuntimeHUDModule.cpp" />
     <ClCompile Include="Modules\TestStages\TestStageHUDModule.cpp" />
+    <ClCompile Include="Modules\TestStages\BehaviourTreeTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\DebugGalleryTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\SpawnerTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\ArenaTestStageModule.cpp" />
@@ -80,6 +81,7 @@
     <ClInclude Include="Modules\TestStages\AssetRuntimeRendererModule.h" />
     <ClInclude Include="Modules\TestStages\AssetRuntimeHUDModule.h" />
     <ClInclude Include="Modules\TestStages\TestStageHUDModule.h" />
+    <ClInclude Include="Modules\TestStages\BehaviourTreeTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\DebugGalleryTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\SpawnerTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\ArenaTestStageModule.h" />

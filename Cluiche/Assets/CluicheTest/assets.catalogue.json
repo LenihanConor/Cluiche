@@ -952,6 +952,31 @@
             "tags": [
                 "misc/ApplicationFlow"
             ]
+        },
+        {
+            "id": "stage.behaviour_tree_test_stage",
+            "type": "stage",
+            "source_path": "Stages/BehaviourTreeTestStage/behaviour_tree_test_stage.diastage",
+            "scope": "global",
+            "tags": [
+                "misc"
+            ],
+            "references": [
+                {
+                    "type": "contains",
+                    "target": "manifest.behaviour_tree_test_stage"
+                }
+            ]
+        },
+        {
+            "id": "manifest.behaviour_tree_test_stage",
+            "type": "manifest",
+            "source_path": "Stages/BehaviourTreeTestStage/misc/ApplicationFlow/behaviour_tree_test_stage.diaapp",
+            "scope": "stage",
+            "stage_name": "BehaviourTreeTestStage",
+            "tags": [
+                "misc/ApplicationFlow"
+            ]
         }
     ],
     "rules_path": "assets.rules.json"
