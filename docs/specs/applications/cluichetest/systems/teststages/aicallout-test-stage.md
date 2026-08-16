@@ -340,9 +340,9 @@ def test_aicallout_lifecycle(dia_client):
 
 ## Open Design Questions
 
-1. **DiaDebugDomainRegistry access** — does the stage access `DiaDebugDomainRegistry` via a `ModuleRef`, a service singleton, or a different injection pattern? Confirm before Task 5 by looking at how `DebugGalleryTestStageModule` registers its domains.
+1. ~~**DiaDebugDomainRegistry access**~~ — **Resolved.** Use `ModuleRef<Cluiche::AppFlow::VisualDebuggerModule>{this}` in the header. Defer `vd->RegisterDomain()` to first `OnUpdate` via a `mDomainsRegistered` flag; call `vd->UnregisterDomain()` in `OnStop`. Note: spec text references `DiaDebugDomainRegistry` — the actual API routes through `VisualDebuggerModule` directly. Matches `DebugGalleryTestStageModule` exactly.
 
-2. **Wander direction tables** — `kEmitterWanderDirs` and `kResponderWanderDirs` need 8 angles per entity (deterministic, no runtime randomness). Confirm format (constexpr float[entityCount][8] in radians) and whether they live inline in the .cpp or in a separate constants header before Task 2.
+2. ~~**Wander direction tables**~~ — **Resolved.** `static constexpr float kEmitterWanderDirs[6][8]` and `kResponderWanderDirs[6][8]` in the .cpp. Each entity tracks `uint8_t mWanderDirIdx` cycling 0→7. No separate header needed.
 
 ## Binding Decisions Compliance
 
@@ -363,4 +363,4 @@ def test_aicallout_lifecycle(dia_client):
 ## Status
 
 **Status:** Approved
-**Plan:** _(create alongside implementation)_
+**Plan:** [aicallout-test-stage.plan.md](aicallout-test-stage.plan.md)

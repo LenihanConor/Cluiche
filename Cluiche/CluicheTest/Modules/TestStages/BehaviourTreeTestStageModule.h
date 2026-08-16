@@ -19,6 +19,7 @@ namespace Dia::Observation::Metric { class Gauge; }
 #ifdef DIA_DEBUG
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include "Modules/VisualDebuggerModule.h"
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
 #include <memory>
 namespace Dia::BehaviourTree { class BehaviourTreeVisualDebugger; }
 #endif
@@ -181,6 +182,22 @@ private:
     unsigned int mFrameCount           = 0;
 
 #ifdef DIA_DEBUG
+    friend class BTDebugLayer;
+
+    class BTDebugLayer : public Dia::Debug::IVisualDebugger
+    {
+    public:
+        explicit BTDebugLayer(const BehaviourTreeTestStageModule* module) : mModule(module) {}
+        Dia::Core::StringCRC GetLayerName() const override
+        {
+            return Dia::Core::StringCRC("CluicheTest.BehaviourTree");
+        }
+        void Draw(Dia::Core::IDebugDraw& draw) override;
+    private:
+        const BehaviourTreeTestStageModule* mModule = nullptr;
+    };
+
+    BTDebugLayer                                                             mBtDebugLayer{this};
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::VisualDebuggerModule> mVisualDebuggerRef{this};
     std::unique_ptr<Dia::BehaviourTree::BehaviourTreeVisualDebugger>        mBtDebugDomain;
     bool mDomainRegistered = false;

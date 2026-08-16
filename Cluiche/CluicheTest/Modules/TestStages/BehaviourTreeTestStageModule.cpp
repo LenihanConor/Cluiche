@@ -259,6 +259,9 @@ void BehaviourTreeTestStageModule::OnStart(Dia::Automation::AutomationService* /
     mMetricTotalFrames     = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.bt.total_frames"));
 
 #ifdef DIA_DEBUG
+    if (auto* vd = mVisualDebuggerRef.Get())
+        vd->GetLayerManager().Register(&mBtDebugLayer, 10);
+
     mBtDebugDomain = std::make_unique<Dia::BehaviourTree::BehaviourTreeVisualDebugger>(mGuards[0].btComponent);
     mGuards[0].btComponent.AddEventListener(mBtDebugDomain.get());
     mDomainRegistered = false;
@@ -377,6 +380,9 @@ void BehaviourTreeTestStageModule::OnUpdate(float deltaTime)
 void BehaviourTreeTestStageModule::OnStop()
 {
 #ifdef DIA_DEBUG
+    if (auto* vd = mVisualDebuggerRef.Get())
+        vd->GetLayerManager().Unregister(Dia::Core::StringCRC("CluicheTest.BehaviourTree"));
+
     if (mDomainRegistered && mBtDebugDomain)
     {
         if (auto* vd = mVisualDebuggerRef.Get())
@@ -434,6 +440,66 @@ void BehaviourTreeTestStageModule::RegisterCheckpoints()
             return { mCheckMultiStateDivergence, mCheckMultiStateDivergence ? "divergence observed" : "all same state", 0.f };
         });
 }
+
+// ---------------------------------------------------------------------------
+// BTDebugLayer::Draw
+// ---------------------------------------------------------------------------
+#ifdef DIA_DEBUG
+void BehaviourTreeTestStageModule::BTDebugLayer::Draw(Dia::Core::IDebugDraw& draw)
+{
+    using RGBA = Dia::Core::RGBA;
+    using V2   = Dia::Maths::Vector2D;
+
+    // Default camera zoom=1 maps 1 world unit to 1 pixel.
+    // Scale world-unit positions to screen pixels so the scene is legible.
+    static constexpr float kS = 50.0f;
+
+    auto s = [](const V2& v) { return V2(v.x * kS, v.y * kS); };
+
+    // Wanderer — blue
+    draw.RequestDraw(s(mModule->mWandererPos), 12.0f,
+        RGBA(255, 255, 255, 255),
+        RGBA(50, 150, 255, 220));
+
+    for (unsigned int i = 0; i < kGuardCount; ++i)
+    {
+        const GuardAgent& guard = mModule->mGuards[i];
+
+        bool hasTarget     = false;
+        bool targetVisible = false;
+        if (const bool* ht = guard.blackboard.TryGet<bool>(Dia::Core::StringCRC("has_target")))
+            hasTarget = *ht;
+        if (const bool* tv = guard.blackboard.TryGet<bool>(Dia::Core::StringCRC("target_visible")))
+            targetVisible = *tv;
+
+        // Colour by state: chase=red, alert=yellow, patrol=green
+        RGBA fill = hasTarget        ? RGBA(220,  50,  50, 200)
+                  : targetVisible    ? RGBA(220, 200,  50, 200)
+                  :                    RGBA(100, 180, 100, 200);
+
+        const V2 gPos = s(guard.position);
+
+        // Guard body
+        draw.RequestDraw(gPos, 15.0f, RGBA(255, 255, 255, 255), fill);
+
+        // Detection range ring
+        draw.RequestDraw(gPos, kDetectionRange * kS, RGBA(200, 200, 200, 80));
+
+        // Line + dot to current waypoint when patrolling
+        if (!hasTarget && !targetVisible)
+        {
+            unsigned int wpIdx = guard.waypointIndex % 3u;
+            const V2 wp = s(guard.waypoints[wpIdx]);
+            draw.RequestDraw(gPos, wp, RGBA(150, 150, 255, 140));
+            draw.RequestDraw(wp, 5.0f, RGBA(150, 150, 255, 200));
+        }
+
+        // Line to wanderer when chasing
+        if (hasTarget)
+            draw.RequestDraw(gPos, s(mModule->mWandererPos), RGBA(220, 50, 50, 180));
+    }
+}
+#endif
 
 } // namespace CluicheTest
 
