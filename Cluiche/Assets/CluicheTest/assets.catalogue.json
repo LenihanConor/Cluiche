@@ -977,6 +977,31 @@
             "tags": [
                 "misc/ApplicationFlow"
             ]
+        },
+        {
+            "id": "stage.aicallout_test_stage",
+            "type": "stage",
+            "source_path": "Stages/AICalloutTestStage/aicallout_test_stage.diastage",
+            "scope": "global",
+            "tags": [
+                "misc"
+            ],
+            "references": [
+                {
+                    "type": "contains",
+                    "target": "manifest.aicallout_test_stage"
+                }
+            ]
+        },
+        {
+            "id": "manifest.aicallout_test_stage",
+            "type": "manifest",
+            "source_path": "Stages/AICalloutTestStage/misc/ApplicationFlow/aicallout_test_stage.diaapp",
+            "scope": "stage",
+            "stage_name": "AICalloutTestStage",
+            "tags": [
+                "misc/ApplicationFlow"
+            ]
         }
     ],
     "rules_path": "assets.rules.json"

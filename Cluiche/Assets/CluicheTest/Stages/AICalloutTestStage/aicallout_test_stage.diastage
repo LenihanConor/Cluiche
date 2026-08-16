@@ -1,0 +1,9 @@
+{
+    "name": "AICalloutTestStage",
+    "manifest": "Stages/AICalloutTestStage/misc/ApplicationFlow/aicallout_test_stage.diaapp",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

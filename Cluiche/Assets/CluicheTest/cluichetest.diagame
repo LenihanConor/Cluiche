@@ -109,6 +109,10 @@
         {
             "path": "Stages/BehaviourTreeTestStage/behaviour_tree_test_stage.diastage",
             "type": "stage"
+        },
+        {
+            "path": "Stages/AICalloutTestStage/aicallout_test_stage.diastage",
+            "type": "stage"
         }
     ],
     "name": "CluicheTest",

@@ -30,6 +30,7 @@
     <ClCompile Include="Modules\TestStages\AssetRuntimeRendererModule.cpp" />
     <ClCompile Include="Modules\TestStages\AssetRuntimeHUDModule.cpp" />
     <ClCompile Include="Modules\TestStages\TestStageHUDModule.cpp" />
+    <ClCompile Include="Modules\TestStages\AICalloutTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\BehaviourTreeTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\DebugGalleryTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\SpawnerTestStageModule.cpp" />
@@ -81,6 +82,7 @@
     <ClInclude Include="Modules\TestStages\AssetRuntimeRendererModule.h" />
     <ClInclude Include="Modules\TestStages\AssetRuntimeHUDModule.h" />
     <ClInclude Include="Modules\TestStages\TestStageHUDModule.h" />
+    <ClInclude Include="Modules\TestStages\AICalloutTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\BehaviourTreeTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\DebugGalleryTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\SpawnerTestStageModule.h" />
@@ -331,6 +333,12 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaBehaviourTreeVisualDebugger\DiaBehaviourTreeVisualDebugger.vcxproj">
       <Project>{A1B2C3D4-E5F6-7890-A1B2-C3D4E5F67890}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaAICallout\DiaAICallout.vcxproj">
+      <Project>{F0A1B2C3-D4E5-6789-0F1A-2B3C4D5E6F78}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaAICalloutVisualDebugger\DiaAICalloutVisualDebugger.vcxproj">
+      <Project>{01A2B3C4-D5E6-7890-A1B2-C3D4E5F06789}</Project>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
