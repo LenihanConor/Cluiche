@@ -60,9 +60,10 @@ namespace Dia
             // Restart evaluation from the root. Clears cursor and all decorator state.
             void Reset();
 
-            bool       IsComplete()  const;   // root returned kSuccess or kFailure last tick
-            NodeResult LastResult()  const;
-            bool       HasAsset()    const;
+            bool                 IsComplete()    const;   // root returned kSuccess or kFailure last tick
+            NodeResult           LastResult()    const;
+            bool                 HasAsset()      const;
+            Dia::Core::StringCRC GetRootNodeId() const;   // empty CRC when !HasAsset()
 
         private:
             struct Impl;

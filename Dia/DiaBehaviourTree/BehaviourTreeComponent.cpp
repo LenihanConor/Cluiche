@@ -510,5 +510,11 @@ bool BehaviourTreeComponent::HasAsset() const
     return mImpl->asset != nullptr;
 }
 
+Dia::Core::StringCRC BehaviourTreeComponent::GetRootNodeId() const
+{
+    if (!mImpl->asset) return Dia::Core::StringCRC{};
+    return mImpl->asset->GetRootNodeId();
+}
+
     } // namespace BehaviourTree
 } // namespace Dia

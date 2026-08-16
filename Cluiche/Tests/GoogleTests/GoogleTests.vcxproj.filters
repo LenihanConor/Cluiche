@@ -1591,6 +1591,9 @@
     <ClCompile Include="DiaBehaviourTree\TestBehaviourTreeSystem.cpp">
     <ClCompile Include="DiaBehaviourTree\TestTestHelpers.cpp">
     <ClCompile Include="DiaBehaviourTree\TestExhaustive.cpp">
+    <ClCompile Include="DiaBehaviourTreeVisualDebugger\TestBehaviourTreeVisualDebugger.cpp">
+      <Filter>DiaBehaviourTreeVisualDebugger</Filter>
+    </ClCompile>
       <Filter>DiaBehaviourTree</Filter>
     </ClCompile>
       <Filter>DiaBehaviourTree</Filter>
