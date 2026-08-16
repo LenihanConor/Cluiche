@@ -82,6 +82,7 @@
     <ClInclude Include="BehaviourTreeComponent.h" />
     <ClInclude Include="IBehaviourTreeEventListener.h" />
     <ClInclude Include="BehaviourTreeSystem.h" />
+    <ClInclude Include="Testing\BTTestHelpers.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ActionRegistry.cpp" />
