@@ -20,6 +20,7 @@ namespace Dia::Observation::Metric { class Gauge; }
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include "Modules/VisualDebuggerModule.h"
 #include <DiaCore/DebugDraw/IVisualDebugger.h>
+#include <DiaBehaviourTree/IBehaviourTreeEventListener.h>
 #include <memory>
 namespace Dia::BehaviourTree { class BehaviourTreeVisualDebugger; }
 #endif
@@ -182,6 +183,15 @@ private:
     unsigned int mFrameCount           = 0;
 
 #ifdef DIA_DEBUG
+    // Records the last node entered each tick so the world overlay can label it.
+    struct BTNodeTracker : Dia::BehaviourTree::IBehaviourTreeEventListener
+    {
+        Dia::Core::StringCRC lastEntered;
+        void OnNodeEntered  (Dia::Core::StringCRC nodeId)                              override { lastEntered = nodeId; }
+        void OnNodeCompleted(Dia::Core::StringCRC, Dia::BehaviourTree::NodeResult)  override {}
+        void OnTreeCompleted(Dia::BehaviourTree::NodeResult)                        override { lastEntered = {}; }
+    };
+
     friend class BTDebugLayer;
 
     class BTDebugLayer : public Dia::Debug::IVisualDebugger
@@ -197,6 +207,7 @@ private:
         const BehaviourTreeTestStageModule* mModule = nullptr;
     };
 
+    BTNodeTracker                                                            mNodeTrackers[kGuardCount];
     BTDebugLayer                                                             mBtDebugLayer{this};
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::VisualDebuggerModule> mVisualDebuggerRef{this};
     std::unique_ptr<Dia::BehaviourTree::BehaviourTreeVisualDebugger>        mBtDebugDomain;

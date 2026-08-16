@@ -165,27 +165,20 @@ static NodeResult EvaluateSelector(
     const BehaviourTreeAsset::NodeDescriptor& node,
     float                                     deltaTime)
 {
-    NodeState& state = (*ctx.nodeStates)[node.id.Value()];
-    const int startIdx = state.resumeChildIndex;
+    // Priority (reactive) selector — always evaluates children from highest priority.
+    // This lets higher-priority branches interrupt a running lower-priority branch.
     const int childCount = static_cast<int>(node.children.size());
 
-    for (int i = startIdx; i < childCount; ++i)
+    for (int i = 0; i < childCount; ++i)
     {
         NodeResult result = EvaluateNode(ctx, node.children[i], deltaTime);
         if (result == NodeResult::kRunning)
-        {
-            state.resumeChildIndex = i;
             return NodeResult::kRunning;
-        }
         if (result == NodeResult::kSuccess)
-        {
-            state.resumeChildIndex = 0;
             return NodeResult::kSuccess;
-        }
         // kFailure — try next child
     }
 
-    state.resumeChildIndex = 0;
     return NodeResult::kFailure;
 }
 

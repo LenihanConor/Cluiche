@@ -262,6 +262,9 @@ void BehaviourTreeTestStageModule::OnStart(Dia::Automation::AutomationService* /
     if (auto* vd = mVisualDebuggerRef.Get())
         vd->GetLayerManager().Register(&mBtDebugLayer, 10);
 
+    for (unsigned int i = 0; i < kGuardCount; ++i)
+        mGuards[i].btComponent.AddEventListener(&mNodeTrackers[i]);
+
     mBtDebugDomain = std::make_unique<Dia::BehaviourTree::BehaviourTreeVisualDebugger>(mGuards[0].btComponent);
     mGuards[0].btComponent.AddEventListener(mBtDebugDomain.get());
     mDomainRegistered = false;
@@ -299,6 +302,7 @@ void BehaviourTreeTestStageModule::OnUpdate(float deltaTime)
             {
                 *hasTarget = false;
                 guard.targetLostFrames = 0;
+                guard.orderInFlight      = false;
                 guard.orderJustCompleted = false;
                 guard.orderQueue.Cancel();
                 if (!mCheckTargetLost)
@@ -389,6 +393,9 @@ void BehaviourTreeTestStageModule::OnStop()
             vd->UnregisterDomain(*mBtDebugDomain);
         mDomainRegistered = false;
     }
+    for (unsigned int i = 0; i < kGuardCount; ++i)
+        mGuards[i].btComponent.RemoveEventListener(&mNodeTrackers[i]);
+
     if (mBtDebugDomain)
     {
         mGuards[0].btComponent.RemoveEventListener(mBtDebugDomain.get());
@@ -481,6 +488,11 @@ void BehaviourTreeTestStageModule::BTDebugLayer::Draw(Dia::Core::IDebugDraw& dra
 
         // Guard body
         draw.RequestDraw(gPos, 15.0f, RGBA(255, 255, 255, 255), fill);
+
+        // Active node label
+        const char* nodeName = mModule->mNodeTrackers[i].lastEntered.AsChar();
+        if (nodeName && *nodeName)
+            draw.RequestDrawText(V2(gPos.x - 40.0f, gPos.y + 20.0f), nodeName, 10.0f, RGBA(255, 255, 200, 220));
 
         // Detection range ring
         draw.RequestDraw(gPos, kDetectionRange * kS, RGBA(200, 200, 200, 80));
