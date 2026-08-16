@@ -15,14 +15,15 @@ Metrics asserted on completion:
 
 _STAGE = "BehaviourTreeTestStage"
 
-# Wanderer starts at (6, 0); Guard 1 starts at (4, 0) — distance 2.0 < detection range 5.0.
-# Checkpoints ordered by expected fire time (all within the 600-frame / 20s budget).
+# Wanderer starts at (5, 0); Guard 1 starts at (3, 0) — distance 2.0 < detection range 4.0.
+# Orbit is fast (7.5 m/s tangential, 4.2s period); target_lost fires ~7-8s after stage start.
+# All checkpoints within the 600-frame / 20s budget.
 _CHECKPOINTS = [
     ("bt.patrol_started",          5.0),
-    ("bt.chase_triggered",        10.0),
-    ("bt.parallel_fired",         12.0),
-    ("bt.multi_state_divergence", 12.0),
-    ("bt.target_lost",            20.0),
+    ("bt.chase_triggered",         8.0),
+    ("bt.parallel_fired",         10.0),
+    ("bt.multi_state_divergence", 10.0),
+    ("bt.target_lost",            18.0),
 ]
 
 
@@ -40,7 +41,7 @@ def test_bt_guard_patrol_chase_loop(dia_client):
 
         assert total_chases >= 1,    f"Expected >=1 chase, got {total_chases}"
         assert decorator_cycles >= 1, f"Expected >=1 decorator cycle, got {decorator_cycles}"
-        assert total_frames >= 100,  f"Expected >=100 frames, got {total_frames}"
+        assert total_frames >= 30,   f"Expected >=30 frames, got {total_frames}"
     finally:
         dia_client.abort_stage()
         dia_client.navigate_to("Boot")

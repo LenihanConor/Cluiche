@@ -54,6 +54,8 @@ struct GuardAgent
     // Back-ptr to pre-allocated move order (one per guard, lives in module).
     struct GuardMoveOrder* ownMoveOrder = nullptr;
     bool orderInFlight = false;
+    // Set by GuardMoveOrder::Finish; cleared by the action that observes it.
+    bool orderJustCompleted = false;
 
     // Counts consecutive frames with target_visible=false (used to reset has_target).
     int targetLostFrames = 0;
@@ -139,11 +141,13 @@ private:
 
     // ---- Constants ----
     static constexpr unsigned int kGuardCount       = 3;
-    static constexpr float kDetectionRange          = 5.0f;
-    static constexpr float kWandererOrbitRadius     = 6.0f;
-    static constexpr float kWandererAngularSpeed    = 0.4f;
+    static constexpr float kDetectionRange          = 4.0f;
+    static constexpr float kWandererOrbitRadius     = 5.0f;
+    // Fast orbit (7.5 m/s tangential) so the wanderer outpaces the guard (3.5 m/s chase)
+    // and exits detection range, triggering the bt.target_lost checkpoint.
+    static constexpr float kWandererAngularSpeed    = 1.5f;
     static constexpr float kWaypointReachDist       = 0.3f;
-    static constexpr int   kTargetLostThreshold     = 60;
+    static constexpr int   kTargetLostThreshold     = 30;
 
     // ---- Shared asset (one BT definition used by all guards) ----
     Dia::BehaviourTree::BehaviourTreeAsset mSharedBTAsset;

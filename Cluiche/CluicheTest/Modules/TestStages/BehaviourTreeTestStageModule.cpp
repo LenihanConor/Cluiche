@@ -37,16 +37,18 @@ static const char* kGuardBtJson = R"({
 // ---------------------------------------------------------------------------
 // Per-guard patrol waypoints and start positions
 // ---------------------------------------------------------------------------
+// Guards patrol near the wanderer orbit (radius 5) so they regularly enter
+// detection range (4.0) as it sweeps past at 7.5 m/s.
 static const Dia::Maths::Vector2D kGuardWaypoints[3][3] = {
-    { {-4.f,  0.f}, {-4.f,  4.f}, {-2.f,  2.f} },
-    { { 4.f,  0.f}, { 4.f,  4.f}, { 2.f,  2.f} },
-    { { 0.f,  4.f}, { 2.f, -2.f}, {-2.f, -2.f} },
+    { {-3.f,  0.f}, {-3.f,  3.f}, {-1.f,  1.f} },
+    { { 3.f,  0.f}, { 3.f,  3.f}, { 1.f,  1.f} },
+    { { 0.f,  3.f}, { 1.f, -2.f}, {-1.f, -2.f} },
 };
 
 static const Dia::Maths::Vector2D kGuardStartPos[3] = {
-    {-4.f,  0.f},
-    { 4.f,  0.f},
-    { 0.f,  4.f},
+    {-3.f,  0.f},
+    { 3.f,  0.f},
+    { 0.f,  3.f},
 };
 
 // ---------------------------------------------------------------------------
@@ -99,7 +101,8 @@ bool GuardMoveOrder::Update(GuardOrderContext& ctx, float dt)
 
 void GuardMoveOrder::Finish(GuardOrderContext& ctx)
 {
-    ctx.guard->orderInFlight = false;
+    ctx.guard->orderInFlight      = false;
+    ctx.guard->orderJustCompleted = true;
 }
 
 void GuardMoveOrder::Cancel(GuardOrderContext& ctx)
@@ -123,6 +126,15 @@ Dia::BehaviourTree::NodeResult BehaviourTreeTestStageModule::ActMoveToWaypoint(
     const Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 8>& /*params*/)
 {
     auto* guard = static_cast<GuardAgent*>(ctx);
+    // Detect order just completed (Finish called this frame before BT tick).
+    if (guard->orderJustCompleted)
+    {
+        guard->orderJustCompleted = false;
+        guard->waypointIndex++;
+        ++guard->modulePtr->mTotalPatrolWaypoints;
+        ++guard->modulePtr->mDecoratorCycles;
+        return Dia::BehaviourTree::NodeResult::kSuccess;
+    }
     if (!guard->orderInFlight)
     {
         unsigned int wpIdx = guard->waypointIndex % 3u;
@@ -131,13 +143,7 @@ Dia::BehaviourTree::NodeResult BehaviourTreeTestStageModule::ActMoveToWaypoint(
         guard->orderInFlight = true;
         guard->orderQueue.Enqueue(guard->ownMoveOrder);
     }
-    if (!guard->orderQueue.IsEmpty())
-        return Dia::BehaviourTree::NodeResult::kRunning;
-
-    guard->waypointIndex++;
-    ++guard->modulePtr->mTotalPatrolWaypoints;
-    ++guard->modulePtr->mDecoratorCycles;
-    return Dia::BehaviourTree::NodeResult::kSuccess;
+    return Dia::BehaviourTree::NodeResult::kRunning;
 }
 
 Dia::BehaviourTree::NodeResult BehaviourTreeTestStageModule::ActMoveToTarget(
@@ -145,6 +151,12 @@ Dia::BehaviourTree::NodeResult BehaviourTreeTestStageModule::ActMoveToTarget(
     const Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 8>& /*params*/)
 {
     auto* guard = static_cast<GuardAgent*>(ctx);
+    // Detect order just completed (guard reached last known target position).
+    if (guard->orderJustCompleted)
+    {
+        guard->orderJustCompleted = false;
+        return Dia::BehaviourTree::NodeResult::kSuccess;
+    }
     if (!guard->orderInFlight)
     {
         guard->ownMoveOrder->target = guard->chaseTarget;
@@ -152,9 +164,7 @@ Dia::BehaviourTree::NodeResult BehaviourTreeTestStageModule::ActMoveToTarget(
         guard->orderInFlight = true;
         guard->orderQueue.Enqueue(guard->ownMoveOrder);
     }
-    if (!guard->orderQueue.IsEmpty())
-        return Dia::BehaviourTree::NodeResult::kRunning;
-    return Dia::BehaviourTree::NodeResult::kSuccess;
+    return Dia::BehaviourTree::NodeResult::kRunning;
 }
 
 Dia::BehaviourTree::NodeResult BehaviourTreeTestStageModule::ActSetAlertEffect(
@@ -205,9 +215,10 @@ void BehaviourTreeTestStageModule::OnStart(Dia::Automation::AutomationService* /
         guard.waypoints[1]     = kGuardWaypoints[i][1];
         guard.waypoints[2]     = kGuardWaypoints[i][2];
         guard.chaseTarget      = {0.f, 0.f};
-        guard.ownMoveOrder     = &mGuardMoveOrders[i];
-        guard.orderInFlight    = false;
-        guard.targetLostFrames = 0;
+        guard.ownMoveOrder        = &mGuardMoveOrders[i];
+        guard.orderInFlight       = false;
+        guard.orderJustCompleted  = false;
+        guard.targetLostFrames    = 0;
         guard.modulePtr        = this;
 
         guard.blackboard.Register<bool>(Dia::Core::StringCRC("has_target"))     = false;
@@ -223,9 +234,9 @@ void BehaviourTreeTestStageModule::OnStart(Dia::Automation::AutomationService* /
         guard.orderQueue.AddObserver(mGuardObservers[i]);
     }
 
-    // Wanderer
+    // Wanderer — starts at (kWandererOrbitRadius, 0), near Guard 1 at (3, 0)
     mWandererAngle = 0.0f;
-    mWandererPos   = { kWandererOrbitRadius, 0.f };
+    mWandererPos   = Dia::Maths::Vector2D(kWandererOrbitRadius, 0.f);
 
     // Checkpoint flags
     mCheckPatrolStarted        = false;
@@ -285,6 +296,8 @@ void BehaviourTreeTestStageModule::OnUpdate(float deltaTime)
             {
                 *hasTarget = false;
                 guard.targetLostFrames = 0;
+                guard.orderJustCompleted = false;
+                guard.orderQueue.Cancel();
                 if (!mCheckTargetLost)
                 {
                     mCheckTargetLost = true;
@@ -297,12 +310,14 @@ void BehaviourTreeTestStageModule::OnUpdate(float deltaTime)
             guard.targetLostFrames = 0;
         }
 
-        // Advance order queue then tick BT
+        // Advance order queue then tick BT (reset on completion so the tree loops)
         {
             GuardOrderContext ctx{ &guard };
             guard.orderQueue.Update(ctx, deltaTime);
         }
         guard.btComponent.Tick(deltaTime);
+        if (guard.btComponent.IsComplete())
+            guard.btComponent.Reset();
 
         // Latch chase_triggered
         if (hasTarget && *hasTarget && !mCheckChaseTriggered)
@@ -383,6 +398,8 @@ void BehaviourTreeTestStageModule::OnStop()
         mGuards[i].orderQueue.Cancel();
         mGuards[i].btComponent.Reset();
         mGuards[i].orderQueue.RemoveObserver(mGuardObservers[i]);
+        mGuards[i].blackboard.Unregister(Dia::Core::StringCRC("has_target"));
+        mGuards[i].blackboard.Unregister(Dia::Core::StringCRC("target_visible"));
     }
 
     DIA_LOG_INFO("CluicheTest", "BehaviourTreeTestStageModule::OnStop");
