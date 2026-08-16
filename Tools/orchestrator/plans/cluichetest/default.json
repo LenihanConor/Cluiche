@@ -1,0 +1,5 @@
+{
+  "scenarios": [
+    "scenarios/cluichetest/behaviourtree/test_bt_e2e.py"
+  ]
+}
