@@ -327,6 +327,9 @@
     <ProjectReference Include="..\..\Dia\DiaMailboxVisualDebugger\DiaMailboxVisualDebugger.vcxproj">
       <Project>{A3B4C5D6-E7F8-9012-A3B4-C5D6E7F89012}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaBehaviourTreeVisualDebugger\DiaBehaviourTreeVisualDebugger.vcxproj">
+      <Project>{A1B2C3D4-E5F6-7890-A1B2-C3D4E5F67890}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{CEC960D4-B8B3-463B-9F68-716C5C3C4315}</ProjectGuid>

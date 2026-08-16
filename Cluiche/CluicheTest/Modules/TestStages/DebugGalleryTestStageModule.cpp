@@ -27,6 +27,7 @@
 #include <DiaHTNVisualDebugger/HTNVisualDebugger.h>
 #include <DiaAIBudgetVisualDebugger/AIBudgetVisualDebugger.h>
 #include <DiaMailboxVisualDebugger/MailboxVisualDebugger.h>
+#include <DiaBehaviourTreeVisualDebugger/BehaviourTreeVisualDebugger.h>
 // Fixture headers
 #include <DiaStateMachine/FlatStateMachine.h>
 #include <DiaStateMachine/StateMachineBuilder.h>
@@ -56,6 +57,7 @@
 #include <DiaHTN/HTNPlannerComponent.h>
 #include <DiaAIBudget/AIBudgetScheduler.h>
 #include <DiaMailbox/Mailbox.h>
+#include <DiaBehaviourTree/BehaviourTreeComponent.h>
 #endif
 
 #ifdef DIA_DEBUG
@@ -206,6 +208,8 @@ void DebugGalleryTestStageModule::OnStart(Dia::Automation::AutomationService* se
     mHTNDomain          = std::make_unique<Dia::HTN::HTNVisualDebugger>(*mHTNPlanner);
     mAIBudgetDomain     = std::make_unique<Dia::AIBudget::AIBudgetVisualDebugger>(*mAIBudgetScheduler, *mAIBudgetResult);
     mMailboxDomain      = std::make_unique<Dia::Mailbox::MailboxVisualDebugger>(*mMailbox);
+    mBTComponent        = std::make_unique<Dia::BehaviourTree::BehaviourTreeComponent>();
+    mBehaviourTreeDomain = std::make_unique<Dia::BehaviourTree::BehaviourTreeVisualDebugger>(*mBTComponent);
 
     DIA_LOG_INFO("CluicheTest", "DebugGalleryTestStageModule — fixtures built; domains register on first update");
 #endif
@@ -240,8 +244,9 @@ void DebugGalleryTestStageModule::OnUpdate(float /*deltaTime*/)
             vd->RegisterDomain(*mHTNDomain);
             vd->RegisterDomain(*mAIBudgetDomain);
             vd->RegisterDomain(*mMailboxDomain);
+            vd->RegisterDomain(*mBehaviourTreeDomain);
             mDomainsRegistered = true;
-            DIA_LOG_INFO("CluicheTest", "DebugGalleryTestStageModule — 21 domains registered");
+            DIA_LOG_INFO("CluicheTest", "DebugGalleryTestStageModule — 22 domains registered");
         }
     }
 #endif
@@ -256,6 +261,7 @@ void DebugGalleryTestStageModule::OnStop()
     auto* vd = mVisualDebuggerRef.Get();
     if (vd)
     {
+        if (mBehaviourTreeDomain) vd->UnregisterDomain(*mBehaviourTreeDomain);
         if (mMailboxDomain)       vd->UnregisterDomain(*mMailboxDomain);
         if (mAIBudgetDomain)      vd->UnregisterDomain(*mAIBudgetDomain);
         if (mHTNDomain)           vd->UnregisterDomain(*mHTNDomain);
@@ -280,6 +286,7 @@ void DebugGalleryTestStageModule::OnStop()
     }
 
     // Domains first, then the fixtures they reference.
+    mBehaviourTreeDomain.reset();
     mMailboxDomain.reset();
     mAIBudgetDomain.reset();
     mHTNDomain.reset();
@@ -327,9 +334,10 @@ void DebugGalleryTestStageModule::OnStop()
     mPathResult.reset();
     mPathGrid.reset();
     mSteeringSystem.reset();
+    mBTComponent.reset();
 
     mDomainsRegistered = false;
-    DIA_LOG_INFO("CluicheTest", "DebugGalleryTestStageModule — 21 domains unregistered");
+    DIA_LOG_INFO("CluicheTest", "DebugGalleryTestStageModule — 22 domains unregistered");
 #endif
 }
 
@@ -338,4 +346,4 @@ void DebugGalleryTestStageModule::OnStop()
 namespace { using DebugGalleryTestStageModule_ = CluicheTest::DebugGalleryTestStageModule; }
 DIA_MODULE(DebugGalleryTestStageModule_);
 DIA_DESCRIBE(DebugGalleryTestStageModule_::kTypeId,
-    "Visual gallery stage: registers all 23 IDebugDomain instances simultaneously for DiaDebugPanel validation.");
+    "Visual gallery stage: registers all 24 IDebugDomain instances simultaneously for DiaDebugPanel validation.");

@@ -44,7 +44,8 @@ namespace Dia::Pathfinding { class SquarePathGrid; struct PathResult; class Path
 namespace Dia::FlowField   { class FlowField; class FlowFieldVisualDebugger; }
 namespace Dia::HTN         { class HTNPlannerComponent; class HTNVisualDebugger; }
 namespace Dia::AIBudget    { class AIBudgetScheduler; struct AIBudgetResult; class AIBudgetVisualDebugger; }
-namespace Dia::Mailbox     { class Mailbox; class MailboxVisualDebugger; }
+namespace Dia::Mailbox        { class Mailbox; class MailboxVisualDebugger; }
+namespace Dia::BehaviourTree  { class BehaviourTreeComponent; class BehaviourTreeVisualDebugger; }
 #endif
 
 namespace CluicheTest {
@@ -55,7 +56,7 @@ public:
     static const Dia::Core::StringCRC kTypeId;
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kSim;
     static constexpr const char* kDescription =
-        "Visual gallery: registers all 23 IDebugDomain instances with synthetic fixture data for panel validation";
+        "Visual gallery: registers all 24 IDebugDomain instances with synthetic fixture data for panel validation";
     explicit DebugGalleryTestStageModule(const Dia::Core::StringCRC& instanceId);
     ~DebugGalleryTestStageModule() override;
 
@@ -95,13 +96,14 @@ private:
     std::unique_ptr<Dia::AIBudget::AIBudgetScheduler>     mAIBudgetScheduler;
     std::unique_ptr<Dia::AIBudget::AIBudgetResult>        mAIBudgetResult;
     std::unique_ptr<Dia::Mailbox::Mailbox>                mMailbox;
+    std::unique_ptr<Dia::BehaviourTree::BehaviourTreeComponent> mBTComponent;
 
     bool mDomainsRegistered = false;
 
-    // 21 gallery domains. Coord2DDebugDomain and Coord3DDebugDomain are excluded
+    // 22 gallery domains. Coord2DDebugDomain and Coord3DDebugDomain are excluded
     // because VisualDebuggerModule already registers them on startup; registering
     // them again would fire a DIA_ASSERT (duplicate domain ID). The panel sees all
-    // 23 domains: 2 from VisualDebuggerModule + 21 from this stage.
+    // 24 domains: 2 from VisualDebuggerModule + 22 from this stage.
     std::unique_ptr<Dia::Geometry2DVisualDebugger::Geometry2DDebugDomain>  mGeometry2DDomain;
     std::unique_ptr<Dia::AssetRuntime::AssetRuntimeDebugDomain>            mAssetRuntimeDomain;
     std::unique_ptr<Dia::UtilityAI::UtilityAIDebugDomain>                  mUtilityAIDomain;
@@ -126,6 +128,7 @@ private:
     std::unique_ptr<Dia::HTN::HTNVisualDebugger>                          mHTNDomain;
     std::unique_ptr<Dia::AIBudget::AIBudgetVisualDebugger>                mAIBudgetDomain;
     std::unique_ptr<Dia::Mailbox::MailboxVisualDebugger>                  mMailboxDomain;
+    std::unique_ptr<Dia::BehaviourTree::BehaviourTreeVisualDebugger>      mBehaviourTreeDomain;
 #endif
 };
 
