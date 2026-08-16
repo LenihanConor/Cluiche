@@ -51,7 +51,6 @@ namespace Dia
             // Decorator registry — optional; for custom decorators.
             void SetDecoratorRegistry(const DecoratorRegistry* registry);
 
-            // Listener management — no-ops until Task 8 implements IBehaviourTreeEventListener.
             void AddEventListener(IBehaviourTreeEventListener* listener);
             void RemoveEventListener(IBehaviourTreeEventListener* listener);
 

@@ -717,6 +717,7 @@
     <ClCompile Include="DiaBehaviourTree\TestBehaviourTreeComponent.cpp" />
     <ClCompile Include="DiaBehaviourTree\TestLeafNodes.cpp" />
     <ClCompile Include="DiaBehaviourTree\TestControlFlowNodes.cpp" />
+    <ClCompile Include="DiaBehaviourTree\TestDecoratorNodes.cpp" />
     <!-- DiaHTN -->
     <ClCompile Include="DiaHTN\TestOperatorRegistry.cpp" />
     <ClCompile Include="DiaHTN\TestHTNDomain.cpp" />
@@ -803,6 +804,7 @@
     <ClCompile Include="DiaAICallout\CalloutClaimReleaseTests.cpp" />
     <ClCompile Include="DiaAICallout\CalloutTTLTests.cpp" />
     <ClCompile Include="DiaAICalloutVisualDebugger\TestCalloutRegistryDebugger.cpp" />
+    <ClCompile Include="DiaBehaviourTree\TestEventListener.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

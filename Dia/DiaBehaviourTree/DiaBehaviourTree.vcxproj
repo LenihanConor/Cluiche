@@ -80,6 +80,7 @@
     <ClInclude Include="DecoratorRegistry.h" />
     <ClInclude Include="BehaviourTreeAsset.h" />
     <ClInclude Include="BehaviourTreeComponent.h" />
+    <ClInclude Include="IBehaviourTreeEventListener.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ActionRegistry.cpp" />

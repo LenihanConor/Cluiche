@@ -1,4 +1,5 @@
 #include <DiaBehaviourTree/BehaviourTreeComponent.h>
+#include <DiaBehaviourTree/IBehaviourTreeEventListener.h>
 #include <DiaBlackboard/Blackboard.h>
 #include <DiaEntity/ComponentMacros.h>
 #include <DiaCore/Reflect/ReflectMacros.h>
@@ -52,6 +53,7 @@ struct EvalContext
     void*                                        actionContext;
     std::unordered_map<unsigned int, NodeState>* nodeStates;  // owned by Impl
     const DecoratorRegistry*                     decoratorRegistry;
+    std::vector<IBehaviourTreeEventListener*>*   listeners;   // snapshot; nullable
 };
 
 // ============================================================================
@@ -372,6 +374,10 @@ static NodeResult EvaluateNode(
     const BehaviourTreeAsset::NodeDescriptor* node = ctx.asset->GetNode(nodeId);
     if (!node) return NodeResult::kFailure;
 
+    if (ctx.listeners)
+        for (IBehaviourTreeEventListener* l : *ctx.listeners)
+            l->OnNodeEntered(nodeId);
+
     static const Dia::Core::StringCRC kCondition{"condition"};
     static const Dia::Core::StringCRC kAction   {"action"};
     static const Dia::Core::StringCRC kSequence {"sequence"};
@@ -379,14 +385,19 @@ static NodeResult EvaluateNode(
     static const Dia::Core::StringCRC kParallel {"parallel"};
     static const Dia::Core::StringCRC kDecorator{"decorator"};
 
-    if (node->type == kCondition) return EvaluateCondition(ctx, *node);
-    if (node->type == kAction)    return EvaluateAction(ctx, *node);
-    if (node->type == kSequence)  return EvaluateSequence(ctx, *node, deltaTime);
-    if (node->type == kSelector)  return EvaluateSelector(ctx, *node, deltaTime);
-    if (node->type == kParallel)  return EvaluateParallel(ctx, *node, deltaTime);
-    if (node->type == kDecorator) return EvaluateDecorator(ctx, *node, deltaTime);
+    NodeResult result = NodeResult::kFailure;
+    if      (node->type == kCondition) result = EvaluateCondition(ctx, *node);
+    else if (node->type == kAction)    result = EvaluateAction(ctx, *node);
+    else if (node->type == kSequence)  result = EvaluateSequence(ctx, *node, deltaTime);
+    else if (node->type == kSelector)  result = EvaluateSelector(ctx, *node, deltaTime);
+    else if (node->type == kParallel)  result = EvaluateParallel(ctx, *node, deltaTime);
+    else if (node->type == kDecorator) result = EvaluateDecorator(ctx, *node, deltaTime);
 
-    return NodeResult::kFailure;
+    if (result != NodeResult::kRunning && ctx.listeners)
+        for (IBehaviourTreeEventListener* l : *ctx.listeners)
+            l->OnNodeCompleted(nodeId, result);
+
+    return result;
 }
 
 // ============================================================================
@@ -431,13 +442,11 @@ void BehaviourTreeComponent::SetDecoratorRegistry(const DecoratorRegistry* regis
 
 void BehaviourTreeComponent::AddEventListener(IBehaviourTreeEventListener* listener)
 {
-    // No-op until Task 8 implements IBehaviourTreeEventListener.
     mImpl->listeners.push_back(listener);
 }
 
 void BehaviourTreeComponent::RemoveEventListener(IBehaviourTreeEventListener* listener)
 {
-    // No-op until Task 8 implements IBehaviourTreeEventListener.
     auto& v = mImpl->listeners;
     for (auto it = v.begin(); it != v.end(); ++it)
     {
@@ -454,6 +463,9 @@ NodeResult BehaviourTreeComponent::Tick(float deltaTime)
     if (!mImpl->asset)
         return NodeResult::kFailure;
 
+    // Snapshot so RemoveEventListener mid-tick is safe — we iterate the copy, not the live list
+    std::vector<IBehaviourTreeEventListener*> listenersSnapshot = mImpl->listeners;
+
     EvalContext ctx;
     ctx.asset              = mImpl->asset;
     ctx.blackboard         = mImpl->blackboard;
@@ -461,11 +473,17 @@ NodeResult BehaviourTreeComponent::Tick(float deltaTime)
     ctx.actionContext      = mImpl->actionContext;
     ctx.nodeStates         = &mImpl->nodeStates;
     ctx.decoratorRegistry  = mImpl->decoratorRegistry;
+    ctx.listeners          = listenersSnapshot.empty() ? nullptr : &listenersSnapshot;
 
     NodeResult result = EvaluateNode(ctx, mImpl->asset->GetRootNodeId(), deltaTime);
 
     mImpl->lastResult = result;
     mImpl->isComplete = (result != NodeResult::kRunning);
+
+    if (result != NodeResult::kRunning && !listenersSnapshot.empty())
+        for (IBehaviourTreeEventListener* l : listenersSnapshot)
+            l->OnTreeCompleted(result);
+
     return result;
 }
 
