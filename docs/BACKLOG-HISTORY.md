@@ -84,6 +84,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | diaeconomy | [spec](specs/) | 2026-08-06 | Marked done by `dia docs spec-done` |
 | DiaEntitySpatial | SpatialComponent, EntitySpatialIndex, EntitySpatialModule, Test Utilities | 2026-08-06 | Moved from backlog — already implemented |
 | DiaAICallout | Callout (emit/query/claim/release), CalloutHandle, CalloutRegistry, TTL expiry, Test Utilities | 2026-08-06 | Moved from backlog — already implemented |
+| DiaAICalloutVisualDebugger | CalloutRegistryDebugger (IDebugDomain), CalloutRadiiDrawer (green=unclaimed, red=claimed) | 2026-08-14 | Tasks 10–13 done; 20 GoogleTests pass |
 | EntitySpatialTestStage | TestStages | 2026-08-06 | Moved from backlog — already implemented |
 | DiaScalarFieldVisualDebugger | Gradient arrow overlay (arrowhead triangle + hex axial-to-world fix), heatmap, layer names | 2026-08-06 | Moved from backlog — already implemented || DiaSensor | SensorResultsComponent, SightSensorComponent, ProximitySensorComponent, DamageSensorComponent, SoundSensorComponent, SensorBlackboardAdapter, SensorModule, Test Utilities | 2026-08-06 | Moved from backlog — already implemented |
 | DiaSensorVisualDebugger | World-space overlay: sight cones + proximity circles; IVisualDebugger impl; reads SensorResultsComponent | 2026-08-06 | Moved from backlog — already implemented |
@@ -102,6 +103,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | Clang-Tidy analysis | CMake migration (compile_commands.json) | 2026-08-13 | Dropped — not wanted |
 | TSan (ThreadSanitizer) | Linux target (WSL2 CI) | 2026-08-13 | Dropped — not wanted |
 | Visual Debugger Domain Stats Tests | Add TDD RED stats-field assertions to all 13 domain test files (extend existing `*_JSONState` suites — do not create new files). Each test targets the specific `stats.xxx` fields each `debugger-impl.plan.md` task populates. Also add drawer-name assertions for tasks 13–15 (Scene2D split → 3 drawers, LightRangesDrawer, IK2D/Lighting3D label renames). Run gate: `dia run googletest --filter="*DebugDomain*_JSONState_Stats*"`. Add these after the impl work lands to avoid conflicts. Full plan: `.claude/plans/deep-stargazing-aurora.md`. | 2026-08-14 | 42 tests across 12 _JSONState_Stats suites (28 pass 1 + 14 pass 2); 366/366 green |
+| Visual Debugger Panel Stats | debugger-impl.plan.md | 2026-08-14 | Stats fields wired for all 13 debug domains; 338/338 tests green. |
 | diarulesvisualdebugger | [spec](specs/) | 2026-08-14 | Marked done by `dia docs spec-done` |
 | diablackboardvisualdebugger | [spec](specs/) | 2026-08-14 | Marked done by `dia docs spec-done` |
 | diaaibudgetvisualdebugger | [spec](specs/) | 2026-08-14 | Marked done by `dia docs spec-done` |
@@ -110,6 +112,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | diastatemachinevisualdebugger | [spec](specs/) | 2026-08-14 | Marked done by `dia docs spec-done` |
 | diahtnvisualdebugger | [spec](specs/) | 2026-08-14 | Marked done by `dia docs spec-done` |
 | diamailboxvisualdebugger | [spec](specs/) | 2026-08-14 | Marked done by `dia docs spec-done` |
+| diabehaviourtree | [spec](specs/) | 2026-08-15 | Marked done by `dia docs spec-done` |
 
 ---
 
