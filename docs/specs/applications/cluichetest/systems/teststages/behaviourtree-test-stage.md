@@ -380,4 +380,4 @@ def test_behaviour_tree_guard_patrol_chase(dia_client):
 
 ## Status
 
-**Status:** Approved
+**Status:** Done
