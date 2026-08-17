@@ -1420,7 +1420,15 @@
       "PowerShell(dia validate *)",
       "Bash(wait %1)",
       "PowerShell([System.Guid]::NewGuid\\(\\).ToString\\(\"B\"\\).ToUpper\\(\\))",
-      "Bash(xargs -I{} bash -c 'ls \"C:/GitHub/Cluiche/sessions/{}\"')"
+      "Bash(xargs -I{} bash -c 'ls \"C:/GitHub/Cluiche/sessions/{}\"')",
+      "Bash(PATH='/c/Program Files/nodejs:__TRACKED_VAR__' npm install)",
+      "Bash(tee cluichetest_buffer_logging.log)",
+      "Bash(tee cluichetest_composite_logging.log)",
+      "Bash(mkdir -p \"C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaBlackboardVisualDebugger\\\\Docs\")",
+      "Bash(mkdir -p \"C:\\\\GitHub\\\\Cluiche\\\\Cluiche\\\\Tests\\\\GoogleTests\\\\DiaBlackboardVisualDebugger\")",
+      "Bash(mkdir -p \"C:/GitHub/Cluiche/Dia/DiaFlowFieldVisualDebugger/Docs\")",
+      "Bash(mkdir -p \"C:/GitHub/Cluiche/Cluiche/Tests/GoogleTests/DiaFlowFieldVisualDebugger\")",
+      "PowerShell(dia scaffold *)"
     ],
     "defaultMode": "auto"
   }

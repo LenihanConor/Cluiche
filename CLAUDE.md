@@ -68,51 +68,12 @@ This is a Visual Studio C++ project using MSBuild.
 ```bash
 dia run googletest
 dia run googletest --filter="FixedDrawLayer*"
-dia run googletest --config Release
 dia run cluichetest
-dia run cluicheeditor
-dia launch googletest --filter="SomeSuite*"
-dia launch cluichetest
-dia pipeline --target googletest
-dia pipeline --target cluichetest --config Release
-dia scaffold module DiaCore Serializer --layer platform
-dia scaffold plugin SceneInspector --layout dockable
 dia scaffold stage RigidBody2D --modules Physics2DModule --budget 900
 dia check deps
-dia check deps --verbose
-dia check cppcheck
-dia check cppcheck --accept-baseline
-dia check sanitizer --config Asan
-dia check sln-sync
-dia check sln-sync --dry-run
-dia check spec-sync
-dia check spec-sync --verbose
-dia validate manifest
-dia validate manifest --path Cluiche/Assets/CluicheTest/cluichetest.diagame
-dia env setup
-dia env verify
-dia test cli
-dia docs plan docs/specs/applications/dia/systems/foo/foo.plan.md 3 --status Done --notes "All tests pass"
-dia docs plan foo.plan.md 1 -s "In Progress"
-dia docs registry
-dia docs registry --dry-run
+dia docs plan foo.plan.md 3 --status Done --notes "All tests pass"
 dia docs spec-done docs/specs/applications/dia/systems/diacamera3d/diacamera3d.md
 dia docs vcxproj-add DiaCore "NewModule\\NewModule.h" --filter NewModule
-dia docs vcxproj-add GoogleTests "DiaCore\\TestNewModule.cpp"
-dia docs backlog move DiaCamera3D --notes "All features implemented"
-dia docs spec-scaffold feature camera3d-follow --parent DiaCamera3D
-dia docs spec-scaffold system DiaNewSystem
-dia docs test-scaffold Dia/DiaCore/Containers/Arrays/DynamicArray.h
-dia docs precommit
-dia docs precommit --staged
-```
-
-### Raw MSBuild (fallback)
-
-```bash
-start Cluiche/Cluiche.sln
-msbuild Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=x64
-msbuild Dia/DiaCore/DiaCore.vcxproj /p:Configuration=Debug /p:Platform=x64
 ```
 
 ### Configurations
