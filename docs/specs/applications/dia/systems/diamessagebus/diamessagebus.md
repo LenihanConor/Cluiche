@@ -51,7 +51,7 @@ Sender identity is never part of routing. Only the `Address` determines receiver
 - **Cross-PU messaging.** SimPU → RenderPU or MainPU communication remains the stream system's job. Flush adapters are the seam, not the bus itself.
 - **Thread safety.** Bus is single-threaded (sim thread only), matching DiaMailbox's SD-MBX-007 decision.
 - **Message persistence across stage transitions.** The bus and its ledger die with the stage's `MessageBusModule`. The ring buffer is transient.
-- **Live inspector UI.** The ring buffer and `ServiceStream` are the designed seam; the editor panel is a future "DiaMessageBus tooling v2" milestone.
+- **Live inspector UI (CluicheEditor).** The ring buffer and `ServiceStream` are the designed seam; the editor live-replay panel is a future "DiaMessageBus tooling v2" milestone. The in-game `IDebugDomain` overlay (`MessageBusDebugDomain`, opened with `~`) is in scope — see Feature: visual-debugger.
 - **EventDispatcher.** `Dia::Core::Events::EventDispatcher` is removed as part of this system (see Feature: eventdispatcher-removal). DiaInput migrates to `InputBusAdapter`.
 - **Schema code-gen.** DiaPython-based IDL → C++ message type generation is deferred to tooling v2.
 
@@ -197,6 +197,8 @@ public:
 | frame-ledger | `LedgerSnapshot`, ring buffer (60 seconds), `ServiceStream<LedgerSnapshot>` export, Release-build strip | [frame-ledger.md](frame-ledger.md) | Draft |
 | schema-browser | CluicheEditor panel: graph view, list view, payload inspector, structural duplicate analysis; reads routing table from `MessageBusModule` via `DiaDebugServer`; mockup at `docs/research/gameplay_msg_bus/inspector-mockup.html` | [schema-browser.md](schema-browser.md) | Draft |
 | eventdispatcher-removal | Remove `Dia::Core::Events::EventDispatcher`, `EventQueue`, `Delegate` from DiaCore; migrate `DiaInput::InputSourceManager::UpdateModern` and `LegacyEventConverter` to `InputBusAdapter`; delete dead test files | [eventdispatcher-removal.md](eventdispatcher-removal.md) | Draft |
+| visual-debugger | `MessageBusDebugDomain` — `IDebugDomain` (not world-space): Schema tab (registered producers → router → subscribers per type), Live tab (current-tick `LedgerSnapshot` counts + deliveries + pass tag), History tab (per-tick totals ring buffer); commands: `selectTab`, `setHistoryWindow`; guarded `#ifdef DIA_DEBUG` | [visual-debugger.md](visual-debugger.md) | Draft |
+| messagebus-test-stage | CluicheTest E2E stage: 5 wandering Emitters + 5 wandering Receivers; `NetworkPulseEvent` (broadcast, 2s interval), `DirectPingEvent` (EntityRouter, deterministic round-robin), `PongEvent` (Reaction pass), `BurstEvent` (InputBusAdapter auto-trigger); colour flash overlays + animated connection lines; 5 checkpoints | [messagebus-test-stage spec](../../../../../cluichetest/systems/teststages/messagebus-test-stage.md) | Approved |
 | module-and-build | `DiaMessageBus.vcxproj`, `Cluiche.sln` registration, `dia.messagingbus.architecture.module.md` YAML | [module-and-build.md](module-and-build.md) | Draft |
 
 ## Dependencies on Other Systems

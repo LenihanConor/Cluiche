@@ -29,3 +29,11 @@
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
 | 7 | [schema-browser](schema-browser.md) — CluicheEditor panel; graph view, list view, payload inspector, structural-duplicate analysis; reads routing table from `MessageBusModule` via `DiaDebugServer`; reference mockup at `docs/research/gameplay_msg_bus/inspector-mockup.html` | HTML mockup acceptance gate | Not Started | opus | Prereq: 3, 4, 6 |
+
+## Phase 4: Tooling
+
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| 8 | [visual-debugger](visual-debugger.md) — `MessageBusDebugDomain` (IDebugDomain): Schema tab (producers/router/subscribers per type), Live tab (LedgerSnapshot entry list + totals), History tab (per-tick ring buffer; dropped-tick highlight); `OnCommand` tab/window dispatch; guarded `#ifdef DIA_DEBUG` | `TestMessageBusDebugDomain*` GoogleTest suite (AC-2 through AC-8 per feature spec) | Not Started | sonnet | Prereq: 4 (frame-ledger); adds DiaVisualDebugger as debug-only dep |
+| 9 | Exhaustive testing — (a) GoogleTest: `MessageBusDebugDomain` `GetJSONState()` shape, command dispatch, mock-ledger stats computation, producer/subscriber schema stability, reaction-pass entries tagged correctly; (b) GoogleTest: full Bus round-trip with mock `EntityRouter` + real BroadcastRouter + Reaction pass re-entrancy assert; (c) HTML mockup for `MessageBusDebugDomain` panel (Schema / Live / History tabs) as editor acceptance gate | All tests green; HTML mockup reviewed | Not Started | sonnet | Prereq: 8; covers both runtime correctness and editor panel visual contract |
+| 10 | [messagebus-test-stage](../../../../../cluichetest/systems/teststages/messagebus-test-stage.md) — CluicheTest E2E stage; see feature spec for full task breakdown (7 sub-tasks) | All 5 checkpoints pass; `dropped == 0`; determinism second-pass passes | Not Started | sonnet | Prereq: 8; stage spec has its own plan |
