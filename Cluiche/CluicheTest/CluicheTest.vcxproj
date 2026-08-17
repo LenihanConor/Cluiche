@@ -241,6 +241,9 @@
     <ProjectReference Include="..\..\Dia\DiaEntitySpatial\DiaEntitySpatial.vcxproj">
       <Project>{E5F6A7B8-C9D0-1234-ABCD-567890EF0123}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaGridVisibilityVisualDebugger\DiaGridVisibilityVisualDebugger.vcxproj">
+      <Project>{F2E1D0C9-B8A7-4356-FEDC-BA9876543210}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaEntityVisualDebugger\DiaEntityVisualDebugger.vcxproj">
       <Project>{B3C4D5E6-F7A8-9012-BCDE-F12345678901}</Project>
     </ProjectReference>

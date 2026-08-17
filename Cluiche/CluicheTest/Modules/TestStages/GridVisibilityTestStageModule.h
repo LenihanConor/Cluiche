@@ -16,6 +16,7 @@
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include "Modules/VisualDebuggerModule.h"
 #include "Modules/TestStages/Drawers/GridVisibilityDrawer.h"
+#include <DiaGridVisibilityVisualDebugger/GridVisibilityDebugDomain.h>
 #endif
 
 namespace Dia::Observation::Metric { class Gauge; }
@@ -113,6 +114,7 @@ private:
 #ifdef DIA_DEBUG
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::VisualDebuggerModule> mVisualDebuggerRef{this};
     std::unique_ptr<GridVisibilityDrawer> mDrawer;
+    std::unique_ptr<Dia::GridVisibilityVisualDebugger::GridVisibilityDebugDomain<Dia::Pathfinding::SquarePathGrid>> mDebugDomain;
 #endif
 };
 

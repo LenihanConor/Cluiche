@@ -480,6 +480,14 @@ void GridVisibilityTestStageModule::OnUpdate(float deltaTime)
                 mEntityWorldPos, mEnemyFlashTimers, mStageTime,
                 vd->GetLayerManager());
             vd->GetLayerManager().Register(mDrawer.get(), 20, stageTag);
+
+            mDebugDomain = std::make_unique<
+                Dia::GridVisibilityVisualDebugger::GridVisibilityDebugDomain<Dia::Pathfinding::SquarePathGrid>>(
+                *mVisSystem, *mSpatialModule, kCellSize);
+            Json::Value selectArgs(Json::objectValue);
+            selectArgs["groupId"] = "Red";
+            mDebugDomain->OnCommand(Dia::Core::StringCRC("selectGroup"), selectArgs);
+            vd->RegisterDomain(*mDebugDomain);
         }
     }
 #endif
@@ -495,6 +503,12 @@ void GridVisibilityTestStageModule::OnUpdate(float deltaTime)
 void GridVisibilityTestStageModule::OnStop()
 {
 #ifdef DIA_DEBUG
+    if (mDebugDomain)
+    {
+        if (auto* vd = mVisualDebuggerRef.Get())
+            vd->UnregisterDomain(*mDebugDomain);
+        mDebugDomain.reset();
+    }
     if (mDrawer)
     {
         if (auto* vd = mVisualDebuggerRef.Get())
