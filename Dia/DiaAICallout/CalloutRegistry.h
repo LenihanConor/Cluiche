@@ -12,7 +12,7 @@ namespace Dia::AICallout {
     struct QueryFilter {
         Dia::Core::StringCRC  kind;     // required — callout.kind must equal this
         Dia::Maths::Vector2D  origin;   // centre of the search area
-        float                 radius;   // world-unit search radius
+        float                 radius = 0.0f; // world-unit search radius
         Dia::Core::StringCRC  faction;  // StringCRC::kZero = accept any faction
     };
 
@@ -38,6 +38,10 @@ namespace Dia::AICallout {
     class CalloutRegistry : public CalloutRegistryData {
     public:
         CalloutRegistry();
+
+        // Reset all slots to their initial state (equivalent to destruction + reconstruction).
+        // Use instead of reassignment to avoid a large stack temporary.
+        void Reset();
 
         // Post a callout. Returns a handle the emitter uses to release it.
         // Asserts and returns an invalid handle if the pool is full.

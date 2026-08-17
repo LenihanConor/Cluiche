@@ -514,7 +514,7 @@ void AICalloutTestStageModule::OnStop()
         mEmitters[i].activeHandle = Dia::AICallout::CalloutHandle{};
 
     // Clear registry so a re-entry starts from a clean state (determinism requirement)
-    mRegistry = Dia::AICallout::CalloutRegistry{};
+    mRegistry.Reset();
 
     DIA_LOG_INFO("CluicheTest", "AICalloutTestStageModule::OnStop — emitted=%d claimed=%d expired=%d released=%d",
         mTotalEmitted, mTotalClaimed, mTotalExpired, mTotalReleased);

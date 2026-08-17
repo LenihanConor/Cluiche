@@ -3,14 +3,20 @@
 
 namespace Dia::AICallout {
 
-CalloutRegistry::CalloutRegistry()
+void CalloutRegistry::Reset()
 {
     for (uint32_t i = 0u; i < kMaxCallouts; ++i)
     {
         mSlots[i].generation      = CalloutHandle::kInvalidGeneration;
         mSlots[i].live            = false;
         mSlots[i].claimed         = false;
+        mSlots[i].claimerEntityId = Dia::Core::StringCRC();
     }
+}
+
+CalloutRegistry::CalloutRegistry()
+{
+    Reset();
 }
 
 CalloutHandle CalloutRegistry::Emit(const Callout& callout)

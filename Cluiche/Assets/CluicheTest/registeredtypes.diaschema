@@ -215,6 +215,11 @@
     },
     {
       "allowed_pus": "sim",
+      "description": "DiaAICallout e2e: two-faction wandering-emitter emit/claim/release/TTL lifecycle with visual debugger overlay",
+      "type_id": "AICalloutTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
       "description": "BehaviourTree E2E: guard patrol/alert/chase loop, shared BT asset, 3 independent guards",
       "type_id": "BehaviourTreeTestStageModule"
     },
@@ -467,6 +472,6 @@
   "processing_units": [],
   "version": {
     "major": 1,
-    "minor": 26
+    "minor": 27
   }
 }
