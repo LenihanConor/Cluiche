@@ -113,6 +113,8 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | diahtnvisualdebugger | [spec](specs/) | 2026-08-14 | Marked done by `dia docs spec-done` |
 | diamailboxvisualdebugger | [spec](specs/) | 2026-08-14 | Marked done by `dia docs spec-done` |
 | diabehaviourtree | [spec](specs/) | 2026-08-15 | Marked done by `dia docs spec-done` |
+| DiaBehaviourTreeVisualDebugger | [diabehaviourtreevisualdebugger.md](specs/applications/dia/systems/diabehaviourtreevisualdebugger/diabehaviourtreevisualdebugger.md) | 2026-08-16 | IDebugDomain + IBehaviourTreeEventListener dual-inheritance; 128-slot fixed ring buffer; GetJSONState (drawers, stats, lastTickNodes); OnCommand toggle; 6 GoogleTests pass. |
+| diagridvisibility | [spec](specs/) | 2026-08-16 | Marked done by `dia docs spec-done` |
 
 ---
 
@@ -164,6 +166,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 |------|-----------|-------|
 | AIDecisionTestStage + scenario | 2026-07-31 | 5 checkpoints: Condition eval (health<50, enemy.visible), Rules (CallForHelp fires), UtilityAI sync (Flee wins at health=30), AIBudget async (EvaluateAsync callback). `scenarios/cluichetest/ai_decision/test_ai_decision.py`. BlackboardComponent + ConditionRegistry inline bridge + RuleSetComponent + UtilitySetComponent + AIBudgetScheduler. |
 | AIHTNTestStage + scenario | 2026-07-31 | 6 checkpoints: sync plan built, plan complete, diverged+replanned after health mutation, RuleActionBridge operator fired, async plan completed, async plan correct. `scenarios/cluichetest/ai_htn/test_ai_htn.py`. Phase state machine (7 phases) driving HTNPlannerComponent + HTNPlanner direct async path. |
+| BehaviourTreeTestStage | 2026-08-16 | 3-guard patrol/alert/chase loop; shared BT asset + independent blackboards; all 5 node types; DiaOrder (`GuardMoveOrder`); debugger panel auto-shown; 5 checkpoints; 10 tasks. |
 
 ---
 
