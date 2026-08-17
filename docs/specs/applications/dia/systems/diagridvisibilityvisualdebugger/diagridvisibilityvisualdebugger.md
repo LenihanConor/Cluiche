@@ -131,11 +131,11 @@ In addition to all 16 ACs in `@docs/specs/applications/dia/systems/diadebugdomai
 
 | Feature | Description | Spec | Status |
 |---------|-------------|------|--------|
-| GridVisibilityDebugDomain | `IDebugDomain` implementation — domain metadata, Register/Unregister, vcxproj + module build | inline | Draft |
-| Cell State Drawer | World-space per-cell colour overlay: Unexplored / Revealed / Visible mapped to palette colours | inline | Draft |
-| Sight Radii Drawer | World-space circle outlines at each registered sight source at its configured radius | inline | Draft |
-| Shadowcast Boundary Drawer | Optional edge-segment outline at Visible / non-Visible cell boundaries for the selected group; off by default | inline | Draft |
-| Panel Stats + Group Selector | `GetJSONState()` emitting groups[], stats, selectedGroup + `selectGroup` command dispatch | inline | Draft |
+| GridVisibilityDebugDomain | `IDebugDomain` implementation — domain metadata, Register/Unregister, vcxproj + module build | inline | Done |
+| Cell State Drawer | World-space per-cell colour overlay: Unexplored / Revealed / Visible mapped to palette colours | inline | Done |
+| Sight Radii Drawer | World-space circle outlines at each registered sight source at its configured radius | inline | Done |
+| Shadowcast Boundary Drawer | Optional edge-segment outline at Visible / non-Visible cell boundaries for the selected group; off by default | inline | Done |
+| Panel Stats + Group Selector | `GetJSONState()` emitting groups[], stats, selectedGroup + `selectGroup` command dispatch | inline | Done |
 
 ## Dependencies on Other Systems
 
@@ -194,4 +194,4 @@ In addition to all 16 ACs in `@docs/specs/applications/dia/systems/diadebugdomai
 
 ## Status
 
-`Approved` — Plan: [diagridvisibilityvisualdebugger.plan.md](diagridvisibilityvisualdebugger.plan.md)
+`Done` — Plan: [diagridvisibilityvisualdebugger.plan.md](diagridvisibilityvisualdebugger.plan.md)

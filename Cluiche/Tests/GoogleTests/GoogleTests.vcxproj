@@ -813,6 +813,7 @@
     <ClCompile Include="DiaGridVisibility\TestGridVisibilitySystem.cpp" />
     <ClCompile Include="DiaGridVisibility\TestGridVisibilityTypes.cpp" />
     <ClCompile Include="DiaGridVisibility\TestGridVisibilityExhaustive.cpp" />
+    <ClCompile Include="DiaGridVisibilityVisualDebugger\TestGridVisibilityDebugDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
