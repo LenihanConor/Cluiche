@@ -810,6 +810,9 @@
     <ClCompile Include="DiaBehaviourTree\TestExhaustive.cpp" />
     <!-- DiaBehaviourTreeVisualDebugger -->
     <ClCompile Include="DiaBehaviourTreeVisualDebugger\TestBehaviourTreeVisualDebugger.cpp" />
+    <ClCompile Include="DiaGridVisibility\TestGridVisibilitySystem.cpp" />
+    <ClCompile Include="DiaGridVisibility\TestGridVisibilityTypes.cpp" />
+    <ClCompile Include="DiaGridVisibility\TestGridVisibilityExhaustive.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

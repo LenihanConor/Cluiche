@@ -214,6 +214,9 @@
     <Filter Include="DiaMailboxVisualDebugger">
       <UniqueIdentifier>{DMVD0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaGridVisibility">
+      <UniqueIdentifier>{B1C2D3E4-F5A6-7890-BCDE-F12345678902}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -1592,6 +1595,15 @@
     <ClCompile Include="DiaBehaviourTree\TestTestHelpers.cpp">
     <ClCompile Include="DiaBehaviourTree\TestExhaustive.cpp">
     <ClCompile Include="DiaBehaviourTreeVisualDebugger\TestBehaviourTreeVisualDebugger.cpp">
+    <ClCompile Include="DiaGridVisibility\TestGridVisibilitySystem.cpp">
+      <Filter>DiaGridVisibility</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaGridVisibility\TestGridVisibilityTypes.cpp">
+      <Filter>DiaGridVisibility</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaGridVisibility\TestGridVisibilityExhaustive.cpp">
+      <Filter>DiaGridVisibility</Filter>
+    </ClCompile>
       <Filter>DiaBehaviourTreeVisualDebugger</Filter>
     </ClCompile>
       <Filter>DiaBehaviourTree</Filter>
