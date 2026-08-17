@@ -19,7 +19,9 @@
 #include <DiaCore/Colour/RGBA.h>
 #include <DiaCore/DebugDraw/IVisualDebugger.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
+#include <DiaCore/DebugDraw/DebugColourPalette.h>
 #include <DiaCore/Json/external/json/json.h>
+#include <DiaPathfinding/CellCoord.h>
 
 namespace Dia
 {
@@ -64,7 +66,46 @@ namespace Dia
 
                 void Draw(Dia::Core::IDebugDraw& draw) override
                 {
-                    // stub — full implementation in Task 4
+                    if (mSelectedGroup == nullptr) return;
+
+                    const int W = mSystem.GetVisWidth();
+                    const int H = mSystem.GetVisHeight();
+                    if (W <= 0 || H <= 0) return;
+
+                    const float visCellSize = mCellSize * static_cast<float>(mSystem.GetChunkSize());
+                    const Dia::Core::RGBA kNoOutline(0, 0, 0, 0);
+
+                    for (int y = 0; y < H; ++y)
+                    {
+                        for (int x = 0; x < W; ++x)
+                        {
+                            const Dia::GridVisibility::VisibilityState state =
+                                mSystem.GetCellState({x, y}, *mSelectedGroup);
+
+                            Dia::Core::RGBA fillColour;
+                            switch (state)
+                            {
+                            case Dia::GridVisibility::VisibilityState::Visible:
+                                fillColour = Dia::Debug::DebugColourPalette::kGoal;
+                                break;
+                            case Dia::GridVisibility::VisibilityState::Revealed:
+                                fillColour = Dia::Debug::DebugColourPalette::kInactive;
+                                break;
+                            default: // Unexplored
+                                fillColour = Dia::Debug::DebugColourPalette::kDeepSleep;
+                                break;
+                            }
+
+                            const Dia::Maths::Vector2D cellMin(
+                                static_cast<float>(x)     * visCellSize,
+                                static_cast<float>(y)     * visCellSize);
+                            const Dia::Maths::Vector2D cellMax(
+                                static_cast<float>(x + 1) * visCellSize,
+                                static_cast<float>(y + 1) * visCellSize);
+
+                            draw.RequestDrawRect(cellMin, cellMax, kNoOutline, fillColour);
+                        }
+                    }
                 }
 
             private:
