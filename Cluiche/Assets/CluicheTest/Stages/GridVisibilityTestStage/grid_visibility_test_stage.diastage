@@ -1,0 +1,9 @@
+{
+    "name": "GridVisibilityTestStage",
+    "manifest": "Stages/GridVisibilityTestStage/misc/ApplicationFlow/grid_visibility_test_stage.diaapp",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}
