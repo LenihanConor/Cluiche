@@ -215,7 +215,7 @@
     },
     {
       "allowed_pus": "sim",
-      "description": "TODO: describe what this stage tests",
+      "description": "Two-group fog-of-war demo: Red/Blue patrol sight-sources on a 24x18 grid with shadowcasting, Revealed persistence, and enemy flash on detection.",
       "type_id": "GridVisibilityTestStageModule"
     },
     {
