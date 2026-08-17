@@ -188,7 +188,54 @@ namespace Dia
 
                 void Draw(Dia::Core::IDebugDraw& draw) override
                 {
-                    // stub — full implementation in Task 6
+                    if (mSelectedGroup == nullptr) return;
+
+                    const int W = mSystem.GetVisWidth();
+                    const int H = mSystem.GetVisHeight();
+                    if (W <= 0 || H <= 0) return;
+
+                    const float s = mCellSize * static_cast<float>(mSystem.GetChunkSize());
+
+                    auto isVisible = [&](int nx, int ny) -> bool
+                    {
+                        if (nx < 0 || ny < 0 || nx >= W || ny >= H) return false;
+                        return mSystem.GetCellState({nx, ny}, *mSelectedGroup)
+                               == Dia::GridVisibility::VisibilityState::Visible;
+                    };
+
+                    for (int y = 0; y < H; ++y)
+                    {
+                        for (int x = 0; x < W; ++x)
+                        {
+                            if (!isVisible(x, y)) continue;
+
+                            const float x0 = static_cast<float>(x)     * s;
+                            const float x1 = static_cast<float>(x + 1) * s;
+                            const float y0 = static_cast<float>(y)     * s;
+                            const float y1 = static_cast<float>(y + 1) * s;
+
+                            // North edge
+                            if (!isVisible(x, y - 1))
+                                draw.RequestDraw(Dia::Maths::Vector2D(x0, y0),
+                                                 Dia::Maths::Vector2D(x1, y0),
+                                                 Dia::Debug::DebugColourPalette::kWarning);
+                            // South edge
+                            if (!isVisible(x, y + 1))
+                                draw.RequestDraw(Dia::Maths::Vector2D(x0, y1),
+                                                 Dia::Maths::Vector2D(x1, y1),
+                                                 Dia::Debug::DebugColourPalette::kWarning);
+                            // West edge
+                            if (!isVisible(x - 1, y))
+                                draw.RequestDraw(Dia::Maths::Vector2D(x0, y0),
+                                                 Dia::Maths::Vector2D(x0, y1),
+                                                 Dia::Debug::DebugColourPalette::kWarning);
+                            // East edge
+                            if (!isVisible(x + 1, y))
+                                draw.RequestDraw(Dia::Maths::Vector2D(x1, y0),
+                                                 Dia::Maths::Vector2D(x1, y1),
+                                                 Dia::Debug::DebugColourPalette::kWarning);
+                        }
+                    }
                 }
 
             private:
