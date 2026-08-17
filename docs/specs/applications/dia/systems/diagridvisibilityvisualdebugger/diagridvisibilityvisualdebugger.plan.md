@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/applications/dia/systems/diagridvisibilityvisualdebugger/diagridvisibilityvisualdebugger.md
-**Status:** Not Started
+**Status:** In Progress
 
 ---
 
@@ -62,9 +62,9 @@ Walk the visibility grid. For each cell that is `Visible` for the selected group
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | Module scaffold — `Dia/DiaGridVisibilityVisualDebugger/` directory, `DiaGridVisibilityVisualDebugger.vcxproj` + `.vcxproj.filters`, `dia.gridvisibilityvisualdebugger.architecture.module.md` YAML, sln entry under `2.0-Gameplay` | Build passes with empty module | Not Started | haiku | |
-| 2 | `VisitSightSources()` debug accessor — add `#ifdef DIA_DEBUG void VisitSightSources(fn) const` to `GridVisibilitySystem<TGraph>` in DiaGridVisibility; iterates internal sight-source registry | Compile only (accessor exists under DIA_DEBUG) | Not Started | haiku | Touches DiaGridVisibility, not this module |
-| 3 | `GridVisibilityDebugDomain<TGraph>` skeleton — header with all `IDebugDomain` pure virtuals stubbed (return defaults), constructor taking `(system, spatial, cellSize)`, `mSelectedGroup` defaulting to first registered group or empty, three drawer members declared | Compile only | Not Started | sonnet | Header-only template; no .cpp needed for domain class |
+| 1 | Module scaffold — `Dia/DiaGridVisibilityVisualDebugger/` directory, `DiaGridVisibilityVisualDebugger.vcxproj` + `.vcxproj.filters`, `dia.gridvisibilityvisualdebugger.architecture.module.md` YAML, sln entry under `2.0-Gameplay` | Build passes with empty module | Done | haiku | Added to 3.1-Visual-Tools in sln; GUID {F2E1D0C9-B8A7-4356-FEDC-BA9876543210} |
+| 2 | `VisitSightSources()` debug accessor — add `#ifdef DIA_DEBUG void VisitSightSources(fn) const` to `GridVisibilitySystem<TGraph>` in DiaGridVisibility; iterates internal sight-source registry | Compile only (accessor exists under DIA_DEBUG) | Done | haiku | Also added VisitGroups + GetGroupCellCounts (needed by Tasks 5 and 7) |
+| 3 | `GridVisibilityDebugDomain<TGraph>` skeleton — header with all `IDebugDomain` pure virtuals stubbed (return defaults), constructor taking `(system, spatial, cellSize)`, `mSelectedGroup` defaulting to first registered group or empty, three drawer members declared | Compile only | Done | sonnet | Header-only template; CVisibilityGraph concept in Dia::GridVisibility namespace |
 | 4 | Cell State Drawer — iterate all visibility-grid cells via `GetCellState()` for `mSelectedGroup`, map to `DebugColourPalette` (kBackground/kMuted/kAccent), emit filled rectangle per cell using cell-to-world mapping | Unit test: 3×3 grid with known states → correct colour per cell | Not Started | sonnet | |
 | 5 | Sight Radii Drawer — call `VisitSightSources()`, skip entries where `groupId != mSelectedGroup`, look up world position from `EntitySpatialModule`, emit circle outline with radius = registered sight radius | Unit test: 2 groups registered, only selected group's circles emitted | Not Started | sonnet | Depends on Task 2 |
 | 6 | Shadowcast Boundary Drawer — walk grid for Visible cells, emit edge segments at boundaries with non-Visible neighbours; starts disabled (`mEnabled = false`) | Unit test: 3×3 grid with a 1×1 visible interior → 4 edge segments emitted | Not Started | sonnet | |
