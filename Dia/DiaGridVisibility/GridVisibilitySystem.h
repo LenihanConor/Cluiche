@@ -106,6 +106,53 @@ namespace Dia::GridVisibility {
         // True if any pathfinding cell inside this visibility cell's chunk is passable.
         bool IsVisCellPassable(Dia::Pathfinding::CellCoord cell) const;
 
+#ifdef DIA_DEBUG
+        // Debug accessor: iterate all registered sight sources.
+        // fn receives (Entity, VisibilityGroupId, sightRadius, lastVisCell).
+        // lastVisCell is the visibility-grid coordinate of the source's last known position;
+        // use (lastVisCell * visCellSize) for world-space circle centre.
+        template<typename Fn>
+        void VisitSightSources(Fn fn) const
+        {
+            for (unsigned int i = 0; i < mSources.Size(); ++i)
+            {
+                const SightSourceEntry& s = mSources[static_cast<unsigned int>(i)];
+                fn(s.entity, s.groupId, s.sightRadius, s.lastVisCell);
+            }
+        }
+
+        // Debug accessor: iterate all registered group IDs.
+        template<typename Fn>
+        void VisitGroups(Fn fn) const
+        {
+            for (unsigned int i = 0; i < mGroups.Size(); ++i)
+                fn(mGroups[i].id);
+        }
+
+        // Debug accessor: count cells per state for a given group.
+        // fn receives (VisibilityGroupId, int visibleCount, int revealedCount, int unexploredCount).
+        void GetGroupCellCounts(VisibilityGroupId groupId,
+                                int& outVisible, int& outRevealed, int& outUnexplored) const
+        {
+            outVisible   = 0;
+            outRevealed  = 0;
+            outUnexplored = 0;
+            const int groupIndex = FindGroupIndex(groupId);
+            if (groupIndex < 0) return;
+            const GroupState& group = mGroups[static_cast<unsigned int>(groupIndex)];
+            const int cellCount = VisCellCount();
+            for (int c = 0; c < cellCount; ++c)
+            {
+                switch (group.cellStates[static_cast<unsigned int>(c)])
+                {
+                case VisibilityState::Visible:    ++outVisible;    break;
+                case VisibilityState::Revealed:   ++outRevealed;   break;
+                case VisibilityState::Unexplored: ++outUnexplored; break;
+                }
+            }
+        }
+#endif // DIA_DEBUG
+
     private:
         //--------------------------------------------------------------------------------
         // Internal capacities

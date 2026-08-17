@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{AA01B203-C4D5-E6F7-8910-A1B2C3D4E5F6}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="GridVisibilityDebugDomain.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DiaGridVisibilityVisualDebugger.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.gridvisibilityvisualdebugger.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+</Project>
