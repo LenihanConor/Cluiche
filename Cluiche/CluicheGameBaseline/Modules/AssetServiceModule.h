@@ -121,6 +121,7 @@ private:
 
     Dia::ApplicationFlow::ServiceStreamReader<Dia::AssetRuntime::TextureHandler>  mTextureHandlerService{this, "KernelTextureHandler"};
     Dia::ApplicationFlow::ServiceStreamReader<Dia::Mesh3D::Mesh3DAssetHandler>    mMeshHandlerService{this, "KernelMeshHandler"};
+    Dia::ApplicationFlow::ServiceStreamWriter<Dia::AssetRuntime::AssetRuntime>     mRuntimeService{this, "AssetRuntimeService"};
     Dia::ApplicationFlow::ServiceStreamWriter<AssetLoadStatus>                     mAssetLoadStatusService{this, "AssetLoadStatus"};
     AssetLoadStatus                                                                 mAssetLoadStatus;
     Dia::ApplicationFlow::ModuleRef<UIModule>                                      mUI{this};

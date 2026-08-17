@@ -29,6 +29,8 @@ Dia::ApplicationFlow::StartResult AssetRuntimeVisualDebuggerModule::DoStart()
     {
         mDebugDomain = std::make_unique<Dia::AssetRuntime::AssetRuntimeDebugDomain>();
         mDebugDomain->Register(mLayerManagerStream.Get());
+        if (mRuntimeStream.IsAvailable())
+            mDebugDomain->SetRuntime(&mRuntimeStream.Get());
     }
 
     return Dia::ApplicationFlow::StartResult::kReady;
@@ -42,6 +44,8 @@ Dia::ApplicationFlow::StopResult AssetRuntimeVisualDebuggerModule::DoStop()
 {
     if (mDebugDomain && mLayerManagerStream.IsAvailable())
         mDebugDomain->Unregister(mLayerManagerStream.Get());
+    if (mDebugDomain)
+        mDebugDomain->SetRuntime(nullptr);
     mDebugDomain.reset();
     return Dia::ApplicationFlow::StopResult::kDone;
 }
@@ -49,6 +53,7 @@ Dia::ApplicationFlow::StopResult AssetRuntimeVisualDebuggerModule::DoStop()
 void AssetRuntimeVisualDebuggerModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 {
     mLayerManagerStream.Connect(app);
+    mRuntimeStream.Connect(app);
 }
 
 } } // namespace Cluiche::AppFlow

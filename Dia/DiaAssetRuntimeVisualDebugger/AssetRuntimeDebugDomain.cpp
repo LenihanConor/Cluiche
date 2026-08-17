@@ -4,6 +4,7 @@
 
 #include "DiaAssetRuntimeVisualDebugger.h"
 
+#include <DiaAssetRuntime/AssetRuntime.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 
@@ -30,6 +31,11 @@ namespace
 
 AssetRuntimeDebugDomain::AssetRuntimeDebugDomain() = default;
 AssetRuntimeDebugDomain::~AssetRuntimeDebugDomain() = default;
+
+void AssetRuntimeDebugDomain::SetRuntime(const Dia::AssetRuntime::AssetRuntime* runtime)
+{
+    mRuntime = runtime;
+}
 
 // Identity
 Dia::Core::StringCRC AssetRuntimeDebugDomain::GetDomainId() const  { return Dia::Core::StringCRC("AssetRuntime"); }
@@ -70,7 +76,22 @@ void AssetRuntimeDebugDomain::GetJSONState(Json::Value& out)
         drawers.append(entry);
     }
     out["drawers"] = drawers;
-    out["stats"]   = Json::Value(Json::objectValue);
+
+    Json::Value stats(Json::objectValue);
+    if (mRuntime != nullptr)
+    {
+        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128> allBuf;
+        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128> loadedBuf;
+        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128> pendingBuf;
+        const unsigned int assetCount   = mRuntime->GetAllAssets(allBuf);
+        const unsigned int loadedCount  = mRuntime->GetLoadedAssets(loadedBuf);
+        const unsigned int pendingCount = mRuntime->GetStagedAssets(pendingBuf);
+
+        stats["assetCount"]   = assetCount;
+        stats["loadedCount"]  = loadedCount;
+        stats["pendingCount"] = pendingCount;
+    }
+    out["stats"] = stats;
 }
 
 void AssetRuntimeDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value& args)

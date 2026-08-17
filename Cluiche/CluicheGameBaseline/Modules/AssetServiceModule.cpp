@@ -104,6 +104,7 @@ Dia::ApplicationFlow::StartResult AssetServiceModule::DoStart()
 
     mAssetLoadStatus.stageId = Dia::Core::StringCRC{};
     mAssetLoadStatus.state   = AssetLoadStatus::State::kIdle;
+    mRuntimeService.Register(mRuntime);
     mAssetLoadStatusService.Register(mAssetLoadStatus);
 
     // Register health reporter.
@@ -410,6 +411,7 @@ void AssetServiceModule::OnConnectStreams(Dia::ApplicationFlow::Application& app
 {
     mTextureHandlerService.Connect(app);
     mMeshHandlerService.Connect(app);
+    mRuntimeService.Connect(app);
     mAssetLoadStatusService.Connect(app);
 }
 

@@ -15,6 +15,7 @@
 
 namespace Dia::Debug        { class DebugLayerManager; }
 namespace Dia::AssetRuntime { class DiaAssetRuntimeVisualDebugger; }
+namespace Dia::AssetRuntime { class AssetRuntime; }
 
 namespace Dia::AssetRuntime
 {
@@ -39,6 +40,10 @@ public:
     void Register(Dia::Debug::DebugLayerManager& mgr)   override;
     void Unregister(Dia::Debug::DebugLayerManager& mgr) override;
 
+    // Inject the runtime so GetJSONState() can populate live stats.
+    // Must be called before GetJSONState() is first invoked (kMain thread).
+    void SetRuntime(const Dia::AssetRuntime::AssetRuntime* runtime);
+
     // ---- IDebugDomain: panel bridge ----
     void GetJSONState(Json::Value& out) override;
     void OnCommand(Dia::Core::StringCRC cmd, const Json::Value& args) override;
@@ -52,6 +57,7 @@ private:
 
     Dia::Debug::DebugLayerManager*                        mLayerManager = nullptr;
     std::unique_ptr<DiaAssetRuntimeVisualDebugger>        mDebugger;
+    const Dia::AssetRuntime::AssetRuntime*                mRuntime      = nullptr;
 };
 
 } // namespace Dia::AssetRuntime

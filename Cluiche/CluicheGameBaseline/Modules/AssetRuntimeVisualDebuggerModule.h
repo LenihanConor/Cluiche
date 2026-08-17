@@ -7,6 +7,7 @@
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaStreams/ServiceStreamReader.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaAssetRuntime/AssetRuntime.h>
 #include <DiaAssetRuntimeVisualDebugger/AssetRuntimeDebugDomain.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include "Modules/DebugUIModule.h"
@@ -31,7 +32,8 @@ protected:
 
 private:
     Dia::ApplicationFlow::ModuleRef<DebugUIModule> mDebugUI{this, Dia::Core::StringCRC("DebugUI")};
-    Dia::ApplicationFlow::ServiceStreamReader<Dia::Debug::DebugLayerManager> mLayerManagerStream{this, "DebugLayerManager"};
+    Dia::ApplicationFlow::ServiceStreamReader<Dia::Debug::DebugLayerManager>    mLayerManagerStream{this, "DebugLayerManager"};
+    Dia::ApplicationFlow::ServiceStreamReader<Dia::AssetRuntime::AssetRuntime>  mRuntimeStream{this, "AssetRuntimeService"};
     std::unique_ptr<Dia::AssetRuntime::AssetRuntimeDebugDomain> mDebugDomain;
 };
 
