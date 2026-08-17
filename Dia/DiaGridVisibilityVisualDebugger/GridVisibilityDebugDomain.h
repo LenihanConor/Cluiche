@@ -22,6 +22,7 @@
 #include <DiaCore/DebugDraw/DebugColourPalette.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaPathfinding/CellCoord.h>
+#include <DiaEntity/Entity.h>
 
 namespace Dia
 {
@@ -136,7 +137,25 @@ namespace Dia
 
                 void Draw(Dia::Core::IDebugDraw& draw) override
                 {
-                    // stub — full implementation in Task 5
+                    if (mSelectedGroup == nullptr) return;
+
+                    const float visCellSize = mCellSize * static_cast<float>(mSystem.GetChunkSize());
+
+                    mSystem.VisitSightSources(
+                        [&](Dia::Entity::Entity /*entity*/,
+                            Dia::GridVisibility::VisibilityGroupId groupId,
+                            float sightRadius,
+                            Dia::Pathfinding::CellCoord lastVisCell)
+                        {
+                            if (!(groupId == *mSelectedGroup))
+                                return;
+
+                            const Dia::Maths::Vector2D centre(
+                                (static_cast<float>(lastVisCell.x) + 0.5f) * visCellSize,
+                                (static_cast<float>(lastVisCell.y) + 0.5f) * visCellSize);
+
+                            draw.RequestDraw(centre, sightRadius, Dia::Debug::DebugColourPalette::kGoal);
+                        });
                 }
 
             private:
