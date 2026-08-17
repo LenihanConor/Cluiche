@@ -30,6 +30,7 @@
     <ClCompile Include="Modules\TestStages\AssetRuntimeRendererModule.cpp" />
     <ClCompile Include="Modules\TestStages\AssetRuntimeHUDModule.cpp" />
     <ClCompile Include="Modules\TestStages\TestStageHUDModule.cpp" />
+    <ClCompile Include="Modules\TestStages\GridVisibilityTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\AICalloutTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\BehaviourTreeTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\DebugGalleryTestStageModule.cpp" />
@@ -71,6 +72,7 @@
     <ClCompile Include="Modules\TestStages\Drawers\ScalarFieldTestDrawer.cpp" />
     <ClCompile Include="Modules\TestStages\EntitySpatialTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\Drawers\SpawnerTestDrawer.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\GridVisibilityDrawer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\BootMenuModule.h" />
@@ -82,6 +84,7 @@
     <ClInclude Include="Modules\TestStages\AssetRuntimeRendererModule.h" />
     <ClInclude Include="Modules\TestStages\AssetRuntimeHUDModule.h" />
     <ClInclude Include="Modules\TestStages\TestStageHUDModule.h" />
+    <ClInclude Include="Modules\TestStages\GridVisibilityTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\AICalloutTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\BehaviourTreeTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\DebugGalleryTestStageModule.h" />
@@ -123,6 +126,7 @@
     <ClInclude Include="Modules\TestStages\Drawers\ScalarFieldTestDrawer.h" />
     <ClInclude Include="Modules\TestStages\EntitySpatialTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\Drawers\SpawnerTestDrawer.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\GridVisibilityDrawer.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">

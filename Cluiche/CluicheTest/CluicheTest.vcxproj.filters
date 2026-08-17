@@ -50,6 +50,9 @@
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClCompile>
     <ClCompile Include="Modules\TestStages\TestStageHUDModule.cpp">
+    <ClCompile Include="Modules\TestStages\GridVisibilityTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClCompile>
     <ClCompile Include="Modules\TestStages\AICalloutTestStageModule.cpp">
@@ -187,6 +190,9 @@
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
     <ClInclude Include="Modules\TestStages\TestStageHUDModule.h">
+    <ClInclude Include="Modules\TestStages\GridVisibilityTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
     <ClInclude Include="Modules\TestStages\AICalloutTestStageModule.h">
@@ -302,6 +308,9 @@
     </ClCompile>
     <ClCompile Include="Modules\TestStages\Drawers\EconomyDrawer.cpp">
     <ClCompile Include="Modules\TestStages\Drawers\SpawnerTestDrawer.cpp">
+    <ClCompile Include="Modules\TestStages\Drawers\GridVisibilityDrawer.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
       <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
     </ClCompile>
       <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
@@ -311,6 +320,9 @@
     </ClInclude>
     <ClInclude Include="Modules\TestStages\Drawers\EconomyDrawer.h">
     <ClInclude Include="Modules\TestStages\Drawers\SpawnerTestDrawer.h">
+    <ClInclude Include="Modules\TestStages\Drawers\GridVisibilityDrawer.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
       <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
     </ClInclude>
       <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
