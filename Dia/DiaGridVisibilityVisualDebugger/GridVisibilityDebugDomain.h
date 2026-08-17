@@ -323,16 +323,94 @@ namespace Dia
 
             void GetJSONState(Json::Value& out) override
             {
-                // stub — full impl in Task 7
-                out["drawers"]       = Json::Value(Json::arrayValue);
-                out["stats"]         = Json::Value(Json::objectValue);
-                out["selectedGroup"] = Json::Value("");
-                out["groups"]        = Json::Value(Json::arrayValue);
+                // --- drawers ---
+                static const char* const kDrawerNames[3] =
+                    { "Cell State", "Sight Radii", "Shadowcast Boundary" };
+
+                Json::Value drawers(Json::arrayValue);
+                for (int i = 0; i < 3; ++i)
+                {
+                    Dia::Debug::IVisualDebugger* d = GetDrawer(i);
+                    Json::Value entry(Json::objectValue);
+                    entry["name"]    = kDrawerNames[i];
+                    entry["enabled"] = (mLayerManager != nullptr && d != nullptr)
+                                     ? mLayerManager->IsLayerEnabled(d->GetLayerName())
+                                     : false;
+                    drawers.append(entry);
+                }
+                out["drawers"] = drawers;
+
+                // --- stats ---
+                int sightSourceCount = 0;
+                mSystem.VisitSightSources(
+                    [&](Dia::Entity::Entity,
+                        Dia::GridVisibility::VisibilityGroupId,
+                        float, Dia::Pathfinding::CellCoord)
+                    { ++sightSourceCount; });
+
+                Json::Value stats(Json::objectValue);
+                stats["gridWidth"]        = mSystem.GetVisWidth();
+                stats["gridHeight"]       = mSystem.GetVisHeight();
+                stats["chunkSize"]        = mSystem.GetChunkSize();
+                stats["groupCount"]       = mSystem.GetGroupCount();
+                stats["sightSourceCount"] = sightSourceCount;
+                out["stats"] = stats;
+
+                // --- selectedGroup ---
+                out["selectedGroup"] = mSelectedGroup.AsChar();
+
+                // --- groups ---
+                Json::Value groups(Json::arrayValue);
+                mSystem.VisitGroups(
+                    [&](Dia::GridVisibility::VisibilityGroupId groupId)
+                    {
+                        int vis = 0, rev = 0, unexp = 0;
+                        mSystem.GetGroupCellCounts(groupId, vis, rev, unexp);
+                        Json::Value g(Json::objectValue);
+                        g["id"]             = groupId.AsChar();
+                        g["visibleCells"]   = vis;
+                        g["revealedCells"]  = rev;
+                        g["unexploredCells"]= unexp;
+                        groups.append(g);
+                    });
+                out["groups"] = groups;
             }
 
             void OnCommand(Dia::Core::StringCRC cmd, const Json::Value& args) override
             {
-                // stub — full impl in Task 7
+                static const Dia::Core::StringCRC kCmdToggle("toggle");
+                static const Dia::Core::StringCRC kCmdSelectGroup("selectGroup");
+
+                if (cmd == kCmdToggle)
+                {
+                    if (mLayerManager == nullptr) return;
+                    if (!args.isMember("drawer") || !args["drawer"].isString()) return;
+
+                    const Dia::Core::StringCRC drawerName(args["drawer"].asCString());
+                    Dia::Debug::IVisualDebugger* drawer = nullptr;
+
+                    if (drawerName == Dia::Core::StringCRC("Cell State"))
+                        drawer = &mCellStateDrawer;
+                    else if (drawerName == Dia::Core::StringCRC("Sight Radii"))
+                        drawer = &mSightRadiiDrawer;
+                    else if (drawerName == Dia::Core::StringCRC("Shadowcast Boundary"))
+                        drawer = &mBoundaryDrawer;
+
+                    if (drawer == nullptr) return;
+
+                    const Dia::Core::StringCRC layerName = drawer->GetLayerName();
+                    if (mLayerManager->IsLayerEnabled(layerName))
+                        mLayerManager->DisableLayer(layerName);
+                    else
+                        mLayerManager->EnableLayer(layerName);
+                    return;
+                }
+
+                if (cmd == kCmdSelectGroup)
+                {
+                    if (!args.isMember("groupId") || !args["groupId"].isString()) return;
+                    mSelectedGroup = Dia::Core::StringCRC(args["groupId"].asCString());
+                }
             }
 
             // ----------------------------------------------------------------
