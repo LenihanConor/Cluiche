@@ -51,9 +51,7 @@ static const Dia::Maths::Vector2D* const kPatrolWaypoints[2] = {
 };
 
 // World-space origin of the grid's top-left corner (matches drawer)
-static const Dia::Maths::Vector2D kGridOrigin(
-    GridVisibilityTestStageModule::kGridOriginX,
-    GridVisibilityTestStageModule::kGridOriginY);
+static const Dia::Maths::Vector2D kGridOrigin(-360.0f, -270.0f);
 
 // Visibility group IDs
 static const Dia::GridVisibility::VisibilityGroupId kRedGroup("Red");
