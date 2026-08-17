@@ -48,12 +48,6 @@ Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testin
 
 ---
 
-### Blocked on asset service injection
-
-| Item | Blocked by | Notes |
-|------|-----------|-------|
-| AssetRuntimeDebugDomain stats | `DiaAssetRuntime` service not injected into domain constructor | `GetJSONState()` emits `stats: {}`. Wire a service ref into `AssetRuntimeDebugDomain` then add `assetCount`, `loadedCount`, `pendingCount` stats fields. |
-
 ---
 
 ## Loose Ends (non-spec items)

@@ -16,6 +16,7 @@
 #ifdef DIA_DEBUG
 
 #include <DiaAssetRuntimeVisualDebugger/AssetRuntimeDebugDomain.h>
+#include <DiaAssetRuntime/AssetRuntime.h>
 
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaGraphics/Testing/MockVisitors.h>
@@ -377,6 +378,41 @@ TEST(AssetRuntimeDebugDomain_OnCommand, SetScaleWithUnknownKeyIsIgnored)
     domain.OnCommand(Dia::Core::StringCRC("setScale"), args);
 
     EXPECT_FLOAT_EQ(mgr.GetDebugScale(), 1.0f);
+}
+
+// ===========================================================================
+// AC-15 #4 addendum — stats fields wired via SetRuntime
+// ===========================================================================
+
+TEST(AssetRuntimeDebugDomain_JSONState, WithRuntimeStatsFieldsArePresent)
+{
+    Dia::Debug::DebugLayerManager mgr;
+    AssetRuntimeDebugDomain domain;
+    domain.Register(mgr);
+
+    Dia::AssetRuntime::AssetRuntime runtime;
+    domain.SetRuntime(&runtime);
+
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    ASSERT_TRUE(state["stats"].isObject());
+    EXPECT_TRUE(state["stats"].isMember("assetCount"));
+    EXPECT_TRUE(state["stats"].isMember("loadedCount"));
+    EXPECT_TRUE(state["stats"].isMember("pendingCount"));
+    EXPECT_EQ(state["stats"]["assetCount"].asUInt(),   0u);
+    EXPECT_EQ(state["stats"]["loadedCount"].asUInt(),  0u);
+    EXPECT_EQ(state["stats"]["pendingCount"].asUInt(), 0u);
+}
+
+TEST(AssetRuntimeDebugDomain_JSONState, WithoutRuntimeStatsIsEmptyObject)
+{
+    AssetRuntimeDebugDomain domain;
+    Json::Value state;
+    domain.GetJSONState(state);
+
+    ASSERT_TRUE(state["stats"].isObject());
+    EXPECT_EQ(state["stats"].size(), 0u);
 }
 
 #endif // DIA_DEBUG
