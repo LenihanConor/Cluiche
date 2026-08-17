@@ -194,4 +194,6 @@ In addition to all 16 ACs in `@docs/specs/applications/dia/systems/diadebugdomai
 
 ## Status
 
-`Done` — Plan: [diagridvisibilityvisualdebugger.plan.md](diagridvisibilityvisualdebugger.plan.md)
+**Status:** `Done`
+
+Plan: [diagridvisibilityvisualdebugger.plan.md](diagridvisibilityvisualdebugger.plan.md)
