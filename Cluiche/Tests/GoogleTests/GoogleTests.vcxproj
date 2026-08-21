@@ -699,8 +699,10 @@
     <ClCompile Include="DiaTriggerScript\TestTriggerScriptTestHelpers.cpp" />
     <!-- DiaEntitySpawner -->
     <ClCompile Include="DiaEntitySpawner\TestEntitySpawner.cpp" />
+    <ClCompile Include="DiaEntitySpawner\SpawnDespawnBusBroadcastTests.cpp" />
     <!-- DiaMessageBus -->
     <ClCompile Include="DiaMessageBus\TestDiaMessageBusCore.cpp" />
+    <ClCompile Include="DiaMessageBus\EntityRouterRegistrationTest.cpp" />
     <!-- DiaUtilityAI -->
     <ClCompile Include="DiaUtilityAI\TestResponseCurve.cpp" />
     <ClCompile Include="DiaUtilityAI\TestGroupConsiderationContext.cpp" />
@@ -764,6 +766,7 @@
     <ClCompile Include="DiaSensor\TestDiaSensor.cpp" />
     <!-- DiaEconomy -->
     <ClCompile Include="DiaEconomy\TestDiaEconomy.cpp" />
+    <ClCompile Include="DiaEconomy\EconomyBusAdapterTests.cpp" />
     <ClCompile Include="DiaSaveGame\TestSaveLoadContext.cpp" />
     <ClCompile Include="DiaSaveGame\TestSaveManifest.cpp" />
     <ClCompile Include="DiaSaveGame\TestSaveManager.cpp" />
@@ -819,6 +822,7 @@
     <ClCompile Include="DiaGridVisibilityVisualDebugger\TestGridVisibilityDebugDomain.cpp" />
     <ClCompile Include="Animation2D\ClipCompletionBusAdapterTests.cpp" />
     <ClCompile Include="DiaAssetRuntime\TestListenerNotification.cpp" />
+    <ClCompile Include="DiaAssetRuntime\TestAssetRuntimeBusAdapter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

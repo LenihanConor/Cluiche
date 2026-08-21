@@ -1483,12 +1483,21 @@
     <ClCompile Include="DiaEconomy\TestDiaEconomy.cpp">
       <Filter>DiaEconomy</Filter>
     </ClCompile>
+    <ClCompile Include="DiaEconomy\EconomyBusAdapterTests.cpp">
+      <Filter>DiaEconomy</Filter>
+    </ClCompile>
     <!-- DiaEntitySpawner -->
     <ClCompile Include="DiaEntitySpawner\TestEntitySpawner.cpp">
       <Filter>DiaEntitySpawner</Filter>
     </ClCompile>
+    <ClCompile Include="DiaEntitySpawner\SpawnDespawnBusBroadcastTests.cpp">
+      <Filter>DiaEntitySpawner</Filter>
+    </ClCompile>
     <!-- DiaMessageBus -->
     <ClCompile Include="DiaMessageBus\TestDiaMessageBusCore.cpp">
+      <Filter>DiaMessageBus</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMessageBus\EntityRouterRegistrationTest.cpp">
       <Filter>DiaMessageBus</Filter>
     </ClCompile>
     <!-- DiaObjective -->
@@ -1689,6 +1698,9 @@
       <Filter>Animation2D</Filter>
     </ClCompile>
     <ClCompile Include="DiaAssetRuntime\TestListenerNotification.cpp">
+      <Filter>DiaAssetRuntime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAssetRuntime\TestAssetRuntimeBusAdapter.cpp">
       <Filter>DiaAssetRuntime</Filter>
     </ClCompile>
   </ItemGroup>
