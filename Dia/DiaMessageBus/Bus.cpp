@@ -4,7 +4,18 @@
 namespace Dia::MessageBus {
 
     const Dia::Core::StringCRC Bus::kBroadcastRouterId("broadcast");
-    const Dia::Core::StringCRC Bus::kEntityRouterId("entity");
+    // Value matches Dia::Entity::kEntityRouterId (EntityAddress.cpp) exactly.
+    // DiaMessageBus must not #include diaentitytemplate headers (binding layer
+    // exclusion), so this is an independently-defined constant with the same
+    // string value, not a shared symbol -- Mailbox::RegisterRouter/GetRouter
+    // key strictly by IMailboxRouter::GetRouterId()'s returned value, so the
+    // real EntityRouter (whose GetRouterId() returns "dia.entity.router")
+    // would never resolve against a Post/Subscribe built with this constant
+    // if the value diverged. Found and fixed during entity-router-bus-wiring:
+    // the two systems were specced independently and picked different
+    // literals ("entity" here vs. "dia.entity.router" there) for the same
+    // logical router.
+    const Dia::Core::StringCRC Bus::kEntityRouterId("dia.entity.router");
 
     Bus::Bus()  = default;
     Bus::~Bus() = default;

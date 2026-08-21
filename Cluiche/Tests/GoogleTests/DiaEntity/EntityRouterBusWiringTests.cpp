@@ -16,18 +16,22 @@
 // and a Bus, so the wiring is exercised directly here rather than inside a
 // not-yet-existing stage.
 //
-// IMPORTANT — router-id mismatch discovered while writing this test:
-// Dia::MessageBus::Bus::kEntityRouterId is StringCRC("entity"), but the real
-// Dia::Entity::EntityRouter::GetRouterId() returns Dia::Entity::kEntityRouterId,
-// which is StringCRC("dia.entity.router") (see EntityAddress.cpp). Mailbox
-// routers are looked up by GetRouterId() (Mailbox::RegisterRouter /
-// Mailbox::GetRouter — see Mailbox.cpp), so an Address built with
-// Bus::kEntityRouterId would never find the real EntityRouter once it's
-// registered — only the test-local MockEntityRouter in
-// EntityRouterRegistrationTest.cpp matches Bus::kEntityRouterId, because it
-// hardcodes GetRouterId() to return it. Every test below therefore builds its
-// Address via the Dia::Entity::Make*Address helpers (which stamp
-// Dia::Entity::kEntityRouterId), NOT Bus::kEntityRouterId.
+// IMPORTANT — router-id mismatch discovered while writing this test, FIXED
+// same session: Dia::MessageBus::Bus::kEntityRouterId was StringCRC("entity"),
+// but the real Dia::Entity::EntityRouter::GetRouterId() returns
+// Dia::Entity::kEntityRouterId, StringCRC("dia.entity.router") (see
+// EntityAddress.cpp). Mailbox routers are looked up by GetRouterId()
+// (Mailbox::RegisterRouter / Mailbox::GetRouter — see Mailbox.cpp), so an
+// Address built with the old Bus::kEntityRouterId value would never have
+// found the real EntityRouter once registered — only the test-local
+// MockEntityRouter in EntityRouterRegistrationTest.cpp matched it, because it
+// hardcoded GetRouterId() to return whatever Bus::kEntityRouterId was.
+// Bus::kEntityRouterId's VALUE is now "dia.entity.router" too (Bus.cpp) —
+// DiaMessageBus still doesn't #include diaentitytemplate headers (the two
+// constants remain independently defined, not a shared symbol), but their
+// values now match. Tests below still build addresses via the
+// Dia::Entity::Make*Address helpers (unaffected either way); see
+// RouterIdConstants_ValuesMatch below for the regression guard on the fix.
 //
 // SubscriberId encoding reused as-is (EntityAddress.cpp):
 //   MakeEntitySubscriberId(entity).value == (index << 24) | (generation & 0xFFFFFF)
@@ -80,6 +84,19 @@ namespace {
     }
 
 } // namespace
+
+// =========================================================================
+// RouterIdConstants_ValuesMatch
+//
+// Regression guard for the id mismatch documented in the file header.
+// DiaMessageBus and diaentitytemplate are specced/built independently and
+// must not #include each other's headers, so this can only be a value
+// equality check (two separately-defined StringCRC constants), not a shared
+// symbol — if either constant's literal ever drifts again, this fails.
+// =========================================================================
+TEST(EntityRouterBusWiring, RouterIdConstants_ValuesMatch) {
+    EXPECT_EQ(Dia::MessageBus::Bus::kEntityRouterId, Dia::Entity::kEntityRouterId);
+}
 
 // =========================================================================
 // GetEntityRouter_ReturnsSameInstanceAsPrivateMailboxRouter

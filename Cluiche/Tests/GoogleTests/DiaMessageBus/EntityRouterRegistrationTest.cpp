@@ -65,9 +65,16 @@ namespace Dia::MessageBus::Testing {
 
     // =========================================================================
     // AC-2: router-id constants.
+    //
+    // kEntityRouterId's value is "dia.entity.router", not "entity" -- fixed
+    // during entity-router-bus-wiring to match the real
+    // Dia::Entity::EntityRouter::GetRouterId() (EntityAddress.cpp), which
+    // Mailbox::RegisterRouter/GetRouter key on. See
+    // EntityRouterBusWiringTests.cpp's file header and its
+    // RouterIdConstants_ValuesMatch regression test for the full story.
     // =========================================================================
     TEST(EntityRouterRegistrationTest, RouterIdConstants_MatchExpectedStrings) {
-        EXPECT_TRUE(Dia::MessageBus::Bus::kEntityRouterId == Dia::Core::StringCRC("entity"));
+        EXPECT_TRUE(Dia::MessageBus::Bus::kEntityRouterId == Dia::Core::StringCRC("dia.entity.router"));
         EXPECT_TRUE(Dia::MessageBus::Bus::kBroadcastRouterId == Dia::Core::StringCRC("broadcast"));
     }
 
