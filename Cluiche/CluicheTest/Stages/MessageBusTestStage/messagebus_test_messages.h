@@ -10,24 +10,24 @@ namespace CluicheTest::Messages {
 
     // ── (1) Message structs ─────────────────────────────────────────────
     struct NetworkPulseEvent {
-        static constexpr Dia::Core::StringCRC kTypeId{ "NetworkPulseEvent" };
+        static inline const Dia::Core::StringCRC kTypeId{ "NetworkPulseEvent" };
         uint32_t sequenceId;  // monotonically increasing per emitter
         EntityId emitterId;  // which emitter fired
     };
 
     struct DirectPingEvent {
-        static constexpr Dia::Core::StringCRC kTypeId{ "DirectPingEvent" };
+        static inline const Dia::Core::StringCRC kTypeId{ "DirectPingEvent" };
         EntityId senderId;  // entity that sent the ping
         uint32_t pingId;  // per-sender sequence number
     };
 
     struct PongEvent {
-        static constexpr Dia::Core::StringCRC kTypeId{ "PongEvent" };
+        static inline const Dia::Core::StringCRC kTypeId{ "PongEvent" };
         EntityId responderId;  // receiver that replied
     };
 
     struct BurstEvent {
-        static constexpr Dia::Core::StringCRC kTypeId{ "BurstEvent" };
+        static inline const Dia::Core::StringCRC kTypeId{ "BurstEvent" };
         uint32_t count;  // number of pulses in this burst
     };
 

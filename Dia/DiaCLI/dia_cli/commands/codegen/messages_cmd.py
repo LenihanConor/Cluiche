@@ -47,7 +47,10 @@ def render_header(data: dict, source_filename: str) -> str:
     for msg in messages:
         msg_id = msg["id"]
         lines.append(f"    struct {msg_id} {{")
-        lines.append(f'        static constexpr Dia::Core::StringCRC kTypeId{{ "{msg_id}" }};')
+        # StringCRC's const-char* constructor is not constexpr (it CRC-hashes
+        # at runtime), so kTypeId must be "inline const" rather than
+        # "constexpr" or every generated header fails to compile.
+        lines.append(f'        static inline const Dia::Core::StringCRC kTypeId{{ "{msg_id}" }};')
         for field in msg.get("fields", []):
             field_line = f"        {field['type']} {field['name']};"
             notes = field.get("notes")

@@ -92,7 +92,7 @@ def test_codegen_messages_generates_header(tmp_path):
 
     # Structs.
     assert "struct NetworkPulseEvent {" in text
-    assert 'static constexpr Dia::Core::StringCRC kTypeId{ "NetworkPulseEvent" };' in text
+    assert 'static inline const Dia::Core::StringCRC kTypeId{ "NetworkPulseEvent" };' in text
     assert "struct PongEvent {" in text
     assert "struct BurstEvent {" in text
 
