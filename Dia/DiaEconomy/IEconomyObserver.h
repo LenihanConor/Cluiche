@@ -9,30 +9,48 @@ namespace Dia { namespace Economy {
 
     // -----------------------------------------------------------------------
     // Event structs
+    //
+    // Snapshot values only — no pointer/reference to a live EconomyInstance.
+    // These payloads are safe to forward onto DiaMessageBus (a bus-queued
+    // message can sit until the next flush pass, by which time a raw
+    // instance pointer could be stale or dangling). Instance identity is
+    // carried via EconomyInstance::GetInstanceName()'s StringCRC.
     // -----------------------------------------------------------------------
 
     struct PoolChangedEvent
     {
-        const EconomyInstance* instance;
-        Dia::Core::StringCRC   resource_name;
-        float                  new_value;
-        float                  delta;
+        Dia::Core::StringCRC instanceName;
+        Dia::Core::StringCRC resourceName;
+        float                newValue;
+        float                delta;
     };
 
     struct TransactionClampedEvent
     {
-        const EconomyInstance* instance;
-        Dia::Core::StringCRC   resource_name;
-        float                  requested_amount;
-        float                  actual_amount;
+        Dia::Core::StringCRC instanceName;
+        Dia::Core::StringCRC resourceName;
+        float                requestedAmount;
+        float                actualAmount;
     };
 
     struct TransferCompletedEvent
     {
-        const EconomyInstance* from_instance;
-        const EconomyInstance* to_instance;
-        Dia::Core::StringCRC   resource_name;
-        float                  amount;
+        Dia::Core::StringCRC fromInstanceName;
+        Dia::Core::StringCRC toInstanceName;
+        Dia::Core::StringCRC resourceName;
+        float                amount;
+    };
+
+    struct PoolReachedMaximumEvent
+    {
+        Dia::Core::StringCRC instanceName;
+        Dia::Core::StringCRC resourceName;
+    };
+
+    struct PoolReachedMinimumEvent
+    {
+        Dia::Core::StringCRC instanceName;
+        Dia::Core::StringCRC resourceName;
     };
 
     // -----------------------------------------------------------------------
@@ -43,11 +61,11 @@ namespace Dia { namespace Economy {
     public:
         virtual ~IEconomyObserver() = default;
 
-        virtual void OnPoolChanged        (const PoolChangedEvent&)                                            {}
-        virtual void OnTransactionClamped (const TransactionClampedEvent&)                                     {}
-        virtual void OnTransferCompleted  (const TransferCompletedEvent&)                                      {}
-        virtual void OnPoolReachedMaximum (const EconomyInstance&, Dia::Core::StringCRC resource_name)         {}
-        virtual void OnPoolReachedMinimum (const EconomyInstance&, Dia::Core::StringCRC resource_name)         {}
+        virtual void OnPoolChanged        (const PoolChangedEvent&)        {}
+        virtual void OnTransactionClamped (const TransactionClampedEvent&) {}
+        virtual void OnTransferCompleted  (const TransferCompletedEvent&)  {}
+        virtual void OnPoolReachedMaximum (const PoolReachedMaximumEvent&) {}
+        virtual void OnPoolReachedMinimum (const PoolReachedMinimumEvent&) {}
     };
 
 }} // namespace Dia::Economy

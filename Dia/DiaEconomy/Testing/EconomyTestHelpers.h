@@ -86,12 +86,12 @@ namespace Dia { namespace Economy { namespace Testing {
             lastTransferCompleted = e;
         }
 
-        void OnPoolReachedMaximum(const EconomyInstance&, Dia::Core::StringCRC) override
+        void OnPoolReachedMaximum(const PoolReachedMaximumEvent&) override
         {
             ++poolReachedMaximumCount;
         }
 
-        void OnPoolReachedMinimum(const EconomyInstance&, Dia::Core::StringCRC) override
+        void OnPoolReachedMinimum(const PoolReachedMinimumEvent&) override
         {
             ++poolReachedMinimumCount;
         }

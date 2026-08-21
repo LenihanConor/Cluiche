@@ -38,10 +38,10 @@ namespace Dia { namespace Economy {
         }
 
         PoolChangedEvent pce;
-        pce.instance      = &instance;
-        pce.resource_name = resource_name;
-        pce.new_value     = actual;
-        pce.delta         = delta;
+        pce.instanceName = instance.GetInstanceName();
+        pce.resourceName = resource_name;
+        pce.newValue     = actual;
+        pce.delta        = delta;
         mObserverSubject.NotifyPoolChanged(pce);
 
         if (clamped)
@@ -50,10 +50,10 @@ namespace Dia { namespace Economy {
                          resource_name.AsChar(), amount, delta);
 
             TransactionClampedEvent tce;
-            tce.instance          = &instance;
-            tce.resource_name     = resource_name;
-            tce.requested_amount  = amount;
-            tce.actual_amount     = delta;
+            tce.instanceName     = instance.GetInstanceName();
+            tce.resourceName     = resource_name;
+            tce.requestedAmount  = amount;
+            tce.actualAmount     = delta;
             mObserverSubject.NotifyTransactionClamped(tce);
 
             if (oldVal < maxVal) // only fire on transition (wasn't already at max)
@@ -94,10 +94,10 @@ namespace Dia { namespace Economy {
         }
 
         PoolChangedEvent pce;
-        pce.instance      = &instance;
-        pce.resource_name = resource_name;
-        pce.new_value     = actual;
-        pce.delta         = delta;
+        pce.instanceName = instance.GetInstanceName();
+        pce.resourceName = resource_name;
+        pce.newValue     = actual;
+        pce.delta        = delta;
         mObserverSubject.NotifyPoolChanged(pce);
 
         if (clamped)
@@ -106,10 +106,10 @@ namespace Dia { namespace Economy {
                          resource_name.AsChar(), amount, delta);
 
             TransactionClampedEvent tce;
-            tce.instance          = &instance;
-            tce.resource_name     = resource_name;
-            tce.requested_amount  = amount;
-            tce.actual_amount     = delta;
+            tce.instanceName     = instance.GetInstanceName();
+            tce.resourceName     = resource_name;
+            tce.requestedAmount  = amount;
+            tce.actualAmount     = delta;
             mObserverSubject.NotifyTransactionClamped(tce);
 
             if (oldVal > minVal) // only fire on transition (wasn't already at min)
@@ -138,10 +138,10 @@ namespace Dia { namespace Economy {
         Earn(to, resource_name, amount);
 
         TransferCompletedEvent te;
-        te.from_instance  = &from;
-        te.to_instance    = &to;
-        te.resource_name  = resource_name;
-        te.amount         = amount;
+        te.fromInstanceName = from.GetInstanceName();
+        te.toInstanceName   = to.GetInstanceName();
+        te.resourceName     = resource_name;
+        te.amount           = amount;
         mObserverSubject.NotifyTransferCompleted(te);
 
         return spendResult; // returns result of the deduct phase
@@ -171,19 +171,19 @@ namespace Dia { namespace Economy {
         const float delta  = actual - oldVal;
 
         PoolChangedEvent pce;
-        pce.instance      = &instance;
-        pce.resource_name = resource_name;
-        pce.new_value     = actual;
-        pce.delta         = delta;
+        pce.instanceName = instance.GetInstanceName();
+        pce.resourceName = resource_name;
+        pce.newValue     = actual;
+        pce.delta        = delta;
         mObserverSubject.NotifyPoolChanged(pce);
 
         if (clamped)
         {
             TransactionClampedEvent tce;
-            tce.instance          = &instance;
-            tce.resource_name     = resource_name;
-            tce.requested_amount  = value;
-            tce.actual_amount     = actual;
+            tce.instanceName    = instance.GetInstanceName();
+            tce.resourceName    = resource_name;
+            tce.requestedAmount = value;
+            tce.actualAmount    = actual;
             mObserverSubject.NotifyTransactionClamped(tce);
         }
 

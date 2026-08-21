@@ -17,6 +17,10 @@ namespace Dia { namespace Economy {
         void NotifyPoolChanged        (const PoolChangedEvent&);
         void NotifyTransactionClamped (const TransactionClampedEvent&);
         void NotifyTransferCompleted  (const TransferCompletedEvent&);
+
+        // Takes the live instance + resource name at the call site (EconomySystem
+        // already has both in hand); builds the snapshot event internally before
+        // forwarding to each observer's OnPoolReachedMaximum/Minimum.
         void NotifyPoolReachedMaximum (const EconomyInstance&, Dia::Core::StringCRC resource_name);
         void NotifyPoolReachedMinimum (const EconomyInstance&, Dia::Core::StringCRC resource_name);
 

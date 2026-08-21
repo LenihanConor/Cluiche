@@ -1,0 +1,68 @@
+{
+    "schema": "diagamemessages/v1",
+    "namespace": "Dia::Economy::Messages",
+    "includes": [],
+    "messages": [
+        {
+            "id": "PoolChangedEvent",
+            "router": "broadcast",
+            "pass": "primary",
+            "producers": ["EconomyBusAdapter"],
+            "consumers": [],
+            "fields": [
+                { "name": "instanceName", "type": "Dia::Core::StringCRC", "notes": "EconomyInstance::GetInstanceName() snapshot" },
+                { "name": "resourceName", "type": "Dia::Core::StringCRC", "notes": "resource pool that changed" },
+                { "name": "newValue",     "type": "float",                "notes": "pool value after the change" },
+                { "name": "delta",        "type": "float",                "notes": "signed change amount" }
+            ]
+        },
+        {
+            "id": "TransactionClampedEvent",
+            "router": "broadcast",
+            "pass": "primary",
+            "producers": ["EconomyBusAdapter"],
+            "consumers": [],
+            "fields": [
+                { "name": "instanceName",    "type": "Dia::Core::StringCRC", "notes": "EconomyInstance::GetInstanceName() snapshot" },
+                { "name": "resourceName",    "type": "Dia::Core::StringCRC", "notes": "resource pool that was clamped" },
+                { "name": "requestedAmount", "type": "float",                "notes": "amount originally requested" },
+                { "name": "actualAmount",    "type": "float",                "notes": "amount actually applied after clamping" }
+            ]
+        },
+        {
+            "id": "TransferCompletedEvent",
+            "router": "broadcast",
+            "pass": "primary",
+            "producers": ["EconomyBusAdapter"],
+            "consumers": [],
+            "fields": [
+                { "name": "fromInstanceName", "type": "Dia::Core::StringCRC", "notes": "source instance identity snapshot" },
+                { "name": "toInstanceName",   "type": "Dia::Core::StringCRC", "notes": "destination instance identity snapshot" },
+                { "name": "resourceName",     "type": "Dia::Core::StringCRC", "notes": "resource transferred" },
+                { "name": "amount",           "type": "float",                "notes": "amount transferred" }
+            ]
+        },
+        {
+            "id": "PoolReachedMaximumEvent",
+            "router": "broadcast",
+            "pass": "primary",
+            "producers": ["EconomyBusAdapter"],
+            "consumers": [],
+            "fields": [
+                { "name": "instanceName", "type": "Dia::Core::StringCRC", "notes": "EconomyInstance::GetInstanceName() snapshot" },
+                { "name": "resourceName", "type": "Dia::Core::StringCRC", "notes": "resource pool that hit its maximum" }
+            ]
+        },
+        {
+            "id": "PoolReachedMinimumEvent",
+            "router": "broadcast",
+            "pass": "primary",
+            "producers": ["EconomyBusAdapter"],
+            "consumers": [],
+            "fields": [
+                { "name": "instanceName", "type": "Dia::Core::StringCRC", "notes": "EconomyInstance::GetInstanceName() snapshot" },
+                { "name": "resourceName", "type": "Dia::Core::StringCRC", "notes": "resource pool that hit its minimum" }
+            ]
+        }
+    ]
+}

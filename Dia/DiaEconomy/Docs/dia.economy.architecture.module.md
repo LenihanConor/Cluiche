@@ -26,6 +26,7 @@ responsibilities:
   - EconomySystem::Tick — income rule evaluation and modifier application per instance per frame
   - Transaction API — Earn, Spend, Transfer, SetValue with TransactionResult clamping
   - Observer events — OnPoolChanged, OnTransactionClamped, OnTransferCompleted, OnPoolReached*
+  - EconomyBusAdapter — forwards observer events onto DiaMessageBus::Bus as snapshot-value messages
   - Modifier stack — multiply_income, multiply_cap, flat_income; conditional via DiaCondition adaptor
   - Derived resource registration hook for C++ computed values
   - Test utilities under Testing/ subdirectory
@@ -61,6 +62,7 @@ dependencies:
     - dia.observation
   optional:
     - dia.condition
+    - dia.messagebus
   forbidden:
     - dia.statemachine
     - dia.streams

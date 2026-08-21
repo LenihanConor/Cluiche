@@ -81,6 +81,10 @@
     <ClInclude Include="IEconomyConditionAdaptor.h" />
     <ClInclude Include="IEconomyObserver.h" />
     <ClInclude Include="EconomyObserverSubject.h" />
+    <ClInclude Include="EconomyBusAdapter.h" />
+    <ClInclude Include="Messages\economy_messages.h">
+      <Filter>Messages</Filter>
+    </ClInclude>
     <ClInclude Include="Testing\EconomyTestHelpers.h">
       <Filter>Testing</Filter>
     </ClInclude>
@@ -91,9 +95,13 @@
     <ClCompile Include="EconomySystem.cpp" />
     <ClCompile Include="EconomyInstanceHealthReporter.cpp" />
     <ClCompile Include="EconomyObserverSubject.cpp" />
+    <ClCompile Include="EconomyBusAdapter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.economy.architecture.module.md" />
+    <None Include="Messages\economy_messages.diagamemessages">
+      <Filter>Messages</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
@@ -102,6 +110,10 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaObservation\DiaObservation.vcxproj">
       <Project>{5E6F7A8B-C9D0-E1F2-3456-789ABCDE0123}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaMessageBus\DiaMessageBus.vcxproj">
+      <Project>{D5E6F7A8-B9C0-1234-DEF0-567890ABCDEF}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

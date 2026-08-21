@@ -601,9 +601,9 @@ TEST(EconomyInspector_Events, RingNoOverflowCrash)
 
     // Build a PoolChangedEvent and call OnPoolChanged 600 times (ring depth=500)
     PoolChangedEvent ev;
-    ev.instance      = &inst;
-    ev.resource_name = StringCRC("gold");
-    ev.new_value     = 100.0f;
+    ev.instanceName = inst.GetInstanceName();
+    ev.resourceName = StringCRC("gold");
+    ev.newValue      = 100.0f;
     ev.delta         = 10.0f;
 
     for (int i = 0; i < 600; ++i)
@@ -626,9 +626,9 @@ TEST(EconomyInspector_Events, ActivateSubscribesToObserver)
 
     // Fire a pool-changed event via the source's observer callback directly
     PoolChangedEvent ev;
-    ev.instance      = &inst;
-    ev.resource_name = StringCRC("gold");
-    ev.new_value     = 110.0f;
+    ev.instanceName = inst.GetInstanceName();
+    ev.resourceName = StringCRC("gold");
+    ev.newValue      = 110.0f;
     ev.delta         = 10.0f;
 
     // Should not crash
@@ -1062,9 +1062,9 @@ TEST(EconomyInspector_Events, DeltaPayloadFullRingFalse)
     src.Activate(&server);
 
     PoolChangedEvent ev;
-    ev.instance      = &inst;
-    ev.resource_name = StringCRC("gold");
-    ev.new_value     = 110.0f;
+    ev.instanceName = inst.GetInstanceName();
+    ev.resourceName = StringCRC("gold");
+    ev.newValue      = 110.0f;
     ev.delta         = 10.0f;
     src.OnPoolChanged(ev);
 
@@ -1084,10 +1084,10 @@ TEST(EconomyInspector_Events, TransactionClampedHasAttemptedAndActual)
     src.Activate(&server);
 
     TransactionClampedEvent ev;
-    ev.instance         = &inst;
-    ev.resource_name    = StringCRC("gold");
-    ev.requested_amount = 50.0f;
-    ev.actual_amount    = 0.0f;
+    ev.instanceName    = inst.GetInstanceName();
+    ev.resourceName    = StringCRC("gold");
+    ev.requestedAmount = 50.0f;
+    ev.actualAmount    = 0.0f;
     src.OnTransactionClamped(ev);
 
     ASSERT_EQ(src.sendCount, 1);
@@ -1112,10 +1112,10 @@ TEST(EconomyInspector_Events, TransferCompletedHasDestination)
     src.Activate(&server);
 
     TransferCompletedEvent ev;
-    ev.from_instance = &from;
-    ev.to_instance   = &to;
-    ev.resource_name = StringCRC("gold");
-    ev.amount        = 50.0f;
+    ev.fromInstanceName = from.GetInstanceName();
+    ev.toInstanceName   = to.GetInstanceName();
+    ev.resourceName     = StringCRC("gold");
+    ev.amount           = 50.0f;
     src.OnTransferCompleted(ev);
 
     ASSERT_EQ(src.sendCount, 1);
@@ -1139,9 +1139,9 @@ TEST(EconomyInspector_Events, FrameCounterIncrementsOnTick)
     src.Tick(0.016f, 0, 0);
 
     PoolChangedEvent ev;
-    ev.instance      = &inst;
-    ev.resource_name = StringCRC("gold");
-    ev.new_value     = 110.0f;
+    ev.instanceName = inst.GetInstanceName();
+    ev.resourceName = StringCRC("gold");
+    ev.newValue      = 110.0f;
     ev.delta         = 10.0f;
     src.OnPoolChanged(ev);
 

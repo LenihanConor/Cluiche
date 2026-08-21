@@ -7,12 +7,21 @@
     <Filter Include="Testing">
       <UniqueIdentifier>{DIAEC002-A1B2-C3D4-E5F6-789012345678}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Messages">
+      <UniqueIdentifier>{DIAEC003-A1B2-C3D4-E5F6-789012345678}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EconomySchema.h" />
     <ClInclude Include="EconomyInstance.h" />
     <ClInclude Include="EconomySystem.h" />
     <ClInclude Include="EconomyInstanceHealthReporter.h" />
+    <ClInclude Include="IEconomyObserver.h" />
+    <ClInclude Include="EconomyObserverSubject.h" />
+    <ClInclude Include="EconomyBusAdapter.h" />
+    <ClInclude Include="Messages\economy_messages.h">
+      <Filter>Messages</Filter>
+    </ClInclude>
     <ClInclude Include="Testing\EconomyTestHelpers.h">
       <Filter>Testing</Filter>
     </ClInclude>
@@ -22,10 +31,15 @@
     <ClCompile Include="EconomyInstance.cpp" />
     <ClCompile Include="EconomySystem.cpp" />
     <ClCompile Include="EconomyInstanceHealthReporter.cpp" />
+    <ClCompile Include="EconomyObserverSubject.cpp" />
+    <ClCompile Include="EconomyBusAdapter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.economy.architecture.module.md">
       <Filter>Docs</Filter>
+    </None>
+    <None Include="Messages\economy_messages.diagamemessages">
+      <Filter>Messages</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -67,8 +67,8 @@ void EconomyEventsSource::OnPoolChanged(const Dia::Economy::PoolChangedEvent& ev
 
     Json::Value entry;
     entry["frame"]    = mFrame;
-    entry["resource"] = ev.resource_name.AsChar();
-    entry["instance"] = ev.instance ? ev.instance->GetInstanceName().AsChar() : "";
+    entry["resource"] = ev.resourceName.AsChar();
+    entry["instance"] = ev.instanceName.AsChar();
     entry["amount"]   = ev.delta;
     entry["source"]   = "";
 
@@ -85,10 +85,10 @@ void EconomyEventsSource::OnTransactionClamped(const Dia::Economy::TransactionCl
     Json::Value entry;
     entry["frame"]     = mFrame;
     entry["type"]      = "Clamped";
-    entry["instance"]  = ev.instance ? ev.instance->GetInstanceName().AsChar() : "";
-    entry["resource"]  = ev.resource_name.AsChar();
-    entry["attempted"] = ev.requested_amount;
-    entry["actual"]    = ev.actual_amount;
+    entry["instance"]  = ev.instanceName.AsChar();
+    entry["resource"]  = ev.resourceName.AsChar();
+    entry["attempted"] = ev.requestedAmount;
+    entry["actual"]    = ev.actualAmount;
 
     SendDelta(entry);
 }
@@ -98,10 +98,10 @@ void EconomyEventsSource::OnTransferCompleted(const Dia::Economy::TransferComple
     Json::Value entry;
     entry["frame"]       = mFrame;
     entry["type"]        = "Transfer";
-    entry["instance"]    = ev.from_instance ? ev.from_instance->GetInstanceName().AsChar() : "";
-    entry["resource"]    = ev.resource_name.AsChar();
+    entry["instance"]    = ev.fromInstanceName.AsChar();
+    entry["resource"]    = ev.resourceName.AsChar();
     entry["amount"]      = ev.amount;
-    entry["destination"] = ev.to_instance ? ev.to_instance->GetInstanceName().AsChar() : "";
+    entry["destination"] = ev.toInstanceName.AsChar();
 
     SendDelta(entry);
 }
