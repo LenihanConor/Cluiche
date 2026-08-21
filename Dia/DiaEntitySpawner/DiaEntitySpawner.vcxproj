@@ -75,6 +75,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="Docs\dia.entityspawner.architecture.module.md" />
+    <None Include="Messages\entityspawner_messages.diagamemessages" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EntitySpawnerModule.h" />
@@ -116,6 +117,10 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaEntitySpatial\DiaEntitySpatial.vcxproj">
       <Project>{E5F6A7B8-C9D0-1234-ABCD-567890EF0123}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaMessageBus\DiaMessageBus.vcxproj">
+      <Project>{D5E6F7A8-B9C0-1234-DEF0-567890ABCDEF}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

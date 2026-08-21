@@ -6,6 +6,7 @@
 #include <DiaEntity/EntityAddress.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaMailbox/Mailbox.h>
+#include <DiaMessageBus/Bus.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaObservation/Profile/DiaProfile.h>
@@ -21,10 +22,12 @@ const Dia::Core::StringCRC EntitySpawnerModule::kInstanceId("entity-spawner-modu
 // Constructor
 // ---------------------------------------------------------------------------
 EntitySpawnerModule::EntitySpawnerModule(Dia::Entity::Domain& domain,
-                                         Dia::Entity::IBlueprintLoader& loader)
+                                         Dia::Entity::IBlueprintLoader& loader,
+                                         Dia::MessageBus::Bus& bus)
     : Module(kInstanceId)
     , mDomain(domain)
     , mSpawner(domain)
+    , mBus(bus)
 {
     mSpawner.SetBlueprintLoader(&loader);
 }
@@ -76,6 +79,17 @@ Dia::ApplicationFlow::StartResult EntitySpawnerModule::DoStart()
 
     // Wire the despawn callback so the impl can notify us when it despawns.
     mSpawner.SetDespawnCallback(&EntitySpawnerModule::OnDespawnCallback, this);
+
+    // Register the bus-broadcast delivery path for EntitySpawnedEvent/EntityDespawnedEvent.
+    // Schema-documented in Messages/entityspawner_messages.diagamemessages (router:
+    // "broadcast", pass: "primary", producers: ["EntitySpawnerModule"]). RegisterType
+    // returns false if this Bus instance already has the type registered (e.g. a
+    // restarted module reusing the same Bus) — harmless, not treated as an error.
+    mBus.RegisterType<Dia::Entity::EntitySpawnedEvent, 128>(Dia::Mailbox::OverflowPolicy::DropOldest);
+    mBus.RegisterProducer<Dia::Entity::EntitySpawnedEvent>(Dia::Core::StringCRC("EntitySpawnerModule"));
+
+    mBus.RegisterType<Dia::Entity::EntityDespawnedEvent, 128>(Dia::Mailbox::OverflowPolicy::DropOldest);
+    mBus.RegisterProducer<Dia::Entity::EntityDespawnedEvent>(Dia::Core::StringCRC("EntitySpawnerModule"));
 
     // Register metrics.
     auto& registry = Dia::Observation::Metric::MetricRegistry::Instance();
@@ -218,6 +232,7 @@ void EntitySpawnerModule::TrySpawnFromEmitter(Dia::Entity::Entity emitterEntity,
         ev.blueprintId = comp.blueprintId;
         ev.tag         = comp.blueprintId;
         mSpawnedWriter.Send(ev);
+        mBus.Broadcast(ev);
 
         // Update metrics.
         if (mMetricSpawnRate)   mMetricSpawnRate->Inc(1);
@@ -250,6 +265,7 @@ void EntitySpawnerModule::OnDespawnCallback(void* ctx,
     ev.entity = entity;
     ev.reason = reason;
     self->mDespawnedWriter.Send(ev);
+    self->mBus.Broadcast(ev);
 
     // Update metrics.
     if (self->mMetricActiveCount)

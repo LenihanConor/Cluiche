@@ -19,6 +19,7 @@ namespace Dia { namespace Entity {
 } }
 
 namespace Dia { namespace ApplicationFlow { class Application; } }
+namespace Dia { namespace MessageBus { class Bus; } }
 
 namespace Dia::EntitySpawner {
 
@@ -29,7 +30,8 @@ namespace Dia::EntitySpawner {
 // Responsibilities:
 //   - Tick SpawnEmitterComponent token accumulation and burst logic.
 //   - Evaluate lifetime and radius despawn conditions each Update.
-//   - Publish EntitySpawnedEvent and EntityDespawnedEvent on sim-thread streams.
+//   - Publish EntitySpawnedEvent and EntityDespawnedEvent on sim-thread streams
+//     AND directly on the shared Dia::MessageBus::Bus (same-thread subscribers).
 //   - Subscribe to EntityDestroyedMessage to stay consistent with domain destroys.
 //   - Expose IEntitySpawner& via GetSpawner() for game code.
 // ---------------------------------------------------------------------------
@@ -38,9 +40,10 @@ class EntitySpawnerModule : public Dia::ApplicationFlow::Module
 public:
     static const Dia::Core::StringCRC kInstanceId;
 
-    // Both Domain& and IBlueprintLoader& must outlive this module.
+    // Domain&, IBlueprintLoader&, and Bus& must all outlive this module.
     EntitySpawnerModule(Dia::Entity::Domain& domain,
-                        Dia::Entity::IBlueprintLoader& loader);
+                        Dia::Entity::IBlueprintLoader& loader,
+                        Dia::MessageBus::Bus& bus);
 
     // Exposes the underlying IEntitySpawner for caller-driven Spawn/Despawn.
     Dia::Entity::IEntitySpawner& GetSpawner();
@@ -75,6 +78,11 @@ private:
 
     Dia::Entity::Domain&      mDomain;
     EntitySpawnerImpl         mSpawner;
+
+    // Shared message bus — same-thread Broadcast<T>() delivery path, alongside
+    // the cross-PU EventStreamWriters below. Only this module layer touches
+    // the bus; EntitySpawnerImpl has zero bus dependency.
+    Dia::MessageBus::Bus&     mBus;
 
     // Event stream writers — connected in OnConnectStreams.
     Dia::ApplicationFlow::EventStreamWriter<Dia::Entity::EntitySpawnedEvent>

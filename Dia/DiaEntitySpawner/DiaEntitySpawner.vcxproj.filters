@@ -49,5 +49,8 @@
     <None Include="Docs\dia.entityspawner.architecture.module.md">
       <Filter>Docs</Filter>
     </None>
+    <None Include="Messages\entityspawner_messages.diagamemessages">
+      <Filter>Docs</Filter>
+    </None>
   </ItemGroup>
 </Project>

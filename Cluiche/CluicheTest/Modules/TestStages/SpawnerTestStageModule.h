@@ -6,6 +6,7 @@
 #include <DiaEntity/Domain.h>
 #include <DiaEntity/Entity.h>
 #include <DiaEntitySpawner/EntitySpawnerModule.h>
+#include <DiaMessageBus/Bus.h>
 #include <memory>
 
 namespace Dia { namespace Automation { class AutomationService; } }
@@ -41,8 +42,9 @@ private:
     class TestableSpawnerModule : public Dia::EntitySpawner::EntitySpawnerModule
     {
     public:
-        TestableSpawnerModule(Dia::Entity::Domain& domain, Dia::Entity::IBlueprintLoader& loader)
-            : EntitySpawnerModule(domain, loader)
+        TestableSpawnerModule(Dia::Entity::Domain& domain, Dia::Entity::IBlueprintLoader& loader,
+                              Dia::MessageBus::Bus& bus)
+            : EntitySpawnerModule(domain, loader, bus)
         {}
         void Start()          { DoStart(); }
         void Update(float dt) { DoUpdate(dt); }
@@ -71,6 +73,10 @@ private:
 
     Dia::Entity::Domain                     mDomain;
     Dia::Entity::IBlueprintLoader*          mLoader  = nullptr;   // owned, deleted in dtor
+    // Owned locally — this stage has no wider PU-level MessageBus wiring yet, so
+    // it stands up its own Bus purely to satisfy EntitySpawnerModule's Bus&
+    // dependency. Not shared with any other module in this stage.
+    Dia::MessageBus::Bus                    mBus;
     std::unique_ptr<TestableSpawnerModule>  mSpawner;
 
     Dia::Entity::Entity mRateEmitter;

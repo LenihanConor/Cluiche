@@ -1,0 +1,34 @@
+{
+    "schema": "diagamemessages/v1",
+    "namespace": "Dia::Entity",
+    "includes": ["DiaEntity/Entity.h", "DiaCore/CRC/StringCRC.h"],
+    "messages": [
+        {
+            "id": "EntitySpawnedEvent",
+            "router": "broadcast",
+            "pass": "primary",
+            "capacity": 128,
+            "overflow": "drop_oldest",
+            "producers": ["EntitySpawnerModule"],
+            "consumers": [],
+            "fields": [
+                { "name": "entity",      "type": "Entity",              "notes": "the newly spawned entity" },
+                { "name": "blueprintId", "type": "Dia::Core::StringCRC", "notes": "blueprint used to spawn it" },
+                { "name": "tag",         "type": "Dia::Core::StringCRC", "notes": "caller-supplied spawn tag" }
+            ]
+        },
+        {
+            "id": "EntityDespawnedEvent",
+            "router": "broadcast",
+            "pass": "primary",
+            "capacity": 128,
+            "overflow": "drop_oldest",
+            "producers": ["EntitySpawnerModule"],
+            "consumers": [],
+            "fields": [
+                { "name": "entity", "type": "Entity",        "notes": "the entity that was despawned" },
+                { "name": "reason", "type": "DespawnReason",  "notes": "Lifetime | Radius | Cap | Explicit" }
+            ]
+        }
+    ]
+}

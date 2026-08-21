@@ -141,8 +141,12 @@ void SpawnerTestStageModule::OnStart(Dia::Automation::AutomationService* service
     // Create the mock loader (owned by this module).
     mLoader = new MockBlueprintLoader();
 
+    // Bring up this stage's local bus before the spawner module registers its
+    // broadcast types in Start().
+    mBus.Initialize();
+
     // Create the spawner module.
-    mSpawner = std::make_unique<TestableSpawnerModule>(mDomain, *mLoader);
+    mSpawner = std::make_unique<TestableSpawnerModule>(mDomain, *mLoader, mBus);
     mSpawner->Start();
 
     // Override DespawnCallback so we can count lifetime despawns.
@@ -214,8 +218,10 @@ void SpawnerTestStageModule::OnUpdate(float deltaTime)
 
     mElapsed += deltaTime;
 
-    // Tick the spawner module.
+    // Tick the spawner module, then flush the local bus so any subscribers
+    // (none in this stage today) would see this frame's broadcasts.
     mSpawner->Update(deltaTime);
+    mBus.Update();
 
     // Track spawn count by observing change in GetTrackedChildCount().
     auto& impl = static_cast<Dia::EntitySpawner::EntitySpawnerImpl&>(mSpawner->GetSpawner());

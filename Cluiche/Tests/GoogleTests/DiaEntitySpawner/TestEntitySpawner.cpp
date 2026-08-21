@@ -18,6 +18,7 @@
 #include <DiaEntitySpawner/SpawnEmitterComponent.h>
 #include <DiaEntitySpawner/SpawnerTypes.h>
 #include <DiaEntitySpatial/SpatialComponent.h>
+#include <DiaMessageBus/Bus.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaCore/CRC/StringCRC.h>
 
@@ -98,6 +99,7 @@ protected:
 
     Dia::Entity::Domain    domain;
     MockBlueprintLoader    loader;
+    Dia::MessageBus::Bus   bus;
 };
 
 // ============================================================================
@@ -109,8 +111,9 @@ protected:
 class TestableEntitySpawnerModule : public Dia::EntitySpawner::EntitySpawnerModule
 {
 public:
-    TestableEntitySpawnerModule(Dia::Entity::Domain& domain, Dia::Entity::IBlueprintLoader& loader)
-        : EntitySpawnerModule(domain, loader)
+    TestableEntitySpawnerModule(Dia::Entity::Domain& domain, Dia::Entity::IBlueprintLoader& loader,
+                                 Dia::MessageBus::Bus& bus)
+        : EntitySpawnerModule(domain, loader, bus)
     {}
 
     void Start()             { DoStart(); }
@@ -457,7 +460,7 @@ TEST_F(EntitySpawnerImplTest, TickChildRadii_NotDespawnedWithinRadius)
 // 14. Module: DoStart + DoStop without any entities — no crash
 TEST_F(EntitySpawnerImplTest, Module_DoStart_DoStop_NoCrash)
 {
-    TestableEntitySpawnerModule mod(domain, loader);
+    TestableEntitySpawnerModule mod(domain, loader, bus);
     mod.Start();
     mod.Stop();
     // No assertions needed — the test passes if there is no crash.
@@ -472,7 +475,7 @@ TEST_F(EntitySpawnerImplTest, Module_RateSpawn_TokenAccumulation)
         emitter, MakeEmitterConfig("test-bp", 2.0f, 0, 0, 0.0f, 0.0f, true));
     domain.EndOfFrame();
 
-    TestableEntitySpawnerModule mod(domain, loader);
+    TestableEntitySpawnerModule mod(domain, loader, bus);
     mod.Start();
 
     // Update 0.4s: tokens = 0.4*2 = 0.8 — no spawn yet.
@@ -497,7 +500,7 @@ TEST_F(EntitySpawnerImplTest, Module_BurstSpawn_FiresOnActivation)
         emitter, MakeEmitterConfig("test-bp", 0.0f, 3, 0, 0.0f, 0.0f, true));
     domain.EndOfFrame();
 
-    TestableEntitySpawnerModule mod(domain, loader);
+    TestableEntitySpawnerModule mod(domain, loader, bus);
     mod.Start();
 
     // First update fires burst.
@@ -522,7 +525,7 @@ TEST_F(EntitySpawnerImplTest, Module_CapEnforcement_FIFOOverflow)
         emitter, MakeEmitterConfig("test-bp", 10.0f, 0, 2, 0.0f, 0.0f, true));
     domain.EndOfFrame();
 
-    TestableEntitySpawnerModule mod(domain, loader);
+    TestableEntitySpawnerModule mod(domain, loader, bus);
     mod.Start();
 
     // 1.0s at rate 10 → 10 spawn attempts; cap=2 keeps rolling FIFO, final count = 2.
@@ -543,7 +546,7 @@ TEST_F(EntitySpawnerImplTest, Module_LifetimeViaModule_ChildDespawnedAfterUpdate
         emitter, MakeEmitterConfig("test-bp", 0.0f, 1, 0, 0.5f, 0.0f, true));
     domain.EndOfFrame();
 
-    TestableEntitySpawnerModule mod(domain, loader);
+    TestableEntitySpawnerModule mod(domain, loader, bus);
     mod.Start();
 
     // First update fires the burst.
@@ -569,7 +572,7 @@ TEST_F(EntitySpawnerImplTest, Module_Shutdown_DespawnsAll)
         emitter, MakeEmitterConfig("test-bp", 0.0f, 3, 0, 0.0f, 0.0f, true));
     domain.EndOfFrame();
 
-    TestableEntitySpawnerModule mod(domain, loader);
+    TestableEntitySpawnerModule mod(domain, loader, bus);
     mod.Start();
     mod.Update(0.016f);
     ASSERT_EQ(AsImpl(mod.GetSpawner()).GetTrackedChildCount(), 3u)

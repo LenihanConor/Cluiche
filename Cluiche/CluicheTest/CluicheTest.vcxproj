@@ -311,6 +311,9 @@
     <ProjectReference Include="..\..\Dia\DiaEntitySpawner\DiaEntitySpawner.vcxproj">
       <Project>{F4A5B6C7-D8E9-0123-ABCD-EF0123456789}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaMessageBus\DiaMessageBus.vcxproj">
+      <Project>{D5E6F7A8-B9C0-1234-DEF0-567890ABCDEF}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaTriggerScript\DiaTriggerScript.vcxproj">
       <Project>{B6C7D8E9-F0A1-2345-6789-ABCDEF012345}</Project>
     </ProjectReference>

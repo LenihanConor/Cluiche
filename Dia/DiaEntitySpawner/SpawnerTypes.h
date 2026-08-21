@@ -42,12 +42,21 @@ public:
 };
 
 struct EntitySpawnedEvent {
+    // Schema-documented in Dia/DiaEntitySpawner/Messages/entityspawner_messages.diagamemessages.
+    // Hand-added (not codegen-emitted) because this struct's field layout already
+    // exists here; codegen output is not wired into the build for this type.
+    static inline const Dia::Core::StringCRC kTypeId{ "EntitySpawnedEvent" };
+
     Entity              entity;
     Dia::Core::StringCRC blueprintId;
     Dia::Core::StringCRC tag;
 };
 
 struct EntityDespawnedEvent {
+    // Schema-documented in Dia/DiaEntitySpawner/Messages/entityspawner_messages.diagamemessages.
+    // Hand-added (not codegen-emitted) — see EntitySpawnedEvent::kTypeId note above.
+    static inline const Dia::Core::StringCRC kTypeId{ "EntityDespawnedEvent" };
+
     Entity          entity;
     DespawnReason   reason;
 };
