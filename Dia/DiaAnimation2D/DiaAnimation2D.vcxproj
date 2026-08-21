@@ -91,6 +91,10 @@
     <ClInclude Include="AnimationEvaluator.h" />
     <ClInclude Include="IAnimClipObserver.h" />
     <ClInclude Include="AnimClipObserverSubject.h" />
+    <ClInclude Include="AnimClipBusAdapter.h" />
+    <ClInclude Include="Messages\animation2d_messages.h">
+      <Filter>Messages</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SpringChain.cpp" />
@@ -101,9 +105,13 @@
     <ClCompile Include="PoseBlendStack.cpp" />
     <ClCompile Include="AnimationEvaluator.cpp" />
     <ClCompile Include="AnimClipObserverSubject.cpp" />
+    <ClCompile Include="AnimClipBusAdapter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.animation2d.architecture.module.md" />
+    <None Include="Messages\animation2d_messages.diagamemessages">
+      <Filter>Messages</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Testing\AnimClipTestHelpers.h">
@@ -151,6 +159,14 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaSerializer\DiaSerializer.vcxproj">
       <Project>{B0C1D2E3-F4A5-6789-BCDE-F01234567891}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaMessageBus\DiaMessageBus.vcxproj">
+      <Project>{D5E6F7A8-B9C0-1234-DEF0-567890ABCDEF}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaEntity\DiaEntity.vcxproj">
+      <Project>{D9E0F1A2-B3C4-5678-9DEF-012345678903}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>
