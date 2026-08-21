@@ -803,6 +803,7 @@
     <ClCompile Include="DiaAICallout\CalloutQueryTests.cpp" />
     <ClCompile Include="DiaAICallout\CalloutClaimReleaseTests.cpp" />
     <ClCompile Include="DiaAICallout\CalloutTTLTests.cpp" />
+    <ClCompile Include="DiaAICallout\CalloutObserverBusAdapterTests.cpp" />
     <ClCompile Include="DiaAICalloutVisualDebugger\TestCalloutRegistryDebugger.cpp" />
     <ClCompile Include="DiaBehaviourTree\TestEventListener.cpp" />
     <ClCompile Include="DiaBehaviourTree\TestBehaviourTreeSystem.cpp" />
@@ -814,6 +815,8 @@
     <ClCompile Include="DiaGridVisibility\TestGridVisibilityTypes.cpp" />
     <ClCompile Include="DiaGridVisibility\TestGridVisibilityExhaustive.cpp" />
     <ClCompile Include="DiaGridVisibilityVisualDebugger\TestGridVisibilityDebugDomain.cpp" />
+    <ClCompile Include="Animation2D\ClipCompletionBusAdapterTests.cpp" />
+    <ClCompile Include="DiaAssetRuntime\TestListenerNotification.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

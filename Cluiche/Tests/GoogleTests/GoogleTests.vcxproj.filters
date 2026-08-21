@@ -1589,6 +1589,7 @@
     <ClCompile Include="DiaAICallout\CalloutQueryTests.cpp">
     <ClCompile Include="DiaAICallout\CalloutClaimReleaseTests.cpp">
     <ClCompile Include="DiaAICallout\CalloutTTLTests.cpp">
+    <ClCompile Include="DiaAICallout\CalloutObserverBusAdapterTests.cpp">
     <ClCompile Include="DiaAICalloutVisualDebugger\TestCalloutRegistryDebugger.cpp">
     <ClCompile Include="DiaBehaviourTree\TestEventListener.cpp">
     <ClCompile Include="DiaBehaviourTree\TestBehaviourTreeSystem.cpp">
@@ -1615,6 +1616,8 @@
       <Filter>DiaBehaviourTree</Filter>
     </ClCompile>
       <Filter>DiaAICalloutVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaAICallout</Filter>
     </ClCompile>
       <Filter>DiaAICallout</Filter>
     </ClCompile>
@@ -1673,5 +1676,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Animation2D\ClipCompletionBusAdapterTests.cpp">
+      <Filter>Animation2D</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAssetRuntime\TestListenerNotification.cpp">
+      <Filter>DiaAssetRuntime</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

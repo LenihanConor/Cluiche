@@ -24,6 +24,8 @@
     <ClInclude Include="PoseLayer.h" />
     <ClInclude Include="PoseBlendStack.h" />
     <ClInclude Include="AnimationEvaluator.h" />
+    <ClInclude Include="IAnimClipObserver.h" />
+    <ClInclude Include="AnimClipObserverSubject.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SpringChain.cpp" />
@@ -33,6 +35,7 @@
     <ClCompile Include="AnimClipLoader.cpp" />
     <ClCompile Include="PoseBlendStack.cpp" />
     <ClCompile Include="AnimationEvaluator.cpp" />
+    <ClCompile Include="AnimClipObserverSubject.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.animation2d.architecture.module.md">
