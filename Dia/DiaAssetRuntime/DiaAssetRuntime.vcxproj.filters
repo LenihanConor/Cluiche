@@ -41,6 +41,12 @@
     <ClInclude Include="IAssetStateListener.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="AssetRuntimeBusAdapter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Messages\assetruntime_messages.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RuntimeManifestLoader.cpp">
@@ -49,9 +55,15 @@
     <ClCompile Include="AssetRuntime.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="AssetRuntimeBusAdapter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.assetruntime.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+    <None Include="Messages\assetruntime_messages.diagamemessages">
       <Filter>Docs</Filter>
     </None>
   </ItemGroup>

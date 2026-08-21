@@ -1,0 +1,38 @@
+{
+    "schema": "diagamemessages/v1",
+    "namespace": "Dia::AssetRuntime",
+    "includes": ["DiaCore/Strings/String512.h"],
+    "messages": [
+        {
+            "id": "AssetReadyEvent",
+            "router": "broadcast",
+            "pass": "primary",
+            "producers": ["AssetRuntimeBusAdapter"],
+            "consumers": [],
+            "fields": [
+                { "name": "assetId",      "type": "Dia::Core::StringCRC",              "notes": "asset that transitioned to Staged" },
+                { "name": "resolvedPath", "type": "Dia::Core::Containers::String512",  "notes": "resolved deploy path for the asset" }
+            ]
+        },
+        {
+            "id": "AssetUnloadingEvent",
+            "router": "broadcast",
+            "pass": "primary",
+            "producers": ["AssetRuntimeBusAdapter"],
+            "consumers": [],
+            "fields": [
+                { "name": "assetId", "type": "Dia::Core::StringCRC", "notes": "asset that transitioned to Unloaded" }
+            ]
+        },
+        {
+            "id": "AssetLoadFailedEvent",
+            "router": "broadcast",
+            "pass": "primary",
+            "producers": ["AssetRuntimeBusAdapter"],
+            "consumers": [],
+            "fields": [
+                { "name": "assetId", "type": "Dia::Core::StringCRC", "notes": "asset that transitioned to Failed" }
+            ]
+        }
+    ]
+}

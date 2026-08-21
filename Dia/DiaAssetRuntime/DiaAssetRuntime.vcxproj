@@ -85,6 +85,8 @@
     <ClInclude Include="Handlers\JsonPassthroughHandler.h" />
     <ClInclude Include="Handlers\TextureHandler.h" />
     <ClInclude Include="IAssetStateListener.h" />
+    <ClInclude Include="AssetRuntimeBusAdapter.h" />
+    <ClInclude Include="Messages\assetruntime_messages.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AssetRuntimeDebugCommands.cpp" />
@@ -92,9 +94,11 @@
     <ClCompile Include="AssetRuntime.cpp" />
     <ClCompile Include="Handlers\JsonPassthroughHandler.cpp" />
     <ClCompile Include="Handlers\TextureHandler.cpp" />
+    <ClCompile Include="AssetRuntimeBusAdapter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.assetruntime.architecture.module.md" />
+    <None Include="Messages\assetruntime_messages.diagamemessages" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaAsset\DiaAsset.vcxproj">
@@ -127,6 +131,10 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaFileIO\DiaFileIO.vcxproj">
       <Project>{a1b2c3d4-e5f6-7890-abcd-ef1234567890}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaMessageBus\DiaMessageBus.vcxproj">
+      <Project>{D5E6F7A8-B9C0-1234-DEF0-567890ABCDEF}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>
