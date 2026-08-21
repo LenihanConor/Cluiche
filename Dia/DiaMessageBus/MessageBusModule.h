@@ -2,6 +2,9 @@
 #include <DiaApplicationFlow/Module.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaMessageBus/Bus.h>
+#ifdef DIA_DEBUG
+#include <DiaMessageBus/LedgerHistory.h>
+#endif
 
 namespace Dia::MessageBus {
 
@@ -24,6 +27,12 @@ public:
     Bus&       GetBus();
     const Bus& GetBus() const;
 
+#ifdef DIA_DEBUG
+    // Debug-only: last kLedgerCapacity completed-tick ledger snapshots, for a
+    // future visual debugger's History tab. Absent entirely in Release.
+    const LedgerHistory& GetLedgerHistory() const;
+#endif
+
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
     void                              DoUpdate(float deltaTime) override;
@@ -31,6 +40,9 @@ protected:
 
 private:
     Bus mBus;
+#ifdef DIA_DEBUG
+    LedgerHistory mLedgerHistory;
+#endif
 };
 
 } // namespace Dia::MessageBus

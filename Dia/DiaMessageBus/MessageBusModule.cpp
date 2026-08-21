@@ -20,6 +20,13 @@ const Bus& MessageBusModule::GetBus() const
     return mBus;
 }
 
+#ifdef DIA_DEBUG
+const LedgerHistory& MessageBusModule::GetLedgerHistory() const
+{
+    return mLedgerHistory;
+}
+#endif
+
 Dia::ApplicationFlow::StartResult MessageBusModule::DoStart()
 {
     mBus.Initialize();
@@ -36,6 +43,9 @@ Dia::ApplicationFlow::StartResult MessageBusModule::DoStart()
 void MessageBusModule::DoUpdate(float /*deltaTime*/)
 {
     mBus.Update();
+#ifdef DIA_DEBUG
+    mLedgerHistory.Push(mBus.GetLastTickLedger());
+#endif
 }
 
 Dia::ApplicationFlow::StopResult MessageBusModule::DoStop()

@@ -29,13 +29,21 @@ responsibilities:
   - Expose last-tick LedgerSnapshot via GetLastTickLedger() (double-buffered)
   - Implement IModule on SimPU (MessageBusModule)
   - Provide IFlushAdapter interface for physics and input adapters
+  - Retain the last kLedgerCapacity (3600) completed-tick LedgerSnapshots in a
+    Debug-only ring buffer (LedgerHistory), owned by MessageBusModule and
+    pushed to from DoUpdate() right after Bus::Update() returns. Compiles out
+    of Release entirely (#ifdef DIA_DEBUG). Backing storage is a single
+    fixed-capacity heap allocation made once at LedgerHistory construction
+    (no heap activity on the Push/ForEachSnapshot hot path). Measured
+    sizeof(LedgerSnapshot) = 9496 bytes, so the 3600-slot ring is
+    ~34.19 MB (~32.6 MiB) of Debug-only static-lifetime storage.
 
 non_responsibilities:
   - Message schema definitions (application layer -- DiaGameplayMessages or equivalent)
   - EntityRouter implementation (owned by diaentitytemplate)
   - Cross-PU messaging (DiaStreams handles that boundary)
   - Thread safety (single-threaded sim thread only, per SD-MBX2-008)
-  - Ledger history ring buffer and ServiceStream cross-PU export (deferred live-tooling follow-on, SD-MBX2-004)
+  - ServiceStream<LedgerSnapshot> cross-PU export outlet for LedgerHistory (deferred live-tooling follow-on, SD-MBX2-004)
   - EventDispatcher (removed in eventdispatcher-removal feature, SD-MBX2-006)
 
 dependent_modules: []
@@ -46,6 +54,7 @@ public_api:
     - Dia/DiaMessageBus/MessageBusModule.h
     - Dia/DiaMessageBus/IFlushAdapter.h
     - Dia/DiaMessageBus/LedgerSnapshot.h
+    - Dia/DiaMessageBus/LedgerHistory.h
     - Dia/DiaMessageBus/BusSubscriptionHandle.h
   namespaces:
     - Dia::MessageBus
@@ -54,6 +63,7 @@ public_api:
     - MessageBusModule
     - IFlushAdapter
     - LedgerSnapshot
+    - LedgerHistory
     - BusSubscriptionHandle
 
 dependencies:

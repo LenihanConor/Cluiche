@@ -13,6 +13,9 @@
     <ClCompile Include="BusSubscriptionHandle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="LedgerHistory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="MessageBusModule.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -28,6 +31,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="LedgerSnapshot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LedgerHistory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="BusSubscriptionHandle.h">
