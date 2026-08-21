@@ -143,6 +143,59 @@ def _validate_diaapp(data: dict) -> List[str]:
     return errors
 
 
+def _validate_diagamemessages(data: dict) -> List[str]:
+    """Validate a .diagamemessages file."""
+    errors = []
+    errors += _check_key(data, "schema", str)
+    errors += _check_key(data, "namespace", str)
+    errors += _check_key(data, "messages", list)
+
+    if "includes" in data and not isinstance(data["includes"], list):
+        errors.append(f"includes should be list, got {type(data['includes']).__name__}")
+
+    if isinstance(data.get("messages"), list):
+        for i, msg in enumerate(data["messages"]):
+            prefix = f"messages[{i}]"
+            if not isinstance(msg, dict):
+                errors.append(f"{prefix} should be object")
+                continue
+            errors += _check_key(msg, "id", str, prefix)
+            errors += _check_key(msg, "router", str, prefix)
+            errors += _check_key(msg, "pass", str, prefix)
+            errors += _check_key(msg, "producers", list, prefix)
+            errors += _check_key(msg, "consumers", list, prefix)
+
+            if isinstance(msg.get("router"), str) and msg["router"] not in ("broadcast", "entity"):
+                errors.append(f"{prefix}.router must be 'broadcast' or 'entity', got '{msg['router']}'")
+
+            if isinstance(msg.get("pass"), str) and msg["pass"] not in ("primary", "reaction"):
+                errors.append(f"{prefix}.pass must be 'primary' or 'reaction', got '{msg['pass']}'")
+
+            if "capacity" in msg and not isinstance(msg["capacity"], int):
+                errors.append(f"{prefix}.capacity should be int, got {type(msg['capacity']).__name__}")
+
+            if "overflow" in msg:
+                overflow = msg["overflow"]
+                if isinstance(overflow, str) and overflow not in ("assert", "drop_oldest"):
+                    errors.append(f"{prefix}.overflow must be 'assert' or 'drop_oldest', got '{overflow}'")
+                elif not isinstance(overflow, str):
+                    errors.append(f"{prefix}.overflow should be str, got {type(overflow).__name__}")
+
+            if "fields" in msg:
+                if not isinstance(msg["fields"], list):
+                    errors.append(f"{prefix}.fields should be list, got {type(msg['fields']).__name__}")
+                else:
+                    for j, field in enumerate(msg["fields"]):
+                        fprefix = f"{prefix}.fields[{j}]"
+                        if not isinstance(field, dict):
+                            errors.append(f"{fprefix} should be object")
+                            continue
+                        errors += _check_key(field, "name", str, fprefix)
+                        errors += _check_key(field, "type", str, fprefix)
+
+    return errors
+
+
 # ---------------------------------------------------------------------------
 # Click command
 # ---------------------------------------------------------------------------
@@ -168,7 +221,7 @@ def manifest(ctx: click.Context, target_path: str | None, verbose: bool) -> None
             p = repo_root / p
         files = [p]
     else:
-        for ext in ("*.diaapp", "*.diagame", "*.diastage"):
+        for ext in ("*.diaapp", "*.diagame", "*.diastage", "*.diagamemessages"):
             files.extend(repo_root.rglob(ext))
 
     # Exclude worktree and build artifacts
@@ -205,6 +258,8 @@ def manifest(ctx: click.Context, target_path: str | None, verbose: bool) -> None
             errors, warnings = _validate_diagame(data, f)
         elif suffix == ".diaapp":
             errors = _validate_diaapp(data)
+        elif suffix == ".diagamemessages":
+            errors = _validate_diagamemessages(data)
         else:
             continue
 
