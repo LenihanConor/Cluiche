@@ -2,17 +2,24 @@
 //
 // Covers the observer/notification half (plan task "18a") of the
 // callout-observer-bus-adapter feature: ICalloutObserver + CalloutObserverSubject
-// wired into CalloutRegistry::Emit/Claim/Release. The DiaMessageBus bus-delivery
-// half of this feature is a separate, later task and will add cases to this same
-// file — it is NOT covered here. Zero DiaMessageBus dependency in this file.
+// wired into CalloutRegistry::Emit/Claim/Release (zero DiaMessageBus dependency
+// in that half).
+//
+// The remaining cases below cover the bus-forwarding half: CalloutBusAdapter
+// forwarding each ICalloutObserver notification onto a Dia::MessageBus::Bus
+// via Bus::Broadcast<T>() with the generated CalloutEmittedEvent /
+// CalloutClaimedEvent / CalloutReleasedEvent structs.
 
 #include <gtest/gtest.h>
 
+#include <DiaAICallout/CalloutBusAdapter.h>
 #include <DiaAICallout/CalloutRegistry.h>
 #include <DiaAICallout/ICalloutObserver.h>
+#include <DiaAICallout/Messages/callout_messages.h>
 #include <DiaAICallout/Testing/CalloutTestHelpers.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaMaths/Vector/Vector2D.h>
+#include <DiaMessageBus/Bus.h>
 
 #include <string>
 #include <vector>
@@ -316,4 +323,191 @@ TEST(CalloutObserverBusAdapterTests, Determinism_EmitClaimReleaseSequence_Identi
 
     ASSERT_EQ(orderRun1.size(), 6u); // 2 emits + 2 claims + 2 releases
     EXPECT_EQ(orderRun1, orderRun2);
+}
+
+// =============================================================================
+// Bus-forwarding half: CalloutBusAdapter -> Dia::MessageBus::Bus::Broadcast<T>()
+// =============================================================================
+
+TEST(CalloutObserverBusAdapterTests, OnCalloutEmitted_BroadcastsFullCalloutAndHandlePayload)
+{
+    Dia::MessageBus::Bus bus;
+    bus.Initialize();
+    ASSERT_TRUE((bus.RegisterType<CalloutEmittedEvent, 8>()));
+
+    CalloutEmittedEvent received{};
+    unsigned int callCount = 0u;
+
+    auto handle = bus.Subscribe<CalloutEmittedEvent>(
+        StringCRC("TestSubscriber"),
+        [&](const CalloutEmittedEvent& evt) {
+            ++callCount;
+            received = evt;
+        },
+        Dia::MessageBus::Pass::Primary);
+    ASSERT_TRUE(handle.IsValid());
+
+    CalloutRegistry registry;
+    const StringCRC kind("HelpNeeded");
+    const Dia::Maths::Vector2D pos(3.0f, 4.0f);
+    const Callout callout{ kind, pos, 25.0f, StringCRC::kZero, 8.0f, Json::Value() };
+    const CalloutHandle regHandle = registry.Emit(callout);
+
+    // Drive the adapter directly — its whole job is to forward the observer
+    // notification onto the bus, independent of who owns the registry.
+    CalloutBusAdapter adapter(bus);
+    adapter.OnCalloutEmitted(callout, regHandle);
+
+    bus.Update();
+
+    ASSERT_EQ(callCount, 1u);
+    EXPECT_EQ(received.callout.kind, kind);
+    EXPECT_FLOAT_EQ(received.callout.position.x, pos.x);
+    EXPECT_FLOAT_EQ(received.callout.position.y, pos.y);
+    EXPECT_FLOAT_EQ(received.callout.radius, 25.0f);
+    EXPECT_FLOAT_EQ(received.callout.ttl, 8.0f);
+    EXPECT_EQ(received.handle.GetIndex(), regHandle.GetIndex());
+    EXPECT_EQ(received.handle.GetGeneration(), regHandle.GetGeneration());
+}
+
+TEST(CalloutObserverBusAdapterTests, OnCalloutClaimed_BroadcastsHandlePlusClaimerId_LighterShape)
+{
+    Dia::MessageBus::Bus bus;
+    bus.Initialize();
+    ASSERT_TRUE((bus.RegisterType<CalloutClaimedEvent, 8>()));
+
+    CalloutClaimedEvent received{};
+    unsigned int callCount = 0u;
+
+    auto handle = bus.Subscribe<CalloutClaimedEvent>(
+        StringCRC("TestSubscriber"),
+        [&](const CalloutClaimedEvent& evt) {
+            ++callCount;
+            received = evt;
+        },
+        Dia::MessageBus::Pass::Primary);
+    ASSERT_TRUE(handle.IsValid());
+
+    CalloutRegistry registry;
+    const CalloutHandle regHandle = EmitTestCallout(registry, StringCRC("HelpNeeded"), Dia::Maths::Vector2D(0.0f, 0.0f));
+    const StringCRC claimer("EntityA");
+
+    CalloutBusAdapter adapter(bus);
+    adapter.OnCalloutClaimed(regHandle, claimer);
+
+    bus.Update();
+
+    ASSERT_EQ(callCount, 1u);
+    EXPECT_EQ(received.handle.GetIndex(), regHandle.GetIndex());
+    EXPECT_EQ(received.handle.GetGeneration(), regHandle.GetGeneration());
+    EXPECT_EQ(received.claimerEntityId, claimer);
+}
+
+TEST(CalloutObserverBusAdapterTests, OnCalloutReleased_BroadcastsHandlePlusClaimerId_LighterShape)
+{
+    Dia::MessageBus::Bus bus;
+    bus.Initialize();
+    ASSERT_TRUE((bus.RegisterType<CalloutReleasedEvent, 8>()));
+
+    CalloutReleasedEvent received{};
+    unsigned int callCount = 0u;
+
+    auto handle = bus.Subscribe<CalloutReleasedEvent>(
+        StringCRC("TestSubscriber"),
+        [&](const CalloutReleasedEvent& evt) {
+            ++callCount;
+            received = evt;
+        },
+        Dia::MessageBus::Pass::Primary);
+    ASSERT_TRUE(handle.IsValid());
+
+    CalloutRegistry registry;
+    const CalloutHandle regHandle = EmitTestCallout(registry, StringCRC("HelpNeeded"), Dia::Maths::Vector2D(0.0f, 0.0f));
+    const StringCRC claimer("EntityA");
+
+    CalloutBusAdapter adapter(bus);
+    adapter.OnCalloutReleased(regHandle, claimer);
+
+    bus.Update();
+
+    ASSERT_EQ(callCount, 1u);
+    EXPECT_EQ(received.handle.GetIndex(), regHandle.GetIndex());
+    EXPECT_EQ(received.handle.GetGeneration(), regHandle.GetGeneration());
+    EXPECT_EQ(received.claimerEntityId, claimer);
+}
+
+TEST(CalloutObserverBusAdapterTests, GeneratedEventTypes_RegisterAndBroadcastAgainstBus_Compiles)
+{
+    // Proves the three .diagamemessages-declared types (CalloutEmittedEvent /
+    // CalloutClaimedEvent / CalloutReleasedEvent) are usable end to end through
+    // the generated RegisterMessages() wiring, not just hand-rolled RegisterType calls.
+    Dia::MessageBus::Bus bus;
+    bus.Initialize();
+
+    RegisterMessages(bus, Handlers{}); // no declared consumers yet — empty Handlers is valid
+
+    const CalloutHandle dummyHandle;
+    EXPECT_TRUE(bus.Broadcast(CalloutEmittedEvent{ Callout{}, dummyHandle }));
+    EXPECT_TRUE(bus.Broadcast(CalloutClaimedEvent{ dummyHandle, StringCRC("EntityA") }));
+    EXPECT_TRUE(bus.Broadcast(CalloutReleasedEvent{ dummyHandle, StringCRC("EntityA") }));
+
+    bus.Update(); // no subscribers — just proves the drain path doesn't crash
+}
+
+// AICalloutTestStageModule.h (Cluiche/CluicheTest/Modules/TestStages/AICalloutTestStageModule.h)
+// is the existing (Done) consumer of CalloutRegistry referenced in this feature's acceptance
+// criteria. It is intentionally NOT included or modified here — it lives in the CluicheTest
+// application layer (a different vcxproj/include-path universe than this Dia-level GoogleTests
+// target) and per the feature's Non-Goals, updating it to demonstrate CalloutBusAdapter wiring
+// is an optional follow-up, not required for this feature. Its continued zero-DiaMessageBus-
+// dependency compilation is verified out of band via:
+//   grep -c DiaMessageBus Cluiche/CluicheTest/Modules/TestStages/AICalloutTestStageModule.h .cpp
+// (expected: 0 matches in both files) plus the existing `dia run cluichetest` / stage test-suite
+// build, neither of which this feature touches.
+
+TEST(CalloutObserverBusAdapterTests, EndToEnd_RealEmit_ReactsViaBusWithoutCallingQuery)
+{
+    // Proves the core design goal: a Bus::Subscribe<CalloutEmittedEvent> handler
+    // reacts to a real CalloutRegistry::Emit() call using only the event's
+    // self-describing payload (kind/position/radius/faction) — zero Query() calls.
+    Dia::MessageBus::Bus bus;
+    bus.Initialize();
+    ASSERT_TRUE((bus.RegisterType<CalloutEmittedEvent, 8>()));
+
+    bool  reactedWithoutQuery = false;
+    StringCRC observedKind;
+    Dia::Maths::Vector2D observedPosition;
+    float observedRadius = 0.0f;
+
+    auto subHandle = bus.Subscribe<CalloutEmittedEvent>(
+        StringCRC("ReactingListener"),
+        [&](const CalloutEmittedEvent& evt) {
+            // Everything a listener needs to decide whether it cares comes
+            // straight off evt.callout — no registry.Query() round-trip.
+            observedKind     = evt.callout.kind;
+            observedPosition = evt.callout.position;
+            observedRadius   = evt.callout.radius;
+            reactedWithoutQuery = true;
+        },
+        Dia::MessageBus::Pass::Primary);
+    ASSERT_TRUE(subHandle.IsValid());
+
+    CalloutRegistry   registry;
+    CalloutBusAdapter adapter(bus);
+    registry.Subscribe(&adapter);
+
+    const StringCRC kind("HelpNeeded");
+    const Dia::Maths::Vector2D pos(12.0f, -6.0f);
+    const CalloutHandle emittedHandle = EmitTestCallout(registry, kind, pos, 40.0f, 6.0f);
+    ASSERT_TRUE(emittedHandle.IsValid());
+
+    bus.Update();
+
+    EXPECT_TRUE(reactedWithoutQuery);
+    EXPECT_EQ(observedKind, kind);
+    EXPECT_FLOAT_EQ(observedPosition.x, pos.x);
+    EXPECT_FLOAT_EQ(observedPosition.y, pos.y);
+    EXPECT_FLOAT_EQ(observedRadius, 40.0f);
+
+    registry.Unsubscribe(&adapter);
 }

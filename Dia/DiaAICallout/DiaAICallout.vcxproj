@@ -85,11 +85,14 @@
     <ClInclude Include="Testing\CalloutTestHelpers.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="CalloutBusAdapter.h" />
+    <ClInclude Include="Messages\callout_messages.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CalloutHandle.cpp" />
     <ClCompile Include="CalloutObserverSubject.cpp" />
     <ClCompile Include="CalloutRegistry.cpp" />
+    <ClCompile Include="CalloutBusAdapter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
@@ -102,6 +105,10 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaMaths\DiaMaths.vcxproj">
       <Project>{2BBA0AD3-D449-4C0E-8C84-ACFA8BCA456B}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaMessageBus\DiaMessageBus.vcxproj">
+      <Project>{D5E6F7A8-B9C0-1234-DEF0-567890ABCDEF}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

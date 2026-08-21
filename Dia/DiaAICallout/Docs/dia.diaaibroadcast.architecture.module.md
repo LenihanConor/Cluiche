@@ -37,12 +37,15 @@ non_responsibilities:
 dependent_modules:
   - dia.core
   - dia.geometry2d
+  - dia.messagebus
 
 public_api:
   headers:
     - Dia/DiaAICallout/Callout.h
     - Dia/DiaAICallout/CalloutHandle.h
     - Dia/DiaAICallout/CalloutRegistry.h
+    - Dia/DiaAICallout/CalloutBusAdapter.h
+    - Dia/DiaAICallout/Messages/callout_messages.h
     - Dia/DiaAICallout/Testing/CalloutTestHelpers.h
   namespaces:
     - Dia::AICallout
@@ -52,6 +55,7 @@ dependencies:
   required:
     - dia.core
     - dia.geometry2d
+    - dia.messagebus
   forbidden:
     - dia.entityspatial
     - dia.blackboard
