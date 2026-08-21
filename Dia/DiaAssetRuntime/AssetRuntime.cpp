@@ -67,6 +67,7 @@ namespace Dia
         //------------------------------------------------------------------------------------
         AssetRuntime::AssetRuntime()
             : mOwnerThreadId(GetCurrentThreadIdValue())
+            , mIsDispatching(false)
         {}
 
         bool AssetRuntime::LoadManifest(const Dia::Core::FilePath& manifestPath)
@@ -296,6 +297,69 @@ namespace Dia
             }
 
             DIA_LOG_WARNING("AssetRuntime", "UnregisterTypeHandler: no handler registered for '%s'", typePrefix);
+        }
+
+        void AssetRuntime::RegisterListener(IAssetStateListener* listener)
+        {
+            AssertOwnerThread();
+            if (!listener)
+            {
+                DIA_LOG_WARNING("AssetRuntime", "RegisterListener: null listener");
+                return;
+            }
+
+            for (unsigned int i = 0; i < mListeners.Size(); ++i)
+            {
+                if (mListeners[i] == listener)
+                {
+                    DIA_LOG_WARNING("AssetRuntime", "RegisterListener: listener already registered — ignoring duplicate");
+                    return;
+                }
+            }
+
+            if (mListeners.Size() == kMaxListeners)
+            {
+                DIA_LOG_WARNING("AssetRuntime", "RegisterListener: listener list full (capacity %u)", kMaxListeners);
+                return;
+            }
+
+            mListeners.Add(listener);
+        }
+
+        void AssetRuntime::UnregisterListener(IAssetStateListener* listener)
+        {
+            AssertOwnerThread();
+            if (!listener)
+                return;
+
+            if (mIsDispatching)
+            {
+                // Defer removal until the current dispatch loop completes —
+                // removing from mListeners mid-iteration would invalidate it.
+                for (unsigned int i = 0; i < mPendingListenerRemovals.Size(); ++i)
+                {
+                    if (mPendingListenerRemovals[i] == listener)
+                        return; // already pending removal
+                }
+
+                if (mPendingListenerRemovals.Size() == kMaxListeners)
+                {
+                    DIA_LOG_WARNING("AssetRuntime", "UnregisterListener: pending removal list full (capacity %u)", kMaxListeners);
+                    return;
+                }
+
+                mPendingListenerRemovals.Add(listener);
+                return;
+            }
+
+            for (unsigned int i = 0; i < mListeners.Size(); ++i)
+            {
+                if (mListeners[i] == listener)
+                {
+                    mListeners.RemoveAt(i);
+                    return;
+                }
+            }
         }
 
         void AssetRuntime::RetryAssetLoad(const Dia::Core::StringCRC& assetId)
@@ -651,6 +715,57 @@ namespace Dia
             return nullptr;
         }
 
+        void AssetRuntime::DispatchOnAssetReady(const Dia::Core::StringCRC& assetId,
+                                                 const Dia::Core::Containers::String512& resolvedPath)
+        {
+            mIsDispatching = true;
+            for (unsigned int i = 0; i < mListeners.Size(); ++i)
+            {
+                mListeners[i]->OnAssetReady(assetId, resolvedPath);
+            }
+            mIsDispatching = false;
+            ApplyPendingListenerRemovals();
+        }
+
+        void AssetRuntime::DispatchOnAssetUnloading(const Dia::Core::StringCRC& assetId)
+        {
+            mIsDispatching = true;
+            for (unsigned int i = 0; i < mListeners.Size(); ++i)
+            {
+                mListeners[i]->OnAssetUnloading(assetId);
+            }
+            mIsDispatching = false;
+            ApplyPendingListenerRemovals();
+        }
+
+        void AssetRuntime::DispatchOnAssetLoadFailed(const Dia::Core::StringCRC& assetId)
+        {
+            mIsDispatching = true;
+            for (unsigned int i = 0; i < mListeners.Size(); ++i)
+            {
+                mListeners[i]->OnAssetLoadFailed(assetId);
+            }
+            mIsDispatching = false;
+            ApplyPendingListenerRemovals();
+        }
+
+        void AssetRuntime::ApplyPendingListenerRemovals()
+        {
+            for (unsigned int i = 0; i < mPendingListenerRemovals.Size(); ++i)
+            {
+                IAssetStateListener* listener = mPendingListenerRemovals[i];
+                for (unsigned int j = 0; j < mListeners.Size(); ++j)
+                {
+                    if (mListeners[j] == listener)
+                    {
+                        mListeners.RemoveAt(j);
+                        break;
+                    }
+                }
+            }
+            mPendingListenerRemovals.RemoveAll();
+        }
+
         bool AssetRuntime::TryTransition(const Dia::Core::StringCRC& assetId, AssetState target)
         {
             AssetState* state = mStateTable.TryGetItem(assetId);
@@ -692,6 +807,28 @@ namespace Dia
                 AssetStateToStr(target));
 
             *state = target;
+
+            // Listener dispatch — fires on the transitions consuming systems
+            // care about. Wired centrally here so every code path that drives
+            // a transition (DispatchLoad, AutoValidate, the private
+            // IAssetLoadCallback overrides, RequestStageUnload, RetryAssetLoad)
+            // notifies listeners consistently without each having to know
+            // about the listener list.
+            if (target == AssetState::Staged)
+            {
+                const RuntimeAssetEntry* entry = mAssetTable.TryGetItemConst(assetId);
+                if (entry)
+                    DispatchOnAssetReady(assetId, entry->mDeployPath);
+            }
+            else if (target == AssetState::Unloaded)
+            {
+                DispatchOnAssetUnloading(assetId);
+            }
+            else if (target == AssetState::Failed)
+            {
+                DispatchOnAssetLoadFailed(assetId);
+            }
+
             return true;
         }
 

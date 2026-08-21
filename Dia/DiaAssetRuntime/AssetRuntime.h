@@ -2,6 +2,7 @@
 
 #include "DiaAssetRuntime/AssetScope.h"
 #include "DiaAssetRuntime/AssetState.h"
+#include "DiaAssetRuntime/IAssetStateListener.h"
 #include "DiaAssetRuntime/IAssetTypeHandler.h"
 #include "DiaAssetRuntime/RuntimeManifestLoader.h"
 
@@ -45,6 +46,12 @@ namespace Dia
             // Type handler registration
             void RegisterTypeHandler(const char* typePrefix, IAssetTypeHandler* handler);
             void UnregisterTypeHandler(const char* typePrefix);
+
+            // Listener registration — passive observers of asset state transitions.
+            // Safe to unregister (self or another listener) during dispatch;
+            // removal is deferred until the current dispatch loop completes.
+            void RegisterListener(IAssetStateListener* listener);
+            void UnregisterListener(IAssetStateListener* listener);
 
             // Explicit retry for failed assets
             void RetryAssetLoad(const Dia::Core::StringCRC& assetId);
@@ -93,6 +100,7 @@ namespace Dia
             static const unsigned int kStateTableSize  = RuntimeManifestLoader::kAssetTableSize;
             static const unsigned int kRefTableSize    = RuntimeManifestLoader::kAssetTableSize;
             static const unsigned int kMaxHandlers     = 16;
+            static const unsigned int kMaxListeners    = 16;
 
             typedef Dia::Core::Containers::HashTableC<
                 Dia::Core::StringCRC,
@@ -127,6 +135,13 @@ namespace Dia
             IAssetTypeHandler* FindHandler(const Dia::Core::StringCRC& typePrefixCRC) const;
             void AssertOwnerThread() const;
 
+            // Listener dispatch
+            void DispatchOnAssetReady(const Dia::Core::StringCRC& assetId,
+                                       const Dia::Core::Containers::String512& resolvedPath);
+            void DispatchOnAssetUnloading(const Dia::Core::StringCRC& assetId);
+            void DispatchOnAssetLoadFailed(const Dia::Core::StringCRC& assetId);
+            void ApplyPendingListenerRemovals();
+
             RuntimeManifestLoader::AssetTable mAssetTable;
             RuntimeManifestLoader::StageTable mStageTable;
             StateTable                        mStateTable;
@@ -134,6 +149,10 @@ namespace Dia
 
             Dia::Core::Containers::DynamicArrayC<HandlerEntry, kMaxHandlers> mHandlers;
             unsigned int                      mOwnerThreadId;
+
+            Dia::Core::Containers::DynamicArrayC<IAssetStateListener*, kMaxListeners> mListeners;
+            Dia::Core::Containers::DynamicArrayC<IAssetStateListener*, kMaxListeners> mPendingListenerRemovals;
+            bool                               mIsDispatching;
         };
     }
 }

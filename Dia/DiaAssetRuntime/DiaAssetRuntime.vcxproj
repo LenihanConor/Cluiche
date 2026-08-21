@@ -84,6 +84,7 @@
     <ClInclude Include="AssetRuntime.h" />
     <ClInclude Include="Handlers\JsonPassthroughHandler.h" />
     <ClInclude Include="Handlers\TextureHandler.h" />
+    <ClInclude Include="IAssetStateListener.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AssetRuntimeDebugCommands.cpp" />
