@@ -1,7 +1,7 @@
 # Implementation Plan: diaentitytemplate
 
 **Spec:** [diaentity.md](diaentity.md)
-**Status:** Done
+**Status:** In Progress
 **Created:** 2026-05-21
 
 ## Session Notes
@@ -57,6 +57,8 @@ However, three implementation features have a **dependency coupling to DiaReflec
 | **Verification & Smoke Test** | | | | | |
 | 16 | Integration smoke test: `TestDomainComponent` + small CluicheTest blueprint exercising foundation, reflection, blueprint loading, references, hierarchy, queries, mailbox routing, and inspection. Host in DummyStage. | `dia run googletest --filter="diaentitytemplate*"` all GREEN; smoke blueprint loads without assert | Skipped | sonnet | Deferred — unit/integration coverage already comprehensive at 94 tests. System/E2E smoke test to be done as a separate initiative when CluicheTest scene scaffolding is ready. |
 | 17 | PD-003 / AD-005 Superseded amendment — edit platform spec and Dia app spec to mark both decisions Superseded, pointing to diaentitytemplate.md as the new authority. Per SD-ENT-021. | Spec review: no unresolved conflicts remain | Done | haiku | Completed 2026-05-24. Both specs updated to `Superseded by diaentitytemplate.md`. Conflict C-1 in diaentitytemplate.md marked Resolved. |
+| **F11 — MessageBus Bus Wiring** | | | | | |
+| 18 | [entity-router-bus-wiring](entity-router-bus-wiring.md) — register `Domain`'s existing `EntityRouter` on the shared `DiaMessageBus::Bus` too; add `GetEntityRouter()` accessor; define `SubscriberId` = entity handle bits convention | See feature spec ACs | Not Started | sonnet | Tracked in [diamessagebus.plan.md](../diamessagebus/diamessagebus.plan.md) Phase 8, task 13. Prereq: DiaMessageBus `core-bus` + `entity-router-registration` |
 
 ## DIA_COMPONENT Macro Contract (to be filled in at Task 6)
 

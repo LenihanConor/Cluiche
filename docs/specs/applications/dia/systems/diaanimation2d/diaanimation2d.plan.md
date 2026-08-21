@@ -1,7 +1,7 @@
 # Plan: DiaAnimation2D
 
 **Spec:** @docs/specs/applications/dia/systems/diaanimation2d/diaanimation2d.md  
-**Status:** Done  
+**Status:** In Progress  
 **Started:** 2026-05-02  
 **Last Updated:** 2026-05-02 (rev 2)
 
@@ -47,6 +47,8 @@ DiaAnimation2D is a pure C++ static library sitting above DiaRig2D and below gam
 | 25 | Build all configurations (Debug + Release x64), run tests, confirm all pass | Verification | Done | 120/120 passing (rev 2) |
 | 26 | Update `docs/BACKLOG.md` — move DiaAnimation2D from Ready to Build → Done | Docs | Done | |
 | 27 | Update `docs/specs/systems/dia/diaanimation2d.md` status to Done | Docs | Done | |
+| 28a | [clip-completion-bus-adapter](clip-completion-bus-adapter.md) (detection) — one-shot/loop completion detection in `AnimClipPlayer::Update`; `IAnimClipObserver`; must distinguish natural finish from explicit `Stop()` | Bus Integration | Not Started | Tracked in [diamessagebus.plan.md](../diamessagebus/diamessagebus.plan.md) Phase 8, task 20a. No bus prereq — can start immediately |
+| 28b | [clip-completion-bus-adapter](clip-completion-bus-adapter.md) (bus half) — `AnimClipBusAdapter : IAnimClipObserver`; `Broadcast` is primary delivery mode (no `AnimationComponent2D` built) | Bus Integration | Not Started | Tracked in diamessagebus.plan.md Phase 8, task 20b. Prereq: 28a, DiaMessageBus `core-bus` |
 
 ---
 

@@ -1,7 +1,7 @@
 # Plan: DiaAssetRuntime
 
 **Spec:** @docs/specs/applications/dia/systems/diaassetruntime/diaassetruntime.md  
-**Status:** Done  
+**Status:** In Progress  
 **Started:** 2026-05-05  
 **Last Updated:** 2026-05-06
 
@@ -42,6 +42,8 @@ Build order is strictly sequential: F1 → F2 → F3 → F4 → F5 → F6. Each 
 | 25 | Register subscribe_transitions (push stream) | F6 | Done | sonnet | Internal IAssetStateListener (TransitionLogger) logs events via DiaLogger. Push-stream to WebSocket requires DiaDebugServer layer above this. |
 | 26 | GoogleTest: Feature 6 | F6 | Done | sonnet | 10 tests passing: command registration, all 6 commands callable, valid/invalid params, subscribe idempotency. |
 | 27 | Add DiaAssetRuntime project reference to GoogleTests.vcxproj | — | Done | haiku | Done in F1. |
+| 28a | [asset-runtime-bus-adapter](asset-runtime-bus-adapter.md) (restore) — rebuild `IAssetStateListener`/`RegisterListener`/`UnregisterListener`/dispatch wiring per the existing Approved `event-notification.md` spec (missing from codebase despite F4 marked Done above) | Restore original `EventNotificationTest.cpp` — 9 tests | Not Started | sonnet | Tracked in [diamessagebus.plan.md](../diamessagebus/diamessagebus.plan.md) Phase 8, task 19a. No bus prereq — can start immediately |
+| 28b | [asset-runtime-bus-adapter](asset-runtime-bus-adapter.md) (bus half) — `AssetRuntimeBusAdapter : IAssetStateListener` forwarding to `Bus::Broadcast` | See feature spec ACs | Not Started | sonnet | Tracked in diamessagebus.plan.md Phase 8, task 19b. Prereq: 28a, DiaMessageBus `core-bus` |
 
 ## File Map
 

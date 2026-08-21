@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/applications/dia/systems/diaaibroadcast/diaaibroadcast.md
-**Status:** Done
+**Status:** In Progress
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
@@ -16,3 +16,5 @@
 | 11 | **[Debugger]** `CalloutRegistryDebugger` — `IDebugDomain` impl: identity (domainId="aicallout", group="AIBehavior"), `GetJSONState` emits live callout table (kind, position, radius, faction, ttl, claimed), `HasWorldDrawers()=true` with circle drawers for callout radii | Unit: GetJSONState has correct keys, IDebugDomain contract test shapes | Done | sonnet | CalloutRadiiDrawer draws circles (green=unclaimed, red=claimed); fixed Vector2D .x/.y; build exit 0. |
 | 12 | **[Debugger]** Debugger GoogleTests — IDebugDomain contract tests | `dia run googletest --filter="DiaAICalloutDebugger*"` all pass | Done | haiku | 20 tests, 3 suites (Identity/JSONState/OnCommand); DiaAICalloutVisualDebugger.lib wired into GoogleTests. |
 | 13 | **[Debugger]** Debugger vcxproj sync + registry — `dia docs registry`, verify entries, `dia check sln-sync` | Registry entry present, sln clean | Done | haiku | All 4 vcxproj entries confirmed; registry at 5284 lines; sln in sync. Pre-existing layer mapping warns unchanged. |
+| 14a | [callout-observer-bus-adapter](callout-observer-bus-adapter.md) — `ICalloutObserver`/`CalloutObserverSubject` composed by `CalloutRegistry`; notify on Emit/Claim/Release only | See feature spec ACs | Not Started | sonnet | Tracked in [diamessagebus.plan.md](../diamessagebus/diamessagebus.plan.md) Phase 8, task 18a. No bus prereq — can start immediately |
+| 14b | [callout-observer-bus-adapter](callout-observer-bus-adapter.md) (bus half) — `CalloutBusAdapter : ICalloutObserver` forwarding to `Bus::Broadcast` | See feature spec ACs | Not Started | sonnet | Tracked in diamessagebus.plan.md Phase 8, task 18b. Prereq: 14a, DiaMessageBus `core-bus` |

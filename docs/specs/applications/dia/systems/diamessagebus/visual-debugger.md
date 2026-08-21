@@ -7,6 +7,8 @@
 
 `MessageBusModule` exposes `Bus::RegisterProducer<T>`, `Bus::Subscribe<T>`, and `GetLastTickLedger()` — but there is no way to see the live routing graph or per-tick message activity without attaching a debugger. Developers can't tell which types are flowing, whether reaction-pass messages are spiking, or whether a producer is registered but has no subscribers. `MessageBusDebugDomain` makes all of this visible in the in-game debug panel (`~` key) without touching Release builds.
 
+This is an **in-game Visual Debugger** (not the Editor tier and not the Inspector tier — see SD-MBX2-011). It reads the `Bus` and the ledger **in-process** on the sim thread; it does NOT use `DiaDebugServer` or any cross-PU connection. The **Live tab** reads the last-tick ledger (`GetLastTickLedger()`, delivered by core-bus); the **History tab** reads the ledger history ring buffer (delivered by frame-ledger); the **Schema tab** reads the bus routing/producer table.
+
 ## Acceptance Criteria
 
 | # | Criterion | Verification |
@@ -116,4 +118,4 @@ namespace Dia::MessageBus {
 
 ## Status
 
-**Status:** Draft
+**Status:** Approved
