@@ -77,7 +77,19 @@
     <None Include="dia.messagebus.architecture.module.md" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DiaMessageBus.cpp" />
+    <ClInclude Include="BusTypes.h" />
+    <ClInclude Include="IFlushAdapter.h" />
+    <ClInclude Include="LedgerSnapshot.h" />
+    <ClInclude Include="BusSubscriptionHandle.h" />
+    <ClInclude Include="Bus.h" />
+    <ClInclude Include="BroadcastRouter.h" />
+    <ClInclude Include="MessageBusModule.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="BusSubscriptionHandle.cpp" />
+    <ClCompile Include="Bus.cpp" />
+    <ClCompile Include="BroadcastRouter.cpp" />
+    <ClCompile Include="MessageBusModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaMailbox\DiaMailbox.vcxproj">

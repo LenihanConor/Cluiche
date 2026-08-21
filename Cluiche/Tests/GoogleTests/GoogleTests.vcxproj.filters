@@ -211,6 +211,9 @@
     <Filter Include="DiaEntitySpawner">
       <UniqueIdentifier>{B2C3D4E5-F6A7-8901-BCDE-F01234567890}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaMessageBus">
+      <UniqueIdentifier>{C3D4E5F6-A7B8-9012-CDEF-012345678901}</UniqueIdentifier>
+    </Filter>
     <Filter Include="DiaMailboxVisualDebugger">
       <UniqueIdentifier>{DMVD0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
@@ -1483,6 +1486,10 @@
     <!-- DiaEntitySpawner -->
     <ClCompile Include="DiaEntitySpawner\TestEntitySpawner.cpp">
       <Filter>DiaEntitySpawner</Filter>
+    </ClCompile>
+    <!-- DiaMessageBus -->
+    <ClCompile Include="DiaMessageBus\TestDiaMessageBusCore.cpp">
+      <Filter>DiaMessageBus</Filter>
     </ClCompile>
     <!-- DiaObjective -->
     <ClCompile Include="DiaObjective\TestObjectiveSet.cpp">
