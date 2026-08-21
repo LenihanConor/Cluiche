@@ -51,7 +51,7 @@
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
 | 10 | [frame-ledger](frame-ledger.md) — history **ring buffer** (`kLedgerCapacity` ticks) over `LedgerSnapshot`, Release-build strip; feeds History tab. (`ServiceStream` export stays deferred.) | `TestDiaMessageBusLedger*` | Done | sonnet | Prereq: 2 (last-tick ledger); LedgerHistory ring buffer (3600 ticks) owned by MessageBusModule, DIA_DEBUG-only, visitor-style read API. Real sizeof(LedgerSnapshot)=9496B (not spec's ~1.3KB estimate) required heap-once-at-construction backing instead of inline array to avoid stack overflow. 7/7 new tests green, 29/29 core-bus regression green. |
-| 11 | [visual-debugger](visual-debugger.md) — `MessageBusDebugDomain` `IDebugDomain`: Schema / Live / History tabs; reads bus + ledger in-process; `#ifdef DIA_DEBUG` | AC-2..AC-8 (GoogleTest) + `~` panel visible | Not Started | sonnet | Prereq: 10; wire into test stage |
+| 11 | [visual-debugger](visual-debugger.md) — `MessageBusDebugDomain` `IDebugDomain`: Schema / Live / History tabs; reads bus + ledger in-process; `#ifdef DIA_DEBUG` | AC-2..AC-8 (GoogleTest) + `~` panel visible | Done | sonnet | Prereq: 10; wire into test stage; Domain implementation (AC-2..AC-8) done -- minimal Bus.h introspection added (ForEachRegisteredType/ForEachProducerForType/ForEachSubscriberForType, DIA_DEBUG-only accessors, always-compiled bookkeeping). 8/8 new tests green, 59/59 across affected suites green. AC-1 (`~` panel visible) deferred to task 12 -- no stage yet owns both a Domain and a MessageBusModule to wire it into. |
 
 ## Phase 7: End-to-end proof (B)
 
