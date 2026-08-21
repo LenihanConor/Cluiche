@@ -2,6 +2,8 @@
 
 #include <DiaAICallout/Callout.h>
 #include <DiaAICallout/CalloutHandle.h>
+#include <DiaAICallout/CalloutObserverSubject.h>
+#include <DiaAICallout/ICalloutObserver.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaMaths/Vector/Vector2D.h>
@@ -70,7 +72,16 @@ namespace Dia::AICallout {
         // Each live slot has its ttl decremented by dt; when ttl <= 0 the slot
         // is expired (live=false, claimed=false) so any existing handles
         // become invalid on their next IsValid() check.
+        // NOTE: TTL expiry never fires observer notifications (SD-018a).
         void Update(float dt);
+
+        // Subscribe/unsubscribe to Emit/Claim/Release lifecycle notifications.
+        // Does not affect Query() or any other existing behaviour.
+        void Subscribe(ICalloutObserver* observer);
+        void Unsubscribe(ICalloutObserver* observer);
+
+    private:
+        CalloutObserverSubject mObservers;
     };
 
     // --- template implementation -----------------------------------------------

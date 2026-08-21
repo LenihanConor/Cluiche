@@ -79,13 +79,16 @@
   <ItemGroup>
     <ClInclude Include="Callout.h" />
     <ClInclude Include="CalloutHandle.h" />
+    <ClInclude Include="CalloutObserverSubject.h" />
     <ClInclude Include="CalloutRegistry.h" />
+    <ClInclude Include="ICalloutObserver.h" />
     <ClInclude Include="Testing\CalloutTestHelpers.h">
       <Filter>Testing</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CalloutHandle.cpp" />
+    <ClCompile Include="CalloutObserverSubject.cpp" />
     <ClCompile Include="CalloutRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>

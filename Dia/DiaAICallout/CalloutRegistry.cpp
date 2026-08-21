@@ -38,7 +38,9 @@ CalloutHandle CalloutRegistry::Emit(const Callout& callout)
             mSlots[i].claimed         = false;
             mSlots[i].claimerEntityId = Dia::Core::StringCRC();
 
-            return CalloutHandle(i, newGen, this);
+            const CalloutHandle handle(i, newGen, this);
+            mObservers.NotifyCalloutEmitted(mSlots[i].callout, handle);
+            return handle;
         }
     }
 
@@ -75,6 +77,8 @@ bool CalloutRegistry::Claim(const CalloutHandle& handle, Dia::Core::StringCRC cl
 
     slot.claimed         = true;
     slot.claimerEntityId = claimerEntityId;
+
+    mObservers.NotifyCalloutClaimed(handle, claimerEntityId);
     return true;
 }
 
@@ -99,6 +103,8 @@ void CalloutRegistry::Release(const CalloutHandle& handle, Dia::Core::StringCRC 
 
     slot.claimed         = false;
     slot.claimerEntityId = Dia::Core::StringCRC();
+
+    mObservers.NotifyCalloutReleased(handle, claimerEntityId);
 }
 
 void CalloutRegistry::Update(float dt)
@@ -121,6 +127,16 @@ void CalloutRegistry::Update(float dt)
             slot.claimerEntityId = Dia::Core::StringCRC();
         }
     }
+}
+
+void CalloutRegistry::Subscribe(ICalloutObserver* observer)
+{
+    mObservers.Subscribe(observer);
+}
+
+void CalloutRegistry::Unsubscribe(ICalloutObserver* observer)
+{
+    mObservers.Unsubscribe(observer);
 }
 
 } // namespace Dia::AICallout
