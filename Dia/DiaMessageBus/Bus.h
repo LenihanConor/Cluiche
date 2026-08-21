@@ -44,6 +44,14 @@ namespace Dia::MessageBus {
         uint32_t                          mailboxTypeKey = 0;
         Dia::Mailbox::SubscriptionHandle  mailboxHandle;
         bool                              active         = false;
+        // Display-only copy of the StringCRC passed to Subscribe<T>.
+        // subscriberId above is Mailbox's own numeric SubscriberId (built
+        // from StringCRC::Value()) and cannot be turned back into a string;
+        // this field exists purely so debug/tooling introspection (e.g.
+        // MessageBusDebugDomain's Schema tab, see ForEachSubscriberForType
+        // below) can show a human-readable subscriber id. Not read by any
+        // routing/dispatch code path.
+        Dia::Core::StringCRC              displaySubscriberId;
     };
 
     // ======================================================================
@@ -140,6 +148,43 @@ namespace Dia::MessageBus {
         // with the owned Mailbox.
         bool IsRouterRegistered(Dia::Core::StringCRC routerId);
 
+        // --- Debug-only introspection (tooling, e.g. MessageBusDebugDomain's
+        // Schema tab) ---
+        //
+        // Bus has no notion of "this type's router" at RegisterType time —
+        // routing is decided per-Post via the Address passed by the caller,
+        // not declared per-type. Rather than bolt a router parameter onto
+        // RegisterType<T>/RegisterProducer<T> (both are codegen'd and called
+        // from many production sites — see DiaMessageBus/Messages/*.h — so
+        // widening either signature is not "minimal and targeted"), these
+        // accessors expose which router(s) a type has actually been
+        // dispatched through so far. That is graph metadata Bus already has
+        // the raw data for (DispatchOne sees addr.routerId every call); it
+        // is just not currently surfaced. Kept out of Release entirely since
+        // only the Debug-only visual debugger domain consumes it.
+#ifdef DIA_DEBUG
+        struct RegisteredTypeInfo {
+            Dia::Core::StringCRC typeId;
+            bool                 sawBroadcastRouter = false;
+            bool                 sawEntityRouter    = false;
+        };
+
+        // Visits every registered type (registration order), each with the
+        // set of routers it has been dispatched through so far.
+        template <class Fn>
+        void ForEachRegisteredType(Fn&& fn) const;
+
+        // Visits every producer id registered (RegisterProducer<T>) against
+        // the type whose display id is typeId.
+        template <class Fn>
+        void ForEachProducerForType(Dia::Core::StringCRC typeId, Fn&& fn) const;
+
+        // Visits every currently-active subscriber id (Subscribe<T>) for the
+        // type whose display id is typeId.
+        template <class Fn>
+        void ForEachSubscriberForType(Dia::Core::StringCRC typeId, Fn&& fn) const;
+#endif // DIA_DEBUG
+
     private:
         friend class BusSubscriptionHandle;
 
@@ -175,6 +220,14 @@ namespace Dia::MessageBus {
             // this-tick delta, regardless of whether the drops happened before
             // Update() was even called or during a pre-Primary flush adapter.
             uint64_t              lastDroppedTotal = 0;
+            // Debug-only introspection (see ForEachRegisteredType): which
+            // router(s) this type has been dispatched through so far, ever.
+            // Updated from DispatchOne<T>; never reset. Always compiled
+            // (like the rest of TypeRecord) so DispatchOne doesn't need an
+            // #ifdef in the dispatch hot path — only the public accessors
+            // that read these flags are Debug-only.
+            bool                  sawBroadcastRouter = false;
+            bool                  sawEntityRouter    = false;
         };
 
         struct ProducerRecord {
@@ -201,6 +254,12 @@ namespace Dia::MessageBus {
                                                      Pass pass);
 
         TypeRecord* FindTypeRecord(uint32_t typeKey);
+#ifdef DIA_DEBUG
+        // Debug-only introspection helper: linear scan by display id rather
+        // than by internal typeKey, since tooling only ever has the
+        // StringCRC a type registered itself under (T::kTypeId).
+        const TypeRecord* FindTypeRecordByDisplayId(Dia::Core::StringCRC typeId) const;
+#endif
 
         Dia::Mailbox::Mailbox mMailbox;
         BroadcastRouter        mBroadcastRouter;
@@ -307,6 +366,7 @@ namespace Dia::MessageBus {
         rec->mailboxTypeKey = key;
         rec->mailboxHandle  = mailboxHandle;
         rec->active         = true;
+        rec->displaySubscriberId = subscriberId;
 
         return BusSubscriptionHandle(this, poolHandle);
     }
@@ -355,6 +415,18 @@ namespace Dia::MessageBus {
         LedgerMessageEntry& entry = FindOrCreateLedgerEntry(T::kTypeId, addr.routerId, currentPass);
         entry.count += 1;
 
+        // Debug-only introspection bookkeeping (see ForEachRegisteredType) —
+        // cheap (two StringCRC compares), always compiled, no #ifdef in this
+        // hot path; only the public accessors reading these flags are
+        // Debug-only.
+        if (TypeRecord* rec = FindTypeRecord(key)) {
+            if (addr.routerId == kBroadcastRouterId) {
+                rec->sawBroadcastRouter = true;
+            } else if (addr.routerId == kEntityRouterId) {
+                rec->sawEntityRouter = true;
+            }
+        }
+
         Dia::Mailbox::SubscriberSet matched;
         const bool resolved = mMailbox.Resolve<T>(addr, matched);
         if (!resolved) {
@@ -372,5 +444,45 @@ namespace Dia::MessageBus {
             });
         }
     }
+
+#ifdef DIA_DEBUG
+    template <class Fn>
+    void Bus::ForEachRegisteredType(Fn&& fn) const {
+        for (uint32_t i = 0; i < mTypeRecords.Size(); ++i) {
+            const TypeRecord& rec = mTypeRecords[i];
+            RegisteredTypeInfo info;
+            info.typeId             = rec.displayTypeId;
+            info.sawBroadcastRouter = rec.sawBroadcastRouter;
+            info.sawEntityRouter    = rec.sawEntityRouter;
+            fn(info);
+        }
+    }
+
+    template <class Fn>
+    void Bus::ForEachProducerForType(Dia::Core::StringCRC typeId, Fn&& fn) const {
+        const TypeRecord* typeRec = FindTypeRecordByDisplayId(typeId);
+        if (typeRec == nullptr) {
+            return;
+        }
+        for (uint32_t i = 0; i < mProducerRecords.Size(); ++i) {
+            if (mProducerRecords[i].typeKey == typeRec->typeKey) {
+                fn(mProducerRecords[i].producerId);
+            }
+        }
+    }
+
+    template <class Fn>
+    void Bus::ForEachSubscriberForType(Dia::Core::StringCRC typeId, Fn&& fn) const {
+        const TypeRecord* typeRec = FindTypeRecordByDisplayId(typeId);
+        if (typeRec == nullptr) {
+            return;
+        }
+        mHandlerPool.ForEach([&](Dia::Core::Handle<HandlerRecord> /*handle*/, const HandlerRecord& rec) {
+            if (rec.active && rec.mailboxTypeKey == typeRec->typeKey) {
+                fn(rec.displaySubscriberId);
+            }
+        });
+    }
+#endif // DIA_DEBUG
 
 } // namespace Dia::MessageBus

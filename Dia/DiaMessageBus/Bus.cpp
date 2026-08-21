@@ -107,6 +107,17 @@ namespace Dia::MessageBus {
         return nullptr;
     }
 
+#ifdef DIA_DEBUG
+    const Bus::TypeRecord* Bus::FindTypeRecordByDisplayId(Dia::Core::StringCRC typeId) const {
+        for (uint32_t i = 0; i < mTypeRecords.Size(); ++i) {
+            if (mTypeRecords[i].displayTypeId == typeId) {
+                return &mTypeRecords[i];
+            }
+        }
+        return nullptr;
+    }
+#endif // DIA_DEBUG
+
     void Bus::ReleaseHandlerSlot(Dia::Core::Handle<HandlerRecord> handle) {
         if (!mHandlerPool.IsValid(handle)) {
             return;

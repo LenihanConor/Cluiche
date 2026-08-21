@@ -19,6 +19,9 @@
     <ClCompile Include="MessageBusModule.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="MessageBusDebugDomain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Bus.h">
@@ -43,6 +46,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="MessageBusModule.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MessageBusDebugDomain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

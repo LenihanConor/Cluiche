@@ -85,6 +85,7 @@
     <ClInclude Include="Bus.h" />
     <ClInclude Include="BroadcastRouter.h" />
     <ClInclude Include="MessageBusModule.h" />
+    <ClInclude Include="MessageBusDebugDomain.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LedgerHistory.cpp" />
@@ -92,6 +93,7 @@
     <ClCompile Include="Bus.cpp" />
     <ClCompile Include="BroadcastRouter.cpp" />
     <ClCompile Include="MessageBusModule.cpp" />
+    <ClCompile Include="MessageBusDebugDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaMailbox\DiaMailbox.vcxproj">
@@ -112,6 +114,10 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaObservation\DiaObservation.vcxproj">
       <Project>{5E6F7A8B-C9D0-E1F2-3456-789ABCDE0123}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaVisualDebugger\DiaVisualDebugger.vcxproj">
+      <Project>{9BDEE3A3-1E06-4AF4-8628-E55B8E0E2E4B}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

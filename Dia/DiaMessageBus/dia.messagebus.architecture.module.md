@@ -37,6 +37,13 @@ responsibilities:
     (no heap activity on the Push/ForEachSnapshot hot path). Measured
     sizeof(LedgerSnapshot) = 9496 bytes, so the 3600-slot ring is
     ~34.19 MB (~32.6 MiB) of Debug-only static-lifetime storage.
+  - Provide MessageBusDebugDomain, a Debug-only IDebugDomain (in-game visual
+    debugger, `~` panel) exposing Schema (routing graph: registered types,
+    producers, observed routers, subscribers), Live (last-tick ledger), and
+    History (LedgerHistory ring buffer) tabs. Entirely #ifdef DIA_DEBUG;
+    zero footprint in Release. Backed by three small Debug-only Bus
+    introspection accessors (ForEachRegisteredType/ForEachProducerForType/
+    ForEachSubscriberForType) added for this tab's use only.
 
 non_responsibilities:
   - Message schema definitions (application layer -- DiaGameplayMessages or equivalent)
@@ -56,6 +63,7 @@ public_api:
     - Dia/DiaMessageBus/LedgerSnapshot.h
     - Dia/DiaMessageBus/LedgerHistory.h
     - Dia/DiaMessageBus/BusSubscriptionHandle.h
+    - Dia/DiaMessageBus/MessageBusDebugDomain.h
   namespaces:
     - Dia::MessageBus
   entry_points:
@@ -65,6 +73,7 @@ public_api:
     - LedgerSnapshot
     - LedgerHistory
     - BusSubscriptionHandle
+    - MessageBusDebugDomain
 
 dependencies:
   required:
@@ -73,7 +82,8 @@ dependencies:
     - dia.application.flow
     - dia.streams
     - dia.observation
-  optional: []
+  optional:
+    - dia.visual.debugger # MessageBusDebugDomain only; #ifdef DIA_DEBUG, absent from Release
   forbidden:
     - dia.entity.template
     - dia.gameplay.messages
