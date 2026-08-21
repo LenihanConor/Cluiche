@@ -83,6 +83,8 @@
     <ClInclude Include="IBehaviourTreeEventListener.h" />
     <ClInclude Include="BehaviourTreeSystem.h" />
     <ClInclude Include="Testing\BTTestHelpers.h" />
+    <ClInclude Include="BehaviourTreeBusAdapter.h" />
+    <ClInclude Include="Messages\behaviourtree_messages.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ActionRegistry.cpp" />
@@ -90,9 +92,11 @@
     <ClCompile Include="BehaviourTreeAsset.cpp" />
     <ClCompile Include="BehaviourTreeComponent.cpp" />
     <ClCompile Include="BehaviourTreeSystem.cpp" />
+    <ClCompile Include="BehaviourTreeBusAdapter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diabehaviourtree.architecture.module.md" />
+    <None Include="Messages\behaviourtree_messages.diagamemessages" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
@@ -105,6 +109,14 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaAIBudget\DiaAIBudget.vcxproj">
       <Project>{C9D0E1F2-A3B4-5678-90AB-CDEF01234567}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaEntity\DiaEntity.vcxproj">
+      <Project>{D9E0F1A2-B3C4-5678-9DEF-012345678903}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaMessageBus\DiaMessageBus.vcxproj">
+      <Project>{D5E6F7A8-B9C0-1234-DEF0-567890ABCDEF}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

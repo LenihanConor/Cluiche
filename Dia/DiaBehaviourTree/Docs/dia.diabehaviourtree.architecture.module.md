@@ -34,6 +34,7 @@ responsibilities:
   - BehaviourTreeComponent — IComponent binding asset + blackboard + action context + optional decorator registry; owns execution cursor and per-node decorator state; Tick(deltaTime) is caller-driven; Reset() restarts from root
   - BehaviourTreeSystem — IAIBudgetedSystem registered with AIBudgetScheduler; ticks BehaviourTreeComponents within budget window
   - IBehaviourTreeEventListener — OnNodeEntered, OnNodeCompleted, OnTreeCompleted per-component callbacks
+  - BehaviourTreeBusAdapter — forwards event-listener callbacks onto DiaMessageBus::Bus, entity-addressed via Dia::Entity::MakeEntityAddress (never Broadcast)
   - ActionRegistry — explicit handler table (StringCRC → ActionFn); not a singleton
   - DecoratorRegistry — explicit registry for custom IDecoratorNode types; not a singleton
   - Test utilities under DiaBehaviourTree/Testing/ — SpyAction, AssertNodeVisited, AssertLastResult
@@ -63,6 +64,7 @@ public_api:
     - Dia/DiaBehaviourTree/BehaviourTreeComponent.h
     - Dia/DiaBehaviourTree/BehaviourTreeSystem.h
     - Dia/DiaBehaviourTree/Testing/BTTestHelpers.h
+    - Dia/DiaBehaviourTree/BehaviourTreeBusAdapter.h
   namespaces:
     - Dia::BehaviourTree
     - Dia::BehaviourTree::Testing
@@ -72,6 +74,9 @@ dependencies:
     - dia.core
     - dia.blackboard
     - dia.aibudget
+  optional:
+    - dia.messagebus
+    - dia.entity
   forbidden:
     - dia.order
     - dia.rules

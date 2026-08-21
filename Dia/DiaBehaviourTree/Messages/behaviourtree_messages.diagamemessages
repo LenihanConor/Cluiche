@@ -1,0 +1,38 @@
+{
+    "schema": "diagamemessages/v1",
+    "namespace": "Dia::BehaviourTree::Messages",
+    "includes": ["DiaBehaviourTree/NodeResult.h", "DiaCore/CRC/StringCRC.h"],
+    "messages": [
+        {
+            "id": "NodeEnteredEvent",
+            "router": "entity",
+            "pass": "primary",
+            "producers": ["BehaviourTreeBusAdapter"],
+            "consumers": [],
+            "fields": [
+                { "name": "nodeId", "type": "Dia::Core::StringCRC", "notes": "node entered on the owning entity's tree" }
+            ]
+        },
+        {
+            "id": "NodeCompletedEvent",
+            "router": "entity",
+            "pass": "primary",
+            "producers": ["BehaviourTreeBusAdapter"],
+            "consumers": [],
+            "fields": [
+                { "name": "nodeId", "type": "Dia::Core::StringCRC", "notes": "node that finished evaluating" },
+                { "name": "result", "type": "NodeResult",           "notes": "kSuccess or kFailure — never posted for kRunning" }
+            ]
+        },
+        {
+            "id": "TreeCompletedEvent",
+            "router": "entity",
+            "pass": "primary",
+            "producers": ["BehaviourTreeBusAdapter"],
+            "consumers": [],
+            "fields": [
+                { "name": "result", "type": "NodeResult", "notes": "root node's final result for this tick" }
+            ]
+        }
+    ]
+}

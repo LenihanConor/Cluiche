@@ -7,10 +7,25 @@
     <Filter Include="Docs">
       <UniqueIdentifier>{E2F3A4B5-C6D7-8901-3456-DEF012345678}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Messages">
+      <UniqueIdentifier>{F3A4B5C6-D7E8-9012-4567-EF0123456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diabehaviourtree.architecture.module.md">
       <Filter>Docs</Filter>
     </None>
+    <None Include="Messages\behaviourtree_messages.diagamemessages">
+      <Filter>Messages</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="BehaviourTreeBusAdapter.h" />
+    <ClInclude Include="Messages\behaviourtree_messages.h">
+      <Filter>Messages</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="BehaviourTreeBusAdapter.cpp" />
   </ItemGroup>
 </Project>
