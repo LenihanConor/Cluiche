@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <functional>
+#include <DiaCore/Core/Assert.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Containers/HandlePool.h>
@@ -57,10 +58,13 @@ namespace Dia::MessageBus {
     // Single-threaded (sim thread only), matching DiaMailbox SD-MBX-007 /
     // DiaMessageBus SD-MBX2-008.
     //
-    // SCOPE NOTE: this task builds the Primary-pass-only flush. Pass::Reaction
-    // is accepted by Subscribe() and stored on the handler record, but no
-    // dispatch path invokes Reaction-pass handlers yet — that sweep is a
-    // separate, later task layered on top of Update().
+    // Update() runs two sweeps per tick: a Primary pass (dispatches to
+    // Pass::Primary subscribers; these handlers may Post/Broadcast new
+    // messages), then a Reaction pass (dispatches to Pass::Reaction
+    // subscribers, including anything Posted during Primary). Post is
+    // blocked — DIA_ASSERT in Debug, silent false in Release — while the
+    // Reaction pass is executing, so a Reaction-pass handler cannot
+    // re-enqueue and chain into a further sweep.
     // ======================================================================
     class Bus {
     public:
@@ -203,6 +207,12 @@ namespace Dia::MessageBus {
         LedgerSnapshot mLedgers[2];
         uint32_t       mBuildingIndex = 0;
         uint64_t       mTickCounter   = 0;
+
+        // Re-entrancy guard: true only while the Reaction-pass sweep is
+        // executing inside Update(). Blocks Post<T> from re-enqueuing during
+        // that sweep (Primary-pass handlers are unaffected — they run before
+        // this flag is set).
+        bool mInReactionPass = false;
     };
 
     // ======================================================================
@@ -295,6 +305,11 @@ namespace Dia::MessageBus {
 
     template <class T>
     bool Bus::Post(const Dia::Mailbox::Address& addr, const T& message) {
+        if (mInReactionPass) {
+            DIA_ASSERT(false, "DiaMessageBus: Post/Broadcast called during the Reaction pass — Reaction handlers may not re-enqueue");
+            return false;
+        }
+
         const bool ok = mMailbox.Send<T>(addr, message);
         if (!ok) {
             DIA_LOG_WARNING("DiaMessageBus", "Post: send failed (type not registered?)");

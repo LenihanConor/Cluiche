@@ -1,12 +1,11 @@
 // TestDiaMessageBusCore.cpp
 //
 // Covers the DiaMessageBus core-bus task: Bus wrapping Mailbox,
-// MessageBusModule wrapping Bus, BroadcastRouter, and the single
-// Primary-pass-only flush + last-tick ledger.
+// MessageBusModule wrapping Bus, BroadcastRouter, and the two-pass flush
+// (Primary sweep then Reaction sweep) + last-tick ledger.
 //
-// Explicitly NOT covered here (separate, later task): Reaction-pass
-// dispatch, re-entrancy guarding for a second sweep. Pass::Reaction is
-// exercised only to prove it is currently a no-op sink.
+// AC-10: the Reaction pass, and the Post/Broadcast re-entrancy guard that
+// blocks enqueuing while the Reaction pass is executing.
 //
 // Per AC-13: assertions go through Bus::GetLastTickLedger() / handler
 // call counts, never by reaching into Bus internals.
@@ -14,6 +13,7 @@
 #include <gtest/gtest.h>
 #include <vector>
 
+#include <DiaCore/Core/Assert.h>
 #include <DiaMessageBus/Bus.h>
 #include <DiaMessageBus/MessageBusModule.h>
 #include <DiaMessageBus/BroadcastRouter.h>
@@ -323,7 +323,16 @@ namespace Dia::MessageBus::Testing {
         EXPECT_EQ(countB, 1);
     }
 
-    TEST(DiaMessageBusCore, ReactionPassSubscriber_NeverInvoked_ThisTask) {
+    // A message already queued BEFORE Update() is consumed by that type's
+    // Primary drain (Mailbox::Drain is a snapshot-and-consume — see
+    // DiaMailbox), even though DispatchOne filters it out for a Reaction-only
+    // subscriber. There is nothing left for the Reaction sweep to drain, so
+    // the Reaction subscriber never fires for a message posted this way.
+    // (Contrast with ReactionPass_DeliversMessagePostedDuringPrimaryHandler
+    // below, where the message is posted DURING the Primary sweep — i.e.
+    // after that type's Primary drain already ran/will run this tick — and
+    // is therefore still in the queue when the Reaction sweep drains it.)
+    TEST(DiaMessageBusCore, ReactionPassSubscriber_NotInvoked_ForMessageQueuedBeforeUpdate) {
         Dia::MessageBus::Bus bus;
         bus.Initialize();
         ASSERT_TRUE((bus.RegisterType<TestMsgA, 8>()));
@@ -337,6 +346,208 @@ namespace Dia::MessageBus::Testing {
 
         EXPECT_EQ(count, 0);
     }
+
+    // =========================================================================
+    // AC-10: Reaction pass drains messages posted DURING Primary handlers to
+    // Pass::Reaction subscribers, after Primary completes (same tick).
+    // =========================================================================
+    struct TestMsgReaction {
+        static inline const Dia::Core::StringCRC kTypeId{ "TestMsgReaction" };
+        int value = 0;
+    };
+
+    // Dedicated trigger type used only to get a Primary handler to
+    // (re-)post TestMsgA DURING the Primary sweep, so the freshly-posted
+    // TestMsgA is still queued when the Reaction sweep drains TestMsgA
+    // (unlike a TestMsgA queued before Update() at all, which Primary's own
+    // drain of TestMsgA would already have consumed).
+    struct TestMsgReactionTrigger {
+        static inline const Dia::Core::StringCRC kTypeId{ "TestMsgReactionTrigger" };
+    };
+
+    TEST(DiaMessageBusCore, ReactionPass_DeliversMessagePostedDuringPrimaryHandler_SameTick) {
+        Dia::MessageBus::Bus bus;
+        bus.Initialize();
+        // Registration order matters here: Update()'s Primary loop is one
+        // forward pass over every registered type. TestMsgReaction must be
+        // registered (and therefore Primary-drained) BEFORE TestMsgA so that
+        // its Primary drain has already happened by the time TestMsgA's
+        // Primary handler posts a fresh TestMsgReaction — otherwise that
+        // post would land ahead of TestMsgReaction's Primary drain still
+        // within the same Primary loop and be consumed there instead of
+        // surviving to the Reaction sweep.
+        ASSERT_TRUE((bus.RegisterType<TestMsgReaction, 8>()));
+        ASSERT_TRUE((bus.RegisterType<TestMsgA, 8>()));
+
+        int reactionCount = 0;
+        auto reactionHandle = bus.Subscribe<TestMsgReaction>(
+            Dia::Core::StringCRC("reaction-sub"),
+            [&reactionCount](const TestMsgReaction&) { ++reactionCount; },
+            Dia::MessageBus::Pass::Reaction);
+
+        // Primary handler for TestMsgA posts a TestMsgReaction message.
+        auto primaryHandle = bus.Subscribe<TestMsgA>(
+            Dia::Core::StringCRC("primary-sub"),
+            [&bus](const TestMsgA&) { bus.Broadcast(TestMsgReaction{}); },
+            Dia::MessageBus::Pass::Primary);
+
+        bus.Broadcast(TestMsgA{});
+        bus.Update();
+
+        EXPECT_EQ(reactionCount, 1) << "Message posted by a Primary handler must be visible to the same tick's Reaction sweep";
+
+        // Not delivered again on a later tick with nothing new posted.
+        bus.Update();
+        EXPECT_EQ(reactionCount, 1);
+    }
+
+    // A Primary subscriber and a Reaction subscriber on the SAME type: only
+    // one of them fires per drained message, gated by which sweep is
+    // currently running (a message is drained — and dispatched — exactly
+    // once, under exactly one currentPass value).
+    TEST(DiaMessageBusCore, PrimaryAndReactionSubscribers_SameType_NeverBothFireForSameMessage) {
+        Dia::MessageBus::Bus bus;
+        bus.Initialize();
+        ASSERT_TRUE((bus.RegisterType<TestMsgA, 8>()));
+
+        int primaryCount = 0, reactionCount = 0;
+        auto primaryHandle = bus.Subscribe<TestMsgA>(
+            Dia::Core::StringCRC("primary-sub"),
+            [&primaryCount](const TestMsgA&) { ++primaryCount; },
+            Dia::MessageBus::Pass::Primary);
+        auto reactionHandle = bus.Subscribe<TestMsgA>(
+            Dia::Core::StringCRC("reaction-sub"),
+            [&reactionCount](const TestMsgA&) { ++reactionCount; },
+            Dia::MessageBus::Pass::Reaction);
+
+        bus.Broadcast(TestMsgA{});
+        bus.Update();
+
+        // The message existed before Update(): Primary's drain consumes it
+        // and dispatches under currentPass=Primary, so only the Primary
+        // subscriber fires. The Reaction sweep's drain finds nothing left.
+        EXPECT_EQ(primaryCount, 1);
+        EXPECT_EQ(reactionCount, 0);
+    }
+
+    // A Primary-pass handler's Post/Broadcast call must succeed normally —
+    // regression check that the new re-entrancy guard only blocks Post while
+    // the Reaction sweep is executing, not during Primary.
+    TEST(DiaMessageBusCore, PrimaryPassHandler_PostSucceeds_NotBlockedByReactionGuard) {
+        Dia::MessageBus::Bus bus;
+        bus.Initialize();
+        ASSERT_TRUE((bus.RegisterType<TestMsgA, 8>()));
+        ASSERT_TRUE((bus.RegisterType<TestMsgReaction, 8>()));
+
+        bool postReturnedTrue = false;
+        auto primaryHandle = bus.Subscribe<TestMsgA>(
+            Dia::Core::StringCRC("primary-sub"),
+            [&bus, &postReturnedTrue](const TestMsgA&) {
+                postReturnedTrue = bus.Broadcast(TestMsgReaction{});
+            },
+            Dia::MessageBus::Pass::Primary);
+
+        bus.Broadcast(TestMsgA{});
+        bus.Update();
+
+        EXPECT_TRUE(postReturnedTrue);
+    }
+
+    // Recorder installed as g_pAssertFunc for the two tests below, matching
+    // the existing Core/Threading/TestJobSystem.cpp swap-and-restore pattern.
+    // Defined unconditionally (not just under #ifdef DEBUG): DIA_ASSERT
+    // compiles out entirely in Release, so installing this recorder there is
+    // harmless (it is simply never invoked) and keeps this test file
+    // building the same way in both configurations.
+    namespace {
+        int gBusReactionAssertCount = 0;
+        void BusReactionAssertRecorder(const char*, const char*, int, const char*, ...) {
+            ++gBusReactionAssertCount;
+        }
+    } // namespace
+
+    // A Reaction-pass handler that itself calls Post/Broadcast must be
+    // blocked: Post returns false and no delivery happens. In a Debug build
+    // the real (default) assert handler would otherwise fire here too —
+    // its default behavior is to break into a debugger, which crashes an
+    // unattended test run — so this test installs the same no-op recorder
+    // used by ReactionPassHandler_PostBlocked_FiresDIA_ASSERT_DebugOnly
+    // below purely to keep the process alive; the actual assert-fires
+    // assertion lives in that dedicated test.
+    TEST(DiaMessageBusCore, ReactionPassHandler_PostBlocked_ReturnsFalseAndNoDelivery) {
+        auto* prevAssertFunc = Dia::Core::g_pAssertFunc;
+        Dia::Core::g_pAssertFunc = BusReactionAssertRecorder;
+
+        Dia::MessageBus::Bus bus;
+        bus.Initialize();
+        ASSERT_TRUE((bus.RegisterType<TestMsgA, 8>()));
+        ASSERT_TRUE((bus.RegisterType<TestMsgReaction, 8>()));
+        ASSERT_TRUE((bus.RegisterType<TestMsgReactionTrigger, 8>()));
+
+        int downstreamCount = 0;
+        auto downstreamHandle = bus.Subscribe<TestMsgReaction>(
+            Dia::Core::StringCRC("downstream-sub"),
+            [&downstreamCount](const TestMsgReaction&) { ++downstreamCount; },
+            Dia::MessageBus::Pass::Reaction);
+
+        bool postReturnedFalse = true; // stays true only if Post is never called
+        bool postWasCalled = false;
+        auto reactionHandle = bus.Subscribe<TestMsgA>(
+            Dia::Core::StringCRC("reaction-sub"),
+            [&bus, &postReturnedFalse, &postWasCalled](const TestMsgA&) {
+                postWasCalled = true;
+                postReturnedFalse = !bus.Broadcast(TestMsgReaction{});
+            },
+            Dia::MessageBus::Pass::Reaction);
+
+        // A Primary handler posts TestMsgA DURING the Primary sweep, so it is
+        // still queued when the Reaction sweep drains TestMsgA — that's what
+        // drives the Reaction-pass TestMsgA handler above (see the
+        // TestMsgReactionTrigger comment above its declaration).
+        auto triggerHandle = bus.Subscribe<TestMsgReactionTrigger>(
+            Dia::Core::StringCRC("trigger-sub"),
+            [&bus](const TestMsgReactionTrigger&) { bus.Broadcast(TestMsgA{}); },
+            Dia::MessageBus::Pass::Primary);
+        bus.Broadcast(TestMsgReactionTrigger{});
+
+        bus.Update();
+
+        EXPECT_TRUE(postWasCalled) << "Reaction-pass TestMsgA handler must have run this tick";
+        EXPECT_TRUE(postReturnedFalse) << "Post/Broadcast called from a Reaction-pass handler must return false";
+        EXPECT_EQ(downstreamCount, 0) << "No delivery must occur for a Post blocked by the Reaction re-entrancy guard";
+
+        Dia::Core::g_pAssertFunc = prevAssertFunc;
+    }
+
+#ifdef DEBUG
+    TEST(DiaMessageBusCore, ReactionPassHandler_PostBlocked_FiresDIA_ASSERT_DebugOnly) {
+        auto* prevAssertFunc = Dia::Core::g_pAssertFunc;
+        Dia::Core::g_pAssertFunc = BusReactionAssertRecorder;
+        gBusReactionAssertCount = 0;
+
+        Dia::MessageBus::Bus bus;
+        bus.Initialize();
+        ASSERT_TRUE((bus.RegisterType<TestMsgA, 8>()));
+        ASSERT_TRUE((bus.RegisterType<TestMsgReaction, 8>()));
+        ASSERT_TRUE((bus.RegisterType<TestMsgReactionTrigger, 8>()));
+
+        auto triggerHandle = bus.Subscribe<TestMsgReactionTrigger>(
+            Dia::Core::StringCRC("trigger-sub"),
+            [&bus](const TestMsgReactionTrigger&) { bus.Broadcast(TestMsgA{}); },
+            Dia::MessageBus::Pass::Primary);
+        auto reactionHandle = bus.Subscribe<TestMsgA>(
+            Dia::Core::StringCRC("reaction-sub"),
+            [&bus](const TestMsgA&) { bus.Broadcast(TestMsgReaction{}); },
+            Dia::MessageBus::Pass::Reaction);
+
+        bus.Broadcast(TestMsgReactionTrigger{});
+        bus.Update();
+
+        EXPECT_GT(gBusReactionAssertCount, 0) << "Expected DIA_ASSERT to fire when Post is called during the Reaction pass";
+
+        Dia::Core::g_pAssertFunc = prevAssertFunc;
+    }
+#endif
 
     // =========================================================================
     // AC-11: GetLastTickLedger() returns the just-completed tick's snapshot;

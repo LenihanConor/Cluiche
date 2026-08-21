@@ -4,9 +4,9 @@
 namespace Dia::MessageBus {
 
     // Pass tag for Subscribe — controls which flush pass the handler runs in.
-    // NOTE: for this task only Pass::Primary is dispatched. Pass::Reaction is
-    // accepted by Subscribe() and stored, but no dispatch path fires for it yet
-    // (Reaction sweep is a separate, later task).
+    // Bus::Update() runs a Primary sweep followed by a Reaction sweep each
+    // tick. Primary-pass handlers may Post/Broadcast; Reaction-pass handlers
+    // may not (Bus::Post is guarded while the Reaction sweep is executing).
     enum class Pass : uint8_t { Primary, Reaction };
 
 } // namespace Dia::MessageBus

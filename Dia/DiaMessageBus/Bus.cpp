@@ -36,6 +36,18 @@ namespace Dia::MessageBus {
             mTypeRecords[i].drainFn(*this, Pass::Primary);
         }
 
+        // Reaction pass: drain every registered type again, dispatching only
+        // to Reaction-pass subscribers. Primary-pass handlers above may have
+        // Post/Broadcast'd new messages — those are visible here since Post
+        // writes straight into the Mailbox type queue. While this sweep runs,
+        // Post is blocked (see Bus::Post) so Reaction handlers cannot chain
+        // into a further sweep.
+        mInReactionPass = true;
+        for (uint32_t i = 0; i < mTypeRecords.Size(); ++i) {
+            mTypeRecords[i].drainFn(*this, Pass::Reaction);
+        }
+        mInReactionPass = false;
+
         // Swap: the buffer just finished building becomes "last tick".
         mBuildingIndex = 1 - mBuildingIndex;
     }
