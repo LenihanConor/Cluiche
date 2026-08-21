@@ -360,13 +360,7 @@
     <ClInclude Include="Architecture\Events\Event.h">
       <Filter>Architecture\Events</Filter>
     </ClInclude>
-    <ClInclude Include="Architecture\Events\EventQueue.h">
-      <Filter>Architecture\Events</Filter>
-    </ClInclude>
     <ClInclude Include="Architecture\Events\Delegate.h">
-      <Filter>Architecture\Events</Filter>
-    </ClInclude>
-    <ClInclude Include="Architecture\Events\EventDispatcher.h">
       <Filter>Architecture\Events</Filter>
     </ClInclude>
 

@@ -90,9 +90,7 @@
     <ClInclude Include="Architecture\Observer.h" />
     <ClInclude Include="Architecture\Singleton\Singleton.h" />
     <ClInclude Include="Architecture\Events\Event.h" />
-    <ClInclude Include="Architecture\Events\EventQueue.h" />
     <ClInclude Include="Architecture\Events\Delegate.h" />
-    <ClInclude Include="Architecture\Events\EventDispatcher.h" />
     <ClInclude Include="Colour\RGBA.h" />
     <ClInclude Include="Debug\IDebugDraw.h" />
     <ClInclude Include="DebugDraw\IVisualDebugger.h" />

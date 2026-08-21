@@ -6,9 +6,6 @@
 #include "DiaInput/EventData.h"
 #include "DiaInput/IInputSource.h"
 
-// Forward declare for modern event support
-namespace Dia { namespace Core { namespace Events { class EventDispatcher; } } }
-
 namespace Dia
 {
 	namespace Input
@@ -78,26 +75,6 @@ namespace Dia
 			///
 			/// Invokes EndFrame() on all registered sources.
 			void EndFrame();
-
-			/// @brief Poll all sources and dispatch to modern event system
-			///
-			/// @param dispatcher EventDispatcher to queue modern typed events
-			///
-			/// This is an opt-in modernized version of Update() that converts
-			/// legacy events to type-safe modern events and dispatches them.
-			///
-			/// **Usage:**
-			/// @code
-			/// Core::Events::EventDispatcher dispatcher;
-			/// manager.UpdateModern(dispatcher);
-			///
-			/// // Subscribe to typed events
-			/// dispatcher.Subscribe<Input::Events::KeyPressedEvent>([](auto* event) {
-			///     if (event->GetKey() == EKey::Escape)
-			///         QuitGame();
-			/// });
-			/// @endcode
-			void UpdateModern(Core::Events::EventDispatcher& dispatcher);
 
 		private:
 			InputSourceList mInputSourceList;  ///< List of registered input sources

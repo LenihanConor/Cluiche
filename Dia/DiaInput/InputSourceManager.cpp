@@ -3,9 +3,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "DiaInput/InputSourceManager.h"
 
-#include <DiaCore/Architecture/Events/EventDispatcher.h>
 #include <DiaObservation/Log/DiaLog.h>
-#include "DiaInput/Events/LegacyEventConverter.h"
 
 namespace Dia
 {
@@ -130,23 +128,6 @@ namespace Dia
 			{
 				mInputSourceList[i]->EndFrame();
 			}
-		}
-
-		void InputSourceManager::UpdateModern(Core::Events::EventDispatcher& dispatcher)
-		{
-			// Poll all sources into legacy event buffer
-			EventData legacyEvents;
-
-			for (unsigned int i = 0; i < mInputSourceList.Size(); i++)
-			{
-				mInputSourceList[i]->Poll(legacyEvents);
-			}
-
-			// Convert and dispatch to modern event system
-			Events::LegacyEventConverter::ConvertAndDispatch(legacyEvents, dispatcher);
-
-			DIA_LOG_TRACE("Input", "UpdateModern(): Converted %u legacy events to modern events",
-				legacyEvents.Size());
 		}
 	}
 }

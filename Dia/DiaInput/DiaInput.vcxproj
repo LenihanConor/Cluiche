@@ -35,7 +35,6 @@
     <ClInclude Include="Events\GamepadEvents.h" />
     <ClInclude Include="Events\JoystickEvents.h" />
     <ClInclude Include="Events\KeyboardEvents.h" />
-    <ClInclude Include="Events\LegacyEventConverter.h" />
     <ClInclude Include="Events\MouseEvents.h" />
     <ClInclude Include="IInputSource.h" />
     <ClInclude Include="InputProfile.h" />
