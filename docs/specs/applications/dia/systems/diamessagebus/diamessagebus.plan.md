@@ -11,7 +11,7 @@
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | [module-and-build](module-and-build.md) — `DiaMessageBus.vcxproj`, `Cluiche.sln` registration, `dia.messagebus.architecture.module.md` YAML module doc | Build passes | Not Started | haiku | `dia scaffold module` + `dia docs vcxproj-add` |
+| 1 | [module-and-build](module-and-build.md) — `DiaMessageBus.vcxproj`, `Cluiche.sln` registration, `dia.messagebus.architecture.module.md` YAML module doc | Build passes | Done | haiku | `dia scaffold module` + `dia docs vcxproj-add`; DiaMessageBus.vcxproj scaffolded, registered in Cluiche.sln (framework layer), module YAML authored. dia check sln-sync clean; dia check deps 37/37 OK; build 0 errors/0 warnings Debug|x64. |
 
 ## Phase 1: Core bus (runtime substrate)
 
