@@ -22,6 +22,9 @@
     <Filter Include="ApplicationFlow\Modules\TestStages\UIUltralight">
       <UniqueIdentifier>{d4e5f6a7-b8c9-0123-def0-ef4567890123}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Messages">
+      <UniqueIdentifier>{e5f6a7b8-c9d0-1234-ef01-f56789012345}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -60,6 +63,9 @@
     </ClCompile>
     <ClCompile Include="Modules\TestStages\BehaviourTreeTestStageModule.cpp">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Messages\GuardOrderBusAdapter.cpp">
+      <Filter>Messages</Filter>
     </ClCompile>
     <ClCompile Include="Modules\TestStages\DebugGalleryTestStageModule.cpp">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
@@ -200,6 +206,12 @@
     </ClInclude>
     <ClInclude Include="Modules\TestStages\BehaviourTreeTestStageModule.h">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Messages\GuardOrderBusAdapter.h">
+      <Filter>Messages</Filter>
+    </ClInclude>
+    <ClInclude Include="Messages\order_messages.h">
+      <Filter>Messages</Filter>
     </ClInclude>
     <ClInclude Include="Modules\TestStages\DebugGalleryTestStageModule.h">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>

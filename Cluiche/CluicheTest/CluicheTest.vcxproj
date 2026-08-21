@@ -33,6 +33,7 @@
     <ClCompile Include="Modules\TestStages\GridVisibilityTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\AICalloutTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\BehaviourTreeTestStageModule.cpp" />
+    <ClCompile Include="Messages\GuardOrderBusAdapter.cpp" />
     <ClCompile Include="Modules\TestStages\DebugGalleryTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\SpawnerTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\ArenaTestStageModule.cpp" />
@@ -87,6 +88,8 @@
     <ClInclude Include="Modules\TestStages\GridVisibilityTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\AICalloutTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\BehaviourTreeTestStageModule.h" />
+    <ClInclude Include="Messages\GuardOrderBusAdapter.h" />
+    <ClInclude Include="Messages\order_messages.h" />
     <ClInclude Include="Modules\TestStages\DebugGalleryTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\SpawnerTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\ArenaTestStageModule.h" />
@@ -127,6 +130,9 @@
     <ClInclude Include="Modules\TestStages\EntitySpatialTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\Drawers\SpawnerTestDrawer.h" />
     <ClInclude Include="Modules\TestStages\Drawers\GridVisibilityDrawer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Messages\order_messages.diagamemessages" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">

@@ -623,6 +623,10 @@
     <ClCompile Include="CluicheTest\TestResultsRegistryTests.cpp" />
     <ClCompile Include="CluicheTest\TestStageHUDTests.cpp" />
     <ClCompile Include="..\..\CluicheTest\Modules\TestStages\TestResultsRegistry.cpp" />
+    <ClCompile Include="CluicheTest\GuardOrderBusAdapterTests.cpp" />
+    <ClCompile Include="..\..\CluicheTest\Messages\GuardOrderBusAdapter.cpp" />
+    <ClCompile Include="..\..\CluicheTest\Modules\TestStages\TestStageModuleBase.cpp" />
+    <ClCompile Include="..\..\CluicheTest\Modules\TestStages\BehaviourTreeTestStageModule.cpp" />
     <!-- DiaImGui -->
     <ClCompile Include="DiaVisualDebugger\TestCoord2DDrawers.cpp" />
     <ClCompile Include="ApplicationFlow\TestPUTiming.cpp" />
@@ -821,6 +825,11 @@
     <ClCompile Include="Animation2D\ClipCompletionBusAdapterTests.cpp" />
     <ClCompile Include="DiaAssetRuntime\TestListenerNotification.cpp" />
     <ClCompile Include="DiaAssetRuntime\TestAssetRuntimeBusAdapter.cpp" />
+    <ClCompile Include="DiaBehaviourTree\BehaviourTreeBusAdapterTests.cpp" />
+    <ClCompile Include="DiaMessageBus\TestMessageBusDebugDomain.cpp" />
+    <ClCompile Include="RigidBody2D\TestPhysicsBusAdapter.cpp" />
+    <ClCompile Include="Input\TestInputBusAdapter.cpp" />
+    <ClCompile Include="DiaMessageBus\TestFlushAdapterIntegration.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

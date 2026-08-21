@@ -1308,6 +1308,18 @@
     <ClCompile Include="..\..\CluicheTest\Modules\TestStages\TestResultsRegistry.cpp">
       <Filter>CluicheTest</Filter>
     </ClCompile>
+    <ClCompile Include="CluicheTest\GuardOrderBusAdapterTests.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CluicheTest\Messages\GuardOrderBusAdapter.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CluicheTest\Modules\TestStages\TestStageModuleBase.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CluicheTest\Modules\TestStages\BehaviourTreeTestStageModule.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
     <!-- Automation -->
     <ClCompile Include="Automation\TestAutomationService.cpp">
       <Filter>Automation</Filter>
@@ -1696,6 +1708,21 @@
     </ClCompile>
     <ClCompile Include="DiaAssetRuntime\TestAssetRuntimeBusAdapter.cpp">
       <Filter>DiaAssetRuntime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaBehaviourTree\BehaviourTreeBusAdapterTests.cpp">
+      <Filter>DiaBehaviourTree</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMessageBus\TestMessageBusDebugDomain.cpp">
+      <Filter>DiaMessageBus</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestPhysicsBusAdapter.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\TestInputBusAdapter.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMessageBus\TestFlushAdapterIntegration.cpp">
+      <Filter>DiaMessageBus</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
