@@ -31,7 +31,7 @@
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 6 | [schema-browser](schema-browser.md) — CluicheEditor offline panel; scans ALL `.diagamemessages` tree-wide, builds the **union graph**, joins producers↔consumers by `StringCRC`; graph / list / web views, field inspector, structural-duplicate + **orphan** analysis; read-only viewer (v1); mockup at `docs/research/gameplay_msg_bus/inspector-mockup.html` | HTML mockup acceptance gate | Not Started | opus | Prereq: 4 |
+| 6 | [schema-browser](schema-browser.md) — CluicheEditor offline panel; scans ALL `.diagamemessages` tree-wide, builds the **union graph**, joins producers↔consumers by `StringCRC`; graph / list / web views, field inspector, structural-duplicate + **orphan** analysis; read-only viewer (v1); mockup at `docs/research/gameplay_msg_bus/inspector-mockup.html` | HTML mockup acceptance gate | Done | opus | Prereq: 4; DiaSchemaBrowser CluicheEditor plugin: read-only union-graph builder over all *.diagamemessages files (5 found, 17 messages), Graph/List/Web views, Payload tab, Schema Analysis (computed dupe scoring + bidirectional orphans), matching approved inspector-mockup.html wired to real data. Placed under Dia/ per DiaPipelineEditor/DiaSceneEditor precedent. 21/21 unit tests green, pipeline build 3/3 stages green. |
 
 ## Phase 4: Entity routing (B — entity↔entity / system↔entity design)
 
