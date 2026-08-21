@@ -24,7 +24,7 @@
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 4 | [diagamemessages-format](diagamemessages-format.md) — `.diagamemessages` JSON IDL format; `_validate_diagamemessages` + `*.diagamemessages` scan in `cli_validate.py` | `dia validate manifest` rejects invalid files; valid sample parses | Not Started | sonnet | No runtime prereqs — pure tooling; front-loadable |
+| 4 | [diagamemessages-format](diagamemessages-format.md) — `.diagamemessages` JSON IDL format; `_validate_diagamemessages` + `*.diagamemessages` scan in `cli_validate.py` | `dia validate manifest` rejects invalid files; valid sample parses | Done | sonnet | No runtime prereqs — pure tooling; front-loadable; _validate_diagamemessages added to cli_validate.py; *.diagamemessages added to manifest() scan+dispatch. 182 files scanned, 4 pre-existing unrelated errors unchanged. Invalid/valid sample files verified. |
 | 5 | [diagamemessages-format](diagamemessages-format.md) (codegen) — `dia codegen messages`: structs (`kTypeId` + fields) **+ `RegisterMessages(Bus&, Handlers&)` wiring + `Handlers` binding struct**; generated headers committed; per SD-MBX2-009/010 | codegen on sample produces header that compiles + wires against `Bus`; unbound handler asserts | Not Started | sonnet | Prereq: 4; generated output compiles once 2 is done |
 
 ## Phase 3: Editor — offline design surface (B)
