@@ -111,7 +111,8 @@ ui_builds = [
   { cwd = "Dia/DiaEntityInspector/UI", cmd = "node node_modules/typescript/bin/tsc && node node_modules/vite/bin/vite.js build" },
   { cwd = "Dia/DiaPythonConsoleEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" },
   { cwd = "Cluiche/CluicheEditor/Plugins/DiaChatPlugin/UI", cmd = "node node_modules/vite/bin/vite.js build" },
-  { cwd = "Dia/DiaBlackboardInspector/UI", cmd = "node node_modules/typescript/bin/tsc && node node_modules/vite/bin/vite.js build" }
+  { cwd = "Dia/DiaBlackboardInspector/UI", cmd = "node node_modules/typescript/bin/tsc && node node_modules/vite/bin/vite.js build" },
+  { cwd = "Dia/DiaSchemaBrowser/UI", cmd = "node node_modules/typescript/bin/tsc && node node_modules/vite/bin/vite.js build" }
 ]
 files = [
   { src = "External/Python311/python311.dll",             dest = "$(OutDir)" },
@@ -134,6 +135,8 @@ files = [
   { src = "Dia/DiaBlackboardInspector/UI/dist/assets/*", dest = "$(OutDir)plugins/blackboardinspector/assets/" },
   { src = "Dia/DiaEntityTemplateEditor/UI/*",                 dest = "$(OutDir)plugins/EntityTemplateEditor/" },
   { src = "Dia/DiaSceneEditor/UI/*",                    dest = "$(OutDir)plugins/sceneeditor/" },
+  { src = "Dia/DiaSchemaBrowser/UI/dist/*", dest = "$(OutDir)plugins/schemabrowser/" },
+  { src = "Dia/DiaSchemaBrowser/UI/dist/assets/*", dest = "$(OutDir)plugins/schemabrowser/assets/" },
   { src = "Dia/DiaPipelineEditor/UI/dist/*",              dest = "$(OutDir)plugins/diapipelineeditor/" },
   { src = "Dia/DiaPipelineEditor/UI/dist/assets/*",       dest = "$(OutDir)plugins/diapipelineeditor/assets/" },
   { src = "Dia/DiaApplicationFlowInspector/UI/dist/*",    dest = "$(OutDir)plugins/diaapplicationflowinspector/" },

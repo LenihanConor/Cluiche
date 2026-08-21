@@ -33,6 +33,7 @@
     <ClCompile Include="..\..\Dia\DiaApplicationFlowEditor\DiaApplicationFlowEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaApplicationFlowInspector\DiaApplicationFlowInspectorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaPipelineEditor\PipelineEditorPlugin.cpp" />
+    <ClCompile Include="..\..\Dia\DiaSchemaBrowser\DiaSchemaBrowserPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaEntityInspector\DiaEntityInspectorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaBlackboardInspector\DiaBlackboardInspectorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaPythonConsoleEditor\DiaPythonConsolePlugin.cpp" />
@@ -104,6 +105,9 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaPipelineEditor\DiaPipelineEditor.vcxproj">
       <Project>{C2D3E4F5-A6B7-8901-CDEF-012345678901}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaSchemaBrowser\DiaSchemaBrowser.vcxproj">
+      <Project>{D72BBB38-5662-5193-87CF-9BC724347793}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaEditor\DiaEditor.vcxproj">
       <Project>{f1a2b3c4-d5e6-7890-abcd-ef1234567890}</Project>
