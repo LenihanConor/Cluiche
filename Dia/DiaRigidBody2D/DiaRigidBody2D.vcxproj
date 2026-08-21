@@ -122,12 +122,16 @@
     <ClCompile Include="World\PhysicsWorld.cpp" />
     <ClCompile Include="Triggers\TriggerVolume2D.cpp" />
     <ClCompile Include="Triggers\DetectTriggerOverlaps.cpp" />
+    <ClCompile Include="PhysicsBusAdapter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.rigidbody2d.architecture.module.md" />
+    <None Include="Messages\physics_messages.diagamemessages" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Testing\PhysicsWorldBuilder.h" />
+    <ClInclude Include="PhysicsBusAdapter.h" />
+    <ClInclude Include="Messages\physics_messages.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
@@ -140,6 +144,10 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaGeometry2D\DiaGeometry2D.vcxproj">
       <Project>{A3C4D5E6-F7B8-9012-CDEF-012345678901}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaMessageBus\DiaMessageBus.vcxproj">
+      <Project>{D5E6F7A8-B9C0-1234-DEF0-567890ABCDEF}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

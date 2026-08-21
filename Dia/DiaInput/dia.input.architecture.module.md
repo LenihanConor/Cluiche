@@ -36,6 +36,16 @@ non_responsibilities:
   - Rendering or platform integration concerns (unless this module is explicitly an adapter)
   - High-level orchestration (owned by higher-layer modules)
 
+dependent_modules:
+  - dia.core.containers.arrays
+  - dia.core.containers.hashtable
+  - dia.core.core
+  - dia.core.logging
+  - dia.core.events
+  - dia.core.time
+  - dia.core.crc
+  - dia.messagebus
+
 public_api:
   headers:
     - Dia/DiaInput/ConsoleGamepad.h
@@ -91,5 +101,6 @@ dependencies:
     - dia.core.events
     - dia.core.time
     - dia.core.crc
+    - dia.messagebus
   forbidden: []
 ---

@@ -41,6 +41,11 @@
     <ClInclude Include="InputRecorder.h" />
     <ClInclude Include="InputSourceManager.h" />
     <ClInclude Include="InputState.h" />
+    <ClInclude Include="InputBusAdapter.h" />
+    <ClInclude Include="Messages\input_messages.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Messages\input_messages.diagamemessages" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
@@ -49,11 +54,16 @@
     <ProjectReference Include="..\DiaMaths\DiaMaths.vcxproj">
       <Project>{2bba0ad3-d449-4c0e-8c84-acfa8bca456b}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\DiaMessageBus\DiaMessageBus.vcxproj">
+      <Project>{D5E6F7A8-B9C0-1234-DEF0-567890ABCDEF}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ConsoleGamepad.cpp" />
     <ClCompile Include="ConsoleGamepadManager.cpp" />
     <ClCompile Include="InputSourceManager.cpp" />
+    <ClCompile Include="InputBusAdapter.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{936FA28F-E171-401F-8185-D2AF48DB4098}</ProjectGuid>

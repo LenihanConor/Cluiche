@@ -34,6 +34,9 @@
     <Filter Include="Testing">
       <UniqueIdentifier>{E1F2A3B4-C5D6-7890-1234-567890456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Messages">
+      <UniqueIdentifier>{F2A3B4C5-D6E7-8901-2345-678901567890}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DiaRigidBody2DSerializers.h" />
@@ -171,15 +174,27 @@
     <ClCompile Include="Triggers\DetectTriggerOverlaps.cpp">
       <Filter>Triggers</Filter>
     </ClCompile>
+    <ClCompile Include="PhysicsBusAdapter.cpp">
+      <Filter>Messages</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.rigidbody2d.architecture.module.md">
       <Filter>Docs</Filter>
     </None>
+    <None Include="Messages\physics_messages.diagamemessages">
+      <Filter>Messages</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Testing\PhysicsWorldBuilder.h">
       <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicsBusAdapter.h">
+      <Filter>Messages</Filter>
+    </ClInclude>
+    <ClInclude Include="Messages\physics_messages.h">
+      <Filter>Messages</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

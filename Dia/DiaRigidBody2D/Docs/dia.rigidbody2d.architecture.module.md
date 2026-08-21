@@ -48,6 +48,7 @@ dependent_modules:
   - dia.geometry2d
   - dia.maths
   - dia.core
+  - dia.messagebus
 
 public_api:
   headers: []
@@ -68,6 +69,7 @@ dependencies:
     - dia.geometry2d
     - dia.maths
     - dia.core
+    - dia.messagebus
   forbidden:
     - dia.graphics
     - dia.application
