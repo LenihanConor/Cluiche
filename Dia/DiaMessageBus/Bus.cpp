@@ -31,9 +31,21 @@ namespace Dia::MessageBus {
             }
         }
 
-        // Primary pass: drain every registered type.
+        // Primary pass: snapshot every type's queued count BEFORE any Primary
+        // handler in this tick has run, then bound each type's Primary drain
+        // to its own snapshot. Anything posted mid-sweep (by any type's
+        // Primary handler, including into a type whose slot comes later in
+        // this same loop, or into its own type) lands at the tail of that
+        // type's queue and is structurally excluded from this bounded drain,
+        // regardless of registration order — it survives, untouched, for the
+        // unbounded Reaction sweep below.
+        Dia::Core::Containers::DynamicArrayC<uint32_t, kMaxTypes> primarySnapshot;
         for (uint32_t i = 0; i < mTypeRecords.Size(); ++i) {
-            mTypeRecords[i].drainFn(*this, Pass::Primary);
+            primarySnapshot.Add(mTypeRecords[i].countFn(*this));
+        }
+
+        for (uint32_t i = 0; i < mTypeRecords.Size(); ++i) {
+            mTypeRecords[i].drainFn(*this, Pass::Primary, primarySnapshot[i]);
         }
 
         // Reaction pass: drain every registered type again, dispatching only
@@ -44,7 +56,7 @@ namespace Dia::MessageBus {
         // into a further sweep.
         mInReactionPass = true;
         for (uint32_t i = 0; i < mTypeRecords.Size(); ++i) {
-            mTypeRecords[i].drainFn(*this, Pass::Reaction);
+            mTypeRecords[i].drainFn(*this, Pass::Reaction, UINT32_MAX);
         }
         mInReactionPass = false;
 

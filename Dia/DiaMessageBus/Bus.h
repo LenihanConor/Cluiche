@@ -161,12 +161,14 @@ namespace Dia::MessageBus {
             return key;
         }
 
-        using DrainFn = void (*)(Bus& self, Pass currentPass);
+        using DrainFn = void (*)(Bus& self, Pass currentPass, uint32_t maxCount);
+        using CountFn = uint32_t (*)(Bus& self);
 
         struct TypeRecord {
             uint32_t             typeKey = 0;
             Dia::Core::StringCRC displayTypeId;
             DrainFn              drainFn = nullptr;
+            CountFn              countFn = nullptr;
             // Mailbox::TypeStats::totalDropped is cumulative-since-registration,
             // not per-tick. We snapshot it at the end of every DrainTrampoline
             // call and diff against the running total next tick to recover the
@@ -181,7 +183,12 @@ namespace Dia::MessageBus {
         };
 
         template <class T>
-        static void DrainTrampoline(Bus& self, Pass currentPass);
+        static void DrainTrampoline(Bus& self, Pass currentPass, uint32_t maxCount);
+
+        template <class T>
+        static uint32_t CountTrampoline(Bus& self) {
+            return self.mMailbox.GetTypeStats<T>().currentCount;
+        }
 
         template <class T>
         void DispatchOne(const Dia::Mailbox::Address& addr, const T& msg, Pass currentPass);
@@ -237,6 +244,7 @@ namespace Dia::MessageBus {
         rec.typeKey       = key;
         rec.displayTypeId = T::kTypeId;
         rec.drainFn       = &Bus::DrainTrampoline<T>;
+        rec.countFn       = &Bus::CountTrampoline<T>;
         mTypeRecords.Add(rec);
         return true;
     }
@@ -323,10 +331,10 @@ namespace Dia::MessageBus {
     }
 
     template <class T>
-    void Bus::DrainTrampoline(Bus& self, Pass currentPass) {
+    void Bus::DrainTrampoline(Bus& self, Pass currentPass, uint32_t maxCount) {
         self.mMailbox.Drain<T>([&self, currentPass](const Dia::Mailbox::Address& addr, const T& msg) {
             self.DispatchOne<T>(addr, msg, currentPass);
-        });
+        }, maxCount);
 
         // Recover this-tick's drop delta from the cumulative Mailbox total,
         // regardless of when the drops happened (before Update() was called,

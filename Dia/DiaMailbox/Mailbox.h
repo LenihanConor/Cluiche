@@ -1,5 +1,6 @@
 #pragma once
 #include <stdio.h>
+#include <cstdint>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Metric/Counter.h>
@@ -62,12 +63,17 @@ namespace Dia::Mailbox {
         template <class T>
         bool Send(const Address& addr, const T& message);
 
-        // Drain all messages of type T, calling visitor(addr, msg) for each.
-        // Snapshot semantics: visits only messages present at call time.
-        // Messages sent during drain are preserved for the next drain.
+        // Drains up to maxCount messages of type T (FIFO, oldest first),
+        // calling visitor(addr, msg) for each. Snapshot semantics: visits
+        // only messages present at call time, bounded by maxCount. Messages
+        // beyond maxCount (or sent during drain) remain queued, untouched,
+        // for a later Drain call — this is what lets DiaMessageBus bound its
+        // Primary sweep to a pre-sweep snapshot, deferring anything posted
+        // during Primary handler dispatch to the Reaction sweep. Existing
+        // behavior (drain everything present) is maxCount's default.
         // No-op (no warning) if type is not registered.
         template <class T, class Visitor>
-        void Drain(const Visitor& visitor);
+        void Drain(const Visitor& visitor, uint32_t maxCount = UINT32_MAX);
 
         // Subscribe subscriber to messages of type T.
         // Returns an invalid handle if T is not registered, the per-type list is full, or the pool is full.
@@ -302,7 +308,7 @@ namespace Dia::Mailbox {
     }
 
     template <class T, class Visitor>
-    void Mailbox::Drain(const Visitor& visitor) {
+    void Mailbox::Drain(const Visitor& visitor, uint32_t maxCount) {
         const uint32_t key  = TypeKey<T>();
         TypedQueueDescriptor* desc = FindDescriptor(key);
 
@@ -311,8 +317,8 @@ namespace Dia::Mailbox {
             return;
         }
 
-        // Snapshot: visit only messages present right now
-        const uint32_t snapshotCount = desc->count;
+        // Snapshot: visit only messages present right now, bounded by maxCount
+        const uint32_t snapshotCount = (desc->count < maxCount) ? desc->count : maxCount;
 
         if (snapshotCount == 0) {
             // Empty drain: no warning, dropsThisDrain NOT reset (per spec AI Q11)

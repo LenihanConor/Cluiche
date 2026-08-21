@@ -621,4 +621,138 @@ namespace Dia::MessageBus::Testing {
         EXPECT_EQ(ledger.droppedCount, 3u);
     }
 
+    // =========================================================================
+    // Bug fix: Reaction-pass delivery must not depend on RegisterType
+    // registration order between the posting type and the target type.
+    //
+    // Pre-fix, Update()'s Primary loop is a single forward sweep calling
+    // drainFn(Pass::Primary) per type with NO shared snapshot boundary across
+    // types. If A is registered before B and A's Primary handler posts B
+    // DURING the sweep, B's slot (later in the same forward loop) sees the
+    // freshly-posted message already sitting in its queue when the loop
+    // reaches it, and Mailbox::Drain<B>() (which snapshots desc->count at
+    // call time, with no upper bound) drains and dispatches it as
+    // Pass::Primary right there — silently destroying it (B has no Primary
+    // subscriber) before the Reaction sweep ever runs. The fix snapshots
+    // every type's queued count ONCE, before any Primary handler in this
+    // tick has run, and bounds each type's Primary drain to that snapshot —
+    // so this must hold regardless of A/B registration order.
+    // =========================================================================
+    TEST(DiaMessageBusCore, ReactionPass_DeliversMessage_RegardlessOfRegistrationOrder_PosterBeforeTarget) {
+        Dia::MessageBus::Bus bus;
+        bus.Initialize();
+        // A registered before B: A's slot index < B's slot index in the
+        // Primary loop — this is the ordering that exposes the bug.
+        ASSERT_TRUE((bus.RegisterType<TestMsgA, 8>()));
+        ASSERT_TRUE((bus.RegisterType<TestMsgB, 8>()));
+
+        int reactionCount = 0;
+        auto reactionHandle = bus.Subscribe<TestMsgB>(
+            Dia::Core::StringCRC("reaction-sub"),
+            [&reactionCount](const TestMsgB&) { ++reactionCount; },
+            Dia::MessageBus::Pass::Reaction);
+
+        auto primaryHandle = bus.Subscribe<TestMsgA>(
+            Dia::Core::StringCRC("primary-sub"),
+            [&bus](const TestMsgA&) { bus.Broadcast(TestMsgB{}); },
+            Dia::MessageBus::Pass::Primary);
+
+        bus.Broadcast(TestMsgA{});
+        bus.Update();
+
+        EXPECT_EQ(reactionCount, 1)
+            << "Reaction subscriber for B must receive a message posted by A's Primary "
+               "handler, regardless of A/B registration order";
+    }
+
+    // Same scenario, opposite registration order (B before A). This ordering
+    // does NOT expose the bug even pre-fix (B's Primary drain already ran by
+    // the time A's handler posts to it), so this must pass both before and
+    // after the fix — a regression guard for the other ordering direction.
+    TEST(DiaMessageBusCore, ReactionPass_DeliversMessage_RegardlessOfRegistrationOrder_TargetBeforePoster) {
+        Dia::MessageBus::Bus bus;
+        bus.Initialize();
+        ASSERT_TRUE((bus.RegisterType<TestMsgB, 8>()));
+        ASSERT_TRUE((bus.RegisterType<TestMsgA, 8>()));
+
+        int reactionCount = 0;
+        auto reactionHandle = bus.Subscribe<TestMsgB>(
+            Dia::Core::StringCRC("reaction-sub"),
+            [&reactionCount](const TestMsgB&) { ++reactionCount; },
+            Dia::MessageBus::Pass::Reaction);
+
+        auto primaryHandle = bus.Subscribe<TestMsgA>(
+            Dia::Core::StringCRC("primary-sub"),
+            [&bus](const TestMsgA&) { bus.Broadcast(TestMsgB{}); },
+            Dia::MessageBus::Pass::Primary);
+
+        bus.Broadcast(TestMsgA{});
+        bus.Update();
+
+        EXPECT_EQ(reactionCount, 1);
+    }
+
+    // Same-type mid-sweep re-entry: a Primary handler for A posts a NEW A
+    // message during A's own Primary drain. The snapshot bound must also
+    // exclude this from the same Primary drain call so it survives, untouched,
+    // for the Reaction sweep — not just cross-type mid-sweep posts.
+    TEST(DiaMessageBusCore, ReactionPass_DeliversMessage_PostedBySameTypePrimaryHandler_MidSweep) {
+        Dia::MessageBus::Bus bus;
+        bus.Initialize();
+        ASSERT_TRUE((bus.RegisterType<TestMsgA, 8>()));
+
+        int reactionCount = 0;
+        auto reactionHandle = bus.Subscribe<TestMsgA>(
+            Dia::Core::StringCRC("reaction-sub"),
+            [&reactionCount](const TestMsgA&) { ++reactionCount; },
+            Dia::MessageBus::Pass::Reaction);
+
+        bool reposted = false;
+        auto primaryHandle = bus.Subscribe<TestMsgA>(
+            Dia::Core::StringCRC("primary-sub"),
+            [&bus, &reposted](const TestMsgA& msg) {
+                if (!reposted) {
+                    reposted = true;
+                    TestMsgA next;
+                    next.value = msg.value + 1;
+                    bus.Broadcast(next);
+                }
+            },
+            Dia::MessageBus::Pass::Primary);
+
+        TestMsgA seed;
+        seed.value = 1;
+        bus.Broadcast(seed);
+        bus.Update();
+
+        EXPECT_EQ(reactionCount, 1)
+            << "A Primary handler for A that posts a new A message mid-sweep must not "
+               "have that message drained again within the same Primary sweep";
+    }
+
+    // Regression guard: the snapshot bound must not under-deliver messages
+    // that were genuinely queued BEFORE Update() was called at all (the
+    // normal case) — only messages posted DURING the Primary sweep should be
+    // deferred.
+    TEST(DiaMessageBusCore, PrimaryPass_StillDeliversAllPreQueuedMessages_AfterSnapshotBoundFix) {
+        Dia::MessageBus::Bus bus;
+        bus.Initialize();
+        ASSERT_TRUE((bus.RegisterType<TestMsgA, 8>()));
+
+        int primaryCount = 0;
+        auto primaryHandle = bus.Subscribe<TestMsgA>(
+            Dia::Core::StringCRC("primary-sub"),
+            [&primaryCount](const TestMsgA&) { ++primaryCount; },
+            Dia::MessageBus::Pass::Primary);
+
+        const int N = 5;
+        for (int i = 0; i < N; ++i) {
+            bus.Broadcast(TestMsgA{});
+        }
+        bus.Update();
+
+        EXPECT_EQ(primaryCount, N)
+            << "Snapshot bound must not under-deliver messages queued before Update() was called";
+    }
+
 } // namespace Dia::MessageBus::Testing
