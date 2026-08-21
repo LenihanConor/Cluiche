@@ -43,7 +43,7 @@
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 8 | [eventdispatcher-removal](eventdispatcher-removal.md) — Remove `EventDispatcher`, `EventQueue`, `Delegate` from DiaCore; migrate `DiaInput::InputSourceManager` + `LegacyEventConverter` to `InputBusAdapter`; delete dead test files | Full compile + GoogleTest green | Not Started | sonnet | Prereq: 2. Verified blast radius: DiaInput + DiaCore/Architecture/Events + 4 test files (ChatPanelBridge `mEventQueue` is `std::queue`, not coupled) |
+| 8 | [eventdispatcher-removal](eventdispatcher-removal.md) — Remove `EventDispatcher`, `EventQueue`, `Delegate` from DiaCore; migrate `DiaInput::InputSourceManager` + `LegacyEventConverter` to `InputBusAdapter`; delete dead test files | Full compile + GoogleTest green | Done | sonnet | Prereq: 2. Verified blast radius: DiaInput + DiaCore/Architecture/Events + 4 test files (ChatPanelBridge `mEventQueue` is `std::queue`, not coupled); EventDispatcher/EventQueue/LegacyEventConverter removed; UpdateModern removed, Update(EventData&) preserved; 4 dead test files deleted. DEVIATION: Delegate.h NOT deleted -- spec's blast-radius claim was wrong, it's live production code (ActionMap::ActionCallback), deleting it would break DiaInput. Retiring it is a separate future decision. Full suite green (8610 tests). |
 | 9 | [flush-adapters](flush-adapters.md) — `PhysicsBusAdapter` in DiaRigidBody2D (drains physics `EventStream`); `InputBusAdapter` in DiaInput | Integration tests | Not Started | sonnet | Prereq: 2, 5, 8 — needs codegen (5) for the generated `physics_messages.h`/`input_messages.h` the adapters `#include`; runs after eventdispatcher-removal (8) |
 
 ## Phase 6: In-game visual debugger (A — in-process)
