@@ -96,6 +96,16 @@ namespace Dia::Entity {
         Dia::Mailbox::Mailbox&       GetMailbox()       { return mMailbox; }
         const Dia::Mailbox::Mailbox& GetMailbox() const override { return mMailbox; }
 
+        // --- Entity router access ---
+
+        // Returns the same EntityRouter instance already registered with this
+        // Domain's own private Mailbox in the constructor. Callers (composition
+        // roots that own both a Domain and a DiaMessageBus Bus) can additionally
+        // register it with a Bus's mailbox via Bus::RegisterRouter — the router
+        // holds no per-mailbox state, so registering it on a second mailbox is safe.
+        EntityRouter&       GetEntityRouter()       { return mEntityRouter; }
+        const EntityRouter& GetEntityRouter() const { return mEntityRouter; }
+
         // --- IEntityInspectable overrides (F9: Editor Inspection) ---
 
         uint32_t GetEntityCount() const override;

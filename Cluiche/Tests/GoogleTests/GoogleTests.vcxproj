@@ -176,8 +176,6 @@
     <ClCompile Include="Core\Containers\TestContainerStress.cpp" />
     <ClCompile Include="Core\Containers\TestContainerInvariants.cpp" />
     <ClCompile Include="Core\Events\TestDelegate.cpp" />
-    <ClCompile Include="Core\Events\TestEventQueue.cpp" />
-    <ClCompile Include="Core\Events\TestEventDispatcher.cpp" />
     <ClCompile Include="Core\Memory\TestSmartPointers.cpp" />
     <ClCompile Include="Core\Memory\TestAllocator.cpp" />
     <ClCompile Include="Core\FilePath\TestFilePath.cpp" />
@@ -241,8 +239,6 @@
     <ClCompile Include="Input\TestActionContext.cpp" />
     <ClCompile Include="Input\TestInputProfile.cpp" />
     <ClCompile Include="Input\TestInputRecorder.cpp" />
-    <ClCompile Include="Input\TestLegacyEventConverter.cpp" />
-    <ClCompile Include="Input\TestModernEvents.cpp" />
     <ClCompile Include="Python\TestLifecycle.cpp" />
     <ClCompile Include="Python\TestTypeConversion.cpp" />
     <ClCompile Include="Python\TestErrorHandling.cpp" />
@@ -491,6 +487,7 @@
     <ClCompile Include="DiaEntity\EntityRefTests.cpp" />
     <ClCompile Include="DiaEntity\QuerySystemTests.cpp" />
     <ClCompile Include="DiaEntity\EntityRouterTests.cpp" />
+    <ClCompile Include="DiaEntity\EntityRouterBusWiringTests.cpp" />
     <ClCompile Include="DiaEntity\HierarchyTests.cpp" />
     <ClCompile Include="DiaEntity\EditorInspectionTests.cpp" />
     <ClCompile Include="DiaEntity\StressTests.cpp" />
@@ -703,6 +700,7 @@
     <!-- DiaMessageBus -->
     <ClCompile Include="DiaMessageBus\TestDiaMessageBusCore.cpp" />
     <ClCompile Include="DiaMessageBus\EntityRouterRegistrationTest.cpp" />
+    <ClCompile Include="DiaMessageBus\TestDiaMessageBusLedgerHistory.cpp" />
     <!-- DiaUtilityAI -->
     <ClCompile Include="DiaUtilityAI\TestResponseCurve.cpp" />
     <ClCompile Include="DiaUtilityAI\TestGroupConsiderationContext.cpp" />

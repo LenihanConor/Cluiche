@@ -287,12 +287,6 @@
     <ClCompile Include="Core\Events\TestDelegate.cpp">
       <Filter>Core\Events</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Events\TestEventDispatcher.cpp">
-      <Filter>Core\Events</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Events\TestEventQueue.cpp">
-      <Filter>Core\Events</Filter>
-    </ClCompile>
     <!-- Core\Memory -->
     <ClCompile Include="Core\Memory\TestSmartPointers.cpp">
       <Filter>Core\Memory</Filter>
@@ -480,12 +474,6 @@
       <Filter>Input</Filter>
     </ClCompile>
     <ClCompile Include="Input\TestInputRecorder.cpp">
-      <Filter>Input</Filter>
-    </ClCompile>
-    <ClCompile Include="Input\TestLegacyEventConverter.cpp">
-      <Filter>Input</Filter>
-    </ClCompile>
-    <ClCompile Include="Input\TestModernEvents.cpp">
       <Filter>Input</Filter>
     </ClCompile>
     <ClCompile Include="Python\TestLifecycle.cpp">
@@ -990,6 +978,9 @@
       <Filter>DiaEntity</Filter>
     </ClCompile>
     <ClCompile Include="DiaEntity\EntityRouterTests.cpp">
+      <Filter>DiaEntity</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaEntity\EntityRouterBusWiringTests.cpp">
       <Filter>DiaEntity</Filter>
     </ClCompile>
     <ClCompile Include="DiaEntity\HierarchyTests.cpp">
@@ -1498,6 +1489,9 @@
       <Filter>DiaMessageBus</Filter>
     </ClCompile>
     <ClCompile Include="DiaMessageBus\EntityRouterRegistrationTest.cpp">
+      <Filter>DiaMessageBus</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMessageBus\TestDiaMessageBusLedgerHistory.cpp">
       <Filter>DiaMessageBus</Filter>
     </ClCompile>
     <!-- DiaObjective -->
