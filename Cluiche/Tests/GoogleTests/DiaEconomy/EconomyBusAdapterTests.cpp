@@ -272,3 +272,62 @@ TEST(EconomyBusAdapter, RealTransaction_DeliversPoolChangedEventEndToEnd)
 
     sys.GetObserverSubject().Unsubscribe(&adapter);
 }
+
+// ===========================================================================
+// 4. Regression proof: PoolChangedEvent is a snapshot taken at emit time, not
+//    a live reference re-read at delivery time. Two Earn() calls queue two
+//    independent Broadcast()-ed snapshots before either is delivered; only
+//    once the bus is flushed must each event show the value it had at its
+//    OWN emit time — never both showing the instance's final value at
+//    delivery time. This is the specific invariant the PoolChangedEvent
+//    redesign (dropping the raw EconomyInstance* for a StringCRC + snapshot
+//    floats) exists to guarantee — a raw-pointer payload would silently
+//    regress to both events reporting the post-second-Earn value.
+// ===========================================================================
+
+TEST(EconomyBusAdapter, PoolChangedEvent_QueuedThenDelivered_ValuesMatchEmitTimeNotDeliveryTime)
+{
+    EconomySchema schema = MakeSimpleSchema("gold", 0.0f, 1000.0f, 100.0f);
+    EconomyInstance inst = EconomyInstance::CreateFromSchema(schema);
+    EconomySystem sys;
+
+    Dia::MessageBus::Bus bus;
+    bus.Initialize();
+    EconomyBusAdapter adapter(bus);
+    sys.GetObserverSubject().Subscribe(&adapter);
+
+    Messages::PoolChangedEvent received[2];
+    unsigned int receivedCount = 0;
+    auto handle = bus.Subscribe<Messages::PoolChangedEvent>(
+        StringCRC("test"),
+        [&](const Messages::PoolChangedEvent& e) {
+            if (receivedCount < 2) received[receivedCount] = e;
+            ++receivedCount;
+        });
+    ASSERT_TRUE(handle.IsValid());
+
+    // First Earn: 100 -> 150. Adapter broadcasts a snapshot with
+    // newValue=150 — queued in the Mailbox, not yet delivered.
+    TransactionResult r1 = sys.Earn(inst, StringCRC("gold"), 50.0f);
+    (void)r1;
+
+    // Second Earn, still before any bus.Update(): 150 -> 350. Mutates the
+    // same live EconomyInstance a raw-pointer payload would have pointed
+    // at, and queues a second, independent snapshot with newValue=350.
+    TransactionResult r2 = sys.Earn(inst, StringCRC("gold"), 200.0f);
+    (void)r2;
+
+    ASSERT_EQ(receivedCount, 0u); // nothing delivered until the bus flushes
+
+    bus.Update();
+
+    ASSERT_EQ(receivedCount, 2u);
+    // Each delivered event must show the value at ITS OWN emit time, not the
+    // instance's final value (350) at delivery time. A dangling/live-pointer
+    // regression would show 350 for both.
+    EXPECT_FLOAT_EQ(received[0].newValue, 150.0f);
+    EXPECT_FLOAT_EQ(received[1].newValue, 350.0f);
+    EXPECT_NE(received[0].newValue, received[1].newValue);
+
+    sys.GetObserverSubject().Unsubscribe(&adapter);
+}
