@@ -82,6 +82,7 @@
     <ClInclude Include="Testing\VisibilityTestHelpers.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DiaGridVisibility.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.gridvisibility.architecture.module.md" />

@@ -14,6 +14,9 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DiaGridVisibility.cpp" />
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="IVisibilityChangeObserver.h" />
     <ClInclude Include="VisibilityGroupId.h" />
     <ClInclude Include="VisibilityLogChannel.h" />
