@@ -6,6 +6,7 @@
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Containers/HandlePool.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Metric/Counter.h>
 #include <DiaMailbox/Mailbox.h>
 #include <DiaMessageBus/BusTypes.h>
 #include <DiaMessageBus/LedgerSnapshot.h>
@@ -148,6 +149,14 @@ namespace Dia::MessageBus {
         // with the owned Mailbox.
         bool IsRouterRegistered(Dia::Core::StringCRC routerId);
 
+        // --- Health/capacity introspection (Release-safe — used by
+        // BusHealthReporter and available to any caller that wants to watch
+        // for the bus approaching a fixed-capacity limit) ---
+        uint32_t GetRegisteredTypeCount() const { return mTypeRecords.Size(); }
+        uint32_t GetTypeCapacity()        const { return kMaxTypes; }
+        uint32_t GetHandlerCount()        const { return mHandlerPool.GetSize(); }
+        uint32_t GetHandlerCapacity()     const { return kMaxHandlers; }
+
         // --- Debug-only introspection (tooling, e.g. MessageBusDebugDomain's
         // Schema tab) ---
         //
@@ -279,6 +288,15 @@ namespace Dia::MessageBus {
         // that sweep (Primary-pass handlers are unaffected — they run before
         // this flag is set).
         bool mInReactionPass = false;
+
+        // dia.msgbus.{posted,delivered,dropped} — registered in the
+        // constructor, mirroring Mailbox's own mMetricSent/mMetricDropped/
+        // mMetricDrained pattern (Mailbox.cpp). Always compiled (Release
+        // too) — these are cheap, sustained-operations metrics, not
+        // Debug-only diagnostics.
+        Dia::Observation::Metric::Counter* mMetricPosted    = nullptr;
+        Dia::Observation::Metric::Counter* mMetricDelivered = nullptr;
+        Dia::Observation::Metric::Counter* mMetricDropped   = nullptr;
     };
 
     // ======================================================================
@@ -290,9 +308,13 @@ namespace Dia::MessageBus {
         const uint32_t key = TypeKey<T>();
 
         if (FindTypeRecord(key) != nullptr) {
+            // Already registered — expected/idempotent (codegen'd
+            // RegisterMessages() call sites rely on this being a silent
+            // no-op), not a warning-worthy condition.
             return false;
         }
         if (mTypeRecords.IsFull()) {
+            DIA_LOG_WARNING("DiaMessageBus", "RegisterType: type registry full (capacity %u)", kMaxTypes);
             return false;
         }
         if (!mMailbox.RegisterType<T, kCapacity>(policy)) {
@@ -381,6 +403,8 @@ namespace Dia::MessageBus {
         const bool ok = mMailbox.Send<T>(addr, message);
         if (!ok) {
             DIA_LOG_WARNING("DiaMessageBus", "Post: send failed (type not registered?)");
+        } else if (mMetricPosted) {
+            mMetricPosted->Inc();
         }
         return ok;
     }
@@ -405,6 +429,9 @@ namespace Dia::MessageBus {
             const uint64_t deltaThisTick   = totalDroppedNow - rec->lastDroppedTotal;
             rec->lastDroppedTotal = totalDroppedNow;
             self.mLedgers[self.mBuildingIndex].droppedCount += static_cast<uint32_t>(deltaThisTick);
+            if (self.mMetricDropped && deltaThisTick > 0) {
+                self.mMetricDropped->Inc(deltaThisTick);
+            }
         }
     }
 
@@ -440,6 +467,9 @@ namespace Dia::MessageBus {
                     rec.pass == currentPass && rec.subscriberId == sid) {
                     static_cast<HandlerSlot<T>*>(rec.slot)->handler(msg);
                     entry.deliveries += 1;
+                    if (mMetricDelivered) {
+                        mMetricDelivered->Inc();
+                    }
                 }
             });
         }

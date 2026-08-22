@@ -1506,6 +1506,9 @@
     <ClCompile Include="DiaMessageBus\TestDiaMessageBusLedgerHistory.cpp">
       <Filter>DiaMessageBus</Filter>
     </ClCompile>
+    <ClCompile Include="DiaMessageBus\TestBusHealthReporter.cpp">
+      <Filter>DiaMessageBus</Filter>
+    </ClCompile>
     <!-- DiaObjective -->
     <ClCompile Include="DiaObjective\TestObjectiveSet.cpp">
       <Filter>DiaObjective</Filter>

@@ -1,5 +1,6 @@
 #include <DiaMessageBus/MessageBusModule.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Health/HealthRegistry.h>
 
 namespace Dia::MessageBus {
 
@@ -36,6 +37,12 @@ Dia::ApplicationFlow::StartResult MessageBusModule::DoStart()
         DIA_LOG_WARNING("DiaMessageBus",
             "MessageBusModule::DoStart: BroadcastRouter failed to register");
     }
+    else
+    {
+        DIA_LOG_INFO("DiaMessageBus", "MessageBusModule::DoStart: Bus initialized, BroadcastRouter registered");
+    }
+
+    Dia::Observation::Health::HealthRegistry::Instance().Register(&mHealthReporter);
 
     return Dia::ApplicationFlow::StartResult::kReady;
 }
@@ -43,6 +50,7 @@ Dia::ApplicationFlow::StartResult MessageBusModule::DoStart()
 void MessageBusModule::DoUpdate(float /*deltaTime*/)
 {
     mBus.Update();
+    mHealthReporter.Check();
 #ifdef DIA_DEBUG
     mLedgerHistory.Push(mBus.GetLastTickLedger());
 #endif
@@ -50,6 +58,8 @@ void MessageBusModule::DoUpdate(float /*deltaTime*/)
 
 Dia::ApplicationFlow::StopResult MessageBusModule::DoStop()
 {
+    Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealthReporter);
+    DIA_LOG_INFO("DiaMessageBus", "MessageBusModule::DoStop");
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 

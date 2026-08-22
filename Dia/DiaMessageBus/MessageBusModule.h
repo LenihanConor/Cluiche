@@ -2,6 +2,7 @@
 #include <DiaApplicationFlow/Module.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaMessageBus/Bus.h>
+#include <DiaMessageBus/BusHealthReporter.h>
 #ifdef DIA_DEBUG
 #include <DiaMessageBus/LedgerHistory.h>
 #endif
@@ -40,6 +41,7 @@ protected:
 
 private:
     Bus mBus;
+    BusHealthReporter mHealthReporter{Dia::Core::StringCRC("MessageBusModule"), mBus};
 #ifdef DIA_DEBUG
     LedgerHistory mLedgerHistory;
 #endif

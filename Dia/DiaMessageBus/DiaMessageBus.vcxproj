@@ -86,6 +86,7 @@
     <ClInclude Include="BroadcastRouter.h" />
     <ClInclude Include="MessageBusModule.h" />
     <ClInclude Include="MessageBusDebugDomain.h" />
+    <ClInclude Include="BusHealthReporter.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LedgerHistory.cpp" />
@@ -94,6 +95,7 @@
     <ClCompile Include="BroadcastRouter.cpp" />
     <ClCompile Include="MessageBusModule.cpp" />
     <ClCompile Include="MessageBusDebugDomain.cpp" />
+    <ClCompile Include="BusHealthReporter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaMailbox\DiaMailbox.vcxproj">

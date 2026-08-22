@@ -1,5 +1,7 @@
 #include <DiaMessageBus/Bus.h>
 #include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
 
 namespace Dia::MessageBus {
 
@@ -17,7 +19,12 @@ namespace Dia::MessageBus {
     // logical router.
     const Dia::Core::StringCRC Bus::kEntityRouterId("dia.entity.router");
 
-    Bus::Bus()  = default;
+    Bus::Bus() {
+        auto& reg     = Dia::Observation::Metric::MetricRegistry::Instance();
+        mMetricPosted    = reg.RegisterCounter(Dia::Core::StringCRC("dia.msgbus.posted"));
+        mMetricDelivered = reg.RegisterCounter(Dia::Core::StringCRC("dia.msgbus.delivered"));
+        mMetricDropped   = reg.RegisterCounter(Dia::Core::StringCRC("dia.msgbus.dropped"));
+    }
     Bus::~Bus() = default;
 
     void Bus::Initialize() {
@@ -26,6 +33,7 @@ namespace Dia::MessageBus {
 
     void Bus::Update() {
         DIA_TRACE_ZONE("messagebus.flush", ::Dia::Observation::Trace::Category::kNone);
+        DIA_PROFILE_SCOPE("messagebus.flush", ::Dia::Observation::Profile::Category::kNone);
 
         LedgerSnapshot& building = mLedgers[mBuildingIndex];
         building.entries.RemoveAll();
@@ -36,9 +44,13 @@ namespace Dia::MessageBus {
         building.timestampUs  = 0;
 
         // Pre-Primary: flush adapters, in registration order.
-        for (uint32_t i = 0; i < mFlushAdapters.Size(); ++i) {
-            if (mFlushAdapters[i] != nullptr) {
-                mFlushAdapters[i]->Flush(*this);
+        {
+            DIA_TRACE_ZONE("messagebus.flush.preprimary", ::Dia::Observation::Trace::Category::kNone);
+            DIA_PROFILE_SCOPE("messagebus.flush.preprimary", ::Dia::Observation::Profile::Category::kNone);
+            for (uint32_t i = 0; i < mFlushAdapters.Size(); ++i) {
+                if (mFlushAdapters[i] != nullptr) {
+                    mFlushAdapters[i]->Flush(*this);
+                }
             }
         }
 
@@ -50,13 +62,18 @@ namespace Dia::MessageBus {
         // type's queue and is structurally excluded from this bounded drain,
         // regardless of registration order — it survives, untouched, for the
         // unbounded Reaction sweep below.
-        Dia::Core::Containers::DynamicArrayC<uint32_t, kMaxTypes> primarySnapshot;
-        for (uint32_t i = 0; i < mTypeRecords.Size(); ++i) {
-            primarySnapshot.Add(mTypeRecords[i].countFn(*this));
-        }
+        {
+            DIA_TRACE_ZONE("messagebus.flush.primary", ::Dia::Observation::Trace::Category::kNone);
+            DIA_PROFILE_SCOPE("messagebus.flush.primary", ::Dia::Observation::Profile::Category::kNone);
 
-        for (uint32_t i = 0; i < mTypeRecords.Size(); ++i) {
-            mTypeRecords[i].drainFn(*this, Pass::Primary, primarySnapshot[i]);
+            Dia::Core::Containers::DynamicArrayC<uint32_t, kMaxTypes> primarySnapshot;
+            for (uint32_t i = 0; i < mTypeRecords.Size(); ++i) {
+                primarySnapshot.Add(mTypeRecords[i].countFn(*this));
+            }
+
+            for (uint32_t i = 0; i < mTypeRecords.Size(); ++i) {
+                mTypeRecords[i].drainFn(*this, Pass::Primary, primarySnapshot[i]);
+            }
         }
 
         // Reaction pass: drain every registered type again, dispatching only
@@ -65,11 +82,15 @@ namespace Dia::MessageBus {
         // writes straight into the Mailbox type queue. While this sweep runs,
         // Post is blocked (see Bus::Post) so Reaction handlers cannot chain
         // into a further sweep.
-        mInReactionPass = true;
-        for (uint32_t i = 0; i < mTypeRecords.Size(); ++i) {
-            mTypeRecords[i].drainFn(*this, Pass::Reaction, UINT32_MAX);
+        {
+            DIA_TRACE_ZONE("messagebus.flush.reaction", ::Dia::Observation::Trace::Category::kNone);
+            DIA_PROFILE_SCOPE("messagebus.flush.reaction", ::Dia::Observation::Profile::Category::kNone);
+            mInReactionPass = true;
+            for (uint32_t i = 0; i < mTypeRecords.Size(); ++i) {
+                mTypeRecords[i].drainFn(*this, Pass::Reaction, UINT32_MAX);
+            }
+            mInReactionPass = false;
         }
-        mInReactionPass = false;
 
         // Swap: the buffer just finished building becomes "last tick".
         mBuildingIndex = 1 - mBuildingIndex;

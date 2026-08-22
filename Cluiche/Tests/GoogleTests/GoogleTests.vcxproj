@@ -705,6 +705,7 @@
     <ClCompile Include="DiaMessageBus\TestDiaMessageBusCore.cpp" />
     <ClCompile Include="DiaMessageBus\EntityRouterRegistrationTest.cpp" />
     <ClCompile Include="DiaMessageBus\TestDiaMessageBusLedgerHistory.cpp" />
+    <ClCompile Include="DiaMessageBus\TestBusHealthReporter.cpp" />
     <!-- DiaUtilityAI -->
     <ClCompile Include="DiaUtilityAI\TestResponseCurve.cpp" />
     <ClCompile Include="DiaUtilityAI\TestGroupConsiderationContext.cpp" />
