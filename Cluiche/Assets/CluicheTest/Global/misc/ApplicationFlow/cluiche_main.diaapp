@@ -26,7 +26,9 @@
                 "ArenaTestStage",
                 "DebugGalleryTestStage",
                 "BehaviourTreeTestStage",
-                "AICalloutTestStage"
+                "AICalloutTestStage",
+                "GridVisibilityTestStage",
+                "MessageBusTestStage"
             ],
             "auto_advance": false
         },
@@ -184,6 +186,20 @@
                 "Boot"
             ],
             "auto_advance": false
+        },
+        {
+            "name": "GridVisibilityTestStage",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "MessageBusTestStage",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
         }
     ],
     "initial_stage": "Boot",
@@ -272,6 +288,12 @@
             "id": "AssetLoadStatus",
             "kind": "ServiceStream",
             "payload_type": "AssetLoadStatus",
+            "from": "MainPU"
+        },
+        {
+            "id": "AssetRuntimeService",
+            "kind": "ServiceStream",
+            "payload_type": "AssetRuntime",
             "from": "MainPU"
         },
         {
@@ -449,7 +471,9 @@
                         "ArenaTestStage",
                         "DebugGalleryTestStage",
                         "BehaviourTreeTestStage",
-                        "AICalloutTestStage"
+                        "AICalloutTestStage",
+                        "GridVisibilityTestStage",
+                        "MessageBusTestStage"
                     ],
                     "dependencies": [
                         "ObservationModule",
@@ -485,6 +509,10 @@
                         },
                         {
                             "id": "AssetLoadStatus",
+                            "role": "provides"
+                        },
+                        {
+                            "id": "AssetRuntimeService",
                             "role": "provides"
                         }
                     ]
@@ -555,7 +583,9 @@
                         "ArenaTestStage",
                         "DebugGalleryTestStage",
                         "BehaviourTreeTestStage",
-                        "AICalloutTestStage"
+                        "AICalloutTestStage",
+                        "GridVisibilityTestStage",
+                        "MessageBusTestStage"
                     ],
                     "dependencies": [
                         "ObservationModule",
@@ -727,7 +757,9 @@
                         "ArenaTestStage",
                         "DebugGalleryTestStage",
                         "BehaviourTreeTestStage",
-                        "AICalloutTestStage"
+                        "AICalloutTestStage",
+                        "GridVisibilityTestStage",
+                        "MessageBusTestStage"
                     ],
                     "dependencies": [
                         "Camera2DModule"
@@ -851,7 +883,9 @@
                         "ArenaTestStage",
                         "DebugGalleryTestStage",
                         "BehaviourTreeTestStage",
-                        "AICalloutTestStage"
+                        "AICalloutTestStage",
+                        "GridVisibilityTestStage",
+                        "MessageBusTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"
@@ -879,6 +913,10 @@
                     "channels": [
                         {
                             "id": "DebugLayerManager",
+                            "role": "consumes"
+                        },
+                        {
+                            "id": "AssetRuntimeService",
                             "role": "consumes"
                         }
                     ]

@@ -1002,6 +1002,56 @@
             "tags": [
                 "misc/ApplicationFlow"
             ]
+        },
+        {
+            "id": "stage.grid_visibility_test_stage",
+            "type": "stage",
+            "source_path": "Stages/GridVisibilityTestStage/grid_visibility_test_stage.diastage",
+            "scope": "global",
+            "tags": [
+                "misc"
+            ],
+            "references": [
+                {
+                    "type": "contains",
+                    "target": "manifest.grid_visibility_test_stage"
+                }
+            ]
+        },
+        {
+            "id": "manifest.grid_visibility_test_stage",
+            "type": "manifest",
+            "source_path": "Stages/GridVisibilityTestStage/misc/ApplicationFlow/grid_visibility_test_stage.diaapp",
+            "scope": "stage",
+            "stage_name": "GridVisibilityTestStage",
+            "tags": [
+                "misc/ApplicationFlow"
+            ]
+        },
+        {
+            "id": "stage.message_bus_test_stage",
+            "type": "stage",
+            "source_path": "Stages/MessageBusTestStage/message_bus_test_stage.diastage",
+            "scope": "global",
+            "tags": [
+                "misc"
+            ],
+            "references": [
+                {
+                    "type": "contains",
+                    "target": "manifest.message_bus_test_stage"
+                }
+            ]
+        },
+        {
+            "id": "manifest.message_bus_test_stage",
+            "type": "manifest",
+            "source_path": "Stages/MessageBusTestStage/misc/ApplicationFlow/message_bus_test_stage.diaapp",
+            "scope": "stage",
+            "stage_name": "MessageBusTestStage",
+            "tags": [
+                "misc/ApplicationFlow"
+            ]
         }
     ],
     "rules_path": "assets.rules.json"

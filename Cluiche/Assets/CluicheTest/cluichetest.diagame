@@ -113,6 +113,14 @@
         {
             "path": "Stages/AICalloutTestStage/aicallout_test_stage.diastage",
             "type": "stage"
+        },
+        {
+            "path": "Stages/GridVisibilityTestStage/grid_visibility_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/MessageBusTestStage/message_bus_test_stage.diastage",
+            "type": "stage"
         }
     ],
     "name": "CluicheTest",

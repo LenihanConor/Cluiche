@@ -215,6 +215,11 @@
     },
     {
       "allowed_pus": "sim",
+      "description": "MessageBus E2E: BroadcastRouter fan-out, EntityRouter targeted delivery, Reaction-pass chaining, IFlushAdapter injection",
+      "type_id": "MessageBusTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
       "description": "Two-group fog-of-war demo: Red/Blue patrol sight-sources on a 24x18 grid with shadowcasting, Revealed persistence, and enemy flash on detection.",
       "type_id": "GridVisibilityTestStageModule"
     },
@@ -477,6 +482,6 @@
   "processing_units": [],
   "version": {
     "major": 1,
-    "minor": 29
+    "minor": 30
   }
 }
