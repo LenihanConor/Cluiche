@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/applications/dia/systems/diamessagebus/diamessagebus.md
-**Status:** In Progress
+**Status:** Done
 
 > Declaration-first system. The through-line is the authoring loop (B): design messages in a `.diagamemessages` doc → `dia codegen messages` generates structs + registration wiring → build the system out by filling in handler slots. The last-tick ledger and the in-game visual debugger are in scope. Only the Inspector tier (cross-PU `ServiceStream` export + live CluicheEditor Inspector) is deferred (see bottom).
 >
@@ -57,7 +57,7 @@
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 12 | [messagebus-test-stage](../../../../../cluichetest/systems/teststages/messagebus-test-stage.md) — CluicheTest E2E stage; proves doc → codegen → build loop; message types authored in `.diagamemessages`, structs+wiring generated; asserts `dropped == 0` via last-tick ledger | All checkpoints pass; determinism second-pass passes | Not Started | sonnet | Prereq: 3, 5, 7; stage spec has its own plan |
+| 12 | [messagebus-test-stage](../../../../../cluichetest/systems/teststages/messagebus-test-stage.md) — CluicheTest E2E stage; proves doc → codegen → build loop; message types authored in `.diagamemessages`, structs+wiring generated; asserts `dropped == 0` via last-tick ledger | All checkpoints pass; determinism second-pass passes | Done | sonnet | Prereq: 3, 5, 7; stage spec has its own plan; MessageBusTestStageModule: 5 Emitters/5 Receivers, real EntityRouter registered on stage's own Bus (first real stage to do so), BurstAdapter injection, Reaction-pass PongEvent, MessageBusDebugDomain wired via TestableMessageBusModule wrapper. Found+fixed a real checkpoint bug (mPulsesDelivered vs mPulsesSent, 5x fan-out inflation). Also fixed unrelated pre-existing DiaGridVisibility link failure (zero .cpp files) blocking all of CluicheTest. 44/44 GoogleTests green; E2E scenario 2/2 passed (one transient harness flake, confirmed pre-existing via clean re-run). |
 
 ## Phase 8: Consumer integration (cross-system bus adoption)
 

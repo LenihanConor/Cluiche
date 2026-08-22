@@ -318,6 +318,6 @@ All resolved before approval.
 
 ## Status
 
-`Approved` — Ready to build.
+`Done` — All 21 plan tasks (Phase 0-7 + Phase 8 consumer adoption) implemented, verified, and committed.
 
-**Plan:** [diamessagebus.plan.md](diamessagebus.plan.md) _(created at implementation start)_
+**Plan:** [diamessagebus.plan.md](diamessagebus.plan.md) — Done
