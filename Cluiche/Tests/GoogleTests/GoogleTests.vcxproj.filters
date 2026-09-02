@@ -1754,5 +1754,11 @@
     <ClCompile Include="ApplicationFlow\TestProcessingUnitDomainRegistry.cpp">
       <Filter>ApplicationFlow</Filter>
     </ClCompile>
+    <ClCompile Include="DiaSimTime\TestSimTimeScheduler.cpp">
+      <Filter>DiaSimTime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaSimTime\TestISimTimeBudgetedSystem.cpp">
+      <Filter>DiaSimTime</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

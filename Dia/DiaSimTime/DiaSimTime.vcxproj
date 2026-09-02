@@ -78,6 +78,8 @@
     <ClInclude Include="DiaRenderTime.h" />
     <ClInclude Include="SimTimeSchedulerFire.h" />
     <ClInclude Include="SimTimeScheduler.h" />
+    <ClInclude Include="SimTimePriority.h" />
+    <ClInclude Include="ISimTimeBudgetedSystem.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaMainTime.cpp" />
@@ -102,6 +104,10 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaObservation\DiaObservation.vcxproj">
       <Project>{5E6F7A8B-C9D0-E1F2-3456-789ABCDE0123}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaAIBudget\DiaAIBudget.vcxproj">
+      <Project>{C9D0E1F2-A3B4-5678-90AB-CDEF01234567}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

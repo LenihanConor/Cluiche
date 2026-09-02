@@ -11,6 +11,7 @@ dependencies:
   - dia.applicationflow
   - dia.streams
   - dia.observation
+  - dia.aibudget  # ISimTimeBudgetedSystem extends Dia::AIBudget::IAIBudgetedSystem
 public_api:
   headers:
     - DiaSimTime/DiaMainTime.h

@@ -10,6 +10,8 @@
     <ClInclude Include="DiaRenderTime.h" />
     <ClInclude Include="SimTimeSchedulerFire.h" />
     <ClInclude Include="SimTimeScheduler.h" />
+    <ClInclude Include="SimTimePriority.h" />
+    <ClInclude Include="ISimTimeBudgetedSystem.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaMainTime.cpp" />
