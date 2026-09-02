@@ -9,7 +9,7 @@
 namespace Cluiche { namespace AppFlow {
 
 DummyUIPageModule::DummyUIPageModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : MainModule(instanceId)
     , mPage(this)
 {}
 
@@ -35,7 +35,7 @@ Dia::ApplicationFlow::StartResult DummyUIPageModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void DummyUIPageModule::DoUpdate(float /*dt*/)
+void DummyUIPageModule::DoUpdate(const Dia::SimTime::MainTimeContext& /*ctx*/)
 {
     // Page rendering is driven by UIModule; no per-frame work here.
 }

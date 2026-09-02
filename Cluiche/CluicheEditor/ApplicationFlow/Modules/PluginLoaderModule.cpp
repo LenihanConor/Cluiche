@@ -24,7 +24,7 @@ namespace Cluiche
 		const Dia::Core::StringCRC PluginLoaderModule::kTypeId("PluginLoaderModule");
 
 		PluginLoaderModule::PluginLoaderModule(const Dia::Core::StringCRC& instanceId)
-			: Dia::ApplicationFlow::Module(instanceId)
+			: Dia::ApplicationFlow::MainModule(instanceId)
 			, mView(nullptr)
 			, mModelRef(this, EditorModelModule::kTypeId)
 			, mViewRef(this, EditorViewModule::kTypeId)
@@ -190,8 +190,9 @@ namespace Cluiche
 			return Dia::ApplicationFlow::StartResult::kReady;
 		}
 
-		void PluginLoaderModule::DoUpdate(float deltaTime)
+		void PluginLoaderModule::DoUpdate(const Dia::SimTime::MainTimeContext& ctx)
 		{
+			const float deltaTime = ctx.wallClockDt;
 			for (unsigned int i = 0; i < mLoadedPlugins.Size(); ++i)
 			{
 				mLoadedPlugins[i].plugin->OnUpdate(deltaTime);

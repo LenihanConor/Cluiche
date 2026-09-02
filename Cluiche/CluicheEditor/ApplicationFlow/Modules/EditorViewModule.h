@@ -1,6 +1,6 @@
 #pragma once
 
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/MainModule.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaEditor/MVC/EditorView.h>
 #include <DiaEditor/Sinks/EditorConsoleSink.h>
@@ -19,7 +19,7 @@ namespace Cluiche
 		class EditorViewControllerModule;
 		class SplashScreenModule;
 
-		class EditorViewModule : public Dia::ApplicationFlow::Module
+		class EditorViewModule : public Dia::ApplicationFlow::MainModule
 		{
 		public:
 			static const Dia::Core::StringCRC kTypeId;
@@ -31,7 +31,7 @@ namespace Cluiche
 
 		protected:
 			Dia::ApplicationFlow::StartResult DoStart() override;
-			void DoUpdate(float deltaTime) override;
+			void DoUpdate(const Dia::SimTime::MainTimeContext& ctx) override;
 			Dia::ApplicationFlow::StopResult DoStop() override;
 
 		private:

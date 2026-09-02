@@ -54,7 +54,7 @@ namespace Cluiche
 		const Dia::Core::StringCRC SplashScreenModule::kTypeId("SplashScreenModule");
 
 		SplashScreenModule::SplashScreenModule(const Dia::Core::StringCRC& instanceId)
-			: Dia::ApplicationFlow::Module(instanceId)
+			: Dia::ApplicationFlow::MainModule(instanceId)
 			, mHwnd(nullptr)
 		{
 		}
@@ -89,7 +89,7 @@ namespace Cluiche
 			return Dia::ApplicationFlow::StartResult::kReady;
 		}
 
-		void SplashScreenModule::DoUpdate(float /*deltaTime*/)
+		void SplashScreenModule::DoUpdate(const Dia::SimTime::MainTimeContext& /*ctx*/)
 		{
 			// Splash is passive; its paint messages are dispatched through
 			// EditorViewModule's PumpNativeMessages once that starts.  During Boot

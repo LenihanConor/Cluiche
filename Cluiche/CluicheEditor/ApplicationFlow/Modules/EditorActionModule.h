@@ -1,6 +1,6 @@
 #pragma once
 
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/MainModule.h>
 #include <DiaEditor/EditorAPI/EditorActionRegistry.h>
 #include <DiaEditor/EditorAPI/EditorActionQueue.h>
 #include <DiaEditor/EditorAPI/EditorAPIHealthReporter.h>
@@ -14,7 +14,7 @@ namespace Cluiche
 		// Owns the EditorActionRegistry and EditorActionQueue.
 		// DoUpdate() drains the queue on the main thread each frame.
 		// Exposes registry pointer so other modules can call RegisterAction().
-		class EditorActionModule : public Dia::ApplicationFlow::Module
+		class EditorActionModule : public Dia::ApplicationFlow::MainModule
 		{
 		public:
 			static const Dia::Core::StringCRC kTypeId;
@@ -26,7 +26,7 @@ namespace Cluiche
 
 		protected:
 			Dia::ApplicationFlow::StartResult DoStart() override;
-			void                              DoUpdate(float deltaTime) override;
+			void                              DoUpdate(const Dia::SimTime::MainTimeContext& ctx) override;
 			Dia::ApplicationFlow::StopResult  DoStop() override;
 
 		private:

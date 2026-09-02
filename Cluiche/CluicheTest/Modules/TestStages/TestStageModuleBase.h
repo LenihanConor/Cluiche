@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/LifecycleEvent.h>
 #include <DiaStreams/StreamReader.h>
 #include <DiaStreams/EventStreamStore.h>
@@ -13,7 +13,7 @@ namespace Dia { namespace ApplicationFlow { template<typename T> class ServiceSt
 
 namespace CluicheTest {
 
-class TestStageModuleBase : public Dia::ApplicationFlow::Module
+class TestStageModuleBase : public Dia::ApplicationFlow::SimModule
 {
 public:
     explicit TestStageModuleBase(const Dia::Core::StringCRC& instanceId);
@@ -21,7 +21,7 @@ public:
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart() final;
-    void DoUpdate(float deltaTime) final;
+    void DoUpdate(const Dia::SimTime::SimTimeContext& ctx) final;
     Dia::ApplicationFlow::StopResult DoStop() final;
 
     virtual Dia::Core::StringCRC GetStageName() const = 0;

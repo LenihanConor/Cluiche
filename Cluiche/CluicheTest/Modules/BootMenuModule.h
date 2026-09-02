@@ -1,5 +1,5 @@
 #pragma once
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/RenderModule.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -12,7 +12,7 @@
 
 namespace Cluiche { namespace AppFlow {
 
-class BootMenuModule : public Dia::ApplicationFlow::Module {
+class BootMenuModule : public Dia::ApplicationFlow::RenderModule {
 public:
     static const Dia::Core::StringCRC kTypeId;
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kRender;
@@ -21,7 +21,7 @@ public:
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
-    void DoUpdate(float dt) override;
+    void DoUpdate(const Dia::SimTime::RenderTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult DoStop() override;
     void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 

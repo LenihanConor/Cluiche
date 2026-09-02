@@ -12,7 +12,7 @@ namespace Cluiche
 		const Dia::Core::StringCRC EditorViewControllerModule::kTypeId("EditorViewControllerModule");
 
 		EditorViewControllerModule::EditorViewControllerModule(const Dia::Core::StringCRC& instanceId)
-			: Dia::ApplicationFlow::Module(instanceId)
+			: Dia::ApplicationFlow::MainModule(instanceId)
 			, mModelRef(this, EditorModelModule::kTypeId)
 			, mHistoryRef(this, CommandHistoryModule::kTypeId)
 		{
@@ -32,7 +32,7 @@ namespace Cluiche
 			return Dia::ApplicationFlow::StartResult::kReady;
 		}
 
-		void EditorViewControllerModule::DoUpdate(float /*deltaTime*/)
+		void EditorViewControllerModule::DoUpdate(const Dia::SimTime::MainTimeContext& /*ctx*/)
 		{
 		}
 

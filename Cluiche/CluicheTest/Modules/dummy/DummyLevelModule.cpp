@@ -21,7 +21,7 @@ static constexpr float kScreenHeight = 600.0f;
 static constexpr float kMoveSpeed    = 100.0f; // pixels per second
 
 DummyLevelModule::DummyLevelModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : SimModule(instanceId)
 {
 }
 
@@ -53,8 +53,9 @@ Dia::ApplicationFlow::StartResult DummyLevelModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kLoading;
 }
 
-void DummyLevelModule::DoUpdate(float dt)
+void DummyLevelModule::DoUpdate(const Dia::SimTime::SimTimeContext& ctx)
 {
+    const float dt = ctx.gameDt.AsFloatInSeconds();
     // --- Input ---
     if (InputStreamModule* input = mInput.Get())
     {

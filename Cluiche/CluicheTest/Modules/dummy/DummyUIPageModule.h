@@ -1,5 +1,5 @@
 #pragma once
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/MainModule.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include "DummyUIPage.h"
@@ -12,7 +12,7 @@ namespace Cluiche { namespace AppFlow {
 // the DummyStage stage. Application_ExitLevel (from the HTML) triggers
 // a return TransitionTo("Boot").
 class DummyUIPageModule
-    : public Dia::ApplicationFlow::Module
+    : public Dia::ApplicationFlow::MainModule
     , public Cluiche::DummyStage::DummyUIPageExternalInterface
 {
 public:
@@ -24,7 +24,7 @@ public:
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
-    void DoUpdate(float dt) override;
+    void DoUpdate(const Dia::SimTime::MainTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult DoStop() override;
 
 private:

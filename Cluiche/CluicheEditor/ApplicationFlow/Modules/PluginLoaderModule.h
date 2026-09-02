@@ -1,6 +1,6 @@
 #pragma once
 
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/MainModule.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaEditor/Plugin/EditorPluginContext.h>
@@ -21,7 +21,7 @@ namespace Cluiche
 		class EditorViewModule;
 		class EditorActionModule;
 
-		class PluginLoaderModule : public Dia::ApplicationFlow::Module, public Dia::Editor::IPluginLoader
+		class PluginLoaderModule : public Dia::ApplicationFlow::MainModule, public Dia::Editor::IPluginLoader
 		{
 		public:
 			static const Dia::Core::StringCRC kTypeId;
@@ -40,7 +40,7 @@ namespace Cluiche
 
 		protected:
 			Dia::ApplicationFlow::StartResult DoStart() override;
-			void DoUpdate(float deltaTime) override;
+			void DoUpdate(const Dia::SimTime::MainTimeContext& ctx) override;
 			Dia::ApplicationFlow::StopResult DoStop() override;
 
 		private:

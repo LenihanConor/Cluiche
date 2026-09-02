@@ -13,7 +13,7 @@ namespace Cluiche
 		const Dia::Core::StringCRC EditorActionModule::kTypeId("EditorActionModule");
 
 		EditorActionModule::EditorActionModule(const Dia::Core::StringCRC& instanceId)
-			: Dia::ApplicationFlow::Module(instanceId)
+			: Dia::ApplicationFlow::MainModule(instanceId)
 		{
 		}
 
@@ -34,8 +34,9 @@ namespace Cluiche
 			return Dia::ApplicationFlow::StartResult::kReady;
 		}
 
-		void EditorActionModule::DoUpdate(float deltaTime)
+		void EditorActionModule::DoUpdate(const Dia::SimTime::MainTimeContext& ctx)
 		{
+			const float deltaTime = ctx.wallClockDt;
 			DIA_TRACE_ZONE("editor.action_queue_drain", Dia::Observation::Trace::Category::kDiaApplicationFlow);
 
 			mHealthReporter.Tick();

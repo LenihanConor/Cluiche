@@ -11,7 +11,7 @@ namespace CluicheTest {
 const Dia::Core::StringCRC AssetRuntimeRendererModule::kTypeId("AssetRuntimeRendererModule");
 
 AssetRuntimeRendererModule::AssetRuntimeRendererModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : SimModule(instanceId)
 {}
 
 Dia::ApplicationFlow::StartResult AssetRuntimeRendererModule::DoStart()
@@ -19,7 +19,7 @@ Dia::ApplicationFlow::StartResult AssetRuntimeRendererModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void AssetRuntimeRendererModule::DoUpdate(float /*deltaTime*/)
+void AssetRuntimeRendererModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*ctx*/)
 {
     mFrame.Clear();
 

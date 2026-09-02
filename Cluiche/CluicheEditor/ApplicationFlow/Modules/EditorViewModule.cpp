@@ -27,7 +27,7 @@ namespace Cluiche
 		const Dia::Core::StringCRC EditorViewModule::kTypeId("EditorViewModule");
 
 		EditorViewModule::EditorViewModule(const Dia::Core::StringCRC& instanceId)
-			: Dia::ApplicationFlow::Module(instanceId)
+			: Dia::ApplicationFlow::MainModule(instanceId)
 			, mWindow(nullptr)
 			, mUISystem(nullptr)
 			, mRestoreMaximized(false)
@@ -145,7 +145,7 @@ namespace Cluiche
 			return Dia::ApplicationFlow::StartResult::kReady;
 		}
 
-		void EditorViewModule::DoUpdate(float /*deltaTime*/)
+		void EditorViewModule::DoUpdate(const Dia::SimTime::MainTimeContext& /*ctx*/)
 		{
 			if (mWindow)
 				Dia::Window::PumpNativeMessages(mWindow);

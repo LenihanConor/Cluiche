@@ -91,7 +91,7 @@ namespace Cluiche
 		} // anonymous namespace
 
 		EditorModelModule::EditorModelModule(const Dia::Core::StringCRC& instanceId)
-			: Dia::ApplicationFlow::Module(instanceId)
+			: Dia::ApplicationFlow::MainModule(instanceId)
 			, mRecentCount(0)
 		{
 			mProjectPath[0]         = '\0';
@@ -158,7 +158,7 @@ namespace Cluiche
 			return Dia::ApplicationFlow::StartResult::kReady;
 		}
 
-		void EditorModelModule::DoUpdate(float /*deltaTime*/)
+		void EditorModelModule::DoUpdate(const Dia::SimTime::MainTimeContext& /*ctx*/)
 		{
 			Dia::Observation::Log::Logger::Instance().FlushBuffers();
 		}

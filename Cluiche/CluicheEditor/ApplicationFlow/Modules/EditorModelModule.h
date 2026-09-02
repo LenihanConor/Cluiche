@@ -1,6 +1,6 @@
 #pragma once
 
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/MainModule.h>
 #include <DiaEditor/MVC/EditorModel.h>
 #include <DiaEditor/Project/ProjectContext.h>
 
@@ -18,7 +18,7 @@ namespace Cluiche
 			bool hasStoredState = false;
 		};
 
-		class EditorModelModule : public Dia::ApplicationFlow::Module
+		class EditorModelModule : public Dia::ApplicationFlow::MainModule
 		{
 		public:
 			static const Dia::Core::StringCRC kTypeId;
@@ -39,7 +39,7 @@ namespace Cluiche
 
 		protected:
 			Dia::ApplicationFlow::StartResult DoStart() override;
-			void DoUpdate(float deltaTime) override;
+			void DoUpdate(const Dia::SimTime::MainTimeContext& ctx) override;
 			Dia::ApplicationFlow::StopResult DoStop() override;
 
 		private:

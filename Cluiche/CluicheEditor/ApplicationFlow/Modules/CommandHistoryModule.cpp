@@ -9,7 +9,7 @@ namespace Cluiche
 		const Dia::Core::StringCRC CommandHistoryModule::kTypeId("CommandHistoryModule");
 
 		CommandHistoryModule::CommandHistoryModule(const Dia::Core::StringCRC& instanceId)
-			: Dia::ApplicationFlow::Module(instanceId)
+			: Dia::ApplicationFlow::MainModule(instanceId)
 		{
 		}
 
@@ -18,7 +18,7 @@ namespace Cluiche
 			return Dia::ApplicationFlow::StartResult::kReady;
 		}
 
-		void CommandHistoryModule::DoUpdate(float /*deltaTime*/)
+		void CommandHistoryModule::DoUpdate(const Dia::SimTime::MainTimeContext& /*ctx*/)
 		{
 		}
 

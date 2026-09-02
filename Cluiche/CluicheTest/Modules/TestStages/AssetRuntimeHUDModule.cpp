@@ -15,7 +15,7 @@ namespace CluicheTest {
 const Dia::Core::StringCRC AssetRuntimeHUDModule::kTypeId("AssetRuntimeHUDModule");
 
 AssetRuntimeHUDModule::AssetRuntimeHUDModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : RenderModule(instanceId)
 {}
 
 Dia::ApplicationFlow::StartResult AssetRuntimeHUDModule::DoStart()
@@ -25,7 +25,7 @@ Dia::ApplicationFlow::StartResult AssetRuntimeHUDModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void AssetRuntimeHUDModule::DoUpdate(float /*deltaTime*/)
+void AssetRuntimeHUDModule::DoUpdate(const Dia::SimTime::RenderTimeContext& /*ctx*/)
 {
     DIA_TRACE_ZONE("AssetRuntimeHUDModule.Update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
 

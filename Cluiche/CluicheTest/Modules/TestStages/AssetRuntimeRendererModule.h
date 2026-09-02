@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaStreams/StreamWriter.h>
 #include <DiaStreams/ServiceStreamReader.h>
@@ -9,7 +9,7 @@
 
 namespace CluicheTest {
 
-class AssetRuntimeRendererModule : public Dia::ApplicationFlow::Module
+class AssetRuntimeRendererModule : public Dia::ApplicationFlow::SimModule
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
@@ -19,7 +19,7 @@ public:
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
-    void DoUpdate(float deltaTime) override;
+    void DoUpdate(const Dia::SimTime::SimTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult DoStop() override;
     void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 

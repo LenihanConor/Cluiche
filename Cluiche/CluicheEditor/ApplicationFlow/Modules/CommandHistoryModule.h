@@ -1,13 +1,13 @@
 #pragma once
 
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/MainModule.h>
 #include <DiaEditor/Command/CommandHistory.h>
 
 namespace Cluiche
 {
 	namespace Editor
 	{
-		class CommandHistoryModule : public Dia::ApplicationFlow::Module
+		class CommandHistoryModule : public Dia::ApplicationFlow::MainModule
 		{
 		public:
 			static const Dia::Core::StringCRC kTypeId;
@@ -18,7 +18,7 @@ namespace Cluiche
 
 		protected:
 			Dia::ApplicationFlow::StartResult DoStart() override;
-			void DoUpdate(float deltaTime) override;
+			void DoUpdate(const Dia::SimTime::MainTimeContext& ctx) override;
 			Dia::ApplicationFlow::StopResult DoStop() override;
 
 		private:

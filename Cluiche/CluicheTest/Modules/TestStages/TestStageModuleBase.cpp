@@ -16,7 +16,7 @@ template class Dia::ApplicationFlow::ServiceStreamReader<Dia::Automation::Automa
 namespace CluicheTest {
 
 TestStageModuleBase::TestStageModuleBase(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : SimModule(instanceId)
     , mAutomationServiceStream(new Dia::ApplicationFlow::ServiceStreamReader<Dia::Automation::AutomationService>(this, Dia::Core::StringCRC("AutomationService")))
 {}
 
@@ -83,8 +83,9 @@ Dia::ApplicationFlow::StartResult TestStageModuleBase::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void TestStageModuleBase::DoUpdate(float deltaTime)
+void TestStageModuleBase::DoUpdate(const Dia::SimTime::SimTimeContext& ctx)
 {
+    const float deltaTime = ctx.gameDt.AsFloatInSeconds();
     if (!mResolved)
     {
         ++mFrameCount;

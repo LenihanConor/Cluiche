@@ -16,7 +16,7 @@ namespace Cluiche { namespace AppFlow {
 const Dia::Core::StringCRC BootMenuModule::kTypeId("BootMenuModule");
 
 BootMenuModule::BootMenuModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : RenderModule(instanceId)
 {}
 
 Dia::ApplicationFlow::StartResult BootMenuModule::DoStart()
@@ -49,7 +49,7 @@ Dia::ApplicationFlow::StartResult BootMenuModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void BootMenuModule::DoUpdate(float /*dt*/)
+void BootMenuModule::DoUpdate(const Dia::SimTime::RenderTimeContext& /*ctx*/)
 {
     if (DebugUIModule* debugUI = mDebugUI.Get())
     {
