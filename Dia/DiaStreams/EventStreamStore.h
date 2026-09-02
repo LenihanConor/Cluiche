@@ -157,8 +157,8 @@ private:
     std::atomic<uint64_t>    mCurrentBatchId{1};   // starts at 1; 0 = pre-first-flush
     std::atomic<uint64_t>    mFlushSequence{0};    // 0 = no flush yet
 
-    ReaderBuffer mReaders[kDefaultMaxReaders];
-    int          mReaderCount = 0;
+    ReaderBuffer* mReaders     = nullptr;  // heap-allocated, sized to mMaxReaders (ctor)
+    int           mReaderCount = 0;
 
     TapEntry     mTaps[kMaxTaps];
     unsigned int mTapCount     = 0;
@@ -192,6 +192,8 @@ inline EventStreamStore<T>::EventStreamStore(const Dia::Core::StringCRC& id,
     , mNextTapId(1)
     , mInDispatch(false)
 {
+    mReaders = new ReaderBuffer[mMaxReaders];
+
     auto& reg          = Dia::Observation::Metric::MetricRegistry::Instance();
     const std::string  prefix = std::string("stream.") + mId.AsChar();
     mMetricCurrentSize = reg.RegisterGauge  (Dia::Core::StringCRC((prefix + ".current_size").c_str()));
@@ -201,7 +203,7 @@ inline EventStreamStore<T>::EventStreamStore(const Dia::Core::StringCRC& id,
 template<typename T>
 inline EventStreamStore<T>::~EventStreamStore()
 {
-    for (int i = 0; i < static_cast<int>(kDefaultMaxReaders); ++i)
+    for (int i = 0; i < static_cast<int>(mMaxReaders); ++i)
     {
         if (mReaders[i].buffer != nullptr)
         {
@@ -214,6 +216,8 @@ inline EventStreamStore<T>::~EventStreamStore()
             mReaders[i].batchStamps = nullptr;
         }
     }
+    delete[] mReaders;
+    mReaders = nullptr;
 }
 
 template<typename T>
@@ -227,8 +231,13 @@ inline int EventStreamStore<T>::RegisterReader()
 {
     std::lock_guard<std::mutex> lock(mMutex);
     if (mReaderCount >= static_cast<int>(mMaxReaders))
+    {
+        DIA_LOG_WARNING("stream",
+            "stream.reader.capacity_exceeded stream_id=%s max_readers=%u",
+            mId.AsChar(), mMaxReaders);
         return -1;
-    for (int i = 0; i < static_cast<int>(kDefaultMaxReaders); ++i)
+    }
+    for (int i = 0; i < static_cast<int>(mMaxReaders); ++i)
     {
         if (!mReaders[i].active)
         {
@@ -245,6 +254,11 @@ inline int EventStreamStore<T>::RegisterReader()
             return i;
         }
     }
+    // Should be unreachable after the count check above, but guard against
+    // fragmentation/logic drift with the same warning rather than a silent -1.
+    DIA_LOG_WARNING("stream",
+        "stream.reader.capacity_exceeded stream_id=%s max_readers=%u",
+        mId.AsChar(), mMaxReaders);
     return -1;
 }
 

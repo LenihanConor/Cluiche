@@ -31,7 +31,11 @@ public:
     bool IsConnected() const;
 
     // Called from the owning module's OnConnectStreams() override.
-    void Connect(IStreamConnector& connector);
+    // maxReaders only takes effect if this call is the first Connect() for
+    // mStreamId (RegisterOrFindStreamStore returns an existing store as-is
+    // for subsequent callers, keeping whatever capacity the first caller set).
+    void Connect(IStreamConnector& connector,
+                 unsigned int maxReaders = EventStreamStore<T>::kDefaultMaxReaders);
 
     // Framework-internal: directly wire to an already-created store.
     // Used by Application to wire the $lifecycle writer without going through
@@ -80,10 +84,14 @@ inline bool EventStreamWriter<T>::IsConnected() const
 }
 
 template<typename T>
-inline void EventStreamWriter<T>::Connect(IStreamConnector& connector)
+inline void EventStreamWriter<T>::Connect(IStreamConnector& connector, unsigned int maxReaders)
 {
     IStreamStore* istore = connector.RegisterOrFindStreamStore(
-        Dia::Core::UniquePtr<IStreamStore>(new EventStreamStore<T>(mStreamId)));
+        Dia::Core::UniquePtr<IStreamStore>(new EventStreamStore<T>(
+            mStreamId,
+            Dia::Core::StringCRC::kZero,
+            EventStreamStore<T>::kDefaultCapacity,
+            maxReaders)));
     mStore = static_cast<EventStreamStore<T>*>(istore);
 }
 

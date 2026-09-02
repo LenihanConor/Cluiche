@@ -26,6 +26,12 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Time/TimeAbsolute.h>
+#include <DiaObservation/Log/Logger.h>
+#include <DiaObservation/Log/ISink.h>
+#include <DiaObservation/Log/LogEntry.h>
+#include <DiaObservation/Log/LogLevel.h>
+
+#include <string.h>
 
 using namespace Dia::ApplicationFlow;
 using namespace Dia::Core;
@@ -283,6 +289,148 @@ TEST(EventStream, SequenceMonotonic)
     EXPECT_LT(out[0].sequence, out[1].sequence)
         << "sequence should be monotonically increasing";
     EXPECT_LT(out[1].sequence, out[2].sequence);
+}
+
+// ---- Reader-slot capacity ceiling (Task 3.3) --------------------------------
+//
+// EventStreamStore's reader-slot storage used to be a compile-time fixed
+// array sized to kDefaultMaxReaders (8), regardless of the runtime
+// `maxReaders` constructor argument — so passing >8 silently capped at 8.
+// These tests cover: (a) a 9th distinct reader succeeding when the store is
+// constructed with maxReaders > 8, (b) a logged warning (not a silent -1)
+// when a reader connects past the store's actual configured capacity, and
+// (c) the existing default (8-reader) ceiling behaviour is unchanged.
+
+class StreamLogSink : public Dia::Observation::Log::ISink
+{
+public:
+    static const unsigned int kMaxEntries = 128;
+
+    StreamLogSink()
+        : mEntryCount(0)
+    {
+        SetLevelThreshold(Dia::Observation::Log::LogLevel::kDebug);
+        SetChannelFilter(Dia::Core::StringCRC("stream"), true);
+    }
+
+    void OnLogEntry(const Dia::Observation::Log::LogEntry& entry) override
+    {
+        if (mEntryCount < kMaxEntries)
+            mEntries[mEntryCount++] = entry;
+    }
+
+    const char* GetName() const override { return "StreamLogSink"; }
+
+    void Clear() { mEntryCount = 0; }
+
+    unsigned int CountByLevel(Dia::Observation::Log::LogLevel level) const
+    {
+        unsigned int count = 0;
+        for (unsigned int i = 0; i < mEntryCount; ++i)
+            if (mEntries[i].level == level) ++count;
+        return count;
+    }
+
+    bool HasMessageContaining(const char* substring) const
+    {
+        for (unsigned int i = 0; i < mEntryCount; ++i)
+            if (strstr(mEntries[i].message, substring) != nullptr)
+                return true;
+        return false;
+    }
+
+private:
+    Dia::Observation::Log::LogEntry mEntries[kMaxEntries];
+    unsigned int mEntryCount;
+};
+
+class EventStreamCapacityTest : public ::testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        mSink.Clear();
+        Dia::Observation::Log::Logger::Instance().RegisterThreadBuffer();
+        Dia::Observation::Log::Logger::Instance().RegisterSink(&mSink);
+    }
+
+    void TearDown() override
+    {
+        Dia::Observation::Log::Logger::Instance().UnregisterSink(&mSink);
+        Dia::Observation::Log::Logger::Instance().UnregisterThreadBuffer();
+    }
+
+    void FlushLogs()
+    {
+        Dia::Observation::Log::Logger::Instance().FlushSync();
+    }
+
+    StreamLogSink mSink;
+};
+
+TEST_F(EventStreamCapacityTest, NinthReaderSucceedsWhenMaxReadersRaised)
+{
+    // maxReaders=16 must actually back a 16-slot allocation, not silently
+    // cap at the compile-time kDefaultMaxReaders (8).
+    EventStreamStore<int> estore(StringCRC("e_cap_16"),
+        Dia::Core::StringCRC::kZero,
+        /*capacity=*/EventStreamStore<int>::kDefaultCapacity,
+        /*maxReaders=*/16u);
+
+    int indices[9];
+    for (int i = 0; i < 9; ++i)
+        indices[i] = estore.RegisterReader();
+
+    for (int i = 0; i < 9; ++i)
+        EXPECT_GE(indices[i], 0) << "reader " << i << " should register successfully (maxReaders=16)";
+
+    // All 9 indices must be distinct.
+    for (int i = 0; i < 9; ++i)
+        for (int j = i + 1; j < 9; ++j)
+            EXPECT_NE(indices[i], indices[j]) << "reader indices " << i << " and " << j << " collided";
+
+    // Ninth reader must actually receive independently-consumable events —
+    // proves it's backed by real storage, not a stub slot.
+    estore.Send(MakeEvent(42));
+    DynamicArrayC<Event<int>, 32> out;
+    estore.Consume(indices[8], out);
+    ASSERT_EQ(out.Size(), 1u);
+    EXPECT_EQ(out[0].payload, 42);
+}
+
+TEST_F(EventStreamCapacityTest, ReaderPastConfiguredCapacityLogsWarningNotSilentFailure)
+{
+    EventStreamStore<int> estore(StringCRC("e_cap_default"));  // default maxReaders=8
+
+    for (int i = 0; i < 8; ++i)
+        ASSERT_GE(estore.RegisterReader(), 0);
+
+    // 9th reader exceeds the default 8-reader ceiling — must fail...
+    int overflowIdx = estore.RegisterReader();
+    EXPECT_EQ(overflowIdx, -1);
+
+    // ...but must log a warning rather than failing silently.
+    FlushLogs();
+    EXPECT_GE(mSink.CountByLevel(Dia::Observation::Log::LogLevel::kWarning), 1u);
+    EXPECT_TRUE(mSink.HasMessageContaining("stream.reader.capacity_exceeded"));
+    EXPECT_TRUE(mSink.HasMessageContaining("e_cap_default"));
+}
+
+TEST_F(EventStreamCapacityTest, DefaultEightReaderCeilingUnchanged)
+{
+    // Regression guard: default-capacity behaviour must be identical to
+    // pre-fix behaviour — exactly 8 readers succeed, the 9th is rejected.
+    EventStreamStore<int> estore(StringCRC("e_cap_regress"));
+
+    int successCount = 0;
+    for (int i = 0; i < 9; ++i)
+    {
+        if (estore.RegisterReader() >= 0)
+            ++successCount;
+    }
+
+    EXPECT_EQ(successCount, 8)
+        << "exactly kDefaultMaxReaders (8) readers should succeed for a default-constructed store";
 }
 
 // ---------------------------------------------------------------------------
