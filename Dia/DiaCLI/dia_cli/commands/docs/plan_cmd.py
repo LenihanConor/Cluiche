@@ -17,7 +17,7 @@ _TRANSITIONS = {
 }
 
 _TABLE_ROW_RE = re.compile(
-    r"^\|\s*(\d+)\s*\|"
+    r"^\|\s*([\w.]+)\s*\|"
     r"\s*(.*?)\s*\|"
     r"\s*(.*?)\s*\|"
     r"\s*(.*?)\s*\|"
