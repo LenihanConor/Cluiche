@@ -202,6 +202,11 @@ def run_sln_sync(
             sln_text = sln_text[:global_idx + 1] + folder_decl + sln_text[global_idx + 1:]
 
     # 2. Update NestedProjects section
+    # Track which reassignments were applied by rewriting an existing line —
+    # a project with NO current nested entry (old_folder == "<none>") has no
+    # line to rewrite and must instead get a brand-new line inserted just
+    # before EndGlobalSection.
+    handled_child_guids: set[str] = set()
     new_nested_lines: list[str] = []
     in_nested = False
     for line in sln_text.splitlines(keepends=True):
@@ -210,10 +215,13 @@ def run_sln_sync(
             new_nested_lines.append(line)
             continue
         if in_nested and "EndGlobalSection" in line:
-            # Before closing, add entries for new folders themselves
-            for folder_name in sorted(folders_to_create):
-                # New top-level folders have no parent — don't add nested entry
-                pass
+            # Insert brand-new entries for projects that had no prior nesting
+            # (existing-line rewrite below only handles projects already nested).
+            for project_name, project_guid, old_folder, new_folder in sorted(reassignments):
+                if old_folder == "<none>" and project_guid not in handled_child_guids:
+                    new_parent_guid = _folder_guid(new_folder)
+                    new_nested_lines.append(f"\t\t{project_guid} = {new_parent_guid}\n")
+                    handled_child_guids.add(project_guid)
             in_nested = False
             new_nested_lines.append(line)
             continue
@@ -231,6 +239,7 @@ def run_sln_sync(
                     new_nested_lines.append(
                         f"{m.group(1)}{child_guid}{m.group(3)}{new_parent_guid}{m.group(5)}\n"
                     )
+                    handled_child_guids.add(child_guid)
                     continue
             new_nested_lines.append(line)
         else:
