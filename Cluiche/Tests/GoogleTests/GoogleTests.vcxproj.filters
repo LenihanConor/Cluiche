@@ -1748,5 +1748,8 @@
     <ClCompile Include="DiaSimTime\TestDiaRenderTime.cpp">
       <Filter>DiaSimTime</Filter>
     </ClCompile>
+    <ClCompile Include="Core\SimTime\TestSimTimeDomainRegistry.cpp">
+      <Filter>Core\SimTime</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

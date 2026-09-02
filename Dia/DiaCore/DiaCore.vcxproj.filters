@@ -666,12 +666,18 @@
     <ClInclude Include="SimTime\SimTimeDomain.h">
       <Filter>SimTime</Filter>
     </ClInclude>
+    <ClInclude Include="SimTime\SimTimeDomainRegistry.h">
+      <Filter>SimTime</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Metadata\DescriptionRegistry.cpp">
       <Filter>Metadata</Filter>
     </ClCompile>
     <ClCompile Include="SimTime\SimTimeDomain.cpp">
+      <Filter>SimTime</Filter>
+    </ClCompile>
+    <ClCompile Include="SimTime\SimTimeDomainRegistry.cpp">
       <Filter>SimTime</Filter>
     </ClCompile>
   </ItemGroup>

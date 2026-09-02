@@ -199,6 +199,7 @@
     <ClInclude Include="Threading\ThreadPool.h" />
     <ClInclude Include="SimTime\SimTimeContext.h" />
     <ClInclude Include="SimTime\SimTimeDomain.h" />
+    <ClInclude Include="SimTime\SimTimeDomainRegistry.h" />
   </ItemGroup>
   <ItemGroup>
 
@@ -236,6 +237,7 @@
     <ClCompile Include="Reflect\FieldAttributes.cpp" />
     <ClCompile Include="Metadata\DescriptionRegistry.cpp" />
     <ClCompile Include="SimTime\SimTimeDomain.cpp" />
+    <ClCompile Include="SimTime\SimTimeDomainRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>
 
