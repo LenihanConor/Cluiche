@@ -12,6 +12,7 @@
 #include <gtest/gtest.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaStreams/FrameStreamStore.h>
@@ -203,9 +204,9 @@ TEST(EventStream, SequenceMonotonic)
 
 // ---- FrameStream integration -----------------------------------------------
 
-struct Str_FrameWriterModule : Module
+struct Str_FrameWriterModule : SimModule
 {
-    using Module::Module;
+    using SimModule::SimModule;
     static const StringCRC kTypeId;
 
     StreamWriter<int> mWriter{this, StringCRC("Str_FrameChannel")};
@@ -213,7 +214,7 @@ struct Str_FrameWriterModule : Module
 
     void OnConnectStreams(Application& app) override { mWriter.Connect(app); }
     StartResult DoStart() override { return StartResult::kReady; }
-    void DoUpdate(float) override
+    void DoUpdate(const Dia::SimTime::SimTimeContext&) override
     {
         TimeAbsolute t = TimeAbsolute::CreateFromMilliseconds(0);
         mWriter.Write(writeValue, t);
@@ -222,9 +223,9 @@ struct Str_FrameWriterModule : Module
 };
 const StringCRC Str_FrameWriterModule::kTypeId("Str_FrameWriterModule");
 
-struct Str_FrameReaderModule : Module
+struct Str_FrameReaderModule : SimModule
 {
-    using Module::Module;
+    using SimModule::SimModule;
     static const StringCRC kTypeId;
 
     StreamReader<int> mReader{this, StringCRC("Str_FrameChannel")};
@@ -232,7 +233,7 @@ struct Str_FrameReaderModule : Module
 
     void OnConnectStreams(Application& app) override { mReader.Connect(app); }
     StartResult DoStart() override { return StartResult::kReady; }
-    void DoUpdate(float) override
+    void DoUpdate(const Dia::SimTime::SimTimeContext&) override
     {
         const int* v = mReader.FetchLatest();
         if (v) lastRead = *v;
@@ -354,9 +355,9 @@ TEST(StreamIntegration, FrameStreamWriterReaderRoundTrip)
 
 // ---- EventStream integration -----------------------------------------------
 
-struct Str_EventWriterModule : Module
+struct Str_EventWriterModule : SimModule
 {
-    using Module::Module;
+    using SimModule::SimModule;
     static const StringCRC kTypeId;
 
     EventStreamWriter<int> mWriter{this, StringCRC("Str_EventChannel")};
@@ -365,7 +366,7 @@ struct Str_EventWriterModule : Module
 
     void OnConnectStreams(Application& app) override { mWriter.Connect(app); }
     StartResult DoStart() override { return StartResult::kReady; }
-    void DoUpdate(float) override
+    void DoUpdate(const Dia::SimTime::SimTimeContext&) override
     {
         if (sendOnNextUpdate)
         {
@@ -377,9 +378,9 @@ struct Str_EventWriterModule : Module
 };
 const StringCRC Str_EventWriterModule::kTypeId("Str_EventWriterModule");
 
-struct Str_EventReaderModule : Module
+struct Str_EventReaderModule : SimModule
 {
-    using Module::Module;
+    using SimModule::SimModule;
     static const StringCRC kTypeId;
 
     EventStreamReader<int> mReader{this, StringCRC("Str_EventChannel")};
@@ -387,7 +388,7 @@ struct Str_EventReaderModule : Module
 
     void OnConnectStreams(Application& app) override { mReader.Connect(app); }
     StartResult DoStart() override { return StartResult::kReady; }
-    void DoUpdate(float) override
+    void DoUpdate(const Dia::SimTime::SimTimeContext&) override
     {
         mReader.Consume(consumed);
     }

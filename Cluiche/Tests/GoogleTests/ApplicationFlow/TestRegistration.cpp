@@ -9,6 +9,7 @@
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
+#include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaApplicationFlow/IApplicationInspectable.h>
@@ -24,40 +25,40 @@ using namespace Dia::Core::Containers;
 // Fixture modules
 // ---------------------------------------------------------------------------
 
-struct RegTestModule : Module
+struct RegTestModule : SimModule
 {
-    using Module::Module;
+    using SimModule::SimModule;
     static const StringCRC kTypeId;
     StartResult DoStart() override { return StartResult::kReady; }
-    void        DoUpdate(float) override {}
+    void        DoUpdate(const Dia::SimTime::SimTimeContext&) override {}
     StopResult  DoStop() override { return StopResult::kDone; }
 };
 const StringCRC RegTestModule::kTypeId("RegTestModule");
 
 // A second module type used as "sibling" in ModuleRef tests.
 // Prefixed V2Reg_ to avoid ODR collision with v1 TestModuleRef.cpp.
-struct V2RegSiblingModule : Module
+struct V2RegSiblingModule : SimModule
 {
-    using Module::Module;
+    using SimModule::SimModule;
     static const StringCRC kTypeId;
 
     StartResult DoStart() override { return StartResult::kReady; }
-    void        DoUpdate(float) override {}
+    void        DoUpdate(const Dia::SimTime::SimTimeContext&) override {}
     StopResult  DoStop() override { return StopResult::kDone; }
 };
 const StringCRC V2RegSiblingModule::kTypeId("V2RegSiblingModule");
 
 // A module that stores a ModuleRef to V2RegSiblingModule and attempts resolution
 // during DoUpdate.
-struct V2RegOwnerModule : Module
+struct V2RegOwnerModule : SimModule
 {
-    using Module::Module;
+    using SimModule::SimModule;
     static const StringCRC kTypeId;
 
     bool siblingFound = false;
 
     StartResult DoStart() override { return StartResult::kReady; }
-    void DoUpdate(float) override
+    void DoUpdate(const Dia::SimTime::SimTimeContext&) override
     {
         ModuleRef<V2RegSiblingModule> ref(this, V2RegSiblingModule::kTypeId);
         if (ref.Get() != nullptr)

@@ -13,6 +13,7 @@
 #include <gtest/gtest.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaStreams/EventStreamStore.h>
@@ -30,9 +31,9 @@ using namespace Dia::Core::Containers;
 // Minimal module that connects an EventStreamReader on $lifecycle.
 // ---------------------------------------------------------------------------
 
-struct LC_LifecycleReaderModule : Module
+struct LC_LifecycleReaderModule : SimModule
 {
-    using Module::Module;
+    using SimModule::SimModule;
     static const StringCRC kTypeId;
 
     EventStreamReader<LifecycleEvent> mReader{this, StringCRC("$lifecycle")};
@@ -56,7 +57,7 @@ struct LC_LifecycleReaderModule : Module
         }
     }
 
-    void DoUpdate(float) override
+    void DoUpdate(const Dia::SimTime::SimTimeContext&) override
     {
         if (mLifecycleStore && mReaderIndex >= 0)
         {
@@ -88,12 +89,12 @@ struct LC_LifecycleReaderModule : Module
 };
 const StringCRC LC_LifecycleReaderModule::kTypeId("LC_LifecycleReaderModule");
 
-struct LC_SimpleModule : Module
+struct LC_SimpleModule : SimModule
 {
-    using Module::Module;
+    using SimModule::SimModule;
     static const StringCRC kTypeId;
     StartResult DoStart() override { return StartResult::kReady; }
-    void        DoUpdate(float) override {}
+    void        DoUpdate(const Dia::SimTime::SimTimeContext&) override {}
     StopResult  DoStop() override { return StopResult::kDone; }
 };
 const StringCRC LC_SimpleModule::kTypeId("LC_SimpleModule");

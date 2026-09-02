@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/IApplicationInspectable.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
@@ -23,9 +24,9 @@ using namespace Dia::Core::Containers;
 // Fixtures
 // ---------------------------------------------------------------------------
 
-struct CountingModule : Module
+struct CountingModule : SimModule
 {
-    using Module::Module;
+    using SimModule::SimModule;
     static const StringCRC kTypeId;
 
     int startCalls  = 0;
@@ -36,15 +37,15 @@ struct CountingModule : Module
     StopResult  stopResult  = StopResult::kDone;
 
     StartResult DoStart() override { ++startCalls; return startResult; }
-    void        DoUpdate(float) override { ++updateCalls; }
+    void        DoUpdate(const Dia::SimTime::SimTimeContext&) override { ++updateCalls; }
     StopResult  DoStop() override { ++stopCalls; return stopResult; }
 };
 const StringCRC CountingModule::kTypeId("CountingModule");
 
 // Module that returns kLoading a configurable number of times then kReady.
-struct AsyncStartModule : Module
+struct AsyncStartModule : SimModule
 {
-    using Module::Module;
+    using SimModule::SimModule;
     static const StringCRC kTypeId;
 
     int loadingFrames = 3;    // how many kLoading results before kReady
@@ -55,7 +56,7 @@ struct AsyncStartModule : Module
         ++startCallCount;
         return (startCallCount >= loadingFrames) ? StartResult::kReady : StartResult::kLoading;
     }
-    void       DoUpdate(float) override {}
+    void       DoUpdate(const Dia::SimTime::SimTimeContext&) override {}
     StopResult DoStop() override { return StopResult::kDone; }
 };
 const StringCRC AsyncStartModule::kTypeId("AsyncStartModule");

@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/IApplicationInspectable.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
@@ -22,12 +23,12 @@ using namespace Dia::Core::Containers;
 // Fixture module
 // ---------------------------------------------------------------------------
 
-struct InspectModule : Module
+struct InspectModule : SimModule
 {
-    using Module::Module;
+    using SimModule::SimModule;
     static const StringCRC kTypeId;
     StartResult DoStart() override { return StartResult::kReady; }
-    void        DoUpdate(float) override {}
+    void        DoUpdate(const Dia::SimTime::SimTimeContext&) override {}
     StopResult  DoStop() override { return StopResult::kDone; }
 };
 const StringCRC InspectModule::kTypeId("InspectModule");

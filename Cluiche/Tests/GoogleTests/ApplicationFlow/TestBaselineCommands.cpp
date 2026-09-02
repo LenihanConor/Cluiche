@@ -17,6 +17,7 @@
 #include <gtest/gtest.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/IApplicationInspectable.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
@@ -32,13 +33,13 @@ using namespace Dia::Core::Containers;
 // ---------------------------------------------------------------------------
 // Fixture module — always kReady / kDone; tracks DoStart call count
 // ---------------------------------------------------------------------------
-struct BC_SimpleModule : Module
+struct BC_SimpleModule : SimModule
 {
-    using Module::Module;
+    using SimModule::SimModule;
     static const StringCRC kTypeId;
     int startCallCount = 0;
     StartResult DoStart() override { ++startCallCount; return StartResult::kReady; }
-    void        DoUpdate(float) override {}
+    void        DoUpdate(const Dia::SimTime::SimTimeContext&) override {}
     StopResult  DoStop() override { return StopResult::kDone; }
 };
 const StringCRC BC_SimpleModule::kTypeId("BC_SimpleModule");

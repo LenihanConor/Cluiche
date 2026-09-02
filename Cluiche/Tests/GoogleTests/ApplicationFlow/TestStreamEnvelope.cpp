@@ -11,6 +11,7 @@
 #include <gtest/gtest.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaStreams/EventStreamStore.h>
@@ -176,23 +177,23 @@ TEST(StreamEnvelope, FanOutReadersSameEnvelope)
 // senderCrc when sending.
 // ---------------------------------------------------------------------------
 
-struct Env_WriterModule : Module
+struct Env_WriterModule : SimModule
 {
-    using Module::Module;
+    using SimModule::SimModule;
     static const StringCRC kTypeId;
 
     EventStreamWriter<int> mWriter{this, StringCRC("Env_Channel")};
 
     void OnConnectStreams(Application& app) override { mWriter.Connect(app); }
     StartResult DoStart() override { return StartResult::kReady; }
-    void DoUpdate(float) override {}
+    void DoUpdate(const Dia::SimTime::SimTimeContext&) override {}
     StopResult DoStop() override { return StopResult::kDone; }
 };
 const StringCRC Env_WriterModule::kTypeId("Env_WriterModule");
 
-struct Env_ReaderModule : Module
+struct Env_ReaderModule : SimModule
 {
-    using Module::Module;
+    using SimModule::SimModule;
     static const StringCRC kTypeId;
 
     EventStreamReader<int> mReader{this, StringCRC("Env_Channel")};
@@ -200,7 +201,7 @@ struct Env_ReaderModule : Module
 
     void OnConnectStreams(Application& app) override { mReader.Connect(app); }
     StartResult DoStart() override { return StartResult::kReady; }
-    void DoUpdate(float) override { mReader.Consume(consumed); }
+    void DoUpdate(const Dia::SimTime::SimTimeContext&) override { mReader.Consume(consumed); }
     StopResult DoStop() override { return StopResult::kDone; }
 };
 const StringCRC Env_ReaderModule::kTypeId("Env_ReaderModule");

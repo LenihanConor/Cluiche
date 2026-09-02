@@ -8,6 +8,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include <gtest/gtest.h>
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
@@ -106,12 +107,12 @@ TEST(ServiceStreamStore, ResetThenRegisterAgainWorks)
 
 namespace {
 
-struct SC_Module : Module
+struct SC_Module : SimModule
 {
-    using Module::Module;
+    using SimModule::SimModule;
     static const StringCRC kTypeId;
     StartResult DoStart() override { return StartResult::kReady; }
-    void        DoUpdate(float) override {}
+    void        DoUpdate(const Dia::SimTime::SimTimeContext&) override {}
     StopResult  DoStop() override { return StopResult::kDone; }
 };
 const StringCRC SC_Module::kTypeId("SC_Module");
@@ -336,16 +337,16 @@ namespace {
 struct SC_Service { int id = 0; };
 
 // Provider module: registers the service handle from DoStart
-struct SC_ProviderModule : Module
+struct SC_ProviderModule : SimModule
 {
-    using Module::Module;
+    using SimModule::SimModule;
     static const StringCRC kTypeId;
 
     SC_Service service;
     ServiceStreamWriter<SC_Service> writer;
 
     SC_ProviderModule(const StringCRC& id)
-        : Module(id)
+        : SimModule(id)
         , writer(this, StringCRC("svc"))
     {}
 
@@ -357,22 +358,22 @@ struct SC_ProviderModule : Module
         writer.Register(service);
         return StartResult::kReady;
     }
-    void       DoUpdate(float) override {}
+    void       DoUpdate(const Dia::SimTime::SimTimeContext&) override {}
     StopResult DoStop() override { return StopResult::kDone; }
 };
 const StringCRC SC_ProviderModule::kTypeId("SC_ProviderModule");
 
 // Consumer module: reads the service handle from DoStart (after commit gate)
-struct SC_ConsumerModule : Module
+struct SC_ConsumerModule : SimModule
 {
-    using Module::Module;
+    using SimModule::SimModule;
     static const StringCRC kTypeId;
 
     ServiceStreamReader<SC_Service> reader;
     int readValue = -1;
 
     SC_ConsumerModule(const StringCRC& id)
-        : Module(id)
+        : SimModule(id)
         , reader(this, StringCRC("svc"))
     {}
 
@@ -386,7 +387,7 @@ struct SC_ConsumerModule : Module
         readValue = reader.Get().id;
         return StartResult::kReady;
     }
-    void       DoUpdate(float) override {}
+    void       DoUpdate(const Dia::SimTime::SimTimeContext&) override {}
     StopResult DoStop() override { return StopResult::kDone; }
 };
 const StringCRC SC_ConsumerModule::kTypeId("SC_ConsumerModule");

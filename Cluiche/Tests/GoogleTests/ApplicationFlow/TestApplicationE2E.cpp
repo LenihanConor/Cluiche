@@ -10,6 +10,7 @@
 #include <gtest/gtest.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/IApplicationInspectable.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
@@ -25,9 +26,9 @@ using namespace Dia::Core::Containers;
 // the exact sequence of DoStart/DoUpdate/DoStop across the application run.
 // ---------------------------------------------------------------------------
 
-struct E2E_TrackableModule : Module
+struct E2E_TrackableModule : SimModule
 {
-    using Module::Module;
+    using SimModule::SimModule;
     static const StringCRC kTypeId;
 
     int startCalls  = 0;
@@ -35,7 +36,7 @@ struct E2E_TrackableModule : Module
     int stopCalls   = 0;
 
     StartResult DoStart() override  { ++startCalls;  return StartResult::kReady; }
-    void        DoUpdate(float)  override { ++updateCalls; }
+    void        DoUpdate(const Dia::SimTime::SimTimeContext&)  override { ++updateCalls; }
     StopResult  DoStop()  override  { ++stopCalls;   return StopResult::kDone; }
 };
 const StringCRC E2E_TrackableModule::kTypeId("E2E_TrackableModule");

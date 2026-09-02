@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
@@ -24,12 +25,12 @@ using namespace Dia::Observation::Metric;
 // ---------------------------------------------------------------------------
 // Fixture module
 // ---------------------------------------------------------------------------
-struct MC_SimpleModule : Module
+struct MC_SimpleModule : SimModule
 {
-    using Module::Module;
+    using SimModule::SimModule;
     static const StringCRC kTypeId;
     StartResult DoStart() override { return StartResult::kReady; }
-    void        DoUpdate(float) override {}
+    void        DoUpdate(const Dia::SimTime::SimTimeContext&) override {}
     StopResult  DoStop() override { return StopResult::kDone; }
 };
 const StringCRC MC_SimpleModule::kTypeId("MC_SimpleModule");

@@ -10,6 +10,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include <gtest/gtest.h>
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaApplicationFlow/Manifest/ManifestValidatorV2.h>
@@ -24,12 +25,12 @@ using namespace Dia::Core::Containers;
 // Fixture module
 // ---------------------------------------------------------------------------
 
-struct ValX_SimpleModule : Module
+struct ValX_SimpleModule : SimModule
 {
-    using Module::Module;
+    using SimModule::SimModule;
     static const StringCRC kTypeId;
     StartResult DoStart() override { return StartResult::kReady; }
-    void        DoUpdate(float) override {}
+    void        DoUpdate(const Dia::SimTime::SimTimeContext&) override {}
     StopResult  DoStop() override { return StopResult::kDone; }
 };
 const StringCRC ValX_SimpleModule::kTypeId("ValX_SimpleModule");

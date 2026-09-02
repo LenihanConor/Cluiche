@@ -10,6 +10,7 @@
 #include <gtest/gtest.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/IApplicationInspectable.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
@@ -27,12 +28,12 @@ using namespace Dia::Core::Containers;
 // ---------------------------------------------------------------------------
 // Simple fixture module — always kReady / kDone
 // ---------------------------------------------------------------------------
-struct TG_SimpleModule : Module
+struct TG_SimpleModule : SimModule
 {
-    using Module::Module;
+    using SimModule::SimModule;
     static const StringCRC kTypeId;
     StartResult DoStart() override { return StartResult::kReady; }
-    void        DoUpdate(float) override {}
+    void        DoUpdate(const Dia::SimTime::SimTimeContext&) override {}
     StopResult  DoStop() override { return StopResult::kDone; }
 };
 const StringCRC TG_SimpleModule::kTypeId("TG_SimpleModule");
@@ -41,9 +42,9 @@ const StringCRC TG_SimpleModule::kTypeId("TG_SimpleModule");
 // Guard-registering module — registers a hold guard from DoStart and removes
 // it from DoStop. Exposes mHeld so the test can flip it.
 // ---------------------------------------------------------------------------
-struct TG_GuardModule : Module
+struct TG_GuardModule : SimModule
 {
-    using Module::Module;
+    using SimModule::SimModule;
     static const StringCRC kTypeId;
 
     bool mHeld = true;
@@ -59,7 +60,7 @@ struct TG_GuardModule : Module
         return StartResult::kReady;
     }
 
-    void DoUpdate(float) override {}
+    void DoUpdate(const Dia::SimTime::SimTimeContext&) override {}
 
     StopResult DoStop() override
     {
@@ -74,9 +75,9 @@ const StringCRC TG_GuardModule::kTypeId("TG_GuardModule");
 // ---------------------------------------------------------------------------
 // Lifecycle-reader module — tracks $lifecycle events for AC12
 // ---------------------------------------------------------------------------
-struct TG_LifecycleReaderModule : Module
+struct TG_LifecycleReaderModule : SimModule
 {
-    using Module::Module;
+    using SimModule::SimModule;
     static const StringCRC kTypeId;
 
     EventStreamStore<LifecycleEvent>* mLifecycleStore = nullptr;
@@ -94,7 +95,7 @@ struct TG_LifecycleReaderModule : Module
         }
     }
 
-    void DoUpdate(float) override
+    void DoUpdate(const Dia::SimTime::SimTimeContext&) override
     {
         if (mLifecycleStore && mReaderIndex >= 0)
             mLifecycleStore->Consume(mReaderIndex, consumed);
