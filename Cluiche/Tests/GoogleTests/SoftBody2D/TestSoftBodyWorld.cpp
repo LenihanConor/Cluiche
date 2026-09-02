@@ -3,6 +3,8 @@
 #include <DiaSoftBody2D/SoftBodyWorld.h>
 #include <DiaMaths/Vector/Vector2D.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaObservation/Metric/Counter.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
 
 #include <cmath>
 
@@ -150,6 +152,27 @@ TEST(SoftBody2D_World, Update_AccumulatorHandlesLargeDelta)
     world.AddRope(MakeSimpleRopeDef());
     world.Update(10.0f);
     EXPECT_EQ(world.GetBodyCount(), 1);
+}
+
+TEST(SoftBody2D_World, Update_AccumulatorHandlesLargeDelta_IncrementsSharedDroppedTicksMetric)
+{
+    // Shared with ProcessingUnit's SimPU accumulator metric and PhysicsWorld's
+    // own cap-hit detection — a global, idempotently-registered counter, so
+    // assert on the delta caused by this test, not an absolute value
+    // (finding 18).
+    Dia::Observation::Metric::Counter* counter = Dia::Observation::Metric::MetricRegistry::Instance()
+        .RegisterCounter(Dia::Core::StringCRC("simtime.accumulator.dropped_ticks"));
+    ASSERT_NE(counter, nullptr);
+    uint64_t before = counter->Value();
+
+    WorldDef def = MakeDefaultWorldDef();
+    def.maxSubSteps = 2;
+    SoftBodyWorld world(def);
+
+    world.AddRope(MakeSimpleRopeDef());
+    world.Update(10.0f);  // Forces a cap-hit — SoftBodyWorld resets the accumulator (existing behavior)
+
+    EXPECT_GT(counter->Value(), before);
 }
 
 TEST(SoftBody2D_World, Update_EmptyWorld_NoCrash)

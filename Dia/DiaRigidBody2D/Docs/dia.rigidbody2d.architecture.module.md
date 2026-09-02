@@ -49,6 +49,7 @@ dependent_modules:
   - dia.maths
   - dia.core
   - dia.messagebus
+  - dia.observation
 
 public_api:
   headers: []

@@ -54,6 +54,7 @@ dependent_modules:
   - dia.geometry2d
   - dia.maths
   - dia.core
+  - dia.observation
 
 public_api:
   headers:

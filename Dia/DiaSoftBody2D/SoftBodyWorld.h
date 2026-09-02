@@ -9,6 +9,7 @@
 
 namespace Dia::Geometry2D { class AARect; class Circle; class Line; }
 namespace Dia::RigidBody2D { class PhysicsWorld; }
+namespace Dia { namespace Observation { namespace Metric { class Counter; } } }
 
 namespace Dia::SoftBody2D {
 
@@ -57,6 +58,7 @@ private:
 
     WorldDef                                                        mDef;
     float                                                           mAccumulator;
+    Dia::Observation::Metric::Counter*                              mMetricDroppedTicks = nullptr;
     Dia::Core::Containers::DynamicArray<SoftBody*>                  mBodies;
     Dia::Core::Containers::DynamicArray<const Dia::Geometry2D::AARect*>  mStaticRects;
     Dia::Core::Containers::DynamicArray<const Dia::Geometry2D::Circle*>  mStaticCircles;
