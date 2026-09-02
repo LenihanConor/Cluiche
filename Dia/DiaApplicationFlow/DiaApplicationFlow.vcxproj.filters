@@ -62,6 +62,9 @@
     </ClInclude>
     <ClInclude Include="Manifest\TypedImport.h">
     <ClInclude Include="Observation\ObservationModule.h">
+    <ClInclude Include="SimModule.h" />
+    <ClInclude Include="RenderModule.h" />
+    <ClInclude Include="MainModule.h" />
       <Filter>Observation</Filter>
     </ClInclude>
       <Filter>Manifest</Filter>

@@ -28,6 +28,9 @@
     <Filter Include="Core\Time">
       <UniqueIdentifier>{D4E5F6G7-4444-5555-6666-777777777777}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Core\SimTime">
+      <UniqueIdentifier>{1A2B3C4D-8765-4321-9876-543210fedcba}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Core\Type">
       <UniqueIdentifier>{F6G7H8I9-6666-7777-8888-999999999999}</UniqueIdentifier>
     </Filter>
@@ -1726,6 +1729,15 @@
     </ClCompile>
     <ClCompile Include="DiaMessageBus\TestFlushAdapterIntegration.cpp">
       <Filter>DiaMessageBus</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\SimTime\TestSimTimeContext.cpp">
+      <Filter>Core\SimTime</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestPUTypedModules.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\SimTime\TestSimTimeDomain.cpp">
+      <Filter>Core\SimTime</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

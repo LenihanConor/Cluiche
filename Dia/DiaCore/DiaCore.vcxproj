@@ -197,6 +197,8 @@
     <ClInclude Include="Threading\Mutex.h" />
     <ClInclude Include="Threading\Thread.h" />
     <ClInclude Include="Threading\ThreadPool.h" />
+    <ClInclude Include="SimTime\SimTimeContext.h" />
+    <ClInclude Include="SimTime\SimTimeDomain.h" />
   </ItemGroup>
   <ItemGroup>
 
@@ -233,6 +235,7 @@
     <ClCompile Include="Threading\ThreadPool.cpp" />
     <ClCompile Include="Reflect\FieldAttributes.cpp" />
     <ClCompile Include="Metadata\DescriptionRegistry.cpp" />
+    <ClCompile Include="SimTime\SimTimeDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
 

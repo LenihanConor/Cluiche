@@ -831,6 +831,9 @@
     <ClCompile Include="RigidBody2D\TestPhysicsBusAdapter.cpp" />
     <ClCompile Include="Input\TestInputBusAdapter.cpp" />
     <ClCompile Include="DiaMessageBus\TestFlushAdapterIntegration.cpp" />
+    <ClCompile Include="Core\SimTime\TestSimTimeContext.cpp" />
+    <ClCompile Include="ApplicationFlow\TestPUTypedModules.cpp" />
+    <ClCompile Include="Core\SimTime\TestSimTimeDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
