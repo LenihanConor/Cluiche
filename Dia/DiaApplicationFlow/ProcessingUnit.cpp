@@ -80,26 +80,35 @@ namespace Dia { namespace ApplicationFlow {
         DIA_ASSERT(module != nullptr, "ProcessingUnit::AddModule — module must not be null");
         DIA_ASSERT(mModuleCount < kMaxModules, "ProcessingUnit::AddModule — module capacity exceeded");
 
-#ifdef DIA_DEBUG
         {
             PUAffinity moduleAffinity = TypeRegistry::Global().GetAllowedPUs(module->GetTypeId());
-            if (moduleAffinity != PUAffinity::kAny &&
-                !HasAffinity(moduleAffinity, mAffinity) &&
-                mAffinity != PUAffinity::kAny)
+            if (moduleAffinity != PUAffinity::kAny)
             {
-                DIA_ASSERT(false,
-                    "Module '%s' (type '%s') not allowed on PU '%s' — kAllowedPUs mismatch",
-                    module->GetInstanceId().AsChar(),
-                    module->GetTypeId().AsChar(),
-                    GetInstanceId().AsChar());
-                DIA_LOG_ERROR("ApplicationFlow",
-                    "Module '%s' placed on wrong PU '%s' (type '%s')",
-                    module->GetInstanceId().AsChar(),
-                    GetInstanceId().AsChar(),
-                    module->GetTypeId().AsChar());
+                // A kAny-affinity PU (any custom-named PU — instance ID isn't
+                // "MainPU"/"SimPU"/"RenderPU") has no declared role, so it can never
+                // satisfy a module that DOES declare a specific role. Do not fall through
+                // to the bitmask check below for this case — PUAffinity::kAny is 0xFF,
+                // so HasAffinity(moduleAffinity, kAny) is unconditionally true and would
+                // silently pass every role-specific module through.
+                const bool mismatched = (mAffinity == PUAffinity::kAny)
+                    ? true
+                    : !HasAffinity(moduleAffinity, mAffinity);
+
+                if (mismatched)
+                {
+                    DIA_LOG_ERROR("ApplicationFlow",
+                        "Module '%s' placed on wrong PU '%s' (type '%s')",
+                        module->GetInstanceId().AsChar(),
+                        GetInstanceId().AsChar(),
+                        module->GetTypeId().AsChar());
+                    RELEASE_DIA_ASSERT(!mismatched,
+                        "Module '%s' (type '%s') not allowed on PU '%s' — kAllowedPUs mismatch",
+                        module->GetInstanceId().AsChar(),
+                        module->GetTypeId().AsChar(),
+                        GetInstanceId().AsChar());
+                }
             }
         }
-#endif
 
         ModuleEntry& entry = mModules[mModuleCount];
         entry.module          = std::move(module);

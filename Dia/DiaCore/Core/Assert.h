@@ -99,8 +99,8 @@ namespace Dia
 
 #endif	// DEBUG
 
-// Release build assertion: active in BOTH debug and release builds
-// Use sparingly for critical runtime checks that must always be present
-#define RELEASE_DIA_ASSERT(exp, str)  do { if(!(exp)) { theConsole.WriteMessage("\nDIA_ASSERTION FAULT: %s %s\nFILE: %s\nLINE: %d\n\n", #exp, str, __FILE__, __LINE__); REALBREAKPOINT(); } else 0; } while (0)
+// Release build assertion: active in BOTH debug and release builds.
+// Use sparingly for critical runtime checks that must always be present.
+#define RELEASE_DIA_ASSERT(exp, ...) do { if(!(exp)){ Dia::Core::g_pAssertFunc(#exp, __FILE__, __LINE__, __VA_ARGS__);}} while (0)
 
 #endif // DIA_ASSERT

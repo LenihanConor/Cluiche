@@ -14,6 +14,8 @@
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
+#include <DiaApplicationFlow/Application.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 using namespace Dia::ApplicationFlow;
@@ -186,4 +188,143 @@ TEST(ProcessingUnitAffinity, UnknownPU_HasAnyAffinity)
 {
     ProcessingUnit pu(StringCRC("CustomPU"), 30.0f, false);
     EXPECT_EQ(pu.GetAffinity(), PUAffinity::kAny);
+}
+
+// ---------------------------------------------------------------------------
+// PUPlacementAssert — proves ProcessingUnit::AddModule's kAllowedPUs guard:
+//   1. fires in Release builds too (RELEASE_DIA_ASSERT), not just Debug
+//   2. closes the kAny-PU gap: a kAny-affinity PU (e.g. a custom-named PU
+//      like an editor's tool PU) can no longer silently accept a module
+//      that declares a specific kAllowedPUs role
+//   3. does NOT fire for correctly-placed / unannotated modules
+//
+// ProcessingUnit::AddModule reads Module::GetTypeId(), which is only set by
+// Application::BuildFromManifest() (Module::SetTypeId is private, friended
+// to ProcessingUnit/Application only — a bare Module constructed directly in
+// a test has an empty typeId). So these tests go through the real
+// Application::Start() -> BuildFromManifest() -> ProcessingUnit::AddModule()
+// path, using TypeRegistry::Global() (the same registry AddModule reads
+// from) rather than a local TypeRegistry instance.
+// ---------------------------------------------------------------------------
+namespace {
+
+    // Register a module type into the GLOBAL TypeRegistry (mirrors
+    // RegisterInto<T> above, but targets TypeRegistry::Global() since that's
+    // what ProcessingUnit::AddModule consults). TypeRegistry::Register()
+    // silently skips duplicate registrations, so calling this at the top of
+    // every test in this group is safe.
+    template<typename T>
+    void RegisterGlobal()
+    {
+        TypeRegistry::TypeMetadata meta;
+        meta.factory = [](const StringCRC& id) -> Module* { return new T(id); };
+        if constexpr (HasAllowedPUs<T>::value)
+            meta.allowedPUs = T::kAllowedPUs;
+        if constexpr (HasDescription<T>::value)
+            meta.description = T::kDescription;
+        TypeRegistry::Global().Register(T::kTypeId, meta);
+    }
+
+    void EnsureGlobalPlacementRegistrations()
+    {
+        RegisterGlobal<SimOnlyModule>();
+        RegisterGlobal<NoAnnotationModule>();
+    }
+
+    // Minimal single-stage, single-PU, single-module manifest — just enough
+    // to pass ManifestValidatorV2 and reach BuildFromManifest().
+    ApplicationManifestV3 BuildPlacementManifest(const char* puInstanceId,
+                                                  const StringCRC& moduleTypeId)
+    {
+        ApplicationManifestV3 manifest;
+        manifest.version = 3;
+
+        StageDeclaration boot;
+        boot.name = StringCRC("Boot");
+        manifest.stages.Add(boot);
+        manifest.initialStage = StringCRC("Boot");
+
+        ProcessingUnitDeclaration pu;
+        pu.instanceId      = StringCRC(puInstanceId);
+        pu.frequencyHz     = 30.0f;
+        pu.dedicatedThread = false;
+
+        ModuleDeclaration mod;
+        mod.instanceId     = StringCRC("placementMod");
+        mod.typeId         = moduleTypeId;
+        mod.startTimeoutMs = 1000.0f;
+        mod.stopTimeoutMs  = 1000.0f;
+        mod.stages.Add(StringCRC("Boot"));
+        pu.modules.Add(mod);
+
+        manifest.processingUnits.Add(pu);
+        return manifest;
+    }
+
+} // anonymous namespace
+
+// Case 1 (finding 1): moduleAffinity=kSim vs PU affinity=kMain ("MainPU").
+// Mismatch. Must fire even without a debugger attached, in any build config
+// — this is exactly what RELEASE_DIA_ASSERT (routed through BREAKPOINT() /
+// __debugbreak()) is for.
+TEST(PUPlacementAssert, Mismatch_MainPU_Dies)
+{
+    EnsureGlobalPlacementRegistrations();
+    ApplicationManifestV3 manifest = BuildPlacementManifest("MainPU", SimOnlyModule::kTypeId);
+
+    EXPECT_DEATH(
+        {
+            Application app(manifest, TypeRegistry::Global());
+            app.Start();
+        },
+        "");
+}
+
+// Case 2 (finding 2 — the kAny-PU gap regression test): moduleAffinity=kSim
+// vs a custom-named PU ("CustomToolPU"), which ProcessingUnit's constructor
+// maps to PUAffinity::kAny. Before this task's fix, PUAffinity::kAny is 0xFF
+// so HasAffinity(kSim, kAny) was unconditionally true and this mismatch
+// silently passed forever, in every build config. Must now die too.
+TEST(PUPlacementAssert, Mismatch_CustomAnyPU_Dies)
+{
+    EnsureGlobalPlacementRegistrations();
+    ApplicationManifestV3 manifest = BuildPlacementManifest("CustomToolPU", SimOnlyModule::kTypeId);
+
+    EXPECT_DEATH(
+        {
+            Application app(manifest, TypeRegistry::Global());
+            app.Start();
+        },
+        "");
+}
+
+// Case 3a: an unannotated module (defaults to kAllowedPUs = kAny) is valid
+// on any PU, including a custom-named (kAny-affinity) one. No crash.
+TEST(PUPlacementAssert, NoAnnotationModule_AnyPU_Succeeds)
+{
+    EnsureGlobalPlacementRegistrations();
+    ApplicationManifestV3 manifest = BuildPlacementManifest("CustomToolPU", NoAnnotationModule::kTypeId);
+
+    Application app(manifest, TypeRegistry::Global());
+    EXPECT_TRUE(app.Start());
+
+    Dia::Core::Containers::DynamicArrayC<ModuleStateInfo, 64> infos;
+    app.GetActiveModules(StringCRC("CustomToolPU"), infos);
+    ASSERT_EQ(infos.Size(), 1u);
+    EXPECT_TRUE(infos[0].instanceId == StringCRC("placementMod"));
+}
+
+// Case 3b: a kSim-only module placed on "SimPU" (correct placement). No crash.
+TEST(PUPlacementAssert, SimOnlyModule_SimPU_Succeeds)
+{
+    EnsureGlobalPlacementRegistrations();
+    ApplicationManifestV3 manifest = BuildPlacementManifest("SimPU", SimOnlyModule::kTypeId);
+
+    Application app(manifest, TypeRegistry::Global());
+    EXPECT_TRUE(app.Start());
+
+    Dia::Core::Containers::DynamicArrayC<ModuleStateInfo, 64> infos;
+    app.GetActiveModules(StringCRC("SimPU"), infos);
+    ASSERT_EQ(infos.Size(), 1u);
+    EXPECT_TRUE(infos[0].instanceId == StringCRC("placementMod"));
 }
