@@ -20,12 +20,14 @@ public:
 
     // --- Read ---
     bool Read(Dia::Core::StringCRC key, int32_t& out) const;
+    bool Read(Dia::Core::StringCRC key, int64_t& out) const;
     bool Read(Dia::Core::StringCRC key, float& out) const;
     bool Read(Dia::Core::StringCRC key, bool& out) const;
     bool Read(Dia::Core::StringCRC key, char* outBuffer, unsigned int bufferSize) const;
 
     // --- Write (for use in migration callbacks) ---
     void Write(Dia::Core::StringCRC key, int32_t value);
+    void Write(Dia::Core::StringCRC key, int64_t value);
     void Write(Dia::Core::StringCRC key, float value);
     void Write(Dia::Core::StringCRC key, bool value);
     void Write(Dia::Core::StringCRC key, const char* value);

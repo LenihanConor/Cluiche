@@ -31,6 +31,26 @@ TEST(DiaSaveGame_Context, RoundTripInt)
     EXPECT_EQ(42, hp);
 }
 
+TEST(DiaSaveGame_Context, RoundTripInt64)
+{
+    SaveContext save;
+    // Value beyond int32_t's range (~10 billion) — proves this isn't silently
+    // truncating through the existing int32_t Write/Read path.
+    save.Write(StringCRC("timestamp"), int64_t(10000000000LL));
+
+    char buf[1024];
+    ASSERT_TRUE(save.Flush(buf, sizeof(buf)));
+
+    Json::Value root;
+    Json::Reader reader;
+    ASSERT_TRUE(reader.parse(buf, root));
+
+    LoadContext load(root);
+    int64_t timestamp = 0;
+    EXPECT_TRUE(load.Read(StringCRC("timestamp"), timestamp));
+    EXPECT_EQ(10000000000LL, timestamp);
+}
+
 TEST(DiaSaveGame_Context, RoundTripFloat)
 {
     SaveContext save;
@@ -247,6 +267,20 @@ TEST(DiaSaveGame_Context, Write_String_MutatesAndReadsBack)
     char name[32] = {};
     EXPECT_TRUE(ctx.Read(StringCRC("name"), name, sizeof(name)));
     EXPECT_STREQ("Cluiche", name);
+}
+
+TEST(DiaSaveGame_Context, Write_Int64_MutatesAndReadsBack)
+{
+    Json::Value root(Json::objectValue);
+    LoadContext ctx(root);
+
+    // Migration-callback pattern: Write then Read within a single LoadContext,
+    // using a value beyond int32_t's range.
+    ctx.Write(StringCRC("timestamp"), int64_t(10000000000LL));
+
+    int64_t timestamp = 0;
+    EXPECT_TRUE(ctx.Read(StringCRC("timestamp"), timestamp));
+    EXPECT_EQ(10000000000LL, timestamp);
 }
 
 TEST(DiaSaveGame_Context, Write_OverwritesExistingValue)

@@ -54,6 +54,15 @@ bool LoadContext::Read(Dia::Core::StringCRC key, int32_t& out) const
     return true;
 }
 
+bool LoadContext::Read(Dia::Core::StringCRC key, int64_t& out) const
+{
+    const Json::Value& node = Current();
+    if (!node.isMember(key.AsChar()) || !node[key.AsChar()].isIntegral())
+        return false;
+    out = node[key.AsChar()].asInt64();
+    return true;
+}
+
 bool LoadContext::Read(Dia::Core::StringCRC key, float& out) const
 {
     const Json::Value& node = Current();
@@ -89,6 +98,11 @@ bool LoadContext::Read(Dia::Core::StringCRC key, char* outBuffer, unsigned int b
 // --- Write ---
 
 void LoadContext::Write(Dia::Core::StringCRC key, int32_t value)
+{
+    MutableCurrent()[key.AsChar()] = value;
+}
+
+void LoadContext::Write(Dia::Core::StringCRC key, int64_t value)
 {
     MutableCurrent()[key.AsChar()] = value;
 }

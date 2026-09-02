@@ -47,6 +47,11 @@ void SaveContext::Write(Dia::Core::StringCRC key, int32_t value)
     Current()[key.AsChar()] = value;
 }
 
+void SaveContext::Write(Dia::Core::StringCRC key, int64_t value)
+{
+    Current()[key.AsChar()] = value;
+}
+
 void SaveContext::Write(Dia::Core::StringCRC key, float value)
 {
     Current()[key.AsChar()] = value;

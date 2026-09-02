@@ -22,6 +22,7 @@ public:
     ~SaveContext();
 
     void Write(Dia::Core::StringCRC key, int32_t value);
+    void Write(Dia::Core::StringCRC key, int64_t value);
     void Write(Dia::Core::StringCRC key, float value);
     void Write(Dia::Core::StringCRC key, bool value);
     void Write(Dia::Core::StringCRC key, const char* value);
