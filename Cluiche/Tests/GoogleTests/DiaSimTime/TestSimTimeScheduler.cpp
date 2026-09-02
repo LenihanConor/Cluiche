@@ -18,8 +18,18 @@
 #include <DiaSimTime/SimTimeSchedulerFire.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaCore/Memory/UniquePtr.h>
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaCore/Time/TimeRelative.h>
+#include <DiaStreams/Event.h>
+#include <DiaStreams/EventStreamReader.h>
+#include <DiaStreams/EventStreamStore.h>
+#include <DiaStreams/IStreamConnector.h>
+#include <DiaStreams/IStreamStore.h>
+
+#include <chrono>
+#include <thread>
+#include <vector>
 
 using namespace Dia::Core;
 using namespace Dia::Core::Containers;
@@ -40,6 +50,34 @@ namespace {
         }
         return false;
     }
+
+    // Minimal test-only IStreamConnector: no reusable one exists yet in the
+    // test tree (checked TestStreams.cpp / TestLifecycleEvents.cpp — both
+    // integration-test through a real Application). Matches the real
+    // contract used by EventStreamWriter<T>::Connect / EventStreamReader<T>::
+    // Connect: register-or-find by stream ID, taking ownership of a newly
+    // created store only when no store with that ID exists yet.
+    class TestStreamConnector : public Dia::ApplicationFlow::IStreamConnector
+    {
+    public:
+        Dia::ApplicationFlow::IStreamStore* RegisterOrFindStreamStore(
+            Dia::Core::UniquePtr<Dia::ApplicationFlow::IStreamStore> newStore) override
+        {
+            for (auto& existing : mStores)
+            {
+                if (existing->GetId() == newStore->GetId())
+                {
+                    return existing.Get(); // newStore discarded (destructs on return)
+                }
+            }
+            Dia::ApplicationFlow::IStreamStore* raw = newStore.Get();
+            mStores.push_back(std::move(newStore));
+            return raw;
+        }
+
+    private:
+        std::vector<Dia::Core::UniquePtr<Dia::ApplicationFlow::IStreamStore>> mStores;
+    };
 
 } // anonymous namespace
 
@@ -350,4 +388,107 @@ TEST(SimTimeSchedulerTest, PlainTickFiresWithoutReporting)
 
     sched.Tick(Ms(6000));
     EXPECT_EQ(sched.GetQueueDepth(), 0);
+}
+
+// ---------------------------------------------------------------------------
+// Task 3.2: Connect() wires a real EventStreamWriter<SimTimeSchedulerFire>.
+// A reader registered against the same stream ID (via the same connector)
+// actually receives the fired Event<SimTimeSchedulerFire> envelope, with the
+// right eventType/targetSystemId in .payload — genuine EventStreamStore
+// delivery, not just the 3.1 out-param test-visibility hook.
+// ---------------------------------------------------------------------------
+TEST(SimTimeSchedulerTest, ConnectDeliversFiredEventsThroughRealStream)
+{
+    SimTimeScheduler sched;
+    TestStreamConnector connector;
+    sched.Connect(connector);
+
+    Dia::ApplicationFlow::EventStreamReader<SimTimeSchedulerFire> reader(
+        nullptr, StringCRC("SimTimeSchedulerFire"));
+    reader.Connect(connector);
+    ASSERT_TRUE(reader.IsConnected());
+
+    sched.ScheduleAt(Ms(100), StringCRC("boom"), StringCRC("PhysicsSystem"));
+    sched.Tick(Ms(100));
+
+    DynamicArrayC<Dia::ApplicationFlow::Event<SimTimeSchedulerFire>, 8> received;
+    reader.Consume(received);
+
+    ASSERT_EQ(received.Size(), 1u);
+    EXPECT_EQ(received[0].payload.eventType,      StringCRC("boom"));
+    EXPECT_EQ(received[0].payload.targetSystemId, StringCRC("PhysicsSystem"));
+}
+
+// ---------------------------------------------------------------------------
+// Q2 fan-out: two independently-registered readers on the same stream both
+// receive the same fired event — the scheduler does not route to a specific
+// target, it fans out to every reader and consumers filter by
+// targetSystemId themselves.
+// ---------------------------------------------------------------------------
+TEST(SimTimeSchedulerTest, ConnectFansOutToMultipleReaders)
+{
+    SimTimeScheduler sched;
+    TestStreamConnector connector;
+    sched.Connect(connector);
+
+    Dia::ApplicationFlow::EventStreamReader<SimTimeSchedulerFire> readerA(
+        nullptr, StringCRC("SimTimeSchedulerFire"));
+    Dia::ApplicationFlow::EventStreamReader<SimTimeSchedulerFire> readerB(
+        nullptr, StringCRC("SimTimeSchedulerFire"));
+    readerA.Connect(connector);
+    readerB.Connect(connector);
+
+    sched.ScheduleAt(Ms(100), StringCRC("boom"), StringCRC("PhysicsSystem"));
+    sched.Tick(Ms(100));
+
+    DynamicArrayC<Dia::ApplicationFlow::Event<SimTimeSchedulerFire>, 8> receivedA;
+    DynamicArrayC<Dia::ApplicationFlow::Event<SimTimeSchedulerFire>, 8> receivedB;
+    readerA.Consume(receivedA);
+    readerB.Consume(receivedB);
+
+    ASSERT_EQ(receivedA.Size(), 1u);
+    ASSERT_EQ(receivedB.Size(), 1u);
+    EXPECT_EQ(receivedA[0].payload.eventType, StringCRC("boom"));
+    EXPECT_EQ(receivedB[0].payload.eventType, StringCRC("boom"));
+}
+
+// ---------------------------------------------------------------------------
+// A scheduler that never calls Connect() must not crash on Tick() — the
+// underlying EventStreamWriter::Send() safely no-ops (kFailLoudRejected) when
+// disconnected, so firing is unconditional and doesn't need to branch on
+// "is a stream connected."
+// ---------------------------------------------------------------------------
+TEST(SimTimeSchedulerTest, TickWithoutConnectDoesNotCrash)
+{
+    SimTimeScheduler sched; // Connect() never called
+    sched.ScheduleAt(Ms(100), StringCRC("A"), StringCRC("sys"));
+
+    DynamicArrayC<SimTimeSchedulerFire, 8> fired;
+    sched.Tick(Ms(100), fired);
+    EXPECT_EQ(fired.Size(), 1u) << "out-param reporting still works even with no stream connected";
+}
+
+// ---------------------------------------------------------------------------
+// Regression/documentation: Tick() is driven purely by the currentTime
+// parameter, never by any wall-clock source. Sleeping past a scheduled
+// entry's game time on the real clock, then Tick()-ing with a game time that
+// is still before it, must not fire — proving pause/slow-motion/fast-forward
+// are entirely the caller's responsibility via what they pass as
+// currentTime. (True since 3.1; re-asserted here as part of 3.2's acceptance
+// criteria.)
+// ---------------------------------------------------------------------------
+TEST(SimTimeSchedulerTest, TickIgnoresWallClockOnlyCurrentTimeParamGoverns)
+{
+    SimTimeScheduler sched;
+    sched.ScheduleAt(Ms(100), StringCRC("A"), StringCRC("sys"));
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(50)); // real time advances well past 100ms...
+
+    DynamicArrayC<SimTimeSchedulerFire, 8> fired;
+    sched.Tick(Ms(50), fired); // ...but game time passed in is still before the fire time
+    EXPECT_EQ(fired.Size(), 0u) << "must not fire based on elapsed wall-clock time";
+    EXPECT_EQ(sched.GetQueueDepth(), 1);
+
+    sched.Tick(Ms(100), fired);
+    EXPECT_EQ(fired.Size(), 1u) << "fires once the caller-supplied game time actually reaches it";
 }

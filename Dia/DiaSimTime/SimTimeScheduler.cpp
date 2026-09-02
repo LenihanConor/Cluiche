@@ -1,4 +1,8 @@
 #include <DiaSimTime/SimTimeScheduler.h>
+#include <DiaApplicationFlow/Module.h>  // required for EventStreamWriter<T>::Send()'s
+                                        // mOwner->GetInstanceId() to compile (owner is
+                                        // always nullptr here, but the template still
+                                        // needs Module's complete type).
 #include <DiaCore/Core/Assert.h>
 
 namespace Dia::SimTime {
@@ -266,6 +270,13 @@ namespace Dia::SimTime {
         PlaceRef(IndexOf(handle));  // bumps epoch (old Ref goes stale), re-parks in wheel/heap
     }
 
+    // --- Stream connect --------------------------------------------------------
+    void SimTimeScheduler::Connect(Dia::ApplicationFlow::IStreamConnector& connector,
+                                   unsigned int maxReaders)
+    {
+        mFireWriter.Connect(connector, maxReaders);
+    }
+
     // --- Tick ----------------------------------------------------------------
     void SimTimeScheduler::TickInternal(Core::TimeAbsolute currentTime,
                                         DynamicArrayC<SimTimeSchedulerFire, kMaxEntries>& firedOut)
@@ -330,6 +341,9 @@ namespace Dia::SimTime {
             {
                 firedOut.Add(s.payload);
             }
+            // Real fan-out delivery (Q2). Safe unconditionally: Send() no-ops
+            // (kFailLoudRejected) when Connect() was never called.
+            mFireWriter.Send(s.payload);
 
             if (s.recurring)
             {

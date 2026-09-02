@@ -5,6 +5,8 @@
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaCore/Time/TimeRelative.h>
 #include <DiaSimTime/SimTimeSchedulerFire.h>
+#include <DiaStreams/EventStreamWriter.h>
+#include <DiaStreams/IStreamConnector.h>
 #include <cstdint>
 #include <optional>
 
@@ -21,12 +23,15 @@ namespace Dia::SimTime {
     // far-future entries overflow into a min-heap and migrate into the wheel as
     // the clock catches up.
     //
-    // Task 3.1 scope: this is the scheduling *engine* only. Tick() pops all due
-    // entries and re-arms recurring ones, exposing what fired through an out-
-    // parameter overload (a test-visibility hook). Task 3.2 swaps the firing
-    // destination to a real EventStreamWriter<SimTimeSchedulerFire>::Send() per
-    // entry and adds pause/scale-aware ticking. There is intentionally NO
-    // DiaStreams / DiaApplicationFlow coupling here.
+    // Task 3.1 built the scheduling *engine*: Tick() pops all due entries and
+    // re-arms recurring ones, exposing what fired through an out-parameter
+    // overload (a test-visibility hook). Task 3.2 adds real fan-out delivery:
+    // Connect() wires an EventStreamWriter<SimTimeSchedulerFire>, and every
+    // fired entry is also Send() through it (Q2 — fan-out via EventStreamStore,
+    // no callback path; consumers filter by targetSystemId). Pause/scale
+    // correctness is inherent: Tick(currentTime) never reads any wall-clock
+    // source itself, so whatever time domain the caller passes in (paused,
+    // scaled, fast-forwarded) is exactly what governs firing.
     //
     // Handles (ScheduleHandle) pack a 32-bit slot index (low dword) and a 32-bit
     // generation (high dword). Generation starts at 1 and is bumped every time a
@@ -54,6 +59,17 @@ namespace Dia::SimTime {
         static constexpr unsigned int kHeapCapacity    = 256;
 
         SimTimeScheduler();
+
+        // Wire this scheduler's fire events into a real EventStreamStore.
+        // Stream ID: StringCRC("SimTimeSchedulerFire"). Not called from a
+        // Module::OnConnectStreams() yet (DiaSimTimeModule doesn't exist until
+        // Task 4.4) — call this directly wherever the scheduler is owned until
+        // then. Safe to never call: Send() below no-ops when disconnected.
+        // maxReaders defaults higher than EventStreamStore's own default (8)
+        // since scheduler fire events are a fan-out point many systems may
+        // realistically subscribe to.
+        void  Connect(Dia::ApplicationFlow::IStreamConnector& connector,
+                      unsigned int maxReaders = 16);
 
         // Fire once at absolute game time.
         ScheduleHandle  ScheduleAt(Core::TimeAbsolute time,
@@ -179,6 +195,14 @@ namespace Dia::SimTime {
         int64_t mCurrentMicros = 0;   // last time seen by Tick(); Zero() before first Tick
         int64_t mBaseBucket    = 0;   // absolute bucket index at the wheel window front
         int     mPendingCount  = 0;
+
+        // Real fan-out destination for fired entries (Task 3.2 / Q2). Owned as
+        // a member, constructed with owner=nullptr: EventStreamWriter's owner
+        // param is only used to stamp Event::senderCrc, and falls back to a
+        // "$framework" sentinel when null — fine for a scheduler that isn't
+        // itself a Module. Send() safely no-ops until Connect() is called.
+        Dia::ApplicationFlow::EventStreamWriter<SimTimeSchedulerFire> mFireWriter{
+            nullptr, Core::StringCRC("SimTimeSchedulerFire") };
     };
 
 } // namespace Dia::SimTime
