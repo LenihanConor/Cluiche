@@ -1,6 +1,7 @@
 """dia docs vcxproj-add — add source files to vcxproj + filters without AI."""
 from __future__ import annotations
 
+import uuid
 from pathlib import Path
 
 import click
@@ -8,16 +9,25 @@ import click
 from dia_cli.utils.repo_root import find_repo_root
 
 
-def _insert_after_last(text: str, search: str, insertion: str) -> str:
-    lines = text.splitlines(keepends=True)
+def _find_last_entry_end(lines: list[str], tag: str) -> int:
+    """Return the line index of the last complete <tag>...</tag> (or self-closing
+    <tag ... />) entry, so an insertion can be placed cleanly after it.
+
+    Searching only for lines containing the opening `<tag Include=` (the previous
+    behavior) is wrong for multi-line entries: it inserts BETWEEN an existing
+    entry's opening tag and its own closing lines instead of after the whole
+    entry, corrupting the file. A multi-line entry ends on a line that is exactly
+    `</tag>` (own line); a single-line entry ends on the same line it starts,
+    matching `<tag Include="..." />`.
+    """
     last_idx = -1
     for i, line in enumerate(lines):
-        if search in line:
+        stripped = line.strip()
+        if stripped == f"</{tag}>" or (
+            stripped.startswith(f"<{tag} Include=") and stripped.endswith("/>")
+        ):
             last_idx = i
-    if last_idx == -1:
-        raise click.ClickException(f"Could not find anchor '{search}' in file")
-    lines.insert(last_idx + 1, insertion + "\n")
-    return "".join(lines)
+    return last_idx
 
 
 def _already_present(text: str, filename: str) -> bool:
@@ -35,16 +45,46 @@ def add_to_vcxproj(vcxproj_path: Path, relative_path: str, is_header: bool) -> b
 
     tag = "ClInclude" if is_header else "ClCompile"
     line = f'    <{tag} Include="{relative_path}" />'
-    anchor = f"<{tag} Include="
 
-    text = _insert_after_last(text, anchor, line)
-    vcxproj_path.write_text(text, encoding="utf-8")
+    lines = text.splitlines(keepends=True)
+    last_idx = _find_last_entry_end(lines, tag)
+    if last_idx == -1:
+        raise click.ClickException(f"Could not find an existing <{tag}> entry to anchor after")
+    lines.insert(last_idx + 1, line + "\n")
+    vcxproj_path.write_text("".join(lines), encoding="utf-8")
+    return True
+
+
+def _ensure_filter_declared(filters_path: Path, filter_name: str) -> bool:
+    """Ensure <Filter Include="{filter_name}"> exists in the top Filter-declaration
+    block. Returns True if a new declaration was inserted."""
+    text = filters_path.read_text(encoding="utf-8")
+
+    if f'<Filter Include="{filter_name}">' in text or f'<Filter Include="{filter_name}" ' in text:
+        return False
+
+    lines = text.splitlines(keepends=True)
+    last_idx = _find_last_entry_end(lines, "Filter")
+    if last_idx == -1:
+        raise click.ClickException("Could not find an existing <Filter> declaration to anchor after")
+
+    new_guid = str(uuid.uuid4())
+    block = (
+        f'    <Filter Include="{filter_name}">\n'
+        f'      <UniqueIdentifier>{{{new_guid}}}</UniqueIdentifier>\n'
+        f'    </Filter>\n'
+    )
+    lines.insert(last_idx + 1, block)
+    filters_path.write_text("".join(lines), encoding="utf-8")
     return True
 
 
 def add_to_filters(filters_path: Path, relative_path: str, is_header: bool, filter_name: str | None) -> bool:
     if not filters_path.exists():
         raise click.ClickException(f"filters file not found: {filters_path}")
+
+    if filter_name:
+        _ensure_filter_declared(filters_path, filter_name)
 
     text = filters_path.read_text(encoding="utf-8")
 
@@ -62,9 +102,12 @@ def add_to_filters(filters_path: Path, relative_path: str, is_header: bool, filt
     else:
         block = f'    <{tag} Include="{relative_path}" />'
 
-    anchor = f"<{tag} Include="
-    text = _insert_after_last(text, anchor, block)
-    filters_path.write_text(text, encoding="utf-8")
+    lines = text.splitlines(keepends=True)
+    last_idx = _find_last_entry_end(lines, tag)
+    if last_idx == -1:
+        raise click.ClickException(f"Could not find an existing <{tag}> entry to anchor after")
+    lines.insert(last_idx + 1, block + "\n")
+    filters_path.write_text("".join(lines), encoding="utf-8")
     return True
 
 
