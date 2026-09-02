@@ -16,12 +16,15 @@
     <ClInclude Include="SimTimeState.h" />
     <ClInclude Include="SimTimePolicy.h" />
     <ClInclude Include="SimTimeRegistry.h" />
+    <ClInclude Include="SimTimeBudget.h" />
+    <ClInclude Include="IOneShotWork.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaMainTime.cpp" />
     <ClCompile Include="DiaRenderTime.cpp" />
     <ClCompile Include="SimTimeScheduler.cpp" />
     <ClCompile Include="SimTimeRegistry.cpp" />
+    <ClCompile Include="SimTimeBudget.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diasimtime.architecture.module.md">
