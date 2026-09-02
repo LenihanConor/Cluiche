@@ -1739,5 +1739,8 @@
     <ClCompile Include="Core\SimTime\TestSimTimeDomain.cpp">
       <Filter>Core\SimTime</Filter>
     </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestProcessingUnitAccumulator.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -63,6 +63,7 @@ namespace Dia { namespace ApplicationFlow {
         Dia::Core::StringCRC instanceId;
         float frequencyHz    = 30.0f;
         bool  dedicatedThread = false;
+        unsigned int maxCatchUpTicksPerFrame = 5;
 
         Dia::Core::Containers::DynamicArrayC<ModuleDeclaration, 64> modules;
     };

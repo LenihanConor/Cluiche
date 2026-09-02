@@ -3,10 +3,12 @@
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Memory/UniquePtr.h>
+#include <DiaCore/SimTime/SimTimeContext.h>
+#include <DiaCore/SimTime/SimTimeDomain.h>
 #include <atomic>
 #include <thread>
 
-namespace Dia { namespace Observation { namespace Metric { class Gauge; } } }
+namespace Dia { namespace Observation { namespace Metric { class Gauge; class Counter; } } }
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -18,7 +20,8 @@ namespace Dia { namespace ApplicationFlow {
     public:
         ProcessingUnit(const Dia::Core::StringCRC& instanceId,
                        float frequencyHz,
-                       bool dedicatedThread);
+                       bool dedicatedThread,
+                       unsigned int maxCatchUpTicksPerFrame = 5);
         ~ProcessingUnit();
 
         ProcessingUnit(const ProcessingUnit&) = delete;
@@ -28,6 +31,22 @@ namespace Dia { namespace ApplicationFlow {
         [[nodiscard]] float GetFrequencyHz() const;
         [[nodiscard]] bool IsDedicatedThread() const;
         [[nodiscard]] PUAffinity GetAffinity() const { return mAffinity; }
+
+        // Time contexts — cached each Update() and read by the typed module bases
+        // (SimModule / RenderModule / MainModule) when they forward DoUpdate.
+        [[nodiscard]] const Dia::SimTime::SimTimeContext&    GetSimTimeContext()    const { return mSimTimeContext; }
+        [[nodiscard]] const Dia::SimTime::RenderTimeContext& GetRenderTimeContext() const { return mRenderTimeContext; }
+        [[nodiscard]] const Dia::SimTime::MainTimeContext&   GetMainTimeContext()   const { return mMainTimeContext; }
+
+        // Framework-internal — called by DiaRenderTime (a later task) after it reads FetchLatest()
+        // from the sim-time FrameStream. Not part of the public Module API; sibling RenderModules
+        // only ever read via GetRenderTimeContext() above.
+        void SetRenderTimeContext(const Dia::SimTime::RenderTimeContext& ctx) { mRenderTimeContext = ctx; }
+
+        // The SimPU owns the world clock directly. A later task (SimTimeDomainRegistry) wraps this
+        // same instance rather than owning a separate copy — do not construct a second world domain
+        // anywhere else.
+        [[nodiscard]] Dia::SimTime::SimTimeDomain& GetWorldDomain() { return mWorldDomain; }
 
         // Module management (called by Application during Start)
         void AddModule(Dia::Core::UniquePtr<Module> module,
@@ -62,6 +81,12 @@ namespace Dia { namespace ApplicationFlow {
     private:
         static constexpr unsigned int kMaxModules = 64;
 
+        // Two-pass tick bodies extracted from Update() (see Update() for the
+        // forward/reverse dependency-order rationale). RunForwardPass ticks
+        // kStarting/kActive modules; RunReversePass ticks kStopping modules.
+        void RunForwardPass(float deltaTime);
+        void RunReversePass(float deltaTime);
+
         struct ModuleEntry {
             Dia::Core::UniquePtr<Module> module;
             float startTimeoutMs = 0.0f;
@@ -91,6 +116,21 @@ namespace Dia { namespace ApplicationFlow {
         float mLastTickMs = 0.0f;
         Dia::Observation::Metric::Gauge* mMetricLastTickMs = nullptr;
         unsigned int mTickCount = 0;
+
+        // --- DiaSimTime (Task 1.4) -------------------------------------------
+        // The SimPU owns the world clock directly. Constructed in the ctor
+        // init-list (needs frequencyHz).
+        Dia::SimTime::SimTimeDomain     mWorldDomain;
+        float                           mSimAccumulatorSec = 0.0f;
+        unsigned int                    mMaxCatchUpTicksPerFrame;   // set in ctor init-list from the new param
+        Dia::Observation::Metric::Counter* mMetricDroppedTicks = nullptr;
+
+        // TimeAbsolute/TimeRelative expose only a private default constructor
+        // (factory-only via Zero()/CreateFrom*()), so SimTimeContext/RenderTimeContext
+        // have no usable default constructor — supply Zero() explicitly here (MSVC C2512).
+        Dia::SimTime::SimTimeContext    mSimTimeContext{ Dia::Core::TimeAbsolute::Zero(), Dia::Core::TimeRelative::Zero(), 0, 1.0f, false };
+        Dia::SimTime::RenderTimeContext mRenderTimeContext{ 0.0f, Dia::Core::TimeAbsolute::Zero(), 0 };
+        Dia::SimTime::MainTimeContext   mMainTimeContext{ 0.0f };
     };
 
 }} // namespace Dia::ApplicationFlow

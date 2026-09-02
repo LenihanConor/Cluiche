@@ -834,6 +834,7 @@
     <ClCompile Include="Core\SimTime\TestSimTimeContext.cpp" />
     <ClCompile Include="ApplicationFlow\TestPUTypedModules.cpp" />
     <ClCompile Include="Core\SimTime\TestSimTimeDomain.cpp" />
+    <ClCompile Include="ApplicationFlow\TestProcessingUnitAccumulator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

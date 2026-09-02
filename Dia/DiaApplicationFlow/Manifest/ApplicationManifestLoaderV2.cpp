@@ -168,6 +168,7 @@ namespace Dia { namespace ApplicationFlow {
                     pu.instanceId = Dia::Core::StringCRC(puJson["instance_id"].asCString());
                 pu.frequencyHz    = puJson.get("frequency_hz",    30.0f).asFloat();
                 pu.dedicatedThread = puJson.get("dedicated_thread", false).asBool();
+                pu.maxCatchUpTicksPerFrame = puJson.get("max_catch_up_ticks_per_frame", 5).asUInt();
 
                 // modules
                 if (puJson.isMember("modules") && puJson["modules"].isArray())

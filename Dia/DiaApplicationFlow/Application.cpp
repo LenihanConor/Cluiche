@@ -729,7 +729,8 @@ namespace Dia { namespace ApplicationFlow {
             Dia::Core::UniquePtr<ProcessingUnit> pu(
                 new ProcessingUnit(puDecl.instanceId,
                                    puDecl.frequencyHz,
-                                   puDecl.dedicatedThread));
+                                   puDecl.dedicatedThread,
+                                   puDecl.maxCatchUpTicksPerFrame));
 
             // Create and add modules in manifest array order (= dep order).
             for (unsigned int m = 0; m < puDecl.modules.Size(); ++m)

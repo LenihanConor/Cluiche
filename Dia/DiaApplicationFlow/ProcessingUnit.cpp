@@ -8,6 +8,7 @@
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Log/Logger.h>
+#include <DiaObservation/Metric/Counter.h>
 #include <DiaObservation/Metric/Gauge.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaObservation/Profile/DiaProfile.h>
@@ -21,12 +22,18 @@ namespace Dia { namespace ApplicationFlow {
     //--------------------------------------------------------------------------
     ProcessingUnit::ProcessingUnit(const Dia::Core::StringCRC& instanceId,
                                    float frequencyHz,
-                                   bool dedicatedThread)
+                                   bool dedicatedThread,
+                                   unsigned int maxCatchUpTicksPerFrame)
         : mInstanceId(instanceId)
         , mAffinity(PUAffinity::kAny)
         , mFrequencyHz(frequencyHz)
         , mDedicatedThread(dedicatedThread)
         , mModuleCount(0)
+        // "world" is a literal here, not yet a shared constant — a later task
+        // (SimTimeDomainRegistry) formally declares kWorldId = StringCRC{"world"};
+        // this is the same literal, just not yet centralized.
+        , mWorldDomain(Dia::Core::StringCRC("world"), frequencyHz, Dia::Core::TimeAbsolute::Zero())
+        , mMaxCatchUpTicksPerFrame(maxCatchUpTicksPerFrame)
     {
         // Map well-known PU instance IDs to their affinity enum.
         if      (instanceId == Dia::Core::StringCRC("MainPU"))   mAffinity = PUAffinity::kMain;
@@ -46,6 +53,13 @@ namespace Dia { namespace ApplicationFlow {
             mMetricLastTickMs = Dia::Observation::Metric::MetricRegistry::Instance()
                                     .RegisterGauge(Dia::Core::StringCRC(metricName.c_str()));
         }
+
+        // DiaSimTime (Task 1.4) — single global counter for sim-accumulator backlog
+        // drops (matches the spec's metrics table key exactly). Registered
+        // unconditionally (same simple pattern as the gauge above) even though it's
+        // only ever incremented for kSim PUs.
+        mMetricDroppedTicks = Dia::Observation::Metric::MetricRegistry::Instance()
+                                  .RegisterCounter(Dia::Core::StringCRC("simtime.accumulator.dropped_ticks"));
     }
 
     //--------------------------------------------------------------------------
@@ -163,14 +177,8 @@ namespace Dia { namespace ApplicationFlow {
     // on the same Update call — it gets one DoStop tick rather than waiting
     // a whole frame.
     //--------------------------------------------------------------------------
-    void ProcessingUnit::Update(float deltaTime)
+    void ProcessingUnit::RunForwardPass(float deltaTime)
     {
-        DIA_PROFILE_SCOPE("pu.update", Dia::Observation::Profile::Category::kDiaApplicationFlow);
-        DIA_TRACE_ZONE("pu.update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
-
-        // Task 34 — measure tick duration
-        const auto tickStart = std::chrono::high_resolution_clock::now();
-
         // Forward pass: starting/active modules.
         for (unsigned int i = 0; i < mModuleCount; ++i)
         {
@@ -181,7 +189,11 @@ namespace Dia { namespace ApplicationFlow {
                 entry.module->FrameTick(deltaTime, entry.startTimeoutMs, entry.stopTimeoutMs);
             }
         }
+    }
 
+    //--------------------------------------------------------------------------
+    void ProcessingUnit::RunReversePass(float deltaTime)
+    {
         // Reverse pass: stopping modules (dependent-before-dependency).
         for (int i = static_cast<int>(mModuleCount) - 1; i >= 0; --i)
         {
@@ -192,6 +204,85 @@ namespace Dia { namespace ApplicationFlow {
                 entry.module->FrameTick(deltaTime, entry.startTimeoutMs, entry.stopTimeoutMs);
             }
         }
+    }
+
+    //--------------------------------------------------------------------------
+    void ProcessingUnit::Update(float deltaTime)
+    {
+        DIA_PROFILE_SCOPE("pu.update", Dia::Observation::Profile::Category::kDiaApplicationFlow);
+        DIA_TRACE_ZONE("pu.update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
+
+        // Task 34 — measure tick duration
+        const auto tickStart = std::chrono::high_resolution_clock::now();
+
+        switch (mAffinity)
+        {
+            case PUAffinity::kSim:
+            {
+                // Fixed-timestep accumulator (ST-011): banks real elapsed time, drains it in
+                // whole 1/GetFrequencyHz() steps, running the full forward pass once per step
+                // (0, 1, or several times per real call) so every SimModule::DoUpdate always
+                // sees a constant-size gameDt, never a raw variable frame delta. Capped at
+                // mMaxCatchUpTicksPerFrame to avoid a spiral of death; excess backlog is
+                // dropped (not deferred) and logged/counted.
+                if (mWorldDomain.IsPaused())
+                {
+                    // Don't bank time while paused — resuming after a long pause must not
+                    // trigger a catch-up burst.
+                    mSimAccumulatorSec = 0.0f;
+                }
+                else
+                {
+                    mSimAccumulatorSec += deltaTime;
+                }
+
+                const float fixedStepSec = (mFrequencyHz > 0.0f) ? (1.0f / mFrequencyHz) : 0.0f;
+                unsigned int ticksThisFrame = 0;
+                if (fixedStepSec > 0.0f)
+                {
+                    while (mSimAccumulatorSec >= fixedStepSec && ticksThisFrame < mMaxCatchUpTicksPerFrame)
+                    {
+                        mWorldDomain.Tick();   // advances by fixedStep * current scale
+                        mSimTimeContext = Dia::SimTime::SimTimeContext{
+                            mWorldDomain.Now(), mWorldDomain.Step(), mWorldDomain.GetTick(),
+                            mWorldDomain.GetScale(), mWorldDomain.IsPaused() };
+                        RunForwardPass(fixedStepSec);   // fixedStepSec, not the real deltaTime —
+                                                        // FrameTick's timeout bookkeeping should see
+                                                        // the sum of fixed steps actually consumed
+                        mSimAccumulatorSec -= fixedStepSec;
+                        ++ticksThisFrame;
+                    }
+                    if (mSimAccumulatorSec >= fixedStepSec)
+                    {
+                        // Still behind after the cap: drop the backlog, don't defer it.
+                        DIA_LOG_WARNING("pu", "pu.sim_catchup_dropped id=%s backlog_sec=%.3f",
+                            mInstanceId.AsChar(), static_cast<double>(mSimAccumulatorSec));
+                        if (mMetricDroppedTicks)
+                            mMetricDroppedTicks->Inc();
+                        mSimAccumulatorSec = 0.0f;
+                    }
+                }
+                break;   // forward pass already ran above (0..N times) — do not run it again below
+            }
+            case PUAffinity::kRender:
+                // mRenderTimeContext is NOT computed here — DiaRenderTime (a later task) pushes
+                // it via SetRenderTimeContext() during its own DoUpdate. Sibling RenderModules
+                // read whatever was pushed last tick — one-tick-stale by design.
+                RunForwardPass(deltaTime);
+                break;
+            case PUAffinity::kMain:
+            default:
+                // default here also covers PUAffinity::kAny (any custom-named PU, e.g. an
+                // editor's tool PU) — those modules use MainModule too, so they need
+                // mMainTimeContext populated the same way kMain does.
+                mMainTimeContext = Dia::SimTime::MainTimeContext{ deltaTime };
+                RunForwardPass(deltaTime);
+                break;
+        }
+
+        // Always exactly once per real Update() call, regardless of how many fixed steps
+        // drained above — shutdown sequencing must not stall just because 0 steps drained.
+        RunReversePass(deltaTime);
 
         if (mPostTickFn)
             mPostTickFn();
