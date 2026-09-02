@@ -835,6 +835,7 @@
     <ClCompile Include="ApplicationFlow\TestPUTypedModules.cpp" />
     <ClCompile Include="Core\SimTime\TestSimTimeDomain.cpp" />
     <ClCompile Include="ApplicationFlow\TestProcessingUnitAccumulator.cpp" />
+    <ClCompile Include="DiaSimTime\TestDiaRenderTime.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
@@ -871,6 +872,10 @@
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaMessageBus\DiaMessageBus.vcxproj">
       <Project>{D5E6F7A8-B9C0-1234-DEF0-567890ABCDEF}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaSimTime\DiaSimTime.vcxproj">
+      <Project>{6AF5866D-8687-4A93-915B-0B4B738F56CD}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaAICallout\DiaAICallout.vcxproj">

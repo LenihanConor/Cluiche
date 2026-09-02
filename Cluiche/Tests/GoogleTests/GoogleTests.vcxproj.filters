@@ -223,6 +223,9 @@
     <Filter Include="DiaGridVisibility">
       <UniqueIdentifier>{B1C2D3E4-F5A6-7890-BCDE-F12345678902}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaSimTime">
+      <UniqueIdentifier>{bbf4d9c1-57f3-452e-a2e3-bff9736245d6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -1741,6 +1744,9 @@
     </ClCompile>
     <ClCompile Include="ApplicationFlow\TestProcessingUnitAccumulator.cpp">
       <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaSimTime\TestDiaRenderTime.cpp">
+      <Filter>DiaSimTime</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
