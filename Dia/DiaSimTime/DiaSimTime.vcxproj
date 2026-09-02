@@ -76,10 +76,13 @@
   <ItemGroup>
     <ClInclude Include="DiaMainTime.h" />
     <ClInclude Include="DiaRenderTime.h" />
+    <ClInclude Include="SimTimeSchedulerFire.h" />
+    <ClInclude Include="SimTimeScheduler.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaMainTime.cpp" />
     <ClCompile Include="DiaRenderTime.cpp" />
+    <ClCompile Include="SimTimeScheduler.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diasimtime.architecture.module.md" />
