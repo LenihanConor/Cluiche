@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <mutex>
+#include <optional>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaStreams/IStreamStore.h>
@@ -43,7 +44,11 @@ private:
     // Double buffer: two slots, atomic index selects which is "front"
     struct Slot
     {
-        T        data{};
+        // std::optional<T> rather than a default-constructed T: some payload types
+        // (e.g. SimTimeContext) have members with only private/factory constructors
+        // (TimeAbsolute/TimeRelative) and are therefore not default-constructible.
+        // optional<T> defaults to empty with no requirement on T's default ctor.
+        std::optional<T> data;
         long long timestampUs = 0LL;  // raw microseconds; TimeAbsolute has no default ctor
         bool     hasData      = false;
     };
@@ -104,7 +109,7 @@ inline const T* FrameStreamStore<T>::FetchLatest() const
     if (mSlots[i].hasData)
     {
         mWarnedNoData.store(false, std::memory_order_relaxed);
-        return &mSlots[i].data;
+        return &(*mSlots[i].data);
     }
     if (!mWarnedNoData.exchange(true, std::memory_order_relaxed))
         FrameStream_WarnNoData(mId);
