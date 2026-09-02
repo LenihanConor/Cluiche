@@ -1751,5 +1751,8 @@
     <ClCompile Include="Core\SimTime\TestSimTimeDomainRegistry.cpp">
       <Filter>Core\SimTime</Filter>
     </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestProcessingUnitDomainRegistry.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

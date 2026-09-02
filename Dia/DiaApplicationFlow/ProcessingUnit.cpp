@@ -33,6 +33,7 @@ namespace Dia { namespace ApplicationFlow {
         // (SimTimeDomainRegistry) formally declares kWorldId = StringCRC{"world"};
         // this is the same literal, just not yet centralized.
         , mWorldDomain(Dia::Core::StringCRC("world"), frequencyHz, Dia::Core::TimeAbsolute::Zero())
+        , mDomainRegistry(mWorldDomain)
         , mMaxCatchUpTicksPerFrame(maxCatchUpTicksPerFrame)
     {
         // Map well-known PU instance IDs to their affinity enum.

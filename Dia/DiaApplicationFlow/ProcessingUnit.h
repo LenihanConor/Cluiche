@@ -5,6 +5,7 @@
 #include <DiaCore/Memory/UniquePtr.h>
 #include <DiaCore/SimTime/SimTimeContext.h>
 #include <DiaCore/SimTime/SimTimeDomain.h>
+#include <DiaCore/SimTime/SimTimeDomainRegistry.h>
 #include <atomic>
 #include <thread>
 
@@ -47,6 +48,11 @@ namespace Dia { namespace ApplicationFlow {
         // same instance rather than owning a separate copy — do not construct a second world domain
         // anywhere else.
         [[nodiscard]] Dia::SimTime::SimTimeDomain& GetWorldDomain() { return mWorldDomain; }
+
+        // Task 2.2 — named clock-tree registry bound to mWorldDomain (never copies it).
+        // Owns any sub-domains created via Create(); Find(kWorldId) returns the exact
+        // same instance as GetWorldDomain() above.
+        [[nodiscard]] Dia::SimTime::SimTimeDomainRegistry& GetDomainRegistry() { return mDomainRegistry; }
 
         // Module management (called by Application during Start)
         void AddModule(Dia::Core::UniquePtr<Module> module,
@@ -121,6 +127,11 @@ namespace Dia { namespace ApplicationFlow {
         // The SimPU owns the world clock directly. Constructed in the ctor
         // init-list (needs frequencyHz).
         Dia::SimTime::SimTimeDomain     mWorldDomain;
+
+        // Task 2.2 — registry binds to mWorldDomain by reference; must be declared
+        // AFTER mWorldDomain (member init order follows declaration order).
+        Dia::SimTime::SimTimeDomainRegistry mDomainRegistry;
+
         float                           mSimAccumulatorSec = 0.0f;
         unsigned int                    mMaxCatchUpTicksPerFrame;   // set in ctor init-list from the new param
         Dia::Observation::Metric::Counter* mMetricDroppedTicks = nullptr;
