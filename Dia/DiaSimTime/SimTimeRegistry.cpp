@@ -12,43 +12,42 @@ namespace Dia::SimTime {
     // gameplay event-type namespace.
     const Core::StringCRC SimTimeRegistry::kWakeSentinelEventType("$simtime.wake");
 
-    namespace {
-
-        // Tier -> minimum interval between runs (this task's chosen mapping;
-        // there is no config-driven override yet — that is Task 4.4's OnConfigure
-        // job). Returns whether the tier is *always* due (kImmediate) via
-        // outAlways, and whether it is *never* due via the throttle (kDormant)
-        // via outNever. Otherwise outInterval holds the tier default.
-        void TierInterval(SimTimeTier tier,
-                          bool& outAlways, bool& outNever, Core::TimeRelative& outInterval)
-        {
-            outAlways = false;
-            outNever  = false;
-            switch (tier)
-            {
-            case SimTimeTier::kImmediate:
-                outAlways = true;                                            // every tick
-                break;
-            case SimTimeTier::kHigh:
-                outInterval = Core::TimeRelative::CreateFromMicroseconds(33333.0f); // ~30 Hz
-                break;
-            case SimTimeTier::kMedium:
-                outInterval = Core::TimeRelative::CreateFromMilliseconds(100);      // 10 Hz
-                break;
-            case SimTimeTier::kLow:
-                outInterval = Core::TimeRelative::CreateFromMilliseconds(500);      // 2 Hz
-                break;
-            case SimTimeTier::kDormant:
-                outNever = true;                                            // never via throttle
-                break;
-            }
-        }
-
-    } // anonymous namespace
-
     SimTimeRegistry::SimTimeRegistry(SimTimeScheduler& scheduler)
         : mScheduler(scheduler)
+        // Default Hz-tier intervals (overridable via SetTierHz from config JSON):
+        , mHighInterval  (Core::TimeRelative::CreateFromMicroseconds(33333.0f)) // ~30 Hz
+        , mMediumInterval(Core::TimeRelative::CreateFromMilliseconds(100))      // 10 Hz
+        , mLowInterval   (Core::TimeRelative::CreateFromMilliseconds(500))      // 2 Hz
     {
+    }
+
+    // Tier -> minimum interval between runs. kImmediate is always due, kDormant
+    // never due (both hardcoded); the three Hz tiers read the configurable
+    // members (SetTierHz). Returns "always due" via outAlways and "never due" via
+    // outNever; otherwise outInterval holds the tier interval.
+    void SimTimeRegistry::TierInterval(SimTimeTier tier,
+                                       bool& outAlways, bool& outNever, Core::TimeRelative& outInterval) const
+    {
+        outAlways = false;
+        outNever  = false;
+        switch (tier)
+        {
+        case SimTimeTier::kImmediate:
+            outAlways = true;               // every tick
+            break;
+        case SimTimeTier::kHigh:
+            outInterval = mHighInterval;
+            break;
+        case SimTimeTier::kMedium:
+            outInterval = mMediumInterval;
+            break;
+        case SimTimeTier::kLow:
+            outInterval = mLowInterval;
+            break;
+        case SimTimeTier::kDormant:
+            outNever = true;                // never via throttle
+            break;
+        }
     }
 
     // --- Lookup --------------------------------------------------------------
@@ -250,6 +249,41 @@ namespace Dia::SimTime {
     int SimTimeRegistry::GetRegisteredCount() const
     {
         return static_cast<int>(mEntries.Size());
+    }
+
+    SimTimeRegistryEntryView SimTimeRegistry::GetEntryAt(int index) const
+    {
+        DIA_ASSERT(index >= 0 && index < static_cast<int>(mEntries.Size()),
+                   "SimTimeRegistry::GetEntryAt — index %d out of range (count %u)",
+                   index, mEntries.Size());
+        const Entry& e = mEntries.At(static_cast<unsigned int>(index));
+        SimTimeRegistryEntryView view;
+        view.systemId = e.systemId;
+        view.system   = e.system;
+        view.policy   = e.policy;
+        return view;
+    }
+
+    int SimTimeRegistry::GetSleepingCount() const
+    {
+        int count = 0;
+        for (unsigned int i = 0; i < mEntries.Size(); ++i)
+        {
+            if (mEntries.At(i).state == SimTimeState::kSleeping)
+            {
+                ++count;
+            }
+        }
+        return count;
+    }
+
+    void SimTimeRegistry::SetTierHz(float highHz, float mediumHz, float lowHz)
+    {
+        // A non-positive Hz leaves that tier's interval unchanged (keeps the
+        // ctor default / previously-configured value) — never divide by <= 0.
+        if (highHz   > 0.0f) { mHighInterval   = Core::TimeRelative::CreateFromMilliseconds(static_cast<int>(1000.0f / highHz));   }
+        if (mediumHz > 0.0f) { mMediumInterval = Core::TimeRelative::CreateFromMilliseconds(static_cast<int>(1000.0f / mediumHz)); }
+        if (lowHz    > 0.0f) { mLowInterval    = Core::TimeRelative::CreateFromMilliseconds(static_cast<int>(1000.0f / lowHz));    }
     }
 
 } // namespace Dia::SimTime

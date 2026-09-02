@@ -3,6 +3,7 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Time/TimeAbsolute.h>
+#include <DiaCore/Time/TimeRelative.h>
 #include <DiaSimTime/SimTimePolicy.h>
 #include <DiaSimTime/SimTimeState.h>
 #include <DiaSimTime/SimTimeSchedulerFire.h>
@@ -14,6 +15,19 @@ namespace Dia::SimTime {
 
     class ISimTimeBudgetedSystem;
     class SimTimeScheduler;
+
+    // SimTimeRegistryEntryView
+    // -------------------------------------------------------------------------
+    // Read-only snapshot of one registered entry, handed out by GetEntryAt() so
+    // Task 4.4's gate loop can walk the registry (systemId + system pointer +
+    // policy) without exposing the private Entry struct or its mutable
+    // state/throttle bookkeeping. Thin value view over data that already exists.
+    struct SimTimeRegistryEntryView
+    {
+        Core::StringCRC         systemId;
+        ISimTimeBudgetedSystem* system = nullptr;
+        SimTimePolicy           policy;
+    };
 
     // SimTimeRegistry
     // -------------------------------------------------------------------------
@@ -113,6 +127,24 @@ namespace Dia::SimTime {
         // Number of currently registered systems.
         int   GetRegisteredCount() const;
 
+        // --- Enumeration (Task 4.4 gate loop) --------------------------------
+        // Read-only snapshot of the registered entry at `index` (0-based, in
+        // registration order). DIA_ASSERT on out-of-range. Pairs with
+        // GetRegisteredCount() to walk every registered system.
+        SimTimeRegistryEntryView GetEntryAt(int index) const;
+
+        // Number of registered systems currently in the kSleeping state
+        // (feeds the simtime.registry.sleeping_count metric).
+        int   GetSleepingCount() const;
+
+        // --- Tier -> interval configuration (Task 4.4 OnConfigure) -----------
+        // Override the throttle interval for the three Hz-based tiers from the
+        // config JSON's tier_hz block. Each hz is converted to an interval of
+        // 1000/hz ms. A non-positive hz leaves that tier's interval unchanged
+        // (config-preserving default). kImmediate / kDormant are NOT Hz-based
+        // and are unaffected.
+        void  SetTierHz(float highHz, float mediumHz, float lowHz);
+
     private:
         struct Entry
         {
@@ -135,7 +167,21 @@ namespace Dia::SimTime {
         const Entry* FindEntry(Core::StringCRC systemId) const;
         Entry*       FindEntry(Core::StringCRC systemId);
 
+        // Tier -> throttle interval. kImmediate is always due (outAlways) and
+        // kDormant is never due (outNever) — both hardcoded, not Hz-based. The
+        // three Hz tiers (kHigh/kMedium/kLow) read their interval from the
+        // configurable members below (defaults set in the ctor; overridable via
+        // SetTierHz).
+        void TierInterval(SimTimeTier tier,
+                          bool& outAlways, bool& outNever, Core::TimeRelative& outInterval) const;
+
         SimTimeScheduler& mScheduler;   // externally owned (dependency injection)
+
+        // Configurable Hz-tier intervals (defaults in the ctor: kHigh ~30Hz,
+        // kMedium 10Hz, kLow 2Hz). SetTierHz overwrites these from config.
+        Core::TimeRelative mHighInterval;
+        Core::TimeRelative mMediumInterval;
+        Core::TimeRelative mLowInterval;
 
         Dia::Core::Containers::DynamicArrayC<Entry, kMaxSystems>             mEntries;
         Dia::Core::Containers::DynamicArrayC<WakeSub, kMaxWakeSubscriptions> mWakeSubs;

@@ -1760,5 +1760,14 @@
     <ClCompile Include="DiaSimTime\TestISimTimeBudgetedSystem.cpp">
       <Filter>DiaSimTime</Filter>
     </ClCompile>
+    <ClCompile Include="DiaSimTime\TestSimTimeRegistry.cpp">
+      <Filter>DiaSimTime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaSimTime\TestSimTimeBudget.cpp">
+      <Filter>DiaSimTime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaSimTime\TestDiaSimTimeModule.cpp">
+      <Filter>DiaSimTime</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
