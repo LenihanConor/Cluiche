@@ -1,13 +1,14 @@
 #pragma once
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/MainModule.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/SimTime/SimTimeContext.h>
 #include <DiaThreading/JobSystem.h>
 #include <DiaObservation/Metric/JobSystemMetricsAdapter.h>
 
 namespace Cluiche { namespace AppFlow {
 
-class JobSystemModule : public Dia::ApplicationFlow::Module {
+class JobSystemModule : public Dia::ApplicationFlow::MainModule {
 public:
     static const Dia::Core::StringCRC kTypeId;
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kMain;
@@ -19,7 +20,7 @@ public:
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart()         override;
-    void                              DoUpdate(float dt) override;
+    void                              DoUpdate(const Dia::SimTime::MainTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult  DoStop()          override;
 
 private:

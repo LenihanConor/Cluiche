@@ -14,7 +14,7 @@ namespace Cluiche { namespace AppFlow {
 const Dia::Core::StringCRC SimNavigationHandlerModule::kTypeId("SimNavigationHandlerModule");
 
 SimNavigationHandlerModule::SimNavigationHandlerModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : SimModule(instanceId)
     , mAutomationService(new Dia::ApplicationFlow::ServiceStreamReader<Dia::Automation::AutomationService>(this, Dia::Core::StringCRC("AutomationService")))
 {}
 
@@ -28,7 +28,7 @@ Dia::ApplicationFlow::StartResult SimNavigationHandlerModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void SimNavigationHandlerModule::DoUpdate(float /*dt*/)
+void SimNavigationHandlerModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*ctx*/)
 {
     static constexpr unsigned int kMaxPerFrame = 4;
     Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::Event<RenderToSimNavRequest>, kMaxPerFrame> events;

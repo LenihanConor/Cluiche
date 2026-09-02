@@ -20,7 +20,7 @@
 namespace Cluiche { namespace AppFlow {
 
 UIModule::UIModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : MainModule(instanceId)
 {}
 
 UIModule::~UIModule()
@@ -65,7 +65,7 @@ Dia::ApplicationFlow::StartResult UIModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void UIModule::DoUpdate(float /*dt*/)
+void UIModule::DoUpdate(const Dia::SimTime::MainTimeContext& /*ctx*/)
 {
     DIA_TRACE_ZONE("UIModule::DoUpdate", Dia::Observation::Trace::Category::kNone);
 

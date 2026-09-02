@@ -39,7 +39,7 @@ std::atomic<unsigned int>   KernelModule::sWindowWidth{1400};
 std::atomic<unsigned int>   KernelModule::sWindowHeight{1000};
 
 KernelModule::KernelModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : MainModule(instanceId)
 {}
 
 void KernelModule::OnConfigure(const char* /*configJson*/)
@@ -174,7 +174,7 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void KernelModule::DoUpdate(float /*dt*/)
+void KernelModule::DoUpdate(const Dia::SimTime::MainTimeContext& /*ctx*/)
 {
     mFrameEvents.RemoveAll();
 

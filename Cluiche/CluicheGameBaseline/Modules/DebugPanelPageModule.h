@@ -2,10 +2,11 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/MainModule.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/SimTime/SimTimeContext.h>
 #include <DiaStreams/EventStreamWriter.h>
 #include <DiaStreams/EventStreamReader.h>
 #include <DiaStreams/ServiceStreamReader.h>
@@ -30,7 +31,7 @@ namespace Cluiche { namespace AppFlow {
 // thread and dispatches to IDebugDomain::OnCommand. ModuleRef cannot be used
 // for that hop because it only resolves modules inside the same PU.
 class DebugPanelPageModule
-    : public Dia::ApplicationFlow::Module
+    : public Dia::ApplicationFlow::MainModule
     , public DebugPanelPage::ICallbacks
 {
 public:
@@ -55,7 +56,7 @@ public:
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
-    void DoUpdate(float dt) override;
+    void DoUpdate(const Dia::SimTime::MainTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult DoStop() override;
     void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 

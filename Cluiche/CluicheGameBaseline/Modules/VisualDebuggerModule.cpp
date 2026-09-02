@@ -22,7 +22,7 @@ namespace Cluiche { namespace AppFlow {
 const Dia::Core::StringCRC VisualDebuggerModule::kTypeId("VisualDebuggerModule");
 
 VisualDebuggerModule::VisualDebuggerModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : SimModule(instanceId)
 {}
 
 // Destructor defined here (not in header) so unique_ptr can destroy the
@@ -43,7 +43,7 @@ Dia::ApplicationFlow::StartResult VisualDebuggerModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void VisualDebuggerModule::DoUpdate(float /*dt*/)
+void VisualDebuggerModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*ctx*/)
 {
     DIA_TRACE_ZONE("VisualDebuggerModule.Update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
 

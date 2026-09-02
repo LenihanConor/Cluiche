@@ -1,7 +1,8 @@
 ﻿#pragma once
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/SimTime/SimTimeContext.h>
 #include <DiaStreams/StreamWriter.h>
 #include <DiaStreams/StreamReader.h>
 #include <DiaGraphics/Frame/FrameData.h>
@@ -9,7 +10,7 @@
 
 namespace Cluiche { namespace AppFlow {
 
-class LoadingScreenModule : public Dia::ApplicationFlow::Module {
+class LoadingScreenModule : public Dia::ApplicationFlow::SimModule {
 public:
     static const Dia::Core::StringCRC kTypeId;
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kSim;
@@ -18,7 +19,7 @@ public:
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart()                              override;
-    void                              DoUpdate(float dt)                     override;
+    void                              DoUpdate(const Dia::SimTime::SimTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult  DoStop()                               override;
     void                              OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 

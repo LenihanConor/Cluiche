@@ -18,7 +18,7 @@ namespace Cluiche { namespace AppFlow {
 const Dia::Core::StringCRC AutomationModule::kTypeId("AutomationModule");
 
 AutomationModule::AutomationModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : MainModule(instanceId)
     , mAutomationServiceStream(new Dia::ApplicationFlow::ServiceStreamWriter<Dia::Automation::AutomationService>(this, Dia::Core::StringCRC("AutomationService")))
 {
 }
@@ -45,8 +45,9 @@ Dia::ApplicationFlow::StartResult AutomationModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void AutomationModule::DoUpdate(float dt)
+void AutomationModule::DoUpdate(const Dia::SimTime::MainTimeContext& ctx)
 {
+    const float dt = ctx.wallClockDt;
     if (mService)
         mService->TickHeartbeat(dt);
 }

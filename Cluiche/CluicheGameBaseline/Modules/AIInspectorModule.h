@@ -2,9 +2,10 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
+#include <DiaCore/SimTime/SimTimeContext.h>
 #include <DiaStreams/EventStreamWriter.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include "Modules/EntityModule.h"
@@ -15,7 +16,7 @@ namespace Dia { namespace AIBudget    { class AIBudgetModule; } }
 
 namespace Cluiche { namespace AppFlow {
 
-class AIInspectorModule : public Dia::ApplicationFlow::Module
+class AIInspectorModule : public Dia::ApplicationFlow::SimModule
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
@@ -28,7 +29,7 @@ public:
 protected:
     void                              OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
     Dia::ApplicationFlow::StartResult DoStart()          override;
-    void                              DoUpdate(float dt) override;
+    void                              DoUpdate(const Dia::SimTime::SimTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult  DoStop()           override;
 
 private:

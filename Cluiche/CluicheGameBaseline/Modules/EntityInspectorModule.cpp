@@ -20,7 +20,7 @@ namespace Cluiche { namespace AppFlow {
 const Dia::Core::StringCRC EntityInspectorModule::kTypeId("EntityInspectorModule");
 
 EntityInspectorModule::EntityInspectorModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : SimModule(instanceId)
 {}
 
 EntityInspectorModule::~EntityInspectorModule() = default;
@@ -58,7 +58,7 @@ Dia::ApplicationFlow::StartResult EntityInspectorModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void EntityInspectorModule::DoUpdate(float /*dt*/)
+void EntityInspectorModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*ctx*/)
 {
     DIA_TRACE_ZONE("EntityInspectorModule::DoUpdate", Dia::Observation::Trace::Category::kNone);
 

@@ -21,7 +21,7 @@ namespace Cluiche { namespace AppFlow {
 const Dia::Core::StringCRC EconomyInspectorModule::kTypeId("EconomyInspectorModule");
 
 EconomyInspectorModule::EconomyInspectorModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : SimModule(instanceId)
 {}
 
 EconomyInspectorModule::~EconomyInspectorModule()
@@ -57,8 +57,9 @@ Dia::ApplicationFlow::StartResult EconomyInspectorModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void EconomyInspectorModule::DoUpdate(float dt)
+void EconomyInspectorModule::DoUpdate(const Dia::SimTime::SimTimeContext& ctx)
 {
+    const float dt = ctx.gameDt.AsFloatInSeconds();
     DIA_TRACE_ZONE("EconomyInspectorModule::DoUpdate", Dia::Observation::Trace::Category::kNone);
 
     if (!mSourcesActive || !mDebugServer)

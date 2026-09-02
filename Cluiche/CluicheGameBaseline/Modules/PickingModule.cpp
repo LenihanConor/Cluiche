@@ -15,7 +15,7 @@ namespace Cluiche { namespace AppFlow {
 const Dia::Core::StringCRC PickingModule::kTypeId("PickingModule");
 
 PickingModule::PickingModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : SimModule(instanceId)
 {}
 
 Dia::ApplicationFlow::StartResult PickingModule::DoStart()
@@ -26,7 +26,7 @@ Dia::ApplicationFlow::StartResult PickingModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void PickingModule::DoUpdate(float /*dt*/)
+void PickingModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*ctx*/)
 {
     if (!mInputRef.Get() || !mCameraRef.Get()) return;
 

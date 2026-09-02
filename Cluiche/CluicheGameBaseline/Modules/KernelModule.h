@@ -1,8 +1,9 @@
 #pragma once
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/MainModule.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/SimTime/SimTimeContext.h>
 #include <DiaCore/Strings/String64.h>
 #include <DiaStreams/EventStreamWriter.h>
 #include <DiaStreams/ServiceStreamWriter.h>
@@ -34,7 +35,7 @@ namespace Dia { namespace Window { class IWindow; } }
 
 namespace Cluiche { namespace AppFlow {
 
-class KernelModule : public Dia::ApplicationFlow::Module {
+class KernelModule : public Dia::ApplicationFlow::MainModule {
 public:
     static const Dia::Core::StringCRC kTypeId;
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kMain;
@@ -59,7 +60,7 @@ public:
 protected:
     void OnConfigure(const char* configJson) override;
     Dia::ApplicationFlow::StartResult DoStart() override;
-    void DoUpdate(float dt) override;
+    void DoUpdate(const Dia::SimTime::MainTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult DoStop() override;
     void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 

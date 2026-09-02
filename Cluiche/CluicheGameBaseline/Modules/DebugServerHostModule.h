@@ -16,9 +16,10 @@
 // itself has zero dependency on DiaApplicationFlow.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/MainModule.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/Streams/ServiceStreamWriter.h>
+#include <DiaCore/SimTime/SimTimeContext.h>
 #include <DiaStreams/IStreamStore.h>
 #include <DiaStreams/EventStreamReader.h>
 #include <DiaDebugServer/DebugServer.h>
@@ -39,7 +40,7 @@ namespace Dia { namespace Observation { namespace Metric {
 namespace Cluiche { namespace AppFlow {
 
 class DebugServerHostModule
-    : public Dia::ApplicationFlow::Module
+    : public Dia::ApplicationFlow::MainModule
     , private Dia::DebugServer::IDebugStateProvider
 {
 public:
@@ -68,7 +69,7 @@ protected:
     void OnConfigure(const char* configJson) override;
     void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
     Dia::ApplicationFlow::StartResult DoStart() override;
-    void DoUpdate(float deltaTime) override;
+    void DoUpdate(const Dia::SimTime::MainTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult DoStop() override;
 
     // IDebugStateProvider — translates v2 IApplicationInspectable into the

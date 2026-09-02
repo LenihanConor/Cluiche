@@ -12,7 +12,7 @@ namespace Cluiche { namespace AppFlow {
 const Dia::Core::StringCRC Scene2DModule::kTypeId("Scene2DModule");
 
 Scene2DModule::Scene2DModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : SimModule(instanceId)
 {}
 
 Dia::ApplicationFlow::StartResult Scene2DModule::DoStart()

@@ -11,7 +11,7 @@ namespace Cluiche { namespace AppFlow {
 const Dia::Core::StringCRC Light2DModule::kTypeId("Light2DModule");
 
 Light2DModule::Light2DModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : SimModule(instanceId)
 {}
 
 Dia::ApplicationFlow::StartResult Light2DModule::DoStart()
@@ -20,7 +20,7 @@ Dia::ApplicationFlow::StartResult Light2DModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void Light2DModule::DoUpdate(float /*dt*/)
+void Light2DModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*ctx*/)
 {
 }
 

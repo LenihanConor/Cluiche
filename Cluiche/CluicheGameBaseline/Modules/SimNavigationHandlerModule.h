@@ -1,7 +1,8 @@
 #pragma once
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/SimTime/SimTimeContext.h>
 #include <DiaStreams/EventStreamReader.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaStreams/Event.h>
@@ -15,7 +16,7 @@ namespace Cluiche { namespace AppFlow {
 // Reads navigation requests from RenderPU modules and executes TransitionTo()
 // on the sim thread. Enforces the rule that application flow decisions are made
 // on SimPU, not on the render thread.
-class SimNavigationHandlerModule : public Dia::ApplicationFlow::Module
+class SimNavigationHandlerModule : public Dia::ApplicationFlow::SimModule
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
@@ -27,7 +28,7 @@ public:
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
-    void DoUpdate(float dt) override;
+    void DoUpdate(const Dia::SimTime::SimTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult DoStop() override;
     void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 

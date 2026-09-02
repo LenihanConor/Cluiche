@@ -12,7 +12,7 @@ namespace Cluiche { namespace AppFlow {
 const Dia::Core::StringCRC AssetRuntimeVisualDebuggerModule::kTypeId("AssetRuntimeVisualDebuggerModule");
 
 AssetRuntimeVisualDebuggerModule::AssetRuntimeVisualDebuggerModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : RenderModule(instanceId)
 {}
 
 AssetRuntimeVisualDebuggerModule::~AssetRuntimeVisualDebuggerModule() = default;
@@ -36,7 +36,7 @@ Dia::ApplicationFlow::StartResult AssetRuntimeVisualDebuggerModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void AssetRuntimeVisualDebuggerModule::DoUpdate(float /*dt*/)
+void AssetRuntimeVisualDebuggerModule::DoUpdate(const Dia::SimTime::RenderTimeContext& /*ctx*/)
 {
 }
 

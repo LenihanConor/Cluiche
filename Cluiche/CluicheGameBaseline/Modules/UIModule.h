@@ -1,7 +1,8 @@
 #pragma once
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/MainModule.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/SimTime/SimTimeContext.h>
 #include <DiaStreams/EventStreamReader.h>
 #include <DiaStreams/StreamWriter.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
@@ -26,7 +27,7 @@ namespace Cluiche { namespace AppFlow {
 // stage's page module stops (UnloadPage) and the new one starts (LoadPage) —
 // UIModule itself stays running so there's no UISystem teardown between
 // stages.
-class UIModule : public Dia::ApplicationFlow::Module
+class UIModule : public Dia::ApplicationFlow::MainModule
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
@@ -51,7 +52,7 @@ public:
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
-    void DoUpdate(float dt) override;
+    void DoUpdate(const Dia::SimTime::MainTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult DoStop() override;
     void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 

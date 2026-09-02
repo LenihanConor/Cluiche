@@ -63,7 +63,7 @@ namespace
 const Dia::Core::StringCRC DebugPanelPageModule::kTypeId("DebugPanelPageModule");
 
 DebugPanelPageModule::DebugPanelPageModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : MainModule(instanceId)
 {}
 
 Dia::ApplicationFlow::StartResult DebugPanelPageModule::DoStart()
@@ -91,7 +91,7 @@ Dia::ApplicationFlow::StartResult DebugPanelPageModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void DebugPanelPageModule::DoUpdate(float /*dt*/)
+void DebugPanelPageModule::DoUpdate(const Dia::SimTime::MainTimeContext& /*ctx*/)
 {
     DIA_TRACE_ZONE("DebugPanelPageModule.Update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
 

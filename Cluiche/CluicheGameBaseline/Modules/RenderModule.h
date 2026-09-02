@@ -1,7 +1,8 @@
 ﻿#pragma once
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/RenderModule.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/SimTime/SimTimeContext.h>
 #include <DiaStreams/StreamReader.h>
 #include <DiaStreams/StreamWriter.h>
 #include <DiaStreams/ServiceStreamReader.h>
@@ -16,16 +17,16 @@ namespace Dia { namespace Bgfx3D { class Canvas3D; } }
 
 namespace Cluiche { namespace AppFlow {
 
-class RenderModule : public Dia::ApplicationFlow::Module {
+class SceneRenderModule : public Dia::ApplicationFlow::RenderModule {
 public:
     static const Dia::Core::StringCRC kTypeId;
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kRender;
     static constexpr const char* kDescription = "Main renderer — reads SimToRender, drives canvas";
-    explicit RenderModule(const Dia::Core::StringCRC& instanceId);
+    explicit SceneRenderModule(const Dia::Core::StringCRC& instanceId);
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
-    void DoUpdate(float dt) override;
+    void DoUpdate(const Dia::SimTime::RenderTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult DoStop() override;
     void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 

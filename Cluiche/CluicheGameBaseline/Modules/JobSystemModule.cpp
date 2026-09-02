@@ -8,7 +8,7 @@ namespace Cluiche { namespace AppFlow {
 const Dia::Core::StringCRC JobSystemModule::kTypeId("JobSystemModule");
 
 JobSystemModule::JobSystemModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : MainModule(instanceId)
 {
 }
 
@@ -20,7 +20,7 @@ Dia::ApplicationFlow::StartResult JobSystemModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void JobSystemModule::DoUpdate(float /*dt*/)
+void JobSystemModule::DoUpdate(const Dia::SimTime::MainTimeContext& /*ctx*/)
 {
 }
 

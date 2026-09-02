@@ -1,8 +1,9 @@
 #pragma once
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/SimTime/SimTimeContext.h>
 #include <DiaScene2D/SceneLoader2D.h>
 #include <DiaScene2D/LayerTable.h>
 #include "Modules/EntityModule.h"
@@ -11,7 +12,7 @@
 
 namespace Cluiche { namespace AppFlow {
 
-class Scene2DModule : public Dia::ApplicationFlow::Module
+class Scene2DModule : public Dia::ApplicationFlow::SimModule
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
@@ -25,7 +26,7 @@ public:
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart()          override;
-    void                              DoUpdate(float dt) override {}
+    void                              DoUpdate(const Dia::SimTime::SimTimeContext& ctx) override {}
     Dia::ApplicationFlow::StopResult  DoStop()           override;
 
 private:

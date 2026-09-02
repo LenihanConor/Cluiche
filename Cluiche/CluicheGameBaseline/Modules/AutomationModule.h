@@ -7,17 +7,18 @@
 // This module uses stages: ["all"] so it runs for the full session.
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/MainModule.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Memory/UniquePtr.h>
+#include <DiaCore/SimTime/SimTimeContext.h>
 
 namespace Dia { namespace Automation { class AutomationService; } }
 namespace Dia { namespace ApplicationFlow { template<typename T> class ServiceStreamWriter; } }
 
 namespace Cluiche { namespace AppFlow {
 
-class AutomationModule : public Dia::ApplicationFlow::Module {
+class AutomationModule : public Dia::ApplicationFlow::MainModule {
 public:
     static const Dia::Core::StringCRC kTypeId;
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kMain;
@@ -29,7 +30,7 @@ public:
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
-    void DoUpdate(float dt) override;
+    void DoUpdate(const Dia::SimTime::MainTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult DoStop() override;
     void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 

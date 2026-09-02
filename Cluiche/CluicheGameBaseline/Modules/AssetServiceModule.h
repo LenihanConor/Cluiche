@@ -1,7 +1,8 @@
 #pragma once
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/MainModule.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
+#include <DiaCore/SimTime/SimTimeContext.h>
 #include <DiaAssetRuntime/AssetRuntime.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Strings/String32.h>
@@ -35,7 +36,7 @@ namespace Cluiche { namespace AppFlow {
 //   - RequestStageLoad / RequestStageUnload are called externally by
 //     stage-loading code when a stage starts / stops (ref-counted inside
 //     AssetRuntime).
-class AssetServiceModule : public Dia::ApplicationFlow::Module
+class AssetServiceModule : public Dia::ApplicationFlow::MainModule
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
@@ -59,7 +60,7 @@ public:
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
-    void DoUpdate(float dt) override;
+    void DoUpdate(const Dia::SimTime::MainTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult DoStop() override;
     void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 

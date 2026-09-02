@@ -1,7 +1,8 @@
 ﻿#pragma once
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/SimTime/SimTimeContext.h>
 #include <DiaStreams/StreamWriter.h>
 #include <DiaStreams/StreamReader.h>
 #include <DiaGraphics/Frame/FrameData.h>
@@ -22,7 +23,7 @@ namespace Cluiche { namespace AppFlow {
 // Having a single SimToRender writer is what fixes the cross-thread flashing:
 // the RenderPU double-buffer always observes a complete frame (scene + debug +
 // UI), never a partial one from a mid-tick write by a competing writer.
-class UICompositeModule : public Dia::ApplicationFlow::Module {
+class UICompositeModule : public Dia::ApplicationFlow::SimModule {
 public:
     static const Dia::Core::StringCRC kTypeId;
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kSim;
@@ -31,7 +32,7 @@ public:
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart()  override;
-    void                              DoUpdate(float dt) override;
+    void                              DoUpdate(const Dia::SimTime::SimTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult  DoStop()   override;
     void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 

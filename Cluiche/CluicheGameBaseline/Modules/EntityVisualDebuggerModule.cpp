@@ -18,7 +18,7 @@ namespace Cluiche { namespace AppFlow {
 const Dia::Core::StringCRC EntityVisualDebuggerModule::kTypeId("EntityVisualDebuggerModule");
 
 EntityVisualDebuggerModule::EntityVisualDebuggerModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : SimModule(instanceId)
 {}
 
 EntityVisualDebuggerModule::~EntityVisualDebuggerModule() = default;
@@ -57,7 +57,7 @@ Dia::ApplicationFlow::StartResult EntityVisualDebuggerModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void EntityVisualDebuggerModule::DoUpdate(float)
+void EntityVisualDebuggerModule::DoUpdate(const Dia::SimTime::SimTimeContext&)
 {
     if (!mPickingSubscribed) return;
 

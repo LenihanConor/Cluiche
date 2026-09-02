@@ -72,7 +72,7 @@ namespace Cluiche { namespace AppFlow {
 const Dia::Core::StringCRC AssetServiceModule::kTypeId("AssetServiceModule");
 
 AssetServiceModule::AssetServiceModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : MainModule(instanceId)
 {}
 
 Dia::ApplicationFlow::StartResult AssetServiceModule::DoStart()
@@ -126,7 +126,7 @@ Dia::ApplicationFlow::StartResult AssetServiceModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void AssetServiceModule::DoUpdate(float /*dt*/)
+void AssetServiceModule::DoUpdate(const Dia::SimTime::MainTimeContext& /*ctx*/)
 {
     // Late binding: keep trying until both handlers are registered.
     if (!mTextureHandlerRegistered || !mUIHandlerRegistered)

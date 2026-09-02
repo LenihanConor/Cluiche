@@ -11,7 +11,7 @@ namespace Cluiche { namespace AppFlow {
 const Dia::Core::StringCRC MainStateProducerModule::kTypeId("MainStateProducerModule");
 
 MainStateProducerModule::MainStateProducerModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : MainModule(instanceId)
 {}
 
 Dia::ApplicationFlow::StartResult MainStateProducerModule::DoStart()
@@ -20,7 +20,7 @@ Dia::ApplicationFlow::StartResult MainStateProducerModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void MainStateProducerModule::DoUpdate(float /*dt*/)
+void MainStateProducerModule::DoUpdate(const Dia::SimTime::MainTimeContext& /*ctx*/)
 {
     MainToRenderFrame frame;
 

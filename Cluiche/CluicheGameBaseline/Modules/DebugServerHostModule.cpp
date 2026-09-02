@@ -35,7 +35,7 @@ namespace Cluiche { namespace AppFlow {
 const Dia::Core::StringCRC DebugServerHostModule::kTypeId("DebugServerHostModule");
 
 DebugServerHostModule::DebugServerHostModule(const Dia::Core::StringCRC& instanceId)
-    : Dia::ApplicationFlow::Module(instanceId)
+    : Dia::ApplicationFlow::MainModule(instanceId)
 {
 }
 
@@ -150,8 +150,9 @@ Dia::ApplicationFlow::StartResult DebugServerHostModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void DebugServerHostModule::DoUpdate(float deltaTime)
+void DebugServerHostModule::DoUpdate(const Dia::SimTime::MainTimeContext& ctx)
 {
+    const float deltaTime = ctx.wallClockDt;
     // Rolling FPS over kFpsWindowSec.
     if (deltaTime > 0.0f)
     {

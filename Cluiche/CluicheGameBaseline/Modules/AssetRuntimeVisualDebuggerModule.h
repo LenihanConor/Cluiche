@@ -2,11 +2,12 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/RenderModule.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaStreams/ServiceStreamReader.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/SimTime/SimTimeContext.h>
 #include <DiaAssetRuntime/AssetRuntime.h>
 #include <DiaAssetRuntimeVisualDebugger/AssetRuntimeDebugDomain.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
@@ -15,7 +16,7 @@
 
 namespace Cluiche { namespace AppFlow {
 
-class AssetRuntimeVisualDebuggerModule : public Dia::ApplicationFlow::Module
+class AssetRuntimeVisualDebuggerModule : public Dia::ApplicationFlow::RenderModule
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
@@ -26,7 +27,7 @@ public:
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
-    void DoUpdate(float dt) override;
+    void DoUpdate(const Dia::SimTime::RenderTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult DoStop() override;
     void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 

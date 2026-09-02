@@ -16,13 +16,13 @@
 
 namespace Cluiche { namespace AppFlow {
 
-const Dia::Core::StringCRC RenderModule::kTypeId("RenderModule");
+const Dia::Core::StringCRC SceneRenderModule::kTypeId("RenderModule");
 
-RenderModule::RenderModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+SceneRenderModule::SceneRenderModule(const Dia::Core::StringCRC& instanceId)
+    : Dia::ApplicationFlow::RenderModule(instanceId)
 {}
 
-Dia::ApplicationFlow::StartResult RenderModule::DoStart()
+Dia::ApplicationFlow::StartResult SceneRenderModule::DoStart()
 {
     // RenderModule runs on the RenderPU dedicated thread, KernelModule runs on
     // MainPU. Wait (return kLoading) until the KernelCanvas service stream is
@@ -56,7 +56,7 @@ Dia::ApplicationFlow::StartResult RenderModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void RenderModule::DoUpdate(float /*dt*/)
+void SceneRenderModule::DoUpdate(const Dia::SimTime::RenderTimeContext& /*ctx*/)
 {
     if (mCanvas == nullptr)
         return;
@@ -104,7 +104,7 @@ void RenderModule::DoUpdate(float /*dt*/)
     mFenceOutput.Write(fence, Dia::Core::TimeAbsolute::Zero());
 }
 
-Dia::ApplicationFlow::StopResult RenderModule::DoStop()
+Dia::ApplicationFlow::StopResult SceneRenderModule::DoStop()
 {
     DIA_LOG_INFO("Application", "RenderModule DoStop entry");
 
@@ -136,7 +136,7 @@ Dia::ApplicationFlow::StopResult RenderModule::DoStop()
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 
-void RenderModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
+void SceneRenderModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 {
     mFrameInput.Connect(app);
     mFrame3DInput.Connect(app);
@@ -148,6 +148,6 @@ void RenderModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 
 } } // namespace Cluiche::AppFlow
 
-namespace { using RenderModule_ = Cluiche::AppFlow::RenderModule; }
+namespace { using RenderModule_ = Cluiche::AppFlow::SceneRenderModule; }
 DIA_MODULE(RenderModule_);
 DIA_DESCRIBE(RenderModule_::kTypeId, "Submits draw calls each frame using the bgfx canvas; consumes scene and camera FrameStreams.");

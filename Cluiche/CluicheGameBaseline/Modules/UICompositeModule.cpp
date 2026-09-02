@@ -10,7 +10,7 @@ namespace Cluiche { namespace AppFlow {
 const Dia::Core::StringCRC UICompositeModule::kTypeId("UICompositeModule");
 
 UICompositeModule::UICompositeModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : SimModule(instanceId)
 {}
 
 Dia::ApplicationFlow::StartResult UICompositeModule::DoStart()
@@ -24,7 +24,7 @@ Dia::ApplicationFlow::StartResult UICompositeModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void UICompositeModule::DoUpdate(float /*dt*/)
+void UICompositeModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*ctx*/)
 {
     mFrame.Clear();
 

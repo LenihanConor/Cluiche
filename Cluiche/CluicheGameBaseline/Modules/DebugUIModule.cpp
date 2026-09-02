@@ -13,7 +13,7 @@ namespace Cluiche { namespace AppFlow {
 const Dia::Core::StringCRC DebugUIModule::kTypeId("DebugUIModule");
 
 DebugUIModule::DebugUIModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : RenderModule(instanceId)
 {}
 
 Dia::ApplicationFlow::StartResult DebugUIModule::DoStart()
@@ -37,8 +37,9 @@ Dia::ApplicationFlow::StartResult DebugUIModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void DebugUIModule::DoUpdate(float dt)
+void DebugUIModule::DoUpdate(const Dia::SimTime::RenderTimeContext& ctx)
 {
+    const float dt = ctx.frameDt;
     Dia::ImGui::NewFrame(dt);
     mFrameActive = true;
 }

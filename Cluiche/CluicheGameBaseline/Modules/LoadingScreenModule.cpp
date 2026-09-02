@@ -13,7 +13,7 @@ namespace Cluiche { namespace AppFlow {
 const Dia::Core::StringCRC LoadingScreenModule::kTypeId("LoadingScreenModule");
 
 LoadingScreenModule::LoadingScreenModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : SimModule(instanceId)
 {
 }
 
@@ -25,8 +25,9 @@ Dia::ApplicationFlow::StartResult LoadingScreenModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void LoadingScreenModule::DoUpdate(float dt)
+void LoadingScreenModule::DoUpdate(const Dia::SimTime::SimTimeContext& ctx)
 {
+    const float dt = ctx.gameDt.AsFloatInSeconds();
     mElapsed += dt;
     mLoadingFrame.Clear();
 

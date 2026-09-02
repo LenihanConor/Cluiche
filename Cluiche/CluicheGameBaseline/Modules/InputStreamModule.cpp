@@ -12,7 +12,7 @@ namespace Cluiche { namespace AppFlow {
 const Dia::Core::StringCRC InputStreamModule::kTypeId("InputStreamModule");
 
 InputStreamModule::InputStreamModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : SimModule(instanceId)
 {
     memset(mCurrentKeys,  0, sizeof(mCurrentKeys));
     memset(mPreviousKeys, 0, sizeof(mPreviousKeys));
@@ -31,7 +31,7 @@ Dia::ApplicationFlow::StartResult InputStreamModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void InputStreamModule::DoUpdate(float /*dt*/)
+void InputStreamModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*ctx*/)
 {
     memcpy(mPreviousKeys,  mCurrentKeys,  sizeof(mCurrentKeys));
     memcpy(mPreviousMouse, mCurrentMouse, sizeof(mCurrentMouse));

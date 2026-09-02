@@ -12,7 +12,7 @@ namespace Cluiche { namespace AppFlow {
 const Dia::Core::StringCRC Camera2DModule::kTypeId("Camera2DModule");
 
 Camera2DModule::Camera2DModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : SimModule(instanceId)
 {}
 
 Dia::ApplicationFlow::StartResult Camera2DModule::DoStart()
@@ -30,8 +30,9 @@ Dia::ApplicationFlow::StartResult Camera2DModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void Camera2DModule::DoUpdate(float dt)
+void Camera2DModule::DoUpdate(const Dia::SimTime::SimTimeContext& ctx)
 {
+    const float dt = ctx.gameDt.AsFloatInSeconds();
     // Sync window size from KernelModule's atomic (set once at startup, immutable after)
     const unsigned int w = KernelModule::GetWindowWidth();
     const unsigned int h = KernelModule::GetWindowHeight();

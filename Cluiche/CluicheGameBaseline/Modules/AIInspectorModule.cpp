@@ -60,7 +60,7 @@ namespace Cluiche { namespace AppFlow {
 const Dia::Core::StringCRC AIInspectorModule::kTypeId("AIInspectorModule");
 
 AIInspectorModule::AIInspectorModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : SimModule(instanceId)
 {}
 
 AIInspectorModule::~AIInspectorModule() = default;
@@ -108,8 +108,9 @@ Dia::ApplicationFlow::StartResult AIInspectorModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void AIInspectorModule::DoUpdate(float dt)
+void AIInspectorModule::DoUpdate(const Dia::SimTime::SimTimeContext& ctx)
 {
+    const float dt = ctx.gameDt.AsFloatInSeconds();
     DIA_TRACE_ZONE("AIInspectorModule::DoUpdate", Dia::Observation::Trace::Category::kNone);
 
     ++mFrameCounter;
