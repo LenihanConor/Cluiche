@@ -69,6 +69,99 @@ TEST(FrameStream, DoubleBufferWriteReadsLatest)
         << "FetchLatest should return the most recently written value";
 }
 
+// ---- Ring buffer + FetchClosestTo tests ------------------------------------
+
+TEST(FrameStream, FetchClosestToReturnsNullBeforeWrite)
+{
+    FrameStreamStore<int> store(StringCRC("s_closest_null"));
+    const int* val = store.FetchClosestTo(TimeAbsolute::CreateFromMilliseconds(0));
+    EXPECT_EQ(val, nullptr)
+        << "FetchClosestTo should return nullptr before any Write";
+}
+
+TEST(FrameStream, FetchClosestToExactMatch)
+{
+    FrameStreamStore<int> store(StringCRC("s_closest_exact"));
+    store.Write(10, TimeAbsolute::CreateFromMilliseconds(10));
+    store.Write(20, TimeAbsolute::CreateFromMilliseconds(20));
+    store.Write(30, TimeAbsolute::CreateFromMilliseconds(30));
+
+    const int* val = store.FetchClosestTo(TimeAbsolute::CreateFromMilliseconds(20));
+    ASSERT_NE(val, nullptr);
+    EXPECT_EQ(*val, 20)
+        << "FetchClosestTo should return the sample with an exactly matching timestamp";
+}
+
+TEST(FrameStream, FetchClosestToNearestEarlier)
+{
+    // Samples at 10ms and 20ms; request 12ms -> closer to the 10ms sample.
+    FrameStreamStore<int> store(StringCRC("s_closest_earlier"));
+    store.Write(10, TimeAbsolute::CreateFromMilliseconds(10));
+    store.Write(20, TimeAbsolute::CreateFromMilliseconds(20));
+
+    const int* val = store.FetchClosestTo(TimeAbsolute::CreateFromMilliseconds(12));
+    ASSERT_NE(val, nullptr);
+    EXPECT_EQ(*val, 10)
+        << "Request 12ms falls between 10ms and 20ms, nearer the earlier (10ms) sample";
+}
+
+TEST(FrameStream, FetchClosestToNearestLater)
+{
+    // Samples at 10ms and 20ms; request 18ms -> closer to the 20ms sample.
+    FrameStreamStore<int> store(StringCRC("s_closest_later"));
+    store.Write(10, TimeAbsolute::CreateFromMilliseconds(10));
+    store.Write(20, TimeAbsolute::CreateFromMilliseconds(20));
+
+    const int* val = store.FetchClosestTo(TimeAbsolute::CreateFromMilliseconds(18));
+    ASSERT_NE(val, nullptr);
+    EXPECT_EQ(*val, 20)
+        << "Request 18ms falls between 10ms and 20ms, nearer the later (20ms) sample";
+}
+
+TEST(FrameStream, RingHoldsCapacitySamplesAndFetchLatestIsNewest)
+{
+    // Write more than the ring capacity (8). Values keyed to timestamps in ms.
+    FrameStreamStore<int> store(StringCRC("s_ring_capacity"));
+    const int kWrites = 12;  // > kRingCapacity (8)
+    for (int i = 1; i <= kWrites; ++i)
+        store.Write(i * 100, TimeAbsolute::CreateFromMilliseconds(i));
+
+    const int* latest = store.FetchLatest();
+    ASSERT_NE(latest, nullptr);
+    EXPECT_EQ(*latest, kWrites * 100)
+        << "FetchLatest should return the most recently written value after wrap-around";
+
+    // The 5 oldest writes (ts 1..4) were overwritten; only ts 5..12 remain.
+    // Requesting exactly ts=12 returns its value; requesting exactly ts=5 (oldest
+    // retained) returns its value.
+    const int* newest = store.FetchClosestTo(TimeAbsolute::CreateFromMilliseconds(12));
+    ASSERT_NE(newest, nullptr);
+    EXPECT_EQ(*newest, 1200);
+
+    const int* oldestRetained = store.FetchClosestTo(TimeAbsolute::CreateFromMilliseconds(5));
+    ASSERT_NE(oldestRetained, nullptr);
+    EXPECT_EQ(*oldestRetained, 500)
+        << "Oldest retained sample (ts=5) should still be retrievable exactly";
+}
+
+TEST(FrameStream, FetchClosestToOlderThanAllRetainedReturnsOldest)
+{
+    // Overwrite the ring so ts 5..12 remain. Requesting an ancient timestamp (ts=1,
+    // which has been overwritten) should gracefully return the oldest RETAINED
+    // sample (ts=5), not nullptr.
+    FrameStreamStore<int> store(StringCRC("s_ring_graceful"));
+    const int kWrites = 12;
+    for (int i = 1; i <= kWrites; ++i)
+        store.Write(i * 100, TimeAbsolute::CreateFromMilliseconds(i));
+
+    const int* val = store.FetchClosestTo(TimeAbsolute::CreateFromMilliseconds(1));
+    ASSERT_NE(val, nullptr)
+        << "FetchClosestTo on a timestamp older than everything retained should "
+           "degrade to the nearest (oldest retained) sample, not nullptr";
+    EXPECT_EQ(*val, 500)
+        << "Oldest retained sample is ts=5 (value 500) after 12 writes into an 8-slot ring";
+}
+
 // ---------------------------------------------------------------------------
 // Section 2: EventStreamStore<T> unit tests
 // ---------------------------------------------------------------------------
