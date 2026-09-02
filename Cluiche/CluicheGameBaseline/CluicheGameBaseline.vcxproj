@@ -42,7 +42,6 @@
     <ClCompile Include="Modules\Scene2DModule.cpp" />
     <ClCompile Include="Modules\ProfilerModule.cpp" />
     <ClCompile Include="Modules\RenderModule.cpp" />
-    <ClCompile Include="Modules\TimeServerModule.cpp" />
     <ClCompile Include="Modules\UIModule.cpp" />
     <ClCompile Include="Types\InputEvent.cpp" />
     <ClCompile Include="Types\MainToRenderEvent.cpp" />
@@ -90,7 +89,6 @@
     <ClInclude Include="Modules\Scene2DModule.h" />
     <ClInclude Include="Modules\ProfilerModule.h" />
     <ClInclude Include="Modules\RenderModule.h" />
-    <ClInclude Include="Modules\TimeServerModule.h" />
     <ClInclude Include="Modules\UIModule.h" />
     <ClInclude Include="Types\InputEvent.h" />
     <ClInclude Include="Types\MainToRenderEvent.h" />

@@ -636,23 +636,12 @@
             "dedicated_thread": true,
             "modules": [
                 {
-                    "instance_id": "TimeServerModule",
-                    "type_id": "TimeServerModule",
-                    "stages": [
-                        "all"
-                    ],
-                    "dependencies": [],
-                    "channels": []
-                },
-                {
                     "instance_id": "InputStreamModule",
                     "type_id": "InputStreamModule",
                     "stages": [
                         "all"
                     ],
-                    "dependencies": [
-                        "TimeServerModule"
-                    ],
+                    "dependencies": [],
                     "channels": [
                         {
                             "id": "MainToSim",

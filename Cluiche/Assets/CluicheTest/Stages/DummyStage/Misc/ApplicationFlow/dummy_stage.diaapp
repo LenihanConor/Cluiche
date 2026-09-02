@@ -24,7 +24,7 @@
                     "instance_id": "DummyLevelModule",
                     "type_id": "DummyLevelModule",
                     "stages": [ "DummyStage" ],
-                    "dependencies": [ "TimeServerModule", "InputStreamModule" ],
+                    "dependencies": [ "InputStreamModule" ],
                     "channels": [
                         { "id": "SimScene",             "role": "writes" },
                         { "id": "SimToMain",            "role": "writes" },

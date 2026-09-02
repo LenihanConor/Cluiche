@@ -141,12 +141,7 @@ void DummyLevelModule::DoUpdate(float dt)
     mRenderOutput.Write(mFrame, Dia::Core::TimeAbsolute::Zero());
 
     // --- UI commands ---
-    float fps = 0.0f;
-    if (TimeServerModule* ts = mTimeServer.Get())
-    {
-        float delta = ts->GetDeltaTime();
-        fps = (delta > 0.0f) ? (1.0f / delta) : 0.0f;
-    }
+    float fps = (dt > 0.0f) ? (1.0f / dt) : 0.0f;
 
     SimToMainEvent fpsEvt;
     fpsEvt.kind           = SimToMainEvent::Kind::kUICommand;

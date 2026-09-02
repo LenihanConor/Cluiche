@@ -359,11 +359,6 @@
       "type_id": "UIModule"
     },
     {
-      "allowed_pus": "sim",
-      "description": "Initializes the time server and provides authoritative frame-time to all modules.",
-      "type_id": "TimeServerModule"
-    },
-    {
       "allowed_pus": "render",
       "description": "Submits draw calls each frame using the bgfx canvas; consumes scene and camera FrameStreams.",
       "type_id": "RenderModule"

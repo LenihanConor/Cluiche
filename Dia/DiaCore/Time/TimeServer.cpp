@@ -1,13 +1,9 @@
 #include "DiaCore/Time/TimeServer.h"
 
 #include "DiaCore/Core/Assert.h"
-#include "DiaCore/Time/SystemClock.h"
-
-#include <chrono>
-#include <thread>
 
 namespace Dia
-{	
+{
 	namespace Core
 	{
 		//------------------------------------------------------------------------------
@@ -15,23 +11,23 @@ namespace Dia
 			: mTime( TimeAbsolute::MinimumTime() )
 			, mTimeStep( TimeRelative::MinimumTime() )
 			, mLastTime( TimeAbsolute::Zero() )
-			, mSystemTimeOfNextTick( TimeAbsolute::Zero() )
 			, mTimeScale(1.0f)
 			, mQueuedTimeScale( 0.0f )
 			, mTick(0)
+			, mIsPaused(false)
 		{}
-	
+
 		//------------------------------------------------------------------------------
 		TimeServer::TimeServer( float hz, const TimeAbsolute &timeNow )
 			: mTime( timeNow )
 			, mTimeStep( TimeRelative::CreateFromSeconds(1.0f / hz) )
 			, mLastTime( mTime )
-			, mSystemTimeOfNextTick( TimeAbsolute::Zero() )
 			, mTimeScale(1.0f)
 			, mQueuedTimeScale( mTimeScale )
 			, mTick(0)
+			, mIsPaused(false)
 		{
-			DIA_ASSERT(mTimeStep > Dia::Core::TimeRelative::Zero(), "step is too small" );	
+			DIA_ASSERT(mTimeStep > Dia::Core::TimeRelative::Zero(), "step is too small" );
 		}
 
 		//------------------------------------------------------------------------------
@@ -39,10 +35,10 @@ namespace Dia
 			: mTime( rhs.mTime )
 			, mTimeStep( rhs.mTimeStep )
 			, mLastTime( rhs.mLastTime )
-			, mSystemTimeOfNextTick(rhs.mSystemTimeOfNextTick )
 			, mTimeScale( rhs.mTimeScale )
 			, mQueuedTimeScale( rhs.mQueuedTimeScale )
 			, mTick( rhs.mTick )
+			, mIsPaused( rhs.mIsPaused )
 		{}
 
 		//------------------------------------------------------------------------------
@@ -53,8 +49,8 @@ namespace Dia
 			mTimeScale = rhs.mTimeScale;
 			mTick = rhs.mTick;
 			mLastTime = rhs.mLastTime;
-			mSystemTimeOfNextTick = rhs.mSystemTimeOfNextTick;
 			mQueuedTimeScale = rhs.mQueuedTimeScale;
+			mIsPaused = rhs.mIsPaused;
 
 			return *this;
 		}
@@ -86,20 +82,10 @@ namespace Dia
 		{
 			DIA_ASSERT(mTime >= TimeAbsolute::Zero(), "Have not set ther server time properly");
 
-			// If this is the first tick ignore anywaiting
-			if (mTick != 0)
+			if (mIsPaused)
 			{
-				const TimeAbsolute& currentSystemTime = Dia::Core::sSystemClock.CurrentTime();
-				// This will cause a block
-				if (currentSystemTime < mSystemTimeOfNextTick)
-				{ 
-					TimeRelative timeToWait = mSystemTimeOfNextTick - currentSystemTime;
-					std::chrono::milliseconds dura(timeToWait.AsIntInMilliseconds());
-					std::this_thread::sleep_for(dura);
-				}
+				return;
 			}
-
-			mSystemTimeOfNextTick = Dia::Core::sSystemClock.CurrentTime() + mTimeStep;
 
 			mLastTime = mTime;
 
@@ -120,7 +106,7 @@ namespace Dia
 		{
 			return mLastTime;
 		}
-		
+
 		//------------------------------------------------------------------------------
 		const TimeRelative& TimeServer::GetStep() const
 		{
@@ -161,6 +147,45 @@ namespace Dia
 		void TimeServer::AdjustTimeScale( float adjScale )
 		{
 			mQueuedTimeScale += adjScale;
+		}
+
+		//------------------------------------------------------------------------------
+		void TimeServer::Pause()
+		{
+			mIsPaused = true;
+		}
+
+		//------------------------------------------------------------------------------
+		void TimeServer::Resume()
+		{
+			mIsPaused = false;
+		}
+
+		//------------------------------------------------------------------------------
+		bool TimeServer::IsPaused() const
+		{
+			return mIsPaused;
+		}
+
+		//------------------------------------------------------------------------------
+		void TimeServer::Step(TimeRelative step)
+		{
+			mLastTime = mTime;
+			mTime += step;
+			++mTick;
+		}
+
+		//------------------------------------------------------------------------------
+		void TimeServer::AdvanceTo(TimeAbsolute target)
+		{
+			if (target <= mTime)
+			{
+				return;
+			}
+
+			mLastTime = mTime;
+			mTime = target;
+			++mTick;
 		}
 	}
 }

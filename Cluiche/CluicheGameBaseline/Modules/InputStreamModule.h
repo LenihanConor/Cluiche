@@ -6,7 +6,6 @@
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaInput/EKey.h>
 #include "Types/MainToSimEvent.h"
-#include "Modules/TimeServerModule.h"
 
 namespace Cluiche { namespace AppFlow {
 
@@ -39,7 +38,6 @@ private:
     static constexpr unsigned int kMaxMouseButtons = 8;
 
     Dia::ApplicationFlow::EventStreamReader<MainToSimEvent> mInput{this, "MainToSim"};
-    Dia::ApplicationFlow::ModuleRef<TimeServerModule>   mTimeServer{this};
 
     bool mCurrentKeys[kMaxKeys];
     bool mPreviousKeys[kMaxKeys];
