@@ -13,7 +13,7 @@ namespace Dia
 		const Dia::Core::StringCRC AIBudgetModule::kInstanceId("AIBudgetModule");
 
 		AIBudgetModule::AIBudgetModule()
-			: Module(kInstanceId)
+			: SimModule(kInstanceId)
 			, mScheduler()
 			, mBudgetMs(1.0f)
 			, mUsedUsGauge(nullptr)
@@ -64,7 +64,7 @@ namespace Dia
 			return Dia::ApplicationFlow::StartResult::kReady;
 		}
 
-		void AIBudgetModule::DoUpdate(float /*deltaTime*/)
+		void AIBudgetModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*ctx*/)
 		{
 			mLastResult = mScheduler.Update(mBudgetMs);
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/MainModule.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 namespace Dia { namespace Observation { namespace Metric { class Gauge; } } }
@@ -9,7 +9,7 @@ namespace Dia
 {
     namespace ApplicationFlow
     {
-        class MetricsCollectorModule : public Module
+        class MetricsCollectorModule : public MainModule
         {
         public:
             static const Dia::Core::StringCRC kInstanceId;
@@ -18,7 +18,7 @@ namespace Dia
 
         protected:
             StartResult DoStart() override;
-            void        DoUpdate(float deltaTime) override;
+            void        DoUpdate(const Dia::SimTime::MainTimeContext& ctx) override;
             StopResult  DoStop() override;
 
         private:

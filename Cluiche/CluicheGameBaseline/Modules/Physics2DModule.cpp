@@ -12,7 +12,7 @@ namespace Cluiche { namespace AppFlow {
 const Dia::Core::StringCRC Physics2DModule::kTypeId("Physics2DModule");
 
 Physics2DModule::Physics2DModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : SimModule(instanceId)
 {
     mWorldDef.gravity = Dia::Maths::Vector2D(0.0f, -9.81f);
     mWorldDef.fixedTimestep = 1.0f / 30.0f;
@@ -42,8 +42,9 @@ Dia::ApplicationFlow::StartResult Physics2DModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void Physics2DModule::DoUpdate(float dt)
+void Physics2DModule::DoUpdate(const Dia::SimTime::SimTimeContext& ctx)
 {
+    const float dt = ctx.gameDt.AsFloatInSeconds();
 #ifdef DIA_DEBUG
     if (!mDebugDomain)
         RegisterDebugDomain();

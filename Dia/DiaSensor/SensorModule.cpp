@@ -22,7 +22,7 @@ const Dia::Core::StringCRC SensorModule::kInstanceId("sensor-module");
 
 SensorModule::SensorModule(Dia::Entity::Domain& domain,
                            Dia::EntitySpatial::EntitySpatialModule& spatialModule)
-    : Module(kInstanceId)
+    : SimModule(kInstanceId)
     , mDomain(domain)
     , mSpatialModule(spatialModule)
     , mSoundEventList()
@@ -55,7 +55,7 @@ Dia::ApplicationFlow::StartResult SensorModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void SensorModule::DoUpdate(float /*deltaTime*/)
+void SensorModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*ctx*/)
 {
     ++mFrameNumber;
     Update(mFrameNumber);

@@ -9,7 +9,7 @@ namespace Cluiche { namespace AppFlow {
 const Dia::Core::StringCRC EntityModule::kTypeId("EntityModule");
 
 EntityModule::EntityModule(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
+    : SimModule(instanceId)
 {
 }
 
@@ -31,8 +31,9 @@ Dia::ApplicationFlow::StartResult EntityModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void EntityModule::DoUpdate(float dt)
+void EntityModule::DoUpdate(const Dia::SimTime::SimTimeContext& ctx)
 {
+    const float dt = ctx.gameDt.AsFloatInSeconds();
     mDomain.Update(dt);
     mDomain.EndOfFrame();
 }

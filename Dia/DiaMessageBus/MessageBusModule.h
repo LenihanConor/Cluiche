@@ -1,5 +1,5 @@
 #pragma once
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/SimModule.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaMessageBus/Bus.h>
 #include <DiaMessageBus/BusHealthReporter.h>
@@ -18,7 +18,7 @@ namespace Dia::MessageBus {
 // almost all behaviour lives in Bus (directly unit-testable without the
 // Module framework); this class only forwards the three lifecycle hooks.
 // ---------------------------------------------------------------------------
-class MessageBusModule : public Dia::ApplicationFlow::Module
+class MessageBusModule : public Dia::ApplicationFlow::SimModule
 {
 public:
     static const Dia::Core::StringCRC kInstanceId;
@@ -36,7 +36,7 @@ public:
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
-    void                              DoUpdate(float deltaTime) override;
+    void                              DoUpdate(const Dia::SimTime::SimTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult  DoStop() override;
 
 private:

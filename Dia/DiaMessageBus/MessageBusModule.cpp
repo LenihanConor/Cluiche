@@ -7,7 +7,7 @@ namespace Dia::MessageBus {
 const Dia::Core::StringCRC MessageBusModule::kInstanceId("message-bus-module");
 
 MessageBusModule::MessageBusModule()
-    : Module(kInstanceId)
+    : SimModule(kInstanceId)
 {
 }
 
@@ -47,7 +47,7 @@ Dia::ApplicationFlow::StartResult MessageBusModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void MessageBusModule::DoUpdate(float /*deltaTime*/)
+void MessageBusModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*ctx*/)
 {
     mBus.Update();
     mHealthReporter.Check();

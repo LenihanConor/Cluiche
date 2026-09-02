@@ -44,7 +44,7 @@ namespace Dia
         // Construction
         // -----------------------------------------------------------------------------------------
         TriggerScriptModule::TriggerScriptModule()
-            : Dia::ApplicationFlow::Module(kInstanceId)
+            : Dia::ApplicationFlow::SimModule(kInstanceId)
             , mImpl(new Impl())
         {
         }
@@ -308,8 +308,9 @@ namespace Dia
         // -----------------------------------------------------------------------------------------
         // Tick / DoUpdate
         // -----------------------------------------------------------------------------------------
-        void TriggerScriptModule::DoUpdate(float deltaTime)
+        void TriggerScriptModule::DoUpdate(const Dia::SimTime::SimTimeContext& ctx)
         {
+            const float deltaTime = ctx.gameDt.AsFloatInSeconds();
             Tick(deltaTime);
         }
 

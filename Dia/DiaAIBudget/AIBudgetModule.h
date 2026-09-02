@@ -1,6 +1,6 @@
 #pragma once
 
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/SimModule.h>
 #include <DiaAIBudget/AIBudgetScheduler.h>
 
 // Forward declarations — avoids pulling full metric headers into every translation unit.
@@ -24,7 +24,7 @@ namespace Dia
 		//   ai.budget.systems_run    (Counter) — systems that executed this frame
 		//   ai.budget.systems_deferred (Counter) — systems skipped due to budget exhaustion
 		//-------------------------------------------------------------------------------------------
-		class AIBudgetModule : public Dia::ApplicationFlow::Module
+		class AIBudgetModule : public Dia::ApplicationFlow::SimModule
 		{
 		public:
 			static const Dia::Core::StringCRC kInstanceId;
@@ -50,7 +50,7 @@ namespace Dia
 			Dia::ApplicationFlow::StartResult DoStart() override;
 
 			// Calls mScheduler.Update(mBudgetMs) and updates metrics.
-			void        DoUpdate(float deltaTime) override;
+			void        DoUpdate(const Dia::SimTime::SimTimeContext& ctx) override;
 
 			// Nulls all metric pointers.
 			Dia::ApplicationFlow::StopResult  DoStop() override;

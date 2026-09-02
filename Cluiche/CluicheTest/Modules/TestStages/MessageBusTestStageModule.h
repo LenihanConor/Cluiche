@@ -61,8 +61,16 @@ private:
     {
     public:
         TestableMessageBusModule() = default;
-        void Start()          { DoStart(); }
-        void Update(float dt) { DoUpdate(dt); }
+        void Start() { DoStart(); }
+        void Update(float dt)
+        {
+            Dia::SimTime::SimTimeContext ctx{
+                Dia::Core::TimeAbsolute::Zero(),
+                Dia::Core::TimeRelative::CreateFromSeconds(dt),
+                0, 1.0f, false
+            };
+            DoUpdate(ctx);
+        }
         void Stop()           { DoStop(); }
     };
 

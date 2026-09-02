@@ -1,5 +1,5 @@
 #pragma once
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaRigidBody2D/World/WorldDef.h>
@@ -15,7 +15,7 @@ namespace Dia::RigidBody2D { class PhysicsWorld; class Body2DBase; }
 
 namespace Cluiche { namespace AppFlow {
 
-class Physics2DModule : public Dia::ApplicationFlow::Module {
+class Physics2DModule : public Dia::ApplicationFlow::SimModule {
 public:
     static const Dia::Core::StringCRC kTypeId;
     explicit Physics2DModule(const Dia::Core::StringCRC& instanceId);
@@ -25,7 +25,7 @@ public:
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart()          override;
-    void                              DoUpdate(float dt) override;
+    void                              DoUpdate(const Dia::SimTime::SimTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult  DoStop()           override;
 
 private:

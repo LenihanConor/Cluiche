@@ -54,7 +54,15 @@ public:
 
     // Expose the two-pass frame loop for test control.
     void Start()  { DoStart(); }
-    void Tick(float dt = 0.f) { DoUpdate(dt); }
+    void Tick(float dt = 0.f)
+    {
+        Dia::SimTime::SimTimeContext ctx{
+            Dia::Core::TimeAbsolute::Zero(),
+            Dia::Core::TimeRelative::CreateFromSeconds(dt),
+            0, 1.0f, false
+        };
+        DoUpdate(ctx);
+    }
 };
 
 // ============================================================================

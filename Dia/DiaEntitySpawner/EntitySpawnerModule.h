@@ -2,7 +2,7 @@
 #ifndef DIA_ENTITYSPAWNER_ENTITYSPAWNERMODULE_H
 #define DIA_ENTITYSPAWNER_ENTITYSPAWNERMODULE_H
 
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/Streams/EventStreamWriter.h>
 #include <DiaEntitySpawner/EntitySpawnerImpl.h>
 #include <DiaEntitySpawner/Health/EntitySpawnerHealth.h>
@@ -35,7 +35,7 @@ namespace Dia::EntitySpawner {
 //   - Subscribe to EntityDestroyedMessage to stay consistent with domain destroys.
 //   - Expose IEntitySpawner& via GetSpawner() for game code.
 // ---------------------------------------------------------------------------
-class EntitySpawnerModule : public Dia::ApplicationFlow::Module
+class EntitySpawnerModule : public Dia::ApplicationFlow::SimModule
 {
 public:
     static const Dia::Core::StringCRC kInstanceId;
@@ -56,7 +56,7 @@ protected:
     void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 
     Dia::ApplicationFlow::StartResult DoStart() override;
-    void                              DoUpdate(float deltaTime) override;
+    void                              DoUpdate(const Dia::SimTime::SimTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult  DoStop() override;
 
 private:

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/Streams/EventStreamWriter.h>
 #include <DiaTriggerScript/TriggerActionRegistry.h>
 #include <DiaTriggerScript/TriggerDef.h>
@@ -27,7 +27,7 @@ namespace Dia
         // SD-002: Tick-polled with per-trigger checkIntervalMs throttle.
         // SD-007: One-shot is the default; repeating is opt-in.
         //-------------------------------------------------------------------------------------------
-        class TriggerScriptModule : public Dia::ApplicationFlow::Module
+        class TriggerScriptModule : public Dia::ApplicationFlow::SimModule
         {
         public:
             static const Dia::Core::StringCRC kInstanceId;
@@ -69,7 +69,7 @@ namespace Dia
         protected:
             void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
             Dia::ApplicationFlow::StartResult DoStart() override;
-            void DoUpdate(float deltaTime) override;
+            void DoUpdate(const Dia::SimTime::SimTimeContext& ctx) override;
             Dia::ApplicationFlow::StopResult  DoStop() override;
 
         private:

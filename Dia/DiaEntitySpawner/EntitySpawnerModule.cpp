@@ -24,7 +24,7 @@ const Dia::Core::StringCRC EntitySpawnerModule::kInstanceId("entity-spawner-modu
 EntitySpawnerModule::EntitySpawnerModule(Dia::Entity::Domain& domain,
                                          Dia::Entity::IBlueprintLoader& loader,
                                          Dia::MessageBus::Bus& bus)
-    : Module(kInstanceId)
+    : SimModule(kInstanceId)
     , mDomain(domain)
     , mSpawner(domain)
     , mBus(bus)
@@ -109,8 +109,9 @@ Dia::ApplicationFlow::StartResult EntitySpawnerModule::DoStart()
 // ---------------------------------------------------------------------------
 // DoUpdate
 // ---------------------------------------------------------------------------
-void EntitySpawnerModule::DoUpdate(float deltaTime)
+void EntitySpawnerModule::DoUpdate(const Dia::SimTime::SimTimeContext& ctx)
 {
+    const float deltaTime = ctx.gameDt.AsFloatInSeconds();
     DIA_PROFILE_SCOPE("spawner.update", ::Dia::Observation::Profile::Category::kNone);
     DIA_TRACE_ZONE   ("spawner.update", ::Dia::Observation::Trace::Category::kNone);
 

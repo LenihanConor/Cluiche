@@ -17,7 +17,7 @@ namespace Dia
         const Dia::Core::StringCRC MetricsCollectorModule::kInstanceId("MetricsCollectorModule");
 
         MetricsCollectorModule::MetricsCollectorModule()
-            : Module(kInstanceId)
+            : MainModule(kInstanceId)
             , mFpsGauge(nullptr)
             , mFrameTimeGauge(nullptr)
             , mMemoryGauge(nullptr)
@@ -39,8 +39,9 @@ namespace Dia
             return StartResult::kReady;
         }
 
-        void MetricsCollectorModule::DoUpdate(float deltaTime)
+        void MetricsCollectorModule::DoUpdate(const Dia::SimTime::MainTimeContext& ctx)
         {
+            const float deltaTime = ctx.wallClockDt;
             if (deltaTime > 0.0f)
             {
                 if (mFpsGauge)

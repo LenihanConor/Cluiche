@@ -2,7 +2,7 @@
 #ifndef DIA_SENSOR_SENSORMODULE_H
 #define DIA_SENSOR_SENSORMODULE_H
 
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/SimModule.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaSensor/SoundEventList.h>
@@ -24,7 +24,7 @@ namespace Dia::Sensor {
 // DoUpdate internally calls in order:
 //   1. Update()       — clears SoundEventList; ticks all sensor components
 //   2. RunAdapters()  — distils SensorResultsComponent -> blackboard (AC-7)
-class SensorModule : public Dia::ApplicationFlow::Module
+class SensorModule : public Dia::ApplicationFlow::SimModule
 {
 public:
     static const Dia::Core::StringCRC kInstanceId;
@@ -43,7 +43,7 @@ public:
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
-    void                              DoUpdate(float deltaTime) override;
+    void                              DoUpdate(const Dia::SimTime::SimTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult  DoStop() override;
 
 private:
