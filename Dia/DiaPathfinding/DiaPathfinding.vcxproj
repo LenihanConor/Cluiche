@@ -87,6 +87,7 @@
     <ClInclude Include="Testing\PathfindingTestHelpers.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="PathfindingSystemBudgetAdapter.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SquarePathGrid.cpp" />
@@ -107,6 +108,10 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaObservation\DiaObservation.vcxproj">
       <Project>{5E6F7A8B-C9D0-E1F2-3456-789ABCDE0123}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaSimTime\DiaSimTime.vcxproj">
+      <Project>{6AF5866D-8687-4A93-915B-0B4B738F56CD}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

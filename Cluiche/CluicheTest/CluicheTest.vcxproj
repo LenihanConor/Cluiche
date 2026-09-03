@@ -216,6 +216,9 @@
     <ProjectReference Include="..\..\Dia\DiaAIBudget\DiaAIBudget.vcxproj">
       <Project>{C9D0E1F2-A3B4-5678-90AB-CDEF01234567}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaSimTime\DiaSimTime.vcxproj">
+      <Project>{6AF5866D-8687-4A93-915B-0B4B738F56CD}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaHTN\DiaHTN.vcxproj">
       <Project>{F4B5C6D7-E8F9-0123-A456-789012345678}</Project>
     </ProjectReference>

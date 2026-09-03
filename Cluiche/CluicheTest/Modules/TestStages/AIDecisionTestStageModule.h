@@ -9,7 +9,7 @@
 #include <DiaRules/RuleSetComponent.h>
 #include <DiaUtilityAI/UtilitySet.h>
 #include <DiaUtilityAI/UtilitySetComponent.h>
-#include <DiaAIBudget/AIBudgetScheduler.h>
+#include <DiaSimTime/SimTimeBudget.h>
 #include <memory>
 
 #ifdef DIA_DEBUG
@@ -24,7 +24,7 @@ class AIDecisionTestStageModule : public TestStageModuleBase
 public:
     static const Dia::Core::StringCRC kTypeId;
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kSim;
-    static constexpr const char* kDescription = "Integration stage: Condition + Rules + UtilityAI (sync/async) + AIBudget";
+    static constexpr const char* kDescription = "Integration stage: Condition + Rules + UtilityAI (sync/async) + DiaSimTime";
     static constexpr unsigned int kMinDisplayFrames = 150; // 5 s at 30 Hz
 
     explicit AIDecisionTestStageModule(const Dia::Core::StringCRC& instanceId);
@@ -52,7 +52,7 @@ private:
     Dia::Rules::RuleActionRegistry          mActionRegistry;
     Dia::Rules::RuleSetComponent            mRuleSetComponent;
     Dia::UtilityAI::UtilitySetComponent     mUtilitySetComponent;
-    Dia::AIBudget::AIBudgetScheduler        mScheduler;
+    Dia::SimTime::SimTimeBudget              mBudget;
 
     // Checkpoint flags
     bool mConditionHealthLow       = false;

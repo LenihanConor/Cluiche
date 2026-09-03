@@ -4,7 +4,7 @@
 #include <DiaHTN/HTNDomain.h>
 #include <DiaCondition/IConditionContext.h>
 #include <DiaCore/CRC/StringCRC.h>
-#include <DiaAIBudget/AIBudgetScheduler.h>
+#include <DiaSimTime/SimTimeBudget.h>
 
 namespace Dia
 {
@@ -17,11 +17,12 @@ namespace Dia
         //
         // Stateless depth-first forward-chaining planner (SD-001, SD-007).
         // Plan() decomposes the root task into a flat sequence of primitive operators.
-        // PlanAsync() submits the work to AIBudgetScheduler; result delivered via callback (SD-008).
+        // PlanAsync() submits the work to SimTimeBudget's one-shot queue (ST-012);
+        // result delivered via callback (SD-008).
         //
         // SD-001: Stateless — one instance can plan for any number of entities.
         // SD-007: Ordered method selection — first method whose precondition passes wins.
-        // SD-008: Async path submits to AIBudgetScheduler; no internal threads.
+        // SD-008: Async path submits to SimTimeBudget; no internal threads.
         // AD-003: Dia::HTN:: namespace.
         //-------------------------------------------------------------------------------------------
         class HTNPlanner
@@ -33,13 +34,15 @@ namespace Dia
                          const HTNDomain& domain,
                          Dia::Condition::IConditionContext& ctx) const;
 
-            // Async planning — submits work to AIBudgetScheduler.
-            // Callback fires when the scheduler drains the work item.
-            // Returns false if submission fails (scheduler at capacity).
+            // Async planning — submits work to SimTimeBudget's one-shot queue.
+            // Callback fires when SimTimeBudget::RunOneShots() drains the work item.
+            // Always returns true (SimTimeBudget::SubmitOneShot asserts rather than
+            // gracefully failing on overflow; its capacity is generous enough that
+            // this is not a real runtime condition to check).
             bool PlanAsync(Dia::Core::StringCRC rootTask,
                            const HTNDomain& domain,
                            Dia::Condition::IConditionContext& ctx,
-                           Dia::AIBudget::AIBudgetScheduler& scheduler,
+                           Dia::SimTime::SimTimeBudget& budget,
                            PlanResultCallback callback,
                            void* callbackUserData);
         };

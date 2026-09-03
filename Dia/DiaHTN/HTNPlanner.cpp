@@ -1,7 +1,8 @@
 #include "HTNPlanner.h"
 #include "HTNPlan.h"
 
-#include <DiaAIBudget/IAIBudgetedSystem.h>
+#include <DiaSimTime/IOneShotWork.h>
+#include <DiaSimTime/SimTimeBudget.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
@@ -185,33 +186,30 @@ namespace Dia
         // Heap-allocated on submission, self-deletes after the callback fires.
         // No static storage — SD-009 (no hidden global state).
         // -----------------------------------------------------------------------
-        struct HTNPlanWorkItem : public Dia::AIBudget::IAIBudgetedSystem
+        struct HTNPlanWorkItem : public Dia::SimTime::IOneShotWork
         {
-            Dia::Core::StringCRC GetSystemId() const override
-            {
-                return Dia::Core::StringCRC("HTNPlanWorkItem");
-            }
-
             Dia::Core::StringCRC rootTask;
             const HTNDomain*     domain           = nullptr;
             Dia::Condition::IConditionContext* ctx = nullptr;
             PlanResultCallback   callback          = nullptr;
             void*                callbackUserData  = nullptr;
-            Dia::AIBudget::AIBudgetScheduler* scheduler = nullptr;
 
-            void UpdateBudgeted(float /*budgetMs*/) override
+            bool Step(float /*budgetMs*/) override
             {
                 HTNPlanner planner;
                 HTNPlan plan = planner.Plan(rootTask, *domain, *ctx);
 
-                if (scheduler)
-                    scheduler->Unregister(this);
-
+                // No self-unregister needed: SimTimeBudget::RunOneShots removes this
+                // item from its queue once Step() returns true.
                 if (callback)
                     callback(std::move(plan), callbackUserData);
 
-                // Self-delete: no global list owns us.
+                // Self-delete: no global list owns us. Capture the return value in a
+                // local before delete this — avoids any appearance of touching
+                // `this` (even harmlessly, via the return statement) after freeing it.
+                const bool done = true;
                 delete this;
+                return done;
             }
         };
 
@@ -221,7 +219,7 @@ namespace Dia
         bool HTNPlanner::PlanAsync(Dia::Core::StringCRC rootTask,
                                    const HTNDomain& domain,
                                    Dia::Condition::IConditionContext& ctx,
-                                   Dia::AIBudget::AIBudgetScheduler& scheduler,
+                                   Dia::SimTime::SimTimeBudget& budget,
                                    PlanResultCallback callback,
                                    void* callbackUserData)
         {
@@ -231,19 +229,15 @@ namespace Dia
             item->ctx              = &ctx;
             item->callback         = callback;
             item->callbackUserData = callbackUserData;
-            item->scheduler        = &scheduler;
 
-            const bool submitted = scheduler.Register(item);
-            if (!submitted)
-            {
-                DIA_LOG_WARNING("HTN", "htn.plan_async.submit_failed: scheduler at capacity, root=%u", rootTask.Value());
-                delete item;
-            }
-            else
-            {
-                DIA_LOG_DEBUG("HTN", "htn.plan_async.submitted: root=%u", rootTask.Value());
-            }
-            return submitted;
+            // SimTimeBudget::SubmitOneShot has no graceful-failure return — it
+            // DIA_ASSERTs on overflow instead. Its one-shot queue capacity (256)
+            // is far larger than the old AIBudgetScheduler's (16), so the
+            // "scheduler at capacity" failure path this used to guard against is
+            // no longer a real runtime condition; PlanAsync always succeeds here.
+            budget.SubmitOneShot(item);
+            DIA_LOG_DEBUG("HTN", "htn.plan_async.submitted: root=%u", rootTask.Value());
+            return true;
         }
 
     } // namespace HTN

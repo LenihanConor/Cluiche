@@ -107,8 +107,8 @@
       <Project>{186D9CD5-3D3E-46F1-9C35-67F6F11E829A}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\DiaAIBudget\DiaAIBudget.vcxproj">
-      <Project>{C9D0E1F2-A3B4-5678-90AB-CDEF01234567}</Project>
+    <ProjectReference Include="..\DiaSimTime\DiaSimTime.vcxproj">
+      <Project>{6AF5866D-8687-4A93-915B-0B4B738F56CD}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\DiaEntity\DiaEntity.vcxproj">

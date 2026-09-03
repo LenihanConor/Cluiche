@@ -3,9 +3,10 @@
 #include <DiaUtilityAI/ResponseCurve.h>
 #include <DiaCondition/ConditionExpr.h>
 #include <DiaRules/RuleActionRegistry.h>
-#include <DiaAIBudget/IAIBudgetedSystem.h>
-#include <DiaAIBudget/AIBudgetScheduler.h>
+#include <DiaSimTime/IOneShotWork.h>
+#include <DiaSimTime/SimTimeBudget.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/Core/Assert.h>
 #include <vector>
 #include <list>
 #include <algorithm>
@@ -15,10 +16,10 @@ namespace Dia
     namespace UtilityAI
     {
         // ---------------------------------------------------------------------------
-        // UtilityEvalWorkItem — one-shot IAIBudgetedSystem submitted by EvaluateAsync.
+        // UtilityEvalWorkItem — one-shot IOneShotWork submitted by EvaluateAsync.
         // Stored in a std::list (stable addresses) inside Impl.
         // ---------------------------------------------------------------------------
-        struct UtilityEvalWorkItem : public Dia::AIBudget::IAIBudgetedSystem
+        struct UtilityEvalWorkItem : public Dia::SimTime::IOneShotWork
         {
             const UtilitySet*                     set;
             Dia::Condition::IConditionContext*    ctx;
@@ -28,36 +29,34 @@ namespace Dia
             const PersonalityProfile*             personality;
             UtilityResultCallback                 callback;
             void*                                 callbackUserData;
-            Dia::AIBudget::AIBudgetScheduler*     scheduler;
+            Dia::SimTime::SimTimeBudget*          budget;
+
+            // Completion flag. NOT a re-entrancy guard for Step() — SimTimeBudget::
+            // RunOneShots() removes an item from its own queue once Step() returns
+            // true, so Step() is guaranteed to run at most once per submission.
+            // This flag exists purely so EvaluateAsync can prune completed entries
+            // from mImpl->pendingWorkItems (this list has no relationship to
+            // SimTimeBudget's queue and needs its own bookkeeping).
             bool                                  mFired;
 
             UtilityEvalWorkItem()
                 : set(nullptr), ctx(nullptr), registry(nullptr)
                 , actionContext(nullptr), group(nullptr), personality(nullptr)
                 , callback(nullptr), callbackUserData(nullptr)
-                , scheduler(nullptr), mFired(false)
+                , budget(nullptr), mFired(false)
             {}
 
-            Dia::Core::StringCRC GetSystemId() const override
+            bool Step(float /*budgetMs*/) override
             {
-                return Dia::Core::StringCRC("UtilityEvalWorkItem");
-            }
-
-            void UpdateBudgeted(float /*budgetMs*/) override
-            {
-                if (mFired)
-                    return;
-
-                mFired = true;
-
                 // Run sync evaluation (dispatches winner via registry).
                 UtilitySelection result = set->Evaluate(*ctx, *registry, actionContext, group, personality);
 
-                // Unregister before firing callback so re-entrant calls are safe.
-                scheduler->Unregister(this);
+                mFired = true;
 
                 if (callback)
                     callback(result, callbackUserData);
+
+                return true; // always fully synchronous — completes in one Step() call.
             }
         };
 
@@ -81,12 +80,17 @@ namespace Dia
         {
             if (mImpl)
             {
-                // Unregister any pending (unfired) work items so the scheduler
-                // does not hold dangling pointers after this UtilitySet is destroyed.
-                for (UtilityEvalWorkItem& item : mImpl->pendingWorkItems)
+                // NOTE: Unlike the old AIBudgetScheduler-backed path, SimTimeBudget's
+                // one-shot queue (ST-012) has no per-item Unregister/cancel API — a
+                // pending (unfired) work item cannot be pulled out of the queue here.
+                // Destroying a UtilitySet while an EvaluateAsync call is still pending
+                // is therefore a caller error (Step() would later dereference a
+                // dangling `set` pointer); assert in debug to catch misuse instead of
+                // silently leaving a dangling pointer in the queue.
+                for (const UtilityEvalWorkItem& item : mImpl->pendingWorkItems)
                 {
-                    if (!item.mFired)
-                        item.scheduler->Unregister(&item);
+                    DIA_ASSERT(item.mFired,
+                        "UtilitySet destroyed with a pending EvaluateAsync work item still queued in SimTimeBudget");
                 }
                 delete mImpl;
             }
@@ -206,7 +210,7 @@ namespace Dia
             Dia::Condition::IConditionContext& ctx,
             const Dia::Rules::RuleActionRegistry& registry,
             void* actionContext,
-            Dia::AIBudget::AIBudgetScheduler& scheduler,
+            Dia::SimTime::SimTimeBudget& budget,
             UtilityResultCallback callback,
             void* callbackUserData,
             GroupConsiderationContext* group,
@@ -233,10 +237,10 @@ namespace Dia
             item.personality      = personality;
             item.callback         = callback;
             item.callbackUserData = callbackUserData;
-            item.scheduler        = &scheduler;
+            item.budget           = &budget;
             item.mFired           = false;
 
-            scheduler.Register(&item);
+            budget.SubmitOneShot(&item);
         }
 
         UtilitySet UtilitySet::LoadFromJson(const Json::Value& root)

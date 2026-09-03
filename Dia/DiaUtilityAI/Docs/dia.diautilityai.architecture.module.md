@@ -21,7 +21,7 @@ intent: >
   Provides a data-driven utility AI layer that scores all eligible ActionDefs each evaluation frame
   and selects the single highest-scoring action (winner-takes-all). Actions are guarded by ConditionExpr
   prerequisites (DiaCondition), dispatched via RuleActionRegistry (DiaRules), and optionally time-sliced
-  via AIBudgetScheduler (DiaAIBudget).
+  as a one-shot via SimTimeBudget (DiaSimTime).
 
 responsibilities:
   - ResponseCurve — maps normalised float [0,1] input to score [0,1] via 6 named easing shapes
@@ -36,14 +36,14 @@ non_responsibilities:
   - All-matching rule evaluation — DiaRules
   - Condition/expression evaluation logic — DiaCondition
   - Blackboard slot registration — DiaBlackboard
-  - Budget enforcement or time-slicing logic — DiaAIBudget
+  - Budget enforcement or time-slicing logic — DiaSimTime
   - Thread-safe evaluation — caller synchronizes
   - Score overlay visualisation — DiaUtilityAIVisualDebugger (separate module)
 
 dependent_modules:
   - dia.condition
   - dia.rules
-  - dia.aibudget
+  - dia.simtime
   - dia.entity
 
 public_api:
@@ -64,7 +64,7 @@ dependencies:
     - dia.core
     - dia.condition
     - dia.rules
-    - dia.aibudget
+    - dia.simtime
     - dia.entity
   forbidden:
     - dia.blackboard

@@ -4,7 +4,7 @@
 #include <DiaHTN/OperatorRegistry.h>
 #include <DiaHTN/TaskResult.h>
 #include <DiaHTN/Testing/HTNTestHelpers.h>
-#include <DiaAIBudget/AIBudgetScheduler.h>
+#include <DiaSimTime/SimTimeBudget.h>
 #include <DiaCore/Json/external/json/json.h>
 
 // DiaHTN_PlannerComponent
@@ -350,41 +350,44 @@ TEST(DiaHTN_PlannerComponent, ReplanAsync_CancelOnDestroy_NoUAF)
     // a no-op — no write into freed memory.
     auto domain = LoadDomain(kTwoPrimDomain);
     Dia::HTN::Testing::MockHTNContext ctx;
-    Dia::AIBudget::AIBudgetScheduler scheduler;
+    Dia::SimTime::SimTimeBudget budget;
 
     {
         Dia::HTN::HTNPlannerComponent comp;
         comp.SetDomain(&domain);
         comp.SetRootTask(Dia::Core::StringCRC("Root"));
-        comp.ReplanAsync(ctx, scheduler);
+        comp.ReplanAsync(ctx, budget);
         // comp destructs here — cancels the pending token.
     }
 
-    // Scheduler drains after the component is gone. Must not crash.
-    scheduler.Update(100.0f);
+    // Budget drains after the component is gone. Must not crash.
+    budget.RunOneShots(100.0f);
     // If we reach here without a crash or assertion, the cancel guard worked.
     SUCCEED();
 }
 
 TEST(DiaHTN_PlannerComponent, ReplanAsync_DoubleSubmit_SecondCancelsFirst)
 {
-    // A second ReplanAsync call before the scheduler drains should cancel the first
+    // A second ReplanAsync call before budget drains should cancel the first
     // work item's token so only the second plan is installed.
     auto domain = LoadDomain(kTwoPrimDomain);
     Dia::HTN::Testing::MockHTNContext ctx;
-    Dia::AIBudget::AIBudgetScheduler scheduler;
+    Dia::SimTime::SimTimeBudget budget;
 
     Dia::HTN::HTNPlannerComponent comp;
     comp.SetDomain(&domain);
     comp.SetRootTask(Dia::Core::StringCRC("Root"));
 
-    comp.ReplanAsync(ctx, scheduler); // first submission
-    comp.ReplanAsync(ctx, scheduler); // second submission — cancels first token
+    comp.ReplanAsync(ctx, budget); // first submission
+    comp.ReplanAsync(ctx, budget); // second submission — cancels first token
 
-    // Two Updates needed: each work item calls Unregister(this) during UpdateBudgeted, which
-    // shrinks the array mid-loop and causes the next item to be skipped until the next Update.
-    scheduler.Update(100.0f); // drains item1 (cancelled → no-op); item2 shifts to [0] but is skipped
-    scheduler.Update(100.0f); // drains item2 (installs plan)
+    // SimTimeBudget::RunOneShots drains its queue in submission order within a
+    // single call (unlike the old AIBudgetScheduler, it does not skip an item
+    // when an earlier one is removed mid-loop), so one drain is now enough to
+    // process both items. A second call is a harmless no-op kept here for
+    // extra safety.
+    budget.RunOneShots(100.0f); // drains item1 (cancelled → no-op) and item2 (installs plan)
+    budget.RunOneShots(100.0f); // no-op; queue already empty
     EXPECT_TRUE(comp.HasActivePlan());
 }
 
@@ -392,7 +395,7 @@ TEST(DiaHTN_PlannerComponent, ReplanAsync_CallbackUpdatesActivePlan)
 {
     auto domain = LoadDomain(kTwoPrimDomain);
     Dia::HTN::Testing::MockHTNContext ctx;
-    Dia::AIBudget::AIBudgetScheduler scheduler;
+    Dia::SimTime::SimTimeBudget budget;
 
     Dia::HTN::HTNPlannerComponent comp;
     comp.SetDomain(&domain);
@@ -400,10 +403,10 @@ TEST(DiaHTN_PlannerComponent, ReplanAsync_CallbackUpdatesActivePlan)
 
     EXPECT_FALSE(comp.HasActivePlan());
 
-    comp.ReplanAsync(ctx, scheduler);
+    comp.ReplanAsync(ctx, budget);
     EXPECT_FALSE(comp.HasActivePlan()); // callback not yet fired
 
-    scheduler.Update(100.0f);           // drains work item, fires OnAsyncPlanReady
+    budget.RunOneShots(100.0f);         // drains work item, fires OnAsyncPlanReady
     EXPECT_TRUE(comp.HasActivePlan());
     ASSERT_NE(comp.GetActivePlan(), nullptr);
     EXPECT_EQ(comp.GetActivePlan()->GetTaskCount(), 2);

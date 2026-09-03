@@ -7,6 +7,9 @@
     <Filter Include="Docs">
       <UniqueIdentifier>{D2E3F4A5-B6C7-8901-DEF0-123456789013}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaPathfinding">
+      <UniqueIdentifier>{ab208407-257d-40a1-86b2-ee6b5bdb08f0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CellCoord.h" />
@@ -21,6 +24,9 @@
     <ClInclude Include="IPathResultObserver.h" />
     <ClInclude Include="Testing\PathfindingTestHelpers.h">
       <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="PathfindingSystemBudgetAdapter.h">
+      <Filter>DiaPathfinding</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -8,7 +8,7 @@
 #include <DiaHTN/OperatorRegistry.h>
 #include <DiaHTN/TaskResult.h>
 #include <DiaCondition/IConditionContext.h>
-#include <DiaAIBudget/AIBudgetScheduler.h>
+#include <DiaSimTime/SimTimeBudget.h>
 
 namespace Dia
 {
@@ -46,10 +46,10 @@ namespace Dia
             void Replan(Dia::Condition::IConditionContext& ctx);
 
             // Re-plan asynchronously; active plan continues until callback fires.
-            // Safe if the component is destroyed before the scheduler drains: the pending
-            // context is cancelled and the callback becomes a no-op.
+            // Safe if the component is destroyed before budget drains the one-shot: the
+            // pending context is cancelled and the callback becomes a no-op.
             void ReplanAsync(Dia::Condition::IConditionContext& ctx,
-                             Dia::AIBudget::AIBudgetScheduler& scheduler);
+                             Dia::SimTime::SimTimeBudget& budget);
 
             // Tick the active plan: calls current operator, advances on kSucceeded.
             // Returns kFailed if the operator fails. Returns kSucceeded if plan is

@@ -66,19 +66,19 @@ void HTNPlannerComponent::Replan(Dia::Condition::IConditionContext& ctx)
 }
 
 void HTNPlannerComponent::ReplanAsync(Dia::Condition::IConditionContext& ctx,
-                                       Dia::AIBudget::AIBudgetScheduler& scheduler)
+                                       Dia::SimTime::SimTimeBudget& budget)
 {
     if (!mDomain)
         return;
 
     // Allocate the new cancel token before submitting.
-    // Only cancel the previous token if submission succeeds — if the scheduler rejects
-    // the new item (e.g. duplicate ID already queued), leave the old item alive.
+    // Only cancel the previous token if submission succeeds — if submission is ever
+    // rejected (e.g. duplicate ID already queued), leave the old item alive.
     AsyncContext* newCtx = new AsyncContext();
     newCtx->component   = this;
     newCtx->cancelled   = false;
 
-    const bool submitted = mPlanner.PlanAsync(mRootTask, *mDomain, ctx, scheduler, &OnAsyncPlanReady, newCtx);
+    const bool submitted = mPlanner.PlanAsync(mRootTask, *mDomain, ctx, budget, &OnAsyncPlanReady, newCtx);
     if (!submitted)
     {
         delete newCtx;

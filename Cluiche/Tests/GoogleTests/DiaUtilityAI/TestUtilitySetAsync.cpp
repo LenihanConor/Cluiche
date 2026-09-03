@@ -2,7 +2,7 @@
 #include <DiaUtilityAI/UtilitySet.h>
 #include <DiaCondition/Testing/ConditionTestHelpers.h>
 #include <DiaRules/RuleActionRegistry.h>
-#include <DiaAIBudget/AIBudgetScheduler.h>
+#include <DiaSimTime/SimTimeBudget.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
 
@@ -74,14 +74,14 @@ TEST(DiaUtilityAI_UtilitySetAsync, EvaluateAsync_CallbackFires_WhenSchedulerDrai
     Dia::Rules::RuleActionRegistry registry;
     registry.Register(Dia::Core::StringCRC("Attack"), [](void*) {});
 
-    Dia::AIBudget::AIBudgetScheduler scheduler;
+    Dia::SimTime::SimTimeBudget budget;
 
     AsyncResult result;
-    set.EvaluateAsync(ctx, registry, nullptr, scheduler, AsyncCallback, &result);
+    set.EvaluateAsync(ctx, registry, nullptr, budget, AsyncCallback, &result);
 
-    EXPECT_EQ(scheduler.GetRegisteredCount(), 1);
+    EXPECT_EQ(budget.GetPendingOneShotCount(), 1);
 
-    scheduler.Update(1000.0f);
+    budget.RunOneShots(1000.0f);
 
     EXPECT_EQ(result.callCount, 1);
     EXPECT_EQ(result.sel.actionId, Dia::Core::StringCRC("Attack"));
@@ -100,20 +100,21 @@ TEST(DiaUtilityAI_UtilitySetAsync, EvaluateAsync_OneShot_CallbackFiresOnce)
     Dia::Rules::RuleActionRegistry registry;
     registry.Register(Dia::Core::StringCRC("Attack"), [](void*) {});
 
-    Dia::AIBudget::AIBudgetScheduler scheduler;
+    Dia::SimTime::SimTimeBudget budget;
 
     AsyncResult result;
-    set.EvaluateAsync(ctx, registry, nullptr, scheduler, AsyncCallback, &result);
+    set.EvaluateAsync(ctx, registry, nullptr, budget, AsyncCallback, &result);
 
     // Drain twice — callback must fire only once.
-    scheduler.Update(1000.0f);
-    scheduler.Update(1000.0f);
+    budget.RunOneShots(1000.0f);
+    budget.RunOneShots(1000.0f);
 
     EXPECT_EQ(result.callCount, 1);
 }
 
 // ---------------------------------------------------------------------------
-// 3. Work item self-unregisters: scheduler is empty after drain
+// 3. Work item is removed from the queue once drained (SimTimeBudget::
+//    RunOneShots removes an item as soon as its Step() returns true).
 // ---------------------------------------------------------------------------
 
 TEST(DiaUtilityAI_UtilitySetAsync, EvaluateAsync_SchedulerEmptyAfterDrain)
@@ -122,14 +123,14 @@ TEST(DiaUtilityAI_UtilitySetAsync, EvaluateAsync_SchedulerEmptyAfterDrain)
     Dia::Condition::Testing::MockConditionContext ctx;
     Dia::Rules::RuleActionRegistry registry;
 
-    Dia::AIBudget::AIBudgetScheduler scheduler;
+    Dia::SimTime::SimTimeBudget budget;
 
     AsyncResult result;
-    set.EvaluateAsync(ctx, registry, nullptr, scheduler, AsyncCallback, &result);
+    set.EvaluateAsync(ctx, registry, nullptr, budget, AsyncCallback, &result);
 
-    EXPECT_EQ(scheduler.GetRegisteredCount(), 1);
-    scheduler.Update(1000.0f);
-    EXPECT_EQ(scheduler.GetRegisteredCount(), 0);
+    EXPECT_EQ(budget.GetPendingOneShotCount(), 1);
+    budget.RunOneShots(1000.0f);
+    EXPECT_EQ(budget.GetPendingOneShotCount(), 0);
 }
 
 // ---------------------------------------------------------------------------
@@ -145,12 +146,12 @@ TEST(DiaUtilityAI_UtilitySetAsync, EvaluateAsync_NoEligible_CallbackReceivesNoSe
     ctx.SetBool(Dia::Core::StringCRC("enemy"), Dia::Core::StringCRC("visible"), false);
 
     Dia::Rules::RuleActionRegistry registry;
-    Dia::AIBudget::AIBudgetScheduler scheduler;
+    Dia::SimTime::SimTimeBudget budget;
 
     AsyncResult result;
-    set.EvaluateAsync(ctx, registry, nullptr, scheduler, AsyncCallback, &result);
+    set.EvaluateAsync(ctx, registry, nullptr, budget, AsyncCallback, &result);
 
-    scheduler.Update(1000.0f);
+    budget.RunOneShots(1000.0f);
 
     EXPECT_EQ(result.callCount, 1);
     EXPECT_EQ(result.sel.actionId, Dia::Core::StringCRC());
@@ -158,10 +159,10 @@ TEST(DiaUtilityAI_UtilitySetAsync, EvaluateAsync_NoEligible_CallbackReceivesNoSe
 }
 
 // ---------------------------------------------------------------------------
-// 5. Multiple async submissions: each fires once across successive scheduler
-//    drains (items self-unregister, so the scheduler processes them in order
-//    across Update calls — a known characteristic of the scheduler's iteration
-//    when items remove themselves mid-loop).
+// 5. Multiple async submissions: each fires exactly once. SimTimeBudget::
+//    RunOneShots drains its queue in submission order within a single call
+//    (it does not skip when an earlier item is removed mid-loop), so both
+//    items complete in one drain here.
 // ---------------------------------------------------------------------------
 
 TEST(DiaUtilityAI_UtilitySetAsync, EvaluateAsync_MultipleSubmissions_EachFiresExactlyOnce)
@@ -171,22 +172,20 @@ TEST(DiaUtilityAI_UtilitySetAsync, EvaluateAsync_MultipleSubmissions_EachFiresEx
     Dia::Rules::RuleActionRegistry registry;
     registry.Register(Dia::Core::StringCRC("Attack"), [](void*) {});
 
-    Dia::AIBudget::AIBudgetScheduler scheduler;
+    Dia::SimTime::SimTimeBudget budget;
 
     AsyncResult resultA;
     AsyncResult resultB;
 
-    set.EvaluateAsync(ctx, registry, nullptr, scheduler, AsyncCallback, &resultA);
-    set.EvaluateAsync(ctx, registry, nullptr, scheduler, AsyncCallback, &resultB);
+    set.EvaluateAsync(ctx, registry, nullptr, budget, AsyncCallback, &resultA);
+    set.EvaluateAsync(ctx, registry, nullptr, budget, AsyncCallback, &resultB);
 
-    EXPECT_EQ(scheduler.GetRegisteredCount(), 2);
+    EXPECT_EQ(budget.GetPendingOneShotCount(), 2);
 
-    // First drain: item A fires (removes itself), item B gets shifted and may be
-    // skipped due to the index advancing past it. Drain again to ensure B fires.
-    scheduler.Update(1000.0f);
-    scheduler.Update(1000.0f);
+    budget.RunOneShots(1000.0f);
+    budget.RunOneShots(1000.0f); // harmless extra drain; queue is already empty
 
     EXPECT_EQ(resultA.callCount, 1);
     EXPECT_EQ(resultB.callCount, 1);
-    EXPECT_EQ(scheduler.GetRegisteredCount(), 0);
+    EXPECT_EQ(budget.GetPendingOneShotCount(), 0);
 }

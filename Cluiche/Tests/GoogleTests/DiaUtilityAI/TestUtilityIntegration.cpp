@@ -9,7 +9,7 @@
 #include <DiaCondition/Testing/ConditionTestHelpers.h>
 #include <DiaCondition/ConditionRegistry.h>
 #include <DiaRules/RuleActionRegistry.h>
-#include <DiaAIBudget/AIBudgetScheduler.h>
+#include <DiaSimTime/SimTimeBudget.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Json/external/json/json.h>
@@ -264,13 +264,13 @@ TEST(DiaUtilityAI_Integration, AsyncEval_PersonalityApplied_CallbackGetsCorrectW
         ]
     })");
 
-    Dia::AIBudget::AIBudgetScheduler scheduler;
+    Dia::SimTime::SimTimeBudget budget;
     AsyncResult result;
 
-    set.EvaluateAsync(ctx, registry, nullptr, scheduler, AsyncCallback, &result,
+    set.EvaluateAsync(ctx, registry, nullptr, budget, AsyncCallback, &result,
                       nullptr, &profile);
 
-    scheduler.Update(1000.0f);
+    budget.RunOneShots(1000.0f);
 
     EXPECT_EQ(result.callCount, 1);
     EXPECT_EQ(result.sel.actionId, Dia::Core::StringCRC("Attack"));

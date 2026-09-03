@@ -6,7 +6,7 @@
 #include <DiaHTN/OperatorRegistry.h>
 #include <DiaHTN/TaskResult.h>
 #include <DiaHTN/Testing/HTNTestHelpers.h>
-#include <DiaAIBudget/AIBudgetScheduler.h>
+#include <DiaSimTime/SimTimeBudget.h>
 #include <DiaCore/Json/external/json/json.h>
 
 // DiaHTN_Integration
@@ -116,15 +116,15 @@ TEST(DiaHTN_Integration, FullAsyncPlan_TicksToCompletion)
     Dia::HTN::HTNPlannerComponent comp;
     Dia::HTN::Testing::MockHTNContext ctx;
     ctx.SetBool(Dia::Core::StringCRC("unit"), Dia::Core::StringCRC("ready"), true);
-    Dia::AIBudget::AIBudgetScheduler scheduler;
+    Dia::SimTime::SimTimeBudget budget;
 
     comp.SetDomain(&domain);
     comp.SetRegistry(&registry);
     comp.SetRootTask(Dia::Core::StringCRC("Patrol"));
-    comp.ReplanAsync(ctx, scheduler);
+    comp.ReplanAsync(ctx, budget);
 
     EXPECT_FALSE(comp.HasActivePlan()); // callback not yet fired
-    scheduler.Update(100.0f);           // drains item and fires callback
+    budget.RunOneShots(100.0f);         // drains item and fires callback
     ASSERT_TRUE(comp.HasActivePlan());
     EXPECT_EQ(comp.GetActivePlan()->GetTaskCount(), 3);
 

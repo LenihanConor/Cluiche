@@ -17,12 +17,12 @@ summary: >
   Repeater, Cooldown, Guard) + IDecoratorNode extension interface, action leaf (ActionFn via ActionRegistry,
   multi-tick kRunning), condition leaf (Blackboard bool slot by StringCRC key),
   BehaviourTreeComponent (IComponent, owns execution cursor and decorator state, caller-driven Tick()),
-  BehaviourTreeSystem (IAIBudgetedSystem, time-slices across entities within budget).
+  BehaviourTreeSystem (ISimTimeBudgetedSystem, time-slices across entities within budget).
 
 intent: >
   Provides a composable, time-sliced behaviour tree execution layer. Many entities share a single
   BehaviourTreeAsset; per-entity execution state lives entirely in BehaviourTreeComponent. Trees are
-  defined in JSON, loaded at runtime, and ticked by BehaviourTreeSystem within the AIBudgetScheduler
+  defined in JSON, loaded at runtime, and ticked by BehaviourTreeSystem within the SimTimeBudget
   time slice. Action leaves dispatch via ActionRegistry callbacks; condition leaves read Blackboard
   bool slots directly.
 
@@ -32,7 +32,7 @@ responsibilities:
   - Decorator nodes — Inverter, Repeater, Cooldown (DiaCore/Timer gate), Guard (blackboard bool key gate); IDecoratorNode + DecoratorRegistry for custom types
   - Leaf nodes — condition leaf reads Blackboard bool slot by StringCRC key; action leaf invokes ActionFn via ActionRegistry with actionContext and params
   - BehaviourTreeComponent — IComponent binding asset + blackboard + action context + optional decorator registry; owns execution cursor and per-node decorator state; Tick(deltaTime) is caller-driven; Reset() restarts from root
-  - BehaviourTreeSystem — IAIBudgetedSystem registered with AIBudgetScheduler; ticks BehaviourTreeComponents within budget window
+  - BehaviourTreeSystem — ISimTimeBudgetedSystem registered with DiaSimTime (SimTimeBudget); ticks BehaviourTreeComponents within budget window
   - IBehaviourTreeEventListener — OnNodeEntered, OnNodeCompleted, OnTreeCompleted per-component callbacks
   - BehaviourTreeBusAdapter — forwards event-listener callbacks onto DiaMessageBus::Bus, entity-addressed via Dia::Entity::MakeEntityAddress (never Broadcast)
   - ActionRegistry — explicit handler table (StringCRC → ActionFn); not a singleton
@@ -50,7 +50,7 @@ non_responsibilities:
 
 dependent_modules:
   - dia.blackboard
-  - dia.aibudget
+  - dia.simtime
   - dia.core
 
 public_api:
@@ -73,7 +73,7 @@ dependencies:
   required:
     - dia.core
     - dia.blackboard
-    - dia.aibudget
+    - dia.simtime
   optional:
     - dia.messagebus
     - dia.entity

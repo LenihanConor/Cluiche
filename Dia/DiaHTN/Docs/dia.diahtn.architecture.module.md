@@ -20,7 +20,7 @@ intent: >
   Provides a stateless, data-driven HTN planning layer that decomposes high-level goal tasks
   into ordered sequences of primitive operators. Operators are bound via OperatorRegistry
   (StringCRC → OperatorFn with TaskResult lifecycle). Re-planning is always caller-triggered.
-  Async path submits to AIBudgetScheduler; caller drives Tick() each frame.
+  Async path submits to SimTimeBudget's one-shot queue (DiaSimTime); caller drives Tick() each frame.
 
 responsibilities:
   - HTNDomain — JSON-loadable compound + primitive task definition; immutable after load; validates cycles + dangling refs
@@ -44,7 +44,7 @@ non_responsibilities:
 dependent_modules:
   - dia.condition
   - dia.rules
-  - dia.aibudget
+  - dia.simtime
   - dia.entity
 
 public_api:
@@ -65,7 +65,7 @@ dependencies:
   required:
     - dia.core
     - dia.condition
-    - dia.aibudget
+    - dia.simtime
     - dia.entity
     - dia.observation
   optional:

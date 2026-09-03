@@ -10,7 +10,7 @@
 #include <DiaHTN/OperatorRegistry.h>
 #include <DiaHTN/HTNPlannerComponent.h>
 #include <DiaHTN/HTNPlanner.h>
-#include <DiaAIBudget/AIBudgetScheduler.h>
+#include <DiaSimTime/SimTimeBudget.h>
 #include <memory>
 
 #ifdef DIA_DEBUG
@@ -25,7 +25,7 @@ class AIHTNTestStageModule : public TestStageModuleBase
 public:
     static const Dia::Core::StringCRC kTypeId;
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kSim;
-    static constexpr const char* kDescription = "Integration stage: HTN (sync + diverge/replan + async) + AIBudget + RuleActionBridge";
+    static constexpr const char* kDescription = "Integration stage: HTN (sync + diverge/replan + async) + DiaSimTime + RuleActionBridge";
     static constexpr unsigned int kMinDisplayFrames = 150; // 5 s at 30 Hz
 
     explicit AIHTNTestStageModule(const Dia::Core::StringCRC& instanceId);
@@ -53,7 +53,7 @@ private:
     Dia::HTN::OperatorRegistry              mOperatorRegistry;
     Dia::HTN::HTNPlannerComponent           mHTNComponent;
     Dia::HTN::HTNPlanner                    mStandalonePlanner; // used for direct async call
-    Dia::AIBudget::AIBudgetScheduler        mScheduler;
+    Dia::SimTime::SimTimeBudget             mBudget;
 
     // Async result storage (filled by standalone planner callback)
     Dia::HTN::HTNPlan                       mAsyncResultPlan;

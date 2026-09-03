@@ -3,7 +3,7 @@
 #include <DiaHTN/HTNDomain.h>
 #include <DiaHTN/HTNPlan.h>
 #include <DiaHTN/Testing/HTNTestHelpers.h>
-#include <DiaAIBudget/AIBudgetScheduler.h>
+#include <DiaSimTime/SimTimeBudget.h>
 #include <DiaCore/Json/external/json/json.h>
 
 // DiaHTN_Planner
@@ -467,13 +467,13 @@ TEST(DiaHTN_Planner, PlanAsync_Submit_CallbackFires)
     auto domain = LoadDomain(kLinearDomain);
     Dia::HTN::Testing::MockHTNContext ctx;
     Dia::HTN::HTNPlanner planner;
-    Dia::AIBudget::AIBudgetScheduler scheduler;
+    Dia::SimTime::SimTimeBudget budget;
 
     struct Result { bool fired = false; int taskCount = 0; };
     Result result;
 
     const bool submitted = planner.PlanAsync(
-        Dia::Core::StringCRC("Root"), domain, ctx, scheduler,
+        Dia::Core::StringCRC("Root"), domain, ctx, budget,
         [](Dia::HTN::HTNPlan plan, void* ud)
         {
             auto* r = static_cast<Result*>(ud);
@@ -483,9 +483,9 @@ TEST(DiaHTN_Planner, PlanAsync_Submit_CallbackFires)
         &result);
 
     EXPECT_TRUE(submitted);
-    EXPECT_FALSE(result.fired); // not yet — scheduler hasn't ticked
+    EXPECT_FALSE(result.fired); // not yet — budget hasn't drained the one-shot
 
-    scheduler.Update(100.0f);   // drains the work item
+    budget.RunOneShots(100.0f); // drains the work item
     EXPECT_TRUE(result.fired);
     EXPECT_EQ(result.taskCount, 2);
 }
@@ -511,13 +511,13 @@ TEST(DiaHTN_Planner, PlanAsync_FailingDomain_CallbackFiresWithEmptyPlan)
     ctx.SetFloat(Dia::Core::StringCRC("x"), Dia::Core::StringCRC("f"), 0.0f);
 
     Dia::HTN::HTNPlanner planner;
-    Dia::AIBudget::AIBudgetScheduler scheduler;
+    Dia::SimTime::SimTimeBudget budget;
 
     struct Result { bool fired = false; bool planEmpty = false; };
     Result result;
 
     planner.PlanAsync(
-        Dia::Core::StringCRC("Root"), domain, ctx, scheduler,
+        Dia::Core::StringCRC("Root"), domain, ctx, budget,
         [](Dia::HTN::HTNPlan plan, void* ud)
         {
             auto* r = static_cast<Result*>(ud);
@@ -526,7 +526,7 @@ TEST(DiaHTN_Planner, PlanAsync_FailingDomain_CallbackFiresWithEmptyPlan)
         },
         &result);
 
-    scheduler.Update(100.0f);
+    budget.RunOneShots(100.0f);
     EXPECT_TRUE(result.fired);
     EXPECT_TRUE(result.planEmpty);
 }

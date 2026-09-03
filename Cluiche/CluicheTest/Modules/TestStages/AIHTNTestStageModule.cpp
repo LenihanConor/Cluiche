@@ -273,7 +273,7 @@ void AIHTNTestStageModule::OnUpdate(float /*deltaTime*/)
                 Dia::Core::StringCRC("TopGoal"),
                 mDomain,
                 *mConditionRegistry,
-                mScheduler,
+                mBudget,
                 &AIHTNTestStageModule::OnStandaloneAsyncPlan,
                 this);
             mPhase = Phase::kAsyncWait;
@@ -283,8 +283,8 @@ void AIHTNTestStageModule::OnUpdate(float /*deltaTime*/)
 
     case Phase::kAsyncWait:
     {
-        // Drain scheduler; callback fires synchronously inside Update()
-        mScheduler.Update(10.0f);
+        // Drain the one-shot queue; callback fires synchronously inside RunOneShots()
+        mBudget.RunOneShots(10.0f);
 
         if (mAsyncCallbackFired && !mAsyncPlanCompleted)
         {
@@ -348,4 +348,4 @@ void AIHTNTestStageModule::OnStop()
 
 namespace { using AIHTNTestStageModule_ = CluicheTest::AIHTNTestStageModule; }
 DIA_MODULE(AIHTNTestStageModule_);
-DIA_DESCRIBE(AIHTNTestStageModule_::kTypeId, "Integration stage: HTN (sync + diverge/replan + async) + AIBudget + RuleActionBridge");
+DIA_DESCRIBE(AIHTNTestStageModule_::kTypeId, "Integration stage: HTN (sync + diverge/replan + async) + DiaSimTime + RuleActionBridge");

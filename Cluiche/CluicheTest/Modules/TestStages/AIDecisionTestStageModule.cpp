@@ -259,12 +259,12 @@ void AIDecisionTestStageModule::OnUpdate(float /*deltaTime*/)
         mAsyncSubmitted = true;
         mAsyncUtilitySet.EvaluateAsync(
             *mConditionRegistry, mActionRegistry, this,
-            mScheduler, &AIDecisionTestStageModule::OnUtilityAsyncResult, this);
+            mBudget, &AIDecisionTestStageModule::OnUtilityAsyncResult, this);
     }
 
-    // Frame 3+: drain scheduler until callback fires
+    // Frame 3+: drain budget's one-shot queue until callback fires
     if (GetFrameCount() >= 3 && !mBudgetAsyncCompleted)
-        mScheduler.Update(10.0f);
+        mBudget.RunOneShots(10.0f);
 
     if (AllCheckpointsPassed())
     {
@@ -303,4 +303,4 @@ void AIDecisionTestStageModule::OnStop()
 
 namespace { using AIDecisionTestStageModule_ = CluicheTest::AIDecisionTestStageModule; }
 DIA_MODULE(AIDecisionTestStageModule_);
-DIA_DESCRIBE(AIDecisionTestStageModule_::kTypeId, "Integration stage: Condition + Rules + UtilityAI (sync/async) + AIBudget");
+DIA_DESCRIBE(AIDecisionTestStageModule_::kTypeId, "Integration stage: Condition + Rules + UtilityAI (sync/async) + DiaSimTime");

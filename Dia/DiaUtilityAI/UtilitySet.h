@@ -6,7 +6,7 @@
 #include <DiaCondition/IConditionContext.h>
 #include <DiaCondition/ConditionRegistry.h>
 #include <DiaRules/RuleActionRegistry.h>
-#include <DiaAIBudget/AIBudgetScheduler.h>
+#include <DiaSimTime/SimTimeBudget.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Json/external/json/json.h>
@@ -24,7 +24,7 @@ namespace Dia
         };
 
         // Callback type for EvaluateAsync. Fired on the thread that calls
-        // AIBudgetScheduler::Update() when the work item is drained.
+        // SimTimeBudget::RunOneShots() when the work item is drained.
         // result — the winning selection (actionId == zero and score == 0.0f if nothing eligible).
         // userData — the pointer passed as callbackUserData to EvaluateAsync().
         using UtilityResultCallback = void(*)(UtilitySelection result, void* userData);
@@ -50,18 +50,21 @@ namespace Dia
                 GroupConsiderationContext* group = nullptr,
                 const PersonalityProfile* personality = nullptr) const;
 
-            // Async evaluation: submits a one-shot work item to scheduler.
+            // Async evaluation: submits a one-shot work item to budget's one-shot
+            // completion queue (SimTimeBudget::SubmitOneShot, ST-012).
             // All parameters are captured by pointer/value at submission time.
-            // Caller is responsible for keeping ctx, registry, and any pointed-to
-            // objects alive until the callback fires.
-            // When the scheduler drains the work item, Evaluate() is called (which
-            // dispatches the winner) and then callback is invoked with the selection.
-            // The work item is one-shot — callback fires exactly once.
+            // Caller is responsible for keeping ctx, registry, this UtilitySet, and
+            // any pointed-to objects alive until the callback fires — SimTimeBudget's
+            // one-shot queue has no cancel/unregister API, so destroying any of them
+            // early is undefined behaviour.
+            // When budget drains the work item (RunOneShots), Evaluate() is called
+            // (which dispatches the winner) and then callback is invoked with the
+            // selection. The work item is one-shot — callback fires exactly once.
             void EvaluateAsync(
                 Dia::Condition::IConditionContext& ctx,
                 const Dia::Rules::RuleActionRegistry& registry,
                 void* actionContext,
-                Dia::AIBudget::AIBudgetScheduler& scheduler,
+                Dia::SimTime::SimTimeBudget& budget,
                 UtilityResultCallback callback,
                 void* callbackUserData,
                 GroupConsiderationContext* group = nullptr,

@@ -31,6 +31,7 @@ responsibilities:
   - PathResult — success, totalCost, DynamicArrayC<CellCoord>, ToWorldPositions()
   - PathfindingSystem<TGraph> — async request queue, Update(budgetMs) time-slicing, IPathResultObserver result delivery
   - CancelRequest(PathRequestId) — drops pending work
+  - PathfindingSystemBudgetAdapter<TGraph> — wraps PathfindingSystem::Update(ms) as ISimTimeBudgetedSystem (DiaSimTime, kBackground priority)
   - DIA_LOG_INFO on request submit, path found, path failed
   - Test utilities under Testing/ subdirectory
 
@@ -44,7 +45,8 @@ non_responsibilities:
   - Thread safety within PathfindingSystem
   - Visual debugger overlay
 
-dependent_modules: []
+dependent_modules:
+  - dia.simtime
 
 public_api:
   headers:
@@ -57,6 +59,7 @@ public_api:
     - Dia/DiaPathfinding/FindPath.h
     - Dia/DiaPathfinding/IPathResultObserver.h
     - Dia/DiaPathfinding/PathfindingSystem.h
+    - Dia/DiaPathfinding/PathfindingSystemBudgetAdapter.h
   namespaces:
     - Dia::Pathfinding
   entry_points:
@@ -70,12 +73,14 @@ public_api:
     - FindPath
     - PathfindingSystem
     - IPathResultObserver
+    - PathfindingSystemBudgetAdapter
 
 dependencies:
   required:
     - dia.core
     - dia.maths
     - dia.observation
+    - dia.simtime
   forbidden:
     - dia.geometry2d
     - dia.blackboard
