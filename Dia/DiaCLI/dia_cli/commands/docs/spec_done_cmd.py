@@ -14,12 +14,25 @@ from dia_cli.utils.repo_root import find_repo_root
 
 _STATUS_RE = re.compile(r"(\*\*Status:\*\*\s*`?)(\w[\w ]*?)(`?\s*$)", re.MULTILINE)
 
+# Alternate convention used by many older specs: a "## Status" heading followed
+# by a bare backtick-quoted value on its own line, e.g.:
+#   ## Status
+#
+#   `Approved`
+_STATUS_HEADING_RE = re.compile(
+    r"(^## Status\s*\n+\s*`)(\w[\w ]*?)(`\s*$)", re.MULTILINE
+)
+
 
 def _update_spec_status(spec_path: Path, target_status: str = "Done") -> str:
     text = spec_path.read_text(encoding="utf-8")
     m = _STATUS_RE.search(text)
     if not m:
-        raise click.ClickException(f"No **Status:** field found in {spec_path.name}")
+        m = _STATUS_HEADING_RE.search(text)
+    if not m:
+        raise click.ClickException(
+            f"No **Status:** field or '## Status' heading found in {spec_path.name}"
+        )
 
     current = m.group(2).strip()
     if current == target_status:
@@ -45,8 +58,11 @@ def _find_plan_file(spec_path: Path) -> Path | None:
 
 def _update_plan_header(plan_path: Path) -> None:
     text = plan_path.read_text(encoding="utf-8")
+    # Word-only status token (e.g. "In Progress", "Done") — deliberately does NOT
+    # consume trailing whitespace, so any "... — <notes>" suffix on the same line
+    # keeps its separating space instead of being glued to the new status word.
     text = re.sub(
-        r"(\*\*Status:\*\*\s*)([\w ]+)",
+        r"(\*\*Status:\*\*\s*)(\w+(?:\s+\w+)*)",
         r"\1Done",
         text,
         count=1,

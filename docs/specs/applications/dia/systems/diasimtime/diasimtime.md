@@ -532,6 +532,6 @@ Defaults to 5 if unspecified. Backlog beyond the cap is dropped, not deferred (`
 
 ## Status
 
-`Approved`
+`Done`
 
 Implementation tracked in @docs/specs/applications/dia/systems/diasimtime/diasimtime.plan.md.
