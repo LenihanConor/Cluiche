@@ -118,6 +118,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | diagridvisibilityvisualdebugger | [spec](specs/applications/dia/systems/diagridvisibilityvisualdebugger/diagridvisibilityvisualdebugger.md) | 2026-08-16 | GridVisibilityDebugDomain (template); CellState/SightRadii/ShadowcastBoundary drawers; GetJSONState + group selector; 23 GoogleTests; wired into GridVisibility test stage |
 | GridVisibilityTestStage | [spec](specs/applications/cluichetest/systems/teststages/) | 2026-08-16 | Two-group fog-of-war E2E stage; Red/Blue patrol + 5 enemies; 24×18 grid with walls; shadowcasting + Revealed persistence + enemy flash; GridVisibilityDebugDomain wired |
 | AICalloutTestStage | [plan](specs/applications/cluichetest/systems/teststages/aicallout-test-stage.plan.md) | 2026-08-16 | Moved by `dia docs backlog move` |
+| diasimtime | [spec](specs/) | 2026-09-02 | Marked done by `dia docs spec-done` |
 
 ---
 

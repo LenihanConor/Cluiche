@@ -305,7 +305,7 @@
     },
     {
       "allowed_pus": "sim",
-      "description": "Integration stage: Condition + Rules + UtilityAI (sync/async) + AIBudget",
+      "description": "Integration stage: Condition + Rules + UtilityAI (sync/async) + DiaSimTime",
       "type_id": "AIDecisionTestStageModule"
     },
     {
@@ -315,7 +315,7 @@
     },
     {
       "allowed_pus": "sim",
-      "description": "Integration stage: HTN (sync + diverge/replan + async) + AIBudget + RuleActionBridge",
+      "description": "Integration stage: HTN (sync + diverge/replan + async) + DiaSimTime + RuleActionBridge",
       "type_id": "AIHTNTestStageModule"
     },
     {
@@ -477,6 +477,6 @@
   "processing_units": [],
   "version": {
     "major": 1,
-    "minor": 30
+    "minor": 31
   }
 }
