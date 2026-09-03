@@ -216,6 +216,81 @@ TEST(DiaSimTime_SimTimeBudget, UsedMsReflectsWallClockConsumed)
 }
 
 // -------------------------------------------------------------------------
+// 1b. Negative tier budgets/deadlines are clamped to 0 (documented contract).
+// -------------------------------------------------------------------------
+
+TEST(DiaSimTime_SimTimeBudget, NegativeTierBudgetsAndDeadlinesAreClampedToZero)
+{
+    SimTimeBudget budget;
+    budget.SetTierBudgets(-5.0f, -1.0f, -0.5f, -100.0f);
+    budget.AllocateTick(MakeCtx());
+
+    EXPECT_FLOAT_EQ(budget.GetTierRemainingMs(SimTimePriority::kCritical),   0.0f);
+    EXPECT_FLOAT_EQ(budget.GetTierRemainingMs(SimTimePriority::kHigh),       0.0f);
+    EXPECT_FLOAT_EQ(budget.GetTierRemainingMs(SimTimePriority::kNormal),     0.0f);
+    EXPECT_FLOAT_EQ(budget.GetTierRemainingMs(SimTimePriority::kBackground), 0.0f);
+
+    // A negative deadline clamped to 0 makes any staleness >0 immediately
+    // eligible for promotion — prove it by registering after a tiny wait so
+    // real wall-clock staleness is unambiguously > 0.
+    budget.SetTierDeadlines(-4.0f, -16.0f, -100.0f, -1000.0f);
+
+    CountingSystem sys("clamp.critical", SimTimePriority::kCritical);
+    budget.Register(&sys);
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+    budget.AllocateTick(MakeCtx());
+    EXPECT_TRUE(budget.RunIfCapacity(&sys))
+        << "a clamped-to-zero deadline must promote as soon as any staleness has accrued";
+    EXPECT_EQ(budget.GetLastPromotedCount(), 1);
+}
+
+// -------------------------------------------------------------------------
+// 1c. Deadline promotion is not special-cased to kBackground — kCritical
+// promotes the same way once its (much tighter) deadline is exceeded.
+// -------------------------------------------------------------------------
+
+TEST(DiaSimTime_SimTimeBudget, CriticalTierPromotesAtDeadlineLikeBackground)
+{
+    SimTimeBudget budget;
+    budget.SetTierBudgets(0.0f, 1.0f, 0.5f, 0.25f);         // critical zero — can only run via promotion
+    budget.SetTierDeadlines(20.0f, 16.0f, 100.0f, 1000.0f); // tight critical deadline
+
+    CountingSystem crit("crit.system", SimTimePriority::kCritical);
+    budget.Register(&crit);
+
+    budget.AllocateTick(MakeCtx());
+    EXPECT_FALSE(budget.RunIfCapacity(&crit));
+    EXPECT_EQ(crit.mCallCount, 0);
+    EXPECT_EQ(budget.GetLastDeferredCount(), 1);
+    EXPECT_EQ(budget.GetLastPromotedCount(), 0);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(25));   // exceed the 20ms deadline
+
+    budget.AllocateTick(MakeCtx());
+    EXPECT_TRUE(budget.RunIfCapacity(&crit));
+    EXPECT_EQ(crit.mCallCount, 1);
+    EXPECT_EQ(budget.GetLastPromotedCount(), 1);
+    EXPECT_EQ(budget.GetLastDeferredCount(), 0);
+}
+
+// -------------------------------------------------------------------------
+// 1d. RunIfCapacity on an unknown / never-registered system is a safe no-op.
+// -------------------------------------------------------------------------
+
+TEST(DiaSimTime_SimTimeBudget, RunIfCapacityOnUnknownSystemIsSafeNoOp)
+{
+    SimTimeBudget budget;
+    CountingSystem ghost("ghost.system", SimTimePriority::kNormal);
+
+    budget.AllocateTick(MakeCtx());
+    EXPECT_FALSE(budget.RunIfCapacity(&ghost));
+    EXPECT_EQ(ghost.mCallCount, 0);
+    EXPECT_EQ(budget.GetLastDeferredCount(), 0)
+        << "an unregistered system must not be counted as deferred";
+}
+
+// -------------------------------------------------------------------------
 // 3. One-shot completion path (ST-012)
 // -------------------------------------------------------------------------
 

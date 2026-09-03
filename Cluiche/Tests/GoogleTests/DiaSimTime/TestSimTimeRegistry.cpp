@@ -278,6 +278,102 @@ TEST(SimTimeRegistryTest, RegisterWakeOnMessageWakesOnMatchingNotify)
 }
 
 // ---------------------------------------------------------------------------
+// GetEntryAt / GetRegisteredCount enumeration (Task 4.4's gate loop walks the
+// registry through this pair) — order and view contents must match Register.
+// ---------------------------------------------------------------------------
+TEST(SimTimeRegistryTest, GetEntryAtEnumeratesRegisteredSystemsInOrder)
+{
+    SimTimeScheduler sched;
+    SimTimeRegistry  registry(sched);
+
+    FakeSystem a("A");
+    FakeSystem b("B");
+    SimTimePolicy policyB;
+    policyB.tier = SimTimeTier::kHigh;
+    registry.Register(&a, SimTimePolicy{});
+    registry.Register(&b, policyB);
+    ASSERT_EQ(registry.GetRegisteredCount(), 2);
+
+    const SimTimeRegistryEntryView viewA = registry.GetEntryAt(0);
+    const SimTimeRegistryEntryView viewB = registry.GetEntryAt(1);
+
+    EXPECT_EQ(viewA.systemId, a.GetSystemId());
+    EXPECT_EQ(viewA.system, &a);
+    EXPECT_EQ(viewA.policy.tier, SimTimeTier::kImmediate);
+
+    EXPECT_EQ(viewB.systemId, b.GetSystemId());
+    EXPECT_EQ(viewB.system, &b);
+    EXPECT_EQ(viewB.policy.tier, SimTimeTier::kHigh);
+}
+
+// ---------------------------------------------------------------------------
+// SetTierHz overrides the Hz-based tiers' throttle interval; a non-positive
+// Hz for a given tier leaves that tier's interval unchanged (config-preserving
+// default).
+// ---------------------------------------------------------------------------
+TEST(SimTimeRegistryTest, SetTierHzOverridesThrottleInterval)
+{
+    SimTimeScheduler sched;
+    SimTimeRegistry  registry(sched);
+
+    FakeSystem sys("HzSys");
+    SimTimePolicy policy;
+    policy.tier = SimTimeTier::kHigh;   // default ~30Hz (~33ms)
+    registry.Register(&sys, policy);
+    const StringCRC id = sys.GetSystemId();
+
+    registry.SetTierHz(/*high*/ 10.0f, /*medium*/ -1.0f, /*low*/ 0.0f);   // -> 100ms
+
+    registry.MarkRan(id, Ms(0));
+    EXPECT_FALSE(registry.DueThisTick(id, Ms(50)))
+        << "50ms < the configured 100ms interval — still throttled";
+    EXPECT_TRUE(registry.DueThisTick(id, Ms(100)))
+        << "100ms >= the configured 100ms interval — due";
+}
+
+TEST(SimTimeRegistryTest, SetTierHzNonPositiveLeavesIntervalUnchanged)
+{
+    SimTimeScheduler sched;
+    SimTimeRegistry  registry(sched);
+
+    FakeSystem sys("MedSys");
+    SimTimePolicy policy;
+    policy.tier = SimTimeTier::kMedium;   // default 10Hz -> 100ms
+    registry.Register(&sys, policy);
+    const StringCRC id = sys.GetSystemId();
+
+    registry.SetTierHz(-1.0f, 0.0f, -5.0f);   // all non-positive: no tier is affected
+
+    registry.MarkRan(id, Ms(0));
+    EXPECT_FALSE(registry.DueThisTick(id, Ms(50)))
+        << "the default 100ms medium interval must be unaffected by a non-positive override";
+    EXPECT_TRUE(registry.DueThisTick(id, Ms(100)));
+}
+
+// ---------------------------------------------------------------------------
+// GetSleepingCount reflects the live count of kSleeping entries (feeds the
+// simtime.registry.sleeping_count gauge).
+// ---------------------------------------------------------------------------
+TEST(SimTimeRegistryTest, GetSleepingCountReflectsCurrentSleepers)
+{
+    SimTimeScheduler sched;
+    SimTimeRegistry  registry(sched);
+
+    FakeSystem a("A"), b("B"), c("C");
+    registry.Register(&a, SimTimePolicy{});
+    registry.Register(&b, SimTimePolicy{});
+    registry.Register(&c, SimTimePolicy{});
+    EXPECT_EQ(registry.GetSleepingCount(), 0);
+
+    registry.Sleep(a.GetSystemId());
+    registry.Sleep(b.GetSystemId());
+    EXPECT_EQ(registry.GetSleepingCount(), 2);
+
+    registry.Wake(a.GetSystemId());
+    EXPECT_EQ(registry.GetSleepingCount(), 1);
+}
+
+// ---------------------------------------------------------------------------
 // Unregistered / unknown systemId is a safe no-op on every accessor — no crash,
 // no assert, sensible defaults.
 // ---------------------------------------------------------------------------

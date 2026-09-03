@@ -252,6 +252,87 @@ TEST(SimTimeSaveStateTest, UnregisteredSavedSystemIsSkippedNotAsserted)
 }
 
 // ---------------------------------------------------------------------------
+// 6. Combined round trip: gameTime + a pending scheduler entry + sleep state
+//    are all persisted and restored together through ONE Serialize/Deserialize
+//    pass (each was previously only proven in isolation). The world domain is
+//    additionally paused/scaled on the source to prove that has no bearing on
+//    the pieces SimTimeSaveState actually owns (ST-015 does not persist
+//    pause/scale — only gameTime).
+// ---------------------------------------------------------------------------
+TEST(SimTimeSaveStateTest, CombinedGameTimeSchedulerAndSleepStateRoundTripTogether)
+{
+    SimTimeDomain    worldA(StringCRC("world"), 60.0f);
+    SimTimeScheduler schedA;
+    SimTimeRegistry  regA(schedA);
+
+    worldA.AdvanceTo(Ms(3000));
+    worldA.Pause();
+    worldA.SetScale(0.5f);
+
+    const StringCRC evt("combo.event");
+    const StringCRC tgt("combo.target");
+    schedA.ScheduleAt(Ms(3100), evt, tgt);
+
+    FakeSystem sleeper("ComboSleeper");
+    FakeSystem waker("ComboWaker");
+    regA.Register(&sleeper, SimTimePolicy{});
+    regA.Register(&waker,   SimTimePolicy{});
+    regA.Sleep(sleeper.GetSystemId());
+
+    SimTimeSaveState saveA(worldA, schedA, regA);
+    const Json::Value root = SaveToJson(saveA);
+
+    SimTimeDomain    worldB(StringCRC("world"), 60.0f);
+    SimTimeScheduler schedB;
+    SimTimeRegistry  regB(schedB);
+    FakeSystem sleeperB("ComboSleeper");
+    FakeSystem wakerB("ComboWaker");
+    regB.Register(&sleeperB, SimTimePolicy{});
+    regB.Register(&wakerB,   SimTimePolicy{});
+
+    SimTimeSaveState saveB(worldB, schedB, regB);
+    Dia::SaveGame::LoadContext load(root);
+    saveB.Deserialize(load);
+
+    EXPECT_EQ(worldB.Now(), Ms(3000))
+        << "world clock restored correctly alongside the scheduler + sleep state";
+    EXPECT_EQ(schedB.GetQueueDepth(), 1);
+    EXPECT_EQ(regB.GetState(sleeperB.GetSystemId()), SimTimeState::kSleeping);
+    EXPECT_EQ(regB.GetState(wakerB.GetSystemId()), SimTimeState::kAwake);
+
+    DynamicArrayC<SimTimeSchedulerFire, 16> fired;
+    schedB.Tick(Ms(3100), fired);
+    EXPECT_TRUE(FiredContains(fired, evt))
+        << "the restored scheduler entry must still fire at its saved time";
+}
+
+// ---------------------------------------------------------------------------
+// 7. An empty scheduler and registry round-trip cleanly — no assert/crash on
+//    zero-length arrays, and the restored gameTime is unaffected.
+// ---------------------------------------------------------------------------
+TEST(SimTimeSaveStateTest, EmptySchedulerAndRegistryRoundTripWithoutError)
+{
+    SimTimeDomain    worldA(StringCRC("world"), 60.0f);
+    SimTimeScheduler schedA;
+    SimTimeRegistry  regA(schedA);
+    worldA.AdvanceTo(Ms(1234));
+
+    SimTimeSaveState saveA(worldA, schedA, regA);
+    const Json::Value root = SaveToJson(saveA);
+
+    SimTimeDomain    worldB(StringCRC("world"), 60.0f);
+    SimTimeScheduler schedB;
+    SimTimeRegistry  regB(schedB);
+    SimTimeSaveState saveB(worldB, schedB, regB);
+    Dia::SaveGame::LoadContext load(root);
+    saveB.Deserialize(load);   // must not assert/crash with zero scheduler/registry entries
+
+    EXPECT_EQ(worldB.Now(), Ms(1234));
+    EXPECT_EQ(schedB.GetQueueDepth(), 0);
+    EXPECT_EQ(regB.GetRegisteredCount(), 0);
+}
+
+// ---------------------------------------------------------------------------
 // Gap A — SimTimeScheduler::GetPendingEntries: read-only peek across wheel + heap.
 // ---------------------------------------------------------------------------
 TEST(SimTimeSchedulerTest, GetPendingEntriesReportsLiveWheelAndHeapEntries)

@@ -241,3 +241,31 @@ TEST(SimTimeDomainRegistry, Destroy_RemovesDomainAndTickAllSkipsIt)
     registry.TickAll();
     EXPECT_EQ(b.GetTick(), 1u);
 }
+
+// Destroying an ancestor leaves its children with a dangling parentId.
+// ComputeAncestorChain's walk stops at the first missing entry WITHOUT falling
+// through to the world root — so a child whose parent was destroyed composes
+// no ancestor scale at all (not even the world's), and is not treated as
+// paused by an ancestor it can no longer see.
+TEST(SimTimeDomainRegistry, Destroy_ParentLeavesChildWithNoAncestorComposition)
+{
+    SimTimeDomain world = MakeWorld();
+    SimTimeDomainRegistry registry(world);
+
+    SimTimeDomain& parent = registry.Create(StringCRC("parent"));
+    SimTimeDomain& child  = registry.Create(StringCRC("child"), StringCRC("parent"));
+    parent.SetScale(2.0f);
+    world.SetScale(4.0f);
+    world.Pause();   // even the world's pause must NOT reach the orphaned child
+
+    registry.Destroy(StringCRC("parent"));
+    EXPECT_EQ(registry.Find(StringCRC("parent")), nullptr);
+
+    registry.TickAll();
+
+    EXPECT_EQ(child.GetTick(), 1u)
+        << "an orphaned child (dangling parentId) must still advance every TickAll pass";
+    EXPECT_EQ(child.Now(), TimeAbsolute::Zero() + child.Step())
+        << "with a dangling parent the walk stops before reaching the world root, "
+           "so no ancestor scale composes in and the world's pause does not apply";
+}

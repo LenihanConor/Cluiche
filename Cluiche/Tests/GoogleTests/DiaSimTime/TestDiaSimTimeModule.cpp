@@ -31,12 +31,17 @@
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
+#include <DiaSimTime/SimTimePriority.h>
 #include <DiaStreams/StreamReader.h>
 #include <DiaCore/SimTime/SimTimeContext.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaCore/Time/TimeRelative.h>
+#include <DiaSaveGame/SaveRegistry.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Metric/Gauge.h>
+#include <DiaObservation/Metric/Counter.h>
 
 using namespace Dia::ApplicationFlow;
 using namespace Dia::Core;
@@ -47,6 +52,7 @@ using Dia::SimTime::SimTimePolicy;
 using Dia::SimTime::SimTimeState;
 using Dia::SimTime::SimTimeTier;
 using Dia::SimTime::SimTimeContext;
+using Dia::SimTime::SimTimePriority;
 
 namespace {
 
@@ -58,13 +64,16 @@ namespace {
     class CountingSystem : public ISimTimeBudgetedSystem
     {
     public:
-        explicit CountingSystem(const char* id) : mId(id) {}
-        StringCRC GetSystemId() const override { return mId; }
+        explicit CountingSystem(const char* id, SimTimePriority priority = SimTimePriority::kNormal)
+            : mId(id), mPriority(priority) {}
+        StringCRC       GetSystemId() const override { return mId; }
+        SimTimePriority GetPriority() const override { return mPriority; }
         void UpdateBudgeted(float /*budgetMs*/) override { ++updateCalls; }
 
         int updateCalls = 0;
     private:
-        StringCRC mId;
+        StringCRC       mId;
+        SimTimePriority mPriority;
     };
 
     // ---------------------------------------------------------------------------
@@ -299,4 +308,159 @@ TEST(DiaSimTimeModuleTest, PublishesSimTimeContextToFrameStream)
         << "The sibling reader must observe a SimTimeContext published to the SimTime stream";
     EXPECT_TRUE(g_reader->lastCtx.gameTime > TimeAbsolute::Zero())
         << "The published SimTimeContext must carry the advancing sim game clock";
+}
+
+// ---------------------------------------------------------------------------
+// 5. OnConfigure's "tier_hz" block reaches SimTimeRegistry::SetTierHz: a kHigh
+// system configured down to 5Hz (200ms interval) must still be throttled after
+// ~167ms of ticks, a span the unconfigured ~33ms default would not survive.
+// ---------------------------------------------------------------------------
+TEST(DiaSimTimeModuleTest, OnConfigureTierHzOverridesThrottleInterval)
+{
+    g_module = nullptr;
+    TypeRegistry reg;
+    reg.Register(DiaSimTimeModule::kTypeId, CreateModule);
+
+    auto manifest = BuildManifest(false);
+    manifest.processingUnits[0].modules[0].configJson = "{\"tier_hz\":{\"high\":5.0}}";
+
+    Application app(manifest, reg);
+    ASSERT_TRUE(app.Start());
+    ASSERT_TRUE(PumpUntilActive(app));
+    ASSERT_NE(g_module, nullptr);
+
+    CountingSystem high("STM_ConfigHigh");
+    SimTimePolicy highPolicy; highPolicy.tier = SimTimeTier::kHigh;
+    g_module->Register(&high, highPolicy);
+
+    // Fresh system: due immediately — drive it to its first run.
+    for (int i = 0; i < 5 && high.updateCalls == 0; ++i)
+        app.Update(kFixed60);
+    ASSERT_GT(high.updateCalls, 0);
+
+    const int runsAfterFirst = high.updateCalls;
+    // ~10 more 60Hz ticks == ~167ms — under the configured 200ms interval, but
+    // well past several ~33ms default intervals.
+    for (int i = 0; i < 10; ++i)
+        app.Update(kFixed60);
+
+    EXPECT_EQ(high.updateCalls, runsAfterFirst)
+        << "OnConfigure's tier_hz override (5Hz -> 200ms) must still be throttling "
+           "after ~167ms, which the unconfigured ~33ms default would not survive";
+
+    g_module->Unregister(&high);
+}
+
+// ---------------------------------------------------------------------------
+// 6. OnConfigure's "budget" block reaches SimTimeBudget::SetTierBudgets: a
+// kCritical-priority system configured to a zero critical-tier budget must
+// never run via the budget path (isolated from LOD throttling by giving it a
+// kImmediate tier, so only the budget gate can explain a zero run count).
+// ---------------------------------------------------------------------------
+TEST(DiaSimTimeModuleTest, OnConfigureBudgetBlockAppliesZeroCriticalBudget)
+{
+    g_module = nullptr;
+    TypeRegistry reg;
+    reg.Register(DiaSimTimeModule::kTypeId, CreateModule);
+
+    auto manifest = BuildManifest(false);
+    manifest.processingUnits[0].modules[0].configJson =
+        "{\"budget\":{\"criticalMs\":0.0,\"highMs\":1.0,\"normalMs\":0.5,\"backgroundMs\":0.25}}";
+
+    Application app(manifest, reg);
+    ASSERT_TRUE(app.Start());
+    ASSERT_TRUE(PumpUntilActive(app));
+    ASSERT_NE(g_module, nullptr);
+
+    CountingSystem critical("STM_ConfigCritical", SimTimePriority::kCritical);
+    SimTimePolicy policy; policy.tier = SimTimeTier::kImmediate;   // always due — isolates the budget gate
+    g_module->Register(&critical, policy);
+
+    for (int i = 0; i < 5; ++i)
+        app.Update(kFixed60);
+
+    EXPECT_EQ(critical.updateCalls, 0)
+        << "OnConfigure's budget block (criticalMs=0) must starve a critical-tier system; "
+           "these fast, sleep-free ticks stay well under its ~4ms default promotion deadline";
+
+    g_module->Unregister(&critical);
+}
+
+// ---------------------------------------------------------------------------
+// 7. SetSaveRegistry wiring: DoStart registers the module's SimTimeSaveState
+// with the injected SaveRegistry; DoStop unregisters it.
+// ---------------------------------------------------------------------------
+TEST(DiaSimTimeModuleTest, SetSaveRegistryWiresParticipantOnStartAndUnwiresOnStop)
+{
+    g_module = nullptr;
+    TypeRegistry reg;
+    reg.Register(DiaSimTimeModule::kTypeId, CreateModule);
+
+    auto manifest = BuildManifest(false);
+    Application app(manifest, reg);
+    ASSERT_TRUE(app.Start());
+    ASSERT_NE(g_module, nullptr);
+
+    Dia::SaveGame::SaveRegistry saveRegistry;
+    g_module->SetSaveRegistry(saveRegistry);   // must be called before DoStart runs
+
+    ASSERT_TRUE(PumpUntilActive(app));         // drives DoStart
+
+    ASSERT_EQ(saveRegistry.GetParticipantCount(), 1u)
+        << "DoStart must register the module's SimTimeSaveState when a registry was injected";
+    EXPECT_EQ(saveRegistry.GetIdAt(0), DiaSimTimeModule::kTypeId);
+    EXPECT_NE(saveRegistry.GetParticipantAt(0), nullptr);
+
+    app.RequestShutdown();
+    app.Update(kFixed60);
+
+    EXPECT_EQ(saveRegistry.GetParticipantCount(), 0u)
+        << "DoStop must unregister the save participant";
+}
+
+// ---------------------------------------------------------------------------
+// 8. Metrics: simtime.tick increments once per DoUpdate; simtime.registry.
+// sleeping_count and simtime.scheduler.queue_depth reflect live state.
+// ---------------------------------------------------------------------------
+TEST(DiaSimTimeModuleTest, MetricsReflectTickSleepingCountAndQueueDepth)
+{
+    g_module = nullptr;
+    TypeRegistry reg;
+    reg.Register(DiaSimTimeModule::kTypeId, CreateModule);
+
+    auto manifest = BuildManifest(false);
+    Application app(manifest, reg);
+    ASSERT_TRUE(app.Start());
+    ASSERT_TRUE(PumpUntilActive(app));
+    ASSERT_NE(g_module, nullptr);
+
+    auto& metricRegistry = Dia::Observation::Metric::MetricRegistry::Instance();
+    auto* tickCounter     = metricRegistry.FindCounter(StringCRC("simtime.tick"));
+    auto* sleepingGauge   = metricRegistry.FindGauge(StringCRC("simtime.registry.sleeping_count"));
+    auto* queueDepthGauge = metricRegistry.FindGauge(StringCRC("simtime.scheduler.queue_depth"));
+    ASSERT_NE(tickCounter, nullptr);
+    ASSERT_NE(sleepingGauge, nullptr);
+    ASSERT_NE(queueDepthGauge, nullptr);
+
+    const uint64_t ticksBefore = tickCounter->Value();
+
+    CountingSystem sleeper("STM_MetricSleeper");
+    g_module->Register(&sleeper, SimTimePolicy{});
+    g_module->Sleep(sleeper.GetSystemId());
+
+    // Schedule far in the future so it stays pending (not fired) across the update below.
+    g_module->GetScheduler().ScheduleAt(
+        TimeAbsolute::Zero() + TimeRelative::CreateFromMilliseconds(100000),
+        StringCRC("metric.probe"), StringCRC("nobody"));
+
+    app.Update(kFixed60);
+
+    EXPECT_EQ(tickCounter->Value() - ticksBefore, 1ull)
+        << "simtime.tick must increment exactly once per DoUpdate";
+    EXPECT_GE(sleepingGauge->Value(), 1.0)
+        << "simtime.registry.sleeping_count must reflect the sleeping system";
+    EXPECT_GE(queueDepthGauge->Value(), 1.0)
+        << "simtime.scheduler.queue_depth must reflect the pending scheduled event";
+
+    g_module->Unregister(&sleeper);
 }
