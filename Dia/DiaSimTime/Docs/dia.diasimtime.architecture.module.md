@@ -12,6 +12,7 @@ dependencies:
   - dia.streams
   - dia.observation
   - dia.aibudget  # ISimTimeBudgetedSystem extends Dia::AIBudget::IAIBudgetedSystem
+  - dia.savegame  # SimTimeSaveState implements ISaveable; DiaSimTimeModule registers with SaveRegistry
 public_api:
   headers:
     - DiaSimTime/DiaMainTime.h

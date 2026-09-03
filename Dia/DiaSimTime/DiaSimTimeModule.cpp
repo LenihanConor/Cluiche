@@ -7,6 +7,7 @@
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaObservation/Metric/Gauge.h>
 #include <DiaObservation/Metric/Counter.h>
+#include <DiaSaveGame/SaveRegistry.h>
 
 #include <json/json.h>
 
@@ -72,7 +73,16 @@ namespace Dia::SimTime {
         mMetricSleepingCount = registry.RegisterGauge  (Dia::Core::StringCRC("simtime.registry.sleeping_count"));
         mMetricTick          = registry.RegisterCounter(Dia::Core::StringCRC("simtime.tick"));
 
-        // TODO(Task 4.7): register with SaveRegistry / build SimTimeSaveState here.
+        // Build + register the combined save/load participant, but only if a
+        // SaveRegistry was injected (SetSaveRegistry). The save state needs the
+        // PU-owned world domain, which is only reachable now that the module is
+        // attached to its ProcessingUnit.
+        if (mSaveRegistry != nullptr)
+        {
+            mSaveState = Dia::Core::MakeUnique<SimTimeSaveState>(
+                GetProcessingUnit()->GetWorldDomain(), mScheduler, mRegistry);
+            mSaveRegistry->Register(kTypeId, mSaveState.Get());
+        }
 
         return Dia::ApplicationFlow::StartResult::kReady;
     }
@@ -118,6 +128,14 @@ namespace Dia::SimTime {
 
     Dia::ApplicationFlow::StopResult DiaSimTimeModule::DoStop()
     {
+        // Release the save participant (mirrors the lifecycle-resource rule: what
+        // DoStart acquires, DoStop releases).
+        if (mSaveRegistry != nullptr)
+        {
+            mSaveRegistry->Unregister(kTypeId);
+        }
+        mSaveState.Reset();
+
         mMetricQueueDepth    = nullptr;
         mMetricSleepingCount = nullptr;
         mMetricTick          = nullptr;
@@ -159,6 +177,11 @@ namespace Dia::SimTime {
     void DiaSimTimeModule::RegisterWakeOnMessage(Dia::Core::StringCRC systemId, Dia::Core::StringCRC eventType)
     {
         mRegistry.RegisterWakeOnMessage(systemId, eventType);
+    }
+
+    void DiaSimTimeModule::SetSaveRegistry(Dia::SaveGame::SaveRegistry& registry)
+    {
+        mSaveRegistry = &registry;
     }
 
     Dia::SimTime::SimTimeDomainRegistry& DiaSimTimeModule::GetDomainRegistry()

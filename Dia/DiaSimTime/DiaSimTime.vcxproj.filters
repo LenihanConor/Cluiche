@@ -19,6 +19,7 @@
     <ClInclude Include="SimTimeBudget.h" />
     <ClInclude Include="IOneShotWork.h" />
     <ClInclude Include="DiaSimTimeModule.h" />
+    <ClInclude Include="SimTimeSaveState.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaMainTime.cpp" />
@@ -27,6 +28,7 @@
     <ClCompile Include="SimTimeRegistry.cpp" />
     <ClCompile Include="SimTimeBudget.cpp" />
     <ClCompile Include="DiaSimTimeModule.cpp" />
+    <ClCompile Include="SimTimeSaveState.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diasimtime.architecture.module.md">

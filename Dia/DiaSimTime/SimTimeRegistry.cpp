@@ -187,6 +187,11 @@ namespace Dia::SimTime {
         return e ? e->state : SimTimeState::kAwake;
     }
 
+    bool SimTimeRegistry::IsRegistered(Core::StringCRC systemId) const
+    {
+        return FindEntry(systemId) != nullptr;
+    }
+
     // --- Wake conditions -----------------------------------------------------
     void SimTimeRegistry::RegisterWakeOnTime(Core::StringCRC systemId, Core::TimeAbsolute at)
     {

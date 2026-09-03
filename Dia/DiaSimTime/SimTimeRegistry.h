@@ -95,6 +95,11 @@ namespace Dia::SimTime {
         void          Wake(Core::StringCRC systemId);
         // Unknown systemId -> kAwake (the default state).
         SimTimeState  GetState(Core::StringCRC systemId) const;
+        // Whether a system with this id is currently registered. Distinct from
+        // GetState (which returns kAwake for BOTH a registered-awake system and an
+        // unknown one). SimTimeSaveState::Deserialize uses this to tell a saved
+        // systemId that is no longer registered (log + skip) from one that is.
+        bool          IsRegistered(Core::StringCRC systemId) const;
 
         // --- Wake conditions --------------------------------------------------
         // Wake-on-time: schedule a wake for `at` on the injected scheduler, tagged

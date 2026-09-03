@@ -226,6 +226,9 @@
     <Filter Include="DiaSimTime">
       <UniqueIdentifier>{bbf4d9c1-57f3-452e-a2e3-bff9736245d6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaPathfinding">
+      <UniqueIdentifier>{848797c9-ea26-4ef7-af69-5e4405bcd89d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -1768,6 +1771,12 @@
     </ClCompile>
     <ClCompile Include="DiaSimTime\TestDiaSimTimeModule.cpp">
       <Filter>DiaSimTime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaSimTime\TestSimTimeSaveState.cpp">
+      <Filter>DiaSimTime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaPathfinding\TestPathfindingSystemBudgetAdapter.cpp">
+      <Filter>DiaPathfinding</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

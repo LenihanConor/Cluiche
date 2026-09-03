@@ -58,6 +58,20 @@ namespace Dia::SimTime {
         static constexpr unsigned int kBucketCapacity  = 64;
         static constexpr unsigned int kHeapCapacity    = 256;
 
+        // Read-only snapshot of one currently-pending entry, handed out by
+        // GetPendingEntries() (Task 4.7) so SimTimeSaveState::Serialize can walk
+        // every live scheduled entry across BOTH the wheel and the overflow heap
+        // without firing / removing / re-arming anything. recurringInterval is
+        // only meaningful when recurring == true (Zero() otherwise).
+        struct PendingEntryView
+        {
+            Core::TimeAbsolute  fireTime          = Core::TimeAbsolute::Zero();
+            Core::StringCRC     eventType;
+            Core::StringCRC     targetSystemId;
+            bool                recurring         = false;
+            Core::TimeRelative  recurringInterval = Core::TimeRelative::Zero(); // valid iff recurring
+        };
+
         SimTimeScheduler();
 
         // Wire this scheduler's fire events into a real EventStreamStore.
@@ -123,7 +137,60 @@ namespace Dia::SimTime {
         // Number of entries currently pending across wheel + heap combined.
         int   GetQueueDepth() const;
 
-    private:
+        // Read-only peek at every currently-pending entry, wheel + heap combined,
+        // in no particular order (Serialize doesn't need fire-time ordering).
+        // Bounded by N — entries beyond N are silently not included (kMaxEntries
+        // == 256 total cap already bounds realistic sizes; size N to that cap to
+        // guarantee completeness). This walks the same storage TickInternal does
+        // and applies the identical stale-ref rule (!s.active || ref.epoch !=
+        // s.epoch => skip), but is strictly READ-ONLY: it never frees a slot,
+        // removes a Ref, or re-arms anything. Only one live Ref per slot exists
+        // (every placement bumps the slot epoch), so no entry is reported twice.
+        // Defined inline (template): the whole walk lives in the member body so
+        // the private Ref / Slot nested types are in complete-class scope. A
+        // local lambda applies the same live-check + view-fill to both wheel and
+        // heap refs, keeping it read-only (no FreeSlot / RemoveAt / re-arm).
+        template<unsigned int N>
+        void  GetPendingEntries(Dia::Core::Containers::DynamicArrayC<PendingEntryView, N>& outEntries) const
+        {
+            auto appendIfLive = [&](const Ref& ref)
+            {
+                if (outEntries.IsFull())
+                {
+                    return;
+                }
+                const Slot& s = mSlots[ref.slotIndex];
+                if (!s.active || ref.epoch != s.epoch)
+                {
+                    return; // stale ref — same rule TickInternal uses
+                }
+                PendingEntryView view;
+                view.fireTime       = Core::TimeAbsolute::CreateFromMicroseconds(
+                                          static_cast<long long>(s.scheduledMicros));
+                view.eventType      = s.payload.eventType;
+                view.targetSystemId = s.payload.targetSystemId;
+                view.recurring      = s.recurring;
+                if (s.recurring && s.interval.has_value())
+                {
+                    view.recurringInterval = s.interval.value();
+                }
+                outEntries.Add(view);
+            };
+
+            for (int b = 0; b < kNumBuckets; ++b)
+            {
+                const Dia::Core::Containers::DynamicArrayC<Ref, kBucketCapacity>& bucket = mWheel[b];
+                for (unsigned int i = 0; i < bucket.Size(); ++i)
+                {
+                    appendIfLive(bucket[i]);
+                }
+            }
+            for (unsigned int i = 0; i < mHeap.Size(); ++i)
+            {
+                appendIfLive(mHeap[i]);
+            }
+        }
+
         // Wheel/heap store lightweight references back into the slot pool. The
         // epoch makes lazy deletion safe: Cancel/Reschedule/re-arm just bump the
         // owning slot's epoch, so any stale Ref still physically parked in a

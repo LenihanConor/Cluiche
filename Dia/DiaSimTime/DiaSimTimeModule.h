@@ -12,6 +12,8 @@
 #include <DiaSimTime/SimTimeRegistry.h>
 #include <DiaSimTime/SimTimePolicy.h>
 #include <DiaSimTime/SimTimeState.h>
+#include <DiaSimTime/SimTimeSaveState.h>
+#include <DiaCore/Memory/UniquePtr.h>
 #include <cstdint>
 
 // Forward declarations — keep the metric headers out of every consumer TU.
@@ -19,6 +21,8 @@ namespace Dia { namespace Observation { namespace Metric {
     class Gauge;
     class Counter;
 } } }
+
+namespace Dia { namespace SaveGame { class SaveRegistry; } }
 
 namespace Dia::SimTime {
 
@@ -70,6 +74,14 @@ namespace Dia::SimTime {
         void  RegisterWakeOnTime(Dia::Core::StringCRC systemId, Dia::Core::TimeAbsolute at);
         void  RegisterWakeOnMessage(Dia::Core::StringCRC systemId, Dia::Core::StringCRC eventType);
 
+        // Inject the save/load registry this module registers its SimTimeSaveState
+        // with (setter injection — Dia::ApplicationFlow::Application has no
+        // knowledge of SaveRegistry, so whoever assembles the Application +
+        // SaveManager calls this BEFORE Application::Start() drives DoStart()).
+        // Safe to never call: DoStart only builds + registers the save state when
+        // a registry was injected.
+        void  SetSaveRegistry(Dia::SaveGame::SaveRegistry& registry);
+
         // Pass-through to the ProcessingUnit-owned world clock-tree registry.
         Dia::SimTime::SimTimeDomainRegistry&  GetDomainRegistry();
         SimTimeScheduler&                     GetScheduler();
@@ -94,6 +106,13 @@ namespace Dia::SimTime {
             this, Dia::Core::StringCRC("SimTime") };
 
         uint64_t mTickCounter = 0;
+
+        // Save/load. mSaveRegistry is injected via SetSaveRegistry (nullptr until
+        // then); mSaveState is built in DoStart (it needs the PU-owned world
+        // domain, only reachable once the module is attached to its PU) and
+        // released in DoStop.
+        Dia::SaveGame::SaveRegistry*            mSaveRegistry = nullptr;
+        Dia::Core::UniquePtr<SimTimeSaveState>  mSaveState;
 
         // Metrics (registered in DoStart, nulled in DoStop).
         Dia::Observation::Metric::Gauge*   mMetricQueueDepth    = nullptr;
