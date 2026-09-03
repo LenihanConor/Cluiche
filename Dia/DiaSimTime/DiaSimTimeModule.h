@@ -60,6 +60,11 @@ namespace Dia::SimTime {
 
         explicit DiaSimTimeModule(const Dia::Core::StringCRC& instanceId);
 
+        // Re-expose the inherited no-arg overload: GetState(StringCRC) below
+        // would otherwise hide it (C++ name hiding), breaking ModuleRef<T>::Get()
+        // (which calls the generic Module::GetState() on any sibling module type).
+        using Dia::ApplicationFlow::Module::GetState;
+
         // --- Public interface (spec) -----------------------------------------
         // Registers a budgeted system with BOTH the registry (for sleep/LOD) and
         // the budget allocator (for CPU-budget gating) — the gate loop needs it

@@ -49,7 +49,7 @@ This stage satisfies AC-S1 through AC-S9 as defined in the [Infrastructure spec]
 | AC-A7 | DiaRules desperate-charge fires for at least 1 enemy (health drops below 0.2 threshold before kill) | arena.desperate_charge_triggered checkpoint passes |
 | AC-A8 | Global blackboard slots `wave1_cleared`, `wave2_cleared`, `wave3_cleared` flip true in the correct wave order | State trigger condition evaluations trace through correctly |
 | AC-A9 | Stage completes within 900 frames (30s at 30Hz) | Orchestrator timeout |
-| AC-A10 | Repeated run (Boot→Arena→Boot→Arena) produces identical `total_frames` and `total_kills` metrics | Determinism — AC-S7 |
+| AC-A10 | Repeated run (Boot→Arena→Boot→Arena) produces identical `total_kills` and `waves_completed` metrics. `total_frames` is diagnostic only — TriggerScript/EnemyAI/Objectives run through DiaSimTimeModule's wall-clock budget gate (see DiaSimTime Budget Integration below), which DiaSimTime's own spec (ST-010) documents as non-deterministic tick-to-tick, so exact frame-count equality is not required | Determinism — AC-S7 |
 
 ## Design
 
@@ -259,6 +259,18 @@ Rule "DespCharge":
 | `chosen_action` | StringCRC | UtilityAI evaluation each frame |
 
 The global blackboard is passed as the `IConditionContext` to both TriggerScriptModule and ObjectiveSet. Per-enemy blackboards serve as condition contexts for per-enemy RuleSets.
+
+### DiaSimTime Budget Integration
+
+`DiaSimTimeModule` (umbrella SimPU module, declared before `ArenaTestStageModule` in `arena_test_stage.diaapp` — Arena depends on it) drives TriggerScript/EnemyAI/Objectives instead of `OnUpdate` calling them directly. Three `ISimTimeBudgetedSystem` wrappers are registered in `OnStart` and unregistered in `OnStop`:
+
+| System | Priority tier |
+|---|---|
+| `Arena.TriggerScript` (wraps `mTriggerScript.Tick`) | kHigh |
+| `Arena.EnemyAI` (wraps `UpdateEnemyAI`) | kNormal |
+| `Arena.Objectives` (wraps `mObjectives.Evaluate`) | kBackground |
+
+This gives real multi-system contention for `DiaSimTimeModule`'s per-tier CPU budget with production code, rather than only the synthetic stand-ins DiaSimTime's own unit tests use. Consequence: these three calls are wall-clock gated (ST-010) and can be deferred/promoted a tick late under load — see AC-A10.
 
 ### Spatial Trigger: SpatialProvider Stub
 

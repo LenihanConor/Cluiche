@@ -1,5 +1,9 @@
 {
     "version": 3,
+    "streams": [
+        { "id": "SimTime", "kind": "FrameStream" },
+        { "id": "SimTimeSchedulerFire", "kind": "EventStream" }
+    ],
     "processing_units": [
         { "instance_id": "MainPU", "frequency_hz": 30, "dedicated_thread": false, "modules": [] },
         {
@@ -8,10 +12,17 @@
             "dedicated_thread": true,
             "modules": [
                 {
+                    "instance_id": "DiaSimTime",
+                    "type_id": "DiaSimTime",
+                    "stages": ["ArenaTestStage"],
+                    "dependencies": [],
+                    "channels": []
+                },
+                {
                     "instance_id": "ArenaTestStageModule",
                     "type_id": "ArenaTestStageModule",
                     "stages": ["ArenaTestStage"],
-                    "dependencies": ["VisualDebuggerModule"],
+                    "dependencies": ["DiaSimTime", "VisualDebuggerModule"],
                     "channels": [
                         { "id": "AutomationService", "role": "consumes" },
                         { "id": "RenderToSim", "role": "reads" }

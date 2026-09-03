@@ -241,6 +241,14 @@ namespace Dia { namespace ApplicationFlow {
             return (loadResult == LoadResult::kFileNotFound) ? ComposeResult::kFileNotFound : ComposeResult::kParseError;
         }
 
+        // Merge: append stage-declared streams (e.g. a stage-scoped umbrella module's
+        // own EventStream/FrameStream) onto the base manifest's stream list. Mirrors
+        // the modules-append below — no dedupe, same as modules.Add.
+        for (unsigned int i = 0; i < stageManifest.streams.Size(); ++i)
+        {
+            outManifest.streams.Add(stageManifest.streams[i]);
+        }
+
         // Merge: for each PU in stageManifest, find matching PU in outManifest and append modules
         for (unsigned int si = 0; si < stageManifest.processingUnits.Size(); ++si)
         {

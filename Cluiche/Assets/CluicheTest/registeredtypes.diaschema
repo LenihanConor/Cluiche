@@ -472,11 +472,16 @@
       "allowed_pus": "main",
       "description": "Drives automated test sequences and script-based input replay.",
       "type_id": "AutomationModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Umbrella SimPU module: assembles the sim-time scheduler, budget, and registry into the per-tick gate loop and publishes SimTimeContext onto the SimTime FrameStream.",
+      "type_id": "DiaSimTime"
     }
   ],
   "processing_units": [],
   "version": {
     "major": 1,
-    "minor": 31
+    "minor": 32
   }
 }

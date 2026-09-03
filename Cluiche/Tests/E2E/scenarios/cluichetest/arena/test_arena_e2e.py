@@ -15,7 +15,10 @@ Metrics asserted on completion:
   cluichetest.arena.powerup_collected    == 1
   cluichetest.arena.desperate_charges_fired >= 1
 
-Determinism test: second run must produce identical total_frames.
+Determinism test: second run must produce identical total_kills/waves_completed.
+total_frames is diagnostic only — TriggerScript/EnemyAI/Objectives now run
+through DiaSimTimeModule's wall-clock budget gate (ST-010: non-deterministic
+tick-to-tick under load), so exact frame-count equality is not guaranteed.
 """
 
 _STAGE = "ArenaTestStage"
@@ -60,13 +63,14 @@ def test_arena_three_wave_victory(dia_client):
 
 
 def test_arena_determinism(dia_client):
-    """Run the stage twice; total_frames must be identical both runs."""
+    """Run the stage twice; total_kills/waves_completed must be identical both runs."""
     dia_client.navigate_to(_STAGE)
     try:
         for cp, timeout in _CHECKPOINTS:
             result = dia_client.poll_checkpoint(cp, timeout_s=timeout)
             assert result["passed"], f"First run — {cp} failed: {result['message']}"
-        frames1 = dia_client.get_metric("cluichetest.arena.total_frames")
+        kills1 = dia_client.get_metric("cluichetest.arena.total_kills")
+        waves1 = dia_client.get_metric("cluichetest.arena.waves_completed")
     finally:
         dia_client.abort_stage()
         dia_client.navigate_to("Boot")
@@ -76,10 +80,13 @@ def test_arena_determinism(dia_client):
         for cp, timeout in _CHECKPOINTS:
             result = dia_client.poll_checkpoint(cp, timeout_s=timeout)
             assert result["passed"], f"Second run — {cp} failed: {result['message']}"
-        frames2 = dia_client.get_metric("cluichetest.arena.total_frames")
+        kills2 = dia_client.get_metric("cluichetest.arena.total_kills")
+        waves2 = dia_client.get_metric("cluichetest.arena.waves_completed")
     finally:
         dia_client.abort_stage()
         dia_client.navigate_to("Boot")
 
-    assert frames1 == frames2, \
-        f"Non-deterministic frame count: first={frames1}, second={frames2}"
+    assert kills1 == kills2, \
+        f"Non-deterministic kill count: first={kills1}, second={kills2}"
+    assert waves1 == waves2, \
+        f"Non-deterministic waves_completed: first={waves1}, second={waves2}"

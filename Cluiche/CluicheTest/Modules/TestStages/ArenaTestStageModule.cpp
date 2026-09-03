@@ -6,6 +6,8 @@
 #include <DiaEntitySpatial/SpatialComponent.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaStateMachine/StateMachineBuilder.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
+#include <cstdio>
 
 // ---------------------------------------------------------------------------
 // Inline JSON assets
@@ -646,9 +648,39 @@ void ArenaTestStageModule::OnStart(Dia::Automation::AutomationService* /*service
     RegisterCheckpoints();
     RegisterMetrics();
 
+    // Register once, for the module's lifetime — not per-entry. On stage exit,
+    // Application::BeginStop() drops ALL outgoing-stage modules out of kActive
+    // together before any of their DoStop() runs, so DiaSimTimeModule is never
+    // kActive by the time ArenaTestStageModule::OnStop runs and ModuleRef::Get()
+    // can never resolve it there. Re-entering the stage reuses the same
+    // long-lived wrapper objects, so guard against double-registration instead.
+    if (!mSimTimeSystemsRegistered)
+    {
+        if (auto* simTime = mSimTimeRef.Get())
+        {
+            Dia::SimTime::SimTimePolicy policy;   // default: kImmediate tier, no sleep
+            simTime->Register(&mTriggerScriptBudgeted, policy);
+            simTime->Register(&mEnemyAIBudgeted, policy);
+            simTime->Register(&mObjectivesBudgeted, policy);
+            mSimTimeSystemsRegistered = true;
+        }
+        else
+        {
+            DIA_LOG_WARNING("CluicheTest",
+                "ArenaTestStageModule::OnStart — DiaSimTimeModule unavailable; "
+                "TriggerScript/EnemyAI/Objectives will not run this entry");
+        }
+    }
+
 #ifdef DIA_DEBUG
     if (auto* vd = mVisualDebuggerRef.Get())
         vd->GetLayerManager().Register(&mDebugLayer, 10);
+
+    if (auto* cam = mCameraRef.Get())
+    {
+        mSavedCameraZoom = cam->GetActiveCamera().GetZoom();
+        cam->GetActiveCamera().SetZoom(40.0f);
+    }
 #endif
 
     DIA_LOG_INFO("CluicheTest", "ArenaTestStageModule::OnStart");
@@ -659,6 +691,13 @@ void ArenaTestStageModule::OnStart(Dia::Automation::AutomationService* /*service
 // ---------------------------------------------------------------------------
 void ArenaTestStageModule::OnUpdate(float deltaTime)
 {
+    // Cached for the DiaSimTime-budgeted wrappers (TriggerScriptBudgetedSystem,
+    // EnemyAIBudgetedSystem, ObjectivesBudgetedSystem) — they run inside
+    // DiaSimTimeModule::DoUpdate, which ticks before this OnUpdate each frame
+    // (see arena_test_stage.diaapp: DiaSimTimeModule precedes this module).
+    // SimPU is fixed-timestep, so this is a constant value in practice.
+    mLastDeltaTime = deltaTime;
+
     // 1. Advance player northward from (0,-3) until y >= 0, mark dirty.
     if (mPlayerPosition.y < 0.f)
     {
@@ -692,13 +731,10 @@ void ArenaTestStageModule::OnUpdate(float deltaTime)
         DIA_LOG_INFO("CluicheTest", "Arena: powerup collected (direct AABB)");
     }
 
-    // 4. Tick triggers (QueryRegion now sees the current player position).
-    mTriggerScript.Tick(deltaTime);
-
-    if (mGlobalConditionRegistry)
-        mObjectives.Evaluate(*mGlobalConditionRegistry);
-
-    UpdateEnemyAI(deltaTime);
+    // 4. TriggerScript.Tick / Objectives.Evaluate / UpdateEnemyAI now run via
+    //    DiaSimTimeModule's budget gate loop (TriggerScriptBudgetedSystem /
+    //    ObjectivesBudgetedSystem / EnemyAIBudgetedSystem, registered in
+    //    OnStart) instead of being called directly here.
 
     if (mMetricTotalKills)        mMetricTotalKills->Set(static_cast<double>(mTotalKills));
     if (mMetricWavesCompleted)    mMetricWavesCompleted->Set(static_cast<double>(mWavesCompleted));
@@ -714,6 +750,12 @@ void ArenaTestStageModule::OnUpdate(float deltaTime)
 // ---------------------------------------------------------------------------
 void ArenaTestStageModule::OnStop()
 {
+    // Deliberately not unregistering mTriggerScriptBudgeted/mEnemyAIBudgeted/
+    // mObjectivesBudgeted here — see the registration-guard comment in OnStart.
+    // DiaSimTimeModule is always already out of kActive by the time this runs
+    // (both modules drop out of kActive together on stage exit), so a
+    // ModuleRef<DiaSimTimeModule>::Get() here would only ever return nullptr.
+
     // TriggerScriptModule is non-copyable and has no explicit move — cannot
     // reset via assignment. Instead we clear the trigger list via LoadFromJson
     // with an empty document, and null the dependency pointers.
@@ -777,6 +819,9 @@ void ArenaTestStageModule::OnStop()
 #ifdef DIA_DEBUG
     if (auto* vd = mVisualDebuggerRef.Get())
         vd->GetLayerManager().Unregister(Dia::Core::StringCRC("CluicheTest.Arena"));
+
+    if (auto* cam = mCameraRef.Get())
+        cam->GetActiveCamera().SetZoom(mSavedCameraZoom);
 #endif
 
     DIA_LOG_INFO("CluicheTest", "ArenaTestStageModule::OnStop");
@@ -1037,8 +1082,76 @@ bool ArenaTestStageModule::AllCheckpointsPassed() const
 }
 
 #ifdef DIA_DEBUG
-void ArenaTestStageModule::ArenaDebugLayer::Draw(Dia::Core::IDebugDraw& /*draw*/)
+static const char* ArenaObjectiveStateLabel(Dia::Objective::ObjectiveState state)
 {
+    switch (state)
+    {
+        case Dia::Objective::ObjectiveState::kInactive: return "inactive";
+        case Dia::Objective::ObjectiveState::kActive:    return "active";
+        case Dia::Objective::ObjectiveState::kComplete:  return "complete";
+        case Dia::Objective::ObjectiveState::kFailed:    return "failed";
+        default:                                         return "?";
+    }
+}
+
+void ArenaTestStageModule::ArenaDebugLayer::Draw(Dia::Core::IDebugDraw& draw)
+{
+    const Dia::Core::RGBA kPlayerCol (60, 220, 60, 230);
+    const Dia::Core::RGBA kEnemyCol  (220, 60, 60, 230);
+    const Dia::Core::RGBA kEnemyLowHpCol(120, 20, 20, 230);
+    const Dia::Core::RGBA kDeadCol   (100, 100, 100, 180);
+    const Dia::Core::RGBA kZoneOutline(0, 200, 200, 200);
+    const Dia::Core::RGBA kZoneFill  (0, 200, 200, 60);
+    const Dia::Core::RGBA kTextCol   (255, 255, 255, 230);
+
+    // Power-up zone: (-1,-1) -> (1,1).
+    draw.RequestDrawRect(Dia::Maths::Vector2D(-1.f, -1.f), Dia::Maths::Vector2D(1.f, 1.f),
+        kZoneOutline, kZoneFill);
+
+    // Player.
+    const Dia::Maths::Vector2D& p = mModule->mPlayerPosition;
+    draw.RequestDrawRect(p + Dia::Maths::Vector2D(-0.4f, -0.4f), p + Dia::Maths::Vector2D(0.4f, 0.4f),
+        kPlayerCol, kPlayerCol);
+
+    // Enemies — alive ones red (darker when health < 0.2, i.e. desperate-charge
+    // threshold); dead ones grey. All spawned slots up to mEnemyCount, not just
+    // currently-alive, so kills stay visible.
+    for (unsigned int i = 0; i < mModule->mEnemyCount; ++i)
+    {
+        const EnemyAgent& e = mModule->mEnemies[i];
+        const Dia::Maths::Vector2D half(0.3f, 0.3f);
+        Dia::Core::RGBA col = kDeadCol;
+        if (e.alive)
+            col = (e.health < 0.2f) ? kEnemyLowHpCol : kEnemyCol;
+        draw.RequestDrawRect(e.position - half, e.position + half, col, col);
+    }
+
+    // Sidebar — objective states, last trigger, wave/kill counters. World-space
+    // text anchored top-left of the arena (bounds are (-10,-10)->(10,10)).
+    float sidebarY = 9.5f;
+    const float kLineStep = 0.6f;
+    char line[128];
+
+    snprintf(line, sizeof(line), "Wave %d/3  Kills %d", mModule->mWavesCompleted, mModule->mTotalKills);
+    draw.RequestDrawText(Dia::Maths::Vector2D(-9.5f, sidebarY), line, 14.f, kTextCol);
+    sidebarY -= kLineStep;
+
+    snprintf(line, sizeof(line), "Last trigger: %s",
+        mModule->mLastTriggerLabel.empty() ? "none" : mModule->mLastTriggerLabel.c_str());
+    draw.RequestDrawText(Dia::Maths::Vector2D(-9.5f, sidebarY), line, 14.f, kTextCol);
+    sidebarY -= kLineStep;
+
+    const int objectiveCount = mModule->mObjectives.GetCount();
+    for (int i = 0; i < objectiveCount; ++i)
+    {
+        const Dia::Objective::ObjectiveDef* def = mModule->mObjectives.GetAt(i);
+        if (!def)
+            continue;
+        snprintf(line, sizeof(line), "%s: %s", def->id.AsChar(),
+            ArenaObjectiveStateLabel(mModule->mObjectives.GetState(def->id)));
+        draw.RequestDrawText(Dia::Maths::Vector2D(-9.5f, sidebarY), line, 14.f, kTextCol);
+        sidebarY -= kLineStep;
+    }
 }
 
 #endif

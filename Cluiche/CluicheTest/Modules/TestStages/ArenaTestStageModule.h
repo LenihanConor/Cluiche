@@ -20,6 +20,9 @@
 #include <DiaEntity/Entity.h>
 #include <DiaMaths/Vector/Vector2D.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaApplicationFlow/ModuleRefV2.h>
+#include <DiaSimTime/DiaSimTimeModule.h>
+#include <DiaSimTime/ISimTimeBudgetedSystem.h>
 
 #include <functional>
 #include <memory>
@@ -28,8 +31,8 @@
 namespace Dia::Observation::Metric { class Gauge; }
 
 #ifdef DIA_DEBUG
-#include <DiaApplicationFlow/ModuleRefV2.h>
 #include "Modules/VisualDebuggerModule.h"
+#include "Modules/Camera2DModule.h"
 #include <DiaCore/DebugDraw/IVisualDebugger.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #endif
@@ -141,6 +144,74 @@ public:
         Callback mCallback;
     };
 
+    // -----------------------------------------------------------------------
+    // Budgeted system wrappers
+    //
+    // Registered with the umbrella DiaSimTimeModule (SimPU sibling module) so
+    // TriggerScript/Objective/EnemyAI updates run through the real per-tick
+    // budget gate loop instead of being called directly from OnUpdate. Three
+    // separate systems sharing DiaSimTimeModule's per-tier pools give genuine
+    // multi-system contention with production code (not synthetic stand-ins).
+    // Nested classes so they can call the owning module's private helpers.
+    // -----------------------------------------------------------------------
+    class TriggerScriptBudgetedSystem : public Dia::SimTime::ISimTimeBudgetedSystem
+    {
+    public:
+        explicit TriggerScriptBudgetedSystem(ArenaTestStageModule* owner) : mOwner(owner) {}
+        Dia::Core::StringCRC GetSystemId() const override
+        {
+            static const Dia::Core::StringCRC id("Arena.TriggerScript");
+            return id;
+        }
+        Dia::SimTime::SimTimePriority GetPriority() const override { return Dia::SimTime::SimTimePriority::kHigh; }
+        void UpdateBudgeted(float budgetMs) override
+        {
+            if (budgetMs <= 0.f) return;
+            mOwner->mTriggerScript.Tick(mOwner->mLastDeltaTime);
+        }
+    private:
+        ArenaTestStageModule* mOwner;
+    };
+
+    class EnemyAIBudgetedSystem : public Dia::SimTime::ISimTimeBudgetedSystem
+    {
+    public:
+        explicit EnemyAIBudgetedSystem(ArenaTestStageModule* owner) : mOwner(owner) {}
+        Dia::Core::StringCRC GetSystemId() const override
+        {
+            static const Dia::Core::StringCRC id("Arena.EnemyAI");
+            return id;
+        }
+        Dia::SimTime::SimTimePriority GetPriority() const override { return Dia::SimTime::SimTimePriority::kNormal; }
+        void UpdateBudgeted(float budgetMs) override
+        {
+            if (budgetMs <= 0.f) return;
+            mOwner->UpdateEnemyAI(mOwner->mLastDeltaTime);
+        }
+    private:
+        ArenaTestStageModule* mOwner;
+    };
+
+    class ObjectivesBudgetedSystem : public Dia::SimTime::ISimTimeBudgetedSystem
+    {
+    public:
+        explicit ObjectivesBudgetedSystem(ArenaTestStageModule* owner) : mOwner(owner) {}
+        Dia::Core::StringCRC GetSystemId() const override
+        {
+            static const Dia::Core::StringCRC id("Arena.Objectives");
+            return id;
+        }
+        Dia::SimTime::SimTimePriority GetPriority() const override { return Dia::SimTime::SimTimePriority::kBackground; }
+        void UpdateBudgeted(float budgetMs) override
+        {
+            if (budgetMs <= 0.f) return;
+            if (mOwner->mGlobalConditionRegistry)
+                mOwner->mObjectives.Evaluate(*mOwner->mGlobalConditionRegistry);
+        }
+    private:
+        ArenaTestStageModule* mOwner;
+    };
+
 protected:
     Dia::Core::StringCRC GetStageName() const override;
     unsigned int         GetBudgetFrames() const override { return 900; }
@@ -207,6 +278,20 @@ private:
     // --- Frame counter ---
     unsigned int mFrameCount = 0;
 
+    // --- DiaSimTime budget wiring ---
+    // Sibling umbrella module (declared before this one in the manifest, with
+    // this module depending on it — see arena_test_stage.diaapp). Cached
+    // deltaTime: the three wrapped systems run inside DiaSimTimeModule's gate
+    // loop (which ticks before this module's own OnUpdate each frame, per the
+    // manifest dependency order), one tick behind whatever OnUpdate last saw.
+    // SimPU is fixed-timestep, so this is a constant value in practice.
+    Dia::ApplicationFlow::ModuleRef<Dia::SimTime::DiaSimTimeModule> mSimTimeRef{this};
+    TriggerScriptBudgetedSystem mTriggerScriptBudgeted{this};
+    EnemyAIBudgetedSystem       mEnemyAIBudgeted{this};
+    ObjectivesBudgetedSystem    mObjectivesBudgeted{this};
+    float mLastDeltaTime = 1.0f / 30.0f;
+    bool  mSimTimeSystemsRegistered = false;
+
     // --- Last trigger that fired (displayed in ImGui sidebar) ---
     std::string mLastTriggerLabel;
 
@@ -252,6 +337,13 @@ private:
     };
     ArenaDebugLayer mDebugLayer{this};
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::VisualDebuggerModule> mVisualDebuggerRef{this};
+
+    // Arena's world is small-unit scale (bounds (-10,-10)->(10,10)); the shared
+    // Camera2D default zoom (1.0 = 1 world unit per pixel) renders it as a few
+    // pixels wide. Zoomed in for the duration of this stage; restored on exit
+    // since Camera2DModule is global (not stage-scoped) and other stages share it.
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::Camera2DModule> mCameraRef{this};
+    float mSavedCameraZoom = 1.0f;
 #endif
 };
 
