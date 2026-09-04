@@ -10,6 +10,9 @@
 
 #include <DiaAttribute/AttributeSchema.h>
 
+#include <DiaCondition/ConditionExpr.h>
+#include <DiaCondition/ConditionRegistry.h>
+
 namespace Dia::Attribute {
 
     // -----------------------------------------------------------------------
@@ -83,6 +86,12 @@ namespace Dia::Attribute {
         [[nodiscard]] ModifierHandle AddModifier(const AttributeModifier& modifier);
         void RemoveModifier(ModifierHandle handle);
 
+        // Registers the (non-owning) DiaCondition registry used to evaluate conditional
+        // modifiers' when_condition expressions. Caller retains ownership and must keep
+        // the registry alive for as long as any conditional modifier added after this
+        // call remains on the AttributeSet. Not required for unconditional modifiers.
+        void SetConditionRegistry(Dia::Condition::ConditionRegistry* registry);
+
         Dia::Core::StringCRC GetSchemaName() const;
 
     private:
@@ -92,8 +101,9 @@ namespace Dia::Attribute {
 
         struct ModifierEntry
         {
-            ModifierHandle     handle;
-            AttributeModifier  modifier;
+            ModifierHandle                  handle;
+            AttributeModifier               modifier;
+            Dia::Condition::ConditionExpr*   parsed_condition; // heap-owned; nullptr if when_condition was empty
         };
 
         struct AttributeSlot
@@ -104,10 +114,13 @@ namespace Dia::Attribute {
             Dia::Core::Containers::DynamicArrayC<ModifierEntry, kMaxModifiersPerAttribute> modifiers;
         };
 
-        static float ResolveValue(const AttributeSlot& slot);
+        float ResolveValue(const AttributeSlot& slot) const;
 
         Dia::Core::StringCRC mSchemaName;
         Dia::Core::Containers::HashTable<Dia::Core::StringCRC, AttributeSlot> mSlots;
+
+        // Non-owning — caller (SetConditionRegistry) retains lifetime.
+        Dia::Condition::ConditionRegistry* mConditionRegistry = nullptr;
 
         // Mints ModifierHandle identity. Payload per-slot is the owning attribute_name,
         // so RemoveModifier(handle) can locate the AttributeSlot without a linear scan

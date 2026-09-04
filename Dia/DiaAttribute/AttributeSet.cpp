@@ -3,6 +3,10 @@
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/Core/Assert.h>
 
+#include <DiaCore/Json/external/json/json.h>
+
+#include <utility>
+
 namespace Dia::Attribute {
 
     // -----------------------------------------------------------------------
@@ -21,7 +25,20 @@ namespace Dia::Attribute {
     }
 
     AttributeSet::~AttributeSet()
-    {}
+    {
+        // Release any heap-owned ConditionExpr instances still attached to outstanding
+        // conditional modifiers. AttributeSet is non-copyable/non-movable (see header),
+        // so there is no risk of a slot/entry being copied and later double-freed here.
+        for (auto it = mSlots.Begin(); it != mSlots.End(); ++it)
+        {
+            AttributeSlot& slot = it.Value();
+            for (unsigned int i = 0; i < slot.modifiers.Size(); ++i)
+            {
+                delete slot.modifiers[i].parsed_condition;
+                slot.modifiers[i].parsed_condition = nullptr;
+            }
+        }
+    }
 
     // -----------------------------------------------------------------------
     // CreateFromSchema — returns a prvalue constructed directly in the return
@@ -64,7 +81,7 @@ namespace Dia::Attribute {
     // -----------------------------------------------------------------------
     // Resolution pipeline
     // -----------------------------------------------------------------------
-    float AttributeSet::ResolveValue(const AttributeSlot& slot)
+    float AttributeSet::ResolveValue(const AttributeSlot& slot) const
     {
         float addSum          = 0.0f;
         float multiplyProduct = 1.0f;
@@ -73,7 +90,19 @@ namespace Dia::Attribute {
 
         for (unsigned int i = 0; i < slot.modifiers.Size(); ++i)
         {
-            const AttributeModifier& mod = slot.modifiers[i].modifier;
+            const ModifierEntry& entry = slot.modifiers[i];
+
+            // Conditional modifiers whose gating condition currently evaluates false
+            // contribute nothing to this resolve — they remain registered, just inactive.
+            if (entry.parsed_condition != nullptr)
+            {
+                DIA_ASSERT(mConditionRegistry != nullptr,
+                    "AttributeSet::ResolveValue: conditional modifier present but no ConditionRegistry set");
+                if (mConditionRegistry == nullptr || !entry.parsed_condition->Evaluate(*mConditionRegistry))
+                    continue;
+            }
+
+            const AttributeModifier& mod = entry.modifier;
             switch (mod.operation)
             {
             case ModifierOperation::Add:
@@ -162,14 +191,60 @@ namespace Dia::Attribute {
             return ModifierHandle::Invalid();
         }
 
+        // Conditional modifiers: parse + validate the when_condition JSON eagerly, before
+        // the modifier ever enters the array, so ResolveValue() never has to deal with an
+        // unresolvable or malformed condition (AC-4 / AC-5 of the Conditional Modifiers feature).
+        Dia::Condition::ConditionExpr* parsedCondition = nullptr;
+        if (modifier.when_condition[0] != '\0')
+        {
+            // Note: these are data/content validation failures (bad or stale game data),
+            // not programmer errors — logged via DIA_LOG_WARNING only, no DIA_ASSERT.
+            if (mConditionRegistry == nullptr)
+            {
+                DIA_LOG_WARNING("Attribute", "AttributeSet::AddModifier: attribute '%s' modifier '%s' has a when_condition but SetConditionRegistry was never called — modifier dropped",
+                    modifier.attribute_name.AsChar(), modifier.modifier_name.AsChar());
+                return ModifierHandle::Invalid();
+            }
+
+            Json::Value conditionRoot;
+            Json::Reader conditionReader;
+            const bool parsedJson = conditionReader.parse(modifier.when_condition, conditionRoot);
+            if (!parsedJson)
+            {
+                DIA_LOG_WARNING("Attribute", "AttributeSet::AddModifier: attribute '%s' modifier '%s' when_condition is not valid JSON — modifier dropped",
+                    modifier.attribute_name.AsChar(), modifier.modifier_name.AsChar());
+                return ModifierHandle::Invalid();
+            }
+
+            Dia::Core::Containers::DynamicArrayC<const char*, 32> loadErrors;
+            Dia::Condition::ConditionExpr expr = Dia::Condition::ConditionExpr::LoadFromJson(conditionRoot, loadErrors);
+            if (!expr.IsValid())
+            {
+                DIA_LOG_WARNING("Attribute", "AttributeSet::AddModifier: attribute '%s' modifier '%s' when_condition failed to parse — modifier dropped",
+                    modifier.attribute_name.AsChar(), modifier.modifier_name.AsChar());
+                return ModifierHandle::Invalid();
+            }
+
+            Dia::Core::Containers::DynamicArrayC<const char*, 32> validateErrors;
+            if (!expr.Validate(*mConditionRegistry, validateErrors))
+            {
+                DIA_LOG_WARNING("Attribute", "AttributeSet::AddModifier: attribute '%s' modifier '%s' when_condition references an accessor unresolvable in the ConditionRegistry — modifier dropped",
+                    modifier.attribute_name.AsChar(), modifier.modifier_name.AsChar());
+                return ModifierHandle::Invalid();
+            }
+
+            parsedCondition = new Dia::Condition::ConditionExpr(std::move(expr));
+        }
+
         // Mint the internal handle (payload = owning attribute_name), then translate
         // its index+generation into the public ModifierHandle tag type.
         Dia::Core::Handle<Dia::Core::StringCRC> internal = mModifierHandlePool.Allocate(modifier.attribute_name);
         ModifierHandle handle(internal.GetIndex(), internal.GetGeneration());
 
         ModifierEntry entry;
-        entry.handle   = handle;
-        entry.modifier = modifier;
+        entry.handle           = handle;
+        entry.modifier         = modifier;
+        entry.parsed_condition = parsedCondition;
         slot->modifiers.Add(entry);
 
         DIA_LOG_INFO("Attribute", "AttributeSet::AddModifier: '%s' added to attribute '%s'",
@@ -202,6 +277,8 @@ namespace Dia::Attribute {
         {
             if (slot->modifiers[i].handle == handle)
             {
+                delete slot->modifiers[i].parsed_condition;
+                slot->modifiers[i].parsed_condition = nullptr;
                 slot->modifiers.RemoveAt(i);
                 break;
             }
@@ -210,6 +287,11 @@ namespace Dia::Attribute {
         mModifierHandlePool.Free(internal);
 
         DIA_LOG_INFO("Attribute", "AttributeSet::RemoveModifier: modifier removed");
+    }
+
+    void AttributeSet::SetConditionRegistry(Dia::Condition::ConditionRegistry* registry)
+    {
+        mConditionRegistry = registry;
     }
 
     // -----------------------------------------------------------------------

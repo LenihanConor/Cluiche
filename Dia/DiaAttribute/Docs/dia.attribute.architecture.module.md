@@ -29,9 +29,12 @@ responsibilities:
   - ModifierHandle-based AddModifier/RemoveModifier with generational-handle safety
   - AttributeSetComponent — single component wrapping one AttributeSet per entity
   - DIA_LOG_INFO on schema load and AddModifier/RemoveModifier; DIA_LOG_WARNING on schema validation failure
+  - Conditional modifier gating — when_condition (DiaCondition ConditionExpr JSON) evaluated per-resolve
+    via a per-AttributeSet ConditionRegistry (SetConditionRegistry), without RemoveModifier churn
 
 non_responsibilities:
-  - when_condition evaluation (carried only — Feature 2 evaluates it)
+  - when_condition parsing/resolvability is validated eagerly at AddModifier time (invalid JSON or an
+    unresolvable accessor rejects the modifier before it is ever added — see ConditionExpr::Validate)
   - Observer/event notifications on attribute change (later feature)
   - Accessor bridge to DiaCondition/DiaBlackboard (later feature)
   - Schema-asset registry / lookup-by-name (AttributeSetComponent::OnAttach is a no-op stub until this exists)
@@ -56,6 +59,7 @@ dependencies:
     - dia.core
     - dia.observation
     - dia.entity
+    - dia.condition
   optional: []
   forbidden:
     - dia.statemachine
