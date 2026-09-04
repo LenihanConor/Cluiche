@@ -12,6 +12,7 @@
 | CluicheTest | Demo game and engine testbed that showcases Dia engine capabilities | [cluichetest.md](../applications/cluichetest/cluichetest.md) | Active |
 | CluicheEditor | Plugin-based editor application for building and debugging Cluiche games, built on DiaEditor framework | [cluicheeditor.md](../applications/cluicheeditor/cluicheeditor.md) | Draft |
 | GoogleTests | Unit testing suite for validating Dia engine modules with intelligent dirty test tracking | [googletests.md](../applications/googletests/googletests.md) | Active |
+| CoW | Crucible of Wings - game built on Dia and CluicheGameBaseline; develops on a dedicated `cow` branch with a permission guardrail requiring explicit approval for any edit to Dia, CluicheGameBaseline, CluicheTest, or CluicheEditor | [cow.md](../applications/cow/cow.md) | Draft |
 
 ## Shared Codebase
 
