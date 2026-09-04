@@ -208,6 +208,9 @@
     <Filter Include="DiaEconomy">
       <UniqueIdentifier>{EC0N0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaAttribute">
+      <UniqueIdentifier>{ATTR0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
     <Filter Include="DiaObjective">
       <UniqueIdentifier>{D5E6F7A8-B9C0-1234-EF01-678901234CDE}</UniqueIdentifier>
     </Filter>
@@ -1497,6 +1500,10 @@
     </ClCompile>
     <ClCompile Include="DiaEconomy\EconomyBusAdapterTests.cpp">
       <Filter>DiaEconomy</Filter>
+    </ClCompile>
+    <!-- DiaAttribute -->
+    <ClCompile Include="DiaAttribute\TestDiaAttributeCore.cpp">
+      <Filter>DiaAttribute</Filter>
     </ClCompile>
     <!-- DiaEntitySpawner -->
     <ClCompile Include="DiaEntitySpawner\TestEntitySpawner.cpp">
