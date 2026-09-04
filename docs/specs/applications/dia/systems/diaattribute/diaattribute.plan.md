@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/applications/dia/systems/diaattribute/diaattribute.md
-**Status:** In Progress
+**Status:** Done
 
 > New system — data-driven gameplay attribute/stat framework, sibling to DiaEconomy (same idiom: StringCRC, JSON schema, DiaCondition-gated modifiers, Observer events, DiaCore containers — no shared code). Build order: Core (Phase 1) is the load-bearing prerequisite for everything else. Conditional Modifiers, Change Notifications, and the AI Accessor Bridge (Phase 2) are independent increments on top of Core — order between them is flexible. Visual Debugger and Save/Serialization (Phase 3) build on Phase 2's modifier-stack and change-event shapes.
 >
