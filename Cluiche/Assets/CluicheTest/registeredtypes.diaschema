@@ -174,6 +174,20 @@
       "description": "",
       "fields": [],
       "type_id": "behaviour-tree-component"
+    },
+    {
+      "debug_name": "AttributeSetComponent",
+      "default_values": {
+        "schema_name": null
+      },
+      "description": "Wraps one AttributeSet \u00e2\u20ac\u201d resolved base+modifier attribute values for this entity.",
+      "fields": [
+        {
+          "kind": "string_id",
+          "name": "schema_name"
+        }
+      ],
+      "type_id": "dia.attribute.set"
     }
   ],
   "game": "cluichetest",
@@ -440,6 +454,11 @@
     },
     {
       "allowed_pus": "sim",
+      "description": "Attribute inspector: values, ranges, modifier stack for the selection",
+      "type_id": "AttributeVisualDebuggerModule"
+    },
+    {
+      "allowed_pus": "sim",
       "description": "Entity debug overlays: labels, hierarchy, stats, picking, inspector",
       "type_id": "EntityVisualDebuggerModule"
     },
@@ -482,6 +501,6 @@
   "processing_units": [],
   "version": {
     "major": 1,
-    "minor": 32
+    "minor": 33
   }
 }

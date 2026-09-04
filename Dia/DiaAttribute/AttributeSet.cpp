@@ -404,9 +404,75 @@ namespace Dia::Attribute {
         return it.GetKey();
     }
 
+    float AttributeSet::GetMinimumValueByIndex(unsigned int index) const
+    {
+        DIA_ASSERT(index < mSlots.Size(),
+            "AttributeSet::GetMinimumValueByIndex: index %u out of range (attribute count %u)", index, mSlots.Size());
+        if (index >= mSlots.Size())
+            return 0.0f;
+
+        return mSlots.GetItemByIndexConst(index).minimum_value;
+    }
+
+    float AttributeSet::GetMaximumValueByIndex(unsigned int index) const
+    {
+        DIA_ASSERT(index < mSlots.Size(),
+            "AttributeSet::GetMaximumValueByIndex: index %u out of range (attribute count %u)", index, mSlots.Size());
+        if (index >= mSlots.Size())
+            return 0.0f;
+
+        return mSlots.GetItemByIndexConst(index).maximum_value;
+    }
+
     bool AttributeSet::HasAttribute(Dia::Core::StringCRC attribute_name) const
     {
         return mSlots.ContainsKey(attribute_name);
+    }
+
+    // -----------------------------------------------------------------------
+    // Modifier-stack inspection (see header for the query-surface contract)
+    // -----------------------------------------------------------------------
+    unsigned int AttributeSet::GetModifierCountForAttribute(Dia::Core::StringCRC attribute_name) const
+    {
+        const AttributeSlot* slot = mSlots.TryGetItemConst(attribute_name);
+        DIA_ASSERT(slot != nullptr,
+            "AttributeSet::GetModifierCountForAttribute: unknown attribute '%s'", attribute_name.AsChar());
+        if (slot == nullptr)
+            return 0;
+
+        return slot->modifiers.Size();
+    }
+
+    ModifierSnapshot AttributeSet::GetModifierSnapshotForAttribute(Dia::Core::StringCRC attribute_name, unsigned int index) const
+    {
+        ModifierSnapshot snap{};
+
+        const AttributeSlot* slot = mSlots.TryGetItemConst(attribute_name);
+        DIA_ASSERT(slot != nullptr,
+            "AttributeSet::GetModifierSnapshotForAttribute: unknown attribute '%s'", attribute_name.AsChar());
+        if (slot == nullptr)
+            return snap;
+
+        DIA_ASSERT(index < slot->modifiers.Size(),
+            "AttributeSet::GetModifierSnapshotForAttribute: index %u out of range (modifier count %u) for attribute '%s'",
+            index, slot->modifiers.Size(), attribute_name.AsChar());
+        if (index >= slot->modifiers.Size())
+            return snap;
+
+        const ModifierEntry& entry = slot->modifiers[index];
+
+        snap.modifier_name = entry.modifier.modifier_name;
+        snap.operation     = entry.modifier.operation;
+        snap.value         = entry.modifier.value;
+        snap.isConditional = (entry.parsed_condition != nullptr);
+
+        // Mirrors ResolveValue's null-registry-defensive check — an unconditional modifier
+        // is always "true" (it always contributes); a conditional one is evaluated live.
+        snap.conditionCurrentlyTrue = snap.isConditional
+            ? (mConditionRegistry != nullptr && entry.parsed_condition->Evaluate(*mConditionRegistry))
+            : true;
+
+        return snap;
     }
 
     // -----------------------------------------------------------------------

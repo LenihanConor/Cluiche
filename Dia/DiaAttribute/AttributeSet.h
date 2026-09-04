@@ -47,6 +47,21 @@ namespace Dia::Attribute {
     using ModifierHandle = Dia::Core::Handle<ModifierTag>;
 
     // -----------------------------------------------------------------------
+    // ModifierSnapshot
+    //
+    // Read-only snapshot of one active modifier, for inspection (e.g. the visual
+    // debugger). Not part of the resolution pipeline — a query surface only.
+    // -----------------------------------------------------------------------
+    struct ModifierSnapshot
+    {
+        Dia::Core::StringCRC modifier_name;
+        ModifierOperation    operation;
+        float                value;
+        bool                 isConditional;           // when_condition was non-empty at AddModifier time
+        bool                 conditionCurrentlyTrue;  // meaningful only if isConditional; true for unconditional modifiers
+    };
+
+    // -----------------------------------------------------------------------
     // AttributeSet
     //
     // Resolution pipeline (fixed):
@@ -131,6 +146,26 @@ namespace Dia::Attribute {
         // if index is out of range. O(index) — intended for one-off registration-time
         // iteration, not per-frame use.
         Dia::Core::StringCRC GetAttributeNameByIndex(unsigned int index) const;
+
+        // Schema-invariant clamp range of the attribute at `index`. Returns 0.0f and asserts
+        // if index is out of range. Same index-stability contract as GetValueByIndex.
+        float GetMinimumValueByIndex(unsigned int index) const;
+        float GetMaximumValueByIndex(unsigned int index) const;
+
+        // -------------------------------------------------------------------
+        // Modifier-stack inspection
+        //
+        // Query surface only — enumerates the modifiers currently registered against
+        // one attribute, including each one's live condition state. Exists so an
+        // out-of-module inspector (DiaAttributeVisualDebugger) can display the stack
+        // without reaching into the private ModifierEntry / AttributeSlot types.
+        //
+        // Both methods assert (and return a benign default) on an unknown attribute or
+        // an out-of-range index, matching every other index/name accessor in this class.
+        // -------------------------------------------------------------------
+
+        unsigned int     GetModifierCountForAttribute(Dia::Core::StringCRC attribute_name) const;
+        ModifierSnapshot GetModifierSnapshotForAttribute(Dia::Core::StringCRC attribute_name, unsigned int index) const;
 
         // True if `attribute_name` is a known attribute on this set (i.e. present in the
         // schema this AttributeSet was created/initialized from). Used by Deserialize to

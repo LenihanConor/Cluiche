@@ -211,6 +211,9 @@
     <Filter Include="DiaAttribute">
       <UniqueIdentifier>{ATTR0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaAttributeVisualDebugger">
+      <UniqueIdentifier>{6B2F9C41-58AE-4D73-9E10-C4A7B305F282}</UniqueIdentifier>
+    </Filter>
     <Filter Include="DiaObjective">
       <UniqueIdentifier>{D5E6F7A8-B9C0-1234-EF01-678901234CDE}</UniqueIdentifier>
     </Filter>
@@ -1796,6 +1799,11 @@
     </ClCompile>
     <ClCompile Include="DiaPathfinding\TestPathfindingSystemBudgetAdapter.cpp">
       <Filter>DiaPathfinding</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DiaAttributeVisualDebugger\TestAttributeVisualDebugger.cpp">
+      <Filter>DiaAttributeVisualDebugger</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

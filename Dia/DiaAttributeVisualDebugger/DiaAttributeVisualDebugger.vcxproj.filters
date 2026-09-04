@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{3C41A9B2-7D58-4E60-9A1F-2B6C8D0E5F71}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.attributevisualdebugger.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="AttributeVisualDebugger.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="AttributeVisualDebugger.cpp" />
+  </ItemGroup>
+</Project>

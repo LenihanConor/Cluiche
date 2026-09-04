@@ -47,6 +47,18 @@
                     "channels": []
                 },
                 {
+                    "instance_id": "AttributeVisualDebuggerModule",
+                    "type_id": "AttributeVisualDebuggerModule",
+                    "stages": [
+                        "EntityTestStage"
+                    ],
+                    "dependencies": [
+                        "EntityModule",
+                        "VisualDebuggerModule"
+                    ],
+                    "channels": []
+                },
+                {
                     "instance_id": "EntityInspectorModule",
                     "type_id": "EntityInspectorModule",
                     "stages": [

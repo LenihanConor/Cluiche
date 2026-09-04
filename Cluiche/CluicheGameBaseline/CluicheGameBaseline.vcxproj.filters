@@ -120,6 +120,9 @@
     </ClCompile>
       <Filter>Types</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\AttributeVisualDebuggerModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\EntityModule.h">
@@ -247,6 +250,9 @@
       <Filter>Modules\InspectorSources</Filter>
     </ClInclude>
       <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\AttributeVisualDebuggerModule.h">
+      <Filter>Modules</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
