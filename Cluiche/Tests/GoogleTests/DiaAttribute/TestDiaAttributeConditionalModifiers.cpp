@@ -300,6 +300,84 @@ TEST(DiaAttributeConditionalModifiers, AC7_RemoveModifier_ConditionFalseAtRemova
 }
 
 // ===========================================================================
+// Destructor cleanup — a live (never-removed) CONDITIONAL modifier's heap-owned
+// ConditionExpr (ModifierEntry::parsed_condition) must be deleted by ~AttributeSet
+// without crashing. Mirrors AttributeSet_GoesOutOfScope_WithLiveSubscriber_DoesNotCrash
+// in TestDiaAttributeChangeNotifications.cpp, which covers the observer-subscription
+// side of destruction but not this separate per-modifier cleanup loop.
+// ===========================================================================
+
+TEST(DiaAttributeConditionalModifiers, AttributeSet_GoesOutOfScope_WithLiveConditionalModifier_DoesNotCrash)
+{
+    ConditionTestState state{};
+    state.ready = true; // condition currently true — modifier is live and active, not dormant
+
+    {
+        Dia::Condition::ConditionRegistry registry(&state);
+        ConfigureTestRegistry(registry);
+        AttributeSchema schema = MakeDragonSchema();
+        AttributeSet set = AttributeSet::CreateFromSchema(schema);
+        set.SetConditionRegistry(&registry);
+
+        const char* whenCondition = R"({"op":"==","slot":"actor","field":"ready","value":true})";
+        ModifierHandle h = set.AddModifier(MakeConditionalModifier("buff", "health", ModifierOperation::Add, 50.0f, whenCondition));
+        ASSERT_TRUE(h.IsValid());
+        // Deliberately never call RemoveModifier — the destructor must clean up
+        // parsed_condition itself.
+    } // set (and its live conditional modifier's heap-allocated ConditionExpr) destructs here
+
+    SUCCEED();
+}
+
+TEST(DiaAttributeConditionalModifiers, AttributeSet_GoesOutOfScope_WithTwoLiveConditionalModifiersOnDifferentAttributes_DoesNotCrash)
+{
+    ConditionTestState state{};
+    state.ready = true;
+
+    {
+        Dia::Condition::ConditionRegistry registry(&state);
+        ConfigureTestRegistry(registry);
+        AttributeSchema schema = MakeDragonSchema();
+        AttributeSet set = AttributeSet::CreateFromSchema(schema);
+        set.SetConditionRegistry(&registry);
+
+        const char* whenCondition = R"({"op":"==","slot":"actor","field":"ready","value":true})";
+        ModifierHandle h1 = set.AddModifier(MakeConditionalModifier("healthBuff", "health", ModifierOperation::Add, 50.0f, whenCondition));
+        ModifierHandle h2 = set.AddModifier(MakeConditionalModifier("strengthBuff", "strength", ModifierOperation::Add, 10.0f, whenCondition));
+        ASSERT_TRUE(h1.IsValid());
+        ASSERT_TRUE(h2.IsValid());
+        // Both left live — the destructor's slot loop must walk every attribute's
+        // slot (not just one) and delete each entry's parsed_condition.
+    }
+
+    SUCCEED();
+}
+
+TEST(DiaAttributeConditionalModifiers, AttributeSet_GoesOutOfScope_WithMixedConditionalAndUnconditionalModifiers_DoesNotCrash)
+{
+    ConditionTestState state{};
+    state.ready = true;
+
+    {
+        Dia::Condition::ConditionRegistry registry(&state);
+        ConfigureTestRegistry(registry);
+        AttributeSchema schema = MakeDragonSchema();
+        AttributeSet set = AttributeSet::CreateFromSchema(schema);
+        set.SetConditionRegistry(&registry);
+
+        const char* whenCondition = R"({"op":"==","slot":"actor","field":"ready","value":true})";
+        ModifierHandle conditional   = set.AddModifier(MakeConditionalModifier("condBuff", "health", ModifierOperation::Add, 50.0f, whenCondition));
+        ModifierHandle unconditional = set.AddModifier(MakeModifier("plainBuff", "health", ModifierOperation::Add, 25.0f));
+        ASSERT_TRUE(conditional.IsValid());
+        ASSERT_TRUE(unconditional.IsValid());
+        // Destructor's per-entry null-check on parsed_condition must delete only the
+        // conditional entry's ConditionExpr and skip the unconditional one (nullptr).
+    }
+
+    SUCCEED();
+}
+
+// ===========================================================================
 // Logging — AC-4 / AC-5 rejection paths log a warning (DIA_LOG_WARNING)
 // ===========================================================================
 

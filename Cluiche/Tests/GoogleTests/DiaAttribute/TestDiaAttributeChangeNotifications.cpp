@@ -280,6 +280,65 @@ TEST(DiaAttributeChangeNotifications, SecondMutation_StillAtMinimum_DoesNotRefir
 }
 
 // ===========================================================================
+// RemoveModifier can also trigger a boundary crossing (in either direction) —
+// NotifyIfChanged (called from RemoveModifier same as AddModifier/SetBaseValue)
+// doesn't distinguish which mutating method changed the resolved value.
+// ===========================================================================
+
+TEST(DiaAttributeChangeNotifications, RemoveModifier_CrossesIntoMinimumBoundary_FiresReachedMinimumOnce)
+{
+    AttributeSchema schema = MakeDragonSchema();
+    AttributeSet set = AttributeSet::CreateFromSchema(schema);
+
+    // strength: min 0, max 200, default 50. Together the two modifiers land inside
+    // range (50 - 60 + 15 = 5); set up before the observer subscribes.
+    ModifierHandle bigNegative   = set.AddModifier(MakeModifier("bigNegative", "strength", ModifierOperation::Add, -60.0f));
+    ModifierHandle smallPositive = set.AddModifier(MakeModifier("smallPositive", "strength", ModifierOperation::Add, 15.0f));
+    ASSERT_FLOAT_EQ(set.GetValue(StringCRC("strength")), 5.0f);
+
+    RecordingObserver observer;
+    set.GetObserverSubject().Subscribe(&observer);
+
+    // Removing smallPositive drops the resolved value to 50 - 60 = -10, clamped to 0 —
+    // a crossing INTO the minimum boundary caused by RemoveModifier itself.
+    set.RemoveModifier(smallPositive);
+
+    EXPECT_FLOAT_EQ(set.GetValue(StringCRC("strength")), 0.0f);
+    ASSERT_EQ(observer.mChangedCount, 1u);
+    EXPECT_FLOAT_EQ(observer.mChangedEvents[0].old_value, 5.0f);
+    EXPECT_FLOAT_EQ(observer.mChangedEvents[0].new_value, 0.0f);
+    EXPECT_EQ(observer.mMinCount, 1u);
+    EXPECT_EQ(observer.mMaxCount, 0u);
+}
+
+TEST(DiaAttributeChangeNotifications, RemoveModifier_CausesValueToLeaveMinimumBoundary_NoBoundaryEventFires)
+{
+    AttributeSchema schema = MakeDragonSchema();
+    AttributeSet set = AttributeSet::CreateFromSchema(schema);
+
+    // strength: min 0, max 200, default 50. Both modifiers together push it below
+    // minimum (50 - 40 - 20 = -10), clamped to 0 — set up before the observer subscribes.
+    ModifierHandle first  = set.AddModifier(MakeModifier("first", "strength", ModifierOperation::Add, -40.0f));
+    ModifierHandle second = set.AddModifier(MakeModifier("second", "strength", ModifierOperation::Add, -20.0f));
+    ASSERT_FLOAT_EQ(set.GetValue(StringCRC("strength")), 0.0f);
+
+    RecordingObserver observer;
+    set.GetObserverSubject().Subscribe(&observer);
+
+    // Removing "first" leaves only "second": 50 - 20 = 30, inside range — the value
+    // leaves the minimum boundary. There is no "left boundary" notification, so this
+    // must not re-fire ReachedMinimum, nor incorrectly fire ReachedMaximum.
+    set.RemoveModifier(first);
+
+    EXPECT_FLOAT_EQ(set.GetValue(StringCRC("strength")), 30.0f);
+    ASSERT_EQ(observer.mChangedCount, 1u);
+    EXPECT_FLOAT_EQ(observer.mChangedEvents[0].old_value, 0.0f);
+    EXPECT_FLOAT_EQ(observer.mChangedEvents[0].new_value, 30.0f);
+    EXPECT_EQ(observer.mMinCount, 0u);
+    EXPECT_EQ(observer.mMaxCount, 0u);
+}
+
+// ===========================================================================
 // AC-4 — multiple observers, Unsubscribe, and safe destruction with live subscribers
 // ===========================================================================
 
