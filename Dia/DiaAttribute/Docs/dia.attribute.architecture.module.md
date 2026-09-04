@@ -34,11 +34,31 @@ responsibilities:
   - Change notifications — AttributeObserverSubject/IAttributeObserver push OnAttributeChanged and
     edge-triggered OnAttributeReachedMaximum/OnAttributeReachedMinimum synchronously from SetBaseValue,
     AddModifier, and RemoveModifier when a mutation actually changes the resolved value
+  - AttributeAccessorBridge — exposes an AttributeSet's live resolved values to DiaRules/DiaUtilityAI
+    via DiaCondition's ConditionRegistry, registering one float accessor per schema attribute under a
+    caller-chosen slot name (resolvable as "slot_name.attribute_name" from condition JSON). Works
+    around ConditionRegistry's non-capturing float(*)(void*) accessor signature using a compile-time
+    trampoline table of kMaxBridgedAttributesPerSet (64) index-templated accessors
+  - Index-stable attribute access — AttributeSet::GetAttributeCount/GetValueByIndex/
+    GetAttributeNameByIndex; attribute slots keep their schema index for the AttributeSet's lifetime
+    (slots are never removed after InitializeFromSchema, only modifiers are)
+
+lifetime_hazards:
+  - A bridged AttributeSet MUST outlive every ConditionRegistry it was registered into.
+    ConditionRegistry has no unregister method, so there is nothing to call on entity despawn —
+    registered accessors keep dereferencing the registry's `data` pointer for the registry's whole
+    life. A registry bound to a per-entity AttributeSet must therefore be owned by, and destroyed
+    with, that entity. Known and accepted; see Open Design Question #1 in the accessor-bridge spec.
+  - AttributeAccessorBridge::RegisterAccessors cannot verify that `registry` was constructed with
+    `data` pointing at the AttributeSet being bridged (ConditionRegistry exposes no getter for
+    `data`). Violating that precondition silently reads through the wrong object.
 
 non_responsibilities:
   - when_condition parsing/resolvability is validated eagerly at AddModifier time (invalid JSON or an
     unresolvable accessor rejects the modifier before it is ever added — see ConditionExpr::Validate)
-  - Accessor bridge to DiaCondition/DiaBlackboard (later feature)
+  - Unregistering bridged accessors — ConditionRegistry has no unregister API; DiaAttribute does not
+    add one (that would be a DiaCondition change)
+  - Bool accessors — AttributeAccessorBridge bridges float attributes only
   - Schema-asset registry / lookup-by-name (AttributeSetComponent::OnAttach is a no-op stub until this exists)
   - UI and rendering
 
@@ -51,12 +71,14 @@ public_api:
     - Dia/DiaAttribute/AttributeSetComponent.h
     - Dia/DiaAttribute/IAttributeObserver.h
     - Dia/DiaAttribute/AttributeObserverSubject.h
+    - Dia/DiaAttribute/AttributeAccessorBridge.h
   namespaces:
     - Dia::Attribute
   entry_points:
     - AttributeSchema
     - AttributeSet
     - AttributeSetComponent
+    - AttributeAccessorBridge
 
 dependencies:
   required:

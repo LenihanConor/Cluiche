@@ -1511,6 +1511,9 @@
     <ClCompile Include="DiaAttribute\TestDiaAttributeChangeNotifications.cpp">
       <Filter>DiaAttribute</Filter>
     </ClCompile>
+    <ClCompile Include="DiaAttribute\TestDiaAttributeAccessorBridge.cpp">
+      <Filter>DiaAttribute</Filter>
+    </ClCompile>
     <!-- DiaEntitySpawner -->
     <ClCompile Include="DiaEntitySpawner\TestEntitySpawner.cpp">
       <Filter>DiaEntitySpawner</Filter>

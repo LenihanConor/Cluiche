@@ -106,6 +106,30 @@ namespace Dia::Attribute {
 
         Dia::Core::StringCRC GetSchemaName() const;
 
+        // -------------------------------------------------------------------
+        // Index-based access
+        //
+        // Attribute slots are index-stable: InitializeFromSchema adds them in schema
+        // index order and slots are never removed afterwards (only modifiers are), so
+        // index i here always denotes schema.GetAttributeByIndex(i)'s attribute for the
+        // lifetime of this AttributeSet.
+        //
+        // These exist so AttributeAccessorBridge can build a compile-time trampoline
+        // table of non-capturing C function pointers (one per index) over an AttributeSet
+        // whose attribute names are only known at runtime — see AttributeAccessorBridge.h.
+        // -------------------------------------------------------------------
+
+        unsigned int GetAttributeCount() const;
+
+        // Fully resolved value (same pipeline as GetValue) of the attribute at `index`.
+        // Returns 0.0f and asserts if index is out of range.
+        float GetValueByIndex(unsigned int index) const;
+
+        // Name of the attribute at `index`. Returns a default (zero) StringCRC and asserts
+        // if index is out of range. O(index) — intended for one-off registration-time
+        // iteration, not per-frame use.
+        Dia::Core::StringCRC GetAttributeNameByIndex(unsigned int index) const;
+
     private:
         // Delegating constructor used by CreateFromSchema — constructs the
         // returned prvalue directly (guaranteed elision), never via copy/move.

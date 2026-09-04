@@ -350,4 +350,41 @@ namespace Dia::Attribute {
         return mSchemaName;
     }
 
+    // -----------------------------------------------------------------------
+    // Index-based access (see header for the index-stability contract)
+    // -----------------------------------------------------------------------
+    unsigned int AttributeSet::GetAttributeCount() const
+    {
+        return mSlots.Size();
+    }
+
+    float AttributeSet::GetValueByIndex(unsigned int index) const
+    {
+        DIA_ASSERT(index < mSlots.Size(),
+            "AttributeSet::GetValueByIndex: index %u out of range (attribute count %u)", index, mSlots.Size());
+        if (index >= mSlots.Size())
+            return 0.0f;
+
+        // HashTable's payload array is append-order, so GetItemByIndexConst(index) is the
+        // slot added by InitializeFromSchema for schema attribute `index`.
+        return ResolveValue(mSlots.GetItemByIndexConst(index));
+    }
+
+    Dia::Core::StringCRC AttributeSet::GetAttributeNameByIndex(unsigned int index) const
+    {
+        DIA_ASSERT(index < mSlots.Size(),
+            "AttributeSet::GetAttributeNameByIndex: index %u out of range (attribute count %u)", index, mSlots.Size());
+        if (index >= mSlots.Size())
+            return Dia::Core::StringCRC();
+
+        // HashTable exposes GetItemByIndexConst for payloads but no GetKeyByIndex, so walk
+        // the const iterator (which does expose GetKey) `index` steps. O(index) — acceptable
+        // because callers iterate once at registration time over a small schema.
+        auto it = mSlots.Begin();
+        for (unsigned int i = 0; i < index; ++i)
+            ++it;
+
+        return it.GetKey();
+    }
+
 } // namespace Dia::Attribute
