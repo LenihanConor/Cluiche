@@ -31,11 +31,13 @@ responsibilities:
   - DIA_LOG_INFO on schema load and AddModifier/RemoveModifier; DIA_LOG_WARNING on schema validation failure
   - Conditional modifier gating — when_condition (DiaCondition ConditionExpr JSON) evaluated per-resolve
     via a per-AttributeSet ConditionRegistry (SetConditionRegistry), without RemoveModifier churn
+  - Change notifications — AttributeObserverSubject/IAttributeObserver push OnAttributeChanged and
+    edge-triggered OnAttributeReachedMaximum/OnAttributeReachedMinimum synchronously from SetBaseValue,
+    AddModifier, and RemoveModifier when a mutation actually changes the resolved value
 
 non_responsibilities:
   - when_condition parsing/resolvability is validated eagerly at AddModifier time (invalid JSON or an
     unresolvable accessor rejects the modifier before it is ever added — see ConditionExpr::Validate)
-  - Observer/event notifications on attribute change (later feature)
   - Accessor bridge to DiaCondition/DiaBlackboard (later feature)
   - Schema-asset registry / lookup-by-name (AttributeSetComponent::OnAttach is a no-op stub until this exists)
   - UI and rendering
@@ -47,6 +49,8 @@ public_api:
     - Dia/DiaAttribute/AttributeSchema.h
     - Dia/DiaAttribute/AttributeSet.h
     - Dia/DiaAttribute/AttributeSetComponent.h
+    - Dia/DiaAttribute/IAttributeObserver.h
+    - Dia/DiaAttribute/AttributeObserverSubject.h
   namespaces:
     - Dia::Attribute
   entry_points:

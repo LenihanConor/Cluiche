@@ -9,9 +9,12 @@
 #include <DiaCore/Containers/HashTables/HashTable.h>
 
 #include <DiaAttribute/AttributeSchema.h>
+#include <DiaAttribute/AttributeObserverSubject.h>
 
 #include <DiaCondition/ConditionExpr.h>
 #include <DiaCondition/ConditionRegistry.h>
+
+#include <DiaEntity/Entity.h>
 
 namespace Dia::Attribute {
 
@@ -92,6 +95,15 @@ namespace Dia::Attribute {
         // call remains on the AttributeSet. Not required for unconditional modifiers.
         void SetConditionRegistry(Dia::Condition::ConditionRegistry* registry);
 
+        // Non-owning — used to stamp AttributeChangedEvent::entity / boundary event
+        // entity params. Optional: if never called, those params carry a default
+        // (invalid) Dia::Entity::Entity.
+        void SetOwningEntity(Dia::Entity::Entity entity);
+
+        // Callers Subscribe/Unsubscribe IAttributeObserver instances directly on the
+        // returned reference.
+        AttributeObserverSubject& GetObserverSubject();
+
         Dia::Core::StringCRC GetSchemaName() const;
 
     private:
@@ -116,11 +128,23 @@ namespace Dia::Attribute {
 
         float ResolveValue(const AttributeSlot& slot) const;
 
+        // Diffs before/after the resolved value of a slot and fires OnAttributeChanged
+        // plus the edge-triggered OnAttributeReachedMaximum/Minimum notifications as
+        // appropriate. No-op if before == after. Called only on the success path of a
+        // mutating method, after the mutation has already been applied to slot.
+        void NotifyIfChanged(Dia::Core::StringCRC attribute_name, const AttributeSlot& slot, float before, float after);
+
         Dia::Core::StringCRC mSchemaName;
         Dia::Core::Containers::HashTable<Dia::Core::StringCRC, AttributeSlot> mSlots;
 
         // Non-owning — caller (SetConditionRegistry) retains lifetime.
         Dia::Condition::ConditionRegistry* mConditionRegistry = nullptr;
+
+        // Non-owning — caller (SetOwningEntity) retains lifetime. Default-constructed
+        // (invalid handle) when AttributeSet is used standalone without an owning entity.
+        Dia::Entity::Entity mOwningEntity;
+
+        AttributeObserverSubject mObserverSubject;
 
         // Mints ModifierHandle identity. Payload per-slot is the owning attribute_name,
         // so RemoveModifier(handle) can locate the AttributeSlot without a linear scan

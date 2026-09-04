@@ -15,6 +15,8 @@ namespace Dia::Attribute {
     AttributeSet::AttributeSet()
         : mSchemaName()
         , mSlots()
+        , mOwningEntity()
+        , mObserverSubject()
         , mModifierHandlePool()
     {}
 
@@ -131,6 +133,25 @@ namespace Dia::Attribute {
         return resolved;
     }
 
+    void AttributeSet::NotifyIfChanged(Dia::Core::StringCRC attribute_name, const AttributeSlot& slot, float before, float after)
+    {
+        if (before == after)
+            return;
+
+        AttributeChangedEvent e{ mOwningEntity, attribute_name, before, after };
+        mObserverSubject.NotifyAttributeChanged(e);
+
+        const bool wasAtMax = (before == slot.maximum_value);
+        const bool isAtMax  = (after  == slot.maximum_value);
+        if (!wasAtMax && isAtMax)
+            mObserverSubject.NotifyAttributeReachedMaximum(mOwningEntity, attribute_name);
+
+        const bool wasAtMin = (before == slot.minimum_value);
+        const bool isAtMin  = (after  == slot.minimum_value);
+        if (!wasAtMin && isAtMin)
+            mObserverSubject.NotifyAttributeReachedMinimum(mOwningEntity, attribute_name);
+    }
+
     float AttributeSet::GetValue(Dia::Core::StringCRC attribute_name) const
     {
         const AttributeSlot* slot = mSlots.TryGetItemConst(attribute_name);
@@ -158,7 +179,11 @@ namespace Dia::Attribute {
         if (slot == nullptr)
             return;
 
+        const float before = ResolveValue(*slot);
         slot->base_value = value;
+        const float after = ResolveValue(*slot);
+
+        NotifyIfChanged(attribute_name, *slot, before, after);
     }
 
     // -----------------------------------------------------------------------
@@ -241,11 +266,16 @@ namespace Dia::Attribute {
         Dia::Core::Handle<Dia::Core::StringCRC> internal = mModifierHandlePool.Allocate(modifier.attribute_name);
         ModifierHandle handle(internal.GetIndex(), internal.GetGeneration());
 
+        const float before = ResolveValue(*slot);
+
         ModifierEntry entry;
         entry.handle           = handle;
         entry.modifier         = modifier;
         entry.parsed_condition = parsedCondition;
         slot->modifiers.Add(entry);
+
+        const float after = ResolveValue(*slot);
+        NotifyIfChanged(modifier.attribute_name, *slot, before, after);
 
         DIA_LOG_INFO("Attribute", "AttributeSet::AddModifier: '%s' added to attribute '%s'",
             modifier.modifier_name.AsChar(), modifier.attribute_name.AsChar());
@@ -273,13 +303,21 @@ namespace Dia::Attribute {
         if (slot == nullptr)
             return;
 
+        // Value copy — ownerAttr is a pointer into pool storage that Free() below may invalidate.
+        Dia::Core::StringCRC attrName = *ownerAttr;
+
         for (unsigned int i = 0; i < slot->modifiers.Size(); ++i)
         {
             if (slot->modifiers[i].handle == handle)
             {
+                const float before = ResolveValue(*slot);
+
                 delete slot->modifiers[i].parsed_condition;
                 slot->modifiers[i].parsed_condition = nullptr;
                 slot->modifiers.RemoveAt(i);
+
+                const float after = ResolveValue(*slot);
+                NotifyIfChanged(attrName, *slot, before, after);
                 break;
             }
         }
@@ -292,6 +330,16 @@ namespace Dia::Attribute {
     void AttributeSet::SetConditionRegistry(Dia::Condition::ConditionRegistry* registry)
     {
         mConditionRegistry = registry;
+    }
+
+    void AttributeSet::SetOwningEntity(Dia::Entity::Entity entity)
+    {
+        mOwningEntity = entity;
+    }
+
+    AttributeObserverSubject& AttributeSet::GetObserverSubject()
+    {
+        return mObserverSubject;
     }
 
     // -----------------------------------------------------------------------

@@ -77,11 +77,14 @@
     <ClInclude Include="AttributeSchema.h" />
     <ClInclude Include="AttributeSet.h" />
     <ClInclude Include="AttributeSetComponent.h" />
+    <ClInclude Include="IAttributeObserver.h" />
+    <ClInclude Include="AttributeObserverSubject.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AttributeSchema.cpp" />
     <ClCompile Include="AttributeSet.cpp" />
     <ClCompile Include="AttributeSetComponent.cpp" />
+    <ClCompile Include="AttributeObserverSubject.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.attribute.architecture.module.md" />
