@@ -24,9 +24,11 @@
 #include <DiaObservation/Log/LogLevel.h>
 
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/Core/Assert.h>
 #include <DiaCore/Json/external/json/json.h>
 
 #include <string.h>
+#include <stdio.h>
 
 using namespace Dia::Attribute;
 using Dia::Core::StringCRC;
@@ -334,4 +336,85 @@ TEST(DiaAttributeSaveSerialization, AC4_DeserializeTwiceIntoIndependentSets_Both
     // proves the two sets' handle pools are fully independent post-Deserialize.
     targetA.SetBaseValue(StringCRC("health"), 1.0f);
     EXPECT_FLOAT_EQ(targetB.GetBaseValue(StringCRC("health")), 1000.0f);
+}
+
+// ===========================================================================
+// Bug fix #1 — Deserialize must not trip AddModifier's internal
+// "modifier stack is full" DIA_ASSERT on a legitimate save-file scenario: a
+// saved attribute with more than kMaxModifiersPerAttribute modifier entries
+// (corrupted, hand-edited, or saved under a since-lowered cap).
+//
+// The JSON tree below is hand-constructed to match the exact shape
+// AttributeSet::Serialize produces (see kKeyBaseValues/kKeyModifiers/... in
+// AttributeSet.cpp) rather than going through Serialize/AddModifier, because
+// the real AddModifier path already refuses a 17th unconditional Add on one
+// attribute — the only way to reproduce "save data with too many modifiers"
+// is to build the JSON directly, exactly as a corrupted/hand-edited/schema-
+// drifted save file would look on disk.
+//
+// Uses the swap-g_pAssertFunc-for-a-recording-no-op precedent already
+// established in Core/Threading/TestJobSystem.cpp and
+// DiaMessageBus/TestDiaMessageBusCore.cpp to safely observe whether
+// AddModifier's internal assert fires, without crashing the test process.
+// ===========================================================================
+
+namespace
+{
+    int gDeserializeFullStackAssertCount = 0;
+    void RecordingAssertHandler_DeserializeFullStack(const char*, const char*, int, const char*, ...)
+    {
+        ++gDeserializeFullStackAssertCount;
+    }
+}
+
+TEST_F(DiaAttributeSaveSerializationLoggingTest, Deserialize_AttributeAlreadyAtModifierCap_DropsExcessWithWarning_NeverTripsAddModifiersAssert)
+{
+    AttributeSchema schema = MakeDragonSchema();
+    AttributeSet target = AttributeSet::CreateFromSchema(schema);
+
+    // Hand-built save JSON: kMaxModifiersPerAttribute + 1 (17) unconditional Add
+    // modifiers, all targeting "health" — one attribute already saturated.
+    const unsigned int kSavedModifierCount = AttributeSet::kMaxModifiersPerAttribute + 1;
+
+    Json::Value root(Json::objectValue);
+    root["baseValues"] = Json::Value(Json::objectValue);
+
+    Json::Value modifiers(Json::arrayValue);
+    for (unsigned int i = 0; i < kSavedModifierCount; ++i)
+    {
+        char nameBuf[32];
+        snprintf(nameBuf, sizeof(nameBuf), "mod_%02u", i);
+
+        Json::Value elem(Json::objectValue);
+        elem["modifierName"]  = nameBuf;
+        elem["attributeName"] = "health";
+        elem["operation"]     = static_cast<Json::Int>(ModifierOperation::Add);
+        elem["value"]         = 1.0f;
+        elem["whenCondition"] = "";
+        modifiers.append(elem);
+    }
+    root["modifiers"] = modifiers;
+
+    auto* prevAssertFunc = Dia::Core::g_pAssertFunc;
+    Dia::Core::g_pAssertFunc = RecordingAssertHandler_DeserializeFullStack;
+    gDeserializeFullStackAssertCount = 0;
+
+    FlushLogs();
+    mSink.Clear();
+
+    LoadContext load(root);
+    target.Deserialize(load);
+
+    FlushLogs();
+    Dia::Core::g_pAssertFunc = prevAssertFunc;
+
+    // The fix: Deserialize's own pre-check drops the 17th saved modifier before ever
+    // calling AddModifier, so AddModifier's internal full-stack DIA_ASSERT is never reached.
+    EXPECT_EQ(gDeserializeFullStackAssertCount, 0);
+
+    // Exactly kMaxModifiersPerAttribute (16) modifiers actually applied; the 17th dropped.
+    EXPECT_EQ(target.GetModifierCountForAttribute(StringCRC("health")), AttributeSet::kMaxModifiersPerAttribute);
+
+    // A warning was logged for the dropped modifier.
+    EXPECT_GE(mSink.CountByLevel(Dia::Observation::Log::LogLevel::kWarning), 1u);
 }

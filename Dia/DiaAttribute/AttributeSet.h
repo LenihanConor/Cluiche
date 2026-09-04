@@ -207,6 +207,16 @@ namespace Dia::Attribute {
             float minimum_value = 0.0f;
             float maximum_value = 0.0f;
             Dia::Core::Containers::DynamicArrayC<ModifierEntry, kMaxModifiersPerAttribute> modifiers;
+
+            // Per-SLOT reentrancy guard for ResolveValue (see AttributeSet.cpp). Deliberately
+            // scoped to one attribute slot, not the whole AttributeSet: a conditional modifier
+            // on attribute A legitimately gating on a DIFFERENT attribute B of the same set
+            // (AttributeAccessorBridge) causes a nested ResolveValue call on B's slot while A's
+            // is still resolving — that is normal, non-cyclic cross-attribute evaluation and
+            // must not trip this guard. Only A's own slot re-entering ITS OWN ResolveValue call
+            // (the true self-reference cycle this guard exists to catch) must trip it. `mutable`
+            // because ResolveValue takes `const AttributeSlot&`.
+            mutable bool resolving = false;
         };
 
         float ResolveValue(const AttributeSlot& slot) const;

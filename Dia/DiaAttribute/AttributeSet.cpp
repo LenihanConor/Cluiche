@@ -102,6 +102,40 @@ namespace Dia::Attribute {
     // -----------------------------------------------------------------------
     float AttributeSet::ResolveValue(const AttributeSlot& slot) const
     {
+        // Reentrancy guard: a conditional modifier's when_condition can reference an
+        // accessor (via AttributeAccessorBridge) that reads back through GetValueByIndex
+        // into THIS SAME SLOT's resolution — e.g. attribute "health" gated on a condition
+        // that itself reads "health". Without this guard that is unbounded recursion
+        // (stack overflow), not a graceful failure. Detect it and break the cycle by
+        // returning the un-resolved base value instead.
+        //
+        // Deliberately scoped per-SLOT (slot.resolving), not per-AttributeSet: a
+        // conditional modifier on attribute A legitimately gating on a DIFFERENT
+        // attribute B of the same set (AttributeAccessorBridge) causes a nested
+        // ResolveValue call on B's slot while A's is still resolving — that is normal,
+        // non-cyclic cross-attribute evaluation and must not trip this guard.
+        if (slot.resolving)
+        {
+            DIA_ASSERT(false,
+                "AttributeSet::ResolveValue: reentrant call detected — a conditional modifier's "
+                "when_condition references an accessor that reads back into this same attribute's "
+                "resolution, causing infinite recursion. Returning the un-resolved base value to break the cycle.");
+            DIA_LOG_WARNING("Attribute",
+                "AttributeSet::ResolveValue: reentrant resolution detected — returning base_value to break a self-referencing conditional-modifier cycle");
+            return slot.base_value;
+        }
+
+        // RAII guard: guarantees slot.resolving is reset to false on every exit from this
+        // function (including any early return added in future edits), rather than relying
+        // on a manual reset placed before each return statement.
+        struct ScopedResolveGuard
+        {
+            bool& flag;
+            ~ScopedResolveGuard() { flag = false; }
+        };
+        slot.resolving = true;
+        ScopedResolveGuard scopedGuard{ slot.resolving };
+
         float addSum          = 0.0f;
         float multiplyProduct = 1.0f;
         bool  hasOverride     = false;
@@ -561,6 +595,20 @@ namespace Dia::Attribute {
                     DIA_LOG_WARNING("Attribute",
                         "AttributeSet::Deserialize: saved modifier '%s' references attribute '%s' which no longer exists in the current schema — dropped",
                         modifierNameBuf, attributeNameBuf);
+                    continue;
+                }
+
+                // Same reasoning as the HasAttribute check above, for AddModifier's OTHER
+                // programmer-bug assert: a save file can legitimately carry more than
+                // kMaxModifiersPerAttribute modifiers for one attribute (corrupted, hand-edited,
+                // or saved under a since-lowered cap). That is schema/data drift, not a
+                // programmer error, so it must never reach AddModifier's internal
+                // DIA_ASSERT(false, "...modifier stack is full") — pre-check and drop instead.
+                if (GetModifierCountForAttribute(attrName) >= kMaxModifiersPerAttribute)
+                {
+                    DIA_LOG_WARNING("Attribute",
+                        "AttributeSet::Deserialize: attribute '%s' modifier stack is already full (%u) — saved modifier '%s' dropped",
+                        attributeNameBuf, kMaxModifiersPerAttribute, modifierNameBuf);
                     continue;
                 }
 
