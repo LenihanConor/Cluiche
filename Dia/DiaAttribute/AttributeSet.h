@@ -16,6 +16,8 @@
 
 #include <DiaEntity/Entity.h>
 
+#include <DiaSaveGame/ISaveable.h>
+
 namespace Dia::Attribute {
 
     // -----------------------------------------------------------------------
@@ -62,7 +64,7 @@ namespace Dia::Attribute {
     // AttributeSet (e.g. AttributeSetComponent) must use InitializeFromSchema()
     // to populate it in place instead of assigning a freshly-created instance.
     // -----------------------------------------------------------------------
-    class AttributeSet
+    class AttributeSet : public Dia::SaveGame::ISaveable
     {
     public:
         static const unsigned int kMaxModifiersPerAttribute    = 16;
@@ -129,6 +131,28 @@ namespace Dia::Attribute {
         // if index is out of range. O(index) — intended for one-off registration-time
         // iteration, not per-frame use.
         Dia::Core::StringCRC GetAttributeNameByIndex(unsigned int index) const;
+
+        // True if `attribute_name` is a known attribute on this set (i.e. present in the
+        // schema this AttributeSet was created/initialized from). Used by Deserialize to
+        // pre-check a saved modifier's attribute before ever calling AddModifier — see .cpp.
+        bool HasAttribute(Dia::Core::StringCRC attribute_name) const;
+
+        // -------------------------------------------------------------------
+        // Dia::SaveGame::ISaveable
+        //
+        // Persists every attribute's base value and its full active modifier list
+        // (modifier_name, attribute_name, operation, value, when_condition). A saved
+        // modifier whose attribute_name no longer exists in the current schema is
+        // dropped on load with a DIA_LOG_WARNING (schema drift between save and load
+        // is expected data-compatibility handling, not a programmer error).
+        //
+        // ModifierHandle values are NOT preserved across save/load — Deserialize always
+        // calls the public AddModifier, which mints fresh handles from this instance's
+        // own HandlePool.
+        // -------------------------------------------------------------------
+        void     Serialize  (Dia::SaveGame::SaveContext& ctx) const override;
+        void     Deserialize(Dia::SaveGame::LoadContext& ctx)       override;
+        uint32_t GetVersion () const override { return 1; }
 
     private:
         // Delegating constructor used by CreateFromSchema — constructs the

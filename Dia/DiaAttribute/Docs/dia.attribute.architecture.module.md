@@ -42,6 +42,10 @@ responsibilities:
   - Index-stable attribute access — AttributeSet::GetAttributeCount/GetValueByIndex/
     GetAttributeNameByIndex; attribute slots keep their schema index for the AttributeSet's lifetime
     (slots are never removed after InitializeFromSchema, only modifiers are)
+  - Save/load — AttributeSet implements Dia::SaveGame::ISaveable: Serialize/Deserialize round-trip
+    every attribute's base value and its full active modifier list; a saved modifier whose
+    attribute no longer exists in the current schema is dropped with a DIA_LOG_WARNING rather than
+    a crash; deserialized modifiers always receive freshly-issued ModifierHandle values
 
 lifetime_hazards:
   - A bridged AttributeSet MUST outlive every ConditionRegistry it was registered into.
@@ -86,6 +90,7 @@ dependencies:
     - dia.observation
     - dia.entity
     - dia.condition
+    - dia.savegame
   optional: []
   forbidden:
     - dia.statemachine

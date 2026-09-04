@@ -5,9 +5,26 @@
 
 #include <DiaCore/Json/external/json/json.h>
 
+#include <DiaSaveGame/SaveContext.h>
+#include <DiaSaveGame/LoadContext.h>
+
+#include <cstring>
 #include <utility>
 
 namespace Dia::Attribute {
+
+    namespace {
+
+        // --- JSON keys (StringCRC's AsChar() is used as the jsoncpp member key) ---
+        const Dia::Core::StringCRC kKeyBaseValues    ("baseValues");
+        const Dia::Core::StringCRC kKeyModifiers     ("modifiers");
+        const Dia::Core::StringCRC kKeyModifierName  ("modifierName");
+        const Dia::Core::StringCRC kKeyAttributeName ("attributeName");
+        const Dia::Core::StringCRC kKeyOperation     ("operation");
+        const Dia::Core::StringCRC kKeyValue         ("value");
+        const Dia::Core::StringCRC kKeyWhenCondition ("whenCondition");
+
+    } // anonymous namespace
 
     // -----------------------------------------------------------------------
     // Construction
@@ -385,6 +402,113 @@ namespace Dia::Attribute {
             ++it;
 
         return it.GetKey();
+    }
+
+    bool AttributeSet::HasAttribute(Dia::Core::StringCRC attribute_name) const
+    {
+        return mSlots.ContainsKey(attribute_name);
+    }
+
+    // -----------------------------------------------------------------------
+    // Dia::SaveGame::ISaveable
+    // -----------------------------------------------------------------------
+    void AttributeSet::Serialize(Dia::SaveGame::SaveContext& ctx) const
+    {
+        // 1. Base values — a plain named object, keyed by attribute name.
+        ctx.BeginObject(kKeyBaseValues);
+        for (unsigned int i = 0; i < GetAttributeCount(); ++i)
+        {
+            Dia::Core::StringCRC name = GetAttributeNameByIndex(i);
+            ctx.Write(name, GetBaseValue(name));
+        }
+        ctx.EndObject();
+
+        // 2. Full active modifier list, across every attribute slot.
+        ctx.BeginArray(kKeyModifiers);
+        for (auto it = mSlots.Begin(); it != mSlots.End(); ++it)
+        {
+            const AttributeSlot& slot = it.Value();
+            for (unsigned int i = 0; i < slot.modifiers.Size(); ++i)
+            {
+                const AttributeModifier& modifier = slot.modifiers[i].modifier;
+
+                Json::Value elem(Json::objectValue);
+                elem[kKeyModifierName.AsChar()]  = modifier.modifier_name.AsChar();
+                elem[kKeyAttributeName.AsChar()] = modifier.attribute_name.AsChar();
+                elem[kKeyOperation.AsChar()]     = static_cast<Json::Int>(modifier.operation);
+                elem[kKeyValue.AsChar()]         = modifier.value;
+                elem[kKeyWhenCondition.AsChar()] = modifier.when_condition; // empty string if unconditional
+                ctx.CurrentNode().append(elem);
+            }
+        }
+        ctx.EndArray();
+    }
+
+    void AttributeSet::Deserialize(Dia::SaveGame::LoadContext& ctx)
+    {
+        // 1. Base values — only ever reads keys for attributes this (possibly-newer)
+        //    schema still has; any saved base value for an attribute this schema has
+        //    since dropped is simply never read (LoadContext::Read returns false).
+        if (ctx.BeginObject(kKeyBaseValues))
+        {
+            for (unsigned int i = 0; i < GetAttributeCount(); ++i)
+            {
+                Dia::Core::StringCRC name = GetAttributeNameByIndex(i);
+                float value = 0.0f;
+                if (ctx.Read(name, value))
+                    SetBaseValue(name, value);
+            }
+            ctx.EndObject();
+        }
+
+        // 2. Modifiers — reconstructed via the public AddModifier, so Core's own
+        //    validation (full-stack rejection, conditional-modifier parsing/validation)
+        //    applies exactly as it would to any other caller. Handles are freshly
+        //    issued by THIS instance's HandlePool (AC-4) — never assumed stable.
+        uint32_t modifierCount = 0;
+        if (ctx.BeginArray(kKeyModifiers, modifierCount))
+        {
+            for (uint32_t i = 0; i < modifierCount; ++i)
+            {
+                ctx.SetArrayIndex(i);
+
+                char    modifierNameBuf[64]  = {};
+                char    attributeNameBuf[64] = {};
+                int32_t operationVal         = 0;
+                float   value                = 0.0f;
+                char    whenConditionBuf[128] = {}; // matches AttributeModifier::when_condition's size
+
+                ctx.Read(kKeyModifierName,  modifierNameBuf,  sizeof(modifierNameBuf));
+                ctx.Read(kKeyAttributeName, attributeNameBuf, sizeof(attributeNameBuf));
+                ctx.Read(kKeyOperation,     operationVal);
+                ctx.Read(kKeyValue,         value);
+                ctx.Read(kKeyWhenCondition, whenConditionBuf, sizeof(whenConditionBuf));
+
+                // AC-2: the attribute this saved modifier targets may no longer exist in
+                // the current schema. Check BEFORE calling AddModifier — AddModifier's own
+                // DIA_ASSERT for an unknown attribute exists to catch a *programmer* bug,
+                // not this legitimate save/schema-drift condition, so it must never be
+                // reached from here.
+                Dia::Core::StringCRC attrName(attributeNameBuf);
+                if (!HasAttribute(attrName))
+                {
+                    DIA_LOG_WARNING("Attribute",
+                        "AttributeSet::Deserialize: saved modifier '%s' references attribute '%s' which no longer exists in the current schema — dropped",
+                        modifierNameBuf, attributeNameBuf);
+                    continue;
+                }
+
+                AttributeModifier modifier{};
+                modifier.modifier_name  = Dia::Core::StringCRC(modifierNameBuf);
+                modifier.attribute_name = attrName;
+                modifier.operation      = static_cast<ModifierOperation>(operationVal);
+                modifier.value          = value;
+                strncpy_s(modifier.when_condition, sizeof(modifier.when_condition), whenConditionBuf, _TRUNCATE);
+
+                AddModifier(modifier); // handle discarded — fresh handles are the contract (AC-4)
+            }
+            ctx.EndArray();
+        }
     }
 
 } // namespace Dia::Attribute

@@ -775,6 +775,7 @@
     <ClCompile Include="DiaAttribute\TestDiaAttributeConditionalModifiers.cpp" />
     <ClCompile Include="DiaAttribute\TestDiaAttributeChangeNotifications.cpp" />
     <ClCompile Include="DiaAttribute\TestDiaAttributeAccessorBridge.cpp" />
+    <ClCompile Include="DiaAttribute\TestDiaAttributeSaveSerialization.cpp" />
     <ClCompile Include="DiaSaveGame\TestSaveLoadContext.cpp" />
     <ClCompile Include="DiaSaveGame\TestSaveManifest.cpp" />
     <ClCompile Include="DiaSaveGame\TestSaveManager.cpp" />
