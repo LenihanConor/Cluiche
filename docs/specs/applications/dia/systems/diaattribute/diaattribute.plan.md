@@ -42,7 +42,7 @@
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 5 | [visual-debugger](visual-debugger.md) — `DiaAttributeVisualDebugger` `IDebugDomain`, push+poll dual update path | AC-1..AC-5 (GoogleTest) + panel visible | Not Started | sonnet | Prereq: 2, 3 |
+| 5 | [visual-debugger](visual-debugger.md) — `DiaAttributeVisualDebugger` `IDebugDomain`, push+poll dual update path | AC-1..AC-5 (GoogleTest) + panel visible | Done | sonnet | Prereq: 2, 3; 23 GoogleTests pass (AC-1..AC-5); 97/97 DiaAttribute+VD suites green. Panel-list appearance needs a human keypress; E2E entity_test_stage smoke passes with the module active. |
 | 6 | [save-serialization](save-serialization.md) — `AttributeSet : ISaveable`, `SaveContext`/`LoadContext` tree serialization | `TestDiaAttributeSaveSerialization*` | Done | sonnet | Prereq: 1. Partially blocked on system spec ODQ #2 (time-limited modifier duration) — do not add a speculative duration field if that question is still unresolved when this task starts.; 74/74 DiaAttribute* pass (70 existing + 4 new, AC-1..4). Followed DiaSimTime::SimTimeSaveState's proven array-of-objects pattern instead of spec's untested BeginObject-per-element sketch. |
 
 ---
