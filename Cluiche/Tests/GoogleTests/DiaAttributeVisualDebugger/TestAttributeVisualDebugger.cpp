@@ -17,6 +17,7 @@
 
 #include <DiaAttributeVisualDebugger/AttributeVisualDebugger.h>
 
+#include <DiaAttribute/AttributeAccessorBridge.h>
 #include <DiaAttribute/AttributeSchema.h>
 #include <DiaAttribute/AttributeSet.h>
 #include <DiaAttribute/AttributeSetComponent.h>
@@ -27,13 +28,18 @@
 #include <DiaEntity/Domain.h>
 #include <DiaEntity/ComponentPool.h>
 
+#include <DiaSaveGame/SaveContext.h>
+#include <DiaSaveGame/LoadContext.h>
+
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
 
+#include <stdio.h>
 #include <string.h>
+#include <string>
 
 using Dia::Attribute::AttributeModifier;
 using Dia::Attribute::AttributeSchema;
@@ -612,6 +618,379 @@ TEST(AttributeVisualDebugger, OnCommand_UnknownCommandAndMalformedArgs_AreNoOps)
     h.mDebugger.OnCommand(StringCRC("toggle"), args);
 
     EXPECT_TRUE(h.State()["drawers"][0u]["enabled"].asBool()) << "no malformed command may flip state";
+}
+
+// ===========================================================================
+// Bug fix — use-after-free in RebindObserver when the previously-observed
+// entity/component was destroyed since the last GetJSONState() call.
+//
+// RebindObserver used to unconditionally dereference mObservedComponent to
+// unsubscribe the debugger, with no liveness check on the entity that owned it.
+// If that entity (and its AttributeSetComponent) was destroyed since the last
+// GetJSONState() call, mObservedComponent is a dangling/stale pointer — the
+// component's storage may have been destructed and its pool slot recycled.
+// The fix tracks mObservedEntity alongside mObservedComponent and only
+// dereferences the previous component if Domain::GetAliveEntity confirms it is
+// still alive with the same generation.
+//
+// NOTE ON PROVING THIS RED (see task report for the full account): this
+// codebase's ComponentPool/HandlePool storage is a fixed-size byte array (no
+// heap), and AttributeObserverSubject's own storage is a fixed-size
+// DynamicArrayC<IAttributeObserver*, 16> (also no heap). HandlePool::Free()
+// calls ~T() in place but does not poison/zero the freed bytes. So dereferencing
+// the stale pointer in a short-lived, single-threaded test reads
+// already-destructed-but-still-resident memory — undefined behaviour, but not
+// memory that is reliably unmapped/poisoned/overwritten by anything else before
+// this test observes it. This test therefore cannot and does not claim to
+// reliably crash on the pre-fix code; run against the pre-fix code it completed
+// without crashing (quoted in the task report). What IS asserted, on both the
+// pre-fix and post-fix code, is the observable state-based contract: the
+// destroy+reselect sequence must not corrupt the debugger's bookkeeping, must
+// rebuild exactly once per real selection change, and must leave the domain
+// able to cleanly observe a fresh, unrelated entity afterwards.
+// ===========================================================================
+
+TEST(AttributeVisualDebugger, Bugfix_ObservedEntityDestroyed_ThenDifferentEntitySelected_NoCrash)
+{
+    Harness h;
+    h.CreateSelectedAttributeEntity(); // entity A, selected
+
+    h.State(); // subscribes the debugger to A's AttributeSet
+    ASSERT_EQ(h.mDebugger.GetRebuildCountForTesting(), 1u);
+
+    // Destroy A. Applied at EndOfFrame: its AttributeSetComponent (and the AttributeSet
+    // the debugger is subscribed to) is detached and its pool slot freed.
+    h.mDomain.QueueDestroy(h.mEntity);
+    h.mDomain.EndOfFrame();
+
+    // Select a DIFFERENT entity with no AttributeSetComponent. ResolveSelectedEntity
+    // correctly returns Invalid() for A's dead slot; this bare entity resolves to a
+    // nullptr component. comp (nullptr) != mObservedComponent (still A's stale pointer),
+    // so RebindObserver is invoked on exactly the buggy code path.
+    Dia::Entity::Entity entityB = h.CreateSelectedBareEntity();
+
+    Json::Value state;
+    ASSERT_NO_FATAL_FAILURE(state = h.State())
+        << "must not crash when the previously-observed entity was destroyed";
+
+    // B is selected but carries no AttributeSetComponent.
+    EXPECT_TRUE (state["stats"]["hasSelection"].asBool());
+    EXPECT_FALSE(state["stats"]["hasAttributeSet"].asBool());
+    EXPECT_EQ(state["stats"]["attributes"].size(), 0u);
+
+    // Exactly one rebuild for this call — the selection change is real and must not be
+    // served from A's now-meaningless cached tree.
+    EXPECT_EQ(h.mDebugger.GetRebuildCountForTesting(), 2u);
+
+    // The debugger must now be cleanly unbound (no bookkeeping left half-updated by a
+    // skipped/mishandled Unsubscribe) and able to observe a THIRD, unrelated, live entity
+    // from a clean slate.
+    h.CreateSelectedAttributeEntity(); // entity C, fresh AttributeSetComponent, selected
+    h.Set().SetBaseValue(StringCRC("health"), 1800.0f); // must fire OnAttributeChanged normally
+
+    Json::Value stateC = h.State();
+    EXPECT_TRUE(stateC["stats"]["hasAttributeSet"].asBool());
+    Json::Value health = FindAttribute(stateC, "health");
+    ASSERT_FALSE(health.isNull());
+    EXPECT_FLOAT_EQ(health["baseValue"].asFloat(), 1800.0f);
+
+    (void)entityB;
+}
+
+// ===========================================================================
+// Coverage gap 14 — kMaxTrackedConditionalModifiers (64) cache-cap boundary.
+// RefreshConditionalCache's `if (mConditionCache.IsFull()) return;` truncation
+// had no test. RebuildJSONState walks every attribute/modifier unconditionally
+// (the cap only bounds the internal poll-diff cache), so the panel must still
+// report every attribute correctly even when the live conditional-modifier
+// count exceeds the cap.
+// ===========================================================================
+
+TEST(AttributeVisualDebugger, Coverage_ConditionCacheCap_ExceedsMaxTrackedConditionalModifiers_NoCrash)
+{
+    Harness h;
+
+    const unsigned int kAttrCount = 70; // > kMaxTrackedConditionalModifiers (64)
+
+    std::string json = "{ \"schema_name\": \"wide\", \"attributes\": [";
+    for (unsigned int i = 0; i < kAttrCount; ++i)
+    {
+        char entry[192];
+        snprintf(entry, sizeof(entry),
+            "%s{ \"attribute_name\": \"attr_%02u\", \"minimum_value\": 0.0, \"maximum_value\": 10000.0, \"default_value\": %u.0 }",
+            (i == 0) ? "" : ",", i, i);
+        json += entry;
+    }
+    json += "] }";
+    AttributeSchema wideSchema = AttributeSchema::LoadFromJsonValue(ParseJson(json.c_str()));
+
+    Dia::Entity::Entity entity = h.mDomain.CreateEntity();
+    h.mDomain.QueueAddComponent<AttributeSetComponent>(entity, Json::Value());
+    h.mDomain.EndOfFrame();
+
+    AttributeSetComponent* comp = h.mDomain.GetComponent<AttributeSetComponent>(entity);
+    ASSERT_NE(comp, nullptr);
+    comp->InitializeFromSchema(wideSchema);
+    comp->GetAttributeSet().SetConditionRegistry(&h.mRegistry);
+
+    h.mState.ready = true; // condition true for every conditional modifier below
+
+    // One conditional modifier per attribute — 70 conditional modifiers total, exceeding
+    // kMaxTrackedConditionalModifiers (64). Same "generate N unique names programmatically"
+    // technique TestDiaAttributeAccessorBridge.cpp uses for its own >64 cap test.
+    for (unsigned int i = 0; i < kAttrCount; ++i)
+    {
+        char attrName[32];
+        snprintf(attrName, sizeof(attrName), "attr_%02u", i);
+        char modName[32];
+        snprintf(modName, sizeof(modName), "mod_%02u", i);
+        AddMod(comp->GetAttributeSet(),
+               MakeConditionalModifier(modName, attrName, ModifierOperation::Add, 1.0f, kWhenReady));
+    }
+
+    h.Select(entity);
+
+    Json::Value state;
+    ASSERT_NO_FATAL_FAILURE(state = h.State());
+
+    ASSERT_TRUE(state["stats"]["hasAttributeSet"].asBool());
+    EXPECT_EQ(state["stats"]["attributes"].size(), kAttrCount)
+        << "RebuildJSONState walks every attribute regardless of the condition-cache cap";
+
+    // Every attribute's single conditional modifier must still be reported correctly — the
+    // 64 cap bounds only the internal poll-diff cache, not the displayed JSON tree.
+    for (unsigned int i = 0; i < kAttrCount; ++i)
+    {
+        char attrName[32];
+        snprintf(attrName, sizeof(attrName), "attr_%02u", i);
+        Json::Value attr = FindAttribute(state, attrName);
+        ASSERT_FALSE(attr.isNull()) << "attribute " << attrName << " missing";
+        ASSERT_EQ(attr["modifiers"].size(), 1u) << attrName;
+        EXPECT_TRUE(attr["modifiers"][0u]["isConditional"].asBool()) << attrName;
+        EXPECT_TRUE(attr["modifiers"][0u]["conditionTrue"].asBool()) << attrName;
+    }
+
+    // PollConditionalModifiersChanged also walks the live set against the truncated cache —
+    // must not crash even though more than 64 conditional modifiers exist.
+    for (unsigned int i = 0; i < AttributeVisualDebugger::kConditionalPollIntervalFrames; ++i)
+        ASSERT_NO_FATAL_FAILURE(h.State());
+}
+
+// ===========================================================================
+// Coverage gap 15 — disabled-drawer mutation handling. Mutating the underlying
+// AttributeSet while AttributeInspector is toggled off must not be lost: the
+// panel shows nothing while disabled (RebuildJSONState's mLastEnabledSeen
+// guard), but re-enabling must reveal the mutation that happened while hidden.
+// ===========================================================================
+
+TEST(AttributeVisualDebugger, Coverage_MutationWhileDisabled_ReflectedOnceReenabled)
+{
+    Harness h;
+    h.CreateSelectedAttributeEntity();
+
+    h.State(); // subscribes; builds with the drawer enabled
+
+    Json::Value args(Json::objectValue);
+    args["drawer"] = "AttributeInspector";
+    h.mDebugger.OnCommand(StringCRC("toggle"), args); // disable
+
+    Json::Value disabledState = h.State();
+    EXPECT_FALSE(disabledState["drawers"][0u]["enabled"].asBool());
+    EXPECT_EQ(disabledState["stats"]["attributes"].size(), 0u)
+        << "nothing is displayed while the drawer is toggled off";
+
+    // Mutate while disabled — fires OnAttributeChanged, marks dirty.
+    h.Set().SetBaseValue(StringCRC("health"), 1750.0f);
+
+    Json::Value stillDisabled = h.State();
+    EXPECT_EQ(stillDisabled["stats"]["attributes"].size(), 0u)
+        << "still disabled — a rebuild happens but RebuildJSONState's mLastEnabledSeen guard "
+           "skips the attribute walk";
+
+    // Re-enable.
+    h.mDebugger.OnCommand(StringCRC("toggle"), args);
+
+    Json::Value reenabled = h.State();
+    EXPECT_TRUE(reenabled["drawers"][0u]["enabled"].asBool());
+    Json::Value health = FindAttribute(reenabled, "health");
+    ASSERT_FALSE(health.isNull());
+    EXPECT_FLOAT_EQ(health["baseValue"].asFloat(), 1750.0f)
+        << "the mutation that happened while hidden must be visible once re-enabled";
+}
+
+// ===========================================================================
+// Coverage gap 16 — a deserialized AttributeSet fed into the debugger. Proves
+// the debugger works correctly against freshly-issued handles and heap-owned
+// parsed_condition pointers from a Deserialize path, not just direct
+// AddModifier calls.
+// ===========================================================================
+
+TEST(AttributeVisualDebugger, Coverage_DeserializedAttributeSet_ReportsCorrectlyWithNoCrash)
+{
+    Harness h;
+
+    // Build + populate a standalone source set (mirrors TestDiaAttributeSaveSerialization.cpp).
+    AttributeSchema schema = MakeDragonSchema();
+    AttributeSet source = AttributeSet::CreateFromSchema(schema);
+
+    Dia::Condition::ConditionRegistry sourceRegistry(&h.mState);
+    ConfigureTestRegistry(sourceRegistry);
+    source.SetConditionRegistry(&sourceRegistry);
+
+    source.SetBaseValue(StringCRC("health"), 1300.0f);
+    AddMod(source, MakeModifier("flatBuff", "health", ModifierOperation::Add, 100.0f));
+
+    h.mState.ready = true;
+    AddMod(source, MakeConditionalModifier("readyBuff", "strength", ModifierOperation::Add, 20.0f, kWhenReady));
+
+    Dia::SaveGame::SaveContext save;
+    source.Serialize(save);
+
+    static char buf[Dia::SaveGame::SaveContext::kBufferSize];
+    ASSERT_TRUE(save.Flush(buf, sizeof(buf)));
+
+    Json::Value reparsed;
+    Json::Reader reader;
+    ASSERT_TRUE(reader.parse(buf, reparsed));
+
+    // Deserialize into a FRESH AttributeSetComponent attached to an entity in the harness's
+    // Domain — proves the debugger works against deserialize-issued handles and heap-owned
+    // parsed_condition pointers, not just direct AddModifier calls.
+    Dia::Entity::Entity entity = h.mDomain.CreateEntity();
+    h.mDomain.QueueAddComponent<AttributeSetComponent>(entity, Json::Value());
+    h.mDomain.EndOfFrame();
+
+    AttributeSetComponent* comp = h.mDomain.GetComponent<AttributeSetComponent>(entity);
+    ASSERT_NE(comp, nullptr);
+    comp->InitializeFromSchema(schema);
+    comp->GetAttributeSet().SetConditionRegistry(&h.mRegistry); // must be set BEFORE Deserialize
+
+    Dia::SaveGame::LoadContext load(reparsed);
+    comp->GetAttributeSet().Deserialize(load);
+
+    h.Select(entity);
+
+    Json::Value state;
+    ASSERT_NO_FATAL_FAILURE(state = h.State());
+    ASSERT_TRUE(state["stats"]["hasAttributeSet"].asBool());
+
+    Json::Value health = FindAttribute(state, "health");
+    ASSERT_FALSE(health.isNull());
+    EXPECT_FLOAT_EQ(health["baseValue"].asFloat(), 1300.0f);
+    Json::Value flat = FindModifier(health, "flatBuff");
+    ASSERT_FALSE(flat.isNull());
+    EXPECT_EQ(flat["operation"].asString(), "Add");
+    EXPECT_FLOAT_EQ(flat["value"].asFloat(), 100.0f);
+
+    Json::Value strength = FindAttribute(state, "strength");
+    ASSERT_FALSE(strength.isNull());
+    Json::Value ready = FindModifier(strength, "readyBuff");
+    ASSERT_FALSE(ready.isNull());
+    EXPECT_TRUE(ready["isConditional"].asBool());
+    EXPECT_TRUE(ready["conditionTrue"].asBool())
+        << "h.mState.ready == true at both deserialize time and registry-read time";
+}
+
+// ===========================================================================
+// Coverage gap 17 — AttributeAccessorBridge and the visual debugger observing
+// the same AttributeSet. Confirms the bridge's own live read
+// (registry.GetFloat) and the debugger's panel state agree after a
+// condition-driven flip.
+//
+// The gating condition deliberately depends on an EXTERNAL accessor (the
+// harness's actor.ready, backed by ConditionTestState) rather than one of the
+// bridge's own self.* attributes. This keeps the test focused on the actual
+// scenario it's proving — the bridge's direct read and the debugger's panel
+// state agreeing after a condition-driven flip — without also exercising
+// AttributeSet::ResolveValue's per-slot reentrancy guard (see AttributeSet.h/
+// .cpp and DiaAttributeAccessorBridge.AC4_BridgedSetGatesItsOwnConditionalModifier,
+// which covers that cross-attribute-same-set case directly). The bridge
+// registry below is intentionally a SECOND, independent ConditionRegistry
+// (data = &h.Set()) used only for direct registry.GetFloat reads, never
+// installed via SetConditionRegistry.
+// ===========================================================================
+
+TEST(AttributeVisualDebugger, Coverage_AccessorBridgeAndVisualDebugger_AgreeOnSameAttributeSet)
+{
+    Harness h;
+    h.CreateSelectedAttributeEntity(); // wires h.mRegistry (data=h.mState) as the condition registry
+    h.mState.ready = false;
+
+    // A SEPARATE registry whose `data` pointer IS the observed AttributeSet — required by
+    // AttributeAccessorBridge's precondition. Used only for direct registry.GetFloat reads
+    // below (mirroring how DiaRules/DiaUtilityAI would read it) — never installed via
+    // SetConditionRegistry, so resolving `health` never invokes a bridge accessor.
+    Dia::Condition::ConditionRegistry bridgeRegistry(&h.Set());
+    Dia::Attribute::AttributeAccessorBridge::RegisterAccessors(bridgeRegistry, h.Set(), StringCRC("self"));
+
+    // Gated on the EXTERNAL actor.ready accessor (h.mRegistry), not on any self.* bridged
+    // attribute — see the reentrancy note above.
+    AddMod(h.Set(), MakeConditionalModifier("readyBuff", "health", ModifierOperation::Add, 300.0f, kWhenReady));
+
+    // Baseline — condition false, both reads agree.
+    {
+        Json::Value health = FindAttribute(h.State(), "health");
+        ASSERT_FALSE(health.isNull());
+        EXPECT_FLOAT_EQ(health["value"].asFloat(), 1000.0f);
+        EXPECT_FLOAT_EQ(bridgeRegistry.GetFloat(StringCRC("self"), StringCRC("health")), 1000.0f);
+    }
+
+    // Flip the external gate directly. This fires NO change notification (the documented
+    // Feature 3 gap) — only the bounded poll (AC-5) picks it up.
+    h.mState.ready = true;
+
+    // Wait out a full poll interval so the assertion holds regardless of whether the push
+    // path or the bounded poll is what actually picked up the flip.
+    for (unsigned int i = 0; i <= AttributeVisualDebugger::kConditionalPollIntervalFrames; ++i)
+        h.State();
+
+    Json::Value health = FindAttribute(h.State(), "health");
+    ASSERT_FALSE(health.isNull());
+    EXPECT_FLOAT_EQ(health["value"].asFloat(), 1300.0f);
+    EXPECT_TRUE(FindModifier(health, "readyBuff")["conditionTrue"].asBool());
+
+    EXPECT_FLOAT_EQ(bridgeRegistry.GetFloat(StringCRC("self"), StringCRC("health")), 1300.0f)
+        << "the bridge's own read (used by DiaRules/DiaUtilityAI) must agree with the panel";
+}
+
+// ===========================================================================
+// Coverage gap 18 — a second, independent IAttributeObserver coexists with the
+// debugger's own subscription on the same AttributeSet.
+// ===========================================================================
+
+namespace
+{
+    class CountingAttributeObserver : public Dia::Attribute::IAttributeObserver
+    {
+    public:
+        void OnAttributeChanged(const Dia::Attribute::AttributeChangedEvent&) override { ++changeCount; }
+        unsigned int changeCount = 0;
+    };
+}
+
+TEST(AttributeVisualDebugger, Coverage_SecondIndependentObserver_CoexistsWithDebuggerSubscription)
+{
+    Harness h;
+    h.CreateSelectedAttributeEntity();
+
+    h.State(); // subscribes the debugger
+
+    CountingAttributeObserver second;
+    h.Set().GetObserverSubject().Subscribe(&second);
+
+    h.Set().SetBaseValue(StringCRC("health"), 1600.0f);
+
+    EXPECT_EQ(second.changeCount, 1u) << "the second observer must see the mutation too";
+
+    Json::Value state = h.State();
+    EXPECT_EQ(h.mDebugger.GetRebuildCountForTesting(), 2u)
+        << "the debugger's own rebuild must also have fired — both observers coexist on one subject";
+
+    Json::Value health = FindAttribute(state, "health");
+    ASSERT_FALSE(health.isNull());
+    EXPECT_FLOAT_EQ(health["baseValue"].asFloat(), 1600.0f);
+
+    h.Set().GetObserverSubject().Unsubscribe(&second);
 }
 
 #endif // DIA_DEBUG

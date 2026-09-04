@@ -57,7 +57,7 @@ AttributeVisualDebugger::AttributeVisualDebugger(Dia::Entity::Domain& domain)
 AttributeVisualDebugger::~AttributeVisualDebugger()
 {
     // Never leave a dangling observer registration on a surviving AttributeSet.
-    RebindObserver(nullptr);
+    RebindObserver(Dia::Entity::Entity::Invalid(), nullptr);
 }
 
 // ---------------------------------------------------------------------------
@@ -111,7 +111,7 @@ void AttributeVisualDebugger::Unregister(Dia::Debug::DebugLayerManager& /*mgr*/)
 {
     // Selection is no longer observable — drop the current subscription so the
     // domain does not hold an observer registration it can no longer refresh.
-    RebindObserver(nullptr);
+    RebindObserver(Dia::Entity::Entity::Invalid(), nullptr);
     mLayerManager = nullptr;
 }
 
@@ -164,7 +164,7 @@ void AttributeVisualDebugger::GetJSONState(Json::Value& out)
                            : nullptr;
 
     if (comp != mObservedComponent)
-        RebindObserver(comp); // selection changed — resubscribe and force a rebuild
+        RebindObserver(selected, comp); // selection changed — resubscribe and force a rebuild
 
     // AC-5: bounded re-check of the selected entity's conditional modifiers only.
     // Skipped entirely when there is nothing to show, so this is never a global tick.
@@ -237,12 +237,23 @@ void AttributeVisualDebugger::OnAttributeChanged(const Dia::Attribute::Attribute
 // Internals
 // ---------------------------------------------------------------------------
 
-void AttributeVisualDebugger::RebindObserver(Dia::Attribute::AttributeSetComponent* comp)
+void AttributeVisualDebugger::RebindObserver(Dia::Entity::Entity entity, Dia::Attribute::AttributeSetComponent* comp)
 {
     if (mObservedComponent != nullptr)
-        mObservedComponent->GetAttributeSet().GetObserverSubject().Unsubscribe(this);
+    {
+        // Only touch the previously-observed component if its entity is still alive
+        // with the SAME generation. If the entity was destroyed (or its slot recycled
+        // for something else) since the last GetJSONState call, mObservedComponent may
+        // be dangling or may now point at a wholly unrelated object — either way it is
+        // unsafe/wrong to dereference it, so just drop the reference without unsubscribing.
+        const bool previousStillAlive = mObservedEntity.IsValid() &&
+            mDomain.GetAliveEntity(mObservedEntity.GetIndex()) == mObservedEntity;
+        if (previousStillAlive)
+            mObservedComponent->GetAttributeSet().GetObserverSubject().Unsubscribe(this);
+    }
 
     mObservedComponent = comp;
+    mObservedEntity    = (comp != nullptr) ? entity : Dia::Entity::Entity::Invalid();
 
     if (mObservedComponent != nullptr)
         mObservedComponent->GetAttributeSet().GetObserverSubject().Subscribe(this);

@@ -110,7 +110,11 @@ private:
     void RebuildJSONState(Dia::Entity::Entity entity, Dia::Attribute::AttributeSetComponent& comp);
 
     /// Subscribe/unsubscribe as the selection changes. Always marks dirty.
-    void RebindObserver(Dia::Attribute::AttributeSetComponent* comp);
+    /// `entity` is the (already-resolved) entity that owns `comp`, or Entity::Invalid()
+    /// when comp is nullptr. Needed alongside comp so the PREVIOUSLY-observed component
+    /// can be liveness-checked (via mObservedEntity) before it is dereferenced — see
+    /// mObservedEntity's comment.
+    void RebindObserver(Dia::Entity::Entity entity, Dia::Attribute::AttributeSetComponent* comp);
 
     /// Re-evaluates only the conditional modifiers of comp, diffs them against
     /// mConditionCache and refreshes the cache. Returns true if any flipped (AC-5).
@@ -135,6 +139,15 @@ private:
 
     // Currently-subscribed component, or nullptr. Non-owning.
     Dia::Attribute::AttributeSetComponent* mObservedComponent = nullptr;
+
+    // The entity that owns mObservedComponent, or Entity::Invalid() when mObservedComponent
+    // is nullptr. Carried alongside the component pointer purely so RebindObserver can
+    // confirm — via mDomain.GetAliveEntity — that the PREVIOUS selection is still alive
+    // (same generation) before dereferencing mObservedComponent. Without this, an entity
+    // destroyed since the last GetJSONState() call leaves mObservedComponent dangling (or
+    // pointing at a recycled, unrelated component), and unsubscribing through it would be a
+    // use-after-free / wrong-object write.
+    Dia::Entity::Entity mObservedEntity;
 
     bool         mDirty        = true; ///< start dirty so the first GetJSONState always builds
     Json::Value  mCachedState;         ///< reused on non-dirty, non-poll-triggered frames
