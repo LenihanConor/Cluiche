@@ -2,7 +2,7 @@
 
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
-#include <DiaUI/IUISystem.h>
+#include <DiaCore/UI/IJSBridge.h>
 #include "DiaEditor/MVC/EditorViewController.h"
 
 #include <sstream>
@@ -13,7 +13,7 @@ namespace Dia
 	{
 		static const char* kEditorCallName = "DiaEditor_call";
 
-		WebUIBridge::WebUIBridge(Dia::UI::IUISystem* uiSystem)
+		WebUIBridge::WebUIBridge(Dia::Core::IJSBridge* uiSystem)
 			: mUISystem(uiSystem)
 			, mController(nullptr)
 		{

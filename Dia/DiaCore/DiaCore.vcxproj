@@ -200,6 +200,7 @@
     <ClInclude Include="SimTime\SimTimeContext.h" />
     <ClInclude Include="SimTime\SimTimeDomain.h" />
     <ClInclude Include="SimTime\SimTimeDomainRegistry.h" />
+    <ClInclude Include="UI\IJSBridge.h" />
   </ItemGroup>
   <ItemGroup>
 

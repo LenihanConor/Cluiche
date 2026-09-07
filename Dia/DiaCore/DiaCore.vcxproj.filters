@@ -115,6 +115,9 @@
     <Filter Include="Core\Debug">
       <UniqueIdentifier>{f3a4b5c6-7890-abcd-ef12-34567890abcd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="UI">
+      <UniqueIdentifier>{63d41a51-c4a5-470a-86aa-f8cd3ede1012}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Assert.h">
@@ -668,6 +671,9 @@
     </ClInclude>
     <ClInclude Include="SimTime\SimTimeDomainRegistry.h">
       <Filter>SimTime</Filter>
+    </ClInclude>
+    <ClInclude Include="UI\IJSBridge.h">
+      <Filter>UI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

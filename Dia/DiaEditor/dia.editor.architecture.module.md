@@ -31,6 +31,7 @@ dependencies:
     - dia.debugprotocol
     - dia.game
     - dia.protobuf
+    - dia.core.ui  # WebUIBridge depends on IJSBridge only, not the domain-tier dia.ui
   forbidden: []
 
 public_api:
