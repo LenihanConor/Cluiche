@@ -13,7 +13,7 @@
 #include <DiaEntitySpatial/SpatialComponent.h>
 #include <DiaEntity/Domain.h>
 #include <DiaEntity/ComponentPool.h>
-#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaGeometry2D/Shapes/AARect.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>

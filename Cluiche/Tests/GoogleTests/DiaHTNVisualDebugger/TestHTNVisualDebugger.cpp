@@ -18,7 +18,7 @@
 #include <DiaHTN/HTNDomain.h>
 #include <DiaHTN/OperatorRegistry.h>
 #include <DiaHTN/Testing/HTNTestHelpers.h>
-#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
 

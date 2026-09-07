@@ -7,7 +7,7 @@
 #pragma once
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/Domain/IDebugDomain.h>
+#include <DiaDebugDraw/Domain/IDebugDomain.h>
 #include <DiaEntitySpatial/EntitySpatialIndex.h>
 #include <atomic>
 #include <memory>

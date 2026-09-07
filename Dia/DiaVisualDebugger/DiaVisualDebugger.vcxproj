@@ -95,8 +95,6 @@
     <ClInclude Include="Coord3D\Coord3DAxesDrawer.h" />
     <ClInclude Include="Coord3D\Coord3DGridDrawer.h" />
     <ClInclude Include="Coord3D\Coord3DCameraDrawer.h" />
-    <ClInclude Include="Domain\\IDebugDomain.h" />
-    <ClInclude Include="Domain\\DebugGroupAccents.h" />
     <ClInclude Include="Domain\\DiaDebugDomainRegistry.h" />
     <ClInclude Include="Coord2D\Coord2DDebugDomain.h" />
     <ClInclude Include="Coord3D\Coord3DDebugDomain.h" />
@@ -111,7 +109,6 @@
     <ClCompile Include="Coord3D\Coord3DAxesDrawer.cpp" />
     <ClCompile Include="Coord3D\Coord3DGridDrawer.cpp" />
     <ClCompile Include="Coord3D\Coord3DCameraDrawer.cpp" />
-    <ClCompile Include="Domain\\DebugGroupAccents.cpp" />
     <ClCompile Include="Domain\\DiaDebugDomainRegistry.cpp" />
     <ClCompile Include="Coord2D\Coord2DDebugDomain.cpp" />
     <ClCompile Include="Coord3D\Coord3DDebugDomain.cpp" />

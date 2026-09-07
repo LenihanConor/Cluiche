@@ -10,7 +10,7 @@
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaInput/InputRouter.h>
 #include <DiaUI/IUISystem.h>
-#include <DiaVisualDebugger/Domain/IDebugDomain.h>
+#include <DiaDebugDraw/Domain/IDebugDomain.h>
 
 #include <cstdio>
 #include <cstring>

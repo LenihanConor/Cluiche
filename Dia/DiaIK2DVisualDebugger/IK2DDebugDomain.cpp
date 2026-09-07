@@ -8,7 +8,7 @@
 #include "IKReachCirclesDrawer.h"
 
 #include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaIK2D/IKSolver.h>
 
 namespace Dia::IK2D

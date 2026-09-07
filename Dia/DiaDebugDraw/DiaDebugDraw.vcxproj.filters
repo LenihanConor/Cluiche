@@ -4,10 +4,26 @@
     <Filter Include="Docs">
       <UniqueIdentifier>{a1b2c3d4-e5f6-7890-abcd-ef1234500001}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Domain">
+      <UniqueIdentifier>{58605d13-7c33-4573-be19-41cf12a77c65}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.debugdraw.architecture.module.md">
       <Filter>Docs</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Domain\IDebugDomain.h">
+      <Filter>Domain</Filter>
+    </ClInclude>
+    <ClInclude Include="Domain\DebugGroupAccents.h">
+      <Filter>Domain</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Domain\DebugGroupAccents.cpp">
+      <Filter>Domain</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

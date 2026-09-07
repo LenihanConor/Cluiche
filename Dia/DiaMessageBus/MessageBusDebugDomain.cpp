@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <vector>
 #include <cstring>
-#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 
 namespace Dia::MessageBus {
 

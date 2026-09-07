@@ -39,7 +39,7 @@ Following the `DiaXxxVisualDebugger` contract (`debugger-contract.md`), `DiaHTN`
 // DiaHTNVisualDebugger/HTNVisualDebugger.h
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/Domain/IDebugDomain.h>
+#include <DiaDebugDraw/Domain/IDebugDomain.h>
 
 namespace Dia::HTN { class HTNPlannerComponent; }
 

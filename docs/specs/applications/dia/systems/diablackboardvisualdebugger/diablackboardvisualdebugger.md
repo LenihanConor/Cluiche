@@ -38,7 +38,7 @@ Following the `DiaXxxVisualDebugger` contract, `DiaBlackboard` has zero compile-
 // DiaBlackboardVisualDebugger/BlackboardVisualDebugger.h
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/Domain/IDebugDomain.h>
+#include <DiaDebugDraw/Domain/IDebugDomain.h>
 
 namespace Dia::Blackboard { class Blackboard; }
 

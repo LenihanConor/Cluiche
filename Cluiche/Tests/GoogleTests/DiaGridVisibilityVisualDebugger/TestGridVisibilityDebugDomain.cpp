@@ -22,7 +22,7 @@
 #include <DiaEntity/Domain.h>
 #include <DiaEntity/Entity.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaCore/DebugDraw/DebugColourPalette.h>

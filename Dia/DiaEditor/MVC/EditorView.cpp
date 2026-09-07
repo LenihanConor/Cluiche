@@ -42,14 +42,14 @@ namespace Dia
 			Shutdown();
 		}
 
-		void EditorView::Initialize(Dia::UI::IUISystem* uiSystem, EditorViewController* controller)
+		void EditorView::Initialize(Dia::UI::IUISystem* uiSystem, Dia::Core::IJSBridge* jsBridge, EditorViewController* controller)
 		{
 			mUISystem = uiSystem;
 			mController = controller;
 
 			mDockingLayout = new DockingLayout();
 
-			mWebUIBridge = new WebUIBridge(uiSystem);
+			mWebUIBridge = new WebUIBridge(jsBridge);
 			mWebUIBridge->Initialize(controller);
 
 			RegisterBuiltInRequestHandlers();

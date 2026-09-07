@@ -8,7 +8,7 @@
 #include "SoftVelocityDrawer.h"
 
 #include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaSoftBody2D/SoftBodyWorld.h>
 #include <DiaSoftBody2D/Rope.h>
 #include <DiaSoftBody2D/Cloth.h>

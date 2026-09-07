@@ -53,7 +53,7 @@ These accessors are not `DIA_DEBUG`-only — they are useful at runtime and have
 // DiaFlowFieldVisualDebugger/FlowFieldVisualDebugger.h
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/Domain/IDebugDomain.h>
+#include <DiaDebugDraw/Domain/IDebugDomain.h>
 #include <DiaFlowField/FlowField.h>
 
 namespace Dia::FlowField

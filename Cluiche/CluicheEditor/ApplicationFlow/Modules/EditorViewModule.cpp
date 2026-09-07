@@ -95,7 +95,7 @@ namespace Cluiche
 			mUISystem->CreatePage("dia://ui/index.html",
 				static_cast<int>(size.X()), static_cast<int>(size.Y()));
 
-			mView.Initialize(mUISystem, controller);
+			mView.Initialize(mUISystem, mUISystem, controller);
 
 			// Register console sink now that the view/bridge is ready
 			Dia::Editor::WebUIBridge* bridge = mView.GetWebUIBridge();

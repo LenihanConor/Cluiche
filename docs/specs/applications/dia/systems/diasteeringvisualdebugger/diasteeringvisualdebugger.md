@@ -54,7 +54,7 @@ void VisitAgents(Fn&& fn) const;
 // DiaSteeringVisualDebugger/SteeringVisualDebugger.h
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/Domain/IDebugDomain.h>
+#include <DiaDebugDraw/Domain/IDebugDomain.h>
 
 namespace Dia::Steering { class SteeringSystem; }
 

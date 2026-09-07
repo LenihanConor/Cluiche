@@ -7,7 +7,7 @@
 #include "AABBOverlayDrawer.h"
 
 #include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 
 namespace Dia::Geometry2DVisualDebugger
 {

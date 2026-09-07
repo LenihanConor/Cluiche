@@ -58,7 +58,7 @@ If `PathGrid` stores cells in a flat array, `VisitCells` is trivial. Add these t
 // DiaPathfindingVisualDebugger/PathfindingVisualDebugger.h
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/Domain/IDebugDomain.h>
+#include <DiaDebugDraw/Domain/IDebugDomain.h>
 #include <DiaPathfinding/PathResult.h>
 
 namespace Dia::Pathfinding { class PathGrid; }

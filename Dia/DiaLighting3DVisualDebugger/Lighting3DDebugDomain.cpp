@@ -7,7 +7,7 @@
 #include "LightRangesDrawer.h"
 
 #include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaLighting3D/Registry/LightRegistry3D.h>
 
 namespace Dia { namespace Lighting3D {

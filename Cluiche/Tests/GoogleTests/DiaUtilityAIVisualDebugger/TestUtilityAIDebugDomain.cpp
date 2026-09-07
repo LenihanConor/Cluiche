@@ -9,7 +9,7 @@
 
 #include <DiaUtilityAIVisualDebugger/UtilityAIDebugDomain.h>
 #include <DiaUtilityAI/UtilitySet.h>
-#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaCondition/Testing/ConditionTestHelpers.h>
 #include <DiaRules/RuleActionRegistry.h>
 #include <DiaCore/CRC/StringCRC.h>

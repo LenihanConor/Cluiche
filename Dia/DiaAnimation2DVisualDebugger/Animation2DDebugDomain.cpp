@@ -7,7 +7,7 @@
 #include "AnimSpringDrawer.h"
 
 #include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaAnimation2D/AnimationEvaluator.h>
 #include <DiaAnimation2D/AnimClipPlayer.h>
 #include <DiaAnimation2D/SpringChain.h>

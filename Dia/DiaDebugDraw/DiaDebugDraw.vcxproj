@@ -82,12 +82,15 @@
     <ClInclude Include="..\DiaVisualDebugger\IFixedPrimitiveBuffer.h" />
     <ClInclude Include="..\DiaVisualDebugger\FixedPrimitiveBuffer.h" />
     <ClInclude Include="..\DiaVisualDebugger\FixedDrawRegistry.h" />
+    <ClInclude Include="Domain\IDebugDomain.h" />
+    <ClInclude Include="Domain\DebugGroupAccents.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\DiaVisualDebugger\DebugLayerManager.cpp" />
     <ClCompile Include="..\DiaVisualDebugger\DebugColourPalette.cpp" />
     <ClCompile Include="..\DiaVisualDebugger\FixedPrimitiveBuffer.cpp" />
     <ClCompile Include="..\DiaVisualDebugger\FixedDrawRegistry.cpp" />
+    <ClCompile Include="Domain\DebugGroupAccents.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.debugdraw.architecture.module.md" />

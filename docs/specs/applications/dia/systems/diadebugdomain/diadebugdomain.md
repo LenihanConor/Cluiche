@@ -59,7 +59,7 @@ DiaXxx (any system) ⊥ DiaXxxVisualDebugger  (zero dependency — SD-002)
 
 ### IDebugDomain
 
-Lives in `Dia/DiaVisualDebugger/Domain/IDebugDomain.h`.
+Lives in `Dia/DiaDebugDraw/Domain/IDebugDomain.h`.
 
 ```cpp
 namespace Dia::VisualDebugger {
@@ -149,7 +149,7 @@ All current and future visual debugger modules must satisfy these ACs.
 5. `GetDescription()` string is ≤80 characters
 
 **World-space draw rules:**
-6. World-space draw colours from `DebugColourPalette` only — no hardcoded `ColourRGBA` literals in `Draw()` implementations. Panel accent tints returned by `GetAccentColour()` use `DebugGroupAccents` named constants (defined in the group accent table below; published as `Dia/DiaVisualDebugger/Domain/DebugGroupAccents.h`); these are named constants, not inline literals, and are exempt from the `DebugColourPalette`-only rule.
+6. World-space draw colours from `DebugColourPalette` only — no hardcoded `ColourRGBA` literals in `Draw()` implementations. Panel accent tints returned by `GetAccentColour()` use `DebugGroupAccents` named constants (defined in the group accent table below; published as `Dia/DiaDebugDraw/Domain/DebugGroupAccents.h`); these are named constants, not inline literals, and are exempt from the `DebugColourPalette`-only rule.
 7. All world-space sizes, radii, and lengths multiplied by `IDebugContext::GetDebugScale()`. Verified by the scale-sensitivity test shape (AC-15); not statically checkable by `dia check`.
 8. No `ImGui::GetBackgroundDrawList()` or any other ImGui call in a visual debugger module
 
@@ -175,7 +175,7 @@ All current and future visual debugger modules must satisfy these ACs.
 
 **Domain group accents (reference):**
 
-These 8 values are published as `DebugGroupAccents` static constants in `Dia/DiaVisualDebugger/Domain/DebugGroupAccents.h`. `GetAccentColour()` implementations return one of these — never an inline `ColourRGBA` literal.
+These 8 values are published as `DebugGroupAccents` static constants in `Dia/DiaDebugDraw/Domain/DebugGroupAccents.h`. `GetAccentColour()` implementations return one of these — never an inline `ColourRGBA` literal.
 
 | Group | StringCRC key | Accent colour | `DebugGroupAccents` constant |
 |-------|---------------|---------------|------------------------------|

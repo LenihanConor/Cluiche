@@ -19,7 +19,7 @@
 
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
-#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaGraphics/Frame/DebugPrimitive.h>

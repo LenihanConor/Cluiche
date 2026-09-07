@@ -9,7 +9,7 @@
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
-#include <DiaVisualDebugger/Domain/IDebugDomain.h>
+#include <DiaDebugDraw/Domain/IDebugDomain.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
 // Full domain definitions needed here so unique_ptr can destroy complete types.
 #include <DiaVisualDebugger/Coord2D/Coord2DDebugDomain.h>

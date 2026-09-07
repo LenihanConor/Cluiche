@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.debugdraw
 name: DiaDebugDraw
 owner_team: TBD
-layer: foundation/services
+layer: foundation/platform
 status: active
 maturity: dev
 
@@ -14,6 +14,9 @@ summary: >
   Abstract debug draw registration, layer management, and primitive dispatch.
   Extracted from DiaVisualDebugger so domain modules (Physics, Animation, Entity)
   can register debug layers without depending on the Visual rendering domain.
+  layer is foundation/platform (not foundation/services): IDebugDomain transitively
+  needs DiaCore/DebugDraw/IVisualDebugger.h, which itself requires DiaMaths — same
+  reasoning as dia.core.debugdraw.
 
 intent: >
   Provide the debug layer registry and abstract interfaces without requiring
@@ -25,6 +28,8 @@ responsibilities:
   - Fixed-topology object registry and primitive buffering
   - Layer name constants and colour palette constants
   - Optional DiaAPI command registration for layer toggle/scale
+  - IDebugDomain — abstract contract every domain debug-domain implements (graphics-free)
+  - DebugGroupAccents — canonical accent colour constants per debug domain group (graphics-free)
 
 non_responsibilities:
   - Concrete draw implementations (DiaVisualDebugger)

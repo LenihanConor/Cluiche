@@ -18,7 +18,7 @@
 
 #include <DiaStateMachine/FlatStateMachine.h>
 #include <DiaStateMachine/StateMachineBuilder.h>
-#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
 

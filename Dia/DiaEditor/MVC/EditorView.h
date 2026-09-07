@@ -12,6 +12,11 @@ namespace Dia
 		class IUISystem;
 	}
 
+	namespace Core
+	{
+		class IJSBridge;
+	}
+
 	namespace Editor
 	{
 		class WebUIBridge;
@@ -33,7 +38,9 @@ namespace Dia
 			EditorView();
 			~EditorView();
 
-			void Initialize(Dia::UI::IUISystem* uiSystem, EditorViewController* controller);
+			// jsBridge is the same object as uiSystem, upcast by the caller (which has the
+			// complete Dia::UI::IUISystem type) so this foundation-tier file never needs it.
+			void Initialize(Dia::UI::IUISystem* uiSystem, Dia::Core::IJSBridge* jsBridge, EditorViewController* controller);
 			void Shutdown();
 
 			void RegisterComponent(const char* name, const char* uiPath);

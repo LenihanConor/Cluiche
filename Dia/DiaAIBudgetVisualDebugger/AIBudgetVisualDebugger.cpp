@@ -8,7 +8,7 @@
 #ifdef DIA_DEBUG
 
 #include <DiaAIBudget/AIBudgetScheduler.h>
-#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 
 namespace
 {

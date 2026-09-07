@@ -22,7 +22,7 @@ Establishes the formal 15-AC contract that all current and future `DiaXxxVisualD
 
 **World-space draw rules:**
 
-6. World-space draw colours from `DebugColourPalette` only — no hardcoded `ColourRGBA` literals in `Draw()` implementations. Panel accent tints returned by `GetAccentColour()` use `DebugGroupAccents` named constants (defined in the group accent table in the system spec; published as `Dia/DiaVisualDebugger/Domain/DebugGroupAccents.h`); these are named constants, not inline literals, and are exempt from the `DebugColourPalette`-only rule.
+6. World-space draw colours from `DebugColourPalette` only — no hardcoded `ColourRGBA` literals in `Draw()` implementations. Panel accent tints returned by `GetAccentColour()` use `DebugGroupAccents` named constants (defined in the group accent table in the system spec; published as `Dia/DiaDebugDraw/Domain/DebugGroupAccents.h`); these are named constants, not inline literals, and are exempt from the `DebugColourPalette`-only rule.
 7. All world-space sizes, radii, and lengths multiplied by `IDebugContext::GetDebugScale()`. Verified by the scale-sensitivity test shape (AC 15); not statically checkable by `dia check`.
 8. No `ImGui::GetBackgroundDrawList()` or any other ImGui call in a visual debugger module.
 

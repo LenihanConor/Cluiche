@@ -11,7 +11,7 @@
 #ifdef DIA_DEBUG
 
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
-#include <DiaVisualDebugger/Domain/IDebugDomain.h>
+#include <DiaDebugDraw/Domain/IDebugDomain.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Colour/RGBA.h>
 #include <DiaCore/Json/external/json/json.h>

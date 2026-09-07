@@ -16,7 +16,7 @@
 #include <DiaAICalloutVisualDebugger/CalloutRegistryDebugger.h>
 #include <DiaAICallout/CalloutRegistry.h>
 #include <DiaAICallout/Callout.h>
-#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaMaths/Vector/Vector2D.h>

@@ -9,7 +9,7 @@
 #include "ConstraintLinesDrawer.h"
 
 #include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaRigidBody2D/World/PhysicsWorld.h>
 #include <DiaRigidBody2D/Bodies/Body2DBase.h>
 

@@ -68,7 +68,7 @@ float GetLastBudgetMs() const;   // returns the budgetMs passed to the most rece
 // DiaAIBudgetVisualDebugger/AIBudgetVisualDebugger.h
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/Domain/IDebugDomain.h>
+#include <DiaDebugDraw/Domain/IDebugDomain.h>
 
 namespace Dia::AIBudget {
     class AIBudgetScheduler;

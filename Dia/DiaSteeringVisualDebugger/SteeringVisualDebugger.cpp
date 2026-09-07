@@ -9,7 +9,7 @@
 #include "SeparationRadiusDrawer.h"
 #include "DetectionBoxDrawer.h"
 #include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaSteering/SteeringSystem.h>
 #include <memory>
 

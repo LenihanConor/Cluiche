@@ -7,7 +7,7 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 
 namespace Dia::StateMachine
 {

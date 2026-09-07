@@ -20,7 +20,7 @@
 #include "Types/DebugPanelCommandEvent.h"
 #include "Types/DebugPanelToggleEvent.h"
 #include "Types/DebugPanelSetVisibilityEvent.h"
-#include <DiaVisualDebugger/Domain/IDebugDomain.h>
+#include <DiaDebugDraw/Domain/IDebugDomain.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
 #include <memory>
 #include <mutex>

@@ -8,7 +8,7 @@
 #include "Coord3DCameraDrawer.h"
 
 #include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaCore/DebugDraw/DebugLayerNames.h>
 #include <DiaGraphics3D/FrameData3D.h>
 #include <DiaGraphics3D/Camera3D.h>

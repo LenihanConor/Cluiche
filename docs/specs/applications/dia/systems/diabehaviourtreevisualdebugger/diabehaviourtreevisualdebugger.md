@@ -42,7 +42,7 @@ Following the `DiaXxxVisualDebugger` contract (`debugger-contract.md`), `DiaBeha
 // DiaBehaviourTreeVisualDebugger/BehaviourTreeVisualDebugger.h
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/Domain/IDebugDomain.h>
+#include <DiaDebugDraw/Domain/IDebugDomain.h>
 #include <DiaBehaviourTree/IBehaviourTreeEventListener.h>
 
 namespace Dia::BehaviourTree { class BehaviourTreeComponent; }

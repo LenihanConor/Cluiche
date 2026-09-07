@@ -9,7 +9,7 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/Domain/IDebugDomain.h>
+#include <DiaDebugDraw/Domain/IDebugDomain.h>
 #include <memory>
 
 namespace Dia::Debug { class DebugLayerManager; }

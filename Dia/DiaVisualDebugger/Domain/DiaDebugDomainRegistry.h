@@ -11,7 +11,7 @@
 #ifdef DIA_DEBUG
 
 #include <DiaCore/CRC/StringCRC.h>
-#include <DiaVisualDebugger/Domain/IDebugDomain.h>
+#include <DiaDebugDraw/Domain/IDebugDomain.h>
 
 #include <unordered_map>
 #include <vector>

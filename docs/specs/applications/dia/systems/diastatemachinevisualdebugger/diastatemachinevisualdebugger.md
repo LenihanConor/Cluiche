@@ -42,7 +42,7 @@ Following the `DiaXxxVisualDebugger` contract, `DiaStateMachine` has zero compil
 // DiaStateMachineVisualDebugger/StateMachineVisualDebugger.h
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/Domain/IDebugDomain.h>
+#include <DiaDebugDraw/Domain/IDebugDomain.h>
 #include <DiaStateMachine/IStateMachineInspectable.h>
 
 namespace Dia::StateMachine

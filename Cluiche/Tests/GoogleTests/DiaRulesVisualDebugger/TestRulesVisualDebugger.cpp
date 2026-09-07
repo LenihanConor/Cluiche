@@ -11,7 +11,7 @@
 #include <DiaRules/RuleSetComponent.h>
 #include <DiaRules/RuleSet.h>
 #include <DiaRules/RuleActionRegistry.h>
-#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaCondition/Testing/ConditionTestHelpers.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>

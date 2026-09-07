@@ -7,7 +7,7 @@
 #include "LayerBoundsDrawer.h"
 
 #include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaCamera2D/Registry/CameraRegistry2D.h>
 #include <DiaLighting2D/Registry/LightRegistry2D.h>
 #include <DiaScene2D/LayerTable.h>

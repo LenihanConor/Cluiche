@@ -12,8 +12,8 @@
 #include <DiaGridVisibility/GridVisibilitySystem.h>
 #include <DiaGridVisibility/VisibilityGroupId.h>
 #include <DiaEntitySpatial/EntitySpatialModule.h>
-#include <DiaVisualDebugger/Domain/IDebugDomain.h>
-#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaDebugDraw/Domain/IDebugDomain.h>
+#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Colour/RGBA.h>
