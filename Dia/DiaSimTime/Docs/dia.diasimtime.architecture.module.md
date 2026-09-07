@@ -1,18 +1,22 @@
 ---
+schema: dia.module.v1
 module_id: dia.simtime
-display_name: DiaSimTime
+name: DiaSimTime
 path: Dia/DiaSimTime
-parent_module: dia.applicationflow
+parent_module_id: dia.application
 layer: foundation/application
+status: active
+maturity: dev
 version: "1.0"
-status: Active
 dependencies:
-  - dia.core
-  - dia.applicationflow
-  - dia.streams
-  - dia.observation
-  - dia.aibudget  # ISimTimeBudgetedSystem extends Dia::AIBudget::IAIBudgetedSystem
-  - dia.savegame  # SimTimeSaveState implements ISaveable; DiaSimTimeModule registers with SaveRegistry
+  required:
+    - dia.core
+    - dia.application
+    - dia.streams
+    - dia.observation
+    - dia.aibudget  # ISimTimeBudgetedSystem extends Dia::AIBudget::IAIBudgetedSystem
+    - dia.savegame  # SimTimeSaveState implements ISaveable; DiaSimTimeModule registers with SaveRegistry
+  forbidden: []
 public_api:
   headers:
     - DiaSimTime/DiaMainTime.h
@@ -25,7 +29,7 @@ public_api:
 responsibilities:
   - DiaMainTime: trivial MainPU presence module (MainTimeContext is computed directly by ProcessingUnit; no active publishing needed)
   - DiaRenderTime: sole reader of the sim-time FrameStream on RenderPU; pushes RenderTimeContext into the owning ProcessingUnit each tick
-not_responsibilities:
+non_responsibilities:
   - Does not publish SimTimeContext itself — that is DiaSimTimeModule (a later phase, not yet built)
   - Does not drive vsync or swap-chain frame pacing
 ---
