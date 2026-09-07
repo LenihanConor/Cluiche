@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.gridvisibilityvisualdebugger
 name: DiaGridVisibilityVisualDebugger
 owner_team: TBD
-layer: domain/visual/tools
+layer: domain/gameplay/tools
 status: active
 maturity: dev
 
@@ -31,12 +31,12 @@ non_responsibilities:
   - Any runtime behaviour in Release builds
 
 dependent_modules:
-  - dia.diavisualdebugger
-  - dia.diagridvisibility
-  - dia.diaentityspatial
-  - dia.diamaths
-  - dia.diacore
-  - dia.diadebugdraw
+  - dia.debug.visualdebugger
+  - dia.gridvisibility
+  - dia.entityspatial
+  - dia.maths
+  - dia.core
+  - dia.debugdraw
 
 public_api:
   headers:
@@ -48,12 +48,11 @@ public_api:
 
 dependencies:
   required:
-    - dia.diavisualdebugger
-    - dia.diagridvisibility
-    - dia.diaentityspatial
-    - dia.diamaths
-    - dia.diacore
-    - dia.diadebugdraw
-  forbidden:
-    - dia.diagridvisibility (must not reverse-depend — SD-002)
+    - dia.debug.visualdebugger
+    - dia.gridvisibility
+    - dia.entityspatial
+    - dia.maths
+    - dia.core
+    - dia.debugdraw
+  forbidden: []
 ---

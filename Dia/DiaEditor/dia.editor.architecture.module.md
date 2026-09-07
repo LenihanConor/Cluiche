@@ -2,7 +2,7 @@
 schema: dia.module.v1
 module_id: dia.editor
 name: DiaEditor
-layer: domain/visual/core
+layer: foundation/application
 path: Dia/DiaEditor
 status: active
 maturity: dev

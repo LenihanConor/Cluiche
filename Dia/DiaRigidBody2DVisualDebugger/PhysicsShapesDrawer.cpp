@@ -15,7 +15,7 @@
 #include <DiaCore/DebugDraw/IDebugContext.h>
 #include <DiaCore/DebugDraw/DebugColourPalette.h>
 #include <DiaCore/DebugDraw/DebugLayerNames.h>
-#include <DiaGraphics/Misc/RGBA.h>
+#include <DiaCore/Colour/RGBA.h>
 
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <cmath>
@@ -30,7 +30,7 @@ static Dia::Maths::Vector2D RotateVec(const Dia::Maths::Vector2D& v, float rad)
     return Dia::Maths::Vector2D(c * v.x - s * v.y, s * v.x + c * v.y);
 }
 
-static Dia::Graphics::RGBA BodyColour(const Body2DBase* body)
+static Dia::Core::RGBA BodyColour(const Body2DBase* body)
 {
     if (!body->IsAwake())
         return Dia::Debug::DebugColourPalette::kDeepSleep;
@@ -51,7 +51,7 @@ static void DrawBody(const Body2DBase* body, Dia::Core::IDebugDraw& draw, bool s
 
     const Dia::Maths::Vector2D pos = t->GetWorldPosition();
     const float                rot = t->GetLocalRotation().AsRadians();
-    const Dia::Graphics::RGBA  col = BodyColour(body);
+    const Dia::Core::RGBA      col = BodyColour(body);
 
     switch (body->GetShapeKind())
     {
