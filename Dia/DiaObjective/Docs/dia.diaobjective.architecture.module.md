@@ -1,10 +1,20 @@
 ---
-module: dia.diaobjective.architecture.module.v1
-id: DiaObjective
-parent: DiaCondition
-layer: gameplay
-namespace: Dia::Objective
+schema: dia.module.v1
+module_id: dia.objective
+name: DiaObjective
+parent_module_id: dia.condition
+layer: domain/gameplay/core
+path: Dia/DiaObjective
 status: active
+maturity: dev
+namespace: Dia::Objective
+
+dependencies:
+  required:
+    - dia.condition
+    - dia.core
+    - dia.entity
+  forbidden: []
 ---
 
 # DiaObjective

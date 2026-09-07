@@ -98,6 +98,9 @@
   <ItemGroup>
     <ClCompile Include="DiaSchemaBrowserPlugin.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.schemabrowser.architecture.module.md" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\DiaEditor\DiaEditor.vcxproj">

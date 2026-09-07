@@ -80,6 +80,9 @@
     <ClCompile Include="ScalarFieldVisualDebugger.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Docs\dia.scalarfieldvisualdebugger.architecture.module.md" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
       <Project>{8D41CBE3-C493-428D-95F3-627E56500667}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

@@ -1,17 +1,22 @@
 ---
+schema: dia.module.v1
 module_id: dia.entityspawner
-display_name: DiaEntitySpawner
-parent_module: dia.entity
-layer: domain-adapter
+name: DiaEntitySpawner
+path: Dia/DiaEntitySpawner
+parent_module_id: dia.entity
+layer: domain/gameplay/core
+status: active
+maturity: dev
 version: "1.0"
-status: Active
 dependencies:
-  - dia.core
-  - dia.maths
-  - dia.entity
-  - dia.entityspatial
-  - dia.applicationflow
-  - dia.observation
+  required:
+    - dia.core
+    - dia.maths
+    - dia.entity
+    - dia.entityspatial
+    - dia.application
+    - dia.observation
+  forbidden: []
 public_api:
   headers:
     - DiaEntitySpawner/SpawnerTypes.h
@@ -32,7 +37,7 @@ responsibilities:
   - Publishes EntitySpawnedEvent and EntityDespawnedEvent on sim-thread streams
   - Handles external entity destruction via EntityDestroyedMessage subscription
   - Full DiaObservation coverage: logs, traces, metrics, health reporter
-not_responsibilities:
+non_responsibilities:
   - Blueprint authoring (DiaEntityBlueprintEditor)
   - Scene placement (DiaScene2D/3D)
   - Object pooling (future child feature)

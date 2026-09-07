@@ -78,6 +78,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="EntitySpatialVisualDebugger.cpp" />
+    <None Include="Docs\dia.entityspatialvisualdebugger.architecture.module.md" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

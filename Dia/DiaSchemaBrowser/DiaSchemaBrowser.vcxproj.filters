@@ -7,6 +7,9 @@
     <Filter Include="UI">
       <UniqueIdentifier>{07EFBF3C-34EF-5F69-A6FD-0F6B8AA43675}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{949fb5f6-5d73-4eb9-9f8e-8110ec1e22a9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaSchemaBrowserPlugin.cpp">
@@ -17,5 +20,10 @@
     <ClInclude Include="DiaSchemaBrowserPlugin.h">
       <Filter>Source</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.schemabrowser.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
   </ItemGroup>
 </Project>

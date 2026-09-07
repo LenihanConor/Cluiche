@@ -1,24 +1,29 @@
 ---
 schema: dia.module.v1
-module_id: dia.diaflowfieldvisualdebugger
-display_name: DiaFlowFieldVisualDebugger
+module_id: dia.flowfieldvisualdebugger
+name: DiaFlowFieldVisualDebugger
 layer: domain/gameplay/tools
+path: Dia/DiaFlowFieldVisualDebugger
 status: active
 maturity: dev
-parent_module: ~
+parent_module_id: dia.flowfield
 dependent_modules:
   - dia.core
   - dia.maths
   - dia.pathfinding
   - dia.flowfield
-  - dia.visualdebugger
-forbidden_dependencies:
-  - dia.entity
-  - dia.application
-  - dia.graphics
-  - dia.aibudget
-  - dia.steering
-  - imgui
+dependencies:
+  required:
+    - dia.core
+    - dia.maths
+    - dia.pathfinding
+    - dia.flowfield
+  forbidden:
+    - dia.entity
+    - dia.application
+    - dia.graphics
+    - dia.aibudget
+    - dia.steering
 public_api:
   headers:
     - DiaFlowFieldVisualDebugger/FlowFieldVisualDebugger.h

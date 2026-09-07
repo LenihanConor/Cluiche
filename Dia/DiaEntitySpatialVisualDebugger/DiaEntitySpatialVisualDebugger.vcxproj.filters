@@ -9,6 +9,9 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{949fb5f6-5d73-4eb9-9f8e-8110ec1e22a9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EntitySpatialVisualDebugger.h">
@@ -19,5 +22,10 @@
     <ClCompile Include="EntitySpatialVisualDebugger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.entityspatialvisualdebugger.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
   </ItemGroup>
 </Project>

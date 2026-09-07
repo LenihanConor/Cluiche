@@ -1,16 +1,21 @@
 ---
+schema: dia.module.v1
 module_id: dia.entityspatial
-display_name: DiaEntitySpatial
-parent_module: dia.entity
-layer: domain-adapter
+name: DiaEntitySpatial
+path: Dia/DiaEntitySpatial
+parent_module_id: dia.entity
+layer: domain/gameplay/core
+status: active
+maturity: dev
 version: "1.0"
-status: In Progress
 dependencies:
-  - dia.core
-  - dia.maths
-  - dia.geometry2d
-  - dia.entity
-  - dia.observation
+  required:
+    - dia.core
+    - dia.maths
+    - dia.geometry2d
+    - dia.entity
+    - dia.observation
+  forbidden: []
 public_api:
   headers:
     - DiaEntitySpatial/SpatialComponent.h
@@ -27,7 +32,7 @@ responsibilities:
   - Provides SpatialComponent for entity opt-in to spatial indexing
   - Provides EntitySpatialModule with dirty-flag frame sweep and five query shapes
   - Supports SquareGrid and HexGrid topologies
-not_responsibilities:
+non_responsibilities:
   - Does not own the geometry math (ISpatialStructure implementations live in DiaGeometry2D)
   - Does not replicate component data inside the index
   - Does not support concurrent queries on the same module instance
