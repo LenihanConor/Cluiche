@@ -7,7 +7,7 @@
 #include "SoftAnchorLinksDrawer.h"
 #include "SoftVelocityDrawer.h"
 
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
 #include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaSoftBody2D/SoftBodyWorld.h>
 #include <DiaSoftBody2D/Rope.h>
@@ -51,7 +51,7 @@ Dia::Core::StringCRC SoftBody2DDebugDomain::GetGroup() const     { return Dia::C
 Dia::Core::RGBA SoftBody2DDebugDomain::GetAccentColour() const   { return Dia::VisualDebugger::DebugGroupAccents::kPhysics; }
 
 // Lifecycle — lazy construction inside Register(); idempotent
-void SoftBody2DDebugDomain::Register(Dia::Debug::DebugLayerManager& mgr)
+void SoftBody2DDebugDomain::Register(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     if (mLayerManager != nullptr) return;
     mParticlesDrawer   = std::make_unique<SoftParticlesDrawer>(mWorld, mgr);
@@ -63,7 +63,7 @@ void SoftBody2DDebugDomain::Register(Dia::Debug::DebugLayerManager& mgr)
     mLayerManager = &mgr;
 }
 
-void SoftBody2DDebugDomain::Unregister(Dia::Debug::DebugLayerManager& mgr)
+void SoftBody2DDebugDomain::Unregister(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     for (int i = 0; i < kDrawerCount; ++i)
         if (Dia::Debug::IVisualDebugger* d = GetDrawer(i)) mgr.Unregister(d->GetLayerName());

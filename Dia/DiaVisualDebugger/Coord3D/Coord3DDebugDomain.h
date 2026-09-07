@@ -17,6 +17,7 @@
 namespace Dia::Debug
 {
     class DebugLayerManager;
+    class IDebugLayerRegistry;
     class Coord3DOriginDrawer;
     class Coord3DAxesDrawer;
     class Coord3DGridDrawer;
@@ -54,8 +55,13 @@ public:
     bool                 HasWorldDrawers() const override { return true; }
 
     // ---- IDebugDomain: lifecycle ----
-    void Register(Dia::Debug::DebugLayerManager& mgr)   override;
-    void Unregister(Dia::Debug::DebugLayerManager& mgr) override;
+    // Takes IDebugLayerRegistry to satisfy the base signature, but downcasts to the
+    // concrete DebugLayerManager internally — Coord3D drawers are the actual owners
+    // of camera3D state (GetCamera3D) and use RegisterWithoutDraw, both inherently
+    // rendering-specific and out of scope for the graphics-free registry interface.
+    // Same domain, no layering concern — DebugLayerManager lives right here.
+    void Register(Dia::Debug::IDebugLayerRegistry& mgr)   override;
+    void Unregister(Dia::Debug::IDebugLayerRegistry& mgr) override;
 
     // ---- IDebugDomain: panel bridge ----
     void GetJSONState(Json::Value& out) override;

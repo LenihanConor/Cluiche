@@ -13,7 +13,7 @@
 #include <memory>
 
 namespace Dia { namespace Entity { class Domain; } }
-namespace Dia { namespace Debug  { class DebugLayerManager; } }
+namespace Dia { namespace Debug  { class IDebugLayerRegistry; } }
 
 namespace Dia
 {
@@ -43,8 +43,8 @@ namespace Dia
             Dia::Core::RGBA      GetAccentColour() const override;
             bool                 HasWorldDrawers() const override { return true; }
 
-            void Register  (Dia::Debug::DebugLayerManager& mgr) override;
-            void Unregister(Dia::Debug::DebugLayerManager& mgr) override;
+            void Register  (Dia::Debug::IDebugLayerRegistry& mgr) override;
+            void Unregister(Dia::Debug::IDebugLayerRegistry& mgr) override;
 
             int                          GetDrawerCount() const override { return 3; }
             Dia::Debug::IVisualDebugger* GetDrawer(int index) override;
@@ -56,7 +56,7 @@ namespace Dia
             const EntitySpatialModule&     mModule;
             const Dia::Entity::Domain&     mDomain;
             EntitySpatialIndex::SquareDef  mDef;
-            Dia::Debug::DebugLayerManager* mLayerManager = nullptr;
+            Dia::Debug::IDebugLayerRegistry* mLayerManager = nullptr;
 
             float mLabelSize = 12.0f;
 

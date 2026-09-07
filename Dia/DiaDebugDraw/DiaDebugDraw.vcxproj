@@ -84,6 +84,7 @@
     <ClInclude Include="..\DiaVisualDebugger\FixedDrawRegistry.h" />
     <ClInclude Include="Domain\IDebugDomain.h" />
     <ClInclude Include="Domain\DebugGroupAccents.h" />
+    <ClInclude Include="Domain\IDebugLayerRegistry.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\DiaVisualDebugger\DebugLayerManager.cpp" />

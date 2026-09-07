@@ -8,7 +8,7 @@
 #include "BoneLabelsDrawer.h"
 #include "RestPoseDrawer.h"
 
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
 #include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 
 namespace Dia::Rig2D
@@ -53,7 +53,7 @@ Dia::Core::StringCRC Rig2DDebugDomain::GetGroup() const     { return Dia::Core::
 Dia::Core::RGBA Rig2DDebugDomain::GetAccentColour() const   { return Dia::VisualDebugger::DebugGroupAccents::kAnimation; }
 
 // Lifecycle
-void Rig2DDebugDomain::Register(Dia::Debug::DebugLayerManager& mgr)
+void Rig2DDebugDomain::Register(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     if (mLayerManager != nullptr) return;
     mBoneLinesDrawer       = std::make_unique<BoneLinesDrawer>(mSkeleton, mWorldTransforms, mgr);
@@ -66,7 +66,7 @@ void Rig2DDebugDomain::Register(Dia::Debug::DebugLayerManager& mgr)
     mLayerManager = &mgr;
 }
 
-void Rig2DDebugDomain::Unregister(Dia::Debug::DebugLayerManager& mgr)
+void Rig2DDebugDomain::Unregister(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     for (int i = 0; i < kDrawerCount; ++i)
         if (Dia::Debug::IVisualDebugger* d = GetDrawer(i)) mgr.Unregister(d->GetLayerName());

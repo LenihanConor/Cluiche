@@ -5,7 +5,7 @@
 #include "DiaAssetRuntimeVisualDebugger.h"
 
 #include <DiaAssetRuntime/AssetRuntime.h>
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
 #include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 
 namespace Dia::AssetRuntime
@@ -45,7 +45,7 @@ Dia::Core::StringCRC AssetRuntimeDebugDomain::GetGroup() const     { return Dia:
 Dia::Core::RGBA AssetRuntimeDebugDomain::GetAccentColour() const   { return Dia::VisualDebugger::DebugGroupAccents::kCoreDebug; }
 
 // Lifecycle
-void AssetRuntimeDebugDomain::Register(Dia::Debug::DebugLayerManager& mgr)
+void AssetRuntimeDebugDomain::Register(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     if (mLayerManager != nullptr) return;
     mDebugger = std::make_unique<DiaAssetRuntimeVisualDebugger>();
@@ -54,7 +54,7 @@ void AssetRuntimeDebugDomain::Register(Dia::Debug::DebugLayerManager& mgr)
     mLayerManager = &mgr;
 }
 
-void AssetRuntimeDebugDomain::Unregister(Dia::Debug::DebugLayerManager& mgr)
+void AssetRuntimeDebugDomain::Unregister(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     for (int i = 0; i < kDrawerCount; ++i)
         if (Dia::Debug::IVisualDebugger* d = GetDrawer(i)) mgr.Unregister(d->GetLayerName());

@@ -12,7 +12,7 @@
 #include <memory>
 
 namespace Dia { namespace FlowField { class FlowField; } }
-namespace Dia { namespace Debug     { class DebugLayerManager; } }
+namespace Dia { namespace Debug     { class IDebugLayerRegistry; } }
 
 namespace Dia { namespace FlowField {
     class DirectionArrowsDrawer;
@@ -32,8 +32,8 @@ namespace Dia { namespace FlowField {
 
         bool HasWorldDrawers() const override { return true; }
 
-        void Register(Dia::Debug::DebugLayerManager& mgr)   override;
-        void Unregister(Dia::Debug::DebugLayerManager& mgr) override;
+        void Register(Dia::Debug::IDebugLayerRegistry& mgr)   override;
+        void Unregister(Dia::Debug::IDebugLayerRegistry& mgr) override;
 
         int                          GetDrawerCount() const override { return 2; }
         Dia::Debug::IVisualDebugger* GetDrawer(int index) override;
@@ -45,7 +45,7 @@ namespace Dia { namespace FlowField {
         const FlowField& mField;
         float            mCellSize;
         float            mArrowLengthScale = 1.0f;
-        Dia::Debug::DebugLayerManager* mLayerManager = nullptr;
+        Dia::Debug::IDebugLayerRegistry* mLayerManager = nullptr;
 
         std::atomic<bool> mDirectionArrowsEnabled{true};
         std::atomic<bool> mReachabilityOverlayEnabled{true};

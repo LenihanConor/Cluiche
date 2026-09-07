@@ -13,7 +13,7 @@
 #include <DiaDebugDraw/Domain/IDebugDomain.h>
 #include <memory>
 
-namespace Dia::Debug        { class DebugLayerManager; }
+namespace Dia::Debug        { class IDebugLayerRegistry; }
 namespace Dia::AssetRuntime { class DiaAssetRuntimeVisualDebugger; }
 namespace Dia::AssetRuntime { class AssetRuntime; }
 
@@ -37,8 +37,8 @@ public:
     bool                 HasWorldDrawers() const override { return true; }
 
     // ---- IDebugDomain: lifecycle ----
-    void Register(Dia::Debug::DebugLayerManager& mgr)   override;
-    void Unregister(Dia::Debug::DebugLayerManager& mgr) override;
+    void Register(Dia::Debug::IDebugLayerRegistry& mgr)   override;
+    void Unregister(Dia::Debug::IDebugLayerRegistry& mgr) override;
 
     // Inject the runtime so GetJSONState() can populate live stats.
     // Must be called before GetJSONState() is first invoked (kMain thread).
@@ -55,7 +55,7 @@ public:
 private:
     Dia::Core::StringCRC ResolveLayerName(const char* drawerName) const;
 
-    Dia::Debug::DebugLayerManager*                        mLayerManager = nullptr;
+    Dia::Debug::IDebugLayerRegistry*                        mLayerManager = nullptr;
     std::unique_ptr<DiaAssetRuntimeVisualDebugger>        mDebugger;
     const Dia::AssetRuntime::AssetRuntime*                mRuntime      = nullptr;
 };

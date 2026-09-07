@@ -14,7 +14,7 @@
 
 #include <memory>
 
-namespace Dia::Debug  { class DebugLayerManager; }
+namespace Dia::Debug  { class IDebugLayerRegistry; }
 namespace Dia::Entity { class IEntityInspectable; class Domain; }
 
 namespace Dia::EntityVisualDebugger
@@ -61,8 +61,8 @@ public:
     bool                 HasWorldDrawers() const override { return true; }
 
     // ---- IDebugDomain: lifecycle ----
-    void Register(Dia::Debug::DebugLayerManager& mgr)   override;
-    void Unregister(Dia::Debug::DebugLayerManager& mgr) override;
+    void Register(Dia::Debug::IDebugLayerRegistry& mgr)   override;
+    void Unregister(Dia::Debug::IDebugLayerRegistry& mgr) override;
 
     // ---- IDebugDomain: panel bridge ----
     void GetJSONState(Json::Value& out) override;
@@ -78,7 +78,7 @@ private:
     Dia::Entity::IEntityInspectable& mInspectable;
     Dia::Entity::Domain&             mDomain;
     Dia::Core::StringCRC             mPositionTypeId;
-    Dia::Debug::DebugLayerManager*   mLayerManager = nullptr;
+    Dia::Debug::IDebugLayerRegistry*   mLayerManager = nullptr;
 
     std::unique_ptr<EntityLabelsDrawer>             mLabelsDrawer;
     std::unique_ptr<HierarchyLinesDrawer>           mHierarchyDrawer;

@@ -7,7 +7,7 @@
 
 namespace Dia::AICallout { class CalloutRegistry; }
 namespace Dia::AICalloutVisualDebugger { class CalloutRadiiDrawer; }
-namespace Dia::Debug { class DebugLayerManager; }
+namespace Dia::Debug { class IDebugLayerRegistry; }
 
 namespace Dia::AICalloutVisualDebugger {
 
@@ -24,8 +24,8 @@ public:
     Dia::Core::RGBA      GetAccentColour() const override;
     bool                 HasWorldDrawers() const override { return true; }
 
-    void Register  (Dia::Debug::DebugLayerManager& mgr) override;
-    void Unregister(Dia::Debug::DebugLayerManager& mgr) override;
+    void Register  (Dia::Debug::IDebugLayerRegistry& mgr) override;
+    void Unregister(Dia::Debug::IDebugLayerRegistry& mgr) override;
 
     int                          GetDrawerCount() const override { return 1; }
     Dia::Debug::IVisualDebugger* GetDrawer(int index) override;

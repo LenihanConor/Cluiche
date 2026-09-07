@@ -7,7 +7,7 @@
 
 #include <DiaEntitySpatial/Adaptors/EntitySpatialOverlay.h>
 #include <DiaEntitySpatial/EntitySpatialModule.h>
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
 #include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaEntity/Domain.h>
 #include <memory>
@@ -42,7 +42,7 @@ const char*          EntitySpatialVisualDebugger::GetDescription()  const { retu
 Dia::Core::StringCRC EntitySpatialVisualDebugger::GetGroup()        const { return Dia::Core::StringCRC("Entity"); }
 Dia::Core::RGBA      EntitySpatialVisualDebugger::GetAccentColour() const { return Dia::VisualDebugger::DebugGroupAccents::kEntity; }
 
-void EntitySpatialVisualDebugger::Register(Dia::Debug::DebugLayerManager& mgr)
+void EntitySpatialVisualDebugger::Register(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     if (mLayerManager != nullptr) return;
     mGrid     = std::make_unique<Adaptors::EntitySpatialGridOverlay>(mDef, kLayerGrid);
@@ -57,7 +57,7 @@ void EntitySpatialVisualDebugger::Register(Dia::Debug::DebugLayerManager& mgr)
     mLayerManager = &mgr;
 }
 
-void EntitySpatialVisualDebugger::Unregister(Dia::Debug::DebugLayerManager& mgr)
+void EntitySpatialVisualDebugger::Unregister(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     for (int i = 0; i < 3; ++i)
         if (auto* d = GetDrawer(i)) mgr.Unregister(d->GetLayerName());

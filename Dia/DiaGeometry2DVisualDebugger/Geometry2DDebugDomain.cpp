@@ -6,7 +6,7 @@
 #include "ShapeLabelsDrawer.h"
 #include "AABBOverlayDrawer.h"
 
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
 #include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 
 namespace Dia::Geometry2DVisualDebugger
@@ -70,7 +70,7 @@ Dia::Core::RGBA Geometry2DDebugDomain::GetAccentColour() const
 // Lifecycle
 // ---------------------------------------------------------------------------
 
-void Geometry2DDebugDomain::Register(Dia::Debug::DebugLayerManager& mgr)
+void Geometry2DDebugDomain::Register(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     if (mLayerManager != nullptr) return;   // idempotent
 
@@ -86,7 +86,7 @@ void Geometry2DDebugDomain::Register(Dia::Debug::DebugLayerManager& mgr)
     mLayerManager = &mgr;
 }
 
-void Geometry2DDebugDomain::Unregister(Dia::Debug::DebugLayerManager& mgr)
+void Geometry2DDebugDomain::Unregister(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     for (int i = 0; i < kDrawerCount; ++i)
         if (Dia::Debug::IVisualDebugger* d = GetDrawer(i)) mgr.Unregister(d->GetLayerName());

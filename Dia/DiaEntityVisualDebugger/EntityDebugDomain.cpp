@@ -9,7 +9,7 @@
 #include "EntityStatsDrawer.h"
 #include "SelectionInspectorDrawer.h"
 
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaEntity/IEntityInspectable.h>
@@ -87,7 +87,7 @@ Dia::Core::RGBA EntityDebugDomain::GetAccentColour() const
 // Lifecycle
 // ---------------------------------------------------------------------------
 
-void EntityDebugDomain::Register(Dia::Debug::DebugLayerManager& mgr)
+void EntityDebugDomain::Register(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     if (mLayerManager != nullptr)
         return;   // already registered — idempotent
@@ -109,7 +109,7 @@ void EntityDebugDomain::Register(Dia::Debug::DebugLayerManager& mgr)
     mLayerManager = &mgr;
 }
 
-void EntityDebugDomain::Unregister(Dia::Debug::DebugLayerManager& mgr)
+void EntityDebugDomain::Unregister(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     for (int i = 0; i < kDrawerCount; ++i)
     {

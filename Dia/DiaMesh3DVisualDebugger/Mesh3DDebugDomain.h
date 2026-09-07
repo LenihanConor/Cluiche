@@ -13,7 +13,7 @@
 #include <DiaDebugDraw/Domain/IDebugDomain.h>
 #include <memory>
 
-namespace Dia::Debug { class DebugLayerManager; }
+namespace Dia::Debug { class IDebugLayerRegistry; }
 namespace Dia { namespace Graphics3D { class Mesh3DFrameData; } }
 
 namespace Dia { namespace Mesh3D {
@@ -49,8 +49,8 @@ public:
     bool                 HasWorldDrawers() const override { return true; }
 
     // ---- IDebugDomain: lifecycle ----
-    void Register(Dia::Debug::DebugLayerManager& mgr)   override;
-    void Unregister(Dia::Debug::DebugLayerManager& mgr) override;
+    void Register(Dia::Debug::IDebugLayerRegistry& mgr)   override;
+    void Unregister(Dia::Debug::IDebugLayerRegistry& mgr) override;
 
     // ---- IDebugDomain: panel bridge ----
     void GetJSONState(Json::Value& out) override;
@@ -65,7 +65,7 @@ private:
 
     const Dia::Graphics3D::Mesh3DFrameData& mFrameData;
     const Dia::Mesh3D::Mesh3DAssetHandler&  mAssetHandler;
-    Dia::Debug::DebugLayerManager*          mLayerManager = nullptr;
+    Dia::Debug::IDebugLayerRegistry*          mLayerManager = nullptr;
 
     std::unique_ptr<MeshBoundsDrawer>  mBoundsDrawer;
     std::unique_ptr<MeshOriginDrawer>  mOriginsDrawer;

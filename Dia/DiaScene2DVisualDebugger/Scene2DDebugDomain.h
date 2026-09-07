@@ -12,7 +12,7 @@
 #include <DiaDebugDraw/Domain/IDebugDomain.h>
 #include <memory>
 
-namespace Dia::Debug    { class DebugLayerManager; }
+namespace Dia::Debug    { class IDebugLayerRegistry; }
 namespace Dia::Camera2D  { class CameraRegistry2D; }
 namespace Dia::Lighting2D { class LightRegistry2D; }
 namespace Dia::Scene2D   { class LayerTable; }
@@ -53,8 +53,8 @@ public:
     bool                 HasWorldDrawers() const override { return true; }
 
     // ---- IDebugDomain: lifecycle ----
-    void Register(Dia::Debug::DebugLayerManager& mgr)   override;
-    void Unregister(Dia::Debug::DebugLayerManager& mgr) override;
+    void Register(Dia::Debug::IDebugLayerRegistry& mgr)   override;
+    void Unregister(Dia::Debug::IDebugLayerRegistry& mgr) override;
 
     // ---- IDebugDomain: panel bridge ----
     void GetJSONState(Json::Value& out) override;
@@ -70,7 +70,7 @@ private:
     const Dia::Camera2D::CameraRegistry2D&  mCameraRegistry;
     const Dia::Lighting2D::LightRegistry2D& mLightRegistry;
     const Dia::Scene2D::LayerTable&         mLayerTable;
-    Dia::Debug::DebugLayerManager*          mLayerManager = nullptr;
+    Dia::Debug::IDebugLayerRegistry*          mLayerManager = nullptr;
 
     std::unique_ptr<CamerasDrawer>     mCamerasDrawer;
     std::unique_ptr<LightsDrawer>      mLightsDrawer;

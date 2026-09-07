@@ -7,7 +7,7 @@
 
 #include "DirectionArrowsDrawer.h"
 #include "ReachabilityOverlayDrawer.h"
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
 #include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaFlowField/FlowField.h>
 #include <DiaPathfinding/CellCoord.h>
@@ -35,7 +35,7 @@ const char* FlowFieldVisualDebugger::GetDescription()           const { return "
 Dia::Core::StringCRC FlowFieldVisualDebugger::GetGroup()        const { return Dia::Core::StringCRC("Navigation"); }
 Dia::Core::RGBA      FlowFieldVisualDebugger::GetAccentColour() const { return Dia::VisualDebugger::DebugGroupAccents::kNavigation; }
 
-void FlowFieldVisualDebugger::Register(Dia::Debug::DebugLayerManager& mgr)
+void FlowFieldVisualDebugger::Register(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     if (mLayerManager != nullptr) return;
     mDirectionArrows     = std::make_unique<DirectionArrowsDrawer>(mField, mgr, mCellSize);
@@ -48,7 +48,7 @@ void FlowFieldVisualDebugger::Register(Dia::Debug::DebugLayerManager& mgr)
     mLayerManager = &mgr;
 }
 
-void FlowFieldVisualDebugger::Unregister(Dia::Debug::DebugLayerManager& mgr)
+void FlowFieldVisualDebugger::Unregister(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     for (int i = 0; i < 2; ++i)
         if (auto* d = GetDrawer(i)) mgr.Unregister(d->GetLayerName());

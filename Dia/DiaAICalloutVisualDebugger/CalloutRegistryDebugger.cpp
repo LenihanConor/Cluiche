@@ -3,7 +3,7 @@
 
 #include "CalloutRadiiDrawer.h"
 #include <DiaDebugDraw/Domain/DebugGroupAccents.h>
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
 #include <DiaAICallout/CalloutRegistry.h>
 #include <stdio.h>
 
@@ -29,13 +29,13 @@ const char* CalloutRegistryDebugger::GetDescription()          const { return "A
 Dia::Core::StringCRC CalloutRegistryDebugger::GetGroup()       const { return Dia::Core::StringCRC("AIBehavior"); }
 Dia::Core::RGBA CalloutRegistryDebugger::GetAccentColour()     const { return Dia::VisualDebugger::DebugGroupAccents::kAIBehavior; }
 
-void CalloutRegistryDebugger::Register(Dia::Debug::DebugLayerManager& mgr)
+void CalloutRegistryDebugger::Register(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     mRadiiDrawer->SetEnabled(mRadiiEnabled.load());
     mgr.Register(mRadiiDrawer.get(), 50);
 }
 
-void CalloutRegistryDebugger::Unregister(Dia::Debug::DebugLayerManager& mgr)
+void CalloutRegistryDebugger::Unregister(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     mgr.Unregister(mRadiiDrawer->GetLayerName());
 }

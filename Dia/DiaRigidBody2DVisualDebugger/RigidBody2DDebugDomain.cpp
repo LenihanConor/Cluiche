@@ -8,7 +8,7 @@
 #include "PhysicsAABBDrawer.h"
 #include "ConstraintLinesDrawer.h"
 
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
 #include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaRigidBody2D/World/PhysicsWorld.h>
 #include <DiaRigidBody2D/Bodies/Body2DBase.h>
@@ -83,7 +83,7 @@ Dia::Core::RGBA RigidBody2DDebugDomain::GetAccentColour() const
 // Lifecycle
 // ---------------------------------------------------------------------------
 
-void RigidBody2DDebugDomain::Register(Dia::Debug::DebugLayerManager& mgr)
+void RigidBody2DDebugDomain::Register(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     if (mLayerManager != nullptr)
         return;   // already registered — idempotent
@@ -104,7 +104,7 @@ void RigidBody2DDebugDomain::Register(Dia::Debug::DebugLayerManager& mgr)
     mLayerManager = &mgr;
 }
 
-void RigidBody2DDebugDomain::Unregister(Dia::Debug::DebugLayerManager& mgr)
+void RigidBody2DDebugDomain::Unregister(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     for (int i = 0; i < kDrawerCount; ++i)
     {

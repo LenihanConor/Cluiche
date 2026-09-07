@@ -13,7 +13,7 @@
 #include <DiaDebugDraw/Domain/IDebugDomain.h>
 #include <memory>
 
-namespace Dia::Debug { class DebugLayerManager; }
+namespace Dia::Debug { class IDebugLayerRegistry; }
 
 namespace Dia::SoftBody2D
 {
@@ -44,8 +44,8 @@ public:
     bool                 HasWorldDrawers() const override { return true; }
 
     // ---- IDebugDomain: lifecycle ----
-    void Register(Dia::Debug::DebugLayerManager& mgr)   override;
-    void Unregister(Dia::Debug::DebugLayerManager& mgr) override;
+    void Register(Dia::Debug::IDebugLayerRegistry& mgr)   override;
+    void Unregister(Dia::Debug::IDebugLayerRegistry& mgr) override;
 
     // ---- IDebugDomain: panel bridge ----
     void GetJSONState(Json::Value& out) override;
@@ -59,7 +59,7 @@ private:
     Dia::Core::StringCRC ResolveLayerName(const char* drawerName) const;
 
     const SoftBodyWorld&           mWorld;
-    Dia::Debug::DebugLayerManager* mLayerManager = nullptr;
+    Dia::Debug::IDebugLayerRegistry* mLayerManager = nullptr;
 
     std::unique_ptr<SoftParticlesDrawer>   mParticlesDrawer;
     std::unique_ptr<SoftConstraintsDrawer> mConstraintsDrawer;

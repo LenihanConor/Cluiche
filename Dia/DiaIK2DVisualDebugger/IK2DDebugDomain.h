@@ -13,7 +13,7 @@
 #include <DiaDebugDraw/Domain/IDebugDomain.h>
 #include <memory>
 
-namespace Dia::Debug { class DebugLayerManager; }
+namespace Dia::Debug { class IDebugLayerRegistry; }
 namespace Dia::IK2D  { class IKSolver; }
 namespace Dia::Rig2D { class Skeleton; }
 
@@ -46,8 +46,8 @@ public:
     bool                 HasWorldDrawers() const override { return true; }
 
     // ---- IDebugDomain: lifecycle ----
-    void Register(Dia::Debug::DebugLayerManager& mgr)   override;
-    void Unregister(Dia::Debug::DebugLayerManager& mgr) override;
+    void Register(Dia::Debug::IDebugLayerRegistry& mgr)   override;
+    void Unregister(Dia::Debug::IDebugLayerRegistry& mgr) override;
 
     // ---- IDebugDomain: panel bridge ----
     void GetJSONState(Json::Value& out) override;
@@ -62,7 +62,7 @@ private:
 
     const IKSolver&                mSolver;
     const Dia::Rig2D::Skeleton&    mSkeleton;
-    Dia::Debug::DebugLayerManager* mLayerManager = nullptr;
+    Dia::Debug::IDebugLayerRegistry* mLayerManager = nullptr;
 
     std::unique_ptr<IKChainBonesDrawer>    mChainBonesDrawer;
     std::unique_ptr<IKChainJointsDrawer>   mChainJointsDrawer;

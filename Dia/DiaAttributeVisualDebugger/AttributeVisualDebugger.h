@@ -23,7 +23,7 @@
 
 #include <atomic>
 
-namespace Dia::Debug     { class DebugLayerManager; }
+namespace Dia::Debug     { class IDebugLayerRegistry; }
 namespace Dia::Entity    { class Domain; }
 namespace Dia::Attribute { class AttributeSet; class AttributeSetComponent; }
 
@@ -85,8 +85,8 @@ public:
     bool HasWorldDrawers() const override { return false; }
 
     // ---- IDebugDomain: lifecycle (context capture only — no drawers) ----
-    void Register(Dia::Debug::DebugLayerManager& mgr)   override;
-    void Unregister(Dia::Debug::DebugLayerManager& mgr) override;
+    void Register(Dia::Debug::IDebugLayerRegistry& mgr)   override;
+    void Unregister(Dia::Debug::IDebugLayerRegistry& mgr) override;
 
     // ---- IDebugDomain: panel bridge ----
     void GetJSONState(Json::Value& out) override;
@@ -135,7 +135,7 @@ private:
     static const unsigned int kMaxTrackedConditionalModifiers = 64;
 
     Dia::Entity::Domain&           mDomain;
-    Dia::Debug::DebugLayerManager* mLayerManager = nullptr;
+    Dia::Debug::IDebugLayerRegistry* mLayerManager = nullptr;
 
     // Currently-subscribed component, or nullptr. Non-owning.
     Dia::Attribute::AttributeSetComponent* mObservedComponent = nullptr;

@@ -7,7 +7,7 @@
 #include "IKChainArrowsDrawer.h"
 #include "IKReachCirclesDrawer.h"
 
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
 #include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaIK2D/IKSolver.h>
 
@@ -51,7 +51,7 @@ Dia::Core::StringCRC IK2DDebugDomain::GetGroup() const     { return Dia::Core::S
 Dia::Core::RGBA IK2DDebugDomain::GetAccentColour() const   { return Dia::VisualDebugger::DebugGroupAccents::kAnimation; }
 
 // Lifecycle
-void IK2DDebugDomain::Register(Dia::Debug::DebugLayerManager& mgr)
+void IK2DDebugDomain::Register(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     if (mLayerManager != nullptr) return;
     mChainBonesDrawer   = std::make_unique<IKChainBonesDrawer>(mSolver, mSkeleton, mgr);
@@ -63,7 +63,7 @@ void IK2DDebugDomain::Register(Dia::Debug::DebugLayerManager& mgr)
     mLayerManager = &mgr;
 }
 
-void IK2DDebugDomain::Unregister(Dia::Debug::DebugLayerManager& mgr)
+void IK2DDebugDomain::Unregister(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     for (int i = 0; i < kDrawerCount; ++i)
         if (Dia::Debug::IVisualDebugger* d = GetDrawer(i)) mgr.Unregister(d->GetLayerName());

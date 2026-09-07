@@ -12,7 +12,7 @@
 #include <memory>
 
 namespace Dia { namespace Pathfinding { class SquarePathGrid; struct PathResult; } }
-namespace Dia { namespace Debug       { class DebugLayerManager; } }
+namespace Dia { namespace Debug       { class IDebugLayerRegistry; } }
 
 namespace Dia { namespace Pathfinding {
     class PathPolylineDrawer;
@@ -32,8 +32,8 @@ namespace Dia { namespace Pathfinding {
 
         bool HasWorldDrawers() const override { return true; }
 
-        void Register(Dia::Debug::DebugLayerManager& mgr)   override;
-        void Unregister(Dia::Debug::DebugLayerManager& mgr) override;
+        void Register(Dia::Debug::IDebugLayerRegistry& mgr)   override;
+        void Unregister(Dia::Debug::IDebugLayerRegistry& mgr) override;
 
         int                          GetDrawerCount() const override { return 2; }
         Dia::Debug::IVisualDebugger* GetDrawer(int index) override;
@@ -45,7 +45,7 @@ namespace Dia { namespace Pathfinding {
         const SquarePathGrid& mGrid;
         const PathResult&     mResult;
         float                 mCellSize;
-        Dia::Debug::DebugLayerManager* mLayerManager = nullptr;
+        Dia::Debug::IDebugLayerRegistry* mLayerManager = nullptr;
 
         float mMarkerRadius = 1.0f;
 

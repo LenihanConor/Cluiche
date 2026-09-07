@@ -6,7 +6,7 @@
 #include "LightsDrawer.h"
 #include "LayerBoundsDrawer.h"
 
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
 #include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaCamera2D/Registry/CameraRegistry2D.h>
 #include <DiaLighting2D/Registry/LightRegistry2D.h>
@@ -54,7 +54,7 @@ Dia::Core::StringCRC Scene2DDebugDomain::GetGroup() const     { return Dia::Core
 Dia::Core::RGBA Scene2DDebugDomain::GetAccentColour() const   { return Dia::VisualDebugger::DebugGroupAccents::kRendering; }
 
 // Lifecycle
-void Scene2DDebugDomain::Register(Dia::Debug::DebugLayerManager& mgr)
+void Scene2DDebugDomain::Register(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     if (mLayerManager != nullptr) return;
     mCamerasDrawer    = std::make_unique<CamerasDrawer>(mCameraRegistry, mgr);
@@ -65,7 +65,7 @@ void Scene2DDebugDomain::Register(Dia::Debug::DebugLayerManager& mgr)
     mLayerManager = &mgr;
 }
 
-void Scene2DDebugDomain::Unregister(Dia::Debug::DebugLayerManager& mgr)
+void Scene2DDebugDomain::Unregister(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     for (int i = 0; i < kDrawerCount; ++i)
         if (Dia::Debug::IVisualDebugger* d = GetDrawer(i)) mgr.Unregister(d->GetLayerName());

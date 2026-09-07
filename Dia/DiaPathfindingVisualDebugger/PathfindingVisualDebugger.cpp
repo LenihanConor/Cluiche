@@ -7,7 +7,7 @@
 
 #include "PathPolylineDrawer.h"
 #include "GridPassabilityDrawer.h"
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
 #include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaPathfinding/SquarePathGrid.h>
 #include <DiaPathfinding/PathResult.h>
@@ -37,7 +37,7 @@ const char* PathfindingVisualDebugger::GetDescription()           const { return
 Dia::Core::StringCRC PathfindingVisualDebugger::GetGroup()        const { return Dia::Core::StringCRC("Navigation"); }
 Dia::Core::RGBA      PathfindingVisualDebugger::GetAccentColour() const { return Dia::VisualDebugger::DebugGroupAccents::kNavigation; }
 
-void PathfindingVisualDebugger::Register(Dia::Debug::DebugLayerManager& mgr)
+void PathfindingVisualDebugger::Register(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     if (mLayerManager != nullptr) return;
     mPathPolyline    = std::make_unique<PathPolylineDrawer>(mGrid, mResult, mgr, mCellSize);
@@ -50,7 +50,7 @@ void PathfindingVisualDebugger::Register(Dia::Debug::DebugLayerManager& mgr)
     mLayerManager = &mgr;
 }
 
-void PathfindingVisualDebugger::Unregister(Dia::Debug::DebugLayerManager& mgr)
+void PathfindingVisualDebugger::Unregister(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     for (int i = 0; i < 2; ++i)
         if (auto* d = GetDrawer(i)) mgr.Unregister(d->GetLayerName());

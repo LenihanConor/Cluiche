@@ -8,7 +8,7 @@
 #include "VelocityArrowsDrawer.h"
 #include "SeparationRadiusDrawer.h"
 #include "DetectionBoxDrawer.h"
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
 #include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaSteering/SteeringSystem.h>
 #include <memory>
@@ -36,7 +36,7 @@ const char* SteeringVisualDebugger::GetDescription()           const { return "S
 Dia::Core::StringCRC SteeringVisualDebugger::GetGroup()        const { return Dia::Core::StringCRC("Navigation"); }
 Dia::Core::RGBA      SteeringVisualDebugger::GetAccentColour() const { return Dia::VisualDebugger::DebugGroupAccents::kNavigation; }
 
-void SteeringVisualDebugger::Register(Dia::Debug::DebugLayerManager& mgr)
+void SteeringVisualDebugger::Register(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     if (mLayerManager != nullptr) return;
     mVelocityArrows   = std::make_unique<VelocityArrowsDrawer>(mSystem, mgr, mArrowScale);
@@ -51,7 +51,7 @@ void SteeringVisualDebugger::Register(Dia::Debug::DebugLayerManager& mgr)
     mLayerManager = &mgr;
 }
 
-void SteeringVisualDebugger::Unregister(Dia::Debug::DebugLayerManager& mgr)
+void SteeringVisualDebugger::Unregister(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     for (int i = 0; i < 3; ++i)
         if (auto* d = GetDrawer(i)) mgr.Unregister(d->GetLayerName());

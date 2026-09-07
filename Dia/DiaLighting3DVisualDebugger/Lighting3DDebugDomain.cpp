@@ -6,7 +6,7 @@
 #include "LightPathArcDrawer.h"
 #include "LightRangesDrawer.h"
 
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
 #include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaLighting3D/Registry/LightRegistry3D.h>
 
@@ -46,7 +46,7 @@ Dia::Core::StringCRC Lighting3DDebugDomain::GetGroup() const     { return Dia::C
 Dia::Core::RGBA Lighting3DDebugDomain::GetAccentColour() const   { return Dia::VisualDebugger::DebugGroupAccents::kRendering; }
 
 // Lifecycle
-void Lighting3DDebugDomain::Register(Dia::Debug::DebugLayerManager& mgr)
+void Lighting3DDebugDomain::Register(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     if (mLayerManager != nullptr) return;
     mWidgetsDrawer = std::make_unique<LightWidgetsDrawer>(mRegistry);
@@ -57,7 +57,7 @@ void Lighting3DDebugDomain::Register(Dia::Debug::DebugLayerManager& mgr)
     mLayerManager = &mgr;
 }
 
-void Lighting3DDebugDomain::Unregister(Dia::Debug::DebugLayerManager& mgr)
+void Lighting3DDebugDomain::Unregister(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     for (int i = 0; i < kDrawerCount; ++i)
         if (Dia::Debug::IVisualDebugger* d = GetDrawer(i)) mgr.Unregister(d->GetLayerName());

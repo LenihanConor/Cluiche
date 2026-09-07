@@ -30,6 +30,10 @@ responsibilities:
   - Optional DiaAPI command registration for layer toggle/scale
   - IDebugDomain — abstract contract every domain debug-domain implements (graphics-free)
   - DebugGroupAccents — canonical accent colour constants per debug domain group (graphics-free)
+  - IDebugLayerRegistry — graphics-free Register/Unregister/EnableLayer/DisableLayer/
+    IsLayerEnabled/SetDebugScale contract (extends IDebugContext); DebugLayerManager
+    implements it so domain debuggers can register/toggle drawers without depending
+    on DebugLayerManager's camera/viewport state directly
 
 non_responsibilities:
   - Concrete draw implementations (DiaVisualDebugger)

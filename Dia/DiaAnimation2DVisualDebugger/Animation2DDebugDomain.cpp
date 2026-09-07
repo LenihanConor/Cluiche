@@ -6,7 +6,7 @@
 #include "AnimClipCursorDrawer.h"
 #include "AnimSpringDrawer.h"
 
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
 #include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 #include <DiaAnimation2D/AnimationEvaluator.h>
 #include <DiaAnimation2D/AnimClipPlayer.h>
@@ -55,7 +55,7 @@ Dia::Core::StringCRC Animation2DDebugDomain::GetGroup() const     { return Dia::
 Dia::Core::RGBA Animation2DDebugDomain::GetAccentColour() const   { return Dia::VisualDebugger::DebugGroupAccents::kAnimation; }
 
 // Lifecycle
-void Animation2DDebugDomain::Register(Dia::Debug::DebugLayerManager& mgr)
+void Animation2DDebugDomain::Register(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     if (mLayerManager != nullptr) return;
     mBlendWeightsDrawer = std::make_unique<AnimBlendWeightsDrawer>(mEvaluator, mSkeleton, mWorldTransforms, mgr);
@@ -66,7 +66,7 @@ void Animation2DDebugDomain::Register(Dia::Debug::DebugLayerManager& mgr)
     mLayerManager = &mgr;
 }
 
-void Animation2DDebugDomain::Unregister(Dia::Debug::DebugLayerManager& mgr)
+void Animation2DDebugDomain::Unregister(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     for (int i = 0; i < kDrawerCount; ++i)
         if (Dia::Debug::IVisualDebugger* d = GetDrawer(i)) mgr.Unregister(d->GetLayerName());

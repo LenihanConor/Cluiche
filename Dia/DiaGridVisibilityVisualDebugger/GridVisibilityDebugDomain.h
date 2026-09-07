@@ -14,7 +14,7 @@
 #include <DiaEntitySpatial/EntitySpatialModule.h>
 #include <DiaDebugDraw/Domain/IDebugDomain.h>
 #include <DiaDebugDraw/Domain/DebugGroupAccents.h>
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Colour/RGBA.h>
 #include <DiaCore/DebugDraw/IVisualDebugger.h>
@@ -300,7 +300,7 @@ namespace Dia
             // IDebugDomain — Lifecycle
             // ----------------------------------------------------------------
 
-            void Register(Dia::Debug::DebugLayerManager& mgr) override
+            void Register(Dia::Debug::IDebugLayerRegistry& mgr) override
             {
                 if (mLayerManager != nullptr) return;
                 mgr.Register(&mCellStateDrawer,   10, Dia::Core::StringCRC("GridVisibility"));
@@ -309,7 +309,7 @@ namespace Dia
                 mLayerManager = &mgr;
             }
 
-            void Unregister(Dia::Debug::DebugLayerManager& mgr) override
+            void Unregister(Dia::Debug::IDebugLayerRegistry& mgr) override
             {
                 mgr.Unregister(mCellStateDrawer.GetLayerName());
                 mgr.Unregister(mSightRadiiDrawer.GetLayerName());
@@ -441,7 +441,7 @@ namespace Dia
             SightRadiiDrawer         mSightRadiiDrawer;
             ShadowcastBoundaryDrawer mBoundaryDrawer;
 
-            Dia::Debug::DebugLayerManager* mLayerManager = nullptr;
+            Dia::Debug::IDebugLayerRegistry* mLayerManager = nullptr;
         };
 
     } // namespace GridVisibilityVisualDebugger

@@ -16,7 +16,7 @@
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <memory>
 
-namespace Dia::Debug { class DebugLayerManager; }
+namespace Dia::Debug { class IDebugLayerRegistry; }
 
 namespace Dia::Rig2D
 {
@@ -49,8 +49,8 @@ public:
     bool                 HasWorldDrawers() const override { return true; }
 
     // ---- IDebugDomain: lifecycle ----
-    void Register(Dia::Debug::DebugLayerManager& mgr)   override;
-    void Unregister(Dia::Debug::DebugLayerManager& mgr) override;
+    void Register(Dia::Debug::IDebugLayerRegistry& mgr)   override;
+    void Unregister(Dia::Debug::IDebugLayerRegistry& mgr) override;
 
     // ---- IDebugDomain: panel bridge ----
     void GetJSONState(Json::Value& out) override;
@@ -65,7 +65,7 @@ private:
 
     const Skeleton&                                                        mSkeleton;
     const Dia::Core::Containers::DynamicArrayC<BoneTransform, kMaxBones>& mWorldTransforms;
-    Dia::Debug::DebugLayerManager*                                         mLayerManager = nullptr;
+    Dia::Debug::IDebugLayerRegistry*                                         mLayerManager = nullptr;
 
     std::unique_ptr<BoneLinesDrawer>       mBoneLinesDrawer;
     std::unique_ptr<JointCirclesDrawer>    mJointCirclesDrawer;

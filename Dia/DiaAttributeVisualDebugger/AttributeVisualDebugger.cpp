@@ -7,7 +7,7 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
 #include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 
 #include <DiaAttribute/AttributeSet.h>
@@ -99,7 +99,7 @@ Dia::Core::RGBA AttributeVisualDebugger::GetAccentColour() const
 // selected-entity id).
 // ---------------------------------------------------------------------------
 
-void AttributeVisualDebugger::Register(Dia::Debug::DebugLayerManager& mgr)
+void AttributeVisualDebugger::Register(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     if (mLayerManager != nullptr)
         return; // already registered — idempotent, matching EntityDebugDomain
@@ -107,7 +107,7 @@ void AttributeVisualDebugger::Register(Dia::Debug::DebugLayerManager& mgr)
     mLayerManager = &mgr;
 }
 
-void AttributeVisualDebugger::Unregister(Dia::Debug::DebugLayerManager& /*mgr*/)
+void AttributeVisualDebugger::Unregister(Dia::Debug::IDebugLayerRegistry& /*mgr*/)
 {
     // Selection is no longer observable — drop the current subscription so the
     // domain does not hold an observer registration it can no longer refresh.

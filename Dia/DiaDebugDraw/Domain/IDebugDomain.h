@@ -17,7 +17,7 @@ namespace Dia
 {
     namespace Debug
     {
-        class DebugLayerManager;
+        class IDebugLayerRegistry;
     }
 }
 
@@ -78,11 +78,11 @@ namespace Dia
 
             /// Bulk-registers all world-space drawers with the layer manager.
             /// Default no-op for panel-only domains.
-            virtual void Register(Dia::Debug::DebugLayerManager& mgr)   {}
+            virtual void Register(Dia::Debug::IDebugLayerRegistry& mgr)   {}
 
             /// Bulk-unregisters all world-space drawers from the layer manager.
             /// Default no-op for panel-only domains.
-            virtual void Unregister(Dia::Debug::DebugLayerManager& mgr) {}
+            virtual void Unregister(Dia::Debug::IDebugLayerRegistry& mgr) {}
 
             // ----------------------------------------------------------------
             // Data bridge to DiaDebugPanel

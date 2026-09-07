@@ -6,7 +6,7 @@
 #include "MeshOriginDrawer.h"
 #include "MeshStatsDrawer.h"
 
-#include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
 #include <DiaDebugDraw/Domain/DebugGroupAccents.h>
 
 namespace Dia { namespace Mesh3D {
@@ -47,7 +47,7 @@ Dia::Core::StringCRC Mesh3DDebugDomain::GetGroup() const     { return Dia::Core:
 Dia::Core::RGBA Mesh3DDebugDomain::GetAccentColour() const   { return Dia::VisualDebugger::DebugGroupAccents::kRendering; }
 
 // Lifecycle
-void Mesh3DDebugDomain::Register(Dia::Debug::DebugLayerManager& mgr)
+void Mesh3DDebugDomain::Register(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     if (mLayerManager != nullptr) return;
     mBoundsDrawer  = std::make_unique<MeshBoundsDrawer>(mFrameData, mAssetHandler);
@@ -58,7 +58,7 @@ void Mesh3DDebugDomain::Register(Dia::Debug::DebugLayerManager& mgr)
     mLayerManager = &mgr;
 }
 
-void Mesh3DDebugDomain::Unregister(Dia::Debug::DebugLayerManager& mgr)
+void Mesh3DDebugDomain::Unregister(Dia::Debug::IDebugLayerRegistry& mgr)
 {
     for (int i = 0; i < kDrawerCount; ++i)
         if (Dia::Debug::IVisualDebugger* d = GetDrawer(i)) mgr.Unregister(d->GetLayerName());

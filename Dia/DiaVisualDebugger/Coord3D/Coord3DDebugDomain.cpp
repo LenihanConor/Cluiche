@@ -48,9 +48,12 @@ Dia::Core::StringCRC Coord3DDebugDomain::GetGroup() const     { return Dia::Core
 Dia::Core::RGBA Coord3DDebugDomain::GetAccentColour() const   { return Dia::VisualDebugger::DebugGroupAccents::kCoreDebug; }
 
 // Lifecycle
-void Coord3DDebugDomain::Register(DebugLayerManager& mgr)
+void Coord3DDebugDomain::Register(IDebugLayerRegistry& registry)
 {
     if (mLayerManager != nullptr) return;
+
+    // Only DebugLayerManager ever implements IDebugLayerRegistry.
+    DebugLayerManager& mgr = static_cast<DebugLayerManager&>(registry);
 
     mOriginDrawer = std::make_unique<Coord3DOriginDrawer>(mgr);
     mAxesDrawer   = std::make_unique<Coord3DAxesDrawer>(mgr);
@@ -71,8 +74,9 @@ void Coord3DDebugDomain::Register(DebugLayerManager& mgr)
     mLayerManager = &mgr;
 }
 
-void Coord3DDebugDomain::Unregister(DebugLayerManager& mgr)
+void Coord3DDebugDomain::Unregister(IDebugLayerRegistry& registry)
 {
+    DebugLayerManager& mgr = static_cast<DebugLayerManager&>(registry);
     for (int i = 0; i < kDrawerCount; ++i)
         if (IVisualDebugger* d = GetDrawer(i)) mgr.Unregister(d->GetLayerName());
     mOriginDrawer.reset(); mAxesDrawer.reset(); mGridDrawer.reset(); mCameraDrawer.reset();

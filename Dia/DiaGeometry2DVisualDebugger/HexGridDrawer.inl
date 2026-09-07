@@ -2,7 +2,6 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugColourPalette.h>
 #include <DiaMaths/Core/MathsDefines.h>

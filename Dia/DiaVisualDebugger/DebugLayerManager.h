@@ -12,7 +12,7 @@
 
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
-#include <DiaCore/DebugDraw/IDebugContext.h>
+#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
 #include <DiaGraphics/Camera/Camera2D.h>
 #include <DiaGraphics/Camera/ViewportTransform.h>
 #include <DiaGraphics3D/Camera3D.h>
@@ -49,7 +49,7 @@ namespace Dia
         //   lambda becomes a dangling capture. RegisterDiaAPICommands() should be called
         //   once during application startup (e.g. from a Module::DoStart()).
         ////////////////////////////////////////////////////////////////////////////////
-        class DebugLayerManager : public Dia::Core::IDebugContext
+        class DebugLayerManager : public IDebugLayerRegistry
         {
         public:
             static const unsigned int kMaxLayers = 128;
@@ -61,11 +61,11 @@ namespace Dia
             // Register a draw class. DIA_ASSERT fires if debugger is null or if the
             // layer name is already registered in either registry (SD-DBG-006).
             // priority: lower value drawn first (underneath); higher value drawn last (on top).
-            void Register(IVisualDebugger* debugger, int priority = 0);
+            void Register(IVisualDebugger* debugger, int priority = 0) override;
 
             // Register a draw class with a stage tag. Same layer name + same pointer = idempotent
             // (reactivates the layer). Same name + different pointer = DIA_ASSERT (SD-DBG-006).
-            void Register(IVisualDebugger* debugger, int priority, const Dia::Core::StringCRC& stageTag);
+            void Register(IVisualDebugger* debugger, int priority, const Dia::Core::StringCRC& stageTag) override;
 
             // Like Register(), but Draw() will never call IVisualDebugger::Draw() on this entry.
             // Use when a drawer's Draw() targets a different frame type than what this manager
@@ -73,7 +73,7 @@ namespace Dia
             void RegisterWithoutDraw(IVisualDebugger* debugger, int priority, const Dia::Core::StringCRC& stageTag);
 
             // Unregister a layer by name. No-op if the name is not registered.
-            void Unregister(Dia::Core::StringCRC layerName);
+            void Unregister(Dia::Core::StringCRC layerName) override;
 
             // Remove all dynamic layers at once (e.g. on module stop before drawers are freed).
             // Does not touch the fixed registry.
@@ -107,9 +107,9 @@ namespace Dia
             // ----------------------------------------------------------------
 
             // Routes through both dynamic and fixed registries.
-            void EnableLayer (Dia::Core::StringCRC layerName);
-            void DisableLayer(Dia::Core::StringCRC layerName);
-            bool IsLayerEnabled(Dia::Core::StringCRC layerName) const;
+            void EnableLayer (Dia::Core::StringCRC layerName) override;
+            void DisableLayer(Dia::Core::StringCRC layerName) override;
+            bool IsLayerEnabled(Dia::Core::StringCRC layerName) const override;
 
             // Activate or deactivate all layers owned by stageTag.
             // Layers with an empty stageTag are unaffected.
@@ -119,7 +119,7 @@ namespace Dia
             // Global debug scale (SD-DBG-005)
             // Draw classes read this before submitting size/length values.
             // ----------------------------------------------------------------
-            void  SetDebugScale(float scale);
+            void  SetDebugScale(float scale) override;
             float GetDebugScale() const override;
 
             // ----------------------------------------------------------------
