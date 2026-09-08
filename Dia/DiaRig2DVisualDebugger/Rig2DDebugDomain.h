@@ -10,7 +10,7 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaDebugDraw/Domain/IDebugDomain.h>
+#include <DiaVisualDebugger/Domain/IDebugDomain.h>
 #include <DiaRig2D/Skeleton.h>
 #include <DiaRig2D/BoneTransform.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>

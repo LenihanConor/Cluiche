@@ -30,6 +30,12 @@
     <Filter Include="Source Files\Coord3D">
       <UniqueIdentifier>{A1B2C3D4-0001-0001-0001-000000000031}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Domain">
+      <UniqueIdentifier>{A1B2C3D4-0001-0001-0001-000000000040}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Domain">
+      <UniqueIdentifier>{A1B2C3D4-0001-0001-0001-000000000041}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IVisualDebugger.h">
@@ -55,6 +61,15 @@
     </ClInclude>
     <ClInclude Include="FixedDrawRegistry.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Domain\IDebugDomain.h">
+      <Filter>Header Files\Domain</Filter>
+    </ClInclude>
+    <ClInclude Include="Domain\IDebugLayerRegistry.h">
+      <Filter>Header Files\Domain</Filter>
+    </ClInclude>
+    <ClInclude Include="Domain\DebugGroupAccents.h">
+      <Filter>Header Files\Domain</Filter>
     </ClInclude>
     <ClInclude Include="Renderers\SpatialGridRenderer.h">
       <Filter>Header Files\Renderers</Filter>
@@ -93,15 +108,15 @@
       <Filter>Header Files\Coord3D</Filter>
     </ClInclude>
     <ClInclude Include="Coord3D\Coord3DCameraDrawer.h">
+      <Filter>Header Files\Coord3D</Filter>
+    </ClInclude>
     <ClInclude Include="Domain\\DiaDebugDomainRegistry.h">
+      <Filter>Header Files\Domain</Filter>
+    </ClInclude>
     <ClInclude Include="Coord2D\Coord2DDebugDomain.h">
+      <Filter>Header Files\Coord2D</Filter>
+    </ClInclude>
     <ClInclude Include="Coord3D\Coord3DDebugDomain.h">
-      <Filter>Coord3D</Filter>
-    </ClInclude>
-      <Filter>Coord2D</Filter>
-    </ClInclude>
-      <Filter>Domain</Filter>
-    </ClInclude>
       <Filter>Header Files\Coord3D</Filter>
     </ClInclude>
   </ItemGroup>
@@ -117,6 +132,9 @@
     </ClCompile>
     <ClCompile Include="FixedDrawRegistry.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Domain\DebugGroupAccents.cpp">
+      <Filter>Source Files\Domain</Filter>
     </ClCompile>
     <ClCompile Include="Coord2D\Coord2DOriginDrawer.cpp">
       <Filter>Source Files\Coord2D</Filter>
@@ -143,15 +161,15 @@
       <Filter>Source Files\Coord3D</Filter>
     </ClCompile>
     <ClCompile Include="Coord3D\Coord3DCameraDrawer.cpp">
+      <Filter>Source Files\Coord3D</Filter>
+    </ClCompile>
     <ClCompile Include="Domain\\DiaDebugDomainRegistry.cpp">
+      <Filter>Source Files\Domain</Filter>
+    </ClCompile>
     <ClCompile Include="Coord2D\Coord2DDebugDomain.cpp">
+      <Filter>Source Files\Coord2D</Filter>
+    </ClCompile>
     <ClCompile Include="Coord3D\Coord3DDebugDomain.cpp">
-      <Filter>Coord3D</Filter>
-    </ClCompile>
-      <Filter>Coord2D</Filter>
-    </ClCompile>
-      <Filter>Domain</Filter>
-    </ClCompile>
       <Filter>Source Files\Coord3D</Filter>
     </ClCompile>
   </ItemGroup>

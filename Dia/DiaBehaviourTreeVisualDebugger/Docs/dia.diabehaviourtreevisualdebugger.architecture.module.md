@@ -2,7 +2,7 @@
 schema: dia.module.v1
 module_id: dia.behaviourtreevisualdebugger
 name: DiaBehaviourTreeVisualDebugger
-layer: domain/gameplay/tools
+layer: 4.1-Gameplay
 path: Dia/DiaBehaviourTreeVisualDebugger
 status: active
 maturity: dev

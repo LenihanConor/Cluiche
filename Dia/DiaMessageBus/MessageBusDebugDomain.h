@@ -12,7 +12,7 @@
 #include <cstdint>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Colour/RGBA.h>
-#include <DiaDebugDraw/Domain/IDebugDomain.h>
+#include <DiaVisualDebugger/Domain/IDebugDomain.h>
 #include <DiaMessageBus/MessageBusModule.h>
 
 namespace Dia::MessageBus {

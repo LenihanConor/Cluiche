@@ -7,8 +7,8 @@
 
 #include <DiaEntitySpatial/Adaptors/EntitySpatialOverlay.h>
 #include <DiaEntitySpatial/EntitySpatialModule.h>
-#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
-#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
+#include <DiaVisualDebugger/Domain/IDebugLayerRegistry.h>
+#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 #include <DiaEntity/Domain.h>
 #include <memory>
 

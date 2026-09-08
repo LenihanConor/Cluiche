@@ -10,7 +10,7 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaDebugDraw/Domain/IDebugDomain.h>
+#include <DiaVisualDebugger/Domain/IDebugDomain.h>
 #include <memory>
 
 namespace Dia::Debug        { class IDebugLayerRegistry; }

@@ -2,7 +2,7 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
+#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 #include <DiaUtilityAI/UtilitySet.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 

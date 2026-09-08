@@ -16,20 +16,14 @@ Current assignment of every Dia `.vcxproj` to a numbered Visual Studio solution 
 ### 1.1-Maths
 `DiaGeometry2D` `DiaGeometry3D` `DiaMaths`
 
-### 1.1-Maths-Tools
-`DiaGeometry2DVisualDebugger`
-
 ### 1.1-Services
 `DiaAPI` `DiaCaptureTest` `DiaDebugProtocol` `DiaDebugServer` `DiaImGui` `DiaMailbox` `DiaMessageBus` `DiaObservation` `DiaPicking` `DiaPython` `DiaSaveGame` `DiaSerializer` `DiaStateMachine` `DiaStreams` `DiaWebSocket`
-
-### 1.1-Services-Tools
-`DiaMailboxVisualDebugger`
 
 ### 1.2-Application
 `DiaApplicationFlow` `DiaAutomation` `DiaEditor` `DiaGame` `DiaSimTime`
 
 ### 1.2-Platform
-`DiaDebugDraw` `DiaGeometry2DPicking` `DiaInput` `DiaSDL` `DiaWindow`
+`DiaGeometry2DPicking` `DiaInput` `DiaSDL` `DiaWindow`
 
 ---
 
@@ -37,9 +31,6 @@ Current assignment of every Dia `.vcxproj` to a numbered Visual Studio solution 
 
 ### 2.0-Assets
 `DiaAsset` `DiaAssetCatalogue` `DiaAssetRuntime` `DiaEntity` `DiaMesh3D`
-
-### 2.1-Assets-Tools
-`DiaAssetRuntimeVisualDebugger` `DiaEntityVisualDebugger` `DiaMesh3DVisualDebugger`
 
 ---
 
@@ -57,18 +48,6 @@ Current assignment of every Dia `.vcxproj` to a numbered Visual Studio solution 
 ### 3.0-Visual
 `DiaBgfx` `DiaBgfx3D` `DiaCamera2D` `DiaCamera3D` `DiaGraphics` `DiaGraphics3D` `DiaLighting2D` `DiaLighting3D` `DiaScene2D` `DiaUI` `DiaUICEF` `DiaUIUltralight`
 
-### 3.1-Animation-Tools
-`DiaAnimation2DVisualDebugger` `DiaIK2DVisualDebugger` `DiaRig2DVisualDebugger`
-
-### 3.1-Gameplay-Tools
-`DiaAIBudgetVisualDebugger` `DiaAICalloutVisualDebugger` `DiaAttributeVisualDebugger` `DiaBehaviourTreeVisualDebugger` `DiaBlackboardVisualDebugger` `DiaEntitySpatialVisualDebugger` `DiaFlowFieldVisualDebugger` `DiaGridVisibilityVisualDebugger` `DiaHTNVisualDebugger` `DiaPathfindingVisualDebugger` `DiaRulesVisualDebugger` `DiaScalarFieldInspector` `DiaScalarFieldVisualDebugger` `DiaStateMachineVisualDebugger` `DiaSteeringVisualDebugger` `DiaUtilityAIVisualDebugger`
-
-### 3.1-Physics-Tools
-`DiaRigidBody2DVisualDebugger` `DiaSoftBody2DVisualDebugger`
-
-### 3.1-Visual-Tools
-`DiaLighting3DVisualDebugger` `DiaScene2DVisualDebugger` `DiaVisualDebugger`
-
 ---
 
 ## Cross-Cutting Tools
@@ -77,7 +56,31 @@ Current assignment of every Dia `.vcxproj` to a numbered Visual Studio solution 
 `DiaApplicationFlowEditor` `DiaAssetCatalogueEditor` `DiaEntityTemplateEditor` `DiaPipelineEditor` `DiaPythonConsoleEditor` `DiaSceneEditor`
 
 ### 4.0-Inspectors
-`DiaAIInspector` `DiaApplicationFlowInspector` `DiaAssetRuntimeInspector` `DiaBlackboardInspector` `DiaEconomyInspector` `DiaEntityInspector` `DiaSchemaBrowser`
+`DiaAIInspector` `DiaApplicationFlowInspector` `DiaAssetRuntimeInspector` `DiaBlackboardInspector` `DiaEconomyInspector` `DiaEntityInspector` `DiaScalarFieldInspector` `DiaSchemaBrowser`
+
+### 4.0-VisualDebuggers
+`DiaVisualDebugger`
+
+### 4.1-VisualDebuggers-Animation
+`DiaAnimation2DVisualDebugger` `DiaIK2DVisualDebugger` `DiaRig2DVisualDebugger`
+
+### 4.1-VisualDebuggers-Assets
+`DiaAssetRuntimeVisualDebugger` `DiaEntityVisualDebugger` `DiaMesh3DVisualDebugger`
+
+### 4.1-VisualDebuggers-Gameplay
+`DiaAIBudgetVisualDebugger` `DiaAICalloutVisualDebugger` `DiaAttributeVisualDebugger` `DiaBehaviourTreeVisualDebugger` `DiaBlackboardVisualDebugger` `DiaEntitySpatialVisualDebugger` `DiaFlowFieldVisualDebugger` `DiaGridVisibilityVisualDebugger` `DiaHTNVisualDebugger` `DiaPathfindingVisualDebugger` `DiaRulesVisualDebugger` `DiaScalarFieldVisualDebugger` `DiaStateMachineVisualDebugger` `DiaSteeringVisualDebugger` `DiaUtilityAIVisualDebugger`
+
+### 4.1-VisualDebuggers-Maths
+`DiaGeometry2DVisualDebugger`
+
+### 4.1-VisualDebuggers-Physics
+`DiaRigidBody2DVisualDebugger` `DiaSoftBody2DVisualDebugger`
+
+### 4.1-VisualDebuggers-Services
+`DiaMailboxVisualDebugger`
+
+### 4.1-VisualDebuggers-Visual
+`DiaLighting3DVisualDebugger` `DiaScene2DVisualDebugger`
 
 ---
 

@@ -95,11 +95,18 @@
     <ClInclude Include="Coord3D\Coord3DAxesDrawer.h" />
     <ClInclude Include="Coord3D\Coord3DGridDrawer.h" />
     <ClInclude Include="Coord3D\Coord3DCameraDrawer.h" />
+    <ClInclude Include="Domain\IDebugDomain.h" />
+    <ClInclude Include="Domain\IDebugLayerRegistry.h" />
+    <ClInclude Include="Domain\DebugGroupAccents.h" />
     <ClInclude Include="Domain\\DiaDebugDomainRegistry.h" />
     <ClInclude Include="Coord2D\Coord2DDebugDomain.h" />
     <ClInclude Include="Coord3D\Coord3DDebugDomain.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DebugLayerManager.cpp" />
+    <ClCompile Include="DebugColourPalette.cpp" />
+    <ClCompile Include="FixedPrimitiveBuffer.cpp" />
+    <ClCompile Include="FixedDrawRegistry.cpp" />
     <ClCompile Include="Coord2D\Coord2DOriginDrawer.cpp" />
     <ClCompile Include="Coord2D\Coord2DAxesDrawer.cpp" />
     <ClCompile Include="Coord2D\Coord2DGridDrawer.cpp" />
@@ -109,6 +116,7 @@
     <ClCompile Include="Coord3D\Coord3DAxesDrawer.cpp" />
     <ClCompile Include="Coord3D\Coord3DGridDrawer.cpp" />
     <ClCompile Include="Coord3D\Coord3DCameraDrawer.cpp" />
+    <ClCompile Include="Domain\DebugGroupAccents.cpp" />
     <ClCompile Include="Domain\\DiaDebugDomainRegistry.cpp" />
     <ClCompile Include="Coord2D\Coord2DDebugDomain.cpp" />
     <ClCompile Include="Coord3D\Coord3DDebugDomain.cpp" />
@@ -143,10 +151,6 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaDebugServer\DiaDebugServer.vcxproj">
       <Project>{6AAFCCCB-71D0-4D8D-A6BE-081F5E02093D}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\DiaDebugDraw\DiaDebugDraw.vcxproj">
-      <Project>{c3d4e5f6-a7b8-9012-cdef-345678901234}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>
