@@ -17,13 +17,13 @@ _DOMAINS_RE = re.compile(r'\*\*Gameplay Domains:\*\*\s*(.+)$', re.MULTILINE)
 _VALID_DOMAINS = {
     "movement", "physics", "collision", "animation", "rendering",
     "lighting", "camera", "ai", "pathfinding", "input", "audio",
-    "ui", "scene", "persistence", "debug",
+    "ui", "scene", "persistence", "debug", "stats",
 }
 
 _DOMAIN_ORDER = [
     "movement", "physics", "collision", "animation", "rendering",
     "lighting", "camera", "ai", "pathfinding", "input", "audio",
-    "ui", "scene", "persistence", "debug",
+    "ui", "scene", "persistence", "debug", "stats",
 ]
 
 _DOMAIN_LABELS = {

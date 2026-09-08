@@ -21,11 +21,11 @@ Survey the problem space for an existing or new research session and write `expl
 
 ### 0. Check Model
 
-Check which model is active. If it is not `claude-opus-4-7`, print:
+Check which model is active. If it is not an Opus-tier model (e.g. `claude-opus-5`), print:
 
 ```
 Research sessions should run on Opus for best results.
-Switch with: /model claude-opus-4-7
+Switch with: /model claude-opus-5 (or the current Opus-tier model)
 Then re-run this command.
 ```
 
@@ -126,6 +126,7 @@ Create `docs/research/<slug>/explore.md` using this exact structure:
 Print:
 ```
 explore.md written to docs/research/<slug>/
+Safe to /clear or start a new session now — /research-map reads explore.md from disk, not this conversation.
 Next step: /research-map <slug>
 ```
 

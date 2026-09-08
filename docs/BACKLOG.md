@@ -23,6 +23,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | Item | Spec | What's needed |
 |------|------|---------------|
 | RenderTestPlugin (CluicheEditor) | — | Needs `/spec-system` — visual debugger panel: wipe slider, region grid, expectation authoring, AI triage panel, render targets. DiaRenderTest CLI Pipeline ✅ unblocked. Mockup: [render_test_debugger_mockup.html](research/render_offline_test/render_test_debugger_mockup.html). Research: [render_offline_test/summary.md](research/render_offline_test/summary.md) |
+| DiaConsole | [diaconsole.md](specs/applications/dia/systems/diaconsole/diaconsole.md) | System spec Approved; needs 5 feature specs (`console-command-model`, `console-native-shell`, `console-typed-results`, `console-project-context`, `console-presets`) via `/spec-feature` before implementation — `console-command-model` first, it's the foundation everything else depends on. Native-window web console over DiaCLI's existing Click commands + NDJSON event stream: reflected command registry, typed structured results, presets, project/target context (CluicheTest/CoW/future sibling projects). Subprocess-only execution, no in-process Click invocation (every DiaCLI command raises `SystemExit` via `ctx.exit()`). Plan: [diaconsole.plan.md](specs/applications/dia/systems/diaconsole/diaconsole.plan.md) — 10 tasks. Mockup: [console.html](specs/applications/dia/systems/diaconsole/mockups/console.html). Research: [cli_launcher/summary.md](research/cli_launcher/summary.md). |
 
 ---
 

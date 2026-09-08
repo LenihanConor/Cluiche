@@ -20,17 +20,7 @@ Commit to a path (human-gated), assign an outcome type, and write the backlog en
 
 ## Instructions for Claude
 
-### 0. Check Model
-
-Check which model is active. If it is not `claude-opus-4-7`, print:
-
-```
-Research sessions should run on Opus for best results.
-Switch with: /model claude-opus-4-7
-Then re-run this command.
-```
-
-And stop. Do not proceed until the user confirms they are on Opus or explicitly says to continue anyway.
+No model gate on this stage — unlike explore/map, this is walking a pre-built decision tree, confirming answers, and writing formulaic files. There's no open-ended judgment call here that Opus would improve on; sonnet is sufficient.
 
 ### 1. Resolve the Session
 
@@ -94,6 +84,7 @@ If the user chose the wildcard:
   ```
 - Write a choose.md recording the wildcard decision (use the wildcard name as the chosen path, outcome type = More research).
 - Write the backlog entry under Spec Work Needed: "Follow-on research session — wildcard from <slug>. Seed with docs/research/<slug>/summary.md."
+- Safe to /clear or start a new session now before running /research-explore on the wildcard — it doesn't need this conversation's history.
 - Stop. Do not generate summary.md.
 
 ### 4. Assign Outcome Type
@@ -221,4 +212,5 @@ Print:
 ```
 Summary written to docs/research/<slug>/summary.md
 Backlog updated: docs/BACKLOG.md  (or BACKLOG-HISTORY.md for Nothing)
+Safe to /clear or start a new session now before starting the next step — it reads summary.md/the backlog entry from disk, not this conversation.
 ```
