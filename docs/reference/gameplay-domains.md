@@ -24,6 +24,7 @@ Used by `dia check gdd-sync` to generate the capability cross-reference view.
 | `scene` | Level loading, scene graph, room transitions |
 | `persistence` | Save/load, serialisation, settings |
 | `debug` | Runtime inspection, visualisation, overlays |
+| `stats` | Gameplay attributes/stats, resource pools, modifiers, derived values |
 
 ## Adding a New Domain
 

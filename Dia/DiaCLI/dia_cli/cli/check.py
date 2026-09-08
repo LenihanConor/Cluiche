@@ -830,7 +830,7 @@ def render_diff(ctx, run_dir, ref_dir, report_dir, threshold, ssim_threshold) ->
 _VALID_DOMAINS = {
     "movement", "physics", "collision", "animation", "rendering",
     "lighting", "camera", "ai", "pathfinding", "input", "audio",
-    "ui", "scene", "persistence", "debug",
+    "ui", "scene", "persistence", "debug", "stats",
 }
 
 _VALID_STATUSES = {"built", "partial", "not-started", "out-of-scope"}
