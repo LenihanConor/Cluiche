@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.blackboardvisualdebugger
 name: DiaBlackboardVisualDebugger
 owner_team: TBD
-layer: domain/gameplay/ai
+layer: domain/gameplay/tools
 status: active
 maturity: dev
 

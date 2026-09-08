@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.htn
 name: DiaHTN
 owner_team: TBD
-layer: domain/gameplay/ai
+layer: domain/gameplay/core
 status: active
 maturity: dev
 

@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.messagebus
 name: DiaMessageBus
 owner_team: TBD
-layer: framework
+layer: foundation/services
 status: stub
 maturity: dev
 

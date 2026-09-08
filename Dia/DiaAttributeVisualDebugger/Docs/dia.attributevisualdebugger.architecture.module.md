@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.attributevisualdebugger
 name: DiaAttributeVisualDebugger
 owner_team: TBD
-layer: domain/gameplay/ai
+layer: domain/gameplay/tools
 status: active
 maturity: dev
 

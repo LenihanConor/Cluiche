@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.behaviourtree
 name: DiaBehaviourTree
 owner_team: TBD
-layer: domain/gameplay/ai
+layer: domain/gameplay/core
 status: active
 maturity: dev
 

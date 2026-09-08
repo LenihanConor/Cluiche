@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.capturetest
 name: CaptureTest
 owner_team: TBD
-layer: tool/capturetest
+layer: foundation/services
 status: active
 maturity: dev
 

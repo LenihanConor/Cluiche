@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.steeringvisualdebugger
 name: DiaSteeringVisualDebugger
 owner_team: TBD
-layer: domain/gameplay/navigation
+layer: domain/gameplay/tools
 status: active
 maturity: dev
 

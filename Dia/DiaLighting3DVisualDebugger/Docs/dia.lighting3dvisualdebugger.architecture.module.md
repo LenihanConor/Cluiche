@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.lighting3dvisualdebugger
 name: DiaLighting3DVisualDebugger
 owner_team: TBD
-layer: tools
+layer: domain/visual/tools
 status: active
 maturity: dev
 
