@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="Canvas3D.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\MaterialRegistry.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\MeshGpuCache.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderers\MeshRenderer.h">
+      <Filter>Renderers</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderers\ShadowRenderer.h">
+    <ClInclude Include="MeshPassLighting.h" />
+      <Filter>Renderers</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Canvas3D.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Resources\MaterialRegistry.cpp">
+      <Filter>Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="Resources\MeshGpuCache.cpp">
+      <Filter>Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderers\MeshRenderer.cpp">
+      <Filter>Renderers</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderers\ShadowRenderer.cpp">
+      <Filter>Renderers</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source">
+      <UniqueIdentifier>{11111111-1111-1111-1111-211111111111}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers">
+      <UniqueIdentifier>{22222222-2222-2222-2222-222222222222}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources">
+      <UniqueIdentifier>{44444444-4444-4444-4444-244444444444}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Renderers">
+      <UniqueIdentifier>{55555555-5555-5555-5555-255555555555}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

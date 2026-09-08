@@ -1,0 +1,17 @@
+{
+	"entity_template" : 
+	{
+		"components" : 
+		[
+			{
+				"fields" : {},
+				"type" : "cluichetest.visual-test-render"
+			},
+			{
+				"fields" : {},
+				"type" : "dia.hierarchy.parent"
+			}
+		],
+		"id" : ""
+	}
+}

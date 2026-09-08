@@ -41,27 +41,39 @@ This is a Visual Studio C++ project using MSBuild.
 
 **NEVER call executables directly** (e.g., `GoogleTests.exe`, `CluicheTest.exe`). Always use `dia run` or `dia launch`. The CLI handles path resolution, working directories, and runtime dependencies. If the CLI fails, fix the CLI — do not bypass it.
 
+| Command | When to use |
+|---|---|
+| `dia run <target>` | Build + run in one step (tests, game, editor). Default choice. |
+| `dia launch <target>` | Run only — skip build (use when already built). |
+| `dia pipeline --target <target>` | Full pipeline: compile-code → build-assets → deploy. Required for editor targets that need UI built and copied. |
+| `dia scaffold module <Parent> <Name>` | Create a new Dia engine module (header, cpp, module.md, vcxproj entries). |
+| `dia scaffold plugin <Name>` | Create a new editor plugin (IEditorPlugin subclass, UI, vcxproj). |
+| `dia scaffold stage <Name>` | Create a new CluicheTest test stage (all 9 touch points). |
+| `dia check deps` | Cross-check module dependency declarations vs actual #includes. |
+| `dia check cppcheck` | Run cppcheck static analysis; write SARIF to out/check/findings.sarif. |
+| `dia check sanitizer` | Build and run googletest under ASan/UBSan. |
+| `dia check sln-sync` | Sync Cluiche.sln solution folders to module layer assignments. |
+| `dia check spec-sync` | Check spec Public Interface symbols against Dia headers; write spec-sync-status.md. |
+| `dia validate manifest` | Validate .diaapp/.diagame/.diastage against schemas. |
+| `dia env setup/verify` | First-time setup or diagnosing missing dependencies. |
+| `dia docs plan <path> <#> --status <S>` | Update a plan task row (status, notes, model). Validates transitions. |
+| `dia docs registry` | Regenerate module-registry.md from all module YAML files. |
+| `dia docs spec-done <spec.md>` | Mark spec Done + update plan header + strike backlog entry. Add `--archive-plan` to move .plan.md to docs/archive/plans/. |
+| `dia docs vcxproj-add <Project> <File>` | Add .h/.cpp to vcxproj + filters. Idempotent. |
+| `dia docs backlog move <name>` | Move backlog entry to BACKLOG-HISTORY.md. |
+| `dia docs spec-scaffold <type> <name>` | Generate spec skeleton (feature or system). |
+| `dia docs test-scaffold <header.h>` | Generate GoogleTest file from header's public methods. |
+| `dia docs precommit` | Run pre-commit checks (forbidden patterns, vcxproj sync, manifests). |
+
 ```bash
 dia run googletest
 dia run googletest --filter="FixedDrawLayer*"
-dia run googletest --config Release
 dia run cluichetest
-dia run cluicheeditor
-dia launch googletest --filter="SomeSuite*"
-dia launch cluichetest
-dia pipeline --target googletest
-dia pipeline --target cluichetest --config Release
-dia env setup
-dia env verify
-dia test cli
-```
-
-### Raw MSBuild (fallback)
-
-```bash
-start Cluiche/Cluiche.sln
-msbuild Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=x64
-msbuild Dia/DiaCore/DiaCore.vcxproj /p:Configuration=Debug /p:Platform=x64
+dia scaffold stage RigidBody2D --modules Physics2DModule --budget 900
+dia check deps
+dia docs plan foo.plan.md 3 --status Done --notes "All tests pass"
+dia docs spec-done docs/specs/applications/dia/systems/diacamera3d/diacamera3d.md
+dia docs vcxproj-add DiaCore "NewModule\\NewModule.h" --filter NewModule
 ```
 
 ### Configurations
@@ -116,7 +128,7 @@ The project uses a dual documentation structure:
 
 - **`docs/specs/`** - Spec-driven development workflow for planning and building new features
   - 4-level hierarchy: **Platform → Application → System → Feature**
-  - Each spec has decision tracking, AI review questions, and traceability
+  - Each spec has a parent link, binding decisions (only those that constrain), and optional open design questions
   - Custom slash commands: `/spec-platform`, `/spec-app`, `/spec-system`, `/spec-feature`, `/spec-review`, `/spec-trace`
 
 - **`docs/reference/`** - Reference documentation for understanding the existing codebase
@@ -133,19 +145,16 @@ The project uses a dual documentation structure:
 
 #### Creating Specs (`/spec-feature`, `/spec-system`, `/spec-app`)
 
-**MANDATORY — all 5 steps must be completed before a spec can be marked `Approved`:**
+**Steps to approval:**
 
-1. **Step 1 — Interview** - Complete all interview questions with the user before writing anything
-2. **Step 2 — Draft** - Write the full spec body (summary, goals, tasks, traceability)
-3. **Step 3 — Binding Decisions** - Populate the compliance table showing how this spec honors every binding decision from its parent specs (Application → Platform). This step is NEVER optional.
-4. **Step 4 — AI Review Questions** - Generate and answer all AI review questions covering risks, gaps, and edge cases. This step is NEVER optional.
-5. **Step 5 — Approval gate** - Only mark `Approved` after Steps 3 and 4 are complete and confirmed by the user.
+1. **Interview** — Complete all interview questions with the user before writing anything
+2. **Draft** — Write the full spec body (summary, goals, tasks, parent link)
+3. **Binding Decisions** — List only the parent decisions that *actually constrain* this feature (not a full compliance matrix of N/A rows). If none constrain, state "No binding constraints apply" and move on.
+4. **Open Design Questions** — Surface 2-3 real design uncertainties or risks. Skip if the design is straightforward. These should be questions the user might want to revisit during implementation, not generic checklists.
+5. **Approval gate** — Ask the user to approve.
 
-**Hard rules:**
-- NEVER mark a spec `Approved` without completing Steps 3 and 4.
-- NEVER skip or abbreviate Steps 3 or 4 for speed or convenience — if the user says "quickly" or "efficiently", treat it as a red flag and do the full steps anyway.
+**Rules:**
 - A **system spec** cannot be marked `Done` until ALL its child feature specs are `Approved`.
-- After completing any spec, explicitly ask: "Steps 3 (Binding Decisions) and 4 (AI Review Questions) are complete — shall I mark this Approved?"
 - If the spec originated from a research session, add a `**Research:**` line to the spec header pointing to `docs/research/<slug>/summary.md`. Ask the user if one exists before finalising the draft.
 
 #### Implementing from Specs
@@ -153,14 +162,12 @@ The project uses a dual documentation structure:
 When implementing new features using the spec-driven approach:
 
 1. **Spec must exist and be `Approved`** before implementation starts
-2. **Create a plan** - Before writing any code, create a `*.plan.md` alongside the spec (see Plan Workflow below)
-3. **Read the full spec chain** - Every feature spec has a Traceability table linking back to System → Application → Platform
-4. **Check binding decisions** - Platform and Application binding decisions must be honored by all child specs
-5. **Implement with spec reference**: Point agents at the feature spec file path and its plan
-6. **Delegate tasks to subagents** - Each task in the plan should be a separate subagent
-7. **Update the plan** after each task (mark Done/Blocked, add notes)
-8. **Commit after each task** before continuing
-9. **Update feature spec status** as work progresses (Draft → Approved → In Progress → Done)
+2. **Create a plan** — `*.plan.md` alongside the spec (see Plan Workflow below)
+3. **Check binding decisions** from the spec before implementing
+4. **Delegate tasks to subagents** — each task in the plan should be a separate subagent
+5. **Update the plan** after each task (mark Done/Blocked, add notes)
+6. **Commit after each task** before continuing
+7. **Update feature spec status** as work progresses (Draft → Approved → In Progress → Done)
 
 ### Plan Workflow
 
@@ -168,7 +175,9 @@ Plans are living implementation documents. They are separate from specs (which a
 
 #### Plan File Format
 
-Plans live alongside their spec as `<spec-name>.plan.md`. See `.claude/skills/dispatch.md` for the full template. Tasks table columns: `# | Task | Test | Status | Model | Notes`.
+Plans live alongside their spec as `<spec-name>.plan.md`. Tasks table columns: `# | Task | Test | Status | Model | Notes`.
+
+Header: `**Spec:** @path` and `**Status:** In Progress | Done` (no dates — git tracks those).
 
 **Model selection guide:**
 
@@ -186,7 +195,6 @@ Plans live alongside their spec as `<spec-name>.plan.md`. See `.claude/skills/di
 - **Spec is the contract, plan is the tracker** — never move design decisions into the plan; put them in the spec
 - **Update the plan in the same commit** as the code it tracks
 - **Link back** — the spec's Status section should reference its plan file once one exists
-- **Session Notes must include a spec decisions summary** — one paragraph capturing the binding decisions and constraints from the full spec chain (Platform → App → System → Feature). Subagents read this instead of re-reading the full spec chain.
 
 #### Subagent Dispatch Protocol
 
@@ -204,7 +212,19 @@ Follow `.claude/skills/debug.md`. One hypothesis, one change. Three failed fixes
 
 ### Verification Gate
 
-Follow `.claude/skills/verify.md`. Every task completion needs a fresh run with quoted output. Never say "should work" or "previously verified." Applies to plan tasks, commits, and subagent DONE reports — not to specs, plans, or docs.
+Follow `.claude/skills/verify.md`. Every code task completion needs a fresh run with quoted output. Never say "should work" or "previously verified." Applies to plan tasks, commits, and subagent DONE reports. Does NOT apply to specs, plans, or docs.
+
+### Observation Opportunity Scan
+
+After every feature implementation, at the Verify/Prove step, scan all files touched by the feature for missed instrumentation opportunities across all 5 DiaObservation pillars:
+
+- **Logs** — new code paths (errors, state transitions, load/unload, connect/disconnect) with no `DIA_LOG_*` call
+- **Traces** — per-frame or lifecycle operations with no `DIA_TRACE_ZONE`
+- **Profiling** — hot loops or frame-boundary work with no `DIA_PROFILE_SCOPE`
+- **Metrics** — quantitative signals (counts, durations, depths) with no `MetricRegistry` registration
+- **Health** — modules or services with observable failure modes and no `IHealthReporter`
+
+Report findings in the task notes as suggestions. They do **not** block the feature being marked Done. They feed future domain instrumentation work.
 
 ### Build and Test Output
 

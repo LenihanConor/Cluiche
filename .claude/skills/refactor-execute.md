@@ -111,9 +111,9 @@ For each identified spec:
 3. Rewrite only those sections to reflect the post-phase shape
 4. Do NOT modify:
    - Status field
-   - Traceability table
-   - Binding Decisions compliance table
-   - AI Review Questions
+   - Parent links
+   - Binding Decisions
+   - Open Design Questions
    - Any section not describing architecture/API
 5. Print a summary of what changed:
    ```
@@ -186,7 +186,7 @@ Next step: /refactor-review <slug>
 
 ## Cluiche Context
 
-Engine modules: DiaCore, DiaMaths, DiaGeometry2D, DiaGraphics, DiaWindow, DiaInput, DiaUI/Awesomium/CEF/Ultralight, DiaApplication, DiaAPI, DiaSFML, DiaLogger, DiaRigidBody2D, DiaSoftBody2D, DiaWebSocket, DiaEditor, DiaPython
+Engine modules: DiaCore, DiaMaths, DiaGeometry2D, DiaGraphics, DiaWindow, DiaInput, DiaUI/Awesomium/CEF/Ultralight, DiaApplicationFlow, DiaAPI, DiaSFML, DiaLogger, DiaRigidBody2D, DiaSoftBody2D, DiaWebSocket, DiaEditor, DiaPython
 
 Applications: CluicheTest (demo + testbed), CluicheEditor (plugin editor), GoogleTests
 

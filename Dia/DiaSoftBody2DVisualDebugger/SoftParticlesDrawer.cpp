@@ -10,17 +10,18 @@
 #include "DiaSoftBody2D/Rope.h"
 #include "DiaSoftBody2D/Cloth.h"
 #include "DiaSoftBody2D/Particle.h"
-#include "DiaGraphics/Frame/FrameData.h"
-#include "DiaVisualDebugger/DebugLayerManager.h"
-#include "DiaVisualDebugger/DebugColourPalette.h"
-#include "DiaVisualDebugger/DebugLayerNames.h"
+#include "DiaCore/DebugDraw/IDebugDraw.h"
+#include "DiaCore/DebugDraw/IDebugContext.h"
+#include "DiaCore/DebugDraw/DebugColourPalette.h"
+#include "DiaCore/DebugDraw/DebugLayerNames.h"
 #include "DiaCore/Core/Assert.h"
+#include <DiaObservation/Trace/DiaTrace.h>
 
 namespace Dia::SoftBody2D
 {
 
-SoftParticlesDrawer::SoftParticlesDrawer(const SoftBodyWorld&                world,
-                                         const Dia::Debug::DebugLayerManager& manager)
+SoftParticlesDrawer::SoftParticlesDrawer(const SoftBodyWorld&            world,
+                                         const Dia::Core::IDebugContext& manager)
     : mWorld(world)
     , mManager(manager)
 {}
@@ -30,22 +31,22 @@ Dia::Core::StringCRC SoftParticlesDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kSoftParticles;
 }
 
-static void DrawParticlesFromRope(const Rope* rope, float debugScale,
-                                  Dia::Graphics::FrameData& frameData)
+static void DrawParticlesFromRope(const Rope* rope, float scale,
+                                  Dia::Core::IDebugDraw& draw)
 {
     const int count = rope->GetParticleCount();
     for (int i = 0; i < count; ++i)
     {
         const Particle& p = rope->GetParticle(i);
-        const Dia::Graphics::RGBA colour = (p.invMass == 0.0f)
+        const Dia::Core::RGBA colour = (p.invMass == 0.0f)
             ? Dia::Debug::DebugColourPalette::kPinned
             : Dia::Debug::DebugColourPalette::kActive;
-        frameData.RequestDraw(p.position, p.radius * debugScale, colour);
+        draw.RequestDraw(p.position, p.radius * scale, colour);
     }
 }
 
-static void DrawParticlesFromCloth(const Cloth* cloth, float debugScale,
-                                   Dia::Graphics::FrameData& frameData)
+static void DrawParticlesFromCloth(const Cloth* cloth, float scale,
+                                   Dia::Core::IDebugDraw& draw)
 {
     const int resX = cloth->GetResX();
     const int resY = cloth->GetResY();
@@ -54,17 +55,18 @@ static void DrawParticlesFromCloth(const Cloth* cloth, float debugScale,
         for (int x = 0; x < resX; ++x)
         {
             const Particle& p = cloth->GetParticle(x, y);
-            const Dia::Graphics::RGBA colour = (p.invMass == 0.0f)
+            const Dia::Core::RGBA colour = (p.invMass == 0.0f)
                 ? Dia::Debug::DebugColourPalette::kPinned
                 : Dia::Debug::DebugColourPalette::kActive;
-            frameData.RequestDraw(p.position, p.radius * debugScale, colour);
+            draw.RequestDraw(p.position, p.radius * scale, colour);
         }
     }
 }
 
-void SoftParticlesDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void SoftParticlesDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
-    const float debugScale = mManager.GetDebugScale();
+    DIA_TRACE_ZONE("soft.particles", ::Dia::Observation::Trace::Category::kDiaGraphics);
+    const float debugScale = mManager.GetDebugScale() * mRadiusMultiplier;
     const auto& bodies = mWorld.GetBodies();
 
     for (unsigned int b = 0; b < bodies.Size(); ++b)
@@ -75,10 +77,10 @@ void SoftParticlesDrawer::Draw(Dia::Graphics::FrameData& frameData)
         switch (body->GetBodyType())
         {
             case BodyType::kRope:
-                DrawParticlesFromRope(static_cast<const Rope*>(body), debugScale, frameData);
+                DrawParticlesFromRope(static_cast<const Rope*>(body), debugScale, draw);
                 break;
             case BodyType::kCloth:
-                DrawParticlesFromCloth(static_cast<const Cloth*>(body), debugScale, frameData);
+                DrawParticlesFromCloth(static_cast<const Cloth*>(body), debugScale, draw);
                 break;
         }
     }

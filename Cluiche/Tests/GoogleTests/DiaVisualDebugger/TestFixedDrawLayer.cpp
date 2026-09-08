@@ -80,7 +80,7 @@ namespace
     public:
         explicit StubDynLayer(const char* name) : mName(name) {}
         Dia::Core::StringCRC GetLayerName() const override { return mName; }
-        void Draw(Dia::Graphics::FrameData& /*fd*/) override {}
+        void Draw(Dia::Core::IDebugDraw& /*draw*/) override {}
     private:
         Dia::Core::StringCRC mName;
     };
@@ -726,24 +726,15 @@ TEST(FixedDrawLayer_Renderers, BVH_Built_EmitsNodeRects)
 
 TEST(FixedDrawLayer_Renderers, HexGrid_EmitsSixLinesPerValidHex)
 {
-    // Small hex grid: radius=10, bounds [0,0]→[40,40] → a handful of valid hexes
+    // 4x4 grid, radius=10 → 16 cells, each drawn as 6 lines = 96 primitives
     Dia::Geometry2D::HexGrid<int>::Def def;
-    def.worldBounds = Dia::Geometry2D::AARect(
-        Dia::Maths::Vector2D( 0.0f,  0.0f),
-        Dia::Maths::Vector2D(40.0f, 40.0f));
+    def.origin   = Dia::Maths::Vector2D(0.0f, 0.0f);
+    def.colCount = 4;
+    def.rowCount = 4;
     def.hexRadius = 10.0f;
     auto grid = std::make_unique<Dia::Geometry2D::HexGrid<int>>(def);
 
-    // Count valid hexes manually using the grid API
-    int validHexCount = 0;
-    const int minQ = grid->GetMinQ();
-    const int minR = grid->GetMinR();
-    const int colCount = grid->GetColCount();
-    const int rowCount = grid->GetRowCount();
-    for (int r = 0; r < rowCount; ++r)
-        for (int q = 0; q < colCount; ++q)
-            if (grid->IsValidHex({ minQ + q, minR + r }))
-                ++validHexCount;
+    const int validHexCount = grid->GetColCount() * grid->GetRowCount();
 
     Dia::Debug::HexGridRenderer<int> renderer;
     Dia::Debug::FixedPrimitiveBuffer buf(1024);
@@ -755,9 +746,9 @@ TEST(FixedDrawLayer_Renderers, HexGrid_EmitsSixLinesPerValidHex)
 TEST(FixedDrawLayer_Renderers, HexGrid_EmitsLine2D_InInactiveColour)
 {
     Dia::Geometry2D::HexGrid<int>::Def def;
-    def.worldBounds = Dia::Geometry2D::AARect(
-        Dia::Maths::Vector2D(0.0f,  0.0f),
-        Dia::Maths::Vector2D(20.0f, 20.0f));
+    def.origin   = Dia::Maths::Vector2D(0.0f, 0.0f);
+    def.colCount = 3;
+    def.rowCount = 3;
     def.hexRadius = 8.0f;
     auto grid = std::make_unique<Dia::Geometry2D::HexGrid<int>>(def);
 

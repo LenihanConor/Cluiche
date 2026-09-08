@@ -49,7 +49,7 @@ Common code patterns used throughout Cluiche codebase with examples for AI agent
 // Header: MyModule.h
 #pragma once
 
-#include "DiaApplication/ApplicationModule.h"
+#include "DiaApplicationFlow/ApplicationModule.h"
 
 namespace MyNamespace
 {
@@ -159,7 +159,7 @@ namespace MyNamespace
 // Header: MyPhase.h
 #pragma once
 
-#include "DiaApplication/ApplicationPhase.h"
+#include "DiaApplicationFlow/ApplicationPhase.h"
 
 namespace MyNamespace
 {
@@ -257,7 +257,7 @@ namespace MyNamespace
 // Header: MyProcessingUnit.h
 #pragma once
 
-#include "DiaApplication/ApplicationProcessingUnit.h"
+#include "DiaApplicationFlow/ApplicationProcessingUnit.h"
 #include <thread>
 
 namespace MyNamespace
@@ -377,7 +377,7 @@ namespace MyNamespace
 
 ```cpp
 // Using LevelFactory (existing)
-#include "DiaApplication/LevelFactory.h"
+#include "DiaApplicationFlow/LevelFactory.h"
 
 // Register level
 Dia::Application::LevelFactory::Instance()->Register<MyLevel>("MyLevel");
@@ -545,7 +545,7 @@ if (MyManager::IsCreated())
 
 ```cpp
 // Header: Define FrameStream
-#include "DiaApplication/FrameStream.h"
+#include "DiaApplicationFlow/FrameStream.h"
 
 class MainProcessingUnit : public Dia::Application::ProcessingUnit
 {

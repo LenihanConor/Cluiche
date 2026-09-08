@@ -3,7 +3,7 @@
 #include <cmath>
 
 #include <DiaCore/Core/Assert.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 namespace Dia
 {
@@ -123,9 +123,34 @@ namespace Dia
 		const Dia::Core::Containers::DynamicArrayC<Dia::Rig2D::BoneTransform, Dia::Rig2D::kMaxBones>&
 		    IKSolver::GetWorldTransforms() const
 		{
-			DIA_ASSERT(mRootTransformSet,
-			           "IKSolver::GetWorldTransforms — SetRootTransform() must be called before drawing");
+			// Not an assert — drawers may run before the first solver tick on the first frame.
+			// World transforms default-constructed to zero (bind pose at origin) until
+			// SetRootTransform is called.
+			if (!mRootTransformSet)
+			{
+				DIA_LOG_WARNING("IK2D",
+				    "IKSolver::GetWorldTransforms called before SetRootTransform — "
+				    "returning default-zero transforms");
+			}
 			return mWorldTransforms;
+		}
+
+		bool IKSolver::IsSolved(int chainIndex) const
+		{
+			if (chainIndex < 0 || chainIndex >= static_cast<int>(mChains.Size())) return false;
+			return mChains[chainIndex].lastSolved;
+		}
+
+		int IKSolver::GetLastIterationCount(int chainIndex) const
+		{
+			if (chainIndex < 0 || chainIndex >= static_cast<int>(mChains.Size())) return 0;
+			return mChains[chainIndex].lastIterationCount;
+		}
+
+		float IKSolver::GetEndEffectorError(int chainIndex) const
+		{
+			if (chainIndex < 0 || chainIndex >= static_cast<int>(mChains.Size())) return 0.0f;
+			return mChains[chainIndex].lastEndEffectorError;
 		}
 
 		int IKSolver::FindChainIndex(Dia::Core::StringCRC chainId) const
@@ -194,6 +219,17 @@ namespace Dia
 			                             mSkeleton.GetBone(midIdx).localPosition.X());
 			const float restEnd = atan2f(mSkeleton.GetBone(endIdx).localPosition.Y(),
 			                             mSkeleton.GetBone(endIdx).localPosition.X());
+
+			// Degenerate: target at (or within floating-point epsilon of) start — no
+			// valid extension direction. Skip pose modification; any pose is equally valid.
+			if (d < 1e-6f)
+			{
+				ResolvedChain& ch = mChains[chainIdx];
+				ch.lastSolved           = true;
+				ch.lastIterationCount   = 1;
+				ch.lastEndEffectorError = (mWorldTransforms[chain.endIndex].position - target).Magnitude();
+				return true;
+			}
 
 			float startWorldAngle;
 			float midWorldAngle;
@@ -268,6 +304,16 @@ namespace Dia
 			    ShortestArcLerp(mSnapshotRotations[midIdx], midLocalAngle, reachWeight);
 
 			RefreshWorldTransforms();
+
+			// Write solve result — TwoBone always converges when reachable.
+			{
+				ResolvedChain& ch = mChains[chainIdx];
+				ch.lastSolved           = true;
+				ch.lastIterationCount   = 1;
+				const Dia::Maths::Vector2D endPos = mWorldTransforms[chain.endIndex].position;
+				ch.lastEndEffectorError = (endPos - target).Magnitude();
+			}
+
 			return true;
 		}
 
@@ -303,6 +349,10 @@ namespace Dia
 			for (int i = startIdx; i <= endIdx; ++i)
 				mWorkingPositions[i] = mWorldTransforms[i].position;
 
+			// Solve-result fields accumulated across both reachable and unreachable paths.
+			bool fabrikSolved   = false;
+			int  fabrikIters    = 0;
+
 			if (distToTarget >= totalLength)
 			{
 				// Unreachable: extend fully toward target
@@ -312,25 +362,26 @@ namespace Dia
 				mWorkingPositions[startIdx] = startWorldPos;
 				for (int i = startIdx + 1; i <= endIdx; ++i)
 				{
-					// Each bone contributes its segment length along the direction
-					// Compute the direction offset accounting for bone rest angle
 					const float boneLen      = mSkeleton.GetBone(i).length;
 					const float boneRestAngle = atan2f(mSkeleton.GetBone(i).localPosition.Y(),
 					                                    mSkeleton.GetBone(i).localPosition.X());
-					// World rotation needed to point this bone toward dir
 					const float dirAngle  = atan2f(dir.y, dir.x);
 					const float worldRot  = dirAngle - boneRestAngle;
-					const float dirActual = worldRot + boneRestAngle; // = dirAngle
+					const float dirActual = worldRot + boneRestAngle;
 					accumulated += boneLen;
 					mWorkingPositions[i] = startWorldPos + dir * accumulated;
-					(void)worldRot; (void)dirActual; // used implicitly via dir
+					(void)worldRot; (void)dirActual;
 				}
+				fabrikSolved = false;
+				fabrikIters  = 0;
 			}
 			else
 			{
 				bool converged = false;
+				int  lastIter  = 0;
 				for (int iter = 0; iter < chain.def.maxIterations; ++iter)
 				{
+					lastIter = iter + 1;
 					// Backward pass: pin end effector at target
 					mWorkingPositions[endIdx] = target;
 					for (int i = endIdx - 1; i >= startIdx; --i)
@@ -397,9 +448,10 @@ namespace Dia
 				}
 
 				if (!converged)
-				{
 					DIA_LOG_WARNING("Rig2D", "IKSolver::SolveFABRIK — did not converge within maxIterations");
-				}
+
+				fabrikSolved = converged;
+				fabrikIters  = lastIter;
 			}
 
 			// Convert working world positions back to local rotations
@@ -420,6 +472,15 @@ namespace Dia
 			}
 
 			RefreshWorldTransforms();
+
+			// Write solve result.
+			{
+				ResolvedChain& ch = mChains[chainIdx];
+				ch.lastSolved           = fabrikSolved;
+				ch.lastIterationCount   = fabrikIters;
+				ch.lastEndEffectorError = (mWorkingPositions[endIdx] - target).Magnitude();
+			}
+
 			return true;
 		}
 

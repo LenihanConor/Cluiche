@@ -1,6 +1,6 @@
 #pragma once
 
-#include <DiaApplication/Manifest/TypedImport.h>
+#include <DiaApplicationFlow/Manifest/TypedImport.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Strings/String256.h>
 
@@ -13,6 +13,7 @@ namespace Dia
 		struct DiaGameConfig
 		{
 			Dia::Core::Containers::String256 assetRoot;
+			Dia::Core::Containers::String256 assetCatalogue;
 		};
 
 		struct DiaGameManifest
@@ -36,6 +37,7 @@ namespace Dia
 		{
 			Dia::Core::Containers::String256 name;
 			Dia::Core::Containers::String256 manifestPath;
+			Dia::Core::Containers::String256 scenePath;  // optional; empty if absent
 		};
 	}
 }

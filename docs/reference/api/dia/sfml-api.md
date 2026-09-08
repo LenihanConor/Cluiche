@@ -2,6 +2,9 @@
 
 **Last Updated:** 2026-04-01
 
+!!! warning "Stale — DiaSFML is being replaced"
+    DiaSFML is being phased out in favour of DiaSdl (SDL3 backend). This document describes the old SFML integration and is no longer maintained. See `docs/specs/features/dia/diasdl/` for the replacement spec.
+
 SFML backend implementation API providing graphics, window, input, and audio integration.
 
 ---

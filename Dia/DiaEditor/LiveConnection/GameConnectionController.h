@@ -2,6 +2,7 @@
 
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
+#include <DiaEditor/MVC/IEditorContext.h>
 
 #include <cstdint>
 
@@ -12,6 +13,7 @@ namespace Dia
 		class WebUIBridge;
 		class GameConnectionManager;
 		class EditorView;
+		class EditorActionRegistry;
 
 		// Drives the Game Connection panel: owns the editor-side UI state
 		// machine (disconnected / connecting / connected), registers the
@@ -31,10 +33,25 @@ namespace Dia
 				kConnected
 			};
 
+			struct PendingSubscribe
+			{
+				char topic[64];
+				float elapsedSec;
+			};
+
+			struct SubscribeAckRecord
+			{
+				char topic[64];
+				float latencyMs;
+			};
+
 			GameConnectionController();
 			~GameConnectionController();
 
-			void Initialize(WebUIBridge* bridge, GameConnectionManager* manager, EditorView* editorView = nullptr);
+			void Initialize(WebUIBridge* bridge, GameConnectionManager* manager,
+			               EditorView* editorView = nullptr,
+			               EditorActionRegistry* api = nullptr);
+			void SetEditorContext(IEditorContext* context);
 			void Shutdown();
 
 			// Pumped by the owning module each frame.
@@ -76,6 +93,8 @@ namespace Dia
 			Json::Value HandleConnectRequest(const Json::Value& data);
 			Json::Value HandleDisconnectRequest(const Json::Value& data);
 			Json::Value HandleGetStateRequest(const Json::Value& data);
+			Json::Value HandleGetAckRecordsRequest(const Json::Value& data);
+			Json::Value HandleSendCommandRequest(const Json::Value& data);
 
 			void BuildStatePayload(Json::Value& out) const;
 			void SetLastError(const char* msg);
@@ -83,9 +102,11 @@ namespace Dia
 
 			void PushGameConsoleEntry(const char* level, const char* message);
 
-			WebUIBridge* mBridge;
+			WebUIBridge*          mBridge;
 			GameConnectionManager* mManager;
-			EditorView* mEditorView;
+			EditorView*            mEditorView;
+			IEditorContext*        mEditorContext;
+			EditorActionRegistry*  mApi = nullptr;
 
 			State mState;
 
@@ -118,6 +139,19 @@ namespace Dia
 			static const float kHeartbeatIntervalSeconds;
 			static const float kHandshakeTimeoutSeconds;
 			static const float kPongTimeoutSeconds;
+
+			static constexpr float kSubscribeAckTimeoutSeconds = 3.0f;
+			static constexpr int kMaxPendingSubscribes = 16;
+			PendingSubscribe mPendingSubscribes[kMaxPendingSubscribes];
+			int mPendingSubscribeCount;
+
+			static constexpr int kMaxAckRecords = 16;
+			SubscribeAckRecord mAckRecords[kMaxAckRecords];
+			int mAckRecordCount;
+
+			void TrackPendingSubscribe(const char* topic);
+			void ClearPendingSubscribe(const char* topic);
+			void CheckSubscribeTimeouts(float deltaTime);
 		};
 	}
 }

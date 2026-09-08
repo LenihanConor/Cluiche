@@ -11,17 +11,18 @@
 #include "DiaSoftBody2D/Cloth.h"
 #include "DiaSoftBody2D/Particle.h"
 #include "DiaSoftBody2D/Constraints/DistanceConstraint.h"
-#include "DiaGraphics/Frame/FrameData.h"
-#include "DiaVisualDebugger/DebugLayerManager.h"
-#include "DiaVisualDebugger/DebugColourPalette.h"
-#include "DiaVisualDebugger/DebugLayerNames.h"
+#include "DiaCore/DebugDraw/IDebugDraw.h"
+#include "DiaCore/DebugDraw/IDebugContext.h"
+#include "DiaCore/DebugDraw/DebugColourPalette.h"
+#include "DiaCore/DebugDraw/DebugLayerNames.h"
 #include "DiaCore/Core/Assert.h"
+#include <DiaObservation/Trace/DiaTrace.h>
 
 namespace Dia::SoftBody2D
 {
 
-SoftConstraintsDrawer::SoftConstraintsDrawer(const SoftBodyWorld&                world,
-                                             const Dia::Debug::DebugLayerManager& manager)
+SoftConstraintsDrawer::SoftConstraintsDrawer(const SoftBodyWorld&            world,
+                                             const Dia::Core::IDebugContext& manager)
     : mWorld(world)
     , mManager(manager)
 {}
@@ -31,7 +32,7 @@ Dia::Core::StringCRC SoftConstraintsDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kSoftConstraints;
 }
 
-static Dia::Graphics::RGBA ConstraintColour(ConstraintType type)
+static Dia::Core::RGBA ConstraintColour(ConstraintType type)
 {
     switch (type)
     {
@@ -43,7 +44,7 @@ static Dia::Graphics::RGBA ConstraintColour(ConstraintType type)
     return Dia::Debug::DebugColourPalette::kActive;
 }
 
-static void DrawConstraintsFromRope(const Rope* rope, Dia::Graphics::FrameData& frameData)
+static void DrawConstraintsFromRope(const Rope* rope, Dia::Core::IDebugDraw& draw)
 {
     const int count = rope->GetConstraintCount();
     for (int i = 0; i < count; ++i)
@@ -53,11 +54,11 @@ static void DrawConstraintsFromRope(const Rope* rope, Dia::Graphics::FrameData& 
 
         const Dia::Maths::Vector2D& posA = rope->GetParticle(c.indexA).position;
         const Dia::Maths::Vector2D& posB = rope->GetParticle(c.indexB).position;
-        frameData.RequestDraw(posA, posB, ConstraintColour(c.type));
+        draw.RequestDraw(posA, posB, ConstraintColour(c.type));
     }
 }
 
-static void DrawConstraintsFromCloth(const Cloth* cloth, Dia::Graphics::FrameData& frameData)
+static void DrawConstraintsFromCloth(const Cloth* cloth, Dia::Core::IDebugDraw& draw)
 {
     const int resX  = cloth->GetResX();
     const int resY  = cloth->GetResY();
@@ -77,12 +78,13 @@ static void DrawConstraintsFromCloth(const Cloth* cloth, Dia::Graphics::FrameDat
 
         const Dia::Maths::Vector2D& posA = cloth->GetParticle(axA, ayA).position;
         const Dia::Maths::Vector2D& posB = cloth->GetParticle(axB, ayB).position;
-        frameData.RequestDraw(posA, posB, ConstraintColour(c.type));
+        draw.RequestDraw(posA, posB, ConstraintColour(c.type));
     }
 }
 
-void SoftConstraintsDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void SoftConstraintsDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
+    DIA_TRACE_ZONE("soft.constraints", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const auto& bodies = mWorld.GetBodies();
 
     for (unsigned int b = 0; b < bodies.Size(); ++b)
@@ -93,10 +95,10 @@ void SoftConstraintsDrawer::Draw(Dia::Graphics::FrameData& frameData)
         switch (body->GetBodyType())
         {
             case BodyType::kRope:
-                DrawConstraintsFromRope(static_cast<const Rope*>(body), frameData);
+                DrawConstraintsFromRope(static_cast<const Rope*>(body), draw);
                 break;
             case BodyType::kCloth:
-                DrawConstraintsFromCloth(static_cast<const Cloth*>(body), frameData);
+                DrawConstraintsFromCloth(static_cast<const Cloth*>(body), draw);
                 break;
         }
     }

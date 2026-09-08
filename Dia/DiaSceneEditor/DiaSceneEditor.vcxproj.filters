@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="UI">
+      <UniqueIdentifier>{D2222222-2222-2222-2222-222222222222}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="DiaSceneEditorPlugin.h" />
+    <ClInclude Include="SceneFileHandler.h" />
+    <ClInclude Include="SceneHierarchyController.h" />
+    <ClInclude Include="PropertyInspectorController.h" />
+    <ClInclude Include="ProjectContextManager.h" />
+    <ClInclude Include="SceneMutator.h" />
+    <ClInclude Include="SceneValidator.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DiaSceneEditorPlugin.cpp" />
+    <ClCompile Include="SceneFileHandler.cpp" />
+    <ClCompile Include="SceneHierarchyController.cpp" />
+    <ClCompile Include="PropertyInspectorController.cpp" />
+    <ClCompile Include="ProjectContextManager.cpp" />
+    <ClCompile Include="SceneMutator.cpp" />
+    <ClCompile Include="SceneValidator.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="dia.sceneeditor.architecture.module.md" />
+    <None Include="UI\index.html">
+      <Filter>UI</Filter>
+    </None>
+  </ItemGroup>
+</Project>

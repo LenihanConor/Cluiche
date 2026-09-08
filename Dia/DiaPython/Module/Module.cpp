@@ -6,7 +6,7 @@
 #include "Module.h"
 #include "DiaPython/DiaPythonInternal.h"
 #include "DiaPython/Lifecycle/Lifecycle.h"
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <cctype>
 
 namespace Dia
@@ -166,6 +166,7 @@ namespace Dia
 			// If Python initialized, create pybind11 module immediately
 			if (IsInitialized())
 			{
+				py::gil_scoped_acquire acquire;
 
 				try
 				{
@@ -184,8 +185,27 @@ namespace Dia
 
 
 					// Add to sys.modules
-					py::module_::import("sys").attr("modules")[name] = newModuleObj;
+					py::module_ sys = py::module_::import("sys");
+					sys.attr("modules")[name] = newModuleObj;
 
+					// For dotted names (e.g. "dia_editor.project"), wire the child as an
+					// attribute on the parent and give the parent a __path__ so Python
+					// treats it as a package — otherwise "import dia_editor.project" raises
+					// "dia_editor is not a package".
+					std::string nameStr(name);
+					auto dotPos = nameStr.rfind('.');
+					if (dotPos != std::string::npos)
+					{
+						std::string parentName = nameStr.substr(0, dotPos);
+						std::string childAttr  = nameStr.substr(dotPos + 1);
+						py::object parentMod = sys.attr("modules").attr("get")(parentName.c_str(), py::none());
+						if (!parentMod.is_none())
+						{
+							if (!py::hasattr(parentMod, "__path__"))
+								parentMod.attr("__path__") = py::list();
+							parentMod.attr(childAttr.c_str()) = newModuleObj;
+						}
+					}
 
 					// Store as py::module_
 					moduleImpl->pybindModule = new py::module_(py::cast<py::module_>(newModuleObj));
@@ -279,6 +299,7 @@ namespace Dia
 			// If module has pybind11 handle, register immediately
 			if (moduleImpl->pybindModule)
 			{
+				py::gil_scoped_acquire acquire;
 
 				try
 				{
@@ -288,13 +309,6 @@ namespace Dia
 
 					// Register with pybind11
 					moduleImpl->pybindModule->attr(functionName) = wrappedCallback;
-
-
-					// Set docstring if provided
-					if (docstring && docstring[0] != '\0')
-					{
-						wrappedCallback.attr("__doc__") = py::str(docstring);
-					}
 
 					DIA_LOG_INFO("DiaPython", "AddFunction: Registered '%s' in module '%s'", functionName, moduleImpl->name.c_str());
 				}
@@ -355,6 +369,8 @@ namespace Dia
 			// If module has pybind11 handle, register immediately
 			if (moduleImpl->pybindModule)
 			{
+				py::gil_scoped_acquire acquire;
+
 				try
 				{
 					// Wrap callback to catch C++ exceptions
@@ -371,10 +387,6 @@ namespace Dia
 					}
 
 					moduleImpl->pybindModule->attr(functionName) = wrappedCallback;
-					if (!fullDocstring.empty())
-					{
-						wrappedCallback.attr("__doc__") = py::str(fullDocstring.c_str());
-					}
 
 					DIA_LOG_INFO("DiaPython", "AddFunctionOverload: Registered '%s%s' in module '%s'",
 						functionName, signatureHint ? signatureHint : "", moduleImpl->name.c_str());

@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.core.containers
 name: Containers
 owner_team: TBD
-layer: platform
+layer: foundation/core
 status: active
 maturity: dev
 
@@ -27,18 +27,20 @@ non_responsibilities:
   - Cross-cutting engine orchestration
 
 dependent_modules:
-  - dia.core.containers.arrays
-  - dia.core.containers.bitflag
-  - dia.core.containers.graphs
-  - dia.core.containers.hashtables
-  - dia.core.containers.linklist
-  - dia.core.containers.misc
-  - dia.core.containers.strings
+  - dia.core.memory
+  - dia.core.core
+  - dia.core.strings
+  - dia.core.crc
 
 public_api:
-  headers: []
-  namespaces: []
-  entry_points: []
+  headers:
+    - Containers/Handle.h
+    - Containers/HandlePool.h
+  namespaces:
+    - Dia::Core
+  entry_points:
+    - "Handle<T> — typed index+generation handle value type"
+    - "HandlePool<T, kCapacity> — fixed-capacity generation-tracking object pool"
 
 dependencies:
   required: []

@@ -1,0 +1,2356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DiaSceneEditor</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    font-family: var(--pico-font-family, 'Segoe UI', system-ui, sans-serif);
+    font-size: var(--pico-font-size, 12px);
+    background: var(--pico-background-color, #1e1e1e);
+    color: var(--pico-color, #d4d4d4);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* ── Overlay ── */
+  .no-project-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--pico-modal-overlay-background-color, rgba(0,0,0,0.6));
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 8px; z-index: 100;
+  }
+  .no-project-overlay .overlay-message { font-size: 14px; color: var(--pico-del-color, #f44747); }
+  .no-project-overlay .overlay-hint { font-size: 11px; color: var(--pico-muted-color, #808080); }
+
+  /* ── Title bar ── */
+  .titlebar {
+    background: var(--pico-card-background-color, #252526);
+    border-bottom: 1px solid var(--pico-border-color, #3c3c3c);
+    padding: 5px 10px; display: flex; align-items: center; gap: 8px;
+    flex-shrink: 0; user-select: none;
+  }
+  .fdot { width: 6px; height: 6px; background: var(--pico-primary, #0e639c); border-radius: 50%; }
+  .ttl { font-weight: 600; color: var(--pico-color, #d4d4d4); }
+  .tfile { color: var(--pico-muted-color, #808080); font-size: 11px; }
+  .tdirty { color: #cca700; font-size: 11px; margin-left: auto; font-weight: 600; display: none; }
+  .tdirty.show { display: inline; }
+
+  /* ── Toolbar ── */
+  .toolbar {
+    background: var(--pico-card-background-color, #252526);
+    border-bottom: 1px solid var(--pico-border-color, #3c3c3c);
+    padding: 4px 8px; display: flex; align-items: center; gap: 4px; flex-shrink: 0;
+  }
+  .tbtn {
+    background: var(--pico-secondary, #3a3d41);
+    border: 1px solid var(--pico-border-color, #3c3c3c);
+    border-radius: 3px; color: var(--pico-muted-color, #808080);
+    padding: 3px 8px; font-size: 11px; cursor: pointer; white-space: nowrap;
+  }
+  .tbtn:hover {
+    background: var(--pico-secondary-hover, #4a4d51);
+    color: var(--pico-color, #d4d4d4);
+    border-color: var(--pico-primary, #0e639c);
+  }
+  .tbtn.accent {
+    background: var(--pico-primary, #0e639c);
+    border-color: var(--pico-primary-hover, #1177bb);
+    color: var(--pico-primary-inverse, #ffffff);
+  }
+  .tbtn.accent:hover { background: var(--pico-primary-hover, #1177bb); }
+  .tsep { width: 1px; height: 18px; background: var(--pico-border-color, #3c3c3c); margin: 0 4px; flex-shrink: 0; }
+  .spacer { flex: 1; }
+  .toolbar-label { font-size: 10px; color: var(--pico-muted-color, #808080); text-transform: uppercase; letter-spacing: .3px; }
+  .toolbar-select {
+    background: var(--pico-form-element-background-color, #252526);
+    border: 1px solid var(--pico-form-element-border-color, #3c3c3c);
+    border-radius: 3px; color: var(--pico-form-element-color, #d4d4d4);
+    padding: 3px 6px; font-size: 11px; outline: none; cursor: pointer; max-width: 180px;
+  }
+  .toolbar-select:focus { border-color: var(--pico-form-element-active-border-color, #0e639c); }
+  .toolbar-select:hover { border-color: var(--pico-primary, #0e639c); }
+
+  /* ── Main layout ── */
+  .main { display: flex; flex: 1; overflow: hidden; }
+
+  /* ── Left column ── */
+  .lcol {
+    width: 30%; min-width: 220px; max-width: 360px;
+    background: var(--pico-background-color, #1e1e1e);
+    border-right: 2px solid var(--pico-muted-border-color, #2d2d2d);
+    display: flex; flex-direction: column; overflow: hidden;
+    position: relative;
+  }
+  .colhdr {
+    background: var(--pico-card-background-color, #252526);
+    border-bottom: 1px solid var(--pico-border-color, #3c3c3c);
+    padding: 5px 8px; display: flex; align-items: center; gap: 5px; flex-shrink: 0;
+  }
+  .colhdr-ttl { font-size: 11px; color: var(--pico-muted-color, #808080); text-transform: uppercase; letter-spacing: .5px; }
+  .colhdr-cnt { font-size: 10px; color: var(--pico-muted-color, #808080); margin-left: auto; }
+  .searchrow {
+    background: var(--pico-background-color, #1e1e1e);
+    border-bottom: 1px solid var(--pico-muted-border-color, #2d2d2d);
+    padding: 5px 6px; flex-shrink: 0;
+  }
+  .srch {
+    background: var(--pico-form-element-background-color, #252526);
+    border: 1px solid var(--pico-form-element-border-color, #3c3c3c);
+    border-radius: 3px; color: var(--pico-form-element-color, #d4d4d4);
+    padding: 4px 7px; font-size: 11px; outline: none; width: 100%;
+  }
+  .srch:focus { border-color: var(--pico-form-element-active-border-color, #0e639c); }
+  .srch::placeholder { color: var(--pico-form-element-placeholder-color, #808080); }
+  .hier { overflow-y: auto; flex: 1; padding: 2px 0; }
+
+  /* ── Sections ── */
+  .sec { margin-bottom: 2px; }
+  .sec-hdr {
+    display: flex; align-items: center; padding: 4px 8px;
+    cursor: pointer; user-select: none; gap: 5px;
+    background: var(--pico-background-color, #1e1e1e);
+    border-bottom: 1px solid var(--pico-muted-border-color, #2d2d2d);
+  }
+  .sec-hdr:hover { background: var(--pico-card-background-color, #252526); }
+  .sec-chv { color: var(--pico-muted-color, #808080); font-size: 9px; transition: transform .15s; width: 10px; }
+  .sec.open .sec-chv { transform: rotate(90deg); }
+  .sec-icon { font-family: var(--pico-font-family-monospace, monospace); font-size: 9px; border: 1px solid var(--pico-border-color, #3c3c3c); border-radius: 2px; padding: 1px 3px; }
+  .sec-icon.layer    { border-color: #3a8a8a; color: #6ac4c4; background: #1a2e2e; }
+  .sec-icon.camera   { border-color: #6a3a8a; color: #a46ac4; background: #231a2e; }
+  .sec-icon.light    { border-color: #8a7a3a; color: #c4b86a; background: #2e2a1a; }
+  .sec-icon.entity   { border-color: #3a8a4a; color: #6ac47a; background: #1a2e1e; }
+  .sec-icon.blueprint { border-color: #5a6a8a; color: #8ab0d8; background: #1a222e; }
+  .sec-name { font-size: 11px; color: var(--pico-color, #d4d4d4); font-weight: 600; }
+  .sec-cnt {
+    font-size: 10px; color: var(--pico-muted-color, #808080); margin-left: auto;
+    background: var(--pico-card-background-color, #252526); border-radius: 8px; padding: 1px 6px;
+  }
+  .sec-body { display: none; }
+  .sec.open .sec-body { display: block; }
+
+  /* ── Items ── */
+  .item {
+    display: flex; align-items: center; padding: 0 8px; height: 26px;
+    cursor: pointer; border-bottom: 1px solid var(--pico-muted-border-color, #2d2d2d);
+    gap: 5px; border-left: 2px solid transparent;
+  }
+  .item:hover { background: var(--pico-card-background-color, #252526); }
+  .item.sel {
+    background: var(--pico-form-element-selected-background-color, #094771);
+    border-left-color: var(--pico-primary, #0e639c);
+  }
+  .item.disabled { opacity: 0.5; }
+  .item-icon {
+    font-family: var(--pico-font-family-monospace, monospace); font-size: 8.5px;
+    border: 1px solid var(--pico-border-color, #3c3c3c); border-radius: 2px;
+    padding: 0px 2px; flex-shrink: 0;
+  }
+  .item-icon.L { border-color: #3a8a8a; color: #6ac4c4; background: #1a2e2e; }
+  .item-icon.C { border-color: #6a3a8a; color: #a46ac4; background: #231a2e; }
+  .item-icon.W { border-color: #8a7a3a; color: #c4b86a; background: #2e2a1a; }
+  .item-icon.E { border-color: #3a8a4a; color: #6ac47a; background: #1a2e1e; }
+  .item-icon.B { border-color: #5a6a8a; color: #8ab0d8; background: #1a222e; }
+  .item-name { flex: 1; font-size: 11px; color: var(--pico-color, #d4d4d4); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item.sel .item-name { color: var(--pico-primary-inverse, #ffffff); }
+  .item-meta { font-size: 10px; color: var(--pico-muted-color, #808080); font-family: var(--pico-font-family-monospace, monospace); flex-shrink: 0; }
+  .item-badge { font-size: 9px; border: 1px solid var(--pico-border-color, #3c3c3c); border-radius: 2px; padding: 0px 4px; flex-shrink: 0; }
+  .item-badge.active { border-color: #3a8a4a; color: #6ac47a; background: #1a2e1e; }
+  .item-badge.dir { border-color: #8a7a3a; color: #c4b86a; background: #2e2a1a; }
+  .item-badge.pnt { border-color: #8a5a3a; color: #c4906a; background: #2e1a1a; }
+  .item-badge.refs { border-color: var(--pico-border-color, #3c3c3c); color: var(--pico-muted-color, #808080); background: var(--pico-background-color, #1e1e1e); }
+  .item-warning { color: #f44747; font-size: 12px; flex-shrink: 0; margin-left: 4px; }
+  .item.has-warning .item-name { color: #f4a747; }
+  .item.has-warning .item-meta { color: #f4a747; }
+
+  /* ── Divider ── */
+  .divider { width: 4px; background: var(--pico-muted-border-color, #2d2d2d); cursor: col-resize; flex-shrink: 0; }
+  .divider:hover { background: var(--pico-primary, #0e639c); }
+
+  /* ── Right column ── */
+  .rcol { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--pico-background-color, #1e1e1e); }
+  .ctx-strip {
+    background: var(--pico-card-background-color, #252526);
+    border-bottom: 1px solid var(--pico-border-color, #3c3c3c);
+    padding: 6px 12px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; min-height: 36px;
+  }
+  .ctx-icon { font-family: var(--pico-font-family-monospace, monospace); font-size: 9px; border: 1px solid var(--pico-border-color, #3c3c3c); border-radius: 2px; padding: 1px 3px; }
+  .ctx-name { font-size: 13px; color: var(--pico-color, #d4d4d4); font-weight: 600; }
+  .ctx-entity-template { margin-left: auto; font-size: 11px; color: var(--pico-muted-color, #808080); }
+  .ctx-entity-template b { color: var(--pico-h2-color, #9cdcfe); }
+
+  /* ── No selection ── */
+  .nosel { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--pico-muted-border-color, #2d2d2d); gap: 6px; }
+  .nosel .big { font-size: 28px; }
+  .nosel .hint { font-size: 11px; color: var(--pico-muted-color, #808080); }
+
+  /* ── Sub-tabs ── */
+  .stabs { background: var(--pico-background-color, #1e1e1e); border-bottom: 1px solid var(--pico-border-color, #3c3c3c); display: flex; flex-shrink: 0; }
+  .stab { padding: 6px 14px; cursor: pointer; color: var(--pico-muted-color, #808080); border-bottom: 2px solid transparent; font-size: 11px; transition: color .15s; }
+  .stab:hover { color: var(--pico-color, #d4d4d4); }
+  .stab.active { color: var(--pico-primary-inverse, #ffffff); border-bottom-color: var(--pico-primary, #0e639c); }
+
+  /* ── Property panel ── */
+  .props { overflow-y: auto; flex: 1; padding: 8px; }
+  .prop-section { margin-bottom: 8px; }
+  .prop-section-hdr {
+    font-size: 10px; color: var(--pico-muted-color, #808080);
+    text-transform: uppercase; letter-spacing: .5px;
+    padding: 4px 0 3px 0; border-bottom: 1px solid var(--pico-muted-border-color, #2d2d2d); margin-bottom: 4px;
+  }
+  .prop-row { display: flex; align-items: center; padding: 3px 0; min-height: 26px; border-left: 2px solid transparent; padding-left: 8px; }
+  .prop-row.override { border-left-color: var(--pico-primary, #0e639c); }
+  .prop-row.entity-template-default { border-left-color: var(--pico-form-element-valid-border-color, #89d185); }
+  .prop-label { width: 140px; font-size: 11px; color: var(--pico-muted-color, #808080); flex-shrink: 0; }
+  .prop-type { width: 50px; font-size: 10px; color: var(--pico-muted-color, #808080); font-family: var(--pico-font-family-monospace, monospace); flex-shrink: 0; }
+  .prop-value { flex: 1; font-family: var(--pico-font-family-monospace, monospace); font-size: 11px; }
+  .prop-input {
+    background: var(--pico-form-element-background-color, #252526);
+    border: 1px solid var(--pico-form-element-border-color, #3c3c3c);
+    border-radius: 3px; color: var(--pico-form-element-color, #d4d4d4);
+    padding: 2px 6px; font-size: 11px; font-family: var(--pico-font-family-monospace, monospace);
+    width: 100%; outline: none;
+  }
+  .prop-input:focus { border-color: var(--pico-form-element-active-border-color, #0e639c); }
+  .prop-input:disabled {
+    color: var(--pico-form-element-disabled-color, #666666);
+    background: var(--pico-form-element-disabled-background-color, #2a2d2e);
+    border-color: var(--pico-form-element-disabled-border-color, #3c3c3c);
+  }
+  .prop-check { width: 14px; height: 14px; accent-color: var(--pico-primary, #0e639c); }
+  .prop-link { color: var(--pico-primary, #0e639c); cursor: pointer; font-size: 11px; text-decoration: none; }
+  .prop-link:hover { text-decoration: underline; color: var(--pico-primary-hover, #1177bb); }
+  .prop-link.disabled-link { color: var(--pico-muted-color, #808080); cursor: default; pointer-events: none; }
+  .prop-error { color: var(--pico-del-color, #f44747); font-size: 11px; }
+
+  /* ── Component group ── */
+  .comp-group { margin-bottom: 6px; border: 1px solid var(--pico-border-color, #3c3c3c); border-radius: 4px; overflow: hidden; }
+  .comp-hdr {
+    background: var(--pico-card-background-color, #252526);
+    padding: 4px 10px; display: flex; align-items: center; cursor: pointer; gap: 6px; user-select: none;
+  }
+  .comp-hdr:hover { background: var(--pico-secondary-hover, #4a4d51); }
+  .comp-chv { color: var(--pico-muted-color, #808080); font-size: 9px; transition: transform .15s; width: 10px; }
+  .comp-group.open .comp-chv { transform: rotate(90deg); }
+  .comp-name { font-weight: 600; color: var(--pico-h2-color, #9cdcfe); font-size: 11.5px; }
+  .comp-body { display: none; padding: 4px 6px; }
+  .comp-group.open .comp-body { display: block; }
+
+  /* ── Affects layers ── */
+  .layer-check { display: flex; align-items: center; gap: 6px; padding: 2px 8px; }
+  .layer-check label { font-size: 11px; color: var(--pico-muted-color, #808080); cursor: pointer; }
+
+  /* ── Entity template banner ── */
+  .entity-template-banner {
+    background: var(--pico-code-background-color, #2d2d30);
+    border: 1px solid var(--pico-border-color, #3c3c3c);
+    border-radius: 4px; padding: 8px 12px; margin-bottom: 8px;
+    font-size: 11px; color: var(--pico-muted-color, #808080);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .entity-template-banner b { color: var(--pico-h2-color, #9cdcfe); }
+  .entity-template-banner .entity-template-open { color: var(--pico-primary, #0e639c); cursor: pointer; margin-left: auto; font-size: 10px; opacity: 1; }
+  .entity-template-banner .entity-template-open:hover { text-decoration: underline; }
+
+  /* ── Layer reorder buttons ── */
+  .layer-reorder-btn {
+    font-size: 8px; color: var(--pico-muted-color, #808080); cursor: pointer;
+    padding: 0 2px; flex-shrink: 0; line-height: 1; display: none;
+  }
+  .item:hover .layer-reorder-btn { display: inline; }
+  .layer-reorder-btn:hover { color: var(--pico-primary, #0e639c); }
+  .layer-reorder-btn.disabled { opacity: 0.3; pointer-events: none; }
+
+  /* ── Filter pills ── */
+  .filter-pills { display: flex; gap: 3px; padding-top: 5px; }
+  .fpill {
+    background: var(--pico-secondary, #3a3d41);
+    border: 1px solid var(--pico-border-color, #3c3c3c);
+    border-radius: 10px; color: var(--pico-muted-color, #808080);
+    padding: 1px 7px; font-size: 10px; cursor: pointer; user-select: none; white-space: nowrap;
+  }
+  .fpill:hover { border-color: var(--pico-primary, #0e639c); color: var(--pico-color, #d4d4d4); }
+  .fpill.off { opacity: 0.35; }
+  .sec.section-hidden { display: none; }
+
+  /* ── Add override ── */
+  .add-override { display: flex; align-items: center; gap: 4px; padding: 6px 8px; }
+  .add-btn {
+    background: var(--pico-secondary, #3a3d41);
+    border: 1px solid var(--pico-border-color, #3c3c3c);
+    border-radius: 3px; color: var(--pico-muted-color, #808080);
+    padding: 3px 8px; font-size: 10px; cursor: pointer;
+  }
+  .add-btn:hover {
+    background: var(--pico-secondary-hover, #4a4d51);
+    color: var(--pico-color, #d4d4d4);
+    border-color: var(--pico-primary, #0e639c);
+  }
+
+  /* ── Promote override ── */
+  .prop-row.non-override { opacity: 0.5; }
+  .prop-row.non-override:hover { opacity: 0.8; cursor: pointer; }
+
+  /* ── Status bar ── */
+  .sbar {
+    background: var(--pico-card-background-color, #252526);
+    border-top: 1px solid var(--pico-border-color, #3c3c3c);
+    padding: 2px 10px; font-size: 10px; color: var(--pico-muted-color, #808080);
+    display: flex; gap: 14px; flex-shrink: 0;
+  }
+  .sbar .sok { color: var(--pico-primary, #0e639c); }
+  .sbar b { color: var(--pico-h2-color, #9cdcfe); }
+
+  /* ── Context menu ── */
+  .ctx-menu {
+    position: fixed;
+    background: var(--pico-dropdown-background-color, #252526);
+    border: 1px solid var(--pico-dropdown-border-color, #3c3c3c);
+    border-radius: 4px; padding: 4px 0; z-index: 1000; min-width: 160px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.5); display: none;
+  }
+  .ctx-menu.show { display: block; }
+  .ctx-menu-item { padding: 5px 12px; font-size: 11px; color: var(--pico-color, #d4d4d4); cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  .ctx-menu-item:hover { background: var(--pico-form-element-selected-background-color, #094771); color: var(--pico-primary-inverse, #ffffff); }
+  .ctx-menu-item.danger { color: var(--pico-del-color, #f44747); }
+  .ctx-menu-item.danger:hover { background: #3a2020; }
+  .ctx-menu-sep { height: 1px; background: var(--pico-border-color, #3c3c3c); margin: 3px 0; }
+  .ctx-menu-item .shortcut { margin-left: auto; color: var(--pico-muted-color, #808080); font-size: 10px; }
+
+  /* ── Rename inline ── */
+  .item-rename-input {
+    background: var(--pico-form-element-background-color, #252526);
+    border: 1px solid var(--pico-primary, #0e639c);
+    border-radius: 3px; color: var(--pico-color, #d4d4d4);
+    padding: 1px 4px; font-size: 11px; font-family: inherit; width: 100%; outline: none;
+  }
+
+  /* ── Change blueprint dialog ── */
+  .dialog-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--pico-modal-overlay-background-color, rgba(0,0,0,0.6));
+    z-index: 2000; display: none; align-items: center; justify-content: center;
+  }
+  .dialog-overlay.show { display: flex; }
+  .dialog {
+    background: var(--pico-card-background-color, #252526);
+    border: 1px solid var(--pico-border-color, #3c3c3c);
+    border-radius: 6px; padding: 16px; min-width: 340px; max-width: 420px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.5);
+  }
+  .dialog-title { font-size: 13px; font-weight: 600; color: var(--pico-color, #d4d4d4); margin-bottom: 10px; }
+  .dialog-body { font-size: 11px; color: var(--pico-muted-color, #808080); margin-bottom: 12px; line-height: 1.5; }
+  .dialog-select {
+    background: var(--pico-form-element-background-color, #252526);
+    border: 1px solid var(--pico-form-element-border-color, #3c3c3c);
+    border-radius: 3px; color: var(--pico-form-element-color, #d4d4d4);
+    padding: 4px 8px; font-size: 11px; width: 100%; outline: none; margin-bottom: 8px;
+  }
+  .dialog-select:focus { border-color: var(--pico-form-element-active-border-color, #0e639c); }
+  .dialog-warn {
+    background: #2a1a10; border: 1px solid #6a4010;
+    border-radius: 3px; padding: 6px 10px; font-size: 10px; color: #e8a850; margin-bottom: 10px;
+  }
+  .dialog-transfer {
+    font-size: 10px; color: var(--pico-muted-color, #808080); margin-bottom: 10px;
+    padding: 6px; background: var(--pico-background-color, #1e1e1e); border-radius: 3px;
+  }
+  .dialog-transfer .ok { color: var(--pico-ins-color, #89d185); }
+  .dialog-transfer .orphan { color: #cca700; }
+  .dialog-btns { display: flex; justify-content: flex-end; gap: 6px; }
+  .dialog-btn { padding: 4px 12px; border-radius: 3px; font-size: 11px; cursor: pointer; border: 1px solid var(--pico-border-color, #3c3c3c); }
+  .dialog-btn.cancel { background: var(--pico-secondary, #3a3d41); color: var(--pico-muted-color, #808080); }
+  .dialog-btn.cancel:hover { background: var(--pico-secondary-hover, #4a4d51); }
+  .dialog-btn.confirm { background: var(--pico-primary, #0e639c); border-color: var(--pico-primary-hover, #1177bb); color: var(--pico-primary-inverse, #ffffff); }
+  .dialog-btn.confirm:hover { background: var(--pico-primary-hover, #1177bb); }
+
+  /* ── Scene properties dialog ── */
+  .scene-props-dialog { min-width: 360px; max-width: 480px; }
+  .scene-props-section { margin-bottom: 12px; }
+  .scene-props-label {
+    font-size: 10px; color: var(--pico-muted-color, #808080);
+    text-transform: uppercase; letter-spacing: .5px;
+    padding: 3px 0; border-bottom: 1px solid var(--pico-muted-border-color, #2d2d2d); margin-bottom: 6px;
+  }
+  .scene-props-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+  .scene-props-key { width: 130px; font-size: 11px; color: var(--pico-muted-color, #808080); flex-shrink: 0; }
+  .scene-props-input {
+    background: var(--pico-form-element-background-color, #252526);
+    border: 1px solid var(--pico-form-element-border-color, #3c3c3c);
+    border-radius: 3px; color: var(--pico-form-element-color, #d4d4d4);
+    padding: 2px 6px; font-size: 11px; font-family: var(--pico-font-family-monospace, monospace);
+    width: 90px; outline: none;
+  }
+  .scene-props-input:focus { border-color: var(--pico-form-element-active-border-color, #0e639c); }
+  .validation-error {
+    background: #2a1010; border: 1px solid var(--pico-form-element-invalid-border-color, #f44747);
+    border-radius: 3px; padding: 6px 10px; font-size: 10px; color: var(--pico-del-color, #f44747); margin-bottom: 6px;
+  }
+  .validation-warn {
+    background: #2a2010; border: 1px solid #6a5010;
+    border-radius: 3px; padding: 6px 10px; font-size: 10px; color: #e0b050; margin-bottom: 6px;
+  }
+  .validation-ok {
+    background: #102a10; border: 1px solid var(--pico-form-element-valid-border-color, #89d185);
+    border-radius: 3px; padding: 6px 10px; font-size: 10px; color: var(--pico-ins-color, #89d185); margin-bottom: 6px;
+  }
+
+  /* ── New-scene form rows ── */
+  .dialog-form-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+  .dialog-form-label { width: 40px; font-size: 11px; color: var(--pico-muted-color, #808080); padding-top: 4px; flex-shrink: 0; }
+  .dialog-form-error {
+    font-size: 10px; color: var(--pico-del-color, #f44747);
+    background: #2a1010; border: 1px solid #f44747; border-radius: 2px;
+    padding: 4px 8px; margin-bottom: 8px; display: none;
+  }
+
+  /* ── No scene overlay ── */
+  .no-scene-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--pico-modal-overlay-background-color, rgba(0,0,0,0.6));
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 12px; z-index: 50;
+    border-right: 2px solid var(--pico-muted-border-color, #2d2d2d);
+  }
+  .no-scene-overlay .hint { font-size: 12px; color: var(--pico-muted-color, #808080); }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--pico-background-color, #1e1e1e); }
+  ::-webkit-scrollbar-thumb { background: var(--pico-secondary, #3a3d41); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--pico-secondary-hover, #4a4d51); }
+</style>
+</head>
+<body>
+
+<div class="no-project-overlay" id="no-project-overlay">
+  <div class="overlay-message">No project loaded</div>
+  <div class="overlay-hint">Open a .diagame project to use this panel</div>
+</div>
+
+<div class="titlebar">
+  <div class="fdot"></div>
+  <span class="ttl">DiaSceneEditor</span>
+  <span class="tfile" id="tfile"></span>
+  <span class="tdirty" id="dirty">* Unsaved</span>
+</div>
+
+<div class="toolbar">
+  <span class="toolbar-label">Stage:</span>
+  <select class="toolbar-select" id="stage-select"><option value="">Loading...</option></select>
+  <div class="tsep"></div>
+  <button class="tbtn accent" id="btn-new-scene" title="Create a new .diascene file via the Asset Catalogue">+ New Scene</button>
+  <div class="tsep"></div>
+  <button class="tbtn accent" id="btn-add-entity">+ Entity</button>
+  <button class="tbtn accent" id="btn-add-camera">+ Camera</button>
+  <button class="tbtn accent" id="btn-add-light">+ Light</button>
+  <button class="tbtn accent" id="btn-add-layer">+ Layer</button>
+  <div class="tsep"></div>
+  <button class="tbtn" id="btn-scene-props">Scene Properties</button>
+  <div class="spacer"></div>
+</div>
+
+<div class="main">
+  <div class="lcol" id="lcol">
+    <div class="no-scene-overlay" id="no-scene-overlay" style="display:none">
+      <span class="hint">No scene assigned to this stage.</span>
+      <button class="tbtn accent" id="btn-create-scene-cta">+ Create Scene</button>
+    </div>
+    <div class="colhdr">
+      <span class="colhdr-ttl">Scene Hierarchy</span>
+      <span class="colhdr-cnt" id="total-cnt">0</span>
+    </div>
+    <div class="searchrow">
+      <input class="srch" type="text" placeholder="filter..." id="filter-input">
+      <div class="filter-pills">
+        <span class="fpill" data-section="layers" title="Toggle Layers">L</span>
+        <span class="fpill" data-section="cameras" title="Toggle Cameras">C</span>
+        <span class="fpill" data-section="lights" title="Toggle Lights">Li</span>
+        <span class="fpill" data-section="entities" title="Toggle Entities">E</span>
+      </div>
+    </div>
+    <div class="hier" id="hier"></div>
+  </div>
+
+  <div class="divider" id="divider"></div>
+
+  <div class="rcol" id="rcol">
+    <div class="ctx-strip" id="ctx-strip" style="display:none">
+      <span class="ctx-icon" id="ctx-icon">E</span>
+      <span class="ctx-name" id="ctx-name"></span>
+      <span class="ctx-entity-template" id="ctx-entity-template"></span>
+    </div>
+    <div class="stabs" id="stabs" style="display:none">
+      <div class="stab active" data-tab="instance">Instance Overrides</div>
+    </div>
+    <div class="nosel" id="nosel">
+      <span class="big">&#8592;</span>
+      <span class="hint">Select an item from the scene hierarchy</span>
+    </div>
+    <div class="props" id="props" style="display:none"></div>
+  </div>
+</div>
+
+<!-- CONTEXT MENU -->
+<div class="ctx-menu" id="ctx-menu">
+  <div class="ctx-menu-item" data-action="duplicate">Duplicate<span class="shortcut">Ctrl+D</span></div>
+  <div class="ctx-menu-item" data-action="rename">Rename<span class="shortcut">F2</span></div>
+  <div class="ctx-menu-sep"></div>
+  <div class="ctx-menu-item" data-action="change-entity-template" id="ctx-entity-template">Change Blueprint...</div>
+  <div class="ctx-menu-item" data-action="toggle-enable">Enable / Disable</div>
+  <div class="ctx-menu-sep"></div>
+  <div class="ctx-menu-item danger" data-action="delete">Delete<span class="shortcut">Del</span></div>
+</div>
+
+<!-- NEW SCENE DIALOG -->
+<div class="dialog-overlay" id="new-scene-dialog">
+  <div class="dialog">
+    <div class="dialog-title">New Scene</div>
+    <div class="dialog-form-row">
+      <label class="dialog-form-label">Name</label>
+      <input class="dialog-select" id="new-scene-name" placeholder="my_scene" autocomplete="off" style="margin-bottom:0" />
+    </div>
+    <div class="dialog-form-row">
+      <label class="dialog-form-label">Path</label>
+      <input class="dialog-select" id="new-scene-path" placeholder="Stages/my_scene/my_scene.diascene" autocomplete="off" style="margin-bottom:0" />
+    </div>
+    <div class="dialog-form-row">
+      <label class="dialog-form-label">Tags</label>
+      <input class="dialog-select" id="new-scene-tags" placeholder="tag1, tag2" autocomplete="off" style="margin-bottom:0" />
+    </div>
+    <div class="dialog-form-row">
+      <label class="dialog-form-label">Scope</label>
+      <select class="dialog-select" id="new-scene-scope" style="margin-bottom:0">
+        <option value="global">Global</option>
+        <option value="stage">Stage</option>
+      </select>
+    </div>
+    <div class="dialog-form-row" id="new-scene-stage-row" style="display:none">
+      <label class="dialog-form-label">Stage</label>
+      <select class="dialog-select" id="new-scene-stage" style="margin-bottom:0"></select>
+    </div>
+    <div class="dialog-form-error" id="new-scene-error"></div>
+    <div class="dialog-btns">
+      <button class="dialog-btn cancel" id="new-scene-cancel">Cancel</button>
+      <button class="dialog-btn confirm" id="new-scene-confirm">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHANGE ENTITY TEMPLATE DIALOG -->
+<div class="dialog-overlay" id="entity-template-dialog">
+  <div class="dialog">
+    <div class="dialog-title">Change Template</div>
+    <div class="dialog-body">Select a new blueprint for <b id="entity-template-dialog-entity"></b>:</div>
+    <select class="dialog-select" id="entity-template-dialog-select"></select>
+    <div class="dialog-transfer" id="entity-template-dialog-transfer"></div>
+    <div class="dialog-warn">This operation is lossy. Overrides for fields that don't exist in the new blueprint will be orphaned.</div>
+    <div class="dialog-btns">
+      <button class="dialog-btn cancel" id="entity-template-dialog-cancel">Cancel</button>
+      <button class="dialog-btn confirm" id="entity-template-dialog-confirm">Change Blueprint</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DIALOG -->
+<div class="dialog-overlay" id="confirm-dialog">
+  <div class="dialog">
+    <div class="dialog-title" id="confirm-dialog-title">Confirm</div>
+    <div class="dialog-body" id="confirm-dialog-body"></div>
+    <div class="dialog-btns">
+      <button class="dialog-btn cancel" id="confirm-dialog-cancel">Cancel</button>
+      <button class="dialog-btn confirm" id="confirm-dialog-ok">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD OVERRIDE DIALOG -->
+<div class="dialog-overlay" id="add-override-dialog">
+  <div class="dialog">
+    <div class="dialog-title">Add Override</div>
+    <div class="dialog-body">Select a blueprint field to add as an instance override:</div>
+    <select class="dialog-select" id="add-override-select"></select>
+    <div class="dialog-btns">
+      <button class="dialog-btn cancel" id="add-override-cancel">Cancel</button>
+      <button class="dialog-btn confirm" id="add-override-confirm">Add Override</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD ITEM DIALOG -->
+<div class="dialog-overlay" id="add-item-dialog">
+  <div class="dialog">
+    <div class="dialog-title" id="add-item-dialog-title">Add Item</div>
+    <div class="dialog-body">
+      <label for="add-item-name" style="display:block;margin-bottom:4px;font-weight:600;">Name:</label>
+      <input type="text" id="add-item-name" class="dialog-input" placeholder="my_entity" style="width:100%;margin-bottom:12px;padding:6px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg-main);color:var(--fg);">
+      <label for="add-item-select" style="display:block;margin-bottom:4px;font-weight:600;">Template:</label>
+    </div>
+    <select class="dialog-select" id="add-item-select"></select>
+    <div class="dialog-btns">
+      <button class="dialog-btn cancel" id="add-item-cancel">Cancel</button>
+      <button class="dialog-btn confirm" id="add-item-confirm">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCENE PROPERTIES DIALOG -->
+<div class="dialog-overlay" id="scene-props-dialog">
+  <div class="dialog scene-props-dialog">
+    <div class="dialog-title">Scene Properties</div>
+    <div id="scene-props-body"></div>
+    <div class="dialog-btns">
+      <button class="dialog-btn cancel" id="scene-props-cancel">Close</button>
+      <button class="dialog-btn confirm" id="scene-props-save">Save Bounds</button>
+    </div>
+  </div>
+</div>
+
+<div class="sbar">
+  <span class="sok" id="s-project">&#9632; scene editor</span>
+  <span>Entities: <b id="s-ent">0</b></span>
+  <span>Cameras: <b id="s-cam">0</b></span>
+  <span>Lights: <b id="s-lit">0</b></span>
+  <span>Layers: <b id="s-lay">0</b></span>
+  <span style="margin-left:auto" id="s-save">Ready</span>
+</div>
+
+<script>
+'use strict';
+
+// ============================================================
+// DEMO DATA — used when diaBridge is not present
+// ============================================================
+const DEMO_SCENE = {
+  world_bounds: { min: [0, 0], max: [3840, 1080] },
+  layers: [
+    { id:'background', sort_order:-10, parallax:[0.3,0.0], sort_policy:'insertion', enabled:true },
+    { id:'midground',  sort_order:0,   parallax:[1.0,1.0], sort_policy:'insertion', enabled:true },
+    { id:'foreground', sort_order:10,  parallax:[1.2,1.0], sort_policy:'insertion', enabled:true }
+  ],
+  cameras: [
+    { id:'main_camera',    active:true,  blueprint:'camera_2d_follow', instance_data:{'Camera2D.position':[960,540],'FollowBehaviour.offset':[0,-80],'FollowBehaviour.damping':0.15} },
+    { id:'cinematic_cam',  active:false, blueprint:'camera_2d_static', instance_data:{'Camera2D.position':[1920,540],'Camera2D.zoom':0.8} }
+  ],
+  lights: [
+    { id:'sun_light',    blueprint:'directional_light', enabled:true, type:'DIR', instance_data:{'DirectionalLight2D.intensity':0.8,'DirectionalLight2D.direction':[0.5,-1.0]}, affects_layers:['foreground','midground'] },
+    { id:'torch_flicker',blueprint:'point_light_warm',  enabled:true, type:'PNT', instance_data:{'PointLight2D.position':[1200,400],'PointLight2D.radius':150.0,'PointLight2D.intensity':1.2}, affects_layers:['foreground'] }
+  ],
+  entities: [
+    { id:'player_spawn',       blueprint:'player_entity',   enabled:true, instance_data:{'Transform2D.position':[400,800],'Health.max_hp':100} },
+    { id:'enemy_patrol_01',    blueprint:'enemy_patrol',    enabled:true, instance_data:{'Transform2D.position':[1200,800],'PatrolBehaviour.speed':2.5,'PatrolBehaviour.range':300} },
+    { id:'enemy_patrol_02',    blueprint:'enemy_patrol',    enabled:true, instance_data:{'Transform2D.position':[2400,800],'PatrolBehaviour.speed':1.8,'PatrolBehaviour.range':200} },
+    { id:'coin_pickup_01',     blueprint:'coin_pickup',     enabled:true, instance_data:{'Transform2D.position':[800,600],'Collectible.value':10} },
+    { id:'coin_pickup_02',     blueprint:'coin_pickup',     enabled:true, instance_data:{'Transform2D.position':[1600,500],'Collectible.value':10} },
+    { id:'coin_pickup_03',     blueprint:'coin_pickup',     enabled:true, instance_data:{'Transform2D.position':[2800,650],'Collectible.value':25} },
+    { id:'moving_platform_01', blueprint:'platform_moving', enabled:true, instance_data:{'Transform2D.position':[2000,700],'PlatformMover.speed':1.5} },
+    { id:'checkpoint_01',      blueprint:'checkpoint_flag', enabled:true, instance_data:{'Transform2D.position':[1800,800]} }
+  ]
+};
+
+const DEMO_ENTITY_TEMPLATES = {
+  'player_entity':  { file:'player_entity.diaentitytemplate',   fields:{'Transform2D.position':[0,0],'Transform2D.rotation':0,'Transform2D.scale':[1,1],'Health.max_hp':50,'Health.current_hp':50,'Health.invulnerable':false,'RigidBody2D.mass':1.0,'RigidBody2D.drag':0.05,'RigidBody2D.gravity_scale':1.0,'Collider2D.shape':'AABB','Collider2D.size':[32,64],'Collider2D.offset':[0,0]} },
+  'enemy_patrol':   { file:'enemy_patrol.diaentitytemplate',    fields:{'Transform2D.position':[0,0],'Transform2D.rotation':0,'Transform2D.scale':[1,1],'Health.max_hp':30,'Health.current_hp':30,'Health.invulnerable':false,'PatrolBehaviour.speed':2.0,'PatrolBehaviour.range':200,'PatrolBehaviour.pause_time':1.0,'RigidBody2D.mass':1.0,'RigidBody2D.drag':0.05,'RigidBody2D.gravity_scale':1.0} },
+  'coin_pickup':    { file:'coin_pickup.diaentitytemplate',     fields:{'Transform2D.position':[0,0],'Transform2D.rotation':0,'Transform2D.scale':[1,1],'Collectible.value':10,'Collectible.respawn':false,'Collectible.magnet_range':0} },
+  'platform_moving':{ file:'platform_moving.diaentitytemplate', fields:{'Transform2D.position':[0,0],'Transform2D.rotation':0,'Transform2D.scale':[1,1],'PlatformMover.speed':1.0,'PlatformMover.loop':true,'PlatformMover.pause_at_ends':0.5} },
+  'checkpoint_flag':{ file:'checkpoint_flag.diaentitytemplate', fields:{'Transform2D.position':[0,0],'Transform2D.rotation':0,'Transform2D.scale':[1,1],'Checkpoint.activated':false,'Checkpoint.respawn_offset':[0,-32]} },
+  'camera_2d_follow':{ file:'camera_2d_follow.diaentitytemplate',fields:{'Camera2D.position':[0,0],'Camera2D.zoom':1.0,'Camera2D.rotation':0,'FollowBehaviour.target':'','FollowBehaviour.offset':[0,0],'FollowBehaviour.damping':0.1,'FollowBehaviour.dead_zone':[50,30]} },
+  'camera_2d_static':{ file:'camera_2d_static.diaentitytemplate',fields:{'Camera2D.position':[0,0],'Camera2D.zoom':1.0,'Camera2D.rotation':0} },
+  'directional_light':{ file:'directional_light.diaentitytemplate',fields:{'DirectionalLight2D.intensity':1.0,'DirectionalLight2D.direction':[0,-1],'DirectionalLight2D.color':[1,1,0.9]} },
+  'point_light_warm': { file:'point_light_warm.diaentitytemplate', fields:{'PointLight2D.position':[0,0],'PointLight2D.radius':100,'PointLight2D.intensity':1.0,'PointLight2D.color':[1,0.8,0.5],'PointLight2D.falloff':2.0} }
+};
+
+const DEMO_STAGES = [
+  { name:'platformer_level_01', stagePath:'stages/platformer_level_01.diastage', scenePath:'scenes/platformer_level_01.diascene' },
+  { name:'boss_arena',          stagePath:'stages/boss_arena.diastage',          scenePath:'scenes/boss_arena.diascene' },
+  { name:'tutorial_intro',      stagePath:'stages/tutorial_intro.diastage',      scenePath:'scenes/tutorial_intro.diascene' }
+];
+
+// ============================================================
+// BRIDGE — postMessage to parent frame
+// ============================================================
+var _diaReqId = 0;
+var _diaPending = {};
+var _diaTopicListeners = {};
+
+function hasBridge() { return window.parent && window.parent !== window; }
+
+function diaLog(msg) {
+  if (hasBridge()) {
+    window.parent.postMessage({ __diaFromFrame: true,
+      payload: { type: 'editor.ui_log', data: { source: 'sceneeditor', msg: msg } } }, '*');
+  } else {
+    console.log('[SceneEditor] ' + msg);
+  }
+}
+
+function bridgeRequest(handler, data) {
+  if (!hasBridge()) return Promise.resolve(stubRequest(handler, data || {}));
+  return new Promise(function(resolve) {
+    var reqId = 'se' + (_diaReqId++);
+    _diaPending[reqId] = resolve;
+    window.parent.postMessage({
+      __diaFromFrame: true,
+      payload: { type: 'scene_editor.' + handler, reqId: reqId, data: data || {} }
+    }, '*');
+  });
+}
+
+function showToast(level, title, message) {
+  window.parent.postMessage({
+    __diaFromFrame: true,
+    payload: { type: 'editor.notify', data: { level: level, title: title, message: message } }
+  }, '*');
+}
+
+function showConfirm(title, message) {
+  return new Promise(resolve => {
+    document.getElementById('confirm-dialog-title').textContent = title;
+    document.getElementById('confirm-dialog-body').textContent = message;
+    document.getElementById('confirm-dialog').classList.add('show');
+    const okBtn = document.getElementById('confirm-dialog-ok');
+    const cancelBtn = document.getElementById('confirm-dialog-cancel');
+    const finish = (val) => {
+      document.getElementById('confirm-dialog').classList.remove('show');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      resolve(val);
+    };
+    const onOk = () => finish(true);
+    const onCancel = () => finish(false);
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+  });
+}
+
+function bridgeOn(event, cb) {
+  var topic = 'scene_editor.' + event;
+  if (!_diaTopicListeners[topic]) _diaTopicListeners[topic] = [];
+  _diaTopicListeners[topic].push(cb);
+}
+
+window.addEventListener('message', function(ev) {
+  var d = ev.data;
+  if (d && d.__diaResponse && d.reqId && _diaPending[d.reqId]) {
+    _diaPending[d.reqId](d.result || {});
+    delete _diaPending[d.reqId];
+  }
+  if (d && d.__dia && d.topic && _diaTopicListeners[d.topic]) {
+    _diaTopicListeners[d.topic].forEach(function(fn) {
+      try { fn(d.data); } catch(e) { showToast('warning', 'Scene listener error', d.topic + ': ' + e.message); }
+    });
+  }
+});
+
+// Stub responses mirror the real handler shapes
+function stubRequest(handler, data) {
+  switch (handler) {
+    case 'get_stage_list':
+      return { success:true, stages: DEMO_STAGES };
+
+    case 'load_stage_scene': {
+      const stage = DEMO_STAGES.find(s => s.stagePath === data.stagePath) || DEMO_STAGES[0];
+      return {
+        success:true,
+        stage: stage.name,
+        scene: stage.scenePath,
+        hierarchy: buildDemoHierarchy(),
+        dirty: false
+      };
+    }
+
+    case 'load_scene':
+      return { success:true, scene: data.path, hierarchy: buildDemoHierarchy(), dirty: false };
+
+    case 'save_scene':
+      return { success:true, dirty:false };
+
+    case 'get_hierarchy_filtered': {
+      const fl = (data.filter || '').toLowerCase();
+      return { success:true, hierarchy: buildDemoHierarchy(fl) };
+    }
+
+    case 'set_selection':
+      return { success:true, selection: { type: data.type, id: data.id } };
+
+    case 'get_properties': {
+      const props = getLocalProperties(data.selectionType, data.selectionId);
+      return { success:true, properties: props, selection: { type: data.selectionType, id: data.selectionId } };
+    }
+
+    case 'get_entity_template_defaults': {
+      const bp = DEMO_ENTITY_TEMPLATES[data.entityTemplateId];
+      return { success:true, data: bp ? bp.fields : {} };
+    }
+
+    case 'mark_dirty':
+      return { success:true, dirty:true };
+
+    case 'get_dirty_state':
+      return { success:true, dirty: isDirty };
+
+    case 'add_item': {
+      const newId = data.itemType + '_new_' + Date.now();
+      const item = makeNewItem(data.itemType, data.entityTemplateId, newId);
+      addItemToScene(data.itemType, item);
+      return { success:true, hierarchy: buildDemoHierarchy() };
+    }
+
+    case 'duplicate_item': {
+      const src = findItemInScene(data.itemType, data.itemId);
+      if (!src) return { success:false, hierarchy: buildDemoHierarchy() };
+      const clone = JSON.parse(JSON.stringify(src));
+      clone.id = src.id + '_copy';
+      if (clone.instance_data && clone.instance_data['Transform2D.position']) {
+        clone.instance_data['Transform2D.position'] = clone.instance_data['Transform2D.position'].map(v => v + 50);
+      }
+      if (data.itemType === 'camera') clone.active = false;
+      if (data.itemType === 'layer') clone.sort_order = (src.sort_order || 0) + 1;
+      addItemToScene(data.itemType, clone);
+      return { success:true, hierarchy: buildDemoHierarchy() };
+    }
+
+    case 'delete_item': {
+      deleteItemFromScene(data.itemType, data.itemId);
+      return { success:true, hierarchy: buildDemoHierarchy() };
+    }
+
+    case 'set_enabled': {
+      const item = findItemInScene(data.itemType, data.itemId);
+      if (item) {
+        if ('enabled' in item) item.enabled = data.enabled;
+        else if ('active' in item) item.active = data.enabled;
+      }
+      return { success:true, hierarchy: buildDemoHierarchy() };
+    }
+
+    case 'rename_item': {
+      const item = findItemInScene(data.itemType, data.oldId);
+      if (item) item.id = data.newId;
+      return { success:true, hierarchy: buildDemoHierarchy() };
+    }
+
+    case 'get_available_entity_templates': {
+      const allBps = Object.keys(DEMO_ENTITY_TEMPLATES);
+      let filtered;
+      if (data.itemType === 'camera') filtered = allBps.filter(k => k.startsWith('camera_'));
+      else if (data.itemType === 'light') filtered = allBps.filter(k => k.startsWith('directional_') || k.startsWith('point_light'));
+      else filtered = allBps.filter(k => !k.startsWith('camera_') && !k.startsWith('directional_') && !k.startsWith('point_light'));
+      return { success:true, assetType: data.itemType, entityTemplates: filtered.map(k => ({ id:k, file: DEMO_ENTITY_TEMPLATES[k].file })) };
+    }
+
+    case 'change_entity_template': {
+      const item = findItemInScene(data.itemType, data.itemId);
+      if (item) {
+        const newFields = DEMO_ENTITY_TEMPLATES[data.newEntityTemplateId]?.fields || {};
+        const surviving = {};
+        Object.keys(item.instance_data || {}).forEach(k => { if (k in newFields) surviving[k] = item.instance_data[k]; });
+        item.blueprint = data.newEntityTemplateId;
+        item.instance_data = surviving;
+      }
+      return { success:true, hierarchy: buildDemoHierarchy() };
+    }
+
+    case 'analyse_change_entity_template': {
+      const item = findItemInScene(data.itemType, data.itemId);
+      const newFields = DEMO_ENTITY_TEMPLATES[data.newEntityTemplateComponents]?.fields || {};
+      const overrides = (item && item.instance_data) ? Object.keys(item.instance_data) : [];
+      const transferring = overrides.filter(k => k in newFields);
+      const orphaned = overrides.filter(k => !(k in newFields));
+      return { success:true, analysis: { transferring, orphaned } };
+    }
+
+    case 'add_layer': {
+      DEMO_SCENE.layers.push({ id: data.layerId, sort_order:0, parallax:[1,1], sort_policy:'insertion', enabled:true });
+      return { success:true, hierarchy: buildDemoHierarchy() };
+    }
+
+    case 'delete_layer':
+      DEMO_SCENE.layers = DEMO_SCENE.layers.filter(l => l.id !== data.layerId);
+      return { success:true, hierarchy: buildDemoHierarchy() };
+
+    case 'update_layer': {
+      const layer = DEMO_SCENE.layers.find(l => l.id === data.layerId);
+      if (layer) Object.assign(layer, data.fields);
+      return { success:true, hierarchy: buildDemoHierarchy() };
+    }
+
+    case 'set_camera_active': {
+      DEMO_SCENE.cameras.forEach(c => { c.active = (c.id === data.cameraId); });
+      return { success:true, hierarchy: buildDemoHierarchy() };
+    }
+
+    case 'set_light_affects_layers': {
+      const light = DEMO_SCENE.lights.find(l => l.id === data.lightId);
+      if (light) light.affects_layers = data.layerIds;
+      return { success:true, hierarchy: buildDemoHierarchy() };
+    }
+
+    case 'add_override': {
+      const item = findItemInScene(data.itemType, data.itemId);
+      if (item) {
+        if (!item.instance_data) item.instance_data = {};
+        item.instance_data[data.overrideKey] = data.defaultValue;
+      }
+      return { success:true };
+    }
+
+    case 'remove_override': {
+      const item = findItemInScene(data.itemType, data.itemId);
+      if (item && item.instance_data) delete item.instance_data[data.overrideKey];
+      return { success:true };
+    }
+
+    case 'update_override': {
+      const item = findItemInScene(data.itemType, data.itemId);
+      if (item && item.instance_data) item.instance_data[data.overrideKey] = data.value;
+      return { success:true };
+    }
+
+    case 'validate': {
+      const errors = [];
+      const warnings = [];
+      if (DEMO_SCENE.layers.length === 0) errors.push('Scene has no layers.');
+      if (DEMO_SCENE.cameras.filter(c => c.active).length === 0) warnings.push('No active camera.');
+      return { success:true, validation: { valid: errors.length === 0, errors, warnings } };
+    }
+
+    case 'get_scene_properties':
+      return {
+        success:true,
+        properties: {
+          world_bounds: DEMO_SCENE.world_bounds,
+          entity_count: DEMO_SCENE.entities.length,
+          camera_count: DEMO_SCENE.cameras.length,
+          light_count: DEMO_SCENE.lights.length,
+          layer_count: DEMO_SCENE.layers.length
+        }
+      };
+
+    case 'set_world_bounds':
+      DEMO_SCENE.world_bounds = data.world_bounds;
+      return { success:true };
+
+    default:
+      return { success:false, error: 'Unknown handler: ' + handler };
+  }
+}
+
+// ============================================================
+// DEMO DATA HELPERS
+// ============================================================
+function buildDemoHierarchy(filter) {
+  const fl = filter ? filter.toLowerCase() : '';
+  function matchId(id) { return !fl || id.toLowerCase().includes(fl); }
+
+  return {
+    layers:   DEMO_SCENE.layers.filter(l => matchId(l.id)),
+    cameras:  DEMO_SCENE.cameras.filter(c => matchId(c.id) || (c.blueprint && c.blueprint.includes(fl))),
+    lights:   DEMO_SCENE.lights.filter(l => matchId(l.id) || (l.blueprint && l.blueprint.includes(fl))),
+    entities: DEMO_SCENE.entities.filter(e => matchId(e.id) || (e.blueprint && e.blueprint.includes(fl)))
+  };
+}
+
+function getLocalProperties(type, id) {
+  const item = findItemInScene(type, id);
+  if (!item) return {};
+  return JSON.parse(JSON.stringify(item));
+}
+
+function findItemInScene(type, id) {
+  const map = { layer: DEMO_SCENE.layers, camera: DEMO_SCENE.cameras, light: DEMO_SCENE.lights, entity: DEMO_SCENE.entities };
+  const arr = map[type];
+  return arr ? arr.find(i => i.id === id) || null : null;
+}
+
+function addItemToScene(type, item) {
+  const map = { layer: DEMO_SCENE.layers, camera: DEMO_SCENE.cameras, light: DEMO_SCENE.lights, entity: DEMO_SCENE.entities };
+  if (map[type]) map[type].push(item);
+}
+
+function deleteItemFromScene(type, id) {
+  const map = { layer: DEMO_SCENE.layers, camera: DEMO_SCENE.cameras, light: DEMO_SCENE.lights, entity: DEMO_SCENE.entities };
+  if (map[type]) {
+    const idx = map[type].findIndex(i => i.id === id);
+    if (idx !== -1) map[type].splice(idx, 1);
+  }
+}
+
+function makeNewItem(type, entityTemplateId, id) {
+  const bp = entityTemplateId || defaultEntityTemplateForType(type);
+  if (type === 'layer') return { id, sort_order:0, parallax:[1,1], sort_policy:'insertion', enabled:true };
+  if (type === 'camera') return { id, active:false, blueprint:bp, instance_data:{} };
+  if (type === 'light')  return { id, blueprint:bp, enabled:true, type:'PNT', instance_data:{}, affects_layers:[] };
+  return { id, blueprint:bp, enabled:true, instance_data:{} };
+}
+
+function defaultEntityTemplateForType(type) {
+  if (type === 'camera') return 'camera_2d_static';
+  if (type === 'light')  return 'point_light_warm';
+  return 'player_entity';
+}
+
+// ============================================================
+// APP STATE
+// ============================================================
+let state = {
+  stages: [],
+  currentStage: null,
+  currentScene: null,
+  hierarchy: { layers:[], cameras:[], lights:[], entities:[] },
+  selected: null,   // { type, id, data }
+  activeTab: 'instance',
+  isDirty: false,
+  entityTemplateCache: {}, // entityTemplateId -> fields
+  sectionVisible: { layers:true, cameras:true, lights:true, entities:true }
+};
+// Restore pill state from localStorage
+try {
+  const saved = localStorage.getItem('sceneeditor_section_visible');
+  if (saved) state.sectionVisible = { ...state.sectionVisible, ...JSON.parse(saved) };
+} catch(e) {}
+
+// ============================================================
+// PROJECT OVERLAY
+// ============================================================
+function updateProjectOverlay(isValid) {
+  const el = document.getElementById('no-project-overlay');
+  if (el) el.style.display = isValid ? 'none' : 'flex';
+}
+
+// ============================================================
+// INIT
+// ============================================================
+async function init() {
+  // Check project state first — show overlay if no project loaded
+  const projState = await bridgeRequest('get_project_state');
+  if (projState && projState.isValid !== undefined) {
+    updateProjectOverlay(projState.isValid);
+  }
+
+  const result = await bridgeRequest('get_stage_list');
+  if (!result.success) return;
+
+  state.stages = result.stages || [];
+  populateStageDropdown(state.stages);
+
+  // Subscribe to push events
+  bridgeOn('dirty_changed', (dirty) => setDirty(dirty));
+  bridgeOn('project_changed', (data) => {
+    const isValid = !!(data && data.isValid);
+    updateProjectOverlay(isValid);
+    if (data && data.stages) {
+      state.stages = data.stages;
+      populateStageDropdown(state.stages);
+    }
+    const projEl = document.getElementById('s-project');
+    if (projEl && data && data.diagamePath) {
+      projEl.textContent = '■ ' + data.diagamePath.split(/[\\/]/).pop();
+    }
+  });
+
+  if (state.stages.length > 0) {
+    await loadStage(state.stages[0].stagePath);
+  }
+}
+
+function populateStageDropdown(stages) {
+  const sel = document.getElementById('stage-select');
+  sel.innerHTML = '';
+  stages.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.stagePath;
+    const hasScene = s.scenePath && s.scenePath.length > 0;
+    opt.textContent = hasScene ? s.name : s.name + ' (no scene)';
+    if (!hasScene) {
+      opt.style.color = 'var(--pico-muted-color, #888)';
+    }
+    sel.appendChild(opt);
+  });
+}
+
+document.getElementById('stage-select').addEventListener('change', async e => {
+  await loadStage(e.target.value);
+});
+
+async function loadStage(stagePath) {
+  const result = await bridgeRequest('load_stage_scene', { stagePath });
+  diaLog('loadStage result: success=' + result.success
+    + ' scene=' + (result.scene ? typeof result.scene : 'null/undef')
+    + ' hierarchyKeys=' + (result.hierarchy ? Object.keys(result.hierarchy).join(',') : 'null/undef')
+    + ' layers=' + (result.hierarchy && result.hierarchy.layers ? result.hierarchy.layers.length : '?'));
+  if (!result.success) { diaLog('loadStage: returning early, success=false'); return; }
+
+  state.currentStage = result.stage || null;
+  state.currentScene = result.scene || null;
+  state.hierarchy = result.hierarchy || { layers:[], cameras:[], lights:[], entities:[] };
+  state.selected = null;
+  state.entityTemplateCache = {};
+
+  diaLog('step:updateTitleFile'); updateTitleFile(result.stage ? result.stage.scenePath : null);
+  diaLog('step:setDirty'); setDirty(result.dirty || false);
+  diaLog('step:renderHierarchy'); renderHierarchy();
+  diaLog('step:renderProperties'); renderProperties();
+  diaLog('step:updateStatusCounts'); updateStatusCounts();
+  diaLog('overlay check: currentScene=' + (state.currentScene ? 'object' : 'null/false'));
+  const overlay = document.getElementById('no-scene-overlay');
+  if (overlay) overlay.style.display = state.currentScene ? 'none' : 'flex';
+}
+
+function updateTitleFile(scenePath) {
+  const el = document.getElementById('tfile');
+  if (scenePath) {
+    const name = scenePath.split(/[\\/]/).pop();
+    el.textContent = '/ ' + name;
+  } else {
+    el.textContent = '';
+  }
+}
+
+// ============================================================
+// DIRTY STATE
+// ============================================================
+function setDirty(dirty) {
+  state.isDirty = dirty;
+  document.getElementById('dirty').classList.toggle('show', dirty);
+  const saveEl = document.getElementById('s-save');
+  if (dirty) {
+    saveEl.textContent = 'Unsaved';
+    saveEl.style.color = '#c4a040';
+  } else {
+    saveEl.textContent = 'Saved';
+    saveEl.style.color = '';
+  }
+}
+
+async function markDirty() {
+  const result = await bridgeRequest('mark_dirty');
+  setDirty(result.dirty !== false);
+}
+
+// ============================================================
+// HIERARCHY RENDERING
+// ============================================================
+function renderHierarchy() {
+  const hier = document.getElementById('hier');
+  hier.innerHTML = '';
+
+  const h = state.hierarchy;
+  let totalCount = 0;
+
+  const sections = [
+    { key:'layers',   name:'Layers',   iconChar:'L', iconCls:'layer',   items: (h.layers  ||[]).map(i=>({...i,_type:'layer'})) },
+    { key:'cameras',  name:'Cameras',  iconChar:'C', iconCls:'camera',  items: (h.cameras ||[]).map(i=>({...i,_type:'camera'})) },
+    { key:'lights',   name:'Lights',   iconChar:'*', iconCls:'light',   items: (h.lights  ||[]).map(i=>({...i,_type:'light'})) },
+    { key:'entities', name:'Entities', iconChar:'E', iconCls:'entity',  items: (h.entities||[]).map(i=>({...i,_type:'entity'})) }
+  ];
+
+  sections.forEach(sec => {
+    if (sec.items.length === 0) return;
+    totalCount += sec.items.length;
+
+    const secEl = document.createElement('div');
+    const isHidden = state.sectionVisible[sec.key] === false;
+    secEl.className = 'sec open' + (isHidden ? ' section-hidden' : '');
+    secEl.dataset.section = sec.key;
+    secEl.innerHTML = `
+      <div class="sec-hdr">
+        <span class="sec-chv">&#9654;</span>
+        <span class="sec-icon ${sec.iconCls}">${sec.iconChar}</span>
+        <span class="sec-name">${sec.name}</span>
+        <span class="sec-cnt">${sec.items.length}</span>
+      </div>
+      <div class="sec-body"></div>
+    `;
+    secEl.querySelector('.sec-hdr').addEventListener('click', () => secEl.classList.toggle('open'));
+
+    const body = secEl.querySelector('.sec-body');
+    sec.items.forEach(item => {
+      body.appendChild(buildItemRow(item));
+    });
+
+    hier.appendChild(secEl);
+  });
+
+  document.getElementById('total-cnt').textContent = totalCount;
+}
+
+function buildItemRow(item) {
+  const isSel = state.selected && state.selected.type === item._type && state.selected.id === item.id;
+  const isDisabled = (item.enabled === false) || (item.active === false && item._type === 'camera');
+
+  const row = document.createElement('div');
+  row.className = `item${isSel ? ' sel' : ''}${isDisabled && item._type !== 'camera' ? ' disabled' : ''}`;
+  row.dataset.type = item._type;
+  row.dataset.id = item.id;
+
+  let iconCssClass, iconChar;
+  switch (item._type) {
+    case 'layer':  iconCssClass = 'L'; iconChar = 'L'; break;
+    case 'camera': iconCssClass = 'C'; iconChar = 'C'; break;
+    case 'light':  iconCssClass = 'W'; iconChar = '*'; break;
+    default:       iconCssClass = 'E'; iconChar = 'E'; break;
+  }
+
+  let meta = '';
+  let badge = '';
+  let warning = '';
+  let reorderBtns = '';
+  if (item._type === 'layer') {
+    meta = `sort:${item.sort_order}`;
+    const layers = state.hierarchy.layers || [];
+    const layerIdx = layers.findIndex(l => l.id === item.id);
+    const atTop    = layerIdx === 0;
+    const atBottom = layerIdx === layers.length - 1;
+    reorderBtns = `<span class="layer-reorder-btn${atTop ? ' disabled' : ''}" data-dir="up" data-id="${escAttr(item.id)}" title="Move up">&#9650;</span>`
+                + `<span class="layer-reorder-btn${atBottom ? ' disabled' : ''}" data-dir="down" data-id="${escAttr(item.id)}" title="Move down">&#9660;</span>`;
+  } else if (item._type === 'camera') {
+    badge = item.active ? '<span class="item-badge active">ACTIVE</span>' : '';
+  } else if (item._type === 'light') {
+    const typeLower = (item.type || 'pnt').toLowerCase();
+    badge = `<span class="item-badge ${typeLower}">${item.type || 'PNT'}</span>`;
+  } else if (item._type === 'entity') {
+    meta = item.entityTemplate || '';
+  }
+
+  if (item.entityTemplate_known === false) {
+    warning = '<span class="item-warning" title="Template not found">&#9888;</span>';
+    row.classList.add('has-warning');
+  }
+
+  row.innerHTML = `
+    <span class="item-icon ${iconCssClass}">${iconChar}</span>
+    <span class="item-name">${escHtml(item.id)}</span>
+    ${meta ? `<span class="item-meta">${escHtml(meta)}</span>` : ''}
+    ${badge}
+    ${warning}
+    ${reorderBtns}
+  `;
+
+  row.addEventListener('click', e => {
+    const reorderBtn = e.target.closest('.layer-reorder-btn');
+    if (reorderBtn) {
+      e.stopPropagation();
+      if (!reorderBtn.classList.contains('disabled')) {
+        reorderLayer(reorderBtn.dataset.id, reorderBtn.dataset.dir);
+      }
+      return;
+    }
+    onSelectItem(item._type, item.id, item);
+  });
+  row.addEventListener('contextmenu', e => onContextMenu(e, item));
+
+  return row;
+}
+
+async function reorderLayer(layerId, direction) {
+  const layers = state.hierarchy.layers || [];
+  const idx = layers.findIndex(l => l.id === layerId);
+  if (idx < 0) return;
+  const newIndex = direction === 'up' ? idx - 1 : idx + 1;
+  if (newIndex < 0 || newIndex >= layers.length) return;
+  const result = await bridgeRequest('reorder_layer', { layerId, newIndex });
+  if (result.success) {
+    state.hierarchy = result.hierarchy;
+    renderHierarchy();
+    updateStatusCounts();
+  }
+}
+
+// ============================================================
+// SELECTION
+// ============================================================
+async function onSelectItem(type, id, localData) {
+  // Optimistic update using local data first
+  state.selected = { type, id, data: localData };
+  state.activeTab = 'instance';
+
+  // Re-render hierarchy to update selection highlight
+  renderHierarchy();
+
+  // Fetch authoritative properties from backend
+  const [selResult, propsResult] = await Promise.all([
+    bridgeRequest('set_selection', { type, id }),
+    bridgeRequest('get_properties', { selectionType: type, selectionId: id })
+  ]);
+
+  if (propsResult.success) {
+    state.selected = { type, id, data: propsResult.properties };
+  }
+
+  renderProperties();
+}
+
+// ============================================================
+// PROPERTY PANEL
+// ============================================================
+function renderProperties() {
+  const nosel   = document.getElementById('nosel');
+  const ctxStrip = document.getElementById('ctx-strip');
+  const stabs   = document.getElementById('stabs');
+  const props   = document.getElementById('props');
+
+  if (!state.selected) {
+    nosel.style.display = 'flex';
+    ctxStrip.style.display = 'none';
+    stabs.style.display = 'none';
+    props.style.display = 'none';
+    return;
+  }
+
+  nosel.style.display = 'none';
+  ctxStrip.style.display = 'flex';
+  props.style.display = 'block';
+
+  const { type, id, data } = state.selected;
+
+  // Context strip icon
+  const iconMap = { layer:'L', camera:'C', light:'*', entity:'E' };
+  document.getElementById('ctx-icon').textContent = iconMap[type] || 'E';
+  document.getElementById('ctx-name').textContent = id;
+
+  const ctxEntityTemplate = document.getElementById('ctx-entity-template');
+  if (data && data.entityTemplate) {
+    ctxEntityTemplate.style.display = 'inline';
+    const etMissing = data.entityTemplate_known === false;
+    ctxEntityTemplate.innerHTML = etMissing
+      ? `template: <span class="prop-error" title="Template not found in asset catalogue">&#9888; ${escHtml(data.entityTemplate)}</span>`
+      : `template: <b><a class="prop-link" id="ctx-entity-template-link" data-template="${escHtml(data.entityTemplate)}">${escHtml(data.entityTemplate)} &rarr;</a></b>`;
+  } else {
+    ctxEntityTemplate.style.display = 'none';
+  }
+
+  // Sub-tabs: show for entity/camera/light that have an entity template
+  const hasEntityTemplateTabs = (type !== 'layer') && data && data.entityTemplate;
+  stabs.style.display = hasEntityTemplateTabs ? 'flex' : 'none';
+  if (hasEntityTemplateTabs) {
+    stabs.querySelectorAll('.stab').forEach(t => t.classList.toggle('active', t.dataset.tab === state.activeTab));
+  }
+
+  if (state.activeTab === 'blueprint' && hasEntityTemplateTabs) {
+    renderEntityTemplateTab(data);
+  } else {
+    renderInstanceTab(type, data);
+  }
+}
+
+function renderInstanceTab(type, data) {
+  const props = document.getElementById('props');
+  if (!data) { props.innerHTML = ''; return; }
+
+  let html = '';
+  if (type === 'layer')  html = renderLayerInstance(data);
+  else if (type === 'camera') html = renderCameraInstance(data);
+  else if (type === 'light')  html = renderLightInstance(data);
+  else html = renderEntityInstance(data);
+
+  props.innerHTML = html;
+  attachInstanceHandlers(type, data);
+}
+
+function renderEntityInstance(data) {
+  let html = buildSection('Identity', [
+    propRow('ID', 'string', data.id, false, true),
+    propRowEntityTemplateLink('Template', data.entityTemplate, data.entityTemplate_known),
+    propRowCheck('Enabled', data.enabled !== false)
+  ]);
+
+  const bpFields = (DEMO_ENTITY_TEMPLATES[data.entityTemplate] || { fields:{} }).fields;
+  html += buildSection('Instance Data Overrides',
+    [ renderFieldsGrouped(data.instance_data || {}, data.instance_data || {}, bpFields, false) ]
+  );
+  html += `<div class="add-override"><button class="add-btn" data-action="add-override">+ Add Override...</button></div>`;
+  return html;
+}
+
+function renderCameraInstance(data) {
+  let html = buildSection('Identity', [
+    propRow('ID', 'string', data.id, false, true),
+    propRowEntityTemplateLink('Template', data.entityTemplate, data.entityTemplate_known),
+    propRowCheck('Active', data.active === true)
+  ]);
+  const bpFields = (DEMO_ENTITY_TEMPLATES[data.entityTemplate] || { fields:{} }).fields;
+  html += buildSection('Instance Data Overrides',
+    [ renderFieldsGrouped(data.instance_data || {}, data.instance_data || {}, bpFields, false) ]
+  );
+  html += `<div class="add-override"><button class="add-btn" data-action="add-override">+ Add Override...</button></div>`;
+  return html;
+}
+
+function renderLightInstance(data) {
+  const curType = data.lightType || data.type || 'PNT';
+  const typeSelect = `<div class="prop-row">
+    <span class="prop-label">Type</span>
+    <span class="prop-type">enum</span>
+    <select class="prop-input" id="light-type-select" style="padding:1px 4px;height:auto;">
+      <option value="PNT"${curType === 'PNT' ? ' selected' : ''}>PNT — Point</option>
+      <option value="DIR"${curType === 'DIR' ? ' selected' : ''}>DIR — Directional</option>
+    </select>
+  </div>`;
+  let html = buildSection('Identity', [
+    propRow('ID', 'string', data.id, false, true),
+    propRowEntityTemplateLink('Template', data.entityTemplate, data.entityTemplate_known),
+    propRowCheck('Enabled', data.enabled !== false),
+    typeSelect
+  ]);
+
+  // Affects layers checkboxes
+  const layers = state.hierarchy.layers || DEMO_SCENE.layers;
+  let layerChecks = layers.map(l => {
+    const checked = (data.affects_layers || []).includes(l.id);
+    return `<div class="layer-check"><input type="checkbox" class="prop-check" data-layer="${escHtml(l.id)}" ${checked ? 'checked' : ''}><label>${escHtml(l.id)}</label></div>`;
+  }).join('');
+  html += `<div class="prop-section"><div class="prop-section-hdr">Affects Layers</div>${layerChecks}</div>`;
+
+  const bpFields = (DEMO_ENTITY_TEMPLATES[data.entityTemplate] || { fields:{} }).fields;
+  html += buildSection('Instance Data Overrides',
+    [ renderFieldsGrouped(data.instance_data || {}, data.instance_data || {}, bpFields, false) ]
+  );
+  html += `<div class="add-override"><button class="add-btn" data-action="add-override">+ Add Override...</button></div>`;
+  return html;
+}
+
+function renderLayerInstance(data) {
+  let html = buildSection('Identity', [
+    propRow('ID', 'string', data.id, false, true),
+    propRow('Sort Order', 'int', data.sort_order, false),
+    propRowCheck('Enabled', data.enabled !== false)
+  ]);
+  html += buildSection('Parallax', [
+    propRow('X', 'float', data.parallax ? data.parallax[0] : 1.0, false),
+    propRow('Y', 'float', data.parallax ? data.parallax[1] : 1.0, false)
+  ]);
+  html += buildSection('Sort Policy', [
+    propRow('Policy', 'enum', data.sort_policy || 'insertion', false, true)
+  ]);
+
+  const lights = state.hierarchy.lights || DEMO_SCENE.lights;
+  const affectingLights = lights.filter(l => (l.affects_layers || []).includes(data.id));
+  let lightRows = affectingLights.length > 0
+    ? affectingLights.map(l => `<div class="prop-row"><span class="prop-label" style="color:#c4b86a">${escHtml(l.id)}</span></div>`).join('')
+    : `<div class="prop-row"><span class="prop-label" style="color:#44446a;font-style:italic">None</span></div>`;
+  html += `<div class="prop-section"><div class="prop-section-hdr">Assigned Lights</div>${lightRows}</div>`;
+  return html;
+}
+
+async function renderEntityTemplateTab(data) {
+  const props = document.getElementById('props');
+  const entityTemplateId = data.entityTemplate;
+
+  // Fetch entity template defaults (cached)
+  let bpFields = state.entityTemplateCache[entityTemplateId];
+  if (!bpFields) {
+    const result = await bridgeRequest('get_entity_template_defaults', { entityTemplateId: entityTemplateId, itemType: state.selected.type });
+    bpFields = result.success ? result.data : {};
+    state.entityTemplateCache[entityTemplateId] = bpFields;
+  }
+
+  const bpFile = (DEMO_ENTITY_TEMPLATES[entityTemplateId] && DEMO_ENTITY_TEMPLATES[entityTemplateId].file) || (entityTemplateId + '.diaentitytemplate');
+  let html = `<div class="entity-template-banner">
+    Blueprint defaults from <b>${escHtml(bpFile)}</b> (read-only)
+    <span class="entity-template-open">Open in Blueprint Editor &rarr;</span>
+  </div>`;
+  html += renderFieldsGrouped(bpFields, {}, {}, true);
+
+  props.innerHTML = html;
+  const openLink = props.querySelector('.entity-template-open');
+  if (openLink) {
+    openLink.addEventListener('click', () => {
+      const itemType = state.selected ? state.selected.type : 'entity';
+      bridgeRequest('open_entity_template', { entityTemplateId: entityTemplateId, itemType });
+    });
+  }
+}
+
+// ============================================================
+// FIELD / PROP HELPERS
+// ============================================================
+function buildSection(title, contentParts) {
+  return `<div class="prop-section"><div class="prop-section-hdr">${escHtml(title)}</div>${contentParts.join('')}</div>`;
+}
+
+// Renders component-grouped fields.
+// fields = the fields to show (e.g. instance_data or bp fields)
+// overrides = set of keys that are overridden (have purple border + editable)
+// bpFields = all blueprint fields (to detect non-overridden bp fields when in instance view)
+// readonly = all inputs disabled
+function renderFieldsGrouped(fields, overrides, bpFields, readonly) {
+  const groups = {};
+
+  // In instance tab: show overridden keys from fields, plus dimmed non-overridden bp keys
+  const allKeys = new Set([...Object.keys(fields)]);
+  if (!readonly) {
+    Object.keys(bpFields).forEach(k => allKeys.add(k));
+  }
+
+  allKeys.forEach(key => {
+    const parts = key.split('.');
+    const comp = parts[0];
+    const field = parts.slice(1).join('.');
+    if (!groups[comp]) groups[comp] = [];
+    const isOvr = key in overrides;
+    const val = isOvr ? fields[key] : (bpFields[key] !== undefined ? bpFields[key] : fields[key]);
+    groups[comp].push({ key, field, value: val, isOverride: isOvr });
+  });
+
+  let html = '';
+  Object.keys(groups).forEach(comp => {
+    html += `<div class="comp-group open">`;
+    html += `<div class="comp-hdr"><span class="comp-chv">&#9654;</span><span class="comp-name">${escHtml(comp)}</span></div>`;
+    html += `<div class="comp-body">`;
+    groups[comp].forEach(f => {
+      const type = guessType(f.value);
+      const display = formatValue(f.value);
+      const isOvr = !readonly && f.isOverride;
+      const isNonOvr = !readonly && !f.isOverride;
+      let rowClass = 'prop-row';
+      if (isOvr) rowClass += ' override';
+      else if (isNonOvr) rowClass += ' non-override';
+
+      html += `<div class="${rowClass}" data-field-key="${escHtml(f.key)}" data-is-override="${isOvr}">`;
+      html += `<span class="prop-label">${escHtml(f.field)}</span>`;
+      html += `<span class="prop-type">${type}</span>`;
+      if (type === 'bool') {
+        html += `<input type="checkbox" class="prop-check" ${f.value ? 'checked' : ''} ${(readonly || isNonOvr) ? 'disabled' : ''}>`;
+      } else {
+        html += `<input class="prop-input" value="${escAttr(display)}" ${(readonly || isNonOvr) ? 'disabled' : ''}>`;
+      }
+      html += `</div>`;
+    });
+    html += `</div></div>`;
+  });
+  return html;
+}
+
+function guessType(val) {
+  if (val === null || val === undefined) return 'string';
+  if (Array.isArray(val)) return val.length === 2 ? 'vec2' : 'vec' + val.length;
+  if (typeof val === 'number') return val % 1 === 0 ? 'int' : 'float';
+  if (typeof val === 'boolean') return 'bool';
+  return 'string';
+}
+
+function formatValue(val) {
+  if (val === null || val === undefined) return '';
+  if (Array.isArray(val)) return '(' + val.join(', ') + ')';
+  return String(val);
+}
+
+function propRow(label, type, value, isOverride, readonly) {
+  const display = formatValue(value);
+  const cls = isOverride ? ' override' : '';
+  return `<div class="prop-row${cls}">
+    <span class="prop-label">${escHtml(label)}</span>
+    <span class="prop-type">${type}</span>
+    <input class="prop-input" value="${escAttr(display)}" ${readonly ? 'disabled' : ''}>
+  </div>`;
+}
+
+function propRowCheck(label, checked) {
+  return `<div class="prop-row">
+    <span class="prop-label">${escHtml(label)}</span>
+    <span class="prop-type">bool</span>
+    <input type="checkbox" class="prop-check" ${checked ? 'checked' : ''}>
+  </div>`;
+}
+
+function propRowEntityTemplateLink(label, entityTemplateId, known) {
+  const missing = known === false;
+  const linkHtml = missing
+    ? `<span class="prop-error" title="Template not found in asset catalogue">&#9888; ${escHtml(entityTemplateId)} (not found)</span>`
+    : `<a class="prop-link" id="entity-template-nav-link" data-template="${escHtml(entityTemplateId)}">${escHtml(entityTemplateId)} &rarr;</a>`;
+  return `<div class="prop-row">
+    <span class="prop-label">${escHtml(label)}</span>
+    <span class="prop-type"></span>
+    <span class="prop-value">${linkHtml}</span>
+    <button class="tbtn" id="btn-change-entity-template" style="margin-left:6px;font-size:9px;padding:2px 6px">Change Template</button>
+  </div>`;
+}
+
+// ============================================================
+// PROPERTY PANEL INTERACTIONS
+// ============================================================
+function attachInstanceHandlers(type, data) {
+  const props = document.getElementById('props');
+
+  // Component group collapse
+  props.addEventListener('click', handlePropsClick);
+
+  // Input changes → mark dirty + call update_override
+  props.addEventListener('change', handlePropsChange);
+}
+
+document.getElementById('props').addEventListener('click', handlePropsClick);
+document.getElementById('props').addEventListener('change', handlePropsChange);
+
+function handlePropsClick(e) {
+  // Component group header toggle
+  const compHdr = e.target.closest('.comp-hdr');
+  if (compHdr) {
+    compHdr.parentElement.classList.toggle('open');
+    return;
+  }
+
+  // Template link → open in DiaEntityTemplateEditor
+  const bpLink = e.target.closest('#entity-template-nav-link');
+  if (bpLink) {
+    const entityTemplateId = bpLink.dataset.template;
+    const itemType = state.selected ? state.selected.type : 'entity';
+    if (entityTemplateId) bridgeRequest('open_entity_template', { entityTemplateId, itemType });
+    return;
+  }
+
+  // Change entity template button
+  const changeBpBtn = e.target.closest('#btn-change-entity-template');
+  if (changeBpBtn && state.selected) {
+    openChangeEntityTemplateDialog(state.selected);
+    return;
+  }
+
+  // Clicking a dimmed non-overridden row → promote to override
+  const nonOvrRow = e.target.closest('.prop-row.non-override');
+  if (nonOvrRow && state.selected) {
+    const key = nonOvrRow.dataset.fieldKey;
+    if (key) promoteOverride(key, nonOvrRow);
+    return;
+  }
+
+  // Add override button
+  if (e.target.closest('[data-action="add-override"]')) {
+    openAddOverrideDialog();
+  }
+}
+
+function openAddOverrideDialog() {
+  if (!state.selected) return;
+  const data = state.selected.data || {};
+
+  // Collect all blueprint fields from the backend-returned components (kind + value)
+  const components = data.components || [];
+  const instanceData = data.instance_data || {};
+  const unoverridden = [];
+  components.forEach(comp => {
+    const typeName = comp.type || comp.name || '';
+    const fields = Array.isArray(comp.fields) ? comp.fields : Object.entries(comp.fields || {}).map(([n, v]) => ({name:n, value:v, overridden:false}));
+    fields.forEach(f => {
+      const key = typeName + '.' + (f.name || f.key);
+      if (!f.overridden && !(key in instanceData)) {
+        unoverridden.push({ key, value: f.value });
+      }
+    });
+  });
+
+  // Fallback: use DEMO data when no real components available
+  if (unoverridden.length === 0 && data.entityTemplate) {
+    const bpFields = (DEMO_ENTITY_TEMPLATES[data.entityTemplate] || { fields:{} }).fields;
+    Object.entries(bpFields).forEach(([key, value]) => {
+      if (!(key in (data.instance_data || {}))) unoverridden.push({ key, value });
+    });
+  }
+
+  if (unoverridden.length === 0) {
+    showToast('info', 'No Fields', 'All blueprint fields are already overridden.');
+    return;
+  }
+
+  const sel = document.getElementById('add-override-select');
+  sel.innerHTML = '';
+  unoverridden.forEach(f => {
+    const opt = document.createElement('option');
+    opt.value = f.key;
+    opt.textContent = f.key;
+    opt.dataset.defaultVal = JSON.stringify(f.value);
+    sel.appendChild(opt);
+  });
+
+  document.getElementById('add-override-dialog').classList.add('show');
+}
+
+document.getElementById('add-override-cancel').addEventListener('click', () => {
+  document.getElementById('add-override-dialog').classList.remove('show');
+});
+
+document.getElementById('add-override-confirm').addEventListener('click', () => {
+  const sel = document.getElementById('add-override-select');
+  const key = sel.value;
+  if (!key) return;
+  let defaultVal = '';
+  try { defaultVal = JSON.parse(sel.options[sel.selectedIndex].dataset.defaultVal); } catch(e) {}
+  document.getElementById('add-override-dialog').classList.remove('show');
+  promoteOverride(key, null, defaultVal);
+});
+
+async function promoteOverride(key, rowEl, defaultValue) {
+  if (!state.selected) return;
+  const { type, id, data } = state.selected;
+  const bpFields = (DEMO_ENTITY_TEMPLATES[data.entityTemplate] || { fields:{} }).fields;
+  const def = defaultValue !== undefined ? defaultValue : (bpFields[key] !== undefined ? bpFields[key] : '');
+
+  await bridgeRequest('add_override', { itemType: type, itemId: id, overrideKey: key, defaultValue: def });
+  await markDirty();
+
+  // Update local data
+  if (!data.instance_data) data.instance_data = {};
+  data.instance_data[key] = def;
+  renderProperties();
+}
+
+async function handlePropsChange(e) {
+  if (!state.selected) return;
+  const input = e.target;
+
+  // Light type selector
+  if (input.id === 'light-type-select' && state.selected.type === 'light') {
+    const lightId = state.selected.id;
+    const type = input.value;
+    const result = await bridgeRequest('set_light_type', { lightId, type });
+    if (result.success) {
+      state.hierarchy = result.hierarchy;
+      if (state.selected.data) state.selected.data.lightType = type;
+      renderHierarchy();
+    }
+    return;
+  }
+
+  // Affects layers checkbox
+  if (input.dataset.layer !== undefined) {
+    const light = state.selected.data;
+    const layerId = input.dataset.layer;
+    let layers = [...(light.affects_layers || [])];
+    if (input.checked) { if (!layers.includes(layerId)) layers.push(layerId); }
+    else layers = layers.filter(l => l !== layerId);
+    light.affects_layers = layers;
+    await bridgeRequest('set_light_affects_layers', { lightId: light.id, layerIds: layers });
+    await markDirty();
+    return;
+  }
+
+  // Override field input
+  const row = input.closest('.prop-row.override');
+  if (row && row.dataset.fieldKey) {
+    const key = row.dataset.fieldKey;
+    const rawVal = input.type === 'checkbox' ? input.checked : input.value;
+    await bridgeRequest('update_override', { itemType: state.selected.type, itemId: state.selected.id, overrideKey: key, value: rawVal });
+    await markDirty();
+  }
+}
+
+document.getElementById('stabs').addEventListener('click', e => {
+  const tab = e.target.closest('.stab');
+  if (!tab) return;
+  state.activeTab = tab.dataset.tab;
+  renderProperties();
+});
+
+// ============================================================
+// FILTER
+// ============================================================
+document.getElementById('filter-input').addEventListener('input', async e => {
+  const filter = e.target.value.trim();
+  const result = await bridgeRequest('get_hierarchy_filtered', { filter });
+  if (result.success) {
+    state.hierarchy = result.hierarchy;
+    renderHierarchy();
+    updateStatusCounts();
+  }
+});
+
+// Filter pills — sync initial state then handle clicks
+(function initPills() {
+  document.querySelectorAll('.fpill').forEach(pill => {
+    const sec = pill.dataset.section;
+    if (state.sectionVisible[sec] === false) pill.classList.add('off');
+    pill.addEventListener('click', () => {
+      const visible = state.sectionVisible[sec] !== false;
+      state.sectionVisible[sec] = !visible;
+      pill.classList.toggle('off', !state.sectionVisible[sec]);
+      try { localStorage.setItem('sceneeditor_section_visible', JSON.stringify(state.sectionVisible)); } catch(e) {}
+      // Toggle section visibility in the already-rendered hierarchy
+      const secEl = document.querySelector(`.sec[data-section="${sec}"]`);
+      if (secEl) secEl.classList.toggle('section-hidden', !state.sectionVisible[sec]);
+    });
+  });
+})();
+
+// ============================================================
+// TOOLBAR ACTIONS
+// ============================================================
+document.getElementById('ctx-entity-template').addEventListener('click', e => {
+  const link = e.target.closest('#ctx-entity-template-link');
+  if (link) {
+    const entityTemplateId = link.dataset.template;
+    const itemType = state.selected ? state.selected.type : 'entity';
+    if (entityTemplateId) bridgeRequest('open_entity_template', { entityTemplateId, itemType });
+  }
+});
+
+document.getElementById('btn-new-scene').addEventListener('click', () => {
+  document.getElementById('new-scene-name').value = '';
+  document.getElementById('new-scene-path').value = '';
+  document.getElementById('new-scene-tags').value = '';
+  document.getElementById('new-scene-scope').value = 'global';
+  document.getElementById('new-scene-stage-row').style.display = 'none';
+  document.getElementById('new-scene-error').style.display = 'none';
+  populateNewSceneStages();
+  document.getElementById('new-scene-dialog').classList.add('show');
+  document.getElementById('new-scene-name').focus();
+});
+
+document.getElementById('new-scene-name').addEventListener('input', function() {
+  const name = this.value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+  if (name) {
+    document.getElementById('new-scene-path').value = 'Stages/' + name + '/' + name + '.diascene';
+  }
+});
+
+document.getElementById('new-scene-scope').addEventListener('change', function() {
+  document.getElementById('new-scene-stage-row').style.display = (this.value === 'stage') ? '' : 'none';
+});
+
+async function populateNewSceneStages() {
+  const r = await bridgeRequest('get_stage_list');
+  const sel = document.getElementById('new-scene-stage');
+  sel.innerHTML = '';
+  const stages = (r && r.stages) || [];
+  stages.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.stagePath || s.name || s;
+    opt.textContent = s.name || s.stagePath || s;
+    sel.appendChild(opt);
+  });
+}
+
+document.getElementById('new-scene-cancel').addEventListener('click', () => {
+  document.getElementById('new-scene-dialog').classList.remove('show');
+});
+
+document.getElementById('new-scene-confirm').addEventListener('click', async () => {
+  const name = document.getElementById('new-scene-name').value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+  const path = document.getElementById('new-scene-path').value.trim();
+  const tags = document.getElementById('new-scene-tags').value.trim();
+  const scope = document.getElementById('new-scene-scope').value;
+  const stage = document.getElementById('new-scene-stage').value;
+  const errEl = document.getElementById('new-scene-error');
+
+  if (!name) { errEl.textContent = 'Name is required.'; errEl.style.display = ''; return; }
+  if (!path) { errEl.textContent = 'Path is required.'; errEl.style.display = ''; return; }
+  errEl.style.display = 'none';
+  document.getElementById('new-scene-dialog').classList.remove('show');
+
+  const id = 'diascene.' + name;
+  const params = { assetType: 'diascene', id, source_path: path };
+  if (tags) params.tags = tags.split(',').map(t => t.trim()).filter(Boolean);
+  if (scope === 'stage' && stage) params.scope = { type: 'stage', stageId: stage };
+
+  const result = await bridgeRequest('create_asset', params);
+  if (!result || !result.success) {
+    showToast('error', 'New scene failed', result && result.error || 'unknown');
+    return;
+  }
+
+  const stagePath = document.getElementById('stage-select').value;
+  if (stagePath && result.absPath) {
+    await bridgeRequest('associate_scene_to_stage', { stagePath, scenePath: result.absPath });
+    await loadStage(stagePath);
+  }
+});
+
+document.getElementById('btn-create-scene-cta').addEventListener('click', () => {
+  document.getElementById('btn-new-scene').click();
+});
+
+document.getElementById('btn-add-entity').addEventListener('click', () => addItem('entity'));
+document.getElementById('btn-add-camera').addEventListener('click', () => addItem('camera'));
+document.getElementById('btn-add-light').addEventListener('click',  () => addItem('light'));
+document.getElementById('btn-add-layer').addEventListener('click',  () => addItem('layer'));
+
+async function createDefaultTemplates(itemType) {
+  const scenePath = state.currentStage ? state.currentStage.scenePath : null;
+  if (!scenePath) {
+    showToast('error', 'No Scene', 'Load a scene first.');
+    return false;
+  }
+  const sceneDir = scenePath.replace(/[/\\][^/\\]*$/, '');
+
+  const defaults = {
+    camera: [{ name: 'default_camera', ext: '.diacamera', type: 'diacamera' }],
+    light: [
+      { name: 'point_light', ext: '.dialight', type: 'dialight' },
+      { name: 'directional_light', ext: '.dialight', type: 'dialight' }
+    ],
+    entity: [{ name: 'default_entity', ext: '.diaentitytemplate', type: 'diaentitytemplate' }]
+  };
+
+  const templates = defaults[itemType] || [];
+  for (const tmpl of templates) {
+    const id = tmpl.type + '.' + tmpl.name;
+    const source_path = sceneDir + '/' + tmpl.name + tmpl.ext;
+    const result = await bridgeRequest('create_asset', { assetType: tmpl.type, id, source_path });
+    if (!result || !result.success) {
+      showToast('error', 'Create Failed', 'Could not create ' + tmpl.name + ': ' + (result && result.error || 'unknown'));
+      return false;
+    }
+  }
+  showToast('success', 'Templates Created', 'Default templates created successfully.');
+  return true;
+}
+
+async function addItem(itemType) {
+  if (itemType === 'layer') {
+    // Show dialog with just the name field
+    document.getElementById('add-item-dialog-title').textContent = 'Add Layer';
+    const nameInput = document.getElementById('add-item-name');
+    const templateLabel = document.querySelector('#add-item-dialog .dialog-body label[for="add-item-select"]');
+    const sel = document.getElementById('add-item-select');
+    nameInput.value = 'layer_' + Date.now();
+    nameInput.dataset.userEdited = '';
+    templateLabel.style.display = 'none';
+    sel.style.display = 'none';
+
+    document.getElementById('add-item-dialog').classList.add('show');
+    nameInput.focus();
+    nameInput.select();
+
+    const layerId = await new Promise(resolve => {
+      const confirm = document.getElementById('add-item-confirm');
+      const cancel  = document.getElementById('add-item-cancel');
+      const finish = (val) => {
+        document.getElementById('add-item-dialog').classList.remove('show');
+        templateLabel.style.display = '';
+        sel.style.display = '';
+        confirm.removeEventListener('click', onConfirm);
+        cancel.removeEventListener('click',  onCancel);
+        resolve(val);
+      };
+      const onConfirm = () => finish(nameInput.value.trim() || ('layer_' + Date.now()));
+      const onCancel  = () => finish(null);
+      confirm.addEventListener('click', onConfirm);
+      cancel.addEventListener('click',  onCancel);
+    });
+
+    if (!layerId) return;
+    const result = await bridgeRequest('add_layer', { layerId, sortOrder: 0, parallax: [1,1], sortPolicy: 'insertion' });
+    if (result.success) {
+      state.hierarchy = result.hierarchy;
+      renderHierarchy();
+      updateStatusCounts();
+    } else {
+      showToast('error', 'Add Layer Failed', result.error || 'Unknown error');
+    }
+    return;
+  }
+
+  // Entity / Camera / Light — need a template selection
+  const bpResult = await bridgeRequest('get_available_entity_templates', { itemType });
+  if (!bpResult.success) {
+    showToast('error', 'Cannot Add Item', bpResult.error || 'Failed to fetch templates');
+    return;
+  }
+  let entityTemplates = bpResult.entityTemplates || [];
+  if (entityTemplates.length === 0) {
+    const labelMap2 = { entity:'entity template', camera:'camera', light:'light' };
+    const typeName = labelMap2[itemType] || itemType;
+    const shouldCreate = await showConfirm('No Templates', `No ${typeName} templates found. Create defaults?`);
+    if (!shouldCreate) return;
+
+    const created = await createDefaultTemplates(itemType);
+    if (!created) return;
+
+    const retry = await bridgeRequest('get_available_entity_templates', { itemType });
+    entityTemplates = (retry.success && retry.entityTemplates) || [];
+    if (entityTemplates.length === 0) {
+      showToast('error', 'Create Failed', 'Default templates were created but could not be loaded.');
+      return;
+    }
+  }
+
+  // Populate and show the add-item dialog
+  const labelMap = { entity:'Entity', camera:'Camera', light:'Light' };
+  document.getElementById('add-item-dialog-title').textContent = 'Add ' + (labelMap[itemType] || itemType);
+  const sel = document.getElementById('add-item-select');
+  const nameInput = document.getElementById('add-item-name');
+  sel.innerHTML = '';
+  entityTemplates.forEach(bp => {
+    const opt = document.createElement('option');
+    opt.value = bp.id;
+    opt.textContent = bp.id;
+    sel.appendChild(opt);
+  });
+
+  // Pre-fill name from first template selection
+  nameInput.value = sel.value || '';
+  nameInput.dataset.userEdited = '';
+  const onSelChange = () => { if (!nameInput.dataset.userEdited) nameInput.value = sel.value; };
+  const onNameInput = () => { nameInput.dataset.userEdited = nameInput.value ? '1' : ''; };
+  sel.addEventListener('change', onSelChange);
+  nameInput.addEventListener('input', onNameInput);
+
+  document.getElementById('add-item-dialog').classList.add('show');
+  nameInput.focus();
+
+  await new Promise(resolve => {
+    const confirm = document.getElementById('add-item-confirm');
+    const cancel  = document.getElementById('add-item-cancel');
+    const finish = (result) => {
+      document.getElementById('add-item-dialog').classList.remove('show');
+      nameInput.dataset.userEdited = '';
+      sel.removeEventListener('change', onSelChange);
+      nameInput.removeEventListener('input', onNameInput);
+      confirm.removeEventListener('click', onConfirm);
+      cancel.removeEventListener('click',  onCancel);
+      resolve(result);
+    };
+    const onConfirm = () => finish({ entityTemplateId: sel.value, id: nameInput.value.trim() });
+    const onCancel  = () => finish(null);
+    confirm.addEventListener('click', onConfirm);
+    cancel.addEventListener('click',  onCancel);
+  }).then(async (chosen) => {
+    if (!chosen) return;
+    const payload = { itemType, entityTemplateId: chosen.entityTemplateId };
+    if (chosen.id) payload.id = chosen.id;
+    const result = await bridgeRequest('add_item', payload);
+    if (result.success) {
+      state.hierarchy = result.hierarchy;
+      renderHierarchy();
+      updateStatusCounts();
+    } else {
+      showToast('error', 'Add Failed', result.error || 'Unknown error');
+    }
+  });
+}
+
+// ============================================================
+// SCENE PROPERTIES MODAL
+// ============================================================
+document.getElementById('btn-scene-props').addEventListener('click', openScenePropsDialog);
+
+async function openScenePropsDialog() {
+  const [propsResult, validResult] = await Promise.all([
+    bridgeRequest('get_scene_properties'),
+    bridgeRequest('validate')
+  ]);
+
+  const body = document.getElementById('scene-props-body');
+  let html = '';
+
+  if (propsResult.success) {
+    const p = propsResult.properties;
+    const wb = p.world_bounds || { min:[0,0], max:[3840,1080] };
+    html += `<div class="scene-props-section">
+      <div class="scene-props-label">World Bounds</div>
+      <div class="scene-props-row">
+        <span class="scene-props-key">Min X</span>
+        <input class="scene-props-input" id="wb-min-x" value="${wb.min[0]}">
+        <span class="scene-props-key" style="width:40px">Min Y</span>
+        <input class="scene-props-input" id="wb-min-y" value="${wb.min[1]}">
+      </div>
+      <div class="scene-props-row">
+        <span class="scene-props-key">Max X</span>
+        <input class="scene-props-input" id="wb-max-x" value="${wb.max[0]}">
+        <span class="scene-props-key" style="width:40px">Max Y</span>
+        <input class="scene-props-input" id="wb-max-y" value="${wb.max[1]}">
+      </div>
+    </div>`;
+
+    html += `<div class="scene-props-section">
+      <div class="scene-props-label">Counts</div>
+      <div class="scene-props-row"><span class="scene-props-key">Entities</span><span>${p.entity_count || 0}</span></div>
+      <div class="scene-props-row"><span class="scene-props-key">Cameras</span><span>${p.camera_count || 0}</span></div>
+      <div class="scene-props-row"><span class="scene-props-key">Lights</span><span>${p.light_count || 0}</span></div>
+      <div class="scene-props-row"><span class="scene-props-key">Layers</span><span>${p.layer_count || 0}</span></div>
+    </div>`;
+  }
+
+  if (validResult.success) {
+    const v = validResult.validation;
+    html += `<div class="scene-props-section"><div class="scene-props-label">Validation</div>`;
+    if (v.valid && v.errors.length === 0 && v.warnings.length === 0) {
+      html += `<div class="validation-ok">Scene is valid.</div>`;
+    }
+    v.errors.forEach(err => { html += `<div class="validation-error">Error: ${escHtml(err)}</div>`; });
+    v.warnings.forEach(w => { html += `<div class="validation-warn">Warning: ${escHtml(w)}</div>`; });
+    html += `</div>`;
+  }
+
+  body.innerHTML = html;
+  document.getElementById('scene-props-dialog').classList.add('show');
+}
+
+document.getElementById('scene-props-cancel').addEventListener('click', () => {
+  document.getElementById('scene-props-dialog').classList.remove('show');
+});
+
+document.getElementById('scene-props-save').addEventListener('click', async () => {
+  const minX = parseFloat(document.getElementById('wb-min-x').value) || 0;
+  const minY = parseFloat(document.getElementById('wb-min-y').value) || 0;
+  const maxX = parseFloat(document.getElementById('wb-max-x').value) || 3840;
+  const maxY = parseFloat(document.getElementById('wb-max-y').value) || 1080;
+  await bridgeRequest('set_world_bounds', { world_bounds: { min:[minX, minY], max:[maxX, maxY] } });
+  await markDirty();
+  document.getElementById('scene-props-dialog').classList.remove('show');
+});
+
+// ============================================================
+// CONTEXT MENU
+// ============================================================
+const ctxMenuEl = document.getElementById('ctx-menu');
+let ctxTarget = null;
+
+function onContextMenu(e, item) {
+  e.preventDefault();
+  e.stopPropagation();
+  ctxTarget = item;
+
+  // Show/hide Change Entity Template only for entity/camera/light with blueprints
+  const changeBpItem = document.getElementById('ctx-entity-template');
+  changeBpItem.style.display = (item._type !== 'layer') ? '' : 'none';
+
+  ctxMenuEl.style.left = e.clientX + 'px';
+  ctxMenuEl.style.top  = e.clientY + 'px';
+  ctxMenuEl.classList.add('show');
+}
+
+document.addEventListener('click', () => ctxMenuEl.classList.remove('show'));
+document.getElementById('hier').addEventListener('contextmenu', e => {
+  // Fallback: if no item was hit, hide
+  if (!e.target.closest('.item')) {
+    e.preventDefault();
+    ctxMenuEl.classList.remove('show');
+  }
+});
+
+ctxMenuEl.addEventListener('click', async e => {
+  const action = e.target.closest('.ctx-menu-item')?.dataset.action;
+  if (!action || !ctxTarget) return;
+  ctxMenuEl.classList.remove('show');
+  await handleContextAction(action, ctxTarget);
+});
+
+async function handleContextAction(action, item) {
+  if (action === 'duplicate') {
+    const result = await bridgeRequest('duplicate_item', { itemType: item._type, itemId: item.id });
+    if (result.success) {
+      state.hierarchy = result.hierarchy;
+      renderHierarchy();
+      await markDirty();
+      updateStatusCounts();
+    }
+
+  } else if (action === 'delete') {
+    const result = await bridgeRequest('delete_item', { itemType: item._type, itemId: item.id });
+    if (result.success) {
+      if (state.selected && state.selected.type === item._type && state.selected.id === item.id) {
+        state.selected = null;
+        renderProperties();
+      }
+      state.hierarchy = result.hierarchy;
+      renderHierarchy();
+      await markDirty();
+      updateStatusCounts();
+    }
+
+  } else if (action === 'toggle-enable') {
+    const hasEnabled = item._type !== 'camera';
+    const currentState = hasEnabled ? (item.enabled !== false) : (item.active === true);
+    const result = await bridgeRequest('set_enabled', { itemType: item._type, itemId: item.id, enabled: !currentState });
+    if (result.success) {
+      state.hierarchy = result.hierarchy;
+      renderHierarchy();
+      await markDirty();
+      // Refresh properties if this is the selected item
+      if (state.selected && state.selected.id === item.id) renderProperties();
+    }
+
+  } else if (action === 'rename') {
+    startRename(item);
+
+  } else if (action === 'change-entity-template') {
+    // Select the item first so the dialog has context
+    await onSelectItem(item._type, item.id, item);
+    openChangeEntityTemplateDialog(state.selected);
+  }
+}
+
+// ============================================================
+// INLINE RENAME
+// ============================================================
+function startRename(item) {
+  // Find the item row in the DOM
+  const row = document.querySelector(`.item[data-type="${item._type}"][data-id="${CSS.escape(item.id)}"]`);
+  if (!row) return;
+  const nameSpan = row.querySelector('.item-name');
+  if (!nameSpan) return;
+
+  const oldId = item.id;
+  const input = document.createElement('input');
+  input.className = 'item-rename-input';
+  input.value = oldId;
+  nameSpan.replaceWith(input);
+  input.focus();
+  input.select();
+
+  const commit = async () => {
+    const newId = input.value.trim();
+    if (newId && newId !== oldId) {
+      const result = await bridgeRequest('rename_item', { itemType: item._type, oldId, newId });
+      if (result.success) {
+        state.hierarchy = result.hierarchy;
+        if (state.selected && state.selected.id === oldId) {
+          state.selected = null;
+        }
+        renderHierarchy();
+        await markDirty();
+        updateStatusCounts();
+        return;
+      }
+    }
+    // Restore on cancel or failure
+    input.replaceWith(nameSpan);
+  };
+
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+    if (e.key === 'Escape') { input.value = oldId; input.blur(); }
+  });
+}
+
+// ============================================================
+// CHANGE ENTITY TEMPLATE DIALOG
+// ============================================================
+async function openChangeEntityTemplateDialog(sel) {
+  if (!sel || !sel.data || !sel.data.entityTemplate) return;
+
+  document.getElementById('entity-template-dialog-entity').textContent = sel.id;
+
+  // Fetch available entity templates
+  const bpResult = await bridgeRequest('get_available_entity_templates', { itemType: sel.type });
+  const entityTemplates = bpResult.success ? bpResult.entityTemplates : [];
+
+  const selectEl = document.getElementById('entity-template-dialog-select');
+  selectEl.innerHTML = '';
+  entityTemplates.forEach(bp => {
+    const opt = document.createElement('option');
+    opt.value = bp.id;
+    opt.textContent = bp.id;
+    if (bp.id === sel.data.entityTemplate) opt.disabled = true;
+    selectEl.appendChild(opt);
+  });
+  const firstAvailable = entityTemplates.find(b => b.id !== sel.data.entityTemplate);
+  if (firstAvailable) selectEl.value = firstAvailable.id;
+
+  updateChangeEntityTemplateTransfer(sel);
+  document.getElementById('entity-template-dialog').classList.add('show');
+}
+
+document.getElementById('entity-template-dialog-select').addEventListener('change', () => {
+  if (state.selected) updateChangeEntityTemplateTransfer(state.selected);
+});
+
+async function updateChangeEntityTemplateTransfer(sel) {
+  const newBpId = document.getElementById('entity-template-dialog-select').value;
+  const transferEl = document.getElementById('entity-template-dialog-transfer');
+  if (!newBpId || !sel) { transferEl.innerHTML = ''; return; }
+
+  const result = await bridgeRequest('analyse_change_entity_template', {
+    itemType: sel.type,
+    itemId: sel.id,
+    newEntityTemplateId: newBpId
+  });
+
+  if (!result.success) { transferEl.innerHTML = ''; return; }
+  const { transferring, orphaned } = result.analysis;
+
+  let html = '';
+  if (transferring && transferring.length > 0) {
+    html += `<span class="ok">${transferring.length} override${transferring.length !== 1 ? 's' : ''} will transfer:</span> ${transferring.map(k => k.split('.')[1] || k).join(', ')}<br>`;
+  }
+  if (orphaned && orphaned.length > 0) {
+    html += `<span class="orphan">${orphaned.length} override${orphaned.length !== 1 ? 's' : ''} will be orphaned:</span> ${orphaned.map(k => k.split('.')[1] || k).join(', ')}`;
+  }
+  if ((!transferring || transferring.length === 0) && (!orphaned || orphaned.length === 0)) {
+    html = 'No overrides to transfer.';
+  }
+  transferEl.innerHTML = html;
+}
+
+document.getElementById('entity-template-dialog-cancel').addEventListener('click', () => {
+  document.getElementById('entity-template-dialog').classList.remove('show');
+});
+
+document.getElementById('entity-template-dialog-confirm').addEventListener('click', async () => {
+  const newBpId = document.getElementById('entity-template-dialog-select').value;
+  if (!newBpId || !state.selected) return;
+
+  const result = await bridgeRequest('change_entity_template', {
+    itemType: state.selected.type,
+    itemId: state.selected.id,
+    newEntityTemplateId: newBpId
+  });
+
+  if (result.success) {
+    state.hierarchy = result.hierarchy;
+    // Refresh selection data
+    const propsResult = await bridgeRequest('get_properties', { selectionType: state.selected.type, selectionId: state.selected.id });
+    if (propsResult.success) state.selected.data = propsResult.properties;
+    state.activeTab = 'instance';
+    renderHierarchy();
+    renderProperties();
+    await markDirty();
+    updateStatusCounts();
+  }
+  document.getElementById('entity-template-dialog').classList.remove('show');
+});
+
+// ============================================================
+// STATUS COUNTS
+// ============================================================
+function updateStatusCounts() {
+  const h = state.hierarchy;
+  document.getElementById('s-ent').textContent = (h.entities || []).length;
+  document.getElementById('s-cam').textContent = (h.cameras  || []).length;
+  document.getElementById('s-lit').textContent = (h.lights   || []).length;
+  document.getElementById('s-lay').textContent = (h.layers   || []).length;
+}
+
+// ============================================================
+// RESIZE DIVIDER
+// ============================================================
+(function() {
+  const divider = document.getElementById('divider');
+  const lcol    = document.getElementById('lcol');
+  let dragging  = false;
+
+  divider.addEventListener('mousedown', () => { dragging = true; });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const w = Math.max(200, Math.min(500, e.clientX));
+    lcol.style.width = w + 'px';
+  });
+  document.addEventListener('mouseup', () => { dragging = false; });
+})();
+
+// ============================================================
+// UTILS
+// ============================================================
+function escHtml(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function escAttr(s) {
+  return escHtml(s);
+}
+
+// ============================================================
+// BOOT
+// ============================================================
+init();
+</script>
+</body>
+</html>

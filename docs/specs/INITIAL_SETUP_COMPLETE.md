@@ -18,7 +18,7 @@ The spec-driven development system has been initialized with Cluiche-specific in
 - Platform overview: Cluiche/Dia engine description
 - Applications table: Cluiche main application listed
 - Shared codebase: All 11 Dia modules documented
-  - DiaCore, DiaMaths, DiaApplication, DiaGraphics, DiaWindow, DiaInput, DiaUI, DiaSFML, DiaPhysics, DiaAI
+  - DiaCore, DiaMaths, DiaApplicationFlow, DiaGraphics, DiaWindow, DiaInput, DiaUI, DiaSFML, DiaPhysics, DiaAI
 - Architecture principles: 6 core principles defined
 - Non-functional requirements: Performance, thread safety, memory, maintainability, testability, platform support
 - **6 binding decisions defined** (PD-001 through PD-006):

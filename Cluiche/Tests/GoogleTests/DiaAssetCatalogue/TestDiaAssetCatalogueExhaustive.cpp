@@ -1,14 +1,12 @@
 #include <gtest/gtest.h>
 
-#include <DiaCore/Type/TypeDeclarationMacros.h>
-#include <DiaCore/Type/TypeDefinitionMacros.h>
-#include <DiaCore/Type/TypeFacade.h>
-#include <DiaCore/Type/TypeVariableAttributes.h>
-#include <DiaCore/Type/TypeInstance.h>
-#include <DiaCore/Containers/Strings/StringWriter.h>
+#include <DiaCore/Reflect/ReflectMacros.h>
+#include <DiaCore/Reflect/JsonArchive.h>
+#include <DiaCore/Reflect/FieldAttributes.h>
 #include <DiaCore/Containers/Strings/StringReader.h>
-#include <DiaCore/CRC/CRC.h>
 #include <DiaCore/CRC/StringCRC.h>
+
+#include <string>
 #include <DiaCore/FilePath/FilePath.h>
 #include <DiaCore/FilePath/PathStore.h>
 #include <DiaCore/Json/external/json/json.h>
@@ -42,13 +40,11 @@ namespace
 	// Nested struct for loader tests
 	struct NestedInner
 	{
-		DIA_TYPE_DECLARATION;
 		int mInnerValue = 0;
 	};
 
 	struct NestedOuter
 	{
-		DIA_TYPE_DECLARATION;
 		int mOuterValue = 0;
 		NestedInner mInner;
 	};
@@ -56,38 +52,10 @@ namespace
 	// Struct with an asset reference field for RelationshipInferrer tests
 	struct AssetRefStruct
 	{
-		DIA_TYPE_DECLARATION;
 		char mReferencedAsset[64];
 
 		AssetRefStruct() { mReferencedAsset[0] = '\0'; }
 	};
-
-	DIA_TYPE_DEFINITION(NestedInner)
-		DIA_TYPE_ADD_VARIABLE("mInnerValue", mInnerValue)
-			DIA_TYPE_ADD_VARIABLE_ATTRIBUTE(Dia::Core::Types::TypeVariableAttributeRequired)
-	DIA_TYPE_DEFINITION_END()
-
-	DIA_TYPE_DEFINITION(NestedOuter)
-		DIA_TYPE_ADD_VARIABLE("mOuterValue", mOuterValue)
-			DIA_TYPE_ADD_VARIABLE_ATTRIBUTE(Dia::Core::Types::TypeVariableAttributeRequired)
-	DIA_TYPE_DEFINITION_END()
-
-	DIA_TYPE_DEFINITION(AssetRefStruct)
-		DIA_TYPE_ADD_VARIABLE_ARRAY("mReferencedAsset", mReferencedAsset, 64)
-			DIA_TYPE_ADD_VARIABLE_ATTRIBUTE_PARAM_1(Dia::Core::Types::TypeVariableAttributeAssetReference, Dia::Core::StringCRC("texture"))
-	DIA_TYPE_DEFINITION_END()
-
-	// Helper: register a type if not already present
-	template<typename T>
-	void EnsureTypeRegistered(Dia::Core::Types::TypeRegistry& reg)
-	{
-		Dia::Core::Types::TypeDefinition* def = T::GetTypeStatic();
-		Dia::Core::CRC crc(def->GetUniqueCRC());
-		if (!reg.ContainsType(crc))
-		{
-			reg.Add(def);
-		}
-	}
 
 	// Helper: create AssetRecord
 	Dia::AssetCatalogue::AssetRecord MakeTestRecord(const char* id, const char* typeId, const char* sourcePath = "Raw/test.json")
@@ -123,6 +91,30 @@ namespace
 	{
 		return WriteTestFileHelper(path, content, strlen(content));
 	}
+
+	DIA_SERIALIZE(NestedInner, 1)
+		DIA_FIELD_REQUIRED(mInnerValue)
+	DIA_SERIALIZE_END
+
+	DIA_SERIALIZE(NestedOuter, 1)
+		DIA_FIELD_REQUIRED(mOuterValue)
+	DIA_SERIALIZE_END
+
+	DIA_SERIALIZE(AssetRefStruct, 1)
+		DIA_FIELD(mReferencedAsset)
+	DIA_SERIALIZE_END
+}
+
+DIA_ATTR_ASSET_REF(AssetRefStruct, mReferencedAsset, texture)
+
+template<typename T>
+static std::string SerializeToJson(const T& obj)
+{
+	Dia::Reflect::JsonWriteArchive ar;
+	T& mutableObj = const_cast<T&>(obj);
+	serialize(ar, mutableObj, 0u);
+	Json::FastWriter writer;
+	return writer.write(ar.GetRoot());
 }
 
 // ===========================================================================
@@ -133,10 +125,6 @@ class JsonDefinitionLoaderExhaustive : public ::testing::Test
 protected:
 	static void SetUpTestSuite()
 	{
-		Dia::Core::Types::TypeRegistry& reg = Dia::Core::Types::GetTypeFacade().Registry();
-		EnsureTypeRegistered<NestedInner>(reg);
-		EnsureTypeRegistered<NestedOuter>(reg);
-		EnsureTypeRegistered<AssetRefStruct>(reg);
 	}
 };
 
@@ -212,27 +200,23 @@ TEST_F(JsonDefinitionLoaderExhaustive, LoadResult_ErrorsAccumulate_UpToCapacity1
 // LoadFromBuffer with struct missing required field (serialize then strip)
 TEST_F(JsonDefinitionLoaderExhaustive, LoadFromBuffer_NestedMissingRequiredField)
 {
-	Dia::Core::Types::TypeRegistry& reg = Dia::Core::Types::GetTypeFacade().Registry();
-
 	// Serialize a complete NestedOuter so we get valid JSON
 	NestedOuter source;
 	source.mOuterValue = 7;
 
-	char bufferMem[8 * 1024];
-	Dia::Core::Containers::StringWriter writer(bufferMem, 8 * 1024);
-	Dia::Core::Types::GetTypeFacade().JsonSerializer().Serialize(source, writer);
+	std::string json = SerializeToJson(source);
 
 	// Parse and strip the required field
 	Json::Value root;
 	Json::Reader jsonReader;
-	jsonReader.parse(bufferMem, root, false);
+	jsonReader.parse(json, root, false);
 	root.removeMember("mOuterValue");
 
 	Json::FastWriter fastWriter;
 	std::string modifiedJson = fastWriter.write(root);
 
 	Dia::Core::Containers::StringReader reader(modifiedJson.c_str());
-	Dia::AssetCatalogue::JsonDefinitionLoader loader(reg);
+	Dia::AssetCatalogue::JsonDefinitionLoader loader;
 
 	auto result = loader.LoadFromBuffer<NestedOuter>(reader);
 
@@ -244,18 +228,13 @@ TEST_F(JsonDefinitionLoaderExhaustive, LoadFromBuffer_NestedMissingRequiredField
 // LoadFromBuffer with correct required field — success
 TEST_F(JsonDefinitionLoaderExhaustive, LoadFromBuffer_RequiredFieldPresent_Success)
 {
-	Dia::Core::Types::TypeRegistry& reg = Dia::Core::Types::GetTypeFacade().Registry();
-
 	// Serialize a NestedOuter with all fields
 	NestedOuter source;
 	source.mOuterValue = 99;
 
-	char bufferMem[8 * 1024];
-	Dia::Core::Containers::StringWriter writer(bufferMem, 8 * 1024);
-	Dia::Core::Types::GetTypeFacade().JsonSerializer().Serialize(source, writer);
-
-	Dia::Core::Containers::StringReader reader(bufferMem);
-	Dia::AssetCatalogue::JsonDefinitionLoader loader(reg);
+	std::string json = SerializeToJson(source);
+	Dia::Core::Containers::StringReader reader(json.c_str());
+	Dia::AssetCatalogue::JsonDefinitionLoader loader;
 
 	auto result = loader.LoadFromBuffer<NestedOuter>(reader);
 
@@ -269,18 +248,14 @@ TEST_F(JsonDefinitionLoaderExhaustive, Load_ValidTempFile_Success)
 {
 	if (!EnsureTestTempDir()) GTEST_SKIP() << "C:\\Temp not accessible";
 
-	Dia::Core::Types::TypeRegistry& reg = Dia::Core::Types::GetTypeFacade().Registry();
-
 	// Serialize NestedOuter to a temp file
 	NestedOuter source;
 	source.mOuterValue = 42;
 
-	char bufferMem[8 * 1024];
-	Dia::Core::Containers::StringWriter writer(bufferMem, 8 * 1024);
-	Dia::Core::Types::GetTypeFacade().JsonSerializer().Serialize(source, writer);
+	std::string json = SerializeToJson(source);
 
 	const char* filePath = "C:\\Temp\\test_loader_exhaustive.json";
-	ASSERT_TRUE(WriteTestFileHelper(filePath, bufferMem));
+	ASSERT_TRUE(WriteTestFileHelper(filePath, json.c_str()));
 
 	// Register a path alias for temp
 	if (!Dia::Core::PathStore::IsPathAliasRegistered(Dia::Core::Path::Alias("temptest")))
@@ -294,7 +269,7 @@ TEST_F(JsonDefinitionLoaderExhaustive, Load_ValidTempFile_Success)
 		Dia::Core::Path::Alias("temptest"),
 		Dia::Core::FilePath::FileName("test_loader_exhaustive.json"));
 
-	Dia::AssetCatalogue::JsonDefinitionLoader loader(reg);
+	Dia::AssetCatalogue::JsonDefinitionLoader loader;
 	auto result = loader.Load<NestedOuter>(fp);
 
 	EXPECT_TRUE(result.mSuccess);
@@ -306,10 +281,8 @@ TEST_F(JsonDefinitionLoaderExhaustive, Load_ValidTempFile_Success)
 // Load with empty path returns FileNotFound
 TEST_F(JsonDefinitionLoaderExhaustive, Load_EmptyPath_ReturnsFileNotFound)
 {
-	Dia::Core::Types::TypeRegistry& reg = Dia::Core::Types::GetTypeFacade().Registry();
-
 	Dia::Core::FilePath emptyPath;
-	Dia::AssetCatalogue::JsonDefinitionLoader loader(reg);
+	Dia::AssetCatalogue::JsonDefinitionLoader loader;
 	auto result = loader.Load<NestedOuter>(emptyPath);
 
 	EXPECT_FALSE(result.mSuccess);
@@ -341,13 +314,14 @@ protected:
 	}
 };
 
-// All 8 built-in types present after RegisterBuiltInAssetTypes
-TEST_F(AssetTypeFrameworkExhaustive, BuiltIn_All8TypesRegistered)
+// All built-in types present after RegisterBuiltInAssetTypes
+TEST_F(AssetTypeFrameworkExhaustive, BuiltIn_All11TypesRegistered)
 {
 	Dia::AssetCatalogue::AssetTypeRegistry registry;
 	Dia::AssetCatalogue::RegisterBuiltInAssetTypes(registry);
 
-	EXPECT_EQ(registry.GetCount(), 8u);
+	// 7 base types + 4 file types (diaentitytemplate, diacamera, dialight, diascene) = 11
+	EXPECT_EQ(registry.GetCount(), 11u);
 }
 
 // Verify each built-in type ID string
@@ -356,7 +330,7 @@ TEST_F(AssetTypeFrameworkExhaustive, BuiltIn_EachTypeId_Exists)
 	Dia::AssetCatalogue::AssetTypeRegistry registry;
 	Dia::AssetCatalogue::RegisterBuiltInAssetTypes(registry);
 
-	const char* expectedIds[] = { "texture", "sprite", "audio", "config", "entity", "stage", "ui", "folder" };
+	const char* expectedIds[] = { "texture", "sprite", "audio", "config", "diaentitytemplate", "stage", "ui", "folder" };
 	for (int i = 0; i < 8; ++i)
 	{
 		const Dia::AssetCatalogue::AssetTypeDescriptor* desc =
@@ -371,7 +345,7 @@ TEST_F(AssetTypeFrameworkExhaustive, BuiltIn_TypeIds_AreDistinct)
 	Dia::AssetCatalogue::AssetTypeRegistry registry;
 	Dia::AssetCatalogue::RegisterBuiltInAssetTypes(registry);
 
-	const char* ids[] = { "texture", "sprite", "audio", "config", "entity", "stage", "ui", "folder" };
+	const char* ids[] = { "texture", "sprite", "audio", "config", "diaentitytemplate", "stage", "ui", "folder" };
 	for (int i = 0; i < 8; ++i)
 	{
 		for (int j = i + 1; j < 8; ++j)
@@ -1209,35 +1183,31 @@ TEST_F(AssetCatalogueIntegrationExhaustive, RelationshipInferrer_RecordOverload_
 	EXPECT_EQ(edges.Size(), 0u);
 }
 
-// Integration: RelationshipInferrer with TypeInstance reads asset reference field
-TEST_F(AssetCatalogueIntegrationExhaustive, RelationshipInferrer_TypeInstance_InfersUsesEdge)
+// Integration: RelationshipInferrer with typed object reads asset reference field
+TEST_F(AssetCatalogueIntegrationExhaustive, RelationshipInferrer_TypedObject_InfersUsesEdge)
 {
-	Dia::Core::Types::TypeRegistry& reg = Dia::Core::Types::GetTypeFacade().Registry();
-	EnsureTypeRegistered<AssetRefStruct>(reg);
-
-	// Register AssetRefStruct as a custom type in AssetTypeRegistry
 	Dia::AssetCatalogue::AssetTypeRegistry typeReg;
-
 	Dia::AssetCatalogue::AssetTypeDescriptor desc;
 	desc.mTypeId = Dia::Core::StringCRC("assetref");
 	desc.mName = Dia::Core::Containers::String64("AssetRef Test");
 	desc.mFilePattern = Dia::Core::Containers::String64("*.assetref.json");
-	desc.mTypeDefinition = AssetRefStruct::GetTypeStatic();
+	desc.mDeserializeFn = nullptr;
 	typeReg.Register(desc);
 
-	// Create an instance with a reference value
 	AssetRefStruct instance;
 	strcpy_s(instance.mReferencedAsset, sizeof(instance.mReferencedAsset), "texture.hero");
 
-	Dia::Core::Types::TypeInstance typeInst(AssetRefStruct::GetTypeStatic(), &instance);
-
+	uint32_t typeCrc = Dia::Core::StringCRC("AssetRefStruct").Value();
 	Dia::AssetCatalogue::RelationshipInferrer inferrer;
 	Dia::Core::Containers::DynamicArrayC<Dia::AssetCatalogue::RelationshipEdge, 16> edges;
-	inferrer.InferRelationships(typeInst, Dia::Core::StringCRC("assetref"), typeReg, edges);
+	inferrer.InferRelationships(instance, typeCrc, typeReg, edges);
 
 	EXPECT_EQ(edges.Size(), 1u);
-	EXPECT_EQ(edges[0].mRelationshipType, Dia::AssetCatalogue::RelationshipTypes::kUses);
-	EXPECT_EQ(edges[0].mTargetAssetId, Dia::Core::StringCRC("texture.hero"));
+	if (edges.Size() > 0)
+	{
+		EXPECT_EQ(edges[0].mRelationshipType, Dia::AssetCatalogue::RelationshipTypes::kUses);
+		EXPECT_EQ(edges[0].mTargetAssetId, Dia::Core::StringCRC("texture.hero"));
+	}
 }
 
 // Integration: Full pipeline — LoadRules -> EvaluateDryRun -> Apply -> SaveManifest -> LoadManifest

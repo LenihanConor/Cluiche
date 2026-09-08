@@ -22,9 +22,11 @@ function formatDuration(ms: number): string {
 interface StageRowProps {
     stage: StageState;
     onToggle: () => void;
+    estDurationMs?: number;
+    setRef?: (el: HTMLDivElement | null) => void;
 }
 
-export const StageRow: FC<StageRowProps> = ({ stage, onToggle }) => {
+export const StageRow: FC<StageRowProps> = ({ stage, onToggle, estDurationMs = 0, setRef }) => {
     const icon = statusIcons[stage.status] ?? statusIcons['not-started'];
     const [elapsed, setElapsed] = useState(0);
 
@@ -43,8 +45,10 @@ export const StageRow: FC<StageRowProps> = ({ stage, onToggle }) => {
         ? formatDuration(elapsed * 1000)
         : formatDuration(stage.durationMs);
 
+    const showEstimate = stage.status === 'running' && estDurationMs > 0;
+
     return (
-        <div>
+        <div ref={setRef}>
             <div
                 onClick={onToggle}
                 style={{
@@ -65,8 +69,19 @@ export const StageRow: FC<StageRowProps> = ({ stage, onToggle }) => {
                 <span style={{ fontFamily: 'monospace', color: '#888', minWidth: 50, textAlign: 'right' }}>
                     {displayDuration}
                 </span>
+                {showEstimate && (
+                    <span style={{ color: '#555', fontSize: 11, fontFamily: 'monospace' }}>
+                        (~{formatDuration(estDurationMs)} est.)
+                    </span>
+                )}
             </div>
-            {stage.expanded && <StageDetail steps={stage.steps} logLines={stage.logLines} />}
+            {stage.expanded && (
+                <StageDetail
+                    steps={stage.steps}
+                    logLines={stage.logLines}
+                    stageDurationMs={stage.durationMs}
+                />
+            )}
         </div>
     );
 };

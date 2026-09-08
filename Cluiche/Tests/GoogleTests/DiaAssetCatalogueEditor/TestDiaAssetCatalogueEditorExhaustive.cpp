@@ -79,7 +79,7 @@ namespace
         desc.mTypeId = StringCRC(typeId);
         desc.mName = Dia::Core::Containers::String64(name);
         desc.mFilePattern = Dia::Core::Containers::String64(pattern);
-        desc.mTypeDefinition = nullptr;
+        desc.mDeserializeFn = nullptr;
         reg.Register(desc);
     }
 }

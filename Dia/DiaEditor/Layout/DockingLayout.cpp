@@ -17,6 +17,16 @@ namespace Dia
 		{
 			DIA_ASSERT(name != nullptr, "DockingLayout: panel name must not be null");
 			DIA_ASSERT(uiPath != nullptr, "DockingLayout: panel uiPath must not be null");
+
+			for (unsigned int i = 0; i < mPanels.Size(); ++i)
+			{
+				if (strcmp(mPanels[i].name, name) == 0)
+				{
+					strncpy_s(mPanels[i].uiPath, sizeof(mPanels[i].uiPath), uiPath, _TRUNCATE);
+					return;
+				}
+			}
+
 			DIA_ASSERT(!mPanels.IsFull(), "DockingLayout: max panel capacity reached");
 
 			PanelInfo info;
@@ -102,8 +112,11 @@ namespace Dia
 			const Json::Value& panels = in["panels"];
 			for (unsigned int i = 0; i < panels.size() && i < kMaxPanels; ++i)
 			{
-				PanelInfo info;
 				std::string name = panels[i]["name"].asString();
+				if (IsPanelRegistered(name.c_str()))
+					continue;
+
+				PanelInfo info;
 				std::string uiPath = panels[i]["uiPath"].asString();
 				strncpy_s(info.name, sizeof(info.name), name.c_str(), _TRUNCATE);
 				strncpy_s(info.uiPath, sizeof(info.uiPath), uiPath.c_str(), _TRUNCATE);
@@ -131,10 +144,22 @@ namespace Dia
 			layout["panels"] = validPanels;
 		}
 
+		void DockingLayout::SetMosaicTree(const Json::Value& tree)
+		{
+			mMosaicTree = tree;
+		}
+
+		const Json::Value& DockingLayout::GetMosaicTree() const
+		{
+			return mMosaicTree;
+		}
+
 		bool DockingLayout::SaveToDisk(const char* path) const
 		{
 			Json::Value root;
 			Serialize(root);
+			if (!mMosaicTree.isNull())
+				root["tree"] = mMosaicTree;
 
 			Json::StreamWriterBuilder writer;
 			std::ofstream file(path);
@@ -158,6 +183,8 @@ namespace Dia
 				return false;
 
 			Deserialize(root);
+			if (root.isMember("tree") && !root["tree"].isNull())
+				mMosaicTree = root["tree"];
 			return true;
 		}
 	}

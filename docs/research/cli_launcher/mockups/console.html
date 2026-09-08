@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dia Console — Mockup</title>
+<style>
+  :root {
+    --bg-0: #0d1117;
+    --bg-1: #161b22;
+    --bg-2: #1c2128;
+    --bg-3: #22272e;
+    --border: #30363d;
+    --text-0: #e6edf3;
+    --text-1: #9198a1;
+    --text-2: #6e7681;
+    --accent: #4493f8;
+    --accent-dim: #1f6feb26;
+    --green: #3fb950;
+    --green-dim: #3fb95022;
+    --red: #f85149;
+    --red-dim: #f8514922;
+    --yellow: #d29922;
+    --yellow-dim: #d2992222;
+    --mono: "Cascadia Code", "SF Mono", Consolas, monospace;
+    --sans: -apple-system, "Segoe UI", Inter, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: #000;
+    font-family: var(--sans);
+    color: var(--text-0);
+    font-size: 13px;
+  }
+
+  /* ---- Native window frame (pywebview chromeless window look) ---- */
+  .window {
+    width: 1280px;
+    height: 800px;
+    margin: 16px auto;
+    background: var(--bg-0);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    border: 1px solid var(--border);
+  }
+  .titlebar {
+    height: 34px;
+    background: var(--bg-1);
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    -webkit-app-region: drag;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .titlebar .dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  .titlebar .logo { width: 16px; height: 16px; border-radius: 3px; background: linear-gradient(135deg, var(--accent), #7c5cff); margin-right: 8px; }
+  .titlebar .title { font-size: 12px; color: var(--text-1); font-weight: 600; letter-spacing: 0.3px; }
+  .titlebar .winctrls { margin-left: auto; display: flex; gap: 14px; color: var(--text-2); font-size: 13px; }
+  .titlebar .winctrls span { cursor: default; }
+  .titlebar .winctrls .close:hover { color: var(--red); }
+
+  /* ---- Top context bar ---- */
+  .contextbar {
+    height: 42px;
+    background: var(--bg-1);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 14px;
+    flex-shrink: 0;
+  }
+  .ctx-label { color: var(--text-2); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .pill {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    color: var(--text-0);
+    display: flex; align-items: center; gap: 6px;
+    cursor: default;
+  }
+  .pill .chev { color: var(--text-2); font-size: 9px; margin-left: 2px; }
+  .pill.project { border-color: #3a4a63; background: var(--accent-dim); color: #a9cdff; font-weight: 600; }
+  .sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+  .status-badge {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--green);
+    background: var(--green-dim);
+    border: 1px solid #2f6f3e;
+    border-radius: 6px;
+    padding: 4px 10px;
+  }
+  .status-badge .pulse {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+    box-shadow: 0 0 0 3px var(--green-dim);
+  }
+
+  /* ---- Body layout ---- */
+  .body { flex: 1; display: flex; overflow: hidden; }
+
+  /* ---- Left nav ---- */
+  .nav {
+    width: 220px;
+    background: var(--bg-1);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+  .search {
+    margin: 10px 10px 6px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 12px;
+    color: var(--text-2);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .search kbd {
+    margin-left: auto;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 10px;
+    color: var(--text-2);
+  }
+  .navgroups { overflow-y: auto; padding: 4px 6px 10px; }
+  .navgroup { margin-top: 10px; }
+  .navgroup-title {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-2);
+    padding: 4px 8px;
+    font-weight: 600;
+  }
+  .navitem {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px;
+    border-radius: 5px;
+    color: var(--text-1);
+    font-size: 12.5px;
+    cursor: default;
+  }
+  .navitem .dotstat { width: 5px; height: 5px; border-radius: 50%; background: var(--text-2); flex-shrink:0; }
+  .navitem.active {
+    background: var(--accent-dim);
+    color: var(--text-0);
+    font-weight: 600;
+  }
+  .navitem.active .dotstat { background: var(--accent); }
+  .navitem:not(.active):hover { background: var(--bg-2); }
+
+  .presets {
+    border-top: 1px solid var(--border);
+    padding: 10px;
+  }
+  .presets-title { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-2); margin-bottom: 6px; font-weight: 600; }
+  .preset-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px;
+    padding: 3px 9px; font-size: 11px; color: var(--text-1);
+    margin: 0 4px 4px 0;
+  }
+  .preset-chip .star { color: var(--yellow); font-size: 10px; }
+
+  /* ---- Center column ---- */
+  .center { flex: 1; display: flex; flex-direction: column; min-width: 0; border-right: 1px solid var(--border); }
+
+  .cmdheader {
+    padding: 14px 18px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .cmdheader .path { font-family: var(--mono); font-size: 11px; color: var(--text-2); margin-bottom: 4px; }
+  .cmdheader .name { font-size: 17px; font-weight: 700; color: var(--text-0); }
+  .cmdheader .desc { font-size: 12px; color: var(--text-1); margin-top: 3px; }
+
+  .form-area { padding: 16px 18px; overflow-y: auto; }
+  .field-row { display: flex; gap: 14px; margin-bottom: 12px; }
+  .field { flex: 1; }
+  .field label { display: block; font-size: 11px; color: var(--text-2); margin-bottom: 5px; font-weight: 600; letter-spacing: 0.2px; }
+  .field select, .field input[type=text], .field input[type=number] {
+    width: 100%;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-0);
+    padding: 7px 9px;
+    font-size: 12.5px;
+    font-family: var(--sans);
+  }
+  .field select:focus, .field input:focus { outline: none; border-color: var(--accent); }
+  .field.required label::after { content: " *"; color: var(--red); }
+
+  .checkrow { display: flex; gap: 18px; margin: 4px 0 14px; flex-wrap: wrap; }
+  .checkitem { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-1); }
+  .checkitem .box { width: 14px; height: 14px; border: 1px solid var(--text-2); border-radius: 3px; display: inline-block; }
+  .checkitem .box.checked { background: var(--accent); border-color: var(--accent); position: relative; }
+  .checkitem .box.checked::after { content: "✓"; color: white; font-size: 10px; position: absolute; left: 1px; top: -2px; }
+
+  .advanced-toggle {
+    font-size: 11px; color: var(--text-2); cursor: default;
+    display: flex; align-items: center; gap: 5px; margin: 4px 0 14px;
+  }
+
+  .cli-preview {
+    background: var(--bg-0);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 9px 12px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: #79c0ff;
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 16px;
+  }
+  .cli-preview .lbl { color: var(--text-2); font-family: var(--sans); font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .cli-preview .copy { margin-left: auto; color: var(--text-2); font-size: 11px; }
+
+  .actions { display: flex; gap: 10px; }
+  .btn {
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+    border: 1px solid transparent;
+    cursor: default;
+  }
+  .btn.primary { background: var(--accent); color: white; }
+  .btn.secondary { background: var(--bg-2); color: var(--text-1); border-color: var(--border); }
+
+  .execpanel {
+    border-top: 1px solid var(--border);
+    padding: 12px 18px;
+    background: var(--bg-1);
+  }
+  .execpanel-title { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-2); font-weight: 600; margin-bottom: 8px; }
+  .step { display: flex; align-items: center; gap: 10px; padding: 4px 0; font-size: 12px; }
+  .step .icon { width: 14px; text-align: center; }
+  .step .icon.ok { color: var(--green); }
+  .step .icon.run { color: var(--accent); }
+  .step .icon.pending { color: var(--text-2); }
+  .step .label { color: var(--text-1); width: 90px; flex-shrink: 0; }
+  .step .bar { flex: 1; height: 6px; background: var(--bg-3); border-radius: 3px; overflow: hidden; }
+  .step .bar .fill { height: 100%; background: var(--accent); }
+  .step .time { color: var(--text-2); font-family: var(--mono); font-size: 11px; width: 46px; text-align: right; }
+
+  .logpane {
+    flex: 1;
+    background: var(--bg-0);
+    padding: 10px 18px;
+    overflow-y: auto;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.65;
+    border-top: 1px solid var(--border);
+  }
+  .logline { color: var(--text-1); }
+  .logline .ts { color: var(--text-2); margin-right: 8px; }
+  .logline.warn { color: var(--yellow); }
+  .logline.err { color: var(--red); }
+  .logline.ok { color: var(--green); }
+
+  /* ---- Right results panel ---- */
+  .results { width: 300px; flex-shrink: 0; display: flex; flex-direction: column; background: var(--bg-1); }
+  .results-header { padding: 12px 16px 8px; border-bottom: 1px solid var(--border); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-2); font-weight: 600; }
+  .results-body { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+
+  .card { border-radius: 7px; padding: 10px 12px; border: 1px solid var(--border); }
+  .card.ok { background: var(--green-dim); border-color: #2f6f3e; }
+  .card.err { background: var(--red-dim); border-color: #6e2b27; }
+  .card.warn { background: var(--yellow-dim); border-color: #6e5a1f; }
+  .card-title { font-size: 12.5px; font-weight: 700; display: flex; align-items: center; gap: 7px; }
+  .card.ok .card-title { color: var(--green); }
+  .card.err .card-title { color: var(--red); }
+  .card.warn .card-title { color: var(--yellow); }
+  .card-sub { font-size: 11px; color: var(--text-1); margin-top: 4px; }
+  .card-detail { margin-top: 8px; font-family: var(--mono); font-size: 10.5px; color: var(--text-1); background: rgba(0,0,0,0.25); border-radius: 5px; padding: 6px 8px; }
+
+  .artifact-list { display: flex; flex-direction: column; gap: 6px; }
+  .artifact {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg-2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 6px 9px; font-size: 11px; color: var(--text-1);
+  }
+  .artifact .ficon { color: var(--accent); }
+  .artifact .fname { flex: 1; font-family: var(--mono); color: var(--text-0); }
+  .artifact .open { color: var(--text-2); font-size: 10px; }
+
+  /* ---- Footer ---- */
+  .footer {
+    height: 30px;
+    background: var(--bg-1);
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; gap: 16px;
+    padding: 0 16px;
+    font-size: 11px; color: var(--text-2);
+    flex-shrink: 0;
+  }
+  .footer kbd { background: var(--bg-3); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-family: var(--mono); color: var(--text-1); margin-right: 4px; }
+
+  .caption {
+    text-align: center; color: #6e7681; font-family: var(--sans);
+    font-size: 12px; margin-top: 10px;
+  }
+</style>
+</head>
+<body>
+
+<div class="window">
+
+  <!-- Custom titlebar: makes the web UI feel like a native app window, not a browser tab (pywebview / WebView2 host) -->
+  <div class="titlebar">
+    <div class="logo"></div>
+    <div class="title">DIA CONSOLE</div>
+    <div class="winctrls">
+      <span>&#8211;</span>
+      <span>&#9633;</span>
+      <span class="close">&#10005;</span>
+    </div>
+  </div>
+
+  <!-- Context bar: current project/target, config/platform, status -->
+  <div class="contextbar">
+    <span class="ctx-label">Project</span>
+    <span class="pill project">CoW <span class="chev">▾</span></span>
+    <div class="sep"></div>
+    <span class="ctx-label">Target</span>
+    <span class="pill">cluichetest <span class="chev">▾</span></span>
+    <span class="ctx-label">Config</span>
+    <span class="pill">Debug <span class="chev">▾</span></span>
+    <span class="ctx-label">Platform</span>
+    <span class="pill">Win64 <span class="chev">▾</span></span>
+    <div class="status-badge"><span class="pulse"></span> Running</div>
+  </div>
+
+  <div class="body">
+
+    <!-- Left: searchable, grouped command tree -->
+    <div class="nav">
+      <div class="search">🔍 Search commands <kbd>Ctrl K</kbd></div>
+      <div class="navgroups">
+        <div class="navgroup">
+          <div class="navgroup-title">Run &amp; Debug</div>
+          <div class="navitem active"><span class="dotstat"></span> run</div>
+          <div class="navitem"><span class="dotstat"></span> launch</div>
+          <div class="navitem"><span class="dotstat"></span> pipeline</div>
+          <div class="navitem"><span class="dotstat"></span> fix</div>
+          <div class="navitem"><span class="dotstat"></span> diagnose</div>
+        </div>
+        <div class="navgroup">
+          <div class="navgroup-title">Test &amp; Quality</div>
+          <div class="navitem"><span class="dotstat"></span> test googletest</div>
+          <div class="navitem"><span class="dotstat"></span> test e2e</div>
+          <div class="navitem"><span class="dotstat"></span> test cli</div>
+          <div class="navitem"><span class="dotstat"></span> check arch</div>
+          <div class="navitem"><span class="dotstat"></span> check cppcheck</div>
+        </div>
+        <div class="navgroup">
+          <div class="navgroup-title">Assets &amp; Data</div>
+          <div class="navitem"><span class="dotstat"></span> asset build</div>
+          <div class="navitem"><span class="dotstat"></span> reflect reflect</div>
+        </div>
+        <div class="navgroup">
+          <div class="navgroup-title">Create &amp; Docs</div>
+          <div class="navitem"><span class="dotstat"></span> scaffold module</div>
+          <div class="navitem"><span class="dotstat"></span> docs plan</div>
+        </div>
+        <div class="navgroup">
+          <div class="navgroup-title">Environment</div>
+          <div class="navitem"><span class="dotstat"></span> env setup</div>
+          <div class="navitem"><span class="dotstat"></span> env verify</div>
+        </div>
+        <div class="navgroup">
+          <div class="navgroup-title">Advanced</div>
+          <div class="navitem"><span class="dotstat"></span> api exec</div>
+          <div class="navitem"><span class="dotstat"></span> show config</div>
+        </div>
+      </div>
+
+      <!-- Presets: core v1 feature, not deferred polish -->
+      <div class="presets">
+        <div class="presets-title">Presets</div>
+        <span class="preset-chip"><span class="star">★</span> E2E Smoke</span>
+        <span class="preset-chip"><span class="star">★</span> Arch Summary</span>
+        <span class="preset-chip">+ Save current…</span>
+      </div>
+    </div>
+
+    <!-- Center: generated form for selected command + execution + logs -->
+    <div class="center">
+      <div class="cmdheader">
+        <div class="path">dia run &lt;target&gt;</div>
+        <div class="name">Run</div>
+        <div class="desc">Build and launch a target — pipeline (compile + deploy) then launch.</div>
+      </div>
+
+      <div class="form-area">
+        <div class="field-row">
+          <div class="field required">
+            <label>Target</label>
+            <select><option>cluichetest</option></select>
+          </div>
+          <div class="field">
+            <label>Config</label>
+            <select><option>Debug</option></select>
+          </div>
+          <div class="field">
+            <label>Filter</label>
+            <input type="text" placeholder="PATTERN — e.g. Physics2D*">
+          </div>
+          <div class="field">
+            <label>Shards</label>
+            <input type="number" value="4">
+          </div>
+        </div>
+
+        <div class="checkrow">
+          <div class="checkitem"><span class="box"></span> Force rebuild</div>
+          <div class="checkitem"><span class="box checked"></span> Include SLOW_* suites</div>
+          <div class="checkitem"><span class="box"></span> Verbose</div>
+          <div class="checkitem"><span class="box"></span> Build only</div>
+        </div>
+
+        <div class="advanced-toggle">▸ Advanced options (2 hidden)</div>
+
+        <div class="cli-preview">
+          <span class="lbl">CLI</span>
+          <span>dia run cluichetest --config Debug --all --shards 4</span>
+          <span class="copy">⧉ copy</span>
+        </div>
+
+        <div class="actions">
+          <div class="btn primary">▶ Run</div>
+          <div class="btn secondary">Cancel</div>
+        </div>
+      </div>
+
+      <div class="execpanel">
+        <div class="execpanel-title">Execution</div>
+        <div class="step"><span class="icon ok">✓</span><span class="label">compile</span><div class="bar"><div class="fill" style="width:100%"></div></div><span class="time">4.2s</span></div>
+        <div class="step"><span class="icon ok">✓</span><span class="label">build-assets</span><div class="bar"><div class="fill" style="width:100%"></div></div><span class="time">1.8s</span></div>
+        <div class="step"><span class="icon run">◐</span><span class="label">tests</span><div class="bar"><div class="fill" style="width:63%"></div></div><span class="time">6.4s</span></div>
+        <div class="step"><span class="icon pending">○</span><span class="label">launch</span><div class="bar"><div class="fill" style="width:0%"></div></div><span class="time">—</span></div>
+      </div>
+
+      <div class="logpane">
+        <div class="logline"><span class="ts">14:52:31</span>▶ pipeline run started (cluichetest, Debug)</div>
+        <div class="logline"><span class="ts">14:52:33</span>&nbsp;&nbsp;compile ... done (2.1s)</div>
+        <div class="logline ok"><span class="ts">14:52:35</span>&nbsp;&nbsp;build-assets ... done (1.8s)</div>
+        <div class="logline"><span class="ts">14:52:37</span>&nbsp;&nbsp;tests ... running (2042/3241)</div>
+        <div class="logline warn"><span class="ts">14:52:38</span>&nbsp;&nbsp;[RigidBody2D_Test] resting contact did not sleep within budget</div>
+        <div class="logline"><span class="ts">14:52:39</span>&nbsp;&nbsp;tests ... running (2390/3241)</div>
+      </div>
+    </div>
+
+    <!-- Right: typed results/findings, not raw log scraping -->
+    <div class="results">
+      <div class="results-header">Results / Findings</div>
+      <div class="results-body">
+        <div class="card ok">
+          <div class="card-title">✓ Build succeeded</div>
+          <div class="card-sub">compile + build-assets · 3.9s total</div>
+        </div>
+        <div class="card err">
+          <div class="card-title">✕ 1 failed test</div>
+          <div class="card-sub">RigidBody2D_Test.RestingContactSleeps</div>
+          <div class="card-detail">Expected sleep within 12 frames, got 41 frames.<br>Cluiche/Tests/GoogleTests/RigidBody2D/RestingContact.cpp:88</div>
+        </div>
+        <div class="card warn">
+          <div class="card-title">⚠ 2 warnings</div>
+          <div class="card-sub">Slow suite not tagged SLOW_* (x2)</div>
+        </div>
+        <div class="artifact-list">
+          <div class="artifact"><span class="ficon">▤</span><span class="fname">gtest-results.xml</span><span class="open">open</span></div>
+          <div class="artifact"><span class="ficon">▤</span><span class="fname">last-run.ndjson</span><span class="open">open</span></div>
+          <div class="artifact"><span class="ficon">▤</span><span class="fname">CluicheTest.exe</span><span class="open">reveal</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    <span><kbd>/</kbd>Palette</span>
+    <span><kbd>Enter</kbd>Run</span>
+    <span><kbd>Ctrl R</kbd>Rerun</span>
+    <span><kbd>Esc</kbd>Back</span>
+    <span><kbd>F1</kbd>Help</span>
+  </div>
+
+</div>
+
+<div class="caption">Dia Console mockup — chromeless native window (pywebview / WebView2), free front-end stack, no Webix. Static mock — not wired to any backend.</div>
+
+</body>
+</html>

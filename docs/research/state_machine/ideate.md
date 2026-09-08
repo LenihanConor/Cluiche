@@ -81,8 +81,8 @@ Includes validation (reachability analysis, deadlock detection, transition compl
 
 ---
 
-### Candidate 8: DiaApplication Phase System Refactor to Use Generic FSM
-**Home module/system:** `Dia/DiaApplication/` (refactor existing code)
+### Candidate 8: DiaApplicationFlow Phase System Refactor to Use Generic FSM
+**Home module/system:** `Dia/DiaApplicationFlow/` (refactor existing code)
 **Size:** L (1–2 months)
 **Description:** Refactor the existing Phase/ProcessingUnit system to use the generic state machine library internally. Phases become states in an HSM, phase transitions become FSM transitions with guards, and the existing module lifecycle (start/stop/retain) maps to state entry/exit/retain actions. The public API remains backward-compatible — existing phase code continues to work — but the internal implementation shares the generic FSM infrastructure.
 

@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Modules">
+      <UniqueIdentifier>{3c25b1d8-299a-4a1b-ad3e-fa82cc4b198a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Types">
+      <UniqueIdentifier>{b2c3d4e5-f6a7-8901-bcde-f12345678902}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Modules\EntityModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\MainStateProducerModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\AssetServiceModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\Camera2DModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\Light2DModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\InputStreamModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\PickingModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\JobSystemModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\KernelModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\LoadingScreenModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\UICompositeModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\ObservationModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\Physics2DModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\Scene2DModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\ProfilerModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\AssetRuntimeVisualDebuggerModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\EntityVisualDebuggerModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\EntityInspectorModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\RenderModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\UIModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\InputEvent.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\MainToRenderEvent.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\MainToRenderFrame.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\MainToSimEvent.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\SimToMainEvent.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\DebugServerPushEvent.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\UICommand.cpp">
+    <ClCompile Include="Modules\InspectorSources\ModuleStateSource.cpp">
+    <ClCompile Include="Modules\InspectorSources\StreamStateSource.cpp">
+    <ClCompile Include="Modules\InspectorSources\TimingAggregateSource.cpp">
+    <ClCompile Include="Modules\InspectorSources\LifecycleEventSource.cpp">
+    <ClCompile Include="Modules\InspectorSources\BlackboardInspectorSource.cpp">
+    <ClCompile Include="Modules\SimNavigationHandlerModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\AIInspectorModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\EconomyInspectorModule.cpp">
+    <ClCompile Include="Modules\DebugPanelPage.cpp">
+    <ClCompile Include="Modules\DebugPanelPageModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+      <Filter>Modules</Filter>
+    </ClCompile>
+      <Filter>Modules</Filter>
+    </ClCompile>
+      <Filter>Modules</Filter>
+    </ClCompile>
+      <Filter>Modules\InspectorSources</Filter>
+    </ClCompile>
+      <Filter>Modules\InspectorSources</Filter>
+    </ClCompile>
+      <Filter>Modules\InspectorSources</Filter>
+    </ClCompile>
+      <Filter>Modules\InspectorSources</Filter>
+    </ClCompile>
+      <Filter>Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\AttributeVisualDebuggerModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Modules\EntityModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\MainStateProducerModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\AssetServiceModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\Camera2DModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\Light2DModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\InputStreamModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\PickingModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\JobSystemModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\KernelModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\LoadingScreenModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\UICompositeModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\ObservationModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\Physics2DModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\Scene2DModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\ProfilerModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\AssetRuntimeVisualDebuggerModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\EntityVisualDebuggerModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\EntityInspectorModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\RenderModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\UIModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\InputEvent.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\MainToRenderEvent.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\MainToRenderFrame.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\MainToSimEvent.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\SimToMainEvent.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\DebugServerPushEvent.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\UICommand.h">
+    <ClInclude Include="Modules\InspectorSources\ModuleStateSource.h">
+    <ClInclude Include="Modules\InspectorSources\StreamStateSource.h">
+    <ClInclude Include="Modules\InspectorSources\TimingAggregateSource.h">
+    <ClInclude Include="Modules\InspectorSources\LifecycleEventSource.h">
+    <ClInclude Include="Types\BlackboardInspectEvent.h">
+    <ClInclude Include="Modules\InspectorSources\BlackboardInspectorSource.h">
+    <ClInclude Include="Types\RenderToSimNavRequest.h">
+    <ClInclude Include="Modules\SimNavigationHandlerModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\AIInspectorModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\EconomyInspectorModule.h">
+    <ClInclude Include="Types\DebugPanelCommandEvent.h">
+    <ClInclude Include="Modules\DebugPanelPage.h">
+    <ClInclude Include="Modules\DebugPanelPageModule.h">
+    <ClInclude Include="Types\DebugPanelToggleEvent.h">
+    <ClInclude Include="Types\DebugPanelSetVisibilityEvent.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+      <Filter>Types</Filter>
+    </ClInclude>
+      <Filter>Modules</Filter>
+    </ClInclude>
+      <Filter>Modules</Filter>
+    </ClInclude>
+      <Filter>Types</Filter>
+    </ClInclude>
+      <Filter>Modules</Filter>
+    </ClInclude>
+      <Filter>Types</Filter>
+    </ClInclude>
+      <Filter>Modules</Filter>
+    </ClInclude>
+      <Filter>Types</Filter>
+    </ClInclude>
+      <Filter>Modules\InspectorSources</Filter>
+    </ClInclude>
+      <Filter>Modules\InspectorSources</Filter>
+    </ClInclude>
+      <Filter>Modules\InspectorSources</Filter>
+    </ClInclude>
+      <Filter>Modules\InspectorSources</Filter>
+    </ClInclude>
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\AttributeVisualDebuggerModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Connection Toolbar Button - Mockup</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #1e1e1e; font-family: 'Segoe UI', system-ui, sans-serif; padding: 40px; color: #ccc; }
+
+  h2 { color: #888; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .section { margin-bottom: 40px; }
+
+  /* === Toolbar === */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    height: 28px;
+    background: #252526;
+    border-top: 1px solid #3c3c3c;
+    padding: 0 8px;
+    gap: 6px;
+  }
+
+  .pill-zone {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .pill {
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    color: #808080;
+    border: 1px solid #3c3c3c;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 2px;
+    padding: 0 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .pill.active {
+    background: #0e639c;
+    color: #fff;
+    border: none;
+  }
+
+  .right-side {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  /* === Project Button === */
+  .project-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #cccccc;
+    font-size: 11px;
+    font-family: inherit;
+    padding: 2px 6px;
+    border-radius: 2px;
+  }
+  .project-btn .live-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #89d185;
+  }
+  .project-btn .chevron { font-size: 9px; opacity: 0.6; }
+
+  /* === Connection Button (new) === */
+  .conn-btn-wrapper { position: relative; }
+
+  .conn-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #808080;
+    font-size: 11px;
+    font-family: inherit;
+    padding: 2px 6px;
+    border-radius: 2px;
+  }
+  .conn-btn:hover { background: #2a2d2e; }
+  .conn-btn .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+  }
+  .conn-btn .dot.red { background: #f48771; }
+  .conn-btn .dot.green { background: #89d185; }
+  .conn-btn .chevron { font-size: 9px; opacity: 0.6; }
+
+  /* === Connection Dropdown === */
+  .conn-dropdown {
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    margin-bottom: 4px;
+    background: #2d2d30;
+    border: 1px solid #3c3c3c;
+    border-radius: 4px;
+    min-width: 260px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    z-index: 1000;
+    overflow: hidden;
+    padding: 8px 0;
+  }
+
+  .conn-dropdown .status-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px 8px;
+    font-size: 11px;
+    color: #888;
+  }
+  .conn-dropdown .status-row .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+  .conn-dropdown .status-row .label {
+    font-weight: 600;
+  }
+
+  .conn-dropdown .separator {
+    height: 1px;
+    background: #3c3c3c;
+    margin: 4px 0;
+  }
+
+  .conn-dropdown .url-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+  }
+  .conn-dropdown .url-input {
+    flex: 1;
+    background: #1e1e1e;
+    border: 1px solid #3c3c3c;
+    border-radius: 2px;
+    color: #ccc;
+    font-size: 11px;
+    font-family: inherit;
+    padding: 4px 8px;
+    outline: none;
+  }
+  .conn-dropdown .url-input:focus {
+    border-color: #0e639c;
+  }
+
+  .conn-dropdown .action-row {
+    display: flex;
+    gap: 6px;
+    padding: 6px 12px;
+  }
+  .conn-dropdown .action-btn {
+    flex: 1;
+    padding: 5px 10px;
+    border-radius: 3px;
+    border: none;
+    cursor: pointer;
+    font-size: 11px;
+    font-family: inherit;
+    font-weight: 500;
+  }
+  .conn-dropdown .action-btn.primary {
+    background: #0e639c;
+    color: #fff;
+  }
+  .conn-dropdown .action-btn.primary:hover {
+    background: #1177bb;
+  }
+  .conn-dropdown .action-btn.secondary {
+    background: transparent;
+    border: 1px solid #3c3c3c;
+    color: #ccc;
+  }
+  .conn-dropdown .action-btn.secondary:hover {
+    background: #3c3c3c;
+  }
+  .conn-dropdown .action-btn.danger {
+    background: transparent;
+    border: 1px solid #3c3c3c;
+    color: #f48771;
+  }
+  .conn-dropdown .action-btn.danger:hover {
+    background: rgba(244,135,113,0.1);
+  }
+
+  .conn-dropdown .game-info {
+    padding: 6px 12px;
+    font-size: 11px;
+    color: #aaa;
+  }
+  .conn-dropdown .game-info .info-label {
+    color: #666;
+    font-size: 10px;
+    margin-bottom: 2px;
+  }
+  .conn-dropdown .game-info .info-value {
+    color: #ccc;
+  }
+
+  /* === Annotation === */
+  .annotation {
+    color: #569cd6;
+    font-size: 11px;
+    margin-top: 8px;
+    padding: 6px 10px;
+    border-left: 2px solid #569cd6;
+    background: rgba(86, 156, 214, 0.05);
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================ -->
+<div class="section">
+  <h2>State 1: Disconnected (dropdown closed)</h2>
+  <div class="toolbar">
+    <div class="pill-zone">
+      <button class="pill active">Scene Editor</button>
+      <button class="pill">Output</button>
+      <button class="pill">Debug Layers</button>
+      <button class="pill">Blueprint</button>
+    </div>
+    <div class="right-side">
+      <button class="project-btn">
+        <span class="live-dot"></span>
+        <span>CluicheTest &middot; cluichetest.diagame</span>
+        <span class="chevron">&#9662;</span>
+      </button>
+      <button class="conn-btn">
+        <span class="dot red"></span>
+        <span>Disconnected</span>
+        <span class="chevron">&#9662;</span>
+      </button>
+    </div>
+  </div>
+  <div class="annotation">Connection button now has a chevron indicating it opens a dropdown (like .diagame button). "Game Connection" pill is gone from the left.</div>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <h2>State 2: Disconnected (dropdown open)</h2>
+  <div style="position: relative; padding-top: 110px;">
+    <div class="toolbar" style="position: relative;">
+      <div class="pill-zone">
+        <button class="pill active">Scene Editor</button>
+        <button class="pill">Output</button>
+        <button class="pill">Debug Layers</button>
+        <button class="pill">Blueprint</button>
+      </div>
+      <div class="right-side">
+        <button class="project-btn">
+          <span class="live-dot"></span>
+          <span>CluicheTest &middot; cluichetest.diagame</span>
+          <span class="chevron">&#9662;</span>
+        </button>
+        <div class="conn-btn-wrapper">
+          <button class="conn-btn" style="background: #2a2d2e;">
+            <span class="dot red"></span>
+            <span>Disconnected</span>
+            <span class="chevron">&#9662;</span>
+          </button>
+          <!-- Dropdown opens ABOVE the toolbar (like ProjectContextButton) -->
+          <div class="conn-dropdown">
+            <div class="status-row">
+              <span class="dot" style="background: #f48771;"></span>
+              <span class="label" style="color: #f48771;">Disconnected</span>
+            </div>
+            <div class="separator"></div>
+            <div class="url-row">
+              <input class="url-input" type="text" value="ws://localhost:9002" />
+            </div>
+            <div class="action-row">
+              <button class="action-btn primary">Connect</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="annotation">Dropdown pops up above the toolbar. Shows URL input + Connect button. Minimal and focused.</div>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <h2>State 3: Connected (dropdown open)</h2>
+  <div style="position: relative; padding-top: 150px;">
+    <div class="toolbar" style="position: relative;">
+      <div class="pill-zone">
+        <button class="pill active">Scene Editor</button>
+        <button class="pill">Output</button>
+        <button class="pill">Debug Layers</button>
+        <button class="pill">Blueprint</button>
+      </div>
+      <div class="right-side">
+        <button class="project-btn">
+          <span class="live-dot"></span>
+          <span>CluicheTest &middot; cluichetest.diagame</span>
+          <span class="chevron">&#9662;</span>
+        </button>
+        <div class="conn-btn-wrapper">
+          <button class="conn-btn" style="background: #2a2d2e;">
+            <span class="dot green"></span>
+            <span>Connected</span>
+            <span class="chevron">&#9662;</span>
+          </button>
+          <div class="conn-dropdown">
+            <div class="status-row">
+              <span class="dot" style="background: #89d185;"></span>
+              <span class="label" style="color: #89d185;">Connected</span>
+            </div>
+            <div class="separator"></div>
+            <div class="game-info">
+              <div class="info-label">Game</div>
+              <div class="info-value">CluicheTest (v0.1.0)</div>
+            </div>
+            <div class="game-info">
+              <div class="info-label">Target</div>
+              <div class="info-value">ws://localhost:9002</div>
+            </div>
+            <div class="separator"></div>
+            <div class="action-row">
+              <button class="action-btn danger">Disconnect</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="annotation">When connected: shows game info (name, version) and target URL. Single "Disconnect" button in danger style.</div>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <h2>State 4: Connecting (spinner state)</h2>
+  <div class="toolbar">
+    <div class="pill-zone">
+      <button class="pill active">Scene Editor</button>
+      <button class="pill">Output</button>
+      <button class="pill">Debug Layers</button>
+      <button class="pill">Blueprint</button>
+    </div>
+    <div class="right-side">
+      <button class="project-btn">
+        <span class="live-dot"></span>
+        <span>CluicheTest &middot; cluichetest.diagame</span>
+        <span class="chevron">&#9662;</span>
+      </button>
+      <button class="conn-btn">
+        <span class="dot" style="background: #dcdcaa;"></span>
+        <span>Connecting...</span>
+        <span class="chevron">&#9662;</span>
+      </button>
+    </div>
+  </div>
+  <div class="annotation">Yellow dot + "Connecting..." while handshake is in progress. Dropdown still accessible to cancel.</div>
+</div>
+
+<!-- ============================================ -->
+<div class="section" style="margin-top: 60px; border-top: 1px solid #3c3c3c; padding-top: 20px;">
+  <h2>Summary of Changes</h2>
+  <ul style="font-size: 12px; color: #aaa; line-height: 2;">
+    <li><b style="color: #ccc;">Remove:</b> Game Connection as a dockable panel (no longer in pill zone)</li>
+    <li><b style="color: #ccc;">Remove:</b> Performance/memory charts (FPS, memory graphs)</li>
+    <li><b style="color: #ccc;">Keep:</b> Connection status indicator on toolbar (green/red dot)</li>
+    <li><b style="color: #ccc;">Add:</b> Dropdown with connect/disconnect controls (mirrors .diagame pattern)</li>
+    <li><b style="color: #ccc;">Keep:</b> C++ GameConnectionManager + Controller (backend still manages WebSocket)</li>
+    <li><b style="color: #ccc;">Keep:</b> Topic pub/sub (Debug Layers, Output Console still subscribe to connection topics)</li>
+    <li><b style="color: #ccc;">Change:</b> Plugin becomes headless (no UI path, not dockable)</li>
+  </ul>
+</div>
+
+</body>
+</html>

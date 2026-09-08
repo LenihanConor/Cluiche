@@ -1,0 +1,102 @@
+# DiaEntitySpawner — Implementation Plan
+
+**Spec:** @docs/specs/applications/dia/systems/diaentityspawner/diaentityspawner.md
+**Status:** In Progress
+
+---
+
+## Implementation Patterns
+
+### Module scaffold pattern
+`dia scaffold module DiaEntity EntitySpawner --layer simulation` produces the header, cpp, module.md skeleton, and vcxproj entries. All subsequent tasks edit the scaffolded files rather than creating new ones.
+
+### IModule lifecycle pattern
+```cpp
+class EntitySpawnerModule : public IModule {
+public:
+    static constexpr StringCRC kUniqueId = StringCRC("EntitySpawnerModule");
+    void Init(ModuleContext& ctx) override;
+    void Update(float dt, ModuleContext& ctx) override;
+    void Shutdown(ModuleContext& ctx) override;
+    IEntitySpawner& GetSpawner();
+private:
+    EntitySpawnerImpl mSpawner;
+};
+```
+`EntitySpawnerImpl` holds the tracking table and implements `IEntitySpawner`. Module wraps it and wires streams/loader refs.
+
+### IBlueprintLoader lazy-cache pattern
+```cpp
+IBlueprintLoader* mBlueprintLoader = nullptr;
+
+IBlueprintLoader& GetLoader(ModuleContext& ctx) {
+    if (!mBlueprintLoader)
+        mBlueprintLoader = ctx.GetModule<BlueprintLoaderModule>().GetLoader();
+    return *mBlueprintLoader;
+}
+```
+Cache invalidated in `Shutdown()`. Same pattern as DiaEntitySpatial module ref.
+
+### Internal tracking table
+Two tables in `EntitySpawnerImpl`:
+- `HashTable<Entity, SpawnedChildData>` — keyed by child entity; holds `emitterEntity`, `spawnTime`, `age`.
+- `HashTable<Entity, EmitterState>` — keyed by emitter entity; holds `tokenAccumulator`, `DynamicArrayC<Entity> children` (FIFO order for cap overflow).
+
+All tables use DiaCore containers (no STL). `Entity` key uses generational handle equality.
+
+### SpawnEmitterComponent token accumulation pattern
+```cpp
+state.tokenAccumulator += comp.rate * dt;
+while (state.tokenAccumulator >= 1.0f) {
+    TrySpawn(emitterEntity, comp, ctx);
+    state.tokenAccumulator -= 1.0f;
+}
+```
+Fractional tokens carry across frames. `rate=0` skips the while loop entirely.
+
+### Cap enforcement (FIFO overflow)
+Before each new spawn, if `children.Size() >= comp.cap && comp.cap > 0`: despawn `children[0]` with reason `Cap`, remove from front.
+
+### EntityDestroyedMessage subscription
+`Init()` subscribes to `EntityDestroyedMessage` on the domain stream. Handler removes the destroyed entity from both tracking tables and fires `EntityDespawnedEvent` with reason `Explicit` (external destroy is treated as explicit from the spawner's perspective, since the spawner did not initiate it — alternatively use a dedicated `ExternalDestroy` reason; see Task 3 note).
+
+### Event publishing pattern
+```cpp
+ctx.GetStream<EntitySpawnedEvent>().Push({ entity, request.blueprintId, request.tag });
+ctx.GetStream<EntityDespawnedEvent>().Push({ entity, reason });
+```
+Published on sim-thread `FrameStream` after the domain `EndOfFrame()` commit.
+
+### DiaObservation instrumentation sites
+- `DIA_LOG_INFO("EntitySpawner", "Spawned entity={} blueprint={} pos={}", ...)` — after successful spawn
+- `DIA_LOG_INFO("EntitySpawner", "Despawned entity={} reason={}", ...)` — on every despawn
+- `DIA_LOG_ERROR("EntitySpawner", "Blueprint not found: {}", blueprintId)` — on `BlueprintNotFound`
+- `DIA_TRACE_ZONE("EntitySpawner::Spawn")` — inside `Spawn()` critical path
+- `DIA_TRACE_ZONE("EntitySpawner::Update")` — inside `Update()` emitter loop
+- `DIA_PROFILE_SCOPE("EntitySpawnerModule::Update")` — outer Update scope
+- Metrics registered in `Init()`: `spawner.active_count` (Gauge), `spawner.spawn_rate` (Counter), `spawner.despawn_reason.lifetime/radius/cap/explicit` (Counters)
+- Health: `ReportHealthStatus(HealthStatus::Degraded, "IBlueprintLoader unavailable")` if loader is null at Update time
+
+### GoogleTest structure
+Single file `GoogleTests/DiaEntity/TestEntitySpawner.cpp`. Test fixture owns a `Domain` + `EntitySpawnerModule` initialized in `SetUp()`. Blueprint stubs registered via a `MockBlueprintLoader`. Tests step `Update(dt)` manually to control time.
+
+### CluicheTest stage structure
+`dia scaffold stage Spawner` produces the 9 touch points. Stage sets up 4 emitter entities in `InitPhase`, each with a distinct `SpawnEmitterComponent` policy. `VelocityComponent` on spawned entities moves them outward. DiaVisualDebugger overlay registered in `InitPhase`. DiaAutomation checkpoints registered in `InitPhase`, evaluated in `UpdatePhase`.
+
+---
+
+## Tasks
+
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| 1 | Scaffold EntitySpawner module — `dia scaffold module`, vcxproj entries, module.md YAML | `dia run googletest` compiles clean | Done | haiku | DiaEntitySpawner.vcxproj, .filters, 6 source stubs, Docs/md, sln entry (3.0-Gameplay), GoogleTests wired; build verified |
+| 2 | Core types — `SpawnRequest`, `SpawnResult`, `SpawnError`, `DespawnReason`, `IEntitySpawner`, `EntitySpawnedEvent`, `EntityDespawnedEvent` | Compile only | Done | sonnet | SpawnerTypes.h; all 7 types in Dia::Entity:: namespace; 7693 tests pass |
+| 3 | `SpawnEmitterComponent` — `DIA_COMPONENT` + all `FIELD` declarations; `EmitterState` internal struct | Compile only | Done | sonnet | External destroy fires Explicit (enum has no ExternalDestroy); EmitterState in EntitySpawnerImpl.h |
+| 4 | `EntitySpawnerImpl` — tracking tables, `Spawn()` + `Despawn()` impl, lazy `IBlueprintLoader` cache, `EntityDestroyedMessage` subscription | Unit: SpawnRequest API cases (valid spawn, BlueprintNotFound, DomainFull) | Done | sonnet | HashTableC child+emitter tables; SetBlueprintLoader(); HandleExternalDestroy(); DespawnOldestChild(); build clean |
+| 5 | `EntitySpawnerModule` — IModule wrapper: `Init()`, `Update(dt)` emitter loop (token accumulation + cap + despawn conditions), `Shutdown()` | Unit: rate/burst/cap/lifetime/radius/events/lifecycle/tag/parent test cases | Done | sonnet | Wires impl into module lifecycle; most of the spec's GoogleTest suite proven here; EntitySpawnerModule fully implemented — OnConnectStreams, DoStart/DoUpdate/DoStop, TickEmitters (token+burst+cap FIFO), TickDespawnConditions (lifetime+radius), EntityDestroyedMessage subscription, DespawnCallback for event publishing; DiaEntitySpatial dep added for radius checks; build clean, 7692 tests pass |
+| 6 | DiaObservation pass — all log/trace/profile/metric/health instrumentation sites | `dia run googletest` green; metrics appear in session output | Done | sonnet | Follow instrumentation sites listed in Implementation Patterns; Full DiaObservation pass: DIA_LOG_ERROR on error paths, DIA_LOG_INFO on spawn/despawn, DIA_TRACE_ZONE on Spawn+DoUpdate, DIA_PROFILE_SCOPE on DoUpdate, 6 metric members (active_count gauge + 5 counters), EntitySpawnerHealth reporter (Degraded if no loader), register/unregister in DoStart/DoStop; 7693 tests pass |
+| 7 | GoogleTest suite — exhaustive `TestEntitySpawner.cpp` per spec test table | `dia run googletest --filter="EntitySpawner*"` all green | Done | sonnet | MockBlueprintLoader stub; manual `Update(dt)` stepping; 22 tests across 5 suites (ImplAPI x9, LifetimeDespawn x2, RadiusDespawn x2, EmitterModule x6, Events x3); MockBlueprintLoader stub; TestableEntitySpawnerModule wrapper for DoStart/DoUpdate/DoStop; rate/burst/cap/lifetime/radius/lifecycle/callback all verified; 7746 tests pass |
+| 8 | CluicheTest SpawnerStage — 4 emitters, VelocityComponent, DiaVisualDebugger overlay, 4 DiaAutomation checkpoints | `dia run cluichetest` reaches SpawnerStage; visual + checkpoint pass | Done | sonnet | `dia scaffold stage Spawner`; confirms E2E integration; SpawnerTestStage: 4 emitters (Rate/Burst/Cap/Explicit), 4 DiaAutomation checkpoints (t=1/3/5/8s), DespawnCallback counts lifetime reason; TestableSpawnerModule inner class exposes DoStart/DoUpdate/DoStop; DiaEntitySpawner ProjectReference added to CluicheTest.vcxproj; build clean 7746 tests pass |
+| 9 | Module doc + registry — finalise `dia.entity.entityspawner.architecture.module.md` YAML frontmatter; `dia docs registry` | `dia check deps` clean | Done | haiku | Fill deps, public headers, layer assignment; module.md YAML updated: status Active, dia.entityspatial added to deps, both namespaces listed, all 4 public headers; dia docs registry regenerated; dia check deps shows 0 entityspawner issues (25 pre-existing in other modules) |
+| 10 | Spec-done — `dia docs spec-done`; update plan status to Done | — | Done | haiku | Final housekeeping commit; dia docs spec-done: spec → Done, plan header → Done, backlog entry struck |
+| 11 | [spawn-despawn-bus-broadcast](spawn-despawn-bus-broadcast.md) — `Bus::Broadcast<EntitySpawnedEvent>`/`<EntityDespawnedEvent>` added in `EntitySpawnerModule::DoUpdate`, alongside existing `EventStreamWriter` publish | See feature spec ACs | Not Started | sonnet | Tracked in [diamessagebus.plan.md](../diamessagebus/diamessagebus.plan.md) Phase 8, task 17. Prereq: DiaMessageBus `core-bus` |

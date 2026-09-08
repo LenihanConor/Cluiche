@@ -2,8 +2,8 @@
 #include "DiaWebSocket/Internal/WebSocketppWrapper.h"
 #include "DiaCore/Threading/Thread.h"
 #include "DiaCore/Threading/Mutex.h"
-#include <DiaLogger/DiaLog.h>
-#include <DiaLogger/Logger.h>
+#include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Log/Logger.h>
 
 #include <map>
 #include <cstring>
@@ -35,7 +35,7 @@ namespace Dia
 			Dia::Core::Containers::DynamicArrayC<Internal::QueuedEvent, 64> mIncomingQueue;
 			Dia::Core::Mutex mIncomingMutex;
 
-			Dia::Core::Containers::DynamicArrayC<Internal::OutgoingMessage, 64> mOutgoingQueue;
+			Dia::Core::Containers::DynamicArrayC<Internal::OutgoingMessage, 512> mOutgoingQueue;
 			Dia::Core::Mutex mOutgoingMutex;
 
 			int FindConnectionId(Internal::ConnectionHdl hdl)
@@ -192,6 +192,8 @@ namespace Dia
 				Dia::Core::ScopedLock<Dia::Core::Mutex> outLock(mOutgoingMutex);
 				Dia::Core::ScopedLock<Dia::Core::Mutex> connLock(mConnectionsMutex);
 
+				Dia::Core::Containers::DynamicArrayC<int, 16> deadConnections;
+
 				for (unsigned int i = 0; i < mOutgoingQueue.Size(); ++i)
 				{
 					const Internal::OutgoingMessage& msg = mOutgoingQueue.At(i);
@@ -211,9 +213,12 @@ namespace Dia
 									msg.dataLength,
 									opcode);
 							}
-							catch (const std::exception& e)
+							catch (const std::exception&)
 							{
-								DIA_LOG_ERROR("WebSocket", "Server: Send failed: %s", e.what());
+								if (!deadConnections.IsFull())
+								{
+									deadConnections.Add(pair.first);
+								}
 							}
 						}
 					}
@@ -229,20 +234,39 @@ namespace Dia
 									msg.dataLength,
 									opcode);
 							}
-							catch (const std::exception& e)
+							catch (const std::exception&)
 							{
-								DIA_LOG_ERROR("WebSocket", "Server: Send failed: %s", e.what());
+								if (!deadConnections.IsFull())
+								{
+									deadConnections.Add(msg.connectionId);
+								}
 							}
 						}
 					}
 				}
 
 				mOutgoingQueue.RemoveAll();
+
+				for (unsigned int i = 0; i < deadConnections.Size(); ++i)
+				{
+					int connId = deadConnections.At(i);
+					auto it = mConnectionsById.find(connId);
+					if (it != mConnectionsById.end())
+					{
+						try
+						{
+							mConnectionIdByPtr.erase(it->second.lock().get());
+						}
+						catch (...) {}
+						mConnectionsById.erase(it);
+					}
+					DIA_LOG_WARNING("WebSocket", "Server: Removed stale connection %d", connId);
+				}
 			}
 
 			void WorkerThreadMain()
 			{
-				Dia::Logger::Logger::Instance().RegisterThreadBuffer();
+				Dia::Observation::Log::Logger::Instance().RegisterThreadBuffer();
 				DIA_LOG_INFO("WebSocket", "Server worker thread registered for logging");
 
 				while (mIsRunning)
@@ -264,7 +288,7 @@ namespace Dia
 					Dia::Core::ThisThread::SleepMs(1);
 				}
 
-				Dia::Logger::Logger::Instance().UnregisterThreadBuffer();
+				Dia::Observation::Log::Logger::Instance().UnregisterThreadBuffer();
 			}
 		};
 
@@ -467,12 +491,12 @@ namespace Dia
 			mImpl->mOutgoingQueue.Add(msg);
 		}
 
-		void Server::Send(int connectionId, const void* data, size_t length, MessageType type)
+		bool Server::Send(int connectionId, const void* data, size_t length, MessageType type)
 		{
 			if (length > mImpl->mMaxMessageSize)
 			{
 				DIA_LOG_WARNING("WebSocket", "Server: Send message too large");
-				return;
+				return false;
 			}
 
 			Internal::OutgoingMessage msg;
@@ -496,10 +520,11 @@ namespace Dia
 			if (mImpl->mOutgoingQueue.IsFull())
 			{
 				DIA_LOG_WARNING("WebSocket", "Server: Outgoing queue full - dropping message");
-				return;
+				return false;
 			}
 
 			mImpl->mOutgoingQueue.Add(msg);
+			return true;
 		}
 
 		void Server::BroadcastText(const char* text)
@@ -507,9 +532,9 @@ namespace Dia
 			Broadcast(text, strlen(text), MessageType::kText);
 		}
 
-		void Server::SendText(int connectionId, const char* text)
+		bool Server::SendText(int connectionId, const char* text)
 		{
-			Send(connectionId, text, strlen(text), MessageType::kText);
+			return Send(connectionId, text, strlen(text), MessageType::kText);
 		}
 
 		void Server::BroadcastBinary(const void* data, size_t length)

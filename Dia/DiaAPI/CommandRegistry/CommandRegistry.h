@@ -7,6 +7,7 @@
 
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaCore/Json/external/json/json.h>
 #include <functional>
 
 namespace Dia
@@ -115,5 +116,40 @@ namespace Dia
 		// Get commands by category
 		// Returns empty array if category not found
 		Dia::Core::Containers::DynamicArrayC<const CommandInfo*, 64> GetCommandsByCategory(const Dia::Core::StringCRC& category);
+
+		////////////////////////////////////////////////////////////////////////////////
+		// JSON command callback path (AC2-AC3)
+		//
+		// Parallel to the CLI callback path. Commands registered here return a
+		// structured Json::Value response rather than an int exit code.
+		// All responses are wrapped in {"success": true/false, "data"/"error": ...}.
+		// Guard fn must be idempotent and side-effect-free.
+		////////////////////////////////////////////////////////////////////////////////
+
+		// JSON-oriented callback — returns the response data (wrapped by framework).
+		// On success: return your data object; framework wraps as {"success":true,"data":...}
+		// On error: throw or return Json::Value(Json::nullValue) to signal failure.
+		using CommandCallbackJson = std::function<Json::Value(const Json::Value& params)>;
+
+		struct CommandInfoJson
+		{
+			Dia::Core::StringCRC name;
+			const char* description = nullptr;
+			Dia::Core::StringCRC category;
+			const char* owner = nullptr;
+			CommandCallbackJson callback;
+		};
+
+		// Register a JSON-callback command.
+		// Logs a warning if a CLI command with the same name is also registered.
+		// Returns false if name is invalid or duplicate JSON command.
+		bool RegisterCommandJson(const CommandInfoJson& info);
+
+		// Execute a JSON-callback command by name.
+		// Returns {"success":true,"data":{...}} on success.
+		// Returns {"success":false,"error":"command not found"} for unknown commands.
+		// Returns {"success":false,"error":"<message>"} on handler exception.
+		Json::Value ExecuteCommandJson(const Dia::Core::StringCRC& name, const Json::Value& params);
+
 	} // namespace API
 } // namespace Dia

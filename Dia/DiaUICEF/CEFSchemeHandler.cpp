@@ -4,7 +4,7 @@
 #include "CEFSchemeHandler.h"
 #include "CEFUtils.h"
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 #include <include/cef_scheme.h>
 
@@ -114,12 +114,83 @@ namespace Dia
 			long size = ftell(f);
 			fseek(f, 0, SEEK_SET);
 
-			mFileData.resize(static_cast<size_t>(size));
-			fread(mFileData.data(), 1, static_cast<size_t>(size), f);
+			std::string raw(static_cast<size_t>(size), '\0');
+			fread(&raw[0], 1, static_cast<size_t>(size), f);
 			fclose(f);
+
+			if (IsPluginHtmlPath(mFilePath))
+			{
+				std::string injected = InjectThemeLinks(raw);
+				mFileData.assign(injected.begin(), injected.end());
+			}
+			else
+			{
+				mFileData.assign(raw.begin(), raw.end());
+			}
 
 			mReadOffset = 0;
 			return true;
+		}
+
+		bool CEFResourceHandler::IsPluginHtmlPath(const std::string& filePath)
+		{
+			auto hasExt = [&](const std::string& ext) {
+				return filePath.size() >= ext.size() &&
+					filePath.compare(filePath.size() - ext.size(), ext.size(), ext) == 0;
+			};
+			if (!hasExt(".html") && !hasExt(".htm"))
+				return false;
+
+			auto containsSlash = [&](const std::string& seg) {
+				std::string fwd = filePath;
+				for (char& c : fwd) if (c == '\\') c = '/';
+				return fwd.find("/" + seg + "/") != std::string::npos ||
+					fwd.find("\\" + seg + "\\") != std::string::npos;
+			};
+			return containsSlash("plugins");
+		}
+
+		std::string CEFResourceHandler::InjectThemeLinks(const std::string& html)
+		{
+			// Script runs before CSS loads, so data-theme="dark" is set when Pico applies its selectors.
+			static const std::string kLinks =
+				"<script>document.documentElement.setAttribute('data-theme','dark');</script>\n"
+				"<link rel=\"stylesheet\" href=\"dia://theme/pico.min.css\">\n"
+				"<link rel=\"stylesheet\" href=\"dia://theme/dia-overrides.css\">\n";
+
+			// Insert after <head> if present, otherwise before <body>
+			auto findCaseInsensitive = [](const std::string& haystack, const std::string& needle) -> size_t {
+				if (needle.empty()) return 0;
+				for (size_t i = 0; i + needle.size() <= haystack.size(); ++i)
+				{
+					bool match = true;
+					for (size_t j = 0; j < needle.size(); ++j)
+					{
+						if (tolower((unsigned char)haystack[i + j]) != tolower((unsigned char)needle[j]))
+						{
+							match = false;
+							break;
+						}
+					}
+					if (match) return i;
+				}
+				return std::string::npos;
+			};
+
+			size_t headPos = findCaseInsensitive(html, "<head>");
+			if (headPos != std::string::npos)
+			{
+				size_t insertPos = headPos + 6; // after <head>
+				return html.substr(0, insertPos) + "\n" + kLinks + html.substr(insertPos);
+			}
+
+			size_t bodyPos = findCaseInsensitive(html, "<body");
+			if (bodyPos != std::string::npos)
+			{
+				return html.substr(0, bodyPos) + "<head>\n" + kLinks + "</head>\n" + html.substr(bodyPos);
+			}
+
+			return html;
 		}
 
 		//-------------------------------------------------------------------

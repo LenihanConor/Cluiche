@@ -1,4 +1,5 @@
 """Unit tests for dia test googletest (AC1-AC9 from diatest/googletest.md spec)."""
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -7,6 +8,7 @@ from click.testing import CliRunner
 
 from dia_cli.cli_main import cli
 from dia_cli.commands.test.googletest_runner import find_binary, run
+from dia_cli.commands.test.xml_merger import merge_xml
 
 
 # ---------------------------------------------------------------------------
@@ -102,7 +104,7 @@ def test_run_invokes_binary(mock_run, tmp_path):
     binary = _make_staged(tmp_path)
     mock_run.return_value = MagicMock(returncode=0)
     code = run(repo_root=tmp_path, config="Debug", filter_pattern=None,
-               verbose=False, docker=False)
+               verbose=False, docker=False, run_all=False)
     assert code == 0
     args = mock_run.call_args[0][0]
     assert str(binary) == args[0]
@@ -113,7 +115,7 @@ def test_run_propagates_nonzero_exit(mock_run, tmp_path):
     _make_staged(tmp_path)
     mock_run.return_value = MagicMock(returncode=1)
     code = run(repo_root=tmp_path, config="Debug", filter_pattern=None,
-               verbose=False, docker=False)
+               verbose=False, docker=False, run_all=False)
     assert code == 1
 
 
@@ -126,7 +128,7 @@ def test_run_uses_binary_dir_as_cwd(mock_run, tmp_path):
     binary = _make_staged(tmp_path)
     mock_run.return_value = MagicMock(returncode=0)
     run(repo_root=tmp_path, config="Debug", filter_pattern=None,
-        verbose=False, docker=False)
+        verbose=False, docker=False, run_all=False)
     cwd = mock_run.call_args[1]["cwd"]
     assert cwd == str(binary.parent)
 
@@ -140,7 +142,7 @@ def test_run_filter_passes_gtest_filter(mock_run, tmp_path):
     _make_staged(tmp_path)
     mock_run.return_value = MagicMock(returncode=0)
     run(repo_root=tmp_path, config="Debug", filter_pattern="TestArray*",
-        verbose=False, docker=False)
+        verbose=False, docker=False, run_all=False)
     args = mock_run.call_args[0][0]
     assert "--gtest_filter=TestArray*" in args
 
@@ -154,7 +156,7 @@ def test_run_config_release_uses_release_binary(mock_run, tmp_path):
     _make_staged(tmp_path, "Release")
     mock_run.return_value = MagicMock(returncode=0)
     run(repo_root=tmp_path, config="Release", filter_pattern=None,
-        verbose=False, docker=False)
+        verbose=False, docker=False, run_all=False)
     args = mock_run.call_args[0][0]
     assert "Release" in args[0]
 
@@ -168,7 +170,7 @@ def test_run_verbose_passes_gtest_verbose(mock_run, tmp_path):
     _make_staged(tmp_path)
     mock_run.return_value = MagicMock(returncode=0)
     run(repo_root=tmp_path, config="Debug", filter_pattern=None,
-        verbose=True, docker=False)
+        verbose=True, docker=False, run_all=False)
     args = mock_run.call_args[0][0]
     assert "--gtest_print_time=1" in args
 
@@ -208,3 +210,283 @@ def test_run_docker_forwards_flags(mock_run, tmp_path):
     assert "--filter" in joined
     assert "Foo*" in joined
     assert "--verbose" in joined
+
+
+# ---------------------------------------------------------------------------
+# SLOW_ suite tagging: default filter injection and --all flag
+# ---------------------------------------------------------------------------
+
+@patch("dia_cli.commands.test.googletest_runner.subprocess.run")
+def test_run_default_injects_slow_filter(mock_run, tmp_path):
+    _make_staged(tmp_path)
+    mock_run.return_value = MagicMock(returncode=0)
+    run(repo_root=tmp_path, config="Debug", filter_pattern=None, verbose=False, docker=False, run_all=False)
+    args = mock_run.call_args[0][0]
+    assert "--gtest_filter=-SLOW_*" in args
+
+
+@patch("dia_cli.commands.test.googletest_runner.subprocess.run")
+def test_run_all_skips_default_filter(mock_run, tmp_path):
+    _make_staged(tmp_path)
+    mock_run.return_value = MagicMock(returncode=0)
+    run(repo_root=tmp_path, config="Debug", filter_pattern=None, verbose=False, docker=False, run_all=True)
+    args = mock_run.call_args[0][0]
+    assert "--gtest_filter=-SLOW_*" not in args
+    assert not any("gtest_filter" in a for a in args)
+
+
+@patch("dia_cli.commands.test.googletest_runner.subprocess.run")
+def test_run_explicit_filter_overrides_default(mock_run, tmp_path):
+    _make_staged(tmp_path)
+    mock_run.return_value = MagicMock(returncode=0)
+    run(repo_root=tmp_path, config="Debug", filter_pattern="TestArray*", verbose=False, docker=False, run_all=False)
+    args = mock_run.call_args[0][0]
+    assert "--gtest_filter=TestArray*" in args
+    assert "--gtest_filter=-SLOW_*" not in args
+
+
+@patch("dia_cli.commands.test.googletest_runner.subprocess.run")
+def test_run_warns_untagged_slow_suites(mock_run, tmp_path, capsys):
+    _make_staged(tmp_path)
+    mock_run.return_value = MagicMock(returncode=0)
+    # Pre-create a fake XML with a slow untagged suite
+    xml_path = tmp_path / "Cluiche" / "out" / "GoogleTests" / "last_run.xml"
+    xml_path.parent.mkdir(parents=True, exist_ok=True)
+    xml_path.write_text(
+        '<?xml version="1.0"?>'
+        '<testsuites>'
+        '<testsuite name="PythonBindings" time="1.2" tests="3" />'
+        '<testsuite name="SLOW_Physics" time="2.0" tests="5" />'
+        '</testsuites>'
+    )
+    # Run (XML already exists; subprocess won't overwrite in this mock scenario)
+    run(repo_root=tmp_path, config="Debug", filter_pattern=None, verbose=False, docker=False, run_all=False)
+    captured = capsys.readouterr()
+    assert "WARNING" in captured.out
+    assert "PythonBindings" in captured.out
+    assert "SLOW_Physics" not in captured.out  # already tagged
+
+
+@patch("dia_cli.commands.test.googletest_runner.subprocess.run")
+def test_run_no_warning_when_all_tagged(mock_run, tmp_path, capsys):
+    _make_staged(tmp_path)
+    mock_run.return_value = MagicMock(returncode=0)
+    xml_path = tmp_path / "Cluiche" / "out" / "GoogleTests" / "last_run.xml"
+    xml_path.parent.mkdir(parents=True, exist_ok=True)
+    xml_path.write_text(
+        '<?xml version="1.0"?>'
+        '<testsuites>'
+        '<testsuite name="SLOW_PythonBindings" time="1.2" tests="3" />'
+        '</testsuites>'
+    )
+    run(repo_root=tmp_path, config="Debug", filter_pattern=None, verbose=False, docker=False, run_all=False)
+    captured = capsys.readouterr()
+    assert "WARNING" not in captured.out
+
+
+# ---------------------------------------------------------------------------
+# _resolve_full_suite_config
+# ---------------------------------------------------------------------------
+
+def test_run_all_without_explicit_config_uses_full_suite_config(tmp_path):
+    """--all without --config should resolve full_suite_config (Release) from pipeline config."""
+    from dia_cli.cli.run import _resolve_full_suite_config
+    mock_target = MagicMock()
+    mock_target.full_suite_config = "Release"
+    mock_cfg = MagicMock()
+    mock_cfg.targets = {"googletest": mock_target}
+    with patch("dia_cli.commands.pipeline.pipeline_config.load_pipeline_config", return_value=mock_cfg):
+        result = _resolve_full_suite_config(tmp_path, "googletest")
+    assert result == "Release"
+
+
+def test_resolve_full_suite_config_returns_release_on_missing_toml(tmp_path):
+    """_resolve_full_suite_config returns 'Release' when pipeline.toml is missing."""
+    from dia_cli.cli.run import _resolve_full_suite_config
+    # tmp_path has no pipeline.toml → load_pipeline_config raises PipelineConfigError
+    result = _resolve_full_suite_config(tmp_path, "googletest")
+    assert result == "Release"
+
+
+def test_resolve_full_suite_config_returns_release_for_unknown_target(tmp_path):
+    """_resolve_full_suite_config returns 'Release' when target is not in pipeline config."""
+    from dia_cli.cli.run import _resolve_full_suite_config
+    mock_cfg = MagicMock()
+    mock_cfg.targets = {}
+    with patch("dia_cli.commands.pipeline.pipeline_config.load_pipeline_config", return_value=mock_cfg):
+        result = _resolve_full_suite_config(tmp_path, "nonexistent")
+    assert result == "Release"
+
+
+# ---------------------------------------------------------------------------
+# xml_merger tests
+# ---------------------------------------------------------------------------
+
+def test_merge_xml_combines_testsuites(tmp_path):
+    a = tmp_path / "a.xml"
+    b = tmp_path / "b.xml"
+    a.write_text('<?xml version="1.0"?><testsuites><testsuite name="A" tests="1"/></testsuites>')
+    b.write_text('<?xml version="1.0"?><testsuites><testsuite name="B" tests="2"/></testsuites>')
+    out = tmp_path / "merged.xml"
+    merge_xml([a, b], out)
+    root = ET.parse(str(out)).getroot()
+    names = {ts.get("name") for ts in root.findall("testsuite")}
+    assert names == {"A", "B"}
+
+
+def test_merge_xml_skips_missing_files(tmp_path):
+    a = tmp_path / "a.xml"
+    a.write_text('<?xml version="1.0"?><testsuites><testsuite name="A" tests="1"/></testsuites>')
+    out = tmp_path / "merged.xml"
+    merge_xml([a, tmp_path / "missing.xml"], out)
+    root = ET.parse(str(out)).getroot()
+    assert len(root.findall("testsuite")) == 1
+
+
+def test_merge_xml_skips_malformed_files(tmp_path):
+    a = tmp_path / "a.xml"
+    bad = tmp_path / "bad.xml"
+    a.write_text('<?xml version="1.0"?><testsuites><testsuite name="A" tests="1"/></testsuites>')
+    bad.write_text("not valid xml <<<")
+    out = tmp_path / "merged.xml"
+    merge_xml([a, bad], out)
+    root = ET.parse(str(out)).getroot()
+    assert len(root.findall("testsuite")) == 1
+
+
+def test_merge_xml_creates_parent_dirs(tmp_path):
+    a = tmp_path / "a.xml"
+    a.write_text('<?xml version="1.0"?><testsuites><testsuite name="A" tests="1"/></testsuites>')
+    out = tmp_path / "nested" / "dir" / "merged.xml"
+    merge_xml([a], out)
+    assert out.exists()
+
+
+def test_merge_xml_empty_inputs_creates_empty_root(tmp_path):
+    out = tmp_path / "merged.xml"
+    merge_xml([], out)
+    root = ET.parse(str(out)).getroot()
+    assert root.tag == "testsuites"
+    assert len(list(root)) == 0
+
+
+# ---------------------------------------------------------------------------
+# shard runner: shards=0 uses normal single-process path
+# ---------------------------------------------------------------------------
+
+@patch("dia_cli.commands.test.googletest_runner.subprocess.run")
+def test_run_shards_0_uses_normal_path(mock_run, tmp_path):
+    _make_staged(tmp_path)
+    mock_run.return_value = MagicMock(returncode=0)
+    code = run(repo_root=tmp_path, config="Debug", filter_pattern=None,
+               verbose=False, docker=False, run_all=False, shards=0)
+    assert code == 0
+    # shards=0 → single subprocess invocation (not list_tests + N shards)
+    assert mock_run.call_count == 1
+
+
+@patch("dia_cli.commands.test.googletest_runner.subprocess.run")
+def test_run_shards_1_uses_normal_path(mock_run, tmp_path):
+    _make_staged(tmp_path)
+    mock_run.return_value = MagicMock(returncode=0)
+    code = run(repo_root=tmp_path, config="Debug", filter_pattern=None,
+               verbose=False, docker=False, run_all=False, shards=1)
+    assert code == 0
+    assert mock_run.call_count == 1
+
+
+# ---------------------------------------------------------------------------
+# shard runner: shards>1 delegates to run_shards
+# ---------------------------------------------------------------------------
+
+@patch("dia_cli.commands.test.shard_runner.subprocess.run")
+def test_run_shards_delegates_when_shards_gt_1(mock_run, tmp_path):
+    _make_staged(tmp_path)
+    mock_run.return_value = MagicMock(returncode=0)
+    code = run(repo_root=tmp_path, config="Debug", filter_pattern=None,
+               verbose=False, docker=False, run_all=False, shards=2)
+    assert code == 0
+    assert mock_run.call_count == 2  # one per shard, no list_tests call
+
+
+@patch("dia_cli.commands.test.shard_runner.subprocess.run")
+def test_run_shards_uses_gtest_env_vars(mock_run, tmp_path):
+    _make_staged(tmp_path)
+    mock_run.return_value = MagicMock(returncode=0)
+    run(repo_root=tmp_path, config="Debug", filter_pattern=None,
+        verbose=False, docker=False, run_all=False, shards=3)
+    envs = [call[1]["env"] for call in mock_run.call_args_list]
+    shard_indices = sorted(int(e["GTEST_SHARD_INDEX"]) for e in envs)
+    assert all(e["GTEST_TOTAL_SHARDS"] == "3" for e in envs)
+    assert shard_indices == [0, 1, 2]
+
+
+@patch("dia_cli.commands.test.shard_runner.subprocess.run")
+def test_run_shards_returns_nonzero_if_any_shard_fails(mock_run, tmp_path):
+    _make_staged(tmp_path)
+    mock_run.side_effect = [MagicMock(returncode=0), MagicMock(returncode=1)]
+    code = run(repo_root=tmp_path, config="Debug", filter_pattern=None,
+               verbose=False, docker=False, run_all=False, shards=2)
+    assert code != 0
+
+
+@patch("dia_cli.commands.test.shard_runner.subprocess.run")
+def test_run_shards_no_tests_found_returns_nonzero(mock_run, tmp_path):
+    # shards=0 → single-process path, not shard path; use shards=2 with 0 tests
+    # With env-var sharding GTest handles empty shards gracefully (exit 0).
+    # This test just verifies shards=0 falls through to the normal runner.
+    _make_staged(tmp_path)
+    mock_run.return_value = MagicMock(returncode=0)
+    code = run(repo_root=tmp_path, config="Debug", filter_pattern=None,
+               verbose=False, docker=False, run_all=False, shards=0)
+    assert code == 0
+    assert mock_run.call_count == 1  # normal single-process path
+
+
+@patch("dia_cli.commands.test.shard_runner.subprocess.run")
+def test_run_shards_composes_with_filter(mock_run, tmp_path):
+    _make_staged(tmp_path)
+    mock_run.return_value = MagicMock(returncode=0)
+    run(repo_root=tmp_path, config="Debug", filter_pattern="SuiteA*",
+        verbose=False, docker=False, run_all=False, shards=2)
+    for call in mock_run.call_args_list:
+        args = call[0][0]
+        assert any("SuiteA*" in a for a in args)
+
+
+@patch("dia_cli.commands.test.shard_runner.subprocess.run")
+def test_run_shards_composes_with_all(mock_run, tmp_path):
+    _make_staged(tmp_path)
+    mock_run.return_value = MagicMock(returncode=0)
+    run(repo_root=tmp_path, config="Debug", filter_pattern=None,
+        verbose=False, docker=False, run_all=True, shards=2)
+    for call in mock_run.call_args_list:
+        args = call[0][0]
+        assert not any("-SLOW_*" in a for a in args)
+
+
+@patch("dia_cli.commands.test.shard_runner.subprocess.run")
+def test_run_shards_creates_merged_xml(mock_run, tmp_path):
+    _make_staged(tmp_path)
+    mock_run.return_value = MagicMock(returncode=0)
+    # Pre-create shard XML so merger can read it
+    out_base = tmp_path / "Cluiche" / "out" / "GoogleTests"
+    out_base.mkdir(parents=True, exist_ok=True)
+    (out_base / "shard_0.xml").write_text(
+        '<?xml version="1.0"?><testsuites><testsuite name="SuiteA" tests="1"/></testsuites>'
+    )
+    run(repo_root=tmp_path, config="Debug", filter_pattern=None,
+        verbose=False, docker=False, run_all=False, shards=2)
+    merged = tmp_path / "Cluiche" / "out" / "GoogleTests" / "merged.xml"
+    assert merged.exists()
+
+
+# ---------------------------------------------------------------------------
+# --shards CLI option is present in help
+# ---------------------------------------------------------------------------
+
+def test_googletest_help_shows_shards():
+    runner = CliRunner()
+    result = runner.invoke(cli, ["test", "googletest", "--help"])
+    assert result.exit_code == 0
+    assert "--shards" in result.output

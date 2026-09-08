@@ -11,7 +11,8 @@ namespace Dia
 		enum class LayoutMode
 		{
 			kFullScreen,
-			kDockable
+			kDockable,
+			kHeadless
 		};
 
 		struct EditorPluginInfo
@@ -63,6 +64,11 @@ namespace Dia
 				item.pinned = false;
 				return item;
 			}
+
+			// Called by the framework after LoadPlugin — whether the plugin was freshly loaded or
+			// was already running. Implementations should navigate to the identified asset without
+			// reloading. Default no-op preserves backward compatibility for all existing plugins.
+			virtual void OnNavigate(const Dia::Core::StringCRC& instanceId) { (void)instanceId; }
 		};
 
 		class IEditorPluginFactory

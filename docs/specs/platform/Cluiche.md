@@ -8,10 +8,11 @@
 
 | Application | Description | Spec | Status |
 |-------------|-------------|------|--------|
-| Dia | The game engine (DiaCore, DiaMaths, DiaGraphics, etc.) - shared engine code organized as an application for spec purposes | [dia.md](../applications/dia.md) | Active |
-| CluicheTest | Demo game and engine testbed that showcases Dia engine capabilities | [cluichetest.md](../applications/cluichetest.md) | Active |
-| CluicheEditor | Plugin-based editor application for building and debugging Cluiche games, built on DiaEditor framework | [cluicheeditor.md](../applications/cluicheeditor.md) | Draft |
-| GoogleTests | Unit testing suite for validating Dia engine modules with intelligent dirty test tracking | [googletests.md](../applications/googletests.md) | Active |
+| Dia | The game engine (DiaCore, DiaMaths, DiaGraphics, etc.) - shared engine code organized as an application for spec purposes | [dia.md](../applications/dia/dia.md) | Active |
+| CluicheTest | Demo game and engine testbed that showcases Dia engine capabilities | [cluichetest.md](../applications/cluichetest/cluichetest.md) | Active |
+| CluicheEditor | Plugin-based editor application for building and debugging Cluiche games, built on DiaEditor framework | [cluicheeditor.md](../applications/cluicheeditor/cluicheeditor.md) | Draft |
+| GoogleTests | Unit testing suite for validating Dia engine modules with intelligent dirty test tracking | [googletests.md](../applications/googletests/googletests.md) | Active |
+| CoW | Crucible of Wings - game built on Dia and CluicheGameBaseline; develops on a dedicated `cow` branch with a permission guardrail requiring explicit approval for any edit to Dia, CluicheGameBaseline, CluicheTest, or CluicheEditor | [cow.md](../applications/cow/cow.md) | Draft |
 
 ## Shared Codebase
 
@@ -24,7 +25,7 @@ The Dia engine is a modular C++ framework organized into subsystems:
 **Core Infrastructure:**
 - **DiaCore** - Foundation library (containers, type system, serialization, memory management, CRC hashing)
 - **DiaMaths** - Math library (vectors, matrices, shapes for 2D/3D)
-- **DiaApplication** - Application framework (ProcessingUnit/Phase/Module architecture)
+- **DiaApplicationFlow** - Application framework (ProcessingUnit/Phase/Module architecture)
 
 **Rendering & Graphics:**
 - **DiaGraphics** - Graphics abstraction layer (ICanvas, Frame)
@@ -48,7 +49,7 @@ The Dia engine is a modular C++ framework organized into subsystems:
 - Module dependency graph maintained via `Tools/dia_modules.py`
 - 56+ architecture module files defining public APIs, responsibilities, and dependencies
 
-See @docs/specs/applications/dia.md for full Dia engine specification.
+See @docs/specs/applications/dia/dia.md for full Dia engine specification.
 
 ### Shared Infrastructure
 
@@ -64,7 +65,7 @@ See @docs/specs/applications/dia.md for full Dia engine specification.
 - **Singleton**: `Dia::Core::Singleton<T>`
 - **Observer**: `Observer` / `ObserverSubject`
 - **Factory**: Component factory registry pattern
-- **State Machine**: Phase transition system in DiaApplication
+- **State Machine**: Phase transition system in DiaApplicationFlow
 - **Component-Based Architecture**: Composition over inheritance
 
 ## Architecture Principles
@@ -117,7 +118,7 @@ Module dependency changes validated via `python Tools/dia_modules.py --validate`
 |----|----------|-----------|-------|--------|---------|
 | PD-001 | Use StringCRC for all entity/component IDs | Compile-time hashing provides zero-cost string comparison; prevents typos | Platform-wide | Accepted | Yes |
 | PD-002 | ProcessingUnit/Phase/Module architecture for app structure | Enables multi-threaded execution with explicit scheduling; clear lifecycle management | Platform-wide | Accepted | Yes |
-| PD-003 | Component-based entities (IComponent/IComponentObject) | Composition over inheritance; enables flexible runtime entity construction | Platform-wide | Accepted | Yes |
+| PD-003 | Component-based entities (IComponent/IComponentObject) | Composition over inheritance; enables flexible runtime entity construction | Platform-wide | Superseded by diaentitytemplate | Yes |
 | PD-004 | No STL containers in public APIs | Dia containers (DynamicArrayC, HashTable, LinkList) ensure consistent memory management and integration with engine | Platform-wide | Accepted | Yes |
 | PD-005 | x64 is the only supported build target | 32-bit Win32 configurations were removed; x64 is the sole platform for all projects | Platform-wide | Accepted | Yes |
 | PD-006 | Visual Studio project files are source of truth | MSBuild used for all builds; manual project file maintenance required; `Directory.Build.props` at repo root is the authority for shared build settings above the per-project level | Platform-wide | Accepted | Yes |

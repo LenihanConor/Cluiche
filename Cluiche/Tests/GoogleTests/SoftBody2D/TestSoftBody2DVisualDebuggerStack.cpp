@@ -48,6 +48,7 @@ static RecordingDebugVisitor Inspect(const FrameData& fd)
 }
 
 // PrimitiveCapture is large (~22KB) — pass by reference to avoid stack copies.
+namespace {
 struct PrimitiveCapture : public DebugFrameDataVisitor
 {
     static constexpr int kMax = 256;
@@ -62,6 +63,7 @@ struct PrimitiveCapture : public DebugFrameDataVisitor
     }
     void Visit(const DebugFrameData&) const override {}
 };
+} // namespace
 
 // Pass by reference — do not return PrimitiveCapture by value (too large for reliable stack return)
 static void DoCapture(const FrameData& fd, PrimitiveCapture& cap)

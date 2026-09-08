@@ -2,8 +2,6 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaGraphics/Frame/FrameData.h>
-#include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugColourPalette.h>
 
@@ -17,16 +15,16 @@ Dia::Core::StringCRC QuadtreeDrawer<T, MaxObjects>::GetLayerName() const
 }
 
 template<typename T, unsigned int MaxObjects>
-void QuadtreeDrawer<T, MaxObjects>::Draw(Dia::Graphics::FrameData& frameData)
+void QuadtreeDrawer<T, MaxObjects>::Draw(Dia::Core::IDebugDraw& draw)
 {
     if (!IsEnabled()) return;
 
     mTree.VisitNodes([&](const Dia::Geometry2D::AARect& bounds, bool isLeaf)
     {
-        const Dia::Graphics::RGBA colour = isLeaf
+        const Dia::Core::RGBA colour = isLeaf
             ? Dia::Debug::DebugColourPalette::kActive
             : Dia::Debug::DebugColourPalette::kInactive;
-        frameData.RequestDrawRect(bounds.GetBottomLeft(), bounds.GetTopRight(), colour);
+        draw.RequestDrawRect(bounds.GetBottomLeft(), bounds.GetTopRight(), colour);
     });
 }
 

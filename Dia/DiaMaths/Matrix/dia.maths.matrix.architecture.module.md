@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.maths.matrix
 name: Matrix
 owner_team: TBD
-layer: platform
+layer: foundation/maths
 status: active
 maturity: dev
 
@@ -27,17 +27,26 @@ non_responsibilities:
   - Rendering or platform integration concerns (unless this module is explicitly an adapter)
   - High-level orchestration (owned by higher-layer modules)
 
+dependent_modules:
+  - dia.core.core
+  - dia.maths.quaternion
+  - dia.maths.vector
+
 public_api:
   headers:
     - Dia/DiaMaths/Matrix/Matrix.h
     - Dia/DiaMaths/Matrix/Matrix22.h
     - Dia/DiaMaths/Matrix/Matrix33.h
     - Dia/DiaMaths/Matrix/Matrix44.h
+    - Dia/DiaMaths/Matrix/Matrix34.h
   namespaces: []
   entry_points:
     - Angle
     - Matrix
     - Matrix22
+    - Matrix33
+    - Matrix44
+    - Matrix34
     - Vector2D
 
 dependencies:

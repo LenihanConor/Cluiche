@@ -1,4 +1,4 @@
 @echo off
 cd ..
-call venv\Scripts\activate
+call .venv\Scripts\activate
 mkdocs build

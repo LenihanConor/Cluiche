@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{D4E5F6A7-B8C9-0123-D4E5-F6A7B8C90123}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{E5F6A7B8-C9D0-1234-E5F6-A7B8C9D01234}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Messages">
+      <UniqueIdentifier>{F6A7B8C9-D0E1-2345-F6A7-B8C9D0E12345}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.diaaibroadcast.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Callout.h" />
+    <ClInclude Include="CalloutHandle.h" />
+    <ClInclude Include="CalloutObserverSubject.h" />
+    <ClInclude Include="CalloutRegistry.h" />
+    <ClInclude Include="ICalloutObserver.h" />
+    <ClInclude Include="Testing\CalloutTestHelpers.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="CalloutBusAdapter.h" />
+    <ClInclude Include="Messages\callout_messages.h">
+      <Filter>Messages</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="CalloutHandle.cpp" />
+    <ClCompile Include="CalloutObserverSubject.cpp" />
+    <ClCompile Include="CalloutRegistry.cpp" />
+    <ClCompile Include="CalloutBusAdapter.cpp" />
+  </ItemGroup>
+</Project>

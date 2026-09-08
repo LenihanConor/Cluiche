@@ -1,6 +1,6 @@
 #include "DiaCore/CRC/StringCRC.h"
 
-#include "DiaCore/Type/BasicTypeDefines.h"
+#include "DiaCore/Core/BasicTypeDefines.h"
 #include "DiaCore/Memory/Memory.h"
 
 namespace Dia

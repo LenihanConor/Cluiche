@@ -18,8 +18,8 @@ namespace Dia
 			GraphEdge<EdgePayload, NodePayload>::GraphEdge(const Dia::Core::StringCRC& uniqueId, const EdgePayload& payload, GraphNode<NodePayload, EdgePayload>* head, GraphNode<NodePayload, EdgePayload>* tail)
 				: mUniqueId(uniqueId)
 				, mPayload(payload)
-				, mHead(head)
 				, mTail(tail)
+				, mHead(head)
 			{
 				DIA_ASSERT(mHead != nullptr, "Head being inserted into node is null");
 				DIA_ASSERT(mTail != nullptr, "Tail being inserted into node is null");

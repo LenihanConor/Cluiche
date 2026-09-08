@@ -7,9 +7,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VisualDebugger.h" />
+    <ClInclude Include="Rig2DDebugDomain.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="VisualDebugger.cpp" />
+    <ClCompile Include="Rig2DDebugDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.rig2dvisualdebugger.architecture.module.md">

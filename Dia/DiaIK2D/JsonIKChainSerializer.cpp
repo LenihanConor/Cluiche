@@ -2,7 +2,7 @@
 #include "IIKChainSerializer.h"
 
 #include <DiaCore/Json/external/json/json.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaMaths/Core/MathsDefines.h>
 #include <cstring>
 

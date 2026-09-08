@@ -29,9 +29,9 @@ This matrix maps each requirement ID to its implementation location(s) in the co
 | Req ID | Status | Priority | Implementation Files |
 |--------|--------|----------|---------------------|
 | **CF-001** | ✅ | P0 | `Cluiche/ApplicationFlow/ProcessingUnits/MainProcessingUnit.h`<br>`Cluiche/ApplicationFlow/ProcessingUnits/RenderProcessingUnit.h`<br>`Cluiche/ApplicationFlow/ProcessingUnits/SimProcessingUnit.h` |
-| **CF-002** | ✅ | P0 | `Cluiche/CluicheKernel/LevelFactory.h`<br>`Cluiche/Stages/DummyStage/DummyStage.h`<br>`Cluiche/Levels/UnitTestLevel/UnitTestLevel.h`<br>`Dia/DiaApplication/Level/ILevel.h` |
-| **CF-003** | ✅ | P1 | `Cluiche/CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h`<br>`Cluiche/CluicheKernel/ApplicationFlow/Modules/LevelFactoryModule.h`<br>`Dia/DiaApplication/ApplicationModule.h` |
-| **CF-004** | ✅ | P1 | `Cluiche/ApplicationFlow/Phases/MainBootPhase.h`<br>`Cluiche/ApplicationFlow/Phases/MainBootStrapPhase.h`<br>`Cluiche/ApplicationFlow/Phases/RenderRunningPhase.h`<br>`Dia/DiaApplication/ApplicationPhase.h` |
+| **CF-002** | ✅ | P0 | `Cluiche/CluicheKernel/LevelFactory.h`<br>`Cluiche/Stages/DummyStage/DummyStage.h`<br>`Cluiche/Levels/UnitTestLevel/UnitTestLevel.h`<br>`Dia/DiaApplicationFlow/Level/ILevel.h` |
+| **CF-003** | ✅ | P1 | `Cluiche/CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h`<br>`Cluiche/CluicheKernel/ApplicationFlow/Modules/LevelFactoryModule.h`<br>`Dia/DiaApplicationFlow/ApplicationModule.h` |
+| **CF-004** | ✅ | P1 | `Cluiche/ApplicationFlow/Phases/MainBootPhase.h`<br>`Cluiche/ApplicationFlow/Phases/MainBootStrapPhase.h`<br>`Cluiche/ApplicationFlow/Phases/RenderRunningPhase.h`<br>`Dia/DiaApplicationFlow/ApplicationPhase.h` |
 | **CF-005** | 🚧 | P2 | `Cluiche/ApplicationFlow/ProcessingUnits/MainProcessingUnit.cpp:GenerateModuleDependecyGraph()` (partial) |
 
 ---
@@ -40,7 +40,7 @@ This matrix maps each requirement ID to its implementation location(s) in the co
 
 | Req ID | Status | Priority | Implementation Files |
 |--------|--------|----------|---------------------|
-| **DE-001** | ✅ | P0 | `Dia/DiaApplication/ApplicationProcessingUnit.h`<br>`Dia/DiaApplication/ApplicationPhase.h`<br>`Dia/DiaApplication/ApplicationModule.h`<br>No platform headers in Dia core modules |
+| **DE-001** | ✅ | P0 | `Dia/DiaApplicationFlow/ApplicationProcessingUnit.h`<br>`Dia/DiaApplicationFlow/ApplicationPhase.h`<br>`Dia/DiaApplicationFlow/ApplicationModule.h`<br>No platform headers in Dia core modules |
 | **DE-002** | ✅ | P0 | `Dia/DiaCore/Containers/Arrays/DiaCoreArray.h`<br>`Dia/DiaCore/Containers/Arrays/DiaCoreDynamicArray.h`<br>`Dia/DiaCore/Containers/HashTables/DiaCoreHashTable.h`<br>`Dia/DiaCore/Containers/Graphs/DiaCoreGraph.h`<br>`Dia/DiaCore/Containers/LinkLists/DiaCoreLinkList.h`<br>`Dia/DiaCore/Containers/BitFlags/DiaCoreBitFlag.h` |
 | **DE-003** | ✅ | P0 | `Dia/DiaCore/CRC/DiaCoreCRC.h` (StringCRC)<br>`Dia/DiaCore/Type/DiaCoreTypeRegistry.h`<br>`Dia/DiaCore/Type/DiaCoreTypeDefinition.h` |
 | **DE-004** | ✅ | P0 | `Dia/DiaGraphics/Interface/ICanvas.h`<br>`Dia/DiaSFML/DiaSFMLRenderWindow.h` (SFML backend) |
@@ -65,7 +65,7 @@ This matrix maps each requirement ID to its implementation location(s) in the co
 | **NF-005** | ✅ | P1 | `Dia/DiaCore/Containers/`<br>Verified: Performance comparable to STL |
 | **NF-006** | ❌ | P1 | No code coverage measurement yet<br>Tests exist in `Tests/UnitTests/` |
 | **NF-007** | ✅ | P0 | `Dia/DiaCore/Core/Assert.h` (DIA_ASSERT)<br>Assertions throughout codebase |
-| **NF-008** | 🚧 | P0 | `Dia/DiaApplication/FrameStream.h` (thread-safe)<br>`Dia/DiaMaths/Core/DiaMathsRandom.h` (thread-safe, fixed)<br>Transform2D hierarchy not thread-safe (known issue) |
+| **NF-008** | 🚧 | P0 | `Dia/DiaApplicationFlow/FrameStream.h` (thread-safe)<br>`Dia/DiaMaths/Core/DiaMathsRandom.h` (thread-safe, fixed)<br>Transform2D hierarchy not thread-safe (known issue) |
 | **NF-009** | ✅ | P1 | DIA_ASSERT usage throughout codebase<br>Verified: Assertions fire for invalid input |
 | **NF-010** | ✅ | P1 | `/docs/05-api/` - Comprehensive API documentation |
 | **NF-011** | ✅ | P0 | `/docs/reference/architecture/` - Architecture documentation<br>`/docs/reference/design-rationale/` - Design rationale |
@@ -83,9 +83,9 @@ This matrix maps each requirement ID to its implementation location(s) in the co
 | **CR-001** | ✅ | P0 | `Cluiche/ApplicationFlow/ProcessingUnits/MainProcessingUnit.cpp`<br>`Cluiche/ApplicationFlow/ProcessingUnits/RenderProcessingUnit.cpp`<br>`Cluiche/ApplicationFlow/ProcessingUnits/SimProcessingUnit.cpp` |
 | **CR-002** | ✅ | P0 | `Cluiche/CluicheKernel/ApplicationFlow/Modules/` (all modules)<br>Module composition in ProcessingUnit constructors |
 | **CR-003** | ✅ | P1 | `Cluiche/ApplicationFlow/Phases/` (all phases)<br>Phase transitions in ProcessingUnits |
-| **CR-004** | ✅ | P0 | `Cluiche/CluicheKernel/ApplicationFlow/Modules/SimInputFrameStreamModule.h`<br>`Dia/DiaApplication/FrameStream.h` |
+| **CR-004** | ✅ | P0 | `Cluiche/CluicheKernel/ApplicationFlow/Modules/SimInputFrameStreamModule.h`<br>`Dia/DiaApplicationFlow/FrameStream.h` |
 | **CR-005** | 🚧 | P1 | `Cluiche/CluicheKernel/ApplicationFlow/Modules/SimUIProxyModule.h`<br>Basic implementation, needs expansion |
-| **CR-006** | ✅ | P0 | `Cluiche/CluicheKernel/LevelFactory.h`<br>`Dia/DiaApplication/Level/ILevel.h` |
+| **CR-006** | ✅ | P0 | `Cluiche/CluicheKernel/LevelFactory.h`<br>`Dia/DiaApplicationFlow/Level/ILevel.h` |
 | **CR-007** | ✅ | P0 | All levels implement ILevel::Load() and Unload()<br>`Cluiche/Stages/DummyStage/DummyStage.cpp`<br>`Cluiche/Levels/UnitTestLevel/UnitTestLevel.cpp` |
 | **CR-008** | ✅ | P1 | `Cluiche/Stages/DummyStage/` - Minimal level<br>`Cluiche/Levels/UnitTestLevel/` - Test harness |
 | **CR-009** | ✅ | P0 | `Cluiche/CluicheKernel/ApplicationFlow/Modules/MainInputModule.cpp`<br>`Cluiche/CluicheKernel/ApplicationFlow/Modules/SimInputFrameStreamModule.cpp` |
@@ -109,11 +109,11 @@ This matrix maps each requirement ID to its implementation location(s) in the co
 | **DR-004** | ✅ | P1 | `Dia/DiaCore/Architecture/Components/IComponent.h`<br>`Dia/DiaCore/Architecture/Components/IComponentObject.h`<br>`Dia/DiaCore/Architecture/Components/IComponentFactory.h`<br>`Dia/DiaCore/Architecture/Components/ComponentFactoryRegistry.h`<br>`Dia/DiaCore/Architecture/Components/StaticPooledComponentFactory.h` |
 | **DR-005** | ✅ | P1 | `Dia/DiaCore/Architecture/Singleton/Singleton.h` |
 | **DR-006** | ✅ | P1 | `Dia/DiaCore/Architecture/Observer.h` |
-| **DR-007** | ✅ | P0 | `Dia/DiaApplication/ApplicationProcessingUnit.h` |
-| **DR-008** | ✅ | P0 | `Dia/DiaApplication/ApplicationModule.h` |
-| **DR-009** | ✅ | P0 | `Dia/DiaApplication/ApplicationPhase.h` |
-| **DR-010** | ✅ | P0 | `Dia/DiaApplication/FrameStream.h` |
-| **DR-011** | ✅ | P0 | `Dia/DiaApplication/Level/ILevel.h`<br>`Dia/DiaApplication/Level/LevelFactory.h` |
+| **DR-007** | ✅ | P0 | `Dia/DiaApplicationFlow/ApplicationProcessingUnit.h` |
+| **DR-008** | ✅ | P0 | `Dia/DiaApplicationFlow/ApplicationModule.h` |
+| **DR-009** | ✅ | P0 | `Dia/DiaApplicationFlow/ApplicationPhase.h` |
+| **DR-010** | ✅ | P0 | `Dia/DiaApplicationFlow/FrameStream.h` |
+| **DR-011** | ✅ | P0 | `Dia/DiaApplicationFlow/Level/ILevel.h`<br>`Dia/DiaApplicationFlow/Level/LevelFactory.h` |
 | **DR-012** | ✅ | P0 | `Dia/DiaMaths/Vector/Vector2D.h`<br>`Dia/DiaMaths/Vector/Vector3D.h`<br>`Dia/DiaMaths/Vector/Vector4D.h` |
 | **DR-013** | ✅ | P0 | `Dia/DiaMaths/Matrix/Matrix22.h`<br>`Dia/DiaMaths/Matrix/Matrix33.h`<br>`Dia/DiaMaths/Matrix/Matrix44.h` |
 | **DR-014** | ⚠️ | P1 | `Dia/DiaMaths/Transform/Transform2D.h`<br>`Dia/DiaMaths/Transform/Transform3D.h`<br>⚠️ Performance issue: GetWorldMatrix() slow (no caching) |

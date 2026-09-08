@@ -10,17 +10,17 @@ echo.
 echo Starting documentation server...
 echo.
 
-REM Check if venv exists
-if not exist "venv\Scripts\activate.bat" (
+REM Check if .venv exists
+if not exist ".venv\Scripts\activate.bat" (
     echo ERROR: Virtual environment not found!
-    echo Please run: python -m venv venv
-    echo Then run: venv\Scripts\pip install -r docs\requirements.txt
+    echo Please run: python -m venv .venv
+    echo Then run: .venv\Scripts\pip install -r docs\requirements.txt
     pause
     exit /b 1
 )
 
 REM Activate virtual environment and start server
-call venv\Scripts\activate
+call .venv\Scripts\activate
 
 echo Clearing documentation cache...
 if exist ".mkdocs-site" rmdir /s /q ".mkdocs-site" >nul 2>&1

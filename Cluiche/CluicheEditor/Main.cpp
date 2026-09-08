@@ -1,50 +1,86 @@
 ////////////////////////////////////////////////////////////////////////////////
-// CluicheEditor entry point
+// CluicheEditor entry point — v2 bootstrap
+//
+// Project path injection:
+//   The project path is NOT parsed here.  EditorModelModule::DoStart() reads
+//   GetCommandLineW() directly, which is process-wide and always available.
+//   This avoids any coupling between Main and individual modules.
+//
+// Module registration:
+//   Each module's .cpp registers itself at static-init time via DIA_MODULE.
+//   As long as those translation units are linked in, no explicit include or
+//   call is needed here.
 ////////////////////////////////////////////////////////////////////////////////
 #include <windows.h>
+#include <stdio.h>
 #include <include/cef_app.h>
 
 #include <DiaUICEF/CEFProcessHandler.h>
 
-#include "ApplicationFlow/ProcessingUnits/CluicheEditorProcessingUnit.h"
+#include <DiaApplicationFlow/Application.h>
+#include <DiaApplicationFlow/TypeRegistry.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestLoaderV2.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 
-int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPWSTR lpCmdLine, int /*nCmdShow*/)
+#include <chrono>
+#include <memory>
+#include <thread>
+
+int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPWSTR /*lpCmdLine*/, int /*nCmdShow*/)
 {
-	// CEF subprocess guard: must come before ANY Dia initialization.
-	// Pass a CEFProcessHandler so renderer/helper processes register the
-	// dia:// custom scheme (OnRegisterCustomSchemes runs in all processes).
-	CefMainArgs mainArgs(hInstance);
-	CefRefPtr<Dia::UICEF::CEFProcessHandler> app = new Dia::UICEF::CEFProcessHandler("");
-	int exitCode = CefExecuteProcess(mainArgs, app.get(), nullptr);
-	if (exitCode >= 0)
-		return exitCode;
+    // CEF subprocess guard: must come before ANY Dia initialization.
+    CefMainArgs mainArgs(hInstance);
+    CefRefPtr<Dia::UICEF::CEFProcessHandler> cefApp = new Dia::UICEF::CEFProcessHandler("");
+    int exitCode = CefExecuteProcess(mainArgs, cefApp.get(), nullptr);
+    if (exitCode >= 0)
+        return exitCode;
 
-	// Main editor process
-	Cluiche::Editor::CluicheEditorProcessingUnit* editorPU =
-		new Cluiche::Editor::CluicheEditorProcessingUnit();
+    // Heap-allocate manifest — the struct grows with module/channel count and
+    // can overflow the default 1MB stack (see CluicheTest/Main.cpp for the same
+    // pattern). Application holds it by const reference, so it must outlive app.
+    std::unique_ptr<Dia::ApplicationFlow::ApplicationManifestV3> manifestOwner(
+        new Dia::ApplicationFlow::ApplicationManifestV3());
+    Dia::ApplicationFlow::ApplicationManifestV3& manifest = *manifestOwner;
+    Dia::ApplicationFlow::LoadResult loadResult =
+        Dia::ApplicationFlow::ApplicationManifestLoaderV2::LoadFromFile("assets/configs/editor.diaapp", manifest);
 
-	// Parse the single project path argument (strip surrounding quotes, convert to UTF-8).
-	if (lpCmdLine != nullptr && lpCmdLine[0] != L'\0')
-	{
-		LPWSTR arg = lpCmdLine;
-		while (*arg == L' ' || *arg == L'\t') ++arg;
-		if (*arg == L'"')
-		{
-			++arg;
-			LPWSTR end = arg;
-			while (*end && *end != L'"') ++end;
-			*end = L'\0';
-		}
+    if (loadResult != Dia::ApplicationFlow::LoadResult::kSuccess)
+    {
+        printf("CluicheEditor: failed to load manifest 'assets/configs/editor.diaapp' (result: %d)\n",
+               static_cast<int>(loadResult));
+        return 1;
+    }
 
-		char utf8[260] = { 0 };
-		WideCharToMultiByte(CP_UTF8, 0, arg, -1, utf8, sizeof(utf8), nullptr, nullptr);
-		editorPU->SetProjectPath(utf8);
-	}
+    Dia::ApplicationFlow::TypeRegistry& registry = Dia::ApplicationFlow::TypeRegistry::Global();
+    Dia::ApplicationFlow::Application app(manifest, registry);
 
-	editorPU->Start();
-	editorPU->Update();
-	editorPU->Stop();
+    if (!app.Start())
+    {
+        printf("CluicheEditor: application failed to start\n");
+        return 1;
+    }
 
-	delete editorPU;
-	return 0;
+    // Frame-paced main loop at 120 Hz.  The editor is GUI-only; an uncapped
+    // loop wastes CPU spinning without matching renderer output.  Sleep off
+    // any time left in the frame budget after Update returns.
+    using Clock    = std::chrono::steady_clock;
+    using Duration = std::chrono::duration<float>;
+    constexpr Duration kFrameBudget{1.0f / 120.0f};
+
+    auto lastFrameStart = Clock::now();
+    while (true)
+    {
+        const auto frameStart = Clock::now();
+        const float deltaTime = std::chrono::duration_cast<Duration>(frameStart - lastFrameStart).count();
+        lastFrameStart = frameStart;
+
+        if (!app.Update(deltaTime))
+            break;
+
+        const auto elapsed   = Clock::now() - frameStart;
+        const auto remaining = kFrameBudget - elapsed;
+        if (remaining.count() > 0.0f)
+            std::this_thread::sleep_for(remaining);
+    }
+    return 0;
 }

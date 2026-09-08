@@ -133,7 +133,7 @@ Documentation Updates Required:
 ### Weekly
 - **Check:** Cross-reference accuracy (automated)
 - **Check:** Broken links (automated)
-- **Update:** DOCUMENTATION_TODO.md status
+- **Update:** BACKLOG.md status
 
 ### Monthly
 - **Review:** AI guides for accuracy
@@ -242,7 +242,7 @@ def check_coverage():
     # Check if documented in /docs/05-api/
     # Report undocumented APIs
     
-    # Find all modules in DOCUMENTATION_TODO.md
+    # Find all modules in BACKLOG.md
     # Report incomplete sections
 ```
 
@@ -365,7 +365,7 @@ void Update()
 
 **Better:**
 ```cpp
-// Dia/DiaApplication/ApplicationModule.h
+// Dia/DiaApplicationFlow/ApplicationModule.h
 void ApplicationModule::Update(float dt)
 {
     mTime += dt;
@@ -494,4 +494,4 @@ class OldArray { };
 
 **[→ Contributing Guidelines](contributing.md)**  
 **[→ Documentation Viewer Guide](documentation-viewer-guide.md)**  
-**[→ Documentation TODO](../../DOCUMENTATION_TODO.md)**
+**[→ Documentation TODO](../../BACKLOG.md)**

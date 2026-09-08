@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DiaMessageBus — Schema Browser</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:#0D0F1C; --s1:#111420; --s2:#171B2F; --s3:#1E2340; --s4:#252B4C;
+  --b1:#252B48; --b2:#2F3860;
+  --hi:#ECF0FC; --mid:#7580AE; --lo:#3A4265;
+  --primary:#F0AC1A; --reaction:#9B72F5;
+  --broadcast:#1ED8D8; --entity:#4A7FE0;
+  --producer:#2ECC8A; --dupe:#F06070; --adapter:#F0AC1A;
+}
+body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--hi); height:100vh; display:flex; flex-direction:column; overflow:hidden; font-size:12px; }
+
+/* ── TOPBAR ── */
+.topbar { height:40px; display:flex; align-items:center; gap:10px; padding:0 14px; background:var(--s1); border-bottom:1px solid var(--b1); flex-shrink:0; }
+.app-title { font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; color:var(--broadcast); letter-spacing:.1em; text-transform:uppercase; white-space:nowrap; }
+.sep { width:1px; height:18px; background:var(--b2); flex-shrink:0; }
+.search-wrap { position:relative; flex:0 0 200px; }
+.search-icon { position:absolute; left:8px; top:50%; transform:translateY(-50%); color:var(--lo); font-size:11px; pointer-events:none; }
+.search-input { width:100%; background:var(--s3); border:1px solid var(--b1); color:var(--hi); font-family:'JetBrains Mono',monospace; font-size:11px; padding:4px 8px 4px 26px; outline:none; transition:border-color .15s; }
+.search-input::placeholder { color:var(--lo); }
+.search-input:focus { border-color:var(--broadcast); }
+.filters { display:flex; gap:3px; }
+.f { font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:600; padding:3px 8px; border:1px solid var(--b1); background:transparent; color:var(--lo); cursor:pointer; letter-spacing:.06em; text-transform:uppercase; transition:all .12s; }
+.f:hover { color:var(--mid); border-color:var(--b2); }
+.f.on { background:var(--s3); color:var(--hi); border-color:var(--b2); }
+.f.on.fb { border-color:var(--broadcast); color:var(--broadcast); }
+.f.on.fe { border-color:var(--entity); color:var(--entity); }
+.f.on.fp { border-color:var(--primary); color:var(--primary); }
+.f.on.fr { border-color:var(--reaction); color:var(--reaction); }
+.f.on.fd { border-color:var(--dupe); color:var(--dupe); }
+.topbar-right { margin-left:auto; display:flex; gap:3px; }
+.vbtn { font-family:'JetBrains Mono',monospace; font-size:10px; padding:4px 12px; border:1px solid var(--b1); background:transparent; color:var(--mid); cursor:pointer; letter-spacing:.04em; text-transform:uppercase; transition:all .12s; }
+.vbtn.on { background:var(--s3); border-color:var(--broadcast); color:var(--broadcast); }
+
+/* ── LAYOUT ── */
+.workspace { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.workspace-main { flex:1; display:flex; overflow:hidden; }
+
+/* ── LEFT ── */
+.panel-left { width:220px; flex-shrink:0; display:flex; flex-direction:column; border-right:1px solid var(--b1); overflow:hidden; }
+.plh { padding:7px 12px; border-bottom:1px solid var(--b1); background:var(--s1); display:flex; align-items:center; gap:6px; }
+.pll { font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--lo); }
+.cnt { font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--lo); background:var(--s3); padding:1px 5px; }
+.msg-list { flex:1; overflow-y:auto; }
+.msg-list::-webkit-scrollbar { width:3px; }
+.msg-list::-webkit-scrollbar-thumb { background:var(--b2); }
+.mrow { display:flex; align-items:center; gap:6px; padding:6px 12px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,.025); transition:background .1s; position:relative; }
+.mrow:hover { background:var(--s2); }
+.mrow.sel { background:var(--s3); }
+.mrow.sel::before { content:''; position:absolute; left:0; top:0; bottom:0; width:2px; background:var(--broadcast); }
+.mrow.sel.has-dupe::before { background:var(--dupe); }
+.pdot { width:6px; height:6px; flex-shrink:0; transform:rotate(45deg); background:var(--primary); }
+.pdot.r { background:var(--reaction); }
+.mname { font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:500; color:var(--hi); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rbadge { font-family:'JetBrains Mono',monospace; font-size:8px; padding:1px 4px; color:var(--broadcast); border:1px solid rgba(30,216,216,.25); background:rgba(30,216,216,.06); flex-shrink:0; }
+.rbadge.e { color:var(--entity); border-color:rgba(74,127,224,.25); background:rgba(74,127,224,.06); }
+.dupico { font-size:10px; color:var(--dupe); flex-shrink:0; }
+.conscount { font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--lo); flex-shrink:0; }
+
+/* ── CENTER ── */
+.panel-center { flex:1; display:flex; flex-direction:column; overflow:hidden; position:relative; }
+
+/* graph view */
+.graph-canvas { flex:1; position:relative; overflow:hidden; background-color:var(--bg); background-image:radial-gradient(circle,var(--b1) 1px,transparent 1px); background-size:24px 24px; display:none; }
+.graph-canvas.on { display:block; }
+#graph-svg { width:100%; height:100%; }
+.graph-empty { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
+.graph-empty-msg { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--lo); text-align:center; line-height:2; }
+
+/* list view */
+.list-view { flex:1; overflow-y:auto; display:none; padding:28px 32px; }
+.list-view.on { display:block; }
+.list-view::-webkit-scrollbar { width:3px; }
+.list-view::-webkit-scrollbar-thumb { background:var(--b2); }
+.lv-title { font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:600; color:var(--hi); margin-bottom:4px; }
+.lv-meta { display:flex; gap:8px; margin-bottom:28px; flex-wrap:wrap; }
+.meta-pill { font-family:'JetBrains Mono',monospace; font-size:9px; padding:2px 8px; letter-spacing:.06em; text-transform:uppercase; }
+.meta-pill.broadcast { color:var(--broadcast); border:1px solid rgba(30,216,216,.3); background:rgba(30,216,216,.07); }
+.meta-pill.entity { color:var(--entity); border:1px solid rgba(74,127,224,.3); background:rgba(74,127,224,.07); }
+.meta-pill.primary { color:var(--primary); border:1px solid rgba(240,172,26,.3); background:rgba(240,172,26,.07); }
+.meta-pill.reaction { color:var(--reaction); border:1px solid rgba(155,114,245,.3); background:rgba(155,114,245,.07); }
+.lv-section { margin-bottom:24px; }
+.lv-sl { font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--lo); padding-bottom:6px; border-bottom:1px solid var(--b1); margin-bottom:10px; }
+.lv-row { display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid rgba(255,255,255,.03); }
+.lv-node { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--hi); min-width:160px; }
+.lv-node-type { font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--lo); background:var(--s3); padding:1px 6px; letter-spacing:.06em; text-transform:uppercase; }
+.lv-node-type.p { color:var(--producer); }
+.lv-node-type.b { color:var(--broadcast); }
+.lv-node-type.e { color:var(--entity); }
+.lv-node-type.a { color:var(--adapter); }
+.lv-divider { display:flex; align-items:center; gap:12px; padding:14px 0; color:var(--lo); font-family:'JetBrains Mono',monospace; font-size:10px; }
+.lv-div-line { flex:1; height:1px; background:var(--b1); }
+.lv-div-label { color:var(--primary); }
+.lv-div-label.r { color:var(--reaction); }
+
+/* ── WEB VIEW ── */
+.web-canvas { flex:1; position:relative; overflow:hidden; background-color:var(--bg); background-image:radial-gradient(circle,var(--b1) 1px,transparent 1px); background-size:28px 28px; display:none; }
+.web-canvas.on { display:flex; flex-direction:column; }
+.web-toolbar { display:flex; align-items:center; gap:8px; padding:8px 12px; background:rgba(13,15,28,.85); border-bottom:1px solid var(--b1); flex-shrink:0; z-index:10; backdrop-filter:blur(4px); }
+.wtbtn { font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:600; padding:3px 10px; border:1px solid var(--b1); background:var(--s2); color:var(--lo); cursor:pointer; letter-spacing:.06em; text-transform:uppercase; transition:all .12s; }
+.wtbtn:hover { border-color:var(--b2); color:var(--mid); }
+.wtbtn.active { border-color:var(--reaction); color:var(--reaction); background:rgba(155,114,245,.1); }
+.wtbtn:disabled { opacity:.3; cursor:default; }
+.web-hint { font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--lo); margin-left:4px; }
+.web-selected-info { font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--hi); margin-left:8px; }
+.web-selected-info span { color:var(--broadcast); }
+.chain-legend { margin-left:auto; display:flex; gap:14px; }
+.cl-item { display:flex; align-items:center; gap:5px; font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--lo); }
+.cl-dot { width:8px; height:8px; border-radius:50%; }
+#web-svg { flex:1; width:100%; cursor:default; }
+
+/* ── BOTTOM ── */
+.panel-bottom { height:190px; flex-shrink:0; border-top:1px solid var(--b1); display:flex; flex-direction:column; background:var(--s1); }
+.tab-bar { display:flex; align-items:stretch; border-bottom:1px solid var(--b1); flex-shrink:0; }
+.tbtn { font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; padding:7px 14px; border:none; background:transparent; color:var(--lo); cursor:pointer; border-bottom:2px solid transparent; position:relative; top:1px; transition:all .12s; }
+.tbtn:hover { color:var(--mid); }
+.tbtn.on { color:var(--hi); border-bottom-color:var(--broadcast); }
+.tbtn .wn { display:inline-block; background:rgba(240,96,112,.15); color:var(--dupe); font-size:8px; padding:0 4px; margin-left:4px; vertical-align:middle; }
+.tab-content { flex:1; overflow:hidden; display:flex; }
+.payload-view { flex:1; overflow-y:auto; padding:12px 16px; display:none; }
+.payload-view.on { display:block; }
+.payload-view::-webkit-scrollbar { width:3px; }
+.payload-view::-webkit-scrollbar-thumb { background:var(--b2); }
+.py-empty { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--lo); margin-top:24px; text-align:center; }
+.field-table { width:100%; border-collapse:collapse; }
+.field-table th { font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--lo); text-align:left; padding:0 12px 6px 0; border-bottom:1px solid var(--b1); }
+.field-table td { font-family:'JetBrains Mono',monospace; font-size:11px; padding:5px 12px 5px 0; border-bottom:1px solid rgba(255,255,255,.025); }
+.fname { color:var(--hi); }
+.ftype { color:var(--entity); }
+.fnotes { color:var(--lo); font-size:10px; }
+.analysis-view { flex:1; overflow-y:auto; padding:12px 16px; display:none; }
+.analysis-view.on { display:block; }
+.analysis-view::-webkit-scrollbar { width:3px; }
+.analysis-view::-webkit-scrollbar-thumb { background:var(--b2); }
+.an-empty { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--lo); margin-top:24px; text-align:center; }
+.dupe-card { border:1px solid rgba(240,96,112,.2); background:rgba(240,96,112,.04); padding:10px 12px; margin-bottom:10px; }
+.dupe-head { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+.dupe-ttl { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--dupe); font-weight:600; }
+.dupe-score { font-family:'JetBrains Mono',monospace; font-size:9px; padding:1px 6px; background:rgba(240,96,112,.12); color:var(--dupe); border:1px solid rgba(240,96,112,.3); }
+.diff-table { width:100%; border-collapse:collapse; }
+.diff-table th { font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:600; color:var(--lo); padding:3px 10px 3px 0; text-align:left; border-bottom:1px solid var(--b1); letter-spacing:.08em; text-transform:uppercase; }
+.diff-table td { font-family:'JetBrains Mono',monospace; font-size:10px; padding:3px 10px 3px 0; border-bottom:1px solid rgba(255,255,255,.02); }
+.d-eq { color:var(--mid); }
+.d-left { color:var(--dupe); }
+.d-right { color:var(--primary); }
+.d-match { color:var(--producer); }
+.d-sym { color:var(--lo); }
+.dupe-suggest { font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--lo); margin-top:8px; padding:5px 8px; background:var(--s3); border-left:2px solid var(--primary); }
+.dupe-suggest code { color:var(--primary); font-size:10px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="app-title">DiaMessageBus</span>
+  <div class="sep"></div>
+  <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--lo);white-space:nowrap;">SCHEMA BROWSER</span>
+  <div class="sep"></div>
+  <div class="search-wrap">
+    <span class="search-icon">⌕</span>
+    <input class="search-input" id="search" type="text" placeholder="filter message types…" oninput="applyFilter()">
+  </div>
+  <div class="filters">
+    <button class="f on" onclick="setFilter('all',this)">All</button>
+    <button class="f fb" onclick="setFilter('broadcast',this)">Broadcast</button>
+    <button class="f fe" onclick="setFilter('entity',this)">Entity</button>
+    <button class="f fp" onclick="setFilter('primary',this)">Primary</button>
+    <button class="f fr" onclick="setFilter('reaction',this)">Reaction</button>
+    <button class="f fd" onclick="setFilter('dupes',this)">Dupes</button>
+  </div>
+  <div class="topbar-right">
+    <button class="vbtn on" id="vbtn-graph" onclick="setView('graph')">Graph</button>
+    <button class="vbtn" id="vbtn-list"  onclick="setView('list')">List</button>
+    <button class="vbtn" id="vbtn-web"   onclick="setView('web')">Web</button>
+  </div>
+</div>
+
+<div class="workspace">
+  <div class="workspace-main">
+
+    <div class="panel-left">
+      <div class="plh">
+        <span class="pll">Message Types</span>
+        <span class="cnt" id="list-count">9</span>
+      </div>
+      <div class="msg-list" id="msg-list"></div>
+    </div>
+
+    <div class="panel-center">
+
+      <!-- GRAPH VIEW -->
+      <div class="graph-canvas on" id="graph-canvas">
+        <svg id="graph-svg"></svg>
+        <div class="graph-empty" id="graph-empty">
+          <div class="graph-empty-msg">Select a message type<br>to view its connections</div>
+        </div>
+      </div>
+
+      <!-- LIST VIEW -->
+      <div class="list-view" id="list-view"></div>
+
+      <!-- WEB VIEW -->
+      <div class="web-canvas" id="web-canvas">
+        <div class="web-toolbar">
+          <button class="wtbtn" id="btn-trace" onclick="toggleTrace()" disabled>Trace Chain</button>
+          <button class="wtbtn" onclick="clearWebSelection()">Clear</button>
+          <button class="wtbtn" onclick="resetWebLayout()">Reset Layout</button>
+          <span class="web-hint" id="web-hint">Click any node to select · drag to reposition</span>
+          <span class="web-selected-info" id="web-sel-info"></span>
+          <div class="chain-legend">
+            <div class="cl-item"><div class="cl-dot" style="background:var(--producer)"></div>System</div>
+            <div class="cl-item"><div class="cl-dot" style="background:var(--entity)"></div>Component</div>
+            <div class="cl-item"><div class="cl-dot" style="background:var(--adapter)"></div>Adapter</div>
+            <div class="cl-item"><div class="cl-dot" style="transform:rotate(45deg);border-radius:1px;background:var(--primary)"></div>Primary msg</div>
+            <div class="cl-item"><div class="cl-dot" style="transform:rotate(45deg);border-radius:1px;background:var(--reaction)"></div>Reaction msg</div>
+          </div>
+        </div>
+        <svg id="web-svg"></svg>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="panel-bottom">
+    <div class="tab-bar">
+      <button class="tbtn on" id="tbtn-payload"  onclick="setTab('payload')">Payload</button>
+      <button class="tbtn"    id="tbtn-analysis" onclick="setTab('analysis')">Schema Analysis <span class="wn" id="dupe-count">0</span></button>
+    </div>
+    <div class="tab-content">
+      <div class="payload-view on" id="payload-view"></div>
+      <div class="analysis-view"   id="analysis-view"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const MESSAGES = [
+  { id:'DamageEvent',      router:'broadcast', pass:'primary',
+    producers:['DamageSystem'],
+    consumers:['HealthSystem','UISystem','AchievSystem'],
+    payload:[{name:'target',type:'EntityId',notes:'entity receiving damage'},{name:'amount',type:'float',notes:'raw damage before mitigation'},{name:'source',type:'StringCRC',notes:'attacker identity'},{name:'flags',type:'uint8_t',notes:'bitmask: physical/magical/true'}],
+    dupes:['SpellDmgEvent'] },
+  { id:'SpellDmgEvent',    router:'broadcast', pass:'primary',
+    producers:['SpellSystem'],
+    consumers:['HealthSystem','UISystem','AchievSystem'],
+    payload:[{name:'target',type:'EntityId',notes:'entity receiving damage'},{name:'amount',type:'float',notes:'raw damage before mitigation'},{name:'source',type:'StringCRC',notes:'attacker identity'},{name:'spellId',type:'StringCRC',notes:'which spell was cast'}],
+    dupes:['DamageEvent'] },
+  { id:'DeathEvent',       router:'broadcast', pass:'reaction',
+    producers:['HealthSystem'],
+    consumers:['UISystem','AchievSystem','LootSystem','AISystem'],
+    payload:[{name:'entity',type:'EntityId',notes:'who died'},{name:'killer',type:'EntityId',notes:'last damage source'}],
+    dupes:[] },
+  { id:'HitEvent',         router:'entity',    pass:'primary',
+    producers:['DamageSystem'],
+    consumers:['HealthComp','ShieldComp','AnimComp'],
+    payload:[{name:'damage',type:'float',notes:'post-mitigation value'},{name:'direction',type:'Vec2',notes:'normalised hit direction'}],
+    dupes:[] },
+  { id:'CollisionEvent',   router:'entity',    pass:'primary',
+    producers:['PhysicsAdapter'],
+    consumers:['HealthComp','SoundComp'],
+    payload:[{name:'other',type:'EntityId',notes:'other body in collision'},{name:'impulse',type:'float',notes:'collision impulse magnitude'},{name:'normal',type:'Vec2',notes:'collision normal (world space)'}],
+    dupes:[] },
+  { id:'BuffEvent',        router:'broadcast', pass:'primary',
+    producers:['SpellSystem'],
+    consumers:['UISystem','StatSystem'],
+    payload:[{name:'target',type:'EntityId',notes:'entity receiving buff'},{name:'buffType',type:'StringCRC',notes:'buff identifier'},{name:'duration',type:'float',notes:'seconds; -1 = permanent'}],
+    dupes:[] },
+  { id:'ObjectiveComplete',router:'broadcast', pass:'reaction',
+    producers:['QuestSystem'],
+    consumers:['UISystem','AchievSystem'],
+    payload:[{name:'objectiveId',type:'StringCRC',notes:'which objective'},{name:'completedBy',type:'EntityId',notes:'completing entity'}],
+    dupes:[] },
+  { id:'ResourceChanged',  router:'broadcast', pass:'primary',
+    producers:['EconomySystem'],
+    consumers:['UISystem','QuestSystem'],
+    payload:[{name:'resourceType',type:'StringCRC',notes:'gold/wood/mana etc.'},{name:'delta',type:'int32_t',notes:'signed change amount'},{name:'newTotal',type:'int32_t',notes:'value after change'}],
+    dupes:[] },
+  { id:'AIStateChange',    router:'broadcast', pass:'primary',
+    producers:['AISystem'],
+    consumers:['UISystem'],
+    payload:[{name:'entity',type:'EntityId',notes:''},{name:'fromState',type:'StringCRC',notes:'previous state id'},{name:'toState',type:'StringCRC',notes:'new state id'}],
+    dupes:[] },
+];
+
+// ─── APP STATE ───────────────────────────────────────────────────────────────
+const state = { selected:'DamageEvent', view:'graph', tab:'payload', filter:'all', search:'' };
+
+// ─── FILTER ──────────────────────────────────────────────────────────────────
+function visibleMessages() {
+  return MESSAGES.filter(m => {
+    const q = state.search.toLowerCase();
+    if (q && !m.id.toLowerCase().includes(q)) return false;
+    if (state.filter==='broadcast') return m.router==='broadcast';
+    if (state.filter==='entity')    return m.router==='entity';
+    if (state.filter==='primary')   return m.pass==='primary';
+    if (state.filter==='reaction')  return m.pass==='reaction';
+    if (state.filter==='dupes')     return m.dupes.length>0;
+    return true;
+  });
+}
+function setFilter(f,btn) {
+  state.filter=f;
+  document.querySelectorAll('.f').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderList();
+}
+function applyFilter() { state.search=document.getElementById('search').value; renderList(); }
+
+// ─── LEFT LIST ───────────────────────────────────────────────────────────────
+function renderList() {
+  const msgs=visibleMessages();
+  document.getElementById('list-count').textContent=msgs.length;
+  document.getElementById('msg-list').innerHTML=msgs.map(m=>`
+    <div class="mrow ${m.dupes.length?'has-dupe':''} ${state.selected===m.id?'sel':''}" onclick="select('${m.id}')">
+      <div class="pdot ${m.pass==='reaction'?'r':''}"></div>
+      <span class="mname">${m.id}</span>
+      <span class="rbadge ${m.router==='entity'?'e':''}">${m.router==='broadcast'?'B':'E'}</span>
+      ${m.dupes.length?'<span class="dupico" title="Potential duplicate">⚠</span>':''}
+      <span class="conscount">${m.consumers.length}</span>
+    </div>`).join('');
+}
+function select(id) { state.selected=id; renderList(); renderCenter(); renderBottom(); }
+
+// ─── VIEW TOGGLE ─────────────────────────────────────────────────────────────
+function setView(v) {
+  state.view=v;
+  ['graph','list','web'].forEach(k=>{
+    document.getElementById(`vbtn-${k}`).classList.toggle('on',k===v);
+  });
+  document.getElementById('graph-canvas').classList.toggle('on',v==='graph');
+  document.getElementById('list-view').classList.toggle('on',v==='list');
+  document.getElementById('web-canvas').classList.toggle('on',v==='web');
+  renderCenter();
+  if (v==='web') { setTimeout(()=>{ initWeb(); startSim(); },50); }
+  else stopSim();
+}
+
+// ─── CENTER DISPATCH ─────────────────────────────────────────────────────────
+function renderCenter() {
+  if (state.view==='graph') renderGraph();
+  else if (state.view==='list') renderListView();
+  // web renders via its own loop
+}
+
+// ─── GRAPH VIEW ──────────────────────────────────────────────────────────────
+function renderGraph() {
+  const msg=MESSAGES.find(m=>m.id===state.selected);
+  const empty=document.getElementById('graph-empty');
+  const svg=document.getElementById('graph-svg');
+  if (!msg) { empty.style.display='flex'; svg.innerHTML=''; return; }
+  empty.style.display='none';
+  const W=svg.clientWidth||800, H=svg.clientHeight||320;
+  const cx=W/2, cy=H/2;
+  const passColor=msg.pass==='primary'?'#F0AC1A':'#9B72F5';
+  const routerColor=msg.router==='broadcast'?'#1ED8D8':'#4A7FE0';
+  const dHW=Math.max(80,msg.id.length*5+36), dHH=38;
+  const nodeW=148, nodeH=28, spacing=46;
+  const prodX=W*.18, consX=W*.82;
+  const prodN=msg.producers.length, consN=msg.consumers.length;
+  const prodY0=cy-((prodN-1)*spacing)/2, consY0=cy-((consN-1)*spacing)/2;
+  let s=`<defs>
+    <marker id="arr" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><polygon points="0 0,7 3.5,0 7" fill="${passColor}" opacity=".65"/></marker>
+    <filter id="glow"><feGaussianBlur stdDeviation="3" result="cb"/><feMerge><feMergeNode in="cb"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>`;
+  msg.producers.forEach((_,i)=>{
+    const py=prodY0+i*spacing, x1=prodX+nodeW/2, y1=py, x2=cx-dHW, y2=cy, dx=Math.abs(x2-x1)*.42;
+    s+=`<path d="M${x1} ${y1} C${x1+dx} ${y1},${x2-dx} ${y2},${x2} ${y2}" fill="none" stroke="${passColor}" stroke-width="1.5" opacity=".45" marker-end="url(#arr)"/>`;
+  });
+  msg.consumers.forEach((_,i)=>{
+    const cy2=consY0+i*spacing, x1=cx+dHW, y1=cy, x2=consX-nodeW/2, y2=cy2, dx=Math.abs(x2-x1)*.42;
+    s+=`<path d="M${x1} ${y1} C${x1+dx} ${y1},${x2-dx} ${y2},${x2} ${y2}" fill="none" stroke="${passColor}" stroke-width="1.5" opacity=".45" marker-end="url(#arr)"/>`;
+  });
+  msg.producers.forEach((prod,i)=>{
+    const py=prodY0+i*spacing, isA=prod.includes('Adapter'), nc=isA?'#F0AC1A':'#2ECC8A', lbl=isA?'ADAPTER':'PRODUCER';
+    const x=prodX-nodeW/2, y=py-nodeH/2;
+    s+=`<rect x="${x}" y="${y}" width="${nodeW}" height="${nodeH}" fill="#1E2340" stroke="${nc}" stroke-width="1.5"/>
+    <text x="${x+5}" y="${y+8}" font-family="JetBrains Mono,monospace" font-size="7" fill="${nc}" opacity=".55" letter-spacing=".1">${lbl}</text>
+    <text x="${prodX}" y="${py+4}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" font-weight="500" fill="${nc}">${prod}</text>`;
+  });
+  const dp=`M${cx} ${cy-dHH} L${cx+dHW} ${cy} L${cx} ${cy+dHH} L${cx-dHW} ${cy} Z`;
+  s+=`<path d="${dp}" fill="#171B2F" stroke="${passColor}" stroke-width="2" filter="url(#glow)" opacity=".9"/>
+  <path d="${dp}" fill="#171B2F" stroke="${passColor}" stroke-width="2"/>
+  <text x="${cx}" y="${cy-5}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="12" font-weight="600" fill="${routerColor}">${msg.id}</text>
+  <text x="${cx}" y="${cy+13}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="${passColor}" opacity=".7" letter-spacing=".1">${msg.pass.toUpperCase()} · ${msg.router.toUpperCase()}</text>`;
+  msg.consumers.forEach((cons,i)=>{
+    const cy2=consY0+i*spacing, isComp=msg.router==='entity'||cons.endsWith('Comp'), nc=isComp?'#4A7FE0':'#1ED8D8', lbl=isComp?'COMPONENT':'SUBSCRIBER';
+    const x=consX-nodeW/2, y=cy2-nodeH/2;
+    s+=`<rect x="${x}" y="${y}" width="${nodeW}" height="${nodeH}" fill="#1E2340" stroke="${nc}" stroke-width="1"/>
+    <text x="${x+5}" y="${y+8}" font-family="JetBrains Mono,monospace" font-size="7" fill="${nc}" opacity=".55" letter-spacing=".1">${lbl}</text>
+    <text x="${consX}" y="${cy2+4}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="${nc}">${cons}</text>`;
+  });
+  svg.innerHTML=s;
+}
+
+// ─── LIST VIEW ───────────────────────────────────────────────────────────────
+function renderListView() {
+  const msg=MESSAGES.find(m=>m.id===state.selected);
+  const el=document.getElementById('list-view');
+  if (!msg) { el.innerHTML='<div class="py-empty">Select a message type from the left panel.</div>'; return; }
+  el.innerHTML=`
+    <div class="lv-title">${msg.id}</div>
+    <div class="lv-meta">
+      <span class="meta-pill ${msg.router}">${msg.router} router</span>
+      <span class="meta-pill ${msg.pass}">${msg.pass} pass</span>
+      ${msg.dupes.length?`<span class="meta-pill" style="color:var(--dupe);border:1px solid rgba(240,96,112,.3);background:rgba(240,96,112,.07);">⚠ potential dupe: ${msg.dupes.join(', ')}</span>`:''}
+    </div>
+    <div class="lv-section">
+      <div class="lv-sl">Producers</div>
+      ${msg.producers.map(p=>{const isA=p.includes('Adapter');return`<div class="lv-row"><span class="lv-node">${p}</span><span class="lv-node-type ${isA?'a':'p'}">${isA?'adapter':'system'}</span></div>`;}).join('')}
+    </div>
+    <div class="lv-divider"><div class="lv-div-line"></div><span class="lv-div-label ${msg.pass==='reaction'?'r':''}">→ ${msg.id} · ${msg.pass} pass →</span><div class="lv-div-line"></div></div>
+    <div class="lv-section">
+      <div class="lv-sl">Consumers</div>
+      ${msg.consumers.map(c=>{const isComp=msg.router==='entity'||c.endsWith('Comp');return`<div class="lv-row"><span class="lv-node">${c}</span><span class="lv-node-type ${isComp?'e':'b'}">${isComp?'component':'system'}</span></div>`;}).join('')}
+    </div>`;
+}
+
+// ─── WEB VIEW ────────────────────────────────────────────────────────────────
+let webNodes=[], webLinks=[], webSelected=null, webTracing=false, webHighlight=null;
+let simAlpha=1.0, animFrame=null, webInited=false;
+let dragNode=null, dragOffset={x:0,y:0};
+
+function buildWebData() {
+  const nodeMap={};
+  const links=[];
+  MESSAGES.forEach(m=>{
+    if (!nodeMap['msg:'+m.id]) nodeMap['msg:'+m.id]={id:'msg:'+m.id,label:m.id,kind:'message',pass:m.pass,router:m.router,msgId:m.id,x:0,y:0,vx:0,vy:0,fixed:false};
+    [...m.producers,...m.consumers].forEach(name=>{
+      if (!nodeMap['sys:'+name]) {
+        const isComp=name.endsWith('Comp'), isAdap=name.includes('Adapter');
+        nodeMap['sys:'+name]={id:'sys:'+name,label:name,kind:isAdap?'adapter':isComp?'component':'system',x:0,y:0,vx:0,vy:0,fixed:false};
+      }
+    });
+    m.producers.forEach(p=>links.push({source:'sys:'+p,target:'msg:'+m.id,type:'produce',pass:m.pass,msgId:m.id}));
+    m.consumers.forEach(c=>links.push({source:'msg:'+m.id,target:'sys:'+c,type:'consume',pass:m.pass,msgId:m.id}));
+  });
+  return {nodes:Object.values(nodeMap),links};
+}
+
+function initWeb() {
+  if (webInited) return;
+  webInited=true;
+  const d=buildWebData();
+  webNodes=d.nodes; webLinks=d.links;
+  resetWebLayout();
+  const svg=document.getElementById('web-svg');
+  svg.addEventListener('mousedown',webMouseDown);
+  svg.addEventListener('mousemove',webMouseMove);
+  svg.addEventListener('mouseup',webMouseUp);
+  svg.addEventListener('click',webClick);
+}
+
+function resetWebLayout() {
+  const svg=document.getElementById('web-svg');
+  const W=svg.clientWidth||900, H=svg.clientHeight||460;
+  const cx=W/2, cy=H/2;
+  const sysNodes=webNodes.filter(n=>n.kind!=='message');
+  const msgNodes=webNodes.filter(n=>n.kind==='message');
+  const r=Math.min(W,H)*0.36;
+  sysNodes.forEach((n,i)=>{
+    const a=(i/sysNodes.length)*2*Math.PI-Math.PI/2;
+    n.x=cx+r*Math.cos(a); n.y=cy+r*Math.sin(a); n.vx=0; n.vy=0; n.fixed=false;
+  });
+  msgNodes.forEach(n=>{
+    const conns=webLinks.filter(l=>l.source===n.id||l.target===n.id);
+    if (!conns.length) { n.x=cx; n.y=cy; }
+    else {
+      const pts=conns.map(l=>{const oid=l.source===n.id?l.target:l.source; const on=webNodes.find(nn=>nn.id===oid); return on?{x:on.x,y:on.y}:{x:cx,y:cy};});
+      n.x=pts.reduce((s,p)=>s+p.x,0)/pts.length;
+      n.y=pts.reduce((s,p)=>s+p.y,0)/pts.length;
+    }
+    n.vx=0; n.vy=0; n.fixed=false;
+  });
+  simAlpha=1.0;
+}
+
+function simTick() {
+  if (simAlpha<0.005) return;
+  const repulsion=1800, springK=0.04, idealLen=110, centerK=0.012, damp=0.82;
+  const svg=document.getElementById('web-svg');
+  const W=svg.clientWidth||900, H=svg.clientHeight||460;
+  const cx=W/2, cy=H/2;
+  // repulsion
+  for (let i=0;i<webNodes.length;i++) {
+    for (let j=i+1;j<webNodes.length;j++) {
+      const a=webNodes[i], b=webNodes[j];
+      const dx=b.x-a.x, dy=b.y-a.y, d=Math.sqrt(dx*dx+dy*dy)||1;
+      const f=repulsion/(d*d);
+      const fx=dx/d*f, fy=dy/d*f;
+      if (!a.fixed){a.vx-=fx;a.vy-=fy;}
+      if (!b.fixed){b.vx+=fx;b.vy+=fy;}
+    }
+  }
+  // springs
+  webLinks.forEach(l=>{
+    const a=webNodes.find(n=>n.id===l.source), b=webNodes.find(n=>n.id===l.target);
+    if (!a||!b) return;
+    const dx=b.x-a.x, dy=b.y-a.y, d=Math.sqrt(dx*dx+dy*dy)||1;
+    const f=springK*(d-idealLen);
+    const fx=dx/d*f, fy=dy/d*f;
+    if (!a.fixed){a.vx+=fx;a.vy+=fy;}
+    if (!b.fixed){b.vx-=fx;b.vy-=fy;}
+  });
+  // center pull
+  webNodes.forEach(n=>{
+    if (n.fixed) return;
+    n.vx+=(cx-n.x)*centerK; n.vy+=(cy-n.y)*centerK;
+    n.vx*=damp*simAlpha; n.vy*=damp*simAlpha;
+    n.x+=n.vx; n.y+=n.vy;
+    n.x=Math.max(30,Math.min(W-30,n.x)); n.y=Math.max(30,Math.min(H-30,n.y));
+  });
+  simAlpha*=0.985;
+}
+
+function startSim() {
+  stopSim();
+  function loop() { simTick(); renderWeb(); animFrame=requestAnimationFrame(loop); }
+  animFrame=requestAnimationFrame(loop);
+}
+function stopSim() { if (animFrame){cancelAnimationFrame(animFrame);animFrame=null;} }
+
+function getNodeColor(n) {
+  if (n.kind==='message') return n.pass==='primary'?'#F0AC1A':'#9B72F5';
+  if (n.kind==='adapter')   return '#F0AC1A';
+  if (n.kind==='component') return '#4A7FE0';
+  return '#1ED8D8';
+}
+function getNodeR(n) { return n.kind==='message'?13: n.kind==='system'?20:16; }
+
+function computeHighlight() {
+  if (!webSelected) return null;
+  const hnodes=new Set([webSelected]), hlinks=new Set();
+  webLinks.forEach((l,i)=>{
+    if (l.source===webSelected||l.target===webSelected) { hlinks.add(i); hnodes.add(l.source); hnodes.add(l.target); }
+  });
+  return {nodes:hnodes,links:hlinks};
+}
+
+function computeChain(startId) {
+  const hnodes=new Set([startId]), hlinks=new Set();
+  const queue=[startId], visited=new Set();
+  while (queue.length) {
+    const cur=queue.shift();
+    if (visited.has(cur)) continue;
+    visited.add(cur);
+    webLinks.forEach((l,i)=>{
+      if (l.source===cur) {
+        hlinks.add(i); hnodes.add(l.target);
+        if (!visited.has(l.target)) queue.push(l.target);
+      }
+    });
+  }
+  return {nodes:hnodes,links:hlinks};
+}
+
+function renderWeb() {
+  const svg=document.getElementById('web-svg');
+  if (!svg||!webNodes.length) return;
+  const W=svg.clientWidth||900, H=svg.clientHeight||460;
+  const hl=webTracing&&webSelected?computeChain(webSelected):computeHighlight();
+  const hasHl=hl!==null;
+
+  const MF='JetBrains Mono,monospace';
+  let s=`<defs>
+    <marker id="wa-p" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><polygon points="0 0,6 3,0 6" fill="#F0AC1A" opacity=".7"/></marker>
+    <marker id="wa-r" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><polygon points="0 0,6 3,0 6" fill="#9B72F5" opacity=".7"/></marker>
+    <marker id="wa-pd" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><polygon points="0 0,6 3,0 6" fill="#F0AC1A" opacity=".25"/></marker>
+    <marker id="wa-rd" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><polygon points="0 0,6 3,0 6" fill="#9B72F5" opacity=".25"/></marker>
+    <filter id="wglow"><feGaussianBlur stdDeviation="4" result="cb"/><feMerge><feMergeNode in="cb"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>`;
+
+  // links
+  webLinks.forEach((l,i)=>{
+    const a=webNodes.find(n=>n.id===l.source), b=webNodes.find(n=>n.id===l.target);
+    if (!a||!b) return;
+    const lit=!hasHl||hl.links.has(i);
+    const col=l.pass==='primary'?'#F0AC1A':'#9B72F5';
+    const op=lit?0.55:0.06;
+    const markId=lit?(l.pass==='primary'?'wa-p':'wa-r'):(l.pass==='primary'?'wa-pd':'wa-rd');
+    const dx=b.x-a.x, dy=b.y-a.y;
+    const len=Math.sqrt(dx*dx+dy*dy)||1;
+    const br=getNodeR(b)+3;
+    const tx=b.x-dx/len*br, ty=b.y-dy/len*br;
+    const mx=(a.x+b.x)/2+dy/len*18, my=(a.y+b.y)/2-dx/len*18;
+    s+=`<path d="M${a.x} ${a.y} Q${mx} ${my} ${tx} ${ty}" fill="none" stroke="${col}" stroke-width="${lit?1.5:1}" opacity="${op}" marker-end="url(#${markId})"/>`;
+  });
+
+  // nodes
+  webNodes.forEach(n=>{
+    const lit=!hasHl||hl.nodes.has(n.id);
+    const isSel=n.id===webSelected;
+    const col=getNodeColor(n);
+    const r=getNodeR(n);
+    const baseOp=lit?1:0.18;
+    const strokeW=isSel?2.5:1.5;
+
+    if (n.kind==='message') {
+      const s2=r;
+      const pts=`${n.x} ${n.y-s2} ${n.x+s2} ${n.y} ${n.x} ${n.y+s2} ${n.x-s2} ${n.y}`;
+      const fill=isSel?'#222844':'#111420';
+      s+=`<polygon points="${pts}" fill="${fill}" stroke="${col}" stroke-width="${strokeW}" opacity="${baseOp}" ${isSel?'filter="url(#wglow)"':''}/>`;
+      s+=`<text x="${n.x}" y="${n.y+3}" text-anchor="middle" font-family="${MF}" font-size="8" font-weight="500" fill="${col}" opacity="${baseOp}">${n.label}</text>`;
+    } else {
+      s+=`<circle cx="${n.x}" cy="${n.y}" r="${r}" fill="${isSel?'#1E2340':'#111420'}" stroke="${col}" stroke-width="${strokeW}" opacity="${baseOp}" ${isSel?'filter="url(#wglow)"':''}/>`;
+      const short=n.label.replace(/System|Comp|Adapter/,'');
+      s+=`<text x="${n.x}" y="${n.y+4}" text-anchor="middle" font-family="${MF}" font-size="${n.kind==='system'?9:8}" font-weight="500" fill="${col}" opacity="${baseOp}">${short}</text>`;
+    }
+  });
+
+  svg.innerHTML=s;
+}
+
+// ─── WEB INTERACTION ─────────────────────────────────────────────────────────
+function findNodeAt(x,y) {
+  for (let i=webNodes.length-1;i>=0;i--) {
+    const n=webNodes[i], r=getNodeR(n)+5;
+    if (Math.abs(x-n.x)<r&&Math.abs(y-n.y)<r) return n;
+  }
+  return null;
+}
+
+function webMouseDown(e) {
+  const rect=e.currentTarget.getBoundingClientRect();
+  const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+  const n=findNodeAt(mx,my);
+  if (n) { dragNode=n; dragOffset={x:mx-n.x,y:my-n.y}; n.fixed=true; simAlpha=Math.max(simAlpha,0.2); e.preventDefault(); }
+}
+function webMouseMove(e) {
+  if (!dragNode) return;
+  const rect=e.currentTarget.getBoundingClientRect();
+  dragNode.x=e.clientX-rect.left-dragOffset.x;
+  dragNode.y=e.clientY-rect.top-dragOffset.y;
+}
+function webMouseUp() { dragNode=null; }
+
+function webClick(e) {
+  if (dragNode) return;
+  const rect=e.currentTarget.getBoundingClientRect();
+  const n=findNodeAt(e.clientX-rect.left,e.clientY-rect.top);
+  if (!n) { clearWebSelection(); return; }
+  if (n.id===webSelected) { clearWebSelection(); return; }
+  webSelected=n.id;
+  const btn=document.getElementById('btn-trace');
+  btn.disabled=false;
+  const info=document.getElementById('web-sel-info');
+  if (n.kind==='message') {
+    const msg=MESSAGES.find(m=>m.id===n.msgId);
+    info.innerHTML=`<span>${n.label}</span> · ${msg?msg.pass+' · '+msg.router:''}`;
+    if (msg) { state.selected=msg.id; renderList(); renderBottom(); }
+  } else {
+    info.innerHTML=`<span>${n.label}</span> · ${n.kind}`;
+  }
+  document.getElementById('web-hint').textContent='';
+  if (webTracing) renderWeb();
+  else renderWeb();
+}
+
+function clearWebSelection() {
+  webSelected=null; webTracing=false;
+  document.getElementById('btn-trace').disabled=true;
+  document.getElementById('btn-trace').classList.remove('active');
+  document.getElementById('web-sel-info').innerHTML='';
+  document.getElementById('web-hint').textContent='Click any node to select · drag to reposition';
+  renderWeb();
+}
+
+function toggleTrace() {
+  if (!webSelected) return;
+  webTracing=!webTracing;
+  document.getElementById('btn-trace').classList.toggle('active',webTracing);
+  renderWeb();
+}
+
+// ─── TAB ─────────────────────────────────────────────────────────────────────
+function setTab(t) {
+  state.tab=t;
+  document.getElementById('tbtn-payload').classList.toggle('on',t==='payload');
+  document.getElementById('tbtn-analysis').classList.toggle('on',t==='analysis');
+  document.getElementById('payload-view').classList.toggle('on',t==='payload');
+  document.getElementById('analysis-view').classList.toggle('on',t==='analysis');
+}
+
+// ─── BOTTOM ──────────────────────────────────────────────────────────────────
+function renderPayload() {
+  const msg=MESSAGES.find(m=>m.id===state.selected);
+  const el=document.getElementById('payload-view');
+  if (!msg) { el.innerHTML='<div class="py-empty">Select a message type to inspect its payload.</div>'; return; }
+  el.innerHTML=`<table class="field-table"><thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+    ${msg.payload.map(f=>`<tr><td class="fname">${f.name}</td><td class="ftype">${f.type}</td><td class="fnotes">${f.notes}</td></tr>`).join('')}
+  </tbody></table>`;
+}
+function renderAnalysis() {
+  const msg=MESSAGES.find(m=>m.id===state.selected);
+  const el=document.getElementById('analysis-view');
+  if (!msg||!msg.dupes.length) { el.innerHTML='<div class="an-empty">No duplicate candidates for this message type.</div>'; return; }
+  let html='';
+  msg.dupes.forEach(dupId=>{
+    const dup=MESSAGES.find(m=>m.id===dupId); if (!dup) return;
+    const allF=new Map();
+    msg.payload.forEach(f=>allF.set(f.name,{a:f,b:null}));
+    dup.payload.forEach(f=>{ if (allF.has(f.name)) allF.get(f.name).b=f; else allF.set(f.name,{a:null,b:f}); });
+    let mc=0; allF.forEach(({a,b})=>{ if (a&&b&&a.type===b.type) mc++; });
+    const score=Math.round((mc/allF.size)*100);
+    const sameC=msg.consumers.slice().sort().join(',')=== dup.consumers.slice().sort().join(',');
+    let rows='';
+    allF.forEach(({a,b},name)=>{
+      if (a&&b&&a.type===b.type) rows+=`<tr><td class="d-match">${name}</td><td class="d-match">${a.type}</td><td class="d-sym">=</td><td class="d-match">${b.type}</td></tr>`;
+      else if (a&&b) rows+=`<tr><td class="d-left">${name}</td><td class="d-left">${a.type}</td><td class="d-sym">≠</td><td class="d-right">${b.type}</td></tr>`;
+      else if (a) rows+=`<tr><td class="d-left">${name}</td><td class="d-left">${a.type}</td><td class="d-sym">−</td><td class="d-eq">—</td></tr>`;
+      else rows+=`<tr><td class="d-eq">—</td><td class="d-eq">—</td><td class="d-sym">+</td><td class="d-right">${name}: ${b.type}</td></tr>`;
+    });
+    html+=`<div class="dupe-card">
+      <div class="dupe-head">
+        <span class="dupe-ttl">${msg.id} ≈ ${dup.id}</span>
+        <span class="dupe-score">${score}% field match</span>
+        ${sameC?'<span class="dupe-score" style="color:var(--primary);border-color:rgba(240,172,26,.3);background:rgba(240,172,26,.1);">same subscribers</span>':''}
+      </div>
+      <table class="diff-table"><thead><tr><th>${msg.id}</th><th>type</th><th></th><th>${dup.id}</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="dupe-suggest">↳ Consider merging into <code>${msg.id}</code> with a <code>damage_type: StringCRC</code> tag field</div>
+    </div>`;
+  });
+  el.innerHTML=html;
+}
+function renderBottom() { renderPayload(); renderAnalysis(); const n=MESSAGES.filter(m=>m.dupes.length>0).length/2|0; document.getElementById('dupe-count').textContent=n; }
+
+// ─── RESIZE ──────────────────────────────────────────────────────────────────
+window.addEventListener('resize',()=>{ if (state.view==='graph') renderGraph(); });
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+renderList(); renderCenter(); renderBottom();
+</script>
+</body>
+</html>

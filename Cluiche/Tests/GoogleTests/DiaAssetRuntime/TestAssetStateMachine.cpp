@@ -7,6 +7,7 @@
 
 #include <DiaAssetRuntime/AssetRuntime.h>
 #include <DiaAssetRuntime/AssetState.h>
+#include <DiaAssetRuntime/IAssetTypeHandler.h>
 
 #include <DiaCore/FilePath/PathStore.h>
 #include <DiaCore/FilePath/FilePath.h>
@@ -73,8 +74,6 @@ namespace
         return Dia::Core::FilePath(Dia::Core::StringCRC(kF2Alias), filename);
     }
 
-    // Build a runtime loaded with two assets: "asset.alpha" and "asset.beta"
-    // Returns true if the manifest loaded successfully.
     bool LoadTwoAssetRuntime(Dia::AssetRuntime::AssetRuntime& runtime, const char* jsonFilename)
     {
         static const char kJson[] = R"({
@@ -95,6 +94,61 @@ namespace
         return runtime.LoadManifest(fp);
     }
 
+    // Mock handler that immediately calls OnLoadComplete
+    struct ImmediateHandler : public Dia::AssetRuntime::IAssetTypeHandler
+    {
+        unsigned int loadCount = 0;
+        unsigned int unloadCount = 0;
+
+        void Load(const Dia::Core::StringCRC& assetId,
+                  const Dia::Core::Containers::String512&,
+                  Dia::AssetRuntime::IAssetLoadCallback* callback) override
+        {
+            loadCount++;
+            callback->OnLoadComplete(assetId);
+        }
+
+        void Unload(const Dia::Core::StringCRC&) override
+        {
+            unloadCount++;
+        }
+    };
+
+    // Mock handler that immediately calls OnLoadFailed
+    struct FailingHandler : public Dia::AssetRuntime::IAssetTypeHandler
+    {
+        unsigned int loadCount = 0;
+
+        void Load(const Dia::Core::StringCRC& assetId,
+                  const Dia::Core::Containers::String512&,
+                  Dia::AssetRuntime::IAssetLoadCallback* callback) override
+        {
+            loadCount++;
+            callback->OnLoadFailed(assetId, "test failure");
+        }
+
+        void Unload(const Dia::Core::StringCRC&) override {}
+    };
+
+    // Mock handler that does NOT call the callback (simulates async/deferred load)
+    struct DeferredHandler : public Dia::AssetRuntime::IAssetTypeHandler
+    {
+        Dia::AssetRuntime::IAssetLoadCallback* lastCallback = nullptr;
+        Dia::Core::StringCRC lastAssetId;
+        unsigned int loadCount = 0;
+
+        void Load(const Dia::Core::StringCRC& assetId,
+                  const Dia::Core::Containers::String512&,
+                  Dia::AssetRuntime::IAssetLoadCallback* callback) override
+        {
+            loadCount++;
+            lastCallback = callback;
+            lastAssetId = assetId;
+        }
+
+        void Unload(const Dia::Core::StringCRC&) override {}
+    };
+
 } // anonymous namespace
 
 // ---------------------------------------------------------------------------
@@ -113,15 +167,15 @@ protected:
 // Tests — state init
 // ---------------------------------------------------------------------------
 
-TEST_F(AssetStateMachineTest, StateInit_AllAssetsRegisteredAfterLoad)
+TEST_F(AssetStateMachineTest, StateInit_AllAssetsNullAfterLoad)
 {
     Dia::AssetRuntime::AssetRuntime runtime;
     ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_stateinit.json"));
 
     EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
-              Dia::AssetRuntime::AssetState::Registered);
+              Dia::AssetRuntime::AssetState::Null);
     EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.beta")),
-              Dia::AssetRuntime::AssetState::Registered);
+              Dia::AssetRuntime::AssetState::Null);
 }
 
 TEST_F(AssetStateMachineTest, IsAssetReady_FalseAfterLoad)
@@ -134,52 +188,224 @@ TEST_F(AssetStateMachineTest, IsAssetReady_FalseAfterLoad)
 }
 
 // ---------------------------------------------------------------------------
-// Tests — AcknowledgeAssetLoaded
+// Tests — handler dispatch on stage load
 // ---------------------------------------------------------------------------
 
-TEST_F(AssetStateMachineTest, AcknowledgeAssetLoaded_FromLoaded_Succeeds)
+TEST_F(AssetStateMachineTest, HandlerCalled_OnStageLoad)
 {
-    // AcknowledgeAssetLoaded transitions Staged→Loaded.
-    // We cannot directly set Staged from outside, but AcknowledgeAssetLoaded
-    // wraps TryTransition(id, Loaded).  From Registered, Loaded is not a
-    // valid transition, so the state should remain Registered.
     Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_ackloaded_invalid.json"));
+    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_handler_call.json"));
 
-    // Registered→Loaded is invalid; state unchanged.
-    runtime.AcknowledgeAssetLoaded(Dia::Core::StringCRC("asset.alpha"));
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
+    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
+
+    EXPECT_EQ(handler.loadCount, 2u);
+}
+
+TEST_F(AssetStateMachineTest, Handler_ImmediateSuccess_AssetsLoaded)
+{
+    Dia::AssetRuntime::AssetRuntime runtime;
+    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_immediate_loaded.json"));
+
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
+    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
+
     EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
-              Dia::AssetRuntime::AssetState::Registered);
+              Dia::AssetRuntime::AssetState::Loaded);
+    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.beta")),
+              Dia::AssetRuntime::AssetState::Loaded);
+    EXPECT_TRUE(runtime.IsAssetReady(Dia::Core::StringCRC("asset.alpha")));
+}
+
+TEST_F(AssetStateMachineTest, Handler_Failure_AssetsFailed)
+{
+    Dia::AssetRuntime::AssetRuntime runtime;
+    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_handler_fail.json"));
+
+    FailingHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
+    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
+
+    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
+              Dia::AssetRuntime::AssetState::Failed);
+    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.beta")),
+              Dia::AssetRuntime::AssetState::Failed);
+    EXPECT_FALSE(runtime.IsAssetReady(Dia::Core::StringCRC("asset.alpha")));
+}
+
+TEST_F(AssetStateMachineTest, Handler_Deferred_AssetsInLoading)
+{
+    Dia::AssetRuntime::AssetRuntime runtime;
+    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_handler_deferred.json"));
+
+    DeferredHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
+    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
+
+    EXPECT_EQ(handler.loadCount, 2u);
+    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
+              Dia::AssetRuntime::AssetState::Loading);
+    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.beta")),
+              Dia::AssetRuntime::AssetState::Loading);
+    EXPECT_FALSE(runtime.IsLoadComplete(Dia::Core::StringCRC("stage.s1")));
+}
+
+TEST_F(AssetStateMachineTest, NoHandler_AssetsTransitionToFailed)
+{
+    Dia::AssetRuntime::AssetRuntime runtime;
+    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_no_handler.json"));
+
+    // No handler registered for "asset" prefix
+    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
+
+    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
+              Dia::AssetRuntime::AssetState::Failed);
+    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.beta")),
+              Dia::AssetRuntime::AssetState::Failed);
 }
 
 // ---------------------------------------------------------------------------
-// Tests — AcknowledgeAssetUnloaded
+// Tests — IsLoadComplete
 // ---------------------------------------------------------------------------
 
-TEST_F(AssetStateMachineTest, AcknowledgeAssetUnloaded_FromRegistered_Invalid)
+TEST_F(AssetStateMachineTest, IsLoadComplete_TrueWhenAllLoaded)
 {
-    // Registered→Registered is not a valid transition.
     Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_ackunloaded_reg.json"));
+    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_loadcomplete.json"));
 
-    runtime.AcknowledgeAssetUnloaded(Dia::Core::StringCRC("asset.alpha"));
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
+    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
+
+    EXPECT_TRUE(runtime.IsLoadComplete(Dia::Core::StringCRC("stage.s1")));
+}
+
+TEST_F(AssetStateMachineTest, IsLoadComplete_FalseWhenFailed)
+{
+    Dia::AssetRuntime::AssetRuntime runtime;
+    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_loadcomplete_fail.json"));
+
+    FailingHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
+    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
+
+    EXPECT_FALSE(runtime.IsLoadComplete(Dia::Core::StringCRC("stage.s1")));
+}
+
+// ---------------------------------------------------------------------------
+// Tests — GetLoadProgress
+// ---------------------------------------------------------------------------
+
+TEST_F(AssetStateMachineTest, GetLoadProgress_AllLoaded)
+{
+    Dia::AssetRuntime::AssetRuntime runtime;
+    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_progress_loaded.json"));
+
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
+    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
+
+    auto progress = runtime.GetLoadProgress(Dia::Core::StringCRC("stage.s1"));
+    EXPECT_EQ(progress.total, 2u);
+    EXPECT_EQ(progress.loaded, 2u);
+    EXPECT_EQ(progress.failed, 0u);
+}
+
+TEST_F(AssetStateMachineTest, GetLoadProgress_AllFailed)
+{
+    Dia::AssetRuntime::AssetRuntime runtime;
+    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_progress_failed.json"));
+
+    FailingHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
+    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
+
+    auto progress = runtime.GetLoadProgress(Dia::Core::StringCRC("stage.s1"));
+    EXPECT_EQ(progress.total, 2u);
+    EXPECT_EQ(progress.loaded, 0u);
+    EXPECT_EQ(progress.failed, 2u);
+}
+
+// ---------------------------------------------------------------------------
+// Tests — RetryAssetLoad
+// ---------------------------------------------------------------------------
+
+TEST_F(AssetStateMachineTest, RetryAssetLoad_FromFailed_ReDispatchesHandler)
+{
+    Dia::AssetRuntime::AssetRuntime runtime;
+    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_retry.json"));
+
+    // First attempt fails
+    FailingHandler failHandler;
+    runtime.RegisterTypeHandler("asset", &failHandler);
+    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
+
     EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
-              Dia::AssetRuntime::AssetState::Registered);
+              Dia::AssetRuntime::AssetState::Failed);
+    EXPECT_EQ(failHandler.loadCount, 2u);
+
+    // Replace with a succeeding handler and retry
+    runtime.UnregisterTypeHandler("asset");
+    ImmediateHandler successHandler;
+    runtime.RegisterTypeHandler("asset", &successHandler);
+
+    runtime.RetryAssetLoad(Dia::Core::StringCRC("asset.alpha"));
+
+    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
+              Dia::AssetRuntime::AssetState::Loaded);
+    EXPECT_EQ(successHandler.loadCount, 1u);
+}
+
+TEST_F(AssetStateMachineTest, RetryAssetLoad_NotFailed_NoOp)
+{
+    Dia::AssetRuntime::AssetRuntime runtime;
+    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_retry_noop.json"));
+
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
+    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
+
+    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
+              Dia::AssetRuntime::AssetState::Loaded);
+
+    unsigned int before = handler.loadCount;
+    runtime.RetryAssetLoad(Dia::Core::StringCRC("asset.alpha"));
+    EXPECT_EQ(handler.loadCount, before); // no re-dispatch
+}
+
+// ---------------------------------------------------------------------------
+// Tests — unload
+// ---------------------------------------------------------------------------
+
+TEST_F(AssetStateMachineTest, Unload_CallsHandlerUnload)
+{
+    Dia::AssetRuntime::AssetRuntime runtime;
+    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_unload_handler.json"));
+
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
+    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
+    runtime.RequestStageUnload(Dia::Core::StringCRC("stage.s1"));
+
+    EXPECT_EQ(handler.unloadCount, 2u);
+    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
+              Dia::AssetRuntime::AssetState::Unloaded);
 }
 
 // ---------------------------------------------------------------------------
 // Tests — unknown asset queries
 // ---------------------------------------------------------------------------
 
-TEST_F(AssetStateMachineTest, GetAssetState_UnknownId_ReturnsSentinel)
+TEST_F(AssetStateMachineTest, GetAssetState_UnknownId_ReturnsNull)
 {
     Dia::AssetRuntime::AssetRuntime runtime;
     ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_unknown_state.json"));
 
-    // Unknown ID returns sentinel Registered (documented fallback).
     Dia::AssetRuntime::AssetState s =
         runtime.GetAssetState(Dia::Core::StringCRC("asset.does_not_exist"));
-    EXPECT_EQ(s, Dia::AssetRuntime::AssetState::Registered);
+    EXPECT_EQ(s, Dia::AssetRuntime::AssetState::Null);
 }
 
 TEST_F(AssetStateMachineTest, IsAssetReady_UnknownId_ReturnsFalse)
@@ -191,108 +417,35 @@ TEST_F(AssetStateMachineTest, IsAssetReady_UnknownId_ReturnsFalse)
 }
 
 // ---------------------------------------------------------------------------
-// Tests — IsAssetReady after transition sequence
+// Tests — handler registration
 // ---------------------------------------------------------------------------
 
-TEST_F(AssetStateMachineTest, IsAssetReady_TrueOnlyWhenLoaded)
-{
-    // We can only drive the state machine through public API.
-    // After load: Registered — not ready.
-    // There is no public API to move to Staged/Loaded in F2 alone
-    // (RequestStageLoad is F3), so we verify the negative: ready is false
-    // from initial Registered state.
-    Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_isready_loaded.json"));
-
-    EXPECT_FALSE(runtime.IsAssetReady(Dia::Core::StringCRC("asset.alpha")));
-    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
-              Dia::AssetRuntime::AssetState::Registered);
-}
-
-// ---------------------------------------------------------------------------
-// Tests — invalid transitions do not change state
-// ---------------------------------------------------------------------------
-
-TEST_F(AssetStateMachineTest, InvalidTransition_StateUnchanged)
+TEST_F(AssetStateMachineTest, RegisterTypeHandler_DuplicatePrefix_NoDoubleRegister)
 {
     Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_invalid_trans.json"));
+    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_handler_dup.json"));
 
-    // Attempt Registered→Loaded (invalid).
-    runtime.AcknowledgeAssetLoaded(Dia::Core::StringCRC("asset.alpha"));
-    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
-              Dia::AssetRuntime::AssetState::Registered);
-
-    // Attempt Registered→Registered via AcknowledgeAssetUnloaded (invalid).
-    runtime.AcknowledgeAssetUnloaded(Dia::Core::StringCRC("asset.alpha"));
-    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
-              Dia::AssetRuntime::AssetState::Registered);
-}
-
-// ---------------------------------------------------------------------------
-// Tests — AcknowledgeAssetUnloaded on unknown ID is safe (no crash)
-// ---------------------------------------------------------------------------
-
-TEST_F(AssetStateMachineTest, AcknowledgeAssetLoaded_UnknownId_SafeNoCrash)
-{
-    Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_ack_unknown.json"));
-
-    // Should log a warning and return without crashing.
-    runtime.AcknowledgeAssetLoaded(Dia::Core::StringCRC("asset.ghost"));
-    runtime.AcknowledgeAssetUnloaded(Dia::Core::StringCRC("asset.ghost"));
-    // No assertion needed — just verifying no crash/assert.
-    SUCCEED();
-}
-
-// ---------------------------------------------------------------------------
-// Tests — AcknowledgeAssetLoadFailed
-// ---------------------------------------------------------------------------
-
-TEST_F(AssetStateMachineTest, AcknowledgeAssetLoadFailed_FromRegistered_Invalid)
-{
-    // Registered→Registered via LoadFailed is not valid.
-    Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_loadfail_reg.json"));
-
-    runtime.AcknowledgeAssetLoadFailed(Dia::Core::StringCRC("asset.alpha"));
-    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
-              Dia::AssetRuntime::AssetState::Registered);
-}
-
-TEST_F(AssetStateMachineTest, AcknowledgeAssetLoadFailed_FromStaged_ReturnsToRegistered)
-{
-    // Staged→Registered (load failed, retry path).
-    Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_loadfail_staged.json"));
+    ImmediateHandler h1, h2;
+    runtime.RegisterTypeHandler("asset", &h1);
+    runtime.RegisterTypeHandler("asset", &h2); // should warn, not register
 
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
-    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
-              Dia::AssetRuntime::AssetState::Staged);
-
-    runtime.AcknowledgeAssetLoadFailed(Dia::Core::StringCRC("asset.alpha"));
-    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
-              Dia::AssetRuntime::AssetState::Registered);
+    EXPECT_EQ(h1.loadCount, 2u);
+    EXPECT_EQ(h2.loadCount, 0u); // h2 was not registered
 }
 
-TEST_F(AssetStateMachineTest, AcknowledgeAssetLoadFailed_RefCountPreserved)
+TEST_F(AssetStateMachineTest, UnregisterTypeHandler_RemovedSuccessfully)
 {
-    // After load failure, the stage still wants the asset — ref count unchanged.
     Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_loadfail_refcount.json"));
+    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_handler_unreg.json"));
+
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
+    runtime.UnregisterTypeHandler("asset");
 
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
-    EXPECT_EQ(runtime.GetAssetRefCount(Dia::Core::StringCRC("asset.alpha")), 1u);
-
-    runtime.AcknowledgeAssetLoadFailed(Dia::Core::StringCRC("asset.alpha"));
-    EXPECT_EQ(runtime.GetAssetRefCount(Dia::Core::StringCRC("asset.alpha")), 1u);
-}
-
-TEST_F(AssetStateMachineTest, AcknowledgeAssetLoadFailed_UnknownId_SafeNoCrash)
-{
-    Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_loadfail_unknown.json"));
-
-    runtime.AcknowledgeAssetLoadFailed(Dia::Core::StringCRC("asset.ghost"));
-    SUCCEED();
+    EXPECT_EQ(handler.loadCount, 0u);
+    // Assets should be Failed since no handler found
+    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
+              Dia::AssetRuntime::AssetState::Failed);
 }

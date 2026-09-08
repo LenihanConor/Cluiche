@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include <DiaGeometry2D/Spatial/JsonSpatialGridSerializer.h>
+#include <DiaGeometry2D/Spatial/Serializers/JsonSpatialGridSerializer.h>
 #include <DiaSerializer/SerializeResult.h>
 #include <cstdio>
 

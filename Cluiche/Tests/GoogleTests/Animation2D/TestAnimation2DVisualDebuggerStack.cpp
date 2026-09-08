@@ -246,7 +246,7 @@ TEST(Animation2DVisualDebugger_AnimClipCursorDrawer, Draw_PlayingClip_DrawsTextP
     Dia::Graphics::FrameData frameData;
     drawer.Draw(frameData);
 
-    EXPECT_EQ(frameData.GetDebugPrimitiveCount(), 1u);
+    EXPECT_EQ(frameData.GetTextPrimitiveCount(), 1u);
 }
 
 TEST(Animation2DVisualDebugger_AnimClipCursorDrawer, Draw_PlayingClip_IsActive)
@@ -267,9 +267,8 @@ TEST(Animation2DVisualDebugger_AnimClipCursorDrawer, Draw_PlayingClip_IsActive)
     Dia::Graphics::FrameData frameData;
     drawer.Draw(frameData);
 
-    ASSERT_EQ(frameData.GetDebugPrimitiveCount(), 1u);
-    const DebugPrimitiveText2D& t = frameData.GetDebugPrimitive(0u).text2D;
-    EXPECT_EQ(t.colour, Dia::Debug::DebugColourPalette::kActive);
+    ASSERT_EQ(frameData.GetTextPrimitiveCount(), 1u);
+    EXPECT_EQ(frameData.GetTextPrimitive(0u).colour, Dia::Debug::DebugColourPalette::kActive);
 }
 
 TEST(Animation2DVisualDebugger_AnimClipCursorDrawer, Draw_StoppedClip_IsInactive)
@@ -278,7 +277,6 @@ TEST(Animation2DVisualDebugger_AnimClipCursorDrawer, Draw_StoppedClip_IsInactive
     Dia::Rig2D::Skeleton    skeleton(skelDef);
 
     AnimationEvaluator evaluator(skeleton);
-    // Just registered, not playing
     evaluator.RegisterClipPlayer(Dia::Core::StringCRC("idle"));
 
     auto wt = MakeWorldTransforms();
@@ -288,9 +286,8 @@ TEST(Animation2DVisualDebugger_AnimClipCursorDrawer, Draw_StoppedClip_IsInactive
     Dia::Graphics::FrameData frameData;
     drawer.Draw(frameData);
 
-    ASSERT_EQ(frameData.GetDebugPrimitiveCount(), 1u);
-    const DebugPrimitiveText2D& t = frameData.GetDebugPrimitive(0u).text2D;
-    EXPECT_EQ(t.colour, Dia::Debug::DebugColourPalette::kInactive);
+    ASSERT_EQ(frameData.GetTextPrimitiveCount(), 1u);
+    EXPECT_EQ(frameData.GetTextPrimitive(0u).colour, Dia::Debug::DebugColourPalette::kInactive);
 }
 
 TEST(Animation2DVisualDebugger_AnimClipCursorDrawer, Draw_Disabled_NoPrimitives)
@@ -351,7 +348,7 @@ TEST(Animation2DVisualDebugger_AnimBlendWeightsDrawer, Draw_TwoLayers_TwoTextPri
     Dia::Graphics::FrameData frameData;
     drawer.Draw(frameData);
 
-    EXPECT_EQ(frameData.GetDebugPrimitiveCount(), 2u);
+    EXPECT_EQ(frameData.GetTextPrimitiveCount(), 2u);
 }
 
 TEST(Animation2DVisualDebugger_AnimBlendWeightsDrawer, Draw_ZeroWeightLayer_IsInactive)
@@ -370,9 +367,8 @@ TEST(Animation2DVisualDebugger_AnimBlendWeightsDrawer, Draw_ZeroWeightLayer_IsIn
     Dia::Graphics::FrameData frameData;
     drawer.Draw(frameData);
 
-    ASSERT_EQ(frameData.GetDebugPrimitiveCount(), 1u);
-    const DebugPrimitiveText2D& t = frameData.GetDebugPrimitive(0u).text2D;
-    EXPECT_EQ(t.colour, Dia::Debug::DebugColourPalette::kInactive);
+    ASSERT_EQ(frameData.GetTextPrimitiveCount(), 1u);
+    EXPECT_EQ(frameData.GetTextPrimitive(0u).colour, Dia::Debug::DebugColourPalette::kInactive);
 }
 
 TEST(Animation2DVisualDebugger_AnimBlendWeightsDrawer, LayerName_IsAnimBlendWeights)

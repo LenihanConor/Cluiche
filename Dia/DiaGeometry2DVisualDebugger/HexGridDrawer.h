@@ -8,10 +8,10 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/IVisualDebugger.h>
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
 #include <DiaGeometry2D/Spatial/HexGrid.h>
 
-namespace Dia::Debug { class DebugLayerManager; }
+namespace Dia::Core  { class IDebugContext; }
 
 namespace Dia::Geometry2DVisualDebugger
 {
@@ -32,17 +32,27 @@ class HexGridDrawer : public Dia::Debug::IVisualDebugger
 {
 public:
     HexGridDrawer(const Dia::Geometry2D::HexGrid<T, MaxObjects>& grid,
-                  const Dia::Debug::DebugLayerManager&           manager)
+                  const Dia::Core::IDebugContext&           manager)
         : mGrid(grid)
         , mManager(manager)
     {}
 
     Dia::Core::StringCRC GetLayerName() const override;
-    void Draw(Dia::Graphics::FrameData& frameData) override;
+    void Draw(Dia::Core::IDebugDraw& draw) override;
+
+    // Called by the owning stage module each frame with the externally-owned
+    // selection. Pass nullptr to clear. The pointer is not stored across frames
+    // — caller must pass it again each update.
+    void SetSelection(const Dia::Geometry2D::HexCoord* selected)
+    {
+        mSelected = selected;
+    }
 
 private:
     const Dia::Geometry2D::HexGrid<T, MaxObjects>& mGrid;
-    const Dia::Debug::DebugLayerManager&           mManager;
+    const Dia::Core::IDebugContext&           mManager;
+    bool                                           mShowLabels{ false };
+    const Dia::Geometry2D::HexCoord*               mSelected{ nullptr };
 };
 
 } // namespace Dia::Geometry2DVisualDebugger

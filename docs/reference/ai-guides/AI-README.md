@@ -42,7 +42,7 @@ Quick summary:
 
 | Subsystem | Responsibility | Does NOT Handle |
 |-----------|---------------|-----------------|
-| DiaApplication | Thread lifecycle, module orchestration | Game logic, rendering |
+| DiaApplicationFlow | Thread lifecycle, module orchestration | Game logic, rendering |
 | DiaCore | Containers, type system, time | Threading, graphics |
 | DiaGraphics | Rendering abstraction (ICanvas) | Window management, backend |
 | DiaMaths | Vector/matrix/shape math | Physics simulation |
@@ -101,7 +101,7 @@ Quick summary:
 
 **Code Example:**
 ```cpp
-// Dia/DiaApplication/ApplicationProcessingUnit.h
+// Dia/DiaApplicationFlow/ApplicationProcessingUnit.h
 class ProcessingUnit {
     void Start();   // Initialize first phase
     void Update();  // Run current phase update loop
@@ -109,7 +109,7 @@ class ProcessingUnit {
     void TransitionPhase(Phase* newPhase);  // Queued, thread-safe
 };
 
-// Dia/DiaApplication/ApplicationModule.h
+// Dia/DiaApplicationFlow/ApplicationModule.h
 class Module {
     virtual void DoStart() = 0;
     virtual void DoUpdate() = 0;
@@ -398,7 +398,7 @@ dependencies:
 
 ### Task: Fix a Bug in DiaMaths
 
-1. **Read known issues** → [known-issues.md](../subsystems/dia-maths/known-issues.md)
+1. **Read known issues** → [known-issues.md](../architecture/dia-maths-known-issues.md)
    - Template specialization bugs (InverseLerp, MoveTowards)
    - Dead code in IntersectionTests
 2. **Locate source** → `Dia/DiaMaths/Core/` or `Dia/DiaMaths/Shape/`
@@ -449,7 +449,7 @@ C++ Standard Library (std::chrono, std::mutex, std::thread)
 ### Within Dia Engine
 
 ```
-DiaApplication (Module/Phase/PU framework)
+DiaApplicationFlow (Module/Phase/PU framework)
     ↓ depends on
 DiaCore (Containers, Type, Time, Memory)
 
@@ -479,7 +479,7 @@ DiaMaths ← (independent, minimal dependencies)
 
 **Test Coverage:**
 - Overall coverage <30%
-- DiaApplication <20%
+- DiaApplicationFlow <20%
 - DiaCore ~30-40%
 - DiaMaths ~40%
 
@@ -570,7 +570,7 @@ DIA_FUNCTOR(name)                   # Functor helper
 **Status:** Living document (Phase 1 of 10 complete)  
 **Repository:** C:\GitHub\Cluiche
 
-**Progress Tracking:** See [DOCUMENTATION_TODO.md](../../DOCUMENTATION_TODO.md)
+**Progress Tracking:** See [BACKLOG.md](../../BACKLOG.md)
 
 ---
 

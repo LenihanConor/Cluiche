@@ -27,6 +27,7 @@ def run(
     fail_fast: bool,
     quiet: bool,
     local_llm: bool = False,
+    python_packages: bool = False,
 ) -> int:
     root = repo_root if repo_root is not None else _REPO_ROOT
 
@@ -36,12 +37,14 @@ def run(
         return 2
 
     # Determine which steps to run
-    run_all = not any([toolchain, deps_only, dep_id, submodules, claude, local_llm])
+    run_all = not any([toolchain, deps_only, dep_id, submodules, claude, local_llm, python_packages])
     steps = []
     if run_all or toolchain:
         steps.append("toolchain")
     if run_all or deps_only or dep_id:
         steps.append("deps")
+    if run_all or python_packages:
+        steps.append("python-packages")
     if run_all or submodules:
         steps.append("submodules")
     if run_all or claude:
@@ -80,6 +83,11 @@ def run(
                 print(f"{label} restoring deps...")
             from dia_cli.commands.env.deps_restore_cmd import run as deps_run
             code = deps_run(repo_root=root, dep_id=dep_id, force=force, quiet=quiet)
+
+        elif step == "python-packages":
+            if not quiet:
+                print(f"{label} installing Python packages...")
+            code = _setup_python_packages(root, force, quiet)
 
         elif step == "submodules":
             if not quiet:
@@ -159,6 +167,39 @@ def _run_submodules(repo_root: Path, quiet: bool) -> int:
         return 1
     except subprocess.TimeoutExpired:
         print("ERROR: git submodule update timed out after 5 minutes")
+        return 1
+
+
+def _setup_python_packages(repo_root: Path, force: bool, quiet: bool) -> int:
+    """Install packages from External/Python311/requirements.txt into the bundled Python."""
+    import sys
+
+    req_file = repo_root / "Dia" / "DiaCLI" / "requirements.txt"
+    if not req_file.exists():
+        print(f"ERROR: requirements.txt not found at {req_file}")
+        print(f"       To fix: create {req_file} with one package per line")
+        return 1
+
+    site_packages = repo_root / "External" / "Python311" / "Lib" / "site-packages"
+    site_packages.mkdir(parents=True, exist_ok=True)
+
+    if not quiet:
+        print(f"         Installing packages to {site_packages} ...")
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--target", str(site_packages),
+             "-r", str(req_file)],
+            capture_output=True, text=True, timeout=300,
+        )
+        if result.returncode != 0:
+            print(f"ERROR: pip install failed:\n{result.stderr.strip()}")
+            print(f"       To retry manually: pip install --target \"{site_packages}\" -r \"{req_file}\"")
+            return 1
+        if not quiet:
+            print(f"         Python packages installed")
+        return 0
+    except subprocess.TimeoutExpired:
+        print("ERROR: pip install timed out after 5 minutes")
         return 1
 
 

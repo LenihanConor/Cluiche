@@ -12,8 +12,6 @@ namespace Dia
 			class String128 : public String<128>
 			{
 			public:
-				DIA_TYPE_DECLARATION;
-
 				String128();																				
 				explicit String128 ( ConstIterator& iter ); 
 				explicit String128 ( ConstReverseIterator& iter ); 

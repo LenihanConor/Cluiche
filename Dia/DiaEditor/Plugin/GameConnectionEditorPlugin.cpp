@@ -1,8 +1,12 @@
 #include "DiaEditor/Plugin/GameConnectionEditorPlugin.h"
 #include "DiaEditor/Plugin/EditorPluginRegistrationMacros.h"
 #include "DiaEditor/Plugin/EditorPluginContext.h"
+#include "DiaEditor/Plugin/PluginServiceLocator.h"
+#include "DiaEditor/MVC/EditorModel.h"
+#include "DiaEditor/EditorAPI/EditorActionRegistryService.h"
+#include "DiaEditor/EditorAPI/EditorActionRegistry.h"
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 namespace Dia
 {
@@ -11,17 +15,40 @@ namespace Dia
 		void GameConnectionEditorPlugin::OnLoad(const EditorPluginContext& context)
 		{
 			DIA_LOG_INFO("Editor", "GameConnectionEditorPlugin: OnLoad");
+			mServices = context.mServices;
+
+			Dia::Editor::EditorActionRegistry* api = nullptr;
+			if (mServices != nullptr)
+			{
+				Dia::Editor::EditorActionRegistryService* regSvc =
+					mServices->GetService<Dia::Editor::EditorActionRegistryService>();
+				if (regSvc != nullptr)
+					api = regSvc->GetRegistry();
+			}
+
 			mManager.Initialize();
 			mController.SetPersistencePath("assets/configs/editor-connection.json");
 			mController.LoadPersistedUrl();
-			mController.Initialize(context.mBridge, &mManager, context.mView);
+			mController.SetEditorContext(context.mModel);
+			mController.Initialize(context.mBridge, &mManager, context.mView, api);
 			mController.AutoConnect("ws://localhost:9002");
+
+			mProjectController.Initialize(context.mBridge, context.mModel, api);
+
+			if (mServices)
+				mServices->RegisterService(&mManager);
+
 			DIA_LOG_INFO("Editor", "GameConnectionEditorPlugin: Initialized manager and controller");
 		}
 
 		void GameConnectionEditorPlugin::OnUnload()
 		{
 			DIA_LOG_INFO("Editor", "GameConnectionEditorPlugin: OnUnload");
+
+			if (mServices)
+				mServices->UnregisterService<GameConnectionManager>();
+
+			mProjectController.Shutdown();
 			mController.Shutdown();
 			mManager.Shutdown();
 		}

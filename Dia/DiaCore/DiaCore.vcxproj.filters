@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Core">
@@ -12,6 +12,9 @@
     </Filter>
     <Filter Include="Time\Source">
       <UniqueIdentifier>{317f8437-84cd-4e78-b0e8-1267cc0e2bec}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SimTime">
+      <UniqueIdentifier>{9c3a7e21-6b4f-4d2a-8e91-2f7c5a1b9d3e}</UniqueIdentifier>
     </Filter>
     <Filter Include="Memory">
       <UniqueIdentifier>{1f1ef674-2c72-4267-8eea-67ea84719f44}</UniqueIdentifier>
@@ -28,20 +31,8 @@
     <Filter Include="CRC\Source">
       <UniqueIdentifier>{f5a3628a-1ba4-40e7-a916-e8450abd5399}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Type">
-      <UniqueIdentifier>{7d1abbc4-5748-4184-a23a-719033b81ad1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Type\Interfaces">
-      <UniqueIdentifier>{5c3bacdc-9d23-41f0-a562-f2411efd461e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Type\Interfaces\Source">
-      <UniqueIdentifier>{312ea2c8-7634-4411-a8aa-5a7e80a0b2da}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Type\Internals">
-      <UniqueIdentifier>{c496659c-6a39-4bb4-bfa1-b898dfa52677}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Type\Internals\Source">
-      <UniqueIdentifier>{bd65c902-3a11-4959-97d6-df230137de1b}</UniqueIdentifier>
+    <Filter Include="Reflect">
+      <UniqueIdentifier>{a1b2c3d4-e5f6-7890-abcd-ef1234567890}</UniqueIdentifier>
     </Filter>
     <Filter Include="Strings">
       <UniqueIdentifier>{596d4694-f233-441d-8fbb-7e6ca63d948e}</UniqueIdentifier>
@@ -88,26 +79,11 @@
     <Filter Include="Architecture">
       <UniqueIdentifier>{e0d6069c-6f08-4000-884f-53bf622c4955}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Architecture\Components">
-      <UniqueIdentifier>{2cdccfe9-6169-478d-80de-c94d789c8833}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Architecture\Singleton">
       <UniqueIdentifier>{a2488200-c774-43b8-a466-4e028b1cab04}</UniqueIdentifier>
     </Filter>
     <Filter Include="Architecture\Events">
       <UniqueIdentifier>{b3499311-d885-54c9-b577-5f139c2dbc15}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Architecture\Components\Interface">
-      <UniqueIdentifier>{f122460b-a74c-4bd8-839e-3314bddecde0}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Architecture\Components\Interface\Source">
-      <UniqueIdentifier>{a6f5b006-af6b-4a80-93a9-e01be5365f73}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Architecture\Components\Concrete">
-      <UniqueIdentifier>{76c9dc03-ba1e-46cd-a7e7-d6fe704c6e7f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Architecture\Components\Concrete\Source">
-      <UniqueIdentifier>{46d4f6e0-a570-43ac-b834-57a4a5973ed7}</UniqueIdentifier>
     </Filter>
     <Filter Include="Containers\Misc">
       <UniqueIdentifier>{185de9e0-5cde-43a6-9502-fd026771219a}</UniqueIdentifier>
@@ -118,8 +94,8 @@
     <Filter Include="Frame">
       <UniqueIdentifier>{0f1abddd-5815-43db-8cd3-6324be46c66f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="FilePath">
-      <UniqueIdentifier>{aacdf484-6764-43dd-9fa4-5a26854fd233}</UniqueIdentifier>
+    <Filter Include="Metadata">
+      <UniqueIdentifier>{1a2b3c4d-5e6f-7890-abcd-ef1234567890}</UniqueIdentifier>
     </Filter>
     <Filter Include="Json">
       <UniqueIdentifier>{cdb42dc0-fedf-4724-9e84-449d3348f884}</UniqueIdentifier>
@@ -138,6 +114,9 @@
     </Filter>
     <Filter Include="Core\Debug">
       <UniqueIdentifier>{f3a4b5c6-7890-abcd-ef12-34567890abcd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UI">
+      <UniqueIdentifier>{63d41a51-c4a5-470a-86aa-f8cd3ede1012}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -161,6 +140,21 @@
     </ClInclude>
     <ClInclude Include="Core\System.h">
       <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Debug\IDebugDraw.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DebugDraw\IVisualDebugger.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DebugDraw\IDebugContext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DebugDraw\DebugColourPalette.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DebugDraw\DebugLayerNames.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Core\Debug\DebugConsole.h">
       <Filter>Core\Debug</Filter>
@@ -225,52 +219,37 @@
     <ClInclude Include="CRC\StripStringCRC.h">
       <Filter>CRC</Filter>
     </ClInclude>
-    <ClInclude Include="Type\BasicTypeDefines.h">
-      <Filter>Type\Interfaces</Filter>
+    <ClInclude Include="Reflect\Reflect.h">
+      <Filter>Reflect</Filter>
     </ClInclude>
-    <ClInclude Include="Type\TypeDeclarationMacros.h">
-      <Filter>Type\Interfaces</Filter>
+    <ClInclude Include="Reflect\Archive.h">
+      <Filter>Reflect</Filter>
     </ClInclude>
-    <ClInclude Include="Type\TypeDefinitionMacros.h">
-      <Filter>Type\Interfaces</Filter>
+    <ClInclude Include="Reflect\ReflectMacros.h">
+      <Filter>Reflect</Filter>
     </ClInclude>
-    <ClInclude Include="Type\TypeFacade.h">
-      <Filter>Type\Interfaces</Filter>
+    <ClInclude Include="Reflect\SerializeResult.h">
+      <Filter>Reflect</Filter>
     </ClInclude>
-    <ClInclude Include="Type\TypeRegistry.h">
-      <Filter>Type\Interfaces</Filter>
+    <ClInclude Include="Reflect\JsonArchive.h">
+      <Filter>Reflect</Filter>
     </ClInclude>
-    <ClInclude Include="Type\TypeTextSerializer.h">
-      <Filter>Type\Interfaces</Filter>
+    <ClInclude Include="Reflect\BinaryArchive.h">
+      <Filter>Reflect</Filter>
     </ClInclude>
-    <ClInclude Include="Type\TypeTraits.h">
-      <Filter>Type\Interfaces</Filter>
+    <ClInclude Include="Reflect\ContainerSpecializations.h">
+      <Filter>Reflect</Filter>
     </ClInclude>
-    <ClInclude Include="Type\TypeDefinition.h">
-      <Filter>Type\Internals</Filter>
+    <ClInclude Include="Reflect\PolymorphicRegistry.h">
+      <Filter>Reflect</Filter>
     </ClInclude>
-    <ClInclude Include="Type\TypeInstance.h">
-      <Filter>Type\Internals</Filter>
+    <ClInclude Include="Reflect\FieldAttributes.h">
+      <Filter>Reflect</Filter>
     </ClInclude>
-    <ClInclude Include="Type\TypeMember.h">
-      <Filter>Type\Internals</Filter>
-    </ClInclude>
-    <ClInclude Include="Type\TypeParameterInput.h">
-      <Filter>Type\Internals</Filter>
-    </ClInclude>
-    <ClInclude Include="Type\TypeVariable.h">
-      <Filter>Type\Internals</Filter>
-    </ClInclude>
-    <ClInclude Include="Type\TypeVariableAttributes.h">
-      <Filter>Type\Internals</Filter>
-    </ClInclude>
-    <ClInclude Include="Type\TypeVariableData.h">
-      <Filter>Type\Internals</Filter>
+    <ClInclude Include="Reflect\DiaCoreSerializers.h">
+      <Filter>Reflect</Filter>
     </ClInclude>
     <ClInclude Include="Strings\String.h">
-      <Filter>Strings</Filter>
-    </ClInclude>
-    <ClInclude Include="Strings\StringJsonSerializer.h">
       <Filter>Strings</Filter>
     </ClInclude>
     <ClInclude Include="Strings\String1024.h">
@@ -336,6 +315,12 @@
     <ClInclude Include="Containers\Handle.h">
       <Filter>Containers</Filter>
     </ClInclude>
+    <ClInclude Include="Containers\HandlePool.h">
+      <Filter>Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\HandlePool.inl">
+      <Filter>Containers</Filter>
+    </ClInclude>
     <ClInclude Include="Containers\BitFlag\BitArray16.h">
       <Filter>Containers\BitFlag</Filter>
     </ClInclude>
@@ -381,36 +366,10 @@
     <ClInclude Include="Architecture\Events\Event.h">
       <Filter>Architecture\Events</Filter>
     </ClInclude>
-    <ClInclude Include="Architecture\Events\EventQueue.h">
-      <Filter>Architecture\Events</Filter>
-    </ClInclude>
     <ClInclude Include="Architecture\Events\Delegate.h">
       <Filter>Architecture\Events</Filter>
     </ClInclude>
-    <ClInclude Include="Architecture\Events\EventDispatcher.h">
-      <Filter>Architecture\Events</Filter>
-    </ClInclude>
-    <ClInclude Include="Architecture\Components\Interface\ComponentID.h">
-      <Filter>Architecture\Components\Interface</Filter>
-    </ClInclude>
-    <ClInclude Include="Architecture\Components\Interface\IComponent.h">
-      <Filter>Architecture\Components\Interface</Filter>
-    </ClInclude>
-    <ClInclude Include="Architecture\Components\Interface\IComponentFactory.h">
-      <Filter>Architecture\Components\Interface</Filter>
-    </ClInclude>
-    <ClInclude Include="Architecture\Components\Interface\IComponentObject.h">
-      <Filter>Architecture\Components\Interface</Filter>
-    </ClInclude>
-    <ClInclude Include="Architecture\Components\Concrete\DynamicComponentFactory.h">
-      <Filter>Architecture\Components\Concrete</Filter>
-    </ClInclude>
-    <ClInclude Include="Architecture\Components\Concrete\StaticPooledComponentFactory.h">
-      <Filter>Architecture\Components\Concrete</Filter>
-    </ClInclude>
-    <ClInclude Include="Architecture\Components\Concrete\StaticSizedComponentObject.h">
-      <Filter>Architecture\Components\Concrete</Filter>
-    </ClInclude>
+
     <ClInclude Include="Containers\Misc\CircularBufferC.h">
       <Filter>Containers\Misc</Filter>
     </ClInclude>
@@ -425,9 +384,6 @@
     </ClInclude>
     <ClInclude Include="Containers\Misc\FastDelegate.h">
       <Filter>Containers\Misc</Filter>
-    </ClInclude>
-    <ClInclude Include="FilePath\FilePath.h">
-      <Filter>FilePath</Filter>
     </ClInclude>
     <ClInclude Include="Json\external\json\json.h">
       <Filter>Json\External</Filter>
@@ -461,39 +417,6 @@
     </ClInclude>
     <ClInclude Include="Json\external\json_tool.h">
       <Filter>Json\External\Source</Filter>
-    </ClInclude>
-    <ClInclude Include="Type\TypeJsonSerializer.h">
-      <Filter>Type\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="FilePath\PathStore.h">
-      <Filter>FilePath</Filter>
-    </ClInclude>
-    <ClInclude Include="FilePath\Path.h">
-      <Filter>FilePath</Filter>
-    </ClInclude>
-    <ClInclude Include="FilePath\PathStoreConfig.h">
-      <Filter>FilePath</Filter>
-    </ClInclude>
-    <ClInclude Include="FilePath\FileLoad.h">
-      <Filter>FilePath</Filter>
-    </ClInclude>
-    <ClInclude Include="FilePath\IFileLoad.h">
-      <Filter>FilePath</Filter>
-    </ClInclude>
-    <ClInclude Include="FilePath\SerializedFileLoad.h">
-      <Filter>FilePath</Filter>
-    </ClInclude>
-    <ClInclude Include="FilePath\AsyncFileLoader.h">
-      <Filter>FilePath</Filter>
-    </ClInclude>
-    <ClInclude Include="FilePath\FileWatcher.h">
-      <Filter>FilePath</Filter>
-    </ClInclude>
-    <ClInclude Include="FilePath\StreamReader.h">
-      <Filter>FilePath</Filter>
-    </ClInclude>
-    <ClInclude Include="FilePath\StreamWriter.h">
-      <Filter>FilePath</Filter>
     </ClInclude>
     <ClInclude Include="Architecture\Factory.h">
       <Filter>Architecture</Filter>
@@ -572,36 +495,6 @@
     <ClCompile Include="CRC\StripStringCRC.cpp">
       <Filter>CRC\Source</Filter>
     </ClCompile>
-    <ClCompile Include="Type\TypeFacade.cpp">
-      <Filter>Type\Interfaces\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Type\TypeRegistry.cpp">
-      <Filter>Type\Interfaces\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Type\TypeTextSerializer.cpp">
-      <Filter>Type\Interfaces\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Type\TypeDefinition.cpp">
-      <Filter>Type\Internals\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Type\TypeInstance.cpp">
-      <Filter>Type\Internals\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Type\TypeMember.cpp">
-      <Filter>Type\Internals\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Type\TypeParameterInput.cpp">
-      <Filter>Type\Internals\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Type\TypeVariable.cpp">
-      <Filter>Type\Internals\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Type\TypeVariableAttributes.cpp">
-      <Filter>Type\Internals\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Type\TypeVariableData.cpp">
-      <Filter>Type\Internals\Source</Filter>
-    </ClCompile>
     <ClCompile Include="Containers\HashTables\HashTableHashFunctionData.cpp">
       <Filter>Containers\HashTables\Source</Filter>
     </ClCompile>
@@ -611,32 +504,9 @@
     <ClCompile Include="Containers\Strings\StringWriter.cpp">
       <Filter>Containers\Strings\Source</Filter>
     </ClCompile>
-    <ClCompile Include="Architecture\Components\Interface\IComponent.cpp">
-      <Filter>Architecture\Components\Interface\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Architecture\Components\Interface\IComponentFactory.cpp">
-      <Filter>Architecture\Components\Interface\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Architecture\Components\Interface\IComponentObject.cpp">
-      <Filter>Architecture\Components\Interface\Source</Filter>
-    </ClCompile>
+
     <ClCompile Include="Timer\TimeThreadLimiter.cpp">
       <Filter>Timer\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="FilePath\FilePath.cpp">
-      <Filter>FilePath</Filter>
-    </ClCompile>
-    <ClCompile Include="Json\external\json_writer.cpp">
-      <Filter>Json\External\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Json\external\json_reader.cpp">
-      <Filter>Json\External\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Json\external\json_value.cpp">
-      <Filter>Json\External\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Type\TypeJsonSerializer.cpp">
-      <Filter>Type\Interfaces\Source</Filter>
     </ClCompile>
     <ClCompile Include="Strings\String8.cpp">
       <Filter>Strings\Source</Filter>
@@ -659,38 +529,20 @@
     <ClCompile Include="Strings\String1024.cpp">
       <Filter>Strings\Source</Filter>
     </ClCompile>
-    <ClCompile Include="FilePath\PathStore.cpp">
-      <Filter>FilePath</Filter>
-    </ClCompile>
-    <ClCompile Include="FilePath\Path.cpp">
-      <Filter>FilePath</Filter>
-    </ClCompile>
-    <ClCompile Include="FilePath\PathStoreConfig.cpp">
-      <Filter>FilePath</Filter>
-    </ClCompile>
     <ClCompile Include="Strings\StringUtils.cpp">
       <Filter>Strings\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Strings\StringJsonSerializer.cpp">
-      <Filter>Strings\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="FilePath\FileLoad.cpp">
-      <Filter>FilePath</Filter>
     </ClCompile>
     <ClCompile Include="Architecture\Observer.cpp">
       <Filter>Architecture</Filter>
     </ClCompile>
+    <ClCompile Include="Threading\ThreadPool.cpp">
+      <Filter>Threading</Filter>
+    </ClCompile>
+    <ClCompile Include="Reflect\FieldAttributes.cpp">
+      <Filter>Reflect</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Type\TypeFacade.inl">
-      <Filter>Type\Interfaces\Source</Filter>
-    </None>
-    <None Include="Type\TypeVariable.inl">
-      <Filter>Type\Internals\Source</Filter>
-    </None>
-    <None Include="Type\TypeVariableData.inl">
-      <Filter>Type\Internals\Source</Filter>
-    </None>
     <None Include="Strings\String.inl">
       <Filter>Strings\Source</Filter>
     </None>
@@ -781,15 +633,7 @@
     <None Include="Architecture\Singleton\Singleton.inl">
       <Filter>Architecture\Singleton</Filter>
     </None>
-    <None Include="Architecture\Components\Concrete\DynamicComponentFactory.inl">
-      <Filter>Architecture\Components\Concrete\Source</Filter>
-    </None>
-    <None Include="Architecture\Components\Concrete\StaticPooledComponentFactory.inl">
-      <Filter>Architecture\Components\Concrete\Source</Filter>
-    </None>
-    <None Include="Architecture\Components\Concrete\StaticSizedComponentObject.inl">
-      <Filter>Architecture\Components\Concrete\Source</Filter>
-    </None>
+
     <None Include="Containers\Misc\CircularBufferC.inl">
       <Filter>Containers\Misc\source</Filter>
     </None>
@@ -811,5 +655,36 @@
     <None Include="LOGGING_SYSTEM_IMPLEMENTATION.md">
       <Filter>Docs</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Metadata\DescriptionRegistry.h">
+      <Filter>Metadata</Filter>
+    </ClInclude>
+    <ClInclude Include="Metadata\DescribeMacro.h">
+      <Filter>Metadata</Filter>
+    </ClInclude>
+    <ClInclude Include="SimTime\SimTimeContext.h">
+      <Filter>SimTime</Filter>
+    </ClInclude>
+    <ClInclude Include="SimTime\SimTimeDomain.h">
+      <Filter>SimTime</Filter>
+    </ClInclude>
+    <ClInclude Include="SimTime\SimTimeDomainRegistry.h">
+      <Filter>SimTime</Filter>
+    </ClInclude>
+    <ClInclude Include="UI\IJSBridge.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Metadata\DescriptionRegistry.cpp">
+      <Filter>Metadata</Filter>
+    </ClCompile>
+    <ClCompile Include="SimTime\SimTimeDomain.cpp">
+      <Filter>SimTime</Filter>
+    </ClCompile>
+    <ClCompile Include="SimTime\SimTimeDomainRegistry.cpp">
+      <Filter>SimTime</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

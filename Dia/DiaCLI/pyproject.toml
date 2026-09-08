@@ -1,6 +1,6 @@
 [build-system]
-requires = [ "poetry>=0.12",]
-build-backend = "poetry.masonry.api"
+requires = [ "poetry-core>=1.0.0",]
+build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "dia-cli"
@@ -23,6 +23,8 @@ jinja2 = "^3.0.0"
 python-box = "^7.0.0"
 rich = ">=13.0"
 anthropic = ">=0.25.0"
+requests = ">=2.28.0"
+requests-toolbelt = ">=1.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.0.0"

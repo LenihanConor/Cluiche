@@ -1,0 +1,28 @@
+{
+    "version": 3,
+    "processing_units": [
+        {
+            "instance_id": "MainPU",
+            "frequency_hz": 30,
+            "dedicated_thread": false,
+            "modules": []
+        },
+        {
+            "instance_id": "SimPU",
+            "frequency_hz": 30,
+            "dedicated_thread": true,
+            "modules": [
+                {
+                    "instance_id": "AIDecisionTestStageModule",
+                    "type_id": "AIDecisionTestStageModule",
+                    "stages": ["AIDecisionTestStage"],
+                    "dependencies": [],
+                    "channels": [
+                        { "id": "AutomationService", "role": "consumes" },
+                        { "id": "RenderToSim", "role": "reads" }
+                    ]
+                }
+            ]
+        }
+    ]
+}

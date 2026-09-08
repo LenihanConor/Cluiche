@@ -9,9 +9,17 @@
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Asan|x64">
+      <Configuration>Debug-Asan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Ubsan|x64">
+      <Configuration>Debug-Ubsan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}</ProjectGuid>
+    <ProjectGuid>{9BDEE3A3-1E06-4AF4-8628-E55B8E0E2E4B}</ProjectGuid>
     <RootNamespace>DiaVisualDebugger</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
@@ -25,6 +33,15 @@
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Asan|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>ClangCL</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
@@ -32,10 +49,10 @@
   <PropertyGroup>
     <_ProjectFileVersion>11.0.51106.1</_ProjectFileVersion>
   </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64' Or '$(Configuration)|$(Platform)'=='Debug-Asan|x64' Or '$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)..\..\External\jsoncpp-master\include;$(ProjectDir)..\..\External\protobuf\Current-x64\include;$(ProjectDir)..\..\External\websocketpp;$(ProjectDir)..\..\External\asio\asio\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)..\..\External\jsoncpp-master\include;$(ProjectDir)..\..\External\protobuf\Current-x64\include;$(ProjectDir)..\..\External\websocketpp;$(ProjectDir)..\..\External\asio\asio\include;$(ProjectDir)..\..\External\imgui\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;DIA_DEBUG;ASIO_STANDALONE;_WEBSOCKETPP_CPP11_STL_;_WEBSOCKETPP_CPP11_THREAD_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
@@ -49,8 +66,8 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)..\..\External\jsoncpp-master\include;$(ProjectDir)..\..\External\protobuf\Current-x64\include;$(ProjectDir)..\..\External\websocketpp;$(ProjectDir)..\..\External\asio\asio\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;ASIO_STANDALONE;_WEBSOCKETPP_CPP11_STL_;_WEBSOCKETPP_CPP11_THREAD_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)..\..\External\jsoncpp-master\include;$(ProjectDir)..\..\External\protobuf\Current-x64\include;$(ProjectDir)..\..\External\websocketpp;$(ProjectDir)..\..\External\asio\asio\include;$(ProjectDir)..\..\External\imgui\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;DIA_DEBUG;ASIO_STANDALONE;_WEBSOCKETPP_CPP11_STL_;_WEBSOCKETPP_CPP11_THREAD_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -61,7 +78,6 @@
     <ClInclude Include="DebugLayerManager.h" />
     <ClInclude Include="DebugColourPalette.h" />
     <ClInclude Include="DebugLayerNames.h" />
-    <ClInclude Include="DebugLayerPanelPlugin.h" />
     <ClInclude Include="IObjectRenderer.h" />
     <ClInclude Include="IFixedPrimitiveBuffer.h" />
     <ClInclude Include="FixedPrimitiveBuffer.h" />
@@ -70,13 +86,32 @@
     <ClInclude Include="Renderers\QuadtreeRenderer.h" />
     <ClInclude Include="Renderers\BVHRenderer.h" />
     <ClInclude Include="Renderers\HexGridRenderer.h" />
+    <ClInclude Include="Coord2D\Coord2DOriginDrawer.h" />
+    <ClInclude Include="Coord2D\Coord2DAxesDrawer.h" />
+    <ClInclude Include="Coord2D\Coord2DGridDrawer.h" />
+    <ClInclude Include="Coord2D\Coord2DBoundsDrawer.h" />
+    <ClInclude Include="Coord2D\Coord2DCursorDrawer.h" />
+    <ClInclude Include="Coord3D\Coord3DOriginDrawer.h" />
+    <ClInclude Include="Coord3D\Coord3DAxesDrawer.h" />
+    <ClInclude Include="Coord3D\Coord3DGridDrawer.h" />
+    <ClInclude Include="Coord3D\Coord3DCameraDrawer.h" />
+    <ClInclude Include="Domain\\DiaDebugDomainRegistry.h" />
+    <ClInclude Include="Coord2D\Coord2DDebugDomain.h" />
+    <ClInclude Include="Coord3D\Coord3DDebugDomain.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DebugLayerManager.cpp" />
-    <ClCompile Include="DebugColourPalette.cpp" />
-    <ClCompile Include="DebugLayerPanelPlugin.cpp" />
-    <ClCompile Include="FixedPrimitiveBuffer.cpp" />
-    <ClCompile Include="FixedDrawRegistry.cpp" />
+    <ClCompile Include="Coord2D\Coord2DOriginDrawer.cpp" />
+    <ClCompile Include="Coord2D\Coord2DAxesDrawer.cpp" />
+    <ClCompile Include="Coord2D\Coord2DGridDrawer.cpp" />
+    <ClCompile Include="Coord2D\Coord2DBoundsDrawer.cpp" />
+    <ClCompile Include="Coord2D\Coord2DCursorDrawer.cpp" />
+    <ClCompile Include="Coord3D\Coord3DOriginDrawer.cpp" />
+    <ClCompile Include="Coord3D\Coord3DAxesDrawer.cpp" />
+    <ClCompile Include="Coord3D\Coord3DGridDrawer.cpp" />
+    <ClCompile Include="Coord3D\Coord3DCameraDrawer.cpp" />
+    <ClCompile Include="Domain\\DiaDebugDomainRegistry.cpp" />
+    <ClCompile Include="Coord2D\Coord2DDebugDomain.cpp" />
+    <ClCompile Include="Coord3D\Coord3DDebugDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.debug.architecture.module.md" />
@@ -94,6 +129,10 @@
       <Project>{1CF9F92B-666E-4B39-9DDE-B1CFBEF68618}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+    <ProjectReference Include="..\DiaJson\DiaJson.vcxproj">
+      <Project>{b2c3d4e5-f6a7-8901-bcde-f23456789012}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
     <ProjectReference Include="..\DiaAPI\DiaAPI.vcxproj">
       <Project>{1E7F6E13-50CF-411C-B34C-66D70121DD03}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
@@ -106,8 +145,8 @@
       <Project>{6AAFCCCB-71D0-4D8D-A6BE-081F5E02093D}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\DiaEditor\DiaEditor.vcxproj">
-      <Project>{F1A2B3C4-D5E6-7890-ABCD-EF1234567890}</Project>
+    <ProjectReference Include="..\DiaDebugDraw\DiaDebugDraw.vcxproj">
+      <Project>{c3d4e5f6-a7b8-9012-cdef-345678901234}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

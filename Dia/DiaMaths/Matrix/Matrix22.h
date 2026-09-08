@@ -1,7 +1,5 @@
 #pragma once
 
-#include "DiaCore/Type/TypeDeclarationMacros.h"
-
 namespace Dia
 {
 	namespace Maths
@@ -11,9 +9,7 @@ namespace Dia
 
 		class Matrix22
 		{
-		public:	
-			DIA_TYPE_DECLARATION;
-
+		public:
 			Matrix22(); 
 			Matrix22(float e00, float e01, float e10, float e11);
 			Matrix22(const Vector2D& xAxis, const Vector2D& yAxis);

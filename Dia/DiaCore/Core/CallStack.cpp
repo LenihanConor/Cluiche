@@ -386,7 +386,7 @@ namespace Dia
 					return FALSE;
 				}
 
-				hMods = (HMODULE*) malloc(sizeof(HMODULE) * (TTBUFLEN / sizeof HMODULE));
+				hMods = (HMODULE*) malloc(sizeof(HMODULE) * (TTBUFLEN / sizeof(HMODULE)));
 				tt = (char*) malloc(sizeof(char) * TTBUFLEN);
 				tt2 = (char*) malloc(sizeof(char) * TTBUFLEN);
 				if ( (hMods == NULL) || (tt == NULL) || (tt2 == NULL) )
@@ -505,6 +505,8 @@ cleanup:
 							break;
 						case 9: // SymDia:
 							szSymType = "DIA";
+							break;
+						default:
 							break;
 						}
 					}

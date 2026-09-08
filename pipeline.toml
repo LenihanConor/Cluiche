@@ -3,6 +3,15 @@ default_config = "Debug"
 default_platform = "x64"
 default_target = "googletest"
 
+[bgfx]
+default_backend = "dx11"   # dx11 | dx12 | vulkan
+
+[bgfx_shaders]
+backends     = ["dx11", "dx12", "vulkan"]
+source_roots = ["Dia/DiaBgfx/Shaders", "Dia/DiaBgfx3D/Shaders"]
+output_root  = "Cluiche/bin/$(AppName)/$(Configuration)/$(Platform)/assets/shaders"
+shaderc_path = "External/bgfx/tools/shaderc.exe"
+
 [proto]
 proto_dir = "Dia/DiaDebugProtocol/proto"
 output_dir = "Dia/DiaDebugProtocol/proto/generated"
@@ -11,35 +20,78 @@ language = "cpp"
 [targets.googletest]
 project = "Cluiche/Tests/GoogleTests/GoogleTests.vcxproj"
 stages = ["compile-code", "deploy"]
+full_suite_config = "Release"
 
 [targets.googletest.build_deps]
-protobuf = true
+protobuf      = true
+bgfx_shaders  = false
 
 [targets.googletest.deploy]
 files = [
   { src = "External/Python311/python311.dll", dest = "$(OutDir)" },
+  { src = "External/SFML/Current-x64/bin/sfml-window-3.dll", dest = "$(OutDir)" },
+  { src = "External/SFML/Current-x64/bin/sfml-window-d-3.dll", dest = "$(OutDir)" },
+  { src = "External/SFML/Current-x64/bin/sfml-system-3.dll", dest = "$(OutDir)" },
+  { src = "External/SFML/Current-x64/bin/sfml-system-d-3.dll", dest = "$(OutDir)" },
   { src = "Cluiche/Assets/CluicheTest/Global/misc/ApplicationFlow/*.diaapp", dest = "$(OutDir)Data/Manifests/misc/ApplicationFlow/" },
   { src = "Cluiche/Assets/CluicheTest/cluichetest.diagame", dest = "$(OutDir)Data/Manifests/" },
+  { src = "Cluiche/Assets/CluicheTest/cluichetest.diaobservation", dest = "$(OutDir)Data/Manifests/" },
   { src = "Cluiche/Assets/CluicheTest/Stages/DummyStage/Misc/ApplicationFlow/*", dest = "$(OutDir)Data/stages/DummyStage/Misc/ApplicationFlow/" },
-  { src = "Cluiche/Assets/CluicheTest/Stages/DummyStage/dummy_stage.diastage", dest = "$(OutDir)Data/stages/DummyStage/" }
+  { src = "Cluiche/Assets/CluicheTest/Stages/DummyStage/dummy_stage.diastage", dest = "$(OutDir)Data/stages/DummyStage/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/RigidBody2DTestStage/Misc/ApplicationFlow/*", dest = "$(OutDir)Data/stages/RigidBody2DTestStage/Misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/RigidBody2DTestStage/rigidbody2d_stage.diastage", dest = "$(OutDir)Data/stages/RigidBody2DTestStage/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/EntityTestStage/misc/ApplicationFlow/*", dest = "$(OutDir)Data/stages/EntityTestStage/misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/EntityTestStage/entity_test_stage.diastage", dest = "$(OutDir)Data/stages/EntityTestStage/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/Animation2DTestStage/misc/ApplicationFlow/*", dest = "$(OutDir)Data/stages/Animation2DTestStage/misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/Animation2DTestStage/animation2d_test_stage.diastage", dest = "$(OutDir)Data/stages/Animation2DTestStage/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/Animation2DTestStage/skeleton/*", dest = "$(OutDir)Data/stages/Animation2DTestStage/skeleton/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/Animation2DTestStage/clips/*", dest = "$(OutDir)Data/stages/Animation2DTestStage/clips/" }
 ]
 
 [targets.cluichetest]
 project = "Cluiche/CluicheTest/CluicheTest.vcxproj"
-stages = ["compile-code", "build-assets", "deploy"]
+stages = ["compile-code", "reflect", "build-assets", "deploy"]
 app_name = "CluicheTest"
 catalogue_manifest = "Cluiche/Assets/CluicheTest/assets.catalogue.json"
-asset_stages = ["stage.global", "stage.dummy_stage"]
 
 [targets.cluichetest.build_deps]
-protobuf = true
+protobuf     = true
+bgfx_shaders = true
 
 [targets.cluichetest.deploy]
 files = [
-  { src = "External/SFML/Current-x64/bin/*.dll", dest = "$(OutDir)" },
+  { src = "External/SFML/Current-x64/bin/sfml-window-3.dll", dest = "$(OutDir)" },
+  { src = "External/SFML/Current-x64/bin/sfml-window-d-3.dll", dest = "$(OutDir)" },
+  { src = "External/SFML/Current-x64/bin/sfml-system-3.dll", dest = "$(OutDir)" },
+  { src = "External/SFML/Current-x64/bin/sfml-system-d-3.dll", dest = "$(OutDir)" },
   { src = "Dia/DiaUIUltralight/Deploy/*", dest = "$(OutDir)" },
+  { src = "External/Ultralight/resources/*", dest = "$(OutDir)assets/resources/" },
   { src = "Cluiche/Assets/CluicheTest/cluichetest.diagame", dest = "$(OutDir)assets/" },
-  { src = "Cluiche/Assets/CluicheTest/Stages/DummyStage/dummy_stage.diastage", dest = "$(OutDir)assets/stages/DummyStage/" }
+  { src = "Cluiche/Assets/CluicheTest/registeredtypes.diaschema", dest = "$(OutDir)assets/" },
+  { src = "Cluiche/Assets/CluicheTest/cluichetest.diaobservation", dest = "$(OutDir)assets/" },
+  { src = "Cluiche/Assets/CluicheTest/assets.catalogue.json", dest = "$(OutDir)assets/" },
+  { src = "Cluiche/Assets/CluicheTest/Global/misc/ApplicationFlow/cluiche_main.diaapp", dest = "$(OutDir)assets/global/misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/Animation2DTestStage/animation2d_test_stage.diastage", dest = "$(OutDir)assets/stages/Animation2DTestStage/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/Animation2DTestStage/misc/ApplicationFlow/animation2d_test_stage.diaapp", dest = "$(OutDir)assets/stages/Animation2DTestStage/misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/Animation2DTestStage/skeleton/dragon.diarig", dest = "$(OutDir)assets/stages/Animation2DTestStage/skeleton/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/Animation2DTestStage/clips/idle_clip.diaclip", dest = "$(OutDir)assets/stages/Animation2DTestStage/clips/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/Animation2DTestStage/clips/flap_up_clip.diaclip", dest = "$(OutDir)assets/stages/Animation2DTestStage/clips/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/Animation2DTestStage/clips/flap_down_clip.diaclip", dest = "$(OutDir)assets/stages/Animation2DTestStage/clips/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/IK2DTestStage/ik2d_test_stage.diastage", dest = "$(OutDir)assets/stages/IK2DTestStage/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/IK2DTestStage/misc/ApplicationFlow/ik2d_test_stage.diaapp", dest = "$(OutDir)assets/stages/IK2DTestStage/misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/IK2DTestStage/skeleton/dragon.diarig", dest = "$(OutDir)assets/stages/IK2DTestStage/skeleton/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/Mesh3DTestStage/misc/ApplicationFlow/mesh3d_test_stage.diaapp", dest = "$(OutDir)assets/stages/Mesh3DTestStage/misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/Mesh3DTestStage/mesh3d_test_stage.diastage", dest = "$(OutDir)assets/stages/Mesh3DTestStage/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/AIDecisionTestStage/ai_decision_test_stage.diastage", dest = "$(OutDir)assets/stages/AIDecisionTestStage/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/AIDecisionTestStage/misc/ApplicationFlow/ai_decision_test_stage.diaapp", dest = "$(OutDir)assets/stages/AIDecisionTestStage/misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/AIHTNTestStage/ai_htn_test_stage.diastage", dest = "$(OutDir)assets/stages/AIHTNTestStage/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/AIHTNTestStage/misc/ApplicationFlow/ai_htn_test_stage.diaapp", dest = "$(OutDir)assets/stages/AIHTNTestStage/misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/PathfindingTestStage/pathfinding_test_stage.diastage", dest = "$(OutDir)assets/stages/PathfindingTestStage/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/PathfindingTestStage/misc/ApplicationFlow/pathfinding_test_stage.diaapp", dest = "$(OutDir)assets/stages/PathfindingTestStage/misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/ScalarFieldTestStage/scalarfield_test_stage.diastage", dest = "$(OutDir)assets/stages/ScalarFieldTestStage/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/ScalarFieldTestStage/misc/ApplicationFlow/scalarfield_test_stage.diaapp", dest = "$(OutDir)assets/stages/ScalarFieldTestStage/misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/EntitySpatialTestStage/entityspatial_test_stage.diastage", dest = "$(OutDir)assets/stages/EntitySpatialTestStage/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/EntitySpatialTestStage/misc/ApplicationFlow/entityspatial_test_stage.diaapp", dest = "$(OutDir)assets/stages/EntitySpatialTestStage/misc/ApplicationFlow/" },
 ]
 
 [targets.cluicheeditor]
@@ -53,27 +105,55 @@ cef_wrapper = true
 [targets.cluicheeditor.deploy]
 ui_builds = [
   { cwd = "Cluiche/CluicheEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" },
-  { cwd = "Dia/DiaApplicationEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" },
-  { cwd = "Dia/DiaPipelineEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" }
+  { cwd = "Dia/DiaApplicationFlowEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" },
+  { cwd = "Dia/DiaPipelineEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" },
+  { cwd = "Dia/DiaApplicationFlowInspector/UI", cmd = "node node_modules/vite/bin/vite.js build" },
+  { cwd = "Dia/DiaEntityInspector/UI", cmd = "node node_modules/typescript/bin/tsc && node node_modules/vite/bin/vite.js build" },
+  { cwd = "Dia/DiaPythonConsoleEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" },
+  { cwd = "Cluiche/CluicheEditor/Plugins/DiaChatPlugin/UI", cmd = "node node_modules/vite/bin/vite.js build" },
+  { cwd = "Dia/DiaBlackboardInspector/UI", cmd = "node node_modules/typescript/bin/tsc && node node_modules/vite/bin/vite.js build" },
+  { cwd = "Dia/DiaSchemaBrowser/UI", cmd = "node node_modules/typescript/bin/tsc && node node_modules/vite/bin/vite.js build" }
 ]
 files = [
+  { src = "External/Python311/python311.dll",             dest = "$(OutDir)" },
   { src = "External/CEF/Resources/*",                     dest = "$(OutDir)" },
   { src = "External/CEF/Resources/locales/**",            dest = "$(OutDir)locales/" },
   { src = "External/CEF/bin/$(Configuration)/*",          dest = "$(OutDir)" },
   { src = "Cluiche/CluicheEditor/Data/*",                 dest = "$(OutDir)assets/configs/" },
   { src = "Cluiche/CluicheEditor/UI/dist/*",              dest = "$(OutDir)ui/" },
   { src = "Cluiche/CluicheEditor/UI/dist/assets/*",       dest = "$(OutDir)ui/assets/" },
+  { src = "Cluiche/CluicheEditor/UI/theme/*",             dest = "$(OutDir)theme/" },
   { src = "Dia/DiaEditor/Plugin/Assets/**/*",             dest = "$(OutDir)plugins/" },
-  { src = "Dia/DiaApplicationEditor/UI/dist/*",           dest = "$(OutDir)plugins/diaapplicationeditor/" },
-  { src = "Dia/DiaApplicationEditor/UI/dist/assets/*",    dest = "$(OutDir)plugins/diaapplicationeditor/assets/" },
-  { src = "Dia/DiaApplicationEditor/Assets/*",            dest = "$(OutDir)plugins/diaapplicationeditor/" },
-  { src = "Dia/DiaAssetRuntimeEditor/UI/*",                dest = "$(OutDir)plugins/assetruntimeeditor/" },
+  { src = "Dia/DiaApplicationFlowEditor/UI/dist/*",           dest = "$(OutDir)plugins/diaapplicationfloweditor/" },
+  { src = "Dia/DiaApplicationFlowEditor/UI/dist/assets/*",    dest = "$(OutDir)plugins/diaapplicationfloweditor/assets/" },
+  { src = "Dia/DiaApplicationFlowEditor/Assets/*",            dest = "$(OutDir)plugins/diaapplicationfloweditor/" },
+  { src = "Dia/DiaAssetRuntimeInspector/UI/*",               dest = "$(OutDir)plugins/assetruntimeinspector/" },
   { src = "Dia/DiaAssetCatalogueEditor/UI/*",              dest = "$(OutDir)plugins/assetcatalogue/" },
+  { src = "Dia/DiaEntityInspector/UI/dist/*",           dest = "$(OutDir)plugins/entityinspector/" },
+  { src = "Dia/DiaEntityInspector/UI/dist/assets/*",    dest = "$(OutDir)plugins/entityinspector/assets/" },
+  { src = "Dia/DiaBlackboardInspector/UI/dist/*",       dest = "$(OutDir)plugins/blackboardinspector/" },
+  { src = "Dia/DiaBlackboardInspector/UI/dist/assets/*", dest = "$(OutDir)plugins/blackboardinspector/assets/" },
+  { src = "Dia/DiaEntityTemplateEditor/UI/*",                 dest = "$(OutDir)plugins/EntityTemplateEditor/" },
+  { src = "Dia/DiaSceneEditor/UI/*",                    dest = "$(OutDir)plugins/sceneeditor/" },
+  { src = "Dia/DiaSchemaBrowser/UI/dist/*", dest = "$(OutDir)plugins/schemabrowser/" },
+  { src = "Dia/DiaSchemaBrowser/UI/dist/assets/*", dest = "$(OutDir)plugins/schemabrowser/assets/" },
   { src = "Dia/DiaPipelineEditor/UI/dist/*",              dest = "$(OutDir)plugins/diapipelineeditor/" },
   { src = "Dia/DiaPipelineEditor/UI/dist/assets/*",       dest = "$(OutDir)plugins/diapipelineeditor/assets/" },
-  { src = "Cluiche/Assets/CluicheEditor/*",               dest = "$(OutDir)assets/icons/" },
+  { src = "Dia/DiaApplicationFlowInspector/UI/dist/*",    dest = "$(OutDir)plugins/diaapplicationflowinspector/" },
+  { src = "Dia/DiaApplicationFlowInspector/UI/dist/assets/*", dest = "$(OutDir)plugins/diaapplicationflowinspector/assets/" },
+  { src = "Dia/DiaPythonConsoleEditor/UI/dist/*",           dest = "$(OutDir)plugins/pythonconsole/" },
+  { src = "Dia/DiaPythonConsoleEditor/UI/dist/assets/*",    dest = "$(OutDir)plugins/pythonconsole/assets/" },
+  { src = "Cluiche/CluicheEditor/Plugins/DiaChatPlugin/UI/dist/*",    dest = "$(OutDir)plugins/diachat/" },
+  { src = "Cluiche/CluicheEditor/Plugins/DiaChatPlugin/UI/dist/assets/*", dest = "$(OutDir)plugins/diachat/assets/" },
+  { src = "Cluiche/Assets/CluicheEditor/*.ico",            dest = "$(OutDir)assets/icons/" },
+  { src = "Cluiche/Assets/CluicheEditor/*.bmp",            dest = "$(OutDir)assets/icons/" },
+  { src = "Cluiche/Assets/CluicheEditor/*.png",            dest = "$(OutDir)assets/icons/" },
+  { src = "Cluiche/Assets/CluicheEditor/cluicheeditor.diaobservation", dest = "$(OutDir)assets/" },
   { src = "Cluiche/bin/DiaUICEF_TestSubprocess/$(Configuration)/x64/DiaUICEF_TestSubprocess.exe", dest = "$(OutDir)cef/" },
-  { src = "Cluiche/bin/DiaUICEF_TestSubprocess/$(Configuration)/x64/DiaUICEF_TestSubprocess.pdb", dest = "$(OutDir)cef/" }
+  { src = "Cluiche/bin/DiaUICEF_TestSubprocess/$(Configuration)/x64/DiaUICEF_TestSubprocess.pdb", dest = "$(OutDir)cef/" },
+  { src = "Cluiche/CluicheEditor/scripts/*",                  dest = "$(OutDir)scripts/" },
+  { src = "External/Python311/Lib/site-packages/**/*",        dest = "$(OutDir)python_packages/" },
+  { src = "Cluiche/Assets/CluicheEditor/ai_context/*",       dest = "$(OutDir)assets/ai_context/" }
 ]
 
 [targets.diasfml]
@@ -83,7 +163,10 @@ hidden = true
 
 [targets.diasfml.deploy]
 files = [
-  { src = "External/SFML/Current-x64/bin/*.dll", dest = "$(OutDir)" }
+  { src = "External/SFML/Current-x64/bin/sfml-window-3.dll", dest = "$(OutDir)" },
+  { src = "External/SFML/Current-x64/bin/sfml-window-d-3.dll", dest = "$(OutDir)" },
+  { src = "External/SFML/Current-x64/bin/sfml-system-3.dll", dest = "$(OutDir)" },
+  { src = "External/SFML/Current-x64/bin/sfml-system-d-3.dll", dest = "$(OutDir)" }
 ]
 
 [targets.diauiultralight]

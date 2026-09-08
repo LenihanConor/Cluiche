@@ -1,0 +1,450 @@
+////////////////////////////////////////////////////////////////////////////////
+// Filename: GridVisibilityDebugDomain.h
+// Description: IDebugDomain implementation for the GridVisibility system.
+//              Owns three world-space drawers: CellStateDrawer, SightRadiiDrawer,
+//              and ShadowcastBoundaryDrawer. Full implementations are provided in
+//              Tasks 4–6; all Draw() methods are stubbed here.
+// System spec: docs/specs/applications/dia/systems/diadebugdomain/diadebugdomain.md
+////////////////////////////////////////////////////////////////////////////////
+#pragma once
+#ifdef DIA_DEBUG
+
+#include <DiaGridVisibility/GridVisibilitySystem.h>
+#include <DiaGridVisibility/VisibilityGroupId.h>
+#include <DiaEntitySpatial/EntitySpatialModule.h>
+#include <DiaDebugDraw/Domain/IDebugDomain.h>
+#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
+#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
+#include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/Colour/RGBA.h>
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
+#include <DiaCore/DebugDraw/DebugColourPalette.h>
+#include <DiaCore/Json/external/json/json.h>
+#include <DiaPathfinding/CellCoord.h>
+#include <DiaEntity/Entity.h>
+
+namespace Dia
+{
+    namespace GridVisibilityVisualDebugger
+    {
+        ////////////////////////////////////////////////////////////////////////////////
+        // GridVisibilityDebugDomain
+        //
+        // Visual debugger domain for the GridVisibility system. Contributes three
+        // world-space drawers that can be toggled independently from the debug panel:
+        //   - CellStateDrawer         (GV.CellState)   — per-cell visibility overlay
+        //   - SightRadiiDrawer        (GV.SightRadii)  — sight source radius circles
+        //   - ShadowcastBoundaryDrawer(GV.Boundary)    — shadowcast octant outlines
+        //
+        // Templated on CVisibilityGraph so that the same domain works with any
+        // grid type that satisfies the GridVisibility constraint.
+        ////////////////////////////////////////////////////////////////////////////////
+        template<Dia::GridVisibility::CVisibilityGraph TGraph>
+        class GridVisibilityDebugDomain : public Dia::VisualDebugger::IDebugDomain
+        {
+        public:
+
+            // ----------------------------------------------------------------
+            // Inner drawer: CellStateDrawer
+            // ----------------------------------------------------------------
+            class CellStateDrawer : public Dia::Debug::IVisualDebugger
+            {
+            public:
+                CellStateDrawer(
+                    const Dia::GridVisibility::GridVisibilitySystem<TGraph>& system,
+                    const Dia::GridVisibility::VisibilityGroupId&             selectedGroup,
+                    float                                                     cellSize)
+                    : mSystem(system)
+                    , mSelectedGroup(&selectedGroup)
+                    , mCellSize(cellSize)
+                {}
+
+                Dia::Core::StringCRC GetLayerName() const override
+                {
+                    return Dia::Core::StringCRC("GV.CellState");
+                }
+
+                void Draw(Dia::Core::IDebugDraw& draw) override
+                {
+                    if (mSelectedGroup == nullptr) return;
+
+                    const int W = mSystem.GetVisWidth();
+                    const int H = mSystem.GetVisHeight();
+                    if (W <= 0 || H <= 0) return;
+
+                    const float visCellSize = mCellSize * static_cast<float>(mSystem.GetChunkSize());
+                    const Dia::Core::RGBA kNoOutline(0, 0, 0, 0);
+
+                    for (int y = 0; y < H; ++y)
+                    {
+                        for (int x = 0; x < W; ++x)
+                        {
+                            const Dia::GridVisibility::VisibilityState state =
+                                mSystem.GetCellState({x, y}, *mSelectedGroup);
+
+                            Dia::Core::RGBA fillColour;
+                            switch (state)
+                            {
+                            case Dia::GridVisibility::VisibilityState::Visible:
+                                fillColour = Dia::Debug::DebugColourPalette::kGoal;
+                                break;
+                            case Dia::GridVisibility::VisibilityState::Revealed:
+                                fillColour = Dia::Debug::DebugColourPalette::kInactive;
+                                break;
+                            default: // Unexplored
+                                fillColour = Dia::Debug::DebugColourPalette::kDeepSleep;
+                                break;
+                            }
+
+                            const Dia::Maths::Vector2D cellMin(
+                                static_cast<float>(x)     * visCellSize,
+                                static_cast<float>(y)     * visCellSize);
+                            const Dia::Maths::Vector2D cellMax(
+                                static_cast<float>(x + 1) * visCellSize,
+                                static_cast<float>(y + 1) * visCellSize);
+
+                            draw.RequestDrawRect(cellMin, cellMax, kNoOutline, fillColour);
+                        }
+                    }
+                }
+
+            private:
+                const Dia::GridVisibility::GridVisibilitySystem<TGraph>& mSystem;
+                const Dia::GridVisibility::VisibilityGroupId*             mSelectedGroup;
+                float                                                     mCellSize;
+            };
+
+            // ----------------------------------------------------------------
+            // Inner drawer: SightRadiiDrawer
+            // ----------------------------------------------------------------
+            class SightRadiiDrawer : public Dia::Debug::IVisualDebugger
+            {
+            public:
+                SightRadiiDrawer(
+                    const Dia::GridVisibility::GridVisibilitySystem<TGraph>& system,
+                    const Dia::GridVisibility::VisibilityGroupId&             selectedGroup,
+                    float                                                     cellSize)
+                    : mSystem(system)
+                    , mSelectedGroup(&selectedGroup)
+                    , mCellSize(cellSize)
+                {}
+
+                Dia::Core::StringCRC GetLayerName() const override
+                {
+                    return Dia::Core::StringCRC("GV.SightRadii");
+                }
+
+                void Draw(Dia::Core::IDebugDraw& draw) override
+                {
+                    if (mSelectedGroup == nullptr) return;
+
+                    const float visCellSize = mCellSize * static_cast<float>(mSystem.GetChunkSize());
+
+                    mSystem.VisitSightSources(
+                        [&](Dia::Entity::Entity /*entity*/,
+                            Dia::GridVisibility::VisibilityGroupId groupId,
+                            float sightRadius,
+                            Dia::Pathfinding::CellCoord lastVisCell)
+                        {
+                            if (!(groupId == *mSelectedGroup))
+                                return;
+
+                            const Dia::Maths::Vector2D centre(
+                                (static_cast<float>(lastVisCell.x) + 0.5f) * visCellSize,
+                                (static_cast<float>(lastVisCell.y) + 0.5f) * visCellSize);
+
+                            draw.RequestDraw(centre, sightRadius, Dia::Debug::DebugColourPalette::kGoal);
+                        });
+                }
+
+            private:
+                const Dia::GridVisibility::GridVisibilitySystem<TGraph>& mSystem;
+                const Dia::GridVisibility::VisibilityGroupId*             mSelectedGroup;
+                float                                                     mCellSize;
+            };
+
+            // ----------------------------------------------------------------
+            // Inner drawer: ShadowcastBoundaryDrawer
+            // ----------------------------------------------------------------
+            class ShadowcastBoundaryDrawer : public Dia::Debug::IVisualDebugger
+            {
+            public:
+                ShadowcastBoundaryDrawer(
+                    const Dia::GridVisibility::GridVisibilitySystem<TGraph>& system,
+                    const Dia::GridVisibility::VisibilityGroupId&             selectedGroup,
+                    float                                                     cellSize)
+                    : mSystem(system)
+                    , mSelectedGroup(&selectedGroup)
+                    , mCellSize(cellSize)
+                {
+                    SetEnabled(false);
+                }
+
+                Dia::Core::StringCRC GetLayerName() const override
+                {
+                    return Dia::Core::StringCRC("GV.Boundary");
+                }
+
+                void Draw(Dia::Core::IDebugDraw& draw) override
+                {
+                    if (mSelectedGroup == nullptr) return;
+
+                    const int W = mSystem.GetVisWidth();
+                    const int H = mSystem.GetVisHeight();
+                    if (W <= 0 || H <= 0) return;
+
+                    const float s = mCellSize * static_cast<float>(mSystem.GetChunkSize());
+
+                    auto isVisible = [&](int nx, int ny) -> bool
+                    {
+                        if (nx < 0 || ny < 0 || nx >= W || ny >= H) return false;
+                        return mSystem.GetCellState({nx, ny}, *mSelectedGroup)
+                               == Dia::GridVisibility::VisibilityState::Visible;
+                    };
+
+                    for (int y = 0; y < H; ++y)
+                    {
+                        for (int x = 0; x < W; ++x)
+                        {
+                            if (!isVisible(x, y)) continue;
+
+                            const float x0 = static_cast<float>(x)     * s;
+                            const float x1 = static_cast<float>(x + 1) * s;
+                            const float y0 = static_cast<float>(y)     * s;
+                            const float y1 = static_cast<float>(y + 1) * s;
+
+                            // North edge
+                            if (!isVisible(x, y - 1))
+                                draw.RequestDraw(Dia::Maths::Vector2D(x0, y0),
+                                                 Dia::Maths::Vector2D(x1, y0),
+                                                 Dia::Debug::DebugColourPalette::kWarning);
+                            // South edge
+                            if (!isVisible(x, y + 1))
+                                draw.RequestDraw(Dia::Maths::Vector2D(x0, y1),
+                                                 Dia::Maths::Vector2D(x1, y1),
+                                                 Dia::Debug::DebugColourPalette::kWarning);
+                            // West edge
+                            if (!isVisible(x - 1, y))
+                                draw.RequestDraw(Dia::Maths::Vector2D(x0, y0),
+                                                 Dia::Maths::Vector2D(x0, y1),
+                                                 Dia::Debug::DebugColourPalette::kWarning);
+                            // East edge
+                            if (!isVisible(x + 1, y))
+                                draw.RequestDraw(Dia::Maths::Vector2D(x1, y0),
+                                                 Dia::Maths::Vector2D(x1, y1),
+                                                 Dia::Debug::DebugColourPalette::kWarning);
+                        }
+                    }
+                }
+
+            private:
+                const Dia::GridVisibility::GridVisibilitySystem<TGraph>& mSystem;
+                const Dia::GridVisibility::VisibilityGroupId*             mSelectedGroup;
+                float                                                     mCellSize;
+            };
+
+            // ----------------------------------------------------------------
+            // GridVisibilityDebugDomain constructor
+            // ----------------------------------------------------------------
+            GridVisibilityDebugDomain(
+                const Dia::GridVisibility::GridVisibilitySystem<TGraph>& system,
+                const Dia::EntitySpatial::EntitySpatialModule&            spatial,
+                float                                                     cellSize)
+                : mSystem(system)
+                , mSpatial(spatial)
+                , mCellSize(cellSize)
+                , mSelectedGroup{}
+                , mCellStateDrawer(system, mSelectedGroup, cellSize)
+                , mSightRadiiDrawer(system, mSelectedGroup, cellSize)
+                , mBoundaryDrawer(system, mSelectedGroup, cellSize)
+                , mLayerManager(nullptr)
+            {}
+
+            // ----------------------------------------------------------------
+            // IDebugDomain — Identity
+            // ----------------------------------------------------------------
+
+            Dia::Core::StringCRC GetDomainId() const override
+            {
+                return Dia::Core::StringCRC("GridVisibility");
+            }
+
+            const char* GetDisplayName() const override
+            {
+                return "Grid Visibility";
+            }
+
+            const char* GetDescription() const override
+            {
+                return "Grid visibility — cell state overlay, sight radii, shadowcast boundary";
+            }
+
+            Dia::Core::StringCRC GetGroup() const override
+            {
+                return Dia::Core::StringCRC("Spatial");
+            }
+
+            Dia::Core::RGBA GetAccentColour() const override
+            {
+                return Dia::VisualDebugger::DebugGroupAccents::kSpatial;
+            }
+
+            // ----------------------------------------------------------------
+            // IDebugDomain — World-space drawer capability
+            // ----------------------------------------------------------------
+
+            bool HasWorldDrawers() const override { return true; }
+
+            // ----------------------------------------------------------------
+            // IDebugDomain — Lifecycle
+            // ----------------------------------------------------------------
+
+            void Register(Dia::Debug::IDebugLayerRegistry& mgr) override
+            {
+                if (mLayerManager != nullptr) return;
+                mgr.Register(&mCellStateDrawer,   10, Dia::Core::StringCRC("GridVisibility"));
+                mgr.Register(&mSightRadiiDrawer,  20, Dia::Core::StringCRC("GridVisibility"));
+                mgr.Register(&mBoundaryDrawer,    30, Dia::Core::StringCRC("GridVisibility"));
+                mLayerManager = &mgr;
+            }
+
+            void Unregister(Dia::Debug::IDebugLayerRegistry& mgr) override
+            {
+                mgr.Unregister(mCellStateDrawer.GetLayerName());
+                mgr.Unregister(mSightRadiiDrawer.GetLayerName());
+                mgr.Unregister(mBoundaryDrawer.GetLayerName());
+                mLayerManager = nullptr;
+            }
+
+            // ----------------------------------------------------------------
+            // IDebugDomain — Data bridge to DiaDebugPanel
+            // ----------------------------------------------------------------
+
+            void GetJSONState(Json::Value& out) override
+            {
+                // --- drawers ---
+                static const char* const kDrawerNames[3] =
+                    { "Cell State", "Sight Radii", "Shadowcast Boundary" };
+
+                Json::Value drawers(Json::arrayValue);
+                for (int i = 0; i < 3; ++i)
+                {
+                    Dia::Debug::IVisualDebugger* d = GetDrawer(i);
+                    Json::Value entry(Json::objectValue);
+                    entry["name"]    = kDrawerNames[i];
+                    entry["enabled"] = (mLayerManager != nullptr && d != nullptr)
+                                     ? mLayerManager->IsLayerEnabled(d->GetLayerName())
+                                     : false;
+                    drawers.append(entry);
+                }
+                out["drawers"] = drawers;
+
+                // --- stats ---
+                int sightSourceCount = 0;
+                mSystem.VisitSightSources(
+                    [&](Dia::Entity::Entity,
+                        Dia::GridVisibility::VisibilityGroupId,
+                        float, Dia::Pathfinding::CellCoord)
+                    { ++sightSourceCount; });
+
+                Json::Value stats(Json::objectValue);
+                stats["gridWidth"]        = mSystem.GetVisWidth();
+                stats["gridHeight"]       = mSystem.GetVisHeight();
+                stats["chunkSize"]        = mSystem.GetChunkSize();
+                stats["groupCount"]       = mSystem.GetGroupCount();
+                stats["sightSourceCount"] = sightSourceCount;
+                out["stats"] = stats;
+
+                // --- selectedGroup ---
+                out["selectedGroup"] = mSelectedGroup.AsChar();
+
+                // --- groups ---
+                Json::Value groups(Json::arrayValue);
+                mSystem.VisitGroups(
+                    [&](Dia::GridVisibility::VisibilityGroupId groupId)
+                    {
+                        int vis = 0, rev = 0, unexp = 0;
+                        mSystem.GetGroupCellCounts(groupId, vis, rev, unexp);
+                        Json::Value g(Json::objectValue);
+                        g["id"]             = groupId.AsChar();
+                        g["visibleCells"]   = vis;
+                        g["revealedCells"]  = rev;
+                        g["unexploredCells"]= unexp;
+                        groups.append(g);
+                    });
+                out["groups"] = groups;
+            }
+
+            void OnCommand(Dia::Core::StringCRC cmd, const Json::Value& args) override
+            {
+                static const Dia::Core::StringCRC kCmdToggle("toggle");
+                static const Dia::Core::StringCRC kCmdSelectGroup("selectGroup");
+
+                if (cmd == kCmdToggle)
+                {
+                    if (mLayerManager == nullptr) return;
+                    if (!args.isMember("drawer") || !args["drawer"].isString()) return;
+
+                    const Dia::Core::StringCRC drawerName(args["drawer"].asCString());
+                    Dia::Debug::IVisualDebugger* drawer = nullptr;
+
+                    if (drawerName == Dia::Core::StringCRC("Cell State"))
+                        drawer = &mCellStateDrawer;
+                    else if (drawerName == Dia::Core::StringCRC("Sight Radii"))
+                        drawer = &mSightRadiiDrawer;
+                    else if (drawerName == Dia::Core::StringCRC("Shadowcast Boundary"))
+                        drawer = &mBoundaryDrawer;
+
+                    if (drawer == nullptr) return;
+
+                    const Dia::Core::StringCRC layerName = drawer->GetLayerName();
+                    if (mLayerManager->IsLayerEnabled(layerName))
+                        mLayerManager->DisableLayer(layerName);
+                    else
+                        mLayerManager->EnableLayer(layerName);
+                    return;
+                }
+
+                if (cmd == kCmdSelectGroup)
+                {
+                    if (!args.isMember("groupId") || !args["groupId"].isString()) return;
+                    mSelectedGroup = Dia::Core::StringCRC(args["groupId"].asCString());
+                }
+            }
+
+            // ----------------------------------------------------------------
+            // IDebugDomain — World-space drawer access
+            // ----------------------------------------------------------------
+
+            int GetDrawerCount() const override { return 3; }
+
+            Dia::Debug::IVisualDebugger* GetDrawer(int index) override
+            {
+                switch (index)
+                {
+                    case 0: return &mCellStateDrawer;
+                    case 1: return &mSightRadiiDrawer;
+                    case 2: return &mBoundaryDrawer;
+                    default: return nullptr;
+                }
+            }
+
+        private:
+            const Dia::GridVisibility::GridVisibilitySystem<TGraph>& mSystem;
+            const Dia::EntitySpatial::EntitySpatialModule&            mSpatial;
+            float                                                     mCellSize;
+
+            Dia::GridVisibility::VisibilityGroupId mSelectedGroup;
+
+            CellStateDrawer          mCellStateDrawer;
+            SightRadiiDrawer         mSightRadiiDrawer;
+            ShadowcastBoundaryDrawer mBoundaryDrawer;
+
+            Dia::Debug::IDebugLayerRegistry* mLayerManager = nullptr;
+        };
+
+    } // namespace GridVisibilityVisualDebugger
+} // namespace Dia
+
+#endif // DIA_DEBUG

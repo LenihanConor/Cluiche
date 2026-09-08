@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{C3D4E5F6-A7B8-9012-3456-CDEF01234567}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{D4E5F6A7-B8C9-0123-4567-DEF012345678}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.diautilityaivisualdebugger.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="UtilityScoreDrawer.h" />
+    <ClInclude Include="UtilityAIDebugDomain.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="UtilityScoreDrawer.cpp" />
+    <ClCompile Include="UtilityAIDebugDomain.cpp" />
+  </ItemGroup>
+</Project>

@@ -97,6 +97,111 @@
       "install_type": "zip",
       "unzip_to": "External/imgui",
       "strip_root": true
+    },
+    {
+      "id": "bx",
+      "version": "eed706fb",
+      "install_type": "build",
+      "source": {
+        "git": "https://github.com/bkaradzic/bx.git",
+        "commit": "eed706fb272f201f628287a80da028655cab5be9"
+      },
+      "build": {
+        "command": "echo bx is header+source only; nothing to build separately",
+        "working_dir": "<clone_root>"
+      },
+      "stage": [
+        { "from": "include", "to": "External/bx/include" },
+        { "from": "src",     "to": "External/bx/src" },
+        { "from": "tools/bin/windows/genie.exe", "to": "External/bx/tools/genie.exe" }
+      ],
+      "sentinel_inputs": [ "External/bx/tools/genie.exe" ]
+    },
+    {
+      "id": "bimg",
+      "version": "5c7eabb1",
+      "install_type": "build",
+      "source": {
+        "git": "https://github.com/bkaradzic/bimg.git",
+        "commit": "5c7eabb1d73cb0c1a3c23c0268dd70e8dca972f7"
+      },
+      "build": {
+        "command": "echo bimg is header+source only; nothing to build separately",
+        "working_dir": "<clone_root>"
+      },
+      "stage": [
+        { "from": "include",   "to": "External/bimg/include" },
+        { "from": "src",       "to": "External/bimg/src" },
+        { "from": "3rdparty",  "to": "External/bimg/3rdparty" }
+      ],
+      "depends_on": ["bx"],
+      "sentinel_inputs": []
+    },
+    {
+      "id": "bgfx",
+      "version": "7d03e160",
+      "install_type": "build",
+      "source": {
+        "git": "https://github.com/bkaradzic/bgfx.git",
+        "commit": "7d03e160fa7447660d2ff58d8cd314e9a8baae56"
+      },
+      "build": {
+        "command": "..\\bx\\tools\\bin\\windows\\genie.exe --with-tools vs2022 && msbuild .build\\projects\\vs2022\\bgfx.sln /p:Configuration=Release /p:Platform=x64 /m:4 /p:UseMultiToolTask=false && msbuild .build\\projects\\vs2022\\bgfx.sln /p:Configuration=Debug /p:Platform=x64 /m:4 /p:UseMultiToolTask=false",
+        "working_dir": "<clone_root>"
+      },
+      "stage": [
+        { "from": "include",                                        "to": "External/bgfx/include" },
+        { "from": ".build/win64_vs2022/bin/bgfxRelease.lib",        "to": "External/bgfx/lib/Release/bgfx.lib" },
+        { "from": ".build/win64_vs2022/bin/bgfxDebug.lib",          "to": "External/bgfx/lib/Debug/bgfx.lib" },
+        { "from": ".build/win64_vs2022/bin/shadercRelease.exe",     "to": "External/bgfx/tools/shaderc.exe" },
+        { "from": "examples/common/imgui",                          "to": "External/bgfx/examples/common/imgui" },
+        { "from": "examples/common/nanovg",                         "to": "External/bgfx/examples/common/nanovg" },
+        { "from": "examples/common/bgfx_utils.h",                   "to": "External/bgfx/examples/common/bgfx_utils.h" },
+        { "from": "3rdparty/dear-imgui",                            "to": "External/bgfx/3rdparty/dear-imgui" },
+        { "from": "3rdparty/iconfontheaders",                       "to": "External/bgfx/3rdparty/iconfontheaders" }
+      ],
+      "depends_on": ["bx", "bimg"],
+      "sentinel_inputs": [
+        "External/bgfx/lib/Release/bgfx.lib",
+        "External/bgfx/lib/Debug/bgfx.lib",
+        "External/bgfx/tools/shaderc.exe",
+        "External/bgfx/examples/common/imgui/imgui.cpp"
+      ]
+    },
+    {
+      "id": "pmd",
+      "version": "7.6.0",
+      "url": "https://github.com/pmd/pmd/releases/download/pmd_releases/7.6.0/pmd-dist-7.6.0-bin.zip",
+      "mirrors": [],
+      "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
+      "install_type": "zip",
+      "unzip_to": "External/pmd",
+      "strip_root": true,
+      "sentinel_inputs": ["External/pmd/bin/pmd.bat"]
+    },
+    {
+      "id": "sdl3",
+      "version": "3.x-main",
+      "install_type": "cmake_build",
+      "source": {
+        "local": "External/SDL3"
+      },
+      "cmake_options": [
+        "-DSDL_STATIC=ON",
+        "-DSDL_SHARED=OFF",
+        "-DSDL_TEST_LIBRARY=OFF",
+        "-DSDL_TESTS=OFF",
+        "-DSDL_DIRECTX=OFF",
+        "-DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON"
+      ],
+      "stage": [
+        {"from": "_build/Release/SDL3-static.lib", "to": "External/SDL3/lib/Release/SDL3-static.lib"},
+        {"from": "_build/Debug/Debug/SDL3-static.lib", "to": "External/SDL3/lib/Debug/SDL3-static.lib"}
+      ],
+      "sentinel_inputs": [
+        "External/SDL3/lib/Release/SDL3-static.lib",
+        "External/SDL3/lib/Debug/SDL3-static.lib"
+      ]
     }
   ]
 }

@@ -20,6 +20,7 @@ enum MessageType {
   MESSAGE_TYPE_LOG = 14;
   MESSAGE_TYPE_LOG_BATCH = 15;
   MESSAGE_TYPE_DEBUG_LAYER_STATE = 16;
+  MESSAGE_TYPE_SUBSCRIBE_ACK = 17;
 }
 
 message DebugMessage {
@@ -42,6 +43,7 @@ message DebugMessage {
     LogEntry log = 23;
     LogBatch log_batch = 24;
     DebugLayerState debug_layer_state = 25;
+    SubscribeAck subscribe_ack = 26;
   }
 }
 
@@ -139,4 +141,10 @@ message DebugLayerEntry {
 message DebugLayerState {
   repeated DebugLayerEntry layers        = 1;
   uint32                   dropped_count = 2;
+}
+
+message SubscribeAck {
+  string data_type = 1;
+  bool   success   = 2;
+  string message   = 3;
 }

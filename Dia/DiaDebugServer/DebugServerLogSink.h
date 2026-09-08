@@ -1,6 +1,6 @@
 #pragma once
 
-#include <DiaLogger/ISink.h>
+#include <DiaObservation/Log/ISink.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
 namespace Dia
@@ -9,14 +9,14 @@ namespace Dia
 
 	namespace DebugServer
 	{
-		class DebugServerLogSink : public Dia::Logger::ISink
+		class DebugServerLogSink : public Dia::Observation::Log::ISink
 		{
 		public:
 			DebugServerLogSink();
 
 			void SetServer(Dia::WebSocket::Server* server);
 
-			void OnLogEntry(const Dia::Logger::LogEntry& entry) override;
+			void OnLogEntry(const Dia::Observation::Log::LogEntry& entry) override;
 			const char* GetName() const override { return "DebugServerLog"; }
 
 			void FlushToServer();

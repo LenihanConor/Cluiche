@@ -11,6 +11,7 @@
   <ItemGroup>
     <ClInclude Include="IKChainDef.h" />
     <ClInclude Include="IKSolver.h" />
+    <ClInclude Include="DiaIK2DSerializers.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="IKSolver.cpp" />

@@ -14,22 +14,6 @@ TEST(Rig2D_SkeletonComponent, Construction_ValidSkeleton)
 	EXPECT_EQ(comp.GetCurrentPose().GetBoneCount(), 3);
 }
 
-TEST(Rig2D_SkeletonComponent, GetType_ReturnsCorrectId)
-{
-	SkeletonDef def = Testing::MakeSimpleChain(2);
-	SkeletonComponent comp(def);
-
-	EXPECT_EQ(comp.GetType(), SkeletonComponent::ID);
-}
-
-TEST(Rig2D_SkeletonComponent, IsType_MatchesOwnId)
-{
-	SkeletonDef def = Testing::MakeSimpleChain(2);
-	SkeletonComponent comp(def);
-
-	EXPECT_TRUE(comp.IsType(SkeletonComponent::ID));
-	EXPECT_FALSE(comp.IsType(0xDEADBEEF));
-}
 
 TEST(Rig2D_SkeletonComponent, MutablePoseAccess)
 {
@@ -54,14 +38,6 @@ TEST(Rig2D_SkeletonComponent, ResetToBindPose_RestoresDefaults)
 	EXPECT_FLOAT_EQ(comp.GetCurrentPose().GetLocalTransform(1).position.y, 1.0f);
 }
 
-TEST(Rig2D_SkeletonComponent, InheritsIComponent)
-{
-	SkeletonDef def = Testing::MakeSimpleChain(2);
-	SkeletonComponent comp(def);
-
-	Dia::Core::IComponent* base = &comp;
-	EXPECT_TRUE(base->IsType(SkeletonComponent::ID));
-}
 
 TEST(Rig2D_SkeletonComponent, Humanoid_FullConstruction)
 {

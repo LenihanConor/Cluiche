@@ -1,0 +1,52 @@
+{
+    "schema": "diagamemessages/v1",
+    "namespace": "CluicheTest::Messages",
+    "includes": ["DiaEntity/EntityId.h"],
+    "messages": [
+        {
+            "id": "NetworkPulseEvent",
+            "router": "broadcast",
+            "pass": "primary",
+            "capacity": 128,
+            "overflow": "drop_oldest",
+            "producers": ["EmitterSystem"],
+            "consumers": ["ReceiverSystem"],
+            "fields": [
+                { "name": "sequenceId", "type": "uint32_t", "notes": "monotonically increasing per emitter" },
+                { "name": "emitterId",  "type": "EntityId",  "notes": "which emitter fired" }
+            ]
+        },
+        {
+            "id": "DirectPingEvent",
+            "router": "entity",
+            "pass": "primary",
+            "producers": ["EmitterSystem"],
+            "consumers": ["ReceiverSystem"],
+            "fields": [
+                { "name": "senderId", "type": "EntityId", "notes": "entity that sent the ping" },
+                { "name": "pingId",   "type": "uint32_t", "notes": "per-sender sequence number" }
+            ]
+        },
+        {
+            "id": "PongEvent",
+            "router": "broadcast",
+            "pass": "reaction",
+            "producers": ["ReceiverSystem"],
+            "consumers": ["EmitterSystem"],
+            "fields": [
+                { "name": "responderId", "type": "EntityId", "notes": "receiver that replied" }
+            ]
+        },
+        {
+            "id": "BurstEvent",
+            "router": "broadcast",
+            "pass": "primary",
+            "capacity": 32,
+            "producers": ["EmitterSystem"],
+            "consumers": [],
+            "fields": [
+                { "name": "count", "type": "uint32_t", "notes": "number of pulses in this burst" }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Asan|x64">
+      <Configuration>Debug-Asan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Ubsan|x64">
+      <Configuration>Debug-Ubsan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Modules\AutomationModule.cpp" />
+    <ClCompile Include="Modules\EntityModule.cpp" />
+    <ClCompile Include="Modules\MainStateProducerModule.cpp" />
+    <ClCompile Include="Modules\AssetServiceModule.cpp" />
+    <ClCompile Include="Modules\VisualDebuggerModule.cpp" />
+    <ClCompile Include="Modules\AssetRuntimeVisualDebuggerModule.cpp" />
+    <ClCompile Include="Modules\EntityVisualDebuggerModule.cpp" />
+    <ClCompile Include="Modules\AttributeVisualDebuggerModule.cpp" />
+    <ClCompile Include="Modules\EntityInspectorModule.cpp" />
+    <ClCompile Include="Modules\DebugUIModule.cpp" />
+    <ClCompile Include="Modules\DebugServerHostModule.cpp" />
+    <ClCompile Include="Modules\JobSystemModule.cpp" />
+    <ClCompile Include="Modules\Camera2DModule.cpp" />
+    <ClCompile Include="Modules\Light2DModule.cpp" />
+    <ClCompile Include="Modules\InputStreamModule.cpp" />
+    <ClCompile Include="Modules\PickingModule.cpp" />
+    <ClCompile Include="Modules\KernelModule.cpp" />
+    <ClCompile Include="Modules\LoadingScreenModule.cpp" />
+    <ClCompile Include="Modules\UICompositeModule.cpp" />
+    <ClCompile Include="Modules\ObservationModule.cpp" />
+    <ClCompile Include="Modules\Physics2DModule.cpp" />
+    <ClCompile Include="Modules\Scene2DModule.cpp" />
+    <ClCompile Include="Modules\ProfilerModule.cpp" />
+    <ClCompile Include="Modules\RenderModule.cpp" />
+    <ClCompile Include="Modules\UIModule.cpp" />
+    <ClCompile Include="Types\InputEvent.cpp" />
+    <ClCompile Include="Types\MainToRenderEvent.cpp" />
+    <ClCompile Include="Types\MainToRenderFrame.cpp" />
+    <ClCompile Include="Types\MainToSimEvent.cpp" />
+    <ClCompile Include="Types\SimToMainEvent.cpp" />
+    <ClCompile Include="Types\DebugServerPushEvent.cpp" />
+    <ClCompile Include="Types\UICommand.cpp" />
+    <ClCompile Include="Modules\InspectorSources\ModuleStateSource.cpp" />
+    <ClCompile Include="Modules\InspectorSources\StreamStateSource.cpp" />
+    <ClCompile Include="Modules\InspectorSources\TimingAggregateSource.cpp" />
+    <ClCompile Include="Modules\InspectorSources\LifecycleEventSource.cpp" />
+    <ClCompile Include="Modules\InspectorSources\BlackboardInspectorSource.cpp" />
+    <ClCompile Include="Modules\InspectorSources\EconomySchemaSource.cpp" />
+    <ClCompile Include="Modules\InspectorSources\EconomyInstancesSource.cpp" />
+    <ClCompile Include="Modules\InspectorSources\EconomyModifiersSource.cpp" />
+    <ClCompile Include="Modules\InspectorSources\EconomyEventsSource.cpp" />
+    <ClCompile Include="Modules\SimNavigationHandlerModule.cpp" />
+    <ClCompile Include="Modules\AIInspectorModule.cpp" />
+    <ClCompile Include="Modules\EconomyInspectorModule.cpp" />
+    <ClCompile Include="Modules\DebugPanelPage.cpp" />
+    <ClCompile Include="Modules\DebugPanelPageModule.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Modules\AutomationModule.h" />
+    <ClInclude Include="Modules\EntityModule.h" />
+    <ClInclude Include="Modules\MainStateProducerModule.h" />
+    <ClInclude Include="Modules\AssetServiceModule.h" />
+    <ClInclude Include="Modules\VisualDebuggerModule.h" />
+    <ClInclude Include="Modules\AssetRuntimeVisualDebuggerModule.h" />
+    <ClInclude Include="Modules\EntityVisualDebuggerModule.h" />
+    <ClInclude Include="Modules\EntityInspectorModule.h" />
+    <ClInclude Include="Modules\DebugUIModule.h" />
+    <ClInclude Include="Modules\DebugServerHostModule.h" />
+    <ClInclude Include="Modules\JobSystemModule.h" />
+    <ClInclude Include="Modules\Camera2DModule.h" />
+    <ClInclude Include="Modules\Light2DModule.h" />
+    <ClInclude Include="Modules\InputStreamModule.h" />
+    <ClInclude Include="Modules\PickingModule.h" />
+    <ClInclude Include="Modules\KernelModule.h" />
+    <ClInclude Include="Modules\LoadingScreenModule.h" />
+    <ClInclude Include="Modules\UICompositeModule.h" />
+    <ClInclude Include="Modules\ObservationModule.h" />
+    <ClInclude Include="Modules\Physics2DModule.h" />
+    <ClInclude Include="Modules\Scene2DModule.h" />
+    <ClInclude Include="Modules\ProfilerModule.h" />
+    <ClInclude Include="Modules\RenderModule.h" />
+    <ClInclude Include="Modules\UIModule.h" />
+    <ClInclude Include="Types\InputEvent.h" />
+    <ClInclude Include="Types\MainToRenderEvent.h" />
+    <ClInclude Include="Types\MainToRenderFrame.h" />
+    <ClInclude Include="Types\MainToSimEvent.h" />
+    <ClInclude Include="Types\SimToMainEvent.h" />
+    <ClInclude Include="Types\DebugServerPushEvent.h" />
+    <ClInclude Include="Types\UICommand.h" />
+    <ClInclude Include="Modules\InspectorSources\ModuleStateSource.h" />
+    <ClInclude Include="Modules\InspectorSources\StreamStateSource.h" />
+    <ClInclude Include="Modules\InspectorSources\TimingAggregateSource.h" />
+    <ClInclude Include="Modules\InspectorSources\LifecycleEventSource.h" />
+    <ClInclude Include="Types\BlackboardInspectEvent.h" />
+    <ClInclude Include="Modules\InspectorSources\BlackboardInspectorSource.h" />
+    <ClInclude Include="Modules\InspectorSources\EconomySchemaSource.h" />
+    <ClInclude Include="Modules\InspectorSources\EconomyInstancesSource.h" />
+    <ClInclude Include="Modules\InspectorSources\EconomyModifiersSource.h" />
+    <ClInclude Include="Modules\InspectorSources\EconomyEventsSource.h" />
+    <ClInclude Include="Types\RenderToSimNavRequest.h" />
+    <ClInclude Include="Modules\SimNavigationHandlerModule.h" />
+    <ClInclude Include="Modules\AIInspectorModule.h" />
+    <ClInclude Include="Modules\EconomyInspectorModule.h" />
+    <ClInclude Include="Types\DebugPanelCommandEvent.h" />
+    <ClInclude Include="Modules\DebugPanelPage.h" />
+    <ClInclude Include="Modules\DebugPanelPageModule.h" />
+    <ClInclude Include="Types\DebugPanelToggleEvent.h" />
+    <ClInclude Include="Types\DebugPanelSetVisibilityEvent.h" />
+    <ClInclude Include="Modules\AttributeVisualDebuggerModule.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">
+      <Project>{dd3d58ef-028b-42cb-b837-0042ba30d96f}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaStreams\DiaStreams.vcxproj">
+      <Project>{d4e5f6a7-b8c9-0123-def0-456789012345}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaCore\DiaCore.vcxproj">
+      <Project>{8d41cbe3-c493-428d-95f3-627e56500667}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaThreading\DiaThreading.vcxproj">
+      <Project>{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaObservation\DiaObservation.vcxproj">
+      <Project>{7a8b9c0d-e1f2-3456-7890-abcdef012345}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaRigidBody2D\DiaRigidBody2D.vcxproj">
+      <Project>{C1D2E3F4-A5B6-7890-CDEF-012345678902}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaRigidBody2DVisualDebugger\DiaRigidBody2DVisualDebugger.vcxproj">
+      <Project>{A2B3C4D5-E6F7-8901-BCDE-F01234567891}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaGraphics\DiaGraphics.vcxproj">
+      <Project>{1cf9f92b-666e-4b39-9dde-b1cfbef68618}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaPicking\DiaPicking.vcxproj">
+      <Project>{E1F2A3B4-C5D6-7890-1234-567890ABCDE1}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaGeometry2DPicking\DiaGeometry2DPicking.vcxproj">
+      <Project>{F2A3B4C5-D6E7-8901-2345-678901BCDEF2}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaMailbox\DiaMailbox.vcxproj">
+      <Project>{C4D5E6F7-A8B9-0123-CDEF-456789ABCDEF}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaInput\DiaInput.vcxproj">
+      <Project>{936fa28f-e171-401f-8185-d2af48db4098}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaMaths\DiaMaths.vcxproj">
+      <Project>{2bba0ad3-d449-4c0e-8c84-acfa8bca456b}</Project>
+    </ProjectReference>
+
+    <ProjectReference Include="..\..\Dia\DiaSDL\DiaSDL.vcxproj">
+      <Project>{B1C2D3E4-F5A6-7890-BCDE-F01234567891}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaBgfx\DiaBgfx.vcxproj">
+      <Project>{A1B2C3D4-E5F6-7890-1234-ABCDEF012345}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaUI\DiaUI.vcxproj">
+      <Project>{835ca128-691f-4cea-a0b3-ce6e41c394e7}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaUIUltralight\DiaUIUltralight.vcxproj">
+      <Project>{b7c3d812-4f91-4e2a-9b56-fa38e1d09c74}</Project>
+      <ReferenceOutputAssembly Condition="'$(Platform)'=='Win32'">false</ReferenceOutputAssembly>
+      <LinkLibraryDependencies Condition="'$(Platform)'=='Win32'">false</LinkLibraryDependencies>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaWindow\DiaWindow.vcxproj">
+      <Project>{52178c86-628d-4fe4-ae55-d3485faec070}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaAssetRuntime\DiaAssetRuntime.vcxproj">
+      <Project>{c9d0e1f2-a3b4-5678-9cde-f01234567890}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaMesh3D\DiaMesh3D.vcxproj">
+      <Project>{F1E2D3C4-B5A6-7890-FEDC-BA9876543210}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaBgfx3D\DiaBgfx3D.vcxproj">
+      <Project>{D2E3F4A5-B6C7-8901-DEF0-123456789ABC}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaGraphics3D\DiaGraphics3D.vcxproj">
+      <Project>{C5D6E7F8-A9B0-1234-EF01-234567890123}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaDebugServer\DiaDebugServer.vcxproj">
+      <Project>{6aafcccb-71d0-4d8d-a6be-081f5e02093d}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaAutomation\DiaAutomation.vcxproj">
+      <Project>{2A3B4C5D-6E7F-8091-A2B3-C4D5E6F70123}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaVisualDebugger\DiaVisualDebugger.vcxproj">
+      <Project>{9BDEE3A3-1E06-4AF4-8628-E55B8E0E2E4B}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaAssetRuntimeVisualDebugger\DiaAssetRuntimeVisualDebugger.vcxproj">
+      <Project>{D3E4F5A6-B7C8-9012-DEFA-234567890ABC}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaImGui\DiaImGui.vcxproj">
+      <Project>{F6A7B8C9-D0E1-2345-ABCD-567890ABCDE1}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaEntity\DiaEntity.vcxproj">
+      <Project>{D9E0F1A2-B3C4-5678-9DEF-012345678903}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaScene2D\DiaScene2D.vcxproj">
+      <Project>{D6E7F8A9-B0C1-2345-DEF0-123456789004}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaCamera2D\DiaCamera2D.vcxproj">
+      <Project>{B2C3D4E5-F6A7-8901-BCDE-F12345678902}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaLighting2D\DiaLighting2D.vcxproj">
+      <Project>{C5D6E7F8-A9B0-1234-CDEF-012345678903}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaEntityVisualDebugger\DiaEntityVisualDebugger.vcxproj">
+      <Project>{B3C4D5E6-F7A8-9012-BCDE-F12345678901}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaAttributeVisualDebugger\DiaAttributeVisualDebugger.vcxproj">
+      <Project>{85715DEF-8A27-4405-8FAE-D68D9435F47A}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaEntityInspector\DiaEntityInspector.vcxproj">
+      <Project>{A3B4C5D6-E7F8-9012-ABCD-EF1234567890}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaAPI\DiaAPI.vcxproj">
+      <Project>{1E7F6E13-50CF-411C-B34C-66D70121DD03}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaAIBudget\DiaAIBudget.vcxproj">
+      <Project>{C9D0E1F2-A3B4-5678-90AB-CDEF01234567}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaUtilityAI\DiaUtilityAI.vcxproj">
+      <Project>{E2F3A4B5-C6D7-8901-EF23-456789012345}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaRules\DiaRules.vcxproj">
+      <Project>{C7D8E9F0-A1B2-3456-CDEF-012345678901}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaHTN\DiaHTN.vcxproj">
+      <Project>{F4B5C6D7-E8F9-0123-A456-789012345678}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaEconomy\DiaEconomy.vcxproj">
+      <Project>{6E2AFB11-772C-4552-B065-D50083E5787D}</Project>
+    </ProjectReference>
+
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{7b4a5c2e-3f1d-4a8b-9c6e-12d5f8b3a7e1}</ProjectGuid>
+    <RootNamespace>CluicheGameBaseline</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Asan|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>ClangCL</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>11.0.51106.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64' Or '$(Configuration)|$(Platform)'=='Debug-Asan|x64' Or '$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../DIA/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>DEBUG;DIA_DEBUG;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <BrowseInformation>true</BrowseInformation>
+    </ClCompile>
+    <Lib>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+    </Lib>
+    <Bscmake>
+      <PreserveSbr>true</PreserveSbr>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../DIA/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

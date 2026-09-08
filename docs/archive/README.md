@@ -1,69 +1,30 @@
 # Documentation Archive
 
-**Last Updated:** 2026-04-01
-
-This directory contains historical analysis files and bug reports that have been superseded by comprehensive documentation.
+This directory contains historical files that have been superseded or completed.
 
 ---
 
-## Archived Files
+## Historical Analysis (from April 2026 documentation effort)
 
-### Bug Reports (Consolidated)
+- **BUG_REPORT.md** — Original DiaMaths bug report; superseded by `reference/subsystems/dia-maths/`
+- **ADDITIONAL_ISSUES.md** — Additional codebase analysis issues; superseded by `reference/development/known-issues.md`
+- **FINAL_ISSUES_SUMMARY.md** — Issues summary; superseded by `reference/development/known-issues.md`
+- **DIACORE_FUNCTIONALITY_ANALYSIS.md** — DiaCore subsystem analysis; superseded by `reference/api/dia/core-api.md`
+- **DIACORE_TO_100_PERCENT.md** — DiaCore completion planning; superseded by current specs
 
-These files have been consolidated into `/docs/09-development/known-issues.md`:
+## Documentation Meta-files (from April–May 2026)
 
-- **BUG_REPORT.md** (archived 2026-04-01)
-  - Original bug report for DiaMaths issues
-  - Issues documented: Transform2D thread safety, Random thread safety, performance concerns
-  - **Superseded by:** `/docs/07-subsystems/dia-maths/known-issues.md`
+- **DOCUMENTATION_TODO.md** — Phase tracking for the initial reference docs migration
+- **REMAINING_WORK_PLAN.md** — Work plan written during migration; work is complete
+- **CROSS_REFERENCE_STATUS.md** — Link validation snapshot from migration
+- **INTERIM_FILES_STATUS.md** — Status of interim files from migration effort
+- **PHASE_10_COMPLETION_SUMMARY.md** — Migration phase 10 completion record
+- **MIGRATION_SUMMARY.md** — Record of `docs/NN-*/` → `docs/reference/` restructure
+- **migrate-to-reference.py** — One-shot link migration script; migration complete
 
-- **ADDITIONAL_ISSUES.md** (archived 2026-04-01)
-  - Additional issues discovered during codebase analysis
-  - **Superseded by:** `/docs/09-development/known-issues.md`
+## Completed Plans (orphaned from docs/plans/)
 
-- **FINAL_ISSUES_SUMMARY.md** (archived 2026-04-01)
-  - Summary of all issues found
-  - **Superseded by:** `/docs/09-development/known-issues.md`
-
-### Historical Analysis
-
-These files were interim analysis documents created during documentation effort:
-
-- **DIACORE_FUNCTIONALITY_ANALYSIS.md** (archived 2026-04-01)
-  - Analysis of DiaCore subsystems
-  - **Superseded by:** `/docs/05-api/dia/core-api.md` and `/docs/07-subsystems/dia-core/`
-
-- **DIACORE_TO_100_PERCENT.md** (archived 2026-04-01)
-  - Planning document for DiaCore completion
-  - **Superseded by:** Comprehensive requirements and API documentation
-
----
-
-## Why Archive?
-
-These files served their purpose during the documentation creation process but are now redundant. Rather than delete them (losing historical context), they've been archived for reference.
-
-**Current Documentation:**
-- **Bug tracking:** `/docs/09-development/known-issues.md`
-- **DiaMaths issues:** `/docs/07-subsystems/dia-maths/known-issues.md`
-- **DiaCore API:** `/docs/05-api/dia/core-api.md`
-- **Requirements:** `/docs/03-requirements/`
-- **Architecture:** `/docs/01-architecture/`
-
----
-
-## Retrieval
-
-If you need to reference the original analysis:
-
-```bash
-# View archived file
-cat docs/archive/BUG_REPORT.md
-
-# Compare with current docs
-diff docs/archive/BUG_REPORT.md docs/09-development/known-issues.md
-```
-
----
-
-**Note:** These files are not referenced by the main documentation and can be safely deleted if desired.
+- **eliminate-asset-service-static.plan.md** — Done: removed `AssetServiceModule::GetStatic()`
+- **eliminate-visualdebugger-static.plan.md** — Done: removed `VisualDebuggerModule::sLayerManager`
+- **orchestrate-hardening.plan.md** — Done: `dia test e2e` orchestrator hardening
+- **render-fence-capture-timing.plan.md** — Done: render fence capture timing fix

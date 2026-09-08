@@ -1,6 +1,6 @@
 #!/bin/bash
 cd "$(dirname "$0")/.."
-source venv/bin/activate
+source .venv/bin/activate
 
 # Clear documentation cache for fresh build
 echo "Clearing documentation cache..."

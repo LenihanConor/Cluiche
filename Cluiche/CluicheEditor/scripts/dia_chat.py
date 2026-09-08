@@ -1,0 +1,1134 @@
+"""
+dia_chat.py -- ChatOrchestrator for DiaChatPlugin.
+
+Loaded by C++ via DiaPython: dia_python.load_script("scripts/dia_chat.py")
+Top-level functions are registered as DiaPython callable bindings.
+
+No third-party imports at module level.  Backend-specific imports (anthropic,
+ollama, httpx, google-generativeai) live in Task 3's backend classes.
+"""
+
+import json
+import logging
+import os
+import threading
+import time
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+
+_LOG = logging.getLogger("dia_chat")
+
+
+# ---------------------------------------------------------------------------
+# Persistence helpers (DCP-008)
+# ---------------------------------------------------------------------------
+
+def _history_path(project_path):
+    """Return the JSONL path for the given project_path."""
+    slug = os.path.basename(project_path.rstrip('/\\')).lower().replace(' ', '_')
+    return os.path.join('Cluiche', 'out', 'CluicheEditor', 'chat', slug, 'history.jsonl')
+
+
+_SETTINGS_PATH = os.path.join('Cluiche', 'out', 'CluicheEditor', 'chat', 'settings.json')
+
+
+def _load_backend_settings():
+    """Return (backend_name, model) from persisted settings, or defaults."""
+    try:
+        with open(_SETTINGS_PATH, 'r', encoding='utf-8') as fh:
+            data = json.load(fh)
+            return data.get('backend', 'ollama'), data.get('model', 'gemma2:27b')
+    except Exception:
+        return 'ollama', 'gemma2:27b'
+
+
+def _save_backend_settings(backend_name, model):
+    """Persist the active backend and model to disk."""
+    try:
+        os.makedirs(os.path.dirname(_SETTINGS_PATH), exist_ok=True)
+        with open(_SETTINGS_PATH, 'w', encoding='utf-8') as fh:
+            json.dump({'backend': backend_name, 'model': model}, fh)
+    except Exception as exc:
+        _LOG.warning("dia_chat: _save_backend_settings failed: %s", exc)
+
+
+def _load_history(path):
+    """
+    Load messages from a JSONL file.  Returns [] if the file does not exist.
+    Skips malformed lines silently.
+    """
+    if not os.path.exists(path):
+        return []
+    messages = []
+    try:
+        with open(path, 'r', encoding='utf-8') as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    messages.append(json.loads(line))
+                except Exception:
+                    pass
+    except Exception as e:
+        print("[DiaChat] history error: {0}".format(e))
+    return messages
+
+
+def _save_history(path, messages):
+    """Overwrite the JSONL file with the given message list."""
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w', encoding='utf-8') as fh:
+            for msg in messages:
+                fh.write(json.dumps(msg) + '\n')
+    except Exception as e:
+        print("[DiaChat] history error: {0}".format(e))
+
+
+def _trim_history(messages, max_pairs=50):
+    """
+    Cap the message list to max_pairs exchanges (max_pairs * 2 messages).
+    Drops the oldest messages when over the limit.
+    """
+    limit = max_pairs * 2
+    if len(messages) > limit:
+        return messages[len(messages) - limit:]
+    return messages
+
+
+def _context_window_history_cap(backend):
+    """
+    Return the max exchange pairs to include based on backend type.
+
+    Local models (Ollama) have limited context windows — sending 50 exchanges
+    pushes out the system prompt. Cloud backends can handle much more.
+    """
+    if backend is None:
+        return 8
+    class_name = type(backend).__name__.lower()
+    if 'ollama' in class_name:
+        return 8
+    return 40
+
+
+# ---------------------------------------------------------------------------
+# ChatEvent tagged union
+# ---------------------------------------------------------------------------
+
+@dataclass
+class TokenChunk:
+    """A streaming text token from the LLM."""
+    text: str
+    done: bool
+
+
+@dataclass
+class ToolCall:
+    """The LLM wants to call an editor action."""
+    call_id: str
+    fn: str
+    params: dict
+
+
+@dataclass
+class Done:
+    """Signals end of a clean exchange (no further events)."""
+    pass
+
+
+@dataclass
+class Error:
+    """Signals a fatal error in the exchange."""
+    message: str
+
+
+# ---------------------------------------------------------------------------
+# ILLMBackend ABC
+# ---------------------------------------------------------------------------
+
+class ILLMBackend(ABC):
+    """Abstract base for all LLM provider backends."""
+
+    @abstractmethod
+    def stream_chat(self, messages, tools):
+        """
+        Yield ChatEvent instances for the given conversation turn.
+
+        Parameters
+        ----------
+        messages : list[dict]  -- {role, content} message list
+        tools    : list[dict]  -- tool definitions (action manifest format)
+
+        Yields
+        ------
+        TokenChunk | ToolCall | Done | Error
+        """
+
+    @abstractmethod
+    def list_models(self):
+        """Return a list of available model name strings."""
+
+    @abstractmethod
+    def is_available(self):
+        """Return True if this backend can be reached right now."""
+
+
+# ---------------------------------------------------------------------------
+# ConversationHistory
+# ---------------------------------------------------------------------------
+
+class ConversationHistory:
+    """In-memory conversation history with JSONL persistence (DCP-008)."""
+
+    def __init__(self):
+        self._exchanges = []  # list of {role, content, tool_calls, timestamp}
+
+    def add_exchange(self, user_text, assistant_text, tool_calls=None):
+        """Append a user/assistant exchange pair to the history."""
+        ts = time.time()
+        self._exchanges.append({
+            "role": "user",
+            "content": user_text,
+            "tool_calls": [],
+            "timestamp": ts,
+        })
+        self._exchanges.append({
+            "role": "assistant",
+            "content": assistant_text,
+            "tool_calls": tool_calls if tool_calls is not None else [],
+            "timestamp": ts,
+        })
+
+    def load_from(self, messages):
+        """
+        Bulk-load a list of {"role", "content"} dicts (e.g. from JSONL file).
+        Each dict is stored directly; missing keys default to empty values.
+        """
+        for msg in messages:
+            if not isinstance(msg, dict):
+                continue
+            self._exchanges.append({
+                "role": msg.get("role", ""),
+                "content": msg.get("content", ""),
+                "tool_calls": msg.get("tool_calls", []),
+                "timestamp": msg.get("timestamp", 0.0),
+            })
+
+    def to_messages(self):
+        """
+        Return a flat list of {role, content} dicts suitable for the messages
+        array passed to ILLMBackend.stream_chat.
+        """
+        result = []
+        for entry in self._exchanges:
+            result.append({"role": entry["role"], "content": entry["content"]})
+        return result
+
+    def to_list(self):
+        """Return a copy of all exchanges as plain {role, content} dicts."""
+        return [{"role": e["role"], "content": e["content"]} for e in self._exchanges]
+
+    def clear(self):
+        """Discard all stored history."""
+        self._exchanges = []
+
+
+# ---------------------------------------------------------------------------
+# ToolDispatcher
+# ---------------------------------------------------------------------------
+
+class ToolError(Exception):
+    pass
+
+
+class ToolDispatcher:
+    """
+    Wraps the execute_action callable and raises ToolError on failure.
+
+    Parameters
+    ----------
+    execute_action : callable(name: str, params: dict) -> dict
+        The DiaPython binding to DiaEditorAPI::ExecuteAction.
+    notify_bridge : callable(topic: str, payload: dict) | None
+        Optional callback to push error events to the UI.
+    """
+
+    def __init__(self, execute_action, notify_bridge=None):
+        self._execute_action = execute_action  # callable(name, params) -> dict
+        self._notify_bridge = notify_bridge
+
+    def _push(self, topic, payload):
+        if self._notify_bridge is not None:
+            try:
+                self._notify_bridge(topic, payload)
+            except Exception as exc:
+                _LOG.error("dia_chat: _push(%s) failed: %s", topic, exc)
+
+    def dispatch(self, name, params):
+        try:
+            result = self._execute_action(name, params)
+            if result is None:
+                result = {}
+            return result
+        except Exception as exc:
+            # Detect DiaEditorAPI not loaded (ImportError or missing dia_editor module)
+            if isinstance(exc, ImportError) or 'dia_editor' in str(exc):
+                self._push('chat.error', {
+                    'error_type': 'editor_api_unavailable',
+                    'message': 'DiaEditorAPI not loaded. Editor actions are disabled.',
+                })
+            raise ToolError(str(exc)) from exc
+
+
+# ---------------------------------------------------------------------------
+# KnowledgeLoader
+# ---------------------------------------------------------------------------
+
+class KnowledgeLoader:
+    """
+    Reads ai_context/ files and assembles a token-budgeted system prompt.
+
+    Priority order (highest first):
+      1. editor_actions.md  — always generated from manifest (DCP-005; never read from disk)
+      2. data_types.md      — always included if present
+      3. engine_overview.md
+      4. editor_workflows.md
+      5. asset_style_guide.md
+
+    Lower-priority files are trimmed first if the total would exceed token_budget.
+
+    Parameters
+    ----------
+    ai_context_dir : str
+        Path to the directory containing the ai_context .md files.
+    token_budget : int
+        Maximum estimated tokens for the assembled prompt (default 4096).
+    """
+
+    _GROUNDING_PREAMBLE = (
+        "You are the Dia Engine assistant for CluicheEditor. "
+        "Below are reference sections about the engine. "
+        "Use them to answer the user's question helpfully. "
+        "Be conversational and expressive — explain concepts clearly, "
+        "give examples, and guide the user step by step when appropriate.\n"
+    )
+
+    # Files read from disk, in priority order (editor_actions.md handled separately).
+    # Each entry: (filename, title, keywords for relevance matching).
+    _DISK_FILES = [
+        ("data_types.md",       "Data Types",
+         {"entity", "component", "stringcrc", "manifest", "diastage", "diagame",
+          "serialize", "factory", "type", "template", "asset"}),
+        ("engine_overview.md",  "Engine Overview",
+         {"module", "layer", "processing", "phase", "namespace", "architecture",
+          "diacore", "diamaths", "diagraphics", "diaphysics", "build", "engine"}),
+        ("editor_workflows.md", "Editor Workflows",
+         {"plugin", "panel", "webui", "bridge", "action", "register", "build",
+          "run", "editor", "shortcut", "menu", "dock", "workflow"}),
+        ("asset_style_guide.md","Asset Style Guide",
+         {"name", "naming", "convention", "directory", "file", "sprite", "audio",
+          "animation", "yaml", "stage", "validate", "style", "asset", "path"}),
+        ("dia_asset_lifecycle.md", "Asset & Entity Lifecycle",
+         {"entity", "component", "lifecycle", "pool", "mutation", "blueprint", "scene",
+          "domain", "attach", "detach", "query", "template", "register", "serialize",
+          "instantiate", "spawn", "ecs", "macro"}),
+        ("troubleshooting.md",    "Troubleshooting & DiaCLI Reference",
+         {"error", "fix", "build", "run", "linker", "manifest", "include", "fail",
+          "debug", "compile", "deploy", "environment", "crash", "symptom", "lnk",
+          "unresolved", "missing", "pipeline", "broken", "failing", "hang", "deadlock"}),
+    ]
+
+    def __init__(self, ai_context_dir, token_budget=4096):
+        self._ai_context_dir = ai_context_dir
+        self._token_budget = token_budget
+
+    def load(self, manifest=None, user_message=None):
+        """
+        Assemble and return the system prompt string.
+
+        If manifest is provided, regenerate editor_actions.md content inline
+        (DCP-005 — never read editor_actions.md from disk; always generate from manifest).
+
+        If user_message is provided, only include context files whose keywords
+        overlap with the message (relevance filtering). Falls back to all files
+        when no keywords match or user_message is None.
+
+        Trims lower-priority files first if total exceeds token_budget.
+        Returns the assembled prompt string.
+        """
+        import os
+
+        sections = []  # list of (title, content) in priority order
+
+        # --- Priority 1: editor_actions.md — generated from manifest, never from disk ---
+        if manifest is not None:
+            actions_content = self._generate_actions_content(manifest)
+            if actions_content:
+                sections.append(("Editor Actions", actions_content))
+
+        # --- Determine which disk files are relevant to the user's query ---
+        relevant_files = self._select_relevant_files(user_message)
+
+        # --- Priorities 2-5: disk files (filtered by relevance) ---
+        for filename, title, _keywords in relevant_files:
+            filepath = os.path.join(self._ai_context_dir, filename)
+            try:
+                with open(filepath, "r", encoding="utf-8") as fh:
+                    content = fh.read().strip()
+                if content:
+                    sections.append((title, content))
+            except OSError:
+                pass  # Missing file — skip silently
+
+        # --- Assemble with budget enforcement ---
+        # Preamble always included; trim context blocks from lowest priority first.
+        preamble_block = self._GROUNDING_PREAMBLE + "\n\n"
+
+        blocks = ["## {0}\n{1}\n".format(title, content) for title, content in sections]
+        while blocks:
+            candidate = preamble_block + "\n".join(blocks)
+            if self.estimate_tokens(candidate) <= self._token_budget:
+                return candidate
+            blocks.pop()
+
+        return preamble_block.strip()
+
+    def _select_relevant_files(self, user_message):
+        """
+        Return the subset of _DISK_FILES relevant to user_message.
+
+        Uses simple keyword overlap: tokenizes the message into lowercase words
+        and checks intersection with each file's keyword set. Files with any
+        overlap are included. If no files match (or user_message is None),
+        returns all files (fallback to full context).
+        """
+        if not user_message:
+            return self._DISK_FILES
+
+        msg_words = set(user_message.lower().split())
+        matched = []
+        for entry in self._DISK_FILES:
+            _filename, _title, keywords = entry
+            if msg_words & keywords:
+                matched.append(entry)
+
+        return matched if matched else self._DISK_FILES
+
+    @staticmethod
+    def _generate_actions_content(manifest):
+        """Format the manifest actions list into Markdown."""
+        actions = manifest if isinstance(manifest, list) else manifest.get("actions", [])
+        if not actions:
+            return ""
+        lines = []
+        for action in actions:
+            if not isinstance(action, dict):
+                continue
+            name = action.get("name", "")
+            description = action.get("description", "")
+            params = action.get("params", [])
+            lines.append("### {0}".format(name))
+            if description:
+                lines.append(description)
+            if params:
+                param_parts = []
+                for p in params:
+                    if not isinstance(p, dict):
+                        continue
+                    pname = p.get("name", "")
+                    ptype = p.get("type", "")
+                    preq = "required" if p.get("required") else "optional"
+                    pdesc = p.get("description", "")
+                    param_parts.append("{0} ({1}, {2}): {3}".format(pname, ptype, preq, pdesc))
+                lines.append("Params: " + "; ".join(param_parts))
+            lines.append("")
+        return "\n".join(lines).strip()
+
+    @staticmethod
+    def estimate_tokens(text):
+        """word count / 0.75"""
+        return int(len(text.split()) / 0.75)
+
+
+# ---------------------------------------------------------------------------
+# ChatOrchestrator
+# ---------------------------------------------------------------------------
+
+class ChatOrchestrator:
+    """
+    Manages the full LLM conversation loop for DiaChatPlugin.
+
+    Parameters
+    ----------
+    token_callback   : callable(text: str, done: bool)
+        Pushes streamed tokens to C++ (registered by ChatPanelBridge).
+    manifest_getter  : callable() -> dict | None
+        Returns the DiaEditorAPI action manifest.  Returns None when
+        DiaEditorAPI is not loaded; chat continues in knowledge-only mode.
+    execute_action   : callable(name: str, params: dict) -> dict
+        Calls C++ DiaEditorAPI::ExecuteAction.
+    confirm_callback : callable(call_id: str, fn: str, params: dict, description: str)
+        Triggers the C++ confirmation gate for destructive actions.
+    notify_bridge    : callable(topic: str, payload: dict) | None
+        Pushes error/status events to the React UI.  None disables UI
+        error notifications (used in headless tests).
+    max_tool_depth   : int
+        Maximum tool calls allowed per send_message exchange (DCP-007, default 8).
+    """
+
+    def __init__(self, token_callback, manifest_getter, execute_action,
+                 confirm_callback, notify_bridge=None, max_tool_depth=8,
+                 project_path=""):
+        self._token_callback = token_callback
+        self._manifest_getter = manifest_getter
+        self._execute_action = execute_action
+        self._confirm_callback = confirm_callback
+        self._notify_bridge = notify_bridge
+        self._max_tool_depth = max_tool_depth
+
+        self._dispatcher = ToolDispatcher(execute_action, notify_bridge=notify_bridge)
+
+        self._backend = None
+        self._system_prompt = ""
+        self._knowledge_loader = None
+        self._history = ConversationHistory()
+        self._context_mode = "full_context"
+
+        # Persistence (DCP-008)
+        self._history_path = _history_path(project_path) if project_path else ""
+        if self._history_path:
+            saved = _load_history(self._history_path)
+            if saved:
+                self._history.load_from(saved)
+
+        # Maps call_id -> (fn, params, threading.Event, result_container)
+        # result_container is a one-element list so the event-handler can write
+        # the outcome (dict | None) and send_message can read it after the event.
+        self.pending_confirm = {}
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _push(self, topic, payload):
+        if self._notify_bridge is not None:
+            try:
+                self._notify_bridge(topic, payload)
+            except Exception as exc:
+                _LOG.error("dia_chat: _push(%s) failed: %s", topic, exc)
+
+    # ------------------------------------------------------------------
+    # Configuration
+    # ------------------------------------------------------------------
+
+    def set_backend(self, backend, backend_name_hint=""):
+        """
+        Set the active ILLMBackend implementation.
+
+        After switching, checks availability and pushes a chat.backend_status
+        event to the UI (error or success with model list).
+        """
+        self._backend = backend
+        self._check_backend_availability(backend, backend_name_hint=backend_name_hint)
+
+    def _check_backend_availability(self, backend, backend_name_hint=""):
+        """
+        Inspect *backend* and push chat.backend_status events.
+        Pushes an error event for: ollama_down, no_models, api_key_missing.
+        Pushes a success event (with model list) when available.
+        """
+        if backend is None:
+            return
+
+        class_name = type(backend).__name__.lower()
+        is_ollama = 'ollama' in class_name
+
+        try:
+            available = backend.is_available()
+        except Exception:
+            available = False
+
+        if is_ollama and not available:
+            self._push('chat.backend_status', {
+                'status': 'error',
+                'error_type': 'ollama_down',
+                'message': 'Ollama is not running. Start Ollama or switch to Claude/Gemini.',
+            })
+            return
+
+        try:
+            models = backend.list_models() if available else []
+        except Exception:
+            models = []
+
+        if is_ollama and available and not models:
+            self._push('chat.backend_status', {
+                'status': 'error',
+                'error_type': 'no_models',
+                'message': 'No models installed. Run: ollama pull llama3.2',
+            })
+            return
+
+        # --- Cloud backends: check for API key ---
+        if not is_ollama:
+            api_key = getattr(backend, 'api_key', None) or getattr(backend, '_api_key', None)
+            if not api_key:
+                self._push('chat.backend_status', {
+                    'status': 'error',
+                    'error_type': 'api_key_missing',
+                    'message': 'API key not set. Set ANTHROPIC_API_KEY / GOOGLE_API_KEY env var.',
+                })
+                return
+
+        # --- Success: push model list so UI can populate the dropdown ---
+        current_model = getattr(backend, 'model', '')
+        bname = backend_name_hint or class_name.replace('backend', '')
+        self._push('chat.backend_status', {
+            'status': 'ok',
+            'backend': bname,
+            'model': current_model,
+            'models': models,
+            'available': True,
+        })
+
+    def set_system_prompt(self, text, loader=None):
+        """Set the system prompt and optionally retain the loader for per-message relevance filtering."""
+        self._system_prompt = text
+        self._knowledge_loader = loader
+
+    def _resolve_system_prompt(self, user_message):
+        """
+        Return the system prompt for this message.
+
+        For local backends (Ollama): rebuild per-message with relevance filtering
+        so only context files matching the user's query are included.
+        For cloud backends: return the cached full prompt (they have large windows).
+        """
+        if not self._knowledge_loader:
+            return self._system_prompt
+
+        is_local = self._backend is not None and 'ollama' in type(self._backend).__name__.lower()
+        if not is_local:
+            return self._system_prompt
+
+        raw_manifest = self._manifest_getter() if self._manifest_getter else None
+        manifest = ChatOrchestrator._parse_manifest(raw_manifest)
+        return self._knowledge_loader.load(manifest=manifest, user_message=user_message)
+
+    # ------------------------------------------------------------------
+    # Public entry point
+    # ------------------------------------------------------------------
+
+    def send_message(self, text, context_mode="full_context", extra_files=None):
+        """
+        Run the full LLM conversation loop for a single user message.
+
+        1. Assemble messages (system + history + new user message).
+        2. Fetch tool definitions from manifest_getter (mode-dependent).
+        3. Call backend.stream_chat(messages, tools).
+        4. For each ToolCall event: dispatch, feed result back, continue.
+        5. Stream tokens to C++ via token_callback.
+        6. Append completed exchange to ConversationHistory.
+
+        Parameters
+        ----------
+        text         : str  -- the user's message text
+        context_mode : str  -- "full_context" | "tools_only" | "custom"
+        extra_files  : list -- additional file paths for context (Task 4)
+        """
+        if self._backend is None:
+            _LOG.warning("dia_chat: send_message called with no backend set")
+            self._token_callback("[error: no LLM backend configured]", True)
+            return
+
+        if extra_files is None:
+            extra_files = []
+
+        # --- 1. Assemble messages ---
+        messages = []
+        if context_mode != "tools_only":
+            system_prompt = self._resolve_system_prompt(text)
+            if system_prompt:
+                messages.append({"role": "system", "content": system_prompt})
+        history_cap = _context_window_history_cap(self._backend)
+        history_msgs = self._history.to_messages()
+        capped = history_msgs[-(history_cap * 2):] if len(history_msgs) > history_cap * 2 else history_msgs
+        messages.extend(capped)
+        messages.append({"role": "user", "content": text})
+
+        # --- 2. Fetch tools ---
+        tools = self._get_tools(context_mode)
+
+        # --- 3-4. Streaming loop with tool call handling ---
+        tool_depth = 0
+        assistant_text_parts = []
+        all_tool_calls = []
+
+        _LOG.info("dia_chat: stream started (context_mode=%s)", context_mode)
+
+        while True:
+            stream_ended = False
+            pending_tool_call = None
+
+            try:
+                for event in self._backend.stream_chat(messages, tools):
+                    if isinstance(event, TokenChunk):
+                        if event.text:
+                            assistant_text_parts.append(event.text)
+                            self._token_callback(event.text, False)
+                        if event.done:
+                            stream_ended = True
+                            break
+
+                    elif isinstance(event, ToolCall):
+                        pending_tool_call = event
+                        break
+
+                    elif isinstance(event, Done):
+                        stream_ended = True
+                        break
+
+                    elif isinstance(event, Error):
+                        _LOG.error("dia_chat: backend error: %s", event.message)
+                        self._token_callback(
+                            "[error: {0}]".format(event.message), True
+                        )
+                        return
+
+            except Exception as exc:
+                exc_type = type(exc).__name__
+                if 'ConnectionError' in exc_type or 'ConnectError' in exc_type:
+                    _LOG.error("dia_chat: stream connection dropped: %s", exc)
+                    self._push('chat.error', {
+                        'error_type': 'stream_dropped',
+                        'message': 'Connection lost.',
+                        'retry': True,
+                    })
+                else:
+                    _LOG.error("dia_chat: exception during stream_chat: %s", exc)
+                self._token_callback("[error: {0}]".format(str(exc)), True)
+                return
+
+            if pending_tool_call is not None:
+                tool_depth += 1
+                try:
+                    tool_result = self._handle_tool_call(
+                        pending_tool_call, tool_depth, messages, tools
+                    )
+                except ToolError as exc:
+                    _LOG.error("dia_chat: _handle_tool_call raised: %s", exc)
+                    self._token_callback("[error: {0}]".format(str(exc)), True)
+                    return
+                if tool_result is None:
+                    # Depth limit reached — already injected the limit message;
+                    # break out and let the loop send final tokens.
+                    break
+                all_tool_calls.append({
+                    "call_id": pending_tool_call.call_id,
+                    "fn": pending_tool_call.fn,
+                    "params": pending_tool_call.params,
+                    "result": tool_result,
+                })
+                # Feed tool result back into messages and re-enter the stream.
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": pending_tool_call.call_id,
+                    "content": json.dumps(tool_result),
+                })
+                continue  # re-enter the while loop
+
+            # No more tool calls; the stream ended naturally.
+            break
+
+        # --- 5. Signal end of tokens ---
+        self._token_callback("", True)
+        _LOG.info("dia_chat: stream ended (tool_calls=%d)", len(all_tool_calls))
+
+        # --- 6. Append to history ---
+        assistant_text = "".join(assistant_text_parts)
+        self._history.add_exchange(text, assistant_text, all_tool_calls)
+
+        # --- 7. Persist history (DCP-008) ---
+        if self._history_path:
+            trimmed = _trim_history(self._history.to_list())
+            _save_history(self._history_path, trimmed)
+
+    # ------------------------------------------------------------------
+    # Tool handling helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _parse_manifest(raw):
+        """
+        Normalise the value returned by manifest_getter() to a list of action dicts.
+
+        manifest_getter() returns:
+          - None        → registry not available
+          - str         → JSON-encoded array (new C++ implementation)
+          - list        → already a list of action dicts
+          - dict        → legacy shape with 'actions' or 'tools' key
+        """
+        if raw is None:
+            return None
+        if isinstance(raw, str):
+            try:
+                parsed = json.loads(raw)
+            except (ValueError, TypeError):
+                _LOG.warning("dia_chat: manifest_getter returned invalid JSON string")
+                return None
+            return parsed if isinstance(parsed, list) else None
+        if isinstance(raw, list):
+            return raw
+        if isinstance(raw, dict):
+            return raw.get("actions", raw.get("tools", []))
+        return None
+
+    def _get_tools(self, context_mode):
+        """Return the tools list appropriate for the given context_mode."""
+        if context_mode == "tools_only" or context_mode == "full_context" or context_mode == "custom":
+            manifest = self._parse_manifest(self._manifest_getter())
+            if manifest is None:
+                _LOG.warning(
+                    "dia_chat: manifest_getter returned None — "
+                    "DiaEditorAPI not loaded; continuing in knowledge-only mode"
+                )
+                return []
+            return manifest
+        return []
+
+    def _handle_tool_call(self, tool_call, depth, messages, tools):
+        """
+        Dispatch a single tool call event.
+
+        Returns the result dict, or None if the depth limit was hit
+        (in that case the limit message is injected into `messages`).
+        """
+        if depth > self._max_tool_depth:
+            _LOG.warning(
+                "dia_chat: depth guard triggered (depth=%d, max=%d)", depth, self._max_tool_depth
+            )
+            messages.append({
+                "role": "user",
+                "content": (
+                    "Max tool call depth reached. "
+                    "Please summarize what you've done."
+                ),
+            })
+            return None
+
+        fn = tool_call.fn
+        params = tool_call.params
+        call_id = tool_call.call_id
+
+        # --- Destructive action gate ---
+        manifest = self._parse_manifest(self._manifest_getter())
+        if self._is_destructive(fn, manifest):
+            description = self._get_action_description(fn, manifest)
+            confirmed = self._await_confirmation(call_id, fn, params, description)
+            if not confirmed:
+                self._push('chat.error', {
+                    'error_type': 'destructive_cancel',
+                    'message': '{0} was cancelled.'.format(fn),
+                    'inline': True,
+                })
+                return {"error": "User cancelled action"}
+
+        # --- Dispatch with timeout guard (5 s) ---
+        _TOOL_TIMEOUT_S = 5.0
+        result_holder = [None]
+        error_holder = [None]
+        done_event = threading.Event()
+
+        def _run_tool():
+            try:
+                result_holder[0] = self._dispatcher.dispatch(fn, params)
+            except Exception as exc:
+                error_holder[0] = exc
+            finally:
+                done_event.set()
+
+        t = threading.Thread(target=_run_tool, daemon=True)
+        t.start()
+
+        if not done_event.wait(timeout=_TOOL_TIMEOUT_S):
+            _LOG.error("dia_chat: tool '%s' timed out after %.1fs", fn, _TOOL_TIMEOUT_S)
+            self._push('chat.error', {
+                'error_type': 'tool_timeout',
+                'message': 'Action timed out. Retrying...',
+            })
+            # Single retry — wait another full timeout window for the thread to finish.
+            if not done_event.wait(timeout=_TOOL_TIMEOUT_S):
+                self._push('chat.error', {
+                    'error_type': 'tool_timeout',
+                    'message': 'Action timed out.',
+                })
+                raise ToolError('Tool call timed out after {0}s'.format(_TOOL_TIMEOUT_S))
+
+        if error_holder[0] is not None:
+            exc = error_holder[0]
+            if isinstance(exc, ToolError):
+                _LOG.error("dia_chat: execute_action('%s') raised: %s", fn, exc)
+                return {"error": str(exc)}
+            raise exc
+
+        return result_holder[0]
+
+    def _is_destructive(self, fn, manifest):
+        """Return True if the named action is marked destructive in the manifest."""
+        if manifest is None:
+            return False
+        actions = manifest if isinstance(manifest, list) else manifest.get("actions", [])
+        for action in actions:
+            if isinstance(action, dict) and action.get("name") == fn:
+                return bool(action.get("destructive", False))
+        return False
+
+    def _get_action_description(self, fn, manifest):
+        """Return the description string for an action, or empty string."""
+        if manifest is None:
+            return ""
+        actions = manifest if isinstance(manifest, list) else manifest.get("actions", [])
+        for action in actions:
+            if isinstance(action, dict) and action.get("name") == fn:
+                return action.get("description", "")
+        return ""
+
+    def _await_confirmation(self, call_id, fn, params, description):
+        """
+        Call confirm_callback to push a chat.confirm_required event to C++,
+        then block on a threading.Event until on_confirm_response is called.
+
+        Returns True if the user confirmed, False if cancelled.
+        """
+        event = threading.Event()
+        result_container = [None]  # [True | False]
+        self.pending_confirm[call_id] = (fn, params, event, result_container)
+
+        try:
+            self._confirm_callback(call_id, fn, params, description)
+        except Exception as exc:
+            _LOG.error("dia_chat: confirm_callback raised: %s", exc)
+            del self.pending_confirm[call_id]
+            return False
+
+        # Block until C++ calls on_confirm_response (or timeout safety net).
+        signalled = event.wait(timeout=300)  # 5-minute safety timeout
+        del self.pending_confirm[call_id]
+
+        if not signalled:
+            _LOG.warning(
+                "dia_chat: confirmation for '%s' timed out after 300 s", fn
+            )
+            return False
+
+        return bool(result_container[0])
+
+    # ------------------------------------------------------------------
+    # Confirmation response (called from C++ via module-level binding)
+    # ------------------------------------------------------------------
+
+    def on_confirm_response(self, call_id, confirmed):
+        """
+        Resolve a pending destructive-action confirmation.
+
+        Called by C++ (via the on_confirm_response module-level function)
+        when the user clicks Confirm or Cancel in the chat panel.
+        """
+        entry = self.pending_confirm.get(call_id)
+        if entry is None:
+            _LOG.warning(
+                "dia_chat: on_confirm_response for unknown call_id '%s'", call_id
+            )
+            return
+        _fn, _params, event, result_container = entry
+        result_container[0] = confirmed
+        event.set()
+
+    # ------------------------------------------------------------------
+    # History
+    # ------------------------------------------------------------------
+
+    def clear_history(self):
+        """Clear the in-memory conversation history and delete the JSONL file."""
+        self._history.clear()
+        if self._history_path and os.path.exists(self._history_path):
+            try:
+                os.remove(self._history_path)
+            except Exception as e:
+                print("[DiaChat] history error: {0}".format(e))
+
+
+# ---------------------------------------------------------------------------
+# Module-level singleton and DiaPython-callable bindings
+# ---------------------------------------------------------------------------
+
+_orchestrator = None   # type: ChatOrchestrator | None
+_notify_bridge = None  # module-level copy set by initialize() for pre-init error paths
+
+
+def initialize(token_callback, manifest_getter, execute_action, confirm_callback,
+               notify_bridge=None, ai_context_dir=None, token_budget=4096,
+               project_path=""):
+    """
+    Create the global ChatOrchestrator instance.
+
+    Called by C++ (ChatPanelBridge) at plugin startup via DiaPython AddFunction.
+
+    Parameters
+    ----------
+    token_callback   : callable(text: str, done: bool)
+    manifest_getter  : callable() -> dict | None
+    execute_action   : callable(name: str, params: dict) -> dict
+    confirm_callback : callable(call_id, fn, params, description)
+    notify_bridge    : callable(topic: str, payload: dict) | None
+        Callback for pushing error/status events to the React UI.
+    ai_context_dir   : str | None
+        Path to the ai_context/ directory.  When provided, a KnowledgeLoader
+        is created, the system prompt is assembled, and set on the orchestrator.
+    token_budget     : int
+        Token budget forwarded to KnowledgeLoader (default 4096).
+    project_path     : str
+        Path to the open project directory.  Used to derive the JSONL history
+        path for conversation persistence (DCP-008).
+    """
+    global _orchestrator, _notify_bridge
+    _notify_bridge = notify_bridge
+    _orchestrator = ChatOrchestrator(
+        token_callback=token_callback,
+        manifest_getter=manifest_getter,
+        execute_action=execute_action,
+        confirm_callback=confirm_callback,
+        notify_bridge=notify_bridge,
+        project_path=project_path,
+    )
+    if ai_context_dir:
+        loader = KnowledgeLoader(ai_context_dir, token_budget=token_budget)
+        raw_manifest = manifest_getter() if manifest_getter else None
+        manifest = ChatOrchestrator._parse_manifest(raw_manifest)
+        prompt = loader.load(manifest=manifest)
+        _orchestrator.set_system_prompt(prompt, loader=loader)
+    _LOG.info("dia_chat: initialized")
+
+
+def send_message(text, context_mode="full_context", extra_files=None):
+    """
+    Deliver a user message to the orchestrator.
+
+    Runs on a DiaPython background thread; token_callback is thread-safe
+    (ChatPanelBridge handles marshalling to the UI thread).
+    """
+    if _orchestrator is None:
+        _LOG.error("dia_chat: send_message called before initialize()")
+        if _notify_bridge is not None:
+            try:
+                _notify_bridge('chat.error', {
+                    'error_type': 'python_unavailable',
+                    'message': 'Chat not initialized — please reload the editor.',
+                })
+            except Exception:
+                pass
+        return
+    _orchestrator.send_message(text, context_mode=context_mode, extra_files=extra_files)
+
+
+def set_backend(backend_name, model):
+    """
+    Select an LLM backend by name and model.  Persists the selection to disk.
+
+    Instantiates the named backend via create_backend() and registers it on
+    the orchestrator.  Backend classes live in dia_chat_backends.
+    After switching, the orchestrator checks availability and pushes
+    chat.backend_status events (error or success with model list) to the UI.
+    """
+    _LOG.info("dia_chat: set_backend: backend=%s model=%s", backend_name, model)
+    try:
+        from dia_chat_backends import create_backend
+        backend = create_backend(backend_name, model)
+        if _orchestrator is not None:
+            _orchestrator.set_backend(backend, backend_name_hint=backend_name)
+            _save_backend_settings(backend_name, model)
+        else:
+            _LOG.warning(
+                "dia_chat: set_backend called before initialize(); "
+                "backend will not be applied until orchestrator is created"
+            )
+    except Exception as exc:
+        _LOG.error("dia_chat: set_backend failed: %s", exc)
+        if _orchestrator is not None:
+            _orchestrator._push('chat.backend_status', {
+                'status': 'error',
+                'error_type': 'backend_init_failed',
+                'message': "Failed to initialise backend '{0}': {1}".format(backend_name, exc),
+            })
+
+
+def startup_probe():
+    """
+    Load persisted backend/model and call set_backend().
+
+    Called by C++ at plugin startup instead of the hardcoded set_backend().
+    Falls back to ollama/qwen2.5-coder:14b if no settings file exists.
+    """
+    backend_name, model = _load_backend_settings()
+    _LOG.info("dia_chat: startup_probe: loaded backend=%s model=%s", backend_name, model)
+    set_backend(backend_name, model)
+
+
+def query_model_list(backend_name):
+    """
+    Query available models for the given backend and push the list to the UI.
+
+    Called by C++ when the user changes the backend selector so the model
+    dropdown can be refreshed without switching the active backend.
+    Pushes chat.backend_status { status: 'model_list', backend, models }.
+    """
+    try:
+        from dia_chat_backends import create_backend
+        backend = create_backend(backend_name)
+        models = backend.list_models()
+    except Exception as exc:
+        _LOG.warning("dia_chat: query_model_list(%s) failed: %s", backend_name, exc)
+        models = []
+    if _notify_bridge is not None:
+        try:
+            _notify_bridge('chat.backend_status', {
+                'status': 'model_list',
+                'backend': backend_name,
+                'models': models,
+            })
+        except Exception as exc:
+            _LOG.warning("dia_chat: query_model_list notify failed: %s", exc)
+
+
+def set_context_mode(mode):
+    """Store the active context mode on the orchestrator."""
+    if _orchestrator is None:
+        _LOG.warning("dia_chat: set_context_mode called before initialize()")
+        return
+    _orchestrator._context_mode = mode
+
+
+def add_context_file(path):
+    """Log receipt of an additional context file (KnowledgeLoader wires this in Task 4)."""
+    _LOG.info("dia_chat: add_context_file: %s", path)
+
+
+def clear_history():
+    """Clear the conversation history."""
+    if _orchestrator is None:
+        _LOG.warning("dia_chat: clear_history called before initialize()")
+        return
+    _orchestrator.clear_history()
+
+
+def on_confirm_response(call_id, confirmed):
+    """
+    Forward a user confirmation/cancellation to the orchestrator.
+
+    Called by C++ after the user responds to a destructive-action prompt.
+    """
+    if _orchestrator is None:
+        _LOG.warning("dia_chat: on_confirm_response called before initialize()")
+        return
+    _orchestrator.on_confirm_response(call_id, confirmed)

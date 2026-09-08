@@ -241,6 +241,7 @@ def _build_cef_wrapper(repo_root: Path, build_config: str, output=None, system: 
 def run(config: PipelineConfig, target: str, build_config: str, force: bool, repo_root: Path, output=None, system: str = "pipeline") -> int:
     stage = "compile-code"
     target_cfg = config.targets[target]
+    platform = config.global_cfg.default_platform
 
     if target_cfg.build_deps.protobuf:
         rc = _build_protobuf(config, force, repo_root, output=output, system=system, stage=stage)
@@ -249,6 +250,22 @@ def run(config: PipelineConfig, target: str, build_config: str, force: bool, rep
 
     if target_cfg.build_deps.cef_wrapper:
         rc = _build_cef_wrapper(repo_root, build_config, output=output, system=system, stage=stage)
+        if rc != 0:
+            return rc
+
+    if target_cfg.build_deps.bgfx_shaders:
+        from ..bgfx_shader_cook import cook_bgfx_shaders
+        rc = cook_bgfx_shaders(
+            cfg=config.bgfx_shaders,
+            app_name=target_cfg.app_name,
+            build_config=build_config,
+            platform=platform,
+            force=force,
+            repo_root=repo_root,
+            output=output,
+            system=system,
+            stage=stage,
+        )
         if rc != 0:
             return rc
 
@@ -263,7 +280,6 @@ def run(config: PipelineConfig, target: str, build_config: str, force: bool, rep
         logger.error(f"Project not found: {project_path}")
         return 1
 
-    platform = config.global_cfg.default_platform
     solution_dir = str(repo_root / "Cluiche").replace("/", "\\") + "\\"
     cmd = [
         str(msbuild),
@@ -271,7 +287,7 @@ def run(config: PipelineConfig, target: str, build_config: str, force: bool, rep
         f"/p:Configuration={build_config}",
         f"/p:Platform={platform}",
         f"/p:SolutionDir={solution_dir}",
-        "/m",
+        "/m:2",
         "/v:minimal",
         "/nologo",
     ]
@@ -283,7 +299,7 @@ def run(config: PipelineConfig, target: str, build_config: str, force: bool, rep
     if output:
         output.log(system=system, level="info", message=f"msbuild {project_rel} [{build_config}|{platform}]", stage=stage)
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
         if output and result.stdout:
             for line in result.stdout.strip().splitlines():
                 stripped = line.strip()
@@ -309,7 +325,7 @@ def run(config: PipelineConfig, target: str, build_config: str, force: bool, rep
             output.step_failed(system=system, stage=stage, step="msbuild", error=err)
         return 1
     except subprocess.TimeoutExpired:
-        err = "msbuild timed out after 10 minutes"
+        err = "msbuild timed out after 30 minutes"
         logger.error(f"compile-code: {err}")
         if output:
             output.step_failed(system=system, stage=stage, step="msbuild", error=err)

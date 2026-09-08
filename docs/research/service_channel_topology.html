@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cross-PU Data Flow: Before &amp; After ServiceStream</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: #1a1a2e; color: #e0e0e0; padding: 24px; }
+h1 { text-align: center; margin-bottom: 8px; font-size: 1.6rem; color: #fff; }
+.subtitle { text-align: center; margin-bottom: 32px; color: #888; font-size: 0.9rem; }
+.container { display: flex; gap: 32px; justify-content: center; flex-wrap: wrap; }
+.panel { flex: 1; min-width: 580px; max-width: 720px; background: #16213e; border-radius: 12px; padding: 24px; border: 1px solid #2a3a5e; }
+.panel h2 { text-align: center; margin-bottom: 16px; font-size: 1.1rem; }
+.panel h2.before { color: #ff6b6b; }
+.panel h2.after { color: #51cf66; }
+
+.topology { position: relative; width: 100%; height: 620px; }
+
+.pu { position: absolute; border-radius: 10px; padding: 12px; border: 2px solid; }
+.pu-main { background: #1b2838; border-color: #4a90d9; left: 10px; top: 10px; width: 200px; }
+.pu-sim { background: #1b2838; border-color: #d4a843; left: 240px; top: 10px; width: 200px; }
+.pu-render { background: #1b2838; border-color: #8b5cf6; left: 470px; top: 10px; width: 200px; }
+
+.pu-label { font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; text-align: center; padding: 4px; border-radius: 4px; }
+.pu-main .pu-label { background: #4a90d9; color: #fff; }
+.pu-sim .pu-label { background: #d4a843; color: #1a1a2e; }
+.pu-render .pu-label { background: #8b5cf6; color: #fff; }
+
+.module { background: #0f1729; border: 1px solid #3a4a6e; border-radius: 6px; padding: 5px 8px; margin: 4px 0; font-size: 0.7rem; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.module.highlight { border-color: #51cf66; color: #51cf66; }
+.module.highlight-pub { border-color: #ffd43b; color: #ffd43b; }
+
+svg.streams { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+svg.streams line, svg.streams path { stroke-width: 2; fill: none; }
+
+.legend { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; font-size: 0.75rem; }
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.legend-swatch { width: 28px; height: 4px; border-radius: 2px; }
+.legend-swatch.frame { background: #51cf66; }
+.legend-swatch.event { background: #74c0fc; }
+.legend-swatch.service { background: #ffd43b; }
+.legend-swatch.static-bad { background: #ff6b6b; height: 4px; border-top: 2px dashed #ff6b6b; background: none; }
+
+.note { margin-top: 12px; padding: 10px; background: #0d1b2a; border-radius: 6px; font-size: 0.75rem; color: #aaa; line-height: 1.5; }
+.note strong { color: #e0e0e0; }
+</style>
+</head>
+<body>
+
+<h1>Cross-PU Data Flow Topology</h1>
+<p class="subtitle">CluicheTest Application &mdash; Before &amp; After ServiceStream Migration</p>
+
+<div class="container">
+
+<!-- BEFORE PANEL -->
+<div class="panel">
+<h2 class="before">BEFORE (Current &mdash; Statics + Streams)</h2>
+<div class="topology" id="before">
+  <!-- PU boxes -->
+  <div class="pu pu-main" style="height:560px;">
+    <div class="pu-label">MainPU (30Hz, main thread)</div>
+    <div class="module">ObservationModule</div>
+    <div class="module">ProfilerModule</div>
+    <div class="module">JobSystemModule</div>
+    <div class="module" id="b-kernel">KernelModule</div>
+    <div class="module">UIModule</div>
+    <div class="module" id="b-asset">AssetServiceModule</div>
+    <div class="module">DebugServerHostModule</div>
+    <div class="module">AutomationModule</div>
+  </div>
+  <div class="pu pu-sim" style="height:340px;">
+    <div class="pu-label">SimPU (30Hz, thread)</div>
+    <div class="module">TimeServerModule</div>
+    <div class="module">InputStreamModule</div>
+    <div class="module">LoadingScreenModule</div>
+    <div class="module" style="margin-top:8px; border-color:#555; color:#777;">-- DummyStage --</div>
+    <div class="module" id="b-dummy">DummyLevelModule</div>
+    <div class="module">EntityModule</div>
+    <div class="module" style="margin-top:8px; border-color:#555; color:#777;">-- RigidBody2D --</div>
+    <div class="module">VisualDebuggerModule</div>
+  </div>
+  <div class="pu pu-render" style="height:340px;">
+    <div class="pu-label">RenderPU (60Hz, thread)</div>
+    <div class="module">DebugUIModule</div>
+    <div class="module">BootMenuModule</div>
+    <div class="module">TestStageHUDModule</div>
+    <div class="module">VisDbgConsoleModule</div>
+    <div class="module" id="b-render">RenderModule</div>
+  </div>
+
+  <!-- Stream arrows (SVG) -->
+  <svg class="streams" viewBox="0 0 680 620" preserveAspectRatio="xMidYMid meet">
+    <defs>
+      <marker id="b-arrow-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#51cf66"/>
+      </marker>
+      <marker id="b-arrow-blue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#74c0fc"/>
+      </marker>
+      <marker id="b-arrow-red" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#ff6b6b"/>
+      </marker>
+    </defs>
+
+    <!-- InputToSim: MainPU -> SimPU (EventStream) -->
+    <line x1="210" y1="195" x2="238" y2="195" stroke="#74c0fc" marker-end="url(#b-arrow-blue)"/>
+    <text x="212" y="188" fill="#74c0fc" font-size="9" font-family="monospace">InputToSim</text>
+
+    <!-- UIToSim: MainPU -> SimPU (FrameStream) -->
+    <line x1="210" y1="225" x2="238" y2="225" stroke="#51cf66" marker-end="url(#b-arrow-green)"/>
+    <text x="212" y="218" fill="#51cf66" font-size="9" font-family="monospace">UIToSim</text>
+
+    <!-- SimToUI: SimPU -> MainPU (EventStream) -->
+    <line x1="238" y1="255" x2="210" y2="255" stroke="#74c0fc" marker-end="url(#b-arrow-blue)"/>
+    <text x="212" y="268" fill="#74c0fc" font-size="9" font-family="monospace">SimToUI</text>
+
+    <!-- SimToRender: SimPU -> RenderPU (FrameStream) -->
+    <line x1="440" y1="195" x2="468" y2="195" stroke="#51cf66" marker-end="url(#b-arrow-green)"/>
+    <text x="442" y="188" fill="#51cf66" font-size="9" font-family="monospace">SimToRender</text>
+
+    <!-- STATIC connections (red dashed) -->
+    <!-- sCanvas: KernelModule(Main) --> RenderModule(Render) -->
+    <line x1="210" y1="350" x2="468" y2="300" stroke="#ff6b6b" stroke-dasharray="5,3" marker-end="url(#b-arrow-red)"/>
+    <text x="300" y="340" fill="#ff6b6b" font-size="9" font-family="monospace" font-weight="bold">sCanvas (static)</text>
+
+    <!-- sTextureHandler: KernelModule(Main) --> RenderModule(Render) + DummyLevel(Sim) + AssetService(Main) -->
+    <line x1="210" y1="380" x2="468" y2="320" stroke="#ff6b6b" stroke-dasharray="5,3" marker-end="url(#b-arrow-red)"/>
+    <line x1="210" y1="380" x2="238" y2="380" stroke="#ff6b6b" stroke-dasharray="5,3" marker-end="url(#b-arrow-red)"/>
+    <text x="252" y="395" fill="#ff6b6b" font-size="9" font-family="monospace" font-weight="bold">sTextureHandler (static)</text>
+
+    <!-- sRenderContextReleased: RenderModule(Render) --> KernelModule(Main) -->
+    <line x1="468" y1="345" x2="210" y2="420" stroke="#ff6b6b" stroke-dasharray="5,3" marker-end="url(#b-arrow-red)"/>
+    <text x="270" y="430" fill="#ff6b6b" font-size="9" font-family="monospace" font-weight="bold">sRenderCtxReleased (atomic)</text>
+  </svg>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-swatch frame"></div> FrameStream (per-frame data)</div>
+  <div class="legend-item"><div class="legend-swatch event"></div> EventStream (discrete events)</div>
+  <div class="legend-item"><div class="legend-swatch static-bad" style="border-top: 2px dashed #ff6b6b; height:0;"></div> Static pointer (invisible to framework)</div>
+</div>
+
+<div class="note">
+  <strong>Problem:</strong> The 3 red dashed lines are invisible to the manifest. No validation, no config visibility,
+  no ordering guarantees. They rely on "set before use" convention + raw static pointers.
+  A module author has to know to call <code>GetStaticCanvas()</code> and trust it's been set.
+  The <code>sRenderContextReleased</code> atomic is a shutdown fence — directionally reversed (Render&rarr;Main).
+</div>
+</div>
+
+<!-- AFTER PANEL -->
+<div class="panel">
+<h2 class="after">AFTER (ServiceStream replaces statics)</h2>
+<div class="topology" id="after">
+  <!-- PU boxes -->
+  <div class="pu pu-main" style="height:560px;">
+    <div class="pu-label">MainPU (30Hz, main thread)</div>
+    <div class="module">ObservationModule</div>
+    <div class="module">ProfilerModule</div>
+    <div class="module">JobSystemModule</div>
+    <div class="module highlight-pub" id="a-kernel">KernelModule [publishes]</div>
+    <div class="module">UIModule</div>
+    <div class="module highlight" id="a-asset">AssetServiceModule [subscribes]</div>
+    <div class="module">DebugServerHostModule</div>
+    <div class="module">AutomationModule</div>
+  </div>
+  <div class="pu pu-sim" style="height:340px;">
+    <div class="pu-label">SimPU (30Hz, thread)</div>
+    <div class="module">TimeServerModule</div>
+    <div class="module">InputStreamModule</div>
+    <div class="module">LoadingScreenModule</div>
+    <div class="module" style="margin-top:8px; border-color:#555; color:#777;">-- DummyStage --</div>
+    <div class="module highlight" id="a-dummy">DummyLevelModule [subscribes]</div>
+    <div class="module">EntityModule</div>
+    <div class="module" style="margin-top:8px; border-color:#555; color:#777;">-- RigidBody2D --</div>
+    <div class="module">VisualDebuggerModule</div>
+  </div>
+  <div class="pu pu-render" style="height:340px;">
+    <div class="pu-label">RenderPU (60Hz, thread)</div>
+    <div class="module">DebugUIModule</div>
+    <div class="module">BootMenuModule</div>
+    <div class="module">TestStageHUDModule</div>
+    <div class="module">VisDbgConsoleModule</div>
+    <div class="module highlight" id="a-render">RenderModule [subscribes]</div>
+  </div>
+
+  <!-- Stream arrows (SVG) -->
+  <svg class="streams" viewBox="0 0 680 620" preserveAspectRatio="xMidYMid meet">
+    <defs>
+      <marker id="a-arrow-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#51cf66"/>
+      </marker>
+      <marker id="a-arrow-blue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#74c0fc"/>
+      </marker>
+      <marker id="a-arrow-yellow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#ffd43b"/>
+      </marker>
+    </defs>
+
+    <!-- InputToSim: MainPU -> SimPU (EventStream) -->
+    <line x1="210" y1="195" x2="238" y2="195" stroke="#74c0fc" marker-end="url(#a-arrow-blue)"/>
+    <text x="212" y="188" fill="#74c0fc" font-size="9" font-family="monospace">InputToSim</text>
+
+    <!-- UIToSim: MainPU -> SimPU (FrameStream) -->
+    <line x1="210" y1="225" x2="238" y2="225" stroke="#51cf66" marker-end="url(#a-arrow-green)"/>
+    <text x="212" y="218" fill="#51cf66" font-size="9" font-family="monospace">UIToSim</text>
+
+    <!-- SimToUI: SimPU -> MainPU (EventStream) -->
+    <line x1="238" y1="255" x2="210" y2="255" stroke="#74c0fc" marker-end="url(#a-arrow-blue)"/>
+    <text x="212" y="268" fill="#74c0fc" font-size="9" font-family="monospace">SimToUI</text>
+
+    <!-- SimToRender: SimPU -> RenderPU (FrameStream) -->
+    <line x1="440" y1="195" x2="468" y2="195" stroke="#51cf66" marker-end="url(#a-arrow-green)"/>
+    <text x="442" y="188" fill="#51cf66" font-size="9" font-family="monospace">SimToRender</text>
+
+    <!-- ServiceStream: Canvas (Main -> Render) -->
+    <line x1="210" y1="350" x2="468" y2="300" stroke="#ffd43b" marker-end="url(#a-arrow-yellow)"/>
+    <text x="310" y="338" fill="#ffd43b" font-size="9" font-family="monospace" font-weight="bold">Canvas</text>
+
+    <!-- ServiceStream: TextureHandler (Main -> Render, Main -> Sim) -->
+    <line x1="210" y1="380" x2="468" y2="320" stroke="#ffd43b" marker-end="url(#a-arrow-yellow)"/>
+    <line x1="210" y1="380" x2="238" y2="380" stroke="#ffd43b" marker-end="url(#a-arrow-yellow)"/>
+    <text x="252" y="395" fill="#ffd43b" font-size="9" font-family="monospace" font-weight="bold">TextureHandler</text>
+  </svg>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-swatch frame"></div> FrameStream (per-frame data)</div>
+  <div class="legend-item"><div class="legend-swatch event"></div> EventStream (discrete events)</div>
+  <div class="legend-item"><div class="legend-swatch service"></div> ServiceStream (stable handle, set once)</div>
+</div>
+
+<div class="note">
+  <strong>Result:</strong> All cross-PU data flow is now manifest-declared. The 2 yellow lines replace 2 of the 3 red dashed statics.
+  <code>sRenderContextReleased</code> is <strong>removed from scope</strong> &mdash; it's a shutdown fence, not a service handle;
+  it will be solved as a framework lifecycle hook separately.<br><br>
+  <strong>Module author pattern:</strong><br>
+  <code style="color:#ffd43b;">ServiceStreamWriter&lt;ICanvas&gt; mCanvas{this, "Canvas"};</code> &rarr; <code>Publish(canvas)</code> once in DoStart<br>
+  <code style="color:#51cf66;">ServiceStreamReader&lt;ICanvas&gt; mCanvas{this, "Canvas"};</code> &rarr; <code>Get()</code> anywhere after publisher's DoStart
+</div>
+
+<!-- Manifest comparison -->
+<div class="note" style="margin-top:12px;">
+  <strong>Manifest (unified channels array):</strong><br>
+  <pre style="color:#ccc; font-size:0.72rem; margin-top:6px; line-height:1.4;">
+// streams[] adds:
+{ "id": "Canvas",         "kind": "ServiceStream", "payload_type": "ICanvas",          "from": "MainPU" }
+{ "id": "TextureHandler", "kind": "ServiceStream", "payload_type": "ITextureHandler",  "from": "MainPU" }
+
+// modules use unified channels[] instead of reads[]/writes[]:
+"KernelModule":     { "channels": [{"id":"InputToSim","role":"writes"}, {"id":"Canvas","role":"publishes"}, {"id":"TextureHandler","role":"publishes"}] }
+"RenderModule":     { "channels": [{"id":"SimToRender","role":"reads"}, {"id":"Canvas","role":"subscribes"}, {"id":"TextureHandler","role":"subscribes"}] }
+"DummyLevelModule": { "channels": [{"id":"TextureHandler","role":"subscribes"}] }
+"AssetServiceModule": { "channels": [{"id":"TextureHandler","role":"subscribes"}] }
+  </pre>
+</div>
+</div>
+
+</div>
+
+<!-- Summary table -->
+<div style="max-width: 1480px; margin: 32px auto 0; background: #16213e; border-radius: 12px; padding: 20px; border: 1px solid #2a3a5e;">
+<h2 style="text-align:center; font-size:1rem; margin-bottom:12px; color:#fff;">Stream Kind Summary</h2>
+<table style="width:100%; border-collapse:collapse; font-size:0.8rem;">
+<tr style="border-bottom:1px solid #3a4a6e;">
+  <th style="padding:8px; text-align:left; color:#888;">Kind</th>
+  <th style="padding:8px; text-align:left; color:#888;">Frequency</th>
+  <th style="padding:8px; text-align:left; color:#888;">Semantics</th>
+  <th style="padding:8px; text-align:left; color:#888;">Example</th>
+  <th style="padding:8px; text-align:left; color:#888;">Roles</th>
+</tr>
+<tr style="border-bottom:1px solid #2a3a5e;">
+  <td style="padding:8px; color:#51cf66;">FrameStream</td>
+  <td style="padding:8px;">Every frame</td>
+  <td style="padding:8px;">Latest-value ring buffer; reader gets most recent frame</td>
+  <td style="padding:8px;">SimToRender (FrameData)</td>
+  <td style="padding:8px;"><code>writes</code> / <code>reads</code></td>
+</tr>
+<tr style="border-bottom:1px solid #2a3a5e;">
+  <td style="padding:8px; color:#74c0fc;">EventStream</td>
+  <td style="padding:8px;">On demand</td>
+  <td style="padding:8px;">Discrete events; reader consumes queue</td>
+  <td style="padding:8px;">InputToSim (InputEvent)</td>
+  <td style="padding:8px;"><code>writes</code> / <code>reads</code></td>
+</tr>
+<tr>
+  <td style="padding:8px; color:#ffd43b;">ServiceStream</td>
+  <td style="padding:8px;">Once (at DoStart)</td>
+  <td style="padding:8px;">Stable handle; published once, available forever</td>
+  <td style="padding:8px;">Canvas (ICanvas)</td>
+  <td style="padding:8px;"><code>publishes</code> / <code>subscribes</code></td>
+</tr>
+</table>
+</div>
+
+</body>
+</html>

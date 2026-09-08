@@ -5,10 +5,24 @@ from pathlib import Path
 from dia_cli.utils.repo_root import find_repo_root
 
 
+_CONFIG_ALIASES = {"Asan": "Debug-Asan", "Ubsan": "Debug-Ubsan"}
+
+
+def _resolve_full_suite_config(repo_root: Path, target: str) -> str:
+    """Return full_suite_config for target from pipeline.toml, or 'Release' on any failure."""
+    try:
+        from dia_cli.commands.pipeline.pipeline_config import load_pipeline_config
+        pipeline_config = load_pipeline_config(repo_root)
+        t = pipeline_config.targets.get(target)
+        return t.full_suite_config if t else "Release"
+    except Exception:
+        return "Release"
+
+
 @click.command()
 @click.argument("target")
-@click.option("--config", default="Debug", metavar="CONFIG",
-              help="Build configuration: Debug or Release (default: Debug).")
+@click.option("--config", default=None, metavar="CONFIG",
+              help="Build configuration: Debug, Release, Asan, or Ubsan (default: Debug, or Release with --all).")
 @click.option("--filter", "filter_pattern", default=None, metavar="PATTERN",
               help="For googletest: pass --gtest_filter=PATTERN.")
 @click.option("--verbose", is_flag=True, default=False,
@@ -19,14 +33,25 @@ from dia_cli.utils.repo_root import find_repo_root
               help="Run pipeline without launching.")
 @click.option("--force", is_flag=True, default=False,
               help="Force pipeline rebuild even if up to date.")
+@click.option("--all", "run_all", is_flag=True, default=False,
+              help="For googletest: include SLOW_* suites (default excludes them).")
+@click.option("--shards", default=0, metavar="N", type=int,
+              help="For googletest: run in N parallel shards (0=disabled, omit for cpu_count-1).")
 @click.pass_context
-def cli(ctx, target, config, filter_pattern, verbose, no_build, build_only, force):
+def cli(ctx, target, config, filter_pattern, verbose, no_build, build_only, force, run_all, shards):
     """Run the full pipeline then launch a target.
 
     TARGET is one of: googletest, cluichetest, cluicheeditor.
 
     Equivalent to: dia pipeline --target TARGET && dia launch TARGET
     """
+    # Resolve config: explicit wins; --all without explicit → full_suite_config; else "Debug"
+    if config is None:
+        if run_all and not no_build:
+            config = _resolve_full_suite_config(find_repo_root(__file__), target) or "Release"
+        else:
+            config = "Debug"
+    config = _CONFIG_ALIASES.get(config, config)
     repo_root = find_repo_root(__file__)
 
     if not no_build:
@@ -45,6 +70,8 @@ def cli(ctx, target, config, filter_pattern, verbose, no_build, build_only, forc
         config=config,
         filter_pattern=filter_pattern,
         verbose=verbose,
+        run_all=run_all,
+        shards=shards,
     )
     ctx.exit(exit_code)
 

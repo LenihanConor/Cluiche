@@ -1,0 +1,9 @@
+# TypeScript build output — sources are .ts/.tsx, never commit compiled .js
+# (shadow .js files were resolved by Vite/Vitest before .tsx, breaking edits)
+src/**/*.js
+src/**/*.jsx
+src/**/*.d.ts
+!src/vite-env.d.ts
+
+# Node
+node_modules/

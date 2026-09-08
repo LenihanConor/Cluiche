@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Manifest">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="TypeRegistry">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Streams">
+      <UniqueIdentifier>{D0E1F2A3-B4C5-6789-D012-345678901BCD}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Application.cpp" />
+    <ClCompile Include="LifecycleEvent.cpp" />
+    <ClCompile Include="Module.cpp" />
+    <ClCompile Include="ProcessingUnit.cpp" />
+    <ClCompile Include="TypeRegistry.cpp" />
+    <ClCompile Include="Manifest\ApplicationManifestV3.cpp">
+      <Filter>Manifest</Filter>
+    </ClCompile>
+    <ClCompile Include="Manifest\ApplicationManifestLoaderV2.cpp">
+      <Filter>Manifest</Filter>
+    </ClCompile>
+    <ClCompile Include="Manifest\ManifestComposerV2.cpp">
+      <Filter>Manifest</Filter>
+    </ClCompile>
+    <ClCompile Include="Manifest\ManifestValidatorV2.cpp">
+    <ClCompile Include="Observation\ObservationModule.cpp">
+      <Filter>Observation</Filter>
+    </ClCompile>
+      <Filter>Manifest</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Application.h" />
+    <ClInclude Include="IApplicationInspectable.h" />
+    <ClInclude Include="IApplicationControl.h" />
+    <ClInclude Include="LifecycleEvent.h" />
+    <ClInclude Include="Module.h" />
+    <ClInclude Include="ModuleState.h" />
+    <ClInclude Include="ModuleRefV2.h" />
+    <ClInclude Include="ProcessingUnit.h" />
+    <ClInclude Include="RegistrationMacrosV2.h" />
+    <ClInclude Include="PUAffinity.h">
+      <Filter>TypeRegistry</Filter>
+    </ClInclude>
+    <ClInclude Include="TypeRegistry.h" />
+    <ClInclude Include="DebugDataTypes.h" />
+    <ClInclude Include="Manifest\ApplicationManifestV3.h">
+      <Filter>Manifest</Filter>
+    </ClInclude>
+    <ClInclude Include="Manifest\ApplicationManifestLoaderV2.h">
+      <Filter>Manifest</Filter>
+    </ClInclude>
+    <ClInclude Include="Manifest\ManifestComposerV2.h">
+      <Filter>Manifest</Filter>
+    </ClInclude>
+    <ClInclude Include="Manifest\ManifestValidatorV2.h">
+      <Filter>Manifest</Filter>
+    </ClInclude>
+    <ClInclude Include="Manifest\TypedImport.h">
+    <ClInclude Include="Observation\ObservationModule.h">
+    <ClInclude Include="SimModule.h" />
+    <ClInclude Include="RenderModule.h" />
+    <ClInclude Include="MainModule.h" />
+      <Filter>Observation</Filter>
+    </ClInclude>
+      <Filter>Manifest</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

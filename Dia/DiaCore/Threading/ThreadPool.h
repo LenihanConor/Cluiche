@@ -7,6 +7,9 @@
 #include <queue>
 #include <functional>
 #include <condition_variable>
+#include <thread>
+#include <vector>
+#include <atomic>
 
 namespace Dia
 {
@@ -15,19 +18,18 @@ namespace Dia
 		//---------------------------------------------------------------------------------------------------------------------------------
 		// Thread Pool
 		//
-		// Pool of worker threads for executing tasks concurrently.
+		// Pool of worker threads pulling from a single FIFO queue.
 		//
 		// USAGE:
-		//   ThreadPool pool(4);  // 4 worker threads
-		//   pool.Enqueue([]() {
-		//       // Work here
-		//   });
-		//   pool.WaitAll();  // Wait for all tasks to complete
+		//   ThreadPool pool(4);  // 4 worker threads, 0 = hardware concurrency
+		//   pool.Enqueue([]() { /* work */ });
+		//   pool.WaitAll();      // wait until queue is empty + no active tasks
 		//
-		// FEATURES:
-		//   - Fixed number of worker threads
-		//   - Work-stealing task queue
-		//   - Automatic load balancing
+		// SHUTDOWN CONTRACT:
+		//   ~ThreadPool / Shutdown() drains: workers keep pulling tasks until the
+		//   queue is empty, then exit. Tasks submitted before Shutdown are
+		//   guaranteed to run. Submitting after Shutdown is undefined — the task
+		//   will sit in the queue with no workers to drain it.
 		//---------------------------------------------------------------------------------------------------------------------------------
 
 		class ThreadPool
@@ -35,132 +37,21 @@ namespace Dia
 		public:
 			using Task = std::function<void()>;
 
-			// Constructor - creates worker threads
-			explicit ThreadPool(unsigned int numThreads = 0)
-				: mShutdown(false)
-			{
-				if (numThreads == 0)
-				{
-					numThreads = Thread::GetHardwareConcurrency();
-					if (numThreads == 0) numThreads = 4; // Fallback
-				}
+			explicit ThreadPool(unsigned int numThreads = 0);
+			~ThreadPool();
 
-				mThreads.reserve(numThreads);
-				for (unsigned int i = 0; i < numThreads; ++i)
-				{
-					mThreads.push_back(std::thread([this]() { WorkerThread(); }));
-				}
-			}
-
-			// Destructor - waits for all tasks and shuts down
-			~ThreadPool()
-			{
-				Shutdown();
-			}
-
-			// Enqueue a task
-			void Enqueue(Task task)
-			{
-				{
-					std::unique_lock<std::mutex> lock(mQueueMutex);
-					mTasks.push(std::move(task));
-				}
-				mCondition.notify_one();
-			}
-
-			// Wait for all tasks to complete
-			void WaitAll()
-			{
-				std::unique_lock<std::mutex> lock(mQueueMutex);
-				mWaitCondition.wait(lock, [this]() {
-					return mTasks.empty() && mActiveTasks == 0;
-				});
-			}
-
-			// Get number of worker threads
-			size_t GetThreadCount() const
-			{
-				return mThreads.size();
-			}
-
-			// Get number of pending tasks
-			size_t GetPendingTaskCount() const
-			{
-				std::unique_lock<std::mutex> lock(mQueueMutex);
-				return mTasks.size();
-			}
-
-			// Shutdown pool
-			void Shutdown()
-			{
-				{
-					std::unique_lock<std::mutex> lock(mQueueMutex);
-					mShutdown = true;
-				}
-				mCondition.notify_all();
-
-				for (auto& thread : mThreads)
-				{
-					if (thread.joinable())
-					{
-						thread.join();
-					}
-				}
-				mThreads.clear();
-			}
+			void Enqueue(Task task);
+			void WaitAll();
+			size_t GetThreadCount() const;
+			size_t GetPendingTaskCount() const;
+			size_t GetQueueDepth() const { return GetPendingTaskCount(); }
+			int    GetActiveTaskCount() const { return mActiveTasks.load(std::memory_order_acquire); }
+			uint64_t GetSubmittedCount() const { return mSubmittedCount.load(std::memory_order_relaxed); }
+			uint64_t GetCompletedCount() const { return mCompletedCount.load(std::memory_order_relaxed); }
+			void Shutdown();
 
 		private:
-			void WorkerThread()
-			{
-				while (true)
-				{
-					Task task;
-
-					{
-						std::unique_lock<std::mutex> lock(mQueueMutex);
-
-						// Wait for task or shutdown
-						mCondition.wait(lock, [this]() {
-							return mShutdown || !mTasks.empty();
-						});
-
-						if (mShutdown && mTasks.empty())
-						{
-							return;
-						}
-
-						if (!mTasks.empty())
-						{
-							task = std::move(mTasks.front());
-							mTasks.pop();
-							++mActiveTasks;
-						}
-					}
-
-					// Execute task
-					if (task)
-					{
-						try
-						{
-							task();
-						}
-						catch (...)
-						{
-							// Suppress exceptions to prevent thread termination
-							// The task failed, but other tasks should continue
-						}
-
-						{
-							std::unique_lock<std::mutex> lock(mQueueMutex);
-							--mActiveTasks;
-							if (mTasks.empty() && mActiveTasks == 0)
-							{
-								mWaitCondition.notify_all();
-							}
-						}
-					}
-				}
-			}
+			void WorkerThread();
 
 			std::vector<std::thread> mThreads;
 			std::queue<Task> mTasks;
@@ -169,7 +60,9 @@ namespace Dia
 			std::condition_variable mCondition;
 			std::condition_variable mWaitCondition;
 
-			std::atomic<int> mActiveTasks{0};
+			std::atomic<int>      mActiveTasks{0};
+			std::atomic<uint64_t> mSubmittedCount{0};
+			std::atomic<uint64_t> mCompletedCount{0};
 			bool mShutdown;
 		};
 	}

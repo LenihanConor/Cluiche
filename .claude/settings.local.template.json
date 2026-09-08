@@ -18,6 +18,7 @@
       "Bash(powershell:*)",
       "Bash(pwsh:*)"
     ],
-    "defaultMode": "auto"
+    "defaultMode": "auto",
+    "model": "global.anthropic.claude-sonnet-4-6"
   }
 }

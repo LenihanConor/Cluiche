@@ -118,7 +118,7 @@ Markdown documentation follows YAML frontmatter.
 - **Type:** Enum
 - **Values:**
   - `platform` - Foundation layer (DiaCore, DiaMaths)
-  - `framework` - Application framework (DiaApplication)
+  - `framework` - Application framework (DiaApplicationFlow)
   - `application` - Application code (Cluiche)
   - `backend` - Backend implementations (DiaSFML)
 - **Purpose:** Architectural layer classification

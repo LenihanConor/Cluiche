@@ -5,19 +5,21 @@
 
 #ifdef DIA_DEBUG
 
+#include <DiaObservation/Trace/DiaTrace.h>
 #include "DiaRigidBody2D/World/PhysicsWorld.h"
 #include "DiaRigidBody2D/WorldShapeUtil.h"
-#include "DiaGraphics/Frame/FrameData.h"
+#include <DiaCore/DebugDraw/IDebugDraw.h>
+#include <DiaCore/Colour/RGBA.h>
 #include "DiaGeometry2D/Shapes/AARect.h"
-#include "DiaVisualDebugger/DebugLayerManager.h"
-#include "DiaVisualDebugger/DebugColourPalette.h"
-#include "DiaVisualDebugger/DebugLayerNames.h"
+#include <DiaCore/DebugDraw/IDebugContext.h>
+#include <DiaCore/DebugDraw/DebugColourPalette.h>
+#include <DiaCore/DebugDraw/DebugLayerNames.h>
 
 namespace Dia::RigidBody2D
 {
 
-PhysicsAABBDrawer::PhysicsAABBDrawer(const PhysicsWorld&                world,
-                                     const Dia::Debug::DebugLayerManager& manager)
+PhysicsAABBDrawer::PhysicsAABBDrawer(const PhysicsWorld&             world,
+                                     const Dia::Core::IDebugContext& manager)
     : mWorld(world)
     , mManager(manager)
 {}
@@ -27,8 +29,9 @@ Dia::Core::StringCRC PhysicsAABBDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kPhysicsAABB;
 }
 
-void PhysicsAABBDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void PhysicsAABBDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
+    DIA_TRACE_ZONE("physics.aabb", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const auto& rigidBodies = mWorld.GetRigidBodies();
 
     for (unsigned int i = 0; i < rigidBodies.Size(); ++i)
@@ -37,10 +40,21 @@ void PhysicsAABBDrawer::Draw(Dia::Graphics::FrameData& frameData)
         if (!body->GetTransform()) continue;
 
         const Dia::Geometry2D::AARect aabb = ComputeWorldAABB(body);
-        frameData.RequestDrawRect(
-            aabb.GetBottomLeft(),
-            aabb.GetTopRight(),
-            Dia::Debug::DebugColourPalette::kWarning);
+        if (mFilled)
+        {
+            draw.RequestDrawRect(
+                aabb.GetBottomLeft(),
+                aabb.GetTopRight(),
+                Dia::Debug::DebugColourPalette::kWarning,
+                Dia::Core::RGBA(255, 220, 0, 40));
+        }
+        else
+        {
+            draw.RequestDrawRect(
+                aabb.GetBottomLeft(),
+                aabb.GetTopRight(),
+                Dia::Debug::DebugColourPalette::kWarning);
+        }
     }
 }
 

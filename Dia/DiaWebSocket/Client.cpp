@@ -2,8 +2,8 @@
 #include "DiaWebSocket/Internal/WebSocketppWrapper.h"
 #include "DiaCore/Threading/Thread.h"
 #include "DiaCore/Threading/Mutex.h"
-#include <DiaLogger/DiaLog.h>
-#include <DiaLogger/Logger.h>
+#include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Log/Logger.h>
 
 #include <cstring>
 #include <string>
@@ -35,7 +35,7 @@ namespace Dia
 			ConnectionCallback mOnConnection;
 			ErrorCallback mOnError;
 
-			Dia::Core::Containers::DynamicArrayC<Internal::QueuedEvent, 64> mIncomingQueue;
+			Dia::Core::Containers::DynamicArrayC<Internal::QueuedEvent, 512> mIncomingQueue;
 			Dia::Core::Mutex mIncomingMutex;
 
 			Dia::Core::Containers::DynamicArrayC<Internal::OutgoingMessage, 64> mOutgoingQueue;
@@ -242,7 +242,7 @@ namespace Dia
 
 			void WorkerThreadMain()
 			{
-				Dia::Logger::Logger::Instance().RegisterThreadBuffer();
+				Dia::Observation::Log::Logger::Instance().RegisterThreadBuffer();
 				DIA_LOG_INFO("WebSocket", "Client worker thread registered for logging");
 
 				while (mIsRunning)
@@ -264,7 +264,7 @@ namespace Dia
 					Dia::Core::ThisThread::SleepMs(1);
 				}
 
-				Dia::Logger::Logger::Instance().UnregisterThreadBuffer();
+				Dia::Observation::Log::Logger::Instance().UnregisterThreadBuffer();
 			}
 		};
 
@@ -358,43 +358,10 @@ namespace Dia
 				mImpl->WorkerThreadMain();
 			});
 
-			float elapsed = 0.0f;
-			while (GetState() == ConnectionState::kConnecting && elapsed < mImpl->mConnectionTimeout)
-			{
-				Dia::Core::ThisThread::SleepMs(100);
-				elapsed += 0.1f;
-			}
-
-			if (GetState() == ConnectionState::kConnected)
-			{
-				return true;
-			}
-			else
-			{
-				DIA_LOG_WARNING("WebSocket", "Client: Connection timeout after %.1fs", elapsed);
-
-				// Clean up: stop worker so next Connect() gets a clean slate.
-				mImpl->mIsRunning = false;
-				if (mImpl->mClient)
-				{
-					try { mImpl->mClient->stop(); } catch (...) {}
-				}
-				if (mImpl->mWorkerThread)
-				{
-					mImpl->mWorkerThread->Join();
-					delete mImpl->mWorkerThread;
-					mImpl->mWorkerThread = nullptr;
-				}
-				mImpl->mConnection.reset();
-				delete mImpl->mClient;
-				mImpl->mClient = nullptr;
-
-				{
-					Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mImpl->mStateMutex);
-					mImpl->mState = ConnectionState::kDisconnected;
-				}
-				return false;
-			}
+			// Non-blocking: return immediately. The controller's Update() loop
+			// drives the handshake timeout via kHandshakeTimeoutSeconds. OnFail /
+			// OnClose queue connection events that Update() delivers to callers.
+			return true;
 		}
 
 		void Client::Disconnect()

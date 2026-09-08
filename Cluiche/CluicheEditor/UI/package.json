@@ -12,10 +12,12 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
+    "@dia/editor-ui": "file:../../../Dia/DiaEditorUI",
     "fuse.js": "^7.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-mosaic-component": "^6.1.0"
+    "react-mosaic-component": "^6.1.0",
+    "zustand": "^4.5.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",

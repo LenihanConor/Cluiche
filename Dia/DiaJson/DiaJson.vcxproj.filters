@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{b2c3d4e5-f6a7-8901-bcde-f23456789012}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\DiaCore\Json\external\json\assertions.h" />
+    <ClInclude Include="..\DiaCore\Json\external\json\autolink.h" />
+    <ClInclude Include="..\DiaCore\Json\external\json\config.h" />
+    <ClInclude Include="..\DiaCore\Json\external\json\features.h" />
+    <ClInclude Include="..\DiaCore\Json\external\json\forwards.h" />
+    <ClInclude Include="..\DiaCore\Json\external\json\json.h" />
+    <ClInclude Include="..\DiaCore\Json\external\json\reader.h" />
+    <ClInclude Include="..\DiaCore\Json\external\json\value.h" />
+    <ClInclude Include="..\DiaCore\Json\external\json\version.h" />
+    <ClInclude Include="..\DiaCore\Json\external\json\writer.h" />
+    <ClInclude Include="..\DiaCore\Json\external\json_tool.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\DiaCore\Json\external\json_reader.cpp" />
+    <ClCompile Include="..\DiaCore\Json\external\json_value.cpp" />
+    <ClCompile Include="..\DiaCore\Json\external\json_valueiterator.inl" />
+    <ClCompile Include="..\DiaCore\Json\external\json_writer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="dia.json.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+</Project>

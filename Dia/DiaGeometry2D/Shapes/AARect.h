@@ -33,6 +33,9 @@ namespace Dia
 			IntersectionClassify IsIntersecting(const Circle& circle) const;
 
 		private:
+			template<class Archive>
+			friend void serialize(Archive& ar, AARect& obj, unsigned version);
+
 			Dia::Maths::Vector2D mBottomLeft;
 			Dia::Maths::Vector2D mTopRight;
 		};

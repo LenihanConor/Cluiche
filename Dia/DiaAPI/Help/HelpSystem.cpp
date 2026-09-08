@@ -5,7 +5,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "HelpSystem.h"
 #include <DiaAPI/Events/EventSystem.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <cstdio>
 #include <cstring>
 

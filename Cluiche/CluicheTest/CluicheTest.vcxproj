@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
   
@@ -10,44 +10,139 @@
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Asan|x64">
+      <Configuration>Debug-Asan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Ubsan|x64">
+      <Configuration>Debug-Ubsan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ApplicationFlow\Phases\MainBootPhase.cpp" />
-    <ClCompile Include="ApplicationFlow\Phases\MainBootStrapPhase.cpp" />
-    <ClCompile Include="ApplicationFlow\Phases\RenderRunningPhase.cpp" />
-    <ClCompile Include="ApplicationFlow\Phases\SimBootPhase.cpp" />
-    <ClCompile Include="ApplicationFlow\Phases\SimBootStrapPhase.cpp" />
-    <ClCompile Include="ApplicationFlow\ProcessingUnits\MainProcessingUnit.cpp" />
-    <ClCompile Include="ApplicationFlow\ProcessingUnits\RenderProcessingUnit.cpp" />
-    <ClCompile Include="ApplicationFlow\ProcessingUnits\SimProcessingUnit.cpp" />
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="Source\LaunchUIPage.cpp" />
+    <ClCompile Include="Modules\BootMenuModule.cpp" />
+    <ClCompile Include="Modules\TestMainStateProducerModule.cpp" />
+    <ClCompile Include="Modules\TestStages\TestStageModuleBase.cpp" />
+    <ClCompile Include="Modules\TestStages\TestResultsRegistry.cpp" />
+    <ClCompile Include="Modules\TestStages\RigidBody2DTestModule.cpp" />
+    <ClCompile Include="Modules\TestStages\TestAssetRuntimeStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\AssetRuntimeRendererModule.cpp" />
+    <ClCompile Include="Modules\TestStages\AssetRuntimeHUDModule.cpp" />
+    <ClCompile Include="Modules\TestStages\TestStageHUDModule.cpp" />
+    <ClCompile Include="Modules\TestStages\MessageBusTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\GridVisibilityTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\AICalloutTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\BehaviourTreeTestStageModule.cpp" />
+    <ClCompile Include="Messages\GuardOrderBusAdapter.cpp" />
+    <ClCompile Include="Modules\TestStages\DebugGalleryTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\SpawnerTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\ArenaTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\Mesh3DRenderSystemTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\Mesh3DTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\Animation2DTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\SoftBody2DTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\EntityTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\Entity\TransformComponent.cpp" />
+    <ClCompile Include="Modules\TestStages\Entity\VisualTestRenderComponent.cpp" />
+    <ClCompile Include="Modules\TestStages\Entity\PickableCircleComponent.cpp" />
+    <ClCompile Include="Modules\TestStages\Geometry2DTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\Scene2DTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\UIUltralightTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\UIUltralight\UIUltralightTestPage.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\Geometry2DShapesDrawer.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\EntityTestDrawer.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\Geometry2DLabelsDrawer.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\Geometry2DIntersectionsDrawer.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\Geometry2DAABBDrawer.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\Animation2DTestDrawer.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\Scene2DTestDrawer.cpp" />
+    <ClCompile Include="Modules\TestStages\IK2DTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\IK2DTestDrawer.cpp" />
+    <ClCompile Include="Modules\dummy\DummyLevelModule.cpp" />
+    <ClCompile Include="Modules\dummy\DummyUIPageModule.cpp" />
+    <ClCompile Include="Modules\dummy\DummyUIPage.cpp" />
+    <ClCompile Include="Modules\TestStages\AIDecisionTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\EconomyTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\AIHTNTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\PathfindingTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\AIDecisionTestDrawer.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\AIHTNTestDrawer.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\PathfindingTestDrawer.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\EconomyDrawer.cpp" />
+    <ClCompile Include="Modules\TestStages\ScalarFieldTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\ScalarFieldTestDrawer.cpp" />
+    <ClCompile Include="Modules\TestStages\EntitySpatialTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\SpawnerTestDrawer.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\GridVisibilityDrawer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Data\Manifests\cluiche_main.diaapp">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Data\Manifests\cluiche_render.diaapp">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Data\Manifests\cluiche_sim.diaapp">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
+    <ClInclude Include="Modules\BootMenuModule.h" />
+    <ClInclude Include="Modules\TestMainStateProducerModule.h" />
+    <ClInclude Include="Modules\TestStages\TestStageModuleBase.h" />
+    <ClInclude Include="Modules\TestStages\TestResultsRegistry.h" />
+    <ClInclude Include="Modules\TestStages\RigidBody2DTestModule.h" />
+    <ClInclude Include="Modules\TestStages\TestAssetRuntimeStageModule.h" />
+    <ClInclude Include="Modules\TestStages\AssetRuntimeRendererModule.h" />
+    <ClInclude Include="Modules\TestStages\AssetRuntimeHUDModule.h" />
+    <ClInclude Include="Modules\TestStages\TestStageHUDModule.h" />
+    <ClInclude Include="Modules\TestStages\MessageBusTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\GridVisibilityTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\AICalloutTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\BehaviourTreeTestStageModule.h" />
+    <ClInclude Include="Messages\GuardOrderBusAdapter.h" />
+    <ClInclude Include="Messages\order_messages.h" />
+    <ClInclude Include="Modules\TestStages\DebugGalleryTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\SpawnerTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\ArenaTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\Mesh3DRenderSystemTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\Mesh3DTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\Animation2DTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\SoftBody2DTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\EntityTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\Entity\TransformComponent.h" />
+    <ClInclude Include="Modules\TestStages\Entity\VisualTestRenderComponent.h" />
+    <ClInclude Include="Modules\TestStages\Entity\PickableCircleComponent.h" />
+    <ClInclude Include="Modules\TestStages\Geometry2DTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\Scene2DTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\UIUltralightTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\UIUltralight\UIUltralightTestPage.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\Geometry2DShapesDrawer.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\EntityTestDrawer.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\Geometry2DLabelsDrawer.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\Geometry2DIntersectionsDrawer.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\Geometry2DAABBDrawer.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\Animation2DTestDrawer.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\Scene2DTestDrawer.h" />
+    <ClInclude Include="Modules\TestStages\IK2DTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\IK2DTestDrawer.h" />
+    <ClInclude Include="Modules\dummy\DummyLevelModule.h" />
+    <ClInclude Include="Modules\dummy\DummyUIPageModule.h" />
+    <ClInclude Include="Modules\dummy\DummyUIPage.h" />
+    <ClInclude Include="Modules\TestStages\AIDecisionTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\EconomyTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\AIHTNTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\PathfindingTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\AIDecisionTestDrawer.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\AIHTNTestDrawer.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\PathfindingTestDrawer.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\EconomyDrawer.h" />
+    <ClInclude Include="Modules\TestStages\ScalarFieldTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\ScalarFieldTestDrawer.h" />
+    <ClInclude Include="Modules\TestStages\EntitySpatialTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\SpawnerTestDrawer.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\GridVisibilityDrawer.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ApplicationFlow\Phases\MainBootPhase.h" />
-    <ClInclude Include="ApplicationFlow\Phases\MainBootStrapPhase.h" />
-    <ClInclude Include="ApplicationFlow\Phases\RenderRunningPhase.h" />
-    <ClInclude Include="ApplicationFlow\Phases\SimBootPhase.h" />
-    <ClInclude Include="ApplicationFlow\Phases\SimBootStrapPhase.h" />
-    <ClInclude Include="ApplicationFlow\ProcessingUnits\MainProcessingUnit.h" />
-    <ClInclude Include="ApplicationFlow\ProcessingUnits\RenderProcessingUnit.h" />
-    <ClInclude Include="ApplicationFlow\ProcessingUnits\SimProcessingUnit.h" />
-    <ClInclude Include="Source\LaunchUIPage.h" />
+    <None Include="Messages\order_messages.diagamemessages" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Dia\DiaApplication\DiaApplication.vcxproj">
+    <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">
       <Project>{dd3d58ef-028b-42cb-b837-0042ba30d96f}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaStreams\DiaStreams.vcxproj">
+      <Project>{d4e5f6a7-b8c9-0123-def0-456789012345}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaGame\DiaGame.vcxproj">
       <Project>{A1B2C3D4-E5F6-7890-ABCD-EF0123456789}</Project>
@@ -64,9 +159,7 @@
     <ProjectReference Include="..\..\Dia\DiaMaths\DiaMaths.vcxproj">
       <Project>{2bba0ad3-d449-4c0e-8c84-acfa8bca456b}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\Dia\DiaSFML\DiaSFML.vcxproj">
-      <Project>{d0101596-9011-46af-a16a-69a2bb0cca69}</Project>
-    </ProjectReference>
+
     <ProjectReference Include="..\..\Dia\DiaUIUltralight\DiaUIUltralight.vcxproj">
       <Project>{b7c3d812-4f91-4e2a-9b56-fa38e1d09c74}</Project>
       <ReferenceOutputAssembly Condition="'$(Platform)'=='Win32'">false</ReferenceOutputAssembly>
@@ -78,9 +171,6 @@
     <ProjectReference Include="..\..\Dia\DiaWindow\DiaWindow.vcxproj">
       <Project>{52178c86-628d-4fe4-ae55-d3485faec070}</Project>
     </ProjectReference>
-    <ProjectReference Include="CluicheKernel\CluicheKernel.vcxproj">
-      <Project>{649d1b1d-c23f-4373-aca8-8a3a59c0cfa0}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaDebugServer\DiaDebugServer.vcxproj">
       <Project>{6aafcccb-71d0-4d8d-a6be-081f5e02093d}</Project>
     </ProjectReference>
@@ -90,11 +180,189 @@
     <ProjectReference Include="..\..\Dia\DiaWebSocket\DiaWebSocket.vcxproj">
       <Project>{458b1e8f-6660-499f-b265-e40dc3257b81}</Project>
     </ProjectReference>
-    <ProjectReference Include="Stages\DummyStage\DummyStage.vcxproj">
-      <Project>{8a8a5635-62ab-4516-a3f4-978499024724}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaAssetRuntime\DiaAssetRuntime.vcxproj">
       <Project>{C9D0E1F2-A3B4-5678-9CDE-F01234567890}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaAssetRuntimeVisualDebugger\DiaAssetRuntimeVisualDebugger.vcxproj">
+      <Project>{D3E4F5A6-B7C8-9012-DEFA-234567890ABC}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">
+      <Project>{7b4a5c2e-3f1d-4a8b-9c6e-12d5f8b3a7e1}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaBlackboard\DiaBlackboard.vcxproj">
+      <Project>{186D9CD5-3D3E-46F1-9C35-67F6F11E829A}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaCondition\DiaCondition.vcxproj">
+      <Project>{D4E5F6A7-B8C9-4012-DEFA-123456789012}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaRules\DiaRules.vcxproj">
+      <Project>{C7D8E9F0-A1B2-3456-CDEF-012345678901}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaUtilityAI\DiaUtilityAI.vcxproj">
+      <Project>{E2F3A4B5-C6D7-8901-EF23-456789012345}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaUtilityAIVisualDebugger\DiaUtilityAIVisualDebugger.vcxproj">
+      <Project>{F3A4B5C6-D7E8-9012-F034-567890123456}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaStateMachineVisualDebugger\DiaStateMachineVisualDebugger.vcxproj">
+      <Project>{C1D2E3F4-A5B6-7890-CD12-EF3456789012}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaBlackboardVisualDebugger\DiaBlackboardVisualDebugger.vcxproj">
+      <Project>{D2E3F4A5-B6C7-8901-DE23-F04567890123}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaRulesVisualDebugger\DiaRulesVisualDebugger.vcxproj">
+      <Project>{A4B6C8D0-E2F4-A6B8-C0D2-E4F6A8B0C2D4}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaAIBudget\DiaAIBudget.vcxproj">
+      <Project>{C9D0E1F2-A3B4-5678-90AB-CDEF01234567}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaSimTime\DiaSimTime.vcxproj">
+      <Project>{6AF5866D-8687-4A93-915B-0B4B738F56CD}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaSaveGame\DiaSaveGame.vcxproj">
+      <Project>{10CADE58-BBF3-4114-9D8B-5C8F71C56417}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaHTN\DiaHTN.vcxproj">
+      <Project>{F4B5C6D7-E8F9-0123-A456-789012345678}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaPathfinding\DiaPathfinding.vcxproj">
+      <Project>{B5C6D7E8-F9A0-1234-5678-9ABCDEF01234}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaFlowField\DiaFlowField.vcxproj">
+      <Project>{A5B6C7D8-E9F0-1234-5678-90ABCDEF1234}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaSteering\DiaSteering.vcxproj">
+      <Project>{A7B8C9D0-E1F2-3456-7890-ABCDEF012350}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaRigidBody2D\DiaRigidBody2D.vcxproj">
+      <Project>{C1D2E3F4-A5B6-7890-CDEF-012345678902}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaGeometry2D\DiaGeometry2D.vcxproj">
+      <Project>{A3C4D5E6-F7B8-9012-CDEF-012345678901}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaPicking\DiaPicking.vcxproj">
+      <Project>{E1F2A3B4-C5D6-7890-1234-567890ABCDE1}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaGeometry2DPicking\DiaGeometry2DPicking.vcxproj">
+      <Project>{F2A3B4C5-D6E7-8901-2345-678901BCDEF2}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaImGui\DiaImGui.vcxproj">
+      <Project>{F6A7B8C9-D0E1-2345-ABCD-567890ABCDE1}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaEntity\DiaEntity.vcxproj">
+      <Project>{D9E0F1A2-B3C4-5678-9DEF-012345678903}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaEntitySpatial\DiaEntitySpatial.vcxproj">
+      <Project>{E5F6A7B8-C9D0-1234-ABCD-567890EF0123}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaGridVisibilityVisualDebugger\DiaGridVisibilityVisualDebugger.vcxproj">
+      <Project>{F2E1D0C9-B8A7-4356-FEDC-BA9876543210}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaEntityVisualDebugger\DiaEntityVisualDebugger.vcxproj">
+      <Project>{B3C4D5E6-F7A8-9012-BCDE-F12345678901}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaRigidBody2DVisualDebugger\DiaRigidBody2DVisualDebugger.vcxproj">
+      <Project>{A2B3C4D5-E6F7-8901-BCDE-F01234567891}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaGeometry2DVisualDebugger\DiaGeometry2DVisualDebugger.vcxproj">
+      <Project>{D4E5F6A7-B8C9-0123-DEF0-234567890123}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaSoftBody2D\DiaSoftBody2D.vcxproj">
+      <Project>{D2E3F4A5-B6C7-8901-DEFC-112233445566}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaSoftBody2DVisualDebugger\DiaSoftBody2DVisualDebugger.vcxproj">
+      <Project>{B2C3D4E5-F6A7-8901-BCDE-F12345678901}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaRig2D\DiaRig2D.vcxproj">
+      <Project>{E4F5A6B7-C8D9-0123-ABCD-456789ABCDE0}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaAnimation2D\DiaAnimation2D.vcxproj">
+      <Project>{A6B7C8D9-E0F1-2345-ABCD-678901234567}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaAnimation2DVisualDebugger\DiaAnimation2DVisualDebugger.vcxproj">
+      <Project>{E5F6A7B8-C9D0-1234-EF01-345678901234}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaScene2D\DiaScene2D.vcxproj">
+      <Project>{D6E7F8A9-B0C1-2345-DEF0-123456789004}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaScene2DVisualDebugger\DiaScene2DVisualDebugger.vcxproj">
+      <Project>{A1B2C3D4-E5F6-7890-ABCD-EF1234567895}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaRig2DVisualDebugger\DiaRig2DVisualDebugger.vcxproj">
+      <Project>{F5A6B7C8-D9E0-1234-BCDE-56789ABCDEF1}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaIK2D\DiaIK2D.vcxproj">
+      <Project>{F4A5B6C7-D8E9-0123-FABC-445566778899}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaIK2DVisualDebugger\DiaIK2DVisualDebugger.vcxproj">
+      <Project>{C3D4E5F6-A7B8-9012-CDEF-123456789012}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaBgfx3D\DiaBgfx3D.vcxproj">
+      <Project>{D2E3F4A5-B6C7-8901-DEF0-123456789ABC}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaGraphics3D\DiaGraphics3D.vcxproj">
+      <Project>{C5D6E7F8-A9B0-1234-EF01-234567890123}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaMesh3D\DiaMesh3D.vcxproj">
+      <Project>{F1E2D3C4-B5A6-7890-FEDC-BA9876543210}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaMesh3DVisualDebugger\DiaMesh3DVisualDebugger.vcxproj">
+      <Project>{E3F4A5B6-C7D8-9012-EF01-234567890ABC}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaLighting3D\DiaLighting3D.vcxproj">
+      <Project>{E7F8A9B0-C1D2-3456-EF01-234567890A05}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaLighting3DVisualDebugger\DiaLighting3DVisualDebugger.vcxproj">
+      <Project>{F2A3B4C5-D6E7-8901-FA23-B4C5D6E78901}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
+      <Project>{C3D4E5F6-A7B8-9012-CDEF-012345678901}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaEconomy\DiaEconomy.vcxproj">
+      <Project>{6E2AFB11-772C-4552-B065-D50083E5787D}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaEntitySpawner\DiaEntitySpawner.vcxproj">
+      <Project>{F4A5B6C7-D8E9-0123-ABCD-EF0123456789}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaMessageBus\DiaMessageBus.vcxproj">
+      <Project>{D5E6F7A8-B9C0-1234-DEF0-567890ABCDEF}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaTriggerScript\DiaTriggerScript.vcxproj">
+      <Project>{B6C7D8E9-F0A1-2345-6789-ABCDEF012345}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaObjective\DiaObjective.vcxproj">
+      <Project>{A5B6C7D8-E9F0-1234-5678-901234567890}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaStateMachine\DiaStateMachine.vcxproj">
+      <Project>{E3F4A5B6-C7D8-9012-EFAB-334455667788}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaSteeringVisualDebugger\DiaSteeringVisualDebugger.vcxproj">
+      <Project>{F4A5B6C7-D8E9-0123-F045-678901234567}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaPathfindingVisualDebugger\DiaPathfindingVisualDebugger.vcxproj">
+      <Project>{E9F0A1B2-C3D4-5678-EFAB-901234567890}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaFlowFieldVisualDebugger\DiaFlowFieldVisualDebugger.vcxproj">
+      <Project>{C2D3E4F5-A6B7-8901-CDEF-123456789AB0}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaHTNVisualDebugger\DiaHTNVisualDebugger.vcxproj">
+      <Project>{B2C3D4E5-F6A7-8012-BCDE-F01234567891}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaAIBudgetVisualDebugger\DiaAIBudgetVisualDebugger.vcxproj">
+      <Project>{E3F4A5B6-C7D8-9012-EF34-567890123456}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaMailboxVisualDebugger\DiaMailboxVisualDebugger.vcxproj">
+      <Project>{A3B4C5D6-E7F8-9012-A3B4-C5D6E7F89012}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaBehaviourTreeVisualDebugger\DiaBehaviourTreeVisualDebugger.vcxproj">
+      <Project>{A1B2C3D4-E5F6-7890-A1B2-C3D4E5F67890}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaAICallout\DiaAICallout.vcxproj">
+      <Project>{F0A1B2C3-D4E5-6789-0F1A-2B3C4D5E6F78}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaAICalloutVisualDebugger\DiaAICalloutVisualDebugger.vcxproj">
+      <Project>{01A2B3C4-D5E6-7890-A1B2-C3D4E5F06789}</Project>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -105,6 +373,15 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Asan|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>ClangCL</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -123,22 +400,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <RunCodeAnalysis>true</RunCodeAnalysis>
   </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64' Or '$(Configuration)|$(Platform)'=='Debug-Asan|x64' Or '$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)../../DIA/;$(ProjectDir)../../External/protobuf/Current-x64/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>DEBUG;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)../CluicheGameBaseline/;$(ProjectDir)../../DIA/;$(ProjectDir)../../External/protobuf/Current-x64/include;$(ProjectDir)../../External/imgui/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>DEBUG;DIA_DEBUG;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <BrowseInformation>true</BrowseInformation>
+      <BrowseInformation>false</BrowseInformation>
       <EnablePREfast>true</EnablePREfast>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(LibOutDir)DummyStage.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)CluicheKernel.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaSFML.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaApplication.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaAPI.lib;sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(RepoRoot)SFML\Current-x64\lib\Debug;$(RepoRoot)Dia\DiaBin\CluicheKernel;$(RepoRoot)Dia\DiaBin\DiaInput;$(RepoRoot)External\SFML\Current-x64\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalOptions>/WHOLEARCHIVE:DiaDebugServer.lib /WHOLEARCHIVE:CluicheKernel.lib %(AdditionalOptions)</AdditionalOptions>
+      <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
+      <ImportLibrary>$(IntDir)$(TargetName).lib</ImportLibrary>
+      <AdditionalDependencies>$(LibOutDir)CluicheGameBaseline.lib;$(LibOutDir)DiaBlackboard.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaGraphics3D.lib;$(LibOutDir)DiaBgfx3D.lib;$(LibOutDir)DiaMesh3D.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaPicking.lib;$(LibOutDir)DiaGeometry2DPicking.lib;$(LibOutDir)DiaMailbox.lib;$(LibOutDir)DiaImGui.lib;$(LibOutDir)DiaEntity.lib;$(LibOutDir)DiaVisualDebugger.lib;$(LibOutDir)DiaRigidBody2DVisualDebugger.lib;$(LibOutDir)DiaGeometry2DVisualDebugger.lib;$(LibOutDir)DiaLighting3D.lib;$(LibOutDir)DiaLighting3DVisualDebugger.lib;$(LibOutDir)DiaCaptureTest.lib;$(LibOutDir)DiaSDL.lib;$(LibOutDir)DiaPathfinding.lib;$(LibOutDir)DiaFlowField.lib;$(LibOutDir)DiaSteering.lib;$(LibOutDir)DiaEconomy.lib;$(LibOutDir)DiaEntitySpawner.lib;SDL3-static.lib;setupapi.lib;winmm.lib;imm32.lib;version.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\External\SDL3\lib\Debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>/WHOLEARCHIVE:DiaDebugServer.lib /WHOLEARCHIVE:CluicheGameBaseline.lib %(AdditionalOptions)</AdditionalOptions>
+      <IgnoreSpecificDefaultLibraries>LIBCMT;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>
     <PostBuildEvent>
       <Command>cd "$(RepoRoot)Dia\DiaCLI" &amp;&amp; ".venv\Scripts\python.exe" -m dia_cli pipeline deploy cluichetest --config $(Configuration) --out-dir "$(BinRoot)$(MSBuildProjectName)\$(Configuration)\$(Platform)\"</Command>
@@ -151,15 +432,16 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)../../DIA/;$(ProjectDir)../../External/protobuf/Current-x64/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)../CluicheGameBaseline/;$(ProjectDir)../../DIA/;$(ProjectDir)../../External/protobuf/Current-x64/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(LibOutDir)DummyStage.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)CluicheKernel.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaSFML.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaApplication.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaDebugProtocol.lib;$(LibOutDir)DiaProtobuf.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaAPI.lib;sfml-graphics.lib;sfml-window.lib;sfml-system.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(RepoRoot)External\SFML\Current-x64\lib\;$(ProjectDir)..\..\External\protobuf\Current-x64\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(LibOutDir)CluicheGameBaseline.lib;$(LibOutDir)DiaBlackboard.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaGraphics3D.lib;$(LibOutDir)DiaBgfx3D.lib;$(LibOutDir)DiaMesh3D.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaDebugProtocol.lib;$(LibOutDir)DiaProtobuf.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaEntity.lib;$(LibOutDir)DiaLighting3D.lib;$(LibOutDir)DiaLighting3DVisualDebugger.lib;$(LibOutDir)DiaCaptureTest.lib;$(LibOutDir)DiaSDL.lib;$(LibOutDir)DiaPathfinding.lib;$(LibOutDir)DiaFlowField.lib;$(LibOutDir)DiaSteering.lib;$(LibOutDir)DiaEconomy.lib;$(LibOutDir)DiaEntitySpawner.lib;SDL3-static.lib;setupapi.lib;imm32.lib;version.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\External\SDL3\lib\Release\;$(ProjectDir)..\..\External\protobuf\Current-x64\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>/WHOLEARCHIVE:DiaDebugServer.lib /WHOLEARCHIVE:CluicheGameBaseline.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
       <Command>cd "$(RepoRoot)Dia\DiaCLI" &amp;&amp; ".venv\Scripts\python.exe" -m dia_cli pipeline deploy cluichetest --config $(Configuration) --out-dir "$(BinRoot)$(MSBuildProjectName)\$(Configuration)\$(Platform)\"</Command>

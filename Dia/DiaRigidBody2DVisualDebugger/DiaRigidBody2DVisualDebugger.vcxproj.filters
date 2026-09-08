@@ -7,9 +7,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DiaRigidBodyVisualDebugger.h" />
+    <ClInclude Include="RigidBody2DDebugDomain.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaRigidBodyVisualDebugger.cpp" />
+    <ClCompile Include="RigidBody2DDebugDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.rigidbody2dvisualdebugger.architecture.module.md">

@@ -1,0 +1,9 @@
+{
+    "name": "EntityTestStage",
+    "manifest": "Stages/EntityTestStage/misc/ApplicationFlow/entity_test_stage.diaapp",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

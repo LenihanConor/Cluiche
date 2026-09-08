@@ -149,7 +149,7 @@ Threads must communicate via FrameStreams for thread-safe data transfer.
 
 **Status:** ✅ Complete
 
-**[→ DiaApplication API](../api/dia/application-api.md)**
+**[→ DiaApplicationFlow API](../api/dia/application-api.md)**
 
 ---
 

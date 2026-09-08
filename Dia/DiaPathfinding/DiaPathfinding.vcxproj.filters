@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{C1D2E3F4-A5B6-7890-CDEF-012345678902}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{D2E3F4A5-B6C7-8901-DEF0-123456789013}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaPathfinding">
+      <UniqueIdentifier>{ab208407-257d-40a1-86b2-ee6b5bdb08f0}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CellCoord.h" />
+    <ClInclude Include="CPathGraph.h" />
+    <ClInclude Include="IPathCostProvider.h" />
+    <ClInclude Include="PathResult.h" />
+    <ClInclude Include="SquarePathGrid.h" />
+    <ClInclude Include="HexPathGrid.h" />
+    <ClInclude Include="FindPath.h" />
+    <ClInclude Include="PathfindingSystem.h" />
+    <ClInclude Include="PathfindingSystem.inl" />
+    <ClInclude Include="IPathResultObserver.h" />
+    <ClInclude Include="Testing\PathfindingTestHelpers.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="PathfindingSystemBudgetAdapter.h">
+      <Filter>DiaPathfinding</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="SquarePathGrid.cpp" />
+    <ClCompile Include="HexPathGrid.cpp" />
+    <ClCompile Include="PathResult.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.pathfinding.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+</Project>

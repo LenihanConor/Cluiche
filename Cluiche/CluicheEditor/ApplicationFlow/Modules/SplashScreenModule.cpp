@@ -1,5 +1,7 @@
 #include "SplashScreenModule.h"
 
+#include <DiaApplicationFlow/RegistrationMacrosV2.h>
+
 namespace Cluiche
 {
 	namespace Editor
@@ -51,13 +53,13 @@ namespace Cluiche
 
 		const Dia::Core::StringCRC SplashScreenModule::kTypeId("SplashScreenModule");
 
-		SplashScreenModule::SplashScreenModule(Dia::Application::ProcessingUnit* pu)
-			: Dia::Application::Module(pu, kTypeId, RunningEnum::kIdle)
+		SplashScreenModule::SplashScreenModule(const Dia::Core::StringCRC& instanceId)
+			: Dia::ApplicationFlow::MainModule(instanceId)
 			, mHwnd(nullptr)
 		{
 		}
 
-		Dia::Application::StateObject::OpertionResponse SplashScreenModule::DoStart(const Dia::Application::StateObject::IStartData*)
+		Dia::ApplicationFlow::StartResult SplashScreenModule::DoStart()
 		{
 			HINSTANCE hInstance = GetModuleHandleW(nullptr);
 
@@ -84,7 +86,23 @@ namespace Cluiche
 			if (mHwnd)
 				UpdateWindow(mHwnd);
 
-			return Dia::Application::StateObject::OpertionResponse::kImmediate;
+			return Dia::ApplicationFlow::StartResult::kReady;
+		}
+
+		void SplashScreenModule::DoUpdate(const Dia::SimTime::MainTimeContext& /*ctx*/)
+		{
+			// Splash is passive; its paint messages are dispatched through
+			// EditorViewModule's PumpNativeMessages once that starts.  During Boot
+			// (before the editor window exists) we pump the thread queue directly
+			// so the initial WM_PAINT lands and the splash is visible.
+			if (mHwnd == nullptr) return;
+
+			MSG msg;
+			while (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE))
+			{
+				TranslateMessage(&msg);
+				DispatchMessageW(&msg);
+			}
 		}
 
 		void SplashScreenModule::Dismiss()
@@ -96,9 +114,14 @@ namespace Cluiche
 			}
 		}
 
-		void SplashScreenModule::DoStop()
+		Dia::ApplicationFlow::StopResult SplashScreenModule::DoStop()
 		{
 			Dismiss();
+			return Dia::ApplicationFlow::StopResult::kDone;
 		}
 	}
 }
+
+namespace { using SplashScreenModule_ = Cluiche::Editor::SplashScreenModule; }
+DIA_MODULE(SplashScreenModule_);
+DIA_DESCRIBE(SplashScreenModule_::kTypeId, "Displays the editor splash screen while the application initializes.");

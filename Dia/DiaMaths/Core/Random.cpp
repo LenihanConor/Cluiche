@@ -3,8 +3,6 @@
 #include "DiaMaths/Core/CoreMaths.h"
 #include "DiaMaths/Core/Trigonometry.h"
 #include "DiaMaths/Vector/Vector2D.h"
-#include "DiaMaths/Shape/2D/Circle2D.h"
-#include "DiaMaths/Shape/2D/AARect2D.h"
 
 #include <random>
 #include <chrono>
@@ -141,54 +139,6 @@ namespace Dia
 			{
 				probability = Clamp(probability, 0.0f, 1.0f);
 				return RandomUnit() < probability;
-			}
-
-			//-----------------------------------------------------------------------------
-			// Generate random point inside circle with uniform distribution
-			// IMPORTANT: We use sqrt(random) for radius to get uniform distribution!
-			//
-			// Why sqrt? Area increases with r^2, so:
-			//   - Without sqrt: points cluster near center (linear radius sampling)
-			//   - With sqrt: uniform distribution across the entire circle area
-			//
-			// Algorithm:
-			//   1. Random angle (0 to 2π)
-			//   2. Random radius using sqrt(random) for uniform density
-			//   3. Convert polar coordinates (r, θ) to Cartesian (x, y)
-			Vector2D RandomPointInCircle(const Circle2D& circle)
-			{
-				float angle = RandomRange(0.0f, PI_2);
-				float radius = Dia::Maths::SquareRoot(RandomUnit()) * circle.GetRadius();
-
-				// Convert polar to Cartesian: x = r*cos(θ), y = r*sin(θ)
-				float cosAngle = Dia::Maths::Cos(angle);
-				float sinAngle = Dia::Maths::Sin(angle);
-
-				return circle.GetCenter() + Vector2D(cosAngle * radius, sinAngle * radius);
-			}
-
-			//-----------------------------------------------------------------------------
-			Vector2D RandomPointOnCircle(const Circle2D& circle)
-			{
-				float angle = RandomRange(0.0f, PI_2);
-				float radius = circle.GetRadius();
-
-				float cosAngle = Dia::Maths::Cos(angle);
-				float sinAngle = Dia::Maths::Sin(angle);
-
-				return circle.GetCenter() + Vector2D(cosAngle * radius, sinAngle * radius);
-			}
-
-			//-----------------------------------------------------------------------------
-			Vector2D RandomPointInRect(const AARect2D& rect)
-			{
-				const Vector2D& bottomLeft = rect.GetBottomLeft();
-				const Vector2D& topRight = rect.GetTopRight();
-
-				float x = RandomRange(bottomLeft.x, topRight.x);
-				float y = RandomRange(bottomLeft.y, topRight.y);
-
-				return Vector2D(x, y);
 			}
 
 			//-----------------------------------------------------------------------------

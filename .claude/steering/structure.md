@@ -14,7 +14,7 @@ C:\GitHub\Cluiche\
 │   ├── DiaGraphics/              # Graphics abstraction
 │   ├── DiaWindow/                # Window management
 │   ├── DiaInput/                 # Input handling
-│   ├── DiaApplication/           # Application framework
+│   ├── DiaApplicationFlow/           # Application framework
 │   ├── DiaUI/                    # UI base
 │   ├── DiaSFML/                  # SFML integration layer
 │   └── ...                       # Other subsystems

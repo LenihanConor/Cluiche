@@ -4,6 +4,8 @@
 #pragma once
 
 #include "DiaGraphics/Frame/FrameData.h"
+#include "DiaGraphics/Interface/FrameCapture.h"
+#include <DiaObservation/Capture/IFrameCaptureSource.h>
 
 #include <DiaCore/Core/EnumClass.h>
 #include <DiaMaths/Vector/Vector2D.h>
@@ -16,7 +18,7 @@ namespace Dia
 		////////////////////////////////////////////////////////////////////////////////
 		// Enum name: ICanvas
 		////////////////////////////////////////////////////////////////////////////////
-		class ICanvas
+		class ICanvas : public Dia::Observation::Capture::IFrameCaptureSource
 		{
 		public:
 			class Settings
@@ -57,7 +59,8 @@ namespace Dia
 
 			virtual void Initialize(const Settings& settings) = 0;
 			virtual void SetCanvasSize(const Dia::Maths::Vector2D& size) = 0;
-			virtual void SetActiveContext(bool active)=0;
+
+			virtual void Shutdown() {}
 
 			virtual void StartFrame(const FrameData& nextFrame) = 0;
 			virtual void ProcessFrame(const FrameData& nextFrame) = 0;
@@ -77,6 +80,16 @@ namespace Dia
 				StartFrame(frame);
 				ProcessFrame(frame);
 				EndFrame(frame);
+			}
+
+			virtual FrameCaptureToken RequestFrameCapture()
+			{
+				return FrameCaptureToken{};
+			}
+
+			virtual FrameCaptureResult PollFrameCapture(const FrameCaptureToken& /*token*/)
+			{
+				return FrameCaptureResult{};
 			}
 		};
 	}

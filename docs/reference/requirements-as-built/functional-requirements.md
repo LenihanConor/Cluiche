@@ -198,7 +198,7 @@ Core framework must not depend on platform-specific APIs.
 - [ ] Can build without backend (core only)
 
 **Implementation:**
-- `DiaApplication`, `DiaCore`, `DiaMaths` - Platform-agnostic
+- `DiaApplicationFlow`, `DiaCore`, `DiaMaths` - Platform-agnostic
 - `DiaGraphics::ICanvas` - Abstract interface
 - `DiaSFML` - SFML backend (Windows/Linux/macOS)
 
@@ -376,7 +376,7 @@ Ensure math operations safe for multi-threaded use.
 
 **Status:** Partially complete (Random fixed, Transform needs work)
 
-**[→ Thread Safety Notes](../subsystems/dia-maths/thread-safety-notes.md)**
+**[→ Thread Safety Notes](../architecture/dia-maths-thread-safety.md)**
 
 ---
 

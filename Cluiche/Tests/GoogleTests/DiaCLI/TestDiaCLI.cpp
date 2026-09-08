@@ -50,12 +50,16 @@ namespace DiaCLI
 		// Should succeed
 		EXPECT_EQ(0, exitCode) << "Output: " << output;
 
-		// Should list core commands
+		// Should list core commands (setup removed; env is its replacement)
 		EXPECT_NE(output.find("command"), std::string::npos) << "Expected 'command' in help output";
-		EXPECT_NE(output.find("setup"), std::string::npos) << "Expected 'setup' in help output";
+		EXPECT_NE(output.find("env"), std::string::npos) << "Expected 'env' in help output";
 		EXPECT_NE(output.find("show"), std::string::npos) << "Expected 'show' in help output";
 		EXPECT_NE(output.find("api"), std::string::npos) << "Expected 'api' in help output";
 		EXPECT_NE(output.find("test"), std::string::npos) << "Expected 'test' in help output";
+
+		// Removed commands must not appear
+		EXPECT_EQ(output.find("mycommand"), std::string::npos) << "Unexpected 'mycommand' in help output";
+		EXPECT_EQ(output.find("prefixtest"), std::string::npos) << "Unexpected 'prefixtest' in help output";
 	}
 
 	// Test: Command Execution - dia test runs successfully
@@ -74,20 +78,26 @@ namespace DiaCLI
 		EXPECT_NE(output.find("ui"), std::string::npos) << "Expected 'ui' subcommand in test group help: " << output;
 	}
 
-	// Test: Prefix Stripping - cli_ prefix is stripped
+	// Test: Prefix Stripping - cli_ prefix files are exposed without the prefix
+	// (cli_prefixtest.py was a dedicated test shim that no longer exists;
+	//  prefix stripping is exercised here by verifying that no cli_/cli- named
+	//  command appears in the live --help output)
 	TEST(DiaCLI, PrefixStrippingWorks)
 	{
 		int exitCode = 0;
 		std::string output = ExecuteCommand(
-			"C:\\Users\\clenihan\\AppData\\Roaming\\Python\\Python311-32\\Scripts\\poetry.exe run -C Dia\\DiaCLI dia prefixtest",
+			"C:\\Users\\clenihan\\AppData\\Roaming\\Python\\Python311-32\\Scripts\\poetry.exe run -C Dia\\DiaCLI dia --help",
 			exitCode
 		);
 
 		// Should succeed
 		EXPECT_EQ(0, exitCode) << "Output: " << output;
 
-		// Should output expected message
-		EXPECT_NE(output.find("cli_ prefix was stripped correctly"), std::string::npos);
+		// No command should expose the raw cli_ prefix
+		EXPECT_EQ(output.find("cli_"), std::string::npos)
+			<< "Unexpected cli_-prefixed command in help output";
+		EXPECT_EQ(output.find("cli-"), std::string::npos)
+			<< "Unexpected cli--prefixed command in help output";
 	}
 
 	// Test: DiaAPI Bridge - api command exists and handles unavailable gracefully
@@ -113,7 +123,7 @@ namespace DiaCLI
 		EXPECT_TRUE(hasDiaAPIReference) << "Expected DiaAPI-related message in output: " << output;
 	}
 
-	// Test: Custom Command Appears - mycommand is discovered
+	// Test: Core Commands Appear - verifies the stable command surface is discoverable
 	TEST(DiaCLI, CustomCommandAppears)
 	{
 		int exitCode = 0;
@@ -125,8 +135,13 @@ namespace DiaCLI
 		// Should succeed
 		EXPECT_EQ(0, exitCode);
 
-		// Should list mycommand (created during setup)
-		EXPECT_NE(output.find("mycommand"), std::string::npos) << "Expected 'mycommand' in help output";
+		// Stable commands present after cleanup
+		EXPECT_NE(output.find("reflect"), std::string::npos) << "Expected 'reflect' in help output";
+		EXPECT_NE(output.find("scaffold"), std::string::npos) << "Expected 'scaffold' in help output";
+
+		// Removed commands absent
+		EXPECT_EQ(output.find("mycommand"), std::string::npos) << "Unexpected 'mycommand' in help output";
+		EXPECT_EQ(output.find("orchestrate"), std::string::npos) << "Unexpected 'orchestrate' in help output";
 	}
 
 	// Test: Exit Codes - Invalid command returns non-zero

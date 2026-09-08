@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
 
 #include <DiaSoftBody2D/SoftBodyWorld.h>
-#include <DiaLogger/Logger.h>
-#include <DiaLogger/ISink.h>
-#include <DiaLogger/LogEntry.h>
-#include <DiaLogger/LogLevel.h>
+#include <DiaObservation/Log/Logger.h>
+#include <DiaObservation/Log/ISink.h>
+#include <DiaObservation/Log/LogEntry.h>
+#include <DiaObservation/Log/LogLevel.h>
 #include <DiaMaths/Vector/Vector2D.h>
 #include <DiaCore/CRC/StringCRC.h>
 
@@ -13,7 +13,7 @@
 using namespace Dia::SoftBody2D;
 using namespace Dia::Maths;
 
-class SoftBodyLogSink : public Dia::Logger::ISink
+class SoftBodyLogSink : public Dia::Observation::Log::ISink
 {
 public:
     static const unsigned int kMaxEntries = 128;
@@ -21,11 +21,11 @@ public:
     SoftBodyLogSink()
         : mEntryCount(0)
     {
-        SetLevelThreshold(Dia::Logger::LogLevel::kDebug);
+        SetLevelThreshold(Dia::Observation::Log::LogLevel::kDebug);
         SetChannelFilter(Dia::Core::StringCRC("Physics"), true);
     }
 
-    void OnLogEntry(const Dia::Logger::LogEntry& entry) override
+    void OnLogEntry(const Dia::Observation::Log::LogEntry& entry) override
     {
         if (mEntryCount < kMaxEntries)
             mEntries[mEntryCount++] = entry;
@@ -34,11 +34,11 @@ public:
     const char* GetName() const override { return "SoftBodyLogSink"; }
 
     unsigned int GetEntryCount() const { return mEntryCount; }
-    const Dia::Logger::LogEntry& GetEntry(unsigned int i) const { return mEntries[i]; }
+    const Dia::Observation::Log::LogEntry& GetEntry(unsigned int i) const { return mEntries[i]; }
 
     void Clear() { mEntryCount = 0; }
 
-    unsigned int CountByLevel(Dia::Logger::LogLevel level) const
+    unsigned int CountByLevel(Dia::Observation::Log::LogLevel level) const
     {
         unsigned int count = 0;
         for (unsigned int i = 0; i < mEntryCount; ++i)
@@ -59,7 +59,7 @@ public:
     }
 
 private:
-    Dia::Logger::LogEntry mEntries[kMaxEntries];
+    Dia::Observation::Log::LogEntry mEntries[kMaxEntries];
     unsigned int mEntryCount;
 };
 
@@ -69,19 +69,19 @@ protected:
     void SetUp() override
     {
         mSink.Clear();
-        Dia::Logger::Logger::Instance().RegisterThreadBuffer();
-        Dia::Logger::Logger::Instance().RegisterSink(&mSink);
+        Dia::Observation::Log::Logger::Instance().RegisterThreadBuffer();
+        Dia::Observation::Log::Logger::Instance().RegisterSink(&mSink);
     }
 
     void TearDown() override
     {
-        Dia::Logger::Logger::Instance().UnregisterSink(&mSink);
-        Dia::Logger::Logger::Instance().UnregisterThreadBuffer();
+        Dia::Observation::Log::Logger::Instance().UnregisterSink(&mSink);
+        Dia::Observation::Log::Logger::Instance().UnregisterThreadBuffer();
     }
 
     void FlushLogs()
     {
-        Dia::Logger::Logger::Instance().FlushBuffers();
+        Dia::Observation::Log::Logger::Instance().FlushSync();
     }
 
     SoftBodyLogSink mSink;
@@ -113,7 +113,7 @@ TEST_F(SoftBodyLoggingTest, MaxSubSteps_WarningEmitted)
     world.Update(10.0f);
     FlushLogs();
 
-    EXPECT_GE(mSink.CountByLevel(Dia::Logger::LogLevel::kWarning), 1u);
+    EXPECT_GE(mSink.CountByLevel(Dia::Observation::Log::LogLevel::kWarning), 1u);
     EXPECT_TRUE(mSink.HasMessageContaining("maxSubSteps"));
 }
 
@@ -171,7 +171,7 @@ TEST_F(SoftBodyLoggingTest, NoMaxSubStepsWarning_OnNormalDelta)
     bool hasMaxSubStepsWarning = false;
     for (unsigned int i = 0; i < mSink.GetEntryCount(); ++i)
     {
-        if (mSink.GetEntry(i).level == Dia::Logger::LogLevel::kWarning &&
+        if (mSink.GetEntry(i).level == Dia::Observation::Log::LogLevel::kWarning &&
             strstr(mSink.GetEntry(i).message, "maxSubSteps") != nullptr)
         {
             hasMaxSubStepsWarning = true;
@@ -392,7 +392,7 @@ TEST_F(SoftBodyLoggingTest, StableSimulation_ZeroWarnings)
         world.Update(1.0f / 60.0f);
     FlushLogs();
 
-    EXPECT_EQ(mSink.CountByLevel(Dia::Logger::LogLevel::kWarning), 0u);
+    EXPECT_EQ(mSink.CountByLevel(Dia::Observation::Log::LogLevel::kWarning), 0u);
 }
 
 #endif // NDEBUG

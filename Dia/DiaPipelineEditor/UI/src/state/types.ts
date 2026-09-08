@@ -9,6 +9,7 @@ export interface StepState {
     status: 'not-started' | 'running' | 'passed' | 'failed' | 'interrupted';
     durationMs: number;
     startTimestamp: number;
+    inlineError?: string | null;
 }
 
 export interface StageState {
@@ -32,6 +33,12 @@ export interface PipelineState {
     stages: StageState[];
     historyRuns: HistoryRun[];
     viewingHistoryIndex: number | null;
+    stageManifest: string[];
+    stageDurationsMs: Record<string, number>;
+    lastSuccessTimestamp: number | null;
+    isProjectLoaded: boolean;
+    diagameName: string;
+    canLaunch: boolean;
 }
 
 export interface PipelineEventData {
@@ -70,6 +77,7 @@ export interface HistoryRun {
     totalDurationMs: number;
     startTimestamp: number;
     interrupted: boolean;
+    stageDurationsMs: Record<string, number>;
 }
 
 export const initialPipelineState: PipelineState = {
@@ -83,4 +91,10 @@ export const initialPipelineState: PipelineState = {
     stages: [],
     historyRuns: [],
     viewingHistoryIndex: null,
+    stageManifest: [],
+    stageDurationsMs: {},
+    lastSuccessTimestamp: null,
+    isProjectLoaded: false,
+    diagameName: '',
+    canLaunch: false,
 };

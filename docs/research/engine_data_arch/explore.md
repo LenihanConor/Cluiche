@@ -65,8 +65,8 @@ The constraint for Cluiche is different: a small AI-developed game, small scope,
 | **DiaCore FilePath/PathStore** | Path aliasing with deferred resolution. Decouples asset references from physical locations — exactly what the identity system needs |
 | **DiaCore JSON** | jsoncpp wrapper provides read/write. Sufficient for authored data format |
 | **DiaAPI CommandRegistry** | Plugin-based command framework with categories. Natural host for import/build/validate commands |
-| **DiaApplication ProcessingUnit** | Multi-phase lifecycle orchestration. Could model the import->validate->build pipeline as phases |
-| **DiaApplication Module** | Hot-reload support, dependency graphs, JSON config. Asset systems could be Modules within a build ProcessingUnit |
+| **DiaApplicationFlow ProcessingUnit** | Multi-phase lifecycle orchestration. Could model the import->validate->build pipeline as phases |
+| **DiaApplicationFlow Module** | Hot-reload support, dependency graphs, JSON config. Asset systems could be Modules within a build ProcessingUnit |
 | **CluicheEditor / DiaEditor** | Plugin-based editor with CEF UI. Natural host for explorer/inspection tooling |
 
 ### Platform Decision Constraints

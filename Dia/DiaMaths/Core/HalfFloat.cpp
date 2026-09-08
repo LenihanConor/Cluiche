@@ -88,7 +88,7 @@ namespace Dia
 			{
 				if (m == 0)
 				{
-					fl.i = s << 31;
+					fl.i = static_cast<unsigned int>(s) << 31;
 					return fl.f;
 				}
 				else
@@ -107,12 +107,12 @@ namespace Dia
 			{
 				if (m == 0)
 				{
-					fl.i = (s << 31) | 0x7f800000;
+					fl.i = (static_cast<unsigned int>(s) << 31) | 0x7f800000;
 					return fl.f;
 				}
 				else
 				{
-					fl.i = (s << 31) | 0x7f800000 | (m << 13);
+					fl.i = (static_cast<unsigned int>(s) << 31) | 0x7f800000 | (m << 13);
 					return fl.f;
 				}
 			}
@@ -120,7 +120,7 @@ namespace Dia
 			e = e + (127 - 15);
 			m = m << 13;
 
-			fl.i = (s << 31) | (e << 23) | m;
+			fl.i = (static_cast<unsigned int>(s) << 31) | (e << 23) | m;
 			return fl.f;
 		}
 

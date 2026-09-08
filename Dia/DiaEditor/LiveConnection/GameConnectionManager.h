@@ -15,7 +15,7 @@ namespace Dia
 
 	namespace Editor
 	{
-		// Pure manager — no DiaApplication dependency.
+		// Pure manager — no DiaApplicationFlow dependency.
 		// Call Initialize() once on startup. Call Update() each frame.
 		// Connection is on-demand: call Connect(host, port) when the game is ready.
 		// The tool boots cleanly with no game present.
@@ -27,9 +27,10 @@ namespace Dia
 			using DataCallback = std::function<void(const Json::Value&)>;
 			using ConnectionCallback = std::function<void(bool connected)>;
 			using RawMessageCallback = std::function<void(const char* rawText, unsigned int rawLength, const Json::Value&)>;
+			using SubscribeSentCallback = std::function<void(const char* topic)>;
 
 			GameConnectionManager();
-			~GameConnectionManager();
+			virtual ~GameConnectionManager();
 
 			void Initialize();
 			void Shutdown();
@@ -37,15 +38,15 @@ namespace Dia
 
 			void Connect(const char* host, int port);
 			void Disconnect();
-			bool IsConnected() const;
+			virtual bool IsConnected() const;
 
 			void SetAutoReconnect(bool enable);
 			void SetAutoReconnectDelay(float seconds);
 			void SetAutoReconnectMaxAttempts(int maxAttempts);
 			bool GetAutoReconnect() const { return mAutoReconnect; }
 
-			void Subscribe(const Dia::Core::StringCRC& topic, DataCallback callback);
-			void Unsubscribe(const Dia::Core::StringCRC& topic);
+			virtual void Subscribe(const Dia::Core::StringCRC& topic, DataCallback callback);
+			virtual void Unsubscribe(const Dia::Core::StringCRC& topic);
 			void Publish(const Dia::Core::StringCRC& topic, const Json::Value& data);
 
 			using CommandResponseCallback = std::function<void(bool success, const Json::Value& result)>;
@@ -58,6 +59,10 @@ namespace Dia
 			// receives, regardless of envelope shape. Used by consumers that speak
 			// a non-topic protocol (e.g. DiaDebugProtocol's {type, ...} frames).
 			void SetRawMessageCallback(RawMessageCallback callback);
+
+			// Notified each time a subscribe message is actually sent to the game.
+			// Used by GameConnectionController to track pending subscribes.
+			void SetSubscribeSentCallback(SubscribeSentCallback callback);
 			void SendRaw(const Json::Value& message);
 			void SendRawText(const char* text);
 			const char* GetLastError() const { return mLastError; }
@@ -65,6 +70,7 @@ namespace Dia
 		private:
 			void HandleMessage(const char* text, unsigned int length);
 			void HandleConnection(bool connected);
+			void SendProtocolSubscribe(const Dia::Core::StringCRC& topic);
 
 			struct Subscription
 			{
@@ -89,6 +95,7 @@ namespace Dia
 			Dia::WebSocket::Client* mClient;
 			ConnectionCallback mConnectionCallback;
 			RawMessageCallback mRawMessageCallback;
+			SubscribeSentCallback mSubscribeSentCallback;
 
 			char mHost[128];
 			int mPort;

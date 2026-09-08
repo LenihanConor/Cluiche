@@ -82,7 +82,7 @@ C:\GitHub\Cluiche\
 │   └── Tests/                   ← Test projects
 │
 ├── Dia/                          ← DIA ENGINE APPLICATION (13+ subsystems)
-│   ├── DiaApplication/          ← Module/Phase/ProcessingUnit framework
+│   ├── DiaApplicationFlow/          ← Module/Phase/ProcessingUnit framework
 │   ├── DiaCore/                 ← Containers, Type system, Time
 │   ├── DiaMaths/                ← Vector, Matrix, Transform, Shape
 │   ├── DiaGraphics/             ← ICanvas rendering abstraction
@@ -153,8 +153,8 @@ int main() {
 **Core Entry Points:**
 - `Cluiche/CluicheTest/Main.cpp` - Application entry point
 - `Cluiche/CluicheTest/ApplicationFlow/ProcessingUnits/MainProcessingUnit.h` - Main thread orchestrator
-- `Dia/DiaApplication/ApplicationProcessingUnit.h` - ProcessingUnit base class
-- `Dia/DiaApplication/ApplicationModule.h` - Module base class
+- `Dia/DiaApplicationFlow/ApplicationProcessingUnit.h` - ProcessingUnit base class
+- `Dia/DiaApplicationFlow/ApplicationModule.h` - Module base class
 
 **Core Modules:**
 - `Cluiche/CluicheTest/CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h` - Time, input, window, canvas
@@ -169,7 +169,7 @@ int main() {
 
 **Read the module architecture files:**
 - `Dia/dia.root.architecture.module.md` - Root module overview
-- `Dia/DiaApplication/Docs/dia.application.architecture.module.md` - Framework details
+- `Dia/DiaApplicationFlow/Docs/dia.application.architecture.module.md` - Framework details
 - `Dia/DiaCore/Docs/dia.core.architecture.module.md` - Core utilities
 - [53 more .architecture.module.md files throughout Dia/]
 

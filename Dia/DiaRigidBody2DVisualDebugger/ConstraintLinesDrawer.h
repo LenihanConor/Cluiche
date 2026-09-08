@@ -8,10 +8,10 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/IVisualDebugger.h>
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
 
 namespace Dia::RigidBody2D { class PhysicsWorld; }
-namespace Dia::Debug       { class DebugLayerManager; }
+namespace Dia::Core        { class IDebugContext; }
 
 namespace Dia::RigidBody2D
 {
@@ -19,15 +19,15 @@ namespace Dia::RigidBody2D
 class ConstraintLinesDrawer : public Dia::Debug::IVisualDebugger
 {
 public:
-    ConstraintLinesDrawer(const PhysicsWorld&                world,
-                          const Dia::Debug::DebugLayerManager& manager);
+    ConstraintLinesDrawer(const PhysicsWorld&             world,
+                          const Dia::Core::IDebugContext& manager);
 
     Dia::Core::StringCRC GetLayerName() const override;
-    void Draw(Dia::Graphics::FrameData& frameData) override;
+    void Draw(Dia::Core::IDebugDraw& draw) override;
 
 private:
     const PhysicsWorld&                  mWorld;
-    const Dia::Debug::DebugLayerManager& mManager;
+    [[maybe_unused]] const Dia::Core::IDebugContext& mManager;
 };
 
 } // namespace Dia::RigidBody2D

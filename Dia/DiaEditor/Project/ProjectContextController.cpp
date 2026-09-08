@@ -1,0 +1,280 @@
+#include "DiaEditor/Project/ProjectContextController.h"
+#include "DiaEditor/EditorAPI/EditorActionRegistry.h"
+#include "DiaEditor/EditorAPI/EditorActionDescriptor.h"
+#include "DiaEditor/MVC/IEditorContext.h"
+#include "DiaEditor/UI/WebUIBridge.h"
+#include "DiaEditor/UI/DataPath.h"
+
+#include <DiaObservation/Log/DiaLog.h>
+#include <DiaCore/CRC/StringCRC.h>
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <commdlg.h>
+
+namespace Dia
+{
+	namespace Editor
+	{
+		static const Dia::Core::StringCRC kReqOpenPath("project.open_path");
+		static const Dia::Core::StringCRC kReqClose("project.close");
+		static const Dia::Core::StringCRC kReqGetRecent("project.get_recent");
+		static const Dia::Core::StringCRC kReqOpen("project.open");
+		static const Dia::Core::StringCRC kReqGetState("project.get_state");
+
+		ProjectContextController::ProjectContextController()
+			: mBridge(nullptr)
+			, mContext(nullptr)
+		{
+		}
+
+		void ProjectContextController::Initialize(WebUIBridge* bridge, IEditorContext* context,
+		                                          EditorActionRegistry* api)
+		{
+			mBridge  = bridge;
+			mContext = context;
+			mApi     = api;
+
+			if (mBridge == nullptr || mContext == nullptr)
+				return;
+
+			mBridge->RegisterRequestHandler(kReqOpenPath, [this](const Json::Value& d) { return HandleOpenPath(d); });
+			mBridge->RegisterRequestHandler(kReqClose,    [this](const Json::Value& d) { return HandleClose(d); });
+			mBridge->RegisterRequestHandler(kReqGetRecent,[this](const Json::Value& d) { return HandleGetRecent(d); });
+			mBridge->RegisterRequestHandler(kReqOpen,     [this](const Json::Value& d) { return HandleOpen(d); });
+			mBridge->RegisterRequestHandler(kReqGetState, [this](const Json::Value& d) { return HandleGetState(d); });
+
+			// Dual-register P0 actions in EditorActionRegistry so Python/DiaAPI can reach
+			// the same handlers without going through WebUIBridge.
+			if (mApi != nullptr)
+			{
+				EditorActionDescriptor openPath;
+				openPath.name           = kReqOpenPath;
+				openPath.description    = "Open a .diagame project by absolute file path. Loads the project into the editor context and fires a project_changed push. Required param: path (string). Returns { ok: bool, path: string } or { ok: false, error: string }.";
+				openPath.category       = "project";
+				openPath.owner          = "ProjectContextController";
+				openPath.dispatchThread = DispatchThread::kMainThread;
+				openPath.handler        = [this](const Json::Value& d) { return HandleOpenPath(d); };
+				mApi->RegisterAction(openPath);
+
+				EditorActionDescriptor close;
+				close.name           = kReqClose;
+				close.description    = "Close the currently open .diagame project. Clears the editor context and fires a project_changed push. No params required. Returns { ok: true }.";
+				close.category       = "project";
+				close.owner          = "ProjectContextController";
+				close.dispatchThread = DispatchThread::kMainThread;
+				close.handler        = [this](const Json::Value& d) { return HandleClose(d); };
+				mApi->RegisterAction(close);
+
+				EditorActionDescriptor getState;
+				getState.name           = kReqGetState;
+				getState.description    = "Return the current project state as a JSON object with fields: name (string), diagamePath (string), source ('live'|'manual'). All fields are empty strings when no project is open.";
+				getState.category       = "project";
+				getState.owner          = "ProjectContextController";
+				getState.dispatchThread = DispatchThread::kMainThread;
+				getState.handler        = [this](const Json::Value& d) { return HandleGetState(d); };
+				mApi->RegisterAction(getState);
+			}
+
+			mContext->OnDiagameProjectChanged(&ProjectContextController::OnProjectChangedStatic, this);
+
+			PushProjectChanged();
+		}
+
+		void ProjectContextController::Shutdown()
+		{
+			if (mApi != nullptr)
+			{
+				mApi->DeregisterActionsForOwner(Dia::Core::StringCRC("ProjectContextController"));
+				mApi = nullptr;
+			}
+			if (mBridge != nullptr)
+			{
+				mBridge->UnregisterRequestHandler(kReqOpenPath);
+				mBridge->UnregisterRequestHandler(kReqClose);
+				mBridge->UnregisterRequestHandler(kReqGetRecent);
+				mBridge->UnregisterRequestHandler(kReqOpen);
+				mBridge->UnregisterRequestHandler(kReqGetState);
+				mBridge = nullptr;
+			}
+			mContext = nullptr;
+		}
+
+		Json::Value ProjectContextController::HandleOpenPath(const Json::Value& data)
+		{
+			Json::Value result;
+			if (!data.isMember("path") || !data["path"].isString())
+			{
+				result["ok"]    = false;
+				result["error"] = "missing path";
+				return result;
+			}
+			const char* path = data["path"].asCString();
+			if (!mContext->LoadDiagameProject(path))
+			{
+				result["ok"]    = false;
+				result["error"] = "failed to load project";
+				return result;
+			}
+			result["ok"]   = true;
+			result["path"] = path;
+			return result;
+		}
+
+		Json::Value ProjectContextController::HandleClose(const Json::Value& /*data*/)
+		{
+			if (mContext != nullptr)
+				mContext->ClearDiagameProject();
+			Json::Value result;
+			result["ok"] = true;
+			return result;
+		}
+
+		Json::Value ProjectContextController::HandleGetRecent(const Json::Value& /*data*/)
+		{
+			Json::Value result;
+			Json::Value paths(Json::arrayValue);
+			if (mContext != nullptr)
+			{
+				unsigned int count = mContext->GetRecentProjectCount();
+				for (unsigned int i = 0; i < count; ++i)
+				{
+					const char* p = mContext->GetRecentProject(i);
+					if (p != nullptr && p[0] != '\0')
+						paths.append(p);
+				}
+			}
+			result["paths"] = paths;
+			return result;
+		}
+
+		Json::Value ProjectContextController::HandleOpen(const Json::Value& /*data*/)
+		{
+			Json::Value result;
+
+			char* headless = nullptr;
+			size_t headlessLen = 0;
+			_dupenv_s(&headless, &headlessLen, "DIA_HEADLESS");
+			bool isHeadless = headless && headless[0] != '\0';
+			free(headless);
+			if (isHeadless)
+			{
+				result["ok"]        = false;
+				result["cancelled"] = true;
+				return result;
+			}
+
+			char filePath[MAX_PATH] = {0};
+			OPENFILENAMEA ofn = {};
+			ofn.lStructSize  = sizeof(ofn);
+			ofn.hwndOwner    = nullptr;
+			ofn.lpstrFilter  = "Dia Game Files (*.diagame)\0*.diagame\0All Files (*.*)\0*.*\0";
+			ofn.lpstrFile    = filePath;
+			ofn.nMaxFile     = MAX_PATH;
+			ofn.lpstrTitle   = "Open .diagame";
+			ofn.Flags        = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+
+			if (!GetOpenFileNameA(&ofn))
+			{
+				result["ok"]       = false;
+				result["cancelled"] = true;
+				return result;
+			}
+
+			if (mContext == nullptr || !mContext->LoadDiagameProject(filePath))
+			{
+				result["ok"]    = false;
+				result["error"] = "failed to load project";
+				return result;
+			}
+
+			result["ok"]   = true;
+			result["path"] = filePath;
+			return result;
+		}
+
+		Json::Value ProjectContextController::HandleGetState(const Json::Value& /*data*/)
+		{
+			Json::Value result;
+			if (mContext == nullptr)
+			{
+				result["name"]        = "";
+				result["diagamePath"] = "";
+				result["source"]      = "manual";
+				return result;
+			}
+
+			const ProjectContext& ctx = mContext->GetDiagameProject();
+			if (ctx.IsValid())
+			{
+				const char* lastSlash = ctx.diagamePath;
+				for (const char* c = ctx.diagamePath; *c; ++c)
+					if (*c == '/' || *c == '\\') lastSlash = c + 1;
+
+				char name[64] = {0};
+				unsigned int i = 0;
+				while (lastSlash[i] && lastSlash[i] != '.' && i < sizeof(name) - 1)
+				{
+					name[i] = lastSlash[i];
+					++i;
+				}
+				name[i] = '\0';
+
+				result["name"]        = name;
+				result["diagamePath"] = ctx.diagamePath;
+				result["source"]      = (ctx.source == ProjectSource::kLive) ? "live" : "manual";
+			}
+			else
+			{
+				result["name"]        = "";
+				result["diagamePath"] = "";
+				result["source"]      = "manual";
+			}
+			return result;
+		}
+
+		void ProjectContextController::PushProjectChanged()
+		{
+			if (mBridge == nullptr || mContext == nullptr)
+				return;
+
+			const ProjectContext& ctx = mContext->GetDiagameProject();
+
+			Json::Value payload;
+			if (ctx.IsValid())
+			{
+				// Extract project name: last path segment without extension.
+				const char* lastSlash = ctx.diagamePath;
+				for (const char* c = ctx.diagamePath; *c; ++c)
+					if (*c == '/' || *c == '\\') lastSlash = c + 1;
+
+				char name[64] = {0};
+				unsigned int i = 0;
+				while (lastSlash[i] && lastSlash[i] != '.' && i < sizeof(name) - 1)
+				{
+					name[i] = lastSlash[i];
+					++i;
+				}
+				name[i] = '\0';
+
+				payload["name"]        = name;
+				payload["diagamePath"] = ctx.diagamePath;
+				payload["source"]      = (ctx.source == ProjectSource::kLive) ? "live" : "manual";
+			}
+			else
+			{
+				payload["name"]        = "";
+				payload["diagamePath"] = "";
+				payload["source"]      = "manual";
+			}
+
+			mBridge->NotifyUIDataChanged(DataPath::kProjectChanged.AsChar(), payload);
+		}
+
+		void ProjectContextController::OnProjectChangedStatic(const ProjectContext& /*ctx*/, void* ud)
+		{
+			auto* self = static_cast<ProjectContextController*>(ud);
+			self->PushProjectChanged();
+		}
+	}
+}

@@ -8,6 +8,7 @@ namespace Dia
 		class EditorView;
 		class WebUIBridge;
 		class IPluginLoader;
+		class PluginServiceLocator;
 
 		struct EditorPluginContext
 		{
@@ -15,12 +16,16 @@ namespace Dia
 			EditorView* mView;
 			WebUIBridge* mBridge;
 			IPluginLoader* mPluginLoader;
+			PluginServiceLocator* mServices;
+			const char* mProjectPath;
 
 			EditorPluginContext()
 				: mModel(nullptr)
 				, mView(nullptr)
 				, mBridge(nullptr)
 				, mPluginLoader(nullptr)
+				, mServices(nullptr)
+				, mProjectPath(nullptr)
 			{}
 		};
 	}

@@ -7,53 +7,45 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/IVisualDebugger.h>
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
 #include <DiaRig2D/Skeleton.h>
 #include <DiaRig2D/BoneTransform.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
-namespace Dia
+namespace Dia::Core { class IDebugContext; }
+
+namespace Dia::Rig2D
 {
-    namespace Debug
-    {
-        class DebugLayerManager;
-    }
-}
 
-namespace Dia
+////////////////////////////////////////////////////////////////////////////////
+// RestPoseDrawer
+//
+// Each Draw() call:
+//   1. Constructs a local Pose and calls SetToBindPose(skeleton).
+//   2. Calls ComputeWorldTransforms() with identity root to get rest-pose transforms.
+//   3. Draws grey lines for each non-root bone (rest-pose ghost).
+//
+// Stack-allocates DynamicArrayC<BoneTransform, kMaxBones> for rest transforms.
+// Layer:   LayerNames::kRigRestPose
+// Priority: 10
+////////////////////////////////////////////////////////////////////////////////
+class RestPoseDrawer : public Dia::Debug::IVisualDebugger
 {
-    namespace Rig2D
-    {
-        ////////////////////////////////////////////////////////////////////////////////
-        // RestPoseDrawer
-        //
-        // Each Draw() call:
-        //   1. Constructs a local Pose and calls SetToBindPose(skeleton).
-        //   2. Calls ComputeWorldTransforms() with identity root to get rest-pose transforms.
-        //   3. Draws grey lines for each non-root bone (rest-pose ghost).
-        //
-        // Stack-allocates DynamicArrayC<BoneTransform, kMaxBones> for rest transforms.
-        // Layer:   LayerNames::kRigRestPose
-        // Priority: 10
-        ////////////////////////////////////////////////////////////////////////////////
-        class RestPoseDrawer : public Dia::Debug::IVisualDebugger
-        {
-        public:
-            RestPoseDrawer(
-                const Skeleton& skeleton,
-                const Dia::Core::Containers::DynamicArrayC<BoneTransform, kMaxBones>& worldTransforms,
-                const Dia::Debug::DebugLayerManager& manager);
+public:
+    RestPoseDrawer(
+        const Skeleton& skeleton,
+        const Dia::Core::Containers::DynamicArrayC<BoneTransform, kMaxBones>& worldTransforms,
+        const Dia::Core::IDebugContext& manager);
 
-            Dia::Core::StringCRC GetLayerName() const override;
-            void Draw(Dia::Graphics::FrameData& frameData) override;
+    Dia::Core::StringCRC GetLayerName() const override;
+    void Draw(Dia::Core::IDebugDraw& draw) override;
 
-        private:
-            const Skeleton&                                                              mSkeleton;
-            const Dia::Core::Containers::DynamicArrayC<BoneTransform, kMaxBones>&       mWorldTransforms;
-            const Dia::Debug::DebugLayerManager&                                         mManager;
-        };
+private:
+    const Skeleton&                                                              mSkeleton;
+    [[maybe_unused]] const Dia::Core::Containers::DynamicArrayC<BoneTransform, kMaxBones>&       mWorldTransforms;
+    [[maybe_unused]] const Dia::Core::IDebugContext&                                              mManager;
+};
 
-    } // namespace Rig2D
-} // namespace Dia
+} // namespace Dia::Rig2D
 
 #endif // DIA_DEBUG

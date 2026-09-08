@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -7,6 +7,14 @@
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release|x64">
       <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Asan|x64">
+      <Configuration>Debug-Asan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Ubsan|x64">
+      <Configuration>Debug-Ubsan</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
@@ -20,6 +28,15 @@
   <!-- Debug x64 Configuration -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Asan|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>ClangCL</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <!-- Release x64 Configuration -->
@@ -60,10 +77,10 @@
   <!-- Debug Win32 Compiler Settings -->
   <!-- Release Win32 Compiler Settings -->
   <!-- Debug x64 Compiler Settings -->
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64' Or '$(Configuration)|$(Platform)'=='Debug-Asan|x64' Or '$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../../Dia/;$(ProjectDir)../../../External/googletest/googletest/include/;$(ProjectDir)../../../External/jsoncpp-master/include/;$(ProjectDir)../../../External/pybind11/include/;$(ProjectDir)../../../External/Python311/include/;$(ProjectDir)../../../External/websocketpp;$(ProjectDir)../../../External/asio/asio/include;$(ProjectDir)../../../External/protobuf/Current-x64/include;$(ProjectDir)../../../External/imgui/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../../Dia/;$(ProjectDir)../../CluicheTest/;$(ProjectDir)../../CluicheEditor/;$(ProjectDir)../../CluicheGameBaseline/;$(ProjectDir)../../../External/googletest/googletest/include/;$(ProjectDir)../../../External/jsoncpp-master/include/;$(ProjectDir)../../../External/pybind11/include/;$(ProjectDir)../../../External/Python311/include/;$(ProjectDir)../../../External/websocketpp;$(ProjectDir)../../../External/asio/asio/include;$(ProjectDir)../../../External/protobuf/Current-x64/include;$(ProjectDir)../../../External/imgui/;$(ProjectDir)../../../External/SDL3/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>DEBUG;WIN64;_CONSOLE;DIA_DEBUG;ASIO_STANDALONE;_WEBSOCKETPP_CPP11_STL_;_WEBSOCKETPP_CPP11_THREAD_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -74,10 +91,11 @@
       <DisableSpecificWarnings>4267;4244;4127</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaAssetCatalogue.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaAssetCatalogueEditor.lib;$(LibOutDir)DiaAssetRuntimeEditor.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaGeometry2DVisualDebugger.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaRigidBody2DVisualDebugger.lib;$(LibOutDir)DiaSoftBody2D.lib;$(LibOutDir)DiaSoftBody2DVisualDebugger.lib;$(LibOutDir)DiaRig2D.lib;$(LibOutDir)DiaRig2DVisualDebugger.lib;$(LibOutDir)DiaIK2D.lib;$(LibOutDir)DiaIK2DVisualDebugger.lib;$(LibOutDir)DiaAnimation2D.lib;$(LibOutDir)DiaAnimation2DVisualDebugger.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaPython.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaApplication.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaEditor.lib;$(LibOutDir)DiaLogger.lib;$(LibOutDir)DiaStateMachine.lib;$(LibOutDir)DiaSerializer.lib;$(LibOutDir)DiaApplicationEditor.lib;$(LibOutDir)DiaVisualDebugger.lib;$(LibOutDir)DiaImGui.lib;$(LibOutDir)DiaVisualDebuggerConsole.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(ProjectDir)../../../External/googletest/lib/x64/Debug/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(LibOutDir)CluicheGameBaseline.lib;$(LibOutDir)DiaMesh3D.lib;$(LibOutDir)DiaMesh3DVisualDebugger.lib;$(LibOutDir)DiaBgfx3D.lib;$(LibOutDir)DiaCamera2D.lib;$(LibOutDir)DiaCamera3D.lib;$(LibOutDir)DiaLighting3DVisualDebugger.lib;$(LibOutDir)DiaLighting3D.lib;$(LibOutDir)DiaLighting2D.lib;$(LibOutDir)DiaScene2D.lib;$(LibOutDir)DiaScene2DVisualDebugger.lib;$(LibOutDir)DiaCaptureTest.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaAssetCatalogue.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaAssetRuntimeVisualDebugger.lib;$(LibOutDir)DiaAssetCatalogueEditor.lib;$(LibOutDir)DiaEntityTemplateEditor.lib;$(LibOutDir)DiaSceneEditor.lib;$(LibOutDir)DiaAssetRuntimeInspector.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaGeometry2DVisualDebugger.lib;$(LibOutDir)DiaGeometry3D.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaRigidBody2DVisualDebugger.lib;$(LibOutDir)DiaSoftBody2D.lib;$(LibOutDir)DiaSoftBody2DVisualDebugger.lib;$(LibOutDir)DiaRig2D.lib;$(LibOutDir)DiaRig2DVisualDebugger.lib;$(LibOutDir)DiaIK2D.lib;$(LibOutDir)DiaIK2DVisualDebugger.lib;$(LibOutDir)DiaAnimation2D.lib;$(LibOutDir)DiaAnimation2DVisualDebugger.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaGraphics3D.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaPython.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaStreams.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaEditor.lib;$(LibOutDir)DiaObservation.lib;$(LibOutDir)DiaMailbox.lib;$(LibOutDir)DiaMessageBus.lib;$(LibOutDir)DiaAICallout.lib;$(LibOutDir)DiaPicking.lib;$(LibOutDir)DiaGeometry2DPicking.lib;$(LibOutDir)DiaEntity.lib;$(LibOutDir)DiaEntitySpatial.lib;$(LibOutDir)DiaStateMachine.lib;$(LibOutDir)DiaOrder.lib;$(LibOutDir)DiaPathfinding.lib;$(LibOutDir)DiaFlowField.lib;$(LibOutDir)DiaSteering.lib;$(LibOutDir)DiaBlackboard.lib;$(LibOutDir)DiaAIBudget.lib;$(LibOutDir)DiaCondition.lib;$(LibOutDir)DiaRules.lib;$(LibOutDir)DiaObjective.lib;$(LibOutDir)DiaTriggerScript.lib;$(LibOutDir)DiaEntitySpawner.lib;$(LibOutDir)DiaUtilityAI.lib;$(LibOutDir)DiaStateMachineVisualDebugger.lib;$(LibOutDir)DiaHTNVisualDebugger.lib;$(LibOutDir)DiaBehaviourTree.lib;$(LibOutDir)DiaBehaviourTreeVisualDebugger.lib;$(LibOutDir)DiaMailboxVisualDebugger.lib;$(LibOutDir)DiaAICalloutVisualDebugger.lib;$(LibOutDir)DiaBlackboardVisualDebugger.lib;$(LibOutDir)DiaAIBudgetVisualDebugger.lib;$(LibOutDir)DiaUtilityAIVisualDebugger.lib;$(LibOutDir)DiaRulesVisualDebugger.lib;$(LibOutDir)DiaSteeringVisualDebugger.lib;$(LibOutDir)DiaPathfindingVisualDebugger.lib;$(LibOutDir)DiaEntitySpatialVisualDebugger.lib;$(LibOutDir)DiaScalarFieldVisualDebugger.lib;$(LibOutDir)DiaSensor.lib;$(LibOutDir)DiaEconomy.lib;$(LibOutDir)DiaAttribute.lib;$(LibOutDir)DiaAttributeVisualDebugger.lib;$(LibOutDir)DiaSerializer.lib;$(LibOutDir)DiaSaveGame.lib;$(LibOutDir)DiaApplicationFlowEditor.lib;$(LibOutDir)DiaApplicationFlowInspector.lib;$(LibOutDir)DiaVisualDebugger.lib;$(LibOutDir)DiaImGui.lib;$(LibOutDir)DiaBgfx.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAsset.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaSDL.lib;SDL3-static.lib;setupapi.lib;winmm.lib;imm32.lib;version.lib;bgfx.lib;bimgDebug.lib;bxDebug.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)../../../External/googletest/lib/x64/Debug/;$(ProjectDir)../../../External/bgfx/lib/Debug/;$(ProjectDir)../../../External/SDL3/lib/Debug/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
+      <StackReserveSize>4194304</StackReserveSize>
     </Link>
     <PostBuildEvent>
       <Command>cd "$(RepoRoot)Dia\DiaCLI" &amp;&amp; ".venv\Scripts\python.exe" -m dia_cli pipeline deploy googletest --config $(Configuration) --out-dir "$(BinRoot)$(MSBuildProjectName)\$(Configuration)\$(Platform)\"</Command>
@@ -88,7 +106,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../../Dia/;$(ProjectDir)../../../External/googletest/googletest/include/;$(ProjectDir)../../../External/jsoncpp-master/include/;$(ProjectDir)../../../External/pybind11/include/;$(ProjectDir)../../../External/Python311/include/;$(ProjectDir)../../../External/websocketpp;$(ProjectDir)../../../External/asio/asio/include;$(ProjectDir)../../../External/protobuf/Current-x64/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../../Dia/;$(ProjectDir)../../CluicheTest/;$(ProjectDir)../../CluicheEditor/;$(ProjectDir)../../CluicheGameBaseline/;$(ProjectDir)../../../External/googletest/googletest/include/;$(ProjectDir)../../../External/jsoncpp-master/include/;$(ProjectDir)../../../External/pybind11/include/;$(ProjectDir)../../../External/Python311/include/;$(ProjectDir)../../../External/websocketpp;$(ProjectDir)../../../External/asio/asio/include;$(ProjectDir)../../../External/protobuf/Current-x64/include;$(ProjectDir)../../../External/SDL3/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NDEBUG;WIN64;_CONSOLE;ASIO_STANDALONE;_WEBSOCKETPP_CPP11_STL_;_WEBSOCKETPP_CPP11_THREAD_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -99,22 +117,46 @@
       <DisableSpecificWarnings>4267;4244;4127</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaAssetCatalogue.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaAssetCatalogueEditor.lib;$(LibOutDir)DiaAssetRuntimeEditor.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaGeometry2DVisualDebugger.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaRigidBody2DVisualDebugger.lib;$(LibOutDir)DiaSoftBody2D.lib;$(LibOutDir)DiaSoftBody2DVisualDebugger.lib;$(LibOutDir)DiaRig2D.lib;$(LibOutDir)DiaRig2DVisualDebugger.lib;$(LibOutDir)DiaIK2D.lib;$(LibOutDir)DiaIK2DVisualDebugger.lib;$(LibOutDir)DiaAnimation2D.lib;$(LibOutDir)DiaAnimation2DVisualDebugger.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaPython.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaApplication.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaEditor.lib;$(LibOutDir)DiaLogger.lib;$(LibOutDir)DiaStateMachine.lib;$(LibOutDir)DiaSerializer.lib;$(LibOutDir)DiaApplicationEditor.lib;$(LibOutDir)DiaVisualDebugger.lib;$(LibOutDir)DiaImGui.lib;$(LibOutDir)DiaVisualDebuggerConsole.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(ProjectDir)../../../External/googletest/lib/x64/Release/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(LibOutDir)CluicheGameBaseline.lib;$(LibOutDir)DiaMesh3D.lib;$(LibOutDir)DiaMesh3DVisualDebugger.lib;$(LibOutDir)DiaBgfx3D.lib;$(LibOutDir)DiaCamera2D.lib;$(LibOutDir)DiaCamera3D.lib;$(LibOutDir)DiaLighting3DVisualDebugger.lib;$(LibOutDir)DiaLighting3D.lib;$(LibOutDir)DiaLighting2D.lib;$(LibOutDir)DiaScene2D.lib;$(LibOutDir)DiaScene2DVisualDebugger.lib;$(LibOutDir)DiaCaptureTest.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaAssetCatalogue.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaAssetRuntimeVisualDebugger.lib;$(LibOutDir)DiaAssetCatalogueEditor.lib;$(LibOutDir)DiaEntityTemplateEditor.lib;$(LibOutDir)DiaSceneEditor.lib;$(LibOutDir)DiaAssetRuntimeInspector.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaGeometry2DVisualDebugger.lib;$(LibOutDir)DiaGeometry3D.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaRigidBody2DVisualDebugger.lib;$(LibOutDir)DiaSoftBody2D.lib;$(LibOutDir)DiaSoftBody2DVisualDebugger.lib;$(LibOutDir)DiaRig2D.lib;$(LibOutDir)DiaRig2DVisualDebugger.lib;$(LibOutDir)DiaIK2D.lib;$(LibOutDir)DiaIK2DVisualDebugger.lib;$(LibOutDir)DiaAnimation2D.lib;$(LibOutDir)DiaAnimation2DVisualDebugger.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaGraphics3D.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaPython.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaStreams.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaEditor.lib;$(LibOutDir)DiaObservation.lib;$(LibOutDir)DiaMailbox.lib;$(LibOutDir)DiaMessageBus.lib;$(LibOutDir)DiaAICallout.lib;$(LibOutDir)DiaPicking.lib;$(LibOutDir)DiaGeometry2DPicking.lib;$(LibOutDir)DiaEntity.lib;$(LibOutDir)DiaEntitySpatial.lib;$(LibOutDir)DiaStateMachine.lib;$(LibOutDir)DiaOrder.lib;$(LibOutDir)DiaPathfinding.lib;$(LibOutDir)DiaFlowField.lib;$(LibOutDir)DiaSteering.lib;$(LibOutDir)DiaBlackboard.lib;$(LibOutDir)DiaAIBudget.lib;$(LibOutDir)DiaCondition.lib;$(LibOutDir)DiaRules.lib;$(LibOutDir)DiaObjective.lib;$(LibOutDir)DiaTriggerScript.lib;$(LibOutDir)DiaEntitySpawner.lib;$(LibOutDir)DiaUtilityAI.lib;$(LibOutDir)DiaStateMachineVisualDebugger.lib;$(LibOutDir)DiaHTNVisualDebugger.lib;$(LibOutDir)DiaBehaviourTree.lib;$(LibOutDir)DiaBehaviourTreeVisualDebugger.lib;$(LibOutDir)DiaMailboxVisualDebugger.lib;$(LibOutDir)DiaAICalloutVisualDebugger.lib;$(LibOutDir)DiaBlackboardVisualDebugger.lib;$(LibOutDir)DiaAIBudgetVisualDebugger.lib;$(LibOutDir)DiaUtilityAIVisualDebugger.lib;$(LibOutDir)DiaRulesVisualDebugger.lib;$(LibOutDir)DiaSteeringVisualDebugger.lib;$(LibOutDir)DiaPathfindingVisualDebugger.lib;$(LibOutDir)DiaEntitySpatialVisualDebugger.lib;$(LibOutDir)DiaScalarFieldVisualDebugger.lib;$(LibOutDir)DiaSensor.lib;$(LibOutDir)DiaEconomy.lib;$(LibOutDir)DiaAttribute.lib;$(LibOutDir)DiaAttributeVisualDebugger.lib;$(LibOutDir)DiaSerializer.lib;$(LibOutDir)DiaSaveGame.lib;$(LibOutDir)DiaApplicationFlowEditor.lib;$(LibOutDir)DiaApplicationFlowInspector.lib;$(LibOutDir)DiaVisualDebugger.lib;$(LibOutDir)DiaImGui.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAsset.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaSDL.lib;SDL3-static.lib;setupapi.lib;winmm.lib;imm32.lib;version.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)../../../External/googletest/lib/x64/Release/;$(ProjectDir)../../../External/SDL3/lib/Release/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <StackReserveSize>4194304</StackReserveSize>
     </Link>
     <PostBuildEvent>
       <Command>cd "$(RepoRoot)Dia\DiaCLI" &amp;&amp; ".venv\Scripts\python.exe" -m dia_cli pipeline deploy googletest --config $(Configuration) --out-dir "$(BinRoot)$(MSBuildProjectName)\$(Configuration)\$(Platform)\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
+  <!-- PCH settings: Debug|x64 only (not Asan/Ubsan) -->
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.h</ForcedIncludeFiles>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <!-- PCH settings: Release|x64 -->
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.h</ForcedIncludeFiles>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <!-- Header Files -->
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+  </ItemGroup>
   <!-- Source Files -->
   <ItemGroup>
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Core\Architecture\TestSingleton.cpp" />
-    <ClCompile Include="Core\Architecture\TestComponent.cpp" />
     <ClCompile Include="Core\Architecture\TestObserver.cpp" />
     <ClCompile Include="Core\Containers\TestArray.cpp" />
     <ClCompile Include="Core\Containers\TestArrayC.cpp" />
@@ -130,11 +172,10 @@
     <ClCompile Include="Core\Containers\TestHashTable.cpp" />
     <ClCompile Include="Core\Containers\TestGraph.cpp" />
     <ClCompile Include="Core\Containers\TestDirectedGraph.cpp" />
+    <ClCompile Include="Core\Containers\TestHandlePool.cpp" />
     <ClCompile Include="Core\Containers\TestContainerStress.cpp" />
     <ClCompile Include="Core\Containers\TestContainerInvariants.cpp" />
     <ClCompile Include="Core\Events\TestDelegate.cpp" />
-    <ClCompile Include="Core\Events\TestEventQueue.cpp" />
-    <ClCompile Include="Core\Events\TestEventDispatcher.cpp" />
     <ClCompile Include="Core\Memory\TestSmartPointers.cpp" />
     <ClCompile Include="Core\Memory\TestAllocator.cpp" />
     <ClCompile Include="Core\FilePath\TestFilePath.cpp" />
@@ -145,11 +186,18 @@
     <ClCompile Include="Core\Time\TestTimerExpiry.cpp" />
     <ClCompile Include="Core\Time\TestTimerSystem.cpp" />
     <ClCompile Include="Core\CRC\TestCRC.cpp" />
+    <ClCompile Include="Core\Reflect\TestArchive.cpp" />
+    <ClCompile Include="Core\Reflect\TestMacroDSL.cpp" />
+    <ClCompile Include="Core\Reflect\TestJsonArchive.cpp" />
+    <ClCompile Include="Core\Reflect\TestBinaryArchive.cpp" />
+    <ClCompile Include="Core\Reflect\TestContainerSpecializations.cpp" />
+    <ClCompile Include="Core\Reflect\TestPolymorphicRegistry.cpp" />
+    <ClCompile Include="Core\Reflect\TestFieldAttributes.cpp" />
+    <ClCompile Include="Core\Reflect\TestDiaMathsSerializers.cpp" />
+    <ClCompile Include="Core\Reflect\TestDiaMathsSerializers2.cpp" />
+    <ClCompile Include="Core\Reflect\TestDiaCoreSerializers.cpp" />
     <ClCompile Include="Core\Type\TestEnum.cpp" />
     <ClCompile Include="Core\Type\TestMetaLogic.cpp" />
-    <ClCompile Include="Core\Type\TestTypeTraits.cpp" />
-    <ClCompile Include="Core\Type\TestJsonTypes.cpp" />
-    <ClCompile Include="Core\Type\TestTypes.cpp" />
     <ClCompile Include="Core\Threading\TestMutex.cpp" />
     <ClCompile Include="Core\Threading\TestAtomic.cpp" />
     <ClCompile Include="Core\Threading\TestThreadPool.cpp" />
@@ -158,6 +206,10 @@
     <ClCompile Include="Maths\TestVector3D.cpp" />
     <ClCompile Include="Maths\TestVector4D.cpp" />
     <ClCompile Include="Maths\TestMatrix33.cpp" />
+    <ClCompile Include="Maths\TestMatrix44.cpp" />
+    <ClCompile Include="Maths\TestMatrix34.cpp" />
+    <ClCompile Include="Maths\TestQuaternion.cpp" />
+    <ClCompile Include="Maths\TestTransform3D.cpp" />
     <ClCompile Include="Maths\TestVectorUtils.cpp" />
     <ClCompile Include="Maths\TestCoreMaths.cpp" />
     <ClCompile Include="Maths\TestFloatMaths.cpp" />
@@ -169,8 +221,6 @@
     <ClCompile Include="Maths\TestMatrix22.cpp" />
     <ClCompile Include="Maths\TestVector2D.cpp" />
     <ClCompile Include="Maths\TestHalfFloat.cpp" />
-    <ClCompile Include="Maths\TestIntersectionClassify.cpp" />
-    <ClCompile Include="Maths\TestCircle2D.cpp" />
     <ClCompile Include="Maths\TestHalfVector2D.cpp" />
     <ClCompile Include="Graphics\TestPrimitiveType.cpp" />
     <ClCompile Include="Graphics\TestRenderStates.cpp" />
@@ -178,15 +228,17 @@
     <ClCompile Include="Graphics\TestTransform.cpp" />
     <ClCompile Include="Graphics\TestVertex.cpp" />
     <ClCompile Include="Graphics\TestFrameData.cpp" />
+    <ClCompile Include="Graphics3D\TestMesh3DFrameData.cpp" />
     <ClCompile Include="Graphics\TestDebugBudget.cpp" />
     <ClCompile Include="Graphics\TestDebugTextPrimitive.cpp" />
+    <ClCompile Include="Graphics\TestCamera2D.cpp" />
+    <ClCompile Include="DiaBgfx\TestFrameCaptureRingBuffer.cpp" />
+    <ClCompile Include="Input\TestInputRouter.cpp" />
     <ClCompile Include="Input\TestInputState.cpp" />
     <ClCompile Include="Input\TestActionMap.cpp" />
     <ClCompile Include="Input\TestActionContext.cpp" />
     <ClCompile Include="Input\TestInputProfile.cpp" />
     <ClCompile Include="Input\TestInputRecorder.cpp" />
-    <ClCompile Include="Input\TestLegacyEventConverter.cpp" />
-    <ClCompile Include="Input\TestModernEvents.cpp" />
     <ClCompile Include="Python\TestLifecycle.cpp" />
     <ClCompile Include="Python\TestTypeConversion.cpp" />
     <ClCompile Include="Python\TestErrorHandling.cpp" />
@@ -194,34 +246,38 @@
     <ClCompile Include="Python\TestScriptExecution.cpp" />
     <ClCompile Include="Python\TestIntegration.cpp" />
     <ClCompile Include="CLI\TestCommandRegistry.cpp" />
+    <ClCompile Include="CLI\TestCommandRegistryJson.cpp" />
     <ClCompile Include="CLI\TestArgumentParser.cpp" />
     <ClCompile Include="CLI\TestHelpSystem.cpp" />
     <ClCompile Include="CLI\TestEventSystem.cpp" />
     <ClCompile Include="CLI\TestPythonBindings.cpp" />
     <ClCompile Include="DiaCLI\TestDiaCLI.cpp" />
-    <ClCompile Include="Application\TestApplicationManifestSerializer.cpp" />
-    <ClCompile Include="Application\TestBasicApplication.cpp" />
-    <ClCompile Include="Application\TestHotReload.cpp" />
-    <ClCompile Include="Application\TestApplicationTypeRegistry.cpp" />
-    <ClCompile Include="Application\TestManifestLoader.cpp" />
-    <ClCompile Include="Application\TestManifestImports.cpp" />
-    <ClCompile Include="Application\TestPUTree.cpp" />
-    <ClCompile Include="Application\TestPUTreeIntegration.cpp" />
-    <ClCompile Include="Application\TestDiaGameFormat.cpp" />
-    <ClCompile Include="Application\TestDiaGameSerializers.cpp" />
-    <ClCompile Include="Application\TestMessageBus.cpp" />
-    <ClCompile Include="Application\TestApplicationLifecycle.cpp" />
-    <ClCompile Include="Application\TestApplicationIntrospector.cpp" />
-    <ClCompile Include="Application\TestApplicationLoader.cpp" />
-    <ClCompile Include="Application\TestPhaseTransition.cpp" />
-    <ClCompile Include="Application\TestModuleRef.cpp" />
-    <ClCompile Include="Application\TestCluicheManifests.cpp" />
-    <ClCompile Include="Application\TestMetricsCollector.cpp" />
-    <ClCompile Include="Application\TestStateObject.cpp" />
+    <ClCompile Include="ApplicationFlow\TestModuleLifecycle.cpp" />
+    <ClCompile Include="ApplicationFlow\TestStageSystem.cpp" />
+    <ClCompile Include="ApplicationFlow\TestRegistration.cpp" />
+    <ClCompile Include="ApplicationFlow\TestManifestLoaderV2.cpp" />
+    <ClCompile Include="ApplicationFlow\TestInspectable.cpp" />
+    <ClCompile Include="ApplicationFlow\TestValidation.cpp" />
+    <ClCompile Include="ApplicationFlow\TestValidationExtended.cpp" />
+    <ClCompile Include="ApplicationFlow\TestStreams.cpp" />
+    <ClCompile Include="ApplicationFlow\TestStreamPolicy.cpp" />
+    <ClCompile Include="ApplicationFlow\TestStreamEnvelope.cpp" />
+    <ClCompile Include="ApplicationFlow\TestStreamTap.cpp" />
+    <ClCompile Include="ApplicationFlow\TestStreamTypeSerializer.cpp" />
+    <ClCompile Include="ApplicationFlow\TestLifecycleEvents.cpp" />
+    <ClCompile Include="ApplicationFlow\TestTransitionGuards.cpp" />
+    <ClCompile Include="ApplicationFlow\TestBaselineCommands.cpp" />
+    <ClCompile Include="ApplicationFlow\TestServiceChannel.cpp" />
+    <ClCompile Include="ApplicationFlow\TestEventStreamBatching.cpp" />
+    <ClCompile Include="ApplicationFlow\TestPUAffinity.cpp" />
+    <ClCompile Include="Automation\TestAutomationService.cpp" />
+    <ClCompile Include="Automation\TestMetricCommand.cpp" />
+    <ClCompile Include="ApplicationFlow\TestApplicationE2E.cpp" />
     <ClCompile Include="UI\TestBoundMethod.cpp" />
     <ClCompile Include="UI\TestUIDataBuffer.cpp" />
     <ClCompile Include="UI\TestPage.cpp" />
     <ClCompile Include="WebSocket\TestWebSocketServer.cpp" />
+    <ClCompile Include="WebSocket\TestWebSocketServerBuffer.cpp" />
     <ClCompile Include="WebSocket\TestWebSocketClient.cpp" />
     <ClCompile Include="WebSocket\TestWebSocketIntegration.cpp" />
     <ClCompile Include="WebSocket\TestWebSocketError.cpp" />
@@ -233,20 +289,51 @@
     <ClCompile Include="UICEF\TestCEFPageManagement.cpp" />
     <ClCompile Include="DebugProtocol\TestDebugProtocolProto.cpp" />
     <ClCompile Include="DebugProtocol\TestDebugProtocolWireCompat.cpp" />
-    <ClCompile Include="DebugServer\TestSubscriptionManager.cpp" />
     <ClCompile Include="DebugServer\TestCommandDispatcher.cpp" />
+    <ClCompile Include="DebugServer\TestDebugServerTaps.cpp" />
     <ClCompile Include="Dia\TestProtoStructConverter.cpp" />
     <ClCompile Include="DebugServer\TestStateSerializer.cpp" />
     <ClCompile Include="DebugServer\TestDebugServerProtocol.cpp" />
-    <ClCompile Include="Integration\TestInputPipeline.cpp" />
-    <ClCompile Include="Integration\TestFrameStreamPipeline.cpp" />
+    <ClCompile Include="DebugServer\TestDebugServerAppState.cpp" />
+    <ClCompile Include="DebugServer\TestDebugServerConnectionHealth.cpp" />
+    <ClCompile Include="DebugServer\TestObservationBridge.cpp" />
     <ClCompile Include="Integration\TestDebugProtocolEndToEnd.cpp" />
-    <ClCompile Include="Integration\TestManifestRoundTrip.cpp" />
     <ClCompile Include="Integration\TestWebUIBridgeDispatch.cpp" />
-    <ClCompile Include="Integration\TestTypeRegistrySeeding.cpp" />
+    <ClCompile Include="Integration\TestEditorPluginBase.cpp" />
     <ClCompile Include="Integration\TestPhysicsGeometryIntegration.cpp" />
-    <ClCompile Include="DiaApplicationEditor\TestManifestSerializer.cpp" />
-    <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\StubEditorPlugin.cpp" />
+    <!-- DiaEntityTemplateEditor Tests -->
+    <ClCompile Include="DiaEntityTemplateEditor\TestBlueprintFileHandler.cpp" />
+    <ClCompile Include="DiaEntityTemplateEditor\TestBlueprintListController.cpp" />
+    <ClCompile Include="DiaEntityTemplateEditor\TestBlueprintPropertyController.cpp" />
+    <ClCompile Include="DiaEntityTemplateEditor\TestBlueprintMutator.cpp" />
+    <ClCompile Include="DiaEntityTemplateEditor\TestSchemaReader.cpp" />
+    <ClCompile Include="DiaEntityTemplateEditor\IntegrationTestBlueprintEditorPlugin.cpp" />
+    <!-- DiaSceneEditor Tests -->
+    <ClCompile Include="DiaSceneEditor\TestSceneMutator.cpp" />
+    <ClCompile Include="DiaSceneEditor\TestSceneValidator.cpp" />
+    <ClCompile Include="DiaSceneEditor\TestSceneEditorHandlers.cpp" />
+    <ClCompile Include="DiaSceneEditor\IntegrationTestSceneEditorPlugin.cpp" />
+    <!-- DiaEntityInspector Tests -->
+    <ClCompile Include="DiaEntityInspector\IntegrationTestEntityInspectorPlugin.cpp" />
+    <ClCompile Include="DiaEntityInspector\TestEntityInspectSerializer.cpp" />
+    <!-- DiaEditorDeepLink Tests -->
+    <ClCompile Include="DiaEditorDeepLink\IntegrationTestEditorDeepLink.cpp" />
+    <!-- DiaApplicationFlowEditor V2 Tests -->
+    <ClCompile Include="DiaApplicationFlowEditor\IntegrationTestApplicationFlowEditorPlugin.cpp" />
+    <ClCompile Include="DiaApplicationFlowEditor\TestManifestEditorState.cpp" />
+    <ClCompile Include="DiaApplicationFlowEditor\TestCommandHistory.cpp" />
+    <ClCompile Include="DiaApplicationFlowEditor\TestTypeDiscoveryService.cpp" />
+    <ClCompile Include="DiaApplicationFlowEditor\TestManifestLoader.cpp" />
+    <ClCompile Include="DiaApplicationFlowEditor\TestManifestSaver.cpp" />
+    <ClCompile Include="DiaApplicationFlowEditor\TestManifestValidator.cpp" />
+    <ClCompile Include="DiaApplicationFlowEditor\TestCommands_PU.cpp" />
+    <ClCompile Include="DiaApplicationFlowEditor\TestCommands_Module.cpp" />
+    <ClCompile Include="DiaApplicationFlowEditor\TestCommands_Stream.cpp" />
+    <ClCompile Include="DiaApplicationFlowEditor\TestCommands_Stage.cpp" />
+    <ClCompile Include="DiaApplicationFlowEditor\TestRiskAssessor.cpp" />
+    <!-- DiaApplicationFlowInspector Tests -->
+    <ClCompile Include="DiaApplicationFlowInspector\TestLiveStateStore.cpp" />
+    <ClCompile Include="DiaApplicationFlowInspector\TestInspectorPlugin.cpp" />
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\HelloEditorPlugin.cpp" />
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\HomeEditorPlugin.cpp" />
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\OutputConsoleEditorPlugin.cpp" />
@@ -254,33 +341,82 @@
     <ClCompile Include="Editor\TestEditorPluginRegistry.cpp" />
     <ClCompile Include="Editor\TestCommandHistory.cpp" />
     <ClCompile Include="Editor\TestEditorModel.cpp" />
+    <ClCompile Include="Editor\TestEditorModelDiagame.cpp" />
     <ClCompile Include="Editor\TestGameConnectionManager.cpp" />
     <ClCompile Include="Editor\TestDockingLayout.cpp" />
+    <ClCompile Include="Editor\TestDockingLayoutDuplication.cpp" />
+    <ClCompile Include="Editor\TestPluginLoaderDuplication.cpp" />
+    <ClCompile Include="Editor\TestPluginLoaderHeadless.cpp" />
+    <ClCompile Include="Editor\TestEditorMemory.cpp" />
+    <ClCompile Include="Editor\TestPluginLoaderMemory.cpp" />
     <ClCompile Include="Editor\TestWebUIBridge.cpp" />
     <ClCompile Include="Editor\TestFileDialogHandler.cpp" />
-    <ClCompile Include="Editor\TestEditorApplication.cpp" />
     <ClCompile Include="Editor\TestEditorApplicationLifecycle.cpp" />
     <ClCompile Include="Editor\TestEditorPluginPipeline.cpp" />
     <ClCompile Include="Editor\TestGameConnectionManagerIntegration.cpp" />
+    <ClCompile Include="Editor\TestGameConnectionManagerPendingQueue.cpp" />
     <ClCompile Include="Editor\TestGameConnectionController.cpp" />
+    <ClCompile Include="Editor\TestProjectContextController.cpp" />
+    <ClCompile Include="Editor\TestAppEditorController.cpp" />
+    <ClCompile Include="Editor\TestEditorActionManifest.cpp" />
     <ClCompile Include="Editor\TestGameConnectionControllerMessages.cpp" />
+    <ClCompile Include="Editor\TestGameConnectionControllerAck.cpp" />
     <ClCompile Include="Editor\TestGameConnectionLifecycle.cpp" />
     <ClCompile Include="Editor\TestEditorToolbarItem.cpp" />
+    <ClCompile Include="Editor\TestPluginServiceLocator.cpp" />
+    <ClCompile Include="Editor\TestNotificationService.cpp" />
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\PluginBrowserEditorPlugin.cpp" />
-    <ClCompile Include="..\..\..\Dia\DiaVisualDebugger\DebugLayerPanelPlugin.cpp">
-      <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ClCompile>
     <!-- DiaVisualDebugger -->
     <ClCompile Include="DiaVisualDebugger\TestDebugLayerManager.cpp">
-      <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ClCompile>
-    <ClCompile Include="DiaVisualDebugger\TestDebugLayerPanelPlugin.cpp">
       <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ClCompile Include="DiaVisualDebugger\TestFixedDrawLayer.cpp">
       <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\TestDebugLayerManagerStages.cpp">
+      <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\TestDebugPrimitive3D.cpp">
+      <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <!-- Geometry3D -->
+    <ClCompile Include="Geometry3D\TestDiaGeometry3DSerializers.cpp" />
+    <ClCompile Include="Geometry3D\TestSpatialGrid3DStress.cpp" />
+    <ClCompile Include="Geometry3D\TestIntersectionTestsEdge.cpp" />
+    <ClCompile Include="Geometry3D\TestSpatialGrid3D.cpp" />
+    <ClCompile Include="Geometry3D\TestIntersectionTests.cpp" />
+    <ClCompile Include="Geometry3D\TestAABB.cpp" />
+    <ClCompile Include="Geometry3D\TestOOBB.cpp" />
+    <ClCompile Include="Geometry3D\TestSphere.cpp" />
+    <ClCompile Include="Geometry3D\TestCapsule.cpp" />
+    <ClCompile Include="Geometry3D\TestTriangle.cpp" />
+    <ClCompile Include="Geometry3D\TestCylinder.cpp" />
+    <ClCompile Include="Geometry3D\TestRay3D.cpp" />
+    <ClCompile Include="Geometry3D\TestPlane3D.cpp" />
+    <ClCompile Include="Geometry3D\TestFrustum.cpp" />
+    <ClCompile Include="Geometry3D\TestSpline3D.cpp" />
+    <!-- DiaCamera2D -->
+    <ClCompile Include="DiaCamera2D\TestCameraRegistry.cpp" />
+    <ClCompile Include="DiaCamera2D\TestCameraBehaviours.cpp" />
+    <ClCompile Include="DiaCamera2D\TestCameraEdgeCasesAndStress.cpp" />
+    <!-- DiaLighting2D -->
+    <ClCompile Include="DiaLighting2D\TestLightRegistry.cpp" />
+    <!-- DiaLighting3D -->
+    <ClCompile Include="DiaLighting3D\TestLightRegistry3D.cpp" />
+    <ClCompile Include="DiaLighting3D\TestBehaviours3D.cpp" />
+    <ClCompile Include="DiaLighting3D\TestLightWidgetsDrawer.cpp" />
+    <ClCompile Include="DiaLighting3D\TestLightPathArcDrawer.cpp" />
+    <!-- DiaCamera3D -->
+    <ClCompile Include="DiaCamera3D\TestCamera3D.cpp" />
+    <ClCompile Include="DiaCamera3D\TestCameraRegistry3D.cpp" />
+    <ClCompile Include="DiaCamera3D\TestCameraBehaviourRegistry3D.cpp" />
+    <ClCompile Include="DiaCamera3D\TestBehaviours3D.cpp" />
+    <ClCompile Include="DiaCamera3D\TestCameraRegistryHealth3D.cpp" />
+    <!-- DiaScene2D -->
+    <ClCompile Include="DiaScene2D\TestScene2DFormat.cpp" />
+    <ClCompile Include="DiaScene2D\TestScene2DLoader.cpp" />
     <!-- Geometry2D -->
+    <ClCompile Include="Geometry2D\TestDiaGeometry2DSerializers.cpp" />
     <ClCompile Include="Geometry2D\TestGeometry2DVisualDebuggerStack.cpp" />
     <ClCompile Include="Geometry2D\TestSpatialGridSerializer.cpp" />
     <ClCompile Include="Geometry2D\TestShapePrimitives.cpp" />
@@ -294,6 +430,15 @@
     <ClCompile Include="Geometry2D\TestBVH.cpp" />
     <ClCompile Include="Geometry2D\TestQuadtree.cpp" />
     <ClCompile Include="Geometry2D\TestHexGrid.cpp" />
+    <ClCompile Include="Geometry2D\TestSpline.cpp" />
+    <!-- Picking -->
+    <ClCompile Include="Picking\TestPickingCore.cpp" />
+    <ClCompile Include="Picking\TestHexGridPickable.cpp" />
+    <ClCompile Include="Picking\TestSpatialGridPickable.cpp" />
+    <ClCompile Include="Picking\TestShapePickable.cpp" />
+    <ClCompile Include="Picking\TestPickingService2D.cpp" />
+    <ClCompile Include="Picking\TestInputStreamMouseButtons.cpp" />
+    <ClCompile Include="Picking\TestCameraViewport.cpp" />
     <!-- RigidBody2D -->
     <ClCompile Include="RigidBody2D\TestPhysicsBody.cpp" />
     <ClCompile Include="RigidBody2D\TestForceAndIntegration.cpp" />
@@ -312,13 +457,65 @@
     <ClCompile Include="RigidBody2D\TestRigidBodyStress.cpp" />
     <ClCompile Include="RigidBody2D\TestRigidBodyDeterminism.cpp" />
     <ClCompile Include="RigidBody2D\TestConservationLaws.cpp" />
-    <ClCompile Include="RigidBody2D\TestRigidBody2DVisualDebugger.cpp" />
-    <!-- DiaLogger -->
-    <ClCompile Include="DiaLogger\TestLogLevel.cpp" />
-    <ClCompile Include="DiaLogger\TestThreadLogBuffer.cpp" />
-    <ClCompile Include="DiaLogger\TestISink.cpp" />
-    <ClCompile Include="DiaLogger\TestLogger.cpp" />
-    <ClCompile Include="DiaLogger\TestAssertSinkBridge.cpp" />
+    <ClCompile Include="RigidBody2D\TestDiaRigidBody2DSerializers.cpp" />
+    <!-- DiaMetrics -->
+    <ClCompile Include="DiaMetrics\TestMetricGauge.cpp" />
+    <ClCompile Include="DiaMetrics\TestMetricCounter.cpp" />
+    <ClCompile Include="DiaMetrics\TestMetricHistogram.cpp" />
+    <ClCompile Include="DiaMetrics\TestMetricRegistry.cpp" />
+    <!-- DiaMailbox -->
+    <ClCompile Include="DiaMailbox\MailboxTypesTests.cpp" />
+    <ClCompile Include="DiaMailbox\TypedQueueTests.cpp" />
+    <ClCompile Include="DiaMailbox\SubscriptionTests.cpp" />
+    <ClCompile Include="DiaMailbox\RouterTests.cpp" />
+    <ClCompile Include="DiaMailbox\MailboxBoundaryTests.cpp" />
+    <ClCompile Include="DiaMailbox\MailboxStressTests.cpp" />
+    <!-- DiaEntityVisualDebugger -->
+    <ClCompile Include="DiaEntityVisualDebugger\TestPosComponent.cpp">
+      <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="DiaEntityVisualDebugger\TestEntityVisualDebuggerDrawers.cpp">
+      <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <!-- DiaEntity -->
+    <ClCompile Include="DiaEntity\DomainTests.cpp" />
+    <ClCompile Include="DiaEntity\TestComponent.cpp" />
+    <ClCompile Include="DiaEntity\ReflectionTests.cpp" />
+    <ClCompile Include="DiaEntity\BlueprintLoaderTests.cpp" />
+    <ClCompile Include="DiaEntity\BpTransformComponent.cpp" />
+    <ClCompile Include="DiaEntity\UpdateLoopTests.cpp" />
+    <ClCompile Include="DiaEntity\EntityRefTests.cpp" />
+    <ClCompile Include="DiaEntity\QuerySystemTests.cpp" />
+    <ClCompile Include="DiaEntity\EntityRouterTests.cpp" />
+    <ClCompile Include="DiaEntity\EntityRouterBusWiringTests.cpp" />
+    <ClCompile Include="DiaEntity\HierarchyTests.cpp" />
+    <ClCompile Include="DiaEntity\EditorInspectionTests.cpp" />
+    <ClCompile Include="DiaEntity\StressTests.cpp" />
+    <ClCompile Include="DiaEntity\IntegrationTests.cpp" />
+    <ClCompile Include="DiaEntity\DataFlowContractTests.cpp" />
+    <!-- DiaEntitySpatial -->
+    <ClCompile Include="DiaEntitySpatial\TestDiaEntitySpatial.cpp" />
+    <ClCompile Include="DiaEntitySpatial\TestEntitySpatialVisualDebugger.cpp" />
+    <!-- DiaObservation -->
+    <ClCompile Include="DiaObservation\Log\TestLogLevel.cpp" />
+    <ClCompile Include="DiaObservation\Log\TestThreadLogBuffer.cpp" />
+    <ClCompile Include="DiaObservation\Log\TestISink.cpp" />
+    <ClCompile Include="DiaObservation\Log\TestLogger.cpp" />
+    <ClCompile Include="DiaObservation\Log\TestAssertSinkBridge.cpp" />
+    <ClCompile Include="DiaObservation\Log\TestAsyncDrain.cpp" />
+    <ClCompile Include="DiaObservation\TestJsonEscape.cpp" />
+    <ClCompile Include="DiaObservation\Trace\TestTracer.cpp" />
+    <ClCompile Include="DiaObservation\Trace\TestTracerRingOverflow.cpp" />
+    <ClCompile Include="DiaObservation\Trace\TestTraceFileSink.cpp" />
+    <ClCompile Include="DiaObservation\Trace\TestScopedZoneEdgeCases.cpp" />
+    <ClCompile Include="DiaObservation\Profile\TestProfiler.cpp" />
+    <ClCompile Include="DiaObservation\Health\TestHealthReporterBase.cpp" />
+    <ClCompile Include="DiaObservation\Health\TestHealthRegistry.cpp" />
+    <ClCompile Include="DiaObservation\Metric\TestMetricsFileSink.cpp" />
+    <ClCompile Include="DiaObservation\Config\TestObservationConfigLoader.cpp" />
+    <ClCompile Include="DiaObservation\Session\TestSessionManagerTick.cpp" />
+    <ClCompile Include="DiaObservation\Session\TestSessionManagerRetention.cpp" />
+    <ClCompile Include="DiaObservation\Capture\TestCaptureManager.cpp" />
     <!-- PipelineEditor -->
     <ClCompile Include="PipelineEditor\TestPipelineLogTailer.cpp" />
     <ClCompile Include="PipelineEditor\TestPipelineEditorPluginBridge.cpp" />
@@ -346,6 +543,7 @@
     <ClCompile Include="Rig\TestBlendPoses.cpp" />
     <ClCompile Include="Rig\TestSkeletonJson.cpp" />
     <ClCompile Include="Rig\TestSkeletonComponent.cpp" />
+    <ClCompile Include="Rig2D\TestDiaRig2DSerializers.cpp" />
     <ClCompile Include="Rig2D\TestRig2DGolden.cpp" />
     <ClCompile Include="Rig2D\TestRig2DInvariant.cpp" />
     <ClCompile Include="Rig2D\TestRig2DStress.cpp" />
@@ -371,6 +569,7 @@
     <ClCompile Include="IK\TestIKDeterminism.cpp" />
     <ClCompile Include="IK\TestIKIntegration.cpp" />
     <ClCompile Include="IK\TestIK2DVisualDebuggerStack.cpp" />
+    <ClCompile Include="IK\TestDiaIK2DSerializers.cpp" />
     <!-- StateMachine -->
     <ClCompile Include="StateMachine\TestFlatStateMachine.cpp" />
     <ClCompile Include="StateMachine\TestHierarchicalStateMachine.cpp" />
@@ -389,16 +588,23 @@
     <ClCompile Include="DiaAssetRuntime\TestDebugCommands.cpp" />
     <ClCompile Include="DiaAssetRuntime\TestGetAllAssets.cpp" />
     <ClCompile Include="DiaAssetRuntime\TestReset.cpp" />
+    <ClCompile Include="DiaAssetRuntime\TestAutoValidation.cpp" />
+    <ClCompile Include="DiaAssetRuntime\TestTextureHandler.cpp" />
+    <!-- DiaUIUltralight -->
+    <ClCompile Include="DiaUIUltralight\TestUIHandler.cpp" />
     <!-- DiaAssetCatalogue -->
     <ClCompile Include="DiaAssetCatalogue\TestJsonDefinitionLoader.cpp" />
     <ClCompile Include="DiaAssetCatalogue\TestAssetTypeFramework.cpp" />
     <ClCompile Include="DiaAssetCatalogue\TestIdentityRelationshipBackbone.cpp" />
     <ClCompile Include="DiaAssetCatalogue\TestCatalogueAutomation.cpp" />
     <ClCompile Include="DiaAssetCatalogue\TestDiaAssetCatalogueExhaustive.cpp" />
+    <!-- DiaGame -->
+    <ClCompile Include="DiaGame\TestJsonDiaGameSerializer.cpp" />
     <!-- DiaAssetCatalogueEditor -->
     <ClCompile Include="DiaAssetCatalogueEditor\TestDiaAssetCatalogueEditorExhaustive.cpp" />
-    <!-- DiaAssetRuntimeEditor -->
-    <ClCompile Include="DiaAssetRuntimeEditor\TestDiaAssetRuntimeEditorExhaustive.cpp" />
+    <ClCompile Include="DiaAssetCatalogueEditor\IntegrationTestAssetCatalogueEditorPlugin.cpp" />
+    <ClCompile Include="DiaAssetCatalogueEditor\IntegrationTestAutoRelationshipTracking.cpp" />
+    <!-- DiaAssetRuntimeInspector -->
     <!-- Animation2D -->
     <ClCompile Include="Animation2D\SpringParamUtilsTests.cpp" />
     <ClCompile Include="Animation2D\SpringChainTests.cpp" />
@@ -410,27 +616,308 @@
     <ClCompile Include="Animation2D\TestUtilitiesTests.cpp" />
     <ClCompile Include="Animation2D\IntegrationTests.cpp" />
     <ClCompile Include="Animation2D\TestAnimation2DVisualDebuggerStack.cpp" />
-    <!-- DiaVisualDebuggerConsole + DiaImGui -->
-    <ClCompile Include="DiaVisualDebugger\TestDiaVisualDebuggerConsole.cpp" />
-    <!-- ImGui sources (required by DiaVisualDebuggerConsole.lib) -->
-    <ClCompile Include="$(ProjectDir)../../../External/imgui/imgui.cpp">
-      <AdditionalIncludeDirectories>$(ProjectDir)../../../External/imgui/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClCompile Include="$(ProjectDir)../../../External/imgui/imgui_draw.cpp">
-      <AdditionalIncludeDirectories>$(ProjectDir)../../../External/imgui/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClCompile Include="$(ProjectDir)../../../External/imgui/imgui_tables.cpp">
-      <AdditionalIncludeDirectories>$(ProjectDir)../../../External/imgui/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClCompile Include="$(ProjectDir)../../../External/imgui/imgui_widgets.cpp">
-      <AdditionalIncludeDirectories>$(ProjectDir)../../../External/imgui/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
+    <ClCompile Include="Animation2D\TestDiaAnimation2DSerializers.cpp" />
+    <!-- DiaSDL -->
+    <ClCompile Include="DiaSDL\TestDiaSDL.cpp" />
+    <!-- CluicheTest -->
+    <ClCompile Include="CluicheTest\TestResultsRegistryTests.cpp" />
+    <ClCompile Include="CluicheTest\TestStageHUDTests.cpp" />
+    <ClCompile Include="..\..\CluicheTest\Modules\TestStages\TestResultsRegistry.cpp" />
+    <ClCompile Include="CluicheTest\GuardOrderBusAdapterTests.cpp" />
+    <ClCompile Include="..\..\CluicheTest\Messages\GuardOrderBusAdapter.cpp" />
+    <ClCompile Include="..\..\CluicheTest\Modules\TestStages\TestStageModuleBase.cpp" />
+    <ClCompile Include="..\..\CluicheTest\Modules\TestStages\BehaviourTreeTestStageModule.cpp" />
+    <!-- DiaImGui -->
+    <ClCompile Include="DiaVisualDebugger\TestCoord2DDrawers.cpp" />
+    <ClCompile Include="ApplicationFlow\TestPUTiming.cpp" />
+    <ClCompile Include="ApplicationFlow\TestStreamTelemetry.cpp" />
+    <ClCompile Include="Integration\TestLiveConnectionPluginBase.cpp" />
+    <ClCompile Include="Editor\TestEditorActionRegistry.cpp" />
+    <ClCompile Include="Editor\TestEditorActionQueue.cpp" />
+    <ClCompile Include="DiaEntityInspector\TestControllers.cpp" />
     <!-- Google Test Source Files - Compiled directly into project -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
       <AdditionalIncludeDirectories>$(ProjectDir)../../../External/googletest/googletest/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <ClCompile Include="DiaAssetRuntimeInspector\TestDiaAssetRuntimeInspectorExhaustive.cpp" />
+    <ClCompile Include="DiaSceneEditor\TestSceneEditorNewActions.cpp" />
+    <ClCompile Include="DiaApplicationFlowEditor\TestAppFlowEditorRegistryActions.cpp" />
+    <ClCompile Include="..\..\..\Cluiche\CluicheEditor\Plugins\DiaChatPlugin\ChatPanelBridge.cpp" />
+    <ClCompile Include="DiaChatPlugin\TestChatPanelBridge.cpp" />
+    <!-- DiaMesh3D -->
+    <ClCompile Include="DiaMesh3D\TestMesh3DAsset.cpp" />
+    <ClCompile Include="DiaMesh3D\TestMesh3DBinaryReader.cpp" />
+    <ClCompile Include="DiaMesh3D\TestMesh3DAssetHandler.cpp" />
+    <ClCompile Include="DiaMesh3D\TestUnitCube.cpp" />
+    <ClCompile Include="DiaMesh3D\TestMeshBoundsDrawer.cpp">
+      <PreprocessorDefinitions Condition="'$(Configuration)'=='Debug' or '$(Configuration)'=='Debug-Asan' or '$(Configuration)'=='Debug-Ubsan'">DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="DiaMesh3D\TestMeshOriginDrawer.cpp">
+      <PreprocessorDefinitions Condition="'$(Configuration)'=='Debug' or '$(Configuration)'=='Debug-Asan' or '$(Configuration)'=='Debug-Ubsan'">DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="DiaMesh3D\TestMeshStatsDrawer.cpp">
+      <PreprocessorDefinitions Condition="'$(Configuration)'=='Debug' or '$(Configuration)'=='Debug-Asan' or '$(Configuration)'=='Debug-Ubsan'">DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <!-- DiaBgfx3D -->
+    <ClCompile Include="DiaBgfx3D\TestMaterialRegistry.cpp" />
+    <ClCompile Include="DiaBgfx3D\TestMeshGpuCache.cpp" />
+    <ClCompile Include="RigidBody2D\TestGravitySettle.cpp" />
+    <ClCompile Include="RigidBody2D\TestCircleVsPolyContact.cpp" />
+    <ClCompile Include="RigidBody2D\\TestRestingContact.cpp" />
+    <ClCompile Include="DiaBgfx\TestShaderProgram.cpp" />
+    <ClCompile Include="CaptureTest\TestFrameCaptureWriter.cpp" />
+    <ClCompile Include="CaptureTest\TestFrameDiff.cpp" />
+    <ClCompile Include="CaptureTest\TestCaptureReportWriter.cpp" />
+    <ClCompile Include="CaptureTest\TestMetricsWriter.cpp" />
+    <ClCompile Include="CaptureTest\TestExpectationEvaluator.cpp" />
+    <ClCompile Include="DiaBgfx3D\TestMeshRenderer.cpp" />
+    <ClCompile Include="DiaBgfx3D\TestMeshPassLighting.cpp" />
+    <ClCompile Include="DiaLighting3D\TestLightPathBehaviour3D.cpp" />
+    <ClCompile Include="DiaBlackboard\TestBlackboard.cpp" />
+    <ClCompile Include="DiaAIBudget\TestAIBudgetScheduler.cpp" />
+    <ClCompile Include="DiaAIBudget\TestAIBudgetSchedulerExtended.cpp" />
+    <ClCompile Include="DiaAIBudget\TestAIBudgetModule.cpp" />
+    <ClCompile Include="DiaCondition\TestConditionRegistry.cpp" />
+    <ClCompile Include="DiaCondition\TestConditionRegistryBoundary.cpp" />
+    <ClCompile Include="DiaCondition\TestConditionExpr.cpp" />
+    <ClCompile Include="DiaCondition\TestConditionExprBoundary.cpp" />
+    <ClCompile Include="DiaCondition\TestConditionGuardAdapter.cpp" />
+    <ClCompile Include="DiaCondition\TestConditionGuardAdapterExtended.cpp" />
+    <!-- DiaRules -->
+    <ClCompile Include="DiaRules\TestRuleActionRegistry.cpp" />
+    <ClCompile Include="DiaRules\TestRuleSet.cpp" />
+    <ClCompile Include="DiaRules\TestRuleSetComponent.cpp" />
+    <ClCompile Include="DiaRules\TestRulesTestHelpers.cpp" />
+    <!-- DiaObjective -->
+    <ClCompile Include="DiaObjective\TestObjectiveSet.cpp" />
+    <ClCompile Include="DiaObjective\TestObjectiveSetComponent.cpp" />
+    <ClCompile Include="DiaObjective\TestCapturingObserver.cpp" />
+    <ClCompile Include="DiaObjective\TestObjectiveSetBoundary.cpp" />
+    <ClCompile Include="DiaObjective\TestObjectiveSetStress.cpp" />
+    <!-- DiaTriggerScript -->
+    <ClCompile Include="DiaTriggerScript\TestTriggerActionRegistry.cpp" />
+    <ClCompile Include="DiaTriggerScript\TestTriggerScriptModule.cpp" />
+    <ClCompile Include="DiaTriggerScript\TestTriggerScriptTestHelpers.cpp" />
+    <!-- DiaEntitySpawner -->
+    <ClCompile Include="DiaEntitySpawner\TestEntitySpawner.cpp" />
+    <ClCompile Include="DiaEntitySpawner\SpawnDespawnBusBroadcastTests.cpp" />
+    <!-- DiaMessageBus -->
+    <ClCompile Include="DiaMessageBus\TestDiaMessageBusCore.cpp" />
+    <ClCompile Include="DiaMessageBus\EntityRouterRegistrationTest.cpp" />
+    <ClCompile Include="DiaMessageBus\TestDiaMessageBusLedgerHistory.cpp" />
+    <ClCompile Include="DiaMessageBus\TestBusHealthReporter.cpp" />
+    <!-- DiaUtilityAI -->
+    <ClCompile Include="DiaUtilityAI\TestResponseCurve.cpp" />
+    <ClCompile Include="DiaUtilityAI\TestGroupConsiderationContext.cpp" />
+    <ClCompile Include="DiaUtilityAI\TestUtilitySet.cpp" />
+    <ClCompile Include="DiaUtilityAI\TestUtilitySetAsync.cpp" />
+    <ClCompile Include="DiaUtilityAI\TestUtilitySetComponent.cpp" />
+    <ClCompile Include="DiaUtilityAI\TestUtilityTestHelpers.cpp" />
+    <ClCompile Include="DiaUtilityAI\TestPersonalityProfile.cpp" />
+    <ClCompile Include="DiaUtilityAI\TestResponseCurveExtended.cpp" />
+    <ClCompile Include="DiaUtilityAI\TestUtilitySetExtended.cpp" />
+    <ClCompile Include="DiaUtilityAI\TestUtilityIntegration.cpp" />
+    <ClCompile Include="DiaOrder\TestOrderQueue.cpp" />
+    <!-- DiaBehaviourTree -->
+    <ClCompile Include="DiaBehaviourTree\TestFoundationTypes.cpp" />
+    <ClCompile Include="DiaBehaviourTree\TestBehaviourTreeAsset.cpp" />
+    <ClCompile Include="DiaBehaviourTree\TestBehaviourTreeComponent.cpp" />
+    <ClCompile Include="DiaBehaviourTree\TestLeafNodes.cpp" />
+    <ClCompile Include="DiaBehaviourTree\TestControlFlowNodes.cpp" />
+    <ClCompile Include="DiaBehaviourTree\TestDecoratorNodes.cpp" />
+    <!-- DiaHTN -->
+    <ClCompile Include="DiaHTN\TestOperatorRegistry.cpp" />
+    <ClCompile Include="DiaHTN\TestHTNDomain.cpp" />
+    <ClCompile Include="DiaHTN\TestHTNPlan.cpp" />
+    <ClCompile Include="DiaHTN\TestHTNPlanner.cpp" />
+    <ClCompile Include="DiaHTN\TestHTNPlannerComponent.cpp" />
+    <ClCompile Include="DiaHTN\TestHTNTestHelpers.cpp" />
+    <ClCompile Include="DiaPathfinding\TestPathfinding.cpp" />
+    <ClCompile Include="DiaPathfinding\TestPathfindingGolden.cpp" />
+    <ClCompile Include="DiaPathfinding\TestPathfindingBoundary.cpp" />
+    <ClCompile Include="CluicheGameBaseline\TestBlackboardInspectorSource.cpp" />
+    <ClCompile Include="CluicheGameBaseline\TestAIInspectorModule.cpp" />
+    <ClCompile Include="CluicheGameBaseline\TestEconomyInspectorSources.cpp" />
+    <ClCompile Include="DiaHTN\TestRuleActionBridge.cpp" />
+    <ClCompile Include="DiaHTN\TestHTNIntegration.cpp" />
+    <!-- DiaFlowField -->
+    <ClCompile Include="DiaFlowField\TestFlowField.cpp" />
+    <ClCompile Include="DiaFlowField\TestComputeFlowField.cpp" />
+    <ClCompile Include="DiaFlowField\TestFlowFieldCache.cpp" />
+    <ClCompile Include="DiaFlowField\TestFlowFieldAdapters.cpp" />
+    <ClCompile Include="DiaFlowField\TestFlowFieldBoundary.cpp" />
+    <ClCompile Include="DiaFlowField\TestFlowFieldGolden.cpp" />
+    <ClCompile Include="DiaFlowField\TestFlowFieldInvariant.cpp" />
+    <ClCompile Include="DiaFlowField\TestFlowFieldStress.cpp" />
+    <!-- DiaScalarField -->
+    <ClCompile Include="DiaScalarField\TestScalarFieldTypes.cpp" />
+    <ClCompile Include="DiaScalarField\TestScalarFieldCore.cpp" />
+    <ClCompile Include="DiaScalarField\TestScalarFieldWriteShapes.cpp" />
+    <ClCompile Include="DiaScalarField\TestScalarFieldGradient.cpp" />
+    <ClCompile Include="DiaScalarField\TestScalarFieldSpatialQueries.cpp" />
+    <ClCompile Include="DiaScalarField\TestScalarFieldCombine.cpp" />
+    <ClCompile Include="DiaScalarField\TestScalarFieldInvariant.cpp" />
+    <ClCompile Include="DiaScalarField\TestScalarFieldTestHelpers.cpp" />
+    <ClCompile Include="DiaScalarField\TestScalarFieldObservation.cpp" />
+    <ClCompile Include="DiaScalarField\TestScalarFieldEdgeCases.cpp" />
+    <ClCompile Include="DiaScalarField\TestScalarFieldVisualDebugger.cpp" />
+    <ClCompile Include="DiaScalarField\TestDiaScalarFieldAdapter.cpp" />
+    <!-- DiaSteering -->
+    <ClCompile Include="DiaSteering\TestSteeringBehaviours.cpp" />
+    <ClCompile Include="DiaSteering\TestSteeringPipeline.cpp" />
+    <ClCompile Include="DiaSteering\TestSteeringSystem.cpp" />
+    <ClCompile Include="DiaSensor\TestDiaSensor.cpp" />
+    <!-- DiaEconomy -->
+    <ClCompile Include="DiaEconomy\TestDiaEconomy.cpp" />
+    <ClCompile Include="DiaEconomy\EconomyBusAdapterTests.cpp" />
+    <!-- DiaAttribute -->
+    <ClCompile Include="DiaAttribute\TestDiaAttributeCore.cpp" />
+    <ClCompile Include="DiaAttribute\TestDiaAttributeConditionalModifiers.cpp" />
+    <ClCompile Include="DiaAttribute\TestDiaAttributeChangeNotifications.cpp" />
+    <ClCompile Include="DiaAttribute\TestDiaAttributeAccessorBridge.cpp" />
+    <ClCompile Include="DiaAttribute\TestDiaAttributeSaveSerialization.cpp" />
+    <ClCompile Include="DiaSaveGame\TestSaveLoadContext.cpp" />
+    <ClCompile Include="DiaSaveGame\TestSaveManifest.cpp" />
+    <ClCompile Include="DiaSaveGame\TestSaveManager.cpp" />
+    <ClCompile Include="DiaSaveGame\TestSaveGameMigration.cpp" />
+    <ClCompile Include="DiaSaveGame\TestSaveManagerAsync.cpp" />
+    <ClCompile Include="DiaSaveGame\TestSaveManagerEvents.cpp" />
+    <ClCompile Include="DiaSaveGame\TestSlotManager.cpp" />
+    <ClCompile Include="DiaSaveGame\TestSaveRegistry.cpp" />
+    <ClCompile Include="DiaVisualDebugger\\TestDiaDebugDomainRegistry.cpp" />
+    <ClCompile Include="DiaRigidBody2DVisualDebugger\TestRigidBody2DDebugDomain.cpp" />
+    <ClCompile Include="DiaSoftBody2DVisualDebugger\TestSoftBody2DDebugDomain.cpp" />
+    <ClCompile Include="DiaAnimation2DVisualDebugger\TestAnimation2DDebugDomain.cpp" />
+    <ClCompile Include="DiaRig2DVisualDebugger\TestRig2DDebugDomain.cpp" />
+    <ClCompile Include="DiaIK2DVisualDebugger\TestIK2DDebugDomain.cpp" />
+    <ClCompile Include="DiaUtilityAIVisualDebugger\TestUtilityAIDebugDomain.cpp" />
+    <ClCompile Include="DiaStateMachineVisualDebugger\TestStateMachineVisualDebugger.cpp" />
+    <ClCompile Include="DiaHTNVisualDebugger\TestHTNVisualDebugger.cpp" />
+    <ClCompile Include="DiaMailboxVisualDebugger\TestMailboxVisualDebugger.cpp" />
+    <ClCompile Include="DiaBlackboardVisualDebugger\TestBlackboardVisualDebugger.cpp" />
+    <ClCompile Include="DiaAttributeVisualDebugger\TestAttributeVisualDebugger.cpp" />
+    <ClCompile Include="DiaAIBudgetVisualDebugger\TestAIBudgetVisualDebugger.cpp" />
+    <ClCompile Include="DiaRulesVisualDebugger\TestRulesVisualDebugger.cpp" />
+    <ClCompile Include="DiaSteeringVisualDebugger\TestSteeringVisualDebugger.cpp" />
+    <ClCompile Include="DiaPathfindingVisualDebugger\TestPathfindingVisualDebugger.cpp" />
+    <ClCompile Include="DiaFlowFieldVisualDebugger\TestFlowFieldVisualDebugger.cpp" />
+    <ClCompile Include="DiaEntitySpatialVisualDebugger\TestEntitySpatialVisualDebugger.cpp">
+      <ObjectFileName>$(IntDir)DiaEntitySpatialVisualDebugger\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="DiaScalarFieldVisualDebugger\TestScalarFieldVisualDebugger.cpp">
+      <ObjectFileName>$(IntDir)DiaScalarFieldVisualDebugger\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="DiaAssetRuntimeVisualDebugger\TestAssetRuntimeDebugDomain.cpp" />
+    <ClCompile Include="DiaGeometry2DVisualDebugger\TestGeometry2DDebugDomain.cpp" />
+    <ClCompile Include="DiaScene2DVisualDebugger\TestScene2DDebugDomain.cpp" />
+    <ClCompile Include="DiaMesh3DVisualDebugger\TestMesh3DDebugDomain.cpp" />
+    <ClCompile Include="DiaLighting3DVisualDebugger\TestLighting3DDebugDomain.cpp" />
+    <ClCompile Include="DiaVisualDebugger\TestCoord2DDebugDomain.cpp" />
+    <ClCompile Include="DiaVisualDebugger\TestCoord3DDebugDomain.cpp" />
+    <ClCompile Include="DiaAICallout\CalloutEmitTests.cpp" />
+    <ClCompile Include="DiaAICallout\CalloutQueryTests.cpp" />
+    <ClCompile Include="DiaAICallout\CalloutClaimReleaseTests.cpp" />
+    <ClCompile Include="DiaAICallout\CalloutTTLTests.cpp" />
+    <ClCompile Include="DiaAICallout\CalloutObserverBusAdapterTests.cpp" />
+    <ClCompile Include="DiaAICalloutVisualDebugger\TestCalloutRegistryDebugger.cpp" />
+    <ClCompile Include="DiaBehaviourTree\TestEventListener.cpp" />
+    <ClCompile Include="DiaBehaviourTree\TestBehaviourTreeSystem.cpp" />
+    <ClCompile Include="DiaBehaviourTree\TestTestHelpers.cpp" />
+    <ClCompile Include="DiaBehaviourTree\TestExhaustive.cpp" />
+    <!-- DiaBehaviourTreeVisualDebugger -->
+    <ClCompile Include="DiaBehaviourTreeVisualDebugger\TestBehaviourTreeVisualDebugger.cpp" />
+    <ClCompile Include="DiaGridVisibility\TestGridVisibilitySystem.cpp" />
+    <ClCompile Include="DiaGridVisibility\TestGridVisibilityTypes.cpp" />
+    <ClCompile Include="DiaGridVisibility\TestGridVisibilityExhaustive.cpp" />
+    <ClCompile Include="DiaGridVisibilityVisualDebugger\TestGridVisibilityDebugDomain.cpp" />
+    <ClCompile Include="Animation2D\ClipCompletionBusAdapterTests.cpp" />
+    <ClCompile Include="DiaAssetRuntime\TestListenerNotification.cpp" />
+    <ClCompile Include="DiaAssetRuntime\TestAssetRuntimeBusAdapter.cpp" />
+    <ClCompile Include="DiaBehaviourTree\BehaviourTreeBusAdapterTests.cpp" />
+    <ClCompile Include="DiaMessageBus\TestMessageBusDebugDomain.cpp" />
+    <ClCompile Include="RigidBody2D\TestPhysicsBusAdapter.cpp" />
+    <ClCompile Include="Input\TestInputBusAdapter.cpp" />
+    <ClCompile Include="DiaMessageBus\TestFlushAdapterIntegration.cpp" />
+    <ClCompile Include="Core\SimTime\TestSimTimeContext.cpp" />
+    <ClCompile Include="ApplicationFlow\TestPUTypedModules.cpp" />
+    <ClCompile Include="Core\SimTime\TestSimTimeDomain.cpp" />
+    <ClCompile Include="ApplicationFlow\TestProcessingUnitAccumulator.cpp" />
+    <ClCompile Include="DiaSimTime\TestDiaRenderTime.cpp" />
+    <ClCompile Include="Core\SimTime\TestSimTimeDomainRegistry.cpp" />
+    <ClCompile Include="ApplicationFlow\TestProcessingUnitDomainRegistry.cpp" />
+    <ClCompile Include="DiaSimTime\TestSimTimeScheduler.cpp" />
+    <ClCompile Include="DiaSimTime\TestISimTimeBudgetedSystem.cpp" />
+    <ClCompile Include="DiaSimTime\TestSimTimeRegistry.cpp" />
+    <ClCompile Include="DiaSimTime\TestSimTimeBudget.cpp" />
+    <ClCompile Include="DiaSimTime\TestDiaSimTimeModule.cpp" />
+    <ClCompile Include="DiaSimTime\TestSimTimeSaveState.cpp" />
+    <ClCompile Include="DiaPathfinding\TestPathfindingSystemBudgetAdapter.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
+      <Project>{C3D4E5F6-A7B8-9012-CDEF-012345678901}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaLighting2D\DiaLighting2D.vcxproj">
+      <Project>{C5D6E7F8-A9B0-1234-CDEF-012345678903}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaLighting3D\DiaLighting3D.vcxproj">
+      <Project>{E7F8A9B0-C1D2-3456-EF01-234567890A05}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaCamera3D\DiaCamera3D.vcxproj">
+      <Project>{F8A9B0C1-D2E3-4567-F012-345678901B06}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaScene2D\DiaScene2D.vcxproj">
+      <Project>{D6E7F8A9-B0C1-2345-DEF0-123456789004}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaScene2DVisualDebugger\DiaScene2DVisualDebugger.vcxproj">
+      <Project>{A1B2C3D4-E5F6-7890-ABCD-EF1234567895}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaThreading\DiaThreading.vcxproj">
+      <Project>{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaMailbox\DiaMailbox.vcxproj">
+      <Project>{C4D5E6F7-A8B9-0123-CDEF-456789ABCDEF}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaMessageBus\DiaMessageBus.vcxproj">
+      <Project>{D5E6F7A8-B9C0-1234-DEF0-567890ABCDEF}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaSimTime\DiaSimTime.vcxproj">
+      <Project>{6AF5866D-8687-4A93-915B-0B4B738F56CD}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaAICallout\DiaAICallout.vcxproj">
+      <Project>{F0A1B2C3-D4E5-6789-0F1A-2B3C4D5E6F78}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaEntity\DiaEntity.vcxproj">
+      <Project>{D9E0F1A2-B3C4-5678-9DEF-012345678903}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaEntitySpatial\DiaEntitySpatial.vcxproj">
+      <Project>{E5F6A7B8-C9D0-1234-ABCD-567890EF0123}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaEntityVisualDebugger\DiaEntityVisualDebugger.vcxproj">
+      <Project>{B3C4D5E6-F7A8-9012-BCDE-F12345678901}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaGeometry3D\DiaGeometry3D.vcxproj">
+      <Project>{B4C5D6E7-F8A9-0123-DEF0-123456789012}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaGraphics3D\DiaGraphics3D.vcxproj">
+      <Project>{C5D6E7F8-A9B0-1234-EF01-234567890123}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaAssetCatalogue\DiaAssetCatalogue.vcxproj">
       <Project>{A8B9C0D1-E2F3-4567-8901-ABCDEF012345}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
@@ -439,16 +926,40 @@
       <Project>{C9D0E1F2-A3B4-5678-9CDE-F01234567890}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaBgfx\DiaBgfx.vcxproj">
+      <Project>{a1b2c3d4-e5f6-7890-1234-abcdef012345}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaAssetCatalogueEditor\DiaAssetCatalogueEditor.vcxproj">
       <Project>{D1E2F3A4-B5C6-7890-DEFA-012345678901}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Dia\DiaAssetRuntimeEditor\DiaAssetRuntimeEditor.vcxproj">
+    <ProjectReference Include="..\..\..\Dia\DiaEntityTemplateEditor\DiaBlueprintEditor.vcxproj">
+      <Project>{E3F4A5B6-C7D8-9012-DEFA-BC1234567890}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaSceneEditor\DiaSceneEditor.vcxproj">
+      <Project>{F2A3B4C5-D6E7-8901-BCDE-F0123456789A}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaAssetRuntimeInspector\DiaAssetRuntimeInspector.vcxproj">
       <Project>{E2F3A4B5-C6D7-8901-EFAB-123456789012}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaEntityInspector\DiaEntityInspector.vcxproj">
+      <Project>{A3B4C5D6-E7F8-9012-ABCD-EF1234567890}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaGeometry2D\DiaGeometry2D.vcxproj">
       <Project>{A3C4D5E6-F7B8-9012-CDEF-012345678901}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaPicking\DiaPicking.vcxproj">
+      <Project>{E1F2A3B4-C5D6-7890-1234-567890ABCDE1}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaGeometry2DPicking\DiaGeometry2DPicking.vcxproj">
+      <Project>{F2A3B4C5-D6E7-8901-2345-678901BCDEF2}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaRigidBody2D\DiaRigidBody2D.vcxproj">
@@ -457,6 +968,14 @@
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaRigidBody2DVisualDebugger\DiaRigidBody2DVisualDebugger.vcxproj">
       <Project>{A2B3C4D5-E6F7-8901-BCDE-F01234567891}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaMesh3DVisualDebugger\DiaMesh3DVisualDebugger.vcxproj">
+      <Project>{E3F4A5B6-C7D8-9012-EF01-234567890ABC}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaLighting3DVisualDebugger\DiaLighting3DVisualDebugger.vcxproj">
+      <Project>{F2A3B4C5-D6E7-8901-FA23-B4C5D6E78901}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaSoftBody2D\DiaSoftBody2D.vcxproj">
@@ -491,8 +1010,63 @@
       <Project>{E5F6A7B8-C9D0-1234-EF01-345678901234}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Dia\DiaApplicationEditor\DiaApplicationEditor.vcxproj">
+    <ProjectReference Include="..\..\..\Dia\DiaUtilityAIVisualDebugger\DiaUtilityAIVisualDebugger.vcxproj">
+      <Project>{F3A4B5C6-D7E8-9012-F034-567890123456}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaStateMachineVisualDebugger\DiaStateMachineVisualDebugger.vcxproj">
+      <Project>{C1D2E3F4-A5B6-7890-CD12-EF3456789012}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaHTNVisualDebugger\DiaHTNVisualDebugger.vcxproj">
+      <Project>{B2C3D4E5-F6A7-8012-BCDE-F01234567891}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaMailboxVisualDebugger\DiaMailboxVisualDebugger.vcxproj">
+      <Project>{A3B4C5D6-E7F8-9012-A3B4-C5D6E7F89012}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaAICalloutVisualDebugger\DiaAICalloutVisualDebugger.vcxproj">
+      <Project>{01A2B3C4-D5E6-7890-A1B2-C3D4E5F06789}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaBlackboardVisualDebugger\DiaBlackboardVisualDebugger.vcxproj">
+      <Project>{D2E3F4A5-B6C7-8901-DE23-F04567890123}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaAIBudgetVisualDebugger\DiaAIBudgetVisualDebugger.vcxproj">
+      <Project>{E3F4A5B6-C7D8-9012-EF34-567890123456}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaRulesVisualDebugger\DiaRulesVisualDebugger.vcxproj">
+      <Project>{A4B6C8D0-E2F4-A6B8-C0D2-E4F6A8B0C2D4}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaSteeringVisualDebugger\DiaSteeringVisualDebugger.vcxproj">
+      <Project>{F4A5B6C7-D8E9-0123-F045-678901234567}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaPathfindingVisualDebugger\DiaPathfindingVisualDebugger.vcxproj">
+      <Project>{E9F0A1B2-C3D4-5678-EFAB-901234567890}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaEntitySpatialVisualDebugger\DiaEntitySpatialVisualDebugger.vcxproj">
+      <Project>{A5B6C7D8-E9F0-1234-ABCD-EF5678901234}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaScalarFieldVisualDebugger\DiaScalarFieldVisualDebugger.vcxproj">
+      <Project>{D8C7B6A5-F0E9-4321-DCBA-FE8765432109}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaAssetRuntimeVisualDebugger\DiaAssetRuntimeVisualDebugger.vcxproj">
+      <Project>{D3E4F5A6-B7C8-9012-DEFA-234567890ABC}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaApplicationFlowEditor\DiaApplicationFlowEditor.vcxproj">
       <Project>{B1C2D3E4-F5A6-7890-BCDE-F01234567890}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaApplicationFlowInspector\DiaApplicationFlowInspector.vcxproj">
+      <Project>{C1D2E3F4-A5B6-7890-CDEF-012345678901}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaGame\DiaGame.vcxproj">
       <Project>{A1B2C3D4-E5F6-7890-ABCD-EF0123456789}</Project>
@@ -503,19 +1077,104 @@
     <ProjectReference Include="..\..\..\Dia\DiaEditor\DiaEditor.vcxproj">
       <Project>{f1a2b3c4-d5e6-7890-abcd-ef1234567890}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Dia\DiaLogger\DiaLogger.vcxproj">
+    <ProjectReference Include="..\..\..\Dia\DiaObservation\DiaObservation.vcxproj">
       <Project>{7a8b9c0d-e1f2-3456-7890-abcdef012345}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaStateMachine\DiaStateMachine.vcxproj">
       <Project>{E3F4A5B6-C7D8-9012-EFAB-334455667788}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaBlackboard\DiaBlackboard.vcxproj">
+      <Project>{186D9CD5-3D3E-46F1-9C35-67F6F11E829A}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaAIBudget\DiaAIBudget.vcxproj">
+      <Project>{C9D0E1F2-A3B4-5678-90AB-CDEF01234567}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaCondition\DiaCondition.vcxproj">
+      <Project>{D4E5F6A7-B8C9-4012-DEFA-123456789012}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaRules\DiaRules.vcxproj">
+      <Project>{C7D8E9F0-A1B2-3456-CDEF-012345678901}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaObjective\DiaObjective.vcxproj">
+      <Project>{A5B6C7D8-E9F0-1234-5678-901234567890}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaTriggerScript\DiaTriggerScript.vcxproj">
+      <Project>{B6C7D8E9-F0A1-2345-6789-ABCDEF012345}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaEntitySpawner\DiaEntitySpawner.vcxproj">
+      <Project>{F4A5B6C7-D8E9-0123-ABCD-EF0123456789}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaUtilityAI\DiaUtilityAI.vcxproj">
+      <Project>{E2F3A4B5-C6D7-8901-EF23-456789012345}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaBehaviourTree\DiaBehaviourTree.vcxproj">
+      <Project>{C0D1E2F3-A4B5-6789-C0D1-E2F3A4B56789}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaBehaviourTreeVisualDebugger\DiaBehaviourTreeVisualDebugger.vcxproj">
+      <Project>{A1B2C3D4-E5F6-7890-A1B2-C3D4E5F67890}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaHTN\DiaHTN.vcxproj">
+      <Project>{F4B5C6D7-E8F9-0123-A456-789012345678}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaOrder\DiaOrder.vcxproj">
+      <Project>{A1B2C3D4-E5F6-7890-1234-567890ABCDEF}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaPathfinding\DiaPathfinding.vcxproj">
+      <Project>{B5C6D7E8-F9A0-1234-5678-9ABCDEF01234}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaFlowField\DiaFlowField.vcxproj">
+      <Project>{A5B6C7D8-E9F0-1234-5678-90ABCDEF1234}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaFlowFieldVisualDebugger\DiaFlowFieldVisualDebugger.vcxproj">
+      <Project>{C2D3E4F5-A6B7-8901-CDEF-123456789AB0}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaSteering\DiaSteering.vcxproj">
+      <Project>{A7B8C9D0-E1F2-3456-7890-ABCDEF012350}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaSensor\DiaSensor.vcxproj">
+      <Project>{F3A4B5C6-D7E8-9012-ABCD-EF0123456789}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaEconomy\DiaEconomy.vcxproj">
+      <Project>{6E2AFB11-772C-4552-B065-D50083E5787D}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaAttribute\DiaAttribute.vcxproj">
+      <Project>{A1D14778-3B62-4B8F-9C2E-DA1147710001}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaAttributeVisualDebugger\DiaAttributeVisualDebugger.vcxproj">
+      <Project>{85715DEF-8A27-4405-8FAE-D68D9435F47A}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaSerializer\DiaSerializer.vcxproj">
       <Project>{B0C1D2E3-F4A5-6789-BCDE-F01234567891}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaSaveGame\DiaSaveGame.vcxproj">
+      <Project>{10CADE58-BBF3-4114-9D8B-5C8F71C56417}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaProtobuf\DiaProtobuf.vcxproj">
       <Project>{87758331-BA9E-4055-B3F0-A62671738D42}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaDebugProtocol\DiaDebugProtocol.vcxproj">
       <Project>{E9E22143-02A3-4D92-894D-079E8ABD8BCA}</Project>
@@ -532,8 +1191,39 @@
       <Project>{F6A7B8C9-D0E1-2345-ABCD-567890ABCDE1}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Dia\DiaVisualDebuggerConsole\DiaVisualDebuggerConsole.vcxproj">
-      <Project>{07B8C9D0-E1F2-3456-BCDE-678901ABCDE2}</Project>
+    <ProjectReference Include="..\..\..\Dia\DiaSDL\DiaSDL.vcxproj">
+      <Project>{B1C2D3E4-F5A6-7890-BCDE-F01234567891}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaWindow\DiaWindow.vcxproj">
+      <Project>{52178C86-628D-4FE4-AE55-D3485FAEC070}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaUIUltralight\DiaUIUltralight.vcxproj">
+      <Project>{B7C3D812-4F91-4E2A-9B56-FA38E1D09C74}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaAsset\DiaAsset.vcxproj">
+      <Project>{43AB4006-91F4-4250-8901-C2B667FDAB21}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaAutomation\DiaAutomation.vcxproj">
+      <Project>{2A3B4C5D-6E7F-8091-A2B3-C4D5E6F70123}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaStreams\DiaStreams.vcxproj">
+      <Project>{d4e5f6a7-b8c9-0123-def0-456789012345}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaMesh3D\DiaMesh3D.vcxproj">
+      <Project>{F1E2D3C4-B5A6-7890-FEDC-BA9876543210}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaBgfx3D\DiaBgfx3D.vcxproj">
+      <Project>{D2E3F4A5-B6C7-8901-DEF0-123456789ABC}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">
+      <Project>{7b4a5c2e-3f1d-4a8b-9c6e-12d5f8b3a7e1}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

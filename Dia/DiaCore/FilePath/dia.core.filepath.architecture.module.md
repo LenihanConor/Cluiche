@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.core.filepath
 name: FilePath
 owner_team: TBD
-layer: platform
+layer: foundation/core
 status: active
 maturity: dev
 
@@ -26,6 +26,15 @@ non_responsibilities:
   - Domain-specific gameplay behavior
   - Rendering or platform integration concerns (unless this module is explicitly an adapter)
   - High-level orchestration (owned by higher-layer modules)
+
+dependent_modules:
+  - dia.core.reflect
+  - dia.core.strings
+  - dia.core.containers.arrays
+  - dia.core.crc
+  - dia.core.json.external.json
+  - dia.core.core
+  - dia.core.containers.strings
 
 public_api:
   headers:

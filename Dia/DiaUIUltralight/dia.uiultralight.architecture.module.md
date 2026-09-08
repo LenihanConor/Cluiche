@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.uiultralight
 name: UIUltralight
 owner_team: TBD
-layer: platform
+layer: domain/visual/core
 status: active
 maturity: dev
 

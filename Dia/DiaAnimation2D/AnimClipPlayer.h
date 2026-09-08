@@ -1,5 +1,6 @@
 #pragma once
 #include "AnimClip.h"
+#include "AnimClipObserverSubject.h"
 
 namespace Dia { namespace Rig2D { class Skeleton; class Pose; } }
 
@@ -23,11 +24,16 @@ namespace Dia { namespace Animation2D {
         float GetNormalizedTime()  const;
         const AnimClip* GetCurrentClip() const;
 
+        void Subscribe  (IAnimClipObserver* observer);
+        void Unsubscribe(IAnimClipObserver* observer);
+
     private:
         const AnimClip* mClip = nullptr;
         PlaybackMode    mMode = PlaybackMode::kOneShot;
         float           mCurrentTime = 0.0f;
         float           mSpeed = 1.0f;
         bool            mIsPlaying = false;
+        bool            mHasFinished = false; // one-shot: true once natural completion has already fired
+        AnimClipObserverSubject mObservers;
     };
 } }

@@ -1,0 +1,47 @@
+{
+    "schema": "diagamemessages/v1",
+    "namespace": "CluicheTest::Messages",
+    "includes": ["DiaMaths/Vector/Vector2D.h"],
+    "messages": [
+        {
+            "id": "OrderStartedEvent",
+            "router": "broadcast",
+            "pass": "primary",
+            "producers": ["GuardOrderBusAdapter"],
+            "consumers": [],
+            "fields": [
+                { "name": "orderId", "type": "Dia::Core::StringCRC",  "notes": "IOrder<GuardOrderContext>::GetOrderId() snapshot" },
+                { "name": "target",  "type": "Dia::Maths::Vector2D",  "notes": "GuardMoveOrder::target, if the started order is a GuardMoveOrder; zero-initialized otherwise" },
+                { "name": "speed",   "type": "float",                 "notes": "GuardMoveOrder::speed, if the started order is a GuardMoveOrder; zero otherwise" }
+            ]
+        },
+        {
+            "id": "OrderFinishedEvent",
+            "router": "broadcast",
+            "pass": "primary",
+            "producers": ["GuardOrderBusAdapter"],
+            "consumers": [],
+            "fields": [
+                { "name": "orderId", "type": "Dia::Core::StringCRC", "notes": "IOrder<GuardOrderContext>::GetOrderId() snapshot" }
+            ]
+        },
+        {
+            "id": "OrderCancelledEvent",
+            "router": "broadcast",
+            "pass": "primary",
+            "producers": ["GuardOrderBusAdapter"],
+            "consumers": [],
+            "fields": [
+                { "name": "orderId", "type": "Dia::Core::StringCRC", "notes": "IOrder<GuardOrderContext>::GetOrderId() snapshot" }
+            ]
+        },
+        {
+            "id": "OrderQueueEmptyEvent",
+            "router": "broadcast",
+            "pass": "primary",
+            "producers": ["GuardOrderBusAdapter"],
+            "consumers": [],
+            "fields": []
+        }
+    ]
+}

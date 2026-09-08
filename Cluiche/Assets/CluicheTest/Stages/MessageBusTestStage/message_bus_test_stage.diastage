@@ -1,0 +1,9 @@
+{
+    "name": "MessageBusTestStage",
+    "manifest": "Stages/MessageBusTestStage/misc/ApplicationFlow/message_bus_test_stage.diaapp",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

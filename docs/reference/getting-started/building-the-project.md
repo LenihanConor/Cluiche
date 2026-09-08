@@ -145,7 +145,7 @@ Cluiche.sln
 ├── Dia Engine Projects
 │   ├── DiaCore (foundation library)
 │   ├── DiaMaths (math library)
-│   ├── DiaApplication (application framework)
+│   ├── DiaApplicationFlow (application framework)
 │   ├── DiaGraphics (graphics abstraction)
 │   ├── DiaWindow (window management)
 │   ├── DiaInput (input handling)
@@ -166,7 +166,7 @@ Cluiche.sln
 Projects build in dependency order:
 1. DiaCore (no dependencies)
 2. DiaMaths (depends on DiaCore)
-3. DiaApplication (depends on DiaCore)
+3. DiaApplicationFlow (depends on DiaCore)
 4. Other Dia modules (depend on DiaCore + others)
 5. Cluiche (depends on all Dia modules)
 
@@ -180,7 +180,7 @@ If needed, build manually in this order:
 ```bash
 msbuild Dia/DiaCore/DiaCore.vcxproj /p:Configuration=Debug /p:Platform=x64
 msbuild Dia/DiaMaths/DiaMaths.vcxproj /p:Configuration=Debug /p:Platform=x64
-msbuild Dia/DiaApplication/DiaApplication.vcxproj /p:Configuration=Debug /p:Platform=x64
+msbuild Dia/DiaApplicationFlow/DiaApplicationFlow.vcxproj /p:Configuration=Debug /p:Platform=x64
 # ... (other Dia modules)
 msbuild Cluiche/CluicheTest/Cluiche.vcxproj /p:Configuration=Debug /p:Platform=x64
 ```
@@ -334,7 +334,7 @@ ls Cluiche/bin/lib/Debug/
 Should contain:
 - DiaCore.lib
 - DiaMaths.lib
-- DiaApplication.lib
+- DiaApplicationFlow.lib
 - DiaGraphics.lib
 - (other Dia modules)
 

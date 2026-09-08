@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cluiche Stream Topology — Current vs Future</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: #0d1117;
+  color: #c9d1d9;
+  padding: 24px;
+  min-height: 100vh;
+}
+h1 { font-size: 22px; font-weight: 600; color: #e6edf3; margin-bottom: 4px; }
+.subtitle { font-size: 13px; color: #8b949e; margin-bottom: 20px; }
+
+/* Tab navigation */
+.tab-bar {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #21262d;
+}
+.tab-btn {
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  color: #8b949e;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+}
+.tab-btn:hover { color: #c9d1d9; }
+.tab-btn.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Legend */
+.legend {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  background: #161b22;
+  border: 1px solid #21262d;
+  border-radius: 8px;
+}
+.legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #8b949e; }
+.legend-line { width: 32px; height: 3px; border-radius: 2px; }
+.legend-line.frame { background: #58a6ff; }
+.legend-line.event { background: #f78166; }
+.legend-line.service { background: #d2a038; background: repeating-linear-gradient(90deg, #d2a038 0, #d2a038 6px, transparent 6px, transparent 10px); }
+
+/* Stats row */
+.stats-row { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+.stat-card {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 14px 18px;
+  min-width: 120px;
+}
+.stat-value { font-size: 26px; font-weight: 700; color: #e6edf3; }
+.stat-label { font-size: 10px; color: #8b949e; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* Main layout: graph left, table right */
+.split-layout { display: flex; gap: 20px; margin-bottom: 24px; }
+.split-layout .graph-panel { flex: 1; min-width: 0; }
+.split-layout .table-panel { flex: 1; min-width: 0; }
+
+/* Graph container */
+.graph-container {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 20px;
+  position: relative;
+}
+.graph-container h3 { font-size: 13px; font-weight: 600; color: #e6edf3; margin-bottom: 12px; }
+canvas { display: block; border-radius: 6px; width: 100%; }
+
+/* Stream table */
+.table-container {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 20px;
+  overflow-x: auto;
+}
+.table-container h3 { font-size: 13px; font-weight: 600; color: #e6edf3; margin-bottom: 12px; }
+.stream-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.stream-table th {
+  text-align: left; padding: 6px 10px; background: #0d1117;
+  border: 1px solid #21262d; color: #8b949e; font-weight: 500;
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px;
+}
+.stream-table td { padding: 6px 10px; border: 1px solid #21262d; }
+.stream-table tr:hover td { background: #0d1117; }
+
+.kind-badge { font-size: 9px; padding: 2px 6px; border-radius: 10px; font-weight: 500; white-space: nowrap; }
+.kind-badge.frame { background: #0c2d6b; color: #58a6ff; }
+.kind-badge.event { background: #3d1a12; color: #f78166; }
+.kind-badge.service { background: #3d2b00; color: #d2a038; }
+
+.scope-badge { font-size: 9px; padding: 2px 6px; border-radius: 10px; font-weight: 500; }
+.scope-badge.global { background: #21262d; color: #8b949e; }
+.scope-badge.stage { background: #0f2d16; color: #3fb950; }
+
+/* PU Columns */
+.pu-layout { display: flex; gap: 12px; margin-top: 20px; }
+.pu-column { flex: 1; min-width: 200px; }
+.pu-header {
+  background: #0d1117; border: 1px solid #30363d; border-radius: 8px 8px 0 0;
+  padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;
+}
+.pu-name { font-weight: 600; font-size: 13px; color: #e6edf3; }
+.pu-meta { font-size: 10px; color: #8b949e; background: #21262d; padding: 2px 6px; border-radius: 10px; }
+.pu-body {
+  background: #0d1117; border: 1px solid #30363d; border-top: none;
+  border-radius: 0 0 8px 8px; padding: 6px;
+}
+.module-card {
+  background: #161b22; border: 1px solid #21262d; border-radius: 6px;
+  padding: 8px 10px; margin-bottom: 4px;
+}
+.module-card:last-child { margin-bottom: 0; }
+.module-name { font-size: 11px; font-weight: 600; color: #e6edf3; margin-bottom: 3px; }
+.channel-list { display: flex; flex-wrap: wrap; gap: 3px; }
+.channel-badge { font-size: 9px; padding: 1px 5px; border-radius: 3px; font-family: 'SF Mono', monospace; white-space: nowrap; }
+.channel-badge.reads { background: #0c2d6b; color: #58a6ff; }
+.channel-badge.writes { background: #0c2d6b; color: #79c0ff; }
+.channel-badge.provides { background: #3d2b00; color: #d2a038; }
+.channel-badge.consumes { background: #3d2b00; color: #e3b341; }
+
+/* Design notes */
+.design-notes {
+  background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+  padding: 20px; margin-top: 20px;
+}
+.design-notes h3 { font-size: 13px; font-weight: 600; color: #e6edf3; margin-bottom: 10px; }
+.design-notes ul { list-style: none; padding: 0; }
+.design-notes li { font-size: 12px; color: #8b949e; padding: 4px 0; padding-left: 16px; position: relative; }
+.design-notes li::before { content: "→"; position: absolute; left: 0; color: #484f58; }
+
+/* Commit lifecycle diagram */
+.lifecycle {
+  background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+  padding: 20px; margin-top: 20px;
+}
+.lifecycle h3 { font-size: 13px; font-weight: 600; color: #e6edf3; margin-bottom: 12px; }
+.lifecycle-steps { display: flex; gap: 4px; align-items: stretch; }
+.lifecycle-step {
+  flex: 1; padding: 12px; border-radius: 6px; text-align: center;
+  display: flex; flex-direction: column; justify-content: center;
+}
+.lifecycle-step.phase1 { background: #21262d; border: 1px solid #30363d; }
+.lifecycle-step.phase2 { background: #3d2b0044; border: 1px solid #d2a038; }
+.lifecycle-step.phase3 { background: #0f2d1644; border: 1px solid #3fb950; }
+.lifecycle-step .step-title { font-size: 11px; font-weight: 600; color: #e6edf3; margin-bottom: 4px; }
+.lifecycle-step .step-desc { font-size: 10px; color: #8b949e; }
+.lifecycle-arrow { display: flex; align-items: center; color: #484f58; font-size: 16px; }
+</style>
+</head>
+<body>
+
+<h1>Cluiche Stream Topology</h1>
+<p class="subtitle">Hybrid model: composite FrameStream per PU-pair, frame-batched EventStream per PU-pair, collected-then-committed ServiceStream</p>
+
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="current">Current (All Shapes Resolved)</button>
+  <button class="tab-btn" data-tab="future">Projected Future (5 PUs, 50+ modules)</button>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-line frame"></div> FrameStream (latest-wins per tick)</div>
+  <div class="legend-item"><div class="legend-line event"></div> EventStream (frame-batched discrete)</div>
+  <div class="legend-item"><div class="legend-line service"></div> ServiceStream (once, committed)</div>
+  <div class="legend-item"><span class="scope-badge global">global</span> App-lifetime</div>
+  <div class="legend-item"><span class="scope-badge stage">stage</span> Stage-lifetime</div>
+</div>
+
+<!-- ==================== CURRENT STATE ==================== -->
+<div class="tab-content active" id="tab-current">
+
+<div class="stats-row">
+  <div class="stat-card"><div class="stat-value">8</div><div class="stat-label">Total Streams</div></div>
+  <div class="stat-card"><div class="stat-value">3</div><div class="stat-label">PUs</div></div>
+  <div class="stat-card"><div class="stat-value">3</div><div class="stat-label">FrameStreams</div></div>
+  <div class="stat-card"><div class="stat-value">3</div><div class="stat-label">EventStreams</div></div>
+  <div class="stat-card"><div class="stat-value">2</div><div class="stat-label">ServiceStreams</div></div>
+  <div class="stat-card"><div class="stat-value">0</div><div class="stat-label">Statics Remaining</div></div>
+</div>
+
+<div class="split-layout">
+  <div class="graph-panel">
+    <div class="graph-container">
+      <h3>Data Flow Graph</h3>
+      <canvas id="currentGraph" width="520" height="380"></canvas>
+    </div>
+  </div>
+  <div class="table-panel">
+    <div class="table-container">
+      <h3>Stream Declarations</h3>
+      <table class="stream-table">
+        <thead><tr><th>ID</th><th>Kind</th><th>Payload</th><th>From → To</th><th>Scope</th></tr></thead>
+        <tbody>
+          <tr><td><strong>MainToSim</strong></td><td><span class="kind-badge event">Event</span></td><td>MainToSimEvent</td><td>MainPU → SimPU</td><td><span class="scope-badge global">global</span></td></tr>
+          <tr><td><strong>SimToMain</strong></td><td><span class="kind-badge event">Event</span></td><td>SimToMainEvent</td><td>SimPU → MainPU</td><td><span class="scope-badge global">global</span></td></tr>
+          <tr><td><strong>MainToRenderEvents</strong></td><td><span class="kind-badge event">Event</span></td><td>MainToRenderEvent</td><td>MainPU → RenderPU</td><td><span class="scope-badge global">global</span></td></tr>
+          <tr><td><strong>SimToRender</strong></td><td><span class="kind-badge frame">Frame</span></td><td>SimToRenderFrame</td><td>SimPU → RenderPU</td><td><span class="scope-badge global">global</span></td></tr>
+          <tr><td><strong>MainToSimFrame</strong></td><td><span class="kind-badge frame">Frame</span></td><td>MainToSimFrame</td><td>MainPU → SimPU</td><td><span class="scope-badge global">global</span></td></tr>
+          <tr><td><strong>MainToRender</strong></td><td><span class="kind-badge frame">Frame</span></td><td>MainToRenderFrame</td><td>MainPU → RenderPU</td><td><span class="scope-badge global">global</span></td></tr>
+          <tr><td><strong>Canvas</strong></td><td><span class="kind-badge service">Service</span></td><td>ICanvas</td><td>MainPU → (any)</td><td><span class="scope-badge global">global</span></td></tr>
+          <tr><td><strong>TextureHandler</strong></td><td><span class="kind-badge service">Service</span></td><td>ITextureHandler</td><td>MainPU → (any)</td><td><span class="scope-badge global">global</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- PU Module Layout -->
+<div class="pu-layout">
+  <div class="pu-column">
+    <div class="pu-header"><span class="pu-name">MainPU</span><span class="pu-meta">30Hz · main</span></div>
+    <div class="pu-body">
+      <div class="module-card"><div class="module-name">KernelModule</div><div class="channel-list">
+        <span class="channel-badge writes">w: MainToSim</span>
+        <span class="channel-badge provides">provides: Canvas</span>
+        <span class="channel-badge provides">provides: TextureHandler</span>
+      </div></div>
+      <div class="module-card"><div class="module-name">UIModule</div><div class="channel-list">
+        <span class="channel-badge reads">r: SimToMain</span>
+        <span class="channel-badge writes">w: MainToSimFrame</span>
+      </div></div>
+      <div class="module-card"><div class="module-name">AssetServiceModule</div><div class="channel-list">
+        <span class="channel-badge consumes">consumes: TextureHandler</span>
+        <span class="channel-badge writes">w: MainToSim</span>
+      </div></div>
+      <div class="module-card"><div class="module-name">AutomationModule</div><div class="channel-list">
+        <span class="channel-badge writes">w: MainToRender</span>
+        <span class="channel-badge writes">w: MainToRenderEvents</span>
+      </div></div>
+      <div class="module-card"><div class="module-name">ObservationModule</div></div>
+      <div class="module-card"><div class="module-name">ProfilerModule</div></div>
+    </div>
+  </div>
+  <div class="pu-column">
+    <div class="pu-header"><span class="pu-name">SimPU</span><span class="pu-meta">30Hz · thread</span></div>
+    <div class="pu-body">
+      <div class="module-card"><div class="module-name">InputStreamModule</div><div class="channel-list">
+        <span class="channel-badge reads">r: MainToSim</span>
+      </div></div>
+      <div class="module-card"><div class="module-name">LoadingScreenModule</div><div class="channel-list">
+        <span class="channel-badge reads">r: MainToSimFrame</span>
+        <span class="channel-badge writes">w: SimToRender</span>
+      </div></div>
+      <div class="module-card"><div class="module-name">TimeServerModule</div></div>
+      <div class="module-card" style="border-style: dashed; border-color: #3fb950;">
+        <div class="module-name" style="color: #3fb950;">Stage Modules ↓</div><div class="channel-list">
+        <span class="channel-badge writes">w: SimToRender</span>
+        <span class="channel-badge writes">w: SimToMain</span>
+        <span class="channel-badge consumes">consumes: TextureHandler</span>
+      </div></div>
+    </div>
+  </div>
+  <div class="pu-column">
+    <div class="pu-header"><span class="pu-name">RenderPU</span><span class="pu-meta">60Hz · thread</span></div>
+    <div class="pu-body">
+      <div class="module-card"><div class="module-name">RenderModule</div><div class="channel-list">
+        <span class="channel-badge reads">r: SimToRender</span>
+        <span class="channel-badge consumes">consumes: Canvas</span>
+        <span class="channel-badge consumes">consumes: TextureHandler</span>
+      </div></div>
+      <div class="module-card"><div class="module-name">TestStageHUDModule</div><div class="channel-list">
+        <span class="channel-badge reads">r: MainToRenderEvents</span>
+        <span class="channel-badge reads">r: MainToRender</span>
+      </div></div>
+      <div class="module-card"><div class="module-name">VisualDebuggerConsole</div><div class="channel-list">
+        <span class="channel-badge reads">r: SimToRender</span>
+      </div></div>
+      <div class="module-card"><div class="module-name">DebugUI / BootMenu</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Lifecycle diagrams -->
+<div class="lifecycle">
+  <h3>ServiceStream — Collected-then-Committed</h3>
+  <div class="lifecycle-steps">
+    <div class="lifecycle-step phase1">
+      <div class="step-title">1. Register</div>
+      <div class="step-desc">All modules DoStart()<br>Providers call Register(handle)<br>Handles stored, NOT accessible</div>
+    </div>
+    <div class="lifecycle-arrow">→</div>
+    <div class="lifecycle-step phase2">
+      <div class="step-title">2. Commit</div>
+      <div class="step-desc">Framework validates all<br>declared services have handles<br>Fail-fast if any missing</div>
+    </div>
+    <div class="lifecycle-arrow">→</div>
+    <div class="lifecycle-step phase3">
+      <div class="step-title">3. Live</div>
+      <div class="step-desc">Consumers call Get()<br>Returns handle immediately<br>Guaranteed available</div>
+    </div>
+  </div>
+</div>
+
+<div class="lifecycle" style="margin-top: 12px;">
+  <h3>EventStream — Frame-Batched</h3>
+  <div class="lifecycle-steps">
+    <div class="lifecycle-step phase1">
+      <div class="step-title">Producer Tick N</div>
+      <div class="step-desc">Modules Send() events<br>Accumulate in buffer<br>Throughout the tick</div>
+    </div>
+    <div class="lifecycle-arrow">→</div>
+    <div class="lifecycle-step phase2">
+      <div class="step-title">Flush</div>
+      <div class="step-desc">End of producer tick<br>Mark batch boundary<br>Tick N events sealed</div>
+    </div>
+    <div class="lifecycle-arrow">→</div>
+    <div class="lifecycle-step phase3">
+      <div class="step-title">Consumer Tick M</div>
+      <div class="step-desc">Consume() returns exactly<br>"last frame's batch"<br>Deterministic replay</div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- ==================== FUTURE STATE ==================== -->
+<div class="tab-content" id="tab-future">
+
+<div class="stats-row">
+  <div class="stat-card"><div class="stat-value">18</div><div class="stat-label">Total Streams</div></div>
+  <div class="stat-card"><div class="stat-value">5</div><div class="stat-label">PUs</div></div>
+  <div class="stat-card"><div class="stat-value">7</div><div class="stat-label">FrameStreams</div></div>
+  <div class="stat-card"><div class="stat-value">5</div><div class="stat-label">EventStreams</div></div>
+  <div class="stat-card"><div class="stat-value">6</div><div class="stat-label">ServiceStreams</div></div>
+  <div class="stat-card"><div class="stat-value">0</div><div class="stat-label">Statics Remaining</div></div>
+</div>
+
+<div class="split-layout">
+  <div class="graph-panel">
+    <div class="graph-container">
+      <h3>Data Flow Graph — Mature Engine</h3>
+      <canvas id="futureGraph" width="520" height="500"></canvas>
+    </div>
+  </div>
+  <div class="table-panel">
+    <div class="table-container">
+      <h3>Stream Declarations (projected)</h3>
+      <table class="stream-table">
+        <thead><tr><th>ID</th><th>Kind</th><th>Payload</th><th>From → To</th><th>Scope</th></tr></thead>
+        <tbody>
+          <tr><td><strong>MainToSim</strong></td><td><span class="kind-badge event">Event</span></td><td>MainToSimEvent</td><td>MainPU → SimPU</td><td><span class="scope-badge global">global</span></td></tr>
+          <tr><td><strong>SimToMain</strong></td><td><span class="kind-badge event">Event</span></td><td>SimToMainEvent</td><td>SimPU → MainPU</td><td><span class="scope-badge global">global</span></td></tr>
+          <tr><td><strong>MainToRenderEvents</strong></td><td><span class="kind-badge event">Event</span></td><td>MainToRenderEvent</td><td>MainPU → RenderPU</td><td><span class="scope-badge global">global</span></td></tr>
+          <tr><td><strong>MainToAudioEvents</strong></td><td><span class="kind-badge event">Event</span></td><td>MainToAudioEvent</td><td>MainPU → AudioPU</td><td><span class="scope-badge global">global</span></td></tr>
+          <tr><td><strong>SimToNetEvents</strong></td><td><span class="kind-badge event">Event</span></td><td>SimToNetEvent</td><td>SimPU → NetPU</td><td><span class="scope-badge global">global</span></td></tr>
+          <tr><td><strong>SimToRender</strong></td><td><span class="kind-badge frame">Frame</span></td><td>SimToRenderFrame</td><td>SimPU → RenderPU</td><td><span class="scope-badge global">global</span></td></tr>
+          <tr><td><strong>MainToSimFrame</strong></td><td><span class="kind-badge frame">Frame</span></td><td>MainToSimFrame</td><td>MainPU → SimPU</td><td><span class="scope-badge global">global</span></td></tr>
+          <tr><td><strong>MainToRender</strong></td><td><span class="kind-badge frame">Frame</span></td><td>MainToRenderFrame</td><td>MainPU → RenderPU</td><td><span class="scope-badge global">global</span></td></tr>
+          <tr><td><strong>SimToAudio</strong></td><td><span class="kind-badge frame">Frame</span></td><td>SimToAudioFrame</td><td>SimPU → AudioPU</td><td><span class="scope-badge global">global</span></td></tr>
+          <tr><td><strong>NetToSim</strong></td><td><span class="kind-badge frame">Frame</span></td><td>NetToSimFrame</td><td>NetPU → SimPU</td><td><span class="scope-badge global">global</span></td></tr>
+          <tr><td><strong>AudioToRender</strong></td><td><span class="kind-badge frame">Frame</span></td><td>AudioToRenderFrame</td><td>AudioPU → RenderPU</td><td><span class="scope-badge global">global</span></td></tr>
+          <tr><td><strong>SimToNet</strong></td><td><span class="kind-badge frame">Frame</span></td><td>SimToNetFrame</td><td>SimPU → NetPU</td><td><span class="scope-badge global">global</span></td></tr>
+          <tr><td><strong>Canvas</strong></td><td><span class="kind-badge service">Service</span></td><td>ICanvas</td><td>MainPU</td><td><span class="scope-badge global">global</span></td></tr>
+          <tr><td><strong>TextureHandler</strong></td><td><span class="kind-badge service">Service</span></td><td>ITextureHandler</td><td>MainPU</td><td><span class="scope-badge global">global</span></td></tr>
+          <tr><td><strong>AudioDevice</strong></td><td><span class="kind-badge service">Service</span></td><td>IAudioDevice</td><td>AudioPU</td><td><span class="scope-badge global">global</span></td></tr>
+          <tr><td><strong>NetSession</strong></td><td><span class="kind-badge service">Service</span></td><td>INetSession</td><td>NetPU</td><td><span class="scope-badge global">global</span></td></tr>
+          <tr><td><strong>PhysicsWorld</strong></td><td><span class="kind-badge service">Service</span></td><td>IPhysicsWorld</td><td>SimPU</td><td><span class="scope-badge stage">stage</span></td></tr>
+          <tr><td><strong>AIContext</strong></td><td><span class="kind-badge service">Service</span></td><td>IAIContext</td><td>SimPU</td><td><span class="scope-badge stage">stage</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Future PU Layout -->
+<div class="pu-layout" style="flex-wrap: wrap;">
+  <div class="pu-column" style="min-width: 180px;">
+    <div class="pu-header"><span class="pu-name">MainPU</span><span class="pu-meta">30Hz</span></div>
+    <div class="pu-body">
+      <div class="module-card"><div class="module-name">KernelModule</div><div class="channel-list">
+        <span class="channel-badge provides">provides: Canvas</span>
+        <span class="channel-badge provides">provides: TextureHandler</span>
+        <span class="channel-badge writes">w: MainToSim</span>
+        <span class="channel-badge writes">w: MainToRender</span>
+      </div></div>
+      <div class="module-card"><div class="module-name">UIModule</div><div class="channel-list">
+        <span class="channel-badge reads">r: SimToMain</span>
+        <span class="channel-badge writes">w: MainToSimFrame</span>
+      </div></div>
+      <div class="module-card"><div class="module-name">AssetServiceModule</div><div class="channel-list">
+        <span class="channel-badge consumes">consumes: TextureHandler</span>
+      </div></div>
+      <div class="module-card"><div class="module-name">AutomationModule</div><div class="channel-list">
+        <span class="channel-badge writes">w: MainToRender</span>
+        <span class="channel-badge writes">w: MainToRenderEvents</span>
+      </div></div>
+    </div>
+  </div>
+  <div class="pu-column" style="min-width: 180px;">
+    <div class="pu-header"><span class="pu-name">SimPU</span><span class="pu-meta">60Hz · thread</span></div>
+    <div class="pu-body">
+      <div class="module-card"><div class="module-name">PhysicsModule</div><div class="channel-list">
+        <span class="channel-badge provides">provides: PhysicsWorld</span>
+        <span class="channel-badge writes">w: SimToRender</span>
+      </div></div>
+      <div class="module-card"><div class="module-name">AIModule</div><div class="channel-list">
+        <span class="channel-badge provides">provides: AIContext</span>
+        <span class="channel-badge consumes">consumes: PhysicsWorld</span>
+      </div></div>
+      <div class="module-card"><div class="module-name">AnimationModule</div><div class="channel-list">
+        <span class="channel-badge writes">w: SimToRender</span>
+        <span class="channel-badge writes">w: SimToAudio</span>
+      </div></div>
+      <div class="module-card"><div class="module-name">InputStreamModule</div><div class="channel-list">
+        <span class="channel-badge reads">r: MainToSim</span>
+        <span class="channel-badge reads">r: NetToSim</span>
+      </div></div>
+      <div class="module-card"><div class="module-name">NetSyncModule</div><div class="channel-list">
+        <span class="channel-badge writes">w: SimToNet</span>
+        <span class="channel-badge writes">w: SimToNetEvents</span>
+      </div></div>
+    </div>
+  </div>
+  <div class="pu-column" style="min-width: 180px;">
+    <div class="pu-header"><span class="pu-name">RenderPU</span><span class="pu-meta">60Hz · thread</span></div>
+    <div class="pu-body">
+      <div class="module-card"><div class="module-name">RenderModule</div><div class="channel-list">
+        <span class="channel-badge reads">r: SimToRender</span>
+        <span class="channel-badge reads">r: MainToRender</span>
+        <span class="channel-badge consumes">consumes: Canvas</span>
+        <span class="channel-badge consumes">consumes: TextureHandler</span>
+      </div></div>
+      <div class="module-card"><div class="module-name">AudioVisualizerModule</div><div class="channel-list">
+        <span class="channel-badge reads">r: AudioToRender</span>
+      </div></div>
+      <div class="module-card"><div class="module-name">HUDModule</div><div class="channel-list">
+        <span class="channel-badge reads">r: MainToRenderEvents</span>
+        <span class="channel-badge reads">r: MainToRender</span>
+      </div></div>
+    </div>
+  </div>
+  <div class="pu-column" style="min-width: 180px;">
+    <div class="pu-header"><span class="pu-name">AudioPU</span><span class="pu-meta">120Hz · thread</span></div>
+    <div class="pu-body">
+      <div class="module-card"><div class="module-name">AudioDriverModule</div><div class="channel-list">
+        <span class="channel-badge provides">provides: AudioDevice</span>
+      </div></div>
+      <div class="module-card"><div class="module-name">AudioMixerModule</div><div class="channel-list">
+        <span class="channel-badge reads">r: SimToAudio</span>
+        <span class="channel-badge reads">r: MainToAudioEvents</span>
+        <span class="channel-badge writes">w: AudioToRender</span>
+        <span class="channel-badge consumes">consumes: AudioDevice</span>
+      </div></div>
+    </div>
+  </div>
+  <div class="pu-column" style="min-width: 180px;">
+    <div class="pu-header"><span class="pu-name">NetPU</span><span class="pu-meta">20Hz · thread</span></div>
+    <div class="pu-body">
+      <div class="module-card"><div class="module-name">NetDriverModule</div><div class="channel-list">
+        <span class="channel-badge provides">provides: NetSession</span>
+      </div></div>
+      <div class="module-card"><div class="module-name">ReplicationModule</div><div class="channel-list">
+        <span class="channel-badge reads">r: SimToNet</span>
+        <span class="channel-badge reads">r: SimToNetEvents</span>
+        <span class="channel-badge writes">w: NetToSim</span>
+        <span class="channel-badge consumes">consumes: NetSession</span>
+      </div></div>
+    </div>
+  </div>
+</div>
+
+<div class="design-notes">
+  <h3>Growth Analysis: Current → Future</h3>
+  <ul>
+    <li><strong>+2 PUs</strong> (AudioPU, NetPU) added 4 new PU-pair directions = +4 FrameStreams, +2 EventStreams</li>
+    <li><strong>+4 ServiceStreams</strong> — 2 global (AudioDevice, NetSession) + 2 stage-scoped (PhysicsWorld, AIContext)</li>
+    <li><strong>Zero new streams</strong> from adding physics debug, animation debug, new render features — all fold into SimToRenderFrame composite</li>
+    <li><strong>18 total streams</strong> for a mature multi-threaded engine with networking and audio — still fits in one screen</li>
+    <li><strong>Max channels per module: 4–5</strong> — no explosion</li>
+    <li><strong>Stage-scoped services</strong> (PhysicsWorld, AIContext) reset on stage unload; inferred from declaring in stage manifest</li>
+  </ul>
+</div>
+
+<div class="design-notes" style="margin-top: 12px;">
+  <h3>Growth Ceiling Formula</h3>
+  <ul>
+    <li>N PUs → at most N×(N-1) directional pairs = 20 for 5 PUs (not all used)</li>
+    <li>Each pair gets max 2 streams (1 Frame + 1 Event) — some pairs only need one</li>
+    <li>ServiceStreams: ~2 per PU (global infrastructure handles) + 2-3 stage-scoped</li>
+    <li><strong>Hard ceiling for 5 PUs: ~30 streams. Practical: 15-20.</strong></li>
+    <li>Compare: fine-grained model at same scale would be 60-80+ streams</li>
+  </ul>
+</div>
+
+<div class="design-notes" style="margin-top: 12px;">
+  <h3>What Adding a New Feature Looks Like</h3>
+  <ul>
+    <li><strong>"I need to send animation events to audio"</strong> → Add a Kind variant to SimToAudioFrame composite struct. No new stream.</li>
+    <li><strong>"I need physics debug viz in the renderer"</strong> → Add fields to SimToRenderFrame. No new stream.</li>
+    <li><strong>"I'm adding a NetworkPU"</strong> → Add 2-3 new streams (Frame/Event per direction needed). New PU = new streams. This is correct.</li>
+    <li><strong>"This stage needs a stage-scoped audio mixer"</strong> → Add a stage ServiceStream in the stage manifest. 1 new stream.</li>
+    <li><strong>"I need per-frame data from Audio to Main"</strong> → New PU-pair direction. 1 new FrameStream. Rare.</li>
+  </ul>
+</div>
+
+</div>
+
+<script>
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// === CURRENT GRAPH ===
+function drawGraph(canvasId, config) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.width, h = canvas.height;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  ctx.scale(dpr, dpr);
+
+  const { nodes, edges, puBoxes } = config;
+
+  // PU backgrounds
+  puBoxes.forEach(pu => {
+    ctx.fillStyle = pu.fill;
+    ctx.strokeStyle = pu.stroke;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(pu.x, pu.y, pu.w, pu.h, 8);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = pu.stroke;
+    ctx.font = 'bold 11px system-ui';
+    ctx.textAlign = 'left';
+    ctx.fillText(pu.label, pu.x + 8, pu.y + 16);
+  });
+
+  // Edges
+  edges.forEach(edge => {
+    const from = nodes[edge.from];
+    const to = nodes[edge.to];
+    if (!from || !to) return;
+    const oy = edge.oy || 0;
+
+    const colors = { frame: '#58a6ff', event: '#f78166', service: '#d2a038' };
+    ctx.strokeStyle = colors[edge.kind] || '#484f58';
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.75;
+
+    if (edge.kind === 'service') ctx.setLineDash([6, 4]);
+    else ctx.setLineDash([]);
+
+    const x1 = from.x + 55, y1 = from.y + oy;
+    const x2 = to.x - 55, y2 = to.y + oy;
+    const cp = Math.abs(x2 - x1) * 0.35;
+
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.bezierCurveTo(x1 + cp, y1, x2 - cp, y2, x2, y2);
+    ctx.stroke();
+
+    // Arrow
+    const angle = Math.atan2(y2 - (y2), x2 - (x2 - cp));
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - 7 * Math.cos(angle - 0.4), y2 - 7 * Math.sin(angle - 0.4));
+    ctx.lineTo(x2 - 7 * Math.cos(angle + 0.4), y2 - 7 * Math.sin(angle + 0.4));
+    ctx.closePath();
+    ctx.fillStyle = colors[edge.kind]; ctx.fill();
+
+    ctx.globalAlpha = 1; ctx.setLineDash([]);
+
+    // Label
+    const lx = (x1 + x2) / 2, ly = (y1 + y2) / 2 - 8 + oy * 0.3;
+    ctx.fillStyle = colors[edge.kind];
+    ctx.font = '9px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText(edge.label, lx, ly);
+  });
+
+  // Nodes
+  Object.entries(nodes).forEach(([name, pos]) => {
+    ctx.fillStyle = '#0d1117';
+    ctx.strokeStyle = '#30363d';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(pos.x - 55, pos.y - 14, 110, 28, 4);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#c9d1d9';
+    ctx.font = '10px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(pos.display || name, pos.x, pos.y);
+  });
+}
+
+// Current graph config
+drawGraph('currentGraph', {
+  puBoxes: [
+    { label: 'MainPU (30Hz)', x: 10, y: 20, w: 150, h: 340, fill: '#1f6feb11', stroke: '#1f6feb' },
+    { label: 'SimPU (30Hz)',  x: 190, y: 20, w: 150, h: 340, fill: '#23863611', stroke: '#238636' },
+    { label: 'RenderPU (60Hz)', x: 370, y: 20, w: 150, h: 340, fill: '#6e40c911', stroke: '#6e40c9' },
+  ],
+  nodes: {
+    Kernel:      { x: 85, y: 70, display: 'Kernel' },
+    UI:          { x: 85, y: 130, display: 'UI' },
+    Asset:       { x: 85, y: 190, display: 'AssetService' },
+    Automation:  { x: 85, y: 250, display: 'Automation' },
+    Input:       { x: 265, y: 70, display: 'InputStream' },
+    Loading:     { x: 265, y: 130, display: 'LoadingScreen' },
+    StageSim:    { x: 265, y: 210, display: 'Stage Modules' },
+    Render:      { x: 445, y: 70, display: 'Render' },
+    HUD:         { x: 445, y: 160, display: 'HUD' },
+    VDConsole:   { x: 445, y: 240, display: 'VD Console' },
+  },
+  edges: [
+    { from: 'Kernel', to: 'Input', label: 'MainToSim', kind: 'event' },
+    { from: 'UI', to: 'Loading', label: 'MainToSimFrame', kind: 'frame' },
+    { from: 'StageSim', to: 'UI', label: 'SimToMain', kind: 'event', oy: -6 },
+    { from: 'Loading', to: 'Render', label: 'SimToRender', kind: 'frame' },
+    { from: 'StageSim', to: 'Render', label: 'SimToRender', kind: 'frame', oy: 6 },
+    { from: 'Automation', to: 'HUD', label: 'MainToRender', kind: 'frame' },
+    { from: 'Automation', to: 'HUD', label: 'MainToRenderEvents', kind: 'event', oy: 12 },
+    { from: 'Kernel', to: 'Render', label: 'Canvas', kind: 'service', oy: -8 },
+    { from: 'Kernel', to: 'Render', label: 'TextureHandler', kind: 'service', oy: 8 },
+  ]
+});
+
+// Future graph config
+drawGraph('futureGraph', {
+  puBoxes: [
+    { label: 'MainPU (30Hz)', x: 5, y: 15, w: 120, h: 460, fill: '#1f6feb11', stroke: '#1f6feb' },
+    { label: 'SimPU (60Hz)',  x: 150, y: 15, w: 120, h: 460, fill: '#23863611', stroke: '#238636' },
+    { label: 'RenderPU (60Hz)', x: 295, y: 15, w: 120, h: 260, fill: '#6e40c911', stroke: '#6e40c9' },
+    { label: 'AudioPU (120Hz)', x: 295, y: 290, w: 120, h: 130, fill: '#da368811', stroke: '#da3688' },
+    { label: 'NetPU (20Hz)', x: 295, y: 430, w: 120, h: 55, fill: '#d2a03811', stroke: '#d2a038' },
+  ],
+  nodes: {
+    Kernel:    { x: 65, y: 60, display: 'Kernel' },
+    UI:        { x: 65, y: 120, display: 'UI' },
+    Asset:     { x: 65, y: 175, display: 'AssetService' },
+    Auto:      { x: 65, y: 230, display: 'Automation' },
+    Physics:   { x: 210, y: 60, display: 'Physics' },
+    AI:        { x: 210, y: 120, display: 'AI' },
+    Anim:      { x: 210, y: 180, display: 'Animation' },
+    InputS:    { x: 210, y: 240, display: 'InputStream' },
+    NetSync:   { x: 210, y: 380, display: 'NetSync' },
+    Render:    { x: 355, y: 60, display: 'Render' },
+    HUD:       { x: 355, y: 140, display: 'HUD' },
+    AudioViz:  { x: 355, y: 210, display: 'AudioViz' },
+    AudioMix:  { x: 355, y: 340, display: 'AudioMixer' },
+    AudioDrv:  { x: 355, y: 400, display: 'AudioDriver' },
+    NetDrv:    { x: 355, y: 455, display: 'NetDriver' },
+  },
+  edges: [
+    // Main → Sim
+    { from: 'Kernel', to: 'InputS', label: 'MainToSim', kind: 'event' },
+    { from: 'UI', to: 'InputS', label: 'MainToSimFrm', kind: 'frame', oy: 4 },
+    // Sim → Render
+    { from: 'Physics', to: 'Render', label: 'SimToRender', kind: 'frame', oy: -4 },
+    { from: 'Anim', to: 'Render', label: 'SimToRender', kind: 'frame', oy: 4 },
+    // Main → Render
+    { from: 'Auto', to: 'HUD', label: 'MainToRender', kind: 'frame' },
+    // Sim → Audio
+    { from: 'Anim', to: 'AudioMix', label: 'SimToAudio', kind: 'frame' },
+    // Audio → Render
+    { from: 'AudioMix', to: 'AudioViz', label: 'AudioToRender', kind: 'frame' },
+    // Sim ↔ Net
+    { from: 'NetSync', to: 'NetDrv', label: 'SimToNet', kind: 'frame' },
+    { from: 'NetDrv', to: 'InputS', label: 'NetToSim', kind: 'frame', oy: 8 },
+    // Services
+    { from: 'Kernel', to: 'Render', label: 'Canvas', kind: 'service', oy: -10 },
+    { from: 'Kernel', to: 'Render', label: 'TexHandler', kind: 'service', oy: 6 },
+    { from: 'AudioDrv', to: 'AudioMix', label: 'AudioDevice', kind: 'service', oy: -4 },
+  ]
+});
+</script>
+
+</body>
+</html>

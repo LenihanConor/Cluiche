@@ -1,4 +1,4 @@
-# DiaApplication API
+# DiaApplicationFlow API
 
 **Last Updated:** 2026-04-01
 
@@ -8,9 +8,9 @@ Application framework API providing ProcessingUnit, Phase, and Module architectu
 
 ## Overview
 
-**DiaApplication** is the core framework layer that provides the Module/Phase/ProcessingUnit pattern for multi-threaded application architecture.
+**DiaApplicationFlow** is the core framework layer that provides the Module/Phase/ProcessingUnit pattern for multi-threaded application architecture.
 
-**Location:** `Dia/DiaApplication/`
+**Location:** `Dia/DiaApplicationFlow/`
 
 **Namespace:** `Dia::Application::`
 
@@ -28,7 +28,7 @@ Application framework API providing ProcessingUnit, Phase, and Module architectu
 
 ### ProcessingUnit
 
-**Header:** `Dia/DiaApplication/ApplicationProcessingUnit.h`
+**Header:** `Dia/DiaApplicationFlow/ApplicationProcessingUnit.h`
 
 **Purpose:** Top-level container that runs on a thread and manages phases.
 
@@ -111,7 +111,7 @@ const Dia::Core::StringCRC MainProcessingUnit::kUniqueId =
 
 ### Phase
 
-**Header:** `Dia/DiaApplication/ApplicationPhase.h`
+**Header:** `Dia/DiaApplicationFlow/ApplicationPhase.h`
 
 **Purpose:** Execution stage that contains modules.
 
@@ -215,7 +215,7 @@ AddModule(new ModuleA());  // Order doesn't matter
 
 ### Module
 
-**Header:** `Dia/DiaApplication/ApplicationModule.h`
+**Header:** `Dia/DiaApplicationFlow/ApplicationModule.h`
 
 **Purpose:** Functional unit with explicit dependencies and lifecycle.
 
@@ -340,7 +340,7 @@ private:
 
 ### StateObject
 
-**Header:** `Dia/DiaApplication/ApplicationStateObject.h`
+**Header:** `Dia/DiaApplicationFlow/ApplicationStateObject.h`
 
 **Purpose:** Base class for objects with lifecycle (levels, game states).
 
@@ -406,7 +406,7 @@ private:
 
 ### ILevel (Interface)
 
-**Header:** `Dia/DiaApplication/ApplicationStateObject.h`
+**Header:** `Dia/DiaApplicationFlow/ApplicationStateObject.h`
 
 **Purpose:** Level interface (alias for StateObject).
 
@@ -418,7 +418,7 @@ typedef StateObject ILevel;
 
 ### LevelFactory
 
-**Header:** `Dia/DiaApplication/LevelFactory.h`
+**Header:** `Dia/DiaApplicationFlow/LevelFactory.h`
 
 **Purpose:** Create levels by name at runtime.
 
@@ -463,7 +463,7 @@ LevelFactory::Destroy();
 
 ### FrameStream<T>
 
-**Header:** `Dia/DiaApplication/FrameStream.h`
+**Header:** `Dia/DiaApplicationFlow/FrameStream.h`
 
 **Purpose:** Thread-safe producer-consumer queue for cross-thread communication.
 

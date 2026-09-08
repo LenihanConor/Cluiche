@@ -34,7 +34,7 @@ C:\GitHub\Cluiche\
 ├── docs/                    # Your markdown source files (unchanged)
 ├── mkdocs.yml              # MkDocs configuration
 ├── requirements.txt         # Python dependencies
-├── venv/                   # Python virtual environment
+├── .venv/                   # Python virtual environment
 ├── site/                   # Generated HTML (gitignored)
 ├── docs-serve.bat          # Windows: Start server
 ├── docs-serve.sh           # Linux/Mac: Start server
@@ -52,7 +52,7 @@ docs-serve.bat
 ./docs-serve.sh
 
 # Or manually
-venv\Scripts\activate  # Windows: venv\Scripts\activate
+.venv\Scripts\activate  # Windows: .venv\Scripts\activate
 mkdocs serve
 ```
 
@@ -64,7 +64,7 @@ The server runs at **http://127.0.0.1:8000** and auto-reloads when files change.
 docs-build.bat
 
 # Or manually
-venv\Scripts\activate
+.venv\Scripts\activate
 mkdocs build
 ```
 
@@ -136,9 +136,9 @@ All dependencies are in `requirements.txt`:
 ### Virtual Environment Issues
 ```bash
 # Recreate virtual environment
-rm -rf venv
-python -m venv venv
-venv\Scripts\activate  # Windows
+rm -rf .venv
+python -m venv .venv
+.venv\Scripts\activate  # Windows
 pip install -r requirements.txt
 ```
 
@@ -161,6 +161,6 @@ The warnings about missing files are expected - they reference documentation tha
 ## Notes
 
 - **Localhost only**: This runs on your local machine only (not deployed)
-- **Git**: `site/` and `venv/` are gitignored
+- **Git**: `site/` and `.venv/` are gitignored
 - **Source files**: Your original `.md` files are unchanged
 - **Portable**: All files relative to repository root

@@ -5,7 +5,6 @@
 #include <DiaGeometry2D/Shapes/Line.h>
 #include <DiaGeometry2D/Shapes/OORect.h>
 #include <DiaGeometry2D/Shapes/Triangle.h>
-#include <DiaGeometry2D/Shapes/Arc.h>
 #include <DiaGeometry2D/Shapes/Capsule.h>
 #include <DiaGeometry2D/Shapes/Ray.h>
 #include <DiaGeometry2D/Shapes/Point.h>
@@ -609,49 +608,6 @@ TEST(Geometry2D_Triangle, CalculateCircumCircle_PassesThroughAllVertices)
         float dist = std::sqrt(dx * dx + dy * dy);
         EXPECT_NEAR(dist, circ.GetRadius(), 0.01f);
     }
-}
-
-// ---------------------------------------------------------------------------
-// Arc (new suite)
-// ---------------------------------------------------------------------------
-
-TEST(Geometry2D_Arc, DefaultConstruction)
-{
-    Arc a;
-    EXPECT_NEAR(a.GetRadius(), 1.0f, 0.001f);
-    EXPECT_NEAR(a.GetFocal().x, 0.0f, 0.001f);
-    EXPECT_NEAR(a.GetFocal().y, 0.0f, 0.001f);
-    EXPECT_NEAR(a.GetAxis().x, 1.0f, 0.001f);
-    EXPECT_NEAR(a.GetAxis().y, 0.0f, 0.001f);
-}
-
-TEST(Geometry2D_Arc, ConstructWithValues_StoresCorrectly)
-{
-    Angle angle = Angle::Deg45;
-    Arc a(3.0f, angle, Vector2D(1.0f, 2.0f), Vector2D(0.0f, 1.0f));
-    EXPECT_NEAR(a.GetRadius(), 3.0f, 0.001f);
-    EXPECT_NEAR(a.GetFocal().x, 1.0f, 0.001f);
-    EXPECT_NEAR(a.GetFocal().y, 2.0f, 0.001f);
-    EXPECT_NEAR(a.GetAxis().x, 0.0f, 0.001f);
-    EXPECT_NEAR(a.GetAxis().y, 1.0f, 0.001f);
-}
-
-TEST(Geometry2D_Arc, CopyConstructor_CopiesValues)
-{
-    Angle angle = Angle::Deg90;
-    Arc a(5.0f, angle, Vector2D(3.0f, 4.0f), Vector2D(1.0f, 0.0f));
-    Arc b(a);
-    EXPECT_NEAR(b.GetRadius(), a.GetRadius(), 0.001f);
-    EXPECT_NEAR(b.GetFocal().x, a.GetFocal().x, 0.001f);
-    EXPECT_NEAR(b.GetFocal().y, a.GetFocal().y, 0.001f);
-    EXPECT_NEAR(b.GetAxis().x, a.GetAxis().x, 0.001f);
-    EXPECT_NEAR(b.GetAxis().y, a.GetAxis().y, 0.001f);
-}
-
-TEST(Geometry2D_Arc, GetSquaredRadius_MatchesRadiusSquared)
-{
-    Arc a(4.0f, Angle::Deg45, Vector2D(0.0f, 0.0f), Vector2D(1.0f, 0.0f));
-    EXPECT_NEAR(a.GetSquaredRadius(), 16.0f, 0.001f);
 }
 
 // ---------------------------------------------------------------------------

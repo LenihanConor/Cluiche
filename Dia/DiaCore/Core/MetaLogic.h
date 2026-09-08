@@ -1,7 +1,7 @@
 #ifndef DIA_METALOGIC_H
 #define DIA_METALOGIC_H
 
-#include "DiaCore/Type/BasicTypeDefines.h"
+#include "DiaCore/Core/BasicTypeDefines.h"
 
 namespace Dia
 {

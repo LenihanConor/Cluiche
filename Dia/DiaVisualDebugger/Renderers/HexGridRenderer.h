@@ -42,8 +42,6 @@ namespace Dia
                 };
 
                 const float hexRadius = grid.GetHexRadius();
-                const int   minQ      = grid.GetMinQ();
-                const int   minR      = grid.GetMinR();
                 const int   colCount  = grid.GetColCount();
                 const int   rowCount  = grid.GetRowCount();
 
@@ -51,7 +49,7 @@ namespace Dia
                 {
                     for (int q = 0; q < colCount; ++q)
                     {
-                        const Dia::Geometry2D::HexCoord coord{ minQ + q, minR + r };
+                        const Dia::Geometry2D::HexCoord coord{ q, r };
                         if (!grid.IsValidHex(coord)) continue;
 
                         const Dia::Maths::Vector2D center = grid.HexToWorld(coord);

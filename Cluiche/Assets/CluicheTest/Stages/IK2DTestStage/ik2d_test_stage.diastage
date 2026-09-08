@@ -1,0 +1,9 @@
+{
+    "name": "IK2DTestStage",
+    "manifest": "Stages/IK2DTestStage/misc/ApplicationFlow/ik2d_test_stage.diaapp",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

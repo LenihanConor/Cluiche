@@ -1,0 +1,98 @@
+#pragma once
+
+#include <DiaEditor/Plugin/EditorPluginBase.h>
+#include <DiaEditor/Project/ProjectContext.h>
+#include <DiaAssetCatalogue/AssetRegistry.h>
+#include <DiaCore/Json/external/json/json.h>
+
+namespace Dia { namespace Editor { class EditorActionRegistry; } }
+
+#include "DiaSceneEditor/SceneFileHandler.h"
+#include "DiaSceneEditor/SceneHierarchyController.h"
+#include "DiaSceneEditor/PropertyInspectorController.h"
+#include "DiaSceneEditor/ProjectContextManager.h"
+#include "DiaSceneEditor/SceneMutator.h"
+#include "DiaSceneEditor/SceneValidator.h"
+
+namespace Dia
+{
+	namespace SceneEditor
+	{
+		class DiaSceneEditorPlugin : public Dia::Editor::EditorPluginBase
+		{
+		public:
+			DiaSceneEditorPlugin()
+				: EditorPluginBase({
+					"DiaSceneEditor",
+					"1.0.0",
+					"Author scene files and entity placements",
+					"dia://plugins/sceneeditor/index.html",
+					Dia::Editor::LayoutMode::kDockable,
+					"scene_editor.dirty_changed",
+					nullptr,
+					false
+				})
+			{
+				mLoadedScenePath[0] = '\0';
+			}
+
+			void OnNavigate(const Dia::Core::StringCRC& instanceId) override;
+
+			// Testable handler methods — can be called directly with JSON fixtures
+			Json::Value HandleAddItem(const Json::Value& data);
+			Json::Value HandleDeleteItem(const Json::Value& data);
+			Json::Value HandleDuplicateItem(const Json::Value& data);
+			Json::Value HandleRenameItem(const Json::Value& data);
+			Json::Value HandleLoadScene(const Json::Value& data);
+			Json::Value HandleSaveScene(const Json::Value& data);
+			Json::Value HandleValidate(const Json::Value& data);
+
+			// Test support — inject a scene root without file I/O
+			void SetTestScene(const Json::Value& sceneRoot)
+			{
+				mLoadedSceneRoot = sceneRoot;
+				strncpy_s(mLoadedScenePath, sizeof(mLoadedScenePath), "test://scene.diascene", _TRUNCATE);
+			}
+
+		protected:
+			void OnPluginLoad() override;
+			void OnPluginUnload() override;
+			void OnProjectChanged(const Dia::Editor::ProjectContext& ctx) override;
+
+		private:
+			void RegisterRequestHandlers();
+			void DualRegisterActions();
+			void RegisterFileActions(Dia::Editor::EditorActionRegistry* api);
+			void RegisterHierarchyCRUDActions(Dia::Editor::EditorActionRegistry* api);
+			void RegisterLayerActions(Dia::Editor::EditorActionRegistry* api);
+			void RegisterOverrideActions(Dia::Editor::EditorActionRegistry* api);
+			void RegisterTemplateActions(Dia::Editor::EditorActionRegistry* api);
+			void RegisterCrossPluginActions(Dia::Editor::EditorActionRegistry* api);
+			void ResolveCatalogueIdForLoadedScene();
+			void AutoSave();
+
+			// Build hierarchy JSON and enrich each item with entityTemplate_known.
+			Json::Value BuildEnrichedHierarchy(const Json::Value& sceneRoot);
+			Json::Value BuildEnrichedHierarchyFiltered(const Json::Value& sceneRoot, const char* filter);
+			void EnrichTemplateKnown(Json::Value& hierarchy);
+
+			// Given a bare template name from a .diascene (e.g. "test_entity"), find the
+			// matching catalogue record by suffix-matching the catalogue id or source_path stem.
+			// Returns the record JSON on success (contains "id" and "source_path"), null on failure.
+			Json::Value ResolveTemplateCatalogueRecord(const char* templateName, const char* itemType) const;
+
+			SceneFileHandler            mFileHandler;
+			SceneValidator              mValidator;
+			SceneHierarchyController    mHierarchyController;
+			PropertyInspectorController mPropertyController;
+			ProjectContextManager       mProjectContextManager;
+
+			Json::Value                 mStageList;
+			Json::Value                 mLoadedSceneRoot;
+			char                        mLoadedScenePath[512];
+			char                        mDiagamePath[512] = {};
+			char                        mDiagameDir[512]  = {};
+			char                        mSceneCatalogueId[256] = {};
+		};
+	}
+}

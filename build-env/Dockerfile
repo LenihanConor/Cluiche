@@ -1,30 +1,28 @@
-# Windows Server Core base image for headless MSVC builds
-# Scope: headless build + test only (no GPU, no GUI per SD-ENV-008)
+# Build environment for Cluiche — Windows Server Core with VS Build Tools + Python 3.11
 FROM mcr.microsoft.com/windows/servercore:ltsc2022
 
-SHELL ["cmd", "/S", "/C"]
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
 
-# Install VS 2022 Build Tools with C++ Desktop workload
-RUN curl -fsSL -o vs_buildtools.exe "https://aka.ms/vs/17/release/vs_buildtools.exe" && \
-    vs_buildtools.exe --quiet --wait --norestart --nocache \
-        --installPath "C:\BuildTools" \
-        --add Microsoft.VisualStudio.Workload.VCTools \
-        --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 \
-        --add Microsoft.VisualStudio.Component.Windows11SDK.22621 \
-        --includeRecommended && \
-    del vs_buildtools.exe
+# Install Chocolatey
+RUN Set-ExecutionPolicy Bypass -Scope Process -Force; \
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; \
+    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 
 # Install Python 3.11
-RUN curl -fsSL -o python_installer.exe "https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe" && \
-    python_installer.exe /quiet InstallAllUsers=1 PrependPath=1 Include_test=0 && \
-    del python_installer.exe
+RUN choco install python --version=3.11.0 -y --no-progress
+RUN python --version
 
-# Install Git
-RUN curl -fsSL -o git_installer.exe "https://github.com/git-for-windows/git/releases/download/v2.44.0.windows.1/Git-2.44.0-64-bit.exe" && \
-    git_installer.exe /VERYSILENT /NORESTART /NOCANCEL /SP- /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS /COMPONENTS="icons,ext\reg\shellhere,assoc,assoc_sh" && \
-    del git_installer.exe
+# Install VS Build Tools (C++ workload)
+RUN choco install visualstudio2022buildtools -y --no-progress \
+    --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools \
+    --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 \
+    --includeRecommended --passive --norestart"
 
-# Configure PATH for MSBuild, Python, Git
-ENV PATH="C:\BuildTools\MSBuild\Current\Bin;C:\Program Files\Python311;C:\Program Files\Python311\Scripts;C:\Program Files\Git\cmd;C:\Program Files\Git\bin;${PATH}"
+# Verify VCTools are present
+RUN if (-not (Test-Path "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC")) { \
+    Write-Error "VCTools not found"; exit 1 }
 
-WORKDIR C:\repo
+# Install vs_buildtools marker check
+RUN Write-Output "vs_buildtools installed"
+
+WORKDIR C:\workspace

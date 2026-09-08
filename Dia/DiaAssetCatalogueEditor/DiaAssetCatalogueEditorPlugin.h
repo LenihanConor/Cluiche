@@ -1,6 +1,7 @@
 #pragma once
 
-#include <DiaEditor/Plugin/IEditorPlugin.h>
+#include <DiaEditor/Plugin/EditorPluginBase.h>
+#include <DiaEditor/Project/ProjectContext.h>
 #include <DiaEditor/Command/CommandHistory.h>
 #include <DiaAssetCatalogue/AssetRegistry.h>
 #include <DiaAssetCatalogue/CatalogueManifestSerializer.h>
@@ -13,6 +14,8 @@
 #include "DiaAssetCatalogueEditor/Handlers/FileDiscoverer.h"
 #include "DiaAssetCatalogueEditor/Handlers/AssetTypeEditorRegistry.h"
 #include <DiaAssetCatalogue/ContentHasher.h>
+
+#include <unordered_map>
 
 namespace Dia
 {
@@ -27,20 +30,24 @@ namespace Dia
 	{
 		namespace Editor
 		{
-			class DiaAssetCatalogueEditorPlugin : public Dia::Editor::IEditorPlugin
+			class DiaAssetCatalogueEditorPlugin : public Dia::Editor::EditorPluginBase
 			{
 			public:
-				const char* GetName() const override { return "DiaAssetCatalogueEditor"; }
-				const char* GetVersion() const override { return "1.0.0"; }
-				const char* GetDescription() const override { return "Author and maintain the asset catalogue manifest"; }
-				const char* GetUIPath() const override { return "dia://plugins/assetcatalogue/index.html"; }
-				Dia::Editor::LayoutMode GetLayoutMode() const override { return Dia::Editor::LayoutMode::kDockable; }
+				DiaAssetCatalogueEditorPlugin();
 
-				void OnLoad(const Dia::Editor::EditorPluginContext& context) override;
-				void OnUnload() override;
+				void OnPluginLoad() override;
+				void OnPluginUnload() override;
 				void OnUpdate(float deltaTime) override;
+				void OnNavigate(const Dia::Core::StringCRC& instanceId) override;
+				void OnProjectChanged(const Dia::Editor::ProjectContext& context) override;
 
 			private:
+				struct AssetTemplate
+				{
+					const char* content;
+					const char* extension;
+				};
+
 				void RegisterRequestHandlers();
 				void RegisterCRUDHandlers();
 				void RegisterDiscovererHandlers();
@@ -48,6 +55,9 @@ namespace Dia
 				void RegisterValidationHandlers();
 				void RegisterAssetTypeEditorHandlers();
 				void RegisterRulesHandlers();
+				void RegisterInferrerHandlers();
+				void DualRegisterActions();
+				void SeedAssetTemplates();
 				void PushDirtyState();
 				void PushRegistryState();
 				void AutoLoadRules();
@@ -57,12 +67,16 @@ namespace Dia
 
 				static Dia::AssetCatalogue::AssetRecord RecordFromJson(const Json::Value& data);
 				static Json::Value RecordToJson(const Dia::AssetCatalogue::AssetRecord& rec);
+				Json::Value RecordToJsonWithMeta(const Dia::AssetCatalogue::AssetRecord& rec) const;
 
 				static const unsigned int kOutputDirLength = 512;
 				char mOutputDir[kOutputDirLength];
 
 				static const unsigned int kCurrentPathLength = 512;
 				char mCurrentPath[kCurrentPathLength];
+
+				static const unsigned int kDiagameDirLength = 512;
+				char mDiagameDir[kDiagameDirLength];
 
 				Dia::AssetCatalogue::AssetRegistry             mRegistry;
 				Dia::AssetCatalogue::CatalogueManifestSerializer mSerializer;
@@ -77,9 +91,7 @@ namespace Dia
 				AssetTypeEditorRegistry                        mTypeEditorRegistry;
 				Dia::AssetCatalogue::CatalogueRulesEngine      mRulesEngine;
 
-				Dia::Editor::WebUIBridge*                      mBridge       = nullptr;
-				Dia::Editor::EditorView*                       mView         = nullptr;
-				Dia::Editor::IPluginLoader*                    mPluginLoader = nullptr;
+				std::unordered_map<Dia::Core::StringCRC, AssetTemplate> mAssetTemplates;
 			};
 		}
 	}

@@ -1,0 +1,68 @@
+#include "Modules/LoadingScreenModule.h"
+
+#include <DiaObservation/Log/DiaLog.h>
+#include <DiaCore/Time/TimeAbsolute.h>
+#include <DiaApplicationFlow/Application.h>
+#include <DiaGraphics/Misc/RGBA.h>
+#include <DiaMaths/Vector/Vector2D.h>
+
+#include <cmath>
+
+namespace Cluiche { namespace AppFlow {
+
+const Dia::Core::StringCRC LoadingScreenModule::kTypeId("LoadingScreenModule");
+
+LoadingScreenModule::LoadingScreenModule(const Dia::Core::StringCRC& instanceId)
+    : SimModule(instanceId)
+{
+}
+
+Dia::ApplicationFlow::StartResult LoadingScreenModule::DoStart()
+{
+    DIA_LOG_INFO("Application", "LoadingScreenModule::DoStart entry");
+    mElapsed = 0.0f;
+    DIA_LOG_INFO("Application", "LoadingScreenModule::DoStart exit");
+    return Dia::ApplicationFlow::StartResult::kReady;
+}
+
+void LoadingScreenModule::DoUpdate(const Dia::SimTime::SimTimeContext& ctx)
+{
+    const float dt = ctx.gameDt.AsFloatInSeconds();
+    mElapsed += dt;
+    mLoadingFrame.Clear();
+
+    // Heartbeat debug draw so the Boot stage has visible sim/render activity
+    // even before the user hits Launch.
+    const float kRadius = 60.0f;
+    Dia::Maths::Vector2D center(100.0f, 100.0f);
+    Dia::Maths::Vector2D dynamic(
+        center.x + std::cos(mElapsed) * kRadius,
+        center.y + std::sin(mElapsed) * kRadius);
+    mLoadingFrame.RequestDraw(center,  75.0f, Dia::Graphics::RGBA::White);
+    mLoadingFrame.RequestDraw(dynamic, 25.0f, Dia::Graphics::RGBA::Red);
+    mLoadingFrame.RequestDraw(center, dynamic, Dia::Graphics::RGBA::White);
+
+    mRenderOutput.Write(mLoadingFrame, Dia::Core::TimeAbsolute::Zero());
+}
+
+Dia::ApplicationFlow::StopResult LoadingScreenModule::DoStop()
+{
+    DIA_LOG_INFO("Application", "LoadingScreenModule::DoStop entry");
+    // Publish a cleared frame so SimScene does not retain the loading-screen
+    // geometry after Boot exits (FrameStreamStore keeps the last write).
+    mLoadingFrame.Clear();
+    mRenderOutput.Write(mLoadingFrame, Dia::Core::TimeAbsolute::Zero());
+    return Dia::ApplicationFlow::StopResult::kDone;
+}
+
+void LoadingScreenModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
+{
+    mRenderOutput.Connect(app);
+}
+
+} } // namespace Cluiche::AppFlow
+
+#include <DiaApplicationFlow/RegistrationMacrosV2.h>
+namespace { using LoadingScreenModule_ = Cluiche::AppFlow::LoadingScreenModule; }
+DIA_MODULE(LoadingScreenModule_);
+DIA_DESCRIBE(LoadingScreenModule_::kTypeId, "Displays a loading screen during asset-heavy stage transitions.");

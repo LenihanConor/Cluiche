@@ -31,11 +31,12 @@ def run(
     output_json: bool,
     quiet: bool,
     local_llm: bool = False,
+    python_packages: bool = False,
 ) -> int:
     root = repo_root if repo_root is not None else _REPO_ROOT
     use_color = sys.stdout.isatty() and not output_json
 
-    run_all = not any([toolchain, deps_only, submodules, docker_only, claude, local_llm])
+    run_all = not any([toolchain, deps_only, submodules, docker_only, claude, local_llm, python_packages])
     checks = []
 
     if run_all or toolchain or docker_only:
@@ -63,6 +64,13 @@ def run(
 
     if run_all or local_llm:
         checks.extend(_check_local_llm())
+
+    if run_all or python_packages:
+        checks.extend(_check_python_packages(root))
+
+    if run_all:
+        checks.extend(_check_cppcheck())
+        checks.extend(_check_pmd())
 
     pass_count = sum(1 for c in checks if c.status == "pass")
     warn_count = sum(1 for c in checks if c.status == "warn")
@@ -170,6 +178,78 @@ def _check_claude(repo_root: Path) -> list:
         results.append(CheckResult("memory symlink", "claude", "fail",
                                    "not configured",
                                    "dia env claude-setup"))
+    return results
+
+
+def _check_python_packages(repo_root: Path) -> list:
+    from dia_cli.utils.check_result import CheckResult
+    import importlib.util
+
+    req_file = repo_root / "Dia" / "DiaCLI" / "requirements.txt"
+    if not req_file.exists():
+        return [CheckResult("requirements.txt", "python-packages", "fail",
+                            "not found", f"expected at {req_file}")]
+
+    results = []
+    for line in req_file.read_text().splitlines():
+        pkg = line.strip()
+        if not pkg or pkg.startswith("#"):
+            continue
+        # Normalise: strip version specifiers and extras, convert - to _
+        import re
+        name = re.split(r"[>=<!;\[]", pkg)[0].strip().replace("-", "_").lower()
+        if importlib.util.find_spec(name) is not None:
+            results.append(CheckResult(pkg, "python-packages", "pass"))
+        else:
+            results.append(CheckResult(pkg, "python-packages", "fail",
+                                       "not installed",
+                                       "dia env setup --python-packages"))
+    return results
+
+
+def _check_cppcheck() -> list:
+    from dia_cli.utils.check_result import CheckResult
+    results = []
+    if shutil.which("cppcheck"):
+        try:
+            r = _sp.run(["cppcheck", "--version"], capture_output=True, text=True, timeout=10)
+            ver = r.stdout.strip() if r.returncode == 0 else "unknown"
+            results.append(CheckResult("Cppcheck", "static-analysis", "pass", ver))
+        except _sp.TimeoutExpired:
+            results.append(CheckResult("Cppcheck", "static-analysis", "warn", "version check timed out"))
+    else:
+        results.append(CheckResult("Cppcheck", "static-analysis", "warn",
+                                   "not installed",
+                                   "dia env setup --toolchain  (or: winget install Cppcheck.Cppcheck)"))
+    return results
+
+
+def _check_pmd() -> list:
+    from dia_cli.utils.check_result import CheckResult
+    repo_root = _REPO_ROOT
+
+    # Prefer repo-local install
+    local_cpd = repo_root / "External" / "pmd" / "bin" / "pmd.bat"
+    if local_cpd.exists():
+        results = [CheckResult("PMD CPD", "static-analysis", "pass", f"External/pmd (local)")]
+    elif shutil.which("cpd") or shutil.which("pmd"):
+        results = [CheckResult("PMD CPD", "static-analysis", "pass", "system PATH")]
+    else:
+        results = [CheckResult("PMD CPD", "static-analysis", "warn",
+                               "not installed — clone detection unavailable",
+                               "dia env setup --deps  (installs PMD to External/pmd/)")]
+
+    # Java is required to run PMD
+    try:
+        r = _sp.run(["java", "-version"], capture_output=True, text=True, timeout=10)
+        if r.returncode != 0:
+            results.append(CheckResult("Java (for PMD)", "static-analysis", "warn",
+                                       "java not on PATH — PMD will not run",
+                                       "dia env setup --toolchain  (or: winget install Microsoft.OpenJDK.21)"))
+    except (FileNotFoundError, _sp.TimeoutExpired):
+        results.append(CheckResult("Java (for PMD)", "static-analysis", "warn",
+                                   "java not found",
+                                   "dia env setup --toolchain  (or: winget install Microsoft.OpenJDK.21)"))
     return results
 
 

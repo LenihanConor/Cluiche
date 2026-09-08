@@ -178,17 +178,22 @@ TEST(RigidBody2D_CollisionDetection, TwoCircles_PartialOverlap_ContactProduced)
 // Test 6 — Contact list is cleared each step; separated bodies leave no contact
 // ---------------------------------------------------------------------------
 
-// Directly exercises DetectCollisions() (no broad-phase required) by confirming
-// that the outContacts array is wiped before each detection pass.
+// Directly exercises DetectCollisions() via the null-broad-phase brute-force
+// path, confirming the outContacts array is wiped before each detection pass.
+// Bodies are placed far apart so no genuine contact is generated — isolating
+// the "cleared each step" invariant from detection results.
 TEST(RigidBody2D_CollisionDetection, ContactList_ClearedEachStep)
 {
-    // Build two-body pools directly — no PhysicsWorld, no broad-phase
+    // Two separated bodies (centres 10 apart, radius 1) — no overlap.
+    Dia::Geometry2D::Transform tA, tB;
+    tA.SetWorldPosition(Vector2D(0.0f, 0.0f));
+    tB.SetWorldPosition(Vector2D(10.0f, 0.0f));
     Dia::Geometry2D::Circle circA(1.0f, Vector2D::Zero());
     Dia::Geometry2D::Circle circB(1.0f, Vector2D::Zero());
 
     PointBodyDef defA, defB;
-    defA.circleShape = &circA;
-    defB.circleShape = &circB;
+    defA.transform = &tA; defA.circleShape = &circA;
+    defB.transform = &tB; defB.circleShape = &circB;
 
     PointBody2D bodyA(defA);
     PointBody2D bodyB(defB);
@@ -200,7 +205,7 @@ TEST(RigidBody2D_CollisionDetection, ContactList_ClearedEachStep)
     pts.Add(&bodyA);
     pts.Add(&bodyB);
 
-    // With null broad-phase DetectCollisions returns immediately — contacts cleared
+    // Separated bodies via brute-force path → no contacts.
     DetectCollisions(pts, rbs, nullptr, contacts);
     EXPECT_EQ(contacts.Size(), 0u);
 
@@ -208,7 +213,7 @@ TEST(RigidBody2D_CollisionDetection, ContactList_ClearedEachStep)
     contacts.Add(Contact{});
     EXPECT_EQ(contacts.Size(), 1u);
 
-    // DetectCollisions must clear it even with nullptr broad-phase
+    // DetectCollisions must clear it before each pass.
     DetectCollisions(pts, rbs, nullptr, contacts);
     EXPECT_EQ(contacts.Size(), 0u);
 }

@@ -10,6 +10,7 @@
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaEditor/Plugin/IEditorPlugin.h>
 #include <DiaCore/Json/external/json/json.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGraphics/Frame/FrameData.h>
 
 using namespace Dia::Debug;
@@ -22,7 +23,7 @@ struct PanelTestLayer : public IVisualDebugger
 {
     explicit PanelTestLayer(const char* name) : mName(name) {}
     Dia::Core::StringCRC GetLayerName() const override { return mName; }
-    void Draw(Dia::Graphics::FrameData& /*fd*/) override {}
+    void Draw(Dia::Core::IDebugDraw& /*draw*/) override {}
     Dia::Core::StringCRC mName;
 };
 

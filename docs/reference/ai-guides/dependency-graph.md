@@ -67,7 +67,7 @@ DiaIO
 ### Layer 3: Framework
 
 ```
-DiaApplication
+DiaApplicationFlow
 ├── DiaCore
 │   ├── Containers (DynamicArray, HashTable)
 │   ├── Type (StringCRC, TypeRegistry)
@@ -76,7 +76,7 @@ DiaApplication
 └── No other Dia dependencies
 ```
 
-**DiaApplication** provides the application framework but doesn't depend on graphics, math, or other subsystems.
+**DiaApplicationFlow** provides the application framework but doesn't depend on graphics, math, or other subsystems.
 
 ---
 
@@ -115,7 +115,7 @@ DiaAI
 
 ```
 Cluiche
-├── DiaApplication
+├── DiaApplicationFlow
 │   ├── ProcessingUnit
 │   ├── Phase
 │   ├── Module
@@ -151,7 +151,7 @@ graph TD
     Cluiche[CluicheTest Application]
     
     %% Dia Framework
-    DiaApp[DiaApplication]
+    DiaApp[DiaApplicationFlow]
     
     %% Dia Core
     DiaCore[DiaCore]
@@ -230,7 +230,7 @@ MainUIModule (ObserverSubject)
 └── No module dependencies
 
 LevelFactoryModule
-└── DiaApplication::LevelFactory
+└── DiaApplicationFlow::LevelFactory
 ```
 
 ### Sim Thread Modules
@@ -310,21 +310,21 @@ Random::RandomFloat()
 ### Layer Violations
 
 **❌ DiaCore cannot depend on:**
-- DiaApplication (higher layer)
+- DiaApplicationFlow (higher layer)
 - DiaMaths (peer layer)
 - DiaGraphics (peer layer)
 - Any application code
 
 **❌ DiaMaths cannot depend on:**
 - DiaGraphics (separation of concerns)
-- DiaApplication (layer violation)
+- DiaApplicationFlow (layer violation)
 - DiaSFML (backend dependency)
 
 **❌ DiaGraphics cannot depend on:**
 - DiaSFML (abstraction must not depend on implementation)
-- DiaApplication (layer violation)
+- DiaApplicationFlow (layer violation)
 
-**❌ DiaApplication cannot depend on:**
+**❌ DiaApplicationFlow cannot depend on:**
 - Cluiche (engine must not know application)
 - DiaSFML (backend dependency)
 - DiaGraphics (optional subsystem)
@@ -445,11 +445,11 @@ dependent_modules:
 
 ### Pattern 2: Application depends on Framework
 
-**Valid:** Cluiche depends on DiaApplication.
+**Valid:** Cluiche depends on DiaApplicationFlow.
 
 ```cpp
-#include "DiaApplication/ApplicationModule.h"
-#include "DiaApplication/ApplicationPhase.h"
+#include "DiaApplicationFlow/ApplicationModule.h"
+#include "DiaApplicationFlow/ApplicationPhase.h"
 ```
 
 ---
@@ -497,7 +497,7 @@ void ICanvas::DrawLine(Vector2D start, Vector2D end);
 - DiaCore → Any Dia subsystem (except external)
 - DiaMaths → DiaGraphics
 - DiaGraphics → DiaSFML
-- DiaApplication → DiaGraphics, DiaMaths, DiaSFML
+- DiaApplicationFlow → DiaGraphics, DiaMaths, DiaSFML
 - Any backend → Cluiche
 - Circular dependencies
 

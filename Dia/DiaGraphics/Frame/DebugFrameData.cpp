@@ -4,7 +4,7 @@
 #include "DiaGraphics/Frame/DebugFrameData.h"
 
 #include "DiaGraphics/Frame/DebugFrameDataVisitor.h"
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 namespace Dia
 {
@@ -24,18 +24,36 @@ namespace Dia
 		{
 			if (mOverCapacityLogged)
 			{
-				DIA_LOG_WARNING("graphics", "DebugFrameData: primitive budget recovered — no drops this frame.");
+				DIA_LOG_WARNING("graphics", "DebugFrameData: geometry budget recovered — no drops this frame.");
 				mOverCapacityLogged = false;
 			}
+			if (mTextOverCapacityLogged)
+			{
+				DIA_LOG_WARNING("graphics", "DebugFrameData: text budget recovered — no drops this frame.");
+				mTextOverCapacityLogged = false;
+			}
+			if (m3DOverCapacityLogged)
+			{
+				DIA_LOG_WARNING("graphics", "DebugFrameData: 3D geometry budget recovered — no drops this frame.");
+				m3DOverCapacityLogged = false;
+			}
 			mDebugPrimitiveBuffer.RemoveAll();
-			mDroppedCount = 0;
+			mTextBuffer.RemoveAll();
+			mDebug3DPrimitiveBuffer.RemoveAll();
+			mDroppedCount     = 0;
+			mTextDroppedCount = 0;
+			mDropped3DCount   = 0;
 		}
 
 		//------------------------------------------------------------------------------
 		void DebugFrameData::CopyDebugBuffer(const DebugFrameData& rhs)
 		{
 			mDebugPrimitiveBuffer = rhs.mDebugPrimitiveBuffer;
+			mTextBuffer           = rhs.mTextBuffer;
 			mDroppedCount         = rhs.mDroppedCount;
+			mTextDroppedCount     = rhs.mTextDroppedCount;
+			mDebug3DPrimitiveBuffer = rhs.mDebug3DPrimitiveBuffer;
+			mDropped3DCount         = rhs.mDropped3DCount;
 		}
 
 		//------------------------------------------------------------------------------
@@ -142,33 +160,102 @@ namespace Dia
 			RGBA colour)
 		{
 			if (fontSize <= 0.0f) return;
-			if (!CanAdd()) return;
+			if (!CanAddText()) return;
 
-			DebugPrimitive p;
-			p.type               = DebugPrimitiveType::Text2D;
-			p.text2D.position    = position;
-			p.text2D.fontSize    = fontSize;
-			p.text2D.colour      = colour;
+			DebugPrimitiveText2D t;
+			t.position = position;
+			t.fontSize = fontSize;
+			t.colour   = colour;
 
-			// Safe truncating copy — null terminator always at [63]
 			unsigned int i = 0;
 			if (text != nullptr)
 			{
 				for (; i < 63 && text[i] != '\0'; ++i)
-					p.text2D.text[i] = text[i];
+					t.text[i] = text[i];
 			}
-			p.text2D.text[i] = '\0';
+			t.text[i] = '\0';
 
-			mDebugPrimitiveBuffer.Add(p);
+			mTextBuffer.Add(t);
+		}
+
+		//------------------------------------------------------------------------------
+		void DebugFrameData::RequestDrawLine3D(const Maths::Vector3D& from, const Maths::Vector3D& to,
+			RGBA colour)
+		{
+			if (!CanAdd3D()) return;
+			DebugPrimitive p;
+			p.type          = DebugPrimitiveType::Line3D;
+			p.line3D.from   = from;
+			p.line3D.to     = to;
+			p.line3D.colour = colour;
+			mDebug3DPrimitiveBuffer.Add(p);
+		}
+
+		//------------------------------------------------------------------------------
+		void DebugFrameData::RequestDrawRay3D(const Maths::Vector3D& origin,
+			const Maths::Vector3D& direction, float length, RGBA colour)
+		{
+			DIA_ASSERT(direction.SquareMagnitude() > 0.0f, "Ray3D direction must be a non-zero unit vector");
+			if (!CanAdd3D()) return;
+			DebugPrimitive p;
+			p.type              = DebugPrimitiveType::Ray3D;
+			p.ray3D.origin      = origin;
+			p.ray3D.direction   = direction;
+			p.ray3D.length      = length;
+			p.ray3D.colour      = colour;
+			mDebug3DPrimitiveBuffer.Add(p);
+		}
+
+		//------------------------------------------------------------------------------
+		void DebugFrameData::RequestDrawBox3D(const Maths::Vector3D& min, const Maths::Vector3D& max,
+			RGBA colour)
+		{
+			if (!CanAdd3D()) return;
+			DebugPrimitive p;
+			p.type          = DebugPrimitiveType::Box3D;
+			p.box3D.min     = min;
+			p.box3D.max     = max;
+			p.box3D.colour  = colour;
+			mDebug3DPrimitiveBuffer.Add(p);
+		}
+
+		//------------------------------------------------------------------------------
+		void DebugFrameData::RequestDrawSphere3D(const Maths::Vector3D& center, float radius,
+			RGBA colour)
+		{
+			if (!CanAdd3D()) return;
+			DebugPrimitive p;
+			p.type               = DebugPrimitiveType::Sphere3D;
+			p.sphere3D.center    = center;
+			p.sphere3D.radius    = radius;
+			p.sphere3D.colour    = colour;
+			mDebug3DPrimitiveBuffer.Add(p);
+		}
+
+		//------------------------------------------------------------------------------
+		void DebugFrameData::RequestDrawArrow3D(const Maths::Vector3D& origin,
+			const Maths::Vector3D& direction, float length, float headSize, RGBA colour)
+		{
+			DIA_ASSERT(direction.SquareMagnitude() > 0.0f, "Arrow3D direction must be a non-zero unit vector");
+			if (!CanAdd3D()) return;
+			DebugPrimitive p;
+			p.type               = DebugPrimitiveType::Arrow3D;
+			p.arrow3D.origin     = origin;
+			p.arrow3D.direction  = direction;
+			p.arrow3D.length     = length;
+			p.arrow3D.headSize   = headSize;
+			p.arrow3D.colour     = colour;
+			mDebug3DPrimitiveBuffer.Add(p);
 		}
 
 		//------------------------------------------------------------------------------
 		void DebugFrameData::AcceptVisitor(const DebugFrameDataVisitor& visitor) const
 		{
 			for (unsigned int i = 0; i < mDebugPrimitiveBuffer.Size(); i++)
-			{
 				visitor.Visit(mDebugPrimitiveBuffer[i]);
-			}
+
+			for (unsigned int i = 0; i < mTextBuffer.Size(); i++)
+				visitor.VisitText(mTextBuffer[i]);
 		}
 	}
 }

@@ -8,49 +8,47 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/IVisualDebugger.h>
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
 #include <DiaRig2D/Skeleton.h>
 #include <DiaRig2D/BoneTransform.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
 namespace Dia
 {
-    namespace Debug
+    namespace Core
     {
-        class DebugLayerManager;
+        class IDebugContext;
     }
 }
 
-namespace Dia
+namespace Dia::Rig2D
 {
-    namespace Rig2D
-    {
-        ////////////////////////////////////////////////////////////////////////////////
-        // BoneLinesDrawer
-        //
-        // Draws a white line from parent-bone world position to child-bone world
-        // position for every non-root bone in the skeleton.
-        // Layer:  LayerNames::kRigBones
-        // Priority: 10
-        ////////////////////////////////////////////////////////////////////////////////
-        class BoneLinesDrawer : public Dia::Debug::IVisualDebugger
-        {
-        public:
-            BoneLinesDrawer(
-                const Skeleton& skeleton,
-                const Dia::Core::Containers::DynamicArrayC<BoneTransform, kMaxBones>& worldTransforms,
-                const Dia::Debug::DebugLayerManager& manager);
 
-            Dia::Core::StringCRC GetLayerName() const override;
-            void Draw(Dia::Graphics::FrameData& frameData) override;
+////////////////////////////////////////////////////////////////////////////////
+// BoneLinesDrawer
+//
+// Draws a white line from parent-bone world position to child-bone world
+// position for every non-root bone in the skeleton.
+// Layer:  LayerNames::kRigBones
+// Priority: 10
+////////////////////////////////////////////////////////////////////////////////
+class BoneLinesDrawer : public Dia::Debug::IVisualDebugger
+{
+public:
+    BoneLinesDrawer(
+        const Skeleton& skeleton,
+        const Dia::Core::Containers::DynamicArrayC<BoneTransform, kMaxBones>& worldTransforms,
+        const Dia::Core::IDebugContext& manager);
 
-        private:
-            const Skeleton&                                                              mSkeleton;
-            const Dia::Core::Containers::DynamicArrayC<BoneTransform, kMaxBones>&       mWorldTransforms;
-            const Dia::Debug::DebugLayerManager&                                         mManager;
-        };
+    Dia::Core::StringCRC GetLayerName() const override;
+    void Draw(Dia::Core::IDebugDraw& draw) override;
 
-    } // namespace Rig2D
-} // namespace Dia
+private:
+    const Skeleton&                                                              mSkeleton;
+    const Dia::Core::Containers::DynamicArrayC<BoneTransform, kMaxBones>&       mWorldTransforms;
+    const Dia::Core::IDebugContext&                                              mManager;
+};
+
+} // namespace Dia::Rig2D
 
 #endif // DIA_DEBUG

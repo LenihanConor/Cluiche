@@ -1,0 +1,21 @@
+{
+    "schema": "diagamemessages/v1",
+    "namespace": "Dia::RigidBody2D::Messages",
+    "includes": ["DiaRigidBody2D/Events/CollisionEvent.h", "cstdint"],
+    "messages": [
+        {
+            "id": "PhysicsCollisionEvent",
+            "router": "broadcast",
+            "pass": "primary",
+            "producers": ["PhysicsBusAdapter"],
+            "consumers": [],
+            "fields": [
+                { "name": "type",          "type": "Dia::RigidBody2D::CollisionEventType", "notes": "Enter/Stay/Exit — mirrors CollisionEvent::type" },
+                { "name": "bodyAUniqueId", "type": "uint32_t", "notes": "Body2DBase::GetUniqueId() snapshot for bodyA — stable identity assigned by PhysicsWorld, not a pointer" },
+                { "name": "bodyBUniqueId", "type": "uint32_t", "notes": "Body2DBase::GetUniqueId() snapshot for bodyB — stable identity assigned by PhysicsWorld, not a pointer" },
+                { "name": "bodyAId",       "type": "Dia::Core::StringCRC", "notes": "Body2DBase::GetId() snapshot for bodyA" },
+                { "name": "bodyBId",       "type": "Dia::Core::StringCRC", "notes": "Body2DBase::GetId() snapshot for bodyB" }
+            ]
+        }
+    ]
+}

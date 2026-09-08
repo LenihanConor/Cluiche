@@ -2,14 +2,13 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaGraphics/Frame/FrameData.h>
-#include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugColourPalette.h>
 #include <DiaMaths/Core/MathsDefines.h>
 #include <DiaMaths/Vector/Vector2D.h>
 
 #include <cmath>
+#include <cstdio>
 
 namespace Dia::Geometry2DVisualDebugger
 {
@@ -17,15 +16,17 @@ namespace Dia::Geometry2DVisualDebugger
 template<typename T, unsigned int MaxObjects>
 Dia::Core::StringCRC HexGridDrawer<T, MaxObjects>::GetLayerName() const
 {
-    return Dia::Debug::LayerNames::kGeoSpatialGrid;
+    return Dia::Debug::LayerNames::kGeoHexGrid;
 }
 
 template<typename T, unsigned int MaxObjects>
-void HexGridDrawer<T, MaxObjects>::Draw(Dia::Graphics::FrameData& frameData)
+void HexGridDrawer<T, MaxObjects>::Draw(Dia::Core::IDebugDraw& draw)
 {
     if (!IsEnabled()) return;
 
-    const Dia::Graphics::RGBA colour = Dia::Debug::DebugColourPalette::kInactive;
+    static const Dia::Core::RGBA kSelectFill(100, 180, 255, 60);
+    static const Dia::Core::RGBA kSelectOutline(100, 180, 255, 200);
+    const Dia::Core::RGBA colour = Dia::Debug::DebugColourPalette::kInactive;
 
     // Pointy-top hexagon corner angles (radians): 30, 90, 150, 210, 270, 330 degrees
     static constexpr float kAngles[6] =
@@ -39,8 +40,6 @@ void HexGridDrawer<T, MaxObjects>::Draw(Dia::Graphics::FrameData& frameData)
     };
 
     const float hexRadius = mGrid.GetHexRadius();
-    const int   minQ      = mGrid.GetMinQ();
-    const int   minR      = mGrid.GetMinR();
     const int   colCount  = mGrid.GetColCount();
     const int   rowCount  = mGrid.GetRowCount();
 
@@ -48,12 +47,11 @@ void HexGridDrawer<T, MaxObjects>::Draw(Dia::Graphics::FrameData& frameData)
     {
         for (int q = 0; q < colCount; ++q)
         {
-            const Dia::Geometry2D::HexCoord coord{ minQ + q, minR + r };
+            const Dia::Geometry2D::HexCoord coord{ q, r };
             if (!mGrid.IsValidHex(coord)) continue;
 
             const Dia::Maths::Vector2D center = mGrid.HexToWorld(coord);
 
-            // Compute 6 corners
             Dia::Maths::Vector2D corners[6];
             for (int k = 0; k < 6; ++k)
             {
@@ -62,10 +60,27 @@ void HexGridDrawer<T, MaxObjects>::Draw(Dia::Graphics::FrameData& frameData)
                     center.y + hexRadius * std::sin(kAngles[k]));
             }
 
-            // Draw 6 edge lines
+            const bool selected = (mSelected != nullptr) && (coord == *mSelected);
+            const Dia::Core::RGBA edgeColour = selected ? kSelectOutline : colour;
+
             for (int k = 0; k < 6; ++k)
+                draw.RequestDraw(corners[k], corners[(k + 1) % 6], edgeColour);
+
+            // Filled triangle fan for selected hex
+            if (selected)
             {
-                frameData.RequestDraw(corners[k], corners[(k + 1) % 6], colour);
+                for (int k = 0; k < 6; ++k)
+                    draw.RequestDraw(center, corners[k], corners[(k + 1) % 6],
+                        Dia::Core::RGBA(0, 0, 0, 0), kSelectFill);
+            }
+
+            if (mShowLabels)
+            {
+                char label[16];
+                std::snprintf(label, sizeof(label), "%d,%d", coord.q, coord.r);
+                draw.RequestDrawText(
+                    Dia::Maths::Vector2D(center.x - hexRadius * 0.35f, center.y),
+                    label, 10.0f, colour);
             }
         }
     }

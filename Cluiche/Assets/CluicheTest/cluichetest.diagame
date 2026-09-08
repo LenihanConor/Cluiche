@@ -1,23 +1,129 @@
 {
-   "config" : {
-      "path_aliases" : {
-         "root" : ".",
-         "ui_common" : "./global/Presentation/UI"
-      },
-      "ultralight" : {
-         "resource_path_prefix" : "global/Misc/Resources/"
-      }
-   },
-   "imports" : [
-      {
-         "path" : "global/misc/ApplicationFlow/cluiche_main.diaapp",
-         "type" : "manifest"
-      },
-      {
-         "path" : "stages/DummyStage/dummy_stage.diastage",
-         "type" : "stage"
-      }
-   ],
-   "name" : "CluicheTest",
-   "version" : "0.1"
+    "config": {
+        "name": "CluicheTest",
+        "build": "dev-0.1",
+        "window": {
+            "title": "CluicheTest - e2e tests",
+            "width_pct": 80,
+            "height_pct": 80
+        },
+        "asset_catalogue": "assets.catalogue.json",
+        "observation": "cluichetest.diaobservation",
+        "path_aliases": {
+            "root": ".",
+            "ui_common": "./global/Presentation/UI"
+        },
+        "ultralight": {
+            "resource_path_prefix": "global/Misc/Resources/"
+        }
+    },
+    "imports": [
+        {
+            "path": "global/misc/ApplicationFlow/cluiche_main.diaapp",
+            "type": "manifest"
+        },
+        {
+            "path": "Stages/DummyStage/dummy_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/RigidBody2DTestStage/rigidbody2d_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/AssetRuntimeTestStage/asset_runtime_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/Geometry2DTestStage/geometry2d_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/UIUltralightTestStage/ui_ultralight_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/EntityTestStage/entity_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/SoftBody2DTestStage/softbody2d_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/Animation2DTestStage/animation2d_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/Scene2DTestStage/scene2d_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/IK2DTestStage/ik2d_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/Mesh3DTestStage/mesh3d_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/Mesh3DRenderSystemTestStage/mesh3drendersystem_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/AIDecisionTestStage/ai_decision_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/AIHTNTestStage/ai_htn_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/PathfindingTestStage/pathfinding_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/ScalarFieldTestStage/scalarfield_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/EntitySpatialTestStage/entityspatial_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/EconomyTestStage/economy_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/SpawnerTestStage/spawner_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/ArenaTestStage/arena_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/DebugGalleryTestStage/debuggallery_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/BehaviourTreeTestStage/behaviour_tree_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/AICalloutTestStage/aicallout_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/GridVisibilityTestStage/grid_visibility_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/MessageBusTestStage/message_bus_test_stage.diastage",
+            "type": "stage"
+        }
+    ],
+    "name": "CluicheTest",
+    "version": "0.1",
+    "schema": "registeredtypes.diaschema"
 }

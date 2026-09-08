@@ -1,6 +1,6 @@
 #include "DiaSerializer/ISerializer.h"
 #include <DiaCore/Core/Assert.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <cstdio>
 #include <cstring>
 

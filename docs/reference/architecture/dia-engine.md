@@ -27,7 +27,7 @@ Detailed architecture of the Dia game engine, the shared engine infrastructure f
 
 | Subsystem | Status | Purpose |
 |-----------|--------|---------|
-| **DiaApplication** | ✅ Stable | Module/Phase/ProcessingUnit framework |
+| **DiaApplicationFlow** | ✅ Stable | Module/Phase/ProcessingUnit framework |
 | **DiaCore** | ✅ Stable | Containers, Type system, Time, Memory |
 | **DiaMaths** | ✅ Stable | Vector, Matrix, Transform, Shape math |
 | **DiaGraphics** | ✅ Stable | Platform-agnostic rendering (ICanvas) |
@@ -49,9 +49,9 @@ Detailed architecture of the Dia game engine, the shared engine infrastructure f
 
 ## Core Subsystems
 
-### 1. DiaApplication
+### 1. DiaApplicationFlow
 
-**Location:** `Dia/DiaApplication/`
+**Location:** `Dia/DiaApplicationFlow/`
 
 **Purpose:** Threading framework via Module/Phase/ProcessingUnit pattern
 
@@ -394,7 +394,7 @@ Vector2D MoveTowards(const Vector2D& current, const Vector2D& target, float maxD
 ```
 
 **Known Issue:** Template specialization bugs in InverseLerp/MoveTowards for vectors  
-**[→ Details](../subsystems/dia-maths/known-issues.md)**
+**[→ Details](../architecture/dia-maths-known-issues.md)**
 
 **Random:**
 ```cpp
@@ -507,7 +507,7 @@ private:
 ```
 
 **Known Issue:** `GetWorldMatrix()` traverses hierarchy multiple times (not optimized)  
-**[→ Details](../subsystems/dia-maths/known-issues.md)**
+**[→ Details](../architecture/dia-maths-known-issues.md)**
 
 ---
 
@@ -549,7 +549,7 @@ bool Raycast(const Vector2D& origin, const Vector2D& direction, const Circle& ci
 ```
 
 **Known Issue:** Dead code in IntersectionTests (unreachable branches)  
-**[→ Details](../subsystems/dia-maths/known-issues.md)**
+**[→ Details](../architecture/dia-maths-known-issues.md)**
 
 **[→ DiaMaths API Documentation](../api/dia/maths-api.md)**
 
@@ -935,7 +935,7 @@ private:
 ```
 Application Layer (Cluiche)
     ↓
-DiaApplication (Module/Phase/PU framework)
+DiaApplicationFlow (Module/Phase/PU framework)
     ↓
 DiaCore (Containers, Type, Time)
     ↑
@@ -962,7 +962,7 @@ schema: dia.module.v1
 module_id: dia.application
 parent_module_id: dia.root
 name: Application
-path: Dia/DiaApplication
+path: Dia/DiaApplicationFlow
 language: cpp
 status: active
 maturity: stable
@@ -976,9 +976,9 @@ dependencies:
 
 public_api:
   headers:
-    - Dia/DiaApplication/ApplicationModule.h
-    - Dia/DiaApplication/ApplicationPhase.h
-    - Dia/DiaApplication/ApplicationProcessingUnit.h
+    - Dia/DiaApplicationFlow/ApplicationModule.h
+    - Dia/DiaApplicationFlow/ApplicationPhase.h
+    - Dia/DiaApplicationFlow/ApplicationProcessingUnit.h
 ---
 ```
 
@@ -1016,7 +1016,7 @@ public_api:
 Dia is a **modular game engine** with 13 subsystems providing:
 
 **Core Foundation:**
-- ✅ DiaApplication - Threading framework
+- ✅ DiaApplicationFlow - Threading framework
 - ✅ DiaCore - Containers, Type system, Time, Memory
 - ✅ DiaMaths - Comprehensive math library
 

@@ -1,19 +1,27 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { PipelineToolbar } from './PipelineToolbar';
+import type { PipelineAction } from '../state/pipelineReducer';
+import type { Dispatch } from 'react';
 
-function simulateTargetsResponse(targets: string[]) {
-    // The toolbar sends a pipeline.get-targets request on mount via postMessage.
-    // Simulate the response arriving via the DiaEditor_onResponse pattern.
-    // Since useBridgeRequest listens for __dia messages with reqId, we need to
-    // intercept the outgoing reqId and respond with it.
-    // Simpler approach: directly send the targets via the build-status topic pattern.
-    // Actually, let's just test the UI rendering with targets pre-populated by
-    // dispatching a message response.
+const noop: Dispatch<PipelineAction> = () => {};
 
-    // The useBridgeRequest hook stores pending callbacks by reqId. We need to capture
-    // the reqId from the outgoing postMessage and respond with it.
-    return targets;
+function defaultProps(overrides: Partial<{
+    buildRunning: boolean;
+    diagameName: string;
+    canLaunch: boolean;
+    lastSuccessTimestamp: number | null;
+    resumeStages: string[];
+}> = {}) {
+    return {
+        buildRunning: false,
+        diagameName: 'cluichetest',
+        canLaunch: false,
+        lastSuccessTimestamp: null,
+        resumeStages: [],
+        dispatch: noop,
+        ...overrides,
+    };
 }
 
 describe('PipelineToolbar', () => {
@@ -23,69 +31,88 @@ describe('PipelineToolbar', () => {
         vi.restoreAllMocks();
     });
 
-    // AC6: toolbar has target dropdown, config dropdown, force checkbox, Run button
-    it('renders target dropdown, config dropdown, force checkbox, and Run button', () => {
-        render(<PipelineToolbar buildRunning={false} />);
-        expect(screen.getByText('Target:')).toBeInTheDocument();
-        expect(screen.getByText('Config:')).toBeInTheDocument();
-        expect(screen.getByText('Force')).toBeInTheDocument();
-        expect(screen.getByText('Run')).toBeInTheDocument();
-    });
-
-    // AC8: shows Cancel when build running
-    it('shows Cancel button when build is running', () => {
-        render(<PipelineToolbar buildRunning={true} />);
-        expect(screen.getByText('Cancel')).toBeInTheDocument();
-        expect(screen.queryByText('Run')).not.toBeInTheDocument();
-    });
-
-    // AC8: dropdowns disabled when running
-    it('disables dropdowns when build is running', () => {
-        render(<PipelineToolbar buildRunning={true} />);
+    // T12: shows diagame name instead of target dropdown
+    it('shows diagame name as a label, not a dropdown', () => {
+        render(<PipelineToolbar {...defaultProps({ diagameName: 'cluichetest' })} />);
+        expect(screen.getByText('cluichetest')).toBeInTheDocument();
+        expect(screen.queryByText('Target:')).not.toBeInTheDocument();
+        // No select for the target
         const selects = screen.getAllByRole('combobox');
-        selects.forEach(s => expect(s).toBeDisabled());
+        selects.forEach(s => expect(s).not.toHaveDisplayValue('cluichetest'));
     });
 
-    it('config dropdown has Debug and Release options', () => {
-        render(<PipelineToolbar buildRunning={false} />);
+    // T12: shows em-dash when diagameName is empty
+    it('shows em-dash when diagameName is empty', () => {
+        render(<PipelineToolbar {...defaultProps({ diagameName: '' })} />);
+        expect(screen.getByText('—')).toBeInTheDocument();
+    });
+
+    // T12: config dropdown is retained
+    it('renders Config dropdown with Debug and Release options', () => {
+        render(<PipelineToolbar {...defaultProps()} />);
+        expect(screen.getByText('Config:')).toBeInTheDocument();
         expect(screen.getByText('Debug')).toBeInTheDocument();
         expect(screen.getByText('Release')).toBeInTheDocument();
     });
 
-    it('force checkbox is unchecked by default', () => {
-        render(<PipelineToolbar buildRunning={false} />);
+    // T12: force checkbox retained
+    it('renders Force checkbox, unchecked by default', () => {
+        render(<PipelineToolbar {...defaultProps()} />);
         const checkbox = screen.getByRole('checkbox');
         expect(checkbox).not.toBeChecked();
     });
 
     it('force checkbox can be toggled', () => {
-        render(<PipelineToolbar buildRunning={false} />);
+        render(<PipelineToolbar {...defaultProps()} />);
         const checkbox = screen.getByRole('checkbox');
         fireEvent.click(checkbox);
         expect(checkbox).toBeChecked();
     });
 
-    // AC6: Run button is disabled when no targets are loaded
-    it('Run button is disabled when no targets loaded', () => {
-        render(<PipelineToolbar buildRunning={false} />);
-        const button = screen.getByText('Run');
-        expect(button).toBeDisabled();
+    // T13: Build/Launch split-button
+    it('renders Build split-button when not running', () => {
+        render(<PipelineToolbar {...defaultProps()} />);
+        expect(screen.getByTitle('Build')).toBeInTheDocument();
     });
 
-    // AC6: sends pipeline.get-targets request on mount
-    it('sends pipeline.get-targets request on mount', () => {
+    it('Build button is disabled when diagameName is empty', () => {
+        render(<PipelineToolbar {...defaultProps({ diagameName: '' })} />);
+        expect(screen.getByTitle('Build')).toBeDisabled();
+    });
+
+    it('Build button sends pipeline.start postMessage', () => {
         postSpy = vi.spyOn(window.parent, 'postMessage');
-        render(<PipelineToolbar buildRunning={false} />);
+        render(<PipelineToolbar {...defaultProps({ diagameName: 'cluichetest' })} />);
+        fireEvent.click(screen.getByTitle('Build'));
         const call = postSpy.mock.calls.find(c => {
             const msg = c[0] as { __diaFromFrame?: boolean; payload?: { type?: string } };
-            return msg?.__diaFromFrame && msg?.payload?.type === 'pipeline.get-targets';
+            return msg?.__diaFromFrame && msg?.payload?.type === 'pipeline.start';
         });
         expect(call).toBeDefined();
     });
 
+    it('dropdown arrow toggles Build & Launch option', () => {
+        render(<PipelineToolbar {...defaultProps({ diagameName: 'cluichetest' })} />);
+        fireEvent.click(screen.getByTitle('More build options'));
+        expect(screen.getByText('Build & Launch')).toBeInTheDocument();
+    });
+
+    // T13: shows Cancel when build running, hides split-button
+    it('shows Cancel button when build is running', () => {
+        render(<PipelineToolbar {...defaultProps({ buildRunning: true })} />);
+        expect(screen.getByText('Cancel')).toBeInTheDocument();
+        expect(screen.queryByTitle('Build')).not.toBeInTheDocument();
+    });
+
+    it('disables Config dropdown when build is running', () => {
+        render(<PipelineToolbar {...defaultProps({ buildRunning: true })} />);
+        const selects = screen.getAllByRole('combobox');
+        selects.forEach(s => expect(s).toBeDisabled());
+    });
+
     it('Cancel button sends pipeline.cancel postMessage', () => {
         postSpy = vi.spyOn(window.parent, 'postMessage');
-        render(<PipelineToolbar buildRunning={true} />);
+        render(<PipelineToolbar {...defaultProps({ buildRunning: true })} />);
         fireEvent.click(screen.getByText('Cancel'));
         const call = postSpy.mock.calls.find(c => {
             const msg = c[0] as { __diaFromFrame?: boolean; payload?: { type?: string } };
@@ -94,6 +121,106 @@ describe('PipelineToolbar', () => {
         expect(call).toBeDefined();
     });
 
-    // Unused helper reference
-    void simulateTargetsResponse;
+    // T13: Launch button
+    it('renders Launch button, disabled when canLaunch is false', () => {
+        render(<PipelineToolbar {...defaultProps({ canLaunch: false })} />);
+        expect(screen.getByTitle('Launch')).toBeDisabled();
+    });
+
+    it('Launch button is enabled when canLaunch is true and not running', () => {
+        render(<PipelineToolbar {...defaultProps({ canLaunch: true, buildRunning: false })} />);
+        expect(screen.getByTitle('Launch')).not.toBeDisabled();
+    });
+
+    it('Launch button sends pipeline.launch postMessage', () => {
+        postSpy = vi.spyOn(window.parent, 'postMessage');
+        render(<PipelineToolbar {...defaultProps({ canLaunch: true })} />);
+        fireEvent.click(screen.getByTitle('Launch'));
+        const call = postSpy.mock.calls.find(c => {
+            const msg = c[0] as { __diaFromFrame?: boolean; payload?: { type?: string } };
+            return msg?.__diaFromFrame && msg?.payload?.type === 'pipeline.launch';
+        });
+        expect(call).toBeDefined();
+    });
+
+    // T14: "Built X ago" label
+    it('shows no elapsed label when lastSuccessTimestamp is null', () => {
+        render(<PipelineToolbar {...defaultProps({ lastSuccessTimestamp: null })} />);
+        expect(screen.queryByText(/Built/)).not.toBeInTheDocument();
+    });
+
+    it('shows "Built Xs ago" when lastSuccessTimestamp is recent', () => {
+        const now = Date.now();
+        render(<PipelineToolbar {...defaultProps({ lastSuccessTimestamp: now - 10_000 })} />);
+        expect(screen.getByText(/Built \d+s ago/)).toBeInTheDocument();
+    });
+
+    it('shows "Built Xm ago" when lastSuccessTimestamp is minutes ago', () => {
+        const now = Date.now();
+        render(<PipelineToolbar {...defaultProps({ lastSuccessTimestamp: now - 5 * 60 * 1000 })} />);
+        expect(screen.getByText(/Built \d+m ago/)).toBeInTheDocument();
+    });
+
+    it('shows "Built Xh ago" when lastSuccessTimestamp is hours ago', () => {
+        const now = Date.now();
+        render(<PipelineToolbar {...defaultProps({ lastSuccessTimestamp: now - 2 * 3600 * 1000 })} />);
+        expect(screen.getByText(/Built \d+h ago/)).toBeInTheDocument();
+    });
+
+    // T14: Open logs link
+    it('renders logs link', () => {
+        render(<PipelineToolbar {...defaultProps()} />);
+        expect(screen.getByText('↗ logs')).toBeInTheDocument();
+    });
+
+    it('logs link sends pipeline.open-logs-folder when diagameName set', () => {
+        postSpy = vi.spyOn(window.parent, 'postMessage');
+        render(<PipelineToolbar {...defaultProps({ diagameName: 'cluichetest' })} />);
+        fireEvent.click(screen.getByText('↗ logs'));
+        const call = postSpy.mock.calls.find(c => {
+            const msg = c[0] as { __diaFromFrame?: boolean; payload?: { type?: string } };
+            return msg?.__diaFromFrame && msg?.payload?.type === 'pipeline.open-logs-folder';
+        });
+        expect(call).toBeDefined();
+    });
+
+    it('logs link does nothing when diagameName is empty', () => {
+        postSpy = vi.spyOn(window.parent, 'postMessage');
+        render(<PipelineToolbar {...defaultProps({ diagameName: '' })} />);
+        fireEvent.click(screen.getByText('↗ logs'));
+        const call = postSpy.mock.calls.find(c => {
+            const msg = c[0] as { __diaFromFrame?: boolean; payload?: { type?: string } };
+            return msg?.__diaFromFrame && msg?.payload?.type === 'pipeline.open-logs-folder';
+        });
+        expect(call).toBeUndefined();
+    });
+
+    // Resume button
+    it('does not render Resume when resumeStages is empty', () => {
+        render(<PipelineToolbar {...defaultProps({ resumeStages: [] })} />);
+        expect(screen.queryByText('↻ Resume')).not.toBeInTheDocument();
+    });
+
+    it('renders Resume button when resumeStages has entries', () => {
+        render(<PipelineToolbar {...defaultProps({ resumeStages: ['deploy'] })} />);
+        expect(screen.getByText('↻ Resume')).toBeInTheDocument();
+    });
+
+    it('Resume button sends pipeline.start with remaining stages', () => {
+        postSpy = vi.spyOn(window.parent, 'postMessage');
+        render(<PipelineToolbar {...defaultProps({ resumeStages: ['deploy', 'static-analysis'] })} />);
+        fireEvent.click(screen.getByText('↻ Resume'));
+        const call = postSpy.mock.calls.find(c => {
+            const msg = c[0] as { __diaFromFrame?: boolean; payload?: { type?: string; data?: { stages?: string } } };
+            return msg?.__diaFromFrame
+                && msg?.payload?.type === 'pipeline.start'
+                && msg?.payload?.data?.stages === 'deploy,static-analysis';
+        });
+        expect(call).toBeDefined();
+    });
+
+    it('does not render Resume when build is running', () => {
+        render(<PipelineToolbar {...defaultProps({ resumeStages: ['deploy'], buildRunning: true })} />);
+        expect(screen.queryByText('↻ Resume')).not.toBeInTheDocument();
+    });
 });

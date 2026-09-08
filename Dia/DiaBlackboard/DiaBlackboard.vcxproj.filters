@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{DIABB001-A1B2-C3D4-E5F6-789012345678}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{DIABB002-A1B2-C3D4-E5F6-789012345678}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Blackboard.h" />
+    <ClInclude Include="Blackboard.inl" />
+    <ClInclude Include="IBlackboardObserver.h" />
+    <ClInclude Include="BlackboardComponent.h" />
+    <ClInclude Include="GlobalBlackboard.h" />
+    <ClInclude Include="Testing\BlackboardTestHelpers.h">
+    <ClInclude Include="BlackboardRegistry.h" />
+    <ClInclude Include="Health\BlackboardRegistryHealth.h">
+      <Filter>Health</Filter>
+    </ClInclude>
+      <Filter>Testing</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Blackboard.cpp" />
+    <ClCompile Include="BlackboardComponent.cpp" />
+    <ClCompile Include="GlobalBlackboard.cpp" />
+    <ClCompile Include="BlackboardRegistry.cpp" />
+    <ClCompile Include="Health\BlackboardRegistryHealth.cpp">
+      <Filter>Health</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.blackboard.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+</Project>

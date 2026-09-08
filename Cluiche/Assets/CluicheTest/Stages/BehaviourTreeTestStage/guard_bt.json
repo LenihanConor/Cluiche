@@ -1,0 +1,57 @@
+{
+  "root": "root_select",
+  "nodes": {
+    "root_select": {
+      "type": "selector",
+      "children": ["chase_seq", "alert_seq", "patrol_repeat"]
+    },
+    "chase_seq": {
+      "type": "sequence",
+      "children": ["cond_has_target", "chase_par"]
+    },
+    "cond_has_target": {
+      "type": "condition",
+      "blackboard_key": "has_target"
+    },
+    "chase_par": {
+      "type": "parallel",
+      "policy": "require_all",
+      "children": ["act_move_to_target", "act_set_alert_effect"]
+    },
+    "act_move_to_target": {
+      "type": "action",
+      "action_id": "move_to_target",
+      "params": []
+    },
+    "act_set_alert_effect": {
+      "type": "action",
+      "action_id": "set_alert_effect",
+      "params": []
+    },
+    "alert_seq": {
+      "type": "sequence",
+      "children": ["cond_target_visible", "act_set_has_target"]
+    },
+    "cond_target_visible": {
+      "type": "condition",
+      "blackboard_key": "target_visible"
+    },
+    "act_set_has_target": {
+      "type": "action",
+      "action_id": "set_has_target",
+      "params": []
+    },
+    "patrol_repeat": {
+      "type": "decorator",
+      "decorator": "repeater",
+      "repeat_count": 0,
+      "break_on_failure": false,
+      "child": "act_move_to_waypoint"
+    },
+    "act_move_to_waypoint": {
+      "type": "action",
+      "action_id": "move_to_waypoint",
+      "params": []
+    }
+  }
+}

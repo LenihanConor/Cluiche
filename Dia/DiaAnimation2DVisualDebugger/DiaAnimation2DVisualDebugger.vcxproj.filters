@@ -9,11 +9,13 @@
     <ClInclude Include="AnimClipCursorDrawer.h" />
     <ClInclude Include="AnimBlendWeightsDrawer.h" />
     <ClInclude Include="AnimSpringDrawer.h" />
+    <ClInclude Include="Animation2DDebugDomain.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AnimClipCursorDrawer.cpp" />
     <ClCompile Include="AnimBlendWeightsDrawer.cpp" />
     <ClCompile Include="AnimSpringDrawer.cpp" />
+    <ClCompile Include="Animation2DDebugDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.animation2dvisualdebugger.architecture.module.md">

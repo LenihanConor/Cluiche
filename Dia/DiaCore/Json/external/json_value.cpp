@@ -477,7 +477,7 @@ void Value::swapPayload(Value& other) {
   other.allocated_ = temp2 & 0x1;
 }
 
-void Value::swap(Value& other) {
+void Value::swap(Value& other) noexcept {
   swapPayload(other);
   std::swap(comments_, other.comments_);
   std::swap(start_, other.start_);

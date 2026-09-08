@@ -1,38 +1,49 @@
 #pragma once
 
-#include <DiaApplication/ApplicationModule.h>
+#include <DiaApplicationFlow/MainModule.h>
+#include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaEditor/MVC/EditorView.h>
+#include <DiaEditor/Sinks/EditorConsoleSink.h>
 
 namespace Dia
 {
 	namespace Window { class IWindow; }
-	namespace UI { class IUISystem; }
+	namespace UI     { class IUISystem; }
 }
 
 namespace Cluiche
 {
 	namespace Editor
 	{
-		class EditorViewModule : public Dia::Application::Module
+		class EditorModelModule;
+		class EditorViewControllerModule;
+		class SplashScreenModule;
+
+		class EditorViewModule : public Dia::ApplicationFlow::MainModule
 		{
 		public:
 			static const Dia::Core::StringCRC kTypeId;
 
-			explicit EditorViewModule(Dia::Application::ProcessingUnit* pu);
+			explicit EditorViewModule(const Dia::Core::StringCRC& instanceId);
 			~EditorViewModule();
 
 			Dia::Editor::EditorView& GetView() { return mView; }
 
 		protected:
-			void DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies) override;
-			Dia::Application::StateObject::OpertionResponse DoStart(const Dia::Application::StateObject::IStartData*) override;
-			void DoUpdate() override;
-			void DoStop() override;
+			Dia::ApplicationFlow::StartResult DoStart() override;
+			void DoUpdate(const Dia::SimTime::MainTimeContext& ctx) override;
+			Dia::ApplicationFlow::StopResult DoStop() override;
 
 		private:
-			Dia::Editor::EditorView mView;
-			Dia::Window::IWindow*   mWindow;
-			Dia::UI::IUISystem*     mUISystem;
+			Dia::Editor::EditorView          mView;
+			Dia::Editor::EditorConsoleSink   mConsoleSink;
+			Dia::Window::IWindow*            mWindow;
+			Dia::UI::IUISystem*              mUISystem;
+			bool                             mRestoreMaximized;
+
+			Dia::ApplicationFlow::ModuleRef<EditorModelModule>          mModelRef;
+			Dia::ApplicationFlow::ModuleRef<EditorViewControllerModule> mControllerRef;
+			Dia::ApplicationFlow::ModuleRef<SplashScreenModule>         mSplashRef;
 		};
 	}
 }

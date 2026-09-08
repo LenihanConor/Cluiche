@@ -6,7 +6,7 @@
 #include "DiaAPI/CommandRegistry/CommandRegistry.h"
 #include "DiaAPI/Parser/ArgumentParser.h"
 #include <DiaPython/DiaPython.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <cstring>
 #include <cstdio>

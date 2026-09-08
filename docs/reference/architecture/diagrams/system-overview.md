@@ -16,7 +16,7 @@ graph TB
     end
 
     subgraph Dia["Dia Engine (Platform Layer)"]
-        DiaApp["DiaApplication<br/>Module/Phase/PU Framework"]
+        DiaApp["DiaApplicationFlow<br/>Module/Phase/PU Framework"]
         DiaCore["DiaCore<br/>Containers, Type, Time"]
         DiaGraphics["DiaGraphics<br/>ICanvas Abstraction"]
         DiaMaths["DiaMaths<br/>Vector, Matrix, Transform"]

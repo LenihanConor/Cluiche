@@ -72,8 +72,8 @@ namespace Dia
 			InputRecorder()
 				: mIsRecording(false)
 				, mIsPlayingBack(false)
-				, mPlaybackStartTime(Dia::Core::TimeAbsolute::Zero())
 				, mRecordingStartTime(Dia::Core::TimeAbsolute::Zero())
+				, mPlaybackStartTime(Dia::Core::TimeAbsolute::Zero())
 				, mPlaybackFrameIndex(0)
 			{}
 

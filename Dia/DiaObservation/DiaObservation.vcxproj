@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Asan|x64">
+      <Configuration>Debug-Asan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Ubsan|x64">
+      <Configuration>Debug-Ubsan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Log\Logger.cpp" />
+    <ClCompile Include="Log\LogLevel.cpp" />
+    <ClCompile Include="Log\ISink.cpp" />
+    <ClCompile Include="Log\ThreadLogBuffer.cpp" />
+    <ClCompile Include="Log\StdOutSink.cpp" />
+    <ClCompile Include="Log\DebugOutputSink.cpp" />
+    <ClCompile Include="Log\AssertSinkBridge.cpp" />
+    <ClCompile Include="Log\ObservationFileSink.cpp" />
+    <ClCompile Include="Config\ObservationConfigLoader.cpp" />
+    <ClCompile Include="Config\ObservationConfigCli.cpp" />
+    <ClCompile Include="Session\SessionManager.cpp" />
+    <ClCompile Include="Session\SessionIdGenerator.cpp" />
+    <ClCompile Include="ScenarioStepStack.cpp" />
+    <ClCompile Include="Trace\Tracer.cpp" />
+    <ClCompile Include="Trace\ScopedZone.cpp" />
+    <ClCompile Include="Trace\TraceFileSink.cpp" />
+    <ClCompile Include="Metric\Counter.cpp" />
+    <ClCompile Include="Metric\Gauge.cpp" />
+    <ClCompile Include="Metric\Histogram.cpp" />
+    <ClCompile Include="Metric\MetricRegistry.cpp" />
+    <ClCompile Include="Metric\MetricsFileSink.cpp" />
+    <ClCompile Include="Health\HealthReporterBase.cpp" />
+    <ClCompile Include="Health\HealthRegistry.cpp" />
+    <ClCompile Include="Profile\Profiler.cpp" />
+    <ClCompile Include="Profile\ProfileScopedZone.cpp" />
+    <ClCompile Include="Profile\ProfileFileSink.cpp" />
+    <ClCompile Include="Capture\ThirdParty\lodepng.cpp">
+      <DisableSpecificWarnings>4334;4267</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="Capture\CaptureManager.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Log\Logger.h" />
+    <ClInclude Include="Log\LogEntry.h" />
+    <ClInclude Include="Log\LogLevel.h" />
+    <ClInclude Include="Log\ISink.h" />
+    <ClInclude Include="Log\ThreadLogBuffer.h" />
+    <ClInclude Include="Log\StdOutSink.h" />
+    <ClInclude Include="Log\DebugOutputSink.h" />
+    <ClInclude Include="Log\AssertSinkBridge.h" />
+    <ClInclude Include="Log\DiaLog.h" />
+    <ClInclude Include="Log\ObservationFileSink.h" />
+    <ClInclude Include="Config\ObservationConfig.h" />
+    <ClInclude Include="Config\ObservationConfigLoader.h" />
+    <ClInclude Include="Config\ObservationConfigCli.h" />
+    <ClInclude Include="Session\SessionManager.h" />
+    <ClInclude Include="Session\SessionIdGenerator.h" />
+    <ClInclude Include="ScenarioStepStack.h" />
+    <ClInclude Include="Trace\SpanRecord.h" />
+    <ClInclude Include="Trace\TraceCategory.h" />
+    <ClInclude Include="Trace\Tracer.h" />
+    <ClInclude Include="Trace\ScopedZone.h" />
+    <ClInclude Include="Trace\TraceFileSink.h" />
+    <ClInclude Include="Trace\DiaTrace.h" />
+    <ClInclude Include="Trace\ITraceSink.h" />
+    <ClInclude Include="Metric\Counter.h" />
+    <ClInclude Include="Metric\Gauge.h" />
+    <ClInclude Include="Metric\Histogram.h" />
+    <ClInclude Include="Metric\MetricSnapshot.h" />
+    <ClInclude Include="Metric\IMetricSink.h" />
+    <ClInclude Include="Metric\MetricRegistry.h" />
+    <ClInclude Include="Metric\MetricsFileSink.h" />
+    <ClInclude Include="Metric\Testing\MetricFixture.h" />
+    <ClInclude Include="Health\IHealthReporter.h" />
+    <ClInclude Include="Health\HealthReporterBase.h" />
+    <ClInclude Include="Health\HealthRegistry.h" />
+    <ClInclude Include="Health\DiaHealth.h" />
+    <ClInclude Include="Health\IHealthTransitionSink.h" />
+    <ClInclude Include="JsonEscape.h" />
+    <ClInclude Include="Profile\ProfileCategory.h" />
+    <ClInclude Include="Profile\ScopeRecord.h" />
+    <ClInclude Include="Profile\Profiler.h" />
+    <ClInclude Include="Profile\ScopedZone.h" />
+    <ClInclude Include="Profile\ProfileFileSink.h" />
+    <ClInclude Include="Profile\DiaProfile.h" />
+    <ClInclude Include="Testing\MockSink.h" />
+    <ClInclude Include="Testing\HealthFixture.h" />
+    <ClInclude Include="Testing\ProfileFixture.h" />
+    <ClInclude Include="Capture\CaptureTypes.h" />
+    <ClInclude Include="Capture\DiaCapture.h" />
+    <ClInclude Include="Capture\ThirdParty\lodepng.h" />
+    <ClInclude Include="Capture\CaptureManager.h" />
+    <ClInclude Include="Capture\IFrameCaptureSource.h" />
+    <ClInclude Include="Metric\JobSystemMetricsAdapter.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
+      <Project>{8D41CBE3-C493-428D-95F3-627E56500667}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaJson\DiaJson.vcxproj">
+      <Project>{b2c3d4e5-f6a7-8901-bcde-f23456789012}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{5E6F7A8B-C9D0-E1F2-3456-789ABCDE0123}</ProjectGuid>
+    <RootNamespace>DiaObservation</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Asan|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>ClangCL</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>11.0.51106.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64' Or '$(Configuration)|$(Platform)'=='Debug-Asan|x64' Or '$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <BrowseInformation>true</BrowseInformation>
+    </ClCompile>
+    <Lib>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir)DiaCore.lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+    <Bscmake>
+      <PreserveSbr>true</PreserveSbr>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

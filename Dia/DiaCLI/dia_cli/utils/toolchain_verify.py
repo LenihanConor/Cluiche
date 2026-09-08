@@ -86,24 +86,33 @@ def check_git() -> CheckResult:
 
 
 def check_nodejs() -> CheckResult:
-    rc, out, _ = _run(["node", "--version"])
+    from dia_cli.utils.node_resolve import find_node
+
+    node_path = find_node()
+    if node_path is None:
+        return CheckResult("Node.js", "toolchain", "fail", "not installed", "dia env setup --toolchain")
+
+    rc, out, _ = _run([str(node_path), "--version"])
     if rc == 0:
         ver = out.strip().lstrip("v")
+        detail = out.strip()
+        if node_path != Path(shutil.which("node") or ""):
+            detail += f" (at {node_path})"
         try:
             major = int(ver.split(".")[0])
             if major >= 18:
-                return CheckResult("Node.js", "toolchain", "pass", out.strip())
+                return CheckResult("Node.js", "toolchain", "pass", detail)
             elif major >= 10:
                 return CheckResult("Node.js", "toolchain", "warn",
-                                   f"Node.js {out.strip()} installed; recommend >= 18",
+                                   f"Node.js {detail} installed; recommend >= 18",
                                    "dia env setup --toolchain")
             else:
                 return CheckResult("Node.js", "toolchain", "fail",
-                                   f"Node.js {out.strip()} too old (< 10)",
+                                   f"Node.js {detail} too old (< 10)",
                                    "dia env setup --toolchain")
         except ValueError:
-            return CheckResult("Node.js", "toolchain", "pass", out.strip())
-    return CheckResult("Node.js", "toolchain", "fail", "not installed", "dia env setup --toolchain")
+            return CheckResult("Node.js", "toolchain", "pass", detail)
+    return CheckResult("Node.js", "toolchain", "fail", "found but could not run", "dia env setup --toolchain")
 
 
 def check_poetry() -> CheckResult:
@@ -137,6 +146,61 @@ def check_docker() -> list:
     return results
 
 
+def check_msvc_asan() -> CheckResult:
+    """Check if MSVC ASan runtime DLL is available."""
+    import glob as _glob
+    if not _VSWHERE.exists():
+        return CheckResult("MSVC ASan runtime", "toolchain", "warn",
+                           "vswhere not found — cannot locate ASan DLL",
+                           "Install VS 2022 with C++ Desktop workload")
+    rc, out, _ = _run([str(_VSWHERE), "-latest", "-property", "installationPath"])
+    if rc != 0 or not out.strip():
+        return CheckResult("MSVC ASan runtime", "toolchain", "warn",
+                           "VS install path not found")
+    vs_path = out.strip()
+    pattern = str(Path(vs_path) / "VC" / "Tools" / "MSVC" / "*" / "bin" / "Hostx64" / "x64" / "clang_rt.asan_dynamic-x86_64.dll")
+    matches = _glob.glob(pattern)
+    if matches:
+        return CheckResult("MSVC ASan runtime", "toolchain", "pass",
+                           f"found at {Path(matches[0]).parent}")
+    return CheckResult("MSVC ASan runtime", "toolchain", "warn",
+                       "clang_rt.asan_dynamic-x86_64.dll not found — ASan builds may fail at runtime",
+                       "Ensure 'C++ AddressSanitizer' is installed in VS 2022")
+
+
+def check_llvm_clangcl() -> CheckResult:
+    """Check if LLVM/clang-cl is available for UBSan builds."""
+    if shutil.which("clang-cl"):
+        rc, out, _ = _run(["clang-cl", "--version"])
+        ver = out.strip().splitlines()[0] if rc == 0 and out.strip() else "unknown"
+        return CheckResult("LLVM clang-cl", "toolchain", "pass", ver)
+    # Also check if VS ships clang-cl via vswhere
+    if _VSWHERE.exists():
+        rc, out, _ = _run([str(_VSWHERE), "-latest", "-find", r"VC\Tools\Llvm\x64\bin\clang-cl.exe"])
+        if rc == 0 and out.strip():
+            p = out.strip().splitlines()[0]
+            if Path(p).exists():
+                return CheckResult("LLVM clang-cl", "toolchain", "pass",
+                                   f"VS-bundled at {p}")
+    return CheckResult("LLVM clang-cl", "toolchain", "warn",
+                       "clang-cl not found — Debug-Ubsan builds will fail",
+                       "Install 'C++ Clang Compiler for Windows' component in VS 2022, or: winget install LLVM.LLVM")
+
+
+def check_java() -> CheckResult:
+    try:
+        result = subprocess.run(["java", "-version"], capture_output=True, text=True)
+        # java -version writes to stderr on most JVMs
+        ver_text = (result.stderr or result.stdout).strip().splitlines()[0] if (result.stderr or result.stdout) else ""
+        if result.returncode == 0 and ver_text:
+            return CheckResult("Java", "toolchain", "pass", ver_text)
+    except (FileNotFoundError, OSError):
+        pass
+    return CheckResult("Java", "toolchain", "warn",
+                       "not installed — required for PMD clone detection",
+                       "dia env setup --toolchain  (or: winget install Microsoft.OpenJDK.21)")
+
+
 def check_all_toolchain() -> list:
     results = []
     results.extend(check_vs2022())
@@ -145,4 +209,7 @@ def check_all_toolchain() -> list:
     results.append(check_nodejs())
     results.append(check_poetry())
     results.extend(check_docker())
+    results.append(check_msvc_asan())
+    results.append(check_llvm_clangcl())
+    results.append(check_java())
     return results

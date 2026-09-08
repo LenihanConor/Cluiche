@@ -1,7 +1,7 @@
 #include "DiaEditor/Plugin/EditorPluginRegistry.h"
 
 #include <DiaCore/Core/Assert.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 namespace Dia
 {
@@ -24,7 +24,11 @@ namespace Dia
 			entry.factory = factory;
 			mEntries.Add(entry);
 
-			DIA_LOG_INFO("Editor", "EditorPluginRegistry: Registered plugin (count=%u)", mEntries.Size());
+			// Note: typeId is logged here, not the display name, because this runs at static-init
+			// time before the log/observation subsystems are guaranteed up — and GetPluginInfo()
+			// would construct a temp plugin instance early. Display names are logged at PluginLoaderModule
+			// startup (RestoreLayoutPlugins) when the registry is enumerated against the saved layout.
+			DIA_LOG_INFO("Editor", "EditorPluginRegistry: Registered typeId='%s' (count=%u)", typeId.AsChar(), mEntries.Size());
 		}
 
 		IEditorPlugin* EditorPluginRegistry::CreatePlugin(const Dia::Core::StringCRC& typeId)
@@ -68,6 +72,66 @@ namespace Dia
 		{
 			DIA_ASSERT(index < mEntries.Size(), "EditorPluginRegistry: index out of range");
 			return mEntries[index].factory;
+		}
+
+		void EditorPluginRegistry::TagPluginManifest(const Dia::Core::StringCRC& typeId, const Dia::Core::StringCRC& manifestId)
+		{
+			for (unsigned int i = 0; i < mEntries.Size(); ++i)
+			{
+				if (mEntries[i].typeId == typeId)
+				{
+					mEntries[i].manifestId = manifestId;
+					return;
+				}
+			}
+			DIA_ASSERT(false, "EditorPluginRegistry::TagPluginManifest: typeId not found");
+		}
+
+		void EditorPluginRegistry::SetActiveManifests(const Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, kMaxManifests>& manifests)
+		{
+			mActiveManifests = manifests;
+			DIA_LOG_INFO("Editor", "EditorPluginRegistry: SetActiveManifests count=%u", mActiveManifests.Size());
+		}
+
+		void EditorPluginRegistry::ClearActiveManifests()
+		{
+			mActiveManifests.RemoveAll();
+			DIA_LOG_INFO("Editor", "EditorPluginRegistry: ClearActiveManifests");
+		}
+
+		bool EditorPluginRegistry::IsInScopeFilter(const Dia::Core::StringCRC& typeId) const
+		{
+			// No filter active — all plugins pass (cold-start)
+			if (mActiveManifests.IsEmpty())
+			{
+				return true;
+			}
+
+			// Find the entry to check its manifestId
+			for (unsigned int i = 0; i < mEntries.Size(); ++i)
+			{
+				if (mEntries[i].typeId == typeId)
+				{
+					// Built-in plugins (empty manifestId) always pass
+					if (mEntries[i].manifestId == Dia::Core::StringCRC())
+					{
+						return true;
+					}
+
+					// Check if plugin's manifest is in the active set
+					for (unsigned int j = 0; j < mActiveManifests.Size(); ++j)
+					{
+						if (mActiveManifests[j] == mEntries[i].manifestId)
+						{
+							return true;
+						}
+					}
+					return false;
+				}
+			}
+
+			// typeId not registered — does not pass
+			return false;
 		}
 	}
 }

@@ -36,6 +36,14 @@ namespace Dia
 			return true;
 		}
 
+		bool ToJson(const google::protobuf::Message& msg, std::string& out)
+		{
+			google::protobuf::util::JsonPrintOptions options;
+			options.preserve_proto_field_names = true;
+			auto status = google::protobuf::util::MessageToJsonString(msg, &out, options);
+			return status.ok();
+		}
+
 		bool FromJson(const char* json, google::protobuf::Message* msg)
 		{
 			if (json == nullptr || msg == nullptr)

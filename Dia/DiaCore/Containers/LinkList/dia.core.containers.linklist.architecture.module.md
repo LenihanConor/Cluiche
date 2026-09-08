@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.core.containers.linklist
 name: LinkList
 owner_team: TBD
-layer: platform
+layer: foundation/core
 status: active
 maturity: dev
 
@@ -27,7 +27,8 @@ non_responsibilities:
   - Cross-cutting engine orchestration
 
 dependent_modules:
-  - dia.core.containers.linklist.blah
+  - dia.core.core
+  - dia.core.containers.arrays
 
 public_api:
   headers:

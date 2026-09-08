@@ -7,8 +7,12 @@
     <Filter Include="Testing">
       <UniqueIdentifier>{ANIM2D02-B2C3-D4E5-F6A7-890123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Messages">
+      <UniqueIdentifier>{ANIM2D03-B2C3-D4E5-F6A7-890123456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DiaAnimation2DSerializers.h" />
     <ClInclude Include="SpringNodeDef.h" />
     <ClInclude Include="SpringChainDef.h" />
     <ClInclude Include="SpringChain.h" />
@@ -23,6 +27,12 @@
     <ClInclude Include="PoseLayer.h" />
     <ClInclude Include="PoseBlendStack.h" />
     <ClInclude Include="AnimationEvaluator.h" />
+    <ClInclude Include="IAnimClipObserver.h" />
+    <ClInclude Include="AnimClipObserverSubject.h" />
+    <ClInclude Include="AnimClipBusAdapter.h" />
+    <ClInclude Include="Messages\animation2d_messages.h">
+      <Filter>Messages</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SpringChain.cpp" />
@@ -32,10 +42,15 @@
     <ClCompile Include="AnimClipLoader.cpp" />
     <ClCompile Include="PoseBlendStack.cpp" />
     <ClCompile Include="AnimationEvaluator.cpp" />
+    <ClCompile Include="AnimClipObserverSubject.cpp" />
+    <ClCompile Include="AnimClipBusAdapter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.animation2d.architecture.module.md">
       <Filter>Docs</Filter>
+    </None>
+    <None Include="Messages\animation2d_messages.diagamemessages">
+      <Filter>Messages</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

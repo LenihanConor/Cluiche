@@ -6,7 +6,7 @@
 #include "Script.h"
 #include "DiaPython/DiaPythonInternal.h"
 #include "DiaPython/Lifecycle/Lifecycle.h"
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <chrono>
 #include <cstdio>
 
@@ -16,24 +16,23 @@ namespace Dia
 	{
 		namespace Internal
 		{
-			// Custom Python writer class for output redirection
-			class CustomWriter
+			// Creates a Python file-like object with write/flush backed by a C++ callback.
+			// Uses SimpleNamespace + cpp_function to avoid py::class_ registration,
+			// which only works at module init time — not at runtime.
+			static py::object MakeWriter(OutputCallback callback)
 			{
-			public:
-				OutputCallback callback;
-
-				CustomWriter(OutputCallback cb) : callback(cb) {}
-
-				void write(const std::string& text)
-				{
-					if (callback)
-					{
-						callback(text.c_str());
-					}
-				}
-
-				void flush() {}
-			};
+				DIA_LOG_INFO("DiaPython", "MakeWriter: creating SimpleNamespace writer");
+				py::object ns = py::module_::import("types").attr("SimpleNamespace")();
+				ns.attr("write") = py::cpp_function([callback](const std::string& text) {
+					DIA_LOG_INFO("DiaPython", "MakeWriter::write called: '%s'", text.c_str());
+					if (callback) callback(text.c_str());
+				});
+				ns.attr("flush") = py::cpp_function([]() {
+					DIA_LOG_INFO("DiaPython", "MakeWriter::flush called");
+				});
+				DIA_LOG_INFO("DiaPython", "MakeWriter: writer created successfully");
+				return ns;
+			}
 
 			// Global output redirection state
 			OutputRedirection gOutputRedirection = { nullptr, nullptr, false, py::object(), py::object() };
@@ -113,6 +112,7 @@ namespace Dia
 					// Calculate duration
 					auto endTime = std::chrono::high_resolution_clock::now();
 					float duration = std::chrono::duration<float>(endTime - startTime).count();
+					(void)duration;  // TODO: Phase 7 - Use in OnScriptExecuted event
 
 					// Convert Python exception to error code
 					ErrorContext context;
@@ -178,6 +178,7 @@ namespace Dia
 					// Calculate duration
 					auto endTime = std::chrono::high_resolution_clock::now();
 					float duration = std::chrono::duration<float>(endTime - startTime).count();
+					(void)duration;  // TODO: Phase 7 - Use in OnScriptExecuted event
 
 					// Convert Python exception to error code
 					ErrorContext context;
@@ -201,18 +202,47 @@ namespace Dia
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
-		// Execute Python script file (synchronous)
+		// Execute Python script file (synchronous, acquires GIL)
 		////////////////////////////////////////////////////////////////////////////////
 		int ExecuteScript(const char* scriptPath, const char** args, int argCount)
 		{
+			if (!IsInitialized())
+			{
+				DIA_LOG_ERROR("DiaPython", "ExecuteScript failed: Python not initialized");
+				return static_cast<int>(ErrorCode::NotInitialized);
+			}
+
+			py::gil_scoped_acquire acquire;
 			return Internal::ExecuteScriptInternal(scriptPath, args, argCount);
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
-		// Execute Python code string (synchronous)
+		// Execute Python code string (synchronous, acquires GIL)
 		////////////////////////////////////////////////////////////////////////////////
 		int ExecuteString(const char* pythonCode)
 		{
+			if (!IsInitialized())
+			{
+				DIA_LOG_ERROR("DiaPython", "ExecuteString failed: Python not initialized");
+				return static_cast<int>(ErrorCode::NotInitialized);
+			}
+
+			py::gil_scoped_acquire acquire;
+			return Internal::ExecuteStringInternal(pythonCode);
+		}
+
+		////////////////////////////////////////////////////////////////////////////////
+		// Execute Python code string from a background thread (acquires GIL)
+		////////////////////////////////////////////////////////////////////////////////
+		int ExecuteStringOnThread(const char* pythonCode)
+		{
+			if (!IsInitialized())
+			{
+				DIA_LOG_ERROR("DiaPython", "ExecuteStringOnThread failed: Python not initialized");
+				return static_cast<int>(ErrorCode::NotInitialized);
+			}
+
+			py::gil_scoped_acquire acquire;
 			return Internal::ExecuteStringInternal(pythonCode);
 		}
 
@@ -233,55 +263,36 @@ namespace Dia
 				return;
 			}
 
+			py::gil_scoped_acquire acquire;
+
 			try
 			{
+				DIA_LOG_INFO("DiaPython", "RedirectOutput: importing sys");
 				py::module_ sys = py::module_::import("sys");
+				DIA_LOG_INFO("DiaPython", "RedirectOutput: sys imported, isRedirected=%d", (int)gOutputRedirection.isRedirected);
 
 				// Store original stdout/stderr if not already redirected
 				if (!gOutputRedirection.isRedirected)
 				{
 					gOutputRedirection.originalStdout = sys.attr("stdout");
 					gOutputRedirection.originalStderr = sys.attr("stderr");
+					DIA_LOG_INFO("DiaPython", "RedirectOutput: stored original stdout/stderr");
 				}
 
-				// Register CustomWriter class with pybind11
-				// Note: We check if class exists because if Python restarts between tests,
-				// the class needs to be re-registered
-				try
-				{
-					py::object builtins = py::globals()["__builtins__"];
-					if (!py::hasattr(builtins, "CustomWriter"))
-					{
-						py::class_<CustomWriter>(builtins, "CustomWriter")
-							.def(py::init<OutputCallback>())
-							.def("write", &CustomWriter::write)
-							.def("flush", &CustomWriter::flush);
-					}
-				}
-				catch (const std::exception& ex)
-				{
-					// If registration fails, log but try to continue
-					DIA_LOG_WARNING("DiaPython", "CustomWriter class registration failed: %s", ex.what());
-				}
-
-				// Create custom writer for stdout
 				if (stdoutCallback)
 				{
-					CustomWriter* writer = new CustomWriter(stdoutCallback);
-					py::object writerObj = py::cast(writer);
-					sys.attr("stdout") = writerObj;
-
+					DIA_LOG_INFO("DiaPython", "RedirectOutput: installing stdout writer");
+					sys.attr("stdout") = MakeWriter(stdoutCallback);
 					gOutputRedirection.stdoutCallback = stdoutCallback;
+					DIA_LOG_INFO("DiaPython", "RedirectOutput: stdout writer installed");
 				}
 
-				// Create custom writer for stderr
 				if (stderrCallback)
 				{
-					CustomWriter* writer = new CustomWriter(stderrCallback);
-					py::object writerObj = py::cast(writer);
-					sys.attr("stderr") = writerObj;
-
+					DIA_LOG_INFO("DiaPython", "RedirectOutput: installing stderr writer");
+					sys.attr("stderr") = MakeWriter(stderrCallback);
 					gOutputRedirection.stderrCallback = stderrCallback;
+					DIA_LOG_INFO("DiaPython", "RedirectOutput: stderr writer installed");
 				}
 
 				gOutputRedirection.isRedirected = true;
@@ -313,6 +324,8 @@ namespace Dia
 				DIA_LOG_WARNING("DiaPython", "RestoreOutput called but output not redirected");
 				return;
 			}
+
+			py::gil_scoped_acquire acquire;
 
 			try
 			{

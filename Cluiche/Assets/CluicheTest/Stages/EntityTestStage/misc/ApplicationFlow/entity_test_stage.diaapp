@@ -1,0 +1,85 @@
+{
+    "version": 3,
+    "processing_units": [
+        {
+            "instance_id": "MainPU",
+            "frequency_hz": 30,
+            "dedicated_thread": false,
+            "modules": []
+        },
+        {
+            "instance_id": "SimPU",
+            "frequency_hz": 30,
+            "dedicated_thread": true,
+            "modules": [
+                {
+                    "instance_id": "EntityTestStageModule",
+                    "type_id": "EntityTestStageModule",
+                    "stages": [
+                        "EntityTestStage"
+                    ],
+                    "dependencies": [
+                        "EntityModule",
+                        "VisualDebuggerModule"
+                    ],
+                    "channels": [
+                        {
+                            "id": "AutomationService",
+                            "role": "consumes"
+                        },
+                        {
+                            "id": "RenderToSim",
+                            "role": "reads"
+                        }
+                    ]
+                },
+                {
+                    "instance_id": "EntityVisualDebuggerModule",
+                    "type_id": "EntityVisualDebuggerModule",
+                    "stages": [
+                        "EntityTestStage"
+                    ],
+                    "dependencies": [
+                        "EntityModule",
+                        "VisualDebuggerModule",
+                        "PickingModule"
+                    ],
+                    "channels": []
+                },
+                {
+                    "instance_id": "AttributeVisualDebuggerModule",
+                    "type_id": "AttributeVisualDebuggerModule",
+                    "stages": [
+                        "EntityTestStage"
+                    ],
+                    "dependencies": [
+                        "EntityModule",
+                        "VisualDebuggerModule"
+                    ],
+                    "channels": []
+                },
+                {
+                    "instance_id": "EntityInspectorModule",
+                    "type_id": "EntityInspectorModule",
+                    "stages": [
+                        "EntityTestStage"
+                    ],
+                    "dependencies": [
+                        "EntityModule",
+                        "VisualDebuggerModule"
+                    ],
+                    "channels": [
+                        {
+                            "id": "DebugServerService",
+                            "role": "consumes"
+                        },
+                        {
+                            "id": "DebugServerPush",
+                            "role": "writes"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

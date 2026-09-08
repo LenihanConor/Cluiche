@@ -1,0 +1,59 @@
+{
+    "schema": "diagamemessages/v1",
+    "namespace": "Dia::Input::Messages",
+    "includes": [],
+    "messages": [
+        {
+            "id": "KeyDownEvent",
+            "router": "broadcast",
+            "pass": "primary",
+            "producers": ["InputBusAdapter"],
+            "consumers": [],
+            "fields": [
+                { "name": "code",    "type": "int",  "notes": "Event::KeyEvent::code snapshot — pass to EKey::CreateFromInt(code) to decode; source EType: kKeyPressed" },
+                { "name": "alt",     "type": "bool", "notes": "Alt modifier held" },
+                { "name": "control", "type": "bool", "notes": "Control modifier held" },
+                { "name": "shift",   "type": "bool", "notes": "Shift modifier held" },
+                { "name": "system",  "type": "bool", "notes": "System/OS modifier held" }
+            ]
+        },
+        {
+            "id": "KeyUpEvent",
+            "router": "broadcast",
+            "pass": "primary",
+            "producers": ["InputBusAdapter"],
+            "consumers": [],
+            "fields": [
+                { "name": "code",    "type": "int",  "notes": "Event::KeyEvent::code snapshot — pass to EKey::CreateFromInt(code) to decode; source EType: kKeyReleased" },
+                { "name": "alt",     "type": "bool", "notes": "Alt modifier held" },
+                { "name": "control", "type": "bool", "notes": "Control modifier held" },
+                { "name": "shift",   "type": "bool", "notes": "Shift modifier held" },
+                { "name": "system",  "type": "bool", "notes": "System/OS modifier held" }
+            ]
+        },
+        {
+            "id": "MouseButtonEvent",
+            "router": "broadcast",
+            "pass": "primary",
+            "producers": ["InputBusAdapter"],
+            "consumers": [],
+            "fields": [
+                { "name": "button",  "type": "int",  "notes": "Event::MouseButtonEvent::button snapshot — pass to EMouseButton::CreateFromInt(button) to decode" },
+                { "name": "x",       "type": "int",  "notes": "cursor x, relative to the owner window" },
+                { "name": "y",       "type": "int",  "notes": "cursor y, relative to the owner window" },
+                { "name": "pressed", "type": "bool", "notes": "true for source EType kMouseButtonPressed, false for kMouseButtonReleased" }
+            ]
+        },
+        {
+            "id": "MouseMovedEvent",
+            "router": "broadcast",
+            "pass": "primary",
+            "producers": ["InputBusAdapter"],
+            "consumers": [],
+            "fields": [
+                { "name": "x", "type": "int", "notes": "Event::MouseMoveEvent::x snapshot" },
+                { "name": "y", "type": "int", "notes": "Event::MouseMoveEvent::y snapshot" }
+            ]
+        }
+    ]
+}

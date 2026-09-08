@@ -21,13 +21,14 @@ namespace Dia { namespace Geometry2D {
 //==============================================================================
 // STRUCT HexCoord
 //==============================================================================
-// Axial (q, r) coordinate for a pointy-top hex grid.
-// Cube coordinate s is derived on demand as -q - r.
+// Offset (col, row) coordinate for a pointy-top hex grid, odd-row-right stagger.
+// q = column index (0..colCount-1), r = row index (0..rowCount-1).
+// Odd rows are shifted right by hexWidth/2 relative to even rows.
 //==============================================================================
 struct HexCoord
 {
-    int q;
-    int r;
+    int q; // column
+    int r; // row
 
     bool operator==(const HexCoord& rhs) const { return q == rhs.q && r == rhs.r; }
     bool operator!=(const HexCoord& rhs) const { return !(*this == rhs); }
@@ -53,8 +54,10 @@ class HexGrid : public ISpatialStructure<T>
 public:
     struct Def
     {
-        AARect worldBounds;
-        float  hexRadius;   // circumradius (center-to-vertex)
+        Dia::Maths::Vector2D origin     = {};   // world position of the bottom-left of cell (0,0)
+        int                  colCount   = 1;    // number of columns
+        int                  rowCount   = 1;    // number of rows
+        float                hexRadius  = 1.0f; // circumradius (center-to-vertex)
     };
 
     explicit HexGrid(const Def& def);
@@ -91,27 +94,33 @@ public:
     int GetObjectCount() const;
 
     // Accessors for debug/visualization (used by DiaGeometry2DVisualDebugger)
-    float GetHexRadius() const { return mHexRadius; }
-    int   GetMinQ()      const { return mMinQ;      }
-    int   GetMinR()      const { return mMinR;      }
-    int   GetColCount()  const { return mColCount;  }
-    int   GetRowCount()  const { return mRowCount;  }
+    float                GetHexRadius() const { return mHexRadius; }
+    int                  GetColCount()  const { return mColCount;  }
+    int                  GetRowCount()  const { return mRowCount;  }
+    Dia::Maths::Vector2D GetOrigin()    const { return mOrigin;    }
 
 private:
     struct Slot
     {
-        T        object;
-        AARect   bounds;
-        uint32_t generation;
-        bool     occupied;
+        T        object     = {};
+        AARect   bounds     = {};
+        uint32_t generation = 0;
+        bool     occupied   = false;
     };
 
     static constexpr int kMaxCells          = 4096;
     static constexpr int kMaxObjectsPerCell = 64;
 
-    // Pointy-top axial direction vectors (q, r) for 6 neighbours
-    static const int kNeighbourDQ[6];
-    static const int kNeighbourDR[6];
+    // Pointy-top offset-coord direction tables (6 neighbours, split by row parity).
+    // Even rows (r % 2 == 0): kEvenDQ/kEvenDR.  Odd rows: kOddDQ/kOddDR.
+    static const int kEvenDQ[6];
+    static const int kEvenDR[6];
+    static const int kOddDQ[6];
+    static const int kOddDR[6];
+
+    // Cube-coord direction vectors used internally for HexDistance / GetRing.
+    static const int kCubeDQ[6];
+    static const int kCubeDR[6];
 
     // Slot pool
     Dia::Core::Containers::DynamicArrayC<Slot, MaxObjects> mSlots;
@@ -121,14 +130,17 @@ private:
 
     // Hex grid cells: each cell holds slot indices
     Dia::Core::Containers::DynamicArrayC<uint32_t, kMaxObjectsPerCell> mCells[kMaxCells];
-    int   mMinQ;
-    int   mMinR;
-    int   mColCount;  // number of distinct q values
-    int   mRowCount;  // number of distinct r values
-    float mHexRadius;
-    float mHexWidth;  // sqrt(3) * radius
-    float mHexHeight; // 2 * radius
-    AARect mWorldBounds;
+    int                  mColCount;  // number of columns
+    int                  mRowCount;  // number of rows
+    float                mHexRadius;
+    float                mHexWidth;  // sqrt(3) * radius
+    float                mHexHeight; // 2 * radius
+    Dia::Maths::Vector2D mOrigin;    // world position of cell (0,0) bottom-left
+
+    // Cube-coord helpers (for HexDistance/GetRing which work in cube space)
+    struct CubeCoord { int q, r, s; };
+    static CubeCoord OffsetToCube(HexCoord hex);
+    static HexCoord  CubeToOffset(CubeCoord cube);
 
     // Helpers
     int  HexToIndex(HexCoord hex) const;

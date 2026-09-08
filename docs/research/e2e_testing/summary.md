@@ -3,6 +3,8 @@
 **Session folder:** docs/research/e2e_testing/
 **Date:** 2026-05-05
 
+> **⚠️ Partially superseded (2026-05-20):** Naming, command surface, scenario format, and module split have been redesigned. See **[design-decisions.md](design-decisions.md)** for the current source of truth. Use the design decisions for spec work; this summary is preserved for historical context only.
+
 ## One-Line Answer
 
 A phased e2e testing solution combining a lightweight Python/pytest harness (JSON scenarios, WebSocket to DiaDebugServer) for orchestration and breadth, with engine-side multi-stage test levels for deep internal validation of systems like DiaRigidBody2D.

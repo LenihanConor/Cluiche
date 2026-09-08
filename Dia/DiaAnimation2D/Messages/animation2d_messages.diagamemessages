@@ -1,0 +1,27 @@
+{
+    "schema": "diagamemessages/v1",
+    "namespace": "Dia::Animation2D::Messages",
+    "includes": [],
+    "messages": [
+        {
+            "id": "ClipFinishedEvent",
+            "router": "broadcast",
+            "pass": "primary",
+            "producers": ["AnimClipBusAdapter"],
+            "consumers": [],
+            "fields": [
+                { "name": "clipId", "type": "Dia::Core::StringCRC", "notes": "AnimClip::GetId() snapshot — stable clip identity, not a pointer" }
+            ]
+        },
+        {
+            "id": "ClipLoopedEvent",
+            "router": "broadcast",
+            "pass": "primary",
+            "producers": ["AnimClipBusAdapter"],
+            "consumers": [],
+            "fields": [
+                { "name": "clipId", "type": "Dia::Core::StringCRC", "notes": "AnimClip::GetId() snapshot — stable clip identity, not a pointer" }
+            ]
+        }
+    ]
+}

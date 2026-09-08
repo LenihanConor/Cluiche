@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.ui
 name: UI
 owner_team: TBD
-layer: platform
+layer: domain/visual/core
 status: active
 maturity: dev
 
@@ -30,6 +30,7 @@ non_responsibilities:
 public_api:
   headers:
     - Dia/DiaUI/BoundMethod.h
+    - Dia/DiaUI/IUIRenderOverlay.h
     - Dia/DiaUI/IUISystem.h
     - Dia/DiaUI/Page.h
     - Dia/DiaUI/UIDataBuffer.h
@@ -38,6 +39,7 @@ public_api:
     - BoundMethod
     - BoundMethodArgs
     - BoundMethodValue
+    - IUIRenderOverlay
     - IUISystem
     - Page
     - UIDataBuffer
@@ -51,5 +53,6 @@ dependencies:
     - dia.core.memory
     - dia.core.strings
     - dia.input
+    - dia.maths.vector
   forbidden: []
 ---

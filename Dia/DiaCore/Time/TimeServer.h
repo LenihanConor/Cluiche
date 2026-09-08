@@ -38,17 +38,25 @@ namespace Dia
 
 			void					SetTimeScale( float scale );
 			void					AdjustTimeScale( float adjScale );
-		
+
+			void					Pause();
+			void					Resume();
+			bool					IsPaused() const;
+
+			void					Step(TimeRelative step);
+			void					AdvanceTo(TimeAbsolute target);
+
 		private:
 			TimeAbsolute			mTime;						// What is the current time for the server, this increments in steps
-			TimeRelative			mTimeStep;					// Length of the time step 
-			TimeAbsolute			mLastTime;					// Previous time before the step			
-			TimeAbsolute			mSystemTimeOfNextTick;		// Next systme time we will step forward 
+			TimeRelative			mTimeStep;					// Length of the time step
+			TimeAbsolute			mLastTime;					// Previous time before the step
 
 			float					mTimeScale;					// Allows us to speed up and slow down time, only applied on the next tick
 			float					mQueuedTimeScale;			// Time scale to be applied next scale
 
 			unsigned int			mTick;						// What is the current "frame" number we are on
+
+			bool					mIsPaused;					// When true, Tick() is a no-op
 		};
 	}
 }

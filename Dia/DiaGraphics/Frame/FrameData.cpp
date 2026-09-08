@@ -2,11 +2,14 @@
 // Filename: Frame.cpp
 ////////////////////////////////////////////////////////////////////////////////
 #include "DiaGraphics/Frame/FrameData.h"
+#include <DiaApplicationFlow/RegistrationMacrosV2.h>
 
 namespace Dia
 {
 	namespace Graphics
 	{
+		DIA_STREAM_TYPE(FrameData);
+
 		FrameData::FrameData()
 		{}
 
@@ -22,6 +25,9 @@ namespace Dia
 			DebugFrameData::ClearDebugBuffer();
 			UIFrameData::ClearUIBuffer();
 			EntityFrameData::Clear();
+			mCamera = Dia::Camera2D::Camera2D();
+			mWindowSize = Dia::Maths::Vector2D(0.0f, 0.0f);
+			mMousePixel = Dia::Maths::Vector2D(0.0f, 0.0f);
 		}
 
 		void FrameData::Copy(const FrameData& rhs)
@@ -30,11 +36,16 @@ namespace Dia
 			UIFrameData::CopyUIBuffer(rhs);
 
 			// Copy entity frame data (sprites)
+			EntityFrameData::Clear();
 			const Core::Containers::DynamicArrayC<SpriteDrawCommand, 256>& sprites = rhs.GetSprites();
 			for (unsigned int i = 0; i < sprites.Size(); ++i)
 			{
 				RequestDrawSprite(sprites[i]);
 			}
+
+			mCamera = rhs.mCamera;
+			mWindowSize = rhs.mWindowSize;
+			mMousePixel = rhs.mMousePixel;
 		}
 	}
 }

@@ -3,7 +3,7 @@
 #include "DiaSerializer/MetadataValue.h"
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Json/external/json/json.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <string>
 
 namespace Dia

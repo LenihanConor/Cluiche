@@ -1,0 +1,9 @@
+{
+    "name": "PathfindingTestStage",
+    "manifest": "Stages/PathfindingTestStage/misc/ApplicationFlow/pathfinding_test_stage.diaapp",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

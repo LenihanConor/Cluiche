@@ -9,7 +9,7 @@ from click.testing import CliRunner
 from dia_cli.cli_main import cli
 from dia_cli.commands.test.ui_runner import check_node_modules, run
 
-_SUBPATH = "Dia/DiaApplicationEditor/UI"
+_SUBPATH = "Dia/DiaApplicationFlowEditor/UI"
 _DOCKER_SUBCMD = "editor-ui"
 
 
@@ -18,14 +18,14 @@ _DOCKER_SUBCMD = "editor-ui"
 # ---------------------------------------------------------------------------
 
 def _fake_root(tmp_path: Path) -> Path:
-    ui = tmp_path / "Dia" / "DiaApplicationEditor" / "UI"
+    ui = tmp_path / "Dia" / "DiaApplicationFlowEditor" / "UI"
     ui.mkdir(parents=True)
     return tmp_path
 
 
 def _fake_root_with_modules(tmp_path: Path) -> Path:
     root = _fake_root(tmp_path)
-    (root / "Dia" / "DiaApplicationEditor" / "UI" / "node_modules").mkdir()
+    (root / "Dia" / "DiaApplicationFlowEditor" / "UI" / "node_modules").mkdir()
     return root
 
 
@@ -124,7 +124,7 @@ def test_run_uses_editor_ui_dir_as_cwd(mock_run, tmp_path):
     mock_run.return_value = MagicMock(returncode=0)
     _run(repo_root=root)
     cwd = mock_run.call_args[1]["cwd"]
-    assert cwd == str(root / "Dia" / "DiaApplicationEditor" / "UI")
+    assert cwd == str(root / "Dia" / "DiaApplicationFlowEditor" / "UI")
 
 
 # ---------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 #include "DiaSoftBody2D/Cloth.h"
 
 #include "DiaCore/Core/Assert.h"
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 #include <cmath>
 

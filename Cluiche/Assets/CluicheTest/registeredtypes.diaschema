@@ -1,0 +1,506 @@
+{
+  "components": [
+    {
+      "debug_name": "TransformComponent",
+      "default_values": {
+        "x": 0,
+        "y": 0
+      },
+      "description": "Holds 2D world-space position (x, y) for an entity.",
+      "fields": [
+        {
+          "kind": "primitive",
+          "name": "x"
+        },
+        {
+          "kind": "primitive",
+          "name": "y"
+        }
+      ],
+      "type_id": "cluichetest.transform"
+    },
+    {
+      "debug_name": "VisualTestRenderComponent",
+      "default_values": {
+        "colour": 0,
+        "radius": 0
+      },
+      "description": "Stores render properties (radius, colour) for circle-based visual representation in the entity test stage.",
+      "fields": [
+        {
+          "kind": "primitive",
+          "name": "radius"
+        },
+        {
+          "kind": "primitive",
+          "name": "colour"
+        }
+      ],
+      "type_id": "cluichetest.visual-test-render"
+    },
+    {
+      "debug_name": "PickableCircleComponent",
+      "default_values": {
+        "isSelected": false,
+        "objectIdx": 0
+      },
+      "description": "Registers a circle shape with the picking service so the entity can be selected in the test stage.",
+      "fields": [
+        {
+          "kind": "primitive",
+          "name": "objectIdx"
+        }
+      ],
+      "type_id": "cluichetest.pickable-circle"
+    },
+    {
+      "debug_name": "ParentComponent",
+      "default_values": {
+        "parentGen": 0,
+        "parentIndex": 0
+      },
+      "description": "Stores the parent entity handle; links this entity into the scene hierarchy.",
+      "fields": [
+        {
+          "kind": "primitive",
+          "name": "parentIndex"
+        },
+        {
+          "kind": "primitive",
+          "name": "parentGen"
+        }
+      ],
+      "type_id": "dia.hierarchy.parent"
+    },
+    {
+      "debug_name": "ChildBufferComponent",
+      "default_values": {},
+      "description": "Stores up to kMaxChildren child entity handles for a parent entity in the hierarchy.",
+      "fields": [],
+      "type_id": "dia.hierarchy.children"
+    },
+    {
+      "debug_name": "SpawnEmitterComponent",
+      "default_values": {
+        "active": false,
+        "blueprintId": null,
+        "burstCount": 0,
+        "cap": 0,
+        "despawnRadius": 0,
+        "lifetime": 0,
+        "rate": 0
+      },
+      "description": "",
+      "fields": [
+        {
+          "kind": "string_id",
+          "name": "blueprintId"
+        },
+        {
+          "kind": "primitive",
+          "name": "rate"
+        },
+        {
+          "kind": "primitive",
+          "name": "burstCount"
+        },
+        {
+          "kind": "primitive",
+          "name": "cap"
+        },
+        {
+          "kind": "primitive",
+          "name": "lifetime"
+        },
+        {
+          "kind": "primitive",
+          "name": "despawnRadius"
+        },
+        {
+          "kind": "primitive",
+          "name": "active"
+        }
+      ],
+      "type_id": "spawn-emitter-component"
+    },
+    {
+      "debug_name": "RuleSetComponent",
+      "default_values": {},
+      "description": "",
+      "fields": [],
+      "type_id": "rule-set-component"
+    },
+    {
+      "debug_name": "UtilitySetComponent",
+      "default_values": {},
+      "description": "",
+      "fields": [],
+      "type_id": "utility-set-component"
+    },
+    {
+      "debug_name": "HTNPlannerComponent",
+      "default_values": {},
+      "description": "",
+      "fields": [],
+      "type_id": "htn-planner-component"
+    },
+    {
+      "debug_name": "SpatialComponent",
+      "default_values": {
+        "layerMask": 0,
+        "position": null,
+        "radius": 0
+      },
+      "description": "",
+      "fields": [
+        {
+          "kind": "nested",
+          "name": "position"
+        },
+        {
+          "kind": "primitive",
+          "name": "radius"
+        },
+        {
+          "kind": "primitive",
+          "name": "mLayerMask"
+        }
+      ],
+      "type_id": "spatial-component"
+    },
+    {
+      "debug_name": "BehaviourTreeComponent",
+      "default_values": {},
+      "description": "",
+      "fields": [],
+      "type_id": "behaviour-tree-component"
+    },
+    {
+      "debug_name": "AttributeSetComponent",
+      "default_values": {
+        "schema_name": null
+      },
+      "description": "Wraps one AttributeSet \u00e2\u20ac\u201d resolved base+modifier attribute values for this entity.",
+      "fields": [
+        {
+          "kind": "string_id",
+          "name": "schema_name"
+        }
+      ],
+      "type_id": "dia.attribute.set"
+    }
+  ],
+  "game": "cluichetest",
+  "modules": [
+    {
+      "allowed_pus": "render",
+      "description": "Displays the CluicheTest boot menu for selecting which test stage to run.",
+      "type_id": "BootMenuModule"
+    },
+    {
+      "allowed_pus": "main",
+      "description": "Drives CluicheTest top-level state: stage selection, transitions, and test lifecycle.",
+      "type_id": "TestMainStateProducerModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Test stage exercising 2D rigid-body physics: polygon ground, falling circles, a thrown body, a distance-joint pendulum, a trigger volume, collision events and a raycast.",
+      "type_id": "RigidBody2DTestModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Test stage for the asset runtime: hot-reload, streaming, and reference-counted asset lifecycle.",
+      "type_id": "TestAssetRuntimeStageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Renders loaded assets in the asset runtime test stage for visual verification.",
+      "type_id": "AssetRuntimeRendererModule"
+    },
+    {
+      "allowed_pus": "render",
+      "description": "HUD overlay for the asset runtime test stage showing load state and asset stats.",
+      "type_id": "AssetRuntimeHUDModule"
+    },
+    {
+      "allowed_pus": "render",
+      "description": "Shared HUD overlay for all CluicheTest stages: shows stage name, controls, and test status.",
+      "type_id": "TestStageHUDModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "MessageBus E2E: BroadcastRouter fan-out, EntityRouter targeted delivery, Reaction-pass chaining, IFlushAdapter injection",
+      "type_id": "MessageBusTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Two-group fog-of-war demo: Red/Blue patrol sight-sources on a 24x18 grid with shadowcasting, Revealed persistence, and enemy flash on detection.",
+      "type_id": "GridVisibilityTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "DiaAICallout e2e: two-faction wandering-emitter emit/claim/release/TTL lifecycle with visual debugger overlay",
+      "type_id": "AICalloutTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "BehaviourTree E2E: guard patrol/alert/chase loop, shared BT asset, 3 independent guards",
+      "type_id": "BehaviourTreeTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Visual gallery stage: registers all 24 IDebugDomain instances simultaneously for DiaDebugPanel validation.",
+      "type_id": "DebugGalleryTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Spawner integration stage: rate/burst/cap/explicit despawn emitters",
+      "type_id": "SpawnerTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Multi-system AI/progression E2E: TriggerScript + Objective + Blackboard + StateMachine + UtilityAI + Rules",
+      "type_id": "ArenaTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Tests MeshRenderer with multiple draw commands per frame including an unknown mesh ID",
+      "type_id": "Mesh3DRenderSystemTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Renders a procedural unit cube with a directional light via Canvas3D",
+      "type_id": "Mesh3DTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Test stage that exercises the 2D animation system with playback and blending scenarios.",
+      "type_id": "Animation2DTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Test stage for 2D soft-body physics: deformation, constraints, and cloth simulation.",
+      "type_id": "SoftBody2DTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Test stage that exercises entity creation, component attachment, and lifecycle scenarios.",
+      "type_id": "EntityTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Test stage for 2D geometry operations: intersection, overlap, and shape queries.",
+      "type_id": "Geometry2DTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Test stage for the 2D scene system: loading levels, layers, and entity placement.",
+      "type_id": "Scene2DTestStageModule"
+    },
+    {
+      "allowed_pus": "main",
+      "description": "Test stage for the Ultralight UI system: page loading, JS bridge, keyboard injection, and input routing.",
+      "type_id": "UIUltralightTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Test stage that validates DiaIK2D solvers (two-bone, FABRIK, look-at) on procedural limb and dragon skeletons.",
+      "type_id": "IK2DTestStageModule"
+    },
+    {
+      "allowed_pus": "any",
+      "description": "Stub level module used as a placeholder during prototype and test stages.",
+      "type_id": "DummyLevelModule"
+    },
+    {
+      "allowed_pus": "any",
+      "description": "Stub UI page module used as a placeholder during prototype and test stages.",
+      "type_id": "DummyUIPageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Integration stage: Condition + Rules + UtilityAI (sync/async) + DiaSimTime",
+      "type_id": "AIDecisionTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Integration stage: DiaEconomy -- gatherers mine gold, deposit to treasury, consumer drains, market modifier",
+      "type_id": "EconomyTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Integration stage: HTN (sync + diverge/replan + async) + DiaSimTime + RuleActionBridge",
+      "type_id": "AIHTNTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Full navigation stack: A* + FlowField + Steering",
+      "type_id": "PathfindingTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Tactical influence maps: Blue + Red faction fields, spatial queries, overlays",
+      "type_id": "ScalarFieldTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Entity spatial queries: 5 query shapes, layer masks, dirty-flag re-index, destroy sweep",
+      "type_id": "EntitySpatialTestStageModule"
+    },
+    {
+      "allowed_pus": "main",
+      "description": "Ultralight HTML debug panel overlay: domain accordions, drawer toggles, live stats, scale sliders.",
+      "type_id": "DebugPanelPageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Pushes economy inspector payloads (instances/modifiers/events/schema) to the debug server",
+      "type_id": "EconomyInspectorModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Pushes AI inspector payloads (budget/utility/rules/HTN) to the debug server",
+      "type_id": "AIInspectorModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Executes navigation requests sent by RenderPU modules on the sim thread.",
+      "type_id": "SimNavigationHandlerModule"
+    },
+    {
+      "allowed_pus": "main",
+      "description": "Manages the Ultralight-based UI system: page lifecycle, input routing, and JavaScript bridge.",
+      "type_id": "UIModule"
+    },
+    {
+      "allowed_pus": "render",
+      "description": "Submits draw calls each frame using the bgfx canvas; consumes scene and camera FrameStreams.",
+      "type_id": "RenderModule"
+    },
+    {
+      "allowed_pus": "any",
+      "description": "Collects and exposes per-frame profiling data for the visual profiler overlay.",
+      "type_id": "ProfilerModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Loads a .diascene into sibling module registries; owns only LayerTable and loader state.",
+      "type_id": "Scene2DModule"
+    },
+    {
+      "allowed_pus": "any",
+      "description": "Runs the 2D rigid-body physics simulation and publishes physics results via FrameStream.",
+      "type_id": "Physics2DModule"
+    },
+    {
+      "allowed_pus": "any",
+      "description": "Initializes the observation system: logging sinks, metrics, traces, and health reporters.",
+      "type_id": "ObservationModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Composites UI layer outputs into the final render target each frame.",
+      "type_id": "UICompositeModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Displays a loading screen during asset-heavy stage transitions.",
+      "type_id": "LoadingScreenModule"
+    },
+    {
+      "allowed_pus": "main",
+      "description": "Manages the application window, bgfx render context, and main-thread kernel loop.",
+      "type_id": "KernelModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Handles mouse/cursor picking against scene geometry and publishes selection results.",
+      "type_id": "PickingModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Polls raw input devices and publishes input state to consumers via FrameStream.",
+      "type_id": "InputStreamModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Owns the LightRegistry2D for the SimPU.",
+      "type_id": "Light2DModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Owns the CameraRegistry2D for the SimPU; drives UpdateAll and viewport sync.",
+      "type_id": "Camera2DModule"
+    },
+    {
+      "allowed_pus": "main",
+      "description": "Initializes and manages the background job system thread pool.",
+      "type_id": "JobSystemModule"
+    },
+    {
+      "allowed_pus": "main",
+      "description": "Hosts the WebSocket debug server that editor and inspector tools connect to.",
+      "type_id": "DebugServerHostModule"
+    },
+    {
+      "allowed_pus": "render",
+      "description": "Renders in-game debug UI panels via ImGui for development diagnostics.",
+      "type_id": "DebugUIModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Pushes entity.inspect payloads to the debug server; registers entity.write_field and entity.find_by_name commands",
+      "type_id": "EntityInspectorModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Attribute inspector: values, ranges, modifier stack for the selection",
+      "type_id": "AttributeVisualDebuggerModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Entity debug overlays: labels, hierarchy, stats, picking, inspector",
+      "type_id": "EntityVisualDebuggerModule"
+    },
+    {
+      "allowed_pus": "render",
+      "description": "Renders asset runtime debug overlays and live asset state visualization.",
+      "type_id": "AssetRuntimeVisualDebuggerModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Renders visual debug overlays: coordinate axes, grids, physics shapes, and velocity arrows.",
+      "type_id": "VisualDebuggerModule"
+    },
+    {
+      "allowed_pus": "main",
+      "description": "Owns the asset runtime: loads, caches, and serves assets to consumers via ServiceStream.",
+      "type_id": "AssetServiceModule"
+    },
+    {
+      "allowed_pus": "main",
+      "description": "Produces the main application state frame and drives top-level game logic.",
+      "type_id": "MainStateProducerModule"
+    },
+    {
+      "allowed_pus": "any",
+      "description": "Hosts the entity world: creates, updates, and destroys diaentitytemplate instances and their components.",
+      "type_id": "EntityModule"
+    },
+    {
+      "allowed_pus": "main",
+      "description": "Drives automated test sequences and script-based input replay.",
+      "type_id": "AutomationModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Umbrella SimPU module: assembles the sim-time scheduler, budget, and registry into the per-tick gate loop and publishes SimTimeContext onto the SimTime FrameStream.",
+      "type_id": "DiaSimTime"
+    }
+  ],
+  "processing_units": [],
+  "version": {
+    "major": 1,
+    "minor": 33
+  }
+}

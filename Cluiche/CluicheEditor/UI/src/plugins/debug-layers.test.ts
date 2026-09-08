@@ -69,9 +69,6 @@ beforeAll(() => {
 function badge(): HTMLElement {
   return document.getElementById("drop-badge") as HTMLElement;
 }
-function banner(): HTMLElement {
-  return document.getElementById("overflow-banner") as HTMLElement;
-}
 function list(): HTMLElement {
   return document.getElementById("layer-list") as HTMLElement;
 }

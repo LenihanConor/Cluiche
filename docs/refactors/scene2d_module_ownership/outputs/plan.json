@@ -1,0 +1,69 @@
+{
+  "command": "plan",
+  "status": "ok",
+  "data": {
+    "goal": "Scene2DModule becomes a pure loader/unloader that populates sibling modules' registries — it no longer owns cameras, lights, or entities.",
+    "phases": [
+      {
+        "phase": 1,
+        "name": "Rename CameraModule -> Camera2DModule",
+        "description": "Rename class, files, kTypeId, all ModuleRef sites, all .diaapp manifests",
+        "files": [
+          "Cluiche/CluicheGameBaseline/Modules/CameraModule.h -> Camera2DModule.h",
+          "Cluiche/CluicheGameBaseline/Modules/CameraModule.cpp -> Camera2DModule.cpp",
+          "Cluiche/CluicheGameBaseline/Modules/VisualDebuggerModule.h",
+          "Cluiche/CluicheGameBaseline/Modules/PickingModule.h",
+          "Cluiche/CluicheGameBaseline/CluicheGameBaseline.vcxproj",
+          "Cluiche/CluicheGameBaseline/CluicheGameBaseline.vcxproj.filters",
+          "Cluiche/Assets/CluicheTest/Global/Misc/ApplicationFlow/cluiche_main.diaapp",
+          "Cluiche/Tests/GoogleTests/Picking/TestCameraViewport.cpp"
+        ]
+      },
+      {
+        "phase": 2,
+        "name": "Create Light2DModule",
+        "description": "New module owning LightRegistry2D, following Camera2DModule pattern. Add to vcxproj and .diaapp manifests for Scene2DTestStage.",
+        "files": [
+          "Cluiche/CluicheGameBaseline/Modules/Light2DModule.h (new)",
+          "Cluiche/CluicheGameBaseline/Modules/Light2DModule.cpp (new)",
+          "Cluiche/CluicheGameBaseline/CluicheGameBaseline.vcxproj",
+          "Cluiche/CluicheGameBaseline/CluicheGameBaseline.vcxproj.filters",
+          "Cluiche/Assets/CluicheTest/Global/Misc/ApplicationFlow/cluiche_main.diaapp",
+          "Cluiche/Assets/CluicheTest/Stages/Scene2DTestStage/misc/ApplicationFlow/scene2d_test_stage.diaapp"
+        ]
+      },
+      {
+        "phase": 3,
+        "name": "Rewire Scene2DModule",
+        "description": "Remove owned registries/domain from Scene2DModule. Add ModuleRef<EntityModule>, ModuleRef<Camera2DModule>, ModuleRef<Light2DModule>. Build SceneLoadContext from their registries. Update .diaapp dependencies.",
+        "files": [
+          "Cluiche/CluicheGameBaseline/Modules/Scene2DModule.h",
+          "Cluiche/CluicheGameBaseline/Modules/Scene2DModule.cpp",
+          "Cluiche/Assets/CluicheTest/Stages/Scene2DTestStage/misc/ApplicationFlow/scene2d_test_stage.diaapp"
+        ]
+      },
+      {
+        "phase": 4,
+        "name": "Update consumers",
+        "description": "Scene2DTestStageModule and Scene2DTestDrawer access cameras/lights/entities from their owning modules directly. Update feature spec.",
+        "files": [
+          "Cluiche/CluicheTest/Modules/TestStages/Scene2DTestStageModule.h",
+          "Cluiche/CluicheTest/Modules/TestStages/Scene2DTestStageModule.cpp",
+          "Cluiche/CluicheTest/Modules/TestStages/Drawers/Scene2DTestDrawer.h",
+          "Cluiche/CluicheTest/Modules/TestStages/Drawers/Scene2DTestDrawer.cpp",
+          "docs/specs/features/cluichegamebaseline/scene2d-module.md"
+        ]
+      }
+    ],
+    "acceptance_criteria": [
+      "A1: dia run cluichetest — Scene2DTestStage passes all 5 checkpoints",
+      "A2: dia run googletest — all existing tests pass",
+      "A3: Only one Entity::Domain instance in SimPU (EntityModule)",
+      "A4: Only one CameraRegistry2D instance in SimPU (Camera2DModule)",
+      "A5: Only one LightRegistry2D instance in SimPU (Light2DModule)",
+      "A6: Scene-loaded cameras visible to PickingModule/VisualDebuggerModule via Camera2DModule",
+      "A7: Scene2DModule has no include for Domain.h, CameraRegistry2D.h, or LightRegistry2D.h",
+      "A8: CameraModule name does not appear anywhere in code or manifests"
+    ]
+  }
+}

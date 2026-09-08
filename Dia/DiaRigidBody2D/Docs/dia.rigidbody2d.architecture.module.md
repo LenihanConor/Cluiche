@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.rigidbody2d
 name: DiaRigidBody2D
 owner_team: TBD
-layer: platform
+layer: domain/physics/core
 status: active
 maturity: dev
 
@@ -48,6 +48,8 @@ dependent_modules:
   - dia.geometry2d
   - dia.maths
   - dia.core
+  - dia.messagebus
+  - dia.observation
 
 public_api:
   headers: []
@@ -68,6 +70,7 @@ dependencies:
     - dia.geometry2d
     - dia.maths
     - dia.core
+    - dia.messagebus
   forbidden:
     - dia.graphics
     - dia.application

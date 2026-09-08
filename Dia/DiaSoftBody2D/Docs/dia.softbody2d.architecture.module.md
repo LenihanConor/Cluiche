@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.softbody2d
 name: DiaSoftBody2D
 owner_team: TBD
-layer: platform
+layer: domain/physics/core
 status: active
 maturity: dev
 
@@ -54,6 +54,7 @@ dependent_modules:
   - dia.geometry2d
   - dia.maths
   - dia.core
+  - dia.observation
 
 public_api:
   headers:

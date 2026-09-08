@@ -139,11 +139,11 @@ Fast lookup tables for AI agents working with Cluiche codebase.
 
 | Class | Header | Purpose |
 |-------|--------|---------|
-| `ProcessingUnit` | `DiaApplication/ApplicationProcessingUnit.h` | Thread container |
-| `Phase` | `DiaApplication/ApplicationPhase.h` | Execution stage |
-| `Module` | `DiaApplication/ApplicationModule.h` | Functional unit |
-| `StateObject` | `DiaApplication/ApplicationStateObject.h` | Stateful object base |
-| `ILevel` | `DiaApplication/ApplicationStateObject.h` | Level interface |
+| `ProcessingUnit` | `DiaApplicationFlow/ApplicationProcessingUnit.h` | Thread container |
+| `Phase` | `DiaApplicationFlow/ApplicationPhase.h` | Execution stage |
+| `Module` | `DiaApplicationFlow/ApplicationModule.h` | Functional unit |
+| `StateObject` | `DiaApplicationFlow/ApplicationStateObject.h` | Stateful object base |
+| `ILevel` | `DiaApplicationFlow/ApplicationStateObject.h` | Level interface |
 
 ### Patterns
 
@@ -159,7 +159,7 @@ Fast lookup tables for AI agents working with Cluiche codebase.
 
 | Class | Header | Purpose |
 |-------|--------|---------|
-| `FrameStream<T>` | `DiaApplication/FrameStream.h` | Thread-safe queue |
+| `FrameStream<T>` | `DiaApplicationFlow/FrameStream.h` | Thread-safe queue |
 
 ---
 

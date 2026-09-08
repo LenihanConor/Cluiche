@@ -5,29 +5,16 @@ import sys
 from dia_cli.utils.dia_cli_config import Config
 
 
-## @defgroup show_grp show
-#  Everything related to `mdk show` command
-#  @{
-
-## @package show Command declarations for `show` top-level command
-
 @click.group()
 def cli():
-    """! Commands for showing information.
-    Not callable without arguments."""
+    """Commands for showing information."""
     pass
 
 
 @cli.command()
 @click.pass_context
 def config(ctx):
-    """! Prints the current configuration
-
-    \f
-    Invoked with `mdk show config`
-
-    @param [in] ctx the Click context
-    """
+    """Print the current dia_cli_prime_config.json configuration."""
     config = Config.from_context(ctx)
     logger.info(f'\nRoot Path: {config.root_path()}')
     logger.info(f'\n{pprint.pformat(config.value, indent=3, width=100)}')
@@ -36,17 +23,5 @@ def config(ctx):
 @cli.command()
 @click.pass_context
 def modules(ctx):
-    """! Show info about Python modules.
-
-    \f
-    Invoked with mdk show modules
-
-    @param [in] ctx the Click context
-    """
+    """Show Python module search paths (sys.path)."""
     logger.info(f'\nModule Search Path (sys.path):\n{pprint.pformat(sys.path)}')
-    # FIXME sys.modules is too much information. Need a way to display
-    # only modules defined by mdk-cli and game teams.
-    # logger.info(f'\nLoaded Modules (sys.modules):\n{pprint.pformat(sys.modules)}')
-    pass
-
-## @}

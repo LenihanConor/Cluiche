@@ -3,11 +3,14 @@ import { initialPipelineState } from './types';
 
 export type PipelineAction =
     | { type: 'PROCESS_EVENTS'; events: PipelineEventData[] }
-    | { type: 'UPDATE_SUMMARY'; summary: { target: string; config: string; passCount: number; failCount: number; totalDurationMs: number; interrupted: boolean; runInProgress: boolean } }
+    | { type: 'UPDATE_SUMMARY'; summary: { target: string; config: string; passCount: number; failCount: number; totalDurationMs: number; interrupted: boolean; runInProgress: boolean; exeExists?: boolean } }
     | { type: 'TOGGLE_STAGE'; stageName: string }
     | { type: 'SET_HISTORY'; runs: HistoryRun[] }
     | { type: 'VIEW_HISTORY'; index: number }
-    | { type: 'CLEAR_HISTORY_VIEW' };
+    | { type: 'CLEAR_HISTORY_VIEW' }
+    | { type: 'SET_STAGE_MANIFEST'; stages: string[] }
+    | { type: 'SET_PROJECT_STATE'; isValid: boolean; diagameName: string; exeExists?: boolean }
+    | { type: 'RECORD_RUN'; run: HistoryRun & { stageDurationsMs: Record<string, number> } };
 
 function findOrCreateStage(stages: StageState[], name: string): StageState[] {
     if (stages.some(s => s.name === name)) return stages;
@@ -45,7 +48,21 @@ function processEvent(state: PipelineState, evt: PipelineEventData): PipelineSta
                 runInProgress: true,
                 target: evt.detail ?? '',
                 config: '',
-                stages: [],
+                stageManifest: state.stageManifest,
+                stageDurationsMs: state.stageDurationsMs,
+                lastSuccessTimestamp: null,
+                isProjectLoaded: state.isProjectLoaded,
+                diagameName: state.diagameName,
+                canLaunch: false,
+                stages: state.stageManifest.map(name => ({
+                    name,
+                    status: 'not-started' as const,
+                    durationMs: 0,
+                    startTimestamp: 0,
+                    logLines: [],
+                    steps: [],
+                    expanded: false,
+                })),
             };
 
         case 'OnStageStarted': {
@@ -82,6 +99,7 @@ function processEvent(state: PipelineState, evt: PipelineEventData): PipelineSta
                     ...s,
                     status: 'failed',
                     durationMs: evt.durationMs >= 0 ? evt.durationMs : s.durationMs,
+                    expanded: true,
                 })),
             };
         }
@@ -122,10 +140,12 @@ function processEvent(state: PipelineState, evt: PipelineEventData): PipelineSta
                 ...state,
                 stages: updateStage(stages, evt.stage, s => ({
                     ...s,
+                    expanded: true,
                     steps: updateStep(findOrCreateStep(s.steps, evt.step), evt.step, st => ({
                         ...st,
                         status: 'failed',
                         durationMs: evt.durationMs >= 0 ? evt.durationMs : st.durationMs,
+                        inlineError: evt.error ?? null,
                     })),
                 })),
             };
@@ -138,13 +158,21 @@ function processEvent(state: PipelineState, evt: PipelineEventData): PipelineSta
                 message: evt.detail ?? evt.error ?? '',
                 timestamp: evt.ts,
             };
-            return {
-                ...state,
-                stages: updateStage(stages, evt.stage, s => ({
+            // Track last error line per step for inline display
+            const updatedStages = updateStage(stages, evt.stage, s => {
+                const updatedSteps = (evt.level === 'error' && evt.step)
+                    ? updateStep(s.steps, evt.step, st => ({
+                        ...st,
+                        inlineError: evt.detail ?? evt.error ?? null,
+                    }))
+                    : s.steps;
+                return {
                     ...s,
                     logLines: [...s.logLines, line],
-                })),
-            };
+                    steps: updatedSteps,
+                };
+            });
+            return { ...state, stages: updatedStages };
         }
 
         case 'OnRunCompleted':
@@ -152,6 +180,8 @@ function processEvent(state: PipelineState, evt: PipelineEventData): PipelineSta
                 ...state,
                 runInProgress: false,
                 totalDurationMs: evt.durationMs >= 0 ? evt.durationMs : state.totalDurationMs,
+                canLaunch: true,
+                lastSuccessTimestamp: Date.now(),
             };
 
         case 'OnRunFailed':
@@ -159,6 +189,7 @@ function processEvent(state: PipelineState, evt: PipelineEventData): PipelineSta
                 ...state,
                 runInProgress: false,
                 totalDurationMs: evt.durationMs >= 0 ? evt.durationMs : state.totalDurationMs,
+                canLaunch: false,
             };
 
         default:
@@ -192,6 +223,10 @@ export function pipelineReducer(state: PipelineState, action: PipelineAction): P
                         : st
                 );
             }
+            // canLaunch if: exe present on disk, OR interrupted-but-clean (all stages passed
+            // before the process was killed), OR already enabled from a prior completed run.
+            const interruptedButClean = s.interrupted && s.failCount === 0 && s.passCount > 0;
+            const canLaunch = s.exeExists === true || interruptedButClean || state.canLaunch;
             return {
                 ...state,
                 target: s.target || state.target,
@@ -201,6 +236,7 @@ export function pipelineReducer(state: PipelineState, action: PipelineAction): P
                 totalDurationMs: s.totalDurationMs,
                 interrupted: s.interrupted,
                 runInProgress: s.runInProgress,
+                canLaunch,
                 stages,
             };
         }
@@ -230,6 +266,55 @@ export function pipelineReducer(state: PipelineState, action: PipelineAction): P
                 ...state,
                 viewingHistoryIndex: null,
             };
+
+        case 'SET_STAGE_MANIFEST':
+            return {
+                ...state,
+                stageManifest: action.stages,
+                stages: action.stages.map(name => ({
+                    name,
+                    status: 'not-started' as const,
+                    durationMs: 0,
+                    startTimestamp: 0,
+                    logLines: [],
+                    steps: [],
+                    expanded: false,
+                })),
+            };
+
+        case 'SET_PROJECT_STATE':
+            return {
+                ...state,
+                isProjectLoaded: action.isValid,
+                diagameName: action.diagameName,
+                canLaunch: action.exeExists === true,
+                lastSuccessTimestamp: null,
+                stageManifest: action.isValid ? state.stageManifest : [],
+                stages: action.isValid ? state.stages : [],
+            };
+
+        case 'RECORD_RUN': {
+            const newRun: HistoryRun = {
+                target: action.run.target,
+                config: action.run.config,
+                passCount: action.run.passCount,
+                failCount: action.run.failCount,
+                totalDurationMs: action.run.totalDurationMs,
+                startTimestamp: action.run.startTimestamp,
+                interrupted: action.run.interrupted,
+                stageDurationsMs: action.run.stageDurationsMs,
+            };
+            const runs = [newRun, ...state.historyRuns].slice(0, 5);
+            // Build new stageDurationsMs from this latest successful run
+            const stageDurationsMs = action.run.failCount === 0 && !action.run.interrupted
+                ? { ...action.run.stageDurationsMs }
+                : state.stageDurationsMs;
+            return {
+                ...state,
+                historyRuns: runs,
+                stageDurationsMs,
+            };
+        }
 
         default:
             return state;

@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.maths
 name: Maths
 owner_team: TBD
-layer: platform
+layer: foundation/maths
 status: active
 maturity: dev
 
@@ -12,7 +12,7 @@ language: cpp
 parent_module_id: dia.root
 
 summary: >
-  Groups Maths submodules: Core, Matrix, Shape, Vector.
+  Groups Maths submodules: Core, Matrix, Quaternion, Transform, Vector.
 
 intent: >
   Provide a clear module boundary and navigation surface for the Maths area.
@@ -29,7 +29,8 @@ non_responsibilities:
 dependent_modules:
   - dia.maths.core
   - dia.maths.matrix
-  - dia.maths.shape
+  - dia.maths.quaternion
+  - dia.maths.transform
   - dia.maths.vector
 
 public_api:

@@ -11,11 +11,13 @@
 #include "DiaGeometry2D/Transform/Transform.h"
 #include "DiaGeometry2D/Shapes/Circle.h"
 #include "DiaGeometry2D/Shapes/ConvexPolygon.h"
-#include "DiaGraphics/Frame/FrameData.h"
-#include "DiaVisualDebugger/DebugLayerManager.h"
-#include "DiaVisualDebugger/DebugColourPalette.h"
-#include "DiaVisualDebugger/DebugLayerNames.h"
+#include <DiaCore/DebugDraw/IDebugDraw.h>
+#include <DiaCore/DebugDraw/IDebugContext.h>
+#include <DiaCore/DebugDraw/DebugColourPalette.h>
+#include <DiaCore/DebugDraw/DebugLayerNames.h>
+#include <DiaCore/Colour/RGBA.h>
 
+#include <DiaObservation/Trace/DiaTrace.h>
 #include <cmath>
 
 namespace Dia::RigidBody2D
@@ -28,7 +30,7 @@ static Dia::Maths::Vector2D RotateVec(const Dia::Maths::Vector2D& v, float rad)
     return Dia::Maths::Vector2D(c * v.x - s * v.y, s * v.x + c * v.y);
 }
 
-static Dia::Graphics::RGBA BodyColour(const Body2DBase* body)
+static Dia::Core::RGBA BodyColour(const Body2DBase* body)
 {
     if (!body->IsAwake())
         return Dia::Debug::DebugColourPalette::kDeepSleep;
@@ -41,14 +43,15 @@ static Dia::Graphics::RGBA BodyColour(const Body2DBase* body)
     return Dia::Debug::DebugColourPalette::kActive;
 }
 
-static void DrawBody(const Body2DBase* body, Dia::Graphics::FrameData& frameData)
+static void DrawBody(const Body2DBase* body, Dia::Core::IDebugDraw& draw, bool showSleeping)
 {
+    if (!showSleeping && !body->IsAwake()) return;
     const Dia::Geometry2D::Transform* t = body->GetTransform();
     if (!t) return;
 
     const Dia::Maths::Vector2D pos = t->GetWorldPosition();
     const float                rot = t->GetLocalRotation().AsRadians();
-    const Dia::Graphics::RGBA  col = BodyColour(body);
+    const Dia::Core::RGBA      col = BodyColour(body);
 
     switch (body->GetShapeKind())
     {
@@ -56,7 +59,7 @@ static void DrawBody(const Body2DBase* body, Dia::Graphics::FrameData& frameData
         {
             const Dia::Geometry2D::Circle* c = body->GetCircleShape();
             if (c)
-                frameData.RequestDraw(pos, c->GetRadius(), col);
+                draw.RequestDraw(pos, c->GetRadius(), col);
             break;
         }
         case ShapeKind::kPoly:
@@ -71,21 +74,21 @@ static void DrawBody(const Body2DBase* body, Dia::Graphics::FrameData& frameData
                     const Dia::Maths::Vector2D lv1 = poly->GetVertex((i + 1) % n);
                     const Dia::Maths::Vector2D wv0 = pos + RotateVec(lv0, rot);
                     const Dia::Maths::Vector2D wv1 = pos + RotateVec(lv1, rot);
-                    frameData.RequestDraw(wv0, wv1, col);
+                    draw.RequestDraw(wv0, wv1, col);
                 }
             }
             break;
         }
         default:
-            frameData.RequestDrawPoint(pos, col);
+            draw.RequestDrawPoint(pos, col);
             break;
     }
 }
 
 // ---------------------------------------------------------------------------
 
-PhysicsShapesDrawer::PhysicsShapesDrawer(const PhysicsWorld&                world,
-                                         const Dia::Debug::DebugLayerManager& manager)
+PhysicsShapesDrawer::PhysicsShapesDrawer(const PhysicsWorld&             world,
+                                         const Dia::Core::IDebugContext& manager)
     : mWorld(world)
     , mManager(manager)
 {}
@@ -95,16 +98,17 @@ Dia::Core::StringCRC PhysicsShapesDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kPhysicsShapes;
 }
 
-void PhysicsShapesDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void PhysicsShapesDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
+    DIA_TRACE_ZONE("physics.shapes", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const auto& pointBodies = mWorld.GetPointBodies();
     const auto& rigidBodies = mWorld.GetRigidBodies();
 
     for (unsigned int i = 0; i < pointBodies.Size(); ++i)
-        DrawBody(pointBodies[i], frameData);
+        DrawBody(pointBodies[i], draw, mShowSleeping);
 
     for (unsigned int i = 0; i < rigidBodies.Size(); ++i)
-        DrawBody(rigidBodies[i], frameData);
+        DrawBody(rigidBodies[i], draw, mShowSleeping);
 }
 
 } // namespace Dia::RigidBody2D

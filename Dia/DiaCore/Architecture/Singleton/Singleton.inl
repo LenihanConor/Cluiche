@@ -11,7 +11,7 @@ namespace Dia
 		template <class T> 
 		void Singleton<T>::Create ()
 		{
-			DIA_ASSERT(msInstance == NULL, "Singleton Already created");
+			DIA_ASSERT(msInstance == nullptr, "Singleton Already created");
 			msInstance = DIA_NEW( T() );
 		}
 
@@ -21,7 +21,7 @@ namespace Dia
 		{
 			DIA_ASSERT(msInstance, "Singleton not created");
 			delete msInstance;
-			msInstance = NULL;
+			msInstance = nullptr;
 		}
 
 		//------------------------------------------------
@@ -60,11 +60,11 @@ namespace Dia
 		template <class T>
 		bool Singleton <T>::IsCreated()
 		{
-			return (msInstance != NULL);
+			return (msInstance != nullptr);
 		}
 
 		//--------------------------------------------------------------------------
 		template <class T>
-		T* Singleton <T>::msInstance = NULL;
+		T* Singleton <T>::msInstance = nullptr;
 	}
 }

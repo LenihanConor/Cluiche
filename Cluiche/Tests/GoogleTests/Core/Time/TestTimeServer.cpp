@@ -301,3 +301,98 @@ TEST(TimeServer, Tick_AfterNonZeroStartTime_AdvancesCorrectly)
     EXPECT_EQ(timeServer.GetTime(), startTime + timeServer.GetStep());
     EXPECT_EQ(timeServer.GetLastTime(), startTime);
 }
+
+// ==============================================================================
+// TimeServer Pause/Resume/Step/AdvanceTo Tests
+// ==============================================================================
+
+TEST(TimeServer, Pause_FreezesTime_TickDoesNotAdvance)
+{
+    TimeServer timeServer(60.0f, TimeAbsolute::Zero());
+
+    timeServer.Pause();
+    timeServer.Tick();
+    timeServer.Tick();
+    timeServer.Tick();
+
+    EXPECT_EQ(timeServer.GetTime(), TimeAbsolute::Zero());
+    EXPECT_EQ(timeServer.GetTick(), 0u);
+}
+
+TEST(TimeServer, Resume_RestoresTicking_AtPreviousScale)
+{
+    TimeServer timeServer(60.0f, TimeAbsolute::Zero());
+
+    timeServer.Pause();
+    timeServer.Tick();
+    timeServer.Resume();
+    timeServer.Tick();
+
+    EXPECT_FALSE(timeServer.IsPaused());
+    EXPECT_EQ(timeServer.GetTime(), TimeAbsolute::Zero() + timeServer.GetStep());
+    EXPECT_EQ(timeServer.GetTick(), 1u);
+}
+
+TEST(TimeServer, Step_WhilePaused_AdvancesExactlyOneStep)
+{
+    TimeServer timeServer(60.0f, TimeAbsolute::Zero());
+
+    timeServer.Pause();
+    TimeRelative step = TimeRelative::CreateFromSeconds(0.25f);
+    timeServer.Step(step);
+
+    EXPECT_EQ(timeServer.GetTime(), TimeAbsolute::Zero() + step);
+    EXPECT_EQ(timeServer.GetTick(), 1u);
+
+    // Still paused - a subsequent Tick() must not advance further
+    timeServer.Tick();
+    EXPECT_EQ(timeServer.GetTime(), TimeAbsolute::Zero() + step);
+    EXPECT_EQ(timeServer.GetTick(), 1u);
+}
+
+TEST(TimeServer, AdvanceTo_LaterTarget_JumpsForward)
+{
+    TimeServer timeServer(60.0f, TimeAbsolute::Zero());
+
+    TimeAbsolute target = TimeAbsolute::CreateFromSeconds(5.0f);
+    timeServer.AdvanceTo(target);
+
+    EXPECT_EQ(timeServer.GetTime(), target);
+    EXPECT_EQ(timeServer.GetLastTime(), TimeAbsolute::Zero());
+    EXPECT_EQ(timeServer.GetTick(), 1u);
+}
+
+TEST(TimeServer, AdvanceTo_EqualTarget_IsNoOp)
+{
+    TimeServer timeServer(60.0f, TimeAbsolute::Zero());
+
+    timeServer.AdvanceTo(TimeAbsolute::Zero());
+
+    EXPECT_EQ(timeServer.GetTime(), TimeAbsolute::Zero());
+    EXPECT_EQ(timeServer.GetTick(), 0u);
+}
+
+TEST(TimeServer, AdvanceTo_EarlierTarget_IsNoOp)
+{
+    TimeAbsolute startTime = TimeAbsolute::CreateFromSeconds(10.0f);
+    TimeServer timeServer(60.0f, startTime);
+
+    TimeAbsolute earlier = TimeAbsolute::CreateFromSeconds(5.0f);
+    timeServer.AdvanceTo(earlier);
+
+    EXPECT_EQ(timeServer.GetTime(), startTime);
+    EXPECT_EQ(timeServer.GetTick(), 0u);
+}
+
+TEST(TimeServer, IsPaused_ReflectsStateThroughPauseResumeCycle)
+{
+    TimeServer timeServer(60.0f, TimeAbsolute::Zero());
+
+    EXPECT_FALSE(timeServer.IsPaused());
+
+    timeServer.Pause();
+    EXPECT_TRUE(timeServer.IsPaused());
+
+    timeServer.Resume();
+    EXPECT_FALSE(timeServer.IsPaused());
+}

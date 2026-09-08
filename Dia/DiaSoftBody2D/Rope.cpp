@@ -1,7 +1,7 @@
 #include "DiaSoftBody2D/Rope.h"
 
 #include "DiaCore/Core/Assert.h"
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 namespace Dia::SoftBody2D {
 

@@ -7,21 +7,22 @@
 
 #include <DiaAnimation2D/AnimationEvaluator.h>
 #include <DiaAnimation2D/AnimClipPlayer.h>
-#include <DiaVisualDebugger/DebugColourPalette.h>
-#include <DiaVisualDebugger/DebugLayerNames.h>
-#include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/DebugColourPalette.h>
+#include <DiaCore/DebugDraw/DebugLayerNames.h>
+#include <DiaCore/DebugDraw/IDebugContext.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 
+#include <DiaObservation/Trace/DiaTrace.h>
 #include <algorithm>
 #include <cstdio>
 
-namespace Dia { namespace Animation2D {
+namespace Dia::Animation2D {
 
 AnimClipCursorDrawer::AnimClipCursorDrawer(
     const AnimationEvaluator&                                                    evaluator,
     const Dia::Rig2D::Skeleton&                                                  skeleton,
     const Dia::Core::Containers::DynamicArrayC<Dia::Rig2D::BoneTransform, 128>& worldTransforms,
-    const Dia::Debug::DebugLayerManager&                                         manager)
+    const Dia::Core::IDebugContext&                                              manager)
     : mEvaluator(evaluator)
     , mSkeleton(skeleton)
     , mWorldTransforms(worldTransforms)
@@ -33,8 +34,9 @@ Dia::Core::StringCRC AnimClipCursorDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kAnimClipCursor;
 }
 
-void AnimClipCursorDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void AnimClipCursorDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
+    DIA_TRACE_ZONE("anim.clip_cursor", ::Dia::Observation::Trace::Category::kDiaGraphics);
     if (mWorldTransforms.Size() == 0) return;
 
     const float scale    = mManager.GetDebugScale();
@@ -48,13 +50,14 @@ void AnimClipCursorDrawer::Draw(Dia::Graphics::FrameData& frameData)
         const Dia::Core::StringCRC id = mEvaluator.GetSourceId(i);
         const AnimClipPlayer* player  = mEvaluator.GetClipPlayer(id);
         if (player == nullptr) continue;  // source is a spring chain
+        if (!mShowStopped && !player->IsPlaying()) continue;
 
         const Dia::Maths::Vector2D labelPos(
             rootPos.x + (-20.0f * scale),
             rootPos.y + ((-8.0f * i) - 4.0f) * scale);
 
         char labelText[64];
-        Dia::Graphics::RGBA colour;
+        Dia::Core::RGBA colour;
 
         if (player->IsPlaying())
         {
@@ -68,10 +71,10 @@ void AnimClipCursorDrawer::Draw(Dia::Graphics::FrameData& frameData)
             colour = Dia::Debug::DebugColourPalette::kInactive;
         }
 
-        frameData.RequestDrawText(labelPos, labelText, fontSize, colour);
+        draw.RequestDrawText(labelPos, labelText, fontSize, colour);
     }
 }
 
-} } // namespace Dia::Animation2D
+} // namespace Dia::Animation2D
 
 #endif // DIA_DEBUG

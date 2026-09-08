@@ -1,0 +1,36 @@
+{
+    "version": 3,
+    "processing_units": [
+        {
+            "instance_id": "MainPU",
+            "frequency_hz": 30,
+            "dedicated_thread": false,
+            "modules": []
+        },
+        {
+            "instance_id": "SimPU",
+            "frequency_hz": 30,
+            "dedicated_thread": true,
+            "modules": [
+                {
+                    "instance_id": "BehaviourTreeTestStageModule",
+                    "type_id": "BehaviourTreeTestStageModule",
+                    "stages": [
+                        "BehaviourTreeTestStage"
+                    ],
+                    "dependencies": [],
+                    "channels": [
+                        {
+                            "id": "AutomationService",
+                            "role": "consumes"
+                        },
+                        {
+                            "id": "RenderToSim",
+                            "role": "reads"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

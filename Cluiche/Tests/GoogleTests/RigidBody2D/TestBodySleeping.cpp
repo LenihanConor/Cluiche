@@ -30,7 +30,7 @@ static PointBody2D* MakePointBody(float mass = 1.0f, bool allowSleeping = true,
     return new PointBody2D(d);
 }
 
-static RigidBody2D* MakeRigidBody(float mass = 1.0f, float moi = 1.0f,
+[[maybe_unused]] static RigidBody2D* MakeRigidBody(float mass = 1.0f, float moi = 1.0f,
                                   bool allowSleeping = true,
                                   BodyType type = BodyType::kDynamic)
 {
@@ -43,7 +43,7 @@ static RigidBody2D* MakeRigidBody(float mass = 1.0f, float moi = 1.0f,
 }
 
 static const float kLinearThreshold  = 0.01f;
-static const float kAngularThreshold = 0.01f;
+[[maybe_unused]] static const float kAngularThreshold = 0.01f;
 static const float kSleepTime        = 0.5f;
 static const float kDt               = 1.0f / 60.0f;
 

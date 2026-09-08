@@ -1,7 +1,7 @@
 #include "JsonDiaGameSerializer.h"
 
 #include <DiaCore/Json/external/json/json.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <cstring>
 
 namespace Dia
@@ -52,6 +52,8 @@ namespace Dia
 				const Json::Value& cfg = root["config"];
 				if (cfg.isMember("asset_root") && cfg["asset_root"].isString())
 					outManifest.config.assetRoot = cfg["asset_root"].asCString();
+				if (cfg.isMember("asset_catalogue") && cfg["asset_catalogue"].isString())
+					outManifest.config.assetCatalogue = cfg["asset_catalogue"].asCString();
 
 				delete outManifest.rawConfig;
 				outManifest.rawConfig = new Json::Value(cfg);
@@ -86,6 +88,8 @@ namespace Dia
 				Json::Value configJson(Json::objectValue);
 				if (manifest.config.assetRoot.Length() > 0)
 					configJson["asset_root"] = manifest.config.assetRoot.AsCStr();
+				if (manifest.config.assetCatalogue.Length() > 0)
+					configJson["asset_catalogue"] = manifest.config.assetCatalogue.AsCStr();
 				root["config"] = configJson;
 			}
 

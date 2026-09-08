@@ -45,7 +45,7 @@ namespace Dia
 		const Dia::Maths::Vector2D& Triangle::GetPt(PtId index)const
 		{
 			DIA_ASSERT(index >= 0 && index < kNumPts, "Inavlid index");
-
+#pragma warning(suppress: 33010)
 			return mPts[index];
 		}
 

@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, act, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import React from "react";
 
 // ── Shared mock state for the bridge ────────────────────────────────────────
 let panelsChangedCb: ((data: unknown) => void) | null = null;
@@ -16,6 +15,7 @@ vi.mock("../../bridge/EditorBridge", () => ({
       if (topic === "panels_changed") panelsChangedCb = cb;
       return vi.fn();
     }),
+    request: vi.fn(() => Promise.resolve(null)),
   },
 }));
 
@@ -39,12 +39,15 @@ vi.mock("react-mosaic-component", () => ({
       </div>
     );
   },
-  MosaicWindow: ({ children, title, toolbarControls }: any) => (
-    <div data-testid={`window-${title}`}>
-      <div data-testid={`controls-${title}`}>{toolbarControls}</div>
-      {children}
-    </div>
-  ),
+  MosaicWindow: ({ children, title, toolbarControls }: any) => {
+    const titleText = typeof title === "string" ? title : title?.props?.children ?? "";
+    return (
+      <div data-testid={`window-${titleText}`}>
+        <div data-testid={`controls-${titleText}`}>{toolbarControls}</div>
+        {children}
+      </div>
+    );
+  },
 }));
 
 import { EditorBridge } from "../../bridge/EditorBridge";
@@ -150,6 +153,8 @@ describe("DockingManager + Toolbar – integration", () => {
     await waitFor(() =>
       expect(screen.queryByTestId("tile-Inspector")).not.toBeInTheDocument()
     );
-    expect(screen.getByTestId("tile-Console")).toBeInTheDocument();
+    // Fullscreen replaces the mosaic with a plain iframe — no tile wrapper
+    expect(screen.queryByTestId("mosaic")).not.toBeInTheDocument();
+    expect(screen.getByTitle("Exit fullscreen")).toBeInTheDocument();
   });
 });

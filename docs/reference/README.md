@@ -38,7 +38,7 @@ This directory contains reference documentation for the **existing Cluiche codeb
 ### API Reference
 **Public interfaces:**
 - [API Overview](api/api-overview.md) - API documentation hub
-- [Dia Engine APIs](api/dia/) - All engine subsystem APIs
+- Dia Engine APIs (`api/dia/`) - All engine subsystem APIs
 <!-- TODO: Cluiche Application APIs - Application-level APIs (see architecture docs in interim) -->
 
 ### Testing
@@ -58,8 +58,8 @@ This directory contains reference documentation for the **existing Cluiche codeb
 
 ### Subsystems
 **Deep technical dives:**
-- [DiaMaths Deep Dive](subsystems/dia-maths/)
-- [More subsystems...](subsystems/)
+- DiaMaths Deep Dive (subsystems/dia-maths/ — removed)
+- More subsystems...
 
 ### Development
 **Development process:**
@@ -86,7 +86,7 @@ This directory contains reference documentation for the **existing Cluiche codeb
 
 This is **reference documentation** for understanding the existing codebase.
 
-If you're looking to plan new features or systems, see **[`docs/specs/`](../specs/)** for the spec-driven development workflow.
+If you're looking to plan new features or systems, see **[`docs/specs/`](../specs/README.md)** for the spec-driven development workflow.
 
 ---
 

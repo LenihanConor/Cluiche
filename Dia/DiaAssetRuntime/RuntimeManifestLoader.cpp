@@ -3,7 +3,7 @@
 #include "DiaCore/Json/external/json/json.h"
 #include "DiaCore/FilePath/FilePath.h"
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 #include <stdio.h>
 #include <string.h>

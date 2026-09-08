@@ -1,8 +1,8 @@
 #include "DiaEditor/UI/WebUIBridge.h"
 
 #include <DiaCore/Core/Assert.h>
-#include <DiaLogger/DiaLog.h>
-#include <DiaUI/IUISystem.h>
+#include <DiaObservation/Log/DiaLog.h>
+#include <DiaCore/UI/IJSBridge.h>
 #include "DiaEditor/MVC/EditorViewController.h"
 
 #include <sstream>
@@ -13,7 +13,7 @@ namespace Dia
 	{
 		static const char* kEditorCallName = "DiaEditor_call";
 
-		WebUIBridge::WebUIBridge(Dia::UI::IUISystem* uiSystem)
+		WebUIBridge::WebUIBridge(Dia::Core::IJSBridge* uiSystem)
 			: mUISystem(uiSystem)
 			, mController(nullptr)
 		{
@@ -92,6 +92,16 @@ namespace Dia
 			}
 		}
 
+		Json::Value WebUIBridge::InvokeRequestHandler(const Dia::Core::StringCRC& eventType, const Json::Value& data) const
+		{
+			for (unsigned int i = 0; i < mRequestHandlers.Size(); ++i)
+			{
+				if (mRequestHandlers[i].eventType == eventType)
+					return mRequestHandlers[i].handler(data);
+			}
+			return Json::Value{};
+		}
+
 		void WebUIBridge::NotifyUIDataChanged(const char* topic, const Json::Value& data)
 		{
 			if (!mUISystem || topic == nullptr)
@@ -107,7 +117,8 @@ namespace Dia
 			Json::StreamWriterBuilder writer;
 			writer["indentation"] = "";
 			std::string json = Json::writeString(writer, envelope);
-			DIA_LOG_TRACE("Editor", "WebUIBridge: NotifyUIDataChanged topic='%s' payload=%u bytes", topic, static_cast<unsigned>(json.size()));
+			if (strcmp(topic, "console_entries") != 0 && strcmp(topic, "core_metrics") != 0 && strcmp(topic, "game_connection_heartbeat") != 0)
+				DIA_LOG_INFO("Editor", "WebUIBridge: NotifyUIDataChanged topic='%s' payload=%u bytes", topic, static_cast<unsigned>(json.size()));
 			mUISystem->CallJSFunction("DiaEditor_onDataChanged", json.c_str());
 		}
 
@@ -161,9 +172,23 @@ namespace Dia
 						return "{}";
 					}
 				}
-				DIA_LOG_WARNING("Editor", "WebUIBridge: No request handler found for '%s', sending empty response", eventTypeStr.c_str());
-				Json::Value empty;
-				SendResponse(reqId, empty);
+				DIA_LOG_ERROR("Editor",
+					"WebUIBridge: No request handler for '%s' (reqId='%s', %u handlers registered). "
+					"Returning {ok:false, error:'no handler'} so caller can surface the failure.",
+					eventTypeStr.c_str(), reqId.c_str(), mRequestHandlers.Size());
+				Json::Value err;
+				err["ok"]    = false;
+				err["error"] = "no handler registered for '" + eventTypeStr + "'";
+				SendResponse(reqId, err);
+				return "{}";
+			}
+
+			static const Dia::Core::StringCRC kUILog("editor.ui_log");
+			if (eventType == kUILog)
+			{
+				const std::string source = data.get("source", "ui").asString();
+				const std::string msg    = data.get("msg", "").asString();
+				DIA_LOG_INFO("EditorUI", "[%s] %s", source.c_str(), msg.c_str());
 				return "{}";
 			}
 

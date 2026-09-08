@@ -22,7 +22,7 @@ The platform emphasizes explicit design, type safety, and clear separation of co
 Cluiche/                        [Platform Root]
 │
 ├── Dia/                        [Dia Engine Application - Shared Engine Code]
-│   ├── DiaApplication         - Module/Phase/ProcessingUnit framework
+│   ├── DiaApplicationFlow         - Module/Phase/ProcessingUnit framework
 │   ├── DiaCore                - Containers, Type system, Time management
 │   ├── DiaMaths               - Vector, Matrix, Transform, Shape math
 │   ├── DiaGraphics            - Platform-agnostic rendering (ICanvas)

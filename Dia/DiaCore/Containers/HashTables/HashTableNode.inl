@@ -120,7 +120,7 @@ namespace Dia
 			}
 
 			//------------------------------------------------------------------------------------
-			template< class Key, class Payload > typename
+			template< class Key, class Payload >
 			const Key& HashTableNode<Key, Payload>::GetKeyConst()const
 			{
 				return mKey;

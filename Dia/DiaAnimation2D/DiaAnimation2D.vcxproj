@@ -9,6 +9,14 @@
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Asan|x64">
+      <Configuration>Debug-Asan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Ubsan|x64">
+      <Configuration>Debug-Ubsan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{A6B7C8D9-E0F1-2345-ABCD-678901234567}</ProjectGuid>
@@ -25,6 +33,15 @@
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Asan|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>ClangCL</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
@@ -32,7 +49,7 @@
   <PropertyGroup>
     <_ProjectFileVersion>11.0.51106.1</_ProjectFileVersion>
   </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64' Or '$(Configuration)|$(Platform)'=='Debug-Asan|x64' Or '$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -57,6 +74,7 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="DiaAnimation2DSerializers.h" />
     <ClInclude Include="SpringNodeDef.h" />
     <ClInclude Include="SpringChainDef.h" />
     <ClInclude Include="SpringChain.h" />
@@ -71,6 +89,12 @@
     <ClInclude Include="PoseLayer.h" />
     <ClInclude Include="PoseBlendStack.h" />
     <ClInclude Include="AnimationEvaluator.h" />
+    <ClInclude Include="IAnimClipObserver.h" />
+    <ClInclude Include="AnimClipObserverSubject.h" />
+    <ClInclude Include="AnimClipBusAdapter.h" />
+    <ClInclude Include="Messages\animation2d_messages.h">
+      <Filter>Messages</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SpringChain.cpp" />
@@ -80,9 +104,14 @@
     <ClCompile Include="AnimClipLoader.cpp" />
     <ClCompile Include="PoseBlendStack.cpp" />
     <ClCompile Include="AnimationEvaluator.cpp" />
+    <ClCompile Include="AnimClipObserverSubject.cpp" />
+    <ClCompile Include="AnimClipBusAdapter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.animation2d.architecture.module.md" />
+    <None Include="Messages\animation2d_messages.diagamemessages">
+      <Filter>Messages</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Testing\AnimClipTestHelpers.h">
@@ -112,11 +141,15 @@
       <Project>{8d41cbe3-c493-428d-95f3-627e56500667}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+    <ProjectReference Include="..\DiaJson\DiaJson.vcxproj">
+      <Project>{b2c3d4e5-f6a7-8901-bcde-f23456789012}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
     <ProjectReference Include="..\DiaMaths\DiaMaths.vcxproj">
       <Project>{2BBA0AD3-D449-4C0E-8C84-ACFA8BCA456B}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\DiaLogger\DiaLogger.vcxproj">
+    <ProjectReference Include="..\DiaObservation\DiaObservation.vcxproj">
       <Project>{7a8b9c0d-e1f2-3456-7890-abcdef012345}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
@@ -126,6 +159,14 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaSerializer\DiaSerializer.vcxproj">
       <Project>{B0C1D2E3-F4A5-6789-BCDE-F01234567891}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaMessageBus\DiaMessageBus.vcxproj">
+      <Project>{D5E6F7A8-B9C0-1234-DEF0-567890ABCDEF}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaEntity\DiaEntity.vcxproj">
+      <Project>{D9E0F1A2-B3C4-5678-9DEF-012345678903}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

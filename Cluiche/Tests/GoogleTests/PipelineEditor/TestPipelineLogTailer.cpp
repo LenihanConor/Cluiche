@@ -590,3 +590,44 @@ TEST(PipelineLogTailer, FullRunEndToEnd)
 	tailer.UnregisterObserver(&observer);
 	tailer.Shutdown();
 }
+
+// Regression: Initialize must seek to end of existing file, not replay past runs
+TEST(PipelineLogTailer, Initialize_SeeksToEndOfExistingFile_DoesNotReplay)
+{
+	TempFile tmp;
+
+	// Write a complete run to the file before the tailer is initialized
+	tmp.Write(kRunStarted);
+	tmp.Write(kStageStarted);
+	tmp.Write(kStageCompleted);
+	tmp.Write(kRunCompleted);
+
+	// Initialize after the file already has content — should NOT replay
+	PipelineLogTailer tailer;
+	tailer.Initialize(tmp.Path());
+	tailer.Poll();
+
+	EXPECT_EQ(tailer.GetEventCount(), 0);
+	EXPECT_FALSE(tailer.IsRunInProgress());
+}
+
+// Regression: Events written AFTER Initialize ARE picked up
+TEST(PipelineLogTailer, Initialize_SeeksToEnd_NewEventsPickedUpAfterInit)
+{
+	TempFile tmp;
+
+	// Pre-existing content — should be skipped
+	tmp.Write(kRunCompleted);
+
+	PipelineLogTailer tailer;
+	tailer.Initialize(tmp.Path());
+
+	// New run written after init — should be picked up
+	tmp.Write(kRunStarted);
+	tailer.Poll();
+
+	EXPECT_EQ(tailer.GetEventCount(), 1);
+	EXPECT_TRUE(tailer.IsRunInProgress());
+
+	tailer.Shutdown();
+}

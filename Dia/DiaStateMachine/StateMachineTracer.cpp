@@ -1,5 +1,5 @@
 #include "DiaStateMachine/StateMachineTracer.h"
-#include "DiaLogger/DiaLog.h"
+#include "DiaObservation/Log/DiaLog.h"
 
 namespace Dia
 {

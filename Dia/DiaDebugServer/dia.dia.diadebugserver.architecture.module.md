@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.dia.diadebugserver
 name: DiaDebugServer
 owner_team: TBD
-layer: platform
+layer: foundation/services
 status: active
 maturity: dev
 
@@ -16,15 +16,17 @@ summary: >
 
 intent: >
   Provides a WebSocket server module that integrates into the Dia application framework,
-  accepting editor connections, broadcasting core metrics, managing data subscriptions,
-  dispatching commands, and forwarding MessageBus events to connected editors.
+  accepting editor connections, broadcasting core metrics, dispatching commands, and
+  forwarding stream events to connected editors via tap-based subscriptions.
 
 responsibilities:
   - WebSocket server lifecycle management (start/stop/update)
   - Core metrics broadcasting (FPS, frame time, memory) every 500ms
-  - Subscription-based data streaming to editors
+  - Tap-based data streaming to editors: on Subscribe message, calls IDebugStateProvider::FindStream
+    then AttachTap on the stream; events are pushed to connected clients on delivery
+  - Stage transitions arrive via tap on the $lifecycle stream (not polled or broadcast separately)
+  - NotifySubscribers: broadcast-to-all shim retained during DebugLayerManager migration (pending removal)
   - Command dispatching (protocol commands and DiaAPI command gateway)
-  - MessageBus event forwarding (phase transitions, module state changes)
   - Server self-monitoring and performance tracking
 
 non_responsibilities:
@@ -38,14 +40,12 @@ dependent_modules: []
 public_api:
   headers:
     - Dia/DiaDebugServer/DebugServerModule.h
-    - Dia/DiaDebugServer/SubscriptionManager.h
     - Dia/DiaDebugServer/StateSerializer.h
     - Dia/DiaDebugServer/CommandDispatcher.h
   namespaces:
     - Dia::DebugServer
   entry_points:
-    - DebugServerModule
-    - SubscriptionManager
+    - DebugServerModule   # exposes NotifySubscribers (broadcast-to-all shim, DebugLayerManager migration pending)
     - StateSerializer
     - CommandDispatcher
 

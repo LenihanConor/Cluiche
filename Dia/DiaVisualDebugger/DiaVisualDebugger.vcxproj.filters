@@ -18,6 +18,18 @@
     <Filter Include="Docs">
       <UniqueIdentifier>{A1B2C3D4-0001-0001-0001-000000000001}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Coord2D">
+      <UniqueIdentifier>{A1B2C3D4-0001-0001-0001-000000000020}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Coord2D">
+      <UniqueIdentifier>{A1B2C3D4-0001-0001-0001-000000000021}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Coord3D">
+      <UniqueIdentifier>{A1B2C3D4-0001-0001-0001-000000000030}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Coord3D">
+      <UniqueIdentifier>{A1B2C3D4-0001-0001-0001-000000000031}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IVisualDebugger.h">
@@ -30,9 +42,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DebugLayerNames.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="DebugLayerPanelPlugin.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="IObjectRenderer.h">
@@ -59,6 +68,42 @@
     <ClInclude Include="Renderers\HexGridRenderer.h">
       <Filter>Header Files\Renderers</Filter>
     </ClInclude>
+    <ClInclude Include="Coord2D\Coord2DOriginDrawer.h">
+      <Filter>Header Files\Coord2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Coord2D\Coord2DAxesDrawer.h">
+      <Filter>Header Files\Coord2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Coord2D\Coord2DGridDrawer.h">
+      <Filter>Header Files\Coord2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Coord2D\Coord2DBoundsDrawer.h">
+      <Filter>Header Files\Coord2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Coord2D\Coord2DCursorDrawer.h">
+      <Filter>Header Files\Coord2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Coord3D\Coord3DOriginDrawer.h">
+      <Filter>Header Files\Coord3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Coord3D\Coord3DAxesDrawer.h">
+      <Filter>Header Files\Coord3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Coord3D\Coord3DGridDrawer.h">
+      <Filter>Header Files\Coord3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Coord3D\Coord3DCameraDrawer.h">
+    <ClInclude Include="Domain\\DiaDebugDomainRegistry.h">
+    <ClInclude Include="Coord2D\Coord2DDebugDomain.h">
+    <ClInclude Include="Coord3D\Coord3DDebugDomain.h">
+      <Filter>Coord3D</Filter>
+    </ClInclude>
+      <Filter>Coord2D</Filter>
+    </ClInclude>
+      <Filter>Domain</Filter>
+    </ClInclude>
+      <Filter>Header Files\Coord3D</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugLayerManager.cpp">
@@ -67,14 +112,47 @@
     <ClCompile Include="DebugColourPalette.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DebugLayerPanelPlugin.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="FixedPrimitiveBuffer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FixedDrawRegistry.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Coord2D\Coord2DOriginDrawer.cpp">
+      <Filter>Source Files\Coord2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Coord2D\Coord2DAxesDrawer.cpp">
+      <Filter>Source Files\Coord2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Coord2D\Coord2DGridDrawer.cpp">
+      <Filter>Source Files\Coord2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Coord2D\Coord2DBoundsDrawer.cpp">
+      <Filter>Source Files\Coord2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Coord2D\Coord2DCursorDrawer.cpp">
+      <Filter>Source Files\Coord2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Coord3D\Coord3DOriginDrawer.cpp">
+      <Filter>Source Files\Coord3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Coord3D\Coord3DAxesDrawer.cpp">
+      <Filter>Source Files\Coord3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Coord3D\Coord3DGridDrawer.cpp">
+      <Filter>Source Files\Coord3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Coord3D\Coord3DCameraDrawer.cpp">
+    <ClCompile Include="Domain\\DiaDebugDomainRegistry.cpp">
+    <ClCompile Include="Coord2D\Coord2DDebugDomain.cpp">
+    <ClCompile Include="Coord3D\Coord3DDebugDomain.cpp">
+      <Filter>Coord3D</Filter>
+    </ClCompile>
+      <Filter>Coord2D</Filter>
+    </ClCompile>
+      <Filter>Domain</Filter>
+    </ClCompile>
+      <Filter>Source Files\Coord3D</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

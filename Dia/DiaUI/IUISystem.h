@@ -2,11 +2,15 @@
 #pragma once
 
 #include <DiaInput/EMouseButton.h>
+#include <DiaInput/EKey.h>
 
 #include <DiaCore/Strings/String64.h>
+#include <DiaCore/UI/IJSBridge.h>
 
 #include <functional>
 #include <string>
+
+namespace Dia { namespace Input { class InputRouter; } }
 
 namespace Dia
 {
@@ -16,10 +20,10 @@ namespace Dia
 		class Page;
 		class IPage;
 
-		class IUISystem
+		class IUISystem : public Dia::Core::IJSBridge
 		{
 		public:
-			using JSHandler = std::function<std::string(const std::string& argsJson)>;
+			using JSHandler = Dia::Core::IJSBridge::JSHandler;
 
 			IUISystem() {};
 			virtual ~IUISystem() {};
@@ -46,11 +50,15 @@ namespace Dia
 			virtual void InjectMouseClick(Dia::Input::EMouseButton button, int x, int y) = 0;
 			virtual void InjectMouseWheel(int scroll_vert, int scroll_horz) = 0;
 
-			// JavaScript <-> C++ bridge (optional; default no-op for UI systems without JS).
-			// RegisterJSHandler binds a name that JS can invoke as window.dia.callCpp(name, argsJson).
-			// CallJSFunction pushes a notification to JS: dia.<functionName>(argsJson).
-			virtual void RegisterJSHandler(const char* /*name*/, JSHandler /*handler*/) {}
-			virtual void CallJSFunction(const char* /*functionName*/, const char* /*argsJson*/) {}
+			// Keyboard injection (default no-op: CEF handles keyboard natively).
+			virtual void InjectKeyDown(Dia::Input::EKey /*key*/, int /*modifiers*/ = 0) {}
+			virtual void InjectKeyUp(Dia::Input::EKey /*key*/, int /*modifiers*/ = 0)   {}
+			virtual void InjectCharacterInput(uint32_t /*codepoint*/)                    {}
+
+			// Input router wiring — UIModule calls this after constructing both objects.
+			virtual void SetInputRouter(Dia::Input::InputRouter* /*router*/) {}
+
+			// JavaScript <-> C++ bridge — see Dia::Core::IJSBridge (RegisterJSHandler/CallJSFunction).
 		};
 	}
 }

@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DiaEntityEditor — Option C: Stacked Accordion</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #13131f;
+    color: #c9c9e0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 12px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── Titlebar ── */
+  .titlebar {
+    background: #1a1a2e;
+    border-bottom: 1px solid #3a3a5a;
+    padding: 5px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    user-select: none;
+  }
+  .title-icon { font-size: 14px; }
+  .title-text { font-weight: 600; color: #e0e0f8; letter-spacing: 0.3px; }
+  .title-app  { color: #5a5a80; font-size: 11px; }
+  .title-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .live-indicator {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 10px; color: #5a9a5a;
+  }
+  .live-dot {
+    width: 6px; height: 6px;
+    background: #5a9a5a; border-radius: 50%;
+    box-shadow: 0 0 4px #5a9a5a;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+  .frame-info { font-size: 10px; color: #5a5a80; font-family: 'Consolas', monospace; }
+
+  /* ── Main scroll container ── */
+  .accordion-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  /* ── Accordion section ── */
+  .acc-section {
+    border-bottom: 1px solid #2a2a3e;
+  }
+  .acc-header {
+    background: #1f1f32;
+    padding: 0 10px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    gap: 8px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 1px solid #2a2a3e;
+  }
+  .acc-header:hover { background: #252538; }
+  .acc-chevron {
+    color: #5060a0;
+    font-size: 9px;
+    transition: transform 0.15s;
+    width: 10px;
+    flex-shrink: 0;
+  }
+  .acc-section.open .acc-chevron { transform: rotate(90deg); }
+  .acc-title {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #9090c0;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+  .acc-section.open .acc-title { color: #c0b8f8; }
+  .acc-badge {
+    background: #252545;
+    border: 1px solid #3a3a5a;
+    border-radius: 10px;
+    padding: 1px 7px;
+    font-size: 9.5px;
+    color: #6060a0;
+    font-family: 'Consolas', monospace;
+  }
+  .acc-section.open .acc-badge { background: #3d2fa0; border-color: #7c6af7; color: #c9baff; }
+  .acc-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+  .acc-body { display: none; }
+  .acc-section.open .acc-body { display: block; }
+
+  /* ── Toolbar ── */
+  .section-toolbar {
+    background: #1e1e2e;
+    border-bottom: 1px solid #252535;
+    padding: 4px 8px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .search-box {
+    background: #181828;
+    border: 1px solid #33334a;
+    border-radius: 3px;
+    color: #c9c9e0;
+    padding: 3px 7px;
+    font-size: 11px;
+    outline: none;
+    width: 150px;
+  }
+  .search-box:focus { border-color: #7c6af7; }
+  .search-box::placeholder { color: #3a3a5a; }
+  .chip {
+    background: #222235;
+    border: 1px solid #33334a;
+    border-radius: 10px;
+    padding: 1px 7px;
+    font-size: 9.5px;
+    color: #6060a0;
+    cursor: pointer;
+  }
+  .chip:hover { border-color: #5a5a7a; color: #9090c0; }
+  .chip.active { background: #3d2fa0; border-color: #7c6af7; color: #c9baff; }
+  .spacer { flex: 1; }
+  .btn-xs {
+    background: #222235;
+    border: 1px solid #33334a;
+    border-radius: 2px;
+    color: #7070a0;
+    padding: 2px 7px;
+    font-size: 10px;
+    cursor: pointer;
+  }
+  .btn-xs:hover { background: #2e2e48; color: #c0c0e0; }
+  .btn-xs.primary { background: #3d2fa0; border-color: #7c6af7; color: #c9baff; }
+  .btn-xs.primary:hover { background: #4d3fb0; }
+
+  /* ── Entity browser ── */
+  .entity-list { background: #1a1a2e; }
+  .entity-row {
+    display: flex;
+    align-items: center;
+    height: 29px;
+    padding: 0 8px 0 0;
+    cursor: pointer;
+    border-bottom: 1px solid #212130;
+    gap: 4px;
+  }
+  .entity-row:hover { background: #222238; }
+  .entity-row.selected { background: #3a3a58; border-left: 2px solid #7c6af7; }
+  .entity-row:not(.selected) { border-left: 2px solid transparent; }
+  .depth-spacer { display: inline-block; flex-shrink: 0; }
+  .tree-connector {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 12px;
+    height: 29px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .tree-connector::before {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 0;
+    bottom: 0;
+    border-left: 1px dashed #2a2a40;
+  }
+  .e-idx {
+    font-family: 'Consolas', monospace;
+    font-size: 9.5px;
+    color: #3a3a58;
+    width: 26px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .e-name {
+    flex: 1;
+    font-size: 11.5px;
+    color: #b8b8d8;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .entity-row.selected .e-name { color: #e0daff; }
+  .comp-tags { display: flex; gap: 2px; flex-shrink: 0; }
+  .tag {
+    font-family: 'Consolas', monospace;
+    font-size: 8px;
+    border: 1px solid #3a3a5a;
+    border-radius: 1px;
+    padding: 1px 2px;
+    color: #6060a0;
+    background: #212130;
+  }
+  .tag.T { border-color: #3a6a8a; color: #6aa8c8; background: #151e28; }
+  .tag.P { border-color: #3a8a4a; color: #6ac47a; background: #151e18; }
+  .tag.R { border-color: #8a5a3a; color: #c4906a; background: #1e1515; }
+  .tag.A { border-color: #8a8a3a; color: #c4c46a; background: #1e1e15; }
+  .tag.S { border-color: #6a3a8a; color: #a46ac4; background: #1a1525; }
+  .tag.H { border-color: #8a3a3a; color: #c46a6a; background: #1e1515; }
+  .tag.C { border-color: #3a8a8a; color: #6ac4c4; background: #151e1e; }
+
+  /* ── Inspector ── */
+  .inspector-body { background: #1a1a2e; padding: 4px; }
+  .inspector-no-sel {
+    padding: 16px;
+    text-align: center;
+    color: #33334a;
+    font-size: 11px;
+  }
+  .comp-section {
+    margin-bottom: 3px;
+    border: 1px solid #2a2a40;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .comp-head {
+    background: #222240;
+    padding: 5px 8px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    gap: 6px;
+  }
+  .comp-head:hover { background: #2a2a4a; }
+  .c-chev { color: #5060a0; font-size: 9px; transition: transform 0.15s; width: 10px; }
+  .comp-section.open .c-chev { transform: rotate(90deg); }
+  .c-name { font-weight: 600; color: #b8b0f0; font-size: 11.5px; }
+  .c-tag-badge { margin-left: 2px; }
+  .c-tier {
+    margin-left: auto;
+    background: #181828;
+    border: 1px solid #3a3a5a;
+    border-radius: 2px;
+    padding: 1px 5px;
+    font-size: 9.5px;
+    color: #6060a0;
+    font-family: 'Consolas', monospace;
+    cursor: pointer;
+  }
+  .c-tier:hover { border-color: #7c6af7; color: #c9baff; }
+  .comp-body { display: none; }
+  .comp-section.open .comp-body { display: block; }
+  .fields-grid { display: grid; grid-template-columns: 150px 80px 1fr auto; }
+  .fg-cell {
+    padding: 3px 8px;
+    border-bottom: 1px solid #1a1a28;
+    font-size: 11px;
+    vertical-align: middle;
+    display: flex;
+    align-items: center;
+  }
+  .fg-cell.name  { color: #7070a0; }
+  .fg-cell.type  { color: #3a3a58; font-family: 'Consolas', monospace; font-size: 10px; }
+  .fg-cell.value { font-family: 'Consolas', monospace; }
+  .fg-cell.action { justify-content: center; }
+  .fg-row:hover .fg-cell { background: #21213a; }
+  .fv-num  { color: #90c890; }
+  .fv-vec  { color: #70a8e8; }
+  .fv-str  { color: #e8b860; }
+  .fv-bool-true  { color: #70c470; }
+  .fv-bool-false { color: #c47070; }
+  .edit-icon { color: #3a3a58; cursor: pointer; font-size: 11px; padding: 1px 3px; border-radius: 2px; }
+  .edit-icon:hover { background: #33335a; color: #c0b8f8; }
+
+  /* ── Queries ── */
+  .queries-body { background: #1a1a2e; padding: 4px; }
+  .q-card {
+    margin-bottom: 3px;
+    border: 1px solid #2a2a40;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .q-head {
+    background: #222240;
+    padding: 5px 8px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    gap: 8px;
+  }
+  .q-head:hover { background: #2a2a4a; }
+  .q-chev { color: #5060a0; font-size: 9px; transition: transform 0.15s; width: 10px; }
+  .q-card.open .q-chev { transform: rotate(90deg); }
+  .q-sig { font-family: 'Consolas', monospace; font-size: 11px; color: #b8b8e0; flex: 1; }
+  .q-count { background: #3d2fa0; border-radius: 10px; padding: 1px 7px; font-size: 9.5px; color: #c9baff; }
+  .q-self { background: #1a2a0a; border: 1px solid #4a7a1a; border-radius: 2px; padding: 1px 5px; font-size: 9px; color: #8ab84a; }
+  .q-body { display: none; padding: 8px; background: #1a1a35; }
+  .q-card.open .q-body { display: block; }
+  .q-members { display: flex; flex-wrap: wrap; gap: 3px; }
+  .q-chip {
+    background: #222235;
+    border: 1px solid #33334a;
+    border-radius: 2px;
+    padding: 2px 6px;
+    font-size: 10px;
+    color: #7070a0;
+    font-family: 'Consolas', monospace;
+  }
+  .q-chip.self { border-color: #7c6af7; color: #c9baff; background: #3d2fa0; }
+
+  /* ── Mailbox ── */
+  .mailbox-body { background: #1a1a2e; }
+  .msg-table-wrap { overflow-x: hidden; }
+  .msg-table { width: 100%; border-collapse: collapse; }
+  .msg-table th {
+    background: #1e1e30;
+    color: #5050780;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 4px 8px;
+    text-align: left;
+    border-bottom: 1px solid #2a2a40;
+    position: sticky;
+    top: 34px; /* height of acc-header */
+    z-index: 5;
+    color: #5050780;
+  }
+  .msg-table th { color: #5a5a80; }
+  .msg-table td {
+    padding: 3px 8px;
+    border-bottom: 1px solid #1e1e2e;
+    font-family: 'Consolas', monospace;
+    font-size: 11px;
+    height: 28px;
+    vertical-align: middle;
+  }
+  .msg-table tr:hover td { background: #222240; }
+  .m-frame { color: #44446a; }
+  .m-sender { color: #8080a8; }
+  .m-addr { color: #6a98b8; }
+  .m-type { display: inline-block; padding: 1px 6px; border-radius: 2px; font-size: 10px; }
+  .mt-damage  { background: #280f00; border: 1px solid #6a4010; color: #e8a850; }
+  .mt-spawn   { background: #0a2000; border: 1px solid #1a6020; color: #70c870; }
+  .mt-destroy { background: #280000; border: 1px solid #6a1010; color: #e87070; }
+  .mt-state   { background: #10103a; border: 1px solid #30308a; color: #b0b0f8; }
+  .mt-anim    { background: #081828; border: 1px solid #18486a; color: #70a8e8; }
+  .mt-collect { background: #082828; border: 1px solid #186868; color: #70c8c8; }
+  .mt-other   { background: #181818; border: 1px solid #383838; color: #686888; }
+  .histogram  { padding: 4px 8px; border-top: 1px solid #1e1e30; }
+  .hist-title { font-size: 10px; color: #44446a; text-transform: uppercase; letter-spacing: 0.4px; padding: 4px 0; }
+  .hist-row { display: flex; align-items: center; gap: 6px; padding: 2px 0; }
+  .hist-lbl { font-family: 'Consolas', monospace; font-size: 10px; color: #7070a0; width: 88px; flex-shrink: 0; }
+  .hist-bg { flex: 1; background: #181828; border-radius: 2px; height: 7px; overflow: hidden; }
+  .hist-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
+  .hist-n { font-family: 'Consolas', monospace; font-size: 10px; color: #44446a; width: 24px; text-align: right; }
+
+  /* ── Watch list ── */
+  .watch-body { background: #1a1a2e; }
+  .watch-table { width: 100%; border-collapse: collapse; }
+  .watch-table th {
+    background: #1e1e30;
+    color: #5a5a80;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 4px 8px;
+    text-align: left;
+    border-bottom: 1px solid #2a2a40;
+  }
+  .watch-table td {
+    padding: 3px 8px;
+    border-bottom: 1px solid #1e1e2e;
+    font-size: 11px;
+    height: 28px;
+    vertical-align: middle;
+  }
+  .watch-table tr:hover td { background: #222240; }
+  .w-entity { color: #b0a8e8; }
+  .w-comp   { color: #7070a0; }
+  .w-field  { color: #6060a0; font-family: 'Consolas', monospace; }
+  .w-val    { font-family: 'Consolas', monospace; color: #90c890; }
+  .w-delta  { font-family: 'Consolas', monospace; font-size: 10px; }
+  .w-up { color: #70c470; }
+  .w-dn { color: #c47070; }
+  .w-eq { color: #33334a; }
+  .w-rm { color: #33334a; cursor: pointer; text-align: center; }
+  .w-rm:hover { color: #c47070; }
+  .watch-add-row {
+    display: flex; gap: 5px; padding: 5px 8px;
+    border-top: 1px solid #222235;
+    background: #1a1a2e;
+  }
+  .sel-input {
+    background: #181828;
+    border: 1px solid #2e2e48;
+    border-radius: 3px;
+    color: #a0a0c8;
+    padding: 3px 6px;
+    font-size: 10px;
+    outline: none;
+    flex: 1;
+  }
+  .sel-input:focus { border-color: #7c6af7; }
+
+  /* ── Status bar ── */
+  .status-bar {
+    background: #161622;
+    border-top: 1px solid #222232;
+    padding: 2px 10px;
+    font-size: 10px;
+    color: #33334a;
+    display: flex;
+    gap: 14px;
+    flex-shrink: 0;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+  .s-ok   { color: #4a8a4a; }
+  .s-val  { color: #6060a0; }
+  .s-warn { color: #8a7a2a; }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: #151525; }
+  ::-webkit-scrollbar-thumb { background: #333348; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #4a4a6a; }
+
+  /* acc-section grow trick: open sections stretch naturally */
+  .acc-section.open.stretch .acc-body {
+    max-height: none;
+  }
+</style>
+</head>
+<body>
+
+<!-- Titlebar -->
+<div class="titlebar">
+  <span class="title-icon">🎮</span>
+  <span class="title-text">DiaEntityEditor</span>
+  <span class="title-app">/ CluicheTest</span>
+  <div class="title-right">
+    <div class="live-indicator"><div class="live-dot"></div>Live</div>
+    <span class="frame-info" id="frame-counter">f#4821 · dt 16.2ms</span>
+  </div>
+</div>
+
+<!-- Scrollable accordion container -->
+<div class="accordion-scroll" id="accordion-scroll">
+
+  <!-- ══════════ 1. Entity Browser ══════════ -->
+  <div class="acc-section open" id="sec-browser">
+    <div class="acc-header" data-sec="browser">
+      <span class="acc-chevron">▶</span>
+      <span class="acc-title">Entity Browser</span>
+      <span class="acc-badge" id="browser-badge">18</span>
+      <div class="acc-right">
+        <span style="font-size:10px;color:#44446a" id="sel-info"></span>
+      </div>
+    </div>
+    <div class="acc-body">
+      <div class="section-toolbar">
+        <input class="search-box" type="text" placeholder="🔍 filter…" id="ent-search">
+        <div class="chip active" data-filter="ALL">All</div>
+        <div class="chip" data-filter="T">T</div>
+        <div class="chip" data-filter="P">P</div>
+        <div class="chip" data-filter="R">R</div>
+        <div class="chip" data-filter="A">A</div>
+        <div class="chip" data-filter="S">S</div>
+        <div class="chip" data-filter="H">H</div>
+        <div class="spacer"></div>
+        <span style="font-size:10px;color:#44446a" id="ent-count">18 entities</span>
+      </div>
+      <div class="entity-list" id="entity-list"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ 2. Inspector ══════════ -->
+  <div class="acc-section open" id="sec-inspector">
+    <div class="acc-header" data-sec="inspector">
+      <span class="acc-chevron">▶</span>
+      <span class="acc-title">Inspector</span>
+      <span class="acc-badge" id="insp-badge">5 comps</span>
+      <div class="acc-right">
+        <span id="insp-entity-label" style="font-size:11px;color:#c0b8f8;font-weight:600"></span>
+      </div>
+    </div>
+    <div class="acc-body">
+      <div class="inspector-body" id="inspector-body">
+        <div class="inspector-no-sel" id="insp-no-sel">Select an entity in the browser above to inspect its components.</div>
+        <div id="insp-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ 3. Queries ══════════ -->
+  <div class="acc-section" id="sec-queries">
+    <div class="acc-header" data-sec="queries">
+      <span class="acc-chevron">▶</span>
+      <span class="acc-title">Queries</span>
+      <span class="acc-badge" id="queries-badge">6</span>
+      <div class="acc-right">
+        <span id="queries-member-info" style="font-size:10px;color:#44446a"></span>
+      </div>
+    </div>
+    <div class="acc-body">
+      <div class="section-toolbar">
+        <input class="search-box" type="text" placeholder="🔍 filter queries…" style="width:130px">
+        <div class="chip active" id="q-filter-all">All</div>
+        <div class="chip" id="q-filter-member">Member only</div>
+        <div class="spacer"></div>
+        <span style="font-size:10px;color:#44446a">6 queries</span>
+      </div>
+      <div class="queries-body" id="queries-body"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ 4. Mailbox ══════════ -->
+  <div class="acc-section" id="sec-mailbox">
+    <div class="acc-header" data-sec="mailbox">
+      <span class="acc-chevron">▶</span>
+      <span class="acc-title">Mailbox</span>
+      <span class="acc-badge" id="mailbox-badge">15 msgs</span>
+      <div class="acc-right">
+        <span style="font-size:10px;color:#5a9a4a">12/frame</span>
+      </div>
+    </div>
+    <div class="acc-body">
+      <div class="section-toolbar">
+        <input class="search-box" type="text" placeholder="🔍 filter…" style="width:120px">
+        <div class="chip active">All</div>
+        <div class="chip">Damage</div>
+        <div class="chip">Spawn</div>
+        <div class="chip">Anim</div>
+        <div class="spacer"></div>
+        <button class="btn-xs">Clear</button>
+      </div>
+      <div class="mailbox-body">
+        <div class="msg-table-wrap">
+          <table class="msg-table">
+            <thead><tr>
+              <th style="width:48px">Frame</th>
+              <th style="width:100px">Sender</th>
+              <th style="width:120px">Address</th>
+              <th style="width:130px">Type</th>
+              <th>Payload</th>
+            </tr></thead>
+            <tbody id="msg-tbody"></tbody>
+          </table>
+        </div>
+        <div class="histogram" id="histogram"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ 5. Watch List ══════════ -->
+  <div class="acc-section" id="sec-watch">
+    <div class="acc-header" data-sec="watch">
+      <span class="acc-chevron">▶</span>
+      <span class="acc-title">Watch List</span>
+      <span class="acc-badge" id="watch-badge">6</span>
+    </div>
+    <div class="acc-body">
+      <div class="watch-body">
+        <table class="watch-table">
+          <thead><tr>
+            <th style="width:100px">Entity</th>
+            <th style="width:110px">Component</th>
+            <th style="width:100px">Field</th>
+            <th>Value</th>
+            <th style="width:50px">Δ</th>
+            <th style="width:24px"></th>
+          </tr></thead>
+          <tbody id="watch-tbody"></tbody>
+        </table>
+        <div class="watch-add-row">
+          <select class="sel-input" id="aw-ent">
+            <option>Player</option><option>Enemy_01</option><option>Enemy_02</option>
+            <option>Camera_Main</option><option>Projectile_01</option>
+          </select>
+          <select class="sel-input" id="aw-comp">
+            <option>Transform</option><option>RigidBody2D</option><option>Health</option>
+            <option>Animation</option><option>StateMachine</option>
+          </select>
+          <select class="sel-input" id="aw-field">
+            <option>position</option><option>velocity</option><option>health</option>
+            <option>rotation</option><option>currentState</option>
+          </select>
+          <button class="btn-xs primary" id="add-watch-btn">+ Watch</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /accordion-scroll -->
+
+<!-- Status bar -->
+<div class="status-bar">
+  <span class="s-ok">● Live</span>
+  <span>f#<b class="s-val">4821</b></span>
+  <span>dt <b class="s-val">16.2ms</b></span>
+  <span>Selected: <b class="s-val" id="status-sel">—</b></span>
+  <span class="s-warn">msgs/f: <b>12</b></span>
+  <span>watch: <b class="s-val" id="status-watch">6</b></span>
+  <span>queries: <b class="s-val">6</b></span>
+</div>
+
+<script>
+// ─── DATA ───
+const ENTITIES = [
+  {idx:0,  gen:1, name:'WorldRoot',       tags:['T'],                  depth:0, parent:null},
+  {idx:1,  gen:1, name:'Player',           tags:['T','P','R','A','S'],  depth:1, parent:0},
+  {idx:2,  gen:3, name:'Enemy_01',         tags:['T','P','R','A','H'],  depth:1, parent:0},
+  {idx:3,  gen:2, name:'Enemy_02',         tags:['T','P','R','A','H'],  depth:1, parent:0},
+  {idx:4,  gen:1, name:'Enemy_03',         tags:['T','P','H'],          depth:1, parent:0},
+  {idx:5,  gen:7, name:'Projectile_01',    tags:['T','P'],              depth:2, parent:1},
+  {idx:6,  gen:6, name:'Projectile_02',    tags:['T','P'],              depth:2, parent:1},
+  {idx:7,  gen:5, name:'Projectile_03',    tags:['T','P'],              depth:2, parent:1},
+  {idx:8,  gen:1, name:'Camera_Main',      tags:['T','C'],              depth:1, parent:0},
+  {idx:9,  gen:1, name:'GroundPlatform_A', tags:['T','R'],              depth:1, parent:0},
+  {idx:10, gen:1, name:'GroundPlatform_B', tags:['T','R'],              depth:1, parent:0},
+  {idx:11, gen:1, name:'GroundPlatform_C', tags:['T','R'],              depth:1, parent:0},
+  {idx:12, gen:2, name:'Pickup_Coin_01',   tags:['T','P','C'],          depth:1, parent:0},
+  {idx:13, gen:2, name:'Pickup_Coin_02',   tags:['T','P','C'],          depth:1, parent:0},
+  {idx:14, gen:1, name:'Spawn_EnemyA',     tags:['T'],                  depth:0, parent:null},
+  {idx:15, gen:1, name:'Spawn_EnemyB',     tags:['T'],                  depth:0, parent:null},
+  {idx:16, gen:1, name:'FX_Explosion_01',  tags:['T','A'],              depth:1, parent:0},
+  {idx:17, gen:1, name:'FX_Dust_Player',   tags:['T','A'],              depth:2, parent:1},
+];
+
+const COMP_DATA = {
+  T:{name:'Transform',    tier:'b', fields:[
+    {n:'position',    v:'(12.40, 0.00)',  t:'vec',  dt:'vec2'},
+    {n:'rotation',    v:'0.000',          t:'num',  dt:'float'},
+    {n:'scale',       v:'(1.00, 1.00)',   t:'vec',  dt:'vec2'},
+    {n:'worldMatrix', v:'mat3x2[inline]', t:'str',  dt:'mat3x2'},
+  ]},
+  P:{name:'RigidBody2D',  tier:'b', fields:[
+    {n:'velocity',    v:'(-2.10, 0.00)', t:'vec',  dt:'vec2'},
+    {n:'mass',        v:'1.000',          t:'num',  dt:'float'},
+    {n:'drag',        v:'0.050',          t:'num',  dt:'float'},
+    {n:'isKinematic', v:'false',          t:'bool', dt:'bool'},
+    {n:'isSleeping',  v:'false',          t:'bool', dt:'bool'},
+  ]},
+  R:{name:'Collider2D',   tier:'b', fields:[
+    {n:'shape',       v:'"AABB"',         t:'str',  dt:'string'},
+    {n:'size',        v:'(1.00, 2.00)',   t:'vec',  dt:'vec2'},
+    {n:'offset',      v:'(0.00,-0.10)',   t:'vec',  dt:'vec2'},
+    {n:'isTrigger',   v:'false',          t:'bool', dt:'bool'},
+    {n:'layer',       v:'1',             t:'num',  dt:'int'},
+  ]},
+  A:{name:'Animation',    tier:'b', fields:[
+    {n:'currentClip', v:'"run"',          t:'str',  dt:'string'},
+    {n:'frame',       v:'7',             t:'num',  dt:'int'},
+    {n:'speed',       v:'1.000',          t:'num',  dt:'float'},
+    {n:'loop',        v:'true',           t:'bool', dt:'bool'},
+  ]},
+  S:{name:'StateMachine', tier:'b', fields:[
+    {n:'currentState',v:'"Running"',      t:'str',  dt:'string'},
+    {n:'prevState',   v:'"Idle"',         t:'str',  dt:'string'},
+    {n:'timeInState', v:'1.234',          t:'num',  dt:'float'},
+    {n:'stateCount',  v:'4',             t:'num',  dt:'int'},
+  ]},
+  H:{name:'Health',       tier:'b', fields:[
+    {n:'health',      v:'80',            t:'num',  dt:'int'},
+    {n:'maxHealth',   v:'100',           t:'num',  dt:'int'},
+    {n:'isAlive',     v:'true',           t:'bool', dt:'bool'},
+    {n:'invincible',  v:'false',          t:'bool', dt:'bool'},
+  ]},
+  C:{name:'Collectible',  tier:'b', fields:[
+    {n:'value',       v:'10',            t:'num',  dt:'int'},
+    {n:'collected',   v:'false',          t:'bool', dt:'bool'},
+    {n:'magnetRange', v:'2.500',          t:'num',  dt:'float'},
+  ]},
+};
+
+const QUERIES = [
+  {sig:'[Transform, RigidBody2D]',             count:9,  members:['Player','Enemy_01','Enemy_02','Enemy_03','Projectile_01','Projectile_02','Projectile_03','Pickup_Coin_01','Pickup_Coin_02']},
+  {sig:'[Transform, RigidBody2D, Animation]',  count:5,  members:['Player','Enemy_01','Enemy_02','Enemy_03','FX_Explosion_01']},
+  {sig:'[Transform, Collider2D]',              count:7,  members:['Player','Enemy_01','Enemy_02','Enemy_03','GroundPlatform_A','GroundPlatform_B','GroundPlatform_C']},
+  {sig:'[Transform, Animation]',               count:6,  members:['Player','Enemy_01','Enemy_02','Enemy_03','FX_Explosion_01','FX_Dust_Player']},
+  {sig:'[Health]',                             count:4,  members:['Player','Enemy_01','Enemy_02','Enemy_03']},
+  {sig:'[Transform, Collectible]',             count:2,  members:['Pickup_Coin_01','Pickup_Coin_02']},
+];
+
+const MESSAGES = [
+  {f:4821,sender:'Player',       addr:'Enemy_02',        ak:'entity',    type:'Damage',       tc:'mt-damage',  payload:'dmg=15, src=proj_07'},
+  {f:4821,sender:'Enemy_01',     addr:'WorldRoot',       ak:'entity',    type:'SpawnRequest', tc:'mt-spawn',   payload:'prefab="Projectile"'},
+  {f:4820,sender:'StateMachine', addr:'Player',          ak:'component', type:'StateChange',  tc:'mt-state',   payload:'Idle→Running'},
+  {f:4820,sender:'Collectible',  addr:'Player',          ak:'entity',    type:'Collect',      tc:'mt-collect', payload:'coin value=10'},
+  {f:4819,sender:'Player',       addr:'Camera_Main',     ak:'entity',    type:'Follow',       tc:'mt-other',   payload:'target=(12.4, 0.0)'},
+  {f:4818,sender:'Health',       addr:'Enemy_03',        ak:'component', type:'Destroy',      tc:'mt-destroy', payload:'hp=0'},
+  {f:4818,sender:'WorldRoot',    addr:'Spawn_EnemyA',    ak:'entity',    type:'SpawnReady',   tc:'mt-spawn',   payload:'idx=4'},
+  {f:4817,sender:'Animation',    addr:'Player',          ak:'component', type:'AnimEnd',      tc:'mt-anim',    payload:'clip="run"'},
+  {f:4816,sender:'Projectile_01',addr:'Enemy_01',        ak:'entity',    type:'Damage',       tc:'mt-damage',  payload:'dmg=10'},
+  {f:4815,sender:'Player',       addr:'Enemy_04',        ak:'entity',    type:'Damage',       tc:'mt-damage',  payload:'dmg=15'},
+  {f:4814,sender:'StateMachine', addr:'Enemy_01',        ak:'component', type:'StateChange',  tc:'mt-state',   payload:'patrol→chase'},
+  {f:4813,sender:'WorldRoot',    addr:'FX_Explosion_01', ak:'entity',    type:'SpawnRequest', tc:'mt-spawn',   payload:'pos=(8.0,1.0)'},
+  {f:4812,sender:'Collectible',  addr:'Pickup_Coin_02',  ak:'component', type:'Collect',      tc:'mt-collect', payload:'coin val=10'},
+  {f:4811,sender:'Animation',    addr:'Enemy_02',        ak:'component', type:'AnimEnd',      tc:'mt-anim',    payload:'clip="walk"'},
+  {f:4810,sender:'Player',       addr:'WorldRoot',       ak:'entity',    type:'SpawnRequest', tc:'mt-spawn',   payload:'prefab="Bullet"'},
+];
+
+let watchItems = [
+  {entity:'Player',     comp:'Transform',    field:'position',     value:'(12.40, 0.00)', delta:'up'},
+  {entity:'Player',     comp:'RigidBody2D',  field:'velocity',     value:'(-2.10, 0.00)', delta:'dn'},
+  {entity:'Player',     comp:'Health',       field:'health',       value:'80',            delta:'eq'},
+  {entity:'Enemy_01',   comp:'Health',       field:'health',       value:'65',            delta:'dn'},
+  {entity:'Enemy_01',   comp:'StateMachine', field:'currentState', value:'"chase"',       delta:'up'},
+  {entity:'Camera_Main',comp:'Transform',    field:'position',     value:'(12.40, 3.50)', delta:'up'},
+];
+
+// ─── STATE ───
+let selectedIdx = null;
+let activeFilter = 'ALL';
+let memberFilter = false;
+
+// ─── ACCORDION ───
+document.querySelectorAll('.acc-header').forEach(h => {
+  h.addEventListener('click', () => {
+    const sec = h.closest('.acc-section');
+    sec.classList.toggle('open');
+  });
+});
+
+// ─── ENTITY LIST ───
+function buildEntityList() {
+  const list  = document.getElementById('entity-list');
+  const count = document.getElementById('ent-count');
+  const badge = document.getElementById('browser-badge');
+  const search = document.getElementById('ent-search').value.toLowerCase();
+  list.innerHTML = '';
+  let n = 0;
+  ENTITIES.forEach(e => {
+    if (search && !e.name.toLowerCase().includes(search)) return;
+    if (activeFilter !== 'ALL' && !e.tags.includes(activeFilter)) return;
+    n++;
+    const row = document.createElement('div');
+    row.className = 'entity-row' + (selectedIdx === e.idx ? ' selected' : '');
+    const indent = Array.from({length:e.depth}, () => `<span class="tree-connector"></span>`).join('');
+    const tags   = e.tags.map(t => `<span class="tag ${t}">${t}</span>`).join('');
+    row.innerHTML = `${indent}<span class="e-idx">${String(e.idx).padStart(3,'0')}</span>
+      <span class="e-name">${e.name}</span>
+      <span class="comp-tags">${tags}</span>`;
+    row.addEventListener('click', () => selectEntity(e.idx));
+    list.appendChild(row);
+  });
+  count.textContent = `${n} entities`;
+  badge.textContent = n;
+}
+
+function selectEntity(idx) {
+  selectedIdx = idx;
+  buildEntityList();
+  buildInspector();
+  const e = ENTITIES.find(x => x.idx === idx);
+  if (e) {
+    document.getElementById('sel-info').textContent = `→ ${e.name}`;
+    document.getElementById('status-sel').textContent = e.name;
+    document.getElementById('queries-member-info').textContent = `${e.name} in ${QUERIES.filter(q=>q.members.includes(e.name)).length} queries`;
+  }
+  buildQueries();
+}
+
+// ─── INSPECTOR ───
+function buildInspector() {
+  const noSel  = document.getElementById('insp-no-sel');
+  const content = document.getElementById('insp-content');
+  const badge  = document.getElementById('insp-badge');
+  const label  = document.getElementById('insp-entity-label');
+  if (selectedIdx === null) {
+    noSel.style.display = 'block'; content.innerHTML = ''; return;
+  }
+  const e = ENTITIES.find(x => x.idx === selectedIdx);
+  noSel.style.display = 'none';
+  badge.textContent = `${e.tags.length} comps`;
+  label.textContent = `[${String(e.idx).padStart(3,'0')}] ${e.name}`;
+  content.innerHTML = '';
+  e.tags.forEach((tag, ti) => {
+    const comp = COMP_DATA[tag];
+    if (!comp) return;
+    const sec = document.createElement('div');
+    sec.className = 'comp-section' + (ti < 2 ? ' open' : '');
+    const fieldsHtml = comp.fields.map(f => {
+      const vc = f.t === 'bool' ? (f.v === 'true' ? 'fv-bool-true' : 'fv-bool-false') : 'fv-' + f.t;
+      return `<div class="fg-row" style="display:contents">
+        <div class="fg-cell name">${f.n}</div>
+        <div class="fg-cell type">${f.dt}</div>
+        <div class="fg-cell value ${vc}">${f.v}</div>
+        <div class="fg-cell action"><span class="edit-icon" title="Edit value">✎</span></div>
+      </div>`;
+    }).join('');
+    sec.innerHTML = `
+      <div class="comp-head">
+        <span class="c-chev">▶</span>
+        <span class="c-name">${comp.name}</span>
+        <span class="tag ${tag} c-tag-badge">${tag}</span>
+        <span class="c-tier" title="Tier — click to edit">Tier: ${comp.tier}</span>
+      </div>
+      <div class="comp-body">
+        <div class="fields-grid">${fieldsHtml}</div>
+      </div>
+    `;
+    sec.querySelector('.comp-head').addEventListener('click', () => sec.classList.toggle('open'));
+    content.appendChild(sec);
+  });
+}
+
+// ─── QUERIES ───
+let qFilterMember = false;
+document.getElementById('q-filter-all').addEventListener('click', function() {
+  qFilterMember = false;
+  this.classList.add('active');
+  document.getElementById('q-filter-member').classList.remove('active');
+  buildQueries();
+});
+document.getElementById('q-filter-member').addEventListener('click', function() {
+  qFilterMember = true;
+  this.classList.add('active');
+  document.getElementById('q-filter-all').classList.remove('active');
+  buildQueries();
+});
+
+function buildQueries() {
+  const body = document.getElementById('queries-body');
+  body.innerHTML = '';
+  const e = selectedIdx !== null ? ENTITIES.find(x => x.idx === selectedIdx) : null;
+  QUERIES.forEach(q => {
+    const isMember = e && q.members.includes(e.name);
+    if (qFilterMember && !isMember) return;
+    const card = document.createElement('div');
+    card.className = 'q-card' + (isMember ? ' open' : '');
+    const selfBadge = isMember ? `<span class="q-self">✓ member</span>` : '';
+    const members = q.members.map(m => {
+      const isSelf = e && m === e.name;
+      return `<span class="q-chip ${isSelf ? 'self' : ''}">${m}</span>`;
+    }).join('');
+    card.innerHTML = `
+      <div class="q-head">
+        <span class="q-chev">▶</span>
+        <span class="q-sig">${q.sig}</span>
+        ${selfBadge}
+        <span class="q-count">${q.count}</span>
+      </div>
+      <div class="q-body">
+        <div style="font-size:10px;color:#33334a;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.4px">Members</div>
+        <div class="q-members">${members}</div>
+      </div>
+    `;
+    card.querySelector('.q-head').addEventListener('click', () => card.classList.toggle('open'));
+    body.appendChild(card);
+  });
+}
+
+// ─── MAILBOX ───
+function buildMailbox() {
+  const tbody = document.getElementById('msg-tbody');
+  tbody.innerHTML = '';
+  MESSAGES.forEach(m => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="m-frame">${m.f}</td>
+      <td class="m-sender">${m.sender}</td>
+      <td class="m-addr"><span style="color:#252545;font-size:9px">[${m.ak}]</span> ${m.addr}</td>
+      <td><span class="m-type ${m.tc}">${m.type}</span></td>
+      <td style="color:#33334a;font-size:10px;font-family:Consolas,monospace">${m.payload}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const hist = document.getElementById('histogram');
+  const types = [
+    {name:'Damage',       count:38, color:'#e8a850'},
+    {name:'SpawnRequest', count:24, color:'#70c870'},
+    {name:'StateChange',  count:19, color:'#b0b0f8'},
+    {name:'AnimEnd',      count:14, color:'#70a8e8'},
+    {name:'Collect',      count: 9, color:'#70c8c8'},
+    {name:'Destroy',      count: 6, color:'#e87070'},
+  ];
+  const max = Math.max(...types.map(t => t.count));
+  hist.innerHTML = `<div class="hist-title">Message type histogram · last 100 frames</div>`;
+  types.forEach(t => {
+    const pct = Math.round(t.count / max * 100);
+    hist.innerHTML += `<div class="hist-row">
+      <span class="hist-lbl">${t.name}</span>
+      <div class="hist-bg"><div class="hist-fill" style="width:${pct}%;background:${t.color}"></div></div>
+      <span class="hist-n">${t.count}</span>
+    </div>`;
+  });
+}
+
+// ─── WATCH ───
+function buildWatch() {
+  const tbody = document.getElementById('watch-tbody');
+  tbody.innerHTML = '';
+  watchItems.forEach((w, i) => {
+    const dc = w.delta === 'up' ? 'w-up' : w.delta === 'dn' ? 'w-dn' : 'w-eq';
+    const di = w.delta === 'up' ? '▲ +0.21' : w.delta === 'dn' ? '▼ -3.00' : '—';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="w-entity">${w.entity}</td>
+      <td class="w-comp">${w.comp}</td>
+      <td class="w-field">${w.field}</td>
+      <td class="w-val">${w.value}</td>
+      <td class="w-delta ${dc}">${di}</td>
+      <td class="w-rm" data-i="${i}">✕</td>
+    `;
+    tr.querySelector('.w-rm').addEventListener('click', () => {
+      watchItems.splice(i, 1);
+      buildWatch();
+      document.getElementById('watch-badge').textContent = watchItems.length;
+      document.getElementById('status-watch').textContent = watchItems.length;
+    });
+    tbody.appendChild(tr);
+  });
+  document.getElementById('watch-badge').textContent = watchItems.length;
+  document.getElementById('status-watch').textContent = watchItems.length;
+}
+
+document.getElementById('add-watch-btn').addEventListener('click', () => {
+  watchItems.push({
+    entity: document.getElementById('aw-ent').value,
+    comp:   document.getElementById('aw-comp').value,
+    field:  document.getElementById('aw-field').value,
+    value:  '—', delta:'eq'
+  });
+  buildWatch();
+  // open watch section
+  document.getElementById('sec-watch').classList.add('open');
+});
+
+// ─── FILTER CHIPS ───
+document.querySelectorAll('#sec-browser .chip').forEach(c => {
+  c.addEventListener('click', () => {
+    document.querySelectorAll('#sec-browser .chip').forEach(x => x.classList.remove('active'));
+    c.classList.add('active');
+    activeFilter = c.dataset.filter;
+    buildEntityList();
+  });
+});
+
+document.getElementById('ent-search').addEventListener('input', buildEntityList);
+
+// ─── ANIMATED FRAME COUNTER ───
+let frame = 4821;
+setInterval(() => {
+  frame += 1;
+  document.getElementById('frame-counter').textContent = `f#${frame} · dt ${(15 + Math.random() * 3).toFixed(1)}ms`;
+}, 500);
+
+// ─── INIT ───
+buildEntityList();
+buildInspector();
+buildQueries();
+buildMailbox();
+buildWatch();
+selectEntity(1);
+</script>
+</body>
+</html>

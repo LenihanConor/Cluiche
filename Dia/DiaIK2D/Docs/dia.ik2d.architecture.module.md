@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.ik2d
 name: DiaIK2D
 owner_team: TBD
-layer: platform
+layer: domain/animation/core
 status: active
 maturity: dev
 

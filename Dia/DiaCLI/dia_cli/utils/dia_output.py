@@ -51,6 +51,7 @@ class OutputContext:
         self._log_json_override = log_json_override
         self._lock = threading.Lock()
         self._log_file = None
+        self._log_owner: Optional[str] = None  # system that called _open_log
         self._console = Console(
             highlight=False,
             markup=False,
@@ -121,7 +122,8 @@ class OutputContext:
         duration_ms = self._elapsed_ms(system, None, None)
         payload = {"event": "OnRunCompleted", "system": system, "passCount": pass_count, "failCount": fail_count, "durationMs": duration_ms, "totalDurationMs": duration_ms}
         self._write_event(payload)
-        self._close_log()
+        if self._log_owner == system:
+            self._close_log()
         sep = "─" * 45
         self._render(Text(f"[{self._ts()}] {sep}", style=_STYLE_DIM))
         self._render(Text(
@@ -133,7 +135,8 @@ class OutputContext:
         duration_ms = self._elapsed_ms(system, None, None)
         payload = {"event": "OnRunFailed", "system": system, "passCount": pass_count, "failCount": fail_count, "durationMs": duration_ms, "totalDurationMs": duration_ms}
         self._write_event(payload)
-        self._close_log()
+        if self._log_owner == system:
+            self._close_log()
         sep = "─" * 45
         self._render(Text(f"[{self._ts()}] {sep}", style=_STYLE_DIM))
         self._render(Text(
@@ -173,20 +176,31 @@ class OutputContext:
             return 0
         return int((time.time() - start) * 1000)
 
+    def log_path_for(self, system: str) -> Path:
+        """Return the NDJSON log path for the given system name."""
+        return self._log_path(system)
+
     def _log_path(self, system: str) -> Path:
         if self._log_json_override:
             return self._log_json_override
         return self._log_dir / system / "last-run.ndjson"
 
     def _open_log(self, system: str) -> None:
+        # If a log is already open by a different owner (e.g. "pipeline" opened
+        # by the top-level runner, then "asset-pipeline" calls run_started),
+        # do not replace it — the subsystem shares the existing file handle.
+        if self._log_file is not None and self._log_owner != system:
+            return
         path = self._log_path(system)
         path.parent.mkdir(parents=True, exist_ok=True)
         self._log_file = open(path, "w", encoding="utf-8")  # noqa: SIM115 — intentional; closed in _close_log
+        self._log_owner = system
 
     def _close_log(self) -> None:
         if self._log_file:
             self._log_file.close()
             self._log_file = None
+            self._log_owner = None
 
     def _write_event(self, payload: dict) -> None:
         payload["ts"] = time.time()

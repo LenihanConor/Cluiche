@@ -55,6 +55,11 @@ namespace Dia
 			mResizeCallback = cb;
 		}
 
+		void Win32Window::SetMoveResizeCallback(MoveResizeCallback cb)
+		{
+			mMoveResizeCallback = cb;
+		}
+
 		void Win32Window::Initialize(const Settings& settings)
 		{
 			HINSTANCE hInstance = GetModuleHandleW(nullptr);
@@ -137,8 +142,6 @@ namespace Dia
 			ShowWindow(static_cast<HWND>(mHwnd), visible ? SW_SHOW : SW_HIDE);
 		}
 
-		bool Win32Window::SetActive(bool) const { return true; }
-
 		void Win32Window::SetMouseCursorVisible(bool visible)
 		{
 			ShowCursor(visible ? TRUE : FALSE);
@@ -176,6 +179,17 @@ namespace Dia
 					int h = static_cast<int>(HIWORD(static_cast<DWORD>(lParam)));
 					sLastCreated->mResizeCallback(w, h);
 				}
+				// Notify on maximize or restore (not on every resize-drag tick).
+				if (sLastCreated && sLastCreated->mMoveResizeCallback
+					&& (wParam == SIZE_MAXIMIZED || wParam == SIZE_RESTORED))
+				{
+					sLastCreated->mMoveResizeCallback();
+				}
+				return 0;
+			case WM_EXITSIZEMOVE:
+				// Fires once when the user releases the mouse after a move or resize drag.
+				if (sLastCreated && sLastCreated->mMoveResizeCallback)
+					sLastCreated->mMoveResizeCallback();
 				return 0;
 			}
 			return static_cast<long>(DefWindowProcW(
@@ -185,7 +199,7 @@ namespace Dia
 				static_cast<LPARAM>(lParam)));
 		}
 
-		IWindow* Win32WindowFactory::Create(const IWindow::Settings& settings, const Graphics::ICanvas::Settings&)
+		IWindow* Win32WindowFactory::Create(const IWindow::Settings& settings)
 		{
 			Win32Window* window = new Win32Window();
 			window->Initialize(settings);

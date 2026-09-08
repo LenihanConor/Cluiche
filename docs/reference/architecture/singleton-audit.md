@@ -28,7 +28,7 @@ This document catalogues every significant singleton and static complex object i
 | `g_pAssertFunc` | `Dia/DiaCore/Core/Assert.cpp:47` | Global function pointer | Medium | Low |
 | ~~`GlobalEventDispatcher`~~ | ~~`Dia/DiaCore/Architecture/Events/EventDispatcher.h:228`~~ | ~~Meyer's static~~ | ~~**High**~~ | ~~High~~ | **Removed** |
 | `TypeFacade` | `Dia/DiaCore/Type/TypeFacade.h:38` | Free function static | Medium | Medium |
-| `ApplicationTypeRegistry` | `Dia/DiaApplication/TypeRegistry/ApplicationTypeRegistry.cpp:12` | Meyer's static | Medium | Low |
+| `ApplicationTypeRegistry` | `Dia/DiaApplicationFlow/TypeRegistry/ApplicationTypeRegistry.cpp:12` | Meyer's static | Medium | Low |
 | `EditorPluginRegistry` | `Dia/DiaEditor/Plugin/EditorPluginRegistry.h:15` | Meyer's static | Low | Low |
 | `AsyncFileLoader` | `Dia/DiaCore/FilePath/AsyncFileLoader.h:128` | Meyer's static | Medium | Medium |
 | `JobSystem` | `Dia/DiaCore/Threading/JobSystem.h:115` | Meyer's static | Medium | Medium |
@@ -149,7 +149,7 @@ This is the highest-value migration item: the existing `EventDispatcher` class a
 
 ### 5. `ApplicationTypeRegistry`
 
-**File:** `Dia/DiaApplication/TypeRegistry/ApplicationTypeRegistry.cpp:12`  
+**File:** `Dia/DiaApplicationFlow/TypeRegistry/ApplicationTypeRegistry.cpp:12`  
 **Pattern:** Meyer's static inside `Instance()`  
 **State:** 3 `HashTable` maps (ProcessingUnit/Phase/Module factory pointers), 3 cached `DynamicArrayC` lists  
 **Callers:** 10 files — registration macros, manifest loader, introspector, tests
@@ -301,7 +301,7 @@ Option 1 is the correct long-term fix. Low effort.
 The recommended migration approach uses a single `EngineContext` struct as the composition root for all engine services.
 
 ```cpp
-// Dia/DiaApplication/EngineContext.h (proposed)
+// Dia/DiaApplicationFlow/EngineContext.h (proposed)
 struct EngineContext
 {
     Logging::Logger           logger;

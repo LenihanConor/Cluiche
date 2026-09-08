@@ -632,8 +632,6 @@ TEST(BitArray16, CompoundXorAssignment_TogglesDifferences)
 
 TEST(BitArray16, GetByte_ReturnsCorrectBytes)
 {
-    unsigned char bit1 = 1;
-    unsigned char bit2 = 2;
     BitArray16 bitflag1(1);
 
     BitArray8 bitarray2(bitflag1.GetByte(0));
@@ -958,8 +956,6 @@ TEST(BitArray32, CompoundXorAssignment_TogglesDifferences)
 
 TEST(BitArray32, GetByte_ReturnsCorrectBytes)
 {
-    unsigned char bit1 = 1;
-    unsigned char bit2 = 2;
     BitArray32 bitflag1(1);
 
     BitArray8 bitarray2(bitflag1.GetByte(0));
@@ -1284,8 +1280,8 @@ TEST(BitArray64, CompoundXorAssignment_TogglesDifferences)
 
 TEST(BitArray64, GetByte_ReturnsCorrectBytes)
 {
-    unsigned char bit1 = 1;
-    unsigned char bit2 = 2;
+    [[maybe_unused]] unsigned char bit1 = 1;
+    [[maybe_unused]] unsigned char bit2 = 2;
     BitArray64 bitflag1(1);
 
     BitArray8 bitarray2(bitflag1.GetByte(0));

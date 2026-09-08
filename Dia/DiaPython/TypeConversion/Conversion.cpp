@@ -6,7 +6,7 @@
 #include "DiaPython/DiaPythonInternal.h"
 #include "DiaPython/Lifecycle/Lifecycle.h"
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 namespace Dia
 {
@@ -26,6 +26,7 @@ namespace Dia
 				return result;  // Return None
 			}
 
+			py::gil_scoped_acquire acquire;
 			try
 			{
 				auto* impl = static_cast<Internal::PythonObjectImpl*>(result.mImpl);
@@ -53,6 +54,7 @@ namespace Dia
 				return result;
 			}
 
+			py::gil_scoped_acquire acquire;
 			try
 			{
 				auto* impl = static_cast<Internal::PythonObjectImpl*>(result.mImpl);
@@ -80,6 +82,7 @@ namespace Dia
 				return result;
 			}
 
+			py::gil_scoped_acquire acquire;
 			try
 			{
 				auto* impl = static_cast<Internal::PythonObjectImpl*>(result.mImpl);
@@ -113,6 +116,7 @@ namespace Dia
 				return result;
 			}
 
+			py::gil_scoped_acquire acquire;
 			try
 			{
 				auto* impl = static_cast<Internal::PythonObjectImpl*>(result.mImpl);
@@ -155,6 +159,7 @@ namespace Dia
 				return 0;
 			}
 
+			py::gil_scoped_acquire acquire;
 			try
 			{
 				// Python coercion: int("123") = 123, int(42.7) = 42
@@ -195,6 +200,7 @@ namespace Dia
 				return 0.0f;
 			}
 
+			py::gil_scoped_acquire acquire;
 			try
 			{
 				// Python coercion: float(42) = 42.0, float("3.14") = 3.14
@@ -235,6 +241,7 @@ namespace Dia
 				return false;
 			}
 
+			py::gil_scoped_acquire acquire;
 			try
 			{
 				// Python truthiness: bool(0) = false, bool("") = false, etc.
@@ -273,6 +280,7 @@ namespace Dia
 				return "";
 			}
 
+			py::gil_scoped_acquire acquire;
 			try
 			{
 				// Convert to Python string, then to C++ string

@@ -32,7 +32,7 @@ This document provides step-by-step instructions for common development tasks in
 // File: Cluiche/CluicheTest/ApplicationFlow/Modules/SimPhysicsModule.h
 #pragma once
 
-#include "DiaApplication/Module/Module.h"
+#include "DiaApplicationFlow/Module/Module.h"
 
 namespace Cluiche
 {
@@ -175,7 +175,7 @@ Cluiche/bin/exe/Debug/Cluiche.exe
 // File: Cluiche/CluicheTest/Levels/TestLevel.h
 #pragma once
 
-#include "DiaApplication/Level/ILevel.h"
+#include "DiaApplicationFlow/Level/ILevel.h"
 
 namespace Cluiche
 {
@@ -446,7 +446,7 @@ void RenderFunction()
 // File: Cluiche/CluicheTest/ApplicationFlow/Phases/SimPreUpdatePhase.h
 #pragma once
 
-#include "DiaApplication/Phase/Phase.h"
+#include "DiaApplicationFlow/Phase/Phase.h"
 
 namespace Cluiche
 {

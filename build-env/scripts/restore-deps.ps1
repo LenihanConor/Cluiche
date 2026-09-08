@@ -1,9 +1,22 @@
-# Restore External/ deps from deps.json inside the container
+# Restore external dependencies declared in deps.json
 param(
-    [string]$RepoRoot = "C:\repo",
+    [string]$RepoRoot = (Split-Path $PSScriptRoot -Parent | Split-Path -Parent),
     [switch]$Force
 )
-Set-Location $RepoRoot
-$args = @("env", "deps")
-if ($Force) { $args += "--force" }
-python -m dia_cli @args
+
+$ErrorActionPreference = 'Stop'
+
+$depsJson = Join-Path $RepoRoot "deps.json"
+if (-not (Test-Path $depsJson)) {
+    Write-Error "deps.json not found at $depsJson"
+    exit 1
+}
+
+Write-Host "Restoring dependencies from $depsJson ..."
+& python -m dia_cli env setup --deps
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Dependency restore failed (exit $LASTEXITCODE)"
+    exit $LASTEXITCODE
+}
+
+Write-Host "Dependencies restored."

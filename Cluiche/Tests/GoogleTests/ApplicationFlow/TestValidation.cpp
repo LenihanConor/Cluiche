@@ -1,0 +1,825 @@
+////////////////////////////////////////////////////////////////////////////////
+// Filename: TestValidation.cpp
+// GoogleTest suite — DiaApplicationFlow v2 ManifestValidatorV2
+//
+// Covers every error and warning code produced by ManifestValidatorV2.
+// Each test uses a local TypeRegistry to avoid global state pollution.
+// Module type prefixed "Val_" to avoid ODR collisions with other test files.
+////////////////////////////////////////////////////////////////////////////////
+#include <gtest/gtest.h>
+#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/SimModule.h>
+#include <DiaApplicationFlow/TypeRegistry.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
+#include <DiaApplicationFlow/Manifest/ManifestValidatorV2.h>
+#include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+
+using namespace Dia::ApplicationFlow;
+using namespace Dia::Core;
+using namespace Dia::Core::Containers;
+
+// ---------------------------------------------------------------------------
+// Fixture module — minimal concrete Module for the registry
+// ---------------------------------------------------------------------------
+
+struct Val_SimpleModule : SimModule
+{
+    using SimModule::SimModule;
+    static const StringCRC kTypeId;
+    StartResult DoStart() override { return StartResult::kReady; }
+    void        DoUpdate(const Dia::SimTime::SimTimeContext&) override {}
+    StopResult  DoStop() override { return StopResult::kDone; }
+};
+const StringCRC Val_SimpleModule::kTypeId("Val_SimpleModule");
+
+// ---------------------------------------------------------------------------
+// Helper: build a fully valid single-PU, single-module manifest.
+// All tests that need a clean baseline start from this.
+// ---------------------------------------------------------------------------
+
+static TypeRegistry BuildRegistryWithSimple()
+{
+    TypeRegistry reg;
+    reg.Register(Val_SimpleModule::kTypeId,
+        [](const StringCRC& id) -> Module* { return new Val_SimpleModule(id); });
+    return reg;
+}
+
+static ApplicationManifestV3 BuildValidManifest()
+{
+    ApplicationManifestV3 manifest;
+    manifest.version = 3;
+
+    StageDeclaration boot;
+    boot.name = StringCRC("Boot");
+    manifest.stages.Add(boot);
+    manifest.initialStage = StringCRC("Boot");
+
+    ProcessingUnitDeclaration pu;
+    pu.instanceId      = StringCRC("MainPU");
+    pu.frequencyHz     = 60.0f;
+    pu.dedicatedThread = false;
+
+    ModuleDeclaration mod;
+    mod.instanceId     = StringCRC("mod0");
+    mod.typeId         = Val_SimpleModule::kTypeId;
+    mod.startTimeoutMs = 10000.0f;
+    mod.stopTimeoutMs  = 5000.0f;
+    mod.stages.Add(StringCRC("Boot"));
+
+    pu.modules.Add(mod);
+    manifest.processingUnits.Add(pu);
+    return manifest;
+}
+
+// Search results array for an entry matching a specific code string.
+static bool HasCode(
+    const DynamicArrayC<ValidationEntry, 64>& results,
+    const char* code,
+    ValidationSeverity severity = ValidationSeverity::kError)
+{
+    const StringCRC target(code);
+    for (unsigned int i = 0; i < results.Size(); ++i)
+    {
+        if (results[i].code == target && results[i].severity == severity)
+            return true;
+    }
+    return false;
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+// A properly formed manifest produces no errors and no warnings.
+TEST(Validation, ValidManifestHasNoErrors)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+    ApplicationManifestV3 manifest = BuildValidManifest();
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_FALSE(validator.HasErrors())
+        << "Valid manifest should produce no errors";
+    EXPECT_FALSE(validator.HasWarnings())
+        << "Valid manifest should produce no warnings";
+    EXPECT_EQ(validator.GetResults().Size(), 0u);
+}
+
+// A module whose typeId is not in the TypeRegistry produces UNKNOWN_TYPE.
+TEST(Validation, UnknownTypeIdReportsError)
+{
+    TypeRegistry reg;
+    // Register nothing — typeId "Val_Ghost" is unknown.
+
+    ApplicationManifestV3 manifest;
+    manifest.version = 2;
+
+    StageDeclaration boot;
+    boot.name = StringCRC("Boot");
+    manifest.stages.Add(boot);
+    manifest.initialStage = StringCRC("Boot");
+
+    ProcessingUnitDeclaration pu;
+    pu.instanceId      = StringCRC("MainPU");
+    pu.frequencyHz     = 60.0f;
+    pu.dedicatedThread = false;
+
+    ModuleDeclaration mod;
+    mod.instanceId     = StringCRC("ghostMod");
+    mod.typeId         = StringCRC("Val_Ghost");
+    mod.startTimeoutMs = 10000.0f;
+    mod.stopTimeoutMs  = 5000.0f;
+    mod.stages.Add(StringCRC("Boot"));
+    pu.modules.Add(mod);
+    manifest.processingUnits.Add(pu);
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_TRUE(validator.HasErrors());
+    EXPECT_TRUE(HasCode(validator.GetResults(), "UNKNOWN_TYPE"))
+        << "Expected UNKNOWN_TYPE error for unregistered typeId";
+}
+
+// initialStage references a stage name not present in the stages array.
+TEST(Validation, UnknownInitialStageReportsError)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+
+    ApplicationManifestV3 manifest;
+    manifest.version = 2;
+
+    StageDeclaration boot;
+    boot.name = StringCRC("Boot");
+    manifest.stages.Add(boot);
+    manifest.initialStage = StringCRC("Nonexistent");  // not in stages
+
+    ProcessingUnitDeclaration pu;
+    pu.instanceId      = StringCRC("MainPU");
+    pu.frequencyHz     = 60.0f;
+    pu.dedicatedThread = false;
+
+    ModuleDeclaration mod;
+    mod.instanceId     = StringCRC("mod0");
+    mod.typeId         = Val_SimpleModule::kTypeId;
+    mod.startTimeoutMs = 10000.0f;
+    mod.stopTimeoutMs  = 5000.0f;
+    mod.stages.Add(StringCRC("Boot"));
+    pu.modules.Add(mod);
+    manifest.processingUnits.Add(pu);
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_TRUE(validator.HasErrors());
+    EXPECT_TRUE(HasCode(validator.GetResults(), "UNKNOWN_STAGE"))
+        << "Expected UNKNOWN_STAGE error for missing initialStage";
+}
+
+// Two ProcessingUnits share the same instanceId — produces DUPLICATE_PU_ID.
+TEST(Validation, DuplicatePUIdReportsError)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+
+    ApplicationManifestV3 manifest;
+    manifest.version = 2;
+
+    StageDeclaration boot;
+    boot.name = StringCRC("Boot");
+    manifest.stages.Add(boot);
+    manifest.initialStage = StringCRC("Boot");
+
+    // First PU
+    {
+        ProcessingUnitDeclaration pu;
+        pu.instanceId      = StringCRC("MainPU");
+        pu.frequencyHz     = 60.0f;
+        pu.dedicatedThread = false;
+
+        ModuleDeclaration mod;
+        mod.instanceId     = StringCRC("mod0");
+        mod.typeId         = Val_SimpleModule::kTypeId;
+        mod.startTimeoutMs = 10000.0f;
+        mod.stopTimeoutMs  = 5000.0f;
+        mod.stages.Add(StringCRC("Boot"));
+        pu.modules.Add(mod);
+        manifest.processingUnits.Add(pu);
+    }
+
+    // Second PU — same instanceId as the first
+    {
+        ProcessingUnitDeclaration pu;
+        pu.instanceId      = StringCRC("MainPU");  // duplicate
+        pu.frequencyHz     = 30.0f;
+        pu.dedicatedThread = false;
+
+        ModuleDeclaration mod;
+        mod.instanceId     = StringCRC("mod1");
+        mod.typeId         = Val_SimpleModule::kTypeId;
+        mod.startTimeoutMs = 10000.0f;
+        mod.stopTimeoutMs  = 5000.0f;
+        mod.stages.Add(StringCRC("Boot"));
+        pu.modules.Add(mod);
+        manifest.processingUnits.Add(pu);
+    }
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_TRUE(validator.HasErrors());
+    EXPECT_TRUE(HasCode(validator.GetResults(), "DUPLICATE_PU_ID"))
+        << "Expected DUPLICATE_PU_ID error";
+}
+
+// Two streams share the same id — produces DUPLICATE_STREAM_ID.
+TEST(Validation, DuplicateStreamIdReportsError)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+    ApplicationManifestV3 manifest = BuildValidManifest();
+
+    // Add a second PU so stream PU refs are valid.
+    ProcessingUnitDeclaration pu2;
+    pu2.instanceId      = StringCRC("SecondPU");
+    pu2.frequencyHz     = 30.0f;
+    pu2.dedicatedThread = false;
+
+    ModuleDeclaration mod2;
+    mod2.instanceId     = StringCRC("mod2");
+    mod2.typeId         = Val_SimpleModule::kTypeId;
+    mod2.startTimeoutMs = 10000.0f;
+    mod2.stopTimeoutMs  = 5000.0f;
+    mod2.stages.Add(StringCRC("Boot"));
+    pu2.modules.Add(mod2);
+    manifest.processingUnits.Add(pu2);
+
+    // Two streams with the same id.
+    StreamDeclaration s1;
+    s1.id          = StringCRC("DataStream");
+    s1.kind        = StringCRC("EventStream");
+    s1.fromPU      = StringCRC("MainPU");
+    s1.toPU        = StringCRC("SecondPU");
+    s1.multiWriter = false;
+
+    StreamDeclaration s2;
+    s2.id          = StringCRC("DataStream");  // duplicate
+    s2.kind        = StringCRC("EventStream");
+    s2.fromPU      = StringCRC("MainPU");
+    s2.toPU        = StringCRC("SecondPU");
+    s2.multiWriter = false;
+
+    manifest.streams.Add(s1);
+    manifest.streams.Add(s2);
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_TRUE(validator.HasErrors());
+    EXPECT_TRUE(HasCode(validator.GetResults(), "DUPLICATE_STREAM_ID"))
+        << "Expected DUPLICATE_STREAM_ID error";
+}
+
+// A stream's fromPU references a PU that doesn't exist — produces UNKNOWN_PU.
+TEST(Validation, UnknownStreamPUReportsError)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+    ApplicationManifestV3 manifest = BuildValidManifest();
+
+    StreamDeclaration s;
+    s.id          = StringCRC("MyStream");
+    s.kind        = StringCRC("EventStream");
+    s.fromPU      = StringCRC("GhostPU");  // does not exist in manifest
+    s.toPU        = StringCRC("MainPU");
+    s.multiWriter = false;
+    manifest.streams.Add(s);
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_TRUE(validator.HasErrors());
+    EXPECT_TRUE(HasCode(validator.GetResults(), "UNKNOWN_PU"))
+        << "Expected UNKNOWN_PU error for stream fromPU referencing missing PU";
+}
+
+// Two modules in the same PU share the same instanceId — DUPLICATE_MODULE_ID.
+TEST(Validation, DuplicateModuleIdReportsError)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+
+    ApplicationManifestV3 manifest;
+    manifest.version = 2;
+
+    StageDeclaration boot;
+    boot.name = StringCRC("Boot");
+    manifest.stages.Add(boot);
+    manifest.initialStage = StringCRC("Boot");
+
+    ProcessingUnitDeclaration pu;
+    pu.instanceId      = StringCRC("MainPU");
+    pu.frequencyHz     = 60.0f;
+    pu.dedicatedThread = false;
+
+    // Two modules, same instanceId.
+    for (int i = 0; i < 2; ++i)
+    {
+        ModuleDeclaration mod;
+        mod.instanceId     = StringCRC("sameMod");  // duplicate
+        mod.typeId         = Val_SimpleModule::kTypeId;
+        mod.startTimeoutMs = 10000.0f;
+        mod.stopTimeoutMs  = 5000.0f;
+        mod.stages.Add(StringCRC("Boot"));
+        pu.modules.Add(mod);
+    }
+    manifest.processingUnits.Add(pu);
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_TRUE(validator.HasErrors());
+    EXPECT_TRUE(HasCode(validator.GetResults(), "DUPLICATE_MODULE_ID"))
+        << "Expected DUPLICATE_MODULE_ID error";
+}
+
+// A module declares a dependency on an instanceId that doesn't exist in the
+// same PU — produces UNKNOWN_DEPENDENCY.
+TEST(Validation, UnknownDependencyReportsError)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+
+    ApplicationManifestV3 manifest;
+    manifest.version = 2;
+
+    StageDeclaration boot;
+    boot.name = StringCRC("Boot");
+    manifest.stages.Add(boot);
+    manifest.initialStage = StringCRC("Boot");
+
+    ProcessingUnitDeclaration pu;
+    pu.instanceId      = StringCRC("MainPU");
+    pu.frequencyHz     = 60.0f;
+    pu.dedicatedThread = false;
+
+    ModuleDeclaration mod;
+    mod.instanceId     = StringCRC("mod0");
+    mod.typeId         = Val_SimpleModule::kTypeId;
+    mod.startTimeoutMs = 10000.0f;
+    mod.stopTimeoutMs  = 5000.0f;
+    mod.stages.Add(StringCRC("Boot"));
+    mod.dependencies.Add(StringCRC("ghostDep"));  // not in this PU
+    pu.modules.Add(mod);
+    manifest.processingUnits.Add(pu);
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_TRUE(validator.HasErrors());
+    EXPECT_TRUE(HasCode(validator.GetResults(), "UNKNOWN_DEPENDENCY"))
+        << "Expected UNKNOWN_DEPENDENCY error";
+}
+
+// A module depends on another module that appears LATER in the array.  The
+// framework uses array order as startup order, so this would start the
+// dependent before its dependency — must produce DEPENDENCY_ORDER.
+TEST(Validation, DependencyOrderReportsError)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+
+    ApplicationManifestV3 manifest;
+    manifest.version = 2;
+
+    StageDeclaration boot;
+    boot.name = StringCRC("Boot");
+    manifest.stages.Add(boot);
+    manifest.initialStage = StringCRC("Boot");
+
+    ProcessingUnitDeclaration pu;
+    pu.instanceId      = StringCRC("MainPU");
+    pu.frequencyHz     = 60.0f;
+    pu.dedicatedThread = false;
+
+    // modA declared FIRST but depends on modB which comes later.
+    ModuleDeclaration modA;
+    modA.instanceId     = StringCRC("modA");
+    modA.typeId         = Val_SimpleModule::kTypeId;
+    modA.startTimeoutMs = 10000.0f;
+    modA.stopTimeoutMs  = 5000.0f;
+    modA.stages.Add(StringCRC("Boot"));
+    modA.dependencies.Add(StringCRC("modB"));
+    pu.modules.Add(modA);
+
+    // modB — at a LATER index than its dependent modA.
+    ModuleDeclaration modB;
+    modB.instanceId     = StringCRC("modB");
+    modB.typeId         = Val_SimpleModule::kTypeId;
+    modB.startTimeoutMs = 10000.0f;
+    modB.stopTimeoutMs  = 5000.0f;
+    modB.stages.Add(StringCRC("Boot"));
+    pu.modules.Add(modB);
+
+    manifest.processingUnits.Add(pu);
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_TRUE(validator.HasErrors());
+    EXPECT_TRUE(HasCode(validator.GetResults(), "DEPENDENCY_ORDER"))
+        << "Expected DEPENDENCY_ORDER error when a module depends on a later-indexed module";
+}
+
+// A module depending on a module at a lower (earlier) index is valid — no
+// DEPENDENCY_ORDER error is produced.
+TEST(Validation, DependencyOrderValidWhenDepIsEarlier)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+
+    ApplicationManifestV3 manifest;
+    manifest.version = 2;
+
+    StageDeclaration boot;
+    boot.name = StringCRC("Boot");
+    manifest.stages.Add(boot);
+    manifest.initialStage = StringCRC("Boot");
+
+    ProcessingUnitDeclaration pu;
+    pu.instanceId      = StringCRC("MainPU");
+    pu.frequencyHz     = 60.0f;
+    pu.dedicatedThread = false;
+
+    // modB first — it's the dependency.
+    ModuleDeclaration modB;
+    modB.instanceId     = StringCRC("modB");
+    modB.typeId         = Val_SimpleModule::kTypeId;
+    modB.startTimeoutMs = 10000.0f;
+    modB.stopTimeoutMs  = 5000.0f;
+    modB.stages.Add(StringCRC("Boot"));
+    pu.modules.Add(modB);
+
+    // modA second — correctly depends on modB (at a lower index).
+    ModuleDeclaration modA;
+    modA.instanceId     = StringCRC("modA");
+    modA.typeId         = Val_SimpleModule::kTypeId;
+    modA.startTimeoutMs = 10000.0f;
+    modA.stopTimeoutMs  = 5000.0f;
+    modA.stages.Add(StringCRC("Boot"));
+    modA.dependencies.Add(StringCRC("modB"));
+    pu.modules.Add(modA);
+
+    manifest.processingUnits.Add(pu);
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_FALSE(HasCode(validator.GetResults(), "DEPENDENCY_ORDER"))
+        << "Expected no DEPENDENCY_ORDER error when dep is at an earlier index";
+}
+
+// Two modules depend on each other (A → B, B → A) — produces CYCLE_DETECTED.
+TEST(Validation, CycleDetectedReportsError)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+
+    ApplicationManifestV3 manifest;
+    manifest.version = 2;
+
+    StageDeclaration boot;
+    boot.name = StringCRC("Boot");
+    manifest.stages.Add(boot);
+    manifest.initialStage = StringCRC("Boot");
+
+    ProcessingUnitDeclaration pu;
+    pu.instanceId      = StringCRC("MainPU");
+    pu.frequencyHz     = 60.0f;
+    pu.dedicatedThread = false;
+
+    // modA depends on modB
+    ModuleDeclaration modA;
+    modA.instanceId     = StringCRC("modA");
+    modA.typeId         = Val_SimpleModule::kTypeId;
+    modA.startTimeoutMs = 10000.0f;
+    modA.stopTimeoutMs  = 5000.0f;
+    modA.stages.Add(StringCRC("Boot"));
+    modA.dependencies.Add(StringCRC("modB"));
+    pu.modules.Add(modA);
+
+    // modB depends on modA — creates the cycle
+    ModuleDeclaration modB;
+    modB.instanceId     = StringCRC("modB");
+    modB.typeId         = Val_SimpleModule::kTypeId;
+    modB.startTimeoutMs = 10000.0f;
+    modB.stopTimeoutMs  = 5000.0f;
+    modB.stages.Add(StringCRC("Boot"));
+    modB.dependencies.Add(StringCRC("modA"));
+    pu.modules.Add(modB);
+
+    manifest.processingUnits.Add(pu);
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_TRUE(validator.HasErrors());
+    EXPECT_TRUE(HasCode(validator.GetResults(), "CYCLE_DETECTED"))
+        << "Expected CYCLE_DETECTED error for mutual dependency";
+}
+
+// A stream has multiWriter=false but two modules list it in their writes array
+// — produces MULTI_WRITER_VIOLATION.
+TEST(Validation, MultiWriterViolationReportsError)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+
+    ApplicationManifestV3 manifest;
+    manifest.version = 2;
+
+    StageDeclaration boot;
+    boot.name = StringCRC("Boot");
+    manifest.stages.Add(boot);
+    manifest.initialStage = StringCRC("Boot");
+
+    StreamDeclaration stream;
+    stream.id          = StringCRC("SharedStream");
+    stream.kind        = StringCRC("EventStream");
+    stream.fromPU      = StringCRC("MainPU");
+    stream.toPU        = StringCRC("MainPU");
+    stream.multiWriter = false;  // single writer only
+    manifest.streams.Add(stream);
+
+    ProcessingUnitDeclaration pu;
+    pu.instanceId      = StringCRC("MainPU");
+    pu.frequencyHz     = 60.0f;
+    pu.dedicatedThread = false;
+
+    // Both modules write the same stream.
+    for (int i = 0; i < 2; ++i)
+    {
+        ModuleDeclaration mod;
+        char buf[16];
+        buf[0] = 'w'; buf[1] = char('0' + i); buf[2] = '\0';
+        mod.instanceId     = StringCRC(buf);
+        mod.typeId         = Val_SimpleModule::kTypeId;
+        mod.startTimeoutMs = 10000.0f;
+        mod.stopTimeoutMs  = 5000.0f;
+        mod.stages.Add(StringCRC("Boot"));
+        { ChannelBinding b; b.id = StringCRC("SharedStream"); b.role = StringCRC("writes"); mod.channels.Add(b); }
+        pu.modules.Add(mod);
+    }
+    manifest.processingUnits.Add(pu);
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_TRUE(validator.HasErrors());
+    EXPECT_TRUE(HasCode(validator.GetResults(), "MULTI_WRITER_VIOLATION"))
+        << "Expected MULTI_WRITER_VIOLATION error";
+}
+
+// A module's stages array references a stage not declared in manifest.stages
+// — produces ORPHAN_MODULE.
+TEST(Validation, OrphanModuleReportsError)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+
+    ApplicationManifestV3 manifest;
+    manifest.version = 2;
+
+    StageDeclaration boot;
+    boot.name = StringCRC("Boot");
+    manifest.stages.Add(boot);
+    manifest.initialStage = StringCRC("Boot");
+
+    ProcessingUnitDeclaration pu;
+    pu.instanceId      = StringCRC("MainPU");
+    pu.frequencyHz     = 60.0f;
+    pu.dedicatedThread = false;
+
+    // Module references a stage that is not declared.
+    ModuleDeclaration mod;
+    mod.instanceId     = StringCRC("orphanMod");
+    mod.typeId         = Val_SimpleModule::kTypeId;
+    mod.startTimeoutMs = 10000.0f;
+    mod.stopTimeoutMs  = 5000.0f;
+    mod.stages.Add(StringCRC("UndeclaredStage"));
+    pu.modules.Add(mod);
+    manifest.processingUnits.Add(pu);
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_TRUE(validator.HasErrors());
+    EXPECT_TRUE(HasCode(validator.GetResults(), "ORPHAN_MODULE"))
+        << "Expected ORPHAN_MODULE error for module with no matching declared stage";
+}
+
+// A stream is declared but no module lists it in its writes array.
+// This is a warning (ORPHAN_STREAM), not an error.
+TEST(Validation, OrphanStreamReportsWarning)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+    ApplicationManifestV3 manifest = BuildValidManifest();
+
+    // Stream declared but never written.
+    StreamDeclaration s;
+    s.id          = StringCRC("UnusedStream");
+    s.kind        = StringCRC("EventStream");
+    s.fromPU      = StringCRC("MainPU");
+    s.toPU        = StringCRC("MainPU");
+    s.multiWriter = false;
+    manifest.streams.Add(s);
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_FALSE(validator.HasErrors())
+        << "ORPHAN_STREAM should be a warning, not an error";
+    EXPECT_TRUE(validator.HasWarnings());
+    EXPECT_TRUE(HasCode(validator.GetResults(), "ORPHAN_STREAM", ValidationSeverity::kWarning))
+        << "Expected ORPHAN_STREAM warning for unwritten stream";
+}
+
+// ---------------------------------------------------------------------------
+// v3 transition rules
+// ---------------------------------------------------------------------------
+
+TEST(ManifestValidatorV2, TransitionTargetInvalid_FiresOnBadTarget)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+    ApplicationManifestV3 manifest = BuildValidManifest();
+
+    // Add a transition pointing at a non-existent stage
+    manifest.stages[0].transitions.Add(StringCRC("NonExistent"));
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_TRUE(validator.HasErrors());
+    EXPECT_TRUE(HasCode(validator.GetResults(), "TRANSITION_TARGET_INVALID"))
+        << "Expected TRANSITION_TARGET_INVALID for unknown transition target";
+}
+
+TEST(ManifestValidatorV2, TransitionTargetInvalid_NoFireOnValidTargets)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+    ApplicationManifestV3 manifest = BuildValidManifest();
+
+    // Add a second stage and wire Boot → Game (valid)
+    StageDeclaration game;
+    game.name = StringCRC("Game");
+    manifest.stages.Add(game);
+    manifest.stages[0].transitions.Add(StringCRC("Game"));
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_FALSE(HasCode(validator.GetResults(), "TRANSITION_TARGET_INVALID"))
+        << "Should not fire TRANSITION_TARGET_INVALID for a valid transition target";
+}
+
+TEST(ManifestValidatorV2, AutoAdvanceAmbiguous_FiresOnZeroTransitions)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+    ApplicationManifestV3 manifest = BuildValidManifest();
+
+    // auto_advance=true with empty transitions[] — ambiguous (nothing to advance to)
+    manifest.stages[0].autoAdvance = true;
+    // transitions stays empty (Size() == 0)
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_TRUE(validator.HasErrors());
+    EXPECT_TRUE(HasCode(validator.GetResults(), "AUTO_ADVANCE_AMBIGUOUS"))
+        << "Expected AUTO_ADVANCE_AMBIGUOUS for auto_advance=true with 0 transitions";
+}
+
+TEST(ManifestValidatorV2, AutoAdvanceAmbiguous_FiresOnMultipleTransitions)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+    ApplicationManifestV3 manifest = BuildValidManifest();
+
+    StageDeclaration game;
+    game.name = StringCRC("Game");
+    manifest.stages.Add(game);
+
+    StageDeclaration credits;
+    credits.name = StringCRC("Credits");
+    manifest.stages.Add(credits);
+
+    // auto_advance=true with 2 transitions — ambiguous (which one to pick?)
+    manifest.stages[0].autoAdvance = true;
+    manifest.stages[0].transitions.Add(StringCRC("Game"));
+    manifest.stages[0].transitions.Add(StringCRC("Credits"));
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_TRUE(validator.HasErrors());
+    EXPECT_TRUE(HasCode(validator.GetResults(), "AUTO_ADVANCE_AMBIGUOUS"))
+        << "Expected AUTO_ADVANCE_AMBIGUOUS for auto_advance=true with 2 transitions";
+}
+
+TEST(ManifestValidatorV2, AutoAdvanceAmbiguous_NoFireOnExactlyOne)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+    ApplicationManifestV3 manifest = BuildValidManifest();
+
+    StageDeclaration game;
+    game.name = StringCRC("Game");
+    manifest.stages.Add(game);
+
+    // auto_advance=true with exactly 1 transition — valid
+    manifest.stages[0].autoAdvance = true;
+    manifest.stages[0].transitions.Add(StringCRC("Game"));
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_FALSE(HasCode(validator.GetResults(), "AUTO_ADVANCE_AMBIGUOUS"))
+        << "Should not fire AUTO_ADVANCE_AMBIGUOUS for exactly 1 transition";
+}
+
+TEST(ManifestValidatorV2, TransitionSelfLoop_FiresOnSelfReference)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+    ApplicationManifestV3 manifest = BuildValidManifest();
+
+    // Boot → Boot (self-loop)
+    manifest.stages[0].transitions.Add(StringCRC("Boot"));
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_FALSE(validator.HasErrors())
+        << "TRANSITION_SELF_LOOP should be a warning, not an error";
+    EXPECT_TRUE(HasCode(validator.GetResults(), "TRANSITION_SELF_LOOP", ValidationSeverity::kWarning))
+        << "Expected TRANSITION_SELF_LOOP warning for self-referencing transition";
+}
+
+TEST(ManifestValidatorV2, TransitionSelfLoop_NoFireOnNormalTransition)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+    ApplicationManifestV3 manifest = BuildValidManifest();
+
+    StageDeclaration game;
+    game.name = StringCRC("Game");
+    manifest.stages.Add(game);
+    manifest.stages[0].transitions.Add(StringCRC("Game")); // Boot → Game, no self-loop
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_FALSE(HasCode(validator.GetResults(), "TRANSITION_SELF_LOOP", ValidationSeverity::kWarning))
+        << "Should not fire TRANSITION_SELF_LOOP for a normal (non-self) transition";
+}
+
+TEST(ManifestValidatorV2, StageUnreachable_FiresForIsolatedStage)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+    ApplicationManifestV3 manifest = BuildValidManifest();
+
+    // Add a stage that nobody transitions to
+    StageDeclaration orphan;
+    orphan.name = StringCRC("OrphanStage");
+    manifest.stages.Add(orphan);
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_FALSE(validator.HasErrors())
+        << "STAGE_UNREACHABLE should be a warning, not an error";
+    EXPECT_TRUE(HasCode(validator.GetResults(), "STAGE_UNREACHABLE", ValidationSeverity::kWarning))
+        << "Expected STAGE_UNREACHABLE warning for stage with no incoming transitions";
+}
+
+TEST(ManifestValidatorV2, StageUnreachable_NoFireForReachableStage)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+    ApplicationManifestV3 manifest = BuildValidManifest();
+
+    StageDeclaration game;
+    game.name = StringCRC("Game");
+    manifest.stages.Add(game);
+
+    // Boot → Game makes Game reachable
+    manifest.stages[0].transitions.Add(StringCRC("Game"));
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_FALSE(HasCode(validator.GetResults(), "STAGE_UNREACHABLE", ValidationSeverity::kWarning))
+        << "Should not flag Game as unreachable when Boot transitions to it";
+}
+
+TEST(ManifestValidatorV2, StageUnreachable_InitialStageNeverFlagged)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+    // Manifest with only Boot (initial) — no outgoing transitions, so Boot would appear
+    // unreachable if the initial-stage exemption wasn't in place
+    ApplicationManifestV3 manifest = BuildValidManifest();
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_FALSE(HasCode(validator.GetResults(), "STAGE_UNREACHABLE", ValidationSeverity::kWarning))
+        << "Initial stage should never be flagged as unreachable";
+}

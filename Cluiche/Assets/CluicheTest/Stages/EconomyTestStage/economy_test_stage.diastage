@@ -1,0 +1,9 @@
+{
+    "name": "EconomyTestStage",
+    "manifest": "Stages/EconomyTestStage/misc/ApplicationFlow/economy_test_stage.diaapp",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

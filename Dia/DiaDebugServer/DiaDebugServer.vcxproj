@@ -9,27 +9,38 @@
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Asan|x64">
+      <Configuration>Debug-Asan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Ubsan|x64">
+      <Configuration>Debug-Ubsan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DebugServerModule.h" />
+    <ClInclude Include="DebugServer.h" />
     <ClInclude Include="DebugServerLogSink.h" />
-    <ClInclude Include="SubscriptionManager.h" />
+    <ClInclude Include="IDebugStateProvider.h" />
+    <ClInclude Include="IStreamTapTarget.h" />
     <ClInclude Include="StateSerializer.h" />
     <ClInclude Include="CommandDispatcher.h" />
+    <ClInclude Include="QueryRegistry.h" />
+    <ClInclude Include="ObservationBridge.h" />
+    <ClInclude Include="IInspectorDataSource.h" />
+    <ClInclude Include="InspectorDataSourceBase.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DebugServerModule.cpp" />
+    <ClCompile Include="DebugServer.cpp" />
     <ClCompile Include="DebugServerLogSink.cpp" />
-    <ClCompile Include="SubscriptionManager.cpp" />
     <ClCompile Include="StateSerializer.cpp" />
     <ClCompile Include="CommandDispatcher.cpp" />
+    <ClCompile Include="QueryRegistry.cpp" />
+    <ClCompile Include="ObservationBridge.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
       <Project>{8D41CBE3-C493-428D-95F3-627E56500667}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\DiaApplication\DiaApplication.vcxproj">
-      <Project>{DD3D58EF-028B-42CB-B837-0042BA30D96F}</Project>
     </ProjectReference>
     <ProjectReference Include="..\DiaWebSocket\DiaWebSocket.vcxproj">
       <Project>{458B1E8F-6660-499F-B265-E40DC3257B81}</Project>
@@ -40,10 +51,14 @@
     <ProjectReference Include="..\DiaDebugProtocol\DiaDebugProtocol.vcxproj">
       <Project>{E9E22143-02A3-4D92-894D-079E8ABD8BCA}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\DiaJson\DiaJson.vcxproj">
+      <Project>{b2c3d4e5-f6a7-8901-bcde-f23456789012}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
     <ProjectReference Include="..\DiaProtobuf\DiaProtobuf.vcxproj">
       <Project>{87758331-BA9E-4055-B3F0-A62671738D42}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\DiaLogger\DiaLogger.vcxproj">
+    <ProjectReference Include="..\DiaObservation\DiaObservation.vcxproj">
       <Project>{7a8b9c0d-e1f2-3456-7890-abcdef012345}</Project>
     </ProjectReference>
   </ItemGroup>
@@ -61,6 +76,15 @@
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Asan|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>ClangCL</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
@@ -68,7 +92,7 @@
   <PropertyGroup>
     <_ProjectFileVersion>11.0.51106.1</_ProjectFileVersion>
   </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64' Or '$(Configuration)|$(Platform)'=='Debug-Asan|x64' Or '$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>./;./../;$(ProjectDir)..\..\External\protobuf\Current-x64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

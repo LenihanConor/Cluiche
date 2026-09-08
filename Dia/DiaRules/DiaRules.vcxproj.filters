@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{B2C3D4E5-F6A7-8901-BCDE-F234567890AB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{C3D4E5F6-A7B8-9012-CDEF-345678901BCD}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.diarules.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="RuleActionRegistry.h" />
+    <ClInclude Include="Testing\RulesTestHelpers.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="RuleActionRegistry.cpp" />
+  </ItemGroup>
+</Project>

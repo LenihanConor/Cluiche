@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{E1F2A3B4-C5D6-7890-1234-567890ABCDEF}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Event.h" />
+    <ClInclude Include="EventStreamReader.h" />
+    <ClInclude Include="EventStreamStore.h" />
+    <ClInclude Include="EventStreamWriter.h" />
+    <ClInclude Include="FrameStreamDiagnostics.h" />
+    <ClInclude Include="FrameStreamStore.h" />
+    <ClInclude Include="IStreamStore.h" />
+    <ClInclude Include="OverflowPolicy.h" />
+    <ClInclude Include="SendResult.h" />
+    <ClInclude Include="ServiceStreamReader.h" />
+    <ClInclude Include="ServiceStreamStore.h" />
+    <ClInclude Include="ServiceStreamWriter.h" />
+    <ClInclude Include="StreamReader.h" />
+    <ClInclude Include="StreamTypeRegistry.h" />
+    <ClInclude Include="StreamWriter.h" />
+    <ClInclude Include="IStreamConnector.h">
+      <Filter>IStreamConnector</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="FrameStreamDiagnostics.cpp" />
+    <ClCompile Include="StreamTypeRegistry.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="dia.streams.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+</Project>

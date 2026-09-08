@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{a1b2c3d4-e5f6-7890-abcd-ef0123456789}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\DiaCore\FilePath\AsyncFileLoader.h" />
+    <ClInclude Include="..\DiaCore\FilePath\FileLoad.h" />
+    <ClInclude Include="..\DiaCore\FilePath\FilePath.h" />
+    <ClInclude Include="..\DiaCore\FilePath\FileWatcher.h" />
+    <ClInclude Include="..\DiaCore\FilePath\IFileLoad.h" />
+    <ClInclude Include="..\DiaCore\FilePath\Path.h" />
+    <ClInclude Include="..\DiaCore\FilePath\PathStore.h" />
+    <ClInclude Include="..\DiaCore\FilePath\PathStoreConfig.h" />
+    <ClInclude Include="..\DiaCore\FilePath\SerializedFileLoad.h" />
+    <ClInclude Include="..\DiaCore\FilePath\StreamReader.h" />
+    <ClInclude Include="..\DiaCore\FilePath\StreamWriter.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\DiaCore\FilePath\FileLoad.cpp" />
+    <ClCompile Include="..\DiaCore\FilePath\FilePath.cpp" />
+    <ClCompile Include="..\DiaCore\FilePath\Path.cpp" />
+    <ClCompile Include="..\DiaCore\FilePath\PathStore.cpp" />
+    <ClCompile Include="..\DiaCore\FilePath\PathStoreConfig.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="dia.fileio.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+</Project>

@@ -10,11 +10,20 @@
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Asan|x64">
+      <Configuration>Debug-Asan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Ubsan|x64">
+      <Configuration>Debug-Ubsan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Frame\DebugFrameData.cpp" />
     <ClCompile Include="Frame\EntityFrameData.cpp" />
     <ClCompile Include="Frame\FrameData.cpp" />
+    <ClCompile Include="Frame\RenderFence.cpp" />
     <ClCompile Include="Frame\SpriteDrawCommand.cpp" />
     <ClCompile Include="Frame\UIFrameData.cpp" />
     <ClCompile Include="Misc\RenderStates.cpp" />
@@ -31,12 +40,14 @@
     <ClInclude Include="Frame\EntityFrameData.h" />
     <ClInclude Include="Frame\EntityFrameDataVisitor.h" />
     <ClInclude Include="Frame\FrameData.h" />
+    <ClInclude Include="Frame\RenderFence.h" />
     <ClInclude Include="Frame\SpriteDrawCommand.h" />
     <ClInclude Include="Frame\UIFrameData.h" />
     <ClInclude Include="Interface\ICanvas.h" />
     <ClInclude Include="Interface\IDrawable.h" />
     <ClInclude Include="Interface\IRenderTarget.h" />
     <ClInclude Include="Interface\IView.h" />
+    <ClInclude Include="Interface\FrameCapture.h" />
     <ClInclude Include="Misc\PrimitiveType.h" />
     <ClInclude Include="Misc\RenderStates.h" />
     <ClInclude Include="Misc\RGBA.h" />
@@ -57,6 +68,15 @@
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Asan|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>ClangCL</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
@@ -64,7 +84,7 @@
   <PropertyGroup>
     <_ProjectFileVersion>11.0.51106.1</_ProjectFileVersion>
   </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64' Or '$(Configuration)|$(Platform)'=='Debug-Asan|x64' Or '$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -102,7 +122,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Testing\MockITexture.h" />
     <ClInclude Include="Testing\MockVisitors.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DiaCamera2D\DiaCamera2D.vcxproj">
+      <Project>{B2C3D4E5-F6A7-8901-BCDE-F12345678902}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaGeometry2D\DiaGeometry2D.vcxproj">
+      <Project>{A3C4D5E6-F7B8-9012-CDEF-012345678901}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

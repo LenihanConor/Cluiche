@@ -1,6 +1,6 @@
 #include "DiaCore/Core/EnumClass.h"
 
-#include "DiaCore/Type/BasicTypeDefines.h"
+#include "DiaCore/Core/BasicTypeDefines.h"
 #include "DiaCore/Memory/Memory.h"
 
 #include <string.h>

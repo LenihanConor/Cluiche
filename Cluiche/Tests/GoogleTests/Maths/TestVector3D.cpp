@@ -503,3 +503,120 @@ TEST(Vector3D, IsValid_ReturnsTrueForFiniteComponents)
 
     EXPECT_TRUE(v.IsValid());
 }
+
+// ==============================================================================
+// Cross Product Tests
+// ==============================================================================
+
+TEST(Vector3DCrossTest, RightHandedXAxisCrossYAxis)
+{
+    Vector3D result = Vector3D::XAxis().Cross(Vector3D::YAxis());
+
+    EXPECT_NEAR(result.x, Vector3D::ZAxis().x, kEpsilon);
+    EXPECT_NEAR(result.y, Vector3D::ZAxis().y, kEpsilon);
+    EXPECT_NEAR(result.z, Vector3D::ZAxis().z, kEpsilon);
+}
+
+TEST(Vector3DCrossTest, RightHandedYAxisCrossZAxis)
+{
+    Vector3D result = Vector3D::YAxis().Cross(Vector3D::ZAxis());
+
+    EXPECT_NEAR(result.x, Vector3D::XAxis().x, kEpsilon);
+    EXPECT_NEAR(result.y, Vector3D::XAxis().y, kEpsilon);
+    EXPECT_NEAR(result.z, Vector3D::XAxis().z, kEpsilon);
+}
+
+TEST(Vector3DCrossTest, RightHandedZAxisCrossXAxis)
+{
+    Vector3D result = Vector3D::ZAxis().Cross(Vector3D::XAxis());
+
+    EXPECT_NEAR(result.x, Vector3D::YAxis().x, kEpsilon);
+    EXPECT_NEAR(result.y, Vector3D::YAxis().y, kEpsilon);
+    EXPECT_NEAR(result.z, Vector3D::YAxis().z, kEpsilon);
+}
+
+TEST(Vector3DCrossTest, AntiCommutativeProperty)
+{
+    Vector3D a(1.0f, 2.0f, 3.0f);
+    Vector3D b(4.0f, 5.0f, 6.0f);
+
+    Vector3D cross_ab = a.Cross(b);
+    Vector3D cross_ba = b.Cross(a);
+
+    EXPECT_NEAR(cross_ab.x, -cross_ba.x, 1e-5f);
+    EXPECT_NEAR(cross_ab.y, -cross_ba.y, 1e-5f);
+    EXPECT_NEAR(cross_ab.z, -cross_ba.z, 1e-5f);
+}
+
+TEST(Vector3DCrossTest, SelfCrossIsZero)
+{
+    Vector3D v(1.0f, 2.0f, 3.0f);
+
+    Vector3D result = v.Cross(v);
+
+    EXPECT_NEAR(result.x, Vector3D::Zero().x, kEpsilon);
+    EXPECT_NEAR(result.y, Vector3D::Zero().y, kEpsilon);
+    EXPECT_NEAR(result.z, Vector3D::Zero().z, kEpsilon);
+}
+
+TEST(Vector3DCrossTest, ParallelCrossIsZero)
+{
+    Vector3D v(1.0f, 2.0f, 3.0f);
+    Vector3D v_scaled = v * 2.0f;
+
+    Vector3D result = v.Cross(v_scaled);
+
+    EXPECT_NEAR(result.x, Vector3D::Zero().x, kEpsilon);
+    EXPECT_NEAR(result.y, Vector3D::Zero().y, kEpsilon);
+    EXPECT_NEAR(result.z, Vector3D::Zero().z, kEpsilon);
+}
+
+TEST(Vector3DCrossTest, ResultIsOrthogonalToFirstVector)
+{
+    Vector3D a(1.0f, 2.0f, 3.0f);
+    Vector3D b(4.0f, 5.0f, 6.0f);
+
+    Vector3D cross = a.Cross(b);
+
+    float dot_product = cross.Dot(a);
+
+    EXPECT_NEAR(dot_product, 0.0f, kEpsilon);
+}
+
+TEST(Vector3DCrossTest, ResultIsOrthogonalToSecondVector)
+{
+    Vector3D a(1.0f, 2.0f, 3.0f);
+    Vector3D b(4.0f, 5.0f, 6.0f);
+
+    Vector3D cross = a.Cross(b);
+
+    float dot_product = cross.Dot(b);
+
+    EXPECT_NEAR(dot_product, 0.0f, kEpsilon);
+}
+
+TEST(Vector3DCrossTest, KnownReferenceValue)
+{
+    Vector3D a(1.0f, 2.0f, 3.0f);
+    Vector3D b(4.0f, 5.0f, 6.0f);
+
+    Vector3D result = a.Cross(b);
+
+    EXPECT_NEAR(result.x, -3.0f, 1e-5f);
+    EXPECT_NEAR(result.y, 6.0f, 1e-5f);
+    EXPECT_NEAR(result.z, -3.0f, 1e-5f);
+}
+
+TEST(Vector3DCrossTest, ConstCorrectness)
+{
+    const Vector3D v1(1.0f, 2.0f, 3.0f);
+    const Vector3D v2(4.0f, 5.0f, 6.0f);
+
+    // This test verifies const correctness by calling Cross on const references
+    // If it compiles, const correctness is satisfied
+    Vector3D result = v1.Cross(v2);
+
+    EXPECT_NEAR(result.x, -3.0f, 1e-5f);
+    EXPECT_NEAR(result.y, 6.0f, 1e-5f);
+    EXPECT_NEAR(result.z, -3.0f, 1e-5f);
+}

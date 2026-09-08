@@ -1,5 +1,6 @@
 """deploy stage: runs ui_builds then copies runtime files per pipeline.toml rules."""
 import glob
+import json
 import shutil
 import subprocess
 from pathlib import Path
@@ -65,7 +66,13 @@ def _copy_files(
                 else:
                     dest_file = dest_dir / src_path.name
                 dest_file.parent.mkdir(parents=True, exist_ok=True)
-                if force or not dest_file.exists() or src_path.stat().st_mtime > dest_file.stat().st_mtime:
+                needs_copy = (
+                    force
+                    or not dest_file.exists()
+                    or src_path.stat().st_mtime > dest_file.stat().st_mtime
+                    or src_path.stat().st_size != dest_file.stat().st_size
+                )
+                if needs_copy:
                     shutil.copy2(src_path, dest_file)
                     logger.info(f"  copied {src_path.name} -> {dest_file}")
                 else:
@@ -81,13 +88,29 @@ def _copy_files(
     return 0
 
 
+def _build_env_with_node() -> dict:
+    """Return a copy of os.environ with node's directory on PATH if needed."""
+    import os
+    import shutil
+    if shutil.which("node"):
+        return None  # already on PATH, use inherited env
+    from dia_cli.utils.node_resolve import node_dir
+    ndir = node_dir()
+    if ndir is None:
+        return None
+    env = os.environ.copy()
+    env["PATH"] = str(ndir) + os.pathsep + env.get("PATH", "")
+    return env
+
+
 def _run_ui_builds(ui_builds, repo_root: Path, output=None, system: str = "pipeline", stage: str = "deploy") -> int:
     if output:
         output.step_started(system=system, stage=stage, step="ui-builds")
+    env = _build_env_with_node()
     for entry in ui_builds:
         cwd = repo_root / entry.cwd
         logger.info(f"deploy: ui_build in {entry.cwd}: {entry.cmd}")
-        result = subprocess.run(entry.cmd, cwd=str(cwd), shell=True)
+        result = subprocess.run(entry.cmd, cwd=str(cwd), shell=True, env=env)
         if result.returncode != 0:
             err = f"ui_build failed (exit {result.returncode}): {entry.cmd}"
             logger.error(f"deploy: {err}")
@@ -119,6 +142,54 @@ def _is_staged(rules, build_config: str, platform: str, out_dir: Optional[Path],
     return True
 
 
+def _derive_diastage_deploy_rules(deploy_files: list[DeployFile], repo_root: Path) -> list[DeployFile]:
+    """Auto-generate DeployFile rules for .diastage files by reading the .diagame imports.
+
+    Finds the .diagame file in the existing deploy rules, reads its imports, and returns
+    a DeployFile for each import with type "stage" that is not already covered by an
+    explicit rule.
+
+    Import paths in .diagame are relative to the .diagame file's directory, e.g.:
+      "Stages/AssetRuntimeTestStage/asset_runtime_stage.diastage"
+    maps to:
+      src  = "Cluiche/Assets/CluicheTest/Stages/AssetRuntimeTestStage/asset_runtime_stage.diastage"
+      dest = "$(OutDir)assets/Stages/AssetRuntimeTestStage/"
+    """
+    diagame_src = None
+    for rule in deploy_files:
+        if rule.src.endswith(".diagame"):
+            diagame_src = rule.src
+            break
+    if diagame_src is None:
+        return []
+
+    diagame_path = repo_root / diagame_src
+    if not diagame_path.exists():
+        return []
+
+    diagame_dir = str(Path(diagame_src).parent)
+
+    try:
+        diagame = json.loads(diagame_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return []
+
+    rules = []
+    for imp in diagame.get("imports", []):
+        if imp.get("type") != "stage":
+            continue
+        path = imp.get("path", "")
+        if not path.endswith(".diastage"):
+            continue
+        src = f"{diagame_dir}/{path}"
+        stage_rel_dir = str(Path(path).parent)
+        dest = f"$(OutDir)assets/{stage_rel_dir}/"
+        if not any(r.src == src for r in deploy_files):
+            rules.append(DeployFile(src=src, dest=dest))
+
+    return rules
+
+
 def run(config: PipelineConfig, target: str, build_config: str, force: bool, repo_root: Path, output=None, system: str = "pipeline") -> int:
     """Called by the pipeline runner (uses path_resolver for $(OutDir))."""
     stage = "deploy"
@@ -131,11 +202,14 @@ def run(config: PipelineConfig, target: str, build_config: str, force: bool, rep
         if rc != 0:
             return rc
 
-    if not force and _is_staged(deploy.files, build_config, platform, None, repo_root, app_name):
+    # Auto-derive .diastage deploy rules from .diagame imports
+    all_files = list(deploy.files) + _derive_diastage_deploy_rules(deploy.files, repo_root)
+
+    if not force and _is_staged(all_files, build_config, platform, None, repo_root, app_name):
         logger.info("deploy: already staged (use --force to re-copy)")
         return 0
 
-    return _copy_files(deploy.files, build_config, platform, None, force, repo_root, app_name, output=output, system=system, stage=stage)
+    return _copy_files(all_files, build_config, platform, None, force, repo_root, app_name, output=output, system=system, stage=stage)
 
 
 def run_deploy(

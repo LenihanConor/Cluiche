@@ -3,7 +3,7 @@
 #include <DiaAssetCatalogue/AssetRegistry.h>
 #include <DiaAssetCatalogue/CatalogueManifestSerializer.h>
 #include <DiaEditor/Command/CommandHistory.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 #include <cstring>
 

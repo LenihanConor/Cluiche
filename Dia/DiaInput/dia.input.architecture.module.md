@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.input
 name: Input
 owner_team: TBD
-layer: platform
+layer: foundation/platform
 status: active
 maturity: production
 
@@ -35,6 +35,16 @@ non_responsibilities:
   - Domain-specific gameplay behavior
   - Rendering or platform integration concerns (unless this module is explicitly an adapter)
   - High-level orchestration (owned by higher-layer modules)
+
+dependent_modules:
+  - dia.core.containers.arrays
+  - dia.core.containers.hashtable
+  - dia.core.core
+  - dia.core.logging
+  - dia.core.events
+  - dia.core.time
+  - dia.core.crc
+  - dia.messagebus
 
 public_api:
   headers:
@@ -91,5 +101,6 @@ dependencies:
     - dia.core.events
     - dia.core.time
     - dia.core.crc
+    - dia.messagebus
   forbidden: []
 ---

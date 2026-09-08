@@ -1,0 +1,31 @@
+#pragma once
+#include <DiaApplicationFlow/MainModule.h>
+#include <DiaApplicationFlow/PUAffinity.h>
+#include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/SimTime/SimTimeContext.h>
+#include <DiaThreading/JobSystem.h>
+#include <DiaObservation/Metric/JobSystemMetricsAdapter.h>
+
+namespace Cluiche { namespace AppFlow {
+
+class JobSystemModule : public Dia::ApplicationFlow::MainModule {
+public:
+    static const Dia::Core::StringCRC kTypeId;
+    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kMain;
+    static constexpr const char* kDescription = "Thread pool for parallel job dispatch";
+    explicit JobSystemModule(const Dia::Core::StringCRC& instanceId);
+
+    Dia::Threading::JobSystem&       GetJobSystem();
+    const Dia::Threading::JobSystem& GetJobSystem() const;
+
+protected:
+    Dia::ApplicationFlow::StartResult DoStart()         override;
+    void                              DoUpdate(const Dia::SimTime::MainTimeContext& ctx) override;
+    Dia::ApplicationFlow::StopResult  DoStop()          override;
+
+private:
+    Dia::Observation::Metric::JobSystemMetricsAdapter mMetricsAdapter;
+    Dia::Threading::JobSystem                         mJobSystem;
+};
+
+} } // namespace Cluiche::AppFlow

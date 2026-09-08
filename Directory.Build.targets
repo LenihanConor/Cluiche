@@ -1,6 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
+  <!-- Force ProgramDatabase for Debug-Asan: /ZI (EditAndContinue) is incompatible with /fsanitize=address -->
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug-Asan'">
+    <ClCompile>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+
+  <!-- Debug-Ubsan: prebuilt MSVC-Debug libs (e.g. DiaProtobuf) have _ITERATOR_DEBUG_LEVEL=2
+       but clang_rt.ubsan_standalone_cxx ships with IDL=0. Use /FORCE:MULTIPLE so lld-link
+       accepts the /FAILIFMISMATCH discrepancy without aborting the link. -->
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug-Ubsan'">
+    <Link>
+      <AdditionalOptions>/FORCE:MULTIPLE %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+
   <!-- ConfigurationType is set by this point; route Application exes to per-app folders -->
   <PropertyGroup Condition="'$(ConfigurationType)'=='Application'">
     <OutDir>$(BinRoot)$(MSBuildProjectName)\$(Configuration)\$(Platform)\</OutDir>
@@ -18,7 +34,7 @@
       Text="DiaEnv: deps.json not found at $(MSBuildThisFileDirectory)deps.json — skipping RestoreExternals. Run `dia env deps` to initialise." />
 
     <Exec
-      Condition="Exists('$(_DepsJson)')"
+      Condition="Exists('$(_DepsJson)') AND !$([System.String]::Copy('$(MSBuildProjectDirectory)').Contains('.diaenv'))"
       Command=".venv\Scripts\python.exe -m dia_cli env deps --quiet"
       ConsoleToMSBuild="true"
       WorkingDirectory="$(_DiaCLIDir)"

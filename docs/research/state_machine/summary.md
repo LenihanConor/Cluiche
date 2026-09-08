@@ -9,7 +9,7 @@ Build `DiaStateMachine` as a dual-implementation library — lightweight flat FS
 
 ## Journey
 
-1. **Explored:** Surveyed the existing DiaApplication phase/module system (sophisticated but lifecycle-coupled, not reusable for gameplay/AI/animation), mapped 10 design axes (topology, triggering, guards, history, concurrency, etc.), and identified 14 Dia modules that provide integration foundations (Events, Graph containers, StringCRC, Logger, Editor plugins, WebUIBridge).
+1. **Explored:** Surveyed the existing DiaApplicationFlow phase/module system (sophisticated but lifecycle-coupled, not reusable for gameplay/AI/animation), mapped 10 design axes (topology, triggering, guards, history, concurrency, etc.), and identified 14 Dia modules that provide integration foundations (Events, Graph containers, StringCRC, Logger, Editor plugins, WebUIBridge).
 2. **Ideated:** 10 candidates generated spanning S to XL scope — from core library variants to entity integration, logging, visual debugging, design-time editing, phase system refactor, and animation specialization.
 3. **Evaluated:** Most candidates were a delivery stack, not competing alternatives. The real decision was core topology: flat-only vs HSM-only vs dual. Dual scored 4.30 (highest) on weighted criteria — best engine value, game value, and Cluiche fit.
 4. **Chose:** Dual implementation confirmed. Editor tooling scoped as a separate spec. Phase system refactor deferred.
@@ -23,7 +23,7 @@ Build `DiaStateMachine` as a dual-implementation library — lightweight flat FS
 
 ## Key Insights from Exploration
 
-- DiaApplication's Phase system is a bespoke state machine — powerful but not reusable. The generic FSM should integrate with it (operate within phases/modules), not replace it.
+- DiaApplicationFlow's Phase system is a bespoke state machine — powerful but not reusable. The generic FSM should integrate with it (operate within phases/modules), not replace it.
 - DiaCore already has `Graph<N,E>` containers that could represent transition topologies, and an `Event` system that naturally triggers state transitions.
 - StringCRC (PD-001) is the natural state/transition identity mechanism — consistent with the rest of the engine.
 - The shared `IStateMachineInspectable` interface is the critical design decision — it's what makes logging, editor tooling, and visual debugging work across both flat and hierarchical types.

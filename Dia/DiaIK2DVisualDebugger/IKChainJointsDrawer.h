@@ -8,58 +8,43 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/IVisualDebugger.h>
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
 
-namespace Dia
+namespace Dia::Core  { class IDebugContext; }
+namespace Dia::IK2D  { class IKSolver; }
+namespace Dia::Rig2D { class Skeleton; }
+
+namespace Dia::IK2D
 {
-    namespace Debug
-    {
-        class DebugLayerManager;
-    }
 
-    namespace IK2D
-    {
-        class IKSolver;
-    }
-
-    namespace Rig2D
-    {
-        class Skeleton;
-    }
-}
-
-namespace Dia
+////////////////////////////////////////////////////////////////////////////////
+// IKChainJointsDrawer
+//
+// For each bone in each IK chain, draws a circle sized by visual role:
+//   End bone   (i == endIdx):   radius 3.5f * scale, colour kHealthy (green)
+//   Start bone (i == startIdx): radius 3.0f * scale, colour kGoal    (cyan)
+//   Mid-chain:                  radius 2.5f * scale, colour kGoal    (cyan)
+// Layer:    LayerNames::kIKJoints
+// Priority: 10
+////////////////////////////////////////////////////////////////////////////////
+class IKChainJointsDrawer : public Dia::Debug::IVisualDebugger
 {
-    namespace IK2D
-    {
-        ////////////////////////////////////////////////////////////////////////////////
-        // IKChainJointsDrawer
-        //
-        // For each bone in each IK chain, draws a circle sized by visual role:
-        //   End bone   (i == endIdx):   radius 3.5f * scale, colour kHealthy (green)
-        //   Start bone (i == startIdx): radius 3.0f * scale, colour kGoal    (cyan)
-        //   Mid-chain:                  radius 2.5f * scale, colour kGoal    (cyan)
-        // Layer:    LayerNames::kIKJoints
-        // Priority: 10
-        ////////////////////////////////////////////////////////////////////////////////
-        class IKChainJointsDrawer : public Dia::Debug::IVisualDebugger
-        {
-        public:
-            IKChainJointsDrawer(
-                const IKSolver&                      solver,
-                const Dia::Rig2D::Skeleton&          skeleton,
-                const Dia::Debug::DebugLayerManager& manager);
+public:
+    IKChainJointsDrawer(
+        const IKSolver&                      solver,
+        const Dia::Rig2D::Skeleton&          skeleton,
+        const Dia::Core::IDebugContext& manager);
 
-            Dia::Core::StringCRC GetLayerName() const override;
-            void Draw(Dia::Graphics::FrameData& frameData) override;
+    Dia::Core::StringCRC GetLayerName() const override;
+    void Draw(Dia::Core::IDebugDraw& draw) override;
 
-        private:
-            const IKSolver&                      mSolver;
-            const Dia::Rig2D::Skeleton&          mSkeleton;
-            const Dia::Debug::DebugLayerManager& mManager;
-        };
+private:
+    float mRadiusMultiplier = 1.0f;
+    const IKSolver&                      mSolver;
+    [[maybe_unused]] const Dia::Rig2D::Skeleton&          mSkeleton;
+    const Dia::Core::IDebugContext& mManager;
+};
 
-    } // namespace IK2D
-} // namespace Dia
+} // namespace Dia::IK2D
 
 #endif // DIA_DEBUG

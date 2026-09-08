@@ -1,0 +1,26 @@
+{
+    "objectives": [
+        {
+            "id": "survive_wave1",
+            "classification": "primary",
+            "completion": { "op": "==", "slot": "global", "field": "wave1_cleared", "value": 1.0 }
+        },
+        {
+            "id": "survive_wave2",
+            "classification": "primary",
+            "prerequisites": ["survive_wave1"],
+            "completion": { "op": "==", "slot": "global", "field": "wave2_cleared", "value": 1.0 }
+        },
+        {
+            "id": "survive_wave3",
+            "classification": "primary",
+            "prerequisites": ["survive_wave2"],
+            "completion": { "op": "==", "slot": "global", "field": "wave3_cleared", "value": 1.0 }
+        },
+        {
+            "id": "collect_powerup",
+            "classification": "optional",
+            "completion": { "op": "==", "slot": "global", "field": "powerup_collected", "value": 1.0 }
+        }
+    ]
+}

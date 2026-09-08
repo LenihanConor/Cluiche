@@ -4,7 +4,6 @@
 #include "DiaGeometry2D/Shapes/Capsule.h"
 #include "DiaGeometry2D/Shapes/Line.h"
 #include "DiaGeometry2D/Shapes/AARect.h"
-#include "DiaGeometry2D/Shapes/Arc.h"
 #include "DiaGeometry2D/Shapes/OORect.h"
 #include "DiaGeometry2D/Shapes/Triangle.h"
 #include "DiaMaths/Core/CoreMaths.h"
@@ -49,12 +48,6 @@ namespace Dia
 		}
 
 		//----------------------------------------------------------------------------------------------------
-		Circle Circle::CreateFrom(const Arc& arc)
-		{
-			return Circle(arc.GetRadius(), arc.GetFocal());
-		}
-
-		//----------------------------------------------------------------------------------------------------
 		Circle Circle::CreateFrom(const Line& line)
 		{
 			return Circle(line.Length() / 2.0f, line.CalculateCenter());
@@ -96,17 +89,6 @@ namespace Dia
 		{
 			ReContructToInclude(rect.GetBottomLeft());
 			ReContructToInclude(rect.GetTopRight());
-		}
-
-		//----------------------------------------------------------------------------------------------------
-		void Circle::ReContructToInclude(const Arc& arc)
-		{
-			Dia::Maths::Vector2D extent1 = arc.CalculateExtentPositionClockwise();
-			Dia::Maths::Vector2D extent2 = arc.CalculateExtentPositionCounterClockwise();
-
-			ReContructToInclude(arc.GetFocal());
-			ReContructToInclude(extent1);
-			ReContructToInclude(extent2);
 		}
 
 		//----------------------------------------------------------------------------------------------------
@@ -175,17 +157,6 @@ namespace Dia
 		{
 			ExpandToInclude(rect.GetBottomLeft());
 			ExpandToInclude(rect.GetTopRight());
-		}
-
-		//----------------------------------------------------------------------------------------------------
-		void Circle::ExpandToInclude(const Arc& arc)
-		{
-			Dia::Maths::Vector2D extent1 = arc.CalculateExtentPositionClockwise();
-			Dia::Maths::Vector2D extent2 = arc.CalculateExtentPositionCounterClockwise();
-
-			ExpandToInclude(arc.GetFocal());
-			ExpandToInclude(extent1);
-			ExpandToInclude(extent2);
 		}
 
 		//----------------------------------------------------------------------------------------------------
@@ -274,16 +245,6 @@ namespace Dia
 		}
 
 		//----------------------------------------------------------------------------------------------------
-		void Circle::ClosestPointOnCircleTo(const Arc& arc, Dia::Maths::Vector2D& result)const
-		{
-			Dia::Maths::Vector2D closestPtOnArc;
-
-			arc.ClosestPointOnArcTo(*this, closestPtOnArc);
-
-			ClosestPointOnCircleTo(closestPtOnArc, result);
-		}
-
-		//----------------------------------------------------------------------------------------------------
 		void Circle::ClosestPointOnCircleTo(const Circle& circle, Dia::Maths::Vector2D& result)const
 		{
 			result = mCenter + ((circle.GetCenter() - mCenter).AsNormal() * mRadius);
@@ -362,12 +323,6 @@ namespace Dia
 		IntersectionClassify Circle::IsIntersecting(const AARect& rect)const
 		{
 			return IntersectionTests::IsIntersecting(rect, *this);
-		}
-
-		//----------------------------------------------------------------------------------------------------
-		IntersectionClassify Circle::IsIntersecting(const Arc& arc)const
-		{
-			return IntersectionTests::IsIntersecting(arc, *this);
 		}
 
 		//----------------------------------------------------------------------------------------------------

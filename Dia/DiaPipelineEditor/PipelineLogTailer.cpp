@@ -1,6 +1,6 @@
 #include "DiaPipelineEditor/PipelineLogTailer.h"
 #include "DiaPipelineEditor/Internal/NdjsonLineParser.h"
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -46,6 +46,18 @@ namespace Dia
 		{
 			strncpy_s(mLogPath, sizeof(mLogPath), logPath, _TRUNCATE);
 			ResetRunState();
+
+			// Seek to end of any existing log file so we don't replay past runs on startup.
+			HANDLE hFile = CreateFileA(mLogPath, GENERIC_READ,
+				FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+				NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+			if (hFile != INVALID_HANDLE_VALUE)
+			{
+				LARGE_INTEGER liSize;
+				if (GetFileSizeEx(hFile, &liSize))
+					mLastReadPos = liSize.QuadPart;
+				CloseHandle(hFile);
+			}
 		}
 
 		void PipelineLogTailer::Shutdown()

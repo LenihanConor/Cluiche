@@ -1,0 +1,534 @@
+#pragma once
+
+#include <DiaScalarField/CFieldTopology.h>
+#include <DiaScalarField/CellIndex.h>
+#include <DiaScalarField/HexFieldTopology.h>
+#include <DiaScalarField/ScalarFieldLogChannel.h>
+#include <DiaScalarField/SquareFieldTopology.h>
+#include <DiaScalarField/UniformDecayPolicy.h>
+#include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Metric/Counter.h>
+#include <DiaObservation/Metric/Gauge.h>
+#include <DiaMaths/Vector/Vector2D.h>
+#include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+
+#include <vector>
+#include <unordered_map>
+#include <utility>
+#include <algorithm>
+#include <cfloat>
+#include <cmath>
+
+namespace Dia
+{
+    namespace ScalarField
+    {
+
+        // --------------------------------------------------------------------
+        // Internal hasher for CellIndex — used only within DiaScalarField.
+        // --------------------------------------------------------------------
+        struct CellIndexHash
+        {
+            std::size_t operator()(const CellIndex& c) const noexcept
+            {
+                // Pack x into the high bits, y into the low bits.
+                // Assumes coordinates fit in 16 bits, which is ample for any
+                // practical field size.
+                return static_cast<std::size_t>(
+                    (static_cast<unsigned>(c.x) << 16u) |
+                    (static_cast<unsigned>(c.y) & 0xFFFFu));
+            }
+        };
+
+        // --------------------------------------------------------------------
+        // FalloffCurve — controls how WriteRadial attenuates with distance.
+        // --------------------------------------------------------------------
+        enum class FalloffCurve
+        {
+            kLinear,     // value = peakValue * (1 - dist/radius)
+            kQuadratic,  // value = peakValue * (1 - (dist/radius)^2)
+            kInverse     // value = peakValue / (1 + dist)  [dist in cell units]
+        };
+
+        // --------------------------------------------------------------------
+        // DiaScalarField<Topology, Policy>
+        //
+        // Double-buffered, topology-agnostic float field.
+        //
+        // Template parameters
+        //   Topology — must satisfy CFieldTopology (GetCellCount + ForEachNeighbour)
+        //   Policy   — must provide ComputeCell(int cell, float current,
+        //                                        float staticModifier,
+        //                                        float neighbourSum) -> float
+        //
+        // Tick() lifecycle:
+        //   1. Flush pending writes into the write buffer.
+        //   2. Propagate: for each cell, accumulate neighbour contributions via
+        //      Policy::ComputeCell, skip blocked cells (write 0).
+        //   3. Swap buffers (write buffer becomes the new read buffer).
+        //   4. Clamp each cell to [mMinClamp, mMaxClamp].
+        // --------------------------------------------------------------------
+        template<CFieldTopology Topology, typename Policy = UniformDecayPolicy>
+        class DiaScalarField
+        {
+        public:
+            // -----------------------------------------------------------------
+            // Construction
+            // -----------------------------------------------------------------
+
+            // Constructs a field over the given topology.
+            // Buffers are zero-initialised; static modifiers are 1.0f; nothing
+            // is blocked; clamp range defaults to [0, 1].
+            explicit DiaScalarField(Topology topology, Policy policy = {})
+                : mTopology(std::move(topology))
+                , mPolicy(std::move(policy))
+                , mMinClamp(0.0f)
+                , mMaxClamp(1.0f)
+            {
+                const int count = mTopology.GetCellCount();
+
+                // Pre-compute the ordered cell list and inverse lookup.
+                BuildCellIndex(count);
+
+                // Allocate buffers.
+                mBufferA.assign(count, 0.0f);
+                mBufferB.assign(count, 0.0f);
+                mBlocked.assign(count, false);
+                mStaticModifier.assign(count, 1.0f);
+
+                DIA_LOG_INFO(kLogChannel, "DiaScalarField constructed: %d cells", count);
+            }
+
+            // -----------------------------------------------------------------
+            // Setters / getters
+            // -----------------------------------------------------------------
+
+            void SetBlocked(CellIndex cell, bool blocked)
+            {
+                mBlocked[CellToIndex(cell)] = blocked;
+            }
+
+            bool IsBlocked(CellIndex cell) const
+            {
+                return mBlocked[CellToIndex(cell)];
+            }
+
+            // Set the pre-baked per-cell multiplier (clamped to [0, 1] by convention).
+            void SetStaticModifier(CellIndex cell, float modifier)
+            {
+                mStaticModifier[CellToIndex(cell)] = modifier;
+            }
+
+            void SetClampRange(float minValue, float maxValue)
+            {
+                mMinClamp = minValue;
+                mMaxClamp = maxValue;
+            }
+
+            // -----------------------------------------------------------------
+            // Write API (pending write queue — shapes added in Task 4)
+            // -----------------------------------------------------------------
+
+            // Queue a direct value write to a cell.  Applied at the start of the
+            // next Tick() before propagation.
+            void QueueWrite(CellIndex cell, float value)
+            {
+                mPendingWrites.emplace_back(CellToIndex(cell), value);
+            }
+
+            // Write a single cell immediately into the pending write queue.
+            void WritePoint(CellIndex cell, float value)
+            {
+                QueueWrite(cell, value);
+            }
+
+            // Write a radial gradient centred on `center` with the given `radius`
+            // (in cell units).  Each cell within the radius receives a
+            // falloff-attenuated write derived from `peakValue`.
+            void WriteRadial(CellIndex center, float radius, float peakValue, FalloffCurve curve)
+            {
+                // Guard: radius <= 0 means only the centre cell gets peak value.
+                // Avoids division-by-zero in the attenuation formulas below.
+                if (radius <= 0.0f)
+                {
+                    mPendingWrites.emplace_back(CellToIndex(center), peakValue);
+                    return;
+                }
+
+                const int count = static_cast<int>(mCells.size());
+                for (int i = 0; i < count; ++i)
+                {
+                    const CellIndex& cell = mCells[i];
+                    const float dx = static_cast<float>(cell.x - center.x);
+                    const float dy = static_cast<float>(cell.y - center.y);
+                    const float dist = std::sqrt(dx * dx + dy * dy);
+
+                    if (dist > radius)
+                        continue;
+
+                    float attenuation = 0.0f;
+                    switch (curve)
+                    {
+                        case FalloffCurve::kLinear:
+                            attenuation = 1.0f - (dist / radius);
+                            break;
+                        case FalloffCurve::kQuadratic:
+                        {
+                            const float t = dist / radius;
+                            attenuation = 1.0f - (t * t);
+                            break;
+                        }
+                        case FalloffCurve::kInverse:
+                            attenuation = 1.0f / (1.0f + dist);
+                            break;
+                    }
+
+                    mPendingWrites.emplace_back(i, peakValue * attenuation);
+                }
+            }
+
+            // Write a constant value to all cells whose x/y coordinates fall
+            // within the axis-aligned box [topLeft, topLeft + (width, height)).
+            void WriteBox(CellIndex topLeft, int width, int height, float value)
+            {
+                const int count = static_cast<int>(mCells.size());
+                for (int i = 0; i < count; ++i)
+                {
+                    const CellIndex& cell = mCells[i];
+                    if (cell.x >= topLeft.x && cell.x < topLeft.x + width &&
+                        cell.y >= topLeft.y && cell.y < topLeft.y + height)
+                    {
+                        mPendingWrites.emplace_back(i, value);
+                    }
+                }
+            }
+
+            // -----------------------------------------------------------------
+            // Tick
+            // -----------------------------------------------------------------
+
+            void Tick()
+            {
+                DIA_TRACE_ZONE  ("scalarfield.tick", ::Dia::Observation::Trace::Category::kNone);
+                DIA_PROFILE_SCOPE("scalarfield.tick", ::Dia::Observation::Profile::Category::kNone);
+
+                // Capture flush count before clearing — used for the debug log below.
+                const int flushCount = static_cast<int>(mPendingWrites.size());
+
+                // 1. Flush pending writes into the read buffer so propagation
+                //    sees them this tick.
+                for (const auto& [idx, value] : mPendingWrites)
+                {
+                    mBufferA[idx] = value;
+                }
+                mPendingWrites.clear();
+
+                // 2. Propagation pass.
+                const int count = static_cast<int>(mCells.size());
+                for (int c = 0; c < count; ++c)
+                {
+                    if (mBlocked[c])
+                    {
+                        mBufferB[c] = 0.0f;
+                        continue;
+                    }
+
+                    float neighbourSum = 0.0f;
+                    mTopology.ForEachNeighbour(mCells[c], [&](CellIndex nb)
+                    {
+                        const int nbIdx = CellToIndex(nb);
+                        neighbourSum += mBufferA[nbIdx];
+                    });
+
+                    float newValue = mPolicy.ComputeCell(c,
+                                                         mBufferA[c],
+                                                         mStaticModifier[c],
+                                                         neighbourSum);
+
+                    // Clamp to [mMinClamp, mMaxClamp].
+                    newValue = Clamp(newValue, mMinClamp, mMaxClamp);
+
+                    mBufferB[c] = newValue;
+                }
+
+                // 3. Swap buffers so B (just written) becomes the new read buffer.
+                mBufferA.swap(mBufferB);
+
+                DIA_LOG_DEBUG(kLogChannel, "scalarfield.tick: cells=%d writes_flushed=%d",
+                    static_cast<int>(mCells.size()),
+                    flushCount);
+
+                if (mTickCounter)  mTickCounter->Inc();
+                if (mCellsGauge)   mCellsGauge->Set(static_cast<double>(mCells.size()));
+            }
+
+            // -----------------------------------------------------------------
+            // Metrics registration
+            // -----------------------------------------------------------------
+
+            // Register per-instance metrics with the global MetricRegistry.
+            // Call from your Module's DoStart().  Safe to call multiple times (idempotent).
+            // Provide distinct StringCRC names per instance so multiple field
+            // instances don't collide (e.g. StringCRC("influence.danger.ticks")).
+            void RegisterMetrics(Dia::Core::StringCRC tickCounterName,
+                                  Dia::Core::StringCRC cellsGaugeName)
+            {
+                auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
+                mTickCounter = reg.RegisterCounter(tickCounterName);
+                mCellsGauge  = reg.RegisterGauge(cellsGaugeName);
+            }
+
+            // -----------------------------------------------------------------
+            // Query
+            // -----------------------------------------------------------------
+
+            // Return the current (post-last-Tick) value for a cell.
+            float GetValue(CellIndex cell) const
+            {
+                return mBufferA[CellToIndex(cell)];
+            }
+
+            int GetCellCount() const
+            {
+                return mTopology.GetCellCount();
+            }
+
+            const Topology& GetTopology() const
+            {
+                return mTopology;
+            }
+
+            // Return the normalized direction of steepest ascent at `cell`.
+            // Uses central-difference over the 4 (square) or 6 (hex) neighbours.
+            // Returns zero vector if all neighbours are equal, cell is at a
+            // boundary with no neighbours, or magnitude < 1e-6f.
+            // Missing neighbours (boundary) are treated as value 0.
+            Dia::Maths::Vector2D GetGradient(CellIndex cell) const
+            {
+                float posX = 0.0f, negX = 0.0f;
+                float posY = 0.0f, negY = 0.0f;
+                int   cntX = 0,    cntY = 0;
+
+                mTopology.ForEachNeighbour(cell, [&](CellIndex nb)
+                {
+                    const float nbVal = mBufferA[CellToIndex(nb)];
+                    if (nb.x > cell.x)      { posX += nbVal; ++cntX; }
+                    else if (nb.x < cell.x) { negX += nbVal; ++cntX; }
+
+                    if (nb.y > cell.y)      { posY += nbVal; ++cntY; }
+                    else if (nb.y < cell.y) { negY += nbVal; ++cntY; }
+                });
+
+                const float dx = (posX - negX) / (cntX > 0 ? static_cast<float>(cntX) : 1.0f);
+                const float dy = (posY - negY) / (cntY > 0 ? static_cast<float>(cntY) : 1.0f);
+
+                const float mag = std::sqrt(dx * dx + dy * dy);
+                if (mag < 1e-6f)
+                    return Dia::Maths::Vector2D(0.0f, 0.0f);
+
+                return Dia::Maths::Vector2D(dx / mag, dy / mag);
+            }
+
+            // Append to `outCells` every cell in the region that is a strict
+            // local maximum (value > every neighbour's value).
+            void FindLocalMaxima(CellIndex regionTopLeft, int width, int height,
+                                 Dia::Core::Containers::DynamicArrayC<CellIndex, 1024>& outCells) const
+            {
+                const int count = static_cast<int>(mCells.size());
+                for (int i = 0; i < count; ++i)
+                {
+                    const CellIndex& c = mCells[i];
+                    if (c.x < regionTopLeft.x || c.x >= regionTopLeft.x + width)  continue;
+                    if (c.y < regionTopLeft.y || c.y >= regionTopLeft.y + height)  continue;
+
+                    const float val = mBufferA[i];
+                    bool isMax = true;
+                    mTopology.ForEachNeighbour(c, [&](CellIndex nb)
+                    {
+                        if (!isMax) return;
+                        if (mBufferA[CellToIndex(nb)] >= val)
+                            isMax = false;
+                    });
+
+                    if (isMax)
+                        outCells.Add(c);
+                }
+            }
+
+            // Append to `outCells` every cell in the region whose value > `threshold`.
+            void FindCellsAboveThreshold(float threshold,
+                                         CellIndex regionTopLeft, int width, int height,
+                                         Dia::Core::Containers::DynamicArrayC<CellIndex, 1024>& outCells) const
+            {
+                const int count = static_cast<int>(mCells.size());
+                for (int i = 0; i < count; ++i)
+                {
+                    const CellIndex& c = mCells[i];
+                    if (c.x < regionTopLeft.x || c.x >= regionTopLeft.x + width)  continue;
+                    if (c.y < regionTopLeft.y || c.y >= regionTopLeft.y + height)  continue;
+
+                    if (mBufferA[i] > threshold)
+                        outCells.Add(c);
+                }
+            }
+
+            // -----------------------------------------------------------------
+            // Multi-field combination
+            // -----------------------------------------------------------------
+
+            // A single weighted input to Combine().
+            // A negative weight subtracts the field's contribution.
+            struct WeightedField
+            {
+                const DiaScalarField* field;
+                float                 weight;
+            };
+
+            // Write a weighted sum of multiple fields directly into `result.mBufferA`
+            // (the read buffer).  This is a direct write — not queued through Tick().
+            //
+            // For each cell index c in [0, result.GetCellCount()):
+            //   combined = sum(inputs[i].field->GetValue(result.mCells[c]) * inputs[i].weight)
+            //   result.mBufferA[c] = Clamp(combined, result.mMinClamp, result.mMaxClamp)
+            //
+            // `Combine` is static so it can access the private state of `result`.
+            static void Combine(DiaScalarField& result,
+                                 Dia::Core::Containers::DynamicArrayC<WeightedField, 32> inputs)
+            {
+                const int count = result.GetCellCount();
+                for (int c = 0; c < count; ++c)
+                {
+                    const CellIndex& cell = result.mCells[c];
+                    float combined = 0.0f;
+                    for (unsigned int i = 0; i < inputs.Size(); ++i)
+                    {
+                        combined += inputs[i].field->GetValue(cell) * inputs[i].weight;
+                    }
+                    result.mBufferA[c] = Clamp(combined, result.mMinClamp, result.mMaxClamp);
+                }
+            }
+
+        private:
+            // -----------------------------------------------------------------
+            // Index helpers
+            // -----------------------------------------------------------------
+
+            // Build mCells (ordered list) and mCellToIndex (inverse map).
+            // We enumerate cells by calling ForEachNeighbour on a sentinel cell
+            // that we know lies in-bounds to get one cell, then flood-fill the
+            // rest.  For square grids this would be overkill, but keeping it
+            // generic avoids specialisation.
+            //
+            // Simpler approach: iterate the concept-required GetCellCount() cells
+            // by brute-forcing CellIndex{x, y} for y in [0, count), x in [0, count)
+            // and checking validity via ForEachNeighbour... but that requires a
+            // ForEachCell which is not in the concept.
+            //
+            // Instead we rely on the topology providing a linear ordering that can
+            // be reconstructed from a BFS from index 0.  For SquareFieldTopology
+            // we can derive the first cell directly; for HexFieldTopology we use
+            // the known axial origin (0,0).
+            //
+            // Actually: simplest correct approach — let the topology enumerate its
+            // own cells indirectly.  We use a BFS from a seed cell:
+            //   - Square: seed = {0, 0}
+            //   - Hex:    seed = {0, 0} (axial centre, always in-bounds)
+            // BFS visits every connected cell exactly once.  This gives a stable,
+            // deterministic ordering as long as the topology is connected, which
+            // both supplied topologies guarantee.
+            void BuildCellIndex(int expectedCount)
+            {
+                mCells.reserve(expectedCount);
+                mCellToIndex.reserve(expectedCount);
+
+                // BFS from origin {0, 0}.
+                std::vector<CellIndex> frontier;
+                frontier.push_back(CellIndex{0, 0});
+                mCellToIndex[CellIndex{0, 0}] = 0;
+                mCells.push_back(CellIndex{0, 0});
+
+                std::size_t head = 0;
+                while (head < mCells.size())
+                {
+                    const CellIndex current = mCells[head++];
+                    mTopology.ForEachNeighbour(current, [&](CellIndex nb)
+                    {
+                        if (mCellToIndex.find(nb) == mCellToIndex.end())
+                        {
+                            const int idx = static_cast<int>(mCells.size());
+                            mCellToIndex[nb] = idx;
+                            mCells.push_back(nb);
+                        }
+                    });
+                }
+
+                // Safety: if BFS did not reach all cells (disconnected topology),
+                // the buffers would be incorrectly sized.  Assert in debug.
+                // (Both supplied topologies are fully connected so this won't fire.)
+            }
+
+            int CellToIndex(CellIndex cell) const
+            {
+                const auto it = mCellToIndex.find(cell);
+                return it->second;
+            }
+
+            CellIndex IndexToCell(int idx) const
+            {
+                return mCells[idx];
+            }
+
+            static float Clamp(float v, float lo, float hi)
+            {
+                return v < lo ? lo : (v > hi ? hi : v);
+            }
+
+            // -----------------------------------------------------------------
+            // State
+            // -----------------------------------------------------------------
+
+            Topology mTopology;
+            Policy   mPolicy;
+
+            // Cell ordering: mCells[i] is the CellIndex for linear index i.
+            std::vector<CellIndex> mCells;
+
+            // Inverse mapping: CellIndex -> linear index.
+            std::unordered_map<CellIndex, int, CellIndexHash> mCellToIndex;
+
+            // Double buffers.  mBufferA is the current read buffer;
+            // mBufferB is the write-in-progress buffer.  They are swapped
+            // at the end of Tick().
+            std::vector<float> mBufferA;
+            std::vector<float> mBufferB;
+
+            // Per-cell blocked flags.
+            std::vector<bool> mBlocked;
+
+            // Pre-baked per-cell multipliers (default 1.0f).
+            std::vector<float> mStaticModifier;
+
+            // Clamp range applied after propagation (default [0, 1]).
+            float mMinClamp;
+            float mMaxClamp;
+
+            // Pending write queue.  Flushed at the start of Tick() before
+            // propagation.  Write-shape API (Task 4) will push entries here.
+            std::vector<std::pair<int, float>> mPendingWrites;
+
+            // Optional metric handles.  Null until RegisterMetrics() is called.
+            Dia::Observation::Metric::Counter* mTickCounter = nullptr;
+            Dia::Observation::Metric::Gauge*   mCellsGauge  = nullptr;
+        };
+
+        // --------------------------------------------------------------------
+        // Convenience type aliases
+        // --------------------------------------------------------------------
+        using SquareScalarField = DiaScalarField<SquareFieldTopology, UniformDecayPolicy>;
+        using HexScalarField    = DiaScalarField<HexFieldTopology,    UniformDecayPolicy>;
+
+    } // namespace ScalarField
+} // namespace Dia

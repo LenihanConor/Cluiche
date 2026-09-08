@@ -1,7 +1,7 @@
 """Unit tests for plugin discovery feature."""
 import pytest
 from click.testing import CliRunner
-from dia_cli.cli_main import cli
+from dia_cli.cli_main import cli, _remove_cli_cmd_prefix
 
 
 def test_plugin_discovery_finds_commands():
@@ -9,12 +9,11 @@ def test_plugin_discovery_finds_commands():
     runner = CliRunner()
     result = runner.invoke(cli, ['--help'])
     assert result.exit_code == 0
-    # Should find at least: command, setup, show, test, prefixtest
+    # Should find at least: command, env, show, test
     assert 'command' in result.output
-    assert 'setup' in result.output
+    assert 'env' in result.output
     assert 'show' in result.output
     assert 'test' in result.output
-    assert 'prefixtest' in result.output
 
 
 def test_filename_becomes_command_name():
@@ -25,15 +24,19 @@ def test_filename_becomes_command_name():
     assert 'Run Dia test suites' in result.output
 
 
-def test_cli_prefix_stripped():
-    """AC3: Files prefixed with cli_ have prefix stripped"""
+def test_cli_prefix_stripping_function():
+    """AC3: _remove_cli_cmd_prefix strips the cli_ prefix from file stems"""
+    assert _remove_cli_cmd_prefix("cli_foo") == "foo"
+    assert _remove_cli_cmd_prefix("bar") == "bar"
+
+
+def test_no_cli_prefix_commands_in_help():
+    """AC3: No command name starting with cli_ or cli- appears in --help output"""
     runner = CliRunner()
     result = runner.invoke(cli, ['--help'])
     assert result.exit_code == 0
-    # Should appear as 'prefixtest' not 'cli-prefixtest'
-    assert 'prefixtest' in result.output
-    assert 'cli-prefixtest' not in result.output
-    assert 'cli_prefixtest' not in result.output
+    assert 'cli_' not in result.output
+    assert 'cli-' not in result.output
 
 
 def test_lazy_loading():
@@ -47,14 +50,6 @@ def test_lazy_loading():
     # If eager loading, any command with errors would fail --help
 
 
-def test_command_execution():
-    """AC4: Commands execute when invoked"""
-    runner = CliRunner()
-    result = runner.invoke(cli, ['prefixtest'])
-    assert result.exit_code == 0
-    assert 'cli_ prefix was stripped correctly!' in result.output
-
-
 def test_help_lists_all_commands():
     """AC8: dia --help lists all discovered commands with descriptions"""
     runner = CliRunner()
@@ -63,4 +58,3 @@ def test_help_lists_all_commands():
     assert 'Commands:' in result.output
     # Verify descriptions appear
     assert 'Run Dia test suites' in result.output
-    assert 'Prefix test' in result.output

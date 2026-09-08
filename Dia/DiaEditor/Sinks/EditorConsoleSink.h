@@ -1,6 +1,6 @@
 #pragma once
 
-#include <DiaLogger/ISink.h>
+#include <DiaObservation/Log/ISink.h>
 #include <DiaCore/Strings/String32.h>
 #include <DiaCore/Strings/String1024.h>
 
@@ -10,14 +10,14 @@ namespace Dia
 	{
 		class WebUIBridge;
 
-		class EditorConsoleSink : public Dia::Logger::ISink
+		class EditorConsoleSink : public Dia::Observation::Log::ISink
 		{
 		public:
 			EditorConsoleSink();
 
 			void SetBridge(WebUIBridge* bridge);
 
-			void OnLogEntry(const Dia::Logger::LogEntry& entry) override;
+			void OnLogEntry(const Dia::Observation::Log::LogEntry& entry) override;
 			const char* GetName() const override { return "EditorConsole"; }
 
 			void NotifyConsoleReady();

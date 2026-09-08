@@ -1,0 +1,38 @@
+{
+    "id": { "value": "flap_down_clip" },
+    "duration": 2.0,
+    "tracks": [
+        {
+            "boneId": { "value": "Wing_L" },
+            "rotationOnly": false,
+            "keyframes": [
+                { "time": 0.0, "rotation": -0.3, "position": { "x": -1.0, "y":  0.8 }, "scale": { "x": 1.0, "y": 1.0 } },
+                { "time": 2.0, "rotation":  0.3, "position": { "x": -1.0, "y": -0.6 }, "scale": { "x": 1.0, "y": 1.0 } }
+            ]
+        },
+        {
+            "boneId": { "value": "Wing_R" },
+            "rotationOnly": false,
+            "keyframes": [
+                { "time": 0.0, "rotation":  0.3, "position": { "x":  1.0, "y":  0.8 }, "scale": { "x": 1.0, "y": 1.0 } },
+                { "time": 2.0, "rotation": -0.3, "position": { "x":  1.0, "y": -0.6 }, "scale": { "x": 1.0, "y": 1.0 } }
+            ]
+        },
+        {
+            "boneId": { "value": "WingTip_L" },
+            "rotationOnly": false,
+            "keyframes": [
+                { "time": 0.0, "rotation": -0.15, "position": { "x": -0.5, "y": -0.2 }, "scale": { "x": 1.0, "y": 1.0 } },
+                { "time": 2.0, "rotation":  0.2,  "position": { "x": -0.5, "y":  0.0 }, "scale": { "x": 1.0, "y": 1.0 } }
+            ]
+        },
+        {
+            "boneId": { "value": "WingTip_R" },
+            "rotationOnly": false,
+            "keyframes": [
+                { "time": 0.0, "rotation":  0.15, "position": { "x":  0.5, "y": -0.2 }, "scale": { "x": 1.0, "y": 1.0 } },
+                { "time": 2.0, "rotation": -0.2,  "position": { "x":  0.5, "y":  0.0 }, "scale": { "x": 1.0, "y": 1.0 } }
+            ]
+        }
+    ]
+}

@@ -23,6 +23,7 @@
     <ClInclude Include="Constraints\DistanceConstraint.h">
       <Filter>Constraints</Filter>
     </ClInclude>
+    <ClInclude Include="DiaSoftBody2DSerializers.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Rope.cpp" />

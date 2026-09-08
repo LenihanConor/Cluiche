@@ -7,21 +7,22 @@
 
 #include <DiaAnimation2D/AnimationEvaluator.h>
 #include <DiaAnimation2D/PoseBlendStack.h>
-#include <DiaVisualDebugger/DebugColourPalette.h>
-#include <DiaVisualDebugger/DebugLayerNames.h>
-#include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/DebugColourPalette.h>
+#include <DiaCore/DebugDraw/DebugLayerNames.h>
+#include <DiaCore/DebugDraw/IDebugContext.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 
+#include <DiaObservation/Trace/DiaTrace.h>
 #include <algorithm>
 #include <cstdio>
 
-namespace Dia { namespace Animation2D {
+namespace Dia::Animation2D {
 
 AnimBlendWeightsDrawer::AnimBlendWeightsDrawer(
     const AnimationEvaluator&                                                    evaluator,
     const Dia::Rig2D::Skeleton&                                                  skeleton,
     const Dia::Core::Containers::DynamicArrayC<Dia::Rig2D::BoneTransform, 128>& worldTransforms,
-    const Dia::Debug::DebugLayerManager&                                         manager)
+    const Dia::Core::IDebugContext&                                              manager)
     : mEvaluator(evaluator)
     , mSkeleton(skeleton)
     , mWorldTransforms(worldTransforms)
@@ -33,8 +34,9 @@ Dia::Core::StringCRC AnimBlendWeightsDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kAnimBlendWeights;
 }
 
-void AnimBlendWeightsDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void AnimBlendWeightsDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
+    DIA_TRACE_ZONE("anim.blend_weights", ::Dia::Observation::Trace::Category::kDiaGraphics);
     if (mWorldTransforms.Size() == 0) return;
 
     const float scale    = mManager.GetDebugScale();
@@ -58,14 +60,14 @@ void AnimBlendWeightsDrawer::Draw(Dia::Graphics::FrameData& frameData)
         char labelText[64];
         std::snprintf(labelText, sizeof(labelText), "%s w=%.2f p=%d", layerId.AsChar(), weight, priority);
 
-        const Dia::Graphics::RGBA colour = (weight > 0.05f)
+        const Dia::Core::RGBA colour = (weight > mWeightThreshold)
             ? Dia::Debug::DebugColourPalette::kActive
             : Dia::Debug::DebugColourPalette::kInactive;
 
-        frameData.RequestDrawText(labelPos, labelText, fontSize, colour);
+        draw.RequestDrawText(labelPos, labelText, fontSize, colour);
     }
 }
 
-} } // namespace Dia::Animation2D
+} // namespace Dia::Animation2D
 
 #endif // DIA_DEBUG

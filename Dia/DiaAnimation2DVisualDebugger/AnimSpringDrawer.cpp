@@ -8,20 +8,21 @@
 #include <DiaAnimation2D/AnimationEvaluator.h>
 #include <DiaAnimation2D/SpringChain.h>
 #include <DiaRig2D/Skeleton.h>
-#include <DiaVisualDebugger/DebugColourPalette.h>
-#include <DiaVisualDebugger/DebugLayerNames.h>
-#include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/DebugColourPalette.h>
+#include <DiaCore/DebugDraw/DebugLayerNames.h>
+#include <DiaCore/DebugDraw/IDebugContext.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 
+#include <DiaObservation/Trace/DiaTrace.h>
 #include <cmath>
 
-namespace Dia { namespace Animation2D {
+namespace Dia::Animation2D {
 
 AnimSpringDrawer::AnimSpringDrawer(
     const AnimationEvaluator&                                                    evaluator,
     const Dia::Rig2D::Skeleton&                                                  skeleton,
     const Dia::Core::Containers::DynamicArrayC<Dia::Rig2D::BoneTransform, 128>& worldTransforms,
-    const Dia::Debug::DebugLayerManager&                                         manager)
+    const Dia::Core::IDebugContext&                                              manager)
     : mEvaluator(evaluator)
     , mSkeleton(skeleton)
     , mWorldTransforms(worldTransforms)
@@ -33,8 +34,9 @@ Dia::Core::StringCRC AnimSpringDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kAnimSpring;
 }
 
-void AnimSpringDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void AnimSpringDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
+    DIA_TRACE_ZONE("anim.spring", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const float scale = mManager.GetDebugScale();
     const float circleRadius = 3.0f * scale;
     const float gravityRayLength = 3.0f * scale;
@@ -56,15 +58,15 @@ void AnimSpringDrawer::Draw(Dia::Graphics::FrameData& frameData)
             const Dia::Maths::Vector2D pos    = mWorldTransforms[boneIndex].position;
             const float                angVel = std::abs(chain->GetNodeAngularVelocity(n));
 
-            Dia::Graphics::RGBA colour;
-            if (angVel < 0.5f)
+            Dia::Core::RGBA colour;
+            if (angVel < mWarnThreshold)
                 colour = Dia::Debug::DebugColourPalette::kHealthy;
-            else if (angVel < 5.0f)
+            else if (angVel < mErrorThreshold)
                 colour = Dia::Debug::DebugColourPalette::kWarning;
             else
                 colour = Dia::Debug::DebugColourPalette::kError;
 
-            frameData.RequestDraw(pos, circleRadius, colour);
+            draw.RequestDraw(pos, circleRadius, colour);
         }
 
         // Gravity indicator: draw ray from chain root bone in gravity direction
@@ -78,7 +80,7 @@ void AnimSpringDrawer::Draw(Dia::Graphics::FrameData& frameData)
                 const Dia::Maths::Vector2D gravDir = chain->GetGravityDirection();
 
                 // gravDir is already normalised by SpringChain (enforced in constructor/SetGravity)
-                frameData.RequestDrawRay(
+                draw.RequestDrawRay(
                     rootPos,
                     gravDir,
                     gravityRayLength,
@@ -88,6 +90,6 @@ void AnimSpringDrawer::Draw(Dia::Graphics::FrameData& frameData)
     }
 }
 
-} } // namespace Dia::Animation2D
+} // namespace Dia::Animation2D
 
 #endif // DIA_DEBUG

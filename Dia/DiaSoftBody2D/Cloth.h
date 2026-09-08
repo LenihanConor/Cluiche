@@ -14,10 +14,10 @@ static constexpr int kMaxClothParticles = 4096;
 struct ClothDef {
     Dia::Core::StringCRC  id;
     Dia::Maths::Vector2D  origin;
-    float                 width;
-    float                 height;
-    int                   resX;
-    int                   resY;
+    float                 width                 = 0.0f;
+    float                 height                = 0.0f;
+    int                   resX                  = 0;
+    int                   resY                  = 0;
     float                 mass                  = 1.0f;
     float                 structuralStiffness   = 1.0f;
     float                 shearStiffness        = 0.8f;

@@ -11,7 +11,7 @@ using namespace Dia::Editor;
 using namespace Dia::Core;
 
 // These tests exercise the library classes working together,
-// without any DiaApplication dependency.
+// without any DiaApplicationFlow dependency.
 
 TEST(EditorLibraryLifecycle, ModelAndHistoryTogether)
 {
@@ -32,7 +32,7 @@ TEST(EditorLibraryLifecycle, ManifestLoaderAndRegistry)
 
     {
         std::ofstream f(manifestPath);
-        f << R"({ "editor": { "enabled": true, "plugins": [{ "type": "StubEditorPlugin", "instance_id": "lifecycle_stub" }] } })";
+        f << R"({ "editor": { "enabled": true, "plugins": [{ "type": "HomeEditorPlugin", "instance_id": "lifecycle_stub" }] } })";
     }
     {
         std::ofstream f(projPath);

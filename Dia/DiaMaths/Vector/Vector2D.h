@@ -1,7 +1,6 @@
 #pragma once
 
 #include "DiaMaths/Core/MathsDefines.h"
-#include "DiaCore/Type/TypeDeclarationMacros.h"
 
 namespace Dia
 {
@@ -13,8 +12,6 @@ namespace Dia
 		class Vector2D
 		{
 		public:
-			DIA_TYPE_DECLARATION;
-
 			static const Vector2D& XAxis();
             static const Vector2D& YAxis();
 			static const Vector2D& Zero();

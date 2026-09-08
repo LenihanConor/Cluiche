@@ -1,0 +1,56 @@
+{
+  "command": "audit",
+  "status": "ok",
+  "data": {
+    "subsystem": "scene2d_module_ownership",
+    "summary": "Scene2DModule owns CameraRegistry2D, LightRegistry2D, and Entity::Domain instances that duplicate ownership from CameraModule and EntityModule, creating parallel worlds where scene-loaded objects are invisible to the modules that should drive them.",
+    "strengths": [
+      "SceneLoader2D + SceneLoadContext pattern is clean and reference-based",
+      "ModuleRef pattern already established by consumers",
+      "CameraModule already demonstrates correct ownership/update pattern",
+      "Clear loader vs validator separation between Scene2DModule and Scene2DTestStageModule"
+    ],
+    "debt": [
+      "D1: Scene2DModule owns mCameraRegistry — scene cameras isolated from CameraModule's actively-updated registry",
+      "D2: Scene2DModule owns mEntityDomain — scene entities not ticked by EntityModule::DoUpdate",
+      "D3: Scene2DModule owns mLightRegistry with no per-frame driver",
+      "D4: CameraModule name mismatches Dia::Camera2D:: engine namespace",
+      "D5: Scene2DModule calls EndOfFrame() on a domain it shouldn't own"
+    ],
+    "duplication": [
+      "Two CameraRegistry2D instances (CameraModule + Scene2DModule)",
+      "Two Entity::Domain instances (EntityModule + Scene2DModule)",
+      "SceneLoadContext constructed identically in DoStart and DoStop"
+    ],
+    "hidden_coupling": [
+      "Scene2DTestStageModule uses mutable GetEntityDomain() bypassing EntityModule",
+      "VisualDebuggerModule and PickingModule hold ModuleRef<CameraModule> — must update on rename",
+      ".diaapp manifests reference CameraModule by type_id string",
+      "Scene2DTestStageModule lacks dependency on EntityModule/CameraModule because Scene2DModule owns everything"
+    ],
+    "missing_tests": [
+      "No GoogleTest for Scene2DModule lifecycle",
+      "No test verifying scene entities appear in EntityModule's domain",
+      "No test verifying scene cameras accessible via CameraModule's registry"
+    ],
+    "likely_invariants": [
+      "I1: After scene load, camera registry contains all .diascene cameras",
+      "I2: After scene load, light registry contains all .diascene lights",
+      "I3: After scene load, entity domain has all .diascene entities spawned",
+      "I4: SceneLoader2D::Unload removes exactly what it loaded",
+      "I5: CameraModule's default camera always registered and active",
+      "I6: EntityModule hierarchy pools registered before scene creates entities",
+      "I7: Scene2DTestStage passes all 5 checkpoints",
+      "I8: PickingModule and VisualDebuggerModule access camera via same runtime module"
+    ],
+    "recommended_cleanup_order": [
+      "1. Rename CameraModule -> Camera2DModule (code, manifests, vcxproj)",
+      "2. Create Light2DModule (owns LightRegistry2D, follows CameraModule pattern)",
+      "3. Rewire Scene2DModule (remove owned registries/domain, add ModuleRefs, build SceneLoadContext from siblings)",
+      "4. Update Scene2DTestStage .diaapp (add EntityModule, Camera2DModule, Light2DModule; update dependencies)",
+      "5. Update Scene2DTestStageModule (access domain via EntityModule, cameras via Camera2DModule, lights via Light2DModule)",
+      "6. Update VisualDebuggerModule/PickingModule references (CameraModule -> Camera2DModule)",
+      "7. Update global .diaapp manifest (rename CameraModule type_id)"
+    ]
+  }
+}

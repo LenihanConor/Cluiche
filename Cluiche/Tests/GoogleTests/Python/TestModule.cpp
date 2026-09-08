@@ -14,21 +14,29 @@ using namespace Dia::Python;
 // Test fixture for module API tests
 class DiaPythonModuleTest : public ::testing::Test
 {
-protected:
-	void SetUp() override
+public:
+	static void SetUpTestSuite()
 	{
-		// Initialize Python for each test
+		// Initialize Python for all tests in this suite
 		bool result = Initialize("External/Python311/", "External/Python/", false);
 		ASSERT_TRUE(result) << "Failed to initialize Python for test";
 	}
 
-	void TearDown() override
+	static void TearDownTestSuite()
 	{
-		// Clean up after each test
+		// Clean up after all tests in this suite
 		if (IsInitialized())
 		{
 			Shutdown();
 		}
+	}
+
+protected:
+	void TearDown() override
+	{
+		// Reset module registry between tests so each test starts with a clean slate
+		Shutdown();
+		Initialize("External/Python311/", "External/Python/", false);
 	}
 };
 

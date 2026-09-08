@@ -19,7 +19,7 @@ If this is a new session:
 4. Derive the subsystem slug:
    - Lowercase the subsystem name
    - Replace spaces with underscores
-   - Example: "DiaApplication" → `dia_application`, "render backend" → `render_backend`
+   - Example: "DiaApplicationFlow" → `dia_application`, "render backend" → `render_backend`
 5. Present the proposed slug: "Proposed folder: docs/refactors/<slug>/. Confirm, or type a custom slug."
 6. Wait for confirmation before creating any files. Then continue to Step 2.
 
@@ -175,7 +175,7 @@ Wait for explicit "yes" before making any edits.
 2. Flag and pause at any manual-review hotspot — do not auto-edit lifetime-sensitive or hot-path code
 3. After code edits, locate the relevant spec(s) in `docs/specs/systems/` and `docs/specs/features/`
 4. Rewrite only architecture/responsibilities/API sections that now describe the old shape
-5. Do NOT touch: spec status, traceability table, binding decisions, AI review questions
+5. Do NOT touch: spec status, parent links, binding decisions, open design questions
 6. Print a summary of what changed in each spec
 
 Write `docs/refactors/<slug>/outputs/execute.json`:
@@ -336,7 +336,7 @@ Engine modules available:
 - DiaWindow — Win32 window management
 - DiaInput — keyboard, mouse, event queue
 - DiaUI / DiaUIAwesomium / DiaUICEF / DiaUIUltralight — UI systems
-- DiaApplication — ProcessingUnit, Phase, Module lifecycle
+- DiaApplicationFlow — ProcessingUnit, Phase, Module lifecycle
 - DiaAPI — command/plugin framework
 - DiaSFML — SFML integration layer
 - DiaLogger — logging channels and sinks

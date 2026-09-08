@@ -1,0 +1,268 @@
+﻿////////////////////////////////////////////////////////////////////////////////
+// Filename: Application.h
+// DiaApplicationFlow — v2 Application
+//
+// Top-level orchestrator.  Takes a validated ApplicationManifestV3 and a
+// TypeRegistry, creates ProcessingUnits and Modules, manages stage transitions
+// and shutdown.
+////////////////////////////////////////////////////////////////////////////////
+#pragma once
+#include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
+
+namespace Json { class Value; }
+#include <DiaApplicationFlow/TypeRegistry.h>
+#include <DiaApplicationFlow/ProcessingUnit.h>
+#include <DiaStreams/IStreamStore.h>
+#include <DiaStreams/IStreamConnector.h>
+#include <DiaStreams/EventStreamStore.h>
+#include <DiaApplicationFlow/LifecycleEvent.h>
+#include <DiaApplicationFlow/IApplicationInspectable.h>
+#include <DiaApplicationFlow/IApplicationControl.h>
+#include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaCore/Memory/UniquePtr.h>
+#include <atomic>
+#include <mutex>
+#include <thread>
+
+namespace Dia { namespace ApplicationFlow {
+
+    // ---------------------------------------------------------------------------
+    // Application
+    //
+    // Lifecycle:
+    //   Application app(manifest, registry);
+    //   if (!app.Start()) { /* handle validation / creation errors */ }
+    //   while (app.Update(dt)) {}
+    //
+    // Thread safety:
+    //   TransitionTo() and RequestShutdown() are safe to call from any thread.
+    //   Update() must be called from the main thread.
+    // ---------------------------------------------------------------------------
+    class Application : public IApplicationInspectable
+                      , public IApplicationControl
+                      , public IStreamConnector
+    {
+    public:
+        Application(const ApplicationManifestV3& manifest,
+                    TypeRegistry& registry);
+        ~Application();
+
+        Application(const Application&) = delete;
+        Application& operator=(const Application&) = delete;
+
+        // Validates manifest, creates PUs / modules, starts dedicated threads,
+        // enters the initial stage.  Returns false on any validation or creation
+        // failure.
+        bool Start();
+
+        // Tick the main (first) PU inline.  Applies any pending stage transition
+        // at the top of the frame.  Returns false once all modules are inactive
+        // (i.e. the application has fully shut down).
+        bool Update(float deltaTime);
+
+        // IApplicationControl — thread-safe; queues a stage transition to
+        // execute at the top of the next Update() call.
+        void TransitionTo(const Dia::Core::StringCRC& stageId) override;
+
+        // IApplicationControl — thread-safe; stops all dedicated threads and
+        // begins stopping every active module.
+        void RequestShutdown() override;
+
+        // IApplicationControl — read-only stage graph query.
+        void GetStageTransitions(const Dia::Core::StringCRC& stage,
+            Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>& out) const override;
+
+        // IApplicationControl — main-thread-only; register/unregister transition guards.
+        bool RegisterTransitionGuard(Module* owner, TransitionGuardFn fn) override;
+        void UnregisterTransitionGuards(Module* owner) override;
+
+        // IApplicationInspectable — returns self (Application implements the interface directly).
+        IApplicationInspectable* GetInspectable() { return this; }
+
+        // IApplicationInspectable overrides
+        [[nodiscard]] Dia::Core::StringCRC GetCurrentStage() const override;
+        [[nodiscard]] bool IsTransitioning() const override;
+        [[nodiscard]] TransitionInfo GetTransitionInfo() const override;
+        void GetAllStages(Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>& out) const override;
+        void GetProcessingUnits(Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 4>& out) const override;
+        void GetActiveModules(const Dia::Core::StringCRC& puId,
+                              Dia::Core::Containers::DynamicArrayC<ModuleStateInfo, 64>& out) const override;
+        void GetStreamInfo(Dia::Core::Containers::DynamicArrayC<StreamInfo, 16>& out) const override;
+        [[nodiscard]] bool IsShuttingDown() const override;
+        IStreamStore* FindStream(const Dia::Core::StringCRC& id) override;
+
+        // Stream store registry — main-thread-only, startup-only.
+        //
+        // RegisterOrFindStreamStore: takes ownership of newStore. If a
+        // store with the same ID already exists, returns the existing one
+        // (first-registrant wins) and the passed-in store is discarded.
+        // Returns non-null on success; returns nullptr if:
+        //   - the stream ID is not declared in mManifest.streams (manifest-gating)
+        //   - capacity is exceeded (asserts in debug)
+        //
+        // Manifest-gating (AC1): a handle whose streamId does not appear in
+        // manifest.streams[] causes Start() to return false. The mConnectFailed
+        // flag is set on any such violation and checked after ConnectModuleStreams().
+        //
+        // Contract: only call during Module::OnConnectStreams, which runs
+        // once on the main thread from Application::Start() before any
+        // dedicated PU threads are launched.  Calling it after Start() has
+        // completed (i.e. from DoStart/DoUpdate/DoStop) asserts in debug;
+        // in release the unsynchronized store array would be a data race.
+        IStreamStore* RegisterOrFindStreamStore(Dia::Core::UniquePtr<IStreamStore> newStore);
+
+        // FindStreamStore: lookup only, no creation. Returns null if not found.
+        // Safe to call at any time — mStreamStores is immutable after Start().
+        IStreamStore* FindStreamStore(const Dia::Core::StringCRC& id) const;
+
+        // Returns the raw "config" block from the .diagame file, or null if
+        // Compose() was not used or the .diagame had no config block.
+        // Safe to call from any module lifecycle method (DoStart, OnConfigure, etc.).
+        [[nodiscard]] const Json::Value* GetDiagameConfig() const override { return mManifest.diagameConfig; }
+
+        // Emit a lifecycle event on the $lifecycle stream.
+        // Called internally by Application and Module; not part of the public module API.
+        void EmitLifecycleEvent(const LifecycleEvent& ev);
+
+    private:
+        // Maximum number of ProcessingUnits supported (matches spec).
+        static constexpr unsigned int kMaxProcessingUnits = 4;
+
+        // The main PU (index 0) runs inline in Update(); only PUs at
+        // indices 1..N can be dedicated-thread, hence (kMax - 1).
+        static constexpr unsigned int kMaxDedicatedThreads = kMaxProcessingUnits - 1;
+
+        // Maximum number of stream stores (frame + event combined).
+        static constexpr unsigned int kMaxStreams = 64;
+
+        // --- Helpers -----------------------------------------------------------
+
+        // Build PUs and modules from the manifest using the type registry.
+        // Returns false on error.
+        bool BuildFromManifest();
+
+        // Walk every module in every PU and call OnConnectStreams(*this).
+        // Called once in Start(), after BuildFromManifest() and before launching
+        // dedicated threads.
+        void ConnectModuleStreams();
+
+        // Apply the pending stage transition (called at the top of Update).
+        // Only kicks off the stop phase; sets mTransitionDraining = true.
+        void ApplyPendingTransition();
+
+        // Continue a draining transition: once all outgoing modules are kInactive,
+        // commits the new stage and starts incoming modules.
+        void TickTransitionDrain();
+
+        // Begin stopping all active modules across all PUs (shutdown path).
+        void BeginStopAllActive();
+
+        // Join any running dedicated-thread PUs.  Called from Update()'s
+        // shutdown tail once all modules have settled, and from the
+        // destructor as a safety net.  Idempotent.
+        void JoinDedicatedThreads();
+
+        // Returns true if every module in every PU is kInactive or kFailed.
+        bool AllModulesInactive() const;
+
+        // Walk all registered ServiceStreamStores; commit any that are registered
+        // but not yet committed (i.e., provider called Register() and this is
+        // the first frame where all providers are registered).
+        void CommitReadyServiceStreams();
+
+        // Returns true if any module is in kFailed state.
+        bool AnyModuleFailed() const;
+
+        // Register dia.app.quit and dia.app.report with DiaAPI.
+        // Called once from Start() after manifest validation, before entering
+        // the initial stage (so commands are available before any module's DoStart).
+        void RegisterBaselineCommands();
+
+        // Evaluate all registered guards.  Returns Allow if all return Allow (or
+        // there are zero guards); returns Hold if any guard returns Hold.
+        // Main-thread-only.  Updates mLastGuardCheckResult.
+        GuardResult CheckGuards();
+
+        // "In stage" predicate: module is in stage S if its stages array
+        // contains S or contains StringCRC("all").
+        static bool ModuleIsInStage(const ModuleDeclaration& decl,
+                                    const Dia::Core::StringCRC& stage);
+
+        // Assert that every module active in `stage` has all of its
+        // GetRequiredModuleTypeIds() entries also active in that stage.
+        void ValidateCostagingRequirements(const Dia::Core::StringCRC& stage);
+
+        // --- State -------------------------------------------------------------
+        const ApplicationManifestV3& mManifest;
+        TypeRegistry&                mRegistry;
+
+        // Fixed-capacity PU array (no heap allocation for PU storage).
+        Dia::Core::UniquePtr<ProcessingUnit> mProcessingUnits[kMaxProcessingUnits];
+        unsigned int                         mProcessingUnitCount = 0;
+
+        // Type-erased stream store registry — owned by Application.
+        // Populated during ConnectModuleStreams() (called from Start()).
+        Dia::Core::UniquePtr<IStreamStore> mStreamStores[kMaxStreams];
+        unsigned int                       mStreamStoreCount = 0;
+
+        // One std::thread per dedicated PU (index 0 = main PU, no thread).
+        std::thread  mDedicatedThreads[kMaxDedicatedThreads];
+        unsigned int mDedicatedThreadCount = 0;
+
+        Dia::Core::StringCRC mCurrentStage;
+
+        // Pending stage transition — written by TransitionTo(), read by Update().
+        mutable std::mutex   mTransitionMutex;
+        Dia::Core::StringCRC mPendingStage;
+        std::atomic<bool>    mHasPendingTransition{false};
+
+        std::atomic<bool>    mShuttingDown{false};
+        bool                 mStarted = false;
+        bool                 mShutdownInitiated = false;  // tracks whether BeginStopAllActive has been called
+        // True only while ConnectModuleStreams() is running.  Guards
+        // RegisterOrFindStreamStore — calls outside this window
+        // would race against dedicated-PU threads.
+        bool                 mConnectingStreams = false;
+
+        // Set to true by RegisterOrFindStreamStore when a handle attempts to
+        // connect a stream whose ID is not declared in mManifest.streams.
+        // Checked after ConnectModuleStreams() — causes Start() to return false.
+        bool                 mConnectFailed = false;
+
+        // F2: framework-owned $lifecycle EventStreamStore.
+        // Created in Start() before module stream connection; capacity 1024.
+        // EmitLifecycleEvent() stamps the Event<T> envelope and calls Send directly.
+        EventStreamStore<LifecycleEvent>* mLifecycleStore = nullptr;
+
+        // Transition drain state: set when outgoing modules are being stopped before
+        // incoming modules can be started. Cleared once all outgoing are kInactive.
+        bool                 mTransitionDraining = false;
+        Dia::Core::StringCRC mDrainingToStage;
+
+        // Rollback retry state: on a non-boot module failure the release-build
+        // policy is to stop and restart the current stage.  If the failure is
+        // deterministic we'd otherwise loop forever — cap it and shut down.
+        static constexpr unsigned int kMaxRollbackAttempts = 3;
+        Dia::Core::StringCRC mLastRollbackStage;     // which stage we last rolled back in
+        unsigned int         mRollbackAttempts = 0;  // consecutive attempts in that stage
+
+        // Transition guard registry — main-thread-only.
+        struct GuardEntry
+        {
+            Module*           owner;
+            TransitionGuardFn fn;
+        };
+        static constexpr unsigned int kMaxGuards = 8;
+        Dia::Core::Containers::DynamicArrayC<GuardEntry, kMaxGuards> mGuards;
+
+        // True after emitting kStageTransitionHeldByGuard for the current pending
+        // transition.  Reset when the transition is committed or replaced.
+        bool mPendingHeldByGuardEmitted = false;
+
+        // Cached result from the last CheckGuards() call; used by GetTransitionInfo()
+        // to avoid calling guards from an inspectable getter.
+        GuardResult mLastGuardCheckResult = GuardResult::Allow;
+    };
+
+}} // namespace Dia::ApplicationFlow

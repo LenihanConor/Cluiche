@@ -4,7 +4,6 @@
 
 #include "DiaCore/FilePath/Path.h"
 #include "DiaCore/Strings/String32.h"
-#include "DiaCore/Type/TypeDeclarationMacros.h"
 
 namespace Dia
 {
@@ -24,12 +23,13 @@ namespace Dia
 		class AliasPathConfigTuple
 		{
 		public:
-			DIA_TYPE_DECLARATION;
-
 			AliasPathConfigTuple() {}
 
 			const Containers::String32& GetAlias()const { return mAlias; }
 			const Path::String& GetPath()const { return mPath; }
+
+			template<class Archive>
+			friend void serialize(Archive& ar, AliasPathConfigTuple& obj, unsigned version);
 
 		private:
 			Containers::String32 mAlias;   // The path alias identifier
@@ -52,13 +52,14 @@ namespace Dia
 		class AliasAppendPathConfig
 		{
 		public:
-			DIA_TYPE_DECLARATION;
-
 			AliasAppendPathConfig() {}
 
 			const Containers::String32& GetAlias()const { return mAlias; }
 			const Containers::String32& GetBaseAlias()const { return mBaseAlias; }
 			const Path::String& GetPathAppend()const { return mPathAppend; }
+
+			template<class Archive>
+			friend void serialize(Archive& ar, AliasAppendPathConfig& obj, unsigned version);
 
 		private:
 			Containers::String32 mAlias;        // The new alias to create
@@ -82,13 +83,14 @@ namespace Dia
 		class PathStoreConfigFragment
 		{
 		public:
-			DIA_TYPE_DECLARATION;
-
 			PathStoreConfigFragment() {}
 
 			const Containers::String32& GetBaseAlias()const { return mBaseAlias; }
 			const Containers::String32& GetFileName()const { return mFileName; }
 			const Path::String& GetPathAppend()const { return mPathAppend; }
+
+			template<class Archive>
+			friend void serialize(Archive& ar, PathStoreConfigFragment& obj, unsigned version);
 
 		private:
 			Containers::String32 mBaseAlias;  // Base alias to resolve fragment location
@@ -107,8 +109,7 @@ namespace Dia
 		//   3. PathStoreConfigFragmentArray - External config files to load
 		//
 		// SERIALIZATION:
-		//   Configured via DIA_TYPE_DEFINITION macros for JSON deserialization.
-		//   See PathStoreConfig.cpp for type definition.
+		//   Uses DiaReflect (DIA_SERIALIZE) for JSON serialization/deserialization.
 		//
 		// USAGE:
 		//   PathStoreConfig config;
@@ -119,8 +120,6 @@ namespace Dia
 		class PathStoreConfig
 		{
 		public:
-			DIA_TYPE_DECLARATION;
-
 			static const int kMaxAliasPathConfigTuples = 8;
 			static const int kMaxAliasAppendPathConfig = 8;
 			static const int kMaxPathConfigFragment = 8;
@@ -135,10 +134,13 @@ namespace Dia
 			const AliasAppendPathArray& GetAliasAppendPathTupleArray()const { return mAliasAppendPathArray; }
 			const PathStoreConfigFragmentArray& GetPathStoreConfigFragmentArray()const { return mPathStoreConfigFragmentArray; }
 
+			template<class Archive>
+			friend void serialize(Archive& ar, PathStoreConfig& obj, unsigned version);
+
 		private:
 			AliasPathTupleArray mAliasPathTupleArray;
 			AliasAppendPathArray mAliasAppendPathArray;
 			PathStoreConfigFragmentArray mPathStoreConfigFragmentArray;
-		}; 
+		};
 	}
 }

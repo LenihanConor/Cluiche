@@ -8,10 +8,10 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/IVisualDebugger.h>
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
 #include <DiaGeometry2D/Spatial/Quadtree.h>
 
-namespace Dia::Debug { class DebugLayerManager; }
+namespace Dia::Core  { class IDebugContext; }
 
 namespace Dia::Geometry2DVisualDebugger
 {
@@ -29,17 +29,17 @@ class QuadtreeDrawer : public Dia::Debug::IVisualDebugger
 {
 public:
     QuadtreeDrawer(const Dia::Geometry2D::Quadtree<T, MaxObjects>& tree,
-                   const Dia::Debug::DebugLayerManager&            manager)
+                   const Dia::Core::IDebugContext&            manager)
         : mTree(tree)
         , mManager(manager)
     {}
 
     Dia::Core::StringCRC GetLayerName() const override;
-    void Draw(Dia::Graphics::FrameData& frameData) override;
+    void Draw(Dia::Core::IDebugDraw& draw) override;
 
 private:
     const Dia::Geometry2D::Quadtree<T, MaxObjects>& mTree;
-    const Dia::Debug::DebugLayerManager&            mManager;
+    const Dia::Core::IDebugContext&            mManager;
 };
 
 } // namespace Dia::Geometry2DVisualDebugger

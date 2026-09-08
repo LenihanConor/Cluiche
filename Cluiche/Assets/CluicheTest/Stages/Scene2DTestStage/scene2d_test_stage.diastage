@@ -1,0 +1,10 @@
+{
+    "name": "Scene2DTestStage",
+    "manifest": "Stages/Scene2DTestStage/misc/ApplicationFlow/scene2d_test_stage.diaapp",
+    "scene": "misc/test_scene.diascene",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

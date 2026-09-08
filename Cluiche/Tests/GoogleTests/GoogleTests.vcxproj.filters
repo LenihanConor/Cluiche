@@ -28,8 +28,14 @@
     <Filter Include="Core\Time">
       <UniqueIdentifier>{D4E5F6G7-4444-5555-6666-777777777777}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Core\SimTime">
+      <UniqueIdentifier>{1A2B3C4D-8765-4321-9876-543210fedcba}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Core\Type">
       <UniqueIdentifier>{F6G7H8I9-6666-7777-8888-999999999999}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Reflect">
+      <UniqueIdentifier>{b2c3d4e5-f6a7-8901-bcde-f12345678901}</UniqueIdentifier>
     </Filter>
     <Filter Include="Maths">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
@@ -48,9 +54,6 @@
     </Filter>
     <Filter Include="DiaCLI">
       <UniqueIdentifier>{DIACLI01-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Application">
-      <UniqueIdentifier>{APP00001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
     <Filter Include="UI">
       <UniqueIdentifier>{UI000001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
@@ -76,17 +79,65 @@
     <Filter Include="Editor">
       <UniqueIdentifier>{EDTR0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
-    <Filter Include="DiaLogger">
+    <Filter Include="DiaMetrics">
+      <UniqueIdentifier>{DMET0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaMailbox">
+      <UniqueIdentifier>{DMBL0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaEntity">
+      <UniqueIdentifier>{DENT0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaObservation">
       <UniqueIdentifier>{DLGR0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaObservation\Log">
+      <UniqueIdentifier>{DLGR0002-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaObservation\Trace">
+      <UniqueIdentifier>{DLGR0003-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaObservation\Health">
+      <UniqueIdentifier>{DLGR0004-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaObservation\Metric">
+      <UniqueIdentifier>{DLGR0005-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaObservation\Session">
+      <UniqueIdentifier>{DLGR0006-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaObservation\Config">
+      <UniqueIdentifier>{DLGR0007-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaObservation\Profile">
+      <UniqueIdentifier>{DLGR0008-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaObservation\Capture">
+      <UniqueIdentifier>{DLGR0009-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
     <Filter Include="PipelineEditor">
       <UniqueIdentifier>{PIPE0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
-    <Filter Include="DiaApplicationEditor">
+    <Filter Include="DiaApplicationFlowEditor">
       <UniqueIdentifier>{DAPPEDTR-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaApplicationFlowInspector">
+      <UniqueIdentifier>{DAFLINSP-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaEntityEditor">
+      <UniqueIdentifier>{DIABPED1-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaSceneEditor">
+      <UniqueIdentifier>{DSCEDIT1-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Geometry3D">
+      <UniqueIdentifier>{GEO3D001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
     <Filter Include="Geometry2D">
       <UniqueIdentifier>{GEO2D001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Picking">
+      <UniqueIdentifier>{A1B2C3D4-E5F6-7890-ABCD-EF1234567891}</UniqueIdentifier>
     </Filter>
     <Filter Include="RigidBody2D">
       <UniqueIdentifier>{RB2D0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
@@ -109,20 +160,86 @@
     <Filter Include="DiaVisualDebugger">
       <UniqueIdentifier>{DVDBG001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaGame">
+      <UniqueIdentifier>{DIAGME01-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
     <Filter Include="DiaAssetCatalogueEditor">
       <UniqueIdentifier>{DACTE001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
     <Filter Include="DiaAssetRuntime">
       <UniqueIdentifier>{DARU0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ApplicationFlow">
+      <UniqueIdentifier>{APPFL001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Automation">
+      <UniqueIdentifier>{AUTO0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CluicheTest">
+      <UniqueIdentifier>{CLCHT001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaBgfx">
+      <UniqueIdentifier>{DBGFX001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaMesh3D">
+      <UniqueIdentifier>{DME3D001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaAIBudget">
+      <UniqueIdentifier>{AIBUDGET1-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaAIBudgetVisualDebugger">
+      <UniqueIdentifier>{A8B9C0D1-E2F3-4567-8901-A2B3C4D5E6F7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CluicheGameBaseline">
+      <UniqueIdentifier>{CGBL0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaRules">
+      <UniqueIdentifier>{DRLS0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaUtilityAI">
+      <UniqueIdentifier>{A2B3C4D5-E6F7-8901-2345-678901234567}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaHTN">
+      <UniqueIdentifier>{C5D6E7F8-A9B0-1234-D678-901234567890}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaSteering">
+      <UniqueIdentifier>{D6E7F8A9-B0C1-2345-E789-012345678901}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaEconomy">
+      <UniqueIdentifier>{EC0N0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaAttribute">
+      <UniqueIdentifier>{ATTR0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaAttributeVisualDebugger">
+      <UniqueIdentifier>{6B2F9C41-58AE-4D73-9E10-C4A7B305F282}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaObjective">
+      <UniqueIdentifier>{D5E6F7A8-B9C0-1234-EF01-678901234CDE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaEntitySpawner">
+      <UniqueIdentifier>{B2C3D4E5-F6A7-8901-BCDE-F01234567890}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaMessageBus">
+      <UniqueIdentifier>{C3D4E5F6-A7B8-9012-CDEF-012345678901}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaMailboxVisualDebugger">
+      <UniqueIdentifier>{DMVD0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaGridVisibility">
+      <UniqueIdentifier>{B1C2D3E4-F5A6-7890-BCDE-F12345678902}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaSimTime">
+      <UniqueIdentifier>{bbf4d9c1-57f3-452e-a2e3-bff9736245d6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaPathfinding">
+      <UniqueIdentifier>{848797c9-ea26-4ef7-af69-5e4405bcd89d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
     <!-- Core\Architecture -->
     <ClCompile Include="Core\Architecture\TestSingleton.cpp">
-      <Filter>Core\Architecture</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Architecture\TestComponent.cpp">
       <Filter>Core\Architecture</Filter>
     </ClCompile>
     <ClCompile Include="Core\Architecture\TestObserver.cpp">
@@ -168,6 +285,9 @@
     <ClCompile Include="Core\Containers\TestDirectedGraph.cpp">
       <Filter>Core\Containers</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Containers\TestHandlePool.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
     <ClCompile Include="Core\Containers\TestContainerStress.cpp">
       <Filter>Core\Containers</Filter>
     </ClCompile>
@@ -180,12 +300,6 @@
     </ClCompile>
     <!-- Core\Events -->
     <ClCompile Include="Core\Events\TestDelegate.cpp">
-      <Filter>Core\Events</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Events\TestEventDispatcher.cpp">
-      <Filter>Core\Events</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Events\TestEventQueue.cpp">
       <Filter>Core\Events</Filter>
     </ClCompile>
     <!-- Core\Memory -->
@@ -231,20 +345,41 @@
     <ClCompile Include="Core\Time\TestTimerSystem.cpp">
       <Filter>Core\Time</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Reflect\TestArchive.cpp">
+      <Filter>Core\Reflect</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Reflect\TestMacroDSL.cpp">
+      <Filter>Core\Reflect</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Reflect\TestJsonArchive.cpp">
+      <Filter>Core\Reflect</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Reflect\TestBinaryArchive.cpp">
+      <Filter>Core\Reflect</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Reflect\TestContainerSpecializations.cpp">
+      <Filter>Core\Reflect</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Reflect\TestPolymorphicRegistry.cpp">
+      <Filter>Core\Reflect</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Reflect\TestFieldAttributes.cpp">
+      <Filter>Core\Reflect</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Reflect\TestDiaMathsSerializers.cpp">
+      <Filter>Core\Reflect</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Reflect\TestDiaMathsSerializers2.cpp">
+      <Filter>Core\Reflect</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Reflect\TestDiaCoreSerializers.cpp">
+      <Filter>Core\Reflect</Filter>
+    </ClCompile>
     <!-- Core\Type -->
     <ClCompile Include="Core\Type\TestEnum.cpp">
       <Filter>Core\Type</Filter>
     </ClCompile>
     <ClCompile Include="Core\Type\TestMetaLogic.cpp">
-      <Filter>Core\Type</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Type\TestTypeTraits.cpp">
-      <Filter>Core\Type</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Type\TestJsonTypes.cpp">
-      <Filter>Core\Type</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Type\TestTypes.cpp">
       <Filter>Core\Type</Filter>
     </ClCompile>
     <!-- Maths -->
@@ -275,6 +410,18 @@
     <ClCompile Include="Maths\TestMatrix33.cpp">
       <Filter>Maths</Filter>
     </ClCompile>
+    <ClCompile Include="Maths\TestMatrix44.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestMatrix34.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestQuaternion.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestTransform3D.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
     <ClCompile Include="Maths\TestTrigonometry.cpp">
       <Filter>Maths</Filter>
     </ClCompile>
@@ -291,12 +438,6 @@
       <Filter>Maths</Filter>
     </ClCompile>
     <ClCompile Include="Maths\TestHalfFloat.cpp">
-      <Filter>Maths</Filter>
-    </ClCompile>
-    <ClCompile Include="Maths\TestIntersectionClassify.cpp">
-      <Filter>Maths</Filter>
-    </ClCompile>
-    <ClCompile Include="Maths\TestCircle2D.cpp">
       <Filter>Maths</Filter>
     </ClCompile>
     <ClCompile Include="Maths\TestHalfVector2D.cpp">
@@ -321,6 +462,19 @@
     <ClCompile Include="Graphics\TestFrameData.cpp">
       <Filter>Graphics</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\TestDebugBudget.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\TestDebugTextPrimitive.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\TestCamera2D.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <!-- DiaBgfx -->
+    <ClCompile Include="DiaBgfx\TestFrameCaptureRingBuffer.cpp">
+      <Filter>DiaBgfx</Filter>
+    </ClCompile>
     <!-- Input -->
     <ClCompile Include="Input\TestInputState.cpp">
       <Filter>Input</Filter>
@@ -335,12 +489,6 @@
       <Filter>Input</Filter>
     </ClCompile>
     <ClCompile Include="Input\TestInputRecorder.cpp">
-      <Filter>Input</Filter>
-    </ClCompile>
-    <ClCompile Include="Input\TestLegacyEventConverter.cpp">
-      <Filter>Input</Filter>
-    </ClCompile>
-    <ClCompile Include="Input\TestModernEvents.cpp">
       <Filter>Input</Filter>
     </ClCompile>
     <ClCompile Include="Python\TestLifecycle.cpp">
@@ -394,61 +542,6 @@
     <ClCompile Include="DiaCLI\TestDiaCLI.cpp">
       <Filter>DiaCLI</Filter>
     </ClCompile>
-    <!-- Application -->
-    <ClCompile Include="Application\TestBasicApplication.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestHotReload.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestApplicationTypeRegistry.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestManifestLoader.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestManifestImports.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestPUTree.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestPUTreeIntegration.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestDiaGameFormat.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestDiaGameSerializers.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestMessageBus.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestApplicationLifecycle.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestApplicationIntrospector.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestApplicationLoader.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestPhaseTransition.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestModuleRef.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestMetricsCollector.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestStateObject.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestCluicheManifests.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
     <!-- UI -->
     <ClCompile Include="UI\TestBoundMethod.cpp">
       <Filter>UI</Filter>
@@ -461,6 +554,9 @@
     </ClCompile>
     <!-- WebSocket -->
     <ClCompile Include="WebSocket\TestWebSocketServer.cpp">
+      <Filter>WebSocket</Filter>
+    </ClCompile>
+    <ClCompile Include="WebSocket\TestWebSocketServerBuffer.cpp">
       <Filter>WebSocket</Filter>
     </ClCompile>
     <ClCompile Include="WebSocket\TestWebSocketClient.cpp">
@@ -499,10 +595,10 @@
       <Filter>DebugProtocol</Filter>
     </ClCompile>
     <!-- DebugServer -->
-    <ClCompile Include="DebugServer\TestSubscriptionManager.cpp">
+    <ClCompile Include="DebugServer\TestCommandDispatcher.cpp">
       <Filter>DebugServer</Filter>
     </ClCompile>
-    <ClCompile Include="DebugServer\TestCommandDispatcher.cpp">
+    <ClCompile Include="DebugServer\TestDebugServerTaps.cpp">
       <Filter>DebugServer</Filter>
     </ClCompile>
     <ClCompile Include="DebugServer\TestStateSerializer.cpp">
@@ -511,31 +607,97 @@
     <ClCompile Include="DebugServer\TestDebugServerProtocol.cpp">
       <Filter>DebugServer</Filter>
     </ClCompile>
+    <ClCompile Include="DebugServer\TestDebugServerAppState.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugServer\TestDebugServerConnectionHealth.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugServer\TestObservationBridge.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
     <!-- Integration -->
-    <ClCompile Include="Integration\TestInputPipeline.cpp">
-      <Filter>Integration</Filter>
-    </ClCompile>
-    <ClCompile Include="Integration\TestFrameStreamPipeline.cpp">
-      <Filter>Integration</Filter>
-    </ClCompile>
     <ClCompile Include="Integration\TestDebugProtocolEndToEnd.cpp">
-      <Filter>Integration</Filter>
-    </ClCompile>
-    <ClCompile Include="Integration\TestManifestRoundTrip.cpp">
       <Filter>Integration</Filter>
     </ClCompile>
     <ClCompile Include="Integration\TestWebUIBridgeDispatch.cpp">
       <Filter>Integration</Filter>
     </ClCompile>
-    <ClCompile Include="Integration\TestTypeRegistrySeeding.cpp">
+    <ClCompile Include="Integration\TestEditorPluginBase.cpp">
       <Filter>Integration</Filter>
     </ClCompile>
     <ClCompile Include="Integration\TestPhysicsGeometryIntegration.cpp">
       <Filter>Integration</Filter>
     </ClCompile>
-    <!-- DiaApplicationEditor -->
-    <ClCompile Include="DiaApplicationEditor\TestManifestSerializer.cpp">
-      <Filter>DiaApplicationEditor</Filter>
+    <!-- DiaEntityEditor Tests -->
+    <ClCompile Include="DiaEntityEditor\TestBlueprintFileHandler.cpp">
+      <Filter>DiaEntityEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaEntityEditor\TestBlueprintListController.cpp">
+      <Filter>DiaEntityEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaEntityEditor\TestBlueprintPropertyController.cpp">
+      <Filter>DiaEntityEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaEntityEditor\TestBlueprintMutator.cpp">
+      <Filter>DiaEntityEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaEntityEditor\IntegrationTestBlueprintEditorPlugin.cpp">
+      <Filter>DiaEntityEditor</Filter>
+    </ClCompile>
+    <!-- DiaSceneEditor Tests -->
+    <ClCompile Include="DiaSceneEditor\TestSceneMutator.cpp">
+      <Filter>DiaSceneEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaSceneEditor\TestSceneValidator.cpp">
+      <Filter>DiaSceneEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaSceneEditor\TestSceneEditorHandlers.cpp">
+      <Filter>DiaSceneEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaSceneEditor\IntegrationTestSceneEditorPlugin.cpp">
+      <Filter>DiaSceneEditor</Filter>
+    </ClCompile>
+    <!-- DiaApplicationFlowEditor V2 Tests -->
+    <ClCompile Include="DiaApplicationFlowEditor\TestManifestEditorState.cpp">
+      <Filter>DiaApplicationFlowEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaApplicationFlowEditor\TestCommandHistory.cpp">
+      <Filter>DiaApplicationFlowEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaApplicationFlowEditor\TestTypeDiscoveryService.cpp">
+      <Filter>DiaApplicationFlowEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaApplicationFlowEditor\TestManifestLoader.cpp">
+      <Filter>DiaApplicationFlowEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaApplicationFlowEditor\TestManifestSaver.cpp">
+      <Filter>DiaApplicationFlowEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaApplicationFlowEditor\TestManifestValidator.cpp">
+      <Filter>DiaApplicationFlowEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaApplicationFlowEditor\TestCommands_PU.cpp">
+      <Filter>DiaApplicationFlowEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaApplicationFlowEditor\TestCommands_Module.cpp">
+      <Filter>DiaApplicationFlowEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaApplicationFlowEditor\TestCommands_Stream.cpp">
+      <Filter>DiaApplicationFlowEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaApplicationFlowEditor\TestCommands_Stage.cpp">
+      <Filter>DiaApplicationFlowEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaApplicationFlowEditor\TestRiskAssessor.cpp">
+      <Filter>DiaApplicationFlowEditor</Filter>
+    </ClCompile>
+    <!-- DiaApplicationFlowInspector Tests -->
+    <ClCompile Include="DiaApplicationFlowInspector\TestLiveStateStore.cpp">
+      <Filter>DiaApplicationFlowInspector</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaApplicationFlowInspector\TestInspectorPlugin.cpp">
+      <Filter>DiaApplicationFlowInspector</Filter>
     </ClCompile>
     <!-- Editor -->
     <ClCompile Include="Editor\TestEditorPluginRegistry.cpp">
@@ -547,10 +709,22 @@
     <ClCompile Include="Editor\TestEditorModel.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\TestEditorModelDiagame.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
     <ClCompile Include="Editor\TestGameConnectionManager.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="Editor\TestDockingLayout.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestDockingLayoutDuplication.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestPluginLoaderDuplication.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestPluginLoaderHeadless.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="Editor\TestWebUIBridge.cpp">
@@ -571,10 +745,19 @@
     <ClCompile Include="Editor\TestGameConnectionManagerIntegration.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\TestGameConnectionManagerPendingQueue.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
     <ClCompile Include="Editor\TestGameConnectionController.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\TestProjectContextController.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
     <ClCompile Include="Editor\TestGameConnectionControllerMessages.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestGameConnectionControllerAck.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="Editor\TestGameConnectionLifecycle.cpp">
@@ -583,10 +766,62 @@
     <ClCompile Include="Editor\TestEditorToolbarItem.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\TestPluginServiceLocator.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\PluginBrowserEditorPlugin.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
+    <!-- Geometry3D -->
+    <ClCompile Include="Geometry3D\TestDiaGeometry3DSerializers.cpp">
+      <Filter>Geometry3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry3D\TestSpatialGrid3DStress.cpp">
+      <Filter>Geometry3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry3D\TestIntersectionTestsEdge.cpp">
+      <Filter>Geometry3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry3D\TestSpatialGrid3D.cpp">
+      <Filter>Geometry3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry3D\TestIntersectionTests.cpp">
+      <Filter>Geometry3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry3D\TestAABB.cpp">
+      <Filter>Geometry3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry3D\TestOOBB.cpp">
+      <Filter>Geometry3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry3D\TestSphere.cpp">
+      <Filter>Geometry3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry3D\TestCapsule.cpp">
+      <Filter>Geometry3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry3D\TestTriangle.cpp">
+      <Filter>Geometry3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry3D\TestCylinder.cpp">
+      <Filter>Geometry3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry3D\TestRay3D.cpp">
+      <Filter>Geometry3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry3D\TestPlane3D.cpp">
+      <Filter>Geometry3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry3D\TestFrustum.cpp">
+      <Filter>Geometry3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry3D\TestSpline3D.cpp">
+      <Filter>Geometry3D</Filter>
+    </ClCompile>
     <!-- Geometry2D -->
+    <ClCompile Include="Geometry2D\TestDiaGeometry2DSerializers.cpp">
+      <Filter>Geometry2D</Filter>
+    </ClCompile>
     <ClCompile Include="Geometry2D\TestGeometry2DVisualDebuggerStack.cpp">
       <Filter>Geometry2D</Filter>
     </ClCompile>
@@ -619,6 +854,31 @@
     </ClCompile>
     <ClCompile Include="Geometry2D\TestHexGrid.cpp">
       <Filter>Geometry2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry2D\TestSpline.cpp">
+      <Filter>Geometry2D</Filter>
+    </ClCompile>
+    <!-- Picking -->
+    <ClCompile Include="Picking\TestPickingCore.cpp">
+      <Filter>Picking</Filter>
+    </ClCompile>
+    <ClCompile Include="Picking\TestHexGridPickable.cpp">
+      <Filter>Picking</Filter>
+    </ClCompile>
+    <ClCompile Include="Picking\TestSpatialGridPickable.cpp">
+      <Filter>Picking</Filter>
+    </ClCompile>
+    <ClCompile Include="Picking\TestShapePickable.cpp">
+      <Filter>Picking</Filter>
+    </ClCompile>
+    <ClCompile Include="Picking\TestPickingService2D.cpp">
+      <Filter>Picking</Filter>
+    </ClCompile>
+    <ClCompile Include="Picking\TestInputStreamMouseButtons.cpp">
+      <Filter>Picking</Filter>
+    </ClCompile>
+    <ClCompile Include="Picking\TestCameraViewport.cpp">
+      <Filter>Picking</Filter>
     </ClCompile>
     <!-- RigidBody2D -->
     <ClCompile Include="RigidBody2D\TestPhysicsBody.cpp">
@@ -672,21 +932,144 @@
     <ClCompile Include="RigidBody2D\TestConservationLaws.cpp">
       <Filter>RigidBody2D</Filter>
     </ClCompile>
-    <!-- DiaLogger -->
-    <ClCompile Include="DiaLogger\TestLogLevel.cpp">
-      <Filter>DiaLogger</Filter>
+    <ClCompile Include="RigidBody2D\TestDiaRigidBody2DSerializers.cpp">
+      <Filter>RigidBody2D</Filter>
     </ClCompile>
-    <ClCompile Include="DiaLogger\TestThreadLogBuffer.cpp">
-      <Filter>DiaLogger</Filter>
+    <!-- DiaMetrics -->
+    <ClCompile Include="DiaMetrics\TestMetricGauge.cpp">
+      <Filter>DiaMetrics</Filter>
     </ClCompile>
-    <ClCompile Include="DiaLogger\TestISink.cpp">
-      <Filter>DiaLogger</Filter>
+    <ClCompile Include="DiaMetrics\TestMetricCounter.cpp">
+      <Filter>DiaMetrics</Filter>
     </ClCompile>
-    <ClCompile Include="DiaLogger\TestLogger.cpp">
-      <Filter>DiaLogger</Filter>
+    <ClCompile Include="DiaMetrics\TestMetricHistogram.cpp">
+      <Filter>DiaMetrics</Filter>
     </ClCompile>
-    <ClCompile Include="DiaLogger\TestAssertSinkBridge.cpp">
-      <Filter>DiaLogger</Filter>
+    <ClCompile Include="DiaMetrics\TestMetricRegistry.cpp">
+      <Filter>DiaMetrics</Filter>
+    </ClCompile>
+    <!-- DiaMailbox -->
+    <ClCompile Include="DiaMailbox\MailboxTypesTests.cpp">
+      <Filter>DiaMailbox</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMailbox\TypedQueueTests.cpp">
+      <Filter>DiaMailbox</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMailbox\SubscriptionTests.cpp">
+      <Filter>DiaMailbox</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMailbox\RouterTests.cpp">
+      <Filter>DiaMailbox</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMailbox\MailboxBoundaryTests.cpp">
+      <Filter>DiaMailbox</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMailbox\MailboxStressTests.cpp">
+      <Filter>DiaMailbox</Filter>
+    </ClCompile>
+    <!-- DiaEntity -->
+    <ClCompile Include="DiaEntity\DomainTests.cpp">
+      <Filter>DiaEntity</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaEntity\TestComponent.cpp">
+      <Filter>DiaEntity</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaEntity\ReflectionTests.cpp">
+      <Filter>DiaEntity</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaEntity\BlueprintLoaderTests.cpp">
+      <Filter>DiaEntity</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaEntity\BpTransformComponent.cpp">
+      <Filter>DiaEntity</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaEntity\UpdateLoopTests.cpp">
+      <Filter>DiaEntity</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaEntity\EntityRefTests.cpp">
+      <Filter>DiaEntity</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaEntity\QuerySystemTests.cpp">
+      <Filter>DiaEntity</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaEntity\EntityRouterTests.cpp">
+      <Filter>DiaEntity</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaEntity\EntityRouterBusWiringTests.cpp">
+      <Filter>DiaEntity</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaEntity\HierarchyTests.cpp">
+      <Filter>DiaEntity</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaEntity\EditorInspectionTests.cpp">
+      <Filter>DiaEntity</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaEntity\StressTests.cpp">
+      <Filter>DiaEntity</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaEntity\IntegrationTests.cpp">
+      <Filter>DiaEntity</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaEntity\DataFlowContractTests.cpp">
+      <Filter>DiaEntity</Filter>
+    </ClCompile>
+    <!-- DiaObservation -->
+    <ClCompile Include="DiaObservation\Log\TestLogLevel.cpp">
+      <Filter>DiaObservation\Log</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Log\TestThreadLogBuffer.cpp">
+      <Filter>DiaObservation\Log</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Log\TestISink.cpp">
+      <Filter>DiaObservation\Log</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Log\TestLogger.cpp">
+      <Filter>DiaObservation\Log</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Log\TestAssertSinkBridge.cpp">
+      <Filter>DiaObservation\Log</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Log\TestAsyncDrain.cpp">
+      <Filter>DiaObservation\Log</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\TestJsonEscape.cpp">
+      <Filter>DiaObservation</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Trace\TestTracer.cpp">
+      <Filter>DiaObservation\Trace</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Trace\TestTracerRingOverflow.cpp">
+      <Filter>DiaObservation\Trace</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Trace\TestTraceFileSink.cpp">
+      <Filter>DiaObservation\Trace</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Trace\TestScopedZoneEdgeCases.cpp">
+      <Filter>DiaObservation\Trace</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestProfiler.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Health\TestHealthReporterBase.cpp">
+      <Filter>DiaObservation\Health</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Health\TestHealthRegistry.cpp">
+      <Filter>DiaObservation\Health</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Metric\TestMetricsFileSink.cpp">
+      <Filter>DiaObservation\Metric</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Config\TestObservationConfigLoader.cpp">
+      <Filter>DiaObservation\Config</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Session\TestSessionManagerTick.cpp">
+      <Filter>DiaObservation\Session</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Session\TestSessionManagerRetention.cpp">
+      <Filter>DiaObservation\Session</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Capture\TestCaptureManager.cpp">
+      <Filter>DiaObservation\Capture</Filter>
     </ClCompile>
     <!-- PipelineEditor -->
     <ClCompile Include="PipelineEditor\TestPipelineLogTailer.cpp">
@@ -745,6 +1128,9 @@
       <Filter>SoftBody2D</Filter>
     </ClCompile>
     <!-- Rig2D -->
+    <ClCompile Include="Rig2D\TestDiaRig2DSerializers.cpp">
+      <Filter>Rig2D</Filter>
+    </ClCompile>
     <ClCompile Include="Rig2D\TestRig2DGolden.cpp">
       <Filter>Rig2D</Filter>
     </ClCompile>
@@ -806,6 +1192,9 @@
     <ClCompile Include="IK\TestIK2DVisualDebuggerStack.cpp">
       <Filter>IK2D</Filter>
     </ClCompile>
+    <ClCompile Include="IK\TestDiaIK2DSerializers.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
     <!-- StateMachine -->
     <ClCompile Include="StateMachine\TestFlatStateMachine.cpp">
       <Filter>StateMachine</Filter>
@@ -856,6 +1245,9 @@
     <ClCompile Include="Animation2D\IntegrationTests.cpp">
       <Filter>Animation2D</Filter>
     </ClCompile>
+    <ClCompile Include="Animation2D\TestDiaAnimation2DSerializers.cpp">
+      <Filter>Animation2D</Filter>
+    </ClCompile>
     <!-- DiaAssetRuntime -->
     <ClCompile Include="DiaAssetRuntime\TestManifestLoadPathResolution.cpp">
       <Filter>DiaAssetRuntime</Filter>
@@ -881,26 +1273,537 @@
     <ClCompile Include="DiaAssetRuntime\TestReset.cpp">
       <Filter>DiaAssetRuntime</Filter>
     </ClCompile>
+    <!-- ApplicationFlow -->
+    <ClCompile Include="ApplicationFlow\TestStreamTypeSerializer.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestServiceChannel.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestEventStreamBatching.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestPUAffinity.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <!-- DiaGame -->
+    <ClCompile Include="DiaGame\TestJsonDiaGameSerializer.cpp">
+      <Filter>DiaGame</Filter>
+    </ClCompile>
     <!-- DiaAssetCatalogueEditor -->
     <ClCompile Include="DiaAssetCatalogueEditor\TestDiaAssetCatalogueEditorExhaustive.cpp">
       <Filter>DiaAssetCatalogueEditor</Filter>
     </ClCompile>
-    <!-- DiaVisualDebugger -->
-    <ClCompile Include="..\..\..\Dia\DiaVisualDebugger\DebugLayerPanelPlugin.cpp">
-      <Filter>DiaVisualDebugger</Filter>
+    <ClCompile Include="DiaAssetCatalogueEditor\IntegrationTestAssetCatalogueEditorPlugin.cpp">
+      <Filter>DiaAssetCatalogueEditor</Filter>
     </ClCompile>
+    <ClCompile Include="DiaAssetCatalogueEditor\IntegrationTestAutoRelationshipTracking.cpp">
+      <Filter>DiaAssetCatalogueEditor</Filter>
+    </ClCompile>
+    <!-- DiaVisualDebugger -->
     <ClCompile Include="DiaVisualDebugger\TestDebugLayerManager.cpp">
       <Filter>DiaVisualDebugger</Filter>
     </ClCompile>
-    <ClCompile Include="DiaVisualDebugger\TestDebugLayerPanelPlugin.cpp">
+    <ClCompile Include="DiaVisualDebugger\TestCoord2DDrawers.cpp">
       <Filter>DiaVisualDebugger</Filter>
     </ClCompile>
-    <ClCompile Include="DiaVisualDebugger\TestDiaVisualDebuggerConsole.cpp">
+    <ClCompile Include="DiaVisualDebugger\TestFixedDrawLayer.cpp">
       <Filter>DiaVisualDebugger</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\TestDebugLayerManagerStages.cpp">
+      <Filter>DiaVisualDebugger</Filter>
+    </ClCompile>
+    <!-- CluicheTest -->
+    <ClCompile Include="CluicheTest\TestResultsRegistryTests.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheTest\TestStageHUDTests.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CluicheTest\Modules\TestStages\TestResultsRegistry.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheTest\GuardOrderBusAdapterTests.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CluicheTest\Messages\GuardOrderBusAdapter.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CluicheTest\Modules\TestStages\TestStageModuleBase.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CluicheTest\Modules\TestStages\BehaviourTreeTestStageModule.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <!-- Automation -->
+    <ClCompile Include="Automation\TestAutomationService.cpp">
+      <Filter>Automation</Filter>
+    </ClCompile>
+    <ClCompile Include="Automation\TestMetricCommand.cpp">
+      <Filter>Automation</Filter>
     </ClCompile>
     <!-- GoogleTest -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
       <Filter>GoogleTest</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="ApplicationFlow\TestPUTiming.cpp">
+    <ClCompile Include="ApplicationFlow\TestStreamTelemetry.cpp">
+    <ClCompile Include="Integration\TestLiveConnectionPluginBase.cpp">
+    <ClCompile Include="Editor\TestEditorActionRegistry.cpp">
+    <ClCompile Include="Editor\TestEditorActionQueue.cpp">
+    <ClCompile Include="DiaEntityInspector\TestControllers.cpp">
+    <ClCompile Include="DiaAssetRuntimeInspector\TestDiaAssetRuntimeInspectorExhaustive.cpp">
+    <ClCompile Include="DiaSceneEditor\TestSceneEditorNewActions.cpp">
+    <ClCompile Include="DiaApplicationFlowEditor\TestAppFlowEditorRegistryActions.cpp">
+    <ClCompile Include="..\..\..\Cluiche\CluicheEditor\Plugins\DiaChatPlugin\ChatPanelBridge.cpp">
+      <Filter>DiaChatPlugin</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaChatPlugin\TestChatPanelBridge.cpp">
+      <Filter>DiaChatPlugin</Filter>
+    </ClCompile>
+    <!-- DiaMesh3D -->
+    <ClCompile Include="DiaMesh3D\TestMesh3DAsset.cpp">
+      <Filter>DiaMesh3D</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMesh3D\TestMesh3DBinaryReader.cpp">
+      <Filter>DiaMesh3D</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMesh3D\TestUnitCube.cpp">
+      <Filter>DiaMesh3D</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMesh3D\TestMeshBoundsDrawer.cpp">
+      <Filter>DiaMesh3D</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMesh3D\TestMeshOriginDrawer.cpp">
+      <Filter>DiaMesh3D</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMesh3D\TestMeshStatsDrawer.cpp">
+      <Filter>DiaMesh3D</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMesh3D\TestMesh3DAssetHandler.cpp">
+    <ClCompile Include="RigidBody2D\TestGravitySettle.cpp">
+    <ClCompile Include="RigidBody2D\TestCircleVsPolyContact.cpp">
+    <ClCompile Include="RigidBody2D\\TestRestingContact.cpp">
+    <ClCompile Include="DiaBgfx\TestShaderProgram.cpp">
+    <ClCompile Include="DiaBgfx3D\TestMeshRenderer.cpp">
+    <ClCompile Include="DiaBgfx3D\TestMeshPassLighting.cpp">
+    <ClCompile Include="DiaLighting3D\TestLightPathBehaviour3D.cpp">
+      <Filter>DiaLighting3D</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaLighting3D\TestLightWidgetsDrawer.cpp">
+      <Filter>DiaLighting3D</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaLighting3D\TestLightPathArcDrawer.cpp">
+    <ClCompile Include="DiaAIBudget\TestAIBudgetScheduler.cpp">
+      <Filter>DiaAIBudget</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAIBudget\TestAIBudgetSchedulerExtended.cpp">
+      <Filter>DiaAIBudget</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAIBudget\TestAIBudgetModule.cpp">
+      <Filter>DiaAIBudget</Filter>
+    </ClCompile>
+    <!-- DiaRules -->
+    <ClCompile Include="DiaRules\TestRuleActionRegistry.cpp">
+      <Filter>DiaRules</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaRules\TestRuleSet.cpp">
+      <Filter>DiaRules</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaRules\TestRuleSetComponent.cpp">
+      <Filter>DiaRules</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaRules\TestRulesTestHelpers.cpp">
+      <Filter>DiaRules</Filter>
+    </ClCompile>
+    <!-- DiaUtilityAI -->
+    <ClCompile Include="DiaUtilityAI\TestResponseCurve.cpp">
+      <Filter>DiaUtilityAI</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaUtilityAI\TestGroupConsiderationContext.cpp">
+      <Filter>DiaUtilityAI</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaUtilityAI\TestUtilitySet.cpp">
+      <Filter>DiaUtilityAI</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaUtilityAI\TestUtilitySetAsync.cpp">
+      <Filter>DiaUtilityAI</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaUtilityAI\TestUtilitySetComponent.cpp">
+      <Filter>DiaUtilityAI</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaUtilityAI\TestUtilityTestHelpers.cpp">
+      <Filter>DiaUtilityAI</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaUtilityAI\TestPersonalityProfile.cpp">
+      <Filter>DiaUtilityAI</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaUtilityAI\TestResponseCurveExtended.cpp">
+      <Filter>DiaUtilityAI</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaUtilityAI\TestUtilitySetExtended.cpp">
+      <Filter>DiaUtilityAI</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaUtilityAI\TestUtilityIntegration.cpp">
+      <Filter>DiaUtilityAI</Filter>
+    </ClCompile>
+    <!-- DiaHTN -->
+    <ClCompile Include="DiaHTN\TestOperatorRegistry.cpp">
+      <Filter>DiaHTN</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaHTN\TestHTNDomain.cpp">
+      <Filter>DiaHTN</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaHTN\TestHTNPlan.cpp">
+      <Filter>DiaHTN</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaHTN\TestHTNPlanner.cpp">
+      <Filter>DiaHTN</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaHTN\TestHTNPlannerComponent.cpp">
+      <Filter>DiaHTN</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaHTN\TestHTNTestHelpers.cpp">
+      <Filter>DiaHTN</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaBlackboard\TestBlackboard.cpp">
+    <ClCompile Include="CluicheGameBaseline\TestBlackboardInspectorSource.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestEconomyInspectorSources.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaPathfinding\TestPathfindingGolden.cpp">
+    <ClCompile Include="DiaPathfinding\TestPathfindingBoundary.cpp">
+    <ClCompile Include="DiaHTN\TestRuleActionBridge.cpp">
+    <ClCompile Include="DiaHTN\TestHTNIntegration.cpp">
+      <Filter>DiaHTN</Filter>
+    </ClCompile>
+      <Filter>DiaHTN</Filter>
+    </ClCompile>
+    <!-- DiaSteering -->
+    <ClCompile Include="DiaSteering\TestSteeringBehaviours.cpp">
+      <Filter>DiaSteering</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaSteering\TestSteeringPipeline.cpp">
+      <Filter>DiaSteering</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaSteering\TestSteeringSystem.cpp">
+    <ClCompile Include="DiaScalarField\TestScalarFieldVisualDebugger.cpp">
+    <ClCompile Include="DiaScalarField\TestDiaScalarFieldAdapter.cpp">
+      <Filter>DiaScalarField</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaSensor\TestDiaSensor.cpp">
+      <Filter>DiaSensor</Filter>
+    </ClCompile>
+    <!-- DiaEconomy -->
+    <ClCompile Include="DiaEconomy\TestDiaEconomy.cpp">
+      <Filter>DiaEconomy</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaEconomy\EconomyBusAdapterTests.cpp">
+      <Filter>DiaEconomy</Filter>
+    </ClCompile>
+    <!-- DiaAttribute -->
+    <ClCompile Include="DiaAttribute\TestDiaAttributeCore.cpp">
+      <Filter>DiaAttribute</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAttribute\TestDiaAttributeConditionalModifiers.cpp">
+      <Filter>DiaAttribute</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAttribute\TestDiaAttributeChangeNotifications.cpp">
+      <Filter>DiaAttribute</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAttribute\TestDiaAttributeAccessorBridge.cpp">
+      <Filter>DiaAttribute</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAttribute\TestDiaAttributeSaveSerialization.cpp">
+      <Filter>DiaAttribute</Filter>
+    </ClCompile>
+    <!-- DiaEntitySpawner -->
+    <ClCompile Include="DiaEntitySpawner\TestEntitySpawner.cpp">
+      <Filter>DiaEntitySpawner</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaEntitySpawner\SpawnDespawnBusBroadcastTests.cpp">
+      <Filter>DiaEntitySpawner</Filter>
+    </ClCompile>
+    <!-- DiaMessageBus -->
+    <ClCompile Include="DiaMessageBus\TestDiaMessageBusCore.cpp">
+      <Filter>DiaMessageBus</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMessageBus\EntityRouterRegistrationTest.cpp">
+      <Filter>DiaMessageBus</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMessageBus\TestDiaMessageBusLedgerHistory.cpp">
+      <Filter>DiaMessageBus</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMessageBus\TestBusHealthReporter.cpp">
+      <Filter>DiaMessageBus</Filter>
+    </ClCompile>
+    <!-- DiaObjective -->
+    <ClCompile Include="DiaObjective\TestObjectiveSet.cpp">
+      <Filter>DiaObjective</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObjective\TestObjectiveSetComponent.cpp">
+      <Filter>DiaObjective</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObjective\TestCapturingObserver.cpp">
+      <Filter>DiaObjective</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObjective\TestObjectiveSetBoundary.cpp">
+      <Filter>DiaObjective</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObjective\TestObjectiveSetStress.cpp">
+      <Filter>DiaObjective</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObjective\TestObjectiveSetBoundary.cpp">
+      <Filter>DiaObjective</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObjective\TestObjectiveSetStress.cpp">
+    <ClCompile Include="DiaSaveGame\TestSaveLoadContext.cpp">
+    <ClCompile Include="DiaSaveGame\TestSaveManifest.cpp">
+    <ClCompile Include="DiaSaveGame\TestSaveManager.cpp">
+    <ClCompile Include="DiaSaveGame\TestSaveGameMigration.cpp">
+    <ClCompile Include="DiaSaveGame\TestSaveManagerAsync.cpp">
+    <ClCompile Include="DiaSaveGame\TestSaveManagerEvents.cpp">
+    <ClCompile Include="DiaSaveGame\TestSlotManager.cpp">
+    <ClCompile Include="DiaSaveGame\TestSaveRegistry.cpp">
+    <ClCompile Include="DiaVisualDebugger\\TestDiaDebugDomainRegistry.cpp">
+    <ClCompile Include="DiaRigidBody2DVisualDebugger\TestRigidBody2DDebugDomain.cpp">
+    <ClCompile Include="DiaSoftBody2DVisualDebugger\TestSoftBody2DDebugDomain.cpp">
+    <ClCompile Include="DiaAnimation2DVisualDebugger\TestAnimation2DDebugDomain.cpp">
+    <ClCompile Include="DiaRig2DVisualDebugger\TestRig2DDebugDomain.cpp">
+    <ClCompile Include="DiaIK2DVisualDebugger\TestIK2DDebugDomain.cpp">
+    <ClCompile Include="DiaUtilityAIVisualDebugger\TestUtilityAIDebugDomain.cpp">
+    <ClCompile Include="DiaStateMachineVisualDebugger\TestStateMachineVisualDebugger.cpp">
+    <ClCompile Include="DiaBlackboardVisualDebugger\TestBlackboardVisualDebugger.cpp">
+    <ClCompile Include="DiaAIBudgetVisualDebugger\TestAIBudgetVisualDebugger.cpp">
+      <Filter>DiaAIBudgetVisualDebugger</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaRulesVisualDebugger\TestRulesVisualDebugger.cpp">
+    <ClCompile Include="DiaAssetRuntimeVisualDebugger\TestAssetRuntimeDebugDomain.cpp">
+    <ClCompile Include="DiaGeometry2DVisualDebugger\TestGeometry2DDebugDomain.cpp">
+    <ClCompile Include="DiaScene2DVisualDebugger\TestScene2DDebugDomain.cpp">
+    <ClCompile Include="DiaMesh3DVisualDebugger\TestMesh3DDebugDomain.cpp">
+    <ClCompile Include="DiaLighting3DVisualDebugger\TestLighting3DDebugDomain.cpp">
+    <ClCompile Include="DiaVisualDebugger\TestCoord2DDebugDomain.cpp">
+    <ClCompile Include="DiaVisualDebugger\TestCoord3DDebugDomain.cpp">
+      <Filter>DiaVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaLighting3DVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaMesh3DVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaScene2DVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaGeometry2DVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaAssetRuntimeVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaUtilityAIVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaStateMachineVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaBlackboardVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaRulesVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaIK2DVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaRig2DVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaAnimation2DVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaSoftBody2DVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaRigidBody2DVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaSaveGame</Filter>
+    </ClCompile>
+      <Filter>DiaSaveGame</Filter>
+    </ClCompile>
+      <Filter>DiaSaveGame</Filter>
+    </ClCompile>
+      <Filter>DiaSaveGame</Filter>
+    </ClCompile>
+      <Filter>DiaSaveGame</Filter>
+    </ClCompile>
+      <Filter>DiaSaveGame</Filter>
+    </ClCompile>
+      <Filter>DiaSaveGame</Filter>
+    </ClCompile>
+      <Filter>DiaSaveGame</Filter>
+    </ClCompile>
+      <Filter>DiaObjective</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMailboxVisualDebugger\TestMailboxVisualDebugger.cpp">
+    <ClCompile Include="DiaAICallout\CalloutEmitTests.cpp">
+    <ClCompile Include="DiaAICallout\CalloutQueryTests.cpp">
+    <ClCompile Include="DiaAICallout\CalloutClaimReleaseTests.cpp">
+    <ClCompile Include="DiaAICallout\CalloutTTLTests.cpp">
+    <ClCompile Include="DiaAICallout\CalloutObserverBusAdapterTests.cpp">
+    <ClCompile Include="DiaAICalloutVisualDebugger\TestCalloutRegistryDebugger.cpp">
+    <ClCompile Include="DiaBehaviourTree\TestEventListener.cpp">
+    <ClCompile Include="DiaBehaviourTree\TestBehaviourTreeSystem.cpp">
+    <ClCompile Include="DiaBehaviourTree\TestTestHelpers.cpp">
+    <ClCompile Include="DiaBehaviourTree\TestExhaustive.cpp">
+    <ClCompile Include="DiaBehaviourTreeVisualDebugger\TestBehaviourTreeVisualDebugger.cpp">
+    <ClCompile Include="DiaGridVisibility\TestGridVisibilitySystem.cpp">
+      <Filter>DiaGridVisibility</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaGridVisibility\TestGridVisibilityTypes.cpp">
+      <Filter>DiaGridVisibility</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaGridVisibility\TestGridVisibilityExhaustive.cpp">
+      <Filter>DiaGridVisibility</Filter>
+    </ClCompile>
+      <Filter>DiaBehaviourTreeVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaBehaviourTree</Filter>
+    </ClCompile>
+      <Filter>DiaBehaviourTree</Filter>
+    </ClCompile>
+      <Filter>DiaBehaviourTree</Filter>
+    </ClCompile>
+      <Filter>DiaBehaviourTree</Filter>
+    </ClCompile>
+      <Filter>DiaAICalloutVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaAICallout</Filter>
+    </ClCompile>
+      <Filter>DiaAICallout</Filter>
+    </ClCompile>
+      <Filter>DiaAICallout</Filter>
+    </ClCompile>
+      <Filter>DiaAICallout</Filter>
+    </ClCompile>
+      <Filter>DiaAICallout</Filter>
+    </ClCompile>
+      <Filter>DiaMailboxVisualDebugger</Filter>
+    </ClCompile>
+      <Filter>DiaScalarField</Filter>
+    </ClCompile>
+      <Filter>DiaSteering</Filter>
+    </ClCompile>
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
+      <Filter>DiaBlackboard</Filter>
+    </ClCompile>
+      <Filter>DiaLighting3D</Filter>
+    </ClCompile>
+      <Filter>DiaBgfx3D</Filter>
+    </ClCompile>
+      <Filter>DiaBgfx3D</Filter>
+    </ClCompile>
+      <Filter>DiaBgfx</Filter>
+    </ClCompile>
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+      <Filter>DiaMesh3D</Filter>
+    </ClCompile>
+      <Filter>DiaApplicationFlowEditor</Filter>
+    </ClCompile>
+      <Filter>DiaSceneEditor</Filter>
+    </ClCompile>
+      <Filter>DiaAssetRuntimeInspector</Filter>
+    </ClCompile>
+      <Filter>DiaEntityInspector</Filter>
+    </ClCompile>
+      <Filter>Editor</Filter>
+    </ClCompile>
+      <Filter>Editor</Filter>
+    </ClCompile>
+      <Filter>Integration</Filter>
+    </ClCompile>
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Animation2D\ClipCompletionBusAdapterTests.cpp">
+      <Filter>Animation2D</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAssetRuntime\TestListenerNotification.cpp">
+      <Filter>DiaAssetRuntime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAssetRuntime\TestAssetRuntimeBusAdapter.cpp">
+      <Filter>DiaAssetRuntime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaBehaviourTree\BehaviourTreeBusAdapterTests.cpp">
+      <Filter>DiaBehaviourTree</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMessageBus\TestMessageBusDebugDomain.cpp">
+      <Filter>DiaMessageBus</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestPhysicsBusAdapter.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\TestInputBusAdapter.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMessageBus\TestFlushAdapterIntegration.cpp">
+      <Filter>DiaMessageBus</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\SimTime\TestSimTimeContext.cpp">
+      <Filter>Core\SimTime</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestPUTypedModules.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\SimTime\TestSimTimeDomain.cpp">
+      <Filter>Core\SimTime</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestProcessingUnitAccumulator.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaSimTime\TestDiaRenderTime.cpp">
+      <Filter>DiaSimTime</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\SimTime\TestSimTimeDomainRegistry.cpp">
+      <Filter>Core\SimTime</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestProcessingUnitDomainRegistry.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaSimTime\TestSimTimeScheduler.cpp">
+      <Filter>DiaSimTime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaSimTime\TestISimTimeBudgetedSystem.cpp">
+      <Filter>DiaSimTime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaSimTime\TestSimTimeRegistry.cpp">
+      <Filter>DiaSimTime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaSimTime\TestSimTimeBudget.cpp">
+      <Filter>DiaSimTime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaSimTime\TestDiaSimTimeModule.cpp">
+      <Filter>DiaSimTime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaSimTime\TestSimTimeSaveState.cpp">
+      <Filter>DiaSimTime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaPathfinding\TestPathfindingSystemBudgetAdapter.cpp">
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DiaAttributeVisualDebugger\TestAttributeVisualDebugger.cpp">
+      <Filter>DiaAttributeVisualDebugger</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

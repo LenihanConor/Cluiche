@@ -25,7 +25,7 @@ Build individual projects or the entire Cluiche solution with proper dependency 
 - **DiaCore**: Foundation library (must build first, no dependencies)
 - **DiaMaths**: Math library (depends on DiaCore)
 - **DiaGraphics**: Graphics layer (depends on DiaCore, DiaMaths, DiaUI)
-- **DiaApplication**: Application framework
+- **DiaApplicationFlow**: Application framework
 - **DiaWindow**: Window management (depends on DiaGraphics)
 - **DiaInput**: Input handling
 - **DiaUI**: Base UI system (depends on DiaCore, DiaInput)

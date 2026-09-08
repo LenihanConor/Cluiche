@@ -130,7 +130,7 @@ namespace Dia
 			}
 
 			//----------------------------------------------------------
-			template< class Key, class Payload, class HashFunctor, unsigned int sizePayload, unsigned int sizeTable > typename
+			template< class Key, class Payload, class HashFunctor, unsigned int sizePayload, unsigned int sizeTable >
 			void HashTableC<Key, Payload, HashFunctor, sizePayload, sizeTable>::Add (const Key& key, const Payload& value)
 			{
 				mPayloadNodes.AddDefault();

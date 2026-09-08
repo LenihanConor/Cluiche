@@ -3,41 +3,30 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#include <DiaCore/CRC/StringCRC.h>
 #include <DiaMaths/Vector/Vector2D.h>
 
 namespace Dia
 {
 	namespace Graphics
 	{
-		////////////////////////////////////////////////////////////
-		/// \brief Interface for texture objects
-		///
-		/// A texture represents an image that can be mapped onto shapes.
-		/// This interface provides backend-agnostic access to texture
-		/// properties and allows retrieval of the native handle for
-		/// direct backend usage.
-		////////////////////////////////////////////////////////////
 		class ITexture
 		{
 		public:
+			enum class State : unsigned char
+			{
+				Pending = 0,
+				Ready   = 1,
+				Failed  = 2
+			};
+
 			virtual ~ITexture() {}
 
-			////////////////////////////////////////////////////////////
-			/// \brief Return the size of the texture
-			///
-			/// \return Size in pixels
-			////////////////////////////////////////////////////////////
-			virtual Maths::Vector2D GetSize() const = 0;
+			virtual Dia::Core::StringCRC GetAssetId() const = 0;
+			virtual Maths::Vector2D     GetSize()    const = 0;
+			virtual State               GetState()   const = 0;
 
-			////////////////////////////////////////////////////////////
-			/// \brief Get the native backend texture handle
-			///
-			/// Returns a pointer to the underlying backend texture object
-			/// (e.g., sf::Texture* for SFML backend). Use with caution.
-			///
-			/// \return Native texture handle (backend-specific)
-			////////////////////////////////////////////////////////////
-			virtual const void* GetNativeHandle() const = 0;
+			bool IsReady() const { return GetState() == State::Ready; }
 
 		protected:
 			ITexture() {}

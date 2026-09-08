@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ScalarField Inspector — Logic Tests</title>
+<style>
+  body { font-family: monospace; font-size: 13px; background: #1e1e1e; color: #d4d4d4; padding: 16px; }
+  h1   { color: #9cdcfe; font-size: 15px; margin-bottom: 12px; }
+  .pass { color: #89d185; }
+  .fail { color: #f44747; font-weight: bold; }
+  .suite { color: #569cd6; margin-top: 14px; margin-bottom: 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  #summary { margin-top: 16px; font-size: 14px; font-weight: bold; }
+</style>
+</head>
+<body>
+<h1>ScalarField Inspector — Logic Tests</h1>
+<div id="output"></div>
+<div id="summary"></div>
+<script>
+// ── Minimal test harness ───────────────────────────────────────────────────
+var results = [];
+
+function suite(name) {
+  results.push({ type: 'suite', name: name });
+}
+
+function test(name, fn) {
+  try {
+    fn();
+    results.push({ type: 'pass', name: name });
+  } catch (e) {
+    results.push({ type: 'fail', name: name, msg: e.message || String(e) });
+  }
+}
+
+function expect(actual) {
+  return {
+    toBe: function(expected) {
+      if (actual !== expected)
+        throw new Error('Expected ' + JSON.stringify(expected) + ' but got ' + JSON.stringify(actual));
+    },
+    toBeCloseTo: function(expected, decimals) {
+      var d = decimals === undefined ? 4 : decimals;
+      var tolerance = Math.pow(10, -d) / 2;
+      var diff = Math.abs(actual - expected);
+      if (diff > tolerance)
+        throw new Error('Expected ~' + expected + ' (±' + tolerance + ') but got ' + actual);
+    },
+    toEqual: function(expected) {
+      var a = JSON.stringify(actual), b = JSON.stringify(expected);
+      if (a !== b) throw new Error('Expected ' + b + ' but got ' + a);
+    },
+    toBeTruthy: function() {
+      if (!actual) throw new Error('Expected truthy but got ' + JSON.stringify(actual));
+    },
+    toBeFalsy: function() {
+      if (actual) throw new Error('Expected falsy but got ' + JSON.stringify(actual));
+    },
+    toBeNull: function() {
+      if (actual !== null) throw new Error('Expected null but got ' + JSON.stringify(actual));
+    }
+  };
+}
+
+// ── Copy under test (pure functions extracted from index.html) ─────────────
+// These must stay in sync with the originals in index.html.
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function fmt4(n) { return (typeof n === 'number') ? n.toFixed(4) : '—'; }
+
+function cellColor(t) {
+  var clamped = Math.max(0, Math.min(1, t));
+  var r = Math.round(255 * clamped);
+  var b = Math.round(255 * (1 - clamped));
+  return 'rgba(' + r + ',0,' + b + ',' + (220/255).toFixed(3) + ')';
+}
+
+function computeStats(cells) {
+  if (!cells || cells.length === 0) return { min: 0, max: 0, mean: 0 };
+  var min = Infinity, max = -Infinity, sum = 0;
+  for (var i = 0; i < cells.length; i++) {
+    var v = cells[i];
+    if (v < min) min = v;
+    if (v > max) max = v;
+    sum += v;
+  }
+  return { min: min, max: max, mean: sum / cells.length };
+}
+
+function findField(fields, name) {
+  if (!fields) return null;
+  for (var i = 0; i < fields.length; i++) {
+    if (fields[i].name === name) return fields[i];
+  }
+  return null;
+}
+
+// Simulate the onStateUpdate + history ring logic.
+function makeHistoryState() {
+  return { history: [], sliderLive: true, sliderValue: 59 };
+}
+
+function pushState(state, fields) {
+  state.history.push(fields);
+  if (state.history.length > 60) state.history.shift();
+  if (state.sliderLive) state.sliderValue = state.history.length - 1;
+}
+
+function getSnapshotFields(state) {
+  if (state.history.length === 0) return [];
+  if (state.sliderLive) return state.history[state.history.length - 1];
+  var idx = Math.min(state.sliderValue, state.history.length - 1);
+  return state.history[idx];
+}
+
+// ── Tests ──────────────────────────────────────────────────────────────────
+
+// --- escapeHtml ---
+suite('escapeHtml');
+
+test('passes plain strings unchanged', function() {
+  expect(escapeHtml('hello world')).toBe('hello world');
+});
+test('escapes &', function() {
+  expect(escapeHtml('a&b')).toBe('a&amp;b');
+});
+test('escapes <', function() {
+  expect(escapeHtml('<tag>')).toBe('&lt;tag&gt;');
+});
+test('escapes "', function() {
+  expect(escapeHtml('"quoted"')).toBe('&quot;quoted&quot;');
+});
+test('converts number to string', function() {
+  expect(escapeHtml(42)).toBe('42');
+});
+
+// --- fmt4 ---
+suite('fmt4');
+
+test('formats 0 as 0.0000', function() {
+  expect(fmt4(0)).toBe('0.0000');
+});
+test('formats 1 as 1.0000', function() {
+  expect(fmt4(1)).toBe('1.0000');
+});
+test('formats 0.12345 to 4dp', function() {
+  expect(fmt4(0.12345)).toBe('0.1235');  // rounds up
+});
+test('returns — for non-number', function() {
+  expect(fmt4('x')).toBe('—');
+  expect(fmt4(null)).toBe('—');
+  expect(fmt4(undefined)).toBe('—');
+});
+
+// --- cellColor ---
+suite('cellColor');
+
+test('value 0 → pure blue (0,0,255)', function() {
+  expect(cellColor(0)).toBe('rgba(0,0,255,' + (220/255).toFixed(3) + ')');
+});
+test('value 1 → pure red (255,0,0)', function() {
+  expect(cellColor(1)).toBe('rgba(255,0,0,' + (220/255).toFixed(3) + ')');
+});
+test('value 0.5 → mid (128,0,128)', function() {
+  expect(cellColor(0.5)).toBe('rgba(128,0,128,' + (220/255).toFixed(3) + ')');
+});
+test('value -1 clamps to 0 (blue)', function() {
+  expect(cellColor(-1)).toBe('rgba(0,0,255,' + (220/255).toFixed(3) + ')');
+});
+test('value 2 clamps to 1 (red)', function() {
+  expect(cellColor(2)).toBe('rgba(255,0,0,' + (220/255).toFixed(3) + ')');
+});
+
+// --- computeStats ---
+suite('computeStats');
+
+test('empty array returns zeros', function() {
+  var s = computeStats([]);
+  expect(s.min).toBe(0);
+  expect(s.max).toBe(0);
+  expect(s.mean).toBe(0);
+});
+test('null returns zeros', function() {
+  var s = computeStats(null);
+  expect(s.min).toBe(0);
+  expect(s.max).toBe(0);
+  expect(s.mean).toBe(0);
+});
+test('single element', function() {
+  var s = computeStats([0.5]);
+  expect(s.min).toBe(0.5);
+  expect(s.max).toBe(0.5);
+  expect(s.mean).toBe(0.5);
+});
+test('min / max / mean correct', function() {
+  var s = computeStats([0.0, 0.5, 1.0]);
+  expect(s.min).toBe(0.0);
+  expect(s.max).toBe(1.0);
+  expect(s.mean).toBeCloseTo(0.5, 6);
+});
+test('mean with uneven values', function() {
+  var s = computeStats([0.2, 0.4, 0.6]);
+  expect(s.mean).toBeCloseTo(0.4, 6);
+});
+
+// --- findField ---
+suite('findField');
+
+test('returns null for empty array', function() {
+  expect(findField([], 'x')).toBeNull();
+});
+test('returns null for null', function() {
+  expect(findField(null, 'x')).toBeNull();
+});
+test('finds by name', function() {
+  var f = [{ name: 'danger', cellCount: 400 }, { name: 'threat', cellCount: 9 }];
+  var result = findField(f, 'threat');
+  expect(result.name).toBe('threat');
+});
+test('returns null when name absent', function() {
+  var f = [{ name: 'danger' }];
+  expect(findField(f, 'missing')).toBeNull();
+});
+
+// --- history ring (pushState / getSnapshotFields) ---
+suite('history ring');
+
+test('starts empty', function() {
+  var s = makeHistoryState();
+  expect(getSnapshotFields(s)).toEqual([]);
+});
+
+test('push one state — live returns it', function() {
+  var s = makeHistoryState();
+  var fields = [{ name: 'f', cellCount: 4 }];
+  pushState(s, fields);
+  expect(getSnapshotFields(s)).toEqual(fields);
+});
+
+test('sliderValue tracks head when live', function() {
+  var s = makeHistoryState();
+  for (var i = 0; i < 5; i++) pushState(s, [{ name: 'f', value: i }]);
+  expect(s.sliderValue).toBe(4);
+  expect(s.history.length).toBe(5);
+});
+
+test('caps at 60 entries', function() {
+  var s = makeHistoryState();
+  for (var i = 0; i < 65; i++) pushState(s, [{ name: 'f', id: i }]);
+  expect(s.history.length).toBe(60);
+});
+
+test('oldest entry evicted at 61', function() {
+  var s = makeHistoryState();
+  for (var i = 0; i < 61; i++) pushState(s, [{ name: 'f', id: i }]);
+  // After 61 pushes, 60 entries remain; index 0 is the 2nd push (id=1).
+  expect(s.history[0][0].id).toBe(1);
+});
+
+test('non-live slider returns historical entry', function() {
+  var s = makeHistoryState();
+  var a = [{ name: 'a' }];
+  var b = [{ name: 'b' }];
+  var c = [{ name: 'c' }];
+  pushState(s, a);
+  pushState(s, b);
+  pushState(s, c);
+
+  // Pin to first entry.
+  s.sliderLive  = false;
+  s.sliderValue = 0;
+  expect(getSnapshotFields(s)).toEqual(a);
+
+  s.sliderValue = 1;
+  expect(getSnapshotFields(s)).toEqual(b);
+
+  s.sliderValue = 2;
+  expect(getSnapshotFields(s)).toEqual(c);
+});
+
+test('sliderValue beyond history length clamps to last', function() {
+  var s = makeHistoryState();
+  var a = [{ name: 'a' }];
+  pushState(s, a);
+  s.sliderLive  = false;
+  s.sliderValue = 50; // only 1 entry
+  expect(getSnapshotFields(s)).toEqual(a);
+});
+
+test('new push does not advance sliderValue when not live', function() {
+  var s = makeHistoryState();
+  pushState(s, [{ name: 'a' }]);
+  s.sliderLive  = false;
+  s.sliderValue = 0;
+
+  pushState(s, [{ name: 'b' }]);
+  // sliderLive is false, so sliderValue must stay 0.
+  expect(s.sliderValue).toBe(0);
+});
+
+// ── Render results ─────────────────────────────────────────────────────────
+var out = document.getElementById('output');
+var passed = 0, failed = 0;
+
+results.forEach(function(r) {
+  if (r.type === 'suite') {
+    var h = document.createElement('div');
+    h.className = 'suite';
+    h.textContent = r.name;
+    out.appendChild(h);
+    return;
+  }
+  var line = document.createElement('div');
+  if (r.type === 'pass') {
+    line.className = 'pass';
+    line.textContent = '  ✓ ' + r.name;
+    passed++;
+  } else {
+    line.className = 'fail';
+    line.textContent = '  ✗ ' + r.name + ' — ' + r.msg;
+    failed++;
+  }
+  out.appendChild(line);
+});
+
+var summary = document.getElementById('summary');
+var total = passed + failed;
+if (failed === 0) {
+  summary.className = 'pass';
+  summary.textContent = '✓ All ' + total + ' tests passed.';
+} else {
+  summary.className = 'fail';
+  summary.textContent = '✗ ' + failed + ' of ' + total + ' tests FAILED.';
+}
+</script>
+</body>
+</html>

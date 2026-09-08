@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dia Console — Mockup</title>
+<style>
+  :root {
+    --bg-0: #0d1117;   /* canvas: recessed content (form, log, results) */
+    --bg-1: #161b22;   /* chrome: header, nav, tabstrip, footer */
+    --bg-2: #1c2128;   /* surface: hover, chips, neutral cards */
+    --bg-3: #262c36;   /* raised: active/hover surface */
+    --border: #30363d; /* used ONLY for: window frame, sidebar divider, input underline, active tab */
+    --text-0: #e6edf3;
+    --text-1: #9198a1;
+    --text-2: #6e7681;
+    --accent: #4493f8;
+    --accent-dim: #1f6feb1a;
+    --green: #3fb950;
+    --red: #f85149;
+    --red-dim: #f8514915;
+    --yellow: #d29922;
+    --yellow-dim: #d2992215;
+    --mono: "Cascadia Code", "SF Mono", Consolas, monospace;
+    --sans: -apple-system, "Segoe UI", Inter, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: #000;
+    font-family: var(--sans);
+    color: var(--text-0);
+    font-size: 13px;
+  }
+
+  .window {
+    width: 1180px;
+    height: 720px;
+    margin: 16px auto 0;
+    background: var(--bg-0);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    border: 1px solid var(--border); /* native window frame — kept intentionally */
+  }
+
+  /* ---- Header block: titlebar + context row fused, one shade, no internal line ---- */
+  .headerblock { background: var(--bg-1); flex-shrink: 0; }
+  .titlebar {
+    height: 34px;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    -webkit-app-region: drag;
+  }
+  .titlebar .logo { width: 16px; height: 16px; border-radius: 3px; background: linear-gradient(135deg, var(--accent), #7c5cff); margin-right: 8px; }
+  .titlebar .title { font-size: 12px; color: var(--text-1); font-weight: 600; letter-spacing: 0.3px; }
+  .titlebar .winctrls { margin-left: auto; display: flex; gap: 14px; color: var(--text-2); font-size: 13px; }
+  .titlebar .winctrls span { cursor: default; }
+  .titlebar .winctrls .close:hover { color: var(--red); }
+
+  .contextrow {
+    height: 34px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 14px;
+    font-size: 12.5px;
+  }
+  .breadcrumb { display: flex; align-items: center; gap: 6px; color: var(--text-1); cursor: default; }
+  .breadcrumb .seg.current { color: var(--text-0); font-weight: 600; }
+  .breadcrumb .chev { color: var(--text-2); font-size: 9px; }
+  .breadcrumb .slash { color: var(--text-2); }
+  .runstate {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--text-1);
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; background: var(--text-2); }
+  .dot.accent { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+  .dot.green { background: var(--green); }
+  .dot.red { background: var(--red); }
+  .dot.yellow { background: var(--yellow); }
+  .runstate.running { color: var(--accent); }
+
+  /* ---- Body layout ---- */
+  .body { flex: 1; display: flex; overflow: hidden; }
+
+  /* ---- Left nav: only structural divider in the whole UI besides the window frame ---- */
+  .nav {
+    width: 220px;
+    background: var(--bg-1);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+  .search {
+    margin: 10px 10px 6px;
+    background: var(--bg-2);
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 12px;
+    color: var(--text-2);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .search kbd {
+    margin-left: auto;
+    background: var(--bg-3);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 10px;
+    color: var(--text-2);
+  }
+  .navgroups { overflow-y: auto; padding: 4px 6px 10px; }
+  .navgroup { margin-top: 2px; }
+  .navgroup-title {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-2);
+    padding: 7px 8px;
+    font-weight: 600;
+    cursor: default;
+  }
+  .navgroup-title .chev { font-size: 9px; width: 8px; }
+  .navgroup-title .count { margin-left: auto; color: var(--text-2); font-weight: 400; letter-spacing: 0; text-transform: none; font-size: 11px; }
+  .navgroup.expanded .navgroup-title { color: var(--text-1); }
+  .navgroup:not(.expanded) .navitems { display: none; }
+
+  .navitem {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px 6px 22px;
+    border-radius: 5px;
+    color: var(--text-1);
+    font-size: 12.5px;
+    cursor: default;
+  }
+  .navitem .dotstat { width: 5px; height: 5px; border-radius: 50%; background: var(--text-2); flex-shrink:0; }
+  .navitem.active {
+    background: var(--accent-dim);
+    color: var(--text-0);
+    font-weight: 600;
+  }
+  .navitem.active .dotstat { background: var(--accent); }
+  .navitem:not(.active):hover { background: var(--bg-2); }
+
+  .presets { padding: 10px; }
+  .presets-title { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-2); margin-bottom: 6px; font-weight: 600; }
+  .preset-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--bg-2); border-radius: 12px;
+    padding: 3px 9px; font-size: 11px; color: var(--text-1);
+    margin: 0 4px 4px 0;
+  }
+  .preset-chip .star { color: var(--yellow); font-size: 10px; }
+
+  /* ---- Center column: pure canvas, no boxes — hierarchy via type & spacing ---- */
+  .center { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--bg-0); }
+
+  .cmdheader { padding: 16px 20px 10px; }
+  .cmdheader .path { font-family: var(--mono); font-size: 11px; color: var(--text-2); margin-bottom: 4px; }
+  .cmdheader .name { font-size: 16px; font-weight: 700; color: var(--text-0); }
+  .cmdheader .desc { font-size: 12px; color: var(--text-1); margin-top: 3px; }
+
+  .form-area { padding: 6px 20px 14px; }
+  .field-row { display: flex; gap: 20px; margin-bottom: 16px; }
+  .field { flex: 1; }
+  .field label { display: block; font-size: 11px; color: var(--text-2); margin-bottom: 6px; font-weight: 600; }
+  .field select, .field input[type=text], .field input[type=number] {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+    color: var(--text-0);
+    padding: 4px 2px 6px;
+    font-size: 12.5px;
+    font-family: var(--sans);
+  }
+  .field select:focus, .field input:focus {
+    outline: none;
+    border-bottom: 1px solid var(--accent);
+  }
+  .field.required label::after { content: " *"; color: var(--red); }
+
+  .checkrow { display: flex; gap: 18px; margin: 4px 0 14px; flex-wrap: wrap; }
+  .checkitem { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-1); }
+  .checkitem .box { width: 13px; height: 13px; border: 1px solid var(--text-2); border-radius: 3px; display: inline-block; }
+  .checkitem .box.checked { background: var(--accent); border-color: var(--accent); position: relative; }
+  .checkitem .box.checked::after { content: "✓"; color: white; font-size: 9px; position: absolute; left: 1px; top: -2px; }
+
+  .advanced-toggle {
+    font-size: 11px; color: var(--text-2); cursor: default;
+    display: flex; align-items: center; gap: 5px; margin: 2px 0 14px;
+  }
+
+  .cli-preview {
+    background: var(--bg-1);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: #79c0ff;
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 14px;
+  }
+  .cli-preview .prefix { color: var(--text-2); font-family: var(--mono); }
+  .cli-preview .copy { margin-left: auto; color: var(--text-2); font-size: 11px; font-family: var(--sans); cursor: default; }
+
+  .actions { display: flex; gap: 10px; }
+  .btn {
+    padding: 7px 20px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+    border: none;
+    cursor: default;
+  }
+  .btn.primary { background: var(--accent); color: white; }
+  .btn.secondary { background: var(--bg-2); color: var(--text-1); }
+
+  /* ---- Output area ---- */
+  .outputpanel { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .tabstrip {
+    display: flex;
+    align-items: center;
+    background: var(--bg-1);
+    flex-shrink: 0;
+    padding: 0 16px;
+  }
+  .tab {
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-2);
+    border-bottom: 2px solid transparent;
+    cursor: default;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tab.active { color: var(--text-0); border-bottom-color: var(--accent); }
+  .tab .badge { background: var(--red-dim); color: var(--red); border-radius: 8px; font-size: 10px; padding: 1px 6px; font-weight: 700; }
+
+  .statusline {
+    padding: 8px 20px;
+    font-size: 11.5px;
+    color: var(--text-1);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .statusline .step { color: var(--text-0); font-weight: 600; }
+  .statusline .bar { width: 90px; height: 3px; background: var(--bg-2); border-radius: 2px; overflow: hidden; }
+  .statusline .bar .fill { height: 100%; background: var(--accent); }
+
+  .logpane {
+    flex: 1;
+    padding: 4px 20px 14px;
+    overflow-y: auto;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.7;
+  }
+  .logline { color: var(--text-2); }
+  .logline .ts { color: var(--text-2); margin-right: 8px; opacity: 0.7; }
+  .logline.warn { color: var(--yellow); }
+  .logline.err { color: var(--red); }
+
+  .resultspane {
+    flex: 1;
+    padding: 12px 20px 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .card { border-radius: 7px; padding: 10px 12px; background: var(--bg-1); }
+  .card.err { background: var(--red-dim); }
+  .card.warn { background: var(--yellow-dim); }
+  .card-title { font-size: 12.5px; font-weight: 700; display: flex; align-items: center; gap: 7px; color: var(--text-0); }
+  .card.err .card-title { color: var(--red); }
+  .card.warn .card-title { color: var(--yellow); }
+  .card-title .mark.ok { color: var(--green); }
+  .card-sub { font-size: 11px; color: var(--text-1); margin-top: 4px; }
+  .card-detail { margin-top: 8px; font-family: var(--mono); font-size: 10.5px; color: var(--text-1); background: rgba(0,0,0,0.25); border-radius: 5px; padding: 6px 8px; }
+
+  .artifacts-line {
+    font-size: 11px; color: var(--text-2);
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    margin-top: 4px;
+  }
+  .artifacts-line .lbl { color: var(--text-2); margin-right: 2px; }
+  .artifacts-line a { color: var(--accent); text-decoration: none; }
+  .artifacts-line .sep { color: var(--text-2); }
+
+  /* ---- Footer: shade change is the only separation from canvas above it ---- */
+  .footer {
+    height: 30px;
+    background: var(--bg-1);
+    display: flex; align-items: center; gap: 16px;
+    padding: 0 16px;
+    font-size: 11px; color: var(--text-2);
+    flex-shrink: 0;
+  }
+  .footer kbd { background: var(--bg-3); border-radius: 4px; padding: 1px 5px; font-family: var(--mono); color: var(--text-1); margin-right: 4px; }
+
+  .statelabel {
+    max-width: 1180px; margin: 18px auto 6px; color: var(--text-1);
+    font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: 0.3px;
+  }
+  .caption {
+    text-align: center; color: #6e7681; font-family: var(--sans);
+    font-size: 12px; margin: 10px 0 24px;
+  }
+</style>
+</head>
+<body>
+
+<div class="statelabel">State A — run in progress (Log tab active)</div>
+<div class="window">
+
+  <div class="headerblock">
+    <div class="titlebar">
+      <div class="logo"></div>
+      <div class="title">DIA CONSOLE</div>
+      <div class="winctrls">
+        <span>&#8211;</span>
+        <span>&#9633;</span>
+        <span class="close">&#10005;</span>
+      </div>
+    </div>
+    <div class="contextrow">
+      <div class="breadcrumb">
+        <span class="seg current">CoW</span>
+        <span class="chev">▾</span>
+        <span class="slash">/</span>
+        <span class="seg">cluichetest</span>
+        <span class="chev">▾</span>
+        <span class="slash">/</span>
+        <span class="seg">Debug</span>
+        <span class="chev">▾</span>
+        <span class="slash">/</span>
+        <span class="seg">Win64</span>
+        <span class="chev">▾</span>
+      </div>
+      <div class="runstate running"><span class="dot accent"></span> Running</div>
+    </div>
+  </div>
+
+  <div class="body">
+
+    <div class="nav">
+      <div class="search">🔍 Search commands <kbd>Ctrl K</kbd></div>
+      <div class="navgroups">
+        <div class="navgroup expanded">
+          <div class="navgroup-title"><span class="chev">▾</span> Run &amp; Debug</div>
+          <div class="navitems">
+            <div class="navitem active"><span class="dotstat"></span> run</div>
+            <div class="navitem"><span class="dotstat"></span> launch</div>
+            <div class="navitem"><span class="dotstat"></span> pipeline</div>
+            <div class="navitem"><span class="dotstat"></span> fix</div>
+            <div class="navitem"><span class="dotstat"></span> diagnose</div>
+          </div>
+        </div>
+        <div class="navgroup">
+          <div class="navgroup-title"><span class="chev">▸</span> Test &amp; Quality <span class="count">5</span></div>
+          <div class="navitems">
+            <div class="navitem"><span class="dotstat"></span> test googletest</div>
+            <div class="navitem"><span class="dotstat"></span> test e2e</div>
+            <div class="navitem"><span class="dotstat"></span> test cli</div>
+            <div class="navitem"><span class="dotstat"></span> check arch</div>
+            <div class="navitem"><span class="dotstat"></span> check cppcheck</div>
+          </div>
+        </div>
+        <div class="navgroup">
+          <div class="navgroup-title"><span class="chev">▸</span> Assets &amp; Data <span class="count">2</span></div>
+          <div class="navitems">
+            <div class="navitem"><span class="dotstat"></span> asset build</div>
+            <div class="navitem"><span class="dotstat"></span> reflect reflect</div>
+          </div>
+        </div>
+        <div class="navgroup">
+          <div class="navgroup-title"><span class="chev">▸</span> Create &amp; Docs <span class="count">2</span></div>
+          <div class="navitems">
+            <div class="navitem"><span class="dotstat"></span> scaffold module</div>
+            <div class="navitem"><span class="dotstat"></span> docs plan</div>
+          </div>
+        </div>
+        <div class="navgroup">
+          <div class="navgroup-title"><span class="chev">▸</span> Environment <span class="count">2</span></div>
+          <div class="navitems">
+            <div class="navitem"><span class="dotstat"></span> env setup</div>
+            <div class="navitem"><span class="dotstat"></span> env verify</div>
+          </div>
+        </div>
+        <div class="navgroup">
+          <div class="navgroup-title"><span class="chev">▸</span> Advanced <span class="count">2</span></div>
+          <div class="navitems">
+            <div class="navitem"><span class="dotstat"></span> api exec</div>
+            <div class="navitem"><span class="dotstat"></span> show config</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="presets">
+        <div class="presets-title">Presets</div>
+        <span class="preset-chip"><span class="star">★</span> E2E Smoke</span>
+        <span class="preset-chip"><span class="star">★</span> Arch Summary</span>
+        <span class="preset-chip">+ Save current…</span>
+      </div>
+    </div>
+
+    <div class="center">
+      <div class="cmdheader">
+        <div class="path">dia run &lt;target&gt;</div>
+        <div class="name">Run</div>
+        <div class="desc">Build and launch a target — pipeline (compile + deploy) then launch.</div>
+      </div>
+
+      <div class="form-area">
+        <div class="field-row">
+          <div class="field required">
+            <label>Target</label>
+            <select><option>cluichetest</option></select>
+          </div>
+          <div class="field">
+            <label>Config</label>
+            <select><option>Debug</option></select>
+          </div>
+          <div class="field">
+            <label>Filter</label>
+            <input type="text" placeholder="PATTERN — e.g. Physics2D*">
+          </div>
+          <div class="field">
+            <label>Shards</label>
+            <input type="number" value="4">
+          </div>
+        </div>
+
+        <div class="checkrow">
+          <div class="checkitem"><span class="box"></span> Force rebuild</div>
+          <div class="checkitem"><span class="box checked"></span> Include SLOW_* suites</div>
+          <div class="checkitem"><span class="box"></span> Verbose</div>
+          <div class="checkitem"><span class="box"></span> Build only</div>
+        </div>
+
+        <div class="advanced-toggle">▸ Advanced options (2 hidden)</div>
+
+        <div class="cli-preview">
+          <span class="prefix">$</span>
+          <span>dia run cluichetest --config Debug --all --shards 4</span>
+          <span class="copy">copy</span>
+        </div>
+
+        <div class="actions">
+          <div class="btn primary">▶ Run</div>
+          <div class="btn secondary">Cancel</div>
+        </div>
+      </div>
+
+      <div class="outputpanel">
+        <div class="tabstrip">
+          <div class="tab active">Log</div>
+          <div class="tab">Results</div>
+        </div>
+        <div class="statusline">
+          <span class="dot accent"></span>
+          <span>Step 3/4 · <span class="step">tests</span> · 2390/3241</span>
+          <div class="bar"><div class="fill" style="width:63%"></div></div>
+        </div>
+        <div class="logpane">
+          <div class="logline"><span class="ts">14:52:31</span>▶ pipeline run started (cluichetest, Debug)</div>
+          <div class="logline"><span class="ts">14:52:33</span>&nbsp;&nbsp;compile ... done (2.1s)</div>
+          <div class="logline"><span class="ts">14:52:35</span>&nbsp;&nbsp;build-assets ... done (1.8s)</div>
+          <div class="logline"><span class="ts">14:52:37</span>&nbsp;&nbsp;tests ... running (2042/3241)</div>
+          <div class="logline warn"><span class="ts">14:52:38</span>&nbsp;&nbsp;[RigidBody2D_Test] resting contact did not sleep within budget</div>
+          <div class="logline"><span class="ts">14:52:39</span>&nbsp;&nbsp;tests ... running (2390/3241)</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    <span><kbd>/</kbd>Palette</span>
+    <span><kbd>Enter</kbd>Run</span>
+    <span><kbd>Ctrl R</kbd>Rerun</span>
+    <span><kbd>Esc</kbd>Back</span>
+    <span><kbd>F1</kbd>Help</span>
+  </div>
+
+</div>
+
+<div class="statelabel">State B — run complete (Results tab active)</div>
+<div class="window">
+
+  <div class="headerblock">
+    <div class="titlebar">
+      <div class="logo"></div>
+      <div class="title">DIA CONSOLE</div>
+      <div class="winctrls">
+        <span>&#8211;</span>
+        <span>&#9633;</span>
+        <span class="close">&#10005;</span>
+      </div>
+    </div>
+    <div class="contextrow">
+      <div class="breadcrumb">
+        <span class="seg current">CoW</span>
+        <span class="chev">▾</span>
+        <span class="slash">/</span>
+        <span class="seg">cluichetest</span>
+        <span class="chev">▾</span>
+        <span class="slash">/</span>
+        <span class="seg">Debug</span>
+        <span class="chev">▾</span>
+        <span class="slash">/</span>
+        <span class="seg">Win64</span>
+        <span class="chev">▾</span>
+      </div>
+      <div class="runstate"><span class="dot"></span> Idle</div>
+    </div>
+  </div>
+
+  <div class="body">
+
+    <div class="nav">
+      <div class="search">🔍 Search commands <kbd>Ctrl K</kbd></div>
+      <div class="navgroups">
+        <div class="navgroup expanded">
+          <div class="navgroup-title"><span class="chev">▾</span> Run &amp; Debug</div>
+          <div class="navitems">
+            <div class="navitem active"><span class="dotstat"></span> run</div>
+            <div class="navitem"><span class="dotstat"></span> launch</div>
+            <div class="navitem"><span class="dotstat"></span> pipeline</div>
+            <div class="navitem"><span class="dotstat"></span> fix</div>
+            <div class="navitem"><span class="dotstat"></span> diagnose</div>
+          </div>
+        </div>
+        <div class="navgroup">
+          <div class="navgroup-title"><span class="chev">▸</span> Test &amp; Quality <span class="count">5</span></div>
+          <div class="navitems">
+            <div class="navitem"><span class="dotstat"></span> test googletest</div>
+            <div class="navitem"><span class="dotstat"></span> test e2e</div>
+            <div class="navitem"><span class="dotstat"></span> test cli</div>
+            <div class="navitem"><span class="dotstat"></span> check arch</div>
+            <div class="navitem"><span class="dotstat"></span> check cppcheck</div>
+          </div>
+        </div>
+        <div class="navgroup">
+          <div class="navgroup-title"><span class="chev">▸</span> Assets &amp; Data <span class="count">2</span></div>
+          <div class="navitems">
+            <div class="navitem"><span class="dotstat"></span> asset build</div>
+            <div class="navitem"><span class="dotstat"></span> reflect reflect</div>
+          </div>
+        </div>
+        <div class="navgroup">
+          <div class="navgroup-title"><span class="chev">▸</span> Create &amp; Docs <span class="count">2</span></div>
+          <div class="navitems">
+            <div class="navitem"><span class="dotstat"></span> scaffold module</div>
+            <div class="navitem"><span class="dotstat"></span> docs plan</div>
+          </div>
+        </div>
+        <div class="navgroup">
+          <div class="navgroup-title"><span class="chev">▸</span> Environment <span class="count">2</span></div>
+          <div class="navitems">
+            <div class="navitem"><span class="dotstat"></span> env setup</div>
+            <div class="navitem"><span class="dotstat"></span> env verify</div>
+          </div>
+        </div>
+        <div class="navgroup">
+          <div class="navgroup-title"><span class="chev">▸</span> Advanced <span class="count">2</span></div>
+          <div class="navitems">
+            <div class="navitem"><span class="dotstat"></span> api exec</div>
+            <div class="navitem"><span class="dotstat"></span> show config</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="presets">
+        <div class="presets-title">Presets</div>
+        <span class="preset-chip"><span class="star">★</span> E2E Smoke</span>
+        <span class="preset-chip"><span class="star">★</span> Arch Summary</span>
+        <span class="preset-chip">+ Save current…</span>
+      </div>
+    </div>
+
+    <div class="center">
+      <div class="cmdheader">
+        <div class="path">dia run &lt;target&gt;</div>
+        <div class="name">Run</div>
+        <div class="desc">Build and launch a target — pipeline (compile + deploy) then launch.</div>
+      </div>
+
+      <div class="form-area">
+        <div class="field-row">
+          <div class="field required">
+            <label>Target</label>
+            <select><option>cluichetest</option></select>
+          </div>
+          <div class="field">
+            <label>Config</label>
+            <select><option>Debug</option></select>
+          </div>
+          <div class="field">
+            <label>Filter</label>
+            <input type="text" placeholder="PATTERN — e.g. Physics2D*">
+          </div>
+          <div class="field">
+            <label>Shards</label>
+            <input type="number" value="4">
+          </div>
+        </div>
+
+        <div class="checkrow">
+          <div class="checkitem"><span class="box"></span> Force rebuild</div>
+          <div class="checkitem"><span class="box checked"></span> Include SLOW_* suites</div>
+          <div class="checkitem"><span class="box"></span> Verbose</div>
+          <div class="checkitem"><span class="box"></span> Build only</div>
+        </div>
+
+        <div class="advanced-toggle">▸ Advanced options (2 hidden)</div>
+
+        <div class="cli-preview">
+          <span class="prefix">$</span>
+          <span>dia run cluichetest --config Debug --all --shards 4</span>
+          <span class="copy">copy</span>
+        </div>
+
+        <div class="actions">
+          <div class="btn primary">▶ Run</div>
+          <div class="btn secondary">Cancel</div>
+        </div>
+      </div>
+
+      <div class="outputpanel">
+        <div class="tabstrip">
+          <div class="tab">Log</div>
+          <div class="tab active">Results <span class="badge">1</span></div>
+        </div>
+        <div class="resultspane">
+          <div class="card">
+            <div class="card-title"><span class="mark ok">✓</span> Build succeeded</div>
+            <div class="card-sub">compile + build-assets · 3.9s total</div>
+          </div>
+          <div class="card err">
+            <div class="card-title">✕ 1 failed test</div>
+            <div class="card-sub">RigidBody2D_Test.RestingContactSleeps</div>
+            <div class="card-detail">Expected sleep within 12 frames, got 41 frames.<br>Cluiche/Tests/GoogleTests/RigidBody2D/RestingContact.cpp:88</div>
+          </div>
+          <div class="card warn">
+            <div class="card-title">! 2 warnings</div>
+            <div class="card-sub">Slow suite not tagged SLOW_* (x2)</div>
+          </div>
+          <div class="artifacts-line">
+            <span class="lbl">artifacts</span>
+            <a href="#">gtest-results.xml</a>
+            <span class="sep">·</span>
+            <a href="#">last-run.ndjson</a>
+            <span class="sep">·</span>
+            <a href="#">CluicheTest.exe</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    <span><kbd>/</kbd>Palette</span>
+    <span><kbd>Enter</kbd>Run</span>
+    <span><kbd>Ctrl R</kbd>Rerun</span>
+    <span><kbd>Esc</kbd>Back</span>
+    <span><kbd>F1</kbd>Help</span>
+  </div>
+
+</div>
+
+<div class="caption">Dia Console mockup — shade-based elevation instead of borders (only the window frame + sidebar divider + input underlines + active tab remain as lines), one accent color at a time (idle/success states are neutral text, color reserved for warnings/errors/active), underline-style inputs, nav accordion (only active group expanded), de-emphasized micro-labels, one consistent dot/glyph language, results folded into a Log/Results tab, artifacts as an inline line. Presets kept as a first-class nav feature. Static mock — not wired to any backend.</div>
+
+</body>
+</html>

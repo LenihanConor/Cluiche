@@ -19,14 +19,6 @@ namespace Dia
 		public:
 			virtual ~IShader() {}
 
-			////////////////////////////////////////////////////////////
-			/// \brief Get the native backend shader handle
-			///
-			/// Returns a pointer to the underlying backend shader object
-			/// (e.g., sf::Shader* for SFML backend). Use with caution.
-			///
-			/// \return Native shader handle (backend-specific)
-			////////////////////////////////////////////////////////////
 			virtual const void* GetNativeHandle() const = 0;
 
 		protected:

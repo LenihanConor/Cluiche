@@ -88,10 +88,12 @@ namespace Dia
 			}
 		}
 
-#ifdef DEBUG
-
 		// Trigger a debugger breakpoint
 		// Causes the debugger to pause execution at this point
+		// Unconditional in both Debug and Release: DIA_ASSERT itself still
+		// compiles out entirely in Release (see Assert.h), but RELEASE_DIA_ASSERT
+		// calls through to this function directly in both configurations, so it
+		// must always do real work.
 		void BREAKPOINT()
 		{
 			__debugbreak();
@@ -99,6 +101,7 @@ namespace Dia
 
 		// Default assertion handler
 		// Logs the assertion failure, captures call stack, and breaks into debugger
+		// Unconditional in both Debug and Release — see BREAKPOINT() note above.
 		void AssertDefault(const char *pExp, const char *pFileName, int iLineNumber, const char* pStr, ...)
 		{
 			// Format the user's message with printf-style arguments
@@ -129,13 +132,5 @@ namespace Dia
 			// Break into debugger for investigation
 			BREAKPOINT();
 		}
-#else
-		// Release builds: no-op implementations (assertions compile out)
-		void BREAKPOINT()
-		{}
-
-		void AssertDefault(const char *pExp, const char *pFileName, int iLineNumber, const char* pStr, ...)
-		{}
-#endif
 	}
 }

@@ -1,13 +1,5 @@
 #include "DiaAssetCatalogue/JsonDefinitionLoader.h"
 
-namespace Dia
-{
-	namespace AssetCatalogue
-	{
-		//------------------------------------------------------------------------------------
-		JsonDefinitionLoader::JsonDefinitionLoader(const Dia::Core::Types::TypeRegistry& registry)
-			: mRegistry(registry)
-		{}
+// JsonDefinitionLoader is a header-only template class.
+// This translation unit exists to satisfy the project build system.
 
-	} // namespace AssetCatalogue
-} // namespace Dia

@@ -3,19 +3,22 @@
 #include <DiaEditor/Plugin/IEditorPlugin.h>
 #include <DiaEditor/LiveConnection/GameConnectionManager.h>
 #include <DiaEditor/LiveConnection/GameConnectionController.h>
+#include <DiaEditor/Project/ProjectContextController.h>
 
 namespace Dia
 {
 	namespace Editor
 	{
+		class PluginServiceLocator;
+
 		class GameConnectionEditorPlugin : public IEditorPlugin
 		{
 		public:
 			const char* GetName() const override { return "Game Connection"; }
 			const char* GetVersion() const override { return "1.0"; }
 			const char* GetDescription() const override { return "Built-in game connection panel"; }
-			const char* GetUIPath() const override { return "dia://plugins/gameconnection/index.html"; }
-			LayoutMode GetLayoutMode() const override { return LayoutMode::kDockable; }
+			const char* GetUIPath() const override { return ""; }
+			LayoutMode GetLayoutMode() const override { return LayoutMode::kHeadless; }
 
 			void OnLoad(const EditorPluginContext& context) override;
 			void OnUnload() override;
@@ -24,6 +27,8 @@ namespace Dia
 		private:
 			GameConnectionManager mManager;
 			GameConnectionController mController;
+			ProjectContextController mProjectController;
+			PluginServiceLocator* mServices = nullptr;
 		};
 	}
 }

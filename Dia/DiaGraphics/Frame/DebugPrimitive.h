@@ -3,7 +3,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#include <cstdint>
 #include <DiaMaths/Vector/Vector2D.h>
+#include <DiaMaths/Vector/Vector3D.h>
 #include <DiaGraphics/Misc/RGBA.h>
 
 namespace Dia
@@ -21,7 +23,11 @@ namespace Dia
 			Arc2D      = 4,
 			Ray2D      = 5,
 			Triangle2D = 6,
-			Text2D     = 7
+			Line3D   = 7,
+			Ray3D    = 8,
+			Box3D    = 9,
+			Sphere3D = 10,
+			Arrow3D  = 11,
 		};
 
 		struct DebugPrimitiveCircle2D
@@ -79,6 +85,48 @@ namespace Dia
 			RGBA            fillColour;   // alpha == 0 means no fill
 		};
 
+		struct DebugPrimitiveLine3D
+		{
+			Maths::Vector3D from;
+			Maths::Vector3D to;
+			RGBA            colour;
+		};
+
+		struct DebugPrimitiveRay3D
+		{
+			Maths::Vector3D origin;
+			Maths::Vector3D direction;  // caller must supply unit vector
+			float           length;
+			RGBA            colour;
+			// Renderer draws shaft + small 2-line arrowhead
+		};
+
+		struct DebugPrimitiveBox3D
+		{
+			Maths::Vector3D min;
+			Maths::Vector3D max;
+			RGBA            colour;
+			// Renderer expands to 12 edges (24 vertices) at draw time
+		};
+
+		struct DebugPrimitiveSphere3D
+		{
+			Maths::Vector3D center;
+			float           radius;
+			RGBA            colour;
+			// Renderer emits 3 great circles (XY, XZ, YZ) × 24 segments each
+		};
+
+		struct DebugPrimitiveArrow3D
+		{
+			Maths::Vector3D origin;
+			Maths::Vector3D direction;  // caller must supply unit vector
+			float           length;
+			float           headSize;   // cone radius as fraction of length (e.g. 0.15)
+			RGBA            colour;
+			// Renderer draws shaft + 4 cone lines
+		};
+
 		// Text2D primitive — world-space text label
 		// fontSize is in pixels (SFML setCharacterSize units); 0 or negative = no draw.
 		// text[64] is null-terminated; strings longer than 63 chars are silently truncated.
@@ -105,10 +153,13 @@ namespace Dia
 				DebugPrimitiveArc2D      arc2D;
 				DebugPrimitiveRay2D      ray2D;
 				DebugPrimitiveTriangle2D triangle2D;
-				DebugPrimitiveText2D     text2D;
+				DebugPrimitiveLine3D     line3D;
+				DebugPrimitiveRay3D      ray3D;
+				DebugPrimitiveBox3D      box3D;
+				DebugPrimitiveSphere3D   sphere3D;
+				DebugPrimitiveArrow3D    arrow3D;
 			};
 
-			// Union members with non-trivial types require explicit constructor/destructor
 			DebugPrimitive() : type(DebugPrimitiveType::Circle2D), entityId(0), circle2D() {}
 			DebugPrimitive(const DebugPrimitive& rhs) { *this = rhs; }
 			DebugPrimitive& operator=(const DebugPrimitive& rhs)
@@ -124,7 +175,11 @@ namespace Dia
 					case DebugPrimitiveType::Arc2D:      arc2D      = rhs.arc2D;      break;
 					case DebugPrimitiveType::Ray2D:      ray2D      = rhs.ray2D;      break;
 					case DebugPrimitiveType::Triangle2D: triangle2D = rhs.triangle2D; break;
-					case DebugPrimitiveType::Text2D:     text2D     = rhs.text2D;     break;
+					case DebugPrimitiveType::Line3D:   line3D   = rhs.line3D;   break;
+					case DebugPrimitiveType::Ray3D:    ray3D    = rhs.ray3D;    break;
+					case DebugPrimitiveType::Box3D:    box3D    = rhs.box3D;    break;
+					case DebugPrimitiveType::Sphere3D: sphere3D = rhs.sphere3D; break;
+					case DebugPrimitiveType::Arrow3D:  arrow3D  = rhs.arrow3D;  break;
 				}
 				return *this;
 			}

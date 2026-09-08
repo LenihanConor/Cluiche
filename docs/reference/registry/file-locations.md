@@ -74,7 +74,7 @@ C:\GitHub\Cluiche\
 ## Dia/ - Engine
 
 ### Application Framework
-- `Dia/DiaApplication/`
+- `Dia/DiaApplicationFlow/`
   - `ApplicationProcessingUnit.h` - ProcessingUnit base
   - `ApplicationPhase.h` - Phase base
   - `ApplicationModule.h` - Module base
@@ -318,8 +318,8 @@ C:\GitHub\Cluiche\
 - `CLAUDE.md` - Claude Code instructions
 
 ### Working Files (Archived)
-- `BUG_REPORT.md` → Migrated to [DiaMaths Known Issues](../subsystems/dia-maths/known-issues.md)
-- `THREAD_SAFE_RANDOM.md` → Migrated to [DiaMaths Thread Safety Notes](../subsystems/dia-maths/thread-safety-notes.md)
+- `BUG_REPORT.md` → Migrated to [DiaMaths Known Issues](../architecture/dia-maths-known-issues.md)
+- `THREAD_SAFE_RANDOM.md` → Migrated to [DiaMaths Thread Safety Notes](../architecture/dia-maths-thread-safety.md)
 - `DIACORE_CLEANUP_ANALYSIS.md` → Migrated to [DiaCore Cleanup Analysis](../development/DIACORE_CLEANUP_ANALYSIS.md)
 - Other working files → Moved to `archive/`
 
@@ -386,8 +386,8 @@ C:\GitHub\Cluiche\
 | **DynamicArray** | `Dia/DiaCore/Containers/Arrays/DynamicArray.h` |
 | **Vector2D** | `Dia/DiaMaths/Vector/Vector2D.h` |
 | **ICanvas** | `Dia/DiaGraphics/Interface/ICanvas.h` |
-| **Module base** | `Dia/DiaApplication/ApplicationModule.h` |
-| **Phase base** | `Dia/DiaApplication/ApplicationPhase.h` |
+| **Module base** | `Dia/DiaApplicationFlow/ApplicationModule.h` |
+| **Phase base** | `Dia/DiaApplicationFlow/ApplicationPhase.h` |
 | **StringCRC** | `Dia/DiaCore/CRC/CRC.h` |
 | **TimeServer** | `Dia/DiaCore/Time/TimeServer.h` |
 | **SFML headers** | `External/SFML-2.5.1/include/` |

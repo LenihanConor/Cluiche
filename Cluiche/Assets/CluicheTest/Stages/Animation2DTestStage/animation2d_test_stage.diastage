@@ -1,0 +1,9 @@
+{
+    "name": "Animation2DTestStage",
+    "manifest": "Stages/Animation2DTestStage/misc/ApplicationFlow/animation2d_test_stage.diaapp",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

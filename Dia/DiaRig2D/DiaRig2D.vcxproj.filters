@@ -23,6 +23,7 @@
     <ClInclude Include="Testing\PoseComparison.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="DiaRig2DSerializers.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Bone.cpp" />

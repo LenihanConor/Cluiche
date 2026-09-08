@@ -12,6 +12,11 @@
 
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
+#include <DiaGraphics/Camera/Camera2D.h>
+#include <DiaGraphics/Camera/ViewportTransform.h>
+#include <DiaGraphics3D/Camera3D.h>
+#include <DiaMaths/Vector/Vector2D.h>
 #include "IVisualDebugger.h"
 #include "IObjectRenderer.h"
 #include "FixedDrawRegistry.h"
@@ -20,13 +25,12 @@ namespace Dia
 {
     namespace Graphics
     {
-        class FrameData;
         class DebugFrameDataVisitor;
     }
 
     namespace DebugServer
     {
-        class DebugServerModule;  // Forward declaration — no header included; caller passes nullptr if absent
+        class DebugServer;  // Forward declaration — no header included; caller passes nullptr if absent
     }
 }
 
@@ -45,10 +49,10 @@ namespace Dia
         //   lambda becomes a dangling capture. RegisterDiaAPICommands() should be called
         //   once during application startup (e.g. from a Module::DoStart()).
         ////////////////////////////////////////////////////////////////////////////////
-        class DebugLayerManager
+        class DebugLayerManager : public IDebugLayerRegistry
         {
         public:
-            static const unsigned int kMaxLayers = 64;
+            static const unsigned int kMaxLayers = 128;
 
             // ----------------------------------------------------------------
             // Registration (dynamic layers)
@@ -57,10 +61,23 @@ namespace Dia
             // Register a draw class. DIA_ASSERT fires if debugger is null or if the
             // layer name is already registered in either registry (SD-DBG-006).
             // priority: lower value drawn first (underneath); higher value drawn last (on top).
-            void Register(IVisualDebugger* debugger, int priority = 0);
+            void Register(IVisualDebugger* debugger, int priority = 0) override;
+
+            // Register a draw class with a stage tag. Same layer name + same pointer = idempotent
+            // (reactivates the layer). Same name + different pointer = DIA_ASSERT (SD-DBG-006).
+            void Register(IVisualDebugger* debugger, int priority, const Dia::Core::StringCRC& stageTag) override;
+
+            // Like Register(), but Draw() will never call IVisualDebugger::Draw() on this entry.
+            // Use when a drawer's Draw() targets a different frame type than what this manager
+            // provides (e.g. a 3D drawer registered for console/ImGui access only).
+            void RegisterWithoutDraw(IVisualDebugger* debugger, int priority, const Dia::Core::StringCRC& stageTag);
 
             // Unregister a layer by name. No-op if the name is not registered.
-            void Unregister(Dia::Core::StringCRC layerName);
+            void Unregister(Dia::Core::StringCRC layerName) override;
+
+            // Remove all dynamic layers at once (e.g. on module stop before drawers are freed).
+            // Does not touch the fixed registry.
+            void ClearDynamicLayers();
 
             // ----------------------------------------------------------------
             // Registration (fixed layers)
@@ -90,22 +107,44 @@ namespace Dia
             // ----------------------------------------------------------------
 
             // Routes through both dynamic and fixed registries.
-            void EnableLayer (Dia::Core::StringCRC layerName);
-            void DisableLayer(Dia::Core::StringCRC layerName);
-            bool IsLayerEnabled(Dia::Core::StringCRC layerName) const;
+            void EnableLayer (Dia::Core::StringCRC layerName) override;
+            void DisableLayer(Dia::Core::StringCRC layerName) override;
+            bool IsLayerEnabled(Dia::Core::StringCRC layerName) const override;
+
+            // Activate or deactivate all layers owned by stageTag.
+            // Layers with an empty stageTag are unaffected.
+            void SetStageActive(const Dia::Core::StringCRC& stageTag, bool active);
 
             // ----------------------------------------------------------------
             // Global debug scale (SD-DBG-005)
             // Draw classes read this before submitting size/length values.
             // ----------------------------------------------------------------
-            void  SetDebugScale(float scale);
-            float GetDebugScale() const;
+            void  SetDebugScale(float scale) override;
+            float GetDebugScale() const override;
+
+            // ----------------------------------------------------------------
+            // Viewport / coordinate transform (used by coord2d overlay layers)
+            // ----------------------------------------------------------------
+            void SetViewport(const Dia::Graphics::Camera2D& camera, const Dia::Maths::Vector2D& windowSize);
+            Dia::Graphics::ViewportTransform GetViewportTransform() const;
+
+            // ----------------------------------------------------------------
+            // 3D camera — stored for use by Coord3D overlay drawers
+            // ----------------------------------------------------------------
+            void SetCamera3D(const Dia::Graphics3D::Camera3D& camera);
+            const Dia::Graphics3D::Camera3D& GetCamera3D() const;
+
+            // ----------------------------------------------------------------
+            // 2D cursor world position — updated by Coord2DCursorDrawer each frame
+            // ----------------------------------------------------------------
+            void SetCursorWorld(const Dia::Maths::Vector2D& worldPos);
+            Dia::Maths::Vector2D GetCursorWorld() const;
 
             // ----------------------------------------------------------------
             // Picking seam — no-op stubs until scene editor (SD-DBG-008)
             // ----------------------------------------------------------------
-            void     SetSelectedEntityId(uint32_t id);
-            uint32_t GetSelectedEntityId() const;
+            void     SetSelectedEntityId(uint32_t id) override;
+            uint32_t GetSelectedEntityId() const override;
 
             // ----------------------------------------------------------------
             // Draw
@@ -113,7 +152,7 @@ namespace Dia
 
             // Call once per frame after simulation update, before rendering.
             // Lazily sorts by priority if dirty, then calls Draw() on each enabled layer.
-            void Draw(Dia::Graphics::FrameData& frameData);
+            void Draw(Dia::Core::IDebugDraw& draw);
 
             // Renders all enabled fixed layers into visitor.
             // Call from render loop after Draw().
@@ -136,7 +175,7 @@ namespace Dia
             // No-op if debugServer is nullptr (DiaDebugServer is an optional dependency).
             // Only broadcasts when mLayersDirty is true (set on Register/Enable/Disable/Unregister).
             // Clears mLayersDirty after broadcast.
-            void BroadcastLayerState(Dia::DebugServer::DebugServerModule* debugServer);
+            void BroadcastLayerState(Dia::DebugServer::DebugServer* debugServer);
 
             // ----------------------------------------------------------------
             // Query
@@ -152,11 +191,28 @@ namespace Dia
             // Returns StringCRC::kZero if index is out of range.
             Dia::Core::StringCRC GetLayerName(int index) const;
 
+            // Returns the IVisualDebugger at position index (0-based), or nullptr.
+            IVisualDebugger* GetLayer(int index) const;
+
+            // Returns the stage tag for the dynamic layer at position index (0-based).
+            // Returns StringCRC::kZero (empty) if index is out of range or layer is global.
+            Dia::Core::StringCRC GetLayerStageTag(int index) const;
+
+            // Returns true if any layer with this stageTag is currently active.
+            bool IsStageActive(const Dia::Core::StringCRC& stageTag) const;
+
+            // Fills `out` with unique stage tags from all registered layers (excluding empty tag).
+            // Uses DynamicArrayC — caller provides the buffer.
+            void GetStageTags(Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16>& out) const;
+
         private:
             struct LayerEntry
             {
-                IVisualDebugger* debugger = nullptr;
-                int              priority = 0;
+                IVisualDebugger*     debugger  = nullptr;
+                int                  priority  = 0;
+                Dia::Core::StringCRC stageTag;           // empty = always active (global layer)
+                bool                 active    = true;   // false = skip Draw, show grayed in console
+                bool                 skipDraw  = false;  // true = skip Draw() but keep ImGui/toggle
             };
 
             Dia::Core::Containers::DynamicArrayC<LayerEntry, kMaxLayers> mLayers;
@@ -166,11 +222,22 @@ namespace Dia
             bool     mSortDirty           = false;
             bool     mRegistrationLocked  = false;
 
+            // Viewport state — stored as inputs; ViewportTransform constructed on demand
+            Dia::Graphics::Camera2D      mViewportCamera;
+            Dia::Maths::Vector2D         mViewportWindowSize;
+
+            // 3D camera — stored for Coord3D overlay drawers
+            Dia::Graphics3D::Camera3D    mCamera3D;
+
+            // 2D cursor world position — updated by Coord2DCursorDrawer each Draw() call
+            Dia::Maths::Vector2D         mCursorWorld;
+
             // Broadcast state tracking (debug-editor-panel)
             uint32_t mLastDroppedCount = 0;  // cached from FrameData at end of Draw()
             bool     mLayersDirty      = false;  // set on Register/Unregister/Enable/Disable
+            bool     mAPICommandsRegistered = false;
 
-            // Insertion sort — stable, O(N²) acceptable for kMaxLayers = 64
+            // Insertion sort — stable, O(N²) acceptable for kMaxLayers = 128
             void SortByPriority();
 
             // Returns the index of the layer with the given name, or -1 if not found.

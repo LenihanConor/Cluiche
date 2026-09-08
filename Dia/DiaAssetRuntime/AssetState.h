@@ -6,10 +6,12 @@ namespace Dia
     {
         enum class AssetState
         {
-            Registered,
+            Null,
             Staged,
+            Loading,
             Loaded,
-            Unloading
+            Failed,
+            Unloaded
         };
     }
 }

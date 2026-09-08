@@ -219,7 +219,7 @@ Thread-safe observer pattern for event notifications.
 
 ---
 
-## Application Framework (DiaApplication)
+## Application Framework (DiaApplicationFlow)
 
 ### DR-007: ProcessingUnit Pattern ✅ P0
 
@@ -239,7 +239,7 @@ High-level execution containers that own modules and phases.
 - [ ] Can run on separate thread
 
 **Implementation:**
-- `DiaApplication/ApplicationProcessingUnit.h`
+- `DiaApplicationFlow/ApplicationProcessingUnit.h`
 - Derived classes for Main, Render, Sim threads
 
 **Test Cases:**
@@ -250,7 +250,7 @@ High-level execution containers that own modules and phases.
 
 **Status:** ✅ Complete
 
-**[→ DiaApplication API](../api/dia/application-api.md)**
+**[→ DiaApplicationFlow API](../api/dia/application-api.md)**
 
 ---
 
@@ -271,7 +271,7 @@ Functional units with explicit dependencies and lifecycle.
 - [ ] Dependency declaration via AddDependency()
 
 **Implementation:**
-- `DiaApplication/ApplicationModule.h`
+- `DiaApplicationFlow/ApplicationModule.h`
 
 **Test Cases:**
 - Module lifecycle
@@ -300,7 +300,7 @@ Execution stages with state machine transitions.
 - [ ] Transition methods (TransitionTo, QueuePhaseTransition)
 
 **Implementation:**
-- `DiaApplication/ApplicationPhase.h`
+- `DiaApplicationFlow/ApplicationPhase.h`
 
 **Test Cases:**
 - Phase transitions
@@ -330,7 +330,7 @@ Thread-safe producer-consumer queue for cross-thread data transfer.
 - [ ] No data loss
 
 **Implementation:**
-- `DiaApplication/FrameStream.h`
+- `DiaApplicationFlow/FrameStream.h`
 
 **Test Cases:**
 - Concurrent writes/reads
@@ -359,8 +359,8 @@ Pluggable level system with factory pattern.
 - [ ] Level transitions
 
 **Implementation:**
-- `DiaApplication/ILevel.h`
-- `DiaApplication/LevelFactory.h`
+- `DiaApplicationFlow/ILevel.h`
+- `DiaApplicationFlow/LevelFactory.h`
 
 **Test Cases:**
 - Level registration
@@ -472,7 +472,7 @@ Hierarchical transforms for parent/child relationships.
 
 **Status:** ⚠️ Blocked (performance issue, needs optimization)
 
-**See [DiaMaths Known Issues](../subsystems/dia-maths/known-issues.md) for performance notes**
+**See [DiaMaths Known Issues](../architecture/dia-maths-known-issues.md) for performance notes**
 
 ---
 
@@ -534,7 +534,7 @@ Thread-safe random number generation.
 
 **Status:** ✅ Complete (fixed 2026-03)
 
-**[→ Thread Safety Notes](../subsystems/dia-maths/thread-safety-notes.md)**
+**[→ Thread Safety Notes](../architecture/dia-maths-thread-safety.md)**
 
 ---
 

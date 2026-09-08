@@ -5,6 +5,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winvalid-offsetof"
+#endif
+
 #include <pybind11/pybind11.h>
 #include <pybind11/embed.h>
 #include "ErrorHandling/Error.h"  // For ErrorCode enum
@@ -32,6 +37,7 @@ namespace Dia
 			{
 				bool isInitialized = false;
 				py::scoped_interpreter* interpreter = nullptr;
+				PyThreadState* mainThreadState = nullptr;  // saved when GIL released after init
 			};
 
 			extern InterpreterState gState;
@@ -132,3 +138,7 @@ namespace Dia
 		}
 	}
 }
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif

@@ -3,28 +3,28 @@
 #include "DiaAssetRuntime/AssetState.h"
 #include "DiaAssetRuntime/AssetScope.h"
 #include "DiaAssetRuntime/RuntimeAssetEntry.h"
-#include "DiaAssetRuntime/IAssetStateListener.h"
 
 #include "DiaCore/Json/external/json/json.h"
 #include "DiaCore/CRC/StringCRC.h"
 #include "DiaCore/Containers/Arrays/DynamicArrayC.h"
 
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaDebugServer/QueryRegistry.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 namespace
 {
-    static Dia::AssetRuntime::ITransitionNotifier* sNotifier = nullptr;
-
     const char* StateToString(Dia::AssetRuntime::AssetState state)
     {
         switch (state)
         {
-            case Dia::AssetRuntime::AssetState::Registered: return "Registered";
-            case Dia::AssetRuntime::AssetState::Staged:     return "Staged";
-            case Dia::AssetRuntime::AssetState::Loaded:     return "Loaded";
-            case Dia::AssetRuntime::AssetState::Unloading:  return "Unloading";
-            default:                                         return "Unknown";
+            case Dia::AssetRuntime::AssetState::Null:     return "Null";
+            case Dia::AssetRuntime::AssetState::Staged:   return "Staged";
+            case Dia::AssetRuntime::AssetState::Loading:  return "Loading";
+            case Dia::AssetRuntime::AssetState::Loaded:   return "Loaded";
+            case Dia::AssetRuntime::AssetState::Failed:   return "Failed";
+            case Dia::AssetRuntime::AssetState::Unloaded: return "Unloaded";
+            default:                                       return "Unknown";
         }
     }
 
@@ -32,68 +32,6 @@ namespace
     {
         return (scope == Dia::AssetRuntime::AssetScope::kGlobal) ? "Global" : "Stage";
     }
-
-    class TransitionLogger : public Dia::AssetRuntime::IAssetStateListener
-    {
-    public:
-        void OnAssetReady(const Dia::Core::StringCRC& assetId,
-                          const Dia::Core::Containers::String512& resolvedPath) override
-        {
-            DIA_LOG_INFO("AssetRuntimeDebugCommands",
-                "subscribe_transitions: asset '%s' -> Staged (path: %s)",
-                assetId.AsChar(), resolvedPath.AsCStr());
-
-            if (sNotifier)
-            {
-                Json::Value payload;
-                payload["assetId"] = assetId.AsChar();
-                payload["oldState"] = "Registered";
-                payload["newState"] = "Staged";
-                Json::FastWriter writer;
-                sNotifier->Notify(Dia::Core::StringCRC("asset_runtime.transitions"),
-                                  writer.write(payload).c_str());
-            }
-        }
-
-        void OnAssetUnloading(const Dia::Core::StringCRC& assetId) override
-        {
-            DIA_LOG_INFO("AssetRuntimeDebugCommands",
-                "subscribe_transitions: asset '%s' -> Unloading",
-                assetId.AsChar());
-
-            if (sNotifier)
-            {
-                Json::Value payload;
-                payload["assetId"] = assetId.AsChar();
-                payload["oldState"] = "Loaded";
-                payload["newState"] = "Unloading";
-                Json::FastWriter writer;
-                sNotifier->Notify(Dia::Core::StringCRC("asset_runtime.transitions"),
-                                  writer.write(payload).c_str());
-            }
-        }
-
-        void OnAssetLoadFailed(const Dia::Core::StringCRC& assetId) override
-        {
-            DIA_LOG_WARNING("AssetRuntimeDebugCommands",
-                "subscribe_transitions: asset '%s' load failed -> Registered",
-                assetId.AsChar());
-
-            if (sNotifier)
-            {
-                Json::Value payload;
-                payload["assetId"] = assetId.AsChar();
-                payload["oldState"] = "Staged";
-                payload["newState"] = "Registered";
-                Json::FastWriter writer;
-                sNotifier->Notify(Dia::Core::StringCRC("asset_runtime.transitions"),
-                                  writer.write(payload).c_str());
-            }
-        }
-    };
-
-    static TransitionLogger sTransitionLogger;
-    static bool             sTransitionLoggerRegistered = false;
 
 } // anonymous namespace
 
@@ -103,8 +41,6 @@ namespace Dia
     {
         void RegisterAssetRuntimeCommands(AssetRuntime& runtime, ITransitionNotifier* notifier)
         {
-            sNotifier = notifier;
-
             // ----------------------------------------------------------------
             // asset_runtime.get-loaded
             // ----------------------------------------------------------------
@@ -307,8 +243,9 @@ namespace Dia
 
             // ----------------------------------------------------------------
             // asset_runtime.subscribe-transitions
-            // Registers an IAssetStateListener that logs transitions and
-            // pushes events via the TransitionNotifyCallback (DiaDebugServer).
+            // Note: With the handler-based architecture, transition logging
+            // is handled via DiaLogger. This command is a placeholder for
+            // future WebSocket push via ITransitionNotifier.
             // ----------------------------------------------------------------
             {
                 Dia::API::CommandInfo cmd;
@@ -318,24 +255,141 @@ namespace Dia
                 cmd.owner       = "DiaAssetRuntime";
                 cmd.version     = "1.0.0";
                 cmd.example     = "asset-runtime-subscribe-transitions";
-                cmd.callback    = [&runtime](const Dia::API::CommandArgs&) -> int
+                cmd.callback    = [notifier](const Dia::API::CommandArgs&) -> int
                 {
-                    if (!sTransitionLoggerRegistered)
-                    {
-                        runtime.RegisterListener(&sTransitionLogger);
-                        sTransitionLoggerRegistered = true;
-                        DIA_LOG_INFO("AssetRuntimeDebugCommands",
-                            "subscribe_transitions: transition logging enabled");
-                    }
-                    else
-                    {
-                        DIA_LOG_INFO("AssetRuntimeDebugCommands",
-                            "subscribe_transitions: already subscribed");
-                    }
+                    DIA_LOG_INFO("AssetRuntimeDebugCommands",
+                        "subscribe_transitions: transition logging enabled (via DiaLogger)");
+                    (void)notifier;
                     return 0;
                 };
                 Dia::API::RegisterCommand(cmd);
             }
+        }
+
+        void RegisterAssetRuntimeQueryHandlers(Dia::DebugServer::QueryRegistry& registry, const AssetRuntime& runtime)
+        {
+            registry.Register(
+                Dia::Core::StringCRC("asset-runtime-get-all-states"),
+                [&runtime](const Json::Value& /*args*/) -> Json::Value
+                {
+                    Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128> all;
+                    unsigned int total = runtime.GetAllAssets(all);
+
+                    Json::Value root;
+                    Json::Value assets(Json::arrayValue);
+
+                    for (unsigned int i = 0; i < all.Size(); ++i)
+                    {
+                        const Dia::Core::StringCRC& id = all[i];
+                        Json::Value entry;
+                        entry["assetId"] = id.AsChar();
+                        entry["state"] = StateToString(runtime.GetAssetState(id));
+                        entry["scope"] = ScopeToString(runtime.GetAssetScope(id));
+                        entry["refCount"] = runtime.GetAssetRefCount(id);
+                        const Dia::Core::Containers::String512* path = runtime.ResolveAssetPath(id);
+                        entry["deployPath"] = path ? path->AsCStr() : "";
+
+                        AssetScope scope = runtime.GetAssetScope(id);
+                        if (scope == AssetScope::kStage)
+                        {
+                            Dia::Core::StringCRC stageId = runtime.GetAssetStageId(id);
+                            if (stageId.Value() != 0)
+                                entry["stageId"] = stageId.AsChar();
+                        }
+
+                        assets.append(entry);
+                    }
+
+                    root["assets"] = assets;
+                    root["total"] = static_cast<int>(total);
+                    return root;
+                });
+
+            registry.Register(
+                Dia::Core::StringCRC("asset-runtime-get-loaded"),
+                [&runtime](const Json::Value& /*args*/) -> Json::Value
+                {
+                    Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128> results;
+                    unsigned int total = runtime.GetLoadedAssets(results);
+
+                    Json::Value root;
+                    root["total"] = static_cast<int>(total);
+                    Json::Value assets(Json::arrayValue);
+                    for (unsigned int i = 0; i < results.Size(); ++i)
+                        assets.append(results[i].AsChar());
+                    root["assets"] = assets;
+                    return root;
+                });
+
+            registry.Register(
+                Dia::Core::StringCRC("asset-runtime-get-staged"),
+                [&runtime](const Json::Value& /*args*/) -> Json::Value
+                {
+                    Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128> results;
+                    unsigned int total = runtime.GetStagedAssets(results);
+
+                    Json::Value root;
+                    root["total"] = static_cast<int>(total);
+                    Json::Value assets(Json::arrayValue);
+                    for (unsigned int i = 0; i < results.Size(); ++i)
+                        assets.append(results[i].AsChar());
+                    root["assets"] = assets;
+                    return root;
+                });
+
+            registry.Register(
+                Dia::Core::StringCRC("asset-runtime-get-state"),
+                [&runtime](const Json::Value& args) -> Json::Value
+                {
+                    Json::Value root;
+                    if (!args.isMember("assetId") || !args["assetId"].isString())
+                    {
+                        root["success"] = false;
+                        root["error"] = "missing assetId parameter";
+                        return root;
+                    }
+
+                    Dia::Core::StringCRC assetId(args["assetId"].asCString());
+                    root["assetId"] = args["assetId"].asCString();
+                    root["state"] = StateToString(runtime.GetAssetState(assetId));
+                    root["scope"] = ScopeToString(runtime.GetAssetScope(assetId));
+                    root["refCount"] = runtime.GetAssetRefCount(assetId);
+                    const Dia::Core::Containers::String512* path = runtime.ResolveAssetPath(assetId);
+                    root["deployPath"] = path ? path->AsCStr() : "";
+
+                    if (runtime.GetAssetScope(assetId) == AssetScope::kStage)
+                    {
+                        Dia::Core::StringCRC stageId = runtime.GetAssetStageId(assetId);
+                        if (stageId.Value() != 0)
+                            root["stageId"] = stageId.AsChar();
+                    }
+                    return root;
+                });
+
+            registry.Register(
+                Dia::Core::StringCRC("asset-runtime-get-stage-deps"),
+                [&runtime](const Json::Value& args) -> Json::Value
+                {
+                    Json::Value root;
+                    if (!args.isMember("stageId") || !args["stageId"].isString())
+                    {
+                        root["success"] = false;
+                        root["error"] = "missing stageId parameter";
+                        return root;
+                    }
+
+                    Dia::Core::StringCRC stageId(args["stageId"].asCString());
+                    Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128> results;
+                    unsigned int total = runtime.GetStageDependencies(stageId, results);
+
+                    root["stageId"] = args["stageId"].asCString();
+                    root["total"] = static_cast<int>(total);
+                    Json::Value assets(Json::arrayValue);
+                    for (unsigned int i = 0; i < results.Size(); ++i)
+                        assets.append(results[i].AsChar());
+                    root["assets"] = assets;
+                    return root;
+                });
         }
 
     } // namespace AssetRuntime

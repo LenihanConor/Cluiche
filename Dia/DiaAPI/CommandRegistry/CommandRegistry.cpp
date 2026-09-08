@@ -7,7 +7,7 @@
 #include "Events/EventSystem.h"
 #include "Parser/ArgumentParser.h"
 #include "Help/HelpSystem.h"
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/Core/Assert.h>
 #include <cctype>
 #include <cstring>
@@ -85,9 +85,20 @@ namespace Dia
 				bool isInitialized = false;
 				Dia::Core::Containers::DynamicArrayC<CommandInfo*, 64> commands;
 				Dia::Core::Containers::DynamicArrayC<CommandInfo*, 64> pendingRegistrations;
+				Dia::Core::Containers::DynamicArrayC<CommandInfoJson*, 256> jsonCommands;
 			};
 
 			RegistryState gRegistryState;
+
+			CommandInfoJson* FindJsonCommandInternal(const Dia::Core::StringCRC& name)
+			{
+				for (unsigned int i = 0; i < gRegistryState.jsonCommands.Size(); i++)
+				{
+					if (gRegistryState.jsonCommands[i]->name == name)
+						return gRegistryState.jsonCommands[i];
+				}
+				return nullptr;
+			}
 
 			CommandInfo* FindCommandInternal(unsigned int crcValue)
 			{
@@ -114,8 +125,8 @@ namespace Dia
 				for (const char* p = name; *p != '\0'; ++p)
 				{
 					char c = *p;
-					// Allow lowercase letters, digits, and hyphens
-					if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-'))
+					// Allow lowercase letters, digits, hyphens, dots, and underscores
+					if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '.' || c == '_'))
 					{
 						return false;
 					}
@@ -196,12 +207,30 @@ namespace Dia
 
 			if (!gRegistryState.isInitialized)
 			{
+				// Still clean up JSON commands even when not initialized — they are
+				// registered without going through Initialize() and may hold captured
+				// Application pointers that need releasing.
+				for (unsigned int i = 0; i < gRegistryState.jsonCommands.Size(); i++)
+					delete gRegistryState.jsonCommands[i];
+				gRegistryState.jsonCommands.RemoveAll();
 				DIA_LOG_WARNING("API", "Shutdown() called but DiaAPI is not initialized");
 				return;
 			}
 
+			// Free heap-allocated CLI command entries
+			for (unsigned int i = 0; i < gRegistryState.commands.Size(); i++)
+				delete gRegistryState.commands[i];
 			gRegistryState.commands.RemoveAll();
+
+			for (unsigned int i = 0; i < gRegistryState.pendingRegistrations.Size(); i++)
+				delete gRegistryState.pendingRegistrations[i];
 			gRegistryState.pendingRegistrations.RemoveAll();
+
+			// Free heap-allocated JSON command entries (and release captured lambdas)
+			for (unsigned int i = 0; i < gRegistryState.jsonCommands.Size(); i++)
+				delete gRegistryState.jsonCommands[i];
+			gRegistryState.jsonCommands.RemoveAll();
+
 			gRegistryState.isInitialized = false;
 
 			DIA_LOG_INFO("API", "DiaAPI command registry shutdown");
@@ -368,6 +397,80 @@ namespace Dia
 			}
 
 			return result;
+		}
+
+		////////////////////////////////////////////////////////////////////////////////
+		// RegisterCommandJson
+		////////////////////////////////////////////////////////////////////////////////
+		bool RegisterCommandJson(const CommandInfoJson& info)
+		{
+			using namespace Internal;
+
+			if (!ValidateCommandName(info.name.AsChar()))
+			{
+				DIA_LOG_ERROR("API", "RegisterCommandJson: invalid name '%s'", info.name.AsChar());
+				return false;
+			}
+			if (!info.description || info.description[0] == '\0')
+			{
+				DIA_LOG_ERROR("API", "RegisterCommandJson: command '%s' has empty description", info.name.AsChar());
+				return false;
+			}
+			if (!info.owner || info.owner[0] == '\0')
+			{
+				DIA_LOG_ERROR("API", "RegisterCommandJson: command '%s' has empty owner", info.name.AsChar());
+				return false;
+			}
+			if (!info.callback)
+			{
+				DIA_LOG_ERROR("API", "RegisterCommandJson: command '%s' has null callback", info.name.AsChar());
+				return false;
+			}
+			if (FindJsonCommandInternal(info.name) != nullptr)
+			{
+				DIA_LOG_ERROR("API", "RegisterCommandJson: command '%s' already registered", info.name.AsChar());
+				return false;
+			}
+			// Warn if a CLI command with the same name also exists
+			if (FindCommandInternal(info.name.Value()) != nullptr)
+			{
+				DIA_LOG_WARNING("API", "RegisterCommandJson: command '%s' also exists as a CLI command", info.name.AsChar());
+			}
+
+			CommandInfoJson* entry = new CommandInfoJson();
+			*entry = info;
+			gRegistryState.jsonCommands.Add(entry);
+			return true;
+		}
+
+		////////////////////////////////////////////////////////////////////////////////
+		// ExecuteCommandJson
+		////////////////////////////////////////////////////////////////////////////////
+		Json::Value ExecuteCommandJson(const Dia::Core::StringCRC& name, const Json::Value& params)
+		{
+			using namespace Internal;
+
+			Json::Value response;
+			const CommandInfoJson* cmd = FindJsonCommandInternal(name);
+			if (!cmd)
+			{
+				response["success"] = false;
+				response["error"]   = "command not found";
+				return response;
+			}
+
+			Json::Value data = cmd->callback(params);
+			if (data.isObject() && data.isMember("error"))
+			{
+				response["success"] = false;
+				response["error"]   = data["error"];
+			}
+			else
+			{
+				response["success"] = true;
+				response["data"]    = data;
+			}
+			return response;
 		}
 	}
 }

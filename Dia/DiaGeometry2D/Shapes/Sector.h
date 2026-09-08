@@ -21,6 +21,9 @@ namespace Dia
 			const Dia::Maths::Angle& GetHalfAngle() const;
 
 		private:
+			template<class Archive>
+			friend void serialize(Archive& ar, Sector& obj, unsigned version);
+
 			Dia::Maths::Vector2D mCenter;
 			float mRadius;
 			Dia::Maths::Vector2D mAxis;

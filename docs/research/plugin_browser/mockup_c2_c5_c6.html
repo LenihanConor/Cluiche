@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Plugin Browser — Mockups</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #1e1e1e;
+    color: #cccccc;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── Tab switcher ──────────────────────────────────────────────── */
+  .switcher {
+    display: flex;
+    background: #252526;
+    border-bottom: 1px solid #3c3c3c;
+    flex-shrink: 0;
+  }
+  .switcher button {
+    padding: 8px 14px;
+    background: transparent;
+    border: none;
+    border-right: 1px solid #3c3c3c;
+    color: #808080;
+    cursor: pointer;
+    font-size: 11px;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .switcher button.active { color: #fff; background: #1e1e1e; border-bottom: 2px solid #0e639c; }
+  .switcher button:hover:not(.active) { background: #2d2d2d; color: #ccc; }
+
+  /* ── Panel shell ───────────────────────────────────────────────── */
+  .panel { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+  .panel.active { display: flex; }
+
+  .panel-header {
+    padding: 10px 12px 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #bbbbbb;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  /* ── Search bar ────────────────────────────────────────────────── */
+  .search-row { padding: 0 10px 8px; flex-shrink: 0; }
+  .search-row input {
+    width: 100%;
+    background: #3c3c3c;
+    border: 1px solid #555;
+    border-radius: 3px;
+    color: #ccc;
+    font-size: 12px;
+    font-family: inherit;
+    padding: 5px 8px;
+    outline: none;
+  }
+  .search-row input::placeholder { color: #666; }
+  .search-row input:focus { border-color: #0e639c; }
+
+  /* ── Filter chips ──────────────────────────────────────────────── */
+  .chips-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 0 10px 8px;
+    flex-shrink: 0;
+  }
+  .chip {
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    cursor: pointer;
+    border: 1px solid #3c3c3c;
+    background: transparent;
+    color: #808080;
+    font-family: inherit;
+  }
+  .chip.active { background: #0e639c; color: #fff; border-color: #0e639c; }
+  .chip:hover:not(.active) { background: #2d2d2d; color: #ccc; }
+
+  /* ── Full-height list area ─────────────────────────────────────── */
+  .list-area { flex: 1; overflow-y: auto; padding: 0 10px; }
+  .list-area::-webkit-scrollbar { width: 6px; }
+  .list-area::-webkit-scrollbar-track { background: #1e1e1e; }
+  .list-area::-webkit-scrollbar-thumb { background: #424242; border-radius: 3px; }
+
+  /* ── Full plugin row (baseline / C2+C5) ────────────────────────── */
+  .plugin-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid #2d2d2d;
+    border-radius: 3px;
+    margin-bottom: 4px;
+    background: #252526;
+  }
+  .plugin-row:hover { border-color: #3c3c3c; background: #2a2a2a; }
+  .plugin-info { flex: 1; min-width: 0; }
+  .plugin-name { font-weight: 600; color: #e0e0e0; font-size: 13px; }
+  .plugin-name .version { font-weight: 400; color: #666; font-size: 11px; margin-left: 4px; }
+  .plugin-desc { font-size: 11px; color: #569cd6; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .plugin-meta { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+  .badge { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; padding: 2px 6px; border-radius: 2px; }
+  .badge-available { color: #808080; }
+  .badge-pinned { background: #3a3a5c; color: #9999dd; }
+  .badge-loaded { background: #1e4620; color: #89d185; }
+
+  .btn-load {
+    padding: 3px 12px;
+    background: #0e639c;
+    border: none;
+    border-radius: 2px;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .btn-load:hover { background: #1177bb; }
+  .btn-unload {
+    padding: 3px 10px;
+    background: transparent;
+    border: 1px solid #3c3c3c;
+    border-radius: 2px;
+    color: #808080;
+    font-size: 11px;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .btn-unload:hover { border-color: #666; color: #ccc; }
+
+  /* ── Compact row (master-detail panel) ─────────────────────────── */
+  .compact-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 2px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .compact-row:hover { background: #2a2a2a; }
+  .compact-row.selected { background: #094771; }
+  .compact-name { flex: 1; font-size: 12px; color: #e0e0e0; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .compact-name .compact-version { color: #555; font-size: 11px; margin-left: 4px; font-weight: 400; }
+  .compact-action { flex-shrink: 0; }
+  .compact-action .btn-load { padding: 2px 10px; font-size: 11px; }
+  .compact-action .btn-unload { padding: 2px 8px; font-size: 11px; }
+  .compact-loaded-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #89d185; flex-shrink: 0; margin-left: 2px;
+  }
+
+  /* ── Detail pane (bottom of master-detail panel) ───────────────── */
+  .detail-pane {
+    flex-shrink: 0;
+    border-top: 1px solid #3c3c3c;
+    background: #252526;
+    padding: 12px 14px;
+    min-height: 110px;
+    max-height: 180px;
+    overflow-y: auto;
+  }
+  .detail-empty { color: #444; font-size: 12px; font-style: italic; padding: 16px 0; }
+  .detail-title { font-size: 14px; font-weight: 700; color: #e0e0e0; }
+  .detail-title .detail-version { font-size: 11px; font-weight: 400; color: #666; margin-left: 6px; }
+  .detail-desc { font-size: 12px; color: #569cd6; margin: 6px 0 10px; line-height: 1.5; }
+  .detail-meta { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
+  .detail-meta-item { font-size: 11px; color: #666; }
+  .detail-meta-item span { color: #aaa; }
+  .detail-actions { display: flex; gap: 6px; }
+  .btn-detail-load {
+    padding: 4px 14px;
+    background: #0e639c;
+    border: none;
+    border-radius: 2px;
+    color: #fff;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .btn-detail-load:hover { background: #1177bb; }
+  .btn-detail-unload {
+    padding: 4px 12px;
+    background: transparent;
+    border: 1px solid #3c3c3c;
+    border-radius: 2px;
+    color: #999;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+
+  /* ── Footer note ───────────────────────────────────────────────── */
+  .baseline-note {
+    padding: 5px 12px;
+    font-size: 11px;
+    color: #444;
+    flex-shrink: 0;
+    border-top: 1px solid #2d2d2d;
+  }
+</style>
+</head>
+<body>
+
+<div class="switcher">
+  <button class="active" onclick="show('current', this)">Current (baseline)</button>
+  <button onclick="show('c2c5', this)">C2 + C5 (chosen)</button>
+  <button onclick="show('compact', this)">Compact + Detail panel</button>
+  <button onclick="show('compactfull', this)">Compact + Detail + C2 + C5</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- CURRENT — baseline                                                -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<div class="panel active" id="panel-current">
+  <div class="panel-header">Plugin Browser</div>
+  <div class="list-area" id="baseline-list"></div>
+  <div class="baseline-note">Baseline — flat list, scroll only</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- C2 + C5 (no pinned section)                                      -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-c2c5">
+  <div class="panel-header">Plugin Browser</div>
+  <div class="search-row">
+    <input type="text" placeholder="Search plugins…" id="c2c5-search" oninput="renderC2C5()" />
+  </div>
+  <div class="chips-row">
+    <button class="chip active" onclick="setChip(this,'c2c5')" data-filter="all">All</button>
+    <button class="chip" onclick="setChip(this,'c2c5')" data-filter="loaded">Loaded</button>
+    <button class="chip" onclick="setChip(this,'c2c5')" data-filter="available">Available</button>
+  </div>
+  <div class="list-area" id="c2c5-list"></div>
+  <div class="baseline-note">C2 + C5 — search + status chips; no pinned section; no C++ changes</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- COMPACT + DETAIL                                                  -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-compact">
+  <div class="panel-header">Plugin Browser</div>
+  <div class="list-area" id="compact-list"></div>
+  <div class="detail-pane" id="compact-detail">
+    <div class="detail-empty">Select a plugin to see details</div>
+  </div>
+  <div class="baseline-note">Compact list — click any row to expand details below</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- COMPACT + DETAIL + C2 + C5                                       -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-compactfull">
+  <div class="panel-header">Plugin Browser</div>
+  <div class="search-row">
+    <input type="text" placeholder="Search plugins…" id="cf-search" oninput="renderCompactFull()" />
+  </div>
+  <div class="chips-row">
+    <button class="chip active" onclick="setChip(this,'cf')" data-filter="all">All</button>
+    <button class="chip" onclick="setChip(this,'cf')" data-filter="loaded">Loaded</button>
+    <button class="chip" onclick="setChip(this,'cf')" data-filter="available">Available</button>
+  </div>
+  <div class="list-area" id="cf-list"></div>
+  <div class="detail-pane" id="cf-detail">
+    <div class="detail-empty">Select a plugin to see details</div>
+  </div>
+  <div class="baseline-note">Full combo — compact list + search + chips + detail pane</div>
+</div>
+
+<script>
+const PLUGINS = [
+  {
+    name: "Application Flow Editor", version: "v2.0",
+    desc: "Visual editor for .diaapp v2 manifests with live runtime inspection",
+    status: "loaded", pinned: true,
+    author: "Dia Engine", category: "Engine",
+    deps: "DiaApplicationFlow"
+  },
+  {
+    name: "DiaAssetCatalogueEditor", version: "v1.0.0",
+    desc: "Author and maintain the asset catalogue manifest",
+    status: "available", pinned: false,
+    author: "Dia Engine", category: "Assets",
+    deps: "DiaAssetRuntime"
+  },
+  {
+    name: "DiaAssetRuntimeEditor", version: "v1.0.0",
+    desc: "Live asset runtime state inspector — shows loaded assets, ref counts, and cache state",
+    status: "available", pinned: false,
+    author: "Dia Engine", category: "Assets",
+    deps: "DiaAssetRuntime"
+  },
+  {
+    name: "Debug Layers Editor", version: "v1.0.0",
+    desc: "Toggle and configure render debug overlays per-frame",
+    status: "available", pinned: false,
+    author: "Dia Engine", category: "Graphics",
+    deps: "DiaGraphics, DiaBgfx"
+  },
+  {
+    name: "Entity Inspector", version: "v1.0.0",
+    desc: "Live diaentitytemplate domain inspector and component editor — inspect entities, modify components at runtime",
+    status: "available", pinned: false,
+    author: "Dia Engine", category: "Engine",
+    deps: "diaentitytemplate"
+  },
+  {
+    name: "Physics Editor", version: "v1.0.0",
+    desc: "RigidBody2D collision shape editor and tuning panel",
+    status: "available", pinned: false,
+    author: "Dia Engine", category: "Engine",
+    deps: "DiaRigidBody2D"
+  },
+  {
+    name: "Pipeline Editor", version: "v1.0.0",
+    desc: "Live pipeline viewer and build trigger — run asset pipelines from inside the editor",
+    status: "available", pinned: false,
+    author: "Dia Engine", category: "Pipeline",
+    deps: "DiaAPI"
+  },
+  {
+    name: "State Machine Editor", version: "v1.0.0",
+    desc: "Visual state machine designer and runtime debugger",
+    status: "available", pinned: false,
+    author: "Dia Engine", category: "Engine",
+    deps: "DiaStateMachine"
+  },
+];
+
+const chipState = { c2c5: "all", cf: "all" };
+const selectedPlugin = { compact: null, cf: null };
+
+// ── Helpers ──────────────────────────────────────────────────────────
+function fuzzy(p, q) {
+  if (!q) return true;
+  const s = q.toLowerCase();
+  return p.name.toLowerCase().includes(s) || p.desc.toLowerCase().includes(s) || p.category.toLowerCase().includes(s);
+}
+function matchChip(p, chip) {
+  if (chip === "all") return true;
+  if (chip === "loaded") return p.status === "loaded";
+  if (chip === "available") return p.status === "available";
+  return true;
+}
+function filtered(panelKey, searchId) {
+  const q = searchId ? (document.getElementById(searchId)?.value ?? "") : "";
+  const chip = chipState[panelKey] ?? "all";
+  return PLUGINS.filter(p => fuzzy(p, q) && matchChip(p, chip));
+}
+
+// ── Full row (baseline / C2+C5) ──────────────────────────────────────
+function fullRowHtml(p) {
+  const action = p.status === "loaded"
+    ? `<button class="btn-unload">Unload</button>`
+    : `<button class="btn-load">Load</button>`;
+  const badges = p.pinned
+    ? `<span class="badge badge-pinned">PINNED</span><span class="badge badge-loaded">LOADED</span>`
+    : `<span class="badge badge-available">${p.status.toUpperCase()}</span>`;
+  return `
+    <div class="plugin-row">
+      <div class="plugin-info">
+        <div class="plugin-name">${p.name} <span class="version">${p.version}</span></div>
+        <div class="plugin-desc">${p.desc}</div>
+      </div>
+      <div class="plugin-meta">${p.pinned ? badges : badges + action}</div>
+    </div>`;
+}
+
+// ── Compact row ──────────────────────────────────────────────────────
+function compactRowHtml(p, panelKey) {
+  const isSelected = selectedPlugin[panelKey] === p.name;
+  const action = p.status === "loaded"
+    ? `<button class="btn-unload" style="padding:2px 8px;font-size:11px;">Unload</button>`
+    : `<button class="btn-load" style="padding:2px 10px;font-size:11px;">Load</button>`;
+  const dot = p.status === "loaded"
+    ? `<div class="compact-loaded-dot" title="Loaded"></div>` : "";
+  return `
+    <div class="compact-row${isSelected ? " selected" : ""}" onclick="selectPlugin('${p.name}','${panelKey}')">
+      ${dot}
+      <div class="compact-name">${p.name}<span class="compact-version">${p.version}</span></div>
+      <div class="compact-action">${action}</div>
+    </div>`;
+}
+
+// ── Detail pane ──────────────────────────────────────────────────────
+function detailHtml(p) {
+  if (!p) return `<div class="detail-empty">Select a plugin to see details</div>`;
+  const loadBtn = p.status === "loaded"
+    ? `<button class="btn-detail-unload">Unload</button>`
+    : `<button class="btn-detail-load">Load</button>`;
+  return `
+    <div class="detail-title">${p.name} <span class="detail-version">${p.version}</span></div>
+    <div class="detail-desc">${p.desc}</div>
+    <div class="detail-meta">
+      <div class="detail-meta-item">Author: <span>${p.author}</span></div>
+      <div class="detail-meta-item">Category: <span>${p.category}</span></div>
+      <div class="detail-meta-item">Depends on: <span>${p.deps}</span></div>
+      <div class="detail-meta-item">Status: <span style="color:${p.status === 'loaded' ? '#89d185' : '#808080'}">${p.status}</span></div>
+    </div>
+    <div class="detail-actions">
+      ${loadBtn}
+    </div>`;
+}
+
+// ── Render functions ─────────────────────────────────────────────────
+function renderBaseline() {
+  document.getElementById("baseline-list").innerHTML = PLUGINS.map(fullRowHtml).join("");
+}
+
+function renderC2C5() {
+  const list = filtered("c2c5", "c2c5-search");
+  document.getElementById("c2c5-list").innerHTML = list.length
+    ? list.map(fullRowHtml).join("")
+    : `<div style="padding:12px;color:#555;font-size:12px;">No plugins match.</div>`;
+}
+
+function renderCompact() {
+  const html = PLUGINS.map(p => compactRowHtml(p, "compact")).join("");
+  document.getElementById("compact-list").innerHTML = html;
+}
+
+function renderCompactFull() {
+  const list = filtered("cf", "cf-search");
+  document.getElementById("cf-list").innerHTML = list.length
+    ? list.map(p => compactRowHtml(p, "cf")).join("")
+    : `<div style="padding:12px;color:#555;font-size:12px;">No plugins match.</div>`;
+}
+
+// ── Interaction ──────────────────────────────────────────────────────
+function selectPlugin(name, panelKey) {
+  selectedPlugin[panelKey] = name;
+  const p = PLUGINS.find(x => x.name === name);
+  document.getElementById(panelKey === "compact" ? "compact-detail" : "cf-detail").innerHTML = detailHtml(p);
+  if (panelKey === "compact") renderCompact();
+  else renderCompactFull();
+}
+
+function setChip(btn, panelKey) {
+  const panelId = panelKey === "c2c5" ? "panel-c2c5" : "panel-compactfull";
+  document.querySelectorAll(`#${panelId} .chip`).forEach(c => c.classList.remove("active"));
+  btn.classList.add("active");
+  chipState[panelKey] = btn.dataset.filter;
+  if (panelKey === "c2c5") renderC2C5();
+  else renderCompactFull();
+}
+
+function show(id, btn) {
+  document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".switcher button").forEach(b => b.classList.remove("active"));
+  document.getElementById("panel-" + id).classList.add("active");
+  btn.classList.add("active");
+}
+
+// ── Init ─────────────────────────────────────────────────────────────
+renderBaseline();
+renderC2C5();
+renderCompact();
+renderCompactFull();
+</script>
+</body>
+</html>

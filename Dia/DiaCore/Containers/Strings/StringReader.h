@@ -1,7 +1,7 @@
 #ifndef DIA_STRING_READER__
 #define DIA_STRING_READER__
 
-#include "DiaCore/Type/BasicTypeDefines.h"
+#include "DiaCore/Core/BasicTypeDefines.h"
 
 namespace Dia
 {

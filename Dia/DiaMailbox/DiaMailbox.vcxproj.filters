@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <None Include="dia.mailbox.architecture.module.md" />
+    <ClInclude Include="IMailboxRouter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MailboxTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Mailbox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Subscription.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\MailboxTestFixture.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\MockRouter.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\TestMessages.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="MailboxTypes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Mailbox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Testing\MockRouter.cpp">
+      <Filter>Testing</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{D1E2F3A4-B5C6-7890-DEFA-012345678901}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{E2F3A4B5-C6D7-8901-EFAB-123456789012}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{F3A4B5C6-D7E8-9012-FABC-234567890123}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

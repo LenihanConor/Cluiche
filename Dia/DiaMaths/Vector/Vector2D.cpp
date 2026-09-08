@@ -5,17 +5,11 @@
 #include "Core/FloatMaths.h"
 #include "Core/Trigonometry.h"
 #include "Matrix/Matrix22.h"
-#include "DiaCore/Type/TypeDefinitionMacros.h"
 
 namespace Dia
 {
 	namespace Maths
 	{
-		DIA_TYPE_DEFINITION( Vector2D )
-			DIA_TYPE_ADD_VARIABLE( "x", x )
-			DIA_TYPE_ADD_VARIABLE( "y", y )
-		DIA_TYPE_DEFINITION_END()
-		
 		//-----------------------------------------------------------------------------
 		Vector2D&  Vector2D::NormalizeSafe()
 		{

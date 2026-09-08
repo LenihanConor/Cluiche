@@ -11,6 +11,7 @@
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaVisualDebugger/DebugColourPalette.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaCore/CRC/StringCRC.h>
 
@@ -35,7 +36,7 @@ struct TestLayer : public IVisualDebugger
 
     Dia::Core::StringCRC GetLayerName() const override { return mName; }
 
-    void Draw(Dia::Graphics::FrameData& /*frameData*/) override
+    void Draw(Dia::Core::IDebugDraw& /*draw*/) override
     {
         ++mDrawCallCount;
         mLastDrawOrder = sDrawSequence++;
@@ -339,8 +340,8 @@ TEST(DebugColourPalette_Values, DebugColourPalette_AllNineDistinct)
 TEST(DebugLayerManager_Registration, MaxCapacity_NoAssert)
 {
     DebugLayerManager mgr;
-    // kMaxLayers = 64 — build distinct names on the stack and register all of them
-    char nameBuf[64][32];
+    // kMaxLayers = 128 — build distinct names on the stack and register all of them
+    char nameBuf[DebugLayerManager::kMaxLayers][32];
     TestLayer* layers[DebugLayerManager::kMaxLayers];
     for (unsigned int i = 0; i < DebugLayerManager::kMaxLayers; ++i)
     {

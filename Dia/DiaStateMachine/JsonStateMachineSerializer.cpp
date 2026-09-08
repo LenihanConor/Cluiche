@@ -6,7 +6,7 @@
 #include <DiaSerializer/JsonMetadataHelpers.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaCore/Core/Assert.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <cstring>
 #include <string>
 

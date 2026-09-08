@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Camera">
+      <UniqueIdentifier>{F8A9B0C1-D2E3-4567-F012-345678901B07}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Registry">
+      <UniqueIdentifier>{F8A9B0C1-D2E3-4567-F012-345678901B08}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Behaviours">
+      <UniqueIdentifier>{F8A9B0C1-D2E3-4567-F012-345678901B09}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Health">
+      <UniqueIdentifier>{F8A9B0C1-D2E3-4567-F012-345678901B0A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{F8A9B0C1-D2E3-4567-F012-345678901B0B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{F8A9B0C1-D2E3-4567-F012-345678901B0C}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="dia.camera3d.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Camera3D.h">
+      <Filter>Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="ViewportTransform3D.h">
+      <Filter>Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Registry\ICameraBehaviour3D.h">
+      <Filter>Registry</Filter>
+    </ClInclude>
+    <ClInclude Include="Registry\CameraBehaviourRegistry3D.h">
+      <Filter>Registry</Filter>
+    </ClInclude>
+    <ClInclude Include="Registry\CameraRegistry3D.h">
+      <Filter>Registry</Filter>
+    </ClInclude>
+    <ClInclude Include="Behaviours\BoundsClamp3D.h">
+      <Filter>Behaviours</Filter>
+    </ClInclude>
+    <ClInclude Include="Behaviours\Follow3D.h">
+      <Filter>Behaviours</Filter>
+    </ClInclude>
+    <ClInclude Include="Behaviours\ScreenShake3D.h">
+      <Filter>Behaviours</Filter>
+    </ClInclude>
+    <ClInclude Include="Behaviours\SmoothDamp3D.h">
+      <Filter>Behaviours</Filter>
+    </ClInclude>
+    <ClInclude Include="Behaviours\Orbit.h">
+      <Filter>Behaviours</Filter>
+    </ClInclude>
+    <ClInclude Include="Behaviours\Flythrough.h">
+      <Filter>Behaviours</Filter>
+    </ClInclude>
+    <ClInclude Include="Health\CameraRegistryHealth3D.h">
+      <Filter>Health</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\CameraBuilder3D.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ViewportTransform3D.cpp">
+      <Filter>Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="Registry\CameraBehaviourRegistry3D.cpp">
+      <Filter>Registry</Filter>
+    </ClCompile>
+    <ClCompile Include="Registry\CameraRegistry3D.cpp">
+      <Filter>Registry</Filter>
+    </ClCompile>
+    <ClCompile Include="Behaviours\BoundsClamp3D.cpp">
+      <Filter>Behaviours</Filter>
+    </ClCompile>
+    <ClCompile Include="Behaviours\Follow3D.cpp">
+      <Filter>Behaviours</Filter>
+    </ClCompile>
+    <ClCompile Include="Behaviours\ScreenShake3D.cpp">
+      <Filter>Behaviours</Filter>
+    </ClCompile>
+    <ClCompile Include="Behaviours\SmoothDamp3D.cpp">
+      <Filter>Behaviours</Filter>
+    </ClCompile>
+    <ClCompile Include="Behaviours\Orbit.cpp">
+      <Filter>Behaviours</Filter>
+    </ClCompile>
+    <ClCompile Include="Behaviours\Flythrough.cpp">
+      <Filter>Behaviours</Filter>
+    </ClCompile>
+    <ClCompile Include="Health\CameraRegistryHealth3D.cpp">
+      <Filter>Health</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

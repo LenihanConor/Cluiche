@@ -10,6 +10,14 @@
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Asan|x64">
+      <Configuration>Debug-Asan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Ubsan|x64">
+      <Configuration>Debug-Ubsan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ActionContext.h" />
@@ -18,20 +26,26 @@
     <ClInclude Include="ConsoleGamepadManager.h" />
     <ClInclude Include="EJoystick.h" />
     <ClInclude Include="EKey.h" />
+    <ClInclude Include="EKeyModifiers.h" />
     <ClInclude Include="EMouseButton.h" />
+    <ClInclude Include="InputRouter.h" />
     <ClInclude Include="Event.h" />
     <ClInclude Include="EventData.h" />
     <ClInclude Include="EventStream.h" />
     <ClInclude Include="Events\GamepadEvents.h" />
     <ClInclude Include="Events\JoystickEvents.h" />
     <ClInclude Include="Events\KeyboardEvents.h" />
-    <ClInclude Include="Events\LegacyEventConverter.h" />
     <ClInclude Include="Events\MouseEvents.h" />
     <ClInclude Include="IInputSource.h" />
     <ClInclude Include="InputProfile.h" />
     <ClInclude Include="InputRecorder.h" />
     <ClInclude Include="InputSourceManager.h" />
     <ClInclude Include="InputState.h" />
+    <ClInclude Include="InputBusAdapter.h" />
+    <ClInclude Include="Messages\input_messages.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Messages\input_messages.diagamemessages" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
@@ -40,11 +54,16 @@
     <ProjectReference Include="..\DiaMaths\DiaMaths.vcxproj">
       <Project>{2bba0ad3-d449-4c0e-8c84-acfa8bca456b}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\DiaMessageBus\DiaMessageBus.vcxproj">
+      <Project>{D5E6F7A8-B9C0-1234-DEF0-567890ABCDEF}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ConsoleGamepad.cpp" />
     <ClCompile Include="ConsoleGamepadManager.cpp" />
     <ClCompile Include="InputSourceManager.cpp" />
+    <ClCompile Include="InputBusAdapter.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{936FA28F-E171-401F-8185-D2AF48DB4098}</ProjectGuid>
@@ -60,6 +79,15 @@
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Asan|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>ClangCL</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
@@ -67,7 +95,7 @@
   <PropertyGroup>
     <_ProjectFileVersion>11.0.51106.1</_ProjectFileVersion>
   </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64' Or '$(Configuration)|$(Platform)'=='Debug-Asan|x64' Or '$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

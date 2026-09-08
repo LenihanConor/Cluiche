@@ -55,7 +55,7 @@ void EmitCollisionEvents(
         while (iter != iterEnd)
         {
             if (!iter.Value().wasContacting)
-                exitKeys.Add(iter.Key());
+                exitKeys.Add(iter.GetKey());
             ++iter;
         }
     }

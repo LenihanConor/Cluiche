@@ -6,6 +6,11 @@
 #ifndef CPPTL_JSON_H_INCLUDED
 #define CPPTL_JSON_H_INCLUDED
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmicrosoft-exception-spec"
+#endif
+
 #if !defined(JSON_IS_AMALGAMATION)
 #include "forwards.h"
 #endif // if !defined(JSON_IS_AMALGAMATION)
@@ -307,7 +312,7 @@ Json::Value obj_value(Json::objectValue); // {}
   /// \note Over-write existing comments. To preserve comments, use #swapPayload().
   Value& operator=(Value other);
   /// Swap everything.
-  void swap(Value& other);
+  void swap(Value& other) noexcept;
   /// Swap values but leave comments and source offsets in place.
   void swapPayload(Value& other);
 

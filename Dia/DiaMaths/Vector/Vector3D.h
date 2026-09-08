@@ -64,6 +64,7 @@ namespace Dia
 			Vector3D		Absolute			()const;
 			Vector3D&		Absolutize			();
 			float			Dot					( const Vector3D& ) const;
+			Vector3D		Cross				( const Vector3D& ) const;
 			float			SquareMagnitude		() const;
 			float			Magnitude			() const;
 			float			DistanceTo			( const Vector3D& ) const;

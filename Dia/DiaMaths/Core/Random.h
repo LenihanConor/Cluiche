@@ -5,8 +5,6 @@ namespace Dia
 	namespace Maths
 	{
 		class Vector2D;
-		class Circle2D;
-		class AARect2D;
 
 		//---------------------------------------------------------------------------------------------------------------------------------
 		// Random Number Generation
@@ -91,25 +89,6 @@ namespace Dia
 			//   probability - Chance of returning true (0.0 = never, 1.0 = always)
 			// Usage: if (RandomChance(0.1f)) { DropRareItem(); } // 10% drop chance
 			bool RandomChance(float probability);
-
-			// Returns random point inside a circle with uniform distribution
-			// Parameters:
-			//   circle - The circle to pick a point within
-			// Note: Uses sqrt for uniform distribution (naive random radius creates center bias)
-			// Usage: Spawning particles, random spawn points within an area
-			Vector2D RandomPointInCircle(const Circle2D& circle);
-
-			// Returns random point on the edge (circumference) of a circle
-			// Parameters:
-			//   circle - The circle to pick a point on
-			// Usage: Spawning enemies around player, placing objects in a ring
-			Vector2D RandomPointOnCircle(const Circle2D& circle);
-
-			// Returns random point inside an axis-aligned rectangle
-			// Parameters:
-			//   rect - The rectangle to pick a point within
-			// Usage: Random spawn positions, scatter placement
-			Vector2D RandomPointInRect(const AARect2D& rect);
 
 			// Returns random unit vector (normalized random direction)
 			// Result has magnitude of 1.0, pointing in a random direction

@@ -64,6 +64,9 @@ namespace Dia
 			float DistanceToPoint(const Dia::Maths::Vector2D& point) const;
 
 		private:
+			template<class Archive>
+			friend void serialize(Archive& ar, Ray& obj, unsigned version);
+
 			Dia::Maths::Vector2D mOrigin;
 			Dia::Maths::Vector2D mDirection;	// Must be normalized
 		};

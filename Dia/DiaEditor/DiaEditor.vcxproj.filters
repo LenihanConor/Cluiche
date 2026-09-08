@@ -22,9 +22,24 @@
     <Filter Include="Sinks">
       <UniqueIdentifier>{A7777777-7777-7777-7777-777777777777}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Project">
+      <UniqueIdentifier>{A8888888-8888-8888-8888-888888888888}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Memory">
+      <UniqueIdentifier>{A9999999-9999-9999-9999-999999999999}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Notification">
+      <UniqueIdentifier>{AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEE0001}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Plugin\IEditorPlugin.h">
+      <Filter>Plugin</Filter>
+    </ClInclude>
+    <ClInclude Include="Plugin\EditorPluginBase.h">
+      <Filter>Plugin</Filter>
+    </ClInclude>
+    <ClInclude Include="Plugin\HandlerTracker.h">
       <Filter>Plugin</Filter>
     </ClInclude>
     <ClInclude Include="Plugin\EditorPluginRegistry.h">
@@ -33,7 +48,6 @@
     <ClInclude Include="Plugin\EditorPluginRegistrationMacros.h">
       <Filter>Plugin</Filter>
     </ClInclude>
-    <ClInclude Include="Plugin\StubEditorPlugin.h" />
     <ClInclude Include="Plugin\HelloEditorPlugin.h" />
     <ClInclude Include="Plugin\HomeEditorPlugin.h" />
     <ClInclude Include="Plugin\EditorPluginContext.h">
@@ -51,28 +65,76 @@
     <ClInclude Include="Plugin\IPluginLoader.h">
       <Filter>Plugin</Filter>
     </ClInclude>
+    <ClInclude Include="Plugin\PluginServiceLocator.h">
+      <Filter>Plugin</Filter>
+    </ClInclude>
     <ClInclude Include="Command\IEditorCommand.h" />
     <ClInclude Include="Command\CompoundCommand.h" />
     <ClInclude Include="Command\CommandHistory.h" />
+    <ClInclude Include="Project\ProjectContext.h">
+      <Filter>Project</Filter>
+    </ClInclude>
+    <ClInclude Include="Project\ProjectContextController.h">
+      <Filter>Project</Filter>
+    </ClInclude>
+    <ClInclude Include="MVC\IEditorContext.h">
+      <Filter>MVC</Filter>
+    </ClInclude>
     <ClInclude Include="MVC\EditorModel.h" />
     <ClInclude Include="MVC\EditorView.h" />
     <ClInclude Include="MVC\EditorViewController.h" />
     <ClInclude Include="LiveConnection\GameConnectionManager.h" />
     <ClInclude Include="LiveConnection\GameConnectionController.h" />
     <ClInclude Include="Layout\DockingLayout.h" />
+    <ClInclude Include="UI\DataPath.h">
+      <Filter>UI</Filter>
+    </ClInclude>
     <ClInclude Include="UI\WebUIBridge.h" />
     <ClInclude Include="UI\FileDialogHandler.h" />
     <ClInclude Include="EditorManifestLoader.h" />
     <ClInclude Include="Sinks\EditorConsoleSink.h">
       <Filter>Sinks</Filter>
     </ClInclude>
+    <ClInclude Include="Memory\EditorMemory.h">
+      <Filter>Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Notification\NotificationService.h">
+    <ClInclude Include="Plugin\LiveConnectionPluginBase.h">
+    <ClInclude Include="EditorAPI\EditorActionRegistry.h">
+    <ClInclude Include="EditorAPI\EditorActionQueue.h">
+    <ClInclude Include="EditorAPI\EditorActionRegistryService.h">
+    <ClInclude Include="EditorAPI\EditorActionPythonModule.h">
+    <ClInclude Include="EditorAPI\EditorAPIHealthReporter.h">
+    <ClInclude Include="EditorAPI\EditorActionQueueService.h">
+      <Filter>EditorAPI</Filter>
+    </ClInclude>
+      <Filter>EditorAPI</Filter>
+    </ClInclude>
+      <Filter>EditorAPI</Filter>
+    </ClInclude>
+      <Filter>EditorAPI</Filter>
+    </ClInclude>
+      <Filter>EditorAPI</Filter>
+    </ClInclude>
+      <Filter>EditorAPI</Filter>
+    </ClInclude>
+      <Filter>Plugin</Filter>
+    </ClInclude>
+      <Filter>Notification</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Plugin\EditorPluginBase.cpp">
+      <Filter>Plugin</Filter>
+    </ClCompile>
     <ClCompile Include="Plugin\EditorPluginRegistry.cpp">
       <Filter>Plugin</Filter>
     </ClCompile>
     <ClCompile Include="Command\CompoundCommand.cpp" />
     <ClCompile Include="Command\CommandHistory.cpp" />
+    <ClCompile Include="Project\ProjectContextController.cpp">
+      <Filter>Project</Filter>
+    </ClCompile>
     <ClCompile Include="MVC\EditorModel.cpp" />
     <ClCompile Include="MVC\EditorView.cpp" />
     <ClCompile Include="MVC\EditorViewController.cpp" />
@@ -84,6 +146,33 @@
     <ClCompile Include="EditorManifestLoader.cpp" />
     <ClCompile Include="Sinks\EditorConsoleSink.cpp">
       <Filter>Sinks</Filter>
+    </ClCompile>
+    <ClCompile Include="Memory\EditorMemory.cpp">
+      <Filter>Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="Notification\NotificationService.cpp">
+    <ClCompile Include="Plugin\LiveConnectionPluginBase.cpp">
+    <ClCompile Include="EditorAPI\EditorActionRegistry.cpp">
+    <ClCompile Include="EditorAPI\EditorActionQueue.cpp">
+    <ClCompile Include="EditorAPI\EditorActionRegistryService.cpp">
+    <ClCompile Include="EditorAPI\EditorActionPythonModule.cpp">
+    <ClCompile Include="EditorAPI\EditorAPIHealthReporter.cpp">
+    <ClCompile Include="EditorAPI\EditorActionQueueService.cpp">
+      <Filter>EditorAPI</Filter>
+    </ClCompile>
+      <Filter>EditorAPI</Filter>
+    </ClCompile>
+      <Filter>EditorAPI</Filter>
+    </ClCompile>
+      <Filter>EditorAPI</Filter>
+    </ClCompile>
+      <Filter>EditorAPI</Filter>
+    </ClCompile>
+      <Filter>EditorAPI</Filter>
+    </ClCompile>
+      <Filter>Plugin</Filter>
+    </ClCompile>
+      <Filter>Notification</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

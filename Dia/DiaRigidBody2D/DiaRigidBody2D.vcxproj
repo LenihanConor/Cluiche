@@ -10,6 +10,14 @@
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Asan|x64">
+      <Configuration>Debug-Asan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Ubsan|x64">
+      <Configuration>Debug-Ubsan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C1D2E3F4-A5B6-7890-CDEF-012345678902}</ProjectGuid>
@@ -26,6 +34,15 @@
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Asan|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>ClangCL</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
@@ -33,7 +50,7 @@
   <PropertyGroup>
     <_ProjectFileVersion>11.0.51106.1</_ProjectFileVersion>
   </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64' Or '$(Configuration)|$(Platform)'=='Debug-Asan|x64' Or '$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -58,6 +75,7 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="DiaRigidBody2DSerializers.h" />
     <ClInclude Include="Bodies\BodyType.h" />
     <ClInclude Include="Bodies\Body2DBase.h" />
     <ClInclude Include="Bodies\PointBody2D.h" />
@@ -104,12 +122,16 @@
     <ClCompile Include="World\PhysicsWorld.cpp" />
     <ClCompile Include="Triggers\TriggerVolume2D.cpp" />
     <ClCompile Include="Triggers\DetectTriggerOverlaps.cpp" />
+    <ClCompile Include="PhysicsBusAdapter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.rigidbody2d.architecture.module.md" />
+    <None Include="Messages\physics_messages.diagamemessages" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Testing\PhysicsWorldBuilder.h" />
+    <ClInclude Include="PhysicsBusAdapter.h" />
+    <ClInclude Include="Messages\physics_messages.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
@@ -122,6 +144,14 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaGeometry2D\DiaGeometry2D.vcxproj">
       <Project>{A3C4D5E6-F7B8-9012-CDEF-012345678901}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaMessageBus\DiaMessageBus.vcxproj">
+      <Project>{D5E6F7A8-B9C0-1234-DEF0-567890ABCDEF}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaObservation\DiaObservation.vcxproj">
+      <Project>{7a8b9c0d-e1f2-3456-7890-abcdef012345}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

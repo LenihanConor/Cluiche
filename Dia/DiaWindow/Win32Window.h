@@ -12,6 +12,7 @@ namespace Dia
 	{
 		using CloseCallback = std::function<void()>;
 		using ResizeCallback = std::function<void(int, int)>;
+		using MoveResizeCallback = std::function<void()>;
 
 		class Win32Window : public IWindow
 		{
@@ -21,6 +22,7 @@ namespace Dia
 
 			void SetCloseCallback(CloseCallback cb);
 			void SetResizeCallback(ResizeCallback cb);
+			void SetMoveResizeCallback(MoveResizeCallback cb);
 
 			void Initialize(const Settings& settings) override;
 			void Close() override;
@@ -33,7 +35,6 @@ namespace Dia
 			void SetTitle(const Core::Containers::String64& title) override;
 			void SetIcon(unsigned int width, unsigned int height, const unsigned char* pixels) override;
 			void SetVisible(bool visible) override;
-			bool SetActive(bool active) const override;
 			void SetMouseCursorVisible(bool visible) override;
 			SystemHandle GetSystemHandle() const override;
 
@@ -47,6 +48,7 @@ namespace Dia
 			bool mIsOpen;
 			CloseCallback mCloseCallback;
 			ResizeCallback mResizeCallback;
+			MoveResizeCallback mMoveResizeCallback;
 
 			static Win32Window* sLastCreated;
 		};
@@ -54,7 +56,7 @@ namespace Dia
 		class Win32WindowFactory : public IWindowFactory
 		{
 		public:
-			IWindow* Create(const IWindow::Settings& windowSettings, const Graphics::ICanvas::Settings& canvasSettings) override;
+			IWindow* Create(const IWindow::Settings& windowSettings) override;
 			void Destroy(IWindow* window) override;
 		};
 	}

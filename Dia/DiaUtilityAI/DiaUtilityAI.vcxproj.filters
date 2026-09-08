@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{A1B2C3D4-E5F6-7890-1234-ABCDEF012345}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{B2C3D4E5-F6A7-8901-2345-BCDEF0123456}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.diautilityai.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ResponseCurve.h" />
+    <ClInclude Include="ScorerDef.h" />
+    <ClInclude Include="ActionDef.h" />
+    <ClInclude Include="GroupConsiderationContext.h" />
+    <ClInclude Include="PersonalityProfile.h" />
+    <ClInclude Include="UtilitySet.h" />
+    <ClInclude Include="UtilitySetComponent.h" />
+    <ClInclude Include="Testing\UtilityTestHelpers.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ResponseCurve.cpp" />
+    <ClCompile Include="GroupConsiderationContext.cpp" />
+    <ClCompile Include="PersonalityProfile.cpp" />
+    <ClCompile Include="UtilitySet.cpp" />
+    <ClCompile Include="UtilitySetComponent.cpp" />
+  </ItemGroup>
+</Project>

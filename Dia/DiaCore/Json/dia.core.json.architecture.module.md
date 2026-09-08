@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.core.json
 name: Json
 owner_team: TBD
-layer: platform
+layer: foundation/core
 status: active
 maturity: dev
 
@@ -26,8 +26,7 @@ non_responsibilities:
   - Implementing leaf functionality directly (owned by child modules)
   - Cross-cutting engine orchestration
 
-dependent_modules:
-  - dia.core.json.external
+dependent_modules: []
 
 public_api:
   headers: []

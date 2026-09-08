@@ -19,6 +19,9 @@
     <Filter Include="Testing">
       <UniqueIdentifier>{A6B7C8D9-E0F1-2345-6789-012345F01234}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Random">
+      <UniqueIdentifier>{B7C8D9E0-F1A2-3456-789A-123456A01235}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Shapes\IntersectionClassify.h">
@@ -28,9 +31,6 @@
       <Filter>Shapes</Filter>
     </ClInclude>
     <ClInclude Include="Shapes\AARect.h">
-      <Filter>Shapes</Filter>
-    </ClInclude>
-    <ClInclude Include="Shapes\Arc.h">
       <Filter>Shapes</Filter>
     </ClInclude>
     <ClInclude Include="Shapes\Capsule.h">
@@ -66,6 +66,12 @@
     <ClInclude Include="Shapes\AnnularSector.h">
       <Filter>Shapes</Filter>
     </ClInclude>
+    <ClInclude Include="Shapes\Spline.h">
+      <Filter>Shapes</Filter>
+    </ClInclude>
+    <ClInclude Include="Shapes\SplineFactory.h">
+      <Filter>Shapes</Filter>
+    </ClInclude>
     <ClInclude Include="Intersection\IntersectionTests.h">
       <Filter>Intersection</Filter>
     </ClInclude>
@@ -87,6 +93,9 @@
     <ClInclude Include="Spatial\HexGrid.h">
       <Filter>Spatial</Filter>
     </ClInclude>
+    <ClInclude Include="Random\Random.h">
+      <Filter>Random</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Shapes\IntersectionClassify.cpp">
@@ -96,9 +105,6 @@
       <Filter>Shapes</Filter>
     </ClCompile>
     <ClCompile Include="Shapes\AARect.cpp">
-      <Filter>Shapes</Filter>
-    </ClCompile>
-    <ClCompile Include="Shapes\Arc.cpp">
       <Filter>Shapes</Filter>
     </ClCompile>
     <ClCompile Include="Shapes\Capsule.cpp">
@@ -134,6 +140,12 @@
     <ClCompile Include="Shapes\AnnularSector.cpp">
       <Filter>Shapes</Filter>
     </ClCompile>
+    <ClCompile Include="Shapes\Spline.cpp">
+      <Filter>Shapes</Filter>
+    </ClCompile>
+    <ClCompile Include="Shapes\SplineFactory.cpp">
+      <Filter>Shapes</Filter>
+    </ClCompile>
     <ClCompile Include="Intersection\IntersectionTests.cpp">
       <Filter>Intersection</Filter>
     </ClCompile>
@@ -152,15 +164,15 @@
     <ClCompile Include="Spatial\HexGrid.cpp">
       <Filter>Spatial</Filter>
     </ClCompile>
+    <ClCompile Include="Random\Random.cpp">
+      <Filter>Random</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shapes\IntersectionClassify.inl">
       <Filter>Shapes</Filter>
     </None>
     <None Include="Shapes\AARect.inl">
-      <Filter>Shapes</Filter>
-    </None>
-    <None Include="Shapes\Arc.inl">
       <Filter>Shapes</Filter>
     </None>
     <None Include="Shapes\Capsule.inl">
@@ -202,10 +214,14 @@
     <None Include="Docs\dia.geometry2d.architecture.module.md">
       <Filter>Docs</Filter>
     </None>
+    <None Include="Random\dia.geometry2d.random.architecture.module.md">
+      <Filter>Random</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Testing\ShapeFactory.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="DiaGeometry2DSerializers.h" />
   </ItemGroup>
 </Project>

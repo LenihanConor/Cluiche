@@ -21,6 +21,8 @@
 #include "DiaGeometry2D/Shapes/Circle.h"
 #include "DiaGeometry2D/Shapes/Ray.h"
 
+namespace Dia { namespace Observation { namespace Metric { class Counter; } } }
+
 namespace Dia::RigidBody2D {
 
 class PhysicsWorld {
@@ -81,6 +83,7 @@ private:
     float                                                                    mAccumulator;
     int                                                                      mStepCount;
     uint32_t                                                                 mNextBodyUid;
+    Dia::Observation::Metric::Counter*                                      mMetricDroppedTicks = nullptr;
     Dia::Core::Containers::DynamicArrayC<PointBody2D*, kMaxPointBodies>              mPointBodies;
     Dia::Core::Containers::DynamicArrayC<Dia::Core::Handle<Body2DBase*>, kMaxPointBodies> mPointHandles;
     Dia::Core::Containers::DynamicArrayC<RigidBody2D*, kMaxRigidBodies>              mRigidBodies;

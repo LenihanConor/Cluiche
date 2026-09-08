@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DiaEntityEditor - Option A: Tabbed Panel</title>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:#13131f; color:#c9c9e0; font-family:'Segoe UI',system-ui,sans-serif; font-size:12px; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+.titlebar { background:#1a1a2e; border-bottom:1px solid #3a3a5a; padding:5px 10px; display:flex; align-items:center; gap:8px; flex-shrink:0; user-select:none; }
+.ttl { font-weight:600; color:#e0e0f8; }
+.tsub { color:#7070a0; font-size:11px; margin-left:auto; }
+.tab-bar { background:#1e1e2e; border-bottom:1px solid #3a3a5a; display:flex; flex-shrink:0; padding:0 4px; }
+.tab { padding:7px 16px; cursor:pointer; color:#8080a8; border-bottom:2px solid transparent; font-size:11.5px; transition:color .15s; white-space:nowrap; }
+.tab:hover { color:#c0c0e0; }
+.tab.active { color:#c9baff; border-bottom-color:#7c6af7; }
+.tab-content { display:none; flex:1; overflow:hidden; flex-direction:column; }
+.tab-content.active { display:flex; }
+.toolbar { background:#222235; border-bottom:1px solid #33334a; padding:4px 8px; display:flex; align-items:center; gap:6px; flex-shrink:0; }
+.srch { background:#1a1a2e; border:1px solid #3a3a5a; border-radius:3px; color:#c9c9e0; padding:3px 7px; font-size:11px; outline:none; width:150px; }
+.srch:focus { border-color:#7c6af7; }
+.srch::placeholder { color:#44446a; }
+.chip { background:#2a2a4a; border:1px solid #4a4a70; border-radius:10px; padding:2px 8px; font-size:10px; color:#9090c0; cursor:pointer; white-space:nowrap; }
+.chip.active { background:#3d2fa0; border-color:#7c6af7; color:#c9baff; }
+.spacer { flex:1; }
+.lbl { color:#55557a; font-size:11px; }
+.btn { background:#2a2a4a; border:1px solid #4a4a6a; border-radius:3px; color:#9090c0; padding:3px 8px; font-size:11px; cursor:pointer; }
+.btn.pri { background:#3d2fa0; border-color:#7c6af7; color:#c9baff; }
+.split { display:flex; flex-direction:column; flex:1; overflow:hidden; }
+.ptop { flex:0 0 52%; overflow:hidden; display:flex; flex-direction:column; }
+.pbot { flex:1; overflow:hidden; display:flex; flex-direction:column; border-top:2px solid #3a3a5a; }
+.phdr { background:#222235; border-bottom:1px solid #33334a; padding:4px 8px; display:flex; align-items:center; gap:6px; flex-shrink:0; font-size:11px; color:#6060a0; text-transform:uppercase; letter-spacing:.5px; }
+.phdrrr { margin-left:auto; font-size:10px; color:#44446a; }
+.colhdr { background:#1e1e30; border-bottom:1px solid #252535; padding:3px 8px; display:flex; gap:6px; flex-shrink:0; }
+.el { overflow-y:auto; flex:1; }
+.er { display:flex; align-items:center; padding:0 8px 0 0; height:28px; cursor:pointer; border-bottom:1px solid #212130; gap:5px; border-left:2px solid transparent; }
+.er:hover { background:#26263a; }
+.er.sel { background:#3d3d5c; border-left-color:#7c6af7; }
+.ei { color:#33334a; font-family:Consolas,monospace; font-size:9.5px; width:28px; text-align:right; flex-shrink:0; }
+.eg { color:#2a2a48; font-family:Consolas,monospace; font-size:9.5px; width:26px; flex-shrink:0; }
+.en { flex:1; font-size:11.5px; color:#b8b8d8; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.er.sel .en { color:#e0d8ff; }
+.tags { display:flex; gap:2px; }
+.tag { font-family:Consolas,monospace; font-size:8.5px; border:1px solid #3a3a5a; border-radius:2px; padding:1px 2px; color:#6060a0; background:#212130; }
+.tag.T { border-color:#3a6a8a; color:#6aa8c8; background:#151e28; }
+.tag.P { border-color:#3a8a4a; color:#6ac47a; background:#15201a; }
+.tag.R { border-color:#8a5a3a; color:#c4906a; background:#201515; }
+.tag.A { border-color:#8a8a3a; color:#c4c46a; background:#201e15; }
+.tag.S { border-color:#6a3a8a; color:#a46ac4; background:#1a1525; }
+.tag.H { border-color:#8a3a3a; color:#c46a6a; background:#201515; }
+.tag.C { border-color:#3a8a8a; color:#6ac4c4; background:#151e1e; }
+.is { overflow-y:auto; flex:1; padding:4px; }
+.cs { margin-bottom:3px; border:1px solid #2e2e48; border-radius:3px; overflow:hidden; }
+.ch { background:#252545; padding:5px 8px; display:flex; align-items:center; cursor:pointer; gap:6px; user-select:none; }
+.ch:hover { background:#2e2e52; }
+.chv { color:#5060a0; font-size:9px; transition:transform .15s; width:10px; }
+.cs.open .chv { transform:rotate(90deg); }
+.cname { font-weight:600; color:#b8b0f0; font-size:12px; }
+.ctier { margin-left:auto; background:#181828; border:1px solid #3a3a5a; border-radius:2px; padding:1px 5px; font-size:9.5px; color:#6060a0; font-family:Consolas,monospace; cursor:pointer; }
+.ctier:hover { border-color:#7c6af7; color:#c9baff; }
+.cb { display:none; }
+.cs.open .cb { display:block; }
+.fg { display:grid; grid-template-columns:150px 80px 1fr 24px; }
+.fc { padding:3px 8px; border-bottom:1px solid #1a1a28; font-size:11px; display:flex; align-items:center; }
+.fname { color:#7070a0; }
+.ftype { color:#33334a; font-family:Consolas,monospace; font-size:10px; }
+.fval { font-family:Consolas,monospace; }
+.fnum { color:#90c890; }
+.fvec { color:#70a8e8; }
+.fstr { color:#e8b860; }
+.ftrue { color:#70c470; }
+.ffalse { color:#c47070; }
+.fedit { color:#333358; cursor:pointer; font-size:11px; padding:1px 3px; border-radius:2px; justify-content:center; }
+.fedit:hover { background:#33335a; color:#c0b8f8; }
+.fr:hover .fc { background:#21213a; }
+.ql { overflow-y:auto; flex:1; padding:4px; }
+.qi { margin-bottom:3px; border:1px solid #2e2e48; border-radius:3px; overflow:hidden; }
+.qh { background:#252545; padding:5px 8px; display:flex; align-items:center; cursor:pointer; gap:8px; }
+.qh:hover { background:#2e2e52; }
+.qchv { color:#5060a0; font-size:9px; transition:transform .15s; width:10px; }
+.qi.open .qchv { transform:rotate(90deg); }
+.qsig { font-family:Consolas,monospace; font-size:11px; color:#b8b8e0; flex:1; }
+.qbdg { background:#3d2fa0; border-radius:10px; padding:1px 8px; font-size:10px; color:#c9baff; }
+.qbody { display:none; padding:8px; background:#1a1a35; }
+.qi.open .qbody { display:block; }
+.qmems { display:flex; flex-wrap:wrap; gap:3px; }
+.qchip { background:#222235; border:1px solid #33334a; border-radius:2px; padding:2px 6px; font-size:10px; color:#7070a0; font-family:Consolas,monospace; }
+.mbox { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.mwrap { flex:1; overflow-y:auto; }
+.mtbl { width:100%; border-collapse:collapse; }
+.mtbl th { background:#222235; color:#5a5a80; font-size:10px; text-transform:uppercase; letter-spacing:.4px; padding:4px 8px; text-align:left; border-bottom:1px solid #33334a; position:sticky; top:0; z-index:1; }
+.mtbl td { padding:3px 8px; border-bottom:1px solid #1e1e2e; font-family:Consolas,monospace; font-size:11px; height:28px; vertical-align:middle; }
+.mtbl tr:hover td { background:#252545; }
+.mfr { color:#44446a; }
+.msnd { color:#8080a8; }
+.madr { color:#6a98b8; }
+.mtdmg { background:#280f00; border:1px solid #6a4010; color:#e8a850; display:inline-block; padding:1px 6px; border-radius:2px; font-size:10px; }
+.mtspwn { background:#0a2000; border:1px solid #1a6020; color:#70c870; display:inline-block; padding:1px 6px; border-radius:2px; font-size:10px; }
+.mtdest { background:#280000; border:1px solid #6a1010; color:#e87070; display:inline-block; padding:1px 6px; border-radius:2px; font-size:10px; }
+.mtstate { background:#10103a; border:1px solid #30308a; color:#b0b0f8; display:inline-block; padding:1px 6px; border-radius:2px; font-size:10px; }
+.mtanim { background:#081828; border:1px solid #18486a; color:#70a8e8; display:inline-block; padding:1px 6px; border-radius:2px; font-size:10px; }
+.mtcoll { background:#082828; border:1px solid #186868; color:#70c8c8; display:inline-block; padding:1px 6px; border-radius:2px; font-size:10px; }
+.mtoth { background:#181818; border:1px solid #383838; color:#686888; display:inline-block; padding:1px 6px; border-radius:2px; font-size:10px; }
+.shdr { background:#1e1e2e; border-bottom:1px solid #252535; padding:4px 8px; font-size:10px; text-transform:uppercase; letter-spacing:.5px; color:#44446a; flex-shrink:0; }
+.hr { display:flex; align-items:center; gap:6px; padding:2px 8px; }
+.hl { font-family:Consolas,monospace; font-size:10px; color:#7070a0; width:88px; }
+.hbg { flex:1; background:#181828; border-radius:2px; height:7px; overflow:hidden; }
+.hfil { height:100%; border-radius:2px; }
+.hn { font-size:10px; color:#44446a; font-family:Consolas,monospace; width:24px; text-align:right; }
+.ww { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.wtbl { width:100%; border-collapse:collapse; }
+.wtbl th { background:#222235; color:#5a5a80; font-size:10px; text-transform:uppercase; letter-spacing:.4px; padding:4px 8px; text-align:left; border-bottom:1px solid #33334a; position:sticky; top:0; z-index:1; }
+.wtbl td { padding:3px 8px; border-bottom:1px solid #1e1e2e; font-size:11px; height:28px; vertical-align:middle; }
+.wtbl tr:hover td { background:#252545; }
+.went { color:#b0a8e8; }
+.wcomp { color:#7070a0; }
+.wfld { color:#6060a0; font-family:Consolas,monospace; }
+.wval { font-family:Consolas,monospace; color:#90c890; }
+.wrm { color:#33334a; cursor:pointer; text-align:center; }
+.wrm:hover { color:#c47070; }
+.awrow { display:flex; gap:5px; padding:5px 8px; border-top:1px solid #2a2a3e; background:#1e1e2e; flex-shrink:0; }
+.awsel { background:#181828; border:1px solid #2e2e48; border-radius:3px; color:#a0a0c8; padding:3px 6px; font-size:11px; outline:none; flex:1; cursor:pointer; }
+.awsel:focus { border-color:#7c6af7; }
+.nosec { flex:1; display:flex; align-items:center; justify-content:center; color:#33334a; }
+.sbar { background:#161622; border-top:1px solid #222232; padding:2px 10px; font-size:10px; color:#33334a; display:flex; gap:14px; flex-shrink:0; }
+.sok { color:#4a8a4a; } .sv { color:#6060a0; } .swn { color:#8a7a2a; }
+::-webkit-scrollbar { width:5px; } ::-webkit-scrollbar-track { background:#151525; }
+::-webkit-scrollbar-thumb { background:#333348; border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:#4a4a6a; }
+</style>
+</head>
+<body>
+<div class="titlebar">
+  <span style="font-size:14px">&#127918;</span>
+  <span class="ttl">DiaEntityEditor</span>
+  <span class="tsub">frame #4821 &middot; 18 entities &middot; runtime: 80.4s</span>
+</div>
+<div class="tab-bar">
+  <div class="tab active" data-tab="entities">Entities</div>
+  <div class="tab" data-tab="queries">Queries</div>
+  <div class="tab" data-tab="mailbox">Mailbox</div>
+  <div class="tab" data-tab="watch">Watch</div>
+</div>
+
+<!-- ENTITIES TAB -->
+<div class="tab-content active" id="tab-entities">
+  <div class="split">
+    <div class="ptop">
+      <div class="toolbar">
+        <input class="srch" type="text" placeholder="filter entities..." id="esrch">
+        <div class="chip active" data-f="ALL">All</div>
+        <div class="chip" data-f="T">T</div>
+        <div class="chip" data-f="P">P</div>
+        <div class="chip" data-f="R">R</div>
+        <div class="chip" data-f="A">A</div>
+        <div class="chip" data-f="H">H</div>
+        <div class="spacer"></div>
+        <span class="lbl" id="ecnt">18 entities</span>
+      </div>
+      <div class="colhdr">
+        <span style="font-size:9.5px;color:#33334a;font-family:Consolas,monospace;width:28px;text-align:right">IDX</span>
+        <span style="font-size:9.5px;color:#33334a;width:26px">GEN</span>
+        <span style="font-size:9.5px;color:#33334a;flex:1">NAME</span>
+        <span style="font-size:9.5px;color:#33334a">TAGS</span>
+      </div>
+      <div class="el" id="el"></div>
+    </div>
+    <div class="pbot">
+      <div class="phdr">
+        Inspector
+        <span id="iname" style="color:#c0b8f8;font-size:11px;margin-left:8px;text-transform:none;letter-spacing:0;font-weight:400"></span>
+        <span class="phdrrr" id="icnt"></span>
+      </div>
+      <div class="is" id="isec">
+        <div class="nosec" id="nosec">Select an entity to inspect</div>
+        <div id="icont" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- QUERIES TAB -->
+<div class="tab-content" id="tab-queries">
+  <div class="toolbar">
+    <input class="srch" type="text" placeholder="filter queries...">
+    <div class="spacer"></div>
+    <span class="lbl">6 queries</span>
+  </div>
+  <div class="ql" id="ql"></div>
+</div>
+
+<!-- MAILBOX TAB -->
+<div class="tab-content" id="tab-mailbox">
+  <div class="mbox">
+    <div class="toolbar">
+      <input class="srch" type="text" placeholder="filter...">
+      <div class="chip active">All</div>
+      <div class="chip">Damage</div>
+      <div class="chip">Spawn</div>
+      <div class="chip">Anim</div>
+      <div class="spacer"></div>
+      <span class="lbl">ring 64 &middot; 15</span>
+      <button class="btn">Clear</button>
+    </div>
+    <div class="shdr">Message Log</div>
+    <div class="mwrap">
+      <table class="mtbl">
+        <thead><tr>
+          <th style="width:48px">Frame</th>
+          <th style="width:100px">Sender</th>
+          <th style="width:120px">Address</th>
+          <th style="width:130px">Type</th>
+          <th>Payload</th>
+        </tr></thead>
+        <tbody id="mbody"></tbody>
+      </table>
+    </div>
+    <div class="shdr">Type Histogram &middot; last 100 frames</div>
+    <div id="hw" style="background:#1a1a2e;padding:4px 0;overflow-y:auto;max-height:120px"></div>
+  </div>
+</div>
+
+<!-- WATCH TAB -->
+<div class="tab-content" id="tab-watch">
+  <div class="ww">
+    <div class="toolbar">
+      <span class="lbl">Watch List</span>
+      <div class="spacer"></div>
+      <button class="btn pri" id="awbtn">+ Add Watch</button>
+    </div>
+    <div style="overflow-y:auto;flex:1">
+      <table class="wtbl">
+        <thead><tr>
+          <th style="width:100px">Entity</th>
+          <th style="width:110px">Component</th>
+          <th style="width:100px">Field</th>
+          <th>Value</th>
+          <th style="width:50px">Delta</th>
+          <th style="width:24px"></th>
+        </tr></thead>
+        <tbody id="wbody"></tbody>
+      </table>
+    </div>
+    <div class="awrow">
+      <select class="awsel" id="awe">
+        <option>Player</option><option>Enemy_01</option><option>Enemy_02</option><option>Camera_Main</option>
+      </select>
+      <select class="awsel" id="awc">
+        <option>Transform</option><option>RigidBody2D</option><option>Health</option><option>Animation</option>
+      </select>
+      <select class="awsel" id="awf">
+        <option>position</option><option>velocity</option><option>health</option><option>rotation</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="sbar">
+  <span class="sok">&#9679; Live</span>
+  <span>Frame <b class="sv">4821</b></span>
+  <span>dt <b class="sv">16.2ms</b></span>
+  <span>Entities: <b class="sv">18</b></span>
+  <span class="swn">Msgs/frame: <b>12</b></span>
+</div>
+
+<script>
+const ENTS=[
+  {i:0,g:1,n:'WorldRoot',t:['T'],d:0},
+  {i:1,g:1,n:'Player',t:['T','P','R','A','S'],d:1},
+  {i:2,g:3,n:'Enemy_01',t:['T','P','R','A','H'],d:1},
+  {i:3,g:2,n:'Enemy_02',t:['T','P','R','A','H'],d:1},
+  {i:4,g:1,n:'Enemy_03',t:['T','P','H'],d:1},
+  {i:5,g:7,n:'Projectile_01',t:['T','P'],d:2},
+  {i:6,g:6,n:'Projectile_02',t:['T','P'],d:2},
+  {i:7,g:5,n:'Projectile_03',t:['T','P'],d:2},
+  {i:8,g:1,n:'Camera_Main',t:['T','C'],d:1},
+  {i:9,g:1,n:'GroundPlatform_A',t:['T','R'],d:1},
+  {i:10,g:1,n:'GroundPlatform_B',t:['T','R'],d:1},
+  {i:11,g:1,n:'GroundPlatform_C',t:['T','R'],d:1},
+  {i:12,g:2,n:'Pickup_Coin_01',t:['T','P','C'],d:1},
+  {i:13,g:2,n:'Pickup_Coin_02',t:['T','P','C'],d:1},
+  {i:14,g:1,n:'Spawn_EnemyA',t:['T'],d:0},
+  {i:15,g:1,n:'Spawn_EnemyB',t:['T'],d:0},
+  {i:16,g:1,n:'FX_Explosion_01',t:['T','A'],d:1},
+  {i:17,g:1,n:'FX_Dust_Player',t:['T','A'],d:2}
+];
+const COMPS={
+  T:{name:'Transform',tier:'b',fields:[{n:'position',v:'(12.40, 0.00)',t:'vec',dt:'vec2'},{n:'rotation',v:'0.000',t:'num',dt:'float'},{n:'scale',v:'(1.00, 1.00)',t:'vec',dt:'vec2'},{n:'worldMatrix',v:'mat3x2[...]',t:'str',dt:'mat3x2'}]},
+  P:{name:'RigidBody2D',tier:'b',fields:[{n:'velocity',v:'(-2.10, 0.00)',t:'vec',dt:'vec2'},{n:'mass',v:'1.000',t:'num',dt:'float'},{n:'drag',v:'0.050',t:'num',dt:'float'},{n:'isKinematic',v:'false',t:'bool',dt:'bool'},{n:'isSleeping',v:'false',t:'bool',dt:'bool'}]},
+  R:{name:'Collider2D',tier:'b',fields:[{n:'shape',v:'"AABB"',t:'str',dt:'string'},{n:'size',v:'(1.00, 2.00)',t:'vec',dt:'vec2'},{n:'offset',v:'(0.00,-0.10)',t:'vec',dt:'vec2'},{n:'isTrigger',v:'false',t:'bool',dt:'bool'},{n:'layer',v:'1',t:'num',dt:'int'}]},
+  A:{name:'Animation',tier:'b',fields:[{n:'currentClip',v:'"run"',t:'str',dt:'string'},{n:'frame',v:'7',t:'num',dt:'int'},{n:'speed',v:'1.000',t:'num',dt:'float'},{n:'loop',v:'true',t:'bool',dt:'bool'}]},
+  S:{name:'StateMachine',tier:'b',fields:[{n:'currentState',v:'"Running"',t:'str',dt:'string'},{n:'prevState',v:'"Idle"',t:'str',dt:'string'},{n:'timeInState',v:'1.234',t:'num',dt:'float'},{n:'stateCount',v:'4',t:'num',dt:'int'}]},
+  H:{name:'Health',tier:'b',fields:[{n:'health',v:'80',t:'num',dt:'int'},{n:'maxHealth',v:'100',t:'num',dt:'int'},{n:'isAlive',v:'true',t:'bool',dt:'bool'},{n:'invincible',v:'false',t:'bool',dt:'bool'}]},
+  C:{name:'Collectible',tier:'b',fields:[{n:'value',v:'10',t:'num',dt:'int'},{n:'collected',v:'false',t:'bool',dt:'bool'},{n:'magnetRange',v:'2.500',t:'num',dt:'float'}]}
+};
+const QUERIES=[
+  {sig:'[Transform, RigidBody2D]',count:9,members:['Player','Enemy_01','Enemy_02','Enemy_03','Projectile_01','Projectile_02','Projectile_03','Pickup_Coin_01','Pickup_Coin_02']},
+  {sig:'[Transform, RigidBody2D, Animation]',count:5,members:['Player','Enemy_01','Enemy_02','Enemy_03','FX_Explosion_01']},
+  {sig:'[Transform, Collider2D]',count:7,members:['Player','Enemy_01','Enemy_02','Enemy_03','GroundPlatform_A','GroundPlatform_B','GroundPlatform_C']},
+  {sig:'[Transform, Animation]',count:6,members:['Player','Enemy_01','Enemy_02','Enemy_03','FX_Explosion_01','FX_Dust_Player']},
+  {sig:'[Health]',count:4,members:['Player','Enemy_01','Enemy_02','Enemy_03']},
+  {sig:'[Transform, Collectible]',count:2,members:['Pickup_Coin_01','Pickup_Coin_02']}
+];
+const MSGS=[
+  {f:4821,s:'Player',a:'Enemy_02',ak:'entity',type:'Damage',tc:'mtdmg',p:'dmg=15, src=proj_07'},
+  {f:4821,s:'Enemy_01',a:'WorldRoot',ak:'entity',type:'SpawnRequest',tc:'mtspwn',p:'prefab="Projectile"'},
+  {f:4820,s:'StateMachine',a:'Player',ak:'component',type:'StateChange',tc:'mtstate',p:'Idle->Running'},
+  {f:4820,s:'Collectible',a:'Player',ak:'entity',type:'Collect',tc:'mtcoll',p:'coin value=10'},
+  {f:4819,s:'Player',a:'Camera_Main',ak:'entity',type:'Follow',tc:'mtoth',p:'target=(12.4,0.0)'},
+  {f:4818,s:'Health',a:'Enemy_03',ak:'component',type:'Destroy',tc:'mtdest',p:'hp=0'},
+  {f:4818,s:'WorldRoot',a:'Spawn_EnemyA',ak:'entity',type:'SpawnReady',tc:'mtspwn',p:'idx=4'},
+  {f:4817,s:'Animation',a:'Player',ak:'component',type:'AnimEnd',tc:'mtanim',p:'clip="run"'},
+  {f:4816,s:'Projectile_01',a:'Enemy_01',ak:'entity',type:'Damage',tc:'mtdmg',p:'dmg=10'},
+  {f:4815,s:'Player',a:'Enemy_04',ak:'entity',type:'Damage',tc:'mtdmg',p:'dmg=15'},
+  {f:4814,s:'StateMachine',a:'Enemy_01',ak:'component',type:'StateChange',tc:'mtstate',p:'patrol->chase'},
+  {f:4813,s:'WorldRoot',a:'FX_Explosion_01',ak:'entity',type:'SpawnRequest',tc:'mtspwn',p:'pos=(8.0,1.0)'},
+  {f:4812,s:'Collectible',a:'Pickup_Coin_02',ak:'component',type:'Collect',tc:'mtcoll',p:'coin val=10'},
+  {f:4811,s:'Animation',a:'Enemy_02',ak:'component',type:'AnimEnd',tc:'mtanim',p:'clip="walk"'},
+  {f:4810,s:'Player',a:'WorldRoot',ak:'entity',type:'SpawnRequest',tc:'mtspwn',p:'prefab="Bullet"'}
+];
+let watchItems=[
+  {e:'Player',c:'Transform',f:'position',v:'(12.40, 0.00)',d:'up'},
+  {e:'Player',c:'RigidBody2D',f:'velocity',v:'(-2.10, 0.00)',d:'dn'},
+  {e:'Player',c:'Health',f:'health',v:'80',d:'eq'},
+  {e:'Enemy_01',c:'Health',f:'health',v:'65',d:'dn'},
+  {e:'Enemy_01',c:'StateMachine',f:'currentState',v:'"chase"',d:'up'},
+  {e:'Camera_Main',c:'Transform',f:'position',v:'(12.40, 3.50)',d:'up'}
+];
+let selIdx=null,af='ALL';
+function bEnts(){
+  const list=document.getElementById('el'),cnt=document.getElementById('ecnt');
+  const srch=document.getElementById('esrch').value.toLowerCase();
+  list.innerHTML='';let n=0;
+  ENTS.forEach(e=>{
+    if(srch&&!e.n.toLowerCase().includes(srch))return;
+    if(af!=='ALL'&&!e.t.includes(af))return;
+    n++;
+    const row=document.createElement('div');
+    row.className='er'+(selIdx===e.i?' sel':'');
+    const ind=Array.from({length:e.d},()=>'<span style="display:inline-block;width:12px"></span>').join('');
+    const tags=e.t.map(x=>'<span class="tag '+x+'">'+x+'</span>').join('');
+    row.innerHTML='<span class="ei">'+String(e.i).padStart(3,'0')+'</span><span class="eg">g'+e.g+'</span><span class="en">'+ind+e.n+'</span><span class="tags">'+tags+'</span>';
+    row.addEventListener('click',()=>selEnt(e.i));
+    list.appendChild(row);
+  });
+  cnt.textContent=n+' entities';
+}
+function selEnt(idx){selIdx=idx;bEnts();bInsp();}
+function bInsp(){
+  if(selIdx===null)return;
+  const e=ENTS.find(x=>x.i===selIdx);
+  document.getElementById('nosec').style.display='none';
+  const cont=document.getElementById('icont');cont.style.display='block';
+  document.getElementById('iname').textContent='['+String(e.i).padStart(3,'0')+'] '+e.n;
+  document.getElementById('icnt').textContent=e.t.length+' components';
+  cont.innerHTML='';
+  e.t.forEach((tag,ti)=>{
+    const comp=COMPS[tag];if(!comp)return;
+    const sec=document.createElement('div');sec.className='cs'+(ti<2?' open':'');
+    const fields=comp.fields.map(f=>{
+      const vc=f.t==='bool'?(f.v==='true'?'ftrue':'ffalse'):'f'+f.t;
+      return '<div class="fr" style="display:contents"><div class="fc fname">'+f.n+'</div><div class="fc ftype">'+f.dt+'</div><div class="fc fval '+vc+'">'+f.v+'</div><div class="fc fedit">&#9998;</div></div>';
+    }).join('');
+    sec.innerHTML='<div class="ch"><span class="chv">&#9658;</span><span class="cname">'+comp.name+'</span><span class="tag '+tag+'" style="margin-left:4px">'+tag+'</span><span class="ctier">Tier: '+comp.tier+'</span></div><div class="cb"><div class="fg">'+fields+'</div></div>';
+    sec.querySelector('.ch').addEventListener('click',()=>sec.classList.toggle('open'));
+    cont.appendChild(sec);
+  });
+}
+document.getElementById('esrch').addEventListener('input',bEnts);
+document.querySelectorAll('.chip[data-f]').forEach(c=>c.addEventListener('click',()=>{
+  document.querySelectorAll('.chip[data-f]').forEach(x=>x.classList.remove('active'));
+  c.classList.add('active');af=c.dataset.f;bEnts();
+}));
+function bQueries(){
+  const ql=document.getElementById('ql');
+  QUERIES.forEach(q=>{
+    const qi=document.createElement('div');qi.className='qi';
+    const mems=q.members.map(m=>'<span class="qchip">'+m+'</span>').join('');
+    qi.innerHTML='<div class="qh"><span class="qchv">&#9658;</span><span class="qsig">'+q.sig+'</span><span class="qbdg">'+q.count+'</span></div><div class="qbody"><div style="font-size:10px;color:#33334a;margin-bottom:4px">Members:</div><div class="qmems">'+mems+'</div></div>';
+    qi.querySelector('.qh').addEventListener('click',()=>qi.classList.toggle('open'));
+    ql.appendChild(qi);
+  });
+}
+function bMailbox(){
+  const tb=document.getElementById('mbody');
+  MSGS.forEach(m=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML='<td class="mfr">'+m.f+'</td><td class="msnd">'+m.s+'</td><td class="madr"><span style="color:#252545;font-size:9px">['+m.ak+']</span> '+m.a+'</td><td><span class="'+m.tc+'">'+m.type+'</span></td><td style="color:#33334a;font-size:10px;font-family:Consolas,monospace">'+m.p+'</td>';
+    tb.appendChild(tr);
+  });
+  const hw=document.getElementById('hw');
+  [{n:'Damage',c:38,col:'#e8a850'},{n:'SpawnRequest',c:24,col:'#70c870'},{n:'StateChange',c:19,col:'#b0b0f8'},{n:'AnimEnd',c:14,col:'#70a8e8'},{n:'Collect',c:9,col:'#70c8c8'},{n:'Destroy',c:6,col:'#e87070'}]
+  .forEach(t=>{
+    const pct=Math.round(t.c/38*100);
+    hw.innerHTML+='<div class="hr"><span class="hl">'+t.n+'</span><div class="hbg"><div class="hfil" style="width:'+pct+'%;background:'+t.col+'"></div></div><span class="hn">'+t.c+'</span></div>';
+  });
+}
+function bWatch(){
+  const tb=document.getElementById('wbody');tb.innerHTML='';
+  watchItems.forEach((w,i)=>{
+    const dc=w.d==='up'?'#70c470':w.d==='dn'?'#c47070':'#33334a';
+    const di=w.d==='up'?'&#9650; +0.21':w.d==='dn'?'&#9660; -3.00':'&#8212;';
+    const tr=document.createElement('tr');
+    tr.innerHTML='<td class="went">'+w.e+'</td><td class="wcomp">'+w.c+'</td><td class="wfld">'+w.f+'</td><td class="wval">'+w.v+'</td><td style="font-family:Consolas,monospace;font-size:10px;color:'+dc+'">'+di+'</td><td class="wrm" data-i="'+i+'">&#10005;</td>';
+    tr.querySelector('.wrm').addEventListener('click',()=>{watchItems.splice(i,1);bWatch();});
+    tb.appendChild(tr);
+  });
+}
+document.getElementById('awbtn').addEventListener('click',()=>{
+  watchItems.push({e:document.getElementById('awe').value,c:document.getElementById('awc').value,f:document.getElementById('awf').value,v:'—',d:'eq'});
+  bWatch();
+});
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  document.getElementById('tab-'+t.dataset.tab).classList.add('active');
+}));
+bEnts();selEnt(1);bQueries();bMailbox();bWatch();
+</script>
+</body>
+</html>

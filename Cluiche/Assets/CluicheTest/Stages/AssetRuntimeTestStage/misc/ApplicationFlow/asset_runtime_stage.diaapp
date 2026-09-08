@@ -1,0 +1,39 @@
+{
+    "version": 3,
+    "processing_units": [
+        {
+            "instance_id": "MainPU",
+            "frequency_hz": 30,
+            "dedicated_thread": false,
+            "modules": []
+        },
+        {
+            "instance_id": "SimPU",
+            "frequency_hz": 30,
+            "dedicated_thread": true,
+            "modules": [
+                {
+                    "instance_id": "TestAssetRuntimeStageModule",
+                    "type_id": "TestAssetRuntimeStageModule",
+                    "stages": [ "AssetRuntimeTestStage" ],
+                    "dependencies": [],
+                    "channels": [
+                        { "id": "AutomationService", "role": "consumes" },
+                        { "id": "AssetLoadStatus",   "role": "consumes" },
+                        { "id": "RenderToSim",       "role": "reads" }
+                    ]
+                },
+                {
+                    "instance_id": "AssetRuntimeRendererModule",
+                    "type_id": "AssetRuntimeRendererModule",
+                    "stages": [ "AssetRuntimeTestStage" ],
+                    "dependencies": [],
+                    "channels": [
+                        { "id": "SimScene",           "role": "writes" },
+                        { "id": "KernelTextureHandler","role": "consumes" }
+                    ]
+                }
+            ]
+        }
+    ]
+}

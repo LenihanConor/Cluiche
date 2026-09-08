@@ -1,0 +1,9 @@
+{
+    "name": "BehaviourTreeTestStage",
+    "manifest": "Stages/BehaviourTreeTestStage/misc/ApplicationFlow/behaviour_tree_test_stage.diaapp",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

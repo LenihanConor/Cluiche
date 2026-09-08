@@ -4,41 +4,44 @@ Derived from spec status across `docs/specs/`. When a spec moves to Done, move i
 
 ---
 
-## In Progress
-
-_Nothing currently in progress._
-
----
-
 ## Ready to Build (Approved → implement)
 
 These specs are `Approved` with all features `Approved`. No spec work needed — go straight to implementation.
 
 ### Systems
 
-| System | Spec | Features | Depends On |
-|--------|------|----------|------------|
-| DiaApplicationEditor | [diaapplicationeditor.md](specs/systems/dia/diaapplicationeditor.md) | 15 features, all Approved — **not yet implemented** | DiaEditor ✅, DiaWebSocket ✅, DiaUICEF ✅, DiaApplication ✅ |
-
----
-
-### Standalone Features (system Done, feature Approved)
-
-| Feature | Spec | System |
-|---------|------|--------|
-| per-app-bin-layout | [per-app-bin-layout.md](specs/features/dia/diapipeline/per-app-bin-layout.md) | DiaPipeline ✅ |
-| Harness Core | [harness-core.md](specs/features/dia/diatestharness/harness-core.md) | DiaTestHarness |
-| Smoke Test Scenario | [smoke-test-scenario.md](specs/features/cluichetest/cluichetestscenarios/smoke-test-scenario.md) | CluicheTestScenarios (depends on Harness Core) |
+| System | Features | Depends On |
+|--------|----------|------------|
+| ~~DiaAttribute~~ | System spec + all 6 feature specs Approved ✅: core, conditional-modifiers, change-notifications, accessor-bridge, visual-debugger, save-serialization. Data-driven gameplay attribute/stat framework — same idiom as DiaEconomy (StringCRC, JSON schema, DiaCondition-gated modifiers, Observer events), no shared code. Plan: [diaattribute.plan.md](specs/applications/dia/systems/diaattribute/diaattribute.plan.md) — 6 tasks, 3 phases. Entry point: task 1 (core). Task 1 has an open design question (component attachment mechanism) to resolve before `AttributeSetComponent`; task 4 (accessor-bridge) is the highest-uncertainty task — `DiaCondition`'s `ConditionRegistry` has no unregister method, may need an upstream fix. Deferred: Archetype/Instance Layering. Parked: Dependency-Graph Derived Attributes, Non-Numeric Typed Properties. Research: [gameplay_attribut_stat_system/summary.md](research/gameplay_attribut_stat_system/summary.md). | DiaCore ✅, diaentitytemplate ✅, DiaCondition ✅ (optional), DiaSaveGame ✅ (optional) |
 
 ---
 
 ## Spec Work Needed (Draft or unset — review/approve before building)
 
+### Other Spec Work
+
 | Item | Spec | What's needed |
 |------|------|---------------|
-| DiaAPI quit command | TBD | Needed for DiaTestHarness graceful shutdown. No quit command exists today (exit is UI-driven). Needs `/spec-feature` under DiaAPI |
-| CluicheTest TestStages system | TBD | Needs `/spec-system` under CluicheTest — multi-stage test stages for deep engine validation (DiaRigidBody2D first). Open questions: phase vs level vs own PU; reporting mechanism. Research: `docs/research/e2e_testing/summary.md` |
+| RenderTestPlugin (CluicheEditor) | — | Needs `/spec-system` — visual debugger panel: wipe slider, region grid, expectation authoring, AI triage panel, render targets. DiaRenderTest CLI Pipeline ✅ unblocked. Mockup: [render_test_debugger_mockup.html](research/render_offline_test/render_test_debugger_mockup.html). Research: [render_offline_test/summary.md](research/render_offline_test/summary.md) |
+| DiaConsole | [diaconsole.md](specs/applications/dia/systems/diaconsole/diaconsole.md) | System spec Approved; needs 5 feature specs (`console-command-model`, `console-native-shell`, `console-typed-results`, `console-project-context`, `console-presets`) via `/spec-feature` before implementation — `console-command-model` first, it's the foundation everything else depends on. Native-window web console over DiaCLI's existing Click commands + NDJSON event stream: reflected command registry, typed structured results, presets, project/target context (CluicheTest/CoW/future sibling projects). Subprocess-only execution, no in-process Click invocation (every DiaCLI command raises `SystemExit` via `ctx.exit()`). Plan: [diaconsole.plan.md](specs/applications/dia/systems/diaconsole/diaconsole.plan.md) — 10 tasks. Mockup: [console.html](specs/applications/dia/systems/diaconsole/mockups/console.html). Research: [cli_launcher/summary.md](research/cli_launcher/summary.md). |
+
+---
+
+## E2E Orchestration Stack
+
+Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testing/design-decisions.md](research/e2e_testing/design-decisions.md)**.
+
+### Deferred
+
+| # | Item | Notes |
+|---|------|-------|
+| 6b | Extract AutomationModuleBase into DiaAutomation | Evaluate from working code after 2+ apps use it |
+| DiaRig3D system | feature spec exists (`skeleton-and-pose.md`) | Needs `/spec-system` — Bone3D, Skeleton3D, Pose3D, FK, `SkeletonComponent3D`, `Rig3DAsset`. Mirrors DiaRig2D. |
+| DiaAnimation3D system | feature spec exists (`clip-and-player.md`) | Needs `/spec-system` — AnimationClip3D, ClipPlayer3D, STEP/LINEAR/CUBICSPLINE, `AnimationComponent3D`. glTF animation import is build-time only. |
 | DiaStateMachineEditor system | TBD | Needs `/spec-system` — editor plugin for state machine visual debugging + design-time editing. Depends on DiaStateMachine ✅, DiaEditor |
+| DiaSkinning3D | TBD — needs `/spec-system` | `skinning-palette` feature already Approved; needs own system spec. SkinningManager, per-frame Matrix34 palettes, `skinningPaletteIndex` on draw commands. | DiaAnimation3D, DiaGraphics3D |
+
+---
 
 ---
 
@@ -46,8 +49,6 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | Item | Notes |
 |------|-------|
-| DiaApplication — Feature 6: Compile-Time Dependency Validation | Deferred by user ("let's come back and talk about 6") |
-| HotReloadManager — `CollectDependentModules()` / `UpdateDependencyReferences()` | Placeholder stubs; needs real implementation |
-| `Dia::Core::Blackboard` — general-purpose key-value store | Identified during DiaStateMachine research; useful for AI, animation, gameplay. Needs `/spec-feature` under DiaCore. |
-| DiaStateMachine — `MarkValid()` exposed on definitions | Added to support serializer load path; could be misused to bypass `Validate()`. Consider making package-internal if access control becomes a concern. |
-| Phase 3d — Physics body serialization | DiaRigidBody2D / DiaSoftBody2D body definitions — DiaAssetCatalogue ✅ now unblocked |
+| RenderTechnique asset type | Layer-level rendering policy (blend mode, post-process like bloom/distortion). Layers reference a technique by name; renderer resolves at draw time. Needs `/spec-feature` under DiaGraphics or DiaBgfx once the scene system lands. |
+| Camera2D controller (pan/zoom/reset) | Application-side input→Camera2D wiring for CluicheTest stages (keyboard pan, scroll zoom, home-key reset). Unblocked once coord2d-debug-overlay ships Camera2D + renderer integration. |
+| DiaDebugDraw.vcxproj duplicate-compile hack | `DiaDebugDraw.vcxproj` still duplicate-compiles `DebugLayerManager.cpp` et al. out of `DiaVisualDebugger` via relative path (unrelated to layer violations — `dia check arch` is clean). Tried removing the duplicate entries once (see [arch_layer_violations/plan.md](refactors/arch_layer_violations/plan.md) task 9): broke the real link for `GoogleTests.exe` with 59 unresolved externals, even though `DiaDebugDraw.lib` isn't referenced anywhere in `GoogleTests.vcxproj` (not in `ProjectReference`, not in `AdditionalDependencies`) while `DiaVisualDebugger.lib` — which should contain these exact symbols — is explicitly linked. Reverted immediately, confirmed clean. Working theory, unconfirmed: a shared intermediate-object-path collision between the two projects compiling the same source files under MSBuild's default parallel build. Needs real investigation (check `IntDir` settings, try a forced serial rebuild) before attempting again. |

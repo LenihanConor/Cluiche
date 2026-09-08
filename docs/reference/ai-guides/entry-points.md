@@ -232,7 +232,7 @@ File: `Cluiche/CluicheKernel/ApplicationFlow/Modules/SimPhysicsModule.h`
 ```cpp
 #pragma once
 
-#include "DiaApplication/ApplicationModule.h"
+#include "DiaApplicationFlow/ApplicationModule.h"
 
 namespace Cluiche
 {
@@ -422,7 +422,7 @@ File: `Cluiche/Levels/MyGameLevel/MyGameLevel.h`
 ```cpp
 #pragma once
 
-#include "DiaApplication/ApplicationStateObject.h"
+#include "DiaApplicationFlow/ApplicationStateObject.h"
 
 namespace Cluiche
 {
@@ -589,7 +589,7 @@ File: `Cluiche/ApplicationFlow/Phases/SimRunningPhase.h`
 ```cpp
 #pragma once
 
-#include "DiaApplication/ApplicationPhase.h"
+#include "DiaApplicationFlow/ApplicationPhase.h"
 
 namespace Cluiche
 {
@@ -683,7 +683,7 @@ Example: Main thread sends messages to Sim thread
 Edit `MainProcessingUnit.h`:
 
 ```cpp
-#include "DiaApplication/FrameStream.h"
+#include "DiaApplicationFlow/FrameStream.h"
 
 class MainProcessingUnit : public Dia::Application::ProcessingUnit
 {

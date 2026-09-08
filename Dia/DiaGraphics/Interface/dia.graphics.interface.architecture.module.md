@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.graphics.interface
 name: Interface
 owner_team: TBD
-layer: platform
+layer: domain/visual/core
 status: active
 maturity: dev
 
@@ -26,6 +26,12 @@ non_responsibilities:
   - Domain-specific gameplay behavior
   - Rendering or platform integration concerns (unless this module is explicitly an adapter)
   - High-level orchestration (owned by higher-layer modules)
+
+dependent_modules:
+  - dia.core.core
+  - dia.maths.vector
+  - dia.graphics.frame
+  - dia.graphics.misc
 
 public_api:
   headers:

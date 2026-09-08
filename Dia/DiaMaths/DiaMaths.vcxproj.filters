@@ -22,21 +22,6 @@
     <Filter Include="Matrix\Source">
       <UniqueIdentifier>{8cec973b-2a80-481a-baa7-d6321f72b8de}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Shape">
-      <UniqueIdentifier>{0155783c-6919-4fdf-b174-9989cfbb72f6}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Shape\2D">
-      <UniqueIdentifier>{f7e2cfb9-17a1-439c-b2be-012c58de0bd0}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Shape\2D\Source">
-      <UniqueIdentifier>{5a160c38-a964-44ad-b065-bb9a12a8bef8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Shape\Common">
-      <UniqueIdentifier>{3035ffe4-4aaf-421b-a29f-be6e3ef347b1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Shape\Common\Source">
-      <UniqueIdentifier>{1fec2d7c-2a1b-413c-84b9-ecf87d411316}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Transform">
       <UniqueIdentifier>{a1b2c3d4-e5f6-7890-abcd-ef1234567890}</UniqueIdentifier>
     </Filter>
@@ -45,6 +30,9 @@
     </Filter>
     <Filter Include="Docs">
       <UniqueIdentifier>{c3d4e5f6-7890-abcd-ef12-3456789abcde}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quaternion">
+      <UniqueIdentifier>{d4e5f6a7-b890-cdef-0123-456789abcdef}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -105,41 +93,24 @@
     <ClInclude Include="Matrix\Matrix33.h">
       <Filter>Matrix</Filter>
     </ClInclude>
-    <ClInclude Include="Shape\2D\AARect2D.h">
-      <Filter>Shape\2D</Filter>
+    <ClInclude Include="Matrix\Matrix44.h">
+      <Filter>Matrix</Filter>
     </ClInclude>
-    <ClInclude Include="Shape\2D\Arc2D.h">
-      <Filter>Shape\2D</Filter>
-    </ClInclude>
-    <ClInclude Include="Shape\2D\Capsule2D.h">
-      <Filter>Shape\2D</Filter>
-    </ClInclude>
-    <ClInclude Include="Shape\2D\Circle2D.h">
-      <Filter>Shape\2D</Filter>
-    </ClInclude>
-    <ClInclude Include="Shape\2D\IntersectionPoint2D.h">
-      <Filter>Shape\2D</Filter>
-    </ClInclude>
-    <ClInclude Include="Shape\2D\Line2D.h">
-      <Filter>Shape\2D</Filter>
-    </ClInclude>
-    <ClInclude Include="Shape\2D\OORect2D.h">
-      <Filter>Shape\2D</Filter>
-    </ClInclude>
-    <ClInclude Include="Shape\2D\Ray2D.h">
-      <Filter>Shape\2D</Filter>
-    </ClInclude>
-    <ClInclude Include="Shape\2D\Triangle2D.h">
-      <Filter>Shape\2D</Filter>
-    </ClInclude>
-    <ClInclude Include="Shape\Common\IntersectionClassify.h">
-      <Filter>Shape\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Shape\Common\IntersectionTests.h">
-      <Filter>Shape\Common</Filter>
+    <ClInclude Include="Matrix\Matrix34.h">
+      <Filter>Matrix</Filter>
     </ClInclude>
     <ClInclude Include="Transform\Transform2D.h">
       <Filter>Transform</Filter>
+    </ClInclude>
+    <ClInclude Include="Transform\Transform3D.h">
+      <Filter>Transform</Filter>
+    </ClInclude>
+    <ClInclude Include="Quaternion\Quaternion.h">
+      <Filter>Quaternion</Filter>
+    </ClInclude>
+    <ClInclude Include="DiaMathsSerializers.h" />
+    <ClInclude Include="Core\SplineBasis.h">
+      <Filter>Core</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -188,41 +159,20 @@
     <ClCompile Include="Matrix\Matrix33.cpp">
       <Filter>Matrix\Source</Filter>
     </ClCompile>
-    <ClCompile Include="Shape\2D\AARect2D.cpp">
-      <Filter>Shape\2D\Source</Filter>
+    <ClCompile Include="Matrix\Matrix44.cpp">
+      <Filter>Matrix\Source</Filter>
     </ClCompile>
-    <ClCompile Include="Shape\2D\Arc2D.cpp">
-      <Filter>Shape\2D\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Shape\2D\Capsule2D.cpp">
-      <Filter>Shape\2D\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Shape\2D\Circle2D.cpp">
-      <Filter>Shape\2D\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Shape\2D\IntersectionPoint2D.cpp">
-      <Filter>Shape\2D\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Shape\2D\Line2D.cpp">
-      <Filter>Shape\2D\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Shape\2D\OORect2D.cpp">
-      <Filter>Shape\2D\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Shape\2D\Ray2D.cpp">
-      <Filter>Shape\2D\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Shape\2D\Triangle2D.cpp">
-      <Filter>Shape\2D\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Shape\Common\IntersectionClassify.cpp">
-      <Filter>Shape\Common\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Shape\Common\IntersectionTests.cpp">
-      <Filter>Shape\Common\Source</Filter>
+    <ClCompile Include="Matrix\Matrix34.cpp">
+      <Filter>Matrix\Source</Filter>
     </ClCompile>
     <ClCompile Include="Transform\Transform2D.cpp">
       <Filter>Transform\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Transform\Transform3D.cpp">
+      <Filter>Transform\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Quaternion\Quaternion.cpp">
+      <Filter>Quaternion</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -256,46 +206,34 @@
     <None Include="Core\Trigonometry.inl">
       <Filter>Core\Source</Filter>
     </None>
-    <None Include="Shape\2D\AARect2D.inl">
-      <Filter>Shape\2D\Source</Filter>
-    </None>
-    <None Include="Shape\2D\Arc2D.inl">
-      <Filter>Shape\2D\Source</Filter>
-    </None>
-    <None Include="Shape\2D\Capsule2D.inl">
-      <Filter>Shape\2D\Source</Filter>
-    </None>
-    <None Include="Shape\2D\Circle2D.inl">
-      <Filter>Shape\2D\Source</Filter>
-    </None>
-    <None Include="Shape\2D\IntersectionPoint2D.inl">
-      <Filter>Shape\2D\Source</Filter>
-    </None>
-    <None Include="Shape\2D\Line2D.inl">
-      <Filter>Shape\2D\Source</Filter>
-    </None>
-    <None Include="Shape\2D\OORect2D.inl">
-      <Filter>Shape\2D\Source</Filter>
-    </None>
-    <None Include="Shape\2D\Ray2D.inl">
-      <Filter>Shape\2D\Source</Filter>
-    </None>
-    <None Include="Shape\2D\Triangle2D.inl">
-      <Filter>Shape\2D\Source</Filter>
-    </None>
-    <None Include="Shape\Common\IntersectionClassify.inl">
-      <Filter>Shape\Common\Source</Filter>
-    </None>
     <None Include="Matrix\Matrix33.inl">
+      <Filter>Matrix\Source</Filter>
+    </None>
+    <None Include="Matrix\Matrix44.inl">
+      <Filter>Matrix\Source</Filter>
+    </None>
+    <None Include="Matrix\Matrix34.inl">
       <Filter>Matrix\Source</Filter>
     </None>
     <None Include="Transform\Transform2D.inl">
       <Filter>Transform\Source</Filter>
     </None>
+    <None Include="Transform\Transform3D.inl">
+      <Filter>Transform\Source</Filter>
+    </None>
+    <None Include="Quaternion\Quaternion.inl">
+      <Filter>Quaternion</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.maths.architecture.module.md">
       <Filter>Docs</Filter>
+    </None>
+    <None Include="Quaternion\dia.maths.quaternion.architecture.module.md">
+      <Filter>Quaternion</Filter>
+    </None>
+    <None Include="Transform\dia.maths.transform.architecture.module.md">
+      <Filter>Transform</Filter>
     </None>
   </ItemGroup>
 </Project>

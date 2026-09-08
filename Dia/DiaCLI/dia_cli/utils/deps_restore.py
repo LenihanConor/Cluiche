@@ -154,6 +154,66 @@ def _install_exe(archive: Path, dep: dict, repo_root: Path) -> int:
     return result.returncode
 
 
+def _restore_cmake_build(dep: dict, repo_root: Path, force: bool, quiet: bool) -> int:
+    import subprocess
+    dep_id = dep["id"]
+    source_local = dep.get("source", {}).get("local")
+    if not source_local:
+        print(f"ERROR: {dep_id} cmake_build requires source.local")
+        return 1
+    source_dir = repo_root / source_local
+    if not source_dir.exists():
+        print(f"ERROR: {dep_id} source directory not found: {source_dir}")
+        print(f"       Run: git submodule update --init {source_local}")
+        return 1
+    cmake_opts = dep.get("cmake_options", [])
+    build_dir = source_dir / "_build"
+    # Configure
+    if not quiet:
+        print(f"  {dep_id} configuring CMake...")
+    configure_cmd = ["cmake", "-S", str(source_dir), "-B", str(build_dir)] + cmake_opts
+    result = subprocess.run(configure_cmd, cwd=str(repo_root), timeout=300,
+                            capture_output=quiet)
+    if result.returncode != 0:
+        print(f"ERROR: {dep_id} CMake configure failed (exit {result.returncode})")
+        return 1
+    # Build Release
+    if not quiet:
+        print(f"  {dep_id} building Release...")
+    build_release = ["cmake", "--build", str(build_dir), "--config", "Release", "--parallel"]
+    result = subprocess.run(build_release, cwd=str(repo_root), timeout=600,
+                            capture_output=quiet)
+    if result.returncode != 0:
+        print(f"ERROR: {dep_id} CMake build Release failed (exit {result.returncode})")
+        return 1
+    # Build Debug
+    if not quiet:
+        print(f"  {dep_id} building Debug...")
+    build_debug = ["cmake", "--build", str(build_dir), "--config", "Debug", "--parallel"]
+    result = subprocess.run(build_debug, cwd=str(repo_root), timeout=600,
+                            capture_output=quiet)
+    if result.returncode != 0:
+        print(f"ERROR: {dep_id} CMake build Debug failed (exit {result.returncode})")
+        return 1
+    # Stage outputs
+    stage = dep.get("stage", [])
+    for entry in stage:
+        src = build_dir / entry["from"].replace("_build/", "")
+        dst = repo_root / entry["to"]
+        if not src.exists():
+            # Try alternate paths for multi-config generators
+            alt = build_dir / entry["from"].replace("_build/", "")
+            if not alt.exists():
+                print(f"  WARNING: staged file not found: {src}")
+                continue
+            src = alt
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
+        if not quiet:
+            print(f"  staged {entry['to']}")
+    return 0
+
+
 def restore_dep(dep: dict, repo_root: Path, force: bool = False, quiet: bool = False) -> int:
     dep_id = dep["id"]
 
@@ -162,62 +222,68 @@ def restore_dep(dep: dict, repo_root: Path, force: bool = False, quiet: bool = F
             print(f"  {dep_id} already restored, skipping")
         return 0
 
-    # Build URL list: primary + mirrors
-    urls = []
-    if dep.get("url"):
-        urls.append(dep["url"])
-    urls.extend(dep.get("mirrors", []))
+    install_type = dep.get("install_type", "zip")
 
-    if not urls:
-        print(f"ERROR: {dep_id} has no url or mirrors — cannot restore")
-        return 1
+    if install_type == "cmake_build":
+        code = _restore_cmake_build(dep, repo_root, force, quiet)
+        if code != 0:
+            return code
+    else:
+        # Build URL list: primary + mirrors
+        urls = []
+        if dep.get("url"):
+            urls.append(dep["url"])
+        urls.extend(dep.get("mirrors", []))
 
-    # Clean up any stale .tmp file
-    tmp_path = repo_root / f".diaenv/deps/{dep_id}.tmp"
-    tmp_path.parent.mkdir(parents=True, exist_ok=True)
-    if tmp_path.exists():
-        tmp_path.unlink()
+        if not urls:
+            print(f"ERROR: {dep_id} has no url or mirrors — cannot restore")
+            return 1
 
-    if not quiet:
-        print(f"  {dep_id} downloading...")
-
-    if not _download_from_sources(urls, tmp_path):
-        print(f"ERROR: {dep_id} download failed. Tried:\n" + "\n".join(f"  {u}" for u in urls))
+        # Clean up any stale .tmp file
+        tmp_path = repo_root / f".diaenv/deps/{dep_id}.tmp"
+        tmp_path.parent.mkdir(parents=True, exist_ok=True)
         if tmp_path.exists():
             tmp_path.unlink()
-        return 1
 
-    # SHA-256 verify
-    expected = dep.get("sha256", "")
-    if expected == _PLACEHOLDER_SHA:
         if not quiet:
-            print(f"  WARNING: {dep_id} sha256 is placeholder — download not integrity-verified")
-    elif expected:
-        actual = _sha256_file(tmp_path)
-        if actual != expected:
-            print(f"ERROR: {dep_id} SHA-256 mismatch\n  expected: {expected}\n  actual:   {actual}")
-            tmp_path.unlink()
+            print(f"  {dep_id} downloading...")
+
+        if not _download_from_sources(urls, tmp_path):
+            print(f"ERROR: {dep_id} download failed. Tried:\n" + "\n".join(f"  {u}" for u in urls))
+            if tmp_path.exists():
+                tmp_path.unlink()
             return 1
 
-    # Install
-    install_type = dep.get("install_type", "zip")
-    unzip_to = repo_root / dep["unzip_to"] if "unzip_to" in dep else None
+        # SHA-256 verify
+        expected = dep.get("sha256", "")
+        if expected == _PLACEHOLDER_SHA:
+            if not quiet:
+                print(f"  WARNING: {dep_id} sha256 is placeholder — download not integrity-verified")
+        elif expected:
+            actual = _sha256_file(tmp_path)
+            if actual != expected:
+                print(f"ERROR: {dep_id} SHA-256 mismatch\n  expected: {expected}\n  actual:   {actual}")
+                tmp_path.unlink()
+                return 1
 
-    if install_type == "zip" and unzip_to:
-        _install_zip(tmp_path, unzip_to, dep.get("strip_root", False))
-    elif install_type == "single_file":
-        if "install_to" not in dep:
-            print(f"ERROR: {dep_id} install_type is 'single_file' but 'install_to' is missing")
-            tmp_path.unlink()
-            return 1
-        _install_single_file(tmp_path, repo_root / dep["install_to"], repo_root)
-    elif install_type == "exe":
-        code = _install_exe(tmp_path, dep, repo_root)
-        if code != 0:
-            tmp_path.unlink()
-            return 1
+        # Install
+        unzip_to = repo_root / dep["unzip_to"] if "unzip_to" in dep else None
 
-    tmp_path.unlink()
+        if install_type == "zip" and unzip_to:
+            _install_zip(tmp_path, unzip_to, dep.get("strip_root", False))
+        elif install_type == "single_file":
+            if "install_to" not in dep:
+                print(f"ERROR: {dep_id} install_type is 'single_file' but 'install_to' is missing")
+                tmp_path.unlink()
+                return 1
+            _install_single_file(tmp_path, repo_root / dep["install_to"], repo_root)
+        elif install_type == "exe":
+            code = _install_exe(tmp_path, dep, repo_root)
+            if code != 0:
+                tmp_path.unlink()
+                return 1
+
+        tmp_path.unlink()
 
     # Write sentinel
     sentinel = get_sentinel_path(repo_root, dep_id)

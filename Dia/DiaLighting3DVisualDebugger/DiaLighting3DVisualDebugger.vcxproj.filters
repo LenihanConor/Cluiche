@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{D4E5F6A7-B8C9-0123-DEFA-B01234567890}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{E5F6A7B8-C9D0-1234-EFAB-C12345678901}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{F6A7B8C9-D0E1-2345-FABC-D23456789012}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.lighting3dvisualdebugger.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="LightWidgetsDrawer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LightPathArcDrawer.h">
+    <ClInclude Include="Lighting3DDebugDomain.h" />
+    <ClInclude Include="LightRangesDrawer.h">
+      <Filter>LightRangesDrawer</Filter>
+    </ClInclude>
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="LightWidgetsDrawer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LightPathArcDrawer.cpp">
+    <ClCompile Include="Lighting3DDebugDomain.cpp" />
+    <ClCompile Include="LightRangesDrawer.cpp">
+      <Filter>LightRangesDrawer</Filter>
+    </ClCompile>
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

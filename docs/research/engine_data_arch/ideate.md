@@ -102,14 +102,14 @@ Content hashing at discover time enables future incremental builds: hash each ra
 
 ### Candidate 5: Stage & Bundle Runtime Loader
 
-**Home module/system:** New `DiaData` runtime component + DiaApplication Module
+**Home module/system:** New `DiaData` runtime component + DiaApplicationFlow Module
 **Size:** M (1-3 weeks)
 **Layer:** Layer 3 — Runtime
 **Description:** The runtime's entry point into data. A `StageLoader` Module that takes a stage ID (StringCRC), reads the built stage manifest from the deploy directory, and recursively loads all referenced bundles and their assets. Bundles can reference other bundles (recursive resolution with cycle detection).
 
 The loader only touches built output — never raw source. It produces a `LoadedStage` object that owns the loaded asset data and provides typed access: `stage.Get<Texture>("player_ship")`, `stage.GetBundle("combat_ui")`.
 
-Stage transitions are hard boundaries: loading a new stage unloads the previous one (or explicit overlap for transitions). Integrates with DiaApplication's Phase system — a stage transition triggers a phase change.
+Stage transitions are hard boundaries: loading a new stage unloads the previous one (or explicit overlap for transitions). Integrates with DiaApplicationFlow's Phase system — a stage transition triggers a phase change.
 
 **Primary value:** Clean runtime loading from a single entry point — the game says "load this stage" and everything cascades.
 

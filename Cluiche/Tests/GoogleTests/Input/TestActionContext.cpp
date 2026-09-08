@@ -46,7 +46,7 @@ TEST(ActionContext, BindKeyConvenienceMethod)
 	context.BindKey(jumpAction, EKey::Space);
 
 	// Access internal ActionMap
-	const ActionMap& actionMap = context.GetActionMap();
+	[[maybe_unused]] const ActionMap& actionMap = context.GetActionMap();
 
 	// Process event
 	EventData events;

@@ -1,4 +1,4 @@
-# Research: Choice -- DiaApplication Flow Tree
+# Research: Choice -- DiaApplicationFlow Flow Tree
 
 **Date:** 2026-05-03
 **Chosen candidate:** Modified Incremental Bundle (C6 + C3 + C5 + C7)
@@ -7,7 +7,7 @@
 
 The user's three original problems map to a clear set of candidates:
 
-- **Problem 1 (naming):** Dropped entirely. No rename, no ApplicationFlow root class. The DiaApplication module name stays as-is. Revisit if confusion resurfaces.
+- **Problem 1 (naming):** Dropped entirely. No rename, no ApplicationFlow root class. The DiaApplicationFlow module name stays as-is. Revisit if confusion resurfaces.
 - **Problem 2 (PU tree):** Activate manifest imports (C6) + PU parent-child tree (C3). Manifests connect declaratively via imports; runtime PUs form a real tree with parent/child ownership and automatic thread lifecycle.
 - **Problem 3 (stages + editor):** Stage manifests (C5) + editor graph view (C7) + DummyStage renamed to DummyStage (convention from C8). Stages become manifest-backed, visible entities; the editor shows the full connected tree.
 
@@ -44,4 +44,4 @@ Each phase is independently shippable.
 ## Next Step
 
 Run /spec-system to create the system spec, then /spec-feature for each phase (A through D).
-Suggested parent system: DiaApplication (existing system spec at docs/specs/systems/dia/diaapplication.md)
+Suggested parent system: DiaApplicationFlow (existing system spec at docs/specs/systems/dia/diaapplication.md)

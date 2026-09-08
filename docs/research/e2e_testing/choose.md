@@ -36,6 +36,6 @@ User chose phased delivery: harness first (reusable for both game and editor), t
 ## Next Step
 
 Run /spec-system with this candidate as input.
-Suggested parent system: DiaApplication (testing infrastructure) or new top-level system "E2E Testing"
+Suggested parent system: DiaApplicationFlow (testing infrastructure) or new top-level system "E2E Testing"
 Phase 1 spec: Feature spec for the Hybrid Harness
 Phase 2 spec: Feature spec for Multi-Stage Test Levels

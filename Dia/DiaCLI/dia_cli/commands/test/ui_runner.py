@@ -38,6 +38,7 @@ def run(
     filter_pattern: Optional[str],
     watch: bool,
     docker: bool,
+    coverage: bool = False,
 ) -> int:
     # config.root_path() points at Dia/DiaCLI/, not the repo root — use _REPO_ROOT by default.
     # repo_root override is accepted for testing.
@@ -51,6 +52,7 @@ def run(
             docker_subcmd=docker_subcmd,
             filter_pattern=filter_pattern,
             watch=watch,
+            coverage=coverage,
         )
 
     if not check_node_modules(ui_dir):
@@ -61,7 +63,12 @@ def run(
         return 2
 
     script = "test:watch" if watch else "test"
-    extra = ["--", "-t", filter_pattern] if filter_pattern else []
+    extra_args: list = []
+    if filter_pattern:
+        extra_args += ["-t", filter_pattern]
+    if coverage:
+        extra_args.append("--coverage")
+    extra = (["--"] + extra_args) if extra_args else []
     cmd = _npm_cmd(script, extra)
 
     # Ensure VS Node.js is on PATH so npm scripts can resolve 'node'
@@ -81,6 +88,7 @@ def _run_docker(
     docker_subcmd: str,
     filter_pattern: Optional[str],
     watch: bool,
+    coverage: bool = False,
 ) -> int:
     check = subprocess.run(
         ["docker", "image", "inspect", _DOCKER_IMAGE],
@@ -98,6 +106,8 @@ def _run_docker(
         forwarded += ["--filter", filter_pattern]
     if watch:
         forwarded.append("--watch")
+    if coverage:
+        forwarded.append("--coverage")
 
     cmd = [
         "docker", "run", "--rm",

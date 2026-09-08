@@ -8,15 +8,15 @@
 
 namespace Dia
 {
-	namespace Application
-	{
-		class ProcessingUnit;
-		class Phase;
-		class Module;
-	}
-
 	namespace DebugServer
 	{
+		class IDebugStateProvider;
+		struct DebugModuleInfo;
+
+		// Frame-rate and memory snapshot broadcast over CORE_METRICS messages.
+		// Populated by DebugServer's host adapter — per-PU timings are not
+		// tracked here; frame time comes from the host tick delta and memory
+		// comes from the OS.
 		struct CoreMetrics
 		{
 			float fps;
@@ -28,13 +28,20 @@ namespace Dia
 		class StateSerializer
 		{
 		public:
-			static Json::Value SerializeProcessingUnitState(const Dia::Application::ProcessingUnit* pu);
-			static Json::Value SerializePhaseState(const Dia::Application::Phase* phase);
-			static Json::Value SerializeModuleState(const Dia::Application::Module* module);
-			static Json::Value SerializeCoreMetrics(const CoreMetrics& metrics);
-			static Json::Value SerializePhaseTransition(const Dia::Core::StringCRC& fromPhase,
-			                                            const Dia::Core::StringCRC& toPhase,
+			// Serialize the host application's current stage + active modules.
+			// Null provider → {"error": "null state provider"}.
+			static Json::Value SerializeApplicationState(const IDebugStateProvider* provider);
+
+			// Serialize a single module snapshot.
+			static Json::Value SerializeModuleState(const DebugModuleInfo& info);
+
+			// Serialize a stage transition event.
+			static Json::Value SerializeStageTransition(const Dia::Core::StringCRC& fromStage,
+			                                            const Dia::Core::StringCRC& toStage,
 			                                            uint64_t timestamp);
+
+			static Json::Value SerializeCoreMetrics(const CoreMetrics& metrics);
+
 			static Json::Value SerializeCommandResponse(const Dia::Core::StringCRC& command,
 			                                            bool success,
 			                                            const char* message);

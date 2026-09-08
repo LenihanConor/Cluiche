@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Editor Nav — Candidate 3: Activity Bar</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: #1e1e1e; color: #d4d4d4; display: flex; flex-direction: column; height: 100vh; overflow: hidden; font-size: 12px; }
+
+/* ── Title bar ── */
+.titlebar { background: #323233; height: 22px; display: flex; align-items: center; padding: 0 12px; gap: 8px; font-size: 11px; color: #bbb; flex-shrink: 0; border-bottom: 1px solid #111; }
+.titlebar strong { color: #d4d4d4; }
+.titlebar .path { color: #888; margin-left: 4px; }
+
+/* ── Main area: activity bar + mosaic ── */
+.shell { display: flex; flex: 1; overflow: hidden; }
+
+/* ══════════════════════════════
+   ACTIVITY BAR  (left column)
+══════════════════════════════ */
+.activity-bar {
+  width: 48px;
+  background: #333333;
+  border-right: 1px solid #252526;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 0;
+  gap: 2px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.ab-item {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Active left-edge accent */
+.ab-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: #d4d4d4;
+  border-radius: 0 2px 2px 0;
+}
+
+/* Letter avatar */
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  transition: opacity .15s;
+  user-select: none;
+}
+
+.ab-item:not(.active) .avatar { opacity: 0.5; }
+.ab-item:hover:not(.active) .avatar { opacity: 0.85; }
+.ab-item.active .avatar { opacity: 1; }
+
+/* Tooltip */
+.ab-item .tooltip {
+  position: absolute;
+  left: 52px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #252526;
+  border: 1px solid #454545;
+  color: #d4d4d4;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .1s;
+  z-index: 100;
+}
+.ab-item:hover .tooltip { opacity: 1; }
+
+/* Separator */
+.ab-sep {
+  width: 28px;
+  height: 1px;
+  background: #454545;
+  margin: 4px 0;
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════
+   MOSAIC AREA
+══════════════════════════════ */
+.mosaic-area {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #252526;
+  overflow: hidden;
+}
+.panel:last-child { border-right: none; }
+
+.panel-titlebar {
+  background: #252526;
+  border-bottom: 1px solid #1e1e1e;
+  padding: 4px 10px;
+  font-size: 11px;
+  color: #bbb;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.panel-titlebar .close-btn {
+  margin-left: auto;
+  color: #666;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+.panel-titlebar .close-btn:hover { color: #d4d4d4; }
+
+.panel-body {
+  flex: 1;
+  padding: 12px;
+  background: #1e1e1e;
+  color: #666;
+  font-size: 11px;
+  overflow: auto;
+}
+
+/* ── Status bar ── */
+.statusbar {
+  background: #007acc;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 11px;
+  color: #fff;
+  flex-shrink: 0;
+  gap: 16px;
+}
+.statusbar .right { margin-left: auto; display: flex; gap: 16px; }
+.conn-dot {
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #89d185;
+  margin-right: 4px;
+}
+
+/* ══════════════════════════════
+   ANNOTATION OVERLAY
+══════════════════════════════ */
+.annotation {
+  position: absolute;
+  background: #ffcc0022;
+  border: 1px dashed #ffcc00aa;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 10px;
+  color: #ffcc00;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ══════════════════════════════
+   COMPARISON TOGGLE
+══════════════════════════════ */
+.compare-bar {
+  position: fixed;
+  bottom: 36px;
+  right: 16px;
+  display: flex;
+  gap: 6px;
+  z-index: 200;
+}
+.compare-btn {
+  padding: 5px 12px;
+  border-radius: 4px;
+  border: 1px solid #555;
+  background: #2d2d2d;
+  color: #d4d4d4;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+.compare-btn.active { background: #0e639c; border-color: #0e639c; color: #fff; }
+.compare-btn:hover:not(.active) { background: #3a3a3a; }
+
+/* ── BEFORE view (current single-letter toolbar) ── */
+#view-before { display: none; }
+#view-before .old-toolbar {
+  height: 28px;
+  background: #252526;
+  border-top: 1px solid #3c3c3c;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+#view-before .letter-btn {
+  width: 24px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600;
+  border-radius: 2px;
+  cursor: pointer;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+#view-before .letter-btn.on  { background: #0e639c; color: #fff; border: none; }
+#view-before .letter-btn.off { background: transparent; color: #808080; border: 1px solid #3c3c3c; }
+</style>
+</head>
+<body>
+
+<!-- Compare controls -->
+<div class="compare-bar">
+  <button class="compare-btn" id="btn-before" onclick="show('before')">◀ Current (letters)</button>
+  <button class="compare-btn active" id="btn-after" onclick="show('after')">▶ Candidate 3 (activity bar)</button>
+</div>
+
+<!-- ══════════════════════════════
+     CANDIDATE 3 VIEW (after)
+══════════════════════════════ -->
+<div id="view-after" style="display:flex; flex-direction:column; height:100vh;">
+
+  <!-- Title bar -->
+  <div class="titlebar">
+    <strong>Cluiche Editor</strong>
+    <span class="path">CluicheTest / cluiche.cluicheproj</span>
+  </div>
+
+  <!-- Shell -->
+  <div class="shell">
+
+    <!-- Activity bar -->
+    <div class="activity-bar" id="activityBar">
+
+      <!-- Home -->
+      <div class="ab-item" onclick="togglePanel('Home',this)" title="">
+        <div class="avatar" style="background:#5c6bc0">H</div>
+        <div class="tooltip">Home</div>
+      </div>
+
+      <!-- Output Console -->
+      <div class="ab-item active" onclick="togglePanel('Output Console',this)" title="">
+        <div class="avatar" style="background:#26a69a">O</div>
+        <div class="tooltip">Output Console</div>
+      </div>
+
+      <!-- Game Connection -->
+      <div class="ab-item active" onclick="togglePanel('Game Connection',this)" title="">
+        <div class="avatar" style="background:#ef5350">G</div>
+        <div class="tooltip">Game Connection</div>
+      </div>
+
+      <div class="ab-sep"></div>
+
+      <!-- Plugin Browser -->
+      <div class="ab-item active" onclick="togglePanel('Plugin Browser',this)" title="">
+        <div class="avatar" style="background:#ab47bc">P</div>
+        <div class="tooltip">Plugin Browser</div>
+      </div>
+
+      <!-- App Flow -->
+      <div class="ab-item active" onclick="togglePanel('App Flow',this)" title="">
+        <div class="avatar" style="background:#f57c00">A</div>
+        <div class="tooltip">App Flow</div>
+      </div>
+
+      <div class="ab-sep"></div>
+
+      <!-- Future panels — shows the pattern scales -->
+      <div class="ab-item" onclick="togglePanel('Stages',this)" title="">
+        <div class="avatar" style="background:#546e7a">St</div>
+        <div class="tooltip">Stages</div>
+      </div>
+
+      <div class="ab-item" onclick="togglePanel('Debug Layers',this)" title="">
+        <div class="avatar" style="background:#558b2f">Db</div>
+        <div class="tooltip">Debug Layers</div>
+      </div>
+
+      <div class="ab-item" onclick="togglePanel('Assets',this)" title="">
+        <div class="avatar" style="background:#00838f">As</div>
+        <div class="tooltip">Assets</div>
+      </div>
+
+      <div class="ab-item" onclick="togglePanel('Physics',this)" title="">
+        <div class="avatar" style="background:#6d4c41">Ph</div>
+        <div class="tooltip">Physics</div>
+      </div>
+
+    </div>
+
+    <!-- Mosaic panels -->
+    <div class="mosaic-area" id="mosaicArea">
+
+      <div class="panel" style="flex:1.2" id="panel-Output Console">
+        <div class="panel-titlebar">
+          Output Console
+          <span class="close-btn" onclick="closePanel('Output Console')">×</span>
+        </div>
+        <div class="panel-body">
+          <div style="color:#89d185">[INFO]  Engine started — 0ms</div>
+          <div style="color:#89d185">[INFO]  DiaApplicationFlow v2 ready</div>
+          <div style="color:#f9e2af">[WARN]  No project file loaded</div>
+          <div style="color:#888; margin-top:8px">_</div>
+        </div>
+      </div>
+
+      <div class="panel" style="flex:1" id="panel-Game Connection">
+        <div class="panel-titlebar">
+          Game Connection
+          <span class="close-btn" onclick="closePanel('Game Connection')">×</span>
+        </div>
+        <div class="panel-body">
+          <div style="color:#89d185; margin-bottom:8px">● Connected — CluicheTest</div>
+          <div>MainPU · 60 Hz</div>
+          <div style="color:#888">SimPU · 30 Hz</div>
+          <div style="color:#888">RenderPU · 60 Hz</div>
+        </div>
+      </div>
+
+      <div class="panel" style="flex:1" id="panel-Plugin Browser">
+        <div class="panel-titlebar">
+          Plugin Browser
+          <span class="close-btn" onclick="closePanel('Plugin Browser')">×</span>
+        </div>
+        <div class="panel-body">
+          <div>HomeEditorPlugin</div>
+          <div>OutputConsoleEditorPlugin</div>
+          <div>GameConnectionEditorPlugin</div>
+          <div>PluginBrowserEditorPlugin</div>
+          <div>AppFlowEditorPlugin</div>
+        </div>
+      </div>
+
+      <div class="panel" style="flex:1.4" id="panel-App Flow">
+        <div class="panel-titlebar">
+          App Flow
+          <span class="close-btn" onclick="closePanel('App Flow')">×</span>
+        </div>
+        <div class="panel-body">
+          <div style="margin-bottom:8px; color:#89b4fa">cluiche.diaapp</div>
+          <div style="background:#252526; border:1px solid #333; border-radius:4px; padding:8px; margin-bottom:6px">
+            <div style="color:#d4d4d4; font-weight:600">MainPU</div>
+            <div style="color:#888">4 modules · 3 stages</div>
+          </div>
+          <div style="background:#252526; border:1px solid #0e639c; border-radius:4px; padding:8px">
+            <div style="color:#d4d4d4; font-weight:600">SimPU</div>
+            <div style="color:#888">6 modules · 2 stages</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div><!-- /shell -->
+
+  <!-- Status bar -->
+  <div class="statusbar">
+    <span><span class="conn-dot"></span> Connected</span>
+    <span>CluicheTest</span>
+    <div class="right">
+      <span>x64 · Debug</span>
+      <span>Ctrl+Shift+P — Command Palette</span>
+    </div>
+  </div>
+
+</div><!-- /view-after -->
+
+
+<!-- ══════════════════════════════
+     CURRENT / BEFORE VIEW
+══════════════════════════════ -->
+<div id="view-before" style="display:none; flex-direction:column; height:100vh;">
+
+  <div class="titlebar">
+    <strong>Cluiche Editor</strong>
+    <span class="path">CluicheTest / cluiche.cluicheproj</span>
+  </div>
+
+  <div style="flex:1; display:flex; overflow:hidden;">
+    <div class="mosaic-area">
+
+      <div class="panel" style="flex:1.2">
+        <div class="panel-titlebar">Output Console <span class="close-btn">×</span></div>
+        <div class="panel-body">
+          <div style="color:#89d185">[INFO]  Engine started — 0ms</div>
+          <div style="color:#89d185">[INFO]  DiaApplicationFlow v2 ready</div>
+          <div style="color:#f9e2af">[WARN]  No project file loaded</div>
+        </div>
+      </div>
+
+      <div class="panel" style="flex:1">
+        <div class="panel-titlebar">Game Connection <span class="close-btn">×</span></div>
+        <div class="panel-body">
+          <div style="color:#89d185; margin-bottom:8px">● Connected — CluicheTest</div>
+          <div>MainPU · 60 Hz</div>
+          <div style="color:#888">SimPU · 30 Hz</div>
+        </div>
+      </div>
+
+      <div class="panel" style="flex:1">
+        <div class="panel-titlebar">Plugin Browser <span class="close-btn">×</span></div>
+        <div class="panel-body">
+          <div>HomeEditorPlugin</div>
+          <div>OutputConsoleEditorPlugin</div>
+          <div>GameConnectionEditorPlugin</div>
+        </div>
+      </div>
+
+      <div class="panel" style="flex:1.4">
+        <div class="panel-titlebar">App Flow <span class="close-btn">×</span></div>
+        <div class="panel-body">
+          <div style="color:#89b4fa; margin-bottom:8px">cluiche.diaapp</div>
+          <div style="background:#252526; border:1px solid #0e639c; border-radius:4px; padding:8px">
+            <div style="font-weight:600">SimPU</div>
+            <div style="color:#888">6 modules · 2 stages</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Old bottom toolbar -->
+  <div class="old-toolbar">
+    <div style="display:flex;gap:2px">
+      <div class="letter-btn off">H</div>
+      <div class="letter-btn on">O</div>
+      <div class="letter-btn on">G</div>
+      <div class="letter-btn on">P</div>
+      <div class="letter-btn on">A</div>
+      <!-- What happens with more plugins: -->
+      <div class="letter-btn off" style="color:#f9e2af;border-color:#f9e2af55" title="Stages — 'S' already taken?">S</div>
+      <div class="letter-btn off" title="Debug Layers — collision with future 'D'?">D</div>
+      <div class="letter-btn off">A</div><!-- collision! -->
+    </div>
+    <div style="flex:1;display:flex;justify-content:center;font-size:11px;color:#888">
+      CluicheTest — cluiche.cluicheproj
+    </div>
+    <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#888">
+      <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#89d185"></span>
+      Connected
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <span><span class="conn-dot"></span> Connected</span>
+    <div class="right"><span>x64 · Debug</span></div>
+  </div>
+
+</div><!-- /view-before -->
+
+
+<script>
+function show(which) {
+  document.getElementById('view-after').style.display  = which === 'after'  ? 'flex' : 'none';
+  document.getElementById('view-before').style.display = which === 'before' ? 'flex' : 'none';
+  document.getElementById('btn-after').classList.toggle('active',  which === 'after');
+  document.getElementById('btn-before').classList.toggle('active', which === 'before');
+}
+
+function togglePanel(name, el) {
+  const isActive = el.classList.toggle('active');
+  const panel = document.getElementById('panel-' + name);
+  if (panel) panel.style.display = isActive ? 'flex' : 'none';
+}
+
+function closePanel(name) {
+  // mirror close button — remove from mosaic and deactivate in activity bar
+  const panel = document.getElementById('panel-' + name);
+  if (panel) panel.style.display = 'none';
+  // find the matching activity bar item by tooltip text
+  document.querySelectorAll('.ab-item').forEach(el => {
+    const tip = el.querySelector('.tooltip');
+    if (tip && tip.textContent === name) el.classList.remove('active');
+  });
+}
+</script>
+</body>
+</html>

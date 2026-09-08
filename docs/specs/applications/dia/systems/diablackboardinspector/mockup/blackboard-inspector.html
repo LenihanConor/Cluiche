@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Blackboard Inspector</title>
+<style>
+  :root {
+    --pico-background-color: #1e1e1e;
+    --pico-card-background-color: #252526;
+    --pico-form-element-background-color: #252526;
+    --pico-color: #d4d4d4;
+    --pico-border-color: #3c3c3c;
+    --pico-muted-border-color: #2d2d2d;
+    --pico-muted-color: #808080;
+    --pico-primary: #0e639c;
+    --pico-primary-hover: #1177bb;
+    --pico-primary-inverse: #ffffff;
+    --pico-secondary: #3a3d41;
+    --pico-secondary-hover: #4a4d51;
+    --pico-h2-color: #9cdcfe;
+    --pico-ins-color: #89d185;
+    --pico-del-color: #f44747;
+    --pico-form-element-color: #d4d4d4;
+    --pico-form-element-border-color: #3c3c3c;
+    --pico-form-element-active-border-color: #0e639c;
+    --pico-font-family: 'Segoe UI', sans-serif;
+    --pico-font-size: 12px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%; overflow: hidden;
+    font-family: var(--pico-font-family);
+    font-size: var(--pico-font-size);
+    background: var(--pico-background-color);
+    color: var(--pico-color);
+    display: flex; flex-direction: column; position: relative;
+  }
+
+  /* ── Panel title ──────────────────────────────────────────────────── */
+  .panel-title {
+    padding: 5px 10px;
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    color: #9cdcfe;
+    background: var(--pico-card-background-color);
+    border-bottom: 1px solid var(--pico-border-color);
+    flex-shrink: 0;
+  }
+
+  /* ── Toolbar ──────────────────────────────────────────────────────── */
+  .toolbar {
+    background: var(--pico-card-background-color);
+    border-bottom: 1px solid var(--pico-border-color);
+    padding: 4px 8px;
+    display: flex; align-items: center; gap: 4px;
+    flex-shrink: 0;
+  }
+  .toolbar input[type=search] {
+    flex: 1;
+    background: #2d2d2d;
+    border: 1px solid var(--pico-border-color);
+    border-radius: 3px;
+    color: var(--pico-color);
+    font-size: 11px;
+    padding: 3px 7px;
+    outline: none;
+    font-family: var(--pico-font-family);
+  }
+  .toolbar input[type=search]::placeholder { color: var(--pico-muted-color); }
+  .toolbar input[type=search]:focus { border-color: var(--pico-primary); }
+  .tbtn {
+    background: var(--pico-secondary);
+    border: 1px solid var(--pico-border-color);
+    border-radius: 3px;
+    color: var(--pico-muted-color);
+    cursor: pointer; font-size: 11px;
+    padding: 2px 7px; line-height: 16px;
+    flex-shrink: 0;
+  }
+  .tbtn:hover { background: var(--pico-secondary-hover); color: var(--pico-color); }
+
+  /* ── Scroll area ──────────────────────────────────────────────────── */
+  .scroll-area {
+    flex: 1; overflow-y: auto; padding: 6px;
+  }
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--pico-background-color); }
+  ::-webkit-scrollbar-thumb { background: var(--pico-secondary); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--pico-secondary-hover); }
+
+  /* ── Empty state ──────────────────────────────────────────────────── */
+  .empty-state {
+    display: flex; align-items: center; justify-content: center;
+    flex: 1; color: var(--pico-muted-color);
+    font-size: 12px; font-style: italic;
+  }
+
+  /* ── Component group (board card) ────────────────────────────────── */
+  .comp-group {
+    border: 1px solid var(--pico-border-color);
+    border-radius: 4px; overflow: hidden; margin-bottom: 6px;
+  }
+  .comp-hdr {
+    background: var(--pico-card-background-color);
+    padding: 4px 10px;
+    display: flex; align-items: center; gap: 6px;
+    cursor: pointer; user-select: none;
+  }
+  .comp-hdr:hover { background: var(--pico-secondary-hover); }
+  .comp-chv {
+    color: var(--pico-muted-color); font-size: 9px;
+    transition: transform .15s; flex-shrink: 0;
+  }
+  .comp-hdr.closed .comp-chv { transform: rotate(-90deg); }
+  .comp-name {
+    font-weight: 600; color: #9cdcfe; font-size: 11.5px; flex: 1;
+  }
+  .comp-id {
+    font-size: 10px; color: var(--pico-muted-color);
+    font-family: monospace;
+  }
+  .badge {
+    font-size: 10px; padding: 1px 6px; border-radius: 8px;
+    background: #2d2d2d; color: var(--pico-muted-color);
+    border: 1px solid var(--pico-border-color);
+    white-space: nowrap;
+  }
+  .comp-body { padding: 4px 6px; }
+
+  /* ── Section label inside a board ────────────────────────────────── */
+  .section-lbl {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--pico-muted-color);
+    padding: 5px 4px 3px;
+  }
+  .section-lbl + .section-lbl { border-top: 1px solid var(--pico-muted-border-color); margin-top: 4px; }
+
+  /* ── Prop rows (slot table) ───────────────────────────────────────── */
+  .prop-row {
+    display: flex; align-items: baseline;
+    padding: 2px 0; min-height: 22px;
+    border-left: 2px solid transparent;
+    padding-left: 4px;
+    border-bottom: 1px solid var(--pico-muted-border-color);
+  }
+  .prop-row:last-child { border-bottom: none; }
+  .prop-key {
+    width: 110px; font-size: 11px; color: #9cdcfe;
+    font-family: monospace; flex-shrink: 0;
+  }
+  .prop-type {
+    width: 120px; font-size: 10px; color: #4ec9b0;
+    font-family: monospace; flex-shrink: 0; padding-top: 1px;
+  }
+  .prop-value {
+    flex: 1; font-family: monospace; font-size: 11px;
+    color: var(--pico-color);
+  }
+  .prop-value .vk { color: #9cdcfe; }
+  .prop-value .vn { color: #b5cea8; }
+  .prop-value .vs { color: #ce9178; }
+  .prop-value.no-ser { color: #555; font-style: italic; }
+
+  /* ── Observer chips ───────────────────────────────────────────────── */
+  .observer-list {
+    display: flex; flex-wrap: wrap; gap: 4px;
+    padding: 4px 4px 6px;
+  }
+  .obs-chip {
+    font-size: 10px; font-family: monospace;
+    padding: 1px 8px; border-radius: 10px;
+    background: #0e3a3a; border: 1px solid #1a5c5c;
+    color: #4ec9b0;
+  }
+  .obs-chip.none { background: none; border-color: var(--pico-border-color); color: #555; }
+</style>
+</head>
+<body>
+
+<div class="panel-title">Blackboard Inspector</div>
+
+<div class="toolbar">
+  <input type="search" placeholder="Filter boards or slots…">
+  <button class="tbtn" title="Expand all">⊞</button>
+  <button class="tbtn" title="Collapse all">⊟</button>
+</div>
+
+<div class="scroll-area">
+
+  <!-- Board 1: PlayerModule (expanded) -->
+  <div class="comp-group">
+    <div class="comp-hdr" onclick="toggleBoard(this)">
+      <span class="comp-chv">▶</span>
+      <span class="comp-name">PlayerModule</span>
+      <span class="comp-id">player</span>
+      <span class="badge">3 slots</span>
+      <span class="badge">2 observers</span>
+    </div>
+    <div class="comp-body">
+      <div class="section-lbl">Slots</div>
+
+      <div class="prop-row">
+        <span class="prop-key">health</span>
+        <span class="prop-type">HealthBoard</span>
+        <span class="prop-value">
+          { <span class="vk">current</span>:&nbsp;<span class="vn">80.0</span>,&nbsp;<span class="vk">max</span>:&nbsp;<span class="vn">100.0</span> }
+        </span>
+      </div>
+      <div class="prop-row">
+        <span class="prop-key">threat</span>
+        <span class="prop-type">ThreatBoard</span>
+        <span class="prop-value">
+          { <span class="vk">level</span>:&nbsp;<span class="vn">2</span>,&nbsp;<span class="vk">sourceId</span>:&nbsp;<span class="vn">17</span> }
+        </span>
+      </div>
+      <div class="prop-row">
+        <span class="prop-key">movement</span>
+        <span class="prop-type">MovementBoard</span>
+        <span class="prop-value no-ser">[no serializer]</span>
+      </div>
+
+      <div class="section-lbl" style="margin-top:4px; border-top:1px solid #2d2d2d; padding-top:5px;">Observers</div>
+      <div class="observer-list">
+        <span class="obs-chip">HealthUI</span>
+        <span class="obs-chip">DamageSystem</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Board 2: EnemyAI_03 (collapsed) -->
+  <div class="comp-group">
+    <div class="comp-hdr closed" onclick="toggleBoard(this)">
+      <span class="comp-chv">▶</span>
+      <span class="comp-name">EnemyAI_03</span>
+      <span class="comp-id">enemy_03</span>
+      <span class="badge">2 slots</span>
+      <span class="badge">1 observer</span>
+    </div>
+    <div class="comp-body" style="display:none;">
+      <div class="section-lbl">Slots</div>
+      <div class="prop-row">
+        <span class="prop-key">target</span>
+        <span class="prop-type">TargetBoard</span>
+        <span class="prop-value">{ <span class="vk">entityId</span>:&nbsp;<span class="vn">42</span> }</span>
+      </div>
+      <div class="prop-row">
+        <span class="prop-key">patrol</span>
+        <span class="prop-type">PatrolBoard</span>
+        <span class="prop-value no-ser">[no serializer]</span>
+      </div>
+      <div class="section-lbl" style="margin-top:4px; border-top:1px solid #2d2d2d; padding-top:5px;">Observers</div>
+      <div class="observer-list">
+        <span class="obs-chip">PatrolSystem</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Board 3: GlobalBlackboard (expanded) -->
+  <div class="comp-group">
+    <div class="comp-hdr" onclick="toggleBoard(this)">
+      <span class="comp-chv">▶</span>
+      <span class="comp-name">GlobalBlackboard</span>
+      <span class="comp-id">global</span>
+      <span class="badge">1 slot</span>
+      <span class="badge">0 observers</span>
+    </div>
+    <div class="comp-body">
+      <div class="section-lbl">Slots</div>
+      <div class="prop-row">
+        <span class="prop-key">gamestate</span>
+        <span class="prop-type">GameStateBoard</span>
+        <span class="prop-value">
+          { <span class="vk">phase</span>:&nbsp;<span class="vs">"Playing"</span>,&nbsp;<span class="vk">score</span>:&nbsp;<span class="vn">1540</span> }
+        </span>
+      </div>
+      <div class="section-lbl" style="margin-top:4px; border-top:1px solid #2d2d2d; padding-top:5px;">Observers</div>
+      <div class="observer-list">
+        <span class="obs-chip none">none</span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- .scroll-area -->
+
+<script>
+  function toggleBoard(hdr) {
+    const body = hdr.nextElementSibling;
+    const isOpen = !hdr.classList.contains('closed');
+    if (isOpen) {
+      hdr.classList.add('closed');
+      body.style.display = 'none';
+    } else {
+      hdr.classList.remove('closed');
+      body.style.display = '';
+    }
+  }
+</script>
+</body>
+</html>

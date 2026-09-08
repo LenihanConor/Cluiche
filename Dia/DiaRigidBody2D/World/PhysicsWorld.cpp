@@ -11,6 +11,11 @@
 #include "DiaGeometry2D/Intersection/IntersectionTests.h"
 #include "DiaGeometry2D/Shapes/Ray.h"
 #include "DiaCore/Core/Assert.h"
+#include "DiaCore/CRC/StringCRC.h"
+
+#include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Metric/Counter.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
 
 namespace Dia::RigidBody2D {
 
@@ -22,6 +27,12 @@ PhysicsWorld::PhysicsWorld(const WorldDef& def)
 {
     mActivePairs.SetSize(kMaxContacts, kMaxContacts * 2);
     mActiveTriggerPairs.SetSize(kMaxTriggerEvents, kMaxTriggerEvents * 2);
+
+    // DiaSimTime (finding 18) — shares the same metric key as ProcessingUnit's
+    // sim-accumulator backlog counter; MetricRegistry::RegisterCounter is
+    // idempotent by name, so increments from both sources aggregate together.
+    mMetricDroppedTicks = Dia::Observation::Metric::MetricRegistry::Instance()
+                              .RegisterCounter(Dia::Core::StringCRC("simtime.accumulator.dropped_ticks"));
 }
 
 PhysicsWorld::~PhysicsWorld()
@@ -157,8 +168,8 @@ void PhysicsWorld::RemoveTriggerVolume(TriggerVolume2D* trigger)
                 auto iterEnd = mActiveTriggerPairs.End();
                 while (iter != iterEnd)
                 {
-                    if (iter.Key().triggerUid == trigger->GetUniqueId())
-                        keysToRemove.Add(iter.Key());
+                    if (iter.GetKey().triggerUid == trigger->GetUniqueId())
+                        keysToRemove.Add(iter.GetKey());
                     ++iter;
                 }
             }
@@ -244,8 +255,8 @@ void PhysicsWorld::FlushBodyReferences(const Body2DBase* body)
         auto iterEnd = mActivePairs.End();
         while (iter != iterEnd)
         {
-            if (iter.Key().ContainsBody(body))
-                keysToRemove.Add(iter.Key());
+            if (iter.GetKey().ContainsBody(body))
+                keysToRemove.Add(iter.GetKey());
             ++iter;
         }
     }
@@ -268,6 +279,18 @@ void PhysicsWorld::Update(float deltaTime)
         ++steps;
         ++mStepCount;
     }
+
+    if (steps >= mDef.maxSubSteps)
+    {
+        // Unlike SoftBodyWorld, the backlog is NOT dropped here — mAccumulator
+        // is left as-is and carries forward into the next Update() call. This
+        // is existing behavior (finding 18); only detection/observability is new.
+        DIA_LOG_WARNING("Physics",
+            "PhysicsWorld: maxSubSteps (%d) reached — sim time deferred to next Update(). deltaTime=%.4f, backlog=%.4f",
+            mDef.maxSubSteps, deltaTime, mAccumulator);
+        if (mMetricDroppedTicks)
+            mMetricDroppedTicks->Inc();
+    }
 }
 
 void PhysicsWorld::StepOnce()
@@ -280,7 +303,7 @@ void PhysicsWorld::StepOnce()
 
     UpdateBroadPhase();
     DetectCollisions(mPointBodies, mRigidBodies, mDef.broadPhase, mLastContacts);
-    ResolveCollisions(mLastContacts, mDef.responseConfig, dt);
+    ResolveCollisions(mLastContacts, mDef.responseConfig, dt, mDef.gravity);
     SolveConstraints(mConstraints, mDef.constraintConfig, dt);
 
     IntegrateLinearVelocities(mPointBodies, dt);

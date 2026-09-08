@@ -5,6 +5,11 @@
 #ifndef GOOGLE_PROTOBUF_INCLUDED_debug_5fprotocol_2eproto_2epb_2eh
 #define GOOGLE_PROTOBUF_INCLUDED_debug_5fprotocol_2eproto_2epb_2eh
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winvalid-offsetof"
+#endif
+
 #include <limits>
 #include <string>
 #include <type_traits>
@@ -116,6 +121,9 @@ extern SubscribeRequestDefaultTypeInternal _SubscribeRequest_default_instance_;
 class UnsubscribeRequest;
 struct UnsubscribeRequestDefaultTypeInternal;
 extern UnsubscribeRequestDefaultTypeInternal _UnsubscribeRequest_default_instance_;
+class SubscribeAck;
+struct SubscribeAckDefaultTypeInternal;
+extern SubscribeAckDefaultTypeInternal _SubscribeAck_default_instance_;
 }  // namespace debug
 }  // namespace dia
 namespace google {
@@ -143,6 +151,7 @@ enum MessageType : int {
   MESSAGE_TYPE_LOG = 14,
   MESSAGE_TYPE_LOG_BATCH = 15,
   MESSAGE_TYPE_DEBUG_LAYER_STATE = 16,
+  MESSAGE_TYPE_SUBSCRIBE_ACK = 17,
   MessageType_INT_MIN_SENTINEL_DO_NOT_USE_ =
       std::numeric_limits<::int32_t>::min(),
   MessageType_INT_MAX_SENTINEL_DO_NOT_USE_ =
@@ -152,8 +161,8 @@ enum MessageType : int {
 bool MessageType_IsValid(int value);
 extern const uint32_t MessageType_internal_data_[];
 constexpr MessageType MessageType_MIN = static_cast<MessageType>(0);
-constexpr MessageType MessageType_MAX = static_cast<MessageType>(16);
-constexpr int MessageType_ARRAYSIZE = 16 + 1;
+constexpr MessageType MessageType_MAX = static_cast<MessageType>(17);
+constexpr int MessageType_ARRAYSIZE = 17 + 1;
 const ::google::protobuf::EnumDescriptor*
 MessageType_descriptor();
 template <typename T>
@@ -166,7 +175,7 @@ const std::string& MessageType_Name(T value) {
 template <>
 inline const std::string& MessageType_Name(MessageType value) {
   return ::google::protobuf::internal::NameOfDenseEnum<MessageType_descriptor,
-                                                 0, 16>(
+                                                 0, 17>(
       static_cast<int>(value));
 }
 inline bool MessageType_Parse(absl::string_view name, MessageType* value) {
@@ -353,6 +362,212 @@ class UnsubscribeRequest final :
         inline explicit Impl_(::google::protobuf::internal::InternalVisibility visibility,
                               ::google::protobuf::Arena* arena, const Impl_& from);
     ::google::protobuf::internal::ArenaStringPtr data_type_;
+    mutable ::google::protobuf::internal::CachedSize _cached_size_;
+    PROTOBUF_TSAN_DECLARE_MEMBER
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_debug_5fprotocol_2eproto;
+};// -------------------------------------------------------------------
+
+class SubscribeAck final :
+    public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:dia.debug.SubscribeAck) */ {
+ public:
+  inline SubscribeAck() : SubscribeAck(nullptr) {}
+  ~SubscribeAck() override;
+  template<typename = void>
+  explicit PROTOBUF_CONSTEXPR SubscribeAck(::google::protobuf::internal::ConstantInitialized);
+
+  inline SubscribeAck(const SubscribeAck& from)
+      : SubscribeAck(nullptr, from) {}
+  SubscribeAck(SubscribeAck&& from) noexcept
+    : SubscribeAck() {
+    *this = ::std::move(from);
+  }
+
+  inline SubscribeAck& operator=(const SubscribeAck& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline SubscribeAck& operator=(SubscribeAck&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetArena() == from.GetArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
+  }
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields()
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
+  }
+
+  static const ::google::protobuf::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::google::protobuf::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::google::protobuf::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const SubscribeAck& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const SubscribeAck* internal_default_instance() {
+    return reinterpret_cast<const SubscribeAck*>(
+               &_SubscribeAck_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    19;
+
+  friend void swap(SubscribeAck& a, SubscribeAck& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(SubscribeAck* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetArena() != nullptr &&
+        GetArena() == other->GetArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetArena() == other->GetArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::google::protobuf::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(SubscribeAck* other) {
+    if (other == this) return;
+    ABSL_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  SubscribeAck* New(::google::protobuf::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<SubscribeAck>(arena);
+  }
+  using ::google::protobuf::Message::CopyFrom;
+  void CopyFrom(const SubscribeAck& from);
+  using ::google::protobuf::Message::MergeFrom;
+  void MergeFrom( const SubscribeAck& from) {
+    SubscribeAck::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  ::size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::google::protobuf::internal::ParseContext* ctx) final;
+  ::uint8_t* _InternalSerialize(
+      ::uint8_t* target, ::google::protobuf::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const { return _impl_._cached_size_.Get(); }
+
+  private:
+  ::google::protobuf::internal::CachedSize* AccessCachedSize() const final;
+  void SharedCtor(::google::protobuf::Arena* arena);
+  void SharedDtor();
+  void InternalSwap(SubscribeAck* other);
+
+  private:
+  friend class ::google::protobuf::internal::AnyMetadata;
+  static ::absl::string_view FullMessageName() {
+    return "dia.debug.SubscribeAck";
+  }
+  protected:
+  explicit SubscribeAck(::google::protobuf::Arena* arena);
+  SubscribeAck(::google::protobuf::Arena* arena, const SubscribeAck& from);
+  public:
+
+  static const ClassData _class_data_;
+  const ::google::protobuf::Message::ClassData*GetClassData() const final;
+
+  ::google::protobuf::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kDataTypeFieldNumber = 1,
+    kMessageFieldNumber  = 3,
+    kSuccessFieldNumber  = 2,
+  };
+  // string data_type = 1;
+  void clear_data_type() ;
+  const std::string& data_type() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_data_type(Arg_&& arg, Args_... args);
+  std::string* mutable_data_type();
+  PROTOBUF_NODISCARD std::string* release_data_type();
+  void set_allocated_data_type(std::string* value);
+
+  private:
+  const std::string& _internal_data_type() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_data_type(
+      const std::string& value);
+  std::string* _internal_mutable_data_type();
+
+  public:
+  // bool success = 2;
+  void clear_success() ;
+  bool success() const;
+  void set_success(bool value);
+
+  private:
+  bool _internal_success() const;
+  void _internal_set_success(bool value);
+
+  public:
+  // string message = 3;
+  void clear_message() ;
+  const std::string& message() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_message(Arg_&& arg, Args_... args);
+  std::string* mutable_message();
+  PROTOBUF_NODISCARD std::string* release_message();
+  void set_allocated_message(std::string* value);
+
+  private:
+  const std::string& _internal_message() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_message(
+      const std::string& value);
+  std::string* _internal_mutable_message();
+
+  public:
+  // @@protoc_insertion_point(class_scope:dia.debug.SubscribeAck)
+ private:
+  class _Internal;
+
+  friend class ::google::protobuf::MessageLite;
+  friend class ::google::protobuf::Arena;
+  template <typename T>
+  friend class ::google::protobuf::Arena::InternalHelper;
+  using InternalArenaConstructable_ = void;
+  using DestructorSkippable_ = void;
+  struct Impl_ {
+
+        inline explicit constexpr Impl_(
+            ::google::protobuf::internal::ConstantInitialized) noexcept;
+        inline explicit Impl_(::google::protobuf::internal::InternalVisibility visibility,
+                              ::google::protobuf::Arena* arena);
+        inline explicit Impl_(::google::protobuf::internal::InternalVisibility visibility,
+                              ::google::protobuf::Arena* arena, const Impl_& from);
+    ::google::protobuf::internal::ArenaStringPtr data_type_;
+    ::google::protobuf::internal::ArenaStringPtr message_;
+    bool success_;
     mutable ::google::protobuf::internal::CachedSize _cached_size_;
     PROTOBUF_TSAN_DECLARE_MEMBER
   };
@@ -3916,6 +4131,7 @@ class DebugMessage final :
     kLog = 23,
     kLogBatch = 24,
     kDebugLayerState = 25,
+    kSubscribeAck = 26,
     PAYLOAD_NOT_SET = 0,
   };
 
@@ -4015,6 +4231,7 @@ class DebugMessage final :
     kLogFieldNumber = 23,
     kLogBatchFieldNumber = 24,
     kDebugLayerStateFieldNumber = 25,
+    kSubscribeAckFieldNumber = 26,
   };
   // uint64 timestamp = 2;
   void clear_timestamp() ;
@@ -4340,6 +4557,25 @@ class DebugMessage final :
   ::dia::debug::DebugLayerState* _internal_mutable_debug_layer_state();
 
   public:
+  // .dia.debug.SubscribeAck subscribe_ack = 26;
+  bool has_subscribe_ack() const;
+  private:
+  bool _internal_has_subscribe_ack() const;
+
+  public:
+  void clear_subscribe_ack() ;
+  const ::dia::debug::SubscribeAck& subscribe_ack() const;
+  PROTOBUF_NODISCARD ::dia::debug::SubscribeAck* release_subscribe_ack();
+  ::dia::debug::SubscribeAck* mutable_subscribe_ack();
+  void set_allocated_subscribe_ack(::dia::debug::SubscribeAck* value);
+  void unsafe_arena_set_allocated_subscribe_ack(::dia::debug::SubscribeAck* value);
+  ::dia::debug::SubscribeAck* unsafe_arena_release_subscribe_ack();
+
+  private:
+  const ::dia::debug::SubscribeAck& _internal_subscribe_ack() const;
+  ::dia::debug::SubscribeAck* _internal_mutable_subscribe_ack();
+
+  public:
   void clear_payload();
   PayloadCase payload_case() const;
   // @@protoc_insertion_point(class_scope:dia.debug.DebugMessage)
@@ -4361,6 +4597,7 @@ class DebugMessage final :
   void set_has_log();
   void set_has_log_batch();
   void set_has_debug_layer_state();
+  void set_has_subscribe_ack();
 
   inline bool has_payload() const;
   inline void clear_has_payload();
@@ -4405,6 +4642,7 @@ class DebugMessage final :
       ::dia::debug::LogEntry* log_;
       ::dia::debug::LogBatch* log_batch_;
       ::dia::debug::DebugLayerState* debug_layer_state_;
+      ::dia::debug::SubscribeAck* subscribe_ack_;
     } payload_;
     mutable ::google::protobuf::internal::CachedSize _cached_size_;
     ::uint32_t _oneof_case_[1];
@@ -5693,6 +5931,82 @@ inline ::dia::debug::DebugLayerState* DebugMessage::mutable_debug_layer_state() 
   return _msg;
 }
 
+// .dia.debug.SubscribeAck subscribe_ack = 26;
+inline bool DebugMessage::has_subscribe_ack() const {
+  return payload_case() == kSubscribeAck;
+}
+inline bool DebugMessage::_internal_has_subscribe_ack() const {
+  return payload_case() == kSubscribeAck;
+}
+inline void DebugMessage::set_has_subscribe_ack() {
+  _impl_._oneof_case_[0] = kSubscribeAck;
+}
+inline void DebugMessage::clear_subscribe_ack() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  if (payload_case() == kSubscribeAck) {
+    if (GetArena() == nullptr) {
+      delete _impl_.payload_.subscribe_ack_;
+    }
+    clear_has_payload();
+  }
+}
+inline ::dia::debug::SubscribeAck* DebugMessage::release_subscribe_ack() {
+  // @@protoc_insertion_point(field_release:dia.debug.DebugMessage.subscribe_ack)
+  if (payload_case() == kSubscribeAck) {
+    clear_has_payload();
+    auto* temp = _impl_.payload_.subscribe_ack_;
+    if (GetArena() != nullptr) {
+      temp = ::google::protobuf::internal::DuplicateIfNonNull(temp);
+    }
+    _impl_.payload_.subscribe_ack_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::dia::debug::SubscribeAck& DebugMessage::_internal_subscribe_ack() const {
+  return payload_case() == kSubscribeAck ? *_impl_.payload_.subscribe_ack_ : reinterpret_cast<::dia::debug::SubscribeAck&>(::dia::debug::_SubscribeAck_default_instance_);
+}
+inline const ::dia::debug::SubscribeAck& DebugMessage::subscribe_ack() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:dia.debug.DebugMessage.subscribe_ack)
+  return _internal_subscribe_ack();
+}
+inline ::dia::debug::SubscribeAck* DebugMessage::unsafe_arena_release_subscribe_ack() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:dia.debug.DebugMessage.subscribe_ack)
+  if (payload_case() == kSubscribeAck) {
+    clear_has_payload();
+    auto* temp = _impl_.payload_.subscribe_ack_;
+    _impl_.payload_.subscribe_ack_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void DebugMessage::unsafe_arena_set_allocated_subscribe_ack(::dia::debug::SubscribeAck* value) {
+  // We rely on the oneof clear method to free the earlier contents
+  // of this oneof. We can directly use the pointer we're given to
+  // set the new value.
+  clear_payload();
+  if (value) {
+    set_has_subscribe_ack();
+    _impl_.payload_.subscribe_ack_ = value;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:dia.debug.DebugMessage.subscribe_ack)
+}
+inline ::dia::debug::SubscribeAck* DebugMessage::_internal_mutable_subscribe_ack() {
+  if (payload_case() != kSubscribeAck) {
+    clear_payload();
+    set_has_subscribe_ack();
+    _impl_.payload_.subscribe_ack_ = CreateMaybeMessage<::dia::debug::SubscribeAck>(GetArena());
+  }
+  return _impl_.payload_.subscribe_ack_;
+}
+inline ::dia::debug::SubscribeAck* DebugMessage::mutable_subscribe_ack() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  ::dia::debug::SubscribeAck* _msg = _internal_mutable_subscribe_ack();
+  // @@protoc_insertion_point(field_mutable:dia.debug.DebugMessage.subscribe_ack)
+  return _msg;
+}
+
 inline bool DebugMessage::has_payload() const {
   return payload_case() != PAYLOAD_NOT_SET;
 }
@@ -6137,6 +6451,139 @@ inline void SubscribeRequest::set_allocated_filter(::google::protobuf::Struct* v
 
   _impl_.filter_ = reinterpret_cast<::google::protobuf::Struct*>(value);
   // @@protoc_insertion_point(field_set_allocated:dia.debug.SubscribeRequest.filter)
+}
+
+// -------------------------------------------------------------------
+
+// SubscribeAck
+
+// string data_type = 1;
+inline void SubscribeAck::clear_data_type() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  _impl_.data_type_.ClearToEmpty();
+}
+inline const std::string& SubscribeAck::data_type() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:dia.debug.SubscribeAck.data_type)
+  return _internal_data_type();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void SubscribeAck::set_data_type(Arg_&& arg,
+                                                     Args_... args) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.data_type_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:dia.debug.SubscribeAck.data_type)
+}
+inline std::string* SubscribeAck::mutable_data_type() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_data_type();
+  // @@protoc_insertion_point(field_mutable:dia.debug.SubscribeAck.data_type)
+  return _s;
+}
+inline const std::string& SubscribeAck::_internal_data_type() const {
+  PROTOBUF_TSAN_READ(&_impl_._tsan_detect_race);
+  return _impl_.data_type_.Get();
+}
+inline void SubscribeAck::_internal_set_data_type(const std::string& value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.data_type_.Set(value, GetArena());
+}
+inline std::string* SubscribeAck::_internal_mutable_data_type() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  return _impl_.data_type_.Mutable( GetArena());
+}
+inline std::string* SubscribeAck::release_data_type() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  // @@protoc_insertion_point(field_release:dia.debug.SubscribeAck.data_type)
+  return _impl_.data_type_.Release();
+}
+inline void SubscribeAck::set_allocated_data_type(std::string* value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  _impl_.data_type_.SetAllocated(value, GetArena());
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        if (_impl_.data_type_.IsDefault()) {
+          _impl_.data_type_.Set("", GetArena());
+        }
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:dia.debug.SubscribeAck.data_type)
+}
+
+// bool success = 2;
+inline void SubscribeAck::clear_success() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  _impl_.success_ = false;
+}
+inline bool SubscribeAck::success() const {
+  // @@protoc_insertion_point(field_get:dia.debug.SubscribeAck.success)
+  return _internal_success();
+}
+inline void SubscribeAck::set_success(bool value) {
+  _internal_set_success(value);
+  // @@protoc_insertion_point(field_set:dia.debug.SubscribeAck.success)
+}
+inline bool SubscribeAck::_internal_success() const {
+  PROTOBUF_TSAN_READ(&_impl_._tsan_detect_race);
+  return _impl_.success_;
+}
+inline void SubscribeAck::_internal_set_success(bool value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.success_ = value;
+}
+
+// string message = 3;
+inline void SubscribeAck::clear_message() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  _impl_.message_.ClearToEmpty();
+}
+inline const std::string& SubscribeAck::message() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:dia.debug.SubscribeAck.message)
+  return _internal_message();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void SubscribeAck::set_message(Arg_&& arg,
+                                                     Args_... args) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.message_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:dia.debug.SubscribeAck.message)
+}
+inline std::string* SubscribeAck::mutable_message() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_message();
+  // @@protoc_insertion_point(field_mutable:dia.debug.SubscribeAck.message)
+  return _s;
+}
+inline const std::string& SubscribeAck::_internal_message() const {
+  PROTOBUF_TSAN_READ(&_impl_._tsan_detect_race);
+  return _impl_.message_.Get();
+}
+inline void SubscribeAck::_internal_set_message(const std::string& value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.message_.Set(value, GetArena());
+}
+inline std::string* SubscribeAck::_internal_mutable_message() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  return _impl_.message_.Mutable( GetArena());
+}
+inline std::string* SubscribeAck::release_message() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  // @@protoc_insertion_point(field_release:dia.debug.SubscribeAck.message)
+  return _impl_.message_.Release();
+}
+inline void SubscribeAck::set_allocated_message(std::string* value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  _impl_.message_.SetAllocated(value, GetArena());
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        if (_impl_.message_.IsDefault()) {
+          _impl_.message_.Set("", GetArena());
+        }
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:dia.debug.SubscribeAck.message)
 }
 
 // -------------------------------------------------------------------
@@ -7905,5 +8352,9 @@ inline const EnumDescriptor* GetEnumDescriptor<::dia::debug::MessageType>() {
 // @@protoc_insertion_point(global_scope)
 
 #include "google/protobuf/port_undef.inc"
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 #endif  // GOOGLE_PROTOBUF_INCLUDED_debug_5fprotocol_2eproto_2epb_2eh

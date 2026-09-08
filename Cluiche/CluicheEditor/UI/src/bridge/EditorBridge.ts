@@ -21,6 +21,10 @@ let nextReqId = 1;
 type TopicListener = (data: unknown) => void;
 const topicListeners = new Map<string, Set<TopicListener>>();
 
+function uiLog(source: string, msg: string): void {
+  sendEvent("editor.ui_log", { source, msg });
+}
+
 function sendEvent(type: string, data?: object): void {
   if (!window.dia || !window.dia.callCpp) {
     console.warn("dia.callCpp not available; event dropped:", type);
@@ -97,6 +101,19 @@ window.addEventListener("message", (ev: MessageEvent) => {
     iframeReqOrigins.set(p.reqId, ev.source as Window);
   }
 
+  // Iframes raising toasts — handle locally, don't round-trip to C++
+  if (p.type === "editor.notify") {
+    const d = p.data as { level?: string; title?: string; message?: string } | undefined;
+    if (d && d.level && d.title) {
+      EditorBridge.notify({
+        level: d.level as "info" | "success" | "warning" | "error",
+        title: d.title,
+        message: d.message,
+      });
+    }
+    return;
+  }
+
   window.dia.callCpp("DiaEditor_call", JSON.stringify(p));
 });
 
@@ -108,28 +125,38 @@ window.DiaEditor_onDataChanged = (payload: unknown) => {
     if (!env || !env.topic) return;
 
     const listeners = topicListeners.get(env.topic);
+    const frames = document.querySelectorAll("iframe");
+
     if (listeners) {
       listeners.forEach((fn) => {
         try { fn(env.data); }
-        catch (err) { console.warn("topic listener failed:", env.topic, err); }
+        catch (err) { console.warn("topic listener failed", env.topic, err); }
       });
     }
 
     // Re-broadcast to every iframe so dockable panels can subscribe too.
-    const frames = document.querySelectorAll("iframe");
     frames.forEach((f) => {
-      try { f.contentWindow?.postMessage({ __dia: true, topic: env.topic, data: env.data }, "*"); }
-      catch { /* frame not ready or cross-origin, ignore */ }
+      try {
+        f.contentWindow?.postMessage({ __dia: true, topic: env.topic, data: env.data }, "*");
+      } catch (err) {
+        uiLog("EditorBridge", `failed to relay topic='${env.topic}' to iframe '${f.title || f.src || "(unknown)"}': ${err}`);
+      }
     });
   } catch (err) {
-    console.warn("DiaEditor_onDataChanged parse failed:", err);
+    uiLog("EditorBridge", `onDataChanged parse failed: ${err}`);
   }
 };
 
 export type PanelInfo = { name: string; uiPath: string; visible: boolean };
 export type CommandInfo = { id: string; label: string };
 
+type ToastDispatch = (toast: { id: string; level: string; title: string; message?: string }) => void;
+let _dispatch: ToastDispatch | null = null;
+export function setToastDispatch(fn: ToastDispatch) { _dispatch = fn; }
+
 export const EditorBridge = {
+  request: <T>(type: string, data?: object) => sendRequest<T>(type, data),
+
   shellReady: () => sendEvent("shell_ready"),
 
   executeCommand: (commandId: string, args?: object) =>
@@ -149,12 +176,17 @@ export const EditorBridge = {
     sendRequest<object>("load_layout"),
 
   saveLayout: (layout: object) => {
-    sendEvent("save_layout", { layout });
+    sendEvent("save_layout", layout);
     return Promise.resolve({});
   },
 
   togglePanelVisibility: (name: string) =>
     sendEvent("toggle_panel_visibility", { name }),
+
+  notify: (opts: { level: "info" | "success" | "warning" | "error"; title: string; message?: string }) => {
+    const id = `n${nextReqId++}`;
+    if (_dispatch) _dispatch({ id, ...opts });
+  },
 
   subscribe: (topic: string, listener: TopicListener) => {
     let set = topicListeners.get(topic);
@@ -173,3 +205,16 @@ export const EditorBridge = {
 };
 
 window.CluicheEditor = EditorBridge;
+
+// C++ toasts arrive via this topic
+EditorBridge.subscribe("editor.notification", (data) => {
+  const d = data as { id?: string; level?: string; title?: string; message?: string };
+  if (_dispatch && d.level && d.title) {
+    _dispatch({
+      id: d.id ?? `n${nextReqId++}`,
+      level: d.level as "info" | "success" | "warning" | "error",
+      title: d.title,
+      message: d.message,
+    });
+  }
+});

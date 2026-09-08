@@ -366,6 +366,16 @@ namespace Dia
 		}
 
 		//-----------------------------------------------------------------------------
+		Vector3D Vector3D::Cross( const Vector3D& rhs) const
+		{
+			return Vector3D(
+				y * rhs.z - z * rhs.y,
+				z * rhs.x - x * rhs.z,
+				x * rhs.y - y * rhs.x
+			);
+		}
+
+		//-----------------------------------------------------------------------------
 		float Vector3D::SquareMagnitude() const
 		{
 			return Dot(*this);

@@ -1,0 +1,40 @@
+{
+    "schema": "diagamemessages/v1",
+    "namespace": "Dia::AICallout",
+    "includes": ["DiaAICallout/Callout.h", "DiaAICallout/CalloutHandle.h"],
+    "messages": [
+        {
+            "id": "CalloutEmittedEvent",
+            "router": "broadcast",
+            "pass": "primary",
+            "producers": ["CalloutBusAdapter"],
+            "consumers": [],
+            "fields": [
+                { "name": "callout", "type": "Callout", "notes": "full callout payload — kind/position/radius/faction/ttl/payload, self-describes filtering criteria" },
+                { "name": "handle",  "type": "CalloutHandle", "notes": "owning handle for the newly-emitted callout" }
+            ]
+        },
+        {
+            "id": "CalloutClaimedEvent",
+            "router": "broadcast",
+            "pass": "primary",
+            "producers": ["CalloutBusAdapter"],
+            "consumers": [],
+            "fields": [
+                { "name": "handle",          "type": "CalloutHandle", "notes": "handle of the claimed callout" },
+                { "name": "claimerEntityId",  "type": "Dia::Core::StringCRC", "notes": "entity that performed the claim" }
+            ]
+        },
+        {
+            "id": "CalloutReleasedEvent",
+            "router": "broadcast",
+            "pass": "primary",
+            "producers": ["CalloutBusAdapter"],
+            "consumers": [],
+            "fields": [
+                { "name": "handle",          "type": "CalloutHandle", "notes": "handle of the released callout" },
+                { "name": "claimerEntityId",  "type": "Dia::Core::StringCRC", "notes": "entity that had claimed it" }
+            ]
+        }
+    ]
+}

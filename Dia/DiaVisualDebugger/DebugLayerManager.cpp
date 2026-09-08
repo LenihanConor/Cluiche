@@ -7,10 +7,13 @@
 #ifdef DIA_DEBUG
 
 #include <DiaCore/Core/Assert.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
-#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaGraphics/Frame/DebugFrameDataVisitor.h>
-#include <DiaDebugServer/DebugServerModule.h>
+#include <DiaGraphics/Camera/Camera2D.h>
+#include <DiaGraphics/Camera/ViewportTransform.h>
+#include <DiaDebugServer/DebugServer.h>
 #include <DiaDebugProtocol/DiaDebugProtocol.h>
 #include <DiaProtobuf/ProtoJsonCodec.h>
 #include <cstdlib>  // std::atof
@@ -25,17 +28,54 @@ namespace Dia
 
         void DebugLayerManager::Register(IVisualDebugger* debugger, int priority)
         {
+            Register(debugger, priority, Dia::Core::StringCRC());
+        }
+
+        void DebugLayerManager::Register(IVisualDebugger* debugger, int priority,
+                                          const Dia::Core::StringCRC& stageTag)
+        {
             DIA_ASSERT(debugger != nullptr, "DebugLayerManager::Register — debugger must not be null");
-            DIA_ASSERT(FindLayerIndex(debugger->GetLayerName()) < 0,
-                       "DebugLayerManager::Register — layer name already registered in dynamic registry");
+
+            // Idempotency: same name + same pointer → just reactivate
+            int existing = FindLayerIndex(debugger->GetLayerName());
+            if (existing >= 0)
+            {
+                if (mLayers[static_cast<unsigned int>(existing)].debugger == debugger)
+                {
+                    mLayers[static_cast<unsigned int>(existing)].active = true;
+                    mLayersDirty = true;
+                    return;
+                }
+                DIA_ASSERT(false, "DebugLayerManager::Register — layer name already registered with different pointer");
+                return;
+            }
+
             DIA_ASSERT(!mFixedRegistry.HasLayer(debugger->GetLayerName()),
                        "DebugLayerManager::Register — layer name already registered in fixed registry");
 
             LayerEntry entry;
-            entry.debugger = debugger;
-            entry.priority = priority;
+            entry.debugger  = debugger;
+            entry.priority  = priority;
+            entry.stageTag  = stageTag;
+            entry.active    = true;
             mLayers.Add(entry);
-            mSortDirty  = true;
+            mSortDirty   = true;
+            mLayersDirty = true;
+        }
+
+        void DebugLayerManager::RegisterWithoutDraw(IVisualDebugger* debugger, int priority,
+                                                     const Dia::Core::StringCRC& stageTag)
+        {
+            Register(debugger, priority, stageTag);
+            int index = FindLayerIndex(debugger->GetLayerName());
+            if (index >= 0)
+                mLayers[static_cast<unsigned int>(index)].skipDraw = true;
+        }
+
+        void DebugLayerManager::ClearDynamicLayers()
+        {
+            mLayers.RemoveAll();
+            mSortDirty   = true;
             mLayersDirty = true;
         }
 
@@ -96,6 +136,20 @@ namespace Dia
             return mFixedRegistry.IsLayerEnabled(layerName);
         }
 
+        void DebugLayerManager::SetStageActive(const Dia::Core::StringCRC& stageTag, bool active)
+        {
+            if (stageTag == Dia::Core::StringCRC())
+                return;  // empty tag = global layer, never deactivated
+            for (unsigned int i = 0; i < mLayers.Size(); ++i)
+            {
+                if (mLayers[i].stageTag == stageTag)
+                {
+                    mLayers[i].active = active;
+                    mLayersDirty = true;
+                }
+            }
+        }
+
         // --------------------------------------------------------------------
         // Global debug scale
         // --------------------------------------------------------------------
@@ -108,6 +162,46 @@ namespace Dia
         float DebugLayerManager::GetDebugScale() const
         {
             return mDebugScale;
+        }
+
+        // --------------------------------------------------------------------
+        // Viewport / coordinate transform
+        // --------------------------------------------------------------------
+
+        void DebugLayerManager::SetViewport(const Dia::Graphics::Camera2D& camera,
+                                             const Dia::Maths::Vector2D& windowSize)
+        {
+            mViewportCamera     = camera;
+            mViewportWindowSize = windowSize;
+        }
+
+        Dia::Graphics::ViewportTransform DebugLayerManager::GetViewportTransform() const
+        {
+            return Dia::Graphics::ViewportTransform(mViewportCamera, mViewportWindowSize);
+        }
+
+        // --------------------------------------------------------------------
+        // 3D camera
+        // --------------------------------------------------------------------
+
+        void DebugLayerManager::SetCamera3D(const Dia::Graphics3D::Camera3D& camera)
+        {
+            mCamera3D = camera;
+        }
+
+        const Dia::Graphics3D::Camera3D& DebugLayerManager::GetCamera3D() const
+        {
+            return mCamera3D;
+        }
+
+        void DebugLayerManager::SetCursorWorld(const Dia::Maths::Vector2D& worldPos)
+        {
+            mCursorWorld = worldPos;
+        }
+
+        Dia::Maths::Vector2D DebugLayerManager::GetCursorWorld() const
+        {
+            return mCursorWorld;
         }
 
         // --------------------------------------------------------------------
@@ -128,20 +222,24 @@ namespace Dia
         // Draw
         // --------------------------------------------------------------------
 
-        void DebugLayerManager::Draw(Dia::Graphics::FrameData& frameData)
+        void DebugLayerManager::Draw(Dia::Core::IDebugDraw& draw)
         {
             if (mSortDirty)
                 SortByPriority();
 
             for (unsigned int i = 0; i < mLayers.Size(); ++i)
             {
+                if (!mLayers[i].active)
+                    continue;
+                if (mLayers[i].skipDraw)
+                    continue;
                 IVisualDebugger* d = mLayers[i].debugger;
                 if (d->IsEnabled())
-                    d->Draw(frameData);
+                    d->Draw(draw);
             }
 
-            // Cache dropped count — FrameData inherits from DebugFrameData
-            const uint32_t droppedNow = frameData.DroppedCount();
+            // Cache dropped count — IDebugDraw exposes DroppedCount
+            const uint32_t droppedNow = draw.DroppedCount();
             if (droppedNow != mLastDroppedCount)
             {
                 mLastDroppedCount = droppedNow;
@@ -156,6 +254,10 @@ namespace Dia
 
         void DebugLayerManager::RegisterDiaAPICommands()
         {
+            if (mAPICommandsRegistered)
+                return;
+            mAPICommandsRegistered = true;
+
             // debug.layer.enable <layer-name>
             Dia::API::RegisterCommand({
                 Dia::Core::StringCRC("debug.layer.enable"),
@@ -231,7 +333,7 @@ namespace Dia
         // --------------------------------------------------------------------
 
         void DebugLayerManager::BroadcastLayerState(
-            Dia::DebugServer::DebugServerModule* debugServer)
+            Dia::DebugServer::DebugServer* debugServer)
         {
             if (debugServer == nullptr) return;
             if (!mLayersDirty) return;
@@ -246,6 +348,8 @@ namespace Dia
                 entry["name"]     = mLayers[i].debugger->GetLayerName().AsChar();
                 entry["enabled"]  = mLayers[i].debugger->IsEnabled();
                 entry["priority"] = mLayers[i].priority;
+                entry["stage"]    = mLayers[i].stageTag.AsChar();   // may be "" for global layers
+                entry["active"]   = mLayers[i].active;
                 layers.append(entry);
             }
             payload["layers"] = layers;
@@ -313,6 +417,46 @@ namespace Dia
             return mLayers[static_cast<unsigned int>(index)].debugger->GetLayerName();
         }
 
+        IVisualDebugger* DebugLayerManager::GetLayer(int index) const
+        {
+            if (index < 0 || static_cast<unsigned int>(index) >= mLayers.Size())
+                return nullptr;
+            return mLayers[static_cast<unsigned int>(index)].debugger;
+        }
+
+        Dia::Core::StringCRC DebugLayerManager::GetLayerStageTag(int index) const
+        {
+            if (index < 0 || static_cast<unsigned int>(index) >= mLayers.Size())
+                return Dia::Core::StringCRC::kZero;
+            return mLayers[static_cast<unsigned int>(index)].stageTag;
+        }
+
+        bool DebugLayerManager::IsStageActive(const Dia::Core::StringCRC& stageTag) const
+        {
+            if (stageTag == Dia::Core::StringCRC())
+                return true;
+            for (unsigned int i = 0; i < mLayers.Size(); ++i)
+                if (mLayers[i].stageTag == stageTag && mLayers[i].active)
+                    return true;
+            return false;
+        }
+
+        void DebugLayerManager::GetStageTags(Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16>& out) const
+        {
+            out.RemoveAll();
+            for (unsigned int i = 0; i < mLayers.Size(); ++i)
+            {
+                const auto& tag = mLayers[i].stageTag;
+                if (tag == Dia::Core::StringCRC())
+                    continue;
+                bool found = false;
+                for (unsigned int j = 0; j < out.Size(); ++j)
+                    if (out[j] == tag) { found = true; break; }
+                if (!found)
+                    out.Add(tag);
+            }
+        }
+
         // --------------------------------------------------------------------
         // Private helpers
         // --------------------------------------------------------------------
@@ -338,7 +482,7 @@ namespace Dia
         {
             for (unsigned int i = 0; i < mLayers.Size(); ++i)
             {
-                if (mLayers[i].debugger->GetLayerName() == layerName)
+                if (mLayers[i].debugger && mLayers[i].debugger->GetLayerName() == layerName)
                     return static_cast<int>(i);
             }
             return -1;

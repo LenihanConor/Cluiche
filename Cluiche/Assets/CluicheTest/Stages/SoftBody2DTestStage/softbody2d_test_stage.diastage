@@ -1,0 +1,9 @@
+{
+    "name": "SoftBody2DTestStage",
+    "manifest": "Stages/SoftBody2DTestStage/misc/ApplicationFlow/softbody2d_test_stage.diaapp",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

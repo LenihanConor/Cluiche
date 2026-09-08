@@ -4,6 +4,7 @@
 #pragma once
 
 #include "DiaInput/EventData.h"
+#include <DiaCore/Containers/BitFlag/BitArray8.h>
 
 namespace Dia
 {
@@ -96,6 +97,14 @@ namespace Dia
 			///
 			/// @param priority New priority value
 			void SetPriority(Priority priority) { mPriority = priority; }
+
+			/// @brief Configure which input source categories to listen for
+			///
+			/// @param sources Bitmask of source categories (platform-backend-defined)
+			///
+			/// @note Default implementation is a no-op. Override in backends that
+			///       support selective source filtering (keyboard, mouse, joystick).
+			virtual void ListenForInputSources(Dia::Core::BitArray8 /*sources*/) {}
 
 		private:
 			int mId;             ///< Unique identifier for this source

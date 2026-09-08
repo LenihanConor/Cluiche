@@ -1,7 +1,7 @@
 #include "DiaEditor/Sinks/EditorConsoleSink.h"
 
 #include "DiaEditor/UI/WebUIBridge.h"
-#include <DiaLogger/LogLevel.h>
+#include <DiaObservation/Log/LogLevel.h>
 #include <DiaCore/Strings/String128.h>
 #include <DiaCore/Json/external/json/json.h>
 
@@ -29,9 +29,9 @@ namespace Dia
 			mReady = false;
 		}
 
-		void EditorConsoleSink::OnLogEntry(const Dia::Logger::LogEntry& entry)
+		void EditorConsoleSink::OnLogEntry(const Dia::Observation::Log::LogEntry& entry)
 		{
-			const char* level = Dia::Logger::LogLevelToString(entry.level);
+			const char* level = Dia::Observation::Log::LogLevelToString(entry.level);
 
 			if (!mReady)
 			{

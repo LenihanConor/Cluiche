@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Blueprint Editor — Mockup v2</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Toolbar ─────────────────────────────────────── */
+    .toolbar {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 10px; background: #2d2d2d;
+      border-bottom: 1px solid #3c3c3c; flex-shrink: 0;
+    }
+    .toolbar .blueprint-path {
+      flex: 1; font-size: 11px; color: #9cdcfe;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .toolbar .status { font-size: 11px; }
+
+    /* ── Layout ──────────────────────────────────────── */
+    .layout { display: flex; flex: 1; overflow: hidden; }
+
+    .panel {
+      display: flex; flex-direction: column;
+      border-right: 1px solid #3c3c3c; overflow: hidden;
+    }
+    .panel-title {
+      padding: 5px 10px; font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      color: #9cdcfe; background: #252526;
+      border-bottom: 1px solid #3c3c3c; flex-shrink: 0;
+    }
+    .panel-body { flex: 1; overflow: auto; padding: 8px; }
+
+    #panel-list   { width: 240px; }
+    #panel-center { flex: 1; border-right: none; }
+    #panel-right  { width: 280px; border-right: none; }
+
+    /* ── Blueprint list ──────────────────────────────── */
+    .list-toolbar {
+      display: flex; align-items: center; gap: 4px;
+      padding: 4px 8px; border-bottom: 1px solid #3c3c3c; flex-shrink: 0;
+    }
+    .list-toolbar input {
+      flex: 1; background: #3c3c3c; color: #d4d4d4;
+      border: 1px solid #555; padding: 2px 6px;
+      font-size: 11px; border-radius: 2px; outline: none;
+    }
+    .list-toolbar input:focus { border-color: #007acc; }
+    .group-header {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; color: #9d9d9d;
+      padding: 6px 4px 3px; margin-top: 4px;
+    }
+    .blueprint-item {
+      padding: 4px 8px; font-size: 12px; cursor: pointer;
+      border-radius: 3px; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    .blueprint-item:hover { background: #2a2d2e; }
+    .blueprint-item.selected { background: #094771; color: #fff; }
+
+    /* ── Component accordion ─────────────────────────── */
+    .blueprint-id {
+      font-size: 13px; color: #9cdcfe; font-weight: 600;
+      padding: 8px 4px 6px; border-bottom: 1px solid #3c3c3c; margin-bottom: 10px;
+    }
+    .accordion {
+      border: 1px solid #3c3c3c; border-radius: 3px;
+      margin-bottom: 6px; overflow: hidden;
+    }
+    .accordion-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 10px; background: #252526; cursor: pointer;
+      font-size: 12px; font-weight: 600; user-select: none;
+    }
+    .accordion-header:hover { background: #2a2d2e; }
+    .accordion-header .chevron { font-size: 10px; color: #9d9d9d; transition: transform 0.12s; }
+    .accordion-header.open .chevron { transform: rotate(90deg); }
+    .accordion-body { display: none; padding: 8px 10px 4px; background: #1e1e1e; }
+    .accordion-body.open { display: block; }
+
+    /* ── Field rows ──────────────────────────────────── */
+    .field-row { padding: 4px 0; font-size: 11px; }
+    .field-header {
+      display: flex; align-items: center; gap: 6px; margin-bottom: 2px;
+    }
+    .field-name { color: #9d9d9d; }
+    .field-required { color: #f48771; font-size: 10px; }
+    .field-kind { color: #555; font-size: 10px; font-style: italic; }
+    .field-controls { display: flex; align-items: center; gap: 4px; }
+    .field-controls input[type="text"],
+    .field-controls input[type="number"] {
+      flex: 1; background: #3c3c3c; color: #d4d4d4;
+      border: 1px solid #555; padding: 2px 6px;
+      font-size: 11px; font-family: inherit;
+      border-radius: 2px; outline: none; min-width: 0;
+    }
+    .field-controls input:focus { border-color: #007acc; }
+
+    /* Blueprint default overriding code default */
+    .field-controls input.has-override { border-color: #4ec9a0; color: #d4d4d4; }
+
+    .field-hint {
+      font-size: 10px; color: #555; margin-top: 1px; padding-left: 2px;
+    }
+    .field-hint .code-val { color: #6a9955; }
+    .field-hint .override-badge {
+      color: #4ec9a0; font-style: normal; font-weight: 600;
+    }
+    .field-hint .clear-btn {
+      color: #9d9d9d; cursor: pointer; margin-left: 4px; font-size: 10px;
+      background: none; border: none; padding: 0; font-family: inherit;
+    }
+    .field-hint .clear-btn:hover { color: #f48771; }
+
+    /* ── Component actions ───────────────────────────── */
+    .comp-actions {
+      display: flex; gap: 6px; margin-top: 6px; padding-top: 6px;
+      border-top: 1px solid #2a2a2a; justify-content: flex-end;
+    }
+    .comp-actions button {
+      background: #3c3c3c; color: #d4d4d4; border: 1px solid #555;
+      padding: 2px 8px; font-size: 11px; cursor: pointer; border-radius: 2px;
+    }
+    .comp-actions button:hover { background: #4c4c4c; }
+    .comp-actions .btn-remove { color: #f48771; border-color: #6b2e2e; }
+    .comp-actions .btn-remove:hover { background: #4b2020; }
+
+    /* ── Add component trigger ───────────────────────── */
+    .add-component-trigger {
+      margin-top: 10px; padding-top: 8px; border-top: 1px solid #3c3c3c;
+    }
+    .add-component-trigger button {
+      width: 100%; background: #2d2d2d; color: #9d9d9d;
+      border: 1px dashed #3c3c3c; padding: 6px; font-size: 11px;
+      cursor: pointer; border-radius: 3px; text-align: center;
+    }
+    .add-component-trigger button:hover { background: #333; color: #d4d4d4; border-color: #555; }
+
+    /* ── Component picker panel ──────────────────────── */
+    .picker-panel {
+      display: none;
+      position: absolute; z-index: 50;
+      background: #252526; border: 1px solid #555;
+      border-radius: 4px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      width: 340px; max-height: 420px;
+      flex-direction: column; overflow: hidden;
+    }
+    .picker-panel.open { display: flex; }
+
+    .picker-header {
+      padding: 8px 10px; border-bottom: 1px solid #3c3c3c;
+      display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+    }
+    .picker-header input {
+      flex: 1; background: #3c3c3c; color: #d4d4d4;
+      border: 1px solid #555; padding: 4px 8px;
+      font-size: 12px; font-family: inherit;
+      border-radius: 2px; outline: none;
+    }
+    .picker-header input:focus { border-color: #007acc; }
+    .picker-header .picker-close {
+      background: none; border: none; color: #9d9d9d;
+      font-size: 14px; cursor: pointer; padding: 2px 4px; border-radius: 2px;
+    }
+    .picker-header .picker-close:hover { color: #d4d4d4; background: #3c3c3c; }
+
+    .picker-count {
+      padding: 4px 10px; font-size: 10px; color: #555;
+      border-bottom: 1px solid #2a2a2a; flex-shrink: 0;
+    }
+
+    .picker-list { flex: 1; overflow-y: auto; }
+
+    .picker-item {
+      padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #2a2a2a;
+    }
+    .picker-item:hover, .picker-item.focused {
+      background: #094771;
+    }
+    .picker-item .pi-name {
+      font-size: 12px; font-weight: 600; color: #d4d4d4;
+      margin-bottom: 2px;
+    }
+    .picker-item.focused .pi-name { color: #fff; }
+    .picker-item .pi-id {
+      font-size: 10px; color: #9d9d9d; margin-bottom: 3px; font-family: monospace;
+    }
+    .picker-item .pi-desc {
+      font-size: 11px; color: #888;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .picker-item.focused .pi-desc { color: #aaa; }
+    .picker-empty {
+      padding: 16px; text-align: center; font-size: 11px; color: #555;
+    }
+
+    .picker-footer {
+      padding: 8px 10px; border-top: 1px solid #3c3c3c;
+      display: flex; gap: 6px; justify-content: flex-end; flex-shrink: 0;
+    }
+    .picker-footer button {
+      padding: 4px 14px; font-size: 11px; cursor: pointer; border-radius: 2px;
+    }
+    .picker-footer .btn-cancel {
+      background: #3c3c3c; color: #d4d4d4; border: 1px solid #555;
+    }
+    .picker-footer .btn-cancel:hover { background: #4c4c4c; }
+    .picker-footer .btn-add {
+      background: #0078d4; color: #fff; border: none;
+    }
+    .picker-footer .btn-add:hover { background: #106ebe; }
+    .picker-footer .btn-add:disabled { background: #2a4a6a; color: #666; cursor: default; }
+
+    /* kbd hint */
+    .picker-footer .hint { font-size: 10px; color: #555; flex: 1; line-height: 1.8; }
+
+    /* ── Usage panel ─────────────────────────────────── */
+    .usage-item {
+      display: flex; justify-content: space-between;
+      padding: 4px 0; font-size: 11px;
+      border-bottom: 1px solid #2d2d2d;
+    }
+    .usage-scene { color: #9cdcfe; }
+    .usage-count { color: #9d9d9d; }
+    .usage-empty { font-size: 11px; color: #555; padding: 4px 0; }
+
+    /* ── Statusbar ───────────────────────────────────── */
+    .statusbar {
+      padding: 2px 10px; font-size: 10px; color: #ccc;
+      background: #007acc; flex-shrink: 0;
+    }
+
+    /* ── Mockup label ────────────────────────────────── */
+    .mockup-banner {
+      background: #4b3000; border-bottom: 1px solid #7a5000;
+      padding: 3px 10px; font-size: 10px; color: #e5a000; flex-shrink: 0;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #1e1e1e; }
+    ::-webkit-scrollbar-thumb { background: #424242; border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<div class="mockup-banner">MOCKUP — Blueprint Editor v2 — Component Picker + Default Values</div>
+
+<div class="toolbar">
+  <span class="blueprint-path">C:\GitHub\Cluiche\Cluiche\Assets\CluicheTest\Global\Scene\argh.diaentitytemplate</span>
+  <span class="status" id="status-msg" style="color:#4ec9a0"></span>
+</div>
+
+<div class="layout">
+
+  <!-- Left: blueprint list -->
+  <div class="panel" id="panel-list">
+    <div class="panel-title">Blueprints</div>
+    <div class="list-toolbar">
+      <input type="text" placeholder="Filter…" />
+    </div>
+    <div class="panel-body">
+      <div class="group-header">Entity</div>
+      <div class="blueprint-item selected">diaentitytemplate.argh</div>
+      <div class="blueprint-item">diaentitytemplate.test</div>
+      <div class="blueprint-item">diaentitytemplate.more</div>
+    </div>
+  </div>
+
+  <!-- Center: component accordion + fields -->
+  <div class="panel" id="panel-center" style="position:relative">
+    <div class="panel-title">Blueprint Properties</div>
+    <div class="panel-body" id="center-body">
+
+      <div class="blueprint-id">⬡ diaentitytemplate.argh</div>
+      <div id="components-container"></div>
+
+      <div class="add-component-trigger">
+        <button onclick="openPicker()">+ Add Component</button>
+      </div>
+
+    </div>
+
+    <!-- Component picker panel (positioned inside panel-center) -->
+    <div class="picker-panel" id="picker-panel">
+      <div class="picker-header">
+        <input type="text" id="picker-filter" placeholder="Search components…"
+               oninput="onPickerFilter()" onkeydown="onPickerKey(event)" />
+        <button class="picker-close" onclick="closePicker()">✕</button>
+      </div>
+      <div class="picker-count" id="picker-count"></div>
+      <div class="picker-list" id="picker-list"></div>
+      <div class="picker-footer">
+        <span class="hint">↑↓ navigate · Enter add · Esc cancel</span>
+        <button class="btn-cancel" onclick="closePicker()">Cancel</button>
+        <button class="btn-add" id="picker-add-btn" onclick="onPickerAdd()" disabled>Add</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: usage panel -->
+  <div class="panel" id="panel-right">
+    <div class="panel-title">Scene Usage</div>
+    <div class="panel-body">
+      <div class="usage-empty">No scene references found.</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="statusbar">DiaEntityTemplateEditor</div>
+
+<script>
+  /* ── Fake data ───────────────────────────────────────── */
+
+  // Schema data: what --dump-schema produces (includes code defaults)
+  var SCHEMA = [
+    {
+      typeId: 'cluichetest.transform',
+      debugName: 'TransformComponent',
+      description: 'World-space position, rotation and uniform scale for an entity.',
+      fields: [
+        { name: 'x',     kind: 'primitive', codeDefault: 0.0 },
+        { name: 'y',     kind: 'primitive', codeDefault: 0.0 },
+        { name: 'scale', kind: 'primitive', codeDefault: 1.0 },
+      ]
+    },
+    {
+      typeId: 'cluichetest.pickable-circle',
+      debugName: 'PickableCircleComponent',
+      description: 'Makes the entity selectable via a circular hit region.',
+      fields: [
+        { name: 'radius', kind: 'primitive', codeDefault: 16.0 },
+      ]
+    },
+    {
+      typeId: 'cluichetest.visual',
+      debugName: 'VisualTestRenderComponent',
+      description: 'Renders a sprite or debug shape tied to this entity.',
+      fields: [
+        { name: 'sprite_id', kind: 'string_id', codeDefault: '' },
+        { name: 'visible',   kind: 'primitive', codeDefault: true },
+        { name: 'layer',     kind: 'primitive', codeDefault: 0 },
+      ]
+    },
+    {
+      typeId: 'cluichetest.parent',
+      debugName: 'ParentComponent',
+      description: 'Marks this entity as a parent node in a hierarchy.',
+      fields: []
+    },
+    {
+      typeId: 'cluichetest.child-buffer',
+      debugName: 'ChildBufferComponent',
+      description: 'Buffers references to child entities for parent traversal.',
+      fields: [
+        { name: 'max_children', kind: 'primitive', codeDefault: 8 },
+      ]
+    },
+  ];
+
+  // Current blueprint state: components that are ON the entity,
+  // with their blueprint-level default overrides (if set).
+  var blueprint = {
+    id: 'diaentitytemplate.argh',
+    components: [
+      {
+        typeId: 'cluichetest.transform',
+        // No overrides yet — all fields will show code defaults as placeholders
+        overrides: {}
+      },
+      {
+        typeId: 'cluichetest.pickable-circle',
+        // 'radius' has been given a blueprint default of 24
+        overrides: { radius: 24.0 }
+      },
+    ]
+  };
+
+  /* ── Render ──────────────────────────────────────────── */
+
+  function schemaForType(typeId) {
+    return SCHEMA.find(function(s) { return s.typeId === typeId; }) || null;
+  }
+
+  function renderAll() {
+    var container = document.getElementById('components-container');
+    container.innerHTML = '';
+    blueprint.components.forEach(function(comp) {
+      container.appendChild(buildAccordion(comp));
+    });
+  }
+
+  function buildAccordion(comp) {
+    var schema = schemaForType(comp.typeId);
+    var wrap = document.createElement('div');
+    wrap.className = 'accordion';
+
+    var header = document.createElement('div');
+    header.className = 'accordion-header open';
+    var label = schema ? schema.debugName : comp.typeId;
+    header.innerHTML = '<span>' + esc(label) + '<span style="font-weight:400;color:#555;margin-left:6px;font-size:10px">' + esc(comp.typeId) + '</span></span><span class="chevron">▶</span>';
+    header.onclick = function() {
+      header.classList.toggle('open');
+      body.classList.toggle('open');
+    };
+
+    var body = document.createElement('div');
+    body.className = 'accordion-body open';
+
+    if (schema && schema.fields.length > 0) {
+      schema.fields.forEach(function(field) {
+        body.appendChild(buildFieldRow(comp, field));
+      });
+    } else {
+      var note = document.createElement('div');
+      note.style.cssText = 'font-size:11px;color:#555;padding:2px 0';
+      note.textContent = schema ? 'No configurable fields.' : 'Unknown component type.';
+      body.appendChild(note);
+    }
+
+    var actions = document.createElement('div');
+    actions.className = 'comp-actions';
+    var removeBtn = document.createElement('button');
+    removeBtn.className = 'btn-remove';
+    removeBtn.textContent = 'Remove';
+    removeBtn.onclick = function() { removeComponent(comp.typeId); };
+    actions.appendChild(removeBtn);
+    body.appendChild(actions);
+
+    wrap.appendChild(header);
+    wrap.appendChild(body);
+    return wrap;
+  }
+
+  function buildFieldRow(comp, field) {
+    var row = document.createElement('div');
+    row.className = 'field-row';
+
+    var hasOverride = comp.overrides.hasOwnProperty(field.name);
+    var currentVal  = hasOverride ? comp.overrides[field.name] : field.codeDefault;
+
+    // Header line: name + kind badge
+    var headerEl = document.createElement('div');
+    headerEl.className = 'field-header';
+    headerEl.innerHTML = '<span class="field-name">' + esc(field.name) + '</span>' +
+                         '<span class="field-kind">' + esc(field.kind) + '</span>';
+    row.appendChild(headerEl);
+
+    // Input row
+    var controls = document.createElement('div');
+    controls.className = 'field-controls';
+
+    var inp = document.createElement('input');
+    inp.type = (field.kind === 'primitive' && typeof currentVal === 'number') ? 'number' : 'text';
+    inp.step = 'any';
+
+    if (hasOverride) {
+      inp.value = String(currentVal);
+      inp.classList.add('has-override');
+    } else {
+      // No blueprint default — show code default as placeholder
+      inp.value = '';
+      inp.placeholder = String(field.codeDefault);
+    }
+
+    inp.onchange = function() {
+      var raw = inp.value.trim();
+      if (raw === '' || raw === String(field.codeDefault)) {
+        // Clear override — revert to code default
+        delete comp.overrides[field.name];
+        inp.classList.remove('has-override');
+        inp.value = '';
+        inp.placeholder = String(field.codeDefault);
+      } else {
+        var parsed = (inp.type === 'number') ? parseFloat(raw) : raw;
+        comp.overrides[field.name] = parsed;
+        inp.classList.add('has-override');
+      }
+      renderHint(hintEl, comp, field);
+      setStatus('Saved');
+    };
+
+    controls.appendChild(inp);
+    row.appendChild(controls);
+
+    // Hint line
+    var hintEl = document.createElement('div');
+    hintEl.className = 'field-hint';
+    renderHint(hintEl, comp, field);
+    row.appendChild(hintEl);
+
+    return row;
+  }
+
+  function renderHint(hintEl, comp, field) {
+    var hasOverride = comp.overrides.hasOwnProperty(field.name);
+    if (hasOverride) {
+      var clearBtn = '<button class="clear-btn" title="Clear blueprint default, revert to code default">clear</button>';
+      hintEl.innerHTML = '<span class="override-badge">blueprint default</span> · code: <span class="code-val">' + esc(String(field.codeDefault)) + '</span>' + clearBtn;
+      hintEl.querySelector('.clear-btn').onclick = function() {
+        delete comp.overrides[field.name];
+        renderAll();
+        setStatus('Cleared — reverted to code default');
+      };
+    } else {
+      hintEl.innerHTML = 'code default: <span class="code-val">' + esc(String(field.codeDefault)) + '</span> · leave blank to keep';
+    }
+  }
+
+  function removeComponent(typeId) {
+    blueprint.components = blueprint.components.filter(function(c) { return c.typeId !== typeId; });
+    renderAll();
+    setStatus('Removed ' + typeId);
+  }
+
+  /* ── Component picker ────────────────────────────────── */
+
+  var pickerFocusIndex = -1;
+  var pickerVisible    = [];
+
+  function availableComponents() {
+    var presentIds = blueprint.components.map(function(c) { return c.typeId; });
+    return SCHEMA.filter(function(s) {
+      return presentIds.indexOf(s.typeId) === -1;
+    });
+  }
+
+  function openPicker() {
+    var panel = document.getElementById('picker-panel');
+    // Position it above the trigger button, inside the center panel
+    panel.style.bottom = '50px';
+    panel.style.left   = '16px';
+    panel.style.right  = '16px';
+    panel.style.width  = 'auto';
+
+    panel.classList.add('open');
+    pickerFocusIndex = -1;
+    document.getElementById('picker-filter').value = '';
+    renderPickerList('');
+    document.getElementById('picker-filter').focus();
+  }
+
+  function closePicker() {
+    document.getElementById('picker-panel').classList.remove('open');
+    pickerFocusIndex = -1;
+  }
+
+  function onPickerFilter() {
+    var q = document.getElementById('picker-filter').value;
+    pickerFocusIndex = -1;
+    renderPickerList(q);
+  }
+
+  function renderPickerList(query) {
+    var q = query.toLowerCase();
+    var available = availableComponents();
+    pickerVisible = available.filter(function(s) {
+      return !q ||
+        s.typeId.toLowerCase().indexOf(q) !== -1 ||
+        s.debugName.toLowerCase().indexOf(q) !== -1 ||
+        (s.description && s.description.toLowerCase().indexOf(q) !== -1);
+    });
+
+    var countEl = document.getElementById('picker-count');
+    countEl.textContent = pickerVisible.length + ' of ' + available.length + ' components available';
+
+    var list = document.getElementById('picker-list');
+    list.innerHTML = '';
+
+    if (pickerVisible.length === 0) {
+      list.innerHTML = '<div class="picker-empty">No components match "' + esc(query) + '"</div>';
+      setPickerAddEnabled(false);
+      return;
+    }
+
+    pickerVisible.forEach(function(s, i) {
+      var item = document.createElement('div');
+      item.className = 'picker-item';
+      item.dataset.index = i;
+      item.innerHTML =
+        '<div class="pi-name">' + esc(s.debugName) + '</div>' +
+        '<div class="pi-id">' + esc(s.typeId) + '</div>' +
+        (s.description ? '<div class="pi-desc">' + esc(s.description) + '</div>' : '');
+      item.onclick = function() {
+        pickerFocusIndex = i;
+        updatePickerFocus();
+      };
+      item.ondblclick = function() {
+        pickerFocusIndex = i;
+        onPickerAdd();
+      };
+      list.appendChild(item);
+    });
+
+    setPickerAddEnabled(false);
+  }
+
+  function updatePickerFocus() {
+    var items = document.querySelectorAll('.picker-item');
+    items.forEach(function(el, i) {
+      el.classList.toggle('focused', i === pickerFocusIndex);
+    });
+    if (pickerFocusIndex >= 0 && pickerFocusIndex < items.length) {
+      items[pickerFocusIndex].scrollIntoView({ block: 'nearest' });
+    }
+    setPickerAddEnabled(pickerFocusIndex >= 0);
+  }
+
+  function setPickerAddEnabled(on) {
+    document.getElementById('picker-add-btn').disabled = !on;
+  }
+
+  function onPickerKey(e) {
+    if (e.key === 'Escape') { closePicker(); return; }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      pickerFocusIndex = Math.min(pickerFocusIndex + 1, pickerVisible.length - 1);
+      updatePickerFocus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      pickerFocusIndex = Math.max(pickerFocusIndex - 1, 0);
+      updatePickerFocus();
+    } else if (e.key === 'Enter') {
+      if (pickerFocusIndex >= 0) onPickerAdd();
+    }
+  }
+
+  function onPickerAdd() {
+    if (pickerFocusIndex < 0 || pickerFocusIndex >= pickerVisible.length) return;
+    var s = pickerVisible[pickerFocusIndex];
+    blueprint.components.push({ typeId: s.typeId, overrides: {} });
+    closePicker();
+    renderAll();
+    setStatus('Added ' + s.debugName);
+  }
+
+  /* ── Utility ─────────────────────────────────────────── */
+
+  var _statusTimer = null;
+  function setStatus(msg, isError) {
+    var el = document.getElementById('status-msg');
+    el.textContent = msg;
+    el.style.color = isError ? '#f48771' : '#4ec9a0';
+    if (_statusTimer) clearTimeout(_statusTimer);
+    _statusTimer = setTimeout(function() { el.textContent = ''; }, 3000);
+  }
+
+  function esc(s) {
+    return String(s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Close picker on outside click
+  document.addEventListener('click', function(e) {
+    var panel = document.getElementById('picker-panel');
+    var trigger = document.querySelector('.add-component-trigger button');
+    if (panel.classList.contains('open') &&
+        !panel.contains(e.target) &&
+        e.target !== trigger) {
+      closePicker();
+    }
+  });
+
+  /* ── Boot ───────────────────────────────────────────── */
+  renderAll();
+</script>
+</body>
+</html>

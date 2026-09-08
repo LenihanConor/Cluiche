@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.statemachine
 name: DiaStateMachine
 owner_team: TBD
-layer: platform
+layer: foundation/services
 status: active
 maturity: dev
 
@@ -37,7 +37,7 @@ responsibilities:
 
 non_responsibilities:
   - Editor visualization (future DiaStateMachineEditor)
-  - Application phase management (DiaApplication)
+  - Application phase management (DiaApplicationFlow)
   - Animation blending or clip playback
   - Thread safety within callbacks
   - Network synchronization

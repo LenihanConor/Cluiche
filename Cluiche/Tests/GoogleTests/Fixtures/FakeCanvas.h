@@ -19,7 +19,6 @@ namespace TestFixtures
             , mStartFrameCallCount(0)
             , mProcessFrameCallCount(0)
             , mEndFrameCallCount(0)
-            , mSetActiveContextCallCount(0)
         {}
 
         // Inspection
@@ -28,7 +27,6 @@ namespace TestFixtures
         int ProcessFrameCallCount()    const { return mProcessFrameCallCount; }
         int EndFrameCallCount()        const { return mEndFrameCallCount; }
         int TotalRenderCallCount()     const { return mStartFrameCallCount + mProcessFrameCallCount + mEndFrameCallCount; }
-        int SetActiveContextCallCount() const { return mSetActiveContextCallCount; }
 
         const Dia::Graphics::ICanvas::Settings& LastSettings() const { return mLastSettings; }
 
@@ -39,11 +37,6 @@ namespace TestFixtures
         }
 
         virtual void SetCanvasSize(const Dia::Maths::Vector2D&) override {}
-
-        virtual void SetActiveContext(bool) override
-        {
-            mSetActiveContextCallCount++;
-        }
 
         virtual void StartFrame(const Dia::Graphics::FrameData&) override
         {
@@ -65,7 +58,6 @@ namespace TestFixtures
         int mStartFrameCallCount;
         int mProcessFrameCallCount;
         int mEndFrameCallCount;
-        int mSetActiveContextCallCount;
         Settings mLastSettings;
     };
 

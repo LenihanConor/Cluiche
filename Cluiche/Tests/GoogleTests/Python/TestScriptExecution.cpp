@@ -31,25 +31,33 @@ static std::string GetTestScriptPath(const char* scriptName)
 // Test fixture for script execution tests
 class DiaPythonScriptExecutionTest : public ::testing::Test
 {
-protected:
-	void SetUp() override
+public:
+	static void SetUpTestSuite()
 	{
-		// Initialize Python for each test
+		// Initialize Python for all tests in this suite
 		bool result = Initialize("External/Python311/", "External/Python/", false);
 		ASSERT_TRUE(result) << "Failed to initialize Python for test";
 	}
 
+	static void TearDownTestSuite()
+	{
+		// Clean up after all tests in this suite
+		if (IsInitialized())
+		{
+			Shutdown();
+		}
+	}
+
+protected:
 	void TearDown() override
 	{
 		// Restore output if redirected
 		RestoreOutput();
 
-		// Cancel all async tasks
-
-		// Clean up after each test
-		if (IsInitialized())
+		// Reinitialize Python if a test shut it down, so subsequent tests start initialized
+		if (!IsInitialized())
 		{
-			Shutdown();
+			Initialize("External/Python311/", "External/Python/", false);
 		}
 	}
 };

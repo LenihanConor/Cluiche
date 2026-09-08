@@ -6,21 +6,24 @@
 
 #ifdef DIA_DEBUG
 
+#include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaGeometry2D/Shapes/Circle.h>
 #include <DiaGeometry2D/Shapes/AARect.h>
 #include <DiaGeometry2D/Shapes/Line.h>
 #include <DiaGeometry2D/Shapes/Ray.h>
 #include <DiaGeometry2D/Shapes/Triangle.h>
 #include <DiaGeometry2D/Shapes/ConvexPolygon.h>
-#include <DiaGraphics/Frame/FrameData.h>
-#include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaVisualDebugger/DebugLayerNames.h>
+#include <DiaGeometry2D/Shapes/Spline.h>
+#include <DiaGeometry2D/Shapes/SplineFactory.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
+#include <DiaCore/DebugDraw/IDebugContext.h>
+#include <DiaCore/DebugDraw/DebugLayerNames.h>
 #include <DiaMaths/Vector/Vector2D.h>
 
 namespace Dia::Geometry2DVisualDebugger
 {
 
-ShapeDrawer::ShapeDrawer(const Dia::Debug::DebugLayerManager& manager)
+ShapeDrawer::ShapeDrawer(const Dia::Core::IDebugContext& manager)
     : mManager(manager)
 {}
 
@@ -115,42 +118,73 @@ void ShapeDrawer::SubmitConvexPoly(const Dia::Geometry2D::ConvexPolygon& shape, 
     mPending.Add(e);
 }
 
+void ShapeDrawer::SubmitSpline(const Dia::Geometry2D::Spline& spline, int segments, Dia::Graphics::RGBA colour)
+{
+    if (spline.GetControlPointCount() < 4) return;
+    if (segments < 1) segments = 1;
+
+    // Each segment needs one Line entry; clamp so we don't overflow the buffer
+    const int available = static_cast<int>(kMaxShapes) - static_cast<int>(mPending.Size());
+    if (segments > available) segments = available;
+    if (segments < 1) return;
+
+    Dia::Maths::Vector2D prev = spline.Evaluate(0.0f);
+    for (int i = 1; i <= segments; ++i)
+    {
+        const float t = static_cast<float>(i) / static_cast<float>(segments);
+        const Dia::Maths::Vector2D curr = spline.Evaluate(t);
+
+        ShapeEntry e;
+        e.type    = ShapeType::Line;
+        e.colour  = colour;
+        e.line.x1 = prev.x;
+        e.line.y1 = prev.y;
+        e.line.x2 = curr.x;
+        e.line.y2 = curr.y;
+        mPending.Add(e);
+        prev = curr;
+
+        if (mPending.IsFull()) break;
+    }
+}
+
 // ---------------------------------------------------------------------------
 
-void ShapeDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void ShapeDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
-    // Clear pending at the start so next frame starts fresh
-    const auto pendingCopy = mPending;
-    mPending.RemoveAll();
+    DIA_TRACE_ZONE("geometry.shapes", ::Dia::Observation::Trace::Category::kDiaGraphics);
+    // Swap out the pending buffer so submissions can continue while we draw
+    Dia::Core::Containers::DynamicArrayC<ShapeEntry, kMaxShapes> pending;
+    pending.Swap(mPending);
 
     if (!IsEnabled()) return;
 
     const float scale = mManager.GetDebugScale();
 
-    for (unsigned int i = 0; i < pendingCopy.Size(); ++i)
+    for (unsigned int i = 0; i < pending.Size(); ++i)
     {
-        const ShapeEntry& e = pendingCopy[i];
+        const ShapeEntry& e = pending[i];
         switch (e.type)
         {
             case ShapeType::Circle:
             {
                 const Dia::Maths::Vector2D center(e.circle.cx, e.circle.cy);
                 // Radius is a world-space extent — drawn as-is; scale does not distort
-                frameData.RequestDraw(center, e.circle.radius, e.colour);
+                draw.RequestDraw(center, e.circle.radius, e.colour);
                 break;
             }
             case ShapeType::AARect:
             {
                 const Dia::Maths::Vector2D min(e.aarect.minX, e.aarect.minY);
                 const Dia::Maths::Vector2D max(e.aarect.maxX, e.aarect.maxY);
-                frameData.RequestDrawRect(min, max, e.colour);
+                draw.RequestDrawRect(min, max, e.colour);
                 break;
             }
             case ShapeType::Line:
             {
                 const Dia::Maths::Vector2D pt1(e.line.x1, e.line.y1);
                 const Dia::Maths::Vector2D pt2(e.line.x2, e.line.y2);
-                frameData.RequestDraw(pt1, pt2, e.colour);
+                draw.RequestDraw(pt1, pt2, e.colour);
                 break;
             }
             case ShapeType::Ray:
@@ -158,7 +192,7 @@ void ShapeDrawer::Draw(Dia::Graphics::FrameData& frameData)
                 const Dia::Maths::Vector2D origin(e.ray.ox, e.ray.oy);
                 const Dia::Maths::Vector2D dir(e.ray.dx, e.ray.dy);
                 // displayLength is a decorative length — multiply by debugScale
-                frameData.RequestDrawRay(origin, dir, e.ray.displayLength * scale, e.colour);
+                draw.RequestDrawRay(origin, dir, e.ray.displayLength * scale, e.colour);
                 break;
             }
             case ShapeType::Triangle:
@@ -166,7 +200,7 @@ void ShapeDrawer::Draw(Dia::Graphics::FrameData& frameData)
                 const Dia::Maths::Vector2D p0(e.triangle.x0, e.triangle.y0);
                 const Dia::Maths::Vector2D p1(e.triangle.x1, e.triangle.y1);
                 const Dia::Maths::Vector2D p2(e.triangle.x2, e.triangle.y2);
-                frameData.RequestDraw(p0, p1, p2, e.colour);
+                draw.RequestDraw(p0, p1, p2, e.colour);
                 break;
             }
             case ShapeType::ConvexPoly:
@@ -176,7 +210,7 @@ void ShapeDrawer::Draw(Dia::Graphics::FrameData& frameData)
                 {
                     const Dia::Maths::Vector2D vi(e.poly.vx[j],         e.poly.vy[j]);
                     const Dia::Maths::Vector2D vj(e.poly.vx[(j+1) % n], e.poly.vy[(j+1) % n]);
-                    frameData.RequestDraw(vi, vj, e.colour);
+                    draw.RequestDraw(vi, vj, e.colour);
                 }
                 break;
             }

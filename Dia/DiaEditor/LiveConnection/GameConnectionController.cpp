@@ -1,4 +1,6 @@
 #include "DiaEditor/LiveConnection/GameConnectionController.h"
+#include "DiaEditor/EditorAPI/EditorActionRegistry.h"
+#include "DiaEditor/EditorAPI/EditorActionDescriptor.h"
 
 #include <DiaDebugProtocol/DiaDebugProtocol.h>
 
@@ -6,7 +8,7 @@
 #include "DiaEditor/MVC/EditorView.h"
 #include "DiaEditor/UI/WebUIBridge.h"
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/Strings/String32.h>
 #include <DiaCore/Strings/String1024.h>
 
@@ -29,6 +31,8 @@ namespace Dia
 		static const Dia::Core::StringCRC kReqConnect("game_connection.connect");
 		static const Dia::Core::StringCRC kReqDisconnect("game_connection.disconnect");
 		static const Dia::Core::StringCRC kReqGetState("game_connection.get_state");
+		static const Dia::Core::StringCRC kReqGetAckRecords("game_connection.get_ack_records");
+		static const Dia::Core::StringCRC kReqSendCommand("game_connection.send_command");
 
 		static const char* kTopicState = "game_connection";
 		static const char* kTopicHeartbeat = "game_connection_heartbeat";
@@ -48,8 +52,9 @@ namespace Dia
 		GameConnectionController::GameConnectionController()
 			: mBridge(nullptr)
 			, mManager(nullptr)
-			, mState(State::kDisconnected)
 			, mEditorView(nullptr)
+			, mEditorContext(nullptr)
+			, mState(State::kDisconnected)
 			, mUseStub(false)
 			, mConnectingPending(false)
 			, mConnectingElapsed(0.0f)
@@ -60,6 +65,8 @@ namespace Dia
 			, mLastPingSentTs(0)
 			, mLastPongReceivedTs(0)
 			, mSinceLastPong(0.0f)
+			, mPendingSubscribeCount(0)
+			, mAckRecordCount(0)
 		{
 			mUrl[0] = '\0';
 			mLastError[0] = '\0';
@@ -76,30 +83,75 @@ namespace Dia
 			Shutdown();
 		}
 
-		void GameConnectionController::Initialize(WebUIBridge* bridge, GameConnectionManager* manager, EditorView* editorView)
+		void GameConnectionController::SetEditorContext(IEditorContext* context)
+		{
+			mEditorContext = context;
+		}
+
+		void GameConnectionController::Initialize(WebUIBridge* bridge, GameConnectionManager* manager,
+		                                          EditorView* editorView, EditorActionRegistry* api)
 		{
 			DIA_LOG_INFO("Editor", "GameConnectionController: Initialize bridge=%p manager=%p", bridge, manager);
 			mBridge = bridge;
 			mManager = manager;
 			mEditorView = editorView;
+			mApi = api;
 
 			if (mManager != nullptr)
 			{
 				mManager->SetConnectionCallback([this](bool connected) { OnManagerConnection(connected); });
 				mManager->SetRawMessageCallback([this](const char* rawText, unsigned int /*rawLength*/, const Json::Value& envelope) { OnManagerRawMessage(rawText, envelope); });
+				mManager->SetSubscribeSentCallback([this](const char* topic) { TrackPendingSubscribe(topic); });
 			}
 
 			RegisterHandlers();
+
+			if (mApi != nullptr)
+			{
+				EditorActionDescriptor connect;
+				connect.name           = kReqConnect;
+				connect.description    = "Initiate a WebSocket connection to a running game instance. Required param: url (string, ws://host:port). Returns { ok: bool } or { ok: false, error: string } if already connected or url is missing.";
+				connect.category       = "game_connection";
+				connect.owner          = "GameConnectionController";
+				connect.dispatchThread = DispatchThread::kMainThread;
+				connect.handler        = [this](const Json::Value& d) { return HandleConnectRequest(d); };
+				mApi->RegisterAction(connect);
+
+				EditorActionDescriptor disconnect;
+				disconnect.name           = kReqDisconnect;
+				disconnect.description    = "Disconnect from the currently connected game instance. No params required. Returns { ok: true }. Logs DIA_LOG_INFO on state transition.";
+				disconnect.category       = "game_connection";
+				disconnect.owner          = "GameConnectionController";
+				disconnect.dispatchThread = DispatchThread::kMainThread;
+				disconnect.handler        = [this](const Json::Value& d) { return HandleDisconnectRequest(d); };
+				mApi->RegisterAction(disconnect);
+
+				EditorActionDescriptor getState;
+				getState.name           = kReqGetState;
+				getState.description    = "Return the current game connection state as a JSON object with fields: connected (bool), state ('disconnected'|'connecting'|'connected'), url (string), lastError (string). Use to check liveness before driving automation.";
+				getState.category       = "game_connection";
+				getState.owner          = "GameConnectionController";
+				getState.dispatchThread = DispatchThread::kMainThread;
+				getState.handler        = [this](const Json::Value& d) { return HandleGetStateRequest(d); };
+				mApi->RegisterAction(getState);
+			}
 		}
 
 		void GameConnectionController::Shutdown()
 		{
 			DIA_LOG_INFO("Editor", "GameConnectionController: Shutdown");
+			if (mApi != nullptr)
+			{
+				mApi->DeregisterActionsForOwner(Dia::Core::StringCRC("GameConnectionController"));
+				mApi = nullptr;
+			}
 			if (mBridge != nullptr)
 			{
 				mBridge->UnregisterRequestHandler(kReqConnect);
 				mBridge->UnregisterRequestHandler(kReqDisconnect);
 				mBridge->UnregisterRequestHandler(kReqGetState);
+				mBridge->UnregisterRequestHandler(kReqGetAckRecords);
+				mBridge->UnregisterRequestHandler(kReqSendCommand);
 				mBridge = nullptr;
 			}
 			mManager = nullptr;
@@ -133,6 +185,7 @@ namespace Dia
 			{
 				mHeartbeatElapsed += deltaTime;
 				mSinceLastPong += deltaTime;
+				CheckSubscribeTimeouts(deltaTime);
 
 				if (mHeartbeatElapsed >= kHeartbeatIntervalSeconds)
 				{
@@ -259,6 +312,18 @@ namespace Dia
 				{
 					return HandleGetStateRequest(data);
 				});
+
+			mBridge->RegisterRequestHandler(kReqGetAckRecords,
+				[this](const Json::Value& data) -> Json::Value
+				{
+					return HandleGetAckRecordsRequest(data);
+				});
+
+			mBridge->RegisterRequestHandler(kReqSendCommand,
+				[this](const Json::Value& data) -> Json::Value
+				{
+					return HandleSendCommandRequest(data);
+				});
 		}
 
 		Json::Value GameConnectionController::HandleConnectRequest(const Json::Value& data)
@@ -314,6 +379,81 @@ namespace Dia
 			DIA_LOG_DEBUG("Editor", "GameConnectionController: HandleGetStateRequest state=%s", kStateToString(mState));
 			Json::Value response;
 			BuildStatePayload(response);
+			return response;
+		}
+
+		Json::Value GameConnectionController::HandleGetAckRecordsRequest(const Json::Value& /*data*/)
+		{
+			Json::Value response;
+			Json::Value records(Json::arrayValue);
+			for (int i = 0; i < mAckRecordCount; ++i)
+			{
+				Json::Value rec;
+				rec["topic"] = mAckRecords[i].topic;
+				rec["latency_ms"] = mAckRecords[i].latencyMs;
+				records.append(rec);
+			}
+			response["records"] = records;
+
+			Json::Value pending(Json::arrayValue);
+			for (int i = 0; i < mPendingSubscribeCount; ++i)
+			{
+				Json::Value p;
+				p["topic"] = mPendingSubscribes[i].topic;
+				p["elapsed_ms"] = mPendingSubscribes[i].elapsedSec * 1000.0f;
+				pending.append(p);
+			}
+			response["pending"] = pending;
+
+			return response;
+		}
+
+		Json::Value GameConnectionController::HandleSendCommandRequest(const Json::Value& data)
+		{
+			Json::Value response;
+
+			if (mState != State::kConnected)
+			{
+				response["ok"] = false;
+				response["error"] = "Not connected";
+				return response;
+			}
+
+			const std::string command = data.get("command", "").asString();
+			if (command.empty())
+			{
+				response["ok"] = false;
+				response["error"] = "command field is required";
+				return response;
+			}
+
+			if (mManager == nullptr)
+			{
+				response["ok"] = false;
+				response["error"] = "Manager not available";
+				return response;
+			}
+
+			const Json::Value& args = data.isMember("args") ? data["args"] : Json::Value(Json::objectValue);
+			const std::string replyTopic = "game_connection.command_response." + command;
+
+			DIA_LOG_INFO("Editor", "GameConnectionController: send_command '%s'", command.c_str());
+
+			WebUIBridge* bridge = mBridge;
+			std::string capturedTopic = replyTopic;
+
+			mManager->SendCommandWithResponse(command.c_str(), args,
+				[bridge, capturedTopic](bool success, const Json::Value& result)
+				{
+					if (bridge == nullptr) return;
+					Json::Value payload;
+					payload["success"] = success;
+					payload["result"] = result;
+					bridge->NotifyUIDataChanged(capturedTopic.c_str(), payload);
+				});
+
+			response["ok"] = true;
+			response["reply_topic"] = replyTopic;
 			return response;
 		}
 
@@ -382,8 +522,51 @@ namespace Dia
 			}
 		}
 
-		void GameConnectionController::OnManagerRawMessage(const char* rawText, const Json::Value& /*envelope*/)
+		void GameConnectionController::OnManagerRawMessage(const char* rawText, const Json::Value& envelope)
 		{
+			// Dispatch observation.metric JSON topic — bridge sends these as plain JSON,
+			// not proto-wrapped. Map gauge values to the core_metrics shape the panel expects.
+			if (envelope.isMember("topic") && envelope["topic"].asString() == "observation.metric")
+			{
+				if (mBridge != nullptr)
+				{
+					const Json::Value& metrics = envelope["metrics"];
+					Json::Value metricsPayload;
+					float fps = 0.0f, frameTimeMs = 0.0f, memoryBytes = 0.0f, uptimeSecs = 0.0f;
+
+					if (metrics.isArray())
+					{
+						for (unsigned int i = 0; i < static_cast<unsigned int>(metrics.size()); ++i)
+						{
+							const Json::Value& m = metrics[i];
+							if (!m.isMember("name") || !m.isMember("value")) continue;
+							const std::string& name = m["name"].asString();
+							float v = static_cast<float>(m["value"].asDouble());
+							if      (name == "dia.fps")           fps         = v;
+							else if (name == "dia.frame_time_ms") frameTimeMs = v;
+							else if (name == "dia.memory_bytes")  memoryBytes = v;
+							else if (name == "dia.uptime_s")      uptimeSecs  = v;
+						}
+					}
+
+					metricsPayload["fps"]              = fps;
+					metricsPayload["frame_time_ms"]    = frameTimeMs;
+					metricsPayload["memory_used_mb"]   = memoryBytes / (1024.0f * 1024.0f);
+					metricsPayload["uptime_seconds"]   = uptimeSecs;
+
+					Json::Value puArray(Json::arrayValue);
+					Json::Value pu;
+					pu["name"] = "MainPU";
+					pu["fps"]  = fps;
+					pu["frame_time_ms"] = frameTimeMs;
+					puArray.append(pu);
+					metricsPayload["processing_units"] = puArray;
+
+					mBridge->NotifyUIDataChanged(kTopicCoreMetrics, metricsPayload);
+				}
+				return;
+			}
+
 			dia::debug::DebugMessage msg;
 			if (!Dia::Proto::FromJson(rawText, &msg))
 			{
@@ -416,6 +599,41 @@ namespace Dia
 					snprintf(logMsg, sizeof(logMsg), "Connected to %s (build %s)",
 						info.name().c_str(), info.build().c_str());
 					PushGameConsoleEntry("info", logMsg);
+
+					// Request .diagame path — live context takes precedence over manual project.
+					if (mEditorContext != nullptr && mManager != nullptr)
+					{
+						IEditorContext* ctx = mEditorContext;
+						DIA_LOG_INFO("Editor", "GameConnectionController: sending get_app_state");
+						mManager->SendCommandWithResponse("get_app_state", Json::Value(Json::objectValue),
+							[ctx](bool success, const Json::Value& result)
+							{
+								if (!success)
+								{
+									DIA_LOG_WARNING("Editor", "GameConnectionController: get_app_state command failed");
+									return;
+								}
+								if (!result.isMember("diagame_path") || !result["diagame_path"].isString())
+								{
+									DIA_LOG_WARNING("Editor", "GameConnectionController: get_app_state missing diagame_path");
+									return;
+								}
+								const char* path = result["diagame_path"].asCString();
+								DIA_LOG_INFO("Editor", "GameConnectionController: diagame_path='%s'", path ? path : "<null>");
+								if (path == nullptr || path[0] == '\0')
+								{
+									DIA_LOG_WARNING("Editor", "GameConnectionController: diagame_path empty, project will not load");
+									return;
+								}
+								ctx->LoadDiagameProject(path);
+							}
+						);
+					}
+					else
+					{
+						DIA_LOG_WARNING("Editor", "GameConnectionController: handshake complete but editorContext=%s manager=%s",
+							mEditorContext ? "ok" : "null", mManager ? "ok" : "null");
+					}
 				}
 				break;
 			}
@@ -445,31 +663,13 @@ namespace Dia
 				}
 				break;
 			}
-			case dia::debug::DebugMessage::kCoreMetrics:
+			case dia::debug::DebugMessage::kSubscribeAck:
 			{
-				if (mBridge != nullptr)
-				{
-					Json::Value metricsPayload;
-					const auto& cm = msg.core_metrics();
-					metricsPayload["fps"] = cm.fps();
-					metricsPayload["frame_time_ms"] = cm.frame_time_ms();
-					metricsPayload["memory_used_mb"] = cm.memory_used_mb();
-					metricsPayload["memory_available_mb"] = cm.memory_available_mb();
-					metricsPayload["uptime_seconds"] = cm.uptime_seconds();
-
-					Json::Value puArray(Json::arrayValue);
-					for (int i = 0; i < cm.processing_units_size(); ++i)
-					{
-						Json::Value pu;
-						pu["name"] = cm.processing_units(i).name();
-						pu["fps"] = cm.processing_units(i).fps();
-						pu["frame_time_ms"] = cm.processing_units(i).frame_time_ms();
-						puArray.append(pu);
-					}
-					metricsPayload["processing_units"] = puArray;
-
-					mBridge->NotifyUIDataChanged(kTopicCoreMetrics, metricsPayload);
-				}
+				const auto& ackMsg = msg.subscribe_ack();
+				DIA_LOG_INFO("Editor",
+					"GameConnectionController: Subscribe ACK for topic '%s' success=%d msg='%s'",
+					ackMsg.data_type().c_str(), ackMsg.success() ? 1 : 0, ackMsg.message().c_str());
+				ClearPendingSubscribe(ackMsg.data_type().c_str());
 				break;
 			}
 			default:
@@ -528,9 +728,15 @@ namespace Dia
 			mConnectingPending = false;
 			mConnectingElapsed = 0.0f;
 			mHeartbeatElapsed = 0.0f;
+			mPendingSubscribeCount = 0;
+			mAckRecordCount = 0;
 
 			if (!mUseStub && mManager != nullptr)
 				mManager->Disconnect();
+
+			// Clear game-project context — live state is no longer valid.
+			if (mEditorContext != nullptr)
+				mEditorContext->ClearDiagameProject();
 
 			if (reason != nullptr && reason[0] != '\0' &&
 				strcmp(reason, "user requested") != 0)
@@ -625,6 +831,69 @@ namespace Dia
 				return;
 			}
 			strncpy_s(mUrl, kMaxUrlLength, url, _TRUNCATE);
+		}
+
+		void GameConnectionController::TrackPendingSubscribe(const char* topic)
+		{
+			if (mPendingSubscribeCount >= kMaxPendingSubscribes) return;
+			PendingSubscribe& ps = mPendingSubscribes[mPendingSubscribeCount++];
+			strncpy_s(ps.topic, sizeof(ps.topic), topic, _TRUNCATE);
+			ps.elapsedSec = 0.0f;
+		}
+
+		void GameConnectionController::ClearPendingSubscribe(const char* topic)
+		{
+			for (int i = 0; i < mPendingSubscribeCount; ++i)
+			{
+				if (strncmp(mPendingSubscribes[i].topic, topic, sizeof(mPendingSubscribes[i].topic)) == 0)
+				{
+					// Record ACK latency
+					if (mAckRecordCount < kMaxAckRecords)
+					{
+						SubscribeAckRecord& rec = mAckRecords[mAckRecordCount++];
+						strncpy_s(rec.topic, sizeof(rec.topic), topic, _TRUNCATE);
+						rec.latencyMs = mPendingSubscribes[i].elapsedSec * 1000.0f;
+					}
+
+					// Swap with last and shrink
+					mPendingSubscribes[i] = mPendingSubscribes[--mPendingSubscribeCount];
+					return;
+				}
+			}
+		}
+
+		void GameConnectionController::CheckSubscribeTimeouts(float deltaTime)
+		{
+			for (int i = 0; i < mPendingSubscribeCount; )
+			{
+				mPendingSubscribes[i].elapsedSec += deltaTime;
+				if (mPendingSubscribes[i].elapsedSec >= kSubscribeAckTimeoutSeconds)
+				{
+					DIA_LOG_ERROR("Editor",
+						"GameConnectionController: Subscribe ACK timeout for topic '%s' (%.1fs)",
+						mPendingSubscribes[i].topic, mPendingSubscribes[i].elapsedSec);
+
+					// Fire toast via bridge
+					if (mBridge != nullptr)
+					{
+						Json::Value notification;
+						notification["level"]   = "error";
+						notification["title"]   = "Subscribe timeout";
+						char msg[128];
+						snprintf(msg, sizeof(msg), "No ACK for %s (3s)", mPendingSubscribes[i].topic);
+						notification["message"] = msg;
+						mBridge->NotifyUIDataChanged("editor.notification", notification);
+					}
+
+					// Remove by swap
+					mPendingSubscribes[i] = mPendingSubscribes[--mPendingSubscribeCount];
+					// Don't increment i — recheck the swapped-in entry
+				}
+				else
+				{
+					++i;
+				}
+			}
 		}
 	}
 }

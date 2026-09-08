@@ -9,7 +9,10 @@
 #include "DiaGeometry2D/Shapes/Circle.h"
 #include "DiaGeometry2D/Shapes/Line.h"
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Metric/Counter.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaCore/CRC/StringCRC.h>
 
 #include <cmath>
 
@@ -27,6 +30,11 @@ SoftBodyWorld::SoftBodyWorld(const WorldDef& def)
     , mStaticCircles(8)
     , mStaticLines(8)
 {
+    // DiaSimTime (finding 18) — shares the same metric key as ProcessingUnit's
+    // sim-accumulator backlog counter; MetricRegistry::RegisterCounter is
+    // idempotent by name, so increments from both sources aggregate together.
+    mMetricDroppedTicks = Dia::Observation::Metric::MetricRegistry::Instance()
+                              .RegisterCounter(Dia::Core::StringCRC("simtime.accumulator.dropped_ticks"));
 }
 
 SoftBodyWorld::~SoftBodyWorld()
@@ -133,6 +141,8 @@ void SoftBodyWorld::Update(float deltaTime)
             "SoftBodyWorld: maxSubSteps (%d) reached — simulation time lost. deltaTime=%.4f",
             mDef.maxSubSteps, deltaTime);
 #endif
+        if (mMetricDroppedTicks)
+            mMetricDroppedTicks->Inc();
     }
 }
 

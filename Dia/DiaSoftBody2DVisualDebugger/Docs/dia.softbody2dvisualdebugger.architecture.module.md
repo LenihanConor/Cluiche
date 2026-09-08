@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.softbody2dvisualdebugger
 name: DiaSoftBody2DVisualDebugger
 owner_team: TBD
-layer: platform
+layer: domain/physics/tools
 status: active
 maturity: dev
 
@@ -34,7 +34,6 @@ dependent_modules:
   - dia.maths
   - dia.geometry2d
   - dia.rigidbody2d
-  - dia.graphics
   - dia.softbody2d
   - dia.diavisualdebugger
 
@@ -58,7 +57,6 @@ dependencies:
     - dia.maths
     - dia.geometry2d
     - dia.rigidbody2d
-    - dia.graphics
     - dia.softbody2d
     - dia.diavisualdebugger
   forbidden: []

@@ -126,7 +126,7 @@ This document defines test coverage goals by subsystem to ensure adequate valida
 
 ---
 
-### DiaApplication (Priority: P0)
+### DiaApplicationFlow (Priority: P0)
 
 **Target:** 60%+ line coverage
 
@@ -371,7 +371,7 @@ add_custom_target(coverage
 
 **Missing Tests:**
 1. DiaCore/Graph container (no tests)
-2. DiaApplication/StateObject (no tests)
+2. DiaApplicationFlow/StateObject (no tests)
 3. DiaInput/InputSourceManager (no tests)
 4. Cluiche modules (minimal tests)
 
@@ -398,7 +398,7 @@ add_custom_target(coverage
 **Inadequate Coverage:**
 1. DiaCore/TypeDefinition serialization
 2. DiaMaths/Transform hierarchy
-3. DiaApplication/ProcessingUnit error handling
+3. DiaApplicationFlow/ProcessingUnit error handling
 
 ---
 
@@ -437,13 +437,13 @@ add_custom_target(coverage
 
 1. DiaCore containers (DynamicArray, HashTable, LinkList)
 2. DiaCore type system (StringCRC, TypeRegistry)
-3. DiaApplication framework (Module, Phase, ProcessingUnit)
+3. DiaApplicationFlow framework (Module, Phase, ProcessingUnit)
 4. FrameStream thread safety
 5. DiaMaths vectors and matrices
 
 **Deliverables:**
 - 70%+ line coverage on DiaCore containers
-- 70%+ line coverage on DiaApplication
+- 70%+ line coverage on DiaApplicationFlow
 - 70%+ line coverage on DiaMaths vectors/matrices
 
 ---
@@ -551,7 +551,7 @@ fi
 
 **Priority Areas:**
 1. DiaCore containers (DynamicArray, HashTable)
-2. DiaApplication framework (Module, Phase, ProcessingUnit, FrameStream)
+2. DiaApplicationFlow framework (Module, Phase, ProcessingUnit, FrameStream)
 3. DiaMaths (Vector2D/3D, Matrix33/44)
 4. Cluiche ProcessingUnits (Main, Render, Sim)
 

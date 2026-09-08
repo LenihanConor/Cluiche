@@ -10,17 +10,18 @@
 #include "DiaSoftBody2D/Rope.h"
 #include "DiaRigidBody2D/Bodies/Body2DBase.h"
 #include "DiaGeometry2D/Transform/Transform.h"
-#include "DiaGraphics/Frame/FrameData.h"
-#include "DiaVisualDebugger/DebugLayerManager.h"
-#include "DiaVisualDebugger/DebugColourPalette.h"
-#include "DiaVisualDebugger/DebugLayerNames.h"
+#include "DiaCore/DebugDraw/IDebugDraw.h"
+#include "DiaCore/DebugDraw/IDebugContext.h"
+#include "DiaCore/DebugDraw/DebugColourPalette.h"
+#include "DiaCore/DebugDraw/DebugLayerNames.h"
 #include "DiaCore/Core/Assert.h"
+#include <DiaObservation/Trace/DiaTrace.h>
 
 namespace Dia::SoftBody2D
 {
 
-SoftAnchorLinksDrawer::SoftAnchorLinksDrawer(const SoftBodyWorld&                world,
-                                             const Dia::Debug::DebugLayerManager& manager)
+SoftAnchorLinksDrawer::SoftAnchorLinksDrawer(const SoftBodyWorld&            world,
+                                             const Dia::Core::IDebugContext& manager)
     : mWorld(world)
     , mManager(manager)
 {}
@@ -30,8 +31,9 @@ Dia::Core::StringCRC SoftAnchorLinksDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kSoftAnchors;
 }
 
-void SoftAnchorLinksDrawer::Draw(Dia::Graphics::FrameData& frameData)
+void SoftAnchorLinksDrawer::Draw(Dia::Core::IDebugDraw& draw)
 {
+    DIA_TRACE_ZONE("soft.anchors", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const auto& bodies = mWorld.GetBodies();
 
     for (unsigned int b = 0; b < bodies.Size(); ++b)
@@ -53,7 +55,7 @@ void SoftAnchorLinksDrawer::Draw(Dia::Graphics::FrameData& frameData)
             {
                 const Dia::Maths::Vector2D& particlePos  = rope->GetParticle(0).position;
                 const Dia::Maths::Vector2D  anchorWorldPos = t->GetWorldPosition();
-                frameData.RequestDraw(particlePos, anchorWorldPos,
+                draw.RequestDraw(particlePos, anchorWorldPos,
                                       Dia::Debug::DebugColourPalette::kWarning);
             }
         }
@@ -66,7 +68,7 @@ void SoftAnchorLinksDrawer::Draw(Dia::Graphics::FrameData& frameData)
             {
                 const Dia::Maths::Vector2D& particlePos  = rope->GetParticle(count - 1).position;
                 const Dia::Maths::Vector2D  anchorWorldPos = t->GetWorldPosition();
-                frameData.RequestDraw(particlePos, anchorWorldPos,
+                draw.RequestDraw(particlePos, anchorWorldPos,
                                       Dia::Debug::DebugColourPalette::kWarning);
             }
         }

@@ -12,13 +12,27 @@
 namespace Dia { namespace Geometry2D {
 
 //------------------------------------------------------------------------------
-// Static neighbour direction tables (pointy-top axial)
+// Static direction tables — pointy-top, odd-row-right stagger
+//
+// Neighbours in reading order (E, NE, NW, W, SW, SE).
+// Even rows (r % 2 == 0):  odd rows shift one column right, so NE/SE point
+// at q+0 whereas on odd rows they point at q+1.
 //------------------------------------------------------------------------------
 template<typename T, unsigned int MaxObjects>
-const int HexGrid<T, MaxObjects>::kNeighbourDQ[6] = { 1,  1,  0, -1, -1,  0 };
+const int HexGrid<T, MaxObjects>::kEvenDQ[6] = {  1,  0, -1, -1, -1,  0 };
+template<typename T, unsigned int MaxObjects>
+const int HexGrid<T, MaxObjects>::kEvenDR[6] = {  0,  1,  1,  0, -1, -1 };
 
 template<typename T, unsigned int MaxObjects>
-const int HexGrid<T, MaxObjects>::kNeighbourDR[6] = { 0, -1, -1,  0,  1,  1 };
+const int HexGrid<T, MaxObjects>::kOddDQ[6]  = {  1,  1,  0, -1,  0,  1 };
+template<typename T, unsigned int MaxObjects>
+const int HexGrid<T, MaxObjects>::kOddDR[6]  = {  0,  1,  1,  0, -1, -1 };
+
+// Cube-coord directions (used by HexDistance / GetRing which work in cube space)
+template<typename T, unsigned int MaxObjects>
+const int HexGrid<T, MaxObjects>::kCubeDQ[6] = {  1,  1,  0, -1, -1,  0 };
+template<typename T, unsigned int MaxObjects>
+const int HexGrid<T, MaxObjects>::kCubeDR[6] = {  0, -1, -1,  0,  1,  1 };
 
 //------------------------------------------------------------------------------
 // Constructor
@@ -27,68 +41,21 @@ template<typename T, unsigned int MaxObjects>
 HexGrid<T, MaxObjects>::HexGrid(const Def& def)
     : mFreeCount(0)
     , mOccupiedCount(0)
-    , mMinQ(0)
-    , mMinR(0)
-    , mColCount(0)
-    , mRowCount(0)
+    , mColCount(def.colCount)
+    , mRowCount(def.rowCount)
     , mHexRadius(def.hexRadius)
     , mHexWidth(0.0f)
     , mHexHeight(0.0f)
-    , mWorldBounds(def.worldBounds)
+    , mOrigin(def.origin)
 {
     DIA_ASSERT(def.hexRadius > 0.0f, "HexGrid: hexRadius must be > 0");
+    DIA_ASSERT(def.colCount  > 0,    "HexGrid: colCount must be > 0");
+    DIA_ASSERT(def.rowCount  > 0,    "HexGrid: rowCount must be > 0");
+    DIA_ASSERT(def.colCount * def.rowCount <= kMaxCells,
+        "HexGrid: colCount * rowCount exceeds kMaxCells — reduce grid size");
 
-    // Pointy-top geometry
     mHexWidth  = 1.7320508075688772f * def.hexRadius; // sqrt(3) * R
     mHexHeight = 2.0f * def.hexRadius;
-
-    // Helper: raw axial coord from a local (lx, ly) offset from bottom-left
-    auto rawAxial = [&](float lx, float ly, int& q, int& r)
-    {
-        const float fq = (lx * 1.7320508075688772f / 3.0f - ly / 3.0f) / def.hexRadius;
-        const float fr = ly * 2.0f / (3.0f * def.hexRadius);
-        float fs = -fq - fr;
-        int qi = static_cast<int>(std::round(fq));
-        int ri = static_cast<int>(std::round(fr));
-        int si = static_cast<int>(std::round(fs));
-        const float dq = std::abs(static_cast<float>(qi) - fq);
-        const float dr = std::abs(static_cast<float>(ri) - fr);
-        const float ds = std::abs(static_cast<float>(si) - fs);
-        if (dq > dr && dq > ds)     qi = -ri - si;
-        else if (dr > ds)           ri = -qi - si;
-        q = qi; r = ri;
-    };
-
-    const float blX = def.worldBounds.GetBottomLeft().x;
-    const float blY = def.worldBounds.GetBottomLeft().y;
-    const float trX = def.worldBounds.GetTopRight().x;
-    const float trY = def.worldBounds.GetTopRight().y;
-
-    // Sample all four corners to find the true axial extent
-    int q0, r0, q1, r1, q2, r2, q3, r3;
-    rawAxial(0.0f,           0.0f,           q0, r0); // bottom-left
-    rawAxial(trX - blX,      0.0f,           q1, r1); // bottom-right
-    rawAxial(0.0f,           trY - blY,      q2, r2); // top-left
-    rawAxial(trX - blX,      trY - blY,      q3, r3); // top-right
-
-    const int minQ = q0 < q1 ? (q0 < q2 ? (q0 < q3 ? q0 : q3) : (q2 < q3 ? q2 : q3))
-                              : (q1 < q2 ? (q1 < q3 ? q1 : q3) : (q2 < q3 ? q2 : q3));
-    const int maxQ = q0 > q1 ? (q0 > q2 ? (q0 > q3 ? q0 : q3) : (q2 > q3 ? q2 : q3))
-                              : (q1 > q2 ? (q1 > q3 ? q1 : q3) : (q2 > q3 ? q2 : q3));
-    const int minR = r0 < r1 ? (r0 < r2 ? (r0 < r3 ? r0 : r3) : (r2 < r3 ? r2 : r3))
-                              : (r1 < r2 ? (r1 < r3 ? r1 : r3) : (r2 < r3 ? r2 : r3));
-    const int maxR = r0 > r1 ? (r0 > r2 ? (r0 > r3 ? r0 : r3) : (r2 > r3 ? r2 : r3))
-                              : (r1 > r2 ? (r1 > r3 ? r1 : r3) : (r2 > r3 ? r2 : r3));
-
-    mMinQ     = minQ - 1; // one-cell margin so boundary hexes are valid
-    mMinR     = minR - 1;
-    mColCount = maxQ - minQ + 3;
-    mRowCount = maxR - minR + 3;
-    if (mColCount < 1) mColCount = 1;
-    if (mRowCount < 1) mRowCount = 1;
-
-    DIA_ASSERT(mColCount * mRowCount <= kMaxCells,
-        "HexGrid: Too many cells — reduce world size or increase hex radius");
 
     // Initialise free list (all slots free)
     mFreeCount = static_cast<int>(MaxObjects);
@@ -306,20 +273,9 @@ void HexGrid<T, MaxObjects>::QueryRay(
     const Dia::Maths::Vector2D& origin = ray.GetOrigin();
     const Dia::Maths::Vector2D& dir    = ray.GetDirection();
 
-    // Starting hex — clamp to valid grid
+    // Starting hex — WorldToHexClamped always returns a valid cell now
     HexCoord current;
-    if (!WorldToHexClamped(origin, current))
-    {
-        // Clamp the origin into the world bounds and retry
-        const float blX = mWorldBounds.GetBottomLeft().x;
-        const float blY = mWorldBounds.GetBottomLeft().y;
-        const float trX = mWorldBounds.GetTopRight().x;
-        const float trY = mWorldBounds.GetTopRight().y;
-        Dia::Maths::Vector2D clamped(
-            origin.x < blX ? blX : (origin.x > trX ? trX : origin.x),
-            origin.y < blY ? blY : (origin.y > trY ? trY : origin.y));
-        if (!WorldToHexClamped(clamped, current)) return;
-    }
+    WorldToHexClamped(origin, current);
 
     bool visited[MaxObjects];
     memset(visited, 0, sizeof(visited));
@@ -359,27 +315,27 @@ void HexGrid<T, MaxObjects>::QueryRay(
             currentCenter.x + dir.x * mHexWidth,
             currentCenter.y + dir.y * mHexHeight);
 
-        // Find the neighbour closest to the target
+        // Find the neighbour closest to the target (use parity-correct tables)
+        const int* dq = ((current.r & 1) != 0) ? kOddDQ : kEvenDQ;
+        const int* dr = ((current.r & 1) != 0) ? kOddDR : kEvenDR;
         int bestNeighbour = 0;
         float bestDist2 = 1e30f;
         for (int n = 0; n < 6; ++n)
         {
-            const HexCoord neighbour = { current.q + kNeighbourDQ[n],
-                                         current.r + kNeighbourDR[n] };
+            const HexCoord neighbour = { current.q + dq[n], current.r + dr[n] };
             if (!IsValidHex(neighbour)) continue;
             const Dia::Maths::Vector2D nc = HexToWorld(neighbour);
-            const float dx = nc.x - target.x;
-            const float dy = nc.y - target.y;
-            const float d2 = dx * dx + dy * dy;
+            const float ndx = nc.x - target.x;
+            const float ndy = nc.y - target.y;
+            const float d2 = ndx * ndx + ndy * ndy;
             if (d2 < bestDist2)
             {
-                bestDist2    = d2;
+                bestDist2     = d2;
                 bestNeighbour = n;
             }
         }
 
-        current = { current.q + kNeighbourDQ[bestNeighbour],
-                    current.r + kNeighbourDR[bestNeighbour] };
+        current = { current.q + dq[bestNeighbour], current.r + dr[bestNeighbour] };
 
         // Stop if we've moved off the grid
         if (!IsValidHex(current)) break;
@@ -406,11 +362,11 @@ void HexGrid<T, MaxObjects>::QueryKNearest(
     struct Candidate
     {
         Dia::Core::Handle<T> handle;
-        float                sqDist;
+        float                sqDist = 0.0f;
     };
 
     static constexpr int kMaxCandidates = kMaxQueryResults;
-    Candidate candidates[kMaxCandidates];
+    Candidate candidates[kMaxCandidates] = {};
     int       candidateCount = 0;
 
     // Expanding ring search outward from the hex containing the point
@@ -450,17 +406,21 @@ void HexGrid<T, MaxObjects>::QueryKNearest(
         }
         else
         {
-            // Walk around the ring using the 6 axial directions
-            // Ring traversal: start at direction 4 offset, then walk 6 sides
-            HexCoord hex = { center.q + kNeighbourDQ[4] * ringR,
-                             center.r + kNeighbourDR[4] * ringR };
+            // Walk around the ring in cube space, convert each to offset for lookup
+            CubeCoord centerCube = OffsetToCube(center);
+            CubeCoord hex = { centerCube.q + kCubeDQ[4] * ringR,
+                              centerCube.r + kCubeDR[4] * ringR,
+                              0 };
+            hex.s = -hex.q - hex.r;
+
             for (int side = 0; side < 6; ++side)
             {
                 for (int step = 0; step < ringR; ++step)
                 {
-                    if (IsValidHex(hex))
+                    const HexCoord off = CubeToOffset(hex);
+                    if (IsValidHex(off))
                     {
-                        const int cellIdx = HexToIndex(hex);
+                        const int cellIdx = HexToIndex(off);
                         const auto& cell  = mCells[cellIdx];
                         for (unsigned int ki = 0; ki < cell.Size() && candidateCount < kMaxCandidates; ++ki)
                         {
@@ -475,7 +435,9 @@ void HexGrid<T, MaxObjects>::QueryKNearest(
                             candidates[candidateCount++] = { Dia::Core::Handle<T>(slotIdx, slot.generation), dx*dx + dy*dy };
                         }
                     }
-                    hex = { hex.q + kNeighbourDQ[side], hex.r + kNeighbourDR[side] };
+                    hex.q += kCubeDQ[side];
+                    hex.r += kCubeDR[side];
+                    hex.s  = -hex.q - hex.r;
                 }
             }
         }
@@ -521,28 +483,21 @@ const T* HexGrid<T, MaxObjects>::Resolve(Dia::Core::Handle<T> handle) const
 template<typename T, unsigned int MaxObjects>
 HexCoord HexGrid<T, MaxObjects>::WorldToHex(const Dia::Maths::Vector2D& worldPos) const
 {
-    // Pointy-top axial conversion
-    const float blX = mWorldBounds.GetBottomLeft().x;
-    const float blY = mWorldBounds.GetBottomLeft().y;
-    const float lx  = worldPos.x - blX;
-    const float ly  = worldPos.y - blY;
+    // Pointy-top, odd-row-right offset coordinates.
+    // HexToWorld places row r's center at: origin.y + r * hexHeight * 0.75 + hexRadius
+    // So invert that: subtract the hexRadius offset before computing the fractional row.
+    const float ly = worldPos.y - mOrigin.y - mHexRadius;
 
-    // Fractional axial coordinates
-    const float fq = (lx * 1.7320508075688772f / 3.0f - ly / 3.0f) / mHexRadius;
-    const float fr = ly * 2.0f / (3.0f * mHexRadius);
+    // Fractional row: each row is separated by mHexHeight * 0.75
+    const float fr = ly / (mHexHeight * 0.75f);
+    const int   r  = static_cast<int>(std::floor(fr + 0.5f));
 
-    // Cube rounding
-    float fs = -fq - fr;
-    int q = static_cast<int>(std::round(fq));
-    int r = static_cast<int>(std::round(fr));
-    int s = static_cast<int>(std::round(fs));
-
-    const float dq = std::abs(static_cast<float>(q) - fq);
-    const float dr = std::abs(static_cast<float>(r) - fr);
-    const float ds = std::abs(static_cast<float>(s) - fs);
-
-    if (dq > dr && dq > ds)      q = -r - s;
-    else if (dr > ds)            r = -q - s;
+    // Column offset: odd rows shift centers right by hexWidth/2.
+    // HexToWorld centers each column with an additional hexWidth*0.5 offset,
+    // so subtract that too before computing the fractional column.
+    const float rowShift = ((r & 1) != 0) ? (mHexWidth * 0.5f) : 0.0f;
+    const float lx = worldPos.x - mOrigin.x - rowShift - mHexWidth * 0.5f;
+    const int   q  = static_cast<int>(std::floor(lx / mHexWidth + 0.5f));
 
     return { q, r };
 }
@@ -550,22 +505,18 @@ HexCoord HexGrid<T, MaxObjects>::WorldToHex(const Dia::Maths::Vector2D& worldPos
 template<typename T, unsigned int MaxObjects>
 Dia::Maths::Vector2D HexGrid<T, MaxObjects>::HexToWorld(HexCoord hex) const
 {
-    // Standard axial-to-Cartesian: raw (q,r)=(0,0) maps to the world bottom-left.
-    const float blX = mWorldBounds.GetBottomLeft().x;
-    const float blY = mWorldBounds.GetBottomLeft().y;
-
-    const float x = blX + mHexRadius * (1.7320508075688772f * static_cast<float>(hex.q)
-                                       + 1.7320508075688772f / 2.0f * static_cast<float>(hex.r));
-    const float y = blY + mHexRadius * (1.5f * static_cast<float>(hex.r));
+    // Center of cell (col, row) in world space.
+    // Odd rows are offset right by hexWidth/2 (stagger).
+    const float rowShift = ((hex.r & 1) != 0) ? (mHexWidth * 0.5f) : 0.0f;
+    const float x = mOrigin.x + static_cast<float>(hex.q) * mHexWidth + rowShift + mHexWidth * 0.5f;
+    const float y = mOrigin.y + static_cast<float>(hex.r) * mHexHeight * 0.75f + mHexRadius;
     return Dia::Maths::Vector2D(x, y);
 }
 
 template<typename T, unsigned int MaxObjects>
 bool HexGrid<T, MaxObjects>::IsValidHex(HexCoord hex) const
 {
-    const int lq = hex.q - mMinQ;
-    const int lr = hex.r - mMinR;
-    return lq >= 0 && lq < mColCount && lr >= 0 && lr < mRowCount;
+    return hex.q >= 0 && hex.q < mColCount && hex.r >= 0 && hex.r < mRowCount;
 }
 
 template<typename T, unsigned int MaxObjects>
@@ -574,23 +525,42 @@ void HexGrid<T, MaxObjects>::GetNeighbours(
     Dia::Core::Containers::DynamicArrayC<HexCoord, 6>& out) const
 {
     out.RemoveAll();
+    const int* dq = ((hex.r & 1) != 0) ? kOddDQ : kEvenDQ;
+    const int* dr = ((hex.r & 1) != 0) ? kOddDR : kEvenDR;
     for (int n = 0; n < 6; ++n)
     {
-        const HexCoord neighbour = { hex.q + kNeighbourDQ[n], hex.r + kNeighbourDR[n] };
+        const HexCoord neighbour = { hex.q + dq[n], hex.r + dr[n] };
         if (IsValidHex(neighbour))
             out.Add(neighbour);
     }
 }
 
+// Convert odd-row-right offset coord → cube coord
+template<typename T, unsigned int MaxObjects>
+typename HexGrid<T, MaxObjects>::CubeCoord
+HexGrid<T, MaxObjects>::OffsetToCube(HexCoord hex)
+{
+    const int q = hex.q - (hex.r - (hex.r & 1)) / 2;
+    const int r = hex.r;
+    return { q, r, -q - r };
+}
+
+// Convert cube coord → odd-row-right offset coord
+template<typename T, unsigned int MaxObjects>
+HexCoord HexGrid<T, MaxObjects>::CubeToOffset(CubeCoord cube)
+{
+    const int col = cube.q + (cube.r - (cube.r & 1)) / 2;
+    return { col, cube.r };
+}
+
 template<typename T, unsigned int MaxObjects>
 int HexGrid<T, MaxObjects>::HexDistance(HexCoord a, HexCoord b) const
 {
-    const int dq = a.q - b.q;
-    const int dr = a.r - b.r;
-    const int ds = (-a.q - a.r) - (-b.q - b.r);
-    const int aq = dq < 0 ? -dq : dq;
-    const int ar = dr < 0 ? -dr : dr;
-    const int as_ = ds < 0 ? -ds : ds;
+    const CubeCoord ca = OffsetToCube(a);
+    const CubeCoord cb = OffsetToCube(b);
+    const int dq = ca.q - cb.q; const int aq = dq < 0 ? -dq : dq;
+    const int dr = ca.r - cb.r; const int ar = dr < 0 ? -dr : dr;
+    const int ds = ca.s - cb.s; const int as_ = ds < 0 ? -ds : ds;
     return (aq + ar + as_) / 2;
 }
 
@@ -608,16 +578,23 @@ void HexGrid<T, MaxObjects>::GetRing(
         return;
     }
 
-    HexCoord hex = { center.q + kNeighbourDQ[4] * radius,
-                     center.r + kNeighbourDR[4] * radius };
+    // Work in cube space for correct ring traversal, then convert back to offset.
+    CubeCoord cube = OffsetToCube(center);
+    CubeCoord hex  = { cube.q + kCubeDQ[4] * radius,
+                       cube.r + kCubeDR[4] * radius,
+                       0 };
+    hex.s = -hex.q - hex.r;
 
     for (int side = 0; side < 6 && !out.IsFull(); ++side)
     {
         for (int step = 0; step < radius && !out.IsFull(); ++step)
         {
-            if (IsValidHex(hex))
-                out.Add(hex);
-            hex = { hex.q + kNeighbourDQ[side], hex.r + kNeighbourDR[side] };
+            const HexCoord off = CubeToOffset(hex);
+            if (IsValidHex(off))
+                out.Add(off);
+            hex.q += kCubeDQ[side];
+            hex.r += kCubeDR[side];
+            hex.s  = -hex.q - hex.r;
         }
     }
 }
@@ -660,7 +637,7 @@ int HexGrid<T, MaxObjects>::GetObjectCount() const
 template<typename T, unsigned int MaxObjects>
 int HexGrid<T, MaxObjects>::HexToIndex(HexCoord hex) const
 {
-    return (hex.q - mMinQ) * mRowCount + (hex.r - mMinR);
+    return hex.q * mRowCount + hex.r;
 }
 
 template<typename T, unsigned int MaxObjects>
@@ -668,8 +645,12 @@ bool HexGrid<T, MaxObjects>::WorldToHexClamped(
     const Dia::Maths::Vector2D& pos, HexCoord& out) const
 {
     out = WorldToHex(pos);
-    if (!IsValidHex(out)) return false;
-    return true;
+    // Clamp into valid range so callers get the nearest cell even for out-of-bounds pos
+    if (out.q < 0)          out.q = 0;
+    if (out.r < 0)          out.r = 0;
+    if (out.q >= mColCount) out.q = mColCount - 1;
+    if (out.r >= mRowCount) out.r = mRowCount - 1;
+    return IsValidHex(out);
 }
 
 template<typename T, unsigned int MaxObjects>
@@ -677,27 +658,36 @@ void HexGrid<T, MaxObjects>::GetHexRange(
     const AARect& bounds,
     int& minQ, int& minR, int& maxQ, int& maxR) const
 {
-    const HexCoord bl = WorldToHex(bounds.GetBottomLeft());
-    const HexCoord tr = WorldToHex(bounds.GetTopRight());
-    const HexCoord br = WorldToHex(Dia::Maths::Vector2D(bounds.GetTopRight().x,  bounds.GetBottomLeft().y));
-    const HexCoord tl = WorldToHex(Dia::Maths::Vector2D(bounds.GetBottomLeft().x, bounds.GetTopRight().y));
+    // Sample all four corners plus mid-points on left/right edges to handle
+    // the stagger case where an odd row protrudes beyond the corner samples.
+    const Dia::Maths::Vector2D bl = bounds.GetBottomLeft();
+    const Dia::Maths::Vector2D tr = bounds.GetTopRight();
+    const Dia::Maths::Vector2D midY(bl.x, (bl.y + tr.y) * 0.5f);
+    const Dia::Maths::Vector2D midYR(tr.x, (bl.y + tr.y) * 0.5f);
 
-    minQ = bl.q;
-    maxQ = bl.q;
-    minR = bl.r;
-    maxR = bl.r;
+    const HexCoord c0 = WorldToHex(bl);
+    const HexCoord c1 = WorldToHex(tr);
+    const HexCoord c2 = WorldToHex(Dia::Maths::Vector2D(tr.x, bl.y));
+    const HexCoord c3 = WorldToHex(Dia::Maths::Vector2D(bl.x, tr.y));
+    const HexCoord c4 = WorldToHex(midY);
+    const HexCoord c5 = WorldToHex(midYR);
 
-    auto expandQ = [&](int q) { if (q < minQ) minQ = q; if (q > maxQ) maxQ = q; };
-    auto expandR = [&](int r) { if (r < minR) minR = r; if (r > maxR) maxR = r; };
-    expandQ(tr.q); expandR(tr.r);
-    expandQ(br.q); expandR(br.r);
-    expandQ(tl.q); expandR(tl.r);
+    minQ = c0.q; maxQ = c0.q;
+    minR = c0.r; maxR = c0.r;
 
-    // Clamp to valid grid
-    if (minQ < mMinQ)             minQ = mMinQ;
-    if (minR < mMinR)             minR = mMinR;
-    if (maxQ >= mMinQ + mColCount) maxQ = mMinQ + mColCount - 1;
-    if (maxR >= mMinR + mRowCount) maxR = mMinR + mRowCount - 1;
+    auto expand = [&](const HexCoord& c)
+    {
+        if (c.q < minQ) minQ = c.q; if (c.q > maxQ) maxQ = c.q;
+        if (c.r < minR) minR = c.r; if (c.r > maxR) maxR = c.r;
+    };
+    expand(c1); expand(c2); expand(c3); expand(c4); expand(c5);
+
+    // Add 1-cell margin for stagger overhang, then clamp to valid grid
+    minQ -= 1; minR -= 1; maxQ += 1; maxR += 1;
+    if (minQ < 0)         minQ = 0;
+    if (minR < 0)         minR = 0;
+    if (maxQ >= mColCount) maxQ = mColCount - 1;
+    if (maxR >= mRowCount) maxR = mRowCount - 1;
 }
 
 template<typename T, unsigned int MaxObjects>

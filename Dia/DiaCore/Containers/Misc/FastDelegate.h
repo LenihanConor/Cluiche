@@ -1,8 +1,13 @@
-//						FastDelegate.h 
+//						FastDelegate.h
 //	Efficient delegates in C++ that generate only two lines of asm code!
 //  Documentation is found at http://www.codeproject.com/cpp/FastDelegate.asp
 //
 //						- Don Clugston, Mar 2004.
+
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-local-typedef"
+#endif
 //		Major contributions were made by Jody Hagins.
 // History:
 // 24-Apr-04 1.0  * Submitted to CodeProject. 
@@ -2288,5 +2293,9 @@ namespace fastdelegate {
 #undef FASTDLGT_RETTYPE
 
 } // namespace fastdelegate
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 #endif

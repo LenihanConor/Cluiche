@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.animation2dvisualdebugger
 name: DiaAnimation2DVisualDebugger
 owner_team: TBD
-layer: debug
+layer: domain/animation/tools
 status: active
 maturity: dev
 
@@ -34,7 +34,6 @@ dependent_modules:
   - dia.maths
   - dia.rig2d
   - dia.animation2d
-  - dia.graphics
   - dia.diavisualdebugger
 
 public_api:
@@ -55,7 +54,6 @@ dependencies:
     - dia.maths
     - dia.rig2d
     - dia.animation2d
-    - dia.graphics
     - dia.diavisualdebugger
   forbidden: []
 ---

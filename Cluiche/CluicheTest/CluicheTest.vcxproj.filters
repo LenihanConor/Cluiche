@@ -1,98 +1,349 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <ItemGroup>
-    <ClCompile Include="Main.cpp" />
-    <ClCompile Include="ApplicationFlow\ProcessingUnits\MainProcessingUnit.cpp">
-      <Filter>ApplicationFlow\ProcessingUnits</Filter>
-    </ClCompile>
-    <ClCompile Include="ApplicationFlow\Phases\MainBootStrapPhase.cpp">
-      <Filter>ApplicationFlow\Phases</Filter>
-    </ClCompile>
-    <ClCompile Include="ApplicationFlow\Phases\MainBootPhase.cpp">
-      <Filter>ApplicationFlow\Phases</Filter>
-    </ClCompile>
-    <ClCompile Include="ApplicationFlow\ProcessingUnits\RenderProcessingUnit.cpp">
-      <Filter>ApplicationFlow\ProcessingUnits</Filter>
-    </ClCompile>
-    <ClCompile Include="ApplicationFlow\Phases\RenderRunningPhase.cpp">
-      <Filter>ApplicationFlow\Phases</Filter>
-    </ClCompile>
-    <ClCompile Include="ApplicationFlow\ProcessingUnits\SimProcessingUnit.cpp">
-      <Filter>ApplicationFlow\ProcessingUnits</Filter>
-    </ClCompile>
-    <ClCompile Include="ApplicationFlow\Phases\SimBootPhase.cpp">
-      <Filter>ApplicationFlow\Phases</Filter>
-    </ClCompile>
-    <ClCompile Include="ApplicationFlow\Phases\SimBootStrapPhase.cpp">
-      <Filter>ApplicationFlow\Phases</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\LaunchUIPage.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-  </ItemGroup>
   <ItemGroup>
     <Filter Include="ApplicationFlow">
       <UniqueIdentifier>{cb998eec-267d-4eee-bc14-f40d3b64cdc8}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ApplicationFlow\ProcessingUnits">
-      <UniqueIdentifier>{a944998d-68ed-49f0-9dcb-21e3e82778e2}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ApplicationFlow\Phases">
-      <UniqueIdentifier>{bb066c32-d621-49b2-925e-ea19f4394f2b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ApplicationFlow\Modules">
       <UniqueIdentifier>{3c25b1d8-299a-4a1b-ad3e-fa82cc4b198a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source">
-      <UniqueIdentifier>{e63b6e6a-3c59-4b0a-accc-30ea65625e99}</UniqueIdentifier>
+    <Filter Include="ApplicationFlow\Modules\TestStages">
+      <UniqueIdentifier>{a1b2c3d4-e5f6-7890-abcd-ef1234567890}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ApplicationFlow\Modules\TestStages\Entity">
+      <UniqueIdentifier>{b2c3d4e5-f6a7-8901-bcde-f12345678901}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ApplicationFlow\Modules\Dummy">
+      <UniqueIdentifier>{b2c3d4e5-f6a7-8901-bcde-ef2345678901}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ApplicationFlow\Modules\TestStages\Drawers">
+      <UniqueIdentifier>{c3d4e5f6-a7b8-9012-cdef-ef3456789012}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ApplicationFlow\Modules\TestStages\UIUltralight">
+      <UniqueIdentifier>{d4e5f6a7-b8c9-0123-def0-ef4567890123}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Messages">
+      <UniqueIdentifier>{e5f6a7b8-c9d0-1234-ef01-f56789012345}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ApplicationFlow\ProcessingUnits\MainProcessingUnit.h">
-      <Filter>ApplicationFlow\ProcessingUnits</Filter>
-    </ClInclude>
-    <ClInclude Include="ApplicationFlow\Phases\MainBootPhase.h">
-      <Filter>ApplicationFlow\Phases</Filter>
-    </ClInclude>
-    <ClInclude Include="ApplicationFlow\Phases\MainBootStrapPhase.h">
-      <Filter>ApplicationFlow\Phases</Filter>
-    </ClInclude>
-    <ClInclude Include="ApplicationFlow\ProcessingUnits\RenderProcessingUnit.h">
-      <Filter>ApplicationFlow\ProcessingUnits</Filter>
-    </ClInclude>
-    <ClInclude Include="ApplicationFlow\Phases\RenderRunningPhase.h">
-      <Filter>ApplicationFlow\Phases</Filter>
-    </ClInclude>
-    <ClInclude Include="ApplicationFlow\ProcessingUnits\SimProcessingUnit.h">
-      <Filter>ApplicationFlow\ProcessingUnits</Filter>
-    </ClInclude>
-    <ClInclude Include="ApplicationFlow\Phases\SimBootPhase.h">
-      <Filter>ApplicationFlow\Phases</Filter>
-    </ClInclude>
-    <ClInclude Include="ApplicationFlow\Phases\SimBootStrapPhase.h">
-      <Filter>ApplicationFlow\Phases</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\LaunchUIPage.h">
-      <Filter>Source</Filter>
-    </ClInclude>
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Modules\BootMenuModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestMainStateProducerModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\RigidBody2DTestModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\TestAssetRuntimeStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\AssetRuntimeRendererModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\AssetRuntimeHUDModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\TestStageModuleBase.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\TestResultsRegistry.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\TestStageHUDModule.cpp">
+    <ClCompile Include="Modules\TestStages\MessageBusTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\GridVisibilityTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\AICalloutTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\BehaviourTreeTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Messages\GuardOrderBusAdapter.cpp">
+      <Filter>Messages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\DebugGalleryTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\SpawnerTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\ArenaTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\Mesh3DRenderSystemTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\Mesh3DTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\Animation2DTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\SoftBody2DTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\EntityTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\Entity\TransformComponent.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages\Entity</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\Entity\VisualTestRenderComponent.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages\Entity</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\Entity\PickableCircleComponent.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages\Entity</Filter>
+    </ClCompile>
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\Geometry2DTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\Scene2DTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\UIUltralightTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\UIUltralight\UIUltralightTestPage.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages\UIUltralight</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\Drawers\Geometry2DShapesDrawer.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\Drawers\EntityTestDrawer.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\Drawers\Geometry2DLabelsDrawer.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\Drawers\Geometry2DIntersectionsDrawer.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClCompile>
+
+    <ClCompile Include="Modules\TestStages\Drawers\Geometry2DAABBDrawer.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\Drawers\Animation2DTestDrawer.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\Drawers\Scene2DTestDrawer.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\IK2DTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\Drawers\IK2DTestDrawer.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\dummy\DummyLevelModule.cpp">
+      <Filter>ApplicationFlow\Modules\Dummy</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\dummy\DummyUIPageModule.cpp">
+      <Filter>ApplicationFlow\Modules\Dummy</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\dummy\DummyUIPage.cpp">
+    <ClCompile Include="Modules\TestStages\AIDecisionTestStageModule.cpp">
+    <ClCompile Include="Modules\TestStages\AIHTNTestStageModule.cpp">
+    <ClCompile Include="Modules\TestStages\Drawers\AIDecisionTestDrawer.cpp">
+    <ClCompile Include="Modules\TestStages\Drawers\AIHTNTestDrawer.cpp">
+    <ClCompile Include="Modules\TestStages\ScalarFieldTestStageModule.cpp">
+    <ClCompile Include="Modules\TestStages\Drawers\ScalarFieldTestDrawer.cpp">
+      <Filter>TestStages\Drawers</Filter>
+    </ClCompile>
+      <Filter>TestStages</Filter>
+    </ClCompile>
+      <Filter>Modules\TestStages\Drawers</Filter>
+    </ClCompile>
+      <Filter>Modules\TestStages\Drawers</Filter>
+    </ClCompile>
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+      <Filter>ApplicationFlow\Modules\Dummy</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="Data">
-      <UniqueIdentifier>{f1a2b3c4-d5e6-7890-abcd-ef1234567890}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Data\Manifests">
-      <UniqueIdentifier>{a1b2c3d4-e5f6-7890-abcd-ef1234567891}</UniqueIdentifier>
-    </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Data\Manifests\cluiche_main.diaapp">
-      <Filter>Data\Manifests</Filter>
-    </None>
-    <None Include="Data\Manifests\cluiche_render.diaapp">
-      <Filter>Data\Manifests</Filter>
-    </None>
-    <None Include="Data\Manifests\cluiche_sim.diaapp">
-      <Filter>Data\Manifests</Filter>
-    </None>
+    <ClInclude Include="Modules\BootMenuModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestMainStateProducerModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\RigidBody2DTestModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\TestAssetRuntimeStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\AssetRuntimeRendererModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\AssetRuntimeHUDModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\TestStageModuleBase.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\TestResultsRegistry.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\TestStageHUDModule.h">
+    <ClInclude Include="Modules\TestStages\MessageBusTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\GridVisibilityTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\AICalloutTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\BehaviourTreeTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Messages\GuardOrderBusAdapter.h">
+      <Filter>Messages</Filter>
+    </ClInclude>
+    <ClInclude Include="Messages\order_messages.h">
+      <Filter>Messages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\DebugGalleryTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\SpawnerTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\ArenaTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\Mesh3DRenderSystemTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\Mesh3DTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\Animation2DTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\SoftBody2DTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\EntityTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\Entity\TransformComponent.h">
+      <Filter>ApplicationFlow\Modules\TestStages\Entity</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\Entity\VisualTestRenderComponent.h">
+      <Filter>ApplicationFlow\Modules\TestStages\Entity</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\Entity\PickableCircleComponent.h">
+      <Filter>ApplicationFlow\Modules\TestStages\Entity</Filter>
+    </ClInclude>
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\Geometry2DTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\Scene2DTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\UIUltralightTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\UIUltralight\UIUltralightTestPage.h">
+      <Filter>ApplicationFlow\Modules\TestStages\UIUltralight</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\Drawers\Geometry2DShapesDrawer.h">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\Drawers\EntityTestDrawer.h">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\Drawers\Geometry2DLabelsDrawer.h">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\Drawers\Geometry2DIntersectionsDrawer.h">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClInclude>
+
+    <ClInclude Include="Modules\TestStages\Drawers\Geometry2DAABBDrawer.h">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\Drawers\Animation2DTestDrawer.h">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\Drawers\Scene2DTestDrawer.h">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\IK2DTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\Drawers\IK2DTestDrawer.h">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\dummy\DummyLevelModule.h">
+      <Filter>ApplicationFlow\Modules\Dummy</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\dummy\DummyUIPageModule.h">
+      <Filter>ApplicationFlow\Modules\Dummy</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\dummy\DummyUIPage.h">
+    <ClInclude Include="Modules\TestStages\AIDecisionTestStageModule.h">
+    <ClInclude Include="Modules\TestStages\AIHTNTestStageModule.h">
+    <ClInclude Include="Modules\TestStages\Drawers\AIDecisionTestDrawer.h">
+    <ClInclude Include="Modules\TestStages\Drawers\AIHTNTestDrawer.h">
+    <ClInclude Include="Modules\TestStages\ScalarFieldTestStageModule.h">
+    <ClInclude Include="Modules\TestStages\Drawers\ScalarFieldTestDrawer.h">
+      <Filter>TestStages\Drawers</Filter>
+    </ClInclude>
+      <Filter>TestStages</Filter>
+    </ClInclude>
+      <Filter>Modules\TestStages\Drawers</Filter>
+    </ClInclude>
+      <Filter>Modules\TestStages\Drawers</Filter>
+    </ClInclude>
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+      <Filter>ApplicationFlow\Modules\Dummy</Filter>
+    </ClInclude>
+    <ClCompile Include="Modules\TestStages\EconomyTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\Drawers\EconomyDrawer.cpp">
+    <ClCompile Include="Modules\TestStages\Drawers\SpawnerTestDrawer.cpp">
+    <ClCompile Include="Modules\TestStages\Drawers\GridVisibilityDrawer.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClCompile>
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClCompile>
+    <ClInclude Include="Modules\TestStages\EconomyTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\Drawers\EconomyDrawer.h">
+    <ClInclude Include="Modules\TestStages\Drawers\SpawnerTestDrawer.h">
+    <ClInclude Include="Modules\TestStages\Drawers\GridVisibilityDrawer.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClInclude>
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

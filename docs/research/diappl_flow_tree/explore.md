@@ -1,15 +1,15 @@
-# Research: Explore -- DiaApplication Flow Tree
+# Research: Explore -- DiaApplicationFlow Flow Tree
 
 **Session date:** 2026-05-03
 **Folder:** docs/research/diappl_flow_tree/
 
 ## Problem Space Overview
 
-DiaApplication currently treats ProcessingUnits as flat, independent peers. CluicheTest manually creates three PUs (Main, Sim, Render), each described by a separate `.diaapp` manifest. MainPU hard-codes creation of SimPU and RenderPU in `PostPhaseStart()`, spawns threads, and joins them in `PrePhaseStop()`. There is no formal parent/child relationship, no root concept, and no way to see the complete thread topology as a connected tree.
+DiaApplicationFlow currently treats ProcessingUnits as flat, independent peers. CluicheTest manually creates three PUs (Main, Sim, Render), each described by a separate `.diaapp` manifest. MainPU hard-codes creation of SimPU and RenderPU in `PostPhaseStart()`, spawns threads, and joins them in `PrePhaseStop()`. There is no formal parent/child relationship, no root concept, and no way to see the complete thread topology as a connected tree.
 
-This creates three interrelated problems. First, the name "DiaApplication" is ambiguous -- it could mean the running application, the framework, or the module itself, leading to confusion about what `ProcessingUnit` actually represents in the execution flow. Second, the PU hierarchy is implicit: MainPU knows about SimPU and RenderPU only because it manually creates them in application-specific code, making it impossible for the engine or editor to discover the full topology generically. Third, the editor can only open one `.diaapp` file at a time, with no way to show how multiple manifests connect into a complete application flow -- and game "levels" (like DummyStage) that inject phases into existing PUs have no manifest representation at all.
+This creates three interrelated problems. First, the name "DiaApplicationFlow" is ambiguous -- it could mean the running application, the framework, or the module itself, leading to confusion about what `ProcessingUnit` actually represents in the execution flow. Second, the PU hierarchy is implicit: MainPU knows about SimPU and RenderPU only because it manually creates them in application-specific code, making it impossible for the engine or editor to discover the full topology generically. Third, the editor can only open one `.diaapp` file at a time, with no way to show how multiple manifests connect into a complete application flow -- and game "levels" (like DummyStage) that inject phases into existing PUs have no manifest representation at all.
 
-The goal is to research whether DiaApplication should evolve into a tree-structured flow model where PUs have explicit parent/child relationships, levels become "stages" with their own manifests, and the editor can visualize the entire connected graph.
+The goal is to research whether DiaApplicationFlow should evolve into a tree-structured flow model where PUs have explicit parent/child relationships, levels become "stages" with their own manifests, and the editor can visualize the entire connected graph.
 
 ## Existing Approaches
 
@@ -29,13 +29,13 @@ The goal is to research whether DiaApplication should evolve into a tree-structu
 | Stage/Level manifests | No manifests (code-only, current) / Own .diaapp that imports into parent / Separate .diastage format | Reusing .diaapp keeps one format; separate format adds clarity |
 | Manifest linking | None (current) / Import field (already in ApplicationManifest) / Separate orchestrator file | Import field exists but is unused -- cheapest path |
 | Thread spawning | Manual per-PU (current) / Automatic by tree walker / Declarative in manifest | Declarative keeps app code clean; auto-spawn removes boilerplate |
-| Naming | DiaApplication (current) / DiaApplicationFlow / DiaFlow / DiaRuntime | "ApplicationFlow" is most descriptive but longest |
+| Naming | DiaApplicationFlow (current) / DiaApplicationFlow / DiaFlow / DiaRuntime | "ApplicationFlow" is most descriptive but longest |
 | Editor visualization | Single .diaapp at a time (current) / Connected tree view / Full application graph | Tree view follows naturally from PU tree model |
 
 ## Known Tradeoffs
 
 - **Explicit tree vs. flexibility**: A formal parent/child tree is easy to visualize but constrains PU topologies. If a future application needs a PU that communicates with two "parents" (fan-in), a strict tree won't support it. A DAG would, but adds complexity.
-- **Naming disruption**: Renaming DiaApplication to DiaApplicationFlow touches every include path, namespace, vcxproj, and architecture doc. Large blast radius for a naming improvement.
+- **Naming disruption**: Renaming DiaApplicationFlow to DiaApplicationFlow touches every include path, namespace, vcxproj, and architecture doc. Large blast radius for a naming improvement.
 - **Stage manifests**: Giving DummyStage (DummyStage) its own .diaapp means the level/stage contributes PU structure, not just phases. This is a shift in ownership -- currently levels inject into PUs they don't own.
 - **Import resolution order**: If stages import PU definitions, the engine needs to resolve imports before constructing the PU tree. Circular imports must be prevented.
 - **Editor complexity**: Showing a tree of connected .diaapp files requires the editor to load multiple manifests, resolve references, and render a graph. More work than single-file editing.
@@ -55,9 +55,9 @@ The goal is to research whether DiaApplication should evolve into a tree-structu
 
 | Module | Relevance |
 |--------|-----------|
-| DiaApplication (ProcessingUnit, Phase, Module) | Direct target -- PU is the node type for the tree |
-| DiaApplication/Manifest | Already has `imports` field and `ApplicationManifest::ProcessingUnitEntry` |
-| DiaApplication/Loader | `ApplicationLoader::LoadApplication()` returns a single PU; needs to return a tree |
+| DiaApplicationFlow (ProcessingUnit, Phase, Module) | Direct target -- PU is the node type for the tree |
+| DiaApplicationFlow/Manifest | Already has `imports` field and `ApplicationManifest::ProcessingUnitEntry` |
+| DiaApplicationFlow/Loader | `ApplicationLoader::LoadApplication()` returns a single PU; needs to return a tree |
 | DiaCore/Containers | DynamicArrayC, HashTable for tree node storage |
 | DiaCore/Memory/UniquePtr | Ownership of child PUs |
 | DiaEditor | Will visualize the PU tree; needs generic graph rendering |
@@ -89,7 +89,7 @@ The `ApplicationManifest` struct already contains:
 ## Open Questions for Ideation
 
 - Should the PU tree be a compile-time construct (class hierarchy) or a runtime construct (data-driven from manifests)?
-- Is renaming DiaApplication to DiaApplicationFlow worth the codebase churn, or can the confusion be solved with better documentation and a thin wrapper type (e.g., `ApplicationFlow` as a tree-root class)?
+- Is renaming DiaApplicationFlow to DiaApplicationFlow worth the codebase churn, or can the confusion be solved with better documentation and a thin wrapper type (e.g., `ApplicationFlow` as a tree-root class)?
 - Should stages (currently levels) own their own PUs, or only inject phases/modules into parent PUs? Owning PUs means stages can bring their own threads.
 - How should the editor represent the tree -- a single "application flow" document that references .diaapp files, or a live multi-file view?
 - Should the `imports` field in ApplicationManifest be the mechanism for connecting stages, or should a separate orchestrator manifest (e.g., `.diaflow`) describe the tree structure?

@@ -1,0 +1,24 @@
+{
+    "version": 3,
+    "stages": [
+        { "name": "Running", "transitions": [], "auto_advance": false }
+    ],
+    "initial_stage": "Running",
+    "processing_units": [
+        {
+            "instance_id": "EditorPU",
+            "frequency_hz": 20,
+            "dedicated_thread": false,
+            "modules": [
+                { "instance_id": "ObservationModule",           "type_id": "ObservationModule",           "stages": ["all"],     "dependencies": [],                    "channels": [] },
+                { "instance_id": "EditorActionModule",          "type_id": "EditorActionModule",          "stages": ["Running"], "dependencies": ["ObservationModule"],  "channels": [] },
+                { "instance_id": "EditorModelModule",          "type_id": "EditorModelModule",          "stages": ["Running"], "dependencies": ["ObservationModule"], "channels": [] },
+                { "instance_id": "CommandHistoryModule",       "type_id": "CommandHistoryModule",       "stages": ["Running"], "dependencies": [],                    "channels": [] },
+                { "instance_id": "SplashScreenModule",         "type_id": "SplashScreenModule",         "stages": ["Running"], "dependencies": [],                    "channels": [] },
+                { "instance_id": "EditorViewControllerModule", "type_id": "EditorViewControllerModule", "stages": ["Running"], "dependencies": [],                    "channels": [] },
+                { "instance_id": "EditorViewModule",           "type_id": "EditorViewModule",           "stages": ["Running"], "dependencies": [],                    "channels": [] },
+                { "instance_id": "PluginLoaderModule",         "type_id": "PluginLoaderModule",         "stages": ["Running"], "dependencies": [],                    "channels": [] }
+            ]
+        }
+    ]
+}

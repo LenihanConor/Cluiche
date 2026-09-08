@@ -3,6 +3,9 @@
 #include <DiaRigidBody2D/World/PhysicsWorld.h>
 #include <DiaGeometry2D/Transform/Transform.h>
 #include <DiaMaths/Vector/Vector2D.h>
+#include <DiaObservation/Metric/Counter.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaCore/CRC/StringCRC.h>
 
 using namespace Dia::RigidBody2D;
 using namespace Dia::Maths;
@@ -116,6 +119,23 @@ TEST(RigidBody2D_PhysicsWorld, Update_LargeSpike_CappedAtMaxSubSteps)
     std::unique_ptr<PhysicsWorld> world(MakeWorld(1.0f / 60.0f, 8));
     world->Update(10.0f);  // Would be 600 steps without cap
     EXPECT_EQ(world->GetStepCount(), 8);
+}
+
+TEST(RigidBody2D_PhysicsWorld, Update_LargeSpike_IncrementsSharedDroppedTicksMetric)
+{
+    // Shared with ProcessingUnit's SimPU accumulator metric — this is a
+    // global, idempotently-registered counter, so assert on the delta
+    // caused by this test, not an absolute value (finding 18).
+    Dia::Observation::Metric::Counter* counter = Dia::Observation::Metric::MetricRegistry::Instance()
+        .RegisterCounter(Dia::Core::StringCRC("simtime.accumulator.dropped_ticks"));
+    ASSERT_NE(counter, nullptr);
+    uint64_t before = counter->Value();
+
+    std::unique_ptr<PhysicsWorld> world(MakeWorld(1.0f / 60.0f, 8));
+    world->Update(10.0f);  // Forces a cap-hit (backlog deferred, not dropped)
+
+    EXPECT_EQ(world->GetStepCount(), 8);
+    EXPECT_GT(counter->Value(), before);
 }
 
 TEST(RigidBody2D_PhysicsWorld, Update_AccumulatesAcrossFrames)

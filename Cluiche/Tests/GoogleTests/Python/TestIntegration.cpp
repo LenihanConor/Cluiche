@@ -16,21 +16,25 @@ using namespace Dia::Python;
 
 class DiaPythonIntegrationTest : public ::testing::Test
 {
-protected:
-	void SetUp() override
+public:
+	static void SetUpTestSuite()
 	{
 		bool result = Initialize("External/Python311/", "External/Python/", false);
 		ASSERT_TRUE(result) << "Failed to initialize Python for integration test";
 	}
 
-	void TearDown() override
+	static void TearDownTestSuite()
 	{
-		RestoreOutput();
-
 		if (IsInitialized())
 		{
 			Shutdown();
 		}
+	}
+
+protected:
+	void TearDown() override
+	{
+		RestoreOutput();
 	}
 };
 

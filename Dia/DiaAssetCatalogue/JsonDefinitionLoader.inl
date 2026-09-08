@@ -2,15 +2,14 @@
 
 #include "DiaAssetCatalogue/JsonDefinitionLoader.h"
 
-#include "DiaCore/Type/TypeDefinition.h"
-#include "DiaCore/Type/TypeVariable.h"
-#include "DiaCore/Type/TypeVariableAttributes.h"
-#include "DiaCore/Type/TypeFacade.h"
-#include "DiaCore/CRC/CRC.h"
+#include "DiaCore/Reflect/JsonArchive.h"
+#include "DiaCore/Reflect/SerializeResult.h"
 #include "DiaCore/Json/external/json/json.h"
+#include "DiaCore/Containers/Strings/StringReader.h"
+#include "DiaCore/CRC/StringCRC.h"
+#include "DiaCore/Strings/String64.h"
 
 #include <stdio.h>
-#include <string.h>
 
 namespace Dia
 {
@@ -68,8 +67,7 @@ namespace Dia
 				return result;
 			}
 
-			// Stack-allocate up to 64KB; fall back to a simple heap buffer via std
-			// Using a fixed-size static buffer is consistent with how DiaCore avoids dynamic alloc.
+			// Stack-allocate up to 64KB; consistent with DiaCore's avoidance of dynamic alloc.
 			static const unsigned int kMaxFileSize = 64 * 1024;
 			static char sFileBuffer[kMaxFileSize];
 
@@ -99,45 +97,50 @@ namespace Dia
 		{
 			LoadResult<T> result;
 
-			// Check type is registered
-			Dia::Core::CRC typeCRC(T::GetTypeStatic()->GetUniqueCRC());
-			if (!mRegistry.ContainsType(typeCRC))
+			const char* jsonText = buffer.AsCStr();
+
+			// Parse JSON
+			Json::Value root;
+			Json::Reader reader;
+			if (!reader.parse(jsonText, root, false))
 			{
 				LoadError err;
-				err.mKind = LoadErrorKind::TypeNotRegistered;
+				err.mKind = LoadErrorKind::JsonParseError;
 				err.mFieldPath = Dia::Core::StringCRC("");
-				err.mMessage = Dia::Core::Containers::String64("Type not registered");
+				err.mMessage = Dia::Core::Containers::String64("JSON parse error");
 				result.mErrors.Add(err);
 				return result;
 			}
 
-			const char* jsonText = buffer.AsCStr();
+			// Deserialize via DiaReflect JsonReadArchive
+			Dia::Reflect::JsonReadArchive ar(root);
+			serialize(ar, result.mValue, 0u);
 
-			// Quick parse check before calling TypeJsonSerializer (which asserts on failure)
+			// Map DiaReflect errors to LoadError entries
+			const Dia::Reflect::SerializeResult& serResult = ar.GetResult();
+			if (serResult.HasErrors())
 			{
-				Json::Value parsedCheck;
-				Json::Reader reader;
-				if (!reader.parse(jsonText, parsedCheck, false))
+				for (unsigned int i = 0u; i < serResult.ErrorCount(); ++i)
 				{
+					const Dia::Reflect::SerializeError& serErr = serResult.GetError(i);
+
 					LoadError err;
-					err.mKind = LoadErrorKind::JsonParseError;
-					err.mFieldPath = Dia::Core::StringCRC("");
-					err.mMessage = Dia::Core::Containers::String64("JSON parse error");
-					result.mErrors.Add(err);
-					return result;
+					if (serErr.kind == Dia::Reflect::SerializeErrorKind::RequiredFieldMissing)
+					{
+						err.mKind = LoadErrorKind::MissingRequiredField;
+					}
+					else
+					{
+						err.mKind = LoadErrorKind::DeserializationError;
+					}
+					err.mFieldPath = serErr.fieldName;
+					err.mMessage = Dia::Core::Containers::String64("Serialization error");
+					if (!result.mErrors.IsFull())
+					{
+						result.mErrors.Add(err);
+					}
 				}
 			}
-
-			// Deserialize using TypeJsonSerializer (requires an initialised serializer with registry)
-			Dia::Core::Types::TypeJsonSerializer serializer;
-			serializer.Initilize(&mRegistry);
-
-			// We need a non-const StringReader for the Deserialize call
-			Dia::Core::Containers::StringReader mutableBuffer(jsonText);
-			serializer.Deserialize(result.mValue, mutableBuffer);
-
-			// Validate required fields
-			ValidateRequiredFields(result.mValue, jsonText, result);
 
 			if (!result.HasErrors())
 			{
@@ -145,46 +148,6 @@ namespace Dia
 			}
 
 			return result;
-		}
-
-		//------------------------------------------------------------------------------------
-		template<typename T>
-		void JsonDefinitionLoader::ValidateRequiredFields(const T& value, const char* jsonText, LoadResult<T>& result) const
-		{
-			// Parse JSON again to check membership
-			Json::Value parsedRoot;
-			Json::Reader reader;
-			if (!reader.parse(jsonText, parsedRoot, false))
-			{
-				return; // already failed parse check above
-			}
-
-			const Dia::Core::Types::TypeDefinition* typeDefinition = T::GetTypeStatic();
-			if (!typeDefinition)
-			{
-				return;
-			}
-
-			const Dia::Core::Types::TypeDefinition::VariableLinkList& variables = typeDefinition->GetVariables();
-			const Dia::Core::Types::TypeDefinition::VariableLinkListNode* currentNode = variables.HeadConst();
-
-			while (currentNode != nullptr)
-			{
-				const Dia::Core::Types::TypeVariable* var = currentNode->GetPayloadConst();
-				if (var && var->HasAttribute<Dia::Core::Types::TypeVariableAttributeRequired>())
-				{
-					const char* fieldName = var->GetName();
-					if (!parsedRoot.isMember(fieldName))
-					{
-						LoadError err;
-						err.mKind = LoadErrorKind::MissingRequiredField;
-						err.mFieldPath = Dia::Core::StringCRC(fieldName);
-						err.mMessage = Dia::Core::Containers::String64("Missing required field");
-						result.mErrors.Add(err);
-					}
-				}
-				currentNode = currentNode->GetNextConst();
-			}
 		}
 
 	} // namespace AssetCatalogue

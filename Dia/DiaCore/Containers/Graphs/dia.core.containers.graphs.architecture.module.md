@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.core.containers.graphs
 name: Graphs
 owner_team: TBD
-layer: platform
+layer: foundation/core
 status: active
 maturity: dev
 
@@ -31,6 +31,11 @@ non_responsibilities:
   - Domain-specific gameplay behaviour
   - Rendering or platform integration concerns
   - High-level orchestration (owned by higher-layer modules)
+
+dependent_modules:
+  - dia.core.containers.arrays
+  - dia.core.crc
+  - dia.core.core
 
 public_api:
   headers:

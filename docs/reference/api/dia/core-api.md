@@ -937,5 +937,5 @@ arr.PushBack(2);  // May resize, invalidating ptr
 - Containers: ❌ (synchronize externally)
 
 **[→ API Overview](../api-overview.md)**  
-**[→ DiaApplication API](application-api.md)**  
+**[→ DiaApplicationFlow API](application-api.md)**  
 **[→ DiaMaths API](maths-api.md)**

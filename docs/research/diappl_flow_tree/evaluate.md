@@ -1,4 +1,4 @@
-# Research: Evaluate -- DiaApplication Flow Tree
+# Research: Evaluate -- DiaApplicationFlow Flow Tree
 
 **Input:** docs/research/diappl_flow_tree/ideate.md
 
@@ -41,7 +41,7 @@
 
 ### Rank 3: ApplicationFlow Root Class (score: 3.95)
 
-**Why:** A thin, focused class that solves the naming confusion without any module rename. It gives the engine a single discoverable entry point (`ApplicationFlow`) that wraps the PU tree, which the editor and introspection tools query. The cost (4) is low because it's a new class addition, not a refactor. Risk (4) is low because it doesn't change existing PU behavior -- it layers on top. Perfect Cluiche Fit (5) since it lives in DiaApplication, uses StringCRC for lookup, and follows the existing UniquePtr ownership patterns.
+**Why:** A thin, focused class that solves the naming confusion without any module rename. It gives the engine a single discoverable entry point (`ApplicationFlow`) that wraps the PU tree, which the editor and introspection tools query. The cost (4) is low because it's a new class addition, not a refactor. Risk (4) is low because it doesn't change existing PU behavior -- it layers on top. Perfect Cluiche Fit (5) since it lives in DiaApplicationFlow, uses StringCRC for lookup, and follows the existing UniquePtr ownership patterns.
 
 **Watch out for:** On its own, this class is just a container. Its value depends on Candidate 3 (PU tree) being implemented -- without parent/child PUs, the ApplicationFlow root is just a wrapper around a single PU with no tree to traverse. Should be built alongside or after Candidate 3.
 

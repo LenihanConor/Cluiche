@@ -7,12 +7,27 @@ from typing import Optional
 
 import toml
 
-VALID_STAGES = {"compile-code", "build-assets", "deploy"}
+VALID_STAGES = {"compile-code", "reflect", "build-assets", "deploy", "static-analysis"}
 TOML_FILENAME = "pipeline.toml"
+
+_DEFAULT_BGFX_BACKENDS = ["dx11", "dx12", "vulkan"]
+_DEFAULT_BGFX_SOURCE_ROOTS = ["Dia/DiaBgfx/Shaders"]
+_DEFAULT_BGFX_OUTPUT_ROOT = "Cluiche/out/$(AppName)/shaders"
+_DEFAULT_BGFX_SHADERC_PATH = "External/bgfx/tools/shaderc.exe"
 
 
 class PipelineConfigError(Exception):
     pass
+
+
+@dataclass
+class BgfxShadersConfig:
+    backends: list[str] = field(default_factory=lambda: list(_DEFAULT_BGFX_BACKENDS))
+    source_roots: list[str] = field(default_factory=lambda: list(_DEFAULT_BGFX_SOURCE_ROOTS))
+    # Deprecated: kept for backward compat; loader maps source_root -> source_roots
+    source_root: str = ""
+    output_root: str = _DEFAULT_BGFX_OUTPUT_ROOT
+    shaderc_path: str = _DEFAULT_BGFX_SHADERC_PATH
 
 
 @dataclass
@@ -53,14 +68,17 @@ class DeployConfig:
 class BuildDepsConfig:
     protobuf: bool = False
     cef_wrapper: bool = False
+    bgfx_shaders: bool = False
 
 
 @dataclass
 class TargetConfig:
     project: str
+    app_name: str = ""
     stages: list[str] = field(default_factory=list)
     deploy: DeployConfig = field(default_factory=DeployConfig)
     build_deps: BuildDepsConfig = field(default_factory=BuildDepsConfig)
+    full_suite_config: str = "Debug"
 
 
 @dataclass
@@ -68,6 +86,7 @@ class PipelineConfig:
     global_cfg: GlobalConfig
     proto: ProtoConfig
     targets: dict[str, TargetConfig]
+    bgfx_shaders: BgfxShadersConfig = field(default_factory=BgfxShadersConfig)
 
 
 def load_pipeline_config(repo_root: Path) -> PipelineConfig:
@@ -96,6 +115,19 @@ def load_pipeline_config(repo_root: Path) -> PipelineConfig:
         protoc_path=p.get("protoc_path"),
     )
 
+    bs = raw.get("bgfx_shaders", {})
+    # Backward-compatible: prefer source_roots list, fall back to source_root string
+    raw_roots = bs.get("source_roots")
+    if raw_roots is None:
+        legacy = bs.get("source_root")
+        raw_roots = [legacy] if legacy else list(_DEFAULT_BGFX_SOURCE_ROOTS)
+    bgfx_shaders_cfg = BgfxShadersConfig(
+        backends=bs.get("backends", list(_DEFAULT_BGFX_BACKENDS)),
+        source_roots=raw_roots,
+        output_root=bs.get("output_root", _DEFAULT_BGFX_OUTPUT_ROOT),
+        shaderc_path=bs.get("shaderc_path", _DEFAULT_BGFX_SHADERC_PATH),
+    )
+
     targets: dict[str, TargetConfig] = {}
     for name, traw in raw.get("targets", {}).items():
         stages = traw.get("stages", [])
@@ -111,12 +143,15 @@ def load_pipeline_config(repo_root: Path) -> PipelineConfig:
         build_deps = BuildDepsConfig(
             protobuf=bd_raw.get("protobuf", False),
             cef_wrapper=bd_raw.get("cef_wrapper", False),
+            bgfx_shaders=bd_raw.get("bgfx_shaders", False),
         )
         targets[name] = TargetConfig(
             project=traw["project"],
+            app_name=traw.get("app_name", name),
             stages=stages,
             deploy=DeployConfig(files=dep_files, ui_builds=dep_ui_builds),
             build_deps=build_deps,
+            full_suite_config=traw.get("full_suite_config", "Debug"),
         )
 
-    return PipelineConfig(global_cfg=global_cfg, proto=proto, targets=targets)
+    return PipelineConfig(global_cfg=global_cfg, proto=proto, targets=targets, bgfx_shaders=bgfx_shaders_cfg)

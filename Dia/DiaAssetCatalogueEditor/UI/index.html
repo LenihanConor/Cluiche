@@ -4,54 +4,60 @@
   <meta charset="UTF-8" />
   <title>Asset Catalogue Editor</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #1e1e1e;
-      color: #d4d4d4;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+    html, body {
+      height: 100%; overflow: hidden;
+      font-family: var(--pico-font-family, 'Segoe UI', sans-serif);
+      font-size: var(--pico-font-size, 12px);
+      background: var(--pico-background-color, #1e1e1e);
+      color: var(--pico-color, #d4d4d4);
+      display: flex; flex-direction: column; position: relative;
     }
 
-    /* ── Toolbar ─────────────────────────────────────── */
+    /* ── Overlay ── */
+    .no-project-overlay {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--pico-modal-overlay-background-color, rgba(0,0,0,0.6));
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 8px; z-index: 100;
+    }
+    .no-project-overlay .overlay-message { font-size: 14px; color: var(--pico-del-color, #f44747); }
+    .no-project-overlay .overlay-hint    { font-size: 11px; color: var(--pico-muted-color, #808080); }
+
+    /* ── Toolbar ── */
     .toolbar {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 5px 10px;
-      background: #2d2d2d;
-      border-bottom: 1px solid #3c3c3c;
-      flex-shrink: 0;
+      display: flex; align-items: center; gap: 6px; padding: 5px 10px;
+      background: var(--pico-card-background-color, #252526);
+      border-bottom: 1px solid var(--pico-border-color, #3c3c3c); flex-shrink: 0;
     }
     .toolbar button {
-      background: #3c3c3c; color: #d4d4d4;
-      border: 1px solid #555; padding: 3px 10px;
-      font-size: 12px; cursor: pointer; border-radius: 3px;
+      background: var(--pico-secondary, #3a3d41); color: var(--pico-color, #d4d4d4);
+      border: 1px solid var(--pico-border-color, #3c3c3c);
+      padding: 3px 10px; font-size: 12px; cursor: pointer; border-radius: 3px;
     }
-    .toolbar button:hover { background: #4c4c4c; }
-    .toolbar .separator { width: 1px; height: 16px; background: #555; margin: 0 4px; }
+    .toolbar button:hover { background: var(--pico-secondary-hover, #4a4d51); }
+    .toolbar .separator { width: 1px; height: 16px; background: var(--pico-border-color, #3c3c3c); margin: 0 4px; }
     .toolbar .manifest-path {
-      flex: 1; font-size: 11px; color: #9cdcfe;
+      flex: 1; font-size: 11px; color: var(--pico-h2-color, #9cdcfe);
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .toolbar .dirty-indicator { color: #f48771; font-size: 14px; font-weight: bold; visibility: hidden; }
+    .toolbar .dirty-indicator { color: var(--pico-del-color, #f44747); font-size: 14px; font-weight: bold; visibility: hidden; }
     .toolbar .dirty-indicator.dirty { visibility: visible; }
 
-    /* ── Layout ──────────────────────────────────────── */
+    /* ── Layout ── */
     .layout { display: flex; flex: 1; overflow: hidden; }
 
     .panel {
       display: flex; flex-direction: column;
-      border-right: 1px solid #3c3c3c; overflow: hidden;
+      border-right: 1px solid var(--pico-border-color, #3c3c3c); overflow: hidden;
     }
     .panel-title {
       padding: 5px 10px; font-size: 11px; font-weight: 600;
       text-transform: uppercase; letter-spacing: 0.05em;
-      color: #9cdcfe; background: #252526;
-      border-bottom: 1px solid #3c3c3c; flex-shrink: 0;
+      color: var(--pico-h2-color, #9cdcfe);
+      background: var(--pico-card-background-color, #252526);
+      border-bottom: 1px solid var(--pico-border-color, #3c3c3c); flex-shrink: 0;
     }
     .panel-body { flex: 1; overflow: auto; padding: 10px; }
 
@@ -59,193 +65,249 @@
     #panel-center      { flex: 1; }
     #panel-right       { width: 320px; min-width: 240px; border-right: none; }
 
-    /* ── Tabs ─────────────────────────────────────────── */
+    /* ── Tabs ── */
     .tabs {
-      display: flex; background: #252526;
-      border-bottom: 1px solid #3c3c3c; flex-shrink: 0;
+      display: flex; background: var(--pico-card-background-color, #252526);
+      border-bottom: 1px solid var(--pico-border-color, #3c3c3c); flex-shrink: 0;
     }
     .tab {
       padding: 5px 14px; font-size: 11px; cursor: pointer;
-      color: #9d9d9d; border-right: 1px solid #3c3c3c; user-select: none;
+      color: var(--pico-muted-color, #808080);
+      border-right: 1px solid var(--pico-border-color, #3c3c3c); user-select: none;
     }
-    .tab.active { color: #d4d4d4; border-bottom: 2px solid #007acc; }
-    .tab:hover { color: #d4d4d4; }
+    .tab.active { color: var(--pico-color, #d4d4d4); border-bottom: 2px solid var(--pico-primary, #0e639c); }
+    .tab:hover { color: var(--pico-color, #d4d4d4); }
 
     .tab-content { display: none; flex: 1; overflow: auto; padding: 10px; flex-direction: column; }
     .tab-content.active { display: flex; }
 
-    /* ── Filter bar ──────────────────────────────────── */
-    .filter-bar {
-      display: flex; gap: 6px; margin-bottom: 8px; flex-shrink: 0;
-    }
+    /* ── Filter bar ── */
+    .filter-bar { display: flex; gap: 6px; margin-bottom: 8px; flex-shrink: 0; }
     .filter-bar input, .filter-bar select {
-      background: #2d2d2d; color: #d4d4d4; border: 1px solid #555;
+      background: var(--pico-form-element-background-color, #252526);
+      color: var(--pico-form-element-color, #d4d4d4);
+      border: 1px solid var(--pico-form-element-border-color, #3c3c3c);
       padding: 3px 6px; font-size: 11px; border-radius: 3px; flex: 1;
     }
     .filter-bar select { flex: 0 0 120px; }
 
-    /* ── Asset table ─────────────────────────────────── */
+    /* ── Asset table ── */
     .asset-table { width: 100%; border-collapse: collapse; font-size: 11px; }
     .asset-table th {
-      background: #2d2d2d; color: #9cdcfe; text-align: left;
-      padding: 4px 8px; border-bottom: 1px solid #3c3c3c; position: sticky; top: 0;
+      background: var(--pico-card-background-color, #252526);
+      color: var(--pico-h2-color, #9cdcfe); text-align: left;
+      padding: 4px 8px; border-bottom: 1px solid var(--pico-border-color, #3c3c3c); position: sticky; top: 0;
     }
-    .asset-table td { padding: 4px 8px; border-bottom: 1px solid #2d2d2d; cursor: pointer; }
-    .asset-table tr:hover td { background: #2a2d2e; }
-    .asset-table tr.selected td { background: #04395e; }
-    .status-badge {
-      display: inline-block; padding: 1px 6px; border-radius: 2px; font-size: 10px; font-weight: 600;
-    }
+    .asset-table td { padding: 4px 8px; border-bottom: 1px solid var(--pico-muted-border-color, #2d2d2d); cursor: pointer; }
+    .asset-table tr:hover td { background: var(--pico-card-background-color, #252526); }
+    .asset-table tr.selected td { background: var(--pico-form-element-selected-background-color, #094771); }
+    /* Status badge colors — content-semantic */
+    .status-badge { display: inline-block; padding: 1px 6px; border-radius: 2px; font-size: 10px; font-weight: 600; }
     .status-Active     { background: #0e4a2f; color: #4ec9a0; }
     .status-Draft      { background: #3a2e00; color: #dcdcaa; }
     .status-Deprecated { background: #4a1e1e; color: #ce9178; }
 
-    /* ── Panel actions bar ───────────────────────────── */
-    .panel-actions {
-      display: flex; gap: 6px; margin-bottom: 8px; flex-shrink: 0;
-    }
+    /* ── Panel actions ── */
+    .panel-actions { display: flex; gap: 6px; margin-bottom: 8px; flex-shrink: 0; }
     .panel-actions button {
-      background: #3c3c3c; color: #d4d4d4; border: 1px solid #555;
+      background: var(--pico-secondary, #3a3d41); color: var(--pico-color, #d4d4d4);
+      border: 1px solid var(--pico-border-color, #3c3c3c);
       padding: 3px 10px; font-size: 11px; cursor: pointer; border-radius: 3px;
     }
-    .panel-actions button:hover { background: #4c4c4c; }
-    .panel-actions button.btn-primary { background: #0078d4; border-color: #0078d4; color: #fff; }
-    .panel-actions button.btn-primary:hover { background: #1081d8; }
-    .panel-actions button.btn-danger  { background: #5c1a1a; border-color: #8b2020; color: #f48771; }
+    .panel-actions button:hover { background: var(--pico-secondary-hover, #4a4d51); }
+    .panel-actions button.btn-primary { background: var(--pico-primary, #0e639c); border-color: var(--pico-primary, #0e639c); color: var(--pico-primary-inverse, #ffffff); }
+    .panel-actions button.btn-primary:hover { background: var(--pico-primary-hover, #1177bb); }
+    .panel-actions button.btn-danger  { background: #5c1a1a; border-color: #8b2020; color: var(--pico-del-color, #f44747); }
     .panel-actions button.btn-danger:hover { background: #6c2a2a; }
 
-    /* ── Record editor form ──────────────────────────── */
+    /* ── Record editor form ── */
     .form-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 10px; flex-shrink: 0; }
-    .form-row label { width: 110px; font-size: 11px; color: #9d9d9d; padding-top: 4px; flex-shrink: 0; }
+    .form-row label { width: 110px; font-size: 11px; color: var(--pico-muted-color, #808080); padding-top: 4px; flex-shrink: 0; }
     .form-row .form-value { flex: 1; }
     .form-row input[type=text], .form-row select, .form-row .source-row input {
-      background: #2d2d2d; color: #d4d4d4; border: 1px solid #555;
+      background: var(--pico-form-element-background-color, #252526);
+      color: var(--pico-form-element-color, #d4d4d4);
+      border: 1px solid var(--pico-form-element-border-color, #3c3c3c);
       padding: 4px 6px; font-size: 12px; border-radius: 3px; width: 100%;
     }
-    .form-row input[readonly] { color: #6a9955; }
+    .form-row input[readonly] { color: var(--pico-ins-color, #89d185); }
     .source-row { display: flex; gap: 4px; }
     .source-row input { flex: 1; }
-    .source-row button { background: #3c3c3c; color: #d4d4d4; border: 1px solid #555; padding: 3px 8px; font-size: 11px; cursor: pointer; border-radius: 3px; white-space: nowrap; }
-    .source-row button:hover { background: #4c4c4c; }
+    .source-row button {
+      background: var(--pico-secondary, #3a3d41); color: var(--pico-color, #d4d4d4);
+      border: 1px solid var(--pico-border-color, #3c3c3c);
+      padding: 3px 8px; font-size: 11px; cursor: pointer; border-radius: 3px; white-space: nowrap;
+    }
+    .source-row button:hover { background: var(--pico-secondary-hover, #4a4d51); }
 
     .chip-list { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
     .chip {
-      background: #264f78; color: #9cdcfe; border-radius: 10px;
+      background: var(--pico-form-element-selected-background-color, #094771);
+      color: var(--pico-h2-color, #9cdcfe); border-radius: 10px;
       padding: 1px 8px; font-size: 11px; display: flex; align-items: center; gap: 4px;
     }
-    .chip .remove { cursor: pointer; color: #9d9d9d; font-size: 10px; }
-    .chip .remove:hover { color: #f48771; }
-    .chip-input { background: transparent; border: none; color: #d4d4d4; font-size: 11px; width: 80px; outline: none; }
+    .chip .remove { cursor: pointer; color: var(--pico-muted-color, #808080); font-size: 10px; }
+    .chip .remove:hover { color: var(--pico-del-color, #f44747); }
+    .chip-input { background: transparent; border: none; color: var(--pico-color, #d4d4d4); font-size: 11px; width: 80px; outline: none; }
 
-    .form-hint { font-size: 10px; color: #6a6a6a; margin-top: 2px; }
+    .form-hint { font-size: 10px; color: var(--pico-muted-color, #808080); margin-top: 2px; }
 
     .stage-row { display: none; }
     .stage-row.visible { display: flex; }
 
-    /* ── Empty / placeholder states ─────────────────── */
+    /* ── Empty / placeholder states ── */
     .empty-state {
       display: flex; align-items: center; justify-content: center;
-      flex: 1; color: #555; font-size: 12px; font-style: italic;
+      flex: 1; color: var(--pico-muted-color, #808080); font-size: 12px; font-style: italic;
     }
 
-    /* ── File Discoverer panel ───────────────────────── */
+    /* ── File Discoverer panel ── */
     .discoverer-toolbar {
       display: flex; gap: 6px; margin-bottom: 8px; flex-shrink: 0; align-items: center;
     }
     .discoverer-toolbar input {
-      flex: 1; background: #2d2d2d; color: #d4d4d4; border: 1px solid #555;
+      flex: 1; background: var(--pico-form-element-background-color, #252526);
+      color: var(--pico-form-element-color, #d4d4d4);
+      border: 1px solid var(--pico-form-element-border-color, #3c3c3c);
       padding: 3px 6px; font-size: 11px; border-radius: 3px;
     }
     .discoverer-toolbar button {
-      background: #3c3c3c; color: #d4d4d4; border: 1px solid #555;
+      background: var(--pico-secondary, #3a3d41); color: var(--pico-color, #d4d4d4);
+      border: 1px solid var(--pico-border-color, #3c3c3c);
       padding: 3px 10px; font-size: 11px; cursor: pointer; border-radius: 3px; white-space: nowrap;
     }
-    .discoverer-toolbar button.btn-primary { background: #0078d4; border-color: #0078d4; color: #fff; }
-    .discoverer-toolbar button:hover { background: #4c4c4c; }
-    .discoverer-toolbar button.btn-primary:hover { background: #1081d8; }
+    .discoverer-toolbar button.btn-primary { background: var(--pico-primary, #0e639c); border-color: var(--pico-primary, #0e639c); color: var(--pico-primary-inverse, #ffffff); }
+    .discoverer-toolbar button:hover { background: var(--pico-secondary-hover, #4a4d51); }
+    .discoverer-toolbar button.btn-primary:hover { background: var(--pico-primary-hover, #1177bb); }
 
     .discoverer-results { flex: 1; overflow: auto; }
     .discoverer-table { width: 100%; border-collapse: collapse; font-size: 11px; }
     .discoverer-table th {
-      background: #2d2d2d; color: #9cdcfe; text-align: left;
-      padding: 4px 8px; border-bottom: 1px solid #3c3c3c; position: sticky; top: 0;
+      background: var(--pico-card-background-color, #252526);
+      color: var(--pico-h2-color, #9cdcfe); text-align: left;
+      padding: 4px 8px; border-bottom: 1px solid var(--pico-border-color, #3c3c3c); position: sticky; top: 0;
     }
-    .discoverer-table td { padding: 3px 6px; border-bottom: 1px solid #2d2d2d; }
+    .discoverer-table td { padding: 3px 6px; border-bottom: 1px solid var(--pico-muted-border-color, #2d2d2d); }
     .discoverer-table input[type=text] {
-      background: #2d2d2d; color: #d4d4d4; border: 1px solid #3c3c3c;
+      background: var(--pico-form-element-background-color, #252526);
+      color: var(--pico-form-element-color, #d4d4d4);
+      border: 1px solid var(--pico-form-element-border-color, #3c3c3c);
       padding: 2px 4px; font-size: 11px; border-radius: 2px; width: 100%;
     }
-    .discoverer-actions {
-      display: flex; gap: 6px; margin-top: 8px; flex-shrink: 0; align-items: center;
-    }
+    .discoverer-actions { display: flex; gap: 6px; margin-top: 8px; flex-shrink: 0; align-items: center; }
     .discoverer-actions button {
-      background: #0078d4; color: #fff; border: 1px solid #0078d4;
+      background: var(--pico-primary, #0e639c); color: var(--pico-primary-inverse, #ffffff);
+      border: 1px solid var(--pico-primary, #0e639c);
       padding: 4px 14px; font-size: 12px; cursor: pointer; border-radius: 3px;
     }
-    .discoverer-actions button:hover { background: #1081d8; }
-    .discoverer-actions .sel-count { font-size: 11px; color: #9d9d9d; }
+    .discoverer-actions button:hover { background: var(--pico-primary-hover, #1177bb); }
+    .discoverer-actions .sel-count { font-size: 11px; color: var(--pico-muted-color, #808080); }
 
-    /* ── Modal dialogs ───────────────────────────────── */
+    /* ── Modal dialogs ── */
     .modal-overlay {
       display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,0.6); z-index: 100;
-      align-items: center; justify-content: center;
+      background: var(--pico-modal-overlay-background-color, rgba(0,0,0,0.6));
+      z-index: 100; align-items: center; justify-content: center;
     }
     .modal-overlay.open { display: flex; }
     .modal {
-      background: #252526; border: 1px solid #3c3c3c; border-radius: 4px;
-      padding: 20px; min-width: 400px; max-width: 560px; width: 90%;
+      background: var(--pico-card-background-color, #252526);
+      border: 1px solid var(--pico-border-color, #3c3c3c);
+      border-radius: 4px; padding: 20px; min-width: 400px; max-width: 560px; width: 90%;
     }
-    .modal h2 { font-size: 14px; color: #d4d4d4; margin-bottom: 14px; }
+    .modal h2 { font-size: 14px; color: var(--pico-color, #d4d4d4); margin-bottom: 14px; }
     .modal .modal-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
-    .modal .modal-row label { width: 120px; font-size: 11px; color: #9d9d9d; flex-shrink: 0; }
+    .modal .modal-row label { width: 120px; font-size: 11px; color: var(--pico-muted-color, #808080); flex-shrink: 0; }
     .modal .modal-row input, .modal .modal-row select {
-      flex: 1; background: #2d2d2d; color: #d4d4d4; border: 1px solid #555;
+      flex: 1; background: var(--pico-form-element-background-color, #252526);
+      color: var(--pico-form-element-color, #d4d4d4);
+      border: 1px solid var(--pico-form-element-border-color, #3c3c3c);
       padding: 4px 6px; font-size: 12px; border-radius: 3px;
     }
-    .modal .modal-error { color: #f48771; font-size: 11px; margin-bottom: 8px; min-height: 16px; }
+    .modal .modal-error { color: var(--pico-del-color, #f44747); font-size: 11px; margin-bottom: 8px; min-height: 16px; }
+    .id-prefix-row {
+      display: flex; align-items: center; flex: 1;
+      background: var(--pico-form-element-background-color, #252526);
+      border: 1px solid var(--pico-form-element-border-color, #3c3c3c);
+      border-radius: 3px; overflow: hidden;
+    }
+    .id-prefix { padding: 4px 0 4px 6px; font-size: 12px; color: var(--pico-ins-color, #89d185); white-space: nowrap; user-select: none; flex-shrink: 0; }
+    .id-prefix-row input { border: none; background: transparent; flex: 1; padding: 4px 6px 4px 2px; font-size: 12px; color: var(--pico-form-element-color, #d4d4d4); outline: none; min-width: 0; }
     .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
     .modal-footer button {
-      background: #3c3c3c; color: #d4d4d4; border: 1px solid #555;
+      background: var(--pico-secondary, #3a3d41); color: var(--pico-color, #d4d4d4);
+      border: 1px solid var(--pico-border-color, #3c3c3c);
       padding: 5px 16px; font-size: 12px; cursor: pointer; border-radius: 3px;
     }
-    .modal-footer button.btn-primary { background: #0078d4; border-color: #0078d4; color: #fff; }
-    .modal-footer button.btn-danger  { background: #5c1a1a; border-color: #8b2020; color: #f48771; }
-    .modal-footer button:hover { background: #4c4c4c; }
-    .modal-footer button.btn-primary:hover { background: #1081d8; }
+    .modal-footer button.btn-primary { background: var(--pico-primary, #0e639c); border-color: var(--pico-primary, #0e639c); color: var(--pico-primary-inverse, #ffffff); }
+    .modal-footer button.btn-danger  { background: #5c1a1a; border-color: #8b2020; color: var(--pico-del-color, #f44747); }
+    .modal-footer button:hover { background: var(--pico-secondary-hover, #4a4d51); }
+    .modal-footer button.btn-primary:hover { background: var(--pico-primary-hover, #1177bb); }
     .modal-footer button.btn-danger:hover  { background: #6c2a2a; }
 
     .confirm-list {
       max-height: 160px; overflow: auto;
-      background: #1e1e1e; border: 1px solid #3c3c3c;
-      padding: 6px 8px; font-size: 11px; color: #9d9d9d;
+      background: var(--pico-background-color, #1e1e1e);
+      border: 1px solid var(--pico-border-color, #3c3c3c);
+      padding: 6px 8px; font-size: 11px; color: var(--pico-muted-color, #808080);
       border-radius: 3px; margin-bottom: 10px; line-height: 1.6;
     }
 
     .validation-note { font-size: 10px; margin-top: 2px; }
-    .valid   { color: #4ec9a0; }
-    .invalid { color: #f48771; }
+    .valid   { color: var(--pico-ins-color, #89d185); }
+    .invalid { color: var(--pico-del-color, #f44747); }
 
-    /* ── Relationship Graph ──────────────────────────── */
+    /* ── Inline-extracted layout+color helpers ── */
+    .rel-section { margin-top: 16px; border-top: 1px solid var(--pico-border-color, #3c3c3c); padding-top: 12px; }
+    .rel-section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--pico-h2-color, #9cdcfe); margin-bottom: 8px; letter-spacing: .05em; }
+    .rel-refs-label { font-size: 11px; color: var(--pico-muted-color, #808080); margin-bottom: 4px; }
+    .rel-refs-list { font-size: 11px; margin-bottom: 8px; }
+    .rel-add-row { display: flex; gap: 6px; align-items: center; }
+    .rel-add-select { width: 130px; background: var(--pico-form-element-background-color, #252526); color: var(--pico-form-element-color, #d4d4d4); border: 1px solid var(--pico-form-element-border-color, #3c3c3c); padding: 3px 6px; font-size: 11px; border-radius: 3px; }
+    .rel-add-wrap { flex: 1; position: relative; }
+    .rel-add-input { width: 100%; background: var(--pico-form-element-background-color, #252526); color: var(--pico-form-element-color, #d4d4d4); border: 1px solid var(--pico-form-element-border-color, #3c3c3c); padding: 3px 6px; font-size: 11px; border-radius: 3px; }
+    .rel-autocomplete { display: none; position: absolute; top: 100%; left: 0; right: 0; max-height: 120px; overflow: auto; background: var(--pico-card-background-color, #252526); border: 1px solid var(--pico-border-color, #3c3c3c); border-top: none; z-index: 10; font-size: 11px; }
+    .rel-add-btn { background: var(--pico-secondary, #3a3d41); color: var(--pico-color, #d4d4d4); border: 1px solid var(--pico-border-color, #3c3c3c); padding: 3px 10px; font-size: 11px; cursor: pointer; border-radius: 3px; }
+    .rel-add-btn:hover { background: var(--pico-secondary-hover, #4a4d51); }
+    .inline-btn { background: var(--pico-secondary, #3a3d41); color: var(--pico-color, #d4d4d4); border: 1px solid var(--pico-border-color, #3c3c3c); padding: 3px 10px; font-size: 11px; cursor: pointer; border-radius: 3px; }
+    .inline-btn:hover { background: var(--pico-secondary-hover, #4a4d51); }
+    .inline-btn-primary { background: var(--pico-primary, #0e639c); color: var(--pico-primary-inverse, #ffffff); border: 1px solid var(--pico-primary, #0e639c); padding: 3px 10px; font-size: 11px; cursor: pointer; border-radius: 3px; }
+    .inline-btn-primary:hover { background: var(--pico-primary-hover, #1177bb); }
+    .inline-input { flex: 1; background: var(--pico-form-element-background-color, #252526); color: var(--pico-form-element-color, #d4d4d4); border: 1px solid var(--pico-form-element-border-color, #3c3c3c); padding: 3px 6px; font-size: 11px; border-radius: 3px; }
+    .graph-toolbar { flex-shrink: 0; padding: 6px 8px; display: flex; gap: 6px; align-items: center; border-bottom: 1px solid var(--pico-border-color, #3c3c3c); background: var(--pico-card-background-color, #252526); }
+    .graph-root-label { font-size: 11px; color: var(--pico-h2-color, #9cdcfe); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .graph-legend { flex-shrink: 0; padding: 4px 8px; font-size: 10px; color: var(--pico-muted-color, #808080); border-bottom: 1px solid var(--pico-muted-border-color, #2d2d2d); display: none; }
+    /* Graph legend dot colors are asset-type-semantic — keep hardcoded */
+    .graph-legend .dot-texture { color: #007acc; }
+    .graph-legend .dot-entity  { color: #4ec9a0; }
+    .graph-legend .dot-config  { color: #ce9178; }
+    .graph-legend .dot-stage   { color: #dcdcaa; }
+    .graph-legend .dot-audio   { color: #c586c0; }
+    .graph-legend .dot-other   { color: var(--pico-h2-color, #9cdcfe); }
+    .graph-legend .dot-hint    { color: var(--pico-muted-color, #808080); margin-left: 8px; }
+    .rules-toolbar-row { flex-shrink: 0; margin-bottom: 8px; display: flex; gap: 6px; align-items: center; }
+    .rules-status { flex-shrink: 0; font-size: 11px; margin-bottom: 8px; color: var(--pico-muted-color, #808080); }
+    .rules-actions-row { flex-shrink: 0; margin-bottom: 6px; display: flex; gap: 6px; }
+    .rules-overwrite-label { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--pico-muted-color, #808080); margin-left: 6px; cursor: pointer; }
+
+    /* ── Relationship Graph ── */
     #graph-canvas svg { width: 100%; height: 100%; }
-    .graph-node {
-      cursor: pointer;
-      user-select: none;
-    }
+    .graph-node { cursor: pointer; user-select: none; }
     .graph-node circle { stroke-width: 1.5px; }
-    .graph-node text { font-size: 9px; fill: #d4d4d4; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
-    .graph-edge line { stroke: #555; stroke-width: 1px; }
-    .graph-edge-label { font-size: 8px; fill: #6a6a6a; text-anchor: middle; pointer-events: none; }
+    .graph-node text { font-size: 9px; fill: var(--pico-color, #d4d4d4); text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+    .graph-edge line { stroke: var(--pico-border-color, #3c3c3c); stroke-width: 1px; }
+    .graph-edge-label { font-size: 8px; fill: var(--pico-muted-color, #808080); text-anchor: middle; pointer-events: none; }
   </style>
 </head>
 <body>
 
+<div class="no-project-overlay" id="no-project-overlay">
+  <div class="overlay-message">No project loaded</div>
+  <div class="overlay-hint">Open a .diagame project to use this panel</div>
+</div>
+
 <!-- ── Toolbar ───────────────────────────────────── -->
 <div class="toolbar">
-  <button onclick="onNew()">New</button>
-  <button onclick="onOpen()">Open</button>
-  <button onclick="onSave()">Save</button>
-  <div class="separator"></div>
   <span class="manifest-path" id="manifest-path">No manifest loaded</span>
   <span class="dirty-indicator" id="dirty-indicator">*</span>
 </div>
@@ -262,9 +324,9 @@
         <button class="btn-danger"  onclick="onDeleteSelected()" id="btn-delete" disabled>Delete</button>
       </div>
       <div class="filter-bar">
-        <input  id="filter-text"   type="text" placeholder="Filter…" oninput="applyFilters()" />
-        <select id="filter-type"   onchange="applyFilters()"><option value="">All Types</option></select>
-        <input  id="filter-tag"    type="text" placeholder="Tag…"    oninput="applyFilters()" style="flex:0 0 80px" />
+        <input  id="filter-text"   type="text" placeholder="Filter…" oninput="renderAssetList()" />
+        <select id="filter-type"   onchange="renderAssetList()"><option value="">All Types</option></select>
+        <input  id="filter-tag"    type="text" placeholder="Tag…"    oninput="renderAssetList()" style="flex:0 0 80px" />
       </div>
       <div style="flex:1;overflow:auto;">
         <table class="asset-table" id="asset-table">
@@ -280,15 +342,10 @@
     </div>
   </div>
 
-  <!-- Center: tabs -->
+  <!-- Center: Record Editor -->
   <div class="panel" id="panel-center" style="display:flex;flex-direction:column;">
-    <div class="tabs">
-      <div class="tab active" onclick="showCenterTab('records',this)">Record Editor</div>
-      <div class="tab"        onclick="showCenterTab('discoverer',this)">File Discoverer</div>
-    </div>
-
-    <!-- Tab: Record Editor -->
-    <div class="tab-content active" id="tab-records" style="overflow:auto;">
+    <div class="panel-title">Record Editor</div>
+    <div style="flex:1;overflow:auto;padding:10px;">
       <div class="empty-state" id="record-empty">Select an asset to edit</div>
       <div id="record-form" style="display:none;">
         <div class="form-row">
@@ -307,7 +364,7 @@
           <label>Source Path</label>
           <div class="form-value">
             <div class="source-row">
-              <input type="text" id="rec-source-path" placeholder="relative/path/to/file" />
+              <input type="text" id="rec-source-path" placeholder="relative/path/to/file" oninput="scheduleAutosave()" />
               <button onclick="browseSourcePath()">Browse…</button>
             </div>
           </div>
@@ -315,7 +372,7 @@
         <div class="form-row">
           <label>Status</label>
           <div class="form-value">
-            <select id="rec-status">
+            <select id="rec-status" onchange="scheduleAutosave()">
               <option value="Active">Active</option>
               <option value="Draft">Draft</option>
               <option value="Deprecated">Deprecated</option>
@@ -325,7 +382,7 @@
         <div class="form-row">
           <label>Scope</label>
           <div class="form-value">
-            <select id="rec-scope" onchange="onScopeChange()">
+            <select id="rec-scope" onchange="onScopeChange(); scheduleAutosave()">
               <option value="global">Global</option>
               <option value="stage">Stage</option>
             </select>
@@ -334,7 +391,7 @@
         <div class="form-row stage-row" id="stage-row">
           <label>Stage Name</label>
           <div class="form-value">
-            <input type="text" id="rec-stage" placeholder="stage_name" />
+            <input type="text" id="rec-stage" placeholder="stage_name" oninput="scheduleAutosave()" />
           </div>
         </div>
         <div class="form-row">
@@ -348,42 +405,104 @@
           </div>
         </div>
         <div class="panel-actions" style="margin-top:12px;">
-          <button class="btn-primary" onclick="onSaveRecord()">Save Changes</button>
-          <button onclick="onDiscardRecord()">Discard</button>
-          <button onclick="onOpenAsset(selectedId)" id="btn-open-asset" disabled>Open</button>
+          <button onclick="onOpenInEditor(selectedId)" id="btn-open-in-editor" disabled>Open in Editor</button>
+          <button onclick="onOpenInFile(selectedId)" id="btn-open-in-file" disabled>Open in File</button>
         </div>
 
         <!-- Relationship section -->
-        <div style="margin-top:16px;border-top:1px solid #3c3c3c;padding-top:12px;">
-          <div style="font-size:11px;font-weight:600;text-transform:uppercase;color:#9cdcfe;margin-bottom:8px;letter-spacing:.05em;">Relationships</div>
+        <div class="rel-section">
+          <div class="rel-section-title">Relationships</div>
 
           <div style="margin-bottom:8px;">
-            <div style="font-size:11px;color:#9d9d9d;margin-bottom:4px;">Forward refs (this asset references)</div>
-            <div id="rel-forward-list" style="font-size:11px;"></div>
+            <div class="rel-refs-label">Forward refs (this asset references)</div>
+            <div id="rel-forward-list" class="rel-refs-list"></div>
           </div>
 
           <div style="margin-bottom:10px;">
-            <div style="font-size:11px;color:#9d9d9d;margin-bottom:4px;">Reverse refs (references this asset)</div>
-            <div id="rel-reverse-list" style="font-size:11px;"></div>
+            <div class="rel-refs-label">Reverse refs (references this asset)</div>
+            <div id="rel-reverse-list" class="rel-refs-list"></div>
           </div>
 
-          <div style="display:flex;gap:6px;align-items:center;">
-            <select id="rel-add-rel" style="width:130px;background:#2d2d2d;color:#d4d4d4;border:1px solid #555;padding:3px 6px;font-size:11px;border-radius:3px;">
+          <div class="rel-add-row">
+            <select id="rel-add-rel" class="rel-add-select">
               <option value="uses">uses</option>
               <option value="contains">contains</option>
             </select>
-            <div style="flex:1;position:relative;">
-              <input type="text" id="rel-add-target" placeholder="target ID" style="width:100%;background:#2d2d2d;color:#d4d4d4;border:1px solid #555;padding:3px 6px;font-size:11px;border-radius:3px;" oninput="onRelTargetInput()" />
-              <div id="rel-autocomplete" style="display:none;position:absolute;top:100%;left:0;right:0;max-height:120px;overflow:auto;background:#252526;border:1px solid #555;border-top:none;z-index:10;font-size:11px;"></div>
+            <div class="rel-add-wrap">
+              <input type="text" id="rel-add-target" placeholder="target ID" class="rel-add-input" oninput="onRelTargetInput()" />
+              <div id="rel-autocomplete" class="rel-autocomplete"></div>
             </div>
-            <button onclick="onAddRelationship()" style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:3px 10px;font-size:11px;cursor:pointer;border-radius:3px;">Add</button>
+            <button onclick="onAddRelationship()" class="rel-add-btn">Add</button>
           </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Tab: File Discoverer -->
-    <div class="tab-content" id="tab-discoverer" style="flex-direction:column;">
+  <!-- Right: Validation / Rules / Graph / File Discoverer -->
+  <div class="panel" id="panel-right" style="display:flex;flex-direction:column;">
+    <div class="tabs">
+      <div class="tab active" onclick="showRightTab('validation',this)">Validation</div>
+      <div class="tab"        onclick="showRightTab('rules',this)">Rules</div>
+      <div class="tab"        onclick="showRightTab('graph',this)">Graph</div>
+      <div class="tab"        onclick="showRightTab('discoverer',this)">Discoverer</div>
+    </div>
+    <div class="tab-content active" id="tab-right-validation" style="flex-direction:column;">
+      <div class="rules-toolbar-row">
+        <button onclick="onValidate()" class="inline-btn">Validate</button>
+        <button onclick="onReconcileReferences()" class="inline-btn">Reconcile References</button>
+      </div>
+      <div id="reconcile-status" style="display:none;flex-shrink:0;margin-bottom:6px;font-size:11px;"></div>
+      <div id="val-summary" style="display:none;flex-shrink:0;margin-bottom:8px;font-size:11px;"></div>
+      <div id="val-list" style="flex:1;overflow:auto;font-size:11px;">
+        <div class="empty-state">Click Validate to check the catalogue</div>
+      </div>
+    </div>
+    <div class="tab-content" id="tab-right-rules" style="flex-direction:column;">
+      <div class="rules-toolbar-row">
+        <input type="text" id="rules-path" placeholder="assets.rules.json" class="inline-input" />
+        <button onclick="onBrowseRules()" class="inline-btn">Browse…</button>
+        <button onclick="onLoadRules()" class="inline-btn">Load</button>
+      </div>
+      <div id="rules-status" class="rules-status"></div>
+      <div class="rules-actions-row">
+        <button onclick="onDryRun()" id="btn-dry-run" disabled class="inline-btn">Dry Run</button>
+        <button onclick="onApplyRules()" id="btn-apply-rules" disabled class="inline-btn-primary">Apply</button>
+        <label class="rules-overwrite-label">
+          <input type="checkbox" id="chk-overwrite-manuals" /> Overwrite manual fields
+        </label>
+      </div>
+      <div id="rules-list" style="flex:1;overflow:auto;font-size:11px;">
+        <div class="empty-state">No rules loaded. Use Load Rules to open assets.rules.json.</div>
+      </div>
+    </div>
+    <div class="tab-content" id="tab-right-graph" style="flex-direction:column;padding:0;">
+      <div id="graph-toolbar" class="graph-toolbar">
+        <span id="graph-root-label" class="graph-root-label">Select an asset</span>
+        <button onclick="onGraphReset()" class="inline-btn" style="padding:2px 8px;">Reset</button>
+      </div>
+      <div id="graph-legend" class="graph-legend">
+        <span class="dot-texture">● texture</span>
+        <span class="dot-entity" style="margin-left:8px;">● entity</span>
+        <span class="dot-config" style="margin-left:8px;">● config</span>
+        <span class="dot-stage" style="margin-left:8px;">● stage</span>
+        <span class="dot-audio" style="margin-left:8px;">● audio</span>
+        <span class="dot-other" style="margin-left:8px;">● other</span>
+        <span class="dot-hint">root=larger · dblclick to expand</span>
+      </div>
+      <div id="graph-canvas" style="flex:1;position:relative;">
+        <div class="empty-state" id="graph-empty">Select an asset to view its relationship graph</div>
+      </div>
+    </div>
+    <!-- Tab: File Discoverer
+         Scans a directory for files that are NOT already registered in the catalogue.
+         Use this to bulk-onboard existing assets from disk:
+           1. Enter or Browse to a root folder
+           2. Click Scan — shows unregistered files with suggested type/ID
+           3. Edit type/ID if needed, select files, click Add Selected
+         All selected files are registered as catalogue records in one atomic operation.
+    -->
+    <div class="tab-content" id="tab-right-discoverer" style="flex-direction:column;">
       <div class="discoverer-toolbar">
         <input type="text" id="disc-root-path" placeholder="Root path to scan…" />
         <button onclick="onDiscoverBrowse()">Browse…</button>
@@ -395,61 +514,7 @@
       <div class="discoverer-actions" id="disc-actions" style="display:none;">
         <button onclick="onAddSelected()">Add Selected</button>
         <span class="sel-count" id="disc-sel-count">0 selected</span>
-        <button onclick="onSelectAllDisc()" style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:3px 8px;font-size:11px;cursor:pointer;border-radius:3px;">Select All</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Right: Validation / Rules / Graph -->
-  <div class="panel" id="panel-right" style="display:flex;flex-direction:column;">
-    <div class="tabs">
-      <div class="tab active" onclick="showRightTab('validation',this)">Validation</div>
-      <div class="tab"        onclick="showRightTab('rules',this)">Rules</div>
-      <div class="tab"        onclick="showRightTab('graph',this)">Graph</div>
-    </div>
-    <div class="tab-content active" id="tab-right-validation" style="flex-direction:column;">
-      <div style="flex-shrink:0;margin-bottom:8px;">
-        <button onclick="onValidate()" style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:4px 14px;font-size:12px;cursor:pointer;border-radius:3px;">Validate</button>
-      </div>
-      <div id="val-summary" style="display:none;flex-shrink:0;margin-bottom:8px;font-size:11px;"></div>
-      <div id="val-list" style="flex:1;overflow:auto;font-size:11px;">
-        <div class="empty-state">Click Validate to check the catalogue</div>
-      </div>
-    </div>
-    <div class="tab-content" id="tab-right-rules" style="flex-direction:column;">
-      <div style="flex-shrink:0;margin-bottom:8px;display:flex;gap:6px;align-items:center;">
-        <input type="text" id="rules-path" placeholder="assets.rules.json" style="flex:1;background:#2d2d2d;color:#d4d4d4;border:1px solid #555;padding:3px 6px;font-size:11px;border-radius:3px;" />
-        <button onclick="onBrowseRules()" style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:3px 10px;font-size:11px;cursor:pointer;border-radius:3px;">Browse…</button>
-        <button onclick="onLoadRules()" style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:3px 10px;font-size:11px;cursor:pointer;border-radius:3px;">Load</button>
-      </div>
-      <div id="rules-status" style="flex-shrink:0;font-size:11px;margin-bottom:8px;color:#9d9d9d;"></div>
-      <div style="flex-shrink:0;margin-bottom:6px;display:flex;gap:6px;">
-        <button onclick="onDryRun()" id="btn-dry-run" disabled style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:3px 10px;font-size:11px;cursor:pointer;border-radius:3px;">Dry Run</button>
-        <button onclick="onApplyRules()" id="btn-apply-rules" disabled style="background:#0078d4;color:#fff;border:1px solid #0078d4;padding:3px 10px;font-size:11px;cursor:pointer;border-radius:3px;">Apply</button>
-        <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#9d9d9d;margin-left:6px;cursor:pointer;">
-          <input type="checkbox" id="chk-overwrite-manuals" /> Overwrite manual fields
-        </label>
-      </div>
-      <div id="rules-list" style="flex:1;overflow:auto;font-size:11px;">
-        <div class="empty-state">No rules loaded. Use Load Rules to open assets.rules.json.</div>
-      </div>
-    </div>
-    <div class="tab-content" id="tab-right-graph" style="flex-direction:column;padding:0;">
-      <div id="graph-toolbar" style="flex-shrink:0;padding:6px 8px;display:flex;gap:6px;align-items:center;border-bottom:1px solid #3c3c3c;background:#252526;">
-        <span id="graph-root-label" style="font-size:11px;color:#9cdcfe;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Select an asset</span>
-        <button onclick="onGraphReset()" style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:2px 8px;font-size:11px;cursor:pointer;border-radius:3px;">Reset</button>
-      </div>
-      <div id="graph-legend" style="flex-shrink:0;padding:4px 8px;font-size:10px;color:#6a6a6a;border-bottom:1px solid #2d2d2d;display:none;">
-        <span style="color:#007acc;">● texture</span>
-        <span style="margin-left:8px;color:#4ec9a0;">● entity</span>
-        <span style="margin-left:8px;color:#ce9178;">● config</span>
-        <span style="margin-left:8px;color:#dcdcaa;">● stage</span>
-        <span style="margin-left:8px;color:#c586c0;">● audio</span>
-        <span style="margin-left:8px;color:#9cdcfe;">● other</span>
-        <span style="margin-left:8px;color:#9d9d9d;">root=larger · dblclick to expand</span>
-      </div>
-      <div id="graph-canvas" style="flex:1;position:relative;">
-        <div class="empty-state" id="graph-empty">Select an asset to view its relationship graph</div>
+        <button onclick="onSelectAllDisc()" class="inline-btn">Select All</button>
       </div>
     </div>
   </div>
@@ -461,19 +526,25 @@
   <div class="modal">
     <h2>New Asset Record</h2>
     <div class="modal-row">
-      <label>ID <span style="color:#9d9d9d;font-size:10px;">(type.name)</span></label>
+      <label>Type</label>
+      <select id="create-type" onchange="updateIdPrefix(); updateCreateDefaultSourcePath()"></select>
+    </div>
+    <div class="modal-row">
+      <label>Name</label>
       <div style="flex:1">
-        <input type="text" id="create-id" placeholder="texture.player_ship" oninput="validateCreateId()" />
+        <div class="id-prefix-row">
+          <span class="id-prefix" id="create-id-prefix">—.</span>
+          <input type="text" id="create-id-name" placeholder="player_ship" oninput="validateCreateId(); updateCreateDefaultSourcePath()" />
+        </div>
         <div class="validation-note" id="create-id-note"></div>
       </div>
     </div>
     <div class="modal-row">
-      <label>Type</label>
-      <select id="create-type"></select>
-    </div>
-    <div class="modal-row">
       <label>Source Path</label>
-      <input type="text" id="create-source-path" placeholder="assets/textures/player.png" />
+      <div style="display:flex;gap:4px;flex:1">
+        <input type="text" id="create-source-path" placeholder="assets/textures/player.png" style="flex:1" oninput="this.dataset.userEdited='1'" />
+        <button onclick="browseCreateSourcePath()" class="inline-btn" style="white-space:nowrap">Browse…</button>
+      </div>
     </div>
     <div class="modal-row">
       <label>Tags</label>
@@ -487,8 +558,8 @@
       </select>
     </div>
     <div class="modal-row" id="create-stage-row" style="display:none;">
-      <label>Stage Name</label>
-      <input type="text" id="create-stage" placeholder="stage_name" />
+      <label>Stage</label>
+      <select id="create-stage"></select>
     </div>
     <div class="modal-error" id="create-error"></div>
     <div class="modal-footer">
@@ -502,7 +573,7 @@
 <div class="modal-overlay" id="modal-delete">
   <div class="modal">
     <h2>Delete Asset Record?</h2>
-    <p style="font-size:12px;color:#9d9d9d;margin-bottom:10px;">
+    <p style="font-size:12px;color:var(--pico-muted-color,#808080);margin-bottom:10px;">
       This will permanently remove the record and all edges attached to it.
     </p>
     <div class="confirm-list" id="delete-info"></div>
@@ -517,7 +588,7 @@
 <div class="modal-overlay" id="modal-bulk">
   <div class="modal">
     <h2>Add Selected Files?</h2>
-    <p style="font-size:12px;color:#9d9d9d;margin-bottom:8px;">
+    <p style="font-size:12px;color:var(--pico-muted-color,#808080);margin-bottom:8px;">
       The following records will be created:
     </p>
     <div class="confirm-list" id="bulk-list"></div>
@@ -536,6 +607,7 @@
   var discResults = [];
   var pendingBulkItems = [];
   var pendingDeleteId = null;
+  var manifestDir = '';  // directory of the loaded manifest, for default source paths
 
   /* ── Bridge ──────────────────────────────────────── */
   var _diaReqId = 1;
@@ -552,6 +624,13 @@
     });
   }
 
+  function diaLog(msg) {
+    window.parent.postMessage({
+      __diaFromFrame: true,
+      payload: { type: 'editor.ui_log', data: { source: 'assetcatalogue', msg: msg } }
+    }, '*');
+  }
+
   window.addEventListener('message', function(ev) {
     var d = ev.data;
     if (d && d.__diaResponse && d.reqId && _diaPending[d.reqId]) {
@@ -559,26 +638,41 @@
       delete _diaPending[d.reqId];
     }
     if (d && d.__dia && d.topic) {
+      if (d.topic !== 'console_entries') diaLog('[AssetCatalogue] received topic=' + d.topic);
       if (window.DiaEditor_onDataChanged) {
         window.DiaEditor_onDataChanged({ topic: d.topic, data: d.data });
       }
     }
   });
 
+  /* ── Project overlay ─────────────────────────────── */
+  function updateProjectOverlay(isValid) {
+    var el = document.getElementById('no-project-overlay');
+    if (el) el.style.display = isValid ? 'none' : 'flex';
+  }
+
   /* ── C++ push ─────────────────────────────────────── */
   window.DiaEditor_onDataChanged = function(msg) {
-    if (msg.topic === 'assetcatalogue.state') {
+    if (msg.topic !== 'console_entries') diaLog('[AssetCatalogue] DiaEditor_onDataChanged topic=' + msg.topic);
+    if (msg.topic === 'assetcatalogue.status') {
+      // status fires when there is no project or no asset_catalogue configured
+      updateProjectOverlay(false);
+      var emptyEl = document.getElementById('asset-empty');
+      if (emptyEl) {
+        emptyEl.textContent = msg.data || 'No catalogue loaded';
+        emptyEl.style.color = '#f48771';
+        emptyEl.style.display = '';
+      }
+      setManifestPath('');
+      setDirty(false);
+    } else if (msg.topic === 'assetcatalogue.state') {
+      updateProjectOverlay(true);
       setManifestPath(msg.data.path);
       setDirty(msg.data.dirty);
     } else if (msg.topic === 'assetcatalogue.records') {
       allRecords = Array.isArray(msg.data) ? msg.data : [];
       renderAssetList();
       if (selectedId) loadRelationships(selectedId);
-    } else if (msg.topic === 'assetcatalogue.lastManifestPath') {
-      if (msg.data.lastManifestPath) {
-        var reopen = confirm('Re-open last manifest?\n' + msg.data.lastManifestPath);
-        if (reopen) loadManifest(msg.data.lastManifestPath);
-      }
     } else if (msg.topic === 'assetcatalogue.rulesLoaded') {
       document.getElementById('rules-path').value = msg.data.rules_path || '';
       var statusEl = document.getElementById('rules-status');
@@ -595,66 +689,82 @@
       var statusEl = document.getElementById('rules-status');
       statusEl.textContent = '⛔ Auto-load failed: ' + (msg.data.error || 'unknown error');
       statusEl.style.color = '#f48771';
+    } else if (msg.topic === 'asset_catalogue.navigate_to_record') {
+      var navId = msg.data && msg.data.id;
+      if (navId) {
+        document.getElementById('filter-type').value = '';
+        selectedId = navId;
+        renderAssetList();
+        var rows = document.querySelectorAll('#asset-tbody tr');
+        for (var i = 0; i < rows.length; i++) {
+          if (rows[i].classList.contains('selected')) {
+            rows[i].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            break;
+          }
+        }
+      }
     }
   };
 
   /* ── Toolbar ─────────────────────────────────────── */
   function setManifestPath(path) {
     document.getElementById('manifest-path').textContent = path || 'No manifest loaded';
+    // Keep manifestDir in sync so Browse and default paths work
+    if (path && path.length > 0) {
+      var lastSlash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+      manifestDir = lastSlash >= 0 ? path.substring(0, lastSlash + 1) : '';
+    } else {
+      manifestDir = '';
+    }
   }
   function setDirty(dirty) {
     var el = document.getElementById('dirty-indicator');
     dirty ? el.classList.add('dirty') : el.classList.remove('dirty');
   }
 
-  function onNew() {
-    if (!confirmUnsaved()) return;
-    diaRequest('asset_catalogue.new_manifest', {}).then(function(r) {
-      if (!r.success) alert('Failed: ' + r.error);
-    });
-  }
-  function onOpen(prefilled) {
-    if (!confirmUnsaved()) return;
-    if (prefilled) {
-      loadManifest(prefilled);
-      return;
-    }
-    diaRequest('asset_catalogue.browse_open', {}).then(function(r) {
-      if (r.success === false && r.error) alert('Open failed: ' + r.error);
-    });
-  }
-  function loadManifest(path) {
-    diaRequest('asset_catalogue.load_manifest', { path: path }).then(function(r) {
-      if (!r.success) alert('Load failed: ' + r.error);
-    });
-  }
-  function onSave() {
-    diaRequest('asset_catalogue.save_manifest', {}).then(function(r) {
-      if (!r.success) alert('Save failed: ' + r.error);
-    });
-  }
-  function confirmUnsaved() {
-    var ind = document.getElementById('dirty-indicator');
-    if (!ind.classList.contains('dirty')) return true;
-    var choice = confirm('Unsaved changes. Discard?');
-    return choice;
-  }
-
   document.addEventListener('keydown', function(e) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); onSave(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); }
   });
 
-  // Deferred graph init — runs after layout is established
-  window.addEventListener('load', function() { initGraph(); });
+  // On mount: init graph then pull current state from the backend. The plugin may
+  // not be registered yet (loaded on demand), so retry until we get a real response.
+  window.addEventListener('load', function() {
+    initGraph();
+    pollGetState(0);
+  });
+
+  function applyGetState(r) {
+    if (r.status) {
+      updateProjectOverlay(false);
+      var emptyEl = document.getElementById('asset-empty');
+      if (emptyEl) { emptyEl.textContent = r.status; emptyEl.style.color = '#f48771'; emptyEl.style.display = ''; }
+      return;
+    }
+    updateProjectOverlay(!!(r.path && r.path.length > 0));
+    setManifestPath(r.path);
+    setDirty(r.dirty);
+    if (Array.isArray(r.records) && r.records.length > 0) {
+      allRecords = r.records;
+      renderAssetList();
+    }
+  }
+
+  var _pollGetStateTimer = null;
+  function pollGetState(attempt) {
+    diaLog('[AssetCatalogue] pollGetState attempt=' + attempt);
+    diaRequest('asset_catalogue.get_state', {}).then(function(r) {
+      diaLog('[AssetCatalogue] get_state response attempt=' + attempt + ' success=' + (r.success || false) + ' records=' + (r.records ? r.records.length : 0));
+      // Bridge returns {} when no handler is registered yet — retry up to 10 times.
+      if (!r.success && attempt < 10) {
+        _pollGetStateTimer = setTimeout(function() { pollGetState(attempt + 1); }, 500);
+        return;
+      }
+      if (r.success) applyGetState(r);
+      else diaLog('[AssetCatalogue] pollGetState exhausted — no handler after 10 attempts');
+    });
+  }
 
   /* ── Tabs ─────────────────────────────────────────── */
-  function showCenterTab(name, el) {
-    document.querySelectorAll('#panel-center .tab').forEach(function(t) { t.classList.remove('active'); });
-    document.querySelectorAll('#panel-center .tab-content').forEach(function(t) { t.classList.remove('active'); });
-    if (el) el.classList.add('active');
-    var content = document.getElementById('tab-' + name);
-    if (content) content.classList.add('active');
-  }
   function showRightTab(name, el) {
     document.querySelectorAll('#panel-right .tab').forEach(function(t) { t.classList.remove('active'); });
     document.querySelectorAll('#panel-right .tab-content').forEach(function(t) { t.classList.remove('active'); });
@@ -705,7 +815,7 @@
 
     tbody.innerHTML = filtered.map(function(r) {
       var sel = r.id === selectedId ? ' selected' : '';
-      return '<tr class="' + sel + '" onclick="selectRecord(\'' + escHtml(r.id) + '\')" ondblclick="onOpenAsset(\'' + escHtml(r.id) + '\')">' +
+      return '<tr class="' + sel + '" onclick="selectRecord(\'' + escHtml(r.id) + '\')" ondblclick="onOpenInEditor(\'' + escHtml(r.id) + '\')">' +
         '<td>' + escHtml(r.id) + '</td>' +
         '<td>' + escHtml(r.type) + '</td>' +
         '<td><span class="status-badge status-' + escHtml(r.status) + '">' + escHtml(r.status) + '</span></td>' +
@@ -717,10 +827,11 @@
   function selectRecord(id) {
     selectedId = id;
     document.getElementById('btn-delete').disabled = false;
-    document.getElementById('btn-open-asset').disabled = false;
     renderAssetList();
 
     var rec = allRecords.find(function(r) { return r.id === id; });
+    document.getElementById('btn-open-in-editor').disabled = !rec || !rec.has_editor;
+    document.getElementById('btn-open-in-file').disabled   = !rec || !rec.source_path;
     if (!rec) return;
 
     document.getElementById('record-empty').style.display = 'none';
@@ -773,6 +884,7 @@
   function removeTag(i) {
     editingTags.splice(i, 1);
     renderTags();
+    scheduleAutosave();
   }
 
   function onTagKeyDown(e) {
@@ -782,6 +894,7 @@
       if (v && editingTags.indexOf(v) < 0) {
         editingTags.push(v);
         renderTags();
+        scheduleAutosave();
       } else {
         e.target.value = '';
       }
@@ -789,12 +902,26 @@
   }
 
   function browseSourcePath() {
-    var path = prompt('Source path:');
-    if (path) document.getElementById('rec-source-path').value = path;
+    diaRequest('asset_catalogue.browse_source_file', {}).then(function(r) {
+      if (!r.success) return;
+      var el       = document.getElementById('rec-source-path');
+      var folder   = r.relative_path || r.path;
+      var current  = el.value.trim();
+      // Keep the filename part if the user already typed one, just update the directory
+      var filename = current ? current.replace(/^.*[/\\]/, '') : '';
+      el.value = filename ? folder + filename : folder;
+    });
   }
 
-  function onSaveRecord() {
+  var _autosaveTimer = null;
+  function scheduleAutosave() {
+    if (_autosaveTimer) clearTimeout(_autosaveTimer);
+    _autosaveTimer = setTimeout(function() { doAutosave(); }, 300);
+  }
+
+  function doAutosave() {
     var id = document.getElementById('rec-id').value;
+    if (!id) return;
     var scope = document.getElementById('rec-scope').value;
     var payload = {
       id: id,
@@ -806,18 +933,21 @@
     if (scope === 'stage') payload.stage = document.getElementById('rec-stage').value;
 
     diaRequest('asset_catalogue.update_record', payload).then(function(r) {
-      if (!r.success) alert('Update failed: ' + r.error);
+      if (!r.success) diaLog('[AssetCatalogue] autosave failed: ' + r.error);
     });
   }
 
-  function onDiscardRecord() {
-    if (selectedId) selectRecord(selectedId);
+  function onOpenInEditor(id) {
+    if (!id) return;
+    diaRequest('asset_catalogue.open_in_editor', { id: id }).then(function(r) {
+      if (!r.success) showToast('error', 'Open in editor failed', r.error);
+    });
   }
 
-  function onOpenAsset(id) {
+  function onOpenInFile(id) {
     if (!id) return;
-    diaRequest('asset_catalogue.open_asset', { id: id }).then(function(r) {
-      if (!r.success) console.warn('open_asset failed:', r.error);
+    diaRequest('asset_catalogue.open_in_file', { id: id }).then(function(r) {
+      if (!r.success) showToast('error', 'Open in file failed', r.error);
     });
   }
 
@@ -863,10 +993,10 @@
     if (!selectedId) return;
     var rel    = document.getElementById('rel-add-rel').value.trim();
     var target = document.getElementById('rel-add-target').value.trim();
-    if (!rel || !target) { alert('Enter rel type and target ID.'); return; }
+    if (!rel || !target) { showToast('warning', 'Missing fields', 'Enter relationship type and target ID'); return; }
 
     diaRequest('asset_catalogue.add_relationship', { from: selectedId, rel: rel, to: target }).then(function(r) {
-      if (!r.success) { alert('Add relationship failed: ' + r.error); return; }
+      if (!r.success) { showToast('error', 'Add relationship failed', r.error); return; }
       document.getElementById('rel-add-target').value = '';
       document.getElementById('rel-autocomplete').style.display = 'none';
       loadRelationships(selectedId);
@@ -900,32 +1030,60 @@
 
   function onRemoveRelationship(from, rel, to) {
     diaRequest('asset_catalogue.remove_relationship', { from: from, rel: rel, to: to }).then(function(r) {
-      if (!r.success) alert('Remove relationship failed: ' + r.error);
+      if (!r.success) showToast('error', 'Remove relationship failed', r.error);
       else loadRelationships(selectedId);
     });
   }
 
   /* ── Create Dialog ───────────────────────────────── */
   function openCreateDialog() {
-    // Populate type selector
+    // Populate type selector from registered asset types
     var sel = document.getElementById('create-type');
-    sel.innerHTML = '';
-    var typeSet = {};
-    allRecords.forEach(function(r) { typeSet[r.type] = 1; });
-    Object.keys(typeSet).sort().forEach(function(t) {
-      var o = document.createElement('option');
-      o.value = t; o.textContent = t;
-      sel.appendChild(o);
+    sel.innerHTML = '<option value="">Loading…</option>';
+    diaRequest('asset_catalogue.get_asset_types', {}).then(function(r) {
+      sel.innerHTML = '';
+      var types = (r.success && r.types) ? r.types : [];
+      if (types.length === 0) {
+        // Fallback: scan existing records
+        var typeSet = {};
+        allRecords.forEach(function(rec) { typeSet[rec.type] = rec.type; });
+        Object.keys(typeSet).sort().forEach(function(t) {
+          var o = document.createElement('option');
+          o.value = t; o.textContent = t;
+          sel.appendChild(o);
+        });
+      } else {
+        types.forEach(function(t) {
+          var o = document.createElement('option');
+          o.value = t.typeId; o.textContent = t.name + ' (' + t.typeId + ')';
+          sel.appendChild(o);
+        });
+      }
+      updateIdPrefix();
+      updateCreateDefaultSourcePath();
     });
 
-    document.getElementById('create-id').value = '';
-    document.getElementById('create-source-path').value = '';
+    document.getElementById('create-id-name').value = '';
+    document.getElementById('create-id-prefix').textContent = '—.';
+    var srcPathEl = document.getElementById('create-source-path');
+    srcPathEl.value = '';
+    srcPathEl.dataset.userEdited = '';
     document.getElementById('create-tags').value = '';
     document.getElementById('create-scope').value = 'global';
     document.getElementById('create-stage-row').style.display = 'none';
-    document.getElementById('create-stage').value = '';
     document.getElementById('create-error').textContent = '';
     document.getElementById('create-id-note').textContent = '';
+
+    // Populate stage dropdown from existing stage records
+    var stageSel = document.getElementById('create-stage');
+    stageSel.innerHTML = '<option value="">— select stage —</option>';
+    allRecords.filter(function(r) { return r.type === 'stage'; }).forEach(function(r) {
+      var o = document.createElement('option');
+      var stageName = r.id.indexOf('.') >= 0 ? r.id.split('.').slice(1).join('.') : r.id;
+      o.value = stageName; o.textContent = stageName;
+      stageSel.appendChild(o);
+    });
+
     openModal('modal-create');
   }
 
@@ -934,63 +1092,139 @@
     document.getElementById('create-stage-row').style.display = (v === 'stage') ? 'flex' : 'none';
   }
 
+  function updateIdPrefix() {
+    var typeId = document.getElementById('create-type').value;
+    document.getElementById('create-id-prefix').textContent = (typeId || '—') + '.';
+  }
+
+  // Extension hints for known blueprint types; falls back to empty.
+  var kTypeExtensions = {
+    'diaentitytemplate': '.diaentitytemplate',
+    'diacamera': '.diacamera',
+    'dialight':  '.dialight',
+    'diascene':  '.diascene',
+    'texture':   '.png',
+    'audio':     '.wav',
+    'config':    '.config.json',
+    'sprite':    '.sprite.json',
+    'ui':        '.ui.json',
+    'stage':     '.stage.json',
+  };
+
+  function updateCreateDefaultSourcePath() {
+    var name   = document.getElementById('create-id-name').value.trim();
+    var typeId = document.getElementById('create-type').value;
+    var pathEl = document.getElementById('create-source-path');
+
+    if (pathEl.dataset.userEdited === '1') return;
+
+    if (!name || !typeId) { pathEl.value = ''; return; }
+
+    var ext   = kTypeExtensions[typeId] || ('.' + typeId);
+    pathEl.value = name + ext;
+  }
+
+  function browseCreateSourcePath() {
+    diaRequest('asset_catalogue.browse_source_file', {}).then(function(r) {
+      if (!r.success) return;
+      var pathEl  = document.getElementById('create-source-path');
+      var folder  = r.relative_path || r.path;
+      var current = pathEl.value.trim();
+      // Preserve any filename already in the field, just update the directory prefix
+      var filename = current ? current.replace(/^.*[/\\]/, '') : '';
+      pathEl.value = filename ? folder + filename : folder;
+      pathEl.dataset.userEdited = '1';
+    });
+  }
+
+  function getCreateFullId() {
+    var typeId = document.getElementById('create-type').value;
+    var name   = document.getElementById('create-id-name').value.trim();
+    return (typeId && name) ? typeId + '.' + name : '';
+  }
+
   function validateCreateId() {
-    var id = document.getElementById('create-id').value;
-    var note = document.getElementById('create-id-note');
-    var re = /^[a-z0-9_-]+\.[a-z0-9_-]+$/;
-    if (!id) { note.textContent = ''; return false; }
-    if (!re.test(id)) {
+    var name  = document.getElementById('create-id-name').value.trim();
+    var typeId = document.getElementById('create-type').value;
+    var note   = document.getElementById('create-id-note');
+    var nameRe = /^[a-z0-9_-]+$/;
+
+    if (!name) { note.textContent = ''; return false; }
+    if (!typeId) {
       note.className = 'validation-note invalid';
-      note.textContent = 'Format: type.name (lowercase, alphanumeric, _ or -)';
+      note.textContent = 'Select a type first';
       return false;
     }
-    var dup = allRecords.some(function(r) { return r.id === id; });
+    if (!nameRe.test(name)) {
+      note.className = 'validation-note invalid';
+      note.textContent = 'Lowercase, alphanumeric, _ or - only';
+      return false;
+    }
+    var fullId = typeId + '.' + name;
+    var dup = allRecords.some(function(r) { return r.id === fullId; });
     if (dup) {
       note.className = 'validation-note invalid';
-      note.textContent = 'ID already exists';
+      note.textContent = 'ID "' + fullId + '" already exists';
       return false;
     }
     note.className = 'validation-note valid';
-    note.textContent = '✓';
+    note.textContent = '✓  ' + fullId;
     return true;
   }
 
   function onCreateRecord() {
     if (!validateCreateId()) {
-      document.getElementById('create-error').textContent = 'Fix ID validation errors first.';
+      document.getElementById('create-error').textContent = 'Fix the name field first.';
       return;
     }
-    var id    = document.getElementById('create-id').value;
+    var id    = getCreateFullId();
     var type  = document.getElementById('create-type').value;
     var scope = document.getElementById('create-scope').value;
     var tags  = document.getElementById('create-tags').value
       .split(',').map(function(t){ return t.trim(); }).filter(Boolean);
 
-    if (!type) {
-      // If no types in registry yet, use the first part of the ID
-      type = id.split('.')[0];
+    var source_path = document.getElementById('create-source-path').value;
+
+    // Types that create a real file — route through create_asset
+    var templateTypes = ['diascene', 'diaentitytemplate', 'diacamera', 'dialight'];
+    var isTemplateType = templateTypes.indexOf(type) !== -1;
+
+    if (isTemplateType) {
+      diaRequest('asset_catalogue.create_asset', {
+        assetType: type,
+        id: id,
+        source_path: source_path
+      }).then(function(r) {
+        if (!r.success) {
+          document.getElementById('create-error').textContent = r.error || 'Create failed';
+        } else {
+          closeModal('modal-create');
+          selectedId = id;
+        }
+      });
+    } else {
+      var payload = {
+        id: id,
+        type: type,
+        source_path: source_path,
+        status: 'Active',
+        scope: scope,
+        tags: tags
+      };
+      if (scope === 'stage') payload.stage = document.getElementById('create-stage').value;
+
+      diaRequest('asset_catalogue.create_record', payload).then(function(r) {
+        if (!r.success) {
+          document.getElementById('create-error').textContent = r.error || 'Create failed';
+        } else {
+          closeModal('modal-create');
+          selectedId = id;
+        }
+      });
     }
-
-    var payload = {
-      id: id,
-      type: type,
-      source_path: document.getElementById('create-source-path').value,
-      status: 'Active',
-      scope: scope,
-      tags: tags
-    };
-    if (scope === 'stage') payload.stage = document.getElementById('create-stage').value;
-
-    diaRequest('asset_catalogue.create_record', payload).then(function(r) {
-      if (!r.success) {
-        document.getElementById('create-error').textContent = r.error || 'Create failed';
-      } else {
-        closeModal('modal-create');
-        selectedId = id;
-      }
-    });
   }
 
+  /* ── New Scene shortcut ─────────────────────────── */
   /* ── Delete ──────────────────────────────────────── */
   function onDeleteSelected() {
     if (!selectedId) return;
@@ -1009,7 +1243,7 @@
   function onConfirmDelete() {
     if (!pendingDeleteId) return;
     diaRequest('asset_catalogue.delete_record', { id: pendingDeleteId }).then(function(r) {
-      if (!r.success) alert('Delete failed: ' + r.error);
+      if (!r.success) showToast('error', 'Delete failed', r.error);
       else {
         selectedId = null;
         pendingDeleteId = null;
@@ -1058,13 +1292,31 @@
     });
   }
 
+  function onReconcileReferences() {
+    var statusEl = document.getElementById('reconcile-status');
+    statusEl.style.display = '';
+    statusEl.style.color = '#9d9d9d';
+    statusEl.textContent = 'Reconciling…';
+    diaRequest('asset_catalogue.infer_relationships', {}).then(function(r) {
+      if (!r.success) {
+        statusEl.style.color = '#f48771';
+        statusEl.textContent = '⛔ ' + (r.error || 'Reconcile failed');
+        return;
+      }
+      statusEl.style.color = '#4ec9a0';
+      statusEl.textContent = '✓ Reconciled — ' + r.scenes_scanned + ' scene' + (r.scenes_scanned !== 1 ? 's' : '') +
+        ', ' + r.edges_added + ' edge' + (r.edges_added !== 1 ? 's' : '') + ' added' +
+        (r.edges_skipped > 0 ? ', ' + r.edges_skipped + ' skipped' : '');
+    });
+  }
+
   /* ── Rules ───────────────────────────────────────── */
   var rulesLoaded = false;
   var dryRunResults = [];
 
   function onBrowseRules() {
     diaRequest('asset_catalogue.browse_rules', {}).then(function(r) {
-      if (!r.success) { if (r.error) alert('Browse rules failed: ' + r.error); return; }
+      if (!r.success) { if (r.error) showToast('error', 'Browse rules failed', r.error); return; }
       var statusEl = document.getElementById('rules-status');
       document.getElementById('rules-path').value = r.path || '';
       statusEl.textContent = '✓ Loaded — ' + r.rule_count + ' rule' + (r.rule_count !== 1 ? 's' : '');
@@ -1080,7 +1332,7 @@
 
   function onLoadRules() {
     var path = document.getElementById('rules-path').value.trim();
-    if (!path) { alert('Enter a rules file path.'); return; }
+    if (!path) { showToast('warning', 'Missing path', 'Enter a rules file path'); return; }
     diaRequest('asset_catalogue.load_rules', { path: path }).then(function(r) {
       var statusEl = document.getElementById('rules-status');
       if (!r.success) {
@@ -1169,7 +1421,7 @@
     msg += '\nThis can be undone.';
     if (!confirm(msg)) return;
     diaRequest('asset_catalogue.apply_rules', { overwrite_manuals: overwriteManuals }).then(function(r) {
-      if (!r.success) { alert('Apply failed: ' + r.error); return; }
+      if (!r.success) { showToast('error', 'Apply rules failed', r.error); return; }
       document.getElementById('rules-list').innerHTML =
         '<div style="color:#4ec9a0;font-size:11px;">✓ Applied ' + r.applied_count + ' change' + (r.applied_count !== 1 ? 's' : '') + '</div>';
     });
@@ -1183,7 +1435,7 @@
 
   function onDiscover() {
     var root = document.getElementById('disc-root-path').value.trim();
-    if (!root) { alert('Enter a root path first.'); return; }
+    if (!root) { showToast('warning', 'Missing path', 'Enter a root path first'); return; }
 
     diaRequest('asset_catalogue.discover_files', { root_path: root }).then(function(r) {
       var resultsEl = document.getElementById('disc-results');
@@ -1245,7 +1497,7 @@
         id:   document.getElementById('disc-id-'   + i).value
       });
     });
-    if (selected.length === 0) { alert('Select at least one file.'); return; }
+    if (selected.length === 0) { showToast('warning', 'No selection', 'Select at least one file'); return; }
 
     // Show bulk-add confirmation
     pendingBulkItems = selected;
@@ -1268,7 +1520,7 @@
       return { id: item.id, type: item.type, source_path: item.path, status: 'Active', scope: 'global', tags: [] };
     });
     diaRequest('asset_catalogue.bulk_create_records', { records: records }).then(function(r) {
-      if (!r.success) alert('Bulk add failed: ' + r.error);
+      if (!r.success) showToast('error', 'Bulk add failed', r.error);
     });
   }
 
@@ -1345,6 +1597,13 @@
     fetchAndAddGraphRefs(id, false);
   }
 
+  function showToast(level, title, message) {
+    window.parent.postMessage({
+      __diaFromFrame: true,
+      payload: { type: 'editor.notify', data: { level: level, title: title, message: message } }
+    }, '*');
+  }
+
   function fetchAndAddGraphRefs(id, isExpand) {
     if (isExpand && graphExpandedNodes[id]) return;
     graphExpandedNodes[id] = true;
@@ -1358,12 +1617,16 @@
           addGraphNode(r.target, isExpand ? 'expanded' : 'forward');
           addGraphEdge(id, r.target, r.rel);
         });
+      } else if (fwd.error) {
+        showToast('warning', 'Graph expand failed', fwd.error);
       }
       if (rev.success) {
         (rev.refs || []).forEach(function(r) {
           addGraphNode(r.source, isExpand ? 'expanded' : 'reverse');
           addGraphEdge(r.source, id, r.rel);
         });
+      } else if (rev.error) {
+        showToast('warning', 'Graph expand failed', rev.error);
       }
       renderGraph();
     });

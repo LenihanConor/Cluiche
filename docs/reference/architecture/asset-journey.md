@@ -1,6 +1,6 @@
 # Asset Journey: End-to-End Walkthrough
 
-How a single asset — `texture.player_ship` — travels from authored file to loaded-in-game, touching every system along the way. Read the [asset-system-overview](../../specs/systems/dia/asset-system-overview.md) for the architectural view; this document is the concrete trace.
+How a single asset — `texture.player_ship` — travels from authored file to loaded-in-game, touching every system along the way. Read the [asset-system-overview](../../specs/applications/dia/systems/asset-system-overview/asset-system-overview.md) for the architectural view; this document is the concrete trace.
 
 ---
 

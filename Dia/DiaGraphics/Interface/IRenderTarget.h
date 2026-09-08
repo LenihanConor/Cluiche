@@ -9,7 +9,7 @@
 #include "DiaGraphics/Misc/PrimitiveType.h"
 
 #include <DiaMaths/Vector/Vector2D.h>
-#include <DiaMaths/Shape/2D/AARect2D.h>
+#include <DiaGeometry2D/Shapes/AARect.h>
 
 namespace Dia
 {
@@ -46,7 +46,7 @@ namespace Dia
 
 			////////////////////////////////////////////////////////////
 			///  Get the viewport of a view, applied to this render target
-			virtual Dia::Maths::AARect2D GetViewport(const IView& view) const = 0;
+			virtual Dia::Geometry2D::AARect GetViewport(const IView& view) const = 0;
 
 			////////////////////////////////////////////////////////////
 			/// Convert a point from target coordinates to world

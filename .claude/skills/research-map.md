@@ -22,11 +22,11 @@ Build understanding of the idea space through conversation, then commit to `map.
 
 ### 0. Check Model
 
-Check which model is active. If it is not `claude-opus-4-7`, print:
+Check which model is active. If it is not an Opus-tier model (e.g. `claude-opus-5`), print:
 
 ```
 Research sessions should run on Opus for best results.
-Switch with: /model claude-opus-4-7
+Switch with: /model claude-opus-5 (or the current Opus-tier model)
 Then re-run this command.
 ```
 
@@ -149,6 +149,7 @@ Write `docs/research/<slug>/map.md` using the final agreed map:
 Print:
 ```
 map.md written to docs/research/<slug>/
+Safe to /clear or start a new session now — /research-choose reads map.md from disk, not this conversation.
 Next step: /research-choose <slug>
 ```
 
@@ -156,7 +157,7 @@ Next step: /research-choose <slug>
 
 ## Cluiche Context
 
-Engine modules: DiaCore, DiaMaths, DiaGeometry2D, DiaGraphics, DiaWindow, DiaInput, DiaUI/Awesomium/CEF/Ultralight, DiaApplication, DiaAPI, DiaSFML, DiaLogger, DiaRigidBody2D, DiaSoftBody2D, DiaWebSocket, DiaEditor, DiaPython
+Engine modules: DiaCore, DiaMaths, DiaGeometry2D, DiaGraphics, DiaWindow, DiaInput, DiaUI/Awesomium/CEF/Ultralight, DiaApplicationFlow, DiaAPI, DiaSFML, DiaLogger, DiaRigidBody2D, DiaSoftBody2D, DiaWebSocket, DiaEditor, DiaPython
 
 Applications: CluicheTest (demo + testbed), CluicheEditor (plugin editor), GoogleTests
 

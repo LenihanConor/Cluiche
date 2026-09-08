@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Editor Nav — Candidate 1: Full-Label Pill Bar</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: #1e1e1e; color: #d4d4d4; display: flex; flex-direction: column; height: 100vh; overflow: hidden; font-size: 12px; }
+
+/* ── Title bar ── */
+.titlebar { background: #323233; height: 22px; display: flex; align-items: center; padding: 0 12px; gap: 8px; font-size: 11px; color: #bbb; flex-shrink: 0; border-bottom: 1px solid #111; }
+.titlebar strong { color: #d4d4d4; }
+.titlebar .path { color: #888; }
+
+/* ── Mosaic area ── */
+.mosaic-area { flex: 1; display: flex; flex-direction: row; overflow: hidden; }
+.panel { display: flex; flex-direction: column; border-right: 1px solid #252526; overflow: hidden; }
+.panel:last-child { border-right: none; }
+.panel-titlebar { background: #252526; border-bottom: 1px solid #1e1e1e; padding: 4px 10px; font-size: 11px; color: #bbb; display: flex; align-items: center; flex-shrink: 0; }
+.panel-titlebar .close-btn { margin-left: auto; color: #666; cursor: pointer; font-size: 14px; line-height: 1; }
+.panel-titlebar .close-btn:hover { color: #d4d4d4; }
+.panel-body { flex: 1; padding: 12px; background: #1e1e1e; color: #666; font-size: 11px; overflow: auto; }
+
+/* ── Status bar ── */
+.statusbar { background: #007acc; height: 22px; display: flex; align-items: center; padding: 0 12px; font-size: 11px; color: #fff; flex-shrink: 0; gap: 16px; }
+.statusbar .right { margin-left: auto; display: flex; gap: 16px; }
+.conn-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #89d185; margin-right: 4px; }
+
+/* ══════════════════════════════
+   TOOLBAR — CANDIDATE 1
+══════════════════════════════ */
+.toolbar {
+  height: 32px;
+  background: #252526;
+  border-top: 1px solid #3c3c3c;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  flex-shrink: 0;
+  gap: 0;
+  position: relative;
+}
+
+.pill-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden; /* clipped — overflow handled by JS */
+}
+
+/* Pill button */
+.pill {
+  display: flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  white-space: nowrap;
+  flex-shrink: 0;
+  user-select: none;
+  transition: background .1s, color .1s;
+}
+.pill.on  { background: #0e639c; color: #fff; border: none; }
+.pill.off { background: transparent; color: #808080; border: 1px solid #3c3c3c; }
+.pill.off:hover { border-color: #666; color: #bbb; }
+.pill.on:hover  { background: #1177bb; }
+
+/* Overflow button */
+.overflow-btn {
+  height: 22px;
+  padding: 0 8px;
+  background: transparent;
+  border: 1px solid #3c3c3c;
+  color: #808080;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  white-space: nowrap;
+  display: none; /* shown by JS when needed */
+  flex-shrink: 0;
+}
+.overflow-btn:hover { border-color: #666; color: #bbb; }
+
+/* Overflow dropdown */
+.overflow-menu {
+  display: none;
+  position: absolute;
+  bottom: 36px;
+  left: 8px;
+  background: #2d2d2d;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  min-width: 180px;
+  z-index: 200;
+  padding: 4px 0;
+  box-shadow: 0 4px 12px #00000066;
+}
+.overflow-menu.open { display: block; }
+.overflow-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 11px;
+  color: #d4d4d4;
+}
+.overflow-item:hover { background: #3a3a3a; }
+.overflow-item .check { width: 12px; color: #0e639c; font-weight: 700; }
+
+/* Centre region */
+.toolbar-centre { display: flex; justify-content: center; align-items: center; padding: 0 12px; font-size: 11px; color: #888; white-space: nowrap; }
+
+/* Connection status */
+.conn-status {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 11px; color: #808080;
+  padding: 0 6px;
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════
+   COMPARE BAR
+══════════════════════════════ */
+.compare-bar { position: fixed; bottom: 36px; right: 16px; display: flex; gap: 6px; z-index: 300; }
+.compare-btn { padding: 5px 12px; border-radius: 4px; border: 1px solid #555; background: #2d2d2d; color: #d4d4d4; cursor: pointer; font-size: 11px; font-family: 'Segoe UI', system-ui, sans-serif; }
+.compare-btn.active { background: #0e639c; border-color: #0e639c; color: #fff; }
+.compare-btn:hover:not(.active) { background: #3a3a3a; }
+
+/* ── Scenario controls ── */
+.scenario-bar { position: fixed; top: 30px; right: 16px; display: flex; gap: 6px; z-index: 300; align-items: center; }
+.scenario-label { font-size: 10px; color: #888; }
+.scenario-btn { padding: 3px 10px; border-radius: 3px; border: 1px solid #555; background: #2d2d2d; color: #d4d4d4; cursor: pointer; font-size: 10px; font-family: 'Segoe UI', system-ui, sans-serif; }
+.scenario-btn.active { background: #444; border-color: #888; color: #fff; }
+.scenario-btn:hover:not(.active) { background: #3a3a3a; }
+</style>
+</head>
+<body>
+
+<!-- Compare controls -->
+<div class="compare-bar">
+  <button class="compare-btn" id="btn-before" onclick="showView('before')">◀ Current (letters)</button>
+  <button class="compare-btn active" id="btn-after" onclick="showView('after')">▶ Candidate 1 (pill bar)</button>
+</div>
+
+<!-- Scenario controls (only visible in "after" view) -->
+<div class="scenario-bar" id="scenarioBar">
+  <span class="scenario-label">Plugins:</span>
+  <button class="scenario-btn active" id="sc5" onclick="setScenario(5,this)">5 (today)</button>
+  <button class="scenario-btn" id="sc8" onclick="setScenario(8,this)">8</button>
+  <button class="scenario-btn" id="sc12" onclick="setScenario(12,this)">12</button>
+</div>
+
+<!-- ══════════════════════════════
+     CANDIDATE 1 VIEW
+══════════════════════════════ -->
+<div id="view-after" style="display:flex; flex-direction:column; height:100vh;">
+
+  <div class="titlebar">
+    <strong>Cluiche Editor</strong>
+    <span class="path">CluicheTest / cluiche.cluicheproj</span>
+  </div>
+
+  <div class="mosaic-area">
+    <div class="panel" style="flex:1.2" id="p-Output Console">
+      <div class="panel-titlebar">Output Console<span class="close-btn" onclick="togglePill('Output Console')">×</span></div>
+      <div class="panel-body">
+        <div style="color:#89d185">[INFO]  Engine started — 0ms</div>
+        <div style="color:#89d185">[INFO]  DiaApplicationFlow v2 ready</div>
+        <div style="color:#f9e2af">[WARN]  No project file loaded</div>
+      </div>
+    </div>
+    <div class="panel" style="flex:1" id="p-Game Connection">
+      <div class="panel-titlebar">Game Connection<span class="close-btn" onclick="togglePill('Game Connection')">×</span></div>
+      <div class="panel-body">
+        <div style="color:#89d185;margin-bottom:8px">● Connected — CluicheTest</div>
+        <div>MainPU · 60 Hz</div>
+        <div style="color:#888">SimPU · 30 Hz</div>
+      </div>
+    </div>
+    <div class="panel" style="flex:1.4" id="p-App Flow">
+      <div class="panel-titlebar">App Flow<span class="close-btn" onclick="togglePill('App Flow')">×</span></div>
+      <div class="panel-body">
+        <div style="color:#89b4fa;margin-bottom:8px">cluiche.diaapp</div>
+        <div style="background:#252526;border:1px solid #0e639c;border-radius:4px;padding:8px">
+          <div style="font-weight:600">SimPU</div>
+          <div style="color:#888">6 modules · 2 stages</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PILL TOOLBAR -->
+  <div class="toolbar" id="pillToolbar">
+    <div class="pill-group" id="pillGroup">
+      <!-- pills injected by JS -->
+    </div>
+    <button class="overflow-btn" id="overflowBtn" onclick="toggleOverflow()">⋯ <span id="overflowCount"></span></button>
+    <div class="toolbar-centre">CluicheTest — cluiche.cluicheproj</div>
+    <div class="conn-status">
+      <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#89d185"></span>
+      Connected
+    </div>
+  </div>
+
+  <!-- Overflow dropdown -->
+  <div class="overflow-menu" id="overflowMenu">
+    <!-- items injected by JS -->
+  </div>
+
+  <div class="statusbar">
+    <span><span class="conn-dot"></span> Connected</span>
+    <div class="right"><span>x64 · Debug</span></div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════
+     CURRENT / BEFORE VIEW
+══════════════════════════════ -->
+<div id="view-before" style="display:none; flex-direction:column; height:100vh;">
+
+  <div class="titlebar">
+    <strong>Cluiche Editor</strong>
+    <span class="path">CluicheTest / cluiche.cluicheproj</span>
+  </div>
+
+  <div class="mosaic-area">
+    <div class="panel" style="flex:1.2">
+      <div class="panel-titlebar">Output Console<span class="close-btn">×</span></div>
+      <div class="panel-body">
+        <div style="color:#89d185">[INFO]  Engine started</div>
+        <div style="color:#f9e2af">[WARN]  No project file loaded</div>
+      </div>
+    </div>
+    <div class="panel" style="flex:1">
+      <div class="panel-titlebar">Game Connection<span class="close-btn">×</span></div>
+      <div class="panel-body"><div style="color:#89d185">● Connected</div></div>
+    </div>
+    <div class="panel" style="flex:1.4">
+      <div class="panel-titlebar">App Flow<span class="close-btn">×</span></div>
+      <div class="panel-body" style="color:#89b4fa">cluiche.diaapp</div>
+    </div>
+  </div>
+
+  <div style="height:28px;background:#252526;border-top:1px solid #3c3c3c;display:flex;align-items:center;padding:0 8px;gap:2px;flex-shrink:0">
+    <div style="display:flex;gap:2px" id="old-pills">
+      <!-- injected by scenario -->
+    </div>
+    <div style="flex:1;display:flex;justify-content:center;font-size:11px;color:#888">CluicheTest — cluiche.cluicheproj</div>
+    <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#808080">
+      <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#89d185"></span> Connected
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <span><span class="conn-dot"></span> Connected</span>
+    <div class="right"><span>x64 · Debug</span></div>
+  </div>
+</div>
+
+<script>
+// All possible panels across scenarios
+const ALL_PANELS = [
+  { name: 'Home',            on: false },
+  { name: 'Output Console',  on: true  },
+  { name: 'Game Connection', on: true  },
+  { name: 'Plugin Browser',  on: false },
+  { name: 'App Flow',        on: true  },
+  // extra panels for 8-scenario
+  { name: 'Stages',          on: false },
+  { name: 'Debug Layers',    on: false },
+  { name: 'Assets',          on: false },
+  // extra panels for 12-scenario
+  { name: 'Physics',         on: false },
+  { name: 'Audio',           on: false },
+  { name: 'Animation',       on: false },  // note: also starts with 'A' — collision in old bar
+  { name: 'Profiler',        on: false },
+];
+
+let currentCount = 5;
+let panels = [];
+let overflowOpen = false;
+
+function setScenario(n, btn) {
+  currentCount = n;
+  document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  panels = ALL_PANELS.slice(0, n).map(p => ({ ...p }));
+  renderPills();
+  renderOldBar();
+}
+
+function renderPills() {
+  const group = document.getElementById('pillGroup');
+  const overflowBtn = document.getElementById('overflowBtn');
+  const overflowMenu = document.getElementById('overflowMenu');
+
+  // measure available width
+  const toolbar = document.getElementById('pillToolbar');
+  // reserve space for centre + conn status + overflow btn
+  const reserved = 260;
+  const available = toolbar.clientWidth - reserved;
+
+  // build all pills first (off-screen measure)
+  const PILL_PAD = 20 + 3; // padding + gap
+  const CHAR_W = 6.5;      // approx px per char at 11px Segoe UI
+
+  let usedWidth = 0;
+  let visiblePills = [];
+  let overflowPills = [];
+
+  panels.forEach(p => {
+    const pillW = p.name.length * CHAR_W + PILL_PAD;
+    if (usedWidth + pillW <= available) {
+      visiblePills.push(p);
+      usedWidth += pillW + 3;
+    } else {
+      overflowPills.push(p);
+    }
+  });
+
+  // render visible pills
+  group.innerHTML = '';
+  visiblePills.forEach(p => {
+    const btn = document.createElement('button');
+    btn.className = 'pill ' + (p.on ? 'on' : 'off');
+    btn.textContent = p.name;
+    btn.onclick = () => togglePill(p.name);
+    group.appendChild(btn);
+  });
+
+  // overflow
+  if (overflowPills.length > 0) {
+    overflowBtn.style.display = 'flex';
+    document.getElementById('overflowCount').textContent = '+' + overflowPills.length;
+    overflowMenu.innerHTML = '';
+    overflowPills.forEach(p => {
+      const item = document.createElement('div');
+      item.className = 'overflow-item';
+      item.innerHTML = `<span class="check">${p.on ? '✓' : ''}</span><span>${p.name}</span>`;
+      item.onclick = () => { togglePill(p.name); toggleOverflow(); };
+      overflowMenu.appendChild(item);
+    });
+  } else {
+    overflowBtn.style.display = 'none';
+    overflowMenu.classList.remove('open');
+  }
+}
+
+function renderOldBar() {
+  const container = document.getElementById('old-pills');
+  if (!container) return;
+  container.innerHTML = '';
+  const initials = {};
+  panels.forEach(p => {
+    const letter = p.name.charAt(0).toUpperCase();
+    const collision = initials[letter];
+    initials[letter] = true;
+    const btn = document.createElement('div');
+    btn.style.cssText = `width:24px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;border-radius:2px;cursor:pointer;font-family:'Segoe UI',system-ui,sans-serif;`;
+    if (collision) {
+      btn.style.cssText += 'background:transparent;color:#f48771;border:1px solid #f4877155;';
+      btn.title = p.name + ' — initial collision!';
+    } else if (p.on) {
+      btn.style.cssText += 'background:#0e639c;color:#fff;border:none;';
+      btn.title = p.name;
+    } else {
+      btn.style.cssText += 'background:transparent;color:#808080;border:1px solid #3c3c3c;';
+      btn.title = p.name;
+    }
+    btn.textContent = letter;
+    container.appendChild(btn);
+  });
+}
+
+function togglePill(name) {
+  const p = panels.find(x => x.name === name);
+  if (!p) return;
+  p.on = !p.on;
+  const panel = document.getElementById('p-' + name);
+  if (panel) panel.style.display = p.on ? 'flex' : 'none';
+  renderPills();
+}
+
+function toggleOverflow() {
+  overflowOpen = !overflowOpen;
+  document.getElementById('overflowMenu').classList.toggle('open', overflowOpen);
+}
+
+// close overflow on outside click
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#overflowBtn') && !e.target.closest('#overflowMenu')) {
+    overflowOpen = false;
+    document.getElementById('overflowMenu').classList.remove('open');
+  }
+});
+
+function showView(which) {
+  document.getElementById('view-after').style.display  = which === 'after'  ? 'flex' : 'none';
+  document.getElementById('view-before').style.display = which === 'before' ? 'flex' : 'none';
+  document.getElementById('btn-after').classList.toggle('active',  which === 'after');
+  document.getElementById('btn-before').classList.toggle('active', which === 'before');
+  document.getElementById('scenarioBar').style.display = which === 'after' ? 'flex' : 'none';
+  renderOldBar();
+}
+
+// init
+panels = ALL_PANELS.slice(0, 5).map(p => ({ ...p }));
+renderPills();
+renderOldBar();
+window.addEventListener('resize', renderPills);
+</script>
+</body>
+</html>

@@ -8,10 +8,10 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/IVisualDebugger.h>
+#include <DiaCore/DebugDraw/IVisualDebugger.h>
 #include <DiaGeometry2D/Spatial/SpatialGrid.h>
 
-namespace Dia::Debug { class DebugLayerManager; }
+namespace Dia::Core  { class IDebugContext; }
 
 namespace Dia::Geometry2DVisualDebugger
 {
@@ -29,17 +29,28 @@ class SpatialGridDrawer : public Dia::Debug::IVisualDebugger
 {
 public:
     SpatialGridDrawer(const Dia::Geometry2D::SpatialGrid<T, MaxObjects>& grid,
-                      const Dia::Debug::DebugLayerManager&               manager)
+                      const Dia::Core::IDebugContext&               manager)
         : mGrid(grid)
         , mManager(manager)
     {}
 
     Dia::Core::StringCRC GetLayerName() const override;
-    void Draw(Dia::Graphics::FrameData& frameData) override;
+    void Draw(Dia::Core::IDebugDraw& draw) override;
+
+    struct CellCoord { int x; int y; };
+
+    // Called by the owning stage module each frame with the externally-owned
+    // selection. Pass nullptr to clear.
+    void SetSelection(const CellCoord* selected)
+    {
+        mSelected = selected;
+    }
 
 private:
     const Dia::Geometry2D::SpatialGrid<T, MaxObjects>& mGrid;
-    const Dia::Debug::DebugLayerManager&               mManager;
+    const Dia::Core::IDebugContext&               mManager;
+    bool                                               mShowLabels{ false };
+    const CellCoord*                                   mSelected{ nullptr };
 };
 
 } // namespace Dia::Geometry2DVisualDebugger

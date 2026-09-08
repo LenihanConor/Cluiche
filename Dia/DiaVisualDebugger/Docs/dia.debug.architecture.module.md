@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.debug.visualdebugger
 name: DiaVisualDebugger
 owner_team: TBD
-layer: platform
+layer: domain/visual/tools
 status: active
 maturity: dev
 

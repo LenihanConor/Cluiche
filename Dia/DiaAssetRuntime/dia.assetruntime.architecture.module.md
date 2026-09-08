@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.assetruntime
 name: DiaAssetRuntime
 owner_team: TBD
-layer: platform
+layer: assets/core
 status: active
 maturity: dev
 
@@ -31,20 +31,22 @@ responsibilities:
   - Path alias registration — asset IDs registered as aliases in DiaCore PathStore
 
 non_responsibilities:
-  - Asset content loading (textures, audio, meshes — owned by DiaGraphics, DiaAudio)
-  - DiaApplication lifecycle integration
+  - DiaApplicationFlow lifecycle integration
   - Manifest authoring or editing (owned by DiaAssetCatalogueEditor)
   - Asset pipeline or transform (owned by DiaAssetPipeline)
+  - Audio or mesh asset loading (future DiaAudio, DiaMesh3D)
 
 dependent_modules:
   - dia.core
   - dia.logger
+  - dia.bgfx
 
 public_api:
   headers:
     - DiaAssetRuntime/AssetRuntime.h
     - DiaAssetRuntime/IAssetStateListener.h
     - DiaAssetRuntime/AssetState.h
+    - DiaAssetRuntime/Handlers/TextureHandler.h
   namespaces:
     - Dia::AssetRuntime
   entry_points:
@@ -54,14 +56,16 @@ public_api:
     - RuntimeManifestLoader
     - RuntimeAssetEntry
     - RuntimeStageEntry
+    - TextureHandler
 
 dependencies:
   required:
     - dia.core
     - dia.logger
+    - dia.bgfx
+    - dia.threading
   forbidden:
     - dia.application
     - dia.assetcatalogue
-    - dia.graphics
-    - dia.audio
+    - dia.sfml
 ---

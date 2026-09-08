@@ -41,7 +41,7 @@ namespace Dia
 		inline
 		Dia::Maths::Vector2D& Line::operator[](int index)
 		{
-			DIA_ASSERT(index >= 0 && index <= kNumPts, "Index out of bounds");
+			DIA_ASSERT(index >= 0 && index < kNumPts, "Index out of bounds");
 			return mPt[index];
 		}
 
@@ -49,7 +49,7 @@ namespace Dia
 		inline
 		const Dia::Maths::Vector2D& Line::operator[](int index) const
 		{
-			DIA_ASSERT(index >= 0 && index <= kNumPts, "Index out of bounds");
+			DIA_ASSERT(index >= 0 && index < kNumPts, "Index out of bounds");
 			return mPt[index];
 		}
 
@@ -57,7 +57,7 @@ namespace Dia
 		inline
 		Dia::Maths::Vector2D& Line::operator[](unsigned int index)
 		{
-			DIA_ASSERT(index >= 0 && index <= (unsigned int)kNumPts, "Index out of bounds");
+			DIA_ASSERT(index < (unsigned int)kNumPts, "Index out of bounds");
 			return mPt[index];
 		}
 
@@ -65,7 +65,7 @@ namespace Dia
 		inline
 		const Dia::Maths::Vector2D& Line::operator[](unsigned int index) const
 		{
-			DIA_ASSERT(index >= 0 && index <= (unsigned int)kNumPts, "Index out of bounds");
+			DIA_ASSERT(index < (unsigned int)kNumPts, "Index out of bounds");
 			return mPt[index];
 		}
 

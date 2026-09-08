@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Blackboard Inspector</title>
+<style>
+  :root {
+    --pico-background-color: #1e1e1e;
+    --pico-card-background-color: #252526;
+    --pico-form-element-background-color: #252526;
+    --pico-color: #d4d4d4;
+    --pico-border-color: #3c3c3c;
+    --pico-muted-border-color: #2d2d2d;
+    --pico-muted-color: #808080;
+    --pico-primary: #0e639c;
+    --pico-primary-hover: #1177bb;
+    --pico-primary-inverse: #ffffff;
+    --pico-secondary: #3a3d41;
+    --pico-secondary-hover: #4a4d51;
+    --pico-h2-color: #9cdcfe;
+    --pico-ins-color: #89d185;
+    --pico-del-color: #f44747;
+    --pico-form-element-color: #d4d4d4;
+    --pico-form-element-border-color: #3c3c3c;
+    --pico-form-element-active-border-color: #0e639c;
+    --pico-font-family: 'Segoe UI', sans-serif;
+    --pico-font-size: 12px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%; overflow: hidden;
+    font-family: var(--pico-font-family);
+    font-size: var(--pico-font-size);
+    background: var(--pico-background-color);
+    color: var(--pico-color);
+    display: flex; flex-direction: column; position: relative;
+  }
+
+  /* ── Panel title ──────────────────────────────────────────────────── */
+  .panel-title {
+    padding: 5px 10px;
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    color: #9cdcfe;
+    background: var(--pico-card-background-color);
+    border-bottom: 1px solid var(--pico-border-color);
+    flex-shrink: 0;
+  }
+
+  /* ── Toolbar ──────────────────────────────────────────────────────── */
+  .toolbar {
+    background: var(--pico-card-background-color);
+    border-bottom: 1px solid var(--pico-border-color);
+    padding: 4px 8px;
+    display: flex; align-items: center; gap: 4px;
+    flex-shrink: 0;
+  }
+  .toolbar input[type=search] {
+    flex: 1;
+    background: #2d2d2d;
+    border: 1px solid var(--pico-border-color);
+    border-radius: 3px;
+    color: var(--pico-color);
+    font-size: 11px;
+    padding: 3px 7px;
+    outline: none;
+    font-family: var(--pico-font-family);
+  }
+  .toolbar input[type=search]::placeholder { color: var(--pico-muted-color); }
+  .toolbar input[type=search]:focus { border-color: var(--pico-primary); }
+  .tbtn {
+    background: var(--pico-secondary);
+    border: 1px solid var(--pico-border-color);
+    border-radius: 3px;
+    color: var(--pico-muted-color);
+    cursor: pointer; font-size: 11px;
+    padding: 2px 7px; line-height: 16px;
+    flex-shrink: 0;
+  }
+  .tbtn:hover { background: var(--pico-secondary-hover); color: var(--pico-color); }
+
+  /* ── Scroll area ──────────────────────────────────────────────────── */
+  .scroll-area {
+    flex: 1; overflow-y: auto; padding: 6px;
+  }
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--pico-background-color); }
+  ::-webkit-scrollbar-thumb { background: var(--pico-secondary); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--pico-secondary-hover); }
+
+  /* ── Empty state ──────────────────────────────────────────────────── */
+  .empty-state {
+    display: flex; align-items: center; justify-content: center;
+    height: 100%; color: var(--pico-muted-color);
+    font-size: 12px; font-style: italic;
+  }
+
+  /* ── Component group (board card) ────────────────────────────────── */
+  .comp-group {
+    border: 1px solid var(--pico-border-color);
+    border-radius: 4px; overflow: hidden; margin-bottom: 6px;
+  }
+  .comp-hdr {
+    background: var(--pico-card-background-color);
+    padding: 4px 10px;
+    display: flex; align-items: center; gap: 6px;
+    cursor: pointer; user-select: none;
+  }
+  .comp-hdr:hover { background: var(--pico-secondary-hover); }
+  .comp-chv {
+    color: var(--pico-muted-color); font-size: 9px;
+    transition: transform .15s; flex-shrink: 0;
+  }
+  .comp-hdr.closed .comp-chv { transform: rotate(-90deg); }
+  .comp-name {
+    font-weight: 600; color: #9cdcfe; font-size: 11.5px; flex: 1;
+  }
+  .comp-id {
+    font-size: 10px; color: var(--pico-muted-color);
+    font-family: monospace;
+  }
+  .badge {
+    font-size: 10px; padding: 1px 6px; border-radius: 8px;
+    background: #2d2d2d; color: var(--pico-muted-color);
+    border: 1px solid var(--pico-border-color);
+    white-space: nowrap;
+  }
+  .comp-body { padding: 4px 6px; }
+
+  /* ── Section label inside a board ────────────────────────────────── */
+  .section-lbl {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--pico-muted-color);
+    padding: 5px 4px 3px;
+  }
+  .section-lbl.section-observers {
+    margin-top: 4px;
+    border-top: 1px solid var(--pico-muted-border-color);
+    padding-top: 5px;
+  }
+
+  /* ── Prop rows (slot table) ───────────────────────────────────────── */
+  .prop-row {
+    display: flex; align-items: baseline;
+    padding: 2px 0; min-height: 22px;
+    border-left: 2px solid transparent;
+    padding-left: 4px;
+    border-bottom: 1px solid var(--pico-muted-border-color);
+  }
+  .prop-row:last-child { border-bottom: none; }
+  .prop-key {
+    width: 110px; font-size: 11px; color: #9cdcfe;
+    font-family: monospace; flex-shrink: 0;
+  }
+  .prop-type {
+    width: 120px; font-size: 10px; color: #4ec9b0;
+    font-family: monospace; flex-shrink: 0; padding-top: 1px;
+  }
+  .prop-value {
+    flex: 1; font-family: monospace; font-size: 11px;
+    color: var(--pico-color);
+  }
+  .prop-value .vk { color: #9cdcfe; }
+  .prop-value .vn { color: #b5cea8; }
+  .prop-value .vs { color: #ce9178; }
+  .prop-value.no-ser { color: #555; font-style: italic; }
+
+  /* ── Observer chips ───────────────────────────────────────────────── */
+  .observer-list {
+    display: flex; flex-wrap: wrap; gap: 4px;
+    padding: 4px 4px 6px;
+  }
+  .obs-chip {
+    font-size: 10px; font-family: monospace;
+    padding: 1px 8px; border-radius: 10px;
+    background: #0e3a3a; border: 1px solid #1a5c5c;
+    color: #4ec9b0;
+  }
+  .obs-chip.none { background: none; border-color: var(--pico-border-color); color: #555; }
+</style>
+</head>
+<body>
+
+<div class="panel-title">Blackboard Inspector</div>
+
+<div class="toolbar">
+  <input type="search" id="filter-input" placeholder="Filter boards or slots…">
+  <button class="tbtn" id="btn-expand-all" title="Expand all">&#x229E;</button>
+  <button class="tbtn" id="btn-collapse-all" title="Collapse all">&#x229F;</button>
+</div>
+
+<div class="scroll-area" id="scroll-area">
+  <div class="empty-state" id="empty-state">No blackboards registered</div>
+</div>
+
+<script src="../dia-live-connection.js"></script>
+<script>
+  // ── State ─────────────────────────────────────────────────────────────
+  var currentBoards = [];
+  var filterText = '';
+
+  // ── Toggle a single board open/closed ─────────────────────────────────
+  function toggleBoard(hdr) {
+    var body = hdr.nextElementSibling;
+    var isOpen = !hdr.classList.contains('closed');
+    if (isOpen) {
+      hdr.classList.add('closed');
+      body.style.display = 'none';
+    } else {
+      hdr.classList.remove('closed');
+      body.style.display = '';
+    }
+  }
+
+  // ── Value renderer ────────────────────────────────────────────────────
+  function renderValue(val) {
+    if (val === '[no serializer]') {
+      return '<span class="prop-value no-ser">[no serializer]</span>';
+    }
+    return '<span class="prop-value">' + jsonToHtml(val) + '</span>';
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function jsonToHtml(val) {
+    if (val === null)            return '<span class="vn">null</span>';
+    if (typeof val === 'boolean') return '<span class="vn">' + val + '</span>';
+    if (typeof val === 'number')  return '<span class="vn">' + val + '</span>';
+    if (typeof val === 'string')  return '<span class="vs">&quot;' + escapeHtml(val) + '&quot;</span>';
+    if (Array.isArray(val)) {
+      if (val.length === 0) return '[]';
+      return '[ ' + val.map(jsonToHtml).join(',&nbsp;') + ' ]';
+    }
+    if (typeof val === 'object') {
+      var keys = Object.keys(val);
+      if (keys.length === 0) return '{}';
+      var parts = keys.map(function(k) {
+        return '<span class="vk">' + escapeHtml(k) + '</span>:&nbsp;' + jsonToHtml(val[k]);
+      });
+      return '{&nbsp;' + parts.join(',&nbsp;') + '&nbsp;}';
+    }
+    return escapeHtml(String(val));
+  }
+
+  // ── Build HTML for a single board ─────────────────────────────────────
+  function buildBoardHtml(board, expanded) {
+    var slotCount = board.slots    ? board.slots.length    : 0;
+    var obsCount  = board.observers ? board.observers.length : 0;
+    var slotLabel = slotCount === 1 ? '1 slot'     : slotCount + ' slots';
+    var obsLabel  = obsCount  === 1 ? '1 observer' : obsCount  + ' observers';
+    var closedClass = expanded ? '' : ' closed';
+
+    var html = '<div class="comp-group">';
+    html += '<div class="comp-hdr' + closedClass + '" onclick="toggleBoard(this)">';
+    html += '<span class="comp-chv">&#9658;</span>';
+    html += '<span class="comp-name">' + escapeHtml(board.label || board.id) + '</span>';
+    html += '<span class="comp-id">'   + escapeHtml(board.id)                + '</span>';
+    html += '<span class="badge">'     + escapeHtml(slotLabel)               + '</span>';
+    html += '<span class="badge">'     + escapeHtml(obsLabel)                + '</span>';
+    html += '</div>';
+
+    var bodyDisplay = expanded ? '' : ' style="display:none;"';
+    html += '<div class="comp-body"' + bodyDisplay + '>';
+
+    html += '<div class="section-lbl">Slots</div>';
+    if (slotCount === 0) {
+      html += '<div class="prop-row"><span class="prop-key" style="color:var(--pico-muted-color);font-style:italic;">—</span></div>';
+    } else {
+      board.slots.forEach(function(slot) {
+        html += '<div class="prop-row">';
+        html += '<span class="prop-key">'  + escapeHtml(slot.key)  + '</span>';
+        html += '<span class="prop-type">' + escapeHtml(slot.type) + '</span>';
+        html += renderValue(slot.value);
+        html += '</div>';
+      });
+    }
+
+    html += '<div class="section-lbl section-observers">Observers</div>';
+    html += '<div class="observer-list">';
+    if (obsCount === 0) {
+      html += '<span class="obs-chip none">none</span>';
+    } else {
+      board.observers.forEach(function(name) {
+        html += '<span class="obs-chip">' + escapeHtml(name) + '</span>';
+      });
+    }
+    html += '</div>';
+    html += '</div></div>';
+    return html;
+  }
+
+  // ── Rebuild list from currentBoards + filterText ──────────────────────
+  function rebuildUI() {
+    var scrollArea = document.getElementById('scroll-area');
+    var emptyState = document.getElementById('empty-state');
+    var query = filterText.trim().toLowerCase();
+
+    var visible = currentBoards.filter(function(board) {
+      if (!query) return true;
+      var label = (board.label || '').toLowerCase();
+      var id    = (board.id    || '').toLowerCase();
+      return label.indexOf(query) !== -1 || id.indexOf(query) !== -1;
+    });
+
+    scrollArea.querySelectorAll('.comp-group').forEach(function(g) { g.remove(); });
+
+    if (visible.length === 0) {
+      emptyState.textContent = currentBoards.length === 0
+        ? 'No blackboards registered'
+        : 'No boards match "' + filterText + '"';
+      emptyState.style.display = '';
+      return;
+    }
+
+    emptyState.style.display = 'none';
+    var fragment = document.createDocumentFragment();
+    visible.forEach(function(board) {
+      var wrapper = document.createElement('div');
+      wrapper.innerHTML = buildBoardHtml(board, true);
+      fragment.appendChild(wrapper.firstChild);
+    });
+    scrollArea.appendChild(fragment);
+  }
+
+  function renderBoards(payload) {
+    currentBoards = (payload && Array.isArray(payload.boards)) ? payload.boards : [];
+    rebuildUI();
+  }
+
+  // ── Expand / collapse all ─────────────────────────────────────────────
+  document.getElementById('btn-expand-all').addEventListener('click', function() {
+    document.querySelectorAll('.comp-hdr').forEach(function(hdr) {
+      hdr.classList.remove('closed');
+      if (hdr.nextElementSibling) hdr.nextElementSibling.style.display = '';
+    });
+  });
+
+  document.getElementById('btn-collapse-all').addEventListener('click', function() {
+    document.querySelectorAll('.comp-hdr').forEach(function(hdr) {
+      hdr.classList.add('closed');
+      if (hdr.nextElementSibling) hdr.nextElementSibling.style.display = 'none';
+    });
+  });
+
+  // ── Filter input ──────────────────────────────────────────────────────
+  document.getElementById('filter-input').addEventListener('input', function(e) {
+    filterText = e.target.value;
+    rebuildUI();
+  });
+
+  // ── Wire live connection via shared helper ────────────────────────────
+  DiaLiveConnection.init({
+    prefix: 'blackboard_inspector',
+    onDisconnected: function() {
+      currentBoards = [];
+      rebuildUI();
+    },
+    onData: function(topic, data) {
+      if (topic === 'blackboard_inspector.state') renderBoards(data);
+    }
+  });
+</script>
+</body>
+</html>

@@ -39,10 +39,10 @@ TEST(WebSocketIntegration, ClientConnectsToServer)
 
 	bool connected = client.Connect("ws://127.0.0.1:9300");
 	EXPECT_TRUE(connected);
-	EXPECT_TRUE(client.IsConnected());
 
 	PumpUpdates(server, client);
 
+	EXPECT_TRUE(client.IsConnected());
 	EXPECT_TRUE(serverSawConnect.load());
 	EXPECT_EQ(server.GetConnectionCount(), 1);
 
@@ -445,4 +445,345 @@ TEST(WebSocketIntegration, ServerStop_ClientHandlesGracefully)
 
 	client.Disconnect();
 	EXPECT_FALSE(client.IsConnected());
+}
+
+// ==============================================================================
+// Stale Connection Eviction
+// ==============================================================================
+
+TEST(WebSocketIntegration, StaleConnection_EvictedOnSendFailure)
+{
+	// Verify that when a client disconnects abruptly, subsequent broadcasts
+	// don't error-spam — the server evicts the dead connection silently.
+	Server server(9600);
+	server.Start();
+
+	std::atomic<int> connectCount{0};
+	std::atomic<int> disconnectCount{0};
+	server.SetConnectionCallback([&](int connId, bool connected) {
+		if (connected) connectCount++;
+		else disconnectCount++;
+	});
+
+	Client client;
+	client.SetConnectionTimeout(5.0f);
+	client.SetReconnectOnDisconnect(false);
+	client.Connect("ws://127.0.0.1:9600");
+
+	PumpUpdates(server, client, 20);
+	ASSERT_EQ(server.GetConnectionCount(), 1);
+
+	// Force-disconnect client without graceful close
+	client.Disconnect();
+
+	// Server hasn't processed the disconnect yet — broadcast will hit a dead connection.
+	// The server should evict it rather than logging errors every frame.
+	server.BroadcastText("after disconnect 1");
+	server.BroadcastText("after disconnect 2");
+	server.BroadcastText("after disconnect 3");
+
+	// Pump server to process outgoing + detect stale
+	for (int i = 0; i < 50; ++i)
+	{
+		server.Update();
+		ThisThread::SleepMs(10);
+	}
+
+	// Connection should be evicted from the active set
+	EXPECT_EQ(server.GetConnectionCount(), 0);
+
+	server.Stop();
+}
+
+TEST(WebSocketIntegration, StaleConnection_OtherClientsUnaffected)
+{
+	// When one client dies, broadcasts still reach remaining clients.
+	Server server(9601);
+	server.Start();
+
+	Client client1;
+	client1.SetConnectionTimeout(5.0f);
+	client1.SetReconnectOnDisconnect(false);
+	client1.Connect("ws://127.0.0.1:9601");
+
+	Client client2;
+	client2.SetConnectionTimeout(5.0f);
+	client2.SetReconnectOnDisconnect(false);
+
+	std::atomic<int> client2Received{0};
+	client2.SetMessageCallback([&](const Message& msg) {
+		client2Received++;
+	});
+	client2.Connect("ws://127.0.0.1:9601");
+
+	// Wait for both connections to register
+	for (int i = 0; i < 30; ++i)
+	{
+		server.Update();
+		client1.Update();
+		client2.Update();
+		ThisThread::SleepMs(10);
+	}
+	ASSERT_EQ(server.GetConnectionCount(), 2);
+
+	// Kill client1 abruptly
+	client1.Disconnect();
+
+	// Broadcast — should still reach client2
+	server.BroadcastText("still alive");
+
+	for (int i = 0; i < 50; ++i)
+	{
+		server.Update();
+		client2.Update();
+		ThisThread::SleepMs(10);
+	}
+
+	EXPECT_GE(client2Received.load(), 1);
+	// Stale client1 should be evicted
+	EXPECT_LE(server.GetConnectionCount(), 1);
+
+	client2.Disconnect();
+	server.Stop();
+}
+
+TEST(WebSocketIntegration, StaleConnection_TargetedSendToDeadConnection)
+{
+	// SendText to a specific dead connection should evict it, not error-spam.
+	Server server(9602);
+	server.Start();
+
+	int capturedConnId = -1;
+	server.SetConnectionCallback([&](int connId, bool connected) {
+		if (connected) capturedConnId = connId;
+	});
+
+	Client client;
+	client.SetConnectionTimeout(5.0f);
+	client.SetReconnectOnDisconnect(false);
+	client.Connect("ws://127.0.0.1:9602");
+
+	PumpUpdates(server, client, 20);
+	ASSERT_GT(capturedConnId, 0);
+	ASSERT_EQ(server.GetConnectionCount(), 1);
+
+	// Kill client
+	client.Disconnect();
+
+	// Targeted send to the now-dead connection
+	server.SendText(capturedConnId, "targeted to dead");
+	server.SendText(capturedConnId, "targeted to dead 2");
+
+	// Pump to process outgoing
+	for (int i = 0; i < 50; ++i)
+	{
+		server.Update();
+		ThisThread::SleepMs(10);
+	}
+
+	// Dead connection evicted
+	EXPECT_EQ(server.GetConnectionCount(), 0);
+
+	server.Stop();
+}
+
+TEST(WebSocketIntegration, StaleConnection_NewClientAfterEviction)
+{
+	// Server continues accepting new connections after evicting dead ones.
+	Server server(9603);
+	server.Start();
+
+	Client client1;
+	client1.SetConnectionTimeout(5.0f);
+	client1.SetReconnectOnDisconnect(false);
+	client1.Connect("ws://127.0.0.1:9603");
+
+	PumpUpdates(server, client1, 20);
+	ASSERT_EQ(server.GetConnectionCount(), 1);
+
+	// Kill client1
+	client1.Disconnect();
+
+	// Force eviction via broadcast
+	server.BroadcastText("trigger eviction");
+	for (int i = 0; i < 50; ++i)
+	{
+		server.Update();
+		ThisThread::SleepMs(10);
+	}
+	ASSERT_EQ(server.GetConnectionCount(), 0);
+
+	// Now connect a fresh client — server should still work
+	Client client2;
+	client2.SetConnectionTimeout(5.0f);
+	client2.SetReconnectOnDisconnect(false);
+
+	std::string received;
+	client2.SetMessageCallback([&](const Message& msg) {
+		if (msg.type == MessageType::kText)
+			received = msg.AsText();
+	});
+	client2.Connect("ws://127.0.0.1:9603");
+
+	PumpUpdates(server, client2, 20);
+	ASSERT_EQ(server.GetConnectionCount(), 1);
+
+	// Verify messaging works with the new client
+	server.BroadcastText("hello new client");
+	PumpUpdates(server, client2, 30);
+
+	EXPECT_EQ(received, "hello new client");
+
+	client2.Disconnect();
+	server.Stop();
+}
+
+TEST(WebSocketIntegration, StaleConnection_RepeatedBroadcastsNoAccumulation)
+{
+	// After eviction, repeated broadcasts don't keep trying the dead connection.
+	Server server(9604);
+	server.Start();
+
+	Client client;
+	client.SetConnectionTimeout(5.0f);
+	client.SetReconnectOnDisconnect(false);
+	client.Connect("ws://127.0.0.1:9604");
+
+	PumpUpdates(server, client, 20);
+	ASSERT_EQ(server.GetConnectionCount(), 1);
+
+	client.Disconnect();
+
+	// First broadcast triggers eviction
+	server.BroadcastText("first");
+	for (int i = 0; i < 30; ++i)
+	{
+		server.Update();
+		ThisThread::SleepMs(10);
+	}
+	EXPECT_EQ(server.GetConnectionCount(), 0);
+
+	// Subsequent broadcasts should be no-ops (no connections, no errors)
+	server.BroadcastText("second");
+	server.BroadcastText("third");
+	for (int i = 0; i < 20; ++i)
+	{
+		server.Update();
+		ThisThread::SleepMs(10);
+	}
+
+	// Still zero — no ghost connections reappearing
+	EXPECT_EQ(server.GetConnectionCount(), 0);
+
+	server.Stop();
+}
+
+TEST(WebSocketIntegration, StaleConnection_MultipleDeadInSameBroadcast)
+{
+	// Multiple clients dying simultaneously — all evicted in one broadcast pass.
+	Server server(9605);
+	server.SetMaxConnections(8);
+	server.Start();
+
+	std::vector<Client*> clients;
+	for (int i = 0; i < 4; ++i)
+	{
+		Client* c = new Client();
+		c->SetConnectionTimeout(5.0f);
+		c->SetReconnectOnDisconnect(false);
+		c->Connect("ws://127.0.0.1:9605");
+		clients.push_back(c);
+	}
+
+	// Pump all clients + server
+	for (int i = 0; i < 30; ++i)
+	{
+		server.Update();
+		for (auto* c : clients) c->Update();
+		ThisThread::SleepMs(10);
+	}
+	ASSERT_EQ(server.GetConnectionCount(), 4);
+
+	// Kill all clients
+	for (auto* c : clients)
+		c->Disconnect();
+
+	// Broadcast hits 4 dead connections at once
+	server.BroadcastText("mass eviction");
+
+	for (int i = 0; i < 50; ++i)
+	{
+		server.Update();
+		ThisThread::SleepMs(10);
+	}
+
+	EXPECT_EQ(server.GetConnectionCount(), 0);
+
+	for (auto* c : clients)
+		delete c;
+
+	server.Stop();
+}
+
+TEST(WebSocketIntegration, StaleConnection_EvictionCapSaturation)
+{
+	// The deadConnections array in ProcessOutgoing is capped at 16.
+	// With >16 dead connections, the overflow ones survive the first pass
+	// but are cleaned up on subsequent broadcasts.
+	Server server(9606);
+	server.SetMaxConnections(20);
+	server.Start();
+
+	// Connect 18 clients (exceeds the 16-slot eviction buffer)
+	std::vector<Client*> clients;
+	for (int i = 0; i < 18; ++i)
+	{
+		Client* c = new Client();
+		c->SetConnectionTimeout(5.0f);
+		c->SetReconnectOnDisconnect(false);
+		c->Connect("ws://127.0.0.1:9606");
+		clients.push_back(c);
+	}
+
+	for (int i = 0; i < 50; ++i)
+	{
+		server.Update();
+		for (auto* c : clients) c->Update();
+		ThisThread::SleepMs(10);
+	}
+	ASSERT_EQ(server.GetConnectionCount(), 18);
+
+	// Kill all clients
+	for (auto* c : clients)
+		c->Disconnect();
+
+	// First broadcast can only evict up to 16 (buffer cap)
+	server.BroadcastText("pass 1");
+	for (int i = 0; i < 50; ++i)
+	{
+		server.Update();
+		ThisThread::SleepMs(10);
+	}
+
+	// Might still have 2 leftover
+	int remaining = server.GetConnectionCount();
+	EXPECT_LE(remaining, 2) << "First pass should evict at least 16";
+
+	// Second broadcast catches the stragglers
+	if (remaining > 0)
+	{
+		server.BroadcastText("pass 2");
+		for (int i = 0; i < 50; ++i)
+		{
+			server.Update();
+			ThisThread::SleepMs(10);
+		}
+	}
+
+	EXPECT_EQ(server.GetConnectionCount(), 0);
+
+	for (auto* c : clients)
+		delete c;
+
+	server.Stop();
 }

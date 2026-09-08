@@ -1,7 +1,7 @@
 #include "DiaEditor/Plugin/HelloEditorPlugin.h"
 #include "DiaEditor/Plugin/EditorPluginRegistrationMacros.h"
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 namespace Dia
 {

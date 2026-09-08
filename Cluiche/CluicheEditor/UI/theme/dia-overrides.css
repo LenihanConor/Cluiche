@@ -1,0 +1,100 @@
+/* dia-overrides.css — maps Pico CSS variables to the Cluiche dark editor palette */
+:root {
+  --pico-font-family: "Segoe UI", system-ui, sans-serif;
+  --pico-font-family-monospace: Consolas, "Courier New", monospace;
+  --pico-font-size: 12px;
+  --pico-line-height: 1.5;
+
+  /* Backgrounds */
+  --pico-background-color: #1e1e1e;
+  --pico-card-background-color: #252526;
+  --pico-card-sectioning-background-color: #1e1e1e;
+  --pico-dropdown-background-color: #252526;
+  --pico-modal-overlay-background-color: rgba(0, 0, 0, 0.6);
+  --pico-code-background-color: #2d2d30;
+
+  /* Text */
+  --pico-color: #d4d4d4;
+  --pico-muted-color: #808080;
+  --pico-h1-color: #569cd6;
+  --pico-h2-color: #9cdcfe;
+  --pico-h3-color: #9cdcfe;
+  --pico-h4-color: #d4d4d4;
+  --pico-h5-color: #d4d4d4;
+  --pico-h6-color: #d4d4d4;
+  --pico-code-color: #ce9178;
+  --pico-ins-color: #89d185;
+  --pico-del-color: #f44747;
+  --pico-blockquote-footer-color: #808080;
+
+  /* Primary (accent blue) */
+  --pico-primary: #0e639c;
+  --pico-primary-hover: #1177bb;
+  --pico-primary-focus: rgba(14, 99, 156, 0.25);
+  --pico-primary-inverse: #ffffff;
+  --pico-primary-background: #0e639c;
+  --pico-primary-hover-background: #1177bb;
+  --pico-primary-focus-background: #0e639c;
+
+  /* Secondary */
+  --pico-secondary: #3a3d41;
+  --pico-secondary-hover: #4a4d51;
+  --pico-secondary-focus: rgba(58, 61, 65, 0.25);
+  --pico-secondary-inverse: #d4d4d4;
+  --pico-secondary-background: #3a3d41;
+  --pico-secondary-hover-background: #4a4d51;
+
+  /* Borders */
+  --pico-border-color: #3c3c3c;
+  --pico-muted-border-color: #2d2d2d;
+  --pico-card-border-color: #3c3c3c;
+  --pico-dropdown-border-color: #3c3c3c;
+  --pico-table-border-color: #3c3c3c;
+
+  /* Form elements */
+  --pico-form-element-background-color: #252526;
+  --pico-form-element-selected-background-color: #094771;
+  --pico-form-element-border-color: #3c3c3c;
+  --pico-form-element-color: #d4d4d4;
+  --pico-form-element-placeholder-color: #808080;
+  --pico-form-element-active-background-color: #252526;
+  --pico-form-element-active-border-color: #0e639c;
+  --pico-form-element-focus-color: #0e639c;
+  --pico-form-element-disabled-background-color: #2a2d2e;
+  --pico-form-element-disabled-border-color: #3c3c3c;
+  --pico-form-element-disabled-color: #666666;
+  --pico-form-element-invalid-border-color: #f44747;
+  --pico-form-element-valid-border-color: #89d185;
+
+  /* Spacing — compact for editor panels */
+  --pico-spacing: 0.75rem;
+  --pico-block-spacing-vertical: 0.5rem;
+  --pico-block-spacing-horizontal: 0.75rem;
+  --pico-grid-spacing-vertical: 0.5rem;
+  --pico-grid-spacing-horizontal: 0.75rem;
+
+  /* Typography scale (keep editor compact) */
+  --pico-typography-spacing-vertical: 0.75rem;
+
+  /* Nav */
+  --pico-nav-element-spacing-vertical: 0.25rem;
+  --pico-nav-element-spacing-horizontal: 0.5rem;
+
+  /* Tables */
+  --pico-table-row-stripped-background-color: #252526;
+
+  /* Scrollbar */
+  color-scheme: dark;
+}
+
+/* Compact headings for panel UIs */
+h1 { font-size: 14px; margin-bottom: 0.5rem; }
+h2 { font-size: 12px; margin-bottom: 0.375rem; letter-spacing: 0.05em; text-transform: uppercase; }
+h3 { font-size: 12px; margin-bottom: 0.375rem; }
+
+/* Reset body to fill panel iframe */
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: auto;
+}

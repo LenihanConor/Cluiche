@@ -1,0 +1,84 @@
+#pragma once
+
+#include <DiaCore/Json/external/json/json.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Health/HealthReporterBase.h>
+#include <DiaCore/CRC/StringCRC.h>
+
+#include <mutex>
+#include <queue>
+
+namespace Dia
+{
+	namespace Editor { class WebUIBridge; }
+	namespace Observation { namespace Metric { class Counter; } }
+}
+
+namespace CluicheEditor
+{
+	class ChatPanelBridgeHealth : public Dia::Observation::Health::HealthReporterBase
+	{
+	public:
+		static const Dia::Core::StringCRC kName;
+
+		Dia::Core::StringCRC GetReporterName() const override { return kName; }
+
+		// Called from OnBackendStatus — sets OK or Failing based on availability.
+		void OnBackendAvailability(bool available);
+	};
+
+	class ChatPanelBridge
+	{
+	public:
+		explicit ChatPanelBridge(Dia::Editor::WebUIBridge* bridge);
+		~ChatPanelBridge();
+
+		void Initialize(Dia::Editor::WebUIBridge* bridge);
+
+		// Called from DiaPython background thread — thread-safe push.
+		void OnTokenChunk(const char* text, bool done);
+		void OnToolStart(const char* callId, const char* fn, const Json::Value& params);
+		void OnToolResult(const char* callId, const Json::Value& result, int durationMs);
+		void OnToolError(const char* callId, const char* error);
+		void OnConfirmRequired(const char* callId, const char* fn, const Json::Value& params, const char* description);
+		void OnChatError(const char* message);
+		void OnBackendStatus(const char* backend, const char* model, bool available);
+		void OnBackendStatusRaw(const Json::Value& payload);
+		void OnContextWarning(int usedTokens, int budgetTokens, int pct);
+
+		// Called from main thread (EditorPU update loop) — drains the token queue.
+		void DoUpdate(float deltaTime);
+
+	private:
+		enum class EventType
+		{
+			kToken,
+			kToolStart,
+			kToolResult,
+			kToolError,
+			kConfirmRequired,
+			kChatError,
+			kBackendStatus,
+			kContextWarning
+		};
+
+		struct ChatEvent
+		{
+			EventType   type;
+			Json::Value payload;
+		};
+
+		Dia::Editor::WebUIBridge*                   mBridge;
+		std::mutex                                  mQueueMutex;
+		std::queue<ChatEvent>                       mEventQueue;
+
+		Dia::Observation::Metric::Counter*          mMetricMessagesSent   = nullptr;
+		Dia::Observation::Metric::Counter*          mMetricToolCalls      = nullptr;
+		Dia::Observation::Metric::Counter*          mMetricTokensStreamed  = nullptr;
+
+		float                                       mMetricsPushTimer     = 0.0f;
+		static constexpr float                      kMetricsPushInterval  = 2.0f;
+
+		ChatPanelBridgeHealth                       mHealth;
+	};
+}

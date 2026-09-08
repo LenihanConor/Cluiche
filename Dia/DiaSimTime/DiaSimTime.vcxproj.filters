@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="DiaMainTime.h" />
+    <ClInclude Include="DiaRenderTime.h" />
+    <ClInclude Include="SimTimeSchedulerFire.h" />
+    <ClInclude Include="SimTimeScheduler.h" />
+    <ClInclude Include="SimTimePriority.h" />
+    <ClInclude Include="ISimTimeBudgetedSystem.h" />
+    <ClInclude Include="SimTimeTier.h" />
+    <ClInclude Include="SimTimeState.h" />
+    <ClInclude Include="SimTimePolicy.h" />
+    <ClInclude Include="SimTimeRegistry.h" />
+    <ClInclude Include="SimTimeBudget.h" />
+    <ClInclude Include="IOneShotWork.h" />
+    <ClInclude Include="DiaSimTimeModule.h" />
+    <ClInclude Include="SimTimeSaveState.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DiaMainTime.cpp" />
+    <ClCompile Include="DiaRenderTime.cpp" />
+    <ClCompile Include="SimTimeScheduler.cpp" />
+    <ClCompile Include="SimTimeRegistry.cpp" />
+    <ClCompile Include="SimTimeBudget.cpp" />
+    <ClCompile Include="DiaSimTimeModule.cpp" />
+    <ClCompile Include="SimTimeSaveState.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.diasimtime.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+</Project>

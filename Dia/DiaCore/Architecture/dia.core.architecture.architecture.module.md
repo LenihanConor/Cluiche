@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.core.architecture
 name: Architecture
 owner_team: TBD
-layer: platform
+layer: foundation/core
 status: active
 maturity: dev
 
@@ -12,7 +12,7 @@ language: cpp
 parent_module_id: dia.core
 
 summary: >
-  Groups Architecture submodules: Components, Singleton.
+  Groups Architecture submodules: Singleton.
 
 intent: >
   Provide a clear module boundary and navigation surface for the Architecture area.
@@ -27,8 +27,11 @@ non_responsibilities:
   - Cross-cutting engine orchestration
 
 dependent_modules:
-  - dia.core.architecture.components
-  - dia.core.architecture.singleton
+  - dia.core.containers.arrays
+  - dia.core.crc
+  - dia.core.core
+  - dia.core.time
+  - dia.core.memory
 
 public_api:
   headers:

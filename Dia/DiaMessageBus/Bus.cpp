@@ -1,0 +1,190 @@
+#include <DiaMessageBus/Bus.h>
+#include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+
+namespace Dia::MessageBus {
+
+    const Dia::Core::StringCRC Bus::kBroadcastRouterId("broadcast");
+    // Value matches Dia::Entity::kEntityRouterId (EntityAddress.cpp) exactly.
+    // DiaMessageBus must not #include diaentitytemplate headers (binding layer
+    // exclusion), so this is an independently-defined constant with the same
+    // string value, not a shared symbol -- Mailbox::RegisterRouter/GetRouter
+    // key strictly by IMailboxRouter::GetRouterId()'s returned value, so the
+    // real EntityRouter (whose GetRouterId() returns "dia.entity.router")
+    // would never resolve against a Post/Subscribe built with this constant
+    // if the value diverged. Found and fixed during entity-router-bus-wiring:
+    // the two systems were specced independently and picked different
+    // literals ("entity" here vs. "dia.entity.router" there) for the same
+    // logical router.
+    const Dia::Core::StringCRC Bus::kEntityRouterId("dia.entity.router");
+
+    Bus::Bus() {
+        auto& reg     = Dia::Observation::Metric::MetricRegistry::Instance();
+        mMetricPosted    = reg.RegisterCounter(Dia::Core::StringCRC("dia.msgbus.posted"));
+        mMetricDelivered = reg.RegisterCounter(Dia::Core::StringCRC("dia.msgbus.delivered"));
+        mMetricDropped   = reg.RegisterCounter(Dia::Core::StringCRC("dia.msgbus.dropped"));
+    }
+    Bus::~Bus() = default;
+
+    void Bus::Initialize() {
+        mMailbox.RegisterRouter(&mBroadcastRouter);
+    }
+
+    void Bus::Update() {
+        DIA_TRACE_ZONE("messagebus.flush", ::Dia::Observation::Trace::Category::kNone);
+        DIA_PROFILE_SCOPE("messagebus.flush", ::Dia::Observation::Profile::Category::kNone);
+
+        LedgerSnapshot& building = mLedgers[mBuildingIndex];
+        building.entries.RemoveAll();
+        building.droppedCount = 0;
+        building.tickIndex    = mTickCounter++;
+        // No wall-clock helper is wired into DiaMessageBus yet; 0 is a
+        // deliberate placeholder (see task brief / Observation follow-ups).
+        building.timestampUs  = 0;
+
+        // Pre-Primary: flush adapters, in registration order.
+        {
+            DIA_TRACE_ZONE("messagebus.flush.preprimary", ::Dia::Observation::Trace::Category::kNone);
+            DIA_PROFILE_SCOPE("messagebus.flush.preprimary", ::Dia::Observation::Profile::Category::kNone);
+            for (uint32_t i = 0; i < mFlushAdapters.Size(); ++i) {
+                if (mFlushAdapters[i] != nullptr) {
+                    mFlushAdapters[i]->Flush(*this);
+                }
+            }
+        }
+
+        // Primary pass: snapshot every type's queued count BEFORE any Primary
+        // handler in this tick has run, then bound each type's Primary drain
+        // to its own snapshot. Anything posted mid-sweep (by any type's
+        // Primary handler, including into a type whose slot comes later in
+        // this same loop, or into its own type) lands at the tail of that
+        // type's queue and is structurally excluded from this bounded drain,
+        // regardless of registration order — it survives, untouched, for the
+        // unbounded Reaction sweep below.
+        {
+            DIA_TRACE_ZONE("messagebus.flush.primary", ::Dia::Observation::Trace::Category::kNone);
+            DIA_PROFILE_SCOPE("messagebus.flush.primary", ::Dia::Observation::Profile::Category::kNone);
+
+            Dia::Core::Containers::DynamicArrayC<uint32_t, kMaxTypes> primarySnapshot;
+            for (uint32_t i = 0; i < mTypeRecords.Size(); ++i) {
+                primarySnapshot.Add(mTypeRecords[i].countFn(*this));
+            }
+
+            for (uint32_t i = 0; i < mTypeRecords.Size(); ++i) {
+                mTypeRecords[i].drainFn(*this, Pass::Primary, primarySnapshot[i]);
+            }
+        }
+
+        // Reaction pass: drain every registered type again, dispatching only
+        // to Reaction-pass subscribers. Primary-pass handlers above may have
+        // Post/Broadcast'd new messages — those are visible here since Post
+        // writes straight into the Mailbox type queue. While this sweep runs,
+        // Post is blocked (see Bus::Post) so Reaction handlers cannot chain
+        // into a further sweep.
+        {
+            DIA_TRACE_ZONE("messagebus.flush.reaction", ::Dia::Observation::Trace::Category::kNone);
+            DIA_PROFILE_SCOPE("messagebus.flush.reaction", ::Dia::Observation::Profile::Category::kNone);
+            mInReactionPass = true;
+            for (uint32_t i = 0; i < mTypeRecords.Size(); ++i) {
+                mTypeRecords[i].drainFn(*this, Pass::Reaction, UINT32_MAX);
+            }
+            mInReactionPass = false;
+        }
+
+        // Swap: the buffer just finished building becomes "last tick".
+        mBuildingIndex = 1 - mBuildingIndex;
+    }
+
+    void Bus::RegisterFlushAdapter(IFlushAdapter* adapter) {
+        if (adapter == nullptr) {
+            return;
+        }
+        if (mFlushAdapters.IsFull()) {
+            DIA_LOG_WARNING("DiaMessageBus", "RegisterFlushAdapter: table full (capacity %u)", kMaxFlushAdapters);
+            return;
+        }
+        mFlushAdapters.Add(adapter);
+    }
+
+    void Bus::RegisterRouter(Dia::Mailbox::IMailboxRouter* router) {
+        mMailbox.RegisterRouter(router);
+    }
+
+    const LedgerSnapshot& Bus::GetLastTickLedger() const {
+        return mLedgers[1 - mBuildingIndex];
+    }
+
+    bool Bus::IsRouterRegistered(Dia::Core::StringCRC routerId) {
+        return mMailbox.GetRouter(routerId) != nullptr;
+    }
+
+    Bus::TypeRecord* Bus::FindTypeRecord(uint32_t typeKey) {
+        for (uint32_t i = 0; i < mTypeRecords.Size(); ++i) {
+            if (mTypeRecords[i].typeKey == typeKey) {
+                return &mTypeRecords[i];
+            }
+        }
+        return nullptr;
+    }
+
+#ifdef DIA_DEBUG
+    const Bus::TypeRecord* Bus::FindTypeRecordByDisplayId(Dia::Core::StringCRC typeId) const {
+        for (uint32_t i = 0; i < mTypeRecords.Size(); ++i) {
+            if (mTypeRecords[i].displayTypeId == typeId) {
+                return &mTypeRecords[i];
+            }
+        }
+        return nullptr;
+    }
+#endif // DIA_DEBUG
+
+    void Bus::ReleaseHandlerSlot(Dia::Core::Handle<HandlerRecord> handle) {
+        if (!mHandlerPool.IsValid(handle)) {
+            return;
+        }
+
+        HandlerRecord* rec = mHandlerPool.Get(handle);
+        if (rec != nullptr) {
+            delete rec->slot;
+            rec->slot = nullptr;
+            if (rec->mailboxHandle.IsValid()) {
+                mMailbox.Unsubscribe(rec->mailboxHandle);
+            }
+            rec->active = false;
+        }
+        mHandlerPool.Free(handle);
+    }
+
+    LedgerMessageEntry& Bus::FindOrCreateLedgerEntry(Dia::Core::StringCRC typeId,
+                                                      Dia::Core::StringCRC routerId,
+                                                      Pass pass) {
+        LedgerSnapshot& building = mLedgers[mBuildingIndex];
+
+        for (uint32_t i = 0; i < building.entries.Size(); ++i) {
+            if (building.entries[i].typeId == typeId && building.entries[i].pass == pass) {
+                return building.entries[i];
+            }
+        }
+
+        LedgerMessageEntry entry;
+        entry.typeId     = typeId;
+        entry.routerId   = routerId;
+        entry.count      = 0;
+        entry.deliveries = 0;
+        entry.pass       = pass;
+
+        if (building.entries.IsFull()) {
+            // 32 types x 2 passes == 64 capacity; this task only dispatches
+            // Primary, so this should never trip. Guard anyway.
+            DIA_LOG_WARNING("DiaMessageBus", "Ledger entries full — dropping tally entry for this tick");
+            static LedgerMessageEntry sOverflowSink;
+            sOverflowSink = entry;
+            return sOverflowSink;
+        }
+
+        building.entries.Add(entry);
+        return building.entries[building.entries.Size() - 1];
+    }
+
+} // namespace Dia::MessageBus

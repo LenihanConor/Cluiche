@@ -1,0 +1,61 @@
+{
+    "id": { "value": "dragon" },
+    "bones": [
+        {
+            "name": { "value": "Root" },
+            "parentIndex": -1,
+            "localPosition": { "x": 0.0, "y": 0.0 },
+            "localRotation": 0.0,
+            "localScale": { "x": 1.0, "y": 1.0 },
+            "length": 0.0
+        },
+        {
+            "name": { "value": "Head" },
+            "parentIndex": 0,
+            "localPosition": { "x": 0.0, "y": 1.5 },
+            "localRotation": 0.0,
+            "localScale": { "x": 1.0, "y": 1.0 },
+            "length": 0.5
+        },
+        {
+            "name": { "value": "Tail" },
+            "parentIndex": 0,
+            "localPosition": { "x": 0.0, "y": -1.5 },
+            "localRotation": 0.0,
+            "localScale": { "x": 1.0, "y": 1.0 },
+            "length": 1.0
+        },
+        {
+            "name": { "value": "Wing_L" },
+            "parentIndex": 0,
+            "localPosition": { "x": -1.0, "y": 0.0 },
+            "localRotation": 0.0,
+            "localScale": { "x": 1.0, "y": 1.0 },
+            "length": 1.0
+        },
+        {
+            "name": { "value": "Wing_R" },
+            "parentIndex": 0,
+            "localPosition": { "x": 1.0, "y": 0.0 },
+            "localRotation": 0.0,
+            "localScale": { "x": 1.0, "y": 1.0 },
+            "length": 1.0
+        },
+        {
+            "name": { "value": "WingTip_L" },
+            "parentIndex": 3,
+            "localPosition": { "x": -0.5, "y": 0.0 },
+            "localRotation": 0.0,
+            "localScale": { "x": 1.0, "y": 1.0 },
+            "length": 0.8
+        },
+        {
+            "name": { "value": "WingTip_R" },
+            "parentIndex": 4,
+            "localPosition": { "x": 0.5, "y": 0.0 },
+            "localRotation": 0.0,
+            "localScale": { "x": 1.0, "y": 1.0 },
+            "length": 0.8
+        }
+    ]
+}

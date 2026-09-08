@@ -71,6 +71,12 @@ namespace Dia
 			const Dia::Core::Containers::DynamicArrayC<Dia::Rig2D::BoneTransform, Dia::Rig2D::kMaxBones>&
 			    GetWorldTransforms() const;
 
+			// Solve-result accessors — read last result for chain at index (0-based).
+			// Returns false/0/0.0f for indices out of range or before first solve.
+			bool  IsSolved(int chainIndex)           const;
+			int   GetLastIterationCount(int chainIndex) const;
+			float GetEndEffectorError(int chainIndex)   const;
+
 		private:
 			struct ResolvedChain
 			{
@@ -78,6 +84,10 @@ namespace Dia
 				int        startIndex;
 				int        endIndex;
 				int        jointCount;
+				// Cached per-solve result written by Solve*.
+				bool  lastSolved           = false;
+				int   lastIterationCount   = 0;
+				float lastEndEffectorError = 0.0f;
 			};
 
 			int   FindChainIndex(Dia::Core::StringCRC chainId) const;

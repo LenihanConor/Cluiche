@@ -4,9 +4,14 @@
 #include "DiaCore/FilePath/Path.h"
 #include "DiaCore/CRC/CRC.h"
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 
 #include <math.h>
+#include <string.h>
+#include <cstdio>
+#include <filesystem>
 
 #if defined(_MSC_VER)
 #define WIN32_LEAN_AND_MEAN
@@ -24,6 +29,20 @@ namespace
 #else
         return static_cast<unsigned int>(reinterpret_cast<uintptr_t>(pthread_self()) & 0xFFFFFFFF);
 #endif
+    }
+
+    const char* AssetStateToStr(Dia::AssetRuntime::AssetState s)
+    {
+        switch (s)
+        {
+            case Dia::AssetRuntime::AssetState::Null:     return "Null";
+            case Dia::AssetRuntime::AssetState::Staged:   return "Staged";
+            case Dia::AssetRuntime::AssetState::Loading:  return "Loading";
+            case Dia::AssetRuntime::AssetState::Loaded:   return "Loaded";
+            case Dia::AssetRuntime::AssetState::Failed:   return "Failed";
+            case Dia::AssetRuntime::AssetState::Unloaded: return "Unloaded";
+            default:                                       return "Unknown";
+        }
     }
 }
 
@@ -47,8 +66,8 @@ namespace Dia
         // AssetRuntime
         //------------------------------------------------------------------------------------
         AssetRuntime::AssetRuntime()
-            : mIsDispatching(false)
-            , mOwnerThreadId(GetCurrentThreadIdValue())
+            : mOwnerThreadId(GetCurrentThreadIdValue())
+            , mIsDispatching(false)
         {}
 
         bool AssetRuntime::LoadManifest(const Dia::Core::FilePath& manifestPath)
@@ -61,6 +80,8 @@ namespace Dia
             InitStateTable();
             InitRefCountTable();
             RegisterPathAliases();
+            DIA_LOG_INFO("AssetRuntime", "LoadManifest: %u assets across %u stages registered",
+                mAssetTable.Size(), mStageTable.Size());
             return true;
         }
 
@@ -74,6 +95,8 @@ namespace Dia
             InitStateTable();
             InitRefCountTable();
             RegisterPathAliases();
+            DIA_LOG_INFO("AssetRuntime", "LoadManifest: %u assets across %u stages registered",
+                mAssetTable.Size(), mStageTable.Size());
             return true;
         }
 
@@ -96,7 +119,7 @@ namespace Dia
             if (!state)
             {
                 DIA_LOG_WARNING("AssetRuntime", "GetAssetState: unknown asset '%s'", assetId.AsChar());
-                return AssetState::Registered;
+                return AssetState::Null;
             }
             return *state;
         }
@@ -113,22 +136,280 @@ namespace Dia
             return *state == AssetState::Loaded;
         }
 
-        void AssetRuntime::AcknowledgeAssetLoaded(const Dia::Core::StringCRC& assetId)
+        bool AssetRuntime::IsLoadComplete(const Dia::Core::StringCRC& stageId) const
         {
             AssertOwnerThread();
-            TryTransition(assetId, AssetState::Loaded);
+            const RuntimeStageEntry* stage = mStageTable.TryGetItemConst(stageId);
+            if (!stage)
+            {
+                DIA_LOG_WARNING("AssetRuntime", "IsLoadComplete: unknown stage '%s'", stageId.AsChar());
+                return false;
+            }
+
+            unsigned int assetCount = stage->mAssetIds.Size();
+            for (unsigned int i = 0; i < assetCount; ++i)
+            {
+                const AssetState* state = mStateTable.TryGetItemConst(stage->mAssetIds[i]);
+                if (!state || *state != AssetState::Loaded)
+                    return false;
+            }
+            return true;
         }
 
-        void AssetRuntime::AcknowledgeAssetUnloaded(const Dia::Core::StringCRC& assetId)
+        void AssetRuntime::RequestStageLoad(const Dia::Core::StringCRC& stageId)
         {
+            DIA_PROFILE_SCOPE("asset.catalog.load", Dia::Observation::Profile::Category::kDiaAssetRuntime);
+            DIA_TRACE_ZONE("asset.catalog.load", Dia::Observation::Trace::Category::kDiaAssetRuntime);
             AssertOwnerThread();
-            TryTransition(assetId, AssetState::Registered);
+            const RuntimeStageEntry* stage = mStageTable.TryGetItemConst(stageId);
+            if (!stage)
+            {
+                DIA_LOG_WARNING("AssetRuntime", "RequestStageLoad: unknown stage '%s'", stageId.AsChar());
+                return;
+            }
+
+            DIA_LOG_INFO("AssetRuntime", "RequestStageLoad: stage '%s' (%u assets)",
+                stageId.AsChar(), stage->mAssetIds.Size());
+
+            unsigned int assetCount = stage->mAssetIds.Size();
+            for (unsigned int i = 0; i < assetCount; ++i)
+            {
+                const Dia::Core::StringCRC& assetId = stage->mAssetIds[i];
+
+                unsigned int* refCount = mRefCountTable.TryGetItem(assetId);
+                if (!refCount)
+                {
+                    DIA_LOG_WARNING("AssetRuntime", "RequestStageLoad: asset '%s' in stage '%s' not found in ref table",
+                        assetId.AsChar(), stageId.AsChar());
+                    continue;
+                }
+
+                unsigned int prev = *refCount;
+                (*refCount)++;
+
+                if (prev == 0)
+                {
+                    if (TryTransition(assetId, AssetState::Staged))
+                    {
+                        DispatchLoad(assetId);
+                    }
+                }
+            }
         }
 
-        void AssetRuntime::AcknowledgeAssetLoadFailed(const Dia::Core::StringCRC& assetId)
+        void AssetRuntime::RequestStageUnload(const Dia::Core::StringCRC& stageId)
         {
             AssertOwnerThread();
-            TryTransition(assetId, AssetState::Registered);
+            const RuntimeStageEntry* stage = mStageTable.TryGetItemConst(stageId);
+            if (!stage)
+            {
+                DIA_LOG_WARNING("AssetRuntime", "RequestStageUnload: unknown stage '%s'", stageId.AsChar());
+                return;
+            }
+
+            unsigned int assetCount = stage->mAssetIds.Size();
+            for (unsigned int i = 0; i < assetCount; ++i)
+            {
+                const Dia::Core::StringCRC& assetId = stage->mAssetIds[i];
+
+                const AssetState* state = mStateTable.TryGetItemConst(assetId);
+                if (state && *state == AssetState::Loading)
+                {
+                    DIA_ASSERT(false, "RequestStageUnload: asset '%s' is in Loading state — cannot unload while loading (programming error in game flow)", assetId.AsChar());
+                    continue;
+                }
+
+                unsigned int* refCount = mRefCountTable.TryGetItem(assetId);
+                if (!refCount)
+                {
+                    DIA_LOG_WARNING("AssetRuntime", "RequestStageUnload: asset '%s' in stage '%s' not found in ref table",
+                        assetId.AsChar(), stageId.AsChar());
+                    continue;
+                }
+
+                if (*refCount == 0)
+                {
+                    DIA_LOG_WARNING("AssetRuntime",
+                        "RequestStageUnload: asset '%s' ref count already 0 (double unload for stage '%s')",
+                        assetId.AsChar(), stageId.AsChar());
+                    continue;
+                }
+
+                (*refCount)--;
+
+                if (*refCount == 0)
+                {
+                    DIA_LOG_DEBUG("asset", "asset.record.deleted asset_id=%s", assetId.AsChar());
+                    DispatchUnload(assetId);
+                    TryTransition(assetId, AssetState::Unloaded);
+                }
+            }
+        }
+
+        void AssetRuntime::RegisterTypeHandler(const char* typePrefix, IAssetTypeHandler* handler)
+        {
+            AssertOwnerThread();
+            if (!typePrefix || !handler)
+            {
+                DIA_LOG_WARNING("AssetRuntime", "RegisterTypeHandler: null argument");
+                return;
+            }
+
+            Dia::Core::StringCRC prefixCRC(typePrefix);
+
+            for (unsigned int i = 0; i < mHandlers.Size(); ++i)
+            {
+                if (mHandlers[i].mTypePrefixCRC == prefixCRC)
+                {
+                    DIA_LOG_WARNING("AssetRuntime", "RegisterTypeHandler: handler already registered for '%s'", typePrefix);
+                    return;
+                }
+            }
+
+            if (mHandlers.Size() == kMaxHandlers)
+            {
+                DIA_LOG_WARNING("AssetRuntime", "RegisterTypeHandler: handler list full (capacity %u)", kMaxHandlers);
+                return;
+            }
+
+            HandlerEntry entry;
+            entry.mTypePrefixCRC = prefixCRC;
+            entry.mTypePrefix = Dia::Core::Containers::String32(typePrefix);
+            entry.mHandler = handler;
+            mHandlers.Add(entry);
+            DIA_LOG_DEBUG("asset", "asset.type.registered type=%s", typePrefix);
+        }
+
+        void AssetRuntime::UnregisterTypeHandler(const char* typePrefix)
+        {
+            AssertOwnerThread();
+            if (!typePrefix)
+                return;
+
+            Dia::Core::StringCRC prefixCRC(typePrefix);
+            for (unsigned int i = 0; i < mHandlers.Size(); ++i)
+            {
+                if (mHandlers[i].mTypePrefixCRC == prefixCRC)
+                {
+                    mHandlers.RemoveAt(i);
+                    return;
+                }
+            }
+
+            DIA_LOG_WARNING("AssetRuntime", "UnregisterTypeHandler: no handler registered for '%s'", typePrefix);
+        }
+
+        void AssetRuntime::RegisterListener(IAssetStateListener* listener)
+        {
+            AssertOwnerThread();
+            if (!listener)
+            {
+                DIA_LOG_WARNING("AssetRuntime", "RegisterListener: null listener");
+                return;
+            }
+
+            for (unsigned int i = 0; i < mListeners.Size(); ++i)
+            {
+                if (mListeners[i] == listener)
+                {
+                    DIA_LOG_WARNING("AssetRuntime", "RegisterListener: listener already registered — ignoring duplicate");
+                    return;
+                }
+            }
+
+            if (mListeners.Size() == kMaxListeners)
+            {
+                DIA_LOG_WARNING("AssetRuntime", "RegisterListener: listener list full (capacity %u)", kMaxListeners);
+                return;
+            }
+
+            mListeners.Add(listener);
+        }
+
+        void AssetRuntime::UnregisterListener(IAssetStateListener* listener)
+        {
+            AssertOwnerThread();
+            if (!listener)
+                return;
+
+            if (mIsDispatching)
+            {
+                // Defer removal until the current dispatch loop completes —
+                // removing from mListeners mid-iteration would invalidate it.
+                for (unsigned int i = 0; i < mPendingListenerRemovals.Size(); ++i)
+                {
+                    if (mPendingListenerRemovals[i] == listener)
+                        return; // already pending removal
+                }
+
+                if (mPendingListenerRemovals.Size() == kMaxListeners)
+                {
+                    DIA_LOG_WARNING("AssetRuntime", "UnregisterListener: pending removal list full (capacity %u)", kMaxListeners);
+                    return;
+                }
+
+                mPendingListenerRemovals.Add(listener);
+                return;
+            }
+
+            for (unsigned int i = 0; i < mListeners.Size(); ++i)
+            {
+                if (mListeners[i] == listener)
+                {
+                    mListeners.RemoveAt(i);
+                    return;
+                }
+            }
+        }
+
+        void AssetRuntime::RetryAssetLoad(const Dia::Core::StringCRC& assetId)
+        {
+            AssertOwnerThread();
+            const AssetState* state = mStateTable.TryGetItemConst(assetId);
+            if (!state)
+            {
+                DIA_LOG_WARNING("AssetRuntime", "RetryAssetLoad: unknown asset '%s'", assetId.AsChar());
+                return;
+            }
+
+            if (*state != AssetState::Failed)
+            {
+                DIA_LOG_WARNING("AssetRuntime", "RetryAssetLoad: asset '%s' is not in Failed state", assetId.AsChar());
+                return;
+            }
+
+            if (TryTransition(assetId, AssetState::Loading))
+            {
+                DispatchLoad(assetId);
+            }
+        }
+
+        AssetRuntime::LoadProgress AssetRuntime::GetLoadProgress(const Dia::Core::StringCRC& stageId) const
+        {
+            AssertOwnerThread();
+            LoadProgress progress = { 0, 0, 0 };
+
+            const RuntimeStageEntry* stage = mStageTable.TryGetItemConst(stageId);
+            if (!stage)
+            {
+                DIA_LOG_WARNING("AssetRuntime", "GetLoadProgress: unknown stage '%s'", stageId.AsChar());
+                return progress;
+            }
+
+            progress.total = stage->mAssetIds.Size();
+            for (unsigned int i = 0; i < progress.total; ++i)
+            {
+                const AssetState* state = mStateTable.TryGetItemConst(stage->mAssetIds[i]);
+                if (!state)
+                    continue;
+
+                if (*state == AssetState::Loaded)
+                    progress.loaded++;
+                else if (*state == AssetState::Failed)
+                    progress.failed++;
+            }
+
+            return progress;
         }
 
         unsigned int AssetRuntime::GetAllAssets(
@@ -216,142 +497,18 @@ namespace Dia
                 AssetState* state = mStateTable.TryGetItem(entry.mId);
                 if (!state) continue;
 
-                if (*state != AssetState::Registered)
-                    DispatchAssetUnloading(entry.mId);
+                if (*state == AssetState::Loaded || *state == AssetState::Loading)
+                    DispatchUnload(entry.mId);
             }
 
             for (unsigned int i = 0; i < count; ++i)
             {
                 const RuntimeAssetEntry& entry = mAssetTable.GetItemByIndexConst(i);
                 AssetState* state = mStateTable.TryGetItem(entry.mId);
-                if (state) *state = AssetState::Registered;
+                if (state) *state = AssetState::Null;
 
                 unsigned int* refCount = mRefCountTable.TryGetItem(entry.mId);
                 if (refCount) *refCount = 0u;
-            }
-        }
-
-        void AssetRuntime::RegisterListener(IAssetStateListener* listener)
-        {
-            AssertOwnerThread();
-            if (!listener)
-                return;
-
-            unsigned int count = mListeners.Size();
-            for (unsigned int i = 0; i < count; ++i)
-            {
-                if (mListeners[i] == listener)
-                {
-                    DIA_LOG_WARNING("AssetRuntime", "RegisterListener: listener already registered");
-                    return;
-                }
-            }
-
-            if (mListeners.Size() == kMaxListeners)
-            {
-                DIA_LOG_WARNING("AssetRuntime", "RegisterListener: listener list full (capacity %u)", kMaxListeners);
-                return;
-            }
-
-            mListeners.Add(listener);
-        }
-
-        void AssetRuntime::UnregisterListener(IAssetStateListener* listener)
-        {
-            AssertOwnerThread();
-            if (!listener)
-                return;
-
-            if (mIsDispatching)
-            {
-                if (mDeferredRemovals.Size() < kMaxListeners)
-                    mDeferredRemovals.Add(listener);
-                return;
-            }
-
-            unsigned int count = mListeners.Size();
-            for (unsigned int i = 0; i < count; ++i)
-            {
-                if (mListeners[i] == listener)
-                {
-                    mListeners.RemoveAt(i);
-                    return;
-                }
-            }
-
-            DIA_LOG_WARNING("AssetRuntime", "UnregisterListener: listener not found");
-        }
-
-        void AssetRuntime::RequestStageLoad(const Dia::Core::StringCRC& stageId)
-        {
-            AssertOwnerThread();
-            const RuntimeStageEntry* stage = mStageTable.TryGetItemConst(stageId);
-            if (!stage)
-            {
-                DIA_LOG_WARNING("AssetRuntime", "RequestStageLoad: unknown stage '%s'", stageId.AsChar());
-                return;
-            }
-
-            unsigned int assetCount = stage->mAssetIds.Size();
-            for (unsigned int i = 0; i < assetCount; ++i)
-            {
-                const Dia::Core::StringCRC& assetId = stage->mAssetIds[i];
-
-                unsigned int* refCount = mRefCountTable.TryGetItem(assetId);
-                if (!refCount)
-                {
-                    DIA_LOG_WARNING("AssetRuntime", "RequestStageLoad: asset '%s' in stage '%s' not found in ref table",
-                        assetId.AsChar(), stageId.AsChar());
-                    continue;
-                }
-
-                unsigned int prev = *refCount;
-                (*refCount)++;
-
-                if (prev == 0)
-                {
-                    TryTransition(assetId, AssetState::Staged);
-                }
-            }
-        }
-
-        void AssetRuntime::RequestStageUnload(const Dia::Core::StringCRC& stageId)
-        {
-            AssertOwnerThread();
-            const RuntimeStageEntry* stage = mStageTable.TryGetItemConst(stageId);
-            if (!stage)
-            {
-                DIA_LOG_WARNING("AssetRuntime", "RequestStageUnload: unknown stage '%s'", stageId.AsChar());
-                return;
-            }
-
-            unsigned int assetCount = stage->mAssetIds.Size();
-            for (unsigned int i = 0; i < assetCount; ++i)
-            {
-                const Dia::Core::StringCRC& assetId = stage->mAssetIds[i];
-
-                unsigned int* refCount = mRefCountTable.TryGetItem(assetId);
-                if (!refCount)
-                {
-                    DIA_LOG_WARNING("AssetRuntime", "RequestStageUnload: asset '%s' in stage '%s' not found in ref table",
-                        assetId.AsChar(), stageId.AsChar());
-                    continue;
-                }
-
-                if (*refCount == 0)
-                {
-                    DIA_LOG_WARNING("AssetRuntime",
-                        "RequestStageUnload: asset '%s' ref count already 0 (double unload for stage '%s')",
-                        assetId.AsChar(), stageId.AsChar());
-                    continue;
-                }
-
-                (*refCount)--;
-
-                if (*refCount == 0)
-                {
-                    TryTransition(assetId, AssetState::Unloading);
-                }
             }
         }
 
@@ -397,16 +554,31 @@ namespace Dia
         }
 
         //------------------------------------------------------------------------------------
+        // IAssetLoadCallback
+        //------------------------------------------------------------------------------------
+        void AssetRuntime::OnLoadComplete(const Dia::Core::StringCRC& assetId)
+        {
+            DIA_LOG_INFO("AssetRuntime", "Asset '%s' loaded", assetId.AsChar());
+            TryTransition(assetId, AssetState::Loaded);
+            DIA_LOG_DEBUG("asset", "asset.record.created asset_id=%s", assetId.AsChar());
+        }
+
+        void AssetRuntime::OnLoadFailed(const Dia::Core::StringCRC& assetId, const char* reason)
+        {
+            DIA_LOG_ERROR("AssetRuntime", "Asset '%s' load failed: %s", assetId.AsChar(), reason ? reason : "unknown");
+            TryTransition(assetId, AssetState::Failed);
+        }
+
+        //------------------------------------------------------------------------------------
         // Private
         //------------------------------------------------------------------------------------
         void AssetRuntime::InitStateTable()
         {
-            // Initialize all loaded assets to Registered state.
             unsigned int count = mAssetTable.Size();
             for (unsigned int i = 0; i < count; ++i)
             {
                 const RuntimeAssetEntry& entry = mAssetTable.GetItemByIndexConst(i);
-                mStateTable.Add(entry.mId, AssetState::Registered);
+                mStateTable.Add(entry.mId, AssetState::Null);
             }
         }
 
@@ -440,54 +612,149 @@ namespace Dia
             }
         }
 
-        void AssetRuntime::DispatchAssetReady(const Dia::Core::StringCRC& assetId)
+        void AssetRuntime::DispatchLoad(const Dia::Core::StringCRC& assetId)
         {
+            DIA_PROFILE_SCOPE("asset.load", Dia::Observation::Profile::Category::kDiaAssetRuntime);
+            DIA_TRACE_ZONE("asset.load", Dia::Observation::Trace::Category::kDiaAssetRuntime);
+            const AssetState* currentState = mStateTable.TryGetItemConst(assetId);
+            if (!currentState || *currentState != AssetState::Loading)
+                TryTransition(assetId, AssetState::Loading);
+
             const RuntimeAssetEntry* entry = mAssetTable.TryGetItemConst(assetId);
             if (!entry)
             {
-                DIA_LOG_ERROR("AssetRuntime", "DispatchAssetReady: asset '%s' not in table — listeners will not be notified", assetId.AsChar());
+                DIA_LOG_ERROR("AssetRuntime", "DispatchLoad: asset '%s' not in table", assetId.AsChar());
+                TryTransition(assetId, AssetState::Failed);
                 return;
             }
 
-            mIsDispatching = true;
-            unsigned int count = mListeners.Size();
-            for (unsigned int i = 0; i < count; ++i)
-                mListeners[i]->OnAssetReady(assetId, entry->mDeployPath);
-            mIsDispatching = false;
+            Dia::Core::StringCRC typePrefixCRC = ExtractTypePrefix(assetId);
+            IAssetTypeHandler* handler = FindHandler(typePrefixCRC);
 
-            FlushDeferredRemovals();
-        }
-
-        void AssetRuntime::DispatchAssetUnloading(const Dia::Core::StringCRC& assetId)
-        {
-            mIsDispatching = true;
-            unsigned int count = mListeners.Size();
-            for (unsigned int i = 0; i < count; ++i)
-                mListeners[i]->OnAssetUnloading(assetId);
-            mIsDispatching = false;
-
-            FlushDeferredRemovals();
-        }
-
-        void AssetRuntime::DispatchAssetLoadFailed(const Dia::Core::StringCRC& assetId)
-        {
-            mIsDispatching = true;
-            unsigned int count = mListeners.Size();
-            for (unsigned int i = 0; i < count; ++i)
-                mListeners[i]->OnAssetLoadFailed(assetId);
-            mIsDispatching = false;
-
-            FlushDeferredRemovals();
-        }
-
-        void AssetRuntime::FlushDeferredRemovals()
-        {
-            unsigned int removeCount = mDeferredRemovals.Size();
-            for (unsigned int i = 0; i < removeCount; ++i)
+            if (handler)
             {
-                IAssetStateListener* listener = mDeferredRemovals[i];
-                unsigned int count = mListeners.Size();
-                for (unsigned int j = 0; j < count; ++j)
+                handler->Load(assetId, entry->mDeployPath, this);
+            }
+            else
+            {
+                AutoValidate(assetId, entry->mDeployPath);
+            }
+        }
+
+        void AssetRuntime::AutoValidate(const Dia::Core::StringCRC& assetId,
+                                         const Dia::Core::Containers::String512& resolvedPath)
+        {
+            const char* path = resolvedPath.AsCStr();
+            bool exists = false;
+
+            // Folder assets have trailing '/' in their deploy path
+            unsigned int len = resolvedPath.Length();
+            if (len > 0 && (path[len - 1] == '/' || path[len - 1] == '\\'))
+            {
+                exists = std::filesystem::is_directory(path);
+            }
+            else
+            {
+                FILE* f = nullptr;
+                fopen_s(&f, path, "rb");
+                if (f)
+                {
+                    fclose(f);
+                    exists = true;
+                }
+            }
+
+            if (exists)
+            {
+                DIA_LOG_INFO("AssetRuntime", "Asset '%s' auto-validated at '%s'", assetId.AsChar(), path);
+                TryTransition(assetId, AssetState::Loaded);
+            }
+            else
+            {
+                DIA_LOG_ERROR("AssetRuntime", "AutoValidate: resource not found at '%s' for asset '%s'", path, assetId.AsChar());
+                TryTransition(assetId, AssetState::Failed);
+            }
+        }
+
+        void AssetRuntime::DispatchUnload(const Dia::Core::StringCRC& assetId)
+        {
+            Dia::Core::StringCRC typePrefixCRC = ExtractTypePrefix(assetId);
+            IAssetTypeHandler* handler = FindHandler(typePrefixCRC);
+
+            if (handler)
+            {
+                handler->Unload(assetId);
+            }
+        }
+
+        Dia::Core::StringCRC AssetRuntime::ExtractTypePrefix(const Dia::Core::StringCRC& assetId) const
+        {
+            const char* idStr = assetId.AsChar();
+            if (!idStr)
+                return Dia::Core::StringCRC();
+
+            char prefix[32];
+            unsigned int i = 0;
+            while (idStr[i] != '\0' && idStr[i] != '.' && i < 31)
+            {
+                prefix[i] = idStr[i];
+                i++;
+            }
+            prefix[i] = '\0';
+
+            return Dia::Core::StringCRC(prefix);
+        }
+
+        IAssetTypeHandler* AssetRuntime::FindHandler(const Dia::Core::StringCRC& typePrefixCRC) const
+        {
+            for (unsigned int i = 0; i < mHandlers.Size(); ++i)
+            {
+                if (mHandlers[i].mTypePrefixCRC == typePrefixCRC)
+                    return mHandlers[i].mHandler;
+            }
+            return nullptr;
+        }
+
+        void AssetRuntime::DispatchOnAssetReady(const Dia::Core::StringCRC& assetId,
+                                                 const Dia::Core::Containers::String512& resolvedPath)
+        {
+            mIsDispatching = true;
+            for (unsigned int i = 0; i < mListeners.Size(); ++i)
+            {
+                mListeners[i]->OnAssetReady(assetId, resolvedPath);
+            }
+            mIsDispatching = false;
+            ApplyPendingListenerRemovals();
+        }
+
+        void AssetRuntime::DispatchOnAssetUnloading(const Dia::Core::StringCRC& assetId)
+        {
+            mIsDispatching = true;
+            for (unsigned int i = 0; i < mListeners.Size(); ++i)
+            {
+                mListeners[i]->OnAssetUnloading(assetId);
+            }
+            mIsDispatching = false;
+            ApplyPendingListenerRemovals();
+        }
+
+        void AssetRuntime::DispatchOnAssetLoadFailed(const Dia::Core::StringCRC& assetId)
+        {
+            mIsDispatching = true;
+            for (unsigned int i = 0; i < mListeners.Size(); ++i)
+            {
+                mListeners[i]->OnAssetLoadFailed(assetId);
+            }
+            mIsDispatching = false;
+            ApplyPendingListenerRemovals();
+        }
+
+        void AssetRuntime::ApplyPendingListenerRemovals()
+        {
+            for (unsigned int i = 0; i < mPendingListenerRemovals.Size(); ++i)
+            {
+                IAssetStateListener* listener = mPendingListenerRemovals[i];
+                for (unsigned int j = 0; j < mListeners.Size(); ++j)
                 {
                     if (mListeners[j] == listener)
                     {
@@ -496,13 +763,7 @@ namespace Dia
                     }
                 }
             }
-            mDeferredRemovals.RemoveAll();
-        }
-
-        void AssetRuntime::AssertOwnerThread() const
-        {
-            DIA_ASSERT(GetCurrentThreadIdValue() == mOwnerThreadId,
-                "AssetRuntime accessed from wrong thread — single-threaded use only");
+            mPendingListenerRemovals.RemoveAll();
         }
 
         bool AssetRuntime::TryTransition(const Dia::Core::StringCRC& assetId, AssetState target)
@@ -516,16 +777,17 @@ namespace Dia
 
             AssetState current = *state;
 
-            // Validate allowed transitions
             bool valid = false;
             switch (current)
             {
-                case AssetState::Registered: valid = (target == AssetState::Staged);       break;
-                case AssetState::Staged:     valid = (target == AssetState::Loaded)
-                                                  || (target == AssetState::Unloading)
-                                                  || (target == AssetState::Registered); break;
-                case AssetState::Loaded:     valid = (target == AssetState::Unloading);   break;
-                case AssetState::Unloading:  valid = (target == AssetState::Registered);  break;
+                case AssetState::Null:     valid = (target == AssetState::Staged);                break;
+                case AssetState::Staged:   valid = (target == AssetState::Loading);               break;
+                case AssetState::Loading:  valid = (target == AssetState::Loaded)
+                                                || (target == AssetState::Failed);                break;
+                case AssetState::Loaded:   valid = (target == AssetState::Unloaded);              break;
+                case AssetState::Failed:   valid = (target == AssetState::Loading)
+                                                || (target == AssetState::Unloaded);              break;
+                case AssetState::Unloaded: valid = (target == AssetState::Staged);                break;
             }
 
             if (!valid)
@@ -538,22 +800,42 @@ namespace Dia
                 return false;
             }
 
-            DIA_LOG_DEBUG("AssetRuntime",
-                "TryTransition: '%s' %d -> %d",
+            DIA_LOG_INFO("AssetRuntime",
+                "State change: '%s' %s -> %s",
                 assetId.AsChar(),
-                static_cast<int>(current),
-                static_cast<int>(target));
+                AssetStateToStr(current),
+                AssetStateToStr(target));
 
             *state = target;
 
+            // Listener dispatch — fires on the transitions consuming systems
+            // care about. Wired centrally here so every code path that drives
+            // a transition (DispatchLoad, AutoValidate, the private
+            // IAssetLoadCallback overrides, RequestStageUnload, RetryAssetLoad)
+            // notifies listeners consistently without each having to know
+            // about the listener list.
             if (target == AssetState::Staged)
-                DispatchAssetReady(assetId);
-            else if (target == AssetState::Unloading)
-                DispatchAssetUnloading(assetId);
-            else if (target == AssetState::Registered && current == AssetState::Staged)
-                DispatchAssetLoadFailed(assetId);
+            {
+                const RuntimeAssetEntry* entry = mAssetTable.TryGetItemConst(assetId);
+                if (entry)
+                    DispatchOnAssetReady(assetId, entry->mDeployPath);
+            }
+            else if (target == AssetState::Unloaded)
+            {
+                DispatchOnAssetUnloading(assetId);
+            }
+            else if (target == AssetState::Failed)
+            {
+                DispatchOnAssetLoadFailed(assetId);
+            }
 
             return true;
+        }
+
+        void AssetRuntime::AssertOwnerThread() const
+        {
+            DIA_ASSERT(GetCurrentThreadIdValue() == mOwnerThreadId,
+                "AssetRuntime accessed from wrong thread — single-threaded use only");
         }
 
     } // namespace AssetRuntime
