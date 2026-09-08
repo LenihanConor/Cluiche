@@ -168,7 +168,7 @@ result = execute_api_command("validate-assets", args=["--path", "assets/"])
 - **Project scaffolding** - Code generation, project initialization (use existing tools or add as custom commands)
 - **Configuration management** - Complex config systems, path resolution (keep simple or add as custom commands)
 - **IDE integration** - IDE plugins (VS Code, Visual Studio) are separate; DiaCLI is CLI-only
-- **Interactive TUI** - Commands are non-interactive for CI/CD compatibility
+- **Interactive TUI** - Individual DiaCLI commands remain non-interactive for CI/CD compatibility; an optional interactive/visual layer over these same commands is out of scope for DiaCLI itself and lives in the separate DiaConsole system ([diaconsole.md](../diaconsole/diaconsole.md)), which invokes DiaCLI's commands rather than changing their behavior
 
 ## Decisions
 
