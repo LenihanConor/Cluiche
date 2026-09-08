@@ -2,7 +2,7 @@
 schema: dia.module.v1
 module_id: dia.schemabrowser
 name: DiaSchemaBrowser
-layer: domain/visual/tools
+layer: tools/inspector
 path: Dia/DiaSchemaBrowser
 status: active
 maturity: dev

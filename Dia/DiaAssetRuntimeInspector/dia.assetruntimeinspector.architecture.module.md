@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.assetruntimeinspector
 name: DiaAssetRuntimeInspector
 owner_team: TBD
-layer: domain/visual/tools
+layer: tools/inspector
 status: active
 maturity: dev
 

@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.pythonconsole
 name: DiaPythonConsoleEditor
 parent_module_id: dia.root
-layer: domain/visual/tools
+layer: tools/editor
 path: Dia/DiaPythonConsoleEditor
 type: editor_plugin
 dependencies:

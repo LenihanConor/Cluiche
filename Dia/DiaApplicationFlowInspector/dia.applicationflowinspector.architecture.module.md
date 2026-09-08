@@ -2,7 +2,7 @@
 schema: dia.module.v1
 module_id: dia.applicationflowinspector
 name: DiaApplicationFlowInspector
-layer: domain/visual/tools
+layer: tools/inspector
 path: Dia/DiaApplicationFlowInspector
 status: active
 dependent_modules:

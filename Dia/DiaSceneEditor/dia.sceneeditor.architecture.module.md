@@ -2,7 +2,7 @@
 schema: dia.module.v1
 module_id: dia.sceneeditor
 name: DiaSceneEditor
-layer: domain/visual/tools
+layer: tools/editor
 path: Dia/DiaSceneEditor
 
 dependencies:

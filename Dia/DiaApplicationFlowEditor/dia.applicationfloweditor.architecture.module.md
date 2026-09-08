@@ -2,7 +2,7 @@
 schema: dia.module.v1
 module_id: dia.applicationfloweditor
 name: DiaApplicationFlowEditor
-layer: domain/visual/tools
+layer: tools/editor
 path: Dia/DiaApplicationFlowEditor
 status: active
 dependent_modules:

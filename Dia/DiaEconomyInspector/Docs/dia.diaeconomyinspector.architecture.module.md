@@ -2,7 +2,7 @@
 schema: dia.module.v1
 module_id: dia.economyinspector
 name: DiaEconomyInspector
-layer: domain/visual/tools
+layer: tools/inspector
 path: Dia/DiaEconomyInspector
 dependencies:
   required:

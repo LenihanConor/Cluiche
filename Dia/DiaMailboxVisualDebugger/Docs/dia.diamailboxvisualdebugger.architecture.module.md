@@ -2,7 +2,7 @@
 schema: dia.module.v1
 module_id: dia.mailboxvisualdebugger
 name: DiaMailboxVisualDebugger
-layer: domain/visual/tools
+layer: foundation/services/tools
 path: Dia/DiaMailboxVisualDebugger
 status: active
 maturity: dev

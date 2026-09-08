@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.assetcatalogueeditor
 name: DiaAssetCatalogueEditor
 owner_team: TBD
-layer: domain/visual/tools
+layer: tools/editor
 status: active
 maturity: dev
 

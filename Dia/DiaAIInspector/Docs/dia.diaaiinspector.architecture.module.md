@@ -2,7 +2,7 @@
 schema: dia.module.v1
 module_id: dia.aiinspector
 name: DiaAIInspector
-layer: domain/visual/tools
+layer: tools/inspector
 path: Dia/DiaAIInspector
 dependencies:
   required:

@@ -2,7 +2,7 @@
 schema: dia.module.v1
 module_id: dia.pipelineeditor
 name: DiaPipelineEditor
-layer: domain/visual/tools
+layer: tools/editor
 path: Dia/DiaPipelineEditor
 status: active
 maturity: dev
