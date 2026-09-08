@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/applications/cluichetest/systems/teststages/aicallout-test-stage.md
-**Status:** In Progress
+**Status:** Done
 
 ## Pre-dispatch resolutions
 

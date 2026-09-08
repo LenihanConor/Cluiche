@@ -362,5 +362,5 @@ def test_aicallout_lifecycle(dia_client):
 
 ## Status
 
-**Status:** Approved
+**Status:** Done
 **Plan:** [aicallout-test-stage.plan.md](aicallout-test-stage.plan.md)
