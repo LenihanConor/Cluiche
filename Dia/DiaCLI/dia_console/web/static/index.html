@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dia Console</title>
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+<div class="window">
+
+  <div class="headerblock">
+    <div class="titlebar">
+      <div class="logo"></div>
+      <div class="title">DIA CONSOLE</div>
+      <div class="winctrls">
+        <span class="minimize" title="Minimize">&#8211;</span>
+        <span class="maximize" title="Maximize">&#9633;</span>
+        <span class="close" title="Close">&#10005;</span>
+      </div>
+    </div>
+    <div class="contextrow">
+      <!-- Target/config context (console-project-context.md): real <select>s
+           populated from GET /api/context. No project-level (cross-repo/
+           sibling) switching UI anywhere -- this repo has exactly one real
+           project. Platform stays a static label -- there is nothing to
+           select (PD-005: x64 is the only supported platform). -->
+      <div class="breadcrumb">
+        <select class="seg-select" id="target-select" title="Target"></select>
+        <span class="slash">/</span>
+        <select class="seg-select" id="config-select" title="Config"></select>
+        <span class="slash">/</span>
+        <span class="seg current" id="platform-label">x64</span>
+      </div>
+      <div class="runstate" id="runstate">
+        <span class="dot" id="runstate-dot"></span>
+        <span id="runstate-text">Idle</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="body">
+
+    <div class="nav">
+      <div class="search">
+        &#128269; <input id="nav-search" type="text" placeholder="Search commands">
+        <kbd>Ctrl K</kbd>
+      </div>
+      <div class="navgroups" id="navgroups">
+        <!-- populated by app.js from GET /api/commands -->
+      </div>
+      <!-- Presets panel intentionally omitted (Goal 7) — console-presets' job, not this feature's. -->
+    </div>
+
+    <div class="center">
+      <div class="cmdheader empty" id="cmdheader">
+        <div class="name" id="cmdheader-name">Select a command</div>
+        <div class="desc" id="cmdheader-desc">Choose a command from the left to see its options.</div>
+      </div>
+
+      <div class="form-area" id="form-area" style="display:none">
+        <div class="field-row" id="form-fields"></div>
+        <div class="checkrow" id="form-flags"></div>
+
+        <div class="cli-preview">
+          <span class="prefix">$</span>
+          <span id="cli-preview-text"></span>
+          <span class="copy" id="cli-preview-copy">copy</span>
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" id="run-btn" type="button">&#9654; Run</button>
+          <button class="btn secondary" id="cancel-btn" type="button" disabled>Cancel</button>
+        </div>
+      </div>
+
+      <div class="outputpanel">
+        <div class="tabstrip">
+          <div class="tab active" id="tab-log" data-tab="log">Log</div>
+          <div class="tab" id="tab-results" data-tab="results">Results</div>
+        </div>
+        <div class="statusline" id="statusline">
+          <span class="dot" id="statusline-dot"></span>
+          <span id="statusline-text">No execution yet.</span>
+          <div class="bar"><div class="fill"></div></div>
+        </div>
+        <div class="logpane" id="logpane">
+          <div class="empty-hint">Run a command to see its live output here.</div>
+        </div>
+        <!-- Results tab: console-typed-results' job, not this feature's — static
+             empty state only (Goal 7). -->
+        <div class="resultspane" id="resultspane" style="display:none">
+          <div class="empty-state">No structured results yet.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    <span><kbd>/</kbd>Palette</span>
+    <span><kbd>Enter</kbd>Run</span>
+    <span><kbd>Ctrl R</kbd>Rerun</span>
+    <span><kbd>Esc</kbd>Back</span>
+    <span><kbd>F1</kbd>Help</span>
+  </div>
+
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

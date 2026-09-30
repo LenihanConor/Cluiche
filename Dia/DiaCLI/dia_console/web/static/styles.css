@@ -1,0 +1,318 @@
+/* Dia Console shell styles.
+ *
+ * Lifted from docs/specs/applications/dia/systems/diaconsole/mockups/console.html
+ * per console-native-shell.md Task 8: same :root palette + class names, minus
+ * the .presets/.preset-chip rules (Presets panel is omitted entirely from
+ * this feature) and the mockup-only .statelabel/.caption debug helpers.
+ * A few small additions are called out inline where a *generic* renderer
+ * needs something the mockup's hand-authored fixed layout didn't.
+ */
+:root {
+  --bg-0: #0d1117;   /* canvas: recessed content (form, log, results) */
+  --bg-1: #161b22;   /* chrome: header, nav, tabstrip, footer */
+  --bg-2: #1c2128;   /* surface: hover, chips, neutral cards */
+  --bg-3: #262c36;   /* raised: active/hover surface */
+  --border: #30363d; /* used ONLY for: window frame, sidebar divider, input underline, active tab */
+  --text-0: #e6edf3;
+  --text-1: #9198a1;
+  --text-2: #6e7681;
+  --accent: #4493f8;
+  --accent-dim: #1f6feb1a;
+  --green: #3fb950;
+  --red: #f85149;
+  --red-dim: #f8514915;
+  --yellow: #d29922;
+  --yellow-dim: #d2992215;
+  --mono: "Cascadia Code", "SF Mono", Consolas, monospace;
+  --sans: -apple-system, "Segoe UI", Inter, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  background: #000;
+  font-family: var(--sans);
+  color: var(--text-0);
+  font-size: 13px;
+  height: 100%;
+}
+body { height: 100vh; overflow: hidden; }
+
+.window {
+  width: 100%;
+  height: 100vh;
+  background: var(--bg-0);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border); /* native window frame — kept intentionally */
+}
+
+/* ---- Header block: titlebar + context row fused, one shade, no internal line ---- */
+.headerblock { background: var(--bg-1); flex-shrink: 0; }
+.titlebar {
+  height: 34px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  -webkit-app-region: drag;
+}
+.titlebar .logo { width: 16px; height: 16px; border-radius: 3px; background: linear-gradient(135deg, var(--accent), #7c5cff); margin-right: 8px; }
+.titlebar .title { font-size: 12px; color: var(--text-1); font-weight: 600; letter-spacing: 0.3px; }
+.titlebar .winctrls { margin-left: auto; display: flex; gap: 14px; color: var(--text-2); font-size: 13px; -webkit-app-region: no-drag; }
+.titlebar .winctrls span { cursor: pointer; }
+.titlebar .winctrls .close:hover { color: var(--red); }
+
+.contextrow {
+  height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  font-size: 12.5px;
+}
+.breadcrumb { display: flex; align-items: center; gap: 6px; color: var(--text-1); cursor: default; }
+.breadcrumb .seg.current { color: var(--text-0); font-weight: 600; }
+.breadcrumb .slash { color: var(--text-2); }
+/* Target/config selectors (console-project-context.md) -- same visual
+   weight as .seg.current, but interactive; the platform segment stays a
+   plain .seg.current label since there's nothing to select. */
+.breadcrumb .seg-select {
+  background: transparent;
+  color: var(--text-0);
+  font-weight: 600;
+  font-size: 12.5px;
+  font-family: var(--sans);
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 2px 2px;
+  border-radius: 3px;
+}
+.breadcrumb .seg-select:hover,
+.breadcrumb .seg-select:focus {
+  background: var(--bg-2);
+}
+.breadcrumb .seg-select option {
+  background: var(--bg-1);
+  color: var(--text-0);
+}
+.runstate {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text-1);
+}
+.dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; background: var(--text-2); }
+.dot.accent { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+.dot.green { background: var(--green); }
+.dot.red { background: var(--red); }
+.dot.yellow { background: var(--yellow); }
+.runstate.running { color: var(--accent); }
+
+/* ---- Body layout ---- */
+.body { flex: 1; display: flex; overflow: hidden; min-height: 0; }
+
+/* ---- Left nav: only structural divider in the whole UI besides the window frame ---- */
+.nav {
+  width: 220px;
+  background: var(--bg-1);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+.search {
+  margin: 10px 10px 6px;
+  background: var(--bg-2);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: var(--text-2);
+  display: flex; align-items: center; gap: 6px;
+}
+.search input {
+  border: none; background: transparent; color: var(--text-0);
+  font-size: 12px; font-family: var(--sans); outline: none; flex: 1;
+}
+.search kbd {
+  margin-left: auto;
+  background: var(--bg-3);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 10px;
+  color: var(--text-2);
+}
+.navgroups { overflow-y: auto; padding: 4px 6px 10px; flex: 1; }
+.navgroup { margin-top: 2px; }
+.navgroup-title {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-2);
+  padding: 7px 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.navgroup-title .chev { font-size: 9px; width: 8px; }
+.navgroup-title .count { margin-left: auto; color: var(--text-2); font-weight: 400; letter-spacing: 0; text-transform: none; font-size: 11px; }
+.navgroup.expanded .navgroup-title { color: var(--text-1); }
+.navgroup:not(.expanded) .navitems { display: none; }
+.navgroup.no-match { display: none; }
+
+.navitem {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px 6px 22px;
+  border-radius: 5px;
+  color: var(--text-1);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.navitem .dotstat { width: 5px; height: 5px; border-radius: 50%; background: var(--text-2); flex-shrink:0; }
+.navitem.active {
+  background: var(--accent-dim);
+  color: var(--text-0);
+  font-weight: 600;
+}
+.navitem.active .dotstat { background: var(--accent); }
+.navitem:not(.active):hover { background: var(--bg-2); }
+.navitem.filtered-out { display: none; }
+
+/* ---- Center column: pure canvas, no boxes — hierarchy via type & spacing ---- */
+.center { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--bg-0); overflow: hidden; }
+
+.cmdheader { padding: 16px 20px 10px; }
+.cmdheader .path { font-family: var(--mono); font-size: 11px; color: var(--text-2); margin-bottom: 4px; }
+.cmdheader .name { font-size: 16px; font-weight: 700; color: var(--text-0); }
+.cmdheader .desc { font-size: 12px; color: var(--text-1); margin-top: 3px; }
+.cmdheader.empty .name { color: var(--text-1); font-weight: 600; }
+
+.form-area { padding: 6px 20px 14px; overflow-y: auto; }
+.field-row { display: flex; gap: 20px; margin-bottom: 16px; flex-wrap: wrap; } /* wrap added: mockup's row is fixed at 4 fields, a generic form isn't */
+.field { flex: 1; min-width: 140px; }
+.field label { display: block; font-size: 11px; color: var(--text-2); margin-bottom: 6px; font-weight: 600; }
+.field .help { font-size: 10.5px; color: var(--text-2); margin-top: 4px; }
+.field select, .field input[type=text], .field input[type=number] {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  color: var(--text-0);
+  padding: 4px 2px 6px;
+  font-size: 12.5px;
+  font-family: var(--sans);
+}
+.field select:focus, .field input:focus {
+  outline: none;
+  border-bottom: 1px solid var(--accent);
+}
+.field.required label::after { content: " *"; color: var(--red); }
+
+.checkrow { display: flex; gap: 18px; margin: 4px 0 14px; flex-wrap: wrap; }
+.checkitem { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-1); cursor: pointer; position: relative; }
+.checkitem input[type=checkbox] { position: absolute; opacity: 0; width: 13px; height: 13px; margin: 0; cursor: pointer; }
+.checkitem .box { width: 13px; height: 13px; border: 1px solid var(--text-2); border-radius: 3px; display: inline-block; }
+.checkitem input:checked + .box { background: var(--accent); border-color: var(--accent); position: relative; }
+.checkitem input:checked + .box::after { content: "\2713"; color: white; font-size: 9px; position: absolute; left: 1px; top: -2px; }
+
+.cli-preview {
+  background: var(--bg-1);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: #79c0ff;
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 14px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.cli-preview .prefix { color: var(--text-2); font-family: var(--mono); }
+.cli-preview .copy { margin-left: auto; color: var(--text-2); font-size: 11px; font-family: var(--sans); cursor: pointer; flex-shrink: 0; }
+
+.actions { display: flex; gap: 10px; }
+.btn {
+  padding: 7px 20px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+.btn.primary { background: var(--accent); color: white; }
+.btn.secondary { background: var(--bg-2); color: var(--text-1); }
+.btn:disabled { opacity: 0.4; cursor: default; }
+
+/* ---- Output area ---- */
+.outputpanel { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.tabstrip {
+  display: flex;
+  align-items: center;
+  background: var(--bg-1);
+  flex-shrink: 0;
+  padding: 0 16px;
+}
+.tab {
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+}
+.tab.active { color: var(--text-0); border-bottom-color: var(--accent); }
+
+.statusline {
+  padding: 8px 20px;
+  font-size: 11.5px;
+  color: var(--text-1);
+  display: flex; align-items: center; gap: 8px;
+}
+.statusline .step { color: var(--text-0); font-weight: 600; }
+.statusline .bar { width: 90px; height: 3px; background: var(--bg-2); border-radius: 2px; overflow: hidden; visibility: hidden; }
+.statusline.running .bar { visibility: visible; }
+.statusline .bar .fill {
+  height: 100%; width: 40%; background: var(--accent); border-radius: 2px;
+  animation: dia-console-indeterminate 1.1s ease-in-out infinite;
+}
+@keyframes dia-console-indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
+}
+
+.logpane {
+  flex: 1;
+  padding: 4px 20px 14px;
+  overflow-y: auto;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.7;
+}
+.logline { color: var(--text-2); }
+.logline .ts { color: var(--text-2); margin-right: 8px; opacity: 0.7; }
+.logline.warn { color: var(--yellow); }
+.logline.err { color: var(--red); }
+.logpane .empty-hint { color: var(--text-2); font-style: italic; }
+
+.resultspane {
+  flex: 1;
+  padding: 12px 20px 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.resultspane .empty-state { color: var(--text-2); font-size: 12.5px; }
+
+/* ---- Footer: shade change is the only separation from canvas above it ---- */
+.footer {
+  height: 30px;
+  background: var(--bg-1);
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 16px;
+  font-size: 11px; color: var(--text-2);
+  flex-shrink: 0;
+}
+.footer kbd { background: var(--bg-3); border-radius: 4px; padding: 1px 5px; font-family: var(--mono); color: var(--text-1); margin-right: 4px; }
