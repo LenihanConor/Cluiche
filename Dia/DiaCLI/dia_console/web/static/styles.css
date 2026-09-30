@@ -288,7 +288,23 @@ body { height: 100vh; overflow: hidden; }
 .btn:disabled { opacity: 0.4; cursor: default; }
 
 /* ---- Output area ---- */
-.outputpanel { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.outputpanel { flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; }
+.pane-copy {
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  background: var(--bg-2);
+  color: var(--text-2);
+  font-size: 11px;
+  font-family: var(--sans);
+  padding: 4px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  opacity: 0.85;
+  z-index: 1;
+}
+.pane-copy:hover { opacity: 1; color: var(--text-0); }
+.pane-copy.copied { color: var(--accent); opacity: 1; }
 .tabstrip {
   display: flex;
   align-items: center;

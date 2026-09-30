@@ -100,6 +100,11 @@
         <div class="resultspane" id="resultspane" style="display:none">
           <div class="empty-state">No structured results yet.</div>
         </div>
+
+        <!-- Copies whichever of logpane/resultspane is currently visible --
+             they're mutually exclusive tabs, so one floating button covers
+             both instead of duplicating it per pane. -->
+        <span class="pane-copy" id="pane-copy" title="Copy contents">copy</span>
       </div>
     </div>
 

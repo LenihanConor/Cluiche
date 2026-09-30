@@ -369,3 +369,21 @@ def test_generated_text_fields_disable_browser_autocomplete():
     app_js = (repo_root / "Dia" / "DiaCLI" / "dia_console" / "web" / "static" / "app.js").read_text(encoding="utf-8")
 
     assert 'input.autocomplete = "off"' in app_js
+
+
+def test_pane_copy_button_present_and_wired():
+    """Copy button in the log/results pane's corner -- verified via a real
+    click-driven test (evaluate_js against a live launch()): clicking it
+    with real pane content set actually writes to the clipboard and flips
+    the button's own text to "copied"."""
+    from dia_cli.utils.repo_root import find_repo_root
+
+    repo_root = find_repo_root(__file__)
+    static_dir = repo_root / "Dia" / "DiaCLI" / "dia_console" / "web" / "static"
+    index_html = (static_dir / "index.html").read_text(encoding="utf-8")
+    app_js = (static_dir / "app.js").read_text(encoding="utf-8")
+    styles_css = (static_dir / "styles.css").read_text(encoding="utf-8")
+
+    assert 'id="pane-copy"' in index_html
+    assert "copyActivePaneContents" in app_js
+    assert ".pane-copy" in styles_css

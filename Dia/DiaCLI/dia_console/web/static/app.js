@@ -889,6 +889,22 @@
     qs("resultspane").style.display = tab === "results" ? "" : "none";
   }
 
+  /** Copies whichever of logpane/resultspane is currently visible. */
+  function copyActivePaneContents() {
+    var pane = qs("logpane").style.display !== "none" ? qs("logpane") : qs("resultspane");
+    var text = pane.textContent.trim();
+    if (!text || !navigator.clipboard) return;
+    navigator.clipboard.writeText(text).then(function () {
+      var btn = qs("pane-copy");
+      btn.textContent = "copied";
+      btn.classList.add("copied");
+      setTimeout(function () {
+        btn.textContent = "copy";
+        btn.classList.remove("copied");
+      }, 1200);
+    }).catch(function () {});
+  }
+
   // ---------------------------------------------------------------- boot
 
   function loadCommands() {
@@ -911,6 +927,7 @@
       setActiveTab("results");
       if (state.executionId) loadResults(state.executionId);
     });
+    qs("pane-copy").addEventListener("click", copyActivePaneContents);
     qs("nav-search").addEventListener("input", applyNavFilter);
     qs("target-select").addEventListener("change", onTargetSelectChanged);
     qs("config-select").addEventListener("change", onConfigSelectChanged);
