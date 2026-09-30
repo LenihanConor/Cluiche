@@ -25,11 +25,23 @@ from __future__ import annotations
 import os
 import sys
 
-if __name__ == "__main__":
+
+def _ensure_std_streams() -> None:
+    """Stub ``sys.stdout``/``sys.stderr`` to ``os.devnull`` when ``None``.
+
+    Extracted as its own function (rather than inlined in the ``__main__``
+    guard below) so a test can call it directly with ``sys.stdout``/
+    ``sys.stderr`` monkeypatched to ``None`` -- reproducing the exact
+    windowed/frozen crash condition without needing a real PyInstaller build.
+    """
     if sys.stdout is None:
         sys.stdout = open(os.devnull, "w")
     if sys.stderr is None:
         sys.stderr = open(os.devnull, "w")
+
+
+if __name__ == "__main__":
+    _ensure_std_streams()
 
     from dia_console.shell import launch
 

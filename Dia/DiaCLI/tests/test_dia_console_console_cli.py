@@ -15,13 +15,19 @@ the default ``pytest`` run.
 """
 from __future__ import annotations
 
+import io
+import json
+import subprocess
 import sys
+import time
+import urllib.request
 
 import click
 import pytest
 from click.testing import CliRunner
 
 from dia_cli.cli import console as console_module
+from dia_console.packaging import entrypoint as entrypoint_module
 
 
 # ===========================================================================
@@ -278,8 +284,113 @@ def test_install_shortcut_command_prints_target_on_success(monkeypatch, tmp_path
 
 
 # ===========================================================================
+# Frozen sys.std* crash guard -- regression test for a real bug found by
+# actually double-clicking the packaged exe (git history: "stub
+# sys.stdout/stderr in the frozen entrypoint"). Fast: no PyInstaller build
+# needed, just monkeypatches sys.stdout/stderr to None the way Windows
+# itself does for a console=False build with no attached console.
+# ===========================================================================
+
+def test_ensure_std_streams_stubs_none_stdout_and_stderr(monkeypatch):
+    monkeypatch.setattr(sys, "stdout", None)
+    monkeypatch.setattr(sys, "stderr", None)
+
+    entrypoint_module._ensure_std_streams()
+
+    assert sys.stdout is not None
+    assert sys.stderr is not None
+    sys.stdout.write("smoke")  # must not raise ValueError: I/O operation on closed file
+    sys.stderr.write("smoke")
+
+
+def test_ensure_std_streams_leaves_real_streams_untouched(monkeypatch):
+    fake_out, fake_err = io.StringIO(), io.StringIO()
+    monkeypatch.setattr(sys, "stdout", fake_out)
+    monkeypatch.setattr(sys, "stderr", fake_err)
+
+    entrypoint_module._ensure_std_streams()
+
+    assert sys.stdout is fake_out
+    assert sys.stderr is fake_err
+
+
+# ===========================================================================
+# DiaConsole.spec static guard -- regression test for the pathex/hiddenimports
+# bugs found by an actual PyInstaller build (git history: "bundle
+# dia_console/dia_cli and every dynamically-loaded command"). Fast: a plain
+# text check, no PyInstaller invocation.
+# ===========================================================================
+
+def test_diaconsole_spec_bundles_dia_console_and_dynamic_commands():
+    from dia_cli.utils.repo_root import find_repo_root
+
+    repo_root = find_repo_root(__file__)
+    spec_path = repo_root / "Dia" / "DiaCLI" / "dia_console" / "packaging" / "DiaConsole.spec"
+    text = spec_path.read_text(encoding="utf-8")
+
+    assert "pathex=['../..']" in text, (
+        "pathex must resolve to Dia/DiaCLI -- empty pathex means PyInstaller's "
+        "Analysis can never resolve `import dia_console`/`import dia_cli` at all"
+    )
+    for package in ("dia_cli.cli", "dia_cli.commands", "dia_console"):
+        assert f"collect_submodules('{package}')" in text, (
+            f"hiddenimports must force-bundle {package} -- its submodules are loaded "
+            "dynamically at runtime (os.walk + SourceFileLoader), invisible to "
+            "PyInstaller's static import-graph analysis"
+        )
+
+
+# ===========================================================================
 # Real end-to-end PyInstaller build -- opt-in only (Task 11)
 # ===========================================================================
+
+def _powershell_exe() -> str:
+    """Resolve a real powershell executable path.
+
+    Bare ``"powershell"`` can fail to resolve via ``CreateProcess`` depending
+    on how the *current* process's own ``PATH`` was constructed (observed
+    when pytest itself is launched from a Git Bash shell) -- fall back to
+    Windows' well-known, always-present System32 location.
+    """
+    import shutil
+
+    return shutil.which("powershell") or r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
+
+
+def _find_diaconsole_listening_port(timeout: float) -> int | None:
+    """Poll (via PowerShell) for any running DiaConsole.exe's listening TCP port.
+
+    Queried by process *name*, not the PID `subprocess.Popen` returns: an
+    actual double-clicked run showed PyInstaller's onefile bootloader spawns
+    a second child process that does the real work (binds the port, owns the
+    window) -- the parent Popen handle's own PID never listens on anything.
+    """
+    deadline = time.monotonic() + timeout
+    ps_cmd = (
+        "Get-Process -Name DiaConsole -ErrorAction SilentlyContinue | "
+        "ForEach-Object { Get-NetTCPConnection -OwningProcess $_.Id -State Listen "
+        "-ErrorAction SilentlyContinue } | Select-Object -First 1 -ExpandProperty LocalPort"
+    )
+    while time.monotonic() < deadline:
+        result = subprocess.run(
+            [_powershell_exe(), "-NoProfile", "-Command", ps_cmd],
+            capture_output=True, text=True, timeout=10,
+        )
+        output = result.stdout.strip()
+        if output.isdigit():
+            return int(output)
+        time.sleep(0.5)
+    return None
+
+
+def _kill_all_diaconsole_processes() -> None:
+    subprocess.run(
+        [_powershell_exe(), "-NoProfile", "-Command",
+         "Get-Process -Name DiaConsole -ErrorAction SilentlyContinue | "
+         "Stop-Process -Force -ErrorAction SilentlyContinue"],
+        capture_output=True, timeout=10,
+    )
+
 
 @pytest.mark.integration
 def test_build_end_to_end_produces_a_real_exe():
@@ -291,3 +402,41 @@ def test_build_end_to_end_produces_a_real_exe():
 
     assert returncode == 0
     assert console_module.exe_path(repo_root).exists()
+
+
+@pytest.mark.integration
+def test_built_exe_launches_and_serves_real_commands_with_no_output_redirection():
+    """The authoritative regression guard for all three real bugs found this
+    session (pathex, hiddenimports, sys.std* stubbing): actually launch the
+    packaged exe -- deliberately *not* redirecting stdout/stderr, since doing
+    so is exactly what masked the sys.stdout-is-None crash during manual
+    testing -- and confirm it serves every previously-broken command group
+    through its own real HTTP API.
+
+    Depends on test_build_end_to_end_produces_a_real_exe having already run
+    in the same session (pytest runs a module's tests in definition order).
+    """
+    from dia_cli.utils.repo_root import find_repo_root
+
+    repo_root = find_repo_root(__file__)
+    exe = console_module.exe_path(repo_root)
+    assert exe.exists(), "run test_build_end_to_end_produces_a_real_exe first"
+
+    _kill_all_diaconsole_processes()
+    process = subprocess.Popen([str(exe)], cwd=str(exe.parent))
+    try:
+        port = _find_diaconsole_listening_port(timeout=20.0)
+        assert port is not None, "DiaConsole.exe never opened a listening port"
+
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/commands", timeout=5) as resp:
+            commands = json.loads(resp.read())
+        ids = {c["id"] for c in commands}
+        assert len(ids) >= 60, f"expected ~65 reflected commands, got {len(ids)}"
+        for group in ("agent", "asset", "scaffold", "docs", "fix", "reflect", "codegen"):
+            assert any(i == group or i.startswith(group + ".") for i in ids), (
+                f"'{group}' missing from the packaged exe's reflected commands "
+                f"-- regression in pathex/hiddenimports bundling: {sorted(ids)}"
+            )
+    finally:
+        process.terminate()
+        _kill_all_diaconsole_processes()
