@@ -228,4 +228,4 @@ presets:
 
 ## Status
 
-`Approved` — spec written from research (`docs/research/cli_launcher/`), not yet implemented. Plan: @docs/specs/applications/dia/systems/diaconsole/diaconsole.plan.md. All features below are `Draft`; none `Approved` yet — each needs its own `/spec-feature` pass before implementation starts.
+`Approved` — In Progress. Plan: @docs/specs/applications/dia/systems/diaconsole/diaconsole.plan.md. console-command-model, console-native-shell, console-typed-results, and console-project-context are `Approved` and implemented. console-presets and console-desktop-install remain `Draft` and need their own `/spec-feature` pass before implementation starts. System cannot move to `Done` until all 6 feature specs are `Approved`.
