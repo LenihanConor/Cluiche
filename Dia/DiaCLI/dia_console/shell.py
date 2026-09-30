@@ -85,7 +85,12 @@ def start_server(
     ready = threading.Event()
     port_box: dict[str, int] = {}
 
-    config = uvicorn.Config(app, host=host, port=0, log_level="warning")
+    # log_config=None skips uvicorn's own dictConfig-based logging setup
+    # entirely -- DiaConsole never reads uvicorn's console log output (it
+    # uses its own NDJSON/log-tail mechanism), and that setup unconditionally
+    # builds a StreamHandler over sys.stderr, which is None in a windowed
+    # (console=False) frozen build (see packaging/entrypoint.py's docstring).
+    config = uvicorn.Config(app, host=host, port=0, log_level="warning", log_config=None)
     server = _NoSignalServer(config, ready=ready, port_box=port_box)
     thread = threading.Thread(target=server.run, daemon=True, name="dia-console-uvicorn")
     thread.start()
