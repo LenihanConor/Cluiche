@@ -142,12 +142,43 @@ def event_from_ndjson(raw: Mapping[str, Any], execution_id: str, seq: int) -> Ex
 def default_argv_prefix() -> list[str]:
     """The argv words that start a ``dia`` invocation.
 
-    Prefers the installed ``dia`` launcher; falls back to running the CLI module
-    with the current interpreter when the venv's ``Scripts`` dir is not on PATH.
+    Prefers the installed ``dia`` launcher; falls back to the repo's own
+    venv-installed ``dia`` script (a fixed, known-good relative path, since
+    DiaConsole only ever runs from within this one repo); only when
+    definitely *not* frozen does it fall back further to running the CLI
+    module with the current interpreter.
+
+    Real bug found live: a Desktop-shortcut launch of the packaged
+    DiaConsole.exe inherits the plain global Windows PATH, which normally
+    does *not* include the project venv's ``Scripts`` dir (only a dev shell
+    with the venv active does) -- so ``shutil.which("dia")`` returned
+    ``None``, and the old code fell back to
+    ``[sys.executable, "-m", "dia_cli.cli_main"]``. For a frozen PyInstaller
+    build, ``sys.executable`` **is the frozen app itself**
+    (``DiaConsole.exe``), not a real Python interpreter -- running
+    ``DiaConsole.exe -m dia_cli.cli_main run ...`` doesn't run anything of
+    the sort: ``entrypoint.py`` ignores argv entirely and always calls
+    ``launch()``, so every requested command silently became "open a second
+    DiaConsole window instead," whose own ordinary startup log
+    (registry reflection, load_presets) is what showed up in the log pane.
+    Never falls back to ``-m`` invocation when frozen -- fails loudly
+    instead, since re-launching the frozen app itself is never correct.
     """
     executable = shutil.which("dia")
     if executable:
         return [executable]
+
+    venv_dia = find_repo_root(__file__) / "Dia" / "DiaCLI" / ".venv" / "Scripts" / "dia.exe"
+    if venv_dia.is_file():
+        return [str(venv_dia)]
+
+    if getattr(sys, "frozen", False):
+        raise RuntimeError(
+            f"Could not find a real 'dia' launcher: not on PATH, and {venv_dia} "
+            "doesn't exist. Refusing to fall back to sys.executable -- for this "
+            "frozen build that IS DiaConsole.exe itself, and running it with "
+            "'-m' would just relaunch DiaConsole instead of the requested command."
+        )
     return [sys.executable, "-m", "dia_cli.cli_main"]
 
 

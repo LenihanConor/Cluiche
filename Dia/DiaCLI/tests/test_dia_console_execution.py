@@ -487,6 +487,50 @@ def test_default_argv_prefix_resolves_dia_or_falls_back_to_module(real_service):
 
 
 # ===========================================================================
+# default_argv_prefix's fallback chain -- regression guard for a real bug
+# found live: a Desktop-shortcut launch of the packaged DiaConsole.exe has no
+# "dia" on its plain global PATH, so it fell back to
+# [sys.executable, "-m", "dia_cli.cli_main"] -- but for a frozen build,
+# sys.executable IS DiaConsole.exe itself, so every requested command
+# silently became "open a second DiaConsole window instead" (entrypoint.py
+# ignores argv entirely). Confirmed live via the actual reported symptom:
+# the log pane showed that second instance's own ordinary startup log
+# (registry reflection, load_presets), not the requested command's output.
+# ===========================================================================
+
+def test_argv_prefix_uses_venv_dia_script_when_not_on_path(monkeypatch, tmp_path):
+    monkeypatch.setattr(execution_module.shutil, "which", lambda name: None)
+    venv_dia = tmp_path / "Dia" / "DiaCLI" / ".venv" / "Scripts" / "dia.exe"
+    venv_dia.parent.mkdir(parents=True)
+    venv_dia.write_bytes(b"")
+    monkeypatch.setattr(execution_module, "find_repo_root", lambda anchor: tmp_path)
+
+    assert execution_module.default_argv_prefix() == [str(venv_dia)]
+
+
+def test_argv_prefix_raises_when_frozen_and_no_real_launcher_found(monkeypatch, tmp_path):
+    """Must fail loudly, never fall back to sys.executable -- for a frozen
+    build that IS the app itself, and would silently relaunch it instead of
+    running the requested command (the exact bug reported live)."""
+    monkeypatch.setattr(execution_module.shutil, "which", lambda name: None)
+    monkeypatch.setattr(execution_module, "find_repo_root", lambda anchor: tmp_path)
+    monkeypatch.setattr(execution_module.sys, "frozen", True, raising=False)
+
+    with pytest.raises(RuntimeError, match="Refusing to fall back to sys.executable"):
+        execution_module.default_argv_prefix()
+
+
+def test_argv_prefix_falls_back_to_module_invocation_when_unfrozen_and_no_launcher_found(monkeypatch, tmp_path):
+    """Preserves the old dev/test behaviour when genuinely unfrozen (e.g. a
+    bare `python -m pytest` run with no dia on PATH and no venv script)."""
+    monkeypatch.setattr(execution_module.shutil, "which", lambda name: None)
+    monkeypatch.setattr(execution_module, "find_repo_root", lambda anchor: tmp_path)
+    monkeypatch.delattr(execution_module.sys, "frozen", raising=False)
+
+    assert execution_module.default_argv_prefix() == [execution_module.sys.executable, "-m", "dia_cli.cli_main"]
+
+
+# ===========================================================================
 # SD-CONSOLE-009 — subprocess only, never in-process Click invocation
 # ===========================================================================
 
