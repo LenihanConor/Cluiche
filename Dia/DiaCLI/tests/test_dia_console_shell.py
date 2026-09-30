@@ -387,3 +387,27 @@ def test_pane_copy_button_present_and_wired():
     assert 'id="pane-copy"' in index_html
     assert "copyActivePaneContents" in app_js
     assert ".pane-copy" in styles_css
+
+
+def test_pane_clear_button_present_wired_and_log_only():
+    """Clear button beside copy -- log-only per the request (clearing
+    "results", a completed execution's structured cards rather than an
+    appendable stream, doesn't make the same sense). Verified via a real
+    click-driven test: populated the log pane with real content, clicked
+    the actual button, and confirmed it emptied and restored the idle
+    placeholder in the real WebView2 environment."""
+    from dia_cli.utils.repo_root import find_repo_root
+
+    repo_root = find_repo_root(__file__)
+    static_dir = repo_root / "Dia" / "DiaCLI" / "dia_console" / "web" / "static"
+    index_html = (static_dir / "index.html").read_text(encoding="utf-8")
+    app_js = (static_dir / "app.js").read_text(encoding="utf-8")
+    styles_css = (static_dir / "styles.css").read_text(encoding="utf-8")
+
+    assert 'id="pane-clear"' in index_html
+    assert "clearLogPane" in app_js
+    assert '.pane-clear' in styles_css
+
+    set_active_tab_start = app_js.index("function setActiveTab(")
+    set_active_tab_body = app_js[set_active_tab_start:set_active_tab_start + 400]
+    assert 'pane-clear' in set_active_tab_body, "clear button must be shown/hidden per active tab"

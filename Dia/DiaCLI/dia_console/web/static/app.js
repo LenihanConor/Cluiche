@@ -887,6 +887,14 @@
     qs("tab-results").classList.toggle("active", tab === "results");
     qs("logpane").style.display = tab === "log" ? "" : "none";
     qs("resultspane").style.display = tab === "results" ? "" : "none";
+    qs("pane-clear").classList.toggle("hidden", tab !== "log");
+  }
+
+  /** Empties the log pane and restores its idle placeholder. */
+  function clearLogPane() {
+    var pane = qs("logpane");
+    clear(pane);
+    pane.appendChild(el("div", "empty-hint", "Run a command to see its live output here."));
   }
 
   /** Copies whichever of logpane/resultspane is currently visible. */
@@ -928,6 +936,7 @@
       if (state.executionId) loadResults(state.executionId);
     });
     qs("pane-copy").addEventListener("click", copyActivePaneContents);
+    qs("pane-clear").addEventListener("click", clearLogPane);
     qs("nav-search").addEventListener("input", applyNavFilter);
     qs("target-select").addEventListener("change", onTargetSelectChanged);
     qs("config-select").addEventListener("change", onConfigSelectChanged);
