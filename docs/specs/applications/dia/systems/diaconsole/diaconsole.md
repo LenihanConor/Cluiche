@@ -228,4 +228,4 @@ presets:
 
 ## Status
 
-`Approved` — In Progress. Plan: @docs/specs/applications/dia/systems/diaconsole/diaconsole.plan.md. All 6 feature specs are now `Approved`. console-command-model, console-native-shell, console-typed-results, console-project-context, and console-presets are implemented; console-desktop-install is the one remaining implementation task before this system can move to `Done`.
+`Done` — Implemented 2026-09-30. All 6 feature specs Approved and implemented: console-command-model, console-native-shell, console-typed-results, console-project-context, console-presets, console-desktop-install. Plan archived: `docs/archive/plans/diaconsole.plan.md`.
