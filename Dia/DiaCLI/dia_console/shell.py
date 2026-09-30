@@ -140,6 +140,43 @@ def shutdown(
     thread.join(timeout=join_timeout)
 
 
+class _WindowJsApi:
+    """Exposes ``window.pywebview.api.{minimize,maximize,close}()`` to the
+    page's own custom titlebar controls (``index.html``'s frameless titlebar
+    has no OS-drawn window chrome at all, per ``frameless=True`` below --
+    SD-CONSOLE-003).
+
+    Confirmed by reading pywebview's actual bundled JS
+    (``webview/js/api.js``): ``window.pywebview`` only ever carries
+    ``token``/``platform``/``api``/internal callback bookkeeping -- there is
+    no ``window.pywebview.window`` object anywhere in it. ``app.js``'s three
+    titlebar buttons all guarded on ``window.pywebview && window.pywebview.window``,
+    which is *always* falsy, so none of their click handlers were ever even
+    attached -- minimize/maximize/close all silently did nothing, not just
+    close. ``js_api``'s public methods are what pywebview actually exposes
+    as ``window.pywebview.api.<name>()``; each method here calls the real
+    ``webview.Window`` method of the same shape.
+    """
+
+    def __init__(self) -> None:
+        self._window: object | None = None
+
+    def bind(self, window: object) -> None:
+        self._window = window
+
+    def minimize(self) -> None:
+        if self._window is not None:
+            self._window.minimize()
+
+    def maximize(self) -> None:
+        if self._window is not None:
+            self._window.toggle_fullscreen()
+
+    def close(self) -> None:
+        if self._window is not None:
+            self._window.destroy()
+
+
 def launch(
     *,
     app: FastAPI | None = None,
@@ -155,13 +192,16 @@ def launch(
     fastapi_app = app if app is not None else _default_app
     server, thread, port = start_server(fastapi_app, startup_timeout=startup_timeout)
 
+    js_api = _WindowJsApi()
     window = webview.create_window(
         WINDOW_TITLE,
         url=f"http://127.0.0.1:{port}",
         frameless=True,
         width=WINDOW_WIDTH,
         height=WINDOW_HEIGHT,
+        js_api=js_api,
     )
+    js_api.bind(window)
     window.events.closing += lambda: shutdown(
         fastapi_app, server, thread, join_timeout=shutdown_join_timeout
     )

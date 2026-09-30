@@ -212,6 +212,18 @@ class _FakeWindowEvents:
 class _FakeWindow:
     def __init__(self):
         self.events = _FakeWindowEvents()
+        self.destroyed = False
+        self.minimized = False
+        self.fullscreen_toggled = False
+
+    def destroy(self):
+        self.destroyed = True
+
+    def minimize(self):
+        self.minimized = True
+
+    def toggle_fullscreen(self):
+        self.fullscreen_toggled = True
 
 
 def test_launch_wires_window_close_to_cancel_then_shutdown(monkeypatch):
@@ -245,3 +257,83 @@ def test_launch_wires_window_close_to_cancel_then_shutdown(monkeypatch):
     assert create_window_kwargs["frameless"] is True
     assert create_window_kwargs["url"].startswith("http://127.0.0.1:")
     assert create_window_kwargs["title"] == shell.WINDOW_TITLE
+
+
+# ===========================================================================
+# Custom titlebar controls -- regression guard for a real bug found live:
+# the user reported the frameless window's own "X" button did nothing.
+# window.pywebview.window does not exist anywhere in pywebview's actual
+# bundled JS (webview/js/api.js) -- confirmed by reading it -- so
+# app.js's minimize/maximize/close buttons, all gated on
+# `window.pywebview && window.pywebview.window`, never even attached their
+# click handlers. Every prior test in this file drove shutdown()/the
+# closing *event* directly, never the button's own JS, which is exactly
+# why this was never caught until a real click.
+# ===========================================================================
+
+def test_launch_passes_a_js_api_with_working_window_controls(monkeypatch):
+    """launch() must expose a real js_api whose close()/minimize()/maximize()
+    methods actually drive the real webview.Window -- window.pywebview.api
+    is the only thing pywebview's own JS bridge really exposes to the page."""
+    app = _app_with_executions({})
+    fake_window = _FakeWindow()
+    create_window_kwargs = {}
+
+    def fake_create_window(title, **kwargs):
+        create_window_kwargs.update(kwargs)
+        return fake_window
+
+    monkeypatch.setattr(shell.webview, "create_window", fake_create_window)
+    monkeypatch.setattr(shell.webview, "start", lambda: None)
+
+    shell.launch(app=app, startup_timeout=5.0)
+
+    js_api = create_window_kwargs.get("js_api")
+    assert js_api is not None, "create_window must be given a js_api -- window.pywebview.api is the only real bridge"
+
+    js_api.close()
+    assert fake_window.destroyed is True
+
+    js_api.minimize()
+    assert fake_window.minimized is True
+
+    js_api.maximize()
+    assert fake_window.fullscreen_toggled is True
+
+
+def test_window_js_api_close_before_bind_does_not_raise():
+    js_api = shell._WindowJsApi()
+    js_api.close()  # must be a safe no-op, not an AttributeError on None
+
+
+def test_app_js_titlebar_controls_use_the_real_pywebview_api_not_window():
+    """Static guard: window.pywebview.window does not exist anywhere in
+    pywebview's own bundled JS -- catches a future accidental revert to the
+    broken call without needing a real GUI click to notice."""
+    from dia_cli.utils.repo_root import find_repo_root
+
+    repo_root = find_repo_root(__file__)
+    app_js = (repo_root / "Dia" / "DiaCLI" / "dia_console" / "web" / "static" / "app.js").read_text(encoding="utf-8")
+
+    assert "pywebview.window.close(" not in app_js, "window.pywebview.window does not exist in pywebview's real JS bridge"
+    assert "pywebview.window.minimize(" not in app_js
+    assert "pywebview.window.toggleFullscreen(" not in app_js
+
+
+def test_app_js_waits_for_pywebviewready_before_wiring_titlebar_controls():
+    """Second real bug on top of the first: window.pywebview.api is injected
+    asynchronously, with no guarantee it exists by the time this script's own
+    DOMContentLoaded handler runs -- confirmed by an actual real DOM click
+    that evaluated fine but did nothing, because the wiring code's guard was
+    checked too early and never re-checked. pywebview dispatches its own
+    'pywebviewready' event once the bridge is genuinely ready
+    (webview/js/finish.js); this must be listened for as a fallback."""
+    from dia_cli.utils.repo_root import find_repo_root
+
+    repo_root = find_repo_root(__file__)
+    app_js = (repo_root / "Dia" / "DiaCLI" / "dia_console" / "web" / "static" / "app.js").read_text(encoding="utf-8")
+
+    assert "pywebviewready" in app_js
+    assert "window.pywebview.api.close()" in app_js
+    assert "window.pywebview.api.minimize()" in app_js
+    assert "window.pywebview.api.maximize()" in app_js

@@ -912,19 +912,33 @@
     });
 
     // Frameless window -> no native title bar controls; these three glyphs
-    // are the only way to move/close the window, so wire them through
-    // pywebview's JS bridge when present (no-op in a plain dev browser tab).
-    if (window.pywebview && window.pywebview.window) {
-      document.querySelector(".winctrls .minimize").addEventListener("click", function () {
-        window.pywebview.window.minimize();
-      });
-      document.querySelector(".winctrls .maximize").addEventListener("click", function () {
-        window.pywebview.window.toggleFullscreen();
-      });
-      document.querySelector(".winctrls .close").addEventListener("click", function () {
-        window.pywebview.window.close();
-      });
+    // are the only way to move/close the window. window.pywebview.api is
+    // injected by pywebview's own bridge script asynchronously -- there is
+    // no guarantee it already exists by the time this runs (confirmed by an
+    // actual real click: the button existed and .click() didn't throw, but
+    // nothing happened, because window.pywebview.api was still undefined
+    // when this code ran and so never got the chance to attach anything).
+    // pywebview dispatches window's own 'pywebviewready' CustomEvent once
+    // its bridge is genuinely ready (webview/js/finish.js) -- wait for that,
+    // with a synchronous check first in case it already fired before this
+    // script even ran.
+    if (window.pywebview && window.pywebview.api) {
+      wireTitlebarControls();
+    } else {
+      window.addEventListener("pywebviewready", wireTitlebarControls);
     }
+  }
+
+  function wireTitlebarControls() {
+    document.querySelector(".winctrls .minimize").addEventListener("click", function () {
+      window.pywebview.api.minimize();
+    });
+    document.querySelector(".winctrls .maximize").addEventListener("click", function () {
+      window.pywebview.api.maximize();
+    });
+    document.querySelector(".winctrls .close").addEventListener("click", function () {
+      window.pywebview.api.close();
+    });
   }
 
   document.addEventListener("DOMContentLoaded", function () {
