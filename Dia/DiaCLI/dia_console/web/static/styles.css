@@ -203,6 +203,24 @@ body { height: 100vh; overflow: hidden; }
 .navitem:not(.active):hover { background: var(--bg-2); }
 .navitem.filtered-out { display: none; }
 
+/* Nested "family" row -- several sibling commands sharing the same parent
+   path (e.g. pipeline deploy cluichetest/googletest/...) collapsed under
+   one header instead of N flat lines. Same visual language as .navgroup,
+   one indent level deeper. */
+.navfamily { margin-left: 14px; }
+.navfamily-title {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11.5px;
+  color: var(--text-2);
+  padding: 5px 8px;
+  cursor: pointer;
+}
+.navfamily-title .chev { font-size: 8px; width: 8px; }
+.navfamily-title .count { margin-left: auto; color: var(--text-2); font-weight: 400; font-size: 10.5px; }
+.navfamily.expanded .navfamily-title { color: var(--text-1); }
+.navfamily:not(.expanded) .navfamily-items { display: none; }
+.navfamily .navitem { padding-left: 30px; }
+
 /* ---- Center column: pure canvas, no boxes — hierarchy via type & spacing ---- */
 .center { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--bg-0); overflow: hidden; }
 

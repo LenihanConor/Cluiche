@@ -36,6 +36,7 @@
     commandsById: {},
     selectedCommand: null,
     expandedGroup: null,
+    expandedFamily: null,
     executionId: null,
     eventsSource: null,
     logsSource: null,
@@ -98,6 +99,65 @@
     return cmd.path.join(" ");
   }
 
+  /**
+   * Buckets a nav group's commands by `category` (the shared parent path,
+   * e.g. "pipeline.deploy" for pipeline deploy cluichetest/googletest/...).
+   * A category with 2+ commands becomes one collapsible "family" row
+   * instead of N flat sibling lines -- purely a nav-rendering grouping, not
+   * a bespoke per-command UI: any command tree with several same-parent
+   * leaves gets this treatment generically (real example: dia_cli's
+   * deploy_runner.py dynamically generates one Click command per configured
+   * pipeline target, all sharing the "pipeline.deploy" category).
+   */
+  function groupByFamily(commands) {
+    var byCategory = {};
+    var order = [];
+    commands.forEach(function (cmd) {
+      var category = cmd.category || "";
+      if (!byCategory[category]) {
+        byCategory[category] = [];
+        order.push(category);
+      }
+      byCategory[category].push(cmd);
+    });
+    var rows = [];
+    order.forEach(function (category) {
+      var members = byCategory[category];
+      if (category && members.length > 1) {
+        rows.push({ type: "family", category: category, commands: members });
+      } else {
+        members.forEach(function (cmd) {
+          rows.push({ type: "item", cmd: cmd });
+        });
+      }
+    });
+    return rows;
+  }
+
+  function familyLabel(category) {
+    return category.split(".").join(" ");
+  }
+
+  function familyItemLabel(cmd) {
+    return cmd.path[cmd.path.length - 1];
+  }
+
+  function renderNavItem(cmd, group, label) {
+    var itemEl = el("div", "navitem" + (cmd === state.selectedCommand ? " active" : ""));
+    itemEl.dataset.commandId = cmd.id;
+    // Always the full path, regardless of the shortened label a family row
+    // shows -- so searching "pipeline" still finds "cluichetest" nested
+    // under the "pipeline deploy" family.
+    itemEl.dataset.searchText = commandDisplayName(cmd).toLowerCase();
+    itemEl.appendChild(el("span", "dotstat"));
+    itemEl.appendChild(document.createTextNode(" " + label));
+    itemEl.addEventListener("click", function () {
+      state.expandedGroup = group.label;
+      selectCommand(cmd.id);
+    });
+    return itemEl;
+  }
+
   function renderNav() {
     var container = qs("navgroups");
     clear(container);
@@ -125,16 +185,37 @@
       groupEl.appendChild(titleEl);
 
       var itemsEl = el("div", "navitems");
-      group.commands.forEach(function (cmd) {
-        var itemEl = el("div", "navitem" + (cmd === state.selectedCommand ? " active" : ""));
-        itemEl.dataset.commandId = cmd.id;
-        itemEl.appendChild(el("span", "dotstat"));
-        itemEl.appendChild(document.createTextNode(" " + commandDisplayName(cmd)));
-        itemEl.addEventListener("click", function () {
-          state.expandedGroup = group.label;
-          selectCommand(cmd.id);
+      groupByFamily(group.commands).forEach(function (row) {
+        if (row.type === "item") {
+          itemsEl.appendChild(renderNavItem(row.cmd, group, commandDisplayName(row.cmd)));
+          return;
+        }
+        var familyHasSelection = state.selectedCommand
+          ? row.commands.indexOf(state.selectedCommand) !== -1
+          : false;
+        var familyExpanded =
+          state.expandedFamily === row.category ||
+          (state.expandedFamily === null && familyHasSelection);
+
+        var familyEl = el("div", "navfamily" + (familyExpanded ? " expanded" : ""));
+        familyEl.dataset.family = row.category;
+
+        var familyTitleEl = el("div", "navfamily-title");
+        familyTitleEl.appendChild(el("span", "chev", familyExpanded ? "▾" : "▸"));
+        familyTitleEl.appendChild(document.createTextNode(" " + familyLabel(row.category) + " "));
+        familyTitleEl.appendChild(el("span", "count", String(row.commands.length)));
+        familyTitleEl.addEventListener("click", function () {
+          state.expandedFamily = state.expandedFamily === row.category ? null : row.category;
+          renderNav();
         });
-        itemsEl.appendChild(itemEl);
+        familyEl.appendChild(familyTitleEl);
+
+        var familyItemsEl = el("div", "navfamily-items");
+        row.commands.forEach(function (cmd) {
+          familyItemsEl.appendChild(renderNavItem(cmd, group, familyItemLabel(cmd)));
+        });
+        familyEl.appendChild(familyItemsEl);
+        itemsEl.appendChild(familyEl);
       });
       groupEl.appendChild(itemsEl);
       container.appendChild(groupEl);
@@ -147,15 +228,24 @@
     var query = (qs("nav-search").value || "").trim().toLowerCase();
     var groups = document.querySelectorAll("#navgroups .navgroup");
     groups.forEach(function (groupEl) {
-      var items = groupEl.querySelectorAll(".navitem");
-      var anyMatch = query === "";
-      items.forEach(function (itemEl) {
-        var matches = query === "" || itemEl.textContent.toLowerCase().indexOf(query) !== -1;
-        itemEl.classList.toggle("filtered-out", !matches);
-        if (matches) anyMatch = true;
+      var groupAnyMatch = query === "";
+      groupEl.querySelectorAll(".navfamily").forEach(function (familyEl) {
+        var familyAnyMatch = false;
+        familyEl.querySelectorAll(".navitem").forEach(function (itemEl) {
+          var matches = query === "" || itemEl.dataset.searchText.indexOf(query) !== -1;
+          itemEl.classList.toggle("filtered-out", !matches);
+          if (matches) familyAnyMatch = true;
+        });
+        if (query !== "" && familyAnyMatch) familyEl.classList.add("expanded");
+        if (familyAnyMatch) groupAnyMatch = true;
       });
-      groupEl.classList.toggle("no-match", !anyMatch);
-      if (query !== "" && anyMatch) groupEl.classList.add("expanded");
+      groupEl.querySelectorAll(".navitems > .navitem").forEach(function (itemEl) {
+        var matches = query === "" || itemEl.dataset.searchText.indexOf(query) !== -1;
+        itemEl.classList.toggle("filtered-out", !matches);
+        if (matches) groupAnyMatch = true;
+      });
+      groupEl.classList.toggle("no-match", !groupAnyMatch);
+      if (query !== "" && groupAnyMatch) groupEl.classList.add("expanded");
     });
   }
 
