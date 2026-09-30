@@ -523,8 +523,12 @@ def test_events_timeout_is_bounded_not_a_hang(tmp_path):
 
 
 def test_events_tails_ndjson_and_stops_at_terminal_event(tmp_path):
+    """returncode=0: simulates a normal single-phase command (unlike `dia
+    run`), where the process has genuinely finished by the time its own
+    terminal event is visible -- see the premature-terminal-event test for
+    the multi-phase case where that's not true."""
     log_path = tmp_path / "t.ndjson"
-    handle = make_handle(tmp_path, name="t.ndjson", timeout=2.0)
+    handle = make_handle(tmp_path, name="t.ndjson", timeout=2.0, returncode=0)
     write_ndjson(log_path, [
         {"event": "OnRunStarted", "system": "fake"},
         {"event": "OnStageStarted", "system": "fake", "stage": "work"},
@@ -551,6 +555,7 @@ def test_events_picks_up_lines_appended_after_iteration_started(tmp_path):
         agen = handle.events()
         out.append(await agen.__anext__())
         write_ndjson(log_path, [{"event": "OnRunCompleted", "system": "fake"}])
+        handle._process.returncode = 0  # process finishes as its own terminal event lands
         out.append(await agen.__anext__())
         return out
 
@@ -560,7 +565,7 @@ def test_events_picks_up_lines_appended_after_iteration_started(tmp_path):
 
 def test_events_ignores_blank_and_malformed_lines(tmp_path):
     log_path = tmp_path / "t.ndjson"
-    handle = make_handle(tmp_path, name="t.ndjson", timeout=2.0)
+    handle = make_handle(tmp_path, name="t.ndjson", timeout=2.0, returncode=0)
     log_path.parent.mkdir(parents=True, exist_ok=True)
     log_path.write_text(
         '\n{not json}\n{"event":"OnRunStarted","ts":1.0}\n\n{"event":"OnRunCompleted","ts":2.0}\n',
@@ -575,7 +580,7 @@ def test_events_ignores_lines_that_are_valid_json_but_not_an_object(tmp_path):
     every real NDJSON record has -- must be skipped, not raise or be treated
     as a payload."""
     log_path = tmp_path / "t.ndjson"
-    handle = make_handle(tmp_path, name="t.ndjson", timeout=2.0)
+    handle = make_handle(tmp_path, name="t.ndjson", timeout=2.0, returncode=0)
     log_path.parent.mkdir(parents=True, exist_ok=True)
     log_path.write_text(
         '[1, 2, 3]\n"hello"\n42\n'
@@ -610,6 +615,46 @@ def test_events_terminates_when_process_exits_without_terminal_event(tmp_path):
     events = run(collect(handle.events()))
     assert [e.type for e in events] == ["execution.started", "execution.failed"]
     assert "exited" in events[-1].payload["message"]
+
+
+def test_events_keeps_tailing_past_a_premature_terminal_event_until_process_exits(tmp_path):
+    """Real bug found live: `dia run`'s own pipeline phase emits OnRunCompleted
+    (a terminal-mapped event) while launch_target() is still about to run
+    GoogleTests.exe in the *same* process -- the events/logs stream used to
+    end right there, so the UI's log pane stopped updating after the first
+    test line even though the process kept running for minutes producing
+    real output. A terminal-mapped NDJSON event must not end the stream
+    while the real process is still alive; only the process's actual exit
+    (handled by the existing exit-code-respecting fallback) is authoritative."""
+    execution_module.reset_metrics()
+    log_path = tmp_path / "t.ndjson"
+    handle = make_handle(tmp_path, name="t.ndjson", timeout=2.0, returncode=None)
+    write_ndjson(log_path, [
+        {"event": "OnRunStarted", "system": "pipeline"},
+        {"event": "OnRunCompleted", "system": "pipeline", "passCount": 2, "failCount": 0},
+    ])
+
+    async def scenario():
+        collected = []
+
+        async def consume():
+            async for event in handle.events():
+                collected.append(event)
+
+        async def mutate():
+            await asyncio.sleep(0.15)
+            handle._process.returncode = 0  # the process finally exits for real
+
+        await asyncio.gather(consume(), mutate())
+        return collected
+
+    events = run(scenario())
+
+    assert [e.type for e in events] == [
+        "execution.started", "execution.completed", "execution.completed",
+    ]
+    assert "after an earlier terminal event" in events[-1].payload["message"]
+    assert execution_module.get_metrics().completed == 1, "must not double-count the premature event"
 
 
 def test_events_reports_completed_not_failed_when_exit_code_is_zero_with_no_terminal_event(tmp_path):

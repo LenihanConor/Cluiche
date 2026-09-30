@@ -317,6 +317,7 @@ class ExecutionHandle:
 
         pending = ""
         drained_after_exit = False
+        saw_premature_terminal_event = False
         with open(self.log_path, "r", encoding="utf-8", errors="replace") as handle:
             while True:
                 data = handle.read()
@@ -338,6 +339,28 @@ class ExecutionHandle:
                         seq += 1
                         yield event
                         if event.type in TERMINAL_EVENT_TYPES:
+                            if self._process.returncode is None:
+                                # The real process is still running -- e.g.
+                                # `dia run`'s own pipeline phase reports
+                                # OnRunCompleted well before launch_target()
+                                # even starts, in the same process (confirmed
+                                # live: the log pane stopped after one test
+                                # line because this used to end the stream
+                                # right here, before GoogleTests.exe had
+                                # produced almost any of its output). A
+                                # terminal-mapped NDJSON event is not
+                                # authoritative on its own; the process's
+                                # actual exit is -- handled by the "process
+                                # exited without a terminal event" fallback
+                                # below, which yields the real final event
+                                # once it actually happens.
+                                logger.debug(
+                                    "Execution {} saw a terminal-mapped event ({}) while the "
+                                    "process is still running; continuing to tail",
+                                    self.execution_id, event.type,
+                                )
+                                saw_premature_terminal_event = True
+                                continue
                             if event.type == EXECUTION_COMPLETED:
                                 _metrics.completed += 1
                             elif event.type == EXECUTION_FAILED:
@@ -357,13 +380,16 @@ class ExecutionHandle:
                         # PASSED with exit 0, but was always reported as failed).
                         succeeded = self._process.returncode == 0
                         event_type = EXECUTION_COMPLETED if succeeded else EXECUTION_FAILED
-                        message = (
-                            f"process exited with code {self._process.returncode} "
-                            "before emitting a terminal event"
+                        reason = (
+                            "after an earlier terminal event that arrived before the "
+                            "process actually exited (e.g. a multi-phase command like "
+                            "`dia run`)" if saw_premature_terminal_event
+                            else "before emitting a terminal event"
                         )
+                        message = f"process exited with code {self._process.returncode} {reason}"
                         log = logger.info if succeeded else logger.warning
-                        log("Execution {} exited with code {} before emitting a terminal event",
-                            self.execution_id, self._process.returncode)
+                        log("Execution {} exited with code {} {}",
+                            self.execution_id, self._process.returncode, reason)
                         yield self._synthetic_event(event_type, seq, message)
                         if succeeded:
                             _metrics.completed += 1
