@@ -496,6 +496,13 @@
     } else {
       input = el("input");
       input.type = inputType === "number" ? "number" : "text";
+      // Chromium's own form-history autofill remembers/reoffers values by
+      // input name across page loads sharing the same WebView2 profile --
+      // this form is regenerated fresh per command selection, so a stale
+      // autofilled value could both show the wrong content AND (by firing
+      // its own input/change event) mark the field "touched", permanently
+      // blocking the context-driven fill below from ever correcting it.
+      input.autocomplete = "off";
       if (descriptor.multiple) {
         input.placeholder = "comma-separated";
       } else if (descriptor.default !== null && descriptor.default !== undefined) {
@@ -663,6 +670,7 @@
     qs("form-area").style.display = "";
 
     renderForm(cmd);
+    applyContextToCurrentForm();
     updateCliPreview();
     renderNav();
   }

@@ -337,3 +337,35 @@ def test_app_js_waits_for_pywebviewready_before_wiring_titlebar_controls():
     assert "window.pywebview.api.close()" in app_js
     assert "window.pywebview.api.minimize()" in app_js
     assert "window.pywebview.api.maximize()" in app_js
+
+
+def test_select_command_applies_current_context_to_the_new_form():
+    """Real bug found live: selecting a command whose target/config were set
+    from the top bar *before* that command was ever selected left the target
+    field empty (never pre-filled), because applyContextToCurrentForm() was
+    only ever called from the top-bar select's own 'change' handler -- never
+    from selectCommand() itself. Confirmed fixed via a real click-driven
+    test (evaluate_js against a live launch()): selecting "run" with
+    context.currentTarget already "googletest" now fills target=googletest
+    and the CLI preview reads "dia run ... googletest" instead of showing
+    the field empty (or, per the live bug report, a stale autofilled value)."""
+    from dia_cli.utils.repo_root import find_repo_root
+
+    repo_root = find_repo_root(__file__)
+    app_js = (repo_root / "Dia" / "DiaCLI" / "dia_console" / "web" / "static" / "app.js").read_text(encoding="utf-8")
+
+    select_command_start = app_js.index("function selectCommand(")
+    select_command_body = app_js[select_command_start:select_command_start + 500]
+    assert "applyContextToCurrentForm()" in select_command_body
+
+
+def test_generated_text_fields_disable_browser_autocomplete():
+    """A stale browser-autofilled value firing its own input/change event
+    would mark the field 'touched', permanently blocking the fix above from
+    ever being able to correct it for that field's lifetime in the DOM."""
+    from dia_cli.utils.repo_root import find_repo_root
+
+    repo_root = find_repo_root(__file__)
+    app_js = (repo_root / "Dia" / "DiaCLI" / "dia_console" / "web" / "static" / "app.js").read_text(encoding="utf-8")
+
+    assert 'input.autocomplete = "off"' in app_js
