@@ -154,6 +154,7 @@ def test_run_build_defaults_to_real_subprocess_run(monkeypatch, tmp_path):
 # ===========================================================================
 
 def test_build_command_prints_exe_path_on_success(monkeypatch, tmp_path):
+    monkeypatch.setattr(console_module, "_running_interpreter_is_64bit", lambda: True)
     monkeypatch.setattr(console_module, "find_repo_root", lambda anchor: tmp_path)
     monkeypatch.setattr(console_module, "run_build", lambda repo_root: 0)
 
@@ -165,6 +166,7 @@ def test_build_command_prints_exe_path_on_success(monkeypatch, tmp_path):
 
 
 def test_build_command_exits_with_pyinstallers_returncode_on_failure(monkeypatch, tmp_path):
+    monkeypatch.setattr(console_module, "_running_interpreter_is_64bit", lambda: True)
     monkeypatch.setattr(console_module, "find_repo_root", lambda anchor: tmp_path)
     monkeypatch.setattr(console_module, "run_build", lambda repo_root: 5)
 
@@ -172,6 +174,40 @@ def test_build_command_exits_with_pyinstallers_returncode_on_failure(monkeypatch
     result = runner.invoke(console_module.cli, ["build"])
 
     assert result.exit_code == 5
+
+
+# ===========================================================================
+# `dia console build` -- 64-bit interpreter guard (PD-005)
+# ===========================================================================
+
+def test_check_64bit_interpreter_raises_on_32bit(monkeypatch):
+    monkeypatch.setattr(console_module, "_running_interpreter_is_64bit", lambda: False)
+
+    with pytest.raises(click.ClickException, match="64-bit"):
+        console_module.check_64bit_interpreter()
+
+
+def test_check_64bit_interpreter_passes_on_64bit(monkeypatch):
+    monkeypatch.setattr(console_module, "_running_interpreter_is_64bit", lambda: True)
+
+    console_module.check_64bit_interpreter()  # must not raise
+
+
+def test_build_command_fails_fast_on_32bit_without_invoking_pyinstaller(monkeypatch, tmp_path):
+    monkeypatch.setattr(console_module, "_running_interpreter_is_64bit", lambda: False)
+    monkeypatch.setattr(console_module, "find_repo_root", lambda anchor: tmp_path)
+    called = {"value": False}
+    monkeypatch.setattr(
+        console_module, "run_build",
+        lambda repo_root: called.update(value=True) or 0,
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(console_module.cli, ["build"])
+
+    assert result.exit_code != 0
+    assert "64-bit" in result.output
+    assert called["value"] is False, "must fail before ever spawning PyInstaller"
 
 
 # ===========================================================================

@@ -17,6 +17,7 @@ before while also hosting two new subcommands (console-desktop-install.md):
 from __future__ import annotations
 
 import shutil
+import struct
 import subprocess
 import sys
 from pathlib import Path
@@ -50,6 +51,31 @@ def _packaging_dir(repo_root: Path) -> Path:
 # --------------------------------------------------------------------------- #
 # `dia console build`
 # --------------------------------------------------------------------------- #
+
+def _running_interpreter_is_64bit() -> bool:
+    return struct.calcsize("P") * 8 == 64
+
+
+def check_64bit_interpreter() -> None:
+    """Fail loudly (PD-005) rather than silently freeze a 32-bit DiaConsole.exe.
+
+    PyInstaller bundles whichever interpreter invokes it. This repo's own
+    default ``.venv`` was found to be 32-bit Python during a real build+launch
+    pass this session -- with no check, ``dia console build`` would silently
+    produce a 32-bit exe (violating PD-005: x64 is the only supported build
+    target) and nobody would notice until double-clicking the result. Checked
+    at the Click command level, before ``run_build`` ever spawns PyInstaller,
+    so a 32-bit run fails fast instead of wasting 1-3 minutes on a build
+    that's non-compliant regardless of whether it "works."
+    """
+    if not _running_interpreter_is_64bit():
+        raise click.ClickException(
+            "dia console build requires a 64-bit Python interpreter (PD-005: "
+            "x64 is the only supported build target). The interpreter running "
+            f"this command ({sys.executable}) is 32-bit -- re-run this command "
+            "from a 64-bit Python environment."
+        )
+
 
 def pyinstaller_argv_prefix() -> list[str]:
     """The argv words that start a PyInstaller invocation.
@@ -165,6 +191,7 @@ def cli(ctx: click.Context) -> None:
 @click.pass_context
 def build_command(ctx: click.Context) -> None:
     """Package DiaConsole as a windowed one-file DiaConsole.exe via PyInstaller."""
+    check_64bit_interpreter()
     repo_root = find_repo_root(__file__)
     returncode = run_build(repo_root)
     if returncode != 0:
