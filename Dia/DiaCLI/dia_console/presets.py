@@ -50,14 +50,24 @@ def _preset_path(repo_root: Path, scope: Literal["shared", "local"]) -> Path:
 
 def _read_raw_presets(path: Path) -> list[dict]:
     """The ``presets`` list of one preset file. Missing/empty/malformed-top-level
-    file degrades to ``[]`` -- never raises."""
+    file degrades to ``[]`` -- never raises.
+
+    ``presets`` itself must be a list, and only ``dict`` entries within it are
+    kept -- a file with ``presets: "not-a-list"`` (or a list containing a bare
+    string/int entry) degrades the same way a missing file does, rather than
+    raising when iterated (a plain string is itself iterable character-by-
+    character, which would otherwise silently corrupt the result).
+    """
     if not path.exists():
         return []
     with open(path, "r", encoding="utf-8") as handle:
         data = yaml.safe_load(handle) or {}
     if not isinstance(data, dict):
         return []
-    return list(data.get("presets") or [])
+    raw_presets = data.get("presets") or []
+    if not isinstance(raw_presets, list):
+        return []
+    return [raw for raw in raw_presets if isinstance(raw, dict)]
 
 
 def _write_raw_presets(path: Path, raws: list[dict]) -> None:
@@ -86,15 +96,25 @@ def _raw_from_descriptor(preset: PresetDescriptor) -> dict:
 
 
 def load_presets(repo_root: Path) -> list[PresetDescriptor]:
-    """Read and merge both preset files by ``id``; the local overlay wins on collision."""
+    """Read and merge both preset files by ``id``; the local overlay wins on collision.
+
+    A preset entry missing its required ``id`` or ``command`` key (valid YAML,
+    wrong shape -- e.g. a hand-edited file with a typo) is skipped rather than
+    raising, consistent with this module's degrade-gracefully contract: one
+    malformed entry must not take down every other preset in the file.
+    """
     shared_raw = _read_raw_presets(_preset_path(repo_root, "shared"))
     local_raw = _read_raw_presets(_preset_path(repo_root, "local"))
 
     by_id: dict[str, PresetDescriptor] = {}
     for raw in shared_raw:
+        if "id" not in raw or "command" not in raw:
+            continue
         descriptor = _descriptor_from_raw(raw, "shared")
         by_id[descriptor.id] = descriptor
     for raw in local_raw:
+        if "id" not in raw or "command" not in raw:
+            continue
         descriptor = _descriptor_from_raw(raw, "local")
         by_id[descriptor.id] = descriptor  # local always wins on collision
 
