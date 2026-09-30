@@ -133,7 +133,7 @@ presets:
 | console-typed-results | Structured results/findings pane fed by typed `ResultRecord`s | Severity-grouped cards, expandable detail, artifact list with open/reveal actions | [console-typed-results.md](../../../../features/dia/diaconsole/console-typed-results.md) | 4 days | Approved |
 | console-presets | Named, saved command+argument combinations | Repo-shared `.dia/console-presets.yaml` + gitignored user-local `.dia/console-presets.local.yaml` overlay (local wins on ID collision); `dia preset list/run`, full CRUD (save/edit/rename/delete) in the UI, dedicated "Presets" nav section | [console-presets.md](../../../../features/dia/diaconsole/console-presets.md) | 3 days | Approved |
 | console-project-context | Target/config/platform selector + defaults | Reads `pipeline.toml` targets, supplies form defaults on target switch without clobbering user-edited fields. Sibling-project discovery descoped — see Responsibilities. | [console-project-context.md](../../../../features/dia/diaconsole/console-project-context.md) | 3 days | Approved |
-| console-desktop-install | Packaged, double-clickable desktop entry point with a real icon | PyInstaller windowed one-file build producing `DiaConsole.exe` with a bundled icon; `dia console install-shortcut` creates a Windows Desktop `.lnk` targeting it | TBD | 3 days | Draft |
+| console-desktop-install | Packaged, double-clickable desktop entry point with a real icon | PyInstaller windowed one-file build producing `DiaConsole.exe` with a bundled placeholder icon; `dia console build` / `dia console install-shortcut` subcommands | [console-desktop-install.md](../../../../features/dia/diaconsole/console-desktop-install.md) | 3 days | Approved |
 
 **Total Effort Estimate:** 25 days
 
@@ -228,4 +228,4 @@ presets:
 
 ## Status
 
-`Approved` — In Progress. Plan: @docs/specs/applications/dia/systems/diaconsole/diaconsole.plan.md. console-command-model, console-native-shell, console-typed-results, console-project-context, and console-presets are `Approved`; the first four are also implemented. console-desktop-install remains `Draft` and needs its own `/spec-feature` pass before implementation starts. System cannot move to `Done` until all 6 feature specs are `Approved`.
+`Approved` — In Progress. Plan: @docs/specs/applications/dia/systems/diaconsole/diaconsole.plan.md. All 6 feature specs are now `Approved`. console-command-model, console-native-shell, console-typed-results, console-project-context, and console-presets are implemented; console-desktop-install is the one remaining implementation task before this system can move to `Done`.
