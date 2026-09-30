@@ -29,6 +29,8 @@ requests-toolbelt = ">=1.0.0"
 fastapi = ">=0.115.0"
 uvicorn = ">=0.30.0"
 pywebview = ">=5.0"
+pyinstaller = ">=6.0"
+pywin32 = ">=306"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.0.0"
