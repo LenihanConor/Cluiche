@@ -39,6 +39,9 @@
     executionId: null,
     eventsSource: null,
     logsSource: null,
+    // Presets (console-presets.md). Populated from GET /api/presets.
+    presets: [],
+    presetsById: {},
     // Target/config context (console-project-context.md). Populated from
     // GET /api/context on boot; currentTarget/currentConfig track the top
     // bar's <select>s. No project-level (cross-repo/sibling) field here --
@@ -154,6 +157,144 @@
       groupEl.classList.toggle("no-match", !anyMatch);
       if (query !== "" && anyMatch) groupEl.classList.add("expanded");
     });
+  }
+
+  // ---------------------------------------------------------------- presets
+
+  /**
+   * Presets (console-presets.md, Goals 7-10). This section only ever talks
+   * to /api/presets* (SD-CONSOLE-005) -- it never reads the YAML files or
+   * builds argv itself.
+   */
+  function renderPresets() {
+    var container = qs("presetitems");
+    clear(container);
+    if (!state.presets.length) {
+      container.appendChild(el("div", "presets-empty", "No presets saved yet."));
+      return;
+    }
+    state.presets.forEach(function (preset) {
+      var item = el("div", "presetitem");
+      item.dataset.presetId = preset.id;
+
+      item.appendChild(el("span", "name", preset.name));
+
+      var actions = el("span", "presetactions");
+      var editBtn = el("span", null, "✎");
+      editBtn.title = "Edit";
+      editBtn.addEventListener("click", function (event) {
+        event.stopPropagation();
+        editPreset(preset.id);
+      });
+      var deleteBtn = el("span", null, "✕");
+      deleteBtn.title = "Delete";
+      deleteBtn.addEventListener("click", function (event) {
+        event.stopPropagation();
+        deletePreset(preset.id);
+      });
+      actions.appendChild(editBtn);
+      actions.appendChild(deleteBtn);
+      item.appendChild(actions);
+
+      item.addEventListener("click", function () { applyPreset(preset); });
+      container.appendChild(item);
+    });
+  }
+
+  function loadPresets() {
+    return fetch("/api/presets")
+      .then(function (response) { return response.json(); })
+      .then(function (presets) {
+        state.presets = presets;
+        state.presetsById = {};
+        presets.forEach(function (preset) { state.presetsById[preset.id] = preset; });
+        renderPresets();
+      });
+  }
+
+  /**
+   * Clicking a preset (Goal 10): selects its command, then fills the
+   * rendered form from `preset.values`, marking each filled field's
+   * existing `touched` flag true -- an explicit user choice, not a
+   * context default. Never auto-submits; the user still clicks Run.
+   */
+  function applyPreset(preset) {
+    selectCommand(preset.commandId);
+    var values = preset.values || {};
+    Object.keys(values).forEach(function (name) {
+      var input = document.querySelector(
+        '#form-fields [data-name="' + name + '"], #form-flags [data-name="' + name + '"]');
+      if (!input) return;
+      var value = values[name];
+      if (input.type === "checkbox") {
+        input.checked = !!value;
+      } else if (Array.isArray(value)) {
+        input.value = value.join(", ");
+      } else {
+        input.value = value;
+      }
+      input.dataset.touched = "1";
+    });
+    updateCliPreview();
+  }
+
+  /**
+   * "Save current" (Goal 8): the form's full current value snapshot --
+   * every rendered field's value regardless of its `touched` flag, not
+   * just the touched ones.
+   */
+  function saveCurrentPreset() {
+    if (!state.selectedCommand) return;
+    var name = window.prompt("Preset name:");
+    if (!name) return;
+    var id = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    if (!id) id = "preset-" + Date.now();
+    var values = collectFormValues();
+    var merged = {};
+    Object.keys(values.arguments).forEach(function (key) { merged[key] = values.arguments[key]; });
+    Object.keys(values.options).forEach(function (key) { merged[key] = values.options[key]; });
+
+    fetch("/api/presets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: id, name: name, commandId: state.selectedCommand.id, values: merged }),
+    })
+      .then(function (response) {
+        if (!response.ok) throw new Error("save preset failed: " + response.status);
+        return response.json();
+      })
+      .then(function () { loadPresets(); })
+      .catch(function (err) { window.alert("Failed to save preset: " + err.message); });
+  }
+
+  function editPreset(presetId) {
+    var preset = state.presetsById[presetId];
+    if (!preset) return;
+    var newName = window.prompt("Preset name:", preset.name);
+    if (!newName) return;
+    fetch("/api/presets/" + presetId, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: newName }),
+    })
+      .then(function (response) {
+        if (!response.ok) throw new Error("edit preset failed: " + response.status);
+        return response.json();
+      })
+      .then(function () { loadPresets(); })
+      .catch(function (err) { window.alert("Failed to edit preset: " + err.message); });
+  }
+
+  function deletePreset(presetId) {
+    if (!window.confirm("Delete this preset?")) return;
+    fetch("/api/presets/" + presetId, { method: "DELETE" })
+      .then(function (response) {
+        if (!response.ok && response.status !== 204) {
+          throw new Error("delete preset failed: " + response.status);
+        }
+        return loadPresets();
+      })
+      .catch(function (err) { window.alert("Failed to delete preset: " + err.message); });
   }
 
   // -------------------------------------------------------- context (top bar)
@@ -666,6 +807,7 @@
   function wireStaticControls() {
     qs("run-btn").addEventListener("click", runSelectedCommand);
     qs("cancel-btn").addEventListener("click", cancelRun);
+    qs("save-preset-btn").addEventListener("click", saveCurrentPreset);
     qs("tab-log").addEventListener("click", function () { setActiveTab("log"); });
     qs("tab-results").addEventListener("click", function () {
       setActiveTab("results");
@@ -699,5 +841,6 @@
     wireStaticControls();
     loadCommands();
     loadContext();
+    loadPresets();
   });
 })();

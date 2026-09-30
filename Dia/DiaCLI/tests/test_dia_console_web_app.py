@@ -396,6 +396,78 @@ def test_group_label_for_unmapped_segment_falls_back_to_advanced(segment):
 
 
 # ===========================================================================
+# /api/presets CRUD (console-presets.md, Task 14)
+# ===========================================================================
+
+def _write_presets_file(tmp_path, filename, text):
+    dia_dir = tmp_path / ".dia"
+    dia_dir.mkdir(exist_ok=True)
+    (dia_dir / filename).write_text(text, encoding="utf-8")
+
+
+def test_get_presets_returns_merged_list_with_camelcase_command_id(client, tmp_path):
+    _write_presets_file(
+        tmp_path, "console-presets.yaml",
+        "presets:\n  - id: a\n    name: A\n    command: build\n    values:\n      target: x\n",
+    )
+    body = client.get("/api/presets").json()
+    assert body == [{"id": "a", "name": "A", "commandId": "build", "values": {"target": "x"}, "source": "shared"}]
+
+
+def test_get_presets_empty_when_no_files_exist(client):
+    assert client.get("/api/presets").json() == []
+
+
+def test_post_presets_creates_a_local_scoped_preset(client, tmp_path):
+    response = client.post("/api/presets", json={
+        "id": "new-one", "name": "New One", "commandId": "build", "values": {"target": "cluichetest"},
+    })
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body == {
+        "id": "new-one", "name": "New One", "commandId": "build",
+        "values": {"target": "cluichetest"}, "source": "local",
+    }
+    assert (tmp_path / ".dia" / "console-presets.local.yaml").exists()
+    assert not (tmp_path / ".dia" / "console-presets.yaml").exists()
+
+
+def test_put_presets_writes_back_to_the_presets_own_source_file(client, tmp_path):
+    _write_presets_file(
+        tmp_path, "console-presets.yaml",
+        "presets:\n  - id: dup\n    name: Old\n    command: build\n    values:\n      target: x\n",
+    )
+    response = client.put("/api/presets/dup", json={"name": "New Name"})
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["name"] == "New Name"
+    assert body["source"] == "shared"
+    assert body["values"] == {"target": "x"}  # untouched -- PUT body omitted "values"
+
+    shared_text = (tmp_path / ".dia" / "console-presets.yaml").read_text(encoding="utf-8")
+    assert "New Name" in shared_text
+
+
+def test_put_presets_404_for_unknown_id(client):
+    response = client.put("/api/presets/does-not-exist", json={"name": "x"})
+    assert response.status_code == 404
+
+
+def test_delete_presets_removes_from_its_own_source_file_and_returns_204(client, tmp_path):
+    _write_presets_file(
+        tmp_path, "console-presets.local.yaml",
+        "presets:\n  - id: gone\n    name: Gone\n    command: build\n    values: {}\n",
+    )
+    response = client.delete("/api/presets/gone")
+    assert response.status_code == 204
+    assert client.get("/api/presets").json() == []
+
+
+def test_delete_presets_404_for_unknown_id(client):
+    assert client.delete("/api/presets/does-not-exist").status_code == 404
+
+
+# ===========================================================================
 # Real end-to-end: `dia asset build --target cluichetest` (Task 11, AC)
 # ===========================================================================
 

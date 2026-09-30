@@ -2,8 +2,10 @@
  *
  * Lifted from docs/specs/applications/dia/systems/diaconsole/mockups/console.html
  * per console-native-shell.md Task 8: same :root palette + class names, minus
- * the .presets/.preset-chip rules (Presets panel is omitted entirely from
- * this feature) and the mockup-only .statelabel/.caption debug helpers.
+ * the mockup-only .statelabel/.caption debug helpers. The Presets panel
+ * (.presets/.presetitem) was omitted by console-native-shell -- it is added
+ * here by console-presets.md, own class names (not the mockup's
+ * .preset-chip, which described a different layout).
  * A few small additions are called out inline where a *generic* renderer
  * needs something the mockup's hand-authored fixed layout didn't.
  */
@@ -141,6 +143,30 @@ body { height: 100vh; overflow: hidden; }
   font-size: 10px;
   color: var(--text-2);
 }
+/* Presets (console-presets.md, Goal 10) -- listed above the reflected
+   command tree, same visual language as .navgroups/.navitem. */
+.presets { flex-shrink: 0; padding: 4px 6px 2px; border-bottom: 1px solid var(--border); }
+.presets-title {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--text-2); padding: 7px 8px 4px; font-weight: 600;
+}
+.presetitems { max-height: 160px; overflow-y: auto; padding-bottom: 4px; }
+.presetitem {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 8px 5px 22px;
+  border-radius: 5px;
+  color: var(--text-1);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.presetitem:hover { background: var(--bg-2); }
+.presetitem .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.presetitem .presetactions { display: none; gap: 6px; flex-shrink: 0; }
+.presetitem:hover .presetactions { display: flex; }
+.presetitem .presetactions span { color: var(--text-2); font-size: 11px; }
+.presetitem .presetactions span:hover { color: var(--text-0); }
+.presets-empty { padding: 4px 8px 8px; color: var(--text-2); font-size: 11px; font-style: italic; }
+
 .navgroups { overflow-y: auto; padding: 4px 6px 10px; flex: 1; }
 .navgroup { margin-top: 2px; }
 .navgroup-title {

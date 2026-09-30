@@ -16,6 +16,10 @@ Routes (see console-native-shell.md's Data Contracts):
     GET  /api/executions/{id}/logs      -> SSE stream of raw text lines
     GET  /api/executions/{id}/results   -> JSON array of ResultRecord
     POST /api/executions/{id}/cancel    -> 204 No Content
+    GET    /api/presets                 -> JSON array of PresetDescriptor
+    POST   /api/presets                 -> the created PresetDescriptor (scope="local")
+    PUT    /api/presets/{id}            -> the updated PresetDescriptor
+    DELETE /api/presets/{id}            -> 204 No Content
 
 ``/events`` and ``/logs`` are two independent SSE connections, never merged
 into one endpoint (Goal 6, SD-CONSOLE-002).
@@ -31,13 +35,14 @@ from fastapi import FastAPI, HTTPException
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 from dia_cli.cli_main import cli as dia_cli_app
 from dia_cli.commands.pipeline import pipeline_config
 from dia_console.context import list_targets
 from dia_console.execution import ExecutionHandle, ExecutionService
 from dia_console.model import CommandDescriptor, ExecuteCommandRequest
+from dia_console.presets import PresetDescriptor, delete_preset, load_presets, save_preset
 from dia_console.registry import CommandRegistry
 from dia_console.results import build_results
 from dia_console.web.nav_grouping import group_label_for
@@ -63,6 +68,29 @@ class ExecuteCommandRequestBody(BaseModel):
     options: dict[str, Any] = {}
 
 
+class CreatePresetRequestBody(BaseModel):
+    """Wire shape of a ``POST /api/presets`` body (console-presets.md Data Contracts).
+
+    ``commandId`` is camelCase on the wire, like ``/api/presets``'s own
+    response shape -- ``populate_by_name`` lets tests/callers also pass the
+    Python field name directly.
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str
+    name: str
+    command_id: str = Field(alias="commandId")
+    values: dict[str, Any] = {}
+
+
+class UpdatePresetRequestBody(BaseModel):
+    """Wire shape of a ``PUT /api/presets/{id}`` body -- both fields optional."""
+
+    name: str | None = None
+    values: dict[str, Any] | None = None
+
+
 def _default_execution_service() -> ExecutionService:
     """A real ExecutionService wired to the real DiaCLI command tree."""
     return ExecutionService(CommandRegistry.from_click_app(dia_cli_app))
@@ -79,6 +107,22 @@ def _descriptor_to_json(descriptor: CommandDescriptor) -> dict:
     payload = dataclasses.asdict(descriptor)
     payload["groupLabel"] = group_label_for(descriptor.path[0])
     return payload
+
+
+def _preset_to_json(preset: PresetDescriptor) -> dict:
+    """A PresetDescriptor as JSON, per console-presets.md's Data Contracts table.
+
+    ``commandId`` is deliberately camelCase (like ``/api/context``'s
+    ``appName``) -- everything else (``id``/``name``/``values``/``source``)
+    is already the same in both casings.
+    """
+    return {
+        "id": preset.id,
+        "name": preset.name,
+        "commandId": preset.command_id,
+        "values": dict(preset.values),
+        "source": preset.source,
+    }
 
 
 def create_app(execution_service: ExecutionService | None = None) -> FastAPI:
@@ -182,6 +226,50 @@ def create_app(execution_service: ExecutionService | None = None) -> FastAPI:
     async def cancel(execution_id: str) -> None:
         handle = _handle_or_404(execution_id)
         await handle.cancel()
+
+    def _preset_or_404(repo_root: Path, preset_id: str) -> PresetDescriptor:
+        for preset in load_presets(repo_root):
+            if preset.id == preset_id:
+                return preset
+        raise HTTPException(status_code=404, detail=f"Unknown preset id: {preset_id!r}")
+
+    @app.get("/api/presets")
+    async def get_presets() -> list[dict]:
+        repo_root: Path = app.state.execution_service.repo_root
+        return [_preset_to_json(preset) for preset in load_presets(repo_root)]
+
+    @app.post("/api/presets")
+    async def create_preset(body: CreatePresetRequestBody) -> dict:
+        repo_root: Path = app.state.execution_service.repo_root
+        preset = PresetDescriptor(
+            id=body.id,
+            name=body.name,
+            command_id=body.command_id,
+            values=body.values,
+            source="local",
+        )
+        save_preset(repo_root, preset, scope="local")
+        return _preset_to_json(preset)
+
+    @app.put("/api/presets/{preset_id}")
+    async def update_preset(preset_id: str, body: UpdatePresetRequestBody) -> dict:
+        repo_root: Path = app.state.execution_service.repo_root
+        existing = _preset_or_404(repo_root, preset_id)
+        updated = PresetDescriptor(
+            id=existing.id,
+            name=body.name if body.name is not None else existing.name,
+            command_id=existing.command_id,
+            values=body.values if body.values is not None else existing.values,
+            source=existing.source,
+        )
+        save_preset(repo_root, updated, scope=existing.source)
+        return _preset_to_json(updated)
+
+    @app.delete("/api/presets/{preset_id}", status_code=204)
+    async def remove_preset(preset_id: str) -> None:
+        repo_root: Path = app.state.execution_service.repo_root
+        existing = _preset_or_404(repo_root, preset_id)
+        delete_preset(repo_root, existing.id, scope=existing.source)
 
     return app
 

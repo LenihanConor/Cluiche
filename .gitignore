@@ -313,3 +313,7 @@ Dia/DiaDebugProtocol/proto/generated/
 # Claude Code working files (agent worktrees, local settings)
 .claude/worktrees/
 .claude/settings.local.json
+
+# DiaConsole personal presets (console-presets.md) -- .dia/console-presets.yaml
+# is the committed, team-shared file; only the .local. variant is gitignored.
+.dia/console-presets.local.yaml

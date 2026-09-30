@@ -46,10 +46,15 @@
         &#128269; <input id="nav-search" type="text" placeholder="Search commands">
         <kbd>Ctrl K</kbd>
       </div>
+      <!-- Presets (console-presets.md, Goal 10): listed above the reflected
+           command tree. Populated from GET /api/presets. -->
+      <div class="presets" id="presets">
+        <div class="presets-title">Presets</div>
+        <div class="presetitems" id="presetitems"></div>
+      </div>
       <div class="navgroups" id="navgroups">
         <!-- populated by app.js from GET /api/commands -->
       </div>
-      <!-- Presets panel intentionally omitted (Goal 7) — console-presets' job, not this feature's. -->
     </div>
 
     <div class="center">
@@ -71,6 +76,9 @@
         <div class="actions">
           <button class="btn primary" id="run-btn" type="button">&#9654; Run</button>
           <button class="btn secondary" id="cancel-btn" type="button" disabled>Cancel</button>
+          <!-- "Save current" (console-presets.md, Goal 8): posts the form's
+               full current value snapshot, not just touched fields. -->
+          <button class="btn secondary" id="save-preset-btn" type="button">Save preset</button>
         </div>
       </div>
 
