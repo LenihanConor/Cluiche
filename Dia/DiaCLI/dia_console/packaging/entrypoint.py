@@ -40,8 +40,48 @@ def _ensure_std_streams() -> None:
         sys.stderr = open(os.devnull, "w")
 
 
+def _ensure_dia_cli_config() -> None:
+    """Set ``DIA_CLI_CONFIG`` so ``dia_cli_main``'s own command discovery finds
+    the real ``dia_cli/cli/`` tree, regardless of the frozen exe's working
+    directory.
+
+    ``dia_cli_main.py`` resolves its own separate ``_root_path`` (used only
+    for finding CLI command modules, via ``os.walk`` for a directory named
+    ``cli``) either from this env var, or else by walking *up* from the
+    process's cwd looking for ``dia_cli_prime_config.json``. Confirmed by an
+    actual double-click of the installed Desktop shortcut: the nav column
+    showed **zero** commands, because the shortcut's ``WorkingDirectory``
+    (``Cluiche/out/DiaCLI/DiaConsole/``, per console-desktop-install.md's own
+    Goal 6) is not an ancestor of ``Dia/DiaCLI/`` at all -- they are sibling
+    subtrees under the repo root -- so that upward walk can never reach
+    ``dia_cli_prime_config.json`` for this exe, no matter what. It only
+    happened to work during this session's own build+launch testing because
+    the dev shell those tests ran from already had ``DIA_CLI_CONFIG`` set.
+
+    ``find_repo_root`` already resolves correctly in this exact scenario
+    (``dia_console/execution.py`` relies on it for the same reason): a
+    frozen module's own ``__file__`` points into PyInstaller's throwaway
+    ``_MEIPASS`` extraction dir, so its parents-walk fails, but it then falls
+    back to the process's real cwd and cwd's parents -- which *does* reach
+    the repo root, because ``Cluiche/Cluiche.sln`` (the marker it looks for)
+    lives there, unlike ``dia_cli_prime_config.json``.
+    """
+    if "DIA_CLI_CONFIG" in os.environ:
+        return
+    from dia_cli.utils.repo_root import find_repo_root
+
+    try:
+        repo_root = find_repo_root(__file__)
+    except RuntimeError:
+        return
+    config_path = repo_root / "Dia" / "DiaCLI" / "dia_cli_prime_config.json"
+    if config_path.is_file():
+        os.environ["DIA_CLI_CONFIG"] = str(config_path)
+
+
 if __name__ == "__main__":
     _ensure_std_streams()
+    _ensure_dia_cli_config()
 
     from dia_console.shell import launch
 

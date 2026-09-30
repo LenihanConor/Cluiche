@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import subprocess
 import sys
 import time
@@ -348,6 +349,73 @@ def test_ensure_std_streams_leaves_real_streams_untouched(monkeypatch):
 
     assert sys.stdout is fake_out
     assert sys.stderr is fake_err
+
+
+# ===========================================================================
+# DIA_CLI_CONFIG bootstrap -- regression guard for a real bug found by
+# actually double-clicking the installed Desktop shortcut: the nav column
+# showed zero commands, because dia_cli_main.py's own command-discovery
+# resolution can never find dia_cli_prime_config.json by walking up from the
+# shortcut's WorkingDirectory (Cluiche/out/DiaCLI/DiaConsole/ is not an
+# ancestor of Dia/DiaCLI/ -- they're sibling subtrees), and the dev shell
+# this session's own build+launch tests ran from happened to already have
+# DIA_CLI_CONFIG set, masking the bug in every prior verification.
+# ===========================================================================
+
+def test_ensure_dia_cli_config_leaves_existing_env_var_untouched(monkeypatch):
+    monkeypatch.setenv("DIA_CLI_CONFIG", "already-set.json")
+
+    entrypoint_module._ensure_dia_cli_config()
+
+    assert os.environ["DIA_CLI_CONFIG"] == "already-set.json"
+
+
+def test_ensure_dia_cli_config_sets_it_from_the_real_repo_root(monkeypatch, tmp_path):
+    monkeypatch.delenv("DIA_CLI_CONFIG", raising=False)
+    fake_config = tmp_path / "Dia" / "DiaCLI" / "dia_cli_prime_config.json"
+    fake_config.parent.mkdir(parents=True)
+    fake_config.write_text("{}")
+    monkeypatch.setattr("dia_cli.utils.repo_root.find_repo_root", lambda anchor: tmp_path)
+
+    entrypoint_module._ensure_dia_cli_config()
+
+    assert os.environ["DIA_CLI_CONFIG"] == str(fake_config)
+
+
+def test_ensure_dia_cli_config_does_nothing_if_config_file_absent(monkeypatch, tmp_path):
+    monkeypatch.delenv("DIA_CLI_CONFIG", raising=False)
+    monkeypatch.setattr("dia_cli.utils.repo_root.find_repo_root", lambda anchor: tmp_path)
+
+    entrypoint_module._ensure_dia_cli_config()
+
+    assert "DIA_CLI_CONFIG" not in os.environ
+
+
+def test_ensure_dia_cli_config_does_nothing_if_repo_root_unresolvable(monkeypatch):
+    monkeypatch.delenv("DIA_CLI_CONFIG", raising=False)
+
+    def _raise(anchor):
+        raise RuntimeError("not found")
+
+    monkeypatch.setattr("dia_cli.utils.repo_root.find_repo_root", _raise)
+
+    entrypoint_module._ensure_dia_cli_config()  # must not raise
+
+    assert "DIA_CLI_CONFIG" not in os.environ
+
+
+def test_shortcuts_working_directory_is_not_an_ancestor_of_dia_diacli_dir():
+    """Documents *why* this bug exists: proves the shortcut's own
+    WorkingDirectory (exe.parent) is never an ancestor of Dia/DiaCLI/, so any
+    ancestor-walk-based discovery rooted there is structurally unable to find
+    dia_cli_prime_config.json, regardless of future refactors."""
+    from dia_cli.utils.repo_root import find_repo_root
+
+    repo_root = find_repo_root(__file__)
+    shortcut_cwd = console_module.exe_path(repo_root).parent
+    dia_cli_dir = repo_root / "Dia" / "DiaCLI"
+
+    assert dia_cli_dir not in (shortcut_cwd, *shortcut_cwd.parents)
 
 
 # ===========================================================================
