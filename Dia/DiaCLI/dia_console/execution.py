@@ -349,16 +349,26 @@ class ExecutionHandle:
                     return
                 if self._process.returncode is not None:
                     if drained_after_exit:
-                        logger.warning(
-                            "Execution {} exited with code {} before emitting a terminal event",
-                            self.execution_id, self._process.returncode,
-                        )
-                        yield self._synthetic_event(
-                            EXECUTION_FAILED, seq,
+                        # The actual exit code is the only ground truth available
+                        # when a command never emits a structured terminal event
+                        # (most DiaCLI commands don't use OutputContext at all) --
+                        # a real bug reported this as "execution failed" even when
+                        # returncode == 0 (confirmed live: `dia run googletest`
+                        # PASSED with exit 0, but was always reported as failed).
+                        succeeded = self._process.returncode == 0
+                        event_type = EXECUTION_COMPLETED if succeeded else EXECUTION_FAILED
+                        message = (
                             f"process exited with code {self._process.returncode} "
-                            "before emitting a terminal event",
+                            "before emitting a terminal event"
                         )
-                        _metrics.failed += 1
+                        log = logger.info if succeeded else logger.warning
+                        log("Execution {} exited with code {} before emitting a terminal event",
+                            self.execution_id, self._process.returncode)
+                        yield self._synthetic_event(event_type, seq, message)
+                        if succeeded:
+                            _metrics.completed += 1
+                        else:
+                            _metrics.failed += 1
                         return
                     drained_after_exit = True
                 await asyncio.sleep(self._poll_interval)

@@ -55,7 +55,7 @@ def cli(ctx, target, config, filter_pattern, verbose, no_build, build_only, forc
     repo_root = find_repo_root(__file__)
 
     if not no_build:
-        exit_code = _run_pipeline(repo_root, target, config, force)
+        exit_code = _run_pipeline(ctx, repo_root, target, config, force)
         if exit_code != 0:
             ctx.exit(exit_code)
             return
@@ -76,10 +76,9 @@ def cli(ctx, target, config, filter_pattern, verbose, no_build, build_only, forc
     ctx.exit(exit_code)
 
 
-def _run_pipeline(repo_root: Path, target: str, config: str, force: bool) -> int:
+def _run_pipeline(ctx, repo_root: Path, target: str, config: str, force: bool) -> int:
     from dia_cli.commands.pipeline.pipeline_config import load_pipeline_config, PipelineConfigError
     from dia_cli.commands.pipeline.pipeline_runner import run_pipeline
-    from dia_cli.utils.dia_output import OutputContext
 
     try:
         pipeline_config = load_pipeline_config(repo_root)
@@ -92,8 +91,18 @@ def _run_pipeline(repo_root: Path, target: str, config: str, force: bool) -> int
         click.echo(f"ERROR: unknown target '{target}' (known: {known})", err=True)
         return 2
 
-    log_dir = repo_root / "Cluiche" / "out" / "DiaCLI" / "logs"
-    output = OutputContext(log_dir=log_dir)
+    # Reuse the root `dia` command's own OutputContext (honours a --log-json
+    # override, e.g. DiaConsole's per-execution NDJSON path) instead of always
+    # creating a disconnected one -- confirmed as a real bug: `dia run` always
+    # wrote to the default Cluiche/out/DiaCLI/logs/<system>/last-run.ndjson
+    # regardless of --log-json, so DiaConsole's tailed file never received any
+    # event at all and reported "execution failed" even on a real PASSED run.
+    # Mirrors dia_cli/cli/pipeline.py's identical fallback pattern.
+    output = ctx.obj.output if ctx.obj and hasattr(ctx.obj, "output") else None
+    if output is None:
+        from dia_cli.utils.dia_output import OutputContext
+        log_dir = repo_root / "Cluiche" / "out" / "DiaCLI" / "logs"
+        output = OutputContext(log_dir=log_dir)
 
     stages = pipeline_config.targets[target].stages
 

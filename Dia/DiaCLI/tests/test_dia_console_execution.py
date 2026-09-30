@@ -612,6 +612,26 @@ def test_events_terminates_when_process_exits_without_terminal_event(tmp_path):
     assert "exited" in events[-1].payload["message"]
 
 
+def test_events_reports_completed_not_failed_when_exit_code_is_zero_with_no_terminal_event(tmp_path):
+    """Real bug found live: `dia run googletest` PASSED (exit 0) but never
+    emits a structured terminal NDJSON event (its own separate OutputContext
+    bug, fixed independently in dia_cli/cli/run.py) -- DiaConsole reported
+    "execution failed" regardless, because this fallback path used to yield
+    EXECUTION_FAILED unconditionally. The actual exit code is the only
+    ground truth available here and must be respected."""
+    execution_module.reset_metrics()
+    log_path = tmp_path / "t.ndjson"
+    handle = make_handle(tmp_path, name="t.ndjson", timeout=2.0, returncode=0)
+    write_ndjson(log_path, [{"event": "OnRunStarted", "system": "fake"}])
+
+    events = run(collect(handle.events()))
+
+    assert [e.type for e in events] == ["execution.started", "execution.completed"]
+    assert "exited" in events[-1].payload["message"]
+    assert execution_module.get_metrics().completed == 1
+    assert execution_module.get_metrics().failed == 0
+
+
 def test_events_yields_cancelled_after_cancel(tmp_path):
     """Process already exited so cancel() performs no kill — semantics only."""
     handle = make_handle(tmp_path, timeout=2.0, returncode=0)
