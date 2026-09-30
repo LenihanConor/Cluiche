@@ -136,6 +136,15 @@ def test_load_presets_missing_presets_key_degrades_to_empty(tmp_path):
     assert load_presets(tmp_path) == []
 
 
+def test_load_presets_malformed_yaml_syntax_degrades_to_empty(tmp_path):
+    """Genuinely invalid YAML syntax (unbalanced brackets) must degrade to []
+    like every other malformed-file case, not raise yaml.YAMLError uncaught."""
+    (tmp_path / ".dia").mkdir()
+    (tmp_path / ".dia" / "console-presets.yaml").write_text(
+        "presets: [{id: broken\n", encoding="utf-8")
+    assert load_presets(tmp_path) == []
+
+
 def test_load_presets_presets_key_as_string_degrades_to_empty(tmp_path):
     """Valid YAML, wrong shape: `presets` is a scalar string, not a list.
 

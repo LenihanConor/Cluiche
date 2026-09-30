@@ -644,6 +644,60 @@ def test_cancelling_twice_is_idempotent(tmp_path):
     assert handle.cancelled is True
 
 
+# ===========================================================================
+# ExecutionMetrics -- best-effort lifecycle counters (Observation Opportunity
+# Scan finding #11)
+# ===========================================================================
+
+def test_cancel_increments_cancelled_metric_exactly_once_across_two_calls(tmp_path):
+    execution_module.reset_metrics()
+    handle = make_handle(tmp_path, timeout=2.0, returncode=0)
+
+    async def scenario():
+        await handle.cancel()
+        await handle.cancel()
+
+    run(scenario())
+    assert execution_module.get_metrics().cancelled == 1
+
+
+def test_events_completed_increments_completed_metric(tmp_path):
+    execution_module.reset_metrics()
+    log_path = tmp_path / "t.ndjson"
+    handle = make_handle(tmp_path, name="t.ndjson", timeout=2.0, returncode=0)
+    write_ndjson(log_path, [{"event": "OnRunStarted"}, {"event": "OnRunCompleted"}])
+
+    run(collect(handle.events()))
+
+    metrics = execution_module.get_metrics()
+    assert metrics.completed == 1
+    assert metrics.failed == 0
+
+
+def test_events_timeout_increments_failed_metric(tmp_path):
+    execution_module.reset_metrics()
+    handle = make_handle(tmp_path, name="never-appears.ndjson", timeout=0.05, returncode=None)
+
+    run(collect(handle.events()))
+
+    assert execution_module.get_metrics().failed == 1
+
+
+def test_execute_increments_started_metric(tmp_path, monkeypatch):
+    execution_module.reset_metrics()
+
+    async def fake_create_subprocess_exec(*args, **kwargs):
+        return _StubProcess(returncode=0)
+
+    monkeypatch.setattr(execution_module.asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+    registry = CommandRegistry.from_click_app(dia_cli_app)
+    service = ExecutionService(registry, repo_root=tmp_path, log_root=tmp_path / "logs")
+
+    run(service.execute(ExecuteCommandRequest(command_id="show.config", project_id=None, arguments={}, options={})))
+
+    assert execution_module.get_metrics().started == 1
+
+
 def test_events_yields_cancelled_even_with_pending_ndjson_lines(tmp_path):
     log_path = tmp_path / "t.ndjson"
     handle = make_handle(tmp_path, name="t.ndjson", timeout=2.0, returncode=0)

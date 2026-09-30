@@ -16,6 +16,7 @@ Routes (see console-native-shell.md's Data Contracts):
     GET  /api/executions/{id}/logs      -> SSE stream of raw text lines
     GET  /api/executions/{id}/results   -> JSON array of ResultRecord
     POST /api/executions/{id}/cancel    -> 204 No Content
+    GET  /api/status                    -> reflection health + execution metrics
     GET    /api/presets                 -> JSON array of PresetDescriptor
     POST   /api/presets                 -> the created PresetDescriptor (scope="local")
     PUT    /api/presets/{id}            -> the updated PresetDescriptor
@@ -28,6 +29,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import time
 from pathlib import Path
 from typing import Any, AsyncIterator
 
@@ -35,12 +37,14 @@ from fastapi import FastAPI, HTTPException
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field
 
 from dia_cli.cli_main import cli as dia_cli_app
 from dia_cli.commands.pipeline import pipeline_config
 from dia_console.context import list_targets
 from dia_console.execution import ExecutionHandle, ExecutionService
+from dia_console.execution import get_metrics as get_execution_metrics
 from dia_console.model import CommandDescriptor, ExecuteCommandRequest
 from dia_console.presets import PresetDescriptor, delete_preset, load_presets, save_preset
 from dia_console.registry import CommandRegistry
@@ -141,6 +145,7 @@ def create_app(execution_service: ExecutionService | None = None) -> FastAPI:
     app.state.execution_service = execution_service or _default_execution_service()
     app.state.executions: dict[str, ExecutionHandle] = {}
     app.state.execution_commands: dict[str, str] = {}
+    app.state.started_at = time.monotonic()
 
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
@@ -179,6 +184,30 @@ def create_app(execution_service: ExecutionService | None = None) -> FastAPI:
             },
         }
 
+    @app.get("/api/status")
+    async def get_status() -> dict:
+        """Reflection health + execution metrics (Observation Opportunity Scan
+        finding #13). Sourced from the registry already built at app-construction
+        time (SD-CONSOLE-010) and the process-lifetime :class:`ExecutionMetrics`
+        counters -- never re-reflects, never blocks.
+        """
+        registry: CommandRegistry = app.state.execution_service.registry
+        metrics = get_execution_metrics()
+        return {
+            "commandsCount": len(registry),
+            "reflectionErrors": [
+                {"commandId": command_id, "message": message}
+                for command_id, message in registry.reflection_errors
+            ],
+            "uptimeSeconds": time.monotonic() - app.state.started_at,
+            "executions": {
+                "started": metrics.started,
+                "completed": metrics.completed,
+                "failed": metrics.failed,
+                "cancelled": metrics.cancelled,
+            },
+        }
+
     @app.post("/api/execute")
     async def execute(body: ExecuteCommandRequestBody) -> dict:
         request = ExecuteCommandRequest(
@@ -190,6 +219,7 @@ def create_app(execution_service: ExecutionService | None = None) -> FastAPI:
         try:
             handle = await app.state.execution_service.execute(request)
         except KeyError as exc:
+            logger.warning("Execute request for unknown command_id={!r}", body.command_id)
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         app.state.executions[handle.execution_id] = handle
         app.state.execution_commands[handle.execution_id] = request.command_id

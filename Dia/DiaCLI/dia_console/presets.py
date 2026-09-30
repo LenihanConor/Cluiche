@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any, Literal, Mapping
 
 import yaml
+from loguru import logger
 
 from dia_console.model import CommandDescriptor, ExecuteCommandRequest
 
@@ -61,13 +62,25 @@ def _read_raw_presets(path: Path) -> list[dict]:
     if not path.exists():
         return []
     with open(path, "r", encoding="utf-8") as handle:
-        data = yaml.safe_load(handle) or {}
+        try:
+            data = yaml.safe_load(handle) or {}
+        except yaml.YAMLError as exc:
+            logger.warning("Failed to parse preset file {}: {}", path, exc)
+            return []
     if not isinstance(data, dict):
+        logger.warning("Preset file {} has a non-mapping top level ({}); ignoring", path, type(data).__name__)
         return []
     raw_presets = data.get("presets") or []
     if not isinstance(raw_presets, list):
+        logger.warning("Preset file {}'s 'presets' key is not a list ({}); ignoring", path, type(raw_presets).__name__)
         return []
-    return [raw for raw in raw_presets if isinstance(raw, dict)]
+    valid = [raw for raw in raw_presets if isinstance(raw, dict)]
+    if len(valid) != len(raw_presets):
+        logger.warning(
+            "Preset file {} has {} non-mapping entr{} in 'presets'; skipping them",
+            path, len(raw_presets) - len(valid), "y" if len(raw_presets) - len(valid) == 1 else "ies",
+        )
+    return valid
 
 
 def _write_raw_presets(path: Path, raws: list[dict]) -> None:
@@ -109,15 +122,20 @@ def load_presets(repo_root: Path) -> list[PresetDescriptor]:
     by_id: dict[str, PresetDescriptor] = {}
     for raw in shared_raw:
         if "id" not in raw or "command" not in raw:
+            logger.warning("Skipping preset entry missing 'id'/'command': {!r}", raw)
             continue
         descriptor = _descriptor_from_raw(raw, "shared")
         by_id[descriptor.id] = descriptor
     for raw in local_raw:
         if "id" not in raw or "command" not in raw:
+            logger.warning("Skipping preset entry missing 'id'/'command': {!r}", raw)
             continue
         descriptor = _descriptor_from_raw(raw, "local")
+        if descriptor.id in by_id and by_id[descriptor.id].source == "shared":
+            logger.debug("Local preset {!r} overrides the shared one with the same id", descriptor.id)
         by_id[descriptor.id] = descriptor  # local always wins on collision
 
+    logger.debug("load_presets: {} shared, {} local, {} merged", len(shared_raw), len(local_raw), len(by_id))
     return list(by_id.values())
 
 
@@ -135,9 +153,11 @@ def save_preset(repo_root: Path, preset: PresetDescriptor, *, scope: Literal["sh
     for index, raw in enumerate(raws):
         if raw.get("id") == preset.id:
             raws[index] = new_raw
+            logger.info("Updated preset {!r} in {} ({})", preset.id, scope, path)
             break
     else:
         raws.append(new_raw)
+        logger.info("Created preset {!r} in {} ({})", preset.id, scope, path)
     _write_raw_presets(path, raws)
 
 
@@ -150,6 +170,8 @@ def delete_preset(repo_root: Path, preset_id: str, *, scope: Literal["shared", "
     path = _preset_path(repo_root, scope)
     raws = _read_raw_presets(path)
     filtered = [raw for raw in raws if raw.get("id") != preset_id]
+    if len(filtered) != len(raws):
+        logger.info("Deleted preset {!r} from {} ({})", preset_id, scope, path)
     _write_raw_presets(path, filtered)
 
 

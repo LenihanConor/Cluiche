@@ -12,9 +12,11 @@ cache of any kind (SD-CONSOLE-010).
 """
 from __future__ import annotations
 
+import time
 from typing import Any, Iterable, Iterator
 
 import click
+from loguru import logger
 
 from dia_console.model import (
     ArgumentDescriptor,
@@ -175,10 +177,16 @@ class CommandRegistry:
         :attr:`reflection_errors` rather than raising, so one broken command
         cannot take down the whole console.
         """
+        started = time.monotonic()
         commands: list[CommandDescriptor] = []
         errors: list[tuple[str, str]] = []
         cls._reflect(app, (), commands, errors, set())
         commands.sort(key=lambda descriptor: descriptor.id)
+        elapsed_ms = (time.monotonic() - started) * 1000
+        logger.debug(
+            "CommandRegistry reflection: {} commands, {} errors, {:.1f}ms",
+            len(commands), len(errors), elapsed_ms,
+        )
         return cls(commands, errors)
 
     @classmethod
@@ -196,7 +204,9 @@ class CommandRegistry:
         try:
             names = group.list_commands(click.Context(group))
         except Exception as exc:  # pragma: no cover - defensive
-            errors.append((".".join(path), f"list_commands failed: {exc!r}"))
+            message = f"list_commands failed: {exc!r}"
+            errors.append((".".join(path), message))
+            logger.warning("Command reflection failed for {!r}: {}", ".".join(path), message)
             return
         for name in names:
             child_path = path + (name,)
@@ -204,10 +214,13 @@ class CommandRegistry:
             try:
                 child = group.get_command(click.Context(group), name)
             except Exception as exc:
-                errors.append((child_id, f"get_command failed: {exc!r}"))
+                message = f"get_command failed: {exc!r}"
+                errors.append((child_id, message))
+                logger.warning("Command reflection failed for {!r}: {}", child_id, message)
                 continue
             if child is None:
                 errors.append((child_id, "get_command returned None"))
+                logger.warning("Command reflection failed for {!r}: get_command returned None", child_id)
                 continue
             if isinstance(child, click.MultiCommand):
                 cls._reflect(child, child_path, commands, errors, seen)
@@ -215,7 +228,9 @@ class CommandRegistry:
                 try:
                     commands.append(_describe_command(child, child_path))
                 except Exception as exc:  # pragma: no cover - defensive
-                    errors.append((child_id, f"reflection failed: {exc!r}"))
+                    message = f"reflection failed: {exc!r}"
+                    errors.append((child_id, message))
+                    logger.warning("Command reflection failed for {!r}: {}", child_id, message)
 
     # -- lookup ----------------------------------------------------------- #
 

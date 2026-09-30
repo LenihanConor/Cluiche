@@ -27,13 +27,48 @@ import subprocess
 import sys
 import time
 import uuid
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any, AsyncIterator, Iterable, Mapping, Sequence
 
+from loguru import logger
+
 from dia_cli.utils.repo_root import find_repo_root
 from dia_console.model import CommandDescriptor, ExecuteCommandRequest, ExecutionEvent
 from dia_console.registry import CommandRegistry
+
+
+@dataclass
+class ExecutionMetrics:
+    """Best-effort, process-lifetime execution lifecycle counters (Observation
+    Opportunity Scan finding #11) -- not persisted, reset on process restart.
+
+    ``completed``/``failed`` only count executions whose event stream was
+    actually consumed to a terminal event (every normal UI/CLI caller does);
+    ``cancelled`` is incremented unconditionally from :meth:`ExecutionHandle.cancel`
+    itself, since that call happens regardless of whether anyone is still
+    consuming :meth:`ExecutionHandle.events`.
+    """
+
+    started: int = 0
+    completed: int = 0
+    failed: int = 0
+    cancelled: int = 0
+
+
+_metrics = ExecutionMetrics()
+
+
+def get_metrics() -> ExecutionMetrics:
+    """The shared, process-lifetime :class:`ExecutionMetrics` instance."""
+    return _metrics
+
+
+def reset_metrics() -> None:
+    """Reset the shared counters. Test-only -- production code never calls this."""
+    global _metrics
+    _metrics = ExecutionMetrics()
 
 # --------------------------------------------------------------------------- #
 # Wire format translation (SD-CONSOLE-002)
@@ -260,15 +295,25 @@ class ExecutionHandle:
         emitting a terminal event it terminates with ``execution.failed`` too.
         """
         seq = 0
-        deadline = time.monotonic() + self._event_timeout
+        poll_started = time.monotonic()
+        deadline = poll_started + self._event_timeout
         while not self.log_path.exists():
             if self._cancelled:
                 yield self._synthetic_event(EXECUTION_CANCELLED, seq, "execution cancelled")
                 return
             if time.monotonic() >= deadline:
+                logger.warning(
+                    "Execution {} timed out waiting for NDJSON output ({}s)",
+                    self.execution_id, self._event_timeout,
+                )
                 yield self._synthetic_event(EXECUTION_FAILED, seq, NO_OUTPUT_STREAM_MESSAGE)
+                _metrics.failed += 1
                 return
             await asyncio.sleep(self._poll_interval)
+        logger.debug(
+            "Execution {} NDJSON output appeared after {:.2f}s",
+            self.execution_id, time.monotonic() - poll_started,
+        )
 
         pending = ""
         drained_after_exit = False
@@ -293,6 +338,10 @@ class ExecutionHandle:
                         seq += 1
                         yield event
                         if event.type in TERMINAL_EVENT_TYPES:
+                            if event.type == EXECUTION_COMPLETED:
+                                _metrics.completed += 1
+                            elif event.type == EXECUTION_FAILED:
+                                _metrics.failed += 1
                             return
                     continue
                 if self._cancelled:
@@ -300,11 +349,16 @@ class ExecutionHandle:
                     return
                 if self._process.returncode is not None:
                     if drained_after_exit:
+                        logger.warning(
+                            "Execution {} exited with code {} before emitting a terminal event",
+                            self.execution_id, self._process.returncode,
+                        )
                         yield self._synthetic_event(
                             EXECUTION_FAILED, seq,
                             f"process exited with code {self._process.returncode} "
                             "before emitting a terminal event",
                         )
+                        _metrics.failed += 1
                         return
                     drained_after_exit = True
                 await asyncio.sleep(self._poll_interval)
@@ -319,7 +373,11 @@ class ExecutionHandle:
         ``taskkill /F /T`` of the tree rather than a console-control event.
         After this, :meth:`events` terminates with ``execution.cancelled``.
         """
+        already_cancelled = self._cancelled
         self._cancelled = True
+        if not already_cancelled:
+            logger.info("Cancelling execution {} (pid={})", self.execution_id, self.pid)
+            _metrics.cancelled += 1
         if self._process.returncode is None:
             pid = self.pid
             if pid is not None and sys.platform == "win32":
@@ -452,6 +510,8 @@ class ExecutionService:
         log_path = self.log_path_for(execution_id)
         log_path.parent.mkdir(parents=True, exist_ok=True)
         argv = self.build_argv(request, execution_id=execution_id, log_path=log_path)
+        _metrics.started += 1
+        logger.info("Execution {} started: {}", execution_id, " ".join(argv))
         process = await asyncio.create_subprocess_exec(
             *argv,
             cwd=str(self._repo_root),

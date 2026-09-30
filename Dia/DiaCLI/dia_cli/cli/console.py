@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Callable
 
 import click
+from loguru import logger
 
 from dia_cli.utils.repo_root import find_repo_root
 
@@ -126,7 +127,12 @@ def run_build(
     if runner is None:
         runner = subprocess.run
     argv = build_pyinstaller_argv(repo_root)
+    logger.info("dia console build: running PyInstaller ({})", " ".join(argv))
     result = runner(argv, cwd=str(_packaging_dir(repo_root)))
+    if result.returncode == 0:
+        logger.info("dia console build: succeeded -> {}", exe_path(repo_root))
+    else:
+        logger.error("dia console build: PyInstaller exited with code {}", result.returncode)
     return result.returncode
 
 

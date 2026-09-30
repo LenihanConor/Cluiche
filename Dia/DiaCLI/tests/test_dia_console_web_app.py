@@ -219,6 +219,39 @@ def test_get_commands_serializes_tuples_as_json_arrays(client):
     assert isinstance(by_id["build"]["path"], list)
 
 
+# ---------------------------------------------------------------------------
+# GET /api/status (Observation Opportunity Scan finding #13)
+# ---------------------------------------------------------------------------
+
+def test_get_status_shape(client, fake_registry):
+    body = client.get("/api/status").json()
+    assert body["commandsCount"] == len(fake_registry)
+    assert body["reflectionErrors"] == []
+    assert body["uptimeSeconds"] >= 0
+    assert set(body["executions"]) == {"started", "completed", "failed", "cancelled"}
+
+
+def test_get_status_surfaces_reflection_errors(tmp_path):
+    from dia_console.execution import ExecutionService
+    from dia_console.model import CommandDescriptor
+    from dia_console.registry import CommandRegistry
+
+    registry = CommandRegistry(
+        commands=(CommandDescriptor(id="ok", path=("ok",), name="ok", description="", category=""),),
+        reflection_errors=(("broken", "get_command failed: ImportError(...)"),),
+    )
+    service = ExecutionService(registry, repo_root=tmp_path)
+    app = create_app(execution_service=service)
+    client = TestClient(app)
+
+    body = client.get("/api/status").json()
+
+    assert body["commandsCount"] == 1
+    assert body["reflectionErrors"] == [
+        {"commandId": "broken", "message": "get_command failed: ImportError(...)"}
+    ]
+
+
 def test_registry_is_built_once_not_per_request(client, fake_registry):
     client.get("/api/commands")
     client.get("/api/commands")

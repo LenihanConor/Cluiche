@@ -15,6 +15,7 @@ import threading
 import uvicorn
 import webview
 from fastapi import FastAPI
+from loguru import logger
 
 from dia_console.execution import ExecutionHandle
 from dia_console.web.app import app as _default_app
@@ -96,6 +97,10 @@ def start_server(
     thread.start()
 
     if not ready.wait(timeout=startup_timeout) or "port" not in port_box:
+        logger.error(
+            "DiaConsole server failed to start within {}s (uvicorn never signalled readiness)",
+            startup_timeout,
+        )
         raise RuntimeError(
             f"DiaConsole server did not start within {startup_timeout}s "
             "(uvicorn never signalled readiness)."
