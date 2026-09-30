@@ -168,16 +168,23 @@ def default_argv_prefix() -> list[str]:
     if executable:
         return [executable]
 
-    venv_dia = find_repo_root(__file__) / "Dia" / "DiaCLI" / ".venv" / "Scripts" / "dia.exe"
-    if venv_dia.is_file():
-        return [str(venv_dia)]
+    # shutil.which (not a hardcoded "dia.exe") because the real launcher's
+    # exact shape depends on how the venv was provisioned -- confirmed live:
+    # this repo's own .venv has a plain `dia` shim + `dia.cmd` wrapper, no
+    # `dia.exe` at all. `which` already knows how to resolve whichever of
+    # those (or a real .exe elsewhere) actually exists, via the same
+    # PATHEXT-aware logic it uses for the PATH-based lookup above.
+    venv_scripts = find_repo_root(__file__) / "Dia" / "DiaCLI" / ".venv" / "Scripts"
+    venv_dia = shutil.which("dia", path=str(venv_scripts))
+    if venv_dia:
+        return [venv_dia]
 
     if getattr(sys, "frozen", False):
         raise RuntimeError(
-            f"Could not find a real 'dia' launcher: not on PATH, and {venv_dia} "
-            "doesn't exist. Refusing to fall back to sys.executable -- for this "
-            "frozen build that IS DiaConsole.exe itself, and running it with "
-            "'-m' would just relaunch DiaConsole instead of the requested command."
+            f"Could not find a real 'dia' launcher: not on PATH, and none found "
+            f"in {venv_scripts}. Refusing to fall back to sys.executable -- for "
+            "this frozen build that IS DiaConsole.exe itself, and running it "
+            "with '-m' would just relaunch DiaConsole instead of the requested command."
         )
     return [sys.executable, "-m", "dia_cli.cli_main"]
 

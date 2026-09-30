@@ -7,6 +7,7 @@ stub process) run everywhere.  Tests that spawn real processes are marked
 import asyncio
 import inspect
 import json
+import shutil
 import sys
 import time
 from datetime import datetime
@@ -498,21 +499,59 @@ def test_default_argv_prefix_resolves_dia_or_falls_back_to_module(real_service):
 # (registry reflection, load_presets), not the requested command's output.
 # ===========================================================================
 
+_real_which = shutil.which  # captured before any test monkeypatches shutil.which itself
+
+
+def _not_on_real_path_but_which_still_works_within_a_given_dir(name, path=None):
+    """Fake for shutil.which: simulates "dia" missing from the real PATH
+    (path=None -> not found), while still doing a genuine PATHEXT-aware
+    lookup when scoped to an explicit dir -- exactly like the real
+    shutil.which does, just without touching the actual process PATH.
+
+    Calls the captured _real_which, not shutil.which, since
+    execution_module.shutil IS this same test file's shutil module (one
+    process-wide singleton) -- monkeypatching .which on it patches it
+    everywhere, including here, so calling shutil.which again would recurse
+    into this very fake."""
+    if path is None:
+        return None
+    return _real_which(name, path=path)
+
+
 def test_argv_prefix_uses_venv_dia_script_when_not_on_path(monkeypatch, tmp_path):
-    monkeypatch.setattr(execution_module.shutil, "which", lambda name: None)
+    """Named dia.exe here -- a real .exe is one valid shape a venv launcher
+    can take; the .cmd-shaped case (this repo's own actual .venv) is covered
+    by the test below."""
+    monkeypatch.setattr(
+        execution_module.shutil, "which", _not_on_real_path_but_which_still_works_within_a_given_dir)
     venv_dia = tmp_path / "Dia" / "DiaCLI" / ".venv" / "Scripts" / "dia.exe"
     venv_dia.parent.mkdir(parents=True)
     venv_dia.write_bytes(b"")
     monkeypatch.setattr(execution_module, "find_repo_root", lambda anchor: tmp_path)
 
-    assert execution_module.default_argv_prefix() == [str(venv_dia)]
+    assert [p.lower() for p in execution_module.default_argv_prefix()] == [str(venv_dia).lower()]
+
+
+def test_argv_prefix_uses_venv_dia_cmd_when_no_exe_exists(monkeypatch, tmp_path):
+    """This repo's own real .venv has a plain `dia` shim + `dia.cmd`
+    wrapper, no `dia.exe` at all -- confirmed live, and the exact shape that
+    broke a hardcoded ".exe"-only check during manual verification."""
+    monkeypatch.setattr(
+        execution_module.shutil, "which", _not_on_real_path_but_which_still_works_within_a_given_dir)
+    scripts_dir = tmp_path / "Dia" / "DiaCLI" / ".venv" / "Scripts"
+    scripts_dir.mkdir(parents=True)
+    venv_dia_cmd = scripts_dir / "dia.cmd"
+    venv_dia_cmd.write_text("@echo off\n")
+    monkeypatch.setattr(execution_module, "find_repo_root", lambda anchor: tmp_path)
+
+    assert [p.lower() for p in execution_module.default_argv_prefix()] == [str(venv_dia_cmd).lower()]
 
 
 def test_argv_prefix_raises_when_frozen_and_no_real_launcher_found(monkeypatch, tmp_path):
     """Must fail loudly, never fall back to sys.executable -- for a frozen
     build that IS the app itself, and would silently relaunch it instead of
     running the requested command (the exact bug reported live)."""
-    monkeypatch.setattr(execution_module.shutil, "which", lambda name: None)
+    monkeypatch.setattr(execution_module.shutil, "which", lambda name, path=None: None)
     monkeypatch.setattr(execution_module, "find_repo_root", lambda anchor: tmp_path)
     monkeypatch.setattr(execution_module.sys, "frozen", True, raising=False)
 
@@ -523,7 +562,7 @@ def test_argv_prefix_raises_when_frozen_and_no_real_launcher_found(monkeypatch, 
 def test_argv_prefix_falls_back_to_module_invocation_when_unfrozen_and_no_launcher_found(monkeypatch, tmp_path):
     """Preserves the old dev/test behaviour when genuinely unfrozen (e.g. a
     bare `python -m pytest` run with no dia on PATH and no venv script)."""
-    monkeypatch.setattr(execution_module.shutil, "which", lambda name: None)
+    monkeypatch.setattr(execution_module.shutil, "which", lambda name, path=None: None)
     monkeypatch.setattr(execution_module, "find_repo_root", lambda anchor: tmp_path)
     monkeypatch.delattr(execution_module.sys, "frozen", raising=False)
 
