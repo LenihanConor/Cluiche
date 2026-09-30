@@ -136,6 +136,116 @@ def test_load_presets_missing_presets_key_degrades_to_empty(tmp_path):
     assert load_presets(tmp_path) == []
 
 
+def test_load_presets_presets_key_as_string_degrades_to_empty(tmp_path):
+    """Valid YAML, wrong shape: `presets` is a scalar string, not a list.
+
+    A naive `list(...)` over a string would silently explode it into one
+    "preset" per character; this must degrade to [] instead of raising or
+    fabricating garbage entries.
+    """
+    (tmp_path / ".dia").mkdir()
+    (tmp_path / ".dia" / "console-presets.yaml").write_text(
+        'presets: "not-a-list"\n', encoding="utf-8")
+    assert load_presets(tmp_path) == []
+
+
+def test_load_presets_non_dict_entry_in_list_is_skipped(tmp_path):
+    """A stray scalar entry mixed into an otherwise-valid presets list is
+    skipped rather than raising when we try to read its "id"/"command"."""
+    (tmp_path / ".dia").mkdir()
+    (tmp_path / ".dia" / "console-presets.yaml").write_text(
+        textwrap.dedent("""\
+            presets:
+              - "just-a-string"
+              - id: real-one
+                name: Real One
+                command: run
+                values: {}
+        """),
+        encoding="utf-8",
+    )
+    presets = load_presets(tmp_path)
+    assert [p.id for p in presets] == ["real-one"]
+
+
+def test_load_presets_entry_missing_id_is_skipped(tmp_path):
+    """Valid YAML, wrong shape: an entry with no `id` key must not crash the
+    whole load -- it is skipped, and other entries in the file still load."""
+    (tmp_path / ".dia").mkdir()
+    (tmp_path / ".dia" / "console-presets.yaml").write_text(
+        textwrap.dedent("""\
+            presets:
+              - name: No Id
+                command: run
+                values: {}
+              - id: has-id
+                name: Has Id
+                command: run
+                values: {}
+        """),
+        encoding="utf-8",
+    )
+    presets = load_presets(tmp_path)
+    assert [p.id for p in presets] == ["has-id"]
+
+
+def test_load_presets_entry_missing_command_is_skipped(tmp_path):
+    (tmp_path / ".dia").mkdir()
+    (tmp_path / ".dia" / "console-presets.yaml").write_text(
+        textwrap.dedent("""\
+            presets:
+              - id: no-command
+                name: No Command
+                values: {}
+              - id: has-command
+                name: Has Command
+                command: run
+                values: {}
+        """),
+        encoding="utf-8",
+    )
+    presets = load_presets(tmp_path)
+    assert [p.id for p in presets] == ["has-command"]
+
+
+def test_load_presets_unicode_id_name_and_values_round_trip(tmp_path):
+    (tmp_path / ".dia").mkdir()
+    (tmp_path / ".dia" / "console-presets.yaml").write_text(
+        textwrap.dedent("""\
+            presets:
+              - id: "スモーク-e2e"
+                name: "Café Smoke ☕"
+                command: run
+                values:
+                  target: "héllo-wörld-测试"
+        """),
+        encoding="utf-8",
+    )
+    presets = load_presets(tmp_path)
+    assert len(presets) == 1
+    assert presets[0].id == "スモーク-e2e"
+    assert presets[0].name == "Café Smoke ☕"
+    assert presets[0].values == {"target": "héllo-wörld-测试"}
+
+
+def test_load_presets_identical_content_in_both_files_does_not_double_count(tmp_path):
+    """Same id, same content in both files -- collision logic still applies
+    (local wins), but the caller sees exactly one entry, not two."""
+    dia_dir = tmp_path / ".dia"
+    dia_dir.mkdir()
+    identical_text = (
+        "presets:\n  - id: dup\n    name: Same Everywhere\n    command: run\n"
+        "    values:\n      target: cluichetest\n"
+    )
+    (dia_dir / "console-presets.yaml").write_text(identical_text, encoding="utf-8")
+    (dia_dir / "console-presets.local.yaml").write_text(identical_text, encoding="utf-8")
+
+    presets = load_presets(tmp_path)
+    assert len(presets) == 1
+    assert presets[0].source == "local"
+    assert presets[0].name == "Same Everywhere"
+
+
 # ===========================================================================
 # save_preset / delete_preset
 # ===========================================================================
@@ -222,6 +332,24 @@ def test_delete_preset_unknown_id_is_idempotent_noop(tmp_path):
     delete_preset(tmp_path, "does-not-exist", scope="shared")
     delete_preset(tmp_path, "does-not-exist", scope="shared")
     assert {p.id for p in load_presets(tmp_path)} == {"stays"}
+
+
+def test_delete_preset_wrong_scope_for_id_that_only_exists_in_other_scope_is_noop(tmp_path):
+    """`scope="local"` for an id that only exists in the *shared* file must be
+    a no-op on the local file, not accidentally reach into/mutate shared."""
+    dia_dir = tmp_path / ".dia"
+    dia_dir.mkdir()
+    shared_path = dia_dir / "console-presets.yaml"
+    shared_path.write_text(
+        "presets:\n  - id: shared-only\n    name: Shared Only\n    command: run\n    values: {}\n",
+        encoding="utf-8",
+    )
+    shared_before = shared_path.read_text(encoding="utf-8")
+
+    delete_preset(tmp_path, "shared-only", scope="local")
+
+    assert shared_path.read_text(encoding="utf-8") == shared_before
+    assert {p.id for p in load_presets(tmp_path)} == {"shared-only"}
 
 
 # ===========================================================================
@@ -404,6 +532,32 @@ def test_local_preset_collision_overrides_shared_end_to_end(
     captured = capfd.readouterr()
     assert "--target cluichetest" in captured.out
     assert "--suite" not in captured.out
+
+
+def test_run_preset_command_not_in_registry_raises_clear_click_exception(tmp_path, fake_dia_registry):
+    """The preset's own id resolves fine (load_presets never touches the
+    registry) but its `command` doesn't exist in the current registry --
+    must fail with a clear ClickException, not an uncaught KeyError. No
+    subprocess is ever spawned on this path, so this isn't `integration`.
+    """
+    from dia_cli.cli.preset import run_preset
+
+    dia_dir = tmp_path / ".dia"
+    dia_dir.mkdir()
+    (dia_dir / "console-presets.yaml").write_text(
+        textwrap.dedent("""\
+            presets:
+              - id: stale
+                name: Stale Preset
+                command: does.not.exist
+                values: {}
+        """),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(click.ClickException) as exc_info:
+        run_preset(tmp_path, "stale", registry=fake_dia_registry)
+    assert "does.not.exist" in str(exc_info.value)
 
 
 def test_list_presets_text_reports_id_name_command_source(tmp_path):

@@ -263,6 +263,22 @@ def test_event_mapping_never_raises_on_malformed_input():
     assert isinstance(event.time, datetime)
 
 
+def test_event_mapping_ts_as_string_falls_back_to_now_instead_of_raising():
+    """`ts` is documented as an epoch float; a string value (malformed but
+    still valid JSON) must degrade to "now", not raise or propagate garbage."""
+    before = datetime.now()
+    event = event_from_ndjson({"event": "OnRunStarted", "ts": "not-a-timestamp"}, "e", 0)
+    after = datetime.now()
+    assert before <= event.time <= after
+
+
+def test_event_mapping_missing_ts_falls_back_to_now():
+    before = datetime.now()
+    event = event_from_ndjson({"event": "OnRunStarted"}, "e", 0)
+    after = datetime.now()
+    assert before <= event.time <= after
+
+
 # ===========================================================================
 # argv serialization (Open Design Question 3)
 # ===========================================================================
@@ -366,6 +382,84 @@ def test_argv_full_expected_sequence(argv_service, tmp_path):
 def test_build_argv_rejects_unknown_command_id(argv_service):
     with pytest.raises(KeyError):
         argv_service.build_argv(ExecuteCommandRequest("nope", None, {}, {}), execution_id="abc")
+
+
+# ---------------------------------------------------------------------------
+# argv-injection-shaped values -- must always land as exactly one argv
+# element, never split or shell-interpreted (subprocess_exec, never shell=True)
+# ---------------------------------------------------------------------------
+
+def test_argv_positional_value_with_shell_metacharacters_is_one_argv_element(argv_service):
+    argv = argv_service.build_argv(
+        ExecuteCommandRequest("grp.cmd", None, {"target": "; rm -rf / #"}, {}),
+        execution_id="abc",
+    )
+    assert argv[-1] == "; rm -rf / #"
+    assert argv.count("; rm -rf / #") == 1
+    assert "rm" not in argv  # never split on whitespace
+
+
+def test_argv_option_value_that_looks_like_a_flag_is_one_argv_element(argv_service):
+    argv = argv_service.build_argv(
+        ExecuteCommandRequest("grp.cmd", None, {"target": "t"}, {"filter_pattern": "--evil-flag"}),
+        execution_id="abc",
+    )
+    assert argv[argv.index("--filter") + 1] == "--evil-flag"
+    # Only one "--filter" word exists; the value itself is never re-parsed as a flag.
+    assert argv.count("--filter") == 1
+
+
+def test_argv_value_with_embedded_quotes_is_preserved_verbatim(argv_service):
+    argv = argv_service.build_argv(
+        ExecuteCommandRequest("grp.cmd", None, {"target": 'he said "hi" & bye'}, {}),
+        execution_id="abc",
+    )
+    assert argv[-1] == 'he said "hi" & bye'
+
+
+def test_argv_unicode_value_is_preserved_verbatim(argv_service):
+    argv = argv_service.build_argv(
+        ExecuteCommandRequest("grp.cmd", None, {"target": "héllo-wörld-测试-🎮"}, {}),
+        execution_id="abc",
+    )
+    assert argv[-1] == "héllo-wörld-测试-🎮"
+
+
+def test_argv_negative_and_large_integer_options_coerce_to_str(argv_service):
+    argv = argv_service.build_argv(
+        ExecuteCommandRequest("grp.cmd", None, {"target": "t"}, {"shards": -1}),
+        execution_id="abc",
+    )
+    assert argv[argv.index("--shards") + 1] == "-1"
+
+    argv2 = argv_service.build_argv(
+        ExecuteCommandRequest("grp.cmd", None, {"target": "t"}, {"shards": 999_999_999}),
+        execution_id="abc",
+    )
+    assert argv2[argv2.index("--shards") + 1] == "999999999"
+
+
+# ---------------------------------------------------------------------------
+# `multiple` option: zero, one, and several values
+# ---------------------------------------------------------------------------
+
+def test_argv_multiple_option_with_zero_values_emits_nothing(argv_service):
+    """Key present with an empty list -- distinct from the key being absent
+    entirely -- must still emit no `--tag` words at all (nothing to repeat)."""
+    argv = argv_service.build_argv(
+        ExecuteCommandRequest("grp.cmd", None, {"target": "t"}, {"tags": []}),
+        execution_id="abc",
+    )
+    assert "--tag" not in argv
+
+
+def test_argv_multiple_option_with_exactly_one_value(argv_service):
+    argv = argv_service.build_argv(
+        ExecuteCommandRequest("grp.cmd", None, {"target": "t"}, {"tags": ["solo"]}),
+        execution_id="abc",
+    )
+    assert argv.count("--tag") == 1
+    assert argv[argv.index("--tag") + 1] == "solo"
 
 
 # ===========================================================================
@@ -476,6 +570,39 @@ def test_events_ignores_blank_and_malformed_lines(tmp_path):
     assert [e.type for e in events] == ["execution.started", "execution.completed"]
 
 
+def test_events_ignores_lines_that_are_valid_json_but_not_an_object(tmp_path):
+    """`[1, 2, 3]` and a bare `"hello"` are valid JSON, just not the dict shape
+    every real NDJSON record has -- must be skipped, not raise or be treated
+    as a payload."""
+    log_path = tmp_path / "t.ndjson"
+    handle = make_handle(tmp_path, name="t.ndjson", timeout=2.0)
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    log_path.write_text(
+        '[1, 2, 3]\n"hello"\n42\n'
+        '{"event":"OnRunStarted","ts":1.0}\n'
+        '{"event":"OnRunCompleted","ts":2.0}\n',
+        encoding="utf-8",
+    )
+    events = run(collect(handle.events()))
+    assert [e.type for e in events] == ["execution.started", "execution.completed"]
+
+
+def test_events_is_replayable_from_the_start_on_a_second_call(tmp_path):
+    """Requesting events() again for an execution that already finished
+    (e.g. a second GET /events after the run completed) must replay the same
+    terminal event, not error out or return nothing."""
+    log_path = tmp_path / "t.ndjson"
+    handle = make_handle(tmp_path, name="t.ndjson", timeout=2.0, returncode=0)
+    write_ndjson(log_path, [
+        {"event": "OnRunStarted", "system": "fake"},
+        {"event": "OnRunCompleted", "system": "fake"},
+    ])
+    first = run(collect(handle.events()))
+    second = run(collect(handle.events()))
+    assert [e.type for e in first] == ["execution.started", "execution.completed"]
+    assert [e.type for e in second] == ["execution.started", "execution.completed"]
+
+
 def test_events_terminates_when_process_exits_without_terminal_event(tmp_path):
     log_path = tmp_path / "t.ndjson"
     handle = make_handle(tmp_path, name="t.ndjson", timeout=2.0, returncode=1)
@@ -495,6 +622,26 @@ def test_events_yields_cancelled_after_cancel(tmp_path):
 
     events = run(scenario())
     assert [e.type for e in events] == ["execution.cancelled"]
+
+
+def test_cancelling_an_already_completed_execution_does_not_raise(tmp_path):
+    """cancel() on a process that has already exited must be a clean no-op
+    (no attempt to kill a dead process tree)."""
+    handle = make_handle(tmp_path, timeout=2.0, returncode=0)
+    run(handle.cancel())
+    assert handle.cancelled is True
+    assert handle.returncode == 0
+
+
+def test_cancelling_twice_is_idempotent(tmp_path):
+    handle = make_handle(tmp_path, timeout=2.0, returncode=0)
+
+    async def scenario():
+        await handle.cancel()
+        await handle.cancel()
+
+    run(scenario())
+    assert handle.cancelled is True
 
 
 def test_events_yields_cancelled_even_with_pending_ndjson_lines(tmp_path):

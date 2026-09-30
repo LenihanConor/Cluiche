@@ -242,6 +242,20 @@ def test_execute_unknown_command_id_is_404(client):
     assert response.status_code == 404
 
 
+def test_execute_missing_command_id_is_422(client):
+    """`command_id` is a required field on the request body -- omitting it
+    entirely is a client error, not a 500 or a silent no-op."""
+    response = client.post("/api/execute", json={
+        "project_id": None, "arguments": {}, "options": {},
+    })
+    assert response.status_code == 422
+
+
+def test_execute_missing_body_entirely_is_422(client):
+    response = client.post("/api/execute", json={})
+    assert response.status_code == 422
+
+
 # ===========================================================================
 # GET /api/executions/{id}/events and /logs — SSE framing + independence
 # ===========================================================================
@@ -348,6 +362,15 @@ def test_cancel_404_for_unknown_execution_id(client):
     assert client.post("/api/executions/does-not-exist/cancel").status_code == 404
 
 
+def test_cancel_twice_is_idempotent_204_both_times(client, fake_service):
+    execution_id = _execute(client)
+    first = client.post(f"/api/executions/{execution_id}/cancel")
+    second = client.post(f"/api/executions/{execution_id}/cancel")
+    assert first.status_code == 204
+    assert second.status_code == 204
+    assert fake_service.handles[execution_id].cancelled is True
+
+
 # ===========================================================================
 # GET /api/context
 # ===========================================================================
@@ -392,6 +415,15 @@ def test_group_label_for_known_top_level_segments(segment, expected):
     "cli_validate", "cli_check", "something_invented_later", "",
 ])
 def test_group_label_for_unmapped_segment_falls_back_to_advanced(segment):
+    assert nav_grouping.group_label_for(segment) == nav_grouping.ADVANCED_GROUP_LABEL
+
+
+@pytest.mark.parametrize("segment", ["Run", "RUN", "Check", "TEST"])
+def test_group_label_for_is_case_sensitive_not_case_insensitively_matched(segment):
+    """A segment that collides with a table entry only differing in case
+    (e.g. "Run" vs "run") must fall through to Advanced -- confirms the
+    lookup is a deliberate case-sensitive `in` check against the fixed
+    frozensets, not an accidental case-insensitive match."""
     assert nav_grouping.group_label_for(segment) == nav_grouping.ADVANCED_GROUP_LABEL
 
 
@@ -451,6 +483,44 @@ def test_put_presets_writes_back_to_the_presets_own_source_file(client, tmp_path
 def test_put_presets_404_for_unknown_id(client):
     response = client.put("/api/presets/does-not-exist", json={"name": "x"})
     assert response.status_code == 404
+
+
+def test_put_presets_empty_body_leaves_name_and_values_unchanged(client, tmp_path):
+    """Both PUT fields are optional -- an entirely empty body must be a
+    successful no-op, not an error and not a silent clear of the fields."""
+    _write_presets_file(
+        tmp_path, "console-presets.yaml",
+        "presets:\n  - id: dup\n    name: Old\n    command: build\n    values:\n      target: x\n",
+    )
+    response = client.put("/api/presets/dup", json={})
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["name"] == "Old"
+    assert body["values"] == {"target": "x"}
+
+
+def test_post_presets_missing_required_field_is_422(client):
+    """`id`, `name`, and `commandId` are all required on the create body."""
+    response = client.post("/api/presets", json={"name": "No Id", "commandId": "build", "values": {}})
+    assert response.status_code == 422
+
+
+def test_post_presets_missing_body_entirely_is_422(client):
+    response = client.post("/api/presets", json={})
+    assert response.status_code == 422
+
+
+def test_post_presets_unicode_id_name_and_values_round_trip(client, tmp_path):
+    response = client.post("/api/presets", json={
+        "id": "スモーク-e2e", "name": "Café Smoke ☕", "commandId": "build",
+        "values": {"target": "héllo-wörld-测试"},
+    })
+    assert response.status_code == 200, response.text
+    body = client.get("/api/presets").json()
+    assert body == [{
+        "id": "スモーク-e2e", "name": "Café Smoke ☕", "commandId": "build",
+        "values": {"target": "héllo-wörld-测试"}, "source": "local",
+    }]
 
 
 def test_delete_presets_removes_from_its_own_source_file_and_returns_204(client, tmp_path):

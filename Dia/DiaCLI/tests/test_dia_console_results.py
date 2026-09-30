@@ -225,6 +225,22 @@ def test_googletest_adapter_falls_back_to_generic_when_xml_malformed(tmp_path, m
     assert records[0].kind == "GenericResult"
 
 
+def test_googletest_adapter_falls_back_to_generic_when_xml_is_zero_bytes(tmp_path, monkeypatch):
+    """A run that crashed before the runner flushed any XML at all leaves a
+    zero-byte file at the fixed path -- ET.parse raises ParseError on an
+    empty document (distinct trigger from MALFORMED_XML's truncated tag),
+    and this must still degrade to the generic fallback, not raise."""
+    xml_path = tmp_path / "last_run.xml"
+    xml_path.write_text("", encoding="utf-8")
+    monkeypatch.setattr(results_module, "_GTEST_XML_PATH", xml_path)
+
+    handle = make_handle(tmp_path, returncode=1, log_lines=["crashed before flushing"])
+    records = _googletest_adapter(handle)
+
+    assert len(records) == 1
+    assert records[0].kind == "GenericResult"
+
+
 # ---------------------------------------------------------------------------
 # _generic_fallback_adapter
 # ---------------------------------------------------------------------------

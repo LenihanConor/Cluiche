@@ -243,6 +243,58 @@ def test_help_option_is_not_reflected_as_an_option(synthetic_app):
 
 
 # ---------------------------------------------------------------------------
+# Python-keyword / underscore-vs-dash param name collisions
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def keyword_collision_app():
+    @click.group()
+    def root():
+        """Root."""
+
+    @root.command("kw")
+    @click.option("--class", "class_", default=None)  # "class" is a Python keyword
+    @click.option("--in", "in_", default=None)  # "in" is a Python keyword
+    @click.option("--long-option-name", "long_option_name", default=None)
+    def kw(**kwargs):
+        """Command with keyword-colliding param names."""
+
+    return root
+
+
+def test_option_name_that_collides_with_python_keyword_is_reflected_safely(keyword_collision_app):
+    registry = CommandRegistry.from_click_app(keyword_collision_app)
+    options = {o.name: o for o in registry.get("kw").options}
+    assert options["class_"].cli_flag == "--class"
+    assert options["in_"].cli_flag == "--in"
+
+
+def test_option_name_with_underscores_maps_to_dash_cli_flag(keyword_collision_app):
+    registry = CommandRegistry.from_click_app(keyword_collision_app)
+    long_opt = next(o for o in registry.get("kw").options if o.name == "long_option_name")
+    assert long_opt.cli_flag == "--long-option-name"
+
+
+# ---------------------------------------------------------------------------
+# multiple-option default and empty-choice/empty-default boundaries
+# ---------------------------------------------------------------------------
+
+def test_multiple_option_default_empty_tuple_does_not_raise(synthetic_app):
+    @synthetic_app.command("multi-default")
+    @click.option("--tag", "tags", multiple=True)
+    def multi_default(**kwargs):
+        """Multiple option with no default values supplied."""
+
+    registry = CommandRegistry.from_click_app(synthetic_app)
+    tags = next(o for o in registry.get("multi-default").options if o.name == "tags")
+    assert tags.multiple is True
+    # Click itself defaults an unspecified `multiple=True` option to None
+    # (not an empty tuple) -- confirm reflection passes that through as-is
+    # rather than raising or fabricating a different sentinel.
+    assert tags.default is None
+
+
+# ---------------------------------------------------------------------------
 # SD-CONSOLE-010 — no cache, fresh reflection every call
 # ---------------------------------------------------------------------------
 
