@@ -66,7 +66,9 @@ def test_execute_command_request_shape():
 
 
 def test_execution_event_shape():
-    assert _field_names(ExecutionEvent) == ("execution_id", "seq", "time", "type", "step_id", "payload")
+    assert _field_names(ExecutionEvent) == (
+        "execution_id", "seq", "time", "type", "step_id", "payload", "final",
+    )
 
 
 def test_result_record_shape():

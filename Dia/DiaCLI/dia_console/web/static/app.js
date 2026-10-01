@@ -803,7 +803,7 @@
       var payload = JSON.parse(message.data);
       qs("statusline-text").textContent =
         (payload.step_id ? payload.step_id + " · " : "") + payload.type;
-      if (TERMINAL_EXECUTION_TYPES.indexOf(payload.type) !== -1) {
+      if (TERMINAL_EXECUTION_TYPES.indexOf(payload.type) !== -1 && payload.final !== false) {
         setRunning(false);
         if (payload.type === "execution.completed") setRunstate("success", "Idle");
         else setRunstate("failure", "Idle");

@@ -738,6 +738,13 @@ def test_events_keeps_tailing_past_a_premature_terminal_event_until_process_exit
     ]
     assert "after an earlier terminal event" in events[-1].payload["message"]
     assert execution_module.get_metrics().completed == 1, "must not double-count the premature event"
+    assert events[1].final is False, (
+        "the premature OnRunCompleted must be marked final=False -- otherwise "
+        "an SSE client has no way to tell it apart from the real end of the "
+        "stream and closes the connection early (the actual live bug: the log "
+        "pane went silent after the first test line)"
+    )
+    assert events[-1].final is True, "the real terminal event must be marked final"
 
 
 def test_events_reports_completed_not_failed_when_exit_code_is_zero_with_no_terminal_event(tmp_path):

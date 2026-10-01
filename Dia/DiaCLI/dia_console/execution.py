@@ -21,6 +21,7 @@ also stops a chatty command from deadlocking on a full pipe.
 from __future__ import annotations
 
 import asyncio
+import dataclasses
 import json
 import shutil
 import subprocess
@@ -375,23 +376,31 @@ class ExecutionHandle:
                             continue
                         event = event_from_ndjson(raw, self.execution_id, seq)
                         seq += 1
+                        is_premature_terminal = (
+                            event.type in TERMINAL_EVENT_TYPES
+                            and self._process.returncode is None
+                        )
+                        if is_premature_terminal:
+                            # The real process is still running -- e.g.
+                            # `dia run`'s own pipeline phase reports
+                            # OnRunCompleted well before launch_target()
+                            # even starts, in the same process (confirmed
+                            # live: the log pane stopped after one test
+                            # line because this used to end the stream
+                            # right here, before GoogleTests.exe had
+                            # produced almost any of its output). A
+                            # terminal-mapped NDJSON event is not
+                            # authoritative on its own; the process's
+                            # actual exit is -- handled by the "process
+                            # exited without a terminal event" fallback
+                            # below, which yields the real final event
+                            # once it actually happens. ``final=False`` tells
+                            # every consumer (this loop and the SSE client
+                            # alike) not to treat it as end-of-stream.
+                            event = dataclasses.replace(event, final=False)
                         yield event
                         if event.type in TERMINAL_EVENT_TYPES:
-                            if self._process.returncode is None:
-                                # The real process is still running -- e.g.
-                                # `dia run`'s own pipeline phase reports
-                                # OnRunCompleted well before launch_target()
-                                # even starts, in the same process (confirmed
-                                # live: the log pane stopped after one test
-                                # line because this used to end the stream
-                                # right here, before GoogleTests.exe had
-                                # produced almost any of its output). A
-                                # terminal-mapped NDJSON event is not
-                                # authoritative on its own; the process's
-                                # actual exit is -- handled by the "process
-                                # exited without a terminal event" fallback
-                                # below, which yields the real final event
-                                # once it actually happens.
+                            if is_premature_terminal:
                                 logger.debug(
                                     "Execution {} saw a terminal-mapped event ({}) while the "
                                     "process is still running; continuing to tail",

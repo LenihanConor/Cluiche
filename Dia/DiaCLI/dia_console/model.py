@@ -119,6 +119,13 @@ class ExecutionEvent:
     ``step.progress``, ``step.completed``, ``step.failed``, ``step.skipped``,
     ``log``, ``result.produced``.  It is translated from DiaCLI's
     ``dia.output.v1`` NDJSON ``event`` field (SD-CONSOLE-002).
+
+    ``final`` is ``True`` unless this is a terminal-typed event (``type`` in
+    ``execution.completed``/``failed``/``cancelled``) that arrived while the
+    underlying process was still running -- e.g. `dia run`'s pipeline phase
+    reports its own ``OnRunCompleted`` before the launched target has even
+    started. Consumers must not treat a terminal ``type`` as end-of-stream
+    unless ``final`` is also ``True``.
     """
 
     execution_id: str
@@ -127,6 +134,7 @@ class ExecutionEvent:
     type: str
     step_id: str | None
     payload: Mapping[str, Any]
+    final: bool = True
 
 
 @dataclass(frozen=True)

@@ -2,6 +2,7 @@
 __pycache__
 .vscode
 .venv
+.venv64
 *.egg-info
 dist
 node_modules
