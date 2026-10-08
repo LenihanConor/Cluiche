@@ -195,7 +195,7 @@ class TestCheckDepsIntegration:
         with patch("dia_cli.cli.check.find_repo_root", return_value=repo):
             runner = CliRunner()
             result = runner.invoke(cli, ["check", "deps"])
-        assert result.exit_code == 0
+        assert result.exit_code == 1
         assert "MISSING DEPENDENCY" in result.output
         assert "dia.maths.vector" in result.output
         assert "dia.core.containers" in result.output

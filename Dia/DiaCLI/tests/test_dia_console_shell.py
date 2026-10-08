@@ -408,6 +408,6 @@ def test_pane_clear_button_present_wired_and_log_only():
     assert "clearLogPane" in app_js
     assert '.pane-clear' in styles_css
 
-    set_active_tab_start = app_js.index("function setActiveTab(")
-    set_active_tab_body = app_js[set_active_tab_start:set_active_tab_start + 400]
-    assert 'pane-clear' in set_active_tab_body, "clear button must be shown/hidden per active tab"
+    apply_sub_tab_dom_start = app_js.index("function applySubTabDom(")
+    apply_sub_tab_dom_body = app_js[apply_sub_tab_dom_start:apply_sub_tab_dom_start + 400]
+    assert 'pane-clear' in apply_sub_tab_dom_body, "clear button must be shown/hidden per active tab"
