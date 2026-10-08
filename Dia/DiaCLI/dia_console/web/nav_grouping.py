@@ -21,9 +21,9 @@ ADVANCED_GROUP_LABEL = "Advanced"
 #: ``category == ""`` but ``path[0] == "run"``, which is what this table's
 #: left-hand column actually enumerates.
 _GROUP_TABLE: tuple[tuple[frozenset[str], str], ...] = (
-    (frozenset({"run", "launch", "pipeline", "fix", "diagnose"}), "Run & Debug"),
+    (frozenset({"run", "launch", "pipeline", "asset", "reflect"}), "Run"),
+    (frozenset({"fix", "diagnose"}), "Debug"),
     (frozenset({"test", "check"}), "Test & Quality"),
-    (frozenset({"asset", "reflect"}), "Assets & Data"),
     (frozenset({"scaffold", "docs", "codegen"}), "Create & Docs"),
     (frozenset({"env"}), "Environment"),
 )

@@ -83,6 +83,10 @@
       </div>
 
       <div class="outputpanel">
+        <!-- Run tabs (console-run-tabs.md): one tab per execution, populated
+             entirely by app.js. Empty/hidden-by-nothing when state.runs is
+             empty -- app.js renders nothing into it in that case. -->
+        <div class="runtabstrip" id="runtabstrip"></div>
         <div class="tabstrip">
           <div class="tab active" id="tab-log" data-tab="log">Log</div>
           <div class="tab" id="tab-results" data-tab="results">Results</div>

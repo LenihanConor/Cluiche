@@ -327,6 +327,33 @@ def test_events_and_logs_are_independent_endpoints(client):
     assert all(isinstance(frame, dict) for frame in events_frames)
 
 
+def test_two_concurrent_executions_stay_independently_reachable(client, fake_service):
+    """Goal 6 / SD-CONSOLE-002, extended to the forthcoming run-tabs UI: two
+    executions in flight at once never collide on execution_id, and each
+    one's state/streams stay scoped to its own id -- the exact backend
+    guarantee multiple run tabs will rely on without any backend changes."""
+    execution_id_1 = _execute(client, command_id="build")
+    execution_id_2 = _execute(client, command_id="check.arch", options={})
+
+    assert execution_id_1 != execution_id_2
+    # Both executions are tracked simultaneously before either completes/cancels.
+    assert {execution_id_1, execution_id_2} <= set(client.app.state.executions)
+
+    response_1 = client.get(f"/api/executions/{execution_id_1}/events")
+    response_2 = client.get(f"/api/executions/{execution_id_2}/events")
+    assert response_1.status_code == 200
+    assert response_2.status_code == 200
+    frames_1 = parse_sse_frames(response_1.text)
+    frames_2 = parse_sse_frames(response_2.text)
+    assert frames_1[0]["execution_id"] == execution_id_1
+    assert frames_2[0]["execution_id"] == execution_id_2
+
+    # Each id's own command stays attached to it, not the other id's.
+    assert client.app.state.execution_commands[execution_id_1] == "build"
+    assert client.app.state.execution_commands[execution_id_2] == "check.arch"
+    assert fake_service.handles[execution_id_1] is not fake_service.handles[execution_id_2]
+
+
 def test_events_404_for_unknown_execution_id(client):
     assert client.get("/api/executions/does-not-exist/events").status_code == 404
 
@@ -391,6 +418,21 @@ def test_cancel_calls_handle_cancel_and_returns_204(client, fake_service):
     assert handle.cancelled is True
 
 
+def test_cancel_is_scoped_to_one_execution_id(client, fake_service):
+    """Proves a run-tab's close button -- which will call this same
+    endpoint -- can never accidentally cancel a different tab's execution."""
+    execution_id_1 = _execute(client)
+    execution_id_2 = _execute(client)
+    handle_1 = fake_service.handles[execution_id_1]
+    handle_2 = fake_service.handles[execution_id_2]
+
+    response = client.post(f"/api/executions/{execution_id_1}/cancel")
+
+    assert response.status_code == 204
+    assert handle_1.cancelled is True
+    assert handle_2.cancelled is False
+
+
 def test_cancel_404_for_unknown_execution_id(client):
     assert client.post("/api/executions/does-not-exist/cancel").status_code == 404
 
@@ -432,10 +474,10 @@ def test_get_context_target_shape_uses_camelcase_app_name(context_client):
 # ===========================================================================
 
 @pytest.mark.parametrize("segment,expected", [
-    ("run", "Run & Debug"), ("launch", "Run & Debug"), ("pipeline", "Run & Debug"),
-    ("fix", "Run & Debug"), ("diagnose", "Run & Debug"),
+    ("run", "Run"), ("launch", "Run"), ("pipeline", "Run"),
+    ("asset", "Run"), ("reflect", "Run"),
+    ("fix", "Debug"), ("diagnose", "Debug"),
     ("test", "Test & Quality"), ("check", "Test & Quality"),
-    ("asset", "Assets & Data"), ("reflect", "Assets & Data"),
     ("scaffold", "Create & Docs"), ("docs", "Create & Docs"), ("codegen", "Create & Docs"),
     ("env", "Environment"),
 ])

@@ -47,9 +47,9 @@ POST /api/executions/{id}/cancel    → calls ExecutionHandle.cancel(); 204 No C
 
 | Top-level command category | Group label |
 |---|---|
-| `run`, `launch`, `pipeline`, `fix`, `diagnose` | Run & Debug |
+| `run`, `launch`, `pipeline`, `asset`, `reflect` | Run |
+| `fix`, `diagnose` | Debug |
 | `test`, `check` | Test & Quality |
-| `asset`, `reflect` | Assets & Data |
 | `scaffold`, `docs`, `codegen` | Create & Docs |
 | `env` | Environment |
 | anything else (`api`, `show`, `capture`, `agent`, `command`, `cli_validate`, `cli_check`, ...) | Advanced |

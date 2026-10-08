@@ -17,9 +17,9 @@
   // table). Any groupLabel not in this list (there should only ever be
   // "Advanced") is appended at the end.
   var GROUP_ORDER = [
-    "Run & Debug",
+    "Run",
+    "Debug",
     "Test & Quality",
-    "Assets & Data",
     "Create & Docs",
     "Environment",
     "Advanced",
@@ -37,9 +37,12 @@
     selectedCommand: null,
     expandedGroup: null,
     expandedFamily: null,
-    executionId: null,
-    eventsSource: null,
-    logsSource: null,
+    // console-run-tabs.md: one in-flight (or finished-but-still-open)
+    // execution per RunTab, newest appended to the right. `activeRunId` is
+    // a client-side RunTab.id (NOT the server execution id -- a tab exists,
+    // and can be made active, before /api/execute has even resolved).
+    runs: [],
+    activeRunId: null,
     // Presets (console-presets.md). Populated from GET /api/presets.
     presets: [],
     presetsById: {},
@@ -55,6 +58,10 @@
       currentConfig: null,
     },
   };
+
+  // Monotonic source for RunTab.id -- independent of the server's execution
+  // id, which doesn't exist yet at the moment a tab is created.
+  var runTabCounter = 0;
 
   // ------------------------------------------------------------------ utils
 
@@ -675,36 +682,357 @@
     renderNav();
   }
 
-  // -------------------------------------------------------------- run flow
+  // -------------------------------------------------------------- run tabs
+  //
+  // console-run-tabs.md: the web UI tracks arbitrary concurrent executions,
+  // mirroring the backend's app.state.executions. Each RunTab owns its own
+  // pair of EventSources, its own log buffer, and its own results -- only
+  // the currently-active tab's data is reflected into the live DOM.
 
-  function setRunning(isRunning) {
-    qs("run-btn").disabled = isRunning;
-    qs("cancel-btn").disabled = !isRunning;
-    qs("statusline").classList.toggle("running", isRunning);
+  /** Maps a RunTab's internal status to the `.dot` accent class. */
+  function statusDotClass(status) {
+    if (status === "running") return "accent";
+    if (status === "completed") return "green";
+    if (status === "failed") return "red";
+    if (status === "cancelled") return "yellow";
+    return "";
   }
 
-  function setRunstate(kind, text) {
-    var dotClass = { idle: "", running: "accent", success: "green", failure: "red" }[kind] || "";
+  function getActiveTab() {
+    if (state.activeRunId === null) return null;
+    for (var i = 0; i < state.runs.length; i++) {
+      if (state.runs[i].id === state.activeRunId) return state.runs[i];
+    }
+    return null;
+  }
+
+  /**
+   * Goal 4's de-dup rule: base label is the command's display name; if N
+   * tabs currently open already share that base label, the new tab gets
+   * " (N+1)" appended. Counts only tabs currently in state.runs, so a
+   * closed tab's number is free to be reused by a later one.
+   */
+  function nextTabLabel(cmd) {
+    var baseLabel = commandDisplayName(cmd);
+    var count = state.runs.filter(function (t) { return t.baseLabel === baseLabel; }).length;
+    if (count === 0) return baseLabel;
+    return baseLabel + " (" + (count + 1) + ")";
+  }
+
+  function createRunTab(cmd) {
+    runTabCounter += 1;
+    var baseLabel = commandDisplayName(cmd);
+    return {
+      id: "run-" + runTabCounter,
+      executionId: null,
+      commandId: cmd.id,
+      baseLabel: baseLabel,
+      label: nextTabLabel(cmd),
+      status: "running",
+      eventsSource: null,
+      logsSource: null,
+      statuslineText: "Starting…",
+      running: true,
+      logLines: [],
+      activeSubTab: "log",
+      results: [],
+    };
+  }
+
+  /** Builds a `.logline` div from a buffered {text, cls, ts} entry. */
+  function buildLoglineElement(entry) {
+    var line = el("div", "logline" + (entry.cls ? " " + entry.cls : ""));
+    line.appendChild(el("span", "ts", entry.ts));
+    line.appendChild(document.createTextNode(entry.text));
+    return line;
+  }
+
+  /**
+   * Buffers a log line onto `tab.logLines` and, only if `tab` is the
+   * currently active tab, also appends it straight into the live #logpane
+   * DOM -- a thin wrapper around buildLoglineElement so backgrounded tabs
+   * keep accumulating without ever touching the DOM.
+   */
+  function appendLogLineForTab(tab, text) {
+    var lower = text.toLowerCase();
+    var cls = "";
+    if (lower.indexOf("error") !== -1) cls = "err";
+    else if (lower.indexOf("warn") !== -1) cls = "warn";
+
+    var entry = { text: text, cls: cls, ts: new Date().toLocaleTimeString() };
+    tab.logLines.push(entry);
+
+    if (tab.id === state.activeRunId) {
+      var pane = qs("logpane");
+      var hint = pane.querySelector(".empty-hint");
+      if (hint) hint.remove();
+      pane.appendChild(buildLoglineElement(entry));
+      pane.scrollTop = pane.scrollHeight;
+    }
+  }
+
+  /** Fetches /results for a tab's execution; only repaints if still active. */
+  function fetchResultsForTab(tab) {
+    if (!tab.executionId) return;
+    fetch("/api/executions/" + tab.executionId + "/results")
+      .then(function (response) { return response.json(); })
+      .then(function (records) {
+        tab.results = records;
+        if (tab.id === state.activeRunId) renderResults(records);
+      })
+      .catch(function () { /* leave whatever is currently shown */ });
+  }
+
+  /** Header runstate (#runstate-dot/#runstate-text): how many tabs are running. */
+  function setRunstateText(dotClass, text) {
     qs("runstate-dot").className = "dot" + (dotClass ? " " + dotClass : "");
     qs("runstate-text").textContent = text;
-    qs("statusline-dot").className = "dot" + (dotClass ? " " + dotClass : "");
   }
 
-  function appendLogLine(text) {
+  function recomputeRunstate() {
+    var runningCount = state.runs.filter(function (t) { return t.status === "running"; }).length;
+    if (runningCount === 0) {
+      setRunstateText("", "Idle");
+    } else if (runningCount === 1) {
+      setRunstateText("accent", "Running");
+    } else {
+      setRunstateText("accent", runningCount + " running");
+    }
+  }
+
+  function applySubTabDom(subtab) {
+    qs("tab-log").classList.toggle("active", subtab === "log");
+    qs("tab-results").classList.toggle("active", subtab === "results");
+    qs("logpane").style.display = subtab === "log" ? "" : "none";
+    qs("resultspane").style.display = subtab === "results" ? "" : "none";
+    qs("pane-clear").classList.toggle("hidden", subtab !== "log");
+  }
+
+  /** Click handler for the Log/Results sub-tabs, scoped to the active RunTab. */
+  function selectSubTab(subtab) {
+    var tab = getActiveTab();
+    if (tab) tab.activeSubTab = subtab;
+    applySubTabDom(subtab);
+    if (subtab === "results" && tab) fetchResultsForTab(tab);
+  }
+
+  /**
+   * Repaints the ENTIRE output area (statusline, log pane, sub-tab
+   * selection, results) from state.activeRunId's own stored RunTab data --
+   * no re-fetching. Used on tab switch, tab creation, and tab close.
+   */
+  function renderActiveRunTab() {
+    var tab = getActiveTab();
     var pane = qs("logpane");
-    var hint = pane.querySelector(".empty-hint");
-    if (hint) hint.remove();
 
-    var line = el("div", "logline");
-    var lower = text.toLowerCase();
-    if (lower.indexOf("error") !== -1) line.className = "logline err";
-    else if (lower.indexOf("warn") !== -1) line.className = "logline warn";
+    if (!tab) {
+      qs("statusline-text").textContent = "No execution yet.";
+      qs("statusline").classList.remove("running");
+      qs("statusline-dot").className = "dot";
+      qs("run-btn").disabled = false;
+      qs("cancel-btn").disabled = true;
+      clearLogPane();
+      renderResults([]);
+      applySubTabDom("log");
+      return;
+    }
 
-    var ts = el("span", "ts", new Date().toLocaleTimeString());
-    line.appendChild(ts);
-    line.appendChild(document.createTextNode(text));
-    pane.appendChild(line);
-    pane.scrollTop = pane.scrollHeight;
+    qs("statusline-text").textContent = tab.statuslineText || "No execution yet.";
+    qs("statusline").classList.toggle("running", !!tab.running);
+    var dotClass = statusDotClass(tab.status);
+    qs("statusline-dot").className = "dot" + (dotClass ? " " + dotClass : "");
+    // Run is never disabled by the active tab's status -- Run always opens a
+    // NEW tab (Goal 2), including while another tab is still running (the
+    // whole point of this feature: start the editor without waiting for the
+    // game to finish). Only Cancel is scoped to the active tab.
+    qs("run-btn").disabled = false;
+    qs("cancel-btn").disabled = !tab.running;
+
+    clear(pane);
+    if (!tab.logLines.length) {
+      pane.appendChild(el("div", "empty-hint", "Run a command to see its live output here."));
+    } else {
+      tab.logLines.forEach(function (entry) {
+        pane.appendChild(buildLoglineElement(entry));
+      });
+      pane.scrollTop = pane.scrollHeight;
+    }
+
+    applySubTabDom(tab.activeSubTab || "log");
+    renderResults(tab.results || []);
+  }
+
+  /** Rebuilds the #runtabstrip from state.runs, in creation order. */
+  function renderRunTabStrip() {
+    var strip = qs("runtabstrip");
+    clear(strip);
+
+    state.runs.forEach(function (tab) {
+      var tabEl = el("div", "runtab" + (tab.id === state.activeRunId ? " active" : ""));
+      tabEl.dataset.state = tab.status;
+
+      var dotClass = statusDotClass(tab.status);
+      tabEl.appendChild(el("span", "dot" + (dotClass ? " " + dotClass : "")));
+      tabEl.appendChild(el("span", "runtab-label", tab.label));
+
+      var closeEl = el("span", "runtab-close", "✕");
+      closeEl.addEventListener("click", function (event) {
+        event.stopPropagation();
+        closeRunTab(tab);
+      });
+      tabEl.appendChild(closeEl);
+
+      tabEl.addEventListener("click", function () {
+        if (state.activeRunId === tab.id) return;
+        state.activeRunId = tab.id;
+        renderActiveRunTab();
+        renderRunTabStrip();
+      });
+
+      strip.appendChild(tabEl);
+    });
+  }
+
+  function closeTabStreams(tab) {
+    if (tab.eventsSource) { tab.eventsSource.close(); tab.eventsSource = null; }
+    if (tab.logsSource) { tab.logsSource.close(); tab.logsSource = null; }
+  }
+
+  /**
+   * Removes a tab from state.runs and closes its streams. If it was the
+   * active tab, focuses the tab immediately to its left (clamped to the
+   * new last tab if the closed tab was the leftmost), or null if none
+   * remain (Goal 7).
+   */
+  function removeRunTab(tab) {
+    var index = state.runs.indexOf(tab);
+    if (index === -1) return;
+    state.runs.splice(index, 1);
+    closeTabStreams(tab);
+
+    if (tab.id === state.activeRunId) {
+      if (state.runs.length === 0) {
+        state.activeRunId = null;
+      } else {
+        var focusIndex = index - 1;
+        if (focusIndex < 0) focusIndex = 0;
+        if (focusIndex > state.runs.length - 1) focusIndex = state.runs.length - 1;
+        state.activeRunId = state.runs[focusIndex].id;
+      }
+    }
+
+    renderRunTabStrip();
+    renderActiveRunTab();
+    recomputeRunstate();
+  }
+
+  /** Shared POST .../cancel call, used by both the per-tab close button and #cancel-btn. */
+  function cancelExecution(executionId) {
+    if (!executionId) return Promise.resolve();
+    return fetch("/api/executions/" + executionId + "/cancel", { method: "POST" }).catch(function () {});
+  }
+
+  /** .runtab-close click: cancel first if still running, then remove regardless. */
+  function closeRunTab(tab) {
+    if (tab.status === "running") {
+      cancelExecution(tab.executionId).then(function () {
+        removeRunTab(tab);
+      });
+    } else {
+      removeRunTab(tab);
+    }
+  }
+
+  /**
+   * Opens this RunTab's own pair of EventSources at creation time (not just
+   * when active) so backgrounded tabs keep accumulating. Only touches the
+   * live DOM when `tab` is the currently active tab.
+   */
+  function startStreamsForTab(tab) {
+    var executionId = tab.executionId;
+
+    var events = new EventSource("/api/executions/" + executionId + "/events");
+    tab.eventsSource = events;
+    events.onmessage = function (message) {
+      var payload = JSON.parse(message.data);
+      tab.statuslineText = (payload.step_id ? payload.step_id + " · " : "") + payload.type;
+      if (tab.id === state.activeRunId) {
+        qs("statusline-text").textContent = tab.statuslineText;
+      }
+
+      if (TERMINAL_EXECUTION_TYPES.indexOf(payload.type) !== -1 && payload.final !== false) {
+        tab.running = false;
+        if (payload.type === "execution.completed") tab.status = "completed";
+        else if (payload.type === "execution.failed") tab.status = "failed";
+        else tab.status = "cancelled";
+
+        if (tab.eventsSource === events) { events.close(); tab.eventsSource = null; }
+
+        fetchResultsForTab(tab);
+        recomputeRunstate();
+        renderRunTabStrip();
+        if (tab.id === state.activeRunId) renderActiveRunTab();
+
+        // Give the /logs stream a moment to drain trailing lines, then close
+        // it too — otherwise EventSource would try to reconnect once the
+        // server-side stream naturally ends.
+        window.setTimeout(function () {
+          if (tab.logsSource) { tab.logsSource.close(); tab.logsSource = null; }
+        }, 300);
+      }
+    };
+    events.onerror = function () {
+      // Connection dropped unexpectedly (server gone, etc). Don't spin
+      // forever retrying against a run that's no longer trackable.
+      if (tab.eventsSource === events) {
+        events.close();
+        tab.eventsSource = null;
+      }
+    };
+
+    var logs = new EventSource("/api/executions/" + executionId + "/logs");
+    tab.logsSource = logs;
+    logs.onmessage = function (message) {
+      appendLogLineForTab(tab, JSON.parse(message.data));
+    };
+    logs.onerror = function () {
+      if (tab.logsSource === logs) {
+        logs.close();
+        tab.logsSource = null;
+      }
+    };
+  }
+
+  // -------------------------------------------------------------- run flow
+
+  /** #cancel-btn: cancels the currently active tab specifically. */
+  function cancelRun() {
+    var tab = getActiveTab();
+    if (!tab || !tab.executionId) return;
+    cancelExecution(tab.executionId);
+  }
+
+  /** Empties the log pane and restores its idle placeholder. */
+  function clearLogPane() {
+    var pane = qs("logpane");
+    clear(pane);
+    pane.appendChild(el("div", "empty-hint", "Run a command to see its live output here."));
+  }
+
+  /** Copies whichever of logpane/resultspane is currently visible. */
+  function copyActivePaneContents() {
+    var pane = qs("logpane").style.display !== "none" ? qs("logpane") : qs("resultspane");
+    var text = pane.textContent.trim();
+    if (!text || !navigator.clipboard) return;
+    navigator.clipboard.writeText(text).then(function () {
+      var btn = qs("pane-copy");
+      btn.textContent = "copied";
+      btn.classList.add("copied");
+      setTimeout(function () {
+        btn.textContent = "copy";
+        btn.classList.remove("copied");
+      }, 1200);
+    }).catch(function () {});
   }
 
   // ---------------------------------------------------------- results tab
@@ -781,81 +1109,30 @@
     if (artifactsLine) pane.appendChild(artifactsLine);
   }
 
-  function loadResults(executionId) {
-    if (!executionId) return;
-    fetch("/api/executions/" + executionId + "/results")
-      .then(function (response) { return response.json(); })
-      .then(function (records) { renderResults(records); })
-      .catch(function () { /* leave whatever is currently shown */ });
-  }
+  // -------------------------------------------------------------- run flow
 
-  function closeStreams() {
-    if (state.eventsSource) { state.eventsSource.close(); state.eventsSource = null; }
-    if (state.logsSource) { state.logsSource.close(); state.logsSource = null; }
-  }
-
-  function startStreams(executionId) {
-    state.executionId = executionId;
-
-    var events = new EventSource("/api/executions/" + executionId + "/events");
-    state.eventsSource = events;
-    events.onmessage = function (message) {
-      var payload = JSON.parse(message.data);
-      qs("statusline-text").textContent =
-        (payload.step_id ? payload.step_id + " · " : "") + payload.type;
-      if (TERMINAL_EXECUTION_TYPES.indexOf(payload.type) !== -1 && payload.final !== false) {
-        setRunning(false);
-        if (payload.type === "execution.completed") setRunstate("success", "Idle");
-        else setRunstate("failure", "Idle");
-        events.close();
-        state.eventsSource = null;
-        loadResults(executionId);
-        // Give the /logs stream a moment to drain trailing lines, then close
-        // it too — otherwise EventSource would try to reconnect once the
-        // server-side stream naturally ends.
-        window.setTimeout(function () {
-          if (state.logsSource) { state.logsSource.close(); state.logsSource = null; }
-        }, 300);
-      }
-    };
-    events.onerror = function () {
-      // Connection dropped unexpectedly (server gone, etc). Don't spin
-      // forever retrying against a run that's no longer trackable.
-      if (state.eventsSource === events) {
-        events.close();
-        state.eventsSource = null;
-      }
-    };
-
-    var logs = new EventSource("/api/executions/" + executionId + "/logs");
-    state.logsSource = logs;
-    logs.onmessage = function (message) {
-      appendLogLine(JSON.parse(message.data));
-    };
-    logs.onerror = function () {
-      if (state.logsSource === logs) {
-        logs.close();
-        state.logsSource = null;
-      }
-    };
-  }
-
+  /**
+   * Always appends a new RunTab and makes it active -- never reuses or
+   * restarts an existing tab, even for the identical command (Goal 2).
+   */
   function runSelectedCommand() {
     if (!state.selectedCommand) return;
+    var cmd = state.selectedCommand;
     var values = collectFormValues();
 
-    closeStreams();
-    clear(qs("logpane"));
-    renderResults([]);
-    setRunning(true);
-    setRunstate("running", "Running");
-    setActiveTab("log");
+    var tab = createRunTab(cmd);
+    state.runs.push(tab);
+    state.activeRunId = tab.id;
+
+    renderActiveRunTab();
+    renderRunTabStrip();
+    recomputeRunstate();
 
     fetch("/api/execute", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        command_id: state.selectedCommand.id,
+        command_id: cmd.id,
         project_id: null,
         arguments: values.arguments,
         options: values.options,
@@ -866,51 +1143,18 @@
         return response.json();
       })
       .then(function (body) {
-        startStreams(body.execution_id);
+        tab.executionId = body.execution_id;
+        startStreamsForTab(tab);
       })
       .catch(function (err) {
-        setRunning(false);
-        setRunstate("failure", "Idle");
-        appendLogLine("ERROR: " + err.message);
+        tab.running = false;
+        tab.status = "failed";
+        tab.statuslineText = "failed to start";
+        appendLogLineForTab(tab, "ERROR: " + err.message);
+        recomputeRunstate();
+        renderRunTabStrip();
+        if (tab.id === state.activeRunId) renderActiveRunTab();
       });
-  }
-
-  function cancelRun() {
-    if (!state.executionId) return;
-    fetch("/api/executions/" + state.executionId + "/cancel", { method: "POST" }).catch(function () {});
-  }
-
-  // -------------------------------------------------------------- tabstrip
-
-  function setActiveTab(tab) {
-    qs("tab-log").classList.toggle("active", tab === "log");
-    qs("tab-results").classList.toggle("active", tab === "results");
-    qs("logpane").style.display = tab === "log" ? "" : "none";
-    qs("resultspane").style.display = tab === "results" ? "" : "none";
-    qs("pane-clear").classList.toggle("hidden", tab !== "log");
-  }
-
-  /** Empties the log pane and restores its idle placeholder. */
-  function clearLogPane() {
-    var pane = qs("logpane");
-    clear(pane);
-    pane.appendChild(el("div", "empty-hint", "Run a command to see its live output here."));
-  }
-
-  /** Copies whichever of logpane/resultspane is currently visible. */
-  function copyActivePaneContents() {
-    var pane = qs("logpane").style.display !== "none" ? qs("logpane") : qs("resultspane");
-    var text = pane.textContent.trim();
-    if (!text || !navigator.clipboard) return;
-    navigator.clipboard.writeText(text).then(function () {
-      var btn = qs("pane-copy");
-      btn.textContent = "copied";
-      btn.classList.add("copied");
-      setTimeout(function () {
-        btn.textContent = "copy";
-        btn.classList.remove("copied");
-      }, 1200);
-    }).catch(function () {});
   }
 
   // ---------------------------------------------------------------- boot
@@ -930,11 +1174,8 @@
     qs("run-btn").addEventListener("click", runSelectedCommand);
     qs("cancel-btn").addEventListener("click", cancelRun);
     qs("save-preset-btn").addEventListener("click", saveCurrentPreset);
-    qs("tab-log").addEventListener("click", function () { setActiveTab("log"); });
-    qs("tab-results").addEventListener("click", function () {
-      setActiveTab("results");
-      if (state.executionId) loadResults(state.executionId);
-    });
+    qs("tab-log").addEventListener("click", function () { selectSubTab("log"); });
+    qs("tab-results").addEventListener("click", function () { selectSubTab("results"); });
     qs("pane-copy").addEventListener("click", copyActivePaneContents);
     qs("pane-clear").addEventListener("click", clearLogPane);
     qs("nav-search").addEventListener("input", applyNavFilter);
@@ -944,6 +1185,11 @@
       var text = qs("cli-preview-text").textContent;
       if (navigator.clipboard) navigator.clipboard.writeText(text).catch(function () {});
     });
+
+    // console-run-tabs.md: boot with an empty tab strip / idle output area.
+    renderRunTabStrip();
+    renderActiveRunTab();
+    recomputeRunstate();
 
     // Frameless window -> no native title bar controls; these three glyphs
     // are the only way to move/close the window. window.pywebview.api is

@@ -134,8 +134,9 @@ presets:
 | console-presets | Named, saved command+argument combinations | Repo-shared `.dia/console-presets.yaml` + gitignored user-local `.dia/console-presets.local.yaml` overlay (local wins on ID collision); `dia preset list/run`, full CRUD (save/edit/rename/delete) in the UI, dedicated "Presets" nav section | [console-presets.md](../../../../features/dia/diaconsole/console-presets.md) | 3 days | Approved |
 | console-project-context | Target/config/platform selector + defaults | Reads `pipeline.toml` targets, supplies form defaults on target switch without clobbering user-edited fields. Sibling-project discovery descoped — see Responsibilities. | [console-project-context.md](../../../../features/dia/diaconsole/console-project-context.md) | 3 days | Approved |
 | console-desktop-install | Packaged, double-clickable desktop entry point with a real icon | PyInstaller windowed one-file build producing `DiaConsole.exe` with a bundled placeholder icon; `dia console build` / `dia console install-shortcut` subcommands | [console-desktop-install.md](../../../../features/dia/diaconsole/console-desktop-install.md) | 3 days | Approved |
+| console-run-tabs | Tab strip for concurrent executions, so multiple runs (e.g. game + editor) can be live at once instead of one replacing the other's view | Per-tab `EventSource`s + buffered log/status/results, close-cancels-if-running, duplicate-label de-dup, no backend changes | [console-run-tabs.md](../../../../features/dia/diaconsole/console-run-tabs.md) | 2 days | Done |
 
-**Total Effort Estimate:** 25 days
+**Total Effort Estimate:** 27 days
 
 **Recommended Implementation Order:**
 1. console-command-model (6d) — foundation; nothing else can be built or tested without it
@@ -228,4 +229,4 @@ presets:
 
 ## Status
 
-`Done` — Implemented 2026-09-30. All 6 feature specs Approved and implemented: console-command-model, console-native-shell, console-typed-results, console-project-context, console-presets, console-desktop-install. Plan archived: `docs/archive/plans/diaconsole.plan.md`.
+`Done` — All 7 features implemented: core 6 (console-command-model, console-native-shell, console-typed-results, console-project-context, console-presets, console-desktop-install) 2026-09-30, plan archived: `docs/archive/plans/diaconsole.plan.md`. 7th feature, console-run-tabs, implemented 2026-09-30 and manually verified in-browser 2026-10-08: `docs/specs/features/dia/diaconsole/console-run-tabs.plan.md`.
