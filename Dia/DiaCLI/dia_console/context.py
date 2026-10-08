@@ -26,10 +26,9 @@ class TargetInfo:
 def list_targets(repo_root: Path) -> list[TargetInfo]:
     """Non-hidden targets from ``pipeline.toml``, via the existing loader.
 
-    Excludes any target with ``hidden = true`` (``diasfml``,
-    ``diauiultralight`` in the real ``pipeline.toml`` -- internal
-    build-dependency targets no other DiaCLI tooling exposes as user-facing
-    choices).
+    Excludes any target with ``hidden = true`` (``diauiultralight`` in the
+    real ``pipeline.toml`` -- an internal build-dependency target no other
+    DiaCLI tooling exposes as a user-facing choice).
     """
     cfg = pipeline_config.load_pipeline_config(repo_root)
     return [

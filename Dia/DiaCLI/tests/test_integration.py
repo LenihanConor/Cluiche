@@ -57,7 +57,11 @@ class TestRepoRoot:
         root = find_repo_root(str(runner_path))
         assert (root / "Cluiche" / "Cluiche.sln").exists()
 
-    def test_raises_on_bogus_path(self, tmp_path):
+    def test_raises_on_bogus_path(self, tmp_path, monkeypatch):
+        # find_repo_root also falls back to cwd (for installed/site-packages
+        # mode) -- patch it too, or this would find the *real* repo root via
+        # pytest's actual cwd instead of exercising the "nothing found" path.
+        monkeypatch.chdir(tmp_path)
         bogus = tmp_path / "nowhere" / "test.py"
         bogus.parent.mkdir(parents=True)
         bogus.write_text("")
@@ -98,11 +102,17 @@ class TestDepsJsonIntegrity:
         for dep in self.deps:
             install_type = dep.get("install_type", "zip")
             if install_type == "zip":
-                path = dep["unzip_to"]
+                paths = [dep["unzip_to"]]
+            elif install_type == "single_file":
+                paths = [dep["install_to"]]
             else:
-                path = dep["install_to"]
-            assert path.startswith("External/"), \
-                f"dep '{dep['id']}' install path '{path}' is not under External/"
+                # "build" / "cmake_build" deps have no single unzip_to/install_to --
+                # each staged artifact lists its own destination instead.
+                paths = [entry["to"] for entry in dep.get("stage", [])]
+                assert paths, f"dep '{dep['id']}' ({install_type}) has no stage entries to check"
+            for path in paths:
+                assert path.startswith("External/"), \
+                    f"dep '{dep['id']}' install path '{path}' is not under External/"
 
 
 # ---------------------------------------------------------------------------

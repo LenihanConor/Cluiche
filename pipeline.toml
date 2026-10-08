@@ -156,19 +156,6 @@ files = [
   { src = "Cluiche/Assets/CluicheEditor/ai_context/*",       dest = "$(OutDir)assets/ai_context/" }
 ]
 
-[targets.diasfml]
-project = "Dia/DiaSFML/DiaSFML.vcxproj"
-stages = ["compile-code"]
-hidden = true
-
-[targets.diasfml.deploy]
-files = [
-  { src = "External/SFML/Current-x64/bin/sfml-window-3.dll", dest = "$(OutDir)" },
-  { src = "External/SFML/Current-x64/bin/sfml-window-d-3.dll", dest = "$(OutDir)" },
-  { src = "External/SFML/Current-x64/bin/sfml-system-3.dll", dest = "$(OutDir)" },
-  { src = "External/SFML/Current-x64/bin/sfml-system-d-3.dll", dest = "$(OutDir)" }
-]
-
 [targets.diauiultralight]
 project = "Dia/DiaUIUltralight/DiaUIUltralight.vcxproj"
 stages = ["compile-code"]

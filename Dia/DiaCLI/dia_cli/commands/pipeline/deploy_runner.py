@@ -54,7 +54,6 @@ _DEPLOY_TARGETS = [
     "cluichetest",
     "googletest",
     "cluicheeditor",
-    "diasfml",
     "diauiultralight",
 ]
 
