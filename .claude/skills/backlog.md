@@ -13,7 +13,8 @@ Show the current project backlog in a consistent four-section format.
 ## Usage
 
 ```
-/backlog
+/backlog            all projects
+/backlog cow        only rows whose Project column is CoW (also: dia, cluichetest, baseline)
 ```
 
 ## Instructions for Claude
@@ -22,7 +23,7 @@ When this skill is invoked:
 
 ### 1. Read the Backlog
 
-Read `docs/BACKLOG.md` in full.
+Read `docs/BACKLOG.md` in full. Every table has a **Project** column. If an argument is given, keep only rows whose Project contains it (case-insensitive); otherwise keep all rows. Show the Project as the first column of each table you render. For CoW, also read the "CoW: Features to Be Designed (GDD)" section and add a short "Still to be designed" table (Testbed, pieces not yet crossed out) after Blocked when the filter is cow.
 
 ### 2. Render Four Sections
 

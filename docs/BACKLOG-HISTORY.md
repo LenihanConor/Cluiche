@@ -125,6 +125,8 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | Architecture layer violation remediation | `dia check arch` flags ~35 violations across 6 independent root causes (VisualDebugger family → DiaVisualDebugger — the long-standing ~42-file conflict below, now audited; DiaScalarFieldInspector → DiaEditor; GridVisibilityVisualDebugger mistagged vs. its own domain; a duplicate RGBA type pulling RigidBody2DVisualDebugger into the visual domain; DiaSensor/DiaTriggerScript falsely attributed to `dia.root` via malformed module.md metadata; DiaSimTime → DiaSaveGame). Audit complete with a recommended fix and task breakdown per cluster: [arch_layer_violations/plan.md](refactors/arch_layer_violations/plan.md). One task (retagging `dia.editor` from `domain/visual/core` to `foundation/application`) is gated on explicit sign-off before implementation. | 2026-09-07 | dia check arch: 172 -> 0 violations. All 6 original clusters + expanded metadata sweep (task 12, 10 modules) fixed across 6 commits. Task 9 (DiaDebugDraw.vcxproj duplicate-compile cleanup) remains Blocked -- tracked as its own Loose Ends entry, not part of this line's Done state. |
 | DiaDebugDraw.vcxproj duplicate-compile hack | `DiaDebugDraw.vcxproj` still duplicate-compiles `DebugLayerManager.cpp` et al. out of `DiaVisualDebugger` via relative path (unrelated to layer violations — `dia check arch` is clean). Tried removing the duplicate entries once (see [arch_layer_violations/plan.md](refactors/arch_layer_violations/plan.md) task 9): broke the real link for `GoogleTests.exe` with 59 unresolved externals, even though `DiaDebugDraw.lib` isn't referenced anywhere in `GoogleTests.vcxproj` (not in `ProjectReference`, not in `AdditionalDependencies`) while `DiaVisualDebugger.lib` — which should contain these exact symbols — is explicitly linked. Reverted immediately, confirmed clean. Working theory, unconfirmed: a shared intermediate-object-path collision between the two projects compiling the same source files under MSBuild's default parallel build. Needs real investigation (check `IntDir` settings, try a forced serial rebuild) before attempting again. | 2026-09-08 | Resolved 2026-09-08: root-caused as an unfinished extraction (DiaDebugDraw's own doc already claimed the shared registry/palette/dispatch as its responsibility, but the .cpp files never physically moved out of DiaVisualDebugger). Merged DiaDebugDraw into DiaVisualDebugger for real: moved the 4 shared files, added the missing ClCompile entries, fixed ~65 #include paths repo-wide, stripped 11 dead ProjectReferences, deleted the module. Verified via GoogleTests (435/435) and CluicheTest build. |
 | diaconsole | [spec](specs/) | 2026-09-30 | Marked done by `dia docs spec-done` |
+| Dia | F-1: DiaCLI `cow` target + `scaffold sln-add --root` (skeleton B1, B2) | 2026-10-09 | Done: [targets.cow] block + sln-add --root; commits cfc5824f, 7ce0b3b0 |
+| Dia | F-1: DiaCLI data-driven target registry (scaffold-app task 1); makes the `cow` target toml-only | 2026-10-09 | Done: registry derives launch/deploy/error lists from pipeline.toml; scaffold-app task 1; commit 04f9aee5 |
 
 ---
 
@@ -218,3 +220,12 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | HotReloadManager stubs (`CollectDependentModules` / `UpdateDependencyReferences`) | Superseded by DiaApplicationFlow v2 Stage model — hot reload via Phase/Module replacement is no longer the architecture. Never landed in the main codebase (only existed in old agent worktrees). |
 | DiaEnv — env-export | [diaenv.md](specs/applications/dia/systems/diaenv/diaenv.md) | Covered by deps.json + mirrors + submodules |
 | DiaEnv — docker continuous monitoring (`dia env doctor`) | [diaenv.md](specs/applications/dia/systems/diaenv/diaenv.md) | Premature until setup + verify stable (both now Done) |
+
+---
+
+## Dropped
+
+| Item | Project | Dropped | Why |
+|------|---------|---------|-----|
+| Shipping-build gating (compile the menu out, shipping manifest) | CoW | 2026-10-09 | User decision; revisit when a shipping build is planned |
+| `--play` command-line flag and DiaCLI argument forwarding | CoW | 2026-10-09 | Replaced by a Play entry in the Boot menu; DiaCLI has no argument forwarding |
