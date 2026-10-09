@@ -41,7 +41,7 @@ def _resolve_full_suite_config(repo_root: Path, target: str) -> str:
 def cli(ctx, target, config, filter_pattern, verbose, no_build, build_only, force, run_all, shards):
     """Run the full pipeline then launch a target.
 
-    TARGET is one of: googletest, cluichetest, cluicheeditor.
+    TARGET is any target in pipeline.toml (see `dia launch --help`).
 
     Equivalent to: dia pipeline --target TARGET && dia launch TARGET
     """

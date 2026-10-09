@@ -19,6 +19,7 @@ language = "cpp"
 
 [targets.googletest]
 project = "Cluiche/Tests/GoogleTests/GoogleTests.vcxproj"
+exe = "Cluiche/bin/GoogleTests/{config}/x64/GoogleTests.exe"
 stages = ["compile-code", "deploy"]
 full_suite_config = "Release"
 
@@ -96,6 +97,7 @@ files = [
 
 [targets.cluicheeditor]
 project = "Cluiche/CluicheEditor/CluicheEditor.vcxproj"
+exe = "Cluiche/bin/CluicheEditor/{config}/x64/CluicheEditor.exe"
 stages = ["compile-code", "build-assets", "deploy"]
 
 [targets.cluicheeditor.build_deps]

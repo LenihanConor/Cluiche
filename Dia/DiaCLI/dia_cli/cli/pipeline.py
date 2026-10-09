@@ -13,7 +13,7 @@ _VALID_CONFIGS = {"Debug", "Release", "Both"}
 @click.option("--config", default=None, metavar="CONFIG",
               help="Build configuration: Debug, Release, or Both. Default from pipeline.toml.")
 @click.option("--target", default=None, metavar="TARGET",
-              help="Build target (googletest, cluichetest, cluicheeditor). Default from pipeline.toml.")
+              help="Build target (any [targets.*] in pipeline.toml). Default from pipeline.toml.")
 @click.option("--stage", default=None, metavar="STAGES",
               help="Comma-separated stages to run. Default: all stages for target.")
 @click.option("--force", is_flag=True, default=False,

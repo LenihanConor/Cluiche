@@ -68,7 +68,7 @@ Today `launch.py` (`_TARGET_EXE_MAP`), `deploy_runner.py` (`_DEPLOY_TARGETS`) an
 
 | # | Task | Test | Status | Model |
 |---|------|------|--------|-------|
-| 1 | **RED/GREEN:** data-driven target registry from `pipeline.toml` (`launch`, `run`, `pipeline`, `deploy`, error messages); existing targets unchanged | AC1, AC2, AC3 | Draft | sonnet |
+| 1 | **RED/GREEN:** data-driven target registry from `pipeline.toml` (`launch`, `run`, `pipeline`, `deploy`, error messages); existing targets unchanged | AC1, AC2, AC3 | Done | sonnet |
 | 2 | Add Jinja2 templates for the generated files (derived from the hand-built CoW skeleton) | AC4 | Draft | sonnet |
 | 3 | **RED/GREEN:** `dia scaffold app` command (name derivation, templates, solution entry via `sln-add` logic, toml block, `--dry-run`, `--force`) | AC4, AC5, AC6 | Draft | sonnet |
 | 4 | Generate `ScratchApp` outside the committed tree, validate, build with `dia run`, boot, return, exit; diff against CoW; delete it | AC7, AC8, AC9 | Draft | haiku |

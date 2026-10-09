@@ -4,15 +4,15 @@ import click
 from pathlib import Path
 
 from dia_cli.utils.repo_root import find_repo_root
+from dia_cli.commands.pipeline.pipeline_config import (
+    PipelineConfigError,
+    launchable_targets,
+    load_pipeline_config,
+    resolve_target_exe,
+)
 
 
 _CONFIG_ALIASES = {"Asan": "Debug-Asan", "Ubsan": "Debug-Ubsan"}
-
-_TARGET_EXE_MAP = {
-    "googletest": "Cluiche/bin/GoogleTests/{config}/x64/GoogleTests.exe",
-    "cluichetest": "Cluiche/bin/CluicheTest/{config}/x64/CluicheTest.exe",
-    "cluicheeditor": "Cluiche/bin/CluicheEditor/{config}/x64/CluicheEditor.exe",
-}
 
 
 @click.command()
@@ -33,7 +33,7 @@ _TARGET_EXE_MAP = {
 def cli(ctx, target, config, filter_pattern, verbose, run_all, shards, automation):
     """Launch an already-built target executable.
 
-    TARGET is one of: googletest, cluichetest, cluicheeditor.
+    TARGET is any launchable target in pipeline.toml (one with `exe` or `app_name`).
 
     This does NOT build — use 'dia run <target>' to pipeline + launch.
     """
@@ -55,12 +55,21 @@ def launch_target(target: str, config: str, filter_pattern: str = None,
     config = _CONFIG_ALIASES.get(config, config)
     repo_root = find_repo_root(__file__)
 
-    if target not in _TARGET_EXE_MAP:
-        known = ", ".join(sorted(_TARGET_EXE_MAP.keys()))
+    try:
+        pipeline_config = load_pipeline_config(repo_root)
+    except PipelineConfigError as e:
+        click.echo(f"ERROR: {e}", err=True)
+        return 2
+
+    exe_template = None
+    if target in pipeline_config.targets:
+        exe_template = resolve_target_exe(pipeline_config.targets[target])
+    if exe_template is None:
+        known = ", ".join(sorted(launchable_targets(pipeline_config)))
         click.echo(f"ERROR: unknown target '{target}' (known: {known})", err=True)
         return 2
 
-    exe_rel = _TARGET_EXE_MAP[target].format(config=config)
+    exe_rel = exe_template.format(config=config)
     exe_path = repo_root / exe_rel
     if not exe_path.exists():
         click.echo(
