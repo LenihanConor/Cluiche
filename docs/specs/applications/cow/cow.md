@@ -8,6 +8,8 @@ Crucible of Wings (CoW) is a living dragon terrarium and stewardship simulation:
 
 CoW is built on top of Dia and CluicheGameBaseline, developed as its own application sibling to CluicheTest and CluicheEditor. Its tech/art phases are built as 12 vertical-slice **testbeds** that accumulate into the final game. The first build boots to either the real game UI or a debug menu that launches any testbed standalone.
 
+**Backlog:** [cow-backlog.md](cow-backlog.md). **Cross-boundary needs:** [dia-needs.md](dia-needs.md).
+
 **Design source of truth:** the GDD repo (`C:\GitHub\DesignDocs\COW`, `Output Docs/GDD/`). Macro vision: `01_MacroVision/HighConceptPitch.md`. Testbed roster: `10_PrototypeStrategy/TestbedRoster.md` (DECISION-120). The GDD owns what each testbed must prove and its pass/fail metrics; this spec tree owns how it is implemented (see AD-003).
 
 ## Systems
