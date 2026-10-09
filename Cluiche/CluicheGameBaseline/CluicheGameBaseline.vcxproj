@@ -29,6 +29,7 @@
     <ClCompile Include="Modules\AttributeVisualDebuggerModule.cpp" />
     <ClCompile Include="Modules\EntityInspectorModule.cpp" />
     <ClCompile Include="Modules\DebugUIModule.cpp" />
+    <ClCompile Include="Modules\StageStatusModule.cpp" />
     <ClCompile Include="Modules\DebugServerHostModule.cpp" />
     <ClCompile Include="Modules\JobSystemModule.cpp" />
     <ClCompile Include="Modules\Camera2DModule.cpp" />
@@ -118,6 +119,7 @@
     <ClInclude Include="Types\DebugPanelToggleEvent.h" />
     <ClInclude Include="Types\DebugPanelSetVisibilityEvent.h" />
     <ClInclude Include="Modules\AttributeVisualDebuggerModule.h" />
+    <ClInclude Include="Modules\StageStatusModule.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">

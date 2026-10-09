@@ -123,6 +123,9 @@
     <ClCompile Include="Modules\AttributeVisualDebuggerModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\StageStatusModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\EntityModule.h">
@@ -252,6 +255,9 @@
       <Filter>Types</Filter>
     </ClInclude>
     <ClInclude Include="Modules\AttributeVisualDebuggerModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\StageStatusModule.h">
       <Filter>Modules</Filter>
     </ClInclude>
   </ItemGroup>

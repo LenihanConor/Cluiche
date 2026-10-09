@@ -1805,5 +1805,8 @@
     <ClCompile Include="DiaAttributeVisualDebugger\TestAttributeVisualDebugger.cpp">
       <Filter>DiaAttributeVisualDebugger</Filter>
     </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestStageStatusModule.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
