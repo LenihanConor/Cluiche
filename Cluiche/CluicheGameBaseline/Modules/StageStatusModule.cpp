@@ -10,9 +10,33 @@ StageStatusModule::StageStatusModule(const Dia::Core::StringCRC& instanceId)
     : RenderModule(instanceId)
 {}
 
-// RED-phase stubs: real behaviour arrives in the GREEN task.
-bool StageStatusModule::Set(const Dia::Core::StringCRC&, const StageStatus&) { return false; }
-const StageStatusModule::StageStatus* StageStatusModule::Get(const Dia::Core::StringCRC&) const { return nullptr; }
+bool StageStatusModule::Set(const Dia::Core::StringCRC& stage, const StageStatus& status)
+{
+    for (int i = 0; i < mCount; ++i)
+    {
+        if (mEntries[i].stage == stage)
+        {
+            mEntries[i].status = status;
+            return true;
+        }
+    }
+    if (mCount >= kMaxStages)
+        return false;
+    mEntries[mCount].stage = stage;
+    mEntries[mCount].status = status;
+    ++mCount;
+    return true;
+}
+
+const StageStatusModule::StageStatus* StageStatusModule::Get(const Dia::Core::StringCRC& stage) const
+{
+    for (int i = 0; i < mCount; ++i)
+    {
+        if (mEntries[i].stage == stage)
+            return &mEntries[i].status;
+    }
+    return nullptr;
+}
 
 Dia::ApplicationFlow::StartResult StageStatusModule::DoStart() { return Dia::ApplicationFlow::StartResult::kReady; }
 void StageStatusModule::DoUpdate(const Dia::SimTime::RenderTimeContext&) {}
