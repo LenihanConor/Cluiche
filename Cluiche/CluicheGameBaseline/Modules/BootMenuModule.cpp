@@ -1,15 +1,16 @@
 #include "Modules/BootMenuModule.h"
 #include "Modules/DebugUIModule.h"
 #include "Modules/DebugServerHostModule.h"
-#include "Modules/TestStages/TestResultsRegistry.h"
 
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaDebugServer/DebugServer.h>
+#include <DiaCore/Json/external/json/json.h>
 
 #include <imgui.h>
+#include <cstring>
 
 namespace Cluiche { namespace AppFlow {
 
@@ -17,7 +18,35 @@ const Dia::Core::StringCRC BootMenuModule::kTypeId("BootMenuModule");
 
 BootMenuModule::BootMenuModule(const Dia::Core::StringCRC& instanceId)
     : RenderModule(instanceId)
-{}
+{
+    strncpy_s(mTitle, BootMenuLogic::ResolveTitle(nullptr), _TRUNCATE);
+    strncpy_s(mProject, BootMenuLogic::ResolveProject(nullptr), _TRUNCATE);
+}
+
+void BootMenuModule::OnConfigure(const char* configJson)
+{
+    if (configJson == nullptr || configJson[0] == '\0')
+        return;
+
+    Json::Value config;
+    Json::Reader reader;
+    if (!reader.parse(configJson, config))
+    {
+        DIA_LOG_WARNING("Application", "BootMenuModule: OnConfigure - JSON parse failed");
+        return;
+    }
+
+    const char* title = (config.isMember("title") && config["title"].isString()) ? config["title"].asCString() : nullptr;
+    const char* project = (config.isMember("project") && config["project"].isString()) ? config["project"].asCString() : nullptr;
+    strncpy_s(mTitle, BootMenuLogic::ResolveTitle(title), _TRUNCATE);
+    strncpy_s(mProject, BootMenuLogic::ResolveProject(project), _TRUNCATE);
+}
+
+void BootMenuModule::RefreshProvider()
+{
+    // ModuleRef::Get() returns null unless the target module is active.
+    mLogic.SetProvider(mStageStatus.Get());
+}
 
 Dia::ApplicationFlow::StartResult BootMenuModule::DoStart()
 {
@@ -33,17 +62,10 @@ Dia::ApplicationFlow::StartResult BootMenuModule::DoStart()
     mLaunchCounter = Dia::Observation::Metric::MetricRegistry::Instance().RegisterCounter(Dia::Core::StringCRC("boot_menu.launches"));
     mStageCountGauge->Set(static_cast<double>(mNavigableStages.Size()));
 
-    // Mark stages as loaded if we're returning to Boot from a stage
-    for (unsigned int i = 0; i < mNavigableStages.Size(); ++i)
-    {
-        if (CluicheTest::TestResultsRegistry::IsCreated())
-        {
-            const CluicheTest::StageResult* result =
-                CluicheTest::TestResultsRegistry::GetInstance().GetResult(mNavigableStages[i]);
-            if (result && result->state != CluicheTest::StageResult::State::kNotRun)
-                MarkLoaded(i);
-        }
-    }
+    // Returning to Boot from a stage: restore visited markers from the status provider (if any).
+    mSelectedIndex = -1;
+    RefreshProvider();
+    mLogic.RestoreVisited();
 
     DIA_LOG_INFO("Application", "BootMenuModule DoStart exit (%u stages)", mNavigableStages.Size());
     return Dia::ApplicationFlow::StartResult::kReady;
@@ -69,12 +91,15 @@ void BootMenuModule::DoUpdate(const Dia::SimTime::RenderTimeContext& /*ctx*/)
             mFrameWasActive = true;
         }
     }
+    RefreshProvider();
     DrawMenu();
 }
 
 Dia::ApplicationFlow::StopResult BootMenuModule::DoStop()
 {
     DIA_LOG_INFO("Application", "BootMenuModule DoStop entry");
+    mSelectedIndex = -1;
+    mLogic.SetProvider(nullptr);
     DIA_LOG_INFO("Application", "BootMenuModule DoStop exit");
     return Dia::ApplicationFlow::StopResult::kDone;
 }
@@ -83,6 +108,11 @@ void BootMenuModule::CacheNavigableStages()
 {
     mNavigableStages.RemoveAll();
     GetApplication()->GetStageTransitions(Dia::Core::StringCRC("Boot"), mNavigableStages);
+
+    Dia::Core::StringCRC stages[kMaxStages];
+    for (unsigned int i = 0; i < mNavigableStages.Size(); ++i)
+        stages[i] = mNavigableStages[i];
+    mLogic.SetStages(stages, mNavigableStages.Size());
 }
 
 void BootMenuModule::DrawMenu()
@@ -98,11 +128,14 @@ void BootMenuModule::DrawMenu()
     ImGui::SetNextWindowPos(ImVec2(50, 50), ImGuiCond_Once);
     ImGui::SetNextWindowSize(ImVec2(960, 640), ImGuiCond_Once);
 
-    ImGui::Begin("CluicheTest \xe2\x80\x94 Bootstrap");
+    ImGui::Begin(mTitle);
 
     // Header
-    ImGui::Text("Project: CluicheTest v0.1");
-    ImGui::SameLine();
+    if (mProject[0] != '\0')
+    {
+        ImGui::Text("%s", mProject);
+        ImGui::SameLine();
+    }
 
     bool automationConnected = false;
     if (DebugServerHostModule* dsm = mDebugServer.Get())
@@ -120,12 +153,14 @@ void BootMenuModule::DrawMenu()
     ImGui::TextDisabled("%u stages available", mNavigableStages.Size());
     ImGui::Separator();
 
-    // Stage table
-    if (ImGui::BeginTable("##stages", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerH))
+    // Stage table (badge column only when a StageStatusModule is present)
+    const bool hasStatus = mLogic.HasStatus();
+    if (ImGui::BeginTable("##stages", hasStatus ? 3 : 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerH))
     {
         ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 20.0f);
         ImGui::TableSetupColumn("Stage", ImGuiTableColumnFlags_WidthStretch);
-        ImGui::TableSetupColumn("Status", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+        if (hasStatus)
+            ImGui::TableSetupColumn("Status", ImGuiTableColumnFlags_WidthFixed, 80.0f);
         ImGui::TableHeadersRow();
 
         for (unsigned int i = 0; i < mNavigableStages.Size(); ++i)
@@ -133,9 +168,9 @@ void BootMenuModule::DrawMenu()
             ImGui::TableNextRow();
             ImGui::PushID(static_cast<int>(i));
 
-            // Loaded indicator
+            // Visited indicator
             ImGui::TableSetColumnIndex(0);
-            if (IsLoadedThisSession(i))
+            if (mLogic.IsVisited(mNavigableStages[i]))
                 ImGui::TextColored(ImVec4(0.29f, 0.88f, 0.29f, 1.0f), "\xe2\x97\x8f");
             else
                 ImGui::TextDisabled("\xe2\x97\x8b");
@@ -152,14 +187,33 @@ void BootMenuModule::DrawMenu()
             }
 
             // Status badge
-            ImGui::TableSetColumnIndex(2);
-            const char* status = GetStatusLabel(mNavigableStages[i]);
-            if (strcmp(status, "PASSED") == 0)
-                ImGui::TextColored(ImVec4(0.29f, 0.88f, 0.29f, 1.0f), "%s", status);
-            else if (strcmp(status, "FAILED") == 0 || strcmp(status, "TIMEOUT") == 0)
-                ImGui::TextColored(ImVec4(0.88f, 0.29f, 0.29f, 1.0f), "%s", status);
-            else
-                ImGui::TextDisabled("%s", status);
+            if (hasStatus)
+            {
+                ImGui::TableSetColumnIndex(2);
+                BootMenuLogic::Badge badge;
+                if (mLogic.GetBadge(mNavigableStages[i], badge) && badge.label != nullptr)
+                {
+                    switch (badge.severity)
+                    {
+                    case StageStatusModule::Severity::kOk:
+                        ImGui::TextColored(ImVec4(0.29f, 0.88f, 0.29f, 1.0f), "%s", badge.label);
+                        break;
+                    case StageStatusModule::Severity::kFail:
+                        ImGui::TextColored(ImVec4(0.88f, 0.29f, 0.29f, 1.0f), "%s", badge.label);
+                        break;
+                    case StageStatusModule::Severity::kWarn:
+                        ImGui::TextColored(ImVec4(0.95f, 0.75f, 0.25f, 1.0f), "%s", badge.label);
+                        break;
+                    default:
+                        ImGui::TextDisabled("%s", badge.label);
+                        break;
+                    }
+                }
+                else
+                {
+                    ImGui::TextDisabled("-");
+                }
+            }
 
             ImGui::PopID();
         }
@@ -181,75 +235,30 @@ void BootMenuModule::DrawMenu()
         const Dia::Core::StringCRC& target = mNavigableStages[mSelectedIndex];
         DIA_LOG_INFO("Application", "BootMenuModule: Launch button -> navigate_to('%s')", target.AsChar());
         mLaunchCounter->Inc();
+        mLogic.MarkVisited(target);
         mNavRequest.Send({target});
     }
 
     if (!canLaunch)
         ImGui::EndDisabled();
 
-    // Session stats
-    unsigned int passed = 0, failed = 0, pending = 0;
-    if (CluicheTest::TestResultsRegistry::IsCreated())
+    // Counts footer (only when a StageStatusModule exists)
+    if (hasStatus)
     {
-        const auto& registry = CluicheTest::TestResultsRegistry::GetInstance();
-        for (unsigned int i = 0; i < mNavigableStages.Size(); ++i)
-        {
-            const CluicheTest::StageResult* result = registry.GetResult(mNavigableStages[i]);
-            if (!result || result->state == CluicheTest::StageResult::State::kNotRun)
-                ++pending;
-            else if (result->state == CluicheTest::StageResult::State::kPassed)
-                ++passed;
-            else
-                ++failed;
-        }
+        const BootMenuLogic::Counts counts = mLogic.CountBySeverity();
+        ImGui::SameLine(0.0f, 24.0f);
+        ImGui::TextColored(ImVec4(0.29f, 0.88f, 0.29f, 1.0f), "Passed: %u", counts.passed);
+        ImGui::SameLine();
+        ImGui::TextColored(ImVec4(0.88f, 0.29f, 0.29f, 1.0f), "Failed: %u", counts.failed);
+        ImGui::SameLine();
+        ImGui::TextDisabled("Pending: %u", counts.pending);
     }
-    else
-    {
-        pending = mNavigableStages.Size();
-    }
-
-    ImGui::SameLine(0.0f, 24.0f);
-    ImGui::TextColored(ImVec4(0.29f, 0.88f, 0.29f, 1.0f), "Passed: %u", passed);
-    ImGui::SameLine();
-    ImGui::TextColored(ImVec4(0.88f, 0.29f, 0.29f, 1.0f), "Failed: %u", failed);
-    ImGui::SameLine();
-    ImGui::TextDisabled("Pending: %u", pending);
 
     // Footer
     ImGui::Separator();
     ImGui::TextDisabled("Enter = Launch");
 
     ImGui::End();
-}
-
-const char* BootMenuModule::GetStatusLabel(const Dia::Core::StringCRC& stageCrc) const
-{
-    if (!CluicheTest::TestResultsRegistry::IsCreated())
-        return "NOT RUN";
-
-    const CluicheTest::StageResult* result =
-        CluicheTest::TestResultsRegistry::GetInstance().GetResult(stageCrc);
-    if (!result)
-        return "NOT RUN";
-
-    switch (result->state)
-    {
-    case CluicheTest::StageResult::State::kPassed:  return "PASSED";
-    case CluicheTest::StageResult::State::kFailed:  return "FAILED";
-    case CluicheTest::StageResult::State::kTimeout: return "TIMEOUT";
-    case CluicheTest::StageResult::State::kRunning: return "RUNNING";
-    default:                                        return "NOT RUN";
-    }
-}
-
-bool BootMenuModule::IsLoadedThisSession(unsigned int index) const
-{
-    return (mLoadedBitfield & (1u << index)) != 0;
-}
-
-void BootMenuModule::MarkLoaded(unsigned int index)
-{
-    mLoadedBitfield |= (1u << index);
 }
 
 void BootMenuModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
@@ -261,4 +270,4 @@ void BootMenuModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 
 namespace { using BootMenuModule_ = Cluiche::AppFlow::BootMenuModule; }
 DIA_MODULE(BootMenuModule_);
-DIA_DESCRIBE(BootMenuModule_::kTypeId, "Displays the CluicheTest boot menu for selecting which test stage to run.");
+DIA_DESCRIBE(BootMenuModule_::kTypeId, "Displays a boot menu for selecting which stage to launch, with optional per-stage status badges.");

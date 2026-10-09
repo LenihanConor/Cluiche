@@ -129,6 +129,9 @@
     <ClCompile Include="Modules\BootMenuLogic.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\BootMenuModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\EntityModule.h">
@@ -264,6 +267,9 @@
       <Filter>Modules</Filter>
     </ClInclude>
     <ClInclude Include="Modules\BootMenuLogic.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\BootMenuModule.h">
       <Filter>Modules</Filter>
     </ClInclude>
   </ItemGroup>
