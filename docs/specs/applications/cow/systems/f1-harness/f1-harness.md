@@ -64,6 +64,12 @@ Design:
 - **GDD Test 3 (Promotion Parity)** needs CluicheTest's regression coverage, which CoW work cannot run itself under AD-001. It is tracked as a dependency on the Cluiche/engine side (the promotion plan's verify task, task 6), not as a CoW deliverable, and F-1's lock does not wait on it.
 - The `--play` destination is a trivial stub `FrontEnd` stage built as part of F-1 (it logs "front end not yet built" and idles), so Test 1 is runnable now. G-1 replaces it.
 
+## Acceptance Metrics (from the GDD, CH-01)
+
+- Process launch to interactive debug menu: under 2 seconds.
+- Stage launch, return and re-launch cycle repeated 50 times: zero state leaks or crashes.
+- Event bus run of 10,000 messages: delivered exactly 1:1 with posted, zero drops, zero duplicates.
+
 ## Binding Decisions
 
 | Source | Constraint on F-1 |
