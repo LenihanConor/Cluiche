@@ -14,7 +14,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | Project | System | Features | Depends On |
 |---------|--------|----------|------------|
-| CoW | F-1: BootMenuModule promotion + `StageStatusModule` (7 tasks) | [spec](specs/applications/cow/systems/f1-harness/bootmenu-promotion.md) / [plan](specs/applications/cow/systems/f1-harness/bootmenu-promotion.plan.md). Edits Baseline + CluicheTest (signed off) | Nothing |
+| ~~CoW~~ | F-1: BootMenuModule promotion + `StageStatusModule` (7 tasks) | [spec](specs/applications/cow/systems/f1-harness/bootmenu-promotion.md) / [plan](specs/applications/cow/systems/f1-harness/bootmenu-promotion.plan.md). Edits Baseline + CluicheTest (signed off) | Nothing |
 | ~~Dia~~ | F-1: DiaCLI `cow` target + `scaffold sln-add --root` (skeleton B1, B2) | [spec](specs/applications/cow/systems/f1-harness/cow-app-skeleton.md) / [plan](specs/applications/cow/systems/f1-harness/cow-app-skeleton.plan.md). DiaCLI + `pipeline.toml` (signed off) | Nothing; can run alongside the promotion |
 | ~~Dia~~ | F-1: DiaCLI data-driven target registry (scaffold-app task 1); makes the `cow` target toml-only | [scaffold-app.md](specs/applications/dia/systems/diacli/scaffold-app.md). DiaCLI refactor, signed off; existing targets must resolve unchanged | Nothing |
 | CoW | F-1: CoW app skeleton (B3 to B7: project, manifests, `FrontEnd` stub, `Main.cpp`, verify) | Same spec/plan as the `cow` target row | Promotion complete |

@@ -3,7 +3,7 @@
 **Parent:** @docs/specs/applications/cow/systems/f1-harness/f1-harness.md
 **Design source:** `Output Docs/GDD/10_PrototypeStrategy/F1_Harness.md` (Test 2 Stage Launch and Return, Test 3 Promotion Parity)
 **Origin:** @docs/specs/applications/cluichetest/systems/applicationflow/imgui-bootstrap-menu.md (the CluicheTest feature this module came from)
-**Status:** `Approved`
+**Status:** `Done`
 **Plan:** @docs/specs/applications/cow/systems/f1-harness/bootmenu-promotion.plan.md
 
 ## Summary
