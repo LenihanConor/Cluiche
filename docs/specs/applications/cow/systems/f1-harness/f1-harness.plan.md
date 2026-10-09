@@ -28,15 +28,15 @@ System plan: tasks are the feature specs and the cross-cutting tooling work. Eac
 
 | # | Task | Phase | Status | Model | Notes |
 |---|------|-------|--------|-------|-------|
-| 1 | Execute the promotion plan (its 7 tasks) | A | Not Started | sonnet | Sign-off: baseline + CluicheTest (approved) |
-| 2 | Execute skeleton tasks B1 and B2 (DiaCLI `cow` target, `sln-add` path option) | B | Not Started | sonnet | DiaCLI only; independent of A, can run in parallel with task 1 (different files) |
-| 3 | Execute skeleton tasks B3 to B5 (project and solution, manifests and `FrontEnd` stub, `Main.cpp`) | B | Not Started | sonnet | Needs task 1 complete (menu in baseline) and task 2 |
-| 4 | Execute skeleton task B6 (verify end to end, including the boot-choice check and Visual Studio startup) | B, C | Not Started | haiku | Visual Studio F5 part is done by the user |
-| 5 | Mark boot-choice spec Done; update system spec feature rows | C | Not Started | haiku | `dia docs spec-done` |
-| 6 | **RED/GREEN:** `dia scaffold stage --app` (parameterise CluicheTest-specific names, paths and the 9 touch points) with tests | D | Not Started | sonnet | Uses `FrontEnd` as the reference. Existing CluicheTest scaffold output must be unchanged |
+| 1 | Execute the promotion plan (its 7 tasks) | A | Done | sonnet | Sign-off: baseline + CluicheTest (approved); Done |
+| 2 | Execute skeleton tasks B1 and B2 (DiaCLI `cow` target, `sln-add` path option) | B | Done | sonnet | DiaCLI only; independent of A, can run in parallel with task 1 (different files); Done |
+| 3 | Execute skeleton tasks B3 to B5 (project and solution, manifests and `FrontEnd` stub, `Main.cpp`) | B | Done | sonnet | Needs task 1 complete (menu in baseline) and task 2; Done |
+| 4 | Execute skeleton task B6 (verify end to end, including the boot-choice check and Visual Studio startup) | B, C | Done | haiku | Visual Studio F5 part is done by the user; Done |
+| 5 | Mark boot-choice spec Done; update system spec feature rows | C | Done | haiku | `dia docs spec-done`; Done |
+| 6 | **RED/GREEN:** `dia scaffold stage --app` (parameterise CluicheTest-specific names, paths and the 9 touch points) with tests | D | In Progress | sonnet | Uses `FrontEnd` as the reference. Existing CluicheTest scaffold output must be unchanged |
 | 7 | Implement the `new-cow-stage` skill per [new-cow-stage-skill.md](new-cow-stage-skill.md) | D | Not Started | haiku | After task 6. Spec Approved; trial run needs a locked testbed design |
 | 8 | `dia scaffold app` feature spec: [scaffold-app.md](../../../dia/systems/diacli/scaffold-app.md) | D | Spec Approved | opus | Written by interview. Includes the data-driven target registry (signed off) |
-| 9 | Implement `dia scaffold app` per its spec (its 5 tasks); prove by generating `ScratchApp` outside the committed tree and booting it | D | Not Started | sonnet | Needs task 8 approved and the registry refactor signed off. Its task 1 may run before the skeleton and make skeleton B1 toml-only. Do not commit the throwaway app |
+| 9 | Implement `dia scaffold app` per its spec (its 5 tasks); prove by generating `ScratchApp` outside the committed tree and booting it | D | Done | sonnet | Needs task 8 approved and the registry refactor signed off. Its task 1 may run before the skeleton and make skeleton B1 toml-only. Do not commit the throwaway app; Done |
 | 10 | Verify the DiaMessageBus tests pass, then correct `status: stub` in `dia.messagebus.architecture.module.md` | E | Not Started | haiku | Doc only; confirm with a fresh `dia run googletest --filter="*MessageBus*"` first |
 | 11 | Observation opportunity scan across all touched files; log suggestions in the notes | A to D | Not Started | haiku | Does not block Done |
 | 12 | Mark the F-1 system spec Done only when all child features are Approved or Done; record the deferred features | all | Not Started | haiku | System spec rule |
