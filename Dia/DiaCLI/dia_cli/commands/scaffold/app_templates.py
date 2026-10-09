@@ -133,6 +133,28 @@ def baseline_references(repo_root: Path) -> List[Dict]:
             "extra": extra,
             "link_lib": stem if output_referenced else None,
         })
+
+    # The baseline's sources may include Dia libraries it never declares a
+    # ProjectReference to (a static lib does not need one to compile). The app
+    # links the baseline whole-archive, so those libraries must be linked too.
+    known = {re.split(r"[\\/]", r["include"])[-1].rsplit(".", 1)[0] for r in refs}
+    baseline_dir = vcxproj.parent
+    included = set()
+    for src in list(baseline_dir.rglob("*.cpp")) + list(baseline_dir.rglob("*.h")):
+        included.update(re.findall(r"#\s*include\s*<(Dia\w+)/", src.read_text(encoding="utf-8", errors="ignore")))
+    for lib in sorted(included - known):
+        lib_proj = Path(repo_root) / "Dia" / lib / f"{lib}.vcxproj"
+        if not lib_proj.exists():
+            continue
+        lib_guid = ET.parse(lib_proj).getroot().find(f".//{_MSBUILD_NS}ProjectGuid")
+        if lib_guid is None or not (lib_guid.text or "").strip():
+            continue
+        refs.append({
+            "include": f"..\\..\\Dia\\{lib}\\{lib}.vcxproj",
+            "project": lib_guid.text.strip(),
+            "extra": [],
+            "link_lib": lib,
+        })
     return refs
 
 
