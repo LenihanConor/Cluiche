@@ -40,7 +40,7 @@ Mirror CluicheTest's structure, trimmed to what a Boot menu and stub stage need.
 **Module and stream trimming.** Keep what the Boot path uses; drop test-specific modules (`TestStageHUDModule`, the per-stage visual debugger/HUD modules, `PickingModule`, `Physics2DModule`, `AssetRuntime*`). Specific points found:
 
 - `MainStateProducerModule` in CluicheTest maps to `TestMainStateProducerModule`, a CluicheTest type. CoW must use the baseline `MainStateProducerModule`.
-- `BootMenuNavRequest` is consumed by `SimNavigationHandlerModule`, so it and the channel stay.
+- `BootMenuNavRequest` is read by `SimNavigationHandlerModule` on SimPU (a baseline module, verified), so both stay.
 - `BootMenu` refers to `DebugUI` and `DebugServerHost`, so both stay.
 - Final module and stream lists are decided in task 3 by trimming and then running `dia validate manifest` and launching, not guessed here.
 
@@ -84,4 +84,3 @@ Mirror CluicheTest's structure, trimmed to what a Boot menu and stub stage need.
 
 1. CluicheTest's `Main.cpp` holds generic bootstrap (path-alias registration, base-dir computation, schema dump). Copying it into CoW duplicates engine-generic code. A shared helper would belong in the baseline or Dia, so it needs your decision. Default here: copy only what CoW needs and log a Dia need for the helper.
 2. The `reflect` pipeline stage runs `--dump-schema` on the binary to write `registeredtypes.diaschema`. Including it means copying the ~150-line schema dump into CoW's `main()`. Default here: omit `reflect` from CoW's pipeline for now (the runtime does not need the schema file) and add it when the editor needs CoW's schema.
-3. `BootMenuNavRequest` handling lives in a CluicheTest-era `SimNavigationHandlerModule`; task 3 must confirm it is baseline and not test-specific.
