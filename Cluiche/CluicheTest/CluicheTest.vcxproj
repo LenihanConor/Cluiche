@@ -74,6 +74,7 @@
     <ClCompile Include="Modules\TestStages\EntitySpatialTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\Drawers\SpawnerTestDrawer.cpp" />
     <ClCompile Include="Modules\TestStages\Drawers\GridVisibilityDrawer.cpp" />
+    <ClCompile Include="Modules\TestStatusBridgeModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\TestMainStateProducerModule.h" />
@@ -130,6 +131,7 @@
     <ClInclude Include="Modules\TestStages\EntitySpatialTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\Drawers\SpawnerTestDrawer.h" />
     <ClInclude Include="Modules\TestStages\Drawers\GridVisibilityDrawer.h" />
+    <ClInclude Include="Modules\TestStatusBridgeModule.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Messages\order_messages.diagamemessages" />

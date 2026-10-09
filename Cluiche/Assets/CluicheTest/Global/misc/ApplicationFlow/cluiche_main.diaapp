@@ -831,14 +831,40 @@
                     "channels": []
                 },
                 {
+                    "instance_id": "StageStatus",
+                    "type_id": "StageStatusModule",
+                    "stages": [
+                        "Boot"
+                    ],
+                    "dependencies": [],
+                    "channels": []
+                },
+                {
+                    "instance_id": "TestStatusBridge",
+                    "type_id": "TestStatusBridgeModule",
+                    "stages": [
+                        "Boot"
+                    ],
+                    "dependencies": [
+                        "StageStatus"
+                    ],
+                    "channels": []
+                },
+                {
                     "instance_id": "BootMenu",
                     "type_id": "BootMenuModule",
                     "stages": [
                         "Boot"
                     ],
                     "dependencies": [
-                        "DebugUI"
+                        "DebugUI",
+                        "StageStatus",
+                        "TestStatusBridge"
                     ],
+                    "config": {
+                        "title": "CluicheTest — Bootstrap",
+                        "project": "Project: CluicheTest v0.1"
+                    },
                     "channels": [
                         {
                             "id": "BootMenuNavRequest",
