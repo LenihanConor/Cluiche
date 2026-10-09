@@ -1,6 +1,7 @@
 """dia scaffold sln-add — register a project in Cluiche.sln."""
 from __future__ import annotations
 
+import os
 import re
 import uuid
 from pathlib import Path
@@ -156,16 +157,23 @@ def _find_project_guid_by_name(sln_text: str, name: str) -> Optional[str]:
     help="Comma-separated project names this depends on (looks up their GUIDs).",
 )
 @click.option(
+    "--root",
+    default="Dia",
+    show_default=True,
+    metavar="DIR",
+    help="Repo-relative directory containing <name>/<name>.vcxproj (e.g. Cluiche for applications).",
+)
+@click.option(
     "--dry-run",
     is_flag=True,
     default=False,
     help="Print what would change without modifying the .sln file.",
 )
-def sln_add(project_name: str, folder: str, deps: Optional[str], dry_run: bool) -> None:
+def sln_add(project_name: str, folder: str, deps: Optional[str], root: str, dry_run: bool) -> None:
     """Add a project to Cluiche.sln with configs and folder placement.
 
     PROJECT_NAME is the project to add (e.g. DiaPipelineEditor).
-    The .vcxproj must already exist at Dia/<name>/<name>.vcxproj.
+    The .vcxproj must already exist at <root>/<name>/<name>.vcxproj (root defaults to Dia).
     """
     repo_root = find_repo_root(__file__)
     sln_path = repo_root / "Cluiche" / "Cluiche.sln"
@@ -174,13 +182,13 @@ def sln_add(project_name: str, folder: str, deps: Optional[str], dry_run: bool) 
         raise click.ClickException(f"Solution not found: {sln_path}")
 
     # Determine vcxproj path (relative to sln dir)
-    vcxproj_path = repo_root / "Dia" / project_name / f"{project_name}.vcxproj"
+    vcxproj_path = repo_root / root / project_name / f"{project_name}.vcxproj"
     if not vcxproj_path.exists() and not dry_run:
         raise click.ClickException(
             f"vcxproj not found: {vcxproj_path}\n"
-            f"Run 'dia scaffold plugin' or 'dia scaffold module' first."
+            f"Run 'dia scaffold plugin' or 'dia scaffold module' first, or pass --root."
         )
-    vcxproj_rel = f"..\\Dia\\{project_name}\\{project_name}.vcxproj"
+    vcxproj_rel = os.path.relpath(vcxproj_path, sln_path.parent).replace("/", "\\")
 
     project_guid = _make_project_guid(project_name)
 
