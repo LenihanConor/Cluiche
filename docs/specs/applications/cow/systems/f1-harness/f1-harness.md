@@ -14,7 +14,7 @@ CoW needs 12 standalone testbeds launchable from one menu. Dia already has the p
 
 ## Goals
 
-1. Dev builds boot to the debug menu; `--play` jumps to a stub front-end stage; shipping builds contain no menu code.
+1. Dev builds boot to the debug menu, which has a Play entry for a stub front-end stage; shipping builds boot straight to the front end and contain no menu code.
 2. `BootMenuModule` lives in CluicheGameBaseline with no CluicheTest types; CluicheTest's ~25 stages behave unchanged through it.
 3. Menu lists a game's `Boot` transitions, launches any, and returns cleanly with no state leaking between launches.
 4. Confirm the DiaMessageBus Primary/Reaction semantics on a live stage; correct the stale `status: stub` in its module doc.
@@ -24,7 +24,7 @@ CoW needs 12 standalone testbeds launchable from one menu. Dia already has the p
 ## Non-Goals
 
 1. Event replay from file (deferred until V-3 needs canned data).
-2. The real front end's screens (G-1); F-1 only provides a stub destination for `--play`.
+2. The real front end's screens (G-1); F-1 only provides a stub destination for the Play entry.
 3. Touch input on the menu.
 4. Any simulation or visual content.
 5. Crash containment: a crashed testbed stage kills the process and the dev relaunches (GDD decision). No try/catch-style recovery around stage execution or transitions.
@@ -34,8 +34,8 @@ CoW needs 12 standalone testbeds launchable from one menu. Dia already has the p
 | Feature | Spec | Status |
 |---------|------|--------|
 | BootMenuModule promotion + StageStatusModule | @docs/specs/applications/cow/systems/f1-harness/bootmenu-promotion.md | Approved |
-| Boot choice (`--play`, dev/shipping gating) | TBD | Draft |
-| CoW app skeleton (`CoW.diaapp`, Boot stage, stub front end) + `dia scaffold stage --app` | TBD | Draft |
+| Boot choice (Play menu entry, dev/shipping gating) | @docs/specs/applications/cow/systems/f1-harness/boot-choice.md | Draft |
+| CoW app skeleton (project, manifests, Boot stage, stub front end) + `dia scaffold stage --app` | @docs/specs/applications/cow/systems/f1-harness/cow-app-skeleton.md | Draft |
 | Bus live verification (Test 4) | TBD | Draft |
 | Bus traffic file recorder (Debug-only) | TBD | Draft |
 | Debug command / inspector host | TBD | Draft |
@@ -54,7 +54,7 @@ Design:
 1. **Status abstraction.** A concrete baseline `StageStatusModule` holding generic per-stage status (label, severity, visited). `BootMenuModule` finds it through an optional `ModuleRef` (an interface cannot be found by `ModuleRef`); with none, badges are omitted. A CluicheTest bridge module feeds it from `TestResultsRegistry`; CoW adds none. See the feature spec.
 2. **Promotion.** Move `BootMenuModule` to `Cluiche/CluicheGameBaseline/Modules/`, retitle the window from the app name rather than a hard-coded "CluicheTest", update CluicheTest includes and vcxproj entries.
 3. **Dev vs shipping.** One target; a compile-time define (shipping = Release/`DIA_SHIPPING`) excludes `BootMenuModule` registration and the Boot transitions. Test 1's "absent, not hidden" is checked by manual symbol inspection of a shipping build (no automated guard).
-4. **Boot choice.** `--play` is read from the command line at startup and selects the first transition target (stub front-end stage) instead of the `Boot` stage. CoW's `main()` reads the flag (no baseline change).
+4. **Boot choice.** Dev builds load `cow.diagame` (initial stage `Boot`, whose menu lists `FrontEnd` as the Play entry). Shipping builds load `cow.shipping.diagame` (initial stage `FrontEnd`, no Boot stage or menu). A compile-time define selects the manifest. No command-line flag. See the boot-choice feature spec.
 5. **CoW app.** `Cluiche/CoW/` gets `CoW.diaapp` with a `Boot` stage whose transitions list the testbed stages, plus a stub `FrontEnd` stage. `dia scaffold stage` gains an `--app` option so CoW stages are generated under `Cluiche/CoW/`.
 6. **Recorder.** New optional Debug-only recorder in DiaMessageBus writes per-message records (tick, type id, payload bytes) to a versioned file as messages dispatch (new Dia capability).
 7. **Debug host.** Reuse `DebugPanelPageModule`/`IDebugDomain` as the shared host; F-1 proves a stand-in command and panel register without stage-specific wiring.
@@ -62,7 +62,7 @@ Design:
 ## External Dependencies
 
 - **GDD Test 3 (Promotion Parity)** needs CluicheTest's regression coverage, which CoW work cannot run itself under AD-001. It is tracked as a dependency on the Cluiche/engine side (the promotion plan's verify task, task 6), not as a CoW deliverable, and F-1's lock does not wait on it.
-- The `--play` destination is a trivial stub `FrontEnd` stage built as part of F-1 (it logs "front end not yet built" and idles), so Test 1 is runnable now. G-1 replaces it.
+- The Play destination is a trivial stub `FrontEnd` stage built as part of F-1 (it logs "front end not yet built" and idles), so Test 1 is runnable now. G-1 replaces it.
 
 ## Acceptance Metrics (from the GDD, CH-01)
 
@@ -83,6 +83,6 @@ Per the engine/application boundary, recorder and `scaffold --app` are generic c
 
 ## Open Design Questions
 
-1. ~~How does the baseline read `--play`?~~ **Resolved:** CoW's `main()` scans `argv` (as CluicheTest's does for `--automation`) and selects the initial stage, `FrontEnd` vs `Boot`, before Application start. No new baseline API.
+1. ~~How does the baseline read `--play`?~~ **Superseded:** no flag. The front-end jump is a Boot menu entry (a stage transition), which needs no argument parsing or DiaCLI forwarding.
 2. ~~Does the recorder format need to be replay-ready?~~ **Resolved:** yes. The recorder writes versioned binary per-message records (tick, type id, raw payload bytes), not `LedgerSnapshot`s (which hold counts only, no payloads). This needs a Debug-only hook in `Bus` dispatch and per-type payload size from `RegisterType`. The replay reader stays deferred to V-3.
 3. ~~What proves the menu is absent from shipping?~~ **Resolved:** manual inspection only. Inspect the shipping binary's symbols for `BootMenuModule` and confirm no Boot-stage transitions, then run it. No build guard or automated check. Accepted risk: nothing prevents a later regression, so re-inspect whenever shipping configuration changes.
