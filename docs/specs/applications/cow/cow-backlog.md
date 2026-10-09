@@ -19,6 +19,27 @@ Order and parallelism: [f1-harness.plan.md](systems/f1-harness/f1-harness.plan.m
 
 ---
 
+## Features to Be Designed (GDD)
+
+The testbeds and the pieces each one absorbs, from `TestbedRoster.md`. The GDD design session designs these; when a piece has a locked testbed design, cross it out here (`~~like this~~`) and add its implementation work to **Spec Work Needed** below. A testbed row is struck only when all its pieces are.
+
+| # | Testbed | Absorbs (one line each, cross out when designed) | Notes |
+|---|---------|--------------------------------------------------|-------|
+| F-1 | Harness | Boot & Debug Menu · Event Bus & Inspector · Record & Replay | `F1_Harness.md` drafted, challenge pass done; implementation specs exist (see Ready to Build) |
+| F-2 | Core Runtime | Clock & Determinism · RNG · Data Loading & Band Resolver · save/load round-trip | |
+| S-1 | World | World Generation · Single Cell (mode) · Living Ecology (mode) | |
+| S-2 | Dragon | Dragon Sandbox (isolated mode) · Dragon in the World (live mode) · Pathfinding | |
+| S-3 | Lineage & Hearth | Single Hearth · Hearth Economy & Lifecycle · Breeding & Drift | Exactly the dependency graph's B4/B6/C6 bucket |
+| S-4 | Dynasty | Command Chain · Clans & Politics · Apotheosis (late-game preset) | |
+| S-5 | Endurance | Swarm & Scale · History & Save | Both are long runs and large loads, so they share one testbed |
+| V-1 | Map Visuals | Grid · overlays · fog of war · camera | |
+| V-2 | Dragon & Nest Visuals | Dragon Visuals · Nest Diorama | |
+| V-3 | UI & Interaction | UI kit · Input · Lineage View · Event Readability (canned events first, then live) | |
+| A-1 | Audio | none listed | Dia has no audio module |
+| G-1 | First Playable | Front End · every testbed's real-visuals toggle switched on | |
+
+---
+
 ## Spec Work Needed
 
 | Item | What's needed | Depends On |
