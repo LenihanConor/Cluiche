@@ -47,7 +47,7 @@ Instructions the skill gives Claude, in order:
 
 | # | Task | Test | Status | Model |
 |---|------|------|--------|-------|
-| 1 | Write the skill and command files from `new-cluichetest-stage.md`, replacing the domain patterns with the GDD lookup and CoW paths | AC1, AC2, AC3 | Draft | haiku |
+| 1 | Write the skill and command files from `new-cluichetest-stage.md`, replacing the domain patterns with the GDD lookup and CoW paths | AC1, AC2, AC3 | Done | haiku |
 | 2 | Trial run on the first real testbed stage after `scaffold stage --app` exists (the stub stage cannot prove AC5); fix the skill from what it shows | AC4, AC5 | Draft | sonnet |
 
 ## Binding Decisions
