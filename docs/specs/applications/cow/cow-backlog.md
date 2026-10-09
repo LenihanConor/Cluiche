@@ -51,7 +51,7 @@ Each testbed is one stage (AD-005); modes and presets are panels inside the stag
 |------|-------|
 | DiaMessageBus module doc: `status: stub` is stale | Confirm with a fresh `dia run googletest --filter="*MessageBus*"`, then edit the doc (approved) |
 | `dia docs spec-scaffold` writes the wrong parent and fails on a relative `--output-dir` | Found while scaffolding F-1; DiaCLI fix, not yet signed off |
-| Shared application-bootstrap helper | CluicheTest's `Main.cpp` has generic path-alias and base-dir code CoW copies. Dia need #5 in dia-needs.md if wanted |
+| Shared application-bootstrap helper | CluicheTest's `Main.cpp` has generic path-alias and base-dir code CoW copies. not yet logged in dia-needs.md; log it if wanted |
 
 ---
 
