@@ -22,7 +22,7 @@ CoW has two boot paths. A dev build starts at the `Boot` stage and its debug men
 
 ## Design
 
-- A compile-time define selects the manifest. `Main.cpp` loads `cow.diagame` in dev builds and `cow.shipping.diagame` when the define is set. The shipping manifest sets `initial_stage: FrontEnd`, declares no `Boot` stage, and omits `BootMenu` and its channel.
+- A compile-time define selects the manifest. `Main.cpp` loads `cow.diagame` in dev builds and `cow.shipping.diagame` when the define is set. The shipping manifest sets `initial_stage: FrontEnd`, declares no `Boot` stage, omits `BootMenu` and its channel, and gives `FrontEnd` no `"Boot"` transition (it would otherwise dangle). Because the main `.diaapp` is one file listing stages and modules, this means a second main manifest (`cow_main.shipping.diaapp`); the global module list is duplicated between the two.
 - The define also excludes `BootMenuModule`'s registration in the baseline (`DIA_MODULE`) so the module is absent from the binary, not only unused. Because the baseline is a shared library, this needs a define the baseline recognises; no existing shipping define was found, so the nearest candidate is the Release configuration.
 - Dev builds may be Debug or Release; only the shipping define removes the menu.
 
@@ -41,7 +41,7 @@ CoW has two boot paths. A dev build starts at the `Boot` stage and its debug men
 | # | Task | Test | Status | Model |
 |---|------|------|--------|-------|
 | 1 | Add the `FrontEnd` transition from `Boot` (if not already in the skeleton) and confirm dev path | AC1 | Draft | haiku |
-| 2 | Add `cow.shipping.diagame` and shipping `.diaapp` variant; select by define in `Main.cpp` | AC2, AC4 | Draft | sonnet |
+| 2 | Add `cow.shipping.diagame` and `cow_main.shipping.diaapp`; select by define in `Main.cpp`; make `pipeline.toml` deploy the shipping manifests for the shipping configuration | AC2, AC4 | Draft | sonnet |
 | 3 | Gate `BootMenuModule` registration behind the shipping define; add the define to the shipping configuration | AC3, AC5 | Draft | sonnet |
 | 4 | Verify: run dev and shipping builds through `dia`, inspect the shipping binary's symbols manually | AC1 to AC5 | Draft | haiku |
 
@@ -55,5 +55,6 @@ CoW has two boot paths. A dev build starts at the `Boot` stage and its debug men
 
 ## Open Design Questions
 
-1. Which configuration defines "shipping"? There is no `DIA_SHIPPING` today. Options: a new define on a dedicated configuration, or the existing Release configuration. Needs your decision before task 3.
-2. If `BootMenuModule` lives in a shared static library, the linker may still pull it in for other apps; task 3 must confirm the gating removes it from the CoW binary.
+1. The shipping manifest duplicates the dev main manifest's global module list; they can drift. Alternative: generate the shipping manifest from the dev one in the pipeline. Default here: duplicate, since only two small differences exist, and revisit when the module list grows.
+2. Which configuration defines "shipping"? There is no `DIA_SHIPPING` today. Options: a new define on a dedicated configuration, or the existing Release configuration. Needs your decision before task 3.
+3. If `BootMenuModule` lives in a shared static library, the linker may still pull it in for other apps; task 3 must confirm the gating removes it from the CoW binary.

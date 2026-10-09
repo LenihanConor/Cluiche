@@ -26,18 +26,27 @@ Give CoW a buildable, launchable executable that mirrors CluicheTest: `dia run c
 
 ## Design
 
-Mirror CluicheTest's structure, trimmed to what a Boot menu and stub stage need:
+Mirror CluicheTest's structure, trimmed to what a Boot menu and stub stage need. Verified against CluicheTest's `Main.cpp`, `cluichetest.diagame`, `cluiche_main.diaapp`, a stage directory, `pipeline.toml` and DiaCLI.
 
-| Piece | CluicheTest | CoW |
-|-------|-------------|-----|
-| Project | `Cluiche/CluicheTest/CluicheTest.vcxproj` | `Cluiche/CoW/CoW.vcxproj`, added to `Cluiche.sln`, linking Dia and CluicheGameBaseline |
-| Entry | `Main.cpp`: compose manifest, register path aliases, validate, run loop | `Cluiche/CoW/Main.cpp`: same flow, without `TestResultsRegistry` and with the schema dump only if needed (open question 1) |
-| Assets | `Cluiche/Assets/CluicheTest/cluichetest.diagame` | `Cluiche/Assets/CoW/cow.diagame` |
-| Main manifest | `cluiche_main.diaapp` (`initial_stage: Boot`, global modules, channels) | `cow_main.diaapp`: same global modules and channels minus test-specific ones (HUD, test stage modules); `initial_stage: Boot`; Boot stage runs `BootMenu` with config `title`/`project` |
-| Stages | ~25 test stages | `FrontEnd` stub stage only |
-| CLI | `cluichetest` target | `cow` target in the launch, run, pipeline and deploy target maps (`pipeline.toml` if needed) |
+| Piece | CluicheTest (verified) | CoW |
+|-------|------------------------|-----|
+| Project | `Cluiche/CluicheTest/CluicheTest.vcxproj` with `ProjectReference`s to the Dia libraries | `Cluiche/CoW/CoW.vcxproj` in `Cluiche.sln`, same references trimmed to what CoW links, plus CluicheGameBaseline |
+| Entry | `Main.cpp` (354 lines): `--dump-schema` early exit, compose `.diagame`, register path aliases, validate, create `TestResultsRegistry`, `Application` loop at 30 Hz | `Cluiche/CoW/Main.cpp`: same flow without `TestResultsRegistry`; schema dump per open question 3 |
+| Game manifest | `cluichetest.diagame`: window title, `asset_catalogue`, `observation` file, path aliases; imports the main `.diaapp` and every `.diastage` | `cow.diagame` with the same keys (`cow.diaobservation`, a minimal `assets.catalogue.json`) importing the main `.diaapp` and `FrontEnd` stage |
+| Main manifest | `cluiche_main.diaapp`: `initial_stage: Boot`; 26 stage entries; 24 streams; 3 PUs (Main, Sim, Render) with global modules; Boot-scoped `LoadingScreenModule`, `BootMenu` | `cow_main.diaapp`: stage list `Boot` and `FrontEnd`; only the streams and modules the Boot path needs (see below) |
+| Stage | `.diastage` pointing at a stage `.diaapp` (SimPU stage module with channel roles); plus an entry in the main `.diaapp` stage list with `"transitions": ["Boot"]`; plus a `.diagame` import | Same three pieces for `FrontEnd`, with the stage module in `Cluiche/CoW/` |
+| CLI | `cluichetest` entries in `launch.py` exe map, `pipeline.py` help, `deploy_runner.py` list, `pipeline.toml` `[targets.cluichetest]` | `cow` entries in the same places (see Tasks) |
 
-The `FrontEnd` stub is a transition from `Boot` (so it appears as the "Play" entry) and returns to `Boot` the same way CluicheTest stages do.
+**Module and stream trimming.** Keep what the Boot path uses; drop test-specific modules (`TestStageHUDModule`, the per-stage visual debugger/HUD modules, `PickingModule`, `Physics2DModule`, `AssetRuntime*`). Specific points found:
+
+- `MainStateProducerModule` in CluicheTest maps to `TestMainStateProducerModule`, a CluicheTest type. CoW must use the baseline `MainStateProducerModule`.
+- `BootMenuNavRequest` is consumed by `SimNavigationHandlerModule`, so it and the channel stay.
+- `BootMenu` refers to `DebugUI` and `DebugServerHost`, so both stay.
+- Final module and stream lists are decided in task 3 by trimming and then running `dia validate manifest` and launching, not guessed here.
+
+**Return to Boot.** A stage returns because its entry in the main `.diaapp` stage list has `"transitions": ["Boot"]`, and `Boot` lists the stage in its own transitions. `FrontEnd` gets both.
+
+**Pipeline.** `dia run cow` goes through `pipeline.toml`. CluicheTest's target has stages `compile-code, reflect, build-assets, deploy`, `build_deps` (protobuf, bgfx shaders), `catalogue_manifest`, and a `deploy.files` list of SFML DLLs, manifests, the schema, and one entry per stage file. Deploy entries accept `*` patterns, so CoW can use one glob for its stage assets instead of per-file entries.
 
 ## Acceptance Criteria
 
@@ -56,11 +65,11 @@ The `FrontEnd` stub is a transition from `Boot` (so it appears as the "Play" ent
 
 | # | Task | Test | Status | Model |
 |---|------|------|--------|-------|
-| 1 | **RED/GREEN:** add the `cow` target to DiaCLI (launch, run, pipeline, deploy maps) with tests mirroring the existing target tests | AC2 | Draft | sonnet |
+| 1 | **RED/GREEN:** add the `cow` target to DiaCLI (`launch.py` exe map, `pipeline.py`, `deploy_runner.py`) and a `[targets.cow]` block in `pipeline.toml` (stages, `app_name`, `catalogue_manifest`, `build_deps`, deploy files with a stage-asset glob), with tests mirroring the existing target tests | AC2 | Draft | sonnet |
 | 2 | Create `CoW.vcxproj`, filters, and `Cluiche.sln` entry (`dia docs vcxproj-add`) | AC1 | Draft | sonnet |
-| 3 | Create `Cluiche/Assets/CoW/` manifests (`cow.diagame`, `cow_main.diaapp`) and the `FrontEnd` stub stage (module, `.diastage`); validate | AC3, AC4, AC5 | Draft | sonnet |
+| 3 | Create `Cluiche/Assets/CoW/`: `cow.diagame`, `cow_main.diaapp` (trimmed per Design), `cow.diaobservation`, minimal `assets.catalogue.json`; the `FrontEnd` stub stage (`.diastage`, stage `.diaapp`, stage module, main-manifest entry with `"Boot"` transition, `.diagame` import); validate | AC3, AC4, AC5 | Draft | sonnet |
 | 4 | Write `Cluiche/CoW/Main.cpp` | AC3, AC8 | Draft | sonnet |
-| 5 | **RED/GREEN:** add `--app` to `dia scaffold stage` with tests | AC6 | Draft | sonnet |
+| 5 | **RED/GREEN:** add `--app` to `dia scaffold stage` with tests. The command currently hard-codes CluicheTest's namespace, asset paths, `cluiche_main.diaapp`, `.diagame`, `.vcxproj` and filters (9 touch points) and does not touch `pipeline.toml`; `--app` must parameterise all of these | AC6 | Draft | sonnet |
 | 6 | Verify: `dia run cow` end to end (menu, launch FrontEnd, return, exit), then `dia run googletest` and a CluicheTest launch | AC1 to AC8 | Draft | haiku |
 
 ## Binding Decisions
@@ -74,5 +83,5 @@ The `FrontEnd` stub is a transition from `Boot` (so it appears as the "Play" ent
 ## Open Design Questions
 
 1. CluicheTest's `Main.cpp` holds generic bootstrap (path-alias registration, base-dir computation, schema dump). Copying it into CoW duplicates engine-generic code. A shared helper would belong in the baseline or Dia, so it needs your decision. Default here: copy only what CoW needs and log a Dia need for the helper.
-2. How much of `cluiche_main.diaapp` is test-specific? Task 3 starts by listing global modules and channels one by one and keeping only what the Boot menu and stub need.
-3. Does the schema dump need to exist for CoW now (editor tooling), or can it wait?
+2. The `reflect` pipeline stage runs `--dump-schema` on the binary to write `registeredtypes.diaschema`. Including it means copying the ~150-line schema dump into CoW's `main()`. Default here: omit `reflect` from CoW's pipeline for now (the runtime does not need the schema file) and add it when the editor needs CoW's schema.
+3. `BootMenuNavRequest` handling lives in a CluicheTest-era `SimNavigationHandlerModule`; task 3 must confirm it is baseline and not test-specific.
