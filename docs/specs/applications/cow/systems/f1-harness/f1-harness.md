@@ -27,6 +27,7 @@ CoW needs 12 standalone testbeds launchable from one menu. Dia already has the p
 2. The real front end's screens (G-1); F-1 only provides a stub destination for `--play`.
 3. Touch input on the menu.
 4. Any simulation or visual content.
+5. Crash containment: a crashed testbed stage kills the process and the dev relaunches (GDD decision). No try/catch-style recovery around stage execution or transitions.
 
 ## Features
 
@@ -57,6 +58,11 @@ Design:
 5. **CoW app.** `Cluiche/CoW/` gets `CoW.diaapp` with a `Boot` stage whose transitions list the testbed stages, plus a stub `FrontEnd` stage. `dia scaffold stage` gains an `--app` option so CoW stages are generated under `Cluiche/CoW/`.
 6. **Recorder.** New optional Debug-only recorder in DiaMessageBus writes per-message records (tick, type id, payload bytes) to a versioned file as messages dispatch (new Dia capability).
 7. **Debug host.** Reuse `DebugPanelPageModule`/`IDebugDomain` as the shared host; F-1 proves a stand-in command and panel register without stage-specific wiring.
+
+## External Dependencies
+
+- **GDD Test 3 (Promotion Parity)** needs CluicheTest's regression coverage, which CoW work cannot run itself under AD-001. It is tracked as a dependency on the Cluiche/engine side (the promotion plan's verify task, task 6), not as a CoW deliverable, and F-1's lock does not wait on it.
+- The `--play` destination is a trivial stub `FrontEnd` stage built as part of F-1 (it logs "front end not yet built" and idles), so Test 1 is runnable now. G-1 replaces it.
 
 ## Binding Decisions
 
