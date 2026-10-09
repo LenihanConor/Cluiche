@@ -19,7 +19,7 @@ Tasks 1 to 3 edit CluicheGameBaseline and CluicheTest. Per AD-001 each needs exp
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | **RED:** write tests for `StageStatusModule` (`Set`/`Get`, unknown stage returns null, overwrite, capacity limit). Prove RED with quoted output. | AC2 | Not Started | sonnet | TDD. Needs sign-off (baseline). |
+| 1 | **RED:** write tests for `StageStatusModule` (`Set`/`Get`, unknown stage returns null, overwrite, capacity limit). Prove RED with quoted output. | AC2 | Done | sonnet | TDD. Needs sign-off (baseline).; RED proven: 4/5 StageStatus tests fail on assertions (stub Set/Get). Signed off (baseline) |
 | 2 | **GREEN:** add `StageStatusModule` (header, cpp, `Severity`/`StageStatus`, vcxproj, filters, module doc). Refactor. | AC2 | Not Started | sonnet | Needs sign-off (baseline). |
 | 3 | **RED:** write tests for the promoted menu's pure logic (visited bitfield, severity counts, config defaults, no-status behaviour) via an extracted testable helper in `Testing/`. Prove RED. | AC3, AC4, AC5, AC6 | Not Started | sonnet | Menu draw code itself is covered by task 6. |
 | 4 | **GREEN:** `git mv` `BootMenuModule` to `Cluiche/CluicheGameBaseline/Modules/`; remove all `TestResultsRegistry` use; add optional `ModuleRef<StageStatusModule>`; read `title`/`project` from module `config`; footer only when a status module exists; generalise the `DIA_DESCRIBE` text; mark visited on launch; fix includes and vcxproj in both projects. | AC1, AC3, AC4, AC5, AC6 | Not Started | sonnet | Needs sign-off (baseline + CluicheTest). Confirm module `config` is delivered to `BootMenuModule` (spec open point). |
