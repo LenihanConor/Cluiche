@@ -33,7 +33,11 @@ def _validate(repo_root: Path, name: str, stage: str) -> None:
         )
     if stage == "Boot":
         raise click.ClickException("Stage name 'Boot' is reserved for the baseline boot stage.")
+    check_stage_type_clash(repo_root, stage)
 
+
+def check_stage_type_clash(repo_root: Path, stage: str, hint: str = "--stage") -> None:
+    """Reject a stage whose ``<stage>Module`` type already exists in the baseline or Dia."""
     type_name = f"{stage}Module"
     clashes: List[Path] = []
     baseline_modules = repo_root / "Cluiche" / "CluicheGameBaseline" / "Modules"
@@ -45,7 +49,7 @@ def _validate(repo_root: Path, name: str, stage: str) -> None:
     if clashes:
         raise click.ClickException(
             f"Stage module type '{type_name}' clashes with existing {clashes[0].relative_to(repo_root).as_posix()}. "
-            "Choose a different --stage."
+            f"Choose a different {hint}."
         )
 
 

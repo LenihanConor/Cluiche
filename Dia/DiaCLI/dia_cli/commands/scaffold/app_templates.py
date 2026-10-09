@@ -54,6 +54,14 @@ TEMPLATES: List[tuple] = [
     ("stage.diaapp.j2",          "Cluiche/Assets/{name}/Stages/{stage}/misc/ApplicationFlow/{stage_snake}.diaapp"),
 ]
 
+# Templates `dia scaffold stage --app` renders to add one stage to an existing app.
+STAGE_TEMPLATE_NAMES = (
+    "StageModule.h.j2",
+    "StageModule.cpp.j2",
+    "stage.diastage.j2",
+    "stage.diaapp.j2",
+)
+
 # Rendered and appended to pipeline.toml (not a standalone file).
 TOML_BLOCK_TEMPLATE = "pipeline_target.toml.j2"
 
@@ -203,3 +211,18 @@ def render_all(context: Dict) -> Dict[str, str]:
 def render_toml_block(context: Dict) -> str:
     """Render the ``[targets.<lower>]`` block to append to pipeline.toml."""
     return make_environment().get_template(TOML_BLOCK_TEMPLATE).render(**context)
+
+
+def render_stage_files(context: Dict) -> Dict[str, str]:
+    """Render only the per-stage file templates (module + stage manifests) for an existing app."""
+    env = make_environment()
+    return {
+        out.format(**context): env.get_template(tpl).render(**context)
+        for tpl, out in TEMPLATES
+        if tpl in STAGE_TEMPLATE_NAMES
+    }
+
+
+def render_template(template: str, context: Dict) -> str:
+    """Render a single app template by file name (used to reuse catalogue/diagame entries)."""
+    return make_environment().get_template(template).render(**context)
