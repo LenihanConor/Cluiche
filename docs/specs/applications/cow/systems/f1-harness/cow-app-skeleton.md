@@ -4,6 +4,7 @@
 **Design source:** `Output Docs/GDD/10_PrototypeStrategy/F1_Harness.md` (decisions 1 and 3; Test 1, Test 2)
 **Depends on:** @docs/specs/applications/cow/systems/f1-harness/bootmenu-promotion.md (the menu must be in the baseline first)
 **Status:** `Approved`
+**Plan:** @docs/specs/applications/cow/systems/f1-harness/cow-app-skeleton.plan.md
 
 ## Summary
 
