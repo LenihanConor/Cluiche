@@ -95,6 +95,31 @@ files = [
   { src = "Cluiche/Assets/CluicheTest/Stages/EntitySpatialTestStage/misc/ApplicationFlow/entityspatial_test_stage.diaapp", dest = "$(OutDir)assets/stages/EntitySpatialTestStage/misc/ApplicationFlow/" },
 ]
 
+[targets.cow]
+project = "Cluiche/CoW/CoW.vcxproj"
+stages = ["compile-code", "build-assets", "deploy"]
+app_name = "CoW"
+catalogue_manifest = "Cluiche/Assets/CoW/assets.catalogue.json"
+
+[targets.cow.build_deps]
+protobuf     = true
+bgfx_shaders = true
+
+[targets.cow.deploy]
+files = [
+  { src = "External/SFML/Current-x64/bin/sfml-window-3.dll", dest = "$(OutDir)" },
+  { src = "External/SFML/Current-x64/bin/sfml-window-d-3.dll", dest = "$(OutDir)" },
+  { src = "External/SFML/Current-x64/bin/sfml-system-3.dll", dest = "$(OutDir)" },
+  { src = "External/SFML/Current-x64/bin/sfml-system-d-3.dll", dest = "$(OutDir)" },
+  { src = "Dia/DiaUIUltralight/Deploy/*", dest = "$(OutDir)" },
+  { src = "External/Ultralight/resources/*", dest = "$(OutDir)assets/resources/" },
+  { src = "Cluiche/Assets/CoW/cow.diagame", dest = "$(OutDir)assets/" },
+  { src = "Cluiche/Assets/CoW/cow.diaobservation", dest = "$(OutDir)assets/" },
+  { src = "Cluiche/Assets/CoW/assets.catalogue.json", dest = "$(OutDir)assets/" },
+  { src = "Cluiche/Assets/CoW/cow_main.diaapp", dest = "$(OutDir)assets/global/misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/CoW/Stages/**", dest = "$(OutDir)assets/stages/" }
+]
+
 [targets.cluicheeditor]
 project = "Cluiche/CluicheEditor/CluicheEditor.vcxproj"
 exe = "Cluiche/bin/CluicheEditor/{config}/x64/CluicheEditor.exe"

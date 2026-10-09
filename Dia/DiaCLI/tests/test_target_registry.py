@@ -127,3 +127,22 @@ def test_launch_unknown_target_lists_toml_targets(tmp_path, monkeypatch, capsys)
     assert "alpha" in err and "beta" in err
     assert "libonly" not in err  # not launchable
     assert "googletest" not in err  # list comes from the toml, not a hard-coded map
+
+
+# --- skeleton B1: the cow target is toml-only ---
+
+def test_cow_target_resolves_and_deploys():
+    from dia_cli.commands.pipeline.deploy_runner import deploy_group
+
+    cfg = load_pipeline_config(REPO_ROOT)
+    cow = cfg.targets["cow"]
+    assert resolve_target_exe(cow) == "Cluiche/bin/CoW/{config}/x64/CoW.exe"
+    assert "cow" in launchable_targets(cfg)
+    assert cow.project == "Cluiche/CoW/CoW.vcxproj"
+    assert cow.stages == ["compile-code", "build-assets", "deploy"]
+    assert cow.build_deps.protobuf and cow.build_deps.bgfx_shaders
+    import toml
+    raw = toml.load(str(REPO_ROOT / "pipeline.toml"))["targets"]["cow"]
+    assert raw["catalogue_manifest"] == "Cluiche/Assets/CoW/assets.catalogue.json"
+    assert any("Stages/**" in f.src for f in cow.deploy.files)
+    assert "cow" in deploy_group.list_commands(click.Context(deploy_group))
