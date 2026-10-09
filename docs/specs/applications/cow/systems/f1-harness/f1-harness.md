@@ -14,7 +14,7 @@ CoW needs 12 standalone testbeds launchable from one menu. Dia already has the p
 
 ## Goals
 
-1. Dev builds boot to the debug menu, which has a Play entry for a stub front-end stage; shipping builds boot straight to the front end and contain no menu code.
+1. CoW boots to the debug menu, which has a Play entry for a stub front-end stage. Shipping-build gating is out of scope (user decision).
 2. `BootMenuModule` lives in CluicheGameBaseline with no CluicheTest types; CluicheTest's ~25 stages behave unchanged through it.
 3. Menu lists a game's `Boot` transitions, launches any, and returns cleanly with no state leaking between launches.
 4. Confirm the DiaMessageBus Primary/Reaction semantics on a live stage; correct the stale `status: stub` in its module doc.
@@ -34,7 +34,7 @@ CoW needs 12 standalone testbeds launchable from one menu. Dia already has the p
 | Feature | Spec | Status |
 |---------|------|--------|
 | BootMenuModule promotion + StageStatusModule | @docs/specs/applications/cow/systems/f1-harness/bootmenu-promotion.md | Approved |
-| Boot choice (Play menu entry, dev/shipping gating) | @docs/specs/applications/cow/systems/f1-harness/boot-choice.md | Approved |
+| Boot choice (Play menu entry; shipping gating dropped) | @docs/specs/applications/cow/systems/f1-harness/boot-choice.md | Approved |
 | CoW app skeleton (project, manifests, Boot stage, stub front end) + `dia scaffold stage --app` | @docs/specs/applications/cow/systems/f1-harness/cow-app-skeleton.md | Approved |
 | Bus live verification (Test 4) | TBD | Draft |
 | Bus traffic file recorder (Debug-only) | TBD | Draft |
@@ -53,8 +53,8 @@ Design:
 
 1. **Status abstraction.** A concrete baseline `StageStatusModule` holding generic per-stage status (label, severity, visited). `BootMenuModule` finds it through an optional `ModuleRef` (an interface cannot be found by `ModuleRef`); with none, badges are omitted. A CluicheTest bridge module feeds it from `TestResultsRegistry`; CoW adds none. See the feature spec.
 2. **Promotion.** Move `BootMenuModule` to `Cluiche/CluicheGameBaseline/Modules/`, retitle the window from the app name rather than a hard-coded "CluicheTest", update CluicheTest includes and vcxproj entries.
-3. **Dev vs shipping.** One target; a compile-time define (shipping = Release/`DIA_SHIPPING`) excludes `BootMenuModule` registration and the Boot transitions. Test 1's "absent, not hidden" is checked by manual symbol inspection of a shipping build (no automated guard).
-4. **Boot choice.** Dev builds load `cow.diagame` (initial stage `Boot`, whose menu lists `FrontEnd` as the Play entry). Shipping builds load `cow.shipping.diagame` (initial stage `FrontEnd`, no Boot stage or menu). A compile-time define selects the manifest. No command-line flag. See the boot-choice feature spec.
+3. **Shipping.** Not in scope. No compile-out, no second manifest.
+4. **Boot choice.** CoW's single manifest starts at `Boot`, whose menu lists `FrontEnd` as the Play entry. No command-line flag, no shipping variant. See the boot-choice feature spec.
 5. **CoW app.** `Cluiche/CoW/` gets `CoW.diaapp` with a `Boot` stage whose transitions list the testbed stages, plus a stub `FrontEnd` stage. `dia scaffold stage` gains an `--app` option so CoW stages are generated under `Cluiche/CoW/`.
 6. **Recorder.** New optional Debug-only recorder in DiaMessageBus writes per-message records (tick, type id, payload bytes) to a versioned file as messages dispatch (new Dia capability).
 7. **Debug host.** Reuse `DebugPanelPageModule`/`IDebugDomain` as the shared host; F-1 proves a stand-in command and panel register without stage-specific wiring.
@@ -69,6 +69,22 @@ Design:
 - Process launch to interactive debug menu: under 2 seconds.
 - Stage launch, return and re-launch cycle repeated 50 times: zero state leaks or crashes.
 - Event bus run of 10,000 messages: delivered exactly 1:1 with posted, zero drops, zero duplicates.
+
+## Change Sign-off (AD-001)
+
+User decisions on the cross-boundary changes this system needs:
+
+| Change | Decision |
+|--------|----------|
+| Move `BootMenuModule` to the baseline; new baseline `StageStatusModule` | Approved |
+| CluicheTest follow-through (bridge module, manifest, project edits) | Pending: user asked how each game plugs into the status module |
+| `cow` DiaCLI target and `[targets.cow]` in `pipeline.toml` | Pending: user wants CoW's pipeline independent of CluicheTest's |
+| `CoW` entry in `Cluiche.sln`; `scaffold sln-add` path option | Approved |
+| `dia scaffold stage --app` | Approved |
+| Shipping gating in the baseline | Dropped |
+| Bus traffic recorder | Waiting (deferred feature) |
+| DiaMessageBus module doc status fix | Approved |
+| `dia scaffold app` | Approved (to be built) |
 
 ## Binding Decisions
 
@@ -85,4 +101,4 @@ Per the engine/application boundary, recorder and `scaffold --app` are generic c
 
 1. ~~How does the baseline read `--play`?~~ **Superseded:** no flag. The front-end jump is a Boot menu entry (a stage transition), which needs no argument parsing or DiaCLI forwarding.
 2. ~~Does the recorder format need to be replay-ready?~~ **Resolved:** yes. The recorder writes versioned binary per-message records (tick, type id, raw payload bytes), not `LedgerSnapshot`s (which hold counts only, no payloads). This needs a Debug-only hook in `Bus` dispatch and per-type payload size from `RegisterType`. The replay reader stays deferred to V-3.
-3. ~~What proves the menu is absent from shipping?~~ **Resolved:** manual inspection only. Inspect the shipping binary's symbols for `BootMenuModule` and confirm no Boot-stage transitions, then run it. No build guard or automated check. Accepted risk: nothing prevents a later regression, so re-inspect whenever shipping configuration changes.
+3. ~~What proves the menu is absent from shipping?~~ **Superseded:** shipping gating is out of scope (user decision), so no proof is needed.

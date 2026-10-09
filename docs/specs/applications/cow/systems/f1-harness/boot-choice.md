@@ -7,54 +7,40 @@
 
 ## Summary
 
-CoW has two boot paths. A dev build starts at the `Boot` stage and its debug menu, where a "Play" entry (the stub `FrontEnd` stage) is just another transition. A shipping build starts directly at `FrontEnd` and contains no debug menu. There is no command-line flag: choosing the front end in a dev build is a menu click. This differs from the GDD wording ("a `--play` flag or a menu entry"); the flag was dropped because DiaCLI has no argument forwarding and the menu entry satisfies the same branch.
+CoW boots to the `Boot` stage and its debug menu, where a "Play" entry (the stub `FrontEnd` stage) is just another transition. There is no command-line flag and, by decision, **no shipping-build requirement**: the menu is not compiled out and no second manifest exists. Both were dropped: the flag because DiaCLI has no argument forwarding, shipping gating because it is not wanted for F-1. They can be revisited when a shipping build is planned.
 
 ## Goals
 
-1. Dev build: boots to the Boot menu; selecting the `FrontEnd` entry lands on the stub.
-2. Shipping build: boots straight to `FrontEnd`; no Boot stage, no `BootMenuModule` registered or linked.
+1. CoW boots to the Boot menu; selecting the `FrontEnd` entry lands on the stub and returning goes back to Boot.
 
 ## Non-Goals
 
 1. Command-line flags and DiaCLI argument forwarding.
-2. Automated shipping verification (manual inspection only, per the F-1 decision).
+2. Shipping builds: no compile-time define, no shipping manifest, no symbol checks.
 3. The real front end (G-1).
 
 ## Design
 
-- A compile-time define selects the manifest. `Main.cpp` loads `cow.diagame` in dev builds and `cow.shipping.diagame` when the define is set. The shipping manifest sets `initial_stage: FrontEnd`, declares no `Boot` stage, omits `BootMenu` and its channel, and gives `FrontEnd` no `"Boot"` transition (it would otherwise dangle). Because the main `.diaapp` is one file listing stages and modules, this means a second main manifest (`cow_main.shipping.diaapp`); the global module list is duplicated between the two.
-- The define also excludes `BootMenuModule`'s registration in the baseline (`DIA_MODULE`) so the module is absent from the binary, not only unused. Because the baseline is a shared library, this needs a define the baseline recognises; no existing shipping define was found, so the nearest candidate is the Release configuration.
-- Dev builds may be Debug or Release; only the shipping define removes the menu.
+The `FrontEnd` stage is listed in `Boot`'s transitions and has a `"Boot"` transition back, exactly as CluicheTest stages do (see the skeleton spec). That is the whole feature; the work is delivered by the skeleton and the promotion.
 
 ## Acceptance Criteria
 
 | # | Criterion |
 |---|-----------|
-| AC1 | Dev build launches to the Boot menu, which lists `FrontEnd`; selecting it lands on the stub. |
-| AC2 | Shipping build launches directly to the `FrontEnd` stub with no Boot stage. |
-| AC3 | A symbol inspection of the shipping binary shows no `BootMenuModule` symbols. |
-| AC4 | The shipping manifest contains no `Boot` stage, `BootMenu` module, or `BootMenuNavRequest` channel; it passes `dia validate manifest`. |
-| AC5 | CluicheTest's builds and behaviour are unchanged. |
+| AC1 | CoW launches to the Boot menu, which lists `FrontEnd`; selecting it lands on the stub, and the stub returns to Boot. |
 
 ## Tasks
 
 | # | Task | Test | Status | Model |
 |---|------|------|--------|-------|
-| 1 | Add the `FrontEnd` transition from `Boot` (if not already in the skeleton) and confirm dev path | AC1 | Draft | haiku |
-| 2 | Add `cow.shipping.diagame` and `cow_main.shipping.diaapp`; select by define in `Main.cpp`; make `pipeline.toml` deploy the shipping manifests for the shipping configuration | AC2, AC4 | Draft | sonnet |
-| 3 | Gate `BootMenuModule` registration behind the shipping define; add the define to the shipping configuration | AC3, AC5 | Draft | sonnet |
-| 4 | Verify: run dev and shipping builds through `dia`, inspect the shipping binary's symbols manually | AC1 to AC5 | Draft | haiku |
+| 1 | Confirm the `FrontEnd` transitions exist in the skeleton and run the launch and return cycle | AC1 | Draft | haiku |
 
 ## Binding Decisions
 
 | Source | Constraint |
 |--------|------------|
-| AD-001 | Task 3 edits the baseline; needs sign-off. |
-| AD-004 | Dev boots to the menu; shipping compiles it out. The `--play` flag half of AD-004 is superseded by the menu entry (record in cow.md). |
-| F-1 decision | Shipping verification is manual inspection only. |
+| AD-004 | Dev builds boot to the menu with a Play entry. The `--play` flag and the shipping compile-out halves are superseded (user decision). |
 
 ## Open Design Questions
 
-1. The shipping manifest duplicates the dev main manifest's global module list; they can drift. Alternative: generate the shipping manifest from the dev one in the pipeline. Default here: duplicate, since only two small differences exist, and revisit when the module list grows.
-2. Which configuration defines "shipping"? There is no `DIA_SHIPPING` today. Options: a new define on a dedicated configuration, or the existing Release configuration. Needs your decision before task 3.
-3. If `BootMenuModule` lives in a shared static library, the linker may still pull it in for other apps; task 3 must confirm the gating removes it from the CoW binary.
+1. When a shipping build is planned, revisit gating (a define, a second manifest, and symbol checks were the design considered).
