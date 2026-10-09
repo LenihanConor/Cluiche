@@ -1,0 +1,28 @@
+{
+    "config": {
+        "name": "CoW",
+        "build": "dev-0.1",
+        "window": {
+            "title": "CoW",
+            "width_pct": 80,
+            "height_pct": 80
+        },
+        "asset_catalogue": "assets.catalogue.json",
+        "observation": "cow.diaobservation",
+        "path_aliases": {
+            "root": "."
+        }
+    },
+    "imports": [
+        {
+            "path": "global/misc/ApplicationFlow/cow_main.diaapp",
+            "type": "manifest"
+        },
+        {
+            "path": "Stages/FrontEnd/front_end.diastage",
+            "type": "stage"
+        }
+    ],
+    "name": "CoW",
+    "version": "0.1"
+}

@@ -1,0 +1,66 @@
+{
+    "assets": [
+        {
+            "content_hash": 0,
+            "id": "stage.global",
+            "references": [
+                {
+                    "target": "manifest.cow_main",
+                    "type": "contains"
+                }
+            ],
+            "scope": "global",
+            "source_path": "global.stage.json",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "misc"
+            ],
+            "type": "stage"
+        },
+        {
+            "content_hash": 0,
+            "id": "manifest.cow_main",
+            "references": [],
+            "scope": "global",
+            "source_path": "cow_main.diaapp",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "misc/ApplicationFlow"
+            ],
+            "type": "manifest"
+        },
+        {
+            "content_hash": 0,
+            "id": "stage.front_end",
+            "references": [
+                {
+                    "target": "manifest.front_end",
+                    "type": "contains"
+                }
+            ],
+            "scope": "global",
+            "source_path": "Stages/FrontEnd/front_end.diastage",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "misc"
+            ],
+            "type": "stage"
+        },
+        {
+            "content_hash": 0,
+            "id": "manifest.front_end",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/FrontEnd/misc/ApplicationFlow/front_end.diaapp",
+            "stage_name": "FrontEnd",
+            "status": "active",
+            "tags": [
+                "misc/ApplicationFlow"
+            ],
+            "type": "manifest"
+        }
+    ]
+}

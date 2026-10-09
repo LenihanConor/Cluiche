@@ -1,0 +1,9 @@
+{
+    "name": "FrontEnd",
+    "manifest": "Stages/FrontEnd/misc/ApplicationFlow/front_end.diaapp",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

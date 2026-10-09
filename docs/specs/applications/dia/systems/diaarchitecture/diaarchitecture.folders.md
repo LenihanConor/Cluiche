@@ -93,5 +93,6 @@ Not a top-level `Dia/<Name>/<Name>.vcxproj` library module (executables, editors
 | CluicheEditor | _Executables |
 | CluicheGameBaseline | _Executables |
 | CluicheTest | _Executables |
+| CoW | _Executables |
 | DiaUICEF_TestSubprocess | 3.0-Visual |
 | GoogleTests | _Executables |
