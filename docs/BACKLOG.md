@@ -73,7 +73,7 @@ Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testin
 | CoW | DiaMessageBus module doc: `status: stub` is stale | Confirm with a fresh `dia run googletest --filter="*MessageBus*"`, then edit `dia.messagebus.architecture.module.md` (approved) |
 | ~~Dia~~ | `dia docs spec-scaffold` writes the wrong parent and fails on a relative `--output-dir` | Found while scaffolding CoW F-1; DiaCLI fix, not yet signed off |
 | CoW | `new-cow-stage` skill trial run (spec task 2, AC4/AC5) | Run `/new-cow-stage` on the first real testbed once its design is locked in the GDD; fix the skill from what it shows. Skill and command are written |
-| Dia | `dia docs vcxproj-add` picks the filter from the first path segment only | A nested file (for example `Modules\TestStages\Drawers\X.cpp`) lands under `Modules` instead of its siblings' filter. Better default: reuse the filter of an existing entry in the same directory. Found during the promotion |
+| ~~Dia~~ | `dia docs vcxproj-add` picks the filter from the first path segment only | A nested file (for example `Modules\TestStages\Drawers\X.cpp`) lands under `Modules` instead of its siblings' filter. Better default: reuse the filter of an existing entry in the same directory. Found during the promotion |
 | CoW | Shared application-bootstrap helper | CluicheTest's `Main.cpp` has generic path-alias and base-dir code CoW copies. Not yet judged for Dia; log it if wanted |
 | CoW | Deferred: event replay from file | Until V-3 needs canned event data |
 | CoW | Deferred: `reflect` pipeline stage (schema file) | Until the editor needs CoW's schema |

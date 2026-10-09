@@ -40,3 +40,41 @@ def test_cpp_entry_after_multiline_include_entry(tmp_path):
 
     lines = proj.read_text(encoding="utf-8").splitlines()
     assert lines.index('    <ClCompile Include="B.cpp" />') == lines.index("    </ClCompile>") + 1
+
+
+FILTERS = r"""<Project>
+  <ItemGroup>
+    <ClCompile Include="Modules\TestStages\A.cpp">
+      <Filter>Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\Drawers\D.cpp">
+      <Filter>Modules\TestStages\Drawers</Filter>
+    </ClCompile>
+    <ClCompile Include="Other\O.cpp">
+      <Filter>Custom</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
+"""
+
+
+def _infer(tmp_path, rel):
+    from dia_cli.commands.docs.vcxproj_cmd import infer_filter
+
+    f = tmp_path / "P.vcxproj.filters"
+    f.write_text(FILTERS, encoding="utf-8")
+    return infer_filter(f, rel)
+
+
+def test_infer_filter_reuses_sibling_filter(tmp_path):
+    assert _infer(tmp_path, r"Modules\TestStages\Drawers\X.cpp") == r"Modules\TestStages\Drawers"
+    assert _infer(tmp_path, r"Other\X.cpp") == "Custom"
+
+
+def test_infer_filter_falls_back_to_nearest_ancestor(tmp_path):
+    assert _infer(tmp_path, r"Modules\TestStages\New\X.cpp") == r"Modules\TestStages"
+
+
+def test_infer_filter_falls_back_to_first_segment_or_none(tmp_path):
+    assert _infer(tmp_path, r"Brand\New\X.cpp") == "Brand"
+    assert _infer(tmp_path, "X.cpp") is None

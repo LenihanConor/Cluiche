@@ -136,6 +136,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | `new-cow-stage` skill (written; trial pending) | [spec](specs/applications/cow/systems/f1-harness/new-cow-stage-skill.md) | 2026-10-09 | Trial run is a loose end in BACKLOG.md |
 | scaffold-app | [spec](specs/) | 2026-10-09 | Marked done by `dia docs spec-done` |
 | Dia | `dia docs spec-scaffold` writes the wrong parent and fails on a relative `--output-dir` | 2026-10-09 | Parent inference now uses real layout; added --app; relative --output-dir works; tests added |
+| Dia | `dia docs vcxproj-add` picks the filter from the first path segment only | 2026-10-09 | Filter now reused from same-directory entries, then nearest ancestor, then first segment; tests added |
 
 ---
 

@@ -1,6 +1,7 @@
 """dia docs vcxproj-add — add source files to vcxproj + filters without AI."""
 from __future__ import annotations
 
+import re
 import uuid
 from pathlib import Path
 
@@ -86,6 +87,29 @@ def _ensure_filter_declared(filters_path: Path, filter_name: str) -> bool:
     return True
 
 
+_FILTERED_ENTRY = re.compile(
+    r'<(?:ClInclude|ClCompile)\s+Include="([^"]+)">\s*<Filter>([^<]+)</Filter>', re.S
+)
+
+
+def infer_filter(filters_path: Path, relative_path: str) -> str | None:
+    """Pick a filter for a new file: reuse the filter of existing entries in the
+    same directory, else the nearest ancestor directory that has filtered
+    entries, else the first path segment (None for a file at the project root)."""
+    parts = relative_path.replace("/", "\\").split("\\")
+    dir_filters: dict[str, str] = {}
+    if filters_path.exists():
+        text = filters_path.read_text(encoding="utf-8")
+        for include, flt in _FILTERED_ENTRY.findall(text):
+            d = include.replace("/", "\\").rpartition("\\")[0].lower()
+            dir_filters.setdefault(d, flt.strip())
+        for depth in range(len(parts) - 1, 0, -1):
+            found = dir_filters.get("\\".join(parts[:depth]).lower())
+            if found:
+                return found
+    return parts[0] if len(parts) > 1 else None
+
+
 def add_to_filters(filters_path: Path, relative_path: str, is_header: bool, filter_name: str | None) -> bool:
     if not filters_path.exists():
         raise click.ClickException(f"filters file not found: {filters_path}")
@@ -130,6 +154,8 @@ def vcxproj_add(project: str, file_path: str, filter_name: str, dry_run: bool) -
     FILE_PATH is the relative path from the vcxproj location (e.g. Containers\\Array.h).
 
     Auto-detects header vs source from extension. Idempotent — skips if already present.
+    Without --filter, reuses the filter of existing files in the same directory
+    (falling back to parent directories, then the first path segment).
 
     Examples:
         dia docs vcxproj-add DiaCore "NewModule\\NewModule.h" --filter NewModule
@@ -152,9 +178,7 @@ def vcxproj_add(project: str, file_path: str, filter_name: str, dry_run: bool) -
     filters_path = vcxproj_path.with_suffix(".vcxproj.filters")
 
     if not filter_name:
-        parts = file_path.replace("/", "\\").split("\\")
-        if len(parts) > 1:
-            filter_name = parts[0]
+        filter_name = infer_filter(filters_path, file_path)
 
     if dry_run:
         tag = "ClInclude" if is_header else "ClCompile"
