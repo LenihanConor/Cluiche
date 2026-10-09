@@ -77,7 +77,7 @@ User decisions on the cross-boundary changes this system needs:
 | Change | Decision |
 |--------|----------|
 | Move `BootMenuModule` to the baseline; new baseline `StageStatusModule` | Approved |
-| CluicheTest follow-through (bridge module, manifest, project edits) | Pending: user asked how each game plugs into the status module |
+| CluicheTest follow-through (bridge module, manifest, project edits) | Approved |
 | `cow` DiaCLI target and `[targets.cow]` in `pipeline.toml` (separate target, shared DiaCLI pipeline code) | Approved |
 | `CoW` entry in `Cluiche.sln`; `scaffold sln-add` path option | Approved |
 | `dia scaffold stage --app` | Approved |
