@@ -56,7 +56,22 @@ Public: `Set(stage, status)`, `Get(stage) -> const StageStatus*`. Generic: it kn
 
 ### CluicheTest bridge
 
-A CluicheTest-side RenderPU Boot-stage module (`TestStatusBridgeModule`) maps each `TestResultsRegistry` result into `StageStatusModule` (passed to `kOk`, failed or timeout to `kFail`, running to `kWarn`, not-run to `kNone`; `visited` is true for any state other than not-run) on start and each update. `cluiche_main.diaapp` gains the bridge and the title/project config.
+A CluicheTest-side RenderPU Boot-stage module (`TestStatusBridgeModule`) maps each `TestResultsRegistry` result into `StageStatusModule` (`label` is the existing text: PASSED / FAILED / TIMEOUT / RUNNING / NOT RUN; severity: passed to `kOk`, failed and timeout to `kFail`, running and not-run to `kNone`; `visited` is true for any state other than not-run) on start and each update. `cluiche_main.diaapp` gains the bridge, makes `BootMenu` depend on it so it starts first (the menu restores visited markers in `DoStart`), and sets the title/project config to `"CluicheTest — Bootstrap"` and `"Project: CluicheTest v0.1"`.
+
+### Parity with current CluicheTest behaviour
+
+| Behaviour | Current | After promotion | Same? |
+|-----------|---------|-----------------|-------|
+| Stage list, selection, Launch button / Enter, nav request | `GetStageTransitions("Boot")`, `BootMenuNavRequest` | Unchanged | Yes |
+| Window title, project line | Hard-coded | Same strings via `config` | Yes |
+| "Automation: Connected" badge | `DebugServerHostModule` | Unchanged | Yes |
+| Badge text | PASSED / FAILED / TIMEOUT / RUNNING / NOT RUN | Same text via `label` | Yes |
+| Badge colour | Green passed; red failed and timeout; grey otherwise (incl. running) | Same via severity (`kOk`, `kFail`, `kNone`) | Yes |
+| Visited marker on return to Boot | Any state except not-run | Same via `visited` | Yes |
+| Passed/Failed/Pending footer | Running counts as Failed (any non-passed, non-not-run state) | Running is `kNone`, so counts as Pending | **Edge case differs**: only visible if a stage is `kRunning` while Boot is showing, which does not happen in normal flow |
+| Visited marker on launch | Not set (menu stops on launch) | Also set on launch | Invisible: Boot stops on launch |
+| Footer with no registry | Shows 0/0/Pending N | Hidden when no `StageStatusModule` | CluicheTest unaffected; CoW differs by design |
+| Threading | Registry read on RenderPU | Bridge reads it on RenderPU | Yes |
 
 ## Acceptance Criteria
 
@@ -68,7 +83,7 @@ A CluicheTest-side RenderPU Boot-stage module (`TestStatusBridgeModule`) maps ea
 | AC4 | With a populated `StageStatusModule`, badges show label and severity colour, and the footer counts match the entries. |
 | AC5 | Returning to Boot restores visited markers for stages whose entry has `visited`. |
 | AC6 | Window title and project line come from the module `config`, with defaults when absent. |
-| AC7 | CluicheTest: all existing stages launch and return through the promoted menu; badges and counts match the pre-promotion behaviour. |
+| AC7 | CluicheTest: all existing stages launch and return through the promoted menu; title, badge text and colour, visited markers and counts match pre-promotion behaviour (the running-stage footer edge case in the parity table is the only accepted difference). |
 | AC8 | Stage launch and return repeated for each stage leaves no menu state that carries into the next stage (no stale selection or subscription). |
 | AC9 | E2E automation `navigate_to` still works unchanged. |
 
@@ -94,5 +109,4 @@ Per CLAUDE.md, tasks 1 and 2 follow TDD (RED before GREEN), and the baseline nee
 ## Open Design Questions
 
 1. The bridge reads `TestResultsRegistry`, an existing singleton (counted debt). Keeping it there is the least change, but the bridge could later receive results by stream instead.
-2. `Severity::kWarn` is used for "running". Is a distinct "in progress" severity worth having now, or is that over-fitting to CluicheTest?
-3. Does the Passed/Failed/Pending footer belong in the generic menu, or only render when a `StageStatusModule` exists? Current plan: only when it exists.
+2. Does the Passed/Failed/Pending footer belong in the generic menu, or only render when a `StageStatusModule` exists? Current plan: only when it exists.
