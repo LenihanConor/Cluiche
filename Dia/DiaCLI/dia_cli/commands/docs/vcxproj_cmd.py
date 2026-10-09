@@ -21,12 +21,19 @@ def _find_last_entry_end(lines: list[str], tag: str) -> int:
     matching `<tag Include="..." />`.
     """
     last_idx = -1
+    in_item = False
     for i, line in enumerate(lines):
         stripped = line.strip()
-        if stripped == f"</{tag}>" or (
-            stripped.startswith(f"<{tag} Include=") and stripped.endswith("/>")
-        ):
+        if stripped.startswith(f"<{tag} Include="):
+            if stripped.endswith("/>"):
+                last_idx = i
+            else:
+                in_item = True
+        elif stripped == f"</{tag}>" and in_item:
+            # Only close entries opened with Include=; a bare <ClCompile> block
+            # inside an ItemDefinitionGroup holds build settings, not items.
             last_idx = i
+            in_item = False
     return last_idx
 
 
