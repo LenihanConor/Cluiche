@@ -30,7 +30,7 @@ Mirror CluicheTest's structure, trimmed to what a Boot menu and stub stage need.
 
 | Piece | CluicheTest (verified) | CoW |
 |-------|------------------------|-----|
-| Project | `Cluiche/CluicheTest/CluicheTest.vcxproj` with `ProjectReference`s to the Dia libraries | `Cluiche/CoW/CoW.vcxproj` in `Cluiche.sln`, same references trimmed to what CoW links, plus CluicheGameBaseline |
+| Project | `Cluiche/CluicheTest/CluicheTest.vcxproj`: `Application`, `OutDir=$(BinRoot)$(MSBuildProjectName)\$(Configuration)\$(Platform)\` (so `Cluiche/bin/CluicheTest/<cfg>/x64/`), `ProjectReference`s to the Dia libraries, and a PostBuildEvent running `dia pipeline deploy cluichetest` to copy assets into `<OutDir>assets/` | `Cluiche/CoW/CoW.vcxproj` in `Cluiche.sln`: same shape, so output goes to `Cluiche/bin/CoW/<cfg>/x64/CoW.exe`, with a PostBuildEvent running `dia pipeline deploy cow`, references trimmed to what CoW links plus CluicheGameBaseline, and `LocalDebuggerWorkingDirectory=$(OutDir)` so F5 finds `assets/` |
 | Entry | `Main.cpp` (354 lines): `--dump-schema` early exit, compose `.diagame`, register path aliases, validate, create `TestResultsRegistry`, `Application` loop at 30 Hz | `Cluiche/CoW/Main.cpp`: same flow without `TestResultsRegistry`; schema dump per open question 3 |
 | Game manifest | `cluichetest.diagame`: window title, `asset_catalogue`, `observation` file, path aliases; imports the main `.diaapp` and every `.diastage` | `cow.diagame` with the same keys (`cow.diaobservation`, a minimal `assets.catalogue.json`) importing the main `.diaapp` and `FrontEnd` stage |
 | Main manifest | `cluiche_main.diaapp`: `initial_stage: Boot`; 26 stage entries; 24 streams; 3 PUs (Main, Sim, Render) with global modules; Boot-scoped `LoadingScreenModule`, `BootMenu` | `cow_main.diaapp`: stage list `Boot` and `FrontEnd`; only the streams and modules the Boot path needs (see below) |
@@ -54,6 +54,7 @@ Mirror CluicheTest's structure, trimmed to what a Boot menu and stub stage need.
 |---|-----------|
 | AC1 | `CoW.vcxproj` is in `Cluiche.sln` and builds Debug and Release x64. |
 | AC2 | `dia run cow` builds and launches; `dia launch cow` launches an already-built binary. |
+| AC2a | In Visual Studio, CoW can be set as the startup project; building it produces `Cluiche/bin/CoW/<cfg>/x64/CoW.exe` with `assets/cow.diagame` and the deployed manifests beside it (the PostBuildEvent deploy); F5 launches to the Boot menu. |
 | AC3 | CoW opens a Boot menu window using the baseline `BootMenuModule`, titled from config, listing exactly the Boot transitions (`FrontEnd`). |
 | AC4 | Launching `FrontEnd` logs "front end not yet built" and idles; returning goes back to the Boot menu. |
 | AC5 | `dia validate manifest` passes for the CoW manifests. |
@@ -66,7 +67,7 @@ Mirror CluicheTest's structure, trimmed to what a Boot menu and stub stage need.
 | # | Task | Test | Status | Model |
 |---|------|------|--------|-------|
 | 1 | **RED/GREEN:** add the `cow` target to DiaCLI (`launch.py` exe map, `pipeline.py`, `deploy_runner.py`) and a `[targets.cow]` block in `pipeline.toml` (stages, `app_name`, `catalogue_manifest`, `build_deps`, deploy files with a stage-asset glob), with tests mirroring the existing target tests | AC2 | Draft | sonnet |
-| 2 | Create `CoW.vcxproj`, filters, and `Cluiche.sln` entry (`dia docs vcxproj-add`) | AC1 | Draft | sonnet |
+| 2 | Create `CoW.vcxproj` (output dir, deploy PostBuildEvent, debugger working directory), filters, and `Cluiche.sln` entry (`dia docs vcxproj-add`) | AC1, AC2a | Draft | sonnet |
 | 3 | Create `Cluiche/Assets/CoW/`: `cow.diagame`, `cow_main.diaapp` (trimmed per Design), `cow.diaobservation`, minimal `assets.catalogue.json`; the `FrontEnd` stub stage (`.diastage`, stage `.diaapp`, stage module, main-manifest entry with `"Boot"` transition, `.diagame` import); validate | AC3, AC4, AC5 | Draft | sonnet |
 | 4 | Write `Cluiche/CoW/Main.cpp` | AC3, AC8 | Draft | sonnet |
 | 5 | **RED/GREEN:** add `--app` to `dia scaffold stage` with tests. The command currently hard-codes CluicheTest's namespace, asset paths, `cluiche_main.diaapp`, `.diagame`, `.vcxproj` and filters (9 touch points) and does not touch `pipeline.toml`; `--app` must parameterise all of these | AC6 | Draft | sonnet |
