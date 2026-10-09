@@ -32,7 +32,7 @@ CoW needs 12 standalone testbeds launchable from one menu. Dia already has the p
 
 | Feature | Spec | Status |
 |---------|------|--------|
-| Stage status provider + BootMenuModule promotion | TBD | Draft |
+| BootMenuModule promotion + StageStatusModule | @docs/specs/applications/cow/systems/f1-harness/bootmenu-promotion.md | Draft |
 | Boot choice (`--play`, dev/shipping gating) | TBD | Draft |
 | CoW app skeleton (`CoW.diaapp`, Boot stage, stub front end) + `dia scaffold stage --app` | TBD | Draft |
 | Bus live verification (Test 4) | TBD | Draft |
@@ -50,7 +50,7 @@ Findings from the code that shape the design:
 
 Design:
 
-1. **Status abstraction.** A small baseline interface `IStageStatusProvider` (`GetStatus(StringCRC stage)` returning not-run / passed / failed). `BootMenuModule` takes an optional provider; with none, the status badge is omitted. CluicheTest supplies an adapter over `TestResultsRegistry`; CoW supplies none.
+1. **Status abstraction.** A concrete baseline `StageStatusModule` holding generic per-stage status (label, severity, visited). `BootMenuModule` finds it through an optional `ModuleRef` (an interface cannot be found by `ModuleRef`); with none, badges are omitted. A CluicheTest bridge module feeds it from `TestResultsRegistry`; CoW adds none. See the feature spec.
 2. **Promotion.** Move `BootMenuModule` to `Cluiche/CluicheGameBaseline/Modules/`, retitle the window from the app name rather than a hard-coded "CluicheTest", update CluicheTest includes and vcxproj entries.
 3. **Dev vs shipping.** One target; a compile-time define (shipping = Release/`DIA_SHIPPING`) excludes `BootMenuModule` registration and the Boot transitions. Test 1's "absent, not hidden" is checked by manual symbol inspection of a shipping build (no automated guard).
 4. **Boot choice.** `--play` is read from the command line at startup and selects the first transition target (stub front-end stage) instead of the `Boot` stage. CoW's `main()` reads the flag (no baseline change).
