@@ -32,7 +32,7 @@ CoW needs 12 standalone testbeds launchable from one menu. Dia already has the p
 
 | Feature | Spec | Status |
 |---------|------|--------|
-| BootMenuModule promotion + StageStatusModule | @docs/specs/applications/cow/systems/f1-harness/bootmenu-promotion.md | Draft |
+| BootMenuModule promotion + StageStatusModule | @docs/specs/applications/cow/systems/f1-harness/bootmenu-promotion.md | Approved |
 | Boot choice (`--play`, dev/shipping gating) | TBD | Draft |
 | CoW app skeleton (`CoW.diaapp`, Boot stage, stub front end) + `dia scaffold stage --app` | TBD | Draft |
 | Bus live verification (Test 4) | TBD | Draft |
