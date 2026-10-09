@@ -46,6 +46,12 @@ Mirror CluicheTest's structure, trimmed to what a Boot menu and stub stage need.
 
 **Return to Boot.** A stage returns because its entry in the main `.diaapp` stage list has `"transitions": ["Boot"]`, and `Boot` lists the stage in its own transitions. `FrontEnd` gets both.
 
+**Asset pipeline.** CoW reuses the existing pipeline; no new pipeline code is written. The `build-assets` stage delegates to DiaAssetPipeline (validate, transform, deploy phases), driven entirely by the target's `catalogue_manifest` in `pipeline.toml` (it is skipped when none is configured; CluicheEditor has none). CluicheTest's `assets.catalogue.json` lists each asset with references (global stage manifest, `shader.ui_frag`, UI folders, per-stage assets). For CoW:
+
+- `[targets.cow]` sets `catalogue_manifest = "Cluiche/Assets/CoW/assets.catalogue.json"` and `build_deps.bgfx_shaders = true` (the renderer and debug UI need the compiled shaders).
+- The F-1 catalogue is minimal: the main manifest, the `FrontEnd` stage, and only the shaders and UI assets the Boot menu needs. Task 3 builds it by trimming CluicheTest's catalogue and confirming the Boot menu draws.
+- Cooked content (textures, meshes, rigs, tiles) is not part of F-1. Each later testbed adds its own catalogue entries and uses the existing asset rules.
+
 **Pipeline.** `dia run cow` goes through `pipeline.toml`. CluicheTest's target has stages `compile-code, reflect, build-assets, deploy`, `build_deps` (protobuf, bgfx shaders), `catalogue_manifest`, and a `deploy.files` list of SFML DLLs, manifests, the schema, and one entry per stage file. Deploy entries accept `*` patterns, so CoW can use one glob for its stage assets instead of per-file entries.
 
 ## Existing DiaCLI tooling (surveyed)
