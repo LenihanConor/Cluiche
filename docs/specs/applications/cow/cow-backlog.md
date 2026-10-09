@@ -1,6 +1,6 @@
 # CoW Backlog
 
-CoW-specific backlog, derived from the CoW spec tree ([cow.md](cow.md)) and the GDD testbed roster. The main [Cluiche backlog](../../../BACKLOG.md) is for the platform and Dia; this one is only for CoW work. Cross-boundary needs (Dia, CluicheGameBaseline) live in [dia-needs.md](dia-needs.md). When an item is Done, delete it here and note it in the spec's Status; there is no CoW history file yet.
+CoW-specific backlog, derived from the CoW spec tree ([cow.md](cow.md)) and the GDD testbed roster. The main [Cluiche backlog](../../../BACKLOG.md) is for the platform and Dia; this one is only for CoW work. Cross-boundary needs (Dia, CluicheGameBaseline) live in [dia-needs.md](dia-needs.md). When an item is Done, move it to [cow-backlog-history.md](cow-backlog-history.md). The `/cow-backlog` skill shows and updates both files (`dia docs backlog move` handles only the platform backlog).
 
 Design intent for every item lives in the GDD (`C:\GitHub\DesignDocs\COW`, `Output Docs/GDD/10_PrototypeStrategy/TestbedRoster.md`).
 
