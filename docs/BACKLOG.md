@@ -18,7 +18,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | ~~Dia~~ | F-1: DiaCLI `cow` target + `scaffold sln-add --root` (skeleton B1, B2) | [spec](specs/applications/cow/systems/f1-harness/cow-app-skeleton.md) / [plan](specs/applications/cow/systems/f1-harness/cow-app-skeleton.plan.md). DiaCLI + `pipeline.toml` (signed off) | Nothing; can run alongside the promotion |
 | ~~Dia~~ | F-1: DiaCLI data-driven target registry (scaffold-app task 1); makes the `cow` target toml-only | [scaffold-app.md](specs/applications/dia/systems/diacli/scaffold-app.md). DiaCLI refactor, signed off; existing targets must resolve unchanged | Nothing |
 | CoW | F-1: CoW app skeleton (B3 to B7: project, manifests, `FrontEnd` stub, `Main.cpp`, verify) | Same spec/plan as the `cow` target row | Promotion complete |
-| CoW | F-1: Boot choice (Play entry only) | [boot-choice.md](specs/applications/cow/systems/f1-harness/boot-choice.md) | CoW app skeleton (verified in its B6) |
+| ~~CoW~~ | F-1: Boot choice (Play entry only) | [boot-choice.md](specs/applications/cow/systems/f1-harness/boot-choice.md) | CoW app skeleton (verified in its B6) |
 | Dia | F-1: `dia scaffold stage --app` (system plan task 6, TDD) | [f1-harness.plan.md](specs/applications/cow/systems/f1-harness/f1-harness.plan.md). Signed off | CoW app skeleton built |
 | Dia | `dia scaffold app` (templates, command, `ScratchApp` boot proof, docs) | [scaffold-app.md](specs/applications/dia/systems/diacli/scaffold-app.md) tasks 2 to 5 | Registry refactor done; boot proof needs the CoW skeleton |
 | CoW | `new-cow-stage` skill | [new-cow-stage-skill.md](specs/applications/cow/systems/f1-harness/new-cow-stage-skill.md) | `scaffold stage --app`; proving it needs a locked testbed design |
