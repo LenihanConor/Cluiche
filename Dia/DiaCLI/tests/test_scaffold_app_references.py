@@ -25,3 +25,10 @@ def test_includes_of_unreferenced_dia_lib_are_linked(tmp_path):
     libs = [r["link_lib"] for r in baseline_references(tmp_path)]
 
     assert libs == ["CluicheGameBaseline", "DiaCore", "DiaBlackboard"]
+
+
+def test_default_project_guid_matches_solution_guid():
+    from dia_cli.commands.scaffold.app_templates import default_project_guid
+    from dia_cli.commands.scaffold.sln_cmd import _make_project_guid
+
+    assert default_project_guid("ScratchApp") == _make_project_guid("ScratchApp")

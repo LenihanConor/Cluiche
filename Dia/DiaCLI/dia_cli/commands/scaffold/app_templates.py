@@ -85,7 +85,9 @@ def pascal_to_snake(name: str) -> str:
 
 def default_project_guid(name: str) -> str:
     """Deterministic ProjectGuid for an app name, in vcxproj form ``{UPPER-CASE}``."""
-    return "{" + str(uuid.uuid5(_GUID_NAMESPACE, f"cluiche.app.{name}")).upper() + "}"
+    # Must equal the GUID `sln-add` writes into Cluiche.sln, or Visual Studio rewrites the solution.
+    from dia_cli.commands.scaffold.sln_cmd import _make_project_guid
+    return _make_project_guid(name)
 
 
 def baseline_references(repo_root: Path) -> List[Dict]:
