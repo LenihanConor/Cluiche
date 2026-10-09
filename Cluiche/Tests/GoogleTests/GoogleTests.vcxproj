@@ -854,6 +854,7 @@
     <ClCompile Include="DiaPathfinding\TestPathfindingSystemBudgetAdapter.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestStageStatusModule.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestBootMenuLogic.cpp" />
+    <ClCompile Include="CluicheGameBaseline\TestAppIdentity.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

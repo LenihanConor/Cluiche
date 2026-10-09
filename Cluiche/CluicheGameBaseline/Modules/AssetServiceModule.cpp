@@ -1,4 +1,5 @@
 #include "Modules/AssetServiceModule.h"
+#include "Modules/AppIdentity.h"
 
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
@@ -92,7 +93,7 @@ Dia::ApplicationFlow::StartResult AssetServiceModule::DoStart()
     // Parse .diagame for stage path map (global path_aliases are registered
     // in Main.cpp before the Application starts — required for
     // KernelModule's RenderWindow shader lookup).
-    Dia::Core::Containers::String512 diagamePath("%scluichetest.diagame", deployRoot);
+    Dia::Core::Containers::String512 diagamePath("%s%s", deployRoot, CurrentAppIdentity().diagameFileName.c_str());
     ParseDiagame(diagamePath.AsCStr());
 
     // Try to register handlers up front (requires KernelModule+UIModule).

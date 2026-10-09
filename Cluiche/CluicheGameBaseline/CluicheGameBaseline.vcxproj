@@ -68,6 +68,7 @@
     <ClCompile Include="Modules\DebugPanelPageModule.cpp" />
     <ClCompile Include="Modules\BootMenuLogic.cpp" />
     <ClCompile Include="Modules\BootMenuModule.cpp" />
+    <ClCompile Include="Modules\AppIdentity.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\AutomationModule.h" />
@@ -124,6 +125,7 @@
     <ClInclude Include="Modules\StageStatusModule.h" />
     <ClInclude Include="Modules\BootMenuLogic.h" />
     <ClInclude Include="Modules\BootMenuModule.h" />
+    <ClInclude Include="Modules\AppIdentity.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">

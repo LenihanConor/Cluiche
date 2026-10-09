@@ -1811,5 +1811,8 @@
     <ClCompile Include="CluicheGameBaseline\TestBootMenuLogic.cpp">
       <Filter>CluicheGameBaseline</Filter>
     </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestAppIdentity.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
