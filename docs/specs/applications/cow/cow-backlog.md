@@ -6,14 +6,18 @@ Design intent for every item lives in the GDD (`C:\GitHub\DesignDocs\COW`, `Outp
 
 ---
 
-## Ready to Build (Approved, plan written)
+## Ready to Build (Approved)
 
 | Item | Spec / plan | Depends On |
 |------|-------------|------------|
 | F-1: BootMenuModule promotion + `StageStatusModule` (7 tasks) | [bootmenu-promotion.md](systems/f1-harness/bootmenu-promotion.md) / [plan](systems/f1-harness/bootmenu-promotion.plan.md) | Nothing. Edits baseline + CluicheTest (signed off) |
 | F-1: DiaCLI `cow` target + `scaffold sln-add --root` (skeleton B1, B2) | [cow-app-skeleton.md](systems/f1-harness/cow-app-skeleton.md) / [plan](systems/f1-harness/cow-app-skeleton.plan.md) | Nothing. DiaCLI + `pipeline.toml` (signed off). Can run alongside the promotion |
+| F-1: DiaCLI data-driven target registry (scaffold-app task 1); makes the `cow` target toml-only | [scaffold-app.md](../dia/systems/diacli/scaffold-app.md) | Nothing. DiaCLI refactor, signed off; existing targets must resolve unchanged |
 | F-1: CoW app skeleton (B3 to B7: project, manifests, `FrontEnd` stub, `Main.cpp`, verify) | same | Promotion complete |
 | F-1: Boot choice (Play entry only) | [boot-choice.md](systems/f1-harness/boot-choice.md) | CoW app skeleton (verified in its B6) |
+| F-1: `dia scaffold stage --app` (system plan task 6, TDD) | [f1-harness.plan.md](systems/f1-harness/f1-harness.plan.md) | CoW app skeleton built. Signed off |
+| `dia scaffold app` (rest of scaffold-app: templates, command, `ScratchApp` boot proof, docs) | [scaffold-app.md](../dia/systems/diacli/scaffold-app.md) (tasks 2 to 5) | Registry refactor; boot proof needs the CoW skeleton |
+| `new-cow-stage` skill | [new-cow-stage-skill.md](systems/f1-harness/new-cow-stage-skill.md) | `scaffold stage --app`; proving it needs a locked testbed design |
 
 Order and parallelism: [f1-harness.plan.md](systems/f1-harness/f1-harness.plan.md).
 
@@ -44,9 +48,6 @@ The testbeds and the pieces each one absorbs, from `TestbedRoster.md`. The GDD d
 
 | Item | What's needed | Depends On |
 |------|---------------|------------|
-| `dia scaffold app` (DiaCLI) | **Spec Approved:** [scaffold-app.md](../dia/systems/diacli/scaffold-app.md). Includes a data-driven target registry refactor (signed off). Tasks 1 to 3 can start before the skeleton; its boot proof needs the skeleton | Task 1: nothing. Boot proof: CoW app skeleton built |
-| `dia scaffold stage --app` (DiaCLI) | Covered by the system plan (task 6, TDD). Approved; no separate spec | CoW app skeleton built |
-| `new-cow-stage` skill | **Spec Approved:** [new-cow-stage-skill.md](systems/f1-harness/new-cow-stage-skill.md). Reads the GDD testbed entry first | `scaffold stage --app`; first locked testbed design to prove it |
 | F-1: Bus live verification | Feature spec: live-stage proof of Primary and Reaction delivery (Test 4, 10,000 messages at 1:1) | CoW app skeleton |
 | F-1: Bus traffic recorder | Feature spec: versioned per-message records (tick, type id, payload), Debug-only. **Placement undecided:** new Dia capability in DiaMessageBus or a CoW-Shared subscriber that avoids a Dia change | CoW app skeleton; bus live verification |
 | F-1: Debug command / inspector host | Feature spec: shared host for debug commands and inspector panels, proven with a stand-in command and panel | CoW app skeleton |
