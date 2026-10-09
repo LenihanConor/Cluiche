@@ -66,6 +66,7 @@
     <ClCompile Include="Modules\EconomyInspectorModule.cpp" />
     <ClCompile Include="Modules\DebugPanelPage.cpp" />
     <ClCompile Include="Modules\DebugPanelPageModule.cpp" />
+    <ClCompile Include="Modules\BootMenuLogic.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\AutomationModule.h" />
@@ -120,6 +121,7 @@
     <ClInclude Include="Types\DebugPanelSetVisibilityEvent.h" />
     <ClInclude Include="Modules\AttributeVisualDebuggerModule.h" />
     <ClInclude Include="Modules\StageStatusModule.h" />
+    <ClInclude Include="Modules\BootMenuLogic.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">

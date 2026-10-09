@@ -853,6 +853,7 @@
     <ClCompile Include="DiaSimTime\TestSimTimeSaveState.cpp" />
     <ClCompile Include="DiaPathfinding\TestPathfindingSystemBudgetAdapter.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestStageStatusModule.cpp" />
+    <ClCompile Include="CluicheGameBaseline\TestBootMenuLogic.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
