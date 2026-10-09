@@ -9,7 +9,7 @@
 | System | @docs/specs/applications/dia/systems/diacli/diacli.md | **scaffold-app** |
 
 **Origin:** CoW (@docs/specs/applications/cow/cow.md) was built by hand from CluicheTest's pattern; this feature turns that pattern into a generator any future game can use. Logged as Dia need #7 in `docs/specs/applications/cow/dia-needs.md`.
-**Status:** `Draft`
+**Status:** `Approved`
 
 ---
 
@@ -82,7 +82,7 @@ Today `launch.py` (`_TARGET_EXE_MAP`), `deploy_runner.py` (`_DEPLOY_TARGETS`) an
 |--------|------------|
 | Engine vs application boundary | A reusable capability any game can use belongs in Dia; this is DiaCLI, not CoW. |
 | SD-CLI-007 | Scaffolding is template-based (Jinja2), consistent with `dia command create`. |
-| Sign-off | The registry refactor is a larger DiaCLI change than the `cow` target alone; it needs explicit user sign-off before task 1. |
+| Sign-off | The registry refactor is a larger DiaCLI change than the `cow` target alone. Signed off by the user together with spec approval. |
 | CLAUDE.md | Everything is run through `dia`; if the CLI cannot do it, fix the CLI. |
 
 ## Open Design Questions

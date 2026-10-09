@@ -3,7 +3,7 @@
 **Parent:** @docs/specs/applications/cow/systems/f1-harness/f1-harness.md
 **Mirrors:** `.claude/skills/new-cluichetest-stage.md`
 **Depends on:** `dia scaffold stage --app` (system plan task 6) and the CoW app skeleton
-**Status:** `Draft`
+**Status:** `Approved`
 
 ## Summary
 

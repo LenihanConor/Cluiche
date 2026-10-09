@@ -44,9 +44,9 @@ The testbeds and the pieces each one absorbs, from `TestbedRoster.md`. The GDD d
 
 | Item | What's needed | Depends On |
 |------|---------------|------------|
-| `dia scaffold app` (DiaCLI) | **Spec drafted, awaiting approval:** [scaffold-app.md](../dia/systems/diacli/scaffold-app.md). Includes a data-driven target registry refactor (needs sign-off). Tasks 1 to 3 can start before the skeleton; its boot proof needs the skeleton | Task 1: nothing. Boot proof: CoW app skeleton built |
+| `dia scaffold app` (DiaCLI) | **Spec Approved:** [scaffold-app.md](../dia/systems/diacli/scaffold-app.md). Includes a data-driven target registry refactor (signed off). Tasks 1 to 3 can start before the skeleton; its boot proof needs the skeleton | Task 1: nothing. Boot proof: CoW app skeleton built |
 | `dia scaffold stage --app` (DiaCLI) | Covered by the system plan (task 6, TDD). Approved; no separate spec | CoW app skeleton built |
-| `new-cow-stage` skill | **Spec drafted, awaiting approval:** [new-cow-stage-skill.md](systems/f1-harness/new-cow-stage-skill.md). Reads the GDD testbed entry first | `scaffold stage --app`; first locked testbed design to prove it |
+| `new-cow-stage` skill | **Spec Approved:** [new-cow-stage-skill.md](systems/f1-harness/new-cow-stage-skill.md). Reads the GDD testbed entry first | `scaffold stage --app`; first locked testbed design to prove it |
 | F-1: Bus live verification | Feature spec: live-stage proof of Primary and Reaction delivery (Test 4, 10,000 messages at 1:1) | CoW app skeleton |
 | F-1: Bus traffic recorder | Feature spec: versioned per-message records (tick, type id, payload), Debug-only. **Placement undecided:** new Dia capability in DiaMessageBus or a CoW-Shared subscriber that avoids a Dia change | CoW app skeleton; bus live verification |
 | F-1: Debug command / inspector host | Feature spec: shared host for debug commands and inspector panels, proven with a stand-in command and panel | CoW app skeleton |

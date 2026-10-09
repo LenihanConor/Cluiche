@@ -85,7 +85,8 @@ User decisions on the cross-boundary changes this system needs:
 | Shipping gating in the baseline | Dropped |
 | Bus traffic recorder | Waiting (deferred feature) |
 | DiaMessageBus module doc status fix | Approved |
-| `dia scaffold app` | Approved (to be built) |
+| `dia scaffold app` (spec Approved) incl. data-driven DiaCLI target registry | Approved |
+| `new-cow-stage` skill (spec Approved) | Approved |
 
 ## Binding Decisions
 
