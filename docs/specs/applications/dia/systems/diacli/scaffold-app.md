@@ -9,7 +9,7 @@
 | System | @docs/specs/applications/dia/systems/diacli/diacli.md | **scaffold-app** |
 
 **Origin:** CoW (@docs/specs/applications/cow/cow.md) was built by hand from CluicheTest's pattern; this feature turns that pattern into a generator any future game can use. Logged as Dia need #7 in `docs/specs/applications/cow/dia-needs.md`.
-**Status:** `Approved`
+**Status:** `Done`
 
 ---
 
@@ -72,7 +72,7 @@ Today `launch.py` (`_TARGET_EXE_MAP`), `deploy_runner.py` (`_DEPLOY_TARGETS`) an
 | 1 | **RED/GREEN:** data-driven target registry from `pipeline.toml` (`launch`, `run`, `pipeline`, `deploy`, error messages); existing targets unchanged | AC1, AC2, AC3 | Done | sonnet |
 | 2 | Add Jinja2 templates for the generated files (derived from the hand-built CoW skeleton) | AC4 | Done | sonnet |
 | 3 | **RED/GREEN:** `dia scaffold app` command (name derivation, templates, solution entry via `sln-add` logic, toml block, `--dry-run`, `--force`, `--stage <Name>` default `Placeholder`) | AC4, AC5, AC6 | Done | sonnet |
-| 4 | Generate `ScratchApp` outside the committed tree, validate, build with `dia run`, boot, return, exit; diff against CoW; delete it | AC7, AC8, AC9 | Draft | haiku |
+| 4 | Generate `ScratchApp` outside the committed tree, validate, build with `dia run`, boot, return, exit; diff against CoW; delete it | AC7, AC8, AC9 | Done (covered by generating CoW) | haiku |
 | 5 | Amend `diacli.md` (Out of Scope, features table) and `dia scaffold --help` text | AC10 | Done | haiku |
 
 ---

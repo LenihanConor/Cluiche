@@ -129,6 +129,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | Dia | F-1: DiaCLI data-driven target registry (scaffold-app task 1); makes the `cow` target toml-only | 2026-10-09 | Done: registry derives launch/deploy/error lists from pipeline.toml; scaffold-app task 1; commit 04f9aee5 |
 | bootmenu-promotion | [spec](specs/) | 2026-10-09 | Marked done by `dia docs spec-done` |
 | boot-choice | [spec](specs/) | 2026-10-09 | Marked done by `dia docs spec-done` |
+| scaffold-app | [spec](specs/) | 2026-10-09 | Marked done by `dia docs spec-done` |
 
 ---
 
