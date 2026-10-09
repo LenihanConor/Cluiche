@@ -70,7 +70,7 @@ Today `launch.py` (`_TARGET_EXE_MAP`), `deploy_runner.py` (`_DEPLOY_TARGETS`) an
 |---|------|------|--------|-------|
 | 1 | **RED/GREEN:** data-driven target registry from `pipeline.toml` (`launch`, `run`, `pipeline`, `deploy`, error messages); existing targets unchanged | AC1, AC2, AC3 | Done | sonnet |
 | 2 | Add Jinja2 templates for the generated files (derived from the hand-built CoW skeleton) | AC4 | Draft | sonnet |
-| 3 | **RED/GREEN:** `dia scaffold app` command (name derivation, templates, solution entry via `sln-add` logic, toml block, `--dry-run`, `--force`) | AC4, AC5, AC6 | Draft | sonnet |
+| 3 | **RED/GREEN:** `dia scaffold app` command (name derivation, templates, solution entry via `sln-add` logic, toml block, `--dry-run`, `--force`, `--stage <Name>` default `Placeholder`) | AC4, AC5, AC6 | Draft | sonnet |
 | 4 | Generate `ScratchApp` outside the committed tree, validate, build with `dia run`, boot, return, exit; diff against CoW; delete it | AC7, AC8, AC9 | Draft | haiku |
 | 5 | Amend `diacli.md` (Out of Scope, features table) and `dia scaffold --help` text | AC10 | Draft | haiku |
 
@@ -88,5 +88,5 @@ Today `launch.py` (`_TARGET_EXE_MAP`), `deploy_runner.py` (`_DEPLOY_TARGETS`) an
 ## Open Design Questions
 
 1. The generated `.vcxproj` project references are copied from CluicheTest; if the baseline grows, the template drifts. Option: generate references from a list the template reads from one place.
-2. `ScratchApp` must be built to prove AC8. This depends on the CoW skeleton existing and the promotion being complete, so this feature cannot be verified until then. Tasks 1 to 3 can start earlier.
-3. Should generated apps include the `FrontEnd`-style placeholder under the name `Placeholder`, or take a `--stage` argument? Default here: fixed `Placeholder`.
+2. **Resolved (build order reversed):** templates are derived from CluicheTest plus the baseline `BootMenuModule` (after the promotion), not from a hand-built CoW. CoW itself is generated with `dia scaffold app CoW --stage FrontEnd`, replacing skeleton tasks B3 to B5; CoW's verification (skeleton B6) is the boot proof. Task 4 (`ScratchApp`) reduces to a throwaway check that the default `Placeholder` output validates and builds, and AC9 compares the generated CoW against CluicheTest's file kinds. Needs the promotion complete before task 2.
+3. **Resolved:** `--stage <Name>` argument, default `Placeholder`. CoW passes `--stage FrontEnd`.

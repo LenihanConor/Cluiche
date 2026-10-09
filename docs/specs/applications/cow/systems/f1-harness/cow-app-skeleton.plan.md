@@ -23,6 +23,10 @@
 | B6 | Verify: `dia run cow` end to end (build, menu appears, launch `FrontEnd`, log line seen, return to Boot, close, exit 0); `dia run googletest`; launch CluicheTest and use its menu; confirm the boot-choice AC (Play entry); user checks the Visual Studio startup and F5 | AC1 to AC8, boot-choice AC1 | Not Started | haiku | Quote fresh output; pass/fail only |
 | B7 | Observation scan on the touched files; update the spec Status; `dia docs spec-done` for the skeleton and boot-choice specs | all | Not Started | haiku | Scan findings do not block |
 
+## Build Order Change
+
+B3 to B5 are replaced by one step: generate CoW with `dia scaffold app CoW --stage FrontEnd` (scaffold-app tasks 2 and 3), then fix anything CoW-specific by hand. Order: promotion, scaffold-app tasks 2 and 3, generate CoW, B6, B7. The B3 to B5 rows stay as the checklist of what the generator must produce.
+
 ## Dependencies
 
 B1 and B2 are independent of each other and of the promotion. B3 needs B2. B4 needs the promotion and B1 (for validation paths). B5 needs B3 and B4. B6 needs all. B7 last.
