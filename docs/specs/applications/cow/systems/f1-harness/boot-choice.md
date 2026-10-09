@@ -3,7 +3,7 @@
 **Parent:** @docs/specs/applications/cow/systems/f1-harness/f1-harness.md
 **Design source:** `Output Docs/GDD/10_PrototypeStrategy/F1_Harness.md` (decision 1, Test 1)
 **Depends on:** @docs/specs/applications/cow/systems/f1-harness/cow-app-skeleton.md
-**Status:** `Draft`
+**Status:** `Approved`
 
 ## Summary
 
