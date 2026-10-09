@@ -137,6 +137,37 @@ def _find_project_guid_by_name(sln_text: str, name: str) -> Optional[str]:
     return m.group(1) if m else None
 
 
+def solution_has_project(sln_text: str, project_name: str) -> bool:
+    """True if the project (by name and deterministic GUID) is already in the .sln."""
+    return project_name in sln_text and _make_project_guid(project_name) in sln_text
+
+
+def add_project_to_solution(
+    repo_root: Path,
+    project_name: str,
+    folder: str = "library",
+    root: str = "Dia",
+) -> bool:
+    """Register <root>/<name>/<name>.vcxproj in Cluiche.sln.
+
+    Returns False (and changes nothing) if already present, True if added.
+    Raises click.ClickException if the solution is missing. Reused by
+    ``dia scaffold app``.
+    """
+    sln_path = repo_root / "Cluiche" / "Cluiche.sln"
+    if not sln_path.exists():
+        raise click.ClickException(f"Solution not found: {sln_path}")
+    sln_text = sln_path.read_text(encoding="utf-8")
+    if solution_has_project(sln_text, project_name):
+        return False
+    vcxproj_path = repo_root / root / project_name / f"{project_name}.vcxproj"
+    vcxproj_rel = os.path.relpath(vcxproj_path, sln_path.parent).replace("/", "\\")
+    sln_text = _add_project_to_sln(
+        sln_text, project_name, vcxproj_rel, _make_project_guid(project_name), [], folder)
+    sln_path.write_text(sln_text, encoding="utf-8")
+    return True
+
+
 # ---------------------------------------------------------------------------
 # Click command
 # ---------------------------------------------------------------------------
@@ -196,7 +227,7 @@ def sln_add(project_name: str, folder: str, deps: Optional[str], root: str, dry_
     sln_text = sln_path.read_text(encoding="utf-8")
 
     # Check if already present
-    if project_name in sln_text and project_guid in sln_text:
+    if solution_has_project(sln_text, project_name):
         click.echo(f"{project_name} already in solution.")
         return
 
