@@ -32,6 +32,7 @@ Creating a Cluiche application means copying and trimming about ten files by han
 | `Cluiche/Assets/<Name>/<name>.diagame` | Window title, observation file, catalogue, path aliases, imports |
 | `Cluiche/Assets/<Name>/<name>_main.diaapp` | Stages `Boot` and `Placeholder`; the trimmed module and stream set the Boot path needs; `initial_stage: Boot` |
 | `Cluiche/Assets/<Name>/<name>.diaobservation`, `assets.catalogue.json` | Minimal observation config and catalogue |
+| `Cluiche/Assets/<Name>/global.stage.json` | Source for the `stage.global` asset stage; the asset service loads it at start |
 | `Cluiche/Assets/<Name>/Stages/Placeholder/...` | `.diastage`, stage `.diaapp`; stage module under `Cluiche/<Name>/` that logs and idles; `"Boot"` transition |
 | `Cluiche/Cluiche.sln` entry | Via the `sln-add` logic (with a root option), solution folder `executables` |
 | `[targets.<name>]` in `pipeline.toml` | Stages `compile-code, build-assets, deploy`, `app_name`, `catalogue_manifest`, `build_deps`, deploy list with an asset glob |
