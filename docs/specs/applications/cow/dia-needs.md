@@ -13,3 +13,4 @@ Columns: `Tier` is one of `Dia` / `CluicheGameBaseline` / `CoW-Shared` (built di
 | 5 | Audio module (ambient, notifications, time-speed-aware) | Dia | A-1; Dia has none | Proposed |
 | 6 | `dia scaffold sln-add` path option (currently hard-codes `Dia/<name>/`) so `Cluiche/CoW` can be added | Dia (DiaCLI) | CoW skeleton | Proposed |
 | 7 | `dia scaffold app <Name>`: generate a new Cluiche application skeleton (project, sln entry, `main`, manifests, `pipeline.toml` target, Boot stage) | Dia (DiaCLI) | CoW is built by hand from CluicheTest; any future game needs the same | Proposed |
+| 8 | Data-driven DiaCLI target registry from `pipeline.toml` (replaces hard-coded target lists in `launch.py`, `deploy_runner.py`, help text) | Dia (DiaCLI) | `scaffold app`; makes adding the `cow` target toml-only | Proposed: needs sign-off |

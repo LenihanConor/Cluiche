@@ -34,9 +34,9 @@ System plan: tasks are the feature specs and the cross-cutting tooling work. Eac
 | 4 | Execute skeleton task B6 (verify end to end, including the boot-choice check and Visual Studio startup) | B, C | Not Started | haiku | Visual Studio F5 part is done by the user |
 | 5 | Mark boot-choice spec Done; update system spec feature rows | C | Not Started | haiku | `dia docs spec-done` |
 | 6 | **RED/GREEN:** `dia scaffold stage --app` (parameterise CluicheTest-specific names, paths and the 9 touch points) with tests | D | Not Started | sonnet | Uses `FrontEnd` as the reference. Existing CluicheTest scaffold output must be unchanged |
-| 7 | Add a `new-cow-stage` skill beside `new-cluichetest-stage` | D | Not Started | haiku | After task 6 |
-| 8 | Write the `dia scaffold app` feature spec (interview first) | D | Not Started | opus | Spec is generated from what the hand-built skeleton needed; design-judgment work |
-| 9 | Implement `dia scaffold app` per its spec; prove by generating a throwaway app in a temp location and building it | D | Not Started | sonnet | Needs task 8 approved. Do not commit the throwaway app |
+| 7 | Implement the `new-cow-stage` skill per [new-cow-stage-skill.md](new-cow-stage-skill.md) | D | Not Started | haiku | After task 6. Spec Draft; trial run needs a locked testbed design |
+| 8 | `dia scaffold app` feature spec: [scaffold-app.md](../../../dia/systems/diacli/scaffold-app.md) | D | Draft written, awaiting approval | opus | Written by interview. Includes the data-driven target registry |
+| 9 | Implement `dia scaffold app` per its spec (its 5 tasks); prove by generating `ScratchApp` outside the committed tree and booting it | D | Not Started | sonnet | Needs task 8 approved and the registry refactor signed off. Its task 1 may run before the skeleton and make skeleton B1 toml-only. Do not commit the throwaway app |
 | 10 | Verify the DiaMessageBus tests pass, then correct `status: stub` in `dia.messagebus.architecture.module.md` | E | Not Started | haiku | Doc only; confirm with a fresh `dia run googletest --filter="*MessageBus*"` first |
 | 11 | Observation opportunity scan across all touched files; log suggestions in the notes | A to D | Not Started | haiku | Does not block Done |
 | 12 | Mark the F-1 system spec Done only when all child features are Approved or Done; record the deferred features | all | Not Started | haiku | System spec rule |
