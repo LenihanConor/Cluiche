@@ -11,3 +11,5 @@ Columns: `Tier` is one of `Dia` / `CluicheGameBaseline` / `CoW-Shared` (built di
 | 3 | Promote `BootMenuModule` to CluicheGameBaseline with a baseline `StageStatusModule` abstraction (AD-004) | CluicheGameBaseline | F-1 debug menu | Proposed |
 | 4 | Fix stale `status: stub` in `dia.messagebus.architecture.module.md` | Dia | Doc is wrong; code is implemented and tested | Proposed |
 | 5 | Audio module (ambient, notifications, time-speed-aware) | Dia | A-1; Dia has none | Proposed |
+| 6 | `dia scaffold sln-add` path option (currently hard-codes `Dia/<name>/`) so `Cluiche/CoW` can be added | Dia (DiaCLI) | CoW skeleton | Proposed |
+| 7 | `dia scaffold app <Name>`: generate a new Cluiche application skeleton (project, sln entry, `main`, manifests, `pipeline.toml` target, Boot stage) | Dia (DiaCLI) | CoW is built by hand from CluicheTest; any future game needs the same | Proposed |

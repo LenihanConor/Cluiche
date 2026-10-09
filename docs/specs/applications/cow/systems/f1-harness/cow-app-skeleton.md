@@ -48,6 +48,22 @@ Mirror CluicheTest's structure, trimmed to what a Boot menu and stub stage need.
 
 **Pipeline.** `dia run cow` goes through `pipeline.toml`. CluicheTest's target has stages `compile-code, reflect, build-assets, deploy`, `build_deps` (protobuf, bgfx shaders), `catalogue_manifest`, and a `deploy.files` list of SFML DLLs, manifests, the schema, and one entry per stage file. Deploy entries accept `*` patterns, so CoW can use one glob for its stage assets instead of per-file entries.
 
+## Existing DiaCLI tooling (surveyed)
+
+| Command | Use here | Limitation found |
+|---------|----------|------------------|
+| `dia scaffold sln-add` | Register `CoW` in `Cluiche.sln` (`--folder executables`, `--deps`) with all configs | Hard-codes `Dia/<name>/<name>.vcxproj`; CoW is at `Cluiche/CoW/`. Needs a path option (DiaCLI change) |
+| `dia docs vcxproj-add <Project> <File>` | Add each new `.h`/`.cpp` to `CoW.vcxproj` and filters | None; idempotent |
+| `dia scaffold stage` | Generate stages | CluicheTest-only (see task 5). Skill `new-cluichetest-stage` wraps it; add a `new-cow-stage` skill after `--app` exists |
+| `dia scaffold module` / `plugin` | Not used (they create Dia modules and editor plugins) | No `scaffold app` exists. The CoW project is built by hand from CluicheTest's pattern |
+| `dia validate manifest` | Check `.diagame`/`.diaapp`/`.diastage` | None |
+| `dia pipeline deploy <target>` | The post-build deploy step | Needs the `cow` target (task 1) |
+| `dia check sln-sync` | Confirm solution folder layout after adding CoW | Run in verify |
+| `dia check deps`, `dia docs precommit` | Final checks | Run in verify |
+| `dia docs spec-scaffold` | Spec skeleton | Fails with relative `--output-dir` and writes the wrong parent; not used |
+
+Because no `scaffold app` exists, a `dia scaffold app` generating this whole skeleton would be generic Dia tooling any future game needs. Logged as a Dia need rather than built here.
+
 ## Acceptance Criteria
 
 | # | Criterion |
@@ -67,7 +83,7 @@ Mirror CluicheTest's structure, trimmed to what a Boot menu and stub stage need.
 | # | Task | Test | Status | Model |
 |---|------|------|--------|-------|
 | 1 | **RED/GREEN:** add the `cow` target to DiaCLI (`launch.py` exe map, `pipeline.py`, `deploy_runner.py`) and a `[targets.cow]` block in `pipeline.toml` (stages, `app_name`, `catalogue_manifest`, `build_deps`, deploy files with a stage-asset glob), with tests mirroring the existing target tests | AC2 | Draft | sonnet |
-| 2 | Create `CoW.vcxproj` (output dir, deploy PostBuildEvent, debugger working directory), filters, and `Cluiche.sln` entry (`dia docs vcxproj-add`) | AC1, AC2a | Draft | sonnet |
+| 2 | Create `CoW.vcxproj` (output dir, deploy PostBuildEvent, debugger working directory), filters, and `Cluiche.sln` entry via `dia scaffold sln-add` (extended with a path option) and `dia docs vcxproj-add` | AC1, AC2a | Draft | sonnet |
 | 3 | Create `Cluiche/Assets/CoW/`: `cow.diagame`, `cow_main.diaapp` (trimmed per Design), `cow.diaobservation`, minimal `assets.catalogue.json`; the `FrontEnd` stub stage (`.diastage`, stage `.diaapp`, stage module, main-manifest entry with `"Boot"` transition, `.diagame` import); validate | AC3, AC4, AC5 | Draft | sonnet |
 | 4 | Write `Cluiche/CoW/Main.cpp` | AC3, AC8 | Draft | sonnet |
 | 5 | **RED/GREEN:** add `--app` to `dia scaffold stage` with tests. The command currently hard-codes CluicheTest's namespace, asset paths, `cluiche_main.diaapp`, `.diagame`, `.vcxproj` and filters (9 touch points) and does not touch `pipeline.toml`; `--app` must parameterise all of these | AC6 | Draft | sonnet |
