@@ -95,17 +95,30 @@ No binding constraints apply.
 """
 
 
-def _infer_parent_spec(repo_root: Path, spec_type: str, parent_system: str) -> str:
-    if spec_type == "feature":
-        candidates = list((repo_root / "docs" / "specs" / "systems").rglob(f"{parent_system.lower()}.md"))
-        candidates = [c for c in candidates if ".plan." not in str(c)]
-        if candidates:
-            return str(candidates[0].relative_to(repo_root)).replace("\\", "/")
-    elif spec_type == "system":
-        candidates = list((repo_root / "docs" / "specs" / "applications").rglob("*.md"))
-        if candidates:
-            return str(candidates[0].relative_to(repo_root)).replace("\\", "/")
-    return "docs/specs/applications/dia.md"
+def _rel(repo_root: Path, path: Path) -> str:
+    return str(path.relative_to(repo_root)).replace("\\", "/")
+
+
+def _app_spec(repo_root: Path, app: str) -> Path:
+    """Application spec: docs/specs/applications/<app>/<app>.md."""
+    path = repo_root / "docs" / "specs" / "applications" / app.lower() / f"{app.lower()}.md"
+    if not path.is_file():
+        raise click.ClickException(f"Application spec not found: {_rel(repo_root, path)}")
+    return path
+
+
+def _find_system_spec(repo_root: Path, app: str, system: str) -> Path:
+    """System spec: docs/specs/applications/<app>/systems/**/<system>.md."""
+    systems_dir = repo_root / "docs" / "specs" / "applications" / app.lower() / "systems"
+    matches = [
+        c for c in systems_dir.rglob(f"{system.lower()}.md")
+        if ".plan." not in c.name
+    ]
+    if not matches:
+        raise click.ClickException(
+            f"System spec '{system}' not found under {_rel(repo_root, systems_dir)}"
+        )
+    return matches[0]
 
 
 def _name_to_namespace(name: str) -> str:
@@ -116,19 +129,27 @@ def _name_to_namespace(name: str) -> str:
 @click.command("spec-scaffold")
 @click.argument("spec_type", type=click.Choice(["feature", "system"]))
 @click.argument("name")
+@click.option("--app", default="dia", show_default=True,
+              help="Application the spec belongs to (dia, cow, ...).")
 @click.option("--parent", "parent_system", default=None,
-              help="Parent system name (for features) or application (for systems).")
-@click.option("--output-dir", default=None, help="Output directory (auto-detected if omitted).")
+              help="Parent system name (required for features).")
+@click.option("--output-dir", default=None,
+              help="Output directory (auto-detected if omitted; relative paths resolve against the cwd).")
 @click.option("--dry-run", is_flag=True, default=False, help="Print to stdout.")
-def spec_scaffold(spec_type: str, name: str, parent_system: str, output_dir: str, dry_run: bool) -> None:
+def spec_scaffold(spec_type: str, name: str, app: str, parent_system: str,
+                  output_dir: str, dry_run: bool) -> None:
     """Generate a spec file skeleton with all required sections.
 
     SPEC_TYPE is 'feature' or 'system'.
     NAME is the spec name in kebab-case (e.g. camera3d-types, diacamera3d).
 
+    Features land beside their parent system spec; systems land in
+    docs/specs/applications/<app>/systems/<name>/<name>.md.
+
     Examples:
         dia docs spec-scaffold feature camera3d-types --parent DiaCamera3D
         dia docs spec-scaffold system DiaCamera3D
+        dia docs spec-scaffold feature bus-recorder --app cow --parent f1-harness
     """
     repo_root = find_repo_root(__file__)
 
@@ -136,43 +157,38 @@ def spec_scaffold(spec_type: str, name: str, parent_system: str, output_dir: str
         w.capitalize() for w in name.replace("-", " ").replace("_", " ").split()
     )
 
-    parent_spec = ""
-    if parent_system:
-        parent_spec = _infer_parent_spec(repo_root, spec_type, parent_system)
-    else:
-        parent_spec = "docs/specs/applications/dia.md"
-
-    namespace = _name_to_namespace(name)
-
     if spec_type == "feature":
+        if not parent_system:
+            raise click.UsageError("--parent is required for feature specs.")
+        parent_path = _find_system_spec(repo_root, app, parent_system)
+        default_dir = parent_path.parent
         content = _FEATURE_TEMPLATE.format(
             name=display_name,
-            parent_spec_path=parent_spec,
-            namespace=namespace,
+            parent_spec_path=_rel(repo_root, parent_path),
+            namespace=_name_to_namespace(name),
         )
     else:
+        parent_path = _app_spec(repo_root, app)
+        default_dir = parent_path.parent / "systems" / name.lower()
         content = _SYSTEM_TEMPLATE.format(
             name=display_name,
-            parent_spec_path=parent_spec,
+            parent_spec_path=_rel(repo_root, parent_path),
         )
 
     if dry_run:
         click.echo(content)
         return
 
-    if output_dir:
-        out_path = Path(output_dir) / f"{name}.md"
-    else:
-        if spec_type == "feature" and parent_system:
-            parent_lower = parent_system.lower()
-            out_dir = repo_root / "docs" / "specs" / "features" / "dia" / parent_lower
-        elif spec_type == "system":
-            out_dir = repo_root / "docs" / "specs" / "systems" / "dia"
-        else:
-            out_dir = repo_root / "docs" / "specs"
-        out_dir.mkdir(parents=True, exist_ok=True)
-        out_path = out_dir / f"{name}.md"
+    out_dir = Path(output_dir).resolve() if output_dir else default_dir
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / (f"{name.lower()}.md" if spec_type == "system" else f"{name}.md")
+    if out_path.exists():
+        raise click.ClickException(f"Refusing to overwrite existing {out_path}")
 
     out_path.write_text(content, encoding="utf-8")
-    click.echo(f"[dia docs] Created {out_path.relative_to(repo_root)}")
-    click.echo(f"  Next: fill in TODOs, then run /spec-feature or /spec-system for AI review")
+    try:
+        shown = out_path.relative_to(repo_root)
+    except ValueError:
+        shown = out_path
+    click.echo(f"[dia docs] Created {shown}")
+    click.echo("  Next: fill in TODOs, then run /spec-feature or /spec-system for AI review")

@@ -135,6 +135,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | `dia scaffold stage --app` | [plan](specs/applications/cow/systems/f1-harness/f1-harness.plan.md) | 2026-10-09 | F-1 task 6; 22 tests |
 | `new-cow-stage` skill (written; trial pending) | [spec](specs/applications/cow/systems/f1-harness/new-cow-stage-skill.md) | 2026-10-09 | Trial run is a loose end in BACKLOG.md |
 | scaffold-app | [spec](specs/) | 2026-10-09 | Marked done by `dia docs spec-done` |
+| Dia | `dia docs spec-scaffold` writes the wrong parent and fails on a relative `--output-dir` | 2026-10-09 | Parent inference now uses real layout; added --app; relative --output-dir works; tests added |
 
 ---
 
