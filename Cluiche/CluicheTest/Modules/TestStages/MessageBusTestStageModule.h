@@ -84,6 +84,11 @@ private:
     static constexpr float        kPingIntervalSeconds  = 3.0f;
     static constexpr uint32_t     kBurstTriggerFrame    = 150; // t ~= 5.0s at 30Hz
 
+    // Stress mode configuration (10k message test for CoW F-1)
+    static constexpr float        kStressPulseIntervalSeconds = 0.1f;  // 10x faster
+    static constexpr float        kStressPingIntervalSeconds  = 0.15f; // 10x faster
+    static constexpr uint32_t     kStressTargetMessages       = 10000;
+
     enum class FlashKind : uint8_t { None, Pulse, Ping, Pong, Burst };
 
     struct WanderNode
@@ -156,12 +161,19 @@ private:
     uint32_t     mDroppedTotal                   = 0;
     unsigned int mFrameCounter                   = 0;
 
+    // --- Stress mode ---
+    bool         mStressMode                     = false;
+    float        mPulseInterval                  = kPulseIntervalSeconds;
+    float        mPingInterval                   = kPingIntervalSeconds;
+    unsigned int mDuplicatesDetected             = 0;
+
     // --- Metrics ---
     Dia::Observation::Metric::Gauge* mMetricPulsesSent    = nullptr;
     Dia::Observation::Metric::Gauge* mMetricPingsSent     = nullptr;
     Dia::Observation::Metric::Gauge* mMetricPongsReceived = nullptr;
     Dia::Observation::Metric::Gauge* mMetricBursts        = nullptr;
     Dia::Observation::Metric::Gauge* mMetricDropped       = nullptr;
+    Dia::Observation::Metric::Gauge* mMetricDuplicates    = nullptr;
 
 #ifdef DIA_DEBUG
     friend class MessageBusDebugLayer;

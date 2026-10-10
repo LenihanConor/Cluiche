@@ -28,7 +28,8 @@
                 "BehaviourTreeTestStage",
                 "AICalloutTestStage",
                 "GridVisibilityTestStage",
-                "MessageBusTestStage"
+                "MessageBusTestStage",
+                "MessageBusStressTestStage"
             ],
             "auto_advance": false
         },
@@ -196,6 +197,13 @@
         },
         {
             "name": "MessageBusTestStage",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "MessageBusStressTestStage",
             "transitions": [
                 "Boot"
             ],
@@ -473,7 +481,8 @@
                         "BehaviourTreeTestStage",
                         "AICalloutTestStage",
                         "GridVisibilityTestStage",
-                        "MessageBusTestStage"
+                        "MessageBusTestStage",
+                        "MessageBusStressTestStage"
                     ],
                     "dependencies": [
                         "ObservationModule",
@@ -585,7 +594,8 @@
                         "BehaviourTreeTestStage",
                         "AICalloutTestStage",
                         "GridVisibilityTestStage",
-                        "MessageBusTestStage"
+                        "MessageBusTestStage",
+                        "MessageBusStressTestStage"
                     ],
                     "dependencies": [
                         "ObservationModule",
@@ -748,7 +758,8 @@
                         "BehaviourTreeTestStage",
                         "AICalloutTestStage",
                         "GridVisibilityTestStage",
-                        "MessageBusTestStage"
+                        "MessageBusTestStage",
+                        "MessageBusStressTestStage"
                     ],
                     "dependencies": [
                         "Camera2DModule"
@@ -900,7 +911,8 @@
                         "BehaviourTreeTestStage",
                         "AICalloutTestStage",
                         "GridVisibilityTestStage",
-                        "MessageBusTestStage"
+                        "MessageBusTestStage",
+                        "MessageBusStressTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"
