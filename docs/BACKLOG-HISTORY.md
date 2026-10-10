@@ -139,6 +139,8 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | Dia | `dia docs vcxproj-add` picks the filter from the first path segment only | 2026-10-09 | Filter now reused from same-directory entries, then nearest ancestor, then first segment; tests added |
 | CoW | F-1: Bus live verification | 2026-10-09 | Implemented as MessageBusStressTestStage in CluicheTest (commit f717ac07). Validates Primary/Reaction two-pass delivery with 10k messages at 1:1 ratio. CoW can reference this test for F-1 Test 4 verification instead of building a separate CoW-specific stage. |
 | CoW / Dia | F-1: Bus traffic recorder | 2026-10-09 | Implemented as MessageBusStressTestStage in CluicheTest (commit f717ac07). Validates Primary/Reaction two-pass delivery with 10k messages at 1:1 ratio. CoW can reference this test for F-1 Test 4 verification instead of building a separate CoW-specific stage. |
+| CoW | DiaMessageBus module doc: `status: stub` is stale | 2026-10-09 | Moved by `dia docs backlog move` |
+| CoW | Shared application-bootstrap helper | 2026-10-09 | `Dia::ApplicationFlow::LoadManifest` + `RegisterPathAliases` (Manifest/ManifestBootstrap.h); both mains use it, loop/frame rate stay per-app |
 
 ---
 
@@ -155,6 +157,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 
 | Feature | Spec | System | Completed |
 |---------|------|--------|-----------|
+| Multi-Stream RNG | [multi-stream-rng.md](specs/applications/dia/systems/diamaths/multi-stream-rng.md) | DiaMaths | 2026-10-09 — `RandomStream` class + `RandomStreamManager` instance-based registry for deterministic multi-system RNG. 8 independent named streams (WLD, A1, B4, B6, C1, C2, B5, C4) for CoW F-2. StringCRC-keyed, no singleton, per-stream mutex, auto-grows capacity. 26 comprehensive tests: stream independence, determinism, thread safety (concurrent access + cross-thread), edge cases (seed=0/UINT_MAX, capacity limits), pointer stability, backward compatibility. Serialization deferred. |
 | Animation2DTestStage | animation2d-test-stage | TestStages | 2026-06-01 — Dragon skeleton clip playback, pose validation, blend weight interpolation; `animation.clip_complete` + `animation.pose_matches` checkpoints; pytest scenario passes. |
 | EntityTestStage | [entity-test-stage.md](specs/applications/cluichetest/systems/teststages/entity-test-stage.md) | TestStages | 2026-06-01 — Spawn/destroy/hierarchy/query/mailbox/lifecycle validation; `TransformComponent` + `VisualTestRenderComponent`; 6 checkpoints; EntityModule (SimPU, reusable) + EntityTestModule (MainPU, test logic). |
 | Scene2DTestStage | [scene2d-stage.md](specs/applications/cluichetest/systems/teststages/scene2d-stage.md) | TestStages | 2026-06-01 — Scene loading, camera/light/entity hydration, layer resolution; 5 checkpoints; pytest scenario passes. |
