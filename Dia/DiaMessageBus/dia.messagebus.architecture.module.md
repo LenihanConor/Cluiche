@@ -4,7 +4,7 @@ module_id: dia.messagebus
 name: DiaMessageBus
 owner_team: TBD
 layer: foundation/services
-status: stub
+status: active
 maturity: dev
 
 path: Dia/DiaMessageBus
