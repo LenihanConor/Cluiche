@@ -10,9 +10,15 @@
     <ClCompile Include="Modules\FrontEndModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\RandomStreamModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\RandomStreamModule.h">
       <Filter>Modules</Filter>
     </ClInclude>
   </ItemGroup>

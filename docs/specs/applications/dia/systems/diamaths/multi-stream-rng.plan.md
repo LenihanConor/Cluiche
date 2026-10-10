@@ -1,7 +1,7 @@
 # Implementation Plan: Multi-Stream RNG
 
 **Spec:** @docs/specs/applications/dia/systems/diamaths/multi-stream-rng.md  
-**Status:** In Progress
+**Status:** Done
 
 ## Implementation Patterns
 
@@ -140,7 +140,7 @@ TEST(RandomStream, ThreadSafety) {
 | 7 | Add new files to `DiaMaths.vcxproj` and `.vcxproj.filters` via `dia docs vcxproj-add` | — | Done | haiku | 4 headers + 2 cpps + 1 inl = 7 files.; vcxproj files updated |
 | 8 | Add test file to `GoogleTests.vcxproj` and `.vcxproj.filters` via `dia docs vcxproj-add` | — | Done | haiku | 1 test cpp.; test vcxproj updated |
 | 9 | Verify: run `dia run googletest --filter="*RandomStream*"`, quote pass/fail summary. Then run full suite (`dia run googletest`). | AC7, AC8 | Done | haiku | Verify gate. Quote output per build-output rule.; All 26 tests pass (13 RandomStream + 12 RandomStreamManager + 1 BackwardCompatibility). Added 5 gap-coverage tests: CapacityLimits EdgeCaseSeeds CrossThreadIndependence PointerStability BackwardCompatibility |
-| 10 | Observation scan on touched files; commit with message referencing spec. | — | Not Started | haiku | Scan findings do not block. |
+| 10 | Observation scan on touched files; commit with message referencing spec. | — | Done | haiku | Scan findings do not block.; Observation scan: no instrumentation gaps (pure library code). Committed as 171edfc9 with 13 files (5 new DiaMaths sources + tests + spec + plan + project files) |
 
 ## Dependencies
 

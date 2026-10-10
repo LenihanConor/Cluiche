@@ -331,4 +331,4 @@ No migration is required.
 
 ## Status
 
-`Approved` — Ready for implementation. Follow TDD: RED-GREEN-REFACTOR per task table. Create plan file when starting implementation.
+`Done` — Implementation complete. Plan: @docs/specs/applications/dia/systems/diamaths/multi-stream-rng.plan.md. All 10 tasks Done: RandomStream and RandomStreamManager implemented with 26 GoogleTests (21 original + 5 gap coverage), CoW RandomStreamModule built and verified. Commit: 171edfc9.
