@@ -1820,5 +1820,8 @@
     <ClCompile Include="DiaMaths\TestRandomStream.cpp">
       <Filter>DiaMaths</Filter>
     </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestManifestBootstrap.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

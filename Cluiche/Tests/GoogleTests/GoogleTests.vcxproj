@@ -856,6 +856,7 @@
     <ClCompile Include="CluicheGameBaseline\TestBootMenuLogic.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestAppIdentity.cpp" />
     <ClCompile Include="DiaMaths\TestRandomStream.cpp" />
+    <ClCompile Include="ApplicationFlow\TestManifestBootstrap.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
