@@ -137,6 +137,8 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | scaffold-app | [spec](specs/) | 2026-10-09 | Marked done by `dia docs spec-done` |
 | Dia | `dia docs spec-scaffold` writes the wrong parent and fails on a relative `--output-dir` | 2026-10-09 | Parent inference now uses real layout; added --app; relative --output-dir works; tests added |
 | Dia | `dia docs vcxproj-add` picks the filter from the first path segment only | 2026-10-09 | Filter now reused from same-directory entries, then nearest ancestor, then first segment; tests added |
+| CoW | F-1: Bus live verification | 2026-10-09 | Implemented as MessageBusStressTestStage in CluicheTest (commit f717ac07). Validates Primary/Reaction two-pass delivery with 10k messages at 1:1 ratio. CoW can reference this test for F-1 Test 4 verification instead of building a separate CoW-specific stage. |
+| CoW / Dia | F-1: Bus traffic recorder | 2026-10-09 | Implemented as MessageBusStressTestStage in CluicheTest (commit f717ac07). Validates Primary/Reaction two-pass delivery with 10k messages at 1:1 ratio. CoW can reference this test for F-1 Test 4 verification instead of building a separate CoW-specific stage. |
 
 ---
 

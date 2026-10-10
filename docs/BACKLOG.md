@@ -23,8 +23,8 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | Project | Item | Spec | What's needed |
 |---------|------|------|---------------|
-| CoW | F-1: Bus live verification | — | Feature spec: live-stage proof of Primary and Reaction delivery (Test 4, 10,000 messages at 1:1). Depends on CoW app skeleton |
-| CoW / Dia | F-1: Bus traffic recorder | — | Feature spec: versioned per-message records (tick, type id, payload), Debug-only. **Placement undecided:** new Dia capability in DiaMessageBus, or a CoW-Shared subscriber that avoids a Dia change. Depends on CoW app skeleton, bus live verification |
+| ~~CoW~~ | F-1: Bus live verification | — | Feature spec: live-stage proof of Primary and Reaction delivery (Test 4, 10,000 messages at 1:1). Depends on CoW app skeleton |
+| ~~CoW / Dia~~ | F-1: Bus traffic recorder | — | Feature spec: versioned per-message records (tick, type id, payload), Debug-only. **Placement undecided:** new Dia capability in DiaMessageBus, or a CoW-Shared subscriber that avoids a Dia change. Depends on CoW app skeleton, bus live verification |
 | CoW | F-1: Debug command / inspector host | — | Feature spec: shared host for debug commands and inspector panels, proven with a stand-in command and panel. Depends on CoW app skeleton |
 | CoW | F-2 Core Runtime | — | `/spec-system`: world clock, RNG determinism, save/load round-trip, data loading and band resolver. Depends on F-1. GDD `F2_CoreRuntime.md` marked Locked 2026-10-09 (backlog roster below still says challenge pass pending; reconcile) |
 | CoW | S-1 World | — | `/spec-system`: seeded generation; isolated-cell and full-world modes. Depends on F-2 |
