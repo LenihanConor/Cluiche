@@ -112,6 +112,12 @@
     <ClInclude Include="Core\SplineBasis.h">
       <Filter>Core</Filter>
     </ClInclude>
+    <ClInclude Include="Core\RandomStream.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\RandomStreamManager.h">
+      <Filter>Core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Vector\Vector2D.cpp">
@@ -174,6 +180,12 @@
     <ClCompile Include="Quaternion\Quaternion.cpp">
       <Filter>Quaternion</Filter>
     </ClCompile>
+    <ClCompile Include="Core\RandomStream.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\RandomStreamManager.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Vector\Vector2D.inl">
@@ -183,6 +195,9 @@
       <Filter>Vector\Source</Filter>
     </None>
     <None Include="Core\Angle.inl">
+      <Filter>Core\Source</Filter>
+    </None>
+    <None Include="Core\RandomStream.inl">
       <Filter>Core\Source</Filter>
     </None>
     <None Include="Core\CoreMaths.inl">
