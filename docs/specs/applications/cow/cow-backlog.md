@@ -31,11 +31,13 @@ The testbeds and the pieces each one absorbs, from `TestbedRoster.md`. The GDD d
 |---|---------|--------------------------------------------------|-------|
 | F-1 | Harness | Boot & Debug Menu · Event Bus & Inspector · Record & Replay | `F1_Harness.md` drafted, challenge pass done; implementation specs exist (see Ready to Build) |
 | F-2 | Core Runtime | Clock & Determinism · RNG · Data Loading & Band Resolver · save/load round-trip | |
-| S-1 | World | World Generation · Single Cell (mode) · Living Ecology (mode) | |
-| S-2 | Dragon | Dragon Sandbox (isolated mode) · Dragon in the World (live mode) · Pathfinding | |
-| S-3 | Lineage & Hearth | Single Hearth · Hearth Economy & Lifecycle · Breeding & Drift | Exactly the dependency graph's B4/B6/C6 bucket |
-| S-4 | Dynasty | Command Chain · Clans & Politics · Apotheosis (late-game preset) | |
-| S-5 | Endurance | Swarm & Scale · History & Save | Both are long runs and large loads, so they share one testbed |
+| S-1 | World Generation | World Generation | `S1_WorldGeneration.md` Locked 2026-10-11; WLD only, no A1/A3 |
+| S-2 | Single Cell Ecology | Single Cell (isolated A1 unit test) | `S2_SingleCellEcology.md` Locked 2026-10-11; slider-driven, bypasses event interface |
+| S-3 | Living Ecology | Living Ecology (A1+A3 full world, zero dragons) | `S3_LivingEcology.md` Locked 2026-10-11; layered visualization, integration/emergence proof |
+| S-4 | Dragon | Dragon Sandbox (isolated mode) · Dragon in the World (live mode) · Pathfinding | |
+| S-5 | Lineage & Hearth | Single Hearth · Hearth Economy & Lifecycle · Breeding & Drift | Exactly the dependency graph's B4/B6/C6 bucket |
+| S-6 | Dynasty | Command Chain · Clans & Politics · Apotheosis (late-game preset) | |
+| S-7 | Endurance | Swarm & Scale · History & Save | Both are long runs and large loads, so they share one testbed |
 | V-1 | Map Visuals | Grid · overlays · fog of war · camera | |
 | V-2 | Dragon & Nest Visuals | Dragon Visuals · Nest Diorama | |
 | V-3 | UI & Interaction | UI kit · Input · Lineage View · Event Readability (canned events first, then live) | |
@@ -48,15 +50,18 @@ The testbeds and the pieces each one absorbs, from `TestbedRoster.md`. The GDD d
 
 | Item | What's needed | Depends On |
 |------|---------------|------------|
-| F-1: Bus live verification | Feature spec: live-stage proof of Primary and Reaction delivery (Test 4, 10,000 messages at 1:1) | CoW app skeleton |
-| F-1: Bus traffic recorder | Feature spec: versioned per-message records (tick, type id, payload), Debug-only. **Placement undecided:** new Dia capability in DiaMessageBus or a CoW-Shared subscriber that avoids a Dia change | CoW app skeleton; bus live verification |
+| WorldClock | System spec **Approved** at @docs/specs/applications/cow/systems/worldclock/worldclock.md. Season counter, speed tiers (PAUSED/NORMAL/FAST/FASTEST), modal-safe pause, time bands (SEASON/YEAR/DECADE/CENTURY), 4 time domains. 4 features (not started). GDD A2_WorldClock Locked 2026-10-09 | DiaSimTime (Done), DiaMessageBus (Done) |
+| F-1: Bus traffic recorder | Feature spec: versioned per-message records (tick, type id, payload), Debug-only. **Placement undecided:** new Dia capability in DiaMessageBus or a CoW-Shared subscriber that avoids a Dia change | CoW app skeleton |
 | F-1: Debug command / inspector host | Feature spec: shared host for debug commands and inspector panels, proven with a stand-in command and panel | CoW app skeleton |
-| F-2 Core Runtime | `/spec-system`: world clock, RNG determinism, save/load round-trip, data loading and band resolver | F-1 |
-| S-1 World | `/spec-system`: seeded generation; isolated-cell and full-world modes | F-2 |
-| S-2 Dragon | `/spec-system`: isolated and live modes; pathfinding | S-1, F-2 |
-| S-3 Lineage & Hearth | `/spec-system` | S-2 |
-| S-4 Dynasty | `/spec-system`: heaviest testbed; command may split off | S-3 |
-| S-5 Endurance | `/spec-system`: stress load, long-run history and save paging | S-1 to S-4 |
+| E1 Save/Load (CoW implementation) | Feature or system spec: CoW's save/load integration — `serialize_state()`/`restore_state()` contract for WorldClock, RNG streams, dragon data, ecology state. GDD E1_SaveContinue Locked 2026-10-09. Depends on DiaSaveGame (Done) | WorldClock spec |
+| F-2 Core Runtime testbed | Testbed stage spec: 6 tests proving WorldClock, RNG determinism (RandomStreamModule ✅), save/load round-trip, band resolver (DiaAttribute Feature 7 ✅). GDD F2_CoreRuntime Locked 2026-10-09 | WorldClock Approved, E1 spec, DiaAttribute Feature 7 (Draft) |
+| S-1 World Generation | `/spec-system`: WLD data pipeline only — generation, export/import, timeout/failure, reachability validator. No A1/A3. GDD S1_WorldGeneration Locked 2026-10-11 | F-2 |
+| S-2 Single Cell Ecology | `/spec-system`: A1 isolated, slider-driven unit test of tick equations (bypasses event interface). GDD S2_SingleCellEcology Locked 2026-10-11 | F-2 (time controls) |
+| S-3 Living Ecology | `/spec-system`: A1+A3 full world fast-forward, zero dragons, layered visualization (population density, pressure fields, event markers, succession, time-series graphs). GDD S3_LivingEcology Locked 2026-10-11 | S-1 (world loader) |
+| S-4 Dragon | `/spec-system`: isolated and live modes; pathfinding | S-3, F-2 |
+| S-5 Lineage & Hearth | `/spec-system` | S-4 |
+| S-6 Dynasty | `/spec-system`: heaviest testbed; command may split off | S-5 |
+| S-7 Endurance | `/spec-system`: stress load, long-run history and save paging | S-1 to S-6 |
 | V-1 Map Visuals | `/spec-system`: tiles, overlays, fog of war, camera on static data | F-1 |
 | V-2 Dragon & Nest Visuals | `/spec-system`: genome-to-visual, lifecycle stages, nest diorama | V-1 |
 | V-3 UI & Interaction | `/spec-system`: UI kit, input, lineage view, event readability (uses canned data, so needs the bus recorder) | F-1, bus recorder |

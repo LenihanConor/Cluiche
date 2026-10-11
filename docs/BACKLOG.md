@@ -14,6 +14,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | Project | System | Features | Depends On |
 |---------|--------|----------|------------|
+| Dia | DiaAttribute: band-based-initialization | Feature 7: Schema-defined named band ranges (NONE/LOW/BASELINE/MEDIUM/HIGH/APEX or custom), `InitializeFromBands()` one-time resolution to base values, `band_schema_version` support. Spec Draft at @docs/specs/applications/dia/systems/diaattribute/band-based-initialization.md. CoW needs it for dragon stat authoring (F-2 band resolver tests). ~11 hours (1.4 days) | DiaAttribute Core (Feature 1, Done) |
 | Dia | DiaMessageBus: bus-traffic-recorder | Debug-only `IBusRecorder` hook in `Bus::DispatchOne` + `FileBusRecorder` (versioned binary per-message records). Spec Approved and plan written (4 tasks, not started). CoW needs it for F-1 Test 6 and V-3; the CoW wiring (path, tick source, lifecycle) is a separate CoW task | None (DiaMessageBus is built) |
 
 ---
@@ -24,15 +25,17 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | Project | Item | Spec | What's needed |
 |---------|------|------|---------------|
-| ~~CoW~~ | F-1: Bus live verification | — | Feature spec: live-stage proof of Primary and Reaction delivery (Test 4, 10,000 messages at 1:1). Depends on CoW app skeleton |
-| ~~CoW / Dia~~ | F-1: Bus traffic recorder | — | Feature spec: versioned per-message records (tick, type id, payload), Debug-only. **Placement undecided:** new Dia capability in DiaMessageBus, or a CoW-Shared subscriber that avoids a Dia change. Depends on CoW app skeleton, bus live verification |
-| CoW | F-1: Debug command / inspector host | — | Feature spec: shared host for debug commands and inspector panels, proven with a stand-in command and panel. Depends on CoW app skeleton |
-| CoW | F-2 Core Runtime | — | `/spec-system`: world clock, RNG determinism, save/load round-trip, data loading and band resolver. Depends on F-1. GDD `F2_CoreRuntime.md` Locked 2026-10-09 |
-| CoW | S-1 World | — | `/spec-system`: seeded generation; isolated-cell and full-world modes. Depends on F-2 |
-| CoW | S-2 Dragon | — | `/spec-system`: isolated and live modes; pathfinding. Depends on S-1, F-2 |
-| CoW | S-3 Lineage & Hearth | — | `/spec-system`. Depends on S-2 |
-| CoW | S-4 Dynasty | — | `/spec-system`: heaviest testbed; command may split off. Depends on S-3 |
-| CoW | S-5 Endurance | — | `/spec-system`: stress load, long-run history and save paging. Depends on S-1 to S-4 |
+| ~~CoW / Dia~~ | F-1: Bus traffic recorder | — | Feature spec: versioned per-message records (tick, type id, payload), Debug-only. **Placement undecided:** new Dia capability in DiaMessageBus, or a CoW-Shared subscriber that avoids a Dia change. Depends on CoW app skeleton |
+| ~~CoW~~ | ~~F-1: Debug command / inspector host~~ | — | ✅ **Specs complete (2026-10-11):** 4 buildable Dia systems ready for approval: (1) ModuleDebugRegistry (foundation), (2) DiaDebugConsole (in-game command console), (3) DiaDebugDataPanel (panel registry + BusTrafficViewer), (4) DiaDebugPalette (searchable discovery UI). All specs Draft with full APIs, mockups, 12 ACs each. See @docs/specs/applications/cow/systems/f1-harness/BUILD-READY.md. Move to Ready to Build after approval |
+| CoW | WorldClock | @docs/specs/applications/cow/systems/worldclock/worldclock.md | System spec **Approved**: season counter, speed tiers (Hz-based), modal-safe pause, time band resolution, four time domains (sim/wall/render/audio). 4 features. GDD `A2_WorldClock/` Locked 2026-10-09 |
+| CoW | F-2 Core Runtime testbed | — | Testbed stage spec: proves WorldClock (6 tests), RNG determinism (RandomStreamModule ✅), save/load round-trip (E1, needs spec), band resolver (DiaAttribute Feature 7). GDD `F2_CoreRuntime.md` Locked 2026-10-09. Depends on WorldClock Approved, E1 spec |
+| CoW | S-1 World Generation | — | `/spec-system`: WLD data pipeline only — generation, export/import, timeout/failure, reachability validator. No A1/A3. GDD `S1_WorldGeneration.md` Locked 2026-10-11. Depends on F-2 being built |
+| CoW | S-2 Single Cell Ecology | — | `/spec-system`: A1 isolated, slider-driven unit test of tick equations (bypasses event interface). GDD `S2_SingleCellEcology.md` Locked 2026-10-11. Depends on F-2 being built (for time controls) |
+| CoW | S-3 Living Ecology | — | `/spec-system`: A1+A3 full world fast-forward, zero dragons, layered visualization (population density, pressure fields, event markers, succession, time-series graphs). GDD `S3_LivingEcology.md` Locked 2026-10-11. Depends on S-1 being built (world loader) |
+| CoW | S-4 Dragon | — | `/spec-system`: isolated and live modes; pathfinding. Depends on S-3, F-2 |
+| CoW | S-5 Lineage & Hearth | — | `/spec-system`. Depends on S-4 |
+| CoW | S-6 Dynasty | — | `/spec-system`: heaviest testbed; command may split off. Depends on S-5 |
+| CoW | S-7 Endurance | — | `/spec-system`: stress load, long-run history and save paging. Depends on S-1 to S-6 |
 | CoW | V-1 Map Visuals | — | `/spec-system`: tiles, overlays, fog of war, camera on static data. Depends on F-1 |
 | CoW | V-2 Dragon & Nest Visuals | — | `/spec-system`: genome-to-visual, lifecycle stages, nest diorama. Depends on V-1 |
 | CoW | V-3 UI & Interaction | — | `/spec-system`: UI kit, input, lineage view, event readability (canned data, so needs the bus recorder). Depends on F-1, bus recorder |
@@ -84,7 +87,7 @@ The testbeds and the pieces each absorbs, from `TestbedRoster.md`. Cross a piece
 
 | # | Testbed | Absorbs | Notes |
 |---|---------|---------|-------|
-| F-1 | Harness | Boot & Debug Menu · Event Bus & Inspector · Record & Replay | `F1_Harness.md` drafted, challenge pass done; specs exist (see Ready to Build) |
+| F-1 | Harness | Boot & Debug Menu · Event Bus & Inspector · Record & Replay | `F1_Harness.md` drafted, challenge pass done; 4 debug infrastructure specs complete (2026-10-11), ready for approval |
 | F-2 | Core Runtime | Clock & Determinism · RNG · Data Loading & Band Resolver · save/load round-trip | `F2_CoreRuntime.md` Locked 2026-10-09; `/spec-system` row exists |
 | S-1 | World | World Generation · Single Cell (mode) · Living Ecology (mode) | |
 | S-2 | Dragon | Dragon Sandbox (isolated mode) · Dragon in the World (live mode) · Pathfinding | |

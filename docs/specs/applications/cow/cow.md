@@ -17,13 +17,16 @@ One stage per testbed (AD-005).
 
 | System | Track | Description | GDD | Spec |
 |--------|-------|-------------|-----|------|
+| WorldClock | Foundation | CoW time architecture — season counter, speed tiers (PAUSED/NORMAL/FAST/FASTEST), modal-safe pause, time band resolution (SEASON/YEAR/DECADE/CENTURY), four independent time domains (sim/wall/render/audio) | `08_SystemsDeepDive/A2_WorldClock/` | @docs/specs/applications/cow/systems/worldclock/worldclock.md |
 | F-1 Harness | Foundation | Boot flow, debug menu, event bus, inspector/debug-command framework, event record/replay | `10_PrototypeStrategy/F1_Harness.md` | @docs/specs/applications/cow/systems/f1-harness/f1-harness.md |
-| F-2 Core Runtime | Foundation | World clock, RNG determinism, save/load round-trip, data loading/band resolver | `10_PrototypeStrategy/TestbedRoster.md` (summary; testbed spec not written) | TBD |
-| S-1 World | Simulation | Seeded world generation; isolated-cell and full-world ecology modes | `10_PrototypeStrategy/TestbedRoster.md` (summary; testbed spec not written) | TBD |
-| S-2 Dragon | Simulation | Isolated single-dragon sandbox and live-in-world modes; pathfinding | `10_PrototypeStrategy/TestbedRoster.md` (summary; testbed spec not written) | TBD |
-| S-3 Lineage & Hearth | Simulation | Single-hearth isolated mode, live hearth economy/lifecycle, breeding/drift generations preset | `10_PrototypeStrategy/TestbedRoster.md` (summary; testbed spec not written) | TBD |
-| S-4 Dynasty | Simulation | Command chain (loyalty/succession/Archdragon powers), clans and politics, Apotheosis late-game preset | `10_PrototypeStrategy/TestbedRoster.md` (summary; testbed spec not written) | TBD |
-| S-5 Endurance | Simulation | Stress load (swarm/tick budget) and long-run history/save paging | `10_PrototypeStrategy/TestbedRoster.md` (summary; testbed spec not written) | TBD |
+| F-2 Core Runtime | Foundation | Testbed proving WorldClock, RNG determinism, save/load round-trip, band resolver (DiaAttribute Feature 7). GDD Locked 2026-10-09 | `10_PrototypeStrategy/F2_CoreRuntime.md` | TBD |
+| S-1 World Generation | Simulation | WLD data pipeline only — seeded generation, export/import, timeout/failure, reachability validator, no A1/A3. GDD Locked 2026-10-11 | `10_PrototypeStrategy/S1_WorldGeneration.md` | TBD |
+| S-2 Single Cell Ecology | Simulation | A1 isolated, slider-driven unit test of tick equations (bypasses event interface). GDD Locked 2026-10-11 | `10_PrototypeStrategy/S2_SingleCellEcology.md` | TBD |
+| S-3 Living Ecology | Simulation | A1+A3 full world fast-forward with zero dragons — integration/emergence proof with layered visualization. GDD Locked 2026-10-11 | `10_PrototypeStrategy/S3_LivingEcology.md` | TBD |
+| S-4 Dragon | Simulation | Isolated single-dragon sandbox and live-in-world modes; pathfinding | `10_PrototypeStrategy/TestbedRoster.md` | TBD |
+| S-5 Lineage & Hearth | Simulation | Single-hearth isolated mode, live hearth economy/lifecycle, breeding/drift generations preset | `10_PrototypeStrategy/TestbedRoster.md` | TBD |
+| S-6 Dynasty | Simulation | Command chain (loyalty/succession/Archdragon powers), clans and politics, Apotheosis late-game preset | `10_PrototypeStrategy/TestbedRoster.md` | TBD |
+| S-7 Endurance | Simulation | Stress load (swarm/tick budget) and long-run history/save paging | `10_PrototypeStrategy/TestbedRoster.md` | TBD |
 | V-1 Map Visuals | Visual | Tile rendering, overlays, fog of war, camera, on static data | `10_PrototypeStrategy/TestbedRoster.md` (summary; testbed spec not written) | TBD |
 | V-2 Dragon & Nest Visuals | Visual | Genome-to-visual rendering, lifecycle/weathering stages, nest diorama scene | `10_PrototypeStrategy/TestbedRoster.md` (summary; testbed spec not written) | TBD |
 | V-3 UI & Interaction | Visual | Generic UI kit, input/interaction, lineage view, event readability (canned then live) | `10_PrototypeStrategy/TestbedRoster.md` (summary; testbed spec not written) | TBD |
