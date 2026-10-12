@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Multi-Panel Debug Layout — UX Mockup</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0a0a0a;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 12px;
+  color: #d4d4d4;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─────────────────────────────── TOP BAR ─── */
+.app-titlebar {
+  background: linear-gradient(to bottom, #2a2a2a 0%, #1f1f1f 100%);
+  border-bottom: 1px solid #3a3a3a;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.app-title {
+  font-size: 11px;
+  color: #999;
+  flex: 1;
+}
+.titlebar-badge {
+  font-size: 10px;
+  color: #666;
+  background: #161616;
+  padding: 2px 8px;
+  border-radius: 3px;
+  border: 1px solid #2a2a2a;
+}
+.window-controls {
+  display: flex;
+  gap: 6px;
+}
+.control-btn {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+}
+.control-btn.minimize { background: #f5a623; }
+.control-btn.maximize { background: #2ecc71; }
+.control-btn.close { background: #e74c3c; }
+
+/* ─────────────────────────────── MAIN LAYOUT ─── */
+.main-layout {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ─────────────────────────────── LEFT DOCK ─── */
+.left-dock {
+  width: 280px;
+  background: #161616;
+  border-right: 1px solid #2a2a2a;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.dock-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid #2a2a2a;
+  overflow: hidden;
+}
+.dock-panel:last-child { border-bottom: none; }
+.panel-header {
+  background: #1f1f1f;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: move;
+  flex-shrink: 0;
+  border-bottom: 1px solid #2a2a2a;
+}
+.panel-icon {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  flex-shrink: 0;
+}
+.icon-visual { background: #9b59b6; color: #fff; }
+.icon-panel { background: #f5a623; color: #fff; }
+.panel-title {
+  flex: 1;
+  font-size: 10px;
+  color: #aaa;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.panel-controls {
+  display: flex;
+  gap: 4px;
+}
+.panel-control-btn {
+  width: 14px;
+  height: 14px;
+  background: #2a2a2a;
+  border: none;
+  border-radius: 2px;
+  color: #666;
+  cursor: pointer;
+  font-size: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.panel-control-btn:hover { background: #333; color: #aaa; }
+.panel-content {
+  flex: 1;
+  overflow: auto;
+  background: #0f0f0f;
+  padding: 8px;
+}
+
+/* Visual Debugger Panel Specific */
+.vd-group {
+  margin-bottom: 10px;
+}
+.vd-group-header {
+  font-size: 10px;
+  color: #666;
+  padding: 4px 6px;
+  background: #1a1a1a;
+  border-radius: 2px;
+  margin-bottom: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+.vd-group-header:hover { color: #888; background: #1f1f1f; }
+.vd-item {
+  padding: 3px 6px 3px 20px;
+  font-size: 10px;
+  color: #999;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.vd-item:hover { color: #ccc; background: #1a1a1a; }
+.vd-checkbox {
+  width: 12px;
+  height: 12px;
+  border: 1px solid #3a3a3a;
+  border-radius: 2px;
+  display: inline-block;
+  background: #0f0f0f;
+}
+.vd-checkbox.checked {
+  background: #5a9fd4;
+  border-color: #5a9fd4;
+  position: relative;
+}
+.vd-checkbox.checked::after {
+  content: '✓';
+  position: absolute;
+  top: -2px;
+  left: 1px;
+  color: #fff;
+  font-size: 10px;
+}
+
+/* Blackboard Panel Specific */
+.bb-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 6px;
+  font-size: 10px;
+  border-bottom: 1px solid #1a1a1a;
+}
+.bb-key { color: #5a9fd4; }
+.bb-value { color: #ccc; }
+
+/* ─────────────────────────────── CENTER VIEWPORT ─── */
+.center-viewport {
+  flex: 1;
+  position: relative;
+  background: #0d0d12;
+  overflow: hidden;
+}
+.viewport-label {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  font-size: 10px;
+  color: #3a3a4a;
+  letter-spacing: 1px;
+}
+.game-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2a2a3a;
+  font-size: 14px;
+}
+
+/* ─────────────────────────────── RIGHT DOCK ─── */
+.right-dock {
+  width: 320px;
+  background: #161616;
+  border-left: 1px solid #2a2a2a;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Bus Traffic Panel Specific */
+.bt-toolbar {
+  background: #1a1a1a;
+  padding: 6px 8px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border-bottom: 1px solid #2a2a2a;
+  flex-shrink: 0;
+}
+.bt-btn {
+  padding: 3px 8px;
+  background: #252525;
+  border: 1px solid #3a3a3a;
+  color: #999;
+  border-radius: 2px;
+  font-size: 9px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.bt-btn.active { background: #5a9fd4; color: #fff; border-color: #5a9fd4; }
+.bt-stats {
+  background: #0f0f0f;
+  padding: 6px 8px;
+  font-size: 9px;
+  color: #666;
+  border-bottom: 1px solid #2a2a2a;
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.bt-stat { display: flex; gap: 4px; }
+.bt-stat-value { color: #5a9fd4; }
+.bt-table {
+  flex: 1;
+  overflow: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+th {
+  background: #1a1a1a;
+  padding: 5px 6px;
+  text-align: left;
+  font-weight: 600;
+  color: #777;
+  font-size: 9px;
+  border-bottom: 1px solid #2a2a2a;
+  position: sticky;
+  top: 0;
+}
+td {
+  padding: 4px 6px;
+  color: #aaa;
+  border-bottom: 1px solid #0f0f0f;
+}
+.tick-col { color: #666; font-size: 9px; }
+.type-col { color: #5a9fd4; }
+
+/* ─────────────────────────────── FLOATING PANEL ─── */
+.floating-panel {
+  position: absolute;
+  width: 380px;
+  background: #1a1a1a;
+  border: 1px solid #3a3a3a;
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+  z-index: 100;
+}
+.floating-panel.pos-1 { top: 50px; right: 380px; }
+
+/* Entity List Panel Specific */
+.el-filter {
+  background: #1a1a1a;
+  padding: 6px 8px;
+  border-bottom: 1px solid #2a2a2a;
+}
+.el-filter input {
+  width: 100%;
+  background: #0f0f0f;
+  border: 1px solid #3a3a3a;
+  color: #ccc;
+  font-family: inherit;
+  font-size: 10px;
+  padding: 4px 6px;
+  border-radius: 2px;
+  outline: none;
+}
+.el-filter input:focus { border-color: #5a9fd4; }
+.el-item {
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid #1a1a1a;
+  cursor: pointer;
+  font-size: 10px;
+}
+.el-item:hover { background: #1a1a1a; }
+.el-id { color: #5a9fd4; flex-shrink: 0; width: 60px; }
+.el-type { color: #999; flex: 1; }
+.el-components { color: #666; font-size: 9px; }
+
+/* ─────────────────────────────── BOTTOM CONSOLE ─── */
+.bottom-console {
+  height: 180px;
+  background: #1a1a1a;
+  border-top: 1px solid #3a3a3a;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+.console-log {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 10px;
+  background: #0f0f0f;
+  font-size: 10px;
+  line-height: 1.4;
+}
+.log-line {
+  display: flex;
+  gap: 8px;
+  padding: 1px 0;
+}
+.log-time { color: #555; width: 65px; flex-shrink: 0; }
+.log-level { color: #5a9fd4; width: 45px; flex-shrink: 0; font-weight: 600; }
+.log-level.warn { color: #f5a623; }
+.log-message { color: #ccc; }
+.console-input {
+  background: #1f1f1f;
+  border-top: 1px solid #2a2a2a;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.console-prompt {
+  color: #5a9fd4;
+  font-weight: 700;
+}
+.console-field {
+  flex: 1;
+  background: #0f0f0f;
+  border: 1px solid #3a3a3a;
+  color: #fff;
+  font-family: inherit;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 2px;
+  outline: none;
+}
+.console-field:focus { border-color: #5a9fd4; }
+.console-hint {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  background: #252525;
+  border: 1px solid #3a3a3a;
+  border-bottom: none;
+  padding: 4px;
+  font-size: 9px;
+  color: #777;
+}
+
+/* ─────────────────────────────── SHORTCUTS BAR ─── */
+.shortcuts-bar {
+  background: #161616;
+  border-top: 1px solid #2a2a2a;
+  padding: 4px 12px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: #555;
+  flex-shrink: 0;
+}
+.shortcut-group {
+  display: flex;
+  gap: 12px;
+}
+.shortcut-item {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.shortcut-key {
+  background: #1a1a1a;
+  padding: 2px 5px;
+  border-radius: 2px;
+  border: 1px solid #2a2a2a;
+  color: #666;
+}
+</style>
+</head>
+<body>
+
+<!-- Top Title Bar -->
+<div class="app-titlebar">
+  <div class="app-title">CoW - F-1 Harness (Debug Layout)</div>
+  <div class="titlebar-badge">Stage: FrontEnd</div>
+  <div class="titlebar-badge">Tick: 5,281</div>
+  <div class="titlebar-badge">3 Panels Open</div>
+  <div class="window-controls">
+    <button class="control-btn minimize"></button>
+    <button class="control-btn maximize"></button>
+    <button class="control-btn close"></button>
+  </div>
+</div>
+
+<!-- Main Layout -->
+<div class="main-layout">
+
+  <!-- LEFT DOCK -->
+  <div class="left-dock">
+
+    <!-- Visual Debugger Panel (Existing DiaDebugPanel) -->
+    <div class="dock-panel" style="flex: 1.2;">
+      <div class="panel-header">
+        <div class="panel-icon icon-visual">🎨</div>
+        <div class="panel-title">VISUAL DEBUG DOMAINS</div>
+        <div class="panel-controls">
+          <button class="panel-control-btn" title="Minimize">−</button>
+          <button class="panel-control-btn" title="Undock">⇱</button>
+          <button class="panel-control-btn" title="Close">×</button>
+        </div>
+      </div>
+      <div class="panel-content">
+        <div class="vd-group">
+          <div class="vd-group-header">▼ PHYSICS</div>
+          <div class="vd-item">
+            <span class="vd-checkbox checked"></span>
+            <span>Collision Shapes</span>
+          </div>
+          <div class="vd-item">
+            <span class="vd-checkbox"></span>
+            <span>Contact Points</span>
+          </div>
+          <div class="vd-item">
+            <span class="vd-checkbox"></span>
+            <span>Forces</span>
+          </div>
+        </div>
+
+        <div class="vd-group">
+          <div class="vd-group-header">▼ PATHFINDING</div>
+          <div class="vd-item">
+            <span class="vd-checkbox checked"></span>
+            <span>Grid Overlay</span>
+          </div>
+          <div class="vd-item">
+            <span class="vd-checkbox checked"></span>
+            <span>Path Lines</span>
+          </div>
+          <div class="vd-item">
+            <span class="vd-checkbox"></span>
+            <span>Cost Field</span>
+          </div>
+          <div class="vd-item">
+            <span class="vd-checkbox"></span>
+            <span>Obstacles</span>
+          </div>
+        </div>
+
+        <div class="vd-group">
+          <div class="vd-group-header">▼ ENTITIES</div>
+          <div class="vd-item">
+            <span class="vd-checkbox checked"></span>
+            <span>Entity Handles</span>
+          </div>
+          <div class="vd-item">
+            <span class="vd-checkbox"></span>
+            <span>Component Labels</span>
+          </div>
+        </div>
+
+        <div class="vd-group">
+          <div class="vd-group-header">▶ AI/BEHAVIOR</div>
+        </div>
+
+        <div class="vd-group">
+          <div class="vd-group-header">▶ ANIMATION</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Blackboard Inspector Panel -->
+    <div class="dock-panel" style="flex: 0.8;">
+      <div class="panel-header">
+        <div class="panel-icon icon-panel">📊</div>
+        <div class="panel-title">BLACKBOARD INSPECTOR</div>
+        <div class="panel-controls">
+          <button class="panel-control-btn" title="Minimize">−</button>
+          <button class="panel-control-btn" title="Undock">⇱</button>
+          <button class="panel-control-btn" title="Close">×</button>
+        </div>
+      </div>
+      <div class="panel-content" style="padding: 0;">
+        <div class="bb-item">
+          <span class="bb-key">dragon_posX</span>
+          <span class="bb-value">245.3</span>
+        </div>
+        <div class="bb-item">
+          <span class="bb-key">dragon_posY</span>
+          <span class="bb-value">128.7</span>
+        </div>
+        <div class="bb-item">
+          <span class="bb-key">dragon_state</span>
+          <span class="bb-value">"flying"</span>
+        </div>
+        <div class="bb-item">
+          <span class="bb-key">world_tick</span>
+          <span class="bb-value">5281</span>
+        </div>
+        <div class="bb-item">
+          <span class="bb-key">world_speed</span>
+          <span class="bb-value">1.0</span>
+        </div>
+        <div class="bb-item">
+          <span class="bb-key">target_cell</span>
+          <span class="bb-value">[12, 8]</span>
+        </div>
+        <div class="bb-item">
+          <span class="bb-key">path_valid</span>
+          <span class="bb-value">true</span>
+        </div>
+        <div class="bb-item">
+          <span class="bb-key">resource_count</span>
+          <span class="bb-value">47</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CENTER VIEWPORT -->
+  <div class="center-viewport">
+    <div class="viewport-label">GAME VIEWPORT</div>
+    <div class="game-content">
+      🐉 Dragons · 🗺️ World Grid · ⚡ Debug Overlays Active
+    </div>
+  </div>
+
+  <!-- RIGHT DOCK -->
+  <div class="right-dock">
+
+    <!-- Bus Traffic Viewer Panel -->
+    <div class="dock-panel" style="flex: 1;">
+      <div class="panel-header">
+        <div class="panel-icon icon-panel">⚡</div>
+        <div class="panel-title">BUS TRAFFIC VIEWER</div>
+        <div class="panel-controls">
+          <button class="panel-control-btn" title="Minimize">−</button>
+          <button class="panel-control-btn" title="Undock">⇱</button>
+          <button class="panel-control-btn" title="Close">×</button>
+        </div>
+      </div>
+
+      <div class="bt-toolbar">
+        <button class="bt-btn active">▶ Live</button>
+        <button class="bt-btn">⏸ Pause</button>
+        <div style="flex: 1;"></div>
+        <button class="bt-btn">Primary</button>
+        <button class="bt-btn">Reaction</button>
+      </div>
+
+      <div class="bt-stats">
+        <div class="bt-stat">
+          <span>Total:</span>
+          <span class="bt-stat-value">12,847</span>
+        </div>
+        <div class="bt-stat">
+          <span>Msg/sec:</span>
+          <span class="bt-stat-value">487</span>
+        </div>
+        <div class="bt-stat">
+          <span>Types:</span>
+          <span class="bt-stat-value">23</span>
+        </div>
+      </div>
+
+      <div class="bt-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Tick</th>
+              <th>Type</th>
+              <th>Router</th>
+              <th>Cnt</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="tick-col">5,281</td>
+              <td class="type-col">DragonMoveCmd</td>
+              <td>simulation</td>
+              <td>1</td>
+            </tr>
+            <tr>
+              <td class="tick-col">5,281</td>
+              <td class="type-col">DragonStateUpd</td>
+              <td>simulation</td>
+              <td>3</td>
+            </tr>
+            <tr>
+              <td class="tick-col">5,281</td>
+              <td class="type-col">CellUpdateEvt</td>
+              <td>world</td>
+              <td>144</td>
+            </tr>
+            <tr>
+              <td class="tick-col">5,280</td>
+              <td class="type-col">WorldTickEvt</td>
+              <td>__global__</td>
+              <td>1</td>
+            </tr>
+            <tr>
+              <td class="tick-col">5,280</td>
+              <td class="type-col">PathfindQuery</td>
+              <td>pathfinding</td>
+              <td>2</td>
+            </tr>
+            <tr>
+              <td class="tick-col">5,280</td>
+              <td class="type-col">PathfindResult</td>
+              <td>pathfinding</td>
+              <td>2</td>
+            </tr>
+            <tr>
+              <td class="tick-col">5,280</td>
+              <td class="type-col">DragonMoveCmd</td>
+              <td>simulation</td>
+              <td>1</td>
+            </tr>
+            <tr>
+              <td class="tick-col">5,279</td>
+              <td class="type-col">WorldTickEvt</td>
+              <td>__global__</td>
+              <td>1</td>
+            </tr>
+            <tr>
+              <td class="tick-col">5,279</td>
+              <td class="type-col">ResourceGather</td>
+              <td>world</td>
+              <td>12</td>
+            </tr>
+            <tr>
+              <td class="tick-col">5,279</td>
+              <td class="type-col">BlackboardUpd</td>
+              <td>__global__</td>
+              <td>8</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FLOATING PANEL: Entity List -->
+  <div class="floating-panel pos-1">
+    <div class="panel-header">
+      <div class="panel-icon icon-panel">📊</div>
+      <div class="panel-title">ENTITY LIST</div>
+      <div class="panel-controls">
+        <button class="panel-control-btn" title="Dock">⇲</button>
+        <button class="panel-control-btn" title="Close">×</button>
+      </div>
+    </div>
+
+    <div class="el-filter">
+      <input type="text" placeholder="Filter by ID or type...">
+    </div>
+
+    <div class="panel-content" style="padding: 0; max-height: 280px;">
+      <div class="el-item">
+        <span class="el-id">#1024</span>
+        <span class="el-type">Dragon</span>
+        <span class="el-components">Transform, Physics, AI</span>
+      </div>
+      <div class="el-item">
+        <span class="el-id">#1025</span>
+        <span class="el-type">WorldCell</span>
+        <span class="el-components">Transform, Resource</span>
+      </div>
+      <div class="el-item">
+        <span class="el-id">#1026</span>
+        <span class="el-type">WorldCell</span>
+        <span class="el-components">Transform, Resource</span>
+      </div>
+      <div class="el-item">
+        <span class="el-id">#1027</span>
+        <span class="el-type">Nest</span>
+        <span class="el-components">Transform, Economy</span>
+      </div>
+      <div class="el-item">
+        <span class="el-id">#1028</span>
+        <span class="el-type">Resource</span>
+        <span class="el-components">Transform</span>
+      </div>
+      <div class="el-item">
+        <span class="el-id">#1029</span>
+        <span class="el-type">Resource</span>
+        <span class="el-components">Transform</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- BOTTOM CONSOLE -->
+<div class="bottom-console">
+  <div class="console-log">
+    <div class="log-line">
+      <span class="log-time">00:12.341</span>
+      <span class="log-level">INFO</span>
+      <span class="log-message">DiaAPI initialized. 47 commands registered.</span>
+    </div>
+    <div class="log-line">
+      <span class="log-time">00:14.521</span>
+      <span class="log-level">INFO</span>
+      <span class="log-message">&gt; bus_traffic.status</span>
+    </div>
+    <div class="log-line">
+      <span class="log-time">00:14.523</span>
+      <span class="log-level">INFO</span>
+      <span class="log-message">Bus traffic recorder: not active</span>
+    </div>
+    <div class="log-line">
+      <span class="log-time">00:18.102</span>
+      <span class="log-level">INFO</span>
+      <span class="log-message">&gt; pathfinding.show_grid</span>
+    </div>
+    <div class="log-line">
+      <span class="log-time">00:18.105</span>
+      <span class="log-level">INFO</span>
+      <span class="log-message">Pathfinding grid overlay enabled</span>
+    </div>
+    <div class="log-line">
+      <span class="log-time">00:22.841</span>
+      <span class="log-level warn">WARN</span>
+      <span class="log-message">Message bus: 1024 messages dispatched this frame (threshold: 1000)</span>
+    </div>
+    <div class="log-line">
+      <span class="log-time">00:25.992</span>
+      <span class="log-level">INFO</span>
+      <span class="log-message">Stage transition: Boot → FrontEnd</span>
+    </div>
+    <div class="log-line">
+      <span class="log-time">00:28.441</span>
+      <span class="log-level">INFO</span>
+      <span class="log-message">&gt; blackboard.list</span>
+    </div>
+    <div class="log-line">
+      <span class="log-time">00:28.443</span>
+      <span class="log-level">INFO</span>
+      <span class="log-message">Blackboard: 8 keys registered (dragon_posX, dragon_posY, ...)</span>
+    </div>
+  </div>
+
+  <div style="position: relative;">
+    <div class="console-hint" style="display: none;">
+      Press TAB to autocomplete · ↑↓ for history · F1 for palette
+    </div>
+    <div class="console-input">
+      <span class="console-prompt">&gt;</span>
+      <input type="text" class="console-field" placeholder="Type a command...">
+    </div>
+  </div>
+</div>
+
+<!-- SHORTCUTS BAR -->
+<div class="shortcuts-bar">
+  <div class="shortcut-group">
+    <div class="shortcut-item">
+      <span class="shortcut-key">~</span>
+      <span>Console</span>
+    </div>
+    <div class="shortcut-item">
+      <span class="shortcut-key">F1</span>
+      <span>Palette</span>
+    </div>
+    <div class="shortcut-item">
+      <span class="shortcut-key">Ctrl+M</span>
+      <span>Panel Manager</span>
+    </div>
+  </div>
+  <div class="shortcut-group">
+    <span>4 panels open · 3 systems active · 47 commands available</span>
+  </div>
+</div>
+
+</body>
+</html>

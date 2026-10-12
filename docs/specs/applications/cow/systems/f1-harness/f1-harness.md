@@ -18,9 +18,9 @@ CoW needs 12 standalone testbeds launchable from one menu. Dia already has the p
 1. CoW boots to the debug menu, which has a Play entry for a stub front-end stage. Shipping-build gating is out of scope (user decision).
 2. `BootMenuModule` lives in CluicheGameBaseline with no CluicheTest types; CluicheTest's ~25 stages behave unchanged through it.
 3. Menu lists a game's `Boot` transitions, launches any, and returns cleanly with no state leaking between launches.
-4. Confirm the DiaMessageBus Primary/Reaction semantics on a live stage; correct the stale `status: stub` in its module doc.
+4. ~~Confirm the DiaMessageBus Primary/Reaction semantics on a live stage; correct the stale `status: stub` in its module doc.~~ Already satisfied: CluicheTest MessageBusStressTestStage E2E test proves Primary/Reaction semantics (10,000+ messages); module doc status is `active`.
 5. Debug-only file recorder for bus traffic.
-6. One shared host for debug commands and inspector panels.
+6. In-game debug infrastructure: text console for executing DiaAPI commands, data panel registry for live tables/logs, and a searchable palette for discovering all available debug tools (commands, panels, visual debug domains).
 
 ## Non-Goals
 
@@ -37,9 +37,11 @@ CoW needs 12 standalone testbeds launchable from one menu. Dia already has the p
 | BootMenuModule promotion + StageStatusModule | @docs/specs/applications/cow/systems/f1-harness/bootmenu-promotion.md | Approved |
 | Boot choice (Play menu entry; shipping gating dropped) | @docs/specs/applications/cow/systems/f1-harness/boot-choice.md | Approved |
 | CoW app skeleton (project, manifests, Boot stage, stub front end) + `dia scaffold stage --app` | @docs/specs/applications/cow/systems/f1-harness/cow-app-skeleton.md | Approved |
-| Bus live verification (Test 4) | TBD | Draft |
-| Bus traffic file recorder (Debug-only) | TBD | Draft |
-| Debug command / inspector host | TBD | Draft |
+| Bus live verification (Test 4) | N/A — already proven by CluicheTest MessageBusStressTestStage (10,000 message E2E test) | Done |
+| Bus traffic file recorder (Debug-only) | @docs/specs/applications/dia/systems/diamessagebus/bus-traffic-recorder.md | Approved |
+| Debug Console (in-game text console for DiaAPI commands) | @docs/specs/applications/cow/systems/f1-harness/debug-console.md | Draft |
+| Debug Data Panel Registry (in-game data table/log panels) | @docs/specs/applications/cow/systems/f1-harness/debug-data-panel.md | Draft |
+| Debug Palette (command/panel/domain discovery UI) | @docs/specs/applications/cow/systems/f1-harness/debug-palette.md | Draft |
 
 ## Architecture
 
@@ -58,7 +60,7 @@ Design:
 4. **Boot choice.** CoW's single manifest starts at `Boot`, whose menu lists `FrontEnd` as the Play entry. No command-line flag, no shipping variant. See the boot-choice feature spec.
 5. **CoW app.** `Cluiche/CoW/` gets `CoW.diaapp` with a `Boot` stage whose transitions list the testbed stages, plus a stub `FrontEnd` stage. `dia scaffold stage` gains an `--app` option so CoW stages are generated under `Cluiche/CoW/`.
 6. **Recorder.** New optional Debug-only recorder in DiaMessageBus writes per-message records (tick, type id, payload bytes) to a versioned file as messages dispatch (new Dia capability).
-7. **Debug host.** Reuse `DebugPanelPageModule`/`IDebugDomain` as the shared host; F-1 proves a stand-in command and panel register without stage-specific wiring.
+7. **Debug infrastructure.** F-1 exposes three gaps in in-game debug tooling: (a) no text console for executing DiaAPI commands in-game, (b) no registry for data panels (tables/logs) as distinct from visual debug draw (shapes), (c) no discovery UI for available commands/panels/domains. These gaps drive three new Dia systems with mockups at `@docs/specs/applications/cow/systems/f1-harness/mockups/`. F-1 proves each with bus_traffic stand-ins: console executes `bus_traffic.*` commands, data panel shows live message table, palette lists and launches both.
 
 ## External Dependencies
 
@@ -84,7 +86,7 @@ User decisions on the cross-boundary changes this system needs:
 | `dia scaffold stage --app` | Approved |
 | Shipping gating in the baseline | Dropped |
 | Bus traffic recorder | Waiting (deferred feature) |
-| DiaMessageBus module doc status fix | Approved |
+| DiaMessageBus module doc status fix | N/A — module doc already shows `status: active` |
 | `dia scaffold app` (spec Approved) incl. data-driven DiaCLI target registry | Approved |
 | `new-cow-stage` skill (spec Approved) | Approved |
 

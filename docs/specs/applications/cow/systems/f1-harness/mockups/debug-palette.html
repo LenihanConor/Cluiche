@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Debug Palette — UX Mockup</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0a0a0a;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 12px;
+  color: #d4d4d4;
+  height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 80px;
+}
+
+/* ─────────────────────────────── PALETTE WINDOW ─── */
+.palette-window {
+  width: 700px;
+  background: #1a1a1a;
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.8);
+  overflow: hidden;
+}
+
+/* ── Header with search ── */
+.palette-header {
+  background: linear-gradient(to bottom, #2a2a2a 0%, #222 100%);
+  border-bottom: 1px solid #3a3a3a;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.palette-icon {
+  width: 16px;
+  height: 16px;
+  background: #5a9fd4;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+}
+.search-box {
+  flex: 1;
+  background: #0f0f0f;
+  border: 1px solid #3a3a3a;
+  color: #fff;
+  font-family: 'Consolas', monospace;
+  font-size: 14px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  outline: none;
+}
+.search-box:focus { border-color: #5a9fd4; box-shadow: 0 0 0 2px rgba(90, 159, 212, 0.2); }
+.search-box::placeholder { color: #555; }
+.shortcut-badge {
+  font-size: 10px;
+  color: #666;
+  background: #161616;
+  padding: 3px 8px;
+  border-radius: 3px;
+  border: 1px solid #2a2a2a;
+}
+
+/* ── Filter tabs ── */
+.filter-tabs {
+  background: #1f1f1f;
+  border-bottom: 1px solid #2a2a2a;
+  display: flex;
+  padding: 0 12px;
+  gap: 0;
+}
+.filter-tab {
+  padding: 8px 20px;
+  font-size: 11px;
+  color: #888;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.filter-tab:hover { color: #bbb; background: #252525; }
+.filter-tab.active {
+  color: #5a9fd4;
+  border-bottom-color: #5a9fd4;
+  background: #1a1a1a;
+}
+.tab-count {
+  background: #2a2a2a;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 9px;
+  color: #666;
+}
+.filter-tab.active .tab-count {
+  background: #5a9fd4;
+  color: #fff;
+}
+
+/* ── Results list ── */
+.results-container {
+  max-height: 450px;
+  overflow-y: auto;
+  background: #0f0f0f;
+}
+.result-group {
+  border-bottom: 1px solid #1a1a1a;
+}
+.group-header {
+  background: #161616;
+  padding: 6px 16px;
+  font-size: 10px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.result-item {
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: all 0.15s;
+}
+.result-item:hover {
+  background: #1a1a1a;
+  border-left-color: #3a3a3a;
+}
+.result-item.selected {
+  background: #1a2a3a;
+  border-left-color: #5a9fd4;
+}
+.result-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.icon-command { background: #1a3a5a; color: #5a9fd4; }
+.icon-panel { background: #3a2a1a; color: #f5a623; }
+.icon-domain { background: #2a1a3a; color: #9b59b6; }
+.result-content {
+  flex: 1;
+  min-width: 0;
+}
+.result-title {
+  font-size: 13px;
+  color: #eee;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+.result-title .match {
+  color: #5a9fd4;
+  background: rgba(90, 159, 212, 0.15);
+  padding: 0 2px;
+}
+.result-desc {
+  font-size: 10px;
+  color: #666;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.result-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.meta-badge {
+  font-size: 9px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: #2a2a2a;
+  color: #888;
+}
+.meta-keybind {
+  font-size: 10px;
+  color: #777;
+  background: #1a1a1a;
+  padding: 2px 8px;
+  border-radius: 3px;
+  border: 1px solid #2a2a2a;
+  font-weight: 600;
+}
+
+/* ── Footer ── */
+.palette-footer {
+  background: #161616;
+  border-top: 1px solid #2a2a2a;
+  padding: 8px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  color: #666;
+}
+.footer-hint {
+  display: flex;
+  gap: 12px;
+}
+.hint-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.hint-key {
+  background: #1a1a1a;
+  padding: 2px 6px;
+  border-radius: 2px;
+  border: 1px solid #2a2a2a;
+  color: #888;
+}
+
+/* ── No results state ── */
+.no-results {
+  padding: 40px 20px;
+  text-align: center;
+  color: #555;
+}
+.no-results-icon {
+  font-size: 32px;
+  margin-bottom: 10px;
+  opacity: 0.3;
+}
+.no-results-text {
+  font-size: 12px;
+  color: #666;
+}
+</style>
+</head>
+<body>
+
+<div class="palette-window">
+  <!-- Header with search -->
+  <div class="palette-header">
+    <div class="palette-icon">⌘</div>
+    <input type="text" class="search-box" placeholder="Search commands, panels, and debug domains..." value="bus" autofocus>
+    <div class="shortcut-badge">F1 to toggle</div>
+  </div>
+
+  <!-- Filter tabs -->
+  <div class="filter-tabs">
+    <div class="filter-tab active">
+      <span>All</span>
+      <span class="tab-count">47</span>
+    </div>
+    <div class="filter-tab">
+      <span>Commands</span>
+      <span class="tab-count">32</span>
+    </div>
+    <div class="filter-tab">
+      <span>Panels</span>
+      <span class="tab-count">8</span>
+    </div>
+    <div class="filter-tab">
+      <span>Domains</span>
+      <span class="tab-count">7</span>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="results-container">
+    <!-- Commands group -->
+    <div class="result-group">
+      <div class="group-header">Commands (3 matches)</div>
+
+      <div class="result-item selected">
+        <div class="result-icon icon-command">⚡</div>
+        <div class="result-content">
+          <div class="result-title"><span class="match">bus</span>_traffic.start &lt;path&gt;</div>
+          <div class="result-desc">Start recording message bus traffic to a binary file</div>
+        </div>
+        <div class="result-meta">
+          <div class="meta-badge">MESSAGE BUS</div>
+        </div>
+      </div>
+
+      <div class="result-item">
+        <div class="result-icon icon-command">⚡</div>
+        <div class="result-content">
+          <div class="result-title"><span class="match">bus</span>_traffic.stop</div>
+          <div class="result-desc">Stop recording and flush buffer to disk</div>
+        </div>
+        <div class="result-meta">
+          <div class="meta-badge">MESSAGE BUS</div>
+        </div>
+      </div>
+
+      <div class="result-item">
+        <div class="result-icon icon-command">⚡</div>
+        <div class="result-content">
+          <div class="result-title"><span class="match">bus</span>_traffic.status</div>
+          <div class="result-desc">Show current recording status and statistics</div>
+        </div>
+        <div class="result-meta">
+          <div class="meta-badge">MESSAGE BUS</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panels group -->
+    <div class="result-group">
+      <div class="group-header">Panels (1 match)</div>
+
+      <div class="result-item">
+        <div class="result-icon icon-panel">📊</div>
+        <div class="result-content">
+          <div class="result-title"><span class="match">Bus</span> Traffic Viewer</div>
+          <div class="result-desc">Live table showing all message bus dispatches (type, router, pass, count)</div>
+        </div>
+        <div class="result-meta">
+          <div class="meta-badge">DATA</div>
+          <div class="meta-keybind">Ctrl+Shift+B</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Domains group -->
+    <div class="result-group">
+      <div class="group-header">Debug Domains (0 matches)</div>
+      <div style="padding: 20px; text-align: center; color: #555; font-size: 11px;">
+        No visual debug domains match "bus"
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="palette-footer">
+    <div class="footer-hint">
+      <div class="hint-item">
+        <span class="hint-key">↑↓</span>
+        <span>Navigate</span>
+      </div>
+      <div class="hint-item">
+        <span class="hint-key">Enter</span>
+        <span>Execute</span>
+      </div>
+      <div class="hint-item">
+        <span class="hint-key">Esc</span>
+        <span>Close</span>
+      </div>
+    </div>
+    <div>4 results found</div>
+  </div>
+</div>
+
+<!-- Full example with all categories -->
+<script>
+/*
+Example data structure for reference:
+
+const allItems = [
+  // Commands
+  { type: 'command', name: 'bus_traffic.start', category: 'MESSAGE BUS', desc: '...' },
+  { type: 'command', name: 'asset_runtime.get_loaded', category: 'ASSETS', desc: '...' },
+  { type: 'command', name: 'debug.layer.enable', category: 'DEBUG', desc: '...' },
+  { type: 'command', name: 'simtime.set_speed', category: 'SIMULATION', desc: '...' },
+  { type: 'command', name: 'help.list', category: 'HELP', desc: '...' },
+
+  // Panels
+  { type: 'panel', name: 'Bus Traffic Viewer', category: 'DATA', keybind: 'Ctrl+Shift+B', desc: '...' },
+  { type: 'panel', name: 'Blackboard Inspector', category: 'DATA', keybind: 'Ctrl+Shift+K', desc: '...' },
+  { type: 'panel', name: 'Entity List', category: 'DATA', desc: '...' },
+  { type: 'panel', name: 'Asset Runtime State', category: 'DATA', desc: '...' },
+  { type: 'panel', name: 'Console', category: 'CORE', keybind: '~', desc: '...' },
+
+  // Debug Domains (visual debuggers)
+  { type: 'domain', name: 'Physics2D', category: 'PHYSICS', desc: 'Collision shapes, contacts, forces' },
+  { type: 'domain', name: 'Animation2D', category: 'ANIMATION', desc: 'Skeleton bones, pose visualization' },
+  { type: 'domain', name: 'Pathfinding', category: 'NAVIGATION', desc: 'Paths, waypoints, obstacles' },
+  { type: 'domain', name: 'FlowField', category: 'NAVIGATION', desc: 'Flow field vectors, costs' },
+  { type: 'domain', name: 'Entity', category: 'ENTITY', desc: 'Entity handles, components, lifecycle' },
+  { type: 'domain', name: 'Coord2D', category: 'CORE', desc: 'Grid overlay, coordinate markers' },
+  { type: 'domain', name: 'Scene2D', category: 'RENDERING', desc: 'Layers, cameras, render targets' }
+];
+*/
+</script>
+
+</body>
+</html>

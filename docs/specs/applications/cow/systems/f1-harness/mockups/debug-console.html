@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CoW Debug Console — UX Mockup</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0a0a0a;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 13px;
+  color: #d4d4d4;
+  height: 100vh;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─────────────────────────────── CONSOLE WINDOW ─── */
+.console-window {
+  width: 900px;
+  height: 600px;
+  background: #1a1a1a;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Title bar ── */
+.title-bar {
+  background: linear-gradient(to bottom, #2a2a2a 0%, #222 100%);
+  border-bottom: 1px solid #3a3a3a;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: move;
+  user-select: none;
+}
+.title-icon {
+  width: 14px;
+  height: 14px;
+  background: #5a9fd4;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+}
+.title-text {
+  flex: 1;
+  font-size: 11px;
+  color: #aaa;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+.title-toggle {
+  font-size: 9px;
+  color: #666;
+  background: #161616;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid #2a2a2a;
+}
+.window-controls {
+  display: flex;
+  gap: 6px;
+}
+.control-btn {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+}
+.control-btn.minimize { background: #f5a623; }
+.control-btn.close { background: #e74c3c; }
+
+/* ── Tab bar ── */
+.tab-bar {
+  background: #1f1f1f;
+  border-bottom: 1px solid #2a2a2a;
+  display: flex;
+  gap: 0;
+  padding: 0 8px;
+}
+.tab {
+  padding: 6px 16px;
+  font-size: 11px;
+  color: #888;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+.tab:hover { color: #bbb; background: #252525; }
+.tab.active {
+  color: #5a9fd4;
+  border-bottom-color: #5a9fd4;
+  background: #1a1a1a;
+}
+
+/* ── Main content area ── */
+.console-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ── Output panel (left side) ── */
+.output-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #2a2a2a;
+}
+.output-header {
+  background: #1a1a1a;
+  padding: 6px 10px;
+  border-bottom: 1px solid #2a2a2a;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 10px;
+}
+.filter-btn {
+  padding: 3px 8px;
+  background: #252525;
+  border: 1px solid #3a3a3a;
+  color: #888;
+  border-radius: 3px;
+  font-size: 10px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.filter-btn.active { background: #5a9fd4; color: #fff; border-color: #5a9fd4; }
+.clear-btn {
+  margin-left: auto;
+  padding: 3px 8px;
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  color: #999;
+  border-radius: 3px;
+  font-size: 10px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.clear-btn:hover { background: #333; color: #ccc; }
+
+.output-log {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 10px;
+  background: #0f0f0f;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.log-line {
+  display: flex;
+  gap: 10px;
+  padding: 2px 0;
+  font-family: 'Consolas', monospace;
+}
+.log-time {
+  color: #555;
+  flex-shrink: 0;
+  width: 70px;
+}
+.log-level {
+  flex-shrink: 0;
+  width: 50px;
+  font-weight: 600;
+}
+.log-level.info { color: #5a9fd4; }
+.log-level.warn { color: #f5a623; }
+.log-level.error { color: #e74c3c; }
+.log-level.success { color: #2ecc71; }
+.log-message { color: #ccc; flex: 1; }
+
+/* ── Sidebar (right) ── */
+.sidebar {
+  width: 280px;
+  background: #161616;
+  display: flex;
+  flex-direction: column;
+}
+.sidebar-section {
+  border-bottom: 1px solid #2a2a2a;
+  padding: 10px;
+}
+.sidebar-title {
+  font-size: 10px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+.command-item {
+  padding: 5px 8px;
+  margin: 2px 0;
+  background: #1a1a1a;
+  border-radius: 3px;
+  font-size: 10px;
+  color: #888;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.command-item:hover { background: #252525; color: #ccc; }
+.command-name { flex: 1; }
+.command-badge {
+  background: #2a2a2a;
+  padding: 1px 5px;
+  border-radius: 2px;
+  font-size: 9px;
+  color: #666;
+}
+.help-text {
+  font-size: 10px;
+  color: #555;
+  line-height: 1.4;
+  padding: 6px;
+  background: #0f0f0f;
+  border-radius: 3px;
+  margin-top: 6px;
+}
+
+/* ── Input bar ── */
+.input-bar {
+  background: #1f1f1f;
+  border-top: 1px solid #3a3a3a;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.input-prompt {
+  color: #5a9fd4;
+  font-weight: 700;
+  font-size: 13px;
+}
+.input-field {
+  flex: 1;
+  background: #0f0f0f;
+  border: 1px solid #3a3a3a;
+  color: #fff;
+  font-family: 'Consolas', monospace;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 3px;
+  outline: none;
+}
+.input-field:focus { border-color: #5a9fd4; }
+.autocomplete {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  background: #252525;
+  border: 1px solid #3a3a3a;
+  border-bottom: none;
+  border-radius: 3px 3px 0 0;
+  padding: 6px;
+  font-size: 10px;
+  color: #888;
+}
+.autocomplete-item {
+  padding: 4px 8px;
+  cursor: pointer;
+  border-radius: 2px;
+  display: flex;
+  justify-content: space-between;
+}
+.autocomplete-item:hover { background: #2a2a2a; }
+.autocomplete-item.selected { background: #5a9fd4; color: #fff; }
+.status-bar {
+  background: #161616;
+  border-top: 1px solid #2a2a2a;
+  padding: 4px 12px;
+  font-size: 10px;
+  color: #666;
+  display: flex;
+  justify-content: space-between;
+}
+.status-item { display: flex; gap: 15px; }
+</style>
+</head>
+<body>
+
+<div class="console-window">
+  <!-- Title bar -->
+  <div class="title-bar">
+    <div class="title-icon">&gt;</div>
+    <div class="title-text">DEBUG CONSOLE</div>
+    <div class="title-toggle">~ to toggle</div>
+    <div class="window-controls">
+      <button class="control-btn minimize"></button>
+      <button class="control-btn close"></button>
+    </div>
+  </div>
+
+  <!-- Tab bar -->
+  <div class="tab-bar">
+    <div class="tab active">Output</div>
+    <div class="tab">History</div>
+    <div class="tab">Commands</div>
+    <div class="tab">Help</div>
+  </div>
+
+  <!-- Main content -->
+  <div class="console-content">
+    <!-- Output panel -->
+    <div class="output-panel">
+      <div class="output-header">
+        <button class="filter-btn active">All</button>
+        <button class="filter-btn">Info</button>
+        <button class="filter-btn">Warnings</button>
+        <button class="filter-btn">Errors</button>
+        <button class="clear-btn">Clear</button>
+      </div>
+      <div class="output-log">
+        <div class="log-line">
+          <span class="log-time">00:12.341</span>
+          <span class="log-level info">INFO</span>
+          <span class="log-message">DiaAPI initialized. 47 commands registered.</span>
+        </div>
+        <div class="log-line">
+          <span class="log-time">00:12.389</span>
+          <span class="log-level info">INFO</span>
+          <span class="log-message">DebugServerHostModule started on port 8080</span>
+        </div>
+        <div class="log-line">
+          <span class="log-time">00:14.521</span>
+          <span class="log-level success">CMD</span>
+          <span class="log-message">&gt; bus_traffic.status</span>
+        </div>
+        <div class="log-line">
+          <span class="log-time">00:14.523</span>
+          <span class="log-level info">INFO</span>
+          <span class="log-message">Bus traffic recorder: not active</span>
+        </div>
+        <div class="log-line">
+          <span class="log-time">00:18.102</span>
+          <span class="log-level success">CMD</span>
+          <span class="log-message">&gt; bus_traffic.start recording.dat</span>
+        </div>
+        <div class="log-line">
+          <span class="log-time">00:18.105</span>
+          <span class="log-level info">INFO</span>
+          <span class="log-message">Bus traffic recorder started: C:/GitHub/Cluiche/out/CoW/Debug/recording.dat</span>
+        </div>
+        <div class="log-line">
+          <span class="log-time">00:22.841</span>
+          <span class="log-level warn">WARN</span>
+          <span class="log-message">Message bus: 1024 messages dispatched this frame (threshold: 1000)</span>
+        </div>
+        <div class="log-line">
+          <span class="log-time">00:25.992</span>
+          <span class="log-level info">INFO</span>
+          <span class="log-message">Stage transition: Boot → FrontEnd</span>
+        </div>
+        <div class="log-line">
+          <span class="log-time">00:28.441</span>
+          <span class="log-level error">ERROR</span>
+          <span class="log-message">AssetRuntime: Failed to load asset 'ui.main_menu' (file not found)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Recent Commands</div>
+        <div class="command-item">
+          <span class="command-name">bus_traffic.start recording.dat</span>
+          <span class="command-badge">00:18</span>
+        </div>
+        <div class="command-item">
+          <span class="command-name">bus_traffic.status</span>
+          <span class="command-badge">00:14</span>
+        </div>
+        <div class="command-item">
+          <span class="command-name">help list</span>
+          <span class="command-badge">00:10</span>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Quick Actions</div>
+        <div class="command-item">
+          <span class="command-name">debug.layer.list</span>
+          <span class="command-badge">Layer</span>
+        </div>
+        <div class="command-item">
+          <span class="command-name">panel.show bus_traffic</span>
+          <span class="command-badge">Panel</span>
+        </div>
+        <div class="command-item">
+          <span class="command-name">simtime.set_speed 2.0</span>
+          <span class="command-badge">Sim</span>
+        </div>
+      </div>
+
+      <div class="sidebar-section" style="flex: 1;">
+        <div class="sidebar-title">Current Context</div>
+        <div class="help-text">
+          Stage: <strong style="color: #5a9fd4;">FrontEnd</strong><br>
+          Tick: <strong style="color: #ccc;">5,281</strong><br>
+          Commands: <strong style="color: #ccc;">47</strong><br>
+          Panels: <strong style="color: #ccc;">3 open</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input bar with autocomplete -->
+  <div style="position: relative;">
+    <div class="autocomplete" style="display: none;">
+      <div class="autocomplete-item selected">
+        <span>bus_traffic.start &lt;path&gt;</span>
+        <span style="color: #666;">Start recording</span>
+      </div>
+      <div class="autocomplete-item">
+        <span>bus_traffic.stop</span>
+        <span style="color: #666;">Stop recording</span>
+      </div>
+      <div class="autocomplete-item">
+        <span>bus_traffic.status</span>
+        <span style="color: #666;">Show status</span>
+      </div>
+    </div>
+    <div class="input-bar">
+      <span class="input-prompt">&gt;</span>
+      <input type="text" class="input-field" placeholder="Type a command or press F1 for palette..." value="bus_traffic.">
+    </div>
+  </div>
+
+  <!-- Status bar -->
+  <div class="status-bar">
+    <div class="status-item">
+      <span>47 commands available</span>
+      <span>3 panels open</span>
+      <span>Recording active</span>
+    </div>
+    <div class="status-item">
+      <span>Press TAB to autocomplete</span>
+      <span>↑↓ for history</span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
