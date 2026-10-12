@@ -19,6 +19,8 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | Dia | F-1 Debug Infrastructure | 4 specs Approved (2026-10-11): (1) ModuleDebugRegistry (foundation), (2) DiaDebugConsole (in-game command console), (3) DiaDebugDataPanel (panel registry + BusTrafficViewer), (4) DiaDebugPalette (searchable discovery UI). Full APIs, mockups, 12 ACs each. 12-18 days total. Build order: Registry → Console+Panel → Palette | None (all dependencies in Dia) |
 | CoW | WorldClock | System spec Approved + 4 features Approved: (1) WorldClockModule Core (season counter, time band resolution, Hz-based speed), (2) Modal Pause Nesting, (3) Save/Load Integration, (4) Speed Control UI. GDD `A2_WorldClock/` Locked 2026-10-09 | DiaSimTime (Done) |
 | CoW | E1 Save/Load | System spec Approved + 5 features Approved (2026-10-11): (1) SaveLoadModule Core, (2) WorldClock Serialization, (3) RandomStream Serialization, (4) Save/Load Bus Messages, (5) TickCompleted Synchronization. CoW's integration with DiaSaveGame. GDD E1_SaveContinue Locked 2026-10-09 | DiaSaveGame (Done), WorldClock (Approved) |
+| CoW | F-2 Core Runtime | System spec Approved (2026-10-11). Testbed stage with 6 tests: (1) Stream Independence, (2) Determinism Round Trip, (3) Save/Load RNG Round Trip, (4) Clock Proof, (5) Save/Load Proof, (6) Band Resolver Timing. F2CoreRuntimeStage + F2TestRunnerModule + DiaAutomation. GDD `F2_CoreRuntime.md` Locked 2026-10-09 | WorldClock (Approved), E1 Save/Load (Approved), DiaAttribute Feature 7 (Draft — Test 6 only), RandomStreamManager (Done) |
+| CoW | S-1 World Generation | System spec Approved + 7 features Approved (2026-10-11): (1) Placeholder Generation Algorithm, (2) Reachability Validator, (3) Retry Mechanism, (4) JSON Export/Import, (5) Timeout and Failure Handling, (6) F-1 Debug Host Integration, (7) Layered Debug Rendering. WLD data pipeline (seeded generation, export/import, timeout/failure, reachability validator, 3 hard guarantees). **New scope:** geographic region identification (valleys, mountain ranges, coastal zones, highlands, lowlands) algorithmically identified from elevation + water proximity; each cell tagged with `geographic_region_id`. Used for D4 event narrative, C1 territory, rival spacing. A4 uses per-cell weather (not regions). GDD `S1_WorldGeneration.md` Locked 2026-10-11. **Blocker:** Feature 2 requires B2 terrain traversability data externalization (system spec Open Q #2) | F-2 (Approved), F-1 Harness (Approved for Feature 6), B2 terrain data externalization (blocking Feature 2) |
 
 ---
 
@@ -32,11 +34,15 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | ~~CoW~~ | ~~F-1: Debug command / inspector host~~ | — | ✅ **Approved 2026-10-11:** Moved to Ready to Build |
 | ~~CoW~~ | ~~WorldClock~~ | @docs/specs/applications/cow/systems/worldclock/worldclock.md | ✅ **Approved 2026-10-11:** System + 4 features approved, moved to Ready to Build |
 | ~~CoW~~ | ~~E1 Save/Load~~ | @docs/specs/applications/cow/systems/e1-saveload/e1-saveload.md | ✅ **Approved 2026-10-11:** System + 5 features approved, moved to Ready to Build |
-| CoW | F-2 Core Runtime testbed | — | Testbed stage spec: proves WorldClock (6 tests), RNG determinism (RandomStreamModule ✅), save/load round-trip (E1), band resolver (DiaAttribute Feature 7). GDD `F2_CoreRuntime.md` Locked 2026-10-09. Ready to spec once WorldClock/E1 build starts |
-| CoW | S-1 World Generation | — | `/spec-system`: WLD data pipeline only — generation, export/import, timeout/failure, reachability validator. No A1/A3. GDD `S1_WorldGeneration.md` Locked 2026-10-11. Depends on F-2 being built |
-| CoW | S-2 Single Cell Ecology | — | `/spec-system`: A1 isolated, slider-driven unit test of tick equations (bypasses event interface). GDD `S2_SingleCellEcology.md` Locked 2026-10-11. Depends on F-2 being built (for time controls) |
-| CoW | S-3 Living Ecology | — | `/spec-system`: A1+A3 full world fast-forward, zero dragons, layered visualization (population density, pressure fields, event markers, succession, time-series graphs). GDD `S3_LivingEcology.md` Locked 2026-10-11. Depends on S-1 being built (world loader) |
-| CoW | S-4 Dragon | — | `/spec-system`: isolated and live modes; pathfinding. Depends on S-3, F-2 |
+| ~~CoW~~ | ~~F-2 Core Runtime~~ | @docs/specs/applications/cow/systems/f2-core-runtime/f2-core-runtime.md | ✅ **Approved 2026-10-11:** System spec complete, moved to Ready to Build |
+| ~~CoW~~ | ~~S-1 World Generation~~ | @docs/specs/applications/cow/systems/s1-worldgeneration/worldgenerationpipeline.md | ✅ **Approved 2026-10-11:** System + 7 features approved, moved to Ready to Build |
+| CoW | A1 Ecology | — | `/spec-system`: Cellular ecology simulation (biome system, seasonal baselines, population dynamics). §13 Weather Integration (subscribes to `WeatherUpdated`, accumulates rainfall over 13 weeks per season). §14 Interface Contract (exposes `get_biome_seasonal_baseline` for A4). GDD Phase 3 system. **Depends on:** WorldClock (Approved), A4 Weather (unspecced) |
+| CoW | A3 (TBD) | — | `/spec-system`: [System name and description TBD from GDD]. Works with A1 and A4 in S-3 Living Ecology testbed. GDD Phase TBD. **Depends on:** TBD |
+| CoW | A4 Weather System | — | `/spec-system`: Phase 8 system. Cellular automaton weather simulation (52 weeks/year, per-cell moisture/temperature/pressure/wind). Publishes `WeatherUpdated(cell_id, rainfall, temperature, snow_cover)` weekly. 44 tunable constants, 8 debug overlays, 15 commands, 20 edge cases. GDD `A4_WeatherSystem.md` + `A4_TechnicalSpec.md` Locked 2026-10-11. **Depends on:** F-2 (Approved for RNG determinism), RandomStreamManager multi-stream support (Done), S-1 WLD data (elevation, latitude, water_source per cell). **Blocks:** A1 weather integration |
+| CoW | S-2 Single Cell Ecology | — | `/spec-system`: A1 isolated, slider-driven unit test of tick equations (bypasses event interface). GDD `S2_SingleCellEcology.md` Locked 2026-10-11. **Depends on:** F-2 (Approved) for WorldClock time controls, A1 (unspecced) |
+| CoW | S-2.5 Weather Patterns | — | `/spec-system`: A4 isolated weather CA simulation testbed. Tests 20 edge cases (coastal rain, rain shadows, storm movement, seasonal variation, spring floods, droughts, orographic lift, snow melt, etc.). 8 debug overlays (Moisture, Wind, Precipitation, Snow Pack, Cloud Cover, Pressure, Temperature, Ground Water). Proves weekly weather cycle (52 weeks/year). Fast-forward time controls. GDD TBD (testbed needs design). **Depends on:** S-1 (WLD data provider), F-2 (Approved for WorldClock), A4 (unspecced) |
+| CoW | S-3 Living Ecology | — | `/spec-system`: A1+A3+A4 full world fast-forward, zero dragons, layered visualization (population density, pressure fields, event markers, succession, time-series graphs, 8 A4 weather overlays). Tests A1+A4 integration (rainfall accumulation, weather-driven biome response). GDD `S3_LivingEcology.md` Locked 2026-10-11, updated to include A4. Depends on S-1 being built (world loader), A1 (unspecced), A3 (unspecced), A4 (unspecced), S-2.5 (A4 isolated proof) |
+| CoW | S-4 Dragon | — | `/spec-system`: isolated and live modes; pathfinding. **Depends on:** S-3 (unspecced), F-2 (Approved), A1 (unspecced) |
 | CoW | S-5 Lineage & Hearth | — | `/spec-system`. Depends on S-4 |
 | CoW | S-6 Dynasty | — | `/spec-system`: heaviest testbed; command may split off. Depends on S-5 |
 | CoW | S-7 Endurance | — | `/spec-system`: stress load, long-run history and save paging. Depends on S-1 to S-6 |
@@ -91,15 +97,18 @@ The testbeds and the pieces each absorbs, from `TestbedRoster.md`. Cross a piece
 
 | # | Testbed | Absorbs | Notes |
 |---|---------|---------|-------|
-| F-1 | Harness | Boot & Debug Menu · Event Bus & Inspector · Record & Replay | `F1_Harness.md` drafted, challenge pass done; 4 debug infrastructure specs complete (2026-10-11), ready for approval |
-| F-2 | Core Runtime | Clock & Determinism · RNG · Data Loading & Band Resolver · save/load round-trip | `F2_CoreRuntime.md` Locked 2026-10-09; `/spec-system` row exists |
-| S-1 | World | World Generation · Single Cell (mode) · Living Ecology (mode) | |
-| S-2 | Dragon | Dragon Sandbox (isolated mode) · Dragon in the World (live mode) · Pathfinding | |
-| S-3 | Lineage & Hearth | Single Hearth · Hearth Economy & Lifecycle · Breeding & Drift | |
-| S-4 | Dynasty | Command Chain · Clans & Politics · Apotheosis (late-game preset) | |
-| S-5 | Endurance | Swarm & Scale · History & Save | |
-| V-1 | Map Visuals | Grid · overlays · fog of war · camera | |
-| V-2 | Dragon & Nest Visuals | Dragon Visuals · Nest Diorama | |
-| V-3 | UI & Interaction | UI kit · Input · Lineage View · Event Readability | |
+| F-1 | Harness | ~~Boot & Debug Menu~~ · ~~Event Bus & Inspector~~ · Record & Replay | `F1_Harness.md` Locked; 4 debug infrastructure specs Approved 2026-10-11 |
+| F-2 | Core Runtime | ~~Clock & Determinism~~ · ~~RNG~~ · ~~Data Loading & Band Resolver~~ · ~~save/load round-trip~~ | `F2_CoreRuntime.md` Locked 2026-10-09; system spec Approved 2026-10-11 |
+| S-1 | World Generation | ~~World Generation~~ | `S1_WorldGeneration.md` Locked 2026-10-11; system + 7 features Approved 2026-10-11. **New:** geographic region identification |
+| S-2 | Single Cell Ecology | Single Cell (isolated A1 unit test) | `S2_SingleCellEcology.md` Locked 2026-10-11; needs `/spec-system` |
+| S-2.5 | Weather Patterns | Weather CA (isolated A4 test, 8 overlays, 20 edge cases) | **NEW 2026-10-11:** A4 isolated testbed; needs GDD design pass |
+| S-3 | Living Ecology | Living Ecology (A1+A3+A4 full world, zero dragons) | `S3_LivingEcology.md` Locked 2026-10-11, updated to include A4; needs `/spec-system` |
+| S-4 | Dragon | Dragon Sandbox (isolated mode) · Dragon in the World (live mode) · Pathfinding | Needs GDD design pass |
+| S-5 | Lineage & Hearth | Single Hearth · Hearth Economy & Lifecycle · Breeding & Drift | Needs GDD design pass |
+| S-6 | Dynasty | Command Chain · Clans & Politics · Apotheosis (late-game preset) | Needs GDD design pass |
+| S-7 | Endurance | Swarm & Scale · History & Save | Needs GDD design pass |
+| V-1 | Map Visuals | Grid · overlays · fog of war · camera | Needs GDD design pass |
+| V-2 | Dragon & Nest Visuals | Dragon Visuals · Nest Diorama | Needs GDD design pass |
+| V-3 | UI & Interaction | UI kit · Input · Lineage View · Event Readability | Needs GDD design pass |
 | A-1 | Audio | none listed | Dia has no audio module |
-| G-1 | First Playable | Front End · every testbed's real-visuals toggle | |
+| G-1 | First Playable | Front End · every testbed's real-visuals toggle | Final integration testbed |
