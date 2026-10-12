@@ -238,6 +238,9 @@
     <Filter Include="DiaMaths">
       <UniqueIdentifier>{8355fe2c-307b-47d3-b965-8931117171cc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Tests\GoogleTests\DiaAttribute">
+      <UniqueIdentifier>{f69c33c5-f439-4381-a9b9-3e979891d44e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -1822,6 +1825,9 @@
     </ClCompile>
     <ClCompile Include="ApplicationFlow\TestManifestBootstrap.cpp">
       <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAttribute\TestDiaAttributeBandInitialization.cpp">
+      <Filter>Tests\GoogleTests\DiaAttribute</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
