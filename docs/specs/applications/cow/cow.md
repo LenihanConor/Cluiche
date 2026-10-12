@@ -8,7 +8,7 @@ Crucible of Wings (CoW) is a living dragon terrarium and stewardship simulation:
 
 CoW is built on top of Dia and CluicheGameBaseline, developed as its own application sibling to CluicheTest and CluicheEditor. Its tech/art phases are built as 12 vertical-slice **testbeds** that accumulate into the final game. The first build boots to either the real game UI or a debug menu that launches any testbed standalone.
 
-**Backlog:** [cow-backlog.md](cow-backlog.md). **Cross-boundary needs:** [dia-needs.md](dia-needs.md).
+**Backlog:** [BACKLOG.md](../../../BACKLOG.md) (Project = CoW). **Cross-boundary needs:** [dia-needs.md](dia-needs.md).
 
 **Design source of truth:** the GDD repo (`C:\GitHub\DesignDocs\COW`, `Output Docs/GDD/`). Macro vision: `01_MacroVision/HighConceptPitch.md`. Testbed roster: `10_PrototypeStrategy/TestbedRoster.md` (DECISION-120). The GDD owns what each testbed must prove and its pass/fail metrics; this spec tree owns how it is implemented (see AD-003).
 
@@ -19,8 +19,8 @@ One stage per testbed (AD-005).
 |--------|-------|-------------|-----|------|
 | WorldClock | Foundation | CoW time architecture — season counter, speed tiers (PAUSED/NORMAL/FAST/FASTEST), modal-safe pause, time band resolution (SEASON/YEAR/DECADE/CENTURY), four independent time domains (sim/wall/render/audio) | `08_SystemsDeepDive/A2_WorldClock/` | @docs/specs/applications/cow/systems/worldclock/worldclock.md |
 | F-1 Harness | Foundation | Boot flow, debug menu, event bus, inspector/debug-command framework, event record/replay | `10_PrototypeStrategy/F1_Harness.md` | @docs/specs/applications/cow/systems/f1-harness/f1-harness.md |
-| F-2 Core Runtime | Foundation | Testbed proving WorldClock, RNG determinism, save/load round-trip, band resolver (DiaAttribute Feature 7). GDD Locked 2026-10-09 | `10_PrototypeStrategy/F2_CoreRuntime.md` | TBD |
-| S-1 World Generation | Simulation | WLD data pipeline only — seeded generation, export/import, timeout/failure, reachability validator, no A1/A3. GDD Locked 2026-10-11 | `10_PrototypeStrategy/S1_WorldGeneration.md` | TBD |
+| F-2 Core Runtime | Foundation | Testbed proving WorldClock, RNG determinism, save/load round-trip, band resolver (DiaAttribute Feature 7). 6 tests: stream independence, determinism round-trip, RNG save/load, WorldClock proof, E1 proof, band resolver timing. GDD Locked 2026-10-09, Spec Approved 2026-10-11 | `10_PrototypeStrategy/F2_CoreRuntime.md` | @docs/specs/applications/cow/systems/f2-core-runtime/f2-core-runtime.md |
+| S-1 World Generation | Simulation | WLD data pipeline only — seeded generation, export/import, timeout/failure, reachability validator, no A1/A3. GDD Locked 2026-10-11, Spec Approved 2026-10-11 (7 features) | `10_PrototypeStrategy/S1_WorldGeneration.md` | @docs/specs/applications/cow/systems/s1-worldgeneration/worldgenerationpipeline.md |
 | S-2 Single Cell Ecology | Simulation | A1 isolated, slider-driven unit test of tick equations (bypasses event interface). GDD Locked 2026-10-11 | `10_PrototypeStrategy/S2_SingleCellEcology.md` | TBD |
 | S-3 Living Ecology | Simulation | A1+A3 full world fast-forward with zero dragons — integration/emergence proof with layered visualization. GDD Locked 2026-10-11 | `10_PrototypeStrategy/S3_LivingEcology.md` | TBD |
 | S-4 Dragon | Simulation | Isolated single-dragon sandbox and live-in-world modes; pathfinding | `10_PrototypeStrategy/TestbedRoster.md` | TBD |

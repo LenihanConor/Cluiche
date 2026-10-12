@@ -1,6 +1,6 @@
 ---
 name: backlog
-description: Show the current project backlog — ready to build, ready to spec, blocked, and what's next
+description: Show or update the project backlog (all projects, including CoW) — ready to build, ready to spec, blocked, what's next; done/designed/drop
 tags: [backlog, planning, specs]
 user_invocable: true
 agent_invocable: false
@@ -15,6 +15,9 @@ Show the current project backlog in a consistent four-section format.
 ```
 /backlog            all projects
 /backlog cow        only rows whose Project column is CoW (also: dia, cluichetest, baseline)
+/backlog done <item>          move a finished row to BACKLOG-HISTORY.md
+/backlog designed <piece>     CoW: cross out a testbed piece the GDD has locked
+/backlog drop <item> <why>    move a row to history's Dropped table
 ```
 
 ## Instructions for Claude
@@ -23,7 +26,7 @@ When this skill is invoked:
 
 ### 1. Read the Backlog
 
-Read `docs/BACKLOG.md` in full. Every table has a **Project** column. If an argument is given, keep only rows whose Project contains it (case-insensitive); otherwise keep all rows. Show the Project as the first column of each table you render. For CoW, also read the "CoW: Features to Be Designed (GDD)" section and add a short "Still to be designed" table (Testbed, pieces not yet crossed out) after Blocked when the filter is cow.
+Read `docs/BACKLOG.md` in full. Every table has a **Project** column. If an argument is given, keep only rows whose Project contains it (case-insensitive); otherwise keep all rows. Show the Project as the first column of each table you render. For CoW, also include the `Dia` rows whose notes say "CoW needs", and read the "CoW: Features to Be Designed (GDD)" section and add a short "Still to be designed" table (Testbed, pieces not yet crossed out) after Blocked when the filter is cow.
 
 ### 2. Render Four Sections
 
@@ -58,3 +61,18 @@ A table of items that cannot proceed right now. Columns: **Item**, **Why** (one 
 - Do not include Done items (struck-through in the source)
 - Do not show raw file paths or spec links — keep it readable
 - If a section has no items, write "_Nothing here._" under the heading
+
+### 4. Updating the Backlog
+
+**done `<item>`**: run `dia docs backlog move <item> --notes "<note>"` (use `--dry-run` first if several rows could match). Ask the user for the note if it is not obvious. If the item was the last open row of a spec, remind the user to run `dia docs spec-done` for the spec.
+
+**designed `<piece>`** (CoW only):
+1. Find the piece in "CoW: Features to Be Designed (GDD)" and strike it with `~~piece~~`.
+2. If every piece in that testbed row is struck, remove the row, log the testbed in BACKLOG-HISTORY.md under "CoW: Designed in the GDD" with the date and a note, and (after confirming with the user) add its Testbed row to **Spec Work Needed → CoW** with Kind, Deliverable, GDD and Depends On.
+3. Only do this when the user says the GDD design is locked. Never infer it.
+
+**drop `<item>` `<why>`**: remove the row and add it to BACKLOG-HISTORY.md's "Dropped" table (Item, Project, Dropped date, Why).
+
+**CoW row rule**: every CoW row is one System or one Testbed with one deliverable; sub-tasks belong in the spec and plan, not the backlog.
+
+Commit only if the user asks; show a short summary of what moved.

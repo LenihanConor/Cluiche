@@ -44,7 +44,7 @@ The GDD is a sibling checkout. Root: the `COW_GDD_PATH` environment variable if 
 
 If the GDD path does not exist, stop and tell the user how to set `COW_GDD_PATH`.
 
-**Locked check:** the testbed is locked when its pieces are crossed out (`~~like this~~`) in the "CoW: Features to Be Designed (GDD)" table of `docs/BACKLOG.md`. If it is not locked, warn the user and ask whether to scaffold a skeleton stage anyway. Do not continue without an answer.
+**Locked check:** the testbed is locked when it has a Testbed row under "Spec Work Needed" or "Ready to Build" → CoW in `docs/BACKLOG.md` (fully designed testbeds leave the "CoW: Features to Be Designed (GDD)" table and are logged in `docs/BACKLOG-HISTORY.md`). If it is not locked, warn the user and ask whether to scaffold a skeleton stage anyway. Do not continue without an answer.
 
 ### Step 3 — Pick the name and modules
 

@@ -26,11 +26,11 @@ A skill that creates a new CoW testbed stage. It differs from the CluicheTest sk
 Instructions the skill gives Claude, in order:
 
 1. Resolve the testbed from `docs/specs/applications/cow/cow.md` Systems table (id, name, track). If the id is not listed, stop and ask.
-2. Read the testbed summary in the GDD `10_PrototypeStrategy/TestbedRoster.md`, and its own testbed file if one exists (for example `F1_Harness.md`). If the design is not locked (not struck in `cow-backlog.md`'s "Features to Be Designed"), warn the user and ask whether to scaffold a skeleton stage anyway.
+2. Read the testbed summary in the GDD `10_PrototypeStrategy/TestbedRoster.md`, and its own testbed file if one exists (for example `F1_Harness.md`). If the design is not locked (no CoW Testbed row under Ready to Build or Spec Work Needed in `docs/BACKLOG.md`), warn the user and ask whether to scaffold a skeleton stage anyway.
 3. Derive the PascalCase stage name (`<Name>TestbedStage`) and choose modules from the testbed's systems, using the baseline module patterns. Unknown systems go to `dia-needs.md` per AD-002, not into the stage.
 4. Run `dia scaffold stage <Name> --app CoW [--modules ...] [--budget ...]`.
 5. Add a panel stub for modes and presets named in the testbed summary (for example isolated and live for S-2).
-6. Add the stage to `cow-backlog.md` notes, build and launch with `dia run cow`, confirm the stage appears in the Boot menu, launch it, and return.
+6. Add the stage to its CoW row's notes in `docs/BACKLOG.md`, build and launch with `dia run cow`, confirm the stage appears in the Boot menu, launch it, and return.
 7. Update the relevant system spec or plan row; do not touch the GDD.
 
 ## Acceptance Criteria

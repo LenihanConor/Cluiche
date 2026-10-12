@@ -8,6 +8,9 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 
 | Item | Completed | Notes |
 |------|-----------|-------|
+| CoW: `dia scaffold app` (data-driven target registry + templates, command, `ScratchApp` boot proof, docs) | before 2026-10-12 | [scaffold-app.md](specs/applications/dia/systems/diacli/scaffold-app.md); F-1 plan task 9 |
+| CoW: `new-cow-stage` skill (AC1 to AC3) | before 2026-10-12 | F-1 plan task 7; trial run (AC4/AC5) still open in the backlog |
+| CoW: `dia scaffold stage --app` | before 2026-10-12 | F-1 plan task 6; 22 new tests, 148 scaffold tests pass |
 | CI Architecture Gates | 2026-07-09 | `dia check deps` exit code fixed, `dia check arch` wired, `dia check clones` (PMD CPD) added, `.github/workflows/ci.yml` with hard-gate + advisory jobs. |
 
 ---
@@ -16,6 +19,9 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 
 | System | Spec | Completed | Notes |
 |--------|------|-----------|-------|
+| CoW F-1: Boot choice (Play entry only) | [boot-choice.md](specs/applications/cow/systems/f1-harness/boot-choice.md) | before 2026-10-12 | F-1 plan task 5; spec marked Done. Recorded during the 2026-10-12 backlog cleanup |
+| CoW F-1: CoW app skeleton (B1 to B7: `cow` target, `sln-add --root`, project, manifests, `FrontEnd` stub, `Main.cpp`, verify, observation scan) | [cow-app-skeleton.md](specs/applications/cow/systems/f1-harness/cow-app-skeleton.md) | before 2026-10-12 | F-1 plan tasks 2 to 4. Promotion and skeleton edits to baseline, CluicheTest, DiaCLI and `pipeline.toml` were signed off in the F-1 spec |
+| CoW F-1: BootMenuModule promotion + `StageStatusModule` | [bootmenu-promotion.md](specs/applications/cow/systems/f1-harness/bootmenu-promotion.md) | before 2026-10-12 | F-1 plan task 1 |
 | DiaBgfx3D | [diabgfx3d.md](specs/applications/dia/systems/diabgfx3d/diabgfx3d.md) | 2026-07-09 | Phase 2 3D rendering ship gate. gpu-resources (MaterialRegistry + MeshGpuCache), 3d-renderers (MeshRenderer + ShadowRenderer + shaders), canvas3d (Canvas3D ProcessFrame 2D+3D dispatch), mesh-texture-pipeline (albedo + normal maps + TBN), pbr-shading (GGX BRDF + ORM), multiple-directional-lights (8-light array uniforms). |
 | DiaBlackboardInspector | [diablackboardinspector.md](specs/applications/dia/systems/diablackboardinspector/diablackboardinspector.md) | 2026-07-09 | Live runtime blackboard visibility in CluicheEditor. blackboard-registry (BlackboardRegistry + serializer opt-in + IBlackboardObserver::GetId), blackboard-inspector-source (ChangeDetectedSourceBase + EventStream → DebugServer), blackboard-inspector-plugin (LiveConnectionPluginBase + dockable HTML panel). |
 | DiaRenderTest CLI Pipeline | [diarendertest.md](specs/applications/dia/systems/diarendertest/diarendertest.md) | 2026-07-09 | Offline render regression pipeline. png-writer, diff-engine, expectations, python-tools, metrics-writer, cluichetest-integration all shipped. Unblocks RenderTestPlugin (CluicheEditor). |
@@ -212,6 +218,19 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | DiaVisualDebugger — migrate Geometry2D spatial structures to fixed-draw-layer | 2026-05-04 | Re-export headers in `DiaGeometry2DVisualDebugger/Renderers/`; canonical renderers in `DiaVisualDebugger/Renderers/` |
 | CluicheTest shutdown — GL teardown + cross-PU stop fence | 2026-05-18 | `~RenderWindow` reordered: `setActive(true)` before ImGui/texture shutdown. Cross-PU fence: `KernelModule::sRenderContextReleased` atomic; `RenderModule::DoStop` sets it after `SetActiveContext(false)`; `KernelModule::DoStop` spins until observed. Verified clean: no GL_INVALID_OPERATION, no hang. |
 | DiaCore JobSystem refactor | 2026-05-17 | All 5 phases done. P1 (`c1fe4d5`): `ThreadPool` .h/.cpp split, instance API + refcounted `JobHandle` behind a static shim. P2 (`684f9af`): `JobSystemModule` owns the `JobSystem` instance via `GetStatic()`/`GetJobSystem()`. P3 (`b88449e`): `TextureHandler` migrated to `JobHandle` + `Submit`; KernelModule wires the JobSystem in. P4+P5: deleted the static shim, `Job` struct, `ParallelFor`, parent-child fan-out, priority field, and all dead surface; renamed `Init`/`Quit` → `Initialize`/`Shutdown`; honest header docstrings (no work-stealing/priority claims); double-`Initialize` asserts; `ThreadPool` shutdown drains pending tasks (test pins the contract). Final: 11 instance-API tests, full GoogleTest suite (4245 tests) pass; cluichetest launches and exits clean. |
+
+---
+
+## CoW: Designed in the GDD (struck from "CoW: Features to Be Designed")
+
+| Testbed / piece | Locked | Notes |
+|-----------------|--------|-------|
+| S-3 Living Ecology | 2026-10-11 | `S3_LivingEcology.md`; updated to include A4 weather overlays |
+| S-2 Single Cell Ecology | 2026-10-11 | `S2_SingleCellEcology.md` |
+| V-1 Tile Rendering | 2026-10-11 | `V1_TileRendering.md`; 5-layer rendering + A4 weather |
+| S-1 World Generation | 2026-10-11 | `S1_WorldGeneration.md` |
+| F-2 Core Runtime | 2026-10-09 | `F2_CoreRuntime.md` |
+| F-1 Boot & Debug Menu · Event Bus & Inspector | 2026-10-09 | `F1_Harness.md`; Record & Replay still open |
 
 ---
 
