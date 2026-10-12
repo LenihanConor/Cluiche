@@ -289,7 +289,7 @@ namespace Dia::Attribute {
         }
 
         // AC-5: Attribute has no bands field
-        if (def->bands.Size() == 0)
+        if (!def->bands.IsSizeSet() || def->bands.Size() == 0)
         {
             DIA_LOG_WARNING("Attribute",
                 "AttributeSchema::ResolveBand: attribute '%s' has no bands defined — using default_value %.4f",
