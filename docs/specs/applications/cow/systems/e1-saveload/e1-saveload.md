@@ -317,11 +317,11 @@ private:
 
 | # | Feature | Description | Status |
 |---|---------|-------------|--------|
-| 1 | SaveLoadModule Core | SaveConfig, SaveRegistry, participant registration, DiaAPI commands | Draft |
-| 2 | WorldClock Serialization | `WorldClockModule::Serialize/Deserialize`, version 1, always-paused resume | Draft |
-| 3 | RandomStream Serialization | `RandomStreamModule::Serialize/Deserialize`, version 1, master seed + per-stream state | Draft |
-| 4 | Save/Load Bus Messages | SaveRequested, SaveCompleted, LoadRequested, LoadCompleted | Draft |
-| 5 | TickCompleted Synchronization | Wait for TickCompleted before Save() to guarantee no system is mid-tick | Draft |
+| 1 | SaveLoadModule Core | SaveConfig, SaveRegistry, participant registration, DiaAPI commands | Approved |
+| 2 | WorldClock Serialization | `WorldClockModule::Serialize/Deserialize`, version 1, always-paused resume | Approved |
+| 3 | RandomStream Serialization | `RandomStreamModule::Serialize/Deserialize`, version 1, master seed + per-stream state | Approved |
+| 4 | Save/Load Bus Messages | SaveRequested, SaveCompleted, LoadRequested, LoadCompleted | Approved |
+| 5 | TickCompleted Synchronization | Wait for TickCompleted before Save() to guarantee no system is mid-tick | Approved |
 
 > **Note:** Features 1-5 ship together as one unit for F-2 testbed. Future systems (A1, B-layer, etc.) add themselves to the registry as they land.
 
@@ -403,5 +403,5 @@ E1 correctness is proven primarily by **F-2 Core Runtime testbed, Test 5: Save/L
 
 ## Status
 
-**Status:** `Draft`  
+**Status:** `Approved`  
 **Plan:** TBD (create when implementation starts)
