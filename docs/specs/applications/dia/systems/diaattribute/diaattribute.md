@@ -26,12 +26,13 @@ DiaAttribute is *not* a generalization of DiaEconomy, despite sharing the same i
 - Define `AttributeDefinition` — StringCRC name, `minimum_value`, `maximum_value`, `default_value`
 - Define `AttributeSchema` — JSON asset (`attribute_schema` type) declaring the attributes a class of object has (e.g. a Dragon or Footballer schema); loaded once, shared across instances
 - Define `AttributeSet` — per-entity runtime state: one base value per attribute plus its active modifier stack; resolved through a **fixed evaluation pipeline** (`Base → Add → Multiply → Override → Clamp to [minimum_value, maximum_value]`)
+- Provide band-based initialization — `AttributeSchema` can define named band ranges per attribute (e.g., NONE/LOW/BASELINE/MEDIUM/HIGH/APEX); `AttributeSet::InitializeFromBands()` resolves band names to floats once and stores as base values; versioning support via `band_schema_version`
 - Provide `AddModifier(AttributeModifier) → ModifierHandle` / `RemoveModifier(ModifierHandle)` — symmetric lifecycle API so a modifier's source (equip a ring, apply a status effect) can add and later remove exactly one modifier without leaking or double-removing
 - Provide `AttributeSetComponent` — a single `diaentitytemplate` component per entity wrapping one `AttributeSet` (not one component per attribute — respects `kMaxComponentTypesPerDomain = 64` and `kMaxEntitiesPerDomain = 1024`)
 - Provide conditional modifiers — an `AttributeModifier` may carry an optional `when_condition` (DiaCondition expression); simple modifiers (no condition) always apply once added; conditional modifiers are skipped during pipeline resolution when their condition evaluates false, without being removed
 - Provide Observer events — `OnAttributeChanged(entity, attribute_name, old_value, new_value)`, `OnAttributeReachedMaximum(entity, attribute_name)`, `OnAttributeReachedMinimum(entity, attribute_name)`
 - Provide `AttributeAccessorBridge` — registers each entity's resolved attribute values as float accessors in `DiaCondition::ConditionRegistry` (slot+field StringCRC pairs), so `DiaRules` / `DiaUtilityAI` JSON conditions and scorers can read attributes directly
-- Provide schema validation — required-field checks and range coherence (`minimum_value ≤ default_value ≤ maximum_value`) on load
+- Provide schema validation — required-field checks, attribute range coherence (`minimum_value ≤ default_value ≤ maximum_value`), and band range coherence (each band's `[min, max]` within attribute bounds, `min < max`) on load
 - Emit `DIA_LOG_INFO` on schema load and modifier add/remove; `DIA_LOG_WARN` on schema validation warnings
 - Provide test utilities under `DiaAttribute/Testing/` — `MockAttributeSet`, `AssertAttributeValue`, `AssertModifierApplied`; shipped with library, consumer opt-in via include
 - Use DiaCore containers exclusively in all public APIs (AD-002 / PD-004)
@@ -190,8 +191,9 @@ namespace Dia::Attribute {
 | 4 | AI/Blackboard Float Accessor Bridge | `AttributeAccessorBridge` registering attribute values into `DiaCondition::ConditionRegistry` via a compile-time accessor trampoline table | [accessor-bridge.md](accessor-bridge.md) | Approved |
 | 5 | DiaAttributeVisualDebugger | Separate module; `IDebugDomain` overlay for live per-entity attribute + modifier-stack inspection | [visual-debugger.md](visual-debugger.md) | Approved |
 | 6 | Save/Serialization Support | `Dia::SaveGame::ISaveable` integration persisting base values + active modifier state | [save-serialization.md](save-serialization.md) | Approved |
+| 7 | Band-Based Initialization | Schema-defined named band ranges (NONE/LOW/BASELINE/etc.), `InitializeFromBands()` one-time resolution to base values, versioning support | [band-based-initialization.md](band-based-initialization.md) | Approved |
 
-> **Note:** Features 2, 3, and 4 are independent increments on top of Feature 1 (Core) — order between them is flexible. Features 5 and 6 build on top of 2/3 (the debugger wants change events and the modifier stack visible; serialization wants a stable modifier-state shape) and should ship after the Core cluster lands.
+> **Note:** Features 2, 3, and 4 are independent increments on top of Feature 1 (Core) — order between them is flexible. Features 5 and 6 build on top of 2/3 (the debugger wants change events and the modifier stack visible; serialization wants a stable modifier-state shape) and should ship after the Core cluster lands. Feature 7 is independent of 2-6 (band init only touches base values, not modifiers or observers).
 
 ## Inherited Binding Decisions
 
