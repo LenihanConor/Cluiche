@@ -866,6 +866,7 @@
     <ClCompile Include="DiaVisualDebugger\Console\TestConsoleLogRing.cpp" />
     <ClCompile Include="DiaVisualDebugger\Console\TestFuzzyMatcher.cpp" />
     <ClCompile Include="DiaVisualDebugger\Console\TestCommandCompleter.cpp" />
+    <ClCompile Include="CluicheGameBaseline\TestDebugConsoleEvents.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

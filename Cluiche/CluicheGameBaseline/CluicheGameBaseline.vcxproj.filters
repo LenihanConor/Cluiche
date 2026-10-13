@@ -278,5 +278,11 @@
     <ClInclude Include="Modules\AppIdentity.h">
       <Filter>Modules</Filter>
     </ClInclude>
+    <ClInclude Include="Types\DebugConsoleLineEvent.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\DebugConsoleResultEvent.h">
+      <Filter>Types</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

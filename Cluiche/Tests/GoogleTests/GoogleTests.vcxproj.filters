@@ -1856,5 +1856,8 @@
     <ClCompile Include="DiaVisualDebugger\Console\TestCommandCompleter.cpp">
       <Filter>DiaVisualDebugger\Console</Filter>
     </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestDebugConsoleEvents.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

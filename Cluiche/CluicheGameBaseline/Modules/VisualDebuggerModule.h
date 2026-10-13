@@ -18,6 +18,8 @@
 #include "Modules/InputStreamModule.h"
 #include "Modules/Camera2DModule.h"
 #include "Types/DebugPanelCommandEvent.h"
+#include "Types/DebugConsoleLineEvent.h"
+#include "Types/DebugConsoleResultEvent.h"
 #include "Types/DebugPanelToggleEvent.h"
 #include "Types/DebugPanelSetVisibilityEvent.h"
 #include <DiaVisualDebugger/Domain/IDebugDomain.h>
@@ -84,6 +86,8 @@ private:
     // Drain DiaDebugPanel commands arriving from the Main PU over the
     // DebugPanelCommand EventStream and funnel them into the command queue.
     void DrainPanelCommandStream();
+    // Drain console lines from the Main PU, execute each, and write a result event.
+    void DrainConsoleLines();
     // Parse and execute a debug console command string (e.g. "debug.layer.enable x").
     void ExecuteConsoleCommand(const char* cmdText);
 
@@ -93,6 +97,8 @@ private:
     Dia::VisualDebugger::DiaDebugDomainRegistry mDomainRegistry;
     Dia::ApplicationFlow::ServiceStreamWriter<Dia::VisualDebugger::DiaDebugDomainRegistry> mDomainRegistryService{this, "DomainRegistry"};
     Dia::ApplicationFlow::EventStreamReader<DebugPanelCommandEvent> mPanelCommands{this, "DebugPanelCommand"};
+    Dia::ApplicationFlow::EventStreamReader<DebugConsoleLineEvent>   mConsoleLines{this, "DebugConsoleLine"};
+    Dia::ApplicationFlow::EventStreamWriter<DebugConsoleResultEvent> mConsoleResults{this, "DebugConsoleResult"};
     Dia::ApplicationFlow::EventStreamWriter<DebugPanelToggleEvent>  mPanelToggle{this, "DebugPanelToggle"};
     Dia::ApplicationFlow::EventStreamWriter<DebugPanelSetVisibilityEvent> mPanelSetVisibility{this, "DebugPanelSetVisibility"};
     Dia::Core::Containers::DynamicArrayC<PendingCommand, kCommandQueueCapacity> mCommandQueue;

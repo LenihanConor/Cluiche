@@ -126,6 +126,8 @@
     <ClInclude Include="Modules\BootMenuLogic.h" />
     <ClInclude Include="Modules\BootMenuModule.h" />
     <ClInclude Include="Modules\AppIdentity.h" />
+    <ClInclude Include="Types\DebugConsoleLineEvent.h" />
+    <ClInclude Include="Types\DebugConsoleResultEvent.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">

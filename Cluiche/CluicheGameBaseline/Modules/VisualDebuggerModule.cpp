@@ -15,6 +15,7 @@
 #include <DiaVisualDebugger/Coord2D/Coord2DDebugDomain.h>
 #include <DiaVisualDebugger/Coord3D/Coord3DDebugDomain.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
+#include <DiaVisualDebugger/Console/ConsoleExecutor.h>
 #include <mutex>
 
 namespace Cluiche { namespace AppFlow {
@@ -48,6 +49,7 @@ void VisualDebuggerModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*ctx*/)
     DIA_TRACE_ZONE("VisualDebuggerModule.Update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
 
     DrainPanelCommandStream();
+    DrainConsoleLines();
     DrainPendingCommands();
 
     auto* app = GetApplication();
@@ -111,6 +113,8 @@ void VisualDebuggerModule::OnConnectStreams(Dia::ApplicationFlow::Application& a
     mLayerManagerService.Connect(app);
     mDomainRegistryService.Connect(app);
     mPanelCommands.Connect(app);
+    mConsoleLines.Connect(app);
+    mConsoleResults.Connect(app);
     mPanelToggle.Connect(app);
     mPanelSetVisibility.Connect(app);
 }
@@ -235,36 +239,36 @@ void VisualDebuggerModule::ExecuteConsoleCommand(const char* cmdText)
     if (cmdText == nullptr || cmdText[0] == '\0')
         return;
 
-    // Split on spaces: first token = command name, remaining = positional args.
-    // Pointers into buf are valid for the duration of this call (synchronous).
-    char buf[512] = {};
-    strncpy_s(buf, cmdText, sizeof(buf) - 1);
-
-    const char* commandName = nullptr;
-    Dia::API::CommandArgs cmdArgs;
-
-    char* p = buf;
-    while (*p != '\0')
-    {
-        while (*p == ' ') ++p;
-        if (*p == '\0') break;
-        char* token = p;
-        while (*p != '\0' && *p != ' ') ++p;
-        if (*p != '\0') { *p = '\0'; ++p; }
-
-        if (commandName == nullptr)
-            commandName = token;
-        else if (!cmdArgs.positionalArgs.IsFull())
-            cmdArgs.positionalArgs.Add(token);
-    }
-
-    if (commandName == nullptr)
-        return;
-
-    const int exitCode = Dia::API::ExecuteCommand(
-        Dia::Core::StringCRC(commandName), cmdArgs);
+    const Dia::VisualDebugger::Console::ConsoleResult result =
+        Dia::VisualDebugger::Console::ExecuteConsoleCommand(cmdText);
+    const int exitCode = result.exitCode;
 
     DIA_LOG_INFO("Debug", "VisualDebuggerModule: console '%s' -> %d", cmdText, exitCode);
+}
+
+void VisualDebuggerModule::DrainConsoleLines()
+{
+    Dia::Core::Containers::DynamicArrayC<
+        Dia::ApplicationFlow::Event<DebugConsoleLineEvent>, kCommandQueueCapacity> events;
+    mConsoleLines.Consume(events);
+
+    for (unsigned int i = 0; i < events.Size(); ++i)
+    {
+        const DebugConsoleLineEvent& line = events[i].payload;
+
+        DebugConsoleResultEvent out{};
+        out.seq = line.seq;
+        strncpy_s(out.text, line.text, sizeof(out.text) - 1);
+        out.text[sizeof(out.text) - 1] = '\0';
+
+        const Dia::VisualDebugger::Console::ConsoleResult result =
+            Dia::VisualDebugger::Console::ExecuteConsoleCommand(out.text);
+        out.exitCode   = static_cast<int32_t>(result.exitCode);
+        out.parseError = static_cast<uint8_t>(result.parseError);
+
+        DIA_LOG_INFO("Debug", "VisualDebuggerModule: console '%s' -> %d", out.text, out.exitCode);
+        mConsoleResults.Send(out);
+    }
 }
 
 void VisualDebuggerModule::DrainPanelCommandStream()

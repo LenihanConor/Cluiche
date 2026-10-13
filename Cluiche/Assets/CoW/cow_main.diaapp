@@ -89,6 +89,22 @@
             "to": "SimPU"
         },
         {
+            "id": "DebugConsoleLine",
+            "kind": "EventStream",
+            "payload_type": "DebugConsoleLineEvent",
+            "overflow": "drop-oldest",
+            "from": "MainPU",
+            "to": "SimPU"
+        },
+        {
+            "id": "DebugConsoleResult",
+            "kind": "EventStream",
+            "payload_type": "DebugConsoleResultEvent",
+            "overflow": "drop-oldest",
+            "from": "SimPU",
+            "to": "MainPU"
+        },
+        {
             "id": "DebugPanelToggle",
             "kind": "EventStream",
             "payload_type": "DebugPanelToggleEvent",
@@ -285,6 +301,14 @@
                             "role": "writes"
                         },
                         {
+                            "id": "DebugConsoleLine",
+                            "role": "writes"
+                        },
+                        {
+                            "id": "DebugConsoleResult",
+                            "role": "reads"
+                        },
+                        {
                             "id": "DebugPanelToggle",
                             "role": "reads"
                         },
@@ -413,6 +437,14 @@
                         {
                             "id": "DebugPanelCommand",
                             "role": "reads"
+                        },
+                        {
+                            "id": "DebugConsoleLine",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "DebugConsoleResult",
+                            "role": "writes"
                         },
                         {
                             "id": "DebugPanelToggle",
