@@ -11,6 +11,7 @@
 #include <DiaStreams/EventStreamReader.h>
 #include <DiaStreams/ServiceStreamReader.h>
 #include <DiaVisualDebugger/Console/ConsoleHistory.h>
+#include <DiaVisualDebugger/Console/PaletteIndex.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
 
 #include "Modules/DebugPanelPage.h"
@@ -59,6 +60,8 @@ public:
     void OnConsoleLine(unsigned int seq, const char* const* parts, unsigned int partCount) override;
     void OnConsoleComplete(const char* token) override;
     void OnConsoleHistory(bool previous) override;
+    void OnPaletteOpen() override;
+    void OnPaletteSearch(const char* query, int mask) override;
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
@@ -76,6 +79,7 @@ private:
     void PushConsoleResults();
     void PushLogLines();
     void CheckLogRingProbe();
+    void PushPaletteResults(const char* query, int mask);
 
     DebugPanelPage mPage{this};
     bool           mPanelVisible         = false;
@@ -108,6 +112,9 @@ private:
 
     // Lives in the module (not the page) so it survives panel hide/show.
     Dia::VisualDebugger::Console::ConsoleHistory mHistory;
+
+    // Heap-owned: PaletteIndex is non-copyable and holds a snapshot. Created on first open, freed in DoStop.
+    Dia::VisualDebugger::Console::PaletteIndex* mPalette = nullptr;
 
     unsigned int mProbeFramesLeft = 0;   // frames until the ring probe is checked; 0 = done
 };

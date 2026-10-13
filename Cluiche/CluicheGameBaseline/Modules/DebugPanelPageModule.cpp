@@ -157,6 +157,9 @@ Dia::ApplicationFlow::StopResult DebugPanelPageModule::DoStop()
     }
     mProbeFramesLeft = 0;
 
+    delete mPalette;
+    mPalette = nullptr;
+
     mPageInitialized = false;
     return Dia::ApplicationFlow::StopResult::kDone;
 }
@@ -235,6 +238,38 @@ void DebugPanelPageModule::OnConsoleHistory(bool previous)
     char json[1024];
     if (ConsoleJson::BuildSetInput(entry != nullptr ? entry : "", entry == nullptr, json, sizeof(json)))
         PushToPage("consoleSetInput", json);
+}
+
+void DebugPanelPageModule::OnPaletteOpen()
+{
+    using Dia::VisualDebugger::Console::PaletteIndex;
+
+    if (mPalette == nullptr)
+        mPalette = new PaletteIndex();
+
+    if (mDomainRegistry.IsAvailable())
+        mPalette->Build(mDomainRegistry.Get());
+    else
+        DIA_LOG_WARNING("Debug", "DebugPanelPageModule: palette opened before the domain registry is available");
+
+    PushPaletteResults("", PaletteIndex::kTypeCommands | PaletteIndex::kTypeDomains);
+}
+
+void DebugPanelPageModule::OnPaletteSearch(const char* query, int mask)
+{
+    if (mPalette == nullptr)
+        return;   // never opened: nothing to search
+    PushPaletteResults(query != nullptr ? query : "", mask);
+}
+
+void DebugPanelPageModule::PushPaletteResults(const char* query, int mask)
+{
+    // 50 items x ~600 bytes worst case; heap-free static buffer, Main PU only.
+    static char json[32 * 1024];
+    if (Dia::VisualDebugger::Console::ConsoleJson::BuildPaletteResults(*mPalette, query, mask, json, sizeof(json)))
+        PushToPage("paletteResults", json);
+    else
+        DIA_LOG_WARNING("Debug", "DebugPanelPageModule: palette results did not fit the JSON buffer");
 }
 
 bool DebugPanelPageModule::PushToPage(const char* jsFunction, const char* json)

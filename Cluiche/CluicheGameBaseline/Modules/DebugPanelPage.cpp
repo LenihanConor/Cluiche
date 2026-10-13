@@ -27,6 +27,11 @@ void DebugPanelPage::InitializePage()
         Dia::UI::BoundMethod::MethodPtr(this, &DebugPanelPage::OnConsoleComplete_JS)));
     BindMethod(Dia::UI::BoundMethod::CreateBoundMethod("onConsoleHistory",
         Dia::UI::BoundMethod::MethodPtr(this, &DebugPanelPage::OnConsoleHistory_JS)));
+
+    BindMethod(Dia::UI::BoundMethod::CreateBoundMethod("onPaletteOpen",
+        Dia::UI::BoundMethod::MethodPtr(this, &DebugPanelPage::OnPaletteOpen_JS)));
+    BindMethod(Dia::UI::BoundMethod::CreateBoundMethod("onPaletteSearch",
+        Dia::UI::BoundMethod::MethodPtr(this, &DebugPanelPage::OnPaletteSearch_JS)));
 }
 
 void DebugPanelPage::OnCommand_JS(const Dia::UI::BoundMethodArgs& args)
@@ -119,6 +124,39 @@ void DebugPanelPage::OnConsoleHistory_JS(const Dia::UI::BoundMethodArgs& args)
         mCallbacks->OnConsoleHistory(false);
     else
         DIA_LOG_WARNING("Debug", "DebugPanelPage: onConsoleHistory direction '%s' is not prev/next", direction);
+}
+
+void DebugPanelPage::OnPaletteOpen_JS(const Dia::UI::BoundMethodArgs& /*args*/)
+{
+    if (mCallbacks != nullptr)
+        mCallbacks->OnPaletteOpen();
+}
+
+void DebugPanelPage::OnPaletteSearch_JS(const Dia::UI::BoundMethodArgs& args)
+{
+    if (mCallbacks == nullptr)
+        return;
+
+    // (query, mask) where mask is the string "1", "2" or "3".
+    if (args.Size() < 2 || !args.At(0).IsString() || !args.At(1).IsString())
+    {
+        DIA_LOG_WARNING("Debug", "DebugPanelPage: onPaletteSearch needs (query, mask) strings; got %u args",
+                        args.Size());
+        return;
+    }
+
+    const char* maskText = args.At(1).GetString().AsCStr();
+    int mask = 0;
+    if (strcmp(maskText, "1") == 0)      mask = 1;
+    else if (strcmp(maskText, "2") == 0) mask = 2;
+    else if (strcmp(maskText, "3") == 0) mask = 3;
+    else
+    {
+        DIA_LOG_WARNING("Debug", "DebugPanelPage: onPaletteSearch mask '%s' is not 1/2/3", maskText);
+        return;
+    }
+
+    mCallbacks->OnPaletteSearch(args.At(0).GetString().AsCStr(), mask);
 }
 
 } } // namespace Cluiche::AppFlow

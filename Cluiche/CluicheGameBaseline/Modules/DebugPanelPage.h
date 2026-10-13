@@ -43,6 +43,22 @@ namespace Cluiche { namespace AppFlow {
 //                                        "rank":"exact|prefix|contains|subsequence"}]}
 //   consoleSetInput(json)     {"text":"...","restore":false}; restore:true means
 //                             "past the newest history entry: restore your draft".
+//
+// Palette JS contract (panel-palette.md). Every string argument is <= 63 chars.
+//   app.onPaletteOpen()
+//       Palette opened: C++ rebuilds its index from the live registries and pushes
+//       paletteResults for the empty query, mask "3".
+//   app.onPaletteSearch(query, mask)
+//       query: <= 60 chars; mask: "1" (commands), "2" (domains) or "3" (both).
+//   paletteResults(json)      {"total":N,"counts":{"all":N,"commands":N,"domains":N},
+//                              "items":[{"type":"command|domain","name":"...",
+//                              "description":"...","category":"...","example":"...",
+//                              "domainId":"...","action":"fill|reveal","actionText":"...",
+//                              "hl":"0101..."}]}
+//       counts are true totals for the query; items are the ranked results for the
+//       mask (<= 50, truncated if the buffer fills). action "fill": put actionText
+//       in the console input; "reveal": reveal the domain whose id is actionText.
+//       hl has one '0'/'1' per character of name (1 = matched by the query).
 // History and the log ring live in DebugPanelPageModule, so they survive the
 // panel being hidden and shown again. appendLogLines is pushed only while the
 // page is loaded; lines logged while hidden are delivered on the next show.
@@ -66,6 +82,10 @@ public:
         virtual void OnConsoleLine(unsigned int seq, const char* const* parts, unsigned int partCount) = 0;
         virtual void OnConsoleComplete(const char* token) = 0;
         virtual void OnConsoleHistory(bool previous) = 0;
+
+        // Palette bindings. mask: 1 = commands, 2 = domains, 3 = both.
+        virtual void OnPaletteOpen() = 0;
+        virtual void OnPaletteSearch(const char* query, int mask) = 0;
     };
 
     explicit DebugPanelPage(ICallbacks* callbacks);
@@ -77,6 +97,8 @@ private:
     void OnConsoleLine_JS(const Dia::UI::BoundMethodArgs& args);
     void OnConsoleComplete_JS(const Dia::UI::BoundMethodArgs& args);
     void OnConsoleHistory_JS(const Dia::UI::BoundMethodArgs& args);
+    void OnPaletteOpen_JS(const Dia::UI::BoundMethodArgs& args);
+    void OnPaletteSearch_JS(const Dia::UI::BoundMethodArgs& args);
 
     ICallbacks* mCallbacks;
 };

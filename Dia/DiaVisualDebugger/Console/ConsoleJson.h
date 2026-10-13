@@ -14,6 +14,9 @@
 
 #include <DiaVisualDebugger/Console/CommandCompleter.h>
 #include <DiaVisualDebugger/Console/ConsoleLogRing.h>
+#ifdef DIA_DEBUG
+#include <DiaVisualDebugger/Console/PaletteIndex.h>
+#endif
 
 #include <cstdint>
 
@@ -44,6 +47,18 @@ namespace Dia
 
 				// {"text":"...","restore":false|true}  (history recall: restore=true means "restore the draft")
 				static bool BuildSetInput(const char* text, bool restore, char* out, unsigned outSize);
+
+#ifdef DIA_DEBUG
+				// Palette results (panel-palette.md):
+				// {"total":N,"counts":{"all":N,"commands":N,"domains":N},"items":[{"type":"command|domain",
+				//  "name","description","category","example","domainId","action":"fill|reveal",
+				//  "actionText","hl":"0101.."}]}
+				// counts are true totals for the query (masks 3,1,2); items are the ranked results for
+				// typeFilterMask (<= 50). If items do not fit they are truncated (valid JSON, counts intact);
+				// returns false only if the wrapper/counts do not fit.
+				static bool BuildPaletteResults(const PaletteIndex& index, const char* query, int typeFilterMask,
+												char* out, unsigned outSize);
+#endif
 			};
 		}
 	}
