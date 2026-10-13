@@ -110,7 +110,14 @@ ConsoleResult ExecuteConsoleCommand(const char* text);   // parse + Dia::API::Ex
 } // namespace
 ```
 
-`ParseCommandLine` builds an `argv` (`{"dia", name, tokens...}`) in `storage` and calls `ArgumentParser::ParseArguments`, so the named-arg and flag grammar is exactly the CLI's.
+`ParseCommandLine` builds an `argv` (`{"dia", name, tokens...}`) in `storage` and calls `ArgumentParser::ParseArguments`, so the flag grammar is the CLI's.
+
+Amended after task 2 (2026-10-13), where the code differed from the first draft:
+- The CLI only treats `--key=val` as a named argument; a bare `key=val` would be positional. To meet AC-1, the console parser rewrites an **unquoted** bare `key=val` (before any `--`) to `--key=val`. Quoted tokens stay positional.
+- `ParseError` gained `InvalidArgument` for lines `ArgumentParser` rejects (`---x`, unknown short flag, a name that starts with `-`). `TooManyArgs` now means only more than 32 tokens.
+- `ConsoleHistory::GetNext` returns `nullptr` once it steps past the newest entry, meaning "restore the draft the user was typing".
+- `ConsoleLogRing` is about 175 KB: own it as a heap object or a member of a heap object, never on the stack. `GetTotalWritten()` exists for the probe-line check in `DoStart`.
+- A thread must call `Logger::RegisterThreadBuffer()` or its `DIA_LOG_*` lines are silently dropped; tests that log from helper threads do this.
 
 ### Threading and data flow
 
