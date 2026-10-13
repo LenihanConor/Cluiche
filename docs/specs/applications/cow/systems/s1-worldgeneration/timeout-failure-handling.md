@@ -14,7 +14,7 @@ This feature resolves PARK-P6-001 (worldgen timeout/failure behavior, parked sin
 
 Without timeout/failure handling:
 - **Infinite hangs** — Unlucky seeds or unsatisfiable parameters (e.g., too many Hearth Sites for small grid) could retry forever if Feature 3's `maxRetryAttempts` is set too high or validation is slow
-- **Silent failures** — Actual generation errors (e.g., out-of-memory, file I/O error loading traversability matrix) would crash the game or return corrupted worlds without clear diagnostics
+- **Silent failures** — Actual generation errors (e.g., out-of-memory, file I/O error loading the placeholder terrain table) would crash the game or return corrupted worlds without clear diagnostics
 - **Non-distinguishable failures** — Timeout, retry-exhaustion, manual Cancel, and generation errors would look identical in logs, making debugging impossible
 
 With timeout/failure handling:
@@ -58,7 +58,7 @@ Result<WorldStructure> GenerateWorld(uint64_t outerSeed, const GenParams& params
         // Generate and validate (Feature 1 + Feature 2)
         uint64_t subSeed = DeriveSubSeed(outerSeed, attempt);
         WorldStructure world = PlaceholderGenerator::Generate(subSeed, params);
-        ValidationResult validation = ReachabilityValidator::Validate(world, params);
+        ValidationResult validation = ReachabilityValidator::Validate(world, params.validation);
         
         if (validation.passed) {
             PublishEvent(WorldGenerationComplete{world, outerSeed, attempt});
@@ -91,7 +91,7 @@ Result<WorldStructure> GenerateWorld(uint64_t outerSeed, const GenParams& params
 
 **Error sources:**
 - Feature 1 (Placeholder Generation): out-of-bounds array access, out-of-memory, bad RNG state
-- Feature 2 (Reachability Validator): failed to load traversability matrix, pathfinding stack overflow
+- Feature 2 (Reachability Validator): failed to load placeholder terrain table, pathfinding stack overflow
 - Feature 4 (JSON Export/Import): file I/O error (disk full, permission denied)
 
 **Partial state cleanup:** `Result<WorldStructure>::Failure()` does not return a world; caller receives failure status only. Partial `WorldStructure` (allocated in `Generate()` but not validated) is discarded (goes out of scope, cleaned up by destructors).

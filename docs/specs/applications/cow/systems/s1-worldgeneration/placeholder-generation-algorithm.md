@@ -73,7 +73,7 @@ Each phase consumes the seed via RandomStreamManager, ensuring determinism.
 
 **Algorithm:** Map biome → terrain-type via lookup table (e.g., "Forest" biome → "Foliage" terrain type, "Mountain" biome → "Rock" terrain type). Exact biome-to-terrain mappings TBD by Phase 2 data design, placeholder uses arbitrary 1:1 mapping.
 
-**Purpose:** Terrain types drive B2's traversability rules (body-plan block matrix), required for Feature 2 reachability validation.
+**Purpose:** Terrain types are what navigation profiles key on (`INavigationProfile`; S-1's placeholder terrain table now, B2's body-plan rules later), required for Feature 2 reachability validation.
 
 ### Region Boundary Assignment (Phase 4)
 
@@ -145,6 +145,7 @@ struct GenParams {
     PlacementParams placementParams;       // Site placement tuning (TBD by placeholder)
     uint32_t maxRetryAttempts;             // Not used by this feature (Feature 3)
     float timeoutSeconds;                  // Not used by this feature (Feature 5)
+    ValidationParams validation;           // Not used by this feature (Features 2/3): injected guarantees + navigation profiles
 };
 
 struct PlacementParams {

@@ -47,7 +47,7 @@ Result<WorldStructure> GenerateWorld(uint64_t outerSeed, const GenParams& params
         uint64_t subSeed = DeriveSubSeed(outerSeed, attempt);
         
         WorldStructure world = PlaceholderGenerator::Generate(subSeed, params);
-        ValidationResult validation = ReachabilityValidator::Validate(world, params);
+        ValidationResult validation = ReachabilityValidator::Validate(world, params.validation);
         
         if (validation.passed) {
             // Success: return world with retry count for telemetry
@@ -82,7 +82,7 @@ uint64_t DeriveSubSeed(uint64_t outerSeed, uint32_t attemptCounter) {
 ### Integration with Features 1 and 2
 
 - **Feature 1 (Placeholder Generation Algorithm):** Retry calls `PlaceholderGenerator::Generate(subSeed, params)` per attempt (Feature 1 is stateless, doesn't know about retry)
-- **Feature 2 (Reachability Validator):** Retry calls `ReachabilityValidator::Validate(world, params)` per attempt (Feature 2 is stateless, doesn't know about retry)
+- **Feature 2 (Reachability Validator):** Retry calls `ReachabilityValidator::Validate(world, params.validation)` per attempt (Feature 2 is stateless, doesn't know about retry)
 - **This feature (Retry Mechanism):** Orchestrates the loop (attempt counter, sub-seed derivation, success/failure decision)
 
 ### Telemetry

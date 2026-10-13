@@ -6,7 +6,9 @@
 
 ## Summary
 
-The Reachability Validator validates the three hard placement guarantees that every successfully-generated CoW world must satisfy: (1) every Hearth Site is reachable from at least one Nexus Node, (2) every pair of dynasty starting positions respects minimum spacing, (3) all six world-throne sites exist and are each reachable from the Ancient Interiors. Validation uses **dragon-traversable paths** (B2's body-plan terrain block matrix), not naive graph connectivity — "reachable" means at least one dragon body plan can traverse the path.
+The Reachability Validator checks a generated `WorldStructure` against a set of **injected world guarantees** (`IWorldGuarantee`). S-1 ships three built-in guarantees that every successfully-generated CoW world must satisfy: (1) every Hearth Site is reachable from at least one Nexus Node, (2) every pair of dynasty starting positions respects minimum spacing, (3) all six world-throne sites exist and are each reachable from the Ancient Interiors. Other systems (A1 ecological viability, C1 territory, D4 regions) can add guarantees later without editing S-1.
+
+"Reachable" is never naive graph connectivity. It is answered under injected **navigation profiles** (`INavigationProfile`): a profile supplies a Dia `IPathCostProvider` bound to the world, and two cells are reachable if a path exists under **any** injected profile. S-1 ships a placeholder terrain-table profile; B2 (Dragon) later injects one profile per body plan. The validator never knows what a body plan is.
 
 This feature prevents Feature 1 (Placeholder Generation Algorithm) from returning playable-looking but mechanically broken worlds. It enables Feature 3 (Retry Mechanism) to detect guarantee violations and trigger sub-seed retries.
 
@@ -18,107 +20,89 @@ Without validation, CoW worlds could be:
 - **Unwinnable** — Missing or unreachable world-thrones means Apotheosis is impossible (violates Constitution §8, makes late-game unachievable)
 - **Silently broken** — Feature 1's naive placeholder algorithm can easily produce these violations; without validation, they'd only be discovered during S-4/S-5/S-6 manual playtesting, wasting iteration time
 
-Naive graph connectivity is insufficient: a graph-connected path might traverse terrain no dragon body plan can cross (e.g., water for land-only dragons, cliffs for wingless dragons). B2's body-plan block matrix defines which terrain types each body plan can traverse — reachability must respect these rules.
+Naive graph connectivity is insufficient: a graph-connected path might traverse terrain no dragon can cross (e.g., water for land-only dragons, cliffs for wingless dragons). Which terrain each actor can cross is B2's concern and is not built yet, so S-1 must not depend on it: navigability is injected.
 
 ## Goals
 
-1. **Three hard guarantees enforced** — Validates all three guarantees (Hearth↔Nexus reachability, dynasty minimum spacing, world-throne existence/reachability); returns pass/fail per guarantee and overall pass/fail
-2. **Dragon-traversable reachability** — Uses B2's body-plan terrain block matrix to determine "can at least one dragon body plan path from A to B" (not naive graph connectivity ignoring terrain)
+1. **Guarantees are pluggable** — The validator runs a list of `IWorldGuarantee` and returns one result per guarantee plus an overall pass/fail. The three hard guarantees are built-in implementations, not special cases
+2. **Navigability is injected** — Reachability is answered under injected `INavigationProfile`s via Dia's `IPathCostProvider` (DiaPathfinding). "Reachable" = a path exists under at least one profile. No B2 types appear in S-1
 3. **Fast validation** — Completes within generation's 5-second budget (reachability checks for typical world sizes must be efficient, not exhaustive search)
 4. **Clear failure reporting** — When a guarantee fails, returns which guarantee and diagnostic info (e.g., "Hearth at (X, Y) unreachable from any Nexus", "Dynasty starts at (X1, Y1) and (X2, Y2) too close: distance D < minimum M")
-5. **Deterministic** — Same world structure always produces same validation result (no randomness in path-finding)
+5. **Deterministic** — Same world structure, guarantees and profiles always produce the same validation result (no randomness in path-finding; results ordered by injection order)
 
 ## Non-Goals
 
 1. **Tuned generation** — This feature validates worlds; Feature 1 generates them
 2. **Retry logic** — This feature returns pass/fail; Feature 3 orchestrates retries when validation fails
-3. **Pathfinding API for runtime** — This is validation-time reachability only; S-4's actual dragon pathfinding is a separate system
+3. **Pathfinding API for runtime** — This is validation-time reachability only; S-4's actual dragon pathfinding is a separate system (it will reuse the same profile idea, but not this validator)
 4. **Optimal paths** — Any valid path proving reachability is sufficient; shortest/best path not required
-5. **Reachability for other game mechanics** — Only validates the three hard guarantees, not general-purpose "can entity X reach tile Y"
+5. **Owning B2's traversability data** — The real body-plan matrix and its `INavigationProfile` implementation belong to B2. S-1 ships only the placeholder profile
+6. **Selecting which guarantees run in a game session** — The caller (retry mechanism / debug host / app wiring) assembles the list; the validator has no registry or auto-discovery
 
 ## Architecture
+
+### Layering
+
+| Piece | Responsibility | Owner |
+|-------|----------------|-------|
+| `WorldStructure` → square path grid adapter | Topology for Dia `FindPath<TGraph>` | S-1 (CoW-Shared) |
+| `INavigationProfile` | Named factory: `CreateCostProvider(world)` returns an `IPathCostProvider` bound to that world | Interface: S-1. Implementations: S-1 (placeholder), B2 (body plans), others later |
+| `INavigationQuery` | `IsReachable(from, to)` — true if any profile finds a path | S-1 (built by the validator per `Validate()` call) |
+| `IWorldGuarantee` | `Check(ValidationContext)` → `GuaranteeResult` | Interface: S-1. Implementations: S-1 (three built-ins), others later |
+| `ReachabilityValidator` | Binds profiles to the world, builds the context, runs each guarantee, aggregates | S-1 |
+
+**Why a profile is a factory, not a bare cost provider:** `IPathCostProvider::GetCost(from, to)` takes only cell coordinates, so a provider needs the world to look up terrain. Profiles are injected before any world exists (and each retry generates a new one), so the profile creates a world-bound provider per `Validate()` call.
 
 ### Validation Flow
 
 ```cpp
-struct ValidationResult {
-    bool passed;  // Overall: all three guarantees satisfied
-    GuaranteeResult hearthNexusReachability;
-    GuaranteeResult dynastySpacing;
-    GuaranteeResult worldThroneExistence;
-};
-
-struct GuaranteeResult {
-    bool satisfied;
-    DynamicArrayC<std::string> diagnostics;  // Empty if satisfied; failure details if not
-};
-
-ValidationResult Validate(const WorldStructure& world, const ValidationParams& params);
+ValidationResult ReachabilityValidator::Validate(const WorldStructure& world, const ValidationParams& params);
 ```
 
-**Three-stage validation:**
+1. For each `INavigationProfile` in `params.profiles`, call `CreateCostProvider(world)` once; build an `INavigationQuery` over them.
+2. Build a `ValidationContext { world, navigation }`.
+3. For each `IWorldGuarantee` in `params.guarantees` (in injection order), call `Check(context)`.
+4. `passed` = every guarantee satisfied.
 
-1. **Hearth↔Nexus Reachability:** For each Hearth Site, attempt to find a dragon-traversable path from that Hearth to any Nexus Node. If any Hearth is unreachable from all Nexuses, guarantee fails.
+**All guarantees run independently** — don't stop at first failure; report every violation for better diagnostics.
 
-2. **Dynasty Minimum Spacing:** For each pair of dynasty starting positions, compute grid distance. If any pair's distance < `params.minimumDynastySpacing`, guarantee fails.
+An empty `profiles` list makes every reachability query return false. `Validate()` logs an error and fails the overall result with a diagnostic rather than silently passing or throwing.
 
-3. **World-Throne Existence/Reachability:** Confirm exactly 6 world-thrones exist (one per Apotheosis type). For each throne, attempt to find a dragon-traversable path from that throne to any Ancient Interiors cell (region enum check). If any throne is unreachable, guarantee fails.
-
-**Short-circuit:** All three guarantees checked independently (don't stop at first failure — report all violations for better diagnostics).
-
-### Dragon-Traversable Reachability
-
-**Data source:** B2's body-plan terrain block matrix (GDD §2, system spec Open Question #2). Format TBD by B2 spec, assumed to be an authored file (e.g., JSON/CSV) mapping `(BodyPlan, TerrainType) → bool canTraverse`.
-
-**Algorithm:**
+### Navigation: Reachable Under Any Profile
 
 ```cpp
-bool IsReachable(GridCoord from, GridCoord to, const WorldStructure& world, const TraversabilityMatrix& matrix) {
-    // Attempt pathfinding for each body plan in matrix
-    for (auto bodyPlan : matrix.GetAllBodyPlans()) {
-        if (PathExists(from, to, world, bodyPlan, matrix)) {
-            return true;  // At least one body plan can traverse
-        }
+bool NavigationQuery::IsReachable(GridCoord from, GridCoord to) const {
+    for (auto& costs : mBoundProviders) {
+        // Dia DiaPathfinding: A* over the world's square grid; kImpassableCost edges are blocked.
+        if (FindPath(mGrid, from, to, *costs).success) return true;
     }
-    return false;  // No body plan can reach destination
-}
-
-bool PathExists(GridCoord from, GridCoord to, const WorldStructure& world, BodyPlan plan, const TraversabilityMatrix& matrix) {
-    // BFS or A* with terrain-type traversability check per body plan
-    // For each neighbor cell, check: can this body plan traverse the cell's terrain type?
-    // If matrix.CanTraverse(plan, cell.terrain) == false, skip that neighbor
+    return false;
 }
 ```
 
-**Rationale:** Checking all body plans (not just one arbitrary plan) ensures "playable" — if zero body plans can reach a site, it's mechanically inaccessible (player can never breed/evolve a dragon that reaches it). If at least one plan can reach it, the player has a path (even if constrained).
+**Rationale:** "Any profile" keeps the original intent: if zero actor kinds can reach a site, it is mechanically inaccessible; if at least one can, the player has a path (even if constrained). With the placeholder, there is one profile; with B2 injected, one per body plan.
 
-### Minimum Dynasty Spacing
+**Cost semantics are free:** because the profile is an `IPathCostProvider`, weighted costs (e.g., "reachable within cost N") need no new interface. Not used by the three built-ins.
 
-**Algorithm:** Grid distance (Manhattan or Euclidean, TBD by `ValidationParams`).
+**Speed option:** per-pair `FindPath` is the baseline. If AC6 fails, `INavigationQuery` may be backed by a multi-source DiaFlowField (all Nexuses → every Hearth in one pass). That is an implementation detail behind the same interface.
+
+### Built-in Guarantees
+
+**`HearthNexusReachabilityGuarantee`** — For each Hearth Site, `IsReachable(hearth, nexus)` for any Nexus Node. Diagnostic per unreachable Hearth.
+
+**`DynastySpacingGuarantee(minimumSpacing)`** — For each pair of dynasty starts, grid distance (Manhattan or Euclidean, see plan patterns). If any pair < `minimumSpacing`, fails. Exact value is a constructor argument (tunable default per GDD open question 1), not hardcoded. Does not use navigation.
 
 ```cpp
-bool CheckDynastySpacing(const DynamicArrayC<DynastyStart>& starts, float minimumSpacing) {
-    for (size_t i = 0; i < starts.size(); ++i) {
-        for (size_t j = i + 1; j < starts.size(); ++j) {
-            float distance = GridDistance(starts[i].position, starts[j].position);
-            if (distance < minimumSpacing) {
-                return false;  // Violation found
-            }
-        }
-    }
-    return true;  // All pairs respect minimum
-}
+for (size_t i = 0; i < starts.size(); ++i)
+    for (size_t j = i + 1; j < starts.size(); ++j)
+        if (GridDistance(starts[i].position, starts[j].position) < minimumSpacing) { /* violation */ }
 ```
 
-**Exact `minimumSpacing` value:** Tunable default per GDD open question 1, left as `ValidationParams` field (not hardcoded).
+**`WorldThroneGuarantee`** — Existence: `world.thrones.size() == 6` and all six Apotheosis types present once. Reachability: each throne must reach any cell with `cell.region == Region::AncientInteriors` via `IsReachable`. If Ancient Interiors is several disjoint regions, any cell from any of them suffices.
 
-### World-Throne Existence/Reachability
+### Placeholder Profile
 
-**Existence check:** `world.thrones.size() == 6` and all six Apotheosis types present (one per type, no duplicates).
-
-**Reachability check:** For each throne, find any cell with `cell.region == Region::AncientInteriors`, then check `IsReachable(throne.position, ancientInteriorsCell, world, matrix)`.
-
-**Assumption:** Ancient Interiors is a contiguous region (if multiple disjoint regions exist, any cell from any of them suffices for "reachable from Ancient Interiors").
+`TerrainTableNavigationProfile` loads a small authored file mapping `TerrainType → passable (and optionally cost)`. Its bound provider returns `kImpassableCost` for edges entering a blocked terrain type. This is the S-1 default and the test double for AC5. It is **not** B2's matrix: the terrain types are S-1's, and B2 later replaces or supplements it by injecting its own profiles.
 
 ## Public Interfaces
 
@@ -128,42 +112,71 @@ bool CheckDynastySpacing(const DynamicArrayC<DynastyStart>& starts, float minimu
 // ReachabilityValidator.h (CoW/Shared/WorldGeneration/)
 namespace CoW::WorldGeneration {
 
-struct ValidationParams {
-    float minimumDynastySpacing;  // Grid units (tunable default, GDD open question 1)
-    // Future: other tuning knobs (timeout per reachability check, max path length, etc.)
-};
-
-struct ValidationResult {
-    bool passed;  // Overall: all three guarantees satisfied
-    GuaranteeResult hearthNexusReachability;
-    GuaranteeResult dynastySpacing;
-    GuaranteeResult worldThroneExistence;
-};
-
 struct GuaranteeResult {
+    StringCRC id;                          // Which guarantee produced this
     bool satisfied;
     DynamicArrayC<std::string> diagnostics;  // Empty if satisfied; failure details if not
 };
 
+struct ValidationResult {
+    bool passed;                                // Overall: every guarantee satisfied
+    DynamicArrayC<GuaranteeResult> guarantees;  // One per injected guarantee, injection order
+    const GuaranteeResult* Find(StringCRC id) const;  // nullptr if not present
+};
+
+// Answers reachability under the injected profiles (any-profile semantics).
+class INavigationQuery {
+public:
+    virtual ~INavigationQuery() = default;
+    virtual bool IsReachable(GridCoord from, GridCoord to) const = 0;
+};
+
+// A kind of actor's navigability. Injected; S-1 ships the placeholder, B2 ships body plans.
+class INavigationProfile {
+public:
+    virtual ~INavigationProfile() = default;
+    virtual StringCRC GetId() const = 0;
+    // Returned provider is bound to 'world' and owned by the caller for one Validate() call.
+    virtual std::unique_ptr<Dia::Pathfinding::IPathCostProvider>
+        CreateCostProvider(const WorldStructure& world) const = 0;
+};
+
+struct ValidationContext {
+    const WorldStructure& world;
+    const INavigationQuery& navigation;
+};
+
+// A rule every accepted world must satisfy. Stateless per call; must be deterministic.
+class IWorldGuarantee {
+public:
+    virtual ~IWorldGuarantee() = default;
+    virtual StringCRC GetId() const = 0;
+    virtual GuaranteeResult Check(const ValidationContext& context) const = 0;
+};
+
+struct ValidationParams {
+    DynamicArrayC<const INavigationProfile*> profiles;   // non-owning; must outlive Validate()
+    DynamicArrayC<const IWorldGuarantee*>    guarantees; // non-owning; must outlive Validate()
+};
+
+// Owns the three built-in guarantees and the placeholder profile, wired into a ValidationParams.
+class DefaultValidationSet {
+public:
+    explicit DefaultValidationSet(float minimumDynastySpacing);
+    const ValidationParams& GetParams() const;
+    // Callers append extra profiles/guarantees (e.g., B2's body-plan profiles) to a copy of GetParams().
+};
+
 class ReachabilityValidator {
 public:
-    // Validate world against three hard guarantees
     // Blocking call; completes within generation's 5-second budget for typical worlds
     static ValidationResult Validate(const WorldStructure& world, const ValidationParams& params);
-
-private:
-    static GuaranteeResult ValidateHearthNexusReachability(const WorldStructure& world);
-    static GuaranteeResult ValidateDynastySpacing(const WorldStructure& world, const ValidationParams& params);
-    static GuaranteeResult ValidateWorldThroneExistence(const WorldStructure& world);
-    
-    // Dragon-traversable reachability (uses B2 traversability matrix)
-    static bool IsReachable(GridCoord from, GridCoord to, const WorldStructure& world);
 };
 
 } // namespace CoW::WorldGeneration
 ```
 
-**Rationale:** Static validator (no instance state needed for validation). Traversability matrix loaded once per validation call (or cached globally if loading is expensive).
+**Rationale:** Static validator (no instance state). Callers (Feature 3 retry, Feature 5 timeout, Feature 6 debug host) keep the same `Validate(world, params)` call shape. The injection happens where `ValidationParams` is assembled, which is the app wiring in the F-1 harness and S-1 stage.
 
 ### Events
 
@@ -176,49 +189,63 @@ private:
 | System/Feature | Why needed | Status |
 |----------------|-----------|---------|
 | **Feature 1 (Placeholder Generation Algorithm)** | Produces `WorldStructure` to validate | Draft (being specced) |
-| **B2 terrain traversability data** | Body-plan block matrix as authored file (defines which terrain types each body plan can traverse) | **Blocking:** GDD open question #3 and system spec Open Question #2 — must externalize B2's traversability rules before this feature can validate correctly |
-| **Phase 2 data design** | Region enum (Ancient Interiors), ApotheosisType enum (6 types), BodyPlan enum (body-plan list for traversability matrix) | GDD in-progress (types TBD — placeholder uses arbitrary enums until Phase 2 finalizes) |
+| **DiaPathfinding** | `SquarePathGrid`, `FindPath<TGraph>`, `IPathCostProvider` (`kImpassableCost`) | Done |
+| **Phase 2 data design** | Region enum (Ancient Interiors), ApotheosisType enum (6 types), TerrainType enum (placeholder profile table) | GDD in-progress (types TBD — placeholder uses arbitrary enums until Phase 2 finalizes) |
+
+**Not a dependency:** B2 (Dragon). B2 consumes `INavigationProfile` later. Nothing in S-1 waits on it.
 
 ### Dia Engine Dependencies
 
-- **DiaCore** (containers: `DynamicArrayC`, file I/O for loading traversability matrix)
+- **DiaCore** (containers: `DynamicArrayC`, file I/O for loading the placeholder terrain table)
 - **DiaMaths** (`GridCoord`, distance calculations, bounds checks)
-- **Pathfinding utility** (BFS or A* for reachability checks — either implement locally or use future Dia pathfinding module if available; S-4 will build dragon pathfinding later, but validator doesn't need full A* features, just "does path exist")
+- **DiaPathfinding** (`FindPath`, `IPathCostProvider`). DiaFlowField is an optional speed-up behind `INavigationQuery`
+
+No new Dia header is required: the injection point already exists in DiaPathfinding, and the S-1 interfaces use CoW's own world concepts (AD-002).
 
 ## Acceptance Criteria
 
-### AC1 — Hearth↔Nexus Reachability Validation
-Generate world where all Hearth Sites are manually confirmed reachable from at least one Nexus Node (via visual inspection or hand-authored test world). Validate. **Pass:** `hearthNexusReachability.satisfied == true`.
+Tests use the `DefaultValidationSet` with the placeholder profile unless stated. Look results up with `ValidationResult::Find(id)`.
 
-Generate world where at least one Hearth is unreachable (hand-edit test world to create isolated island with Hearth, no Nexus). Validate. **Pass:** `hearthNexusReachability.satisfied == false` and `diagnostics` contains Hearth position.
+### AC1 — Hearth↔Nexus Reachability Validation
+Hand-authored world where all Hearth Sites are reachable from at least one Nexus Node. Validate. **Pass:** the Hearth↔Nexus result has `satisfied == true`.
+
+World where at least one Hearth is unreachable (isolated island with Hearth, no Nexus). Validate. **Pass:** `satisfied == false` and `diagnostics` contains Hearth position.
 
 ### AC2 — Dynasty Spacing Validation
-Generate world with dynasty starts placed ≥ minimum spacing apart. Validate with `minimumDynastySpacing = 10` (arbitrary value). **Pass:** `dynastySpacing.satisfied == true`.
+Dynasty starts placed ≥ minimum spacing apart, validated with `minimumDynastySpacing = 10` (arbitrary value). **Pass:** the dynasty-spacing result has `satisfied == true`.
 
-Generate world with two dynasty starts placed < minimum spacing apart (hand-edit test world). Validate with same `minimumDynastySpacing`. **Pass:** `dynastySpacing.satisfied == false` and `diagnostics` contains both positions and actual distance.
+Two dynasty starts < minimum spacing apart, same minimum. **Pass:** `satisfied == false` and `diagnostics` contains both positions and actual distance.
 
 ### AC3 — World-Throne Existence/Reachability Validation
-Generate world with exactly 6 world-thrones, all reachable from Ancient Interiors. Validate. **Pass:** `worldThroneExistence.satisfied == true`.
+Exactly 6 world-thrones, all reachable from Ancient Interiors. **Pass:** the world-throne result has `satisfied == true`.
 
-Generate world with < 6 world-thrones (hand-edit test world). Validate. **Pass:** `worldThroneExistence.satisfied == false` and `diagnostics` mentions count mismatch.
+< 6 world-thrones. **Pass:** `satisfied == false` and `diagnostics` mentions count mismatch.
 
-Generate world with 6 world-thrones but one unreachable from Ancient Interiors (hand-edit test world to place throne on isolated island). Validate. **Pass:** `worldThroneExistence.satisfied == false` and `diagnostics` contains throne position.
+6 world-thrones but one unreachable from Ancient Interiors (isolated island). **Pass:** `satisfied == false` and `diagnostics` contains throne position.
 
 ### AC4 — Overall Pass/Fail
-Generate world where all three guarantees pass. Validate. **Pass:** `ValidationResult.passed == true`.
+All built-in guarantees pass. **Pass:** `ValidationResult.passed == true` and `guarantees.size() == 3`.
 
-Generate world where at least one guarantee fails. Validate. **Pass:** `ValidationResult.passed == false`.
+At least one guarantee fails. **Pass:** `passed == false`.
 
-### AC5 — Dragon-Traversable Reachability (Not Naive Graph Connectivity)
-Create test world with path from A to B that is graph-connected but blocked for all body plans (e.g., water tiles between A and B, and traversability matrix says no body plan can traverse water). Validate reachability from A to B. **Pass:** `IsReachable(A, B) == false` (proves validator respects traversability matrix, not just grid adjacency).
+### AC5 — Navigability Is Respected (Not Naive Graph Connectivity)
+Test world with a path from A to B that is graph-connected but crosses only terrain the placeholder profile blocks (e.g., water blocked). **Pass:** `INavigationQuery::IsReachable(A, B) == false` — proves the validator honours the injected `IPathCostProvider`, not grid adjacency.
 
-Create test world with path from A to B that is traversable by at least one body plan per matrix. Validate. **Pass:** `IsReachable(A, B) == true`.
+Test world with a path crossing only passable terrain. **Pass:** `IsReachable(A, B) == true`.
 
 ### AC6 — Validation Speed
-Generate worlds with typical sizes (128×128 grid, ~10 Hearth Sites, ~5 Nexus Nodes, 6 world-thrones, ~5 dynasty starts). Measure time from `Validate()` call to return. **Target: completes within 5-second generation budget** (exact fraction TBD, but must not dominate generation time — target <1 second for typical worlds).
+Typical sizes (128×128 grid, ~10 Hearth Sites, ~5 Nexus Nodes, 6 world-thrones, ~5 dynasty starts). Measure time from `Validate()` call to return. **Target: completes within the 5-second generation budget**, and under 1 second for typical worlds.
 
 ### AC7 — Deterministic Validation
-Generate world, validate twice with identical `ValidationParams`. **Pass:** Both validation results identical (same `passed` value, same `diagnostics` per guarantee). Proves no randomness in pathfinding or distance calculations.
+Validate the same world twice with identical `ValidationParams`. **Pass:** identical `passed`, identical per-guarantee `satisfied` and `diagnostics`, in the same order.
+
+### AC8 — Injected Navigation Profiles (Any-Profile Semantics)
+Two test profiles on the same world: profile P blocks water, profile Q allows water, and A→B crosses only water. **Pass:** with `{P}` alone `IsReachable(A, B) == false`; with `{P, Q}` it is `true`; with `{Q}` alone it is `true`. Proves new navigation rules are added by injection with no change to S-1 code.
+
+Empty `profiles`. **Pass:** `Validate()` returns `passed == false` with a diagnostic stating no navigation profile was supplied.
+
+### AC9 — Injected Guarantees
+A test `IWorldGuarantee` that always fails, appended to the built-in set. **Pass:** `passed == false`, `guarantees.size() == 4`, the extra result is last and `Find(itsId)->satisfied == false`. A test guarantee that always passes leaves `passed == true`. A custom guarantee that queries `context.navigation` receives the same answers as the built-ins.
 
 ## Inherited Binding Decisions
 
@@ -226,16 +253,16 @@ Generate world, validate twice with identical `ValidationParams`. **Pass:** Both
 
 | ID | Decision | How it applies |
 |----|----------|----------------|
-| PD-001 | Use StringCRC for all entity/component IDs | Region enum (Ancient Interiors), ApotheosisType, BodyPlan enums use StringCRC for comparison when loading from traversability matrix file |
-| PD-004 | No STL containers in public APIs | `ValidationResult` and `GuaranteeResult` use `DynamicArrayC<std::string>` for diagnostics, not `std::vector<std::string>` |
+| PD-001 | Use StringCRC for all entity/component IDs | Guarantee and profile IDs are `StringCRC`; Region/ApotheosisType/TerrainType enums use StringCRC when loaded from the placeholder terrain table file |
+| PD-004 | No STL containers in public APIs | `ValidationResult`, `GuaranteeResult` and `ValidationParams` use `DynamicArrayC`, not `std::vector` |
 | PD-007 | C++20 is required | Validator can use C++20 features (std::span for grid access, concepts for pathfinding traits if needed) |
 
 ### From Application (CoW)
 
 | ID | Decision | How it applies |
 |----|----------|----------------|
-| AD-002 | Classify cross-cutting needs | `ReachabilityValidator` is **CoW-Shared** (reused by S-1 retry mechanism, potentially S-2/S-3 if they regenerate worlds). Not Dia (too CoW-specific: uses CoW's Hearth/Nexus/world-throne concepts). Not Baseline (no other game needs CoW's three hard guarantees) |
-| AD-003 | GDD owns design intent | GDD defines three hard guarantees (§2), "reachable means dragon-traversable not graph-connected" (decision 2), and B2 body-plan traversability dependency (open question 3). This spec defines validation algorithm (BFS per body plan, distance checks, diagnostic reporting) |
+| AD-002 | Classify cross-cutting needs | `ReachabilityValidator`, `IWorldGuarantee` and `INavigationProfile` are **CoW-Shared** (reused by S-1 retry mechanism, potentially S-2/S-3 if they regenerate worlds). Not Dia: they use CoW's Hearth/Nexus/world-throne concepts, and the generic part (cost injection) already exists in DiaPathfinding. Not Baseline (no other game needs CoW's guarantees) |
+| AD-003 | GDD owns design intent | GDD defines three hard guarantees (§2), "reachable means traversable not graph-connected" (decision 2), and the B2 traversability dependency (open question 3). This spec resolves that dependency by injection: S-1 defines the seam, B2 fills it when built |
 
 ### From System (WorldGenerationPipeline)
 
@@ -247,27 +274,30 @@ Generate world, validate twice with identical `ValidationParams`. **Pass:** Both
 
 | # | Question | Impact | Resolution |
 |---|----------|--------|------------|
-| 1 | What is the exact `minimumDynastySpacing` value? | Affects AC2 test data and Feature 3 retry success rate; does not block implementation (use arbitrary default, tune via F-1 debug host) | GDD open question 1 defers this; leave as `ValidationParams` field with placeholder default (e.g., 10.0 grid units) |
-| 2 | Is B2's terrain traversability data (body-plan block matrix) externalized as an authored file yet? | **Blocking:** Cannot implement dragon-traversable reachability without this data | **Must resolve before implementation:** If B2 traversability rules aren't externalized, that's a Cluiche-side task (log to `dia-needs.md` per AD-002) before Feature 2 can be built. This is system spec Open Question #2. |
-| 3 | Should reachability use BFS (guaranteed shortest path, slower) or greedy best-first (faster but not guaranteed shortest)? | Affects AC6 validation speed; does not affect correctness (any valid path proves reachability) | Placeholder uses BFS (simpler, correctness-first); optimize to A* or greedy if AC6 fails speed target |
-| 4 | Should validator cache traversability matrix globally (loaded once at module init) or per-call (reload each validation)? | Affects validation speed if matrix loading is expensive | Load once per `Validate()` call initially; profile and add global cache if loading dominates validation time |
+| 1 | What is the exact `minimumDynastySpacing` value? | Affects AC2 test data and Feature 3 retry success rate; does not block implementation (use arbitrary default, tune via F-1 debug host) | GDD open question 1 defers this; constructor argument of `DynastySpacingGuarantee` with placeholder default (e.g., 10.0 grid units) |
+| 2 | ~~Is B2's terrain traversability data externalized yet?~~ | Was blocking | **Resolved 2026-10-13:** navigability is injected via `INavigationProfile` / DiaPathfinding `IPathCostProvider`. S-1 ships a placeholder terrain-table profile and does not wait for B2. B2's follow-up (one profile per body plan) is logged in `dia-needs.md` as a CoW-side task for when B2 is built |
+| 3 | Per-pair `FindPath` or a multi-source DiaFlowField behind `INavigationQuery`? | Affects AC6 speed; not correctness | Start with per-pair `FindPath` (simplest, correctness-first); switch the query implementation to DiaFlowField if AC6 fails |
+| 4 | Which profiles count toward a given guarantee? | Today every guarantee uses "any profile"; a future guarantee might need a specific profile (e.g., "a human road network connects the hearths") | Not needed for the built-ins. If one arrives, extend `INavigationQuery` with `IsReachable(from, to, profileId)`; additive, no break |
+| 5 | Should the guarantee list be assembled by a registry rather than by the caller? | Today the caller builds `ValidationParams` (app wiring) | Caller-assembled until a second consumer proves a registry is needed (Non-Goal 6) |
 
 ## Status
 
-`Approved` — 2026-10-11
+`Approved` — 2026-10-11. Amended 2026-10-13: navigability and guarantees made injectable (Open Q #2 resolved; blocker removed).
 
 ---
 
 ## Implementation Notes
 
-When implementation begins (after approval), create a plan file `reachability-validator.plan.md` alongside this spec. The plan must include an **Implementation Patterns** section documenting:
+When implementation begins, create a plan file `reachability-validator.plan.md` alongside this spec (TDD per `.claude/skills/tdd.md`). The plan must include an **Implementation Patterns** section documenting:
 
-- Traversability matrix file format (JSON schema, loading code, caching strategy)
-- Pathfinding algorithm choice (BFS vs. A* vs. Dijkstra for reachability checks)
+- Placeholder terrain-table file format (JSON schema, loading code, where it lives)
+- `WorldStructure` → DiaPathfinding grid adapter (build per `Validate()` call vs cache; cost of rebuilding on every retry)
+- Pathfinding choice (per-pair `FindPath` vs DiaFlowField multi-source)
 - Diagnostic message format (how to report unreachable Hearth/throne positions for Feature 3 retry logs)
 - Distance calculation (Manhattan vs. Euclidean for dynasty spacing)
 - Timeout/early-exit for pathfinding (if any reachability check runs too long, how to handle)
+- Test doubles: an always-fail guarantee, an always-pass guarantee, a water-blocking and a water-allowing profile (ship under a `Testing/` folder alongside the feature)
 
 These patterns are validated against actual implementation before tasks are marked Done.
 
-**Blocker resolution:** Coordinate with user on B2 traversability data externalization before starting implementation. If B2 data not ready, log to `docs/specs/applications/cow/dia-needs.md` per AD-002 and defer Feature 2 until data available.
+**B2 hand-off:** when B2 is built, it implements `INavigationProfile` once per body plan and the app wiring appends them to the `ValidationParams`. No change to S-1 code is needed; add the follow-up to `docs/specs/applications/cow/dia-needs.md` only if B2 turns out to need something Dia-side.

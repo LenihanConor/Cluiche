@@ -20,7 +20,7 @@ CoW requires worlds that are:
 - **Deterministic** — same seed always produces byte-for-byte identical output, including retry sequences
 - **Authorable** — designers must be able to export a procedural world, hand-edit problematic placements in a text editor, and re-import the result
 - **Tunable** — designers need fast iteration (generate → inspect → tweak → regenerate under 5 seconds) without switching to a separate tool
-- **Validated** — reachability checks use dragon traversability rules (B2 body-plan terrain block matrix), not naive graph connectivity
+- **Validated** — reachability checks use injected navigation profiles (B2's body-plan rules plug in later), not naive graph connectivity
 - **Failure-safe** — unlucky seeds or unsatisfiable parameters must not hang forever or silently return broken worlds
 
 Without this system, every downstream testbed (S-2/S-3 ecology, S-4 dragons, S-5+ lineage/clans) would be blocked on placeholder worlds, and tuning world generation quality would require manual binary editing or separate standalone tools.
@@ -73,11 +73,11 @@ struct Cell {
 
 These must hold for every successfully-generated world (enforced by retry mechanism):
 
-1. **Hearth↔Nexus reachability:** Every Hearth Site is reachable from at least one Nexus Node via dragon-traversable paths (uses B2's body-plan terrain block matrix)
+1. **Hearth↔Nexus reachability:** Every Hearth Site is reachable from at least one Nexus Node via traversable paths under the injected navigation profiles
 2. **Dynasty minimum spacing:** Every pair of dynasty starting positions (player + rivals) respects the minimum spacing rule (exact value TBD by placeholder algorithm)
 3. **World-throne existence/reachability:** All six world-throne sites exist (one per Apotheosis type) and are each reachable from the Ancient Interiors
 
-**Validation uses B2's traversability data** (body-plan block matrix from `B2_TechnicalSpec.md`), not naive graph connectivity — "reachable" means at least one dragon body plan can traverse the path, per GDD open question #3.
+**Validation uses injected navigation profiles** (`INavigationProfile` → DiaPathfinding `IPathCostProvider`), not naive graph connectivity — "reachable" means a path exists under at least one profile, per GDD open question #3. S-1 ships a placeholder terrain-table profile; B2 injects one profile per body plan when built. The three guarantees are also injected (`IWorldGuarantee`), so later systems can add guarantees without editing S-1.
 
 ### Retry Mechanism with Sub-Seeds
 
@@ -130,7 +130,7 @@ Manual:    player clicks Cancel button → Cancel + "MANUAL_CANCEL" assert/messa
 
 ### Data Dependencies
 
-1. **B2's terrain traversability data** (body-plan block matrix) — WLD reads this from an authored file to validate reachability (GDD open question #3). If B2's traversability rules aren't externalized yet, that's a blocking Cluiche-side task before S-1 can prove the three hard guarantees.
+1. **B2's body-plan traversability** — no longer a blocker. Navigability is injected (`INavigationProfile`); S-1 ships a placeholder terrain-table profile and B2 supplies the real profiles later (GDD open question #3).
 
 2. **A1's species biome-affinity data** — Optional, for design reference toggle. If not externalized, cut the toggle (doesn't block S-1's core pipeline).
 
@@ -175,7 +175,7 @@ struct WorldGenerationComplete {
     uint64_t seed;
     uint32_t retryAttempts;  // 0 if first attempt succeeded
 };
-// Subscribers: A2/WorldClock (initializes clock), A1/Ecology (initializes grid state), 
+// Subscribers: A2/GameSpeedController (resets to season 0, paused), A1/Ecology (initializes grid state), 
 //              C4/Dynasty (schedules rival arrival waves)
 
 // Published on timeout/failure
@@ -216,9 +216,9 @@ struct WorldGenerationCancelled {
 
 | System | Why needed | Status |
 |--------|-----------|---------|
-| **F-2 Core Runtime** | RNG determinism (same seed → same retry sequence), WorldClock integration (time controls for debug), band resolver (if WLD uses DiaAttribute Feature 7) | Approved (backlog row) |
+| **F-2 Core Runtime** | RNG determinism (same seed → same retry sequence), GameSpeedController integration (time controls for debug), band resolver (if WLD uses DiaAttribute Feature 7) | Approved (backlog row) |
 | **F-1 Harness** | Debug host integration (seed/param inputs, Regenerate button, Export/Import UI, Cancel button) | Approved (backlog row) |
-| **B2 terrain traversability data** | Body-plan block matrix as authored file (validates reachability guarantee) | GDD open question #3 — needs externalization before S-1 can validate correctly |
+| **DiaPathfinding** | `IPathCostProvider` injection point and `FindPath` for reachability. B2 is **not** a dependency: its body-plan profiles are injected later | Done |
 | **A1 species biome-affinity data** | Optional for design reference toggle | Optional — cut the toggle if not externalized |
 
 ### Dia Engine Dependencies
@@ -234,7 +234,7 @@ struct WorldGenerationCancelled {
 | # | Feature | Description | Spec | Status |
 |---|---------|-------------|------|--------|
 | 1 | Placeholder Generation Algorithm | Biome assignment, terrain type assignment, region boundaries per GDD Phase 2 lore; site placement (Hearth/Nexus/world-throne/dynasty starts) implementing output contract | @placeholder-generation-algorithm.md | Approved |
-| 2 | Reachability Validator | Validates three hard guarantees using B2's body-plan terrain block matrix; checks dragon-traversable paths (not naive graph connectivity) | @reachability-validator.md | Approved |
+| 2 | Reachability Validator | Runs injected world guarantees (three built-in hard guarantees) using injected navigation profiles (placeholder now, B2 body plans later); not naive graph connectivity | @reachability-validator.md | Approved |
 | 3 | Retry Mechanism | Deterministic sub-seed retry (outer seed + attempt counter) when guarantees fail; bounded attempt count; same outer seed → same retry sequence | @retry-mechanism.md | Approved |
 | 4 | JSON Export/Import | Human-readable JSON format capturing full world structure (grid, biomes, terrain, sites); round-trip guarantee (Import(Export(world)) == world) | @json-export-import.md | Approved |
 | 5 | Timeout and Failure Handling | Hard timeout monitors total generation time; timeout/unsatisfiable/error route through Cancel's discard-and-return with distinguishing assert/message | @timeout-failure-handling.md | Approved |
@@ -297,7 +297,7 @@ The following binding decisions from parent specs apply to this system:
 | # | Question | Impact | Resolution |
 |---|----------|--------|------------|
 | 1 | What are the exact placeholder algorithm parameters? (biome distribution weights, minimum-spacing value, reachability-check implementation, bounded retry-attempt count, hard timeout value) | Affects GenParams struct and default values; doesn't block S-1 implementation (these are tunable defaults) | Leave as tunable defaults, not fixed in spec; designers adjust via F-1's debug host during S-1 challenge pass |
-| 2 | Is B2's terrain traversability data (body-plan block matrix) externalized as an authored file yet? | Blocks reachability validator implementation (GDD open question #3) | **Must resolve before S-1 Task 2 (Reachability Validator):** If B2 traversability rules aren't externalized, that's a Cluiche-side task before WLD can validate correctly |
+| 2 | ~~Is B2's terrain traversability data externalized yet?~~ | Was blocking | **Resolved 2026-10-13:** navigability is injected via `INavigationProfile` (DiaPathfinding `IPathCostProvider`); S-1 ships a placeholder profile and no longer waits on B2. See reachability-validator.md |
 | 3 | Is A1's species biome-affinity data externalized? | Design Reference toggle only; can cut if not externalized without blocking S-1 core pipeline | Optional — if not externalized by S-1 Feature 7 implementation, cut the Design Reference toggle (non-blocking) |
 | 4 | Should a future standalone WorldDesign (CluicheEditor-based) toolset be built? | Out of scope for S-1 (GDD decision 3 chose in-game iteration), but GDD leaves this open as "genuinely open" for later | Deferred — S-1 proves in-game iteration first; revisit after S-1 challenge pass shows iteration speed/ergonomics |
 
