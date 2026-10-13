@@ -1850,5 +1850,11 @@
     <ClCompile Include="DiaVisualDebugger\Console\TestConsoleLogRing.cpp">
       <Filter>DiaVisualDebugger\Console</Filter>
     </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestFuzzyMatcher.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestCommandCompleter.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

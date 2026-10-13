@@ -137,6 +137,12 @@
     <ClInclude Include="Console\ConsoleLogRing.h">
       <Filter>Console</Filter>
     </ClInclude>
+    <ClInclude Include="Console\FuzzyMatcher.h">
+      <Filter>Console</Filter>
+    </ClInclude>
+    <ClInclude Include="Console\CommandCompleter.h">
+      <Filter>Console</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugLayerManager.cpp">
@@ -203,6 +209,12 @@
       <Filter>Console</Filter>
     </ClCompile>
     <ClCompile Include="Console\ConsoleLogRing.cpp">
+      <Filter>Console</Filter>
+    </ClCompile>
+    <ClCompile Include="Console\FuzzyMatcher.cpp">
+      <Filter>Console</Filter>
+    </ClCompile>
+    <ClCompile Include="Console\CommandCompleter.cpp">
       <Filter>Console</Filter>
     </ClCompile>
   </ItemGroup>
