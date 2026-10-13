@@ -2,7 +2,7 @@
 
 **Parent:** @docs/specs/applications/dia/systems/diadebugdomain/diadebugdomain.md
 **Mockup:** @docs/specs/applications/cow/systems/f1-harness/mockups/debug-console.html (visual reference for the output area; task 1 updates it to show the strip-in-panel layout)
-**Status:** Approved
+**Status:** Done
 **Plan:** @docs/specs/applications/dia/systems/diadebugdomain/panel-console.plan.md
 **Depends on:** @docs/specs/applications/dia/systems/diaapi/command-unregister.md (thread-safe registry, uncapped list)
 

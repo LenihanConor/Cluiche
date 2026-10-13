@@ -1,7 +1,7 @@
 # Feature Spec: Command Unregister
 
 **Parent:** @docs/specs/applications/dia/systems/diaapi/diaapi.md
-**Status:** Approved
+**Status:** Done
 **Plan:** @docs/specs/applications/dia/systems/diaapi/command-unregister.plan.md
 
 ## Summary

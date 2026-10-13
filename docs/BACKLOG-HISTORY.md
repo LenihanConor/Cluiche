@@ -150,6 +150,9 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | CoW | DiaMessageBus module doc: `status: stub` is stale | 2026-10-09 | Moved by `dia docs backlog move` |
 | CoW | Shared application-bootstrap helper | 2026-10-09 | `Dia::ApplicationFlow::LoadManifest` + `RegisterPathAliases` (Manifest/ManifestBootstrap.h); both mains use it, loop/frame rate stay per-app |
 | Dia | DiaMessageBus: bus-traffic-recorder | 2026-10-13 | `IBusRecorder` + `Bus::SetRecorder` hook, `FileBusRecorder` (format v1, injected tick source), test helpers, observation (3 counters, flush profile scope, `FileBusRecorderHealthReporter`). 37 tests; AC-10 relaxed to a runtime assert (spec amended). Commits 2cc53024..17a3aa47. CoW wiring (path, tick source, flush/close on exit) remains a separate CoW task |
+| command-unregister | [spec](specs/) | 2026-10-13 | Marked done by `dia docs spec-done` |
+| panel-palette | [spec](specs/) | 2026-10-13 | Marked done by `dia docs spec-done` |
+| panel-console | [spec](specs/applications/dia/systems/diadebugdomain/panel-console.md) | 2026-10-13 | Console strip in DiaDebugPanel: parser, results, history, autocomplete, log view, PanelController, golden contract tests. Replaced the old DiaDebugConsole/ModuleDebugRegistry/DiaDebugDataPanel plan (the last two superseded). User-verified in CluicheTest. Also fixed along the way: ASan link and runner, StringCRC / String<N> over-reads, Application metric pointers |
 
 ---
 

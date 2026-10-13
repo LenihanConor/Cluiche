@@ -2,7 +2,7 @@
 
 **Parent:** @docs/specs/applications/dia/systems/diadebugdomain/diadebugdomain.md
 **Mockup:** @docs/specs/applications/cow/systems/f1-harness/mockups/debug-palette.html (task 1 updates it: Ctrl+P hint, Commands and Domains tabs only)
-**Status:** Approved
+**Status:** Done
 **Plan:** @docs/specs/applications/dia/systems/diadebugdomain/panel-palette.plan.md
 **Depends on:** @docs/specs/applications/dia/systems/diadebugdomain/panel-console.md (`FuzzyMatcher`, console strip, thread-safe command list)
 
