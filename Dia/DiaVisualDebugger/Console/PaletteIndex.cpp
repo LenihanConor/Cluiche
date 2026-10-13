@@ -149,7 +149,10 @@ namespace Dia
 				if (item.type == PaletteItemType::Domain)
 				{
 					a.kind = PaletteAction::RevealDomain;
-					CopyStr(a.text, sizeof(a.text), item.domainId);
+					// The panel page keys domain cards by display name (the panel JSON is rooted at
+					// GetDisplayName()), which differs from GetDomainId() for some domains (e.g.
+					// "MessageBus" vs "Message Bus"). Reveal by the key the page actually uses.
+					CopyStr(a.text, sizeof(a.text), item.name);
 					return a;
 				}
 

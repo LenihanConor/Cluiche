@@ -236,7 +236,9 @@ TEST_F(PaletteIndexTest, AC7_ResolveActions)
 
 	a = ResolvePaletteAction(idx.GetItem(FindByName(idx, "Palette Stub")));
 	EXPECT_EQ(a.kind, PaletteAction::RevealDomain);
-	EXPECT_STREQ(a.text, "PaletteStubDomain");
+	// The panel page keys domain cards by display name (DebugPanelPageModule roots the JSON at
+	// GetDisplayName()), so the reveal key is the display name, not GetDomainId().
+	EXPECT_STREQ(a.text, "Palette Stub");
 }
 
 #endif // DIA_DEBUG

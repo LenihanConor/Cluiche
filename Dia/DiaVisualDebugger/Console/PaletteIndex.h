@@ -27,7 +27,7 @@ namespace Dia
 				char description[128];
 				char category[32];	// command category, or domain group
 				char example[128];	// commands only, may be empty
-				char domainId[64];	// domains only
+				char domainId[64];	// domains only: GetDomainId(); NOT the panel card key (that is `name`, the display name)
 			};
 
 			class PaletteIndex

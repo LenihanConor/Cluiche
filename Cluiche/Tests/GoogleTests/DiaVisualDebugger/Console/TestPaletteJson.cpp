@@ -121,7 +121,7 @@ TEST_F(PaletteJsonTest, CountsDifferPerMask)
 	ASSERT_EQ(root["items"].size(), 1u);
 	EXPECT_EQ(root["items"][0]["type"].asString(), "domain");
 	EXPECT_EQ(root["items"][0]["action"].asString(), "reveal");
-	EXPECT_EQ(root["items"][0]["actionText"].asString(), "PaletteJsonStubDomain");
+	EXPECT_EQ(root["items"][0]["actionText"].asString(), "Palette Json Stub");
 	EXPECT_EQ(root["items"][0]["domainId"].asString(), "PaletteJsonStubDomain");
 }
 

@@ -95,6 +95,9 @@ public:
 };
 
 struct PaletteAction { enum Kind { FillConsole, RevealDomain } kind; char text[160]; };
+// RevealDomain.text is the panel card key = the domain's DISPLAY NAME (DebugPanelPageModule roots the
+// panel JSON at GetDisplayName(), and the page uses it as data-domain). GetDomainId() can differ
+// (MessageBus vs "Message Bus"), so it is not used for reveal. Found 2026-10-13 in palette task 4 review.
 PaletteAction ResolvePaletteAction(const PaletteItem& item);
 
 }
