@@ -16,6 +16,7 @@
 #include <DiaVisualDebugger/Console/ConsoleJson.h>
 #include <DiaVisualDebugger/Console/ConsoleLineAssembler.h>
 #include <DiaVisualDebugger/Console/ConsoleLogRing.h>
+#include <DiaVisualDebugger/Console/PanelJson.h>
 #include <DiaVisualDebugger/Domain/IDebugDomain.h>
 
 #include <cstdio>
@@ -23,48 +24,6 @@
 #include <string>
 
 namespace Cluiche { namespace AppFlow {
-
-namespace
-{
-    // Canonical group keys from the DiaDebugDomain spec. IDebugDomain::GetGroup()
-    // returns a StringCRC, which cannot be reversed to text, so the panel-facing
-    // group label is recovered by matching against this table.
-    struct GroupEntry
-    {
-        const char* name;
-    };
-
-    const GroupEntry kGroups[] =
-    {
-        { "CoreDebug"  },
-        { "Physics"    },
-        { "Animation"  },
-        { "Navigation" },
-        { "Rendering"  },
-        { "Spatial"    },
-        { "Entity"     },
-        { "AIBehavior" },
-    };
-
-    const char* ResolveGroupName(Dia::Core::StringCRC groupId)
-    {
-        for (const GroupEntry& entry : kGroups)
-        {
-            if (groupId == Dia::Core::StringCRC(entry.name))
-                return entry.name;
-        }
-        return "CoreDebug";
-    }
-
-    // "#rrggbb" — the panel sets each card's --accent CSS variable from this.
-    void FormatAccentHex(const Dia::Core::RGBA& colour, char (&out)[8])
-    {
-        snprintf(out, sizeof(out), "#%02x%02x%02x",
-                 static_cast<unsigned int>(colour.R()),
-                 static_cast<unsigned int>(colour.G()),
-                 static_cast<unsigned int>(colour.B()));
-    }
-}
 
 const Dia::Core::StringCRC DebugPanelPageModule::kTypeId("DebugPanelPageModule");
 
@@ -402,25 +361,7 @@ void DebugPanelPageModule::PushDomainStatesToPanel()
     const Dia::VisualDebugger::DiaDebugDomainRegistry& registry = mDomainRegistry.Get();
 
     Json::Value root(Json::objectValue);
-    registry.VisitAll([&root](Dia::VisualDebugger::IDebugDomain& domain)
-    {
-        Json::Value state(Json::objectValue);
-        domain.GetJSONState(state);
-
-        const char* displayName = domain.GetDisplayName();
-        if (displayName == nullptr)
-            return;
-
-        char accentHex[8] = {};
-        FormatAccentHex(domain.GetAccentColour(), accentHex);
-
-        state["_displayName"] = displayName;
-        state["_group"]       = ResolveGroupName(domain.GetGroup());
-        state["_description"] = domain.GetDescription() ? domain.GetDescription() : "";
-        state["_accent"]      = accentHex;
-
-        root[displayName] = state;
-    });
+    Dia::VisualDebugger::Console::BuildDomainStatesRoot(registry, root);
 
     Json::FastWriter writer;
     writer.omitEndingLineFeed();
