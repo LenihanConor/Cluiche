@@ -21,7 +21,6 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | Project | System | Features | Depends On |
 |---------|--------|----------|------------|
-| Dia | DiaAttribute: band-based-initialization | Feature 7: Schema-defined named band ranges (NONE/LOW/BASELINE/MEDIUM/HIGH/APEX or custom), `InitializeFromBands()` one-time resolution to base values, `band_schema_version` support. Spec Draft at @docs/specs/applications/dia/systems/diaattribute/band-based-initialization.md. CoW needs it for dragon stat authoring (F-2 band resolver tests). ~11 hours (1.4 days) | DiaAttribute Core (Feature 1, Done) |
 | Dia | DiaMessageBus: bus-traffic-recorder | Debug-only `IBusRecorder` hook in `Bus::DispatchOne` + `FileBusRecorder` (versioned binary per-message records). Spec Approved and plan written (4 tasks, not started). CoW needs it for F-1 Test 6 and V-3; the CoW wiring (path, tick source, lifecycle) is a separate CoW task | None (DiaMessageBus is built) |
 | Dia | F-1 Debug Infrastructure | 4 specs Approved (2026-10-11): (1) ModuleDebugRegistry (foundation), (2) DiaDebugConsole (in-game command console), (3) DiaDebugDataPanel (panel registry + BusTrafficViewer), (4) DiaDebugPalette (searchable discovery UI). Full APIs, mockups, 12 ACs each. 12-18 days total. Build order: Registry → Console+Panel → Palette | None (all dependencies in Dia) |
 
