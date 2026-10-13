@@ -4,6 +4,7 @@
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaMessageBus/BusSubscriptionHandle.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
 #include "Modules/MessageBusHostModule.h"
 #include <cstdint>
 
@@ -40,6 +41,9 @@ private:
     Dia::MessageBus::BusSubscriptionHandle mSubscription;
     uint32_t mPosted    = 0;
     uint32_t mDelivered = 0;
+    Dia::Observation::Metric::Counter* mPostedMetric    = nullptr;
+    Dia::Observation::Metric::Counter* mDeliveredMetric = nullptr;
+    Dia::Observation::Metric::Counter* mDroppedMetric   = nullptr;
 };
 
 } // namespace CoW

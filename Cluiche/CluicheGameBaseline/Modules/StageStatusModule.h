@@ -3,6 +3,7 @@
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/SimTime/SimTimeContext.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
 
 namespace Cluiche { namespace AppFlow {
 
@@ -41,6 +42,7 @@ private:
     };
     Entry mEntries[kMaxStages];
     int mCount = 0;
+    Dia::Observation::Metric::Counter* mRejectedCounter = nullptr;
 };
 
 } } // namespace Cluiche::AppFlow

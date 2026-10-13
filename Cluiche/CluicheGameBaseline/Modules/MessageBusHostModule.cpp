@@ -1,5 +1,6 @@
 #include "Modules/MessageBusHostModule.h"
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 #ifdef DIA_DEBUG
 #include <DiaMessageBus/MessageBusDebugDomain.h>
@@ -54,6 +55,7 @@ void MessageBusHostModule::TryRegisterDebugDomain()
     {
         vd->RegisterDomain(*mDebugDomain);
         mDomainRegistered = true;
+        DIA_LOG_INFO("DiaMessageBus", "MessageBusHostModule: bus debug domain registered with the visual debugger");
     }
 }
 
@@ -64,6 +66,7 @@ void MessageBusHostModule::UnregisterDebugDomain()
     if (VisualDebuggerModule* vd = mVisualDebuggerRef.Get())
         vd->UnregisterDomain(*mDebugDomain);
     mDomainRegistered = false;
+    DIA_LOG_INFO("DiaMessageBus", "MessageBusHostModule: bus debug domain unregistered");
 }
 #endif
 

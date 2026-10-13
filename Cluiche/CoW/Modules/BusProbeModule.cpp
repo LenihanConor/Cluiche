@@ -23,7 +23,16 @@ Dia::ApplicationFlow::StartResult BusProbeModule::DoStart()
     bus.RegisterType<BusProbeEvent, 16>();
     bus.RegisterProducer<BusProbeEvent>(GetInstanceId());
     mSubscription = bus.Subscribe<BusProbeEvent>(GetInstanceId(),
-        [this](const BusProbeEvent&) { ++mDelivered; });
+        [this](const BusProbeEvent&) {
+            ++mDelivered;
+            if (mDeliveredMetric)
+                mDeliveredMetric->Inc();
+        });
+
+    auto& metrics = Dia::Observation::Metric::MetricRegistry::Instance();
+    mPostedMetric    = metrics.RegisterCounter(Dia::Core::StringCRC("cow.bus_probe.posted"));
+    mDeliveredMetric = metrics.RegisterCounter(Dia::Core::StringCRC("cow.bus_probe.delivered"));
+    mDroppedMetric   = metrics.RegisterCounter(Dia::Core::StringCRC("cow.bus_probe.dropped"));
 
     mPosted = 0;
     mDelivered = 0;
@@ -40,12 +49,23 @@ void BusProbeModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*ctx*/)
     BusProbeEvent event;
     event.sequence = mPosted;
     if (host->GetBus().Broadcast(event))
+    {
         ++mPosted;
+        if (mPostedMetric)
+            mPostedMetric->Inc();
+    }
+    else if (mDroppedMetric)
+    {
+        mDroppedMetric->Inc();
+    }
 }
 
 Dia::ApplicationFlow::StopResult BusProbeModule::DoStop()
 {
     mSubscription = Dia::MessageBus::BusSubscriptionHandle();
+    mPostedMetric = nullptr;
+    mDeliveredMetric = nullptr;
+    mDroppedMetric = nullptr;
     DIA_LOG_INFO("CoW", "BusProbeModule: stopped");
     return Dia::ApplicationFlow::StopResult::kDone;
 }

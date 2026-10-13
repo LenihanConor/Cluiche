@@ -67,6 +67,9 @@ Dia::ApplicationFlow::StartResult BootMenuModule::DoStart()
     RefreshProvider();
     mLogic.RestoreVisited();
 
+    if (mNavigableStages.Size() == 0)
+        DIA_LOG_WARNING("Application", "BootMenuModule: no stages found in the Boot transitions, the menu will be empty");
+
     DIA_LOG_INFO("Application", "BootMenuModule DoStart exit (%u stages)", mNavigableStages.Size());
     return Dia::ApplicationFlow::StartResult::kReady;
 }

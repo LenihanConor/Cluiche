@@ -1,6 +1,7 @@
 #include "Modules/StageStatusModule.h"
 
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 namespace Cluiche { namespace AppFlow {
 
@@ -21,7 +22,12 @@ bool StageStatusModule::Set(const Dia::Core::StringCRC& stage, const StageStatus
         }
     }
     if (mCount >= kMaxStages)
+    {
+        DIA_LOG_WARNING("Application", "StageStatusModule: table full (%d stages), status for stage dropped", kMaxStages);
+        if (mRejectedCounter)
+            mRejectedCounter->Inc();
         return false;
+    }
     mEntries[mCount].stage = stage;
     mEntries[mCount].status = status;
     ++mCount;
@@ -38,9 +44,17 @@ const StageStatusModule::StageStatus* StageStatusModule::Get(const Dia::Core::St
     return nullptr;
 }
 
-Dia::ApplicationFlow::StartResult StageStatusModule::DoStart() { return Dia::ApplicationFlow::StartResult::kReady; }
+Dia::ApplicationFlow::StartResult StageStatusModule::DoStart()
+{
+    mRejectedCounter = Dia::Observation::Metric::MetricRegistry::Instance().RegisterCounter(Dia::Core::StringCRC("stage_status.rejected"));
+    return Dia::ApplicationFlow::StartResult::kReady;
+}
 void StageStatusModule::DoUpdate(const Dia::SimTime::RenderTimeContext&) {}
-Dia::ApplicationFlow::StopResult StageStatusModule::DoStop() { return Dia::ApplicationFlow::StopResult::kDone; }
+Dia::ApplicationFlow::StopResult StageStatusModule::DoStop()
+{
+    mRejectedCounter = nullptr;
+    return Dia::ApplicationFlow::StopResult::kDone;
+}
 
 } } // namespace Cluiche::AppFlow
 
