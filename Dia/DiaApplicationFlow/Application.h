@@ -25,6 +25,8 @@ namespace Json { class Value; }
 #include <mutex>
 #include <thread>
 
+namespace Dia { namespace Observation { namespace Metric { class Counter; class Gauge; } } }
+
 namespace Dia { namespace ApplicationFlow {
 
     // ---------------------------------------------------------------------------
@@ -220,6 +222,10 @@ namespace Dia { namespace ApplicationFlow {
         std::atomic<bool>    mShuttingDown{false};
         bool                 mStarted = false;
         bool                 mShutdownInitiated = false;  // tracks whether BeginStopAllActive has been called
+        // Registry-owned stream metrics, resolved once in the constructor.
+        Observation::Metric::Counter* mServiceStreamCommitCount     = nullptr;
+        Observation::Metric::Counter* mServiceStreamResetCount      = nullptr;
+        Observation::Metric::Gauge*   mServiceStreamCommittedGauge  = nullptr;
         // True only while ConnectModuleStreams() is running.  Guards
         // RegisterOrFindStreamStore — calls outside this window
         // would race against dedicated-PU threads.

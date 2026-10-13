@@ -22,20 +22,6 @@
 
 namespace Dia { namespace ApplicationFlow {
 
-    // File-static stream metrics — lazily initialized on first use.
-    static Observation::Metric::Counter* sServiceStreamCommitCount  = nullptr;
-    static Observation::Metric::Counter* sServiceStreamResetCount   = nullptr;
-    static Observation::Metric::Gauge*   sServiceStreamCommittedGauge = nullptr;
-
-    static void EnsureStreamMetrics()
-    {
-        if (sServiceStreamCommitCount) return;
-        auto& reg = Observation::Metric::MetricRegistry::Instance();
-        sServiceStreamCommitCount    = reg.RegisterCounter(Core::StringCRC("dia.stream.service_commit_count"));
-        sServiceStreamResetCount     = reg.RegisterCounter(Core::StringCRC("dia.stream.service_reset_count"));
-        sServiceStreamCommittedGauge = reg.RegisterGauge(Core::StringCRC("dia.stream.service_committed"));
-    }
-
     //--------------------------------------------------------------------------
     // Constructor / Destructor
     //--------------------------------------------------------------------------
@@ -53,6 +39,11 @@ namespace Dia { namespace ApplicationFlow {
         , mStarted(false)
         , mShutdownInitiated(false)
     {
+        // Resolve registry-owned stream metrics per instance (registry Reset() frees them).
+        auto& reg = Observation::Metric::MetricRegistry::Instance();
+        mServiceStreamCommitCount    = reg.RegisterCounter(Core::StringCRC("dia.stream.service_commit_count"));
+        mServiceStreamResetCount     = reg.RegisterCounter(Core::StringCRC("dia.stream.service_reset_count"));
+        mServiceStreamCommittedGauge = reg.RegisterGauge(Core::StringCRC("dia.stream.service_committed"));
     }
 
     //--------------------------------------------------------------------------
@@ -915,7 +906,6 @@ namespace Dia { namespace ApplicationFlow {
         {
             DIA_PROFILE_SCOPE("app.service_stream_reset", Observation::Profile::Category::kDiaApplicationFlow);
             DIA_TRACE_ZONE("app.service_stream_reset", Observation::Trace::Category::kDiaApplicationFlow);
-            EnsureStreamMetrics();
 
             static const Dia::Core::StringCRC kProvides("provides");
             static const Dia::Core::StringCRC kServiceStream("ServiceStream");
@@ -951,7 +941,8 @@ namespace Dia { namespace ApplicationFlow {
                     DIA_LOG_INFO("Application", "Resetting ServiceStream '%s' — provider leaving stage",
                                  streamId.AsChar());
                     store->Reset();
-                    sServiceStreamResetCount->Inc();
+                    if (mServiceStreamResetCount)
+                        mServiceStreamResetCount->Inc();
                 }
             }
         }
@@ -1185,7 +1176,6 @@ namespace Dia { namespace ApplicationFlow {
         DIA_PROFILE_SCOPE("app.service_commit_gate", Observation::Profile::Category::kDiaApplicationFlow);
         DIA_TRACE_ZONE("app.service_commit_gate", Observation::Trace::Category::kDiaApplicationFlow);
 
-        EnsureStreamMetrics();
         unsigned int committedTotal = 0;
 
         for (unsigned int i = 0; i < mStreamStoreCount; ++i)
@@ -1197,7 +1187,8 @@ namespace Dia { namespace ApplicationFlow {
             if (store->IsRegistered() && !store->IsCommitted())
             {
                 store->Commit();
-                sServiceStreamCommitCount->Inc();
+                if (mServiceStreamCommitCount)
+                    mServiceStreamCommitCount->Inc();
                 DIA_LOG_INFO("Application", "ServiceStream '%s' committed", store->GetId().AsChar());
             }
 
@@ -1205,8 +1196,8 @@ namespace Dia { namespace ApplicationFlow {
                 ++committedTotal;
         }
 
-        if (sServiceStreamCommittedGauge)
-            sServiceStreamCommittedGauge->Set(static_cast<double>(committedTotal));
+        if (mServiceStreamCommittedGauge)
+            mServiceStreamCommittedGauge->Set(static_cast<double>(committedTotal));
     }
 
     // ModuleIsInStage  (private, static)
