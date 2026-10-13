@@ -6,6 +6,7 @@
 #include <DiaCore/CRC/CRC.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <cstring>
+#include <string>
 
 using namespace Dia::Core;
 
@@ -286,4 +287,70 @@ TEST(StringCRC, WhitespaceString_GeneratesCRC)
 
     EXPECT_GT(crc.Value(), 0u);
     EXPECT_EQ(strlen(crc.AsChar()), 3u);
+}
+
+// ==============================================================================
+// StringCRC CopyString bounds (reads must stop at the source terminator)
+// ==============================================================================
+
+TEST(StringCRC, ShortString_TailIsZeroed)
+{
+    StringCRC crc("Circle");
+
+    const char* s = crc.AsChar();
+    EXPECT_STREQ(s, "Circle");
+    for (size_t i = 6; i < static_cast<size_t>(StringCRC::kStringLength); ++i)
+    {
+        EXPECT_EQ(s[i], '\0') << "index " << i;
+    }
+}
+
+TEST(StringCRC, ReassignShorterString_TailIsZeroed)
+{
+    StringCRC crc("A much longer string than the one assigned afterwards");
+    crc = "Hi";
+
+    const char* s = crc.AsChar();
+    EXPECT_STREQ(s, "Hi");
+    for (size_t i = 2; i < static_cast<size_t>(StringCRC::kStringLength); ++i)
+    {
+        EXPECT_EQ(s[i], '\0') << "index " << i;
+    }
+}
+
+TEST(StringCRC, Exactly63Chars_FullyKept)
+{
+    const std::string src(static_cast<size_t>(StringCRC::kStringLength - 1), 'x');
+    StringCRC crc(src.c_str());
+
+    EXPECT_EQ(strlen(crc.AsChar()), static_cast<size_t>(StringCRC::kStringLength - 1));
+    EXPECT_EQ(crc.AsChar()[StringCRC::kStringLength - 1], '\0');
+}
+
+TEST(StringCRC, LongerThan63Chars_TruncatedWithTerminator)
+{
+    const std::string src(static_cast<size_t>(StringCRC::kStringLength + 20), 'y');
+    StringCRC crc(src.c_str());
+
+    EXPECT_EQ(strlen(crc.AsChar()), static_cast<size_t>(StringCRC::kStringLength - 1));
+    EXPECT_EQ(crc.AsChar()[StringCRC::kStringLength - 1], '\0');
+}
+
+TEST(StringCRC, NullptrAssign_GivesEmptyString)
+{
+    StringCRC crc("Something");
+    crc = static_cast<const char*>(nullptr);
+
+    EXPECT_STREQ(crc.AsChar(), "");
+    EXPECT_EQ(crc.Value(), 0u);
+}
+
+TEST(StringCRC, CopyCRCMatchesLiteralCRC)
+{
+    StringCRC crc("CircleShape");
+    StringCRC copy(crc);
+
+    EXPECT_EQ(crc.Value(), CRC("CircleShape").Value());
+    EXPECT_EQ(copy.Value(), crc.Value());
+    EXPECT_STREQ(copy.AsChar(), "CircleShape");
 }
