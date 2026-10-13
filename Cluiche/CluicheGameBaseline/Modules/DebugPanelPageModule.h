@@ -81,6 +81,33 @@ private:
     void CheckLogRingProbe();
     void PushPaletteResults(const char* query, int mask);
 
+    // The JS callbacks above (OnConsoleComplete, OnConsoleHistory, OnPaletteOpen, OnPaletteSearch and a
+    // rejected OnConsoleLine) run from inside a script that Ultralight is executing. Calling CallJSFunction
+    // (EvaluateScript) there re-enters the JS engine, which crashed on Ctrl+P. They therefore only record
+    // a request here, and ProcessDeferredRequests() carries it out from DoUpdate, as OnCommand already
+    // does by queueing an event. Latest request wins for complete/search; history keeps order.
+    struct DeferredRequests
+    {
+        static constexpr unsigned kMaxHistory  = 8;
+        static constexpr unsigned kMaxRejected = 4;
+
+        bool          completePending = false;
+        char          completeToken[64] = {};
+
+        unsigned char history[kMaxHistory] = {};   // 1 = previous, 0 = next; processed in order
+        unsigned      historyCount = 0;
+
+        bool          paletteOpenPending = false;
+        bool          paletteSearchPending = false;
+        char          paletteQuery[64] = {};
+        int           paletteMask = 3;
+
+        unsigned      rejectedSeq[kMaxRejected] = {};   // console lines refused as too long
+        unsigned      rejectedCount = 0;
+    };
+    void ProcessDeferredRequests();
+    DeferredRequests mDeferred;
+
     DebugPanelPage mPage{this};
     bool           mPanelVisible         = false;
     bool           mPageInitialized      = false;

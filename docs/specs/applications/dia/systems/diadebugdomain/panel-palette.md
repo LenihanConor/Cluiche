@@ -114,6 +114,8 @@ type "lay"          -> app.onPaletteSearch("lay", mask)   (query <= 60 chars, fi
 Enter on item       -> JS acts locally: FillConsole sets the strip's input; RevealDomain opens the card
 ```
 
+`onPaletteOpen` and `onPaletteSearch` only record the request; `DebugPanelPageModule::ProcessDeferredRequests()` builds the index and pushes `paletteResults` from `DoUpdate` (next frame). Doing it inside the callback re-entered the JS engine and crashed the app on Ctrl+P (found 2026-10-13). Latest search wins; an open request discards an older pending search.
+
 Selecting needs no C++ round trip because the result JSON already carries the text to fill or the domain id to reveal; `ResolvePaletteAction` is the tested definition of that mapping and the JS mirrors it (AC-7 locks the contract).
 
 ## Binding Decisions

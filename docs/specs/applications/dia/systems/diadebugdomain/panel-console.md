@@ -138,6 +138,8 @@ Main PU (Ultralight)                     Sim PU
 
 **Input length.** The existing path (`app.onCommand(domain, cmd, argsJson)`) cannot carry a long command. The strip instead calls a new binding `app.onConsoleLine(seq, part0, part1, part2, part3)`: JS splits the text into up to four chunks of at most 60 characters, and `ConsoleLineAssembler` (Dia, pure logic) joins them into one string (limit 240). `DebugPanelPage` forwards it to the Sim PU as a `DebugConsoleLine` event (text up to 256 bytes) instead of reusing `DebugPanelCommand`, whose `argsJson` is 512 bytes but already JSON-wrapped.
 
+**No JS calls from inside a JS callback.** `onConsoleLine`, `onConsoleComplete` and `onConsoleHistory` arrive while Ultralight is executing a script. Calling `CallJSFunction` (which runs `EvaluateScript`) from there re-enters the JS engine; Ctrl+P crashed the app this way (found 2026-10-13, see the palette flow). The handlers therefore only record the request and `DebugPanelPageModule::ProcessDeferredRequests()` performs it from `DoUpdate`, the same way `onCommand` queues an event. Any new JS-callable binding must follow this rule.
+
 Autocomplete runs on the Main thread and reads the registry directly, which is why `command-unregister.md` makes the registry thread-safe and adds copy-returning list functions. The JS bridge truncates strings to 63 characters (see `DebugPanelPage.h`), so domain commands keep the three-argument convention; `consoleResult`/`appendLogLines` go the other way (C++ to JS) and are not affected.
 
 ### Log ring
