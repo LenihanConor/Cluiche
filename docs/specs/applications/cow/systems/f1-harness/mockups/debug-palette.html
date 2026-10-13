@@ -2,401 +2,262 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Debug Palette — UX Mockup</title>
+<title>DiaDebugPanel Palette (Ctrl+P) - UX Mockup</title>
+<!--
+  Mockup for docs/specs/applications/dia/systems/diadebugdomain/panel-palette.md
+  The palette is an OVERLAY inside the real debug panel (left, 520px, styling from
+  debug-panel.html). Ctrl+P opens it (click the page first so it has key focus).
+  Tabs: All | Commands | Domains (Panels tab dropped). Enter on a command fills the
+  command strip (not run); Enter on a domain expands its group and highlights the card.
+  Self-contained, no network.
+-->
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0a0e14 linear-gradient(135deg,#0d1520,#1a2433); font-family: 'Consolas','Courier New',monospace;
+  font-size: 12px; color: #d4d4d4; height: 100vh; overflow: hidden; user-select: none; }
+.viewport-note { position: fixed; left: 560px; top: 24px; color: #4a5568; font-size: 11px; line-height: 1.7; max-width: 420px; }
+.viewport-note b { color: #7a8aa0; }
+#panel { position: fixed; top: 0; left: 0; width: 520px; height: 100vh; background: #181818;
+  border-right: 1px solid #2a2a2a; display: flex; flex-direction: column; overflow: hidden; }
+.panel-header { background: #1f1f1f; border-bottom: 1px solid #2d2d2d; padding: 7px 10px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.panel-title { font-size: 10px; color: #7a7a7a; letter-spacing: 2px; font-weight: 700; flex: 1; }
+.scale-row { display: flex; align-items: center; gap: 5px; font-size: 10px; color: #555; }
+.scale-row input[type=range] { width: 55px; height: 3px; accent-color: #5a9fd4; }
+.search-row { padding: 5px 10px; border-bottom: 1px solid #222; flex-shrink: 0; }
+.search-input { width: 100%; background: #0d0d0d; border: 1px solid #2d2d2d; color: #9a9a9a; font-family: inherit; font-size: 11px; padding: 4px 8px; outline: none; }
+.search-input::placeholder { color: #2e2e2e; }
+.groups-list { flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0; scrollbar-width: thin; scrollbar-color: #2d2d2d transparent; }
+.group { border-top: 1px solid #1f1f1f; }
+.group-hdr { display: flex; align-items: center; padding: 6px 10px; cursor: pointer; gap: 8px; background: #181818; }
+.group-hdr:hover { background: #1e1e1e; }
+.group-arrow { width: 10px; font-size: 9px; color: #3a3a3a; }
+.group.closed .group-arrow::after { content: '\25B6'; } .group.open .group-arrow::after { content: '\25BC'; }
+.group-label { font-size: 10px; letter-spacing: 1.2px; font-weight: 700; text-transform: uppercase; flex: 1; color: var(--accent); opacity: .85; }
+.group-meta { font-size: 10px; color: #333; margin-right: 4px; }
+.btn-all { font-family: inherit; font-size: 9px; padding: 2px 7px; border: 1px solid; background: transparent; line-height: 1.6; }
+.btn-all.on { border-color: #1e3a1e; color: #3a7a3a; } .btn-all.off { border-color: #3a1e1e; color: #7a3a3a; }
+.group-body { padding: 4px 8px 6px; background: #131313; }
+.group.closed .group-body { display: none; }
+.group[data-g=physics] { --accent: #f59e0b; } .group[data-g=animation] { --accent: #10b981; } .group[data-g=navigation] { --accent: #3b82f6; }
+.group[data-g=spatial] { --accent: #06b6d4; } .group[data-g=entity] { --accent: #eab308; } .group[data-g=coredebug] { --accent: #6b7280; }
+.domain { margin-bottom: 3px; border: 1px solid #222; background: #1b1b1b; border-left: 2px solid var(--accent); transition: box-shadow .3s, background .3s; }
+.domain.flash { background: #25303d; box-shadow: 0 0 0 1px var(--accent), 0 0 10px rgba(90,159,212,.35); }
+.domain-hdr { display: flex; align-items: center; padding: 5px 8px; gap: 7px; cursor: pointer; }
+.domain-hdr:hover { background: #202020; }
+.tog { width: 13px; height: 13px; background: var(--accent); color: #000; font-size: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.tog::after { content: '\2713'; }
+.domain-name { flex: 1; font-size: 12px; font-weight: 600; color: var(--accent); }
+.domain-stat { font-size: 10px; color: #555; }
+.expand-btn { width: 12px; font-size: 9px; color: #333; }
+.domain.closed .expand-btn::after { content: '\25B6'; } .domain.open .expand-btn::after { content: '\25BC'; }
+.domain-body { padding: 6px 10px 8px; border-top: 1px solid #202020; }
+.domain.closed .domain-body { display: none; }
+.desc { font-size: 10px; color: #434343; margin-bottom: 7px; font-style: italic; line-height: 1.4; }
+.stats { display: flex; flex-wrap: wrap; column-gap: 14px; padding: 5px 0; border-top: 1px solid #1e1e1e; border-bottom: 1px solid #1e1e1e; }
+.s { font-size: 10px; color: #444; } .s .v { color: #777; }
+.entity-lock-row { display: flex; align-items: center; gap: 6px; padding: 5px 10px; border-top: 1px solid #222; flex-shrink: 0; }
+.entity-lock-label { font-size: 9px; letter-spacing: .8px; color: #3a3a3a; text-transform: uppercase; }
+.entity-lock-input { flex: 1; background: #0d0d0d; border: 1px solid #2d2d2d; color: #9a9a9a; font-family: inherit; font-size: 11px; padding: 3px 6px; outline: none; }
+.btn-lock { font-family: inherit; font-size: 9px; padding: 3px 8px; border: 1px solid #2d2d2d; background: transparent; color: #444; }
+.command-strip { border-top: 1px solid #222; padding: 5px 10px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; background: #141414; }
+.cmd-prefix { font-size: 11px; color: #3a3a3a; }
+.cmd-input { flex: 1; min-width: 0; background: transparent; border: none; color: #9a9a9a; font-family: inherit; font-size: 11px; outline: none; }
+.cmd-input:focus { color: #c8c8c8; } .cmd-input::placeholder { color: #2a2a2a; }
+.cmd-result { font-size: 10px; color: #333; }
+.panel-footer { flex-shrink: 0; border-top: 1px solid #1f1f1f; background: #111; padding: 4px 10px; display: flex; gap: 14px; font-size: 9px; color: #3a3a3a; }
+.panel-footer kbd, .pal-foot kbd { font-family: inherit; color: #777; border: 1px solid #2d2d2d; padding: 0 4px; background: #181818; }
 
-body {
-  background: #0a0a0a;
-  font-family: 'Consolas', 'Courier New', monospace;
-  font-size: 12px;
-  color: #d4d4d4;
-  height: 100vh;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: 80px;
-}
-
-/* ─────────────────────────────── PALETTE WINDOW ─── */
-.palette-window {
-  width: 700px;
-  background: #1a1a1a;
-  border: 1px solid #3a3a3a;
-  border-radius: 8px;
-  box-shadow: 0 12px 48px rgba(0,0,0,0.8);
-  overflow: hidden;
-}
-
-/* ── Header with search ── */
-.palette-header {
-  background: linear-gradient(to bottom, #2a2a2a 0%, #222 100%);
-  border-bottom: 1px solid #3a3a3a;
-  padding: 12px 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.palette-icon {
-  width: 16px;
-  height: 16px;
-  background: #5a9fd4;
-  border-radius: 3px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: 700;
-  color: #fff;
-}
-.search-box {
-  flex: 1;
-  background: #0f0f0f;
-  border: 1px solid #3a3a3a;
-  color: #fff;
-  font-family: 'Consolas', monospace;
-  font-size: 14px;
-  padding: 8px 12px;
-  border-radius: 4px;
-  outline: none;
-}
-.search-box:focus { border-color: #5a9fd4; box-shadow: 0 0 0 2px rgba(90, 159, 212, 0.2); }
-.search-box::placeholder { color: #555; }
-.shortcut-badge {
-  font-size: 10px;
-  color: #666;
-  background: #161616;
-  padding: 3px 8px;
-  border-radius: 3px;
-  border: 1px solid #2a2a2a;
-}
-
-/* ── Filter tabs ── */
-.filter-tabs {
-  background: #1f1f1f;
-  border-bottom: 1px solid #2a2a2a;
-  display: flex;
-  padding: 0 12px;
-  gap: 0;
-}
-.filter-tab {
-  padding: 8px 20px;
-  font-size: 11px;
-  color: #888;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.filter-tab:hover { color: #bbb; background: #252525; }
-.filter-tab.active {
-  color: #5a9fd4;
-  border-bottom-color: #5a9fd4;
-  background: #1a1a1a;
-}
-.tab-count {
-  background: #2a2a2a;
-  padding: 1px 6px;
-  border-radius: 10px;
-  font-size: 9px;
-  color: #666;
-}
-.filter-tab.active .tab-count {
-  background: #5a9fd4;
-  color: #fff;
-}
-
-/* ── Results list ── */
-.results-container {
-  max-height: 450px;
-  overflow-y: auto;
-  background: #0f0f0f;
-}
-.result-group {
-  border-bottom: 1px solid #1a1a1a;
-}
-.group-header {
-  background: #161616;
-  padding: 6px 16px;
-  font-size: 10px;
-  color: #666;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-weight: 700;
-  position: sticky;
-  top: 0;
-  z-index: 5;
-}
-.result-item {
-  padding: 10px 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  border-left: 3px solid transparent;
-  transition: all 0.15s;
-}
-.result-item:hover {
-  background: #1a1a1a;
-  border-left-color: #3a3a3a;
-}
-.result-item.selected {
-  background: #1a2a3a;
-  border-left-color: #5a9fd4;
-}
-.result-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  flex-shrink: 0;
-}
-.icon-command { background: #1a3a5a; color: #5a9fd4; }
-.icon-panel { background: #3a2a1a; color: #f5a623; }
-.icon-domain { background: #2a1a3a; color: #9b59b6; }
-.result-content {
-  flex: 1;
-  min-width: 0;
-}
-.result-title {
-  font-size: 13px;
-  color: #eee;
-  font-weight: 600;
-  margin-bottom: 3px;
-}
-.result-title .match {
-  color: #5a9fd4;
-  background: rgba(90, 159, 212, 0.15);
-  padding: 0 2px;
-}
-.result-desc {
-  font-size: 10px;
-  color: #666;
-  line-height: 1.4;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.result-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-.meta-badge {
-  font-size: 9px;
-  padding: 2px 7px;
-  border-radius: 3px;
-  background: #2a2a2a;
-  color: #888;
-}
-.meta-keybind {
-  font-size: 10px;
-  color: #777;
-  background: #1a1a1a;
-  padding: 2px 8px;
-  border-radius: 3px;
-  border: 1px solid #2a2a2a;
-  font-weight: 600;
-}
-
-/* ── Footer ── */
-.palette-footer {
-  background: #161616;
-  border-top: 1px solid #2a2a2a;
-  padding: 8px 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 10px;
-  color: #666;
-}
-.footer-hint {
-  display: flex;
-  gap: 12px;
-}
-.hint-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.hint-key {
-  background: #1a1a1a;
-  padding: 2px 6px;
-  border-radius: 2px;
-  border: 1px solid #2a2a2a;
-  color: #888;
-}
-
-/* ── No results state ── */
-.no-results {
-  padding: 40px 20px;
-  text-align: center;
-  color: #555;
-}
-.no-results-icon {
-  font-size: 32px;
-  margin-bottom: 10px;
-  opacity: 0.3;
-}
-.no-results-text {
-  font-size: 12px;
-  color: #666;
-}
+/* Palette overlay */
+#overlay { position: absolute; inset: 0; background: rgba(0,0,0,.55); display: none; z-index: 10; justify-content: center; align-items: flex-start; padding-top: 70px; }
+#overlay.show { display: flex; }
+.pal { width: 460px; max-height: 70vh; background: #1b1b1b; border: 1px solid #3a3a3a; box-shadow: 0 10px 30px rgba(0,0,0,.7); display: flex; flex-direction: column; }
+.pal-input { background: #0d0d0d; border: none; border-bottom: 1px solid #2d2d2d; color: #d4d4d4; font-family: inherit; font-size: 13px; padding: 9px 12px; outline: none; }
+.pal-input:focus { border-bottom-color: #5a9fd4; } .pal-input::placeholder { color: #3a3a3a; }
+.pal-tabs { display: flex; border-bottom: 1px solid #262626; background: #161616; }
+.tab { padding: 5px 12px; font-size: 10px; color: #555; cursor: pointer; border-bottom: 2px solid transparent; }
+.tab:hover { color: #999; } .tab.active { color: #5a9fd4; border-bottom-color: #5a9fd4; }
+.tab .n { color: #3a3a3a; margin-left: 4px; } .tab.active .n { color: #4a7a9a; }
+.pal-list { overflow-y: auto; flex: 1; min-height: 60px; scrollbar-width: thin; scrollbar-color: #2d2d2d transparent; }
+.row { display: flex; align-items: center; gap: 9px; padding: 6px 12px; cursor: pointer; border-left: 2px solid transparent; }
+.row.sel { background: #243447; border-left-color: #5a9fd4; }
+.type { width: 22px; height: 22px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; border: 1px solid; }
+.type.cmd { color: #5a9fd4; border-color: #1f3a52; background: #101a24; } .type.dom { color: #10b981; border-color: #124a38; background: #0e1b17; }
+.info { flex: 1; min-width: 0; }
+.nm { font-size: 12px; color: #b0b0b0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ds { font-size: 10px; color: #4a4a4a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.row.sel .ds { color: #7a8a9a; }
+.cat { font-size: 9px; color: #6a6a6a; border: 1px solid #2a2a2a; padding: 1px 6px; flex-shrink: 0; letter-spacing: .5px; }
+mark { background: none; color: #f0c040; font-weight: 700; }
+.empty { padding: 22px 12px; text-align: center; color: #3a3a3a; font-style: italic; font-size: 11px; }
+.pal-foot { border-top: 1px solid #262626; background: #161616; padding: 5px 12px; font-size: 9px; color: #444; display: flex; gap: 12px; }
+.pal-foot .tot { margin-left: auto; }
 </style>
 </head>
 <body>
+<div class="viewport-note"><b>Game viewport (not shown).</b><br>
+Click the page, then press <b>Ctrl+P</b> (palette opens over the panel). Type <b>layer</b>, <b>bstrfc</b>, <b>phys</b> or <b>zzzz</b>.
+Up/Down move, <b>Tab</b> cycles tabs, <b>Enter</b> selects, <b>Esc</b> closes.<br><br>
+Command: fills the command strip, focuses it, does not run.<br>Domain: expands its group and highlights the card.</div>
 
-<div class="palette-window">
-  <!-- Header with search -->
-  <div class="palette-header">
-    <div class="palette-icon">⌘</div>
-    <input type="text" class="search-box" placeholder="Search commands, panels, and debug domains..." value="bus" autofocus>
-    <div class="shortcut-badge">F1 to toggle</div>
-  </div>
+<div id="panel">
+  <div class="panel-header"><span class="panel-title">DIA&nbsp;&nbsp;DEBUG</span>
+    <div class="scale-row"><span>Scale</span><input type="range" min="10" max="200" value="50"><span style="color:#9a9a9a">50</span></div></div>
+  <div class="search-row"><input class="search-input" placeholder="filter domains..."></div>
+  <div class="groups-list" id="groups"></div>
+  <div class="entity-lock-row"><span class="entity-lock-label">Entity</span><input class="entity-lock-input" placeholder="entity id"><button class="btn-lock">Lock</button></div>
+  <div class="command-strip"><span class="cmd-prefix">&gt;</span>
+    <input class="cmd-input" id="cmd-input" type="text" maxlength="240" placeholder="debug.layer.enable..."><span class="cmd-result" id="cmd-result"></span></div>
+  <div class="panel-footer"><span><kbd>Ctrl+P</kbd> palette</span><span><kbd>~</kbd> close panel</span><span><kbd>Enter</kbd> run command</span></div>
 
-  <!-- Filter tabs -->
-  <div class="filter-tabs">
-    <div class="filter-tab active">
-      <span>All</span>
-      <span class="tab-count">47</span>
+  <div id="overlay">
+    <div class="pal">
+      <input class="pal-input" id="pal-input" type="text" maxlength="60" autocomplete="off" spellcheck="false" placeholder="Search commands and domains...">
+      <div class="pal-tabs" id="tabs"></div>
+      <div class="pal-list" id="pal-list"></div>
+      <div class="pal-foot"><span><kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate</span><span><kbd>Enter</kbd> select</span><span><kbd>Tab</kbd> tab</span><span><kbd>Esc</kbd> close</span><span class="tot" id="tot"></span></div>
     </div>
-    <div class="filter-tab">
-      <span>Commands</span>
-      <span class="tab-count">32</span>
-    </div>
-    <div class="filter-tab">
-      <span>Panels</span>
-      <span class="tab-count">8</span>
-    </div>
-    <div class="filter-tab">
-      <span>Domains</span>
-      <span class="tab-count">7</span>
-    </div>
-  </div>
-
-  <!-- Results -->
-  <div class="results-container">
-    <!-- Commands group -->
-    <div class="result-group">
-      <div class="group-header">Commands (3 matches)</div>
-
-      <div class="result-item selected">
-        <div class="result-icon icon-command">⚡</div>
-        <div class="result-content">
-          <div class="result-title"><span class="match">bus</span>_traffic.start &lt;path&gt;</div>
-          <div class="result-desc">Start recording message bus traffic to a binary file</div>
-        </div>
-        <div class="result-meta">
-          <div class="meta-badge">MESSAGE BUS</div>
-        </div>
-      </div>
-
-      <div class="result-item">
-        <div class="result-icon icon-command">⚡</div>
-        <div class="result-content">
-          <div class="result-title"><span class="match">bus</span>_traffic.stop</div>
-          <div class="result-desc">Stop recording and flush buffer to disk</div>
-        </div>
-        <div class="result-meta">
-          <div class="meta-badge">MESSAGE BUS</div>
-        </div>
-      </div>
-
-      <div class="result-item">
-        <div class="result-icon icon-command">⚡</div>
-        <div class="result-content">
-          <div class="result-title"><span class="match">bus</span>_traffic.status</div>
-          <div class="result-desc">Show current recording status and statistics</div>
-        </div>
-        <div class="result-meta">
-          <div class="meta-badge">MESSAGE BUS</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Panels group -->
-    <div class="result-group">
-      <div class="group-header">Panels (1 match)</div>
-
-      <div class="result-item">
-        <div class="result-icon icon-panel">📊</div>
-        <div class="result-content">
-          <div class="result-title"><span class="match">Bus</span> Traffic Viewer</div>
-          <div class="result-desc">Live table showing all message bus dispatches (type, router, pass, count)</div>
-        </div>
-        <div class="result-meta">
-          <div class="meta-badge">DATA</div>
-          <div class="meta-keybind">Ctrl+Shift+B</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Domains group -->
-    <div class="result-group">
-      <div class="group-header">Debug Domains (0 matches)</div>
-      <div style="padding: 20px; text-align: center; color: #555; font-size: 11px;">
-        No visual debug domains match "bus"
-      </div>
-    </div>
-  </div>
-
-  <!-- Footer -->
-  <div class="palette-footer">
-    <div class="footer-hint">
-      <div class="hint-item">
-        <span class="hint-key">↑↓</span>
-        <span>Navigate</span>
-      </div>
-      <div class="hint-item">
-        <span class="hint-key">Enter</span>
-        <span>Execute</span>
-      </div>
-      <div class="hint-item">
-        <span class="hint-key">Esc</span>
-        <span>Close</span>
-      </div>
-    </div>
-    <div>4 results found</div>
   </div>
 </div>
 
-<!-- Full example with all categories -->
 <script>
-/*
-Example data structure for reference:
-
-const allItems = [
-  // Commands
-  { type: 'command', name: 'bus_traffic.start', category: 'MESSAGE BUS', desc: '...' },
-  { type: 'command', name: 'asset_runtime.get_loaded', category: 'ASSETS', desc: '...' },
-  { type: 'command', name: 'debug.layer.enable', category: 'DEBUG', desc: '...' },
-  { type: 'command', name: 'simtime.set_speed', category: 'SIMULATION', desc: '...' },
-  { type: 'command', name: 'help.list', category: 'HELP', desc: '...' },
-
-  // Panels
-  { type: 'panel', name: 'Bus Traffic Viewer', category: 'DATA', keybind: 'Ctrl+Shift+B', desc: '...' },
-  { type: 'panel', name: 'Blackboard Inspector', category: 'DATA', keybind: 'Ctrl+Shift+K', desc: '...' },
-  { type: 'panel', name: 'Entity List', category: 'DATA', desc: '...' },
-  { type: 'panel', name: 'Asset Runtime State', category: 'DATA', desc: '...' },
-  { type: 'panel', name: 'Console', category: 'CORE', keybind: '~', desc: '...' },
-
-  // Debug Domains (visual debuggers)
-  { type: 'domain', name: 'Physics2D', category: 'PHYSICS', desc: 'Collision shapes, contacts, forces' },
-  { type: 'domain', name: 'Animation2D', category: 'ANIMATION', desc: 'Skeleton bones, pose visualization' },
-  { type: 'domain', name: 'Pathfinding', category: 'NAVIGATION', desc: 'Paths, waypoints, obstacles' },
-  { type: 'domain', name: 'FlowField', category: 'NAVIGATION', desc: 'Flow field vectors, costs' },
-  { type: 'domain', name: 'Entity', category: 'ENTITY', desc: 'Entity handles, components, lifecycle' },
-  { type: 'domain', name: 'Coord2D', category: 'CORE', desc: 'Grid overlay, coordinate markers' },
-  { type: 'domain', name: 'Scene2D', category: 'RENDERING', desc: 'Layers, cameras, render targets' }
+'use strict';
+var CMDS = [
+  ['debug.layer.list', 'List all draw layers and their state', 'debug', 'debug.layer.list'],
+  ['debug.layer.enable', 'Enable a draw layer by name', 'debug', 'debug.layer.enable Entities'],
+  ['debug.layer.disable', 'Disable a draw layer by name', 'debug', 'debug.layer.disable Entities'],
+  ['debug.layer.toggle', 'Toggle a draw layer by name', 'debug', 'debug.layer.toggle Entities'],
+  ['asset_runtime.get_loaded', 'List assets currently resident in memory', 'assets', 'asset_runtime.get_loaded --type=texture'],
+  ['bus_traffic.start', 'Start recording message bus traffic', 'messagebus', 'bus_traffic.start --capacity=4096'],
+  ['bus_traffic.stop', 'Stop recording message bus traffic', 'messagebus', ''],
+  ['simtime.status', 'Show sim clock, scale and pause state', 'simtime', ''],
+  ['simtime.set_scale', 'Set the simulation time scale', 'simtime', 'simtime.set_scale 0.5'],
+  ['physics.step', 'Advance physics by N fixed steps while paused', 'physics', 'physics.step 3'],
+  ['entity.dump', 'Log all components of an entity', 'entity', 'entity.dump 1042'],
+  ['help', 'List registered commands and usage', 'core', 'help debug.layer.enable']
 ];
-*/
-</script>
+var DOMS = [
+  ['Coord2D', 'Coordinate spaces, transforms and grid overlays', 'Spatial/Geometry', 'spatial'],
+  ['Physics2D', 'Rigid bodies, contacts and broadphase', 'Physics', 'physics'],
+  ['Animation2D', 'Clips, layers and blend state', 'Animation', 'animation'],
+  ['FlowField', 'Navigation flow field costs and vectors', 'Navigation', 'navigation'],
+  ['Entity', 'Entity inspector, component list and lock', 'Entity', 'entity'],
+  ['MessageBus', 'Bus traffic, queue depth and handler timings', 'Core Debug', 'coredebug'],
+  ['Asset Runtime', 'Resident assets, load queue and refcounts', 'Core Debug', 'coredebug'],
+  ['SimTime', 'Sim clock, time scale and tick budget', 'Core Debug', 'coredebug']
+];
+var GROUPS = [['physics','Physics'],['animation','Animation'],['navigation','Navigation'],['spatial','Spatial/Geometry'],['entity','Entity'],['coredebug','Core Debug']];
+var ITEMS = [];   // rebuilt on every open
+var tab = 'all', sel = 0, results = [], total = 0;
+var $ = function (id) { return document.getElementById(id); };
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+// ---- panel (context) ----
+(function buildPanel() {
+  var h = '';
+  GROUPS.forEach(function (g) {
+    var members = DOMS.filter(function (d) { return d[3] === g[0]; });
+    h += '<div class="group closed" data-g="' + g[0] + '" id="grp-' + g[0] + '"><div class="group-hdr"><span class="group-arrow"></span><span class="group-label">' + g[1] +
+         '</span><span class="group-meta">' + members.length + (members.length === 1 ? ' domain' : ' domains') + '</span><button class="btn-all on">All On</button><button class="btn-all off">All Off</button></div><div class="group-body">';
+    members.forEach(function (d, i) {
+      h += '<div class="domain closed" id="dom-' + d[0].replace(/\W/g,'') + '"><div class="domain-hdr"><div class="tog"></div><span class="domain-name">' + d[0] +
+           '</span><span class="domain-stat">items: ' + (12 + i * 7) + '</span><span class="expand-btn"></span></div><div class="domain-body"><div class="desc">' + esc(d[1]) +
+           '</div><div class="stats"><span class="s">frame <span class="v">' + (3 + i) + 'ms</span></span><span class="s">active <span class="v">' + (40 + i) + '</span></span></div></div></div>';
+    });
+    h += '</div></div>';
+  });
+  $('groups').innerHTML = h;
+  Array.prototype.forEach.call(document.querySelectorAll('.group-hdr'), function (e) {
+    e.addEventListener('click', function () { toggle(e.parentNode); });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.domain-hdr'), function (e) {
+    e.addEventListener('click', function () { toggle(e.parentNode); });
+  });
+  function toggle(n) { var o = n.classList.contains('open'); n.classList.toggle('open', !o); n.classList.toggle('closed', o); }
+})();
+
+// ---- fuzzy ----
+function fuzzy(q, s) {
+  q = q.toLowerCase(); var l = s.toLowerCase(), i = l.indexOf(q), idx = [], k;
+  if (i >= 0) { for (k = 0; k < q.length; k++) idx.push(i + k); return { rank: i === 0 ? 0 : 1, idx: idx }; }
+  var p = 0;
+  for (var c = 0; c < l.length && p < q.length; c++) if (l[c] === q[p]) { idx.push(c); p++; }
+  return p === q.length ? { rank: 2, idx: idx } : null;
+}
+function hilite(s, idx) {
+  var out = '';
+  for (var i = 0; i < s.length; i++) out += idx && idx.indexOf(i) >= 0 ? '<mark>' + esc(s[i]) + '</mark>' : esc(s[i]);
+  return out;
+}
+function buildIndex() {
+  ITEMS = CMDS.map(function (c) { return { type: 'cmd', name: c[0], desc: c[1], cat: c[2], example: c[3] }; })
+    .concat(DOMS.map(function (d) { return { type: 'dom', name: d[0], desc: d[1], cat: d[2], gkey: d[3] }; }));
+}
+function search(q) {
+  var out = [];
+  ITEMS.forEach(function (it) {
+    if (!q) { out.push({ it: it, rank: 0, idx: null, dIdx: null }); return; }
+    var m = fuzzy(q, it.name), c = fuzzy(q, it.cat), d = fuzzy(q, it.desc), best = null;
+    if (m) best = { rank: m.rank, idx: m.idx };
+    else if (c && c.rank < 2) best = { rank: 3 + c.rank, idx: null };
+    else if (d && d.rank < 2) best = { rank: 5 + d.rank, idx: null };
+    if (best) out.push({ it: it, rank: best.rank, idx: best.idx });
+  });
+  out.sort(function (a, b) { return a.rank - b.rank || (a.it.name.toLowerCase() < b.it.name.toLowerCase() ? -1 : 1); });
+  return out;
+}
+
+// ---- render ----
+function render() {
+  var q = $('pal-input').value.trim(), all = search(q);
+  var nc = all.filter(function (r) { return r.it.type === 'cmd'; }).length, nd = all.length - nc;
+  var shown = all.filter(function (r) { return tab === 'all' || r.it.type === (tab === 'cmds' ? 'cmd' : 'dom'); });
+  total = shown.length; results = shown.slice(0, 50);
+  if (sel >= results.length) sel = Math.max(0, results.length - 1);
+  $('tabs').innerHTML = [['all', 'All', all.length], ['cmds', 'Commands', nc], ['doms', 'Domains', nd]].map(function (t) {
+    return '<div class="tab' + (tab === t[0] ? ' active' : '') + '" data-t="' + t[0] + '">' + t[1] + '<span class="n">' + t[2] + '</span></div>';
+  }).join('');
+  $('pal-list').innerHTML = results.length ? results.map(function (r, i) {
+    return '<div class="row' + (i === sel ? ' sel' : '') + '" data-i="' + i + '"><span class="type ' + r.it.type + '">' + (r.it.type === 'cmd' ? '&gt;_' : '▣') +
+      '</span><div class="info"><div class="nm">' + hilite(r.it.name, r.idx) + '</div><div class="ds">' + esc(r.it.desc) + '</div></div><span class="cat">' + esc(r.it.cat) + '</span></div>';
+  }).join('') : '<div class="empty">No results found</div>';
+  $('tot').textContent = total > 50 ? 'showing 50 of ' + total : total + ' result' + (total === 1 ? '' : 's');
+  var s = document.querySelector('.row.sel'); if (s) s.scrollIntoView({ block: 'nearest' });
+}
+
+// ---- open / close / select ----
+function openPal() { buildIndex(); $('pal-input').value = ''; tab = 'all'; sel = 0; $('overlay').classList.add('show'); render(); $('pal-input').focus(); }
+function closePal() { $('overlay').classList.remove('show'); }
+function choose(i) {
+  var r = results[i]; if (!r) return; var it = r.it;
+  closePal();
+  if (it.type === 'cmd') {
+    var inp = $('cmd-input'); inp.value = it.example || it.name; inp.focus();
+    $('cmd-result').textContent = it.example ? 'edit args, Enter to run' : 'Enter to run';
+    inp.setSelectionRange(inp.value.length, inp.value.length);
+  } else {
+    var g = $('grp-' + it.gkey), d = $('dom-' + it.name.replace(/\W/g, ''));
+    g.classList.remove('closed'); g.classList.add('open');
+    d.classList.remove('closed'); d.classList.add('open');
+    d.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    d.classList.add('flash'); setTimeout(function () { d.classList.remove('flash'); }, 1600);
+  }
+}
+document.addEventListener('keydown', function (e) {
+  var shown = $('overlay').classList.contains('show');
+  if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) { e.preventDefault(); shown ? $('pal-input').focus() : openPal(); return; }
+  if (!shown) return;
+  if (e.key === 'Escape') { e.preventDefault(); closePal(); }
+  else if (e.key === 'ArrowDown') { e.preventDefault(); if (results.length) sel = (sel + 1) % results.length; render(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); if (results.length) sel = (sel + results.length - 1) % results.length; render(); }
+  else if (e.key === 'Enter') { e.preventDefault(); choose(sel); }
+  else if (e.key === 'Tab') { e.preventDefault(); var t = ['all', 'cmds', 'doms']; tab = t[(t.indexOf(tab) + (e.shiftKey ? 2 : 1)) % 3]; sel = 0; render(); }
+});
+$('pal-input').addEventListener('input', function () { sel = 0; render(); });
+$('tabs').addEventListener('click', function (e) { var t = e.target.closest('.tab'); if (t) { tab = t.getAttribute('data-t'); sel = 0; render(); $('pal-input').focus(); } });
+$('pal-list').addEventListener('mousemove', function (e) { var r = e.target.closest('.row'); if (r && +r.getAttribute('data-i') !== sel) { sel = +r.getAttribute('data-i'); render(); } });
+$('pal-list').addEventListener('click', function (e) { var r = e.target.closest('.row'); if (r) choose(+r.getAttribute('data-i')); });
+$('overlay').addEventListener('mousedown', function (e) { if (e.target === $('overlay')) closePal(); });
+$('cmd-input').addEventListener('keydown', function (e) { if (e.key === 'Enter') { $('cmd-result').textContent = '(would run)'; } });
+</script>
 </body>
 </html>

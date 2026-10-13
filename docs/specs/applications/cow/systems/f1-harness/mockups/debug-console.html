@@ -2,460 +2,279 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>CoW Debug Console — UX Mockup</title>
+<title>DiaDebugPanel Console Strip - UX Mockup</title>
+<!--
+  Mockup for docs/specs/applications/dia/systems/diadebugdomain/panel-console.md
+  Shows the REAL debug panel (left overlay, 520px, styling from debug-panel.html)
+  with the upgraded command strip (result line, history, autocomplete, char counter)
+  and a collapsible Log view with level filter.
+  Try: type "debug.l", Tab/Up/Down, Enter. Fake commands: debug.layer.list,
+  debug.layer.enable <name>, debug.layer.disable <name>, debug.layer.toggle <name>,
+  simtime.status, help. Anything else -> not found (3). Self-contained, no network.
+-->
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0a0e14 linear-gradient(135deg,#0d1520,#1a2433); font-family: 'Consolas','Courier New',monospace;
+  font-size: 12px; color: #d4d4d4; height: 100vh; overflow: hidden; user-select: none; }
+.viewport-note { position: fixed; left: 560px; top: 24px; color: #4a5568; font-size: 11px; line-height: 1.7; max-width: 420px; }
+.viewport-note b { color: #7a8aa0; }
+#panel { position: fixed; top: 0; left: 0; width: 520px; height: 100vh; background: #181818;
+  border-right: 1px solid #2a2a2a; display: flex; flex-direction: column; overflow: hidden; }
+.panel-header { background: #1f1f1f; border-bottom: 1px solid #2d2d2d; padding: 7px 10px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.panel-title { font-size: 10px; color: #7a7a7a; letter-spacing: 2px; font-weight: 700; flex: 1; }
+.scale-row { display: flex; align-items: center; gap: 5px; font-size: 10px; color: #555; }
+.scale-row input[type=range] { width: 55px; height: 3px; accent-color: #5a9fd4; }
+.search-row { padding: 5px 10px; border-bottom: 1px solid #222; flex-shrink: 0; }
+.search-input { width: 100%; background: #0d0d0d; border: 1px solid #2d2d2d; color: #9a9a9a; font-family: inherit; font-size: 11px; padding: 4px 8px; outline: none; }
+.search-input::placeholder { color: #2e2e2e; }
+.groups-list { flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0; }
+.group { border-top: 1px solid #1f1f1f; }
+.group-hdr { display: flex; align-items: center; padding: 6px 10px; cursor: pointer; gap: 8px; background: #181818; }
+.group-hdr:hover { background: #1e1e1e; }
+.group-arrow { width: 10px; font-size: 9px; color: #3a3a3a; }
+.group.closed .group-arrow::after { content: '\25B6'; }
+.group.open .group-arrow::after { content: '\25BC'; }
+.group-label { font-size: 10px; letter-spacing: 1.2px; font-weight: 700; text-transform: uppercase; flex: 1; color: var(--accent); opacity: .85; }
+.group-meta { font-size: 10px; color: #333; margin-right: 4px; }
+.btn-all { font-family: inherit; font-size: 9px; padding: 2px 7px; border: 1px solid; background: transparent; line-height: 1.6; }
+.btn-all.on { border-color: #1e3a1e; color: #3a7a3a; }
+.btn-all.off { border-color: #3a1e1e; color: #7a3a3a; }
+.group-body { padding: 4px 8px 6px; background: #131313; }
+.group.closed .group-body { display: none; }
+.group[data-g=physics] { --accent: #f59e0b; } .group[data-g=animation] { --accent: #10b981; }
+.group[data-g=navigation] { --accent: #3b82f6; } .group[data-g=coredebug] { --accent: #6b7280; }
+.domain { margin-bottom: 3px; border: 1px solid #222; background: #1b1b1b; border-left: 2px solid var(--accent); }
+.domain-hdr { display: flex; align-items: center; padding: 5px 8px; gap: 7px; }
+.tog { width: 13px; height: 13px; background: var(--accent); color: #000; font-size: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.tog::after { content: '\2713'; }
+.domain-name { flex: 1; font-size: 12px; font-weight: 600; color: var(--accent); }
+.domain-stat { font-size: 10px; color: #555; }
+.expand-btn { width: 12px; font-size: 9px; color: #333; }
+.expand-btn::after { content: '\25B6'; }
 
-body {
-  background: #0a0a0a;
-  font-family: 'Consolas', 'Courier New', monospace;
-  font-size: 13px;
-  color: #d4d4d4;
-  height: 100vh;
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+/* Log view (new) */
+.log-view { flex-shrink: 0; border-top: 1px solid #222; background: #141414; }
+.log-hdr { display: flex; align-items: center; gap: 8px; padding: 5px 10px; cursor: pointer; }
+.log-hdr:hover { background: #1a1a1a; }
+.log-arrow { width: 10px; font-size: 9px; color: #3a3a3a; }
+.log-view.open .log-arrow::after { content: '\25BC'; } .log-view.closed .log-arrow::after { content: '\25B6'; }
+.log-title { font-size: 10px; letter-spacing: 1.2px; font-weight: 700; color: #6b7280; flex: 1; }
+.log-count { font-size: 10px; color: #333; }
+.log-filters { display: flex; gap: 4px; }
+.flt { font-family: inherit; font-size: 9px; padding: 2px 7px; border: 1px solid #2d2d2d; background: transparent; color: #555; cursor: pointer; }
+.flt:hover { background: #1a1a1a; color: #888; }
+.flt.active { border-color: #5a9fd4; color: #5a9fd4; }
+.flt[data-lvl=WARN].active { border-color: #c8882a; color: #c8882a; }
+.flt[data-lvl=ERROR].active { border-color: #c03030; color: #c03030; }
+.log-view.closed .log-body, .log-view.closed .log-filters { display: none; }
+.log-body { height: 150px; overflow-y: auto; background: #0f0f0f; border-top: 1px solid #1e1e1e; padding: 2px 0; }
+.log-line { display: flex; gap: 7px; padding: 1px 10px; font-size: 10px; line-height: 1.5; white-space: nowrap; }
+.log-line:nth-child(odd) { background: #121212; }
+.log-ts { color: #3a3a3a; flex-shrink: 0; }
+.badge { width: 38px; text-align: center; font-size: 9px; font-weight: 700; flex-shrink: 0; line-height: 1.6; border: 1px solid; }
+.badge.INFO { color: #4a7a9a; border-color: #1f3340; } .badge.WARN { color: #c8882a; border-color: #4a3410; } .badge.ERROR { color: #c03030; border-color: #4a1a1a; }
+.log-ch { color: #6a6a8a; width: 78px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; }
+.log-msg { color: #8a8a8a; overflow: hidden; text-overflow: ellipsis; }
+.log-line.ERROR .log-msg { color: #b05050; } .log-line.WARN .log-msg { color: #a88040; }
+.log-empty { padding: 10px; color: #3a3a3a; font-style: italic; text-align: center; font-size: 11px; }
 
-/* ─────────────────────────────── CONSOLE WINDOW ─── */
-.console-window {
-  width: 900px;
-  height: 600px;
-  background: #1a1a1a;
-  border: 1px solid #3a3a3a;
-  border-radius: 6px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-/* ── Title bar ── */
-.title-bar {
-  background: linear-gradient(to bottom, #2a2a2a 0%, #222 100%);
-  border-bottom: 1px solid #3a3a3a;
-  padding: 8px 12px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: move;
-  user-select: none;
-}
-.title-icon {
-  width: 14px;
-  height: 14px;
-  background: #5a9fd4;
-  border-radius: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 9px;
-  font-weight: 700;
-  color: #fff;
-}
-.title-text {
-  flex: 1;
-  font-size: 11px;
-  color: #aaa;
-  letter-spacing: 0.5px;
-  font-weight: 600;
-}
-.title-toggle {
-  font-size: 9px;
-  color: #666;
-  background: #161616;
-  padding: 2px 6px;
-  border-radius: 3px;
-  border: 1px solid #2a2a2a;
-}
-.window-controls {
-  display: flex;
-  gap: 6px;
-}
-.control-btn {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: none;
-  cursor: pointer;
-}
-.control-btn.minimize { background: #f5a623; }
-.control-btn.close { background: #e74c3c; }
-
-/* ── Tab bar ── */
-.tab-bar {
-  background: #1f1f1f;
-  border-bottom: 1px solid #2a2a2a;
-  display: flex;
-  gap: 0;
-  padding: 0 8px;
-}
-.tab {
-  padding: 6px 16px;
-  font-size: 11px;
-  color: #888;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
-}
-.tab:hover { color: #bbb; background: #252525; }
-.tab.active {
-  color: #5a9fd4;
-  border-bottom-color: #5a9fd4;
-  background: #1a1a1a;
-}
-
-/* ── Main content area ── */
-.console-content {
-  flex: 1;
-  display: flex;
-  overflow: hidden;
-}
-
-/* ── Output panel (left side) ── */
-.output-panel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  border-right: 1px solid #2a2a2a;
-}
-.output-header {
-  background: #1a1a1a;
-  padding: 6px 10px;
-  border-bottom: 1px solid #2a2a2a;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 10px;
-}
-.filter-btn {
-  padding: 3px 8px;
-  background: #252525;
-  border: 1px solid #3a3a3a;
-  color: #888;
-  border-radius: 3px;
-  font-size: 10px;
-  cursor: pointer;
-  font-family: inherit;
-}
-.filter-btn.active { background: #5a9fd4; color: #fff; border-color: #5a9fd4; }
-.clear-btn {
-  margin-left: auto;
-  padding: 3px 8px;
-  background: #2a2a2a;
-  border: 1px solid #3a3a3a;
-  color: #999;
-  border-radius: 3px;
-  font-size: 10px;
-  cursor: pointer;
-  font-family: inherit;
-}
-.clear-btn:hover { background: #333; color: #ccc; }
-
-.output-log {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px 10px;
-  background: #0f0f0f;
-  font-size: 11px;
-  line-height: 1.5;
-}
-.log-line {
-  display: flex;
-  gap: 10px;
-  padding: 2px 0;
-  font-family: 'Consolas', monospace;
-}
-.log-time {
-  color: #555;
-  flex-shrink: 0;
-  width: 70px;
-}
-.log-level {
-  flex-shrink: 0;
-  width: 50px;
-  font-weight: 600;
-}
-.log-level.info { color: #5a9fd4; }
-.log-level.warn { color: #f5a623; }
-.log-level.error { color: #e74c3c; }
-.log-level.success { color: #2ecc71; }
-.log-message { color: #ccc; flex: 1; }
-
-/* ── Sidebar (right) ── */
-.sidebar {
-  width: 280px;
-  background: #161616;
-  display: flex;
-  flex-direction: column;
-}
-.sidebar-section {
-  border-bottom: 1px solid #2a2a2a;
-  padding: 10px;
-}
-.sidebar-title {
-  font-size: 10px;
-  color: #666;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 8px;
-  font-weight: 700;
-}
-.command-item {
-  padding: 5px 8px;
-  margin: 2px 0;
-  background: #1a1a1a;
-  border-radius: 3px;
-  font-size: 10px;
-  color: #888;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.command-item:hover { background: #252525; color: #ccc; }
-.command-name { flex: 1; }
-.command-badge {
-  background: #2a2a2a;
-  padding: 1px 5px;
-  border-radius: 2px;
-  font-size: 9px;
-  color: #666;
-}
-.help-text {
-  font-size: 10px;
-  color: #555;
-  line-height: 1.4;
-  padding: 6px;
-  background: #0f0f0f;
-  border-radius: 3px;
-  margin-top: 6px;
-}
-
-/* ── Input bar ── */
-.input-bar {
-  background: #1f1f1f;
-  border-top: 1px solid #3a3a3a;
-  padding: 10px 12px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.input-prompt {
-  color: #5a9fd4;
-  font-weight: 700;
-  font-size: 13px;
-}
-.input-field {
-  flex: 1;
-  background: #0f0f0f;
-  border: 1px solid #3a3a3a;
-  color: #fff;
-  font-family: 'Consolas', monospace;
-  font-size: 12px;
-  padding: 6px 10px;
-  border-radius: 3px;
-  outline: none;
-}
-.input-field:focus { border-color: #5a9fd4; }
-.autocomplete {
-  position: absolute;
-  bottom: 100%;
-  left: 0;
-  right: 0;
-  background: #252525;
-  border: 1px solid #3a3a3a;
-  border-bottom: none;
-  border-radius: 3px 3px 0 0;
-  padding: 6px;
-  font-size: 10px;
-  color: #888;
-}
-.autocomplete-item {
-  padding: 4px 8px;
-  cursor: pointer;
-  border-radius: 2px;
-  display: flex;
-  justify-content: space-between;
-}
-.autocomplete-item:hover { background: #2a2a2a; }
-.autocomplete-item.selected { background: #5a9fd4; color: #fff; }
-.status-bar {
-  background: #161616;
-  border-top: 1px solid #2a2a2a;
-  padding: 4px 12px;
-  font-size: 10px;
-  color: #666;
-  display: flex;
-  justify-content: space-between;
-}
-.status-item { display: flex; gap: 15px; }
+/* Command strip (upgraded) */
+.command-strip { position: relative; border-top: 1px solid #222; padding: 5px 10px 4px; flex-shrink: 0; background: #141414; }
+.cmd-row { display: flex; align-items: center; gap: 6px; }
+.cmd-prefix { font-size: 11px; color: #3a3a3a; }
+.cmd-input { flex: 1; min-width: 0; background: transparent; border: none; color: #9a9a9a; font-family: inherit; font-size: 11px; outline: none; }
+.cmd-input:focus { color: #c8c8c8; } .cmd-input::placeholder { color: #2a2a2a; }
+.cmd-counter { font-size: 9px; color: #7a6a2a; display: none; } .cmd-counter.warn { display: inline; } .cmd-counter.max { color: #c03030; }
+.cmd-meta { display: flex; justify-content: space-between; gap: 8px; margin-top: 3px; min-height: 14px; font-size: 10px; }
+.cmd-result { color: #333; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.cmd-result .echo { color: #666; }
+.cmd-result .code { font-weight: 700; margin-left: 6px; }
+.cmd-result .code.ok { color: #3a9a5a; } .cmd-result .code.err { color: #c03030; }
+.cmd-hint { color: #2e2e2e; flex-shrink: 0; } .cmd-hint kbd { font-family: inherit; color: #555; border: 1px solid #2a2a2a; padding: 0 3px; font-size: 9px; }
+.ac { position: absolute; left: 10px; right: 10px; bottom: 100%; background: #1b1b1b; border: 1px solid #3a3a3a; box-shadow: 0 -4px 12px rgba(0,0,0,.5); display: none; z-index: 5; }
+.ac.show { display: block; }
+.ac-item { display: flex; gap: 10px; padding: 3px 8px; font-size: 11px; color: #7a7a7a; cursor: pointer; }
+.ac-item.sel { background: #243447; color: #d4d4d4; }
+.ac-item .nm { flex-shrink: 0; } .ac-item .ds { color: #3f3f3f; font-size: 10px; margin-left: auto; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ac-item.sel .ds { color: #6a7a8a; }
+.ac-item mark { background: none; color: #5a9fd4; font-weight: 700; text-decoration: underline; }
+.ac-foot { padding: 2px 8px; font-size: 9px; color: #3a3a3a; border-top: 1px solid #262626; }
+.ac-foot kbd { font-family: inherit; color: #666; border: 1px solid #2a2a2a; padding: 0 3px; }
 </style>
 </head>
 <body>
+<div class="viewport-note"><b>Game viewport (not shown).</b><br>
+The panel overlays the left 520px, opened with <b>~</b>. This mockup covers the command strip and Log view only; group accordions above are for context.<br><br>
+Try: type <b>debug.l</b> (autocomplete, Tab accepts), Up/Down for history, Enter to run.
+<b>debug.layer.enable x</b> &rarr; exit 0, <b>nonexistent</b> &rarr; not found (3). Paste 200+ chars to see the counter (limit 240).</div>
 
-<div class="console-window">
-  <!-- Title bar -->
-  <div class="title-bar">
-    <div class="title-icon">&gt;</div>
-    <div class="title-text">DEBUG CONSOLE</div>
-    <div class="title-toggle">~ to toggle</div>
-    <div class="window-controls">
-      <button class="control-btn minimize"></button>
-      <button class="control-btn close"></button>
-    </div>
+<div id="panel">
+  <div class="panel-header"><span class="panel-title">DIA&nbsp;&nbsp;DEBUG</span>
+    <div class="scale-row"><span>Scale</span><input type="range" min="10" max="200" value="50"><span style="color:#9a9a9a">50</span></div></div>
+  <div class="search-row"><input class="search-input" placeholder="filter domains..."></div>
+  <div class="groups-list">
+    <div class="group closed" data-g="physics"><div class="group-hdr"><span class="group-arrow"></span><span class="group-label">Physics</span><span class="group-meta">3 domains</span><button class="btn-all on">All On</button><button class="btn-all off">All Off</button></div><div class="group-body"></div></div>
+    <div class="group open" data-g="animation"><div class="group-hdr"><span class="group-arrow"></span><span class="group-label">Animation</span><span class="group-meta">2 domains</span><button class="btn-all on">All On</button><button class="btn-all off">All Off</button></div>
+      <div class="group-body"><div class="domain"><div class="domain-hdr"><div class="tog"></div><span class="domain-name">Animation2D</span><span class="domain-stat">layers: 4</span><span class="expand-btn"></span></div></div></div></div>
+    <div class="group closed" data-g="navigation"><div class="group-hdr"><span class="group-arrow"></span><span class="group-label">Navigation</span><span class="group-meta">2 domains</span><button class="btn-all on">All On</button><button class="btn-all off">All Off</button></div><div class="group-body"></div></div>
+    <div class="group closed" data-g="coredebug"><div class="group-hdr"><span class="group-arrow"></span><span class="group-label">Core Debug</span><span class="group-meta">5 domains</span><button class="btn-all on">All On</button><button class="btn-all off">All Off</button></div><div class="group-body"></div></div>
   </div>
 
-  <!-- Tab bar -->
-  <div class="tab-bar">
-    <div class="tab active">Output</div>
-    <div class="tab">History</div>
-    <div class="tab">Commands</div>
-    <div class="tab">Help</div>
+  <div class="log-view open" id="log-view">
+    <div class="log-hdr" id="log-hdr"><span class="log-arrow"></span><span class="log-title">LOG</span><span class="log-count" id="log-count"></span>
+      <div class="log-filters" id="log-filters">
+        <button class="flt active" data-lvl="ALL">All</button><button class="flt" data-lvl="INFO">Info</button>
+        <button class="flt" data-lvl="WARN">Warn</button><button class="flt" data-lvl="ERROR">Error</button></div></div>
+    <div class="log-body" id="log-body"></div>
   </div>
 
-  <!-- Main content -->
-  <div class="console-content">
-    <!-- Output panel -->
-    <div class="output-panel">
-      <div class="output-header">
-        <button class="filter-btn active">All</button>
-        <button class="filter-btn">Info</button>
-        <button class="filter-btn">Warnings</button>
-        <button class="filter-btn">Errors</button>
-        <button class="clear-btn">Clear</button>
-      </div>
-      <div class="output-log">
-        <div class="log-line">
-          <span class="log-time">00:12.341</span>
-          <span class="log-level info">INFO</span>
-          <span class="log-message">DiaAPI initialized. 47 commands registered.</span>
-        </div>
-        <div class="log-line">
-          <span class="log-time">00:12.389</span>
-          <span class="log-level info">INFO</span>
-          <span class="log-message">DebugServerHostModule started on port 8080</span>
-        </div>
-        <div class="log-line">
-          <span class="log-time">00:14.521</span>
-          <span class="log-level success">CMD</span>
-          <span class="log-message">&gt; bus_traffic.status</span>
-        </div>
-        <div class="log-line">
-          <span class="log-time">00:14.523</span>
-          <span class="log-level info">INFO</span>
-          <span class="log-message">Bus traffic recorder: not active</span>
-        </div>
-        <div class="log-line">
-          <span class="log-time">00:18.102</span>
-          <span class="log-level success">CMD</span>
-          <span class="log-message">&gt; bus_traffic.start recording.dat</span>
-        </div>
-        <div class="log-line">
-          <span class="log-time">00:18.105</span>
-          <span class="log-level info">INFO</span>
-          <span class="log-message">Bus traffic recorder started: C:/GitHub/Cluiche/out/CoW/Debug/recording.dat</span>
-        </div>
-        <div class="log-line">
-          <span class="log-time">00:22.841</span>
-          <span class="log-level warn">WARN</span>
-          <span class="log-message">Message bus: 1024 messages dispatched this frame (threshold: 1000)</span>
-        </div>
-        <div class="log-line">
-          <span class="log-time">00:25.992</span>
-          <span class="log-level info">INFO</span>
-          <span class="log-message">Stage transition: Boot → FrontEnd</span>
-        </div>
-        <div class="log-line">
-          <span class="log-time">00:28.441</span>
-          <span class="log-level error">ERROR</span>
-          <span class="log-message">AssetRuntime: Failed to load asset 'ui.main_menu' (file not found)</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Sidebar -->
-    <div class="sidebar">
-      <div class="sidebar-section">
-        <div class="sidebar-title">Recent Commands</div>
-        <div class="command-item">
-          <span class="command-name">bus_traffic.start recording.dat</span>
-          <span class="command-badge">00:18</span>
-        </div>
-        <div class="command-item">
-          <span class="command-name">bus_traffic.status</span>
-          <span class="command-badge">00:14</span>
-        </div>
-        <div class="command-item">
-          <span class="command-name">help list</span>
-          <span class="command-badge">00:10</span>
-        </div>
-      </div>
-
-      <div class="sidebar-section">
-        <div class="sidebar-title">Quick Actions</div>
-        <div class="command-item">
-          <span class="command-name">debug.layer.list</span>
-          <span class="command-badge">Layer</span>
-        </div>
-        <div class="command-item">
-          <span class="command-name">panel.show bus_traffic</span>
-          <span class="command-badge">Panel</span>
-        </div>
-        <div class="command-item">
-          <span class="command-name">simtime.set_speed 2.0</span>
-          <span class="command-badge">Sim</span>
-        </div>
-      </div>
-
-      <div class="sidebar-section" style="flex: 1;">
-        <div class="sidebar-title">Current Context</div>
-        <div class="help-text">
-          Stage: <strong style="color: #5a9fd4;">FrontEnd</strong><br>
-          Tick: <strong style="color: #ccc;">5,281</strong><br>
-          Commands: <strong style="color: #ccc;">47</strong><br>
-          Panels: <strong style="color: #ccc;">3 open</strong>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Input bar with autocomplete -->
-  <div style="position: relative;">
-    <div class="autocomplete" style="display: none;">
-      <div class="autocomplete-item selected">
-        <span>bus_traffic.start &lt;path&gt;</span>
-        <span style="color: #666;">Start recording</span>
-      </div>
-      <div class="autocomplete-item">
-        <span>bus_traffic.stop</span>
-        <span style="color: #666;">Stop recording</span>
-      </div>
-      <div class="autocomplete-item">
-        <span>bus_traffic.status</span>
-        <span style="color: #666;">Show status</span>
-      </div>
-    </div>
-    <div class="input-bar">
-      <span class="input-prompt">&gt;</span>
-      <input type="text" class="input-field" placeholder="Type a command or press F1 for palette..." value="bus_traffic.">
-    </div>
-  </div>
-
-  <!-- Status bar -->
-  <div class="status-bar">
-    <div class="status-item">
-      <span>47 commands available</span>
-      <span>3 panels open</span>
-      <span>Recording active</span>
-    </div>
-    <div class="status-item">
-      <span>Press TAB to autocomplete</span>
-      <span>↑↓ for history</span>
-    </div>
+  <div class="command-strip">
+    <div class="ac" id="ac"></div>
+    <div class="cmd-row"><span class="cmd-prefix">&gt;</span>
+      <input class="cmd-input" id="cmd-input" type="text" maxlength="240" spellcheck="false" autocomplete="off" placeholder="debug.layer.enable...">
+      <span class="cmd-counter" id="cmd-counter"></span></div>
+    <div class="cmd-meta"><span class="cmd-result" id="cmd-result"></span>
+      <span class="cmd-hint"><kbd>&uarr;</kbd><kbd>&darr;</kbd> history &nbsp;<kbd>Tab</kbd> complete</span></div>
   </div>
 </div>
 
+<script>
+'use strict';
+var COMMANDS = [
+  { name: 'debug.layer.list',    desc: 'List draw layers' },
+  { name: 'debug.layer.enable',  desc: 'Enable a layer: <name>' },
+  { name: 'debug.layer.disable', desc: 'Disable a layer: <name>' },
+  { name: 'debug.layer.toggle',  desc: 'Toggle a layer: <name>' },
+  { name: 'debug.log.level',     desc: 'Set log level' },
+  { name: 'simtime.status',      desc: 'Show sim time state' },
+  { name: 'asset_runtime.get_loaded', desc: 'List loaded assets' },
+  { name: 'help',                desc: 'List commands' }
+];
+var LOGS = [
+  ['12:04:31.102','INFO','Boot','Stage CluicheTest/Physics2D loaded'],
+  ['12:04:31.540','INFO','Debug','Panel opened'],
+  ['12:04:33.871','WARN','Assets','Texture atlas "ui_icons" missing mip chain'],
+  ['12:04:35.012','INFO','Physics2D','Broadphase rebuilt: 128 bodies'],
+  ['12:04:36.660','ERROR','Audio','Device "default" lost, falling back to null'],
+  ['12:04:37.004','INFO','Sim','Tick budget 4.1ms / 16.6ms'],
+  ['12:04:38.250','WARN','Physics2D','Body 77 asleep with non-zero velocity']
+];
+var filter = 'ALL', history = [], histPos = -1, draft = '', acItems = [], acSel = 0;
+var $ = function (id) { return document.getElementById(id); };
+var input = $('cmd-input');
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function pad(n, w) { n = String(n); while (n.length < w) n = '0' + n; return n; }
+function stamp() { var d = new Date(); return pad(d.getHours(),2)+':'+pad(d.getMinutes(),2)+':'+pad(d.getSeconds(),2)+'.'+pad(d.getMilliseconds(),3); }
+
+// Fuzzy: returns {rank, idx[]} or null. rank 0 prefix, 1 contains, 2 subsequence.
+function fuzzy(q, s) {
+  q = q.toLowerCase(); var l = s.toLowerCase(), idx = [], i = l.indexOf(q);
+  if (i >= 0) { for (var k = 0; k < q.length; k++) idx.push(i + k); return { rank: i === 0 ? 0 : 1, idx: idx }; }
+  var p = 0;
+  for (var c = 0; c < l.length && p < q.length; c++) if (l[c] === q[p]) { idx.push(c); p++; }
+  return p === q.length ? { rank: 2, idx: idx } : null;
+}
+function hilite(s, idx) {
+  var out = '';
+  for (var i = 0; i < s.length; i++) out += idx.indexOf(i) >= 0 ? '<mark>' + esc(s[i]) + '</mark>' : esc(s[i]);
+  return out;
+}
+
+function renderLog() {
+  var body = $('log-body'), html = '', n = 0;
+  LOGS.forEach(function (l) {
+    if (filter !== 'ALL' && l[1] !== filter) return;
+    n++;
+    html += '<div class="log-line ' + l[1] + '"><span class="log-ts">' + l[0] + '</span><span class="badge ' + l[1] + '">' + l[1] +
+            '</span><span class="log-ch">' + esc(l[2]) + '</span><span class="log-msg">' + esc(l[3]) + '</span></div>';
+  });
+  body.innerHTML = html || '<div class="log-empty">No log lines at this level</div>';
+  body.scrollTop = body.scrollHeight;
+  $('log-count').textContent = n + ' / ' + LOGS.length;
+}
+function addLog(lvl, ch, msg) { LOGS.push([stamp(), lvl, ch, msg]); if (LOGS.length > 500) LOGS.shift(); renderLog(); }
+
+function renderAc() {
+  var ac = $('ac'), q = input.value.split(' ')[0];
+  if (!q || input.value.indexOf(' ') >= 0) { ac.className = 'ac'; acItems = []; return; }
+  acItems = [];
+  COMMANDS.forEach(function (c) { var m = fuzzy(q, c.name); if (m && c.name !== q) acItems.push({ c: c, m: m }); });
+  acItems.sort(function (a, b) { return a.m.rank - b.m.rank || (a.c.name < b.c.name ? -1 : 1); });
+  acItems = acItems.slice(0, 5);
+  if (acSel >= acItems.length) acSel = 0;
+  if (!acItems.length) { ac.className = 'ac'; return; }
+  ac.innerHTML = acItems.map(function (it, i) {
+    return '<div class="ac-item' + (i === acSel ? ' sel' : '') + '" data-i="' + i + '"><span class="nm">' + hilite(it.c.name, it.m.idx) +
+           '</span><span class="ds">' + esc(it.c.desc) + '</span></div>';
+  }).join('') + '<div class="ac-foot"><kbd>Tab</kbd> accept &nbsp;<kbd>&uarr;</kbd><kbd>&darr;</kbd> select &nbsp;top 5 of ' + COMMANDS.length + '</div>';
+  ac.className = 'ac show';
+}
+function acAccept() {
+  if (!acItems.length) return false;
+  input.value = acItems[acSel].c.name + ' '; acSel = 0; updateCounter(); renderAc(); return true;
+}
+function updateCounter() {
+  var n = input.value.length, c = $('cmd-counter');
+  c.textContent = n + '/240'; c.className = 'cmd-counter' + (n > 200 ? ' warn' : '') + (n >= 240 ? ' max' : '');
+}
+function setResult(text, code) {
+  var cls = code === 0 ? 'ok' : 'err', label = code === 3 ? 'not found (3)' : 'exit ' + code;
+  $('cmd-result').innerHTML = '<span class="echo">&gt; ' + esc(text.length > 44 ? text.slice(0, 43) + '…' : text) +
+                              '</span><span class="code ' + cls + '">' + label + '</span>';
+}
+function run(text) {
+  var tok = text.trim().split(/\s+/), cmd = null;
+  COMMANDS.forEach(function (c) { if (c.name === tok[0]) cmd = c; });
+  if (!cmd) { setResult(text, 3); addLog('INFO', 'Debug', 'Command not found: ' + tok[0] + ' (exit 3)'); return; }
+  var needsArg = /<name>/.test(cmd.desc) && tok.length < 2;
+  if (needsArg) { setResult(text, 2); addLog('WARN', 'Debug', cmd.name + ': missing <name> (exit 2)'); return; }
+  setResult(text, 0);
+  if (cmd.name === 'debug.layer.list') { addLog('INFO', 'Layers', 'Layers: Background, Entities, Debug'); }
+  else if (/debug\.layer\./.test(cmd.name)) { addLog('INFO', 'Layers', cmd.name.split('.').pop() + ' "' + tok[1] + '"'); }
+  else addLog('INFO', 'Debug', cmd.name + ' executed');
+}
+
+input.addEventListener('input', function () { histPos = -1; acSel = 0; updateCounter(); renderAc(); });
+input.addEventListener('keydown', function (e) {
+  var open = acItems.length > 0;
+  if (e.key === 'Tab') { e.preventDefault(); acAccept(); }
+  else if (e.key === 'Escape') { $('ac').className = 'ac'; acItems = []; }
+  else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    e.preventDefault();
+    var up = e.key === 'ArrowUp';
+    if (open && input.value.length && histPos < 0) { acSel = (acSel + (up ? acItems.length - 1 : 1)) % acItems.length; renderAc(); return; }
+    if (!history.length) return;
+    if (histPos < 0) { if (!up) return; draft = input.value; histPos = history.length; }
+    histPos += up ? -1 : 1;
+    if (histPos < 0) histPos = 0;
+    input.value = histPos >= history.length ? (histPos = -1, draft) : history[histPos];
+    updateCounter(); renderAc();
+  } else if (e.key === 'Enter') {
+    var t = input.value.trim(); if (!t) return;
+    if (history[history.length - 1] !== t) history.push(t);
+    if (history.length > 50) history.shift();
+    run(t); input.value = ''; histPos = -1; updateCounter(); renderAc();
+  }
+});
+$('ac').addEventListener('mousedown', function (e) {
+  var it = e.target.closest('.ac-item'); if (!it) return;
+  e.preventDefault(); acSel = +it.getAttribute('data-i'); acAccept(); input.focus();
+});
+$('log-filters').addEventListener('click', function (e) {
+  e.stopPropagation(); var b = e.target.closest('.flt'); if (!b) return;
+  filter = b.getAttribute('data-lvl');
+  Array.prototype.forEach.call(document.querySelectorAll('.flt'), function (x) { x.classList.toggle('active', x === b); });
+  renderLog();
+});
+$('log-hdr').addEventListener('click', function () {
+  var v = $('log-view'), o = v.classList.contains('open');
+  v.classList.toggle('open', !o); v.classList.toggle('closed', o);
+});
+Array.prototype.forEach.call(document.querySelectorAll('.group-hdr'), function (h) {
+  h.addEventListener('click', function () { var g = h.parentNode, o = g.classList.contains('open'); g.classList.toggle('open', !o); g.classList.toggle('closed', o); });
+});
+renderLog(); updateCounter(); setResult('debug.layer.list', 0); input.focus();
+</script>
 </body>
 </html>

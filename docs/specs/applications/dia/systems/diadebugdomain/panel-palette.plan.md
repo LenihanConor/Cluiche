@@ -17,7 +17,7 @@ Needs `panel-console.plan.md` tasks 4 (`FuzzyMatcher`) and 8 (console strip) don
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | Update `mockups/debug-palette.html`: Ctrl+P hint, Commands and Domains tabs only, domain reveal affordance | visual acceptance by the user | Not Started | haiku | Mockup gate before task 4 |
+| 1 | Update `mockups/debug-palette.html`: Ctrl+P hint, Commands and Domains tabs only, domain reveal affordance | visual acceptance by the user | Done | haiku | Mockup gate before task 4; Mockup approved by the user 2026-10-13; JS syntax-checked with esbuild (not browser-tested by the agent); Mockup approved by the user 2026-10-13; JS syntax-checked with esbuild (not browser-tested by the agent) |
 | 2 | **RED/GREEN:** `PaletteIndex` (`Build`, `Search`, type filter, 50-result cap) and `ResolvePaletteAction` | AC-1 to AC-7 | Not Started | sonnet | Uses `FuzzyMatcher` from panel-console; fixture registers test commands and a stub `IDebugDomain` |
 | 3 | `DebugPanelPageModule`/`DebugPanelPage`: own the index, bindings `onPaletteOpen`/`onPaletteSearch`, push `paletteResults` | `dia run cluichetest` boots | Not Started | sonnet | **sign-off** (baseline) |
 | 4 | `debug-panel.html`: overlay, Ctrl+P/Esc/arrows/Enter, tabs, fill-console and reveal-domain actions | AC-8 to AC-11, AC-13 | Not Started | sonnet | **sign-off** (CluicheTest asset); user does the manual checks |

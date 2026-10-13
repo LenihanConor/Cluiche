@@ -18,7 +18,7 @@ Needs `command-unregister.plan.md` tasks 2 to 4 done first (thread-safe registry
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | Update `mockups/debug-console.html`: command strip inside the panel with result line, history hint, autocomplete list, log view with level filter | visual acceptance by the user | Not Started | sonnet | Mockup gate: no UI work (task 8) before the user approves it |
+| 1 | Update `mockups/debug-console.html`: command strip inside the panel with result line, history hint, autocomplete list, log view with level filter | visual acceptance by the user | Done | sonnet | Mockup gate: no UI work (task 8) before the user approves it; Mockup approved by the user 2026-10-13; JS syntax-checked with esbuild (not browser-tested by the agent); Mockup approved by the user 2026-10-13; JS syntax-checked with esbuild (not browser-tested by the agent) |
 | 2 | **RED/GREEN:** `CommandLineParser` (tokenize, quotes, `ArgumentParser`) and `ConsoleLineAssembler` (join up to 4 chunks, limit 240) | AC-1, AC-2, AC-16 (assembler) | Not Started | sonnet | Pure logic; `storage` buffer owns the token text |
 | 3 | **RED/GREEN:** `ConsoleExecutor` (parse + `Dia::API::ExecuteCommand` + typed result) and `ConsoleHistory` | AC-3, AC-4 | Not Started | sonnet | Register throwaway test commands in the fixture |
 | 4 | **RED/GREEN:** `FuzzyMatcher` and `CommandCompleter` over `ListCommandInfos` | AC-5, AC-6 | Not Started | sonnet | `FuzzyMatcher` is reused by the palette; keep its API generic (strings in, ranked indices out) |
