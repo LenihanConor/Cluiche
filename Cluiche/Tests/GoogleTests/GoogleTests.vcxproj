@@ -868,6 +868,7 @@
     <ClCompile Include="DiaVisualDebugger\Console\TestCommandCompleter.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestDebugConsoleEvents.cpp" />
     <ClCompile Include="DiaVisualDebugger\Console\TestConsoleJson.cpp" />
+    <ClCompile Include="DiaVisualDebugger\Console\TestPaletteIndex.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

@@ -146,6 +146,9 @@
     <ClInclude Include="Console\ConsoleJson.h">
       <Filter>Console</Filter>
     </ClInclude>
+    <ClInclude Include="Console\PaletteIndex.h">
+      <Filter>Console</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugLayerManager.cpp">
@@ -221,6 +224,9 @@
       <Filter>Console</Filter>
     </ClCompile>
     <ClCompile Include="Console\ConsoleJson.cpp">
+      <Filter>Console</Filter>
+    </ClCompile>
+    <ClCompile Include="Console\PaletteIndex.cpp">
       <Filter>Console</Filter>
     </ClCompile>
   </ItemGroup>
