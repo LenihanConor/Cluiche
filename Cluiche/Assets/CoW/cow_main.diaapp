@@ -457,6 +457,28 @@
                     ]
                 },
                 {
+                    "instance_id": "MessageBusHostModule",
+                    "type_id": "MessageBusHostModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "VisualDebuggerModule"
+                    ],
+                    "channels": []
+                },
+                {
+                    "instance_id": "BusProbeModule",
+                    "type_id": "BusProbeModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "MessageBusHostModule"
+                    ],
+                    "channels": []
+                },
+                {
                     "instance_id": "LoadingScreenModule",
                     "type_id": "LoadingScreenModule",
                     "stages": [

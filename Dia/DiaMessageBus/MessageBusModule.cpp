@@ -11,6 +11,11 @@ MessageBusModule::MessageBusModule()
 {
 }
 
+MessageBusModule::MessageBusModule(const Dia::Core::StringCRC& instanceId)
+    : SimModule(instanceId)
+{
+}
+
 Bus& MessageBusModule::GetBus()
 {
     return mBus;

@@ -69,6 +69,7 @@
     <ClCompile Include="Modules\BootMenuLogic.cpp" />
     <ClCompile Include="Modules\BootMenuModule.cpp" />
     <ClCompile Include="Modules\AppIdentity.cpp" />
+    <ClCompile Include="Modules\MessageBusHostModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\AutomationModule.h" />
@@ -128,6 +129,7 @@
     <ClInclude Include="Modules\AppIdentity.h" />
     <ClInclude Include="Types\DebugConsoleLineEvent.h" />
     <ClInclude Include="Types\DebugConsoleResultEvent.h" />
+    <ClInclude Include="Modules\MessageBusHostModule.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">
@@ -163,6 +165,9 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaMailbox\DiaMailbox.vcxproj">
       <Project>{C4D5E6F7-A8B9-0123-CDEF-456789ABCDEF}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaMessageBus\DiaMessageBus.vcxproj">
+      <Project>{D5E6F7A8-B9C0-1234-DEF0-567890ABCDEF}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaInput\DiaInput.vcxproj">
       <Project>{936fa28f-e171-401f-8185-d2af48db4098}</Project>

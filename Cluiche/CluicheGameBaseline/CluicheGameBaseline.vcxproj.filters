@@ -135,6 +135,9 @@
     <ClCompile Include="Modules\AppIdentity.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\MessageBusHostModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\EntityModule.h">
@@ -283,6 +286,9 @@
     </ClInclude>
     <ClInclude Include="Types\DebugConsoleResultEvent.h">
       <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\MessageBusHostModule.h">
+      <Filter>Modules</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
