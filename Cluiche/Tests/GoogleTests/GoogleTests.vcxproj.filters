@@ -241,6 +241,9 @@
     <Filter Include="Tests\GoogleTests\DiaAttribute">
       <UniqueIdentifier>{f69c33c5-f439-4381-a9b9-3e979891d44e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaVisualDebugger\Console">
+      <UniqueIdentifier>{962cc1d4-2eda-41a1-98a2-afbcfe8ce603}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -1837,6 +1840,9 @@
     </ClCompile>
     <ClCompile Include="DiaMessageBus\TestBusTrafficRecorderObservation.cpp">
       <Filter>DiaMessageBus</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestCommandLineParser.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -36,6 +36,9 @@
     <Filter Include="Source Files\Domain">
       <UniqueIdentifier>{A1B2C3D4-0001-0001-0001-000000000041}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Console">
+      <UniqueIdentifier>{312c94b4-9f22-4f1d-9ddb-8f1d8c2094da}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IVisualDebugger.h">
@@ -119,6 +122,12 @@
     <ClInclude Include="Coord3D\Coord3DDebugDomain.h">
       <Filter>Header Files\Coord3D</Filter>
     </ClInclude>
+    <ClInclude Include="Console\CommandLineParser.h">
+      <Filter>Console</Filter>
+    </ClInclude>
+    <ClInclude Include="Console\ConsoleLineAssembler.h">
+      <Filter>Console</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugLayerManager.cpp">
@@ -171,6 +180,12 @@
     </ClCompile>
     <ClCompile Include="Coord3D\Coord3DDebugDomain.cpp">
       <Filter>Source Files\Coord3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Console\CommandLineParser.cpp">
+      <Filter>Console</Filter>
+    </ClCompile>
+    <ClCompile Include="Console\ConsoleLineAssembler.cpp">
+      <Filter>Console</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

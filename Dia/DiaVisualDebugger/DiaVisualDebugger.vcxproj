@@ -101,6 +101,8 @@
     <ClInclude Include="Domain\\DiaDebugDomainRegistry.h" />
     <ClInclude Include="Coord2D\Coord2DDebugDomain.h" />
     <ClInclude Include="Coord3D\Coord3DDebugDomain.h" />
+    <ClInclude Include="Console\CommandLineParser.h" />
+    <ClInclude Include="Console\ConsoleLineAssembler.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugLayerManager.cpp" />
@@ -120,6 +122,8 @@
     <ClCompile Include="Domain\\DiaDebugDomainRegistry.cpp" />
     <ClCompile Include="Coord2D\Coord2DDebugDomain.cpp" />
     <ClCompile Include="Coord3D\Coord3DDebugDomain.cpp" />
+    <ClCompile Include="Console\CommandLineParser.cpp" />
+    <ClCompile Include="Console\ConsoleLineAssembler.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.debug.architecture.module.md" />
