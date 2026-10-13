@@ -89,6 +89,7 @@ def run(
             filter_pattern=filter_pattern,
             run_all=run_all,
             verbose=verbose,
+            config=config,
         )
 
     out_xml = _gtest_xml_output_path(root)
