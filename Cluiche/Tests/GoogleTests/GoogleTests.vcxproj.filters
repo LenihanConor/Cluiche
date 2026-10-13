@@ -1832,5 +1832,8 @@
     <ClCompile Include="DiaMessageBus\TestBusTrafficRecorder.cpp">
       <Filter>DiaMessageBus</Filter>
     </ClCompile>
+    <ClCompile Include="DiaMessageBus\TestBusTrafficRecorderEdge.cpp">
+      <Filter>DiaMessageBus</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -859,6 +859,7 @@
     <ClCompile Include="ApplicationFlow\TestManifestBootstrap.cpp" />
     <ClCompile Include="DiaAttribute\TestDiaAttributeBandInitialization.cpp" />
     <ClCompile Include="DiaMessageBus\TestBusTrafficRecorder.cpp" />
+    <ClCompile Include="DiaMessageBus\TestBusTrafficRecorderEdge.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

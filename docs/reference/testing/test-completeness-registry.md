@@ -371,6 +371,7 @@ Gap markers: **ZERO** = no tests, **LOW** = under-tested relative to API surface
 | ManifestLoader | 24 | TestManifestLoader.cpp | 24 | 0 | 0 | GOOD |
 | ManifestImports | 16 | TestManifestImports.cpp | 16 | 0 | 0 | GOOD — AC1-AC9, duplicate reject, relative path, diamond-dedup, deep nesting |
 | MessageBus | 13 | TestMessageBus.cpp | 13 | 0 | 0 | OK |
+| MessageBus BusTrafficRecorder | 33 | TestBusTrafficRecorder.cpp, TestBusTrafficRecorderEdge.cpp | 33 | 0 | 0 | GOOD — 12 AC tests + 21 edge tests (byte layout, truncation, lifecycle, bus swap, AC-10 assert); write-failure mid-run not testable portably |
 | MetricsCollector | 9 | TestMetricsCollector.cpp | 9 | 0 | 0 | OK |
 | Introspector | 10 | TestApplicationIntrospector.cpp | 10 | 0 | 0 | OK |
 | ModuleRef | 7 | TestModuleRef.cpp | 7 | 0 | 0 | OK |
