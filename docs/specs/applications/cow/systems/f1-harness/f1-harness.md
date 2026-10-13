@@ -2,7 +2,7 @@
 
 **Parent:** @docs/specs/applications/cow/cow.md
 **Design source:** `Output Docs/GDD/10_PrototypeStrategy/F1_Harness.md` (DesignDocs repo; owns what must be proven, scenarios, metrics, failure conditions — see AD-003)
-**Status:** `Approved`
+**Status:** `Done`
 **Plan:** @docs/specs/applications/cow/systems/f1-harness/f1-harness.plan.md
 
 ## Summary
