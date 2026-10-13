@@ -98,7 +98,7 @@ def test_launch_recognises_new_target(tmp_path, monkeypatch):
         returncode = 0
 
     monkeypatch.setattr(launch.subprocess, "run",
-                        lambda cmd, cwd=None: calls.append((cmd, cwd)) or _Result())
+                        lambda cmd, cwd=None, **kw: calls.append((cmd, cwd)) or _Result())
     assert launch.launch_target("alpha", "Debug") == 0
     assert calls[0][0] == [str(exe)]
     assert Path(calls[0][1]) == exe.parent

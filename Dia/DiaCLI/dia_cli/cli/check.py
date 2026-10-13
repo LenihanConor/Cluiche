@@ -343,32 +343,82 @@ def _run_sanitizer(config: str, ctx) -> None:
         ctx.exit(1); return
 
     click.echo(f"[dia check] Running {exe_path.name} under {normalized} ...")
+    from dia_cli.utils.asan_runtime import with_asan_runtime_on_path
     run_result = subprocess.run(
         [str(exe_path)],
         cwd=str(exe_path.parent),
         capture_output=True,
         text=True,
+        env=with_asan_runtime_on_path(None, normalized),
     )
+    stdout = run_result.stdout or ""
+    stderr = run_result.stderr or ""
+    code = run_result.returncode
+    code_text = _describe_exit_code(code)
 
     out_dir = repo_root / "Cluiche" / "out" / "check"
     out_dir.mkdir(parents=True, exist_ok=True)
     out_file = out_dir / _SANITIZER_OUTPUT_NAMES[normalized]
-    out_file.write_text(run_result.stderr, encoding="utf-8")
+    out_file.write_text(
+        f"# exit code: {code_text}\n# ---- stdout ----\n{stdout}\n# ---- stderr ----\n{stderr}",
+        encoding="utf-8",
+    )
+    click.echo(f"[dia check] Output written to {out_file}")
+
+    combined = stdout + chr(10) + stderr
 
     findings = [
-        line for line in run_result.stderr.splitlines()
-        if "ERROR:" in line or "runtime error:" in line
+        line.strip() for line in combined.splitlines()
+        if "ERROR:" in line or "runtime error:" in line or "AddressSanitizer:" in line
     ]
     count = len(findings)
 
-    click.echo(f"[dia check] Output written to {out_file}")
-    if count == 0:
-        click.echo("[dia check] No sanitizer findings detected.")
-    else:
-        click.echo(f"[dia check] {count} sanitizer finding(s) detected.")
+    passed = re.findall(r"\[  PASSED  \] (\d+) tests?", combined)
+    failed_lines = [l.strip() for l in combined.splitlines() if l.startswith("[  FAILED  ]")]
+    tests_ran = int(passed[-1]) if passed else 0
+    if passed:
+        click.echo(f"[dia check] gtest: [  PASSED  ] {tests_ran} tests")
+    if failed_lines:
+        click.echo(f"[dia check] gtest: {failed_lines[-1]}")
 
-    if run_result.returncode != 0:
-        ctx.exit(run_result.returncode); return
+    if count:
+        click.echo(f"[dia check] {count} sanitizer finding(s) detected.")
+        distinct = list(dict.fromkeys(findings))[:5]
+        for line in distinct:
+            click.echo(f"  {line}")
+        ctx.exit(code if 0 < code < 256 else 1); return
+
+    if code != 0:
+        click.echo(
+            f"[dia check] Test run FAILED (exit {code_text}) - this is NOT a clean pass",
+            err=True,
+        )
+        ctx.exit(code if 0 < code < 256 else 1); return
+
+    if tests_ran < 1:
+        click.echo(
+            "[dia check] No gtest summary with passed tests found - this is NOT a clean pass",
+            err=True,
+        )
+        ctx.exit(1); return
+
+    click.echo("[dia check] No sanitizer findings detected.")
+
+
+_KNOWN_EXIT_CODES = {
+    0xC0000135: "STATUS_DLL_NOT_FOUND",
+    0xC0000005: "STATUS_ACCESS_VIOLATION",
+    0xC0000409: "STATUS_STACK_BUFFER_OVERRUN",
+}
+
+
+def _describe_exit_code(code: int) -> str:
+    unsigned = code & 0xFFFFFFFF
+    if 0 <= code < 256:
+        return str(code)
+    name = _KNOWN_EXIT_CODES.get(unsigned)
+    text = f"{code} / 0x{unsigned:08X}"
+    return f"{text} {name}" if name else text
 
 
 # ---------------------------------------------------------------------------

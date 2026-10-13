@@ -111,7 +111,9 @@ def launch_target(target: str, config: str, filter_pattern: str = None,
 
     out_dir = exe_path.parent
     try:
-        result = subprocess.run(cmd, cwd=str(out_dir))
+        from dia_cli.utils.asan_runtime import with_asan_runtime_on_path
+        result = subprocess.run(cmd, cwd=str(out_dir),
+                                env=with_asan_runtime_on_path(None, config))
         if target == "googletest":
             _warn_untagged_slow_suites(out_xml)
         if result.returncode == 0:
