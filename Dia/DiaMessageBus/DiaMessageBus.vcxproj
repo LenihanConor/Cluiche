@@ -89,6 +89,8 @@
     <ClInclude Include="BusHealthReporter.h" />
     <ClInclude Include="IBusRecorder.h" />
     <ClInclude Include="Testing\InMemoryBusRecorder.h" />
+    <ClInclude Include="FileBusRecorder.h" />
+    <ClInclude Include="Testing\BusTrafficFileReader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LedgerHistory.cpp" />
@@ -98,6 +100,7 @@
     <ClCompile Include="MessageBusModule.cpp" />
     <ClCompile Include="MessageBusDebugDomain.cpp" />
     <ClCompile Include="BusHealthReporter.cpp" />
+    <ClCompile Include="FileBusRecorder.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaMailbox\DiaMailbox.vcxproj">

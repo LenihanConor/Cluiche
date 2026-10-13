@@ -25,6 +25,7 @@
     <ClCompile Include="BusHealthReporter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FileBusRecorder.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Bus.h">
@@ -59,6 +60,10 @@
     </ClInclude>
     <ClInclude Include="IBusRecorder.h" />
     <ClInclude Include="Testing\InMemoryBusRecorder.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="FileBusRecorder.h" />
+    <ClInclude Include="Testing\BusTrafficFileReader.h">
       <Filter>Testing</Filter>
     </ClInclude>
   </ItemGroup>
