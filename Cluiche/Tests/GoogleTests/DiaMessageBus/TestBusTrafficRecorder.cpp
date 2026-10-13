@@ -424,6 +424,66 @@ namespace Dia::MessageBus::Testing {
         }
     }
 
+    // AC-9: 10,000-message burst round-trips with count, order and payloads matching.
+    TEST(BusTrafficRecorder, File_Burst10k_RoundTrip) {
+        constexpr int kTotal = 10000;
+        TempFile f("dia_bus_rec_burst10k.dat");
+        Dia::MessageBus::Bus bus;
+        bus.Initialize();
+        ASSERT_TRUE((bus.RegisterType<RecorderTestMsgA, 256>()));
+        ASSERT_TRUE((bus.RegisterType<RecorderTestMsgB, 256>()));
+
+        uint64_t tick = 0;
+        FileBusRecorder::Config cfg;
+        cfg.tickSource = &CountingTick;
+        cfg.tickContext = &tick;
+        FileBusRecorder rec;
+        ASSERT_TRUE(rec.Open(f.path.c_str(), cfg));
+        bus.SetRecorder(&rec);
+
+        // Even index -> MsgA (value = i); odd index -> MsgB (x = i, y = -i).
+        // Dispatch order is per-type queue order, so Update after every post
+        // to keep global order == index order (queue capacity 256 is never hit).
+        for (int start = 0; start < kTotal; ++start) {
+            if (start % 2 == 0) {
+                RecorderTestMsgA m; m.value = start;
+                bus.Broadcast(m);
+            } else {
+                RecorderTestMsgB m; m.x = static_cast<float>(start); m.y = -static_cast<float>(start);
+                bus.Broadcast(m);
+            }
+            // Update after every post keeps index order independent of per-type queue draining
+            bus.Update();
+        }
+        bus.SetRecorder(nullptr);
+        rec.Close();
+
+        BusTrafficFileReader reader;
+        ASSERT_TRUE(reader.Open(f.path.c_str()));
+        std::vector<BusTrafficFileReader::Record> recs;
+        ASSERT_TRUE(reader.ReadAll(recs));
+        ASSERT_EQ(recs.size(), static_cast<size_t>(kTotal));
+        uint64_t prevTick = 0;
+        for (int i = 0; i < kTotal; ++i) {
+            if (i > 0) ASSERT_GT(recs[i].tick, prevTick);
+            prevTick = recs[i].tick;
+            if (i % 2 == 0) {
+                ASSERT_EQ(recs[i].typeId, RecorderTestMsgA::kTypeId.Value());
+                RecorderTestMsgA m;
+                ASSERT_EQ(recs[i].payload.size(), sizeof(m));
+                std::memcpy(&m, recs[i].payload.data(), sizeof(m));
+                ASSERT_EQ(m.value, i);
+            } else {
+                ASSERT_EQ(recs[i].typeId, RecorderTestMsgB::kTypeId.Value());
+                RecorderTestMsgB m;
+                ASSERT_EQ(recs[i].payload.size(), sizeof(m));
+                std::memcpy(&m, recs[i].payload.data(), sizeof(m));
+                ASSERT_EQ(m.x, static_cast<float>(i));
+                ASSERT_EQ(m.y, -static_cast<float>(i));
+            }
+        }
+    }
+
     TEST(BusTrafficRecorder, File_UnwritablePath_LogsOnceAndBusUnaffected) {
         Dia::Observation::Log::Logger::Instance().RegisterThreadBuffer();
         WarningCountSink sink;
