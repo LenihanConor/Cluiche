@@ -668,9 +668,10 @@ namespace Dia
 					result["query_commands"] = queryCmds;
 
 					Json::Value apiCmds(Json::arrayValue);
-					auto commands = Dia::API::ListCommands();
+					Dia::Core::Containers::DynamicArrayC<Dia::API::CommandInfo, 256> commands;
+					Dia::API::ListCommandInfos(commands);
 					for (unsigned int i = 0; i < commands.Size(); ++i)
-						apiCmds.append(commands[i]->name.AsChar());
+						apiCmds.append(commands[i].name.AsChar());
 					result["api_commands"] = apiCmds;
 
 					return result;

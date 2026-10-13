@@ -131,19 +131,32 @@ namespace Dia
 		// Command Query
 		////////////////////////////////////////////////////////////////////////////////
 
+		// Result list for ListCommands / GetCommandsByCategory (capacity 256).
+		using CommandList = Dia::Core::Containers::DynamicArrayC<const CommandInfo*, 256>;
+
 		// Get command info by name
 		// Returns nullptr if command not found
-		// The returned pointer (and the pointers in the lists below) are only valid
-		// until the next Unregister*/Shutdown on any thread. Do not hold them across
-		// threads or frames.
+		// The returned pointer (and the pointers in CommandList) are valid until the
+		// next Unregister*/Shutdown on any thread. Do not hold them across threads or
+		// frames; cross-thread callers should use CopyCommandInfo / ListCommandInfos.
 		const CommandInfo* GetCommand(const Dia::Core::StringCRC& name);
 
 		// List all registered commands
-		Dia::Core::Containers::DynamicArrayC<const CommandInfo*, 64> ListCommands();
+		CommandList ListCommands();
 
 		// Get commands by category
 		// Returns empty array if category not found
-		Dia::Core::Containers::DynamicArrayC<const CommandInfo*, 64> GetCommandsByCategory(const Dia::Core::StringCRC& category);
+		CommandList GetCommandsByCategory(const Dia::Core::StringCRC& category);
+
+		// Value-copy of a command's info, safe to use after the command is unregistered.
+		// Returns false if not found. The const char* members (description, owner,
+		// version, example) are copied as pointers: they are assumed to be string
+		// literals or otherwise outlive the registering system.
+		bool CopyCommandInfo(const Dia::Core::StringCRC& name, CommandInfo& out);
+
+		// Value-copies of every registered command (pending ones excluded). Same
+		// const char* assumption as CopyCommandInfo.
+		void ListCommandInfos(Dia::Core::Containers::DynamicArrayC<CommandInfo, 256>& out);
 
 		////////////////////////////////////////////////////////////////////////////////
 		// JSON command callback path (AC2-AC3)

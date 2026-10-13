@@ -988,3 +988,77 @@ TEST_F(CommandRegistryTest, NestedExecuteFromCallback)
 	ASSERT_EQ(std::future_status::ready, writer.wait_for(std::chrono::seconds(5)));
 	EXPECT_TRUE(writer.get());
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// AC-6: list capacity is 256 (previously 64, silently truncated)
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, ListCommandsBeyond64NotTruncated)
+{
+	Initialize();
+	char name[32];
+	for (int i = 0; i < 100; i++)
+	{
+		std::snprintf(name, sizeof(name), "cap-cmd-%d", i);
+		ASSERT_TRUE(RegisterCommand(MakeUnregisterCmd(name, TestCallback)));
+	}
+	EXPECT_EQ(100u, ListCommands().Size());
+	EXPECT_EQ(100u, GetCommandsByCategory(Dia::Core::StringCRC("test")).Size());
+
+	Dia::Core::Containers::DynamicArrayC<CommandInfo, 256> infos;
+	ListCommandInfos(infos);
+	EXPECT_EQ(100u, infos.Size());
+}
+
+TEST_F(CommandRegistryTest, CopyCommandInfoFoundAndMissing)
+{
+	Initialize();
+	ASSERT_TRUE(RegisterCommand(MakeUnregisterCmd("copy-me", [](const CommandArgs&) { return 7; })));
+
+	CommandInfo copy;
+	ASSERT_TRUE(CopyCommandInfo(Dia::Core::StringCRC("copy-me"), copy));
+	EXPECT_EQ(Dia::Core::StringCRC("copy-me"), copy.name);
+	EXPECT_STREQ("Unregister test", copy.description);
+	EXPECT_STREQ("TestSystem", copy.owner);
+	EXPECT_EQ(Dia::Core::StringCRC("test"), copy.category);
+
+	CommandInfo none;
+	EXPECT_FALSE(CopyCommandInfo(Dia::Core::StringCRC("no-such-cmd"), none));
+
+	// Copy stays valid and callable after the command is unregistered
+	ASSERT_TRUE(UnregisterCommand(Dia::Core::StringCRC("copy-me")));
+	EXPECT_FALSE(CopyCommandInfo(Dia::Core::StringCRC("copy-me"), none));
+	CommandArgs args;
+	ASSERT_TRUE(static_cast<bool>(copy.callback));
+	EXPECT_EQ(7, copy.callback(args));
+}
+
+TEST_F(CommandRegistryTest, ListCommandInfosConcurrentWithRegisterUnregister)
+{
+	Initialize();
+	ASSERT_TRUE(RegisterCommand(MakeUnregisterCmd("stable-cmd", TestCallback)));
+
+	std::atomic<bool> stop(false);
+	std::thread writer([&stop]()
+	{
+		char name[32];
+		int i = 0;
+		while (!stop.load())
+		{
+			std::snprintf(name, sizeof(name), "churn-%d", i++ % 20);
+			RegisterCommand(MakeUnregisterCmd(name, TestCallback));
+			UnregisterCommand(Dia::Core::StringCRC(name));
+		}
+	});
+
+	auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(300);
+	while (std::chrono::steady_clock::now() < deadline)
+	{
+		Dia::Core::Containers::DynamicArrayC<CommandInfo, 256> infos;
+		ListCommandInfos(infos);
+		EXPECT_GE(infos.Size(), 1u);
+		CommandInfo c;
+		EXPECT_TRUE(CopyCommandInfo(Dia::Core::StringCRC("stable-cmd"), c));
+	}
+	stop.store(true);
+	writer.join();
+}

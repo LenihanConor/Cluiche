@@ -85,8 +85,8 @@ namespace Dia
 			struct RegistryState
 			{
 				bool isInitialized = false;
-				Dia::Core::Containers::DynamicArrayC<CommandInfo*, 64> commands;
-				Dia::Core::Containers::DynamicArrayC<CommandInfo*, 64> pendingRegistrations;
+				Dia::Core::Containers::DynamicArrayC<CommandInfo*, 256> commands;
+				Dia::Core::Containers::DynamicArrayC<CommandInfo*, 256> pendingRegistrations;
 				Dia::Core::Containers::DynamicArrayC<CommandInfoJson*, 256> jsonCommands;
 			};
 
@@ -286,8 +286,8 @@ namespace Dia
 
 			// Entries are detached under the lock and deleted after it is released, so a
 			// captured lambda's destructor may safely call back into the registry.
-			Dia::Core::Containers::DynamicArrayC<CommandInfo*, 64> commands;
-			Dia::Core::Containers::DynamicArrayC<CommandInfo*, 64> pending;
+			Dia::Core::Containers::DynamicArrayC<CommandInfo*, 256> commands;
+			Dia::Core::Containers::DynamicArrayC<CommandInfo*, 256> pending;
 			Dia::Core::Containers::DynamicArrayC<CommandInfoJson*, 256> jsonCommands;
 			bool wasInitialized = false;
 			{
@@ -550,11 +550,11 @@ namespace Dia
 		////////////////////////////////////////////////////////////////////////////////
 		// List all registered commands
 		////////////////////////////////////////////////////////////////////////////////
-		Dia::Core::Containers::DynamicArrayC<const CommandInfo*, 64> ListCommands()
+		CommandList ListCommands()
 		{
 			using namespace Internal;
 
-			Dia::Core::Containers::DynamicArrayC<const CommandInfo*, 64> result;
+			CommandList result;
 
 			ReadLock lock = AcquireReadLock();
 			for (unsigned int i = 0; i < gRegistryState.commands.Size(); i++)
@@ -568,11 +568,11 @@ namespace Dia
 		////////////////////////////////////////////////////////////////////////////////
 		// Get commands by category
 		////////////////////////////////////////////////////////////////////////////////
-		Dia::Core::Containers::DynamicArrayC<const CommandInfo*, 64> GetCommandsByCategory(const Dia::Core::StringCRC& category)
+		CommandList GetCommandsByCategory(const Dia::Core::StringCRC& category)
 		{
 			using namespace Internal;
 
-			Dia::Core::Containers::DynamicArrayC<const CommandInfo*, 64> result;
+			CommandList result;
 
 			ReadLock lock = AcquireReadLock();
 			for (unsigned int i = 0; i < gRegistryState.commands.Size(); i++)
@@ -585,6 +585,30 @@ namespace Dia
 			}
 
 			return result;
+		}
+
+		////////////////////////////////////////////////////////////////////////////////
+		// Value-copy queries (safe across threads)
+		////////////////////////////////////////////////////////////////////////////////
+		bool CopyCommandInfo(const Dia::Core::StringCRC& name, CommandInfo& out)
+		{
+			Internal::ReadLock lock = Internal::AcquireReadLock();
+			const CommandInfo* found = Internal::FindCommandInternal(name.Value());
+			if (!found)
+				return false;
+			out = *found;
+			return true;
+		}
+
+		void ListCommandInfos(Dia::Core::Containers::DynamicArrayC<CommandInfo, 256>& out)
+		{
+			using namespace Internal;
+
+			ReadLock lock = AcquireReadLock();
+			for (unsigned int i = 0; i < gRegistryState.commands.Size(); i++)
+			{
+				out.Add(*gRegistryState.commands[i]);
+			}
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
