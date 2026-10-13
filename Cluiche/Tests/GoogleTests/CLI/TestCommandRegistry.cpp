@@ -621,3 +621,120 @@ TEST_F(CommandRegistryTest, RunCLIUnknownCommand)
 	int exitCode = RunCLI(2, argv);
 	EXPECT_EQ(3, exitCode);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// command-unregister helpers
+////////////////////////////////////////////////////////////////////////////////
+static CommandInfo MakeUnregisterCmd(const char* name, CommandCallback cb)
+{
+	CommandInfo cmd;
+	cmd.name = Dia::Core::StringCRC(name);
+	cmd.description = "Unregister test";
+	cmd.category = Dia::Core::StringCRC("test");
+	cmd.owner = "TestSystem";
+	cmd.callback = cb;
+	return cmd;
+}
+
+static CommandInfoJson MakeUnregisterJsonCmd(const char* name, CommandCallbackJson cb)
+{
+	CommandInfoJson cmd;
+	cmd.name = Dia::Core::StringCRC(name);
+	cmd.description = "Unregister JSON test";
+	cmd.category = Dia::Core::StringCRC("test");
+	cmd.owner = "TestSystem";
+	cmd.callback = cb;
+	return cmd;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// AC-1: UnregisterCommand removes a registered command
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, UnregisterCommandRemovesCommand)
+{
+	Initialize();
+	ASSERT_TRUE(RegisterCommand(MakeUnregisterCmd("unreg-one", TestCallback)));
+
+	EXPECT_TRUE(UnregisterCommand(Dia::Core::StringCRC("unreg-one")));
+	EXPECT_EQ(nullptr, GetCommand(Dia::Core::StringCRC("unreg-one")));
+
+	CommandArgs args;
+	EXPECT_EQ(3, ExecuteCommand(Dia::Core::StringCRC("unreg-one"), args));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// AC-2: UnregisterCommand returns false for unknown name
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, UnregisterCommandUnknownReturnsFalse)
+{
+	Initialize();
+	EXPECT_FALSE(UnregisterCommand(Dia::Core::StringCRC("never-registered")));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// AC-3: A name can be re-registered after unregistering; new callback runs
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, UnregisterCommandAllowsReRegister)
+{
+	Initialize();
+	ASSERT_TRUE(RegisterCommand(MakeUnregisterCmd("unreg-again", TestCallback)));
+	ASSERT_TRUE(UnregisterCommand(Dia::Core::StringCRC("unreg-again")));
+
+	EXPECT_TRUE(RegisterCommand(MakeUnregisterCmd("unreg-again", FailCallback)));
+
+	CommandArgs args;
+	EXPECT_EQ(1, ExecuteCommand(Dia::Core::StringCRC("unreg-again"), args));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// AC-4: A pending (pre-Initialize) command can be unregistered
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, UnregisterPendingCommand)
+{
+	ASSERT_TRUE(RegisterCommand(MakeUnregisterCmd("unreg-pending", TestCallback)));
+
+	EXPECT_TRUE(UnregisterCommand(Dia::Core::StringCRC("unreg-pending")));
+
+	Initialize();
+	EXPECT_EQ(nullptr, GetCommand(Dia::Core::StringCRC("unreg-pending")));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// AC-5: UnregisterCommandJson mirrors AC-1
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, UnregisterCommandJsonRemovesCommand)
+{
+	Initialize();
+	ASSERT_TRUE(RegisterCommandJson(MakeUnregisterJsonCmd("unreg-json", [](const Json::Value&) { return Json::Value(1); })));
+
+	EXPECT_TRUE(UnregisterCommandJson(Dia::Core::StringCRC("unreg-json")));
+
+	Json::Value response = ExecuteCommandJson(Dia::Core::StringCRC("unreg-json"), Json::Value());
+	EXPECT_FALSE(response["success"].asBool());
+	EXPECT_EQ("command not found", response["error"].asString());
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// AC-5: UnregisterCommandJson mirrors AC-2
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, UnregisterCommandJsonUnknownReturnsFalse)
+{
+	Initialize();
+	EXPECT_FALSE(UnregisterCommandJson(Dia::Core::StringCRC("never-registered-json")));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// AC-5: UnregisterCommandJson mirrors AC-3
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, UnregisterCommandJsonAllowsReRegister)
+{
+	Initialize();
+	ASSERT_TRUE(RegisterCommandJson(MakeUnregisterJsonCmd("unreg-json-again", [](const Json::Value&) { return Json::Value(1); })));
+	ASSERT_TRUE(UnregisterCommandJson(Dia::Core::StringCRC("unreg-json-again")));
+
+	EXPECT_TRUE(RegisterCommandJson(MakeUnregisterJsonCmd("unreg-json-again", [](const Json::Value&) { return Json::Value(2); })));
+
+	Json::Value response = ExecuteCommandJson(Dia::Core::StringCRC("unreg-json-again"), Json::Value());
+	EXPECT_TRUE(response["success"].asBool());
+	EXPECT_EQ(2, response["data"].asInt());
+}

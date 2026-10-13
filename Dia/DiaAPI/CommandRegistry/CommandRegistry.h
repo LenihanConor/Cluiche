@@ -90,6 +90,10 @@ namespace Dia
 		// Returns true on success, false if command name is invalid or duplicate
 		bool RegisterCommand(const CommandInfo& info);
 
+		// Remove a CLI command (also from the pending list).
+		// Returns false if not found.
+		bool UnregisterCommand(const Dia::Core::StringCRC& name);
+
 		////////////////////////////////////////////////////////////////////////////////
 		// Command Execution
 		////////////////////////////////////////////////////////////////////////////////
@@ -144,6 +148,9 @@ namespace Dia
 		// Logs a warning if a CLI command with the same name is also registered.
 		// Returns false if name is invalid or duplicate JSON command.
 		bool RegisterCommandJson(const CommandInfoJson& info);
+
+		// Remove a JSON command. Returns false if not found.
+		bool UnregisterCommandJson(const Dia::Core::StringCRC& name);
 
 		// Execute a JSON-callback command by name.
 		// Returns {"success":true,"data":{...}} on success.

@@ -296,6 +296,55 @@ namespace Dia
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
+		// Unregister a command (registered or pending)
+		////////////////////////////////////////////////////////////////////////////////
+		bool UnregisterCommand(const Dia::Core::StringCRC& name)
+		{
+			using namespace Internal;
+
+			for (unsigned int i = 0; i < gRegistryState.commands.Size(); i++)
+			{
+				if (gRegistryState.commands[i]->name == name)
+				{
+					delete gRegistryState.commands[i];
+					gRegistryState.commands.RemoveAt(i);
+					return true;
+				}
+			}
+
+			for (unsigned int i = 0; i < gRegistryState.pendingRegistrations.Size(); i++)
+			{
+				if (gRegistryState.pendingRegistrations[i]->name == name)
+				{
+					delete gRegistryState.pendingRegistrations[i];
+					gRegistryState.pendingRegistrations.RemoveAt(i);
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		////////////////////////////////////////////////////////////////////////////////
+		// Unregister a JSON command
+		////////////////////////////////////////////////////////////////////////////////
+		bool UnregisterCommandJson(const Dia::Core::StringCRC& name)
+		{
+			using namespace Internal;
+
+			for (unsigned int i = 0; i < gRegistryState.jsonCommands.Size(); i++)
+			{
+				if (gRegistryState.jsonCommands[i]->name == name)
+				{
+					delete gRegistryState.jsonCommands[i];
+					gRegistryState.jsonCommands.RemoveAt(i);
+					return true;
+				}
+			}
+			return false;
+		}
+
+		////////////////////////////////////////////////////////////////////////////////
 		// Execute a registered command by name
 		////////////////////////////////////////////////////////////////////////////////
 		int ExecuteCommand(const Dia::Core::StringCRC& commandName, const CommandArgs& args)
