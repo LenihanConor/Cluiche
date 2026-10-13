@@ -10,8 +10,7 @@
 #include <DiaStreams/EventStreamWriter.h>
 #include <DiaStreams/EventStreamReader.h>
 #include <DiaStreams/ServiceStreamReader.h>
-#include <DiaVisualDebugger/Console/ConsoleHistory.h>
-#include <DiaVisualDebugger/Console/PaletteIndex.h>
+#include <DiaVisualDebugger/Console/PanelController.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
 
 #include "Modules/DebugPanelPage.h"
@@ -37,6 +36,7 @@ namespace Cluiche { namespace AppFlow {
 class DebugPanelPageModule
     : public Dia::ApplicationFlow::MainModule
     , public DebugPanelPage::ICallbacks
+    , private Dia::VisualDebugger::Console::IPanelPusher
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
@@ -79,34 +79,14 @@ private:
     void PushConsoleResults();
     void PushLogLines();
     void CheckLogRingProbe();
-    void PushPaletteResults(const char* query, int mask);
 
-    // The JS callbacks above (OnConsoleComplete, OnConsoleHistory, OnPaletteOpen, OnPaletteSearch and a
-    // rejected OnConsoleLine) run from inside a script that Ultralight is executing. Calling CallJSFunction
-    // (EvaluateScript) there re-enters the JS engine, which crashed on Ctrl+P. They therefore only record
-    // a request here, and ProcessDeferredRequests() carries it out from DoUpdate, as OnCommand already
-    // does by queueing an event. Latest request wins for complete/search; history keeps order.
-    struct DeferredRequests
-    {
-        static constexpr unsigned kMaxHistory  = 8;
-        static constexpr unsigned kMaxRejected = 4;
+    // IPanelPusher: forwards PanelController results to the page.
+    bool Push(const char* jsFunction, const char* json) override { return PushToPage(jsFunction, json); }
 
-        bool          completePending = false;
-        char          completeToken[64] = {};
-
-        unsigned char history[kMaxHistory] = {};   // 1 = previous, 0 = next; processed in order
-        unsigned      historyCount = 0;
-
-        bool          paletteOpenPending = false;
-        bool          paletteSearchPending = false;
-        char          paletteQuery[64] = {};
-        int           paletteMask = 3;
-
-        unsigned      rejectedSeq[kMaxRejected] = {};   // console lines refused as too long
-        unsigned      rejectedCount = 0;
-    };
-    void ProcessDeferredRequests();
-    DeferredRequests mDeferred;
+    // The JS callbacks above run from inside a script that Ultralight is executing, so they only record
+    // a request in mPanel; mPanel.Process() carries it out from DoUpdate (calling CallJSFunction from a
+    // callback re-enters the JS engine, which crashed on Ctrl+P).
+    Dia::VisualDebugger::Console::PanelController mPanel;
 
     DebugPanelPage mPage{this};
     bool           mPanelVisible         = false;
@@ -136,12 +116,6 @@ private:
     // Heap-owned: ConsoleLogRing is about 175 KB. Created in DoStart, freed in DoStop.
     struct ConsoleRuntime;
     ConsoleRuntime* mConsole = nullptr;
-
-    // Lives in the module (not the page) so it survives panel hide/show.
-    Dia::VisualDebugger::Console::ConsoleHistory mHistory;
-
-    // Heap-owned: PaletteIndex is non-copyable and holds a snapshot. Created on first open, freed in DoStop.
-    Dia::VisualDebugger::Console::PaletteIndex* mPalette = nullptr;
 
     unsigned int mProbeFramesLeft = 0;   // frames until the ring probe is checked; 0 = done
 };

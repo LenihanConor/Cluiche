@@ -870,6 +870,7 @@
     <ClCompile Include="DiaVisualDebugger\Console\TestConsoleJson.cpp" />
     <ClCompile Include="DiaVisualDebugger\Console\TestPaletteIndex.cpp" />
     <ClCompile Include="DiaVisualDebugger\Console\TestPaletteJson.cpp" />
+    <ClCompile Include="DiaVisualDebugger\Console\TestPanelController.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

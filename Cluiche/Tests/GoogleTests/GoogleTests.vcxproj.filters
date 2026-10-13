@@ -1868,5 +1868,8 @@
     <ClCompile Include="DiaVisualDebugger\Console\TestPaletteJson.cpp">
       <Filter>DiaVisualDebugger\Console</Filter>
     </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestPanelController.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

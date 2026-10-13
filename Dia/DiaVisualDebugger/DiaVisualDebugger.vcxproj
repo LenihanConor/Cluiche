@@ -110,6 +110,7 @@
     <ClInclude Include="Console\CommandCompleter.h" />
     <ClInclude Include="Console\ConsoleJson.h" />
     <ClInclude Include="Console\PaletteIndex.h" />
+    <ClInclude Include="Console\PanelController.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugLayerManager.cpp" />
@@ -138,6 +139,7 @@
     <ClCompile Include="Console\CommandCompleter.cpp" />
     <ClCompile Include="Console\ConsoleJson.cpp" />
     <ClCompile Include="Console\PaletteIndex.cpp" />
+    <ClCompile Include="Console\PanelController.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.debug.architecture.module.md" />

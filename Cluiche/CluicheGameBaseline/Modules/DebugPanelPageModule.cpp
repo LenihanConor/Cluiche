@@ -123,7 +123,7 @@ void DebugPanelPageModule::DoUpdate(const Dia::SimTime::MainTimeContext& /*ctx*/
     DIA_TRACE_ZONE("DebugPanelPageModule.Update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
 
     DrainToggleEvents();
-    ProcessDeferredRequests();
+    mPanel.Process(*this, mDomainRegistry.IsAvailable() ? &mDomainRegistry.Get() : nullptr);
     PushDomainStatesToPanel();
     PushConsoleResults();
     PushLogLines();
@@ -158,10 +158,7 @@ Dia::ApplicationFlow::StopResult DebugPanelPageModule::DoStop()
     }
     mProbeFramesLeft = 0;
 
-    delete mPalette;
-    mPalette = nullptr;
-
-    mDeferred = DeferredRequests();
+    mPanel.Reset();
 
     mPageInitialized = false;
     return Dia::ApplicationFlow::StopResult::kDone;
@@ -206,114 +203,35 @@ void DebugPanelPageModule::OnConsoleLine(unsigned int seq, const char* const* pa
     if (!ConsoleLineAssembler::Assemble(parts, partCount, event.text, sizeof(event.text)))
     {
         DIA_LOG_WARNING("Debug", "DebugPanelPageModule: console line %u rejected (too long)", seq);
-        // Deferred: this runs inside a JS callback, so no CallJSFunction here (see DeferredRequests).
-        if (mDeferred.rejectedCount < DeferredRequests::kMaxRejected)
-            mDeferred.rejectedSeq[mDeferred.rejectedCount++] = seq;
+        // Deferred: this runs inside a JS callback, so no CallJSFunction here (see mPanel).
+        mPanel.RequestRejectedLine(seq);
         return;
     }
 
-    mHistory.Add(event.text);
+    mPanel.AddToHistory(event.text);
     mConsoleLines.Send(event);
 }
 
-// The four handlers below run inside a JS callback. They only record the request; the work and the
-// CallJSFunction push happen in ProcessDeferredRequests() from DoUpdate.
+// The handlers below run inside a JS callback. They only record the request; the work and the
+// CallJSFunction push happen in mPanel.Process() from DoUpdate.
 void DebugPanelPageModule::OnConsoleComplete(const char* token)
 {
-    mDeferred.completePending = true;
-    strncpy_s(mDeferred.completeToken, token != nullptr ? token : "", sizeof(mDeferred.completeToken) - 1);
+    mPanel.RequestComplete(token);
 }
 
 void DebugPanelPageModule::OnConsoleHistory(bool previous)
 {
-    if (mDeferred.historyCount < DeferredRequests::kMaxHistory)
-        mDeferred.history[mDeferred.historyCount++] = previous ? 1 : 0;
+    mPanel.RequestHistory(previous);
 }
 
 void DebugPanelPageModule::OnPaletteOpen()
 {
-    mDeferred.paletteOpenPending = true;
-    // Opening always shows the full list; drop any older search so it cannot overwrite it.
-    mDeferred.paletteSearchPending = false;
+    mPanel.RequestPaletteOpen();
 }
 
 void DebugPanelPageModule::OnPaletteSearch(const char* query, int mask)
 {
-    mDeferred.paletteSearchPending = true;
-    mDeferred.paletteMask = mask;
-    strncpy_s(mDeferred.paletteQuery, query != nullptr ? query : "", sizeof(mDeferred.paletteQuery) - 1);
-}
-
-void DebugPanelPageModule::ProcessDeferredRequests()
-{
-    using namespace Dia::VisualDebugger::Console;
-
-    // Rejected console lines (too long): report back as a result.
-    for (unsigned i = 0; i < mDeferred.rejectedCount; ++i)
-    {
-        char json[256];
-        if (ConsoleJson::BuildConsoleResult(mDeferred.rejectedSeq[i], 2, static_cast<unsigned>(ParseError::TooLong),
-                                            "line too long", json, sizeof(json)))
-            PushToPage("consoleResult", json);
-    }
-    mDeferred.rejectedCount = 0;
-
-    // History navigation, in the order the keys were pressed.
-    for (unsigned i = 0; i < mDeferred.historyCount; ++i)
-    {
-        const bool previous = (mDeferred.history[i] != 0);
-        const char* entry = previous ? mHistory.GetPrevious() : mHistory.GetNext();
-        if (entry == nullptr && previous)
-            continue;   // empty history: leave the input alone
-
-        // entry == nullptr on "next" means we stepped past the newest entry: restore the draft.
-        char json[1024];
-        if (ConsoleJson::BuildSetInput(entry != nullptr ? entry : "", entry == nullptr, json, sizeof(json)))
-            PushToPage("consoleSetInput", json);
-    }
-    mDeferred.historyCount = 0;
-
-    if (mDeferred.completePending)
-    {
-        mDeferred.completePending = false;
-        Completion items[CommandCompleter::kDefaultMaxResults];
-        const unsigned count = CommandCompleter::Complete(mDeferred.completeToken, items,
-                                                          CommandCompleter::kDefaultMaxResults);
-        char json[1024];
-        if (ConsoleJson::BuildCompletions(items, count, json, sizeof(json)))
-            PushToPage("consoleCompletions", json);
-    }
-
-    if (mDeferred.paletteOpenPending)
-    {
-        mDeferred.paletteOpenPending = false;
-        if (mPalette == nullptr)
-            mPalette = new PaletteIndex();
-
-        if (mDomainRegistry.IsAvailable())
-            mPalette->Build(mDomainRegistry.Get());
-        else
-            DIA_LOG_WARNING("Debug", "DebugPanelPageModule: palette opened before the domain registry is available");
-
-        PushPaletteResults("", PaletteIndex::kTypeCommands | PaletteIndex::kTypeDomains);
-    }
-
-    if (mDeferred.paletteSearchPending)
-    {
-        mDeferred.paletteSearchPending = false;
-        if (mPalette != nullptr)   // never opened: nothing to search
-            PushPaletteResults(mDeferred.paletteQuery, mDeferred.paletteMask);
-    }
-}
-
-void DebugPanelPageModule::PushPaletteResults(const char* query, int mask)
-{
-    // 50 items x ~600 bytes worst case; heap-free static buffer, Main PU only.
-    static char json[32 * 1024];
-    if (Dia::VisualDebugger::Console::ConsoleJson::BuildPaletteResults(*mPalette, query, mask, json, sizeof(json)))
-        PushToPage("paletteResults", json);
-    else
-        DIA_LOG_WARNING("Debug", "DebugPanelPageModule: palette results did not fit the JSON buffer");
+    mPanel.RequestPaletteSearch(query, mask);
 }
 
 bool DebugPanelPageModule::PushToPage(const char* jsFunction, const char* json)
