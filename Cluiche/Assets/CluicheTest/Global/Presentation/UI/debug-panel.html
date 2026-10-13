@@ -301,25 +301,54 @@ body {
 }
 .btn-unlock:hover { color: #eab308; border-color: #6a5000; }
 
-/* ── Phase 2: Command strip ── */
-.command-strip {
-  border-top: 1px solid #222;
-  padding: 5px 10px;
-  display: flex; align-items: center; gap: 6px;
-  flex-shrink: 0; background: #141414;
-}
-.cmd-prefix { font-size: 11px; color: #3a3a3a; flex-shrink: 0; }
-.cmd-input {
-  flex: 1; min-width: 0;
-  background: transparent; border: none;
-  color: #9a9a9a; font-family: inherit; font-size: 11px;
-  padding: 0; outline: none;
-}
-.cmd-input:focus        { color: #c8c8c8; }
-.cmd-input::placeholder { color: #2a2a2a; }
-.cmd-result { font-size: 10px; flex-shrink: 0; color: #333; }
-.cmd-result.ok  { color: #3a7a3a; }
-.cmd-result.err { color: #7a3a3a; }
+/* -- Console: Log view + command strip (panel-console) -- */
+.log-view { flex-shrink: 0; border-top: 1px solid #222; background: #141414; }
+.log-hdr { display: flex; align-items: center; gap: 8px; padding: 5px 10px; cursor: pointer; }
+.log-hdr:hover { background: #1a1a1a; }
+.log-arrow { width: 10px; font-size: 9px; color: #3a3a3a; }
+.log-view.open .log-arrow::after { content: '\25BC'; } .log-view.closed .log-arrow::after { content: '\25B6'; }
+.log-title { font-size: 10px; letter-spacing: 1.2px; font-weight: 700; color: #6b7280; flex: 1; }
+.log-count { font-size: 10px; color: #333; }
+.log-filters { display: flex; gap: 4px; }
+.flt { font-family: inherit; font-size: 9px; padding: 2px 7px; border: 1px solid #2d2d2d; background: transparent; color: #555; cursor: pointer; }
+.flt:hover { background: #1a1a1a; color: #888; }
+.flt.active { border-color: #5a9fd4; color: #5a9fd4; }
+.flt[data-lvl=WARN].active { border-color: #c8882a; color: #c8882a; }
+.flt[data-lvl=ERROR].active { border-color: #c03030; color: #c03030; }
+.log-view.closed .log-body, .log-view.closed .log-filters { display: none; }
+.log-body { height: 150px; overflow-y: auto; background: #0f0f0f; border-top: 1px solid #1e1e1e; padding: 2px 0; }
+.log-line { display: flex; gap: 7px; padding: 1px 10px; font-size: 10px; line-height: 1.5; white-space: nowrap; }
+.log-line:nth-child(odd) { background: #121212; }
+.log-ts { color: #3a3a3a; flex-shrink: 0; }
+.badge { width: 38px; text-align: center; font-size: 9px; font-weight: 700; flex-shrink: 0; line-height: 1.6; border: 1px solid; }
+.badge.INFO { color: #4a7a9a; border-color: #1f3340; } .badge.WARN { color: #c8882a; border-color: #4a3410; } .badge.ERROR { color: #c03030; border-color: #4a1a1a; }
+.log-ch { color: #6a6a8a; width: 78px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; }
+.log-msg { color: #8a8a8a; overflow: hidden; text-overflow: ellipsis; }
+.log-line.ERROR .log-msg { color: #b05050; } .log-line.WARN .log-msg { color: #a88040; }
+.log-empty { padding: 10px; color: #3a3a3a; font-style: italic; text-align: center; font-size: 11px; }
+
+/* Command strip (upgraded) */
+.command-strip { position: relative; border-top: 1px solid #222; padding: 5px 10px 4px; flex-shrink: 0; background: #141414; }
+.cmd-row { display: flex; align-items: center; gap: 6px; }
+.cmd-prefix { font-size: 11px; color: #3a3a3a; }
+.cmd-input { flex: 1; min-width: 0; background: transparent; border: none; color: #9a9a9a; font-family: inherit; font-size: 11px; outline: none; }
+.cmd-input:focus { color: #c8c8c8; } .cmd-input::placeholder { color: #2a2a2a; }
+.cmd-counter { font-size: 9px; color: #7a6a2a; display: none; } .cmd-counter.warn { display: inline; } .cmd-counter.max { color: #c03030; }
+.cmd-meta { display: flex; justify-content: space-between; gap: 8px; margin-top: 3px; min-height: 14px; font-size: 10px; }
+.cmd-result { color: #333; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.cmd-result .echo { color: #666; }
+.cmd-result .code { font-weight: 700; margin-left: 6px; }
+.cmd-result .code.ok { color: #3a9a5a; } .cmd-result .code.err { color: #c03030; }
+.cmd-hint { color: #2e2e2e; flex-shrink: 0; } .cmd-hint kbd { font-family: inherit; color: #555; border: 1px solid #2a2a2a; padding: 0 3px; font-size: 9px; }
+.ac { position: absolute; left: 10px; right: 10px; bottom: 100%; background: #1b1b1b; border: 1px solid #3a3a3a; box-shadow: 0 -4px 12px rgba(0,0,0,.5); display: none; z-index: 5; }
+.ac.show { display: block; }
+.ac-item { display: flex; gap: 10px; padding: 3px 8px; font-size: 11px; color: #7a7a7a; cursor: pointer; }
+.ac-item.sel { background: #243447; color: #d4d4d4; }
+.ac-item .nm { flex-shrink: 0; } .ac-item .ds { color: #3f3f3f; font-size: 10px; margin-left: auto; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ac-item.sel .ds { color: #6a7a8a; }
+.ac-item mark { background: none; color: #5a9fd4; font-weight: 700; text-decoration: underline; }
+.ac-foot { padding: 2px 8px; font-size: 9px; color: #3a3a3a; border-top: 1px solid #262626; }
+.ac-foot kbd { font-family: inherit; color: #666; border: 1px solid #2a2a2a; padding: 0 3px; }
 
 /* ── Stats mini-table (IK2D chains, Animation2D layers, etc.) ── */
 .st-table { width: 100%; margin: 5px 0 2px 0; }
@@ -364,11 +393,21 @@ body {
     <button class="btn-unlock" id="btn-unlock" style="display:none" onclick="onUnlockClick()">&#x2715;</button>
   </div>
 
+  <div class="log-view open" id="log-view">
+    <div class="log-hdr" id="log-hdr"><span class="log-arrow"></span><span class="log-title">LOG</span><span class="log-count" id="log-count"></span>
+      <div class="log-filters" id="log-filters">
+        <button class="flt active" data-lvl="ALL">All</button><button class="flt" data-lvl="INFO">Info</button>
+        <button class="flt" data-lvl="WARN">Warn</button><button class="flt" data-lvl="ERROR">Error</button></div></div>
+    <div class="log-body" id="log-body"></div>
+  </div>
+
   <div class="command-strip">
-    <span class="cmd-prefix">&gt;</span>
-    <input class="cmd-input" id="cmd-input" type="text" placeholder="debug.layer.enable…"
-           onfocus="pushUIOnlyMode()" onblur="popInputMode()">
-    <span class="cmd-result" id="cmd-result"></span>
+    <div class="ac" id="ac"></div>
+    <div class="cmd-row"><span class="cmd-prefix">&gt;</span>
+      <input class="cmd-input" id="cmd-input" type="text" maxlength="240" spellcheck="false" autocomplete="off" placeholder="debug.layer.enable…" onfocus="pushUIOnlyMode()" onblur="popInputMode()">
+      <span class="cmd-counter" id="cmd-counter"></span></div>
+    <div class="cmd-meta"><span class="cmd-result" id="cmd-result"></span>
+      <span class="cmd-hint"><kbd>&uarr;</kbd><kbd>&darr;</kbd> history &nbsp;<kbd>Tab</kbd> complete</span></div>
   </div>
 
 </div>
@@ -805,10 +844,6 @@ window.updateDomainState = updateDomainState;
 var currentFilter  = '';
 var lockedEntityId = '';
 
-// {"text":"..."} + overhead leaves 52 chars for the actual command text
-// before the Ultralight String64 63-char limit is hit.
-var MAX_CMD_TEXT = 52;
-
 // ── JS → C++ log bridge ───────────────────────────────────────────────────
 // Relayed to DIA_LOG_INFO("DebugPanelJS",...) via VisualDebuggerModule on
 // the Sim PU (~1 frame delay). Max payload: 54 chars.
@@ -898,23 +933,252 @@ function updateEntityLockUI() {
   btnUnlock.style.display = locked ? ''     : 'none';
 }
 
-// ── Command strip ─────────────────────────────────────────────────────────
+// ── Console (panel-console; contract in DebugPanelPage.h) ─────────────────
+// JS -> C++: app.onConsoleLine(seq, p0..p3), app.onConsoleComplete(token),
+// app.onConsoleHistory("prev"|"next"). Every string arg is <= 63 chars, so
+// the line is sent as up to 4 chunks of 60. C++ -> JS: consoleResult,
+// appendLogLines, consoleCompletions, consoleSetInput (JSON string or object).
+var CON_MAX_LINE  = 240;
+var CON_CHUNK     = 60;
+var CON_LOG_CAP   = 500;
+var conSeq        = 0;
+var conPending    = 0;     // seq awaiting consoleResult (0 = none)
+var conPendingTxt = '';
+var conDraft      = '';
+var conHistActive = false;
+var conAc         = [];
+var conAcSel      = 0;
+var conAcTimer    = null;
+var conLogFilter  = 'ALL';
+var conLogLines   = [];    // {t, level, channel, msg}
+
+function conEl(id) { return document.getElementById(id); }
+function conApp(name) { return typeof app !== 'undefined' && app && app[name]; }
+function conEsc(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function conParse(data) {
+  if (typeof data === 'string') {
+    try { return JSON.parse(data); } catch (e) { return null; }
+  }
+  return (data && typeof data === 'object') ? data : null;
+}
+function conPad(n, w) { n = String(n); while (n.length < w) n = '0' + n; return n; }
+function conStamp(t) {
+  var ms = Math.floor((t || 0) * 1000), sec = Math.floor(ms / 1000);
+  var mm = Math.floor(sec / 60), hh = Math.floor(mm / 60);
+  return conPad(hh, 2) + ':' + conPad(mm % 60, 2) + ':' + conPad(sec % 60, 2) + '.' + conPad(ms % 1000, 3);
+}
+
+function conUpdateCounter() {
+  var input = conEl('cmd-input'), c = conEl('cmd-counter');
+  if (!input || !c) return;
+  var n = input.value.length;
+  c.textContent = n + '/' + CON_MAX_LINE;
+  c.className = 'cmd-counter' + (n > 200 ? ' warn' : '') + (n >= CON_MAX_LINE ? ' max' : '');
+}
+
+function conSetResult(text, exitCode, parseError) {
+  var el = conEl('cmd-result');
+  if (!el) return;
+  var echo = conPendingTxt.length > 44 ? conPendingTxt.substring(0, 43) + '…' : conPendingTxt;
+  var cls, label;
+  if (exitCode === 0 && !parseError) { cls = 'ok'; label = 'exit 0'; }
+  else if (exitCode === 3) { cls = 'err'; label = 'not found (3)'; }
+  else { cls = 'err'; label = parseError ? 'parse error (' + parseError + ')' : 'exit ' + exitCode; }
+  var extra = text ? ' <span class="echo">' + conEsc(text) + '</span>' : '';
+  el.innerHTML = '<span class="echo">&gt; ' + conEsc(echo) + '</span><span class="code ' + cls + '">' +
+                 conEsc(label) + '</span>' + extra;
+}
+
+function consoleResult(data) {
+  var r = conParse(data);
+  if (!r) return;
+  if (conPending && r.seq !== conPending) return;   // stale result
+  conPending = 0;
+  conSetResult(r.text || '', r.exitCode | 0, r.parseError | 0);
+}
+window.consoleResult = consoleResult;
+
+function conRenderAc() {
+  var ac = conEl('ac');
+  if (!ac) return;
+  if (!conAc.length) { ac.className = 'ac'; ac.innerHTML = ''; return; }
+  if (conAcSel >= conAc.length) conAcSel = 0;
+  var html = '';
+  for (var i = 0; i < conAc.length; ++i) {
+    html += '<div class="ac-item' + (i === conAcSel ? ' sel' : '') + '" data-i="' + i + '"><span class="nm">' +
+            conEsc(conAc[i].name) + '</span><span class="ds">' + conEsc(conAc[i].rank || '') + '</span></div>';
+  }
+  html += '<div class="ac-foot"><kbd>Tab</kbd> accept &nbsp;<kbd>&uarr;</kbd><kbd>&darr;</kbd> select</div>';
+  ac.innerHTML = html;
+  ac.className = 'ac show';
+}
+function conClearAc() { conAc = []; conAcSel = 0; conRenderAc(); }
+
+function consoleCompletions(data) {
+  var r = conParse(data);
+  if (!r || !r.items) return;
+  var input = conEl('cmd-input');
+  // Ignore late results if the first token is gone or finished.
+  if (!input || !input.value || input.value.indexOf(' ') >= 0) { conClearAc(); return; }
+  conAc = r.items.slice(0, 5);
+  conAcSel = 0;
+  conRenderAc();
+}
+window.consoleCompletions = consoleCompletions;
+
+function conAccept() {
+  if (!conAc.length) return false;
+  var input = conEl('cmd-input');
+  input.value = conAc[conAcSel].name + ' ';
+  conClearAc();
+  conUpdateCounter();
+  return true;
+}
+
+function consoleSetInput(data) {
+  var r = conParse(data);
+  var input = conEl('cmd-input');
+  if (!r || !input) return;
+  if (r.restore) { input.value = conDraft; conHistActive = false; }
+  else input.value = r.text || '';
+  conClearAc();
+  conUpdateCounter();
+}
+window.consoleSetInput = consoleSetInput;
+
+function conRenderLog() {
+  var body = conEl('log-body');
+  if (!body) return;
+  var html = '', shown = 0;
+  for (var i = 0; i < conLogLines.length; ++i) {
+    var l = conLogLines[i];
+    if (conLogFilter !== 'ALL' && l.level !== conLogFilter) continue;
+    ++shown;
+    html += '<div class="log-line ' + l.level + '"><span class="log-ts">' + conStamp(l.t) +
+            '</span><span class="badge ' + l.level + '">' + l.level + '</span><span class="log-ch">' +
+            conEsc(l.channel) + '</span><span class="log-msg">' + conEsc(l.msg) + '</span></div>';
+  }
+  body.innerHTML = html || '<div class="log-empty">No log lines at this level</div>';
+  body.scrollTop = body.scrollHeight;
+  var cnt = conEl('log-count');
+  if (cnt) cnt.textContent = shown + ' / ' + conLogLines.length;
+}
+
+function appendLogLines(data) {
+  var r = conParse(data);
+  if (!r || !r.lines) return;
+  for (var i = 0; i < r.lines.length; ++i) {
+    var l = r.lines[i];
+    var lvl = String(l.level || 'INFO').toUpperCase();
+    if (lvl !== 'WARN' && lvl !== 'ERROR' && lvl !== 'INFO') lvl = 'INFO';  // DEBUG shown as INFO
+    conLogLines.push({ t: l.t, level: lvl, channel: l.channel || '', msg: l.msg || '' });
+  }
+  if (conLogLines.length > CON_LOG_CAP) conLogLines.splice(0, conLogLines.length - CON_LOG_CAP);
+  conRenderLog();
+}
+window.appendLogLines = appendLogLines;
+
+function conSend(text) {
+  var seq = ++conSeq;
+  conPending = seq;
+  conPendingTxt = text;
+  var el = conEl('cmd-result');
+  if (el) el.innerHTML = '<span class="echo">&gt; …</span>';
+  if (text.length > CON_MAX_LINE) {
+    conPending = 0;
+    conSetResult('line too long', 2, 0);
+    return;
+  }
+  if (!conApp('onConsoleLine')) { conPending = 0; return; }
+  var p = ['', '', '', ''];
+  for (var i = 0; i < 4; ++i) p[i] = text.substring(i * CON_CHUNK, (i + 1) * CON_CHUNK);
+  app.onConsoleLine(seq, p[0], p[1], p[2], p[3]);
+}
+
 (function () {
-  var input  = document.getElementById('cmd-input');
-  var result = document.getElementById('cmd-result');
+  var input = conEl('cmd-input');
   if (!input) return;
-  input.addEventListener('keydown', function (e) {
-    if (e.key !== 'Enter') return;
-    var text = input.value.trim();
-    if (!text) return;
-    if (text.length > MAX_CMD_TEXT) {
-      if (result) { result.textContent = 'too long'; result.className = 'cmd-result err'; }
-      return;
-    }
-    sendCommand('__console__', 'exec', { text: text });
-    if (result) { result.textContent = '→'; result.className = 'cmd-result'; }
-    input.value = '';
+
+  function requestComplete() {
+    conAcTimer = null;
+    var v = input.value;
+    var sp = v.indexOf(' ');
+    if (!v || sp >= 0) { conClearAc(); return; }
+    if (conApp('onConsoleComplete')) app.onConsoleComplete(v.substring(0, 63));
+  }
+
+  input.addEventListener('input', function () {
+    conHistActive = false;
+    conUpdateCounter();
+    if (conAcTimer) clearTimeout(conAcTimer);
+    conAcTimer = setTimeout(requestComplete, 100);
   });
+
+  input.addEventListener('keydown', function (e) {
+    var k = e.key;
+    if (k === 'Tab') { e.preventDefault(); conAccept(); }
+    else if (k === 'Escape') { conClearAc(); }
+    else if (k === 'ArrowUp' || k === 'ArrowDown') {
+      e.preventDefault();
+      var up = (k === 'ArrowUp');
+      if (conAc.length && !conHistActive) {
+        conAcSel = (conAcSel + (up ? conAc.length - 1 : 1)) % conAc.length;
+        conRenderAc();
+        return;
+      }
+      if (!conApp('onConsoleHistory')) return;
+      if (!conHistActive) {
+        if (!up) return;
+        conDraft = input.value;
+        conHistActive = true;
+      }
+      app.onConsoleHistory(up ? 'prev' : 'next');
+    }
+    else if (k === 'Enter') {
+      var t = input.value.replace(/^\s+|\s+$/g, '');
+      if (!t) return;
+      if (conAcTimer) { clearTimeout(conAcTimer); conAcTimer = null; }
+      conSend(t);
+      input.value = '';
+      conHistActive = false;
+      conClearAc();
+      conUpdateCounter();
+    }
+  });
+
+  var ac = conEl('ac');
+  if (ac) ac.addEventListener('mousedown', function (e) {
+    var n = e.target;
+    while (n && n !== ac && !(n.className && String(n.className).indexOf('ac-item') >= 0)) n = n.parentNode;
+    if (!n || n === ac) return;
+    e.preventDefault();
+    conAcSel = parseInt(n.getAttribute('data-i'), 10) || 0;
+    conAccept();
+    input.focus();
+  });
+
+  var flt = conEl('log-filters');
+  if (flt) flt.addEventListener('click', function (e) {
+    e.stopPropagation();
+    var b = e.target;
+    if (!b || !b.getAttribute || !b.getAttribute('data-lvl')) return;
+    conLogFilter = b.getAttribute('data-lvl');
+    var all = flt.querySelectorAll('.flt');
+    for (var i = 0; i < all.length; ++i) all[i].classList.toggle('active', all[i] === b);
+    conRenderLog();
+  });
+
+  var hdr = conEl('log-hdr');
+  if (hdr) hdr.addEventListener('click', function () {
+    var v = conEl('log-view'), open = v.classList.contains('open');
+    v.classList.toggle('open', !open);
+    v.classList.toggle('closed', open);
+  });
+
+  conUpdateCounter();
+  conRenderLog();
 })();
 
 // ── Global scale slider ──────────────────────────────────────────────────
