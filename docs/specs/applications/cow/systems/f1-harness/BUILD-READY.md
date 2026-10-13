@@ -1,5 +1,7 @@
 # ✅ F-1 Debug Infrastructure - BUILD READY
 
+> **Superseded 2026-10-13.** The four-spec plan below was reshaped: DiaDebugDataPanel and ModuleDebugRegistry were dropped, Console and Palette now extend the existing DiaDebugPanel and live under `docs/specs/applications/dia/systems/diadebugdomain/` (`panel-console.md`, `panel-palette.md`), and command unregister is `docs/specs/applications/dia/systems/diaapi/command-unregister.md`. Kept for history.
+
 **Date:** 2026-10-11  
 **Status:** All specs complete and buildable
 

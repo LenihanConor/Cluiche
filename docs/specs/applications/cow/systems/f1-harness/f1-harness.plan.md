@@ -1,7 +1,8 @@
 # Implementation Plan: F-1 Harness (system)
 
 **Spec:** @docs/specs/applications/cow/systems/f1-harness/f1-harness.md
-**Status:** Not Started
+**Status:** In Progress
+**Sign-off (AD-001):** granted 2026-10-13 by the user for every task marked **sign-off** in this plan (task 13 included).
 
 System plan: tasks are the feature specs and the cross-cutting tooling work. Each feature has its own plan with the detailed tasks.
 
@@ -22,7 +23,8 @@ System plan: tasks are the feature specs and the cross-cutting tooling work. Eac
 | C | Boot choice: Play entry only | boot-choice.md (1 task, folded into B6) | B |
 | D | Tooling: `scaffold stage --app`, `new-cow-stage` skill, `dia scaffold app` (spec first) | see tasks below | B (the hand-built skeleton is the reference) |
 | E | DiaMessageBus module doc status fix | below | none |
-| Deferred | Bus live verification, bus traffic recorder, debug command host | features TBD | B |
+| F | CoW debug host wiring (manifest + panel copy; no new Dia code) | tasks 13 to 15 | B |
+| Deferred | Bus live verification, bus traffic recorder | features TBD | B |
 
 ## Tasks
 
@@ -40,6 +42,9 @@ System plan: tasks are the feature specs and the cross-cutting tooling work. Eac
 | 10 | Verify the DiaMessageBus tests pass, then correct `status: stub` in `dia.messagebus.architecture.module.md` | E | Not Started | haiku | Doc only; confirm with a fresh `dia run googletest --filter="*MessageBus*"` first |
 | 11 | Observation opportunity scan across all touched files; log suggestions in the notes | A to D | Not Started | haiku | Does not block Done |
 | 12 | Mark the F-1 system spec Done only when all child features are Approved or Done; record the deferred features | all | Not Started | haiku | System spec rule |
+| 13 | CoW debug host wiring. In `Assets/CoW/cow_main.diaapp` add, all with stages `["all"]`: `Camera2DModule` (no deps; `VisualDebuggerModule` holds a `ModuleRef` to it), `UIModule` (deps `ObservationModule`, `KernelModule`; channels `SimToMain` reads, `UIToSim` writes), `VisualDebuggerModule` (dep `Camera2DModule`; channels `SimDebug` writes, `DebugLayerManager` provides, `DomainRegistry` writes, `DebugPanelCommand` reads, `DebugPanelToggle` writes, `DebugPanelSetVisibility` writes), `DebugPanelPageModule` (deps `ObservationModule`, `UIModule`; `DomainRegistry` reads, `DebugPanelCommand` writes, `DebugPanelToggle` reads, `DebugPanelSetVisibility` reads), `DebugServerHostModule` (config `port` 9002, `auto_start`, `diagame_path` = `assets/cow.diagame`; channels `DebugServerService` provides, `DebugServerPush` reads). In `cow.diagame` add path alias `ui_common` = `./global/Presentation/UI` (the panel loads `ui_common/debug-panel.html`; CoW only defines `root` today). Copy `debug-panel.html` to `Assets/CoW/Global/Presentation/UI/`, add catalogue entry `ui.debug_panel_page` (type `ui`, scope `global`) and make `build-assets` deploy it. | `dia validate manifest`; `dia pipeline --target cow`; `dia run cow`: `~` opens the panel, `debug.layer.list` runs, Inspector connects on 9002 | Not Started | sonnet | **sign-off** (baseline/asset rules). Needs no new Dia code, can start now. Channel lists are from CluicheTest's manifest; `UIModule` reads `SimToMain`, so check the validator for a missing writer and resolve it rather than dropping the channel. Copy from CluicheTest's current `debug-panel.html` (Webix removal is another agent's work and does not touch this file) |
+| 14 | CoW message bus in the manifest: `MessageBusModule` and one message type so the bus domain has something to show | `dia run cow`: bus domain card appears in the panel | Not Started | sonnet | **Coordinate with the bus-traffic-recorder agent**: it may already add this. Check `git status`/`cow_main.diaapp` before starting; the `bus_traffic.*` commands the old console spec cited do not exist yet and arrive with the recorder wiring |
+| 15 | Re-sync CoW's `debug-panel.html` copy after panel-console task 8 and panel-palette task 4 land; add a note to dia-needs/backlog debt if the two copies have diverged | `dia run cow`: console and Ctrl+P work | Not Started | haiku | Blocked by the two Dia plans; decision 2026-10-13 was copy, not share |
 
 ## Order and parallelism
 

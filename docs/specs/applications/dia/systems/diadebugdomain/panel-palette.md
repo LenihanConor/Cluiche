@@ -1,274 +1,129 @@
-# Feature Spec: Debug Palette
+# Feature Spec: Panel Palette
 
-**Parent:** @docs/specs/applications/cow/systems/f1-harness/f1-harness.md  
-**Mockup:** @docs/specs/applications/cow/systems/f1-harness/mockups/debug-palette.html  
+**Parent:** @docs/specs/applications/dia/systems/diadebugdomain/diadebugdomain.md
+**Mockup:** @docs/specs/applications/cow/systems/f1-harness/mockups/debug-palette.html (task 1 updates it: Ctrl+P hint, Commands and Domains tabs only)
 **Status:** Approved
+**Plan:** @docs/specs/applications/dia/systems/diadebugdomain/panel-palette.plan.md
+**Depends on:** @docs/specs/applications/dia/systems/diadebugdomain/panel-console.md (`FuzzyMatcher`, console strip, thread-safe command list)
 
 ## Summary
 
-A searchable, keyboard-driven discovery UI for all in-game debug tools: DiaAPI commands, data panels, and visual debug domains. Provides fuzzy search, categorized tabs, keyboard navigation (↑↓ to select, Enter to execute), and keybind display. Toggled with `F1` key. Proves CoW F-1 by letting users search "bus" and discover `bus_traffic.*` commands and Bus Traffic Viewer panel.
+A searchable overlay inside DiaDebugPanel, opened with **Ctrl+P**, that finds every registered DiaAPI command and every debug domain. Selecting a command puts it in the console strip ready to run; selecting a domain reveals its card in the panel. It is an overlay in `debug-panel.html`, not a separate module or page. The earlier draft's "Panels" tab is gone (DiaDebugDataPanel was dropped; panels are domains).
 
-## Problem Statement
+## Problem
 
-As the debug infrastructure grows, discoverability becomes a problem:
-
-**Current state:**
-- **47 DiaAPI commands** registered across 8 categories (asset_runtime, bus_traffic, debug.layer, simtime, help, etc.)
-- **8+ data panels** (Bus Traffic Viewer, Blackboard Inspector, Entity List, Asset State, etc.)
-- **7+ visual debug domains** (`IDebugDomain` implementations: Physics2D, Animation2D, Entity, Coord2D, etc.)
-
-**Developers need to:**
-1. Remember exact command names (is it `bus_traffic.start` or `bus.traffic.start`?)
-2. Know what panels exist (is there a panel for X? what's it called?)
-3. Find keybinds (how do I open the Bus Traffic Viewer?)
-
-**No discovery mechanism exists.**
-
-Contrast with CluicheEditor: command palette (`Ctrl+Shift+P`) shows all commands/actions searchable. CoW needs the same for in-game debug tools.
+Commands are registered across several systems and domains across 20+ visual debugger modules. A developer has to remember exact names (`debug.layer.enable`? `debug.layers.enable`?) or read source. The data to answer "what exists?" is already in the process (`ListCommands()`, `HelpSystem`, `DiaDebugDomainRegistry`) but nothing presents it.
 
 ## Goals
 
-1. Unified discovery: search across commands, panels, and domains
-2. Fuzzy search (type "bus" → matches "bus_traffic" and "Bus Traffic Viewer")
-3. Categorized tabs (All, Commands, Panels, Domains)
-4. Keyboard navigation (↑↓ arrows, Enter to execute/launch)
-5. Show keybinds and descriptions
-6. Toggle with `F1` key
-7. Executes commands, toggles panels, does NOT replace them (launches target)
+1. Ctrl+P opens the palette while the panel is visible; Esc closes it.
+2. One search box matches commands (name, description, category) and domains (name, group).
+3. Fuzzy ranking: exact prefix > contains > subsequence, ties alphabetical (same `FuzzyMatcher` as console autocomplete).
+4. Tabs: All / Commands / Domains with result counts.
+5. Up/Down/Enter keyboard navigation.
+6. Enter on a command closes the palette and puts the command text, plus its `example` usage when present, into the console strip with focus. It does not run it.
+7. Enter on a domain closes the palette, expands the domain's group accordion and scrolls to the card.
+8. The index is rebuilt each time the palette opens, so commands registered or unregistered since last open are reflected.
 
 ## Non-Goals
 
-1. Command history (that's Debug Console's job)
-2. Command execution output (palette launches Console if needed)
-3. Panel configuration (palette just shows/hides panels)
-4. Custom keybind editing (keybinds are display-only)
-5. Recent items / favorites (simple flat list for v1)
+- A separate module, window or global key. Works only while the panel is open.
+- Panels tab (dropped with DiaDebugDataPanel).
+- Recent or favourite items, keybind display or editing (no command keybinds exist).
+- Running a command straight from the palette.
+- Opening the panel from Ctrl+P when it is hidden (see Open Design Questions).
 
 ## Acceptance Criteria
 
 | # | Criterion | Verification |
 |---|-----------|--------------|
-| AC-1 | Palette toggles on/off with `F1` key | Manual test in CoW F-1 |
-| AC-2 | Search box accepts text and filters results | Manual test: type "bus", see 4 results |
-| AC-3 | Results grouped by type (Commands, Panels, Domains) | Manual test: see 3 groups in mockup |
-| AC-4 | Fuzzy search works (type "bstrfc" matches "bus_traffic") | Manual test |
-| AC-5 | ↑↓ arrow keys navigate results, Enter executes selected item | Manual test |
-| AC-6 | Selecting a command opens Debug Console and pre-fills command | Manual test: select `bus_traffic.start`, console opens with command ready |
-| AC-7 | Selecting a panel toggles panel visibility (shows if hidden, hides if shown) | Manual test: select Bus Traffic Viewer, panel opens |
-| AC-8 | Selecting a domain toggles domain visibility in DiaDebugPanel | Manual test: select Physics2D domain |
-| AC-9 | Category tabs filter results (Commands, Panels, Domains, All) | Manual test |
-| AC-10 | Each result shows name, description, category badge, and keybind (if any) | Manual test: match mockup layout |
-| AC-11 | Palette visual layout matches mockup | Visual comparison test |
-| AC-12 | ESC key closes palette | Manual test |
+| AC-1 | `PaletteIndex::Build` lists every command from the registry and every domain from the domain registry, each with type, name, description and category/group | GoogleTest |
+| AC-2 | `PaletteIndex::Search("")` returns everything; `Search("zzzz")` returns nothing | GoogleTest |
+| AC-3 | Ranking order is prefix, then contains, then subsequence, ties alphabetical; `"bstrfc"` finds `bus_traffic.start` | GoogleTest |
+| AC-4 | Type filter (Commands / Domains) restricts results without re-ranking | GoogleTest |
+| AC-5 | A command unregistered between two `Build` calls is absent from the second index | GoogleTest |
+| AC-6 | Results are capped at 50 per search and the total match count is reported | GoogleTest |
+| AC-7 | `PaletteExecutor::Resolve` returns "fill console with `<text>`" for a command and "reveal domain `<id>`" for a domain | GoogleTest |
+| AC-8 | Ctrl+P in the panel opens the overlay with the search box focused; Esc closes it | Manual: `dia run cluichetest` |
+| AC-9 | Typing `layer` shows `debug.layer.*` commands and layer-related domains | Manual |
+| AC-10 | Enter on a command fills the console strip and focuses it; Enter again runs it (via panel-console) | Manual |
+| AC-11 | Enter on a domain expands its group and scrolls to the card | Manual |
+| AC-12 | Same behaviour in CoW after the CoW wiring task | Manual |
+| AC-13 | Overlay matches the updated mockup | Visual comparison |
 
 ## Design
 
-### Architecture
+### Where things live
 
 ```
-DiaDebugPalette (new Dia module)
-  ├─ DebugPalettePage.h/.cpp          // Ultralight page (C++ shell)
-  ├─ DebugPaletteIndex.h/.cpp         // Unified index of all debug tools
-  ├─ DebugPaletteExecutor.h/.cpp      // Launch target (command/panel/domain)
-  └─ debug-palette.html                // Ultralight HTML/CSS/JS
+Dia/DiaVisualDebugger/Console/        (same folder as panel-console.md)
+  FuzzyMatcher.h/.cpp                 (from panel-console)
+  PaletteIndex.h/.cpp                 Build() from registries, Search(query, type, out)
+  PaletteExecutor.h/.cpp              Resolve(item) -> action (pure, no UI)
+
+Cluiche/CluicheGameBaseline/Modules/
+  DebugPanelPageModule.*              owns PaletteIndex; bindings onPaletteOpen / onPaletteSearch
+  DebugPanelPage.*                    JS bindings
+
+Cluiche/Assets/CluicheTest/Global/Presentation/UI/debug-panel.html   overlay markup + keys
 ```
 
-### Components
-
-**0. DebugPaletteModule**
+### Types
 
 ```cpp
-// Dia/DiaDebugPalette/DebugPaletteModule.h
-namespace Dia::DebugPalette {
+namespace Dia::VisualDebugger::Console {
 
-class DebugPaletteModule : public Dia::ApplicationFlow::MainModule {
-public:
-    static const Dia::Core::StringCRC kTypeId;
-    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kMain;
-    static constexpr const char* kDescription = "Searchable discovery UI for all debug commands/panels/domains";
-    
-    explicit DebugPaletteModule(const Dia::Core::StringCRC& instanceId);
-    ~DebugPaletteModule() override;
-    
-    void Toggle();
-    void Show();
-    void Hide();
-    bool IsVisible() const { return mVisible; }
-    
-protected:
-    Dia::ApplicationFlow::StartResult DoStart() override;
-    void DoUpdate(const Dia::SimTime::MainTimeContext& ctx) override;
-    Dia::ApplicationFlow::StopResult DoStop() override;
-    
-private:
-    DebugPalettePage* mPage = nullptr;
-    DebugPaletteIndex mIndex;
-    DebugPaletteExecutor mExecutor;
-    bool mVisible = false;
-};
-
-} // namespace Dia::DebugPalette
-```
-
-**1. DebugPaletteIndex**
-
-Aggregates all discoverable debug tools:
-
-```cpp
-namespace Dia::DebugPalette {
-
-enum class ItemType { Command, Panel, Domain };
+enum class PaletteItemType { Command, Domain };
 
 struct PaletteItem {
-    ItemType type;
-    Dia::Core::StringCRC id;                // Unique ID
-    const char* name;                        // Display name
-    const char* description;                 // One-line description
-    Dia::Core::StringCRC category;          // Category (e.g. "messaging", "physics")
-    const char* keybind;                     // Optional keybind (e.g. "Ctrl+Shift+B")
+    PaletteItemType type;
+    char name[64];
+    char description[128];
+    char category[32];     // command category, or domain group
+    char example[128];     // commands only, may be empty
+    char domainId[64];     // domains only
 };
 
-class DebugPaletteIndex {
+class PaletteIndex {
 public:
-    void Rebuild();                          // Scan registries and rebuild index
-    int GetItemCount() const;
+    void Build(const Dia::VisualDebugger::DiaDebugDomainRegistry& domains);
+    // Fills out with indices into items, ranked; returns total matches.
+    int Search(const char* query, int typeFilterMask,
+               Dia::Core::Containers::DynamicArrayC<int, 50>& out) const;
     const PaletteItem& GetItem(int index) const;
-    
-    // Search with fuzzy matching
-    void Search(const char* query, Dia::Core::Containers::DynamicArrayC<int, 64>& outIndices) const;
+    int GetItemCount() const;
 };
 
-} // namespace Dia::DebugPalette
+struct PaletteAction { enum Kind { FillConsole, RevealDomain } kind; char text[160]; };
+PaletteAction ResolvePaletteAction(const PaletteItem& item);
+
+}
 ```
 
-**Index sources:**
-- **Commands:** Query `Dia::API::GetCommandList()` (all registered commands)
-- **Panels:** Query `Dia::DebugPanel::DebugDataPanelRegistry::Instance()` (all panels)
-- **Domains:** Query `Dia::VisualDebugger::DebugDomainRegistry` (all `IDebugDomain` implementations)
+`Build` calls `ListCommandInfos` (copies, from command-unregister.md), so it is safe on the Main thread while the Sim thread registers or unregisters.
 
-**Rebuild trigger:** On `F1` keypress (palette show), rebuild index to catch any newly registered items.
+### Flow
 
-**2. DebugPaletteExecutor**
-
-Launches the selected item:
-
-```cpp
-namespace Dia::DebugPalette {
-
-class DebugPaletteExecutor {
-public:
-    void Execute(const PaletteItem& item);
-};
-
-} // namespace Dia::DebugPalette
+```
+Ctrl+P (JS keydown) -> app.onPaletteOpen()        C++: PaletteIndex::Build, push item count
+type "lay"          -> app.onPaletteSearch("lay", mask)   (query <= 60 chars, fits the 63-char bridge)
+                    <- CallJSFunction("paletteResults", json)   top 50 + total
+Enter on item       -> JS acts locally: FillConsole sets the strip's input; RevealDomain opens the card
 ```
 
-**Execute behavior:**
-- **Command:** Open Debug Console and pre-fill command text (user presses Enter to execute)
-- **Panel:** Toggle panel visibility (if hidden, show; if shown, hide)
-- **Domain:** Toggle domain in DiaDebugPanel (enable/disable drawer)
-
-**3. DebugPalettePage (Ultralight)**
-
-- Loads `debug-palette.html`
-- JS binding: `app.onItemSelected(itemIndex)`
-- Receives selection from HTML, forwards to `DebugPaletteExecutor`
-- Pushes search results to HTML via `CallJSFunction("updateResults", itemsJson)`
-
-**4. HTML/CSS/JS**
-
-See `debug-palette.html` mockup for full layout. Key features:
-
-- **Search box** with autofocus
-- **Category tabs** (All, Commands, Panels, Domains) with result counts
-- **Results list** grouped by type, showing name/description/category/keybind
-- **Keyboard navigation** (↑↓ to select, Enter to execute, ESC to close)
-- **Empty state** ("No results found") when search has zero matches
-
-### Search Algorithm
-
-**Fuzzy matching:**
-1. Exact prefix match (highest priority): "bus" matches "bus_traffic" before "blackboard"
-2. Contains match: "traffic" matches "bus_traffic"
-3. Fuzzy match: "bstrfc" matches "bus_traffic" (first letters of each word)
-
-**Ranking:**
-- Exact prefix > contains > fuzzy
-- Within same rank, sort alphabetically
-
-### Dependencies
-
-| Dependency | Why |
-|------------|-----|
-| `DiaAPI` | Command list query |
-| `DiaDebugDataPanel` | Panel list query |
-| `DiaVisualDebugger` | Domain list query |
-| `DiaDebugConsole` | Launch console with pre-filled command |
-| `DiaUI` | Ultralight page rendering |
-| `DiaApplicationFlow` | Module lifecycle |
-
-### Files Touched
-
-**New files:**
-- `Dia/DiaDebugPalette/DebugPalettePage.h/.cpp`
-- `Dia/DiaDebugPalette/DebugPaletteIndex.h/.cpp`
-- `Dia/DiaDebugPalette/DebugPaletteExecutor.h/.cpp`
-- `Dia/DiaDebugPalette/DebugPaletteModule.h/.cpp`
-- `Dia/DiaDebugPalette/Assets/debug-palette.html` (copied from mockup)
-- `Dia/DiaDebugPalette/DiaDebugPalette.vcxproj`
-- `Dia/DiaDebugPalette/dia.debug.palette.architecture.module.md`
-- `Cluiche/Tests/GoogleTests/DiaDebugPalette/TestPaletteIndex.cpp`
-- `Cluiche/Tests/GoogleTests/DiaDebugPalette/TestFuzzySearch.cpp`
-
-**Updated files:**
-- `DiaAPI/CommandRegistry.h/.cpp` (add `GetCommandList()` if not present)
-- `Cluiche/CluicheGameBaseline/Modules/InputModule.cpp` (bind `F1` key to palette toggle)
-- `Cluiche/Assets/CoW/cow_main.diaapp` (add `DebugPaletteModule` instance)
-- `Cluiche.sln` (add `DiaDebugPalette.vcxproj`)
-
-## Usage Example (CoW F-1)
-
-```cpp
-// User presses F1
-// Palette opens, search box focused
-
-// User types "bus"
-// JS calls app.onSearch("bus")
-// C++ calls DebugPaletteIndex::Search("bus", results)
-// Results: 4 items (3 commands + 1 panel)
-// C++ calls page->CallJSFunction("updateResults", resultsJson)
-// JS renders 4 results in HTML
-
-// User presses ↓ arrow twice, Enter
-// JS calls app.onItemSelected(1)  // index 1 = bus_traffic.stop
-// C++ calls DebugPaletteExecutor::Execute(item)
-// Executor opens Debug Console, pre-fills "bus_traffic.stop"
-// Palette closes
-```
+Selecting needs no C++ round trip because the result JSON already carries the text to fill or the domain id to reveal; `ResolvePaletteAction` is the tested definition of that mapping and the JS mirrors it (AC-7 locks the contract).
 
 ## Binding Decisions
 
 | ID | Decision | How this feature complies |
 |---|---|---|
-| PD-004 | No STL in public APIs | `DebugPaletteIndex` and `DebugPaletteExecutor` use DiaCore types only |
-| AD-001 | Module YAML frontmatter | `dia.debug.palette.architecture.module.md` provided |
-| SD-F1-001 | Palette is Debug-only; #ifdef DIA_DEBUG guards | All palette code compiles out in Release |
-| SD-F1-002 | Palette uses Ultralight for consistency | All debug UI uses same rendering tech |
+| AD-001 (f1-harness) | Baseline, Dia and CluicheTest edits need explicit human sign-off per change | Plan marks baseline and asset tasks as sign-off gated |
+| (Dia rule) | No new singletons | Index is owned by `DebugPanelPageModule` |
+| SD-F1-001 | Debug-only | Baseline wiring inside `#ifdef DIA_DEBUG` |
 
 ## Open Design Questions
 
-1. **Command execution vs. pre-fill.** Should palette execute commands directly, or open Console with command pre-filled? **Proposal:** Pre-fill (gives user chance to add arguments, see output in Console).
-
-2. **Panel toggle vs. show-only.** Should selecting a panel always toggle (hide if shown), or always show? **Proposal:** Toggle (matches VS Code command palette behavior).
-
-3. **Recent items.** Should palette remember recently used items and rank them higher? **Proposal:** Not in v1; add later if needed.
-
-4. **Keybind editing.** Should palette allow editing keybinds, or just display them? **Proposal:** Display only; keybinds are hardcoded or loaded from config (editing is a separate feature).
-
-5. **Category icons.** Should each category have a visual icon (⚡ for commands, 📊 for panels, 🎨 for domains)? **Proposal:** Yes; mockup shows icons, improves scannability.
-
-## Status
-
-Draft
-
-**Plan:** TBD (to be written after approval)
+1. **Ctrl+P while the panel is hidden.** JS key handling only fires when the panel page has input focus. Opening the palette from a hidden panel needs the C++ side (as `VisualDebuggerModule` does for `~`). Proposal: v1 requires the panel to be open; revisit if it is annoying in use.
+2. **Ctrl+P collisions.** The modifier path is confirmed in code: `UIModule` passes modifiers to `InjectKeyDown`, which maps `kModControl` to Ultralight's `kMod_CtrlKey`, so the page should see `event.ctrlKey`. What is unverified is whether the host window or Ultralight claims Ctrl+P first. Task 5 checks at runtime; fall back to Ctrl+K if so.
+3. **Domain action.** "Reveal the card" is read-only. Is toggling the domain's drawers on from the palette also wanted? Proposal: no; the card is one click away and the toggle semantics differ per domain.
+4. **Command metadata quality.** The palette is only as good as `description`/`example`. Some registrants may have empty descriptions. Proposal: show them anyway and list offenders in the plan's final task notes.

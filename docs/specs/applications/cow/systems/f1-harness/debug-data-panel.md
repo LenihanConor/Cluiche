@@ -1,8 +1,10 @@
 # Feature Spec: Debug Data Panel Registry
 
+> **Superseded 2026-10-13.** Dropped. The existing DiaDebugPanel renders stats and array tables from each `IDebugDomain`, and `MessageBusDebugDomain` already provides the bus-traffic Schema/Live/History tabs. A second panel registry (and its singleton) would duplicate that. See `docs/specs/applications/dia/systems/diadebugdomain/panel-console.md` for what replaced the console part.
+
 **Parent:** @docs/specs/applications/cow/systems/f1-harness/f1-harness.md  
 **Mockup:** @docs/specs/applications/cow/systems/f1-harness/mockups/bus-traffic-panel.html  
-**Status:** Approved
+**Status:** Superseded
 
 ## Summary
 

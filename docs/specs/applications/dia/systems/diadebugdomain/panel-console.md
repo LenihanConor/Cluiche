@@ -1,274 +1,157 @@
-# Feature Spec: Debug Console
+# Feature Spec: Panel Console
 
-**Parent:** @docs/specs/applications/cow/systems/f1-harness/f1-harness.md  
-**Mockup:** @docs/specs/applications/cow/systems/f1-harness/mockups/debug-console.html  
+**Parent:** @docs/specs/applications/dia/systems/diadebugdomain/diadebugdomain.md
+**Mockup:** @docs/specs/applications/cow/systems/f1-harness/mockups/debug-console.html (visual reference for the output area; task 1 updates it to show the strip-in-panel layout)
 **Status:** Approved
+**Plan:** @docs/specs/applications/dia/systems/diadebugdomain/panel-console.plan.md
+**Depends on:** @docs/specs/applications/dia/systems/diaapi/command-unregister.md (thread-safe registry, uncapped list)
 
 ## Summary
 
-An in-game Ultralight-rendered text console for executing DiaAPI commands without external tools. Provides command input with autocomplete, multi-tab output log with filtering, command history, and context sidebar. Toggled with `~` (tilde) key. Proves CoW F-1 can execute `bus_traffic.*` commands in-game and see the output immediately.
+Upgrade the command strip that already exists in DiaDebugPanel (`~`) into a usable console: results shown in the panel, `--flags` and `key=value` arguments, command history, autocomplete, and a live log view. This **replaces** the separate "DiaDebugConsole" module the earlier draft proposed. There is no second window, no second toggle key, and no new module: the logic lives in `Dia/DiaVisualDebugger/Console/` and the UI is an extension of `debug-panel.html`.
 
-## Problem Statement
+## Problem
 
-DiaAPI command execution currently requires either:
-1. External tool (`dia <command>` in terminal)
-2. Remote editor connection (CluicheEditor via DebugServer)
-3. Direct C++ code modification
+Today (`VisualDebuggerModule::ExecuteConsoleCommand`, `debug-panel.html` command strip):
 
-During CoW testbed development, developers need to:
-- Start/stop bus traffic recording (`bus_traffic.start`, `bus_traffic.stop`)
-- Query runtime state (`asset_runtime.get_loaded`, `simtime.status`)
-- Toggle debug layers (`debug.layer.enable`)
-- Adjust simulation speed (`simtime.set_speed 2.0`)
-
-Without an in-game console, these workflows break flow and require context switching to external tools.
+- Input is split on spaces and everything becomes a positional argument, so `--flag` and `key=value` never reach a command as flags or named args, even though `DiaAPI/Parser/ArgumentParser` already parses them.
+- The strip shows `->` after Enter. The exit code and anything the command logged only reach the log file.
+- Commands longer than 52 characters are refused (`MAX_CMD_TEXT` in `debug-panel.html`). Ultralight marshals each JS string argument through `String64` (63 characters), and the strip sends the text inside a JSON object, so a long command or path is rejected.
+- No history, no autocomplete, no way to see what happened.
+- The parsing and execution logic lives in the CluicheGameBaseline, so a game cannot reuse it and it cannot be unit-tested without the whole module.
 
 ## Goals
 
-1. Execute any registered DiaAPI command by typing it in-game
-2. See command output (success/error/info logs) immediately in the console
-3. Autocomplete command names (TAB key, fuzzy search)
-4. Navigate command history (up/down arrows)
-5. Filter log output by level (All, Info, Warnings, Errors)
-6. Show current context (stage, tick, command count)
-7. Toggle visibility with `~` key
-8. Draggable/dockable window (Ultralight-based)
-9. Multi-tab interface (Output, History, Commands, Help)
+1. Typed text up to 240 characters is accepted, tokenized (double quotes group a token) and parsed by `ArgumentParser` into `CommandArgs`.
+2. The panel shows, per executed command: the text, the exit code (0 green, non-zero red, 3 shown as "not found"), and the log lines produced since.
+3. Up/Down recall history (50 entries, survives panel close/open, not app restart).
+4. Tab autocompletes command names (top 5, ranked prefix > contains > subsequence).
+5. A log view in the panel shows the last 500 log lines with a level filter (All / Info / Warn / Error).
+6. All logic (tokenizing, history, matching, log ring) is plain C++ with unit tests, independent of Ultralight.
+7. The strip and log view work in both CluicheTest and CoW.
 
 ## Non-Goals
 
-1. Command scripting or batch execution (run one at a time)
-2. Custom keybinds for individual commands (use Debug Palette for that)
-3. Log file export (logs are ephemeral, view only)
-4. Command aliases or macros (use full command names)
-5. Visual debug domain controls (that's DiaDebugPanel's job)
+- A separate console window, module or key. `~` toggles the panel as it does today.
+- Scripting, batch execution, aliases or macros.
+- Capturing a command's stdout. Commands communicate through their exit code and `DIA_LOG_*`.
+- Log export to file.
+- Panel/data-panel registration (DiaDebugDataPanel was dropped).
 
 ## Acceptance Criteria
 
 | # | Criterion | Verification |
 |---|-----------|--------------|
-| AC-1 | Console toggles on/off with `~` key | Manual test: press tilde in CoW F-1 |
-| AC-2 | Typing `bus_traffic.start recording.dat` and pressing Enter executes the command and logs the result | Manual test + GoogleTest mock |
-| AC-3 | Typing `bus_` and pressing TAB shows autocomplete suggestions (`bus_traffic.start`, `bus_traffic.stop`, `bus_traffic.status`) | Manual test |
-| AC-4 | Up arrow recalls previous command, down arrow moves forward in history | Manual test |
-| AC-5 | Filter buttons (All, Info, Warnings, Errors) toggle log visibility | Manual test |
-| AC-6 | Context sidebar shows current stage name, tick count, and command registry count | Manual test in CoW F-1 |
-| AC-7 | Tab navigation works (Output, History, Commands, Help) | Manual test |
-| AC-8 | Window can be dragged by title bar and docked to screen edges | Manual test (DiaUI docking) |
-| AC-9 | Console output matches mockup visual layout | Visual comparison test |
-| AC-10 | Console captures `DIA_LOG_*` output while visible | Manual test: trigger warning, see it in log |
-| AC-11 | Closing console with `~` preserves log history (reopening shows same content) | Manual test |
-| AC-12 | Console works across stage transitions (survives Boot → FrontEnd → Boot) | Manual test in CoW |
+| AC-1 | `CommandLineParser::Parse("foo a \"b c\" --v key=val")` yields name `foo`, positional `a` and `b c`, flag `v`, named `key=val` | GoogleTest |
+| AC-2 | Empty, whitespace-only, unterminated quote and over-long (>240 chars) input return a typed error and never crash | GoogleTest |
+| AC-3 | `ConsoleExecutor::Execute` returns the command's exit code, and 3 for an unknown command | GoogleTest |
+| AC-4 | `ConsoleHistory` keeps the last 50 entries, Up/Down walk them, `Reset()` returns to the end, consecutive duplicates are not stored | GoogleTest |
+| AC-5 | `FuzzyMatcher` ranks exact prefix > contains > subsequence, ties alphabetical; `"bstrfc"` matches `"bus_traffic.start"` | GoogleTest |
+| AC-6 | `CommandCompleter` returns at most 5 matches from the live registry and reflects commands registered or unregistered since the last call | GoogleTest |
+| AC-7 | `ConsoleLogRing` registered as a logger sink stores the last 500 lines; entries logged from several threads are all kept in order or dropped oldest-first, never torn | GoogleTest + `dia check sanitizer` |
+| AC-8 | `DrainSince(cursor)` returns only new lines and survives wrap-around of the ring | GoogleTest |
+| AC-9 | Typing `debug.layer.list` in the panel in CluicheTest shows exit code 0 and the log lines it produced | Manual: `dia run cluichetest` |
+| AC-10 | Typing an unknown command shows "not found" (exit 3) in red | Manual |
+| AC-11 | Up arrow recalls the previous command; Tab completes `debug.l` to `debug.layer.*` suggestions | Manual |
+| AC-12 | Closing and reopening the panel (`~`) keeps history and log content | Manual |
+| AC-13 | Same behaviour in CoW (`dia run cow`) after the CoW wiring task | Manual |
+| AC-14 | Panel visual layout matches the updated mockup | Visual comparison against mockup |
+| AC-15 | `DebugConsoleResult` crosses the Sim to Main stream intact (text, exit code, sequence) | GoogleTest on the event struct round trip |
+| AC-16 | A 200-character command typed in the panel reaches `ExecuteCommand` unchanged (no truncation at the JS bridge) | Manual + GoogleTest on `ConsoleLineAssembler` |
 
 ## Design
 
-### Full API
+### Where things live
+
+```
+Dia/DiaVisualDebugger/Console/        (existing module, already depends on DiaAPI)
+  CommandLineParser.h/.cpp   tokenize + ArgumentParser -> ParsedCommand
+  ConsoleExecutor.h/.cpp     ParsedCommand -> ExecuteCommand -> ConsoleResult
+  ConsoleLineAssembler.h/.cpp   join <=4 chunks into one line (<=240 chars)
+  ConsoleHistory.h/.cpp
+  FuzzyMatcher.h/.cpp        shared with panel-palette.md
+  CommandCompleter.h/.cpp    FuzzyMatcher over ListCommandInfos()
+  ConsoleLogRing.h/.cpp      Observation::Log::ISink, thread-safe ring
+
+Cluiche/CluicheGameBaseline/            (wiring only)
+  Types/DebugConsoleLineEvent.h          Main -> Sim event (command text)
+  Types/DebugConsoleResultEvent.h        Sim -> Main event
+  Modules/VisualDebuggerModule.cpp       ExecuteConsoleCommand becomes a call to ConsoleExecutor
+  Modules/DebugPanelPageModule.*         owns history + log ring, completes, pushes to JS
+  Modules/DebugPanelPage.*               new JS bindings
+
+Cluiche/Assets/CluicheTest/Global/Presentation/UI/debug-panel.html   strip + log view
+```
+
+Following the layer rule: the logic is reusable by any game, so it is Dia; the stream wiring stays in the baseline.
+
+### Types
 
 ```cpp
-// Dia/DiaDebugConsole/DebugConsoleModule.h
-namespace Dia::DebugConsole {
+namespace Dia::VisualDebugger::Console {
 
-class DebugConsoleModule : public Dia::ApplicationFlow::MainModule {
-public:
-    static const Dia::Core::StringCRC kTypeId;
-    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kMain;
-    static constexpr const char* kDescription = "In-game text console for executing DiaAPI commands";
-    
-    explicit DebugConsoleModule(const Dia::Core::StringCRC& instanceId);
-    ~DebugConsoleModule() override;
-    
-    void Toggle();
-    void Show();
-    void Hide();
-    bool IsVisible() const { return mVisible; }
-    
-protected:
-    Dia::ApplicationFlow::StartResult DoStart() override;
-    void DoUpdate(const Dia::SimTime::MainTimeContext& ctx) override;
-    Dia::ApplicationFlow::StopResult DoStop() override;
-    
-private:
-    DebugConsolePage* mPage = nullptr;
-    ConsoleLogSink* mLogSink = nullptr;
-    ConsoleHistory mHistory;
-    bool mVisible = false;
+struct ParsedCommand {
+    Dia::Core::StringCRC name;
+    Dia::API::CommandArgs args;
+    char storage[512];            // owns the token characters args points into
 };
 
-class ConsoleExecutor {
-public:
-    // Returns command exit code (0=success, 3=not found, other=command-specific error)
-    int Execute(const char* commandText);
-    
-private:
-    // Parses "cmd arg1 --flag key=value" into CommandArgs
-    // Grammar: <command> [positional...] [--flag...] [key=value...]
-    bool ParseCommandLine(const char* text, Dia::API::CommandArgs& outArgs);
+enum class ParseError { None, Empty, TooLong, UnterminatedQuote, TooManyArgs };
+
+ParseError ParseCommandLine(const char* text, ParsedCommand& out);
+
+struct ConsoleResult {
+    int  exitCode;                // 0 ok, 3 not found, 2 bad arguments, else command-specific
+    ParseError parseError;
 };
 
-class ConsoleLogSink : public Dia::Observation::ILogSink {
-public:
-    static constexpr int kCapacity = 500;
-    
-    void OnLog(Dia::Observation::LogLevel level, const char* message) override;
-    
-    // Drain new log lines since last call
-    void DrainLogLines(Dia::Core::Containers::DynamicArrayC<LogLine, 64>& outLines);
-    
-private:
-    struct LogLine {
-        float time;
-        Dia::Observation::LogLevel level;
-        char message[256];
-    };
-    
-    Dia::Core::Containers::RingBufferC<LogLine, kCapacity> mBuffer;
-    int mLastDrainedIndex = 0;
-};
+ConsoleResult ExecuteConsoleCommand(const char* text);   // parse + Dia::API::ExecuteCommand
 
-class ConsoleHistory {
-public:
-    static constexpr int kCapacity = 50;
-    
-    void Add(const char* command);
-    const char* GetPrevious();  // Navigate up
-    const char* GetNext();      // Navigate down
-    void Reset();               // Reset cursor to end
-    
-private:
-    Dia::Core::Containers::RingBufferC<char[256], kCapacity> mCommands;
-    int mCursor = -1;  // -1 = at end (no nav active)
-};
-
-} // namespace Dia::DebugConsole
+} // namespace
 ```
 
-### Architecture
+`ParseCommandLine` builds an `argv` (`{"dia", name, tokens...}`) in `storage` and calls `ArgumentParser::ParseArguments`, so the named-arg and flag grammar is exactly the CLI's.
+
+### Threading and data flow
 
 ```
-DiaDebugConsole (new Dia module)
-  ├─ DebugConsolePage.h/.cpp         // Ultralight page (C++ shell)
-  ├─ debug-console.html                // Ultralight HTML/CSS/JS
-  ├─ ConsoleExecutor.h/.cpp           // Command execution bridge
-  ├─ ConsoleLogSink.h/.cpp            // DiaLog capture
-  └─ ConsoleHistory.h/.cpp            // Command history buffer
+Main PU (Ultralight)                     Sim PU
+ debug-panel.html strip
+   Enter -> app.onConsoleLine(seq, part0..part3)
+   DebugPanelPageModule::OnConsoleLine -- DebugConsoleLine (new EventStream) ------->
+                                                   VisualDebuggerModule::DrainConsoleLines
+                                                   ConsoleExecutor -> Dia::API::ExecuteCommand
+   DebugPanelPageModule::DoUpdate <------ DebugConsoleResult (new EventStream) -------
+     CallJSFunction("consoleResult", {seq, text, exitCode})
+
+ ConsoleLogRing (Main-owned, Logger sink, any-thread writes)
+   DoUpdate: DrainSince(cursor) -> CallJSFunction("appendLogLines", json)
+ ConsoleHistory, CommandCompleter: Main thread only
 ```
 
-### Components
+**Input length.** The existing path (`app.onCommand(domain, cmd, argsJson)`) cannot carry a long command. The strip instead calls a new binding `app.onConsoleLine(seq, part0, part1, part2, part3)`: JS splits the text into up to four chunks of at most 60 characters, and `ConsoleLineAssembler` (Dia, pure logic) joins them into one string (limit 240). `DebugPanelPage` forwards it to the Sim PU as a `DebugConsoleLine` event (text up to 256 bytes) instead of reusing `DebugPanelCommand`, whose `argsJson` is 512 bytes but already JSON-wrapped.
 
-**1. DebugConsolePage** (Ultralight page)
-- Inherits from `Dia::UI::Page`
-- Exposes JS binding: `app.executeCommand(commandText)`
-- Receives command from HTML, forwards to `ConsoleExecutor`
-- Pushes log updates to HTML via `CallJSFunction("appendLogLine", ...)`
+Autocomplete runs on the Main thread and reads the registry directly, which is why `command-unregister.md` makes the registry thread-safe and adds copy-returning list functions. The JS bridge truncates strings to 63 characters (see `DebugPanelPage.h`), so domain commands keep the three-argument convention; `consoleResult`/`appendLogLines` go the other way (C++ to JS) and are not affected.
 
-**2. ConsoleExecutor**
-- Wraps `Dia::API::ExecuteCommand()`
-- Parses typed string into `CommandArgs` (split on spaces, extract named args/flags)
-- Captures command result code
-- Forwards output to `ConsoleLogSink`
+### Log ring
 
-**3. ConsoleLogSink**
-- Implements `Dia::Observation::ILogSink`
-- Ring buffer of last 500 log lines (time, level, message)
-- Filters by level (Info, Warning, Error)
-- Notifies `DebugConsolePage` on new log line
+`ConsoleLogRing` registers with `Logger::RegisterSink` in `DebugPanelPageModule::DoStart()` and unregisters in `DoStop()`. The Logger drains on its own thread and calls sinks under its registry mutex, so `OnLogEntry` takes its own mutex, writes into a fixed ring of 500 lines (message truncated to 255, plus level, channel and timestamp from `LogEntry`) and never logs. `RegisterSink` returns void and ignores the call once 8 sinks exist, so `DoStart` checks that a probe line arrives within a few frames and warns once if not. Level filtering is done in the page, not the ring.
 
-**4. ConsoleHistory**
-- Ring buffer of last 50 commands
-- Navigate with up/down arrow (sent from JS)
-- Persists across console close/reopen (not across app restart)
+### Observation
 
-**5. Autocomplete**
-- Query `Dia::API::GetCommandList()` on TAB press
-- Fuzzy match typed prefix against command names
-- Return top 5 matches
-
-### HTML/CSS/JS (Ultralight)
-
-See `debug-console.html` mockup for full layout. Key features:
-
-- **Multi-tab interface:** Output (default), History, Commands, Help
-- **Output tab:** Scrolling log with timestamps, level badges (INFO/WARN/ERROR), filter buttons
-- **Sidebar:** Recent commands, quick actions, context info (stage, tick, command count)
-- **Input bar:** `>` prompt + text field + autocomplete overlay
-- **Status bar:** Command count, panel count, keyboard hints
-
-### Lifecycle
-
-**Initialization:**
-1. `DebugConsoleModule::DoStart()` on MainPU
-2. Create `DebugConsolePage`, load `debug-console.html`
-3. Register `ConsoleLogSink` with `DiaLog`
-4. Bind `~` key to `DebugConsoleModule::Toggle()` (caller's responsibility, see below)
-
-**Per-Frame:**
-1. If console visible, drain new log lines from `ConsoleLogSink`
-2. For each line, call `page->CallJSFunction("appendLogLine", {time, level, message})`
-3. JS updates the HTML output log
-
-**Command Execution:**
-1. User types command + Enter in HTML input field
-2. JS calls `app.executeCommand(commandText)`
-3. `DebugConsolePage::OnExecuteCommand_JS()` → `ConsoleExecutor::Execute()`
-4. `ConsoleExecutor` parses string, calls `Dia::API::ExecuteCommand()`
-5. Result code + any `DIA_LOG_*` output flows back to console
-
-**Toggle:**
-- Caller (e.g., `CluicheGameBaselineInputModule`) detects `~` keypress
-- Calls `DebugConsoleModule::Toggle()`
-- Module shows/hides Ultralight page
-
-### Dependencies
-
-| Dependency | Why |
-|------------|-----|
-| `DiaAPI` | Command registry and execution |
-| `DiaUI` | Ultralight page rendering |
-| `DiaObservation` | `ILogSink` for capturing `DIA_LOG_*` |
-| `DiaApplicationFlow` | Module lifecycle |
-| `DiaInput` (optional) | Caller binds `~` key; console module doesn't touch input directly |
-
-### Files Touched
-
-**New files:**
-- `Dia/DiaDebugConsole/DebugConsolePage.h/.cpp`
-- `Dia/DiaDebugConsole/ConsoleExecutor.h/.cpp`
-- `Dia/DiaDebugConsole/ConsoleLogSink.h/.cpp`
-- `Dia/DiaDebugConsole/ConsoleHistory.h/.cpp`
-- `Dia/DiaDebugConsole/DebugConsoleModule.h/.cpp`
-- `Dia/DiaDebugConsole/DiaDebugConsole.vcxproj`
-- `Dia/DiaDebugConsole/dia.debug.console.architecture.module.md`
-- `Dia/DiaDebugConsole/Assets/debug-console.html` (copied from mockup)
-- `Cluiche/Tests/GoogleTests/DiaDebugConsole/TestConsoleExecutor.cpp`
-- `Cluiche/Tests/GoogleTests/DiaDebugConsole/TestConsoleHistory.cpp`
-
-**Updated files:**
-- `Cluiche/CluicheGameBaseline/Modules/InputModule.cpp` (bind `~` key to toggle)
-- `Cluiche/Assets/CoW/cow_main.diaapp` (add `DebugConsoleModule` instance)
-- `Cluiche/Assets/CluicheTest/Global/Misc/ApplicationFlow/cluiche_main.diaapp` (add module)
-- `Cluiche.sln` (add `DiaDebugConsole.vcxproj`)
+Logs: parse failures and non-zero exit codes at Info level on the `Debug` channel. Metrics: executed-command count. No health reporter (no failure mode that is not already visible in the panel).
 
 ## Binding Decisions
 
 | ID | Decision | How this feature complies |
 |---|---|---|
-| PD-004 | No STL in public APIs | `DebugConsoleModule` API uses `const char*` and DiaCore types only |
-| AD-001 | Module YAML frontmatter | `dia.debug.console.architecture.module.md` provided |
-| SD-F1-001 | Console is Debug-only; #ifdef DIA_DEBUG guards module | Console compiles out in Release builds |
-| SD-F1-002 | Console uses Ultralight (not ImGui) for consistency with DiaDebugPanel | All debug panels use same rendering tech |
+| AD-001 (f1-harness) | Baseline, Dia and CluicheTest edits need explicit human sign-off per change | The plan marks the tasks that touch `CluicheGameBaseline` and CluicheTest assets; each waits for sign-off |
+| (Dia rule) | No new singletons without sign-off | History, ring and completer are owned by `DebugPanelPageModule`; nothing is global |
+| SD-F1-001 | Debug-only | New baseline code stays inside `#ifdef DIA_DEBUG`; Dia console classes are plain logic and compile in all configs |
 
 ## Open Design Questions
 
-1. **Command parsing.** DiaAPI's `ExecuteCommand(StringCRC, CommandArgs)` signature expects pre-parsed args. Should console do full parsing (split on spaces, detect `--flags` and `key=value` named args), or pass raw string and require each command to parse? **Proposal:** Console parses into `CommandArgs` so commands remain parser-agnostic.
-
-2. **Log sink lifecycle.** Should `ConsoleLogSink` register/unregister on console show/hide, or stay registered always? **Proposal:** Always registered (keeps history across close/reopen), but ring buffer prevents unbounded growth.
-
-3. **Help tab content.** Should Help tab show all commands dynamically, or just usage instructions? **Proposal:** Help shows usage instructions ("Type command, press TAB to autocomplete, ↑↓ for history"); full command list is in Debug Palette.
-
-4. **Autocomplete ranking.** When multiple matches exist, rank by exact prefix > fuzzy match > category? **Proposal:** Yes; `bus_` prefers `bus_traffic.*` over `blackboard.*`.
-
-## Status
-
-Draft
-
-**Plan:** TBD (to be written after approval)
+1. **Command output.** Commands return only an int. The panel shows the exit code plus *all* log lines since the command ran, which may include unrelated lines. Is that acceptable, or should commands get a way to return text? Proposal: accept for v1; revisit if a command genuinely needs to print a table.
+2. ~~Where the log ring runs.~~ **Resolved (read `Logger.cpp`):** the drain thread dispatches to sinks while holding `mRegistryMutex`, and `UnregisterSink` takes the same mutex, so unregistering in `DoStop()` waits for any in-flight `OnLogEntry`. Two constraints follow: `OnLogEntry` must not call `Logger` or `DIA_LOG_*` (the mutex is not recursive), and `Logger::kMaxSinks` is 8 with `RegisterSink` silently ignoring the call when full, so `DoStart` must confirm the ring receives a line.
+3. **`debug-panel.html` ownership.** The file lives in CluicheTest's assets and CoW has a copy (decided: copy). This feature changes it, so the copy must be re-synced in the plan's last task. Should the console task also move the file to a shared location now? Decision to date: no.
+4. **Escape sequences.** Only double quotes group tokens; no backslash escapes. Is that enough for the paths debug commands take?
