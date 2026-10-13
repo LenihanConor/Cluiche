@@ -44,6 +44,7 @@ responsibilities:
     zero footprint in Release. Backed by three small Debug-only Bus
     introspection accessors (ForEachRegisteredType/ForEachProducerForType/
     ForEachSubscriberForType) added for this tab's use only.
+  - Provide IBusRecorder, a Debug-only per-dispatch recording hook (Bus::SetRecorder, non-owning), and FileBusRecorder, a default buffered binary file recorder (format v1, injected tick source). Application owns/injects the recorder. Entirely #ifdef DIA_DEBUG.
 
 non_responsibilities:
   - Message schema definitions (application layer -- DiaGameplayMessages or equivalent)
@@ -64,6 +65,8 @@ public_api:
     - Dia/DiaMessageBus/LedgerHistory.h
     - Dia/DiaMessageBus/BusSubscriptionHandle.h
     - Dia/DiaMessageBus/MessageBusDebugDomain.h
+    - Dia/DiaMessageBus/IBusRecorder.h
+    - Dia/DiaMessageBus/FileBusRecorder.h
   namespaces:
     - Dia::MessageBus
   entry_points:
@@ -74,6 +77,8 @@ public_api:
     - LedgerHistory
     - BusSubscriptionHandle
     - MessageBusDebugDomain
+    - IBusRecorder
+    - FileBusRecorder
 
 dependencies:
   required:

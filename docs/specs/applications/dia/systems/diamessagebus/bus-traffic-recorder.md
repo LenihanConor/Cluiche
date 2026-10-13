@@ -1,7 +1,7 @@
 # Feature Spec: Bus Traffic Recorder
 
 **Parent:** @docs/specs/applications/dia/systems/diamessagebus/diamessagebus.md
-**Status:** Approved
+**Status:** Done
 **Origin:** CoW F-1 Harness Test 6 ("Recorded Traffic Survives the Run"); `docs/specs/applications/cow/dia-needs.md` #1.
 
 ## Problem Statement
