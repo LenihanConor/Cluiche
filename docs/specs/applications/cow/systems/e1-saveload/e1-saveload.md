@@ -7,7 +7,9 @@
 
 ## Summary
 
-E1 is CoW's save/load orchestration system. It wires CoW's gameplay modules (GameSpeedController, RandomStreamModule, future A1/B/C/D systems) to DiaSaveGame's generic save/load infrastructure, defines CoW's save directory layout and slot naming, and provides the `SaveLoadModule` that exposes DiaAPI commands (`cow.save <slot>`, `cow.load <slot>`) and bus messages for triggering saves/loads. E1 owns *when* and *how* saves happen in CoW; DiaSaveGame owns the serialization mechanism.
+E1 is CoW's save/load orchestration shell. It provides the `SaveLoadModule`, which owns DiaSaveGame's `SaveManager` and `SaveRegistry`, defines CoW's save directory layout and slot naming, exposes DiaAPI commands (`cow.save <slot>`, `cow.load <slot>`, `cow.save.list`), and executes saves/loads at the sim-frame boundary. E1 owns *when* and *how* saves happen in CoW; DiaSaveGame owns the serialization mechanism.
+
+**E1 does not decide what is saved.** The module ships empty. Each gameplay feature (GameSpeedController, RandomStreamModule, future A1/B/C/D systems) implements `ISaveable` and registers itself with `SaveLoadModule` in its own `DoStart`. E1 therefore has no dependency on the systems it saves, and nothing in it changes when a new participant lands. (Amended: previously E1 took GameSpeedController and RandomStreamModule in its constructor and owned their adapters. We do not yet know what A1/S-1/B/C will need to persist, so E1 is scoped to the shell.)
 
 ## Problem
 
@@ -23,12 +25,11 @@ Without E1, each CoW system would implement its own save/load logic, leading to 
 ## Goals
 
 1. **Single entry point** — `SaveLoadModule` exposes `cow.save <slot>` and `cow.load <slot>` DiaAPI commands; all CoW systems use these, never call DiaSaveGame directly
-2. **Participant registry** — E1 owns the `SaveRegistry` and registers all CoW systems that implement `ISaveable` (GameSpeedController via an E1 adapter, RandomStreamModule, future systems)
+2. **Participant registry** — E1 owns the `SaveRegistry` and exposes `RegisterParticipant` / `UnregisterParticipant`; each CoW system registers its own `ISaveable` (no singleton, no service locator, no E1 knowledge of the participant types)
 3. **Save directory layout** — CoW saves live under `out/saves/cow/`, slots named `slot_<id>.sav` (JSON format for debuggability in prototyping)
 4. **Save orchestration** — Save/load only at the sim-frame boundary, where no system is mid-tick (see Frame-Boundary Save below); after saving or loading, fire a bus message so UI can react
-5. **Deterministic replay** — F-2 testbed proves: save at day 1000, load, verify `GameSpeedState::dayCounter == 1000` and `RandomStreamModule::GetState()` matches
-6. **Always-paused resume** — On load, GameSpeedController always resumes paused (A2 edge case EC-03, enforced by `GameSpeedController::RestoreState`); player must explicitly unpause
-7. **Test 5 coverage** — F-2 Test 5 ("Save/Load Round-Trip") exercises `cow.save quick`, `cow.load quick`, and asserts all registered participants' state matches
+5. **Atomic load** — If any participant fails to load, the whole load is aborted and the game is left unchanged (see Open Design Question 5)
+6. **Supports F-2 Test 5** — F-2 Test 5 ("Save/Load Round-Trip") exercises `cow.save quick` / `cow.load quick` once GameSpeedController and RandomStream have registered their participants. Always-paused resume (A2 EC-03) and RNG continuation are proven by those features' own tests, not E1's.
 
 ## Non-Goals
 
@@ -43,20 +44,22 @@ Without E1, each CoW system would implement its own save/load logic, leading to 
 
 ### Participant Registration
 
-E1 owns the `SaveRegistry` singleton and registers participants in `SaveLoadModule::DoStart()`:
+`SaveLoadModule` owns the `SaveRegistry` (as a member, not a singleton) and initialises the `SaveManager` in `DoStart()`. Participants register themselves:
 
 ```cpp
-void SaveLoadModule::DoStart() {
-    // Register CoW systems in save order
-    mRegistry.Register("game_speed"_crc,    &mGameSpeedParticipant);
-    mRegistry.Register("random_stream"_crc, &mRandomStreamRef);
-    // Future: A1, B-layer, C-layer, etc.
-    
-    mSaveManager.Init(mConfig, mRegistry);
-}
+// SaveLoadModule
+void SaveLoadModule::DoStart() { mSaveManager.Init(mConfig, mRegistry); }
+void RegisterParticipant(StringCRC id, ISaveable* p)  { mRegistry.Register(id, p); }
+void UnregisterParticipant(StringCRC id)              { mRegistry.Unregister(id); }
+
+// A participating module (e.g. GameSpeedControllerModule, owned by that feature)
+void GameSpeedControllerModule::DoStart() { mSaveLoad.RegisterParticipant("game_speed"_crc, &mSaveParticipant); }
+void GameSpeedControllerModule::DoStop()  { mSaveLoad.UnregisterParticipant("game_speed"_crc); }
 ```
 
-**Registration order = serialization order.** GameSpeedController goes first (calendar is foundational); RNG second (seeded from clock); gameplay systems after that. Game time itself is saved by DiaSimTime's own `SimTimeSaveState`.
+`SaveManager` holds the registry by pointer, so registration after `Init` is valid. Cap: `SaveRegistry::kMaxParticipants` (32).
+
+**Registration order = serialization order**, which here means module start order on SimPU. GameSpeedController should start before RNG, and RNG before gameplay systems; `cow_main.diaapp` module ordering is the contract. If an explicit priority is ever needed, add it to `RegisterParticipant` then. Game time itself is saved by DiaSimTime's own `SimTimeSaveState`.
 
 ### Save Directory Layout
 
@@ -85,14 +88,12 @@ config.format        = SaveFormat::Json;
 ```
 1. User calls `cow.save quick`
 2. SaveLoadModule receives DiaAPI command
-3. Publish SaveRequested{slotId="quick"}
-4. Defer to the next frame boundary (see Frame-Boundary Save below)
-5. Call SaveManager::Save("quick"_crc)
+3. Record as pending; defer to the next frame boundary (see Frame-Boundary Save below)
+4. Call SaveManager::Save("quick"_crc)
    - SaveManager calls Serialize() on each registered participant in order
    - Each participant writes its state to SaveContext
    - SaveManager writes manifest + data to disk as slot_quick.sav
-6. Publish SaveCompleted{slotId="quick", result=Success}
-7. Log "Save completed: slot_quick.sav"
+5. Log "Save completed: slot_quick.sav" (or the SaveResult error)
 ```
 
 **Load flow:**
@@ -100,130 +101,37 @@ config.format        = SaveFormat::Json;
 ```
 1. User calls `cow.load quick`
 2. SaveLoadModule receives DiaAPI command
-3. Publish LoadRequested{slotId="quick"}
-4. Pause the sim (publish SpeedChangeRequested{Paused})
-5. Call SaveManager::Load("quick"_crc)
+3. Record as pending; defer to the next frame boundary
+4. Call SaveManager::Load("quick"_crc)
    - SaveManager reads manifest + data from slot_quick.sav
    - SaveManager calls Deserialize() on each registered participant in order
    - Each participant restores its state from LoadContext
-6. Publish LoadCompleted{slotId="quick", result=Success}
-7. Log "Load completed: slot_quick.sav"
-8. GameSpeedController stays Paused (A2 rule: always resume paused)
+5. Log "Load completed: slot_quick.sav" (or the LoadResult error)
 ```
+
+Resuming paused after a load (A2 EC-03) is GameSpeedController's own responsibility, enforced in its `RestoreState`. E1 does not publish speed-change messages.
 
 ### Frame-Boundary Save
 
 GameSpeedController publishes at most one `SimulationTick` per sim frame, and the bus fully dispatches it (Primary and Reaction passes) within that frame. So the start of the next sim frame, before GameSpeedController publishes the next day, is a point where no system is mid-tick.
 
-- Save/load requests (DiaAPI command or `SaveRequested` / `LoadRequested`) are **recorded as pending**, never executed in the handler.
+- Save/load requests (DiaAPI command or the direct `Save`/`Load` API) are **recorded as pending**, never executed in the handler.
 - `SaveLoadModule::DoUpdate` executes the pending request. In `cow_main.diaapp`, `SaveLoadModule` is ordered **before** `GameSpeedControllerModule` on SimPU.
 - No `TickCompleted` message is needed. It was dropped because Reaction-pass handlers can't post, so a same-update "all subscribers finished" message is impossible.
 
 **Sync vs Async:** F-2 uses synchronous I/O (save/load block the sim thread). DiaSaveGame supports async I/O (Feature 7), but E1 defers it until S-7 Endurance testbed (when save times matter).
 
-### ISaveable Implementations
+### Participants (owned by other features)
 
-**GameSpeedController (example):** an E1-owned adapter. GameSpeedController exposes a plain `GameSpeedState` and knows nothing about save files. Only the day counter needs saving: speed, pause source and modal depth are always reset on load (A2 EC-03).
+E1 ships no `ISaveable` implementations. The features that own the state add them, each registering via `RegisterParticipant` (see above):
 
-```cpp
-class GameSpeedSaveParticipant : public ISaveable {
-public:
-    explicit GameSpeedSaveParticipant(GameSpeedControllerModule& module) : mModule(module) {}
+- **GameSpeedController**: day counter only (speed, pause source and modal depth reset on load, A2 EC-03); `RestoreState` always resumes paused.
+- **RandomStreamModule**: master seed + per-stream state.
+- **Future (A1, S-1 world, B/C layers)**: decided when those systems are specced. Save granularity, format and size for the A1 world are open (see Open Design Questions).
 
-    void Serialize(SaveContext& ctx) const override {
-        ctx.Write("day_counter"_crc, mModule.GetController().GetState().dayCounter);
-    }
-    
-    void Deserialize(LoadContext& ctx) override {
-        GameSpeedState saved{};
-        ctx.Read("day_counter"_crc, saved.dayCounter);
-        mModule.RestoreState(saved);   // always resumes Paused (A2 EC-03)
-    }
-    
-    uint32_t GetVersion() const override { return 1; }
+### Bus Messages (deferred)
 
-private:
-    GameSpeedControllerModule& mModule;
-};
-```
-
-**RandomStreamModule (example):**
-
-```cpp
-class RandomStreamModule : public SimModule, public ISaveable {
-public:
-    void Serialize(SaveContext& ctx) const override {
-        ctx.Write("master_seed"_crc, mMasterSeed);
-        ctx.Write("stream_count"_crc, mStreams.Size());
-        
-        ctx.BeginArray("streams"_crc);
-        for (const auto& stream : mStreams) {
-            ctx.BeginObject("stream"_crc);
-            ctx.Write("id"_crc, stream.id.GetCRC());
-            ctx.Write("state"_crc, stream.generator.GetState());
-            ctx.EndObject();
-        }
-        ctx.EndArray();
-    }
-    
-    void Deserialize(LoadContext& ctx) override {
-        ctx.Read("master_seed"_crc, mMasterSeed);
-        
-        uint32_t count = 0;
-        if (ctx.BeginArray("streams"_crc, count)) {
-            mStreams.Clear();
-            for (uint32_t i = 0; i < count; ++i) {
-                if (ctx.BeginObject("stream"_crc)) {
-                    uint64_t id = 0;
-                    uint64_t state = 0;
-                    ctx.Read("id"_crc, id);
-                    ctx.Read("state"_crc, state);
-                    
-                    // Reconstruct stream
-                    auto& stream = mStreams.PushBack();
-                    stream.id = StringCRC(id);
-                    stream.generator.SetState(state);
-                    
-                    ctx.EndObject();
-                }
-            }
-            ctx.EndArray();
-        }
-    }
-    
-    uint32_t GetVersion() const override { return 1; }
-};
-```
-
-### Bus Messages
-
-**Published by SaveLoadModule:**
-
-```cpp
-// Player or automated system requests a save
-struct SaveRequested {
-    StringCRC  slotId;  // e.g. "quick", "autosave", "001"
-};
-
-// Save completed (success or failure)
-struct SaveCompleted {
-    StringCRC   slotId;
-    SaveResult  result;  // Success, DiskFull, PermissionDenied, etc.
-};
-
-// Player or automated system requests a load
-struct LoadRequested {
-    StringCRC  slotId;
-};
-
-// Load completed (success or failure)
-struct LoadCompleted {
-    StringCRC   slotId;
-    LoadResult  result;  // Success, FileNotFound, VersionMismatch, etc.
-};
-```
-
-**Subscribed by SaveLoadModule:** `SaveRequested`, `LoadRequested` (recorded as pending; executed at the frame boundary).
+`SaveRequested` / `SaveCompleted` / `LoadRequested` / `LoadCompleted` are not built. Nothing consumes them until a UI exists (V-4); the commands cover F-2, and `SaveManager`'s own observers (`OnSaveCompleted`, `OnLoadCompleted`) are available if a test needs a completion signal. Add them when a consumer appears.
 
 ### DiaAPI Commands
 
@@ -272,25 +180,28 @@ namespace CoW {
 
 class SaveLoadModule : public Dia::ApplicationFlow::SimModule {
 public:
-    SaveLoadModule(GameSpeedControllerModule& gameSpeed, RandomStreamModule& randomStream);
-    
+    SaveLoadModule() = default;
+
     void DoStart() override;
+    void DoUpdate() override;   // executes pending save/load at the frame boundary
     void DoStop() override;
-    
-    // Direct API (alternative to DiaAPI commands)
-    SaveResult Save(Dia::Core::StringCRC slotId);
-    LoadResult Load(Dia::Core::StringCRC slotId);
-    
-    void EnumerateSlots(Dia::Core::Containers::DynamicArrayC<SlotInfo, 32>& out) const;
-    void DeleteSlot(Dia::Core::StringCRC slotId);
+
+    // Participant registration (called by the owning feature's module)
+    void RegisterParticipant  (Dia::Core::StringCRC id, Dia::SaveGame::ISaveable* participant);
+    void UnregisterParticipant(Dia::Core::StringCRC id);
+
+    // Direct API (alternative to DiaAPI commands); queued to the next DoUpdate
+    void RequestSave(Dia::Core::StringCRC slotId);
+    void RequestLoad(Dia::Core::StringCRC slotId);
+
+    void EnumerateSlots(Dia::Core::Containers::DynamicArrayC<Dia::SaveGame::SlotInfo, 32>& out) const;
 
 private:
     Dia::SaveGame::SaveConfig   mConfig;
     Dia::SaveGame::SaveRegistry mRegistry;
     Dia::SaveGame::SaveManager  mSaveManager;
-    
-    GameSpeedSaveParticipant  mGameSpeedParticipant;
-    RandomStreamModule&       mRandomStreamRef;
+    Dia::Core::StringCRC        mPendingSave;
+    Dia::Core::StringCRC        mPendingLoad;
 };
 
 } // namespace CoW
@@ -300,13 +211,13 @@ private:
 
 | # | Feature | Description | Status |
 |---|---------|-------------|--------|
-| 1 | SaveLoadModule Core | SaveConfig, SaveRegistry, participant registration, DiaAPI commands | Approved |
-| 2 | GameSpeedController Serialization | `GameSpeedSaveParticipant` adapter (day counter only), version 1; always-paused resume enforced by `GameSpeedController::RestoreState` | Approved |
-| 3 | RandomStream Serialization | `RandomStreamModule::Serialize/Deserialize`, version 1, master seed + per-stream state | Approved |
-| 4 | Save/Load Bus Messages | SaveRequested, SaveCompleted, LoadRequested, LoadCompleted | Approved |
-| 5 | Frame-Boundary Save | Save/load requests recorded as pending and executed in `SaveLoadModule::DoUpdate`, ordered before `GameSpeedControllerModule` (replaces `TickCompleted` synchronization) | Approved |
+| 1 | SaveLoadModule Core | SaveConfig, SaveRegistry, `RegisterParticipant`/`UnregisterParticipant`, `cow.save`/`cow.load`/`cow.save.list`, atomic-load error handling | Approved |
+| 2 | Frame-Boundary Save | Requests recorded as pending and executed in `SaveLoadModule::DoUpdate`, ordered before `GameSpeedControllerModule` (replaces `TickCompleted` synchronization) | Approved |
+| 3 | Save/Load Bus Messages | SaveRequested, SaveCompleted, LoadRequested, LoadCompleted | Deferred (no consumer until V-4) |
+| 4 | GameSpeedController Serialization | Day counter participant, version 1 | Moved to GameSpeedController's plan |
+| 5 | RandomStream Serialization | Master seed + per-stream state, version 1 | Moved to RandomStreamModule's plan |
 
-> **Note:** Features 1-5 ship together as one unit for F-2 testbed. Future systems (A1, B-layer, etc.) add themselves to the registry as they land.
+> **Note:** Features 1-2 are E1's build scope and ship as one unit. Features 4-5 are owned by the systems that hold the state and register through E1; F-2 Test 5 depends on them. Future systems (A1, B-layer, etc.) add their own participants as they land.
 
 ## Inherited Binding Decisions
 
@@ -321,6 +232,9 @@ private:
 | AD-003 | GDD owns design intent, spec tree owns implementation | GDD E1_SaveContinue owns *what* must be proven (deterministic replay, always-paused resume); this spec owns *how* it's built |
 
 ## Open Design Questions
+
+0. **Save contents, granularity and format for the A1 world** — "Always full saves" and JSON hold for the day counter and RNG, but a 200x200-cell A1 world may not fit. S-1 already has its own JSON export/import, so whether the world lives inside the save or in a separate file is undecided.
+   - **Recommendation:** Leave open. These are `SaveConfig` choices, so the shell does not change. Decide when A1 is specced; S-7 is the stress point.
 
 1. **Async I/O timing** — DiaSaveGame supports async I/O (serialize to buffer on sim thread, flush off-thread). Should E1 use it in F-2, or defer until S-7?
    - **Recommendation:** Defer. F-2 saves are small (< 1KB for GameSpeedController + RNG); sync I/O adds no perceptible latency. S-7 Endurance testbed (large saves, frequent autosaves) is where async pays off.
@@ -341,9 +255,7 @@ private:
 
 **Requires:**
 - **DiaSaveGame** (ISaveable, SaveManager, SaveRegistry, SaveConfig, SaveContext/LoadContext)
-- **GameSpeedController** (exposes `GameSpeedState` / `RestoreState`; at most one `SimulationTick` per sim frame makes the frame boundary a safe save point)
-- **RandomStreamModule** (implements ISaveable)
-- **DiaMessageBus** (SaveRequested, LoadCompleted, etc.)
+- **GameSpeedController** (module ordering only: at most one `SimulationTick` per sim frame makes the frame boundary a safe save point; E1 has no code dependency on it)
 - **DiaAPI** (command registration for `cow.save`, `cow.load`, `cow.save.list`)
 - **DiaCore** (StringCRC, DynamicArrayC, file I/O, DIA_LOG_*)
 
@@ -353,36 +265,32 @@ private:
 - **V-3 UI** (slot picker UI depends on EnumerateSlots)
 - **S-7 Endurance** (history paging and long-run saves depend on robust save/load)
 
-**Circular dependency risk:** None. E1 depends on GameSpeedController (state struct, module ordering); GameSpeedController knows nothing about E1.
+**Circular dependency risk:** None. Participating modules depend on E1 (to register); E1 depends on none of them.
 
 ## Test Strategy
 
 E1 correctness is proven primarily by **F-2 Core Runtime testbed, Test 5: Save/Load Round-Trip**.
 
-### Unit Tests (GoogleTests/CoW/SaveLoad)
+### Unit Tests (GoogleTests/CoW/SaveLoad), using a fake `ISaveable`
 
-1. **SaveConfig initialization** — Verify baseDirectory, slotPattern, format defaults
-2. **Participant registration order** — Register GameSpeedSaveParticipant, RNG, verify SaveRegistry::GetParticipants() returns them in insertion order
-3. **Serialize/Deserialize GameSpeedController** — Serialize, then Deserialize, verify day counter matches and state is Paused/Player/modalDepth 0
-4. **Serialize/Deserialize RandomStream** — Manually call RandomStream::Serialize, then Deserialize, verify master seed and all stream states match
-5. **SlotInfo enumeration** — Create 3 saves, call EnumerateSlots, verify all 3 appear with correct timestamps
-6. **DeleteSlot** — Create a save, delete it, verify file is gone and EnumerateSlots no longer lists it
-
-### Integration Tests (F-2 testbed, Test 5)
-
-7. **Round-trip determinism** — Run sim to day 1000, call `cow.save quick`, reset sim, call `cow.load quick`, verify:
-   - `GameSpeedState::dayCounter == 1000`
-   - `RandomStreamModule::GetState("default") == savedState`
-   - Next 10 ticks produce identical RNG values as the original run
-8. **Always-paused resume** — Save while speed tier is Fast, load, verify speed tier is Paused
-9. **Frame-boundary save** — Request a save from inside a `SimulationTick` handler, verify SaveManager::Save runs at the next `SaveLoadModule::DoUpdate` and before the next `SimulationTick`
-10. **Bus messages** — Subscribe to SaveCompleted and LoadCompleted, call save/load, verify events fire with correct slotId and result
+1. **SaveConfig initialization**: baseDirectory, slotPattern, format defaults
+2. **Participant registration order**: register fakes A, B; serialization order matches registration order
+3. **Unregister**: an unregistered participant is no longer serialized
+4. **Round trip**: save, mutate fake state, load, state restored
+5. **Request deferral**: `RequestSave` does nothing until `DoUpdate`, then saves exactly once
+6. **Frame-boundary**: a request made from inside a handler runs at the next `DoUpdate`
+7. **Slot enumeration**: 3 saves listed with correct ids
 
 ### Error Cases
 
-11. **Load nonexistent slot** — Call `cow.load missing`, verify LoadResult.error == FileNotFound
-12. **Save to read-only directory** — Change baseDirectory permissions, call `cow.save readonly`, verify SaveResult.error == PermissionDenied
-13. **Load corrupted save** — Manually corrupt a .sav file, call `cow.load corrupted`, verify LoadResult.error == ParseError
+8. **Load nonexistent slot**: FileNotFound, game state unchanged
+9. **Save to unwritable directory**: error result, previous save intact
+10. **Load corrupted save**: ParseError, game state unchanged
+11. **Participant fails mid-load**: whole load aborted, no hybrid state
+
+### Integration (owned by other plans)
+
+GameSpeedController and RandomStream plans prove their own participants (always-paused resume, RNG continuation). F-2 Test 5 proves the end-to-end round trip.
 
 ## Status
 
