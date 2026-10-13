@@ -102,8 +102,7 @@ namespace Dia::Attribute {
         if (memberNames.empty())
             return;
 
-        // Size the HashTable for the number of bands
-        def.bands.SetSize(static_cast<unsigned int>(memberNames.size()), static_cast<unsigned int>(memberNames.size()));
+        // HashTable already sized in ParseAttributes
 
         for (const auto& name : memberNames)
         {
@@ -157,6 +156,23 @@ namespace Dia::Attribute {
             def.maximum_value   = item.isMember("maximum_value") ? item["maximum_value"].asFloat() : 0.0f;
             def.default_value   = item.isMember("default_value") ? item["default_value"].asFloat() : 0.0f;
 
+            // CRITICAL: Initialize bands HashTable BEFORE copying into array
+            // Check if bands field exists to determine initialization size
+            const bool hasBandsField = item.isMember("bands") && item["bands"].isObject();
+            if (hasBandsField)
+            {
+                const auto bandNames = item["bands"].getMemberNames();
+                const unsigned int bandCount = static_cast<unsigned int>(bandNames.size());
+                if (bandCount > 0)
+                    def.bands.SetSize(bandCount, bandCount);
+                else
+                    def.bands.SetSize(0, 1);  // Empty bands object
+            }
+            else
+            {
+                def.bands.SetSize(0, 1);  // No bands field - initialize to safe empty state
+            }
+
             if (def.minimum_value > def.default_value || def.default_value > def.maximum_value)
             {
                 schema.mIsValid = false;
@@ -165,10 +181,12 @@ namespace Dia::Attribute {
                     def.attribute_name.AsChar(), def.default_value, def.minimum_value, def.maximum_value);
             }
 
-            // Parse bands (Feature 7)
-            ParseBands(def, item);
-
+            // Add to array (now safe to copy)
             schema.mAttributes.Add(def);
+
+            // Parse bands (Feature 7) - operate on the array element directly
+            if (hasBandsField)
+                ParseBands(schema.mAttributes[schema.mAttributes.Size() - 1], item);
         }
     }
 
