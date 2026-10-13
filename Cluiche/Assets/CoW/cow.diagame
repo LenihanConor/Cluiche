@@ -10,7 +10,8 @@
         "asset_catalogue": "assets.catalogue.json",
         "observation": "cow.diaobservation",
         "path_aliases": {
-            "root": "."
+            "root": ".",
+            "ui_common": "./global/Presentation/UI"
         }
     },
     "imports": [
