@@ -20,6 +20,8 @@
 
 namespace Dia::MessageBus {
 
+    class IBusRecorder;
+
     // ======================================================================
     // Type-erased handler storage.
     //
@@ -276,10 +278,13 @@ namespace Dia::MessageBus {
         // than by internal typeKey, since tooling only ever has the
         // StringCRC a type registered itself under (T::kTypeId).
         const TypeRecord* FindTypeRecordByDisplayId(Dia::Core::StringCRC typeId) const;
-
-        // Debug-only recorder hook. Non-owning; nullptr if no recorder set.
-        IBusRecorder* mRecorder = nullptr;
 #endif
+
+        // Recorder hook target (SetRecorder/hook are Debug-only). Non-owning;
+        // nullptr if none set. Declared unconditionally so sizeof/offsets of Bus
+        // are identical across translation units that differ on DIA_DEBUG
+        // (e.g. DiaEconomy compiles without it but includes Bus.h).
+        IBusRecorder* mRecorder = nullptr;
 
         Dia::Mailbox::Mailbox mMailbox;
         BroadcastRouter        mBroadcastRouter;
