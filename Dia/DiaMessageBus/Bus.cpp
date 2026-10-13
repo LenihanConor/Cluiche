@@ -137,6 +137,10 @@ namespace Dia::MessageBus {
         }
         return nullptr;
     }
+
+    void Bus::SetRecorder(IBusRecorder* recorder) {
+        mRecorder = recorder;
+    }
 #endif // DIA_DEBUG
 
     void Bus::ReleaseHandlerSlot(Dia::Core::Handle<HandlerRecord> handle) {

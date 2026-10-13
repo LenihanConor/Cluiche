@@ -21,7 +21,7 @@ Bus traffic can only be inspected in memory while the process runs. The last-tic
 | AC-7 | A message with no subscribers is still recorded | GoogleTest: post a type with zero subscribers, assert one record |
 | AC-8 | A failed open or write logs once, disables the recorder, and never crashes or stalls the bus | GoogleTest: open an unwritable path, post traffic, assert bus delivery is unaffected and exactly one warning is logged |
 | AC-9 | A 10,000-message burst round-trips with count, order and payloads matching | GoogleTest |
-| AC-10 | A message type that is not trivially copyable fails to compile when the hook is instantiated (`DIA_ASSERT_STATIC`) | Code review; confirm all existing registered message types still compile |
+| AC-10 | With a recorder set, dispatching a message type that is not trivially copyable trips a `DIA_ASSERT`; with no recorder set nothing is checked and every existing message type still compiles | GoogleTest/code review. *Amended: was a compile-time `DIA_ASSERT_STATIC`, which broke existing types containing `StringCRC` (user-provided copy ctor)* |
 | AC-11 | The recorded tick comes from the injected tick source, not the bus; `Open` fails (and logs) if no tick source is supplied | GoogleTest: supply a fake tick source, assert recorded ticks match it |
 | AC-12 | `bufferSizeBytes` in `Config` controls the write buffer; a small buffer still produces a complete, ordered file | GoogleTest: 64-byte buffer round-trip |
 
@@ -64,8 +64,8 @@ In `Bus::DispatchOne<T>`, before the ledger update and the subscriber loop (so u
 
 ```cpp
 #ifdef DIA_DEBUG
-    DIA_ASSERT_STATIC(std::is_trivially_copyable_v<T>, BusRecorderRequiresTriviallyCopyableMessage);
     if (mRecorder) {
+        DIA_ASSERT(std::is_trivially_copyable_v<T>, "Bus recorder requires trivially copyable message types");
         mRecorder->OnDispatch(T::kTypeId, addr.routerId, currentPass, &msg, sizeof(T));
     }
 #endif
@@ -130,7 +130,7 @@ Type and router ids are `StringCRC` values. A reader needs no schema to skip rec
 
 ## Open Design Questions
 
-1. **`DIA_ASSERT_STATIC` blast radius.** AC-10 makes any non-trivially-copyable message type a Debug build error. A scan of existing `*_messages.h` structs found no STL or container members, but the full solution should be rebuilt to confirm before merge. If one fails, it should become POD rather than weaken the check. Note `DIA_ASSERT_STATIC` is gated on `DEBUG` while the hook is gated on `DIA_DEBUG`; confirm the two are defined together in Debug.
+1. **Trivially-copyable check (resolved).** The original `DIA_ASSERT_STATIC` failed to compile for existing types containing `StringCRC`, so it became a runtime `DIA_ASSERT` active only when a recorder is set. Original note: **`DIA_ASSERT_STATIC` blast radius.** AC-10 makes any non-trivially-copyable message type a Debug build error. A scan of existing `*_messages.h` structs found no STL or container members, but the full solution should be rebuilt to confirm before merge. If one fails, it should become POD rather than weaken the check. Note `DIA_ASSERT_STATIC` is gated on `DEBUG` while the hook is gated on `DIA_DEBUG`; confirm the two are defined together in Debug.
 2. **Tick source shape.** A function pointer plus context avoids `std::function` in the public header and allows applications to inject any tick source they need. DiaSimTime exists (with `SimTimeContext.tick`), but applications have varying tick requirements: CoW may want world domain clock ticks (not root tick), CluicheTest stages may not have DiaSimTime set up, test harnesses may inject simple counters. The function pointer design is correct as-is - flexible, Debug-only, and application-controlled per the ownership split.
 
 ## Status

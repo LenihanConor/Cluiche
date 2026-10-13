@@ -87,6 +87,8 @@
     <ClInclude Include="MessageBusModule.h" />
     <ClInclude Include="MessageBusDebugDomain.h" />
     <ClInclude Include="BusHealthReporter.h" />
+    <ClInclude Include="IBusRecorder.h" />
+    <ClInclude Include="Testing\InMemoryBusRecorder.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LedgerHistory.cpp" />

@@ -1829,5 +1829,8 @@
     <ClCompile Include="DiaAttribute\TestDiaAttributeBandInitialization.cpp">
       <Filter>Tests\GoogleTests\DiaAttribute</Filter>
     </ClCompile>
+    <ClCompile Include="DiaMessageBus\TestBusTrafficRecorder.cpp">
+      <Filter>DiaMessageBus</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

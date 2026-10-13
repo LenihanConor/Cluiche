@@ -13,6 +13,10 @@
 #include <DiaMessageBus/BusSubscriptionHandle.h>
 #include <DiaMessageBus/IFlushAdapter.h>
 #include <DiaMessageBus/BroadcastRouter.h>
+#include <type_traits>
+#ifdef DIA_DEBUG
+#include <DiaMessageBus/IBusRecorder.h>
+#endif
 
 namespace Dia::MessageBus {
 
@@ -192,6 +196,10 @@ namespace Dia::MessageBus {
         // type whose display id is typeId.
         template <class Fn>
         void ForEachSubscriberForType(Dia::Core::StringCRC typeId, Fn&& fn) const;
+
+        // Set a recorder for all dispatched messages. Non-owning pointer;
+        // caller keeps the recorder alive. Pass nullptr to clear.
+        void SetRecorder(IBusRecorder* recorder);
 #endif // DIA_DEBUG
 
     private:
@@ -268,6 +276,9 @@ namespace Dia::MessageBus {
         // than by internal typeKey, since tooling only ever has the
         // StringCRC a type registered itself under (T::kTypeId).
         const TypeRecord* FindTypeRecordByDisplayId(Dia::Core::StringCRC typeId) const;
+
+        // Debug-only recorder hook. Non-owning; nullptr if no recorder set.
+        IBusRecorder* mRecorder = nullptr;
 #endif
 
         Dia::Mailbox::Mailbox mMailbox;
@@ -437,6 +448,12 @@ namespace Dia::MessageBus {
 
     template <class T>
     void Bus::DispatchOne(const Dia::Mailbox::Address& addr, const T& msg, Pass currentPass) {
+#ifdef DIA_DEBUG
+        if (mRecorder) {
+            DIA_ASSERT(std::is_trivially_copyable_v<T>, "Bus recorder requires trivially copyable message types");
+            mRecorder->OnDispatch(T::kTypeId, addr.routerId, currentPass, &msg, sizeof(T));
+        }
+#endif
         const uint32_t key = TypeKey<T>();
 
         LedgerMessageEntry& entry = FindOrCreateLedgerEntry(T::kTypeId, addr.routerId, currentPass);
