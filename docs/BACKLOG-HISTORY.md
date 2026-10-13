@@ -19,6 +19,8 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 
 | System | Spec | Completed | Notes |
 |--------|------|-----------|-------|
+| DiaAttribute Feature 7 (Band-Based Initialization) | @docs/specs/applications/dia/systems/diaattribute/band-based-initialization.md | 2026-10-12 | Schema-defined named band ranges, `InitializeFromBands()` midpoint resolution, `band_schema_version` support, fallback to default_value. 18 unit tests (11 core + 7 edge cases), 154/154 full suite passes. ~3 hours. |
+|--------|------|-----------|-------|
 | CoW F-1: Boot choice (Play entry only) | [boot-choice.md](specs/applications/cow/systems/f1-harness/boot-choice.md) | before 2026-10-12 | F-1 plan task 5; spec marked Done. Recorded during the 2026-10-12 backlog cleanup |
 | CoW F-1: CoW app skeleton (B1 to B7: `cow` target, `sln-add --root`, project, manifests, `FrontEnd` stub, `Main.cpp`, verify, observation scan) | [cow-app-skeleton.md](specs/applications/cow/systems/f1-harness/cow-app-skeleton.md) | before 2026-10-12 | F-1 plan tasks 2 to 4. Promotion and skeleton edits to baseline, CluicheTest, DiaCLI and `pipeline.toml` were signed off in the F-1 spec |
 | CoW F-1: BootMenuModule promotion + `StageStatusModule` | [bootmenu-promotion.md](specs/applications/cow/systems/f1-harness/bootmenu-promotion.md) | before 2026-10-12 | F-1 plan task 1 |
