@@ -8,6 +8,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 
 | Item | Completed | Notes |
 |------|-----------|-------|
+| Webix removal (vendored 5.2.1 folder, catalogue entries, live docs; `dummyStage.html` rewritten as a styled plain HTML/CSS Exit Level panel) | 2026-10-13 | [webix_removal research](research/webix_removal/summary.md); commits `6de511c3`, `ce2829d9`, `82e9fd7c`, `da95d410`. Pending: manual check of the DummyStage panel render and Exit Level in Ultralight. Alpine/React game-UI convention is unaffected (spec already Done). |
 | CoW: `dia scaffold app` (data-driven target registry + templates, command, `ScratchApp` boot proof, docs) | before 2026-10-12 | [scaffold-app.md](specs/applications/dia/systems/diacli/scaffold-app.md); F-1 plan task 9 |
 | CoW: `new-cow-stage` skill (AC1 to AC3) | before 2026-10-12 | F-1 plan task 7; trial run (AC4/AC5) still open in the backlog |
 | CoW: `dia scaffold stage --app` | before 2026-10-12 | F-1 plan task 6; 22 new tests, 148 scaffold tests pass |
