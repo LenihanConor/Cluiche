@@ -103,6 +103,8 @@
     <ClInclude Include="Coord3D\Coord3DDebugDomain.h" />
     <ClInclude Include="Console\CommandLineParser.h" />
     <ClInclude Include="Console\ConsoleLineAssembler.h" />
+    <ClInclude Include="Console\ConsoleExecutor.h" />
+    <ClInclude Include="Console\ConsoleHistory.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugLayerManager.cpp" />
@@ -124,6 +126,8 @@
     <ClCompile Include="Coord3D\Coord3DDebugDomain.cpp" />
     <ClCompile Include="Console\CommandLineParser.cpp" />
     <ClCompile Include="Console\ConsoleLineAssembler.cpp" />
+    <ClCompile Include="Console\ConsoleExecutor.cpp" />
+    <ClCompile Include="Console\ConsoleHistory.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.debug.architecture.module.md" />

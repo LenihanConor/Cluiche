@@ -1844,5 +1844,8 @@
     <ClCompile Include="DiaVisualDebugger\Console\TestCommandLineParser.cpp">
       <Filter>DiaVisualDebugger\Console</Filter>
     </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestConsoleExecutor.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

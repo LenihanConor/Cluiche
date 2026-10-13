@@ -128,6 +128,12 @@
     <ClInclude Include="Console\ConsoleLineAssembler.h">
       <Filter>Console</Filter>
     </ClInclude>
+    <ClInclude Include="Console\ConsoleExecutor.h">
+      <Filter>Console</Filter>
+    </ClInclude>
+    <ClInclude Include="Console\ConsoleHistory.h">
+      <Filter>Console</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugLayerManager.cpp">
@@ -185,6 +191,12 @@
       <Filter>Console</Filter>
     </ClCompile>
     <ClCompile Include="Console\ConsoleLineAssembler.cpp">
+      <Filter>Console</Filter>
+    </ClCompile>
+    <ClCompile Include="Console\ConsoleExecutor.cpp">
+      <Filter>Console</Filter>
+    </ClCompile>
+    <ClCompile Include="Console\ConsoleHistory.cpp">
       <Filter>Console</Filter>
     </ClCompile>
   </ItemGroup>
