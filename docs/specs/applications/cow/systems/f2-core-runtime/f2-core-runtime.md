@@ -7,7 +7,7 @@
 
 ## Summary
 
-F-2 Core Runtime is a CoW testbed stage that proves the runtime foundation every other testbed stands on: deterministic RNG architecture (8 independent streams), WorldClock integration (speed control, pause, time bands), save/load round-trip, and band resolver behavior (DiaAttribute Feature 7). Unlike F-1, most of what F-2 touches is already designed elsewhere (WorldClock, E1 Save/Load are both Approved); F-2's new design surface is the testbed itself and the RNG stream architecture (8 named streams: WLD, A1, B4, B6, C1, C2, B5, C4).
+F-2 Core Runtime is a CoW testbed stage that proves the runtime foundation every other testbed stands on: deterministic RNG architecture (8 independent streams), GameSpeedController integration (speed control, pause, time bands), save/load round-trip, and band resolver behavior (DiaAttribute Feature 7). Unlike F-1, most of what F-2 touches is already designed elsewhere (GameSpeedController, E1 Save/Load); F-2's new design surface is the testbed itself and the RNG stream architecture (8 named streams: WLD, A1, B4, B6, C1, C2, B5, C4).
 
 This is a **dev-facing validation harness**, not player-facing gameplay. It runs 6 independent tests, each with pass/fail criteria, accessible from the debug menu like every other testbed. F-2 uses `DiaAutomation` for test orchestration (scripted action sequences, determinism proofs).
 
@@ -16,7 +16,7 @@ This is a **dev-facing validation harness**, not player-facing gameplay. It runs
 CoW's 12 testbeds build on top of four foundation systems that must work correctly before any gameplay can be validated:
 
 1. **RNG determinism** — CoW's 8 gameplay systems need independent, serializable random streams that never cross-contaminate. Dia's current `Random.h` is a single global Mersenne Twister per thread — no multi-stream support, no serialization.
-2. **WorldClock wiring** — CoW's time system (speed tiers, pause, modal nesting, time bands) must work on a live stage before S-1 to S-7 can build on it.
+2. **GameSpeedController wiring** — CoW's game speed system (speed presets, pause, modal nesting, time bands) must work on a live stage before S-1 to S-7 can build on it.
 3. **Save/load round-trip** — CoW's E1 integration (autosave, serialize/restore contract, atomic write) must prove RNG state + world state round-trips exactly.
 4. **Band resolver timing** — DiaAttribute Feature 7 (band-based initialization) must run exactly once per dragon record (on load or hatch), never re-resolve on live reads.
 
@@ -27,7 +27,7 @@ Without F-2, every subsequent testbed would discover foundation bugs late (S-4 D
 1. **RNG stream independence** — Prove 8 dedicated streams (WLD, A1, B4, B6, C1, C2, B5, C4) draw sequences independently with no shared state leaks (Test 1)
 2. **Determinism proof** — Same seed + same script = identical simulation state, zero divergence over 1,000 ticks (Test 2)
 3. **RNG save/load proof** — All 8 streams round-trip exactly through save/load; reload continues the exact sequence unsaved play would have produced (Test 3)
-4. **WorldClock integration** — Prove speed tiers, pause, modal nesting, single-step work on a live CoW stage matching GDD A2 spec (Test 4)
+4. **GameSpeedController integration** — Prove speed presets, pause, modal nesting, single-step work on a live CoW stage matching GDD A2 spec (Test 4). F-2 owns the speed/pause/step buttons that drive it
 5. **E1 integration** — Prove autosave cadence, atomic write, serialize/restore contract work on a live CoW stage matching GDD E1 spec (Test 5)
 6. **Band resolver timing** — Prove resolver runs exactly once per dragon (on load or hatch), produces stable floats, never re-resolves on live reads (Test 6)
 
@@ -68,9 +68,9 @@ Tests 2 and 3 use `DiaAutomation` for scripted action sequences (spawn dragon, i
 
 Each stream is independently seeded at `WorldGenerationComplete` from the master world seed (GDD F-2 decision 1). All 8 streams serialize/restore with every save/load cycle (GDD F-2 decision 3).
 
-### Dependency on WorldClock, E1, DiaAttribute Feature 7
+### Dependency on GameSpeedController, E1, DiaAttribute Feature 7
 
-- **WorldClock** — Tests 4 depends on `WorldClockModule` + `SpeedChangeRequested` / `ModalOpened` events + `SimulationTick` broadcasting (all defined in `worldclock.md`, system Approved)
+- **GameSpeedController** — Test 4 depends on `GameSpeedControllerModule` + `SpeedChangeRequested` / `ManualAdvanceRequested` / `ModalOpened` / `ModalClosed` events + `SimulationTick` broadcasting (all defined in `gamespeedcontroller.md`, system Approved)
 - **E1 Save/Load** — Test 5 depends on `SaveLoadModule` + `SaveRequested` / `LoadRequested` events + `serialize_state()` / `restore_state()` contract (all defined in `e1-saveload.md`, system Approved)
 - **DiaAttribute Feature 7** — Test 6 depends on `InitializeFromBands()` API, band schema (NONE/LOW/BASELINE/MEDIUM/HIGH/APEX), `band_schema_version` support (spec Draft at `diaattribute/band-based-initialization.md`)
 
@@ -120,15 +120,15 @@ F-2 exercises these systems as-is; no redesign or extension work in F-2's scope 
 
 ### Test 4: Clock Proof
 
-**Setup:** WorldClock initialized on a live CoW stage.
+**Setup:** GameSpeedControllerModule initialized on a live CoW stage, speed presets loaded from config.
 
-**Action:** Exercise all speed tiers (PAUSED/NORMAL/FAST/FASTEST), player pause, nested modal auto-pause (open two modals, confirm closing one doesn't resume), manual single-step while paused.
+**Action:** Exercise Pause and all four presets (Slow/Normal/Fast/Fastest), player pause, nested modal auto-pause (open two modals, confirm closing one doesn't resume), manual single-step while paused.
 
-**Expected:** Every transition matches `A2_TechnicalSpec.md` / `worldclock.md` exactly (Hz values, pause state, modal_depth bookkeeping).
+**Expected:** Every transition matches `A2_TechnicalSpec.md` / `gamespeedcontroller.md` (season rate per configured preset within tolerance, pause state, modalDepth bookkeeping, at most one `SimulationTick` per sim frame).
 
 **Pass condition:** All transitions match spec behavior.
 
-**Failure condition:** Any speed tier Hz mismatch, modal nesting violation, or unexpected resume.
+**Failure condition:** Season rate doesn't match the configured preset, modal nesting violation, unexpected resume, or a skipped/double season tick.
 
 ### Test 5: Save/Load Proof
 
@@ -165,7 +165,7 @@ F-2 exercises these systems as-is; no redesign or extension work in F-2's scope 
 
 - **`F2CoreRuntimeStage`** — Testbed stage class (inherits from `DiaStage`)
   - Registered in CoW Boot stage transitions (per AD-005)
-  - Initializes `F2TestRunnerModule` + `WorldClockModule` + `SaveLoadModule` + stub dragon data for Test 6
+  - Initializes `F2TestRunnerModule` + `GameSpeedControllerModule` + `SaveLoadModule` + stub dragon data for Test 6
 
 ### Module
 
@@ -191,7 +191,7 @@ F-2 exercises these systems as-is; no redesign or extension work in F-2's scope 
 
 ### Systems (CoW)
 
-- **WorldClock** — Approved (4 features Approved), not built yet; F-2 Test 4 exercises it
+- **GameSpeedController** — Approved (re-scoped from WorldClock, 2 features), not built yet; F-2 Test 4 exercises it
 - **E1 Save/Load** — Approved (5 features Approved), not built yet; F-2 Test 5 exercises it
 
 ### Features (Dia)
@@ -202,7 +202,7 @@ F-2 exercises these systems as-is; no redesign or extension work in F-2's scope 
 ### Modules (Dia)
 
 - **DiaAutomation** — Exists (used by CluicheTest); Tests 2 and 3 drive scripted action sequences through it
-- **DiaSimTime** — Exists and Done; WorldClock wraps it
+- **DiaSimTime** — Exists and Done; GameSpeedController drives its world time scale/pause
 - **DiaSaveGame** — Exists and Done; E1 wraps it
 
 ## Inherited Binding Decisions
@@ -227,7 +227,7 @@ F-2 exercises these systems as-is; no redesign or extension work in F-2's scope 
 
 F-2 is a testbed stage, not a capability layer — it has no features of its own. It exercises systems with their own feature specs:
 
-- WorldClock → 4 features (Approved, not built) at `worldclock.md`
+- GameSpeedController → 2 features (Approved, not built) at `gamespeedcontroller.md`
 - E1 Save/Load → 5 features (Approved, not built) at `e1-saveload.md`
 - DiaAttribute Feature 7 → 1 feature (Draft) at `diaattribute/band-based-initialization.md`
 

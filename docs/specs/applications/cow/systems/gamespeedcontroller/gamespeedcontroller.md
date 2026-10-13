@@ -1,379 +1,281 @@
-# System Spec: WorldClock
+# System Spec: GameSpeedController
 
 **Parent:** @docs/specs/applications/cow/cow.md  
-**Design source:** `Output Docs/GDD/10_PrototypeStrategy/F2_CoreRuntime.md`, `Output Docs/GDD/08_SystemsDeepDive/A2_WorldClock/` (DesignDocs repo)
+**Design source:** `Output Docs/GDD/08_SystemsDeepDive/A2_WorldClock/` (DesignDocs repo; GDD name "A2 World Clock & Time Bands")
 
 **Gameplay Domains:** simulation
 
 ## Summary
 
-WorldClock is CoW's simulation time system. It owns the season counter (CoW's primary time unit), speed control (PAUSED/NORMAL/FAST/FASTEST), pause state with modal nesting, and time band resolution (SEASON/YEAR/DECADE/CENTURY). It is the sole broadcaster of `SimulationTick` to the entire game — every CoW gameplay system (ecology, dragons, clans, dynasty) reacts to the ticks WorldClock produces, but WorldClock decides nothing about *what happens* on those ticks.
+GameSpeedController lets the player run CoW's game clock faster or slower, EU4/Civ style: Pause plus four named speed presets whose values come from config. It does not own the clock — DiaSimTime does. It drives DiaSimTime's world time scale and pause, turns the passage of game time into discrete **day** ticks (`SimulationTick{day, band}`), and enforces the pause rules (player pause, nesting-safe modal auto-pause, single-step).
 
-WorldClock is a thin CoW-specific layer over DiaSimTime. DiaSimTime provides the deterministic game clock foundation (tick counter, pause/resume, save/load, event scheduling); WorldClock adds CoW's calendar system (seasons as the primary unit, year/decade/century bands), speed tier UI vocabulary (PAUSED/NORMAL/FAST/FASTEST mapped to Hz values), and modal-pause nesting rules.
-
-## Problem
-
-CoW is a centuries-long simulation where:
-- The player must control pacing (pause to think, fast-forward through quiet stretches)
-- The UI can interrupt at any moment (decree menu, lineage inspector) and the sim must not advance silently while the player is mid-decision (modal auto-pause)
-- Time is CoW's core resource — seasons accumulate into years, decades, centuries; different systems care about different bands (ecology runs every season, genetics drift triggers on decades)
-- Multiple independent time domains coexist: simulation time (deterministic, pausable, saved), wall-clock time (UI animations, never saved), render time (interpolates smooth visuals), future audio time (ambient soundscape)
-- All of this must round-trip through save/load with deterministic replay
-
-Without a unified time architecture, each system would implement its own pause logic, speed control, and calendar math — leading to desync, modal bugs, and save/load drift.
+Every CoW gameplay system advances on `SimulationTick`. Systems that work at a coarser cadence (A4 weekly, A1 seasonal) gate on the tick's band. GameSpeedController decides *when* a day passes, never *what happens* in it.
 
 ## Goals
 
-1. **Single source of simulation time** — `season_counter` is the one true clock; all gameplay systems react to `SimulationTick`, never poll `GetCurrentSeason()`
-2. **Speed control** — Player selects PAUSED/NORMAL/FAST/FASTEST; WorldClock maps these to Hz values (0 / 2 / 5 / 10 Hz) and drives the SimPU tick rate
-3. **Modal-safe pause** — Any `ModalOpened` event auto-pauses the sim with nesting-safe bookkeeping (modal_depth counter, pre-modal speed restoration)
-4. **CoW calendar** — Time band resolution (SEASON/YEAR/DECADE/CENTURY) from modulo arithmetic (season % 4/40/400), published with every `SimulationTick`
-5. **Deterministic save/load** — season_counter, speed_tier, pause_source, modal_depth round-trip exactly; always resume paused (GDD A2 rule)
-6. **Clear time domain boundaries** — Document which clocks are independent (sim vs wall vs render vs audio), so systems use the right clock for their needs
+1. **Speed control** — Pause + four presets (Slow / Normal / Fast / Fastest). Changing speed changes how fast game time flows; the SimPU keeps its fixed tick rate.
+2. **Presets from config** — Wall-clock seconds per day for each preset are loaded from the module's `.diaapp` config block, not compiled in.
+3. **Day ticks** — Each time game time crosses a day boundary, publish exactly one `SimulationTick` with its band (DAY / WEEK / SEASON / YEAR / DECADE / CENTURY).
+4. **Pause rules** — Player pause, nesting-safe modal auto-pause, player pause always wins, single-step while paused.
+5. **New Game / Load state** — New Game starts at day 0, paused. Load restores the day and always comes back paused. State is exposed as a plain struct; E1 owns the save file.
+6. **Speed-independent determinism** — The same inputs produce the same simulation regardless of which speed it ran at.
 
 ## Non-Goals
 
-1. **Deciding what happens on a tick** — WorldClock emits `SimulationTick{season, time_band}`; subscribers (A1 ecology, B-layer dragons, C-layer clans) own their reactions entirely
-2. **Per-entity time scaling** — No slow-motion for individual dragons or hearths; speed control is global only
-3. **Network synchronization** — CoW is single-player; no lockstep, no rollback
-4. **Time travel / replay** — F-2's determinism tests prove replay is *possible*, but a replay UI is out of scope
-5. **Audio time implementation** — A-1 (future) will implement time-speed-aware audio; WorldClock just documents the audio time domain
-6. **Editor time** — CluicheEditor runs on wall-clock time, independent of CoW's sim clock
+- **Owning the clock** — DiaSimTime owns game time, pause, step, and saving the world clock. GameSpeedController only steers it.
+- **Speed/pause/step UI** — Buttons live in F-2 (Test 4 driver) now, UI-I later. They publish the messages below.
+- **Save-file plumbing** — E1 serializes the state struct (E1 Feature 2).
+- **A "tick finished" message** — Not needed: E1 saves at the sim-frame boundary (see E1).
+- **Per-entity or per-subsystem time scaling** — Speed is global.
+- **Calendar text** ("Year 3, Spring, Day 12") — UI-layer.
+- **Batch step, audio pitch at speed, settings-driven default speed** — Deferred until something needs them.
+- **Runtime SimPU frequency change** — Not needed; speed is a time scale, not a tick rate.
 
 ## Architecture
 
-### Time Domain Hierarchy
-
-CoW has **four independent time domains**, each with its own clock and use case:
+### How speed works
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ 1. Simulation Time (WorldClock)                             │
-│    - Deterministic, pausable, saved                         │
-│    - Unit: season_counter (uint64, 0 at New Game)          │
-│    - Drives: A1 ecology, B-layer dragons, C-layer clans    │
-│    - Source: DiaSimTime (SimPU Hz * timeScale)             │
-│    - Speed control: Player selects tier → WorldClock sets Hz│
-└─────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
-│ 2. Wall-Clock Time                                          │
-│    - Always runs, never paused, not saved                   │
-│    - Unit: real seconds (float deltaTime)                   │
-│    - Drives: UI animations, menu transitions, input polling │
-│    - Source: DiaSimTime MainPU wall-clock tick              │
-│    - Independent of sim pause/speed                         │
-└─────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
-│ 3. Render Time                                              │
-│    - Interpolates between sim ticks for smooth visuals     │
-│    - Unit: fractional position between tick N and N+1       │
-│    - Drives: Dragon movement lerp, animation blend          │
-│    - Source: DiaSimTime RenderPU reads sim FrameStream     │
-│    - Runs even when sim is paused (shows last sim state)   │
-└─────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
-│ 4. Audio Time (A-1, future)                                 │
-│    - Ambient: wall-clock (never paused)                     │
-│    - Events: triggered by sim, played at wall-clock rate    │
-│    - Time-speed-aware: pitch/tempo adjust at FAST/FASTEST? │
-│    - Source: Wall-clock + sim event triggers                │
-└─────────────────────────────────────────────────────────────┘
+SimPU (fixed rate, 30 Hz in cow_main.diaapp)
+  └─ world SimTimeDomain           ← DiaSimTime (owns game time)
+       scale = kGameTimePerDay / preset.wallSecondsPerDay
+       Pause() / Resume() / Step()
+  └─ GameSpeedControllerModule     ← this system
+       each sim frame: if game time crossed the next day boundary
+           → dayCounter += 1, publish SimulationTick{day, ResolveBand(day)}
 ```
 
-**Key insight:** These domains are **enforced independent** by Dia's PU architecture (SimPU / MainPU / RenderPU run on separate threads with separate clocks). WorldClock only controls domain 1 (Simulation Time); the others reference it but don't block on it.
+- `kGameTimePerDay` is a fixed constant: **1 game-second = 1 day**. A `SimTimeScheduler` deadline of `+7.0s` therefore means "in one week".
+- DiaSimTime stores time as integer microseconds, so accumulation is exact and deterministic.
+- Paused = `SimTimeDomain::Pause()`. Game time stops, SimPU keeps ticking (UI, debug, and rendering still run).
+- Manual step = `SimTimeDomain::Step(time to next day boundary)`, which produces exactly one `SimulationTick` on the next sim frame.
 
-### CoW Calendar System
+### Determinism rule
 
-CoW's time unit hierarchy:
+**Gameplay state may change only in response to `SimulationTick` (or other bus messages), never by integrating per-frame `gameDt`.** Per-frame `gameDt` is for presentation only (interpolation, animation). This is what makes the simulation identical at every speed: speed changes how many sim frames fall between days, not what happens in a day.
 
-```
-1 Season  = 1 sim tick (base unit)
-1 Year    = 4 seasons
-1 Decade  = 40 seasons (10 years)
-1 Century = 400 seasons (100 years, 10 decades)
-```
+### At most one tick per sim frame
 
-Time band resolution (GDD A2 §2):
+GameSpeedController publishes **at most one** `SimulationTick` per sim frame, so each day's Primary and Reaction bus passes finish before the next day starts. That is also what makes the frame boundary a safe save point for E1.
+
+Config validation asserts that the Fastest preset advances less than one day per sim frame (`wallSecondsPerDay > 1 / SimPU Hz`, i.e. > 0.033 s at 30 Hz), so a boundary can never be skipped. **This caps top speed at SimPU Hz days per second** (30 days/s, roughly 3 s per season, 20 min per century). Accepted; see Resolved Design Decisions.
+
+### Calendar
+
+Fixed constants, not tunable. The week and season sizes match A4 Weather (52 weeks/year) and A1 (13 weeks/season):
+
+| Unit | Size | Days |
+|---|---|---|
+| Day | base tick | 1 |
+| Week | 7 days | 7 |
+| Season | 13 weeks | 91 |
+| Year | 4 seasons | 364 |
+| Decade | 10 years | 3,640 |
+| Century | 10 decades | 36,400 |
 
 ```cpp
-enum class TimeBand : uint8_t {
-    SEASON,   // default, every tick
-    YEAR,     // season_counter % 4 == 0
-    DECADE,   // season_counter % 40 == 0
-    CENTURY   // season_counter % 400 == 0
-};
+enum class TimeBand : uint8_t { Day, Week, Season, Year, Decade, Century };   // ordered smallest → largest
 
-TimeBand ResolveBand(uint64_t season_counter) {
-    if (season_counter % 400 == 0) return TimeBand::CENTURY;
-    if (season_counter % 40  == 0) return TimeBand::DECADE;
-    if (season_counter % 4   == 0) return TimeBand::YEAR;
-    return TimeBand::SEASON;
+// Largest unit whose boundary this day completes.
+TimeBand ResolveBand(uint64_t day);   // %36400 → Century, %3640 → Decade, %364 → Year, %91 → Season, %7 → Week, else Day
+
+uint64_t WeekOf(uint64_t day);     // day / 7
+uint64_t SeasonOf(uint64_t day);   // day / 91
+uint64_t YearOf(uint64_t day);     // day / 364
+```
+
+Subscribers gate with ordered comparison. For example, A1 runs its seasonal pipeline when `band >= TimeBand::Season`, and A4 updates weather when `band >= TimeBand::Week`. Day 0 never produces a tick. The first tick is day 1 (GDD EC-05).
+
+### Speed presets (config)
+
+```cpp
+enum class SpeedTier : uint8_t { Paused, Slow, Normal, Fast, Fastest };
+
+struct SpeedPresetConfig {
+    float wallSecondsPerDay[4];   // Slow, Normal, Fast, Fastest
+};
+```
+
+Loaded from the module's `"config"` block in `cow_main.diaapp`. This is the CoW convention; `BootMenuModule` uses the same mechanism:
+
+```json
+{
+    "instance_id": "GameSpeedControllerModule",
+    "type_id": "GameSpeedControllerModule",
+    "stages": ["all"],
+    "config": {
+        "wall_seconds_per_day": { "slow": 60.0, "normal": 30.0, "fast": 10.0, "fastest": 1.0 }
+    }
 }
 ```
 
-Published with every `SimulationTick` so subscribers can gate work by band (e.g., genetics drift only triggers on DECADE ticks).
+The values shown are **placeholders** to be tuned in playtesting. Validation on load: every value > 0, strictly decreasing Slow→Fastest, Fastest satisfies the one-tick-per-frame rule. A missing or invalid config logs an error and falls back to the compiled defaults.
 
-### Speed Tier Mapping (Civ-style Hz approach)
-
-```cpp
-enum class SpeedTier : uint8_t {
-    PAUSED,   // 0 Hz   - no ticks
-    NORMAL,   // 2 Hz   - 500ms per season (default feel)
-    FAST,     // 5 Hz   - 200ms per season (2.5x speed)
-    FASTEST   // 10 Hz  - 100ms per season (5x speed)
-};
-
-constexpr float SPEED_TIER_HZ[] = {
-    0.0f,   // PAUSED
-    2.0f,   // NORMAL
-    5.0f,   // FAST
-    10.0f   // FASTEST
-};
-```
-
-**Implementation:** `WorldClockModule` calls `ProcessingUnit::SetFrequencyHz(SPEED_TIER_HZ[tier])` when `SpeedChangeRequested` arrives. No timeScale needed — each tick is always exactly 1 season.
-
-**Design rationale (Civ pattern):**
-- Simple Hz change, no fractional-tick accumulation
-- Easy to tune feel in playtesting (just tweak the Hz array)
-- Matches GDD A2's `SEASON_MS[speed_tier]` array (500ms = 2 Hz)
-- DiaSimTime's fixed-timestep accumulator (ST-011) handles catch-up if frame rate drops below Hz
-
-### Pause State & Modal Nesting
-
-WorldClock tracks three pause-related fields (GDD A2 §1):
+### Pause state
 
 ```cpp
-struct WorldClockState {
-    uint64_t    season_counter;          // 0 at New Game, +1 per tick
-    SpeedTier   speed_tier;              // current speed
-    PauseSource pause_source;            // NONE | PLAYER | MODAL
-    uint8_t     modal_depth;             // count of open modals (nesting-safe)
-    SpeedTier   pre_modal_speed_tier;   // remembered for restore
-};
+enum class PauseSource : uint8_t { None, Player, Modal };
 
-enum class PauseSource : uint8_t {
-    NONE,      // sim is running
-    PLAYER,    // player pressed pause
-    MODAL      // UI modal forced pause
+struct GameSpeedState {
+    uint64_t    dayCounter;          // 0 at New Game, +1 per tick, never decreases
+    SpeedTier   speedTier;
+    PauseSource pauseSource;
+    uint8_t     modalDepth;          // nesting-safe count of open modals
+    SpeedTier   preModalSpeedTier;   // restored when modalDepth returns to 0
 };
 ```
 
-**Modal nesting rules (GDD A2 §5):**
+Rules (GDD A2 §4–§6, EC-01 to EC-06):
 
 ```
-on ModalOpened():
-    if modal_depth == 0 and speed_tier != PAUSED:
-        pre_modal_speed_tier = speed_tier
-        speed_tier = PAUSED
-        pause_source = MODAL
-    modal_depth += 1
+SpeedChangeRequested(tier):
+    if modalDepth > 0:                       // added rule, see GDD deltas
+        if tier == Paused: pauseSource = Player
+        else:              preModalSpeedTier = tier
+        return                               // stay paused while a modal is open
+    if tier == Paused: speedTier = Paused; pauseSource = Player
+    else:              speedTier = tier;   pauseSource = None   // selecting a speed is a resume
+    // same tier again = no-op (EC-04)
 
-on ModalClosed():
-    modal_depth = max(0, modal_depth - 1)
-    if modal_depth == 0 and pause_source == MODAL:
-        speed_tier = pre_modal_speed_tier
-        pause_source = NONE
-    // if pause_source == PLAYER, closing the modal does NOT auto-resume
+ManualAdvanceRequested():
+    if speedTier != Paused: reject + log      // EC-06
+    else: step to next day boundary
+
+ModalOpened():
+    if modalDepth == 0 and speedTier != Paused:
+        preModalSpeedTier = speedTier; speedTier = Paused; pauseSource = Modal
+    modalDepth += 1
+
+ModalClosed():
+    modalDepth = max(0, modalDepth - 1)
+    if modalDepth == 0 and pauseSource == Modal:
+        speedTier = preModalSpeedTier; pauseSource = None
+    // a Player pause is never resumed by a modal closing (EC-01)
+
+WorldGenerationComplete():   dayCounter = 0; speedTier = Paused; pauseSource = Player; modalDepth = 0
+RestoreState(saved):         dayCounter = saved.dayCounter; speedTier = Paused; pauseSource = Player; modalDepth = 0   // EC-03
 ```
-
-**Key invariant:** Player pause always wins. A modal closing never overrides a player-requested pause.
-
-### Save/Load Behavior
-
-**Persisted by E1 (via `WorldClockState` serialization):**
-- `season_counter` (primary clock value)
-- `speed_tier` (but always loads as PAUSED, see below)
-- `pause_source` (reconstructed as PLAYER on load)
-- `modal_depth` (always 0 on load — no modals persist across sessions)
-- Pending `SimTimeScheduler` events (via DiaSimTime's `SimTimeSaveState`)
-
-**Load behavior (GDD A2 §6, E1 §4):**
-```cpp
-on GameLoaded(saved_state):
-    season_counter = saved_state.season_counter
-    speed_tier = PAUSED        // always resume paused (A2 edge case EC-03)
-    pause_source = PLAYER
-    modal_depth = 0            // no modals across sessions
-```
-
-**Why always PAUSED on load:** Prevents the sim from racing ahead before the player is ready. Player must explicitly resume after inspecting the loaded state.
 
 ## Public Interfaces
 
 ### Messages (DiaMessageBus)
 
-**Published by WorldClock:**
+| Direction | Message | Payload |
+|---|---|---|
+| Publishes | `SimulationTick` | `uint64_t day; TimeBand band;` |
+| Subscribes | `SpeedChangeRequested` | `SpeedTier tier;` (GDD's `PauseRequested` = `SpeedChangeRequested{Paused}`) |
+| Subscribes | `ManualAdvanceRequested` | — |
+| Subscribes | `ModalOpened` / `ModalClosed` | — |
+| Subscribes | `WorldGenerationComplete` | (published by S-1 WLD) |
 
-```cpp
-// Broadcast to all gameplay systems every sim tick
-struct SimulationTick {
-    uint64_t  season;      // current season_counter value
-    TimeBand  time_band;   // SEASON | YEAR | DECADE | CENTURY
-};
-
-// Published after all SimulationTick subscribers finish
-// E1 waits on this before serializing (guarantees no system is mid-tick)
-struct TickCompleted {
-    uint64_t  season;
-};
-```
-
-**Subscribed by WorldClock:**
-
-```cpp
-// From UI-I (speed control buttons)
-struct SpeedChangeRequested {
-    SpeedTier  tier;   // PAUSED | NORMAL | FAST | FASTEST
-};
-
-// From UI-I (single-step button, only valid while PAUSED)
-struct ManualAdvanceRequested {
-    // no payload — advances season_counter by 1, publishes one SimulationTick
-};
-
-// From UI system (any modal window opening)
-struct ModalOpened {
-    // no payload — increments modal_depth, may auto-pause
-};
-
-// From UI system (any modal window closing)
-struct ModalClosed {
-    // no payload — decrements modal_depth, may auto-resume
-};
-
-// From SYS settings system (preferred default speed for New Game)
-struct SettingsChanged {
-    StringCRC  key;
-    // ... payload varies by key
-};
-```
-
-### C++ API (Read-Only Query)
-
-**WorldClockModule public accessors:**
+### C++
 
 ```cpp
 namespace CoW {
 
-    class WorldClockModule : public Dia::ApplicationFlow::SimModule {
+    // Pure logic, no Dia module dependencies. Unit-tested directly.
+    class GameSpeedController {
     public:
-        // Current state (read-only)
-        uint64_t    GetSeasonCounter() const;
-        TimeBand    GetCurrentBand() const;
-        SpeedTier   GetSpeedTier() const;
-        bool        IsPaused() const;  // true if speed_tier == PAUSED
-        PauseSource GetPauseSource() const;
+        explicit GameSpeedController(const SpeedPresetConfig& config);
 
-        // CoW calendar helpers
-        uint64_t    GetCurrentYear() const;     // season_counter / 4
-        uint64_t    GetCurrentDecade() const;   // season_counter / 40
-        uint64_t    GetCurrentCentury() const;  // season_counter / 400
+        void OnSpeedChangeRequested(SpeedTier tier);
+        bool OnManualAdvanceRequested();         // false if rejected (not paused)
+        void OnModalOpened();
+        void OnModalClosed();
+        void OnNewGame();
+
+        float  GetTimeScale() const;              // 0 when paused
+        bool   IsPaused() const;
+        const GameSpeedState& GetState() const;
+        void   RestoreState(const GameSpeedState& saved);   // always resumes paused
+    };
+
+    TimeBand ResolveBand(uint64_t day);
+    uint64_t WeekOf(uint64_t day);
+    uint64_t SeasonOf(uint64_t day);
+    uint64_t YearOf(uint64_t day);
+
+    // SimModule wiring: config load, bus subscriptions, drives the world SimTimeDomain,
+    // detects day boundaries, publishes SimulationTick.
+    class GameSpeedControllerModule : public Dia::ApplicationFlow::SimModule {
+    public:
+        const GameSpeedController& GetController() const;   // UI/debug/E1 read access
+        void RestoreState(const GameSpeedState& saved);    // called by E1 on load
     };
 
 } // namespace CoW
 ```
 
-**Usage note:** These are debugging/UI queries only. **Gameplay systems must never poll the clock** — they subscribe to `SimulationTick` and react to events. Polling breaks determinism (query timing isn't replayed).
-
-### Dia Integration Points
-
-**WorldClockModule uses DiaSimTime:**
-- Receives `SimTimeContext` each tick (from SimPU's fixed-timestep accumulator)
-- Increments `season_counter` once per `DoUpdate(SimTimeContext)` call
-- Calls `ProcessingUnit::SetFrequencyHz()` to change tick rate when speed changes
-- Publishes `SimTimeContext { gameTime, gameDt, tick }` via DiaStreams for RenderPU interpolation (DiaSimTime already does this — WorldClock just forwards it)
-
-**WorldClockModule does NOT use:**
-- `SimTimeDomain::SetTimeScale()` — speed control is Hz-based, not timeScale
-- `SimTimeScheduler` directly — gameplay systems schedule their own events; WorldClock just ensures the scheduler advances
+Read access is for UI, debug and E1 only. **Gameplay must not poll the day counter.** It subscribes to `SimulationTick`.
 
 ## Features
 
 | # | Feature | Description | Spec | Status |
 |---|---------|-------------|------|--------|
-| 1 | WorldClockModule Core | `WorldClockState`, season counter, time band resolution, Hz-based speed tiers, message handlers | TBD | Approved |
-| 2 | Modal Pause Nesting | `modal_depth` tracking, auto-pause/resume with pre-modal speed restoration | TBD | Approved |
-| 3 | Save/Load Integration | `WorldClockState` serialization via E1, always-paused load behavior | TBD | Approved |
-| 4 | Speed Control UI | UI-I integration — speed buttons, pause button, single-step button (F-2 testbed proves this) | TBD | Approved |
+| 1 | GameSpeedController Core | `GameSpeedController`, calendar (`ResolveBand`, `WeekOf`/`SeasonOf`/`YearOf`), `SpeedPresetConfig` validation: pause/modal state machine, speed→scale mapping, New Game/restore rules. Pure logic, TDD. | TBD | Approved |
+| 2 | GameSpeedControllerModule | SimModule wiring: `.diaapp` config load, bus subscriptions, world `SimTimeDomain` scale/pause/step, day-boundary detection (≤1 tick per frame), `SimulationTick` publishing, `cow_main.diaapp` entry | TBD | Approved |
 
-> **Note:** Features 1-3 are tightly coupled (all live in `WorldClockModule`); they ship together as one unit. Feature 4 is UI work that uses the WorldClock messages; it's CoW-side but separate from the core module.
+**Routed elsewhere:** save/load serialization → E1 Feature 2. Speed/pause/step buttons → F-2 stage (Test 4), UI-I later.
 
 ## Inherited Binding Decisions
 
-| ID | Decision | How it applies to WorldClock |
-|----|----------|------------------------------|
-| PD-001 | Use StringCRC for entity/component IDs | Message types (SpeedChangeRequested, SimulationTick, etc.) are StringCRC-identified in DiaMessageBus registry |
-| PD-002 | ProcessingUnit/Phase/Module architecture | WorldClockModule is a proper SimModule on SimPU; no singletons or static state |
-| PD-004, AD-002 | No STL containers in public APIs | All public APIs use primitive types (uint64_t, SpeedTier enum); no vectors/maps exposed |
-| PD-007 | C++20 required language standard | `enum class` for SpeedTier/TimeBand/PauseSource; `constexpr` for SPEED_TIER_HZ array |
-| AD-001 | CoW develops on cow branch with ask-permission for Dia edits | WorldClock is pure CoW code (Cluiche/CoW/); DiaSimTime edits require sign-off |
-| AD-002 | Four-tier dependency model | WorldClock is CoW-Shared tier (used by all testbeds S-1 through G-1); not generic enough for Dia |
-| AD-003 | GDD owns design intent, spec tree owns implementation | GDD A2 folder owns *what* must be proven (speed tiers, modal pause, time bands); this spec owns *how* it's built |
-| AD-004 | Promote BootMenuModule to baseline | Not applicable — WorldClock is gameplay infrastructure, not boot/menu |
-| AD-005 | One stage per testbed | WorldClock is a module used by testbeds, not a testbed itself |
+| ID | Decision | How it applies |
+|----|----------|----------------|
+| PD-002 | ProcessingUnit/Phase/Module architecture | `GameSpeedControllerModule` is a SimModule on SimPU; no singletons or statics |
+| AD-001 | Ask permission for Dia edits | No Dia changes needed; uses existing `SimTimeDomain::SetScale/Pause/Resume/Step` |
+| AD-002 | Four-tier dependency model | CoW-Shared. Core logic uses no CoW types so it can be promoted to Dia if a second game needs it |
+| AD-003 | GDD owns design intent | GDD A2 owns the pause rules; deviations listed below for GDD update |
 
-## Open Design Questions
+## Deviations from GDD A2
 
-1. **SEASON_MS tuning** — GDD A2 specifies 500ms (NORMAL), but exact values for FAST/FASTEST are "tuned in playtesting." Should we start with 2/5/10 Hz (as proposed), or different ratios?
-   - **Recommendation:** Start with 2/5/10 Hz. F-2 testbed proves determinism at all speeds; playtesting tunes feel from there.
+These are for the DesignDocs owner to fold back into A2:
 
-2. **Manual advance batch size** — `ManualAdvanceRequested` currently advances 1 season. Should there be a `ManualAdvanceBatch(count)` variant for debugging (advance 10 seasons at once)?
-   - **Recommendation:** Defer. Single-step is sufficient for F-2 tests; a batch variant can be added if debuggers actually need it.
+1. **Speed is a time scale, not a tick interval.** GDD §3 fires a tick every `SEASON_MS[tier]`. Here the sim runs at a fixed rate and the scale controls how fast game time flows.
+2. **The day is the base tick, not the season.** `SimulationTick` fires daily with payload `{day, band}`, not `{season, time_band}`. Day and Week are new bands. The calendar is 7 days/week, 13 weeks/season, 4 seasons/year, which matches A4 and A1. `SEASON_MS_*` tuning becomes `wall_seconds_per_day`.
+3. **Four speeds, not three.** Adds **Slow**.
+4. **Speed request while a modal is open** (not covered by GDD). It updates the speed restored when the modal closes, but does not resume while the modal is open.
+5. **Determinism rule.** Gameplay changes only on `SimulationTick`, never from per-frame `gameDt`.
+6. **At most one `SimulationTick` per sim frame.** This caps top speed at SimPU Hz days/s (30 days/s). Accepted.
+7. **`TickCompleted` removed.** E1 saves at the sim-frame boundary instead. The bus's Reaction pass can't post, so "after all subscribers" can't be a same-update message.
+8. **`PauseRequested` is folded into `SpeedChangeRequested{Paused}`.**
+9. **`SettingsChanged` preferred default speed is deferred** (the SYS settings system doesn't exist yet).
 
-3. **Calendar display format** — CoW UI will show "Year 3, Season 2" or "Decade 4." Does WorldClock provide a formatting helper (`FormatCalendar() -> string`), or is that UI-layer code?
-   - **Recommendation:** UI-layer. WorldClock provides `GetCurrentYear()` etc.; UI constructs the string. Keeps localization out of WorldClock.
+## Resolved Design Decisions
 
-4. **Audio time-speed awareness** — A-1 (future) mentions "time-speed-aware audio." Should ambient soundscape pitch-shift at FAST/FASTEST (chipmunk effect), or stay normal?
-   - **Recommendation:** Defer to A-1 spec. WorldClock documents the audio time domain; A-1 decides the feel.
-
-5. **SimTimeDomain usage** — DiaSimTime provides `SimTimeDomain` for sub-clock hierarchies (e.g., a "dragon metabolism" clock that runs slower). Should WorldClock expose this to CoW systems, or keep it internal?
-   - **Recommendation:** Keep internal for now. CoW's speed control is global-only (Non-Goal 2). If a future system needs a sub-clock, revisit.
+1. **Top-speed cap: accepted.** With one day tick per sim frame at 30 Hz, Fastest is at most 30 days/s: about 3 s per season and 20 min per century. The GDD's old Fastest (0.15 s/season) would need about 600 days/s.
+   - Rejected for now: raising SimPU `frequency_hz` (every sim module runs more often), and several day ticks per frame (per-day Reaction-pass work would interleave with the next day).
+   - Revisit if S-2 playtesting shows centuries need to go faster.
 
 ## Dependencies
 
-**Requires:**
-- **DiaSimTime** (SimTimeContext, SimModule base class, ProcessingUnit Hz control, save/load via SimTimeSaveState)
-- **DiaMessageBus** (Primary/Reaction passes, message publishing/subscription)
-- **DiaStreams** (optional: publish WorldClockContext stream for RenderPU interpolation — may already be covered by DiaSimTime's FrameStream)
-- **DiaCore** (StringCRC, DIA_LOG_*, DIA_ASSERT)
-
-**Required by:**
-- **A1** (ecology subscribes to SimulationTick, uses time_band to gate work)
-- **E1** (save/load subscribes to TickCompleted)
-- **All B-layer** (dragons), **C-layer** (clans), **D-layer** (dynasty) systems
-- **V-1** (visuals may use time_band for day/night cycle, weather)
-- **UI-I** (speed control, pause button)
-
-**Circular dependency risk:** WorldClock depends on DiaMessageBus; E1 depends on WorldClock (TickCompleted). But E1 also depends on DiaMessageBus. No actual cycle — all three are independent modules on SimPU, wired by messages.
+**Requires:** DiaSimTime (world `SimTimeDomain`, Done), DiaMessageBus (built), DiaApplicationFlow (module `config` block), DiaCore (Json, StringCRC, logging).  
+**Required by:** E1 (state struct), F-2 Test 4, A1, A4 and all B/C/D-layer systems (`SimulationTick`), UI-I (speed controls).
 
 ## Test Strategy
 
-WorldClock correctness is proven primarily by **F-2 Core Runtime testbed** (GDD F2_CoreRuntime.md):
+**Unit (Feature 1, GoogleTests):**
+- Calendar:
+  - 1→Day, 7→Week, 91→Season, 364→Year, 3640→Decade, 36400→Century.
+  - `SeasonOf`/`YearOf` at boundaries.
+- Pause rules:
+  - EC-01: player pause survives a modal.
+  - EC-02: nested modals.
+  - EC-03: restore always resumes paused.
+  - EC-04: same tier again is a no-op.
+  - EC-06: step is rejected while running.
+- Speed request while a modal is open.
+- Config validation: non-decreasing values or a Fastest that is too fast are rejected, and defaults are used.
 
-### Unit Tests (GoogleTests/CoW/WorldClock)
+**Integration (Feature 2 + F-2 Test 4):**
+- Each preset produces days at its configured wall-clock rate (within tolerance).
+- Pause produces no ticks. A single step produces exactly one tick.
+- Never more than one tick per sim frame, and no day is skipped across a speed change.
 
-1. **Time band resolution** — `ResolveBand(0) == SEASON`, `ResolveBand(4) == YEAR`, `ResolveBand(40) == DECADE`, `ResolveBand(400) == CENTURY`
-2. **Speed tier Hz mapping** — Verify `SPEED_TIER_HZ[PAUSED] == 0.0`, `SPEED_TIER_HZ[NORMAL] == 2.0`, etc.
-3. **Modal nesting** — Open 3 modals, close 2, verify sim stays paused and `modal_depth == 1`
-4. **Player pause wins** — Player pauses, modal opens/closes, verify sim stays paused (pause_source == PLAYER)
-5. **Pre-modal speed restoration** — Start at FAST, modal pauses, close modal, verify speed returns to FAST
-
-### Integration Tests (F-2 testbed, Test 4: Clock Proof)
-
-6. **All four speed tiers** — Exercise PAUSED/NORMAL/FAST/FASTEST on a live stage, confirm Hz matches
-7. **Nested modal auto-pause** — Open two modals, close one, confirm sim stays paused; close second, confirm auto-resume
-8. **Manual single-step** — Pause, call `ManualAdvanceRequested`, confirm exactly 1 `SimulationTick` published
-
-### Determinism Tests (F-2 testbed, Tests 2 & 3)
-
-9. **Speed-independent determinism** — Run same seed at NORMAL, then FAST, confirm identical `season_counter` progression after N ticks
-10. **Save/load clock round-trip** — Save at season 1000, reload, verify `season_counter == 1000` and `speed_tier == PAUSED`
+**Determinism (F-2 Tests 2/3):**
+- The same seed run for N days at Slow and at Fastest gives identical state.
+- Save at day N, load: day == N and the game is paused.
 
 ## Status
 
-**Status:** `Approved`  
+**Status:** `Approved` — 2026-10-13 (re-scoped from WorldClock)  
 **Plan:** TBD (create when implementation starts)
