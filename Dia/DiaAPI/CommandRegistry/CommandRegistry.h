@@ -70,6 +70,27 @@ namespace Dia
 		};
 
 		////////////////////////////////////////////////////////////////////////////////
+		// Threading
+		//
+		// Every function below is thread-safe. One reader/writer lock guards the registry:
+		//   - Queries (GetCommand, ListCommands, GetCommandsByCategory, IsInitialized)
+		//     take it shared.
+		//   - Register*, Unregister*, Initialize, Shutdown take it exclusive.
+		//   - ExecuteCommand / ExecuteCommandJson take it shared and hold it for the
+		//     whole callback. Unregister* on another thread therefore blocks until any
+		//     in-flight callback for any command returns; once Unregister* returns, the
+		//     command's owner may be destroyed.
+		//
+		// Inside a command callback:
+		//   - Queries and nested ExecuteCommand* calls are allowed (they reuse the
+		//     lock this thread already holds).
+		//   - Register*, Unregister*, Initialize and Shutdown are NOT allowed. They
+		//     DIA_ASSERT in Debug; in Release they log an error and return false
+		//     (no-op for Initialize/Shutdown) without touching the lock.
+		//   - Keep callbacks short: while one runs, every register/unregister waits.
+		////////////////////////////////////////////////////////////////////////////////
+
+		////////////////////////////////////////////////////////////////////////////////
 		// Lifecycle Management
 		////////////////////////////////////////////////////////////////////////////////
 
@@ -112,6 +133,9 @@ namespace Dia
 
 		// Get command info by name
 		// Returns nullptr if command not found
+		// The returned pointer (and the pointers in the lists below) are only valid
+		// until the next Unregister*/Shutdown on any thread. Do not hold them across
+		// threads or frames.
 		const CommandInfo* GetCommand(const Dia::Core::StringCRC& name);
 
 		// List all registered commands
