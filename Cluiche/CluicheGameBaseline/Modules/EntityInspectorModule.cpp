@@ -230,6 +230,10 @@ void EntityInspectorModule::UnregisterHandlers()
 {
     DIA_LOG_INFO("Application", "EntityInspectorModule::UnregisterHandlers");
     if (!mDebugServer) return;
+    // Stage-scoped: remove the JSON commands registered in RegisterHandlers so the
+    // next stage entry can register them again (duplicates are rejected).
+    Dia::API::UnregisterCommandJson(Dia::Entity::DebugDataType::kEntityWriteField);
+    Dia::API::UnregisterCommandJson(Dia::Entity::DebugDataType::kEntityFindByName);
     mDebugServer->GetQueryRegistry().Unregister(Dia::Entity::DebugDataType::kEntityInspectRequest);
     mDebugServer = nullptr;
 }

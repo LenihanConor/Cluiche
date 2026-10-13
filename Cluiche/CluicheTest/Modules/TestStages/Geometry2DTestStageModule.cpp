@@ -225,6 +225,9 @@ void Geometry2DTestStageModule::OnUpdate(float /*deltaTime*/)
 
 void Geometry2DTestStageModule::OnStop()
 {
+    Dia::API::UnregisterCommandJson(Dia::Core::StringCRC("dia.geometry2d.shape_count"));
+    Dia::API::UnregisterCommandJson(Dia::Core::StringCRC("dia.geometry2d.intersection_pairs"));
+
     mShapeCount = 0;
     mMetricShapeCount = nullptr;
     mMetricIntersectionPairCount = nullptr;
