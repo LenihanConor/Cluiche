@@ -16,6 +16,9 @@
     <ClCompile Include="Modules\BusProbeModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\BusRecorderModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -25,6 +28,9 @@
       <Filter>Modules</Filter>
     </ClInclude>
     <ClInclude Include="Modules\BusProbeModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\BusRecorderModule.h">
       <Filter>Modules</Filter>
     </ClInclude>
   </ItemGroup>

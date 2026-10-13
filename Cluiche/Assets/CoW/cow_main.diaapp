@@ -479,6 +479,17 @@
                     "channels": []
                 },
                 {
+                    "instance_id": "BusRecorderModule",
+                    "type_id": "BusRecorderModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "MessageBusHostModule"
+                    ],
+                    "channels": []
+                },
+                {
                     "instance_id": "LoadingScreenModule",
                     "type_id": "LoadingScreenModule",
                     "stages": [

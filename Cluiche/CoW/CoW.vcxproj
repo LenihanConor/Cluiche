@@ -27,11 +27,13 @@
     <ClCompile Include="Modules\FrontEndModule.cpp" />
     <ClCompile Include="Modules\RandomStreamModule.cpp" />
     <ClCompile Include="Modules\BusProbeModule.cpp" />
+    <ClCompile Include="Modules\BusRecorderModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />
     <ClInclude Include="Modules\RandomStreamModule.h" />
     <ClInclude Include="Modules\BusProbeModule.h" />
+    <ClInclude Include="Modules\BusRecorderModule.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">
