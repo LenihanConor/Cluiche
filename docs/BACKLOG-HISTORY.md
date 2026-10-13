@@ -155,6 +155,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | panel-palette | [spec](specs/) | 2026-10-13 | Marked done by `dia docs spec-done` |
 | panel-console | [spec](specs/applications/dia/systems/diadebugdomain/panel-console.md) | 2026-10-13 | Console strip in DiaDebugPanel: parser, results, history, autocomplete, log view, PanelController, golden contract tests. Replaced the old DiaDebugConsole/ModuleDebugRegistry/DiaDebugDataPanel plan (the last two superseded). User-verified in CluicheTest. Also fixed along the way: ASan link and runner, StringCRC / String<N> over-reads, Application metric pointers |
 | f1-harness | [spec](specs/applications/cow/systems/f1-harness/f1-harness.md) | 2026-10-13 | CoW boots to a Boot menu with a stub front end; baseline BootMenuModule; `dia scaffold stage --app` and `dia scaffold app`; debug panel host (console, Ctrl+P palette) wired into CoW; message bus in the manifest (baseline MessageBusHostModule + CoW BusProbeModule); bus traffic recorder wired (BusRecorderModule, Test 6 verified from the file after exit). Follow-ups left in BACKLOG Loose Ends |
+| bus-recorder-debug-card | [spec](specs/applications/dia/systems/diamessagebus/visual-debugger.md) | 2026-10-13 | Recorder section in the MessageBus debug card's Live tab (AC-9): attached/state/path/records/bytes/dropped via `IBusRecorder::GetStatus` and `Bus::GetRecorder()`; 4 tests. Also closed the F-1 observation gaps (StageStatus table-full log + counter, BootMenu empty-stage warning, bus host domain logs, BusProbe counters) |
 
 ---
 
