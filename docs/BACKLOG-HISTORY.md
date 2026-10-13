@@ -149,6 +149,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | CoW / Dia | F-1: Bus traffic recorder | 2026-10-09 | Implemented as MessageBusStressTestStage in CluicheTest (commit f717ac07). Validates Primary/Reaction two-pass delivery with 10k messages at 1:1 ratio. CoW can reference this test for F-1 Test 4 verification instead of building a separate CoW-specific stage. |
 | CoW | DiaMessageBus module doc: `status: stub` is stale | 2026-10-09 | Moved by `dia docs backlog move` |
 | CoW | Shared application-bootstrap helper | 2026-10-09 | `Dia::ApplicationFlow::LoadManifest` + `RegisterPathAliases` (Manifest/ManifestBootstrap.h); both mains use it, loop/frame rate stay per-app |
+| Dia | DiaMessageBus: bus-traffic-recorder | 2026-10-13 | `IBusRecorder` + `Bus::SetRecorder` hook, `FileBusRecorder` (format v1, injected tick source), test helpers, observation (3 counters, flush profile scope, `FileBusRecorderHealthReporter`). 37 tests; AC-10 relaxed to a runtime assert (spec amended). Commits 2cc53024..17a3aa47. CoW wiring (path, tick source, flush/close on exit) remains a separate CoW task |
 
 ---
 

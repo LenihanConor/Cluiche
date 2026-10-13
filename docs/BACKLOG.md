@@ -21,7 +21,8 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | Project | System | Features | Depends On |
 |---------|--------|----------|------------|
-| Dia | DiaMessageBus: bus-traffic-recorder | Debug-only `IBusRecorder` hook in `Bus::DispatchOne` + `FileBusRecorder` (versioned binary per-message records). **READY TO IMPLEMENT**: Spec Approved 2026-10-12, design reviewed, all open questions resolved, 4-task plan ready (TDD RED-GREEN-REFACTOR, sonnet/haiku). Interface extensible (file/network/memory targets). CoW needs it for F-1 Test 6 and V-3; the CoW wiring (path, tick source, lifecycle) is a separate CoW task | None (DiaMessageBus is built) |
+| Dia | Debug Console and Command Lifecycle | Specs Approved 2026-10-13: (1) [command-unregister](specs/applications/dia/systems/diaapi/command-unregister.md) / [plan](specs/applications/dia/systems/diaapi/command-unregister.plan.md) (7 tasks: `UnregisterCommand`, thread-safe registry, uncapped list), (2) [panel-console](specs/applications/dia/systems/diadebugdomain/panel-console.md) / [plan](specs/applications/dia/systems/diadebugdomain/panel-console.plan.md) (10 tasks: extends the `~` panel command strip with output, parser, history, autocomplete, log view, 240-char input). Replaces ModuleDebugRegistry and DiaDebugDataPanel (both dropped). Build order: (1) then (2). Baseline/CluicheTest tasks need sign-off | None |
+| Dia | DiaDebugPalette | Spec Approved 2026-10-13: [panel-palette](specs/applications/dia/systems/diadebugdomain/panel-palette.md) / [plan](specs/applications/dia/systems/diadebugdomain/panel-palette.plan.md) (7 tasks). Ctrl+P overlay in the debug panel over commands and domains; fuzzy search | Debug Console and Command Lifecycle |
 
 ### CoW
 
@@ -42,8 +43,6 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | Project | Item | Spec | What's needed |
 |---------|------|------|---------------|
 | Dia | Audio module | — | Needs a Dia spec first; Dia has no audio module. CoW needs it for its A-1 Audio testbed |
-| Dia | Debug Console and Command Lifecycle | [debug-console.md](specs/applications/cow/systems/f1-harness/debug-console.md) (to move under `dia/systems/`) | Extend the existing `~` panel command strip, not a separate console: (1) result/exit-code output shown in the panel, (2) use `DiaAPI/Parser/ArgumentParser` for `--flags` and `key=value`, (3) history, autocomplete, log view, (4) `Dia::API::UnregisterCommand` (thread-safety vs `ExecuteCommand` and duplicate-name behaviour are open questions). Rewrite the spec, move it to Dia, then approve. Supersedes ModuleDebugRegistry (dropped except unregister) and DiaDebugDataPanel (dropped: `IDebugDomain` panel and `MessageBusDebugDomain` already cover it). Decided 2026-10-13 |
-| Dia | DiaDebugPalette | [debug-palette.md](specs/applications/cow/systems/f1-harness/debug-palette.md) (to move under `dia/systems/`) | Search and launch UI over `ListCommands()`, `HelpSystem` and the domain registry. Opens with **Ctrl+P** (changed from F1). Move spec to Dia and update the key before building. Depends on: Debug Console and Command Lifecycle. Decided 2026-10-13 |
 | Dia | RenderTestPlugin (CluicheEditor) | — | Needs `/spec-system` — visual debugger panel: wipe slider, region grid, expectation authoring, AI triage panel, render targets. DiaRenderTest CLI Pipeline ✅ unblocked. Mockup: [render_test_debugger_mockup.html](research/render_offline_test/render_test_debugger_mockup.html). Research: [render_offline_test/summary.md](research/render_offline_test/summary.md) |
 
 ### CoW
