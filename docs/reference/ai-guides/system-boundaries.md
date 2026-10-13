@@ -119,7 +119,7 @@ This document defines clear boundaries between subsystems to help AI agents:
 - Notifying observers when UI ready
 
 **❌ Doesn't Own:**
-- HTML/CSS/JavaScript content (External/Webix/)
+- HTML/CSS/JavaScript content (page assets)
 - Cross-thread UI communication (SimUIProxyModule)
 
 ---
@@ -423,20 +423,6 @@ This document defines clear boundaries between subsystems to help AI agents:
 - File I/O (DiaIO)
 
 **Used By:** DiaCore/Json/ (wrapper)
-
----
-
-### Webix
-
-**✅ Owns:**
-- Web UI components (JavaScript library)
-- Dashboard layouts
-- Data grids, charts, etc.
-
-**❌ Doesn't Own:**
-- Application logic (Cluiche)
-
-**Used By:** MainUIModule
 
 ---
 

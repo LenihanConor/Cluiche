@@ -26,9 +26,9 @@ After Feature 1 moves raw assets into the structured tree, there is no build-tim
 5. `assets.runtime.json` is generated at `bin/CluicheTest/Debug/x64/assets/assets.runtime.json`
 6. `assets.runtime.json` contains a `stage.global` entry listing all global-scoped assets
 7. `assets.runtime.json` contains a `stage.dummy_stage` entry listing all DummyStage-scoped assets
-8. All asset IDs in `assets.runtime.json` follow the `type.name` convention (e.g., `folder.webix_5_2_1`, `file.bootscreen_html`, `texture.test_red`)
+8. All asset IDs in `assets.runtime.json` follow the `type.name` convention (e.g., `folder.ultralight_resources`, `file.bootscreen_html`, `texture.test_red`)
 9. Deploy paths in `assets.runtime.json` are relative to the `assets/` deploy root
-10. Folder assets (Webix, BootStrap) deploy their full directory tree recursively
+10. Folder assets (BootStrap, Ultralight resources) deploy their full directory tree recursively
 11. `dia asset validate --target cluichetest` passes with no errors
 12. Release config also works: `dia asset build --target cluichetest --config Release`
 
@@ -82,13 +82,6 @@ deploy_root = "bin/CluicheTest/{config}/{platform}/assets"
             "id": "folder.bootstrap_ui",
             "type": "folder",
             "source_path": "Global/Presentation/UI/BootStrap/",
-            "scope": "global",
-            "tags": ["Presentation/UI"]
-        },
-        {
-            "id": "folder.webix_5_2_1",
-            "type": "folder",
-            "source_path": "Global/Presentation/UI/Webix/5.2.1/",
             "scope": "global",
             "tags": ["Presentation/UI"]
         },
@@ -149,7 +142,6 @@ deploy_root = "bin/CluicheTest/{config}/{platform}/assets"
                 "manifest.cluiche_sim",
                 "shader.ui_frag",
                 "folder.bootstrap_ui",
-                "folder.webix_5_2_1",
                 "folder.ultralight_resources"
             ]
         },
@@ -180,13 +172,11 @@ bin/CluicheTest/Debug/x64/assets/
 │   ├── Presentation/
 │   │   ├── ui.frag
 │   │   └── UI/
-│   │       ├── BootStrap/
-│   │       │   ├── bootscreen.html
-│   │       │   ├── launchMenuData.json
-│   │       │   ├── launchMenuData.csv
-│   │       │   └── testdata.js
-│   │       └── Webix/
-│   │           └── 5.2.1/...
+│   │       └── BootStrap/
+│   │           ├── bootscreen.html
+│   │           ├── launchMenuData.json
+│   │           ├── launchMenuData.csv
+│   │           └── testdata.js
 │   └── Misc/
 │       └── Resources/
 │           ├── cacert.pem

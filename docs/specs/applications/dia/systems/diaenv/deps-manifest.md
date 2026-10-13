@@ -49,6 +49,8 @@ There is currently no machine-readable record of which binary SDKs belong in `Ex
 | `protobuf` | `External/protobuf/protobuf-25.6` | zip | GitHub releases | `file://` local path |
 | `imgui` | `External/imgui` | zip | GitHub releases (ocornut/imgui) | `file://` local path |
 
+**Removed:** the `webix-*` rows above are historical. All Webix entries have been removed from `deps.json` (`test_deps_json.py` asserts they stay absent); the last vendored copy under `Assets/CluicheTest` was deleted 2026-10-13.
+
 **Excluded:** `External/Python` (unreferenced by any `.vcxproj`), `External/Webix/3.1.2` (unreferenced), `External/Cluiche/Tests` (test data, not a dep), `External/External/googletest` (duplicate — covered by submodule-migration).
 
 ### `deps.json` Schema

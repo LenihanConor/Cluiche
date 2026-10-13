@@ -14,7 +14,6 @@ Cluiche uses **4 external dependencies** for graphics, audio, input, JSON, and U
 |---------|---------|---------|---------|
 | **SFML** | 2.x | Graphics, audio, input, windowing | DiaSFML (primary backend) |
 | **JsonCpp** | master | JSON parsing and serialization | DiaCore (configuration) |
-| **Webix** | Multiple | JavaScript UI framework | UI pages, console |
 | **VisJS** | - | Data visualization library | Debugging visualizations |
 
 **Location:** `External/`
@@ -205,59 +204,6 @@ JsonCpp could be replaced with:
 
 ## UI Dependencies
 
-### Webix
-
-**Location:** `External/Webix/` (multiple versions)
-
-**Version:** Multiple (3.x, 4.x, etc.)
-
-**Purpose:** JavaScript UI framework for web-based tools
-
-**Website:** https://webix.com/
-
-#### What Cluiche Uses
-
-**UI Components:**
-- Tables and grids
-- Forms and inputs
-- Charts and visualizations
-- Layout management
-
-**Usage:**
-```html
-<!-- HTML page using Webix -->
-<script src="webix.js"></script>
-<script>
-    webix.ui({
-        view: "datatable",
-        columns: [
-            { id: "name", header: "Name" },
-            { id: "value", header: "Value" }
-        ],
-        data: [
-            { name: "Item 1", value: 42 },
-            { name: "Item 2", value: 100 }
-        ]
-    });
-</script>
-```
-
-#### Integration
-
-**Loaded as HTML pages:**
-- Webix is included in HTML pages
-- No direct C++ integration
-
-#### Licensing
-
-**License:** GPL v3 or Commercial
-
-**Commercial Use:** ⚠️ Requires commercial license for proprietary software
-
-**Source:** https://github.com/webix-hub/webix
-
----
-
 ### VisJS
 
 **Location:** `External/VisJS/`
@@ -447,10 +393,9 @@ vcpkg integrate install
 |---------|---------|----------------|----------------------|
 | **SFML** | zlib/png | ✅ Yes | ❌ No |
 | **JsonCpp** | MIT / Public Domain | ✅ Yes | ⚠️ Recommended |
-| **Webix** | GPL v3 / Commercial | ⚠️ Requires commercial license | ✅ Yes (GPL) |
 | **VisJS** | Apache 2.0 / MIT | ✅ Yes | ✅ Yes (Apache) |
 
-**⚠️ Important:** Review license terms for commercial projects, especially Webix.
+**⚠️ Important:** Review license terms for commercial projects.
 
 **[→ External documentation links](../registry/external-links.md)**
 
@@ -458,18 +403,16 @@ vcpkg integrate install
 
 ## Summary
 
-Cluiche uses **4 external dependencies**:
+Cluiche uses **3 external dependencies**:
 
 **Core:**
 - ✅ SFML (graphics/audio/input) - Primary backend, permissive license
 - ✅ JsonCpp (JSON parsing) - Simple, permissive license
 
 **UI:**
-- ⚠️ Webix (UI framework) - GPL or commercial license
 - ✅ VisJS (visualization) - Permissive license
 
 **Future:**
 - Consider package manager (vcpkg, Conan)
-- Evaluate Webix license for commercial use
 
 **[→ Back to Architecture Overview](architecture.md)**

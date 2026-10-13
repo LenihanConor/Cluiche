@@ -217,7 +217,6 @@ C:\GitHub\Cluiche\
   - `src/` - JSON source
 
 ### Web UI Components
-- `External/Webix/` - Web UI library
 - `External/VisJS/` - Graph visualization
 
 ---

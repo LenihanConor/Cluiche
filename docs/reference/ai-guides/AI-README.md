@@ -264,7 +264,6 @@ Cluiche/CluicheTest/
 External/
 ├── SFML/                                # Graphics/Audio/Input library
 ├── jsoncpp-master/                      # JSON configuration
-├── Webix/                               # UI framework (multiple versions)
 └── VisJS/                               # Visualization library
 ```
 

@@ -116,7 +116,7 @@ The codebase extensively uses `StringCRC` for efficient string comparison via co
 Located in `External/`:
 - **SFML** - Graphics, window, and multimedia library
 - **jsoncpp-master** - JSON parsing (used via `DiaCore/Json/`)
-- **Webix** & **VisJS** - Web UI frameworks for debugging/visualization
+- **VisJS** - Visualization framework for debugging
 
 ## Project Structure
 

@@ -49,19 +49,6 @@ Documentation links for external dependencies and tools.
 
 ---
 
-### Webix
-
-**Purpose:** JavaScript UI components
-
-**Links:**
-- Official Website: https://webix.com/
-- Documentation: https://docs.webix.com/
-- Demos: https://webix.com/demos/
-
-**Used By:** `External/Webix/`
-
----
-
 ### VisJS
 
 **Purpose:** JavaScript graph visualization

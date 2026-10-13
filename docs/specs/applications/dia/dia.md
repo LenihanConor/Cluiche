@@ -133,7 +133,7 @@ Dia is the engine - it provides dependencies for other applications rather than 
 
 - **SDL3** (External/SDL3) - Window management and input (replaces SFML window/input path; git submodule, built via `dia env setup`)
 - **jsoncpp** (External/jsoncpp-master) - JSON parsing
-- **Webix / VisJS** (External/) - Web UI for debugging/visualization
+- **VisJS** (External/) - Visualization for debugging
 - **GoogleTest** (External/googletest) - Unit testing framework
 
 ## Out of Scope
