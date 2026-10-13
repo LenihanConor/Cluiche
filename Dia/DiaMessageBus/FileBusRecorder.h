@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <DiaMessageBus/IBusRecorder.h>
 
+namespace Dia::Observation::Metric { class Counter; }
+
 namespace Dia::MessageBus {
 
     // Debug-only recorder that writes every dispatched bus message to a binary
@@ -47,6 +49,9 @@ namespace Dia::MessageBus {
 
         bool IsOpen() const { return mFile != nullptr; }
 
+        // True after an open/write failure (until the next successful Open).
+        bool IsDisabled() const { return mDisabled; }
+
         void OnDispatch(Dia::Core::StringCRC typeId,
                         Dia::Core::StringCRC routerId,
                         Pass pass,
@@ -66,6 +71,9 @@ namespace Dia::MessageBus {
         uint32_t  mBufferUsed;
         Config    mConfig;
         bool      mDisabled;
+        Dia::Observation::Metric::Counter* mMetricRecorded     = nullptr;
+        Dia::Observation::Metric::Counter* mMetricRecordedBytes = nullptr;
+        Dia::Observation::Metric::Counter* mMetricDropped      = nullptr;
     };
 
 } // namespace Dia::MessageBus

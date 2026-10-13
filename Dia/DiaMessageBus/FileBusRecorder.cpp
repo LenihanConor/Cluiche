@@ -2,6 +2,8 @@
 
 #include <DiaMessageBus/FileBusRecorder.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
 
 #include <cstdio>
 
@@ -17,6 +19,13 @@ namespace Dia::MessageBus {
     bool FileBusRecorder::Open(const char* path, const Config& config) {
         Close();
         mDisabled = false;
+
+        if (!mMetricRecorded) {
+            auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
+            mMetricRecorded      = reg.RegisterCounter(Dia::Core::StringCRC("dia.msgbus.recorded"));
+            mMetricRecordedBytes = reg.RegisterCounter(Dia::Core::StringCRC("dia.msgbus.recorded_bytes"));
+            mMetricDropped       = reg.RegisterCounter(Dia::Core::StringCRC("dia.msgbus.record_dropped"));
+        }
 
         if (!config.tickSource) {
             Fail("no tick source supplied");
@@ -47,6 +56,7 @@ namespace Dia::MessageBus {
             mDisabled = true;
             return false;
         }
+        if (mMetricRecordedBytes) mMetricRecordedBytes->Inc(8);
         return true;
     }
 
@@ -74,7 +84,11 @@ namespace Dia::MessageBus {
                                      Pass pass,
                                      const void* payload,
                                      uint32_t payloadSize) {
-        if (mDisabled || !mFile) return;
+        if (mDisabled) {
+            if (mMetricDropped) mMetricDropped->Inc();
+            return;
+        }
+        if (!mFile) return;
 
         WriteU64(mConfig.tickSource(mConfig.tickContext));
         WriteU32(typeId.Value());
@@ -83,6 +97,11 @@ namespace Dia::MessageBus {
         WriteBytes(tail, 4);
         WriteU32(payloadSize);
         if (payloadSize > 0 && payload) WriteBytes(payload, payloadSize);
+
+        if (!mDisabled) {
+            if (mMetricRecorded) mMetricRecorded->Inc();
+            if (mMetricRecordedBytes) mMetricRecordedBytes->Inc(24u + (payload ? payloadSize : 0u));
+        }
     }
 
     void FileBusRecorder::WriteBytes(const void* data, uint32_t size) {
@@ -113,6 +132,7 @@ namespace Dia::MessageBus {
 
     bool FileBusRecorder::FlushBuffer() {
         if (mBufferUsed == 0) return true;
+        DIA_PROFILE_SCOPE("messagebus.recorder.flush", ::Dia::Observation::Profile::Category::kNone);
         const size_t written = std::fwrite(mBuffer, 1, mBufferUsed, static_cast<std::FILE*>(mFile));
         if (written != mBufferUsed) {
             Fail("write failed");

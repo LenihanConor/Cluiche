@@ -26,6 +26,7 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FileBusRecorder.cpp" />
+    <ClCompile Include="FileBusRecorderHealthReporter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Bus.h">
@@ -66,6 +67,7 @@
     <ClInclude Include="Testing\BusTrafficFileReader.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="FileBusRecorderHealthReporter.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source Files">

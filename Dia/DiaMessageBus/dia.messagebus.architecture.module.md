@@ -45,6 +45,7 @@ responsibilities:
     introspection accessors (ForEachRegisteredType/ForEachProducerForType/
     ForEachSubscriberForType) added for this tab's use only.
   - Provide IBusRecorder, a Debug-only per-dispatch recording hook (Bus::SetRecorder, non-owning), and FileBusRecorder, a default buffered binary file recorder (format v1, injected tick source). Application owns/injects the recorder. Entirely #ifdef DIA_DEBUG.
+  - FileBusRecorder (Debug-only) emits counters dia.msgbus.recorded, dia.msgbus.recorded_bytes, dia.msgbus.record_dropped and a messagebus.recorder.flush profile scope; FileBusRecorderHealthReporter (Failing when the recorder is disabled) is owned, registered and Check()-ed by the application, not MessageBusModule.
 
 non_responsibilities:
   - Message schema definitions (application layer -- DiaGameplayMessages or equivalent)
@@ -67,6 +68,7 @@ public_api:
     - Dia/DiaMessageBus/MessageBusDebugDomain.h
     - Dia/DiaMessageBus/IBusRecorder.h
     - Dia/DiaMessageBus/FileBusRecorder.h
+    - Dia/DiaMessageBus/FileBusRecorderHealthReporter.h
   namespaces:
     - Dia::MessageBus
   entry_points:
@@ -79,6 +81,7 @@ public_api:
     - MessageBusDebugDomain
     - IBusRecorder
     - FileBusRecorder
+    - FileBusRecorderHealthReporter
 
 dependencies:
   required:
