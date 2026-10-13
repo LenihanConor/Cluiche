@@ -202,6 +202,9 @@ namespace Dia::MessageBus {
         // Set a recorder for all dispatched messages. Non-owning pointer;
         // caller keeps the recorder alive. Pass nullptr to clear.
         void SetRecorder(IBusRecorder* recorder);
+
+        // The installed recorder, or nullptr. Read-only view for tooling.
+        const IBusRecorder* GetRecorder() const { return mRecorder; }
 #endif // DIA_DEBUG
 
     private:

@@ -52,6 +52,8 @@ namespace Dia::MessageBus {
         // True after an open/write failure (until the next successful Open).
         bool IsDisabled() const { return mDisabled; }
 
+        bool GetStatus(RecorderStatus& out) const override;
+
         void OnDispatch(Dia::Core::StringCRC typeId,
                         Dia::Core::StringCRC routerId,
                         Pass pass,
@@ -71,6 +73,10 @@ namespace Dia::MessageBus {
         uint32_t  mBufferUsed;
         Config    mConfig;
         bool      mDisabled;
+        char      mPath[260] = {};
+        uint64_t  mRecordsWritten = 0;
+        uint64_t  mBytesWritten   = 0;
+        uint64_t  mRecordsDropped = 0;
         Dia::Observation::Metric::Counter* mMetricRecorded     = nullptr;
         Dia::Observation::Metric::Counter* mMetricRecordedBytes = nullptr;
         Dia::Observation::Metric::Counter* mMetricDropped      = nullptr;

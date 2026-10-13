@@ -57,6 +57,7 @@ namespace Dia::MessageBus {
         void WriteSchemaTab(Json::Value& out)  const;
         void WriteLiveTab(Json::Value& out)    const;
         void WriteHistoryTab(Json::Value& out) const;
+        void WriteRecorderSection(Json::Value& live) const;
 
         const MessageBusModule& mModule;
         Tab                      mActiveTab          = Tab::Live;

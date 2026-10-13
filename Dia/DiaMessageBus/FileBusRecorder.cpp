@@ -19,6 +19,14 @@ namespace Dia::MessageBus {
     bool FileBusRecorder::Open(const char* path, const Config& config) {
         Close();
         mDisabled = false;
+        mRecordsWritten = 0;
+        mBytesWritten   = 0;
+        mRecordsDropped = 0;
+        mPath[0] = '\0';
+        if (path) {
+            std::strncpy(mPath, path, sizeof(mPath) - 1);
+            mPath[sizeof(mPath) - 1] = '\0';
+        }
 
         if (!mMetricRecorded) {
             auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
@@ -56,6 +64,7 @@ namespace Dia::MessageBus {
             mDisabled = true;
             return false;
         }
+        mBytesWritten += 8;
         if (mMetricRecordedBytes) mMetricRecordedBytes->Inc(8);
         return true;
     }
@@ -85,6 +94,7 @@ namespace Dia::MessageBus {
                                      const void* payload,
                                      uint32_t payloadSize) {
         if (mDisabled) {
+            ++mRecordsDropped;
             if (mMetricDropped) mMetricDropped->Inc();
             return;
         }
@@ -99,9 +109,22 @@ namespace Dia::MessageBus {
         if (payloadSize > 0 && payload) WriteBytes(payload, payloadSize);
 
         if (!mDisabled) {
+            ++mRecordsWritten;
+            mBytesWritten += 24u + (payload ? payloadSize : 0u);
             if (mMetricRecorded) mMetricRecorded->Inc();
             if (mMetricRecordedBytes) mMetricRecordedBytes->Inc(24u + (payload ? payloadSize : 0u));
         }
+    }
+
+    bool FileBusRecorder::GetStatus(RecorderStatus& out) const {
+        out.state = mDisabled ? RecorderStatus::State::kDisabled
+                  : mFile     ? RecorderStatus::State::kOpen
+                              : RecorderStatus::State::kClosed;
+        out.path           = mPath;
+        out.recordsWritten = mRecordsWritten;
+        out.bytesWritten   = mBytesWritten;
+        out.recordsDropped = mRecordsDropped;
+        return true;
     }
 
     void FileBusRecorder::WriteBytes(const void* data, uint32_t size) {

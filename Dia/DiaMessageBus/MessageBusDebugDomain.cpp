@@ -157,7 +157,38 @@ void MessageBusDebugDomain::WriteLiveTab(Json::Value& out) const
     live["totalMessages"]   = static_cast<Json::UInt64>(totalMessages);
     live["totalDeliveries"] = static_cast<Json::UInt64>(totalDeliveries);
     live["entries"]         = entries;
+    WriteRecorderSection(live);
     out["live"] = live;
+}
+
+void MessageBusDebugDomain::WriteRecorderSection(Json::Value& live) const
+{
+    Json::Value recorder(Json::objectValue);
+    const IBusRecorder* installed = mModule.GetBus().GetRecorder();
+    recorder["attached"] = (installed != nullptr);
+
+    if (installed)
+    {
+        RecorderStatus status;
+        if (installed->GetStatus(status))
+        {
+            switch (status.state)
+            {
+            case RecorderStatus::State::kOpen:     recorder["state"] = "open";     break;
+            case RecorderStatus::State::kDisabled: recorder["state"] = "disabled"; break;
+            case RecorderStatus::State::kClosed:   recorder["state"] = "closed";   break;
+            }
+            recorder["path"]           = status.path;
+            recorder["recordsWritten"] = static_cast<Json::UInt64>(status.recordsWritten);
+            recorder["bytesWritten"]   = static_cast<Json::UInt64>(status.bytesWritten);
+            recorder["recordsDropped"] = static_cast<Json::UInt64>(status.recordsDropped);
+        }
+        else
+        {
+            recorder["state"] = "unknown";
+        }
+    }
+    live["recorder"] = recorder;
 }
 
 void MessageBusDebugDomain::WriteHistoryTab(Json::Value& out) const

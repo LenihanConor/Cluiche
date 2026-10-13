@@ -138,3 +138,7 @@ Type and router ids are `StringCRC` values. A reader needs no schema to skip rec
 Approved.
 
 **Plan:** [bus-traffic-recorder.plan.md](bus-traffic-recorder.plan.md) — In Progress (no tasks started)
+
+## Amendment 2026-10-13: recorder status for tooling
+
+`IBusRecorder` gained `RecorderStatus` and a non-pure `GetStatus(RecorderStatus&) const` (default: returns false). `Bus::GetRecorder() const` exposes the installed recorder read-only. `FileBusRecorder` reports its state (open, closed, disabled), path and its own record, byte and dropped counts (kept per instance, not read from the global metrics). `MessageBusDebugDomain` shows these in the Live tab (see visual-debugger.md AC-9).
