@@ -13,10 +13,6 @@
                     "type": "contains"
                 },
                 {
-                    "target": "folder.webix_5_2_1",
-                    "type": "contains"
-                },
-                {
                     "target": "folder.ultralight_resources",
                     "type": "contains"
                 },
@@ -124,19 +120,6 @@
                 "Presentation/UI"
             ],
             "type": "ui"
-        },
-        {
-            "content_hash": 0,
-            "id": "folder.webix_5_2_1",
-            "references": [],
-            "scope": "global",
-            "source_path": "Global/Presentation/UI/Webix",
-            "stage_name": "",
-            "status": "active",
-            "tags": [
-                "Presentation/UI"
-            ],
-            "type": "folder"
         },
         {
             "content_hash": 0,
