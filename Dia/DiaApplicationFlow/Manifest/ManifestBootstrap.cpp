@@ -81,7 +81,8 @@ namespace Dia { namespace ApplicationFlow {
             const auto& results = validator.GetResults();
             for (unsigned int i = 0; i < results.Size(); ++i)
             {
-                printf("Validation error: %s\n", results[i].message.AsCStr());
+                const bool isError = results[i].severity == ValidationSeverity::kError;
+                printf("Validation %s: %s\n", isError ? "error" : "warning", results[i].message.AsCStr());
             }
             return false;
         }

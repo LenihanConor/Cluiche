@@ -158,6 +158,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | bus-recorder-debug-card | [spec](specs/applications/dia/systems/diamessagebus/visual-debugger.md) | 2026-10-13 | Recorder section in the MessageBus debug card's Live tab (AC-9): attached/state/path/records/bytes/dropped via `IBusRecorder::GetStatus` and `Bus::GetRecorder()`; 4 tests. Also closed the F-1 observation gaps (StageStatus table-full log + counter, BootMenu empty-stage warning, bus host domain logs, BusProbe counters) |
 | Dia | 3 tests fail only in the whole-suite ASan run | 2026-10-13 | Not reproduced 2026-10-13: the 3 tests passed in two consecutive full ASan runs; dia check sanitizer exits 0 (9192 tests, no findings). No code change. If they recur, first check for a stale Debug-Asan build (touch the source and rebuild) and the relative Cluiche/out temp paths with GetTickCount(). |
 | Dia | `--shards` runs under Debug-Asan still cannot find the ASan runtime DLL | 2026-10-13 | Fixed 2026-10-13 (6d4262d0): shard_runner builds each shard's env with with_asan_runtime_on_path (config threaded from googletest_runner); unit test added; verified with dia launch googletest --config Asan --shards 2. |
+| Dia | `dia validate manifest` misses ServiceStream orphan providers | 2026-10-13 | Fixed 2026-10-13: dia validate manifest composes each .diagame with its imports and checks ServiceStream provider/consumer constraints (mirrors C++); LoadManifest labels warnings as warnings |
 
 ---
 
