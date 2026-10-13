@@ -108,6 +108,7 @@
     <ClInclude Include="Console\ConsoleLogRing.h" />
     <ClInclude Include="Console\FuzzyMatcher.h" />
     <ClInclude Include="Console\CommandCompleter.h" />
+    <ClInclude Include="Console\ConsoleJson.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugLayerManager.cpp" />
@@ -134,6 +135,7 @@
     <ClCompile Include="Console\ConsoleLogRing.cpp" />
     <ClCompile Include="Console\FuzzyMatcher.cpp" />
     <ClCompile Include="Console\CommandCompleter.cpp" />
+    <ClCompile Include="Console\ConsoleJson.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.debug.architecture.module.md" />
