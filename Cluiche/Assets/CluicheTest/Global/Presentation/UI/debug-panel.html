@@ -350,6 +350,33 @@ body {
 .ac-foot { padding: 2px 8px; font-size: 9px; color: #3a3a3a; border-top: 1px solid #262626; }
 .ac-foot kbd { font-family: inherit; color: #666; border: 1px solid #2a2a2a; padding: 0 3px; }
 
+/* -- Palette overlay (panel-palette; approved mockup debug-palette.html) -- */
+.domain.flash { background: #25303d; box-shadow: 0 0 0 1px var(--accent), 0 0 10px rgba(90,159,212,.35); }
+#pal-overlay { position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0,0,0,.55); display: none; z-index: 10; justify-content: center; align-items: flex-start; padding-top: 70px; }
+#pal-overlay.show { display: flex; }
+.pal { width: 460px; max-height: 70vh; background: #1b1b1b; border: 1px solid #3a3a3a; box-shadow: 0 10px 30px rgba(0,0,0,.7); display: flex; flex-direction: column; }
+.pal-input { background: #0d0d0d; border: none; border-bottom: 1px solid #2d2d2d; color: #d4d4d4; font-family: inherit; font-size: 13px; padding: 9px 12px; outline: none; }
+.pal-input:focus { border-bottom-color: #5a9fd4; } .pal-input::placeholder { color: #3a3a3a; }
+.pal-tabs { display: flex; border-bottom: 1px solid #262626; background: #161616; }
+.pal-tab { padding: 5px 12px; font-size: 10px; color: #555; cursor: pointer; border-bottom: 2px solid transparent; }
+.pal-tab:hover { color: #999; } .pal-tab.active { color: #5a9fd4; border-bottom-color: #5a9fd4; }
+.pal-tab .n { color: #3a3a3a; margin-left: 4px; } .pal-tab.active .n { color: #4a7a9a; }
+.pal-list { overflow-y: auto; flex: 1; min-height: 60px; scrollbar-width: thin; scrollbar-color: #2d2d2d transparent; }
+.pal-row { display: flex; align-items: center; gap: 9px; padding: 6px 12px; cursor: pointer; border-left: 2px solid transparent; }
+.pal-row.sel { background: #243447; border-left-color: #5a9fd4; }
+.pal-type { width: 22px; height: 22px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; border: 1px solid; }
+.pal-type.command { color: #5a9fd4; border-color: #1f3a52; background: #101a24; } .pal-type.domain { color: #10b981; border-color: #124a38; background: #0e1b17; }
+.pal-info { flex: 1; min-width: 0; }
+.pal-nm { font-size: 12px; color: #b0b0b0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pal-ds { font-size: 10px; color: #4a4a4a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.pal-row.sel .pal-ds { color: #7a8a9a; }
+.pal-cat { font-size: 9px; color: #6a6a6a; border: 1px solid #2a2a2a; padding: 1px 6px; flex-shrink: 0; letter-spacing: .5px; }
+.pal mark { background: none; color: #f0c040; font-weight: 700; }
+.pal-empty { padding: 22px 12px; text-align: center; color: #3a3a3a; font-style: italic; font-size: 11px; }
+.pal-foot { border-top: 1px solid #262626; background: #161616; padding: 5px 12px; font-size: 9px; color: #444; display: flex; gap: 12px; }
+.pal-foot .tot { margin-left: auto; }
+.pal-foot kbd { font-family: inherit; color: #777; border: 1px solid #2d2d2d; padding: 0 4px; background: #181818; }
+
 /* ── Stats mini-table (IK2D chains, Animation2D layers, etc.) ── */
 .st-table { width: 100%; margin: 5px 0 2px 0; }
 .st-hdr, .st-row { display: flex; }
@@ -407,7 +434,16 @@ body {
       <input class="cmd-input" id="cmd-input" type="text" maxlength="240" spellcheck="false" autocomplete="off" placeholder="debug.layer.enable…" onfocus="pushUIOnlyMode()" onblur="popInputMode()">
       <span class="cmd-counter" id="cmd-counter"></span></div>
     <div class="cmd-meta"><span class="cmd-result" id="cmd-result"></span>
-      <span class="cmd-hint"><kbd>&uarr;</kbd><kbd>&darr;</kbd> history &nbsp;<kbd>Tab</kbd> complete</span></div>
+      <span class="cmd-hint"><kbd>&uarr;</kbd><kbd>&darr;</kbd> history &nbsp;<kbd>Tab</kbd> complete &nbsp;<kbd>Ctrl+P</kbd> palette</span></div>
+  </div>
+
+  <div id="pal-overlay">
+    <div class="pal">
+      <input class="pal-input" id="pal-input" type="text" maxlength="60" autocomplete="off" spellcheck="false" placeholder="Search commands and domains…" onfocus="pushUIOnlyMode()" onblur="popInputMode()">
+      <div class="pal-tabs" id="pal-tabs"></div>
+      <div class="pal-list" id="pal-list"></div>
+      <div class="pal-foot"><span><kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate</span><span><kbd>Enter</kbd> select</span><span><kbd>Tab</kbd> tab</span><span><kbd>Esc</kbd> close</span><span class="tot" id="pal-tot"></span></div>
+    </div>
   </div>
 
 </div>
@@ -1179,6 +1215,214 @@ function conSend(text) {
 
   conUpdateCounter();
   conRenderLog();
+})();
+
+// ── Command palette (panel-palette; contract in DebugPanelPage.h) ──────────
+// Ctrl+P opens an overlay. JS -> C++: app.onPaletteOpen(), app.onPaletteSearch(query, mask)
+// with mask "1" commands / "2" domains / "3" all. C++ -> JS: paletteResults(json|object).
+// Enter on a "fill" item puts actionText in the console input (not run); on a
+// "reveal" item it expands the group + card whose data-domain equals actionText.
+var PAL_MAX_QUERY = 60;
+var PAL_TABS = [ { mask: '3', label: 'All', key: 'all' },
+                 { mask: '1', label: 'Commands', key: 'commands' },
+                 { mask: '2', label: 'Domains', key: 'domains' } ];
+var palTab    = 0;
+var palSel    = 0;
+var palItems  = [];
+var palCounts = { all: 0, commands: 0, domains: 0 };
+var palTotal  = 0;
+var palTimer  = null;
+
+function palIsOpen() {
+  var o = conEl('pal-overlay');
+  return !!o && o.className.indexOf('show') >= 0;
+}
+
+function palHighlight(name, hl) {
+  var out = '';
+  name = String(name || ''); hl = String(hl || '');
+  for (var i = 0; i < name.length; ++i) {
+    var ch = conEsc(name.charAt(i));
+    out += (hl.charAt(i) === '1') ? '<mark>' + ch + '</mark>' : ch;
+  }
+  return out;
+}
+
+function palRender() {
+  var tabs = conEl('pal-tabs'), list = conEl('pal-list'), tot = conEl('pal-tot');
+  if (!tabs || !list) return;
+  var th = '';
+  for (var t = 0; t < PAL_TABS.length; ++t) {
+    th += '<div class="pal-tab' + (t === palTab ? ' active' : '') + '" data-t="' + t + '">' + PAL_TABS[t].label +
+          '<span class="n">' + (palCounts[PAL_TABS[t].key] | 0) + '</span></div>';
+  }
+  tabs.innerHTML = th;
+  if (palSel >= palItems.length) palSel = Math.max(0, palItems.length - 1);
+  var html = '';
+  for (var i = 0; i < palItems.length; ++i) {
+    var it = palItems[i], isDom = (it.type === 'domain');
+    html += '<div class="pal-row' + (i === palSel ? ' sel' : '') + '" data-i="' + i + '"><span class="pal-type ' +
+            (isDom ? 'domain' : 'command') + '">' + (isDom ? '▣' : '&gt;_') + '</span><div class="pal-info"><div class="pal-nm">' +
+            palHighlight(it.name, it.hl) + '</div><div class="pal-ds">' + conEsc(it.description || '') +
+            '</div></div><span class="pal-cat">' + conEsc(it.category || '') + '</span></div>';
+  }
+  list.innerHTML = html || '<div class="pal-empty">No results found</div>';
+  if (tot) tot.textContent = palTotal > palItems.length ? 'showing ' + palItems.length + ' of ' + palTotal
+                                                         : palTotal + ' result' + (palTotal === 1 ? '' : 's');
+  palScrollSel();
+}
+
+function palScrollSel() {
+  var list = conEl('pal-list');
+  if (!list) return;
+  var rows = list.querySelectorAll('.pal-row');
+  var r = rows[palSel];
+  if (!r) return;
+  if (r.offsetTop < list.scrollTop) list.scrollTop = r.offsetTop;
+  else if (r.offsetTop + r.offsetHeight > list.scrollTop + list.clientHeight)
+    list.scrollTop = r.offsetTop + r.offsetHeight - list.clientHeight;
+}
+
+function palSetSel(i) {
+  var rows = conEl('pal-list').querySelectorAll('.pal-row');
+  if (!rows.length) { palSel = 0; return; }
+  palSel = (i + rows.length) % rows.length;
+  for (var k = 0; k < rows.length; ++k) {
+    rows[k].className = 'pal-row' + (k === palSel ? ' sel' : '');
+  }
+  palScrollSel();
+}
+
+function paletteResults(data) {
+  var r = conParse(data);
+  if (!r) return;
+  palItems  = (r.items && r.items.length) ? r.items.slice(0, 50) : [];
+  var c = r.counts || {};
+  palCounts = { all: c.all | 0, commands: c.commands | 0, domains: c.domains | 0 };
+  palTotal  = (typeof r.total === 'number') ? r.total : palItems.length;
+  palSel    = 0;
+  palRender();
+}
+window.paletteResults = paletteResults;
+
+function palSearchNow() {
+  if (palTimer) { clearTimeout(palTimer); palTimer = null; }
+  var inp = conEl('pal-input');
+  if (!inp || !conApp('onPaletteSearch')) return;
+  var q = inp.value;
+  if (q.length > PAL_MAX_QUERY) q = q.substring(0, PAL_MAX_QUERY);
+  app.onPaletteSearch(q, PAL_TABS[palTab].mask);
+}
+
+function palOpen() {
+  var inp = conEl('pal-input'), ov = conEl('pal-overlay');
+  if (!inp || !ov) return;
+  inp.value = '';
+  palTab = 0; palSel = 0; palItems = []; palTotal = 0;
+  palCounts = { all: 0, commands: 0, domains: 0 };
+  ov.className = 'show';
+  palRender();
+  inp.focus();
+  if (conApp('onPaletteOpen')) app.onPaletteOpen();
+}
+
+function palClose(focusConsole) {
+  var ov = conEl('pal-overlay');
+  if (palTimer) { clearTimeout(palTimer); palTimer = null; }
+  if (ov) ov.className = '';
+  if (focusConsole) { var ci = conEl('cmd-input'); if (ci) ci.focus(); }
+}
+
+function palRevealDomain(id) {
+  var cards = document.querySelectorAll('.domain');
+  var card = null;
+  for (var i = 0; i < cards.length; ++i) {
+    if (cards[i].getAttribute('data-domain') === id) { card = cards[i]; break; }
+  }
+  if (!card) return;
+  var g = card.parentNode;
+  while (g && !(g.className && String(g.className).indexOf('group ') === 0)) g = g.parentNode;
+  if (g) {
+    var gk = g.getAttribute('data-group-key');
+    if (gk) ui.groupOpen[gk] = true;
+    g.classList.add('open'); g.classList.remove('closed');
+    g.classList.remove('hidden');
+  }
+  ui.domainOpen[id] = true;
+  card.classList.add('open'); card.classList.remove('closed');
+  card.classList.remove('hidden');
+  try { card.scrollIntoView(true); } catch (e) { /* old engine */ }
+  card.classList.add('flash');
+  setTimeout(function () { card.classList.remove('flash'); }, 1500);
+}
+
+function palChoose(i) {
+  var it = palItems[i];
+  if (!it) return;
+  palClose(false);
+  if (it.action === 'reveal') {
+    palRevealDomain(String(it.actionText || it.domainId || ''));
+  } else {
+    var ci = conEl('cmd-input');
+    if (!ci) return;
+    ci.value = String(it.actionText || it.name || '');
+    conUpdateCounter();
+    ci.focus();
+    try { ci.setSelectionRange(ci.value.length, ci.value.length); } catch (e) { /* ignore */ }
+  }
+}
+
+function palSwitchTab(t) {
+  palTab = (t + PAL_TABS.length) % PAL_TABS.length;
+  palSel = 0;
+  palRender();
+  palSearchNow();
+}
+
+document.addEventListener('keydown', function (e) {
+  var k = e.key;
+  if (e.ctrlKey && (k === 'p' || k === 'P')) {
+    e.preventDefault();
+    if (palIsOpen()) { var pi = conEl('pal-input'); if (pi) pi.focus(); }
+    else palOpen();
+    return;
+  }
+  if (!palIsOpen()) return;
+  if (k === 'Escape') { e.preventDefault(); palClose(true); }
+  else if (k === 'ArrowDown') { e.preventDefault(); palSetSel(palSel + 1); }
+  else if (k === 'ArrowUp') { e.preventDefault(); palSetSel(palSel - 1); }
+  else if (k === 'Enter') { e.preventDefault(); palChoose(palSel); }
+  else if (k === 'Tab') { e.preventDefault(); palSwitchTab(palTab + (e.shiftKey ? -1 : 1)); }
+});
+
+(function () {
+  var inp = conEl('pal-input');
+  if (!inp) return;
+  inp.addEventListener('input', function () {
+    if (palTimer) clearTimeout(palTimer);
+    palTimer = setTimeout(palSearchNow, 60);
+  });
+  var tabs = conEl('pal-tabs');
+  if (tabs) tabs.addEventListener('click', function (e) {
+    var n = e.target;
+    while (n && n !== tabs && !(n.getAttribute && n.getAttribute('data-t') !== null)) n = n.parentNode;
+    if (!n || n === tabs) return;
+    palSwitchTab(parseInt(n.getAttribute('data-t'), 10) || 0);
+    inp.focus();
+  });
+  var list = conEl('pal-list');
+  function rowOf(e) {
+    var n = e.target;
+    while (n && n !== list && !(n.getAttribute && n.getAttribute('data-i') !== null)) n = n.parentNode;
+    return (n && n !== list) ? parseInt(n.getAttribute('data-i'), 10) : -1;
+  }
+  if (list) {
+    list.addEventListener('mousemove', function (e) { var i = rowOf(e); if (i >= 0 && i !== palSel) palSetSel(i); });
+    list.addEventListener('click', function (e) { var i = rowOf(e); if (i >= 0) palChoose(i); });
+  }
+  var ov = conEl('pal-overlay');
+  if (ov) ov.addEventListener('mousedown', function (e) { if (e.target === ov) palClose(true); });
+  palRender();
 })();
 
 // ── Global scale slider ──────────────────────────────────────────────────
