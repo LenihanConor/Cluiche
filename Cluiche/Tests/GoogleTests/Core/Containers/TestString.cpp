@@ -107,6 +107,38 @@ TEST(String, ConstructionFromDifferentSize_TruncatesOrCopies)
 	EXPECT_STREQ(str4.AsCStr(), "Hello");
 }
 
+TEST(String, ConstructionFromSmallerSize_CopiesContentAndZeroFillsTail)
+{
+	String8 small("Hello");
+	String32 big(small);
+
+	EXPECT_STREQ(big.AsCStr(), "Hello");
+	// Bytes 0..7 mirror the source buffer; everything beyond the source capacity must be zero.
+	for (unsigned int i = small.Size(); i < big.Size(); ++i)
+	{
+		EXPECT_EQ(big.At(i), '\0') << "index " << i;
+	}
+}
+
+TEST(String, ConstructionFromEqualSize_CopiesContent)
+{
+	String8 a("Hello");
+	String<8> b(a);
+
+	EXPECT_STREQ(b.AsCStr(), "Hello");
+	EXPECT_EQ(b.Length(), 5);
+}
+
+TEST(String, ConstructionFromLargerSize_TruncatesWithTerminator)
+{
+	String32 big("0123456789ABCDEF");
+	String8 small(big);
+
+	EXPECT_EQ(small.Length(), 7);
+	EXPECT_STREQ(small.AsCStr(), "0123456");
+	EXPECT_EQ(small.At(7), '\0');
+}
+
 TEST(String, Assignment_OverwritesContent)
 {
 	const char testStr[] = "I like lots of apples";
