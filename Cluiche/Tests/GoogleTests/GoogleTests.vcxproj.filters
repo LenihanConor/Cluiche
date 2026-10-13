@@ -1847,5 +1847,8 @@
     <ClCompile Include="DiaVisualDebugger\Console\TestConsoleExecutor.cpp">
       <Filter>DiaVisualDebugger\Console</Filter>
     </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestConsoleLogRing.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

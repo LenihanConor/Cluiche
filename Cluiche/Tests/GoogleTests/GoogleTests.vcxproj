@@ -863,6 +863,7 @@
     <ClCompile Include="DiaMessageBus\TestBusTrafficRecorderObservation.cpp" />
     <ClCompile Include="DiaVisualDebugger\Console\TestCommandLineParser.cpp" />
     <ClCompile Include="DiaVisualDebugger\Console\TestConsoleExecutor.cpp" />
+    <ClCompile Include="DiaVisualDebugger\Console\TestConsoleLogRing.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
