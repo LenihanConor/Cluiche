@@ -16,6 +16,7 @@
 #include <windows.h>
 #include <thread>
 #include <memory>
+#include <vector>
 
 namespace Dia::SaveGame {
 
@@ -215,7 +216,11 @@ LoadResult SaveManager::Load(Dia::Core::StringCRC slotId)
         return UINT32_MAX;
     };
 
-    // Deserialize participants in registration order, applying migrations as needed.
+    // Pass 1 — migrate and validate every participant. No live state is touched here, so any
+    // failure aborts the load with nothing restored (all-or-nothing).
+    // Slot i is null when the participant is absent from the save.
+    std::vector<std::unique_ptr<LoadContext>> contexts(mRegistry->GetParticipantCount());
+
     for (uint32_t i = 0; i < mRegistry->GetParticipantCount(); ++i)
     {
         ISaveable* p = mRegistry->GetParticipantAt(i);
@@ -228,7 +233,8 @@ LoadResult SaveManager::Load(Dia::Core::StringCRC slotId)
         }
 
         // Wrap the participant's sub-object in a child LoadContext
-        LoadContext pCtx(root[id.AsChar()]);
+        contexts[i] = std::make_unique<LoadContext>(root[id.AsChar()]);
+        LoadContext& pCtx = *contexts[i];
 
         // Apply migration chain when the saved version is behind the live version
         const uint32_t savedVersion = FindSavedVersion(id);
@@ -255,7 +261,23 @@ LoadResult SaveManager::Load(Dia::Core::StringCRC slotId)
             }
         }
 
-        p->Deserialize(pCtx);
+        // Validate on a throwaway copy so navigation state left behind by Validate
+        // cannot leak into Deserialize.
+        LoadContext validateCtx(pCtx.Root());
+        if (!p->Validate(validateCtx))
+        {
+            DIA_LOG_ERROR("savegame", "Load: participant '%s' failed validation — aborting, nothing restored", id.AsChar());
+            return LoadResult::Fail(LoadResultCode::DeserializeError);
+        }
+    }
+
+    // Pass 2 — restore in registration order.
+    for (uint32_t i = 0; i < mRegistry->GetParticipantCount(); ++i)
+    {
+        if (contexts[i])
+        {
+            mRegistry->GetParticipantAt(i)->Deserialize(*contexts[i]);
+        }
     }
 
     DIA_LOG_INFO("savegame", "Load: completed slot '%s'", slotId.AsChar());

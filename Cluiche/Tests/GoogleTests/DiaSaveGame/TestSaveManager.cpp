@@ -443,3 +443,144 @@ TEST(DiaSaveGame_ManagerSlotId, InvalidIdsRejectedWithoutTouchingDisk)
     EXPECT_TRUE(Exists("temp/savegame_tests/slot_ok1.sav"));
     remove("temp/savegame_tests/slot_ok1.sav");
 }
+
+// ---------------------------------------------------------------------------
+// All-or-nothing load: ISaveable::Validate
+// ---------------------------------------------------------------------------
+
+struct ValidatingWorldSaveable : WorldSaveable {
+    bool accept         = true;
+    int  validateCalls  = 0;
+    int  deserializeCalls = 0;
+
+    bool Validate(LoadContext& ctx) const override {
+        const_cast<ValidatingWorldSaveable*>(this)->validateCalls++;
+        int32_t level = 0;
+        return accept && ctx.Read(StringCRC("level"), level);
+    }
+    void Deserialize(LoadContext& ctx) override {
+        deserializeCalls++;
+        WorldSaveable::Deserialize(ctx);
+    }
+};
+
+TEST(DiaSaveGame_ManagerValidate, FailingValidateAbortsLoadAndRestoresNothing)
+{
+    EnsureTestDir();
+
+    PlayerSaveable player;
+    player.data = { 80, 3.5f, true };
+    WorldSaveable world;
+    world.data = { 5 };
+
+    SaveRegistry saveReg;
+    saveReg.Register(StringCRC("player"), &player);
+    saveReg.Register(StringCRC("world"),  &world);
+
+    SaveManager saveMgr;
+    SaveConfig  cfg = MakeConfig();
+    saveMgr.Init(cfg, saveReg);
+    ASSERT_TRUE(saveMgr.Save(StringCRC("slot_val")).Ok());
+
+    // "world" is registered AFTER "player", so without validate-first the player would be restored.
+    PlayerSaveable loadedPlayer;
+    ValidatingWorldSaveable loadedWorld;
+    loadedWorld.accept = false;
+
+    SaveRegistry loadReg;
+    loadReg.Register(StringCRC("player"), &loadedPlayer);
+    loadReg.Register(StringCRC("world"),  &loadedWorld);
+
+    SaveManager loadMgr;
+    loadMgr.Init(cfg, loadReg);
+
+    LoadResult lr = loadMgr.Load(StringCRC("slot_val"));
+    EXPECT_FALSE(lr.Ok());
+    EXPECT_EQ(LoadResultCode::DeserializeError, lr.code);
+    EXPECT_EQ(1, loadedWorld.validateCalls);
+    EXPECT_EQ(0, loadedWorld.deserializeCalls);
+    EXPECT_EQ(0, loadedPlayer.data.hp) << "Earlier participant must not be restored when a later one fails validation";
+
+    remove("temp/savegame_tests/slot_slot_val.sav");
+}
+
+TEST(DiaSaveGame_ManagerValidate, PassingValidateLoadsNormally)
+{
+    EnsureTestDir();
+
+    PlayerSaveable player;
+    player.data = { 80, 3.5f, true };
+    WorldSaveable world;
+    world.data = { 5 };
+
+    SaveRegistry saveReg;
+    saveReg.Register(StringCRC("player"), &player);
+    saveReg.Register(StringCRC("world"),  &world);
+
+    SaveManager saveMgr;
+    SaveConfig  cfg = MakeConfig();
+    saveMgr.Init(cfg, saveReg);
+    ASSERT_TRUE(saveMgr.Save(StringCRC("slot_valok")).Ok());
+
+    PlayerSaveable loadedPlayer;
+    ValidatingWorldSaveable loadedWorld;
+
+    SaveRegistry loadReg;
+    loadReg.Register(StringCRC("player"), &loadedPlayer);
+    loadReg.Register(StringCRC("world"),  &loadedWorld);
+
+    SaveManager loadMgr;
+    loadMgr.Init(cfg, loadReg);
+
+    LoadResult lr = loadMgr.Load(StringCRC("slot_valok"));
+    ASSERT_TRUE(lr.Ok()) << "code " << static_cast<int>(lr.code);
+    EXPECT_EQ(1, loadedWorld.validateCalls);
+    EXPECT_EQ(1, loadedWorld.deserializeCalls);
+    EXPECT_EQ(80, loadedPlayer.data.hp);
+    EXPECT_EQ(5,  loadedWorld.data.level);
+
+    remove("temp/savegame_tests/slot_slot_valok.sav");
+}
+
+struct VersionedWorldSaveable : WorldSaveable {
+    uint32_t version = 1;
+    uint32_t GetVersion() const override { return version; }
+};
+
+TEST(DiaSaveGame_ManagerValidate, MissingMigrationOnLaterParticipantRestoresNothing)
+{
+    EnsureTestDir();
+
+    PlayerSaveable player;
+    player.data = { 80, 3.5f, true };
+    VersionedWorldSaveable world;
+    world.data = { 5 };
+
+    SaveRegistry saveReg;
+    saveReg.Register(StringCRC("player"), &player);
+    saveReg.Register(StringCRC("world"),  &world);
+
+    SaveManager saveMgr;
+    SaveConfig  cfg = MakeConfig();
+    saveMgr.Init(cfg, saveReg);
+    ASSERT_TRUE(saveMgr.Save(StringCRC("slot_mig")).Ok());
+
+    // Live "world" is now v2 with no v1->v2 migration registered.
+    PlayerSaveable loadedPlayer;
+    VersionedWorldSaveable loadedWorld;
+    loadedWorld.version = 2;
+
+    SaveRegistry loadReg;
+    loadReg.Register(StringCRC("player"), &loadedPlayer);
+    loadReg.Register(StringCRC("world"),  &loadedWorld);
+
+    SaveManager loadMgr;
+    loadMgr.Init(cfg, loadReg);
+
+    LoadResult lr = loadMgr.Load(StringCRC("slot_mig"));
+    EXPECT_EQ(LoadResultCode::MigrationError, lr.code);
+    EXPECT_EQ(0, loadedPlayer.data.hp) << "Earlier participant must not be restored when a later migration is missing";
+    EXPECT_EQ(0, loadedWorld.data.level);
+
+    remove("temp/savegame_tests/slot_slot_mig.sav");
+}
