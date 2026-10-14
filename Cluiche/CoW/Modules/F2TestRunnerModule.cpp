@@ -3,6 +3,9 @@
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaSaveGame/SlotManager.h>
+#include <fstream>
+#include <iterator>
 #include <cstring>
 #include <cstdio>
 #include <string>
@@ -116,6 +119,22 @@ void F2TestRunnerModule::ResetScenarioState()
     mC5aSummary[0] = '\0';
     mFReload = F2Fingerprint{};
     mFReplay1000 = F2Fingerprint{};
+    mStartSaveDone = false;
+    mStartSaveOk = false;
+    mHasFStart = false;
+    mFStart = F2Fingerprint{};
+    mRerun = false;
+    mRerunStage = RerunStage::LoadStart;
+    mFRerun500 = F2Fingerprint{};
+    mFRerun1000 = F2Fingerprint{};
+    mFailStage = FailStage::Quiesce;
+    mFailQuiesceUpdates = 0;
+    mQuickBytesBefore.clear();
+    mFLiveBefore = F2Fingerprint{};
+    mMissingLoadFailed = false;
+    mHasC5b = false;
+    mC5bPassed = false;
+    mC5bSummary[0] = '\0';
 }
 
 //-----------------------------------------------------------------------------
@@ -181,6 +200,17 @@ void F2TestRunnerModule::EnterPhase(F2PhaseId phase)
         mScenarioTick = kF2SessionTicks;
         mScriptIndex = 0;
     }
+    if (phase == F2PhaseId::Rerun)
+    {
+        mRerun = true;
+        mRerunStage = RerunStage::LoadStart;
+    }
+    if (phase == F2PhaseId::FailedLoad)
+    {
+        mRerun = false;
+        mFailStage = FailStage::Quiesce;
+        mFailQuiesceUpdates = 0;
+    }
     F2PhaseEntered msg;
     msg.phase = phase;
     Publish(msg);
@@ -194,14 +224,14 @@ void F2TestRunnerModule::RunPhaseBody(F2PhaseId phase)
     mPhaseDone = true;
     switch (phase)
     {
-    case F2PhaseId::Isolation:       RunIsolation(); break; // TODO(plan tasks 4-7): C2 Determinism
+    case F2PhaseId::Isolation:       RunIsolation(); break;
     case F2PhaseId::Session:         RunSession(); break;
     case F2PhaseId::Save:            RunSave(); break;
     case F2PhaseId::ReferenceFuture: RunReferenceFuture(); break;
     case F2PhaseId::Reload:          RunReload(); break;
     case F2PhaseId::Replay:          RunReplay(); break;
-    case F2PhaseId::Rerun:           break; // TODO(plan tasks 6-7): C2 Determinism
-    case F2PhaseId::FailedLoad:      break; // TODO(plan tasks 3-7): failed-load path, C6 BandResolver
+    case F2PhaseId::Rerun:           RunRerun(); break;
+    case F2PhaseId::FailedLoad:      RunFailedLoad(); break;
     default:                         break;
     }
 }
@@ -337,6 +367,23 @@ void F2TestRunnerModule::RunSession()
     GameSpeedControllerModule* gs = mGameSpeed.Get();
     Cluiche::AppFlow::MessageBusHostModule* host = mBus.Get();
 
+    if (!mRerun && !mStartSaveDone)
+    {
+        // Tick 0, before any action or draw: the `start` save phase 6 reloads (there is no in-process
+        // reset API). The runner draws and acts on nothing while it waits.
+        const StepResult r = StepSave("start");
+        if (r == StepResult::Pending)
+            return;
+        bool ok = false;
+        mFStart = CaptureFingerprint(ok);
+        mHasFStart = ok;
+        mStartSaveOk = (r == StepResult::Ok);
+        mStartSaveDone = true;
+        if (!mStartSaveOk)
+            DIA_LOG_ERROR("CoW", "F2: start save did not complete successfully");
+        return;
+    }
+
     if (mScenarioTick == 0 && !mTickSub.IsValid())
     {
         // First call of the phase: subscribe to SimulationTick for the one-per-frame audit.
@@ -360,7 +407,10 @@ void F2TestRunnerModule::RunSession()
         }
         if (!gs || !host || !mTickSub.IsValid())
         {
-            CompleteCheck(F2CheckId::ClockProof, false, "GameSpeedController or bus unavailable");
+            if (mRerun)
+                FinishC2(false, "GameSpeedController or bus unavailable");
+            else
+                CompleteCheck(F2CheckId::ClockProof, false, "GameSpeedController or bus unavailable");
             mPhaseDone = true;   // nothing to drive; later phases still run and report their own failures
             return;
         }
@@ -369,6 +419,16 @@ void F2TestRunnerModule::RunSession()
     if (mScenarioTick >= kF2SessionTicks)
     {
         mTickSub = Dia::MessageBus::BusSubscriptionHandle();
+        if (mRerun)
+        {
+            // The rerun repeats the same actions and draws, but C4 is not re-reported. Capture F500''
+            // here: the same point as F500 (clock stopped, nothing in flight), before any save.
+            bool ok = false;
+            mFRerun500 = CaptureFingerprint(ok);
+            mRerunStage = RerunStage::Remainder;
+            mScriptIndex = 0;
+            return;
+        }
         const bool pass = mC4FirstFailure.empty() && mC4TickViolations == 0 && mC4Transitions == F2SessionScript().size();
         char summary[kSummaryLen];
         if (pass)
@@ -429,45 +489,75 @@ F2Fingerprint F2TestRunnerModule::CaptureFingerprint(bool& ok)
 // resumes paused, the reload comparison (task 5) uses the restored fields only.
 void F2TestRunnerModule::RunSave()
 {
-    constexpr uint32_t kMaxSaveWaitUpdates = 10;
     mPhaseDone = false;
+    const StepResult r = StepSave("quick");
+    if (r == StepResult::Pending)
+        return;
+    mSaveSucceeded = (r == StepResult::Ok);
+    if (!mSaveSucceeded)
+        DIA_LOG_ERROR("CoW", "F2: quick save did not complete successfully");
+    bool ok = false;
+    mF500 = CaptureFingerprint(ok);
+    mHasF500 = ok;
+    mPhaseDone = true;
+}
+
+//-----------------------------------------------------------------------------
+F2TestRunnerModule::StepResult F2TestRunnerModule::StepSave(const char* slot)
+{
+    constexpr uint32_t kMaxSaveWaitUpdates = 10;
     SaveLoadModule* save = mSaveLoad.Get();
     if (!save)
-    {
-        DIA_LOG_ERROR("CoW", "F2: SaveLoadModule unavailable, no save taken");
-        mSaveSucceeded = false;
-        bool ok = false;
-        mF500 = CaptureFingerprint(ok);
-        mHasF500 = ok;
-        mPhaseDone = true;
-        return;
-    }
+        return StepResult::Rejected;
 
     if (!mSaveRequested)
     {
         mSaveCountBefore = save->GetSaveCount();
-        mSaveRequested = save->RequestSave(Dia::Core::StringCRC("quick"));
         mSaveWaitUpdates = 0;
-        if (!mSaveRequested)
-        {
-            DIA_LOG_ERROR("CoW", "F2: quick save request rejected");
-            mPhaseDone = true;
-        }
-        return;
+        if (!save->RequestSave(Dia::Core::StringCRC(slot)))
+            return StepResult::Rejected;
+        mSaveRequested = true;
+        return StepResult::Pending;
     }
 
     ++mSaveWaitUpdates;
     const bool completed = save->GetSaveCount() > mSaveCountBefore;
-    if (completed || mSaveWaitUpdates >= kMaxSaveWaitUpdates)
+    if (!completed && mSaveWaitUpdates < kMaxSaveWaitUpdates)
+        return StepResult::Pending;
+    mSaveRequested = false;
+    if (!completed)
+        return StepResult::Timeout;
+    return save->GetLastSaveResult().Ok() ? StepResult::Ok : StepResult::Failed;
+}
+
+//-----------------------------------------------------------------------------
+// Load requests execute at the next SaveLoadModule update, success or not, so completion is "no longer
+// pending"; success is then read from the last result and the completed-load counter.
+F2TestRunnerModule::StepResult F2TestRunnerModule::StepLoad(const char* slot)
+{
+    constexpr uint32_t kMaxLoadWaitUpdates = 10;
+    SaveLoadModule* save = mSaveLoad.Get();
+    if (!save)
+        return StepResult::Rejected;
+
+    if (!mLoadRequested)
     {
-        mSaveSucceeded = completed && save->GetLastSaveResult().Ok();
-        if (!mSaveSucceeded)
-            DIA_LOG_ERROR("CoW", "F2: quick save did not complete successfully after %u updates", mSaveWaitUpdates);
-        bool ok = false;
-        mF500 = CaptureFingerprint(ok);
-        mHasF500 = ok;
-        mPhaseDone = true;
+        mLoadCountBefore = save->GetLoadCount();
+        mLoadWaitUpdates = 0;
+        if (!save->RequestLoad(Dia::Core::StringCRC(slot)))
+            return StepResult::Rejected;
+        mLoadRequested = true;
+        return StepResult::Pending;
     }
+
+    ++mLoadWaitUpdates;
+    if (save->HasPendingLoad() && mLoadWaitUpdates < kMaxLoadWaitUpdates)
+        return StepResult::Pending;
+    mLoadRequested = false;
+    if (save->HasPendingLoad())
+        return StepResult::Timeout;
+    const bool ok = save->GetLastLoadResult().Ok() && save->GetLoadCount() > mLoadCountBefore;
+    return ok ? StepResult::Ok : StepResult::Failed;
 }
 
 //-----------------------------------------------------------------------------
@@ -475,7 +565,7 @@ void F2TestRunnerModule::RunSave()
 // (phase 5) must reproduce. The streams are not rewound afterwards: the Reload phase restores them.
 void F2TestRunnerModule::RunReferenceFuture()
 {
-    mPhaseDone = RunRemainder(false);
+    mPhaseDone = RunRemainder(RemainderMode::Reference);
 }
 
 //-----------------------------------------------------------------------------
@@ -483,14 +573,14 @@ void F2TestRunnerModule::RunReferenceFuture()
 // draws are compared with the stored reference and resolve C3.
 void F2TestRunnerModule::RunReplay()
 {
-    mPhaseDone = RunRemainder(true);
+    mPhaseDone = RunRemainder(RemainderMode::Replay);
 }
 
 //-----------------------------------------------------------------------------
 // Scenario ticks [500, 1000) with the remainder script (no C4 assertions; C4 is phase 1). On the
 // update after tick 999 capture F1000 FIRST, then draw the next 100 values from each stream
 // (800 values, stream-major, kStreamNames order). Returns true once finished.
-bool F2TestRunnerModule::RunRemainder(bool replay)
+bool F2TestRunnerModule::RunRemainder(RemainderMode mode)
 {
     if (mScenarioTick >= kF2ScenarioTicks)
     {
@@ -508,12 +598,19 @@ bool F2TestRunnerModule::RunRemainder(bool replay)
             }
         }
 
-        if (!replay)
+        if (mode == RemainderMode::Reference)
         {
             mF1000 = fp;
             mHasF1000 = ok;
             mReferenceDraws = draws;
             mHasReferenceDraws = ok && random;
+            return true;
+        }
+
+        if (mode == RemainderMode::Rerun)
+        {
+            mFRerun1000 = fp;
+            FinishRerunComparison(ok && random != nullptr, draws);
             return true;
         }
 
@@ -578,7 +675,7 @@ void F2TestRunnerModule::FinishC5a(bool passed, const char* detail)
     const int i = static_cast<int>(F2CheckId::SaveLoadProof);
     if (passed)
     {
-        // C5 stays Running: part b (the failed load) is plan task 6.
+        // C5 stays Running until phase 7 resolves part b (the failed loads).
         mStatus[i] = F2CheckStatus::Running;
         std::snprintf(mLastResult[i], kSummaryLen, "(a) %s; (b) pending", mC5aSummary);
     }
@@ -597,32 +694,23 @@ void F2TestRunnerModule::FinishC5a(bool passed, const char* detail)
 // straight to Fail otherwise.
 void F2TestRunnerModule::RunReload()
 {
-    constexpr uint32_t kMaxLoadWaitUpdates = 10;
     mPhaseDone = false;
-    SaveLoadModule* save = mSaveLoad.Get();
 
-    if (!save || !mHasF500 || !mSaveSucceeded)
+    if (!mSaveLoad.Get() || !mHasF500 || !mSaveSucceeded)
     {
-        FinishC5a(false, !save ? "SaveLoadModule unavailable" : "no valid quick save or F500");
+        FinishC5a(false, !mSaveLoad.Get() ? "SaveLoadModule unavailable" : "no valid quick save or F500");
         return;
     }
 
-    if (!mLoadRequested)
+    const StepResult r = StepLoad("quick");
+    if (r == StepResult::Pending)
+        return;
+    if (r == StepResult::Rejected)
     {
-        mLoadCountBefore = save->GetLoadCount();
-        mLoadRequested = save->RequestLoad(Dia::Core::StringCRC("quick"));
-        mLoadWaitUpdates = 0;
-        if (!mLoadRequested)
-            FinishC5a(false, "quick load request rejected");
+        FinishC5a(false, "quick load request rejected");
         return;
     }
-
-    ++mLoadWaitUpdates;
-    const bool completed = save->GetLoadCount() > mLoadCountBefore;
-    if (!completed && mLoadWaitUpdates < kMaxLoadWaitUpdates)
-        return;
-
-    if (!completed || !save->GetLastLoadResult().Ok())
+    if (r != StepResult::Ok)
     {
         FinishC5a(false, "quick load did not complete successfully");
         return;
@@ -634,11 +722,274 @@ void F2TestRunnerModule::RunReload()
         FinishC5a(false, "fingerprint unavailable after reload");
         return;
     }
-    const F2CompareResult r = F2Fingerprint::CompareRestored(mF500, mFReload);
-    if (r.IsIdentical())
+    const F2CompareResult cmp = F2Fingerprint::CompareRestored(mF500, mFReload);
+    if (cmp.IsIdentical())
         FinishC5a(true, "8 streams + day counter restored, speed paused");
     else
-        FinishC5a(false, r.Summary().c_str());
+        FinishC5a(false, cmp.Summary().c_str());
+}
+
+//-----------------------------------------------------------------------------
+void F2TestRunnerModule::FinishC2(bool passed, const char* summary)
+{
+    CompleteCheck(F2CheckId::Determinism, passed, summary);
+    if (!passed)
+        DIA_LOG_ERROR("CoW", "F2 C2 failed: %s", summary);
+    mPhaseDone = true;
+}
+
+//-----------------------------------------------------------------------------
+// Phase 6: reload the tick-0 `start` save (no in-process reset API exists), confirm the loaded state
+// equals the tick-0 fingerprint on restored fields, then run the whole script again through the SAME
+// code paths as phases 1 and 3 (RunSession / RunRemainder, in rerun mode). Resolves C2.
+void F2TestRunnerModule::RunRerun()
+{
+    mPhaseDone = false;
+    switch (mRerunStage)
+    {
+    case RerunStage::LoadStart:
+    {
+        if (!mSaveLoad.Get() || !mHasFStart || !mStartSaveOk)
+        {
+            FinishC2(false, "no valid start save or tick-0 fingerprint");
+            return;
+        }
+        const StepResult r = StepLoad("start");
+        if (r == StepResult::Pending)
+            return;
+        if (r != StepResult::Ok)
+        {
+            FinishC2(false, "start load did not complete successfully");
+            return;
+        }
+        bool ok = false;
+        const F2Fingerprint loaded = CaptureFingerprint(ok);
+        if (!ok)
+        {
+            FinishC2(false, "fingerprint unavailable after start load");
+            return;
+        }
+        const F2CompareResult cmp = F2Fingerprint::CompareRestored(mFStart, loaded);
+        if (!cmp.IsIdentical())
+        {
+            FinishC2(false, ("start state: " + cmp.Summary()).c_str());
+            return;
+        }
+        // Back at tick 0: reset the per-run bookkeeping the session code uses.
+        mModel = F2ExpectedClock{};
+        mScenarioTick = 0;
+        mScriptIndex = 0;
+        mTicksThisUpdate = 0;
+        mC4Transitions = 0;
+        mC4Matched = 0;
+        mC4TickViolations = 0;
+        mC4FirstFailure.clear();
+        mCheckPending = false;
+        mTickSub = Dia::MessageBus::BusSubscriptionHandle();
+        mRerunStage = RerunStage::Session;
+        return;
+    }
+    case RerunStage::Session:
+        RunSession();   // on reaching tick 500 it captures F500'' and switches to the Remainder stage
+        return;
+    case RerunStage::Remainder:
+        mPhaseDone = RunRemainder(RemainderMode::Rerun);
+        return;
+    }
+}
+
+//-----------------------------------------------------------------------------
+// C2: F500'' == F500 and F1000'' == F1000 (full compare, captured at the same points as the originals)
+// and the 800 draws match the reference. Divergences = differing fields + mismatched draws.
+void F2TestRunnerModule::FinishRerunComparison(bool haveLive, const std::array<int, kF2ReferenceDrawCount>& draws)
+{
+    if (!haveLive || !mHasF500 || !mHasF1000 || !mHasReferenceDraws)
+    {
+        FinishC2(false, "rerun or reference data unavailable");
+        return;
+    }
+    const F2CompareResult d500 = F2Fingerprint::Compare(mF500, mFRerun500);
+    const F2CompareResult d1000 = F2Fingerprint::Compare(mF1000, mFRerun1000);
+    int badDraws = 0;
+    int firstBad = -1;
+    for (int i = 0; i < kF2ReferenceDrawCount; ++i)
+    {
+        if (draws[i] != mReferenceDraws[i])
+        {
+            ++badDraws;
+            if (firstBad < 0)
+                firstBad = i;
+        }
+    }
+    const size_t divergences = d500.differingFields.size() + d1000.differingFields.size() + static_cast<size_t>(badDraws);
+    char summary[kSummaryLen];
+    if (divergences == 0)
+    {
+        std::snprintf(summary, sizeof(summary), "0 divergences over %u ticks", kF2ScenarioTicks);
+        FinishC2(true, summary);
+        return;
+    }
+    std::string first;
+    if (!d500.differingFields.empty())
+        first = "F500 " + d500.differingFields.front();
+    else if (!d1000.differingFields.empty())
+        first = "F1000 " + d1000.differingFields.front();
+    else
+        first = std::string("stream ") + RandomStreamModule::kStreamNames[firstBad / kF2ReferenceDrawsPerStream]
+              + " draw " + std::to_string(firstBad % kF2ReferenceDrawsPerStream);
+    std::snprintf(summary, sizeof(summary), "%u divergences, first: %s", static_cast<unsigned>(divergences), first.c_str());
+    FinishC2(false, summary);
+}
+
+//-----------------------------------------------------------------------------
+namespace {
+std::string ReadFileBytes(const char* path)
+{
+    std::ifstream in(path, std::ios::binary);
+    return std::string(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+}
+}
+
+//-----------------------------------------------------------------------------
+// Resolves C5 from part a (already stored) and part b (this phase).
+void F2TestRunnerModule::FinishC5b(bool passed, const char* detail)
+{
+    mHasC5b = true;
+    mC5bPassed = passed;
+    std::strncpy(mC5bSummary, detail, kSummaryLen - 1);
+    mC5bSummary[kSummaryLen - 1] = '\0';
+    if (!passed)
+        DIA_LOG_ERROR("CoW", "F2 C5b failed: %s", mC5bSummary);
+
+    const int i = static_cast<int>(F2CheckId::SaveLoadProof);
+    if (mHasC5a && mC5aPassed)
+    {
+        char summary[kSummaryLen];
+        if (passed)
+            std::snprintf(summary, sizeof(summary), "(a) restored fields match; (b) failed loads leave state untouched");
+        else
+            std::snprintf(summary, sizeof(summary), "(a) restored fields match; (b) %s", mC5bSummary);
+        CompleteCheck(F2CheckId::SaveLoadProof, passed, summary);
+    }
+    else if (mStatus[i] == F2CheckStatus::Fail)
+    {
+        // Already failed in phase 4: keep that result first and append part b, without a second event.
+        char summary[kSummaryLen];
+        std::snprintf(summary, sizeof(summary), "%s; (b) %s", mLastResult[i], passed ? "failed loads leave state untouched" : mC5bSummary);
+        std::strncpy(mLastResult[i], summary, kSummaryLen - 1);
+        mLastResult[i][kSummaryLen - 1] = '\0';
+    }
+    else
+    {
+        CompleteCheck(F2CheckId::SaveLoadProof, false, "reload (a) did not run");
+    }
+    mPhaseDone = true;
+}
+
+//-----------------------------------------------------------------------------
+// Phase 7: loads from a missing slot and from a corrupt slot must each fail (SaveLoadModule
+// pre-validates before touching anything) and leave the live state and the `quick` file untouched.
+// The clock is paused first (the remainder script ends running) so the live fingerprint is stable.
+// Only pre-validation failures are covered; a participant failing mid-load is unsupported by E1.
+void F2TestRunnerModule::RunFailedLoad()
+{
+    constexpr uint32_t kQuiesceUpdates = kF2SettleTicks + 2;
+    constexpr const char* kMissingSlot = "missing_slot";
+    constexpr const char* kCorruptSlot = "corrupt";
+    mPhaseDone = false;
+
+    SaveLoadModule* save = mSaveLoad.Get();
+    if (!save || !mSaveSucceeded)
+    {
+        FinishC5b(false, !save ? "SaveLoadModule unavailable" : "no quick save to protect");
+        return;
+    }
+    Dia::SaveGame::SlotManager slots;
+    slots.Init(save->GetConfig());
+    char quickPath[256];
+    slots.BuildPath(Dia::Core::StringCRC("quick"), quickPath, sizeof(quickPath));
+
+    switch (mFailStage)
+    {
+    case FailStage::Quiesce:
+        if (mFailQuiesceUpdates == 0)
+        {
+            F2ScenarioAction pause;
+            pause.kind = F2ActionKind::PlayerPause;
+            IssueAction(pause);
+        }
+        if (++mFailQuiesceUpdates >= kQuiesceUpdates)
+            mFailStage = FailStage::Begin;
+        return;
+
+    case FailStage::Begin:
+    {
+        bool ok = false;
+        mFLiveBefore = CaptureFingerprint(ok);
+        mQuickBytesBefore = ReadFileBytes(quickPath);
+        if (!ok || mQuickBytesBefore.empty())
+        {
+            FinishC5b(false, "no readable quick file or live fingerprint");
+            return;
+        }
+        char corruptPath[256];
+        slots.BuildPath(Dia::Core::StringCRC(kCorruptSlot), corruptPath, sizeof(corruptPath));
+        {
+            std::ofstream out(corruptPath, std::ios::binary | std::ios::trunc);
+            out << "F2 corrupt slot {{ not a save file";
+            if (!out.good())
+            {
+                FinishC5b(false, "could not write the corrupt slot file");
+                return;
+            }
+        }
+        mMissingLoadFailed = false;
+        mFailStage = FailStage::MissingLoad;
+        return;
+    }
+
+    case FailStage::MissingLoad:
+    {
+        const StepResult r = StepLoad(kMissingSlot);
+        if (r == StepResult::Pending)
+            return;
+        mMissingLoadFailed = (r == StepResult::Failed);
+        mFailStage = FailStage::CorruptLoad;
+        return;
+    }
+
+    case FailStage::CorruptLoad:
+    {
+        const StepResult r = StepLoad(kCorruptSlot);
+        if (r == StepResult::Pending)
+            return;
+        const bool corruptLoadFailed = (r == StepResult::Failed);
+        slots.DeleteSlot(Dia::Core::StringCRC(kCorruptSlot));
+
+        bool ok = false;
+        const F2Fingerprint after = CaptureFingerprint(ok);
+        const F2CompareResult live = F2Fingerprint::Compare(mFLiveBefore, after);
+        const bool quickUnchanged = (ReadFileBytes(quickPath) == mQuickBytesBefore);
+
+        char detail[kSummaryLen];
+        bool pass = false;
+        if (!mMissingLoadFailed)
+            std::snprintf(detail, sizeof(detail), "missing slot load did not report failure");
+        else if (!corruptLoadFailed)
+            std::snprintf(detail, sizeof(detail), "corrupt slot load did not report failure");
+        else if (!ok || !live.IsIdentical())
+            std::snprintf(detail, sizeof(detail), "failed load changed live state: %s", ok ? live.Summary().c_str() : "unavailable");
+        else if (!quickUnchanged)
+            std::snprintf(detail, sizeof(detail), "failed load changed the quick save file");
+        else
+        {
+            pass = true;
+            std::snprintf(detail, sizeof(detail), "failed loads leave state untouched");
+        }
+        FinishC5b(pass, detail);
+        return;
+    }
+    }
 }
 
 //-----------------------------------------------------------------------------

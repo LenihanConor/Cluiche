@@ -120,6 +120,18 @@ public:
     // Fingerprint at scenario tick 1000 of the replay (F1000'), captured before the replay draws.
     const F2Fingerprint& GetReplayFingerprint1000() const { return mFReplay1000; }
 
+    // ---- Results of phases 6-7 ----
+    // Fingerprint at scenario tick 0 (start of phase 1), taken together with the `start` save.
+    bool HasStartFingerprint() const { return mHasFStart; }
+    const F2Fingerprint& GetStartFingerprint() const { return mFStart; }
+    // Rerun (phase 6) fingerprints F500'' (end of the session, before any save) and F1000''.
+    const F2Fingerprint& GetRerunFingerprint500() const { return mFRerun500; }
+    const F2Fingerprint& GetRerunFingerprint1000() const { return mFRerun1000; }
+    // C5b (failed loads leave state untouched), valid once phase 7 has run.
+    bool HasC5bResult() const { return mHasC5b; }
+    bool C5bPassed() const { return mHasC5b && mC5bPassed; }
+    const char* GetC5bSummary() const { return mC5bSummary; }
+
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
     void DoUpdate(const Dia::SimTime::SimTimeContext& ctx) override;
@@ -135,11 +147,24 @@ private:
     void RunReferenceFuture();    // phase 3, one scenario tick per call
     void RunReload();             // phase 4: load `quick`, C5a
     void RunReplay();             // phase 5, one scenario tick per call; C3
+    void RunRerun();              // phase 6: reload the tick-0 save, run the whole script again; C2
+    void RunFailedLoad();         // phase 7: missing and corrupt slot loads; C5b, then resolves C5
     // Shared body of phases 3 and 5: the remainder script and per-tick draws over ticks [500, 1000),
     // then (at tick 1000) the F1000 capture and the 100-draws-per-stream pass. Returns true when finished.
     // `replay` selects what is done with the captured values (store as reference vs compare).
-    bool RunRemainder(bool replay);
+    enum class RemainderMode : uint8_t { Reference, Replay, Rerun };
+    bool RunRemainder(RemainderMode mode);
     void FinishC5a(bool passed, const char* detail);
+    void FinishC2(bool passed, const char* summary);
+    void FinishC5b(bool passed, const char* detail);
+    void FinishRerunComparison(bool haveLive, const std::array<int, kF2ReferenceDrawCount>& draws);
+
+    // One step of "request a slot operation, then wait for it to execute at the frame boundary".
+    // Pending = keep calling; Ok = executed and succeeded; Failed = executed and reported failure;
+    // Rejected = the module refused the request; Timeout = never executed.
+    enum class StepResult : uint8_t { Pending, Ok, Failed, Rejected, Timeout };
+    StepResult StepSave(const char* slot);
+    StepResult StepLoad(const char* slot);
     // Issues one script action as the real bus message. Returns false if the bus is unavailable.
     bool IssueAction(const F2ScenarioAction& action);
     void DrawForTick(uint32_t tick);
@@ -208,6 +233,28 @@ private:
     char             mC5aSummary[kSummaryLen] = "";
     F2Fingerprint    mFReload;
     F2Fingerprint    mFReplay1000;
+
+    // Tick-0 save (taken at the start of phase 1) and phase 6 (rerun).
+    bool             mStartSaveDone = false;
+    bool             mStartSaveOk = false;
+    bool             mHasFStart = false;
+    F2Fingerprint    mFStart;
+    bool             mRerun = false;          // phase 1 / remainder code is running for the rerun (C2)
+    enum class RerunStage : uint8_t { LoadStart, Session, Remainder };
+    RerunStage       mRerunStage = RerunStage::LoadStart;
+    F2Fingerprint    mFRerun500;
+    F2Fingerprint    mFRerun1000;
+
+    // Phase 7 (failed loads).
+    enum class FailStage : uint8_t { Quiesce, Begin, MissingLoad, CorruptLoad };
+    FailStage        mFailStage = FailStage::Quiesce;
+    uint32_t         mFailQuiesceUpdates = 0;
+    std::string      mQuickBytesBefore;
+    F2Fingerprint    mFLiveBefore;
+    bool             mMissingLoadFailed = false;
+    bool             mHasC5b = false;
+    bool             mC5bPassed = false;
+    char             mC5bSummary[kSummaryLen] = "";
 };
 
 } // namespace CoW

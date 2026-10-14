@@ -41,7 +41,7 @@ Module* CreateSave(const StringCRC& id) { g_save = new SaveLoadModule(id); retur
 Module* CreateSimTime(const StringCRC& id) { return new DiaSimTimeModule(id); }
 
 constexpr float kDt = 1.0f / 30.0f;
-constexpr int kMaxFrames = 3000;   // phases 0-3 need ~1,010 sim ticks
+constexpr int kMaxFrames = 4000;   // the whole scenario needs ~2,550 sim ticks
 
 struct Fixture
 {
@@ -225,7 +225,7 @@ Phases1to3Result RunPhases1to3(const char* testName)
 
 } // namespace
 
-TEST(F2TestRunnerModule, ChecksStartNotRun)
+TEST(SLOW_F2TestRunnerModule, ChecksStartNotRun)
 {
     Fixture f("f2r_notrun");
     ASSERT_TRUE(f.Boot());
@@ -236,7 +236,7 @@ TEST(F2TestRunnerModule, ChecksStartNotRun)
     }
 }
 
-TEST(F2TestRunnerModule, PhaseStartsIdle)
+TEST(SLOW_F2TestRunnerModule, PhaseStartsIdle)
 {
     Fixture f("f2r_idle");
     ASSERT_TRUE(f.Boot());
@@ -245,7 +245,7 @@ TEST(F2TestRunnerModule, PhaseStartsIdle)
     EXPECT_TRUE(f.phases.empty());
 }
 
-TEST(F2TestRunnerModule, PhasesVisitedInOrder)
+TEST(SLOW_F2TestRunnerModule, PhasesVisitedInOrder)
 {
     Fixture f("f2r_order");
     ASSERT_TRUE(f.Boot());
@@ -260,7 +260,7 @@ TEST(F2TestRunnerModule, PhasesVisitedInOrder)
     }
 }
 
-TEST(F2TestRunnerModule, SessionAndReferenceFutureSpanManyTicks)
+TEST(SLOW_F2TestRunnerModule, SessionAndReferenceFutureSpanManyTicks)
 {
     Fixture f("f2r_span");
     ASSERT_TRUE(f.Boot());
@@ -279,7 +279,7 @@ TEST(F2TestRunnerModule, SessionAndReferenceFutureSpanManyTicks)
     EXPECT_EQ(f.runner->GetScenarioTick(), kF2ScenarioTicks);
 }
 
-TEST(F2TestRunnerModule, EventsFireInOrderAndScenarioCompletesOnce)
+TEST(SLOW_F2TestRunnerModule, EventsFireInOrderAndScenarioCompletesOnce)
 {
     Fixture f("f2r_events");
     ASSERT_TRUE(f.Boot());
@@ -293,18 +293,18 @@ TEST(F2TestRunnerModule, EventsFireInOrderAndScenarioCompletesOnce)
 
     ASSERT_EQ(f.completions.size(), 1u);
     EXPECT_EQ(f.runner->GetCurrentPhase(), F2PhaseId::Idle);
-    // C1, C3, C4 are resolved so far; C5 stays Running (part a done, part b pending); C2, C6 NotRun.
+    // C1-C5 are resolved; C6 (band resolver) is plan task 7.
     EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::StreamIndependence), F2CheckStatus::Pass);
-    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::ClockProof), F2CheckStatus::Pass);
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::Determinism), F2CheckStatus::Pass);
     EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::SaveLoadRng), F2CheckStatus::Pass);
-    EXPECT_EQ(f.completions[0].passCount, 3u);
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::ClockProof), F2CheckStatus::Pass);
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::SaveLoadProof), F2CheckStatus::Pass);
+    EXPECT_EQ(f.completions[0].passCount, 5u);
     EXPECT_EQ(f.completions[0].failCount, 0u);
-    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::Determinism), F2CheckStatus::NotRun);
-    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::SaveLoadProof), F2CheckStatus::Running);
     EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::BandResolver), F2CheckStatus::NotRun);
 }
 
-TEST(F2TestRunnerModule, IsolationResolvesC1StreamIndependence)
+TEST(SLOW_F2TestRunnerModule, IsolationResolvesC1StreamIndependence)
 {
     Fixture f("f2r_c1");
     ASSERT_TRUE(f.Boot());
@@ -330,7 +330,7 @@ TEST(F2TestRunnerModule, IsolationResolvesC1StreamIndependence)
     EXPECT_STREQ(f.checks[0].summary, "8 / 8 streams independent over 64 draws");
 }
 
-TEST(F2TestRunnerModule, SessionResolvesC4ClockProof)
+TEST(SLOW_F2TestRunnerModule, SessionResolvesC4ClockProof)
 {
     Fixture f("f2r_c4");
     ASSERT_TRUE(f.Boot());
@@ -353,7 +353,7 @@ TEST(F2TestRunnerModule, SessionResolvesC4ClockProof)
     EXPECT_EQ(g_game->GetController().GetState().modalDepth, 0);
 }
 
-TEST(F2TestRunnerModule, SeededClockFaultFailsC4AndNamesTheMismatch)
+TEST(SLOW_F2TestRunnerModule, SeededClockFaultFailsC4AndNamesTheMismatch)
 {
     Fixture f("f2r_c4fault");
     ASSERT_TRUE(f.Boot());
@@ -372,7 +372,7 @@ TEST(F2TestRunnerModule, SeededClockFaultFailsC4AndNamesTheMismatch)
     EXPECT_NE(summary.find("ManualStep"), std::string::npos) << summary;
 }
 
-TEST(F2TestRunnerModule, SavePhaseWritesQuickSaveAndCapturesF500)
+TEST(SLOW_F2TestRunnerModule, SavePhaseWritesQuickSaveAndCapturesF500)
 {
     Fixture f("f2r_save");
     ASSERT_TRUE(f.Boot());
@@ -392,7 +392,7 @@ TEST(F2TestRunnerModule, SavePhaseWritesQuickSaveAndCapturesF500)
     EXPECT_EQ(fp.dayCounter, g_game->GetController().GetState().dayCounter) << "clock is stopped, nothing moves during the save";
 }
 
-TEST(F2TestRunnerModule, ReferenceFutureCapturesF1000AndEightHundredDraws)
+TEST(SLOW_F2TestRunnerModule, ReferenceFutureCapturesF1000AndEightHundredDraws)
 {
     Fixture f("f2r_future");
     ASSERT_TRUE(f.Boot());
@@ -427,7 +427,7 @@ TEST(F2TestRunnerModule, ReferenceFutureCapturesF1000AndEightHundredDraws)
     }
 }
 
-TEST(F2TestRunnerModule, TwoRunsFromTheSameSeedProduceIdenticalPhases1To3)
+TEST(SLOW_F2TestRunnerModule, TwoRunsFromTheSameSeedProduceIdenticalPhases1To3)
 {
     const Phases1to3Result a = RunPhases1to3("f2r_det_a");
     const Phases1to3Result b = RunPhases1to3("f2r_det_b");
@@ -484,7 +484,7 @@ bool TamperDrawCount(const std::string& path, const char* name, int delta)
 
 } // namespace
 
-TEST(F2TestRunnerModule, ReloadAndReplayPassC5aAndC3)
+TEST(SLOW_F2TestRunnerModule, ReloadAndReplayPassC5aAndC3)
 {
     Fixture f("f2r_replay");
     ASSERT_TRUE(f.Boot());
@@ -501,7 +501,7 @@ TEST(F2TestRunnerModule, ReloadAndReplayPassC5aAndC3)
     EXPECT_GE(g_save->GetLoadCount(), 1u);
 }
 
-TEST(F2TestRunnerModule, CorruptedSaveFailsC5aAndC3NamingTheStream)
+TEST(SLOW_F2TestRunnerModule, CorruptedSaveFailsC5aAndC3NamingTheStream)
 {
     Fixture f("f2r_corrupt");
     ASSERT_TRUE(f.Boot());
@@ -520,7 +520,7 @@ TEST(F2TestRunnerModule, CorruptedSaveFailsC5aAndC3NamingTheStream)
         << f.runner->GetLastResult(F2CheckId::SaveLoadRng);
 }
 
-TEST(F2TestRunnerModule, PerturbedReplayFailsC3)
+TEST(SLOW_F2TestRunnerModule, PerturbedReplayFailsC3)
 {
     Fixture f("f2r_perturb");
     ASSERT_TRUE(f.Boot());
@@ -537,4 +537,148 @@ TEST(F2TestRunnerModule, PerturbedReplayFailsC3)
     EXPECT_NE(std::string(f.runner->GetLastResult(F2CheckId::SaveLoadRng)).find(stream), std::string::npos)
         << f.runner->GetLastResult(F2CheckId::SaveLoadRng);
     EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::SaveLoadProof), F2CheckStatus::Running);
+}
+
+namespace {
+
+bool RunToCompletion(Fixture& f)
+{
+    return f.runner->RunScenario() && f.PumpUntil([&] { return !f.completions.empty(); });
+}
+
+std::string ReadAll(const std::string& path)
+{
+    std::ifstream in(path, std::ios::binary);
+    return std::string(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+}
+
+} // namespace
+
+TEST(SLOW_F2TestRunnerModule, RerunResolvesC2AndFailedLoadsResolveC5)
+{
+    Fixture f("f2r_c2c5");
+    ASSERT_TRUE(f.Boot());
+    ASSERT_TRUE(RunToCompletion(f));
+
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::Determinism), F2CheckStatus::Pass) << f.runner->GetLastResult(F2CheckId::Determinism);
+    EXPECT_STREQ(f.runner->GetLastResult(F2CheckId::Determinism), "0 divergences over 1000 ticks");
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::SaveLoadProof), F2CheckStatus::Pass) << f.runner->GetLastResult(F2CheckId::SaveLoadProof);
+    EXPECT_STREQ(f.runner->GetLastResult(F2CheckId::SaveLoadProof), "(a) restored fields match; (b) failed loads leave state untouched");
+    EXPECT_TRUE(f.runner->C5bPassed()) << f.runner->GetC5bSummary();
+
+    // The rerun reproduced both checkpoints exactly (full compare) and started from a tick-0 state.
+    ASSERT_TRUE(f.runner->HasStartFingerprint());
+    EXPECT_EQ(f.runner->GetStartFingerprint().dayCounter, 0u);
+    EXPECT_EQ(F2Fingerprint::Compare(f.runner->GetFingerprint500(), f.runner->GetRerunFingerprint500()).Summary(), "identical");
+    EXPECT_EQ(F2Fingerprint::Compare(f.runner->GetFingerprint1000(), f.runner->GetRerunFingerprint1000()).Summary(), "identical");
+
+    // C4 is not re-reported by the rerun, and the quick save was not overwritten by it; the corrupt
+    // slot the failed-load phase wrote is cleaned up.
+    int c4Events = 0;
+    for (const F2CheckCompleted& c : f.checks)
+        if (c.check == F2CheckId::ClockProof) ++c4Events;
+    EXPECT_EQ(c4Events, 1);
+    EXPECT_TRUE(std::filesystem::exists(f.SlotPath("start")));
+    EXPECT_TRUE(std::filesystem::exists(f.SlotPath("quick")));
+    EXPECT_FALSE(std::filesystem::exists(f.SlotPath("corrupt")));
+}
+
+TEST(SLOW_F2TestRunnerModule, PerturbedRerunFailsC2NamingTheStream)
+{
+    Fixture f("f2r_rerun_perturb");
+    ASSERT_TRUE(f.Boot());
+    ASSERT_TRUE(f.runner->RunScenario());
+    ASSERT_TRUE(f.PumpToPhase(F2PhaseId::Rerun));
+    ASSERT_TRUE(f.PumpUntil([&] { return f.runner->GetCurrentPhase() == F2PhaseId::Rerun && f.runner->GetScenarioTick() >= 300
+                                         && f.runner->GetScenarioTick() < kF2SessionTicks; }));
+    const char* stream = RandomStreamModule::kStreamNames[3];
+    g_random->GetStreamByName(StringCRC(stream))->RandomInt();   // one extra draw mid-rerun
+    ASSERT_TRUE(f.PumpUntil([&] { return !f.completions.empty(); }));
+
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::Determinism), F2CheckStatus::Fail);
+    EXPECT_NE(std::string(f.runner->GetLastResult(F2CheckId::Determinism)).find(std::string("stream ") + stream), std::string::npos)
+        << f.runner->GetLastResult(F2CheckId::Determinism);
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::StreamIndependence), F2CheckStatus::Pass);
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::SaveLoadRng), F2CheckStatus::Pass);
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::ClockProof), F2CheckStatus::Pass);
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::SaveLoadProof), F2CheckStatus::Pass);
+    EXPECT_EQ(f.completions[0].passCount, 4u);
+    EXPECT_EQ(f.completions[0].failCount, 1u);
+}
+
+TEST(SLOW_F2TestRunnerModule, TamperedStartSaveFailsC2)
+{
+    Fixture f("f2r_start_tamper");
+    ASSERT_TRUE(f.Boot());
+    ASSERT_TRUE(f.runner->RunScenario());
+    ASSERT_TRUE(f.PumpUntil([&] { return std::filesystem::exists(f.SlotPath("start")); }));
+    f.Pump(1);
+    const char* stream = RandomStreamModule::kStreamNames[4];
+    ASSERT_TRUE(TamperDrawCount(f.SlotPath("start"), stream, 5));
+    ASSERT_TRUE(f.PumpUntil([&] { return !f.completions.empty(); }));
+
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::Determinism), F2CheckStatus::Fail);
+    EXPECT_NE(std::string(f.runner->GetLastResult(F2CheckId::Determinism)).find(std::string("stream ") + stream + " drawCount"), std::string::npos)
+        << f.runner->GetLastResult(F2CheckId::Determinism);
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::SaveLoadRng), F2CheckStatus::Pass);
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::SaveLoadProof), F2CheckStatus::Pass);
+}
+
+TEST(SLOW_F2TestRunnerModule, FailedLoadsFailLoudlyAndChangeNothing)
+{
+    Fixture f("f2r_failedload");
+    ASSERT_TRUE(f.Boot());
+    ASSERT_TRUE(f.runner->RunScenario());
+    ASSERT_TRUE(f.PumpToPhase(F2PhaseId::FailedLoad));
+    const std::string quickBefore = ReadAll(f.SlotPath("quick"));
+    ASSERT_FALSE(quickBefore.empty());
+    const uint32_t loadsBefore = g_save->GetLoadCount();
+    ASSERT_TRUE(f.PumpUntil([&] { return !g_save->GetLastLoadResult().Ok(); }));   // missing slot refused
+    EXPECT_EQ(g_save->GetLastLoadResult().code, Dia::SaveGame::LoadResultCode::SlotNotFound);
+    ASSERT_TRUE(f.PumpUntil([&] { return !f.completions.empty(); }));
+
+    EXPECT_TRUE(f.runner->C5bPassed()) << f.runner->GetC5bSummary();
+    EXPECT_EQ(g_save->GetLoadCount(), loadsBefore) << "no failed load may count as completed";
+    EXPECT_FALSE(g_save->GetLastLoadResult().Ok()) << "the corrupt slot load reported failure";
+    EXPECT_NE(g_save->GetLastLoadResult().code, Dia::SaveGame::LoadResultCode::SlotNotFound) << "last load was the corrupt slot";
+    EXPECT_EQ(ReadAll(f.SlotPath("quick")), quickBefore);
+    EXPECT_FALSE(std::filesystem::exists(f.SlotPath("corrupt")));
+    const F2Fingerprint a = F2Fingerprint::Capture(*g_random, *g_game);
+    f.Pump(10);
+    EXPECT_EQ(F2Fingerprint::Compare(a, F2Fingerprint::Capture(*g_random, *g_game)).Summary(), "identical");
+}
+
+TEST(SLOW_F2TestRunnerModule, FailedLoadThatAltersLiveStateFailsC5b)
+{
+    Fixture f("f2r_failedload_state");
+    ASSERT_TRUE(f.Boot());
+    ASSERT_TRUE(f.runner->RunScenario());
+    ASSERT_TRUE(f.PumpToPhase(F2PhaseId::FailedLoad));
+    ASSERT_TRUE(f.PumpUntil([&] { return !g_save->GetLastLoadResult().Ok(); }));   // the missing-slot load just ran
+    // Simulate a loader that mutates live state before erroring: one stray draw on a stream.
+    const char* stream = RandomStreamModule::kStreamNames[6];
+    g_random->GetStreamByName(StringCRC(stream))->RandomInt();
+    ASSERT_TRUE(f.PumpUntil([&] { return !f.completions.empty(); }));
+
+    EXPECT_FALSE(f.runner->C5bPassed());
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::SaveLoadProof), F2CheckStatus::Fail);
+    EXPECT_NE(std::string(f.runner->GetLastResult(F2CheckId::SaveLoadProof)).find(std::string("stream ") + stream), std::string::npos)
+        << f.runner->GetLastResult(F2CheckId::SaveLoadProof);
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::Determinism), F2CheckStatus::Pass);
+}
+
+TEST(SLOW_F2TestRunnerModule, FailedLoadThatAltersQuickFileFailsC5b)
+{
+    Fixture f("f2r_failedload_file");
+    ASSERT_TRUE(f.Boot());
+    ASSERT_TRUE(f.runner->RunScenario());
+    ASSERT_TRUE(f.PumpToPhase(F2PhaseId::FailedLoad));
+    ASSERT_TRUE(f.PumpUntil([&] { return !g_save->GetLastLoadResult().Ok(); }));
+    ASSERT_TRUE(TamperDrawCount(f.SlotPath("quick"), RandomStreamModule::kStreamNames[1], 1));
+    ASSERT_TRUE(f.PumpUntil([&] { return !f.completions.empty(); }));
+
+    EXPECT_FALSE(f.runner->C5bPassed());
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::SaveLoadProof), F2CheckStatus::Fail);
+    EXPECT_NE(std::string(f.runner->GetLastResult(F2CheckId::SaveLoadProof)).find("quick save file"), std::string::npos)
+        << f.runner->GetLastResult(F2CheckId::SaveLoadProof);
 }
