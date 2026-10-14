@@ -160,6 +160,8 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | Dia | 3 tests fail only in the whole-suite ASan run | 2026-10-13 | Not reproduced 2026-10-13: the 3 tests passed in two consecutive full ASan runs; dia check sanitizer exits 0 (9192 tests, no findings). No code change. If they recur, first check for a stale Debug-Asan build (touch the source and rebuild) and the relative Cluiche/out temp paths with GetTickCount(). |
 | Dia | `--shards` runs under Debug-Asan still cannot find the ASan runtime DLL | 2026-10-13 | Fixed 2026-10-13 (6d4262d0): shard_runner builds each shard's env with with_asan_runtime_on_path (config threaded from googletest_runner); unit test added; verified with dia launch googletest --config Asan --shards 2. |
 | Dia | `dia validate manifest` misses ServiceStream orphan providers | 2026-10-13 | Fixed 2026-10-13: dia validate manifest composes each .diagame with its imports and checks ServiceStream provider/consumer constraints (mirrors C++); LoadManifest labels warnings as warnings |
+| CoW | E1 Save/Load | 2026-10-14 | Built 2026-10-14. SaveLoadModule shell + participants game_speed, random_streams, DiaSimTime; atomic saves, 10 MB buffer, slot-id validation, SaveLoadHealthReporter, migration pre-validation. Dia fixes: RandomStream Restore, TimeServer::SetTime/SetTimeScaleImmediate, SimTimeScheduler::Clear, SlotManager id fix, manifest timestamp. Full suite green. |
+| CoW | GameSpeedController (A2) | 2026-10-14 | Built 2026-10-13; save participant delivered with E1 on 2026-10-14. |
 
 ---
 
