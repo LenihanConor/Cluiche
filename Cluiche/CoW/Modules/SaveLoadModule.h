@@ -3,6 +3,7 @@
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaObservation/Health/HealthReporterBase.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaSaveGame/ISaveable.h>
 #include <DiaSaveGame/SaveConfig.h>
@@ -14,6 +15,16 @@
 #include <cstdint>
 
 namespace CoW {
+
+// Failing: the save directory could not be created, or saves have failed repeatedly in a row
+// (kFailingAfterConsecutiveSaveFailures). Degraded: the most recent save or load failed.
+// OK again as soon as the next save / load of that kind succeeds.
+class SaveLoadHealthReporter : public Dia::Observation::Health::HealthReporterBase
+{
+public:
+    SaveLoadHealthReporter() { SetOK(); }
+    Dia::Core::StringCRC GetReporterName() const override { return Dia::Core::StringCRC("SaveLoadModule"); }
+};
 
 // Owns the DiaSaveGame SaveRegistry/SaveManager for CoW and executes save/load requests at the
 // sim-frame boundary. Requests (direct or via the cow.save / cow.load commands) are only recorded;
@@ -57,6 +68,9 @@ public:
     uint32_t GetSaveCount() const { return mSaveCount; }   // completed (successful) saves
     uint32_t GetLoadCount() const { return mLoadCount; }   // completed (successful) loads
 
+    static constexpr uint32_t kFailingAfterConsecutiveSaveFailures = 3;
+    const SaveLoadHealthReporter& GetHealthReporter() const { return mHealth; }
+
 protected:
     void OnConfigure(const char* configJson) override;
     // Runs before any module's DoStart: hands our registry to a sibling DiaSimTimeModule (if the
@@ -71,6 +85,7 @@ private:
     void ExecuteLoad(Dia::Core::StringCRC slotId);
     // Reads the slot file and checks it would load. Returns Ok or the failing code.
     Dia::SaveGame::LoadResult PreValidateLoad(Dia::Core::StringCRC slotId);
+    void UpdateHealth();
     void RegisterCommands();
     void UnregisterCommands();
 
@@ -93,6 +108,11 @@ private:
     Dia::SaveGame::LoadResult      mLastLoadResult = Dia::SaveGame::LoadResult::Success();
     uint32_t                       mSaveCount = 0;
     uint32_t                       mLoadCount = 0;
+    uint32_t                       mConsecutiveSaveFailures = 0;
+    bool                           mSaveDirFailed = false;
+
+    SaveLoadHealthReporter         mHealth;
+    bool                           mHealthRegistered = false;
 
     Dia::Observation::Metric::Counter* mSaveCounter = nullptr;
     Dia::Observation::Metric::Counter* mSaveFailCounter = nullptr;

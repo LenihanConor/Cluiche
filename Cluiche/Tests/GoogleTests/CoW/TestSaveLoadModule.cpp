@@ -9,6 +9,7 @@
 #include <DiaSaveGame/ISaveable.h>
 #include <DiaSaveGame/SaveContext.h>
 #include <DiaSaveGame/LoadContext.h>
+#include <DiaObservation/Health/IHealthReporter.h>
 #include <Modules/SaveLoadModule.h>
 #include <cstdio>
 #include <cstring>
@@ -75,7 +76,7 @@ struct Fixture
     std::string dir;
     std::string configJson;
 
-    explicit Fixture(const char* testName)
+    explicit Fixture(const char* testName, const char* baseDirOverride = nullptr)
     {
         dir = std::string("out/test_saves/") + testName + "/";
         std::filesystem::remove_all(dir);
@@ -96,7 +97,7 @@ struct Fixture
         decl.instanceId = StringCRC("SaveLoadModule");
         decl.typeId = StringCRC("SaveLoadModule");
         decl.stages.Add(StringCRC("all"));
-        configJson = std::string("{\"base_directory\":\"") + dir + "\"}";
+        configJson = std::string("{\"base_directory\":\"") + (baseDirOverride ? baseDirOverride : dir.c_str()) + "\"}";
         decl.configJson = configJson.c_str();
         pu.modules.Add(decl);
         manifest.processingUnits.Add(pu);
@@ -376,4 +377,139 @@ TEST(SaveLoadModule, CommandsRequireSlotArgumentAndQueueWithOne)
         EXPECT_EQ(Dia::API::ExecuteCommand(StringCRC("cow.save.list"), none), 0);
     }
     Dia::API::Shutdown();
+}
+
+// ---------------------------------------------------------------------------
+// Large saves (SaveManager buffer is 10 MB)
+// ---------------------------------------------------------------------------
+
+namespace {
+struct BigSaveable : ISaveable
+{
+    std::string text;
+    void Serialize(SaveContext& ctx) const override { ctx.Write(StringCRC("blob"), text.c_str()); }
+    void Deserialize(LoadContext& ctx) override
+    {
+        std::vector<char> buf(text.capacity() + 1);
+        std::string out;
+        if (ctx.Read(StringCRC("blob"), buf.data(), static_cast<unsigned int>(buf.size())))
+            text.assign(buf.data());
+    }
+    uint32_t GetVersion() const override { return 1; }
+};
+}
+
+TEST(SaveLoadModule, SaveLargerThanOldSixtyFourKbBufferRoundTrips)
+{
+    Fixture f("bigsave");
+    ASSERT_TRUE(f.Boot());
+
+    BigSaveable big;
+    big.text.assign(500000, 'x');
+    big.text[1234] = 'Q';
+    f.module->RegisterParticipant(StringCRC("big"), &big);
+
+    f.module->RequestSave(StringCRC("big"));
+    ASSERT_TRUE(f.PumpUntil([&] { return !f.module->HasPendingSave(); }));
+    ASSERT_TRUE(f.module->GetLastSaveResult().Ok());
+    EXPECT_GT(std::filesystem::file_size(f.SlotPath("big")), 65536u);
+
+    const std::string expected = big.text;
+    big.text.assign(expected.size(), 'y');
+    f.module->RequestLoad(StringCRC("big"));
+    ASSERT_TRUE(f.PumpUntil([&] { return !f.module->HasPendingLoad(); }));
+    EXPECT_TRUE(f.module->GetLastLoadResult().Ok());
+    EXPECT_EQ(big.text, expected);
+}
+
+// ---------------------------------------------------------------------------
+// Health
+// ---------------------------------------------------------------------------
+
+namespace {
+using Dia::Observation::Health::HealthStatus;
+HealthStatus StatusOf(const Fixture& f) { return f.module->GetHealthReporter().Report().status; }
+StringCRC ReasonOf(const Fixture& f) { return f.module->GetHealthReporter().Report().reason; }
+}
+
+TEST(SaveLoadHealth, OkAfterStart)
+{
+    Fixture f("health_start");
+    ASSERT_TRUE(f.Boot());
+    EXPECT_EQ(StatusOf(f), HealthStatus::kOK);
+}
+
+TEST(SaveLoadHealth, FailedLoadDegradesAndNextSuccessfulLoadRecovers)
+{
+    Fixture f("health_load");
+    ASSERT_TRUE(f.Boot());
+    FakeSaveable a("A");
+    f.module->RegisterParticipant(StringCRC("part_a"), &a);
+
+    f.module->RequestLoad(StringCRC("nothere"));
+    ASSERT_TRUE(f.PumpUntil([&] { return !f.module->HasPendingLoad(); }));
+    EXPECT_EQ(StatusOf(f), HealthStatus::kDegraded);
+    EXPECT_EQ(ReasonOf(f), StringCRC("last_load_failed"));
+    EXPECT_GE(f.module->GetHealthReporter().Report().errors, 1u);
+
+    f.module->RequestSave(StringCRC("good"));
+    ASSERT_TRUE(f.PumpUntil([&] { return !f.module->HasPendingSave(); }));
+    f.module->RequestLoad(StringCRC("good"));
+    ASSERT_TRUE(f.PumpUntil([&] { return !f.module->HasPendingLoad(); }));
+    EXPECT_EQ(StatusOf(f), HealthStatus::kOK);
+}
+
+TEST(SaveLoadHealth, FailedSaveDegradesAndNextSuccessfulSaveRecovers)
+{
+    Fixture f("health_save");
+    ASSERT_TRUE(f.Boot());
+    // A directory where the slot file should go makes fopen("wb") fail.
+    std::filesystem::create_directories(f.SlotPath("bad"));
+
+    f.module->RequestSave(StringCRC("bad"));
+    ASSERT_TRUE(f.PumpUntil([&] { return !f.module->HasPendingSave(); }));
+    EXPECT_FALSE(f.module->GetLastSaveResult().Ok());
+    EXPECT_EQ(StatusOf(f), HealthStatus::kDegraded);
+    EXPECT_EQ(ReasonOf(f), StringCRC("last_save_failed"));
+
+    f.module->RequestSave(StringCRC("good"));
+    ASSERT_TRUE(f.PumpUntil([&] { return !f.module->HasPendingSave(); }));
+    EXPECT_EQ(StatusOf(f), HealthStatus::kOK);
+}
+
+TEST(SaveLoadHealth, RepeatedSaveFailuresEscalateToFailing)
+{
+    Fixture f("health_repeat");
+    ASSERT_TRUE(f.Boot());
+    std::filesystem::create_directories(f.SlotPath("bad"));
+
+    for (uint32_t i = 0; i < SaveLoadModule::kFailingAfterConsecutiveSaveFailures; ++i)
+    {
+        EXPECT_EQ(StatusOf(f), i == 0 ? HealthStatus::kOK : HealthStatus::kDegraded);
+        f.module->RequestSave(StringCRC("bad"));
+        ASSERT_TRUE(f.PumpUntil([&] { return !f.module->HasPendingSave(); }));
+    }
+    EXPECT_EQ(StatusOf(f), HealthStatus::kFailing);
+    EXPECT_EQ(ReasonOf(f), StringCRC("saves_repeatedly_failing"));
+
+    f.module->RequestSave(StringCRC("good"));
+    ASSERT_TRUE(f.PumpUntil([&] { return !f.module->HasPendingSave(); }));
+    EXPECT_EQ(StatusOf(f), HealthStatus::kOK);
+}
+
+TEST(SaveLoadHealth, UncreatableSaveDirectoryIsFailing)
+{
+    // A regular file in the path makes create_directories fail.
+    // (The blocker lives outside the fixture's own directory, which the fixture wipes.)
+    std::filesystem::remove_all("out/test_saves/health_dir_blocker");
+    std::filesystem::create_directories("out/test_saves/health_dir_blocker");
+    { std::ofstream blocker("out/test_saves/health_dir_blocker/blocker"); blocker << "x"; }
+
+    Fixture f("health_dir", "out/test_saves/health_dir_blocker/blocker/sub/");
+    ASSERT_TRUE(f.Boot());
+    EXPECT_EQ(StatusOf(f), HealthStatus::kFailing);
+    EXPECT_EQ(ReasonOf(f), StringCRC("save_dir_unavailable"));
+    EXPECT_GE(f.module->GetHealthReporter().Report().errors, 1u);
+    f.app.reset();
+    std::filesystem::remove_all("out/test_saves/health_dir_blocker");
 }

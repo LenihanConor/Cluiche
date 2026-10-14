@@ -6,6 +6,7 @@
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaSimTime/DiaSimTimeModule.h>
 #include <DiaCore/Json/external/json/json.h>
+#include <DiaObservation/Health/HealthRegistry.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
 #include <DiaObservation/Trace/DiaTrace.h>
@@ -201,8 +202,12 @@ Dia::ApplicationFlow::StartResult SaveLoadModule::DoStart()
 
     std::error_code ec;
     std::filesystem::create_directories(mBaseDirectory, ec);
+    mSaveDirFailed = static_cast<bool>(ec);
     if (ec)
+    {
+        mHealth.IncrementErrors();
         DIA_LOG_ERROR("CoW", "SaveLoadModule: cannot create '%s' (%s)", mBaseDirectory, ec.message().c_str());
+    }
 
     mManager.Init(mConfig, mRegistry);
     mSlots.Init(mConfig);
@@ -211,8 +216,26 @@ Dia::ApplicationFlow::StartResult SaveLoadModule::DoStart()
     mHasPendingLoad = false;
 
     RegisterCommands();
+    mConsecutiveSaveFailures = 0;
+    Dia::Observation::Health::HealthRegistry::Instance().Register(&mHealth);
+    mHealthRegistered = true;
+    UpdateHealth();
     DIA_LOG_INFO("CoW", "SaveLoadModule: started, saving to '%s'", mBaseDirectory);
     return Dia::ApplicationFlow::StartResult::kReady;
+}
+
+void SaveLoadModule::UpdateHealth()
+{
+    if (mSaveDirFailed)
+        mHealth.SetFailing(Dia::Core::StringCRC("save_dir_unavailable"));
+    else if (mConsecutiveSaveFailures >= kFailingAfterConsecutiveSaveFailures)
+        mHealth.SetFailing(Dia::Core::StringCRC("saves_repeatedly_failing"));
+    else if (!mLastSaveResult.Ok())
+        mHealth.SetDegraded(Dia::Core::StringCRC("last_save_failed"));
+    else if (!mLastLoadResult.Ok())
+        mHealth.SetDegraded(Dia::Core::StringCRC("last_load_failed"));
+    else
+        mHealth.SetOK();
 }
 
 LoadResult SaveLoadModule::PreValidateLoad(Dia::Core::StringCRC slotId)
@@ -253,12 +276,15 @@ void SaveLoadModule::ExecuteSave(Dia::Core::StringCRC slotId)
     if (mLastSaveResult.Ok())
     {
         ++mSaveCount;
+        mConsecutiveSaveFailures = 0;
         mSaveCounter->Inc();
         DIA_LOG_INFO("CoW", "SaveLoadModule: saved slot '%s'", slotId.AsChar());
     }
     else
     {
         mSaveFailCounter->Inc();
+        ++mConsecutiveSaveFailures;
+        mHealth.IncrementErrors();
         DIA_LOG_ERROR("CoW", "SaveLoadModule: save of slot '%s' failed (SaveResultCode %d)",
                       slotId.AsChar(), static_cast<int>(mLastSaveResult.code));
     }
@@ -279,6 +305,7 @@ void SaveLoadModule::ExecuteLoad(Dia::Core::StringCRC slotId)
     else
     {
         mLoadFailCounter->Inc();
+        mHealth.IncrementErrors();
         DIA_LOG_ERROR("CoW", "SaveLoadModule: load of slot '%s' failed (LoadResultCode %d), game state untouched",
                       slotId.AsChar(), static_cast<int>(mLastLoadResult.code));
     }
@@ -295,18 +322,25 @@ void SaveLoadModule::DoUpdate(const Dia::SimTime::SimTimeContext&)
         const Dia::Core::StringCRC slot = mPendingSaveSlot;
         mHasPendingSave = false;
         ExecuteSave(slot);
+        UpdateHealth();
     }
     if (mHasPendingLoad)
     {
         const Dia::Core::StringCRC slot = mPendingLoadSlot;
         mHasPendingLoad = false;
         ExecuteLoad(slot);
+        UpdateHealth();
     }
 }
 
 Dia::ApplicationFlow::StopResult SaveLoadModule::DoStop()
 {
     UnregisterCommands();
+    if (mHealthRegistered)
+    {
+        Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealth);
+        mHealthRegistered = false;
+    }
     if (mStarted)
     {
         mManager.Shutdown();
