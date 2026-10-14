@@ -1898,5 +1898,8 @@
     <ClCompile Include="CoW\TestGameSpeedSaveParticipant.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestRandomStreamSaveParticipant.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
