@@ -175,6 +175,6 @@ No other binding constraints apply.
 
 ## Status
 
-`Approved` — 2026-10-14
+`Done` — 2026-10-14
 
 **Plan:** @docs/specs/applications/dia/systems/diapathfinding/hex-rectangular-grid.plan.md

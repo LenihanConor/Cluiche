@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/applications/dia/systems/diapathfinding/hex-rectangular-grid.md
-**Status:** In Progress
+**Status:** Done
 
 The spec has no task list; tasks are derived from its acceptance criteria. All code tasks are TDD (RED then GREEN, quoted output) and verify solo.
 
