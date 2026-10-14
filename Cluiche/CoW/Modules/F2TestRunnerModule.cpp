@@ -4,6 +4,7 @@
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaInput/EKey.h>
 #include <DiaSaveGame/SlotManager.h>
 #include <fstream>
 #include <iterator>
@@ -60,8 +61,24 @@ Dia::ApplicationFlow::StartResult F2TestRunnerModule::DoStart()
 }
 
 //-----------------------------------------------------------------------------
+void F2TestRunnerModule::NavigateTo(const Dia::Core::StringCRC& target)
+{
+    // Same rule as FrontEndModule: while AutomationModule holds navigation, release it instead.
+    if (mAutomation.IsAvailable() && mAutomation.Get().IsHolding())
+        mAutomation.Get().ReleaseNavigationHold(target);
+    else
+        TransitionTo(target);
+}
+
+void F2TestRunnerModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
+{
+    mAutomation.Connect(app);
+}
+
+//-----------------------------------------------------------------------------
 Dia::ApplicationFlow::StopResult F2TestRunnerModule::DoStop()
 {
+    mExitRequested = false;
 #ifdef DIA_DEBUG
     UnregisterDebugDomain();
     mDebugDomain.reset();
@@ -217,6 +234,20 @@ void F2TestRunnerModule::DoUpdate(const Dia::SimTime::SimTimeContext& ctx)
 #ifdef DIA_DEBUG
     TryRegisterDebugDomain();
 #endif
+
+    // Escape returns to Boot, ignored while the scenario is running or pending.
+    if (!mExitRequested && !IsRunning())
+    {
+        if (Cluiche::AppFlow::InputStreamModule* input = mInput.Get())
+        {
+            if (input->WasKeyPressed(Dia::Input::EKey::Escape))
+            {
+                DIA_LOG_INFO("CoW", "F2TestRunnerModule: Escape pressed - returning to Boot");
+                mExitRequested = true;
+                NavigateTo(Dia::Core::StringCRC("Boot"));
+            }
+        }
+    }
 
     if (mRunPending)
     {

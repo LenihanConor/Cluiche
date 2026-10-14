@@ -37,6 +37,37 @@
         },
         {
             "content_hash": 0,
+            "id": "stage.f2_core_runtime",
+            "references": [
+                {
+                    "target": "manifest.f2_core_runtime",
+                    "type": "contains"
+                }
+            ],
+            "scope": "global",
+            "source_path": "Stages/F2CoreRuntime/f2_core_runtime.diastage",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "misc"
+            ],
+            "type": "stage"
+        },
+        {
+            "content_hash": 0,
+            "id": "manifest.f2_core_runtime",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/F2CoreRuntime/misc/ApplicationFlow/f2_core_runtime.diaapp",
+            "stage_name": "F2CoreRuntime",
+            "status": "active",
+            "tags": [
+                "misc/ApplicationFlow"
+            ],
+            "type": "manifest"
+        },
+        {
+            "content_hash": 0,
             "id": "stage.front_end",
             "references": [
                 {

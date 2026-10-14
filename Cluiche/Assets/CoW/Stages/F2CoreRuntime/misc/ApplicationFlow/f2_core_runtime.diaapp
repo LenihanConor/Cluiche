@@ -22,9 +22,15 @@
                         "MessageBusHostModule",
                         "SaveLoadModule",
                         "GameSpeedControllerModule",
-                        "RandomStreamModule"
+                        "RandomStreamModule",
+                        "InputStreamModule"
                     ],
-                    "channels": []
+                    "channels": [
+                        {
+                            "id": "AutomationService",
+                            "role": "consumes"
+                        }
+                    ]
                 }
             ]
         }

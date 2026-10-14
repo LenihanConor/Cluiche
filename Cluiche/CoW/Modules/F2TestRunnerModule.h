@@ -4,6 +4,10 @@
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaAssetRuntime/AssetRuntime.h>
+#include <DiaAutomation/AutomationService.h>
+#include <DiaStreams/ServiceStreamReader.h>
+#include "Modules/InputStreamModule.h"
 #include "Modules/MessageBusHostModule.h"
 #include "Modules/GameSpeedControllerModule.h"
 #include "Modules/SaveLoadModule.h"
@@ -153,8 +157,14 @@ protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
     void DoUpdate(const Dia::SimTime::SimTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult DoStop() override;
+    void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 
 private:
+    void NavigateTo(const Dia::Core::StringCRC& target);
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::InputStreamModule> mInput{this};
+    Dia::ApplicationFlow::ServiceStreamReader<Dia::Automation::AutomationService> mAutomation{this, "AutomationService"};
+    bool mExitRequested = false;
+
 #ifdef DIA_DEBUG
     void TryRegisterDebugDomain();
     void UnregisterDebugDomain();

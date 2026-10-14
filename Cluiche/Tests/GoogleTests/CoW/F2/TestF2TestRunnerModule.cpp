@@ -8,6 +8,9 @@
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaSimTime/DiaSimTimeModule.h>
+#include <DiaApplicationFlow/SimModule.h>
+#include <DiaAutomation/AutomationService.h>
+#include <DiaStreams/ServiceStreamWriter.h>
 #include <Modules/F2TestRunnerModule.h>
 #include <Modules/F2PanelModel.h>
 #include <Modules/F2TestRunnerDebugDomain.h>
@@ -34,6 +37,31 @@ F2TestRunnerModule* g_runner = nullptr;
 RandomStreamModule* g_random = nullptr;
 GameSpeedControllerModule* g_game = nullptr;
 SaveLoadModule* g_save = nullptr;
+
+// Test-only provider of the AutomationService stream that F2TestRunnerModule consumes (Escape -> Boot).
+// The navigation hold is never enabled, so the runner's NavigateTo path is not exercised here.
+class StubAutomationProvider : public SimModule
+{
+public:
+    explicit StubAutomationProvider(const StringCRC& id)
+        : SimModule(id), mStream(this, StringCRC("AutomationService")) {}
+protected:
+    StartResult DoStart() override
+    {
+        auto* app = dynamic_cast<Application*>(GetApplication());
+        if (!app) return StartResult::kFailed;
+        mService.reset(new Dia::Automation::AutomationService(*app));
+        mStream.Register(*mService);
+        return StartResult::kReady;
+    }
+    void DoUpdate(const Dia::SimTime::SimTimeContext&) override {}
+    StopResult DoStop() override { mStream.Deregister(); mService.reset(); return StopResult::kDone; }
+    void OnConnectStreams(Application& app) override { mStream.Connect(app); }
+private:
+    ServiceStreamWriter<Dia::Automation::AutomationService> mStream;
+    std::unique_ptr<Dia::Automation::AutomationService> mService;
+};
+Module* CreateAutomationStub(const StringCRC& id) { return new StubAutomationProvider(id); }
 
 Module* CreateBus(const StringCRC& id) { g_bus = new Cluiche::AppFlow::MessageBusHostModule(id); return g_bus; }
 Module* CreateRunner(const StringCRC& id) { g_runner = new F2TestRunnerModule(id); return g_runner; }
@@ -69,6 +97,7 @@ struct Fixture
         reg.Register(StringCRC("GameSpeedControllerModule"), &CreateGame);
         reg.Register(StringCRC("RandomStreamModule"), &CreateRandom);
         reg.Register(StringCRC("F2TestRunnerModule"), &CreateRunner);
+        reg.Register(StringCRC("StubAutomationProvider"), &CreateAutomationStub);
 
         manifest.version = 3;
         StageDeclaration run; run.name = StringCRC("Run");
@@ -83,6 +112,12 @@ struct Fixture
         fire.id = StringCRC("SimTimeSchedulerFire");
         fire.kind = StringCRC("EventStream");
         manifest.streams.Add(fire);
+        // F2TestRunnerModule connects the navigation-hold service (Escape -> Boot); no provider in tests.
+        StreamDeclaration automation;
+        automation.id = StringCRC("AutomationService");
+        automation.kind = StringCRC("ServiceStream");
+        automation.fromPU = StringCRC("SimPU");
+        manifest.streams.Add(automation);
 
         ProcessingUnitDeclaration pu;
         pu.instanceId = StringCRC("SimPU");
@@ -124,6 +159,14 @@ struct Fixture
         randDecl.dependencies.Add(StringCRC("SaveLoadModule"));
         pu.modules.Add(randDecl);
 
+        ModuleDeclaration autoDecl;
+        autoDecl.instanceId = StringCRC("StubAutomationProvider");
+        autoDecl.typeId = StringCRC("StubAutomationProvider");
+        autoDecl.stages.Add(StringCRC("all"));
+        ChannelBinding provides; provides.id = StringCRC("AutomationService"); provides.role = StringCRC("provides");
+        autoDecl.channels.Add(provides);
+        pu.modules.Add(autoDecl);
+
         ModuleDeclaration decl;
         decl.instanceId = StringCRC("F2TestRunnerModule");
         decl.typeId = StringCRC("F2TestRunnerModule");
@@ -132,6 +175,8 @@ struct Fixture
         decl.dependencies.Add(StringCRC("RandomStreamModule"));
         decl.dependencies.Add(StringCRC("GameSpeedControllerModule"));
         decl.dependencies.Add(StringCRC("SaveLoadModule"));
+        ChannelBinding consumes; consumes.id = StringCRC("AutomationService"); consumes.role = StringCRC("consumes");
+        decl.channels.Add(consumes);
         pu.modules.Add(decl);
 
         manifest.processingUnits.Add(pu);
