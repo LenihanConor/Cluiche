@@ -1946,5 +1946,8 @@
     <ClCompile Include="..\..\CoW\Modules\F2TestRunnerDebugDomain.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="DiaPathfinding\TestHexTopology.cpp">
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

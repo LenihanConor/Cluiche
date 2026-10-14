@@ -905,6 +905,7 @@
     <ClCompile Include="CoW\F2\TestF2PanelModel.cpp" />
     <ClCompile Include="..\..\CoW\Modules\F2PanelModel.cpp" />
     <ClCompile Include="..\..\CoW\Modules\F2TestRunnerDebugDomain.cpp" />
+    <ClCompile Include="DiaPathfinding\TestHexTopology.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
