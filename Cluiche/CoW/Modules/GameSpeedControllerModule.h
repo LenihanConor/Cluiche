@@ -10,6 +10,12 @@
 #include "Modules/GameSpeedMessages.h"
 #include "Modules/MessageBusHostModule.h"
 #include <cstdint>
+#include <memory>
+
+#ifdef DIA_DEBUG
+#include "Modules/VisualDebuggerModule.h"
+#include "Modules/GameSpeedDebugDomain.h"
+#endif
 
 namespace CoW {
 
@@ -33,10 +39,14 @@ public:
     static constexpr const char* kDescription = "Game speed presets, pause rules and daily SimulationTick";
 
     explicit GameSpeedControllerModule(const Dia::Core::StringCRC& instanceId);
+    ~GameSpeedControllerModule() override;
 
     // Read access for UI, debug and E1 only. Gameplay must subscribe to SimulationTick instead.
     const GameSpeedController& GetController() const { return mController; }
     const GameSpeedHealthReporter& GetHealthReporter() const { return mHealth; }
+    bool IsUsingFallbackConfig() const { return mUsingFallbackConfig; }
+    // Posts SpeedChangeRequested on the bus (the same path every other requester uses).
+    bool RequestSpeed(SpeedTier tier);
     // Called by E1 on load. Always comes back paused.
     void RestoreState(const GameSpeedState& saved);
 
@@ -71,6 +81,15 @@ private:
     bool  mClockResetPending = false;
     bool  mPublishFailed = false;
     uint32_t mBackwardsSeen = 0;
+
+#ifdef DIA_DEBUG
+    void TryRegisterDebugDomain();
+    void UnregisterDebugDomain();
+
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::VisualDebuggerModule> mVisualDebuggerRef{this};
+    std::unique_ptr<GameSpeedDebugDomain> mDebugDomain;
+    bool mDomainRegistered = false;
+#endif
 
     GameSpeedHealthReporter mHealth;
     bool mHealthRegistered = false;

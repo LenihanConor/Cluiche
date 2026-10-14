@@ -876,6 +876,7 @@
     <ClCompile Include="CoW\TestGameSpeedControllerModule.cpp" />
     <ClCompile Include="..\..\CoW\Modules\GameSpeedControllerModule.cpp" />
     <ClCompile Include="CoW\TestGameSpeedControllerObservability.cpp" />
+    <ClCompile Include="..\..\CoW\Modules\GameSpeedDebugDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

@@ -25,6 +25,9 @@
     <ClCompile Include="Modules\GameSpeedControllerModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\GameSpeedDebugDomain.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -46,6 +49,9 @@
       <Filter>Modules</Filter>
     </ClInclude>
     <ClInclude Include="Modules\GameSpeedMessages.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\GameSpeedDebugDomain.h">
       <Filter>Modules</Filter>
     </ClInclude>
   </ItemGroup>

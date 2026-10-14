@@ -578,3 +578,123 @@ TEST(SLOW_GameSpeedSoak, DifferentTrafficSameDaySequence)
     EXPECT_TRUE(a.sequential && b.sequential);
     EXPECT_TRUE(a.bandsOk && b.bandsOk);
 }
+
+// ---------------------------------------------------------------------------
+// Debug domain (panel card)
+// ---------------------------------------------------------------------------
+#ifdef DIA_DEBUG
+#include <Modules/GameSpeedDebugDomain.h>
+
+namespace {
+void SendSetScale(GameSpeedDebugDomain& domain, const char* key, double value)
+{
+    Json::Value args(Json::objectValue);
+    args["key"] = key;
+    args["value"] = value;
+    domain.OnCommand(StringCRC("setScale"), args);
+}
+}
+
+TEST(GameSpeedDebugDomain, IdentityAndPanelOnly)
+{
+    Fixture f;
+    ASSERT_TRUE(f.Boot());
+    GameSpeedDebugDomain domain(*f.game);
+    EXPECT_EQ(domain.GetDomainId(), StringCRC("GameSpeed"));
+    EXPECT_FALSE(domain.HasWorldDrawers());
+    EXPECT_LE(strlen(domain.GetDescription()), 80u);
+}
+
+TEST(GameSpeedDebugDomain, StatsReflectCalendarAndSpeed)
+{
+    Options o; o.config = kFastConfig;
+    Fixture f(o);
+    ASSERT_TRUE(f.Boot());
+    GameSpeedDebugDomain domain(*f.game);
+
+    Json::Value out;
+    domain.GetJSONState(out);
+    EXPECT_TRUE(out["drawers"].isArray());
+    EXPECT_EQ(out["stats"]["day"].asUInt64(), 0u);
+    EXPECT_EQ(out["stats"]["speed"].asString(), "Paused");
+    EXPECT_TRUE(out["stats"]["paused"].asBool());
+    EXPECT_EQ(out["stats"]["pauseSource"].asString(), "player");
+    EXPECT_FALSE(out["stats"]["fallbackConfig"].asBool());
+
+    f.SetSpeed(SpeedTier::Fastest);
+    f.Pump(400);
+    domain.GetJSONState(out);
+    const uint64_t day = f.game->GetController().GetState().dayCounter;
+    ASSERT_GT(day, 14u);
+    EXPECT_EQ(out["stats"]["day"].asUInt64(), day);
+    EXPECT_EQ(out["stats"]["speed"].asString(), "Fastest");
+    EXPECT_FALSE(out["stats"]["paused"].asBool());
+    EXPECT_EQ(out["stats"]["dayOfWeek"].asUInt64(), day % 7);
+    EXPECT_EQ(out["stats"]["week"].asUInt64(), WeekOf(day) % 13);
+    EXPECT_EQ(out["stats"]["year"].asUInt64(), YearOf(day));
+    EXPECT_GT(out["stats"]["timeScale"].asDouble(), 0.0);
+}
+
+TEST(GameSpeedDebugDomain, SpeedSliderCarriesCurrentTier)
+{
+    Fixture f;
+    ASSERT_TRUE(f.Boot());
+    GameSpeedDebugDomain domain(*f.game);
+    f.SetSpeed(SpeedTier::Fast);
+    f.Pump(3);
+    Json::Value out;
+    domain.GetJSONState(out);
+    ASSERT_TRUE(out["controls"].isArray());
+    ASSERT_EQ(out["controls"].size(), 1u);
+    const Json::Value& c = out["controls"][0u];
+    EXPECT_EQ(c["key"].asString(), "speed");
+    EXPECT_EQ(c["min"].asInt(), 0);
+    EXPECT_EQ(c["max"].asInt(), 4);
+    EXPECT_EQ(c["value"].asInt(), static_cast<int>(SpeedTier::Fast));
+}
+
+TEST(GameSpeedDebugDomain, SetScaleCommandRequestsSpeedThroughTheBus)
+{
+    Fixture f;
+    ASSERT_TRUE(f.Boot());
+    GameSpeedDebugDomain domain(*f.game);
+    SendSetScale(domain, "speed", 3);
+    EXPECT_EQ(f.game->GetController().GetState().speedTier, SpeedTier::Paused);   // not applied directly
+    f.Pump(3);
+    EXPECT_EQ(f.game->GetController().GetState().speedTier, SpeedTier::Fast);
+    SendSetScale(domain, "speed", 0);
+    f.Pump(3);
+    EXPECT_TRUE(f.game->GetController().IsPaused());
+}
+
+TEST(GameSpeedDebugDomain, InvalidCommandsAreIgnored)
+{
+    Fixture f;
+    ASSERT_TRUE(f.Boot());
+    GameSpeedDebugDomain domain(*f.game);
+    f.SetSpeed(SpeedTier::Normal);
+    f.Pump(3);
+
+    SendSetScale(domain, "speed", 9);        // out of range
+    SendSetScale(domain, "speed", -1);
+    SendSetScale(domain, "other", 1);        // wrong key
+    domain.OnCommand(StringCRC("toggle"), Json::Value(Json::objectValue));   // wrong command
+    Json::Value noValue(Json::objectValue); noValue["key"] = "speed";
+    domain.OnCommand(StringCRC("setScale"), noValue);
+    Json::Value badValue(Json::objectValue); badValue["key"] = "speed"; badValue["value"] = "fast";
+    domain.OnCommand(StringCRC("setScale"), badValue);
+    f.Pump(3);
+    EXPECT_EQ(f.game->GetController().GetState().speedTier, SpeedTier::Normal);
+}
+
+TEST(GameSpeedDebugDomain, FallbackConfigIsVisible)
+{
+    Options o; o.config = "{\"wall_seconds_per_day\":{\"slow\":1,\"normal\":2,\"fast\":3,\"fastest\":4}}";
+    Fixture f(o);
+    ASSERT_TRUE(f.Boot());
+    GameSpeedDebugDomain domain(*f.game);
+    Json::Value out;
+    domain.GetJSONState(out);
+    EXPECT_TRUE(out["stats"]["fallbackConfig"].asBool());
+}
+#endif

@@ -29,6 +29,7 @@
     <ClCompile Include="Modules\BusProbeModule.cpp" />
     <ClCompile Include="Modules\BusRecorderModule.cpp" />
     <ClCompile Include="Modules\GameSpeedControllerModule.cpp" />
+    <ClCompile Include="Modules\GameSpeedDebugDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />
@@ -38,6 +39,7 @@
     <ClInclude Include="Shared\GameSpeedController.h" />
     <ClInclude Include="Modules\GameSpeedControllerModule.h" />
     <ClInclude Include="Modules\GameSpeedMessages.h" />
+    <ClInclude Include="Modules\GameSpeedDebugDomain.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

@@ -43,6 +43,19 @@ GameSpeedControllerModule::GameSpeedControllerModule(const Dia::Core::StringCRC&
     : SimModule(instanceId)
 {}
 
+// Out of line so the debug domain type is complete where it is destroyed.
+GameSpeedControllerModule::~GameSpeedControllerModule() = default;
+
+bool GameSpeedControllerModule::RequestSpeed(SpeedTier tier)
+{
+    Cluiche::AppFlow::MessageBusHostModule* host = mBus.Get();
+    if (!host)
+        return false;
+    SpeedChangeRequested request;
+    request.tier = tier;
+    return host->GetBus().Broadcast(request);
+}
+
 void GameSpeedControllerModule::OnConfigure(const char* configJson)
 {
     mPendingConfig = DefaultSpeedPresetConfig();
@@ -172,6 +185,11 @@ Dia::ApplicationFlow::StartResult GameSpeedControllerModule::DoStart()
         mHealth.IncrementErrors();
     }
     mSubscriptionsFailed = !subscriptionsOk;
+
+#ifdef DIA_DEBUG
+    mDebugDomain = std::make_unique<GameSpeedDebugDomain>(*this);
+    mDomainRegistered = false;
+#endif
 
     Dia::Observation::Health::HealthRegistry::Instance().Register(&mHealth);
     mHealthRegistered = true;
@@ -324,10 +342,40 @@ void GameSpeedControllerModule::DoUpdate(const Dia::SimTime::SimTimeContext& ctx
 
     UpdateGauges();
     UpdateHealth();
+#ifdef DIA_DEBUG
+    TryRegisterDebugDomain();
+#endif
 }
+
+#ifdef DIA_DEBUG
+void GameSpeedControllerModule::TryRegisterDebugDomain()
+{
+    if (mDomainRegistered || !mDebugDomain)
+        return;
+    if (Cluiche::AppFlow::VisualDebuggerModule* vd = mVisualDebuggerRef.Get())
+    {
+        vd->RegisterDomain(*mDebugDomain);
+        mDomainRegistered = true;
+        DIA_LOG_INFO("CoW", "GameSpeedControllerModule: debug domain registered with the visual debugger");
+    }
+}
+
+void GameSpeedControllerModule::UnregisterDebugDomain()
+{
+    if (!mDomainRegistered || !mDebugDomain)
+        return;
+    if (Cluiche::AppFlow::VisualDebuggerModule* vd = mVisualDebuggerRef.Get())
+        vd->UnregisterDomain(*mDebugDomain);
+    mDomainRegistered = false;
+}
+#endif
 
 Dia::ApplicationFlow::StopResult GameSpeedControllerModule::DoStop()
 {
+#ifdef DIA_DEBUG
+    UnregisterDebugDomain();
+    mDebugDomain.reset();
+#endif
     for (auto& handle : mSubscriptions)
         handle = Dia::MessageBus::BusSubscriptionHandle();
 

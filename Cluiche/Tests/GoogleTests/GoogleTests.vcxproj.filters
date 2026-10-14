@@ -1889,5 +1889,8 @@
     <ClCompile Include="CoW\TestGameSpeedControllerObservability.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\GameSpeedDebugDomain.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
