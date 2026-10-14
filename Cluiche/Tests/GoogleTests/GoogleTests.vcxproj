@@ -898,6 +898,8 @@
     <ClCompile Include="..\..\CoW\Modules\F2Fingerprint.cpp" />
     <ClCompile Include="CoW\F2\TestF2StreamIndependence.cpp" />
     <ClCompile Include="..\..\CoW\Modules\F2StreamIndependence.cpp" />
+    <ClCompile Include="CoW\F2\TestF2Scenario.cpp" />
+    <ClCompile Include="..\..\CoW\Modules\F2Scenario.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

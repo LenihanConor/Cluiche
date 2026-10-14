@@ -5,7 +5,14 @@
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include "Modules/MessageBusHostModule.h"
+#include "Modules/GameSpeedControllerModule.h"
+#include "Modules/SaveLoadModule.h"
+#include "Modules/F2Fingerprint.h"
+#include "Modules/F2Scenario.h"
+#include <DiaMessageBus/BusSubscriptionHandle.h>
+#include <array>
 #include <cstdint>
+#include <string>
 
 namespace CoW {
 
@@ -72,7 +79,8 @@ public:
 
     explicit F2TestRunnerModule(const Dia::Core::StringCRC& instanceId);
 
-    // Requests a scenario run; the phases advance one per update starting on the next update.
+    // Requests a scenario run; it starts on the next update. Phases 0, 2 (usually), 4-7 take one or
+    // two updates each; phases 1 and 3 span many updates (one per "scenario tick", see F2Scenario.h).
     // Returns false (ignored) while a run is already in progress.
     bool RunScenario();
 
@@ -82,6 +90,25 @@ public:
     F2PhaseId GetCurrentPhase() const { return mPhase; }
     bool IsRunning() const { return mRunning || mRunPending; }
 
+    // ---- Results of phases 1-3 (valid once the scenario has passed the phase noted) ----
+    uint32_t GetScenarioTick() const { return mScenarioTick; }
+    // Phase 2: did the quick save complete successfully?
+    bool SaveSucceeded() const { return mSaveSucceeded; }
+    // Full fingerprint captured right after the save completed (phase 2). NOTE: GameSpeedController
+    // restores only the day counter and always resumes paused, so the reload comparison (C5, task 5)
+    // must compare restored fields only: 8 streams + day counter, speed state == paused defaults.
+    bool HasFingerprint500() const { return mHasF500; }
+    const F2Fingerprint& GetFingerprint500() const { return mF500; }
+    // Fingerprint at scenario tick 1000 (end of phase 3), captured BEFORE the reference draws.
+    bool HasFingerprint1000() const { return mHasF1000; }
+    const F2Fingerprint& GetFingerprint1000() const { return mF1000; }
+    // The 800 reference draws (phase 3): stream-major, 100 RandomInt() values per stream in
+    // RandomStreamModule::kStreamNames order, drawn right after F1000 was captured. The replay
+    // (task 5) must draw in this same order at the same point (after F1000 is reproduced).
+    // Live streams are NOT rewound afterwards; the Reload phase restores them from the save.
+    bool HasReferenceDraws() const { return mHasReferenceDraws; }
+    const std::array<int, kF2ReferenceDrawCount>& GetReferenceDraws() const { return mReferenceDraws; }
+
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
     void DoUpdate(const Dia::SimTime::SimTimeContext& ctx) override;
@@ -90,7 +117,17 @@ protected:
 private:
     void EnterPhase(F2PhaseId phase);
     void RunPhaseBody(F2PhaseId phase);
+    void ResetScenarioState();
     void RunIsolation();
+    void RunSession();            // phase 1, one scenario tick per call
+    void RunSave();               // phase 2
+    void RunReferenceFuture();    // phase 3, one scenario tick per call
+    // Issues one script action as the real bus message. Returns false if the bus is unavailable.
+    bool IssueAction(const F2ScenarioAction& action);
+    void DrawForTick(uint32_t tick);
+    void EvaluatePendingClockCheck();
+    void RecordC4Failure(const std::string& what);
+    F2Fingerprint CaptureFingerprint(bool& ok);
     void CompleteCheck(F2CheckId check, bool passed, const char* summary);
     template <class T> void Publish(const T& msg);
 
@@ -98,6 +135,8 @@ private:
 
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::MessageBusHostModule> mBus{this};
     Dia::ApplicationFlow::ModuleRef<RandomStreamModule> mRandom{this};
+    Dia::ApplicationFlow::ModuleRef<GameSpeedControllerModule> mGameSpeed{this};
+    Dia::ApplicationFlow::ModuleRef<SaveLoadModule> mSaveLoad{this};
 
     F2PhaseId     mPhase = F2PhaseId::Idle;
     bool          mRunPending = false;
@@ -105,6 +144,42 @@ private:
     bool          mBusReady = false;
     F2CheckStatus mStatus[kF2CheckCount] = {};
     char          mLastResult[kF2CheckCount][kSummaryLen] = {};
+
+    bool          mPhaseDone = false;
+    float         mCtxTimeScale = 0.0f;   // world time scale seen by the current update
+
+    // Phases 1 and 3 (scripted ticks).
+    uint32_t         mScenarioTick = 0;
+    size_t           mScriptIndex = 0;
+    F2ExpectedClock  mModel;
+
+    // C4 bookkeeping.
+    Dia::MessageBus::BusSubscriptionHandle mTickSub;
+    uint32_t         mTicksThisUpdate = 0;   // SimulationTicks delivered since the last runner update
+    uint64_t         mLastTickDay = 0;
+    uint32_t         mC4Transitions = 0;
+    uint32_t         mC4Matched = 0;
+    uint32_t         mC4TickViolations = 0;
+    std::string      mC4FirstFailure;
+    bool             mCheckPending = false;
+    uint32_t         mCheckDueTick = 0;
+    F2ScenarioAction mCheckAction;
+    bool             mCheckStepAccepted = false;
+    uint64_t         mCheckDayAtAction = 0;
+
+    // Phase 2.
+    bool             mSaveRequested = false;
+    uint32_t         mSaveCountBefore = 0;
+    uint32_t         mSaveWaitUpdates = 0;
+    bool             mSaveSucceeded = false;
+
+    // Phases 2-3 results.
+    bool             mHasF500 = false;
+    bool             mHasF1000 = false;
+    bool             mHasReferenceDraws = false;
+    F2Fingerprint    mF500;
+    F2Fingerprint    mF1000;
+    std::array<int, kF2ReferenceDrawCount> mReferenceDraws = {};
 };
 
 } // namespace CoW

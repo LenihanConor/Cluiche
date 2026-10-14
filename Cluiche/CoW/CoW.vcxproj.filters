@@ -40,6 +40,9 @@
     <ClCompile Include="Modules\F2StreamIndependence.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\F2Scenario.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -76,6 +79,9 @@
       <Filter>Modules</Filter>
     </ClInclude>
     <ClInclude Include="Modules\F2StreamIndependence.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\F2Scenario.h">
       <Filter>Modules</Filter>
     </ClInclude>
   </ItemGroup>
