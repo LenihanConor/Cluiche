@@ -1,6 +1,7 @@
 # System Spec: F-2 Core Runtime
 
 **Parent:** @docs/specs/applications/cow/cow.md  
+**Status:** `Done`  
 **Design source:** `Output Docs/GDD/10_PrototypeStrategy/F2_CoreRuntime.md` (DesignDocs repo)
 
 **Gameplay Domains:** none (testbed infrastructure)
@@ -186,7 +187,7 @@ F-2 is a testbed stage, not a capability layer — it has no features of its own
 
 ## Status
 
-`Approved` — 2026-10-11 (amended 2026-10-14: single-scenario structure, Test 5 scoped to E1, Feature 7 Done, scenario driver)
+`Done` — 2026-10-14 (approved 2026-10-11, amended 2026-10-14: single-scenario structure, Test 5 scoped to E1, Feature 7 Done, scenario driver)
 
 Plan: @docs/specs/applications/cow/systems/f2-core-runtime/f2-core-runtime.plan.md
 

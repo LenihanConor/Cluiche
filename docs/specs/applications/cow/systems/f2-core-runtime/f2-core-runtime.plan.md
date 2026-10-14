@@ -1,7 +1,5 @@
 **Spec:** @docs/specs/applications/cow/systems/f2-core-runtime/f2-core-runtime.md
-**Status:** In Progress
-
-Scenario: Save, Reload, Replay. Checks C1-C6 are raised inside it. Build order follows the scenario phases so each task leaves a runnable, partly-green stage.
+**Status:** Done: Save, Reload, Replay. Checks C1-C6 are raised inside it. Build order follows the scenario phases so each task leaves a runnable, partly-green stage.
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
