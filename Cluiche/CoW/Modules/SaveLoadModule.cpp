@@ -99,22 +99,7 @@ void SaveLoadModule::RequestLoad(Dia::Core::StringCRC slotId)
 
 void SaveLoadModule::EnumerateSlots(Dia::Core::Containers::DynamicArrayC<Dia::SaveGame::SlotInfo, 32>& out) const
 {
-    const unsigned int first = out.Size();
     mSlots.EnumerateSlots(out);
-
-    // SlotManager reports the file name minus ".sav" (e.g. "slot_quick"), not the slot id that was
-    // passed to Save. Strip the literal pattern prefix ("slot_") so the ids round-trip into Load.
-    const char* pattern = mConfig.slotPattern;
-    const char* placeholder = std::strstr(pattern, "{id}");
-    const size_t prefixLen = placeholder ? static_cast<size_t>(placeholder - pattern) : 0;
-    if (prefixLen == 0)
-        return;
-    for (unsigned int i = first; i < out.Size(); ++i)
-    {
-        const char* name = out[i].id.AsChar();
-        if (std::strncmp(name, pattern, prefixLen) == 0)
-            out[i].id = Dia::Core::StringCRC(name + prefixLen);
-    }
 }
 
 void SaveLoadModule::RegisterCommands()

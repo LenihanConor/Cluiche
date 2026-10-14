@@ -101,14 +101,18 @@ TEST(DiaSaveGame_SlotManager, Enumerate_ReturnsOnDiskSlots)
     bool foundB = false;
     for (uint32_t i = 0; i < slots.Size(); ++i)
     {
-        // EnumerateSlots strips ".sav" so id = filename-without-extension
+        // EnumerateSlots returns the id that was passed to Save: the filename minus the
+        // slotPattern prefix ("slot_") and suffix (".sav").
         const char* id = slots.At(i).id.AsChar();
-        if (strcmp(id, "slot_enum_a") == 0) foundA = true;
-        if (strcmp(id, "slot_enum_b") == 0) foundB = true;
+        if (strcmp(id, "enum_a") == 0) foundA = true;
+        if (strcmp(id, "enum_b") == 0) foundB = true;
     }
 
-    EXPECT_TRUE(foundA) << "slot_enum_a not found in enumeration";
-    EXPECT_TRUE(foundB) << "slot_enum_b not found in enumeration";
+    EXPECT_TRUE(foundA) << "enum_a not found in enumeration";
+    EXPECT_TRUE(foundB) << "enum_b not found in enumeration";
+
+    // The enumerated id must round-trip into BuildPath/SlotExists.
+    EXPECT_TRUE(sm.SlotExists(StringCRC("enum_a")));
 
     remove("temp/sm_tests/slot_enum_a.sav");
     remove("temp/sm_tests/slot_enum_b.sav");
