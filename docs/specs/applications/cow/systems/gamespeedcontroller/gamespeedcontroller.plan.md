@@ -8,7 +8,7 @@
 | 3 | `cow_main.diaapp` entry + vcxproj wiring | `dia validate manifest`, `dia launch cow` smoke | Done | haiku | Module starts Active with configured presets. |
 | 5 | Exhaustive test pass: metrics/health assertions, tick-lag, bus failure paths, restore ordering, pause lag, message storms, stage restart, seeded soak, century census | 21 tests in `TestGameSpeedControllerObservability.cpp` (+2 calendar) | Done | sonnet | 105 GameSpeed/DayClock tests total. Added `GetHealthReporter()` accessor. |
 | 6 | Debug panel card: `GameSpeedDebugDomain` (calendar, speed, pause stats + speed slider via `SpeedChangeRequested`) | 6 tests in `TestGameSpeedControllerObservability.cpp`; registers in the running game | Done | sonnet | Panel never touches state directly. Slider posts through the bus. |
-| 7 | Save participant (`ISaveable` over the state struct, register with E1 `SaveLoadModule`) | Save/load round trip (F-2 Test 5) | Blocked | sonnet | Waits on E1 `SaveLoadModule`. Note added to the E1 spec. |
+| 7 | Save participant (`ISaveable` over the state struct, register with E1 `SaveLoadModule`) | Save/load round trip (F-2 Test 5) | Done | sonnet | Built with E1 (2026-10-14): participant `game_speed`, lazy registration via `ModuleRef<SaveLoadModule>`, `RestoreState` applies the paused scale immediately. 3 tests + E1 integration tests. |
 | 4 | Observation pass: logs, trace/profile, metrics, health | Review of touched files | Done | sonnet | 12 `cow.gamespeed.*` metrics, `GameSpeedHealthReporter`, DoStart/DoUpdate trace + profile, transition/config/publish logs. |
 
 ## Observation pass

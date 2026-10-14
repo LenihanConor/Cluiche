@@ -252,6 +252,7 @@ private:
 
 5. **Error handling on partial load** — If GameSpeedController deserializes successfully but RandomStream fails, should E1 abort the entire load or leave the game in a hybrid state?
    - **Recommendation:** Abort. DiaSaveGame's LoadResult returns on first failure; E1 logs the error and leaves the game unchanged. Partial loads create undefined state.
+   - **Amended (built 2026-10-14):** atomic load is only partly met. `ISaveable::Deserialize` returns `void` and `SaveManager::Load` restores participants one at a time with no validate step, so a failure *inside* a participant cannot be rolled back. `SaveLoadModule` pre-validates before calling `Load` (slot exists, file parses, manifest readable and engine-compatible) and leaves the game untouched on any of those failures. Participants skip a stream or field they cannot read, and log an error. Spec Test 11 (participant fails mid-load) is **not covered**. Closing the gap needs a `Validate(LoadContext&)` step on `ISaveable` (a Dia change), to be made when a participant with real failure modes lands (A1).
 
 ## Dependencies
 
@@ -296,5 +297,13 @@ GameSpeedController and RandomStream plans prove their own participants (always-
 
 ## Status
 
-**Status:** `Approved`  
-**Plan:** TBD (create when implementation starts)
+**Status:** `Done` (features 1-2; 4-5 delivered through the participant owners)  
+**Plan:** @docs/specs/applications/cow/systems/e1-saveload/e1-saveload.plan.md
+
+### As built (2026-10-14)
+
+- `SaveLoadModule` ships as specced, plus config override `{"base_directory": ...}` and `OnConnectStreams` injecting its registry into `DiaSimTimeModule` (instance id must be `DiaSimTime`) so the world clock and scheduler save as participant `DiaSimTime`.
+- Participants: `game_speed` (day counter, restores paused), `random_streams` (per stream seed + draw count, replayed on restore), `DiaSimTime` (clock, scheduler, sleep state). Each registers lazily from its own `DoUpdate` once a `SaveLoadModule` exists; with none, nothing changes.
+- Dia changes made for this (user-approved): `RandomStream::GetSeed/GetDrawCount/Restore`; `SlotManager::EnumerateSlots` now returns the id passed to `Save`; `TimeServer::SetTime` / `SimTimeDomain::SetTime` (rewind-capable) used by `SimTimeSaveState::Deserialize`; `TimeServer::SetTimeScaleImmediate` / `SimTimeDomain::SetScaleImmediate` so a restore pauses at once. All restore-only APIs.
+- Limits: 64 KB save buffer in `SaveManager`; no live in-game smoke run of `cow_main.diaapp` yet (CoW has no headless launch).
+- Module order on SimPU in `cow_main.diaapp`: DiaSimTime, SaveLoadModule, GameSpeedControllerModule, RandomStreamModule.
