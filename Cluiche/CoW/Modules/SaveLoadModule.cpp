@@ -1,7 +1,10 @@
 #include "Modules/SaveLoadModule.h"
 
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
+#include <DiaApplicationFlow/Application.h>
+#include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
+#include <DiaSimTime/DiaSimTimeModule.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
@@ -73,6 +76,19 @@ void SaveLoadModule::OnConfigure(const char* configJson)
         const bool needsSlash = !dir.empty() && dir.back() != '/' && dir.back() != '\\';
         std::snprintf(mBaseDirectory, kBaseDirCapacity, "%s%s", dir.c_str(), needsSlash ? "/" : "");
     }
+}
+
+void SaveLoadModule::OnConnectStreams(Dia::ApplicationFlow::Application&)
+{
+    Dia::ApplicationFlow::ProcessingUnit* pu = GetProcessingUnit();
+    if (pu == nullptr)
+        return;
+    // FindModule ignores lifecycle state (ModuleRef would not: the sibling is not Active yet).
+    Dia::ApplicationFlow::Module* found = pu->FindModule(Dia::SimTime::DiaSimTimeModule::kTypeId);
+    if (found == nullptr)
+        return;
+    static_cast<Dia::SimTime::DiaSimTimeModule*>(found)->SetSaveRegistry(mRegistry);
+    DIA_LOG_INFO("CoW", "SaveLoadModule: save registry injected into DiaSimTimeModule");
 }
 
 void SaveLoadModule::RegisterParticipant(Dia::Core::StringCRC id, Dia::SaveGame::ISaveable* participant)

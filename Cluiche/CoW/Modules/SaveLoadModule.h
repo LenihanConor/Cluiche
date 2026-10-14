@@ -59,6 +59,9 @@ public:
 
 protected:
     void OnConfigure(const char* configJson) override;
+    // Runs before any module's DoStart: hands our registry to a sibling DiaSimTimeModule (if the
+    // PU has one, instance id == DiaSimTimeModule::kTypeId) so its clock/scheduler state persists.
+    void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
     Dia::ApplicationFlow::StartResult DoStart() override;
     void DoUpdate(const Dia::SimTime::SimTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult DoStop() override;

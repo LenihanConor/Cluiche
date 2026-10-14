@@ -1,5 +1,6 @@
 #include "RandomStreamModule.h"
 #include <DiaApplicationFlow/Application.h>
+#include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaSaveGame/SaveContext.h>
 #include <DiaSaveGame/LoadContext.h>
@@ -163,3 +164,7 @@ Dia::Maths::RandomStream* RandomStreamModule::GetC4Stream()
 }
 
 } // namespace CoW
+
+namespace { using RandomStreamModule_ = CoW::RandomStreamModule; }
+DIA_MODULE(RandomStreamModule_);
+DIA_DESCRIBE(RandomStreamModule_::kTypeId, "8 independent RNG streams for deterministic F-2 simulation; save participant 'random_streams'.");

@@ -1901,5 +1901,8 @@
     <ClCompile Include="CoW\TestRandomStreamSaveParticipant.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestSaveLoadWiring.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

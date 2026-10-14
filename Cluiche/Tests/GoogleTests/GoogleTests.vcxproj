@@ -890,6 +890,7 @@
     <ClCompile Include="CoW\TestSaveLoadModule.cpp" />
     <ClCompile Include="CoW\TestGameSpeedSaveParticipant.cpp" />
     <ClCompile Include="CoW\TestRandomStreamSaveParticipant.cpp" />
+    <ClCompile Include="CoW\TestSaveLoadWiring.cpp" />
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaLighting3D\DiaLighting3D.vcxproj">

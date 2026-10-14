@@ -192,6 +192,16 @@
             "overflow": "drop-oldest",
             "from": "RenderPU",
             "to": "SimPU"
+        },
+        {
+            "id": "SimTime",
+            "kind": "FrameStream",
+            "payload_type": "SimTimeContext"
+        },
+        {
+            "id": "SimTimeSchedulerFire",
+            "kind": "EventStream",
+            "payload_type": "SimTimeSchedulerFire"
         }
     ],
     "processing_units": [
@@ -490,13 +500,32 @@
                     "channels": []
                 },
                 {
+                    "instance_id": "DiaSimTime",
+                    "type_id": "DiaSimTime",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [],
+                    "channels": []
+                },
+                {
+                    "instance_id": "SaveLoadModule",
+                    "type_id": "SaveLoadModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [],
+                    "channels": []
+                },
+                {
                     "instance_id": "GameSpeedControllerModule",
                     "type_id": "GameSpeedControllerModule",
                     "stages": [
                         "all"
                     ],
                     "dependencies": [
-                        "MessageBusHostModule"
+                        "MessageBusHostModule",
+                        "SaveLoadModule"
                     ],
                     "config": {
                         "wall_seconds_per_day": {
@@ -506,6 +535,18 @@
                             "fastest": 1.0
                         }
                     },
+                    "channels": []
+                },
+                {
+                    "instance_id": "RandomStreamModule",
+                    "type_id": "RandomStreamModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "SaveLoadModule",
+                        "GameSpeedControllerModule"
+                    ],
                     "channels": []
                 },
                 {
