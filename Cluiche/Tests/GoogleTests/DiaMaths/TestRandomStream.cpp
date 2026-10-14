@@ -730,3 +730,108 @@ TEST(BackwardCompatibility, RandomNamespaceStillWorks) {
 	Random::Shuffle(array, 5);
 	// Just verify it doesn't crash - result is non-deterministic
 }
+
+//-----------------------------------------------------------------------------
+// RandomStream: Save/Restore (GetSeed, GetDrawCount, Restore)
+//-----------------------------------------------------------------------------
+
+namespace
+{
+	// Exercises every draw API once, appending results to out
+	void MixedDraws(RandomStream& s, std::vector<double>& out)
+	{
+		out.push_back(s.RandomInt());
+		out.push_back(s.RandomRange(-50, 50));
+		out.push_back(s.RandomRange(1, 1000000007));
+		out.push_back(s.RandomRange(2.0f, 9.0f));
+		out.push_back(s.RandomUnit());
+		out.push_back(s.RandomBilateral());
+		out.push_back(s.RandomChance(0.5f) ? 1.0 : 0.0);
+		Vector2D v = s.RandomUnitVector();
+		out.push_back(v.x);
+		out.push_back(v.y);
+		float weights[] = { 1.0f, 2.0f, 3.0f, 4.0f };
+		out.push_back(s.WeightedRandom(weights, 4));
+		int arr[] = { 1, 2, 3, 4, 5, 6, 7, 8 };
+		s.Shuffle(arr, 8);
+		for (int i = 0; i < 8; ++i)
+		{
+			out.push_back(arr[i]);
+		}
+	}
+}
+
+TEST(RandomStream, SeedAndDrawCountFresh) {
+	RandomStream stream(4242);
+	ASSERT_EQ(stream.GetSeed(), 4242u);
+	ASSERT_EQ(stream.GetDrawCount(), 0u);
+}
+
+TEST(RandomStream, RestoreContinuesIdentically) {
+	RandomStream original(777);
+	std::vector<double> scratch;
+	for (int i = 0; i < 50; ++i) {
+		MixedDraws(original, scratch);
+	}
+
+	const unsigned int seed = original.GetSeed();
+	const uint64_t count = original.GetDrawCount();
+	ASSERT_GT(count, 0u);
+
+	RandomStream restored(999);
+	restored.Restore(seed, count);
+	ASSERT_EQ(restored.GetSeed(), seed);
+	ASSERT_EQ(restored.GetDrawCount(), count);
+
+	std::vector<double> a;
+	std::vector<double> b;
+	for (int i = 0; i < 1000; ++i) {
+		MixedDraws(original, a);
+		MixedDraws(restored, b);
+	}
+	ASSERT_EQ(a, b);
+	ASSERT_EQ(original.GetDrawCount(), restored.GetDrawCount());
+}
+
+TEST(RandomStream, RestoreWithRejectionSampling) {
+	// Range chosen so uniform_int_distribution must reject some raw outputs
+	const int kMax = (INT_MAX / 3) * 2 + 12345;
+	RandomStream original(31337);
+	for (int i = 0; i < 5000; ++i) {
+		original.RandomRange(0, kMax);
+	}
+	// Rejections mean more raw draws than API calls
+	ASSERT_GT(original.GetDrawCount(), 5000u);
+
+	RandomStream restored(1);
+	restored.Restore(original.GetSeed(), original.GetDrawCount());
+	for (int i = 0; i < 5000; ++i) {
+		ASSERT_EQ(original.RandomRange(0, kMax), restored.RandomRange(0, kMax));
+	}
+}
+
+TEST(RandomStream, RestoreZeroEqualsFresh) {
+	RandomStream fresh(2024);
+	RandomStream other(5);
+	other.RandomInt();
+	other.RandomInt();
+	other.Restore(2024, 0);
+	ASSERT_EQ(other.GetDrawCount(), 0u);
+	for (int i = 0; i < 100; ++i) {
+		ASSERT_EQ(fresh.RandomInt(), other.RandomInt());
+	}
+}
+
+TEST(RandomStream, DrawCountMonotonicAndRestoreSetsIt) {
+	RandomStream stream(11);
+	uint64_t previous = stream.GetDrawCount();
+	for (int i = 0; i < 100; ++i) {
+		stream.RandomUnit();
+		uint64_t current = stream.GetDrawCount();
+		ASSERT_GT(current, previous);
+		previous = current;
+	}
+	stream.Restore(11, 37);
+	ASSERT_EQ(stream.GetDrawCount(), 37u);
+	ASSERT_EQ(stream.GetSeed(), 11u);
+}

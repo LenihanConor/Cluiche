@@ -9,7 +9,8 @@ namespace Dia
 		//-----------------------------------------------------------------------------
 		// Constructor - seeds the generator
 		RandomStream::RandomStream(unsigned int seed)
-			: mGenerator(seed)
+			: mGenerator{ std::mt19937(seed), 0 }
+			, mSeed(seed)
 		{
 		}
 
@@ -121,6 +122,30 @@ namespace Dia
 			// Floating point rounding might cause us to miss by tiny amount
 			// Return last index as safe fallback
 			return count - 1;
+		}
+
+		//-----------------------------------------------------------------------------
+		unsigned int RandomStream::GetSeed() const
+		{
+			std::lock_guard<std::mutex> lock(mMutex);
+			return mSeed;
+		}
+
+		//-----------------------------------------------------------------------------
+		uint64_t RandomStream::GetDrawCount() const
+		{
+			std::lock_guard<std::mutex> lock(mMutex);
+			return mGenerator.mCount;
+		}
+
+		//-----------------------------------------------------------------------------
+		void RandomStream::Restore(unsigned int seed, uint64_t drawCount)
+		{
+			std::lock_guard<std::mutex> lock(mMutex);
+			mSeed = seed;
+			mGenerator.mEngine.seed(seed);
+			mGenerator.mEngine.discard(drawCount);
+			mGenerator.mCount = drawCount;
 		}
 	}
 }

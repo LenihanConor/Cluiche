@@ -1,0 +1,14 @@
+**Spec:** @docs/specs/applications/cow/systems/e1-saveload/e1-saveload.md
+**Status:** In Progress
+
+Decisions (user, 2026-10-14): RandomStream persists as seed + draw count, replayed on restore (small Dia addition, approved). Atomic load is deferred: `SaveLoadModule` pre-validates (slot exists, parses, manifest compatible) and the spec is amended to document that a mid-load participant failure is unsupported until `ISaveable` gains a validate step. No `ISaveable` change.
+
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| 1 | Dia `RandomStream`: count draws; add `GetSeed()`, `GetDrawCount()`, `Restore(seed, drawCount)` (re-seed + discard N draws) | RED-GREEN: restore reproduces the exact next draws for every draw API (`RandomInt`, `RandomRange` int/float, `RandomUnit`, `RandomBilateral`, `RandomChance`, `RandomUnitVector`, `WeightedRandom`, `Shuffle`) | Done | sonnet | 30 RandomStream tests pass. Dia edit approved. Draw count must be exact, so count generator invocations, not API calls. |
+| 2 | `SaveLoadModule` core: config, registry, `SaveManager`, `Register/UnregisterParticipant`, `RequestSave/RequestLoad`, pending executed in `DoUpdate`, `EnumerateSlots`, pre-validation before load, `cow.save`/`cow.load`/`cow.save.list` commands | RED-GREEN: spec unit tests 1-8, 10 using a fake `ISaveable` (`GoogleTests/CoW/SaveLoad`) | Pending | sonnet | Pure CoW. Use `Dia::API` command registration. |
+| 3 | GameSpeedController save participant (day counter only, v1), registered in `GameSpeedControllerModule::DoStart`; load calls `RestoreState` | RED-GREEN: save at day N, mutate, load, day == N and paused | Pending | sonnet | Ordering rule: restore in same frame as SimTime restore. |
+| 4 | RandomStream save participant (8 streams: seed + draw count, v1) in `RandomStreamModule` | RED-GREEN: draw, save, draw more, load, next draws match the original run | Pending | sonnet | Depends on 1 and 2. |
+| 5 | Wiring: inject `SaveLoadModule` registry into `DiaSimTimeModule::SetSaveRegistry` before its `DoStart`; add `SaveLoadModule`, `RandomStreamModule`, `DiaSimTimeModule` (if absent) to `cow_main.diaapp` with `SaveLoadModule` before `GameSpeedControllerModule`; vcxproj entries | `dia validate manifest`; `dia launch cow` smoke | Pending | sonnet | Check which of these modules are actually missing from the manifest. |
+| 6 | Integration round trip (F-2 Test 5 precursor): real `Application` with SaveLoad + SimTime + GameSpeed + RandomStream; save, advance, load; day counter, world clock and RNG continuation match | Integration test | Pending | sonnet | Also covers frame-boundary and restore-ordering behaviour. |
+| 7 | Observation pass; spec amended for atomic-load gap; update GameSpeedController plan task 7 | Review of touched files | Pending | haiku | User authorised the spec amendment. |

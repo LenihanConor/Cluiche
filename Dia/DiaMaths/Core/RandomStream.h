@@ -3,6 +3,7 @@
 #include <DiaMaths/Vector/Vector2D.h>
 #include <random>
 #include <mutex>
+#include <stdint.h>
 
 namespace Dia
 {
@@ -27,7 +28,7 @@ namespace Dia
 		{
 		public:
 			// Construct a stream with the given seed
-			// The seed is immutable after construction (no re-seeding)
+			// The seed is fixed at construction; Restore() exists for loading saved state only
 			explicit RandomStream(unsigned int seed);
 
 			// Returns random integer in range [0, INT_MAX]
@@ -63,9 +64,32 @@ namespace Dia
 			template<typename T>
 			void Shuffle(T* array, int count);
 
+			// Seed given at construction (or by the last Restore)
+			unsigned int GetSeed() const;
+
+			// Number of raw generator invocations since seeding (not public API calls)
+			uint64_t GetDrawCount() const;
+
+			// Re-seed and fast-forward so subsequent draws match the original run.
+			// For loading saved state only - not for gameplay re-seeding.
+			void Restore(unsigned int seed, uint64_t drawCount);
+
 		private:
-			std::mt19937 mGenerator;  // Mersenne Twister generator
-			std::mutex mMutex;        // Per-stream lock for thread safety
+			// URBG adapter that counts raw generator invocations
+			struct CountingGenerator
+			{
+				using result_type = std::mt19937::result_type;
+				static constexpr result_type min() { return std::mt19937::min(); }
+				static constexpr result_type max() { return std::mt19937::max(); }
+				result_type operator()() { ++mCount; return mEngine(); }
+
+				std::mt19937 mEngine;
+				uint64_t mCount = 0;
+			};
+
+			CountingGenerator mGenerator;  // Mersenne Twister generator (counted)
+			unsigned int mSeed;            // Seed used to initialise mGenerator
+			mutable std::mutex mMutex;     // Per-stream lock for thread safety
 		};
 	}
 }
