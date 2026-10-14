@@ -7,10 +7,13 @@ namespace Dia::Pathfinding {
     constexpr uint32_t kNoCell        = 0xFFFFFFFFu;
     constexpr uint32_t kHexDirections = 6;
 
-    // Rectangular pointy-top odd-r hex topology: odd rows are shifted half a cell right,
-    // row index grows downward. CellCoord x = column, y = row. Index = y * width + x.
-    // Direction d (0..5) is at d * 60 degrees counter-clockwise from east:
-    // 0=E 1=NE 2=NW 3=W 4=SW 5=SE. Opposite of d is (d + 3) % 6.
+    // Rectangular flat-top odd-q hex topology: odd COLUMNS are shifted half a cell down,
+    // row index grows downward (south). CellCoord x = column, y = row. Index = y * width + x.
+    // World space is y-DOWN; with size = centre-to-corner distance a hex is 2*size wide and
+    // sqrt(3)*size tall, columns are 1.5*size apart.
+    // Direction d (0..5) is at on-screen angle 30deg + d*60deg counter-clockwise:
+    // 0=NE 1=N 2=NW 3=SW 4=S 5=SE (flat-top has no E/W neighbour).
+    // Opposite of d is (d + 3) % 6.
     // Pure value type; deterministic and allocation-free.
     class HexTopology {
     public:
@@ -27,12 +30,19 @@ namespace Dia::Pathfinding {
         // Hex steps between two in-grid or virtual coords, via cube coordinates.
         static uint32_t Distance(CellCoord a, CellCoord b);
 
-        // round(angle / 60deg) mod 6. Angle is the abstract counter-clockwise angle
-        // (same convention as DirectionVector); negative angles wrap correctly.
+        // d = round((angle - 30deg) / 60deg) mod 6. Angle is the on-screen counter-clockwise
+        // angle (same convention as DirectionVector); negative angles wrap correctly.
         static uint32_t DirectionFromAngle(float radians);
 
-        // Unit vector (cos(d*60deg), sin(d*60deg)); y is NOT flipped.
+        // Unit vector (cos(theta), -sin(theta)), theta = 30deg + d*60deg; y-DOWN world space,
+        // so d=1 (N) is (0,-1).
         static Dia::Maths::Vector2D DirectionVector(uint32_t dir);
+
+        // World-space centre of a cell: (1.5*size*col, sqrt(3)*size*(row + 0.5*(col&1))).
+        static Dia::Maths::Vector2D CellCenter(CellCoord coord, float size);
+
+        // Inverse of CellCenter (cube rounding). May return out-of-bounds coords.
+        static CellCoord CellFromPoint(Dia::Maths::Vector2D point, float size);
 
         int Width() const  { return mWidth; }
         int Height() const { return mHeight; }

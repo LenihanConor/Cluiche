@@ -12,12 +12,12 @@ namespace Dia::Pathfinding {
     public:
         // Axial hexagon of the given radius (centre at 0,0).
         explicit HexPathGrid(int radius);
-        // Rectangular pointy-top odd-r offset grid; x = column, y = row.
+        // Rectangular flat-top odd-q offset grid; x = column, y = row.
         HexPathGrid(int width, int height);
 
         void SetPassable(CellCoord cell, bool passable);
         bool IsPassable(CellCoord cell) const;
-        // Offset mode: passable in-bounds neighbours in direction order 0..5 (E,NE,NW,W,SW,SE).
+        // Offset mode: passable in-bounds neighbours in direction order 0..5 (NE,N,NW,SW,S,SE).
         void GetNeighbours(CellCoord cell, Dia::Core::Containers::DynamicArrayC<CellCoord, 16>& outNeighbours) const;
 
         HexLayout GetLayout() const;

@@ -7,17 +7,17 @@ using namespace Dia::Pathfinding;
 using Dia::Core::Containers::DynamicArrayC;
 
 namespace {
-    // Expected neighbours of (x,y) per the odd-r table, direction order E,NE,NW,W,SW,SE.
+    // Expected neighbours of (x,y) per the flat-top odd-q table, direction order NE,N,NW,SW,S,SE.
     std::vector<CellCoord> ExpectedTable(int x, int y)
     {
-        const bool odd = (y & 1) != 0;
-        static const int evenDx[6] = { +1,  0, -1, -1, -1,  0 };
-        static const int oddDx[6]  = { +1, +1,  0, -1,  0, +1 };
-        static const int dy[6]     = {  0, -1, -1,  0, +1, +1 };
+        const bool odd = (x & 1) != 0;
+        static const int evenDy[6] = { -1, -1, -1,  0, +1,  0 };
+        static const int oddDy[6]  = {  0, -1,  0, +1, +1, +1 };
+        static const int dx[6]     = { +1,  0, -1, -1,  0, +1 };
         std::vector<CellCoord> r;
         for (int d = 0; d < 6; ++d)
         {
-            r.push_back(CellCoord{ x + (odd ? oddDx[d] : evenDx[d]), y + dy[d] });
+            r.push_back(CellCoord{ x + dx[d], y + (odd ? oddDy[d] : evenDy[d]) });
         }
         return r;
     }
@@ -74,20 +74,22 @@ TEST(HexPathGridRect, SetPassableInBounds)
     EXPECT_TRUE(g.IsPassable({ 2, 3 }));
 }
 
-TEST(HexPathGridRect, NeighbourTableEvenAndOddRows)
+TEST(HexPathGridRect, NeighbourTableEvenAndOddColumns)
 {
-    for (int h : { 6, 7 })
+    for (int w : { 6, 7 })
     {
-        HexPathGrid g(7, h);
-        for (int y : { 2, 3 })
+        const int h = 7;
+        HexPathGrid g(w, h);
+        for (int x : { 2, 3 })
         {
-            auto got = Collect(g, { 3, y });
-            auto exp = ExpectedTable(3, y);
+            const int y = 3;
+            auto got = Collect(g, { x, y });
+            auto exp = ExpectedTable(x, y);
             ASSERT_EQ(got.size(), 6u);
             for (int d = 0; d < 6; ++d)
             {
-                EXPECT_EQ(got[d].x, exp[d].x) << "h=" << h << " y=" << y << " d=" << d;
-                EXPECT_EQ(got[d].y, exp[d].y) << "h=" << h << " y=" << y << " d=" << d;
+                EXPECT_EQ(got[d].x, exp[d].x) << "w=" << w << " x=" << x << " d=" << d;
+                EXPECT_EQ(got[d].y, exp[d].y) << "w=" << w << " x=" << x << " d=" << d;
             }
         }
     }
