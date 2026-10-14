@@ -3,6 +3,7 @@
 #include <DiaFlowField/CFlowFieldGraph.h>
 #include <DiaPathfinding/HexPathGrid.h>
 #include <DiaMaths/Vector/Vector2D.h>
+#include <DiaCore/Core/Assert.h>
 #include <cmath>
 
 namespace Dia::FlowField {
@@ -12,9 +13,15 @@ namespace Dia::FlowField {
     // The caller owns the grid's lifetime; this adapter holds a const reference.
     class HexFlowAdapter {
     public:
+        // Axial maths below (CellToWorldPosition/WorldToCell/GetRadius) assumes the axial
+        // hexagon layout. Rectangular (offset) hex grids are unsupported; follow-up row to
+        // be added when a consumer needs it.
         explicit HexFlowAdapter(const Dia::Pathfinding::HexPathGrid& grid)
             : mGrid(grid)
-        {}
+        {
+            DIA_ASSERT(grid.GetLayout() == Dia::Pathfinding::HexLayout::kAxialHexagon,
+                       "HexFlowAdapter supports axial hexagon grids only; rectangular (offset) hex grids are not supported yet");
+        }
 
         // --- CPathGraph forwarding ---
 

@@ -73,3 +73,8 @@ TEST(HexFlowAdapter, ComputeFlowField_SmallHexGrid_GoalReachable) {
     FlowField f = ComputeFlowField(adapter, CellCoord{0, 0}, costs, 5, 5);
     EXPECT_TRUE(f.Sample(CellCoord{0, 0}).reachable);
 }
+
+TEST(SLOW_HexFlowAdapter_Layout, Constructor_RectangularLayout_Asserts) {
+    Dia::Pathfinding::HexPathGrid grid(10, 8);
+    EXPECT_DEATH(HexFlowAdapter adapter(grid), "");
+}
