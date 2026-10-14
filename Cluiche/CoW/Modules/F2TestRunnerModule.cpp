@@ -50,6 +50,11 @@ Dia::ApplicationFlow::StartResult F2TestRunnerModule::DoStart()
     bus.RegisterProducer<F2ScenarioCompleted>(GetInstanceId());
     mBusReady = true;
 
+#ifdef DIA_DEBUG
+    mDebugDomain = std::make_unique<F2TestRunnerDebugDomain>(*this);
+    mDomainRegistered = false;
+#endif
+
     DIA_LOG_INFO("CoW", "F2TestRunnerModule: ready");
     return StartResult::kReady;
 }
@@ -57,6 +62,10 @@ Dia::ApplicationFlow::StartResult F2TestRunnerModule::DoStart()
 //-----------------------------------------------------------------------------
 Dia::ApplicationFlow::StopResult F2TestRunnerModule::DoStop()
 {
+#ifdef DIA_DEBUG
+    UnregisterDebugDomain();
+    mDebugDomain.reset();
+#endif
     mRunPending = false;
     mRunning = false;
     mTickSub = Dia::MessageBus::BusSubscriptionHandle();
@@ -64,12 +73,74 @@ Dia::ApplicationFlow::StopResult F2TestRunnerModule::DoStop()
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 
+#ifdef DIA_DEBUG
+//-----------------------------------------------------------------------------
+void F2TestRunnerModule::TryRegisterDebugDomain()
+{
+    if (mDomainRegistered || !mDebugDomain)
+        return;
+    if (Cluiche::AppFlow::VisualDebuggerModule* vd = mVisualDebuggerRef.Get())
+    {
+        vd->RegisterDomain(*mDebugDomain);
+        mDomainRegistered = true;
+        DIA_LOG_INFO("CoW", "F2TestRunnerModule: TestRunnerPanel debug domain registered with the visual debugger");
+    }
+}
+
+void F2TestRunnerModule::UnregisterDebugDomain()
+{
+    if (!mDomainRegistered || !mDebugDomain)
+        return;
+    if (Cluiche::AppFlow::VisualDebuggerModule* vd = mVisualDebuggerRef.Get())
+        vd->UnregisterDomain(*mDebugDomain);
+    mDomainRegistered = false;
+}
+#endif
+
 //-----------------------------------------------------------------------------
 bool F2TestRunnerModule::RunScenario()
 {
     if (mRunning || mRunPending)
         return false;
     mRunPending = true;
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+bool F2TestRunnerModule::RequestSetSpeed(SpeedTier tier)
+{
+    if (IsRunning())
+        return false;
+    F2ScenarioAction a;
+    a.kind = F2ActionKind::SetSpeed;
+    a.tier = tier;
+    return IssueAction(a);
+}
+
+bool F2TestRunnerModule::RequestManualStep()
+{
+    if (IsRunning())
+        return false;
+    F2ScenarioAction a;
+    a.kind = F2ActionKind::ManualStep;
+    return IssueAction(a);
+}
+
+bool F2TestRunnerModule::RequestModal(bool open)
+{
+    if (IsRunning())
+        return false;
+    F2ScenarioAction a;
+    a.kind = open ? F2ActionKind::OpenModal : F2ActionKind::CloseModal;
+    return IssueAction(a);
+}
+
+bool F2TestRunnerModule::GetClockState(GameSpeedState& out) const
+{
+    const GameSpeedControllerModule* game = mGameSpeed.Get();
+    if (!game)
+        return false;
+    out = game->GetController().GetState();
     return true;
 }
 
@@ -142,6 +213,10 @@ void F2TestRunnerModule::ResetScenarioState()
 void F2TestRunnerModule::DoUpdate(const Dia::SimTime::SimTimeContext& ctx)
 {
     mCtxTimeScale = ctx.timeScale;
+
+#ifdef DIA_DEBUG
+    TryRegisterDebugDomain();
+#endif
 
     if (mRunPending)
     {

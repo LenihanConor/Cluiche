@@ -36,6 +36,8 @@
     <ClCompile Include="Modules\F2StreamIndependence.cpp" />
     <ClCompile Include="Modules\F2Scenario.cpp" />
     <ClCompile Include="Modules\F2DragonStub.cpp" />
+    <ClCompile Include="Modules\F2PanelModel.cpp" />
+    <ClCompile Include="Modules\F2TestRunnerDebugDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />
@@ -52,6 +54,8 @@
     <ClInclude Include="Modules\F2StreamIndependence.h" />
     <ClInclude Include="Modules\F2Scenario.h" />
     <ClInclude Include="Modules\F2DragonStub.h" />
+    <ClInclude Include="Modules\F2PanelModel.h" />
+    <ClInclude Include="Modules\F2TestRunnerDebugDomain.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

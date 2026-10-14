@@ -233,6 +233,43 @@ body {
 .ctrl .cv { width: 30px; text-align: right; color: #666; }
 
 /* Desc */
+/* ── F-2 TestRunnerPanel card (domain state "panel": "f2_test_runner") ── */
+.domain.f2card, .domain.f2card.disabled { opacity: 1; }
+.domain.f2card .tog { display: none; }
+.f2 { font-size: 11px; }
+.f2 .f2-row { display: flex; align-items: center; margin-bottom: 6px; }
+.f2 .f2-title { color: #dcdcaa; font-weight: 700; flex: 1; }
+.f2 button { font-family: inherit; font-size: 11px; cursor: pointer; }
+.f2 .f2-run { background: #0e639c; color: #fff; border: 0; padding: 3px 10px; }
+.f2 .f2-run:disabled { background: #3a3a3a; color: #777; cursor: default; }
+.f2 .f2-sbtn { background: #333; color: #d4d4d4; border: 1px solid #555; padding: 2px 6px; margin-right: 3px; }
+.f2 .f2-sbtn.sel { background: #4a7c59; border-color: #6aa87a; color: #fff; }
+.f2 .f2-sbtn:disabled { opacity: 0.4; cursor: default; }
+.f2 .f2-strip { display: flex; margin-bottom: 4px; }
+.f2 .f2-ph { flex: 1; text-align: center; padding: 3px 0; margin-right: 2px; background: #2d2d2d;
+             border: 1px solid #3c3c3c; color: #808080; font-size: 8px; overflow: hidden; white-space: nowrap; }
+.f2 .f2-ph.done { background: #243b2a; border-color: #4a7c59; color: #b5e8b0; }
+.f2 .f2-ph.cur  { background: #4a4a1f; border-color: #dcdcaa; color: #fff; }
+.f2 .f2-ph.bad  { background: #4a2020; border-color: #f48771; color: #f8c9c0; }
+.f2 .f2-tick { color: #808080; margin-bottom: 6px; }
+.f2 table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+.f2 th { text-align: left; color: #808080; font-weight: normal; border-bottom: 1px solid #3c3c3c; padding: 2px 4px; }
+.f2 td { padding: 3px 4px; border-bottom: 1px solid #2d2d2d; vertical-align: top; }
+.f2 .f2-st { display: inline-block; min-width: 48px; text-align: center; padding: 0 4px; font-size: 10px; }
+.f2 .f2-st.NotRun  { background: #333; color: #888; }
+.f2 .f2-st.Running { background: #4a4a1f; color: #dcdcaa; }
+.f2 .f2-st.Pass    { background: #243b2a; color: #b5e8b0; }
+.f2 .f2-st.Fail    { background: #4a2020; color: #f48771; }
+.f2 .f2-box { background: #1e1e1e; border: 1px solid #3c3c3c; padding: 4px 6px; margin-bottom: 6px; }
+.f2 .f2-lbl { color: #808080; margin-bottom: 3px; }
+.f2 .f2-fp { display: flex; margin-bottom: 1px; }
+.f2 .f2-fp .k { width: 84px; color: #808080; flex-shrink: 0; }
+.f2 .f2-fp .ok { color: #b5e8b0; }
+.f2 .f2-fp .diff { color: #f48771; }
+.f2 .f2-fp .dim { color: #808080; }
+.f2 .f2-clock { color: #9cdcfe; margin-bottom: 4px; }
+.f2 .f2-foot { color: #808080; }
+
 .desc { font-size: 10px; color: #434343; margin-bottom: 7px; font-style: italic; line-height: 1.4; }
 
 /* ── Group accent colours (fallback; C++ also pushes _accent per domain) ── */
@@ -501,7 +538,9 @@ function domainsOf(data) {
       accent:  d._accent || '',
       drawers: Array.isArray(d.drawers) ? d.drawers : [],
       stats:   (d.stats && typeof d.stats === 'object') ? d.stats : {},
-      controls: Array.isArray(d.controls) ? d.controls : []
+      controls: Array.isArray(d.controls) ? d.controls : [],
+      custom:  (typeof d.panel === 'string') ? d.panel : '',
+      raw:     d
     });
   }
   out.sort(function (a, b) { return a.id < b.id ? -1 : (a.id > b.id ? 1 : 0); });
@@ -568,7 +607,7 @@ function structureSignature(domains) {
     var d = domains[i];
     var drawers = d.drawers.map(function (x) { return x && x.name ? x.name : '?'; }).join(',');
     var ctrls   = d.controls.map(function (c) { return c && c.key ? c.key : '?'; }).join(',');
-    parts.push(d.group + '/' + d.id + '[' + drawers + '][' + ctrls + ']');
+    parts.push(d.group + '/' + d.id + '[' + drawers + '][' + ctrls + ']' + d.custom);
   }
   return parts.join('|');
 }
@@ -648,12 +687,12 @@ function el(tag, cls, text) {
 }
 
 function buildDomainCard(domain) {
-  if (!(domain.id in ui.domainOpen)) ui.domainOpen[domain.id] = false;
+  if (!(domain.id in ui.domainOpen)) ui.domainOpen[domain.id] = (domain.custom === 'f2_test_runner');
 
   var enabled = isDomainEnabled(domain);
 
   var card = document.createElement('div');
-  card.className = 'domain ' + (enabled ? 'enabled ' : 'disabled ') +
+  card.className = 'domain ' + (domain.custom === 'f2_test_runner' ? 'f2card ' : '') + (enabled ? 'enabled ' : 'disabled ') +
                    (ui.domainOpen[domain.id] ? 'open' : 'closed');
   card.setAttribute('data-domain', domain.id);
   if (domain.accent) card.style.setProperty('--accent', domain.accent);
@@ -683,6 +722,12 @@ function buildDomainCard(domain) {
   // Body
   var body = el('div', 'domain-body');
   if (domain.desc) body.appendChild(el('div', 'desc', domain.desc));
+
+  if (domain.custom === 'f2_test_runner') {
+    body.appendChild(buildF2Panel(domain));
+    card.appendChild(body);
+    return card;
+  }
 
   var drawers = el('div', 'drawers');
   for (var i = 0; i < domain.drawers.length; ++i) {
@@ -754,6 +799,127 @@ function formatValue(v) {
   return (Math.abs(n) >= 10 || n === Math.floor(n)) ? String(n) : n.toFixed(2);
 }
 
+// ── F-2 TestRunnerPanel ───────────────────────────────────────────────────
+// Renders the F2PanelModel JSON the F2TestRunner domain publishes (phases, checks, fingerprints,
+// button state). Holds no scenario logic: buttons only send commands (run_scenario, set_speed
+// {tier}, step, modal_open, modal_close); the runner refuses manual ones while the scenario runs.
+// Mockup: docs/mockups/f2-core-runtime-panel-mockup.html
+
+var F2_SPEEDS = ['Pause', 'Slow', 'Normal', 'Fast', 'Fastest'];
+
+function f2Dot(s) { return String(s).split(' | ').join(' · '); }
+
+function buildF2Panel(domain) {
+  var id = domain.id;
+  var root = el('div', 'f2');
+  root.setAttribute('data-role', 'f2');
+
+  var top = el('div', 'f2-row');
+  top.appendChild(el('span', 'f2-title', 'F-2 Core Runtime'));
+  var run = el('button', 'f2-run', 'Run Scenario');
+  run.setAttribute('data-role', 'f2-run');
+  run.addEventListener('click', function () { sendCommand(id, 'run_scenario', {}); });
+  top.appendChild(run);
+  root.appendChild(top);
+
+  var strip = el('div', 'f2-strip'); strip.setAttribute('data-role', 'f2-strip'); root.appendChild(strip);
+  var tick = el('div', 'f2-tick'); tick.setAttribute('data-role', 'f2-tick'); root.appendChild(tick);
+
+  var table = document.createElement('table');
+  table.innerHTML = '<thead><tr><th style="width:22px">#</th><th style="width:120px">Check</th>' +
+                    '<th style="width:58px">Status</th><th>Result</th></tr></thead>';
+  var tbody = document.createElement('tbody'); tbody.setAttribute('data-role', 'f2-checks');
+  table.appendChild(tbody);
+  root.appendChild(table);
+
+  var fpBox = el('div', 'f2-box');
+  fpBox.appendChild(el('div', 'f2-lbl', 'Fingerprints (8 streams + day counter + speed state)'));
+  var fp = el('div'); fp.setAttribute('data-role', 'f2-fp'); fpBox.appendChild(fp);
+  root.appendChild(fpBox);
+
+  var man = el('div', 'f2-box');
+  man.appendChild(el('div', 'f2-lbl', 'Manual controls (same bus messages the script uses; locked while the scenario runs)'));
+  var r1 = el('div', 'f2-row');
+  r1.appendChild(el('span', '', 'Speed '));
+  for (var t = 0; t < F2_SPEEDS.length; ++t) {
+    (function (tier) {
+      var b = el('button', 'f2-sbtn', F2_SPEEDS[tier]);
+      b.setAttribute('data-m', '1');
+      b.setAttribute('data-tier', String(tier));
+      b.addEventListener('click', function () { sendCommand(id, 'set_speed', { tier: tier }); });
+      r1.appendChild(b);
+    })(t);
+  }
+  man.appendChild(r1);
+  var clock = el('div', 'f2-clock'); clock.setAttribute('data-role', 'f2-clock'); man.appendChild(clock);
+  var r2 = el('div', 'f2-row');
+  var cmds = [['Step 1 day', 'step'], ['Modal open', 'modal_open'], ['Modal close', 'modal_close']];
+  for (var c = 0; c < cmds.length; ++c) {
+    (function (label, cmd) {
+      var b = el('button', 'f2-sbtn', label);
+      b.setAttribute('data-m', '1');
+      b.addEventListener('click', function () { sendCommand(id, cmd, {}); });
+      r2.appendChild(b);
+    })(cmds[c][0], cmds[c][1]);
+  }
+  man.appendChild(r2);
+  root.appendChild(man);
+
+  var foot = el('div', 'f2-foot'); foot.setAttribute('data-role', 'f2-foot'); root.appendChild(foot);
+  return root;
+}
+
+function refreshF2Panel(card, st) {
+  var q = function (role) { return card.querySelector('[data-role="' + role + '"]'); };
+  var set = function (node, html) { if (node && node.innerHTML !== html) node.innerHTML = html; };
+  if (!st || !Array.isArray(st.phases) || !Array.isArray(st.checks) || !Array.isArray(st.fingerprints)) return;
+
+  var run = q('f2-run');
+  if (run) { run.textContent = st.runLabel; run.disabled = !st.runEnabled; }
+
+  var strip = '';
+  for (var i = 0; i < st.phases.length; ++i) {
+    var p = st.phases[i];
+    var cls = 'f2-ph' + (p.failed ? ' bad' : (p.current ? ' cur' : (p.done ? ' done' : '')));
+    strip += '<div class="' + cls + '">' + escapeHtml(p.name) + '</div>';
+  }
+  set(q('f2-strip'), strip);
+  set(q('f2-tick'), escapeHtml(st.tickText));
+
+  var rows = '';
+  for (var c = 0; c < st.checks.length; ++c) {
+    var k = st.checks[c];
+    rows += '<tr><td>' + escapeHtml(k.id) + '</td><td>' + escapeHtml(k.name) + '</td><td><span class="f2-st ' +
+            escapeHtml(k.status) + '">' + escapeHtml(k.status) + '</span></td><td>' + escapeHtml(k.result) + '</td></tr>';
+  }
+  set(q('f2-checks'), rows);
+
+  var fp = '', anyShown = false;
+  for (var f = 0; f < st.fingerprints.length; ++f) {
+    var r = st.fingerprints[f];
+    var val;
+    if (r.state === 'pending') val = '<span class="dim">pending</span>';
+    else if (r.state === 'none') val = '<span class="dim">-</span>';
+    else if (r.state === 'diff') val = '<span class="diff">' + escapeHtml(r.diffFields.join(', ')) + '</span>';
+    else val = '<span class="ok">' + escapeHtml(f2Dot(r.text)) + '</span>';
+    if (r.state !== 'none') anyShown = true;
+    fp += '<div class="f2-fp"><span class="k">' + escapeHtml(r.label) + '</span>' + val + '</div>';
+  }
+  if (!anyShown) fp = '<div class="f2-fp"><span class="dim">Captured during the run.</span></div>';
+  set(q('f2-fp'), fp);
+
+  var clock = q('f2-clock');
+  if (clock) clock.textContent = f2Dot(st.clockText);
+  var btns = card.querySelectorAll('button[data-m]');
+  for (var b = 0; b < btns.length; ++b) {
+    btns[b].disabled = !st.controlsEnabled;
+    var tier = btns[b].getAttribute('data-tier');
+    if (tier !== null) btns[b].classList.toggle('sel', parseInt(tier, 10) === st.speedTier);
+  }
+  var foot = q('f2-foot');
+  if (foot) foot.textContent = st.footer;
+}
+
 // ── Refresh (structure unchanged — update text + classes only) ────────────
 
 function refresh(domains) {
@@ -761,6 +927,13 @@ function refresh(domains) {
     var domain = domains[i];
     var card = document.querySelector('.domain[data-domain="' + cssEscape(domain.id) + '"]');
     if (!card) continue;
+
+    if (domain.custom === 'f2_test_runner') {
+      var hl = card.querySelector('[data-role="headline"]');
+      if (hl) hl.textContent = headlineStat(domain);
+      refreshF2Panel(card, domain.raw);
+      continue;
+    }
 
     var enabled = isDomainEnabled(domain);
     card.classList.toggle('enabled',  enabled);

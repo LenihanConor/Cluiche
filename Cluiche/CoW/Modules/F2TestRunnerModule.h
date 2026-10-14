@@ -10,6 +10,11 @@
 #include "Modules/F2Fingerprint.h"
 #include "Modules/F2Scenario.h"
 #include <DiaMessageBus/BusSubscriptionHandle.h>
+#ifdef DIA_DEBUG
+#include "Modules/VisualDebuggerModule.h"
+#include "Modules/F2TestRunnerDebugDomain.h"
+#include <memory>
+#endif
 #include <array>
 #include <cstdint>
 #include <string>
@@ -90,6 +95,15 @@ public:
     F2PhaseId GetCurrentPhase() const { return mPhase; }
     bool IsRunning() const { return mRunning || mRunPending; }
 
+    // ---- Manual controls (TestRunnerPanel) ----
+    // Post the SAME bus messages the scenario script uses. Refused (return false) while the
+    // scenario runs or is pending, or when the bus is unavailable.
+    bool RequestSetSpeed(SpeedTier tier);
+    bool RequestManualStep();
+    bool RequestModal(bool open);
+    // Current game clock for the panel readout. False if GameSpeedController is not active.
+    bool GetClockState(GameSpeedState& out) const;
+
     // Test hook: makes the C6 stub dragon re-resolve on every read, so C6 must fail. Survives RunScenario.
     void SetBandResolverFaultForTest(bool enable) { mBandResolverFault = enable; }
 
@@ -141,6 +155,14 @@ protected:
     Dia::ApplicationFlow::StopResult DoStop() override;
 
 private:
+#ifdef DIA_DEBUG
+    void TryRegisterDebugDomain();
+    void UnregisterDebugDomain();
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::VisualDebuggerModule> mVisualDebuggerRef{this};
+    std::unique_ptr<F2TestRunnerDebugDomain> mDebugDomain;
+    bool mDomainRegistered = false;
+#endif
+
     void EnterPhase(F2PhaseId phase);
     void RunPhaseBody(F2PhaseId phase);
     void ResetScenarioState();

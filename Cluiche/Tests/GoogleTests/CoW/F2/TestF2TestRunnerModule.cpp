@@ -9,6 +9,8 @@
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaSimTime/DiaSimTimeModule.h>
 #include <Modules/F2TestRunnerModule.h>
+#include <Modules/F2PanelModel.h>
+#include <Modules/F2TestRunnerDebugDomain.h>
 #include <Modules/GameSpeedControllerModule.h>
 #include <Modules/GameSpeedMessages.h>
 #include <Modules/MessageBusHostModule.h>
@@ -720,3 +722,143 @@ TEST(SLOW_F2TestRunnerModule, FailedLoadThatAltersQuickFileFailsC5b)
     EXPECT_NE(std::string(f.runner->GetLastResult(F2CheckId::SaveLoadProof)).find("quick save file"), std::string::npos)
         << f.runner->GetLastResult(F2CheckId::SaveLoadProof);
 }
+
+#ifdef DIA_DEBUG
+// ---- F2TestRunnerDebugDomain: the TestRunnerPanel's data bridge ----
+namespace {
+
+void SendCommand(F2TestRunnerDebugDomain& domain, const char* cmd, const char* argsJson = "{}")
+{
+    Json::Value args;
+    Json::Reader().parse(argsJson, args);
+    domain.OnCommand(StringCRC(cmd), args);
+}
+
+struct ManualMessageCounts
+{
+    std::vector<SpeedTier> speeds;
+    int steps = 0, modalOpens = 0, modalCloses = 0;
+    Dia::MessageBus::BusSubscriptionHandle a, b, c, d;
+
+    void Attach(Cluiche::AppFlow::MessageBusHostModule& bus)
+    {
+        a = bus.GetBus().Subscribe<SpeedChangeRequested>(StringCRC("PanelSpeedSink"), [this](const SpeedChangeRequested& m) { speeds.push_back(m.tier); });
+        b = bus.GetBus().Subscribe<ManualAdvanceRequested>(StringCRC("PanelStepSink"), [this](const ManualAdvanceRequested&) { ++steps; });
+        c = bus.GetBus().Subscribe<ModalOpened>(StringCRC("PanelOpenSink"), [this](const ModalOpened&) { ++modalOpens; });
+        d = bus.GetBus().Subscribe<ModalClosed>(StringCRC("PanelCloseSink"), [this](const ModalClosed&) { ++modalCloses; });
+    }
+};
+
+} // namespace
+
+TEST(SLOW_F2TestRunnerModule, DebugDomainStateCarriesPhasesChecksAndFingerprints)
+{
+    Fixture f("f2r_domain_state");
+    ASSERT_TRUE(f.Boot());
+    F2TestRunnerDebugDomain domain(*f.runner);
+
+    Json::Value state(Json::objectValue);
+    domain.GetJSONState(state);
+    EXPECT_TRUE(state["phases"].isArray());
+    EXPECT_EQ(state["phases"].size(), 8u);
+    EXPECT_TRUE(state["checks"].isArray());
+    EXPECT_EQ(state["checks"].size(), 6u);
+    EXPECT_TRUE(state["fingerprints"].isArray());
+    EXPECT_EQ(state["fingerprints"].size(), 4u);
+    EXPECT_EQ(state["runLabel"].asString(), "Run Scenario");
+    EXPECT_TRUE(state["controlsEnabled"].asBool());
+    EXPECT_TRUE(state["drawers"].isArray());
+    EXPECT_TRUE(state["stats"].isObject());
+    EXPECT_STREQ(domain.GetDisplayName(), "F-2 Core Runtime");
+    EXPECT_FALSE(domain.HasWorldDrawers());
+}
+
+TEST(SLOW_F2TestRunnerModule, DebugDomainRunScenarioCommandStartsTheScenario)
+{
+    Fixture f("f2r_domain_run");
+    ASSERT_TRUE(f.Boot());
+    F2TestRunnerDebugDomain domain(*f.runner);
+    ASSERT_FALSE(f.runner->IsRunning());
+
+    SendCommand(domain, "run_scenario");
+    EXPECT_TRUE(f.runner->IsRunning());
+    ASSERT_TRUE(f.PumpUntil([&] { return f.runner->GetCurrentPhase() == F2PhaseId::Session; }));
+
+    Json::Value state(Json::objectValue);
+    domain.GetJSONState(state);
+    EXPECT_EQ(state["runLabel"].asString(), "Running...");
+    EXPECT_FALSE(state["controlsEnabled"].asBool());
+    EXPECT_TRUE(state["phases"][0]["done"].asBool());
+    EXPECT_TRUE(state["phases"][1]["current"].asBool());
+
+    // A second run request while running is refused.
+    SendCommand(domain, "run_scenario");
+    EXPECT_EQ(domain.GetRefusedCommandCount(), 1u);
+}
+
+TEST(SLOW_F2TestRunnerModule, DebugDomainManualCommandsPostTheScriptMessagesWhenIdle)
+{
+    Fixture f("f2r_domain_manual");
+    ASSERT_TRUE(f.Boot());
+    F2TestRunnerDebugDomain domain(*f.runner);
+    ManualMessageCounts seen;
+    seen.Attach(*g_bus);
+
+    SendCommand(domain, "set_speed", "{\"tier\":3}");
+    SendCommand(domain, "step");
+    SendCommand(domain, "modal_open");
+    SendCommand(domain, "modal_close");
+    f.Pump(5);
+
+    ASSERT_EQ(seen.speeds.size(), 1u);
+    EXPECT_EQ(seen.speeds[0], SpeedTier::Fast);
+    EXPECT_EQ(seen.steps, 1);
+    EXPECT_EQ(seen.modalOpens, 1);
+    EXPECT_EQ(seen.modalCloses, 1);
+    EXPECT_EQ(domain.GetAcceptedCommandCount(), 4u);
+    EXPECT_EQ(domain.GetRefusedCommandCount(), 0u);
+}
+
+TEST(SLOW_F2TestRunnerModule, DebugDomainManualCommandsAreRefusedWhileRunning)
+{
+    Fixture f("f2r_domain_locked");
+    ASSERT_TRUE(f.Boot());
+    F2TestRunnerDebugDomain domain(*f.runner);
+    ASSERT_TRUE(f.runner->RunScenario());
+    // Phase 0 and the first update of phase 1 issue no script actions (the first is at a later tick).
+    ASSERT_TRUE(f.PumpUntil([&] { return f.runner->GetCurrentPhase() == F2PhaseId::Isolation; }));
+    ASSERT_TRUE(f.runner->IsRunning());
+
+    ManualMessageCounts seen;
+    seen.Attach(*g_bus);
+    SendCommand(domain, "set_speed", "{\"tier\":4}");
+    SendCommand(domain, "step");
+    SendCommand(domain, "modal_open");
+    SendCommand(domain, "modal_close");
+
+    EXPECT_EQ(domain.GetRefusedCommandCount(), 4u);
+    EXPECT_EQ(domain.GetAcceptedCommandCount(), 0u);
+    EXPECT_TRUE(seen.speeds.empty());
+    EXPECT_EQ(seen.steps, 0);
+    EXPECT_EQ(seen.modalOpens, 0);
+    EXPECT_EQ(seen.modalCloses, 0);
+}
+
+TEST(SLOW_F2TestRunnerModule, DebugDomainRejectsBadSpeedTierAndUnknownCommands)
+{
+    Fixture f("f2r_domain_bad");
+    ASSERT_TRUE(f.Boot());
+    F2TestRunnerDebugDomain domain(*f.runner);
+    ManualMessageCounts seen;
+    seen.Attach(*g_bus);
+
+    SendCommand(domain, "set_speed", "{\"tier\":9}");
+    SendCommand(domain, "set_speed");
+    SendCommand(domain, "frobnicate");
+    f.Pump(3);
+
+    EXPECT_TRUE(seen.speeds.empty());
+    EXPECT_EQ(domain.GetRefusedCommandCount(), 3u);
+    EXPECT_EQ(domain.GetAcceptedCommandCount(), 0u);
+}
+#endif // DIA_DEBUG

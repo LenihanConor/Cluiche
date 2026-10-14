@@ -902,6 +902,9 @@
     <ClCompile Include="..\..\CoW\Modules\F2Scenario.cpp" />
     <ClCompile Include="..\..\CoW\Modules\F2DragonStub.cpp" />
     <ClCompile Include="CoW\F2\TestF2DragonStub.cpp" />
+    <ClCompile Include="CoW\F2\TestF2PanelModel.cpp" />
+    <ClCompile Include="..\..\CoW\Modules\F2PanelModel.cpp" />
+    <ClCompile Include="..\..\CoW\Modules\F2TestRunnerDebugDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
