@@ -13,7 +13,7 @@ parent_module_id: dia.root
 
 summary: >
   Grid A* pathfinding — CPathGraph concept (zero-overhead static polymorphism),
-  SquarePathGrid + HexPathGrid, injectable IPathCostProvider, sync FindPath<TGraph>(),
+  SquarePathGrid + HexPathGrid (axial hexagon or rectangular odd-r offset) + HexTopology, injectable IPathCostProvider, sync FindPath<TGraph>(),
   async PathfindingSystem with time-sliced Update(budgetMs) and IPathResultObserver.
 
 intent: >
@@ -25,7 +25,9 @@ intent: >
 responsibilities:
   - CPathGraph concept — GetNeighbours + IsPassable requirement
   - SquarePathGrid — rectangular grid, 4/8-connected, per-cell passability
-  - HexPathGrid — axial coordinate hex grid, 6-connected, per-cell passability
+  - HexPathGrid — 6-connected hex grid with per-cell passability; two layouts (HexLayout): axial hexagon (radius) and rectangular pointy-top odd-r offset (width, height)
+  - HexTopology — pure value type for rectangular odd-r hex grids; NeighbourAt(cell, dir), kNoCell past the edge, kHexDirections (6), Distance, DirectionFromAngle, DirectionVector
+  - Layout-aware hex heuristic in FindPath (axial vs offset)
   - IPathCostProvider virtual interface + FlatCostProvider (1.0f uniform default)
   - FindPath<TGraph>() synchronous A* returning PathResult
   - PathResult — success, totalCost, DynamicArrayC<CellCoord>, ToWorldPositions()
@@ -56,6 +58,7 @@ public_api:
     - Dia/DiaPathfinding/PathResult.h
     - Dia/DiaPathfinding/SquarePathGrid.h
     - Dia/DiaPathfinding/HexPathGrid.h
+    - Dia/DiaPathfinding/HexTopology.h
     - Dia/DiaPathfinding/FindPath.h
     - Dia/DiaPathfinding/IPathResultObserver.h
     - Dia/DiaPathfinding/PathfindingSystem.h
@@ -70,6 +73,10 @@ public_api:
     - PathResult
     - SquarePathGrid
     - HexPathGrid
+    - HexLayout
+    - HexTopology
+    - kNoCell
+    - kHexDirections
     - FindPath
     - PathfindingSystem
     - IPathResultObserver

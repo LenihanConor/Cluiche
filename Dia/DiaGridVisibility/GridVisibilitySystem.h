@@ -33,7 +33,7 @@ namespace Dia::GridVisibility {
     //
     // CPathGraph only guarantees GetNeighbours + IsPassable. Chunk-grid consolidation and
     // recursive-octant shadowcasting both need the graph's extents, so the visibility system
-    // constrains on a slightly stronger concept. SquarePathGrid and HexPathGrid both satisfy it.
+    // constrains on a slightly stronger concept. SquarePathGrid and rectangular (offset) HexPathGrid both satisfy it.
     //------------------------------------------------------------------------------------
     template<typename T>
     concept CVisibilityGraph = Dia::Pathfinding::CPathGraph<T> && requires(const T& g) {

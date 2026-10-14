@@ -1955,5 +1955,8 @@
     <ClCompile Include="DiaPathfinding\TestHexFindPath.cpp">
       <Filter>DiaPathfinding</Filter>
     </ClCompile>
+    <ClCompile Include="DiaPathfinding\TestHexGridPerformance.cpp">
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
