@@ -45,7 +45,7 @@ Naive graph connectivity is insufficient: a graph-connected path might traverse 
 
 | Piece | Responsibility | Owner |
 |-------|----------------|-------|
-| `WorldStructure` → square path grid adapter | Topology for Dia `FindPath<TGraph>` | S-1 (CoW-Shared) |
+| Hex path grid | Dia's `HexPathGrid(width, height)` (rectangular odd-r), built from the world's terrain table per `Validate()` call; passed to Dia `FindPath<HexPathGrid>`. No S-1 graph class (amended 2026-10-14) | Dia (`hex-rectangular-grid.md`); S-1 only fills in passability |
 | `INavigationProfile` | Named factory: `CreateCostProvider(world)` returns an `IPathCostProvider` bound to that world | Interface: S-1. Implementations: S-1 (placeholder), B2 (body plans), others later |
 | `INavigationQuery` | `IsReachable(from, to)` — true if any profile finds a path | S-1 (built by the validator per `Validate()` call) |
 | `IWorldGuarantee` | `Check(ValidationContext)` → `GuaranteeResult` | Interface: S-1. Implementations: S-1 (three built-ins), others later |
@@ -73,7 +73,7 @@ An empty `profiles` list makes every reachability query return false. `Validate(
 ```cpp
 bool NavigationQuery::IsReachable(GridCoord from, GridCoord to) const {
     for (auto& costs : mBoundProviders) {
-        // Dia DiaPathfinding: A* over the world's square grid; kImpassableCost edges are blocked.
+        // Dia DiaPathfinding: A* over the world's hex grid; kImpassableCost edges are blocked.
         if (FindPath(mGrid, from, to, *costs).success) return true;
     }
     return false;
@@ -90,7 +90,7 @@ bool NavigationQuery::IsReachable(GridCoord from, GridCoord to) const {
 
 **`HearthNexusReachabilityGuarantee`** — For each Hearth Site, `IsReachable(hearth, nexus)` for any Nexus Node. Diagnostic per unreachable Hearth.
 
-**`DynastySpacingGuarantee(minimumSpacing)`** — For each pair of dynasty starts, grid distance (Manhattan or Euclidean, see plan patterns). If any pair < `minimumSpacing`, fails. Exact value is a constructor argument (tunable default per GDD open question 1), not hardcoded. Does not use navigation.
+**`DynastySpacingGuarantee(minimumSpacing)`** — For each pair of dynasty starts, hex distance (`HexTopology::Distance`, in hex steps; amended 2026-10-14). If any pair < `minimumSpacing`, fails. Exact value is a constructor argument (tunable default per GDD open question 1), not hardcoded. Does not use navigation.
 
 ```cpp
 for (size_t i = 0; i < starts.size(); ++i)
@@ -189,7 +189,8 @@ public:
 | System/Feature | Why needed | Status |
 |----------------|-----------|---------|
 | **Feature 1 (Placeholder Generation Algorithm)** | Produces `WorldStructure` to validate | Draft (being specced) |
-| **DiaPathfinding** | `SquarePathGrid`, `FindPath<TGraph>`, `IPathCostProvider` (`kImpassableCost`) | Done |
+| **DiaPathfinding** | `FindPath<TGraph>`, `IPathCostProvider` (`kImpassableCost`) | Done |
+| **DiaPathfinding: Rectangular Hex Grid** | `HexPathGrid(width, height)`, `HexTopology::Distance`, corrected hex heuristic | Draft — must be built first |
 | **Phase 2 data design** | Region enum (Ancient Interiors), ApotheosisType enum (6 types), TerrainType enum (placeholder profile table) | GDD in-progress (types TBD — placeholder uses arbitrary enums until Phase 2 finalizes) |
 
 **Not a dependency:** B2 (Dragon). B2 consumes `INavigationProfile` later. Nothing in S-1 waits on it.
@@ -234,7 +235,7 @@ Test world with a path from A to B that is graph-connected but crosses only terr
 Test world with a path crossing only passable terrain. **Pass:** `IsReachable(A, B) == true`.
 
 ### AC6 — Validation Speed
-Typical sizes (128×128 grid, ~10 Hearth Sites, ~5 Nexus Nodes, 6 world-thrones, ~5 dynasty starts). Measure time from `Validate()` call to return. **Target: completes within the 5-second generation budget**, and under 1 second for typical worlds.
+Typical sizes (Standard 80×52 and Large 104×64 grids, ~10 Hearth Sites, ~5 Nexus Nodes, 6 world-thrones, ~5 dynasty starts). Measure time from `Validate()` call to return. **Target: completes within the 5-second generation budget**, and under 1 second for typical worlds.
 
 ### AC7 — Deterministic Validation
 Validate the same world twice with identical `ValidationParams`. **Pass:** identical `passed`, identical per-guarantee `satisfied` and `diagnostics`, in the same order.
@@ -282,7 +283,7 @@ A test `IWorldGuarantee` that always fails, appended to the built-in set. **Pass
 
 ## Status
 
-`Approved` — 2026-10-11. Amended 2026-10-13: navigability and guarantees made injectable (Open Q #2 resolved; blocker removed).
+`Approved` — 2026-10-11. Amended 2026-10-13: navigability and guarantees made injectable (Open Q #2 resolved; blocker removed). Amended 2026-10-14: hex world on Dia's rectangular `HexPathGrid`; spacing uses hex distance; map sizes per the parent spec.
 
 ---
 
@@ -294,7 +295,7 @@ When implementation begins, create a plan file `reachability-validator.plan.md` 
 - `WorldStructure` → DiaPathfinding grid adapter (build per `Validate()` call vs cache; cost of rebuilding on every retry)
 - Pathfinding choice (per-pair `FindPath` vs DiaFlowField multi-source)
 - Diagnostic message format (how to report unreachable Hearth/throne positions for Feature 3 retry logs)
-- Distance calculation (Manhattan vs. Euclidean for dynasty spacing)
+- Distance calculation (settled: `HexTopology::Distance`, hex steps)
 - Timeout/early-exit for pathfinding (if any reachability check runs too long, how to handle)
 - Test doubles: an always-fail guarantee, an always-pass guarantee, a water-blocking and a water-allowing profile (ship under a `Testing/` folder alongside the feature)
 

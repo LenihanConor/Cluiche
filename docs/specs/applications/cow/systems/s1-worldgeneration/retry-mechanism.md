@@ -157,7 +157,7 @@ Generate world with outer seed that triggers retries (hand-crafted or found empi
 Generate world with `maxRetryAttempts = 5` (arbitrary low bound) and outer seed engineered to never satisfy guarantees (e.g., impossible parameters like 1-cell grid with 10 Hearth Sites). **Pass:** Generation returns Failure after exactly 5 attempts, does not retry forever.
 
 ### AC3 — Success Rate (≥95%)
-Generate worlds across 100 random outer seeds with reasonable `GenParams` (128×128 grid, typical site counts, `maxRetryAttempts = 10` or tuned default). Record how many succeed vs. fallthrough to Failure. **Pass:** ≥95 succeed (GDD Test 1a target). If <95%, either increase `maxRetryAttempts` default or improve Feature 1 algorithm.
+Generate worlds across 100 random outer seeds with reasonable `GenParams` (Standard 80×52 grid, typical site counts, `maxRetryAttempts = 10` or tuned default). Record how many succeed vs. fallthrough to Failure. **Pass:** ≥95 succeed (GDD Test 1a target). If <95%, either increase `maxRetryAttempts` default or improve Feature 1 algorithm.
 
 ### AC4 — Retry Telemetry
 Generate world that triggers ≥1 retry. Capture logs. **Pass:** Log messages include attempt count and validation diagnostics per attempt (e.g., "Attempt 1 failed: Hearth↔Nexus reachability", "Attempt 2 succeeded"). Proves telemetry is present for tuning/debugging.

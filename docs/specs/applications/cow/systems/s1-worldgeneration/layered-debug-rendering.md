@@ -6,7 +6,7 @@
 
 ## Summary
 
-Layered Debug Rendering provides debug-grade visualization of generated worlds to enable fast visual inspection during CoW's testbed iteration workflow. It renders biome-colored tiles (base layer, always on) plus toggleable overlays (Sites, Regions, Dynasty Starts, Design Reference reading A1 biome-affinity data), preventing visual clutter when debugging specific concerns. This is not V-1's real tile art — it's functional colored squares and site markers sufficient for eyeballing "does this placement look broken?" without leaving the game.
+Layered Debug Rendering provides debug-grade visualization of generated worlds to enable fast visual inspection during CoW's testbed iteration workflow. It renders biome-colored tiles (base layer, always on) plus toggleable overlays (Sites, Regions, Dynasty Starts, Design Reference reading A1 biome-affinity data), preventing visual clutter when debugging specific concerns. This is not V-1's real tile art — it's functional colored hexes (pointy-top, matching the world's odd-r hex grid) and site markers sufficient for eyeballing "does this placement look broken?" without leaving the game.
 
 GDD decision 6 chose to include visual rendering despite S-1 being a "data pipeline testbed" because fast iteration requires seeing what you're iterating on.
 
@@ -25,17 +25,17 @@ With debug rendering:
 
 ## Goals
 
-1. **Base layer (always on):** Biome-colored tiles — each cell rendered as colored square (color per biome type), grid overlay optional
+1. **Base layer (always on):** Biome-colored tiles — each cell rendered as a colored pointy-top hexagon (color per biome type), hex-outline overlay optional
 2. **Toggleable overlay: Sites** — Markers for Hearth Sites (circles), Nexus Nodes (triangles), world-thrones (crowns), each with distinct color/shape
 3. **Toggleable overlay: Regions** — Region boundary lines or fill overlays (e.g., Ancient Interiors = red outline, Verdant Lowlands = green outline)
 4. **Toggleable overlay: Dynasty Starts** — Player start (large blue marker), rival starts (large red markers), with distance circles showing minimum spacing
 5. **Toggleable overlay: Design Reference** — Per-cell text or tooltip showing A1 species biome-affinity data (e.g., "Forest → deer (preferred), elk (preferred), wolf (tolerated)")
-6. **Fast rendering** — Renders typical world (128×128 grid = 16k cells) in <1 second, no frame drops during pan/zoom
+6. **Fast rendering** — Renders the largest world (Large 104×64 = 6,656 hexes) in <1 second, no frame drops during pan/zoom
 7. **Toggles in UI** — Checkboxes in F-1 debug host panel (Feature 6) to enable/disable each overlay independently
 
 ## Non-Goals
 
-1. **V-1 real tile art** — Debug-grade only (solid-color squares, simple shapes); V-1 (Map Visuals testbed) owns sprite-based tile rendering, camera controls, fog of war
+1. **V-1 real tile art** — Debug-grade only (solid-color hexes, simple shapes); V-1 (Map Visuals testbed) owns sprite-based tile rendering, camera controls, fog of war
 2. **Animation** — Static rendering only (no animated water, waving grass, etc.)
 3. **Lighting / shaders** — Flat unlit rendering (no shadows, no bloom, no post-processing)
 4. **Terrain elevation** — 2D grid only (no 3D heightmap visualization)
@@ -49,12 +49,12 @@ With debug rendering:
 **Layer stack (bottom to top):**
 
 1. **Base: Biome Tiles** (always rendered)
-   - One colored quad per cell
+   - One colored hexagon per cell (6 vertices around the cell center; odd rows offset half a cell right)
    - Color palette: arbitrary debug colors per biome type (e.g., Forest = green, Mountain = gray, Desert = yellow)
-   - Grid lines: optional toggle (1px black lines between cells)
+   - Hex outlines: optional toggle (1px black outline on each hex)
 
 2. **Overlay 1: Regions** (toggle on/off)
-   - Region boundary rendering: outline mode (draw lines along region edges) or fill mode (semi-transparent overlay)
+   - Region boundary rendering: outline mode (draw the shared hex edge wherever a cell's neighbour in direction `d`, from `HexTopology::NeighbourAt`, has a different region) or fill mode (semi-transparent overlay)
    - Color per region (e.g., Ancient Interiors = red, Verdant Lowlands = green, per Phase 2 region types)
 
 3. **Overlay 2: Sites** (toggle on/off)
@@ -66,11 +66,11 @@ With debug rendering:
 4. **Overlay 3: Dynasty Starts** (toggle on/off)
    - Player start: large circle (blue, 2x cell size)
    - Rival starts: large circles (red, 2x cell size)
-   - Minimum spacing circles: dashed circle around each start (radius = `ValidationParams.minimumDynastySpacing`)
+   - Minimum spacing circles: dashed circle around each start (radius = minimum spacing in hex steps × hex center-to-center distance)
 
 5. **Overlay 4: Design Reference** (toggle on/off)
    - Per-cell text or tooltip (on hover): reads A1 species biome-affinity data, displays "Biome X → species list (preferred/tolerated)"
-   - Tooltip mode preferred (avoids text clutter on 128×128 grid = 16k cells with text)
+   - Tooltip mode preferred (avoids text clutter on a 6,656-cell Large map with text)
 
 **Toggle state:** Stored in S-1 stage's UI state (Feature 6 checkboxes write to `bool mShowSites`, `bool mShowRegions`, etc.; rendering reads these flags).
 
@@ -111,7 +111,9 @@ void RenderBiomeTiles(const WorldStructure& world, const Camera2D& camera) {
 }
 ```
 
-**Performance optimization:** Batch all quads into single draw call (instanced rendering or dynamic vertex buffer); do not issue 16k individual draw calls for 128×128 grid.
+**Hex geometry (amended 2026-10-14):** with hex width `w = cellSize` (pointy-top), row height is `0.75 × (2 / √3) × w`, and the center of cell `(x, y)` is `((x + 0.5 × (y & 1)) × w, y × rowHeight)`. `WorldToScreen` and `ScreenToWorld` use this; `ScreenToWorld` finds the hovered cell by converting to fractional axial coordinates and rounding in cube space, then converts back to an offset coordinate (and returns "none" outside the grid). Hex vertex geometry is built once per world into the batched buffer.
+
+**Performance optimization:** Batch all hexes into a single draw call (dynamic vertex buffer, 6 vertices or 4 triangles per cell); do not issue one draw call per cell (6,656 for Large). The loop below is schematic; replace `DrawQuad` with the hex path.
 
 **Site rendering (unbatched, low count):**
 
@@ -228,7 +230,7 @@ private:
 ## Acceptance Criteria
 
 ### AC1 — Base Layer Rendering
-Generate world with known seed (hand-crafted or empirical). Render S-1 stage. **Pass:** Screen shows 128×128 grid of colored tiles, colors correspond to biome types (visual inspection: "mostly green" if Forest-heavy, "mostly gray" if Mountain-heavy per `GenParams` weights).
+Generate world with known seed (hand-crafted or empirical). Render S-1 stage. **Pass:** Screen shows an 80×52 (Standard) grid of colored hexes with odd rows offset, colors correspond to biome types (visual inspection: "mostly green" if Forest-heavy, "mostly gray" if Mountain-heavy per `GenParams` weights).
 
 ### AC2 — Sites Overlay Toggle
 Generate world, toggle Sites overlay on. **Pass:** Hearth/Nexus/world-throne markers visible on screen (circles/triangles/crowns at site positions). Toggle Sites off. **Pass:** Markers disappear, only biome tiles remain. Proves toggle works.
@@ -243,7 +245,7 @@ Generate world with player + rival starts. Toggle Dynasty Starts overlay on. **P
 Generate world. Toggle Design Reference overlay on. Hover mouse over cell. **Pass:** Tooltip appears showing biome name + species affinity data (e.g., "Forest → deer (preferred), elk (preferred)"). Move mouse to different cell. **Pass:** Tooltip updates to new cell's data. **If A1 data not externalized:** Skip this AC (GDD §2 says "can cut if not externalized").
 
 ### AC6 — Grid Lines Toggle
-Toggle Grid Lines on. **Pass:** 1px black lines visible between cells (grid visible). Toggle off. **Pass:** Grid lines disappear (seamless tile rendering). Proves grid toggle works.
+Toggle Grid Lines on. **Pass:** 1px black hex outlines visible on every cell. Toggle off. **Pass:** Outlines disappear (seamless tile rendering). Proves grid toggle works.
 
 ### AC7 — Camera Pan
 Render world, press WASD or arrow keys. **Pass:** Camera pans (view moves, showing different part of world grid). Pan to edge of world. **Pass:** Camera stops at world bounds (does not pan into void). Proves pan works.
@@ -255,7 +257,10 @@ Render world, scroll mouse wheel up. **Pass:** Camera zooms in (cells appear lar
 Pan and zoom camera, press Home key. **Pass:** Camera resets to default position/zoom (centered on world, full world visible or reasonable default zoom). Proves reset works.
 
 ### AC10 — Rendering Performance
-Generate world with 128×128 grid (16k cells), render with all overlays enabled, measure frame time. **Target: <16ms per frame (60 FPS)** for typical world sizes. Proves rendering fast enough for iteration workflow (no frame drops during pan/zoom).
+Generate a Large world (104×64 = 6,656 cells), render with all overlays enabled, measure frame time. **Target: <16ms per frame (60 FPS)**.
+
+### AC12 — Hex Picking *(added 2026-10-14)*
+Hover the mouse at the center of several cells on even and odd rows, near hex corners, and just outside the grid. **Pass:** `ScreenToWorld` returns the cell whose hex contains the point (centers return that cell; a point just inside a corner returns the nearer cell, never an off-by-one neighbour), and "none" outside the grid. `WorldToScreen(ScreenToWorld(p))` of a cell center round-trips. Proves rendering fast enough for iteration workflow (no frame drops during pan/zoom).
 
 ### AC11 — Toggle Persistence
 Toggle Sites off, Regions on, Dynasty Starts on. Click Regenerate (Feature 6). **Pass:** After regeneration, Sites still off, Regions still on, Dynasty Starts still on (toggle state persists across regenerations). Proves toggles not reset by new world load.
@@ -288,12 +293,12 @@ Toggle Sites off, Regions on, Dynasty Starts on. Click Regenerate (Feature 6). *
 |---|----------|--------|------------|
 | 1 | What are the exact biome debug colors (Forest = green, Mountain = gray, etc.)? | Affects visual clarity (need distinct colors for ~8-10 biomes per Phase 2); does not block implementation (use placeholder colors, update when Phase 2 finalizes) | Use placeholder color palette (HSV-distributed for distinctness); update to thematic colors (Forest = green, Desert = yellow, etc.) when Phase 2 biome names finalized |
 | 2 | Should region overlay use outline mode or fill mode (semi-transparent overlay)? | Outline mode is cleaner but harder to see small regions; fill mode is more visible but obscures biome colors | Start with outline mode (1-2px colored lines along region edges); add fill mode as optional toggle if designers request it |
-| 3 | Should Design Reference overlay be tooltip (hover) or always-on text (per cell)? | Tooltip is cleaner but requires hovering each cell; always-on text is faster to scan but clutters screen (unreadable at 128×128 = 16k cells) | Tooltip mode (per AC5); always-on text mode infeasible for typical world sizes |
+| 3 | Should Design Reference overlay be tooltip (hover) or always-on text (per cell)? | Tooltip is cleaner but requires hovering each cell; always-on text is faster to scan but clutters screen (unreadable at 6,656 cells) | Tooltip mode (per AC5); always-on text mode infeasible for typical world sizes |
 | 4 | Should camera state persist across regenerations (remember pan/zoom between worlds)? | Convenience vs. predictability (persisted camera might be off-screen for smaller worlds); manual reset is safer | No persistence (camera resets on regeneration); add persistence if designers request it during S-1 challenge pass |
 
 ## Status
 
-`Approved` — 2026-10-11
+`Approved` — 2026-10-11. Amended 2026-10-14 (hex world): hex tiles, hex picking, outline-based region edges, Large-map performance target.
 
 ---
 

@@ -1,0 +1,12 @@
+**Spec:** @docs/specs/applications/dia/systems/diapathfinding/hex-rectangular-grid.md
+**Status:** In Progress
+
+The spec has no task list; tasks are derived from its acceptance criteria. All code tasks are TDD (RED then GREEN, quoted output) and verify solo.
+
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| 1 | `HexTopology` (new header/cpp in DiaPathfinding, vcxproj + filters, new GoogleTest file): `kNoCell`, `kHexDirections`, ctor, `CellCount`, `IsInBounds`, `ToIndex`/`ToCoord`, `NeighbourAt`, static `Distance`, `DirectionFromAngle`, `DirectionVector` | RED-GREEN: AC3 (edges/symmetry), AC5 (distance vs BFS), AC6 (direction helpers), AC2 topology-level neighbour table | Pending | sonnet | |
+| 2 | `HexPathGrid(width, height)` rectangular odd-r layout on top of `HexTopology`: `HexLayout`, `GetLayout/GetWidth/GetHeight`, heap-sized passability storage (radius mode unchanged), `GetNeighbours` in direction order, asserts on wrong-mode getters | RED-GREEN: AC1 (construction at 66x42, 80x52, 104x64, 128x128), AC2 (neighbour table on grid), AC4 (GetNeighbours matches topology, ordered, impassable omitted) | Pending | sonnet | |
+| 3 | `FindPath` heuristic by layout: corrected axial cube distance; offset layout uses `HexTopology::Distance` | RED-GREEN: AC7 (FindPath on rectangular grid), AC8 (A* cost equals BFS, both layouts); AC9 existing pathfinding tests (note any golden change, do not regenerate silently) | Pending | sonnet | Risk: a golden may depend on the old axial heuristic |
+| 4 | DiaFlowField `HexFlowAdapter` and DiaGridVisibility: `DIA_ASSERT` that the grid is `kAxialHexagon` (Open Q 1 resolution) | Existing FlowField and GridVisibility tests pass (AC9); add one death/assert test only if the repo has an assert-test pattern | Pending | sonnet | |
+| 5 | AC10 perf test (Large grid neighbour sweep < 1 ms Release; 1,000 FindPath calls reported), update `dia.pathfinding.architecture.module.md`, `diapathfinding.md` HexPathGrid description, run `dia check deps` | AC10; `dia check deps` clean | Pending | sonnet | |

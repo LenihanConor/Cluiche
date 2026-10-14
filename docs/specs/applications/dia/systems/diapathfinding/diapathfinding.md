@@ -237,6 +237,7 @@ namespace Dia::Pathfinding {
 | Asynchronous PathfindingSystem | `RequestPath()` queues request; `Update(budgetMs)` time-slices work; `IPathResultObserver` delivers result. `CancelRequest()` drops pending work. | inline | Done |
 | Lifecycle Logging | `DIA_LOG_INFO` on request submit, path found, and path failed. | inline | Done |
 | Test Utilities | `DiaPathfinding/Testing/` — `AssertPathFound`, `AssertPathCells`, `MockCostProvider`. Ships with library; consumer opt-in via include. | inline | Done |
+| Rectangular Hex Grid | `HexPathGrid(width, height)` — rectangular odd-r offset layout sized to the grid (CoW maps up to 104×64), `HexTopology` (neighbours, distance, direction helpers), and the corrected hex heuristic. Radius mode unchanged. | @hex-rectangular-grid.md | Approved |
 
 ## Dependencies on Other Systems
 

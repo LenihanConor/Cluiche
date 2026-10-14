@@ -29,7 +29,7 @@ With export/import:
 3. **Round-trip guarantee** — `Import(Export(world)) == world` byte-for-byte identical (not "similar", not "regenerated from same seed")
 4. **Validation on import** — Import fails gracefully if JSON is malformed, missing required fields, or violates structural invariants (e.g., cell count != dimensions.width * dimensions.height)
 5. **Versioned schema** — JSON includes schema version tag so future format changes can migrate old files (same pattern as E1 save/load versioning)
-6. **Fast export/import** — Completes within seconds for typical worlds (128×128 grid ~= 16k cells); does not block iteration workflow
+6. **Fast export/import** — Completes within seconds for typical worlds (Large 104×64 = 6,656 cells); does not block iteration workflow
 
 ## Non-Goals
 
@@ -47,17 +47,21 @@ With export/import:
 {
   "schema_version": 1,
   "world": {
+    "topology": "hex_pointy_odd_r",
     "dimensions": {
-      "width": 128,
-      "height": 128
+      "width": 80,
+      "height": 52
     },
     "cells": [
       {
         "biome": "Forest",
         "terrain": "Foliage",
-        "region": "VerdantLowlands"
+        "region": "VerdantLowlands",
+        "elevation": 0.35,
+        "latitude": 0.42,
+        "water_source": "None"
       },
-      // ... 16384 cells total (width * height)
+      // ... 4160 cells total (width * height); cell [y * width + x]
     ],
     "hearths": [
       {
@@ -99,6 +103,8 @@ With export/import:
 - **Flat cells array** (not 2D nested arrays): Simpler JSON parse; cell `[y * width + x]` mapping explicit in import code
 - **Separate site arrays** (not embedded in cells): Matches `WorldStructure` layout; easier to edit site positions without finding the cell
 - **`schema_version` at top level**: Enables future migration (v2 might add new site types, rename fields, etc.)
+- **`topology`** *(amended 2026-10-14)*: names the cell layout. Only `"hex_pointy_odd_r"` (Dia's rectangular `HexPathGrid` layout) is valid in v1; import fails on anything else, so a square-grid file can never be silently misread. No world file existed before this amendment, so the schema stays at v1.
+- **`elevation`, `latitude`, `water_source`** *(amended 2026-10-14)*: A4 Weather's terrain inputs. `elevation` and `latitude` are floats in [0, 1], written with 9 significant digits (`float` round-trips exactly at that precision); `water_source` is `None` / `Ocean` / `Lake` / `River`. Import fails if a float is outside [0, 1] or `water_source` is unknown.
 
 ### Export Implementation
 
@@ -108,6 +114,7 @@ Result<void> ExportWorld(const WorldStructure& world, const std::string& filePat
     root["schema_version"] = 1;
     
     Json::Value worldJson;
+    worldJson["topology"] = "hex_pointy_odd_r";
     worldJson["dimensions"]["width"] = world.dimensions.width;
     worldJson["dimensions"]["height"] = world.dimensions.height;
     
@@ -117,6 +124,9 @@ Result<void> ExportWorld(const WorldStructure& world, const std::string& filePat
         cellJson["biome"] = BiomeToString(cell.biome);        // StringCRC → string
         cellJson["terrain"] = TerrainToString(cell.terrain);
         cellJson["region"] = RegionToString(cell.region);
+        cellJson["elevation"] = cell.elevation;           // written with 9 significant digits
+        cellJson["latitude"] = cell.latitude;
+        cellJson["water_source"] = WaterSourceToString(cell.waterSource);
         worldJson["cells"].append(cellJson);
     }
     
@@ -194,6 +204,9 @@ Result<WorldStructure> ImportWorld(const std::string& filePath) {
         cell.biome = BiomeFromString(cellJson["biome"].asString());
         cell.terrain = TerrainFromString(cellJson["terrain"].asString());
         cell.region = RegionFromString(cellJson["region"].asString());
+        cell.elevation = cellJson["elevation"].asFloat();       // validated into [0, 1]
+        cell.latitude = cellJson["latitude"].asFloat();         // validated into [0, 1]
+        cell.waterSource = WaterSourceFromString(cellJson["water_source"].asString());
         world.cells.push_back(cell);
     }
     
@@ -205,7 +218,7 @@ Result<WorldStructure> ImportWorld(const std::string& filePath) {
 }
 ```
 
-**Validation on import:** Check dimensions, cell count, throne count == 6, at least one PLAYER dynasty start. Fail gracefully if violations found (don't return half-constructed world).
+**Validation on import:** Check `topology`, dimensions, cell count, per-cell `elevation`/`latitude` in [0, 1] and known `water_source`, every site position in bounds, throne count == 6, at least one PLAYER dynasty start. A world with no water cell imports with a warning, not an error (A4 refuses to run on it, and authored test worlds may be waterless). Fail gracefully if violations found (don't return half-constructed world).
 
 ### Round-Trip Guarantee
 
@@ -259,10 +272,11 @@ struct WorldExportComplete {
     std::string filePath;
 };
 
-// Published on successful import (optional, for F-1 debug host feedback)
+// Published on successful import (optional, for F-1 debug host feedback).
+// A small notification: the world is read via WorldGenerationModule::GetCurrentWorld() (amended 2026-10-14).
 struct WorldImportComplete {
-    WorldStructure world;
     std::string filePath;
+    uint32_t worldRevision;
 };
 ```
 
@@ -301,7 +315,10 @@ Export world, hand-edit JSON to move one Hearth Site position (change x/y coordi
 Export world (schema v1). Hand-edit JSON to change `schema_version: 2`. Attempt import. **Pass:** Import returns Failure ("Unsupported schema version: 2"). Proves version gating works for future migration.
 
 ### AC6 — Export/Import Speed
-Export and import world with typical size (128×128 grid = 16384 cells, ~20 sites total). Measure time for each operation. **Target: <3 seconds per operation** (does not block iteration workflow; designers can export/hand-edit/re-import within ~10 seconds total).
+Export and import worlds at the Standard (80×52 = 4,160 cells) and Large (104×64 = 6,656 cells) sizes, ~20 sites total. Measure time for each operation. **Target: <3 seconds per operation** (does not block iteration workflow; designers can export/hand-edit/re-import within ~10 seconds total).
+
+### AC8 — Terrain Fields and Topology *(added 2026-10-14)*
+Round-trip a world containing non-trivial `elevation`/`latitude` values (including 0, 1, and values like 0.1 that are not exact in binary) and all four `water_source` values. **Pass:** every float and enum compares equal after import. Edit `"topology"` to `"square"`, set one `elevation` to 1.5, and set one `water_source` to `"Swamp"`, in turn. **Pass:** each import fails with a message naming the field. Edit a site position outside the grid. **Pass:** import fails.
 
 ### AC7 — Default Export Path (PD-009 Compliance)
 Export world without specifying file path (use default). **Pass:** File written to `Cluiche/out/CoW/worlds/<seed>.wld.json` (or `Cluiche/out/CoW/worlds/world_<timestamp>.wld.json` if seed not available). Proves PD-009 compliance (all non-binary output under `out/<AppName>/`).
@@ -339,7 +356,7 @@ Export world without specifying file path (use default). **Pass:** File written 
 
 ## Status
 
-`Approved` — 2026-10-11
+`Approved` — 2026-10-11. Amended 2026-10-14 (A4 Weather, hex world): `topology`, terrain fields, notification-only import event, map sizes.
 
 ---
 

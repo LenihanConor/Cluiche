@@ -52,8 +52,8 @@ WorldGenerationPipeline produces:
 
 ```cpp
 struct WorldStructure {
-    GridDimensions dimensions;       // width × height in cells
-    std::vector<Cell> cells;         // biome, terrain, region per cell
+    GridDimensions dimensions;       // width × height in cells (hex grid, see Hex Grid below)
+    std::vector<Cell> cells;         // biome, terrain, region, elevation, latitude, water source per cell
     std::vector<HearthSite> hearths; // 1-3 per region (GDD Phase 2 lore)
     std::vector<NexusNode> nexuses;  // count TBD by placeholder algorithm
     std::vector<WorldThrone> thrones;// exactly 6 (one per Apotheosis type)
@@ -64,10 +64,35 @@ struct Cell {
     Biome biome;           // Phase 2 biome types
     TerrainType terrain;   // Phase 2 traversal/interaction types
     Region region;         // Phase 2 Ancient Interiors / Verdant Lowlands / etc.
+    float elevation;       // [0, 1]; read by A4 (orographic lift, upwind elevation)
+    float latitude;        // [0, 1]; 0 = equator, 1 = pole; read by A4 (solar heating)
+    WaterSource waterSource; // None / Ocean / Lake / River; read by A4 (evaporation source)
 };
 ```
 
-**No ecology state** (A1's species populations, resource levels), **no dragon/clan/dynasty state** (B6/C1/C2 runtime) — structure only.
+**No ecology state** (A1's species populations, resource levels), **no dragon/clan/dynasty state** (B6/C1/C2 runtime) — structure only. `elevation`, `latitude` and `waterSource` are static terrain, not simulation state: A4 reads them and never writes them.
+
+### Hex Grid
+
+*Amended 2026-10-14 (A4 Weather).* The world is a **hex grid**, stored as a rectangle of `width × height` cells.
+
+- **Layout:** pointy-top hexes, **odd-r offset** (odd rows shifted half a cell right). Row index grows downward (south). `GridCoord{x, y}` is the offset coordinate, and the cell index is `y * width + x`, so flat arrays and the JSON cell array keep their shape.
+- **Direction order:** 6 directions `d = 0..5`, at angle `d × 60°` counter-clockwise from east: `0` E, `1` NE, `2` NW, `3` W, `4` SW, `5` SE. This is the order A4 depends on.
+- **One hex grid, in Dia (decided 2026-10-14).** The grid and topology are Dia's `Dia::Pathfinding::HexTopology` and `HexPathGrid(width, height)` (rectangular odd-r layout), specified in @docs/specs/applications/dia/systems/diapathfinding/hex-rectangular-grid.md. S-1 defines no hex graph or topology of its own. Neighbours, `kNoCell`, `Distance`, `DirectionFromAngle` and `DirectionVector` all come from there, so S-1, the reachability search, the renderer and A4 share one definition. The old radius-based `HexPathGrid` could not hold a map (1,261 cells at most); the Dia feature extends the same class rather than adding a second one.
+- **Prerequisite:** the Dia feature is `Draft`. **S-1 cannot be built until it is `Approved` and built.**
+- **No world wrap.** Edges are hard; `NeighbourAt` returns `kNoCell` past them.
+
+### Map Sizes
+
+*Amended 2026-10-14.* The game's maps are smaller than the 200×200 this spec first assumed:
+
+| Preset | Tiles (width × height) | Cells |
+|--------|------------------------|-------|
+| Small | 66 × 42 | 2,772 |
+| Standard (default) | 80 × 52 | 4,160 |
+| Large | 104 × 64 | 6,656 |
+
+`GenParams` carries `dimensions`, set from a preset or typed in the debug host. The generator, validator and renderer accept any size from 1×1 up to 128×128 (the tested range of the Dia grid); the three presets are the acceptance targets. Standard replaces 128×128 and 200×200 as the default in every S-1 spec.
 
 ### Three Hard Guarantees
 
@@ -154,6 +179,14 @@ public:
     
     // Query current generation progress (for debug UI progress bar)
     GenerationProgress GetProgress() const;
+
+    // Read access to the current accepted world (generated or imported).
+    // nullptr until the first world is accepted. SimPU only: the pointer is valid until the next
+    // accepted world, so consumers must not hold it across frames; re-read when GetWorldRevision() changes.
+    const WorldStructure* GetCurrentWorld() const;
+
+    // Incremented every time a new world is accepted (WorldGenerationComplete or import).
+    uint32_t GetWorldRevision() const;
 };
 
 struct GenParams {
@@ -161,6 +194,7 @@ struct GenParams {
     PlacementParams placementParams;       // Site placement tuning (TBD by placeholder)
     uint32_t maxRetryAttempts;             // Bounded retry count (default TBD)
     float timeoutSeconds;                  // Hard timeout (default TBD)
+    GridDimensions dimensions;             // Map size; default Standard 80 × 52 (see Map Sizes)
 };
 ```
 
@@ -170,13 +204,15 @@ struct GenParams {
 
 ```cpp
 // Published on successful generation (GDD Phase 7)
+// A small notification, not a payload: bus messages are small POD, so the world itself is
+// read through WorldGenerationModule::GetCurrentWorld() (amended 2026-10-14).
 struct WorldGenerationComplete {
-    WorldStructure world;
     uint64_t seed;
     uint32_t retryAttempts;  // 0 if first attempt succeeded
+    uint32_t worldRevision;  // matches GetWorldRevision() at publish time
 };
 // Subscribers: A2/GameSpeedController (resets to season 0, paused), A1/Ecology (initializes grid state), 
-//              C4/Dynasty (schedules rival arrival waves)
+//              A4/Weather (re-reads terrain, re-runs spin-up), C4/Dynasty (schedules rival arrival waves)
 
 // Published on timeout/failure
 struct WorldGenerationFailed {
@@ -218,7 +254,8 @@ struct WorldGenerationCancelled {
 |--------|-----------|---------|
 | **F-2 Core Runtime** | RNG determinism (same seed → same retry sequence), GameSpeedController integration (time controls for debug), band resolver (if WLD uses DiaAttribute Feature 7) | Approved (backlog row) |
 | **F-1 Harness** | Debug host integration (seed/param inputs, Regenerate button, Export/Import UI, Cancel button) | Approved (backlog row) |
-| **DiaPathfinding** | `IPathCostProvider` injection point and `FindPath` for reachability. B2 is **not** a dependency: its body-plan profiles are injected later | Done |
+| **DiaPathfinding** | `IPathCostProvider` injection point and `FindPath<TGraph>` for reachability (Done). B2 is **not** a dependency: its body-plan profiles are injected later | Done |
+| **DiaPathfinding: Rectangular Hex Grid** | `HexPathGrid(width, height)` and `HexTopology` (see Hex Grid). The only hex graph; S-1 adds none | Draft — new Dia feature, must be built first |
 | **A1 species biome-affinity data** | Optional for design reference toggle | Optional — cut the toggle if not externalized |
 
 ### Dia Engine Dependencies
@@ -233,8 +270,8 @@ struct WorldGenerationCancelled {
 
 | # | Feature | Description | Spec | Status |
 |---|---------|-------------|------|--------|
-| 1 | Placeholder Generation Algorithm | Biome assignment, terrain type assignment, region boundaries per GDD Phase 2 lore; site placement (Hearth/Nexus/world-throne/dynasty starts) implementing output contract | @placeholder-generation-algorithm.md | Approved |
-| 2 | Reachability Validator | Runs injected world guarantees (three built-in hard guarantees) using injected navigation profiles (placeholder now, B2 body plans later); not naive graph connectivity | @reachability-validator.md | Approved |
+| 1 | Placeholder Generation Algorithm | Hex grid and `HexTopology`; biome assignment, terrain type assignment, region boundaries per GDD Phase 2 lore; per-cell elevation, latitude and water source; site placement (Hearth/Nexus/world-throne/dynasty starts) implementing output contract | @placeholder-generation-algorithm.md | Approved |
+| 2 | Reachability Validator | Runs injected world guarantees (three built-in hard guarantees) using injected navigation profiles (placeholder now, B2 body plans later) over a hex path graph; not naive graph connectivity | @reachability-validator.md | Approved |
 | 3 | Retry Mechanism | Deterministic sub-seed retry (outer seed + attempt counter) when guarantees fail; bounded attempt count; same outer seed → same retry sequence | @retry-mechanism.md | Approved |
 | 4 | JSON Export/Import | Human-readable JSON format capturing full world structure (grid, biomes, terrain, sites); round-trip guarantee (Import(Export(world)) == world) | @json-export-import.md | Approved |
 | 5 | Timeout and Failure Handling | Hard timeout monitors total generation time; timeout/unsatisfiable/error route through Cancel's discard-and-return with distinguishing assert/message | @timeout-failure-handling.md | Approved |
@@ -244,10 +281,13 @@ struct WorldGenerationCancelled {
 ## Acceptance Criteria
 
 ### Test 1a — Generation Success Rate
-Generate worlds across 100 random seeds. Record how many succeed (all three guarantees satisfied) vs. fallthrough to Failure (exhausted retry attempts). **Target: ≥95% success rate** (GDD §6, §7).
+Generate worlds across 100 random seeds at each size preset (Small, Standard, Large). Record how many succeed (all three guarantees satisfied) vs. fallthrough to Failure (exhausted retry attempts). **Target: ≥95% success rate** (GDD §6, §7).
 
 ### Test 1b — Guarantee Compliance
 For all successfully-generated worlds from Test 1a, confirm all three hard guarantees hold (Hearth↔Nexus reachability, dynasty minimum spacing, world-throne existence/reachability). **Target: 100% compliance** — zero violations among successful generations (GDD §6, §8).
+
+### Test 1c — Terrain Contract for A4 *(added 2026-10-14)*
+For every world generated in Test 1a: every cell has `elevation` and `latitude` in [0, 1] and a valid `waterSource`; at least one cell has `waterSource != None` (A4 asserts this); and for every cell `NeighbourAt` is symmetric (if B is A's neighbour in direction `d`, A is B's neighbour in direction `(d + 3) mod 6`). **Target: 100%.**
 
 ### Test 2a — Generation Determinism
 Generate a world with a specific seed, record output, regenerate with same seed. Confirm byte-for-byte identical (every cell's biome/terrain/region, every site placement). Test on ≥10 seeds, including at least one that triggers retries. **Target: 100% match** (GDD §4, §6).
@@ -303,7 +343,7 @@ The following binding decisions from parent specs apply to this system:
 
 ## Status
 
-`Approved` — 2026-10-11
+`Approved` — 2026-10-11. Amended 2026-10-14 for A4 Weather: hex grid (Dia's rectangular `HexPathGrid` and `HexTopology`; map-size presets Small/Standard/Large), per-cell `elevation`/`latitude`/`waterSource`, world read accessor, `WorldGenerationComplete` reduced to a notification. No code existed, so the JSON schema stays at v1.
 
 ---
 

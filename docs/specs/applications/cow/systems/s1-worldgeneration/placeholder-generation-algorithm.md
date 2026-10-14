@@ -44,20 +44,31 @@ Without this generator, S-1 cannot prove WLD's data pipeline, and every downstre
 
 ### Algorithm Phases
 
-The placeholder generator runs five sequential phases per generation:
+The placeholder generator runs six sequential phases per generation:
 
 ```cpp
 WorldStructure Generate(uint64_t seed, const GenParams& params) {
-    // Phase 1: Grid initialization
+    // Phase 1: Grid initialization (hex grid, width × height, see parent spec "Hex Grid")
     // Phase 2: Biome assignment (weighted random per params.biomeWeights)
     // Phase 3: Terrain-type assignment (derived from biome)
     // Phase 4: Region boundary assignment (Phase 2 lore patterns)
-    // Phase 5: Site placement (Hearth/Nexus/world-throne/dynasty starts)
+    // Phase 5: Terrain fields for A4 (elevation, latitude, water source)
+    // Phase 6: Site placement (Hearth/Nexus/world-throne/dynasty starts)
     return WorldStructure{...};
 }
 ```
 
-Each phase consumes the seed via RandomStreamManager, ensuring determinism.
+Each phase consumes the seed via RandomStreamManager, ensuring determinism. *(Amended 2026-10-14: the grid is hex, and Phase 5 is new; site placement moved from Phase 5 to 6.)*
+
+### Terrain Fields for A4 (Phase 5)
+
+*Added 2026-10-14.* A4 Weather reads three per-cell values it does not generate. They are placeholder-grade, like the rest of this feature.
+
+- **`waterSource`** (`None` / `Ocean` / `Lake` / `River`): taken from a placeholder biome → water table (water biomes map to `Ocean` or `Lake`; `River` is only set by hand-authored worlds in S-1). **The generator always produces at least one non-`None` cell**: if the biome draw yields none, it converts the lowest-weighted cell's biome to a water biome. A4 asserts this and refuses to run without it.
+- **`elevation`** ([0, 1]): a per-biome base value from a placeholder table plus seeded per-cell jitter, clamped to [0, 1]. Water cells are forced to `0`. Because biomes are near-random, elevation is noisy rather than smooth; that is acceptable for the placeholder, and S-2.5 builds hand-shaped terrain for the weather proofs.
+- **`latitude`** ([0, 1]): derived from the row, equator at the middle row: `latitude = abs(2 * y / (height - 1) - 1)`. Deterministic, no RNG.
+
+Both float values are stored as `float` and round-trip exactly through JSON (see Feature 4).
 
 ### Biome Assignment (Phase 2)
 
@@ -83,7 +94,7 @@ Each phase consumes the seed via RandomStreamManager, ensuring determinism.
 
 **GDD §2 constraint:** 1–3 Hearth Sites per region (enforced in Phase 5 site placement, not here).
 
-### Site Placement (Phase 5)
+### Site Placement (Phase 6)
 
 **Input:** Grid with biomes/terrain/regions per cell
 
@@ -118,10 +129,15 @@ struct Cell {
     Biome biome;           // Phase 2 biome types (enum TBD)
     TerrainType terrain;   // Phase 2 traversal/interaction types (enum TBD)
     Region region;         // Phase 2 regions (enum TBD)
+    float elevation;       // [0, 1] (amended 2026-10-14, for A4)
+    float latitude;        // [0, 1], 0 = equator (amended 2026-10-14, for A4)
+    WaterSource waterSource; // None / Ocean / Lake / River (amended 2026-10-14, for A4)
 };
 
+enum class WaterSource : uint8_t { None = 0, Ocean, Lake, River };
+
 struct HearthSite {
-    GridCoord position;    // cell coordinates
+    GridCoord position;    // hex offset coordinates (odd-r), see parent spec "Hex Grid"
     Region parentRegion;   // which region this Hearth belongs to (lore constraint)
 };
 
@@ -145,6 +161,7 @@ struct GenParams {
     PlacementParams placementParams;       // Site placement tuning (TBD by placeholder)
     uint32_t maxRetryAttempts;             // Not used by this feature (Feature 3)
     float timeoutSeconds;                  // Not used by this feature (Feature 5)
+    GridDimensions dimensions;             // Map size; default Standard 80 × 52 (amended 2026-10-14)
     ValidationParams validation;           // Not used by this feature (Features 2/3): injected guarantees + navigation profiles
 };
 
@@ -176,6 +193,7 @@ private:
     static void AssignBiomes(WorldStructure& world, uint64_t seed, const GenParams& params);
     static void AssignTerrainTypes(WorldStructure& world);
     static void AssignRegions(WorldStructure& world);
+    static void AssignTerrainFields(WorldStructure& world, uint64_t seed);   // elevation, latitude, waterSource
     static void PlaceSites(WorldStructure& world, uint64_t seed, const GenParams& params);
 };
 
@@ -197,6 +215,10 @@ private:
 | **F-2 Core Runtime** | RandomStreamManager for seeded RNG determinism | Approved (backlog) |
 | **DiaSimTime** | RandomStreamManager API | Done |
 | **Phase 2 data design** | Biome enum, TerrainType enum, Region enum, ApotheosisType enum, rival count | GDD in-progress (types TBD — placeholder uses arbitrary enums until Phase 2 finalizes) |
+
+### Hex Topology
+
+Uses Dia's `HexTopology` (parent spec, "Hex Grid"; Dia feature `hex-rectangular-grid.md`). Site placement bounds checks, hex distance and the "no collisions" rule use it; nothing in S-1 re-derives neighbours. This feature adds no hex code of its own.
 
 ### Dia Engine Dependencies
 
@@ -235,7 +257,13 @@ Generate world. For each site array (hearths, nexuses, thrones, starts), confirm
 Generate world on ≥10 random seeds with varying `GenParams`. Confirm `thrones.size() == 6` every time. Confirm each throne has a distinct `type` (one per Apotheosis type, no duplicates). **Pass:** 100% compliance (exactly 6 thrones, all distinct types).
 
 ### AC6 — Generation Speed
-Generate worlds with typical parameters (128×128 grid, biome weights, site counts in expected ranges per placeholder defaults). Measure time from `Generate()` call to return. **Target: <5 seconds** (GDD §7 metric). Excludes validation/retry time (those are other features).
+Generate worlds with typical parameters at each size preset (Small 66×42, Standard 80×52, Large 104×64; biome weights, site counts in expected ranges per placeholder defaults). Measure time from `Generate()` call to return. **Target: <5 seconds** (GDD §7 metric). Excludes validation/retry time (those are other features).
+
+### AC7 — Uses the Dia Hex Grid *(added 2026-10-14)*
+The generator's grid dimensions come from `GenParams.dimensions` (default 80×52). Every site position is in bounds per `HexTopology::IsInBounds`. Hex topology behaviour itself (neighbours, distance, directions) is tested in Dia's `hex-rectangular-grid.md`, not re-tested here. **Pass:** site positions valid for all three presets; a grid with other dimensions (for example 30×20) also generates.
+
+### AC8 — Terrain Fields *(added 2026-10-14)*
+Generate on ≥10 seeds, including a `biomeWeights` that gives water zero weight. **Pass:** every `elevation` and `latitude` is in [0, 1]; `latitude` is 0 on the middle row and 1 on the first and last rows; water cells have `elevation == 0`; every `waterSource != None` cell is a water-table biome; and every world has at least one cell with `waterSource != None`, including the zero-water-weight case. Same seed gives identical fields.
 
 ## Inherited Binding Decisions
 
@@ -269,7 +297,7 @@ Generate worlds with typical parameters (128×128 grid, biome weights, site coun
 
 ## Status
 
-`Approved` — 2026-10-11
+`Approved` — 2026-10-11. Amended 2026-10-14 (A4 Weather): hex grid, `HexTopology`, terrain fields phase, AC7/AC8.
 
 ---
 
