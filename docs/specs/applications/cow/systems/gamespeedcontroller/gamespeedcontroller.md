@@ -208,6 +208,8 @@ namespace CoW {
 
 Read access is for UI, debug and E1 only. **Gameplay must not poll the day counter.** It subscribes to `SimulationTick`.
 
+**Debug panel:** in Debug builds the module registers a `GameSpeedDebugDomain` card (calendar, speed, pause source, time scale, fallback-config flag) with a speed slider. The slider posts `SpeedChangeRequested` like any other requester. It is the only in-game speed control until F-2 Test 4 / UI-I add buttons.
+
 ## Features
 
 | # | Feature | Description | Spec | Status |
@@ -248,7 +250,7 @@ These are for the DesignDocs owner to fold back into A2:
 
 ## Dependencies
 
-**Requires:** DiaSimTime (world `SimTimeDomain`, Done), DiaMessageBus (built), DiaApplicationFlow (module `config` block), DiaCore (Json, StringCRC, logging).  
+**Requires:** DiaCore's `SimTimeDomain` (the world clock the SimPU owns; DiaSimTime's design, Done), DiaMessageBus (built), DiaApplicationFlow (module `config` block), DiaCore (Json, StringCRC, logging). `DiaSimTimeModule` (scheduler, budget, LOD) is **not** required: add it to the manifest only for systems that schedule deadlines.  
 **Required by:** E1 (state struct), F-2 Test 4, A1, A4 and all B/C/D-layer systems (`SimulationTick`), UI-I (speed controls).
 
 ## Test Strategy
@@ -277,5 +279,5 @@ These are for the DesignDocs owner to fold back into A2:
 
 ## Status
 
-**Status:** `Approved` — 2026-10-13 (re-scoped from WorldClock)  
+**Status:** `Done`
 **Plan:** @docs/specs/applications/cow/systems/gamespeedcontroller/gamespeedcontroller.plan.md

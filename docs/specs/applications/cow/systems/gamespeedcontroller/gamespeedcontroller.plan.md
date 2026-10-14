@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/applications/cow/systems/gamespeedcontroller/gamespeedcontroller.md
-**Status:** In Progress
+**Status:** Done
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
@@ -7,6 +7,8 @@
 | 2 | Messages + `GameSpeedControllerModule` (config load, bus wiring, world scale/step, `SimulationTick`) | 21 integration tests in a real `Application` (`TestGameSpeedControllerModule.cpp`) | Done | sonnet | Pause is scale 0, not `SimTimeDomain::Pause()` (a paused world domain stops the SimPU forward pass). Spec amended. |
 | 3 | `cow_main.diaapp` entry + vcxproj wiring | `dia validate manifest`, `dia launch cow` smoke | Done | haiku | Module starts Active with configured presets. |
 | 5 | Exhaustive test pass: metrics/health assertions, tick-lag, bus failure paths, restore ordering, pause lag, message storms, stage restart, seeded soak, century census | 21 tests in `TestGameSpeedControllerObservability.cpp` (+2 calendar) | Done | sonnet | 105 GameSpeed/DayClock tests total. Added `GetHealthReporter()` accessor. |
+| 6 | Debug panel card: `GameSpeedDebugDomain` (calendar, speed, pause stats + speed slider via `SpeedChangeRequested`) | 6 tests in `TestGameSpeedControllerObservability.cpp`; registers in the running game | Done | sonnet | Panel never touches state directly. Slider posts through the bus. |
+| 7 | Save participant (`ISaveable` over the state struct, register with E1 `SaveLoadModule`) | Save/load round trip (F-2 Test 5) | Blocked | sonnet | Waits on E1 `SaveLoadModule`. Note added to the E1 spec. |
 | 4 | Observation pass: logs, trace/profile, metrics, health | Review of touched files | Done | sonnet | 12 `cow.gamespeed.*` metrics, `GameSpeedHealthReporter`, DoStart/DoUpdate trace + profile, transition/config/publish logs. |
 
 ## Observation pass
@@ -19,7 +21,7 @@
 | Metrics | gauges: day, tier, paused, modal_depth, carry_days; counters: ticks, steps, steps_rejected, speed_changes, tick_publish_dropped, clock_backwards, config_fallbacks |
 | Health | Failing: subscription or tick-publish failure; Degraded: day ticks lagging behind the one-per-frame cap, or fallback presets in use |
 
-Suggested follow-ups (not done): an `IDebugDomain` card for day/speed/pause state once F-2 Test 4 wants one; the buttons that publish the request messages (F-2 / UI-I).
+Follow-up: the in-game speed/pause/step buttons are F-2 Test 4 / UI-I. Until then the debug card's speed slider is the only in-game way to change speed.
 
 ## Known behaviours found by the test pass
 

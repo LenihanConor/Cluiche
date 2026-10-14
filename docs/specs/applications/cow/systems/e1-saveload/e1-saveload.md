@@ -111,6 +111,8 @@ config.format        = SaveFormat::Json;
 
 Resuming paused after a load (A2 EC-03) is GameSpeedController's own responsibility, enforced in its `RestoreState`. E1 does not publish speed-change messages.
 
+**GameSpeedController participant (open item):** GameSpeedController is built (2026-10-13) but has no save participant yet; it waits on this module. When `SaveLoadModule` lands, its plan gets the task: register an `ISaveable` over `GameSpeedControllerModule::GetController().GetState()` (the day counter is the only persisted field) and restore through `GameSpeedControllerModule::RestoreState`. **Ordering rule:** the load must call `RestoreState` in the same frame as DiaSimTime's `SimTimeSaveState` clock restore, before the module's next update. If the world clock jumps without it, the module replays the jump as one `SimulationTick` per frame, even while paused. See the plan's "Known behaviours".
+
 ### Frame-Boundary Save
 
 GameSpeedController publishes at most one `SimulationTick` per sim frame, and the bus fully dispatches it (Primary and Reaction passes) within that frame. So the start of the next sim frame, before GameSpeedController publishes the next day, is a point where no system is mid-tick.
