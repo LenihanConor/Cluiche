@@ -88,7 +88,8 @@ private:
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::MessageBusHostModule> mBus{this};
     Dia::ApplicationFlow::ModuleRef<SaveLoadModule> mSaveLoad{this};
     GameSpeedSaveParticipant mSaveParticipant{*this};
-    bool mSaveParticipantRegistered = false;
+    bool mSaveParticipantRegistered = false;   // registration attempted (one try)
+    bool mSaveParticipantOwned = false;        // our registration succeeded; only then unregister
 
     SpeedPresetConfig   mPendingConfig = DefaultSpeedPresetConfig();
     bool                mConfigParseFailed = false;

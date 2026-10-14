@@ -13,6 +13,7 @@
 #include <filesystem>
 #include <fstream>
 #include <string>
+#include <vector>
 
 using namespace Dia::ApplicationFlow;
 using namespace Dia::Core;
@@ -202,4 +203,118 @@ TEST(GameSpeedSaveParticipant, DeserializeWithoutDayKeyLeavesStateUnchanged)
 
     EXPECT_EQ(f.game->GetController().GetState().dayCounter, 9u);
     EXPECT_EQ(f.game->GetSaveParticipant().GetVersion(), 1u);
+}
+
+// ---------------------------------------------------------------------------
+// M7: every speed tier restores paused with the saved day and no tick burst
+// ---------------------------------------------------------------------------
+
+namespace {
+SpeedTier kRunningTiers[] = { SpeedTier::Slow, SpeedTier::Normal, SpeedTier::Fast, SpeedTier::Fastest };
+}
+
+TEST(GameSpeedSaveParticipant, SaveAtEachSpeedTierLoadsPausedWithSavedDayAndNoTickBurst)
+{
+    for (SpeedTier tier : kRunningTiers)
+    {
+        SCOPED_TRACE(SpeedTierName(tier));
+        Fixture f("gs_participant_tiers");
+        ASSERT_TRUE(f.Boot());
+
+        std::vector<SimulationTick> ticks;
+        auto sub = f.bus->GetBus().Subscribe<SimulationTick>(StringCRC("TierTickSink"),
+            [&](const SimulationTick& t) { ticks.push_back(t); });
+        ASSERT_TRUE(sub.IsValid());
+
+        f.game->RestoreState(MakeState(40, SpeedTier::Paused));
+        f.SetSpeed(tier);
+        f.Pump(3);
+        ASSERT_EQ(f.game->GetController().GetState().speedTier, tier);
+        ASSERT_FALSE(f.game->GetController().IsPaused());
+        if (tier == SpeedTier::Fastest)
+            ASSERT_TRUE(f.PumpUntil([&] { return f.game->GetController().GetState().dayCounter > 40; }, 120));
+        const uint64_t savedDay = f.game->GetController().GetState().dayCounter;
+
+        f.save->RequestSave(StringCRC("tier"));
+        ASSERT_TRUE(f.PumpUntil([&] { return f.save->GetSaveCount() == 1; }));
+        ASSERT_TRUE(f.save->GetLastSaveResult().Ok());
+
+        // Diverge: a different day, still running.
+        f.game->RestoreState(MakeState(999, SpeedTier::Paused));
+        f.SetSpeed(tier);
+        f.Pump(2);
+        ASSERT_FALSE(f.game->GetController().IsPaused());
+
+        f.save->RequestLoad(StringCRC("tier"));
+        ASSERT_TRUE(f.PumpUntil([&] { return f.save->GetLoadCount() == 1; }));
+        ticks.clear();
+        f.Pump(45);
+        EXPECT_EQ(f.game->GetController().GetState().dayCounter, savedDay);
+        EXPECT_TRUE(f.game->GetController().IsPaused());
+        EXPECT_EQ(f.game->GetController().GetState().speedTier, SpeedTier::Paused);
+        EXPECT_TRUE(ticks.empty()) << ticks.size() << " tick(s) after load";
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Load while a modal is open (Part 1.4): the restore clears the modal bookkeeping; a later
+// ModalClosed must not underflow or resume the game.
+// ---------------------------------------------------------------------------
+
+TEST(GameSpeedSaveParticipant, LoadWhileModalOpenThenModalClosedStaysPausedWithoutUnderflow)
+{
+    Fixture f("gs_participant_modal");
+    ASSERT_TRUE(f.Boot());
+
+    f.game->RestoreState(MakeState(12, SpeedTier::Paused));
+    f.SetSpeed(SpeedTier::Fast);
+    f.Pump(2);
+    f.save->RequestSave(StringCRC("m"));
+    ASSERT_TRUE(f.PumpUntil([&] { return f.save->GetSaveCount() == 1; }));
+
+    f.SetSpeed(SpeedTier::Fast);
+    ModalOpened open;
+    ASSERT_TRUE(f.bus->GetBus().Broadcast(open));
+    ASSERT_TRUE(f.bus->GetBus().Broadcast(open));   // nested
+    f.Pump(2);
+    ASSERT_EQ(f.game->GetController().GetState().modalDepth, 2u);
+    ASSERT_TRUE(f.game->GetController().IsPaused());
+
+    f.save->RequestLoad(StringCRC("m"));
+    ASSERT_TRUE(f.PumpUntil([&] { return f.save->GetLoadCount() == 1; }));
+    f.Pump(1);
+    EXPECT_TRUE(f.game->GetController().IsPaused());
+    EXPECT_EQ(f.game->GetController().GetState().modalDepth, 0u);
+
+    ModalClosed close;
+    for (int i = 0; i < 3; ++i)   // more closes than opens
+    {
+        ASSERT_TRUE(f.bus->GetBus().Broadcast(close));
+        f.Pump(2);
+        EXPECT_TRUE(f.game->GetController().IsPaused()) << "close " << i;
+        EXPECT_EQ(f.game->GetController().GetState().modalDepth, 0u) << "close " << i;
+        EXPECT_EQ(f.game->GetController().GetState().speedTier, SpeedTier::Paused) << "close " << i;
+    }
+    EXPECT_EQ(f.game->GetController().GetState().dayCounter, 12u);
+}
+
+TEST(GameSpeedController, RestoreStateWithModalsOpenThenClosesNeverResumes)
+{
+    GameSpeedController c(DefaultSpeedPresetConfig());
+    c.OnSpeedChangeRequested(SpeedTier::Fast);
+    c.OnModalOpened();
+    c.OnModalOpened();
+    ASSERT_EQ(c.GetState().modalDepth, 2u);
+
+    c.RestoreState(MakeState(7, SpeedTier::Fast));
+    EXPECT_EQ(c.GetState().modalDepth, 0u);
+    EXPECT_TRUE(c.IsPaused());
+    EXPECT_EQ(c.GetState().dayCounter, 7u);
+
+    c.OnModalClosed();
+    c.OnModalClosed();
+    c.OnModalClosed();
+    EXPECT_EQ(c.GetState().modalDepth, 0u);
+    EXPECT_TRUE(c.IsPaused());
+    EXPECT_EQ(c.GetState().pauseSource, PauseSource::Player);
 }

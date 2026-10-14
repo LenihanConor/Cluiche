@@ -16,6 +16,7 @@
 #include <Modules/SaveLoadModule.h>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <vector>
@@ -381,4 +382,108 @@ TEST(SaveLoadIntegration, FailedLoadsLeaveDayClockAndRngUntouched)
     f.SetSpeed(SpeedTier::Fastest);
     ASSERT_TRUE(f.PumpUntil([&] { return f.Day() > day; }, 300));
     EXPECT_EQ(f.Day(), day + 1);
+}
+
+// ---------------------------------------------------------------------------
+// H5 / M8: no drift across save/load cycles, determinism across two full runs
+// ---------------------------------------------------------------------------
+
+namespace {
+
+std::string ReadAllBytes(const std::string& path)
+{
+    std::ifstream in(path, std::ios::binary);
+    return std::string(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+}
+
+// The save file with the manifest timestamp removed, as canonical text.
+std::string NormalizedSave(const std::string& path)
+{
+    Json::Value root;
+    Json::Reader reader;
+    reader.parse(ReadAllBytes(path), root);
+    if (root.isMember("manifest"))
+        root["manifest"].removeMember("timestamp");
+    return root.toStyledString();
+}
+
+struct ScenarioResult
+{
+    bool ok = false;
+    std::string before;          // slot saved mid-run
+    std::string afterLoad;       // slot saved again right after loading the first
+    std::vector<int> draws;      // RNG draws after the load
+    uint64_t day = 0;
+};
+
+// The full integration scenario from scratch, with fixed inputs.
+ScenarioResult RunScenario(const char* name)
+{
+    ScenarioResult r;
+    Fixture f(name);
+    if (!f.Boot())
+        return r;
+    f.SetSpeed(SpeedTier::Fastest);
+    if (!f.RunDrawingUntil([&] { return f.Day() >= 2; }, 300))
+        return r;
+    if (!f.SaveSlot("first"))
+        return r;
+    if (!f.RunDrawingUntil([&] { return f.Day() >= 4; }, 400))
+        return r;
+
+    f.save->RequestLoad(StringCRC("first"));
+    if (!f.PumpUntil([&] { return f.save->GetLoadCount() == 1; }))
+        return r;
+    f.Pump(2);
+    for (int i = 0; i < kStreams; ++i)
+        for (int n = 0; n < 20; ++n)
+            r.draws.push_back(f.Stream(i)->RandomInt());
+    if (!f.SaveSlot("second"))
+        return r;
+
+    r.before = NormalizedSave(f.SlotPath("first"));
+    r.afterLoad = NormalizedSave(f.SlotPath("second"));
+    r.day = f.Day();
+    r.ok = true;
+    return r;
+}
+
+} // namespace
+
+TEST(SaveLoadIntegration, RepeatedSaveLoadCyclesWithRealParticipantsDoNotDrift)
+{
+    Fixture f("sli_drift");
+    ASSERT_TRUE(f.Boot());
+    f.SetSpeed(SpeedTier::Fastest);
+    ASSERT_TRUE(f.RunDrawingUntil([&] { return f.Day() >= 2; }, 300));
+
+    const char* const slots[] = { "c1", "c2", "c3" };
+    for (const char* slot : slots)
+    {
+        ASSERT_TRUE(f.SaveSlot(slot)) << slot;
+        const uint32_t loads = f.save->GetLoadCount();
+        f.save->RequestLoad(StringCRC(slot));
+        ASSERT_TRUE(f.PumpUntil([&] { return f.save->GetLoadCount() == loads + 1; })) << slot;
+        f.Pump(2);   // paused after load: the world is frozen, nothing may change
+    }
+
+    const std::string c1 = NormalizedSave(f.SlotPath("c1"));
+    const std::string c2 = NormalizedSave(f.SlotPath("c2"));
+    const std::string c3 = NormalizedSave(f.SlotPath("c3"));
+    ASSERT_FALSE(c1.empty());
+    EXPECT_EQ(c2, c3) << "a save taken right after a load must equal the next one";
+    EXPECT_EQ(c1, c2) << "first (running) save vs. save after restore";
+}
+
+TEST(SaveLoadIntegration, TwoFullRunsProduceIdenticalSavesAndRngDraws)
+{
+    const ScenarioResult a = RunScenario("sli_det_a");
+    const ScenarioResult b = RunScenario("sli_det_b");
+    ASSERT_TRUE(a.ok);
+    ASSERT_TRUE(b.ok);
+    EXPECT_EQ(a.before, b.before) << "mid-run save differs between identical runs";
+    EXPECT_EQ(a.afterLoad, b.afterLoad) << "post-load save differs between identical runs";
+    EXPECT_EQ(a.draws, b.draws);
+    EXPECT_EQ(a.day, b.day);
+    EXPECT_FALSE(a.draws.empty());
 }

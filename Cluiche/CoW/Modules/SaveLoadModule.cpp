@@ -92,26 +92,75 @@ void SaveLoadModule::OnConnectStreams(Dia::ApplicationFlow::Application&)
     DIA_LOG_INFO("CoW", "SaveLoadModule: save registry injected into DiaSimTimeModule");
 }
 
-void SaveLoadModule::RegisterParticipant(Dia::Core::StringCRC id, Dia::SaveGame::ISaveable* participant)
+bool SaveLoadModule::FindParticipant(Dia::Core::StringCRC id, uint32_t& outIndex) const
 {
+    for (uint32_t i = 0; i < mRegistry.GetParticipantCount(); ++i)
+    {
+        if (mRegistry.GetIdAt(i) == id)
+        {
+            outIndex = i;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool SaveLoadModule::RegisterParticipant(Dia::Core::StringCRC id, Dia::SaveGame::ISaveable* participant)
+{
+    if (participant == nullptr)
+    {
+        DIA_LOG_ERROR("CoW", "SaveLoadModule: cannot register null participant '%s'", id.AsChar());
+        return false;
+    }
+    uint32_t existing = 0;
+    if (FindParticipant(id, existing))
+    {
+        DIA_LOG_ERROR("CoW", "SaveLoadModule: participant '%s' already registered, ignoring", id.AsChar());
+        return false;
+    }
+    if (mRegistry.GetParticipantCount() >= Dia::SaveGame::SaveRegistry::kMaxParticipants)
+    {
+        DIA_LOG_ERROR("CoW", "SaveLoadModule: registry full (%u), cannot register '%s'",
+                      static_cast<unsigned>(Dia::SaveGame::SaveRegistry::kMaxParticipants), id.AsChar());
+        return false;
+    }
     mRegistry.Register(id, participant);
+    return true;
 }
 
 void SaveLoadModule::UnregisterParticipant(Dia::Core::StringCRC id)
 {
+    uint32_t existing = 0;
+    if (!FindParticipant(id, existing))
+    {
+        DIA_LOG_WARNING("CoW", "SaveLoadModule: unregister of unknown participant '%s' ignored", id.AsChar());
+        return;
+    }
     mRegistry.Unregister(id);
 }
 
-void SaveLoadModule::RequestSave(Dia::Core::StringCRC slotId)
+bool SaveLoadModule::RequestSave(Dia::Core::StringCRC slotId)
 {
+    if (!Dia::SaveGame::SlotManager::IsValidSlotId(slotId.AsChar()))
+    {
+        DIA_LOG_WARNING("CoW", "SaveLoadModule: save rejected, invalid slot id '%s'", slotId.AsChar());
+        return false;
+    }
     mPendingSaveSlot = slotId;
     mHasPendingSave = true;
+    return true;
 }
 
-void SaveLoadModule::RequestLoad(Dia::Core::StringCRC slotId)
+bool SaveLoadModule::RequestLoad(Dia::Core::StringCRC slotId)
 {
+    if (!Dia::SaveGame::SlotManager::IsValidSlotId(slotId.AsChar()))
+    {
+        DIA_LOG_WARNING("CoW", "SaveLoadModule: load rejected, invalid slot id '%s'", slotId.AsChar());
+        return false;
+    }
     mPendingLoadSlot = slotId;
     mHasPendingLoad = true;
+    return true;
 }
 
 void SaveLoadModule::EnumerateSlots(Dia::Core::Containers::DynamicArrayC<Dia::SaveGame::SlotInfo, 32>& out) const
@@ -134,7 +183,11 @@ void SaveLoadModule::RegisterCommands()
             std::printf("usage: cow.save <slotId>\n");
             return 1;
         }
-        RequestSave(Dia::Core::StringCRC(args.positionalArgs[0]));
+        if (!RequestSave(Dia::Core::StringCRC(args.positionalArgs[0])))
+        {
+            std::printf("error: invalid slot id '%s' (use letters, digits, '_', '-', '.')\n", args.positionalArgs[0]);
+            return 1;
+        }
         std::printf("Save queued\n");
         return 0;
     };
@@ -149,7 +202,11 @@ void SaveLoadModule::RegisterCommands()
             std::printf("usage: cow.load <slotId>\n");
             return 1;
         }
-        RequestLoad(Dia::Core::StringCRC(args.positionalArgs[0]));
+        if (!RequestLoad(Dia::Core::StringCRC(args.positionalArgs[0])))
+        {
+            std::printf("error: invalid slot id '%s' (use letters, digits, '_', '-', '.')\n", args.positionalArgs[0]);
+            return 1;
+        }
         std::printf("Load queued\n");
         return 0;
     };
@@ -251,7 +308,10 @@ LoadResult SaveLoadModule::PreValidateLoad(Dia::Core::StringCRC slotId)
     if (!f)
         return LoadResult::Fail(LoadResultCode::FileReadError);
     const size_t bytes = std::fread(buffer.get(), 1, Dia::SaveGame::SaveManager::kBufferSize - 1, f);
+    const bool tooLarge = (bytes == Dia::SaveGame::SaveManager::kBufferSize - 1) && (std::fgetc(f) != EOF);
     std::fclose(f);
+    if (tooLarge)
+        return LoadResult::Fail(LoadResultCode::ParseError);
     buffer[bytes] = '\0';
 
     Json::Value root;
@@ -266,6 +326,32 @@ LoadResult SaveLoadModule::PreValidateLoad(Dia::Core::StringCRC slotId)
 
     if (manifest.CheckCompatibility(mRegistry) == Dia::SaveGame::CompatResult::EngineMismatch)
         return LoadResult::Fail(LoadResultCode::EngineMismatch);
+
+    // SaveManager::Load restores participants one by one, so a failure found midway would leave
+    // the game half-restored. Check every participant's version path up front instead.
+    for (uint32_t m = 0; m < manifest.GetParticipantCount(); ++m)
+    {
+        const Dia::SaveGame::ManifestParticipant& saved = manifest.GetParticipantAt(m);
+        uint32_t live = 0;
+        if (!FindParticipant(saved.id, live))
+            continue;   // not registered: ignored by Load
+        const uint32_t liveVersion = mRegistry.GetParticipantAt(live)->GetVersion();
+        if (saved.version > liveVersion)
+        {
+            DIA_LOG_ERROR("CoW", "SaveLoadModule: slot '%s' has '%s' at v%u but this build only reads v%u (downgrade)",
+                          slotId.AsChar(), saved.id.AsChar(), saved.version, liveVersion);
+            return LoadResult::Fail(LoadResultCode::MigrationError);
+        }
+        for (uint32_t from = saved.version; from < liveVersion; ++from)
+        {
+            if (!mRegistry.HasMigration(saved.id, from))
+            {
+                DIA_LOG_ERROR("CoW", "SaveLoadModule: slot '%s' needs migration for '%s' v%u->v%u, none registered",
+                              slotId.AsChar(), saved.id.AsChar(), from, from + 1);
+                return LoadResult::Fail(LoadResultCode::MigrationError);
+            }
+        }
+    }
 
     return LoadResult::Success();
 }

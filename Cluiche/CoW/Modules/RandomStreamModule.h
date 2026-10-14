@@ -68,7 +68,8 @@ private:
     Dia::Maths::RandomStreamManager mManager;
     Dia::ApplicationFlow::ModuleRef<SaveLoadModule> mSaveLoad{this};
     RandomStreamSaveParticipant mSaveParticipant{*this};
-    bool mSaveParticipantRegistered = false;
+    bool mSaveParticipantRegistered = false;   // registration attempted (one try)
+    bool mSaveParticipantOwned = false;        // our registration succeeded; only then unregister
 };
 
 } // namespace CoW

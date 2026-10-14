@@ -56,9 +56,12 @@ void RandomStreamModule::TryRegisterSaveParticipant()
         return;
     if (SaveLoadModule* sl = mSaveLoad.Get())
     {
-        sl->RegisterParticipant(Dia::Core::StringCRC("random_streams"), &mSaveParticipant);
         mSaveParticipantRegistered = true;
-        DIA_LOG_INFO("CoW", "RandomStreamModule: save participant 'random_streams' registered");
+        mSaveParticipantOwned = sl->RegisterParticipant(Dia::Core::StringCRC("random_streams"), &mSaveParticipant);
+        if (mSaveParticipantOwned)
+            DIA_LOG_INFO("CoW", "RandomStreamModule: save participant 'random_streams' registered");
+        else
+            DIA_LOG_ERROR("CoW", "RandomStreamModule: save participant 'random_streams' could not be registered");
     }
 }
 
@@ -67,9 +70,13 @@ void RandomStreamModule::UnregisterSaveParticipant()
 {
     if (!mSaveParticipantRegistered)
         return;
-    if (SaveLoadModule* sl = mSaveLoad.Get())
-        sl->UnregisterParticipant(Dia::Core::StringCRC("random_streams"));
+    if (mSaveParticipantOwned)
+    {
+        if (SaveLoadModule* sl = mSaveLoad.Get())
+            sl->UnregisterParticipant(Dia::Core::StringCRC("random_streams"));
+    }
     mSaveParticipantRegistered = false;
+    mSaveParticipantOwned = false;
 }
 
 //-----------------------------------------------------------------------------

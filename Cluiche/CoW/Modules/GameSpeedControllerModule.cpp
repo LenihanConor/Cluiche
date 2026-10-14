@@ -365,9 +365,12 @@ void GameSpeedControllerModule::TryRegisterSaveParticipant()
         return;
     if (SaveLoadModule* sl = mSaveLoad.Get())
     {
-        sl->RegisterParticipant(Dia::Core::StringCRC("game_speed"), &mSaveParticipant);
         mSaveParticipantRegistered = true;
-        DIA_LOG_INFO("CoW", "GameSpeedControllerModule: save participant 'game_speed' registered");
+        mSaveParticipantOwned = sl->RegisterParticipant(Dia::Core::StringCRC("game_speed"), &mSaveParticipant);
+        if (mSaveParticipantOwned)
+            DIA_LOG_INFO("CoW", "GameSpeedControllerModule: save participant 'game_speed' registered");
+        else
+            DIA_LOG_ERROR("CoW", "GameSpeedControllerModule: save participant 'game_speed' could not be registered");
     }
 }
 
@@ -375,9 +378,13 @@ void GameSpeedControllerModule::UnregisterSaveParticipant()
 {
     if (!mSaveParticipantRegistered)
         return;
-    if (SaveLoadModule* sl = mSaveLoad.Get())
-        sl->UnregisterParticipant(Dia::Core::StringCRC("game_speed"));
+    if (mSaveParticipantOwned)
+    {
+        if (SaveLoadModule* sl = mSaveLoad.Get())
+            sl->UnregisterParticipant(Dia::Core::StringCRC("game_speed"));
+    }
     mSaveParticipantRegistered = false;
+    mSaveParticipantOwned = false;
 }
 
 void GameSpeedSaveParticipant::Serialize(Dia::SaveGame::SaveContext& ctx) const

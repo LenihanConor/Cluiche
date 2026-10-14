@@ -48,12 +48,15 @@ public:
     const Dia::SaveGame::SaveConfig& GetConfig() const { return mConfig; }
 
     // Registration order is serialization order. Capped at SaveRegistry::kMaxParticipants.
-    void RegisterParticipant(Dia::Core::StringCRC id, Dia::SaveGame::ISaveable* participant);
+    // Returns false (and logs) for a null participant, a duplicate id or a full registry; the
+    // registry is left unchanged. Unregistering an unknown id is a logged no-op.
+    bool RegisterParticipant(Dia::Core::StringCRC id, Dia::SaveGame::ISaveable* participant);
     void UnregisterParticipant(Dia::Core::StringCRC id);
 
     // Record a request; it runs at the next DoUpdate, never inline. Last request wins per kind.
-    void RequestSave(Dia::Core::StringCRC slotId);
-    void RequestLoad(Dia::Core::StringCRC slotId);
+    // Returns false (and records nothing) when the slot id fails SlotManager::IsValidSlotId.
+    bool RequestSave(Dia::Core::StringCRC slotId);
+    bool RequestLoad(Dia::Core::StringCRC slotId);
     bool HasPendingSave() const { return mHasPendingSave; }
     bool HasPendingLoad() const { return mHasPendingLoad; }
 
@@ -85,6 +88,7 @@ private:
     void ExecuteLoad(Dia::Core::StringCRC slotId);
     // Reads the slot file and checks it would load. Returns Ok or the failing code.
     Dia::SaveGame::LoadResult PreValidateLoad(Dia::Core::StringCRC slotId);
+    bool FindParticipant(Dia::Core::StringCRC id, uint32_t& outIndex) const;
     void UpdateHealth();
     void RegisterCommands();
     void UnregisterCommands();
