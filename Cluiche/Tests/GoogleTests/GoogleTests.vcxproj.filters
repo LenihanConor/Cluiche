@@ -1892,5 +1892,8 @@
     <ClCompile Include="..\..\CoW\Modules\GameSpeedDebugDomain.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestSaveLoadModule.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
