@@ -34,6 +34,9 @@
     <ClCompile Include="Modules\F2TestRunnerModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\F2Fingerprint.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -64,6 +67,9 @@
       <Filter>Modules</Filter>
     </ClInclude>
     <ClInclude Include="Modules\F2TestRunnerModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\F2Fingerprint.h">
       <Filter>Modules</Filter>
     </ClInclude>
   </ItemGroup>

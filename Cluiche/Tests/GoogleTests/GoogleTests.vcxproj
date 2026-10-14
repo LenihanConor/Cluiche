@@ -894,6 +894,8 @@
     <ClCompile Include="CoW\TestSaveLoadIntegration.cpp" />
     <ClCompile Include="CoW\F2\TestF2TestRunnerModule.cpp" />
     <ClCompile Include="..\..\CoW\Modules\F2TestRunnerModule.cpp" />
+    <ClCompile Include="CoW\F2\TestF2Fingerprint.cpp" />
+    <ClCompile Include="..\..\CoW\Modules\F2Fingerprint.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
