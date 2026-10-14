@@ -39,7 +39,7 @@ Every CoW gameplay system advances on `SimulationTick`. Systems that work at a c
 SimPU (fixed rate, 30 Hz in cow_main.diaapp)
   └─ world SimTimeDomain           ← DiaSimTime (owns game time)
        scale = kGameTimePerDay / preset.wallSecondsPerDay
-       Pause() / Resume() / Step()
+       SetScale(0) for pause / Step()
   └─ GameSpeedControllerModule     ← this system
        each sim frame: if game time crossed the next day boundary
            → dayCounter += 1, publish SimulationTick{day, ResolveBand(day)}
@@ -47,8 +47,8 @@ SimPU (fixed rate, 30 Hz in cow_main.diaapp)
 
 - `kGameTimePerDay` is a fixed constant: **1 game-second = 1 day**. A `SimTimeScheduler` deadline of `+7.0s` therefore means "in one week".
 - DiaSimTime stores time as integer microseconds, so accumulation is exact and deterministic.
-- Paused = `SimTimeDomain::Pause()`. Game time stops, SimPU keeps ticking (UI, debug, and rendering still run).
-- Manual step = `SimTimeDomain::Step(time to next day boundary)`, which produces exactly one `SimulationTick` on the next sim frame.
+- Paused = world time scale 0 (`SetScale(0)`), **not** `SimTimeDomain::Pause()`. A paused world domain stops the entire SimPU forward pass (`ProcessingUnit::Update` skips all modules), so nothing, including this module and the bus, would run to resume it. With scale 0 game time stops and the SimPU keeps ticking (UI, debug, bus). `SetScale` is queued by `TimeServer` and applies on the following sim tick, so up to one frame of game time (< 1 day) can elapse after a pause request.
+- Manual step = `SimTimeDomain::Step(time to next day boundary)` (works at scale 0), which produces exactly one `SimulationTick` on the next sim frame.
 
 ### Determinism rule
 
@@ -131,7 +131,7 @@ Rules (GDD A2 §4–§6, EC-01 to EC-06):
 SpeedChangeRequested(tier):
     if modalDepth > 0:                       // added rule, see GDD deltas
         if tier == Paused: pauseSource = Player
-        else:              preModalSpeedTier = tier
+        else:              preModalSpeedTier = tier; pauseSource = Modal   // a speed pick is a resume on close
         return                               // stay paused while a modal is open
     if tier == Paused: speedTier = Paused; pauseSource = Player
     else:              speedTier = tier;   pauseSource = None   // selecting a speed is a resume
@@ -212,8 +212,8 @@ Read access is for UI, debug and E1 only. **Gameplay must not poll the day count
 
 | # | Feature | Description | Spec | Status |
 |---|---------|-------------|------|--------|
-| 1 | GameSpeedController Core | `GameSpeedController`, calendar (`ResolveBand`, `WeekOf`/`SeasonOf`/`YearOf`), `SpeedPresetConfig` validation: pause/modal state machine, speed→scale mapping, New Game/restore rules. Pure logic, TDD. | TBD | Approved |
-| 2 | GameSpeedControllerModule | SimModule wiring: `.diaapp` config load, bus subscriptions, world `SimTimeDomain` scale/pause/step, day-boundary detection (≤1 tick per frame), `SimulationTick` publishing, `cow_main.diaapp` entry | TBD | Approved |
+| 1 | GameSpeedController Core | `GameSpeedController`, calendar (`ResolveBand`, `WeekOf`/`SeasonOf`/`YearOf`), `SpeedPresetConfig` validation: pause/modal state machine, speed→scale mapping, New Game/restore rules. Pure logic, TDD. | TBD | Done |
+| 2 | GameSpeedControllerModule | SimModule wiring: `.diaapp` config load, bus subscriptions, world `SimTimeDomain` scale/pause/step, day-boundary detection (≤1 tick per frame), `SimulationTick` publishing, `cow_main.diaapp` entry | TBD | Done |
 
 **Routed elsewhere:** save/load serialization → E1 Feature 2. Speed/pause/step buttons → F-2 stage (Test 4), UI-I later.
 
@@ -222,7 +222,7 @@ Read access is for UI, debug and E1 only. **Gameplay must not poll the day count
 | ID | Decision | How it applies |
 |----|----------|----------------|
 | PD-002 | ProcessingUnit/Phase/Module architecture | `GameSpeedControllerModule` is a SimModule on SimPU; no singletons or statics |
-| AD-001 | Ask permission for Dia edits | No Dia changes needed; uses existing `SimTimeDomain::SetScale/Pause/Resume/Step` |
+| AD-001 | Ask permission for Dia edits | No Dia changes needed; uses existing `SimTimeDomain::SetScale/Step` |
 | AD-002 | Four-tier dependency model | CoW-Shared. Core logic uses no CoW types so it can be promoted to Dia if a second game needs it |
 | AD-003 | GDD owns design intent | GDD A2 owns the pause rules; deviations listed below for GDD update |
 
@@ -278,4 +278,4 @@ These are for the DesignDocs owner to fold back into A2:
 ## Status
 
 **Status:** `Approved` — 2026-10-13 (re-scoped from WorldClock)  
-**Plan:** TBD (create when implementation starts)
+**Plan:** @docs/specs/applications/cow/systems/gamespeedcontroller/gamespeedcontroller.plan.md
