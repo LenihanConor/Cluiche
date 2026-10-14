@@ -244,6 +244,9 @@
     <Filter Include="DiaVisualDebugger\Console">
       <UniqueIdentifier>{962cc1d4-2eda-41a1-98a2-afbcfe8ce603}</UniqueIdentifier>
     </Filter>
+    <Filter Include="CoW">
+      <UniqueIdentifier>{5ef0f0fe-fb6f-45d7-b05f-7456788a4e11}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -1873,6 +1876,18 @@
     </ClCompile>
     <ClCompile Include="DiaVisualDebugger\Console\TestPanelContract.cpp">
       <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestGameSpeedController.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestGameSpeedControllerModule.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\GameSpeedControllerModule.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestGameSpeedControllerObservability.cpp">
+      <Filter>CoW</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
