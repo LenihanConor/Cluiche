@@ -1,0 +1,24 @@
+**Spec:** @docs/specs/applications/cow/systems/f2-core-runtime/f2-core-runtime.md
+**Status:** In Progress
+
+Scenario: Save, Reload, Replay. Checks C1-C6 are raised inside it. Build order follows the scenario phases so each task leaves a runnable, partly-green stage.
+
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| 0 | Confirm a clean reset to tick 0 with re-seed is possible (phase 6 depends on it) | Short probe of reset path; outcome noted in Open items 2 | Pending | sonnet | Gate for tasks 2-6. No code beyond a probe. |
+| 1 | Scaffold `F2CoreRuntimeStage` (`dia scaffold stage` or the CoW stage pattern), `.diastage`, Boot transition, `F2TestRunnerModule` shell with phase/check enums (StringCRC ids), `RunScenario`, `GetCheckStatus`, `GetLastResult`, `GetCurrentPhase`, events | RED-GREEN: check status starts NotRun, phase advances in order, events fire (`GoogleTests/CoW/F2`) | Pending | sonnet | Wires GameSpeedController, SaveLoad, RandomStream modules into the stage manifest. vcxproj via `dia docs vcxproj-add`. |
+| 2 | Fingerprint: capture/compare of 8 stream states (seed + draw count), day counter, GameSpeedController state, using the existing save participants' state accessors | RED-GREEN: equal state gives equal fingerprint; any one-field change differs | Pending | sonnet | Compare, do not hash, so a failure can name the field. |
+| 3 | Phase 0 + C1: interleaved vs isolated draws across 8 streams | RED-GREEN: pass on real streams; a deliberately shared-state fake fails | Pending | sonnet | Uses `RandomStreamModule` as built. |
+| 4 | Phases 1-3 + C4: scripted session 0-500 (all presets, pause, two nested modals, single-step), per-tick stream draws, inline clock assertions, save at 500 (F500), reference future to 1000 (F1000 + 800 draws) | RED-GREEN: transitions match `gamespeedcontroller.md`; a seeded clock fault trips C4 | Pending | sonnet | Script is sim-only stubs. Depends on tasks 0-2. |
+| 5 | Phases 4-5 + C5a, C3: `cow.load quick`, fingerprint == F500, replay remainder, fingerprint == F1000 and 800 / 800 draws | RED-GREEN: pass end to end; corrupting one stream's saved draw count fails C3 | Pending | sonnet | E1 task 6 already proves the round trip headless; this proves it on the live stage. |
+| 6 | Phases 6-7 + C2, C5b: full rerun from seed S, fingerprint at 1000 equal; failed load from missing / corrupt slot leaves file and live state untouched | RED-GREEN: pass; injected nondeterminism fails C2; failed load leaves fingerprint unchanged | Pending | sonnet | Needs the reset path from task 0. |
+| 7 | C6 load path: stub dragon record with authored bands, resolver runs once on load, stable floats, no re-resolve on live read without `band_schema_version` bump | RED-GREEN: invocation count == 1; changed bands without a bump leave floats unchanged | Pending | sonnet | Consumes DiaAttribute Feature 7 (Done). Hatch path deferred until B6. |
+| 8 | `TestRunnerPanel` (phase strip, 6 check rows, Run Scenario) and speed / pause / step buttons posting the GameSpeedController bus messages | HTML mockup approved first (editor-feature rule); then manual run of the stage | Pending | sonnet | Mockup is the visual gate. Buttons publish `SpeedChangeRequested` / `ManualAdvanceRequested`. Business logic stays in the module; UI reads status only. |
+| 9 | Full run: `dia run cow` F-2 stage, all of C1-C5, C6 load path green; amend spec and GDD note; observation scan | Verification gate with quoted output | Pending | haiku | Report pass/fail only per project rules. GDD amendment is in the DesignDocs repo. |
+
+## Open items
+
+1. ~~**Scenario driver.**~~ Decided 2026-10-14: `F2TestRunnerModule` runs the scenario as an internal phase state machine; `DiaAutomation` (an external-driver layer, not a script runner) only triggers `RunScenario` and reads results. Spec wording and Decision 6 amended.
+2. **Reset to tick 0.** Phase 6 needs the sim, SimTime, GameSpeedController and all 8 streams to reset and re-seed in-process. If that is not cleanly possible, phase 6 reloads a tick-0 save instead.
+3. **Hatch path of C6.** Deferred until B6 exists.
+4. **Dragon stub shape** (spec Open Design Question 2) for task 7.

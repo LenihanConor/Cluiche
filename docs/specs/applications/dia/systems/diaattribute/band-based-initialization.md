@@ -1,7 +1,7 @@
 # Feature Spec: DiaAttribute Band-Based Initialization
 
 **Parent:** @docs/specs/applications/dia/systems/diaattribute/diaattribute.md  
-**Status:** `Draft`
+**Status:** `Done`
 
 ## Summary
 

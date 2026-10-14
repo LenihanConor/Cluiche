@@ -9,7 +9,7 @@
 
 F-2 Core Runtime is a CoW testbed stage that proves the runtime foundation every other testbed stands on: deterministic RNG architecture (8 independent streams), GameSpeedController integration (speed control, pause, time bands), save/load round-trip, and band resolver behavior (DiaAttribute Feature 7). Unlike F-1, most of what F-2 touches is already designed elsewhere (GameSpeedController, E1 Save/Load); F-2's new design surface is the testbed itself and the RNG stream architecture (8 named streams: WLD, A1, B4, B6, C1, C2, B5, C4).
 
-This is a **dev-facing validation harness**, not player-facing gameplay. It runs 6 independent tests, each with pass/fail criteria, accessible from the debug menu like every other testbed. F-2 uses `DiaAutomation` for test orchestration (scripted action sequences, determinism proofs).
+This is a **dev-facing validation harness**, not player-facing gameplay, accessible from the debug menu like every other testbed. It runs **one story**: *save, reload, replay*. A scripted session is saved mid-way, the reference future is recorded, the save is reloaded and the same remainder replayed, and the two futures must be bit-identical. The six GDD tests (Tests 1-6) are retained as named **checks** that report pass/fail inside that story. `F2TestRunnerModule` runs the script as an internal phase state machine; `DiaAutomation` can trigger `RunScenario` and read results from outside.
 
 ## Problem
 
@@ -24,12 +24,10 @@ Without F-2, every subsequent testbed would discover foundation bugs late (S-4 D
 
 ## Goals
 
-1. **RNG stream independence** — Prove 8 dedicated streams (WLD, A1, B4, B6, C1, C2, B5, C4) draw sequences independently with no shared state leaks (Test 1)
-2. **Determinism proof** — Same seed + same script = identical simulation state, zero divergence over 1,000 ticks (Test 2)
-3. **RNG save/load proof** — All 8 streams round-trip exactly through save/load; reload continues the exact sequence unsaved play would have produced (Test 3)
-4. **GameSpeedController integration** — Prove speed presets, pause, modal nesting, single-step work on a live CoW stage matching GDD A2 spec (Test 4). F-2 owns the speed/pause/step buttons that drive it
-5. **E1 integration** — Prove autosave cadence, atomic write, serialize/restore contract work on a live CoW stage matching GDD E1 spec (Test 5)
-6. **Band resolver timing** — Prove resolver runs exactly once per dragon (on load or hatch), produces stable floats, never re-resolves on live reads (Test 6)
+1. **One cohesive proof** — Save mid-session, reload, replay: the reloaded future is bit-identical to the unsaved future, and a second run from the same seed is identical to the first
+2. **Report six named checks** inside that proof (C1-C6, the GDD Tests 1-6), so a failure points at the broken system: streams, determinism, RNG save/load, clock, save/load, band resolver
+3. **Own the speed/pause/step buttons** that drive GameSpeedController, used by the script and by hand
+4. **Be the base the later testbeds extend** — each new system adds its actions to the script and its state to the fingerprint, getting determinism and save/load coverage for free
 
 ## Non-Goals
 
@@ -41,16 +39,17 @@ Without F-2, every subsequent testbed would discover foundation bugs late (S-4 D
 
 ## Architecture
 
-### Test Structure
+### Scenario Structure
 
-F-2 is built as one `F2CoreRuntimeStage` with `F2TestRunnerModule` orchestrating 6 independent tests. Each test is a discrete scenario with pass/fail reporting. Tests can run individually or as a full suite. The stage UI shows:
+F-2 is built as one `F2CoreRuntimeStage` with `F2TestRunnerModule` running one scenario, **Save, Reload, Replay**, as an internal phase state machine (`DiaAutomation` is an external-driver layer, so it only triggers `RunScenario` and reads check results). The question it answers: *if we save a game and reload it, do we get exactly the future we would have had?* A **fingerprint** is captured at each checkpoint: the 8 stream states (seed + draw count), the day counter, and the GameSpeedController state. Tests 1-6 from the GDD are **checks** raised at the point in the story where they naturally occur, each reporting Not Run / Running / Pass / Fail.
 
-- Test list (6 rows: Test 1 to Test 6)
-- Status per test (Not Run / Running / Pass / Fail)
-- Last result summary (e.g., "Zero divergence over 1,000 ticks")
-- Run buttons (individual test, run all)
+The stage UI shows:
 
-Tests 2 and 3 use `DiaAutomation` for scripted action sequences (spawn dragon, issue decree, advance N ticks). Tests 1, 4, 5, 6 are direct API exercise.
+- The scenario phases with the current phase highlighted
+- The 6 checks (C1-C6) with status and last result summary (e.g. "800 / 800 draws match")
+- Run Scenario button, plus the speed / pause / step buttons the scripted session uses (and a developer can also drive by hand)
+
+Until dragon and decree systems exist, the script uses sim-only stub actions (speed changes, pause/resume, modal open/close, draws on named streams, advance N ticks); real actions replace them as systems land and extend the fingerprint.
 
 ### RNG Stream Architecture
 
@@ -70,94 +69,40 @@ Each stream is independently seeded at `WorldGenerationComplete` from the master
 
 ### Dependency on GameSpeedController, E1, DiaAttribute Feature 7
 
-- **GameSpeedController** — Test 4 depends on `GameSpeedControllerModule` + `SpeedChangeRequested` / `ManualAdvanceRequested` / `ModalOpened` / `ModalClosed` events + `SimulationTick` broadcasting (all defined in `gamespeedcontroller.md`, system Approved)
-- **E1 Save/Load** — Test 5 depends on `SaveLoadModule` + `SaveRequested` / `LoadRequested` events + `serialize_state()` / `restore_state()` contract (all defined in `e1-saveload.md`, system Approved)
-- **DiaAttribute Feature 7** — Test 6 depends on `InitializeFromBands()` API, band schema (NONE/LOW/BASELINE/MEDIUM/HIGH/APEX), `band_schema_version` support (spec Draft at `diaattribute/band-based-initialization.md`)
+- **GameSpeedController** — C4 depends on `GameSpeedControllerModule` + `SpeedChangeRequested` / `ManualAdvanceRequested` / `ModalOpened` / `ModalClosed` events + `SimulationTick` broadcasting (all defined in `gamespeedcontroller.md`, system Approved)
+- **E1 Save/Load** — C5 depends on `SaveLoadModule`, the `cow.save` / `cow.load` commands and the `ISaveable` participants (GameSpeedController, RandomStream) registered through it (defined in `e1-saveload.md`; the `SaveRequested` / `LoadRequested` bus events are not built)
+- **DiaAttribute Feature 7** — C6 depends on `InitializeFromBands()` API, band schema (NONE/LOW/BASELINE/MEDIUM/HIGH/APEX), `band_schema_version` support (Done; `diaattribute/band-based-initialization.md`)
 
 F-2 exercises these systems as-is; no redesign or extension work in F-2's scope (GDD F-2 decision 5).
 
-## Test Scenarios
+## Scenario: Save, Reload, Replay
 
-### Test 1: Stream Independence
+**Setup:** Master seed S. 8 streams seeded from S. GameSpeedController, SaveLoadModule and stub dragon record (authored bands, `band_schema_version`) in place.
 
-**Setup:** 8 dedicated streams initialized with arbitrary seeds.
+| Phase | Ticks | What happens | Checks raised |
+|---|---|---|---|
+| 0 Isolation | - | Draw interleaved from the 8 streams (A1, C4, A1, WLD, ...); compare each stream against drawing from it alone | **C1** |
+| 1 Session | 0-500 | Scripted run: every speed preset, player pause, two nested modals (closing one must not resume), manual single-step while paused; each tick draws from the streams. Dragon record loaded via the band resolver | **C4** (inline transition assertions), **C6** (load path) |
+| 2 Save | 500 | `cow.save quick`; capture fingerprint F500 | - |
+| 3 Reference future | 500-1000 | Continue the session; capture fingerprint F1000 and the next 100 draws from each stream (800 values) | - |
+| 4 Reload | 500 | `cow.load quick`; fingerprint must equal F500 | **C5** |
+| 5 Replay | 500-1000 | Replay the same remainder; fingerprint must equal F1000; the 800 draws must match the reference | **C3** |
+| 6 Rerun | 0-1000 | Reset, run the whole script again from seed S; fingerprint at 1000 must equal F1000 | **C2** |
+| 7 Failed load | - | `cow.load` from a missing / corrupt slot | **C5** (part b) |
 
-**Action:** Draw a sequence from each stream in an interleaved order (e.g., draw from A1, then C4, then A1 again, then WLD). Record each stream's output sequence.
+### Checks
 
-**Expected:** Each stream's output sequence matches drawing from it alone, uninterrupted by the others. No shared state leaks between streams.
+**C1 Stream independence (GDD Test 1).** Pass: all 8 interleaved sequences equal their isolated baseline. Fail: any stream diverges when interleaved, i.e. shared state leaks.
 
-**Pass condition:** All 8 sequences match their isolated-draw baseline.
+**C2 Determinism (GDD Test 2).** Pass: second run's fingerprint at tick 1000 equals the first; divergence count 0 over 1,000 ticks. Fail: any stream position, day counter or GameSpeedController field differs.
 
-**Failure condition:** Any stream's sequence diverges when interleaved vs. isolated.
+**C3 Save/load RNG round trip (GDD Test 3).** Pass: the reloaded replay's 800 draws (100 x 8 streams) match the reference future exactly, 800 / 800. Fail: any value differs.
 
-### Test 2: Determinism Round Trip
+**C4 Clock proof (GDD Test 4).** Pass: every transition in phase 1 matches `gamespeedcontroller.md`: season rate per configured preset within tolerance, pause state, `modalDepth` bookkeeping, at most one `SimulationTick` per sim frame. Fail: wrong rate, modal nesting violation, unexpected resume, skipped or double season tick.
 
-**Setup:** `DiaAutomation` script with a fixed action sequence (e.g., spawn dragon, issue Hunt decree, advance 1,000 ticks).
+**C5 Save/load proof (GDD Test 5).** (a) Pass: after `cow.load quick`, the fingerprint equals F500 exactly (day counter, GameSpeedController state, RNG continuation). (b) Pass: a load from a missing or corrupt slot reports an error and leaves the existing quick-save file and live state untouched. Fail: any restored field differs, or a failed load alters the file or live state. Autosave cadence and kill-mid-write fault injection are out of scope per `e1-saveload.md`.
 
-**Action:** Run script twice from the same master seed. Record all 8 streams' final positions and resulting world state.
-
-**Expected:** Both runs produce bit-identical stream positions and world state.
-
-**Pass condition:** Zero divergence across all 8 streams and world state over 1,000 ticks.
-
-**Failure condition:** Any stream position or world state field differs between the two runs.
-
-**Metrics:** Divergence count (must be 0), tick count (1,000).
-
-### Test 3: Save/Load RNG Round Trip
-
-**Setup:** Same `DiaAutomation` script as Test 2.
-
-**Action:** Run seeded session, save at tick 500, continue unsaved to tick 600 recording each stream's next 100 draws (800 values total). Separately, reload the tick-500 save and draw the same 100 values from each stream.
-
-**Expected:** Both sets (saved-and-reloaded vs. unsaved-continuation) match exactly.
-
-**Pass condition:** Exact match on 800 values (100 draws × 8 streams).
-
-**Failure condition:** Any RNG value differs between reload and unsaved continuation.
-
-**Metrics:** Match count (must be 800 / 800).
-
-### Test 4: Clock Proof
-
-**Setup:** GameSpeedControllerModule initialized on a live CoW stage, speed presets loaded from config.
-
-**Action:** Exercise Pause and all four presets (Slow/Normal/Fast/Fastest), player pause, nested modal auto-pause (open two modals, confirm closing one doesn't resume), manual single-step while paused.
-
-**Expected:** Every transition matches `A2_TechnicalSpec.md` / `gamespeedcontroller.md` (season rate per configured preset within tolerance, pause state, modalDepth bookkeeping, at most one `SimulationTick` per sim frame).
-
-**Pass condition:** All transitions match spec behavior.
-
-**Failure condition:** Season rate doesn't match the configured preset, modal nesting violation, unexpected resume, or a skipped/double season tick.
-
-### Test 5: Save/Load Proof
-
-**Setup:** E1 SaveLoadModule initialized on a live CoW stage.
-
-**Action:** Exercise autosave firing on season-count schedule, manual save request, atomic write (fault injection if feasible: kill process mid-write, confirm prior save intact), failed load leaves existing file untouched.
-
-**Expected:** Every behavior matches `e1-saveload.md` exactly (autosave cadence, atomic write guarantees, error handling).
-
-**Pass condition:** All E1 behaviors match spec.
-
-**Failure condition:** Autosave skipped, corrupt save written, failed load overwrites good file.
-
-### Test 6: Band Resolver Timing
-
-**Setup:** Dragon record with authored bands (BASELINE for health, HIGH for strength, etc.).
-
-**Action:** 
-1. Load dragon, confirm resolver runs exactly once, produces stable floats
-2. Change dragon's bands in memory without bumping `band_schema_version`
-3. Confirm cached floats do not change (no re-resolve on live read)
-4. Separately, hatch a new dragon mid-session (egg → Young via B6)
-5. Confirm identical resolution step runs once at `on_hatch`, produces stable floats same way as load path
-
-**Expected:** Resolver invoked exactly once per dragon record (across both triggers: load and hatch), never re-invoked on live reads.
-
-**Pass condition:** Invocation count = 1 per dragon, cached floats stable across live reads.
-
-**Failure condition:** Resolver invoked >1 times per dragon, or cached floats change without `band_schema_version` bump.
+**C6 Band resolver timing (GDD Test 6).** Load path: loading the dragon record runs the resolver exactly once and produces stable floats. Changing the record's bands in memory without bumping `band_schema_version` leaves the cached floats unchanged (no re-resolve on live read). Hatch path (egg -> Young via B6) must run the same single resolution at `on_hatch`; deferred until B6 exists. Pass: invocation count = 1 per dragon, floats stable. Fail: more than one invocation, or floats change without a version bump.
 
 ## Public Interface
 
@@ -165,43 +110,43 @@ F-2 exercises these systems as-is; no redesign or extension work in F-2's scope 
 
 - **`F2CoreRuntimeStage`** — Testbed stage class (inherits from `DiaStage`)
   - Registered in CoW Boot stage transitions (per AD-005)
-  - Initializes `F2TestRunnerModule` + `GameSpeedControllerModule` + `SaveLoadModule` + stub dragon data for Test 6
+  - Initializes `F2TestRunnerModule` + `GameSpeedControllerModule` + `SaveLoadModule` + stub dragon data for C6
 
 ### Module
 
-- **`F2TestRunnerModule`** — Test orchestration module
-  - `RunTest(TestId)` — Run one of the 6 tests
-  - `RunAllTests()` — Run full suite sequentially
-  - `GetTestStatus(TestId) -> TestStatus` — Query test result (NotRun / Running / Pass / Fail)
-  - `GetLastResult(TestId) -> string` — Last result summary for UI display
+- **`F2TestRunnerModule`** — Scenario orchestration module
+  - `RunScenario()` — Run Save, Reload, Replay end to end
+  - `GetCheckStatus(CheckId) -> CheckStatus` — C1-C6 result (NotRun / Running / Pass / Fail)
+  - `GetLastResult(CheckId) -> string` — Last result summary for UI display
+  - `GetCurrentPhase() -> PhaseId` — For the phase strip in the UI
 
 ### Events (internal to F2)
 
-- **`TestStarted{TestId}`** — Fired when a test begins
-- **`TestCompleted{TestId, Pass/Fail, ResultSummary}`** — Fired when a test finishes
-- **`AllTestsCompleted{PassCount, FailCount}`** — Fired when suite finishes
+- **`PhaseEntered{PhaseId}`** — Fired when a scenario phase begins
+- **`CheckCompleted{CheckId, Pass/Fail, ResultSummary}`** — Fired when a check resolves
+- **`ScenarioCompleted{PassCount, FailCount}`** — Fired when the scenario finishes
 
 ### UI
 
-- **TestRunnerPanel** — Shows 6 test rows, status, run buttons
+- **TestRunnerPanel** — Shows scenario phases, 6 check rows, status, Run Scenario and speed/pause/step buttons
   - Built with CoW's debug UI toolkit (same as F-1 Harness)
-  - Displays pass/fail status, last result summary, elapsed time per test
+  - Displays pass/fail status, last result summary, elapsed time per phase
 
 ## Dependencies
 
 ### Systems (CoW)
 
-- **GameSpeedController** — Approved (re-scoped from WorldClock, 2 features), not built yet; F-2 Test 4 exercises it
-- **E1 Save/Load** — Approved (5 features Approved), not built yet; F-2 Test 5 exercises it
+- **GameSpeedController** — Approved; core, module and save participant built; F-2 check C4 exercises it. The speed/pause/step buttons are F-2's to build
+- **E1 Save/Load** — Approved; `SaveLoadModule` shell, `cow.save`/`cow.load` and participants for GameSpeedController and RandomStream built or in progress; F-2 check C5 exercises it
 
 ### Features (Dia)
 
-- **DiaAttribute Feature 7** (band-based initialization) — Draft spec exists; F-2 Test 6 exercises it
-- **RandomStreamManager** (multi-stream RNG) — ✅ Done (commit d0bb72ed); F-2 Tests 1-3 ready to build
+- **DiaAttribute Feature 7** (band-based initialization) — ✅ Done; F-2 check C6 exercises it
+- **RandomStreamManager** (multi-stream RNG) — ✅ Done (commit d0bb72ed); scenario phases 0, 3, 5, 6 ready to build
 
 ### Modules (Dia)
 
-- **DiaAutomation** — Exists (used by CluicheTest); Tests 2 and 3 drive scripted action sequences through it
+- **DiaAutomation** — Exists (used by CluicheTest); optional external trigger for `RunScenario` and result readout, not the script runner
 - **DiaSimTime** — Exists and Done; GameSpeedController drives its world time scale/pause
 - **DiaSaveGame** — Exists and Done; E1 wraps it
 
@@ -211,15 +156,15 @@ F-2 exercises these systems as-is; no redesign or extension work in F-2's scope 
 
 | ID | Decision | Rationale | Scope | Impact on this system |
 |----|----------|-----------|-------|----------------------|
-| PD-001 | StringCRC for all entity/component IDs | Compile-time hashing, prevents typos | Platform-wide | F-2 test IDs (Test1-Test6) use StringCRC for identification |
-| PD-002 | ProcessingUnit/Phase/Module architecture | Multi-threaded execution, explicit lifecycle | Platform-wide | F2CoreRuntimeStage uses PU/Phase/Module pattern; F2TestRunnerModule orchestrates tests |
+| PD-001 | StringCRC for all entity/component IDs | Compile-time hashing, prevents typos | Platform-wide | F-2 check and phase IDs (C1-C6) use StringCRC for identification |
+| PD-002 | ProcessingUnit/Phase/Module architecture | Multi-threaded execution, explicit lifecycle | Platform-wide | F2CoreRuntimeStage uses PU/Phase/Module pattern; F2TestRunnerModule orchestrates the scenario |
 | PD-004 | No STL containers in public APIs | Consistent memory management | Platform-wide | F2TestRunnerModule returns Dia containers (DynamicArrayC) for test results |
 | PD-007 | C++20 required | Modern C++ features | Platform-wide | F-2 code compiles under `/std:c++20` |
 | PD-010 | `.diagame` is project root, `.diastage` declares stages | Typed imports, tooling discovery | Platform-wide | F-2 has a `.diastage` file (name + manifest path) listed in CoW Boot transitions |
-| AD-001 | Permission guardrail for Dia/Baseline edits | Explicit sign-off required | CoW app | F-2 flags RandomManager as Dia-need in `dia-needs.md`, does not implement it locally |
+| AD-001 | Permission guardrail for Dia/Baseline edits | Explicit sign-off required | CoW app | RandomManager was flagged in `dia-needs.md` (row 10) and built in Dia as `RandomStreamManager`; F-2 only consumes it |
 | AD-002 | Four-tier model classification | Prevents leakage, reusable code at right layer | CoW app | F-2 classifies every capability: RandomManager → Dia (row 10), TestRunnerPanel → Feature-local |
 | AD-003 | GDD owns design, spec owns implementation | One source of truth per concern | CoW app | F-2 spec defers to GDD F2_CoreRuntime.md for test scenarios / pass metrics; this spec owns class/module structure |
-| AD-005 | One stage per testbed | Reuses Boot transition pattern | CoW app | F-2 is one stage with 6 tests inside, not 6 separate stages |
+| AD-005 | One stage per testbed | Reuses Boot transition pattern | CoW app | F-2 is one stage with one scenario and 6 checks, not separate stages |
 
 ## Features
 
@@ -227,21 +172,23 @@ F-2 exercises these systems as-is; no redesign or extension work in F-2's scope 
 
 F-2 is a testbed stage, not a capability layer — it has no features of its own. It exercises systems with their own feature specs:
 
-- GameSpeedController → 2 features (Approved, not built) at `gamespeedcontroller.md`
-- E1 Save/Load → 5 features (Approved, not built) at `e1-saveload.md`
-- DiaAttribute Feature 7 → 1 feature (Draft) at `diaattribute/band-based-initialization.md`
+- GameSpeedController → 2 features (Approved, partly built) at `gamespeedcontroller.md`
+- E1 Save/Load → 5 features (Approved, partly built) at `e1-saveload.md`
+- DiaAttribute Feature 7 → 1 feature (Done) at `diaattribute/band-based-initialization.md`
 
 ## Open Design Questions
 
 <!-- AI: Real uncertainties or risks surfaced during spec authoring. Skip if straightforward. -->
 
-1. **Test 5 atomic write fault injection** — "Kill process mid-write, confirm prior save intact" is the ideal test, but requires fault injection tooling Dia may not have. Fallback: test atomic write guarantees via file system state inspection (temp file cleanup, no partial writes). Decide during implementation.
+1. **Scenario stub fidelity** — Sim-only stub actions prove determinism of the clock and RNG, not of any gameplay system. Each system that lands should extend the script and the compared state; decide whether that is done in F-2 or in the owning testbed.
 
-3. **Test 6 dragon stub data** — How much of a dragon record does Test 6 need? Minimal: `DragonID`, `band_schema_version`, authored bands (BASELINE health, HIGH strength, etc.), resolved floats storage. If B6 Dragon Lifecycle isn't built yet when F-2 starts, Test 6 step 4 (hatch trigger) gets deferred until B6 exists, and Test 6 only proves the load path initially.
+2. **C6 dragon stub data** — How much of a dragon record does C6 need? Minimal: `DragonID`, `band_schema_version`, authored bands (BASELINE health, HIGH strength, etc.), resolved floats storage. If B6 Dragon Lifecycle isn't built yet when F-2 starts, the C6 hatch path gets deferred until B6 exists, and C6 only proves the load path initially.
 
 ## Status
 
-`Approved` — 2026-10-11
+`Approved` — 2026-10-11 (amended 2026-10-14: single-scenario structure, Test 5 scoped to E1, Feature 7 Done, scenario driver)
+
+Plan: @docs/specs/applications/cow/systems/f2-core-runtime/f2-core-runtime.plan.md
 
 ## GDD Cross-Reference
 
@@ -253,10 +200,10 @@ F-2 is a testbed stage, not a capability layer — it has no features of its own
 - Decision 3: Band resolver runs once per dragon (load or hatch)
 - Decision 4: No debug "force re-resolve" command (rejected, scope creep)
 - Decision 5: A2 and E1 are proven, not redesigned
-- Decision 6: DiaAutomation drives Tests 2 and 3
+- Decision 6: scripted scenario (GDD: DiaAutomation drives Tests 2 and 3). Amended: the module runs the script itself; DiaAutomation is only the external trigger
 - Decision 7: RandomManager enforces no bypass in debug builds
 
-**Test Scenarios:** Lifted verbatim from GDD Section 5.
+**Test Scenarios:** GDD Section 5's six tests are preserved as checks C1-C6 with their pass conditions. This spec restructures them into a single Save, Reload, Replay scenario; the GDD (Locked 2026-10-09) still describes six independent tests and needs a matching amendment.
 
 **Metrics:** From GDD Section 6:
 - Determinism: zero divergence over 1,000 ticks
