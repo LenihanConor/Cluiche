@@ -1,5 +1,6 @@
 #include "F2TestRunnerModule.h"
 #include "F2StreamIndependence.h"
+#include "F2DragonStub.h"
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaObservation/Log/DiaLog.h>
@@ -381,6 +382,7 @@ void F2TestRunnerModule::RunSession()
         mStartSaveDone = true;
         if (!mStartSaveOk)
             DIA_LOG_ERROR("CoW", "F2: start save did not complete successfully");
+        RunBandResolverCheck();   // C6 load path; touches no stream, clock or fingerprint state
         return;
     }
 
@@ -470,6 +472,64 @@ void F2TestRunnerModule::RunSession()
 
     DrawForTick(mScenarioTick);
     ++mScenarioTick;
+}
+
+//-----------------------------------------------------------------------------
+// C6 load path (the hatch path stays deferred until B6 exists). Loads a stub dragon record through the
+// band resolver, then proves: live reads never re-resolve, editing bands without a band_schema_version
+// bump changes nothing, and (negative control) a version bump + explicit reload is the one thing that
+// re-resolves. Self-contained: no RNG draws, no clock or bus traffic, nothing in the fingerprints.
+void F2TestRunnerModule::RunBandResolverCheck()
+{
+    F2DragonStub dragon;
+    dragon.SetReResolveOnRead(mBandResolverFault);
+    dragon.Load(F2DragonRecord{});
+
+    constexpr F2DragonAttr kAttrs[kF2DragonAttrCount] = {
+        F2DragonAttr::Health, F2DragonAttr::Strength, F2DragonAttr::Agility, F2DragonAttr::Fertility };
+    float cached[kF2DragonAttrCount];
+    for (int a = 0; a < kF2DragonAttrCount; ++a)
+        cached[a] = dragon.Read(kAttrs[a]);
+
+    bool stable = true;
+    for (int pass = 0; pass < 3; ++pass)
+        for (int a = 0; a < kF2DragonAttrCount; ++a)
+            stable = stable && (dragon.Read(kAttrs[a]) == cached[a]);
+
+    // Edit the in-memory bands without bumping band_schema_version: nothing may change.
+    for (int a = 0; a < kF2DragonAttrCount; ++a)
+        dragon.MutableRecord().bands[a] = F2Band::Apex;
+    dragon.ReloadIfVersionChanged();   // version unchanged: must be a no-op
+    for (int a = 0; a < kF2DragonAttrCount; ++a)
+        stable = stable && (dragon.Read(kAttrs[a]) == cached[a]);
+    const uint32_t invocations = dragon.GetResolverInvocations();
+
+    // Negative control: the version bump is the only trigger, and it does re-resolve and change floats.
+    // Not part of the pass count above; it proves the check can see a re-resolve at all.
+    dragon.SetReResolveOnRead(false);
+    dragon.MutableRecord().bandSchemaVersion += 1;
+    const bool reloaded = dragon.ReloadIfVersionChanged();
+    bool changed = false;
+    for (int a = 0; a < kF2DragonAttrCount; ++a)
+        changed = changed || (dragon.Read(kAttrs[a]) != cached[a]);
+    const bool controlOk = reloaded && changed && dragon.GetResolverInvocations() == invocations + 1;
+
+    char summary[kSummaryLen];
+    bool pass = false;
+    if (invocations != 1)
+        std::snprintf(summary, sizeof(summary), "%u resolver invocations, expected 1", invocations);
+    else if (!stable)
+        std::snprintf(summary, sizeof(summary), "1 resolver invocation, but floats changed without a version bump");
+    else if (!controlOk)
+        std::snprintf(summary, sizeof(summary), "version bump + reload did not re-resolve (negative control)");
+    else
+    {
+        pass = true;
+        std::snprintf(summary, sizeof(summary), "1 resolver invocation, floats stable");
+    }
+    CompleteCheck(F2CheckId::BandResolver, pass, summary);
+    if (!pass)
+        DIA_LOG_ERROR("CoW", "F2 C6 failed: %s", summary);
 }
 
 //-----------------------------------------------------------------------------

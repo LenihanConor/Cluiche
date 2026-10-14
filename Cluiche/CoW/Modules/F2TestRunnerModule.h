@@ -90,6 +90,9 @@ public:
     F2PhaseId GetCurrentPhase() const { return mPhase; }
     bool IsRunning() const { return mRunning || mRunPending; }
 
+    // Test hook: makes the C6 stub dragon re-resolve on every read, so C6 must fail. Survives RunScenario.
+    void SetBandResolverFaultForTest(bool enable) { mBandResolverFault = enable; }
+
     // ---- Results of phases 1-3 (valid once the scenario has passed the phase noted) ----
     uint32_t GetScenarioTick() const { return mScenarioTick; }
     // Phase 2: did the quick save complete successfully?
@@ -157,6 +160,7 @@ private:
     void FinishC5a(bool passed, const char* detail);
     void FinishC2(bool passed, const char* summary);
     void FinishC5b(bool passed, const char* detail);
+    void RunBandResolverCheck();  // C6 load path, at tick 0 of phase 1
     void FinishRerunComparison(bool haveLive, const std::array<int, kF2ReferenceDrawCount>& draws);
 
     // One step of "request a slot operation, then wait for it to execute at the frame boundary".
@@ -244,6 +248,8 @@ private:
     RerunStage       mRerunStage = RerunStage::LoadStart;
     F2Fingerprint    mFRerun500;
     F2Fingerprint    mFRerun1000;
+
+    bool             mBandResolverFault = false;
 
     // Phase 7 (failed loads).
     enum class FailStage : uint8_t { Quiesce, Begin, MissingLoad, CorruptLoad };

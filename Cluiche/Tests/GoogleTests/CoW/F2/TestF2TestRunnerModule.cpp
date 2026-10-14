@@ -293,15 +293,53 @@ TEST(SLOW_F2TestRunnerModule, EventsFireInOrderAndScenarioCompletesOnce)
 
     ASSERT_EQ(f.completions.size(), 1u);
     EXPECT_EQ(f.runner->GetCurrentPhase(), F2PhaseId::Idle);
-    // C1-C5 are resolved; C6 (band resolver) is plan task 7.
+    // C1-C6 are all resolved.
     EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::StreamIndependence), F2CheckStatus::Pass);
     EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::Determinism), F2CheckStatus::Pass);
     EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::SaveLoadRng), F2CheckStatus::Pass);
     EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::ClockProof), F2CheckStatus::Pass);
     EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::SaveLoadProof), F2CheckStatus::Pass);
-    EXPECT_EQ(f.completions[0].passCount, 5u);
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::BandResolver), F2CheckStatus::Pass);
+    EXPECT_EQ(f.completions[0].passCount, 6u);
     EXPECT_EQ(f.completions[0].failCount, 0u);
-    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::BandResolver), F2CheckStatus::NotRun);
+}
+
+TEST(SLOW_F2TestRunnerModule, SessionStartResolvesC6OnceWithStableFloats)
+{
+    Fixture f("f2r_c6");
+    ASSERT_TRUE(f.Boot());
+    ASSERT_TRUE(f.runner->RunScenario());
+    ASSERT_TRUE(f.PumpToPhase(F2PhaseId::Session));
+    ASSERT_TRUE(f.PumpUntil([&] { return f.runner->GetCheckStatus(F2CheckId::BandResolver) != F2CheckStatus::NotRun; }));
+    EXPECT_EQ(f.runner->GetScenarioTick(), 0u) << "C6 runs at tick 0, before the first action";
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::BandResolver), F2CheckStatus::Pass) << f.runner->GetLastResult(F2CheckId::BandResolver);
+    EXPECT_STREQ(f.runner->GetLastResult(F2CheckId::BandResolver), "1 resolver invocation, floats stable");
+}
+
+TEST(SLOW_F2TestRunnerModule, ReResolvingDragonFailsC6WithCountInSummary)
+{
+    Fixture f("f2r_c6fault");
+    ASSERT_TRUE(f.Boot());
+    f.runner->SetBandResolverFaultForTest(true);
+    ASSERT_TRUE(f.runner->RunScenario());
+    ASSERT_TRUE(f.PumpToPhase(F2PhaseId::Save));
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::BandResolver), F2CheckStatus::Fail);
+    const std::string summary = f.runner->GetLastResult(F2CheckId::BandResolver);
+    EXPECT_NE(summary.find("invocations"), std::string::npos) << summary;
+    EXPECT_EQ(summary.find("1 resolver invocation"), std::string::npos) << summary;
+}
+
+TEST(SLOW_F2TestRunnerModule, C6ReportedExactlyOnceAcrossScenario)
+{
+    Fixture f("f2r_c6once");
+    ASSERT_TRUE(f.Boot());
+    ASSERT_TRUE(f.runner->RunScenario());
+    ASSERT_TRUE(f.PumpUntil([&] { return !f.completions.empty(); }));
+    f.Pump(5);
+    int c6 = 0;
+    for (const F2CheckCompleted& c : f.checks)
+        if (c.check == F2CheckId::BandResolver) ++c6;
+    EXPECT_EQ(c6, 1);
 }
 
 TEST(SLOW_F2TestRunnerModule, IsolationResolvesC1StreamIndependence)
@@ -602,7 +640,7 @@ TEST(SLOW_F2TestRunnerModule, PerturbedRerunFailsC2NamingTheStream)
     EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::SaveLoadRng), F2CheckStatus::Pass);
     EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::ClockProof), F2CheckStatus::Pass);
     EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::SaveLoadProof), F2CheckStatus::Pass);
-    EXPECT_EQ(f.completions[0].passCount, 4u);
+    EXPECT_EQ(f.completions[0].passCount, 5u);
     EXPECT_EQ(f.completions[0].failCount, 1u);
 }
 

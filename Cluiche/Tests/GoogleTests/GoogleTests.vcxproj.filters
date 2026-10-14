@@ -1931,5 +1931,11 @@
     <ClCompile Include="..\..\CoW\Modules\F2Scenario.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\F2DragonStub.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\F2\TestF2DragonStub.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
