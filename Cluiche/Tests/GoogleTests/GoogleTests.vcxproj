@@ -887,6 +887,7 @@
     <ProjectReference Include="..\..\..\Dia\DiaLighting2D\DiaLighting2D.vcxproj">
       <Project>{C5D6E7F8-A9B0-1234-CDEF-012345678903}</Project>
     <ClCompile Include="CoW\TestSaveLoadModule.cpp" />
+    <ClCompile Include="CoW\TestGameSpeedSaveParticipant.cpp" />
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaLighting3D\DiaLighting3D.vcxproj">

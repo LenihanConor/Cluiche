@@ -8,6 +8,8 @@
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
 #include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaSaveGame/SaveContext.h>
+#include <DiaSaveGame/LoadContext.h>
 
 namespace CoW {
 
@@ -342,9 +344,49 @@ void GameSpeedControllerModule::DoUpdate(const Dia::SimTime::SimTimeContext& ctx
 
     UpdateGauges();
     UpdateHealth();
+    TryRegisterSaveParticipant();
 #ifdef DIA_DEBUG
     TryRegisterDebugDomain();
 #endif
+}
+
+void GameSpeedControllerModule::TryRegisterSaveParticipant()
+{
+    if (mSaveParticipantRegistered)
+        return;
+    if (SaveLoadModule* sl = mSaveLoad.Get())
+    {
+        sl->RegisterParticipant(Dia::Core::StringCRC("game_speed"), &mSaveParticipant);
+        mSaveParticipantRegistered = true;
+        DIA_LOG_INFO("CoW", "GameSpeedControllerModule: save participant 'game_speed' registered");
+    }
+}
+
+void GameSpeedControllerModule::UnregisterSaveParticipant()
+{
+    if (!mSaveParticipantRegistered)
+        return;
+    if (SaveLoadModule* sl = mSaveLoad.Get())
+        sl->UnregisterParticipant(Dia::Core::StringCRC("game_speed"));
+    mSaveParticipantRegistered = false;
+}
+
+void GameSpeedSaveParticipant::Serialize(Dia::SaveGame::SaveContext& ctx) const
+{
+    ctx.Write(Dia::Core::StringCRC("day"), static_cast<int64_t>(mModule.GetController().GetState().dayCounter));
+}
+
+void GameSpeedSaveParticipant::Deserialize(Dia::SaveGame::LoadContext& ctx)
+{
+    int64_t day = 0;
+    if (!ctx.Read(Dia::Core::StringCRC("day"), day) || day < 0)
+    {
+        DIA_LOG_ERROR("CoW", "GameSpeedSaveParticipant: missing or invalid 'day', state left unchanged");
+        return;
+    }
+    GameSpeedState state;   // defaults: Paused tier, Player pause source, modalDepth 0
+    state.dayCounter = static_cast<uint64_t>(day);
+    mModule.RestoreState(state);
 }
 
 #ifdef DIA_DEBUG
@@ -376,6 +418,7 @@ Dia::ApplicationFlow::StopResult GameSpeedControllerModule::DoStop()
     UnregisterDebugDomain();
     mDebugDomain.reset();
 #endif
+    UnregisterSaveParticipant();
     for (auto& handle : mSubscriptions)
         handle = Dia::MessageBus::BusSubscriptionHandle();
 

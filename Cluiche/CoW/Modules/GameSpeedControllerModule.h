@@ -9,6 +9,8 @@
 #include <Shared/GameSpeedController.h>
 #include "Modules/GameSpeedMessages.h"
 #include "Modules/MessageBusHostModule.h"
+#include "Modules/SaveLoadModule.h"
+#include <DiaSaveGame/ISaveable.h>
 #include <cstdint>
 #include <memory>
 
@@ -26,6 +28,22 @@ class GameSpeedHealthReporter : public Dia::Observation::Health::HealthReporterB
 public:
     GameSpeedHealthReporter() { SetOK(); }
     Dia::Core::StringCRC GetReporterName() const override { return Dia::Core::StringCRC("GameSpeedControllerModule"); }
+};
+
+class GameSpeedControllerModule;
+
+// E1 save participant: persists the day counter only; speed, pause source and modal depth reset
+// on load and the restore always resumes paused (A2 EC-03).
+class GameSpeedSaveParticipant : public Dia::SaveGame::ISaveable
+{
+public:
+    explicit GameSpeedSaveParticipant(GameSpeedControllerModule& module) : mModule(module) {}
+    void Serialize(Dia::SaveGame::SaveContext& ctx) const override;
+    void Deserialize(Dia::SaveGame::LoadContext& ctx) override;
+    uint32_t GetVersion() const override { return 1; }
+
+private:
+    GameSpeedControllerModule& mModule;
 };
 
 // Steers the SimPU world SimTimeDomain (scale / pause / step), turns passing game time into
@@ -49,6 +67,8 @@ public:
     bool RequestSpeed(SpeedTier tier);
     // Called by E1 on load. Always comes back paused.
     void RestoreState(const GameSpeedState& saved);
+    // The ISaveable registered with SaveLoadModule when one exists (exposed for tests).
+    Dia::SaveGame::ISaveable& GetSaveParticipant() { return mSaveParticipant; }
 
 protected:
     void OnConfigure(const char* configJson) override;
@@ -62,8 +82,13 @@ private:
     void LogTransition(const char* cause, const GameSpeedState& before) const;
     void UpdateGauges();
     void UpdateHealth();
+    void TryRegisterSaveParticipant();
+    void UnregisterSaveParticipant();
 
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::MessageBusHostModule> mBus{this};
+    Dia::ApplicationFlow::ModuleRef<SaveLoadModule> mSaveLoad{this};
+    GameSpeedSaveParticipant mSaveParticipant{*this};
+    bool mSaveParticipantRegistered = false;
 
     SpeedPresetConfig   mPendingConfig = DefaultSpeedPresetConfig();
     bool                mConfigParseFailed = false;
