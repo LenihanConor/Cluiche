@@ -6,7 +6,7 @@
 
 ## Summary
 
-Layered Debug Rendering provides debug-grade visualization of generated worlds to enable fast visual inspection during CoW's testbed iteration workflow. It renders biome-colored tiles (base layer, always on) plus toggleable overlays (Sites, Regions, Dynasty Starts, Design Reference reading A1 biome-affinity data), preventing visual clutter when debugging specific concerns. This is not V-1's real tile art — it's functional colored hexes (pointy-top, matching the world's odd-r hex grid) and site markers sufficient for eyeballing "does this placement look broken?" without leaving the game.
+Layered Debug Rendering provides debug-grade visualization of generated worlds to enable fast visual inspection during CoW's testbed iteration workflow. It renders biome-colored tiles (base layer, always on) plus toggleable overlays (Sites, Regions, Dynasty Starts, Design Reference reading A1 biome-affinity data), preventing visual clutter when debugging specific concerns. This is not V-1's real tile art — it's functional colored hexes (flat-top, matching the world's odd-q hex grid) and site markers sufficient for eyeballing "does this placement look broken?" without leaving the game.
 
 GDD decision 6 chose to include visual rendering despite S-1 being a "data pipeline testbed" because fast iteration requires seeing what you're iterating on.
 
@@ -25,7 +25,7 @@ With debug rendering:
 
 ## Goals
 
-1. **Base layer (always on):** Biome-colored tiles — each cell rendered as a colored pointy-top hexagon (color per biome type), hex-outline overlay optional
+1. **Base layer (always on):** Biome-colored tiles — each cell rendered as a colored flat-top hexagon (color per biome type), hex-outline overlay optional
 2. **Toggleable overlay: Sites** — Markers for Hearth Sites (circles), Nexus Nodes (triangles), world-thrones (crowns), each with distinct color/shape
 3. **Toggleable overlay: Regions** — Region boundary lines or fill overlays (e.g., Ancient Interiors = red outline, Verdant Lowlands = green outline)
 4. **Toggleable overlay: Dynasty Starts** — Player start (large blue marker), rival starts (large red markers), with distance circles showing minimum spacing
@@ -49,7 +49,7 @@ With debug rendering:
 **Layer stack (bottom to top):**
 
 1. **Base: Biome Tiles** (always rendered)
-   - One colored hexagon per cell (6 vertices around the cell center; odd rows offset half a cell right)
+   - One colored hexagon per cell (6 vertices around the cell center; odd columns offset half a cell down)
    - Color palette: arbitrary debug colors per biome type (e.g., Forest = green, Mountain = gray, Desert = yellow)
    - Hex outlines: optional toggle (1px black outline on each hex)
 
@@ -111,7 +111,7 @@ void RenderBiomeTiles(const WorldStructure& world, const Camera2D& camera) {
 }
 ```
 
-**Hex geometry (amended 2026-10-14):** with hex width `w = cellSize` (pointy-top), row height is `0.75 × (2 / √3) × w`, and the center of cell `(x, y)` is `((x + 0.5 × (y & 1)) × w, y × rowHeight)`. `WorldToScreen` and `ScreenToWorld` use this; `ScreenToWorld` finds the hovered cell by converting to fractional axial coordinates and rounding in cube space, then converts back to an offset coordinate (and returns "none" outside the grid). Hex vertex geometry is built once per world into the batched buffer.
+**Hex geometry (amended 2026-10-14, flat-top):** all cell geometry comes from Dia's `HexTopology`, not from renderer-local maths. With `size` = centre-to-corner distance, a hex is `2 × size` wide and `√3 × size` tall, columns are `1.5 × size` apart, and `CellCenter(col, row) = (1.5 × size × col, √3 × size × (row + 0.5 × (col & 1)))` in y-down world space. The six corner vertices sit at on-screen angles 0°, 60°, ... 300° from the centre. `WorldToScreen` uses `CellCenter`; `ScreenToWorld` uses `CellFromPoint` (cube rounding) and returns "none" when the result is outside the grid. Hex vertex geometry is built once per world into the batched buffer.
 
 **Performance optimization:** Batch all hexes into a single draw call (dynamic vertex buffer, 6 vertices or 4 triangles per cell); do not issue one draw call per cell (6,656 for Large). The loop below is schematic; replace `DrawQuad` with the hex path.
 

@@ -137,7 +137,7 @@ struct Cell {
 enum class WaterSource : uint8_t { None = 0, Ocean, Lake, River };
 
 struct HearthSite {
-    GridCoord position;    // hex offset coordinates (odd-r), see parent spec "Hex Grid"
+    GridCoord position;    // hex offset coordinates (flat-top odd-q), see parent spec "Hex Grid"
     Region parentRegion;   // which region this Hearth belongs to (lore constraint)
 };
 

@@ -45,7 +45,7 @@ Naive graph connectivity is insufficient: a graph-connected path might traverse 
 
 | Piece | Responsibility | Owner |
 |-------|----------------|-------|
-| Hex path grid | Dia's `HexPathGrid(width, height)` (rectangular odd-r), built from the world's terrain table per `Validate()` call; passed to Dia `FindPath<HexPathGrid>`. No S-1 graph class (amended 2026-10-14) | Dia (`hex-rectangular-grid.md`); S-1 only fills in passability |
+| Hex path grid | Dia's `HexPathGrid(width, height)` (rectangular flat-top odd-q), built from the world's terrain table per `Validate()` call; passed to Dia `FindPath<HexPathGrid>`. No S-1 graph class (amended 2026-10-14) | Dia (`hex-rectangular-grid.md`); S-1 only fills in passability |
 | `INavigationProfile` | Named factory: `CreateCostProvider(world)` returns an `IPathCostProvider` bound to that world | Interface: S-1. Implementations: S-1 (placeholder), B2 (body plans), others later |
 | `INavigationQuery` | `IsReachable(from, to)` — true if any profile finds a path | S-1 (built by the validator per `Validate()` call) |
 | `IWorldGuarantee` | `Check(ValidationContext)` → `GuaranteeResult` | Interface: S-1. Implementations: S-1 (three built-ins), others later |

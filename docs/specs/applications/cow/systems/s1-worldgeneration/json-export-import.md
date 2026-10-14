@@ -47,7 +47,7 @@ With export/import:
 {
   "schema_version": 1,
   "world": {
-    "topology": "hex_pointy_odd_r",
+    "topology": "hex_flat_odd_q",
     "dimensions": {
       "width": 80,
       "height": 52
@@ -103,7 +103,7 @@ With export/import:
 - **Flat cells array** (not 2D nested arrays): Simpler JSON parse; cell `[y * width + x]` mapping explicit in import code
 - **Separate site arrays** (not embedded in cells): Matches `WorldStructure` layout; easier to edit site positions without finding the cell
 - **`schema_version` at top level**: Enables future migration (v2 might add new site types, rename fields, etc.)
-- **`topology`** *(amended 2026-10-14)*: names the cell layout. Only `"hex_pointy_odd_r"` (Dia's rectangular `HexPathGrid` layout) is valid in v1; import fails on anything else, so a square-grid file can never be silently misread. No world file existed before this amendment, so the schema stays at v1.
+- **`topology`** *(amended 2026-10-14)*: names the cell layout. Only `"hex_flat_odd_q"` (Dia's rectangular `HexPathGrid` layout) is valid in v1; import fails on anything else, so a square-grid file can never be silently misread. No world file existed before this amendment, so the schema stays at v1.
 - **`elevation`, `latitude`, `water_source`** *(amended 2026-10-14)*: A4 Weather's terrain inputs. `elevation` and `latitude` are floats in [0, 1], written with 9 significant digits (`float` round-trips exactly at that precision); `water_source` is `None` / `Ocean` / `Lake` / `River`. Import fails if a float is outside [0, 1] or `water_source` is unknown.
 
 ### Export Implementation
@@ -114,7 +114,7 @@ Result<void> ExportWorld(const WorldStructure& world, const std::string& filePat
     root["schema_version"] = 1;
     
     Json::Value worldJson;
-    worldJson["topology"] = "hex_pointy_odd_r";
+    worldJson["topology"] = "hex_flat_odd_q";
     worldJson["dimensions"]["width"] = world.dimensions.width;
     worldJson["dimensions"]["height"] = world.dimensions.height;
     
