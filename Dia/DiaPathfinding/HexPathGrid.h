@@ -1,31 +1,38 @@
 #pragma once
 #include "DiaPathfinding/CellCoord.h"
+#include "DiaPathfinding/HexTopology.h"
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <vector>
 
 namespace Dia::Pathfinding {
 
+    enum class HexLayout { kAxialHexagon, kOffsetRectangle };
+
     class HexPathGrid {
     public:
+        // Axial hexagon of the given radius (centre at 0,0).
         explicit HexPathGrid(int radius);
+        // Rectangular pointy-top odd-r offset grid; x = column, y = row.
+        HexPathGrid(int width, int height);
 
         void SetPassable(CellCoord cell, bool passable);
         bool IsPassable(CellCoord cell) const;
+        // Offset mode: passable in-bounds neighbours in direction order 0..5 (E,NE,NW,W,SW,SE).
+        void GetNeighbours(CellCoord cell, Dia::Core::Containers::DynamicArrayC<CellCoord, 16>& outNeighbours) const;
 
-        void GetNeighbours(CellCoord cell,
-                           Dia::Core::Containers::DynamicArrayC<CellCoord, 16>& outNeighbours) const;
-
-        int GetRadius() const;
-
+        HexLayout GetLayout() const;
+        int GetRadius() const;  // axial mode only
+        int GetWidth() const;   // offset mode only
+        int GetHeight() const;  // offset mode only
     private:
         bool IsInBounds(CellCoord cell) const;
         int  CellIndex(CellCoord cell) const;
 
+        HexLayout mLayout;
         int mRadius;
-
-        // Bounding-box storage: (2R+1)*(2R+1) entries.
-        // For radius up to 20: (2*20+1)^2 = 41*41 = 1681.
         static const unsigned int kMaxCells = 1681;
-        Dia::Core::Containers::DynamicArrayC<bool, kMaxCells> mPassable;
+        Dia::Core::Containers::DynamicArrayC<bool, kMaxCells> mPassable;  // axial mode
+        HexTopology mTopology;                                             // offset mode (1x1 placeholder in axial mode)
+        std::vector<unsigned char> mOffsetPassable;                        // offset mode, width*height
     };
-
-} // namespace Dia::Pathfinding
+}
