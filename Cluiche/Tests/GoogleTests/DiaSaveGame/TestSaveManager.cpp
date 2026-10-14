@@ -9,8 +9,13 @@
 #include <DiaSaveGame/SaveFormat.h>
 #include <DiaSaveGame/SaveResult.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/Json/external/json/json.h>
 
 #include <cstdio>
+#include <ctime>
+#include <fstream>
+#include <iterator>
+#include <string>
 #include <cstring>
 #include <direct.h>
 
@@ -329,6 +334,45 @@ TEST(DiaSaveGame_ManagerAtomic, SuccessfulSaveOverwritesAndLeavesNoTmp)
     s.value = 0;
     ASSERT_TRUE(mgr.Load(StringCRC("atom")).Ok());
     EXPECT_EQ(7, s.value);
+    remove(kSlotA);
+}
+
+TEST(DiaSaveGame_ManagerTimestamp, SaveStampsManifestAndSlotInfoWithCurrentTime)
+{
+    EnsureTestDir();
+    remove(kSlotA);
+
+    ValueSaveable s; s.value = 1;
+    SaveRegistry reg; reg.Register(StringCRC("v"), &s);
+    SaveManager mgr; SaveConfig cfg = MakeConfig(); mgr.Init(cfg, reg);
+
+    const uint64_t before = static_cast<uint64_t>(time(nullptr));
+    ASSERT_TRUE(mgr.Save(StringCRC("atom")).Ok());
+    const uint64_t after = static_cast<uint64_t>(time(nullptr));
+
+    // Manifest in the file carries the save time.
+    std::ifstream in(kSlotA, std::ios::binary);
+    std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    Json::Value root; Json::Reader reader;
+    ASSERT_TRUE(reader.parse(text, root));
+    const uint64_t stamped = root["manifest"]["timestamp"].asUInt64();
+    EXPECT_GE(stamped, before);
+    EXPECT_LE(stamped, after);
+
+    // Slot enumeration reports it too (file last-write time, allow a couple of seconds of slack).
+    Dia::Core::Containers::DynamicArrayC<SlotInfo, 32> slots;
+    mgr.EnumerateSlots(slots);
+    bool found = false;
+    for (uint32_t i = 0; i < slots.Size(); ++i)
+    {
+        if (strcmp(slots[i].id.AsChar(), "atom") == 0)
+        {
+            found = true;
+            EXPECT_GE(slots[i].timestamp + 2, before);
+            EXPECT_LE(slots[i].timestamp, after + 2);
+        }
+    }
+    EXPECT_TRUE(found);
     remove(kSlotA);
 }
 

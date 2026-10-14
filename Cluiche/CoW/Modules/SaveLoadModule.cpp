@@ -14,6 +14,7 @@
 #include <DiaSaveGame/SaveManifest.h>
 
 #include <cstdio>
+#include <ctime>
 #include <cstring>
 #include <filesystem>
 #include <memory>
@@ -223,8 +224,13 @@ void SaveLoadModule::RegisterCommands()
         {
             std::error_code ec;
             const auto size = std::filesystem::file_size(slots[i].path, ec);
-            std::printf("  %s  %llu bytes\n", slots[i].id.AsChar(),
-                        static_cast<unsigned long long>(ec ? 0 : size));
+            char when[32] = "unknown";
+            const time_t stamp = static_cast<time_t>(slots[i].timestamp);
+            tm utc;
+            if (slots[i].timestamp != 0 && gmtime_s(&utc, &stamp) == 0)
+                std::strftime(when, sizeof(when), "%Y-%m-%d %H:%M:%S UTC", &utc);
+            std::printf("  %s  %llu bytes  %s\n", slots[i].id.AsChar(),
+                        static_cast<unsigned long long>(ec ? 0 : size), when);
         }
         return 0;
     };

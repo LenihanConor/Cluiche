@@ -155,6 +155,13 @@ void SlotManager::EnumerateSlots(Dia::Core::Containers::DynamicArrayC<SlotInfo, 
         snprintf(idBuffer, sizeof(idBuffer), "%.*s", static_cast<int>(idLen), fileName + prefixLen);
         info.id = Dia::Core::StringCRC(idBuffer);
 
+        // File last-write time (FILETIME is 100 ns ticks since 1601) -> Unix seconds.
+        ULARGE_INTEGER ft;
+        ft.LowPart  = findData.ftLastWriteTime.dwLowDateTime;
+        ft.HighPart = findData.ftLastWriteTime.dwHighDateTime;
+        const unsigned long long kUnixEpochTicks = 116444736000000000ull;
+        info.timestamp = ft.QuadPart > kUnixEpochTicks ? (ft.QuadPart - kUnixEpochTicks) / 10000000ull : 0;
+
         out.Add(info);
 
     } while (FindNextFileA(hFind, &findData));

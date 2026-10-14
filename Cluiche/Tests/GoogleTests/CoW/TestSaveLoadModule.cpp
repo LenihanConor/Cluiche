@@ -1062,6 +1062,9 @@ TEST(SaveLoadConfig, ListCommandShowsSlotIdsAsPassedToSave)
         EXPECT_NE(out.find("2 save slot(s)"), std::string::npos) << out;
         EXPECT_NE(out.find("Alpha"), std::string::npos) << out;
         EXPECT_NE(out.find("beta-2"), std::string::npos) << out;
+        // Each line ends with the save time, not "unknown".
+        EXPECT_NE(out.find(" UTC"), std::string::npos) << out;
+        EXPECT_EQ(out.find("unknown"), std::string::npos) << out;
     }
     Dia::API::Shutdown();
 }

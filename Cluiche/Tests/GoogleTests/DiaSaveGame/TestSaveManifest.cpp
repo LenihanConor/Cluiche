@@ -56,7 +56,7 @@ TEST(DiaSaveGame_Manifest, RoundTrip)
 
     SaveManifest manifest;
     manifest.Build(reg, SaveFormat::Json);
-    manifest.SetTimestamp(12345u);
+    manifest.SetTimestamp(5000000000ull); // beyond 32-bit (year 2038 safe)
 
     // Serialise
     SaveContext saveCtx;
@@ -76,7 +76,7 @@ TEST(DiaSaveGame_Manifest, RoundTrip)
 
     EXPECT_EQ(kEngineVersion, loaded.GetEngineVersion());
     EXPECT_EQ(SaveFormat::Json, loaded.GetFormat());
-    EXPECT_EQ(12345u, loaded.GetTimestamp());
+    EXPECT_EQ(5000000000ull, loaded.GetTimestamp());
     EXPECT_EQ(2u, loaded.GetParticipantCount());
 
     EXPECT_EQ(StringCRC("player"), loaded.GetParticipantAt(0).id);

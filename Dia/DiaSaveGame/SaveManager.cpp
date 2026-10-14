@@ -11,6 +11,7 @@
 #include "DiaSaveGame/SaveManifest.h"
 
 #include <stdio.h>
+#include <time.h>
 #include <string.h>
 #include <windows.h>
 #include <thread>
@@ -54,6 +55,7 @@ SaveResult SaveManager::Save(Dia::Core::StringCRC slotId)
     // Build manifest
     SaveManifest manifest;
     manifest.Build(*mRegistry, mConfig->format);
+    manifest.SetTimestamp(static_cast<uint64_t>(time(nullptr)));
 
     // Serialize all participants + manifest into one SaveContext
     SaveContext ctx;
