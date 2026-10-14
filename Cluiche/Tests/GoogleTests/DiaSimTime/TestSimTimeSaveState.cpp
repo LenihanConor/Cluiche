@@ -333,6 +333,33 @@ TEST(SimTimeSaveStateTest, EmptySchedulerAndRegistryRoundTripWithoutError)
 }
 
 // ---------------------------------------------------------------------------
+// 8. A live domain already advanced PAST the saved time is rewound by Deserialize
+//    (AdvanceTo is forward-only; the restore must use SetTime).
+// ---------------------------------------------------------------------------
+TEST(SimTimeSaveStateTest, DeserializeRewindsDomainAlreadyPastSavedTime)
+{
+    SimTimeDomain    worldA(StringCRC("world"), 60.0f);
+    SimTimeScheduler schedA;
+    SimTimeRegistry  regA(schedA);
+    worldA.AdvanceTo(Ms(2000));
+
+    SimTimeSaveState saveA(worldA, schedA, regA);
+    const Json::Value root = SaveToJson(saveA);
+
+    SimTimeDomain    worldB(StringCRC("world"), 60.0f);
+    SimTimeScheduler schedB;
+    SimTimeRegistry  regB(schedB);
+    worldB.AdvanceTo(Ms(4000));
+    ASSERT_EQ(worldB.Now(), Ms(4000));
+
+    SimTimeSaveState saveB(worldB, schedB, regB);
+    Dia::SaveGame::LoadContext load(root);
+    saveB.Deserialize(load);
+
+    EXPECT_EQ(worldB.Now(), Ms(2000)) << "loading an earlier save must rewind the world clock";
+}
+
+// ---------------------------------------------------------------------------
 // Gap A — SimTimeScheduler::GetPendingEntries: read-only peek across wheel + heap.
 // ---------------------------------------------------------------------------
 TEST(SimTimeSchedulerTest, GetPendingEntriesReportsLiveWheelAndHeapEntries)

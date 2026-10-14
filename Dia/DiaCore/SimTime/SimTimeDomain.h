@@ -27,6 +27,7 @@ namespace Dia::SimTime {
         void  Resume();
         void  Step(Core::TimeRelative step);    // manual single-step advance (bypasses pause)
         void  AdvanceTo(Core::TimeAbsolute t);
+        void  SetTime(Core::TimeAbsolute t);    // Rewind-capable; immediate. For restoring saved state only.
 
         float               GetScale() const;
         bool                IsPaused() const;

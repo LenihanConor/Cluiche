@@ -111,12 +111,12 @@ namespace Dia::SimTime {
     // -------------------------------------------------------------------------
     void SimTimeSaveState::Deserialize(Dia::SaveGame::LoadContext& ctx)
     {
-        // 1. Re-anchor the world clock. A freshly-constructed domain starts at its
-        //    minimum time, so AdvanceTo() is a genuine forward jump.
+        // 1. Re-anchor the world clock. SetTime (not AdvanceTo) because a live
+        //    domain may already be past the saved time; AdvanceTo is forward-only.
         int64_t gameTimeUs = 0;
         if (ctx.Read(kKeyGameTime, gameTimeUs))
         {
-            mWorldDomain.AdvanceTo(TimeAbsolute::CreateFromMicroseconds(
+            mWorldDomain.SetTime(TimeAbsolute::CreateFromMicroseconds(
                                        static_cast<long long>(gameTimeUs)));
         }
 

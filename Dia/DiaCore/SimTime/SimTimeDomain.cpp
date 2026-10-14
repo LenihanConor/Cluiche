@@ -43,6 +43,11 @@ namespace Dia::SimTime {
         mTimeServer.AdvanceTo(t);
     }
 
+    void SimTimeDomain::SetTime(Core::TimeAbsolute t)
+    {
+        mTimeServer.SetTime(t);
+    }
+
     float SimTimeDomain::GetScale() const
     {
         return mTimeServer.GetTimeScale();

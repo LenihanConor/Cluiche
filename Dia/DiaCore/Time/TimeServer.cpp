@@ -187,5 +187,13 @@ namespace Dia
 			mTime = target;
 			++mTick;
 		}
+
+		//------------------------------------------------------------------------------
+		void TimeServer::SetTime(TimeAbsolute t)
+		{
+			mLastTime = t;
+			mTime = t;
+			++mTick;
+		}
 	}
 }
