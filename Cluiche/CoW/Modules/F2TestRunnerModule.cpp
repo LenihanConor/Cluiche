@@ -1,4 +1,5 @@
 #include "F2TestRunnerModule.h"
+#include "F2StreamIndependence.h"
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaObservation/Log/DiaLog.h>
@@ -124,7 +125,7 @@ void F2TestRunnerModule::RunPhaseBody(F2PhaseId phase)
 {
     switch (phase)
     {
-    case F2PhaseId::Isolation:       break; // TODO(plan tasks 3-7): C1 StreamIndependence, C2 Determinism
+    case F2PhaseId::Isolation:       RunIsolation(); break; // TODO(plan tasks 4-7): C2 Determinism
     case F2PhaseId::Session:         break; // TODO(plan tasks 3-7): drive session (RNG draws, game days)
     case F2PhaseId::Save:            break; // TODO(plan tasks 3-7): capture save
     case F2PhaseId::ReferenceFuture: break; // TODO(plan tasks 3-7): record reference future
@@ -134,6 +135,26 @@ void F2TestRunnerModule::RunPhaseBody(F2PhaseId phase)
     case F2PhaseId::FailedLoad:      break; // TODO(plan tasks 3-7): failed-load path, C6 BandResolver
     default:                         break;
     }
+}
+
+//-----------------------------------------------------------------------------
+// Phase 0: C1 stream independence. Runs on fresh streams built from the live seeds, so live state is untouched.
+void F2TestRunnerModule::RunIsolation()
+{
+    RandomStreamModule* random = mRandom.Get();
+    if (!random)
+    {
+        CompleteCheck(F2CheckId::StreamIndependence, false, "RandomStreamModule unavailable");
+        return;
+    }
+    Dia::Maths::RandomStream* streams[kF2IndependenceStreamCount];
+    for (int i = 0; i < kF2IndependenceStreamCount; ++i)
+        streams[i] = random->GetStreamByName(Dia::Core::StringCRC(RandomStreamModule::kStreamNames[i]));
+
+    const F2StreamIndependenceResult r = CheckStreamIndependence(streams);
+    CompleteCheck(F2CheckId::StreamIndependence, r.passed, r.summary.c_str());
+    if (!r.passed)
+        DIA_LOG_ERROR("CoW", "F2 C1 failed: %s", r.summary.c_str());
 }
 
 //-----------------------------------------------------------------------------

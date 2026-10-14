@@ -1,4 +1,5 @@
 #pragma once
+#include "Modules/RandomStreamModule.h"   // first: RandomStream.h needs std::min/max unmacroed by windows.h
 #include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
@@ -89,12 +90,14 @@ protected:
 private:
     void EnterPhase(F2PhaseId phase);
     void RunPhaseBody(F2PhaseId phase);
+    void RunIsolation();
     void CompleteCheck(F2CheckId check, bool passed, const char* summary);
     template <class T> void Publish(const T& msg);
 
     static constexpr int kSummaryLen = 96;
 
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::MessageBusHostModule> mBus{this};
+    Dia::ApplicationFlow::ModuleRef<RandomStreamModule> mRandom{this};
 
     F2PhaseId     mPhase = F2PhaseId::Idle;
     bool          mRunPending = false;

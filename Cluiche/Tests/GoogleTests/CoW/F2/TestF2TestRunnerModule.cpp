@@ -1,5 +1,6 @@
 // Shell tests for CoW::F2TestRunnerModule: phase order, initial state, and bus events.
 #include <gtest/gtest.h>
+#include <Modules/RandomStreamModule.h>   // before Application headers: RandomStream.h needs std::min/max unmacroed
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
@@ -17,9 +18,12 @@ namespace {
 
 Cluiche::AppFlow::MessageBusHostModule* g_bus = nullptr;
 F2TestRunnerModule* g_runner = nullptr;
+RandomStreamModule* g_random = nullptr;
 
 Module* CreateBus(const StringCRC& id) { g_bus = new Cluiche::AppFlow::MessageBusHostModule(id); return g_bus; }
 Module* CreateRunner(const StringCRC& id) { g_runner = new F2TestRunnerModule(id); return g_runner; }
+
+Module* CreateRandom(const StringCRC& id) { g_random = new RandomStreamModule(id); return g_random; }
 
 constexpr float kDt = 1.0f / 30.0f;
 
@@ -29,13 +33,15 @@ struct Fixture
     ApplicationManifestV3 manifest;
     std::unique_ptr<Application> app;
     F2TestRunnerModule* runner = nullptr;
-    Dia::MessageBus::BusSubscriptionHandle phaseSub, completedSub;
+    Dia::MessageBus::BusSubscriptionHandle phaseSub, completedSub, checkSub;
+    std::vector<F2CheckCompleted> checks;
     std::vector<F2PhaseId> phases;
     std::vector<F2ScenarioCompleted> completions;
 
     Fixture()
     {
         reg.Register(StringCRC("MessageBusHostModule"), &CreateBus);
+        reg.Register(StringCRC("RandomStreamModule"), &CreateRandom);
         reg.Register(StringCRC("F2TestRunnerModule"), &CreateRunner);
 
         manifest.version = 3;
@@ -54,11 +60,18 @@ struct Fixture
         busDecl.stages.Add(StringCRC("all"));
         pu.modules.Add(busDecl);
 
+        ModuleDeclaration randDecl;
+        randDecl.instanceId = StringCRC("RandomStreamModule");
+        randDecl.typeId = StringCRC("RandomStreamModule");
+        randDecl.stages.Add(StringCRC("all"));
+        pu.modules.Add(randDecl);
+
         ModuleDeclaration decl;
         decl.instanceId = StringCRC("F2TestRunnerModule");
         decl.typeId = StringCRC("F2TestRunnerModule");
         decl.stages.Add(StringCRC("all"));
         decl.dependencies.Add(StringCRC("MessageBusHostModule"));
+        decl.dependencies.Add(StringCRC("RandomStreamModule"));
         pu.modules.Add(decl);
 
         manifest.processingUnits.Add(pu);
@@ -77,6 +90,7 @@ struct Fixture
     {
         g_bus = nullptr;
         g_runner = nullptr;
+        g_random = nullptr;
         app = std::make_unique<Application>(manifest, reg);
         if (!app->Start() || !g_bus || !g_runner)
             return false;
@@ -90,7 +104,9 @@ struct Fixture
                     [this](const F2PhaseEntered& m) { phases.push_back(m.phase); });
                 completedSub = g_bus->GetBus().Subscribe<F2ScenarioCompleted>(StringCRC("TestDoneSink"),
                     [this](const F2ScenarioCompleted& m) { completions.push_back(m); });
-                return phaseSub.IsValid() && completedSub.IsValid();
+                checkSub = g_bus->GetBus().Subscribe<F2CheckCompleted>(StringCRC("TestCheckSink"),
+                    [this](const F2CheckCompleted& m) { checks.push_back(m); });
+                return checkSub.IsValid() && phaseSub.IsValid() && completedSub.IsValid();
             }
         }
         return false;
@@ -149,9 +165,36 @@ TEST(F2TestRunnerModule, EventsFireInOrderAndScenarioCompletesOnce)
         EXPECT_EQ(static_cast<int>(f.phases[i]), i);
 
     ASSERT_EQ(f.completions.size(), 1u);
-    EXPECT_EQ(f.completions[0].passCount, 0u);
     EXPECT_EQ(f.completions[0].failCount, 0u);
     EXPECT_EQ(f.runner->GetCurrentPhase(), F2PhaseId::Idle);
-    for (int i = 0; i < kF2CheckCount; ++i)
-        EXPECT_EQ(f.runner->GetCheckStatus(static_cast<F2CheckId>(i)), F2CheckStatus::NotRun);
+    // Only C1 is implemented so far; the other five stay NotRun.
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::StreamIndependence), F2CheckStatus::Pass);
+    EXPECT_EQ(f.completions[0].passCount, 1u);
+    for (int i = 1; i < kF2CheckCount; ++i)
+        EXPECT_EQ(f.runner->GetCheckStatus(static_cast<F2CheckId>(i)), F2CheckStatus::NotRun) << i;
+}
+
+TEST(F2TestRunnerModule, IsolationResolvesC1StreamIndependence)
+{
+    Fixture f;
+    ASSERT_TRUE(f.Boot());
+    ASSERT_NE(g_random, nullptr);
+
+    // Snapshot live stream state; the check must not disturb it.
+    uint64_t counts[RandomStreamModule::kStreamCount];
+    for (int i = 0; i < RandomStreamModule::kStreamCount; ++i)
+        counts[i] = g_random->GetStreamByName(StringCRC(RandomStreamModule::kStreamNames[i]))->GetDrawCount();
+
+    ASSERT_TRUE(f.runner->RunScenario());
+    f.Pump(2);   // Isolation runs on the first update; bus delivery may lag a frame
+
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::StreamIndependence), F2CheckStatus::Pass);
+    EXPECT_STREQ(f.runner->GetLastResult(F2CheckId::StreamIndependence), "8 / 8 streams independent over 64 draws");
+    ASSERT_EQ(f.checks.size(), 1u);
+    EXPECT_EQ(f.checks[0].check, F2CheckId::StreamIndependence);
+    EXPECT_TRUE(f.checks[0].passed);
+    EXPECT_STREQ(f.checks[0].summary, "8 / 8 streams independent over 64 draws");
+
+    for (int i = 0; i < RandomStreamModule::kStreamCount; ++i)
+        EXPECT_EQ(g_random->GetStreamByName(StringCRC(RandomStreamModule::kStreamNames[i]))->GetDrawCount(), counts[i]) << i;
 }
