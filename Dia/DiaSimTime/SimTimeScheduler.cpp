@@ -259,6 +259,20 @@ namespace Dia::SimTime {
         FreeSlot(IndexOf(handle));  // marks stale; wheel/heap Refs self-heal on next visit
     }
 
+    void SimTimeScheduler::Clear()
+    {
+        // FreeSlot bumps generation + epoch, invalidating handles and any Ref.
+        for (uint32_t i = 0; i < mSlots.Size(); ++i)
+        {
+            FreeSlot(i);    // no-op for already-free slots
+        }
+        for (int b = 0; b < kNumBuckets; ++b)
+        {
+            mWheel[b].RemoveAll();
+        }
+        mHeap.RemoveAll();
+    }
+
     void SimTimeScheduler::Reschedule(ScheduleHandle handle, Core::TimeAbsolute newTime)
     {
         Slot* s = ResolveSlot(handle);
