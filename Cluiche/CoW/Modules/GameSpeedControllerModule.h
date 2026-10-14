@@ -40,7 +40,7 @@ public:
     explicit GameSpeedSaveParticipant(GameSpeedControllerModule& module) : mModule(module) {}
     void Serialize(Dia::SaveGame::SaveContext& ctx) const override;
     void Deserialize(Dia::SaveGame::LoadContext& ctx) override;
-    uint32_t GetVersion() const override { return 1; }
+    uint32_t GetVersion() const override { return 2; }   // v2: + acc_us, pre_modal_tier (v1: day only)
 
 private:
     GameSpeedControllerModule& mModule;
@@ -62,11 +62,14 @@ public:
     // Read access for UI, debug and E1 only. Gameplay must subscribe to SimulationTick instead.
     const GameSpeedController& GetController() const { return mController; }
     const GameSpeedHealthReporter& GetHealthReporter() const { return mHealth; }
+    // Sub-day progress (game microseconds toward the next day tick). Persisted by the save participant.
+    int64_t GetAccumulatedUs() const { return mClockResetPending ? mPendingAccumulatedUs : mDayClock.GetAccumulatedUs(); }
     bool IsUsingFallbackConfig() const { return mUsingFallbackConfig; }
     // Posts SpeedChangeRequested on the bus (the same path every other requester uses).
     bool RequestSpeed(SpeedTier tier);
     // Called by E1 on load. Always comes back paused.
-    void RestoreState(const GameSpeedState& saved);
+    // `accumulatedUs` is the sub-day progress to resume from (0 = start of a day).
+    void RestoreState(const GameSpeedState& saved, int64_t accumulatedUs = 0);
     // The ISaveable registered with SaveLoadModule when one exists (exposed for tests).
     Dia::SaveGame::ISaveable& GetSaveParticipant() { return mSaveParticipant; }
 
@@ -105,6 +108,7 @@ private:
     bool  mSubscriptionsFailed = false;
     bool  mStepPending   = false;
     bool  mClockResetPending = false;
+    int64_t mPendingAccumulatedUs = 0;   // applied after the pending clock reset
     bool  mPublishFailed = false;
     uint32_t mBackwardsSeen = 0;
 

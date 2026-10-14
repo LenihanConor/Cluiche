@@ -236,6 +236,10 @@ public:
     {
         mState = GameSpeedState{};
         mState.dayCounter = saved.dayCounter;   // always comes back paused (EC-03)
+        // Persisted since save v2: what a later modal-close would resume to. Everything else
+        // (tier, pause source, modal depth) stays at the paused defaults.
+        if (IsValidSpeedTier(saved.preModalSpeedTier) && saved.preModalSpeedTier != SpeedTier::Paused)
+            mState.preModalSpeedTier = saved.preModalSpeedTier;
     }
 
     // Game-seconds (== days) per wall-second; 0 when paused.
@@ -297,6 +301,13 @@ public:
         mHasPrevious   = false;
         mPreviousUs    = 0;
         mAccumulatedUs = 0;
+    }
+
+    // Restore sub-day progress (save v2). Clamped to [0, one day); the baseline is re-established by the
+    // next Advance() (call after Reset()).
+    void SetAccumulatedUs(int64_t us)
+    {
+        mAccumulatedUs = (us > 0 && us < kGameMicrosecondsPerDay) ? us : 0;
     }
 
     // Game microseconds until the next day boundary (what a manual step must advance).

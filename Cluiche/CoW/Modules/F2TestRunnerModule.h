@@ -109,6 +109,17 @@ public:
     bool HasReferenceDraws() const { return mHasReferenceDraws; }
     const std::array<int, kF2ReferenceDrawCount>& GetReferenceDraws() const { return mReferenceDraws; }
 
+    // ---- Results of phases 4-5 ----
+    // C5a (reload restored the saved fields; see F2Fingerprint::CompareRestored). C5 as a whole stays
+    // Running after C5a passes (part b, the failed load, is plan task 6) and goes to Fail if C5a fails.
+    bool HasC5aResult() const { return mHasC5a; }
+    bool C5aPassed() const { return mHasC5a && mC5aPassed; }
+    const char* GetC5aSummary() const { return mC5aSummary; }
+    // Fingerprint captured after the reload, before any replay tick.
+    const F2Fingerprint& GetReloadFingerprint() const { return mFReload; }
+    // Fingerprint at scenario tick 1000 of the replay (F1000'), captured before the replay draws.
+    const F2Fingerprint& GetReplayFingerprint1000() const { return mFReplay1000; }
+
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
     void DoUpdate(const Dia::SimTime::SimTimeContext& ctx) override;
@@ -122,6 +133,13 @@ private:
     void RunSession();            // phase 1, one scenario tick per call
     void RunSave();               // phase 2
     void RunReferenceFuture();    // phase 3, one scenario tick per call
+    void RunReload();             // phase 4: load `quick`, C5a
+    void RunReplay();             // phase 5, one scenario tick per call; C3
+    // Shared body of phases 3 and 5: the remainder script and per-tick draws over ticks [500, 1000),
+    // then (at tick 1000) the F1000 capture and the 100-draws-per-stream pass. Returns true when finished.
+    // `replay` selects what is done with the captured values (store as reference vs compare).
+    bool RunRemainder(bool replay);
+    void FinishC5a(bool passed, const char* detail);
     // Issues one script action as the real bus message. Returns false if the bus is unavailable.
     bool IssueAction(const F2ScenarioAction& action);
     void DrawForTick(uint32_t tick);
@@ -180,6 +198,16 @@ private:
     F2Fingerprint    mF500;
     F2Fingerprint    mF1000;
     std::array<int, kF2ReferenceDrawCount> mReferenceDraws = {};
+
+    // Phase 4 (reload) and phase 5 (replay).
+    bool             mLoadRequested = false;
+    uint32_t         mLoadCountBefore = 0;
+    uint32_t         mLoadWaitUpdates = 0;
+    bool             mHasC5a = false;
+    bool             mC5aPassed = false;
+    char             mC5aSummary[kSummaryLen] = "";
+    F2Fingerprint    mFReload;
+    F2Fingerprint    mFReplay1000;
 };
 
 } // namespace CoW

@@ -202,7 +202,7 @@ TEST(GameSpeedSaveParticipant, DeserializeWithoutDayKeyLeavesStateUnchanged)
     f.game->GetSaveParticipant().Deserialize(ctx);
 
     EXPECT_EQ(f.game->GetController().GetState().dayCounter, 9u);
-    EXPECT_EQ(f.game->GetSaveParticipant().GetVersion(), 1u);
+    EXPECT_EQ(f.game->GetSaveParticipant().GetVersion(), 2u);
 }
 
 // ---------------------------------------------------------------------------
@@ -317,4 +317,61 @@ TEST(GameSpeedController, RestoreStateWithModalsOpenThenClosesNeverResumes)
     EXPECT_EQ(c.GetState().modalDepth, 0u);
     EXPECT_TRUE(c.IsPaused());
     EXPECT_EQ(c.GetState().pauseSource, PauseSource::Player);
+}
+
+// ---------------------------------------------------------------------------
+// Version 2: the sub-day accumulator and preModalSpeedTier persist (F-2 C3 convergence).
+// EC-03 is unchanged: speed tier / pause source / modal depth still come back at the paused defaults.
+// ---------------------------------------------------------------------------
+
+TEST(GameSpeedSaveParticipant, RoundTripRestoresSubDayAccumulatorAndPreModalTier)
+{
+    Fixture f("gs_participant_v2");
+    ASSERT_TRUE(f.Boot());
+    f.game->RestoreState(MakeState(3, SpeedTier::Paused));
+    f.SetSpeed(SpeedTier::Fast);
+    f.Pump(8);   // partway into a day
+    ModalOpened open;
+    ASSERT_TRUE(f.bus->GetBus().Broadcast(open));   // preModalSpeedTier = Fast, paused
+    f.Pump(3);
+    ASSERT_EQ(f.game->GetController().GetState().preModalSpeedTier, SpeedTier::Fast);
+    const int64_t savedAcc = f.game->GetAccumulatedUs();
+    const uint64_t savedDay = f.game->GetController().GetState().dayCounter;
+    ASSERT_GT(savedAcc, 0);
+
+    f.save->RequestSave(StringCRC("v2"));
+    ASSERT_TRUE(f.PumpUntil([&] { return f.save->GetSaveCount() == 1; }));
+
+    // Diverge: plain restore resets the accumulator and the modal bookkeeping.
+    f.game->RestoreState(MakeState(99, SpeedTier::Paused));
+    f.Pump(3);
+    ASSERT_EQ(f.game->GetAccumulatedUs(), 0);
+    ASSERT_EQ(f.game->GetController().GetState().preModalSpeedTier, SpeedTier::Normal);
+
+    f.save->RequestLoad(StringCRC("v2"));
+    ASSERT_TRUE(f.PumpUntil([&] { return f.save->GetLoadCount() == 1; }));
+    f.Pump(2);
+
+    EXPECT_EQ(f.game->GetController().GetState().dayCounter, savedDay);
+    EXPECT_EQ(f.game->GetAccumulatedUs(), savedAcc);
+    EXPECT_EQ(f.game->GetController().GetState().preModalSpeedTier, SpeedTier::Fast);
+    // EC-03 unchanged.
+    EXPECT_EQ(f.game->GetController().GetState().speedTier, SpeedTier::Paused);
+    EXPECT_EQ(f.game->GetController().GetState().pauseSource, PauseSource::Player);
+    EXPECT_EQ(f.game->GetController().GetState().modalDepth, 0u);
+}
+
+TEST(GameSpeedSaveParticipant, Version1SaveWithDayOnlyStillLoads)
+{
+    Fixture f("gs_participant_v1compat");
+    ASSERT_TRUE(f.Boot());
+    Json::Value v1(Json::objectValue);
+    v1["day"] = Json::Value(static_cast<Json::Int64>(21));
+    Dia::SaveGame::LoadContext ctx(v1);
+    f.game->GetSaveParticipant().Deserialize(ctx);
+    f.Pump(2);
+    EXPECT_EQ(f.game->GetController().GetState().dayCounter, 21u);
+    EXPECT_EQ(f.game->GetAccumulatedUs(), 0);
+    EXPECT_EQ(f.game->GetController().GetState().preModalSpeedTier, SpeedTier::Normal);
+    EXPECT_TRUE(f.game->GetController().IsPaused());
 }

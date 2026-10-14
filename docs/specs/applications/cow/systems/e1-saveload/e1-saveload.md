@@ -127,7 +127,7 @@ GameSpeedController publishes at most one `SimulationTick` per sim frame, and th
 
 E1 ships no `ISaveable` implementations. The features that own the state add them, each registering via `RegisterParticipant` (see above):
 
-- **GameSpeedController**: day counter only (speed, pause source and modal depth reset on load, A2 EC-03); `RestoreState` always resumes paused.
+- **GameSpeedController**: day counter, sub-day accumulator (`acc_us`) and `preModalSpeedTier` (participant version 2; v1 saves with the day only still load). Speed tier, pause source and modal depth reset on load (A2 EC-03); `RestoreState` always resumes paused.
 - **RandomStreamModule**: master seed + per-stream state.
 - **Future (A1, S-1 world, B/C layers)**: decided when those systems are specced. Save granularity, format and size for the A1 world are open (see Open Design Questions).
 

@@ -69,4 +69,27 @@ F2CompareResult F2Fingerprint::Compare(const F2Fingerprint& a, const F2Fingerpri
     return result;
 }
 
+F2CompareResult F2Fingerprint::CompareRestored(const F2Fingerprint& saved, const F2Fingerprint& loaded)
+{
+    F2CompareResult result;
+    for (int i = 0; i < kF2FingerprintStreamCount; ++i)
+    {
+        const std::string prefix = std::string("stream ") + RandomStreamModule::kStreamNames[i];
+        if (saved.streams[i].seed != loaded.streams[i].seed)
+            result.differingFields.push_back(prefix + " seed");
+        if (saved.streams[i].drawCount != loaded.streams[i].drawCount)
+            result.differingFields.push_back(prefix + " drawCount");
+    }
+    if (saved.dayCounter != loaded.dayCounter)
+        result.differingFields.push_back("dayCounter");
+
+    const GameSpeedState defaults;
+    if (loaded.speedTier != defaults.speedTier)     result.differingFields.push_back("speedTier");
+    if (loaded.pauseSource != defaults.pauseSource) result.differingFields.push_back("pauseSource");
+    if (loaded.modalDepth != defaults.modalDepth)   result.differingFields.push_back("modalDepth");
+    // Persisted since GameSpeed save v2.
+    if (saved.preModalSpeedTier != loaded.preModalSpeedTier) result.differingFields.push_back("preModalSpeedTier");
+    return result;
+}
+
 } // namespace CoW

@@ -108,6 +108,14 @@ void F2TestRunnerModule::ResetScenarioState()
     mF500 = F2Fingerprint{};
     mF1000 = F2Fingerprint{};
     mReferenceDraws.fill(0);
+    mLoadRequested = false;
+    mLoadCountBefore = 0;
+    mLoadWaitUpdates = 0;
+    mHasC5a = false;
+    mC5aPassed = false;
+    mC5aSummary[0] = '\0';
+    mFReload = F2Fingerprint{};
+    mFReplay1000 = F2Fingerprint{};
 }
 
 //-----------------------------------------------------------------------------
@@ -167,6 +175,12 @@ void F2TestRunnerModule::EnterPhase(F2PhaseId phase)
     mPhaseDone = false;
     if (phase == F2PhaseId::ReferenceFuture)
         mScriptIndex = 0;   // phase 3 walks the remainder script from its start
+    if (phase == F2PhaseId::Replay)
+    {
+        // The replay re-runs phase 3 exactly: same ticks, same script, same draw pattern.
+        mScenarioTick = kF2SessionTicks;
+        mScriptIndex = 0;
+    }
     F2PhaseEntered msg;
     msg.phase = phase;
     Publish(msg);
@@ -184,9 +198,9 @@ void F2TestRunnerModule::RunPhaseBody(F2PhaseId phase)
     case F2PhaseId::Session:         RunSession(); break;
     case F2PhaseId::Save:            RunSave(); break;
     case F2PhaseId::ReferenceFuture: RunReferenceFuture(); break;
-    case F2PhaseId::Reload:          break; // TODO(plan tasks 3-7): load save, C3 SaveLoadRng
-    case F2PhaseId::Replay:          break; // TODO(plan tasks 3-7): replay, C4 ClockProof
-    case F2PhaseId::Rerun:           break; // TODO(plan tasks 3-7): C5 SaveLoadProof
+    case F2PhaseId::Reload:          RunReload(); break;
+    case F2PhaseId::Replay:          RunReplay(); break;
+    case F2PhaseId::Rerun:           break; // TODO(plan tasks 6-7): C2 Determinism
     case F2PhaseId::FailedLoad:      break; // TODO(plan tasks 3-7): failed-load path, C6 BandResolver
     default:                         break;
     }
@@ -457,30 +471,89 @@ void F2TestRunnerModule::RunSave()
 }
 
 //-----------------------------------------------------------------------------
-// Phase 3: scenario ticks [500, 1000) with the remainder script (no C4 assertions; C4 is phase 1). On
-// the update after tick 999 capture F1000 FIRST, then record the next 100 draws from each stream
-// (800 values, stream-major). The streams are not rewound afterwards: the Reload phase restores them
-// from the save, and the replay must draw in this same order right after reproducing F1000.
+// Phase 3: reference future. See RunRemainder; the values captured here are the reference the replay
+// (phase 5) must reproduce. The streams are not rewound afterwards: the Reload phase restores them.
 void F2TestRunnerModule::RunReferenceFuture()
 {
-    mPhaseDone = false;
+    mPhaseDone = RunRemainder(false);
+}
+
+//-----------------------------------------------------------------------------
+// Phase 5: replay. Identical code path to phase 3 (RunRemainder), but the captured F1000' and 800
+// draws are compared with the stored reference and resolve C3.
+void F2TestRunnerModule::RunReplay()
+{
+    mPhaseDone = RunRemainder(true);
+}
+
+//-----------------------------------------------------------------------------
+// Scenario ticks [500, 1000) with the remainder script (no C4 assertions; C4 is phase 1). On the
+// update after tick 999 capture F1000 FIRST, then draw the next 100 values from each stream
+// (800 values, stream-major, kStreamNames order). Returns true once finished.
+bool F2TestRunnerModule::RunRemainder(bool replay)
+{
     if (mScenarioTick >= kF2ScenarioTicks)
     {
         bool ok = false;
-        mF1000 = CaptureFingerprint(ok);
-        mHasF1000 = ok;
-        if (RandomStreamModule* random = mRandom.Get())
+        const F2Fingerprint fp = CaptureFingerprint(ok);
+        std::array<int, kF2ReferenceDrawCount> draws = {};
+        RandomStreamModule* random = mRandom.Get();
+        if (random)
         {
             for (int s = 0; s < RandomStreamModule::kStreamCount; ++s)
             {
                 Dia::Maths::RandomStream* stream = random->GetStreamByName(Dia::Core::StringCRC(RandomStreamModule::kStreamNames[s]));
                 for (int n = 0; n < kF2ReferenceDrawsPerStream; ++n)
-                    mReferenceDraws[s * kF2ReferenceDrawsPerStream + n] = stream ? stream->RandomInt() : 0;
+                    draws[s * kF2ReferenceDrawsPerStream + n] = stream ? stream->RandomInt() : 0;
             }
-            mHasReferenceDraws = ok;
         }
-        mPhaseDone = true;
-        return;
+
+        if (!replay)
+        {
+            mF1000 = fp;
+            mHasF1000 = ok;
+            mReferenceDraws = draws;
+            mHasReferenceDraws = ok && random;
+            return true;
+        }
+
+        mFReplay1000 = fp;
+        char summary[kSummaryLen];
+        if (!ok || !random || !mHasF1000 || !mHasReferenceDraws)
+        {
+            CompleteCheck(F2CheckId::SaveLoadRng, false, "replay or reference data unavailable");
+            return true;
+        }
+        const F2CompareResult state = F2Fingerprint::Compare(mF1000, fp);
+        int matched = 0;
+        int firstBad = -1;
+        for (int i = 0; i < kF2ReferenceDrawCount; ++i)
+        {
+            if (draws[i] == mReferenceDraws[i])
+                ++matched;
+            else if (firstBad < 0)
+                firstBad = i;
+        }
+        const bool pass = state.IsIdentical() && matched == kF2ReferenceDrawCount;
+        if (pass)
+        {
+            std::snprintf(summary, sizeof(summary), "%d / %d draws match, state identical", matched, kF2ReferenceDrawCount);
+        }
+        else if (!state.IsIdentical())
+        {
+            std::snprintf(summary, sizeof(summary), "state differs: %s; %d / %d draws match",
+                          state.Summary().c_str(), matched, kF2ReferenceDrawCount);
+        }
+        else
+        {
+            std::snprintf(summary, sizeof(summary), "%d / %d draws match, first mismatch stream %s draw %d",
+                          matched, kF2ReferenceDrawCount, RandomStreamModule::kStreamNames[firstBad / kF2ReferenceDrawsPerStream],
+                          firstBad % kF2ReferenceDrawsPerStream);
+        }
+        CompleteCheck(F2CheckId::SaveLoadRng, pass, summary);
+        if (!pass)
+            DIA_LOG_ERROR("CoW", "F2 C3 failed: %s", summary);
+        return true;
     }
 
     const std::vector<F2ScenarioAction>& script = F2RemainderScript();
@@ -492,6 +565,80 @@ void F2TestRunnerModule::RunReferenceFuture()
     }
     DrawForTick(mScenarioTick);
     ++mScenarioTick;
+    return false;
+}
+
+//-----------------------------------------------------------------------------
+void F2TestRunnerModule::FinishC5a(bool passed, const char* detail)
+{
+    mHasC5a = true;
+    mC5aPassed = passed;
+    std::strncpy(mC5aSummary, detail, kSummaryLen - 1);
+    mC5aSummary[kSummaryLen - 1] = '\0';
+    const int i = static_cast<int>(F2CheckId::SaveLoadProof);
+    if (passed)
+    {
+        // C5 stays Running: part b (the failed load) is plan task 6.
+        mStatus[i] = F2CheckStatus::Running;
+        std::snprintf(mLastResult[i], kSummaryLen, "(a) %s; (b) pending", mC5aSummary);
+    }
+    else
+    {
+        CompleteCheck(F2CheckId::SaveLoadProof, false, (std::string("reload: ") + mC5aSummary).c_str());
+        DIA_LOG_ERROR("CoW", "F2 C5a failed: %s", mC5aSummary);
+    }
+    mPhaseDone = true;
+}
+
+//-----------------------------------------------------------------------------
+// Phase 4: request `cow.load quick` through SaveLoadModule (the API the command uses), wait for the
+// load to complete (frame boundary), then compare RESTORED FIELDS ONLY against F500 (C5a): streams and
+// day counter restored, speed state at the paused defaults. C5 stays Running on success and goes
+// straight to Fail otherwise.
+void F2TestRunnerModule::RunReload()
+{
+    constexpr uint32_t kMaxLoadWaitUpdates = 10;
+    mPhaseDone = false;
+    SaveLoadModule* save = mSaveLoad.Get();
+
+    if (!save || !mHasF500 || !mSaveSucceeded)
+    {
+        FinishC5a(false, !save ? "SaveLoadModule unavailable" : "no valid quick save or F500");
+        return;
+    }
+
+    if (!mLoadRequested)
+    {
+        mLoadCountBefore = save->GetLoadCount();
+        mLoadRequested = save->RequestLoad(Dia::Core::StringCRC("quick"));
+        mLoadWaitUpdates = 0;
+        if (!mLoadRequested)
+            FinishC5a(false, "quick load request rejected");
+        return;
+    }
+
+    ++mLoadWaitUpdates;
+    const bool completed = save->GetLoadCount() > mLoadCountBefore;
+    if (!completed && mLoadWaitUpdates < kMaxLoadWaitUpdates)
+        return;
+
+    if (!completed || !save->GetLastLoadResult().Ok())
+    {
+        FinishC5a(false, "quick load did not complete successfully");
+        return;
+    }
+    bool ok = false;
+    mFReload = CaptureFingerprint(ok);
+    if (!ok)
+    {
+        FinishC5a(false, "fingerprint unavailable after reload");
+        return;
+    }
+    const F2CompareResult r = F2Fingerprint::CompareRestored(mF500, mFReload);
+    if (r.IsIdentical())
+        FinishC5a(true, "8 streams + day counter restored, speed paused");
+    else
+        FinishC5a(false, r.Summary().c_str());
 }
 
 //-----------------------------------------------------------------------------

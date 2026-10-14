@@ -13,7 +13,9 @@
 #include <Modules/GameSpeedMessages.h>
 #include <Modules/MessageBusHostModule.h>
 #include <Modules/SaveLoadModule.h>
+#include <DiaCore/Json/external/json/json.h>
 #include <filesystem>
+#include <fstream>
 #include <memory>
 #include <string>
 #include <vector>
@@ -290,15 +292,15 @@ TEST(F2TestRunnerModule, EventsFireInOrderAndScenarioCompletesOnce)
         EXPECT_EQ(static_cast<int>(f.phases[i]), i);
 
     ASSERT_EQ(f.completions.size(), 1u);
-    EXPECT_EQ(f.completions[0].failCount, 0u);
     EXPECT_EQ(f.runner->GetCurrentPhase(), F2PhaseId::Idle);
-    // C1 and C4 are implemented so far; the other four stay NotRun.
+    // C1, C3, C4 are resolved so far; C5 stays Running (part a done, part b pending); C2, C6 NotRun.
     EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::StreamIndependence), F2CheckStatus::Pass);
     EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::ClockProof), F2CheckStatus::Pass);
-    EXPECT_EQ(f.completions[0].passCount, 2u);
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::SaveLoadRng), F2CheckStatus::Pass);
+    EXPECT_EQ(f.completions[0].passCount, 3u);
+    EXPECT_EQ(f.completions[0].failCount, 0u);
     EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::Determinism), F2CheckStatus::NotRun);
-    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::SaveLoadRng), F2CheckStatus::NotRun);
-    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::SaveLoadProof), F2CheckStatus::NotRun);
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::SaveLoadProof), F2CheckStatus::Running);
     EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::BandResolver), F2CheckStatus::NotRun);
 }
 
@@ -439,4 +441,100 @@ TEST(F2TestRunnerModule, TwoRunsFromTheSameSeedProduceIdenticalPhases1To3)
     EXPECT_EQ(F2Fingerprint::Compare(a.f500, b.f500).Summary(), "identical");
     EXPECT_EQ(F2Fingerprint::Compare(a.f1000, b.f1000).Summary(), "identical");
     EXPECT_EQ(a.draws, b.draws);
+}
+
+namespace {
+
+// Adds `delta` to the saved draw count of stream `name` inside the quick-save JSON.
+bool TamperDrawCount(const std::string& path, const char* name, int delta)
+{
+    Json::Value root;
+    {
+        std::ifstream in(path, std::ios::binary);
+        Json::CharReaderBuilder b;
+        std::string errs;
+        if (!Json::parseFromStream(b, in, &root, &errs))
+            return false;
+    }
+    bool done = false;
+    struct Walk
+    {
+        static void Run(Json::Value& v, const char* name, int delta, bool& done)
+        {
+            if (!v.isObject())
+                return;
+            if (v.isMember(name) && v[name].isObject() && v[name].isMember("draws"))
+            {
+                v[name]["draws"] = Json::Value(static_cast<Json::Int64>(v[name]["draws"].asInt64() + delta));
+                done = true;
+                return;
+            }
+            for (const std::string& k : v.getMemberNames())
+                Run(v[k], name, delta, done);
+        }
+    };
+    Walk::Run(root, name, delta, done);
+    if (!done)
+        return false;
+    std::ofstream out(path, std::ios::binary | std::ios::trunc);
+    Json::StreamWriterBuilder w;
+    out << Json::writeString(w, root);
+    return true;
+}
+
+} // namespace
+
+TEST(F2TestRunnerModule, ReloadAndReplayPassC5aAndC3)
+{
+    Fixture f("f2r_replay");
+    ASSERT_TRUE(f.Boot());
+    ASSERT_TRUE(f.runner->RunScenario());
+    ASSERT_TRUE(f.PumpToPhase(F2PhaseId::Rerun));
+
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::SaveLoadRng), F2CheckStatus::Pass) << f.runner->GetLastResult(F2CheckId::SaveLoadRng);
+    EXPECT_STREQ(f.runner->GetLastResult(F2CheckId::SaveLoadRng), "800 / 800 draws match, state identical");
+    EXPECT_TRUE(f.runner->HasC5aResult());
+    EXPECT_TRUE(f.runner->C5aPassed()) << f.runner->GetC5aSummary();
+    // C5 as a whole waits for part b (task 6).
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::SaveLoadProof), F2CheckStatus::Running);
+    EXPECT_EQ(F2Fingerprint::Compare(f.runner->GetFingerprint1000(), f.runner->GetReplayFingerprint1000()).Summary(), "identical");
+    EXPECT_GE(g_save->GetLoadCount(), 1u);
+}
+
+TEST(F2TestRunnerModule, CorruptedSaveFailsC5aAndC3NamingTheStream)
+{
+    Fixture f("f2r_corrupt");
+    ASSERT_TRUE(f.Boot());
+    ASSERT_TRUE(f.runner->RunScenario());
+    ASSERT_TRUE(f.PumpToPhase(F2PhaseId::ReferenceFuture));   // quick save exists now
+    const char* stream = RandomStreamModule::kStreamNames[2];
+    ASSERT_TRUE(TamperDrawCount(f.SlotPath("quick"), stream, 7));
+    ASSERT_TRUE(f.PumpToPhase(F2PhaseId::Rerun));
+
+    EXPECT_FALSE(f.runner->C5aPassed());
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::SaveLoadProof), F2CheckStatus::Fail);
+    EXPECT_NE(std::string(f.runner->GetLastResult(F2CheckId::SaveLoadProof)).find(std::string("stream ") + stream + " drawCount"), std::string::npos)
+        << f.runner->GetLastResult(F2CheckId::SaveLoadProof);
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::SaveLoadRng), F2CheckStatus::Fail);
+    EXPECT_NE(std::string(f.runner->GetLastResult(F2CheckId::SaveLoadRng)).find(stream), std::string::npos)
+        << f.runner->GetLastResult(F2CheckId::SaveLoadRng);
+}
+
+TEST(F2TestRunnerModule, PerturbedReplayFailsC3)
+{
+    Fixture f("f2r_perturb");
+    ASSERT_TRUE(f.Boot());
+    ASSERT_TRUE(f.runner->RunScenario());
+    ASSERT_TRUE(f.PumpToPhase(F2PhaseId::Replay));
+    ASSERT_TRUE(f.PumpUntil([&] { return f.runner->GetScenarioTick() >= 700; }));
+    ASSERT_EQ(f.runner->GetCurrentPhase(), F2PhaseId::Replay);
+    const char* stream = RandomStreamModule::kStreamNames[5];
+    g_random->GetStreamByName(StringCRC(stream))->RandomInt();   // one extra draw mid-replay
+    ASSERT_TRUE(f.PumpToPhase(F2PhaseId::Rerun));
+
+    EXPECT_TRUE(f.runner->C5aPassed()) << "the perturbation happens after the reload";
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::SaveLoadRng), F2CheckStatus::Fail);
+    EXPECT_NE(std::string(f.runner->GetLastResult(F2CheckId::SaveLoadRng)).find(stream), std::string::npos)
+        << f.runner->GetLastResult(F2CheckId::SaveLoadRng);
+    EXPECT_EQ(f.runner->GetCheckStatus(F2CheckId::SaveLoadProof), F2CheckStatus::Running);
 }

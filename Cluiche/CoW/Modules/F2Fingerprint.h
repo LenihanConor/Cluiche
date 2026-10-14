@@ -48,6 +48,11 @@ struct F2Fingerprint
     static F2Fingerprint Capture(RandomStreamModule& randomStreams, const GameSpeedControllerModule& gameSpeed);
 
     static F2CompareResult Compare(const F2Fingerprint& a, const F2Fingerprint& b);
+    // Reload comparison (C5a): GameSpeedController restores ONLY the day counter and always resumes
+    // paused (A2 EC-03). So this checks all 8 streams (seed + drawCount) and dayCounter against
+    // `saved`, and that `loaded`'s speed state equals the GameSpeedState{} defaults (speedTier,
+    // pauseSource, modalDepth). preModalSpeedTier must equal saved (persisted since GameSpeed save v2); the sub-day accumulator is not in the fingerprint (C3's replay exercises it).
+    static F2CompareResult CompareRestored(const F2Fingerprint& saved, const F2Fingerprint& loaded);
 };
 
 inline bool operator==(const F2Fingerprint& a, const F2Fingerprint& b) { return F2Fingerprint::Compare(a, b).IsIdentical(); }

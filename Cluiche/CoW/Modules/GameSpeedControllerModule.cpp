@@ -123,6 +123,7 @@ Dia::ApplicationFlow::StartResult GameSpeedControllerModule::DoStart()
     }
     mController = GameSpeedController(config);
     mDayClock.Reset();
+    mPendingAccumulatedUs = 0;
     mAppliedValid = false;
     mStepPending = false;
     mClockResetPending = true;
@@ -175,6 +176,7 @@ Dia::ApplicationFlow::StartResult GameSpeedControllerModule::DoStart()
             mController.OnNewGame();
             mStepPending = false;
             mClockResetPending = true;
+            mPendingAccumulatedUs = 0;
             LogTransition("WorldGenerationComplete", before);
         });
 
@@ -204,12 +206,13 @@ Dia::ApplicationFlow::StartResult GameSpeedControllerModule::DoStart()
     return StartResult::kReady;
 }
 
-void GameSpeedControllerModule::RestoreState(const GameSpeedState& saved)
+void GameSpeedControllerModule::RestoreState(const GameSpeedState& saved, int64_t accumulatedUs)
 {
     const GameSpeedState before = mController.GetState();
     mController.RestoreState(saved);
     mStepPending = false;
     mClockResetPending = true;
+    mPendingAccumulatedUs = accumulatedUs;
 
     // Apply the restored scale at once: the queued path would let one more tick run at the old scale.
     if (Dia::ApplicationFlow::ProcessingUnit* pu = GetProcessingUnit())
@@ -321,6 +324,8 @@ void GameSpeedControllerModule::DoUpdate(const Dia::SimTime::SimTimeContext& ctx
     if (mClockResetPending)
     {
         mDayClock.Reset();
+        mDayClock.SetAccumulatedUs(mPendingAccumulatedUs);   // 0 unless a save v2 restore asked for more
+        mPendingAccumulatedUs = 0;
         mClockResetPending = false;
     }
 
@@ -389,7 +394,11 @@ void GameSpeedControllerModule::UnregisterSaveParticipant()
 
 void GameSpeedSaveParticipant::Serialize(Dia::SaveGame::SaveContext& ctx) const
 {
+    // v2 keys: acc_us (sub-day progress) and pre_modal_tier. The tier / pause source / modal depth are
+    // deliberately NOT saved: a load always resumes paused (EC-03).
     ctx.Write(Dia::Core::StringCRC("day"), static_cast<int64_t>(mModule.GetController().GetState().dayCounter));
+    ctx.Write(Dia::Core::StringCRC("acc_us"), mModule.GetAccumulatedUs());
+    ctx.Write(Dia::Core::StringCRC("pre_modal_tier"), static_cast<int64_t>(mModule.GetController().GetState().preModalSpeedTier));
 }
 
 void GameSpeedSaveParticipant::Deserialize(Dia::SaveGame::LoadContext& ctx)
@@ -402,7 +411,16 @@ void GameSpeedSaveParticipant::Deserialize(Dia::SaveGame::LoadContext& ctx)
     }
     GameSpeedState state;   // defaults: Paused tier, Player pause source, modalDepth 0
     state.dayCounter = static_cast<uint64_t>(day);
-    mModule.RestoreState(state);
+
+    // v1 saves carry the day only: the v2 keys are optional and default to a day start / Normal.
+    int64_t accUs = 0;
+    int64_t preModal = 0;
+    if (!ctx.Read(Dia::Core::StringCRC("acc_us"), accUs))
+        accUs = 0;
+    if (ctx.Read(Dia::Core::StringCRC("pre_modal_tier"), preModal)
+        && preModal >= 0 && preModal <= 255 && IsValidSpeedTier(static_cast<SpeedTier>(preModal)))
+        state.preModalSpeedTier = static_cast<SpeedTier>(preModal);
+    mModule.RestoreState(state, accUs);
 }
 
 #ifdef DIA_DEBUG

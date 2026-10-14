@@ -169,3 +169,90 @@ TEST(F2Fingerprint, NullStreamCapturedAsZeros)
     EXPECT_EQ(fp.streams[2].seed, 0u);
     EXPECT_EQ(fp.streams[2].drawCount, 0u);
 }
+
+// ---- CompareRestored (C5a): streams + dayCounter vs saved, speed state vs paused defaults ----
+
+namespace {
+F2Fingerprint SavedLike()
+{
+    F2Fingerprint fp = Base();
+    fp.dayCounter = 120;
+    fp.speedTier = SpeedTier::Fastest;     // the saved speed state is NOT restored
+    fp.pauseSource = PauseSource::None;
+    fp.preModalSpeedTier = SpeedTier::Fast;
+    for (int i = 0; i < kF2FingerprintStreamCount; ++i)
+        fp.streams[i].drawCount = 40 + i;
+    return fp;
+}
+F2Fingerprint LoadedLike(const F2Fingerprint& saved)
+{
+    F2Fingerprint fp = saved;
+    fp.speedTier = SpeedTier::Paused;
+    fp.pauseSource = PauseSource::Player;
+    fp.modalDepth = 0;
+    return fp;
+}
+}
+
+TEST(F2FingerprintRestored, MatchesWhenStreamsAndDayRestoredAndSpeedIsPausedDefault)
+{
+    const F2Fingerprint saved = SavedLike();
+    EXPECT_TRUE(F2Fingerprint::CompareRestored(saved, LoadedLike(saved)).IsIdentical());
+}
+
+TEST(F2FingerprintRestored, StreamDrawCountDifferenceIsNamed)
+{
+    const F2Fingerprint saved = SavedLike();
+    F2Fingerprint loaded = LoadedLike(saved);
+    loaded.streams[2].drawCount += 1;
+    const F2CompareResult r = F2Fingerprint::CompareRestored(saved, loaded);
+    ASSERT_EQ(r.differingFields.size(), 1u) << r.Summary();
+    EXPECT_EQ(r.differingFields[0], std::string("stream ") + RandomStreamModule::kStreamNames[2] + " drawCount");
+}
+
+TEST(F2FingerprintRestored, StreamSeedAndDayCounterDifferencesAreNamed)
+{
+    const F2Fingerprint saved = SavedLike();
+    F2Fingerprint loaded = LoadedLike(saved);
+    loaded.streams[0].seed += 1;
+    loaded.dayCounter += 1;
+    const F2CompareResult r = F2Fingerprint::CompareRestored(saved, loaded);
+    ASSERT_EQ(r.differingFields.size(), 2u) << r.Summary();
+    EXPECT_EQ(r.differingFields[0], std::string("stream ") + RandomStreamModule::kStreamNames[0] + " seed");
+    EXPECT_EQ(r.differingFields[1], "dayCounter");
+}
+
+TEST(F2FingerprintRestored, NonDefaultLoadedSpeedStateIsReported)
+{
+    const F2Fingerprint saved = SavedLike();
+    F2Fingerprint loaded = LoadedLike(saved);
+    loaded.speedTier = SpeedTier::Normal;
+    loaded.pauseSource = PauseSource::None;
+    loaded.modalDepth = 1;
+    const F2CompareResult r = F2Fingerprint::CompareRestored(saved, loaded);
+    ASSERT_EQ(r.differingFields.size(), 3u) << r.Summary();
+    EXPECT_EQ(r.differingFields[0], "speedTier");
+    EXPECT_EQ(r.differingFields[1], "pauseSource");
+    EXPECT_EQ(r.differingFields[2], "modalDepth");
+}
+
+TEST(F2FingerprintRestored, SavedSpeedStateDoesNotMatterOnlyLoadedDoes)
+{
+    F2Fingerprint saved = SavedLike();
+    saved.speedTier = SpeedTier::Paused;   // even a saved Paused/None... loaded must be paused defaults
+    saved.pauseSource = PauseSource::Player;
+    EXPECT_TRUE(F2Fingerprint::CompareRestored(saved, LoadedLike(saved)).IsIdentical());
+    F2Fingerprint loaded = LoadedLike(saved);
+    loaded.speedTier = saved.speedTier = SpeedTier::Fast;
+    EXPECT_FALSE(F2Fingerprint::CompareRestored(saved, loaded).IsIdentical());
+}
+
+TEST(F2FingerprintRestored, PreModalSpeedTierMustBeRestored)
+{
+    const F2Fingerprint saved = SavedLike();
+    F2Fingerprint loaded = LoadedLike(saved);
+    loaded.preModalSpeedTier = SpeedTier::Normal;
+    const F2CompareResult r = F2Fingerprint::CompareRestored(saved, loaded);
+    ASSERT_EQ(r.differingFields.size(), 1u) << r.Summary();
+    EXPECT_EQ(r.differingFields[0], "preModalSpeedTier");
+}

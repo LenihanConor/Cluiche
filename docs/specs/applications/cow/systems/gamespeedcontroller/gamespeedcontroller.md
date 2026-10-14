@@ -153,7 +153,9 @@ ModalClosed():
     // a Player pause is never resumed by a modal closing (EC-01)
 
 WorldGenerationComplete():   dayCounter = 0; speedTier = Paused; pauseSource = Player; modalDepth = 0
-RestoreState(saved):         dayCounter = saved.dayCounter; speedTier = Paused; pauseSource = Player; modalDepth = 0   // EC-03
+RestoreState(saved):         dayCounter = saved.dayCounter; preModalSpeedTier = saved.preModalSpeedTier;
+                             speedTier = Paused; pauseSource = Player; modalDepth = 0   // EC-03
+                             // module also resumes the sub-day DayClock accumulator (see Save participant)
 ```
 
 ## Public Interfaces
@@ -262,7 +264,8 @@ These are for the DesignDocs owner to fold back into A2:
 - Pause rules:
   - EC-01: player pause survives a modal.
   - EC-02: nested modals.
-  - EC-03: restore always resumes paused.
+  - EC-03: restore always resumes paused (tier Paused, pause source Player, modal depth 0). Unchanged by save v2.
+  - Save participant `game_speed`, version 2: persists `day`, `acc_us` (sub-day DayClock progress, game microseconds, clamped to [0, 1 day)) and `pre_modal_tier`. The DayClock baseline is not persisted: the first Advance() after a load re-baselines, so the accumulator resumes consistently regardless of the restored world clock. Version 1 saves (`day` only) still load; the missing keys default to a day start and Normal. Added so F-2 C3 (save, reload, replay) converges on the full fingerprint.
   - EC-04: same tier again is a no-op.
   - EC-06: step is rejected while running.
 - Speed request while a modal is open.
