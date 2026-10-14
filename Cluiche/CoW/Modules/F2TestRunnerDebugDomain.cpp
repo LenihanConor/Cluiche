@@ -10,6 +10,9 @@
 namespace CoW {
 
 namespace {
+    // The panel page keys commands by the display name, and the host looks the domain up by the
+    // CRC of that string, so the domain id MUST be derived from it (single source of truth).
+    const char* const kDisplayName = "F-2 Core Runtime";
     const Dia::Core::StringCRC kCmdRunScenario("run_scenario");
     const Dia::Core::StringCRC kCmdSetSpeed("set_speed");
     const Dia::Core::StringCRC kCmdStep("step");
@@ -19,8 +22,8 @@ namespace {
 
 F2TestRunnerDebugDomain::F2TestRunnerDebugDomain(F2TestRunnerModule& runner) : mRunner(runner) {}
 
-Dia::Core::StringCRC F2TestRunnerDebugDomain::GetDomainId()    const { return Dia::Core::StringCRC("F2TestRunner"); }
-const char*          F2TestRunnerDebugDomain::GetDisplayName() const { return "F-2 Core Runtime"; }
+Dia::Core::StringCRC F2TestRunnerDebugDomain::GetDomainId()    const { return Dia::Core::StringCRC(kDisplayName); }
+const char*          F2TestRunnerDebugDomain::GetDisplayName() const { return kDisplayName; }
 const char*          F2TestRunnerDebugDomain::GetDescription() const { return "F-2 Save, Reload, Replay scenario runner"; }
 Dia::Core::StringCRC F2TestRunnerDebugDomain::GetGroup()       const { return Dia::Core::StringCRC("Systems"); }
 Dia::Core::RGBA      F2TestRunnerDebugDomain::GetAccentColour() const { return Dia::VisualDebugger::DebugGroupAccents::kCoreDebug; }

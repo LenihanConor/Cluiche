@@ -14,6 +14,8 @@
 #include <Modules/F2TestRunnerModule.h>
 #include <Modules/F2PanelModel.h>
 #include <Modules/F2TestRunnerDebugDomain.h>
+#include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
+#include <DiaVisualDebugger/Console/PanelJson.h>
 #include <Modules/GameSpeedControllerModule.h>
 #include <Modules/GameSpeedMessages.h>
 #include <Modules/MessageBusHostModule.h>
@@ -795,6 +797,34 @@ struct ManualMessageCounts
 };
 
 } // namespace
+
+// The panel JS sends commands keyed by the card's DISPLAY NAME (PanelJson `_displayName`);
+// the host hashes that string and calls DiaDebugDomainRegistry::FindDomain. If the domain id is
+// not the CRC of the display name every panel command is silently dropped.
+TEST(SLOW_F2TestRunnerModule, DebugDomainIsFoundByThePanelsDisplayNameLookupAndDispatches)
+{
+    Fixture f("f2r_domain_panel_lookup");
+    ASSERT_TRUE(f.Boot());
+    F2TestRunnerDebugDomain domain(*f.runner);
+    Dia::VisualDebugger::DiaDebugDomainRegistry registry;
+    registry.Register(domain);
+
+    Json::Value root(Json::objectValue);
+    Dia::VisualDebugger::Console::BuildDomainStatesRoot(registry, root);
+    ASSERT_EQ(root.getMemberNames().size(), 1u);
+    const std::string panelId = root[root.getMemberNames()[0]]["_displayName"].asString();
+
+    Dia::VisualDebugger::IDebugDomain* found = registry.FindDomain(StringCRC(panelId.c_str()));
+    ASSERT_NE(found, nullptr);
+    EXPECT_EQ(found, &domain);
+    EXPECT_EQ(domain.GetDomainId(), StringCRC(domain.GetDisplayName()));
+
+    Json::Value args;
+    Json::Reader().parse("{\"tier\":2}", args);
+    found->OnCommand(StringCRC("set_speed"), args);
+    found->OnCommand(StringCRC("run_scenario"), Json::Value(Json::objectValue));
+    EXPECT_TRUE(f.runner->IsRunning());
+}
 
 TEST(SLOW_F2TestRunnerModule, DebugDomainStateCarriesPhasesChecksAndFingerprints)
 {
