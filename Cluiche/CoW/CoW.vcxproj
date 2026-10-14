@@ -28,12 +28,16 @@
     <ClCompile Include="Modules\RandomStreamModule.cpp" />
     <ClCompile Include="Modules\BusProbeModule.cpp" />
     <ClCompile Include="Modules\BusRecorderModule.cpp" />
+    <ClCompile Include="Modules\GameSpeedControllerModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />
     <ClInclude Include="Modules\RandomStreamModule.h" />
     <ClInclude Include="Modules\BusProbeModule.h" />
     <ClInclude Include="Modules\BusRecorderModule.h" />
+    <ClInclude Include="Shared\GameSpeedController.h" />
+    <ClInclude Include="Modules\GameSpeedControllerModule.h" />
+    <ClInclude Include="Modules\GameSpeedMessages.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

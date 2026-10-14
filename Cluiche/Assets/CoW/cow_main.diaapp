@@ -490,6 +490,25 @@
                     "channels": []
                 },
                 {
+                    "instance_id": "GameSpeedControllerModule",
+                    "type_id": "GameSpeedControllerModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "MessageBusHostModule"
+                    ],
+                    "config": {
+                        "wall_seconds_per_day": {
+                            "slow": 60.0,
+                            "normal": 30.0,
+                            "fast": 10.0,
+                            "fastest": 1.0
+                        }
+                    },
+                    "channels": []
+                },
+                {
                     "instance_id": "LoadingScreenModule",
                     "type_id": "LoadingScreenModule",
                     "stages": [
