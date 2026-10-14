@@ -22,6 +22,10 @@
         {
             "path": "Stages/FrontEnd/front_end.diastage",
             "type": "stage"
+        },
+        {
+            "path": "Stages/F2CoreRuntime/f2_core_runtime.diastage",
+            "type": "stage"
         }
     ],
     "name": "CoW",

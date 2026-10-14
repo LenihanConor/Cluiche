@@ -87,7 +87,7 @@ F-2 exercises these systems as-is; no redesign or extension work in F-2's scope 
 | 3 Reference future | 500-1000 | Continue the session; capture fingerprint F1000 and the next 100 draws from each stream (800 values) | - |
 | 4 Reload | 500 | `cow.load quick`; fingerprint must equal F500 | **C5** |
 | 5 Replay | 500-1000 | Replay the same remainder; fingerprint must equal F1000; the 800 draws must match the reference | **C3** |
-| 6 Rerun | 0-1000 | Reset, run the whole script again from seed S; fingerprint at 1000 must equal F1000 | **C2** |
+| 6 Rerun | 0-1000 | Reload the tick-0 save taken at scenario start (no in-process reset API exists), run the whole script again; fingerprint at 1000 must equal F1000 | **C2** |
 | 7 Failed load | - | `cow.load` from a missing / corrupt slot | **C5** (part b) |
 
 ### Checks

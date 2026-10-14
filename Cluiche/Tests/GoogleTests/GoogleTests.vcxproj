@@ -404,8 +404,12 @@
     <!-- DiaLighting3D -->
     <ClCompile Include="DiaLighting3D\TestLightRegistry3D.cpp" />
     <ClCompile Include="DiaLighting3D\TestBehaviours3D.cpp" />
-    <ClCompile Include="DiaLighting3D\TestLightWidgetsDrawer.cpp" />
-    <ClCompile Include="DiaLighting3D\TestLightPathArcDrawer.cpp" />
+    <ClCompile Include="DiaLighting3D\TestLightWidgetsDrawer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="DiaLighting3D\TestLightPathArcDrawer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <!-- DiaCamera3D -->
     <ClCompile Include="DiaCamera3D\TestCamera3D.cpp" />
     <ClCompile Include="DiaCamera3D\TestCameraRegistry3D.cpp" />
@@ -476,6 +480,7 @@
     </ClCompile>
     <ClCompile Include="DiaEntityVisualDebugger\TestEntityVisualDebuggerDrawers.cpp">
       <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <!-- DiaEntity -->
     <ClCompile Include="DiaEntity\DomainTests.cpp" />
@@ -651,12 +656,15 @@
     <ClCompile Include="DiaMesh3D\TestUnitCube.cpp" />
     <ClCompile Include="DiaMesh3D\TestMeshBoundsDrawer.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)'=='Debug' or '$(Configuration)'=='Debug-Asan' or '$(Configuration)'=='Debug-Ubsan'">DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="DiaMesh3D\TestMeshOriginDrawer.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)'=='Debug' or '$(Configuration)'=='Debug-Asan' or '$(Configuration)'=='Debug-Ubsan'">DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="DiaMesh3D\TestMeshStatsDrawer.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)'=='Debug' or '$(Configuration)'=='Debug-Asan' or '$(Configuration)'=='Debug-Ubsan'">DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <!-- DiaBgfx3D -->
     <ClCompile Include="DiaBgfx3D\TestMaterialRegistry.cpp" />
@@ -875,23 +883,25 @@
     <ClCompile Include="CoW\TestGameSpeedController.cpp" />
     <ClCompile Include="CoW\TestGameSpeedControllerModule.cpp" />
     <ClCompile Include="..\..\CoW\Modules\GameSpeedControllerModule.cpp" />
+    <ClCompile Include="..\..\CoW\Modules\SaveLoadModule.cpp" />
+    <ClCompile Include="..\..\CoW\Modules\RandomStreamModule.cpp" />
     <ClCompile Include="CoW\TestGameSpeedControllerObservability.cpp" />
     <ClCompile Include="..\..\CoW\Modules\GameSpeedDebugDomain.cpp" />
+    <ClCompile Include="CoW\TestSaveLoadModule.cpp" />
+    <ClCompile Include="CoW\TestGameSpeedSaveParticipant.cpp" />
+    <ClCompile Include="CoW\TestRandomStreamSaveParticipant.cpp" />
+    <ClCompile Include="CoW\TestSaveLoadWiring.cpp" />
+    <ClCompile Include="CoW\TestSaveLoadIntegration.cpp" />
+    <ClCompile Include="CoW\F2\TestF2TestRunnerModule.cpp" />
+    <ClCompile Include="..\..\CoW\Modules\F2TestRunnerModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
       <Project>{C3D4E5F6-A7B8-9012-CDEF-012345678901}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ClCompile Include="..\..\CoW\Modules\SaveLoadModule.cpp" />
-    <ClCompile Include="..\..\CoW\Modules\RandomStreamModule.cpp" />
     <ProjectReference Include="..\..\..\Dia\DiaLighting2D\DiaLighting2D.vcxproj">
       <Project>{C5D6E7F8-A9B0-1234-CDEF-012345678903}</Project>
-    <ClCompile Include="CoW\TestSaveLoadModule.cpp" />
-    <ClCompile Include="CoW\TestGameSpeedSaveParticipant.cpp" />
-    <ClCompile Include="CoW\TestRandomStreamSaveParticipant.cpp" />
-    <ClCompile Include="CoW\TestSaveLoadWiring.cpp" />
-    <ClCompile Include="CoW\TestSaveLoadIntegration.cpp" />
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaLighting3D\DiaLighting3D.vcxproj">

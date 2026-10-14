@@ -4,7 +4,15 @@
         {
             "name": "Boot",
             "transitions": [
-                "FrontEnd"
+                "FrontEnd",
+                "F2CoreRuntime"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "F2CoreRuntime",
+            "transitions": [
+                "Boot"
             ],
             "auto_advance": false
         },

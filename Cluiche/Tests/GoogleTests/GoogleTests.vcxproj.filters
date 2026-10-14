@@ -1907,5 +1907,11 @@
     <ClCompile Include="CoW\TestSaveLoadIntegration.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\F2\TestF2TestRunnerModule.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\F2TestRunnerModule.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

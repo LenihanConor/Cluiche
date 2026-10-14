@@ -5,8 +5,8 @@ Scenario: Save, Reload, Replay. Checks C1-C6 are raised inside it. Build order f
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 0 | Confirm a clean reset to tick 0 with re-seed is possible (phase 6 depends on it) | Short probe of reset path; outcome noted in Open items 2 | Pending | sonnet | Gate for tasks 2-6. No code beyond a probe. |
-| 1 | Scaffold `F2CoreRuntimeStage` (`dia scaffold stage` or the CoW stage pattern), `.diastage`, Boot transition, `F2TestRunnerModule` shell with phase/check enums (StringCRC ids), `RunScenario`, `GetCheckStatus`, `GetLastResult`, `GetCurrentPhase`, events | RED-GREEN: check status starts NotRun, phase advances in order, events fire (`GoogleTests/CoW/F2`) | Pending | sonnet | Wires GameSpeedController, SaveLoad, RandomStream modules into the stage manifest. vcxproj via `dia docs vcxproj-add`. |
+| 0 | Confirm a clean reset to tick 0 with re-seed is possible (phase 6 depends on it) | Short probe of reset path; outcome noted in Open items 2 | Done | sonnet | Gate for tasks 2-6. No code beyond a probe.; Probe: no in-process reset API, but RandomStream, GameSpeed and SimTime all restore via E1 participants. Phase 6 reloads a tick-0 save taken at scenario start (Open item 2 resolved). |
+| 1 | Scaffold `F2CoreRuntimeStage` (`dia scaffold stage` or the CoW stage pattern), `.diastage`, Boot transition, `F2TestRunnerModule` shell with phase/check enums (StringCRC ids), `RunScenario`, `GetCheckStatus`, `GetLastResult`, `GetCurrentPhase`, events | RED-GREEN: check status starts NotRun, phase advances in order, events fire (`GoogleTests/CoW/F2`) | Done | sonnet | Wires GameSpeedController, SaveLoad, RandomStream modules into the stage manifest. vcxproj via `dia docs vcxproj-add`.; 4 tests pass, manifest validates (71 checked). Stage declares only F2TestRunnerModule (shared modules come from cow_main). Skipped: debug-menu entry (none found; mirrored Boot transition) and assets.catalogue.json entries (check at task 9 / dia pipeline). |
 | 2 | Fingerprint: capture/compare of 8 stream states (seed + draw count), day counter, GameSpeedController state, using the existing save participants' state accessors | RED-GREEN: equal state gives equal fingerprint; any one-field change differs | Pending | sonnet | Compare, do not hash, so a failure can name the field. |
 | 3 | Phase 0 + C1: interleaved vs isolated draws across 8 streams | RED-GREEN: pass on real streams; a deliberately shared-state fake fails | Pending | sonnet | Uses `RandomStreamModule` as built. |
 | 4 | Phases 1-3 + C4: scripted session 0-500 (all presets, pause, two nested modals, single-step), per-tick stream draws, inline clock assertions, save at 500 (F500), reference future to 1000 (F1000 + 800 draws) | RED-GREEN: transitions match `gamespeedcontroller.md`; a seeded clock fault trips C4 | Pending | sonnet | Script is sim-only stubs. Depends on tasks 0-2. |
@@ -19,6 +19,6 @@ Scenario: Save, Reload, Replay. Checks C1-C6 are raised inside it. Build order f
 ## Open items
 
 1. ~~**Scenario driver.**~~ Decided 2026-10-14: `F2TestRunnerModule` runs the scenario as an internal phase state machine; `DiaAutomation` (an external-driver layer, not a script runner) only triggers `RunScenario` and reads results. Spec wording and Decision 6 amended.
-2. **Reset to tick 0.** Phase 6 needs the sim, SimTime, GameSpeedController and all 8 streams to reset and re-seed in-process. If that is not cleanly possible, phase 6 reloads a tick-0 save instead.
+2. ~~**Reset to tick 0.**~~ Decided: phase 6 reloads a tick-0 save taken at scenario start (no in-process reset API exists).
 3. **Hatch path of C6.** Deferred until B6 exists.
 4. **Dragon stub shape** (spec Open Design Question 2) for task 7.

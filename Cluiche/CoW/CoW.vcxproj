@@ -31,6 +31,7 @@
     <ClCompile Include="Modules\GameSpeedControllerModule.cpp" />
     <ClCompile Include="Modules\GameSpeedDebugDomain.cpp" />
     <ClCompile Include="Modules\SaveLoadModule.cpp" />
+    <ClCompile Include="Modules\F2TestRunnerModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />
@@ -42,6 +43,7 @@
     <ClInclude Include="Modules\GameSpeedMessages.h" />
     <ClInclude Include="Modules\GameSpeedDebugDomain.h" />
     <ClInclude Include="Modules\SaveLoadModule.h" />
+    <ClInclude Include="Modules\F2TestRunnerModule.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">
