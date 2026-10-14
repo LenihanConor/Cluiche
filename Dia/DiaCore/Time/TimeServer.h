@@ -38,6 +38,7 @@ namespace Dia
 
 			void					SetTimeScale( float scale );
 			void					AdjustTimeScale( float adjScale );
+			void					SetTimeScaleImmediate( float scale );	// Applies at once, bypassing the one-tick queue. For restoring saved state only.
 
 			void					Pause();
 			void					Resume();

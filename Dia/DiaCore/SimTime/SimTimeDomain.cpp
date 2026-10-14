@@ -18,6 +18,11 @@ namespace Dia::SimTime {
         return mTimeServer.GetStep();
     }
 
+    void SimTimeDomain::SetScaleImmediate(float scale)
+    {
+        mTimeServer.SetTimeScaleImmediate(scale);
+    }
+
     void SimTimeDomain::SetScale(float scale)
     {
         mTimeServer.SetTimeScale(scale);

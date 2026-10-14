@@ -210,6 +210,15 @@ void GameSpeedControllerModule::RestoreState(const GameSpeedState& saved)
     mController.RestoreState(saved);
     mStepPending = false;
     mClockResetPending = true;
+
+    // Apply the restored scale at once: the queued path would let one more tick run at the old scale.
+    if (Dia::ApplicationFlow::ProcessingUnit* pu = GetProcessingUnit())
+    {
+        const float scale = mController.GetTimeScale();
+        pu->GetWorldDomain().SetScaleImmediate(scale);
+        mAppliedScale = scale;
+        mAppliedValid = true;
+    }
     LogTransition("RestoreState", before);
 }
 

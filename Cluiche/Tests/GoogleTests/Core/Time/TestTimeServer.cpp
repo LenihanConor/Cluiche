@@ -440,3 +440,30 @@ TEST(TimeServer, IsPaused_ReflectsStateThroughPauseResumeCycle)
     timeServer.Resume();
     EXPECT_FALSE(timeServer.IsPaused());
 }
+
+// ==============================================================================
+// TimeServer TimeScale Tests - SetTimeScaleImmediate
+// ==============================================================================
+
+TEST(TimeServer, SetTimeScaleImmediate_Zero_NextTickDoesNotAdvance)
+{
+    TimeServer timeServer(60.0f, TimeAbsolute::Zero());
+    timeServer.Tick();
+    const TimeAbsolute before = timeServer.GetTime();
+
+    timeServer.SetTimeScaleImmediate(0.0f);
+    timeServer.Tick();
+
+    EXPECT_EQ(timeServer.GetTime(), before);
+    EXPECT_FLOAT_EQ(timeServer.GetTimeScale(), 0.0f);
+}
+
+TEST(TimeServer, SetTimeScaleImmediate_Half_NextTickUsesNewScale)
+{
+    TimeServer timeServer(60.0f, TimeAbsolute::Zero());
+
+    timeServer.SetTimeScaleImmediate(0.5f);
+    timeServer.Tick();
+
+    EXPECT_EQ(timeServer.GetTime(), TimeAbsolute::Zero() + (timeServer.GetStep() * 0.5f));
+}

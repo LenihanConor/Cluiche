@@ -138,6 +138,13 @@ namespace Dia
 		}
 
 		//------------------------------------------------------------------------------
+		void TimeServer::SetTimeScaleImmediate( float scale )
+		{
+			mTimeScale = scale;
+			mQueuedTimeScale = scale;
+		}
+
+		//------------------------------------------------------------------------------
 		float TimeServer::GetTimeScale() const
 		{
 			return mQueuedTimeScale;
