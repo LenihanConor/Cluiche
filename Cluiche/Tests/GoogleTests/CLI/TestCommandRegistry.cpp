@@ -6,6 +6,13 @@
 #include <gtest/gtest.h>
 #include <DiaAPI/DiaAPI.h>
 #include <DiaCore/Core/Log.h>
+#include <DiaCore/Core/Assert.h>
+#include <atomic>
+#include <chrono>
+#include <cstdio>
+#include <future>
+#include <thread>
+#include <vector>
 
 using namespace Dia::API;
 
@@ -620,4 +627,438 @@ TEST_F(CommandRegistryTest, RunCLIUnknownCommand)
 	char* argv[] = { const_cast<char*>("DiaAPI"), const_cast<char*>("nonexistent") };
 	int exitCode = RunCLI(2, argv);
 	EXPECT_EQ(3, exitCode);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// command-unregister helpers
+////////////////////////////////////////////////////////////////////////////////
+static CommandInfo MakeUnregisterCmd(const char* name, CommandCallback cb)
+{
+	CommandInfo cmd;
+	cmd.name = Dia::Core::StringCRC(name);
+	cmd.description = "Unregister test";
+	cmd.category = Dia::Core::StringCRC("test");
+	cmd.owner = "TestSystem";
+	cmd.callback = cb;
+	return cmd;
+}
+
+static CommandInfoJson MakeUnregisterJsonCmd(const char* name, CommandCallbackJson cb)
+{
+	CommandInfoJson cmd;
+	cmd.name = Dia::Core::StringCRC(name);
+	cmd.description = "Unregister JSON test";
+	cmd.category = Dia::Core::StringCRC("test");
+	cmd.owner = "TestSystem";
+	cmd.callback = cb;
+	return cmd;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// AC-1: UnregisterCommand removes a registered command
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, UnregisterCommandRemovesCommand)
+{
+	Initialize();
+	ASSERT_TRUE(RegisterCommand(MakeUnregisterCmd("unreg-one", TestCallback)));
+
+	EXPECT_TRUE(UnregisterCommand(Dia::Core::StringCRC("unreg-one")));
+	EXPECT_EQ(nullptr, GetCommand(Dia::Core::StringCRC("unreg-one")));
+
+	CommandArgs args;
+	EXPECT_EQ(3, ExecuteCommand(Dia::Core::StringCRC("unreg-one"), args));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// AC-2: UnregisterCommand returns false for unknown name
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, UnregisterCommandUnknownReturnsFalse)
+{
+	Initialize();
+	EXPECT_FALSE(UnregisterCommand(Dia::Core::StringCRC("never-registered")));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// AC-3: A name can be re-registered after unregistering; new callback runs
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, UnregisterCommandAllowsReRegister)
+{
+	Initialize();
+	ASSERT_TRUE(RegisterCommand(MakeUnregisterCmd("unreg-again", TestCallback)));
+	ASSERT_TRUE(UnregisterCommand(Dia::Core::StringCRC("unreg-again")));
+
+	EXPECT_TRUE(RegisterCommand(MakeUnregisterCmd("unreg-again", FailCallback)));
+
+	CommandArgs args;
+	EXPECT_EQ(1, ExecuteCommand(Dia::Core::StringCRC("unreg-again"), args));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// AC-4: A pending (pre-Initialize) command can be unregistered
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, UnregisterPendingCommand)
+{
+	ASSERT_TRUE(RegisterCommand(MakeUnregisterCmd("unreg-pending", TestCallback)));
+
+	EXPECT_TRUE(UnregisterCommand(Dia::Core::StringCRC("unreg-pending")));
+
+	Initialize();
+	EXPECT_EQ(nullptr, GetCommand(Dia::Core::StringCRC("unreg-pending")));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// AC-5: UnregisterCommandJson mirrors AC-1
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, UnregisterCommandJsonRemovesCommand)
+{
+	Initialize();
+	ASSERT_TRUE(RegisterCommandJson(MakeUnregisterJsonCmd("unreg-json", [](const Json::Value&) { return Json::Value(1); })));
+
+	EXPECT_TRUE(UnregisterCommandJson(Dia::Core::StringCRC("unreg-json")));
+
+	Json::Value response = ExecuteCommandJson(Dia::Core::StringCRC("unreg-json"), Json::Value());
+	EXPECT_FALSE(response["success"].asBool());
+	EXPECT_EQ("command not found", response["error"].asString());
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// AC-5: UnregisterCommandJson mirrors AC-2
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, UnregisterCommandJsonUnknownReturnsFalse)
+{
+	Initialize();
+	EXPECT_FALSE(UnregisterCommandJson(Dia::Core::StringCRC("never-registered-json")));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// AC-5: UnregisterCommandJson mirrors AC-3
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, UnregisterCommandJsonAllowsReRegister)
+{
+	Initialize();
+	ASSERT_TRUE(RegisterCommandJson(MakeUnregisterJsonCmd("unreg-json-again", [](const Json::Value&) { return Json::Value(1); })));
+	ASSERT_TRUE(UnregisterCommandJson(Dia::Core::StringCRC("unreg-json-again")));
+
+	EXPECT_TRUE(RegisterCommandJson(MakeUnregisterJsonCmd("unreg-json-again", [](const Json::Value&) { return Json::Value(2); })));
+
+	Json::Value response = ExecuteCommandJson(Dia::Core::StringCRC("unreg-json-again"), Json::Value());
+	EXPECT_TRUE(response["success"].asBool());
+	EXPECT_EQ(2, response["data"].asInt());
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// command-unregister task 3: thread safety (AC-7 to AC-9)
+////////////////////////////////////////////////////////////////////////////////
+namespace
+{
+	std::atomic<int> gRegistryAssertCount{0};
+
+	void RecordingRegistryAssertHandler(const char*, const char*, int, const char*, ...)
+	{
+		gRegistryAssertCount.fetch_add(1);
+	}
+
+	// AC-8 state is file-static (not lambda captures) so the callback never reads
+	// state owned by the CommandInfo that Unregister deletes.
+	std::promise<void>* gBlockingEntered = nullptr;
+	std::shared_future<void> gBlockingRelease;
+
+	int BlockingCallback(const CommandArgs&)
+	{
+		gBlockingEntered->set_value();
+		gBlockingRelease.wait_for(std::chrono::seconds(5));
+		return 0;
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// AC-7: concurrent register/unregister with concurrent execute/list
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, ConcurrentRegisterUnregisterExecuteList)
+{
+	Initialize();
+	std::atomic<int> stableCalls{0};
+	ASSERT_TRUE(RegisterCommand(MakeUnregisterCmd("stress-stable",
+		[&stableCalls](const CommandArgs&) { stableCalls.fetch_add(1); return 0; })));
+	ASSERT_TRUE(RegisterCommandJson(MakeUnregisterJsonCmd("stress-stable-json",
+		[](const Json::Value&) { return Json::Value(7); })));
+
+	const int kWriters = 4;
+	const int kReaders = 4;
+	const int kIterations = 1000;
+
+	std::atomic<int> writersDone{0};
+	std::atomic<int> failures{0};
+	std::atomic<int> readerExecutes{0};
+
+	std::vector<std::thread> threads;
+	for (int t = 0; t < kWriters; ++t)
+	{
+		threads.emplace_back([t, &writersDone, &failures]()
+		{
+			char name[64];
+			for (int i = 0; i < kIterations; ++i)
+			{
+				snprintf(name, sizeof(name), "stress-w%d-%d", t, i);
+				Dia::Core::StringCRC crc(name);
+				if (!RegisterCommand(MakeUnregisterCmd(name, [](const CommandArgs&) { return 0; })))
+					failures.fetch_add(1);
+				if (!RegisterCommandJson(MakeUnregisterJsonCmd(name, [](const Json::Value&) { return Json::Value(1); })))
+					failures.fetch_add(1);
+				if (!UnregisterCommand(crc))
+					failures.fetch_add(1);
+				if (!UnregisterCommandJson(crc))
+					failures.fetch_add(1);
+			}
+			writersDone.fetch_add(1);
+		});
+	}
+	for (int r = 0; r < kReaders; ++r)
+	{
+		threads.emplace_back([&]()
+		{
+			CommandArgs args;
+			while (writersDone.load() < kWriters)
+			{
+				if (ExecuteCommand(Dia::Core::StringCRC("stress-stable"), args) != 0)
+					failures.fetch_add(1);
+				Json::Value response = ExecuteCommandJson(Dia::Core::StringCRC("stress-stable-json"), Json::Value());
+				if (!response["success"].asBool() || response["data"].asInt() != 7)
+					failures.fetch_add(1);
+				auto list = ListCommands();
+				if (list.Size() < 1 || list.Size() > static_cast<unsigned int>(1 + kWriters))
+					failures.fetch_add(1);
+				readerExecutes.fetch_add(1);
+			}
+		});
+	}
+	for (auto& th : threads)
+		th.join();
+
+	EXPECT_EQ(0, failures.load());
+	EXPECT_EQ(readerExecutes.load(), stableCalls.load());
+
+	auto finalList = ListCommands();
+	ASSERT_EQ(1u, finalList.Size());
+	EXPECT_EQ(Dia::Core::StringCRC("stress-stable"), finalList[0]->name);
+
+	char name[64];
+	for (int t = 0; t < kWriters; ++t)
+	{
+		for (int i = 0; i < kIterations; ++i)
+		{
+			snprintf(name, sizeof(name), "stress-w%d-%d", t, i);
+			EXPECT_EQ(nullptr, GetCommand(Dia::Core::StringCRC(name)));
+			EXPECT_FALSE(UnregisterCommandJson(Dia::Core::StringCRC(name)));
+		}
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// AC-8: UnregisterCommand waits for an in-flight callback to return
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, UnregisterWaitsForInFlightCallback)
+{
+	Initialize();
+	std::promise<void> entered;
+	std::promise<void> release;
+	gBlockingEntered = &entered;
+	gBlockingRelease = release.get_future().share();
+
+	ASSERT_TRUE(RegisterCommand(MakeUnregisterCmd("blocking-cmd", BlockingCallback)));
+
+	std::future<int> exec = std::async(std::launch::async, []()
+	{
+		CommandArgs args;
+		return ExecuteCommand(Dia::Core::StringCRC("blocking-cmd"), args);
+	});
+	ASSERT_EQ(std::future_status::ready, entered.get_future().wait_for(std::chrono::seconds(5)));
+
+	std::future<bool> unreg = std::async(std::launch::async, []()
+	{
+		return UnregisterCommand(Dia::Core::StringCRC("blocking-cmd"));
+	});
+
+	// While the callback is blocked, Unregister must not return.
+	EXPECT_EQ(std::future_status::timeout, unreg.wait_for(std::chrono::milliseconds(150)));
+
+	release.set_value();
+	ASSERT_EQ(std::future_status::ready, exec.wait_for(std::chrono::seconds(5)));
+	EXPECT_EQ(0, exec.get());
+	ASSERT_EQ(std::future_status::ready, unreg.wait_for(std::chrono::seconds(5)));
+	EXPECT_TRUE(unreg.get());
+	EXPECT_EQ(nullptr, GetCommand(Dia::Core::StringCRC("blocking-cmd")));
+
+	gBlockingEntered = nullptr;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// AC-9: a callback that registers/unregisters is rejected (assert in Debug,
+// false in all builds) without touching the lock, so it cannot deadlock.
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, RegisterFromInsideCallbackIsRejected)
+{
+	Initialize();
+	auto* prevAssertFunc = Dia::Core::g_pAssertFunc;
+	Dia::Core::g_pAssertFunc = RecordingRegistryAssertHandler;
+	gRegistryAssertCount.store(0);
+
+	ASSERT_TRUE(RegisterCommand(MakeUnregisterCmd("reentrant-victim", TestCallback)));
+	ASSERT_TRUE(RegisterCommandJson(MakeUnregisterJsonCmd("reentrant-victim-json",
+		[](const Json::Value&) { return Json::Value(1); })));
+
+	bool results[4] = { true, true, true, true };
+	ASSERT_TRUE(RegisterCommand(MakeUnregisterCmd("reentrant-cli", [&results](const CommandArgs&)
+	{
+		results[0] = RegisterCommand(MakeUnregisterCmd("reentrant-new", TestCallback));
+		results[1] = UnregisterCommand(Dia::Core::StringCRC("reentrant-victim"));
+		return 0;
+	})));
+	ASSERT_TRUE(RegisterCommandJson(MakeUnregisterJsonCmd("reentrant-json", [&results](const Json::Value&)
+	{
+		results[2] = RegisterCommandJson(MakeUnregisterJsonCmd("reentrant-new-json",
+			[](const Json::Value&) { return Json::Value(1); }));
+		results[3] = UnregisterCommandJson(Dia::Core::StringCRC("reentrant-victim-json"));
+		return Json::Value(0);
+	})));
+
+	CommandArgs args;
+	EXPECT_EQ(0, ExecuteCommand(Dia::Core::StringCRC("reentrant-cli"), args));
+	EXPECT_TRUE(ExecuteCommandJson(Dia::Core::StringCRC("reentrant-json"), Json::Value())["success"].asBool());
+
+	Dia::Core::g_pAssertFunc = prevAssertFunc;
+
+	for (bool r : results)
+		EXPECT_FALSE(r);
+#ifdef DEBUG
+	EXPECT_EQ(4, gRegistryAssertCount.load());
+#endif
+	// Registry unchanged by the rejected calls
+	EXPECT_EQ(nullptr, GetCommand(Dia::Core::StringCRC("reentrant-new")));
+	EXPECT_NE(nullptr, GetCommand(Dia::Core::StringCRC("reentrant-victim")));
+	EXPECT_TRUE(ExecuteCommandJson(Dia::Core::StringCRC("reentrant-victim-json"), Json::Value())["success"].asBool());
+	EXPECT_FALSE(ExecuteCommandJson(Dia::Core::StringCRC("reentrant-new-json"), Json::Value())["success"].asBool());
+
+	// Outside a callback, registration works again
+	EXPECT_TRUE(RegisterCommand(MakeUnregisterCmd("reentrant-new", TestCallback)));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Nested ExecuteCommand from inside a callback works, including while a writer
+// on another thread is queued for the exclusive lock (no recursive shared lock).
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, NestedExecuteFromCallback)
+{
+	Initialize();
+	ASSERT_TRUE(RegisterCommand(MakeUnregisterCmd("nested-inner", [](const CommandArgs&) { return 5; })));
+	ASSERT_TRUE(RegisterCommandJson(MakeUnregisterJsonCmd("nested-inner-json",
+		[](const Json::Value&) { return Json::Value(9); })));
+
+	auto entered = std::make_shared<std::promise<void>>();
+	auto proceed = std::make_shared<std::promise<void>>();
+	std::shared_future<void> proceedFuture = proceed->get_future().share();
+
+	ASSERT_TRUE(RegisterCommand(MakeUnregisterCmd("nested-outer", [entered, proceedFuture](const CommandArgs&)
+	{
+		entered->set_value();
+		proceedFuture.wait_for(std::chrono::seconds(5));
+		CommandArgs inner;
+		int code = ExecuteCommand(Dia::Core::StringCRC("nested-inner"), inner);
+		Json::Value json = ExecuteCommandJson(Dia::Core::StringCRC("nested-inner-json"), Json::Value());
+		return code * 10 + json["data"].asInt();
+	})));
+
+	std::future<int> exec = std::async(std::launch::async, []()
+	{
+		CommandArgs args;
+		return ExecuteCommand(Dia::Core::StringCRC("nested-outer"), args);
+	});
+	ASSERT_EQ(std::future_status::ready, entered->get_future().wait_for(std::chrono::seconds(5)));
+
+	// Queue a writer behind the in-flight callback, then let the callback nest.
+	std::future<bool> writer = std::async(std::launch::async, []()
+	{
+		return RegisterCommand(MakeUnregisterCmd("nested-writer", TestCallback));
+	});
+	std::this_thread::sleep_for(std::chrono::milliseconds(50));
+	proceed->set_value();
+
+	ASSERT_EQ(std::future_status::ready, exec.wait_for(std::chrono::seconds(5))) << "nested execute deadlocked";
+	EXPECT_EQ(59, exec.get());
+	ASSERT_EQ(std::future_status::ready, writer.wait_for(std::chrono::seconds(5)));
+	EXPECT_TRUE(writer.get());
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// AC-6: list capacity is 256 (previously 64, silently truncated)
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, ListCommandsBeyond64NotTruncated)
+{
+	Initialize();
+	char name[32];
+	for (int i = 0; i < 100; i++)
+	{
+		std::snprintf(name, sizeof(name), "cap-cmd-%d", i);
+		ASSERT_TRUE(RegisterCommand(MakeUnregisterCmd(name, TestCallback)));
+	}
+	EXPECT_EQ(100u, ListCommands().Size());
+	EXPECT_EQ(100u, GetCommandsByCategory(Dia::Core::StringCRC("test")).Size());
+
+	Dia::Core::Containers::DynamicArrayC<CommandInfo, 256> infos;
+	ListCommandInfos(infos);
+	EXPECT_EQ(100u, infos.Size());
+}
+
+TEST_F(CommandRegistryTest, CopyCommandInfoFoundAndMissing)
+{
+	Initialize();
+	ASSERT_TRUE(RegisterCommand(MakeUnregisterCmd("copy-me", [](const CommandArgs&) { return 7; })));
+
+	CommandInfo copy;
+	ASSERT_TRUE(CopyCommandInfo(Dia::Core::StringCRC("copy-me"), copy));
+	EXPECT_EQ(Dia::Core::StringCRC("copy-me"), copy.name);
+	EXPECT_STREQ("Unregister test", copy.description);
+	EXPECT_STREQ("TestSystem", copy.owner);
+	EXPECT_EQ(Dia::Core::StringCRC("test"), copy.category);
+
+	CommandInfo none;
+	EXPECT_FALSE(CopyCommandInfo(Dia::Core::StringCRC("no-such-cmd"), none));
+
+	// Copy stays valid and callable after the command is unregistered
+	ASSERT_TRUE(UnregisterCommand(Dia::Core::StringCRC("copy-me")));
+	EXPECT_FALSE(CopyCommandInfo(Dia::Core::StringCRC("copy-me"), none));
+	CommandArgs args;
+	ASSERT_TRUE(static_cast<bool>(copy.callback));
+	EXPECT_EQ(7, copy.callback(args));
+}
+
+TEST_F(CommandRegistryTest, ListCommandInfosConcurrentWithRegisterUnregister)
+{
+	Initialize();
+	ASSERT_TRUE(RegisterCommand(MakeUnregisterCmd("stable-cmd", TestCallback)));
+
+	std::atomic<bool> stop(false);
+	std::thread writer([&stop]()
+	{
+		char name[32];
+		int i = 0;
+		while (!stop.load())
+		{
+			std::snprintf(name, sizeof(name), "churn-%d", i++ % 20);
+			RegisterCommand(MakeUnregisterCmd(name, TestCallback));
+			UnregisterCommand(Dia::Core::StringCRC(name));
+		}
+	});
+
+	auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(300);
+	while (std::chrono::steady_clock::now() < deadline)
+	{
+		Dia::Core::Containers::DynamicArrayC<CommandInfo, 256> infos;
+		ListCommandInfos(infos);
+		EXPECT_GE(infos.Size(), 1u);
+		CommandInfo c;
+		EXPECT_TRUE(CopyCommandInfo(Dia::Core::StringCRC("stable-cmd"), c));
+	}
+	stop.store(true);
+	writer.join();
 }

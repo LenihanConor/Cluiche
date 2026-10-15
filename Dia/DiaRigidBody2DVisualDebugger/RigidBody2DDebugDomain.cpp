@@ -8,8 +8,8 @@
 #include "PhysicsAABBDrawer.h"
 #include "ConstraintLinesDrawer.h"
 
-#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
-#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
+#include <DiaVisualDebugger/Domain/IDebugLayerRegistry.h>
+#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 #include <DiaRigidBody2D/World/PhysicsWorld.h>
 #include <DiaRigidBody2D/Bodies/Body2DBase.h>
 

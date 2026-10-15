@@ -25,14 +25,20 @@
     <Filter Include="Messages">
       <UniqueIdentifier>{e5f6a7b8-c9d0-1234-ef01-f56789012345}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Modules\TestStages">
+      <UniqueIdentifier>{25fbad14-3a7a-4c01-990b-66f8f704baab}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="Modules\BootMenuModule.cpp">
-      <Filter>ApplicationFlow\Modules</Filter>
-    </ClCompile>
     <ClCompile Include="Modules\TestMainStateProducerModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\TestStageModuleBase.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\TestResultsRegistry.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClCompile>
     <ClCompile Include="Modules\TestStages\RigidBody2DTestModule.cpp">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
@@ -46,19 +52,13 @@
     <ClCompile Include="Modules\TestStages\AssetRuntimeHUDModule.cpp">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\TestStages\TestStageModuleBase.cpp">
-      <Filter>ApplicationFlow\Modules\TestStages</Filter>
-    </ClCompile>
-    <ClCompile Include="Modules\TestStages\TestResultsRegistry.cpp">
-      <Filter>ApplicationFlow\Modules\TestStages</Filter>
-    </ClCompile>
     <ClCompile Include="Modules\TestStages\TestStageHUDModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
     <ClCompile Include="Modules\TestStages\MessageBusTestStageModule.cpp">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClCompile>
     <ClCompile Include="Modules\TestStages\GridVisibilityTestStageModule.cpp">
-      <Filter>ApplicationFlow\Modules\TestStages</Filter>
-    </ClCompile>
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClCompile>
     <ClCompile Include="Modules\TestStages\AICalloutTestStageModule.cpp">
@@ -103,8 +103,6 @@
     <ClCompile Include="Modules\TestStages\Entity\PickableCircleComponent.cpp">
       <Filter>ApplicationFlow\Modules\TestStages\Entity</Filter>
     </ClCompile>
-      <Filter>ApplicationFlow\Modules\TestStages</Filter>
-    </ClCompile>
     <ClCompile Include="Modules\TestStages\Geometry2DTestStageModule.cpp">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClCompile>
@@ -129,7 +127,6 @@
     <ClCompile Include="Modules\TestStages\Drawers\Geometry2DIntersectionsDrawer.cpp">
       <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
     </ClCompile>
-
     <ClCompile Include="Modules\TestStages\Drawers\Geometry2DAABBDrawer.cpp">
       <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
     </ClCompile>
@@ -152,33 +149,63 @@
       <Filter>ApplicationFlow\Modules\Dummy</Filter>
     </ClCompile>
     <ClCompile Include="Modules\dummy\DummyUIPage.cpp">
-    <ClCompile Include="Modules\TestStages\AIDecisionTestStageModule.cpp">
-    <ClCompile Include="Modules\TestStages\AIHTNTestStageModule.cpp">
-    <ClCompile Include="Modules\TestStages\Drawers\AIDecisionTestDrawer.cpp">
-    <ClCompile Include="Modules\TestStages\Drawers\AIHTNTestDrawer.cpp">
-    <ClCompile Include="Modules\TestStages\ScalarFieldTestStageModule.cpp">
-    <ClCompile Include="Modules\TestStages\Drawers\ScalarFieldTestDrawer.cpp">
-      <Filter>TestStages\Drawers</Filter>
-    </ClCompile>
-      <Filter>TestStages</Filter>
-    </ClCompile>
-      <Filter>Modules\TestStages\Drawers</Filter>
-    </ClCompile>
-      <Filter>Modules\TestStages\Drawers</Filter>
-    </ClCompile>
-      <Filter>ApplicationFlow\Modules\TestStages</Filter>
-    </ClCompile>
-      <Filter>ApplicationFlow\Modules\TestStages</Filter>
-    </ClCompile>
       <Filter>ApplicationFlow\Modules\Dummy</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\AIDecisionTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\EconomyTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\AIHTNTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\PathfindingTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\Drawers\AIDecisionTestDrawer.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\Drawers\AIHTNTestDrawer.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\Drawers\PathfindingTestDrawer.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\Drawers\EconomyDrawer.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\ScalarFieldTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\Drawers\ScalarFieldTestDrawer.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\EntitySpatialTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\Drawers\SpawnerTestDrawer.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\Drawers\GridVisibilityDrawer.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStatusBridgeModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\JobSystemServiceTestStageModule.cpp">
+      <Filter>Modules\TestStages</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Modules\BootMenuModule.h">
-      <Filter>ApplicationFlow\Modules</Filter>
-    </ClInclude>
     <ClInclude Include="Modules\TestMainStateProducerModule.h">
       <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\TestStageModuleBase.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\TestResultsRegistry.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
     <ClInclude Include="Modules\TestStages\RigidBody2DTestModule.h">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
@@ -192,19 +219,13 @@
     <ClInclude Include="Modules\TestStages\AssetRuntimeHUDModule.h">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\TestStages\TestStageModuleBase.h">
-      <Filter>ApplicationFlow\Modules\TestStages</Filter>
-    </ClInclude>
-    <ClInclude Include="Modules\TestStages\TestResultsRegistry.h">
-      <Filter>ApplicationFlow\Modules\TestStages</Filter>
-    </ClInclude>
     <ClInclude Include="Modules\TestStages\TestStageHUDModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
     <ClInclude Include="Modules\TestStages\MessageBusTestStageModule.h">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
     <ClInclude Include="Modules\TestStages\GridVisibilityTestStageModule.h">
-      <Filter>ApplicationFlow\Modules\TestStages</Filter>
-    </ClInclude>
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
     <ClInclude Include="Modules\TestStages\AICalloutTestStageModule.h">
@@ -252,8 +273,6 @@
     <ClInclude Include="Modules\TestStages\Entity\PickableCircleComponent.h">
       <Filter>ApplicationFlow\Modules\TestStages\Entity</Filter>
     </ClInclude>
-      <Filter>ApplicationFlow\Modules\TestStages</Filter>
-    </ClInclude>
     <ClInclude Include="Modules\TestStages\Geometry2DTestStageModule.h">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
@@ -278,7 +297,6 @@
     <ClInclude Include="Modules\TestStages\Drawers\Geometry2DIntersectionsDrawer.h">
       <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
     </ClInclude>
-
     <ClInclude Include="Modules\TestStages\Drawers\Geometry2DAABBDrawer.h">
       <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
     </ClInclude>
@@ -301,49 +319,52 @@
       <Filter>ApplicationFlow\Modules\Dummy</Filter>
     </ClInclude>
     <ClInclude Include="Modules\dummy\DummyUIPage.h">
-    <ClInclude Include="Modules\TestStages\AIDecisionTestStageModule.h">
-    <ClInclude Include="Modules\TestStages\AIHTNTestStageModule.h">
-    <ClInclude Include="Modules\TestStages\Drawers\AIDecisionTestDrawer.h">
-    <ClInclude Include="Modules\TestStages\Drawers\AIHTNTestDrawer.h">
-    <ClInclude Include="Modules\TestStages\ScalarFieldTestStageModule.h">
-    <ClInclude Include="Modules\TestStages\Drawers\ScalarFieldTestDrawer.h">
-      <Filter>TestStages\Drawers</Filter>
-    </ClInclude>
-      <Filter>TestStages</Filter>
-    </ClInclude>
-      <Filter>Modules\TestStages\Drawers</Filter>
-    </ClInclude>
-      <Filter>Modules\TestStages\Drawers</Filter>
-    </ClInclude>
-      <Filter>ApplicationFlow\Modules\TestStages</Filter>
-    </ClInclude>
-      <Filter>ApplicationFlow\Modules\TestStages</Filter>
-    </ClInclude>
       <Filter>ApplicationFlow\Modules\Dummy</Filter>
     </ClInclude>
-    <ClCompile Include="Modules\TestStages\EconomyTestStageModule.cpp">
+    <ClInclude Include="Modules\TestStages\AIDecisionTestStageModule.h">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
-    </ClCompile>
-    <ClCompile Include="Modules\TestStages\Drawers\EconomyDrawer.cpp">
-    <ClCompile Include="Modules\TestStages\Drawers\SpawnerTestDrawer.cpp">
-    <ClCompile Include="Modules\TestStages\Drawers\GridVisibilityDrawer.cpp">
-      <Filter>Modules</Filter>
-    </ClCompile>
-      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
-    </ClCompile>
-      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
-    </ClCompile>
+    </ClInclude>
     <ClInclude Include="Modules\TestStages\EconomyTestStageModule.h">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
+    <ClInclude Include="Modules\TestStages\AIHTNTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\PathfindingTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\Drawers\AIDecisionTestDrawer.h">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\Drawers\AIHTNTestDrawer.h">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\Drawers\PathfindingTestDrawer.h">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClInclude>
     <ClInclude Include="Modules\TestStages\Drawers\EconomyDrawer.h">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\ScalarFieldTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\Drawers\ScalarFieldTestDrawer.h">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\EntitySpatialTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
     <ClInclude Include="Modules\TestStages\Drawers\SpawnerTestDrawer.h">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClInclude>
     <ClInclude Include="Modules\TestStages\Drawers\GridVisibilityDrawer.h">
-      <Filter>Modules</Filter>
-    </ClInclude>
       <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
     </ClInclude>
-      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    <ClInclude Include="Modules\TestStatusBridgeModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\JobSystemServiceTestStageModule.h">
+      <Filter>Modules\TestStages</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

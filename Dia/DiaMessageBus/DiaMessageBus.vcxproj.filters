@@ -25,6 +25,8 @@
     <ClCompile Include="BusHealthReporter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FileBusRecorder.cpp" />
+    <ClCompile Include="FileBusRecorderHealthReporter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Bus.h">
@@ -57,6 +59,15 @@
     <ClInclude Include="BusHealthReporter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="IBusRecorder.h" />
+    <ClInclude Include="Testing\InMemoryBusRecorder.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="FileBusRecorder.h" />
+    <ClInclude Include="Testing\BusTrafficFileReader.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="FileBusRecorderHealthReporter.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source Files">
@@ -64,6 +75,9 @@
     </Filter>
     <Filter Include="Header Files">
       <UniqueIdentifier>{B2C3D4E5-F6A7-8901-EFAB-123456789012}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{7986fc18-4239-4301-9949-fa6c3455d5fc}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

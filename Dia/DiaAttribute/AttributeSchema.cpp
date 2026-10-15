@@ -14,6 +14,7 @@ namespace Dia::Attribute {
     AttributeSchema::AttributeSchema()
         : mSchemaName()
         , mAttributes()
+        , mBandSchemaVersion(0)
         , mIsValid(false)
     {}
 
@@ -28,6 +29,7 @@ namespace Dia::Attribute {
     AttributeSchema::AttributeSchema(const AttributeSchema& other)
         : mSchemaName(other.mSchemaName)
         , mAttributes()
+        , mBandSchemaVersion(other.mBandSchemaVersion)
         , mIsValid(other.mIsValid)
     {
         const unsigned int count = other.mAttributes.Size();
@@ -46,8 +48,9 @@ namespace Dia::Attribute {
 
         AttributeSchema tmp(other);
 
-        mSchemaName = tmp.mSchemaName;
-        mIsValid    = tmp.mIsValid;
+        mSchemaName          = tmp.mSchemaName;
+        mBandSchemaVersion   = tmp.mBandSchemaVersion;
+        mIsValid             = tmp.mIsValid;
 
         mAttributes.RemoveAll();
         const unsigned int n = tmp.mAttributes.Size();
@@ -62,8 +65,70 @@ namespace Dia::Attribute {
     }
 
     // -----------------------------------------------------------------------
-    // Private parsing helper
+    // Private parsing helpers
     // -----------------------------------------------------------------------
+    bool AttributeSchema::ValidateBandRange(const AttributeDefinition& def, Dia::Core::StringCRC band_name, const BandRange& range)
+    {
+        // AC-6: Reject band range where min > max
+        if (range.min > range.max)
+        {
+            DIA_LOG_WARNING("Attribute",
+                "AttributeSchema: attribute '%s' band '%s' has min (%.4f) > max (%.4f) — invalid",
+                def.attribute_name.AsChar(), band_name.AsChar(), range.min, range.max);
+            return false;
+        }
+
+        // AC-7: Reject band range outside attribute's [minimum_value, maximum_value]
+        if (range.min < def.minimum_value || range.max > def.maximum_value)
+        {
+            DIA_LOG_WARNING("Attribute",
+                "AttributeSchema: attribute '%s' band '%s' range [%.4f, %.4f] outside attribute bounds [%.4f, %.4f]",
+                def.attribute_name.AsChar(), band_name.AsChar(), range.min, range.max,
+                def.minimum_value, def.maximum_value);
+            return false;
+        }
+
+        return true;
+    }
+
+    void AttributeSchema::ParseBands(AttributeDefinition& def, const Json::Value& attrJson)
+    {
+        if (!attrJson.isMember("bands") || !attrJson["bands"].isObject())
+            return;
+
+        const Json::Value& bands = attrJson["bands"];
+        const auto memberNames = bands.getMemberNames();
+
+        if (memberNames.empty())
+            return;
+
+        // HashTable already sized in ParseAttributes
+
+        for (const auto& name : memberNames)
+        {
+            const Json::Value& bandValue = bands[name];
+            if (!bandValue.isArray() || bandValue.size() != 2)
+            {
+                DIA_LOG_WARNING("Attribute",
+                    "AttributeSchema: attribute '%s' band '%s' must be a 2-element array [min, max] — skipped",
+                    def.attribute_name.AsChar(), name.c_str());
+                continue;
+            }
+
+            BandRange range;
+            range.min = bandValue[0].asFloat();
+            range.max = bandValue[1].asFloat();
+
+            Dia::Core::StringCRC band_name(name.c_str());
+
+            // Validate and only add if valid
+            if (ValidateBandRange(def, band_name, range))
+            {
+                def.bands.Add(band_name, range);
+            }
+        }
+    }
+
     void AttributeSchema::ParseAttributes(AttributeSchema& schema, const Json::Value& root)
     {
         if (!root.isMember("attributes") || !root["attributes"].isArray())
@@ -91,6 +156,23 @@ namespace Dia::Attribute {
             def.maximum_value   = item.isMember("maximum_value") ? item["maximum_value"].asFloat() : 0.0f;
             def.default_value   = item.isMember("default_value") ? item["default_value"].asFloat() : 0.0f;
 
+            // CRITICAL: Initialize bands HashTable BEFORE copying into array
+            // Check if bands field exists to determine initialization size
+            const bool hasBandsField = item.isMember("bands") && item["bands"].isObject();
+            if (hasBandsField)
+            {
+                const auto bandNames = item["bands"].getMemberNames();
+                const unsigned int bandCount = static_cast<unsigned int>(bandNames.size());
+                if (bandCount > 0)
+                    def.bands.SetSize(bandCount, bandCount);
+                else
+                    def.bands.SetSize(0, 1);  // Empty bands object
+            }
+            else
+            {
+                def.bands.SetSize(0, 1);  // No bands field - initialize to safe empty state
+            }
+
             if (def.minimum_value > def.default_value || def.default_value > def.maximum_value)
             {
                 schema.mIsValid = false;
@@ -99,7 +181,12 @@ namespace Dia::Attribute {
                     def.attribute_name.AsChar(), def.default_value, def.minimum_value, def.maximum_value);
             }
 
+            // Add to array (now safe to copy)
             schema.mAttributes.Add(def);
+
+            // Parse bands (Feature 7) - operate on the array element directly
+            if (hasBandsField)
+                ParseBands(schema.mAttributes[schema.mAttributes.Size() - 1], item);
         }
     }
 
@@ -145,9 +232,14 @@ namespace Dia::Attribute {
         if (root.isMember("schema_name") && root["schema_name"].isString())
             schema.mSchemaName = Dia::Core::StringCRC(root["schema_name"].asCString());
 
+        // Parse band_schema_version (Feature 7, AC-8)
+        if (root.isMember("band_schema_version") && root["band_schema_version"].isUInt())
+            schema.mBandSchemaVersion = root["band_schema_version"].asUInt();
+
         ParseAttributes(schema, root);
 
-        DIA_LOG_INFO("Attribute", "AttributeSchema loaded: %s", schema.mSchemaName.AsChar());
+        DIA_LOG_INFO("Attribute", "AttributeSchema loaded: %s (band_schema_version: %u)",
+            schema.mSchemaName.AsChar(), schema.mBandSchemaVersion);
 
         return schema;
     }
@@ -184,6 +276,57 @@ namespace Dia::Attribute {
     bool AttributeSchema::IsValid() const
     {
         return mIsValid;
+    }
+
+    // -----------------------------------------------------------------------
+    // Band-based initialization API (Feature 7)
+    // -----------------------------------------------------------------------
+    unsigned int AttributeSchema::GetBandSchemaVersion() const
+    {
+        return mBandSchemaVersion;
+    }
+
+    bool AttributeSchema::HasBands(Dia::Core::StringCRC attribute_name) const
+    {
+        const AttributeDefinition* def = FindAttribute(attribute_name);
+        if (def == nullptr)
+            return false;
+        return def->bands.Size() > 0;
+    }
+
+    float AttributeSchema::ResolveBand(Dia::Core::StringCRC attribute_name, Dia::Core::StringCRC band_name) const
+    {
+        // AC-4, AC-5: Find attribute, check for bands, resolve band name
+        const AttributeDefinition* def = FindAttribute(attribute_name);
+        if (def == nullptr)
+        {
+            DIA_LOG_WARNING("Attribute",
+                "AttributeSchema::ResolveBand: attribute '%s' not found in schema — using default 0.0",
+                attribute_name.AsChar());
+            return 0.0f;
+        }
+
+        // AC-5: Attribute has no bands field
+        if (!def->bands.IsSizeSet() || def->bands.Size() == 0)
+        {
+            DIA_LOG_WARNING("Attribute",
+                "AttributeSchema::ResolveBand: attribute '%s' has no bands defined — using default_value %.4f",
+                def->attribute_name.AsChar(), def->default_value);
+            return def->default_value;
+        }
+
+        // AC-4: Band name not in schema
+        const BandRange* range = def->bands.TryGetItemConst(band_name);
+        if (range == nullptr)
+        {
+            DIA_LOG_WARNING("Attribute",
+                "AttributeSchema::ResolveBand: band '%s' not found for attribute '%s' — using default_value %.4f",
+                band_name.AsChar(), def->attribute_name.AsChar(), def->default_value);
+            return def->default_value;
+        }
+
+        // AC-2: Resolve to midpoint
+        return (range->min + range->max) * 0.5f;
     }
 
 } // namespace Dia::Attribute

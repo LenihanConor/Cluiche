@@ -333,6 +333,33 @@ TEST(SimTimeSaveStateTest, EmptySchedulerAndRegistryRoundTripWithoutError)
 }
 
 // ---------------------------------------------------------------------------
+// 8. A live domain already advanced PAST the saved time is rewound by Deserialize
+//    (AdvanceTo is forward-only; the restore must use SetTime).
+// ---------------------------------------------------------------------------
+TEST(SimTimeSaveStateTest, DeserializeRewindsDomainAlreadyPastSavedTime)
+{
+    SimTimeDomain    worldA(StringCRC("world"), 60.0f);
+    SimTimeScheduler schedA;
+    SimTimeRegistry  regA(schedA);
+    worldA.AdvanceTo(Ms(2000));
+
+    SimTimeSaveState saveA(worldA, schedA, regA);
+    const Json::Value root = SaveToJson(saveA);
+
+    SimTimeDomain    worldB(StringCRC("world"), 60.0f);
+    SimTimeScheduler schedB;
+    SimTimeRegistry  regB(schedB);
+    worldB.AdvanceTo(Ms(4000));
+    ASSERT_EQ(worldB.Now(), Ms(4000));
+
+    SimTimeSaveState saveB(worldB, schedB, regB);
+    Dia::SaveGame::LoadContext load(root);
+    saveB.Deserialize(load);
+
+    EXPECT_EQ(worldB.Now(), Ms(2000)) << "loading an earlier save must rewind the world clock";
+}
+
+// ---------------------------------------------------------------------------
 // Gap A — SimTimeScheduler::GetPendingEntries: read-only peek across wheel + heap.
 // ---------------------------------------------------------------------------
 TEST(SimTimeSchedulerTest, GetPendingEntriesReportsLiveWheelAndHeapEntries)
@@ -397,4 +424,134 @@ TEST(SimTimeRegistryTest, IsRegisteredDistinguishesRegisteredFromUnknown)
 
     registry.Unregister(&sys);
     EXPECT_FALSE(registry.IsRegistered(sys.GetSystemId())) << "unregistered again";
+}
+
+// ---------------------------------------------------------------------------
+// Load into a LIVE scheduler: Deserialize must REPLACE the pending set, not
+// merge into it (no doubled entries, no surviving stale live entries).
+// ---------------------------------------------------------------------------
+TEST(SimTimeSaveStateTest, DeserializeIntoSchedulerHoldingSameEntriesDoesNotDouble)
+{
+    SimTimeDomain    world(StringCRC("world"), 60.0f);
+    SimTimeScheduler sched;
+    SimTimeRegistry  reg(sched);
+
+    const StringCRC oneShot("live.oneshot");
+    const StringCRC recur("live.recurring");
+    const StringCRC tgt("target.system");
+    sched.ScheduleAt(Ms(200), oneShot, tgt);
+    sched.ScheduleRecurring(RMs(100), recur, tgt);
+
+    SimTimeSaveState state(world, sched, reg);
+    const Json::Value root = SaveToJson(state);
+
+    // Load back into the SAME live scheduler (still holding both entries).
+    Dia::SaveGame::LoadContext load(root);
+    state.Deserialize(load);
+
+    EXPECT_EQ(sched.GetQueueDepth(), 2) << "pending count must equal the saved count";
+
+    DynamicArrayC<SimTimeSchedulerFire, 16> fired;
+    sched.Tick(Ms(100), fired);
+    EXPECT_EQ(fired.Size(), 1u) << "recurring fires once at saved phase (100ms)";
+    sched.Tick(Ms(200), fired);
+    unsigned int oneShotCount = 0, recurCount = 0;
+    for (unsigned int i = 0; i < fired.Size(); ++i)
+    {
+        if (fired[i].eventType == oneShot) ++oneShotCount;
+        if (fired[i].eventType == recur)   ++recurCount;
+    }
+    EXPECT_EQ(oneShotCount, 1u) << "one-shot fires exactly once";
+    EXPECT_EQ(recurCount, 2u) << "recurring fired at 100ms and 200ms only";
+}
+
+TEST(SimTimeSaveStateTest, DeserializeDropsLiveEntryNotInSave)
+{
+    SimTimeDomain    world(StringCRC("world"), 60.0f);
+    SimTimeScheduler sched;
+    SimTimeRegistry  reg(sched);
+
+    const StringCRC saved("saved.event");
+    const StringCRC extra("extra.live.event");
+    const StringCRC tgt("target.system");
+    sched.ScheduleAt(Ms(300), saved, tgt);
+
+    SimTimeSaveState state(world, sched, reg);
+    const Json::Value root = SaveToJson(state);
+
+    const ScheduleHandle extraHandle = sched.ScheduleAt(Ms(150), extra, tgt);   // not in the save
+    ASSERT_EQ(sched.GetQueueDepth(), 2);
+
+    Dia::SaveGame::LoadContext load(root);
+    state.Deserialize(load);
+
+    EXPECT_EQ(sched.GetQueueDepth(), 1);
+    sched.Cancel(extraHandle);   // stale handle: must be a safe no-op
+    EXPECT_EQ(sched.GetQueueDepth(), 1);
+
+    DynamicArrayC<SimTimeSchedulerFire, 16> fired;
+    sched.Tick(Ms(1000), fired);
+    EXPECT_FALSE(FiredContains(fired, extra)) << "live-only entry must be gone after load";
+    EXPECT_TRUE(FiredContains(fired, saved));
+}
+
+TEST(SimTimeSaveStateTest, DeserializeTwiceDoesNotDuplicateEntries)
+{
+    SimTimeDomain    worldA(StringCRC("world"), 60.0f);
+    SimTimeScheduler schedA;
+    SimTimeRegistry  regA(schedA);
+    schedA.ScheduleAt(Ms(200), StringCRC("a"), StringCRC("t"));
+    schedA.ScheduleRecurring(RMs(50), StringCRC("b"), StringCRC("t"));
+    SimTimeSaveState saveA(worldA, schedA, regA);
+    const Json::Value root = SaveToJson(saveA);
+
+    SimTimeDomain    worldB(StringCRC("world"), 60.0f);
+    SimTimeScheduler schedB;
+    SimTimeRegistry  regB(schedB);
+    SimTimeSaveState saveB(worldB, schedB, regB);
+    {
+        Dia::SaveGame::LoadContext load(root);
+        saveB.Deserialize(load);
+    }
+    {
+        Dia::SaveGame::LoadContext load(root);
+        saveB.Deserialize(load);
+    }
+    EXPECT_EQ(schedB.GetQueueDepth(), 2);
+}
+
+TEST(SimTimeSaveStateTest, StaleLiveEntryEarlierThanRewoundClockDoesNotFireAfterLoad)
+{
+    // Save at t=2000ms with one future entry.
+    SimTimeDomain    worldA(StringCRC("world"), 60.0f);
+    SimTimeScheduler schedA;
+    SimTimeRegistry  regA(schedA);
+    worldA.AdvanceTo(Ms(2000));
+    schedA.ScheduleAt(Ms(2500), StringCRC("future"), StringCRC("t"));
+    SimTimeSaveState saveA(worldA, schedA, regA);
+    const Json::Value root = SaveToJson(saveA);
+
+    // Live session is at 4000ms with a stale entry scheduled at 3000ms (> saved
+    // time but pending) and one at 1000ms (earlier than the rewound clock).
+    SimTimeDomain    worldB(StringCRC("world"), 60.0f);
+    SimTimeScheduler schedB;
+    SimTimeRegistry  regB(schedB);
+    worldB.AdvanceTo(Ms(4000));
+    const StringCRC stale1("stale.early");
+    const StringCRC stale2("stale.mid");
+    schedB.ScheduleAt(Ms(1000), stale1, StringCRC("t"));
+    schedB.ScheduleAt(Ms(3000), stale2, StringCRC("t"));
+
+    SimTimeSaveState saveB(worldB, schedB, regB);
+    Dia::SaveGame::LoadContext load(root);
+    saveB.Deserialize(load);
+    ASSERT_EQ(worldB.Now(), Ms(2000));
+
+    DynamicArrayC<SimTimeSchedulerFire, 16> fired;
+    schedB.Tick(Ms(2000), fired);
+    schedB.Tick(Ms(5000), fired);
+    EXPECT_FALSE(FiredContains(fired, stale1));
+    EXPECT_FALSE(FiredContains(fired, stale2));
+    EXPECT_TRUE(FiredContains(fired, StringCRC("future")));
+    EXPECT_EQ(fired.Size(), 1u);
 }

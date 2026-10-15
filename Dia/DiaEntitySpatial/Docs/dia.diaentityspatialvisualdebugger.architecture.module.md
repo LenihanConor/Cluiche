@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.diaentityspatialvisualdebugger
 name: DiaEntitySpatialVisualDebugger
 owner_team: TBD
-layer: debug-adaptor
+layer: 4.1-Gameplay
 status: active
 maturity: dev
 

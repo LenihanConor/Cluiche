@@ -28,7 +28,8 @@
                 "BehaviourTreeTestStage",
                 "AICalloutTestStage",
                 "GridVisibilityTestStage",
-                "MessageBusTestStage"
+                "MessageBusTestStage",
+                "MessageBusStressTestStage"
             ],
             "auto_advance": false
         },
@@ -200,6 +201,13 @@
                 "Boot"
             ],
             "auto_advance": false
+        },
+        {
+            "name": "MessageBusStressTestStage",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
         }
     ],
     "initial_stage": "Boot",
@@ -339,6 +347,22 @@
             "to": "SimPU"
         },
         {
+            "id": "DebugConsoleLine",
+            "kind": "EventStream",
+            "payload_type": "DebugConsoleLineEvent",
+            "overflow": "drop-oldest",
+            "from": "MainPU",
+            "to": "SimPU"
+        },
+        {
+            "id": "DebugConsoleResult",
+            "kind": "EventStream",
+            "payload_type": "DebugConsoleResultEvent",
+            "overflow": "drop-oldest",
+            "from": "SimPU",
+            "to": "MainPU"
+        },
+        {
             "id": "DebugPanelToggle",
             "kind": "EventStream",
             "payload_type": "DebugPanelToggleEvent",
@@ -473,7 +497,8 @@
                         "BehaviourTreeTestStage",
                         "AICalloutTestStage",
                         "GridVisibilityTestStage",
-                        "MessageBusTestStage"
+                        "MessageBusTestStage",
+                        "MessageBusStressTestStage"
                     ],
                     "dependencies": [
                         "ObservationModule",
@@ -585,7 +610,8 @@
                         "BehaviourTreeTestStage",
                         "AICalloutTestStage",
                         "GridVisibilityTestStage",
-                        "MessageBusTestStage"
+                        "MessageBusTestStage",
+                        "MessageBusStressTestStage"
                     ],
                     "dependencies": [
                         "ObservationModule",
@@ -599,6 +625,14 @@
                         {
                             "id": "DebugPanelCommand",
                             "role": "writes"
+                        },
+                        {
+                            "id": "DebugConsoleLine",
+                            "role": "writes"
+                        },
+                        {
+                            "id": "DebugConsoleResult",
+                            "role": "reads"
                         },
                         {
                             "id": "DebugPanelToggle",
@@ -748,7 +782,8 @@
                         "BehaviourTreeTestStage",
                         "AICalloutTestStage",
                         "GridVisibilityTestStage",
-                        "MessageBusTestStage"
+                        "MessageBusTestStage",
+                        "MessageBusStressTestStage"
                     ],
                     "dependencies": [
                         "Camera2DModule"
@@ -769,6 +804,14 @@
                         {
                             "id": "DebugPanelCommand",
                             "role": "reads"
+                        },
+                        {
+                            "id": "DebugConsoleLine",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "DebugConsoleResult",
+                            "role": "writes"
                         },
                         {
                             "id": "DebugPanelToggle",
@@ -831,14 +874,40 @@
                     "channels": []
                 },
                 {
+                    "instance_id": "StageStatus",
+                    "type_id": "StageStatusModule",
+                    "stages": [
+                        "Boot"
+                    ],
+                    "dependencies": [],
+                    "channels": []
+                },
+                {
+                    "instance_id": "TestStatusBridge",
+                    "type_id": "TestStatusBridgeModule",
+                    "stages": [
+                        "Boot"
+                    ],
+                    "dependencies": [
+                        "StageStatus"
+                    ],
+                    "channels": []
+                },
+                {
                     "instance_id": "BootMenu",
                     "type_id": "BootMenuModule",
                     "stages": [
                         "Boot"
                     ],
                     "dependencies": [
-                        "DebugUI"
+                        "DebugUI",
+                        "StageStatus",
+                        "TestStatusBridge"
                     ],
+                    "config": {
+                        "title": "CluicheTest — Bootstrap",
+                        "project": "Project: CluicheTest v0.1"
+                    },
                     "channels": [
                         {
                             "id": "BootMenuNavRequest",
@@ -874,7 +943,8 @@
                         "BehaviourTreeTestStage",
                         "AICalloutTestStage",
                         "GridVisibilityTestStage",
-                        "MessageBusTestStage"
+                        "MessageBusTestStage",
+                        "MessageBusStressTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"

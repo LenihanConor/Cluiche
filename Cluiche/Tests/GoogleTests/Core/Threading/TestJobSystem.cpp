@@ -260,6 +260,52 @@ TEST(JobSystemInstance, ShutdownIsIdempotent)
     SUCCEED();
 }
 
+// ==============================================================================
+// TrySubmit (non-asserting variant)
+// ==============================================================================
+
+TEST(JobSystemInstance, TrySubmit_AfterShutdown_ReturnsInvalidHandle)
+{
+    JobSystem js;
+    js.Initialize(2);
+    js.Shutdown();
+
+    // TrySubmit must NOT assert - it returns an invalid handle silently
+    JobHandle h = js.TrySubmit([]() {});
+
+    EXPECT_FALSE(h.IsValid()) << "TrySubmit after Shutdown must return an invalid handle";
+}
+
+TEST(JobSystemInstance, TrySubmit_BeforeInitialize_ReturnsInvalidHandle)
+{
+    JobSystem js;
+
+    // TrySubmit must NOT assert - it returns an invalid handle silently
+    JobHandle h = js.TrySubmit([]() {});
+
+    EXPECT_FALSE(h.IsValid()) << "TrySubmit before Initialize must return an invalid handle";
+}
+
+TEST(JobSystemInstance, TrySubmit_NormalCase_ExecutesFunction)
+{
+    Atomic<int> counter{0};
+
+    JobSystem js;
+    js.Initialize(2);
+
+    JobHandle h = js.TrySubmit([&]() {
+        counter.Increment();
+    });
+
+    EXPECT_TRUE(h.IsValid()) << "TrySubmit should return a valid handle when pool is active";
+
+    js.Wait(h);
+
+    EXPECT_EQ(counter.Load(), 1);
+
+    js.Shutdown();
+}
+
 TEST(JobSystemInstance, StressTest_ManySmallJobs)
 {
     JobSystem js;

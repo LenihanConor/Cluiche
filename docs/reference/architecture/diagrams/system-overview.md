@@ -11,7 +11,6 @@ graph TB
     subgraph External["External Dependencies"]
         SFML["SFML 2.x<br/>Graphics/Audio/Input"]
         JsonCpp["JsonCpp<br/>Configuration"]
-        Webix["Webix<br/>UI Framework"]
         VisJS["VisJS<br/>Visualization"]
     end
 
@@ -67,7 +66,6 @@ graph TB
     %% Dia depends on External
     DiaSFML --> SFML
     DiaCore --> JsonCpp
-    DiaUI --> Webix
 
     %% Styling
     classDef appLayer fill:#4A90E2,stroke:#2E5C8A,stroke-width:2px,color:#fff
@@ -76,7 +74,7 @@ graph TB
 
     class Main,MainPU,RenderPU,SimPU,Levels,Modules appLayer
     class DiaApp,DiaCore,DiaGraphics,DiaMaths,DiaInput,DiaUI,DiaWindow,DiaSFML,DiaIO,DiaPhysics,DiaAI,DiaArch engineLayer
-    class SFML,JsonCpp,Webix,VisJS externalLayer
+    class SFML,JsonCpp,VisJS externalLayer
 ```
 
 [← Back to Architecture Overview](../architecture.md)

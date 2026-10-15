@@ -1,0 +1,1615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dia Debug Panel</title>
+<!--
+  DiaDebugPanel — Phase 1.
+
+  Rendered by Ultralight as an overlay on the left side of the game viewport
+  (SD-007). Styling is lifted verbatim from the approved UX mockup at
+  docs/research/visual_debugger_redesign/mockup.html.
+
+  No CDN / external assets: Ultralight runs fully offline.
+
+  C++ -> JS   updateDomainState(data)      pushed once per frame
+  JS   -> C++ app.onCommand(domainId, cmd, argsJson)
+
+  Phase 2 (built): search bar (domain filter), entity-lock field, command
+  strip (debug.layer.* commands). Domain filtering across modules via
+  IDebugDomain::SetFocusEntity is a follow-up task.
+-->
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: transparent;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 12px;
+  color: #d4d4d4;
+  height: 100vh;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ─────────────────────────────── PANEL ─── */
+#panel {
+  position: fixed;
+  top: 0; left: 0;
+  width: 520px;
+  height: 100vh;
+  background: #181818;
+  border-right: 1px solid #2a2a2a;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Panel header ── */
+.panel-header {
+  background: #1f1f1f;
+  border-bottom: 1px solid #2d2d2d;
+  padding: 7px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.panel-title {
+  font-size: 10px;
+  color: #7a7a7a;
+  letter-spacing: 2px;
+  font-weight: 700;
+  flex: 1;
+}
+.scale-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: #555;
+}
+.scale-row input[type=range] {
+  width: 55px; height: 3px;
+  accent-color: #5a9fd4; cursor: pointer;
+}
+#scale-display { color: #9a9a9a; width: 22px; text-align: right; }
+
+/* ── Groups list ── */
+.groups-list {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #2d2d2d transparent;
+}
+
+/* ── Empty state ── */
+.empty-state {
+  padding: 18px 12px;
+  font-size: 11px;
+  color: #3a3a3a;
+  font-style: italic;
+  text-align: center;
+}
+
+/* ── Group ── */
+.group { border-top: 1px solid #1f1f1f; }
+
+.group-hdr {
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  cursor: pointer;
+  gap: 8px;
+  background: #181818;
+}
+.group-hdr:hover { background: #1e1e1e; }
+
+.group-arrow { width: 10px; font-size: 9px; color: #3a3a3a; flex-shrink: 0; }
+.group.open  .group-arrow::after { content: '▼'; }
+.group.closed .group-arrow::after { content: '▶'; }
+
+.group-label {
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  font-weight: 700;
+  text-transform: uppercase;
+  flex: 1;
+  color: var(--accent);
+  opacity: 0.85;
+}
+
+.group-meta { font-size: 10px; color: #333; margin-right: 4px; }
+
+.btn-all {
+  font-family: inherit; font-size: 9px;
+  padding: 2px 7px;
+  border: 1px solid;
+  cursor: pointer; background: transparent;
+  line-height: 1.6;
+}
+.btn-all.on  { border-color: #1e3a1e; color: #3a7a3a; }
+.btn-all.on:hover  { background: #111d11; color: #5aaa5a; }
+.btn-all.off { border-color: #3a1e1e; color: #7a3a3a; }
+.btn-all.off:hover { background: #1d1111; color: #aa5a5a; }
+
+.group-body {
+  padding: 4px 8px 6px 8px;
+  background: #131313;
+}
+.group.closed .group-body { display: none; }
+
+/* ── Domain Card ── */
+.domain {
+  margin-bottom: 3px;
+  border: 1px solid #222;
+  background: #1b1b1b;
+}
+.domain.enabled  { border-left: 2px solid var(--accent); }
+.domain.disabled { border-left: 2px solid #2a2a2a; opacity: 0.55; }
+
+.domain-hdr {
+  display: flex;
+  align-items: center;
+  padding: 5px 8px;
+  gap: 7px;
+  cursor: pointer;
+}
+.domain-hdr:hover { background: #202020; }
+
+.tog {
+  width: 13px; height: 13px;
+  border: 1px solid #444;
+  flex-shrink: 0; display: flex;
+  align-items: center; justify-content: center;
+  font-size: 8px; cursor: pointer;
+}
+.tog.on  { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
+.tog.on::after  { content: '✓'; }
+.tog.off::after { content: ''; }
+
+.domain-name {
+  flex: 1; font-size: 12px; font-weight: 600; color: #aaa;
+}
+.domain.enabled .domain-name { color: var(--accent); }
+
+.domain-stat { font-size: 10px; color: #3a3a3a; }
+.domain.enabled .domain-stat { color: #555; }
+
+.expand-btn { width: 12px; font-size: 9px; color: #333; flex-shrink: 0; text-align: center; }
+.domain.open   .expand-btn::after { content: '▼'; }
+.domain.closed .expand-btn::after { content: '▶'; }
+
+.domain-body {
+  padding: 6px 10px 8px 10px;
+  border-top: 1px solid #202020;
+}
+.domain.closed .domain-body { display: none; }
+
+/* Drawers */
+.drawers {
+  display: flex; flex-wrap: wrap; gap: 5px 12px; margin-bottom: 8px;
+}
+.dr {
+  display: flex; align-items: center; gap: 4px;
+  cursor: pointer; font-size: 11px; color: #555;
+}
+.dr.on { color: #b0b0b0; }
+.dr-box {
+  width: 11px; height: 11px;
+  border: 1px solid #3a3a3a; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 8px;
+}
+.dr.on .dr-box { background: var(--accent); border-color: var(--accent); color: #000; }
+.dr.on .dr-box::after { content: '✓'; }
+
+/* Stats */
+.stats {
+  display: flex; flex-wrap: wrap; column-gap: 14px; row-gap: 3px;
+  padding: 5px 0; margin-bottom: 6px;
+  border-top: 1px solid #1e1e1e; border-bottom: 1px solid #1e1e1e;
+}
+.stats:empty { display: none; }
+.s { font-size: 10px; color: #444; }
+.s .v { color: #777; }
+.s .v.w { color: #c8882a; }
+.s .v.e { color: #c03030; }
+.s .v.g { color: #3a9a5a; }
+
+/* Controls */
+.controls { display: flex; flex-direction: column; gap: 3px; margin-top: 5px; }
+.controls:empty { display: none; }
+.ctrl {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 10px; color: #444;
+}
+.ctrl span.ctrl-label { width: 96px; flex-shrink: 0; }
+.ctrl input[type=range] {
+  flex: 1; height: 3px;
+  accent-color: var(--accent); cursor: pointer;
+}
+.ctrl .cv { width: 30px; text-align: right; color: #666; }
+
+/* Desc */
+/* ── F-2 TestRunnerPanel card (domain state "panel": "f2_test_runner") ── */
+.domain.f2card, .domain.f2card.disabled { opacity: 1; }
+.domain.f2card .tog { display: none; }
+.f2 { font-size: 11px; }
+.f2 .f2-row { display: flex; align-items: center; margin-bottom: 6px; }
+.f2 .f2-title { color: #dcdcaa; font-weight: 700; flex: 1; }
+.f2 button { font-family: inherit; font-size: 11px; cursor: pointer; }
+.f2 .f2-run { background: #0e639c; color: #fff; border: 0; padding: 3px 10px; }
+.f2 .f2-run:disabled { background: #3a3a3a; color: #777; cursor: default; }
+.f2 .f2-sbtn { background: #333; color: #d4d4d4; border: 1px solid #555; padding: 2px 6px; margin-right: 3px; }
+.f2 .f2-sbtn.sel { background: #4a7c59; border-color: #6aa87a; color: #fff; }
+.f2 .f2-sbtn:disabled { opacity: 0.4; cursor: default; }
+.f2 .f2-strip { display: flex; margin-bottom: 4px; }
+.f2 .f2-ph { flex: 1; text-align: center; padding: 3px 0; margin-right: 2px; background: #2d2d2d;
+             border: 1px solid #3c3c3c; color: #808080; font-size: 8px; overflow: hidden; white-space: nowrap; }
+.f2 .f2-ph.done { background: #243b2a; border-color: #4a7c59; color: #b5e8b0; }
+.f2 .f2-ph.cur  { background: #4a4a1f; border-color: #dcdcaa; color: #fff; }
+.f2 .f2-ph.bad  { background: #4a2020; border-color: #f48771; color: #f8c9c0; }
+.f2 .f2-tick { color: #808080; margin-bottom: 6px; }
+.f2 table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+.f2 th { text-align: left; color: #808080; font-weight: normal; border-bottom: 1px solid #3c3c3c; padding: 2px 4px; }
+.f2 td { padding: 3px 4px; border-bottom: 1px solid #2d2d2d; vertical-align: top; }
+.f2 .f2-st { display: inline-block; min-width: 48px; text-align: center; padding: 0 4px; font-size: 10px; }
+.f2 .f2-st.NotRun  { background: #333; color: #888; }
+.f2 .f2-st.Running { background: #4a4a1f; color: #dcdcaa; }
+.f2 .f2-st.Pass    { background: #243b2a; color: #b5e8b0; }
+.f2 .f2-st.Fail    { background: #4a2020; color: #f48771; }
+.f2 .f2-box { background: #1e1e1e; border: 1px solid #3c3c3c; padding: 4px 6px; margin-bottom: 6px; }
+.f2 .f2-lbl { color: #808080; margin-bottom: 3px; }
+.f2 .f2-fp { display: flex; margin-bottom: 1px; }
+.f2 .f2-fp .k { width: 84px; color: #808080; flex-shrink: 0; }
+.f2 .f2-fp .ok { color: #b5e8b0; }
+.f2 .f2-fp .diff { color: #f48771; }
+.f2 .f2-fp .dim { color: #808080; }
+.f2 .f2-clock { color: #9cdcfe; margin-bottom: 4px; }
+.f2 .f2-foot { color: #808080; }
+
+.desc { font-size: 10px; color: #434343; margin-bottom: 7px; font-style: italic; line-height: 1.4; }
+
+/* ── Group accent colours (fallback; C++ also pushes _accent per domain) ── */
+.group[data-g="physics"]    { --accent: #f59e0b; }
+.group[data-g="animation"]  { --accent: #10b981; }
+.group[data-g="navigation"] { --accent: #3b82f6; }
+.group[data-g="rendering"]  { --accent: #8b5cf6; }
+.group[data-g="spatial"]    { --accent: #06b6d4; }
+.group[data-g="entity"]     { --accent: #eab308; }
+.group[data-g="aibehavior"] { --accent: #ef4444; }
+.group[data-g="coredebug"]  { --accent: #6b7280; }
+
+/* ── Misc ── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #252525; }
+::-webkit-scrollbar-thumb:hover { background: #333; }
+
+/* ── Phase 2: Search ── */
+.search-row {
+  padding: 5px 10px;
+  border-bottom: 1px solid #222;
+  flex-shrink: 0;
+}
+.search-input {
+  width: 100%;
+  background: #0d0d0d;
+  border: 1px solid #2d2d2d;
+  color: #9a9a9a;
+  font-family: inherit;
+  font-size: 11px;
+  padding: 4px 8px;
+  outline: none;
+}
+.search-input:focus         { border-color: #5a9fd4; color: #c8c8c8; }
+.search-input::placeholder  { color: #2e2e2e; }
+
+/* ── Phase 2: Entity lock ── */
+.entity-lock-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 10px;
+  border-top: 1px solid #222;
+  flex-shrink: 0;
+}
+.entity-lock-label {
+  font-size: 9px; letter-spacing: 0.8px; color: #3a3a3a;
+  text-transform: uppercase; flex-shrink: 0;
+}
+.entity-lock-input {
+  flex: 1; min-width: 0;
+  background: #0d0d0d; border: 1px solid #2d2d2d;
+  color: #9a9a9a; font-family: inherit; font-size: 11px;
+  padding: 3px 6px; outline: none;
+}
+.entity-lock-input:focus        { border-color: #5a9fd4; color: #c8c8c8; }
+.entity-lock-input::placeholder { color: #2e2e2e; }
+.btn-lock {
+  font-family: inherit; font-size: 9px; padding: 3px 8px;
+  border: 1px solid #2d2d2d; background: transparent; color: #444; cursor: pointer;
+}
+.btn-lock:hover  { background: #1a1a1a; color: #777; border-color: #3a3a3a; }
+.btn-lock.active { border-color: #eab308; color: #eab308; }
+.btn-unlock {
+  font-family: inherit; font-size: 9px; padding: 3px 7px;
+  border: 1px solid #3a2a00; background: transparent; color: #5a4200; cursor: pointer;
+}
+.btn-unlock:hover { color: #eab308; border-color: #6a5000; }
+
+/* -- Console: Log view + command strip (panel-console) -- */
+.log-view { flex-shrink: 0; border-top: 1px solid #222; background: #141414; }
+.log-hdr { display: flex; align-items: center; gap: 8px; padding: 5px 10px; cursor: pointer; }
+.log-hdr:hover { background: #1a1a1a; }
+.log-arrow { width: 10px; font-size: 9px; color: #3a3a3a; }
+.log-view.open .log-arrow::after { content: '\25BC'; } .log-view.closed .log-arrow::after { content: '\25B6'; }
+.log-title { font-size: 10px; letter-spacing: 1.2px; font-weight: 700; color: #6b7280; flex: 1; }
+.log-count { font-size: 10px; color: #333; }
+.log-filters { display: flex; gap: 4px; }
+.flt { font-family: inherit; font-size: 9px; padding: 2px 7px; border: 1px solid #2d2d2d; background: transparent; color: #555; cursor: pointer; }
+.flt:hover { background: #1a1a1a; color: #888; }
+.flt.active { border-color: #5a9fd4; color: #5a9fd4; }
+.flt[data-lvl=WARN].active { border-color: #c8882a; color: #c8882a; }
+.flt[data-lvl=ERROR].active { border-color: #c03030; color: #c03030; }
+.log-view.closed .log-body, .log-view.closed .log-filters { display: none; }
+.log-body { height: 150px; overflow-y: auto; background: #0f0f0f; border-top: 1px solid #1e1e1e; padding: 2px 0; }
+.log-line { display: flex; gap: 7px; padding: 1px 10px; font-size: 10px; line-height: 1.5; white-space: nowrap; }
+.log-line:nth-child(odd) { background: #121212; }
+.log-ts { color: #3a3a3a; flex-shrink: 0; }
+.badge { width: 38px; text-align: center; font-size: 9px; font-weight: 700; flex-shrink: 0; line-height: 1.6; border: 1px solid; }
+.badge.INFO { color: #4a7a9a; border-color: #1f3340; } .badge.WARN { color: #c8882a; border-color: #4a3410; } .badge.ERROR { color: #c03030; border-color: #4a1a1a; }
+.log-ch { color: #6a6a8a; width: 78px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; }
+.log-msg { color: #8a8a8a; overflow: hidden; text-overflow: ellipsis; }
+.log-line.ERROR .log-msg { color: #b05050; } .log-line.WARN .log-msg { color: #a88040; }
+.log-empty { padding: 10px; color: #3a3a3a; font-style: italic; text-align: center; font-size: 11px; }
+
+/* Command strip (upgraded) */
+.command-strip { position: relative; border-top: 1px solid #222; padding: 5px 10px 4px; flex-shrink: 0; background: #141414; }
+.cmd-row { display: flex; align-items: center; gap: 6px; }
+.cmd-prefix { font-size: 11px; color: #3a3a3a; }
+.cmd-input { flex: 1; min-width: 0; background: transparent; border: none; color: #9a9a9a; font-family: inherit; font-size: 11px; outline: none; }
+.cmd-input:focus { color: #c8c8c8; } .cmd-input::placeholder { color: #2a2a2a; }
+.cmd-counter { font-size: 9px; color: #7a6a2a; display: none; } .cmd-counter.warn { display: inline; } .cmd-counter.max { color: #c03030; }
+.cmd-meta { display: flex; justify-content: space-between; gap: 8px; margin-top: 3px; min-height: 14px; font-size: 10px; }
+.cmd-result { color: #333; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.cmd-result .echo { color: #666; }
+.cmd-result .code { font-weight: 700; margin-left: 6px; }
+.cmd-result .code.ok { color: #3a9a5a; } .cmd-result .code.err { color: #c03030; }
+.cmd-hint { color: #2e2e2e; flex-shrink: 0; } .cmd-hint kbd { font-family: inherit; color: #555; border: 1px solid #2a2a2a; padding: 0 3px; font-size: 9px; }
+.ac { position: absolute; left: 10px; right: 10px; bottom: 100%; background: #1b1b1b; border: 1px solid #3a3a3a; box-shadow: 0 -4px 12px rgba(0,0,0,.5); display: none; z-index: 5; }
+.ac.show { display: block; }
+.ac-item { display: flex; gap: 10px; padding: 3px 8px; font-size: 11px; color: #7a7a7a; cursor: pointer; }
+.ac-item.sel { background: #243447; color: #d4d4d4; }
+.ac-item .nm { flex-shrink: 0; } .ac-item .ds { color: #3f3f3f; font-size: 10px; margin-left: auto; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ac-item.sel .ds { color: #6a7a8a; }
+.ac-item mark { background: none; color: #5a9fd4; font-weight: 700; text-decoration: underline; }
+.ac-foot { padding: 2px 8px; font-size: 9px; color: #3a3a3a; border-top: 1px solid #262626; }
+.ac-foot kbd { font-family: inherit; color: #666; border: 1px solid #2a2a2a; padding: 0 3px; }
+
+/* -- Palette overlay (panel-palette; approved mockup debug-palette.html) -- */
+.domain.flash { background: #25303d; box-shadow: 0 0 0 1px var(--accent), 0 0 10px rgba(90,159,212,.35); }
+#pal-overlay { position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0,0,0,.55); display: none; z-index: 10; justify-content: center; align-items: flex-start; padding-top: 70px; }
+#pal-overlay.show { display: flex; }
+.pal { width: 460px; max-height: 70vh; background: #1b1b1b; border: 1px solid #3a3a3a; box-shadow: 0 10px 30px rgba(0,0,0,.7); display: flex; flex-direction: column; }
+.pal-input { background: #0d0d0d; border: none; border-bottom: 1px solid #2d2d2d; color: #d4d4d4; font-family: inherit; font-size: 13px; padding: 9px 12px; outline: none; }
+.pal-input:focus { border-bottom-color: #5a9fd4; } .pal-input::placeholder { color: #3a3a3a; }
+.pal-tabs { display: flex; border-bottom: 1px solid #262626; background: #161616; }
+.pal-tab { padding: 5px 12px; font-size: 10px; color: #555; cursor: pointer; border-bottom: 2px solid transparent; }
+.pal-tab:hover { color: #999; } .pal-tab.active { color: #5a9fd4; border-bottom-color: #5a9fd4; }
+.pal-tab .n { color: #3a3a3a; margin-left: 4px; } .pal-tab.active .n { color: #4a7a9a; }
+.pal-list { overflow-y: auto; flex: 1; min-height: 60px; scrollbar-width: thin; scrollbar-color: #2d2d2d transparent; }
+.pal-row { display: flex; align-items: center; gap: 9px; padding: 6px 12px; cursor: pointer; border-left: 2px solid transparent; }
+.pal-row.sel { background: #243447; border-left-color: #5a9fd4; }
+.pal-type { width: 22px; height: 22px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; border: 1px solid; }
+.pal-type.command { color: #5a9fd4; border-color: #1f3a52; background: #101a24; } .pal-type.domain { color: #10b981; border-color: #124a38; background: #0e1b17; }
+.pal-info { flex: 1; min-width: 0; }
+.pal-nm { font-size: 12px; color: #b0b0b0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pal-ds { font-size: 10px; color: #4a4a4a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.pal-row.sel .pal-ds { color: #7a8a9a; }
+.pal-cat { font-size: 9px; color: #6a6a6a; border: 1px solid #2a2a2a; padding: 1px 6px; flex-shrink: 0; letter-spacing: .5px; }
+.pal mark { background: none; color: #f0c040; font-weight: 700; }
+.pal-empty { padding: 22px 12px; text-align: center; color: #3a3a3a; font-style: italic; font-size: 11px; }
+.pal-foot { border-top: 1px solid #262626; background: #161616; padding: 5px 12px; font-size: 9px; color: #444; display: flex; gap: 12px; }
+.pal-foot .tot { margin-left: auto; }
+.pal-foot kbd { font-family: inherit; color: #777; border: 1px solid #2d2d2d; padding: 0 4px; background: #181818; }
+
+/* ── Stats mini-table (IK2D chains, Animation2D layers, etc.) ── */
+.st-table { width: 100%; margin: 5px 0 2px 0; }
+.st-hdr, .st-row { display: flex; }
+.st-hdr { border-bottom: 1px solid #1e1e1e; margin-bottom: 1px; }
+.st-row:nth-child(odd) { background: #161616; }
+.st-cell { font-size: 9px; padding: 2px 5px; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-width: 0; }
+.st-hdr .st-cell { color: #383838; font-weight: 700; }
+.st-row .st-cell { color: #5a5a5a; }
+
+/* ── Utility ── */
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div id="panel">
+
+  <div class="panel-header">
+    <span class="panel-title">DIA&nbsp;&nbsp;DEBUG</span>
+    <div class="scale-row">
+      <span>Scale</span>
+      <input type="range" min="10" max="200" value="50" id="scale-range">
+      <span id="scale-display">50</span>
+    </div>
+  </div>
+
+  <div class="search-row">
+    <input class="search-input" id="search-input" type="text" placeholder="filter domains…"
+           onfocus="pushUIOnlyMode()" onblur="popInputMode()">
+  </div>
+
+  <div class="groups-list" id="groups-list">
+    <div class="empty-state" id="empty-state">No domains registered</div>
+  </div>
+
+  <div class="entity-lock-row">
+    <span class="entity-lock-label">Entity</span>
+    <input class="entity-lock-input" id="entity-lock-input" type="text" placeholder="entity id"
+           onfocus="pushUIOnlyMode()" onblur="popInputMode()">
+    <button class="btn-lock" id="btn-lock" onclick="onLockClick()">Lock</button>
+    <button class="btn-unlock" id="btn-unlock" style="display:none" onclick="onUnlockClick()">&#x2715;</button>
+  </div>
+
+  <div class="log-view open" id="log-view">
+    <div class="log-hdr" id="log-hdr"><span class="log-arrow"></span><span class="log-title">LOG</span><span class="log-count" id="log-count"></span>
+      <div class="log-filters" id="log-filters">
+        <button class="flt active" data-lvl="ALL">All</button><button class="flt" data-lvl="INFO">Info</button>
+        <button class="flt" data-lvl="WARN">Warn</button><button class="flt" data-lvl="ERROR">Error</button></div></div>
+    <div class="log-body" id="log-body"></div>
+  </div>
+
+  <div class="command-strip">
+    <div class="ac" id="ac"></div>
+    <div class="cmd-row"><span class="cmd-prefix">&gt;</span>
+      <input class="cmd-input" id="cmd-input" type="text" maxlength="240" spellcheck="false" autocomplete="off" placeholder="debug.layer.enable…" onfocus="pushUIOnlyMode()" onblur="popInputMode()">
+      <span class="cmd-counter" id="cmd-counter"></span></div>
+    <div class="cmd-meta"><span class="cmd-result" id="cmd-result"></span>
+      <span class="cmd-hint"><kbd>&uarr;</kbd><kbd>&darr;</kbd> history &nbsp;<kbd>Tab</kbd> complete &nbsp;<kbd>Ctrl+P</kbd> palette</span></div>
+  </div>
+
+  <div id="pal-overlay">
+    <div class="pal">
+      <input class="pal-input" id="pal-input" type="text" maxlength="60" autocomplete="off" spellcheck="false" placeholder="Search commands and domains…" onfocus="pushUIOnlyMode()" onblur="popInputMode()">
+      <div class="pal-tabs" id="pal-tabs"></div>
+      <div class="pal-list" id="pal-list"></div>
+      <div class="pal-foot"><span><kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate</span><span><kbd>Enter</kbd> select</span><span><kbd>Tab</kbd> tab</span><span><kbd>Esc</kbd> close</span><span class="tot" id="pal-tot"></span></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+'use strict';
+
+// ── Canonical group order + display labels (DiaDebugDomain spec) ───────────
+var GROUP_ORDER = [
+  { key: 'Physics',    label: 'Physics',          css: 'physics'    },
+  { key: 'Animation',  label: 'Animation',        css: 'animation'  },
+  { key: 'Navigation', label: 'Navigation',       css: 'navigation' },
+  { key: 'AIBehavior', label: 'AI/Behavior',      css: 'aibehavior' },
+  { key: 'Rendering',  label: 'Rendering',        css: 'rendering'  },
+  { key: 'Spatial',    label: 'Spatial/Geometry', css: 'spatial'    },
+  { key: 'Entity',     label: 'Entity',           css: 'entity'     },
+  { key: 'CoreDebug',  label: 'Core Debug',       css: 'coredebug'  }
+];
+
+// ── Local UI state (survives per-frame refreshes) ──────────────────────────
+var ui = {
+  groupOpen:   {},   // groupKey  -> bool
+  domainOpen:  {},   // domainId  -> bool
+  structureSig: null,
+  activeSlider: null // control element currently being dragged
+};
+
+var latest = {};     // last pushed domain state, keyed by display name
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+
+// Ultralight marshals every JS string argument through Dia String64, which
+// truncates at 63 characters. Keep argsJson compact and warn if it overflows.
+var MAX_ARG_JSON = 63;
+
+function sendCommand(domainId, cmd, args) {
+  if (typeof app === 'undefined' || !app || !app.onCommand) return;
+  var json = JSON.stringify(args || {});
+  if (json.length > MAX_ARG_JSON) {
+    json = '{}';
+  }
+  app.onCommand(String(domainId), String(cmd), json);
+}
+
+function domainsOf(data) {
+  var out = [];
+  for (var name in data) {
+    if (!Object.prototype.hasOwnProperty.call(data, name)) continue;
+    var d = data[name];
+    if (!d || typeof d !== 'object') continue;
+    out.push({
+      id:      d._displayName || name,
+      group:   d._group || 'CoreDebug',
+      desc:    d._description || '',
+      accent:  d._accent || '',
+      drawers: Array.isArray(d.drawers) ? d.drawers : [],
+      stats:   (d.stats && typeof d.stats === 'object') ? d.stats : {},
+      controls: Array.isArray(d.controls) ? d.controls : [],
+      custom:  (typeof d.panel === 'string') ? d.panel : '',
+      raw:     d
+    });
+  }
+  out.sort(function (a, b) { return a.id < b.id ? -1 : (a.id > b.id ? 1 : 0); });
+  return out;
+}
+
+function isDomainEnabled(domain) {
+  for (var i = 0; i < domain.drawers.length; ++i) {
+    if (domain.drawers[i] && domain.drawers[i].enabled) return true;
+  }
+  return false;
+}
+
+function headlineStat(domain) {
+  for (var k in domain.stats) {
+    if (!Object.prototype.hasOwnProperty.call(domain.stats, k)) continue;
+    var v = domain.stats[k];
+    if (v === null || typeof v === 'object' || Array.isArray(v)) continue;
+    return k + ': ' + formatStatValue(v);
+  }
+  return '';
+}
+
+function formatStatValue(v) {
+  if (v === null || v === undefined) return '';
+  if (typeof v === 'object') return '';
+  if (typeof v === 'boolean') return v ? 'yes' : 'no';
+  if (typeof v === 'number') {
+    if (!isFinite(v)) return String(v);
+    if (Math.floor(v) === v) return String(v);
+    var s = v.toFixed(3);
+    return s.replace(/\.?0+$/, '') || '0';
+  }
+  return String(v);
+}
+
+function renderArrayTable(arr) {
+  if (!arr || arr.length === 0) return '';
+  var cols = [];
+  var first = arr[0];
+  for (var ck in first)
+    if (Object.prototype.hasOwnProperty.call(first, ck)) cols.push(ck);
+  if (cols.length === 0) return '';
+  var html = '<div class="st-table"><div class="st-hdr">';
+  for (var ci = 0; ci < cols.length; ++ci)
+    html += '<span class="st-cell">' + escapeHtml(cols[ci]) + '</span>';
+  html += '</div>';
+  for (var ri = 0; ri < arr.length; ++ri) {
+    html += '<div class="st-row">';
+    for (var ci2 = 0; ci2 < cols.length; ++ci2) {
+      var cv = arr[ri][cols[ci2]];
+      html += '<span class="st-cell">' + escapeHtml(cv !== null && typeof cv === 'object' ? '' : formatStatValue(cv)) + '</span>';
+    }
+    html += '</div>';
+  }
+  return html + '</div>';
+}
+
+// Structure signature — a rebuild only happens when the domain/drawer/control
+// inventory changes, so accordion state and slider drags are never clobbered.
+function structureSignature(domains) {
+  var parts = [];
+  for (var i = 0; i < domains.length; ++i) {
+    var d = domains[i];
+    var drawers = d.drawers.map(function (x) { return x && x.name ? x.name : '?'; }).join(',');
+    var ctrls   = d.controls.map(function (c) { return c && c.key ? c.key : '?'; }).join(',');
+    parts.push(d.group + '/' + d.id + '[' + drawers + '][' + ctrls + ']' + d.custom);
+  }
+  return parts.join('|');
+}
+
+// ── Build (structure changed) ─────────────────────────────────────────────
+
+function rebuild(domains) {
+  var list = document.getElementById('groups-list');
+  list.innerHTML = '';
+
+  if (domains.length === 0) {
+    var empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.id = 'empty-state';
+    empty.textContent = 'No domains registered';
+    list.appendChild(empty);
+    return;
+  }
+
+  for (var g = 0; g < GROUP_ORDER.length; ++g) {
+    var groupDef = GROUP_ORDER[g];
+    var members = domains.filter(function (d) { return d.group === groupDef.key; });
+    if (members.length === 0) continue;
+
+    if (!(groupDef.key in ui.groupOpen)) ui.groupOpen[groupDef.key] = true;
+
+    var group = document.createElement('div');
+    group.className = 'group ' + (ui.groupOpen[groupDef.key] ? 'open' : 'closed');
+    group.setAttribute('data-g', groupDef.css);
+    group.setAttribute('data-group-key', groupDef.key);
+    if (members[0].accent) group.style.setProperty('--accent', members[0].accent);
+
+    var hdr = document.createElement('div');
+    hdr.className = 'group-hdr';
+    hdr.appendChild(el('span', 'group-arrow'));
+    hdr.appendChild(el('span', 'group-label', groupDef.label));
+    var meta = el('span', 'group-meta', members.length + (members.length === 1 ? ' domain' : ' domains'));
+    hdr.appendChild(meta);
+
+    var allOn = document.createElement('button');
+    allOn.className = 'btn-all on';
+    allOn.textContent = 'All On';
+    var allOff = document.createElement('button');
+    allOff.className = 'btn-all off';
+    allOff.textContent = 'All Off';
+    hdr.appendChild(allOn);
+    hdr.appendChild(allOff);
+
+    (function (groupKey, groupEl) {
+      hdr.addEventListener('click', function () {
+        ui.groupOpen[groupKey] = !ui.groupOpen[groupKey];
+        groupEl.classList.toggle('open',   ui.groupOpen[groupKey]);
+        groupEl.classList.toggle('closed', !ui.groupOpen[groupKey]);
+      });
+      allOn.addEventListener('click', function (e) { e.stopPropagation(); setGroupAll(groupKey, true); });
+      allOff.addEventListener('click', function (e) { e.stopPropagation(); setGroupAll(groupKey, false); });
+    })(groupDef.key, group);
+
+    group.appendChild(hdr);
+
+    var body = el('div', 'group-body');
+    for (var m = 0; m < members.length; ++m) {
+      body.appendChild(buildDomainCard(members[m]));
+    }
+    group.appendChild(body);
+
+    list.appendChild(group);
+  }
+  if (currentFilter) applyFilter(currentFilter);
+}
+
+function el(tag, cls, text) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function buildDomainCard(domain) {
+  if (!(domain.id in ui.domainOpen)) ui.domainOpen[domain.id] = (domain.custom === 'f2_test_runner');
+
+  var enabled = isDomainEnabled(domain);
+
+  var card = document.createElement('div');
+  card.className = 'domain ' + (domain.custom === 'f2_test_runner' ? 'f2card ' : '') + (enabled ? 'enabled ' : 'disabled ') +
+                   (ui.domainOpen[domain.id] ? 'open' : 'closed');
+  card.setAttribute('data-domain', domain.id);
+  if (domain.accent) card.style.setProperty('--accent', domain.accent);
+
+  // Header
+  var hdr = el('div', 'domain-hdr');
+  var tog = el('div', 'tog ' + (enabled ? 'on' : 'off'));
+  tog.setAttribute('data-role', 'domain-toggle');
+  hdr.appendChild(tog);
+  hdr.appendChild(el('span', 'domain-name', domain.id));
+  var stat = el('span', 'domain-stat', headlineStat(domain));
+  stat.setAttribute('data-role', 'headline');
+  hdr.appendChild(stat);
+  hdr.appendChild(el('span', 'expand-btn'));
+
+  hdr.addEventListener('click', function () {
+    ui.domainOpen[domain.id] = !ui.domainOpen[domain.id];
+    card.classList.toggle('open',   ui.domainOpen[domain.id]);
+    card.classList.toggle('closed', !ui.domainOpen[domain.id]);
+  });
+  tog.addEventListener('click', function (e) {
+    e.stopPropagation();
+    setDomainAll(domain.id, !tog.classList.contains('on'));
+  });
+  card.appendChild(hdr);
+
+  // Body
+  var body = el('div', 'domain-body');
+  if (domain.desc) body.appendChild(el('div', 'desc', domain.desc));
+
+  if (domain.custom === 'f2_test_runner') {
+    body.appendChild(buildF2Panel(domain));
+    card.appendChild(body);
+    return card;
+  }
+
+  var drawers = el('div', 'drawers');
+  for (var i = 0; i < domain.drawers.length; ++i) {
+    var dw = domain.drawers[i];
+    if (!dw || !dw.name) continue;
+    var row = el('div', 'dr ' + (dw.enabled ? 'on' : 'off'));
+    row.setAttribute('data-drawer', dw.name);
+    row.appendChild(el('span', 'dr-box'));
+    row.appendChild(document.createTextNode(' ' + dw.name));
+    (function (name) {
+      row.addEventListener('click', function (e) {
+        e.stopPropagation();
+        sendCommand(domain.id, 'toggle', { drawer: name });
+      });
+    })(dw.name);
+    drawers.appendChild(row);
+  }
+  body.appendChild(drawers);
+
+  var stats = el('div', 'stats');
+  stats.setAttribute('data-role', 'stats');
+  body.appendChild(stats);
+
+  var controls = el('div', 'controls');
+  for (var c = 0; c < domain.controls.length; ++c) {
+    var ctrlDef = domain.controls[c];
+    if (!ctrlDef || !ctrlDef.key) continue;
+    controls.appendChild(buildControl(domain.id, ctrlDef));
+  }
+  body.appendChild(controls);
+
+  card.appendChild(body);
+  return card;
+}
+
+function buildControl(domainId, def) {
+  var ctrl = el('div', 'ctrl');
+  ctrl.setAttribute('data-control', def.key);
+
+  ctrl.appendChild(el('span', 'ctrl-label', def.label || def.key));
+
+  var range = document.createElement('input');
+  range.type  = 'range';
+  range.min   = (def.min  !== undefined) ? def.min  : 0;
+  range.max   = (def.max  !== undefined) ? def.max  : 1;
+  range.step  = (def.step !== undefined) ? def.step : 0.01;
+  range.value = (def.value !== undefined) ? def.value : 0;
+
+  var display = el('span', 'cv', formatValue(range.value));
+
+  range.addEventListener('input', function () {
+    ui.activeSlider = range;
+    display.textContent = formatValue(range.value);
+  });
+  range.addEventListener('change', function () {
+    ui.activeSlider = null;
+    display.textContent = formatValue(range.value);
+    sendCommand(domainId, 'setScale', { key: def.key, value: parseFloat(range.value) });
+  });
+
+  ctrl.appendChild(range);
+  ctrl.appendChild(display);
+  return ctrl;
+}
+
+function formatValue(v) {
+  var n = parseFloat(v);
+  if (!isFinite(n)) return String(v);
+  return (Math.abs(n) >= 10 || n === Math.floor(n)) ? String(n) : n.toFixed(2);
+}
+
+// ── F-2 TestRunnerPanel ───────────────────────────────────────────────────
+// Renders the F2PanelModel JSON the F2TestRunner domain publishes (phases, checks, fingerprints,
+// button state). Holds no scenario logic: buttons only send commands (run_scenario, set_speed
+// {tier}, step, modal_open, modal_close); the runner refuses manual ones while the scenario runs.
+// Mockup: docs/mockups/f2-core-runtime-panel-mockup.html
+
+var F2_SPEEDS = ['Pause', 'Slow', 'Normal', 'Fast', 'Fastest'];
+
+function f2Dot(s) { return String(s).split(' | ').join(' · '); }
+
+function buildF2Panel(domain) {
+  var id = domain.id;
+  var root = el('div', 'f2');
+  root.setAttribute('data-role', 'f2');
+
+  var top = el('div', 'f2-row');
+  top.appendChild(el('span', 'f2-title', 'F-2 Core Runtime'));
+  var run = el('button', 'f2-run', 'Run Scenario');
+  run.setAttribute('data-role', 'f2-run');
+  run.addEventListener('click', function () { sendCommand(id, 'run_scenario', {}); });
+  top.appendChild(run);
+  root.appendChild(top);
+
+  var strip = el('div', 'f2-strip'); strip.setAttribute('data-role', 'f2-strip'); root.appendChild(strip);
+  var tick = el('div', 'f2-tick'); tick.setAttribute('data-role', 'f2-tick'); root.appendChild(tick);
+
+  var table = document.createElement('table');
+  table.innerHTML = '<thead><tr><th style="width:22px">#</th><th style="width:120px">Check</th>' +
+                    '<th style="width:58px">Status</th><th>Result</th></tr></thead>';
+  var tbody = document.createElement('tbody'); tbody.setAttribute('data-role', 'f2-checks');
+  table.appendChild(tbody);
+  root.appendChild(table);
+
+  var fpBox = el('div', 'f2-box');
+  fpBox.appendChild(el('div', 'f2-lbl', 'Fingerprints (8 streams + day counter + speed state)'));
+  var fp = el('div'); fp.setAttribute('data-role', 'f2-fp'); fpBox.appendChild(fp);
+  root.appendChild(fpBox);
+
+  var man = el('div', 'f2-box');
+  man.appendChild(el('div', 'f2-lbl', 'Manual controls (same bus messages the script uses; locked while the scenario runs)'));
+  var r1 = el('div', 'f2-row');
+  r1.appendChild(el('span', '', 'Speed '));
+  for (var t = 0; t < F2_SPEEDS.length; ++t) {
+    (function (tier) {
+      var b = el('button', 'f2-sbtn', F2_SPEEDS[tier]);
+      b.setAttribute('data-m', '1');
+      b.setAttribute('data-tier', String(tier));
+      b.addEventListener('click', function () { sendCommand(id, 'set_speed', { tier: tier }); });
+      r1.appendChild(b);
+    })(t);
+  }
+  man.appendChild(r1);
+  var clock = el('div', 'f2-clock'); clock.setAttribute('data-role', 'f2-clock'); man.appendChild(clock);
+  var r2 = el('div', 'f2-row');
+  var cmds = [['Step 1 day', 'step'], ['Modal open', 'modal_open'], ['Modal close', 'modal_close']];
+  for (var c = 0; c < cmds.length; ++c) {
+    (function (label, cmd) {
+      var b = el('button', 'f2-sbtn', label);
+      b.setAttribute('data-m', '1');
+      b.addEventListener('click', function () { sendCommand(id, cmd, {}); });
+      r2.appendChild(b);
+    })(cmds[c][0], cmds[c][1]);
+  }
+  man.appendChild(r2);
+  root.appendChild(man);
+
+  var foot = el('div', 'f2-foot'); foot.setAttribute('data-role', 'f2-foot'); root.appendChild(foot);
+  return root;
+}
+
+function refreshF2Panel(card, st) {
+  var q = function (role) { return card.querySelector('[data-role="' + role + '"]'); };
+  var set = function (node, html) { if (node && node.innerHTML !== html) node.innerHTML = html; };
+  if (!st || !Array.isArray(st.phases) || !Array.isArray(st.checks) || !Array.isArray(st.fingerprints)) return;
+
+  var run = q('f2-run');
+  if (run) { run.textContent = st.runLabel; run.disabled = !st.runEnabled; }
+
+  var strip = '';
+  for (var i = 0; i < st.phases.length; ++i) {
+    var p = st.phases[i];
+    var cls = 'f2-ph' + (p.failed ? ' bad' : (p.current ? ' cur' : (p.done ? ' done' : '')));
+    strip += '<div class="' + cls + '">' + escapeHtml(p.name) + '</div>';
+  }
+  set(q('f2-strip'), strip);
+  set(q('f2-tick'), escapeHtml(st.tickText));
+
+  var rows = '';
+  for (var c = 0; c < st.checks.length; ++c) {
+    var k = st.checks[c];
+    rows += '<tr><td>' + escapeHtml(k.id) + '</td><td>' + escapeHtml(k.name) + '</td><td><span class="f2-st ' +
+            escapeHtml(k.status) + '">' + escapeHtml(k.status) + '</span></td><td>' + escapeHtml(k.result) + '</td></tr>';
+  }
+  set(q('f2-checks'), rows);
+
+  var fp = '', anyShown = false;
+  for (var f = 0; f < st.fingerprints.length; ++f) {
+    var r = st.fingerprints[f];
+    var val;
+    if (r.state === 'pending') val = '<span class="dim">pending</span>';
+    else if (r.state === 'none') val = '<span class="dim">-</span>';
+    else if (r.state === 'diff') val = '<span class="diff">' + escapeHtml(r.diffFields.join(', ')) + '</span>';
+    else val = '<span class="ok">' + escapeHtml(f2Dot(r.text)) + '</span>';
+    if (r.state !== 'none') anyShown = true;
+    fp += '<div class="f2-fp"><span class="k">' + escapeHtml(r.label) + '</span>' + val + '</div>';
+  }
+  if (!anyShown) fp = '<div class="f2-fp"><span class="dim">Captured during the run.</span></div>';
+  set(q('f2-fp'), fp);
+
+  var clock = q('f2-clock');
+  if (clock) clock.textContent = f2Dot(st.clockText);
+  var btns = card.querySelectorAll('button[data-m]');
+  for (var b = 0; b < btns.length; ++b) {
+    btns[b].disabled = !st.controlsEnabled;
+    var tier = btns[b].getAttribute('data-tier');
+    if (tier !== null) btns[b].classList.toggle('sel', parseInt(tier, 10) === st.speedTier);
+  }
+  var foot = q('f2-foot');
+  if (foot) foot.textContent = st.footer;
+}
+
+// ── Refresh (structure unchanged — update text + classes only) ────────────
+
+function refresh(domains) {
+  for (var i = 0; i < domains.length; ++i) {
+    var domain = domains[i];
+    var card = document.querySelector('.domain[data-domain="' + cssEscape(domain.id) + '"]');
+    if (!card) continue;
+
+    if (domain.custom === 'f2_test_runner') {
+      var hl = card.querySelector('[data-role="headline"]');
+      if (hl) hl.textContent = headlineStat(domain);
+      refreshF2Panel(card, domain.raw);
+      continue;
+    }
+
+    var enabled = isDomainEnabled(domain);
+    card.classList.toggle('enabled',  enabled);
+    card.classList.toggle('disabled', !enabled);
+
+    var tog = card.querySelector('.tog');
+    if (tog) {
+      tog.classList.toggle('on',  enabled);
+      tog.classList.toggle('off', !enabled);
+    }
+
+    var headline = card.querySelector('[data-role="headline"]');
+    if (headline) headline.textContent = headlineStat(domain);
+
+    for (var d = 0; d < domain.drawers.length; ++d) {
+      var dw = domain.drawers[d];
+      if (!dw || !dw.name) continue;
+      var row = card.querySelector('.dr[data-drawer="' + cssEscape(dw.name) + '"]');
+      if (!row) continue;
+      row.classList.toggle('on',  !!dw.enabled);
+      row.classList.toggle('off', !dw.enabled);
+    }
+
+    var statsEl = card.querySelector('[data-role="stats"]');
+    if (statsEl) renderStats(statsEl, domain.stats);
+
+    for (var c = 0; c < domain.controls.length; ++c) {
+      var def = domain.controls[c];
+      if (!def || !def.key || def.value === undefined) continue;
+      var ctrl = card.querySelector('.ctrl[data-control="' + cssEscape(def.key) + '"]');
+      if (!ctrl) continue;
+      var range = ctrl.querySelector('input[type=range]');
+      if (!range || range === ui.activeSlider) continue;
+      range.value = def.value;
+      var cv = ctrl.querySelector('.cv');
+      if (cv) cv.textContent = formatValue(def.value);
+    }
+  }
+}
+
+function renderStats(container, stats) {
+  var html = '';
+  for (var k in stats) {
+    if (!Object.prototype.hasOwnProperty.call(stats, k)) continue;
+    var v = stats[k];
+    if (Array.isArray(v)) {
+      if (v.length > 0 && v[0] !== null && typeof v[0] === 'object')
+        html += renderArrayTable(v);
+    } else if (v !== null && typeof v === 'object') {
+      for (var sk in v) {
+        if (!Object.prototype.hasOwnProperty.call(v, sk)) continue;
+        var sv = v[sk];
+        if (sv !== null && typeof sv === 'object') continue;
+        html += '<span class="s">' + escapeHtml(k + '.' + sk) +
+                ' <span class="v">' + escapeHtml(formatStatValue(sv)) + '</span></span>';
+      }
+    } else {
+      html += '<span class="s">' + escapeHtml(k) +
+              ' <span class="v">' + escapeHtml(formatStatValue(v)) + '</span></span>';
+    }
+  }
+  if (container.innerHTML !== html) container.innerHTML = html;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function cssEscape(s) {
+  return String(s).replace(/["\\]/g, '\\$&');
+}
+
+// ── Bulk toggles ─────────────────────────────────────────────────────────
+
+function setDomainAll(domainId, target) {
+  var domain = null;
+  var all = domainsOf(latest);
+  for (var i = 0; i < all.length; ++i) { if (all[i].id === domainId) { domain = all[i]; break; } }
+  if (!domain) return;
+
+  for (var d = 0; d < domain.drawers.length; ++d) {
+    var dw = domain.drawers[d];
+    if (!dw || !dw.name) continue;
+    if (!!dw.enabled !== target) sendCommand(domainId, 'toggle', { drawer: dw.name });
+  }
+}
+
+function setGroupAll(groupKey, target) {
+  var all = domainsOf(latest);
+  for (var i = 0; i < all.length; ++i) {
+    if (all[i].group === groupKey) setDomainAll(all[i].id, target);
+  }
+}
+
+// ── C++ -> JS entry point ────────────────────────────────────────────────
+// CallJSFunction evaluates `updateDomainState(<json>)`, so the argument
+// arrives as a live object. A JSON string is also accepted for robustness.
+function updateDomainState(data) {
+  if (typeof data === 'string') {
+    try { data = JSON.parse(data); } catch (e) { return; }
+  }
+  if (!data || typeof data !== 'object') return;
+
+  latest = data;
+  var domains = domainsOf(data);
+  var sig = structureSignature(domains);
+
+  if (sig !== ui.structureSig) {
+    ui.structureSig = sig;
+    rebuild(domains);
+  }
+  refresh(domains);
+}
+window.updateDomainState = updateDomainState;
+
+// ── Phase 2 state ────────────────────────────────────────────────────────
+var currentFilter  = '';
+var lockedEntityId = '';
+
+// ── JS → C++ log bridge ───────────────────────────────────────────────────
+// Relayed to DIA_LOG_INFO("DebugPanelJS",...) via VisualDebuggerModule on
+// the Sim PU (~1 frame delay). Max payload: 54 chars.
+function jsLog(msg) {
+  var s = String(msg);
+  if (s.length > 54) s = s.substring(0, 54);
+  sendCommand('__log__', 'info', { msg: s });
+}
+
+function pushUIOnlyMode() {
+  jsLog('pushUIOnlyMode called');
+  if (typeof app !== 'undefined' && app && app.PushInputMode) {
+    app.PushInputMode('ui_only');
+    jsLog('PushInputMode ok');
+  } else {
+    jsLog('PushInputMode: app not ready');
+  }
+}
+function popInputMode() {
+  jsLog('popInputMode called');
+  if (typeof app !== 'undefined' && app && app.PopInputMode) app.PopInputMode();
+}
+
+// ── Search filter ─────────────────────────────────────────────────────────
+function applyFilter(filter) {
+  currentFilter = (filter || '').trim().toLowerCase();
+  var logVal = currentFilter.length > 30 ? currentFilter.substring(0, 30) : currentFilter;
+  jsLog('applyFilter: "' + logVal + '"');
+  var list = document.getElementById('groups-list');
+  if (!list) return;
+  var groups = list.querySelectorAll('.group');
+  for (var g = 0; g < groups.length; ++g) {
+    var group  = groups[g];
+    var doms   = group.querySelectorAll('.domain');
+    if (!currentFilter) {
+      group.classList.remove('hidden');
+      for (var d = 0; d < doms.length; ++d) doms[d].classList.remove('hidden');
+      continue;
+    }
+    var lbl        = group.querySelector('.group-label');
+    var groupMatch = !!(lbl && lbl.textContent.toLowerCase().indexOf(currentFilter) !== -1);
+    var anyVisible = false;
+    for (var d = 0; d < doms.length; ++d) {
+      var name = (doms[d].getAttribute('data-domain') || '').toLowerCase();
+      var vis  = groupMatch || name.indexOf(currentFilter) !== -1;
+      doms[d].classList.toggle('hidden', !vis);
+      if (vis) anyVisible = true;
+    }
+    group.classList.toggle('hidden', !groupMatch && !anyVisible);
+  }
+}
+
+(function () {
+  var s = document.getElementById('search-input');
+  if (!s) return;
+  s.addEventListener('input', function () {
+    jsLog('search input event: "' + s.value.substring(0, 20) + '"');
+    applyFilter(s.value);
+  });
+})();
+
+// ── Entity lock ───────────────────────────────────────────────────────────
+function onLockClick() {
+  var input = document.getElementById('entity-lock-input');
+  if (!input) return;
+  var id = input.value.trim();
+  if (!id) return;
+  lockedEntityId = id;
+  updateEntityLockUI();
+  sendCommand('__panel__', 'lockEntity', { id: id });
+}
+
+function onUnlockClick() {
+  lockedEntityId = '';
+  var input = document.getElementById('entity-lock-input');
+  if (input) input.value = '';
+  updateEntityLockUI();
+  sendCommand('__panel__', 'lockEntity', { id: '' });
+}
+
+function updateEntityLockUI() {
+  var btnLock   = document.getElementById('btn-lock');
+  var btnUnlock = document.getElementById('btn-unlock');
+  if (!btnLock || !btnUnlock) return;
+  var locked = lockedEntityId.length > 0;
+  btnLock.style.display   = locked ? 'none' : '';
+  btnUnlock.style.display = locked ? ''     : 'none';
+}
+
+// ── Console (panel-console; contract in DebugPanelPage.h) ─────────────────
+// JS -> C++: app.onConsoleLine(seq, p0..p3), app.onConsoleComplete(token),
+// app.onConsoleHistory("prev"|"next"). Every string arg is <= 63 chars, so
+// the line is sent as up to 4 chunks of 60. C++ -> JS: consoleResult,
+// appendLogLines, consoleCompletions, consoleSetInput (JSON string or object).
+var CON_MAX_LINE  = 240;
+var CON_CHUNK     = 60;
+var CON_LOG_CAP   = 500;
+var conSeq        = 0;
+var conPending    = 0;     // seq awaiting consoleResult (0 = none)
+var conPendingTxt = '';
+var conDraft      = '';
+var conHistActive = false;
+var conAc         = [];
+var conAcSel      = 0;
+var conAcTimer    = null;
+var conLogFilter  = 'ALL';
+var conLogLines   = [];    // {t, level, channel, msg}
+
+function conEl(id) { return document.getElementById(id); }
+function conApp(name) { return typeof app !== 'undefined' && app && app[name]; }
+function conEsc(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function conParse(data) {
+  if (typeof data === 'string') {
+    try { return JSON.parse(data); } catch (e) { return null; }
+  }
+  return (data && typeof data === 'object') ? data : null;
+}
+function conPad(n, w) { n = String(n); while (n.length < w) n = '0' + n; return n; }
+function conStamp(t) {
+  var ms = Math.floor((t || 0) * 1000), sec = Math.floor(ms / 1000);
+  var mm = Math.floor(sec / 60), hh = Math.floor(mm / 60);
+  return conPad(hh, 2) + ':' + conPad(mm % 60, 2) + ':' + conPad(sec % 60, 2) + '.' + conPad(ms % 1000, 3);
+}
+
+function conUpdateCounter() {
+  var input = conEl('cmd-input'), c = conEl('cmd-counter');
+  if (!input || !c) return;
+  var n = input.value.length;
+  c.textContent = n + '/' + CON_MAX_LINE;
+  c.className = 'cmd-counter' + (n > 200 ? ' warn' : '') + (n >= CON_MAX_LINE ? ' max' : '');
+}
+
+function conSetResult(text, exitCode, parseError) {
+  var el = conEl('cmd-result');
+  if (!el) return;
+  var echo = conPendingTxt.length > 44 ? conPendingTxt.substring(0, 43) + '…' : conPendingTxt;
+  var cls, label;
+  if (exitCode === 0 && !parseError) { cls = 'ok'; label = 'exit 0'; }
+  else if (exitCode === 3) { cls = 'err'; label = 'not found (3)'; }
+  else { cls = 'err'; label = parseError ? 'parse error (' + parseError + ')' : 'exit ' + exitCode; }
+  var extra = text ? ' <span class="echo">' + conEsc(text) + '</span>' : '';
+  el.innerHTML = '<span class="echo">&gt; ' + conEsc(echo) + '</span><span class="code ' + cls + '">' +
+                 conEsc(label) + '</span>' + extra;
+}
+
+function consoleResult(data) {
+  var r = conParse(data);
+  if (!r) return;
+  if (conPending && r.seq !== conPending) return;   // stale result
+  conPending = 0;
+  conSetResult(r.text || '', r.exitCode | 0, r.parseError | 0);
+}
+window.consoleResult = consoleResult;
+
+function conRenderAc() {
+  var ac = conEl('ac');
+  if (!ac) return;
+  if (!conAc.length) { ac.className = 'ac'; ac.innerHTML = ''; return; }
+  if (conAcSel >= conAc.length) conAcSel = 0;
+  var html = '';
+  for (var i = 0; i < conAc.length; ++i) {
+    html += '<div class="ac-item' + (i === conAcSel ? ' sel' : '') + '" data-i="' + i + '"><span class="nm">' +
+            conEsc(conAc[i].name) + '</span><span class="ds">' + conEsc(conAc[i].rank || '') + '</span></div>';
+  }
+  html += '<div class="ac-foot"><kbd>Tab</kbd> accept &nbsp;<kbd>&uarr;</kbd><kbd>&darr;</kbd> select</div>';
+  ac.innerHTML = html;
+  ac.className = 'ac show';
+}
+function conClearAc() { conAc = []; conAcSel = 0; conRenderAc(); }
+
+function consoleCompletions(data) {
+  var r = conParse(data);
+  if (!r || !r.items) return;
+  var input = conEl('cmd-input');
+  // Ignore late results if the first token is gone or finished.
+  if (!input || !input.value || input.value.indexOf(' ') >= 0) { conClearAc(); return; }
+  conAc = r.items.slice(0, 5);
+  conAcSel = 0;
+  conRenderAc();
+}
+window.consoleCompletions = consoleCompletions;
+
+function conAccept() {
+  if (!conAc.length) return false;
+  var input = conEl('cmd-input');
+  input.value = conAc[conAcSel].name + ' ';
+  conClearAc();
+  conUpdateCounter();
+  return true;
+}
+
+function consoleSetInput(data) {
+  var r = conParse(data);
+  var input = conEl('cmd-input');
+  if (!r || !input) return;
+  if (r.restore) { input.value = conDraft; conHistActive = false; }
+  else input.value = r.text || '';
+  conClearAc();
+  conUpdateCounter();
+}
+window.consoleSetInput = consoleSetInput;
+
+function conRenderLog() {
+  var body = conEl('log-body');
+  if (!body) return;
+  var html = '', shown = 0;
+  for (var i = 0; i < conLogLines.length; ++i) {
+    var l = conLogLines[i];
+    if (conLogFilter !== 'ALL' && l.level !== conLogFilter) continue;
+    ++shown;
+    html += '<div class="log-line ' + l.level + '"><span class="log-ts">' + conStamp(l.t) +
+            '</span><span class="badge ' + l.level + '">' + l.level + '</span><span class="log-ch">' +
+            conEsc(l.channel) + '</span><span class="log-msg">' + conEsc(l.msg) + '</span></div>';
+  }
+  body.innerHTML = html || '<div class="log-empty">No log lines at this level</div>';
+  body.scrollTop = body.scrollHeight;
+  var cnt = conEl('log-count');
+  if (cnt) cnt.textContent = shown + ' / ' + conLogLines.length;
+}
+
+function appendLogLines(data) {
+  var r = conParse(data);
+  if (!r || !r.lines) return;
+  for (var i = 0; i < r.lines.length; ++i) {
+    var l = r.lines[i];
+    var lvl = String(l.level || 'INFO').toUpperCase();
+    if (lvl !== 'WARN' && lvl !== 'ERROR' && lvl !== 'INFO') lvl = 'INFO';  // DEBUG shown as INFO
+    conLogLines.push({ t: l.t, level: lvl, channel: l.channel || '', msg: l.msg || '' });
+  }
+  if (conLogLines.length > CON_LOG_CAP) conLogLines.splice(0, conLogLines.length - CON_LOG_CAP);
+  conRenderLog();
+}
+window.appendLogLines = appendLogLines;
+
+function conSend(text) {
+  var seq = ++conSeq;
+  conPending = seq;
+  conPendingTxt = text;
+  var el = conEl('cmd-result');
+  if (el) el.innerHTML = '<span class="echo">&gt; …</span>';
+  if (text.length > CON_MAX_LINE) {
+    conPending = 0;
+    conSetResult('line too long', 2, 0);
+    return;
+  }
+  if (!conApp('onConsoleLine')) { conPending = 0; return; }
+  var p = ['', '', '', ''];
+  for (var i = 0; i < 4; ++i) p[i] = text.substring(i * CON_CHUNK, (i + 1) * CON_CHUNK);
+  app.onConsoleLine(seq, p[0], p[1], p[2], p[3]);
+}
+
+(function () {
+  var input = conEl('cmd-input');
+  if (!input) return;
+
+  function requestComplete() {
+    conAcTimer = null;
+    var v = input.value;
+    var sp = v.indexOf(' ');
+    if (!v || sp >= 0) { conClearAc(); return; }
+    if (conApp('onConsoleComplete')) app.onConsoleComplete(v.substring(0, 63));
+  }
+
+  input.addEventListener('input', function () {
+    conHistActive = false;
+    conUpdateCounter();
+    if (conAcTimer) clearTimeout(conAcTimer);
+    conAcTimer = setTimeout(requestComplete, 100);
+  });
+
+  input.addEventListener('keydown', function (e) {
+    var k = e.key;
+    if (k === 'Tab') { e.preventDefault(); conAccept(); }
+    else if (k === 'Escape') { conClearAc(); }
+    else if (k === 'ArrowUp' || k === 'ArrowDown') {
+      e.preventDefault();
+      var up = (k === 'ArrowUp');
+      if (conAc.length && !conHistActive) {
+        conAcSel = (conAcSel + (up ? conAc.length - 1 : 1)) % conAc.length;
+        conRenderAc();
+        return;
+      }
+      if (!conApp('onConsoleHistory')) return;
+      if (!conHistActive) {
+        if (!up) return;
+        conDraft = input.value;
+        conHistActive = true;
+      }
+      app.onConsoleHistory(up ? 'prev' : 'next');
+    }
+    else if (k === 'Enter') {
+      var t = input.value.replace(/^\s+|\s+$/g, '');
+      if (!t) return;
+      if (conAcTimer) { clearTimeout(conAcTimer); conAcTimer = null; }
+      conSend(t);
+      input.value = '';
+      conHistActive = false;
+      conClearAc();
+      conUpdateCounter();
+    }
+  });
+
+  var ac = conEl('ac');
+  if (ac) ac.addEventListener('mousedown', function (e) {
+    var n = e.target;
+    while (n && n !== ac && !(n.className && String(n.className).indexOf('ac-item') >= 0)) n = n.parentNode;
+    if (!n || n === ac) return;
+    e.preventDefault();
+    conAcSel = parseInt(n.getAttribute('data-i'), 10) || 0;
+    conAccept();
+    input.focus();
+  });
+
+  var flt = conEl('log-filters');
+  if (flt) flt.addEventListener('click', function (e) {
+    e.stopPropagation();
+    var b = e.target;
+    if (!b || !b.getAttribute || !b.getAttribute('data-lvl')) return;
+    conLogFilter = b.getAttribute('data-lvl');
+    var all = flt.querySelectorAll('.flt');
+    for (var i = 0; i < all.length; ++i) all[i].classList.toggle('active', all[i] === b);
+    conRenderLog();
+  });
+
+  var hdr = conEl('log-hdr');
+  if (hdr) hdr.addEventListener('click', function () {
+    var v = conEl('log-view'), open = v.classList.contains('open');
+    v.classList.toggle('open', !open);
+    v.classList.toggle('closed', open);
+  });
+
+  conUpdateCounter();
+  conRenderLog();
+})();
+
+// ── Command palette (panel-palette; contract in DebugPanelPage.h) ──────────
+// Ctrl+P opens an overlay. JS -> C++: app.onPaletteOpen(), app.onPaletteSearch(query, mask)
+// with mask "1" commands / "2" domains / "3" all. C++ -> JS: paletteResults(json|object).
+// Enter on a "fill" item puts actionText in the console input (not run); on a
+// "reveal" item it expands the group + card whose data-domain equals actionText.
+var PAL_MAX_QUERY = 60;
+var PAL_TABS = [ { mask: '3', label: 'All', key: 'all' },
+                 { mask: '1', label: 'Commands', key: 'commands' },
+                 { mask: '2', label: 'Domains', key: 'domains' } ];
+var palTab    = 0;
+var palSel    = 0;
+var palItems  = [];
+var palCounts = { all: 0, commands: 0, domains: 0 };
+var palTotal  = 0;
+var palTimer  = null;
+
+function palIsOpen() {
+  var o = conEl('pal-overlay');
+  return !!o && o.className.indexOf('show') >= 0;
+}
+
+function palHighlight(name, hl) {
+  var out = '';
+  name = String(name || ''); hl = String(hl || '');
+  for (var i = 0; i < name.length; ++i) {
+    var ch = conEsc(name.charAt(i));
+    out += (hl.charAt(i) === '1') ? '<mark>' + ch + '</mark>' : ch;
+  }
+  return out;
+}
+
+function palRender() {
+  var tabs = conEl('pal-tabs'), list = conEl('pal-list'), tot = conEl('pal-tot');
+  if (!tabs || !list) return;
+  var th = '';
+  for (var t = 0; t < PAL_TABS.length; ++t) {
+    th += '<div class="pal-tab' + (t === palTab ? ' active' : '') + '" data-t="' + t + '">' + PAL_TABS[t].label +
+          '<span class="n">' + (palCounts[PAL_TABS[t].key] | 0) + '</span></div>';
+  }
+  tabs.innerHTML = th;
+  if (palSel >= palItems.length) palSel = Math.max(0, palItems.length - 1);
+  var html = '';
+  for (var i = 0; i < palItems.length; ++i) {
+    var it = palItems[i], isDom = (it.type === 'domain');
+    html += '<div class="pal-row' + (i === palSel ? ' sel' : '') + '" data-i="' + i + '"><span class="pal-type ' +
+            (isDom ? 'domain' : 'command') + '">' + (isDom ? '▣' : '&gt;_') + '</span><div class="pal-info"><div class="pal-nm">' +
+            palHighlight(it.name, it.hl) + '</div><div class="pal-ds">' + conEsc(it.description || '') +
+            '</div></div><span class="pal-cat">' + conEsc(it.category || '') + '</span></div>';
+  }
+  list.innerHTML = html || '<div class="pal-empty">No results found</div>';
+  if (tot) tot.textContent = palTotal > palItems.length ? 'showing ' + palItems.length + ' of ' + palTotal
+                                                         : palTotal + ' result' + (palTotal === 1 ? '' : 's');
+  palScrollSel();
+}
+
+function palScrollSel() {
+  var list = conEl('pal-list');
+  if (!list) return;
+  var rows = list.querySelectorAll('.pal-row');
+  var r = rows[palSel];
+  if (!r) return;
+  if (r.offsetTop < list.scrollTop) list.scrollTop = r.offsetTop;
+  else if (r.offsetTop + r.offsetHeight > list.scrollTop + list.clientHeight)
+    list.scrollTop = r.offsetTop + r.offsetHeight - list.clientHeight;
+}
+
+function palSetSel(i) {
+  var rows = conEl('pal-list').querySelectorAll('.pal-row');
+  if (!rows.length) { palSel = 0; return; }
+  palSel = (i + rows.length) % rows.length;
+  for (var k = 0; k < rows.length; ++k) {
+    rows[k].className = 'pal-row' + (k === palSel ? ' sel' : '');
+  }
+  palScrollSel();
+}
+
+function paletteResults(data) {
+  var r = conParse(data);
+  if (!r) return;
+  palItems  = (r.items && r.items.length) ? r.items.slice(0, 50) : [];
+  var c = r.counts || {};
+  palCounts = { all: c.all | 0, commands: c.commands | 0, domains: c.domains | 0 };
+  palTotal  = (typeof r.total === 'number') ? r.total : palItems.length;
+  palSel    = 0;
+  palRender();
+}
+window.paletteResults = paletteResults;
+
+function palSearchNow() {
+  if (palTimer) { clearTimeout(palTimer); palTimer = null; }
+  var inp = conEl('pal-input');
+  if (!inp || !conApp('onPaletteSearch')) return;
+  var q = inp.value;
+  if (q.length > PAL_MAX_QUERY) q = q.substring(0, PAL_MAX_QUERY);
+  app.onPaletteSearch(q, PAL_TABS[palTab].mask);
+}
+
+function palOpen() {
+  var inp = conEl('pal-input'), ov = conEl('pal-overlay');
+  if (!inp || !ov) return;
+  inp.value = '';
+  palTab = 0; palSel = 0; palItems = []; palTotal = 0;
+  palCounts = { all: 0, commands: 0, domains: 0 };
+  ov.className = 'show';
+  palRender();
+  inp.focus();
+  if (conApp('onPaletteOpen')) app.onPaletteOpen();
+}
+
+function palClose(focusConsole) {
+  var ov = conEl('pal-overlay');
+  if (palTimer) { clearTimeout(palTimer); palTimer = null; }
+  if (ov) ov.className = '';
+  if (focusConsole) { var ci = conEl('cmd-input'); if (ci) ci.focus(); }
+}
+
+function palRevealDomain(id) {
+  var cards = document.querySelectorAll('.domain');
+  var card = null;
+  for (var i = 0; i < cards.length; ++i) {
+    if (cards[i].getAttribute('data-domain') === id) { card = cards[i]; break; }
+  }
+  if (!card) return;
+  var g = card.parentNode;
+  while (g && !(g.className && String(g.className).indexOf('group ') === 0)) g = g.parentNode;
+  if (g) {
+    var gk = g.getAttribute('data-group-key');
+    if (gk) ui.groupOpen[gk] = true;
+    g.classList.add('open'); g.classList.remove('closed');
+    g.classList.remove('hidden');
+  }
+  ui.domainOpen[id] = true;
+  card.classList.add('open'); card.classList.remove('closed');
+  card.classList.remove('hidden');
+  try { card.scrollIntoView(true); } catch (e) { /* old engine */ }
+  card.classList.add('flash');
+  setTimeout(function () { card.classList.remove('flash'); }, 1500);
+}
+
+function palChoose(i) {
+  var it = palItems[i];
+  if (!it) return;
+  palClose(false);
+  if (it.action === 'reveal') {
+    palRevealDomain(String(it.actionText || it.domainId || ''));
+  } else {
+    var ci = conEl('cmd-input');
+    if (!ci) return;
+    ci.value = String(it.actionText || it.name || '');
+    conUpdateCounter();
+    ci.focus();
+    try { ci.setSelectionRange(ci.value.length, ci.value.length); } catch (e) { /* ignore */ }
+  }
+}
+
+function palSwitchTab(t) {
+  palTab = (t + PAL_TABS.length) % PAL_TABS.length;
+  palSel = 0;
+  palRender();
+  palSearchNow();
+}
+
+document.addEventListener('keydown', function (e) {
+  var k = e.key;
+  if (e.ctrlKey && (k === 'p' || k === 'P')) {
+    e.preventDefault();
+    if (palIsOpen()) { var pi = conEl('pal-input'); if (pi) pi.focus(); }
+    else palOpen();
+    return;
+  }
+  if (!palIsOpen()) return;
+  if (k === 'Escape') { e.preventDefault(); palClose(true); }
+  else if (k === 'ArrowDown') { e.preventDefault(); palSetSel(palSel + 1); }
+  else if (k === 'ArrowUp') { e.preventDefault(); palSetSel(palSel - 1); }
+  else if (k === 'Enter') { e.preventDefault(); palChoose(palSel); }
+  else if (k === 'Tab') { e.preventDefault(); palSwitchTab(palTab + (e.shiftKey ? -1 : 1)); }
+});
+
+(function () {
+  var inp = conEl('pal-input');
+  if (!inp) return;
+  inp.addEventListener('input', function () {
+    if (palTimer) clearTimeout(palTimer);
+    palTimer = setTimeout(palSearchNow, 60);
+  });
+  var tabs = conEl('pal-tabs');
+  if (tabs) tabs.addEventListener('click', function (e) {
+    var n = e.target;
+    while (n && n !== tabs && !(n.getAttribute && n.getAttribute('data-t') !== null)) n = n.parentNode;
+    if (!n || n === tabs) return;
+    palSwitchTab(parseInt(n.getAttribute('data-t'), 10) || 0);
+    inp.focus();
+  });
+  var list = conEl('pal-list');
+  function rowOf(e) {
+    var n = e.target;
+    while (n && n !== list && !(n.getAttribute && n.getAttribute('data-i') !== null)) n = n.parentNode;
+    return (n && n !== list) ? parseInt(n.getAttribute('data-i'), 10) : -1;
+  }
+  if (list) {
+    list.addEventListener('mousemove', function (e) { var i = rowOf(e); if (i >= 0 && i !== palSel) palSetSel(i); });
+    list.addEventListener('click', function (e) { var i = rowOf(e); if (i >= 0) palChoose(i); });
+  }
+  var ov = conEl('pal-overlay');
+  if (ov) ov.addEventListener('mousedown', function (e) { if (e.target === ov) palClose(true); });
+  palRender();
+})();
+
+// ── Global scale slider ──────────────────────────────────────────────────
+(function () {
+  var range   = document.getElementById('scale-range');
+  var display = document.getElementById('scale-display');
+  range.addEventListener('input', function () {
+    display.textContent = range.value;
+  });
+  range.addEventListener('change', function () {
+    display.textContent = range.value;
+    sendCommand('__global__', 'setScale', { key: 'debugScale', value: parseFloat(range.value) });
+  });
+})();
+</script>
+</body>
+</html>

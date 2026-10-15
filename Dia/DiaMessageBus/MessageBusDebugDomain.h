@@ -12,7 +12,7 @@
 #include <cstdint>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Colour/RGBA.h>
-#include <DiaDebugDraw/Domain/IDebugDomain.h>
+#include <DiaVisualDebugger/Domain/IDebugDomain.h>
 #include <DiaMessageBus/MessageBusModule.h>
 
 namespace Dia::MessageBus {
@@ -57,6 +57,7 @@ namespace Dia::MessageBus {
         void WriteSchemaTab(Json::Value& out)  const;
         void WriteLiveTab(Json::Value& out)    const;
         void WriteHistoryTab(Json::Value& out) const;
+        void WriteRecorderSection(Json::Value& live) const;
 
         const MessageBusModule& mModule;
         Tab                      mActiveTab          = Tab::Live;

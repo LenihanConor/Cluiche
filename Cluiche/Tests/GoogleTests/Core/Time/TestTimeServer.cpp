@@ -384,6 +384,50 @@ TEST(TimeServer, AdvanceTo_EarlierTarget_IsNoOp)
     EXPECT_EQ(timeServer.GetTick(), 0u);
 }
 
+TEST(TimeServer, SetTime_EarlierTarget_Rewinds)
+{
+    TimeServer timeServer(60.0f, TimeAbsolute::CreateFromSeconds(10.0f));
+
+    TimeAbsolute earlier = TimeAbsolute::CreateFromSeconds(5.0f);
+    timeServer.SetTime(earlier);
+
+    EXPECT_EQ(timeServer.GetTime(), earlier);
+    EXPECT_EQ(timeServer.GetLastTime(), earlier);
+    EXPECT_EQ(timeServer.GetTick(), 1u);
+}
+
+TEST(TimeServer, SetTime_LaterTarget_JumpsForward)
+{
+    TimeServer timeServer(60.0f, TimeAbsolute::Zero());
+
+    TimeAbsolute target = TimeAbsolute::CreateFromSeconds(5.0f);
+    timeServer.SetTime(target);
+
+    EXPECT_EQ(timeServer.GetTime(), target);
+}
+
+TEST(TimeServer, SetTime_DoesNotChangePauseOrScale)
+{
+    TimeServer timeServer(60.0f, TimeAbsolute::CreateFromSeconds(10.0f));
+    timeServer.Pause();
+    timeServer.SetTimeScale(0.5f);
+
+    timeServer.SetTime(TimeAbsolute::Zero());
+
+    EXPECT_TRUE(timeServer.IsPaused());
+    EXPECT_EQ(timeServer.GetTimeScale(), 0.5f);
+}
+
+TEST(TimeServer, AdvanceTo_AfterSetTimeRewind_ResumesForwardFromRewoundTime)
+{
+    TimeServer timeServer(60.0f, TimeAbsolute::CreateFromSeconds(10.0f));
+    timeServer.SetTime(TimeAbsolute::CreateFromSeconds(2.0f));
+
+    timeServer.AdvanceTo(TimeAbsolute::CreateFromSeconds(3.0f));
+
+    EXPECT_EQ(timeServer.GetTime(), TimeAbsolute::CreateFromSeconds(3.0f));
+}
+
 TEST(TimeServer, IsPaused_ReflectsStateThroughPauseResumeCycle)
 {
     TimeServer timeServer(60.0f, TimeAbsolute::Zero());
@@ -395,4 +439,31 @@ TEST(TimeServer, IsPaused_ReflectsStateThroughPauseResumeCycle)
 
     timeServer.Resume();
     EXPECT_FALSE(timeServer.IsPaused());
+}
+
+// ==============================================================================
+// TimeServer TimeScale Tests - SetTimeScaleImmediate
+// ==============================================================================
+
+TEST(TimeServer, SetTimeScaleImmediate_Zero_NextTickDoesNotAdvance)
+{
+    TimeServer timeServer(60.0f, TimeAbsolute::Zero());
+    timeServer.Tick();
+    const TimeAbsolute before = timeServer.GetTime();
+
+    timeServer.SetTimeScaleImmediate(0.0f);
+    timeServer.Tick();
+
+    EXPECT_EQ(timeServer.GetTime(), before);
+    EXPECT_FLOAT_EQ(timeServer.GetTimeScale(), 0.0f);
+}
+
+TEST(TimeServer, SetTimeScaleImmediate_Half_NextTickUsesNewScale)
+{
+    TimeServer timeServer(60.0f, TimeAbsolute::Zero());
+
+    timeServer.SetTimeScaleImmediate(0.5f);
+    timeServer.Tick();
+
+    EXPECT_EQ(timeServer.GetTime(), TimeAbsolute::Zero() + (timeServer.GetStep() * 0.5f));
 }

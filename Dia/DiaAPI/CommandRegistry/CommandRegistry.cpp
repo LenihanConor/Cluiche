@@ -11,6 +11,8 @@
 #include <DiaCore/Core/Assert.h>
 #include <cctype>
 #include <cstring>
+#include <mutex>
+#include <shared_mutex>
 
 namespace Dia
 {
@@ -83,12 +85,65 @@ namespace Dia
 			struct RegistryState
 			{
 				bool isInitialized = false;
-				Dia::Core::Containers::DynamicArrayC<CommandInfo*, 64> commands;
-				Dia::Core::Containers::DynamicArrayC<CommandInfo*, 64> pendingRegistrations;
+				Dia::Core::Containers::DynamicArrayC<CommandInfo*, 256> commands;
+				Dia::Core::Containers::DynamicArrayC<CommandInfo*, 256> pendingRegistrations;
 				Dia::Core::Containers::DynamicArrayC<CommandInfoJson*, 256> jsonCommands;
 			};
 
 			RegistryState gRegistryState;
+
+			////////////////////////////////////////////////////////////////////////////////
+			// Locking (command-unregister spec, Design > Locking)
+			//
+			// gRegistryMutex guards every field of gRegistryState.
+			//   - Queries take the shared lock.
+			//   - Register*/Unregister*/Initialize/Shutdown take the exclusive lock.
+			//   - Execute* takes the shared lock and holds it across the callback, so an
+			//     Unregister on another thread waits for in-flight callbacks to return.
+			//
+			// tCallbackDepth > 0 means this thread is inside an Execute* and already holds
+			// the shared lock. Nested queries/executes then run WITHOUT re-acquiring it:
+			// a recursive shared acquire can deadlock behind a queued writer (SRWLOCK).
+			// Mutations are rejected while it is set (they would self-deadlock).
+			//
+			// Events (Fire*) are never fired while the exclusive lock is held, so an
+			// observer may query the registry. DIA_LOG_* goes to the DiaObservation
+			// logger, which never calls back into DiaAPI, so logging under a lock is safe.
+			////////////////////////////////////////////////////////////////////////////////
+			std::shared_mutex gRegistryMutex;
+			thread_local int tCallbackDepth = 0;
+
+			using ReadLock = std::shared_lock<std::shared_mutex>;
+			using WriteLock = std::unique_lock<std::shared_mutex>;
+
+			// Shared lock, unless this thread already holds it via an in-flight callback.
+			ReadLock AcquireReadLock()
+			{
+				if (tCallbackDepth > 0)
+					return ReadLock(gRegistryMutex, std::defer_lock);
+				return ReadLock(gRegistryMutex);
+			}
+
+			struct CallbackDepthScope
+			{
+				CallbackDepthScope() { ++tCallbackDepth; }
+				~CallbackDepthScope() { --tCallbackDepth; }
+				CallbackDepthScope(const CallbackDepthScope&) = delete;
+				CallbackDepthScope& operator=(const CallbackDepthScope&) = delete;
+			};
+
+			// AC-9: returns true (and asserts in Debug) if called from inside a command
+			// callback. Checked before touching the lock, so it cannot deadlock.
+			bool RejectMutationInsideCallback(const char* operation, const char* name)
+			{
+				if (tCallbackDepth == 0)
+					return false;
+
+				DIA_ASSERT(false, "%s('%s') called from inside a command callback; registry mutation is not allowed there",
+					operation, name);
+				DIA_LOG_ERROR("API", "%s('%s') rejected: called from inside a command callback", operation, name);
+				return true;
+			}
 
 			CommandInfoJson* FindJsonCommandInternal(const Dia::Core::StringCRC& name)
 			{
@@ -169,6 +224,13 @@ namespace Dia
 
 				return true;
 			}
+
+			// Name/description pair captured under the lock so events can fire after it is released
+			struct RegisteredEventData
+			{
+				Dia::Core::StringCRC name;
+				const char* description;
+			};
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
@@ -178,22 +240,36 @@ namespace Dia
 		{
 			using namespace Internal;
 
-			if (gRegistryState.isInitialized)
-			{
-				DIA_LOG_WARNING("API", "Initialize() called but DiaAPI is already initialized");
+			if (RejectMutationInsideCallback("Initialize", ""))
 				return;
-			}
 
-			// Process pending registrations (commands registered before Initialize)
-			for (unsigned int i = 0; i < gRegistryState.pendingRegistrations.Size(); i++)
+			Dia::Core::Containers::DynamicArrayC<RegisteredEventData, 64> toFire;
 			{
-				CommandInfo* cmdInfo = gRegistryState.pendingRegistrations[i];
-				gRegistryState.commands.Add(cmdInfo);
-				FireCommandRegistered(cmdInfo->name, cmdInfo->description);
+				WriteLock lock(gRegistryMutex);
+
+				if (gRegistryState.isInitialized)
+				{
+					DIA_LOG_WARNING("API", "Initialize() called but DiaAPI is already initialized");
+					return;
+				}
+
+				// Process pending registrations (commands registered before Initialize)
+				for (unsigned int i = 0; i < gRegistryState.pendingRegistrations.Size(); i++)
+				{
+					CommandInfo* cmdInfo = gRegistryState.pendingRegistrations[i];
+					gRegistryState.commands.Add(cmdInfo);
+					RegisteredEventData data;
+					data.name = cmdInfo->name;
+					data.description = cmdInfo->description;
+					toFire.Add(data);
+				}
+
+				gRegistryState.pendingRegistrations.RemoveAll();
+				gRegistryState.isInitialized = true;
 			}
 
-			gRegistryState.pendingRegistrations.RemoveAll();
-			gRegistryState.isInitialized = true;
+			for (unsigned int i = 0; i < toFire.Size(); i++)
+				FireCommandRegistered(toFire[i].name, toFire[i].description);
 
 			DIA_LOG_INFO("API", "DiaAPI command registry initialized");
 		}
@@ -205,33 +281,47 @@ namespace Dia
 		{
 			using namespace Internal;
 
-			if (!gRegistryState.isInitialized)
+			if (RejectMutationInsideCallback("Shutdown", ""))
+				return;
+
+			// Entries are detached under the lock and deleted after it is released, so a
+			// captured lambda's destructor may safely call back into the registry.
+			Dia::Core::Containers::DynamicArrayC<CommandInfo*, 256> commands;
+			Dia::Core::Containers::DynamicArrayC<CommandInfo*, 256> pending;
+			Dia::Core::Containers::DynamicArrayC<CommandInfoJson*, 256> jsonCommands;
+			bool wasInitialized = false;
 			{
-				// Still clean up JSON commands even when not initialized — they are
+				WriteLock lock(gRegistryMutex);
+				wasInitialized = gRegistryState.isInitialized;
+
+				// JSON commands are cleaned up even when not initialized: they are
 				// registered without going through Initialize() and may hold captured
 				// Application pointers that need releasing.
-				for (unsigned int i = 0; i < gRegistryState.jsonCommands.Size(); i++)
-					delete gRegistryState.jsonCommands[i];
+				jsonCommands = gRegistryState.jsonCommands;
 				gRegistryState.jsonCommands.RemoveAll();
+
+				if (wasInitialized)
+				{
+					commands = gRegistryState.commands;
+					gRegistryState.commands.RemoveAll();
+					pending = gRegistryState.pendingRegistrations;
+					gRegistryState.pendingRegistrations.RemoveAll();
+					gRegistryState.isInitialized = false;
+				}
+			}
+
+			for (unsigned int i = 0; i < commands.Size(); i++)
+				delete commands[i];
+			for (unsigned int i = 0; i < pending.Size(); i++)
+				delete pending[i];
+			for (unsigned int i = 0; i < jsonCommands.Size(); i++)
+				delete jsonCommands[i];
+
+			if (!wasInitialized)
+			{
 				DIA_LOG_WARNING("API", "Shutdown() called but DiaAPI is not initialized");
 				return;
 			}
-
-			// Free heap-allocated CLI command entries
-			for (unsigned int i = 0; i < gRegistryState.commands.Size(); i++)
-				delete gRegistryState.commands[i];
-			gRegistryState.commands.RemoveAll();
-
-			for (unsigned int i = 0; i < gRegistryState.pendingRegistrations.Size(); i++)
-				delete gRegistryState.pendingRegistrations[i];
-			gRegistryState.pendingRegistrations.RemoveAll();
-
-			// Free heap-allocated JSON command entries (and release captured lambdas)
-			for (unsigned int i = 0; i < gRegistryState.jsonCommands.Size(); i++)
-				delete gRegistryState.jsonCommands[i];
-			gRegistryState.jsonCommands.RemoveAll();
-
-			gRegistryState.isInitialized = false;
 
 			DIA_LOG_INFO("API", "DiaAPI command registry shutdown");
 		}
@@ -241,6 +331,7 @@ namespace Dia
 		////////////////////////////////////////////////////////////////////////////////
 		bool IsInitialized()
 		{
+			Internal::ReadLock lock = Internal::AcquireReadLock();
 			return Internal::gRegistryState.isInitialized;
 		}
 
@@ -250,6 +341,11 @@ namespace Dia
 		bool RegisterCommand(const CommandInfo& info)
 		{
 			using namespace Internal;
+
+			if (RejectMutationInsideCallback("RegisterCommand", info.name.AsChar()))
+			{
+				return false;
+			}
 
 			if (!ValidateCommandInfo(info))
 			{
@@ -262,37 +358,118 @@ namespace Dia
 				return false;
 			}
 
-			// Check for duplicate in main registry
-			if (FindCommandInternal(info.name.Value()) != nullptr)
+			bool fireRegistered = false;
 			{
-				DIA_LOG_ERROR("API", "Command '%s' is already registered (duplicate)", info.name.AsChar());
-				return false;
-			}
+				WriteLock lock(gRegistryMutex);
 
-			// Check pending registrations for duplicates
-			for (unsigned int i = 0; i < gRegistryState.pendingRegistrations.Size(); i++)
-			{
-				if (gRegistryState.pendingRegistrations[i]->name == info.name)
+				// Check for duplicate in main registry
+				if (FindCommandInternal(info.name.Value()) != nullptr)
 				{
-					DIA_LOG_ERROR("API", "Command '%s' is already in pending registrations (duplicate)", info.name.AsChar());
+					DIA_LOG_ERROR("API", "Command '%s' is already registered (duplicate)", info.name.AsChar());
 					return false;
+				}
+
+				// Check pending registrations for duplicates
+				for (unsigned int i = 0; i < gRegistryState.pendingRegistrations.Size(); i++)
+				{
+					if (gRegistryState.pendingRegistrations[i]->name == info.name)
+					{
+						DIA_LOG_ERROR("API", "Command '%s' is already in pending registrations (duplicate)", info.name.AsChar());
+						return false;
+					}
+				}
+
+				CommandInfo* cmdInfo = new CommandInfo();
+				*cmdInfo = info;
+
+				if (gRegistryState.isInitialized)
+				{
+					gRegistryState.commands.Add(cmdInfo);
+					fireRegistered = true;
+				}
+				else
+				{
+					gRegistryState.pendingRegistrations.Add(cmdInfo);
 				}
 			}
 
-			CommandInfo* cmdInfo = new CommandInfo();
-			*cmdInfo = info;
-
-			if (gRegistryState.isInitialized)
+			if (fireRegistered)
 			{
-				gRegistryState.commands.Add(cmdInfo);
-				FireCommandRegistered(cmdInfo->name, cmdInfo->description);
-			}
-			else
-			{
-				gRegistryState.pendingRegistrations.Add(cmdInfo);
+				FireCommandRegistered(info.name, info.description);
 			}
 
 			return true;
+		}
+
+		////////////////////////////////////////////////////////////////////////////////
+		// Unregister a command (registered or pending)
+		////////////////////////////////////////////////////////////////////////////////
+		bool UnregisterCommand(const Dia::Core::StringCRC& name)
+		{
+			using namespace Internal;
+
+			if (RejectMutationInsideCallback("UnregisterCommand", name.AsChar()))
+			{
+				return false;
+			}
+
+			CommandInfo* removed = nullptr;
+			{
+				// Waits for any in-flight ExecuteCommand (shared lock holder) to finish (AC-8)
+				WriteLock lock(gRegistryMutex);
+
+				for (unsigned int i = 0; i < gRegistryState.commands.Size() && !removed; i++)
+				{
+					if (gRegistryState.commands[i]->name == name)
+					{
+						removed = gRegistryState.commands[i];
+						gRegistryState.commands.RemoveAt(i);
+					}
+				}
+
+				for (unsigned int i = 0; i < gRegistryState.pendingRegistrations.Size() && !removed; i++)
+				{
+					if (gRegistryState.pendingRegistrations[i]->name == name)
+					{
+						removed = gRegistryState.pendingRegistrations[i];
+						gRegistryState.pendingRegistrations.RemoveAt(i);
+					}
+				}
+			}
+
+			delete removed;
+			return removed != nullptr;
+		}
+
+		////////////////////////////////////////////////////////////////////////////////
+		// Unregister a JSON command
+		////////////////////////////////////////////////////////////////////////////////
+		bool UnregisterCommandJson(const Dia::Core::StringCRC& name)
+		{
+			using namespace Internal;
+
+			if (RejectMutationInsideCallback("UnregisterCommandJson", name.AsChar()))
+			{
+				return false;
+			}
+
+			CommandInfoJson* removed = nullptr;
+			{
+				WriteLock lock(gRegistryMutex);
+
+				for (unsigned int i = 0; i < gRegistryState.jsonCommands.Size(); i++)
+				{
+					if (gRegistryState.jsonCommands[i]->name == name)
+					{
+						removed = gRegistryState.jsonCommands[i];
+						gRegistryState.jsonCommands.RemoveAt(i);
+						break;
+					}
+				}
+			}
+
+			delete removed;
+			return removed != nullptr;
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
@@ -302,19 +479,27 @@ namespace Dia
 		{
 			using namespace Internal;
 
-			DIA_ASSERT(gRegistryState.isInitialized, "ExecuteCommand called before Initialize()");
-
-			const CommandInfo* cmd = GetCommand(commandName);
-			if (!cmd)
+			int exitCode = 0;
 			{
-				DIA_LOG_ERROR("API", "Command not found: %s", commandName.AsChar());
-				FireCommandError(commandName, "Command not found", 3);
-				return 3;
+				// Held for the whole callback (AC-8); skipped when nested on this thread
+				ReadLock lock = AcquireReadLock();
+
+				DIA_ASSERT(gRegistryState.isInitialized, "ExecuteCommand called before Initialize()");
+
+				const CommandInfo* cmd = FindCommandInternal(commandName.Value());
+				if (!cmd)
+				{
+					if (lock.owns_lock())
+						lock.unlock();
+					DIA_LOG_ERROR("API", "Command not found: %s", commandName.AsChar());
+					FireCommandError(commandName, "Command not found", 3);
+					return 3;
+				}
+
+				CallbackDepthScope depthScope;
+				FireCommandExecuting(commandName, &args);
+				exitCode = cmd->callback(args);
 			}
-
-			FireCommandExecuting(commandName, &args);
-
-			int exitCode = cmd->callback(args);
 
 			if (exitCode != 0)
 			{
@@ -358,18 +543,20 @@ namespace Dia
 		////////////////////////////////////////////////////////////////////////////////
 		const CommandInfo* GetCommand(const Dia::Core::StringCRC& name)
 		{
+			Internal::ReadLock lock = Internal::AcquireReadLock();
 			return Internal::FindCommandInternal(name.Value());
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
 		// List all registered commands
 		////////////////////////////////////////////////////////////////////////////////
-		Dia::Core::Containers::DynamicArrayC<const CommandInfo*, 64> ListCommands()
+		CommandList ListCommands()
 		{
 			using namespace Internal;
 
-			Dia::Core::Containers::DynamicArrayC<const CommandInfo*, 64> result;
+			CommandList result;
 
+			ReadLock lock = AcquireReadLock();
 			for (unsigned int i = 0; i < gRegistryState.commands.Size(); i++)
 			{
 				result.Add(gRegistryState.commands[i]);
@@ -381,12 +568,13 @@ namespace Dia
 		////////////////////////////////////////////////////////////////////////////////
 		// Get commands by category
 		////////////////////////////////////////////////////////////////////////////////
-		Dia::Core::Containers::DynamicArrayC<const CommandInfo*, 64> GetCommandsByCategory(const Dia::Core::StringCRC& category)
+		CommandList GetCommandsByCategory(const Dia::Core::StringCRC& category)
 		{
 			using namespace Internal;
 
-			Dia::Core::Containers::DynamicArrayC<const CommandInfo*, 64> result;
+			CommandList result;
 
+			ReadLock lock = AcquireReadLock();
 			for (unsigned int i = 0; i < gRegistryState.commands.Size(); i++)
 			{
 				const CommandInfo* cmdInfo = gRegistryState.commands[i];
@@ -400,11 +588,40 @@ namespace Dia
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
+		// Value-copy queries (safe across threads)
+		////////////////////////////////////////////////////////////////////////////////
+		bool CopyCommandInfo(const Dia::Core::StringCRC& name, CommandInfo& out)
+		{
+			Internal::ReadLock lock = Internal::AcquireReadLock();
+			const CommandInfo* found = Internal::FindCommandInternal(name.Value());
+			if (!found)
+				return false;
+			out = *found;
+			return true;
+		}
+
+		void ListCommandInfos(Dia::Core::Containers::DynamicArrayC<CommandInfo, 256>& out)
+		{
+			using namespace Internal;
+
+			ReadLock lock = AcquireReadLock();
+			for (unsigned int i = 0; i < gRegistryState.commands.Size(); i++)
+			{
+				out.Add(*gRegistryState.commands[i]);
+			}
+		}
+
+		////////////////////////////////////////////////////////////////////////////////
 		// RegisterCommandJson
 		////////////////////////////////////////////////////////////////////////////////
 		bool RegisterCommandJson(const CommandInfoJson& info)
 		{
 			using namespace Internal;
+
+			if (RejectMutationInsideCallback("RegisterCommandJson", info.name.AsChar()))
+			{
+				return false;
+			}
 
 			if (!ValidateCommandName(info.name.AsChar()))
 			{
@@ -426,6 +643,9 @@ namespace Dia
 				DIA_LOG_ERROR("API", "RegisterCommandJson: command '%s' has null callback", info.name.AsChar());
 				return false;
 			}
+
+			WriteLock lock(gRegistryMutex);
+
 			if (FindJsonCommandInternal(info.name) != nullptr)
 			{
 				DIA_LOG_ERROR("API", "RegisterCommandJson: command '%s' already registered", info.name.AsChar());
@@ -451,15 +671,23 @@ namespace Dia
 			using namespace Internal;
 
 			Json::Value response;
-			const CommandInfoJson* cmd = FindJsonCommandInternal(name);
-			if (!cmd)
+			Json::Value data;
 			{
-				response["success"] = false;
-				response["error"]   = "command not found";
-				return response;
+				// Held for the whole callback (AC-8); skipped when nested on this thread
+				ReadLock lock = AcquireReadLock();
+
+				const CommandInfoJson* cmd = FindJsonCommandInternal(name);
+				if (!cmd)
+				{
+					response["success"] = false;
+					response["error"]   = "command not found";
+					return response;
+				}
+
+				CallbackDepthScope depthScope;
+				data = cmd->callback(params);
 			}
 
-			Json::Value data = cmd->callback(params);
 			if (data.isObject() && data.isMember("error"))
 			{
 				response["success"] = false;

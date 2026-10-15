@@ -80,7 +80,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64' Or '$(Configuration)|$(Platform)'=='Debug-Asan|x64' Or '$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../../Dia/;$(ProjectDir)../../CluicheTest/;$(ProjectDir)../../CluicheEditor/;$(ProjectDir)../../CluicheGameBaseline/;$(ProjectDir)../../../External/googletest/googletest/include/;$(ProjectDir)../../../External/jsoncpp-master/include/;$(ProjectDir)../../../External/pybind11/include/;$(ProjectDir)../../../External/Python311/include/;$(ProjectDir)../../../External/websocketpp;$(ProjectDir)../../../External/asio/asio/include;$(ProjectDir)../../../External/protobuf/Current-x64/include;$(ProjectDir)../../../External/imgui/;$(ProjectDir)../../../External/SDL3/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../../Dia/;$(ProjectDir)../../CluicheTest/;$(ProjectDir)../../CluicheEditor/;$(ProjectDir)../../CluicheGameBaseline/;$(ProjectDir)../../CoW/;$(ProjectDir)../../../External/googletest/googletest/include/;$(ProjectDir)../../../External/jsoncpp-master/include/;$(ProjectDir)../../../External/pybind11/include/;$(ProjectDir)../../../External/Python311/include/;$(ProjectDir)../../../External/websocketpp;$(ProjectDir)../../../External/asio/asio/include;$(ProjectDir)../../../External/protobuf/Current-x64/include;$(ProjectDir)../../../External/imgui/;$(ProjectDir)../../../External/SDL3/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>DEBUG;WIN64;_CONSOLE;DIA_DEBUG;ASIO_STANDALONE;_WEBSOCKETPP_CPP11_STL_;_WEBSOCKETPP_CPP11_THREAD_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -106,7 +106,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../../Dia/;$(ProjectDir)../../CluicheTest/;$(ProjectDir)../../CluicheEditor/;$(ProjectDir)../../CluicheGameBaseline/;$(ProjectDir)../../../External/googletest/googletest/include/;$(ProjectDir)../../../External/jsoncpp-master/include/;$(ProjectDir)../../../External/pybind11/include/;$(ProjectDir)../../../External/Python311/include/;$(ProjectDir)../../../External/websocketpp;$(ProjectDir)../../../External/asio/asio/include;$(ProjectDir)../../../External/protobuf/Current-x64/include;$(ProjectDir)../../../External/SDL3/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../../Dia/;$(ProjectDir)../../CluicheTest/;$(ProjectDir)../../CluicheEditor/;$(ProjectDir)../../CluicheGameBaseline/;$(ProjectDir)../../CoW/;$(ProjectDir)../../../External/googletest/googletest/include/;$(ProjectDir)../../../External/jsoncpp-master/include/;$(ProjectDir)../../../External/pybind11/include/;$(ProjectDir)../../../External/Python311/include/;$(ProjectDir)../../../External/websocketpp;$(ProjectDir)../../../External/asio/asio/include;$(ProjectDir)../../../External/protobuf/Current-x64/include;$(ProjectDir)../../../External/SDL3/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NDEBUG;WIN64;_CONSOLE;ASIO_STANDALONE;_WEBSOCKETPP_CPP11_STL_;_WEBSOCKETPP_CPP11_THREAD_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -404,8 +404,12 @@
     <!-- DiaLighting3D -->
     <ClCompile Include="DiaLighting3D\TestLightRegistry3D.cpp" />
     <ClCompile Include="DiaLighting3D\TestBehaviours3D.cpp" />
-    <ClCompile Include="DiaLighting3D\TestLightWidgetsDrawer.cpp" />
-    <ClCompile Include="DiaLighting3D\TestLightPathArcDrawer.cpp" />
+    <ClCompile Include="DiaLighting3D\TestLightWidgetsDrawer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="DiaLighting3D\TestLightPathArcDrawer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <!-- DiaCamera3D -->
     <ClCompile Include="DiaCamera3D\TestCamera3D.cpp" />
     <ClCompile Include="DiaCamera3D\TestCameraRegistry3D.cpp" />
@@ -476,6 +480,7 @@
     </ClCompile>
     <ClCompile Include="DiaEntityVisualDebugger\TestEntityVisualDebuggerDrawers.cpp">
       <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <!-- DiaEntity -->
     <ClCompile Include="DiaEntity\DomainTests.cpp" />
@@ -651,12 +656,15 @@
     <ClCompile Include="DiaMesh3D\TestUnitCube.cpp" />
     <ClCompile Include="DiaMesh3D\TestMeshBoundsDrawer.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)'=='Debug' or '$(Configuration)'=='Debug-Asan' or '$(Configuration)'=='Debug-Ubsan'">DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="DiaMesh3D\TestMeshOriginDrawer.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)'=='Debug' or '$(Configuration)'=='Debug-Asan' or '$(Configuration)'=='Debug-Ubsan'">DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="DiaMesh3D\TestMeshStatsDrawer.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)'=='Debug' or '$(Configuration)'=='Debug-Asan' or '$(Configuration)'=='Debug-Ubsan'">DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <!-- DiaBgfx3D -->
     <ClCompile Include="DiaBgfx3D\TestMaterialRegistry.cpp" />
@@ -852,6 +860,55 @@
     <ClCompile Include="DiaSimTime\TestDiaSimTimeModule.cpp" />
     <ClCompile Include="DiaSimTime\TestSimTimeSaveState.cpp" />
     <ClCompile Include="DiaPathfinding\TestPathfindingSystemBudgetAdapter.cpp" />
+    <ClCompile Include="CluicheGameBaseline\TestStageStatusModule.cpp" />
+    <ClCompile Include="CluicheGameBaseline\TestBootMenuLogic.cpp" />
+    <ClCompile Include="CluicheGameBaseline\TestAppIdentity.cpp" />
+    <ClCompile Include="DiaMaths\TestRandomStream.cpp" />
+    <ClCompile Include="ApplicationFlow\TestManifestBootstrap.cpp" />
+    <ClCompile Include="DiaAttribute\TestDiaAttributeBandInitialization.cpp" />
+    <ClCompile Include="DiaMessageBus\TestBusTrafficRecorder.cpp" />
+    <ClCompile Include="DiaMessageBus\TestBusTrafficRecorderEdge.cpp" />
+    <ClCompile Include="DiaMessageBus\TestBusTrafficRecorderObservation.cpp" />
+    <ClCompile Include="DiaVisualDebugger\Console\TestCommandLineParser.cpp" />
+    <ClCompile Include="DiaVisualDebugger\Console\TestConsoleExecutor.cpp" />
+    <ClCompile Include="DiaVisualDebugger\Console\TestConsoleLogRing.cpp" />
+    <ClCompile Include="DiaVisualDebugger\Console\TestFuzzyMatcher.cpp" />
+    <ClCompile Include="DiaVisualDebugger\Console\TestCommandCompleter.cpp" />
+    <ClCompile Include="CluicheGameBaseline\TestDebugConsoleEvents.cpp" />
+    <ClCompile Include="DiaVisualDebugger\Console\TestConsoleJson.cpp" />
+    <ClCompile Include="DiaVisualDebugger\Console\TestPaletteIndex.cpp" />
+    <ClCompile Include="DiaVisualDebugger\Console\TestPaletteJson.cpp" />
+    <ClCompile Include="DiaVisualDebugger\Console\TestPanelController.cpp" />
+    <ClCompile Include="DiaVisualDebugger\Console\TestPanelContract.cpp" />
+    <ClCompile Include="CoW\TestGameSpeedController.cpp" />
+    <ClCompile Include="CoW\TestGameSpeedControllerModule.cpp" />
+    <ClCompile Include="..\..\CoW\Modules\GameSpeedControllerModule.cpp" />
+    <ClCompile Include="..\..\CoW\Modules\SaveLoadModule.cpp" />
+    <ClCompile Include="..\..\CoW\Modules\RandomStreamModule.cpp" />
+    <ClCompile Include="CoW\TestGameSpeedControllerObservability.cpp" />
+    <ClCompile Include="..\..\CoW\Modules\GameSpeedDebugDomain.cpp" />
+    <ClCompile Include="CoW\TestSaveLoadModule.cpp" />
+    <ClCompile Include="CoW\TestGameSpeedSaveParticipant.cpp" />
+    <ClCompile Include="CoW\TestRandomStreamSaveParticipant.cpp" />
+    <ClCompile Include="CoW\TestSaveLoadWiring.cpp" />
+    <ClCompile Include="CoW\TestSaveLoadIntegration.cpp" />
+    <ClCompile Include="CoW\F2\TestF2TestRunnerModule.cpp" />
+    <ClCompile Include="..\..\CoW\Modules\F2TestRunnerModule.cpp" />
+    <ClCompile Include="CoW\F2\TestF2Fingerprint.cpp" />
+    <ClCompile Include="..\..\CoW\Modules\F2Fingerprint.cpp" />
+    <ClCompile Include="CoW\F2\TestF2StreamIndependence.cpp" />
+    <ClCompile Include="..\..\CoW\Modules\F2StreamIndependence.cpp" />
+    <ClCompile Include="CoW\F2\TestF2Scenario.cpp" />
+    <ClCompile Include="..\..\CoW\Modules\F2Scenario.cpp" />
+    <ClCompile Include="..\..\CoW\Modules\F2DragonStub.cpp" />
+    <ClCompile Include="CoW\F2\TestF2DragonStub.cpp" />
+    <ClCompile Include="CoW\F2\TestF2PanelModel.cpp" />
+    <ClCompile Include="..\..\CoW\Modules\F2PanelModel.cpp" />
+    <ClCompile Include="..\..\CoW\Modules\F2TestRunnerDebugDomain.cpp" />
+    <ClCompile Include="DiaPathfinding\TestHexTopology.cpp" />
+    <ClCompile Include="DiaPathfinding\TestHexPathGridRect.cpp" />
+    <ClCompile Include="DiaPathfinding\TestHexFindPath.cpp" />
+    <ClCompile Include="DiaPathfinding\TestHexGridPerformance.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

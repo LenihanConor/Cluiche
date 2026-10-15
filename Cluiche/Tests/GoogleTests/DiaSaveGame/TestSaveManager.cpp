@@ -9,8 +9,13 @@
 #include <DiaSaveGame/SaveFormat.h>
 #include <DiaSaveGame/SaveResult.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/Json/external/json/json.h>
 
 #include <cstdio>
+#include <ctime>
+#include <fstream>
+#include <iterator>
+#include <string>
 #include <cstring>
 #include <direct.h>
 
@@ -230,4 +235,352 @@ TEST(DiaSaveGame_Manager, LoadEngineMismatchReturnsError)
     EXPECT_EQ(LoadResultCode::EngineMismatch, lr.code);
 
     remove("temp/savegame_tests/slot_slot_emv.sav");
+}
+
+// ===========================================================================
+// Atomic save / slot id validation / oversize handling
+// ===========================================================================
+
+#include <DiaSaveGame/Testing/SaveTestHelpers.h>
+#include <string>
+
+namespace {
+
+struct ValueSaveable : ISaveable {
+    int value = 0;
+    void Serialize(SaveContext& ctx) const override { ctx.Write(StringCRC("value"), static_cast<int32_t>(value)); }
+    void Deserialize(LoadContext& ctx) override { int32_t v = 0; ctx.Read(StringCRC("value"), v); value = v; }
+    uint32_t GetVersion() const override { return 1; }
+};
+
+struct HugeSaveable : ISaveable {
+    void Serialize(SaveContext& ctx) const override {
+        static const char chunk[] =
+            "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"
+            "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"
+            "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789";
+        for (int i = 0; i < 40000; ++i)
+            { char k[16]; snprintf(k, sizeof(k), "b%d", i); ctx.Write(StringCRC(k), chunk); }
+    }
+    void Deserialize(LoadContext&) override {}
+    uint32_t GetVersion() const override { return 1; }
+};
+
+std::string ReadAll(const char* path) {
+    std::string s;
+    FILE* f = fopen(path, "rb");
+    if (!f) return s;
+    char b[4096]; size_t n;
+    while ((n = fread(b, 1, sizeof(b), f)) > 0) s.append(b, n);
+    fclose(f);
+    return s;
+}
+
+bool Exists(const char* path) {
+    FILE* f = fopen(path, "rb");
+    if (f) { fclose(f); return true; }
+    return false;
+}
+
+const char* kSlotA   = "temp/savegame_tests/slot_atom.sav";
+const char* kSlotATmp = "temp/savegame_tests/slot_atom.sav.tmp";
+
+} // namespace
+
+TEST(DiaSaveGame_ManagerAtomic, FailedWriteKeepsPreviousSave)
+{
+    EnsureTestDir();
+    remove(kSlotA);
+
+    ValueSaveable s; s.value = 1;
+    SaveRegistry reg; reg.Register(StringCRC("v"), &s);
+    SaveManager mgr; SaveConfig cfg = MakeConfig(); mgr.Init(cfg, reg);
+    ASSERT_TRUE(mgr.Save(StringCRC("atom")).Ok());
+    const std::string before = ReadAll(kSlotA);
+    ASSERT_FALSE(before.empty());
+
+    // A directory squatting on the tmp path makes the tmp open fail.
+    _mkdir(kSlotATmp);
+    s.value = 2;
+    SaveResult sr = mgr.Save(StringCRC("atom"));
+    EXPECT_EQ(SaveResultCode::FileWriteError, sr.code);
+    EXPECT_EQ(before, ReadAll(kSlotA));
+
+    s.value = 0;
+    ASSERT_TRUE(mgr.Load(StringCRC("atom")).Ok());
+    EXPECT_EQ(1, s.value);
+
+    _rmdir(kSlotATmp);
+    remove(kSlotA);
+}
+
+TEST(DiaSaveGame_ManagerAtomic, SuccessfulSaveOverwritesAndLeavesNoTmp)
+{
+    EnsureTestDir();
+    remove(kSlotA);
+
+    ValueSaveable s; s.value = 1;
+    SaveRegistry reg; reg.Register(StringCRC("v"), &s);
+    SaveManager mgr; SaveConfig cfg = MakeConfig(); mgr.Init(cfg, reg);
+    ASSERT_TRUE(mgr.Save(StringCRC("atom")).Ok());
+
+    // Stale tmp from a "crash" is overwritten.
+    FILE* f = fopen(kSlotATmp, "wb"); ASSERT_NE(nullptr, f); fwrite("junk", 1, 4, f); fclose(f);
+
+    s.value = 7;
+    ASSERT_TRUE(mgr.Save(StringCRC("atom")).Ok());
+    EXPECT_FALSE(Exists(kSlotATmp));
+
+    s.value = 0;
+    ASSERT_TRUE(mgr.Load(StringCRC("atom")).Ok());
+    EXPECT_EQ(7, s.value);
+    remove(kSlotA);
+}
+
+TEST(DiaSaveGame_ManagerTimestamp, SaveStampsManifestAndSlotInfoWithCurrentTime)
+{
+    EnsureTestDir();
+    remove(kSlotA);
+
+    ValueSaveable s; s.value = 1;
+    SaveRegistry reg; reg.Register(StringCRC("v"), &s);
+    SaveManager mgr; SaveConfig cfg = MakeConfig(); mgr.Init(cfg, reg);
+
+    const uint64_t before = static_cast<uint64_t>(time(nullptr));
+    ASSERT_TRUE(mgr.Save(StringCRC("atom")).Ok());
+    const uint64_t after = static_cast<uint64_t>(time(nullptr));
+
+    // Manifest in the file carries the save time.
+    std::ifstream in(kSlotA, std::ios::binary);
+    std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    Json::Value root; Json::Reader reader;
+    ASSERT_TRUE(reader.parse(text, root));
+    const uint64_t stamped = root["manifest"]["timestamp"].asUInt64();
+    EXPECT_GE(stamped, before);
+    EXPECT_LE(stamped, after);
+
+    // Slot enumeration reports it too (file last-write time, allow a couple of seconds of slack).
+    Dia::Core::Containers::DynamicArrayC<SlotInfo, 32> slots;
+    mgr.EnumerateSlots(slots);
+    bool found = false;
+    for (uint32_t i = 0; i < slots.Size(); ++i)
+    {
+        if (strcmp(slots[i].id.AsChar(), "atom") == 0)
+        {
+            found = true;
+            EXPECT_GE(slots[i].timestamp + 2, before);
+            EXPECT_LE(slots[i].timestamp, after + 2);
+        }
+    }
+    EXPECT_TRUE(found);
+    remove(kSlotA);
+}
+
+TEST(DiaSaveGame_ManagerAtomic, SerializeOverflowReturnsErrorAndKeepsExistingSave)
+{
+    EnsureTestDir();
+    remove(kSlotA);
+
+    ValueSaveable good; good.value = 1;
+    SaveRegistry reg; reg.Register(StringCRC("v"), &good);
+    SaveManager mgr; SaveConfig cfg = MakeConfig(); mgr.Init(cfg, reg);
+    ASSERT_TRUE(mgr.Save(StringCRC("atom")).Ok());
+    const std::string before = ReadAll(kSlotA);
+
+    HugeSaveable huge;
+    SaveRegistry reg2; reg2.Register(StringCRC("h"), &huge);
+    SaveManager mgr2; mgr2.Init(cfg, reg2);
+    EXPECT_EQ(SaveResultCode::SerializeError, mgr2.Save(StringCRC("atom")).code);
+    EXPECT_EQ(before, ReadAll(kSlotA));
+    EXPECT_FALSE(Exists(kSlotATmp));
+    remove(kSlotA);
+}
+
+TEST(DiaSaveGame_ManagerAtomic, LoadOfOversizedFileFailsCleanly)
+{
+    EnsureTestDir();
+    const char* path = "temp/savegame_tests/slot_huge.sav";
+    FILE* f = fopen(path, "wb"); ASSERT_NE(nullptr, f);
+    std::string junk(1 << 20, '{');
+    for (int i = 0; i < 11; ++i) fwrite(junk.data(), 1, junk.size(), f);
+    fclose(f);
+
+    ValueSaveable s; s.value = 5;
+    SaveRegistry reg; reg.Register(StringCRC("v"), &s);
+    SaveManager mgr; SaveConfig cfg = MakeConfig(); mgr.Init(cfg, reg);
+    LoadResult lr = mgr.Load(StringCRC("huge"));
+    EXPECT_FALSE(lr.Ok());
+    EXPECT_EQ(5, s.value);
+    remove(path);
+}
+
+TEST(DiaSaveGame_ManagerSlotId, InvalidIdsRejectedWithoutTouchingDisk)
+{
+    EnsureTestDir();
+    remove("temp/escaped.sav");
+    remove("temp/slot_escaped.sav");
+
+    ValueSaveable s; s.value = 1;
+    SaveRegistry reg; reg.Register(StringCRC("v"), &s);
+    SaveManager mgr; SaveConfig cfg = MakeConfig(); mgr.Init(cfg, reg);
+
+    const char* bad[] = { "", "../x", "a/b", "a\\b", "C:x", ".hidden", "a..b", "CON" };
+    for (const char* id : bad)
+    {
+        EXPECT_EQ(SaveResultCode::InvalidSlotId, mgr.Save(StringCRC(id)).code) << id;
+        EXPECT_EQ(LoadResultCode::InvalidSlotId, mgr.Load(StringCRC(id)).code) << id;
+    }
+    EXPECT_FALSE(Exists("temp/escaped.sav"));
+
+    // Delete / Rename with invalid ids must not move or delete anything.
+    ASSERT_TRUE(mgr.Save(StringCRC("ok1")).Ok());
+    mgr.RenameSlot(StringCRC("ok1"), StringCRC("../escaped"));
+    EXPECT_TRUE(Exists("temp/savegame_tests/slot_ok1.sav"));
+    EXPECT_FALSE(Exists("temp/slot_escaped.sav"));
+    mgr.RenameSlot(StringCRC("a/b"), StringCRC("ok2"));
+    EXPECT_FALSE(Exists("temp/savegame_tests/slot_ok2.sav"));
+    mgr.DeleteSlot(StringCRC("../savegame_tests/slot_ok1"));
+    EXPECT_TRUE(Exists("temp/savegame_tests/slot_ok1.sav"));
+    remove("temp/savegame_tests/slot_ok1.sav");
+}
+
+// ---------------------------------------------------------------------------
+// All-or-nothing load: ISaveable::Validate
+// ---------------------------------------------------------------------------
+
+struct ValidatingWorldSaveable : WorldSaveable {
+    bool accept         = true;
+    int  validateCalls  = 0;
+    int  deserializeCalls = 0;
+
+    bool Validate(LoadContext& ctx) const override {
+        const_cast<ValidatingWorldSaveable*>(this)->validateCalls++;
+        int32_t level = 0;
+        return accept && ctx.Read(StringCRC("level"), level);
+    }
+    void Deserialize(LoadContext& ctx) override {
+        deserializeCalls++;
+        WorldSaveable::Deserialize(ctx);
+    }
+};
+
+TEST(DiaSaveGame_ManagerValidate, FailingValidateAbortsLoadAndRestoresNothing)
+{
+    EnsureTestDir();
+
+    PlayerSaveable player;
+    player.data = { 80, 3.5f, true };
+    WorldSaveable world;
+    world.data = { 5 };
+
+    SaveRegistry saveReg;
+    saveReg.Register(StringCRC("player"), &player);
+    saveReg.Register(StringCRC("world"),  &world);
+
+    SaveManager saveMgr;
+    SaveConfig  cfg = MakeConfig();
+    saveMgr.Init(cfg, saveReg);
+    ASSERT_TRUE(saveMgr.Save(StringCRC("slot_val")).Ok());
+
+    // "world" is registered AFTER "player", so without validate-first the player would be restored.
+    PlayerSaveable loadedPlayer;
+    ValidatingWorldSaveable loadedWorld;
+    loadedWorld.accept = false;
+
+    SaveRegistry loadReg;
+    loadReg.Register(StringCRC("player"), &loadedPlayer);
+    loadReg.Register(StringCRC("world"),  &loadedWorld);
+
+    SaveManager loadMgr;
+    loadMgr.Init(cfg, loadReg);
+
+    LoadResult lr = loadMgr.Load(StringCRC("slot_val"));
+    EXPECT_FALSE(lr.Ok());
+    EXPECT_EQ(LoadResultCode::DeserializeError, lr.code);
+    EXPECT_EQ(1, loadedWorld.validateCalls);
+    EXPECT_EQ(0, loadedWorld.deserializeCalls);
+    EXPECT_EQ(0, loadedPlayer.data.hp) << "Earlier participant must not be restored when a later one fails validation";
+
+    remove("temp/savegame_tests/slot_slot_val.sav");
+}
+
+TEST(DiaSaveGame_ManagerValidate, PassingValidateLoadsNormally)
+{
+    EnsureTestDir();
+
+    PlayerSaveable player;
+    player.data = { 80, 3.5f, true };
+    WorldSaveable world;
+    world.data = { 5 };
+
+    SaveRegistry saveReg;
+    saveReg.Register(StringCRC("player"), &player);
+    saveReg.Register(StringCRC("world"),  &world);
+
+    SaveManager saveMgr;
+    SaveConfig  cfg = MakeConfig();
+    saveMgr.Init(cfg, saveReg);
+    ASSERT_TRUE(saveMgr.Save(StringCRC("slot_valok")).Ok());
+
+    PlayerSaveable loadedPlayer;
+    ValidatingWorldSaveable loadedWorld;
+
+    SaveRegistry loadReg;
+    loadReg.Register(StringCRC("player"), &loadedPlayer);
+    loadReg.Register(StringCRC("world"),  &loadedWorld);
+
+    SaveManager loadMgr;
+    loadMgr.Init(cfg, loadReg);
+
+    LoadResult lr = loadMgr.Load(StringCRC("slot_valok"));
+    ASSERT_TRUE(lr.Ok()) << "code " << static_cast<int>(lr.code);
+    EXPECT_EQ(1, loadedWorld.validateCalls);
+    EXPECT_EQ(1, loadedWorld.deserializeCalls);
+    EXPECT_EQ(80, loadedPlayer.data.hp);
+    EXPECT_EQ(5,  loadedWorld.data.level);
+
+    remove("temp/savegame_tests/slot_slot_valok.sav");
+}
+
+struct VersionedWorldSaveable : WorldSaveable {
+    uint32_t version = 1;
+    uint32_t GetVersion() const override { return version; }
+};
+
+TEST(DiaSaveGame_ManagerValidate, MissingMigrationOnLaterParticipantRestoresNothing)
+{
+    EnsureTestDir();
+
+    PlayerSaveable player;
+    player.data = { 80, 3.5f, true };
+    VersionedWorldSaveable world;
+    world.data = { 5 };
+
+    SaveRegistry saveReg;
+    saveReg.Register(StringCRC("player"), &player);
+    saveReg.Register(StringCRC("world"),  &world);
+
+    SaveManager saveMgr;
+    SaveConfig  cfg = MakeConfig();
+    saveMgr.Init(cfg, saveReg);
+    ASSERT_TRUE(saveMgr.Save(StringCRC("slot_mig")).Ok());
+
+    // Live "world" is now v2 with no v1->v2 migration registered.
+    PlayerSaveable loadedPlayer;
+    VersionedWorldSaveable loadedWorld;
+    loadedWorld.version = 2;
+
+    SaveRegistry loadReg;
+    loadReg.Register(StringCRC("player"), &loadedPlayer);
+    loadReg.Register(StringCRC("world"),  &loadedWorld);
+
+    SaveManager loadMgr;
+    loadMgr.Init(cfg, loadReg);
+
+    LoadResult lr = loadMgr.Load(StringCRC("slot_mig"));
+    EXPECT_EQ(LoadResultCode::MigrationError, lr.code);
+    EXPECT_EQ(0, loadedPlayer.data.hp) << "Earlier participant must not be restored when a later migration is missing";
+    EXPECT_EQ(0, loadedWorld.data.level);
+
+    remove("temp/savegame_tests/slot_slot_mig.sav");
 }

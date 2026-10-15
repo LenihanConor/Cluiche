@@ -66,6 +66,11 @@ def _validate_diagame(data: dict, file_path: Path | None = None) -> Tuple[List[s
             if isinstance(imp.get("type"), str) and imp["type"] not in ("manifest", "stage"):
                 errors.append(f"{prefix}.type must be 'manifest' or 'stage', got '{imp['type']}'")
 
+    if file_path and isinstance(data.get("imports"), list):
+        composed, compose_warnings = _compose_game_manifest(data, file_path)
+        warnings += compose_warnings
+        errors += _validate_service_streams(composed)
+
     # Check schema file if present
     if "schema" in data:
         schema_value = data["schema"]
@@ -141,6 +146,120 @@ def _validate_diaapp(data: dict) -> List[str]:
                 errors += _check_key(stream, "payload_type", str, prefix)
 
     return errors
+
+
+def _load_json(path: Path) -> dict | None:
+    try:
+        loaded = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return loaded if isinstance(loaded, dict) else None
+
+
+def _resolve_import(base_dir: Path, rel: str) -> Path:
+    """Resolve an import path. Source layout differs from the deployed layout the paths are written
+    for, so fall back to a unique file-name match under base_dir."""
+    direct = base_dir / rel
+    if direct.exists():
+        return direct
+    matches = list(base_dir.rglob(Path(rel).name))
+    return matches[0] if len(matches) == 1 else direct
+
+
+def _compose_game_manifest(data: dict, file_path: Path) -> Tuple[dict, List[str]]:
+    """Merge the streams and PU modules of every manifest a .diagame imports (directly or via a
+    .diastage) into one v3 dict, as the C++ loader composes them. Returns (merged, warnings)."""
+    merged: dict = {"streams": [], "processing_units": []}
+    warnings: List[str] = []
+    imports = data.get("imports")
+    if not isinstance(imports, list):
+        return merged, warnings
+
+    for imp in imports:
+        if not isinstance(imp, dict) or not isinstance(imp.get("path"), str):
+            continue
+        imp_path = _resolve_import(file_path.parent, imp["path"])
+        imp_data = _load_json(imp_path)
+        if imp_data is None:
+            warnings.append(f"cannot compose service streams: import not readable: {imp['path']}")
+            continue
+        if imp.get("type") == "stage":
+            manifest_rel = imp_data.get("manifest")
+            if not isinstance(manifest_rel, str):
+                continue
+            imp_data = _load_json(_resolve_import(file_path.parent, manifest_rel))
+            if imp_data is None:
+                warnings.append(f"cannot compose service streams: stage manifest not readable: {manifest_rel}")
+                continue
+
+        if isinstance(imp_data.get("streams"), list):
+            merged["streams"].extend(imp_data["streams"])
+        if isinstance(imp_data.get("processing_units"), list):
+            for pu in imp_data["processing_units"]:
+                if not isinstance(pu, dict):
+                    continue
+                existing = next((m for m in merged["processing_units"] if m.get("instance_id") == pu.get("instance_id")), None)
+                if existing is None:
+                    merged["processing_units"].append({**pu, "modules": list(pu.get("modules") or [])})
+                elif isinstance(pu.get("modules"), list):
+                    existing["modules"].extend(pu["modules"])
+    return merged, warnings
+
+
+def _validate_service_streams(data: dict) -> List[str]:
+    """Mirror ManifestValidatorV2::CheckServiceStreamConstraints for a v3 .diaapp."""
+    errors: List[str] = []
+    streams = data.get("streams")
+    pus = data.get("processing_units")
+    if not isinstance(streams, list) or not isinstance(pus, list):
+        return errors
+
+    for stream in streams:
+        if not isinstance(stream, dict) or stream.get("kind") != "ServiceStream":
+            continue
+        stream_id = stream.get("id")
+
+        providers: List[int] = []   # PU index per provider channel
+        consumers: List[int] = []   # PU index per consumer channel
+        for p, pu in enumerate(pus):
+            if not isinstance(pu, dict) or not isinstance(pu.get("modules"), list):
+                continue
+            for mod in pu["modules"]:
+                if not isinstance(mod, dict) or not isinstance(mod.get("channels"), list):
+                    continue
+                for ch in mod["channels"]:
+                    if not isinstance(ch, dict) or ch.get("id") != stream_id:
+                        continue
+                    if ch.get("role") == "provides":
+                        providers.append(p)
+                    elif ch.get("role") == "consumes":
+                        consumers.append(p)
+
+        if providers:
+            for c in consumers:
+                if c < providers[-1]:
+                    errors.append(
+                        f"ServiceStream '{stream_id}': consumer PU '{_pu_id(pus, c)}' (index {c}) appears before "
+                        f"provider PU '{_pu_id(pus, providers[-1])}' (index {providers[-1]}) in config "
+                        f"[SERVICE_STREAM_PROVIDER_AFTER_CONSUMER]")
+        if not providers:
+            errors.append(
+                f"ServiceStream '{stream_id}' has no provider (no module has role=provides) "
+                f"[SERVICE_STREAM_MISSING_PROVIDER]")
+        elif len(providers) > 1:
+            errors.append(
+                f"ServiceStream '{stream_id}' has {len(providers)} providers - exactly one provider required "
+                f"[SERVICE_STREAM_MULTIPLE_PROVIDERS]")
+        elif not consumers:
+            errors.append(
+                f"ServiceStream '{stream_id}' has a provider but no consumers [SERVICE_STREAM_ORPHAN_PROVIDER]")
+
+    return errors
+
+
+def _pu_id(pus: list, index: int) -> str:
+    pu = pus[index]
+    return str(pu.get("instance_id", index)) if isinstance(pu, dict) else str(index)
 
 
 def _validate_diagamemessages(data: dict) -> List[str]:
@@ -225,7 +344,7 @@ def manifest(ctx: click.Context, target_path: str | None, verbose: bool) -> None
             files.extend(repo_root.rglob(ext))
 
     # Exclude worktree and build artifacts
-    _EXCLUDE_DIRS = {".claude", "node_modules", "build", "out"}
+    _EXCLUDE_DIRS = {".claude", "node_modules", "build", "out", "bin"}
     files = [f for f in files if not any(part in _EXCLUDE_DIRS for part in f.relative_to(repo_root).parts)]
 
     if not files:

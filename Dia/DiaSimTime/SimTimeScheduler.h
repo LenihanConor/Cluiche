@@ -108,6 +108,13 @@ namespace Dia::SimTime {
         // Cancel a pending entry. No-op on kInvalidHandle or a stale handle.
         void  Cancel(ScheduleHandle handle);
 
+        // Drop EVERY pending entry (wheel + heap). All previously issued handles
+        // become stale (slot generations are bumped), so Cancel()/Reschedule()
+        // on them are safe no-ops and can never touch an entry scheduled after
+        // the Clear. The current-time anchor is left untouched. Used by
+        // SimTimeSaveState::Deserialize so a load REPLACES the pending set.
+        void  Clear();
+
         // Move a pending entry's fire time. No-op on kInvalidHandle or a stale
         // handle. The handle stays valid; the entry migrates between wheel and
         // heap as required by its new time.

@@ -421,6 +421,21 @@ def test_run_shards_uses_gtest_env_vars(mock_run, tmp_path):
     assert shard_indices == [0, 1, 2]
 
 
+@patch("dia_cli.commands.test.shard_runner.with_asan_runtime_on_path")
+@patch("dia_cli.commands.test.shard_runner.subprocess.run")
+def test_run_shards_puts_asan_runtime_on_path(mock_run, mock_asan, tmp_path):
+    _make_staged(tmp_path, "Debug-Asan")
+    mock_run.return_value = MagicMock(returncode=0)
+    mock_asan.side_effect = lambda env, config: {"PATH": "ASAN;x"}
+    run(repo_root=tmp_path, config="Debug-Asan", filter_pattern=None,
+        verbose=False, docker=False, run_all=False, shards=2)
+    assert all(c.args[1] == "Debug-Asan" for c in mock_asan.call_args_list)
+    for call in mock_run.call_args_list:
+        env = call[1]["env"]
+        assert env["PATH"].startswith("ASAN;")
+        assert "GTEST_SHARD_INDEX" in env
+
+
 @patch("dia_cli.commands.test.shard_runner.subprocess.run")
 def test_run_shards_returns_nonzero_if_any_shard_fails(mock_run, tmp_path):
     _make_staged(tmp_path)

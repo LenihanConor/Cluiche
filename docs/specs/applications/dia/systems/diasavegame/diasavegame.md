@@ -22,7 +22,7 @@ Any game built on Dia registers its systems with `SaveRegistry` and calls `Save(
 - Define `SaveManifest` — header stored alongside save data: engine version, participant list with per-participant version numbers, format tag, and timestamp
 - Provide `Save(slotId)` / `Load(slotId)` as the only public API surface — all path construction, ordering, and I/O owned internally
 - Implement save orchestration — fire `OnSaveStarted`, call `Serialize` on each registered participant in registration order, write manifest + data, fire `OnSaveCompleted`
-- Implement load orchestration — fire `OnLoadStarted`, read manifest, validate compatibility, call `Deserialize` on each participant in registration order, fire `OnLoadCompleted`
+- Implement load orchestration — fire `OnLoadStarted`, read manifest, validate compatibility, migrate and `Validate` every participant (any failure aborts with nothing restored), then call `Deserialize` on each participant in registration order, fire `OnLoadCompleted`
 - Implement async I/O — serialize all participants to an in-memory buffer on the sim thread (no stall); flush buffer to disk off-thread; load reads from disk off-thread then deserializes on sim thread
 - Implement versioning + migration — each participant declares a version number; when loading a save whose participant version differs from the current registration, registered migration callbacks run in sequence to bring the data forward before `Deserialize` is called
 - Implement slot management — enumerate slots, delete slot, rename slot, query slot metadata (manifest header); enforce max-slot cap if configured

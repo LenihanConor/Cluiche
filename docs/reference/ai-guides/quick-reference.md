@@ -362,7 +362,6 @@ python Tools/dia_modules.py --list dia.core.containers
 |---------|---------|---------|
 | **SFML** | 2.5.1 | Graphics, audio, input |
 | **JsonCpp** | Master | JSON parsing |
-| **Webix** | - | Web UI components |
 | **VisJS** | - | Graph visualization |
 
 ---

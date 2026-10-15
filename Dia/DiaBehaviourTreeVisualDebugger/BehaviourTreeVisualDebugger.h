@@ -9,7 +9,7 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaDebugDraw/Domain/IDebugDomain.h>
+#include <DiaVisualDebugger/Domain/IDebugDomain.h>
 #include <DiaBehaviourTree/IBehaviourTreeEventListener.h>
 #include <DiaBehaviourTree/NodeResult.h>
 #include <DiaCore/CRC/StringCRC.h>

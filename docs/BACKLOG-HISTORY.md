@@ -8,6 +8,10 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 
 | Item | Completed | Notes |
 |------|-----------|-------|
+| Webix removal (vendored 5.2.1 folder, catalogue entries, live docs; `dummyStage.html` rewritten as a styled plain HTML/CSS Exit Level panel) | 2026-10-13 | [webix_removal research](research/webix_removal/summary.md); commits `6de511c3`, `ce2829d9`, `82e9fd7c`, `da95d410`. Pending: manual check of the DummyStage panel render and Exit Level in Ultralight. Alpine/React game-UI convention is unaffected (spec already Done). |
+| CoW: `dia scaffold app` (data-driven target registry + templates, command, `ScratchApp` boot proof, docs) | before 2026-10-12 | [scaffold-app.md](specs/applications/dia/systems/diacli/scaffold-app.md); F-1 plan task 9 |
+| CoW: `new-cow-stage` skill (AC1 to AC3) | before 2026-10-12 | F-1 plan task 7; trial run (AC4/AC5) still open in the backlog |
+| CoW: `dia scaffold stage --app` | before 2026-10-12 | F-1 plan task 6; 22 new tests, 148 scaffold tests pass |
 | CI Architecture Gates | 2026-07-09 | `dia check deps` exit code fixed, `dia check arch` wired, `dia check clones` (PMD CPD) added, `.github/workflows/ci.yml` with hard-gate + advisory jobs. |
 
 ---
@@ -16,6 +20,14 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 
 | System | Spec | Completed | Notes |
 |--------|------|-----------|-------|
+| DiaFlowField + DiaPathfinding: scalable storage | [scalable-storage.md](specs/applications/dia/systems/diaflowfield/scalable-storage.md) | 2026-10-15 | FlowField and SquarePathGrid now use heap-backed DynamicArray, removing 4096-cell caps. Graph-aware Sample/SampleWorld overloads work on any CFlowFieldGraph. 29 tests pass (AC1-AC7, AC9). AC8 (FlowFieldCache) blocked on unrelated issue. CoW Large map (104×64, 6,656 cells) now works. Plan: [scalable-storage.plan.md](specs/applications/dia/systems/diaflowfield/scalable-storage.plan.md) |
+| DiaPathfinding: Rectangular Hex Grid | [hex-rectangular-grid.md](specs/applications/dia/systems/diapathfinding/hex-rectangular-grid.md) | 2026-10-14 | `HexPathGrid(width, height)` rectangular flat-top odd-q layout, `HexTopology` (neighbours, distance, direction helpers, cell geometry), corrected hex heuristic, `HexFlowAdapter` support, `GridVisibilitySystem` compile-time guard. 252 tests pass. Amended from pointy-top odd-r during implementation. CoW needs for S-1, A4 Features 3–6 |
+| CoW GameSpeedController (Features 1 and 2) | [gamespeedcontroller.md](specs/applications/cow/systems/gamespeedcontroller/gamespeedcontroller.md) | 2026-10-13 | `GameSpeedController` core + `GameSpeedControllerModule` (pause as time scale 0, day `SimulationTick`, 12 `cow.gamespeed.*` metrics, health reporter). 105 tests, full suite and ASan pass. Save participant still open in BACKLOG (needs E1 `SaveLoadModule`) |
+| DiaAttribute Feature 7 (Band-Based Initialization) | @docs/specs/applications/dia/systems/diaattribute/band-based-initialization.md | 2026-10-12 | Schema-defined named band ranges, `InitializeFromBands()` midpoint resolution, `band_schema_version` support, fallback to default_value. 18 unit tests (11 core + 7 edge cases), 154/154 full suite passes. ~3 hours. |
+|--------|------|-----------|-------|
+| CoW F-1: Boot choice (Play entry only) | [boot-choice.md](specs/applications/cow/systems/f1-harness/boot-choice.md) | before 2026-10-12 | F-1 plan task 5; spec marked Done. Recorded during the 2026-10-12 backlog cleanup |
+| CoW F-1: CoW app skeleton (B1 to B7: `cow` target, `sln-add --root`, project, manifests, `FrontEnd` stub, `Main.cpp`, verify, observation scan) | [cow-app-skeleton.md](specs/applications/cow/systems/f1-harness/cow-app-skeleton.md) | before 2026-10-12 | F-1 plan tasks 2 to 4. Promotion and skeleton edits to baseline, CluicheTest, DiaCLI and `pipeline.toml` were signed off in the F-1 spec |
+| CoW F-1: BootMenuModule promotion + `StageStatusModule` | [bootmenu-promotion.md](specs/applications/cow/systems/f1-harness/bootmenu-promotion.md) | before 2026-10-12 | F-1 plan task 1 |
 | DiaBgfx3D | [diabgfx3d.md](specs/applications/dia/systems/diabgfx3d/diabgfx3d.md) | 2026-07-09 | Phase 2 3D rendering ship gate. gpu-resources (MaterialRegistry + MeshGpuCache), 3d-renderers (MeshRenderer + ShadowRenderer + shaders), canvas3d (Canvas3D ProcessFrame 2D+3D dispatch), mesh-texture-pipeline (albedo + normal maps + TBN), pbr-shading (GGX BRDF + ORM), multiple-directional-lights (8-light array uniforms). |
 | DiaBlackboardInspector | [diablackboardinspector.md](specs/applications/dia/systems/diablackboardinspector/diablackboardinspector.md) | 2026-07-09 | Live runtime blackboard visibility in CluicheEditor. blackboard-registry (BlackboardRegistry + serializer opt-in + IBlackboardObserver::GetId), blackboard-inspector-source (ChangeDetectedSourceBase + EventStream → DebugServer), blackboard-inspector-plugin (LiveConnectionPluginBase + dockable HTML panel). |
 | DiaRenderTest CLI Pipeline | [diarendertest.md](specs/applications/dia/systems/diarendertest/diarendertest.md) | 2026-07-09 | Offline render regression pipeline. png-writer, diff-engine, expectations, python-tools, metrics-writer, cluichetest-integration all shipped. Unblocks RenderTestPlugin (CluicheEditor). |
@@ -58,6 +70,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | diarendertest | [spec](specs/) | 2026-07-09 | Marked done by `dia docs spec-done` |
 | diabgfx3d | [spec](specs/) | 2026-07-09 | Marked done by `dia docs spec-done` |
 | `dia diagnose --last-run` CLI command | Automate crash triage: find latest session log, extract last module transition + all ERROR entries, show incomplete E2E report, check `%LocalAppData%\CrashDumps`. Saves the manual log-digging cycle after every crash. | 2026-07-10 | Implemented in dia_cli/cli/diagnose.py; surfaces truncated log, last stage/module, errors, E2E report, crash dumps in one command |
+| DiaConsole | [diaconsole.md](specs/applications/dia/systems/diaconsole/diaconsole.md) | 2026-10-08 | All 7 features Done: console-command-model, console-native-shell, console-typed-results, console-project-context, console-presets, console-desktop-install (2026-09-30), console-run-tabs (2026-09-30, manually verified in-browser 2026-10-08). Native-window web console over DiaCLI's Click command tree: reflected registry, NDJSON execution streaming, typed results, presets, project/target context, packaged desktop exe, concurrent-run tabs. |
 | DiaAIBudget | IAIBudgetedSystem, AIBudgetScheduler, AIBudgetModule, Budget Metrics | 2026-07-29 | All features implemented and tested (46 tests) |
 | DiaUtilityAI | ResponseCurve, ActionDef, UtilitySet, AsyncEvaluation, GroupConsideration, UtilitySetComponent, ScoreOverlay, TestUtilities | 2026-07-29 | All features implemented and tested (46 tests) |
 | DiaHTN | [diahtn.md](specs/applications/dia/systems/diahtn/diahtn.md) | 2026-07-29 | All features implemented and tested (46 tests) |
@@ -122,6 +135,40 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | visual-debugger | [spec](specs/) | 2026-09-04 | Marked done by `dia docs spec-done` |
 | DiaAttribute | System spec + all 6 feature specs Approved ✅: core, conditional-modifiers, change-notifications, accessor-bridge, visual-debugger, save-serialization. Data-driven gameplay attribute/stat framework — same idiom as DiaEconomy (StringCRC, JSON schema, DiaCondition-gated modifiers, Observer events), no shared code. Plan: [diaattribute.plan.md](specs/applications/dia/systems/diaattribute/diaattribute.plan.md) — 6 tasks, 3 phases. Entry point: task 1 (core). Task 1 has an open design question (component attachment mechanism) to resolve before `AttributeSetComponent`; task 4 (accessor-bridge) is the highest-uncertainty task — `DiaCondition`'s `ConditionRegistry` has no unregister method, may need an upstream fix. Deferred: Archetype/Instance Layering. Parked: Dependency-Graph Derived Attributes, Non-Numeric Typed Properties. Research: [gameplay_attribut_stat_system/summary.md](research/gameplay_attribut_stat_system/summary.md). | 2026-09-04 | All 6 features Done: Core, Conditional Modifiers, Change Notifications, Accessor Bridge, Save/Serialization, Visual Debugger. 124 GoogleTests pass. Full unfiltered regression: 8933/8933. |
 | Architecture layer violation remediation | `dia check arch` flags ~35 violations across 6 independent root causes (VisualDebugger family → DiaVisualDebugger — the long-standing ~42-file conflict below, now audited; DiaScalarFieldInspector → DiaEditor; GridVisibilityVisualDebugger mistagged vs. its own domain; a duplicate RGBA type pulling RigidBody2DVisualDebugger into the visual domain; DiaSensor/DiaTriggerScript falsely attributed to `dia.root` via malformed module.md metadata; DiaSimTime → DiaSaveGame). Audit complete with a recommended fix and task breakdown per cluster: [arch_layer_violations/plan.md](refactors/arch_layer_violations/plan.md). One task (retagging `dia.editor` from `domain/visual/core` to `foundation/application`) is gated on explicit sign-off before implementation. | 2026-09-07 | dia check arch: 172 -> 0 violations. All 6 original clusters + expanded metadata sweep (task 12, 10 modules) fixed across 6 commits. Task 9 (DiaDebugDraw.vcxproj duplicate-compile cleanup) remains Blocked -- tracked as its own Loose Ends entry, not part of this line's Done state. |
+| DiaDebugDraw.vcxproj duplicate-compile hack | `DiaDebugDraw.vcxproj` still duplicate-compiles `DebugLayerManager.cpp` et al. out of `DiaVisualDebugger` via relative path (unrelated to layer violations — `dia check arch` is clean). Tried removing the duplicate entries once (see [arch_layer_violations/plan.md](refactors/arch_layer_violations/plan.md) task 9): broke the real link for `GoogleTests.exe` with 59 unresolved externals, even though `DiaDebugDraw.lib` isn't referenced anywhere in `GoogleTests.vcxproj` (not in `ProjectReference`, not in `AdditionalDependencies`) while `DiaVisualDebugger.lib` — which should contain these exact symbols — is explicitly linked. Reverted immediately, confirmed clean. Working theory, unconfirmed: a shared intermediate-object-path collision between the two projects compiling the same source files under MSBuild's default parallel build. Needs real investigation (check `IntDir` settings, try a forced serial rebuild) before attempting again. | 2026-09-08 | Resolved 2026-09-08: root-caused as an unfinished extraction (DiaDebugDraw's own doc already claimed the shared registry/palette/dispatch as its responsibility, but the .cpp files never physically moved out of DiaVisualDebugger). Merged DiaDebugDraw into DiaVisualDebugger for real: moved the 4 shared files, added the missing ClCompile entries, fixed ~65 #include paths repo-wide, stripped 11 dead ProjectReferences, deleted the module. Verified via GoogleTests (435/435) and CluicheTest build. |
+| diaconsole | [spec](specs/) | 2026-09-30 | Marked done by `dia docs spec-done` |
+| Dia | F-1: DiaCLI `cow` target + `scaffold sln-add --root` (skeleton B1, B2) | 2026-10-09 | Done: [targets.cow] block + sln-add --root; commits cfc5824f, 7ce0b3b0 |
+| Dia | F-1: DiaCLI data-driven target registry (scaffold-app task 1); makes the `cow` target toml-only | 2026-10-09 | Done: registry derives launch/deploy/error lists from pipeline.toml; scaffold-app task 1; commit 04f9aee5 |
+| bootmenu-promotion | [spec](specs/) | 2026-10-09 | Marked done by `dia docs spec-done` |
+| boot-choice | [spec](specs/) | 2026-10-09 | Marked done by `dia docs spec-done` |
+| cow-app-skeleton (CoW app, generated by `dia scaffold app`) | [spec](specs/applications/cow/systems/f1-harness/cow-app-skeleton.md) | 2026-10-09 | Boots to the Boot menu, FrontEnd launch and return verified, F5 verified |
+| DiaCLI `cow` target, `scaffold sln-add --root`, data-driven target registry | [spec](specs/applications/dia/systems/diacli/scaffold-app.md) | 2026-10-09 | Skeleton B1/B2 and scaffold-app task 1 |
+| `dia scaffold app` | [spec](specs/applications/dia/systems/diacli/scaffold-app.md) | 2026-10-09 | Templates, command, baseline links; task 4 covered by generating CoW |
+| `dia scaffold stage --app` | [plan](specs/applications/cow/systems/f1-harness/f1-harness.plan.md) | 2026-10-09 | F-1 task 6; 22 tests |
+| `new-cow-stage` skill (written; trial pending) | [spec](specs/applications/cow/systems/f1-harness/new-cow-stage-skill.md) | 2026-10-09 | Trial run is a loose end in BACKLOG.md |
+| scaffold-app | [spec](specs/) | 2026-10-09 | Marked done by `dia docs spec-done` |
+| Dia | `dia docs spec-scaffold` writes the wrong parent and fails on a relative `--output-dir` | 2026-10-09 | Parent inference now uses real layout; added --app; relative --output-dir works; tests added |
+| Dia | `dia docs vcxproj-add` picks the filter from the first path segment only | 2026-10-09 | Filter now reused from same-directory entries, then nearest ancestor, then first segment; tests added |
+| CoW | F-1: Bus live verification | 2026-10-09 | Implemented as MessageBusStressTestStage in CluicheTest (commit f717ac07). Validates Primary/Reaction two-pass delivery with 10k messages at 1:1 ratio. CoW can reference this test for F-1 Test 4 verification instead of building a separate CoW-specific stage. |
+| CoW / Dia | F-1: Bus traffic recorder | 2026-10-09 | Implemented as MessageBusStressTestStage in CluicheTest (commit f717ac07). Validates Primary/Reaction two-pass delivery with 10k messages at 1:1 ratio. CoW can reference this test for F-1 Test 4 verification instead of building a separate CoW-specific stage. |
+| CoW | DiaMessageBus module doc: `status: stub` is stale | 2026-10-09 | Moved by `dia docs backlog move` |
+| CoW | Shared application-bootstrap helper | 2026-10-09 | `Dia::ApplicationFlow::LoadManifest` + `RegisterPathAliases` (Manifest/ManifestBootstrap.h); both mains use it, loop/frame rate stay per-app |
+| Dia | DiaMessageBus: bus-traffic-recorder | 2026-10-13 | `IBusRecorder` + `Bus::SetRecorder` hook, `FileBusRecorder` (format v1, injected tick source), test helpers, observation (3 counters, flush profile scope, `FileBusRecorderHealthReporter`). 37 tests; AC-10 relaxed to a runtime assert (spec amended). Commits 2cc53024..17a3aa47. CoW wiring (path, tick source, flush/close on exit) remains a separate CoW task |
+| command-unregister | [spec](specs/) | 2026-10-13 | Marked done by `dia docs spec-done` |
+| panel-palette | [spec](specs/) | 2026-10-13 | Marked done by `dia docs spec-done` |
+| panel-console | [spec](specs/applications/dia/systems/diadebugdomain/panel-console.md) | 2026-10-13 | Console strip in DiaDebugPanel: parser, results, history, autocomplete, log view, PanelController, golden contract tests. Replaced the old DiaDebugConsole/ModuleDebugRegistry/DiaDebugDataPanel plan (the last two superseded). User-verified in CluicheTest. Also fixed along the way: ASan link and runner, StringCRC / String<N> over-reads, Application metric pointers |
+| f1-harness | [spec](specs/applications/cow/systems/f1-harness/f1-harness.md) | 2026-10-13 | CoW boots to a Boot menu with a stub front end; baseline BootMenuModule; `dia scaffold stage --app` and `dia scaffold app`; debug panel host (console, Ctrl+P palette) wired into CoW; message bus in the manifest (baseline MessageBusHostModule + CoW BusProbeModule); bus traffic recorder wired (BusRecorderModule, Test 6 verified from the file after exit). Follow-ups left in BACKLOG Loose Ends |
+| bus-recorder-debug-card | [spec](specs/applications/dia/systems/diamessagebus/visual-debugger.md) | 2026-10-13 | Recorder section in the MessageBus debug card's Live tab (AC-9): attached/state/path/records/bytes/dropped via `IBusRecorder::GetStatus` and `Bus::GetRecorder()`; 4 tests. Also closed the F-1 observation gaps (StageStatus table-full log + counter, BootMenu empty-stage warning, bus host domain logs, BusProbe counters) |
+| Dia | 3 tests fail only in the whole-suite ASan run | 2026-10-13 | Not reproduced 2026-10-13: the 3 tests passed in two consecutive full ASan runs; dia check sanitizer exits 0 (9192 tests, no findings). No code change. If they recur, first check for a stale Debug-Asan build (touch the source and rebuild) and the relative Cluiche/out temp paths with GetTickCount(). |
+| Dia | `--shards` runs under Debug-Asan still cannot find the ASan runtime DLL | 2026-10-13 | Fixed 2026-10-13 (6d4262d0): shard_runner builds each shard's env with with_asan_runtime_on_path (config threaded from googletest_runner); unit test added; verified with dia launch googletest --config Asan --shards 2. |
+| Dia | `dia validate manifest` misses ServiceStream orphan providers | 2026-10-13 | Fixed 2026-10-13: dia validate manifest composes each .diagame with its imports and checks ServiceStream provider/consumer constraints (mirrors C++); LoadManifest labels warnings as warnings |
+| CoW | E1 Save/Load | 2026-10-14 | Built 2026-10-14. SaveLoadModule shell + participants game_speed, random_streams, DiaSimTime; atomic saves, 10 MB buffer, slot-id validation, SaveLoadHealthReporter, migration pre-validation. Dia fixes: RandomStream Restore, TimeServer::SetTime/SetTimeScaleImmediate, SimTimeScheduler::Clear, SlotManager id fix, manifest timestamp. Full suite green. |
+| CoW | GameSpeedController (A2) | 2026-10-14 | Built 2026-10-13; save participant delivered with E1 on 2026-10-14. |
+| CoW | E1 follow-ups | 2026-10-14 | Moved by `dia docs backlog move` |
+| CoW: F-2 Core Runtime | [spec](specs/applications/cow/systems/f2-core-runtime/f2-core-runtime.md) | 2026-10-14 | Done. One Save/Reload/Replay scenario with checks C1-C6 and debug panel; found and fixed the GameSpeedController restore gap (participant v2). Hatch path of C6 waits on B6 |
+| Dia | DiaPathfinding: Rectangular Hex Grid | 2026-10-14 | Built 2026-10-14: HexTopology, rectangular odd-r HexPathGrid, layout-aware heuristic; 9417 tests pass |
+| Dia | DiaGridVisibility: topology-generic line of sight | 2026-10-15 | Moved by `dia docs backlog move` |
+| Baseline | JobSystemService ServiceStream + TrySubmit (dia-needs #12) | 2026-10-15 | **Done 2026-10-15.** JobSystemModule publishes JobSystem& as ServiceStream; JobSystem::TrySubmit() returns invalid handle after shutdown (no assert); manifests updated (cow_main.diaapp, cluiche_main.diaapp); 3 unit tests + integration test (JobSystemServiceTestStage on SimPU); 9183 tests pass. Spec: [jobsystem-servicestream.md](specs/applications/dia/systems/diathreading/jobsystem-servicestream.md). Unblocks A4 Weather parallel updates |
 
 ---
 
@@ -138,6 +185,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 
 | Feature | Spec | System | Completed |
 |---------|------|--------|-----------|
+| Multi-Stream RNG | [multi-stream-rng.md](specs/applications/dia/systems/diamaths/multi-stream-rng.md) | DiaMaths | 2026-10-09 — `RandomStream` class + `RandomStreamManager` instance-based registry for deterministic multi-system RNG. 8 independent named streams (WLD, A1, B4, B6, C1, C2, B5, C4) for CoW F-2. StringCRC-keyed, no singleton, per-stream mutex, auto-grows capacity. 26 comprehensive tests: stream independence, determinism, thread safety (concurrent access + cross-thread), edge cases (seed=0/UINT_MAX, capacity limits), pointer stability, backward compatibility. Serialization deferred. |
 | Animation2DTestStage | animation2d-test-stage | TestStages | 2026-06-01 — Dragon skeleton clip playback, pose validation, blend weight interpolation; `animation.clip_complete` + `animation.pose_matches` checkpoints; pytest scenario passes. |
 | EntityTestStage | [entity-test-stage.md](specs/applications/cluichetest/systems/teststages/entity-test-stage.md) | TestStages | 2026-06-01 — Spawn/destroy/hierarchy/query/mailbox/lifecycle validation; `TransformComponent` + `VisualTestRenderComponent`; 6 checkpoints; EntityModule (SimPU, reusable) + EntityTestModule (MainPU, test logic). |
 | Scene2DTestStage | [scene2d-stage.md](specs/applications/cluichetest/systems/teststages/scene2d-stage.md) | TestStages | 2026-06-01 — Scene loading, camera/light/entity hydration, layer resolution; 5 checkpoints; pytest scenario passes. |
@@ -195,6 +243,19 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 
 ---
 
+## CoW: Designed in the GDD (struck from "CoW: Features to Be Designed")
+
+| Testbed / piece | Locked | Notes |
+|-----------------|--------|-------|
+| S-3 Living Ecology | 2026-10-11 | `S3_LivingEcology.md`; updated to include A4 weather overlays |
+| S-2 Single Cell Ecology | 2026-10-11 | `S2_SingleCellEcology.md` |
+| V-1 Tile Rendering | 2026-10-11 | `V1_TileRendering.md`; 5-layer rendering + A4 weather |
+| S-1 World Generation | 2026-10-11 | `S1_WorldGeneration.md` |
+| F-2 Core Runtime | 2026-10-09 | `F2_CoreRuntime.md` |
+| F-1 Boot & Debug Menu · Event Bus & Inspector | 2026-10-09 | `F1_Harness.md`; Record & Replay still open |
+
+---
+
 ## Superseded Items
 
 | Item | Reason |
@@ -215,3 +276,12 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | HotReloadManager stubs (`CollectDependentModules` / `UpdateDependencyReferences`) | Superseded by DiaApplicationFlow v2 Stage model — hot reload via Phase/Module replacement is no longer the architecture. Never landed in the main codebase (only existed in old agent worktrees). |
 | DiaEnv — env-export | [diaenv.md](specs/applications/dia/systems/diaenv/diaenv.md) | Covered by deps.json + mirrors + submodules |
 | DiaEnv — docker continuous monitoring (`dia env doctor`) | [diaenv.md](specs/applications/dia/systems/diaenv/diaenv.md) | Premature until setup + verify stable (both now Done) |
+
+---
+
+## Dropped
+
+| Item | Project | Dropped | Why |
+|------|---------|---------|-----|
+| Shipping-build gating (compile the menu out, shipping manifest) | CoW | 2026-10-09 | User decision; revisit when a shipping build is planned |
+| `--play` command-line flag and DiaCLI argument forwarding | CoW | 2026-10-09 | Replaced by a Play entry in the Boot menu; DiaCLI has no argument forwarding |

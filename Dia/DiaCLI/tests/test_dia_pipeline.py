@@ -115,6 +115,24 @@ def test_load_config_parses_build_deps(tmp_path):
     assert cfg.targets["googletest"].build_deps.cef_wrapper is False
 
 
+def test_load_config_parses_hidden_true(tmp_path):
+    with_hidden = _MINIMAL_TOML + textwrap.dedent("""\
+
+        [targets.diasfml]
+        project = "Dia/DiaSFML/DiaSFML.vcxproj"
+        hidden = true
+        """)
+    _write_toml(tmp_path, with_hidden)
+    cfg = load_pipeline_config(tmp_path)
+    assert cfg.targets["diasfml"].hidden is True
+
+
+def test_load_config_hidden_defaults_false_when_key_absent(tmp_path):
+    _write_toml(tmp_path)
+    cfg = load_pipeline_config(tmp_path)
+    assert cfg.targets["googletest"].hidden is False
+
+
 def test_load_config_invalid_stage_name(tmp_path):
     bad = _MINIMAL_TOML.replace(
         'stages = ["compile-code", "build-assets", "deploy"]',

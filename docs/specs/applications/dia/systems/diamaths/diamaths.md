@@ -281,6 +281,7 @@ namespace Dia::Maths {
 | Quaternion | New `DiaMaths/Quaternion/` submodule. Unit quaternion with Slerp/Nlerp, axis-angle and Euler conversions, Matrix33/44 conversions, vector rotation. | [quaternion.md](quaternion.md) | Draft |
 | Transform3D | 3D transform with parent-child hierarchy. Vector3D position, Quaternion rotation, Vector3D scale. Both Quaternion and Euler setter overloads. Y-up RH forward/right/up. | [transform3d.md](transform3d.md) | Draft |
 | DiaMaths Shape Cleanup | Delete `Dia/DiaMaths/Shape/2D/` and `Dia/DiaMaths/Shape/Common/` and their module docs. Update vcxproj/filters. Verify no consumers still reference the DiaMaths-side headers. | [shape-cleanup.md](shape-cleanup.md) | Draft |
+| Multi-Stream RNG | `RandomStream` class and `RandomStreamManager` registry for multiple independent, named RNG streams. Enables deterministic gameplay with per-system seeding. Required by CoW F-2 Core Runtime. | [multi-stream-rng.md](multi-stream-rng.md) | Approved |
 
 ## Dependencies on Other Systems
 

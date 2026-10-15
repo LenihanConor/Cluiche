@@ -235,6 +235,18 @@
     <Filter Include="DiaPathfinding">
       <UniqueIdentifier>{848797c9-ea26-4ef7-af69-5e4405bcd89d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaMaths">
+      <UniqueIdentifier>{8355fe2c-307b-47d3-b965-8931117171cc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Tests\GoogleTests\DiaAttribute">
+      <UniqueIdentifier>{f69c33c5-f439-4381-a9b9-3e979891d44e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaVisualDebugger\Console">
+      <UniqueIdentifier>{962cc1d4-2eda-41a1-98a2-afbcfe8ce603}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CoW">
+      <UniqueIdentifier>{5ef0f0fe-fb6f-45d7-b05f-7456788a4e11}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -1804,6 +1816,147 @@
   <ItemGroup>
     <ClCompile Include="DiaAttributeVisualDebugger\TestAttributeVisualDebugger.cpp">
       <Filter>DiaAttributeVisualDebugger</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestStageStatusModule.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestBootMenuLogic.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestAppIdentity.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMaths\TestRandomStream.cpp">
+      <Filter>DiaMaths</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestManifestBootstrap.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAttribute\TestDiaAttributeBandInitialization.cpp">
+      <Filter>Tests\GoogleTests\DiaAttribute</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMessageBus\TestBusTrafficRecorder.cpp">
+      <Filter>DiaMessageBus</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMessageBus\TestBusTrafficRecorderEdge.cpp">
+      <Filter>DiaMessageBus</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMessageBus\TestBusTrafficRecorderObservation.cpp">
+      <Filter>DiaMessageBus</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestCommandLineParser.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestConsoleExecutor.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestConsoleLogRing.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestFuzzyMatcher.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestCommandCompleter.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestDebugConsoleEvents.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestConsoleJson.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestPaletteIndex.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestPaletteJson.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestPanelController.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestPanelContract.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestGameSpeedController.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestGameSpeedControllerModule.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\GameSpeedControllerModule.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestGameSpeedControllerObservability.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\GameSpeedDebugDomain.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestSaveLoadModule.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestGameSpeedSaveParticipant.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestRandomStreamSaveParticipant.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestSaveLoadWiring.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestSaveLoadIntegration.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\F2\TestF2TestRunnerModule.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\F2TestRunnerModule.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\F2\TestF2Fingerprint.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\F2Fingerprint.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\F2\TestF2StreamIndependence.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\F2StreamIndependence.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\F2\TestF2Scenario.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\F2Scenario.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\F2DragonStub.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\F2\TestF2DragonStub.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\F2\TestF2PanelModel.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\F2PanelModel.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\F2TestRunnerDebugDomain.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaPathfinding\TestHexTopology.cpp">
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaPathfinding\TestHexPathGridRect.cpp">
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaPathfinding\TestHexFindPath.cpp">
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaPathfinding\TestHexGridPerformance.cpp">
+      <Filter>DiaPathfinding</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

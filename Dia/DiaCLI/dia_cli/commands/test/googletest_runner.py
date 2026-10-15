@@ -89,6 +89,7 @@ def run(
             filter_pattern=filter_pattern,
             run_all=run_all,
             verbose=verbose,
+            config=config,
         )
 
     out_xml = _gtest_xml_output_path(root)
@@ -104,7 +105,9 @@ def run(
     cmd.append(f"--gtest_output=xml:{out_xml}")
 
     try:
-        result = subprocess.run(cmd, cwd=str(out_dir), timeout=300)
+        from dia_cli.utils.asan_runtime import with_asan_runtime_on_path
+        result = subprocess.run(cmd, cwd=str(out_dir), timeout=300,
+                                env=with_asan_runtime_on_path(None, config))
         _warn_untagged_slow_suites(out_xml)
         return result.returncode
     except subprocess.TimeoutExpired:

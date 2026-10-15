@@ -13,10 +13,6 @@
                     "type": "contains"
                 },
                 {
-                    "target": "folder.webix_5_2_1",
-                    "type": "contains"
-                },
-                {
                     "target": "folder.ultralight_resources",
                     "type": "contains"
                 },
@@ -124,19 +120,6 @@
                 "Presentation/UI"
             ],
             "type": "ui"
-        },
-        {
-            "content_hash": 0,
-            "id": "folder.webix_5_2_1",
-            "references": [],
-            "scope": "global",
-            "source_path": "Global/Presentation/UI/Webix",
-            "stage_name": "",
-            "status": "active",
-            "tags": [
-                "Presentation/UI"
-            ],
-            "type": "folder"
         },
         {
             "content_hash": 0,
@@ -1049,6 +1032,31 @@
             "source_path": "Stages/MessageBusTestStage/misc/ApplicationFlow/message_bus_test_stage.diaapp",
             "scope": "stage",
             "stage_name": "MessageBusTestStage",
+            "tags": [
+                "misc/ApplicationFlow"
+            ]
+        },
+        {
+            "id": "stage.message_bus_stress_test_stage",
+            "type": "stage",
+            "source_path": "Stages/MessageBusStressTestStage/message_bus_stress_test_stage.diastage",
+            "scope": "global",
+            "tags": [
+                "misc"
+            ],
+            "references": [
+                {
+                    "type": "contains",
+                    "target": "manifest.message_bus_stress_test_stage"
+                }
+            ]
+        },
+        {
+            "id": "manifest.message_bus_stress_test_stage",
+            "type": "manifest",
+            "source_path": "Stages/MessageBusStressTestStage/misc/ApplicationFlow/message_bus_stress_test_stage.diaapp",
+            "scope": "stage",
+            "stage_name": "MessageBusStressTestStage",
             "tags": [
                 "misc/ApplicationFlow"
             ]

@@ -475,7 +475,6 @@ DiaSFML/
 External/
 ├── SFML-2.5.1/                        # SFML graphics library
 ├── jsoncpp-master/                    # JSON parsing
-├── Webix/                             # Web UI components
 └── VisJS/                             # Visualization library
 ```
 

@@ -29,6 +29,7 @@
     <ClCompile Include="Modules\AttributeVisualDebuggerModule.cpp" />
     <ClCompile Include="Modules\EntityInspectorModule.cpp" />
     <ClCompile Include="Modules\DebugUIModule.cpp" />
+    <ClCompile Include="Modules\StageStatusModule.cpp" />
     <ClCompile Include="Modules\DebugServerHostModule.cpp" />
     <ClCompile Include="Modules\JobSystemModule.cpp" />
     <ClCompile Include="Modules\Camera2DModule.cpp" />
@@ -65,6 +66,10 @@
     <ClCompile Include="Modules\EconomyInspectorModule.cpp" />
     <ClCompile Include="Modules\DebugPanelPage.cpp" />
     <ClCompile Include="Modules\DebugPanelPageModule.cpp" />
+    <ClCompile Include="Modules\BootMenuLogic.cpp" />
+    <ClCompile Include="Modules\BootMenuModule.cpp" />
+    <ClCompile Include="Modules\AppIdentity.cpp" />
+    <ClCompile Include="Modules\MessageBusHostModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\AutomationModule.h" />
@@ -118,6 +123,13 @@
     <ClInclude Include="Types\DebugPanelToggleEvent.h" />
     <ClInclude Include="Types\DebugPanelSetVisibilityEvent.h" />
     <ClInclude Include="Modules\AttributeVisualDebuggerModule.h" />
+    <ClInclude Include="Modules\StageStatusModule.h" />
+    <ClInclude Include="Modules\BootMenuLogic.h" />
+    <ClInclude Include="Modules\BootMenuModule.h" />
+    <ClInclude Include="Modules\AppIdentity.h" />
+    <ClInclude Include="Types\DebugConsoleLineEvent.h" />
+    <ClInclude Include="Types\DebugConsoleResultEvent.h" />
+    <ClInclude Include="Modules\MessageBusHostModule.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">
@@ -153,6 +165,9 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaMailbox\DiaMailbox.vcxproj">
       <Project>{C4D5E6F7-A8B9-0123-CDEF-456789ABCDEF}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaMessageBus\DiaMessageBus.vcxproj">
+      <Project>{D5E6F7A8-B9C0-1234-DEF0-567890ABCDEF}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaInput\DiaInput.vcxproj">
       <Project>{936fa28f-e171-401f-8185-d2af48db4098}</Project>
@@ -279,7 +294,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64' Or '$(Configuration)|$(Platform)'=='Debug-Asan|x64' Or '$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../DIA/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../DIA/;$(ProjectDir)../../External/imgui/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>DEBUG;DIA_DEBUG;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -299,7 +314,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../DIA/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../DIA/;$(ProjectDir)../../External/imgui/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>

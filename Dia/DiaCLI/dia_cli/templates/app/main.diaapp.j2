@@ -1,0 +1,423 @@
+{
+    "version": 3,
+    "stages": [
+        {
+            "name": "Boot",
+            "transitions": [
+                "{{ stage }}"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "{{ stage }}",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        }
+    ],
+    "initial_stage": "Boot",
+    "streams": [
+        {
+            "id": "MainToSim",
+            "kind": "EventStream",
+            "payload_type": "MainToSimEvent",
+            "overflow": "drop-oldest",
+            "from": "MainPU",
+            "to": "SimPU"
+        },
+        {
+            "id": "SimToRender",
+            "kind": "FrameStream",
+            "payload_type": "FrameData",
+            "from": "SimPU",
+            "to": "RenderPU",
+            "multi_writer": false
+        },
+        {
+            "id": "SimScene",
+            "kind": "FrameStream",
+            "payload_type": "FrameData",
+            "from": "SimPU",
+            "to": "SimPU",
+            "multi_writer": true
+        },
+        {
+            "id": "SimDebug",
+            "kind": "FrameStream",
+            "payload_type": "FrameData",
+            "from": "SimPU",
+            "to": "SimPU",
+            "multi_writer": false
+        },
+        {
+            "id": "SimToRender3D",
+            "kind": "FrameStream",
+            "payload_type": "FrameData3D",
+            "from": "SimPU",
+            "to": "RenderPU",
+            "multi_writer": true
+        },
+        {
+            "id": "UIToSim",
+            "kind": "FrameStream",
+            "payload_type": "UIDataBuffer",
+            "from": "MainPU",
+            "to": "SimPU"
+        },
+        {
+            "id": "MainToRender",
+            "kind": "FrameStream",
+            "payload_type": "MainToRenderFrame",
+            "from": "MainPU",
+            "to": "RenderPU"
+        },
+        {
+            "id": "KernelCanvas",
+            "kind": "ServiceStream",
+            "payload_type": "ICanvas",
+            "from": "MainPU"
+        },
+        {
+            "id": "KernelTextureHandler",
+            "kind": "ServiceStream",
+            "payload_type": "ITextureHandler",
+            "from": "MainPU"
+        },
+        {
+            "id": "KernelMeshHandler",
+            "kind": "ServiceStream",
+            "payload_type": "Mesh3DAssetHandler",
+            "from": "MainPU"
+        },
+        {
+            "id": "AssetLoadStatus",
+            "kind": "ServiceStream",
+            "payload_type": "AssetLoadStatus",
+            "from": "MainPU"
+        },
+        {
+            "id": "AssetRuntimeService",
+            "kind": "ServiceStream",
+            "payload_type": "AssetRuntime",
+            "from": "MainPU"
+        },
+        {
+            "id": "AutomationService",
+            "kind": "ServiceStream",
+            "payload_type": "AutomationService",
+            "from": "MainPU"
+        },
+        {
+            "id": "RenderToSim",
+            "kind": "FrameStream",
+            "payload_type": "RenderFence",
+            "from": "RenderPU",
+            "to": "SimPU"
+        },
+        {
+            "id": "BootMenuNavRequest",
+            "kind": "EventStream",
+            "payload_type": "RenderToSimNavRequest",
+            "overflow": "drop-oldest",
+            "from": "RenderPU",
+            "to": "SimPU"
+        },
+        {
+            "id": "HUDNavRequest",
+            "kind": "EventStream",
+            "payload_type": "RenderToSimNavRequest",
+            "overflow": "drop-oldest",
+            "from": "RenderPU",
+            "to": "SimPU"
+        }
+    ],
+    "processing_units": [
+        {
+            "instance_id": "MainPU",
+            "frequency_hz": 30,
+            "dedicated_thread": false,
+            "modules": [
+                {
+                    "instance_id": "ObservationModule",
+                    "type_id": "ObservationModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [],
+                    "channels": []
+                },
+                {
+                    "instance_id": "ProfilerModule",
+                    "type_id": "ProfilerModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "ObservationModule"
+                    ],
+                    "channels": []
+                },
+                {
+                    "instance_id": "JobSystemModule",
+                    "type_id": "JobSystemModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "ObservationModule"
+                    ],
+                    "channels": []
+                },
+                {
+                    "instance_id": "KernelModule",
+                    "type_id": "KernelModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "ObservationModule",
+                        "JobSystemModule"
+                    ],
+                    "channels": [
+                        {
+                            "id": "MainToSim",
+                            "role": "writes"
+                        },
+                        {
+                            "id": "KernelCanvas",
+                            "role": "provides"
+                        },
+                        {
+                            "id": "KernelTextureHandler",
+                            "role": "provides"
+                        },
+                        {
+                            "id": "KernelMeshHandler",
+                            "role": "provides"
+                        }
+                    ]
+                },
+                {
+                    "instance_id": "AssetServiceModule",
+                    "type_id": "AssetServiceModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "ObservationModule",
+                        "KernelModule",
+                        "JobSystemModule"
+                    ],
+                    "channels": [
+                        {
+                            "id": "KernelTextureHandler",
+                            "role": "consumes"
+                        },
+                        {
+                            "id": "KernelMeshHandler",
+                            "role": "consumes"
+                        },
+                        {
+                            "id": "AssetLoadStatus",
+                            "role": "provides"
+                        },
+                        {
+                            "id": "AssetRuntimeService",
+                            "role": "provides"
+                        }
+                    ]
+                },
+                {
+                    "instance_id": "AutomationModule",
+                    "type_id": "AutomationModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "ObservationModule"
+                    ],
+                    "channels": [
+                        {
+                            "id": "AutomationService",
+                            "role": "provides"
+                        }
+                    ]
+                },
+                {
+                    "instance_id": "MainStateProducerModule",
+                    "type_id": "MainStateProducerModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "ObservationModule",
+                        "AutomationModule",
+                        "AssetServiceModule"
+                    ],
+                    "channels": [
+                        {
+                            "id": "MainToRender",
+                            "role": "writes"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "instance_id": "SimPU",
+            "frequency_hz": 30,
+            "dedicated_thread": true,
+            "modules": [
+                {
+                    "instance_id": "InputStreamModule",
+                    "type_id": "InputStreamModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [],
+                    "channels": [
+                        {
+                            "id": "MainToSim",
+                            "role": "reads"
+                        }
+                    ]
+                },
+                {
+                    "instance_id": "LoadingScreenModule",
+                    "type_id": "LoadingScreenModule",
+                    "stages": [
+                        "Boot"
+                    ],
+                    "dependencies": [],
+                    "channels": [
+                        {
+                            "id": "SimScene",
+                            "role": "writes"
+                        }
+                    ]
+                },
+                {
+                    "instance_id": "UICompositeModule",
+                    "type_id": "UICompositeModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [],
+                    "channels": [
+                        {
+                            "id": "SimScene",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "SimDebug",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "UIToSim",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "SimToRender",
+                            "role": "writes"
+                        }
+                    ]
+                },
+                {
+                    "instance_id": "SimNavigationHandlerModule",
+                    "type_id": "SimNavigationHandlerModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [],
+                    "channels": [
+                        {
+                            "id": "BootMenuNavRequest",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "HUDNavRequest",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "AutomationService",
+                            "role": "consumes"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "instance_id": "RenderPU",
+            "frequency_hz": 30,
+            "dedicated_thread": true,
+            "modules": [
+                {
+                    "instance_id": "DebugUI",
+                    "type_id": "DebugUIModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [],
+                    "channels": []
+                },
+                {
+                    "instance_id": "BootMenu",
+                    "type_id": "BootMenuModule",
+                    "stages": [
+                        "Boot"
+                    ],
+                    "dependencies": [
+                        "DebugUI"
+                    ],
+                    "config": {
+                        "title": "{{ name }}",
+                        "project": "Project: {{ name }} v0.1"
+                    },
+                    "channels": [
+                        {
+                            "id": "BootMenuNavRequest",
+                            "role": "writes"
+                        }
+                    ]
+                },
+                {
+                    "instance_id": "RenderModule",
+                    "type_id": "RenderModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "DebugUI"
+                    ],
+                    "channels": [
+                        {
+                            "id": "SimToRender",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "SimToRender3D",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "RenderToSim",
+                            "role": "writes"
+                        },
+                        {
+                            "id": "KernelCanvas",
+                            "role": "consumes"
+                        },
+                        {
+                            "id": "KernelTextureHandler",
+                            "role": "consumes"
+                        },
+                        {
+                            "id": "KernelMeshHandler",
+                            "role": "consumes"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

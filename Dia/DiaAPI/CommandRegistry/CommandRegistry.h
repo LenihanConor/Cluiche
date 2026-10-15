@@ -70,6 +70,27 @@ namespace Dia
 		};
 
 		////////////////////////////////////////////////////////////////////////////////
+		// Threading
+		//
+		// Every function below is thread-safe. One reader/writer lock guards the registry:
+		//   - Queries (GetCommand, ListCommands, GetCommandsByCategory, IsInitialized)
+		//     take it shared.
+		//   - Register*, Unregister*, Initialize, Shutdown take it exclusive.
+		//   - ExecuteCommand / ExecuteCommandJson take it shared and hold it for the
+		//     whole callback. Unregister* on another thread therefore blocks until any
+		//     in-flight callback for any command returns; once Unregister* returns, the
+		//     command's owner may be destroyed.
+		//
+		// Inside a command callback:
+		//   - Queries and nested ExecuteCommand* calls are allowed (they reuse the
+		//     lock this thread already holds).
+		//   - Register*, Unregister*, Initialize and Shutdown are NOT allowed. They
+		//     DIA_ASSERT in Debug; in Release they log an error and return false
+		//     (no-op for Initialize/Shutdown) without touching the lock.
+		//   - Keep callbacks short: while one runs, every register/unregister waits.
+		////////////////////////////////////////////////////////////////////////////////
+
+		////////////////////////////////////////////////////////////////////////////////
 		// Lifecycle Management
 		////////////////////////////////////////////////////////////////////////////////
 
@@ -90,6 +111,10 @@ namespace Dia
 		// Returns true on success, false if command name is invalid or duplicate
 		bool RegisterCommand(const CommandInfo& info);
 
+		// Remove a CLI command (also from the pending list).
+		// Returns false if not found.
+		bool UnregisterCommand(const Dia::Core::StringCRC& name);
+
 		////////////////////////////////////////////////////////////////////////////////
 		// Command Execution
 		////////////////////////////////////////////////////////////////////////////////
@@ -106,16 +131,32 @@ namespace Dia
 		// Command Query
 		////////////////////////////////////////////////////////////////////////////////
 
+		// Result list for ListCommands / GetCommandsByCategory (capacity 256).
+		using CommandList = Dia::Core::Containers::DynamicArrayC<const CommandInfo*, 256>;
+
 		// Get command info by name
 		// Returns nullptr if command not found
+		// The returned pointer (and the pointers in CommandList) are valid until the
+		// next Unregister*/Shutdown on any thread. Do not hold them across threads or
+		// frames; cross-thread callers should use CopyCommandInfo / ListCommandInfos.
 		const CommandInfo* GetCommand(const Dia::Core::StringCRC& name);
 
 		// List all registered commands
-		Dia::Core::Containers::DynamicArrayC<const CommandInfo*, 64> ListCommands();
+		CommandList ListCommands();
 
 		// Get commands by category
 		// Returns empty array if category not found
-		Dia::Core::Containers::DynamicArrayC<const CommandInfo*, 64> GetCommandsByCategory(const Dia::Core::StringCRC& category);
+		CommandList GetCommandsByCategory(const Dia::Core::StringCRC& category);
+
+		// Value-copy of a command's info, safe to use after the command is unregistered.
+		// Returns false if not found. The const char* members (description, owner,
+		// version, example) are copied as pointers: they are assumed to be string
+		// literals or otherwise outlive the registering system.
+		bool CopyCommandInfo(const Dia::Core::StringCRC& name, CommandInfo& out);
+
+		// Value-copies of every registered command (pending ones excluded). Same
+		// const char* assumption as CopyCommandInfo.
+		void ListCommandInfos(Dia::Core::Containers::DynamicArrayC<CommandInfo, 256>& out);
 
 		////////////////////////////////////////////////////////////////////////////////
 		// JSON command callback path (AC2-AC3)
@@ -144,6 +185,9 @@ namespace Dia
 		// Logs a warning if a CLI command with the same name is also registered.
 		// Returns false if name is invalid or duplicate JSON command.
 		bool RegisterCommandJson(const CommandInfoJson& info);
+
+		// Remove a JSON command. Returns false if not found.
+		bool UnregisterCommandJson(const Dia::Core::StringCRC& name);
 
 		// Execute a JSON-callback command by name.
 		// Returns {"success":true,"data":{...}} on success.

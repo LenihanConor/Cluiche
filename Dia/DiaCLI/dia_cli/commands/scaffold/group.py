@@ -5,6 +5,7 @@ from .stage_cmd import stage
 from .module_cmd import module
 from .plugin_cmd import plugin
 from .sln_cmd import sln_add
+from .app_cmd import app
 
 
 @click.group("scaffold")
@@ -16,3 +17,4 @@ scaffold_group.add_command(stage)
 scaffold_group.add_command(module)
 scaffold_group.add_command(plugin)
 scaffold_group.add_command(sln_add)
+scaffold_group.add_command(app)

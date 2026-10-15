@@ -101,6 +101,8 @@
     <ClInclude Include="Quaternion\Quaternion.h" />
     <ClInclude Include="DiaMathsSerializers.h" />
     <ClInclude Include="Core\SplineBasis.h" />
+    <ClInclude Include="Core\RandomStream.h" />
+    <ClInclude Include="Core\RandomStreamManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Vector\Vector2D.cpp" />
@@ -123,11 +125,14 @@
     <ClCompile Include="Transform\Transform2D.cpp" />
     <ClCompile Include="Transform\Transform3D.cpp" />
     <ClCompile Include="Quaternion\Quaternion.cpp" />
+    <ClCompile Include="Core\RandomStream.cpp" />
+    <ClCompile Include="Core\RandomStreamManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Vector\Vector2D.inl" />
     <None Include="Vector\VectorHalf2D.inl" />
     <None Include="Core\Angle.inl" />
+    <None Include="Core\RandomStream.inl" />
     <None Include="Core\CoreMaths.inl" />
     <None Include="Core\Easing.inl" />
     <None Include="Core\FloatMaths.inl" />

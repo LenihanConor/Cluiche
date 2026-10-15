@@ -1,0 +1,25 @@
+
+[targets.{{ lower }}]
+project = "Cluiche/{{ name }}/{{ name }}.vcxproj"
+stages = ["compile-code", "build-assets", "deploy"]
+app_name = "{{ name }}"
+catalogue_manifest = "Cluiche/Assets/{{ name }}/assets.catalogue.json"
+
+[targets.{{ lower }}.build_deps]
+protobuf     = true
+bgfx_shaders = true
+
+[targets.{{ lower }}.deploy]
+files = [
+  { src = "External/SFML/Current-x64/bin/sfml-window-3.dll", dest = "$(OutDir)" },
+  { src = "External/SFML/Current-x64/bin/sfml-window-d-3.dll", dest = "$(OutDir)" },
+  { src = "External/SFML/Current-x64/bin/sfml-system-3.dll", dest = "$(OutDir)" },
+  { src = "External/SFML/Current-x64/bin/sfml-system-d-3.dll", dest = "$(OutDir)" },
+  { src = "Dia/DiaUIUltralight/Deploy/*", dest = "$(OutDir)" },
+  { src = "External/Ultralight/resources/*", dest = "$(OutDir)assets/resources/" },
+  { src = "Cluiche/Assets/{{ name }}/{{ lower }}.diagame", dest = "$(OutDir)assets/" },
+  { src = "Cluiche/Assets/{{ name }}/{{ lower }}.diaobservation", dest = "$(OutDir)assets/" },
+  { src = "Cluiche/Assets/{{ name }}/assets.catalogue.json", dest = "$(OutDir)assets/" },
+  { src = "Cluiche/Assets/{{ name }}/{{ lower }}_main.diaapp", dest = "$(OutDir)assets/global/misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/{{ name }}/Stages/**", dest = "$(OutDir)assets/stages/" }
+]

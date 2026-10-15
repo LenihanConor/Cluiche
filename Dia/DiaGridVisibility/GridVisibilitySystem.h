@@ -25,6 +25,9 @@
 #include <concepts>
 #include <cstdint>
 #include <span>
+#include <type_traits>
+
+namespace Dia::Pathfinding { class HexPathGrid; }
 
 namespace Dia::GridVisibility {
 
@@ -33,10 +36,15 @@ namespace Dia::GridVisibility {
     //
     // CPathGraph only guarantees GetNeighbours + IsPassable. Chunk-grid consolidation and
     // recursive-octant shadowcasting both need the graph's extents, so the visibility system
-    // constrains on a slightly stronger concept. SquarePathGrid and HexPathGrid both satisfy it.
+    // constrains on a slightly stronger concept. SquarePathGrid satisfies it.
+    // HexPathGrid is DELIBERATELY EXCLUDED: it exposes GetWidth/GetHeight, but the shadowcasting
+    // here assumes a square lattice and gives wrong line of sight on hexes. Hex line of sight
+    // needs its own feature (see hex-rectangular-grid.md, Open Question 1).
     //------------------------------------------------------------------------------------
     template<typename T>
-    concept CVisibilityGraph = Dia::Pathfinding::CPathGraph<T> && requires(const T& g) {
+    concept CVisibilityGraph = Dia::Pathfinding::CPathGraph<T>
+        && !std::is_same_v<T, Dia::Pathfinding::HexPathGrid>
+        && requires(const T& g) {
         { g.GetWidth()  } -> std::convertible_to<int>;
         { g.GetHeight() } -> std::convertible_to<int>;
     };

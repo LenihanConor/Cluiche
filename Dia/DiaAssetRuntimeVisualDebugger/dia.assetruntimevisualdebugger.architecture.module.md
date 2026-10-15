@@ -2,7 +2,7 @@
 schema: dia.module.v1
 module_id: dia.assetruntimevisualdebugger
 name: DiaAssetRuntimeVisualDebugger
-layer: assets/tools
+layer: 4.1-Assets
 path: Dia/DiaAssetRuntimeVisualDebugger
 status: active
 maturity: dev

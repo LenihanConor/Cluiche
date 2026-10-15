@@ -1,0 +1,33 @@
+{
+    "config": {
+        "name": "CoW",
+        "build": "dev-0.1",
+        "window": {
+            "title": "CoW",
+            "width_pct": 80,
+            "height_pct": 80
+        },
+        "asset_catalogue": "assets.catalogue.json",
+        "observation": "cow.diaobservation",
+        "path_aliases": {
+            "root": ".",
+            "ui_common": "./global/Presentation/UI"
+        }
+    },
+    "imports": [
+        {
+            "path": "global/misc/ApplicationFlow/cow_main.diaapp",
+            "type": "manifest"
+        },
+        {
+            "path": "Stages/FrontEnd/front_end.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/F2CoreRuntime/f2_core_runtime.diastage",
+            "type": "stage"
+        }
+    ],
+    "name": "CoW",
+    "version": "0.1"
+}

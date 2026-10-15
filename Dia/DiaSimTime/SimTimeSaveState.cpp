@@ -111,16 +111,25 @@ namespace Dia::SimTime {
     // -------------------------------------------------------------------------
     void SimTimeSaveState::Deserialize(Dia::SaveGame::LoadContext& ctx)
     {
-        // 1. Re-anchor the world clock. A freshly-constructed domain starts at its
-        //    minimum time, so AdvanceTo() is a genuine forward jump.
+        // 1. Re-anchor the world clock. SetTime (not AdvanceTo) because a live
+        //    domain may already be past the saved time; AdvanceTo is forward-only.
         int64_t gameTimeUs = 0;
         if (ctx.Read(kKeyGameTime, gameTimeUs))
         {
-            mWorldDomain.AdvanceTo(TimeAbsolute::CreateFromMicroseconds(
+            mWorldDomain.SetTime(TimeAbsolute::CreateFromMicroseconds(
                                        static_cast<long long>(gameTimeUs)));
         }
 
-        // 2. Re-insert scheduler entries under FRESH handles (ST-016). One-shots
+        // 2. REPLACE the scheduler's pending set: drop every live entry first so
+        //    a load into a running game neither doubles entries present in both
+        //    live and save, nor keeps live-only entries. Wake-on-time
+        //    registrations are ordinary scheduler entries (sentinel event type,
+        //    see SimTimeRegistry::RegisterWakeOnTime) so they are cleared here
+        //    and restored from the saved scheduler array; the registry holds no
+        //    separate handles.
+        mScheduler.Clear();
+
+        //    Re-insert scheduler entries under FRESH handles (ST-016). One-shots
         //    via ScheduleAt(savedTime); recurring via ScheduleRecurring(interval)
         //    then Reschedule() to the saved absolute next-fire time — this keeps
         //    BOTH the exact next fire time AND the recurring interval, so the

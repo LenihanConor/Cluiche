@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.diascalarfieldvisualdebugger
 name: DiaScalarFieldVisualDebugger
 owner_team: TBD
-layer: visual-debug
+layer: 4.1-Gameplay
 status: active
 maturity: dev
 

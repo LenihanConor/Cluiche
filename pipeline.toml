@@ -19,6 +19,7 @@ language = "cpp"
 
 [targets.googletest]
 project = "Cluiche/Tests/GoogleTests/GoogleTests.vcxproj"
+exe = "Cluiche/bin/GoogleTests/{config}/x64/GoogleTests.exe"
 stages = ["compile-code", "deploy"]
 full_suite_config = "Release"
 
@@ -94,8 +95,34 @@ files = [
   { src = "Cluiche/Assets/CluicheTest/Stages/EntitySpatialTestStage/misc/ApplicationFlow/entityspatial_test_stage.diaapp", dest = "$(OutDir)assets/stages/EntitySpatialTestStage/misc/ApplicationFlow/" },
 ]
 
+[targets.cow]
+project = "Cluiche/CoW/CoW.vcxproj"
+stages = ["compile-code", "build-assets", "deploy"]
+app_name = "CoW"
+catalogue_manifest = "Cluiche/Assets/CoW/assets.catalogue.json"
+
+[targets.cow.build_deps]
+protobuf     = true
+bgfx_shaders = true
+
+[targets.cow.deploy]
+files = [
+  { src = "External/SFML/Current-x64/bin/sfml-window-3.dll", dest = "$(OutDir)" },
+  { src = "External/SFML/Current-x64/bin/sfml-window-d-3.dll", dest = "$(OutDir)" },
+  { src = "External/SFML/Current-x64/bin/sfml-system-3.dll", dest = "$(OutDir)" },
+  { src = "External/SFML/Current-x64/bin/sfml-system-d-3.dll", dest = "$(OutDir)" },
+  { src = "Dia/DiaUIUltralight/Deploy/*", dest = "$(OutDir)" },
+  { src = "External/Ultralight/resources/*", dest = "$(OutDir)assets/resources/" },
+  { src = "Cluiche/Assets/CoW/cow.diagame", dest = "$(OutDir)assets/" },
+  { src = "Cluiche/Assets/CoW/cow.diaobservation", dest = "$(OutDir)assets/" },
+  { src = "Cluiche/Assets/CoW/assets.catalogue.json", dest = "$(OutDir)assets/" },
+  { src = "Cluiche/Assets/CoW/cow_main.diaapp", dest = "$(OutDir)assets/global/misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/CoW/Stages/**", dest = "$(OutDir)assets/stages/" }
+]
+
 [targets.cluicheeditor]
 project = "Cluiche/CluicheEditor/CluicheEditor.vcxproj"
+exe = "Cluiche/bin/CluicheEditor/{config}/x64/CluicheEditor.exe"
 stages = ["compile-code", "build-assets", "deploy"]
 
 [targets.cluicheeditor.build_deps]
@@ -154,19 +181,6 @@ files = [
   { src = "Cluiche/CluicheEditor/scripts/*",                  dest = "$(OutDir)scripts/" },
   { src = "External/Python311/Lib/site-packages/**/*",        dest = "$(OutDir)python_packages/" },
   { src = "Cluiche/Assets/CluicheEditor/ai_context/*",       dest = "$(OutDir)assets/ai_context/" }
-]
-
-[targets.diasfml]
-project = "Dia/DiaSFML/DiaSFML.vcxproj"
-stages = ["compile-code"]
-hidden = true
-
-[targets.diasfml.deploy]
-files = [
-  { src = "External/SFML/Current-x64/bin/sfml-window-3.dll", dest = "$(OutDir)" },
-  { src = "External/SFML/Current-x64/bin/sfml-window-d-3.dll", dest = "$(OutDir)" },
-  { src = "External/SFML/Current-x64/bin/sfml-system-3.dll", dest = "$(OutDir)" },
-  { src = "External/SFML/Current-x64/bin/sfml-system-d-3.dll", dest = "$(OutDir)" }
 ]
 
 [targets.diauiultralight]

@@ -9,7 +9,7 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaDebugDraw/Domain/IDebugDomain.h>
+#include <DiaVisualDebugger/Domain/IDebugDomain.h>
 #include <atomic>
 
 namespace Dia::UtilityAI { class UtilitySet; }

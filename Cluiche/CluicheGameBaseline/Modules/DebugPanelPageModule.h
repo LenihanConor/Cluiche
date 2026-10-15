@@ -10,10 +10,13 @@
 #include <DiaStreams/EventStreamWriter.h>
 #include <DiaStreams/EventStreamReader.h>
 #include <DiaStreams/ServiceStreamReader.h>
+#include <DiaVisualDebugger/Console/PanelController.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
 
 #include "Modules/DebugPanelPage.h"
 #include "Modules/UIModule.h"
+#include "Types/DebugConsoleLineEvent.h"
+#include "Types/DebugConsoleResultEvent.h"
 #include "Types/DebugPanelCommandEvent.h"
 #include "Types/DebugPanelToggleEvent.h"
 #include "Types/DebugPanelSetVisibilityEvent.h"
@@ -33,6 +36,7 @@ namespace Cluiche { namespace AppFlow {
 class DebugPanelPageModule
     : public Dia::ApplicationFlow::MainModule
     , public DebugPanelPage::ICallbacks
+    , private Dia::VisualDebugger::Console::IPanelPusher
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
@@ -53,6 +57,11 @@ public:
 
     // DebugPanelPage::ICallbacks — invoked from the Ultralight JS bridge.
     void OnCommand(const char* domainId, const char* cmd, const char* argsJson) override;
+    void OnConsoleLine(unsigned int seq, const char* const* parts, unsigned int partCount) override;
+    void OnConsoleComplete(const char* token) override;
+    void OnConsoleHistory(bool previous) override;
+    void OnPaletteOpen() override;
+    void OnPaletteSearch(const char* query, int mask) override;
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
@@ -64,6 +73,20 @@ private:
     void PushDomainStatesToPanel();
     void DrainToggleEvents();
     void DrainSetVisibilityEvents();
+
+    // Console (panel-console.md). PushToPage returns false when the page cannot receive JS calls.
+    bool PushToPage(const char* jsFunction, const char* json);
+    void PushConsoleResults();
+    void PushLogLines();
+    void CheckLogRingProbe();
+
+    // IPanelPusher: forwards PanelController results to the page.
+    bool Push(const char* jsFunction, const char* json) override { return PushToPage(jsFunction, json); }
+
+    // The JS callbacks above run from inside a script that Ultralight is executing, so they only record
+    // a request in mPanel; mPanel.Process() carries it out from DoUpdate (calling CallJSFunction from a
+    // callback re-enters the JS engine, which crashed on Ctrl+P).
+    Dia::VisualDebugger::Console::PanelController mPanel;
 
     DebugPanelPage mPage{this};
     bool           mPanelVisible         = false;
@@ -83,6 +106,18 @@ private:
 
     Dia::ApplicationFlow::EventStreamReader<DebugPanelSetVisibilityEvent>
         mPanelSetVisibility{this, "DebugPanelSetVisibility"};
+
+    Dia::ApplicationFlow::EventStreamWriter<DebugConsoleLineEvent>
+        mConsoleLines{this, "DebugConsoleLine"};
+
+    Dia::ApplicationFlow::EventStreamReader<DebugConsoleResultEvent>
+        mConsoleResults{this, "DebugConsoleResult"};
+
+    // Heap-owned: ConsoleLogRing is about 175 KB. Created in DoStart, freed in DoStop.
+    struct ConsoleRuntime;
+    ConsoleRuntime* mConsole = nullptr;
+
+    unsigned int mProbeFramesLeft = 0;   // frames until the ring probe is checked; 0 = done
 };
 
 } } // namespace Cluiche::AppFlow

@@ -26,6 +26,10 @@
 #include <DiaMessageBus/MessageBusDebugDomain.h>
 #include <DiaMessageBus/MessageBusModule.h>
 #include <DiaMessageBus/Bus.h>
+#include <DiaMessageBus/FileBusRecorder.h>
+#include <DiaMessageBus/Testing/InMemoryBusRecorder.h>
+#include <cstdio>
+#include <string>
 #include <DiaMailbox/MailboxTypes.h>
 
 namespace Dia::MessageBus::Testing {
@@ -380,6 +384,112 @@ namespace Dia::MessageBus::Testing {
         EXPECT_TRUE(domain.GetGroup() == Dia::Core::StringCRC("Systems"));
         EXPECT_FALSE(domain.HasWorldDrawers());
 
+        module.Stop();
+    }
+
+    // =========================================================================
+    // Recorder section of the Live tab: shows whether the bus is being
+    // recorded, and the recorder's counters.
+    // =========================================================================
+    namespace {
+        uint64_t FixedTick(void*) { return 7; }
+
+        struct RecorderMsg {
+            static inline const Dia::Core::StringCRC kTypeId{ "RecorderSectionMsg" };
+            int value = 0;
+        };
+    }
+
+    TEST(MessageBusDebugDomain, LiveTab_NoRecorder_ReportsNotAttached) {
+        TestableMessageBusModule module;
+        module.Start();
+        module.Update(0.0f);
+
+        MessageBusDebugDomain domain(module);
+        Json::Value state;
+        domain.GetJSONState(state);
+
+        const Json::Value& recorder = state["live"]["recorder"];
+        ASSERT_TRUE(recorder.isObject());
+        EXPECT_FALSE(recorder["attached"].asBool());
+        module.Stop();
+    }
+
+    TEST(MessageBusDebugDomain, LiveTab_OpenFileRecorder_ReportsStateAndCounters) {
+        const std::string path = "msgbus_domain_recorder_test.dbtr";
+        TestableMessageBusModule module;
+        module.Start();
+        Bus& bus = module.GetBus();
+        ASSERT_TRUE((bus.RegisterType<RecorderMsg, 16>()));
+
+        FileBusRecorder recorder;
+        FileBusRecorder::Config config;
+        config.tickSource = &FixedTick;
+        ASSERT_TRUE(recorder.Open(path.c_str(), config));
+        bus.SetRecorder(&recorder);
+
+        for (int i = 0; i < 4; ++i) bus.Broadcast(RecorderMsg{ i });
+        module.Update(0.0f);
+
+        MessageBusDebugDomain domain(module);
+        Json::Value state;
+        domain.GetJSONState(state);
+
+        const Json::Value& r = state["live"]["recorder"];
+        EXPECT_TRUE(r["attached"].asBool());
+        EXPECT_EQ(r["state"].asString(), "open");
+        EXPECT_EQ(r["path"].asString(), path);
+        EXPECT_EQ(r["recordsWritten"].asUInt64(), 4u);
+        EXPECT_EQ(r["bytesWritten"].asUInt64(), 8u + 4u * (24u + sizeof(RecorderMsg)));
+        EXPECT_EQ(r["recordsDropped"].asUInt64(), 0u);
+
+        bus.SetRecorder(nullptr);
+        recorder.Close();
+        module.Stop();
+        std::remove(path.c_str());
+    }
+
+    TEST(MessageBusDebugDomain, LiveTab_DisabledRecorder_ReportsDisabled) {
+        TestableMessageBusModule module;
+        module.Start();
+
+        FileBusRecorder recorder;
+        FileBusRecorder::Config config;
+        config.tickSource = &FixedTick;
+        // An unwritable path disables the recorder (it logs one warning).
+        EXPECT_FALSE(recorder.Open("no_such_directory_for_msgbus_test/out.dbtr", config));
+        module.GetBus().SetRecorder(&recorder);
+        module.Update(0.0f);
+
+        MessageBusDebugDomain domain(module);
+        Json::Value state;
+        domain.GetJSONState(state);
+
+        const Json::Value& r = state["live"]["recorder"];
+        EXPECT_TRUE(r["attached"].asBool());
+        EXPECT_EQ(r["state"].asString(), "disabled");
+
+        module.GetBus().SetRecorder(nullptr);
+        module.Stop();
+    }
+
+    TEST(MessageBusDebugDomain, LiveTab_RecorderWithoutStatus_ReportsUnknown) {
+        TestableMessageBusModule module;
+        module.Start();
+
+        InMemoryBusRecorder recorder;
+        module.GetBus().SetRecorder(&recorder);
+        module.Update(0.0f);
+
+        MessageBusDebugDomain domain(module);
+        Json::Value state;
+        domain.GetJSONState(state);
+
+        const Json::Value& r = state["live"]["recorder"];
+        EXPECT_TRUE(r["attached"].asBool());
+        EXPECT_EQ(r["state"].asString(), "unknown");
+
+        module.GetBus().SetRecorder(nullptr);
         module.Stop();
     }
 

@@ -1,16 +1,17 @@
 """Run GoogleTests in parallel shards and merge results."""
-import os
 import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Optional
+
+from dia_cli.utils.asan_runtime import with_asan_runtime_on_path
 
 from .xml_merger import merge_xml
 
 
 
 def _run_shard(binary: Path, out_dir: Path, shard_index: int, total_shards: int,
-               xml_path: Path, filter_pattern: Optional[str], run_all: bool, verbose: bool) -> int:
+               xml_path: Path, filter_pattern: Optional[str], run_all: bool, verbose: bool, config: str) -> int:
     cmd = [str(binary), f"--gtest_output=xml:{xml_path}"]
     if filter_pattern:
         cmd.append(f"--gtest_filter={filter_pattern}")
@@ -18,7 +19,7 @@ def _run_shard(binary: Path, out_dir: Path, shard_index: int, total_shards: int,
         cmd.append("--gtest_filter=-SLOW_*")
     if verbose:
         cmd.append("--gtest_print_time=1")
-    env = os.environ.copy()
+    env = with_asan_runtime_on_path(None, config)
     env["GTEST_TOTAL_SHARDS"] = str(total_shards)
     env["GTEST_SHARD_INDEX"] = str(shard_index)
     try:
@@ -37,6 +38,7 @@ def run_shards(
     filter_pattern: Optional[str],
     run_all: bool,
     verbose: bool,
+    config: str = "Debug",
 ) -> int:
     out_base = repo_root / "Cluiche" / "out" / "GoogleTests"
     out_base.mkdir(parents=True, exist_ok=True)
@@ -56,6 +58,7 @@ def run_shards(
                 filter_pattern,
                 run_all,
                 verbose,
+                config,
             ): i
             for i in range(num_shards)
         }

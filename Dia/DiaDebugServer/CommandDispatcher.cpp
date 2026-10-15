@@ -26,8 +26,8 @@ namespace Dia
 
 			// Fallback: legacy CLI-style command path.
 			Json::Value response;
-			const Dia::API::CommandInfo* cmdInfo = Dia::API::GetCommand(commandName);
-			if (!cmdInfo)
+			Dia::API::CommandInfo cmdInfo;
+			if (!Dia::API::CopyCommandInfo(commandName, cmdInfo))
 			{
 				response["success"] = false;
 				response["message"] = "Unknown command";
@@ -55,7 +55,7 @@ namespace Dia
 				}
 			}
 
-			int result = cmdInfo->callback(args);
+			int result = cmdInfo.callback(args);
 			response["success"] = (result == 0);
 			response["message"] = (result == 0) ? "Command executed successfully" : "Command failed";
 			response["result_code"] = result;

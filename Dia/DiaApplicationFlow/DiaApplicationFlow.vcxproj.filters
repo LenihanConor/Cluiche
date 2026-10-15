@@ -30,6 +30,9 @@
     <ClCompile Include="Observation\ObservationModule.cpp">
       <Filter>Observation</Filter>
     </ClCompile>
+    <ClCompile Include="Manifest\ManifestBootstrap.cpp">
+      <Filter>Manifest</Filter>
+    </ClCompile>
       <Filter>Manifest</Filter>
     </ClCompile>
   </ItemGroup>
@@ -66,6 +69,9 @@
     <ClInclude Include="RenderModule.h" />
     <ClInclude Include="MainModule.h" />
       <Filter>Observation</Filter>
+    </ClInclude>
+    <ClInclude Include="Manifest\ManifestBootstrap.h">
+      <Filter>Manifest</Filter>
     </ClInclude>
       <Filter>Manifest</Filter>
     </ClInclude>

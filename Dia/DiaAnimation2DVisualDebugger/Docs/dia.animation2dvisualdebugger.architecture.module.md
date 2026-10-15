@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.animation2dvisualdebugger
 name: DiaAnimation2DVisualDebugger
 owner_team: TBD
-layer: domain/animation/tools
+layer: 4.1-Animation
 status: active
 maturity: dev
 

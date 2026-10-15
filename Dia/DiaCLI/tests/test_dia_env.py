@@ -1073,7 +1073,8 @@ class TestVerifyOrchestrator:
              patch.object(_vo_full, "_check_claude", return_value=[]), \
              patch.object(_vo_full, "_check_local_llm", return_value=[]), \
              patch.object(_vo_full, "_check_python_packages", return_value=[]), \
-             patch.object(_vo_full, "_check_cppcheck", return_value=[]):
+             patch.object(_vo_full, "_check_cppcheck", return_value=[]), \
+             patch.object(_vo_full, "_check_pmd", return_value=[]):
             code = run(repo_root=tmp_path, toolchain=False, deps_only=False,
                        submodules=False, docker_only=False, claude=False,
                        output_json=True, quiet=False)
@@ -1092,7 +1093,8 @@ class TestVerifyOrchestrator:
              patch.object(_vo_full, "_check_claude", return_value=[]), \
              patch.object(_vo_full, "_check_local_llm", return_value=[]), \
              patch.object(_vo_full, "_check_python_packages", return_value=[]), \
-             patch.object(_vo_full, "_check_cppcheck", return_value=[]):
+             patch.object(_vo_full, "_check_cppcheck", return_value=[]), \
+             patch.object(_vo_full, "_check_pmd", return_value=[]):
             run(repo_root=tmp_path, toolchain=False, deps_only=False,
                 submodules=False, docker_only=False, claude=False,
                 output_json=True, quiet=False)

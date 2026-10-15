@@ -2,7 +2,7 @@
 schema: dia.module.v1
 module_id: dia.scalarfieldvisualdebugger
 name: DiaScalarFieldVisualDebugger
-layer: domain/gameplay/tools
+layer: 4.1-Gameplay
 path: Dia/DiaScalarFieldVisualDebugger
 status: active
 maturity: dev

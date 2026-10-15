@@ -70,7 +70,7 @@ The following widget panels are provided as reference implementations for develo
 | # | Task | Status | Notes |
 |---|------|--------|-------|
 | 1 | Add Alpine.js v3, Tailwind CSS, and DaisyUI to `deps.json` and `dia env setup` | Done | Vendored to `External/Alpine/`, `External/Tailwind/`, `External/DaisyUI/` via `single_file` install type. `dia env setup` downloads via `deps_restore.py`. |
-| 2 | Delete `External/Webix/` (all 3 versions) and remove from `deps.json` | Done | All three Webix versions removed; `test_deps_json.py` asserts they are absent. |
+| 2 | Delete `External/Webix/` (all 3 versions) and remove from `deps.json` | Done | All three Webix versions removed; `test_deps_json.py` asserts they are absent. The separate CluicheTest copy (`Assets/CluicheTest/Global/Presentation/UI/Webix/5.2.1/`) and its catalogue entries were removed 2026-10-13. |
 | 3 | Create Alpine starter template with `window.app` bridge pattern | Done | `Cluiche/CluicheTest/AlpinePanels/template.html` — loads vendored files, wires `window.GameBridge_dispatch` and `window.app` bridge. |
 | 4 | Scaffold React Vite project for game panels | Done | `Cluiche/CluicheTest/UI/` — React 18 + TypeScript + Vite, output to `bin/Debug/x64/ui/`, `GameBridge.ts` wires `window.GameBridge_dispatch`. |
 | 5 | Create shared CSS custom property theme file for both tiers | Done | `Cluiche/CluicheTest/UI/src/themes/cluichetest.css` — DaisyUI custom property overrides applied via `data-theme="cluichetest"`. |

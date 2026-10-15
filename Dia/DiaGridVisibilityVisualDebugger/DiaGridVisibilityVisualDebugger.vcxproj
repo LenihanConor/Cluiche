@@ -103,10 +103,6 @@
       <Project>{E5F6A7B8-C9D0-1234-ABCD-567890EF0123}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\DiaDebugDraw\DiaDebugDraw.vcxproj">
-      <Project>{C3D4E5F6-A7B8-9012-CDEF-345678901234}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

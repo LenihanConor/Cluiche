@@ -122,6 +122,7 @@ result = execute_api_command("validate-assets", args=["--path", "assets/"])
 | dia-fix | Automated test-fix loop via aider + local LLM | `dia fix <target>`, Ollama default, `--model` for cloud, `--filter` passthrough, `--max-iterations`, `--dry-run`, env verify/setup checks | [dia-fix.md](dia-fix.md) | 3 days | Done |
 | dia-orchestrate | E2E automation CLI + pytest plugin | `dia orchestrate --suite=<app>/<name>`, DiaClient fixture, app_launcher, plan JSON, implicit assert_no_log_errors | [dia-orchestrate.md](dia-orchestrate.md) | 5 days | Done |
 | registered-types-schema | Build-time reflection schema for editor type discovery | `dia reflect --target`, `registeredtypes.diaschema`, versioned major.minor, components + modules + PUs | [registered-types-schema.md](registered-types-schema.md) | 4 days | Approved |
+| scaffold-app | Generate a new Cluiche application skeleton | `dia scaffold app <Name> [--stage] [--dry-run] [--force]`, Jinja2 templates, solution entry, data-driven `pipeline.toml` target | [scaffold-app.md](scaffold-app.md) | 5 days | Approved |
 
 **Total Effort Estimate:** 15 days
 
@@ -165,7 +166,7 @@ result = execute_api_command("validate-assets", args=["--path", "assets/"])
 - **GUI interface** - CLI only; graphical tools are separate concern
 - **Build operations** - MSBuild integration, compilation, packaging (use existing tools or add as custom commands)
 - **Asset pipeline** - Asset conversion, optimization (use existing tools or add as custom commands)
-- **Project scaffolding** - Code generation, project initialization (use existing tools or add as custom commands)
+- **Project scaffolding beyond Cluiche apps** - Generic code generation or project initialization. Cluiche application, module, plugin and stage scaffolding is in scope (`dia scaffold app|module|plugin|stage`)
 - **Configuration management** - Complex config systems, path resolution (keep simple or add as custom commands)
 - **IDE integration** - IDE plugins (VS Code, Visual Studio) are separate; DiaCLI is CLI-only
 - **Interactive TUI** - Individual DiaCLI commands remain non-interactive for CI/CD compatibility; an optional interactive/visual layer over these same commands is out of scope for DiaCLI itself and lives in the separate DiaConsole system ([diaconsole.md](../diaconsole/diaconsole.md)), which invokes DiaCLI's commands rather than changing their behavior

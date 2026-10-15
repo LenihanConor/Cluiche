@@ -14,6 +14,7 @@
 #include "DiaGridVisibility/Testing/VisibilityTestHelpers.h"
 
 #include "DiaPathfinding/SquarePathGrid.h"
+#include <DiaPathfinding/HexPathGrid.h>
 #include "DiaPathfinding/CellCoord.h"
 
 #include "DiaEntity/Domain.h"
@@ -70,6 +71,17 @@ TEST(GridVisibilityConcept, SquarePathGridSatisfiesCVisibilityGraph)
     static_assert(CVisibilityGraph<SquarePathGrid>,
                   "SquarePathGrid must satisfy CVisibilityGraph");
     SUCCEED();
+}
+
+// AC13: hex grids are deliberately excluded (shadowcasting assumes a square lattice).
+TEST(GridVisibilityConcept, HexPathGridIsRejectedByCVisibilityGraph)
+{
+    constexpr bool kHexSatisfies = CVisibilityGraph<Dia::Pathfinding::HexPathGrid>;
+    static_assert(!CVisibilityGraph<Dia::Pathfinding::HexPathGrid>,
+                  "HexPathGrid must NOT satisfy CVisibilityGraph");
+    static_assert(CVisibilityGraph<SquarePathGrid>);
+    static_assert(CVisibilityGraph<MockVisibilityGraph>);
+    EXPECT_FALSE(kHexSatisfies);
 }
 
 // ---------------------------------------------------------------------------
@@ -540,3 +552,5 @@ TEST(GridVisibilityMock, AssertCellVisible_AfterUpdate)
     AssertCellVisible(*sys, CellCoord{ 8, 8 }, blue);
     AssertCanSee(*sys, src, blue);
 }
+
+// ===========================================================================

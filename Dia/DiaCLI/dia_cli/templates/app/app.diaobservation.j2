@@ -1,0 +1,43 @@
+{
+  "schema": "diaobservation/1.0",
+  "log_level": "info",
+  "log_channels": {
+    "WebSocket": "warning"
+  },
+  "sinks": {
+    "stdout": true,
+    "debug_output": true,
+    "observation_file": true,
+    "trace_file": true,
+    "metrics_file": true
+  },
+  "trace": {
+    "enabled": false,
+    "categories": {
+      "diaapplicationflow": false,
+      "diagraphics": false,
+      "diastream": false,
+      "diaassetruntime": false,
+      "diaanimation": false,
+      "all": false
+    }
+  },
+  "profile": {
+    "enabled": false,
+    "categories": {
+      "diaapplicationflow": false,
+      "diagraphics": false,
+      "diastream": false,
+      "diaassetruntime": false,
+      "diaanimation": false,
+      "all": false
+    }
+  },
+  "metrics": {
+    "snapshot_interval_ms": 100
+  },
+  "health": {
+    "file": true,
+    "poll_interval_ms": 500
+  }
+}

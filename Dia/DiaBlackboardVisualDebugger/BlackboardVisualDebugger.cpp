@@ -8,7 +8,7 @@
 #ifdef DIA_DEBUG
 
 #include <DiaBlackboard/Blackboard.h>
-#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
+#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 
 #include <cstdio>
 #include <cstring>

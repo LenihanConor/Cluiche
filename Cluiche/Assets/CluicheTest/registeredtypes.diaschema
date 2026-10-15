@@ -193,11 +193,6 @@
   "game": "cluichetest",
   "modules": [
     {
-      "allowed_pus": "render",
-      "description": "Displays the CluicheTest boot menu for selecting which test stage to run.",
-      "type_id": "BootMenuModule"
-    },
-    {
       "allowed_pus": "main",
       "description": "Drives CluicheTest top-level state: stage selection, transitions, and test lifecycle.",
       "type_id": "TestMainStateProducerModule"
@@ -348,6 +343,21 @@
       "type_id": "EntitySpatialTestStageModule"
     },
     {
+      "allowed_pus": "render",
+      "description": "Publishes TestResultsRegistry results to StageStatusModule for the boot menu.",
+      "type_id": "TestStatusBridgeModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Hosts the DiaMessageBus Bus for a game and shows it in the debug panel.",
+      "type_id": "MessageBusHostModule"
+    },
+    {
+      "allowed_pus": "render",
+      "description": "Displays a boot menu for selecting which stage to launch, with optional per-stage status badges.",
+      "type_id": "BootMenuModule"
+    },
+    {
       "allowed_pus": "main",
       "description": "Ultralight HTML debug panel overlay: domain accordions, drawer toggles, live stats, scale sliders.",
       "type_id": "DebugPanelPageModule"
@@ -444,6 +454,11 @@
     },
     {
       "allowed_pus": "render",
+      "description": "Holds per-stage status (label, severity, visited) keyed by stage CRC.",
+      "type_id": "StageStatusModule"
+    },
+    {
+      "allowed_pus": "render",
       "description": "Renders in-game debug UI panels via ImGui for development diagnostics.",
       "type_id": "DebugUIModule"
     },
@@ -496,11 +511,16 @@
       "allowed_pus": "sim",
       "description": "Umbrella SimPU module: assembles the sim-time scheduler, budget, and registry into the per-tick gate loop and publishes SimTimeContext onto the SimTime FrameStream.",
       "type_id": "DiaSimTime"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Integration test for cross-PU JobSystemService access",
+      "type_id": "JobSystemServiceTestStageModule"
     }
   ],
   "processing_units": [],
   "version": {
     "major": 1,
-    "minor": 33
+    "minor": 36
   }
 }

@@ -123,6 +123,21 @@
     <ClCompile Include="Modules\AttributeVisualDebuggerModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\StageStatusModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\BootMenuLogic.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\BootMenuModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\AppIdentity.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\MessageBusHostModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\EntityModule.h">
@@ -252,6 +267,27 @@
       <Filter>Types</Filter>
     </ClInclude>
     <ClInclude Include="Modules\AttributeVisualDebuggerModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\StageStatusModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\BootMenuLogic.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\BootMenuModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\AppIdentity.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\DebugConsoleLineEvent.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\DebugConsoleResultEvent.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\MessageBusHostModule.h">
       <Filter>Modules</Filter>
     </ClInclude>
   </ItemGroup>

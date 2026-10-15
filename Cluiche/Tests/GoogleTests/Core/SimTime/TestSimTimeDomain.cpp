@@ -172,3 +172,16 @@ TEST(SimTimeDomain, SetScale_HalfSpeed_AffectsStepAfterOneTick)
     EXPECT_EQ(domain.Now(), expected);
     EXPECT_EQ(domain.GetTick(), 2u);
 }
+
+TEST(SimTimeDomain, SetScaleImmediate_Zero_NextTickDoesNotAdvance)
+{
+    SimTimeDomain domain(StringCRC("world"), 60.0f, TimeAbsolute::Zero());
+    domain.Tick();
+    const TimeAbsolute before = domain.Now();
+
+    domain.SetScaleImmediate(0.0f);
+    domain.Tick();
+
+    EXPECT_EQ(domain.Now(), before);
+    EXPECT_FLOAT_EQ(domain.GetScale(), 0.0f);
+}

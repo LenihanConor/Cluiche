@@ -21,7 +21,7 @@ namespace Dia
 			//-----------------------------------------------------------------------------
 			template <unsigned int size> template<unsigned int _size> 
 			String<size>::String (const String<_size>& rhs)
-				: mData(&rhs[0], Size())
+				: mData(&rhs[0], (_size < size ? _size : size))
 			{
 				mData.At(size - 1) = NULL;
 				DIA_ASSERT(IsNullTerminating(), "Is not null terminating");

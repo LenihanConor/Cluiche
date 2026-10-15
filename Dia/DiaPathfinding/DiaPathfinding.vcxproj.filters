@@ -28,11 +28,13 @@
     <ClInclude Include="PathfindingSystemBudgetAdapter.h">
       <Filter>DiaPathfinding</Filter>
     </ClInclude>
+    <ClInclude Include="HexTopology.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SquarePathGrid.cpp" />
     <ClCompile Include="HexPathGrid.cpp" />
     <ClCompile Include="PathResult.cpp" />
+    <ClCompile Include="HexTopology.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.pathfinding.architecture.module.md">
