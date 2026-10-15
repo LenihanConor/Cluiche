@@ -157,7 +157,7 @@ namespace Dia::FlowField {
 | Square + Hex support | Both `SquarePathGrid` and `HexPathGrid` satisfy `CFlowFieldGraph` via thin adapters. | inline | Approved |
 | Lifecycle Logging | `DIA_LOG_INFO` on compute start, completion (cells visited, ms elapsed), and invalidation. | inline | Approved |
 | Test Utilities | `DiaFlowField/Testing/` — `AssertCellDirection`, `AssertReachable`, `AssertUnreachable`, `MockFlowFieldGraph`. Ships with library; consumer opt-in via include. | inline | Approved |
-| Scalable Storage | Heap-sized `FlowField` storage (no 4096-cell cap) and a graph-aware `Sample` / `SampleWorld` overload so any `CFlowFieldGraph` (square, axial hex, rectangular hex) samples correctly. CoW Standard/Large hex maps need it. | @scalable-storage.md | Draft |
+| Scalable Storage | Heap-sized `FlowField` storage (no 4096-cell cap) and a graph-aware `Sample` / `SampleWorld` overload so any `CFlowFieldGraph` (square, axial hex, rectangular hex) samples correctly. CoW Standard/Large hex maps need it. | @scalable-storage.md | Approved |
 
 ## Dependencies on Other Systems
 

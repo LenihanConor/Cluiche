@@ -238,7 +238,7 @@ namespace Dia::Pathfinding {
 | Lifecycle Logging | `DIA_LOG_INFO` on request submit, path found, and path failed. | inline | Done |
 | Test Utilities | `DiaPathfinding/Testing/` — `AssertPathFound`, `AssertPathCells`, `MockCostProvider`. Ships with library; consumer opt-in via include. | inline | Done |
 | Rectangular Hex Grid | `HexPathGrid(width, height)` — rectangular flat-top odd-q offset layout sized to the grid (CoW maps up to 104×64), `HexTopology` (neighbours, distance, direction helpers), and the corrected hex heuristic. Radius mode unchanged. | @hex-rectangular-grid.md | Done |
-| Scalable SquarePathGrid storage | `SquarePathGrid` stores passability on the heap, sized to the grid (no 4096-cell cap, no silent overrun). Specified together with FlowField storage. | @docs/specs/applications/dia/systems/diaflowfield/scalable-storage.md | Draft |
+| Scalable SquarePathGrid storage | `SquarePathGrid` stores passability on the heap, sized to the grid (no 4096-cell cap, no silent overrun). Specified together with FlowField storage. | @docs/specs/applications/dia/systems/diaflowfield/scalable-storage.md | Approved |
 
 ## Dependencies on Other Systems
 

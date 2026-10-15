@@ -139,4 +139,4 @@ No other binding constraints apply.
 
 ## Status
 
-`Draft`
+`Approved` — 2026-10-14
