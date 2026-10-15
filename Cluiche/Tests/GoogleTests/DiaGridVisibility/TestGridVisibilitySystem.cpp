@@ -552,3 +552,5 @@ TEST(GridVisibilityMock, AssertCellVisible_AfterUpdate)
     AssertCellVisible(*sys, CellCoord{ 8, 8 }, blue);
     AssertCanSee(*sys, src, blue);
 }
+
+// ===========================================================================

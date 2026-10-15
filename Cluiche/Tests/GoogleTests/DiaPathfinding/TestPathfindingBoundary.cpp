@@ -556,3 +556,28 @@ TEST(PathfindingSystem_Boundary, FailedRequest_ObserverCalledOnce)
     EXPECT_EQ(obs.foundCount,  0);
     EXPECT_EQ(obs.failedCount, 1);
 }
+
+// ===========================================================================
+// SquarePathGrid edge cases for size validation
+// ===========================================================================
+
+TEST(SLOW_SquarePathGrid_Boundary, Constructor_Width0_Asserts) {
+    EXPECT_DEATH(SquarePathGrid(0, 10), "");
+}
+
+TEST(SLOW_SquarePathGrid_Boundary, Constructor_Height0_Asserts) {
+    EXPECT_DEATH(SquarePathGrid(10, 0), "");
+}
+
+TEST(SLOW_SquarePathGrid_Boundary, Constructor_IntOverflow_Asserts) {
+    // 100000 × 100000 overflows int
+    EXPECT_DEATH(SquarePathGrid(100000, 100000), "");
+}
+
+TEST(SLOW_SquarePathGrid_Boundary, Constructor_NegativeWidth_Asserts) {
+    EXPECT_DEATH(SquarePathGrid(-1, 10), "");
+}
+
+TEST(SLOW_SquarePathGrid_Boundary, Constructor_NegativeHeight_Asserts) {
+    EXPECT_DEATH(SquarePathGrid(10, -1), "");
+}

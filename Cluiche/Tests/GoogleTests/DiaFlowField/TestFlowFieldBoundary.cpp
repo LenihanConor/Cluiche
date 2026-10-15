@@ -290,3 +290,28 @@ TEST(FlowFieldCache_Metrics, AfterInvalidate_RecomputeCountsAsMiss) {
     EXPECT_EQ(cache.GetCacheMisses(), 2);
     EXPECT_EQ(cache.GetRecomputeCount(), 2);
 }
+
+// ===========================================================================
+// Edge cases for size validation
+// ===========================================================================
+
+TEST(SLOW_FlowField_Boundary, Constructor_Width0_Asserts) {
+    EXPECT_DEATH(FlowField(0, 10), "");
+}
+
+TEST(SLOW_FlowField_Boundary, Constructor_Height0_Asserts) {
+    EXPECT_DEATH(FlowField(10, 0), "");
+}
+
+TEST(SLOW_FlowField_Boundary, Constructor_IntOverflow_Asserts) {
+    // 100000 × 100000 = 10,000,000,000 > INT_MAX
+    EXPECT_DEATH(FlowField(100000, 100000), "");
+}
+
+TEST(SLOW_FlowField_Boundary, Constructor_NegativeWidth_Asserts) {
+    EXPECT_DEATH(FlowField(-1, 10), "");
+}
+
+TEST(SLOW_FlowField_Boundary, Constructor_NegativeHeight_Asserts) {
+    EXPECT_DEATH(FlowField(10, -1), "");
+}
