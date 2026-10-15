@@ -348,6 +348,11 @@
       "type_id": "TestStatusBridgeModule"
     },
     {
+      "allowed_pus": "sim",
+      "description": "Hosts the DiaMessageBus Bus for a game and shows it in the debug panel.",
+      "type_id": "MessageBusHostModule"
+    },
+    {
       "allowed_pus": "render",
       "description": "Displays a boot menu for selecting which stage to launch, with optional per-stage status badges.",
       "type_id": "BootMenuModule"
@@ -506,11 +511,16 @@
       "allowed_pus": "sim",
       "description": "Umbrella SimPU module: assembles the sim-time scheduler, budget, and registry into the per-tick gate loop and publishes SimTimeContext onto the SimTime FrameStream.",
       "type_id": "DiaSimTime"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Integration test for cross-PU JobSystemService access",
+      "type_id": "JobSystemServiceTestStageModule"
     }
   ],
   "processing_units": [],
   "version": {
     "major": 1,
-    "minor": 34
+    "minor": 36
   }
 }

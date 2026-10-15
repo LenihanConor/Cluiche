@@ -25,6 +25,9 @@
     <Filter Include="Messages">
       <UniqueIdentifier>{e5f6a7b8-c9d0-1234-ef01-f56789012345}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Modules\TestStages">
+      <UniqueIdentifier>{25fbad14-3a7a-4c01-990b-66f8f704baab}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -189,6 +192,9 @@
     </ClCompile>
     <ClCompile Include="Modules\TestStatusBridgeModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\JobSystemServiceTestStageModule.cpp">
+      <Filter>Modules\TestStages</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -356,6 +362,9 @@
     </ClInclude>
     <ClInclude Include="Modules\TestStatusBridgeModule.h">
       <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\JobSystemServiceTestStageModule.h">
+      <Filter>Modules\TestStages</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

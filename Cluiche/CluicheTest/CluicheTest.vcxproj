@@ -75,6 +75,7 @@
     <ClCompile Include="Modules\TestStages\Drawers\SpawnerTestDrawer.cpp" />
     <ClCompile Include="Modules\TestStages\Drawers\GridVisibilityDrawer.cpp" />
     <ClCompile Include="Modules\TestStatusBridgeModule.cpp" />
+    <ClCompile Include="Modules\TestStages\JobSystemServiceTestStageModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\TestMainStateProducerModule.h" />
@@ -132,6 +133,7 @@
     <ClInclude Include="Modules\TestStages\Drawers\SpawnerTestDrawer.h" />
     <ClInclude Include="Modules\TestStages\Drawers\GridVisibilityDrawer.h" />
     <ClInclude Include="Modules\TestStatusBridgeModule.h" />
+    <ClInclude Include="Modules\TestStages\JobSystemServiceTestStageModule.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Messages\order_messages.diagamemessages" />
