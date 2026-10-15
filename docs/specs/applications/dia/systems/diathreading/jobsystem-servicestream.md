@@ -152,4 +152,4 @@ None. The `ServiceStreamWriter<T>` pattern is well-established (see `KernelModul
 
 ## Status
 
-`Approved` — 2026-10-15
+`Done` — 2026-10-15
