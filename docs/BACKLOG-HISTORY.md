@@ -20,6 +20,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 
 | System | Spec | Completed | Notes |
 |--------|------|-----------|-------|
+| DiaPathfinding: Rectangular Hex Grid | [hex-rectangular-grid.md](specs/applications/dia/systems/diapathfinding/hex-rectangular-grid.md) | 2026-10-14 | `HexPathGrid(width, height)` rectangular flat-top odd-q layout, `HexTopology` (neighbours, distance, direction helpers, cell geometry), corrected hex heuristic, `HexFlowAdapter` support, `GridVisibilitySystem` compile-time guard. 252 tests pass. Amended from pointy-top odd-r during implementation. CoW needs for S-1, A4 Features 3–6 |
 | CoW GameSpeedController (Features 1 and 2) | [gamespeedcontroller.md](specs/applications/cow/systems/gamespeedcontroller/gamespeedcontroller.md) | 2026-10-13 | `GameSpeedController` core + `GameSpeedControllerModule` (pause as time scale 0, day `SimulationTick`, 12 `cow.gamespeed.*` metrics, health reporter). 105 tests, full suite and ASan pass. Save participant still open in BACKLOG (needs E1 `SaveLoadModule`) |
 | DiaAttribute Feature 7 (Band-Based Initialization) | @docs/specs/applications/dia/systems/diaattribute/band-based-initialization.md | 2026-10-12 | Schema-defined named band ranges, `InitializeFromBands()` midpoint resolution, `band_schema_version` support, fallback to default_value. 18 unit tests (11 core + 7 edge cases), 154/154 full suite passes. ~3 hours. |
 |--------|------|-----------|-------|

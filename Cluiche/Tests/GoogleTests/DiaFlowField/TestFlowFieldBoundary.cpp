@@ -17,12 +17,50 @@ using Dia::Pathfinding::FlatCostProvider;
 using Dia::Maths::Vector2D;
 using namespace Dia::FlowField::Testing;
 
-// --- FlowField death tests (DIA_ASSERT preconditions) ---
+// --- FlowField construction (AC1) ---
 
-TEST(SLOW_FlowField_Boundary, Constructor_OverCapacity_Asserts) {
-    // 65x64 = 4160 > kMaxFlowFieldCells(4096)
-    EXPECT_DEATH(FlowField(65, 64), "");
+TEST(SLOW_FlowField_Boundary, Constructor_104x64_Constructs) {
+    // 104×64 = 6656 cells (CoW Large map)
+    FlowField f(104, 64);
+    EXPECT_EQ(f.GetCellCount(), 6656);
+    EXPECT_EQ(f.GetWidth(), 104);
+    EXPECT_EQ(f.GetHeight(), 64);
 }
+
+TEST(SLOW_FlowField_Boundary, Constructor_128x128_Constructs) {
+    // 128×128 = 16384 cells (tested ceiling)
+    FlowField f(128, 128);
+    EXPECT_EQ(f.GetCellCount(), 16384);
+    EXPECT_EQ(f.GetWidth(), 128);
+    EXPECT_EQ(f.GetHeight(), 128);
+}
+
+TEST(SLOW_FlowField_Boundary, Sample_FirstAndLastCell_Work) {
+    FlowField f(104, 64);
+    // First cell
+    f.AccessCell(CellCoord{0, 0}).direction = Vector2D(1.0f, 0.0f);
+    f.AccessCell(CellCoord{0, 0}).reachable = true;
+    const FlowCell& fc0 = f.Sample(CellCoord{0, 0});
+    EXPECT_TRUE(fc0.reachable);
+    EXPECT_FLOAT_EQ(fc0.direction.X(), 1.0f);
+
+    // Last cell (103, 63)
+    f.AccessCell(CellCoord{103, 63}).direction = Vector2D(0.0f, 1.0f);
+    f.AccessCell(CellCoord{103, 63}).reachable = true;
+    const FlowCell& fc_last = f.Sample(CellCoord{103, 63});
+    EXPECT_TRUE(fc_last.reachable);
+    EXPECT_FLOAT_EQ(fc_last.direction.Y(), 1.0f);
+}
+
+TEST(SLOW_FlowField_Boundary, Sample_OutOfBounds_ReturnsDefaultUnreachable) {
+    FlowField f(104, 64);
+    const FlowCell& fc = f.Sample(CellCoord{200, 200});
+    EXPECT_FALSE(fc.reachable);
+    EXPECT_FLOAT_EQ(fc.direction.X(), 0.0f);
+    EXPECT_FLOAT_EQ(fc.direction.Y(), 0.0f);
+}
+
+// --- FlowField death tests (DIA_ASSERT preconditions) ---
 
 TEST(SLOW_FlowField_Boundary, AccessCell_NegativeX_Asserts) {
     FlowField f(3, 3);
