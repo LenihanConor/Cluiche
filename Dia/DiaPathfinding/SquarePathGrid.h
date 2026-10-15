@@ -1,13 +1,18 @@
 #pragma once
 #include "DiaPathfinding/CellCoord.h"
+#include <DiaCore/Containers/Arrays/DynamicArray.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
 namespace Dia::Pathfinding {
 
     enum class SquareConnectivity { k4Connected, k8Connected };
 
+    // Rectangular square-grid pathfinding graph.
+    // Storage is heap-allocated, sized to width * height.
     class SquarePathGrid {
     public:
+        // Construct a width × height grid with all cells passable.
+        // Asserts: width >= 1, height >= 1, width * height fits int.
         SquarePathGrid(int width, int height,
                        SquareConnectivity connectivity = SquareConnectivity::k8Connected);
 
@@ -42,8 +47,7 @@ namespace Dia::Pathfinding {
         int mHeight;
         SquareConnectivity mConnectivity;
 
-        static const unsigned int kMaxCells = 4096;
-        Dia::Core::Containers::DynamicArrayC<bool, kMaxCells> mPassable;
+        Dia::Core::Containers::DynamicArray<bool> mPassable;
     };
 
 } // namespace Dia::Pathfinding

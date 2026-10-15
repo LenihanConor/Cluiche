@@ -1,4 +1,6 @@
 #include "DiaPathfinding/SquarePathGrid.h"
+#include <DiaCore/Core/Assert.h>
+#include <limits>
 
 namespace Dia::Pathfinding {
 
@@ -7,7 +9,14 @@ namespace Dia::Pathfinding {
         , mHeight(height)
         , mConnectivity(connectivity)
     {
+        DIA_ASSERT(width >= 1 && height >= 1,
+                   "SquarePathGrid: invalid dimensions %dx%d (must be >= 1)", width, height);
+        // Check that width * height fits int (avoid overflow)
+        DIA_ASSERT(width <= std::numeric_limits<int>::max() / height,
+                   "SquarePathGrid: grid %dx%d overflows int", width, height);
+
         const int total = width * height;
+        mPassable.Reserve((unsigned int)total);
         for (int i = 0; i < total; ++i)
         {
             mPassable.Add(true);
@@ -18,7 +27,7 @@ namespace Dia::Pathfinding {
     {
         if (IsInBounds(cell))
         {
-            mPassable[CellIndex(cell)] = passable;
+            mPassable[(unsigned int)CellIndex(cell)] = passable;
         }
     }
 
@@ -28,7 +37,7 @@ namespace Dia::Pathfinding {
         {
             return false;
         }
-        return mPassable[CellIndex(cell)];
+        return mPassable[(unsigned int)CellIndex(cell)];
     }
 
     void SquarePathGrid::GetNeighbours(CellCoord cell,
