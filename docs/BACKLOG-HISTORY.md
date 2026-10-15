@@ -168,6 +168,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | CoW: F-2 Core Runtime | [spec](specs/applications/cow/systems/f2-core-runtime/f2-core-runtime.md) | 2026-10-14 | Done. One Save/Reload/Replay scenario with checks C1-C6 and debug panel; found and fixed the GameSpeedController restore gap (participant v2). Hatch path of C6 waits on B6 |
 | Dia | DiaPathfinding: Rectangular Hex Grid | 2026-10-14 | Built 2026-10-14: HexTopology, rectangular odd-r HexPathGrid, layout-aware heuristic; 9417 tests pass |
 | Dia | DiaGridVisibility: topology-generic line of sight | 2026-10-15 | Moved by `dia docs backlog move` |
+| Baseline | JobSystemService ServiceStream + TrySubmit (dia-needs #12) | 2026-10-15 | **Done 2026-10-15.** JobSystemModule publishes JobSystem& as ServiceStream; JobSystem::TrySubmit() returns invalid handle after shutdown (no assert); manifests updated (cow_main.diaapp, cluiche_main.diaapp); 3 unit tests + integration test (JobSystemServiceTestStage on SimPU); 9183 tests pass. Spec: [jobsystem-servicestream.md](specs/applications/dia/systems/diathreading/jobsystem-servicestream.md). Unblocks A4 Weather parallel updates |
 
 ---
 
