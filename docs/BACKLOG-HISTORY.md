@@ -167,6 +167,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | CoW | E1 follow-ups | 2026-10-14 | Moved by `dia docs backlog move` |
 | CoW: F-2 Core Runtime | [spec](specs/applications/cow/systems/f2-core-runtime/f2-core-runtime.md) | 2026-10-14 | Done. One Save/Reload/Replay scenario with checks C1-C6 and debug panel; found and fixed the GameSpeedController restore gap (participant v2). Hatch path of C6 waits on B6 |
 | Dia | DiaPathfinding: Rectangular Hex Grid | 2026-10-14 | Built 2026-10-14: HexTopology, rectangular odd-r HexPathGrid, layout-aware heuristic; 9417 tests pass |
+| Dia | DiaGridVisibility: topology-generic line of sight | 2026-10-15 | Moved by `dia docs backlog move` |
 
 ---
 
