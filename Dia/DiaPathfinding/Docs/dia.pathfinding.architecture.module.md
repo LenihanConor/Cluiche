@@ -24,8 +24,8 @@ intent: >
 
 responsibilities:
   - CPathGraph concept — GetNeighbours + IsPassable requirement
-  - SquarePathGrid — rectangular grid, 4/8-connected, per-cell passability
-  - HexPathGrid — 6-connected hex grid with per-cell passability; two layouts (HexLayout): axial hexagon (radius) and rectangular flat-top odd-q offset (width, height)
+  - SquarePathGrid — rectangular grid, 4/8-connected, per-cell passability (heap-allocated, no cap)
+  - HexPathGrid — 6-connected hex grid with per-cell passability (heap-allocated for rectangular layout); two layouts (HexLayout): axial hexagon (radius) and rectangular flat-top odd-q offset (width, height)
   - HexTopology — pure value type for rectangular flat-top odd-q hex grids (odd columns shifted down; y-down world space; direction order NE,N,NW,SW,S,SE at 30deg+60deg*d CCW); NeighbourAt(cell, dir), kNoCell past the edge, kHexDirections (6), Distance, DirectionFromAngle, DirectionVector, CellCenter(coord,size), CellFromPoint(point,size)
   - Layout-aware hex heuristic in FindPath (axial vs offset)
   - IPathCostProvider virtual interface + FlatCostProvider (1.0f uniform default)
