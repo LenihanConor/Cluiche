@@ -1,6 +1,7 @@
 #pragma once
 
 #include <DiaFlowField/FlowCell.h>
+#include <DiaFlowField/CFlowFieldGraph.h>
 #include <DiaPathfinding/CellCoord.h>
 #include <DiaCore/Containers/Arrays/DynamicArray.h>
 
@@ -24,11 +25,28 @@ namespace Dia
             // Convenience: sample direction from a world position using a uniform
             // square-grid cell size.  Does not need graph access — uses integer
             // division directly (col = worldPos.x / cellSize, row = worldPos.y / cellSize).
+            // NOTE: This overload is square-grid-only and returns incorrect results on hex grids.
+            // Use the graph-aware overload below for any CFlowFieldGraph.
             Dia::Maths::Vector2D SampleWorld(Dia::Maths::Vector2D worldPos, float cellSize) const
             {
                 int col = static_cast<int>(worldPos.X() / cellSize);
                 int row = static_cast<int>(worldPos.Y() / cellSize);
                 return Sample(Dia::Pathfinding::CellCoord{col, row}).direction;
+            }
+
+            // Graph-aware sampling: converts the position with the graph's own WorldToCell,
+            // so it is correct for any CFlowFieldGraph (square, axial hex, rectangular hex).
+            template<CFlowFieldGraph TGraph>
+            const FlowCell& Sample(const TGraph& graph, Dia::Maths::Vector2D worldPos, float cellSize) const
+            {
+                Dia::Pathfinding::CellCoord cell = graph.WorldToCell(worldPos, cellSize);
+                return Sample(cell);
+            }
+
+            template<CFlowFieldGraph TGraph>
+            Dia::Maths::Vector2D SampleWorld(const TGraph& graph, Dia::Maths::Vector2D worldPos, float cellSize) const
+            {
+                return Sample(graph, worldPos, cellSize).direction;
             }
 
             // Conservative completeness check: returns true if every cell in
