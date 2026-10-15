@@ -195,6 +195,6 @@ No other binding constraints apply.
 
 ## Status
 
-`Approved` — 2026-10-14. Amended 2026-10-14: flat-top odd-q (was pointy-top odd-r), cell geometry, `HexFlowAdapter` support, GridVisibility guard (plan tasks 6–8)
+`Done` — 2026-10-14. Amended 2026-10-14: flat-top odd-q (was pointy-top odd-r), cell geometry, `HexFlowAdapter` support, GridVisibility guard (plan tasks 6–8). Full googletest suite: 9427 pass.
 
 **Plan:** @docs/specs/applications/dia/systems/diapathfinding/hex-rectangular-grid.plan.md
