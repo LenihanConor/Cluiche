@@ -2,8 +2,11 @@
 
 #include <gtest/gtest.h>
 #include <DiaFlowField/FlowFieldCache.h>
+#include <DiaFlowField/HexFlowAdapter.h>
 #include <DiaFlowField/Testing/FlowFieldTestHelpers.h>
+#include <DiaPathfinding/HexPathGrid.h>
 #include <DiaPathfinding/IPathCostProvider.h>
+#include <memory>
 
 using namespace Dia::FlowField;
 using Dia::Pathfinding::CellCoord;
@@ -79,4 +82,36 @@ TEST(FlowFieldCache, InvalidateRegion_OnlyAffectsGoalsInsideRegion) {
     const FlowField& fOut1 = cache.GetOrCompute(FlowFieldKey("out"), CellCoord{6, 6});
     const FlowField& fOut2 = cache.GetOrCompute(FlowFieldKey("out"), CellCoord{6, 6});
     EXPECT_EQ(&fOut1, &fOut2);
+}
+
+// ===========================================================================
+// Large grid cache test (AC8)
+// ===========================================================================
+
+TEST(SLOW_FlowFieldCache, LargeHexGrid_104x64_CacheAndInvalidate) {
+    // AC8: FlowFieldCache on 104×64 rectangular hex grid
+    // Note: Needs heap-allocated grid/adapter to avoid lifetime issues
+    auto grid = std::make_unique<Dia::Pathfinding::HexPathGrid>(104, 64);
+    auto adapter = std::make_unique<HexFlowAdapter>(*grid);
+    FlatCostProvider costs;
+    FlowFieldCache<HexFlowAdapter> cache(*adapter, costs, 104, 64);
+
+    // Compute and cache
+    CellCoord goal{52, 32};
+    const FlowField& f1 = cache.GetOrCompute(FlowFieldKey("large"), goal);
+    EXPECT_EQ(cache.GetCachedCount(), 1);
+    EXPECT_TRUE(f1.Sample(goal).reachable);
+
+    // Cache hit returns same field
+    const FlowField& f2 = cache.GetOrCompute(FlowFieldKey("large"), goal);
+    EXPECT_EQ(&f1, &f2);
+    EXPECT_EQ(cache.GetCacheHits(), 1);
+
+    // InvalidateRegion including goal
+    cache.InvalidateRegion(CellCoord{50, 30}, CellCoord{54, 34});
+
+    // Recompute after invalidation
+    const FlowField& f3 = cache.GetOrCompute(FlowFieldKey("large"), goal);
+    EXPECT_EQ(cache.GetRecomputeCount(), 2); // initial + after invalidate
+    EXPECT_TRUE(f3.Sample(goal).reachable);
 }
