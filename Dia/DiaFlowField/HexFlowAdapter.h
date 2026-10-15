@@ -2,6 +2,7 @@
 
 #include <DiaFlowField/CFlowFieldGraph.h>
 #include <DiaPathfinding/HexPathGrid.h>
+#include <DiaPathfinding/HexTopology.h>
 #include <DiaMaths/Vector/Vector2D.h>
 #include <DiaCore/Core/Assert.h>
 #include <cmath>
@@ -9,18 +10,16 @@
 namespace Dia::FlowField {
 
     // Thin adapter that wraps HexPathGrid and satisfies CFlowFieldGraph.
-    // Uses flat-top hex axial coordinates (q, r).
+    // Supports both HexPathGrid layouts:
+    //  - axial hexagon: coordinates are (q, r). NOTE: the axial CellToWorldPosition (pointy-top
+    //    formula) and WorldToCell (flat-top formula) are known to be inconsistent; tracked in the backlog.
+    //  - rectangular flat-top odd-q: delegates to HexTopology::CellCenter / CellFromPoint.
     // The caller owns the grid's lifetime; this adapter holds a const reference.
     class HexFlowAdapter {
     public:
-        // Axial maths below (CellToWorldPosition/WorldToCell/GetRadius) assumes the axial
-        // hexagon layout. Rectangular (offset) hex grids are unsupported; follow-up row to
-        // be added when a consumer needs it.
         explicit HexFlowAdapter(const Dia::Pathfinding::HexPathGrid& grid)
             : mGrid(grid)
         {
-            DIA_ASSERT(grid.GetLayout() == Dia::Pathfinding::HexLayout::kAxialHexagon,
-                       "HexFlowAdapter supports axial hexagon grids only; rectangular (offset) hex grids are not supported yet");
         }
 
         // --- CPathGraph forwarding ---
@@ -43,6 +42,9 @@ namespace Dia::FlowField {
         //   y = cellSize * (r * sqrt(3) / 2)   [sqrt(3)/2 ≈ 0.866025]
         Dia::Maths::Vector2D CellToWorldPosition(Dia::Pathfinding::CellCoord cell, float cellSize) const
         {
+            if (IsOffsetLayout())
+                return Dia::Pathfinding::HexTopology::CellCenter(cell, cellSize);
+
             float x = cellSize * (cell.x + cell.y * 0.5f);
             float y = cellSize * (cell.y * 0.866025f);  // sqrt(3)/2
             return Dia::Maths::Vector2D(x, y);
@@ -53,6 +55,9 @@ namespace Dia::FlowField {
         // r_frac = (-1/3 * wx + (1/sqrt(3)) * wy) / cellSize   [1/sqrt(3) ≈ 0.577350]
         Dia::Pathfinding::CellCoord WorldToCell(Dia::Maths::Vector2D worldPos, float cellSize) const
         {
+            if (IsOffsetLayout())
+                return Dia::Pathfinding::HexTopology::CellFromPoint(worldPos, cellSize);
+
             float wx = worldPos.X();
             float wy = worldPos.Y();
 
@@ -79,9 +84,16 @@ namespace Dia::FlowField {
 
         // --- Convenience accessor ---
 
-        int GetRadius() const { return mGrid.GetRadius(); }
+        int GetRadius() const { return mGrid.GetRadius(); }   // axial layout only (asserts in grid)
+        int GetWidth() const  { return mGrid.GetWidth(); }    // rectangular layout only (asserts in grid)
+        int GetHeight() const { return mGrid.GetHeight(); }   // rectangular layout only (asserts in grid)
 
     private:
+        bool IsOffsetLayout() const
+        {
+            return mGrid.GetLayout() != Dia::Pathfinding::HexLayout::kAxialHexagon;
+        }
+
         const Dia::Pathfinding::HexPathGrid& mGrid;
     };
 
