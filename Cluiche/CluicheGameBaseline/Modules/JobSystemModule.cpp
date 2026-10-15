@@ -12,10 +12,16 @@ JobSystemModule::JobSystemModule(const Dia::Core::StringCRC& instanceId)
 {
 }
 
+void JobSystemModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
+{
+    mJobSystemService.Connect(app);
+}
+
 Dia::ApplicationFlow::StartResult JobSystemModule::DoStart()
 {
     DIA_LOG_INFO("Application", "JobSystemModule DoStart entry");
     mJobSystem.Initialize(0, &mMetricsAdapter);
+    mJobSystemService.Register(mJobSystem);
     DIA_LOG_INFO("Application", "JobSystemModule DoStart ready");
     return Dia::ApplicationFlow::StartResult::kReady;
 }
@@ -27,6 +33,7 @@ void JobSystemModule::DoUpdate(const Dia::SimTime::MainTimeContext& /*ctx*/)
 Dia::ApplicationFlow::StopResult JobSystemModule::DoStop()
 {
     DIA_LOG_INFO("Application", "JobSystemModule DoStop entry");
+    mJobSystemService.Deregister();
     mJobSystem.Shutdown();
     return Dia::ApplicationFlow::StopResult::kDone;
 }

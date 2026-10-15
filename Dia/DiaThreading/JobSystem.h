@@ -75,6 +75,12 @@ namespace Dia
 			// or after Shutdown.
 			JobHandle  Submit(JobFn fn);
 
+			// Non-asserting variant of Submit.
+			// Returns an invalid JobHandle (IsValid() == false) if called before Initialize
+			// or after Shutdown, instead of asserting.
+			// Callers should check IsValid() and fall back to serial execution if needed.
+			JobHandle  TrySubmit(JobFn fn);
+
 			// Blocks until the job behind h has finished. Safe from any thread.
 			void       Wait(const JobHandle& h);
 

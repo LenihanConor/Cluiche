@@ -100,6 +100,40 @@ namespace Dia
 			return handle;
 		}
 
+		JobHandle JobSystem::TrySubmit(JobFn fn)
+		{
+			// Non-asserting variant: return invalid handle if pool is null.
+			if (!mThreadPool)
+				return JobHandle();
+
+			auto jobPtr = std::make_shared<Job>();
+
+			// Capture metrics and pool by value so the lambda is self-contained.
+			auto* metrics = mMetrics;
+			mThreadPool->Enqueue([fn = std::move(fn), jobPtr,
+			                      metrics,
+			                      pool = mThreadPool]() {
+				if (fn) fn();
+				jobPtr->unfinishedJobs.store(0, std::memory_order_release);
+				if (metrics)
+				{
+					metrics->OnJobCompleted();
+					metrics->OnActiveWorkersChanged(static_cast<double>(pool->GetActiveTaskCount()));
+					metrics->OnQueueDepthChanged   (static_cast<double>(pool->GetQueueDepth()));
+				}
+			});
+
+			if (mMetrics)
+			{
+				mMetrics->OnJobSubmitted();
+				mMetrics->OnQueueDepthChanged(static_cast<double>(mThreadPool->GetQueueDepth()));
+			}
+
+			JobHandle handle;
+			handle.mPtr = jobPtr;
+			return handle;
+		}
+
 		void JobSystem::Wait(const JobHandle& h)
 		{
 			if (!h.IsValid()) return;

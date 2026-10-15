@@ -179,6 +179,12 @@
             "from": "MainPU"
         },
         {
+            "id": "JobSystemService",
+            "kind": "ServiceStream",
+            "payload_type": "JobSystem",
+            "from": "MainPU"
+        },
+        {
             "id": "RenderToSim",
             "kind": "FrameStream",
             "payload_type": "RenderFence",
@@ -247,7 +253,12 @@
                     "dependencies": [
                         "ObservationModule"
                     ],
-                    "channels": []
+                    "channels": [
+                        {
+                            "id": "JobSystemService",
+                            "role": "provides"
+                        }
+                    ]
                 },
                 {
                     "instance_id": "KernelModule",
