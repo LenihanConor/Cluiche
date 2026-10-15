@@ -36,32 +36,34 @@ namespace Dia::FlowField {
             auto it = mEntries.find(key);
             if (it == mEntries.end())
             {
-                // New entry: compute and store (heap-allocated to avoid C6262 stack pressure)
-                auto entryPtr = std::make_unique<CacheEntry>();
-                entryPtr->goalCell = goalCell;
-                entryPtr->field    = ComputeFlowField(mGraph, goalCell, mCosts, mWidth, mHeight);
-                entryPtr->dirty    = false;
-                auto [inserted_it, ok] = mEntries.emplace(key, std::move(*entryPtr));
+                // New entry: compute and store
+                CacheEntry entry;
+                entry.goalCell = goalCell;
+                entry.field    = std::make_unique<FlowField>(
+                    ComputeFlowField(mGraph, goalCell, mCosts, mWidth, mHeight));
+                entry.dirty    = false;
+                auto [inserted_it, ok] = mEntries.emplace(key, std::move(entry));
                 DIA_LOG_INFO("FlowField", "FlowFieldCache: computed new field key=%s goal=(%d,%d)",
                              key.AsChar(), goalCell.x, goalCell.y);
                 ++mMisses;
                 ++mRecomputes;
-                return inserted_it->second.field;
+                return *inserted_it->second.field;
             }
             if (it->second.dirty)
             {
                 // Recompute dirty field
                 it->second.goalCell = goalCell;
-                it->second.field    = ComputeFlowField(mGraph, goalCell, mCosts, mWidth, mHeight);
+                it->second.field    = std::make_unique<FlowField>(
+                    ComputeFlowField(mGraph, goalCell, mCosts, mWidth, mHeight));
                 it->second.dirty    = false;
                 DIA_LOG_INFO("FlowField", "FlowFieldCache: recomputed dirty field key=%s goal=(%d,%d)",
                              key.AsChar(), goalCell.x, goalCell.y);
                 ++mMisses;
                 ++mRecomputes;
-                return it->second.field;
+                return *it->second.field;
             }
             ++mHits;
-            return it->second.field;
+            return *it->second.field;
         }
 
         // Mark a specific field dirty — recomputed on next GetOrCompute.
@@ -109,11 +111,9 @@ namespace Dia::FlowField {
     private:
         struct CacheEntry
         {
-            FlowField field;
+            std::unique_ptr<FlowField> field;
             bool dirty = true;
             Dia::Pathfinding::CellCoord goalCell{};
-
-            CacheEntry() : field(1, 1) {}  // dummy default — replaced on first compute
         };
 
         const TGraph&                          mGraph;
