@@ -19,10 +19,6 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 ### Systems
 
-| Project | System | Features | Depends On |
-|---------|--------|----------|------------|
-| Dia | DiaFlowField + DiaPathfinding: scalable storage | 1 feature, **Approved 2026-10-14**: heap-sized `FlowField` and `SquarePathGrid` storage (removes the 4096-cell cap that blocks CoW's Standard 80×52 and Large 104×64 maps; `SquarePathGrid` also has no size check and overruns above 64×64), graph-aware `Sample`/`SampleWorld` overload so any `CFlowFieldGraph` samples correctly (the old `SampleWorld` is square-only and wrong on hex fields). 9 ACs. Spec: [scalable-storage.md](specs/applications/dia/systems/diaflowfield/scalable-storage.md) | `ComputeFlowField`/`FlowFieldCache` audit for hidden fixed-size buffers is the first task. **CoW needs it** for S-4 dragon pathing. Rectangular hex grid (Done) |
-
 ### CoW
 
 | Project | Item | Kind | Deliverable | Spec / plan | Depends On |
