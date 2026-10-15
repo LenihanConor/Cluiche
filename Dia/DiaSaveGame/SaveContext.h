@@ -16,7 +16,7 @@ namespace Dia::SaveGame {
 class SaveContext {
 public:
     static const unsigned int kStackDepth   = 16;
-    static const unsigned int kBufferSize   = 10u * 1024u * 1024u; // 10 MB; heap-allocate (never a stack/member array)
+    static const unsigned int kBufferSize   = 100u * 1024u * 1024u; // 100 MB; heap-allocate (never a stack/member array)
 
     SaveContext();
     ~SaveContext();

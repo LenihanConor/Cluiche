@@ -45,7 +45,7 @@ Dia::SaveGame::SaveConfig SaveLoadModule::DefaultConfig()
     Dia::SaveGame::SaveConfig config;
     config.baseDirectory = kDefaultBaseDirectory;
     config.slotPattern   = "slot_{id}.sav";
-    config.maxSlots      = 0;
+    config.maxSlots      = 8;
     config.format        = Dia::SaveGame::SaveFormat::Json;
     return config;
 }
