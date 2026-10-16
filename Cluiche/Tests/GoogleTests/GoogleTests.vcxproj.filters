@@ -1964,5 +1964,8 @@
     <ClCompile Include="CoW\TestWorldGenerationMessages.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="DiaMaths\TestNoiseValueGradient.cpp">
+      <Filter>DiaMaths</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

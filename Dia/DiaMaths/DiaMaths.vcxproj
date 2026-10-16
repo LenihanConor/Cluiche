@@ -103,6 +103,10 @@
     <ClInclude Include="Core\SplineBasis.h" />
     <ClInclude Include="Core\RandomStream.h" />
     <ClInclude Include="Core\RandomStreamManager.h" />
+    <ClInclude Include="Noise\Noise.h" />
+    <ClInclude Include="Noise\NoiseHash.h" />
+    <ClInclude Include="Noise\ValueNoise.h" />
+    <ClInclude Include="Noise\GradientNoise.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Vector\Vector2D.cpp" />
@@ -127,6 +131,8 @@
     <ClCompile Include="Quaternion\Quaternion.cpp" />
     <ClCompile Include="Core\RandomStream.cpp" />
     <ClCompile Include="Core\RandomStreamManager.cpp" />
+    <ClCompile Include="Noise\ValueNoise.cpp" />
+    <ClCompile Include="Noise\GradientNoise.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Vector\Vector2D.inl" />
