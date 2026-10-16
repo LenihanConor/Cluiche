@@ -193,4 +193,4 @@ None remaining.
 
 ## Status
 
-`Approved` — 2026-10-15. Scope widened the same day (all noise types now, fp_contract off, 16 gradients, `normalise` flag) and all open questions resolved (Worley 5 x 5, OpenSimplex2S, compile-time dispatch). No plan yet (write one when building). Verify the OpenSimplex2S normaliser constant against the published reference at build time. Blocks S-1 plan task 7 (Terrain Generator build).
+`Done` — 2026-10-16. Built per [seeded-noise.plan.md](seeded-noise.plan.md) (8 tasks, 68 `*Noise*` tests). Debug GoogleTests pass; Release verified with a standalone harness over the noise sources (/O2 /GL /arch:AVX2): bit-identical output to Debug, Release timings inside AC19 (Worley fBm 2.3 ms, Simplex 0.43 ms, 3D 0.91 ms per 66x42 grid x 6 octaves). The in-project Release GoogleTests build hits `C1002` (out of heap) so the Release golden tests themselves were not run. OpenSimplex2S N2 = 0.05481866495625118, measured max 0.9998. `Noise3D` peaks at about 0.89 (gradient scale 1.0).
