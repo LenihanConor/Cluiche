@@ -1967,5 +1967,8 @@
     <ClCompile Include="DiaMaths\TestNoiseValueGradient.cpp">
       <Filter>DiaMaths</Filter>
     </ClCompile>
+    <ClCompile Include="DiaMaths\TestNoiseWorley.cpp">
+      <Filter>DiaMaths</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

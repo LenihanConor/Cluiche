@@ -912,6 +912,7 @@
     <ClCompile Include="DiaGridVisibility\TestHexGridVisibility.cpp" />
     <ClCompile Include="CoW\TestWorldGenerationMessages.cpp" />
     <ClCompile Include="DiaMaths\TestNoiseValueGradient.cpp" />
+    <ClCompile Include="DiaMaths\TestNoiseWorley.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

@@ -107,6 +107,7 @@
     <ClInclude Include="Noise\NoiseHash.h" />
     <ClInclude Include="Noise\ValueNoise.h" />
     <ClInclude Include="Noise\GradientNoise.h" />
+    <ClInclude Include="Noise\WorleyNoise.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Vector\Vector2D.cpp" />
@@ -133,6 +134,7 @@
     <ClCompile Include="Core\RandomStreamManager.cpp" />
     <ClCompile Include="Noise\ValueNoise.cpp" />
     <ClCompile Include="Noise\GradientNoise.cpp" />
+    <ClCompile Include="Noise\WorleyNoise.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Vector\Vector2D.inl" />

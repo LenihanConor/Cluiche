@@ -109,6 +109,31 @@ namespace Dia
 				gx = kGradients2D[i][0];
 				gy = kGradients2D[i][1];
 			}
+
+			// Feature point convention: the point of cell (cx, cy) is (cx + jitter * ux, cy + jitter * uy) with ux, uy in [0, 1)
+			// derived from the cell hash. jitter = 0 therefore places every feature point exactly on the integer cell corner (a regular
+			// grid), which makes f1 == 0 exactly when the sample sits on an integer corner. Distances are taken from the sample's cell
+			// origin: dx = (ox + jitter * ux) - fx, with ox the cell offset in the search window and fx the sample's fraction in its cell.
+			inline uint32_t WorleyCellHash(uint32_t seed, int cx, int cy)
+			{
+				return Hash2D(seed, cx, cy);
+			}
+
+			inline float WorleyJitterX(uint32_t cellHash)
+			{
+				return HashToUnit(cellHash);
+			}
+
+			inline float WorleyJitterY(uint32_t cellHash)
+			{
+				return HashToUnit(Mix32(cellHash ^ 0x68E31DA4u));
+			}
+
+			// Id is decorrelated from the jitter bits.
+			inline uint32_t WorleyCellId(uint32_t cellHash)
+			{
+				return Mix32(cellHash + 0x9E3779B9u);
+			}
 		}
 	}
 }
