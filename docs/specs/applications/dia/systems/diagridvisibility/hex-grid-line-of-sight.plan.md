@@ -2,9 +2,10 @@
 
 **Spec:** @docs/specs/applications/dia/systems/diagridvisibility/hex-grid-line-of-sight.md
 
-**Status:** In Progress
+**Status:** Done
 
 **Started:** 2026-10-15
+**Completed:** 2026-10-15
 
 ---
 

@@ -204,9 +204,10 @@ Hex ray-sweep is **O(radius²)** per dirty source (vs square's O(visible cells))
 
 ## Status
 
-**Status:** `Approved`
+**Status:** `Done`
 
-**Date:** 2026-10-15
+**Approved:** 2026-10-15
+**Completed:** 2026-10-15
 
 **Related Research:** None — hex grid (`HexPathGrid`, `HexTopology`) was built in the rectangular hex grid feature (hex-rectangular-grid.md, Done 2026-10-14). This feature builds on that work.
 
