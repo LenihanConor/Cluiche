@@ -913,6 +913,7 @@
     <ClCompile Include="CoW\TestWorldGenerationMessages.cpp" />
     <ClCompile Include="DiaMaths\TestNoiseValueGradient.cpp" />
     <ClCompile Include="DiaMaths\TestNoiseWorley.cpp" />
+    <ClCompile Include="DiaMaths\TestNoiseSimplex.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
