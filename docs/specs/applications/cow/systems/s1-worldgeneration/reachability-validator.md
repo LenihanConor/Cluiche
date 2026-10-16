@@ -28,6 +28,7 @@ Naive graph connectivity is insufficient: a graph-connected path might traverse 
 2. **Navigability is injected** — Reachability is answered under injected `INavigationProfile`s via Dia's `IPathCostProvider` (DiaPathfinding). "Reachable" = a path exists under at least one profile. No B2 types appear in S-1
 3. **Fast validation** — Completes within generation's 5-second budget (reachability checks for typical world sizes must be efficient, not exhaustive search)
 4. **Clear failure reporting** — When a guarantee fails, returns which guarantee and diagnostic info (e.g., "Hearth at (X, Y) unreachable from any Nexus", "Dynasty starts at (X1, Y1) and (X2, Y2) too close: distance D < minimum M")
+4a. **Evidence kept for the debug view** *(amended 2026-10-15)* — Every `GuaranteeResult` also carries structured evidence, whether it passed or failed: the proof path for each reachability pair that succeeded (which cells, under which profile), the cells and pairs that violated it, and the measured spacing for each dynasty pair. Feature 7 draws it; Feature 6 lists it. Evidence is data, not strings, so the drawers never parse diagnostics
 5. **Deterministic** — Same world structure, guarantees and profiles always produce the same validation result (no randomness in path-finding; results ordered by injection order)
 
 ## Non-Goals
@@ -80,6 +81,8 @@ bool NavigationQuery::IsReachable(GridCoord from, GridCoord to) const {
 }
 ```
 
+`FindProofPath(from, to, outPath)` *(amended 2026-10-15)* is the same loop but returns the first successful path's cells and the profile id that found it. Built-in guarantees call it instead of `IsReachable` so they can record the proof path; `IsReachable` stays for guarantees that don't need evidence. Profiles are tried in injection order, so the recorded path is deterministic.
+
 **Rationale:** "Any profile" keeps the original intent: if zero actor kinds can reach a site, it is mechanically inaccessible; if at least one can, the player has a path (even if constrained). With the placeholder, there is one profile; with B2 injected, one per body plan.
 
 **Cost semantics are free:** because the profile is an `IPathCostProvider`, weighted costs (e.g., "reachable within cost N") need no new interface. Not used by the three built-ins.
@@ -100,6 +103,14 @@ for (size_t i = 0; i < starts.size(); ++i)
 
 **`WorldThroneGuarantee`** — Existence: `world.thrones.size() == 6` and all six Apotheosis types present once. Reachability: each throne must reach any cell with `cell.region == Region::AncientInteriors` via `IsReachable`. If Ancient Interiors is several disjoint regions, any cell from any of them suffices.
 
+**Evidence each built-in records** *(amended 2026-10-15)*:
+
+| Guarantee | `proofPaths` | `violatingCells` | `violatingPairs` | `measurements` |
+|-----------|--------------|------------------|------------------|----------------|
+| HearthNexusReachability | One per reachable Hearth: Hearth → the Nexus it reached | Unreachable Hearths | — | — |
+| DynastySpacing | — | — | Every pair below `minimumSpacing` | Hex distance of every pair, plus the minimum |
+| WorldThrone | One per reachable throne: throne → the Ancient Interiors cell it reached | Unreachable thrones | — | Count of thrones per Apotheosis type (shows missing or duplicate types) |
+
 ### Placeholder Profile
 
 `TerrainTableNavigationProfile` loads a small authored file mapping `TerrainType → passable (and optionally cost)`. Its bound provider returns `kImpassableCost` for edges entering a blocked terrain type. This is the S-1 default and the test double for AC5. It is **not** B2's matrix: the terrain types are S-1's, and B2 later replaces or supplements it by injecting its own profiles.
@@ -112,10 +123,34 @@ for (size_t i = 0; i < starts.size(); ++i)
 // ReachabilityValidator.h (CoW/Shared/WorldGeneration/)
 namespace CoW::WorldGeneration {
 
+// Evidence types (amended 2026-10-15): data for the debug view, recorded on pass and fail.
+struct ProofPath {
+    GridCoord from;
+    GridCoord to;
+    StringCRC profileId;                 // Profile that found the path
+    DynamicArrayC<GridCoord> cells;      // from ... to, inclusive
+};
+
+struct CellPair {
+    GridCoord a;
+    GridCoord b;
+};
+
+struct Measurement {
+    StringCRC key;                       // e.g. "pairDistance", "minimumSpacing", "thronesOfType"
+    GridCoord a;                         // Cell(s) the value refers to; kNoCell if none
+    GridCoord b;
+    float value;
+};
+
 struct GuaranteeResult {
     StringCRC id;                          // Which guarantee produced this
     bool satisfied;
     DynamicArrayC<std::string> diagnostics;  // Empty if satisfied; failure details if not
+    DynamicArrayC<ProofPath>   proofPaths;
+    DynamicArrayC<GridCoord>   violatingCells;
+    DynamicArrayC<CellPair>    violatingPairs;
+    DynamicArrayC<Measurement> measurements;
 };
 
 struct ValidationResult {
@@ -129,6 +164,8 @@ class INavigationQuery {
 public:
     virtual ~INavigationQuery() = default;
     virtual bool IsReachable(GridCoord from, GridCoord to) const = 0;
+    // As IsReachable, but fills 'out' with the first successful path (profiles in injection order).
+    virtual bool FindProofPath(GridCoord from, GridCoord to, ProofPath& out) const = 0;
 };
 
 // A kind of actor's navigability. Injected; S-1 ships the placeholder, B2 ships body plans.
@@ -188,9 +225,9 @@ public:
 
 | System/Feature | Why needed | Status |
 |----------------|-----------|---------|
-| **Feature 1 (Placeholder Generation Algorithm)** | Produces `WorldStructure` to validate | Draft (being specced) |
+| **Feature 1 (Placeholder Generation Algorithm)** | Produces `WorldStructure` to validate | Approved |
 | **DiaPathfinding** | `FindPath<TGraph>`, `IPathCostProvider` (`kImpassableCost`) | Done |
-| **DiaPathfinding: Rectangular Hex Grid** | `HexPathGrid(width, height)`, `HexTopology::Distance`, corrected hex heuristic | Draft — must be built first |
+| **DiaPathfinding: Rectangular Hex Grid** | `HexPathGrid(width, height)`, `HexTopology::Distance`, corrected hex heuristic | Done (2026-10-14) |
 | **Phase 2 data design** | Region enum (Ancient Interiors), ApotheosisType enum (6 types), TerrainType enum (placeholder profile table) | GDD in-progress (types TBD — placeholder uses arbitrary enums until Phase 2 finalizes) |
 
 **Not a dependency:** B2 (Dragon). B2 consumes `INavigationProfile` later. Nothing in S-1 waits on it.
@@ -235,10 +272,19 @@ Test world with a path from A to B that is graph-connected but crosses only terr
 Test world with a path crossing only passable terrain. **Pass:** `IsReachable(A, B) == true`.
 
 ### AC6 — Validation Speed
-Typical sizes (Standard 80×52 and Large 104×64 grids, ~10 Hearth Sites, ~5 Nexus Nodes, 6 world-thrones, ~5 dynasty starts). Measure time from `Validate()` call to return. **Target: completes within the 5-second generation budget**, and under 1 second for typical worlds.
+Small world (66×42, ~10 Hearth Sites, ~5 Nexus Nodes, 6 world-thrones, ~5 dynasty starts), evidence recording on. Measure time from `Validate()` call to return. **Target: completes within the 5-second generation budget**, and under 1 second for typical worlds.
 
 ### AC7 — Deterministic Validation
-Validate the same world twice with identical `ValidationParams`. **Pass:** identical `passed`, identical per-guarantee `satisfied` and `diagnostics`, in the same order.
+Validate the same world twice with identical `ValidationParams`. **Pass:** identical `passed`, identical per-guarantee `satisfied`, `diagnostics` and evidence (`proofPaths` cell-for-cell, `violatingCells`, `violatingPairs`, `measurements`), in the same order.
+
+### AC10 — Evidence Recorded *(added 2026-10-15)*
+On the AC1–AC3 worlds:
+- **Passing Hearth↔Nexus:** one `proofPath` per Hearth; each path starts at the Hearth, ends at a Nexus, has neighbouring consecutive cells (`HexTopology::Distance == 1`), crosses no cell the profile blocks, and names the profile that found it.
+- **Unreachable Hearth:** that Hearth is in `violatingCells` and has no `proofPath`.
+- **Too-close dynasty pair:** that pair is in `violatingPairs`; `measurements` holds a `pairDistance` for every pair and one `minimumSpacing`.
+- **Unreachable throne:** that throne is in `violatingCells`; `thronesOfType` measurements show the count per Apotheosis type.
+
+**Pass:** all of the above.
 
 ### AC8 — Injected Navigation Profiles (Any-Profile Semantics)
 Two test profiles on the same world: profile P blocks water, profile Q allows water, and A→B crosses only water. **Pass:** with `{P}` alone `IsReachable(A, B) == false`; with `{P, Q}` it is `true`; with `{Q}` alone it is `true`. Proves new navigation rules are added by injection with no change to S-1 code.
@@ -280,10 +326,11 @@ A test `IWorldGuarantee` that always fails, appended to the built-in set. **Pass
 | 3 | Per-pair `FindPath` or a multi-source DiaFlowField behind `INavigationQuery`? | Affects AC6 speed; not correctness | Start with per-pair `FindPath` (simplest, correctness-first); switch the query implementation to DiaFlowField if AC6 fails |
 | 4 | Which profiles count toward a given guarantee? | Today every guarantee uses "any profile"; a future guarantee might need a specific profile (e.g., "a human road network connects the hearths") | Not needed for the built-ins. If one arrives, extend `INavigationQuery` with `IsReachable(from, to, profileId)`; additive, no break |
 | 5 | Should the guarantee list be assembled by a registry rather than by the caller? | Today the caller builds `ValidationParams` (app wiring) | Caller-assembled until a second consumer proves a registry is needed (Non-Goal 6) |
+| 6 | Should evidence recording be switchable off (e.g. for S-7 stress runs or Release)? | Proof paths are ~10–20 short paths on a Small world, so the cost is negligible now | Always on for S-1. Add a `ValidationParams::recordEvidence` flag only if a profiler shows it matters |
 
 ## Status
 
-`Approved` — 2026-10-11. Amended 2026-10-13: navigability and guarantees made injectable (Open Q #2 resolved; blocker removed). Amended 2026-10-14: hex world on Dia's rectangular `HexPathGrid`; spacing uses hex distance; map sizes per the parent spec.
+`Approved` — 2026-10-11. Amended 2026-10-13: navigability and guarantees made injectable (Open Q #2 resolved; blocker removed). Amended 2026-10-14: hex world on Dia's rectangular `HexPathGrid`; spacing uses hex distance; map sizes per the parent spec. Amended 2026-10-15: `GuaranteeResult` carries structured evidence (proof paths, violating cells/pairs, measurements) and `INavigationQuery::FindProofPath` (Goal 4a, AC10); AC6 measured at Small.
 
 ---
 

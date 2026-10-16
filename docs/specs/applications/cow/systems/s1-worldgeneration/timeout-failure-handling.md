@@ -19,7 +19,7 @@ Without timeout/failure handling:
 
 With timeout/failure handling:
 - **Hard timeout prevents hangs** — Total generation time monitored; if exceeded, timeout path triggers immediately (even mid-retry), preventing infinite loops
-- **Clean failure path** — Unsatisfiable seeds (retry exhaustion) and generation errors (exceptions, I/O failures) route through Cancel's discard-and-return, discarding partial state and returning control to F-1's debug menu
+- **Clean failure path** — Unsatisfiable seeds (retry exhaustion) and generation errors (exceptions, I/O failures) route through Cancel's discard-and-return, discarding partial state and returning control to the S-1 panel (the stage stays open)
 - **Distinguishing diagnostics** — Timeout, Failure, and manual Cancel have distinct assert/log messages, enabling root-cause debugging
 
 ## Goals
@@ -29,6 +29,7 @@ With timeout/failure handling:
 3. **Three distinguishable failure modes** — Timeout ("TIMEOUT"), retry exhaustion ("FAILURE: unsatisfiable seed"), generation error ("FAILURE: error message"); each has unique assert/log text
 4. **Cancel path integration** — Reuses Phase 6's existing discard-and-return mechanism (no new exit path invented); Cancel button, timeout, and failure all route through same path with distinguishing source
 5. **Partial state cleanup** — No half-constructed worlds returned; partial `WorldStructure` discarded on Cancel/timeout/failure
+5a. **Previous world survives** *(clarified 2026-10-15)* — A failed, timed-out or cancelled generation does not touch the last accepted world: `GetCurrentWorld()` and `GetWorldRevision()` are unchanged, and the stage stays open on it. "Discard-and-return" discards the attempt, not the stage or the previous world. Feature 3's `GenerationReport` records the failure
 6. **Non-deterministic timeout** — Timeout is wall-clock based (not tick-based), so same seed may timeout on slow machine or succeed on fast machine; this is acceptable (timeout is a safety net, not a design constraint)
 
 ## Non-Goals
@@ -61,7 +62,7 @@ Result<WorldStructure> GenerateWorld(uint64_t outerSeed, const GenParams& params
         ValidationResult validation = ReachabilityValidator::Validate(world, params.validation);
         
         if (validation.passed) {
-            PublishEvent(WorldGenerationComplete{world, outerSeed, attempt});
+            AcceptWorld(world);  // bumps revision; publishes WorldGenerationComplete{outerSeed, attempt, revision}
             return Result<WorldStructure>::Success(world);
         }
     }
@@ -178,9 +179,9 @@ struct WorldGenerationCancelled {
 
 | System/Feature | Why needed | Status |
 |----------------|-----------|---------|
-| **Feature 1 (Placeholder Generation Algorithm)** | Generates world per retry attempt; may throw exceptions | Draft (being specced) |
-| **Feature 2 (Reachability Validator)** | Validates world per retry attempt; may throw exceptions | Draft (being specced) |
-| **Feature 3 (Retry Mechanism)** | Retry loop is where timeout/failure checks are inserted | Draft (being specced) |
+| **Feature 1 (Placeholder Generation Algorithm)** | Generates world per retry attempt; may throw exceptions | Approved |
+| **Feature 2 (Reachability Validator)** | Validates world per retry attempt; may throw exceptions | Approved |
+| **Feature 3 (Retry Mechanism)** | Retry loop is where timeout/failure checks are inserted | Approved |
 | **Phase 6 Cancel path** | Reuses existing discard-and-return mechanism | Assumed implemented (GDD decision 5 references it) |
 
 ### Dia Engine Dependencies
@@ -247,7 +248,7 @@ Generate world on fast machine (should succeed within 5 seconds), then artificia
 
 ## Status
 
-`Approved` — 2026-10-11
+`Approved` — 2026-10-11. Clarified 2026-10-15: failure keeps the previous world and the stage open (Goal 5a); success publishes the notification-shaped `WorldGenerationComplete`.
 
 ---
 

@@ -2,6 +2,8 @@
 
 **Parent:** @docs/specs/applications/cow/systems/s1-worldgeneration/worldgenerationpipeline.md
 
+> **Superseded 2026-10-15 — do not build from this spec.** It becomes the rule-based **Terrain Generator** (system decisions SD-S1-003 to SD-S1-005). Biome assignment moves to Feature 8 (Biome Classification), and region and site placement to Feature 9 (Regions and Sites). Rewrite: S-1 plan task 3.
+
 **Gameplay Domains:** simulation
 
 ## Summary
@@ -161,7 +163,7 @@ struct GenParams {
     PlacementParams placementParams;       // Site placement tuning (TBD by placeholder)
     uint32_t maxRetryAttempts;             // Not used by this feature (Feature 3)
     float timeoutSeconds;                  // Not used by this feature (Feature 5)
-    GridDimensions dimensions;             // Map size; default Standard 80 × 52 (amended 2026-10-14)
+    GridDimensions dimensions;             // Map size; default Small 66 × 42 (amended 2026-10-15)
     ValidationParams validation;           // Not used by this feature (Features 2/3): injected guarantees + navigation profiles
 };
 
@@ -257,10 +259,10 @@ Generate world. For each site array (hearths, nexuses, thrones, starts), confirm
 Generate world on ≥10 random seeds with varying `GenParams`. Confirm `thrones.size() == 6` every time. Confirm each throne has a distinct `type` (one per Apotheosis type, no duplicates). **Pass:** 100% compliance (exactly 6 thrones, all distinct types).
 
 ### AC6 — Generation Speed
-Generate worlds with typical parameters at each size preset (Small 66×42, Standard 80×52, Large 104×64; biome weights, site counts in expected ranges per placeholder defaults). Measure time from `Generate()` call to return. **Target: <5 seconds** (GDD §7 metric). Excludes validation/retry time (those are other features).
+Generate worlds with typical parameters at the Small preset (66×42; Standard and Large are deferred, amended 2026-10-15; biome weights, site counts in expected ranges per placeholder defaults). Measure time from `Generate()` call to return. **Target: <5 seconds** (GDD §7 metric). Excludes validation/retry time (those are other features).
 
 ### AC7 — Uses the Dia Hex Grid *(added 2026-10-14)*
-The generator's grid dimensions come from `GenParams.dimensions` (default 80×52). Every site position is in bounds per `HexTopology::IsInBounds`. Hex topology behaviour itself (neighbours, distance, directions) is tested in Dia's `hex-rectangular-grid.md`, not re-tested here. **Pass:** site positions valid for all three presets; a grid with other dimensions (for example 30×20) also generates.
+The generator's grid dimensions come from `GenParams.dimensions` (default 66×42). Every site position is in bounds per `HexTopology::IsInBounds`. Hex topology behaviour itself (neighbours, distance, directions) is tested in Dia's `hex-rectangular-grid.md`, not re-tested here. **Pass:** site positions valid at Small; a grid with other dimensions (for example 30×20) also generates.
 
 ### AC8 — Terrain Fields *(added 2026-10-14)*
 Generate on ≥10 seeds, including a `biomeWeights` that gives water zero weight. **Pass:** every `elevation` and `latitude` is in [0, 1]; `latitude` is 0 on the middle row and 1 on the first and last rows; water cells have `elevation == 0`; every `waterSource != None` cell is a water-table biome; and every world has at least one cell with `waterSource != None`, including the zero-water-weight case. Same seed gives identical fields.
@@ -297,7 +299,7 @@ Generate on ≥10 seeds, including a `biomeWeights` that gives water zero weight
 
 ## Status
 
-`Approved` — 2026-10-11. Amended 2026-10-14 (A4 Weather): hex grid, `HexTopology`, terrain fields phase, AC7/AC8.
+`Draft` — re-spec pending (2026-10-15, SD-S1-003). Was `Approved` 2026-10-11; amended 2026-10-14 (A4 Weather): hex grid, `HexTopology`, terrain fields phase, AC7/AC8.
 
 ---
 

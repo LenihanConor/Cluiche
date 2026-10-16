@@ -8,6 +8,8 @@
 
 F-1 Debug Host Integration exposes WLD's generation controls and live telemetry through F-1's in-game debug host UI, enabling CoW's testbed iteration workflow: designers adjust seed/parameters, click Regenerate, see results within seconds, export/import authored worlds, and monitor generation progress live. This feature wires `WorldGenerationModule` APIs to F-1's debug UI (seed input, biome weight sliders, placement param sliders, Regenerate/Export/Import/Cancel buttons, progress bar, retry telemetry display).
 
+*Amended 2026-10-15:* F-1's debug host for data panels is the DiaDebugPanel (`IDebugDomain`), so this panel is the card of Feature 7's `WorldGenDebugDomain`, built from its `GetJSONState` / `OnCommand`. Besides the controls it now explains the data: a **Cell Inspector** (every field of the selected cell) and a **Validation** section (each guarantee's result and evidence summary, plus the per-attempt retry history). Export/Import is this testbed's save/load of a world.
+
 GDD decision 3 chose in-game parameter tuning over a standalone editor — this feature implements that decision.
 
 ## Problem
@@ -32,6 +34,18 @@ With debug host integration:
 4. **Retry telemetry** — Display final retry count on success, or failure diagnostics (timeout/unsatisfiable/error/cancel) on failure
 5. **File path inputs** — Export/Import file path text inputs with default values (`Cluiche/out/CoW/worlds/<seed>.wld.json`)
 6. **Non-blocking UI** — Generation runs on background thread (SimPU); UI remains responsive during generation (Cancel button clickable, progress updates live)
+7. **Cell Inspector** *(added 2026-10-15)* — For the cell selected in Feature 7 (click) or typed here (x, y), shows:
+   - coordinate and cell index;
+   - `biome`, `terrain`, `region`, `elevation`, `latitude`, `waterSource`;
+   - any site on the cell (type and id);
+   - its six neighbours by direction `0..5`, as coordinates or "edge";
+   - Design Reference: species affinity for its biome, only if A1 data is externalized (was a Feature 7 tooltip).
+8. **Validation section** *(added 2026-10-15)* — From `GetLastReport()`:
+   - outcome, attempt count and outer seed;
+   - one row per guarantee: pass/fail, diagnostics, and an evidence count ("10 proof paths, 0 violations"), with each violating cell selectable;
+   - one row per attempt: index, sub-seed, failed guarantee ids, elapsed ms.
+9. **Validate button** *(added 2026-10-15)* — Runs Feature 2 on the current world (e.g. after a hand-edited import) and replaces the Validation section and Feature 7's evidence with the result. Does not change the world
+10. **Map size** *(added 2026-10-15)* — Shows the map size, read-only: Small 66 × 42 is the only S-1 target (parent spec, Map Sizes)
 
 ## Non-Goals
 
@@ -39,13 +53,13 @@ With debug host integration:
 2. **Real-time parameter preview** — Sliders update parameters but don't auto-regenerate (designer must click Regenerate; auto-regen would be too slow)
 3. **Parameter validation** — UI accepts any integer/float input; Feature 1-2 handle validation (e.g., negative seed, impossible placement params)
 4. **Undo/redo** — Each Regenerate produces new world, discarding previous; no history stack (future enhancement if needed)
-5. **Save/Load UI** — This feature handles world export/import only; E1 (save/load) handles live session persistence (separate UI)
+5. **Session Save/Load UI** — World save/load *is* Export/Import here; E1 (save/load) handles live session persistence (separate UI)
 
 ## Architecture
 
 ### UI Layout
 
-**Panel name:** "World Generation" (dockable panel in F-1 debug host, same pattern as event log / inspector panels)
+**Panel name:** "World Generation": the DiaDebugPanel card of `WorldGenDebugDomain` (amended 2026-10-15). Buttons send domain commands (`regenerate`, `export`, `import`, `cancel`, `validate`, `selectCell`, `setColourMode`, `toggle`). The domain turns each into the request events below; the panel never calls the module directly.
 
 **Sections:**
 
@@ -69,7 +83,15 @@ With debug host integration:
    - Export path: text input (default: `Cluiche/out/CoW/worlds/<seed>.wld.json`)
    - Import path: text input (default: empty, or last exported path)
 
-**Mockup (ASCII):**
+5. **View** *(added 2026-10-15)*
+   - Colour by: Biome / Terrain / Region / Elevation / Latitude / Water Source, plus the legend for that mode
+   - Drawer toggles (Feature 7): Tiles, Grid Lines, Region Edges, Sites, Dynasty Starts, Guarantee Evidence, Selection
+
+6. **Cell Inspector** *(added 2026-10-15)* — selected cell's fields, site, neighbours (Goal 7)
+
+7. **Validation** *(added 2026-10-15)* — Validate button; per-guarantee rows; per-attempt rows (Goal 8)
+
+**Mockup (ASCII, sections 1–4; sections 5–7 below):**
 
 ```
 ┌─ World Generation ──────────────────────────────────┐
@@ -94,6 +116,33 @@ With debug host integration:
 │ Import Path: [                                     ] │
 └──────────────────────────────────────────────────────┘
 ```
+
+```
+┌─ View ───────────────────────────────────────────────┐
+│ Colour by: (•)Biome ( )Terrain ( )Region             │
+│            ( )Elevation ( )Latitude ( )Water         │
+│ Legend: ■ Forest ■ Mountain ■ Desert ■ ...           │
+│ [x]Tiles [ ]Grid [ ]Regions [x]Sites [ ]Dynasty      │
+│ [ ]Evidence [x]Selection                             │
+├─ Cell Inspector ─────────────────────────────────────┤
+│ Cell (23, 17)  index 1145        [x: 23] [y: 17]     │
+│ Biome Forest · Terrain Plain · Region Verdant Lowl.  │
+│ Elevation 0.42 · Latitude 0.61 · Water None          │
+│ Site: Hearth #3                                      │
+│ Neighbours 0:(24,17) 1:(23,16) 2:(22,17)             │
+│            3:(22,18) 4:(23,18) 5:(24,18)             │
+├─ Validation ─────────────────── [Validate] ──────────┤
+│ Success after 3 attempts · seed 12345678             │
+│ ✓ HearthNexus   10 proof paths, 0 violations         │
+│ ✓ DynastySpace  min 9 ≥ 8, 0 violations              │
+│ ✓ WorldThrone   6/6 types, 6 proof paths             │
+│ Attempts: #0 sub 12345678 ✗ HearthNexus   41 ms      │
+│           #1 sub 12345679 ✗ WorldThrone   39 ms      │
+│           #2 sub 12345680 ✓               44 ms      │
+└──────────────────────────────────────────────────────┘
+```
+
+Column 23 is odd, so it sits half a cell down (odd-q). The inspector reads neighbours from `HexTopology::NeighbourAt`, never from its own maths.
 
 ### Event Wiring
 
@@ -120,11 +169,11 @@ void OnRegenerateClicked() {
 ```cpp
 void OnWorldGenerationRetry(const WorldGenerationRetry& event) {
     // Update progress bar: attempt N of M
-    float progress = static_cast<float>(event.attemptNumber) / mMaxRetryAttempts;
+    float progress = static_cast<float>(event.attemptNumber) / event.maxAttempts;
     SetProgressBar(progress);
     
     // Update status text
-    SetStatusText("Validating attempt " + std::to_string(event.attemptNumber) + "/" + std::to_string(mMaxRetryAttempts) + "...");
+    SetStatusText("Validating attempt " + std::to_string(event.attemptNumber) + "/" + std::to_string(event.maxAttempts) + "...");
 }
 ```
 
@@ -132,7 +181,8 @@ void OnWorldGenerationRetry(const WorldGenerationRetry& event) {
 
 ```cpp
 void OnWorldGenerationComplete(const WorldGenerationComplete& event) {
-    mCurrentWorld = event.world;
+    // The event is a notification (amended 2026-10-14); the world and report are read
+    // from the module on SimPU when the domain builds its JSON state.
     SetStatusText("Complete (" + std::to_string(event.retryAttempts + 1) + " attempts)");
     SetProgressBar(1.0f);
     
@@ -147,7 +197,7 @@ void OnWorldGenerationComplete(const WorldGenerationComplete& event) {
 void OnWorldGenerationFailed(const WorldGenerationFailed& event) {
     SetStatusText("Failed: " + event.message);
     SetProgressBar(0.0f);
-    mCurrentWorld = nullptr;  // Clear partial state
+    // The previous world stays current (Feature 5 Goal 5a); the Validation section shows the failed attempts.
 }
 ```
 
@@ -155,7 +205,7 @@ void OnWorldGenerationFailed(const WorldGenerationFailed& event) {
 
 ```cpp
 void OnExportClicked() {
-    if (!mCurrentWorld) {
+    if (module.GetCurrentWorld() == nullptr) {
         ShowErrorMessage("No world to export (generate a world first)");
         return;
     }
@@ -236,10 +286,12 @@ struct WorldGenerationCancelled {
 **Subscribed by F-1 Debug Host UI (from Features 3/4/5):**
 
 ```cpp
+// Notifications only (amended 2026-10-15): the world is read via GetCurrentWorld(),
+// the attempt detail via GetLastReport().
 struct WorldGenerationComplete {
-    WorldStructure world;
     uint64_t seed;
     uint32_t retryAttempts;
+    uint32_t worldRevision;
 };
 
 struct WorldGenerationFailed {
@@ -247,18 +299,19 @@ struct WorldGenerationFailed {
     std::string message;
 };
 
-struct WorldGenerationRetry {  // Optional, from Feature 3 Open Q #2
+struct WorldGenerationRetry {  // From Feature 3 (Open Q #2 resolved 2026-10-15)
     uint32_t attemptNumber;
-    ValidationResult lastValidation;
+    uint32_t maxAttempts;
+    uint32_t failedGuaranteeCount;
 };
 
 struct WorldExportComplete {  // Optional, from Feature 4
     std::string filePath;
 };
 
-struct WorldImportComplete {  // Optional, from Feature 4
-    WorldStructure world;
+struct WorldImportComplete {  // Optional, from Feature 4; world via GetCurrentWorld()
     std::string filePath;
+    uint32_t worldRevision;
 };
 ```
 
@@ -269,16 +322,20 @@ struct WorldImportComplete {  // Optional, from Feature 4
 | System/Feature | Why needed | Status |
 |----------------|-----------|---------|
 | **F-1 Harness** | Debug host framework (panel registration, UI primitives like sliders/buttons/text inputs) | Approved (backlog) |
-| **Feature 1 (Placeholder Generation Algorithm)** | Provides `GenParams` struct (biome weights, placement params) | Draft (being specced) |
-| **Feature 3 (Retry Mechanism)** | Provides `GenerateWorld()` API and `WorldGenerationComplete` event | Draft (being specced) |
-| **Feature 4 (JSON Export/Import)** | Provides `ExportWorld()` / `ImportWorld()` APIs | Draft (being specced) |
-| **Feature 5 (Timeout and Failure Handling)** | Provides `CancelGeneration()` API and `WorldGenerationFailed` event | Draft (being specced) |
+| **Feature 1 (Placeholder Generation Algorithm)** | Provides `GenParams` struct (biome weights, placement params) | Approved |
+| **Feature 3 (Retry Mechanism)** | Provides `GenerateWorld()` API and `WorldGenerationComplete` event | Approved |
+| **Feature 4 (JSON Export/Import)** | Provides `ExportWorld()` / `ImportWorld()` APIs | Approved |
+| **Feature 5 (Timeout and Failure Handling)** | Provides `CancelGeneration()` API and `WorldGenerationFailed` event | Approved |
 | **Phase 2 data design** | Biome enum names (for slider labels) | GDD in-progress (names TBD — placeholder uses arbitrary labels) |
+| **Feature 2 (Reachability Validator)** | Evidence counts and violating cells for the Validation section; `Validate()` for the Validate button | Approved (amended 2026-10-15) |
+| **Feature 3 (Retry Mechanism)** | `GetLastReport()` for the Validation section | Approved (amended 2026-10-15) |
+| **Feature 7 (Layered Debug Rendering)** | `WorldGenDebugDomain` hosts this panel; selection and colour mode state | Approved (amended 2026-10-15) |
+| **DiaDebugDomain** | DiaDebugPanel card from `GetJSONState` / `OnCommand` | Done |
 
 ### Dia Engine Dependencies
 
 - **DiaMessageBus** (event pub/sub for cross-thread communication)
-- **DiaUI** (sliders, buttons, text inputs, progress bar, panel framework — assumes F-1 has these primitives)
+- **DiaVisualDebugger / DiaDebugPanel** (panel card, commands; replaces the assumed DiaUI panel framework, amended 2026-10-15)
 - **DiaCore** (file path utilities, logging)
 
 ## Acceptance Criteria
@@ -315,6 +372,31 @@ Click "Random" button next to seed input. **Pass:** Seed input updates to random
 ### AC10 — UI Responsiveness During Generation
 Click Regenerate (long-running generation, e.g., timeout test seed). While generation in progress, drag F-1 debug host window, click other panels. **Pass:** UI remains responsive (no freeze), proving generation runs on background thread. Cancel button clickable.
 
+### AC11 — Cell Inspector *(added 2026-10-15)*
+Click a cell in Feature 7, then type a different coordinate. **Pass:**
+- Each time, the inspector shows that cell's index and all six fields, matching `GetCurrentWorld()->cells[y * width + x]`.
+- A cell holding a site shows the site.
+- The neighbours match `HexTopology::NeighbourAt` for all six directions, with "edge" for `kNoCell`.
+
+Select a Hearth's cell, export, and read the JSON. **Pass:** the inspector's values equal the exported values for that cell.
+
+### AC12 — Validation Section *(added 2026-10-15)*
+Generate with a seed that needs ≥2 attempts. **Pass:**
+- One row per attempt, with sub-seed and failed guarantee ids matching `GetLastReport()`.
+- One row per guarantee, with evidence counts equal to the sizes of its `proofPaths` and `violatingCells` / `violatingPairs`.
+
+Force an unsatisfiable seed. **Pass:** the outcome reads "Failed: unsatisfiable", all attempts are listed, and the previous world is still shown and inspectable.
+
+### AC13 — Validate After Import *(added 2026-10-15)*
+Export a passing world, hand-edit one Hearth onto an isolated cell, import, and click Validate. **Pass:**
+- HearthNexus shows ✗ with one violation.
+- Clicking the violation selects that cell, and the inspector shows it.
+- Feature 7's evidence layer marks it.
+- The world itself is unchanged (`GetWorldRevision()` same as after the import).
+
+### AC14 — Small Map *(added 2026-10-15)*
+**Pass:** the panel shows "Small 66 × 42", and a generated world has `dimensions == {66, 42}`.
+
 ## Inherited Binding Decisions
 
 ### From Platform (Cluiche)
@@ -328,7 +410,7 @@ Click Regenerate (long-running generation, e.g., timeout test seed). While gener
 
 | ID | Decision | How it applies |
 |----|----------|----------------|
-| AD-002 | Classify cross-cutting needs | F-1 Debug Host Integration is **Feature-local** (lives in S-1 stage's UI code); if other CoW testbeds need similar debug panels, extract common patterns to **CoW-Shared** UI utilities. Not Dia (too CoW-specific: uses WLD events and CoW world structure), not Baseline |
+| AD-002 | Classify cross-cutting needs | The panel is part of `WorldGenDebugDomain`, which is **CoW-Shared** with `WorldGenerationModule` (amended 2026-10-15; S-2.5/S-3 load S-1 worlds and reuse the inspector). Not Dia (too CoW-specific: uses WLD events and CoW world structure), not Baseline |
 | AD-003 | GDD owns design intent | GDD defines "in-game parameter tuning, not standalone editor" (decision 3), <5-second regeneration metric (§7), and fast iteration workflow (§4). This spec defines UI layout (panel sections, button actions, progress display) |
 | AD-005 | One stage per testbed; modes chosen in-panel | S-1 is one stage; if S-1 later gains modes (e.g., "Single Cell" vs. "Living Ecology" per GDD testbed roster), they're chosen via a mode dropdown in this debug panel, not as separate stages |
 
@@ -349,7 +431,7 @@ Click Regenerate (long-running generation, e.g., timeout test seed). While gener
 
 ## Status
 
-`Approved` — 2026-10-11
+`Approved` — 2026-10-11. Amended 2026-10-15: panel is the `WorldGenDebugDomain` card in DiaDebugPanel; adds View (colour mode, toggles), Cell Inspector, Validation section, Validate button and read-only Small map size (Goals 7–10, AC11–AC14); event structs match the notification shapes; failure keeps the previous world.
 
 ---
 

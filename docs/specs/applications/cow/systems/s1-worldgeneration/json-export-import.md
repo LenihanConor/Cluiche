@@ -29,7 +29,7 @@ With export/import:
 3. **Round-trip guarantee** — `Import(Export(world)) == world` byte-for-byte identical (not "similar", not "regenerated from same seed")
 4. **Validation on import** — Import fails gracefully if JSON is malformed, missing required fields, or violates structural invariants (e.g., cell count != dimensions.width * dimensions.height)
 5. **Versioned schema** — JSON includes schema version tag so future format changes can migrate old files (same pattern as E1 save/load versioning)
-6. **Fast export/import** — Completes within seconds for typical worlds (Large 104×64 = 6,656 cells); does not block iteration workflow
+6. **Fast export/import** — Completes within seconds for the S-1 world (Small 66×42 = 2,772 cells); does not block iteration workflow
 
 ## Non-Goals
 
@@ -288,7 +288,7 @@ struct WorldImportComplete {
 
 | System/Feature | Why needed | Status |
 |----------------|-----------|---------|
-| **Feature 1 (Placeholder Generation Algorithm)** | Produces `WorldStructure` to export | Draft (being specced) |
+| **Feature 1 (Placeholder Generation Algorithm)** | Produces `WorldStructure` to export | Approved |
 | **Phase 2 data design** | Biome/TerrainType/Region/ApotheosisType enum names (for string serialization) | GDD in-progress (names TBD — placeholder uses arbitrary names until Phase 2 finalizes) |
 
 ### Dia Engine Dependencies
@@ -315,7 +315,7 @@ Export world, hand-edit JSON to move one Hearth Site position (change x/y coordi
 Export world (schema v1). Hand-edit JSON to change `schema_version: 2`. Attempt import. **Pass:** Import returns Failure ("Unsupported schema version: 2"). Proves version gating works for future migration.
 
 ### AC6 — Export/Import Speed
-Export and import worlds at the Standard (80×52 = 4,160 cells) and Large (104×64 = 6,656 cells) sizes, ~20 sites total. Measure time for each operation. **Target: <3 seconds per operation** (does not block iteration workflow; designers can export/hand-edit/re-import within ~10 seconds total).
+Export and import a Small world (66×42 = 2,772 cells, amended 2026-10-15), ~20 sites total. Measure time for each operation. **Target: <3 seconds per operation** (does not block iteration workflow; designers can export/hand-edit/re-import within ~10 seconds total).
 
 ### AC8 — Terrain Fields and Topology *(added 2026-10-14)*
 Round-trip a world containing non-trivial `elevation`/`latitude` values (including 0, 1, and values like 0.1 that are not exact in binary) and all four `water_source` values. **Pass:** every float and enum compares equal after import. Edit `"topology"` to `"square"`, set one `elevation` to 1.5, and set one `water_source` to `"Swamp"`, in turn. **Pass:** each import fails with a message naming the field. Edit a site position outside the grid. **Pass:** import fails.

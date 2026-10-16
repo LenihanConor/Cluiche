@@ -91,6 +91,19 @@ uint64_t DeriveSubSeed(uint64_t outerSeed, uint32_t attemptCounter) {
 
 **On failure:** Log final validation diagnostics (which guarantees failed, why) and total attempt count (helps diagnose unsatisfiable seeds vs. too-low retry bound).
 
+### Generation Report *(added 2026-10-15)*
+
+Logs are post-hoc and need reading; the debug view needs the same facts as data. Every finished generation (success, unsatisfiable, timeout, cancel or error) leaves one `GenerationReport` on the module:
+
+- one `AttemptRecord` per attempt: attempt index, sub-seed, passed or not, the ids of the guarantees that failed, their diagnostics, and elapsed time;
+- the outcome, matching Feature 5's reasons;
+- `finalValidation`: the full `ValidationResult` (with Feature 2's evidence) of the accepted world, or of the last attempt if none was accepted;
+- `worldRevision`: the world revision this generation produced, or 0 if it produced none.
+
+The report replaces the previous one; there is no history across generations. A failed generation keeps the previous world on screen (Feature 5 discards the failed one), so Feature 7 draws `finalValidation` evidence only when `report.worldRevision == GetWorldRevision()`. Otherwise the evidence belongs to a discarded world, and drawing it over the current one would mislead. Feature 6 still lists the failed attempts as text.
+
+Elapsed times are wall-clock and are excluded from determinism checks; everything else in the report is deterministic.
+
 ## Public Interfaces
 
 ### APIs
@@ -105,33 +118,58 @@ public:
     // Internally retries up to params.maxRetryAttempts if validation fails
     // Returns: success (with WorldStructure), or failure (retry exhausted)
     Dia::Core::Result<WorldStructure> GenerateWorld(uint64_t seed, const GenParams& params);
+
+    // Report of the last finished generation (amended 2026-10-15). nullptr before the first.
+    // SimPU only; valid until the next generation finishes. Re-read when GetReportRevision() changes.
+    const GenerationReport* GetLastReport() const;
+    uint32_t GetReportRevision() const;
     
     // ... other Feature 4/5/6 APIs (Export, Import, GetProgress, Cancel)
+};
+
+struct AttemptRecord {
+    uint32_t attempt;                          // 0-indexed
+    uint64_t subSeed;
+    bool passed;
+    DynamicArrayC<StringCRC> failedGuarantees; // Injection order
+    DynamicArrayC<std::string> diagnostics;
+    float elapsedMs;                           // Wall-clock; excluded from determinism checks
+};
+
+struct GenerationReport {
+    uint64_t outerSeed;
+    GenerationOutcome outcome;                 // Success / Unsatisfiable / Timeout / Cancelled / Error
+    DynamicArrayC<AttemptRecord> attempts;
+    ValidationResult finalValidation;          // Accepted world's, else the last attempt's
+    uint32_t worldRevision;                    // Revision produced, 0 if none
 };
 
 } // namespace CoW::WorldGeneration
 ```
 
-**Retry is internal:** `GenerateWorld()` returns final result (success or failure), not per-attempt results. Feature 6 (Debug Host Integration) displays retry telemetry via `GetProgress()` or event logs, not via retry-specific API.
+**Retry is internal:** `GenerateWorld()` returns final result (success or failure), not per-attempt results. Per-attempt detail is read from `GetLastReport()` (amended 2026-10-15).
 
 ### Events
 
 ```cpp
-// Published on successful generation (GDD Phase 7)
+// Published on successful generation (GDD Phase 7). A notification: the world is read via
+// GetCurrentWorld() (amended 2026-10-14, per the parent spec).
 struct WorldGenerationComplete {
-    WorldStructure world;
     uint64_t seed;
     uint32_t retryAttempts;  // 0 if first attempt succeeded, >0 if retries were needed
+    uint32_t worldRevision;
 };
 
-// Published per retry attempt (optional, for F-1 debug host live telemetry)
+// Published after each failed attempt, for live progress. Small POD (amended 2026-10-15):
+// the full ValidationResult no longer rides on the bus; read GetLastReport() for detail.
 struct WorldGenerationRetry {
-    uint32_t attemptNumber;  // 1-indexed (attempt 1, 2, 3, ...)
-    ValidationResult lastValidation;  // Why previous attempt failed
+    uint32_t attemptNumber;          // 1-indexed (attempt 1, 2, 3, ...)
+    uint32_t maxAttempts;
+    uint32_t failedGuaranteeCount;   // In the attempt that just failed
 };
 ```
 
-**Rationale for `WorldGenerationRetry` event:** Enables F-1 debug host to display live retry progress ("Attempt 2/10: Hearth↔Nexus reachability failed"). Optional — can be deferred to Feature 6 if not needed for S-1 MVP.
+**Rationale for `WorldGenerationRetry` event:** Enables F-1 debug host to display live retry progress ("Attempt 2/10: 1 guarantee failed"). Bus messages stay small POD, so the reasons come from the report, which is complete once generation finishes.
 
 ## Dependencies
 
@@ -139,8 +177,8 @@ struct WorldGenerationRetry {
 
 | System/Feature | Why needed | Status |
 |----------------|-----------|---------|
-| **Feature 1 (Placeholder Generation Algorithm)** | Generates world per retry attempt | Draft (being specced) |
-| **Feature 2 (Reachability Validator)** | Validates world per retry attempt | Draft (being specced) |
+| **Feature 1 (Placeholder Generation Algorithm)** | Generates world per retry attempt | Approved |
+| **Feature 2 (Reachability Validator)** | Validates world per retry attempt | Approved |
 | **F-2 Core Runtime** | RandomStreamManager for deterministic sub-seed RNG | Approved (backlog) |
 
 ### Dia Engine Dependencies
@@ -157,7 +195,7 @@ Generate world with outer seed that triggers retries (hand-crafted or found empi
 Generate world with `maxRetryAttempts = 5` (arbitrary low bound) and outer seed engineered to never satisfy guarantees (e.g., impossible parameters like 1-cell grid with 10 Hearth Sites). **Pass:** Generation returns Failure after exactly 5 attempts, does not retry forever.
 
 ### AC3 — Success Rate (≥95%)
-Generate worlds across 100 random outer seeds with reasonable `GenParams` (Standard 80×52 grid, typical site counts, `maxRetryAttempts = 10` or tuned default). Record how many succeed vs. fallthrough to Failure. **Pass:** ≥95 succeed (GDD Test 1a target). If <95%, either increase `maxRetryAttempts` default or improve Feature 1 algorithm.
+Generate worlds across 100 random outer seeds with reasonable `GenParams` (Small 66×42 grid, typical site counts, `maxRetryAttempts = 10` or tuned default). Record how many succeed vs. fallthrough to Failure. **Pass:** ≥95 succeed (GDD Test 1a target). If <95%, either increase `maxRetryAttempts` default or improve Feature 1 algorithm.
 
 ### AC4 — Retry Telemetry
 Generate world that triggers ≥1 retry. Capture logs. **Pass:** Log messages include attempt count and validation diagnostics per attempt (e.g., "Attempt 1 failed: Hearth↔Nexus reachability", "Attempt 2 succeeded"). Proves telemetry is present for tuning/debugging.
@@ -167,6 +205,9 @@ Generate 10 sub-seeds from same outer seed (attempts 0-9). **Pass:** All 10 sub-
 
 ### AC6 — Retry Doesn't Re-Validate on Success
 Mock Feature 2 (Reachability Validator) to count validation calls. Generate world that succeeds on first attempt. **Pass:** Validator called exactly once (no redundant validation after success). Proves retry loop exits immediately on success.
+
+### AC7 — Generation Report *(added 2026-10-15)*
+Generate with a seed that needs ≥2 attempts. **Pass:** `GetLastReport()` has one `AttemptRecord` per attempt, sub-seeds equal `DeriveSubSeed(outer, i)`, each failed record names its failed guarantees, the last record passed, `outcome == Success`, `worldRevision == GetWorldRevision()`, and `finalValidation` carries the accepted world's evidence. Regenerate with the same seed: identical report apart from `elapsedMs`. Then force an unsatisfiable seed (AC2). **Pass:** `outcome == Unsatisfiable`, `attempts.size() == maxRetryAttempts`, `worldRevision == 0`, `GetWorldRevision()` unchanged, and `GetReportRevision()` incremented.
 
 ## Inherited Binding Decisions
 
@@ -195,12 +236,12 @@ Mock Feature 2 (Reachability Validator) to count validation calls. Generate worl
 | # | Question | Impact | Resolution |
 |---|----------|--------|------------|
 | 1 | What is the exact default value for `maxRetryAttempts`? | Affects AC3 success rate and Feature 5 timeout interaction; does not block implementation (use arbitrary default, tune during S-1 challenge pass) | GDD open question 1 defers this; start with placeholder default (e.g., 10 attempts), tune empirically via AC3 to hit ≥95% success rate |
-| 2 | Should retry publish per-attempt events (`WorldGenerationRetry`) or only log? | Affects Feature 6 (Debug Host Integration) — events enable live UI updates ("Attempt 2/10 in progress"); logs are post-hoc only | Decide during Feature 6 spec (can add events later without breaking Feature 3 implementation) |
+| 2 | Should retry publish per-attempt events (`WorldGenerationRetry`) or only log? | Affects Feature 6 (Debug Host Integration) — events enable live UI updates ("Attempt 2/10 in progress"); logs are post-hoc only | **Resolved 2026-10-15:** both. A small `WorldGenerationRetry` event per failed attempt for live progress, and the full detail in `GenerationReport` |
 | 3 | Should sub-seed derivation use additive (`outer + attempt`) or hash-based (`CRC64(outer, attempt)`)? | Affects determinism guarantees if additive has edge-case collisions (e.g., integer overflow) | Start with additive (simpler, faster); switch to hash-based if AC5 shows collision issues or if better bit mixing needed for RNG quality |
 
 ## Status
 
-`Approved` — 2026-10-11
+`Approved` — 2026-10-11. Amended 2026-10-15: `GenerationReport` + `GetLastReport()` (AC7); `WorldGenerationComplete` matches the parent's notification shape; `WorldGenerationRetry` reduced to small POD (Open Q #2 resolved); AC3 at Small.
 
 ---
 
