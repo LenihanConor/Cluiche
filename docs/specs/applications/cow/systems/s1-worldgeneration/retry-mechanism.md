@@ -43,10 +43,16 @@ With retry:
 
 ```cpp
 Result<WorldStructure> GenerateWorld(uint64_t outerSeed, const GenParams& params) {
+    // Terrain is fixed by seed + WorldShapeParams, never by the attempt (SD-S1-008).
+    WorldStructure terrain = BuildTerrainAndBiomes(outerSeed, params);  // Feature 1 (TerrainGenerator) + Feature 8
     for (uint32_t attempt = 0; attempt < params.maxRetryAttempts; ++attempt) {
         uint64_t subSeed = DeriveSubSeed(outerSeed, attempt);
         
-        WorldStructure world = PlaceholderGenerator::Generate(subSeed, params);
+        // Terrain (Feature 1) and biomes (Feature 8) were built once, before the loop, from
+        // outerSeed + params.shape (SD-S1-008); 'terrain' is that fixed world. Each attempt
+        // copies it and re-rolls only Regions and Sites (Feature 9) with the sub-seed.
+        WorldStructure world = terrain;
+        RegionsAndSites::Place(world, subSeed, params);   // Feature 9 (to spec)
         ValidationResult validation = ReachabilityValidator::Validate(world, params.validation);
         
         if (validation.passed) {
@@ -95,7 +101,7 @@ Until Feature 9 is specced, the diagrams above that say "generate world per atte
 
 ### Integration with Features 1 and 2
 
-- **Feature 1 (Placeholder Generation Algorithm):** Retry calls `PlaceholderGenerator::Generate(subSeed, params)` per attempt (Feature 1 is stateless, doesn't know about retry)
+- **Feature 1 (Terrain Generator, @terrain-generator.md):** runs once per Regenerate from the outer seed and `WorldShapeParams`, never per attempt (SD-S1-008). Retry re-runs only Feature 9 (Regions and Sites) with `DeriveSubSeed(outer, attempt)`
 - **Feature 2 (Reachability Validator):** Retry calls `ReachabilityValidator::Validate(world, params.validation)` per attempt (Feature 2 is stateless, doesn't know about retry)
 - **This feature (Retry Mechanism):** Orchestrates the loop (attempt counter, sub-seed derivation, success/failure decision)
 
@@ -191,7 +197,7 @@ struct WorldGenerationRetry {
 
 | System/Feature | Why needed | Status |
 |----------------|-----------|---------|
-| **Feature 1 (Placeholder Generation Algorithm)** | Generates world per retry attempt | Approved |
+| **Feature 1 (Terrain Generator, @terrain-generator.md)** | Generates world per retry attempt | Draft (re-spec 2026-10-15) |
 | **Feature 2 (Reachability Validator)** | Validates world per retry attempt | Approved |
 | **F-2 Core Runtime** | RandomStreamManager for deterministic sub-seed RNG | Approved (backlog) |
 

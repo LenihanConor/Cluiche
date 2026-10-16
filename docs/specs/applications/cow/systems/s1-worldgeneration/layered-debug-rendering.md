@@ -160,7 +160,7 @@ public:
 
 | System/Feature | Why needed | Status |
 |----------------|-----------|---------|
-| **Feature 1 (Placeholder Generation Algorithm)** | Produces `WorldStructure` to render | Approved |
+| **Feature 1 (Terrain Generator, @terrain-generator.md)** | Produces `WorldStructure` to render | Draft (re-spec 2026-10-15) |
 | **Feature 2 (Reachability Validator)** | Evidence (`proofPaths`, `violatingCells`, `violatingPairs`) for `GuaranteeEvidence` and `DynastyStarts` | Approved (amended 2026-10-15) |
 | **Feature 3 (Retry Mechanism)** | `GenerationReport` with `finalValidation` and `worldRevision` (Evidence Freshness) | Approved (amended 2026-10-15) |
 | **Feature 4 (JSON Export/Import)** | Imported worlds also rendered | Approved |

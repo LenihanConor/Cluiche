@@ -62,6 +62,9 @@ Finishing for any failure reason publishes `WorldGenerationFailed`, leaves the l
 ```cpp
 Result<WorldStructure> GenerateWorld(uint64_t outerSeed, const GenParams& params) {
     auto startTime = std::chrono::steady_clock::now();
+
+    // Terrain (Feature 1) + biomes (Feature 8): built once from outerSeed + params.shape (SD-S1-008).
+    WorldStructure terrain = BuildTerrainAndBiomes(outerSeed, params);
     
     for (uint32_t attempt = 0; attempt < params.maxRetryAttempts; ++attempt) {
         // Check timeout before each retry attempt
@@ -72,9 +75,10 @@ Result<WorldStructure> GenerateWorld(uint64_t outerSeed, const GenParams& params
             return Result<WorldStructure>::Failure("TIMEOUT");
         }
         
-        // Generate and validate (Feature 1 + Feature 2)
+        // Re-roll Regions and Sites only (Feature 9), then validate (Feature 2)
         uint64_t subSeed = DeriveSubSeed(outerSeed, attempt);
-        WorldStructure world = PlaceholderGenerator::Generate(subSeed, params);
+        WorldStructure world = terrain;
+        RegionsAndSites::Place(world, subSeed, params);
         ValidationResult validation = ReachabilityValidator::Validate(world, params.validation);
         
         if (validation.passed) {
@@ -107,7 +111,7 @@ Result<WorldStructure> GenerateWorld(uint64_t outerSeed, const GenParams& params
 ```
 
 **Error sources:**
-- Feature 1 (Placeholder Generation): out-of-bounds array access, out-of-memory, bad RNG state
+- Feature 1 (Terrain Generator) or Feature 9 (Regions and Sites): out-of-bounds array access, out-of-memory, bad RNG state
 - Feature 2 (Reachability Validator): failed to load placeholder terrain table, pathfinding stack overflow
 - Feature 4 (JSON Export/Import): file I/O error (disk full, permission denied)
 
@@ -195,7 +199,7 @@ struct WorldGenerationCancelled {
 
 | System/Feature | Why needed | Status |
 |----------------|-----------|---------|
-| **Feature 1 (Placeholder Generation Algorithm)** | Generates world per retry attempt; may throw exceptions | Approved |
+| **Feature 1 (Terrain Generator, @terrain-generator.md)** | Generates world per retry attempt; may throw exceptions | Draft (re-spec 2026-10-15) |
 | **Feature 2 (Reachability Validator)** | Validates world per retry attempt; may throw exceptions | Approved |
 | **Feature 3 (Retry Mechanism)** | Retry loop is where timeout/failure checks are inserted | Approved |
 | **Phase 6 Cancel path** | Reuses existing discard-and-return mechanism | Assumed implemented (GDD decision 5 references it) |

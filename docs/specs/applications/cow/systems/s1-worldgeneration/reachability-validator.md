@@ -10,7 +10,7 @@ The Reachability Validator checks a generated `WorldStructure` against a set of 
 
 "Reachable" is never naive graph connectivity. It is answered under injected **navigation profiles** (`INavigationProfile`): a profile supplies a Dia `IPathCostProvider` bound to the world, and two cells are reachable if a path exists under **any** injected profile. S-1 ships a placeholder terrain-table profile; B2 (Dragon) later injects one profile per body plan. The validator never knows what a body plan is.
 
-This feature prevents Feature 1 (Placeholder Generation Algorithm) from returning playable-looking but mechanically broken worlds. It enables Feature 3 (Retry Mechanism) to detect guarantee violations and trigger sub-seed retries.
+This feature prevents Feature 1 (Terrain Generator) and Feature 9 (Regions and Sites) from returning playable-looking but mechanically broken worlds. It enables Feature 3 (Retry Mechanism) to detect guarantee violations and trigger sub-seed retries.
 
 ## Problem
 
@@ -101,7 +101,7 @@ for (size_t i = 0; i < starts.size(); ++i)
         if (GridDistance(starts[i].position, starts[j].position) < minimumSpacing) { /* violation */ }
 ```
 
-**`WorldThroneGuarantee`** — Existence: `world.thrones.size() == 6` and all six Apotheosis types present once. Reachability: each throne must reach any cell with `cell.region == Region::AncientInteriors` via `IsReachable`. If Ancient Interiors is several disjoint regions, any cell from any of them suffices.
+**`WorldThroneGuarantee`** — Existence: `world.thrones.size() == 6` and all six Apotheosis types present once. Reachability: each throne must reach any cell with `cell.depthZone == DepthZone::AncientInteriors` (the terrain's depth zone, Feature 1; amended 2026-10-15, was `Region::AncientInteriors`) via `FindProofPath`. If the Ancient Interiors are several disjoint patches, any cell of any of them suffices. A world with no Ancient Interiors cell fails this guarantee with a terrain-cause diagnostic ("no Ancient Interiors cells"), which Feature 3 reports as terrain-level (SD-S1-008).
 
 **Evidence each built-in records** *(amended 2026-10-15)*:
 
@@ -109,7 +109,7 @@ for (size_t i = 0; i < starts.size(); ++i)
 |-----------|--------------|------------------|------------------|----------------|
 | HearthNexusReachability | One per reachable Hearth: Hearth → the Nexus it reached | Unreachable Hearths | — | — |
 | DynastySpacing | — | — | Every pair below `minimumSpacing` | Hex distance of every pair, plus the minimum |
-| WorldThrone | One per reachable throne: throne → the Ancient Interiors cell it reached | Unreachable thrones | — | Count of thrones per Apotheosis type (shows missing or duplicate types) |
+| WorldThrone | One per reachable throne: throne → the cell with `depthZone == AncientInteriors` that it reached | Unreachable thrones | — | Count of thrones per Apotheosis type (shows missing or duplicate types), plus `ancientInteriorsCells` (count of cells with that depth zone; 0 means the terrain cause) |
 
 ### Placeholder Profile
 
@@ -225,10 +225,10 @@ public:
 
 | System/Feature | Why needed | Status |
 |----------------|-----------|---------|
-| **Feature 1 (Placeholder Generation Algorithm)** | Produces `WorldStructure` to validate | Approved |
+| **Feature 1 (Terrain Generator, @terrain-generator.md)** | Produces `WorldStructure` to validate | Draft (re-spec 2026-10-15) |
 | **DiaPathfinding** | `FindPath<TGraph>`, `IPathCostProvider` (`kImpassableCost`) | Done |
 | **DiaPathfinding: Rectangular Hex Grid** | `HexPathGrid(width, height)`, `HexTopology::Distance`, corrected hex heuristic | Done (2026-10-14) |
-| **Phase 2 data design** | Region enum (Ancient Interiors), ApotheosisType enum (6 types), TerrainType enum (placeholder profile table) | GDD in-progress (types TBD — placeholder uses arbitrary enums until Phase 2 finalizes) |
+| **Phase 2 data design** | ApotheosisType enum (6 types). `DepthZone` and `TerrainType` now come from Feature 1 (terrain-generator.md) | GDD in-progress (types TBD — placeholder uses arbitrary enums until Phase 2 finalizes) |
 
 **Not a dependency:** B2 (Dragon). B2 consumes `INavigationProfile` later. Nothing in S-1 waits on it.
 
@@ -255,11 +255,13 @@ Dynasty starts placed ≥ minimum spacing apart, validated with `minimumDynastyS
 Two dynasty starts < minimum spacing apart, same minimum. **Pass:** `satisfied == false` and `diagnostics` contains both positions and actual distance.
 
 ### AC3 — World-Throne Existence/Reachability Validation
-Exactly 6 world-thrones, all reachable from Ancient Interiors. **Pass:** the world-throne result has `satisfied == true`.
+Exactly 6 world-thrones, all reachable from a cell with `depthZone == AncientInteriors`. **Pass:** the world-throne result has `satisfied == true`.
 
 < 6 world-thrones. **Pass:** `satisfied == false` and `diagnostics` mentions count mismatch.
 
-6 world-thrones but one unreachable from Ancient Interiors (isolated island). **Pass:** `satisfied == false` and `diagnostics` contains throne position.
+6 world-thrones but one unreachable from the Ancient Interiors depth zone (isolated island). **Pass:** `satisfied == false` and `diagnostics` contains throne position.
+
+6 reachable-looking thrones on a world with no `AncientInteriors` cell. **Pass:** `satisfied == false`, the `ancientInteriorsCells` measurement is 0, and the diagnostic names the terrain cause.
 
 ### AC4 — Overall Pass/Fail
 All built-in guarantees pass. **Pass:** `ValidationResult.passed == true` and `guarantees.size() == 3`.

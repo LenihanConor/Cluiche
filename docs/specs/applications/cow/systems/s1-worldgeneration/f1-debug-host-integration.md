@@ -322,7 +322,7 @@ struct WorldImportComplete {  // Optional, from Feature 4; world via GetCurrentW
 | System/Feature | Why needed | Status |
 |----------------|-----------|---------|
 | **F-1 Harness** | Debug host framework (panel registration, UI primitives like sliders/buttons/text inputs) | Approved (backlog) |
-| **Feature 1 (Placeholder Generation Algorithm)** | Provides `GenParams` struct (biome weights, placement params) | Approved |
+| **Feature 1 (Terrain Generator, @terrain-generator.md)** | Provides `GenParams` struct (biome weights, placement params) | Draft (re-spec 2026-10-15) |
 | **Feature 3 (Retry Mechanism)** | Provides `GenerateWorld()` API and `WorldGenerationComplete` event | Approved |
 | **Feature 4 (JSON Export/Import)** | Provides `ExportWorld()` / `ImportWorld()` APIs | Approved |
 | **Feature 5 (Timeout and Failure Handling)** | Provides `CancelGeneration()` API and `WorldGenerationFailed` event | Approved |

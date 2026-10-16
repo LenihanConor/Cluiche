@@ -53,24 +53,34 @@ WorldGenerationPipeline produces:
 ```cpp
 struct WorldStructure {
     GridDimensions dimensions;       // width × height in cells (hex grid, see Hex Grid below)
-    std::vector<Cell> cells;         // biome, terrain, region, elevation, latitude, water source per cell
+    std::vector<Cell> cells;         // terrain (Feature 1), biome (Feature 8), region (Feature 9) per cell
     std::vector<HearthSite> hearths; // 1-3 per region (GDD Phase 2 lore)
-    std::vector<NexusNode> nexuses;  // count TBD by placeholder algorithm
+    std::vector<NexusNode> nexuses;  // count set by Feature 9
     std::vector<WorldThrone> thrones;// exactly 6 (one per Apotheosis type)
     std::vector<DynastyStart> starts;// player + rivals (GDD Phase 2 rival count)
+    WorldProvenance provenance;      // seed, WorldShapeParams, preset, generator + rules versions (SD-S1-009)
+    uint8_t mainLandmass;            // landmass id holding the Ancient Interiors
 };
 
+// Amended 2026-10-15: terrain fields per Feature 1 (terrain-generator.md), which defines the enums.
 struct Cell {
-    Biome biome;           // Phase 2 biome types
-    TerrainType terrain;   // Phase 2 traversal/interaction types
-    Region region;         // Phase 2 Ancient Interiors / Verdant Lowlands / etc.
-    float elevation;       // [0, 1]; read by A4 (orographic lift, upwind elevation)
-    float latitude;        // [0, 1]; 0 = equator, 1 = pole; read by A4 (solar heating)
+    // Terrain (Feature 1)
+    float elevation;         // [0, 1]; ocean 0, land >= kCoastElev, lake = surface; read by A4 (orographic lift)
+    float latitude;          // [0, 1]; 0 = equator, 1 = pole; read by A4 (solar heating)
     WaterSource waterSource; // None / Ocean / Lake / River; read by A4 (evaporation source)
+    TerrainType terrain;     // DeepWater .. Volcano, derived from elevation + slope + water; navigation table key
+    DepthZone depthZone;     // None (ocean) / FirstShores / WildReaches / AncientInteriors
+    uint8_t landmass;        // 0 = ocean; 1.. per connected landmass
+    uint8_t terrainFlags;    // Coast, Ridge, Barrier, Pass, Volcanic, RiverCrossesBarrier
+    uint8_t downstream;      // river cells: direction 0..5 to the next cell; kNoDirection otherwise
+    // Biomes (Feature 8)
+    Dia::Core::StringCRC biome;  // GDD's 8 biomes + Ocean/Lake (SD-S1-005)
+    // Regions (Feature 9)
+    RegionId region;         // 10-16 regions grown inside depth zones
 };
 ```
 
-**No ecology state** (A1's species populations, resource levels), **no dragon/clan/dynasty state** (B6/C1/C2 runtime) — structure only. `elevation`, `latitude` and `waterSource` are static terrain, not simulation state: A4 reads them and never writes them.
+**No ecology state** (A1's species populations, resource levels), **no dragon/clan/dynasty state** (B6/C1/C2 runtime) — structure only. Ancient Interiors is a `depthZone`, not a region (amended 2026-10-15). `elevation`, `latitude` and `waterSource` are static terrain, not simulation state: A4 reads them and never writes them.
 
 ### Hex Grid
 
@@ -190,6 +200,7 @@ public:
 };
 
 struct GenParams {
+    WorldShapeParams shape;                // Terrain sliders (Feature 1; trivially copyable)
     float biomeWeights[kBiomeCount];       // Distribution weights, indexed by Biome (fixed array: PD-004, trivially copyable)
     PlacementParams placementParams;       // Site placement tuning (TBD by placeholder)
     uint32_t maxRetryAttempts;             // Bounded retry count (default TBD)
@@ -273,7 +284,7 @@ struct WorldGenerationCancelled {
 
 | # | Feature | Description | Spec | Status |
 |---|---------|-------------|------|--------|
-| 1 | Terrain Generator *(was Placeholder Generation Algorithm; re-spec pending, 2026-10-15)* | Rule-based world per GDD `GeographyAndRegions.md`: continent, coast, islands, mountain spine, second barrier, rivers carving valleys, lakes, depth zones; per-cell elevation, latitude and water source. Driven by `WorldShapeParams` sliders + presets, shaped live (sliders only add or remove what they control). Rules fixed and documented; each stage viewable as a layer | @placeholder-generation-algorithm.md (to be rewritten) | Re-spec |
+| 1 | Terrain Generator *(was Placeholder Generation Algorithm; re-specced 2026-10-15)* | Rule-based world per GDD `GeographyAndRegions.md`: continent, coast, islands, mountain spine, second barrier, rivers carving valleys, lakes, depth zones; per-cell elevation, latitude and water source. Driven by `WorldShapeParams` sliders + presets, shaped live (sliders only add or remove what they control). Rules fixed and documented; each stage viewable as a layer | @terrain-generator.md | Draft (re-spec 2026-10-15, awaiting approval) |
 | 2 | Reachability Validator | Runs injected world guarantees (three built-in hard guarantees) using injected navigation profiles (placeholder now, B2 body plans later) over a hex path graph; not naive graph connectivity. Each `GuaranteeResult` keeps its evidence (proof paths, violating cells/pairs) for the debug view | @reachability-validator.md | Approved |
 | 3 | Retry Mechanism | Deterministic sub-seed retry (outer seed + attempt counter) when guarantees fail; bounded attempt count; same outer seed → same retry sequence. Keeps a `GenerationReport` (one entry per attempt: sub-seed, failed guarantee ids) for the debug view | @retry-mechanism.md | Approved |
 | 4 | JSON Export/Import | Human-readable JSON format capturing full world structure (grid, biomes, terrain, sites); round-trip guarantee (Import(Export(world)) == world) | @json-export-import.md | Approved |

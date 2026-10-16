@@ -290,7 +290,7 @@ struct WorldImportComplete {
 
 | System/Feature | Why needed | Status |
 |----------------|-----------|---------|
-| **Feature 1 (Placeholder Generation Algorithm)** | Produces `WorldStructure` to export | Approved |
+| **Feature 1 (Terrain Generator, @terrain-generator.md)** | Produces `WorldStructure` to export | Draft (re-spec 2026-10-15) |
 | **Phase 2 data design** | Biome/TerrainType/Region/ApotheosisType enum names (for string serialization) | GDD in-progress (names TBD — placeholder uses arbitrary names until Phase 2 finalizes) |
 
 ### Dia Engine Dependencies
