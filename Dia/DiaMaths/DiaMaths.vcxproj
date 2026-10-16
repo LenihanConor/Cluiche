@@ -140,7 +140,7 @@
     <ClCompile Include="Noise\WorleyNoise.cpp" />
     <ClCompile Include="Noise\SimplexNoise.cpp" />
     <ClCompile Include="Noise\Noise3D.cpp" />
-    <ClCompile Include="Noise\FractalNoise.inl" />
+    <None Include="Noise\FractalNoise.inl" />
     <ClCompile Include="Noise\FractalNoise.cpp" />
   </ItemGroup>
   <ItemGroup>

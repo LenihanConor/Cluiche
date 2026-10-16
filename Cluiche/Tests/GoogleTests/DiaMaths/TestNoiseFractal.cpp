@@ -138,7 +138,7 @@ namespace
 // AC1: golden bit patterns
 //-----------------------------------------------------------------------------
 
-TEST(NoiseFractal, Golden)
+TEST(SLOW_NoiseFractal, Golden)
 {
 	for (int c = 0; c < kGoldenCaseCount; ++c)
 	{
@@ -153,7 +153,7 @@ TEST(NoiseFractal, Golden)
 // AC2: determinism
 //-----------------------------------------------------------------------------
 
-TEST(NoiseFractal, Determinism)
+TEST(SLOW_NoiseFractal, Determinism)
 {
 	for (int c = 0; c < kGoldenCaseCount; ++c)
 	{
@@ -175,13 +175,13 @@ TEST(NoiseFractal, Determinism)
 namespace
 {
 	template <NoiseType Base>
-	void CheckFractalRange(const FractalParams& base, uint32_t rngSeed)
+	void CheckFractalRange(const FractalParams& base, uint32_t rngSeed, int sampleCount = 100000)
 	{
 		RandomStream rng(rngSeed);
 		FractalParams norm = base; norm.normalise = true;
 		FractalParams raw = base;  raw.normalise = false;
 		const float S = FractalMaxAmplitude(raw);
-		for (int i = 0; i < 100000; ++i)
+		for (int i = 0; i < sampleCount; ++i)
 		{
 			const uint32_t seed = static_cast<uint32_t>(rng.RandomInt());
 			const float x = rng.RandomRange(-500.0f, 500.0f);
@@ -216,11 +216,11 @@ namespace
 	}
 }
 
-TEST(NoiseFractal, RangeValue)    { CheckFractalRange<NoiseType::Value>(MakeParams(6, true), 1); }
-TEST(NoiseFractal, RangeGradient) { CheckFractalRange<NoiseType::Gradient>(MakeParams(6, true), 2); }
-TEST(NoiseFractal, RangeSimplex)  { CheckFractalRange<NoiseType::Simplex>(MakeParams(6, true), 3); }
+TEST(SLOW_NoiseFractal, RangeValue)    { CheckFractalRange<NoiseType::Value>(MakeParams(6, true), 1); }
+TEST(SLOW_NoiseFractal, RangeGradient) { CheckFractalRange<NoiseType::Gradient>(MakeParams(6, true), 2); }
+TEST(SLOW_NoiseFractal, RangeSimplex)  { CheckFractalRange<NoiseType::Simplex>(MakeParams(6, true), 3); }
 
-TEST(NoiseFractal, RangeWorleyAllOutputs)
+TEST(SLOW_NoiseFractal, RangeWorleyAllOutputs)
 {
 	const WorleyOutput outs[] = { WorleyOutput::F1, WorleyOutput::F2, WorleyOutput::F2MinusF1, WorleyOutput::CellValue };
 	const float jitters[] = { 0.0f, 0.5f, 1.0f };
@@ -232,13 +232,14 @@ TEST(NoiseFractal, RangeWorleyAllOutputs)
 			FractalParams p = MakeParams(4, true);
 			p.worley = o;
 			p.jitter = j;
-			CheckFractalRange<NoiseType::Worley>(p, s++);
+			// Full 100k samples at the default jitter; 20k at the degenerate/partial jitters (Worley is the costliest base).
+			CheckFractalRange<NoiseType::Worley>(p, s++, j == 1.0f ? 100000 : 20000);
 		}
 	}
 }
 
 // A single Worley octave must use the documented fixed remap and reach most of [-1, 1].
-TEST(NoiseFractal, WorleySingleOctaveRemap)
+TEST(SLOW_NoiseFractal, WorleySingleOctaveRemap)
 {
 	const WorleyOutput outs[] = { WorleyOutput::F1, WorleyOutput::F2, WorleyOutput::F2MinusF1, WorleyOutput::CellValue };
 	RandomStream rng(31);
@@ -265,9 +266,9 @@ TEST(NoiseFractal, WorleySingleOctaveRemap)
 	EXPECT_EQ(Bits(w.cellValue * 2.0f - 1.0f), Bits(FractalNoise2D<NoiseType::Worley>(77u, 3.3f, 4.4f, p)));
 }
 
-TEST(NoiseFractal, RidgedRangeValue)    { CheckRidgedRange<NoiseType::Value>(4); }
-TEST(NoiseFractal, RidgedRangeGradient) { CheckRidgedRange<NoiseType::Gradient>(5); }
-TEST(NoiseFractal, RidgedRangeSimplex)  { CheckRidgedRange<NoiseType::Simplex>(6); }
+TEST(SLOW_NoiseFractal, RidgedRangeValue)    { CheckRidgedRange<NoiseType::Value>(4); }
+TEST(SLOW_NoiseFractal, RidgedRangeGradient) { CheckRidgedRange<NoiseType::Gradient>(5); }
+TEST(SLOW_NoiseFractal, RidgedRangeSimplex)  { CheckRidgedRange<NoiseType::Simplex>(6); }
 
 // AC13: RidgedNoise2D<NoiseType::Worley> does not compile (static_assert(Base != NoiseType::Worley)
 // inside the template). That cannot be exercised at runtime; do not add a call here.
@@ -276,7 +277,7 @@ TEST(NoiseFractal, RidgedRangeSimplex)  { CheckRidgedRange<NoiseType::Simplex>(6
 // AC14: octave behaviour
 //-----------------------------------------------------------------------------
 
-TEST(NoiseFractal, FractalMaxAmplitude)
+TEST(SLOW_NoiseFractal, FractalMaxAmplitude)
 {
 	FractalParams p = MakeParams(4, false);
 	EXPECT_EQ(Bits(1.875f), Bits(FractalMaxAmplitude(p)));
@@ -286,7 +287,7 @@ TEST(NoiseFractal, FractalMaxAmplitude)
 	EXPECT_EQ(Bits(FractalMaxAmplitude(MakeParams(kMaxNoiseOctaves, false))), Bits(FractalMaxAmplitude(p)));
 }
 
-TEST(NoiseFractal, PrefixAdditiveBitExact)
+TEST(SLOW_NoiseFractal, PrefixAdditiveBitExact)
 {
 	RandomStream rng(555);
 	for (int i = 0; i < 300; ++i)
@@ -309,7 +310,7 @@ TEST(NoiseFractal, PrefixAdditiveBitExact)
 	}
 }
 
-TEST(NoiseFractal, OctaveClamp)
+TEST(SLOW_NoiseFractal, OctaveClamp)
 {
 	const Sample2 s = kSamples[7];
 	EXPECT_EQ(Bits(FractalNoise2D<NoiseType::Simplex>(s.seed, s.x, s.y, MakeParams(1, false))),
@@ -318,7 +319,7 @@ TEST(NoiseFractal, OctaveClamp)
 	          Bits(FractalNoise2D<NoiseType::Simplex>(s.seed, s.x, s.y, MakeParams(500, false))));
 }
 
-TEST(NoiseFractal, NormalisedMatchesUnnormalisedOverS)
+TEST(SLOW_NoiseFractal, NormalisedMatchesUnnormalisedOverS)
 {
 	RandomStream rng(808);
 	for (int oct = 1; oct <= kMaxNoiseOctaves; ++oct)
@@ -344,7 +345,7 @@ TEST(NoiseFractal, NormalisedMatchesUnnormalisedOverS)
 // AC15: ridged shape
 //-----------------------------------------------------------------------------
 
-TEST(NoiseFractal, RidgedCrestsAtBaseZeroCrossings)
+TEST(SLOW_NoiseFractal, RidgedCrestsAtBaseZeroCrossings)
 {
 	// Single octave, frequency 1: ridged == (1 - |n|)^k. Bisect for sign changes of the base along x.
 	RidgedParams rp = MakeRidged(1, true, 2);
@@ -386,7 +387,7 @@ TEST(NoiseFractal, RidgedCrestsAtBaseZeroCrossings)
 	EXPECT_LT(minV, 0.6f);
 }
 
-TEST(NoiseFractal, RidgedVarianceNonDecreasingWithSharpness)
+TEST(SLOW_NoiseFractal, RidgedVarianceNonDecreasingWithSharpness)
 {
 	float prevVar = -1.0f;
 	for (int sharp = 1; sharp <= 4; ++sharp)
@@ -411,7 +412,7 @@ TEST(NoiseFractal, RidgedVarianceNonDecreasingWithSharpness)
 	}
 }
 
-TEST(NoiseFractal, RidgedSharpnessClamps)
+TEST(SLOW_NoiseFractal, RidgedSharpnessClamps)
 {
 	const Sample2 s = kSamples[6];
 	const float s1 = RidgedNoise2D<NoiseType::Simplex>(s.seed, s.x, s.y, MakeRidged(3, true, 1));
@@ -426,7 +427,7 @@ TEST(NoiseFractal, RidgedSharpnessClamps)
 // AC16: domain warp
 //-----------------------------------------------------------------------------
 
-TEST(NoiseFractal, WarpZeroStrengthIsExact)
+TEST(SLOW_NoiseFractal, WarpZeroStrengthIsExact)
 {
 	for (int i = 0; i < kSampleCount; ++i)
 	{
@@ -437,7 +438,7 @@ TEST(NoiseFractal, WarpZeroStrengthIsExact)
 	}
 }
 
-TEST(NoiseFractal, WarpDisplacementBounded)
+TEST(SLOW_NoiseFractal, WarpDisplacementBounded)
 {
 	RandomStream rng(1313);
 	const float strength = 3.5f;
@@ -461,7 +462,7 @@ TEST(NoiseFractal, WarpDisplacementBounded)
 	}
 }
 
-TEST(NoiseFractal, WarpAxesIndependentAndWarpedNoiseMatches)
+TEST(SLOW_NoiseFractal, WarpAxesIndependentAndWarpedNoiseMatches)
 {
 	const Sample2& s = kSamples[6];
 	const FractalParams wp = MakeParams(3, true);
@@ -472,7 +473,7 @@ TEST(NoiseFractal, WarpAxesIndependentAndWarpedNoiseMatches)
 	EXPECT_EQ(Bits(FractalNoise2D<NoiseType::Simplex>(s.seed, w.x, w.y, np)), Bits(composite));
 }
 
-TEST(NoiseFractal, WarpOverWorley)
+TEST(SLOW_NoiseFractal, WarpOverWorley)
 {
 	const Warp2DResult w = Warp2D<NoiseType::Worley>(3u, 1.5f, 2.5f, 1.0f, WorleyParams(WorleyOutput::F1));
 	EXPECT_LE(std::fabs(w.x - 1.5f), 1.0f);

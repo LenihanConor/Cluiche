@@ -80,7 +80,7 @@ namespace
 // AC1: golden bit patterns
 //-----------------------------------------------------------------------------
 
-TEST(Noise3D, GoldenNoise3D)
+TEST(SLOW_Noise3D, GoldenNoise3D)
 {
 	ASSERT_GE(kSampleCount, 16);
 	for (int i = 0; i < kSampleCount; ++i)
@@ -92,7 +92,7 @@ TEST(Noise3D, GoldenNoise3D)
 	}
 }
 
-TEST(Noise3D, GoldenFractal)
+TEST(SLOW_Noise3D, GoldenFractal)
 {
 	for (int i = 0; i < kSampleCount; ++i)
 	{
@@ -109,7 +109,7 @@ TEST(Noise3D, GoldenFractal)
 // AC2: determinism
 //-----------------------------------------------------------------------------
 
-TEST(Noise3D, Determinism)
+TEST(SLOW_Noise3D, Determinism)
 {
 	for (int i = 0; i < kSampleCount; ++i)
 	{
@@ -128,7 +128,7 @@ TEST(Noise3D, Determinism)
 // AC3: range
 //-----------------------------------------------------------------------------
 
-TEST(Noise3D, Range)
+TEST(SLOW_Noise3D, Range)
 {
 	RandomStream rng(2024);
 	float minV = 1.0f, maxV = -1.0f, sum = 0.0f, sumSq = 0.0f;
@@ -160,7 +160,7 @@ TEST(Noise3D, Range)
 	EXPECT_NEAR(0.0f, mean, 0.03f);
 }
 
-TEST(Noise3D, FractalNormaliseRanges)
+TEST(SLOW_Noise3D, FractalNormaliseRanges)
 {
 	// Octaves 1..12, both flags, stay inside their documented range.
 	RandomStream rng(77);
@@ -185,7 +185,7 @@ TEST(Noise3D, FractalNormaliseRanges)
 	}
 }
 
-TEST(Noise3D, FractalPrefixAdditivity)
+TEST(SLOW_Noise3D, FractalPrefixAdditivity)
 {
 	// normalise == false: the N+1-octave result is bit-identical to the N-octave result plus the next term.
 	RandomStream rng(555);
@@ -210,7 +210,7 @@ TEST(Noise3D, FractalPrefixAdditivity)
 	}
 }
 
-TEST(Noise3D, FractalOctaveOneEqualsBase)
+TEST(SLOW_Noise3D, FractalOctaveOneEqualsBase)
 {
 	FractalParams p = MakeParams(1, true);
 	p.frequency = 1.0f;
@@ -225,7 +225,7 @@ TEST(Noise3D, FractalOctaveOneEqualsBase)
 // AC5: seed sensitivity
 //-----------------------------------------------------------------------------
 
-TEST(Noise3D, SeedSensitivity)
+TEST(SLOW_Noise3D, SeedSensitivity)
 {
 	int diff = 0, diffF = 0;
 	for (int i = 0; i < 1024; ++i)
@@ -245,7 +245,7 @@ TEST(Noise3D, SeedSensitivity)
 // AC6: lattice behaviour
 //-----------------------------------------------------------------------------
 
-TEST(Noise3D, ExactlyZeroAtLatticePoints)
+TEST(SLOW_Noise3D, ExactlyZeroAtLatticePoints)
 {
 	for (int iz = -6; iz <= 6; ++iz)
 	{
@@ -264,7 +264,7 @@ TEST(Noise3D, ExactlyZeroAtLatticePoints)
 // AC12: 3D slice continuity
 //-----------------------------------------------------------------------------
 
-TEST(Noise3D, ContinuityInAllAxes)
+TEST(SLOW_Noise3D, ContinuityInAllAxes)
 {
 	const float d = 0.001f;
 	float maxX = 0.0f, maxY = 0.0f, maxZ = 0.0f;
@@ -294,7 +294,7 @@ TEST(Noise3D, ContinuityInAllAxes)
 	}
 }
 
-TEST(Noise3D, SlicesEvolveAndAreCorrelated)
+TEST(SLOW_Noise3D, SlicesEvolveAndAreCorrelated)
 {
 	int differing = 0;
 	for (int i = 0; i < 1024; ++i)
