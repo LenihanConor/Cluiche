@@ -193,4 +193,4 @@ None remaining.
 
 ## Status
 
-`Done` — 2026-10-16. Built per [seeded-noise.plan.md](seeded-noise.plan.md) (8 tasks). All 68 `*Noise*` tests pass in Debug and 67 in Release|x64 (the Release run omits the Debug-only perf-limit variant), including the golden bit patterns (AC1) and the Release performance limits (AC19: Worley fBm 2.2 ms of 4, Simplex 0.46 ms of 1, 3D 0.80 ms of 2 per 66x42 grid x 6 octaves). OpenSimplex2S N2 = 0.05481866495625118, measured max 0.9998. `Noise3D` peaks at about 0.89 (gradient scale 1.0). Release GoogleTests needed `PreferredToolArchitecture=x64` in `dia`'s compile step to avoid `C1002`.
+`Done` — 2026-10-16. Built per [seeded-noise.plan.md](seeded-noise.plan.md) (8 tasks). All 68 `*Noise*` tests pass in Debug and 67 in Release|x64, including the golden bit patterns (AC1) and the Release performance limits (AC19: Worley fBm 2.2 ms of 4, Simplex 0.46 ms of 1, 3D 0.80 ms of 2 per 66x42 grid x 6 octaves). OpenSimplex2S N2 = 0.05481866495625118, measured max 0.9998. `Noise3D` peaks at about 0.89 (gradient scale 1.0). Release GoogleTests needed `PreferredToolArchitecture=x64` in `dia`'s compile step to avoid `C1002`.
