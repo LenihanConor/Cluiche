@@ -35,6 +35,13 @@ namespace Dia
 				return h;
 			}
 
+			inline uint32_t Hash3D(uint32_t seed, int ix, int iy, int iz)
+			{
+				uint32_t h = Hash2D(seed, ix, iy);
+				h = Mix32(h ^ (static_cast<uint32_t>(iz) * 0x85EBCA6Bu));
+				return h;
+			}
+
 			// Exact: (h >> 8) is < 2^24, times 2^-24 gives [0, 1) with no rounding.
 			inline float HashToUnit(uint32_t h)
 			{

@@ -109,6 +109,7 @@
     <ClInclude Include="Noise\GradientNoise.h" />
     <ClInclude Include="Noise\WorleyNoise.h" />
     <ClInclude Include="Noise\SimplexNoise.h" />
+    <ClInclude Include="Noise\Noise3D.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Vector\Vector2D.cpp" />
@@ -137,6 +138,7 @@
     <ClCompile Include="Noise\GradientNoise.cpp" />
     <ClCompile Include="Noise\WorleyNoise.cpp" />
     <ClCompile Include="Noise\SimplexNoise.cpp" />
+    <ClCompile Include="Noise\Noise3D.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Vector\Vector2D.inl" />
