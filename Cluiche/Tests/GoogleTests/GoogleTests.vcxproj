@@ -909,6 +909,7 @@
     <ClCompile Include="DiaPathfinding\TestHexPathGridRect.cpp" />
     <ClCompile Include="DiaPathfinding\TestHexFindPath.cpp" />
     <ClCompile Include="DiaPathfinding\TestHexGridPerformance.cpp" />
+    <ClCompile Include="DiaGridVisibility\TestHexGridVisibility.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

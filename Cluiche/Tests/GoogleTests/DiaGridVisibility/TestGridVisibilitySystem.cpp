@@ -73,16 +73,8 @@ TEST(GridVisibilityConcept, SquarePathGridSatisfiesCVisibilityGraph)
     SUCCEED();
 }
 
-// AC13: hex grids are deliberately excluded (shadowcasting assumes a square lattice).
-TEST(GridVisibilityConcept, HexPathGridIsRejectedByCVisibilityGraph)
-{
-    constexpr bool kHexSatisfies = CVisibilityGraph<Dia::Pathfinding::HexPathGrid>;
-    static_assert(!CVisibilityGraph<Dia::Pathfinding::HexPathGrid>,
-                  "HexPathGrid must NOT satisfy CVisibilityGraph");
-    static_assert(CVisibilityGraph<SquarePathGrid>);
-    static_assert(CVisibilityGraph<MockVisibilityGraph>);
-    EXPECT_FALSE(kHexSatisfies);
-}
+// NOTE: Test removed - HexPathGrid now DOES satisfy CVisibilityGraph after hex visibility support was added.
+// See TestHexGridVisibility.cpp for hex-specific tests.
 
 // ---------------------------------------------------------------------------
 // Construction / consolidation
