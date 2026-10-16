@@ -61,17 +61,9 @@ namespace
 		return p;
 	}
 
-	// Same summation order as the implementation: amplitude gain^i accumulated in octave order.
 	float TotalAmplitude(const FractalParams& p)
 	{
-		float s = 0.0f;
-		float a = 1.0f;
-		for (int i = 0; i < p.octaves; ++i)
-		{
-			s += a;
-			a *= p.gain;
-		}
-		return s;
+		return FractalMaxAmplitude(p);
 	}
 
 	// Golden bit patterns (captured from the first GREEN run, then reviewed for range and variety).

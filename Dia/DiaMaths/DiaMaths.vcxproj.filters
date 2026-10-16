@@ -142,6 +142,9 @@
     <ClInclude Include="Noise\Noise3D.h">
       <Filter>Noise</Filter>
     </ClInclude>
+    <ClInclude Include="Noise\FractalNoise.h">
+      <Filter>Noise</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Vector\Vector2D.cpp">
@@ -223,6 +226,12 @@
       <Filter>Noise</Filter>
     </ClCompile>
     <ClCompile Include="Noise\Noise3D.cpp">
+      <Filter>Noise</Filter>
+    </ClCompile>
+    <None Include="Noise\FractalNoise.inl">
+      <Filter>Noise</Filter>
+    </None>
+    <ClCompile Include="Noise\FractalNoise.cpp">
       <Filter>Noise</Filter>
     </ClCompile>
   </ItemGroup>

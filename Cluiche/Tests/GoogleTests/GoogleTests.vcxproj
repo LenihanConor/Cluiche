@@ -915,6 +915,7 @@
     <ClCompile Include="DiaMaths\TestNoiseWorley.cpp" />
     <ClCompile Include="DiaMaths\TestNoiseSimplex.cpp" />
     <ClCompile Include="DiaMaths\TestNoise3D.cpp" />
+    <ClCompile Include="DiaMaths\TestNoiseFractal.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

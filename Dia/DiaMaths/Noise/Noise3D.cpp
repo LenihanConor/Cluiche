@@ -26,19 +26,6 @@ namespace Dia
 				const uint32_t i = NoiseDetail::Hash3D(seed, ix, iy, iz) >> 28;
 				return kGradients3D[i][0] * dx + kGradients3D[i][1] * dy + kGradients3D[i][2] * dz;
 			}
-
-			// Same summation order as the public amplitude helper: sum(gain^i) accumulated in octave order.
-			inline float TotalAmplitude(int octaves, float gain)
-			{
-				float s = 0.0f;
-				float a = 1.0f;
-				for (int i = 0; i < octaves; ++i)
-				{
-					s += a;
-					a *= gain;
-				}
-				return s;
-			}
 		}
 
 		float Noise3D(uint32_t seed, float x, float y, float z)
@@ -97,7 +84,7 @@ namespace Dia
 
 			if (params.normalise)
 			{
-				const float total = TotalAmplitude(octaves, params.gain);
+				const float total = FractalMaxAmplitude(params);
 				if (total > 0.0f)
 				{
 					sum = sum / total;

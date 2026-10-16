@@ -1976,5 +1976,8 @@
     <ClCompile Include="DiaMaths\TestNoise3D.cpp">
       <Filter>DiaMaths</Filter>
     </ClCompile>
+    <ClCompile Include="DiaMaths\TestNoiseFractal.cpp">
+      <Filter>DiaMaths</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
