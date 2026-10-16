@@ -240,6 +240,8 @@ bool WorldStructure::operator==(const WorldStructure& other) const {
 
 ## Public Interfaces
 
+> *Amended 2026-10-15 (S-1 plan task 1):* event structs on the bus are trivially copyable, so they carry fixed `char filePath[260]` buffers, not `std::string` (the bus recorder asserts this, `DiaMessageBus/Bus.h:461`). The API functions below may still take paths as parameters.
+
 ### APIs
 
 ```cpp
@@ -269,13 +271,13 @@ public:
 ```cpp
 // Published on successful export (optional, for F-1 debug host feedback)
 struct WorldExportComplete {
-    std::string filePath;
+    char filePath[260];   // Fixed buffer: bus messages must be trivially copyable
 };
 
 // Published on successful import (optional, for F-1 debug host feedback).
 // A small notification: the world is read via WorldGenerationModule::GetCurrentWorld() (amended 2026-10-14).
 struct WorldImportComplete {
-    std::string filePath;
+    char filePath[260];   // Fixed buffer: bus messages must be trivially copyable
     uint32_t worldRevision;
 };
 ```

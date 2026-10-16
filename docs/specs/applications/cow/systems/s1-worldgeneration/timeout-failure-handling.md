@@ -41,6 +41,22 @@ With timeout/failure handling:
 
 ## Architecture
 
+### Per-Frame State Machine *(added 2026-10-15)*
+
+`WorldGenerationModule` runs generation **one attempt per SimPU frame**, so Cancel can be handled and the frame never stalls for the full timeout:
+
+```
+Idle --WorldRegenerationRequested--> Attempting(n) --each DoUpdate--> Attempting(n+1) | Idle
+```
+
+Each `DoUpdate` while `Attempting(n)`:
+1. Drain requests. A `WorldGenerationCancelled` finishes the run as MANUAL_CANCEL.
+2. If total wall-clock time exceeds `timeoutSeconds`, finish as TIMEOUT.
+3. Otherwise run attempt `n` (Feature 3). Passed: accept the world (revision +1), publish `WorldGenerationComplete`, go `Idle`. Failed: record the attempt, publish `WorldGenerationRetry`, then continue, or finish as UNSATISFIABLE when `maxRetryAttempts` is reached.
+4. An exception thrown by an attempt finishes the run as ERROR.
+
+Finishing for any failure reason publishes `WorldGenerationFailed`, leaves the last accepted world and revision untouched (Goal 5a), and goes `Idle`. The blocking `GenerateWorld(seed, params)` stays for tests and headless use: it loops the same step with an injectable clock and cancel flag. The code below is the blocking form of the same checks.
+
 ### Timeout Monitoring
 
 ```cpp
@@ -162,7 +178,7 @@ public:
 // Published on timeout/failure/cancel
 struct WorldGenerationFailed {
     FailureReason reason;  // TIMEOUT / UNSATISFIABLE / ERROR / MANUAL_CANCEL
-    std::string message;   // Distinguishing assert text (includes prefix per table above)
+    char message[128];    // Fixed buffer (truncated): distinguishing assert text (includes prefix per table above)
 };
 
 // Subscribed by WorldGenerationModule (from F-1 debug host)

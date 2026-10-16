@@ -102,5 +102,8 @@
     <ClInclude Include="Modules\F2TestRunnerDebugDomain.h">
       <Filter>Modules</Filter>
     </ClInclude>
+    <ClInclude Include="Modules\WorldGenerationMessages.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

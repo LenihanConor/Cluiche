@@ -269,12 +269,12 @@ struct WorldRegenerationRequested {
 
 // Triggered by Export button
 struct WorldExportRequested {
-    std::string filePath;
+    char filePath[260];   // Fixed buffer: bus messages must be trivially copyable
 };
 
 // Triggered by Import button
 struct WorldImportRequested {
-    std::string filePath;
+    char filePath[260];   // Fixed buffer: bus messages must be trivially copyable
 };
 
 // Triggered by Cancel button
@@ -296,7 +296,7 @@ struct WorldGenerationComplete {
 
 struct WorldGenerationFailed {
     FailureReason reason;
-    std::string message;
+    char message[128];    // Fixed buffer (truncated); distinguishing text per GDD decision 5
 };
 
 struct WorldGenerationRetry {  // From Feature 3 (Open Q #2 resolved 2026-10-15)
@@ -306,11 +306,11 @@ struct WorldGenerationRetry {  // From Feature 3 (Open Q #2 resolved 2026-10-15)
 };
 
 struct WorldExportComplete {  // Optional, from Feature 4
-    std::string filePath;
+    char filePath[260];   // Fixed buffer: bus messages must be trivially copyable
 };
 
 struct WorldImportComplete {  // Optional, from Feature 4; world via GetCurrentWorld()
-    std::string filePath;
+    char filePath[260];   // Fixed buffer: bus messages must be trivially copyable
     uint32_t worldRevision;
 };
 ```

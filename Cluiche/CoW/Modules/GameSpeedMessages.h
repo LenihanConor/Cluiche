@@ -36,10 +36,4 @@ struct ModalClosed
     static inline const Dia::Core::StringCRC kTypeId{ "CoW.ModalClosed" };
 };
 
-// Published by S-1 WLD when a new world is ready.
-struct WorldGenerationComplete
-{
-    static inline const Dia::Core::StringCRC kTypeId{ "CoW.WorldGenerationComplete" };
-};
-
 } // namespace CoW

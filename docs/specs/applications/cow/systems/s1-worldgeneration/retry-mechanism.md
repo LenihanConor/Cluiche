@@ -79,6 +79,20 @@ uint64_t DeriveSubSeed(uint64_t outerSeed, uint32_t attemptCounter) {
 
 **Rationale for additive:** Simplest deterministic derivation; guarantees different seed per attempt; if collision issues arise (e.g., `outerSeed = MAX_UINT64 - 1, attempt = 2` wraps), switch to hash-based.
 
+### Per-Frame Stepping *(added 2026-10-15)*
+
+In the module, the loop above is a state machine stepped **one attempt per SimPU frame** (`Idle -> Attempting(n) -> Idle`), with cancel and timeout checked each frame (full description and transitions: Feature 5, Per-Frame State Machine). The blocking `GenerateWorld()` shown above is the same step in a loop, kept for tests and headless use. The attempt loop is a pure object (`GenerationRun`: seed, params, attempt index, report, injected clock and cancel flag) whose `Step()` advances one attempt, so tests can drive it directly.
+
+### What a Retry Re-Rolls *(added 2026-10-15, SD-S1-008)*
+
+A retry **never reshapes the world the designer shaped**:
+- **Terrain and biomes are fixed** by the outer seed + `WorldShapeParams` (Feature 1, Feature 8). They are generated once per run and are identical on every attempt.
+- **Only Regions and Sites** (Feature 9) are re-rolled, each attempt using its own sub-seed (`DeriveSubSeed(outer, attempt)`).
+- **Terrain-level failure:** if a guarantee fails because of the terrain itself (for example, no room for Ancient Interiors, so no throne can be reachable from it), retrying cannot help. The run fails as UNSATISFIABLE with a reason naming the guarantee and the terrain cause, in the `GenerationReport`. It never silently changes the terrain.
+- Sub-seed derivation, determinism and the attempt limit are unchanged.
+
+Until Feature 9 is specced, the diagrams above that say "generate world per attempt" mean "generate Regions and Sites per attempt".
+
 ### Integration with Features 1 and 2
 
 - **Feature 1 (Placeholder Generation Algorithm):** Retry calls `PlaceholderGenerator::Generate(subSeed, params)` per attempt (Feature 1 is stateless, doesn't know about retry)
@@ -241,7 +255,7 @@ Generate with a seed that needs ≥2 attempts. **Pass:** `GetLastReport()` has o
 
 ## Status
 
-`Approved` — 2026-10-11. Amended 2026-10-15: `GenerationReport` + `GetLastReport()` (AC7); `WorldGenerationComplete` matches the parent's notification shape; `WorldGenerationRetry` reduced to small POD (Open Q #2 resolved); AC3 at Small.
+`Approved` — 2026-10-11. Amended 2026-10-15 (task 1: per-frame stepping, SD-S1-008 retry scope): `GenerationReport` + `GetLastReport()` (AC7); `WorldGenerationComplete` matches the parent's notification shape; `WorldGenerationRetry` reduced to small POD (Open Q #2 resolved); AC3 at Small.
 
 ---
 

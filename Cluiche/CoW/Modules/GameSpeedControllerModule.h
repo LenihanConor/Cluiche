@@ -8,6 +8,7 @@
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <Shared/GameSpeedController.h>
 #include "Modules/GameSpeedMessages.h"
+#include "Modules/WorldGenerationMessages.h"
 #include "Modules/MessageBusHostModule.h"
 #include "Modules/SaveLoadModule.h"
 #include <DiaSaveGame/ISaveable.h>

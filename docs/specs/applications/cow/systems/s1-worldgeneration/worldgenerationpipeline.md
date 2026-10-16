@@ -190,7 +190,7 @@ public:
 };
 
 struct GenParams {
-    std::map<Biome, float> biomeWeights;   // Distribution weights per biome
+    float biomeWeights[kBiomeCount];       // Distribution weights, indexed by Biome (fixed array: PD-004, trivially copyable)
     PlacementParams placementParams;       // Site placement tuning (TBD by placeholder)
     uint32_t maxRetryAttempts;             // Bounded retry count (default TBD)
     float timeoutSeconds;                  // Hard timeout (default TBD)
@@ -217,7 +217,7 @@ struct WorldGenerationComplete {
 // Published on timeout/failure
 struct WorldGenerationFailed {
     FailureReason reason;  // TIMEOUT / UNSATISFIABLE / ERROR
-    std::string message;   // Distinguishing assert text per GDD decision 5
+    char message[128];    // Fixed buffer (truncated); distinguishing text per GDD decision 5
 };
 ```
 
@@ -232,12 +232,12 @@ struct WorldRegenerationRequested {
 
 // Triggered by F-1's debug host "Export World" button
 struct WorldExportRequested {
-    std::string filePath;
+    char filePath[260];   // Fixed buffer: bus messages must be trivially copyable
 };
 
 // Triggered by F-1's debug host "Import World" button
 struct WorldImportRequested {
-    std::string filePath;
+    char filePath[260];   // Fixed buffer: bus messages must be trivially copyable
 };
 
 // Triggered by F-1's debug host Cancel button or timeout

@@ -1961,5 +1961,8 @@
     <ClCompile Include="DiaGridVisibility\TestHexGridVisibility.cpp">
       <Filter>DiaGridVisibility</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenerationMessages.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
