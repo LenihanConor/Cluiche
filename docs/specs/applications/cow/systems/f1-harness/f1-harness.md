@@ -39,9 +39,9 @@ CoW needs 12 standalone testbeds launchable from one menu. Dia already has the p
 | CoW app skeleton (project, manifests, Boot stage, stub front end) + `dia scaffold stage --app` | @docs/specs/applications/cow/systems/f1-harness/cow-app-skeleton.md | Approved |
 | Bus live verification (Test 4) | N/A — already proven by CluicheTest MessageBusStressTestStage (10,000 message E2E test) | Done |
 | Bus traffic file recorder (Debug-only) | @docs/specs/applications/dia/systems/diamessagebus/bus-traffic-recorder.md | Approved |
-| Command unregister (DiaAPI) | @docs/specs/applications/dia/systems/diaapi/command-unregister.md | Approved |
-| Panel Console (extends the `~` panel command strip: output, parser, history, autocomplete, log view) | @docs/specs/applications/dia/systems/diadebugdomain/panel-console.md | Approved |
-| Panel Palette (Ctrl+P search over commands and domains) | @docs/specs/applications/dia/systems/diadebugdomain/panel-palette.md | Approved |
+| Command unregister (DiaAPI) | @docs/specs/applications/dia/systems/diaapi/command-unregister.md | Done (amended 2026-10-19, product review) |
+| Panel Console (extends the `~` panel command strip: output, parser, history, autocomplete, log view) | @docs/specs/applications/dia/systems/diadebugdomain/panel-console.md | Done (amended 2026-10-19, product review) |
+| Panel Palette (Ctrl+P search over commands and domains) | @docs/specs/applications/dia/systems/diadebugdomain/panel-palette.md | Done (amended 2026-10-19, product review) |
 | ~~Debug Data Panel Registry~~ · ~~Module Debug Registry~~ | Superseded 2026-10-13: existing `IDebugDomain` panel and `MessageBusDebugDomain` cover data panels; only command unregister is kept | Superseded |
 
 ## Architecture

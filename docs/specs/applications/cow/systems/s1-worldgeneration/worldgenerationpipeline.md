@@ -93,15 +93,21 @@ struct Cell {
 
 ### Map Sizes
 
-*Amended 2026-10-14, re-scoped 2026-10-15.* The game's maps are smaller than the 200×200 this spec first assumed:
+*Amended 2026-10-14, re-scoped 2026-10-15, re-scoped 2026-10-19.* The world-sim stack supports and tests three sizes:
 
-| Preset | Tiles (width × height) | Cells | S-1 scope |
-|--------|------------------------|-------|-----------|
-| Small (default) | 66 × 42 | 2,772 | **The only acceptance target** |
-| Standard | 80 × 52 | 4,160 | Deferred — not built or tested in S-1 |
-| Large | 104 × 64 | 6,656 | Deferred — not built or tested in S-1 |
+| Size | Dims (width × height) | Cells | Role |
+|------|----------------------|-------|------|
+| Small (default) | 66 × 42 | 2,772 | Dev/testbed default |
+| Standard | 80 × 52 | 4,160 | Acceptance target |
+| Large | 104 × 64 | 6,656 | Release perf gate for world-sim stack |
 
-**S-1 only needs Small (decided 2026-10-15).** `GenParams.dimensions` defaults to 66 × 42 and every S-1 acceptance test, performance target and debug-draw budget is measured at Small. Nothing in the code is Small-specific: the generator, validator and renderer take any `dimensions` from 1×1 up to 128×128 (the tested range of the Dia grid). Standard and Large become acceptance targets when a later testbed needs them; until then they are untested.
+**Small is the dev default.** S-1 acceptance tests, performance targets and debug-draw budgets are measured at Small. **Standard and Large are acceptance targets** (amended 2026-10-19): the world-sim stack (S-1, A4 Weather, A1 Ecology) must pass acceptance at Standard and meet the Large perf gate for release. Nothing in the code is size-specific: the generator, validator and renderer take any `dimensions` from 1×1 up to 128×128 (the tested range of the Dia grid).
+
+**Per-size budget scaling (amended 2026-10-19).** Where a spec states only a Small budget, Standard and Large budgets scale by cell count from Small: Standard ≈ ×1.5 (4,160 / 2,772 = 1.501), Large ≈ ×2.4 (6,656 / 2,772 = 2.401), unless stated otherwise.
+
+**Size picker (amended 2026-10-19).** The S-1 testbed exposes a size picker through a dedicated `cow.worldgen.set_size` DiaAPI command (args: `Small` | `Standard` | `Large`); changing size regenerates the world. F6 Goal 10 amended: size display becomes a picker.
+
+**Test coverage (amended 2026-10-19).** Determinism and acceptance tests run at all three sizes. Large tests carry a `SLOW_` prefix where the run time is expensive.
 
 ### Three Hard Guarantees *(moved to the dragon layer, 2026-10-18)*
 
@@ -152,13 +158,11 @@ Manual:    player clicks Cancel button → Cancel + "MANUAL_CANCEL" assert/messa
 
 ### Layered Debug Rendering (GDD decision 8)
 
-**Base layer (always on):** Biome-colored tiles
+**Base layer (always on):** Relief hillshade (default; Feature 7 colour modes cycle through Biome, Terrain, Region, Elevation, Latitude, Water Source and Relief)
 
 **Toggleable overlays:**
 - Sites (one toggle per registered site kind, e.g. the dragon layer's Hearth/Nexus/world-throne markers; none in S-1)
 - Regions (boundary overlays)
-- Dynasty Starts (player + rival position markers)
-- Design Reference (reads A1's species biome-affinity data, displays species-per-biome as text overlay — e.g., "Verdant Lowlands → deer (preferred), elk (preferred), wolf (preferred), cougar (tolerated)")
 
 **Rationale:** Prevents visual clutter when debugging one specific concern (e.g., "are Hearth Sites well-distributed?" doesn't need dynasty-start markers). Matches S-3's layered emergence visualization pattern (GDD decision 7).
 
@@ -265,7 +269,7 @@ struct WorldGenerationCancelled {
 | **F-1 Harness** | Debug host integration (seed/param inputs, Regenerate button, Export/Import UI, Cancel button) | Approved (backlog row) |
 | **DiaPathfinding** | `IPathCostProvider` injection point and `FindPath<TGraph>` for reachability (Done). B2 is **not** a dependency: its body-plan profiles are injected later | Done |
 | **DiaPathfinding: Rectangular Hex Grid** | `HexPathGrid(width, height)` and `HexTopology` (see Hex Grid). The only hex graph; S-1 adds none | Done (2026-10-14) |
-| **Dia debug-draw budget** ([dia-needs](../../dia-needs.md) #13) | Raise `DebugFrameData::kGeometryCapacity` from 2,048 to 8,192 for Feature 7's line and marker overlays. Blocks Feature 7 only | Approved 2026-10-15, not built |
+| **Dia debug-draw budget** ([dia-needs](../../dia-needs.md) #13) | Raise `DebugFrameData::kGeometryCapacity` from 2,048 to 8,192 for Feature 7's line and marker overlays. Blocks Feature 7 only | Done |
 | **Dia CellField renderer** ([dia-needs](../../dia-needs.md) #14) | GPU-retained per-cell colour layer for the hex tiles, colour modes and grid lines; reused later by A4/S-2.5/S-3 overlays. Blocks Feature 7 only | Spec Approved 2026-10-15, not built |
 | **DiaDebugDomain** | `IDebugDomain` + DiaDebugPanel: the F-1 debug host for S-1's controls, inspector and drawers (Features 6 and 7) | Done |
 | **A1 species biome-affinity data** | Optional for design reference toggle | Optional — cut the toggle if not externalized |
@@ -355,7 +359,7 @@ The following binding decisions from parent specs apply to this system:
 | SD-S1-003 | **Rule-based world, not random noise.** Feature 1 is re-specced as a Terrain Generator following the physical rules of GDD `02_WorldLore/GeographyAndRegions.md` (Locked 2026-07-17): continent, coast, peninsulas, islands, mountain spine, second barrier, rivers that run downhill and carve valleys, lakes in basins, depth zones. Noise (dia-needs #15) is raw material inside the rules, never the result. **Deviates from S-1 GDD decision 1** ("placeholder is naive"); the GDD owns that decision (AD-003), so the GDD needs updating | The world must look and feel like a world, and A4 needs coasts and mountains for coastal rain, rain shadows and snow | Accepted 2026-10-15 (GDD fold-back pending) | Yes |
 | SD-S1-004 | **Live shaping.** Designer inputs are `WorldShapeParams` sliders (land vs sea, mountainousness, ruggedness, river density, lakes, coastline complexity, islands, peninsulas) + saved presets (e.g. Continental, Archipelago, Highlands). The pipeline is staged with cached results; a slider re-runs from its first affected stage in the same frame. Sliders are thresholds/weights over seed-fixed fields, so they add or remove only what they control (more lakes adds lakes; nothing reshuffles). Live preview never places sites, validates or retries; those run on Regenerate. Rules are fixed in code and documented step by step, constants in a tuning file, and every stage result is viewable as a layer: **transparent, not tweakable in the UI** | Near-real-time shaping makes it a tool; stability makes it feel like shaping, not rerolling | Accepted 2026-10-15 | Yes |
 | SD-S1-005 | **Terrain first, then biomes.** Feature 1 (Terrain) and Feature 8 (Biome Classification) are separate. Biomes fall out of terrain by rule (temperature from latitude + elevation, moisture from distance to water + rain shadow) into the GDD's 8 biomes + Ocean and Lake, as shared `StringCRC` ids, honouring zone rules and forbidden neighbours. S-1 supplies these first-guess biomes because A4's temperature needs a biome per cell before it can run; A3/A4 evolve them later. Regions and Sites become Feature 9 | Keeps terrain testable and viewable on its own; avoids an A4 ↔ biome circularity | Accepted 2026-10-15 | Yes |
-| SD-S1-006 | **Small map only** (66 × 42). Standard and Large are deferred until a testbed needs them; code still accepts any size up to 128 × 128 | Scope and performance targets stay honest | Accepted 2026-10-15 | Yes |
+| SD-S1-006 | **Three map sizes** (66 × 42 Small, 80 × 52 Standard, 104 × 64 Large). Small is the dev default; Standard and Large are acceptance targets and the Large perf gate applies to the whole world-sim stack (S-1, A4, A1). Per-size budgets scale by cell count from Small (Standard ≈ ×1.5, Large ≈ ×2.4) unless stated otherwise. Code accepts any size up to 128 × 128 | Amended 2026-10-19, product review: the world-sim stack ships at all three sizes | Accepted 2026-10-15, amended 2026-10-19 | Yes |
 | SD-S1-007 | **Debug view = `WorldGenDebugDomain` + CellField.** One `IDebugDomain` holds the panel and drawers on SimPU. Hex tiles, colour modes and grid lines render through the Dia CellField renderer (dia-needs #14: runtime geometry per map size, per-cell value texture, palette/ramp shader); overlays use debug draw with the budget raised to 8,192 (#13). Rejected: a 32,768 budget with immediate-mode tiles (CPU cost grows with size and overlays), a baked mesh asset per size (fixed sizes, drifts from `HexTopology`, colours baked in), and bending the 3D mesh path (lit shader, no updates, two cameras) | One renderer serves S-1, A4's 8 overlays, S-2.5, S-3 and fog of war | Accepted 2026-10-15 | Yes |
 | SD-S1-008 | **Retry never changes the shaped world.** Terrain and biomes are fixed by seed + `WorldShapeParams`. When a guarantee fails, retries re-roll only Regions and Sites (Feature 9) with sub-seeds. If the terrain itself can't satisfy a guarantee (e.g. no room for Ancient Interiors), generation fails with a reason naming the guarantee and the terrain cause; it never silently reshapes | What you shaped in preview is what Regenerate keeps | Accepted 2026-10-15 | Yes |
 | SD-S1-009 | **Provenance and locked imports.** Every export records its seed, `WorldShapeParams`, preset name and generator version. An imported world opens **locked**: sliders show its recorded params but moving one asks whether to drop the edits and regenerate. Regenerating from the recorded provenance reproduces the un-edited world | Hand edits are never lost by accident; any world can be traced back to its recipe | Accepted 2026-10-15 | Yes |

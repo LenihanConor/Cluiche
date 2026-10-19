@@ -17,7 +17,7 @@ Weather          S-2.5        ← this testbed (A4)
 Terrain          S-1          live terrain editor
 ```
 
-A4's debug domain, eight overlays, cell inspector, `cow.weather.*` commands, presets and 13-week history all belong to A4 (A4 Features 5 and 6). S-2.5 adds the stage, the curated worlds, the nine numeric checks, the headless runner and report, the guided walkthrough and the time-series graphs.
+A4's debug domain, nine overlays (eight scalar fields plus wind; amended 2026-10-19, product review), cell inspector, `cow.weather.*` commands, presets and 13-week history all belong to A4 (A4 Features 5 and 6). S-2.5 adds the stage, the curated worlds, the nine numeric checks, the headless runner and report, the guided walkthrough and the time-series graphs.
 
 **Checks are the verdict; overlays explain** (GDD AD-07). Each of the GDD's nine tests is a numeric predicate over A4's committed state. The same predicate runs in two places: in a **headless runner** that drives A4's pure simulation directly and produces the pass/fail report through DiaAutomation, and as a **live check line** in the stage while you watch the overlays.
 
@@ -35,7 +35,7 @@ A4's debug domain, eight overlays, cell inspector, `cow.weather.*` commands, pre
 - **Tuning A4's defaults.** `set_param` exists for understanding. S-2.5 runs on A4's locked TuningParameters, and doesn't write parameters back.
 - **`WeatherUpdated` and A1 integration.** No subscriber here. S-3 checks the event (GDD AD-03).
 - **Extreme weather and year quality.** A4 defines neither (CHANGE-038).
-- **Standard and Large maps.** Small (66 × 42) only, as S-1 (SD-S1-006).
+- **Map sizes (amended 2026-10-19, product review).** Small (66 × 42 = 2,772 cells) is the default and baseline target for acceptance. Standard (80 × 52 = 4,160 cells) and Large (104 × 64 = 6,656 cells) are supported via a size picker (DiaAPI command, see Commands below). Performance budgets scale per size (see Performance below).
 - **Player-facing weather visuals.** That's V-1. The overlays are debug-grade.
 
 ## Architecture
@@ -88,7 +88,7 @@ namespace CoW::S25 {
 ```
 
 **Helpers** (pure, shared by the checks):
-- **Seasons:** one table, as GDD AD-08: Spring weeks 1–13, Summer 14–26, Fall 27–39, Winter 40–52. It's the same calendar A4 reads from GameSpeedController (91-day seasons). An integration test asserts they agree.
+- **Seasons (amended 2026-10-19, product review):** one table, as GDD AD-08: Spring weeks 1–13, Summer 14–26, Autumn 27–39, Winter 40–52. It's the same calendar A4 reads from GameSpeedController (91-day seasons, 13 weeks per season). An integration test asserts they agree.
 - **Distance fields:** hex BFS distance from water-source cells and from the map edge, over Dia's `HexTopology`.
 - **Storm tracker:** links `find_storms` centres (pressure < 0.3 clusters) week to week by nearest centre, giving a track per storm.
 - **Dry spells:** consecutive dry weeks per S-1 region. Without S-1 Feature 9 there's one region.
@@ -103,7 +103,7 @@ namespace CoW::S25 {
 | 3 Storm Movement | a spawned storm's centre moves between weeks; wind around the centre points toward it; the storm dissipates or intensifies by moisture | centre moves ≥ 5 cells in 5 weeks |
 | 4 Seasonal Variation | global mean temperature peaks in Summer and bottoms in Winter, smoothly; Winter precipitation > Summer; temperature crosses the melt threshold in Spring | Winter precipitation ≥ 1.5× Summer |
 | 5 Spring Floods | mountain `snow_pack` rises through Winter and falls through Spring; lowland ground water rises while snow pack falls | lowland ground-water peak lands in Spring (first run records the week) |
-| 6 Droughts | `find_droughts` reports at least one region; inland cells are drier than coastal | ≥ 4 consecutive dry weeks in Summer or Fall |
+| 6 Droughts | `find_droughts` reports at least one region; inland cells are drier than coastal | ≥ 4 consecutive dry weeks in Summer or Autumn |
 | 7 Variability | annual global rainfall differs across 4 years; each year keeps the seasonal shape | — |
 | 8 Boundary | with `boundary.edge_inflow` on vs off, edge weather differs in the expected direction; interior cells differ by no more than a tolerance | interior tolerance |
 | 9 Determinism | committed `WeatherFields` byte-identical at weeks 13, 26, 39, 52 across two runs | — |
@@ -117,10 +117,10 @@ namespace CoW::S25 {
 `S25HeadlessRunner` drives A4's pure `WeatherSimulation` directly, on a worker job, without `SimulationTick`, rendering or the bus. It uses the same initialise → spin-up → step-by-season sequence as `WeatherModule`, through a pure `WeatherRunner` that A4 exposes (see Amendments). So the runner can't drift from the live module. A short live-vs-runner comparison is an integration test.
 
 - **Test plan.** One run per test setup: a 52-week run per world, a 4-year run for Test 7, two determinism runs (Test 9, with different executor range counts, which is stronger than two identical runs), and an `edge_inflow` on/off pair (Test 8). Scenario setup (presets, forcings, wind overrides) is applied through **A4's command executor bound to the runner's own simulation** (see Amendments), so a scenario means the same thing live and headless.
-- **Performance.**
-  - **Headless:** a 52-week run, spin-up included, finishes in **≤ 5 s** (GDD "52-week run", see Deviations).
-  - **Weekly tick:** the slowest `Step()` across the 52 weeks is **≤ 16 ms** on Small, A4 alone. The runner reports it from A4's step profile.
-  - **Live smoke:** the stage runs 52 weeks at Fastest (about 12.1 s, capped by GameSpeedController) with no weekly tick above 16 ms. DiaAutomation triggers it, and A4's step-duration metric supplies the times.
+- **Performance (amended 2026-10-19, product review).**
+  - **Headless:** a 52-week run, spin-up included, finishes in **≤ 5 s** at Small (GDD "52-week run", see Deviations).
+  - **Weekly tick budgets per map size:** Small (2,772 cells) ≤ 4.2 ms, Standard (4,160 cells) ≤ 6.3 ms, Large (6,656 cells) ≤ 10 ms. The baseline/regression run at Small; one additional headless run at Large (no rendering) verifies the Large budget. The runner reports the slowest `Step()` across the 52 weeks from A4's step profile.
+  - **Live smoke:** the stage runs 52 weeks at Fastest (about 12.1 s, capped by GameSpeedController) at Small with no weekly tick above 4.2 ms. DiaAutomation triggers it, and A4's step-duration metric supplies the times.
 - **Report.** `out/CoW/s25/report_<world>_<seed>.json` (PD-009) has one `CheckResult` per check, the world precheck results, the performance numbers, and the edge-case coverage table. A hard fail carries the A4 TechSpec section named in the GDD test.
 - **Edge cases.** `Stages/S25WeatherPatterns/edge_cases.json` maps each of A4's 20 edge cases (`A4_EdgeCaseMatrix.md`) either to the scenario that exercises it or to `untested` with a reason. The report lists both, so nothing is silently skipped.
 - **Automation.** DiaAutomation triggers `cow.s25.run` and reads the result, following F-2's pattern: the module runs the plan, and DiaAutomation is the trigger and readout.
@@ -159,7 +159,7 @@ S-2.5 ships nine scenarios (one per test) plus the five presets as guided setups
 ### Click-to-inspect, step-back, boundary toggle
 
 All three are A4's tools wired to the stage:
-- **Click-to-inspect:** a click on the CellField view selects the cell, and A4's inspector shows its 8 fields plus biome and elevation.
+- **Click-to-inspect:** a click on the CellField view selects the cell, and A4's inspector shows its 9 weather fields (amended 2026-10-19, product review) plus biome and elevation.
 - **Step-back:** the panel's button calls `cow.weather.step_back` (history 13 weeks). It's disabled when history is empty.
 - **Boundary toggle:** a panel switch calls `cow.weather.set_param boundary.edge_inflow <on|off>`, effective next week. Test 8 runs both settings headless.
 
@@ -204,13 +204,13 @@ namespace CoW::Scenarios {                           // CoW-Shared, also used by
 
 ### Commands (DiaAPI)
 
-`cow.s25.world.load`, `cow.s25.run` (headless plan; `world=`, `seed=`), `cow.s25.run.cancel`, `cow.s25.report`, `cow.s25.baseline.record [force]`, `cow.s25.livesmoke`. CoW-Shared: `cow.scenario.list`, `cow.scenario.run`, `cow.scenario.walk next|prev`. The S25 panel card calls the same commands. All weather tools are A4's `cow.weather.*`.
+`cow.s25.world.load`, `cow.s25.world.size <small|standard|large>` (amended 2026-10-19, product review), `cow.s25.run` (headless plan; `world=`, `seed=`, `size=`), `cow.s25.run.cancel`, `cow.s25.report`, `cow.s25.baseline.record [force]`, `cow.s25.livesmoke`. CoW-Shared: `cow.scenario.list`, `cow.scenario.run`, `cow.scenario.walk next|prev`. The S25 panel card calls the same commands. All weather tools are A4's `cow.weather.*`.
 
 ## Features
 
 | # | Feature | Description | Spec | Status |
 |---|---------|-------------|------|--------|
-| 1 | Stage & World | `.diastage`, F-1 menu entry, `S25WeatherModule`, world load and picker (SD-S1-010), the two curated worlds + prechecks, A4 hosting (history 13, table baseline), time controls, step-back button, click-to-inspect wiring, boundary switch, S25 panel card. HTML mockup of the S25 card + A4 tools first | TBD | Draft |
+| 1 | Stage & World | `.diastage`, F-1 menu entry, `S25WeatherModule`, world load and picker (SD-S1-010), size picker (Small/Standard/Large; amended 2026-10-19, product review), the two curated worlds + prechecks, A4 hosting (history 13, table baseline), time controls, step-back button, click-to-inspect wiring, boundary switch, S25 panel card. HTML mockup of the S25 card + A4 tools first | TBD | Draft |
 | 2 | Weather Checks | Pure helpers (season table, distance fields, storm tracker, dry spells, aggregates), the nine tests as named `Hard`/`Default` checks, baseline file record/compare. TDD over hand-built hex terrain with known answers | TBD | Draft |
 | 3 | Headless Runner & Report | `S25HeadlessRunner` on A4's `WeatherRunner` + command executor, the test plan, worker job with progress and cancel, report JSON, edge-case coverage table, headless and live-smoke performance, DiaAutomation trigger and readout, live-vs-runner integration test | TBD | Draft |
 | 4 | Scenarios & Walkthrough (CoW-Shared) | Scenario format + loader + validator, `CheckRegistry`, check-line panel, walkthrough steps and `cow.scenario.*`; the nine S-2.5 scenarios and the five preset setups. S-3 Feature 3 consumes it | TBD | Draft |
@@ -243,10 +243,10 @@ namespace CoW::Scenarios {                           // CoW-Shared, also used by
 
 For the GDD session (`cow-29`) to fold back into `S2.5_WeatherPatterns.md`:
 
-1. **The 52-week ≤ 5 s budget is measured headless.** GameSpeedController caps Fastest at one day per sim frame (30 days/s), so a live 52-week run takes at least 12.1 s. The live run at Fastest becomes a smoke test: about 12.1 s, with no weekly tick above 16 ms.
+1. **The 52-week ≤ 5 s budget is measured headless at Small (amended 2026-10-19, product review).** GameSpeedController caps Fastest at one day per sim frame (30 days/s), so a live 52-week run takes at least 12.1 s. The live run at Fastest becomes a smoke test: about 12.1 s at Small, with no weekly tick above 4.2 ms.
 2. **Checks run headless for the verdict** and live as check lines, using the same predicates. This makes AD-07 concrete.
 3. **Test worlds are curated S-1 preset + seed worlds with shape prechecks.** A precheck failure means "invalid world", not an A4 fail.
-4. **Command names follow the A4 spec:** `cow.weather.reload` (the GDD says `reload_parameters`), plus A4's `load_preset`, `step_back` and `profile`.
+4. **Command names follow the A4 spec (amended 2026-10-19, product review):** `cow.weather.reload` (the GDD says `reload_parameters`), plus A4's `load_preset`, `step_back` and `profile`.
 5. **"Smooth curve" (Test 4) is defined:** at most two direction changes in the 52-week temperature curve after a 3-week moving mean.
 6. **Test 9 uses two different executor range counts** for its two runs, which also proves A4's parallel bit-identity on a real world.
 7. **The walkthrough format is shared with S-3** (CoW-Shared scenarios).

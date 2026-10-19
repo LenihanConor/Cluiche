@@ -14,33 +14,36 @@ A1 is fed by three systems. S-1 provides the world structure, A4 provides weekly
 
 This spec builds **Layer 1** of the GDD's three layers: the analytical cell layer, which always runs. Dragon inputs (tick step 9) are defined as an interface only. Population tokens (Layer 2) and local instantiation (Layer 3) are deferred.
 
+**Map sizes** (amended 2026-10-19, product review): Small 66×42 (2,772 cells), Standard 80×52 (4,160 cells), Large 104×64 (6,656 cells, release performance gate for S-1, A4, A1). S-1 now builds and tests all three sizes.
+
 ## Goals
 
 1. **Species-driven, data-only roster.** Species, biomes and succession rules load from JSON. Code never names a species or functional group (TechnicalSpec §1a).
 2. **Band-gated tick pipeline.** The GDD steps run at the Season, Year, Decade and Century boundaries of GameSpeedController's day ticks, each as a full-grid pass, with no `delta_scale`.
-3. **Pure cell logic, testable alone.** The per-cell equations run on one cell with no neighbours, no module and no weather events (GoogleTests, `isolate_cell`). The same code runs grid-wide when fed by A4 (Ecology testbed, Living mode).
+3. **Pure cell logic, testable alone.** The per-cell equations run on one cell with no neighbours, no module and no weather events (GoogleTests, `isolate_cell`). The same code runs grid-wide when fed by A4 (S-3 Ecology, Living mode).
 4. **Defined ecology state.** Thriving, Stable, Stressed and Collapsed come from a hysteretic health index (C4).
 5. **Succession counters for every A3 path.** A data rule table covers every A3 transition. A1 evaluates it and raises `BiomeSuccessionTriggered` with a `pressure_source` (C7).
 6. **Deterministic.** Same world, data, weather and tick count give bit-identical state at any thread count. Randomness comes only from the `A1` stream of `RandomStreamModule`.
 7. **Save/load.** Ecology state round-trips through E1, and a reload continues bit-identically.
 8. **Observable.** A debug domain with per-cell overlays, a cell inspector, `cow.ecology.*` DiaAPI commands, and profiling, metrics and health.
-9. **Performance.** Season band ≤ 16 ms in Release at Large (6,656 cells) with about 15 species (reported gate).
+9. **Performance** (amended 2026-10-19, product review). Season band ≤ 16 ms in Release at Large (6,656 cells) with about 15 species. Small and Standard budgets scaled by cell count: Small (2,772 cells) ≤ 6.7 ms, Standard (4,160 cells) ≤ 10.0 ms. Reported gate.
 
 ## Non-Goals
 
 - **Dragon pressure (step 9), hunts, Full Fight and Cultivated Ground.** Interfaces are declared (see Public Interfaces); they are built when S-4 needs them.
-- **Population tokens (Layer 2) and local instantiation (Layer 3).** Deferred. The Ecology testbed sees migration through density overlays and flow arrows.
+- **Population tokens (Layer 2) and local instantiation (Layer 3).** Deferred. S-3 Ecology sees migration through density overlays and flow arrows.
 - **Succession transition rules, legacy modifiers and recovery counters.** These belong to A3. A1 provides the counters and the apply API.
 - **Weather.** A4 owns rainfall and temperature variation. A1 does not roll `year_quality` (C6).
 - **Event display and naming.** These belong to D4. A1 only detects thresholds.
 - **World generation.** A1 derives what it needs from S-1's `WorldStructure` and never writes it.
 - **Player-facing visuals.** These belong to V-1. A1's overlays are debug-only.
+- **Year-quality scale.** The GDD's `YEAR_QUALITY_*` values (GOOD 1.3, AVERAGE 1.0, BAD 0.7) belong to climate-control sliders (S-3's pinned-climate input), not to A1 fields (amended 2026-10-19, product review).
 
 ## Architecture
 
 ### Placement
 
-**CoW-Shared** (AD-002). A1 is consumed by A3, A4, the Ecology testbed and later S-4, V-1, B1, B2, C3 and D4. Pure logic lives in `Cluiche/CoW/Shared/Ecology/`. The SimModule, debug domain and save participant live in `Cluiche/CoW/Modules/`. Test helpers (hand-built grids, a stub weather input, golden rosters) ship in `Cluiche/CoW/Shared/Ecology/Testing/`.
+**CoW-Shared** (AD-002). A1 is consumed by A3, A4, S-3 Ecology and later S-4, V-1, B1, B2, C3 and D4. Pure logic lives in `Cluiche/CoW/Shared/Ecology/`. The SimModule, debug domain and save participant live in `Cluiche/CoW/Modules/`. Test helpers (hand-built grids, a stub weather input, golden rosters) ship in `Cluiche/CoW/Shared/Ecology/Testing/`.
 
 ```
 SimPU
@@ -68,7 +71,7 @@ One shared `StringCRC` id set, used by S-1, A1, A3, A4 and `species.json`:
 | Succession outputs (A3 produces) | `Scrub`, `BurnedAshland`, `DesertifiedPlain` |
 | Water (S-1 produces) | `Ocean`, `Lake` |
 
-Lore names (Verdant Lowlands, Stormridge, Ancient Interiors) are regions or depth zones, not biomes. `Volcanic` (primary, eruption ash) and `BurnedAshland` (fire succession) are different ids. `biomes.json` gives every id a `BiomeProfile`, including its seasonal temperature for `IBiomeSeasonalBaseline` and a seasonal `rainfall_baseline` that S-3's pinned climate uses (the GDD's original per-biome seasonal patterns, TechnicalSpec §1b). An unknown id returns 0.5 and logs once (A4 EC-19).
+Lore names (Verdant Lowlands, Stormridge, Ancient Interiors) are regions or depth zones, not biomes. `Volcanic` (primary, eruption ash) and `BurnedAshland` (fire succession) are different ids. A3 uses `BurnedAshland` consistently (amended 2026-10-19, product review). `biomes.json` gives every id a `BiomeProfile`, including its seasonal temperature for `IBiomeSeasonalBaseline` and a seasonal `rainfall_baseline` that S-3's pinned climate uses (the GDD's original per-biome seasonal patterns, TechnicalSpec §1b). An unknown id returns 0.5 and logs once (A4 EC-19).
 
 ### State (structure of arrays)
 
@@ -81,7 +84,7 @@ Lore names (Verdant Lowlands, Stormridge, Ancient Interiors) are regions or dept
 - **Pressure fields:** `prey_scent`, `predator_scent`, `dragon_scent`, `carrion_scent`, `water_gradient`.
 - **Ecology state:** `ecology_state`, `health`, `state_streak` (signed seasons past a band edge), `recovering` flag.
 - **Succession:** `succession_pressure[rule × cell]` (C7, added to the GDD schema).
-- **History:** `years_since_fire`, `drought_years`, `last_dragon_visit`, `local_extinction_flags`, `years_low_herbivore_inflow` (consecutive years in which herbivore migration in was below `low_inflow_threshold`; read by A3's tundra rule; A3 amendment 4), plus the tended fields (declared, unused until step 9).
+- **History:** `years_since_fire`, `drought_years`, `last_dragon_visit`, `local_extinction_flags`, `years_low_herbivore_inflow` (consecutive years in which herbivore migration in was below `low_inflow_threshold`; read by A3's tundra rule; A3 amendment 4; saved state field tracked per cell, not read from the ledger — amended 2026-10-19), plus the tended fields (declared, unused until step 9).
 - **Static geography (derived at init, never changed by the simulation):** `river_overlay`, `corridor_node`, `hearth_site`, `nexus_node`, `world_throne_type`, `route_memory` (C11).
 
 `year_quality` and the deprecated `rainfall` field are not stored (C6).
@@ -148,7 +151,7 @@ So a single bad season never drops a cell, and recovering is slower than degradi
 - `direction` is `forward` (degradation and fire) or `recovery` (Scrub→Grassland, BurnedAshland→Grassland, DesertifiedPlain→Scrub).
 - Recovery rules use `decay: 0`, so stalled progress is kept.
 - A recovery rule's increment is multiplied by the resolver's `GetRecoveryMultiplier(cell)` (dragon acceleration, 1.0 until S-4).
-- A3's spec ships the 12 rules.
+- **Content ownership** (amended 2026-10-19, product review): A3 owns the rule-table contents. A1 ships an initial file translated from A3 TechnicalSpec §4 so A1 can be exercised before A3 exists. A1 evaluates every rule and provides the file schema; A3 authors the conditions and increments.
 
 - `source` is one of `DROUGHT`, `FIRE`, `OVERGRAZE`, `DISEASE`, `DRYING` or `COLD`.
 - `conditions` are `{field, op, value}` tests over cell fields and history (for example `drought_years > 3`, `seed_bank < 0.2`).
@@ -161,7 +164,7 @@ At each rule's band, for every cell whose biome matches `from`:
 
 At step 10, A1 hands the band's triggers, in cell-index order, to the `ISuccessionResolver` (A3) if one is registered. A1 also publishes every trigger, accepted or rejected, as `BiomeSuccessionTriggered`, so observers can see them. With no resolver, the triggers are only published.
 
-A3 owns the rule contents and the staging check. A1 ships an initial file translated from A3 TechnicalSpec §4 and A1 TechnicalSpec §9 so it can be exercised before A3 exists. `GetSuccessionProgress(cell)` (the highest counter) feeds A3's 50% Stressed visual.
+`GetSuccessionProgress(cell)` (the highest counter) feeds A3's 50% Stressed visual.
 
 A3 applies transitions only through A1's API (C9), synchronously inside step 10. A1 owns every cell field:
 
@@ -225,7 +228,7 @@ The season band is gated at ≤ 16 ms in Release at Large (6,656 cells) with abo
 - **Producers:** growth, grazing (by species), wilt, fire.
 - **State:** the health index terms, and which succession rule conditions passed or failed.
 
-The ledger covers the last band only, is overwritten each band, is never saved, and doesn't feed back into the simulation. The equations write their terms to it as they compute them, so it can't drift from what actually ran. A build flag can turn it off if the 16 ms gate needs the time.
+The ledger covers the last band only, is overwritten each band, is never saved, and doesn't feed back into the simulation. The equations write their terms to it as they compute them, so it can't drift from what actually ran. A build flag can turn it off if the 16 ms gate needs the time. Aggregate calculations (e.g., A3's yearly inflow checks) use saved state fields, not the ledger (amended 2026-10-19, product review).
 
 ### Debug, tuning and editing tools
 
@@ -242,7 +245,15 @@ The ledger covers the last band only, is overwritten each band, is never saved, 
 - **Commands:** `inspect`, `ledger`, `set_field`, `set_species`, `paint`, `isolate_cell`, `set_ecology_state`, `step_band`, `reload_data`, `tuning.set`, `tuning.save`, `find_events`, `ignite`, `apply_transition` (until A3).
 - **Instrumentation:** `DIA_PROFILE_SCOPE` per step, `MetricRegistry` counters (cells per state, events per band, band time), an `IHealthReporter` (Degraded on the fallback roster or a failed data validation).
 
-The Ecology testbed stage hosts these. A1 owns no stage.
+S-3 Ecology hosts these. A1 owns no stage.
+
+### Logging
+
+*Added 2026-10-19, product review.* A1 logs on the `ECO` channel:
+
+- **Info:** load/reload complete (species and biome counts, file paths), tuning write-back (file updated), guardrail-reset events (recolonization, extinction-floor recovery).
+- **Warning:** unknown biome or species id falls back to default 0.5 affinity (logged once per id), clamped-to-range values (field name, cell, range), parameter out-of-range uses fallback (parameter name, provided value, fallback).
+- **Error:** data-file schema validation fails (file path, JSON keys missing or wrong type), `EcologyWorldInput` and `WorldStructure` dimension mismatch (expected vs actual).
 
 ## Public Interfaces
 
@@ -321,12 +332,12 @@ Messages (`CellEcologyChanged`, `EventThresholdCrossed`, `BiomeSuccessionTrigger
 | 8 | Ecology Save/Load | `EcologySaveParticipant`: JSON arrays plus palettes, validate, save/continue/load/continue round-trip | TBD | Draft |
 | 9 | Ecology Debug & Tools | `EcologyDebugDomain`: command model first, then panel, inspector with change ledger, CellField overlays, migration arrows, graph panel, live tuning sliders + `tuning.save` write-back, cell edit/paint, `isolate_cell`, profiling, metrics, health. Needs an HTML mockup before build | TBD | Draft |
 
-**Routed elsewhere:** the stage, its Controlled and Living modes, the guided proof scenarios (the old S-2 tests) and the long-run checks (the old S-3 tests) go to the **Ecology testbed** (S-2 and S-3 merged, 2026-10-18). Transition rules, legacy and recovery go to **A3**.
+**Routed elsewhere:** the stage, its Controlled and Living modes, the guided proof scenarios (the old S-2 tests) and the long-run checks (the old S-3 tests) go to **S-3 Ecology** (S-2 and S-3 merged, 2026-10-18). Transition rules, legacy and recovery go to **A3**.
 
 **Build order:** 1 → 2 → 3 → 5. Feature 4 follows 3. Feature 6 follows 4 and 5. Feature 7 follows 6. Features 8 and 9 follow 7 and can run in parallel.
 
 - Features 1–6 need no S-1, A3 or A4 code: their tests use hand-built hex grids and `StubWeatherInput`.
-- The Ecology testbed needs Features 1–7 and 9, plus S-1 Features 1 and 8 (its worlds come from S-1).
+- S-3 Ecology needs Features 1–7 and 9, plus S-1 Features 1 and 8 (its worlds come from S-1).
 
 ## Binding Decisions
 
@@ -335,10 +346,10 @@ Messages (`CellEcologyChanged`, `EventThresholdCrossed`, `BiomeSuccessionTrigger
 | PD-001 | StringCRC for ids | Biome, species, functional group and rule ids are `StringCRC`. Fields store palette indices |
 | PD-002 | ProcessingUnit/Phase/Module architecture | `EcologyModule` is a SimModule on SimPU. A4 finds the baseline provider and A3 finds the apply API through `ModuleRef`, never through singletons |
 | PD-004 | No STL containers in public APIs | `EcologyFields` uses `DynamicArrayC`. Views expose accessors, not `std::` types |
-| AD-001 | Ask permission before Dia/baseline edits | None needed. A1 uses existing DiaMessageBus, DiaSaveGame, `JobSystemService` (Done 2026-10-15), DiaMaths noise, CellField (dia-needs #14) and DiaAPI `CommandRegistry` |
-| AD-002 | Four-tier dependency model | CoW-Shared: A3, A4, the Ecology testbed and later systems consume it |
+| AD-001 | Ask permission before Dia/baseline edits | None needed. A1 uses existing DiaMessageBus, DiaSaveGame, `JobSystemService` (Done 2026-10-15), DiaMaths noise (Done 2026-10-15), DiaAPI `CommandRegistry`. CellField (dia-needs #14) is Spec Approved, not built (amended 2026-10-19, product review) |
+| AD-002 | Four-tier dependency model | CoW-Shared: A3, A4, S-3 Ecology and later systems consume it |
 | AD-003 | GDD owns design intent | GDD A1 owns the mechanics and constants. Deviations are listed below for the GDD owner |
-| AD-005 | One stage per testbed | A1 owns no stage. The Ecology testbed hosts it |
+| AD-005 | One stage per testbed | A1 owns no stage. S-3 Ecology hosts it |
 
 ## Deviations from GDD A1
 
@@ -355,11 +366,11 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 9. **Hard map edges.** Off-map recolonization becomes edge and refugia lifeboats (C10). The grid is odd-q `HexTopology`, not axial.
 10. **Slope, soil, river, corridor and route memory are derived at init** (C11). S-1's schema is unchanged.
 11. **The recolonization event is defined** (C13). Herd migration and the dragon kill field wait for Layer 2 and step 9.
-12. **S-3's A3 stage names** (Barren→Pioneer→Established→Mature→Ancient) don't exist in A3. S-3 Tests 3 and 4 should track A3's real transitions and SEEDING/ESTABLISHING/COMPLETE recovery stages (C8).
+12. **S-3 Ecology's guided scenarios** (amended 2026-10-19, product review): the old S-3 Tests 3 and 4 referring to "Barren→Pioneer→Established→Mature→Ancient" stage names become S-3 Ecology's `A3 across biomes` and `Visual tracking` scenarios (see S-3 spec Feature 3 scenario table), which track A3's real transitions (Grassland→Scrub, BurnedAshland→Grassland, etc.) and SEEDING/ESTABLISHING/COMPLETE recovery stages (C8).
 13. **Stale references** (C12): the performance target is 16 ms at Large (6,656 cells), not 200×200. Saves are JSON, not blobs. S-2's section references should be §4/§5 (equations), §9 (succession) and §10 (events).
 14. **Populations are stored as fractions of `max_density_per_cell`** (C14). S-2's 0–500 sliders are a display scale.
 15. **Layer 1 only.** Step 9, Layer 2 and Layer 3 are deferred, with interfaces declared.
-16. **A1 owns its tools, and S-2 and S-3 merge into one Ecology testbed** (2026-10-18). Tuning, editing, graphs and the change ledger are part of A1 (A4's pattern). One stage hosts them, with a Controlled mode (pinned weather, for understanding and tuning) and a Living mode (A4 and A3 live, long-run emergence). This changes the GDD's testbed roster.
+16. **A1 owns its tools, and S-2 and S-3 merge into S-3 Ecology** (2026-10-18). Tuning, editing, graphs and the change ledger are part of A1 (A4's pattern). One stage hosts them, with a Controlled mode (pinned weather, for understanding and tuning) and a Living mode (A4 and A3 live, long-run emergence). This changes the GDD's testbed roster.
 17. **Natural ignition** (from the A3 spec): seeded lightning fires at the Season band, so fire and BurnedAshland emerge without dragons. This is new GDD content.
 18. **`years_low_herbivore_inflow`** (from the A3 spec) stands in for tundra's "migration routes severed".
 
@@ -379,7 +390,7 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 - **A4.** Without it, `StubWeatherInput` is used and the panel reports the stub as the source.
 - **A3.** Without it, triggers are published and counted but no biome changes. A debug `cow.ecology.apply_transition` command can apply one by hand.
 
-**Required by:** A3 (triggers, apply API), A4 (`IBiomeSeasonalBaseline`), the Ecology testbed, and later S-4, V-1, B1, B2, C3 and D4.
+**Required by:** A3 (triggers, apply API), A4 (`IBiomeSeasonalBaseline`), S-3 Ecology, and later S-4, V-1, B1, B2, C3 and D4.
 
 ## Test Strategy
 
@@ -399,15 +410,16 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 - A4 receives baseline values for all 13 biome ids.
 - Save at year 5, continue to 10, load year 5, continue to 10: identical.
 
-**Performance (Feature 4 gate):** one Season and one Year band at Large in Release with the job executor and 15 species, reported against 16 ms, with a per-step profile.
+**Performance (Feature 4 gate):** one Season and one Year band at Large in Release with the job executor and 15 species, reported against 16 ms, with a per-step profile. Amended 2026-10-19, product review: also report Small and Standard against their scaled budgets (6.7 ms / 10.0 ms).
 
-**Proof (routed to the Ecology testbed):** the GDD's S-2 scenarios (Controlled mode) and S-3's emergence, long-run and A1/A4 response tests (Living mode).
+**Proof (routed to S-3 Ecology):** the GDD's S-2 scenarios (Controlled mode) and S-3's emergence, long-run and A1/A4 response tests (Living mode).
 
 ## Open Design Questions
 
 1. **Publishing on the frame after week 13.** The design assumes `EcologyModule` can publish from its own update on the next sim frame after setting `mSeasonPending`. Feature 7 must check this against DiaMessageBus's pass rules. If it can't, the season pipeline runs on the next day's `SimulationTick`, a one-day lag that changes no results.
-2. **Starting constants.** The health-index weights and bands, the streak lengths, `coastal_reach` and the aquatic roster are new numbers with no GDD values. The Ecology testbed's Controlled mode tunes them first. If they move a lot, should the GDD lock them, or should they stay as tuning-file values?
+2. **Starting constants.** The health-index weights and bands, the streak lengths, `coastal_reach` and the aquatic roster are new numbers with no GDD values. S-3 Ecology's Controlled mode tunes them first. If they move a lot, should the GDD lock them, or should they stay as tuning-file values?
 3. **Memory at scale.** Dense `[species × cell]` arrays cost 15 species × 2 × 6,656 floats (about 0.8 MB), which is fine. If the roster grows past about 40 species, a sparse per-biome species set may be needed. This is revisited in Feature 4's benchmark.
+4. **Same-tick Season+Year ledger loss** (added 2026-10-19, product review). When the Season and Year bands run on the same tick (every 364 days), the last-band-only ledger is overwritten by the Year band, so the Season band's deltas are lost. This affects debugging (the inspector shows only Year's changes) but not the simulation (the ledger is read-only). A planned shared World History spec (Dia, to be specced) may supersede the ledger's retention model and resolve this; alternatively, the ledger could save the Season deltas separately when both bands run.
 
 ## Status
 

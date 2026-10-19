@@ -331,7 +331,7 @@ Render the Biome view for each preset on 3 fixed seeds (alongside the terrain AC
 | SD-S1-002 | Every action/query is a DiaAPI command | Climate sliders go through `set`; no new command or second path |
 | SD-S1-004 | Live shaping | Cached stages 12–14, first-stage table, transparent layers, constants in the tuning file only |
 | SD-S1-005 | Terrain first, then biomes | Biomes derive from terrain by rule into the GDD's 8 biomes + Ocean and Lake, as shared ids. First-guess for A3/A4 |
-| SD-S1-006 | Small map only | Tuning and every AC at 66 × 42 |
+| SD-S1-006 | Three map sizes | Small (66 × 42) is dev default; Standard and Large are acceptance targets (amended 2026-10-19). Tuning and every AC at Small |
 | SD-S1-008 | Retry never reshapes the world | Biomes depend only on seed + `WorldShapeParams`, never on attempt sub-seeds |
 | SD-S1-009 | Provenance and locked imports | Offsets are in `WorldShapeParams`, so provenance reproduces the biomes; imports are not reclassified |
 

@@ -47,7 +47,7 @@ The output is terrain only: per-cell elevation, latitude, water source, terrain 
 3. **Validation and retry.** Features 2 and 3. Retry never reshapes terrain (SD-S1-008).
 4. **Editable rules.** Rule constants change only by editing the tuning file and restarting, never from the panel.
 5. **The panel and the drawers.** Features 6 and 7 build them on the commands and layers defined here.
-6. **Standard and Large maps.** Any size from 1×1 to 128×128 runs, but only Small is tuned and tested (SD-S1-006).
+6. **Per-size tuning.** Any size from 1×1 to 128×128 runs. Small is the dev default; Standard and Large are acceptance targets (amended 2026-10-19, SD-S1-006). Tuning is measured at Small.
 7. **Cross-build bit identity.** Determinism is within one build of the game. Exported worlds store values, not recipes, so nothing has to recompute bit-exactly on another build.
 8. **Erosion simulation, plate tectonics and climate.** The generator uses simple rules, not physics.
 
@@ -707,7 +707,7 @@ The automated shape checks measure structure, not whether a map looks like a wor
 | SD-S1-003 | Rule-based world | The GDD's Part 1–2 rules are the stages |
 | SD-S1-004 | Live shaping | Cached DAG, first-stage table, stability rules, layers, constants in a tuning file not exposed in the UI |
 | SD-S1-005 | Terrain first, then biomes | No biome here. Hand-off table defines Feature 8 and Feature 9 inputs |
-| SD-S1-006 | Small map only | Tuning and every AC at 66 × 42 |
+| SD-S1-006 | Three map sizes | Small (66 × 42) is dev default; Standard and Large are acceptance targets (amended 2026-10-19). Tuning and every AC at Small |
 | SD-S1-008 | Retry never reshapes terrain | Terrain depends only on seed + `WorldShapeParams` (never on attempt sub-seeds) |
 | SD-S1-009 | Provenance, locked imports | `WorldProvenance`; `set`/`preset.load` lock rule |
 | SD-S1-010 | Preset + seed hand-off | Determinism makes a preset id + seed a complete world reference |

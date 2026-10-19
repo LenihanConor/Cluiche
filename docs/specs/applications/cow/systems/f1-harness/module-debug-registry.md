@@ -1,10 +1,10 @@
 # Feature Spec: Module Debug Registry
 
-> **Superseded 2026-10-13.** Dropped except one piece: command unregister is now `docs/specs/applications/dia/systems/diaapi/command-unregister.md`. Domains keep using `DiaDebugDomainRegistry`; panels are domains.
+> **Status: Superseded** (2026-10-13). Dropped except one piece: command unregister is now @docs/specs/applications/dia/systems/diaapi/command-unregister.md (Done 2026-10-19). Domains keep using `DiaDebugDomainRegistry`; panels are domains.
 
 **Parent:** @docs/specs/applications/cow/systems/f1-harness/f1-harness.md  
 **Status:** Superseded  
-**Priority:** P0 - Foundation for Console, Panel Registry, and Palette
+**Priority:** P0 - Foundation for Console, Panel Registry, and Palette (superseded)
 
 ## Summary
 

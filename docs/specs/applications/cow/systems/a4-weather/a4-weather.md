@@ -20,7 +20,7 @@ A4 also ships the tools for tuning weather on its own: a debug domain with eight
 3. **The A1/V-1 contract.** `WeatherUpdated{week}` plus a const `WeatherSnapshot` view carrying every field the GDD's §13 payload lists.
 4. **Data-driven tuning.** All 20 constants load from `weather_parameters.json`, are validated, hot-reload, and can be overridden live.
 5. **Save/load.** Committed weather state round-trips through E1. A reload continues bit-identically.
-6. **Observable.** A debug domain with eight per-cell overlays plus a wind vector field, a cell inspector, console commands, and per-step profiling.
+6. **Observable.** A debug domain with nine per-cell overlays (eight scalars plus a wind vector field), a cell inspector, console commands, and per-step profiling.
 7. **Tunable in isolation.**
    - The five presets and the four regression scenarios (AuthoringDebug §5–§6) ship with A4.
    - The S-2.5 testbed hosts the stage that proves the GDD success criteria (`A4_WeatherSystem.md` §Success Criteria).
@@ -79,7 +79,7 @@ namespace CoW::Weather {
 }
 ```
 
-At 200×200 cells this is 9 floats (36 B) of dynamic state per cell, or about 1.4 MB per copy. The GDD's 64 B/cell estimate assumed an array-of-structs layout.
+At Large (104 × 64 = 6,656 cells) this is 9 floats (36 B) of dynamic state per cell, or about 240 KB per copy. The GDD's 64 B/cell estimate (at 200 × 200) assumed an array-of-structs layout.
 
 ### Update pipeline
 
@@ -91,7 +91,7 @@ At 200×200 cells this is 9 floats (36 B) of dynamic state per cell, or about 1.
 - **Upwind edge inflow.** When a cell's upwind neighbour is `kNoCell`, the cell receives an inflow equal to its own outflow, as if the world past the edge had the same weather (a zero-gradient boundary). Without this, upwind edge cells would lose moisture and heat every week and get nothing back. With steady prevailing winds that leaves fake cold, dry strips along the map edges. The `boundary.edge_inflow` parameter (default `true`) switches it off so S-2.5 can show the GDD-literal behaviour side by side.
 - **Precomputed directions.** The unit vector for each hex direction is a constant table. The wind step's pressure gradient (§5.2) uses it instead of computing `cos`/`sin` per neighbour.
 - **Clamping.** Precipitation amounts are clamped non-negative (CH-09). Snow pack and ground water are capped at 1.0 (CH-04, EC-12). Temperature after transport is clamped non-negative (CH-07). After the last step every field is clamped to its range (EC-20).
-- **Season.** `SeasonOf(day) % 4` from GameSpeedController's calendar, read from the `SimulationTick` that triggered the step. It is not a separate `SeasonAdvanced` message.
+- **Season.** Determined from the week (13 weeks per season): weeks 1–13 Spring, 14–26 Summer, 27–39 Autumn, 40–52 Winter. Read from GameSpeedController's calendar via the `SimulationTick` that triggered the step. It is not a separate `SeasonAdvanced` message.
 
 ### Parallel execution
 
@@ -120,7 +120,7 @@ namespace CoW::Weather {
     - `JobSystemModule::DoStop` calls `Deregister()` before `Shutdown()`.
     - The executor checks `IsAvailable()` before each pass.
     - The executor submits with Dia's new `JobSystem::TrySubmit`, which returns an invalid handle after `Shutdown` instead of asserting. Any range whose `TrySubmit` fails runs inline on the SimPU thread. Each cell's result depends only on its inputs, so the output is unchanged.
-- **Performance gate.** A Feature 2 GoogleTest benchmarks one `Step()` at 200×200 in Release with the job executor and reports the time. The budget is **≤ 10 ms**. Missing it is reported but doesn't fail the build. A miss means optimising the hot pass, not spreading the update over several frames.
+- **Performance gate.** A Feature 2 GoogleTest benchmarks one `Step()` at Large (104 × 64 = 6,656 cells) in Release with the job executor and reports the time. The budget is **≤ 10 ms** (amended 2026-10-19, product review). Missing it is reported but doesn't fail the build. A miss means optimising the hot pass, not spreading the update over several frames. Supporting budgets per map size: Small (66 × 42 = 2,772 cells) ≤ 4.2 ms, Standard (80 × 52 = 4,160 cells) ≤ 6.3 ms, Large (104 × 64 = 6,656 cells) ≤ 10 ms (scaled by cell count).
 - **Spin-up** (52 weeks) runs through the same executor and is accepted as a one-time cost at New Game.
 
 ### Biome seasonal baseline (A4-owned contract, A1 implements)
@@ -201,27 +201,28 @@ Spin-up is deterministic, so a save does not need to know about it. A new game r
 
 ### Parameters
 
-The tuning constants live in `Assets/CoW/weather_parameters.json`, using the GDD TuningParameters §14 schema. The schema is extended with an `init` block holding `initial_moisture_water` and `initial_moisture_land`, and a `baseline_table` block for the default `TableBiomeSeasonalBaseline`. The `.diaapp` module config gives the file path, `spinup_weeks` and `history_weeks`:
+The tuning constants live in `Assets/CoW/weather_parameters.json`, using the GDD TuningParameters §14 schema. The schema is extended with an `init` block holding `initial_moisture_water` and `initial_moisture_land`, a `baseline_table` block for the default `TableBiomeSeasonalBaseline`, and a `boundary` block for `edge_inflow` (see Update pipeline). The `.diaapp` module config gives the file path, `spinup_weeks` and `history_weeks`:
 
 ```json
 {
     "instance_id": "WeatherModule",
     "type_id": "WeatherModule",
     "stages": ["all"],
-    "dependencies": ["MessageBusHostModule", "SaveLoadModule"],
+    "dependencies": ["MessageBusHostModule"],
+    "soft_dependencies": ["SaveLoadModule"],
     "config": { "parameters": "CoW/weather_parameters.json", "spinup_weeks": 52, "history_weeks": 0, "weather_job_ranges": 0 }
 }
 ```
 
-`weather_job_ranges: 0` means "worker count × 4". A `boundary` block holding `edge_inflow` (see Update pipeline) is also added to the parameter file.
+`weather_job_ranges: 0` means "worker count × 4" (amended 2026-10-19, product review). `SaveLoadModule` is a soft dependency: when present, weather state is saved; without it, A4 still runs but doesn't participate in saves (this is the S-2.5 case).
 
 - **Validation on load.** Every rate must be in `[0, 1]` and `snow_threshold <= melt_threshold`. A missing or invalid file logs an error, falls back to the compiled defaults (the GDD values), and reports Degraded health. This is the same rule as GameSpeedController.
-- **Hot reload.** `cow.weather.reload` re-reads the file between steps. `cow.weather.set_param <dotted.key> <value>` overrides one value until the next reload. Both take effect at the next `Step()`, never in the middle of one.
+- **Hot reload (amended 2026-10-19, product review).** `cow.weather.reload` re-reads the file between steps (GDD calls this `reload_parameters`; A4 uses `cow.weather.reload`). `cow.weather.set_param <dotted.key> <value>` overrides one value until the next reload. Both take effect at the next `Step()`, never in the middle of one.
 - **Parameters are not saved.** A save made under overridden parameters reloads with the file's values. This is acceptable because tuning overrides are debug-only.
 
 ### History (rewind)
 
-`WeatherHistory` is an optional ring buffer of committed `WeatherFields`, `history_weeks` deep. It is 0 (off) in `cow_main.diaapp` and 13 in the S-2.5 stage, which is about 18 MB at 200×200.
+`WeatherHistory` is an optional ring buffer of committed `WeatherFields`, `history_weeks` deep. It is 0 (off) in `cow_main.diaapp` and 13 in the S-2.5 stage, which is about 3 MB at Large (6,656 cells; amended 2026-10-19, product review: 13 weeks × 9 fields × 6,656 cells × 4 bytes/float ≈ 3.1 MB).
 
 - `cow.weather.step_back` restores the previous committed state and decrements the week.
 - Step-back is a **debug operation for A4-only stages**. It doesn't rewind GameSpeedController's day counter or any other system, so it is only offered where A4 runs alone (S-2.5). The command refuses to run when `history_weeks` is 0.
@@ -239,7 +240,12 @@ The tuning constants live in `Assets/CoW/weather_parameters.json`, using the GDD
 - **Validate** rejects the load if the saved cell count doesn't match the world's, or if any field array has the wrong length.
 - **Deserialize** restores everything into committed state and clears history.
 
-**Size.** At the Large map size (6,656 cells), A4's 9 float fields × 6,656 cells = 59,904 floats stored as JSON doubles (`%.17g` format, bit-identical round-trip). At ~30 bytes per float in formatted JSON, this is approximately **1.9 MB**. Combined with A1's estimated ~35 fields/cell, the total ecology + weather save is projected at **~10-15 MB**, well within the raised 100 MB buffer limit (`SaveContext::kBufferSize`, updated from 10 MB). The 8-slot cap limits total disk usage to 800 MB. Text JSON is simpler than binary blobs, human-readable for debugging, and requires no base64 codec.
+**Size (amended 2026-10-19, product review).** At the three map sizes, A4's 9 float fields stored as JSON doubles (`%.17g` format, bit-identical round-trip) at ~30 bytes per float in formatted JSON:
+- **Small** (66 × 42 = 2,772 cells): 9 × 2,772 = 24,948 floats ≈ **0.8 MB**
+- **Standard** (80 × 52 = 4,160 cells): 9 × 4,160 = 37,440 floats ≈ **1.2 MB**
+- **Large** (104 × 64 = 6,656 cells): 9 × 6,656 = 59,904 floats ≈ **1.9 MB**
+
+Combined with A1's estimated ~35 fields/cell, the total ecology + weather save is projected at **~10-15 MB** at Large, well within the raised 100 MB buffer limit (`SaveContext::kBufferSize`, updated from 10 MB). The 8-slot cap limits total disk usage to 800 MB. Text JSON is simpler than binary blobs, human-readable for debugging, and requires no base64 codec (amended 2026-10-19, product review: dia-needs #11 blob API was rejected 2026-10-15 after buffer was raised to 100 MB; A4 uses JSON text).
 
 E1 saves at the sim-frame boundary, and `Step()` runs entirely inside one sim frame. So a save can never see a half-updated grid, and the GDD's `is_update_in_progress()` flag isn't needed.
 
@@ -252,10 +258,12 @@ E1 saves at the sim-frame boundary, and `Step()` runs entirely inside one sim fr
 - has overlay toggles
 - posts commands, never mutates state directly (UI/business separation)
 
-**World drawers (8 overlays, AuthoringDebug §1):**
-- moisture, pressure, temperature, precipitation, snow pack, cloud cover and ground water, each drawn as a per-cell colour ramp at the GDD's alpha values
-- wind, drawn as a per-cell arrow coloured by how far the wind deviates from the prevailing direction
-- any number can be on at once
+**World drawers (9 overlays, AuthoringDebug §1; amended 2026-10-19, product review):**
+- Eight scalar fields: moisture, pressure, temperature, precipitation, snow pack, cloud cover, ground water, each drawn as a per-cell colour ramp at the GDD's alpha values
+- Wind: drawn as a per-cell arrow coloured by how far the wind deviates from the prevailing direction
+- Any number can be on at once
+
+**Canonical overlay IDs (amended 2026-10-19, product review):** `moisture`, `pressure`, `temperature`, `precipitation`, `snow_pack`, `cloud_cover`, `ground_water`, `wind` (snake_case; shared with S-2.5's scenario loader, which rejects unknown names).
 
 Drawers are hosted wherever the domain is registered: S-2.5 first, then S-3.
 
@@ -288,6 +296,11 @@ Forcings and overrides are deterministic inputs applied at a fixed point in the 
 - health (`IHealthReporter`):
   - Degraded: fallback parameters or fallback baseline
   - Unhealthy: no water sources
+
+**Logging (amended 2026-10-19, product review):** channel `WTH` (3-4 letter CoW weather channel, following S-1's `WLD` pattern).
+- **Info:** parameter file load/reload success (path, source: file or fallback), preset loaded, reset, baseline provider (A1 or table)
+- **Warning:** parameter out of range (clamped, key, value), unknown overlay id (scenario loader), unknown preset name
+- **Error:** parameter file not found or parse failed (path), no water-source cells (EC-01), baseline provider returned out-of-range temperature
 
 ### Presets and regression scenarios
 
@@ -385,7 +398,7 @@ Messages (`WeatherUpdated`, `BiomeTransitionComplete`) are hand-written structs 
 | PD-002 | ProcessingUnit/Phase/Module architecture | `WeatherModule` is a SimModule on SimPU. No singletons; providers come in through `ModuleRef` |
 | PD-004 | No STL containers in public APIs | `WeatherFields`/`WeatherTerrain` use `DynamicArrayC`. The snapshot exposes accessors, not `std::` types |
 | PD-005 | x64 is the only build target | Saves are JSON text, little-endian floats stored as doubles (jsoncpp `%.17g`) |
-| AD-001 | Ask permission before Dia edits | One shared-layer change was signed off on 2026-10-14: `JobSystemService` + `JobSystem::TrySubmit` (dia-needs #12). It is built from its own feature spec in the Dia/baseline tree, not from A4. Everything else uses existing DiaMessageBus, DiaSaveGame, DiaThreading `JobSystem`, DiaVisualDebugger and DiaAPI `CommandRegistry`. The DiaSaveGame blob API (dia-needs #11) was rejected 2026-10-15 after the buffer was raised to 100 MB |
+| AD-001 | Ask permission before Dia edits | Two Dia capabilities were approved: (1) `JobSystemService` + `JobSystem::TrySubmit` (dia-needs #12, approved 2026-10-14, not built), and (2) CellField renderer (dia-needs #14, approved 2026-10-15, not built). Each is built from its own feature spec in the Dia tree, not from A4. Everything else uses existing DiaMessageBus, DiaSaveGame text JSON (buffer raised to 100 MB; dia-needs #11 blob API was rejected 2026-10-15), DiaThreading `JobSystem`, DiaVisualDebugger and DiaAPI `CommandRegistry` |
 | AD-002 | Four-tier dependency model | CoW-Shared, because A1, V-1, S-2.5 and S-3 all consume it |
 | AD-003 | GDD owns design intent | GDD A4 owns the mechanics and constants. Deviations are listed below for the GDD owner |
 | AD-005 | One stage per testbed | A4 is a System and owns no stage. The S-2.5 testbed is the single stage that hosts it, and chooses presets from its panel |
@@ -406,7 +419,7 @@ These are for the DesignDocs owner to fold back into A4:
 10. **History is 13 weeks, and only in A4-only stages (S-2.5).** It answers GDD open question 3. Production builds keep no history.
 11. **Overlays are debug-only.** This answers GDD open question 1 for now. Player-facing weather is V-1's call.
 12. **Upwind world edges get inflow.** The GDD's hard boundary (EC-16) only covers outflow at the downwind edge. A4 adds a zero-gradient inflow at the upwind edge so the map edge doesn't create a fake climate strip. It can be switched off with `boundary.edge_inflow`.
-13. **The performance target is ≤ 10 ms per week with a parallel update.** This replaces the 35 ms / 30 fps figure in EC-18 and AuthoringDebug §7.1. Shrinking the grid stays the last resort.
+13. **The performance target is ≤ 10 ms per week at Large with a parallel update (amended 2026-10-19, product review).** This replaces the GDD's 200 × 200 and 35 ms / 30 fps figure (EC-18, AuthoringDebug §7.1). Supporting budgets per map size: Small ≤ 4.2 ms, Standard ≤ 6.3 ms, Large ≤ 10 ms (scaled by cell count). Shrinking the grid stays the last resort.
 
 ## Dependencies
 
@@ -419,10 +432,11 @@ These are for the DesignDocs owner to fold back into A4:
 
   **A4 Features 3–6 are blocked until S-1 is amended and built.**
 - **`JobSystemService` ServiceStream + `JobSystem::TrySubmit` (dia-needs #12, approved 2026-10-14, not built).** This is a CluicheGameBaseline change plus one Dia method. Feature 3 uses `SerialExecutor` until it lands. Features 1–2 don't need it.
-- GameSpeedController (`SimulationTick`, `SeasonOf`), Done.
+- GameSpeedController (`SimulationTick`, season from week), Done.
 - DiaMessageBus via `MessageBusHostModule`.
-- E1 `SaveLoadModule`, Done.
+- E1 `SaveLoadModule`, Done (soft: A4 runs without it; S-2.5 has no SaveLoadModule).
 - `VisualDebuggerModule`, plus `DebugLayerManager` for drawers.
+- **Dia CellField renderer (dia-needs #14, Approved 2026-10-15, not built; amended 2026-10-19, product review).** Per-cell colour layer for the nine weather overlays. Blocks Feature 5's drawers. S-2.5's overlays reach CellField through A4's debug domain.
 - DiaAPI `CommandRegistry`.
 - DiaCore (Json, StringCRC, containers, logging).
 
@@ -459,7 +473,7 @@ These are for the DesignDocs owner to fold back into A4:
 
 **Emergence (Feature 6):** AuthoringDebug §6.1–6.4 over hand-built hex terrains, using the GDD's ratios. Each preset loads and runs 13 weeks without health errors. Checking the patterns by eye in a running world is S-2.5's job.
 
-**Performance (Feature 2 gate):** one `Step()` at 200×200 in Release with the job executor, reported against the 10 ms budget, plus the per-step `profile` breakdown.
+**Performance (Feature 2 gate):** one `Step()` at Large (104 × 64) in Release with the job executor, reported against the 10 ms budget, plus the per-step `profile` breakdown.
 
 ## Resolved Design Decisions
 
@@ -467,16 +481,14 @@ These are for the DesignDocs owner to fold back into A4:
    - Rejected: the GDD's literal hard boundary, which leaves fake cold, dry strips along upwind edges and probably fails the coastal-rain criterion.
    - Rejected: moving temperature differences instead of raw temperature. That changes §8 throughout the map and doesn't fix moisture.
    - The `boundary.edge_inflow` toggle keeps the GDD-literal behaviour available in S-2.5 for comparison.
-2. **The update is parallel from the start and runs in one frame.** Passes are split into cell ranges through `IParallelExecutor`. The order-independent gather makes the result bit-identical at any range count. The budget is ≤ 10 ms at 200×200 in Release, enforced as a reported gate in Feature 2.
+2. **The update is parallel from the start and runs in one frame.** Passes are split into cell ranges through `IParallelExecutor`. The order-independent gather makes the result bit-identical at any range count. The budget is ≤ 10 ms at Large (104 × 64) in Release (amended 2026-10-19, product review; was 200×200), enforced as a reported gate in Feature 2.
    - Rejected: spreading the update over the week's 7 day ticks. A save could then land mid-pipeline, which brings back the `is_update_in_progress` problem.
    - Rejected: a single-threaded update first, with parallelism added only if the budget is missed. It's cheaper to build the parallel structure while the pipeline is being written than to retrofit it.
-3. **Saves use a DiaSaveGame blob API with `ValidateBlob`** (dia-needs #11, signed off 2026-10-14).
-   - Float precision was checked and is not the problem: jsoncpp writes doubles with `%.17g`, so floats round-trip exactly.
-   - The problem is the whole-save 10 MB cap. As text arrays, weather alone would be about 11–12 MB; as blobs it is about 1.9 MB.
-   - Rejected: base64 encoding done inside A4. It works, but A1 will need the same thing, so it belongs in DiaSaveGame.
+3. **Saves use JSON text** (dia-needs #11 blob API was rejected 2026-10-15 after the buffer was raised to 100 MB; amended 2026-10-19, product review). At Large (6,656 cells), A4's 9 fields as JSON doubles (`%.17g`) are about 1.9 MB. Combined with A1's ~35 fields/cell, the total ecology + weather save is projected at ~10-15 MB at Large, well within the 100 MB buffer limit. Text JSON is simpler than binary blobs, human-readable for debugging, and requires no base64 codec. Float precision is exact: jsoncpp writes doubles with `%.17g`, so floats round-trip bit-identically.
+   - Rejected: blob API with base64. It would make weather smaller than text JSON, but the 100 MB buffer makes that unnecessary.
    - Rejected: quantising fields to fixed point. The simulation would have to run in fixed point too to stay deterministic.
 
-4. **SimPU gets the job system from a `JobSystemService` `ServiceStream` and submits with `TrySubmit`.** See Parallel execution.
+4. **SimPU gets the job system from a `JobSystemService` `ServiceStream` and submits with `TrySubmit`.** See Parallel execution (dia-needs #12, approved 2026-10-14, not built).
    - Rejected: a private pool inside A4. It would mean two pools competing for cores, and every later SimPU system would repeat it.
    - Rejected: the stream alone without `TrySubmit`. Quitting during a weekly update would hit the `Submit`-after-`Shutdown` assert in Debug builds.
    - Rejected: changing the app's PU stop order. That affects every application.

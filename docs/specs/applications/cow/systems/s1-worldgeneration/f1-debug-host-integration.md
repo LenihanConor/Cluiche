@@ -29,7 +29,7 @@ With debug host integration:
 
 ## Goals
 
-1. **Parameter inputs exposed** — Seed (integer input), climate offsets (`temperatureOffset`, `moistureOffset` sliders; replace per-biome weights, Feature 8), placement params (Nexus count, dynasty spacing, etc. as sliders)
+1. **Parameter inputs exposed** — Seed (integer input), climate offsets (`temperatureOffset`, `moistureOffset` sliders; replace per-biome weights, Feature 8), terrain shape sliders (`WorldShapeParams`, Feature 1). Placement params for dragon-layer sites come later with the dragon layer
 2. **Action buttons** — Regenerate (triggers `GenerateWorld()`), Export (triggers `ExportWorld()`), Import (triggers `ImportWorld()`), Cancel (triggers `CancelGeneration()`)
 3. **Live progress display** — Progress bar or text showing current attempt number, elapsed time, validation status ("Generating...", "Validating attempt 2/10...", "Complete" / "Failed")
 4. **Retry telemetry** — Display final retry count on success, or failure diagnostics (timeout/unsatisfiable/error/cancel) on failure
@@ -46,12 +46,12 @@ With debug host integration:
    - one row per guarantee: pass/fail, diagnostics, and an evidence count ("10 proof paths, 0 violations"), with each violating cell selectable;
    - one row per attempt: index, sub-seed, failed guarantee ids, elapsed ms.
 9. **Validate button** *(added 2026-10-15)* — Runs Feature 2 on the current world (e.g. after a hand-edited import) and replaces the Validation section and Feature 7's evidence with the result. Does not change the world
-10. **Map size** *(added 2026-10-15)* — Shows the map size, read-only: Small 66 × 42 is the only S-1 target (parent spec, Map Sizes)
+10. **Map size** *(added 2026-10-15; amended 2026-10-19, product review)* — A picker for Small 66 × 42 (default), Standard 80 × 52 and Large 104 × 64, calling `cow.worldgen.set_size` (parent spec, Map Sizes)
 
 ## Non-Goals
 
 1. **Visual rendering** — Feature 7 (Layered Debug Rendering) handles world visualization; this feature handles controls only
-2. **Real-time parameter preview** — Sliders update parameters but don't auto-regenerate (designer must click Regenerate; auto-regen would be too slow)
+2. **Automatic regeneration** — *(Amended 2026-10-19):* Terrain and climate sliders auto-regenerate via live preview (SD-S1-004); designer clicks Regenerate only for sites/validation. This non-goal originally stated sliders don't auto-regenerate, but that was superseded by the live-shaping decision
 3. **Parameter validation** — UI accepts any integer/float input; Feature 1-2 handle validation (e.g., negative seed, impossible placement params)
 4. **Undo/redo** — Each Regenerate produces new world, discarding previous; no history stack (future enhancement if needed)
 5. **Session Save/Load UI** — World save/load *is* Export/Import here; E1 (save/load) handles live session persistence (separate UI)
@@ -64,10 +64,11 @@ With debug host integration:
 
 **Sections:**
 
-1. **Parameters**
+1. **Parameters** *(amended 2026-10-19 for Feature 8 climate offsets, Feature 9 dragon-layer placement)*
    - Seed: integer text input (default: random)
-   - Biome Weights: one slider per Phase 2 biome type (labels TBD, defaults from `GenParams`)
-   - Placement Params: sliders for Nexus count, dynasty spacing, etc. (exact params TBD per Feature 1 Open Q #1)
+   - Terrain sliders: `WorldShapeParams` (Land, Continents, Islands, Peninsulas, etc., Feature 1)
+   - Climate sliders: `temperatureOffset`, `moistureOffset` (Feature 8; replaced per-biome weights)
+   - Placement Params: *(dragon layer only, not S-1)* sliders for dynasty count, spacing, etc. added when the dragon layer is specced
 
 2. **Actions**
    - Regenerate button (triggers `GenerateWorld()` with current params)
@@ -92,20 +93,21 @@ With debug host integration:
 
 7. **Validation** *(added 2026-10-15)* — Validate button; per-guarantee rows; per-attempt rows (Goal 8)
 
-**Mockup (ASCII, sections 1–4; sections 5–7 below):**
+**Mockup (ASCII, sections 1–4; sections 5–7 below):** *(amended 2026-10-19: climate offsets replace Biome Weights; Placement Params are dragon-layer, not shown in S-1)*
 
 ```
 ┌─ World Generation ──────────────────────────────────┐
 │ Seed:       [ 12345678                 ] [Random]   │
 │                                                      │
-│ Biome Weights:                                       │
-│   Forest:   [====|----------------] 0.40             │
-│   Mountain: [========|------------] 0.30             │
-│   ...                                                │
+│ Terrain:                                             │
+│   Land:         [======|----------] 0.42             │
+│   Mountainous:  [=======|---------] 0.55             │
+│   Rivers:       [======|-----------] 0.50            │
+│   ... (19 sliders total)                             │
 │                                                      │
-│ Placement Params:                                    │
-│   Nexus Count:      [=====|-----------] 8            │
-│   Dynasty Spacing:  [======|----------] 15.0         │
+│ Climate:                                             │
+│   Temp Offset:  [-------|----------] 0.00            │
+│   Moist Offset: [-------|----------] 0.00            │
 │                                                      │
 │ [Regenerate] [Export] [Import] [Cancel]             │
 │                                                      │
@@ -147,16 +149,18 @@ Column 23 is odd, so it sits half a cell down (odd-q). The inspector reads neigh
 
 ### Event Wiring
 
-**Regenerate button click:**
+**Regenerate button click:** *(amended 2026-10-19: uses DiaAPI commands per SD-S1-002, not direct bus events)*
 
 ```cpp
 void OnRegenerateClicked() {
     // Read parameters from UI
-    GenParams params = ReadParamsFromUI();
-    uint64_t seed = ReadSeedFromUI();
+    Json::Value args;
+    args["seed"] = ReadSeedFromUI();
+    // ... add params ...
     
-    // Publish event (handled by WorldGenerationModule on SimPU)
-    PublishEvent(WorldRegenerationRequested{seed, params});
+    // Send command to WorldGenDebugDomain (SD-S1-002)
+    // Domain queues WorldRegenerationRequested on SimPU
+    SendCommand("WorldGen", "regenerate", args);
     
     // Update UI to "Generating..." state
     SetStatusText("Generating...");

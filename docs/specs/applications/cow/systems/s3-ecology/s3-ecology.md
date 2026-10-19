@@ -17,6 +17,8 @@ Weather          S-2.5        A4
 Terrain          S-1          live terrain editor
 ```
 
+**Map sizes** (amended 2026-10-19, product review): Small 66×42 (2,772 cells, default), Standard 80×52 (4,160 cells), Large 104×64 (6,656 cells). S-3 provides a size picker (DiaAPI command: `cow.s3.map.size`) and keeps long-run default Small with Large opt-in.
+
 S-3 loads an S-1 world and runs A1 on it in one of two modes, chosen from a panel inside the stage (AD-005):
 
 - **Controlled:** the weather is pinned to a climate you set, and A3 is optional. This mode is for understanding and tuning: inspect why values changed, edit cells, tune constants live and save them, isolate a cell. The GDD's S-2 tests run here as guided scenarios.
@@ -54,7 +56,8 @@ SimPU (S3Ecology stage)
   ├─ EcologyModule          A1, with EcologyDebugDomain (all tools)
   ├─ WeatherModule          A4, Living mode only
   ├─ (SuccessionModule)     A3, when it exists
-  └─ S3EcologyModule        mode switch, climate input, scenarios, long-run runner, S3 panel card
+  ├─ SuccessionDebugDomain  A3's debug tools (hosted by S-3; amended 2026-10-19, product review)
+  └─ S3EcologyModule        mode switch, climate input, scenarios, long-run runner, S3 panel card, size picker
 ```
 
 ### Modes
@@ -75,7 +78,7 @@ The panel shows which layers are present: World (preset and seed, or file), Weat
 `S3ClimateInput` implements A1's `IEcologyWeatherInput`. It is deterministic and has no RNG.
 
 - **Base:** each cell's weekly temperature is A1's biome seasonal baseline (`IBiomeSeasonalBaseline`) for the current season. Its weekly rainfall is `biome.rainfall_baseline[season] / 13`, a `biomes.json` field that A1 Feature 1 adds.
-- **Global sliders:** a rain multiplier, a temperature offset, and a year scale (GOOD 1.3 / AVERAGE 1.0 / BAD 0.7, the GDD's `YEAR_QUALITY_*` values).
+- **Global sliders:** a rain multiplier, a temperature offset, and a year scale (GOOD 1.3 / AVERAGE 1.0 / BAD 0.7). These values are defined here and referenced by A1 (amended 2026-10-19, product review).
 - **Region overrides:** the same three values per S-1 region, painted from the panel, for gradients such as a dry interior or a wet coast. These need S-1 Feature 9; without it there's one region.
 - **Snow:** `SnowCover` is true while the temperature is below `snow_threshold`.
 
@@ -83,7 +86,7 @@ The panel shows which layers are present: World (preset and seed, or file), Weat
 
 ### Guided scenarios
 
-A scenario is a data file in `Stages/S3Ecology/scenarios/`:
+**Format** (amended 2026-10-19, product review): S-3 Feature 3 uses the CoW-Shared scenario format from S-2.5 Feature 4. A scenario is a data file in `Stages/S3Ecology/scenarios/`:
 
 ```json
 { "id": "s2_breeding_seasons", "mode": "Controlled", "world": "sandbox_small_temperate",
@@ -172,9 +175,9 @@ namespace CoW::S3 {
 
 | # | Feature | Description | Spec | Status |
 |---|---------|-------------|------|--------|
-| 1 | Stage & Modes | `.diastage`, F-1 menu entry, world load and picker (SD-S1-010), `S3EcologyModule`, Controlled/Living switch and reinitialise, layer-presence panel card, time controls (GameSpeedController), the two sandbox worlds. HTML mockup of the S3 card + A1 tool panel first | TBD | Draft |
-| 2 | Pinned Climate | `S3ClimateInput`: biome baseline, global sliders, year scale, region overrides, snow threshold; `cow.s3.climate.*`. Pure logic, TDD | TBD | Draft |
-| 3 | Guided Scenarios | Uses the CoW-Shared scenario format, loader and check-line panel from S-2.5 Feature 4 (amended 2026-10-18); setup as DiaAPI command lists, named check predicates over A1's view and ledger, live check lines; the 10 Controlled scenarios and 4 Living scenarios | TBD | Draft |
+| 1 | Stage & Modes | `.diastage`, F-1 menu entry, world load and picker (SD-S1-010), `S3EcologyModule`, Controlled/Living switch and reinitialise, layer-presence panel card, time controls (GameSpeedController), size picker (`cow.s3.map.size`), the two sandbox worlds. HTML mockup of the S3 card + A1 tool panel first (amended 2026-10-19, product review) | TBD | Draft |
+| 2 | Pinned Climate | `S3ClimateInput`: biome baseline, global sliders, year scale (GOOD 1.3 / AVERAGE 1.0 / BAD 0.7 values defined here, referenced by A1), region overrides, snow threshold; `cow.s3.climate.*`. Pure logic, TDD (amended 2026-10-19, product review) | TBD | Draft |
+| 3 | Guided Scenarios | Uses the CoW-Shared scenario format, loader and check-line panel from S-2.5 Feature 4 (hard dependency; amended 2026-10-19, product review); setup as DiaAPI command lists, named check predicates over A1's view and ledger, live check lines; the 10 Controlled scenarios and 4 Living scenarios | TBD | Draft |
 | 4 | Long-Run Runner | Headless band driver over the pure simulations, worker job with progress and cancel, report JSON with the six checks, live-vs-runner integration test | TBD | Draft |
 | 5 | Climatology Source | `S3ClimatologyInput`: headless A4 years, per-cell weekly means, cache by world + parameter hash, `cow.s3.climate.source`. Needs A4 Features 1–2 | TBD | Draft |
 
@@ -195,15 +198,16 @@ namespace CoW::S3 {
 For the DesignDocs owner to fold back into `TestbedRoster.md`, `S2_SingleCellEcology.md` and `S3_LivingEcology.md`:
 
 1. **S-2 and S-3 merge into S-3 Ecology**, a single stage with Controlled and Living modes. S-2 retires from the roster. The numbering follows the layers: S-1 terrain, S-2.5 weather, S-3 ecology, S-4 dragons.
-2. **Each layer's testbed is the tool for understanding and tuning that layer.** A1 owns the tools (inspector, change ledger, tuning with write-back, painting, graphs), and S-3 hosts them.
+2. **Each layer's testbed is the tool for understanding and tuning that layer.** A1 owns the tools (inspector, change ledger, tuning with write-back, painting, graphs), and S-3 hosts them. A3's `SuccessionDebugDomain` is also hosted by S-3 (amended 2026-10-19, product review).
 3. **No single-cell world.** The S-2 tests run on small S-1 worlds, with `isolate_cell` where one cell has to be alone. The equations are proven in A1's GoogleTests.
-4. **Year quality is a scale on the pinned climate**, not an A1 field (A1 C6).
+4. **Year quality GOOD 1.3 / AVERAGE 1.0 / BAD 0.7 values are defined in S-3's pinned climate** (amended 2026-10-19, product review), not an A1 field (A1 C6).
 5. **S-2's ecology states:** "Depleted" is Collapsed, and "Recovering" is a flag (A1 C4).
 6. **S-2 Test 9's cluster events are multi-cell scenarios now.** On one cell they couldn't fire.
 7. **Long-run checks run headless over the pure simulations**, not by fast-forwarding the clock. S-3 Test 5.1's determinism check doesn't need the replay reader.
 8. **S-3 Test 5.6's 200×200 target becomes A1's ≤ 16 ms at Large (6,656 cells).** The long-run report has a ≤ 5-minute budget at Small. If 10,000 seasons doesn't fit, the season count drops.
 9. **S-3's A3 stage names** (Barren→Pioneer→Established→Mature→Ancient) are replaced by A3's real transitions and recovery stages (A1 C8).
 10. **S-3's pressure overlay** shows A1's real pressure fields (prey, predator, dragon and carrion scent, water gradient) rather than "predator pressure and climate stress".
+11. **Map sizes** (amended 2026-10-19, product review): S-1 now builds and tests all three sizes (Small, Standard, Large). S-3 adds a size picker and keeps long-run default Small with Large opt-in.
 
 ## Dependencies
 
@@ -215,7 +219,8 @@ For the DesignDocs owner to fold back into `TestbedRoster.md`, `S2_SingleCellEco
 
 **Soft (modes and checks light up as they arrive):**
 - **A4 Weather:** Living mode, Feature 4 (runner) and Feature 5 (climatology). S-2.5 should pass before Living-mode results are trusted.
-- **A3 Biome Succession:** transitions in Living mode, the A3 scenario, and the succession long-run check.
+- **A3 Biome Succession:** transitions in Living mode, the A3 scenario, and the succession long-run check. A3's `SuccessionDebugDomain` is hosted by S-3 (amended 2026-10-19, product review).
+- **S-2.5 Feature 4** (CoW-Shared scenario format, loader and check-line panel): hard dependency for Feature 3 (amended 2026-10-19, product review).
 
 **Required by:** S-4 Dragon (its live mode runs in this world, GDD roster), and V-1 for the base-layer toggle later.
 

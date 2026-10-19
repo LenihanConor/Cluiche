@@ -1,7 +1,7 @@
 # CoW F-1 Debug Infrastructure Summary
 
 **Date:** 2026-10-11  
-**Status:** Ready for review
+**Status:** Done (amended 2026-10-19, product review)
 
 ## What F-1 Drives
 
@@ -9,9 +9,9 @@ CoW F-1 Harness testbed exposes **3 gaps in in-game debug tooling** that drive b
 
 | Gap | System | Mockup | Spec | What It Does |
 |-----|--------|--------|------|--------------|
-| No in-game command execution | **DiaDebugConsole** | [debug-console.html](mockups/debug-console.html) | [debug-console.md](debug-console.md) | Text console for executing DiaAPI commands (toggle: `~`) |
-| No registry for data panels | **DiaDebugDataPanel** | [bus-traffic-panel.html](mockups/bus-traffic-panel.html) | [debug-data-panel.md](debug-data-panel.md) | Registry for in-game data tables/logs (proof: Bus Traffic Viewer) |
-| No debug tool discovery | **DiaDebugPalette** | [debug-palette.html](mockups/debug-palette.html) | [debug-palette.md](debug-palette.md) | Searchable launcher for commands/panels/domains (toggle: `F1`) |
+| No in-game command execution | **Panel Console** (DiaDebugDomain) | [debug-console.html](mockups/debug-console.html) | @docs/specs/applications/dia/systems/diadebugdomain/panel-console.md (Done 2026-10-19) | Text console for executing DiaAPI commands (toggle: `~`) |
+| No registry for data panels | **Superseded** — existing `IDebugDomain` covers this | [bus-traffic-panel.html](mockups/bus-traffic-panel.html) | [debug-data-panel.md](debug-data-panel.md) (Superseded 2026-10-13) | `MessageBusDebugDomain` already provides bus-traffic Schema/Live/History tabs |
+| No debug tool discovery | **Panel Palette** (DiaDebugDomain) | [debug-palette.html](mockups/debug-palette.html) | @docs/specs/applications/dia/systems/diadebugdomain/panel-palette.md (Done 2026-10-19) | Searchable launcher for commands/panels/domains (toggle: Ctrl+P) |
 
 ---
 
@@ -173,9 +173,9 @@ Panel opens, shows live table of messages
 - `docs/specs/applications/cow/systems/f1-harness/mockups/debug-palette.html`
 
 **Feature Specs:**
-- `docs/specs/applications/cow/systems/f1-harness/debug-console.md`
-- `docs/specs/applications/cow/systems/f1-harness/debug-data-panel.md`
-- `docs/specs/applications/cow/systems/f1-harness/debug-palette.md`
+- `docs/specs/applications/dia/systems/diadebugdomain/panel-console.md` (Done)
+- `docs/specs/applications/cow/systems/f1-harness/debug-data-panel.md` (Superseded)
+- `docs/specs/applications/dia/systems/diadebugdomain/panel-palette.md` (Done)
 
 **Updated:**
 - `docs/specs/applications/cow/systems/f1-harness/f1-harness.md` (clarified what F-1 drives)

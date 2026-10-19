@@ -26,7 +26,7 @@ Degradation is always staged and recovery is always slower. Near-floor biomes (D
 4. **Legacy that reads.** Each transition applies its legacy deltas once and starts a timed legacy marker (scorch, bare roots, dry riverbed). The marker drives the visuals, history and D4.
 5. **Visual state.** Normal / Stressed / Transitioning / Post-transition per cell, as data for V-1 and the S-3 overlays.
 6. **Save/load.** A3's per-cell state round-trips through E1.
-7. **Observable.** A debug domain with overlays, an inspector and `cow.succession.*` commands, hosted by S-3 Ecology.
+7. **Observable.** A debug domain with overlays, an inspector and `cow.succession.*` commands. S-3 Ecology hosts `SuccessionDebugDomain` alongside A1's (amended 2026-10-19, product review).
 
 ## Non-Goals
 
@@ -41,7 +41,7 @@ Degradation is always staged and recovery is always slower. Near-floor biomes (D
 
 ### Placement
 
-**CoW-Shared** (AD-002). A3 is consumed by A1, A4, V-1, D4, C3 and S-3. Pure logic lives in `Cluiche/CoW/Shared/Succession/`. `SuccessionModule`, the debug domain and the save participant live in `Cluiche/CoW/Modules/`. Test helpers ship in `Cluiche/CoW/Shared/Succession/Testing/`.
+**CoW-Shared** (AD-002). A3 is consumed by A1, A4, V-1, D4, C3 and S-3 Ecology. Pure logic lives in `Cluiche/CoW/Shared/Succession/`. `SuccessionModule` and the save participant live in `Cluiche/CoW/Modules/`. `SuccessionDebugDomain` lives in `Cluiche/CoW/Modules/` and is hosted by S-3 Ecology (amended 2026-10-19, product review). Test helpers ship in `Cluiche/CoW/Shared/Succession/Testing/`.
 
 ```
 SimPU
@@ -52,8 +52,9 @@ SimPU
   │    publishes CellEcologyChanged, BiomeSuccessionTriggered (observable),
   │             BiomeTransitionComplete, BiomeRecoveryProgressed  ← from the resolver's output
   └─ SuccessionModule (A3)
-       owns SuccessionSimulation, its save participant and SuccessionDebugDomain
+       owns SuccessionSimulation and its save participant
        registers the resolver with EcologyModule via ModuleRef
+       SuccessionDebugDomain hosted by S-3 Ecology (amended 2026-10-19, product review)
 ```
 
 The resolver is optional. If A3 is absent, A1 publishes its triggers and nothing changes (A1 soft dependency). A4 already listens for `BiomeTransitionComplete`, and applies the new biome the next week.
@@ -86,7 +87,7 @@ There's no recovery counter here: it is a rule counter in A1's `succession_press
 
 ### Succession rule table (A3 authors, A1 evaluates)
 
-A3 owns the contents of `succession_rules.json` (A1 C7). The rule format, with one addition made here:
+**Content ownership** (amended 2026-10-19, product review): A3 owns the contents of `succession_rules.json` (A1 C7). A1 ships an initial file translated from A3 TechnicalSpec §4 so A1 can be exercised before A3 exists. A1 evaluates every rule and provides the file schema; A3 authors the conditions and increments. The rule format, with one addition made here:
 
 ```json
 { "id": "grassland_drought_scrub", "from": "Grassland", "to": "Scrub", "source": "DROUGHT",
@@ -118,7 +119,7 @@ A3 owns the contents of `succession_rules.json` (A1 C7). The rule format, with o
 
 These numbers are starting values. They are tuned live in S-3's Controlled mode, and saved through A1's tuning write-back.
 
-**Tundra condition:** the GDD's "migration routes severed" isn't measurable. It becomes `years_low_herbivore_inflow`, a new A1 history field: the number of consecutive years in which herbivore migration into the cell was below `low_inflow_threshold`. A1's change ledger already gives it the yearly inflow.
+**Tundra condition** (amended 2026-10-19, product review): the GDD's "migration routes severed" isn't measurable. It becomes `years_low_herbivore_inflow`, a new A1 history field: the number of consecutive years in which herbivore migration into the cell was below `low_inflow_threshold`. This is a saved state field tracked per cell by A1, not read from the ledger.
 
 ### Resolution (A1 step 10)
 
@@ -208,12 +209,13 @@ This is recorded as A1 amendment 3 below, and is new GDD content for the fold-ba
 
 ### Debug and tools
 
-`SuccessionDebugDomain` (SimPU) follows the A1 pattern: commands first, and the panel calls them.
+`SuccessionDebugDomain` (SimPU, hosted by S-3 Ecology; amended 2026-10-19, product review) follows the A1 pattern: commands first, and the panel calls them.
 
 - **Overlays (CellField):** visual state, recovery stage, legacy marker, highest rule progress (forward or recovery), and the cells rejected by staging this band.
 - **Inspector:** the cell's biome history (`last_transition`), every rule's counter and which conditions pass, the marker and years left, the recovery stage, and acceleration.
 - **Commands:** `cow.succession.inspect`, `cow.succession.transition` (forced, still checked against staging), `cow.succession.accelerate`, `cow.succession.rules.reload`, `cow.succession.rejections`.
 - **Instrumentation:** `DIA_PROFILE_SCOPE` for Resolve, OnYear and OnSeason. Metrics: transitions per band by pair, rejections, cells per visual state. Health is Degraded when the rule table references an unknown biome or field.
+- **Logging** (added 2026-10-19, product review): on the `ECO` channel (shares A1's channel): rejected transitions (staging violation, cell, from, to, source) at Info; accepted transitions at Info; recovery stage changes at Info; rule-table validation errors at Error.
 
 ## Public Interfaces
 

@@ -28,7 +28,7 @@ Without debug rendering:
 
 ## Goals
 
-1. **Tile layer with colour-by mode:** one filled flat-top hex per cell, drawn as a single **CellField** layer (dia-needs #14: GPU-retained hex geometry + a per-cell value texture), not as immediate primitives. The colour mode is one of Biome (default), Terrain, Region, Elevation, Latitude or Water Source. Categorical fields use a distinct palette; `elevation` and `latitude` use a sequential ramp over [0, 1]. Feature 6's panel shows a legend for the current mode.
+1. **Tile layer with colour-by mode:** one filled flat-top hex per cell, drawn as a single **CellField** layer (dia-needs #14: GPU-retained hex geometry + a per-cell value texture), not as immediate primitives. The colour mode is one of Relief (default), Biome, Terrain, Region, Elevation, Latitude, Water Source, Depth Zone, Temperature, Moisture or a named stage layer (see Colour Modes). Categorical fields use a distinct palette; `elevation` and `latitude` use a sequential ramp over [0, 1]. Feature 6's panel shows a legend for the current mode.
 2. **Grid lines and region edges:** optional hex outlines (CellField's inset, so the gaps are the lines and cost nothing), and region boundaries drawn along every shared edge whose two cells differ in region.
 3. **Sites:** markers for Hearth Sites (circles), Nexus Nodes (triangles) and world-thrones (stars), each with a distinct colour and shape.
 4. **Dynasty Starts:** a player marker, rival markers, and a minimum-spacing ring around each start. A ring is red when its start belongs to a pair in DynastySpacing's `violatingPairs`.
@@ -41,12 +41,12 @@ Without debug rendering:
 
 1. **V-1 real tile art:** debug-grade only (solid-colour hexes, simple shapes). V-1 owns sprite tiles, the real camera and fog of war.
 2. **Animation:** static rendering only.
-3. **Lighting / shaders:** flat, unlit rendering.
+3. **3D lighting:** *(amended 2026-10-19)* Relief hillshade is the default tile layer (uses a simple dot-product shader over the slope field), but there's no 3D lighting, shadow maps or normal mapping. The world stays a 2D grid.
 4. **3D terrain:** elevation is a colour ramp on the 2D grid, not a heightmap mesh.
 5. **Live ecology state:** world structure only. A1 runtime state belongs to S-2/S-3.
 6. **Camera persistence:** pan/zoom resets on regeneration.
 7. **Drawing a discarded world:** a failed generation's world is thrown away (Feature 5), so its evidence isn't drawn. Feature 6 lists failed attempts as text.
-8. **Standard / Large performance:** S-1 measures Small only (parent spec, Map Sizes). Larger maps may exceed the budget; that's for whichever testbed first needs them.
+8. **Performance measured at Small:** S-1 measures performance at the dev default (Small). Standard and Large are acceptance targets (amended 2026-10-19, parent spec Map Sizes). Per-size budgets scale by cell count.
 
 ## Architecture
 
@@ -76,14 +76,21 @@ Region-edge counts come from the flat-top odd-q rectangle (about `3 × W × H` e
 
 ### Colour Modes
 
+> **Amended 2026-10-19:** Relief is the default (terrain spec, plan task 10). Temperature, Moisture and per-stage layers come from Feature 8 and Feature 1. A planned **World Layer Viewer** spec (Dia, to be specced) will replace per-system colour modes with a layer registry shared by S-1, A4, S-2.5 and S-3.
+
 | Mode | Field | Palette |
 |------|-------|---------|
-| Biome (default) | `cell.biome` | Categorical, HSV-spaced placeholder colours until Phase 2 biome names land |
+| Relief (default) | `slope` + `elevation` | Hillshade (dot product of slope normal with light direction) over an elevation tint |
+| Biome | `cell.biome` | Categorical, HSV-spaced placeholder colours until Phase 2 biome names land |
 | Terrain | `cell.terrain` | Categorical |
 | Region | `cell.region` | Categorical (same colours as `RegionEdges`) |
 | Elevation | `cell.elevation` | Sequential ramp, 0 = dark blue → 1 = white |
 | Latitude | `cell.latitude` | Sequential ramp, 0 (equator) = warm → 1 (pole) = cold |
 | Water Source | `cell.waterSource` | None = neutral grey; Ocean, Lake and River each distinct |
+| Depth Zone | `cell.depthZone` | Categorical: None (ocean), FirstShores, WildReaches, AncientInteriors |
+| Temperature | Feature 8 layer | Sequential ramp, 0 = cold → 1 = hot |
+| Moisture | Feature 8 layer | Sequential ramp, 0 = dry → 1 = wet |
+| (Per-stage layers) | Feature 1/8 layers | `landPotential`, `ridgeMask`, `barrierMask`, `flowAccumulation`, etc. (queried through `layers` command) |
 
 On a world or colour-mode change the domain writes the per-cell values into its CellField layer (category ids for categorical modes, floats for Elevation/Latitude) and picks the palette or ramp; nothing is uploaded on frames where neither changed. The colour mode is set by the `setColourMode` command (`args: { "mode": "<name>" }`). `GetJSONState` writes the active mode and its legend (category → colour, or ramp endpoints with min/max values seen in this world) for Feature 6 to show.
 
@@ -121,7 +128,7 @@ Pan (WASD / arrow keys, clamped to world bounds), zoom (mouse wheel), reset (Hom
 // WorldGenDebugDomain.h (CoW/Shared/WorldGeneration/) — DIA_DEBUG only
 namespace CoW::WorldGeneration {
 
-enum class ColourMode : uint8_t { Biome, Terrain, Region, Elevation, Latitude, WaterSource };
+enum class ColourMode : uint8_t { Relief, Biome, Terrain, Region, Elevation, Latitude, WaterSource, DepthZone, Temperature, Moisture, Layer };   // Layer = by-name from Feature 1/8 layers
 
 class WorldGenDebugDomain : public Dia::VisualDebugger::IDebugDomain {
 public:
@@ -167,8 +174,8 @@ public:
 | **Feature 4 (JSON Export/Import)** | Imported worlds also rendered | Approved |
 | **Feature 6 (F-1 Debug Host Integration)** | Panel controls, Cell Inspector, legend display | Approved |
 | **DiaDebugDomain** | `IDebugDomain`, `IVisualDebugger`, DiaDebugPanel | Done |
-| **dia-needs #13** | Debug-draw geometry budget 2,048 → 8,192 | Approved 2026-10-15, not built — **blocks this feature** |
-| **dia-needs #14 (CellField)** | Tile layer, colour modes, grid inset | Approved 2026-10-15, spec not written — **blocks this feature** |
+| **dia-needs #13** | Debug-draw geometry budget 2,048 → 8,192 | Done |
+| **dia-needs #14 (CellField)** | Tile layer, colour modes, grid inset | Spec Approved 2026-10-15, not built — **blocks this feature** |
 | **Phase 2 data design** | Biome, Terrain, Region and ApotheosisType enums for palettes and markers | GDD in progress (placeholder colours/shapes) |
 
 ### Dia Engine Dependencies

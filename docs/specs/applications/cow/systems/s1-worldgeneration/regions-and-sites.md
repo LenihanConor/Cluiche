@@ -42,7 +42,7 @@ Regions and nodes are the map the ecology and the dragon layer sit on. A1 derive
 4. **Smoothing or editing biomes.** Biomes are fixed by Feature 8. Regions take a majority and leave the cells alone.
 5. **Edge-biome nodes.** The GDD's 2–4 node edge biomes are a region-of-a-biome concept; not built here.
 6. **Live preview.** Regions and sites are computed on Regenerate only.
-7. **Standard and Large maps.** Small only (SD-S1-006).
+7. **Per-size tuning.** Small is the dev default; Standard and Large are acceptance targets (amended 2026-10-19, SD-S1-006).
 
 ## Architecture
 

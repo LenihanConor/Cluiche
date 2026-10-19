@@ -44,68 +44,111 @@ With export/import:
 
 ### JSON Schema (v1)
 
+> **Amended 2026-10-19 (product review):** schema updated to match actual enums (Biome, TerrainType, RegionId), add missing terrain fields (`depthZone`, `landmass`, `terrainFlags`, `downstream`, `mainLandmass`), replace fixed site arrays with generic `sites` registry per Feature 9, add `provenance` per SD-S1-009, and use `format` + `version` convention (not `schema_version`) to match preset files. Full text updated when this feature is built.
+
 ```json
 {
-  "schema_version": 1,
+  "format": "cow.world",
+  "version": 1,
+  "provenance": {
+    "seed": 12345678,
+    "generator_version": 1,
+    "rules_version": 1,
+    "preset_id": "continental",
+    "params": {
+      "landFraction": 0.42,
+      "continents": 1,
+      "islands": 4,
+      "continentIslands": 0.7,
+      "peninsulas": 2,
+      "coastline": 0.5,
+      "mountainousness": 0.55,
+      "spineToRing": 0.15,
+      "orientationDeg": 30,
+      "passes": 2,
+      "barrier": 0.6,
+      "barrierForm": "Plateau",
+      "ruggedness": 0.4,
+      "rivers": 0.5,
+      "valleyDepth": 0.4,
+      "lakes": 4,
+      "latitudeNorthDeg": 60,
+      "latitudeSouthDeg": 20,
+      "temperatureOffset": 0,
+      "moistureOffset": 0
+    }
+  },
   "world": {
     "topology": "hex_flat_odd_q",
     "dimensions": {
-      "width": 80,
-      "height": 52
+      "width": 66,
+      "height": 42
     },
+    "main_landmass": 1,
     "cells": [
       {
-        "biome": "Forest",
-        "terrain": "Foliage",
-        "region": "VerdantLowlands",
+        "biome": "Biome.TemperateForest",
+        "terrain": "Lowland",
+        "region": 3,
         "elevation": 0.35,
         "latitude": 0.42,
-        "water_source": "None"
-      },
-      // ... 4160 cells total (width * height); cell [y * width + x]
+        "water_source": "None",
+        "depth_zone": "FirstShores",
+        "landmass": 1,
+        "terrain_flags": 1,
+        "downstream": 7
+      }
+      // ... 2772 cells total (width * height); cell [y * width + x]
     ],
-    "hearths": [
+    "regions": [
       {
-        "position": { "x": 10, "y": 20 },
-        "parent_region": "VerdantLowlands"
-      },
-      // ... N hearths
+        "id": 1,
+        "zone": "FirstShores",
+        "landmass": 1,
+        "is_island": false,
+        "primary_biome": "Biome.GrasslandSteppe",
+        "purity": 0.72,
+        "cell_count": 234,
+        "centre_cell": 1145,
+        "neighbours": [2, 3, 5]
+      }
+      // ... 10-16 mainland regions + one per other landmass
     ],
-    "nexuses": [
-      {
-        "position": { "x": 50, "y": 60 }
-      },
-      // ... N nexuses
-    ],
-    "thrones": [
-      {
-        "position": { "x": 70, "y": 80 },
-        "type": "FireApotheosis"
-      },
-      // ... exactly 6 thrones
-    ],
-    "dynasty_starts": [
-      {
-        "position": { "x": 30, "y": 40 },
-        "role": "PLAYER"
-      },
-      {
-        "position": { "x": 100, "y": 110 },
-        "role": "RIVAL"
-      },
-      // ... N dynasty starts (1 PLAYER, N-1 RIVALs)
-    ]
+    "sites": {
+      "CoW.Node.Corridor": [
+        { "cell": 450, "region": 2, "variant": 0, "flags": 1 }
+        // ... 2-4 per barrier
+      ],
+      "CoW.Node.River": [
+        { "cell": 780, "region": 3, "variant": 0, "flags": 0 }
+        // ... river mouths + every 7 upstream
+      ],
+      "CoW.Node.Hunting": [
+        { "cell": 920, "region": 5, "variant": 0, "flags": 0 }
+        // ... 6-15 per region
+      ],
+      "CoW.Node.Resource": [
+        { "cell": 1200, "region": 7, "variant": 0, "flags": 0 }
+      ],
+      "<unknown-kind>": [
+        { "cell": 1500, "region": 8, "variant": 0, "flags": 0 }
+      ]
+    }
   }
 }
 ```
 
-**Rationale for schema choices:**
-- **String biome/terrain/region names** (not integer IDs): Human-readable ("Forest" beats `BiomeID: 3`); maps to StringCRC at import time
+**Rationale for schema choices (amended 2026-10-19):**
+- **String biome/terrain/region names** (not integer IDs): Biomes and terrain types use `StringCRC` ids ("Biome.TemperateForest", "Lowland"); region is `uint8` numeric id. Human-readable; maps to enums at import time
 - **Flat cells array** (not 2D nested arrays): Simpler JSON parse; cell `[y * width + x]` mapping explicit in import code
-- **Separate site arrays** (not embedded in cells): Matches `WorldStructure` layout; easier to edit site positions without finding the cell
-- **`schema_version` at top level**: Enables future migration (v2 might add new site types, rename fields, etc.)
-- **`topology`** *(amended 2026-10-14)*: names the cell layout. Only `"hex_flat_odd_q"` (Dia's rectangular `HexPathGrid` layout) is valid in v1; import fails on anything else, so a square-grid file can never be silently misread. No world file existed before this amendment, so the schema stays at v1.
-- **`elevation`, `latitude`, `water_source`** *(amended 2026-10-14)*: A4 Weather's terrain inputs. `elevation` and `latitude` are floats in [0, 1], written with 9 significant digits (`float` round-trips exactly at that precision); `water_source` is `None` / `Ocean` / `Lake` / `River`. Import fails if a float is outside [0, 1] or `water_source` is unknown.
+- **Generic `sites` registry** (not fixed arrays): Feature 9 re-scope (amended 2026-10-18). Each kind (`StringCRC` id) is a `{cell, region, variant, flags}` array. Unknown kinds round-trip unchanged so authored worlds survive a build that lacks the kind
+- **Provenance** (added 2026-10-19): SD-S1-009 records seed, params, preset, generator and rules versions. Import opens the world **locked**; moving a slider without `unlock: true` refuses
+- **`format` + `version`** (amended 2026-10-19): Matches preset convention, not `schema_version`
+- **Terrain fields** (added 2026-10-19): `depth_zone` ("None" / "FirstShores" / "WildReaches" / "AncientInteriors"), `landmass` (uint8), `terrain_flags` (uint8 bitfield), `downstream` (direction 0..5 or 7 = `kNoDirection`), and world-level `main_landmass`
+- **`topology`** *(amended 2026-10-14)*: names the cell layout. Only `"hex_flat_odd_q"` (Dia's rectangular `HexPathGrid` layout) is valid in v1; import fails on anything else
+- **`elevation`, `latitude`, `water_source`** *(amended 2026-10-14)*: A4 Weather's terrain inputs. `elevation` and `latitude` are floats in [0, 1], written with 9 significant digits; `water_source` is `None` / `Ocean` / `Lake` / `River`. Import fails if a float is outside [0, 1] or `water_source` is unknown
+- **Biome enum values** (amended 2026-10-19): `Ocean`, `Lake`, `GrasslandSteppe`, `TemperateForest`, `WetlandDelta`, `DesertBasin`, `AlpineMountain`, `TundraBoreal`, `Rainforest`, `VolcanicAshland` (Feature 8)
+- **TerrainType enum values** (amended 2026-10-19): `DeepWater`, `ShallowWater`, `Lake`, `River`, `Lowland`, `Hills`, `Highland`, `Mountain`, `Peak`, `Cliff`, `Pass`, `Volcano` (Feature 1)
 
 ### Export Implementation
 
