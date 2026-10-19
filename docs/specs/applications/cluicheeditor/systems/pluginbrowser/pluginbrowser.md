@@ -27,7 +27,7 @@ The Plugin Browser is the panel in CluicheEditor that lets developers discover, 
 | Feature | Description | Spec | Status |
 |---------|-------------|------|--------|
 | Plugin Browser Scaling | Project-scope filter + compact master-detail layout + search + filter chips + palette commands | [plugin-browser-scaling.md](plugin-browser-scaling.md) | Approved |
-| Game-Scoped Editor Plugins | A `.diagame` names its editor manifest; those plugins exist only while that game is loaded (fully unavailable otherwise). Generic Dia editors stay available in every game. Narrows SCPB-002 | [game-scoped-plugins.md](game-scoped-plugins.md) | Draft |
+| Game-Scoped Editor Plugins | A `.diagame` names its editor manifest; those plugins exist only while that game is loaded (fully unavailable otherwise). Generic Dia editors stay available in every game. Narrows SCPB-002 | [game-scoped-plugins.md](game-scoped-plugins.md) | Approved |
 
 ## Dependencies
 

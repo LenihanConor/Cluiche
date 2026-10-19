@@ -1,6 +1,6 @@
 # Feature Spec: Game-Scoped Editor Plugins
 
-**Status:** Draft
+**Status:** Approved
 **Application:** CluicheEditor
 **System:** CluicheEditor Plugin Browser
 **Origin:** 2026-10-19 world-sim product review. The CoW World Data Editor and World Sim Inspector are the first editor plugins that belong to one game.
@@ -111,6 +111,8 @@ Every registry entry already has a `manifestId`; empty means built-in. This feat
 | AC5 | Connecting a running CoW game (live `diagame_path`) makes CoW plugins available without a restart |
 | AC6 | Generic Dia plugins (e.g. Scene Editor, Asset Catalogue Editor) are available in every case above |
 | AC7 | A `.diagame` with no `"editor"` key behaves exactly as today |
+| AC8 | Switching game with a dirty game-scoped plugin prompts Save / Discard / Cancel; Cancel keeps the current game |
+| AC9 | A live connection from a different game asks before switching; declining keeps the loaded game and its plugins |
 
 ## Test Strategy
 
@@ -132,11 +134,11 @@ Every registry entry already has a `manifestId`; empty means built-in. This feat
 | SCPB-002 | The filter is display-only | **Narrowed** (2026-10-19): it still holds for `.cluicheproj` manifests. Game-scoped plugins are fully unavailable out of scope, by user decision |
 | CoW AD-001 | Ask before editing CluicheEditor / Dia | Building this changes `Dia/DiaEditor` and `CluicheEditor`, so it needs sign-off before implementation |
 
-## Open Design Questions
+## Resolved Decisions
 
-1. **Unsaved work on a game switch.** If a CoW editor has unsaved edits when the game switches, should the switch be blocked behind a Save / Discard prompt, or should the edits be auto-stashed? Recommendation: prompt, using the existing dirty-state pattern if `IEditorPlugin` has one.
-2. **The live connection overriding the open project.** A connecting game "takes precedence" over the open `.diagame`. If you're editing CoW data and a CluicheTest game connects, the CoW editor would close. Should the switch ask first?
+1. **Unsaved edits on a game switch: prompt** (2026-10-19). If any game-scoped plugin is dirty, the switch shows Save / Discard / Cancel before closing it. Cancel keeps the current game loaded. This uses the existing dirty-state pattern if `IEditorPlugin` has one; otherwise the feature adds `IsDirty()` / `Save()` to the plugin interface.
+2. **A different game connecting: ask before switching** (2026-10-19). When a live connection reports a `diagame_path` different from the loaded one, the editor asks "Switch to <game>?" instead of switching straight away (this narrows "takes precedence" in `GameConnectionController`). Declining keeps the current game; the connection stays up but game-scoped plugins don't change. If the same game connects, nothing is asked.
 
 ## Status
 
-`Draft`
+`Approved` (2026-10-19). Build needs AD-001 sign-off for the `Dia/DiaEditor` and `CluicheEditor` changes.
