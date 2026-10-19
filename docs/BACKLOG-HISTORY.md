@@ -249,6 +249,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 
 | Testbed / piece | Locked | Notes |
 |-----------------|--------|-------|
+| S-2.5 Weather Patterns | 2026-10-18 | `S2.5_WeatherPatterns.md`; Challenge Pass with 5 challenges, all accepted (year quality dropped, A4's own command set, numeric DiaAutomation checks, new Test 9 determinism, Small-map perf limits) |
 | S-3 Living Ecology | 2026-10-11 | `S3_LivingEcology.md`; updated to include A4 weather overlays |
 | S-2 Single Cell Ecology | 2026-10-11 | `S2_SingleCellEcology.md` |
 | V-1 Tile Rendering | 2026-10-11 | `V1_TileRendering.md`; 5-layer rendering + A4 weather |

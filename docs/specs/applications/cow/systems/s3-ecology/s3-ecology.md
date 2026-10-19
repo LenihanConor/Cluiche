@@ -174,7 +174,7 @@ namespace CoW::S3 {
 |---|---------|-------------|------|--------|
 | 1 | Stage & Modes | `.diastage`, F-1 menu entry, world load and picker (SD-S1-010), `S3EcologyModule`, Controlled/Living switch and reinitialise, layer-presence panel card, time controls (GameSpeedController), the two sandbox worlds. HTML mockup of the S3 card + A1 tool panel first | TBD | Draft |
 | 2 | Pinned Climate | `S3ClimateInput`: biome baseline, global sliders, year scale, region overrides, snow threshold; `cow.s3.climate.*`. Pure logic, TDD | TBD | Draft |
-| 3 | Guided Scenarios | Scenario file format and loader, setup as DiaAPI command lists, named check predicates over A1's view and ledger, live check lines; the 10 Controlled scenarios and 4 Living scenarios | TBD | Draft |
+| 3 | Guided Scenarios | Uses the CoW-Shared scenario format, loader and check-line panel from S-2.5 Feature 4 (amended 2026-10-18); setup as DiaAPI command lists, named check predicates over A1's view and ledger, live check lines; the 10 Controlled scenarios and 4 Living scenarios | TBD | Draft |
 | 4 | Long-Run Runner | Headless band driver over the pure simulations, worker job with progress and cancel, report JSON with the six checks, live-vs-runner integration test | TBD | Draft |
 | 5 | Climatology Source | `S3ClimatologyInput`: headless A4 years, per-cell weekly means, cache by world + parameter hash, `cow.s3.climate.source`. Needs A4 Features 1–2 | TBD | Draft |
 

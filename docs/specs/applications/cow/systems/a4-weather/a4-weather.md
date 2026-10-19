@@ -263,7 +263,7 @@ Drawers are hosted wherever the domain is registered: S-2.5 first, then S-3.
 - shows all fields plus the derived values: seasonal baseline, prevailing direction, pressure perturbation, upwind elevation
 - the domain feeds it to the panel for the selected cell
 
-**Console commands** (`cow.weather.*`, `CommandRegistry`). All mutations are queued and applied at the next `Step()` boundary:
+**Console commands** (`cow.weather.*`, `CommandRegistry`). All mutations are queued and applied at the next `Step()` boundary. The commands are a typed command model (`WeatherCommandExecutor`) bound to a `WeatherSimulation&`: `WeatherModule` binds one to its own simulation, and S-2.5's headless runner binds another to its own, so a scenario's setup commands mean the same thing live and headless:
 
 | Command | Effect |
 |---|---|
@@ -294,7 +294,7 @@ Forcings and overrides are deterministic inputs applied at a fixed point in the 
 A4 provides the reusable pieces that a testbed needs. It does not own the stage.
 
 - **Presets.** The five AuthoringDebug §5 presets are `coastal_storm`, `rain_shadow`, `winter_snow`, `spring_melt` and `drought`.
-  - Each preset is a data file: a starting committed state, forcings, and a season, over a fixed preset world.
+  - Each preset is a data file: a starting committed state, forcings, and a season, over a fixed preset world. That world is S-2.5's `s25_coast_range` (an S-1 preset + seed), amended 2026-10-18.
   - `cow.weather.load_preset <name>` applies one at the next step boundary.
 - **Regression scenarios.** The four AuthoringDebug §6.1–6.4 scenarios are GoogleTests over hand-built hex terrains. Each terrain has a coast, an inland region and a mountain range. The tests use the GDD's success ratios:
   - coastal precipitation > 1.5× inland
@@ -305,13 +305,16 @@ A4 provides the reusable pieces that a testbed needs. It does not own the stage.
 ### Testbed host: S-2.5 Weather Patterns
 
 A4 in isolation is proven in **S-2.5 Weather Patterns**, a separate testbed. The GDD decided this on 2026-10-12, and S-2.5 is a prerequisite for S-3. S-2.5 owns:
-- the stage, with A4 alone over an S-1 world, `history_weeks: 13` and the table baseline
+- the stage, with A4 alone over curated S-1 worlds, `history_weeks: 13` and the table baseline
 - the preset and overlay panels
 - click-to-inspect
 - step-back
-- the visual walkthrough of the six GDD success criteria
+- the GDD's nine tests as numeric checks, run headless for the verdict and live as check lines, plus a walkthrough backed by those checks
 
-S-2.5 uses A4's debug domain, presets and commands as they are. A4 needs nothing from S-2.5. Its GDD testbed doc (`S2.5_WeatherPatterns.md`) still needs a Challenge Pass and lock before S-2.5 gets a spec.
+S-2.5 uses A4's debug domain, presets and commands as they are. Its spec (@docs/specs/applications/cow/systems/s25-weatherpatterns/s25-weatherpatterns.md, Approved 2026-10-18) asked for three A4 changes, applied here on 2026-10-18:
+- **`WeatherRunner`**: a pure initialise → spin-up → step-N-weeks driver (see Public Interfaces) that `WeatherModule` uses, so S-2.5's headless runner can't drift from the module.
+- **The command executor binds to a `WeatherSimulation&`**, not to `WeatherModule` (see Console commands).
+- **The preset world is S-2.5's `s25_coast_range`** (S-1 preset + seed; see Presets and regression scenarios).
 
 ## Public Interfaces
 
@@ -335,6 +338,16 @@ namespace CoW::Weather {
     struct WeatherParameters { /* GDD §14 groups + init + baseline_table */ };
     bool LoadWeatherParameters(const Json::Value& root, WeatherParameters& out);   // false = invalid; out = defaults
     WeatherParameters DefaultWeatherParameters();
+
+    // Pure driver shared by WeatherModule and S-2.5's headless runner (amended 2026-10-18).
+    // Initialise + spin-up, then one Step per week with the season taken from the week (13 weeks per season).
+    class WeatherRunner {
+    public:
+        bool Start(const WeatherTerrain& terrain, const WeatherParameters& params,
+                   const IBiomeSeasonalBaseline& baseline, uint32_t spinupWeeks, IParallelExecutor& executor);
+        void StepWeek(IParallelExecutor& executor);
+        WeatherSimulation& GetSimulation();
+    };
 
     // SimModule wiring.
     class WeatherModule : public Dia::ApplicationFlow::SimModule {
@@ -387,7 +400,7 @@ These are for the DesignDocs owner to fold back into A4:
 4. **The steps run as staged passes.** Each step reads the previous step's results. Steps that read neighbours read a stable copy, and transport is a gather. This makes TechnicalSpec §2's "read current, write next" concrete, since later steps depend on earlier ones.
 5. **No `is_update_in_progress()`** (EC-14). The update runs inside one sim frame and E1 saves at frame boundaries.
 6. **The initial state and spin-up are new.** The GDD doesn't define them. A4 adds seeding rules and 52 silent weeks.
-7. **`year_quality` forcing (CH-01) is left out.** It stays parked (PARK-A4-001) until A1 decides whether `year_quality` survives. A1 was re-locked 2026-10-12.
+7. **`year_quality` forcing (CH-01) is left out.** Closed 2026-10-18: `year_quality` is gone (CHANGE-038), and CHANGE-042 removed the stale term from the A4 TechSpec.
 8. **Terrain inputs depend on an S-1 amendment.** S-1 must be hex and provide elevation, latitude and water_source per cell. Today its `Cell` is `{biome, terrain, region}` on a square grid.
 9. **The A4 docs' open question 2 ("S-1.5 sandbox?") is closed.** The GDD has since decided on a separate S-2.5 Weather Patterns testbed (2026-10-12). A4's own docs still list the question as open.
 10. **History is 13 weeks, and only in A4-only stages (S-2.5).** It answers GDD open question 3. Production builds keep no history.
