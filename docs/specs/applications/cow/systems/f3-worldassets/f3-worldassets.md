@@ -197,7 +197,7 @@ DiaAPI commands. Every authoring action is a command, and the panel calls the sa
 - Warning: stale, dropped keys, dropped cells.
 - Error: unsupported version, missing file, `save_as` with no `source` alias.
 
-**Panel:** a "World Assets" card in the F-1 debug host. It shows the loaded bundle and its parts with stale badges, has list/load/save-as controls, and shows whether `source` is present. It needs an HTML mockup before it is built, and it calls only DiaAPI commands.
+**Panel:** a "World Assets" card in the F-1 debug host (mockup: [mockups/world-assets-card.html](mockups/world-assets-card.html); schema-driven tooltips: [mockups/field-schema-tooltips.html](mockups/field-schema-tooltips.html)). It shows the loaded bundle and its parts with stale badges, has list/load/save-as controls, and shows whether `source` is present. It needs an HTML mockup before it is built, and it calls only DiaAPI commands.
 
 ## Features
 
