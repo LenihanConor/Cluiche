@@ -8,8 +8,9 @@ namespace Dia
 	namespace Maths
 	{
 		// Total amplitude S = sum(gain^i), accumulated in octave order (same order as the fractal loops).
-		float FractalMaxAmplitude(const FractalParams& params)
+		float FractalMaxAmplitude(const FractalParams& rawParams)
 		{
+			const FractalParams params = NoiseDetail::SanitiseParams(rawParams);
 			const int octaves = NoiseDetail::ClampOctaves(params.octaves);
 			float s = 0.0f;
 			float a = 1.0f;

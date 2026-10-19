@@ -9,6 +9,12 @@ namespace Dia
 		//---------------------------------------------------------------------------------------------------------------------------------
 		// Seeded Noise - pure, bit-identical (seed, x, y[, z]) -> float functions.
 		// No global state, no allocation, safe from any thread. See docs/specs/applications/dia/systems/diamaths/seeded-noise.md
+		// Non-finite and extreme inputs (all functions, deterministic, never UB):
+		//   - coordinates: NaN -> 0; +-inf and any |v| > 2^23 clamp to +-2^23 (so results at huge inputs equal the clamp-edge value)
+		//   - FractalParams frequency / lacunarity / gain: non-finite -> defaults 1 / 2 / 0.5; |gain| limited to 4 (no overflow over 12 octaves)
+		//   - jitter: NaN or <= 0 -> 0, >= 1 (incl. +inf) -> 1;  octaves outside 1..12 clamp;  ridged sharpness clamps to 1..4
+		//   - Warp2D: non-finite x / y map as coordinates above (finite values pass through unchanged), NaN strength -> 0, |strength| limited to 2^23
+		//   Results are always finite and inside the documented ranges. Implemented with bit-pattern tests (no <cmath>).
 		//---------------------------------------------------------------------------------------------------------------------------------
 
 		enum class NoiseType : uint8_t { Value, Gradient, Simplex, Worley };

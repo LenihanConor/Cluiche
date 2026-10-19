@@ -173,6 +173,19 @@ All acceptance criteria in `docs/specs/applications/dia/systems/diamaths/seeded-
 
 ---
 
+## Non-finite and extreme inputs
+
+Every public function is total: no crash or UB, finite result inside the documented range, bit-identical across repeats.
+
+- Coordinates: NaN maps to 0; +-inf and any magnitude above 2^23 clamp to +-2^23 (`NoiseDetail::ClampCoord`). Near 2^23 float precision is about 1 unit, so values there are essentially lattice values.
+- `FractalParams` frequency / lacunarity / gain: non-finite values fall back to the defaults (1 / 2 / 0.5); gain is limited to |gain| <= 4. `FractalMaxAmplitude` applies the same sanitising.
+- Worley jitter: NaN or <= 0 gives 0, >= 1 (including +inf) gives 1.
+- Octaves outside 1..12 clamp; ridged sharpness clamps to 1..4.
+- `Warp2D`: non-finite x / y are mapped like coordinates (finite values pass through unchanged), NaN strength is 0, |strength| is limited to 2^23.
+- Detection uses float bit patterns (`NoiseDetail::IsFiniteBits`), so no `<cmath>` and no dependence on fast-math. Covered by `TestNoiseEdgeCases.cpp`.
+
+---
+
 ## References
 
 - **Spec:** docs/specs/applications/dia/systems/diamaths/seeded-noise.md

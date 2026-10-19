@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cstring>
 
 namespace Dia
 {
@@ -54,9 +55,27 @@ namespace Dia
 				return static_cast<float>(h >> 8) * 1.1920928955078125e-7f - 1.0f; // 2^-23
 			}
 
+			// True when v is neither NaN nor +-inf (exponent bits all ones). Bit-pattern test: no <cmath>, immune to fast-math.
+			inline bool IsFiniteBits(float v)
+			{
+				uint32_t u;
+				std::memcpy(&u, &v, sizeof(u));
+				return (u & 0x7F800000u) != 0x7F800000u;
+			}
+
+			// v if finite, otherwise 'fallback' (deterministic NaN/inf sanitiser for parameters).
+			inline float FiniteOr(float v, float fallback)
+			{
+				return IsFiniteBits(v) ? v : fallback;
+			}
+
 			// Clamp a coordinate to +-2^23 (keeps fractional parts and the lattice floor well defined). Comparisons only.
+			// NaN maps to 0 (so the int conversion in FloorToInt is always defined); +-inf clamp to +-2^23.
 			inline float ClampCoord(float v)
 			{
+				uint32_t u;
+				std::memcpy(&u, &v, sizeof(u));
+				if ((u & 0x7FFFFFFFu) > 0x7F800000u) return 0.0f; // NaN
 				if (v > kNoiseCoordLimit) v = kNoiseCoordLimit;
 				if (v < -kNoiseCoordLimit) v = -kNoiseCoordLimit;
 				return v;

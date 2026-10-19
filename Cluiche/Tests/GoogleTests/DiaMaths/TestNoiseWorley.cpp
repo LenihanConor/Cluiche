@@ -92,7 +92,7 @@ namespace
 // AC1: golden bit patterns
 //-----------------------------------------------------------------------------
 
-TEST(SLOW_NoiseWorley, GoldenValues)
+TEST(NoiseWorley, GoldenValues)
 {
 	ASSERT_GE(kSampleCount, 16);
 	for (int i = 0; i < kSampleCount; ++i)
@@ -109,7 +109,7 @@ TEST(SLOW_NoiseWorley, GoldenValues)
 // AC2: determinism
 //-----------------------------------------------------------------------------
 
-TEST(SLOW_NoiseWorley, Determinism)
+TEST(NoiseWorley, Determinism)
 {
 	for (int i = 0; i < kSampleCount; ++i)
 	{
@@ -187,7 +187,7 @@ TEST(SLOW_NoiseWorley, Distribution)
 // AC5: seed sensitivity
 //-----------------------------------------------------------------------------
 
-TEST(SLOW_NoiseWorley, SeedSensitivity)
+TEST(NoiseWorley, SeedSensitivity)
 {
 	int diffF1 = 0, diffId = 0;
 	for (int i = 0; i < 1024; ++i)
@@ -276,7 +276,7 @@ TEST(SLOW_NoiseWorley, MatchesBruteForce9x9)
 // AC10: jitter behaviour and cell ids
 //-----------------------------------------------------------------------------
 
-TEST(SLOW_NoiseWorley, ZeroJitterIsRegularGrid)
+TEST(NoiseWorley, ZeroJitterIsRegularGrid)
 {
 	const uint32_t seed = 31337u;
 	for (int iy = -8; iy <= 8; ++iy)
@@ -291,7 +291,7 @@ TEST(SLOW_NoiseWorley, ZeroJitterIsRegularGrid)
 	}
 }
 
-TEST(SLOW_NoiseWorley, FullJitterMovesFeaturePoints)
+TEST(NoiseWorley, FullJitterMovesFeaturePoints)
 {
 	const uint32_t seed = 9u;
 	int movedF1 = 0;
@@ -308,7 +308,7 @@ TEST(SLOW_NoiseWorley, FullJitterMovesFeaturePoints)
 	EXPECT_GE(ids.size(), 200u);
 }
 
-TEST(SLOW_NoiseWorley, CellIdIsPerFeaturePoint)
+TEST(NoiseWorley, CellIdIsPerFeaturePoint)
 {
 	const uint32_t seed = 4242u;
 	for (int cy = -5; cy <= 5; ++cy)

@@ -65,8 +65,15 @@ namespace Dia
 			return Clamp1((c0 + (c1 - c0) * w) * kGradientScale3D);
 		}
 
-		float FractalNoise3D(uint32_t seed, float x, float y, float z, const FractalParams& params)
+		float FractalNoise3D(uint32_t seed, float x, float y, float z, const FractalParams& rawParams)
 		{
+			FractalParams params = rawParams;
+			params.frequency  = NoiseDetail::FiniteOr(rawParams.frequency, 1.0f);
+			params.lacunarity = NoiseDetail::FiniteOr(rawParams.lacunarity, 2.0f);
+			params.gain       = NoiseDetail::FiniteOr(rawParams.gain, 0.5f);
+			if (params.gain > 4.0f) params.gain = 4.0f;
+			if (params.gain < -4.0f) params.gain = -4.0f;
+
 			int octaves = params.octaves;
 			if (octaves < 1) octaves = 1;
 			if (octaves > kMaxNoiseOctaves) octaves = kMaxNoiseOctaves;

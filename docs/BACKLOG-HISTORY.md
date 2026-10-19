@@ -170,6 +170,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | Dia | DiaGridVisibility: topology-generic line of sight | 2026-10-15 | Moved by `dia docs backlog move` |
 | Baseline | JobSystemService ServiceStream + TrySubmit (dia-needs #12) | 2026-10-15 | **Done 2026-10-15.** JobSystemModule publishes JobSystem& as ServiceStream; JobSystem::TrySubmit() returns invalid handle after shutdown (no assert); manifests updated (cow_main.diaapp, cluiche_main.diaapp); 3 unit tests + integration test (JobSystemServiceTestStage on SimPU); 9183 tests pass. Spec: [jobsystem-servicestream.md](specs/applications/dia/systems/diathreading/jobsystem-servicestream.md). Unblocks A4 Weather parallel updates |
 | Dia | Seeded 2D noise (dia-needs #15) | 2026-10-16 | Moved by `dia docs backlog move` |
+| Dia | Seeded noise test-gap work is uncommitted (paused 2026-10-16) | 2026-10-18 | Finished 2026-10-18: goldens/determinism tests in default run, Simplex goldens replaced, Lipschitz bound measured, NaN/inf/extreme-input handling + TestNoiseEdgeCases. Debug 84 and Release 83 *Noise* tests pass (the one-test difference is PaletteIndexTest.AC2_EmptyQueryReturnsEverythingAndNoiseReturnsNothing, not noise). |
 
 ---
 

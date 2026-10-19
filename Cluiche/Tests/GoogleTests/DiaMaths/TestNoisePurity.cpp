@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <cstring>
 #include <fstream>
-#include <iostream>
+#include <cstdio>
 #include <iterator>
 #include <regex>
 #include <string>
@@ -206,19 +206,89 @@ TEST(NoisePurity, NoRandomHeaderOrThreadLocal)
 	}
 }
 
+namespace
+{
+	bool IsSpace(char c) { return c == 0x20 || c == 0x09 || c == 0x0A || c == 0x0D; }
+
+	bool IsIdentChar(char c)
+	{
+		return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
+	}
+
+	bool IsForbiddenMathName(const std::string& n)
+	{
+		static const char* names[] = { "sin", "cos", "pow", "fmod", "floor", "fma", "exp", "log", "tan", "abs", "fabs" };
+		for (const char* f : names)
+		{
+			if (n == f) return true;
+		}
+		return false;
+	}
+
+	// Hand-written scan (std::regex over the sources is too slow in Debug). Flags std::<name> (any use), and global C-style calls
+	// <name>( / <name>f( / ::<name>( that are not member accesses (. ->) or qualified by another namespace.
+	std::string FindForbiddenMath(const std::string& code)
+	{
+		const size_t n = code.size();
+		size_t i = 0;
+		while (i < n)
+		{
+			if (!IsIdentChar(code[i])) { ++i; continue; }
+			size_t j = i;
+			while (j < n && IsIdentChar(code[j])) ++j;
+			const std::string tok = code.substr(i, j - i);
+
+			std::string base = tok;
+			if (!IsForbiddenMathName(base) && base.size() > 1 && base.back() == 'f') base.pop_back();
+			if (IsForbiddenMathName(base))
+			{
+				// What precedes the token (skipping whitespace).
+				size_t p = i;
+				while (p > 0 && IsSpace(code[p - 1])) --p;
+				bool qualifiedStd = false, member = false, otherNs = false;
+				if (p >= 2 && code[p - 1] == ':' && code[p - 2] == ':')
+				{
+					size_t q = p - 2;
+					while (q > 0 && IsSpace(code[q - 1])) --q;
+					size_t r = q;
+					while (r > 0 && IsIdentChar(code[r - 1])) --r;
+					const std::string ns = code.substr(r, q - r);
+					if (ns == "std") qualifiedStd = true;
+					else if (!ns.empty()) otherNs = true;
+				}
+				else if (p >= 1 && (code[p - 1] == '.' || code[p - 1] == '>'))
+				{
+					member = true;
+				}
+				size_t a = j;
+				while (a < n && IsSpace(code[a])) ++a;
+				const bool call = a < n && code[a] == '(';
+				if (qualifiedStd && tok == base) return "std::" + tok;
+				if (!qualifiedStd && !member && !otherNs && call) return tok + "(";
+			}
+			i = j;
+		}
+		return std::string();
+	}
+}
+
+TEST(NoisePurity, ForbiddenMathScannerWorks)
+{
+	EXPECT_FALSE(FindForbiddenMath("float a = sinf(x);").empty());
+	EXPECT_FALSE(FindForbiddenMath("float a = ::floor (x);").empty());
+	EXPECT_FALSE(FindForbiddenMath("float a = std::pow(x, 2);").empty());
+	EXPECT_FALSE(FindForbiddenMath("auto f = std::fabs;").empty());
+	EXPECT_TRUE(FindForbiddenMath("float a = v.abs(); float b = p->floor(); float c = Foo::floor(x); int d = floorToInt(x); float s = sqrtf(x);").empty());
+}
+
 TEST(NoisePurity, NoForbiddenMathCalls)
 {
 	const std::string dir = FindNoiseDir();
 	ASSERT_FALSE(dir.empty());
-	// std::-qualified and global C-style (sinf, ::floor, ...) forms.
-	const std::regex qualified("\\bstd\\s*::\\s*(sin|cos|pow|fmod|floor|fma|exp|log|tan|abs|fabs)\\b");
-	const std::regex cStyle("(^|[^\\w.:>])(::)?(sin|cos|pow|fmod|floor|fma|exp|log|tan|abs|fabs)f?\\s*\\(");
 	for (const std::string& f : NoiseFiles())
 	{
 		const std::string code = StripComments(ReadFile(dir + f));
-		std::smatch m;
-		EXPECT_FALSE(std::regex_search(code, m, qualified)) << f << ": " << m.str();
-		EXPECT_FALSE(std::regex_search(code, m, cStyle)) << f << ": " << m.str();
+		EXPECT_EQ("", FindForbiddenMath(code)) << f;
 	}
 }
 
@@ -384,8 +454,8 @@ namespace
 	void Report(const char* name, double ms, double releaseLimitMs)
 	{
 		const double limit = kReleaseLimits ? releaseLimitMs : kDebugLimitMs;
-		std::cout << "[NoisePerf] " << name << ": " << ms << " ms for " << (kGridW * kGridH)
-				  << " samples (limit " << limit << " ms, " << (kReleaseLimits ? "Release" : "Debug") << ")" << std::endl;
+		std::printf("[NoisePerf] %s: %.3f ms for %d samples (limit %.3f ms, %s)\n", name, ms, static_cast<int>(kGridW * kGridH),
+					limit, kReleaseLimits ? "Release" : "Debug");
 		EXPECT_LT(ms, limit) << name;
 	}
 

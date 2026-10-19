@@ -72,15 +72,17 @@ namespace
 	const uint32_t kGoldenFractalRaw[19] = { 0x00000000u, 0xBC6E7F2Cu, 0xBEC6E00Au, 0x3DB3C05Bu, 0x3EB0BD60u, 0xBD9C2CECu, 0x3F0D7F7Au, 0x3E89E8F9u, 0x3E9020A8u, 0x3E787198u, 0x3E43F4E9u, 0xBD9B456Bu, 0x3C96AAD1u, 0x3BAA5160u, 0x3C8C5CB0u, 0x00000000u, 0x00000000u, 0x3F2E12CDu, 0xBF2FBD97u };    // octaves 4, normalise off
 
 	// Documented Lipschitz ceiling for |dN/dx|, |dN/dy|, |dN/dz| (each axis): classic Perlin with edge gradients of
-	// length sqrt(2) has a per-axis derivative bound at most about 4; the measured maximum is printed by ContinuityInAllAxes.
-	const float kNoise3DLipschitz = 4.0f;   // measured max 2.20 (x), 1.57 (y), 1.46 (z)
+	// length sqrt(2). Dense per-axis max (SLOW_NoiseLipschitz.Noise3D: forward diff d=2^-10, 2^-4 grid over [-4,4]^3, 2 seeds,
+	// incl. cell borders): 2.6938 (x), 2.7818 (y), 2.9041 (z); the sparse sweep in ContinuityInAllAxes sees 2.20/1.57/1.46.
+	// Bound is ~1.25x the dense max.
+	const float kNoise3DLipschitz = 3.7f;
 }
 
 //-----------------------------------------------------------------------------
 // AC1: golden bit patterns
 //-----------------------------------------------------------------------------
 
-TEST(SLOW_Noise3D, GoldenNoise3D)
+TEST(Noise3D, GoldenNoise3D)
 {
 	ASSERT_GE(kSampleCount, 16);
 	for (int i = 0; i < kSampleCount; ++i)
@@ -92,7 +94,7 @@ TEST(SLOW_Noise3D, GoldenNoise3D)
 	}
 }
 
-TEST(SLOW_Noise3D, GoldenFractal)
+TEST(Noise3D, GoldenFractal)
 {
 	for (int i = 0; i < kSampleCount; ++i)
 	{
@@ -109,7 +111,7 @@ TEST(SLOW_Noise3D, GoldenFractal)
 // AC2: determinism
 //-----------------------------------------------------------------------------
 
-TEST(SLOW_Noise3D, Determinism)
+TEST(Noise3D, Determinism)
 {
 	for (int i = 0; i < kSampleCount; ++i)
 	{
@@ -160,7 +162,7 @@ TEST(SLOW_Noise3D, Range)
 	EXPECT_NEAR(0.0f, mean, 0.03f);
 }
 
-TEST(SLOW_Noise3D, FractalNormaliseRanges)
+TEST(Noise3D, FractalNormaliseRanges)
 {
 	// Octaves 1..12, both flags, stay inside their documented range.
 	RandomStream rng(77);
@@ -185,7 +187,7 @@ TEST(SLOW_Noise3D, FractalNormaliseRanges)
 	}
 }
 
-TEST(SLOW_Noise3D, FractalPrefixAdditivity)
+TEST(Noise3D, FractalPrefixAdditivity)
 {
 	// normalise == false: the N+1-octave result is bit-identical to the N-octave result plus the next term.
 	RandomStream rng(555);
@@ -210,7 +212,7 @@ TEST(SLOW_Noise3D, FractalPrefixAdditivity)
 	}
 }
 
-TEST(SLOW_Noise3D, FractalOctaveOneEqualsBase)
+TEST(Noise3D, FractalOctaveOneEqualsBase)
 {
 	FractalParams p = MakeParams(1, true);
 	p.frequency = 1.0f;
@@ -225,7 +227,7 @@ TEST(SLOW_Noise3D, FractalOctaveOneEqualsBase)
 // AC5: seed sensitivity
 //-----------------------------------------------------------------------------
 
-TEST(SLOW_Noise3D, SeedSensitivity)
+TEST(Noise3D, SeedSensitivity)
 {
 	int diff = 0, diffF = 0;
 	for (int i = 0; i < 1024; ++i)
@@ -245,7 +247,7 @@ TEST(SLOW_Noise3D, SeedSensitivity)
 // AC6: lattice behaviour
 //-----------------------------------------------------------------------------
 
-TEST(SLOW_Noise3D, ExactlyZeroAtLatticePoints)
+TEST(Noise3D, ExactlyZeroAtLatticePoints)
 {
 	for (int iz = -6; iz <= 6; ++iz)
 	{
@@ -264,7 +266,7 @@ TEST(SLOW_Noise3D, ExactlyZeroAtLatticePoints)
 // AC12: 3D slice continuity
 //-----------------------------------------------------------------------------
 
-TEST(SLOW_Noise3D, ContinuityInAllAxes)
+TEST(Noise3D, ContinuityInAllAxes)
 {
 	const float d = 0.001f;
 	float maxX = 0.0f, maxY = 0.0f, maxZ = 0.0f;
@@ -294,7 +296,7 @@ TEST(SLOW_Noise3D, ContinuityInAllAxes)
 	}
 }
 
-TEST(SLOW_Noise3D, SlicesEvolveAndAreCorrelated)
+TEST(Noise3D, SlicesEvolveAndAreCorrelated)
 {
 	int differing = 0;
 	for (int i = 0; i < 1024; ++i)
@@ -319,4 +321,36 @@ TEST(SLOW_Noise3D, SlicesEvolveAndAreCorrelated)
 	const double corr = (sab - sa * sb / n) / std::sqrt((saa - sa * sa / n) * (sbb - sb * sb / n));
 	std::printf("[Noise3D] z vs z+0.001 correlation = %f\n", corr);
 	EXPECT_GT(corr, 0.99);
+}
+
+// Dense measurement of the true max per-axis slope: forward difference d = 2^-10 over a 2^-4 grid in [-4, 4]^3 (cell borders
+// and negatives included) for two seeds.
+TEST(SLOW_NoiseLipschitz, Noise3D)
+{
+	const uint32_t seeds[] = { 1u, 77u };
+	const float d = 1.0f / 1024.0f;
+	float maxX = 0.0f, maxY = 0.0f, maxZ = 0.0f;
+	for (uint32_t seed : seeds)
+	{
+		for (int k = -64; k < 64; ++k)
+		{
+			for (int j = -64; j < 64; ++j)
+			{
+				for (int i = -64; i < 64; ++i)
+				{
+					const float x = static_cast<float>(i) * (1.0f / 16.0f) + (1.0f / 32.0f) * static_cast<float>(i & 1);
+					const float y = static_cast<float>(j) * (1.0f / 16.0f) + (1.0f / 32.0f) * static_cast<float>(j & 1);
+					const float z = static_cast<float>(k) * (1.0f / 16.0f) + (1.0f / 32.0f) * static_cast<float>(k & 1);
+					const float b = Noise3D(seed, x, y, z);
+					maxX = std::fmax(maxX, std::fabs(Noise3D(seed, x + d, y, z) - b) / d);
+					maxY = std::fmax(maxY, std::fabs(Noise3D(seed, x, y + d, z) - b) / d);
+					maxZ = std::fmax(maxZ, std::fabs(Noise3D(seed, x, y, z + d) - b) / d);
+				}
+			}
+		}
+	}
+	std::printf("[measure] Noise3D dense max slope x=%.4f y=%.4f z=%.4f (documented bound %.4f)\n", maxX, maxY, maxZ, kNoise3DLipschitz);
+	EXPECT_LT(maxX, kNoise3DLipschitz);
+	EXPECT_LT(maxY, kNoise3DLipschitz);
+	EXPECT_LT(maxZ, kNoise3DLipschitz);
 }

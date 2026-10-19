@@ -17,6 +17,19 @@ namespace Dia
 			constexpr uint32_t kWarpSeedX = 0x68E31DA4u;
 			constexpr uint32_t kWarpSeedY = 0xB5297A4Du;
 
+			// Parameter sanitising: non-finite frequency/lacunarity/gain fall back to the FractalParams defaults, gain is limited to
+			// |gain| <= 4 so 12 octaves cannot overflow. Finite in-range values pass through unchanged (goldens unaffected).
+			inline FractalParams SanitiseParams(const FractalParams& p)
+			{
+				FractalParams r = p;
+				r.frequency  = FiniteOr(p.frequency, 1.0f);
+				r.lacunarity = FiniteOr(p.lacunarity, 2.0f);
+				r.gain       = FiniteOr(p.gain, 0.5f);
+				if (r.gain > 4.0f) r.gain = 4.0f;
+				if (r.gain < -4.0f) r.gain = -4.0f;
+				return r;
+			}
+
 			inline int ClampOctaves(int octaves)
 			{
 				if (octaves < 1) return 1;
@@ -66,8 +79,9 @@ namespace Dia
 		}
 
 		template <NoiseType Base>
-		float FractalNoise2D(uint32_t seed, float x, float y, const FractalParams& params)
+		float FractalNoise2D(uint32_t seed, float x, float y, const FractalParams& rawParams)
 		{
+			const FractalParams params = NoiseDetail::SanitiseParams(rawParams);
 			const int octaves = NoiseDetail::ClampOctaves(params.octaves);
 
 			float sum = 0.0f;
@@ -98,7 +112,7 @@ namespace Dia
 		{
 			static_assert(Base != NoiseType::Worley, "RidgedNoise2D is not supported over Worley (use F2MinusF1 for crest lines)");
 
-			const FractalParams& fp = params.fractal;
+			const FractalParams fp = NoiseDetail::SanitiseParams(params.fractal);
 			const int octaves = NoiseDetail::ClampOctaves(fp.octaves);
 			int sharpness = params.sharpness;
 			if (sharpness < 1) sharpness = 1;
@@ -139,6 +153,11 @@ namespace Dia
 		template <NoiseType WarpBase>
 		Warp2DResult Warp2D(uint32_t seed, float x, float y, float strength, const FractalParams& warp)
 		{
+			// Inputs are sanitised so the returned point is always finite: non-finite coordinates map via ClampCoord (NaN -> 0,
+			// +-inf -> +-2^23; finite values pass through untouched), strength is NaN -> 0 and limited to +-2^23.
+			if (!NoiseDetail::IsFiniteBits(x)) x = NoiseDetail::ClampCoord(x);
+			if (!NoiseDetail::IsFiniteBits(y)) y = NoiseDetail::ClampCoord(y);
+			strength = NoiseDetail::ClampCoord(strength);
 			if (strength == 0.0f)
 			{
 				return Warp2DResult{ x, y };

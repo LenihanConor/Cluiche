@@ -3,6 +3,7 @@
 #include <DiaMaths/Noise/NoiseHash.h>
 #include <DiaMaths/Core/RandomStream.h>
 #include <cmath>
+#include <cstdio>
 #include <cstdint>
 #include <cstring>
 #include <set>
@@ -52,8 +53,11 @@ namespace
 	const uint32_t kGoldenValue[18] = { 0x3F26B5C0u, 0xBD77FFD0u, 0xBE99CA89u, 0xBEA85F05u, 0xBF490EF8u, 0x3F3F6E74u, 0xBD78BDB0u, 0x3EEF4188u, 0x3E7FCFB8u, 0xBEA03B68u, 0xBF490140u, 0xBDF14CC0u, 0x3E56324Au, 0xBE0F9B50u, 0xBF0A55FAu, 0xBF755860u, 0xBEEE7923u, 0xBF7B877Au };
 	const uint32_t kGoldenGradient[18] = { 0x00000000u, 0xBEA73D74u, 0xBEB5D908u, 0x3CB7E3E6u, 0x00000000u, 0x00000000u, 0x3E905B80u, 0xBE74D220u, 0x3EEBA662u, 0xBE3784B4u, 0x00000000u, 0x00000000u, 0x3A48A146u, 0x3DDDF9AAu, 0x00000000u, 0x00000000u, 0xBCFE579Bu, 0x3AB96502u };
 
-	const float kValueLipschitz = 8.0f;     // |dV/dx| <= 2 (lattice delta) * 1.875 (max fade slope) per axis, summed over 2 axes < 8
-	const float kGradientLipschitz = 8.0f;  // measured max is far below this; bound is a safe analytical ceiling
+	// Bounds are ~1.25x the dense measured per-axis max (SLOW_NoiseLipschitz: forward diff d=2^-10, 2^-5 grid over [-6,6]^2, 3 seeds, incl. cell borders).
+	// Value: measured 3.6454 (analytic ceiling 2 * 1.875 = 3.75), bound 4.6.
+	const float kValueLipschitz = 4.6f;
+	// Gradient: measured 2.8851, bound 3.6.
+	const float kGradientLipschitz = 3.6f;
 }
 
 //-----------------------------------------------------------------------------
@@ -254,4 +258,60 @@ TEST(NoiseValueGradient, AxisBias)
 	EXPECT_GT(corrX, 0.3);
 	EXPECT_GT(corrY, 0.3);
 	EXPECT_LT(std::fabs(corrX - corrY), 0.05);
+}
+
+// Dense measurement of the true max per-axis slope: forward difference with d = 2^-10 (exact in float) over a 2^-5 grid
+// spanning [-6, 6]^2 (cell borders and negatives included) for three seeds.
+TEST(SLOW_NoiseLipschitz, Value)
+{
+	const uint32_t seeds[] = { 1u, 77u, 12345u };
+	const float d = 1.0f / 1024.0f;
+	float maxSlope = 0.0f;
+	for (uint32_t seed : seeds)
+	{
+		for (int j = -192; j < 192; ++j)
+		{
+			for (int i = -192; i < 192; ++i)
+			{
+				const float x = static_cast<float>(i) * (1.0f / 32.0f) + (1.0f / 64.0f);
+				const float y = static_cast<float>(j) * (1.0f / 32.0f) + (1.0f / 64.0f);
+				const float b = ValueNoise2D(seed, x, y);
+				maxSlope = std::fmax(maxSlope, std::fmax(std::fabs(ValueNoise2D(seed, x + d, y) - b), std::fabs(ValueNoise2D(seed, x, y + d) - b)) / d);
+				const float xi = static_cast<float>(i) * (1.0f / 32.0f); // exactly on cell borders when i % 32 == 0
+				const float yi = static_cast<float>(j) * (1.0f / 32.0f);
+				const float bi = ValueNoise2D(seed, xi, yi);
+				maxSlope = std::fmax(maxSlope, std::fmax(std::fabs(ValueNoise2D(seed, xi + d, yi) - bi), std::fabs(ValueNoise2D(seed, xi, yi + d) - bi)) / d);
+			}
+		}
+	}
+	std::printf("[measure] Value dense max slope=%.4f (documented bound %.4f)\n", maxSlope, kValueLipschitz);
+	EXPECT_LT(maxSlope, kValueLipschitz);
+}
+
+// Dense measurement of the true max per-axis slope: forward difference with d = 2^-10 (exact in float) over a 2^-5 grid
+// spanning [-6, 6]^2 (cell borders and negatives included) for three seeds.
+TEST(SLOW_NoiseLipschitz, Gradient)
+{
+	const uint32_t seeds[] = { 1u, 77u, 12345u };
+	const float d = 1.0f / 1024.0f;
+	float maxSlope = 0.0f;
+	for (uint32_t seed : seeds)
+	{
+		for (int j = -192; j < 192; ++j)
+		{
+			for (int i = -192; i < 192; ++i)
+			{
+				const float x = static_cast<float>(i) * (1.0f / 32.0f) + (1.0f / 64.0f);
+				const float y = static_cast<float>(j) * (1.0f / 32.0f) + (1.0f / 64.0f);
+				const float b = GradientNoise2D(seed, x, y);
+				maxSlope = std::fmax(maxSlope, std::fmax(std::fabs(GradientNoise2D(seed, x + d, y) - b), std::fabs(GradientNoise2D(seed, x, y + d) - b)) / d);
+				const float xi = static_cast<float>(i) * (1.0f / 32.0f); // exactly on cell borders when i % 32 == 0
+				const float yi = static_cast<float>(j) * (1.0f / 32.0f);
+				const float bi = GradientNoise2D(seed, xi, yi);
+				maxSlope = std::fmax(maxSlope, std::fmax(std::fabs(GradientNoise2D(seed, xi + d, yi) - bi), std::fabs(GradientNoise2D(seed, xi, yi + d) - bi)) / d);
+			}
+		}
+	}
+	std::printf("[measure] Gradient dense max slope=%.4f (documented bound %.4f)\n", maxSlope, kGradientLipschitz);
+	EXPECT_LT(maxSlope, kGradientLipschitz);
 }

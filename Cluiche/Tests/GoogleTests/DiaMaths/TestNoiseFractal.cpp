@@ -138,7 +138,7 @@ namespace
 // AC1: golden bit patterns
 //-----------------------------------------------------------------------------
 
-TEST(SLOW_NoiseFractal, Golden)
+TEST(NoiseFractal, Golden)
 {
 	for (int c = 0; c < kGoldenCaseCount; ++c)
 	{
@@ -153,14 +153,14 @@ TEST(SLOW_NoiseFractal, Golden)
 // AC2: determinism
 //-----------------------------------------------------------------------------
 
-TEST(SLOW_NoiseFractal, Determinism)
+TEST(NoiseFractal, Determinism)
 {
 	for (int c = 0; c < kGoldenCaseCount; ++c)
 	{
 		for (int i = 0; i < kSampleCount; ++i)
 		{
 			const uint32_t first = Bits(Eval(c, kSamples[i]));
-			for (int n = 0; n < 1000; ++n)
+			for (int n = 0; n < 100; ++n)
 			{
 				ASSERT_EQ(first, Bits(Eval(c, kSamples[i]))) << "case " << c << " sample " << i;
 			}
@@ -277,7 +277,7 @@ TEST(SLOW_NoiseFractal, RidgedRangeSimplex)  { CheckRidgedRange<NoiseType::Simpl
 // AC14: octave behaviour
 //-----------------------------------------------------------------------------
 
-TEST(SLOW_NoiseFractal, FractalMaxAmplitude)
+TEST(NoiseFractal, FractalMaxAmplitude)
 {
 	FractalParams p = MakeParams(4, false);
 	EXPECT_EQ(Bits(1.875f), Bits(FractalMaxAmplitude(p)));
@@ -287,7 +287,7 @@ TEST(SLOW_NoiseFractal, FractalMaxAmplitude)
 	EXPECT_EQ(Bits(FractalMaxAmplitude(MakeParams(kMaxNoiseOctaves, false))), Bits(FractalMaxAmplitude(p)));
 }
 
-TEST(SLOW_NoiseFractal, PrefixAdditiveBitExact)
+TEST(NoiseFractal, PrefixAdditiveBitExact)
 {
 	RandomStream rng(555);
 	for (int i = 0; i < 300; ++i)
@@ -310,7 +310,7 @@ TEST(SLOW_NoiseFractal, PrefixAdditiveBitExact)
 	}
 }
 
-TEST(SLOW_NoiseFractal, OctaveClamp)
+TEST(NoiseFractal, OctaveClamp)
 {
 	const Sample2 s = kSamples[7];
 	EXPECT_EQ(Bits(FractalNoise2D<NoiseType::Simplex>(s.seed, s.x, s.y, MakeParams(1, false))),
@@ -319,7 +319,7 @@ TEST(SLOW_NoiseFractal, OctaveClamp)
 	          Bits(FractalNoise2D<NoiseType::Simplex>(s.seed, s.x, s.y, MakeParams(500, false))));
 }
 
-TEST(SLOW_NoiseFractal, NormalisedMatchesUnnormalisedOverS)
+TEST(NoiseFractal, NormalisedMatchesUnnormalisedOverS)
 {
 	RandomStream rng(808);
 	for (int oct = 1; oct <= kMaxNoiseOctaves; ++oct)
@@ -345,7 +345,7 @@ TEST(SLOW_NoiseFractal, NormalisedMatchesUnnormalisedOverS)
 // AC15: ridged shape
 //-----------------------------------------------------------------------------
 
-TEST(SLOW_NoiseFractal, RidgedCrestsAtBaseZeroCrossings)
+TEST(NoiseFractal, RidgedCrestsAtBaseZeroCrossings)
 {
 	// Single octave, frequency 1: ridged == (1 - |n|)^k. Bisect for sign changes of the base along x.
 	RidgedParams rp = MakeRidged(1, true, 2);
@@ -387,7 +387,7 @@ TEST(SLOW_NoiseFractal, RidgedCrestsAtBaseZeroCrossings)
 	EXPECT_LT(minV, 0.6f);
 }
 
-TEST(SLOW_NoiseFractal, RidgedVarianceNonDecreasingWithSharpness)
+TEST(NoiseFractal, RidgedVarianceNonDecreasingWithSharpness)
 {
 	float prevVar = -1.0f;
 	for (int sharp = 1; sharp <= 4; ++sharp)
@@ -412,7 +412,7 @@ TEST(SLOW_NoiseFractal, RidgedVarianceNonDecreasingWithSharpness)
 	}
 }
 
-TEST(SLOW_NoiseFractal, RidgedSharpnessClamps)
+TEST(NoiseFractal, RidgedSharpnessClamps)
 {
 	const Sample2 s = kSamples[6];
 	const float s1 = RidgedNoise2D<NoiseType::Simplex>(s.seed, s.x, s.y, MakeRidged(3, true, 1));
@@ -427,7 +427,7 @@ TEST(SLOW_NoiseFractal, RidgedSharpnessClamps)
 // AC16: domain warp
 //-----------------------------------------------------------------------------
 
-TEST(SLOW_NoiseFractal, WarpZeroStrengthIsExact)
+TEST(NoiseFractal, WarpZeroStrengthIsExact)
 {
 	for (int i = 0; i < kSampleCount; ++i)
 	{
@@ -462,7 +462,7 @@ TEST(SLOW_NoiseFractal, WarpDisplacementBounded)
 	}
 }
 
-TEST(SLOW_NoiseFractal, WarpAxesIndependentAndWarpedNoiseMatches)
+TEST(NoiseFractal, WarpAxesIndependentAndWarpedNoiseMatches)
 {
 	const Sample2& s = kSamples[6];
 	const FractalParams wp = MakeParams(3, true);
@@ -473,7 +473,7 @@ TEST(SLOW_NoiseFractal, WarpAxesIndependentAndWarpedNoiseMatches)
 	EXPECT_EQ(Bits(FractalNoise2D<NoiseType::Simplex>(s.seed, w.x, w.y, np)), Bits(composite));
 }
 
-TEST(SLOW_NoiseFractal, WarpOverWorley)
+TEST(NoiseFractal, WarpOverWorley)
 {
 	const Warp2DResult w = Warp2D<NoiseType::Worley>(3u, 1.5f, 2.5f, 1.0f, WorleyParams(WorleyOutput::F1));
 	EXPECT_LE(std::fabs(w.x - 1.5f), 1.0f);

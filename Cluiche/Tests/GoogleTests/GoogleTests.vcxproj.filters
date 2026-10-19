@@ -1982,5 +1982,8 @@
     <ClCompile Include="DiaMaths\TestNoisePurity.cpp">
       <Filter>DiaMaths</Filter>
     </ClCompile>
+    <ClCompile Include="DiaMaths\TestNoiseEdgeCases.cpp">
+      <Filter>DiaMaths</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

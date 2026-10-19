@@ -27,7 +27,7 @@ namespace
 
 	// Negative, zero, large (beyond the +-2^23 clamp), lattice-aligned and fractional coordinates; several seeds.
 	const Sample kSamples[] = {
-		{ 0u,          0.0f,        0.0f },
+		{ 0u,          0.3f,        0.7f },       // replaces the origin (simplex value ~1e-29 there pinned nothing)
 		{ 0u,          0.5f,        0.5f },
 		{ 1u,          0.25f,       0.75f },
 		{ 1u,         -0.5f,       -0.5f },
@@ -41,18 +41,19 @@ namespace
 		{ 7u,          0.0f,        1.0f },
 		{ 7u,         -0.001f,      0.001f },
 		{ 42u,         1000.5f,     -1000.5f },
-		{ 42u,         8388608.0f,  8388608.0f }, // 2^23, at the clamp
-		{ 42u,         1.0e9f,     -1.0e9f },     // beyond the clamp
+		{ 42u,         100000.375f, -54321.625f},  // large, non-lattice (coordinates near 2^23 have ~1 unit precision and give ~0)
+		{ 42u,        -8388607.5f,  8388604.25f}, // just inside the negative clamp, non-lattice
 		{ 99u,         123456.789f, 0.333f },
 		{ 99u,        -7.999f,      7.999f },
 	};
 	const int kSampleCount = static_cast<int>(sizeof(kSamples) / sizeof(kSamples[0]));
 
 	// Golden bit patterns (captured from the first GREEN run, then reviewed for range and variety).
-	const uint32_t kGoldenSimplex[18] = { 0x8EDE5FBBu,0xBD611AB7u,0xBD945222u,0xBE9A277Bu,0x3F4E358Au,0xBE19632Fu,0xBE899089u,0x3F3CB46Au,0xBEC644D2u,0x3EDA0415u,0x3EEA2B05u,0x3F4A4A99u,0xBBA58D28u,0x3DE03272u,0x1001A434u,0x10923BCFu,0x3E5EAEEDu,0xBAFF959Du };
+	const uint32_t kGoldenSimplex[18] = { 0xBEB25EE0u,0xBD611AB7u,0xBD945222u,0xBE9A277Bu,0x3F4E358Au,0xBE19632Fu,0xBE899089u,0x3F3CB46Au,0xBEC644D2u,0x3EDA0415u,0x3EEA2B05u,0x3F4A4A99u,0xBBA58D28u,0x3DE03272u,0x3DE7C216u,0x3EAD90DBu,0x3E5EAEEDu,0xBAFF959Du };
 
-	// AC7 Lipschitz bound: measured max slope is about 3.8; 8.0 leaves 2x headroom (same ceiling as Value/Gradient).
-	const float kSimplexLipschitz = 8.0f;
+	// AC7 Lipschitz bound: dense measured per-axis max is 4.5435 (SLOW_NoiseLipschitz: forward diff d=2^-10, 2^-5 grid over [-6,6]^2, 3 seeds,
+	// incl. cell borders; the sparse sweep in Continuity sees 3.76). Bound is ~1.25x the dense max.
+	const float kSimplexLipschitz = 5.7f;
 	// AC4 band: measured std dev is about 0.42 (mean about 0.0001); band is +-0.07 around it.
 	const double kStdDevMin = 0.35, kStdDevMax = 0.49;
 	// AC11 rotation bound: measured std dev delta between 0 and 45 degrees is about 0.003; bound is 0.02.
@@ -74,6 +75,14 @@ TEST(NoiseSimplex, Golden)
 		EXPECT_TRUE(v >= -1.0f && v <= 1.0f) << "sample " << i << " out of range or NaN";
 		EXPECT_EQ(kGoldenSimplex[i], Bits(v)) << "sample " << i;
 	}
+}
+
+// Beyond +-2^23 the coordinate clamps to the lattice point (a trivially small value), so pin the clamp as an equivalence
+// rather than as a golden.
+TEST(NoiseSimplex, CoordinateClampEquivalence)
+{
+	EXPECT_EQ(Bits(SimplexNoise2D(42u, 8388608.0f, 8388608.0f)), Bits(SimplexNoise2D(42u, 1.0e9f, 1.0e9f)));
+	EXPECT_EQ(Bits(SimplexNoise2D(42u, -8388608.0f, 8388608.0f)), Bits(SimplexNoise2D(42u, -1.0e9f, 3.0e38f)));
 }
 
 TEST(NoiseSimplex, Determinism)
@@ -201,4 +210,32 @@ TEST(NoiseSimplex, RotationDoesNotChangeStdDev)
 	MeanStd(s1, q1, n, m1, sd1);
 	std::printf("[measure] simplex sd=%.5f rotated sd=%.5f delta=%.5f\n", sd0, sd1, std::fabs(sd0 - sd1));
 	EXPECT_LT(std::fabs(sd0 - sd1), kRotationStdDevDelta);
+}
+
+// Dense measurement of the true max per-axis slope: forward difference with d = 2^-10 (exact in float) over a 2^-5 grid
+// spanning [-6, 6]^2 (cell borders and negatives included) for three seeds.
+TEST(SLOW_NoiseLipschitz, Simplex)
+{
+	const uint32_t seeds[] = { 1u, 77u, 12345u };
+	const float d = 1.0f / 1024.0f;
+	float maxSlope = 0.0f;
+	for (uint32_t seed : seeds)
+	{
+		for (int j = -192; j < 192; ++j)
+		{
+			for (int i = -192; i < 192; ++i)
+			{
+				const float x = static_cast<float>(i) * (1.0f / 32.0f) + (1.0f / 64.0f);
+				const float y = static_cast<float>(j) * (1.0f / 32.0f) + (1.0f / 64.0f);
+				const float b = SimplexNoise2D(seed, x, y);
+				maxSlope = std::fmax(maxSlope, std::fmax(std::fabs(SimplexNoise2D(seed, x + d, y) - b), std::fabs(SimplexNoise2D(seed, x, y + d) - b)) / d);
+				const float xi = static_cast<float>(i) * (1.0f / 32.0f); // exactly on cell borders when i % 32 == 0
+				const float yi = static_cast<float>(j) * (1.0f / 32.0f);
+				const float bi = SimplexNoise2D(seed, xi, yi);
+				maxSlope = std::fmax(maxSlope, std::fmax(std::fabs(SimplexNoise2D(seed, xi + d, yi) - bi), std::fabs(SimplexNoise2D(seed, xi, yi + d) - bi)) / d);
+			}
+		}
+	}
+	std::printf("[measure] Simplex dense max slope=%.4f (documented bound %.4f)\n", maxSlope, kSimplexLipschitz);
+	EXPECT_LT(maxSlope, kSimplexLipschitz);
 }
