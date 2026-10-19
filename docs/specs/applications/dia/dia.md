@@ -11,6 +11,7 @@ Dia is the game engine application that provides all shared engine infrastructur
 
 | System | Description | Spec |
 |--------|-------------|------|
+| DiaValueSchema | One description per value (parameters, state fields, entity component fields, metrics, command args): sidecar `.schema.json` + `MetricInfo`/`ArgInfo`, `ValueSchemaService`, debug-panel tooltips, named ramps → CellField, `dia validate schema`, export + reference docs. Approved 2026-10-19 (first consumer CoW; 7 features) | [diavalueschema.md](systems/diavalueschema/diavalueschema.md) |
 | DiaAPI | C++ command registration and execution API framework - provides runtime command infrastructure | [diaapi.md](systems/diaapi/diaapi.md) |
 | DiaCLI | Python-based CLI tool for development workflows (build, assets, scaffolding, utilities) | [diacli.md](systems/diacli/diacli.md) |
 | DiaConsole | Native-window web console over DiaCLI — command browsing, typed execution results, presets, project/target context | [diaconsole.md](systems/diaconsole/diaconsole.md) |
