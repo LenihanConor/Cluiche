@@ -81,7 +81,7 @@ Lore names (Verdant Lowlands, Stormridge, Ancient Interiors) are regions or dept
 - **Pressure fields:** `prey_scent`, `predator_scent`, `dragon_scent`, `carrion_scent`, `water_gradient`.
 - **Ecology state:** `ecology_state`, `health`, `state_streak` (signed seasons past a band edge), `recovering` flag.
 - **Succession:** `succession_pressure[rule × cell]` (C7, added to the GDD schema).
-- **History:** `years_since_fire`, `drought_years`, `last_dragon_visit`, `local_extinction_flags`, plus the tended fields (declared, unused until step 9).
+- **History:** `years_since_fire`, `drought_years`, `last_dragon_visit`, `local_extinction_flags`, `years_low_herbivore_inflow` (consecutive years in which herbivore migration in was below `low_inflow_threshold`; read by A3's tundra rule; A3 amendment 4), plus the tended fields (declared, unused until step 9).
 - **Static geography (derived at init, never changed by the simulation):** `river_overlay`, `corridor_node`, `hearth_site`, `nexus_node`, `world_throne_type`, `route_memory` (C11).
 
 `year_quality` and the deprecated `rainfall` field are not stored (C6).
@@ -107,8 +107,8 @@ GameSpeedController publishes one `SimulationTick{day, band}` per day and never 
 
 | Band | Steps |
 |------|-------|
-| Season | 1 weather (consume accumulator), 2 water flow, 3 grass and aquatic, 4 foraging, 8 migration intent, 9 scent (no-op until S-4), ecology state, 12 evidence |
-| Year | 5 predation and carrion, 6 starvation and disease, 7 reproduction, 8 full move, 9 full (no-op), 11 guardrails, succession rules with `band: Year` |
+| Season | 1 weather (consume accumulator), natural ignition and fire spread, 2 water flow, 3 grass and aquatic, 4 foraging, 8 migration intent, 9 scent (no-op until S-4), ecology state, resolver `OnSeason`, 12 evidence |
+| Year | 5 predation and carrion, 6 starvation and disease, 7 reproduction, 8 full move, 9 full (no-op), 11 guardrails, succession rules with `band: Year` + resolver `Resolve` (step 10), resolver `OnYear` |
 | Decade | 2 water table, 3 shrubs and trees, 10 succession rules with `band: Decade`, seed drift |
 | Century | 10 major succession, 11 legacy recolonization |
 
@@ -143,7 +143,12 @@ So a single bad season never drops a cell, and recovering is slower than degradi
 
 ### Succession rules (C7, C9)
 
-`succession_rules.json` lists one rule per A3 transition: `{id, from, to, source, band, conditions[], increment, decay}`.
+`succession_rules.json` lists one rule per A3 transition: `{id, from, to, source, direction, band, conditions[], increment, decay}`.
+
+- `direction` is `forward` (degradation and fire) or `recovery` (Scrub→Grassland, BurnedAshland→Grassland, DesertifiedPlain→Scrub).
+- Recovery rules use `decay: 0`, so stalled progress is kept.
+- A recovery rule's increment is multiplied by the resolver's `GetRecoveryMultiplier(cell)` (dragon acceleration, 1.0 until S-4).
+- A3's spec ships the 12 rules.
 
 - `source` is one of `DROUGHT`, `FIRE`, `OVERGRAZE`, `DISEASE`, `DRYING` or `COLD`.
 - `conditions` are `{field, op, value}` tests over cell fields and history (for example `drought_years > 3`, `seed_bank < 0.2`).
@@ -152,14 +157,28 @@ At each rule's band, for every cell whose biome matches `from`:
 
 - all conditions true: the counter rises by `increment`
 - otherwise: it decays by `decay`, never below 0
-- counter ≥ 1.0: A1 publishes `BiomeSuccessionTriggered{cell, to, source}` and resets that cell's counters
+- counter ≥ 1.0: the rule raises a trigger `{cell, to, source}`
+
+At step 10, A1 hands the band's triggers, in cell-index order, to the `ISuccessionResolver` (A3) if one is registered. A1 also publishes every trigger, accepted or rejected, as `BiomeSuccessionTriggered`, so observers can see them. With no resolver, the triggers are only published.
 
 A3 owns the rule contents and the staging check. A1 ships an initial file translated from A3 TechnicalSpec §4 and A1 TechnicalSpec §9 so it can be exercised before A3 exists. `GetSuccessionProgress(cell)` (the highest counter) feeds A3's 50% Stressed visual.
 
-A3 applies transitions only through A1's API (C9). A1 owns every cell field:
+A3 applies transitions only through A1's API (C9), synchronously inside step 10. A1 owns every cell field:
 
-- `ApplyBiomeTransition(cell, to, LegacyDelta)` sets the biome, applies and clamps the legacy deltas, and resets that cell's succession counters
-- `RemoveLegacy(cell, LegacyDelta)` reverses them
+- `ApplyBiomeTransition(cell, to, LegacyDelta)` sets the biome, applies the legacy deltas **once** and clamps them, and resets **every** succession counter for the cell, forward and recovery.
+- There is no `RemoveLegacy`. Legacy deltas are one-shot, and A1's own processes recover them. A3's legacy marker is for presentation only (A3 amendment 2).
+
+`EcologyModule` publishes the resolver's output (transitions, rejections, recovery stages) at the end of the band, as `BiomeTransitionComplete` and `BiomeRecoveryProgressed`. Every event goes out once, at the end of the band that produced it (A3 amendment 1).
+
+### Natural fire (A3 amendment 3)
+
+Without dragons, nothing would start a fire, so BurnedAshland could never emerge. A1 adds natural ignition:
+
+- **When:** at the Season band, each land cell may ignite with `p = base_ignition × drought_fit(drought_stress) × fuel × temperature_fit`, where fuel is grass + shrub + tree biomass.
+- **Determinism:** draws use the `A1` stream in cell-index order.
+- **Spread:** fire spreads with `fire_spread_rate`, burns biomass into ash, and sets `fire_intensity`, which A3's fire rules read.
+- **New constants:** `base_ignition`, `ignition_drought_fit`, `ignition_temperature_fit`.
+- **By hand:** `cow.ecology.ignite` starts a fire.
 
 ### Aquatic ecology and coastal feeding (C3)
 
@@ -220,7 +239,7 @@ The ledger covers the last band only, is overwritten each band, is never saved, 
 - **Graphs:** a rolling time-series panel. It shows the selected cell's per-species juvenile/adult counts and producers, plus map-wide functional-group totals and the state distribution. It keeps a bounded history of the last 200 bands, records only while the panel is open, and isn't saved.
 - **Tuning:** live sliders over `ecology_parameters.json` and the selected species' and biome's entries, applied at the next band. `cow.ecology.tuning.save` writes them back to the source JSON, using the same source-assets path as S-1's `preset.save`. Hot reload picks up hand edits.
 - **Editing:** set a cell's fields or a species' population, and paint species, producers, water or biome over a brush of cells. Painting a biome reinitialises the painted cells from the biome's starting values. `isolate_cell` turns off migration and propagation into and out of the selected cell, which gives the old single-cell S-2 behaviour.
-- **Commands:** `inspect`, `ledger`, `set_field`, `set_species`, `paint`, `isolate_cell`, `set_ecology_state`, `step_band`, `reload_data`, `tuning.set`, `tuning.save`, `find_events`, `apply_transition` (until A3).
+- **Commands:** `inspect`, `ledger`, `set_field`, `set_species`, `paint`, `isolate_cell`, `set_ecology_state`, `step_band`, `reload_data`, `tuning.set`, `tuning.save`, `find_events`, `ignite`, `apply_transition` (until A3).
 - **Instrumentation:** `DIA_PROFILE_SCOPE` per step, `MetricRegistry` counters (cells per state, events per band, band time), an `IHealthReporter` (Degraded on the fallback roster or a failed data validation).
 
 The Ecology testbed stage hosts these. A1 owns no stage.
@@ -239,8 +258,8 @@ namespace CoW::Ecology {
         void StepCell(uint32_t cell, TimeBand band);                        // one cell, no neighbour passes (tests)
 
         // A3 apply API (C9). A1 owns every cell field.
-        void ApplyBiomeTransition(uint32_t cell, Dia::Core::StringCRC to, const LegacyDelta& legacy);
-        void RemoveLegacy(uint32_t cell, const LegacyDelta& legacy);
+        void ApplyBiomeTransition(uint32_t cell, Dia::Core::StringCRC to, const LegacyDelta& legacy);   // one-shot deltas
+        void SetSuccessionResolver(ISuccessionResolver* resolver);          // A3; nullptr = triggers only published
         float GetSuccessionProgress(uint32_t cell) const;
 
         // Dragon interface (step 9). Declared; queued and ignored until S-4.
@@ -262,6 +281,15 @@ namespace CoW::Ecology {
         virtual bool  SnowCover(uint32_t cell) const = 0;
     };
 
+    class ISuccessionResolver {                                            // A3 seam (A3 amendment 1); declared here so A1 doesn't depend on A3
+    public:
+        virtual ~ISuccessionResolver() = default;
+        virtual void Resolve(const TriggerList& triggers, EcologySimulation& sim, SuccessionOutput& out) = 0;   // step 10
+        virtual void OnYear(const EcologyView& view, SuccessionOutput& out) = 0;
+        virtual void OnSeason() = 0;
+        virtual float GetRecoveryMultiplier(uint32_t cell) const = 0;
+    };
+
     struct EcologyData { /* species roster, biome profiles, succession rules, parameters */ };
     bool LoadEcologyData(const Json::Value& species, const Json::Value& biomes,
                          const Json::Value& rules, const Json::Value& params, EcologyData& out);
@@ -272,7 +300,7 @@ namespace CoW::Ecology {
     public:
         float GetSeasonalTemperature(Dia::Core::StringCRC biome, CoW::Weather::Season season) const override;
         const EcologySimulation& GetSimulation() const;
-        EcologySimulation& GetSimulationForA3();                           // ApplyBiomeTransition / RemoveLegacy only
+        void RegisterSuccessionResolver(ISuccessionResolver* resolver);    // A3's SuccessionModule, via ModuleRef
     };
 }
 ```
@@ -286,8 +314,8 @@ Messages (`CellEcologyChanged`, `EventThresholdCrossed`, `BiomeSuccessionTrigger
 | 1 | Ecology Data | `species.json` (incl. `habitat`, aquatic groups, `coastal_reach`), `biomes.json` (13 ids, `BiomeProfile`, seasonal temperature and `rainfall_baseline`), `succession_rules.json`, `ecology_parameters.json`: load, validate, defaults, fallback roster. Pure logic, TDD | TBD | Draft |
 | 2 | Cell State & Initialise | `EcologyFields` SoA, palettes, `EcologyWorldInput` from `WorldStructure`, derived geography (C11), seeded soil, starting populations, `IBiomeSeasonalBaseline` implementation. Pure logic, TDD | TBD | Draft |
 | 3 | Cell Equations | Per-cell steps 1, 3–7 and 12: producers, per-species births, maturation, Allee, competition, starvation, predation (age-weighted), disease, clamping; `StepCell`; `EcologyLedger` deltas by cause, written as each term is computed (ledger sums equal the actual change). One test group per equation from TechnicalSpec §4–§5. Pure logic, TDD | TBD | Draft |
-| 4 | Grid Passes | Steps 2, 8 and 11 plus pressure-field propagation: water flow and table, migration solver (group and softmax, river and corridor modifiers), coastal cross-feeding, lifeboat guardrails, seed drift; step-outer passes, gather, `IParallelExecutor`, bit-identity, 16 ms gate. Pure logic, TDD | TBD | Draft |
-| 5 | Ecology State & Succession | Health index plus hysteresis (C4), succession rule evaluation (C7), `BiomeSuccessionTriggered`, `ApplyBiomeTransition` / `RemoveLegacy` (C9). Pure logic, TDD | TBD | Draft |
+| 4 | Grid Passes | Steps 2, 8 and 11 plus pressure-field propagation: water flow and table, migration solver (group and softmax, river and corridor modifiers), coastal cross-feeding, lifeboat guardrails, seed drift, natural ignition and fire spread, `years_low_herbivore_inflow`; step-outer passes, gather, `IParallelExecutor`, bit-identity, 16 ms gate. Pure logic, TDD | TBD | Draft |
+| 5 | Ecology State & Succession | Health index plus hysteresis (C4), succession rule evaluation, forward and recovery, with the recovery multiplier (C7), the `ISuccessionResolver` seam at step 10, `BiomeSuccessionTriggered`, one-shot `ApplyBiomeTransition` (C9). Pure logic, TDD | TBD | Draft |
 | 6 | Event Detection | Connected-cell clustering for drought front, predator wave, disease bloom; recolonization; `CellEcologyChanged` change set. Pure logic, TDD | TBD | Draft |
 | 7 | EcologyModule | SimModule: data load and hot reload, `WorldGenerationComplete` init, `WeatherUpdated` accumulation via `WeatherSnapshotInput`, `mSeasonPending` scheduling, stub-input mode, band gating, publishing, `IBiomeSeasonalBaseline` via `ModuleRef`, `JobSystemService` executor, `cow_main.diaapp` entry | TBD | Draft |
 | 8 | Ecology Save/Load | `EcologySaveParticipant`: JSON arrays plus palettes, validate, save/continue/load/continue round-trip | TBD | Draft |
@@ -323,7 +351,7 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 5. **The season pipeline runs on the sim frame after week 13 arrives.** A2's ordering guarantee (CH-A1R-06) can't hold on the bus, because the Reaction pass can't post.
 6. **`year_quality` is dropped from A1** (C6). Rainfall comes from A4 only. This closes A4's PARK-A4-001 as "not needed". S-2's year-quality selector scales the stub weather input.
 7. **`succession_pressure` joins the cell schema, and succession counters come from a data rule table** owned by A3 (C7). Forest, wetland, tundra and rainforest counters are now defined, and `pressure_source` is always set.
-8. **A3 ticks on `SimulationTick` bands and writes A1 only through `ApplyBiomeTransition` and `RemoveLegacy`** (C9). This corrects A3 TechnicalSpec §1's "does not subscribe to SimulationTick".
+8. **A3 runs on A1's bands, synchronously, through `ISuccessionResolver`, and writes A1 only through `ApplyBiomeTransition`** (C9; refined by the A3 spec 2026-10-18). This corrects A3 TechnicalSpec §1's "does not subscribe to SimulationTick". Recovery counters are rules in the same table, and legacy deltas are one-shot.
 9. **Hard map edges.** Off-map recolonization becomes edge and refugia lifeboats (C10). The grid is odd-q `HexTopology`, not axial.
 10. **Slope, soil, river, corridor and route memory are derived at init** (C11). S-1's schema is unchanged.
 11. **The recolonization event is defined** (C13). Herd migration and the dragon kill field wait for Layer 2 and step 9.
@@ -332,6 +360,8 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 14. **Populations are stored as fractions of `max_density_per_cell`** (C14). S-2's 0–500 sliders are a display scale.
 15. **Layer 1 only.** Step 9, Layer 2 and Layer 3 are deferred, with interfaces declared.
 16. **A1 owns its tools, and S-2 and S-3 merge into one Ecology testbed** (2026-10-18). Tuning, editing, graphs and the change ledger are part of A1 (A4's pattern). One stage hosts them, with a Controlled mode (pinned weather, for understanding and tuning) and a Living mode (A4 and A3 live, long-run emergence). This changes the GDD's testbed roster.
+17. **Natural ignition** (from the A3 spec): seeded lightning fires at the Season band, so fire and BurnedAshland emerge without dragons. This is new GDD content.
+18. **`years_low_herbivore_inflow`** (from the A3 spec) stands in for tundra's "migration routes severed".
 
 ## Dependencies
 
@@ -358,7 +388,7 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 - Initialise: derived slope, river and corridor; seeded soil is deterministic; starting populations follow affinity.
 - One test group per equation (TechnicalSpec §4–§5): grass growth, breeding only in season, maturation after N seasons, juvenile 2× predation, Allee below `min_viable`, competition, pack bonus, starvation, functional-group totals.
 - Ecology state: a single bad season doesn't drop a tier; down after `state_down_seasons`; up only after the longer streak; one tier per move; the `recovering` flag.
-- Succession: counters rise and decay per rule; the trigger fires at 1.0 with the right `to` and `source`; counters reset after `ApplyBiomeTransition`; legacy deltas clamp and reverse.
+- Succession: counters rise and decay per rule; the trigger fires at 1.0 with the right `to` and `source`; every counter resets after `ApplyBiomeTransition`; legacy deltas apply once and clamp; recovery rules keep progress when their conditions fail, and multiply by the resolver's factor; triggers reach the resolver in cell-index order, and the biome changes before step 12; natural ignition is deterministic and scales with drought and fuel.
 - Grid passes: migration conserves population (out = in plus edge loss of 0); pressure fields decay faster than they spread with distance; Ocean and Lake are impassable to land species; coastal feeding is symmetric; lifeboats only seed Collapsed neighbours.
 - Events: cluster detection at and below the minimum size.
 - Determinism: same inputs give bit-identical fields. `SerialExecutor` vs 1, 3 and 17 ranges, and reversed range order, all give bit-identical fields after 40 years.
@@ -381,4 +411,4 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 
 ## Status
 
-**Status:** `Approved` (2026-10-18). Conflicts C1–C14 resolved in the interview the same day. Amended the same day: change ledger (Feature 3), tools moved into A1 (Feature 9), and S-2/S-3 merged into one Ecology testbed (deviation 16). No plan yet; create `a1-ecology.plan.md` when implementation starts (Features 1–6 need no S-1, A3 or A4 code).
+**Status:** `Approved` (2026-10-18). Conflicts C1–C14 resolved in the interview the same day. Amended the same day: change ledger (Feature 3), tools moved into A1 (Feature 9), and S-2/S-3 merged into one Ecology testbed (deviation 16). Amended again on A3's approval (2026-10-18): the `ISuccessionResolver` seam, recovery rules, `RemoveLegacy` removed, natural ignition, and `years_low_herbivore_inflow` (deviations 17–18). No plan yet; create `a1-ecology.plan.md` when implementation starts (Features 1–6 need no S-1, A3 or A4 code).
