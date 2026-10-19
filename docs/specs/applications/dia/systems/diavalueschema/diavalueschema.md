@@ -29,7 +29,7 @@ Nothing like this exists today:
 
 - Own the `dia.value_schema` file format (sidecar files) and its loader.
 - Own `ValueInfo` and the runtime lookup `ValueSchemaRegistry` (key → `ValueInfo`). It is published as a service; no singleton.
-- Own the code-side description APIs: `MetricInfo` for metrics, `ArgInfo` for DiaAPI command arguments, and `DIA_ATTR_DESCRIBE` for entity component fields. These feed the same registry.
+- Own the code-side description APIs: `MetricInfo` for metrics, `ValueParam` for DiaAPI command arguments, and `DIA_ATTR_DESCRIBE` for entity component fields. These feed the same registry.
 - Own the debug-panel tooltip contract: controls and inspector rows carry a `schemaKey`, and the panel shows description, unit, range and default.
 - Own the named colour-ramp library and its mapping to CellField ramps.
 - Own the export: `dia schema export`, the DiaDebugServer query `valueschema.get` and `dia docs value-reference`.
@@ -53,8 +53,8 @@ The rule is **describe values where they are defined**:
 | Data-file parameter (e.g. `grazing.rate` in `ecology_parameters.json`) | JSON data file | **Sidecar** `<file>.schema.json` next to it |
 | State field (e.g. `vegetation` per cell) | Code, shown by panels and layers | **Sidecar** fields schema (presentation lives with data) |
 | Metric | `MetricRegistry::Register*` in code | **`MetricInfo`** passed at registration |
-| Command argument | `CommandRegistry` in code | **`ArgInfo`** list on `CommandInfo` |
-| Entity component field | `DIA_FIELD_*` in a component | **`DIA_ATTR_DESCRIBE`**, next to the existing `DIA_ATTR_RANGE` in `FieldAttributeRegistry` |
+| Command argument | `CommandRegistry` (and editor actions) in code | **`ValueParam`** list on `CommandInfo` (the existing `EditorActionParam`, moved into DiaAPI) |
+| Entity component field | `DIA_FIELD_*` in a component | **`DIA_ATTR_DESCRIBE`**, next to the existing `DIA_ATTR_RANGE` in `FieldAttributeRegistry`; exported into `registeredtypes.diaschema` field entries |
 
 At runtime all five end up in one `ValueSchemaRegistry`, so consumers never care where an entry came from.
 
@@ -128,15 +128,32 @@ MetricInfo info{ "Herbivores (world)", "Total herbivore population across all ce
 mMetrics.RegisterGauge(StringCRC("cow.ecology.herbivores_total"), info);
 
 // DiaAPI: CommandInfo gains args
-ArgInfo args[] = {
-    { "kind", ArgType::Enum,   "Which pack to save: weather or ecology.", "", true, "weather|ecology" },
-    { "id",   ArgType::String, "Asset id for the new pack.",               "", true },
-};
+Dia::API::ValueParam params[2];   // formerly EditorActionParam (DiaEditor)
+params[0].name = "kind"; params[0].type = "enum";   params[0].required = true;
+params[0].description = "Which pack to save: weather or ecology."; params[0].enumValues = "weather|ecology";
+params[1].name = "id";   params[1].type = "string"; params[1].required = true;
+params[1].description = "Asset id for the new pack.";
 ```
 
 - Both are optional, so every existing call site keeps compiling.
 - `dia validate schema` reports the missing ones as coverage gaps (see Validation).
 - `HelpSystem` and the palette show the argument text.
+
+### Reuse of existing pieces (amended 2026-10-19)
+
+A survey found that no tool shows per-value descriptions today. Field labels are raw reflected names, and descriptions exist only per component, debug domain and command. It also found three pieces to reuse rather than duplicate:
+
+1. **Command arguments reuse `EditorActionParam`.** `Dia/DiaEditor/EditorAPI/EditorActionDescriptor.h` already has `EditorActionParam {name, type, required, description}`, with up to 8 per action, used by 6 editor plugins.
+   - It moves down into DiaAPI as `Dia::API::ValueParam` and gains optional `unit`, `min`, `max` and `enumValues`.
+   - `EditorActionParam` becomes an alias of it, so editor plugins keep compiling.
+   - DiaAPI `CommandInfo` gains the same list.
+   - There is one type for both registries; no separate `ValueParam`.
+2. **Component fields extend the existing `.diaschema` export.** `Cluiche/CluicheTest/Main.cpp:109-119` already writes each component's `description` into `registeredtypes.diaschema`, but its field entries are just `{name, kind}`.
+   - Feature 7 adds `label`, `description`, `unit`, `min`, `max` and `default` to those field entries, taken from `FieldAttributeRegistry` and the existing defaults.
+   - The Blueprint Editor's `SchemaReader` and the Entity Inspector read them from there. There is no second export path for component fields.
+3. **One shared tooltip UI.** Field rows exist three times today: `DiaEntityTemplateEditor/UI/src/components/FieldRow.tsx`, the Scene Editor's `propRow()` and CluicheTest's `PropertyGrid.tsx`. None of them has a tooltip.
+   - `@dia/editor-ui` (`Dia/DiaEditorUI`) gains `ValueLabel` (label, unit, (i) icon) and `ValueTooltip` (description, range, default, affects, related, source, hint), and the editor rows adopt them.
+   - The in-game debug panel gets one matching `renderValueTooltip()` in its shared panel script, so it isn't copied per panel.
 
 ### Runtime
 
@@ -178,7 +195,7 @@ ArgInfo args[] = {
 - an unknown `ui.ramp`
 
 **Warns on:**
-- metrics or commands with no `MetricInfo` or `ArgInfo` (coverage gap), once code-side infos are available to the validator (Open Q1)
+- metrics or commands with no `MetricInfo` or `ValueParam` (coverage gap), once code-side infos are available to the validator (Open Q1)
 - component fields with `DIA_ATTR_RANGE` but no `DIA_ATTR_DESCRIBE`, on the same condition
 
 ```
@@ -198,15 +215,15 @@ $ dia validate schema
 |---|---|---|---|---|
 | 1 | Format, loader and service | `ValueInfo`, the sidecar loader, `ValueSchemaModule` / `ValueSchemaService`, lookup by full key and by format, clamp-and-warn helper | Draft | TBD |
 | 2 | `dia validate schema` | DiaCLI validator (Python, like `cli_validate.py`), precommit hook | Draft | TBD |
-| 3 | Debug-panel tooltips | Controls and rows take `schemaKey`; panel tooltip, default mark, pack marker; schema query; contract golden | Draft | TBD |
-| 4 | Code-side descriptions | `MetricInfo` on `MetricRegistry`, `ArgInfo` on `CommandInfo`; `HelpSystem` and palette show the args | Draft | TBD |
+| 3 | Tooltips (panel and editor UI) | Controls and rows take `schemaKey`; shared `ValueLabel`/`ValueTooltip` in `@dia/editor-ui` plus `renderValueTooltip()` in the debug panel; default mark, pack marker; schema query; contract golden | Draft | TBD |
+| 4 | Code-side descriptions | `MetricInfo` on `MetricRegistry`; `EditorActionParam` moved to DiaAPI as `ValueParam` (alias kept) and added to `CommandInfo`; `HelpSystem` and palette show the args | Draft | TBD |
 | 5 | Ramps | Named ramp library, `ToCellFieldRamp`, legend data | Draft | TBD |
 | 6 | Export, query and reference | `dia schema export`, `valueschema.get`, `dia docs value-reference` | Draft | TBD |
 | 7 | Entity component fields | `DIA_ATTR_DESCRIBE(Type, field, label, unit, description)` alongside the existing `FieldAttributeRegistry` ranges. It feeds `ValueSchemaService` (kind `component_field`), so the Entity Inspector, Blueprint Editor and Scene Editor show the same tooltips as world values. Without it, entity fields have ranges but no explanations, and two metadata systems drift apart | Draft (v1, user decision 2026-10-19) | TBD |
 
 - **Build order:** 1 → 2 → 3, then 4 and 7 (code-side descriptions), 5 (with or after CellField Step 1) and 6.
-- **Feature 7 consumers:** the Entity Inspector, Blueprint Editor and Scene Editor show the same tooltips as the debug panels. Each component field resolves to the full key `<ComponentType>/<field>`, and its range comes from the existing `RangeAttribute`, so it is never stated twice.
-- **CoW content** is CoW's own work: schema files for every F-3 defaults file, the A1/A4 fields schemas, plus `MetricInfo` and `ArgInfo` on CoW registrations. It goes into F-3 Feature 1's scope and each system's Feature 1.
+- **Feature 7 consumers:** the Entity Inspector, Blueprint Editor and Scene Editor show the same tooltips as the debug panels, read from the extended `registeredtypes.diaschema` and rendered with the shared `ValueTooltip`. Each component field resolves to the full key `<ComponentType>/<field>`, and its range comes from the existing `RangeAttribute`, so it is never stated twice.
+- **CoW content** is CoW's own work: schema files for every F-3 defaults file, the A1/A4 fields schemas, plus `MetricInfo` and `ValueParam` on CoW registrations. It goes into F-3 Feature 1's scope and each system's Feature 1.
 
 ## Dependencies
 
@@ -215,7 +232,9 @@ $ dia validate schema
 | DiaCore Json, StringCRC, `PathStore` | Loader, keys | Done |
 | DiaApplicationFlow `ServiceStream` | `ValueSchemaService` | Done |
 | DiaObservation `MetricRegistry` | `MetricInfo` | Done (extended) |
-| DiaAPI `CommandRegistry`, `HelpSystem` | `ArgInfo` | Done (extended) |
+| DiaAPI `CommandRegistry`, `HelpSystem`; DiaEditor `EditorActionDescriptor` | `ValueParam` (moved from DiaEditor) | Done (extended) |
+| `@dia/editor-ui` (DiaEditorUI) | Shared `ValueLabel` / `ValueTooltip` | Done (extended) |
+| `dia reflect` / `registeredtypes.diaschema` export | Component field descriptions (Feature 7) | Done (extended) |
 | DiaVisualDebugger panel and `IDebugDomain` | Tooltips | Done (extended) |
 | DiaBgfx CellField | Ramps | Approved, not built |
 | DiaCore `FieldAttributeRegistry` / DiaEntity | Entity component fields (Feature 7) | Done (extended) |
@@ -229,7 +248,7 @@ $ dia validate schema
 |---|---|---|---|---|
 | VS-001 | A Dia system; games ship only content (user decision 2026-10-19) | Every consumer is Dia (panel, CellField, CLI, editor); any game has tunables | Accepted | Yes |
 | VS-002 | Data parameters and fields are described in sidecar `.schema.json` files keyed by the data file's `format` | Defaults and packs stay plain values with clean diffs; one schema serves every pack of a format | Accepted | Yes |
-| VS-003 | Metrics and command arguments are described in code at registration (`MetricInfo`, `ArgInfo`) | They are defined in code, so describing them there stops the description drifting from the definition | Accepted | Yes |
+| VS-003 | Metrics and command arguments are described in code at registration (`MetricInfo`, `ValueParam`) | They are defined in code, so describing them there stops the description drifting from the definition | Accepted | Yes |
 | VS-004 | Strict coverage: `dia validate schema` fails if any data key lacks an entry or description, or is out of range. At runtime, out-of-range values are clamped with a Warning | Tooltips can't silently go missing, and bad packs are caught before runtime (user decision 2026-10-19) | Accepted | Yes |
 | VS-005 | No singleton: lookup goes through `ValueSchemaService` | User rule: no singletons without sign-off | Accepted | Yes |
 
@@ -252,14 +271,14 @@ $ dia validate schema
   - The enum `values` parse.
   - The clamp helper clamps and warns once per key.
   - `ToCellFieldRamp` maps min and max.
-  - `MetricInfo` and `ArgInfo` reach the service.
+  - `MetricInfo` and `ValueParam` reach the service.
 - **DiaCLI pytest:** one fixture per fail rule in Validation, and the OK path.
 - **Panel contract golden:** a control with `schemaKey` serialises with tooltip data.
 - **CoW proof** (when CoW content exists): `dia validate schema` passes on every F-3 defaults file and pack. The S-3 slider tooltip shows the schema description; this is the visual gate against the mockup.
 
 ## Resolved Decisions
 
-1. **Code-side descriptions reach the CLI through a headless export** (2026-10-19). `dia schema export` runs the app in describe mode and dumps `MetricInfo`, `ArgInfo` and `DIA_ATTR_DESCRIBE` entries. `dia validate schema` always checks the sidecar files, and checks code-side coverage only when an export exists, so validation never needs a build.
+1. **Code-side descriptions reach the CLI through a headless export** (2026-10-19). `dia schema export` runs the app in describe mode and dumps `MetricInfo`, `ValueParam` and `DIA_ATTR_DESCRIBE` entries. `dia validate schema` always checks the sidecar files, and checks code-side coverage only when an export exists, so validation never needs a build.
    - Rejected: sidecars for metrics and commands, because it breaks VS-003.
 2. **Units are free text in v1** (2026-10-19), plus an optional `ui.format` (`percent`, `fixed:2`). A unit set can come later if charts need to convert units.
 3. **Entity component fields are in v1** (Feature 7, user decision 2026-10-19).
