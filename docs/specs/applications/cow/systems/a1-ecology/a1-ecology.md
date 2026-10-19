@@ -18,7 +18,7 @@ This spec builds **Layer 1** of the GDD's three layers: the analytical cell laye
 
 1. **Species-driven, data-only roster.** Species, biomes and succession rules load from JSON. Code never names a species or functional group (TechnicalSpec §1a).
 2. **Band-gated tick pipeline.** The GDD steps run at the Season, Year, Decade and Century boundaries of GameSpeedController's day ticks, each as a full-grid pass, with no `delta_scale`.
-3. **Pure cell logic, testable alone.** The per-cell equations run on one cell with no neighbours, no module and no weather events (S-2). The same code runs grid-wide when fed by A4 (S-3).
+3. **Pure cell logic, testable alone.** The per-cell equations run on one cell with no neighbours, no module and no weather events (GoogleTests, `isolate_cell`). The same code runs grid-wide when fed by A4 (Ecology testbed, Living mode).
 4. **Defined ecology state.** Thriving, Stable, Stressed and Collapsed come from a hysteretic health index (C4).
 5. **Succession counters for every A3 path.** A data rule table covers every A3 transition. A1 evaluates it and raises `BiomeSuccessionTriggered` with a `pressure_source` (C7).
 6. **Deterministic.** Same world, data, weather and tick count give bit-identical state at any thread count. Randomness comes only from the `A1` stream of `RandomStreamModule`.
@@ -29,7 +29,7 @@ This spec builds **Layer 1** of the GDD's three layers: the analytical cell laye
 ## Non-Goals
 
 - **Dragon pressure (step 9), hunts, Full Fight and Cultivated Ground.** Interfaces are declared (see Public Interfaces); they are built when S-4 needs them.
-- **Population tokens (Layer 2) and local instantiation (Layer 3).** Deferred. S-3 sees migration through density overlays and flow arrows.
+- **Population tokens (Layer 2) and local instantiation (Layer 3).** Deferred. The Ecology testbed sees migration through density overlays and flow arrows.
 - **Succession transition rules, legacy modifiers and recovery counters.** These belong to A3. A1 provides the counters and the apply API.
 - **Weather.** A4 owns rainfall and temperature variation. A1 does not roll `year_quality` (C6).
 - **Event display and naming.** These belong to D4. A1 only detects thresholds.
@@ -40,7 +40,7 @@ This spec builds **Layer 1** of the GDD's three layers: the analytical cell laye
 
 ### Placement
 
-**CoW-Shared** (AD-002). A1 is consumed by A3, A4, S-2, S-3 and later S-4, V-1, B1, B2, C3 and D4. Pure logic lives in `Cluiche/CoW/Shared/Ecology/`. The SimModule, debug domain and save participant live in `Cluiche/CoW/Modules/`. Test helpers (hand-built grids, a stub weather input, golden rosters) ship in `Cluiche/CoW/Shared/Ecology/Testing/`.
+**CoW-Shared** (AD-002). A1 is consumed by A3, A4, the Ecology testbed and later S-4, V-1, B1, B2, C3 and D4. Pure logic lives in `Cluiche/CoW/Shared/Ecology/`. The SimModule, debug domain and save participant live in `Cluiche/CoW/Modules/`. Test helpers (hand-built grids, a stub weather input, golden rosters) ship in `Cluiche/CoW/Shared/Ecology/Testing/`.
 
 ```
 SimPU
@@ -68,7 +68,7 @@ One shared `StringCRC` id set, used by S-1, A1, A3, A4 and `species.json`:
 | Succession outputs (A3 produces) | `Scrub`, `BurnedAshland`, `DesertifiedPlain` |
 | Water (S-1 produces) | `Ocean`, `Lake` |
 
-Lore names (Verdant Lowlands, Stormridge, Ancient Interiors) are regions or depth zones, not biomes. `Volcanic` (primary, eruption ash) and `BurnedAshland` (fire succession) are different ids. `biomes.json` gives every id a `BiomeProfile`, including its seasonal temperature for `IBiomeSeasonalBaseline`. An unknown id returns 0.5 and logs once (A4 EC-19).
+Lore names (Verdant Lowlands, Stormridge, Ancient Interiors) are regions or depth zones, not biomes. `Volcanic` (primary, eruption ash) and `BurnedAshland` (fire succession) are different ids. `biomes.json` gives every id a `BiomeProfile`, including its seasonal temperature for `IBiomeSeasonalBaseline` and a seasonal `rainfall_baseline` that S-3's pinned climate uses (the GDD's original per-biome seasonal patterns, TechnicalSpec §1b). An unknown id returns 0.5 and logs once (A4 EC-19).
 
 ### State (structure of arrays)
 
@@ -118,9 +118,9 @@ The Year, Decade and Century boundaries are also Season boundaries (364 = 4 × 9
 
 A1 reads weather through `IEcologyWeatherInput` (per-cell `Rainfall`, `Temperature`, `SnowCover`), not through A4 directly.
 
-- **S-3 and the game:** `WeatherSnapshotInput` adapts A4's `WeatherSnapshot`. On each `WeatherUpdated{week}`, A1 adds `Rainfall` into `rainfall_accumulator` and takes the latest `Temperature` and `SnowCover`.
+- **Living mode and the game:** `WeatherSnapshotInput` adapts A4's `WeatherSnapshot`. On each `WeatherUpdated{week}`, A1 adds `Rainfall` into `rainfall_accumulator` and takes the latest `Temperature` and `SnowCover`.
 - **Timing:** the 13th week of a season arrives in the bus's Reaction pass, which can't post. A1 sets `mSeasonPending` and runs the season pipeline on the next sim frame, so week 13 always counts toward its own season.
-- **S-2 and tests:** `StubWeatherInput` (Testing/) supplies slider or scripted values. Its GOOD/AVERAGE/BAD selector scales the stub's rainfall; this is not an A1 field. With the stub, the module steps on `SimulationTick` with `band >= Season`.
+- **Controlled mode and tests:** `StubWeatherInput` (Testing/) supplies slider or scripted values. Its GOOD/AVERAGE/BAD selector scales the stub's rainfall; this is not an A1 field. With the stub, the module steps on `SimulationTick` with `band >= Season`.
 
 ### Ecology state (C4)
 
@@ -154,7 +154,7 @@ At each rule's band, for every cell whose biome matches `from`:
 - otherwise: it decays by `decay`, never below 0
 - counter ≥ 1.0: A1 publishes `BiomeSuccessionTriggered{cell, to, source}` and resets that cell's counters
 
-A3 owns the rule contents and the staging check. A1 ships an initial file translated from A3 TechnicalSpec §4 and A1 TechnicalSpec §9 so S-2 can exercise it. `GetSuccessionProgress(cell)` (the highest counter) feeds A3's 50% Stressed visual.
+A3 owns the rule contents and the staging check. A1 ships an initial file translated from A3 TechnicalSpec §4 and A1 TechnicalSpec §9 so it can be exercised before A3 exists. `GetSuccessionProgress(cell)` (the highest counter) feeds A3's 50% Stressed visual.
 
 A3 applies transitions only through A1's API (C9). A1 owns every cell field:
 
@@ -198,17 +198,32 @@ The season band is gated at ≤ 16 ms in Release at Large (6,656 cells) with abo
 
 `EcologySaveParticipant` writes every non-static `EcologyFields` array as a JSON array, plus the species and biome palettes (CRC lists). Floats are stored as doubles (`%.17g`) so they round-trip bit-exactly. Static geography is re-derived from the world on load. The estimated size is about 35 fields × 6,656 cells, inside the 100 MB buffer.
 
-### Debug and observability
+### Change ledger (why values changed)
+
+*Amended 2026-10-18.* A1 is meant to be understood, not just watched, so every step records **why** values changed, not only the results. Each band, `EcologyLedger` holds per-cell, per-species deltas by cause:
+
+- **Populations:** births, maturation, deaths by starvation, predation (by predator species), disease, Allee and base mortality, migration in and out (by direction), lifeboat founding.
+- **Producers:** growth, grazing (by species), wilt, fire.
+- **State:** the health index terms, and which succession rule conditions passed or failed.
+
+The ledger covers the last band only, is overwritten each band, is never saved, and doesn't feed back into the simulation. The equations write their terms to it as they compute them, so it can't drift from what actually ran. A build flag can turn it off if the 16 ms gate needs the time.
+
+### Debug, tuning and editing tools
+
+*Amended 2026-10-18.* The tools for understanding and tuning ecology belong to A1, as A4's do, so every stage that hosts A1 gets them: the Ecology testbed, and later the dragon testbeds. Every action is a `cow.ecology.*` DiaAPI command, and the panel calls the same commands. The commands and their execution model come first; the panel depends only on them.
 
 `EcologyDebugDomain` (SimPU) provides:
 
-- **Panel:** season, year, cell count, state distribution, functional-group totals, last band profile, data source (file or fallback roster), weather input (A4 or stub).
+- **Panel:** season, year, cell count, state distribution, functional-group totals, last band profile, data source (file or fallback roster), weather input (A4 or stub), A3 present or not.
 - **Overlays through Dia CellField:** ecology state, health, biome, each producer, species density or functional-group density, each pressure field, succession progress, and event clusters. Top-3 migration arrows go through debug draw.
-- **Cell inspector:** every field of the selected cell, including per-species juvenile/adult counts and maturation.
-- **DiaAPI commands** `cow.ecology.*` (the panel calls the same commands): `inspect`, `set_field`, `set_species`, `set_ecology_state`, `step_band`, `reload_data`, `find_events`.
+- **Cell inspector:** every field of the selected cell, including per-species juvenile/adult counts and maturation, plus the **change ledger** for that cell: each value's change last band, broken down by cause.
+- **Graphs:** a rolling time-series panel. It shows the selected cell's per-species juvenile/adult counts and producers, plus map-wide functional-group totals and the state distribution. It keeps a bounded history of the last 200 bands, records only while the panel is open, and isn't saved.
+- **Tuning:** live sliders over `ecology_parameters.json` and the selected species' and biome's entries, applied at the next band. `cow.ecology.tuning.save` writes them back to the source JSON, using the same source-assets path as S-1's `preset.save`. Hot reload picks up hand edits.
+- **Editing:** set a cell's fields or a species' population, and paint species, producers, water or biome over a brush of cells. Painting a biome reinitialises the painted cells from the biome's starting values. `isolate_cell` turns off migration and propagation into and out of the selected cell, which gives the old single-cell S-2 behaviour.
+- **Commands:** `inspect`, `ledger`, `set_field`, `set_species`, `paint`, `isolate_cell`, `set_ecology_state`, `step_band`, `reload_data`, `tuning.set`, `tuning.save`, `find_events`, `apply_transition` (until A3).
 - **Instrumentation:** `DIA_PROFILE_SCOPE` per step, `MetricRegistry` counters (cells per state, events per band, band time), an `IHealthReporter` (Degraded on the fallback roster or a failed data validation).
 
-The S-2 and S-3 stages host these. A1 owns no stage.
+The Ecology testbed stage hosts these. A1 owns no stage.
 
 ## Public Interfaces
 
@@ -221,7 +236,7 @@ namespace CoW::Ecology {
         bool Initialise(const EcologyWorldInput& world, const EcologyData& data, uint64_t seed);
         void AccumulateWeek(const IEcologyWeatherInput& weather);           // one A4 week
         void StepBands(TimeBand band, IParallelExecutor& executor);         // runs every band <= band, smallest first
-        void StepCell(uint32_t cell, TimeBand band);                        // S-2: single cell, no neighbour passes
+        void StepCell(uint32_t cell, TimeBand band);                        // one cell, no neighbour passes (tests)
 
         // A3 apply API (C9). A1 owns every cell field.
         void ApplyBiomeTransition(uint32_t cell, Dia::Core::StringCRC to, const LegacyDelta& legacy);
@@ -231,7 +246,9 @@ namespace CoW::Ecology {
         // Dragon interface (step 9). Declared; queued and ignored until S-4.
         void QueueDragonInput(const DragonEcologyInput& input);
 
-        EcologyView GetView() const;                                        // const accessors for debug, A3, S-2/S-3
+        EcologyView GetView() const;                                        // const accessors for debug, A3, Ecology testbed
+        const EcologyLedger& GetLastLedger() const;                         // why values changed last band
+        void SetIsolated(uint32_t cell, bool isolated);                     // debug: no migration/propagation in or out
         const EcologyEvents& GetLastEvents() const;
         const EcologyStepProfile& GetLastProfile() const;
         void RestoreState(const EcologyFields& fields);
@@ -266,22 +283,22 @@ Messages (`CellEcologyChanged`, `EventThresholdCrossed`, `BiomeSuccessionTrigger
 
 | # | Feature | Description | Spec | Status |
 |---|---------|-------------|------|--------|
-| 1 | Ecology Data | `species.json` (incl. `habitat`, aquatic groups, `coastal_reach`), `biomes.json` (13 ids, `BiomeProfile`, seasonal temperature), `succession_rules.json`, `ecology_parameters.json`: load, validate, defaults, fallback roster. Pure logic, TDD | TBD | Draft |
+| 1 | Ecology Data | `species.json` (incl. `habitat`, aquatic groups, `coastal_reach`), `biomes.json` (13 ids, `BiomeProfile`, seasonal temperature and `rainfall_baseline`), `succession_rules.json`, `ecology_parameters.json`: load, validate, defaults, fallback roster. Pure logic, TDD | TBD | Draft |
 | 2 | Cell State & Initialise | `EcologyFields` SoA, palettes, `EcologyWorldInput` from `WorldStructure`, derived geography (C11), seeded soil, starting populations, `IBiomeSeasonalBaseline` implementation. Pure logic, TDD | TBD | Draft |
-| 3 | Cell Equations | Per-cell steps 1, 3–7 and 12: producers, per-species births, maturation, Allee, competition, starvation, predation (age-weighted), disease, clamping; `StepCell` for S-2. One test group per equation from TechnicalSpec §4–§5. Pure logic, TDD | TBD | Draft |
+| 3 | Cell Equations | Per-cell steps 1, 3–7 and 12: producers, per-species births, maturation, Allee, competition, starvation, predation (age-weighted), disease, clamping; `StepCell`; `EcologyLedger` deltas by cause, written as each term is computed (ledger sums equal the actual change). One test group per equation from TechnicalSpec §4–§5. Pure logic, TDD | TBD | Draft |
 | 4 | Grid Passes | Steps 2, 8 and 11 plus pressure-field propagation: water flow and table, migration solver (group and softmax, river and corridor modifiers), coastal cross-feeding, lifeboat guardrails, seed drift; step-outer passes, gather, `IParallelExecutor`, bit-identity, 16 ms gate. Pure logic, TDD | TBD | Draft |
 | 5 | Ecology State & Succession | Health index plus hysteresis (C4), succession rule evaluation (C7), `BiomeSuccessionTriggered`, `ApplyBiomeTransition` / `RemoveLegacy` (C9). Pure logic, TDD | TBD | Draft |
 | 6 | Event Detection | Connected-cell clustering for drought front, predator wave, disease bloom; recolonization; `CellEcologyChanged` change set. Pure logic, TDD | TBD | Draft |
 | 7 | EcologyModule | SimModule: data load and hot reload, `WorldGenerationComplete` init, `WeatherUpdated` accumulation via `WeatherSnapshotInput`, `mSeasonPending` scheduling, stub-input mode, band gating, publishing, `IBiomeSeasonalBaseline` via `ModuleRef`, `JobSystemService` executor, `cow_main.diaapp` entry | TBD | Draft |
 | 8 | Ecology Save/Load | `EcologySaveParticipant`: JSON arrays plus palettes, validate, save/continue/load/continue round-trip | TBD | Draft |
-| 9 | Ecology Debug | `EcologyDebugDomain` panel, inspector, CellField overlays, migration arrows, `cow.ecology.*` commands, profiling, metrics, health | TBD | Draft |
+| 9 | Ecology Debug & Tools | `EcologyDebugDomain`: command model first, then panel, inspector with change ledger, CellField overlays, migration arrows, graph panel, live tuning sliders + `tuning.save` write-back, cell edit/paint, `isolate_cell`, profiling, metrics, health. Needs an HTML mockup before build | TBD | Draft |
 
-**Routed elsewhere:** the single-cell sliders and the S-2 proof scenarios go to the **S-2 Single Cell Ecology** testbed. Full-world emergence, the time-series graphs and the S-3 proof scenarios go to **S-3 Living Ecology**. Transition rules, legacy and recovery go to **A3**.
+**Routed elsewhere:** the stage, its Controlled and Living modes, the guided proof scenarios (the old S-2 tests) and the long-run checks (the old S-3 tests) go to the **Ecology testbed** (S-2 and S-3 merged, 2026-10-18). Transition rules, legacy and recovery go to **A3**.
 
 **Build order:** 1 → 2 → 3 → 5. Feature 4 follows 3. Feature 6 follows 4 and 5. Feature 7 follows 6. Features 8 and 9 follow 7 and can run in parallel.
 
 - Features 1–6 need no S-1, A3 or A4 code: their tests use hand-built hex grids and `StubWeatherInput`.
-- S-2 can start once Features 1, 2, 3 and 5 are built.
+- The Ecology testbed needs Features 1–7 and 9, plus S-1 Features 1 and 8 (its worlds come from S-1).
 
 ## Binding Decisions
 
@@ -291,9 +308,9 @@ Messages (`CellEcologyChanged`, `EventThresholdCrossed`, `BiomeSuccessionTrigger
 | PD-002 | ProcessingUnit/Phase/Module architecture | `EcologyModule` is a SimModule on SimPU. A4 finds the baseline provider and A3 finds the apply API through `ModuleRef`, never through singletons |
 | PD-004 | No STL containers in public APIs | `EcologyFields` uses `DynamicArrayC`. Views expose accessors, not `std::` types |
 | AD-001 | Ask permission before Dia/baseline edits | None needed. A1 uses existing DiaMessageBus, DiaSaveGame, `JobSystemService` (Done 2026-10-15), DiaMaths noise, CellField (dia-needs #14) and DiaAPI `CommandRegistry` |
-| AD-002 | Four-tier dependency model | CoW-Shared: A3, A4, S-2, S-3 and later systems consume it |
+| AD-002 | Four-tier dependency model | CoW-Shared: A3, A4, the Ecology testbed and later systems consume it |
 | AD-003 | GDD owns design intent | GDD A1 owns the mechanics and constants. Deviations are listed below for the GDD owner |
-| AD-005 | One stage per testbed | A1 owns no stage. S-2 and S-3 host it |
+| AD-005 | One stage per testbed | A1 owns no stage. The Ecology testbed hosts it |
 
 ## Deviations from GDD A1
 
@@ -314,6 +331,7 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 13. **Stale references** (C12): the performance target is 16 ms at Large (6,656 cells), not 200×200. Saves are JSON, not blobs. S-2's section references should be §4/§5 (equations), §9 (succession) and §10 (events).
 14. **Populations are stored as fractions of `max_density_per_cell`** (C14). S-2's 0–500 sliders are a display scale.
 15. **Layer 1 only.** Step 9, Layer 2 and Layer 3 are deferred, with interfaces declared.
+16. **A1 owns its tools, and S-2 and S-3 merge into one Ecology testbed** (2026-10-18). Tuning, editing, graphs and the change ledger are part of A1 (A4's pattern). One stage hosts them, with a Controlled mode (pinned weather, for understanding and tuning) and a Living mode (A4 and A3 live, long-run emergence). This changes the GDD's testbed roster.
 
 ## Dependencies
 
@@ -331,7 +349,7 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 - **A4.** Without it, `StubWeatherInput` is used and the panel reports the stub as the source.
 - **A3.** Without it, triggers are published and counted but no biome changes. A debug `cow.ecology.apply_transition` command can apply one by hand.
 
-**Required by:** A3 (triggers, apply API), A4 (`IBiomeSeasonalBaseline`), S-2, S-3, and later S-4, V-1, B1, B2, C3 and D4.
+**Required by:** A3 (triggers, apply API), A4 (`IBiomeSeasonalBaseline`), the Ecology testbed, and later S-4, V-1, B1, B2, C3 and D4.
 
 ## Test Strategy
 
@@ -353,14 +371,14 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 
 **Performance (Feature 4 gate):** one Season and one Year band at Large in Release with the job executor and 15 species, reported against 16 ms, with a per-step profile.
 
-**Proof (routed to the testbeds):** S-2's 10 single-cell scenarios and S-3's emergence, long-run and A1/A4 response tests.
+**Proof (routed to the Ecology testbed):** the GDD's S-2 scenarios (Controlled mode) and S-3's emergence, long-run and A1/A4 response tests (Living mode).
 
 ## Open Design Questions
 
 1. **Publishing on the frame after week 13.** The design assumes `EcologyModule` can publish from its own update on the next sim frame after setting `mSeasonPending`. Feature 7 must check this against DiaMessageBus's pass rules. If it can't, the season pipeline runs on the next day's `SimulationTick`, a one-day lag that changes no results.
-2. **Starting constants.** The health-index weights and bands, the streak lengths, `coastal_reach` and the aquatic roster are new numbers with no GDD values. S-2 tunes them first. If they move a lot, should the GDD lock them, or should they stay as tuning-file values?
+2. **Starting constants.** The health-index weights and bands, the streak lengths, `coastal_reach` and the aquatic roster are new numbers with no GDD values. The Ecology testbed's Controlled mode tunes them first. If they move a lot, should the GDD lock them, or should they stay as tuning-file values?
 3. **Memory at scale.** Dense `[species × cell]` arrays cost 15 species × 2 × 6,656 floats (about 0.8 MB), which is fine. If the roster grows past about 40 species, a sparse per-biome species set may be needed. This is revisited in Feature 4's benchmark.
 
 ## Status
 
-**Status:** `Approved` (2026-10-18). Conflicts C1–C14 resolved in the interview the same day. No plan yet; create `a1-ecology.plan.md` when implementation starts (Features 1–6 need no S-1, A3 or A4 code).
+**Status:** `Approved` (2026-10-18). Conflicts C1–C14 resolved in the interview the same day. Amended the same day: change ledger (Feature 3), tools moved into A1 (Feature 9), and S-2/S-3 merged into one Ecology testbed (deviation 16). No plan yet; create `a1-ecology.plan.md` when implementation starts (Features 1–6 need no S-1, A3 or A4 code).
