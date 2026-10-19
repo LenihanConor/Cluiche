@@ -1,6 +1,7 @@
 # Feature Spec: Layered Debug Rendering
 
 **Parent:** @docs/specs/applications/cow/systems/s1-worldgeneration/worldgenerationpipeline.md
+> **Amended 2026-10-18 (Feature 9 re-scope, @regions-and-sites.md): the fixed Sites and Dynasty Starts overlays are replaced by one Sites overlay with a toggle per registered kind (colour and shape from `SiteKindInfo`); adds a Region colour mode and region edges; Biome, Temperature and Moisture modes come from Feature 8. Full text updated when this feature is built.*
 
 **Gameplay Domains:** simulation
 

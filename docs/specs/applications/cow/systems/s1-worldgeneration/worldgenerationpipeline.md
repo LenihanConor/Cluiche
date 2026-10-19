@@ -7,16 +7,16 @@
 
 ## Summary
 
-WorldGenerationPipeline (WLD) is CoW's world data generation system. It produces a seeded, deterministic world structure — grid (biome/terrain/region per cell), Hearth Sites, Nexus Nodes, world-throne sites, and dynasty starting positions — and validates three hard placement guarantees (Hearth↔Nexus reachability, dynasty minimum spacing, world-throne existence/reachability). WLD is a **data pipeline only**: it generates static world structure, not live simulation state (no A1 ecology tick state, no dragon/clan/dynasty runtime state).
+WorldGenerationPipeline (WLD) is CoW's world data generation system. It produces a seeded, deterministic world structure — grid (terrain/biome/region per cell), a region table, and a **generic site set** — and validates the guarantees registered against it. *(Re-scoped 2026-10-18: S-1 builds terrain, biomes, regions and the geography nodes (corridors, rivers, Hunting Grounds, Resource Deposits), plus a site hook for the dragon layer only; Hearth Sites, Nexus Nodes, world-throne sites, dynasty starts and their three hard placement guarantees — Hearth↔Nexus reachability, dynasty minimum spacing, world-throne reachability — are the dragon layer's, registered through the hook. See @regions-and-sites.md.)* WLD is a **data pipeline only**: it generates static world structure, not live simulation state (no A1 ecology tick state, no dragon/clan/dynasty runtime state).
 
-The system supports **runtime generation** with debug-adjustable parameters (seed, biome distribution weights, placement tuning), **export to human-readable JSON** for hand-editing, **import from JSON** for loading authored worlds, **retry mechanism** with sub-seeds when placement guarantees fail, and **timeout/failure handling** that routes through CoW's Cancel path (GDD decision 5).
+The system supports **runtime generation** with debug-adjustable parameters (seed, terrain and climate sliders, placement tuning), **export to human-readable JSON** for hand-editing, **import from JSON** for loading authored worlds, **retry mechanism** with sub-seeds when placement guarantees fail, and **timeout/failure handling** that routes through CoW's Cancel path (GDD decision 5).
 
 WorldGenerationPipeline enables CoW's testbed iteration workflow: generate → inspect → tweak parameters → regenerate, all from F-1's debug host without leaving the game (GDD decision 3). It resolves **PARK-P6-001** (worldgen timeout/failure behavior).
 
 ## Problem
 
 CoW requires worlds that are:
-- **Structurally correct** — three hard placement guarantees must hold (Hearth↔Nexus reachability, dynasty minimum spacing, world-throne existence/reachability) or the world is unplayable
+- **Structurally correct** — every registered guarantee must hold. S-1 enforces the region layout; the dragon layer adds the three GDD placement guarantees (Hearth↔Nexus reachability, dynasty minimum spacing, world-throne existence/reachability) or the world is unplayable for dragons
 - **Deterministic** — same seed always produces byte-for-byte identical output, including retry sequences
 - **Authorable** — designers must be able to export a procedural world, hand-edit problematic placements in a text editor, and re-import the result
 - **Tunable** — designers need fast iteration (generate → inspect → tweak → regenerate under 5 seconds) without switching to a separate tool
@@ -28,12 +28,12 @@ Without this system, every downstream testbed (S-2/S-3 ecology, S-4 dragons, S-5
 ## Goals
 
 1. **Seeded deterministic generation** — Same outer seed → same retry sequence → same world output, byte-for-byte identical across runs
-2. **Three hard guarantees enforced** — Retry mechanism ensures every successfully-generated world satisfies: (a) every Hearth Site reachable from at least one Nexus Node, (b) dynasty starting positions respect minimum spacing, (c) all six world-throne sites exist (one per Apotheosis type) and are reachable from Ancient Interiors
+2. **Registered guarantees enforced** — Retry mechanism ensures every successfully-generated world satisfies every registered guarantee. S-1 registers `WorldLayoutGuarantee`. The dragon layer registers the GDD's three: (a) every Hearth Site reachable from at least one Nexus Node, (b) dynasty starting positions respect minimum spacing, (c) all six world-throne sites exist (one per Apotheosis type) and are reachable from Ancient Interiors
 3. **Export/import round-trip** — Export world to JSON, hand-edit, re-import as exact match (not a re-roll)
-4. **Debug-adjustable parameters** — Seed, biome distribution weights, placement tuning exposed via F-1's debug host (no app restart needed)
+4. **Debug-adjustable parameters** — Seed, terrain and climate sliders, placement tuning exposed via F-1's debug host (no app restart needed)
 5. **Timeout and failure handling** — Hard timeout prevents infinite hangs; unsatisfiable seeds route through Cancel's discard-and-return path with distinguishing assert/message
 6. **Fast iteration** — Regeneration (seed or parameter change) completes under 5 seconds (GDD §7 metric)
-7. **Debug-grade visualization that explains the data** — A `WorldGenDebugDomain` (`IDebugDomain`) shows every per-cell field (colour-by Biome, Terrain, Region, Elevation, Latitude, Water Source), a click-to-inspect cell inspector, the sites and dynasty starts, and why each guarantee passed or failed (proof paths, violations, per-attempt retry history). Not V-1's real tile art *(amended 2026-10-15)*
+7. **Debug-grade visualization that explains the data** — A `WorldGenDebugDomain` (`IDebugDomain`) shows every per-cell field (colour-by Biome, Terrain, Region, Elevation, Latitude, Water Source), a click-to-inspect cell inspector, the regions and every registered site kind, and why each guarantee passed or failed (proof paths, violations, per-attempt retry history). Not V-1's real tile art *(amended 2026-10-15)*
 
 ## Non-Goals
 
@@ -54,10 +54,9 @@ WorldGenerationPipeline produces:
 struct WorldStructure {
     GridDimensions dimensions;       // width × height in cells (hex grid, see Hex Grid below)
     std::vector<Cell> cells;         // terrain (Feature 1), biome (Feature 8), region (Feature 9) per cell
-    std::vector<HearthSite> hearths; // 1-3 per region (GDD Phase 2 lore)
-    std::vector<NexusNode> nexuses;  // count set by Feature 9
-    std::vector<WorldThrone> thrones;// exactly 6 (one per Apotheosis type)
-    std::vector<DynastyStart> starts;// player + rivals (GDD Phase 2 rival count)
+    RegionTable regions;             // 10-16 mainland regions + one per other landmass (Feature 9)
+    SiteSet sites;                   // generic, per registered kind; empty in S-1 until a layer registers kinds (Feature 9 hook).
+                                     // Dragon layer kinds: Hearth, Nexus, Throne (x6), DynastyStart (replaces the old fixed lists)
     WorldProvenance provenance;      // seed, WorldShapeParams, preset, generator + rules versions (SD-S1-009)
     uint8_t mainLandmass;            // landmass id holding the Ancient Interiors
 };
@@ -104,9 +103,9 @@ struct Cell {
 
 **S-1 only needs Small (decided 2026-10-15).** `GenParams.dimensions` defaults to 66 × 42 and every S-1 acceptance test, performance target and debug-draw budget is measured at Small. Nothing in the code is Small-specific: the generator, validator and renderer take any `dimensions` from 1×1 up to 128×128 (the tested range of the Dia grid). Standard and Large become acceptance targets when a later testbed needs them; until then they are untested.
 
-### Three Hard Guarantees
+### Three Hard Guarantees *(moved to the dragon layer, 2026-10-18)*
 
-These must hold for every successfully-generated world (enforced by retry mechanism):
+These three are the GDD's guarantees on Hearths, Nexus nodes, dynasty starts and world-thrones. S-1 no longer places those sites, so S-1 does not enforce them; the dragon layer registers the sites and these guarantees through the Feature 9 site hook (@regions-and-sites.md). Feature 2 still specifies them. S-1 enforces `WorldLayoutGuarantee`. When registered, they must hold for every successfully-generated world (enforced by retry mechanism):
 
 1. **Hearth↔Nexus reachability:** Every Hearth Site is reachable from at least one Nexus Node via traversable paths under the injected navigation profiles
 2. **Dynasty minimum spacing:** Every pair of dynasty starting positions (player + rivals) respects the minimum spacing rule (exact value TBD by placeholder algorithm)
@@ -156,7 +155,7 @@ Manual:    player clicks Cancel button → Cancel + "MANUAL_CANCEL" assert/messa
 **Base layer (always on):** Biome-colored tiles
 
 **Toggleable overlays:**
-- Sites (Hearth/Nexus/world-throne markers)
+- Sites (one toggle per registered site kind, e.g. the dragon layer's Hearth/Nexus/world-throne markers; none in S-1)
 - Regions (boundary overlays)
 - Dynasty Starts (player + rival position markers)
 - Design Reference (reads A1's species biome-affinity data, displays species-per-biome as text overlay — e.g., "Verdant Lowlands → deer (preferred), elk (preferred), wolf (preferred), cougar (tolerated)")
@@ -200,9 +199,8 @@ public:
 };
 
 struct GenParams {
-    WorldShapeParams shape;                // Terrain sliders (Feature 1; trivially copyable)
-    float biomeWeights[kBiomeCount];       // Distribution weights, indexed by Biome (fixed array: PD-004, trivially copyable)
-    PlacementParams placementParams;       // Site placement tuning (TBD by placeholder)
+    WorldShapeParams shape;                // Terrain sliders (Feature 1) + climate offsets (Feature 8); trivially copyable
+    PlacementParams placementParams;       // Regenerate-time site parameters; empty in S-1, a site kind adds its field when specced (Feature 9)
     uint32_t maxRetryAttempts;             // Bounded retry count (default TBD)
     float timeoutSeconds;                  // Hard timeout (default TBD)
     GridDimensions dimensions;             // Map size; default Small 66 × 42 (see Map Sizes)
@@ -268,7 +266,7 @@ struct WorldGenerationCancelled {
 | **DiaPathfinding** | `IPathCostProvider` injection point and `FindPath<TGraph>` for reachability (Done). B2 is **not** a dependency: its body-plan profiles are injected later | Done |
 | **DiaPathfinding: Rectangular Hex Grid** | `HexPathGrid(width, height)` and `HexTopology` (see Hex Grid). The only hex graph; S-1 adds none | Done (2026-10-14) |
 | **Dia debug-draw budget** ([dia-needs](../../dia-needs.md) #13) | Raise `DebugFrameData::kGeometryCapacity` from 2,048 to 8,192 for Feature 7's line and marker overlays. Blocks Feature 7 only | Approved 2026-10-15, not built |
-| **Dia CellField renderer** ([dia-needs](../../dia-needs.md) #14) | GPU-retained per-cell colour layer for the hex tiles, colour modes and grid lines; reused later by A4/S-2.5/S-3 overlays. Blocks Feature 7 only | Approved 2026-10-15, spec not written |
+| **Dia CellField renderer** ([dia-needs](../../dia-needs.md) #14) | GPU-retained per-cell colour layer for the hex tiles, colour modes and grid lines; reused later by A4/S-2.5/S-3 overlays. Blocks Feature 7 only | Spec Approved 2026-10-15, not built |
 | **DiaDebugDomain** | `IDebugDomain` + DiaDebugPanel: the F-1 debug host for S-1's controls, inspector and drawers (Features 6 and 7) | Done |
 | **A1 species biome-affinity data** | Optional for design reference toggle | Optional — cut the toggle if not externalized |
 
@@ -284,23 +282,23 @@ struct WorldGenerationCancelled {
 
 | # | Feature | Description | Spec | Status |
 |---|---------|-------------|------|--------|
-| 1 | Terrain Generator *(was Placeholder Generation Algorithm; re-specced 2026-10-15)* | Rule-based world per GDD `GeographyAndRegions.md`: continent, coast, islands, mountain spine, second barrier, rivers carving valleys, lakes, depth zones; per-cell elevation, latitude and water source. Driven by `WorldShapeParams` sliders + presets, shaped live (sliders only add or remove what they control). Rules fixed and documented; each stage viewable as a layer | @terrain-generator.md | Draft (re-spec 2026-10-15, awaiting approval) |
+| 1 | Terrain Generator *(was Placeholder Generation Algorithm; re-specced 2026-10-15)* | Rule-based world per GDD `GeographyAndRegions.md`: continent, coast, islands, mountain spine, second barrier, rivers carving valleys, lakes, depth zones; per-cell elevation, latitude and water source. Driven by `WorldShapeParams` sliders + presets, shaped live (sliders only add or remove what they control). Rules fixed and documented; each stage viewable as a layer | @terrain-generator.md | Approved 2026-10-18 |
 | 2 | Reachability Validator | Runs injected world guarantees (three built-in hard guarantees) using injected navigation profiles (placeholder now, B2 body plans later) over a hex path graph; not naive graph connectivity. Each `GuaranteeResult` keeps its evidence (proof paths, violating cells/pairs) for the debug view | @reachability-validator.md | Approved |
 | 3 | Retry Mechanism | Deterministic sub-seed retry (outer seed + attempt counter) when guarantees fail; bounded attempt count; same outer seed → same retry sequence. Keeps a `GenerationReport` (one entry per attempt: sub-seed, failed guarantee ids) for the debug view | @retry-mechanism.md | Approved |
 | 4 | JSON Export/Import | Human-readable JSON format capturing full world structure (grid, biomes, terrain, sites); round-trip guarantee (Import(Export(world)) == world) | @json-export-import.md | Approved |
 | 5 | Timeout and Failure Handling | Hard timeout monitors total generation time; timeout/unsatisfiable/error route through Cancel's discard-and-return with distinguishing assert/message | @timeout-failure-handling.md | Approved |
-| 6 | F-1 Debug Host Integration | `WorldGenDebugDomain` panel: seed input, biome weight sliders, placement param sliders, Regenerate, Export/Import, progress, Cancel; plus the **Cell Inspector** (every field of the selected cell) and **Validation** section (per-guarantee result and per-attempt retry history) | @f1-debug-host-integration.md | Approved |
+| 6 | F-1 Debug Host Integration | `WorldGenDebugDomain` panel: seed input, terrain and climate (`temperatureOffset`, `moistureOffset`) sliders, placement param sliders, Regenerate, Export/Import, progress, Cancel; plus the **Cell Inspector** (every field of the selected cell) and **Validation** section (per-guarantee result and per-attempt retry history) | @f1-debug-host-integration.md | Approved |
 | 7 | Layered Debug Rendering | `WorldGenDebugDomain` drawers: tile layer coloured by Biome / Terrain / Region / Elevation / Latitude / Water Source, grid lines, region edges, Sites, Dynasty Starts, Guarantee Evidence (proof paths, violations), selected-cell highlight, Design Reference (optional). Needs dia-needs #13 and #14 (CellField) | @layered-debug-rendering.md | Approved |
-| 8 | Biome Classification *(new, 2026-10-15)* | Biomes fall out of terrain by rule: temperature (latitude + elevation) and moisture (distance to water + rain shadow) → the GDD's 8 biomes + Ocean/Lake as shared ids; zone rules; forbidden-neighbour fix-up. First-guess biomes that A3/A4 evolve | TBD | To spec |
-| 9 | Regions and Sites *(split out of Feature 1, 2026-10-15; final home decided in the Feature 1 re-spec)* | 10–16 contiguous regions within depth zones, each with a primary biome; Hearth, Nexus, world-throne and dynasty-start placement | TBD | To spec |
+| 8 | Biome Classification *(new, 2026-10-15)* | Biomes fall out of terrain by rule, as live pipeline stages 12–14: temperature (latitude + elevation) and moisture (distance to water + latitude-banded rain shadow) → the GDD's 8 biomes + Ocean/Lake as shared ids; pinned water/volcanic/alpine/wetland cells; climate scoring; zone fix-up; forbidden-neighbour fix-up. Two live sliders (`temperatureOffset`, `moistureOffset`) replace `biomeWeights[]`. First-guess biomes that A3/A4 evolve | @biome-classification.md | Approved 2026-10-18 |
+| 9 | Regions, Nodes and Site Hook *(split out of Feature 1, 2026-10-15; re-scoped 2026-10-18)* | 10–16 contiguous mainland regions within depth zones (one region per other landmass), each with a primary biome; built-in geography nodes (2–4 corridors per barrier, river nodes, Hunting and Resource nodes to 6–15 per region, 80–150 in total); `WorldLayoutGuarantee`; and a generic site hook for dragon-layer kinds only (`SiteRegistry`, `ISitePlacer`) so the dragon layer can add Hearth, Nexus, world-throne, dynasty-start and node kinds, with their guarantees, export and drawing, without editing S-1 | @regions-and-sites.md | Approved 2026-10-18 |
 
 ## Acceptance Criteria
 
 ### Test 1a — Generation Success Rate
-Generate worlds across 100 random seeds at the Small preset (66 × 42). Record how many succeed (all three guarantees satisfied) vs. fallthrough to Failure (exhausted retry attempts). **Target: ≥95% success rate** (GDD §6, §7).
+Generate worlds across 100 random seeds at the Small preset (66 × 42). Record how many succeed (every registered guarantee satisfied; in S-1 that is `WorldLayoutGuarantee`, the dragon layer adds its three) vs. fallthrough to Failure (exhausted retry attempts). **Target: ≥95% success rate** (GDD §6, §7).
 
 ### Test 1b — Guarantee Compliance
-For all successfully-generated worlds from Test 1a, confirm all three hard guarantees hold (Hearth↔Nexus reachability, dynasty minimum spacing, world-throne existence/reachability). **Target: 100% compliance** — zero violations among successful generations (GDD §6, §8).
+For all successfully-generated worlds from Test 1a, confirm every registered guarantee holds (S-1: `WorldLayoutGuarantee`; the dragon layer extends this to Hearth↔Nexus reachability, dynasty minimum spacing and world-throne existence/reachability). **Target: 100% compliance** — zero violations among successful generations (GDD §6, §8).
 
 ### Test 1c — Terrain Contract for A4 *(added 2026-10-14)*
 For every world generated in Test 1a: every cell has `elevation` and `latitude` in [0, 1] and a valid `waterSource`; at least one cell has `waterSource != None` (A4 asserts this); and for every cell `NeighbourAt` is symmetric (if B is A's neighbour in direction `d`, A is B's neighbour in direction `(d + 3) mod 6`). **Target: 100%.**
@@ -309,7 +307,7 @@ For every world generated in Test 1a: every cell has `elevation` and `latitude` 
 Generate a world with a specific seed, record output, regenerate with same seed. Confirm byte-for-byte identical (every cell's biome/terrain/region, every site placement). Test on ≥10 seeds, including at least one that triggers retries. **Target: 100% match** (GDD §4, §6).
 
 ### Test 2b — Debug-Adjustable Regeneration
-Via F-1's debug host, change seed, then separately change a biome weight, regenerating after each change. Confirm each regeneration reflects changed input and completes within **under 5 seconds** (GDD §7 metric).
+Via F-1's debug host, change seed, then separately change the `moistureOffset` climate slider, regenerating after each change. Confirm each regeneration reflects changed input and completes within **under 5 seconds** (GDD §7 metric).
 
 ### Test 3 — Export/Import Round Trip
 Generate world, export to JSON, reload. Confirm reloaded world is identical to exported one (not re-roll of same seed, not similar-but-different). **Target: exact match, every field** (GDD §6, §7).
@@ -321,7 +319,7 @@ Force generation past hard timeout (injected delay). Confirm auto-cancels throug
 Force generation error (not merely slowness). Confirm routes through discard-and-return with assert/log message explicitly identifying "FAILURE", distinct from timeout and manual Cancel (GDD §6, §8).
 
 ### Test 5a — Guarantee Retry and Fallthrough
-Force seed whose first placement violates a guarantee (e.g., narrow map making Hearth↔Nexus unreachable on first try). Confirm generation retries with sub-seed and either succeeds within bounded attempts, or — for engineered-to-never-succeed seed — falls through to Failure rather than returning world that violates guarantee. Confirm outer seed produces same retry sequence and outcome every time (GDD §6).
+Force a first attempt that violates a registered guarantee (S-1 uses a test site kind and a test guarantee that fails on attempt 0; the dragon layer later adds e.g. a narrow map making Hearth↔Nexus unreachable). Confirm generation retries with sub-seed and either succeeds within bounded attempts, or — for engineered-to-never-succeed seed — falls through to Failure rather than returning world that violates guarantee. Confirm outer seed produces same retry sequence and outcome every time (GDD §6).
 
 ## Inherited Binding Decisions
 
@@ -376,7 +374,7 @@ The following binding decisions from parent specs apply to this system:
 
 ## Status
 
-`Approved` — 2026-10-11. Amended 2026-10-14 for A4 Weather: hex grid (Dia's rectangular `HexPathGrid` and `HexTopology`; map-size presets Small/Standard/Large), per-cell `elevation`/`latitude`/`waterSource`, world read accessor, `WorldGenerationComplete` reduced to a notification. No code existed, so the JSON schema stays at v1. Amended 2026-10-15: S-1 targets the Small map only (Standard and Large deferred); the debug view is a `WorldGenDebugDomain` that explains the data (colour-by per-cell field, cell inspector, guarantee evidence, retry history), which adds evidence to `GuaranteeResult`, a `GenerationReport` to the retry loop, and a Dia debug-draw budget raise (dia-needs #13). Same day: tiles and grid move to a Dia CellField renderer (dia-needs #14), and #13 shrinks to 8,192. Same day: Feature 1 becomes a rule-based Terrain Generator shaped live by sliders (re-spec pending; deviates from S-1 GDD decision 1), and Biome Classification (8) and Regions and Sites (9) are added; build order is terrain, then biomes, then the rest.
+`Approved` — 2026-10-11. Amended 2026-10-14 for A4 Weather: hex grid (Dia's rectangular `HexPathGrid` and `HexTopology`; map-size presets Small/Standard/Large), per-cell `elevation`/`latitude`/`waterSource`, world read accessor, `WorldGenerationComplete` reduced to a notification. No code existed, so the JSON schema stays at v1. Amended 2026-10-15: S-1 targets the Small map only (Standard and Large deferred); the debug view is a `WorldGenDebugDomain` that explains the data (colour-by per-cell field, cell inspector, guarantee evidence, retry history), which adds evidence to `GuaranteeResult`, a `GenerationReport` to the retry loop, and a Dia debug-draw budget raise (dia-needs #13). Same day: tiles and grid move to a Dia CellField renderer (dia-needs #14), and #13 shrinks to 8,192. Same day: Feature 1 becomes a rule-based Terrain Generator shaped live by sliders (re-spec pending; deviates from S-1 GDD decision 1), and Biome Classification (8) and Regions and Sites (9) are added; build order is terrain, then biomes, then the rest. Amended 2026-10-18: Feature 8 spec'd (climate offsets replace `biomeWeights[]`); Feature 9 re-scoped at the user's direction to regions, the geography nodes (corridors, rivers, Hunting and Resource) built in, and a generic site hook used only by the dragon layer, with Hearths, Nexus nodes, thrones and dynasty starts (and their three GDD guarantees) moved to it.
 
 **Plan:** @worldgenerationpipeline.plan.md
 

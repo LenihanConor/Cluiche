@@ -1,6 +1,7 @@
 # Feature Spec: JSON Export/Import
 
 **Parent:** @docs/specs/applications/cow/systems/s1-worldgeneration/worldgenerationpipeline.md
+> **Amended 2026-10-18 (Feature 9 re-scope, @regions-and-sites.md): schema v1 stores `regions` and `sites.<kind>` generically (cell, region, variant, flags). Unknown kinds round-trip unchanged. The fixed hearth/nexus/throne/start arrays are replaced by this. Full text updated when this feature is built.*
 
 **Gameplay Domains:** simulation
 

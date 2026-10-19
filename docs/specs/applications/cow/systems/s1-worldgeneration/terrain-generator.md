@@ -89,9 +89,9 @@ At the start of stage 0, the generator reseeds the registered `WLD` stream (`Ran
 1. Noise seeds, one integer per channel: `warp`, `coast`, `ridged`, `rugged`, `barrierWobble`, `vent`.
 2. Continent candidates `k = 0..2`. Each candidate is a centre, an ellipse axis ratio in `[0.65, 1.0]` and an angle. Candidate 0 lies within 0.12 of the map centre. Candidates 1 and 2 lie at least 0.45 from candidate 0 and from each other, and at least 0.2 from the edges (rejection sampling with a fixed draw budget: on exhaustion, the furthest of the tries is used).
 3. Peninsula candidates `j = 0..3`: angles around continent 0, at least 60° apart.
-4. Island candidates `i = 0..23`: map-space points, each with 1–3 blob offsets (≤ 1.5 cells) and blob radii (1.0–2.2 cells).
+4. Island candidates `i = 0..23`: map-space points, each with 1–4 blob offsets (≤ 2.5 cells) and blob radii (1.5–3.5 cells).
 5. The spine's lateral offset, in `[-0.15, 0.15]` of the continent's inradius.
-6. Pass candidates: 8 curve parameters `t` in `[0.12, 0.88]`, at least 0.1 apart, in rank order.
+6. Pass candidates: 8 curve parameters `t` in `[0.12, 0.88]`, in rank order. There is no spacing rule here, because the needed spacing depends on the ridge width (a slider), so stage 2 enforces it.
 
 All later randomness is Dia seeded noise (dia-needs #15) sampled with these seeds. Noise is a pure function of (seed, x, y), so later stages never touch the RNG stream.
 
@@ -110,11 +110,11 @@ All later randomness is Dia seeded noise (dia-needs #15) sampled with these seed
    - it is at least `kBorderWidth + 1` steps from the edge;
    - it is at least `kIslandSpacing = 6` steps from every island already accepted.
 
-   Stop after `Islands` accepted groups.
-   - **Island potential.** `I(c) = max over the accepted groups' blobs of (1 − dist(c, blob) / r_blob)` (`islandPotential` layer).
-   - **Eligible cells:** outside `M_ref`, not next to `M_ref`, and at least `kBorderWidth + 1` steps from the edge.
-   - **Island cells.** The `max(K, 3 · groups)` eligible cells with the highest `I` become island land (ties by index). Every blob centre has `I = 1`, so every group gets its centre first.
-   - **Overflow.** If there are fewer eligible cells than the budget, the unplaced budget returns to the mainland.
+   Stop after `Islands` accepted groups. Fewer are accepted if the candidates run out; the number accepted is reported as `effective.islands`.
+   - **Island potential.** `I(c) = max over the accepted groups' blobs of (1 − dist(c, blob) / r_blob)` (`islandPotential` layer). It is positive only inside a blob.
+   - **Eligible cells:** `I > 0`, outside `M_ref`, not next to `M_ref`, and at least `kBorderWidth + 1` steps from the edge. Because `I > 0` confines every island to its own blobs, islands never grow into a second continent and groups never merge, whatever the budget.
+   - **Island cells.** The `min(eligible, max(K, 3 · groups))` eligible cells with the highest `I` become island land (ties by index). Every blob centre has `I = 1`, so every group gets its centre first.
+   - **Overflow.** The island budget is a *preference* bounded by island capacity (the eligible cells). Any unplaced budget returns to the mainland. At the defaults, capacity is roughly 15–25% of land, so `ContinentIslands` below about 0.8 saturates there. `effective.islandShare` reports the share actually reached, and the panel shows it next to the slider.
 
    The first accepted group is the **volcanic island**: its centre cell is a vent (`volcanic` layer).
 7. **Mainland and clean-up.** The `L − placed island cells` cells with the highest `M` are the mainland. Then:
@@ -122,12 +122,12 @@ All later randomness is Dia seeded noise (dia-needs #15) sampled with these seed
    - any ocean component not connected to the border ocean becomes land (an enclosed sea becomes a lowland basin, which the Lakes stage may refill).
 
    Island cells are exempt from clean-up. The mainland is always a subset of `M_ref`, so islands never touch it. Total land is `L` (±0.01 after clean-up) at every `ContinentIslands` value.
-8. **Landmasses.** Label the land components (`landmass` = 1, 2, …, numbered by smallest cell index). The **main landmass** is the largest component (ties by smallest index).
+8. **Landmasses.** Label the land components (`landmass` = 1, 2, …, numbered by smallest cell index). The **main landmass** is the component that contains the mainland's highest-`M` cell (continent 0's peak), **not** the largest component. That cell is never removed by clean-up, so continent 0 stays the main landmass at every slider value, including when `ContinentIslands` or `Continents` would otherwise make another component bigger. `WorldStructure::mainLandmass` holds its id.
 9. **Coast distance.** Multi-source BFS gives each land cell its steps to the nearest ocean cell (coast cells = 1), and each ocean cell its steps to the nearest land cell (`coastDistance`).
 
 ### Stage 2: Mountains (spine or ring)
 
-Mountains are built on the main landmass only, around its centroid `C` (the centroid of the landmass's cell centres).
+Mountains are built on the main landmass only, around its centre `C`: the centroid of the landmass's cell centres, moved to the nearest main-landmass land cell (ties by index) when the centroid is not on land (a horseshoe or peninsula-heavy continent can have its centroid in the sea).
 
 1. **Reach.** `reach(φ)` is the distance from `C` along direction `φ` to the first ocean cell (march in steps of 0.25 cells, read the cell with `CellFromPoint`). The curve is scaled by `reach`, so it stays inside the land.
 2. **Curve.** For a curve parameter `t ∈ [0, 1]` and `θ = Orientation`:
@@ -136,7 +136,7 @@ Mountains are built on the main landmass only, around its centroid `C` (the cent
    - Blend: `P(t) = lerp(L(t), G(t), SpineToRing)`. At 0 this is a straight spine along `θ`. As the slider rises the spine bends into a horseshoe whose open side faces `θ − 90°`. At 1 its two ends meet and it closes into a ring.
 3. **Mask.** `ridge(c) = max(0, 1 − d_curve(c) / w)`, where `d_curve` is the distance from the cell centre to the polyline (256 segments). The width is `w = lerp(kRidgeWidthMin = 1.2, kRidgeWidthMax = 2.8, Mountainousness)` cells. Off the main landmass the mask is 0.
 4. **One range.** Ridge cells are those with `ridge ≥ kRidgeCellMin = 0.35`. Keep only the largest connected group of ridge cells, and zero the mask everywhere else.
-5. **Passes.** For pass candidates `0 … Passes−1`, multiply the mask by `kPassFloor = 0.2` on every cell within `0.7 · w + 0.5` cells of `P(t_j)` (wide enough that no ridge cell bridges the gap). These cells set `passMask`. The final mask is the `ridgeMask` layer.
+5. **Passes.** Let `g = 0.7 · w + 0.5` cells (the half-width of a gap, wide enough that no ridge cell bridges it). Walk the pass candidates in rank order and accept candidate `j` only if the arc length along `P` between `P(t_j)` and every accepted pass is at least `2g + kMinPiece` (`kMinPiece = 2` cells), so every range piece between two passes survives. Stop after `Passes` accepted passes. Fewer are accepted if the curve is too short to fit them; the number accepted is reported as `effective.passes`. For each accepted pass, multiply the mask by `kPassFloor = 0.2` on every cell within `g` cells of `P(t_j)`. These cells set `passMask`. The final mask is the `ridgeMask` layer.
 
 ### Stage 3: Second barrier
 
@@ -181,7 +181,7 @@ elevationRaw = clamp(kCoastElev + base + mount + barrier + vents + rugged, kCoas
 
 1. **Threshold.** `T = kFlowMax · (kFlowMin / kFlowMax)^Rivers`, with `kFlowMax = 400` and `kFlowMin = 12`. Every land cell with `acc ≥ T` is a river candidate. `Rivers = 0` means no rivers.
 2. **River trees.** Candidates group into trees by the ocean cell they drain into. A whole tree is kept only if:
-   - its highest source (a candidate with no candidate upstream) is at `elevationRaw ≥ kSourceMinElev = 0.3`, so rivers start in the highlands;
+   - its highest source (a candidate with no candidate upstream) is at `filledElevation ≥ kSourceMinElev = 0.3`, so rivers start in the highlands. It uses the filled surface so the test is monotone: a lower threshold only adds upstream cells, and filled elevation never falls going upstream, so a kept tree stays kept (AC10);
    - its longest source-to-mouth run is at least `kMinRiverLength = 4` cells.
 
    Kept cells form the `riverMask` layer.
@@ -201,10 +201,11 @@ Depth zones come from the continent's shape: how far a cell is from the coast, c
 2. **Thresholds**, from the base cost of the main landmass:
    - `t1` is the highest cost in the lowest `kFirstShoresShare = 0.45` of its cells;
    - `t2` is the lowest cost in the highest `kAncientShare = 0.15`.
+   - Costs tie often (flat rings of equal coast distance), so the shares are approximate. If `t2 ≤ t1`, `t2` moves up to the next distinct cost above `t1`. If no such cost exists, the map has no Ancient Interiors.
 
    Rivers never move the thresholds.
 3. **Zone cost** (with rivers). The same Dijkstra, except that entering a river cell (`riverMask`) costs `1 + kRiverCorridor · (ridge and barrier terms)`, with `kRiverCorridor = 0.25`. A river valley is a cheap way through a barrier. This is the `zoneCost` layer, and it is never above `zoneCostBase`.
-4. **Zones.** First Shores where `zoneCost ≤ t1`. Ancient Interiors where `zoneCost ≥ t2`, on the main landmass only. Wild Reaches everywhere else. Other landmasses (extra continents and islands) get First Shores or Wild Reaches by `t1`, so **Ancient Interiors appear only on the main landmass.**
+4. **Zones.** First Shores where `zoneCost ≤ t1`. Ancient Interiors where `zoneCost ≥ t2` **and** coast distance `D ≥ kAncientMinDepth = 3`, on the main landmass only (a cell that fails the depth test is Wild Reaches). Wild Reaches everywhere else. Other landmasses (extra continents and islands) get First Shores or Wild Reaches by `t1`, so **Ancient Interiors appear only on the main landmass.**
 5. Ocean cells are `DepthZone::None`. A lake cell has the zone of its position.
 
 **River monotonicity.** As `Rivers` rises, the river cell set only grows (stage 6). So entry costs only fall, `zoneCost` only falls, and the thresholds stay fixed. Zone edges move only inland, along river corridors: a cell can go Ancient Interiors → Wild Reaches → First Shores, never back.
@@ -217,8 +218,9 @@ Depth zones come from the continent's shape: how far a cell is from the coast, c
 
    Land cells one step from a river are lowered by `0.5×` the deepest adjacent carve, and cells two steps away by `0.2×` (`valleyCarve` layer). Lake cells are not carved.
 2. **New elevation.** `e = max(kCoastElev, elevationRaw − valleyCarve)`.
-3. **Downhill walk.** Visit river cells in increasing `acc` order, which visits upstream cells before downstream ones. Set `e(downstream) = min(e(downstream), e(c))` whenever the downstream cell is land. Every river now runs downhill to its mouth. A river leaving a dry basin cuts a gorge through the rim, and the outlet of a lake is never higher than the lake's surface.
-4. **Lakes.** Lake cells take their surface height. The result is the `elevation` layer, which becomes `Cell::elevation`.
+3. **Lake floors.** Every river cell has a floor: the surface height of the lake it ultimately drains into, or `kCoastElev` if it drains straight to the sea. Raise any river cell that carving left below its floor back up to it. Without this, a river could end up lower than the lake it flows into.
+4. **Downhill walk.** Visit river cells in increasing `acc` order, which visits upstream cells before downstream ones. Set `e(downstream) = max(floor(downstream), min(e(downstream), e(c)))` whenever the downstream cell is land. Floors fall going downstream (an upstream lake's surface is above the next lake's), so every river runs downhill to its mouth. A river leaving a dry basin cuts a gorge through the rim, and the outlet of a lake is never higher than the lake's surface.
+5. **Lakes.** Lake cells take their surface height. The result is the `elevation` layer, which becomes `Cell::elevation`.
 
 ### Stage 10: Classify (terrain type and water source)
 
@@ -272,13 +274,13 @@ Depth zones come from the continent's shape: how far a cell is from the coast, c
 | `landFraction` (Land) | 0.20–0.65 | 0.42 | 1 Landmass | **Additive.** Total land is within ±0.01 of the target. At a fixed `ContinentIslands`, the mainland at a higher value is a superset of the mainland at a lower value. Islands are re-placed against the new reference coast |
 | `continents` | 1–3 | 1 | 1 Landmass | **Rebalancing, positions fixed.** Adding continent `k` keeps the centres, axes and angles of continents `< k`. Total land stays at `Land`, so existing land shrinks to make room. Continent 0 stays the main landmass |
 | `islands` | 0–6 | 4 | 1 Landmass | **Prefix of groups, rebalancing of cells.** The group centres at `n + 1` are the centres at `n` plus the next one. The island budget is set by `ContinentIslands`, so existing groups shrink a little to make room. Group 0 is always the volcanic island |
-| `continentIslands` (ContinentIslands) | 0–1 | 0.7 | 1 Landmass | **Monotone split, total held.** 0 puts nearly all land in islands, 1 nearly all in continents. Total land is unchanged (±0.01). As the value rises, the mainland is a superset of the previous mainland and the island cells are a subset of the previous island cells, so the island share never rises |
+| `continentIslands` (ContinentIslands) | 0–1 | 0.7 | 1 Landmass | **Monotone split, total held, capacity-bound.** Lower values ask for more land in islands, but islands are limited to their blobs (stage 1 step 6), so the share saturates at island capacity. Total land is unchanged (±0.01). As the value rises, the mainland is a superset of the previous mainland and the island cells are a subset of the previous island cells, so the island share never rises |
 | `peninsulas` | 0–3 | 2 | 1 Landmass | **Rebalancing, positions fixed.** Lobe `j` keeps its direction and shape. Total land stays at `Land` |
 | `coastline` | 0–1 | 0.5 | 1 Landmass | **Bounded, total held.** Changes only cells near the coast: at least 95% of the land cells that are ≥ 4 steps inland at 0 stay land at 1. Coastline length (land–ocean edges) is larger at 1 than at 0 |
 | `mountainousness` | 0–1 | 0.55 | 2 Mountains | **Monotone.** The ridge curve is unchanged. Ridge width and height rise. `elevationRaw` never falls on any cell as it rises |
 | `spineToRing` | 0–1 | 0.15 | 2 Mountains | **Continuous.** Land and coast are unchanged. Moving the slider by 0.05 moves each curve point by at most `0.05 · |G(t) − L(t)|` |
 | `orientationDeg` | 0–359 (wraps) | 30 | 2 Mountains | **Rigid.** Land is unchanged. The line form rotates about the centroid. Passes keep their `t` |
-| `passes` | 0–4 | 2 | 2 Mountains | **Prefix.** Passes at `n + 1` = passes at `n` plus the next ranked pass. With `passes = 0` the ridge is one connected group of cells |
+| `passes` | 0–4 | 2 | 2 Mountains | **Prefix of accepted passes.** Passes at `n + 1` = passes at `n` plus the next accepted candidate. A candidate that would crowd an accepted pass is skipped (stage 2 step 5), so a short range can have fewer than `n` (`effective.passes`). With `passes = 0` the ridge is one connected group of cells |
 | `barrier` | 0–1 | 0.6 | 3 Barrier | **Monotone.** The band position is fixed by the landmass. Height and zone cost rise |
 | `barrierForm` | Plateau, VolcanicChain | Plateau | 3 Barrier | **Discrete.** Only stages 3+ change |
 | `ruggedness` | 0–1 | 0.4 | 4 Elevation | **Bounded.** Land, ridge, barrier and `zoneCostBase` are unchanged. Each cell's `elevationRaw` moves by at most `kRuggedAmp`. Rivers may re-route, and the zones along them with them |
@@ -296,6 +298,7 @@ The seed is not a slider. Changing it dirties stage 0, so everything re-runs.
 
 `Cluiche/Assets/CoW/Global/WorldGen/terrain_rules.json` holds every `k…` constant above, as a flat key → value object with a `rulesVersion`.
 
+- The default values in this spec are a **first guess**, written before anyone has seen a map from them. They get a tuning pass after the first preset screenshots (S-1 plan task 18). Changing a constant's value, or adding a constant with a default, bumps `rulesVersion` and does not reopen this spec. Changing a rule (a stage's logic) does.
 - It is loaded once when the module starts.
 - A missing key falls back to the compiled default and logs a warning.
 - A value out of its sane range (declared beside each compiled default) is clamped, logs a warning and reports Degraded health.
@@ -324,7 +327,8 @@ The seed is not a slider. Changing it dirties stage 0, so everything re-runs.
     "mountainousness": 0.55, "spineToRing": 0.15, "orientationDeg": 30, "passes": 2,
     "barrier": 0.6, "barrierForm": "Plateau", "ruggedness": 0.4,
     "rivers": 0.5, "valleyDepth": 0.4, "lakes": 4,
-    "latitudeNorthDeg": 60, "latitudeSouthDeg": 20
+    "latitudeNorthDeg": 60, "latitudeSouthDeg": 20,
+    "temperatureOffset": 0, "moistureOffset": 0
   }
 }
 ```
@@ -344,7 +348,7 @@ The seed is not a slider. Changing it dirties stage 0, so everything re-runs.
 | landFraction | 0.42 | 0.30 | 0.55 |
 | continents | 1 | 2 | 1 |
 | islands | 4 | 5 | 3 |
-| continentIslands | 0.7 | 0.35 | 0.85 |
+| continentIslands | 0.7 | 0.5 | 0.85 |
 | peninsulas | 2 | 2 | 1 |
 | coastline | 0.5 | 0.8 | 0.35 |
 | mountainousness | 0.55 | 0.4 | 0.85 |
@@ -370,7 +374,7 @@ All are `cow.worldgen.*` JSON commands (SD-S1-002), registered by `WorldGenerati
 | Command | Kind | Args | Result |
 |---|---|---|---|
 | `set` | action | Any subset of `WorldShapeParams` keys, plus optional `seed`, plus optional `unlock` | `{success, applied[], clamped[], rejected[]}`. Triggers a live preview. On a locked import it fails with `error: "locked"` unless `unlock: true` (SD-S1-009) |
-| `params` | query | — | `{seed, params{…}, preset, modified, locked, ranges{key: {min, max, default, firstStage}}}`. `ranges` lets the panel build sliders from data |
+| `params` | query | — | `{seed, params{…}, preset, modified, locked, ranges{key: {min, max, default, firstStage}}, effective{…}}`. `ranges` lets the panel build sliders from data. `effective` reports what the rules actually produced when it differs from the request: `continents`, `islands` (groups accepted), `islandShare`, `passes` (accepted), `lakes` (eligible basins), so the panel can show "Lakes 4 (2 available)" instead of a slider that seems to do nothing. Imported worlds report `effective` from the recorded world |
 | `preset.load` | action | `{id}` | Replaces every param (seed kept) and previews. Fails on an unknown id or an invalid file, with the reason. Subject to the lock |
 | `preset.save` | action | `{id, displayName, description?, overwrite?}` | Writes the preset from the current params: the source asset via the `dia launch` alias, or `out/CoW/presets/` without it. Returns `{success, writtenTo, isSource}`. Refuses an existing id unless `overwrite` |
 | `presets` | query | — | `[{id, displayName, description, version, sourcePath}]`, sorted by id |
@@ -433,16 +437,20 @@ struct WorldShapeParams {                 // trivially copyable: carried inside 
     uint8_t     lakes            = 4;      // 0..12
     float       latitudeNorthDeg = 60.0f;  // -90..90
     float       latitudeSouthDeg = 20.0f;  // -90..90
+    float       temperatureOffset = 0.0f;  // -0.3..0.3; Feature 8 (biome-classification.md), stage 12
+    float       moistureOffset    = 0.0f;  // -0.3..0.3; Feature 8, stage 13
     void Clamp();
     bool operator==(const WorldShapeParams&) const = default;
 };
 
 enum class ShapeParam : uint8_t { LandFraction, Continents, Islands, ContinentIslands, Peninsulas, Coastline, Mountainousness,
                                   SpineToRing, Orientation, Passes, Barrier, BarrierForm, Ruggedness,
-                                  Rivers, ValleyDepth, Lakes, LatitudeNorth, LatitudeSouth, Count };
+                                  Rivers, ValleyDepth, Lakes, LatitudeNorth, LatitudeSouth,
+                                  TemperatureOffset, MoistureOffset, Count };   // last two: Feature 8
 
 enum class TerrainStage : uint8_t { SeedFields, Landmass, Mountains, Barrier, Elevation, Drainage,
-                                    Rivers, Lakes, DepthZones, Valleys, Classify, Latitude, Count };
+                                    Rivers, Lakes, DepthZones, Valleys, Classify, Latitude,
+                                    Temperature, Moisture, Biomes, Count };     // last three: Feature 8
 TerrainStage FirstStageAffected(ShapeParam p);
 
 struct WorldProvenance {
@@ -527,9 +535,9 @@ The generator, types, rules and preset I/O (`WorldShapePreset.h`: `LoadPreset`, 
 | Dependency | Why | Status |
 |---|---|---|
 | Dia `HexTopology` (`hex-rectangular-grid.md`) | Neighbours, `Distance`, `CellCenter`, `CellFromPoint`, `kNoCell` | Done |
-| Dia seeded noise (dia-needs #15) | Warp, coast, ridged, rugged, barrier wobble and vent noise. Needs pure functions of (integer seed, float x, float y): gradient noise, fBm, ridged, domain warp. **Blocks the build** (plan task 2). Spec: @docs/specs/applications/dia/systems/diamaths/seeded-noise.md | Approved, spec drafted |
+| Dia seeded noise (dia-needs #15) | Warp, coast, ridged, rugged, barrier wobble and vent noise. Needs pure functions of (integer seed, float x, float y): gradient noise, fBm, ridged, domain warp. Spec: @docs/specs/applications/dia/systems/diamaths/seeded-noise.md | Done (`ac646b22`); no longer blocks the build |
 | `RandomStreamManager` / `RandomStreamModule` (F-2) | The registered `WLD` stream, used in stage 0 only | Done |
-| Dia CellField (dia-needs #14) | Shows the layers in Feature 7. Not needed to build or test this feature | Approved, spec to write |
+| Dia CellField (dia-needs #14) | Shows the layers in Feature 7. Not needed to build or test this feature | Spec Approved, not built |
 | DiaAPI JSON commands, jsoncpp | Commands; preset and rules files | Done |
 | DiaCLI `dia launch` | **Follow-up (small):** on dev launches only, set the source-assets-root alias that `preset.save` uses to write source presets (Presets, Saving). Without it, `preset.save` falls back to `out/CoW/presets/` | To do (DiaCLI change, dev launches only) |
 
@@ -564,13 +572,14 @@ For each consecutive pair of `landFraction` values in AC4, at a fixed `continent
 ### AC5b: Continent/island split
 `continentIslands` from 0 to 1 in steps of 0.1, at `islands = 4`. **Pass:**
 - Total land is unchanged (within ±0.01 of `landFraction`) at every value.
-- Island share (island cells / land cells) never rises as the value rises. It is ≥ 0.5 at 0 when the budget fits, and ≤ 0.05 at 1.
+- Island share (island cells / land cells) never rises as the value rises. At 0 it equals `min(requested share, island capacity)`, where capacity is the count of eligible cells (`I > 0`) over land, and `effective.islandShare` equals the measured share. At 1 it is ≤ 0.05.
+- No island group merges with another (no island cell is adjacent to a cell of a different group).
 - At each step, the mainland is a superset of the previous step's mainland, and the island cells are a subset of the previous island cells.
 - No island cell is next to a mainland cell.
 
 ### AC6: Continents
-`continents` 1 → 2 → 3. **Pass:**
-- The landmass whose centroid is nearest continent 0's candidate centre is the main landmass at every value.
+`continents` 1 → 2 → 3, repeated at `continentIslands` 0, 0.7 and 1. **Pass:**
+- The landmass that holds the mainland's highest-`M` cell (continent 0's peak) is the main landmass at every value, even when another landmass is larger.
 - Ancient Interiors cells are only on the main landmass.
 - The landmasses nearest continents 1 and 2 have First Shores and Wild Reaches only.
 
@@ -591,14 +600,15 @@ For each consecutive pair of `landFraction` values in AC4, at a fixed `continent
 **Pass:**
 - With `passes = 0`, the ridge cells (`Ridge` flag) form one connected group, at `spineToRing` 0, 0.5 and 1.
 - At `spineToRing = 1`, the ridge splits the rest of the main landmass into ≥ 2 connected parts (it encloses the interior) on ≥ 90% of seeds.
-- With `passes = n` at `spineToRing = 0`, the ridge has `n + 1` connected groups.
-- Pass cells are a prefix as `n` rises.
+- With `passes = n` at `spineToRing = 0`, the ridge has `effective.passes + 1` connected groups, and `effective.passes = n` whenever the curve is long enough (checked on the default params, where `n ≤ 3` fits on ≥ 90% of seeds).
+- Between every two accepted passes there is at least one ridge cell (no piece is erased).
+- Accepted passes are a prefix as `n` rises.
 
 ### AC10: Rivers
 **Pass:**
 - From every river cell, following `downstream` reaches an ocean or lake cell through river and lake cells only.
-- `elevation` never rises along a river toward its mouth.
-- Every river tree's highest source is at `elevationRaw ≥ kSourceMinElev`.
+- `elevation` never rises along a river toward its mouth, and no river cell is below the surface of the lake it drains into.
+- Every river tree's highest source is at `filledElevation ≥ kSourceMinElev`.
 - `rivers` from 0 to 1 in steps of 0.1: each river cell set is a superset of the previous one, and `rivers = 0` has no river cells.
 - At the default params, at least one river exists on ≥ 95% of seeds.
 
@@ -620,8 +630,9 @@ For each consecutive pair of `landFraction` values in AC4, at a fixed `continent
 - On each landmass, every First Shores cell's `zoneCost` < every Wild Reaches cell's, which is < every Ancient Interiors cell's.
 - `zoneCost ≤ zoneCostBase` on every cell.
 - Every `Coast` cell is First Shores.
-- Ancient Interiors cells are only on the main landmass, and there is at least one when the main landmass has ≥ 40 cells.
-- Every Ancient Interiors cell is ≥ 3 steps from the coast.
+- Ancient Interiors cells are only on the main landmass, and there is at least one when the main landmass has ≥ 40 cells and the base costs have more than one distinct value above `t1` (stage 8 step 2).
+- Every Ancient Interiors cell is ≥ `kAncientMinDepth` (3) steps from the coast (enforced by the rule, not just observed).
+- `t1 < t2` on every world.
 
 ### AC13b: Rivers move zone edges inland only
 `rivers` from 0 to 1 in steps of 0.1. **Pass:**
@@ -652,6 +663,7 @@ Release build, Small, median of 50 runs. **Pass:**
 - A `rivers`, `lakes` or `valleyDepth` change takes < 5 ms.
 - `GetTimings()` returns one entry per stage, with `ranLastUpdate` correct.
 - `cow.worldgen.layers` reports the same per-stage timings and the total.
+- The 20 ms budget is measured as soon as stages 0–4 exist (the first build task), then re-measured as each stage lands, so a miss shows up while the algorithm is still cheap to change. It is a gate on the finished pipeline, not only on the last task.
 
 ### AC18: Presets produce worlds
 For each of Continental, Archipelago and Highlands, on 50 seeds. **Pass:** every world passes the shape checks: AC2, AC3, the AC4 tolerance, the AC9 connectivity (`passes = 0` variant of the preset), the AC10 reach and downhill rules, the AC11 outflow rule and AC13.
@@ -671,6 +683,7 @@ Each command is called through `ExecuteCommandJson` from a non-SimPU thread. **P
 - `preset.load {id: "highlands"}` makes `params` equal the file.
 - `preset.save` writes a file that `presets` lists, and refuses an existing id without `overwrite`.
 - `layers` lists every stage and layer, and `layers {layer: "flowAccumulation"}` returns 2,772 values equal to `GetLayers()`.
+- `params.effective` matches the generated world: `passes`, `islands` and `lakes` equal the accepted counts, and `islandShare` equals the measured share (checked with `lakes = 12`, `passes = 4`, `islands = 6`, where the request exceeds what fits on at least one seed).
 
 ### AC21: Locked import and provenance
 **Pass:**
@@ -678,6 +691,9 @@ Each command is called through `ExecuteCommandJson` from a non-SimPU thread. **P
 - After a world is imported, `set` without `unlock` fails with `"locked"` and changes nothing.
 - With `unlock: true` it regenerates.
 - Regenerating from an exported world's provenance reproduces the exported cells byte for byte.
+
+### AC22: Visual gate (manual)
+The automated shape checks measure structure, not whether a map looks like a world. After the first build, render the Relief view for each preset on 3 fixed seeds (9 screenshots, via the S-1 plan task 18 capture). **Pass:** the user reviews them and signs off that each reads as the preset's name promises: Continental shows one clear continent, a visible spine with passes and an inland plateau; Archipelago shows several landmasses; Highlands shows a rugged, ring-like mountain mass. Constants are tuned until it passes (Tuning file), and the signed-off set is kept as reference images.
 
 ## Inherited Binding Decisions
 
@@ -712,7 +728,7 @@ Archipelago's 2 continents is a deliberate deviation from the GDD (Presets).
 
 ## Status
 
-`Draft`: re-spec 2026-10-15 (S-1 plan task 3), awaiting user approval.
+`Approved` 2026-10-18 (re-spec 2026-10-15, S-1 plan task 3; review pass below applied before approval).
 
 - Supersedes the Placeholder Generation Algorithm (was `Approved` 2026-10-11, amended 2026-10-14).
 - **Deviates from S-1 GDD decision 1** ("placeholder is naive"): the GDD needs updating, and the BACKLOG has the loose end (SD-S1-003). The Archipelago preset's 2 continents is a second, deliberate deviation for the same fold-back.
@@ -723,7 +739,11 @@ Archipelago's 2 continents is a deliberate deviation from the GDD (Presets).
   - the latitude sign limitation is accepted.
 
   No open questions remain.
-- The build is plan task 7, blocked on dia-needs #15.
+- Review pass 2026-10-18 (all applied):
+  - **Accepted:** main landmass is continent 0's, not the largest; islands confined to their blobs (`I > 0`) with the budget as a capacity-bound preference; default constants marked provisional; 20 ms budget measured early.
+  - **Added:** passes spaced by arc length (adjacent passes could erase the range between them); mountain centre moved onto land; Ancient Interiors need depth ≥ 3 and `t1 < t2`; river cells floored at their lake's surface; river sources tested on the filled surface (monotone); `params.effective` so sliders that hit a limit say so; AC22 visual sign-off; Archipelago `continentIslands` 0.35 → 0.5.
+- Amended 2026-10-18 by Feature 8 (@biome-classification.md): `WorldShapeParams` gains `temperatureOffset` and `moistureOffset` (so 19 sliders), `ShapeParam` and `TerrainStage` gain the climate entries (stages 12–14 run after Latitude), and the three preset files take the two keys at their defaults (0). Terrain stages 0–11, their ACs and the 20 ms budget are unchanged; the budget now also covers stages 12–14. Feature 8 Approved 2026-10-18.
+- The build is plan task 7; seeded noise (dia-needs #15) is Done, so nothing blocks it.
 
 ---
 
@@ -736,3 +756,4 @@ Create `terrain-generator.plan.md` when the build starts (TDD per `.claude/skill
 - **Determinism of priority-flood and Dijkstra:** heap ordering keys and tie rules.
 - **The `terrain_rules.json` schema** and the compiled-default table.
 - **Test helpers in `Testing/`:** hand-built grids for AC15, a slider-sequence driver for AC1/AC14, and shape-check helpers shared with AC18.
+- **Test tiers.** Heavy sweeps (AC1's 200-change sequences, AC4/AC5 slider sweeps, AC18's 150 worlds) go in `SLOW_` suites. Each also has a cheap default-run subset (e.g. 2 seeds, 5 changes) so a plain `dia run googletest` still covers the logic. Golden values for fixed seeds are always in the default run. This is the lesson from the seeded-noise test-gap work.

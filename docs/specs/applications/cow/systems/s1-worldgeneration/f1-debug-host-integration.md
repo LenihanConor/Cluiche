@@ -1,12 +1,13 @@
 # Feature Spec: F-1 Debug Host Integration
 
 **Parent:** @docs/specs/applications/cow/systems/s1-worldgeneration/worldgenerationpipeline.md
+> **Amended 2026-10-18 (Feature 9 re-scope, @regions-and-sites.md): the panel's Validation section lists every registered guarantee; the Dynasty Starts fixed control is replaced by a Sites overlay with a toggle per registered kind (`SiteKindInfo`); adds the `regions` and `sites` queries and the climate offsets from Feature 8. Full text updated when this feature is built.*
 
 **Gameplay Domains:** simulation
 
 ## Summary
 
-F-1 Debug Host Integration exposes WLD's generation controls and live telemetry through F-1's in-game debug host UI, enabling CoW's testbed iteration workflow: designers adjust seed/parameters, click Regenerate, see results within seconds, export/import authored worlds, and monitor generation progress live. This feature wires `WorldGenerationModule` APIs to F-1's debug UI (seed input, biome weight sliders, placement param sliders, Regenerate/Export/Import/Cancel buttons, progress bar, retry telemetry display).
+F-1 Debug Host Integration exposes WLD's generation controls and live telemetry through F-1's in-game debug host UI, enabling CoW's testbed iteration workflow: designers adjust seed/parameters, click Regenerate, see results within seconds, export/import authored worlds, and monitor generation progress live. This feature wires `WorldGenerationModule` APIs to F-1's debug UI (seed input, terrain and climate sliders, placement param sliders, Regenerate/Export/Import/Cancel buttons, progress bar, retry telemetry display).
 
 *Amended 2026-10-15:* F-1's debug host for data panels is the DiaDebugPanel (`IDebugDomain`), so this panel is the card of Feature 7's `WorldGenDebugDomain`, built from its `GetJSONState` / `OnCommand`. Besides the controls it now explains the data: a **Cell Inspector** (every field of the selected cell) and a **Validation** section (each guarantee's result and evidence summary, plus the per-attempt retry history). Export/Import is this testbed's save/load of a world.
 
@@ -28,7 +29,7 @@ With debug host integration:
 
 ## Goals
 
-1. **Parameter inputs exposed** — Seed (integer input), biome distribution weights (sliders per biome type), placement params (Nexus count, dynasty spacing, etc. as sliders)
+1. **Parameter inputs exposed** — Seed (integer input), climate offsets (`temperatureOffset`, `moistureOffset` sliders; replace per-biome weights, Feature 8), placement params (Nexus count, dynasty spacing, etc. as sliders)
 2. **Action buttons** — Regenerate (triggers `GenerateWorld()`), Export (triggers `ExportWorld()`), Import (triggers `ImportWorld()`), Cancel (triggers `CancelGeneration()`)
 3. **Live progress display** — Progress bar or text showing current attempt number, elapsed time, validation status ("Generating...", "Validating attempt 2/10...", "Complete" / "Failed")
 4. **Retry telemetry** — Display final retry count on success, or failure diagnostics (timeout/unsatisfiable/error/cancel) on failure
@@ -322,7 +323,7 @@ struct WorldImportComplete {  // Optional, from Feature 4; world via GetCurrentW
 | System/Feature | Why needed | Status |
 |----------------|-----------|---------|
 | **F-1 Harness** | Debug host framework (panel registration, UI primitives like sliders/buttons/text inputs) | Approved (backlog) |
-| **Feature 1 (Terrain Generator, @terrain-generator.md)** | Provides `GenParams` struct (biome weights, placement params) | Draft (re-spec 2026-10-15) |
+| **Feature 1 (Terrain Generator, @terrain-generator.md)** | Provides `GenParams` struct (`WorldShapeParams` incl. climate offsets, placement params) | Approved 2026-10-18 |
 | **Feature 3 (Retry Mechanism)** | Provides `GenerateWorld()` API and `WorldGenerationComplete` event | Approved |
 | **Feature 4 (JSON Export/Import)** | Provides `ExportWorld()` / `ImportWorld()` APIs | Approved |
 | **Feature 5 (Timeout and Failure Handling)** | Provides `CancelGeneration()` API and `WorldGenerationFailed` event | Approved |
@@ -344,7 +345,7 @@ struct WorldImportComplete {  // Optional, from Feature 4; world via GetCurrentW
 Open S-1 stage in F-1 debug host. Adjust seed, click Regenerate. **Pass:** Status updates to "Generating...", then "Complete (N attempts)" after generation finishes. Repeat with different seed. **Pass:** New world generated (different biome distribution visible in Feature 7 rendering, if implemented).
 
 ### AC2 — Parameter Adjustment Workflow
-Adjust biome weight slider (e.g., increase Forest weight to 0.8), click Regenerate. **Pass:** Generated world has more Forest biome cells than before (observable via Feature 7 rendering or manual inspection of exported JSON).
+Raise the `moistureOffset` slider (e.g., to 0.2), click Regenerate. **Pass:** Generated world has more moisture-loving biome cells (Forest, Rainforest, Wetland) and fewer Desert cells than before (observable via Feature 7 rendering or manual inspection of exported JSON).
 
 ### AC3 — Export Workflow
 Generate world, enter export path `C:/test.wld.json`, click Export. **Pass:** File written to disk, status shows "Exported to C:/test.wld.json" (or similar feedback). Open file in text editor. **Pass:** Valid JSON matching Feature 4 schema.

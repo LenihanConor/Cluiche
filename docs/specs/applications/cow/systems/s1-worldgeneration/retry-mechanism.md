@@ -1,6 +1,7 @@
 # Feature Spec: Retry Mechanism
 
 **Parent:** @docs/specs/applications/cow/systems/s1-worldgeneration/worldgenerationpipeline.md
+> **Amended 2026-10-18 (Feature 9 re-scope, @regions-and-sites.md): the retried stage is `RegionsAndSites::Place` (regions + registered site kinds), each kind on its own sub-seed. `PlaceResult::terrainCause` ends generation with no retry. `GenerationReport` records the placers that ran. Where this spec says Hearths/Nexus/starts, read the dragon layer's registered kinds. Full text updated when this feature is built.*
 
 **Gameplay Domains:** simulation
 
