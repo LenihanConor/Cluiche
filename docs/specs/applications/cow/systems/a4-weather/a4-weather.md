@@ -201,7 +201,7 @@ Spin-up is deterministic, so a save does not need to know about it. A new game r
 
 ### Parameters
 
-The tuning constants live in `Assets/CoW/weather_parameters.json`, using the GDD TuningParameters §14 schema. The schema is extended with an `init` block holding `initial_moisture_water` and `initial_moisture_land`, a `baseline_table` block for the default `TableBiomeSeasonalBaseline`, and a `boundary` block for `edge_inflow` (see Update pipeline). The `.diaapp` module config gives the file path, `spinup_weeks` and `history_weeks`:
+The tuning constants live in `Assets/CoW/Global/Weather/weather_parameters.json` (amended 2026-10-19, F-3 World Assets), using the GDD TuningParameters §14 schema with envelope `"format": "cow.weather_params", "version": 1`. The schema is extended with an `init` block holding `initial_moisture_water` and `initial_moisture_land`, a `baseline_table` block for the default `TableBiomeSeasonalBaseline`, and a `boundary` block for `edge_inflow` (see Update pipeline). The `.diaapp` module config gives the file path, `spinup_weeks` and `history_weeks`:
 
 ```json
 {
@@ -210,7 +210,7 @@ The tuning constants live in `Assets/CoW/weather_parameters.json`, using the GDD
     "stages": ["all"],
     "dependencies": ["MessageBusHostModule"],
     "soft_dependencies": ["SaveLoadModule"],
-    "config": { "parameters": "CoW/weather_parameters.json", "spinup_weeks": 52, "history_weeks": 0, "weather_job_ranges": 0 }
+    "config": { "parameters": "Global/Weather/weather_parameters.json", "spinup_weeks": 52, "history_weeks": 0, "weather_job_ranges": 0 }
 }
 ```
 
@@ -218,7 +218,7 @@ The tuning constants live in `Assets/CoW/weather_parameters.json`, using the GDD
 
 - **Validation on load.** Every rate must be in `[0, 1]` and `snow_threshold <= melt_threshold`. A missing or invalid file logs an error, falls back to the compiled defaults (the GDD values), and reports Degraded health. This is the same rule as GameSpeedController.
 - **Hot reload (amended 2026-10-19, product review).** `cow.weather.reload` re-reads the file between steps (GDD calls this `reload_parameters`; A4 uses `cow.weather.reload`). `cow.weather.set_param <dotted.key> <value>` overrides one value until the next reload. Both take effect at the next `Step()`, never in the middle of one.
-- **Parameters are not saved.** A save made under overridden parameters reloads with the file's values. This is acceptable because tuning overrides are debug-only.
+- **Tuned parameters are saved as weather packs** (amended 2026-10-19, F-3 World Assets). `cow.world.pack.save_as weather <id>` writes overrides-only to `Assets/CoW/Global/Weather/Packs/<id>.weather.json` via the `source` alias. Parameters in the defaults file are not saved; packs are the normal tuning path.
 
 ### History (rewind)
 
@@ -306,7 +306,7 @@ Forcings and overrides are deterministic inputs applied at a fixed point in the 
 
 A4 provides the reusable pieces that a testbed needs. It does not own the stage.
 
-- **Presets.** The five AuthoringDebug §5 presets are `coastal_storm`, `rain_shadow`, `winter_snow`, `spring_melt` and `drought`.
+- **Presets.** The five AuthoringDebug §5 presets are `coastal_storm`, `rain_shadow`, `winter_snow`, `spring_melt` and `drought` (amended 2026-10-19, F-3 World Assets): whether each is a weather pack (parameter overrides) or a scenario (forced state) is decided in A4 Feature 6 (see F-3 Open Design Question 1).
   - Each preset is a data file: a starting committed state, forcings, and a season, over a fixed preset world. That world is S-2.5's `s25_coast_range` (an S-1 preset + seed), amended 2026-10-18.
   - `cow.weather.load_preset <name>` applies one at the next step boundary.
 - **Regression scenarios.** The four AuthoringDebug §6.1–6.4 scenarios are GoogleTests over hand-built hex terrains. Each terrain has a coast, an inland region and a mountain range. The tests use the GDD's success ratios:
@@ -363,10 +363,16 @@ namespace CoW::Weather {
     };
 
     // SimModule wiring.
-    class WeatherModule : public Dia::ApplicationFlow::SimModule {
+    class WeatherModule : public Dia::ApplicationFlow::SimModule,
+                          public IWorldAssetParticipant {      // F-3 World Assets, amended 2026-10-19
     public:
         WeatherSnapshot GetSnapshot() const;        // A1, V-1, debug: read on WeatherUpdated
         const WeatherSimulation& GetSimulation() const;
+        // IWorldAssetParticipant (kind `weather`)
+        Dia::Core::StringCRC Kind() const override { return "weather"; }
+        Json::Value Defaults() const override;
+        void Apply(const Json::Value& resolved) override;
+        Json::Value Capture() const override;
     };
 }
 ```

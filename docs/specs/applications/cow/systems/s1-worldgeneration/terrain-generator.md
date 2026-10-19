@@ -308,11 +308,11 @@ The seed is not a slider. Changing it dirties stage 0, so everything re-runs.
 
 **Location and deployment.** Presets are source assets in `Cluiche/Assets/CoW/Global/WorldGen/Presets/<id>.worldshape.json`. They are registered in `assets.catalogue.json` and deploy through the asset pipeline (SD-S1-011). At runtime the `presets` command lists the deployed copies.
 
-**Saving** (decided 2026-10-15). `preset.save` writes the real source file under `Cluiche/Assets/CoW/Global/WorldGen/Presets/`. It finds the source tree through a **dev-only source-assets-root alias that `dia launch` sets** (dev launches only).
+**Saving** (decided 2026-10-15; amended 2026-10-19, F-3 World Assets). `preset.save` writes the real source file under `Cluiche/Assets/CoW/Global/WorldGen/Presets/` through F-3's `source` alias (dia-needs #16, Approved 2026-10-19, not built).
 - If the alias is absent (non-dev builds, or a launch without it), the preset is written to `Cluiche/out/CoW/presets/` (PD-009), and the response says so (`writtenTo`, `isSource: false`).
 - A new preset id also needs a catalogue entry. When the entry is missing, the response includes the `dia` command to add it.
 
-**Format (version 1):**
+**Format (version 1; envelope format confirmed by F-3 World Assets, 2026-10-19):**
 
 ```json
 {
@@ -539,7 +539,7 @@ The generator, types, rules and preset I/O (`WorldShapePreset.h`: `LoadPreset`, 
 | `RandomStreamManager` / `RandomStreamModule` (F-2) | The registered `WLD` stream, used in stage 0 only | Done |
 | Dia CellField (dia-needs #14) | Shows the layers in Feature 7. Not needed to build or test this feature | Spec Approved, not built |
 | DiaAPI JSON commands, jsoncpp | Commands; preset and rules files | Done |
-| DiaCLI `dia launch` | **Follow-up (small):** on dev launches only, set the source-assets-root alias that `preset.save` uses to write source presets (Presets, Saving). Without it, `preset.save` falls back to `out/CoW/presets/` | To do (DiaCLI change, dev launches only) |
+| F-3 World Assets `source` alias (dia-needs #16) | `preset.save` writes source presets through the `source` alias. Without it, falls back to `out/CoW/presets/` (PD-009) | Approved 2026-10-19 (F-3 World Assets), not built |
 
 No other Dia change is needed. Priority-flood, Dijkstra and BFS over 2,772 cells are small local code. A second consumer would justify moving them to Dia; that is not needed now (AD-002).
 

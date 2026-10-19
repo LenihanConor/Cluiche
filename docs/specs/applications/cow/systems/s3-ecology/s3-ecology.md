@@ -86,10 +86,11 @@ The panel shows which layers are present: World (preset and seed, or file), Weat
 
 ### Guided scenarios
 
-**Format** (amended 2026-10-19, product review): S-3 Feature 3 uses the CoW-Shared scenario format from S-2.5 Feature 4. A scenario is a data file in `Stages/S3Ecology/scenarios/`:
+**Format** (amended 2026-10-19, product review): S-3 Feature 3 uses the CoW-Shared scenario format from S-2.5 Feature 4. A scenario is a data file in `Stages/S3Ecology/scenarios/` using envelope `"format": "cow.scenario", "version": 1` and extension `.scenario.json` (amended 2026-10-19, F-3 World Assets):
 
 ```json
-{ "id": "s2_breeding_seasons", "mode": "Controlled", "world": "sandbox_small_temperate",
+{ "format": "cow.scenario", "version": 1,
+  "id": "s2_breeding_seasons", "mode": "Controlled", "world": "sandbox_small_temperate",
   "setup":  ["cow.s3.climate.set rain=1.0 year=GOOD", "cow.ecology.set_species cell=412 species=deer adult=0.5",
              "cow.ecology.set_species cell=412 species=elk adult=0.5", "cow.ecology.isolate_cell cell=412 on"],
   "watch":  "Step one season at a time. Deer breed in Spring only; elk in Spring and Fall.",
@@ -146,7 +147,7 @@ The stage names its default world in its `.diastage` (SD-S1-010). The panel's wo
 
 ### Stage
 
-`Cluiche/Assets/CoW/Stages/S3Ecology/s3_ecology.diastage`, launched from F-1's debug menu. It holds the default world, the default mode (Controlled) and the scenario list.
+`Cluiche/Assets/CoW/Stages/S3Ecology/s3_ecology.diastage`, launched from F-1's debug menu. It holds the default world (preset + seed, `.wld.json` or `world_bundle`; amended 2026-10-19, F-3 World Assets), the default mode (Controlled) and the scenario list.
 
 ### Module
 
@@ -175,7 +176,7 @@ namespace CoW::S3 {
 
 | # | Feature | Description | Spec | Status |
 |---|---------|-------------|------|--------|
-| 1 | Stage & Modes | `.diastage`, F-1 menu entry, world load and picker (SD-S1-010), `S3EcologyModule`, Controlled/Living switch and reinitialise, layer-presence panel card, time controls (GameSpeedController), size picker (`cow.s3.map.size`), the two sandbox worlds. HTML mockup of the S3 card + A1 tool panel first (amended 2026-10-19, product review) | TBD | Draft |
+| 1 | Stage & Modes | `.diastage`, F-1 menu entry, world load and picker (SD-S1-010: preset + seed, `.wld.json`, or `world_bundle`; amended 2026-10-19, F-3 World Assets), `S3EcologyModule`, Controlled/Living switch and reinitialise (authoring loop exposed via F-3's World Assets card; amended 2026-10-19, F-3 World Assets), layer-presence panel card, time controls (GameSpeedController), size picker (`cow.s3.map.size`), the two sandbox worlds. HTML mockup of the S3 card + A1 tool panel first (amended 2026-10-19, product review) | TBD | Draft |
 | 2 | Pinned Climate | `S3ClimateInput`: biome baseline, global sliders, year scale (GOOD 1.3 / AVERAGE 1.0 / BAD 0.7 values defined here, referenced by A1), region overrides, snow threshold; `cow.s3.climate.*`. Pure logic, TDD (amended 2026-10-19, product review) | TBD | Draft |
 | 3 | Guided Scenarios | Uses the CoW-Shared scenario format, loader and check-line panel from S-2.5 Feature 4 (hard dependency; amended 2026-10-19, product review); setup as DiaAPI command lists, named check predicates over A1's view and ledger, live check lines; the 10 Controlled scenarios and 4 Living scenarios | TBD | Draft |
 | 4 | Long-Run Runner | Headless band driver over the pure simulations, worker job with progress and cancel, report JSON with the six checks, live-vs-runner integration test | TBD | Draft |

@@ -360,6 +360,11 @@ Export world to file, hand-edit JSON (change one Hearth position), enter import 
 ### AC5 — Cancel Workflow
 Click Regenerate, immediately click Cancel (before generation completes). **Pass:** Status updates to "Cancelling...", then "Failed: CANCEL". No world returned (export button disabled or shows error if clicked).
 
+### Amendments (2026-10-19, F-3 World Assets)
+
+- **Baked terrain output:** `cow.world.terrain.bake <id>` writes to `Assets/CoW/Global/WorldGen/Baked/<id>.wld.json` via the `source` alias (dia-needs #16), not `out/`.
+- **World bundle reference:** SD-S1-010 gains `"world_bundle": "<id>"` as a stage world option (feature 6 panel shows it when loading a stage's world config).
+
 ### AC6 — Progress Updates
 Click Regenerate with seed that triggers multiple retries (force via hand-edited impossible parameters). **Pass:** Progress bar and status text update live ("Validating attempt 2/10...", progress bar at 20%, elapsed time counting up). Proves live telemetry works.
 

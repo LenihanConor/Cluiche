@@ -132,10 +132,11 @@ In the stage, `S25WeatherModule` evaluates the active scenario's checks after ea
 
 ### Scenarios and walkthrough (CoW-Shared)
 
-The scenario format S-3 designed becomes CoW-Shared, with one addition: walkthrough steps.
+The scenario format S-3 designed becomes CoW-Shared, with one addition: walkthrough steps. Scenario files use envelope `"format": "cow.scenario", "version": 1` and extension `.scenario.json` (amended 2026-10-19, F-3 World Assets).
 
 ```json
-{ "id": "s25_rain_shadow", "world": "s25_coast_range",
+{ "format": "cow.scenario", "version": 1,
+  "id": "s25_rain_shadow", "world": "s25_coast_range",
   "setup":   ["cow.weather.load_preset rain_shadow"],
   "watch":   "The range blocks the prevailing wind. Rain falls on the windward slope; the leeward side stays dry.",
   "checks":  ["s25.rain_shadow.reported", "s25.rain_shadow.windward_gt_leeward"],
@@ -167,7 +168,7 @@ All three are A4's tools wired to the stage:
 
 ### Stage
 
-`Cluiche/Assets/CoW/Stages/S25WeatherPatterns/s25_weather_patterns.diastage`, launched from F-1's debug menu. It holds the default world (`s25_coast_range`), the scenario list and the A4 module config (`history_weeks: 13`).
+`Cluiche/Assets/CoW/Stages/S25WeatherPatterns/s25_weather_patterns.diastage`, launched from F-1's debug menu. It holds the default world (`s25_coast_range` as preset + seed, or may accept a `world_bundle` with terrain only; amended 2026-10-19, F-3 World Assets), the scenario list and the A4 module config (`history_weeks: 13`).
 
 ### Module
 
@@ -245,11 +246,11 @@ For the GDD session (`cow-29`) to fold back into `S2.5_WeatherPatterns.md`:
 
 1. **The 52-week ≤ 5 s budget is measured headless at Small (amended 2026-10-19, product review).** GameSpeedController caps Fastest at one day per sim frame (30 days/s), so a live 52-week run takes at least 12.1 s. The live run at Fastest becomes a smoke test: about 12.1 s at Small, with no weekly tick above 4.2 ms.
 2. **Checks run headless for the verdict** and live as check lines, using the same predicates. This makes AD-07 concrete.
-3. **Test worlds are curated S-1 preset + seed worlds with shape prechecks.** A precheck failure means "invalid world", not an A4 fail.
+3. **Test worlds are curated S-1 preset + seed worlds with shape prechecks.** A precheck failure means "invalid world", not an A4 fail. May also accept a `world_bundle` with terrain only (amended 2026-10-19, F-3 World Assets).
 4. **Command names follow the A4 spec (amended 2026-10-19, product review):** `cow.weather.reload` (the GDD says `reload_parameters`), plus A4's `load_preset`, `step_back` and `profile`.
 5. **"Smooth curve" (Test 4) is defined:** at most two direction changes in the 52-week temperature curve after a 3-week moving mean.
 6. **Test 9 uses two different executor range counts** for its two runs, which also proves A4's parallel bit-identity on a real world.
-7. **The walkthrough format is shared with S-3** (CoW-Shared scenarios).
+7. **The walkthrough format is shared with S-3** (CoW-Shared scenarios). Scenario files use envelope `"format": "cow.scenario", "version": 1` and extension `.scenario.json` (amended 2026-10-19, F-3 World Assets).
 
 ## Dependencies
 

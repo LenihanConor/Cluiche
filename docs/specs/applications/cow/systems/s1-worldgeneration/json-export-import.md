@@ -44,7 +44,7 @@ With export/import:
 
 ### JSON Schema (v1)
 
-> **Amended 2026-10-19 (product review):** schema updated to match actual enums (Biome, TerrainType, RegionId), add missing terrain fields (`depthZone`, `landmass`, `terrainFlags`, `downstream`, `mainLandmass`), replace fixed site arrays with generic `sites` registry per Feature 9, add `provenance` per SD-S1-009, and use `format` + `version` convention (not `schema_version`) to match preset files. Full text updated when this feature is built.
+> **Amended 2026-10-19 (product review):** schema updated to match actual enums (Biome, TerrainType, RegionId), add missing terrain fields (`depthZone`, `landmass`, `terrainFlags`, `downstream`, `mainLandmass`), replace fixed site arrays with generic `sites` registry per Feature 9, add `provenance` per SD-S1-009, and use `format` + `version` convention (not `schema_version`) to match preset files and F-3 World Assets envelope. Full text updated when this feature is built.
 
 ```json
 {
@@ -143,7 +143,7 @@ With export/import:
 - **Flat cells array** (not 2D nested arrays): Simpler JSON parse; cell `[y * width + x]` mapping explicit in import code
 - **Generic `sites` registry** (not fixed arrays): Feature 9 re-scope (amended 2026-10-18). Each kind (`StringCRC` id) is a `{cell, region, variant, flags}` array. Unknown kinds round-trip unchanged so authored worlds survive a build that lacks the kind
 - **Provenance** (added 2026-10-19): SD-S1-009 records seed, params, preset, generator and rules versions. Import opens the world **locked**; moving a slider without `unlock: true` refuses
-- **`format` + `version`** (amended 2026-10-19): Matches preset convention, not `schema_version`
+- **`format` + `version`** (amended 2026-10-19): Matches preset convention and F-3 World Assets envelope, not `schema_version`
 - **Terrain fields** (added 2026-10-19): `depth_zone` ("None" / "FirstShores" / "WildReaches" / "AncientInteriors"), `landmass` (uint8), `terrain_flags` (uint8 bitfield), `downstream` (direction 0..5 or 7 = `kNoDirection`), and world-level `main_landmass`
 - **`topology`** *(amended 2026-10-14)*: names the cell layout. Only `"hex_flat_odd_q"` (Dia's rectangular `HexPathGrid` layout) is valid in v1; import fails on anything else
 - **`elevation`, `latitude`, `water_source`** *(amended 2026-10-14)*: A4 Weather's terrain inputs. `elevation` and `latitude` are floats in [0, 1], written with 9 significant digits; `water_source` is `None` / `Ocean` / `Lake` / `River`. Import fails if a float is outside [0, 1] or `water_source` is unknown
@@ -155,7 +155,8 @@ With export/import:
 ```cpp
 Result<void> ExportWorld(const WorldStructure& world, const std::string& filePath) {
     Json::Value root;
-    root["schema_version"] = 1;
+    root["format"] = "cow.world";
+    root["version"] = 1;
     
     Json::Value worldJson;
     worldJson["topology"] = "hex_flat_odd_q";
@@ -223,10 +224,11 @@ Result<WorldStructure> ImportWorld(const std::string& filePath) {
         return Result<WorldStructure>::Failure("JSON parse error: " + errors);
     }
     
-    // Validate schema version
-    int schemaVersion = root["schema_version"].asInt();
-    if (schemaVersion != 1) {
-        return Result<WorldStructure>::Failure("Unsupported schema version: " + std::to_string(schemaVersion));
+    // Validate format + version (F-3 World Assets convention, amended 2026-10-19)
+    std::string format = root["format"].asString();
+    int version = root["version"].asInt();
+    if (format != "cow.world" || version != 1) {
+        return Result<WorldStructure>::Failure("Unsupported format/version: " + format + " v" + std::to_string(version));
     }
     
     // Deserialize world structure
@@ -358,7 +360,7 @@ Hand-edit exported JSON to introduce errors: (a) missing "biome" field in cell, 
 Export world, hand-edit JSON to move one Hearth Site position (change x/y coordinates), re-import. **Pass:** Imported world reflects edited position (Hearth at new location), all other data unchanged. Proves hand-editing workflow.
 
 ### AC5 — Schema Version Enforcement
-Export world (schema v1). Hand-edit JSON to change `schema_version: 2`. Attempt import. **Pass:** Import returns Failure ("Unsupported schema version: 2"). Proves version gating works for future migration.
+Export world (schema v1). Hand-edit JSON to change `"version": 2`. Attempt import. **Pass:** Import returns Failure ("Unsupported cow.world version: 2", F-3 version rule). Proves version gating works for future migration.
 
 ### AC6 — Export/Import Speed
 Export and import a Small world (66×42 = 2,772 cells, amended 2026-10-15), ~20 sites total. Measure time for each operation. **Target: <3 seconds per operation** (does not block iteration workflow; designers can export/hand-edit/re-import within ~10 seconds total).

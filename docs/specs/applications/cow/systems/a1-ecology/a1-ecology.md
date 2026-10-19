@@ -232,7 +232,7 @@ The ledger covers the last band only, is overwritten each band, is never saved, 
 
 ### Debug, tuning and editing tools
 
-*Amended 2026-10-18.* The tools for understanding and tuning ecology belong to A1, as A4's do, so every stage that hosts A1 gets them: the Ecology testbed, and later the dragon testbeds. Every action is a `cow.ecology.*` DiaAPI command, and the panel calls the same commands. The commands and their execution model come first; the panel depends only on them.
+*Amended 2026-10-18, 2026-10-19.* The tools for understanding and tuning ecology belong to A1, as A4's do, so every stage that hosts A1 gets them: the Ecology testbed, and later the dragon testbeds. Every action is a `cow.ecology.*` DiaAPI command, and the panel calls the same commands. The commands and their execution model come first; the panel depends only on them.
 
 `EcologyDebugDomain` (SimPU) provides:
 
@@ -240,8 +240,8 @@ The ledger covers the last band only, is overwritten each band, is never saved, 
 - **Overlays through Dia CellField:** ecology state, health, biome, each producer, species density or functional-group density, each pressure field, succession progress, and event clusters. Top-3 migration arrows go through debug draw.
 - **Cell inspector:** every field of the selected cell, including per-species juvenile/adult counts and maturation, plus the **change ledger** for that cell: each value's change last band, broken down by cause.
 - **Graphs:** a rolling time-series panel. It shows the selected cell's per-species juvenile/adult counts and producers, plus map-wide functional-group totals and the state distribution. It keeps a bounded history of the last 200 bands, records only while the panel is open, and isn't saved.
-- **Tuning:** live sliders over `ecology_parameters.json` and the selected species' and biome's entries, applied at the next band. `cow.ecology.tuning.save` writes them back to the source JSON, using the same source-assets path as S-1's `preset.save`. Hot reload picks up hand edits.
-- **Editing:** set a cell's fields or a species' population, and paint species, producers, water or biome over a brush of cells. Painting a biome reinitialises the painted cells from the biome's starting values. `isolate_cell` turns off migration and propagation into and out of the selected cell, which gives the old single-cell S-2 behaviour.
+- **Tuning:** live sliders over `ecology_parameters.json` and the selected species' and biome's entries, applied at the next band. `cow.ecology.tuning.save` writes changes to the defaults files themselves via the `source` alias (dia-needs #16, F-3 World Assets; amended 2026-10-19). `cow.world.pack.save_as ecology <id>` is the normal tuning path, writing overrides-only ecology packs to `Assets/CoW/Global/Ecology/Packs/<id>.ecology.json`. Hot reload picks up hand edits.
+- **Editing:** set a cell's fields or a species' population, and paint species, producers, water or biome over a brush of cells. Painting a biome reinitialises the painted cells from the biome's starting values. Painted/edited cells can be saved as an ecology start state via `cow.world.startstate.save_as` (baked terrain only; F-3 World Assets, amended 2026-10-19), written to `Assets/CoW/Global/Ecology/StartStates/<id>.ecostate.json`. `isolate_cell` turns off migration and propagation into and out of the selected cell, which gives the old single-cell S-2 behaviour.
 - **Commands:** `inspect`, `ledger`, `set_field`, `set_species`, `paint`, `isolate_cell`, `set_ecology_state`, `step_band`, `reload_data`, `tuning.set`, `tuning.save`, `find_events`, `ignite`, `apply_transition` (until A3).
 - **Instrumentation:** `DIA_PROFILE_SCOPE` per step, `MetricRegistry` counters (cells per state, events per band, band time), an `IHealthReporter` (Degraded on the fallback roster or a failed data validation).
 
@@ -307,11 +307,17 @@ namespace CoW::Ecology {
     EcologyData FallbackEcologyData();      // 3 land species (deer, elk, wolf) + 1 aquatic (fish), S-2 GDD decision 4
 
     class EcologyModule : public Dia::ApplicationFlow::SimModule,
-                          public CoW::Weather::IBiomeSeasonalBaseline {
+                          public CoW::Weather::IBiomeSeasonalBaseline,
+                          public IWorldAssetParticipant {      // F-3 World Assets, amended 2026-10-19
     public:
         float GetSeasonalTemperature(Dia::Core::StringCRC biome, CoW::Weather::Season season) const override;
         const EcologySimulation& GetSimulation() const;
         void RegisterSuccessionResolver(ISuccessionResolver* resolver);    // A3's SuccessionModule, via ModuleRef
+        // IWorldAssetParticipant (kinds `ecology`, `ecology_start`): ecology pack and start state
+        Dia::Core::StringCRC Kind() const override;
+        Json::Value Defaults() const override;
+        void Apply(const Json::Value& resolved) override;
+        Json::Value Capture() const override;
     };
 }
 ```
@@ -322,7 +328,7 @@ Messages (`CellEcologyChanged`, `EventThresholdCrossed`, `BiomeSuccessionTrigger
 
 | # | Feature | Description | Spec | Status |
 |---|---------|-------------|------|--------|
-| 1 | Ecology Data | `species.json` (incl. `habitat`, aquatic groups, `coastal_reach`), `biomes.json` (13 ids, `BiomeProfile`, seasonal temperature and `rainfall_baseline`), `succession_rules.json`, `ecology_parameters.json`: load, validate, defaults, fallback roster. Pure logic, TDD | TBD | Draft |
+| 1 | Ecology Data | `species.json` (incl. `habitat`, aquatic groups, `coastal_reach`), `biomes.json` (13 ids, `BiomeProfile`, seasonal temperature and `rainfall_baseline`), `succession_rules.json`, `ecology_parameters.json`: load from `Assets/CoW/Global/Ecology/` with envelopes `cow.species`, `cow.biomes`, `cow.ecology_params` (amended 2026-10-19, F-3 World Assets), validate, defaults, fallback roster. Pure logic, TDD | TBD | Draft |
 | 2 | Cell State & Initialise | `EcologyFields` SoA, palettes, `EcologyWorldInput` from `WorldStructure`, derived geography (C11), seeded soil, starting populations, `IBiomeSeasonalBaseline` implementation. Pure logic, TDD | TBD | Draft |
 | 3 | Cell Equations | Per-cell steps 1, 3–7 and 12: producers, per-species births, maturation, Allee, competition, starvation, predation (age-weighted), disease, clamping; `StepCell`; `EcologyLedger` deltas by cause, written as each term is computed (ledger sums equal the actual change). One test group per equation from TechnicalSpec §4–§5. Pure logic, TDD | TBD | Draft |
 | 4 | Grid Passes | Steps 2, 8 and 11 plus pressure-field propagation: water flow and table, migration solver (group and softmax, river and corridor modifiers), coastal cross-feeding, lifeboat guardrails, seed drift, natural ignition and fire spread, `years_low_herbivore_inflow`; step-outer passes, gather, `IParallelExecutor`, bit-identity, 16 ms gate. Pure logic, TDD | TBD | Draft |
