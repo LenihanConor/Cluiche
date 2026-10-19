@@ -1,0 +1,77 @@
+**Spec:** @docs/specs/applications/cow/systems/s1-worldgeneration/terrain-generator.md
+**Status:** In Progress
+
+System plan: @worldgenerationpipeline.plan.md (task 7). Small map (66 × 42) only. Feature 8 stages 12–14 are **not** in this plan: they are S-1 plan task 11 (`biome-classification.md`), built after this plan is Done.
+
+## Scope
+
+**In:** spec stages 0–11, `WorldShapeParams`, `TerrainRules` + tuning file, `TerrainLayers`, `TerrainGenerator` (`Update`/`Invalidate`/`WriteTerrain`/timings), presets (types, I/O, three files), and ACs 1–19.
+
+**Out (other plan tasks):**
+- AC20 (terrain commands) and the command half of AC21 → `WorldGenerationModule` (system plan tasks 8, 8b, 16). This plan covers the data half of AC21 (provenance contents).
+- AC22 (visual gate) → system plan task 18.
+- `dia launch` source-assets alias for `preset.save` → system plan task 3 follow-up.
+
+## Implementation Patterns
+
+Drafted from the code survey on 2026-10-18. Check against the real code before marking tasks Done.
+
+**Layout.** Pure CoW-Shared code in `Cluiche/CoW/Shared/WorldGeneration/` (namespace `CoW::WorldGeneration`, includes as `<Shared/WorldGeneration/X.h>`). No Dia module dependency beyond DiaMaths (noise, `RandomStream`), DiaPathfinding (`HexTopology`), DiaCore (`StringCRC`, jsoncpp). Test helpers in `Cluiche/CoW/Shared/WorldGeneration/Testing/` (header-only). Tests in `Cluiche/Tests/GoogleTests/CoW/TestTerrain*.cpp`, plain `TEST(Suite, Name)` (CoW tests use no fixtures).
+
+**Build wiring (every task that adds files).** Use `dia docs vcxproj-add` with `--dry-run` first:
+- `dia docs vcxproj-add CoW "Shared\WorldGeneration\X.h" --filter Shared` (and `.cpp`).
+- `dia docs vcxproj-add GoogleTests "..\..\CoW\Shared\WorldGeneration\X.cpp"` for each new `.cpp` (GoogleTests compiles CoW sources directly; header-only files need no entry).
+- `dia docs vcxproj-add GoogleTests "CoW\TestTerrainX.cpp"` for each test file.
+
+**Code style** (match `Shared/GameSpeedController.h`): leading `//` comment naming the class, "pure logic", and `// Spec: docs/specs/...md`; `#pragma once`; `constexpr kPascalCase` constants; `enum class X : uint8_t` with an `inline const char* XName(X)` switch ending `return "Unknown";`; structs with member default initialisers; members `mPascalCase`; Allman braces, 4 spaces.
+
+**Containers (PD-004 deviation to flag).** `DynamicArrayC<T, N>` is fixed-capacity (compile-time `N`, no resize), so it cannot hold per-cell layers for 1×1 … 128×128 maps. Per-cell storage is private `std::vector`, as `HexPathGrid` does. Public APIs expose `const float*` / `const uint32_t*` / `const Cell*` plus a count, never an STL type. `WorldShapeParams` and `WorldProvenance` stay trivially copyable. Report this in the Task 1 notes so the user can confirm.
+
+**Types that do not exist yet** (Task 1 defines them from the specs): `GridDimensions {int width, height}`, `Cell`, `WorldStructure` (cells, dimensions, provenance, mainLandmass; regions and sites come in system plan task 12), `WorldProvenance`. `Cell` carries the terrain fields only; the biome and region fields are added by later features.
+
+**Hex grid.** `Dia::Pathfinding::HexTopology(width, height)` (`<DiaPathfinding/HexTopology.h>`): `NeighbourAt(uint32_t cell, uint32_t dir)` returns `kNoCell` past the edge; `static Distance(CellCoord, CellCoord)`; `static CellCenter(CellCoord, float size)`; `static CellFromPoint(Vector2D, float size)`; `ToIndex`/`ToCoord`; index `y * width + x`; directions 0..5 = NE, N, NW, SW, S, SE, opposite `(d + 3) % 6`; no E/W neighbour. The generator builds its own `HexTopology`. `HexPathGrid` has no public topology accessor.
+
+**Noise.** `<DiaMaths/Noise/Noise.h>`, namespace `Dia::Maths`, seed is `uint32_t` and comes first, all pure and bit-identical, NaN-safe. Use `GradientNoise2D`, `FractalNoise2D<NoiseType::Gradient>(seed, x, y, FractalParams)`, `RidgedNoise2D<Gradient>`, `Warp2D<...>`. Derive each channel's `uint32_t` seed from the stage-0 draws.
+
+**RNG (Dia gap, flag per AD-001).** `RandomStream` has no public reseed. Its constructor takes the seed, and `Restore(seed, drawCount)` is documented for save/load. Stage 0 reseeds the `WLD` stream via `Restore(foldedSeed32, 0)` if that resets state as expected (verify in Task 3, with a test); if not, `TerrainGenerator::Update` takes the stream by reference and Task 3 stops and asks the user before touching Dia. The pure generator is tested with a locally constructed `RandomStream rng(123)` (no Application needed). The 64-bit world seed folds to 32 bits with a fixed mix documented in the code.
+
+**Stage cache.** One struct of `std::vector` layers per stage, a `dirty` bit per stage, and the dependency table (`kStageReads[]`, `kSliderFirstStage[]`) as data so tests can check it against the spec table. `Update` runs dirty stages in order and records `StageTiming`. Determinism: priority-flood heap keys `(elevation, cell index)`, Dijkstra keys `(cost, cell index)`, ties by lowest cell index then lowest direction.
+
+**Floating point.** The noise module compiles with `fp_contract(off)`. TerrainGenerator code that feeds ranking/threshold decisions avoids FMA-dependent expressions; `#pragma fp_contract(off)` in the generator `.cpp` files, with a test for cross-run identity.
+
+**Tuning rows.** Every `k…` constant is a row in one table `{key, default, min, max}` in `TerrainRules`. A stage task adds its rows in the same commit; the JSON loader and clamping (Task 2) are table-driven, so adding a row needs no loader change.
+
+**Test tiers (as the spec's Implementation Notes).** Heavy sweeps (AC1 200-change sequences, AC4/AC5 sweeps, AC18's 150 worlds) go in `SLOW_`-prefixed suites with a cheap default-run subset (2 seeds, 5 changes). Golden hashes for fixed seeds always run in the default suite. Performance ACs are checked only in Release.
+
+**Commands.** `dia run googletest --filter="TerrainX*"`; never run the exe directly. Release perf: `dia run googletest --config Release --filter="TerrainPerf*"`. Long builds go in the background.
+
+## Tasks
+
+TDD per `.claude/skills/tdd.md` (RED proven with quoted output). Every task is solo-verified (RED-GREEN, no batching). Commit per task with the message prefix `feat(CoW): terrain generator task N - ...`. All Model cells are the plan default; ask the user before any opus dispatch.
+
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| 1 | **Types and params.** `TerrainTypes.h`: `WaterSource`, `DepthZone`, `TerrainType` (+`TerrainTypeName`, `TerrainTypeId` StringCRC), `BarrierForm`, `TerrainFlag`, `kNoDirection`, `WorldShapeParams` (+`Clamp`, `operator==`), `ShapeParam`, `TerrainStage`, `FirstStageAffected`, `WorldProvenance`, `GridDimensions`, `Cell`, `WorldStructure` (terrain part), `kTerrainGeneratorVersion`. vcxproj wiring | RED-GREEN: `Clamp` ranges and wrap of `orientationDeg`; `FirstStageAffected` matches the spec's Sliders table row by row; names and ids unique; `WorldShapeParams`/`WorldProvenance` trivially copyable (`static_assert`); defaults equal Continental | Pending | sonnet | Report the container decision (std::vector privately) in notes |
+| 2 | **TerrainRules + tuning file.** Table-driven `TerrainRules` (`Defaults`, `LoadFromJson` with missing-key warning, clamp-and-warn, `rulesVersion`); `Cluiche/Assets/CoW/Global/WorldGen/terrain_rules.json` generated from the defaults; catalogue entry | RED-GREEN: defaults round-trip through JSON; missing key → default + warning; out-of-range → clamped + warning + degraded flag; unknown key ignored with warning | Pending | sonnet | Rows for stage constants are added by each stage task. Seed with the constants shared by all stages (`kCoastElev`, `kBorderWidth`, `kShelfScale`, …) |
+| 3 | **Layers, stage cache and stage 0.** `TerrainLayers` registry (name, type, stage; `FindLayer`, `GetFloat`, `GetUInt`), `TerrainGenerator` skeleton (`Update`, `Invalidate`, `GetTimings`, `GetLastTotalMs`, dirty propagation from the dependency tables), stage 0 SeedFields with the fixed draw order and 64→32 seed folding | RED-GREEN: dirty propagation per slider matches the spec's stage table; `Update` with no change runs no stage; seed change dirties everything; stage 0 draws are identical for the same seed, and a slider change leaves the stage-0 outputs byte-identical; the reseed approach in Implementation Patterns works | Pending | sonnet | Stop and ask the user if `Restore(seed, 0)` cannot reseed (AD-001) |
+| 4 | **Stage 1 Landmass, part A.** Continent blobs with domain warp, peninsulas, potential `M` with border exclusion and edge fade, land budget `L`, reference mainland `M_ref` | RED-GREEN: AC3 (ocean border), AC4 (land fraction within ±0.01 at `continentIslands` 0, 0.7, 1; before island placement), AC5 (mainland additive in `landFraction`), AC8 (peninsula lobes and sector counts) | Pending | sonnet | Layers `landPotential` |
+| 5 | **Stage 1 Landmass, part B.** Island candidates and acceptance, island potential and `I > 0` eligibility, island cells and overflow, vent on group 0, mainland clean-up, enclosed-sea fill, landmass labelling, main landmass = continent 0's peak component, `coastDistance`, `volcanic` | RED-GREEN: AC5b, AC6, AC7, `effective.islands`/`islandShare` values exposed through the generator | Pending | sonnet | Layers `islandPotential`, `landmass`, `coastDistance`, `volcanic`. Adds `Effective` struct for later commands |
+| 6 | **Stage 2 Mountains.** Centre on land, reach, curve (line/ring blend), ridge mask, one-range, arc-length pass acceptance, `passMask` | RED-GREEN: AC9 (connected range at `passes = 0` for 3 `spineToRing` values; ring encloses; `effective.passes + 1` groups; pieces survive; prefix) plus `spineToRing` continuity and `orientationDeg` rigidity from the Sliders table | Pending | sonnet | Layers `ridgeMask`, `passMask` |
+| 7 | **Stages 3–4 Barrier and Elevation, + first timing checkpoint.** Barrier band (Plateau/VolcanicChain), vents; elevation formula; `oceanDepth` | RED-GREEN: barrier monotone in `barrier`; `elevationRaw` bounded by `ruggedness` and monotone in `mountainousness`; ocean exactly 0, land ≥ `kCoastElev`. **Timing checkpoint:** a Release test (not gating yet) prints stages 0–4 total at Small, recorded in the notes | Pending | sonnet | Spec AC17: measure the 20 ms budget as soon as stages 0–4 exist. Report the number; ask the user if stages 0–4 alone exceed 8 ms |
+| 8 | **Stage 5 Drainage.** Priority-flood fill (ε increments, ties by index), basins (`basinDepth`, eligibility, rank), flow direction, flow accumulation | RED-GREEN on hand-built grids: a bowl fills to its spill, flat areas drain, ε never makes a spurious basin below `1e-4`, every land cell has a strictly descending path to the ocean, accumulation sums upstream, ties are deterministic | Pending | sonnet | Layers `filledElevation`, `basinDepth`, `basinRank`, `flowDirection`, `flowAccumulation`. Highest-risk numeric stage; if it blocks twice, escalate to the user about opus (do not self-upgrade) |
+| 9 | **Stages 6–7 Rivers and Lakes.** Threshold from `rivers`, tree keep rules on the filled surface, `riverMask`; lake fill by rank, `lakeMask`, spill cells | RED-GREEN: AC10 (reaches sea or lake; superset as `rivers` rises; `rivers = 0` empty; sources on `filledElevation ≥ kSourceMinElev`), AC11 (lake count `min(lakes, eligible)`, prefix, outflow reaches the ocean) | Pending | sonnet | Layers `riverMask`, `lakeMask` |
+| 10 | **Stage 8 DepthZones.** Base-cost Dijkstra, `t1`/`t2` with the `t1 < t2` guard, rivers as cheap corridors, zones with `kAncientMinDepth`, island zones | RED-GREEN: AC13 (ordering, `zoneCost ≤ zoneCostBase`, coast = First Shores, Ancient only on the main landmass and ≥ 3 steps in, `t1 < t2`), AC13b (rivers move edges inland only) | Pending | sonnet | Layers `zoneCostBase`, `zoneCost`, `depthZone` |
+| 11 | **Stage 9 Valleys.** Carving by `acc`, adjacent-cell falloff, lake floors, downhill walk with floors, final `elevation` | RED-GREEN: AC12 (river/lake unchanged, `elevation` non-increasing in `valleyDepth`, only cells within 2 steps change) plus AC10's downhill rule at every value and "no river cell below its lake's surface" | Pending | sonnet | Layers `valleyCarve`, `elevation` |
+| 12 | **Stages 10–11 Classify and Latitude.** `slope`, terrain-type table, water source, flags; latitude from the span | RED-GREEN: AC15 on a hand-built grid with one cell per rule row plus ties at each threshold; AC16 (top-left and lowest-centre values, monotone in y, 30/−30 minimum at the equator, latitude change runs stage 11 only) | Pending | sonnet | Layers `slope`, `terrainType`, `waterSource`, `latitude` |
+| 13 | **Cell output and provenance.** `WriteTerrain(WorldStructure&)` fills every `Cell` terrain field, `mainLandmass` and `WorldProvenance` (preset id empty) | RED-GREEN: AC2 (terrain contract incl. neighbour symmetry, one terrain type and zone per cell, `depthZone == None` exactly on ocean), AC21's data half (provenance holds seed, params, both versions) | Pending | sonnet | |
+| 14 | **Determinism and slider isolation.** Slider-sequence driver in `Testing/`; AC1 live-vs-fresh identity; AC14 isolation (only dependent stages re-run, others byte-identical) for every slider; golden hashes for fixed seeds | RED-GREEN: AC1 (cheap default subset + `SLOW_` full 200-change × 5 seeds), AC14 for all 18 sliders | Pending | sonnet | Most likely place to expose an undeclared stage dependency; fix the stage, not the test |
+| 15 | **Presets.** `WorldShapePreset.h/.cpp` (`LoadPreset`, `SavePreset`, `ListPresets`), the three preset JSON files and catalogue entries | RED-GREEN: AC19 (files exist and load with no warnings; save→load round-trips exactly; missing/unknown/out-of-range keys; `version: 2` and id mismatch rejected) | Pending | sonnet | Presets live in `Cluiche/Assets/CoW/Global/WorldGen/Presets/`; register in `assets.catalogue.json` (check the CoW catalogue path) |
+| 16 | **Shape checks over presets, performance, and close-out.** Shared shape-check helpers; AC18 (3 presets × 50 seeds, `SLOW_` + a cheap subset); AC17 in Release (full run < 20 ms; `rivers`/`lakes`/`valleyDepth` change < 5 ms; timings correct); AC4/AC5 full sweeps in `SLOW_`; `/gen-tests` audit | `dia run googletest --filter="Terrain*"`, then Release perf, then the full suite (Phase 4) | Pending | sonnet | Then: set spec Status, update system plan task 7 and BACKLOG; Observation Opportunity Scan |
+
+## Open choices
+
+- Container decision (std::vector privately) and the `Restore` reseed: confirmed with the user in Tasks 1 and 3.
+
+## Progress notes
+
+(Added as tasks complete.)

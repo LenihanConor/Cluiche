@@ -743,6 +743,7 @@ Archipelago's 2 continents is a deliberate deviation from the GDD (Presets).
   - **Accepted:** main landmass is continent 0's, not the largest; islands confined to their blobs (`I > 0`) with the budget as a capacity-bound preference; default constants marked provisional; 20 ms budget measured early.
   - **Added:** passes spaced by arc length (adjacent passes could erase the range between them); mountain centre moved onto land; Ancient Interiors need depth ≥ 3 and `t1 < t2`; river cells floored at their lake's surface; river sources tested on the filled surface (monotone); `params.effective` so sliders that hit a limit say so; AC22 visual sign-off; Archipelago `continentIslands` 0.35 → 0.5.
 - Amended 2026-10-18 by Feature 8 (@biome-classification.md): `WorldShapeParams` gains `temperatureOffset` and `moistureOffset` (so 19 sliders), `ShapeParam` and `TerrainStage` gain the climate entries (stages 12–14 run after Latitude), and the three preset files take the two keys at their defaults (0). Terrain stages 0–11, their ACs and the 20 ms budget are unchanged; the budget now also covers stages 12–14. Feature 8 Approved 2026-10-18.
+- Plan: @terrain-generator.plan.md (16 tasks, written 2026-10-18).
 - The build is plan task 7; seeded noise (dia-needs #15) is Done, so nothing blocks it.
 
 ---
