@@ -3,6 +3,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#include <DiaBgfx/Renderers/CellFieldDrawParams.h>
 #include <DiaBgfx/Resources/CellFieldGeometryCache.h>
 #include <DiaGraphics/CellField/CellFieldRegistry.h>
 #include <DiaGraphics/CellField/HexFlatTopOddQBuilder.h>
@@ -12,6 +13,8 @@
 
 #include <stdint.h>
 #include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 namespace Dia
 {
@@ -49,6 +52,42 @@ namespace Dia
             std::unordered_map<CellFieldGpuTextureHandle, Dim> mDims;
         };
 
+        // Opaque GPU colour-map (palette / ramp) texture id.
+        using CellFieldGpuColourMapHandle = uint32_t;
+
+        // Seam for the small colour-map textures. Texels are packed 0xRRGGBBAA; the factory owns
+        // the conversion to the GPU byte order. Clamped; point-sampled for palettes, linear for ramps.
+        class ICellFieldGpuColourMapFactory
+        {
+        public:
+            virtual ~ICellFieldGpuColourMapFactory() = default;
+
+            virtual bool CreateRgba8(uint32_t width, const uint32_t* texels, uint32_t count, bool linearFilter, CellFieldGpuColourMapHandle& outHandle) = 0;
+            virtual void UpdateRgba8(CellFieldGpuColourMapHandle handle, const uint32_t* texels, uint32_t count) = 0;
+            virtual void Destroy(CellFieldGpuColourMapHandle handle) = 0;
+        };
+
+        // Real bgfx implementation (render thread only). width x 1 RGBA8 textures.
+        class BgfxCellFieldGpuColourMapFactory : public ICellFieldGpuColourMapFactory
+        {
+        public:
+            bool CreateRgba8(uint32_t width, const uint32_t* texels, uint32_t count, bool linearFilter, CellFieldGpuColourMapHandle& outHandle) override;
+            void UpdateRgba8(CellFieldGpuColourMapHandle handle, const uint32_t* texels, uint32_t count) override;
+            void Destroy(CellFieldGpuColourMapHandle handle) override;
+
+        private:
+            std::unordered_map<CellFieldGpuColourMapHandle, uint32_t> mWidths;
+        };
+
+        // Renderer-side counters (render thread; read via GetRendererStats).
+        struct CellFieldRendererStats
+        {
+            uint64_t unknownColourMaps = 0;       // draws skipped: colour-map id not registered (cellfield.unknown_colour_maps)
+            uint64_t outOfRangeCategoryCells = 0; // cells whose id fell outside the palette     (cellfield.out_of_range_cells)
+            uint64_t colourMapUploads = 0;        // palette texture creates + revision updates
+            uint32_t colourMapsResident = 0;
+        };
+
         // Renders CellField layers. Render thread only.
         //
         // Stats source of truth: CellFieldRegistry::GetStats() counts uploads / uploadedBytes /
@@ -63,7 +102,8 @@ namespace Dia
             CellFieldRenderer(unsigned short viewId, ShaderProgram* program, Dia::Graphics::CellFieldRegistry* registry);
             // Injected factories (tests). Factories are borrowed and must outlive the renderer.
             CellFieldRenderer(unsigned short viewId, ShaderProgram* program, Dia::Graphics::CellFieldRegistry* registry,
-                              ICellFieldGpuGeometryFactory& geometryFactory, ICellFieldGpuTextureFactory& textureFactory);
+                              ICellFieldGpuGeometryFactory& geometryFactory, ICellFieldGpuTextureFactory& textureFactory,
+                              ICellFieldGpuColourMapFactory& colourMapFactory);
             ~CellFieldRenderer();
 
             void SetCamera(const Dia::Graphics::Camera2D& camera);
@@ -76,6 +116,8 @@ namespace Dia
             // Frees every GPU object. Idempotent.
             void Shutdown();
 
+            CellFieldRendererStats GetRendererStats() const;
+
         private:
             class Sink;
             struct Layer
@@ -87,9 +129,31 @@ namespace Dia
                 CellFieldGeometryKey              geometryKey;
                 CellFieldGpuHandle                geometry = 0;
                 CellFieldGpuTextureHandle         valueTexture = 0;
+                float                             cellSize = 1.0f;
+
+                // Category layers keep a CPU copy of the last Update (<= 64 KB at 128x128) so
+                // out-of-range ids can be counted without a GPU readback.
+                std::vector<float>                values;
+                uint32_t                          valueVersion = 0;   // bumped per accepted Update
+                // Last out-of-range scan key; a scan reruns only when one of these changes.
+                bool                              scanned = false;
+                uint32_t                          scanValueVersion = 0;
+                uint32_t                          scanPaletteId = 0;
+                uint32_t                          scanPaletteRevision = 0;
             };
 
-            void SubmitLayer(const Dia::Core::CellFieldDrawRequest& request, const Layer& layer);
+            struct ColourMapTexture
+            {
+                CellFieldGpuColourMapHandle handle = 0;
+                uint32_t                    revision = 0;
+            };
+
+            // Uploads the baked palette only if the id is new or its revision changed.
+            bool EnsurePaletteTexture(uint32_t id, const Dia::Graphics::CellFieldPaletteData& palette, CellFieldGpuColourMapHandle& outHandle);
+            void CountOutOfRange(Layer& layer, uint32_t paletteId, const Dia::Graphics::CellFieldPaletteData& palette);
+            void SetupView();
+            void SubmitLayer(const Dia::Core::CellFieldDrawRequest& request, const Layer& layer,
+                             const CellFieldDrawParams& params, CellFieldGpuColourMapHandle colourMap);
             void ReleaseLayer(Layer& layer);
 
             unsigned short                    mViewId;
@@ -100,7 +164,12 @@ namespace Dia
 
             BgfxCellFieldGpuGeometryFactory      mOwnedGeometryFactory;
             BgfxCellFieldGpuTextureFactory       mOwnedTextureFactory;
+            BgfxCellFieldGpuColourMapFactory     mOwnedColourMapFactory;
             ICellFieldGpuTextureFactory&         mTextureFactory;
+            ICellFieldGpuColourMapFactory&       mColourMapFactory;
+            std::unordered_map<uint32_t, ColourMapTexture> mPaletteTextures;   // by colourMap id
+            std::unordered_set<uint32_t>         mWarnedUnknownColourMaps;
+            CellFieldRendererStats               mStats;
             Dia::Graphics::HexFlatTopOddQBuilder mHexBuilder;
             CellFieldGeometryCache               mGeometryCache;
             std::unordered_map<uint16_t, Layer>  mLayers;  // by handle index
