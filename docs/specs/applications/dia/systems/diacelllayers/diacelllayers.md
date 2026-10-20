@@ -136,11 +136,11 @@ Aggregates are computed on the provider's PU, on demand (when the selection or v
 
 | # | Feature | Notes | Status | Spec |
 |---|---|---|---|---|
-| 1 | Registry and viewer | `CellLayerRegistry` (service), `CellLayerViewerDomain`, base and overlay picker, legend, hover tooltip, CellField upload on version change | Draft | TBD |
-| 2 | Selection | `CellSelection`, picking, click/shift/box/lasso/category, commands | Draft | TBD |
-| 3 | Query | Expression parser and evaluator, `cells.select.query`, error reporting | Draft | TBD |
-| 4 | Selection inspector | Per-layer stats, category counts, histogram, pin A and compare, `describeCell` slot | Draft | TBD |
-| 5 | Editor mirror | `cells.view.state` topic, `cells.layer.values` and `cells.select.stats` queries, for the World Sim Inspector | Draft | TBD |
+| 1 | Registry and viewer | `CellLayerRegistry` (service), `CellLayerViewerDomain`, base and overlay picker, legend, hover tooltip, CellField upload on version change; shared read-only `CellPicker` for hover (reused by Feature 2); hotkeys | Approved | [registry-and-viewer.md](registry-and-viewer.md) |
+| 2 | Selection | `CellSelection`, click/shift/box/lasso/category/cell-list, commands (picking is built in Feature 1) | Approved | [selection.md](selection.md) |
+| 3 | Query | Expression parser and evaluator, `cells.select.query`, `cells.query.check` (preview), error reporting | Approved | [query.md](query.md) |
+| 4 | Selection inspector | Per-layer stats, category counts, histogram, pin A and compare (live or frozen), `describeCell` slot, `cells.inspect` | Approved | [selection-inspector.md](selection-inspector.md) |
+| 5 | Editor mirror | `cells.view.state` topic, `cells.layer.values` and `cells.select.stats` queries (plus `cells.layer.list` and `cells.select.get`, selection hash), for the World Sim Inspector and the World Data Editor | Approved | [editor-mirror.md](editor-mirror.md) |
 
 - **Build order:** 1 → 2 → 4 → 3 → 5. Feature 1 needs CellField Step 1 and DiaValueSchema Features 1 and 5 (ramps).
 - **CellField alignment:** write the CellField Step 1 plan after this spec is Approved, so its registry and draw request fit a viewer-owned upload. This spec needs no CellField API change; it only consumes `CreateLayer`, `Update`, `RegisterRamp` / `RegisterPalette` and `RequestDrawCellField`.
@@ -195,4 +195,4 @@ Aggregates are computed on the provider's PU, on demand (when the selection or v
 
 ## Status
 
-`Approved` (2026-10-19). Feature specs TBD; no plan yet.
+`Approved` (2026-10-19). All 5 feature specs `Approved` (2026-10-20); no plan yet.
