@@ -252,9 +252,38 @@ namespace Dia
                 info.height = layer.height;
                 info.cellSize = layer.cellSize;
                 info.kind = layer.kind;
+
+                // Elevation layer: resolved only when requested with strength > 0. Stale handles are
+                // counted by ResolveHandle; stale / unknown / non-float / mismatched grids simply
+                // disable hillshade for this draw (BuildCellFieldDrawParams checks kind and size).
+                CellFieldLayerInfo elevInfo;
+                const Layer* elevLayer = nullptr;
+                if (request.elevationLayer.IsValid() && request.hillshadeStrength > 0.0f &&
+                    mRegistry->ResolveHandle(request.elevationLayer))
+                {
+                    auto eit = mLayers.find(request.elevationLayer.index);
+                    if (eit != mLayers.end() && eit->second.generation == request.elevationLayer.generation)
+                    {
+                        elevLayer = &eit->second;
+                        elevInfo.width = elevLayer->width;
+                        elevInfo.height = elevLayer->height;
+                        elevInfo.cellSize = elevLayer->cellSize;
+                        elevInfo.kind = elevLayer->kind;
+                    }
+                }
+
                 CellFieldDrawParams params;
-                if (!BuildCellFieldDrawParams(request, info, isCategory ? &palette : nullptr, isCategory ? nullptr : &ramp, params))
+                if (!BuildCellFieldDrawParams(request, info, isCategory ? &palette : nullptr, isCategory ? nullptr : &ramp, params,
+                                              elevLayer ? &elevInfo : nullptr))
                     continue;
+                const bool hillshade = params.params1[3] > 0.5f;
+                CellFieldGpuTextureHandle elevationTexture = hillshade ? elevLayer->valueTexture : 0;
+                if (!hillshade)
+                {
+                    if (!EnsureDummyElevation())
+                        continue;
+                    elevationTexture = mDummyElevation;
+                }
 
                 CellFieldGpuColourMapHandle colourMap = 0;
                 if (isCategory)
@@ -278,6 +307,7 @@ namespace Dia
                     ++mStats.backdropDraws;
                 }
                 planned.backdrop = false;
+                planned.hillshade = hillshade;
                 mLastPlan.push_back(planned);
                 ++mStats.drawCalls;
 
@@ -290,7 +320,7 @@ namespace Dia
                 }
                 if (backdrop)
                     SubmitBackdrop(layer, params);
-                SubmitLayer(request, layer, params, colourMap);
+                SubmitLayer(layer, params, colourMap, elevationTexture);
             }
         }
 
@@ -496,10 +526,22 @@ namespace Dia
             bgfx::submit(mViewId, bgfx::ProgramHandle{ mProgram->GetProgramHandle() });
         }
 
-        void CellFieldRenderer::SubmitLayer(const Dia::Core::CellFieldDrawRequest& request, const Layer& layer,
-                                            const CellFieldDrawParams& params, CellFieldGpuColourMapHandle colourMap)
+        bool CellFieldRenderer::EnsureDummyElevation()
         {
-            (void)request;
+            if (mHasDummyElevation)
+                return true;
+            if (!mTextureFactory.Create(1, 1, mDummyElevation))
+            {
+                DIA_LOG_ERROR("CFL", "CellFieldRenderer: dummy elevation texture create failed");
+                return false;
+            }
+            mHasDummyElevation = true;
+            return true;
+        }
+
+        void CellFieldRenderer::SubmitLayer(const Layer& layer, const CellFieldDrawParams& params,
+                                            CellFieldGpuColourMapHandle colourMap, CellFieldGpuTextureHandle elevationTexture)
+        {
             if (!mProgram || !mProgram->IsValid())
                 return;
 
@@ -516,9 +558,9 @@ namespace Dia
             const bgfx::TextureHandle value = { static_cast<uint16_t>(layer.valueTexture) };
             bgfx::setTexture(0, u.sColour, bgfx::TextureHandle{ static_cast<uint16_t>(colourMap) });
             bgfx::setTexture(1, u.sValue, value);
-            // Extension point (Task 13): the elevation texture. The shader samples stage 2
-            // unconditionally (result unused when hasElevation == 0), so bind a valid texture.
-            bgfx::setTexture(2, u.sElevation, value);
+            // The shader samples stage 2 unconditionally (result unused when hasElevation == 0):
+            // the elevation layer's texture when hillshade is active, else the 1x1 dummy.
+            bgfx::setTexture(2, u.sElevation, bgfx::TextureHandle{ static_cast<uint16_t>(elevationTexture) });
 
             bgfx::setVertexBuffer(0, bgfx::VertexBufferHandle{ BgfxCellFieldGpuGeometryFactory::VertexBuffer(layer.geometry) });
             bgfx::setIndexBuffer(bgfx::IndexBufferHandle{ BgfxCellFieldGpuGeometryFactory::IndexBuffer(layer.geometry) });
@@ -531,6 +573,11 @@ namespace Dia
             for (auto& kv : mLayers)
                 mTextureFactory.Destroy(kv.second.valueTexture);
             mLayers.clear();
+            if (mHasDummyElevation)
+            {
+                mTextureFactory.Destroy(mDummyElevation);
+                mHasDummyElevation = false;
+            }
             for (auto& kv : mPaletteTextures)
                 mColourMapFactory.Destroy(kv.second.handle);
             mPaletteTextures.clear();

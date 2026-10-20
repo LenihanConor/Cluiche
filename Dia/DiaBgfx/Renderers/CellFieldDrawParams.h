@@ -83,15 +83,40 @@ namespace Dia
         // True only when the effective inset > 0 and the RGBA8 backdrop alpha is non-zero.
         bool CellFieldNeedsBackdrop(float inset, uint32_t backdropRgba8);
 
+        // Hillshade ambient term (u_params2.y): the shade factor of a surface facing fully away
+        // from the light. Final colour = colour * (ambient + strength * max(0, dot(n, light))).
+        const float kCellFieldHillshadeAmbient = 0.4f;
+        const float kCellFieldDefaultLightAzimuthDeg = 315.0f;
+        const float kCellFieldDefaultLightElevationDeg = 45.0f;
+
+        // Unit vector pointing TOWARD the light, in the shader's world space (x right, y down on
+        // screen, z toward the viewer). Azimuth is degrees clockwise from north, north = screen up
+        // = -y, so x = sin(az)cos(el), y = -cos(az)cos(el), z = sin(el). 315/45 = north-west,
+        // elevated (x<0, y<0, z>0). Elevation 90 = (0,0,1); az 90 / el 0 = +x (east).
+        // Non-finite azimuth or elevation -> the defaults (315, 45).
+        void CellFieldLightDirection(float azimuthDeg, float elevationDeg, float out[3]);
+
+        // CPU mirror of the shader's hillshade factor for a plane. dhdx/dhdy = height gradient per
+        // world unit (before elevationScale); pixelWorldSize = world units per pixel (zoom).
+        // P = (x, y, h*scale): dFdx(P) = s*(1,0,scale*dhdx), dFdy(P) = s*(0,1,scale*dhdy), so
+        // n = normalize(cross) = normalize(-scale*dhdx, -scale*dhdy, 1) (the pixel size cancels,
+        // which is the zoom invariance). Returns ambient + strength*max(0, dot(n, light)), or 1
+        // (colour unchanged) when strength <= 0 or non-finite. Non-finite gradient -> n = (0,0,1).
+        float CellFieldHillshadeReference(float dhdx, float dhdy, float elevationScale, float pixelWorldSize,
+                                          const float lightDir[3], float strength);
+
         // Computes the uniforms for one draw. Exactly one of palette / ramp is used, chosen by
         // layer.kind (Category -> palette, Float -> ramp). Returns false if the needed
         // colour map is null. Inset (clamped) and backdrop colour are
-        // passed through; hillshade is an extension point (Task 13).
+        // passed through. `elevation` describes the resolved elevation layer (null = none/stale/
+        // invalid); hillshade is enabled only when it is non-null, Float, the same width/height as
+        // `layer`, and request.hillshadeStrength > 0 (finite); otherwise params1.x and .w are 0.
         bool BuildCellFieldDrawParams(const Dia::Core::CellFieldDrawRequest& request,
                                       const CellFieldLayerInfo& layer,
                                       const Dia::Graphics::CellFieldPaletteData* palette,
                                       const Dia::Graphics::CellFieldRampData* ramp,
-                                      CellFieldDrawParams& out);
+                                      CellFieldDrawParams& out,
+                                      const CellFieldLayerInfo* elevation = nullptr);
 
     } // namespace Bgfx
 } // namespace Dia

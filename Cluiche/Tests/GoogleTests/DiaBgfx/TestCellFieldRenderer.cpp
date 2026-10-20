@@ -8,6 +8,7 @@
 #include "../DiaGraphics/HexTopologyToCellGridDesc.h"
 
 #include <limits>
+#include <math.h>
 #include <map>
 #include <set>
 #include <vector>
@@ -837,4 +838,268 @@ TEST(CellFieldInset, PlannedSubmitOrderBackdropFirst)
     ASSERT_EQ(2u, plan.size());
     EXPECT_TRUE(plan[0].backdrop);
     EXPECT_FALSE(plan[1].backdrop);
+}
+
+// ---- Relief hillshade (Task 13) ------------------------------------------------
+
+namespace
+{
+    float Len3(const float v[3]) { return sqrtf(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]); }
+
+    Dia::Core::CellFieldDrawRequest HillshadeDraw(Dia::Core::CellFieldLayerHandle colour, Dia::Core::CellFieldLayerHandle elevation,
+                                                  float strength, float az = 315.0f, float el = 45.0f, float scale = 1.0f)
+    {
+        Dia::Core::CellFieldDrawRequest r;
+        r.layer = colour;
+        r.colourMap = Dia::Core::StringCRC("hs.ramp").Value();
+        r.elevationLayer = elevation;
+        r.hillshadeStrength = strength;
+        r.lightAzimuthDeg = az;
+        r.lightElevationDeg = el;
+        r.elevationScale = scale;
+        return r;
+    }
+
+    CellFieldLayerInfo FloatInfo(uint16_t w, uint16_t h, CellFieldValueKind kind = CellFieldValueKind::Float)
+    {
+        CellFieldLayerInfo i;
+        i.width = w;
+        i.height = h;
+        i.kind = kind;
+        return i;
+    }
+
+    struct HillshadeFixture : Fixture
+    {
+        HillshadeFixture()
+        {
+            const CellFieldRampStop stops[2] = { { 0.0f, 0x000000FFu }, { 1.0f, 0x00FF00FFu } };
+            EXPECT_TRUE(registry.RegisterRamp(Dia::Core::StringCRC("hs.ramp"), stops, 2).ok);
+        }
+        bool DrawAndGetHillshade(const Dia::Core::CellFieldDrawRequest& req)
+        {
+            CellFieldFrameData frame;
+            frame.RequestDrawCellFieldData(req);
+            renderer.Draw(frame);
+            const auto& plan = renderer.GetLastPlannedSubmits();
+            return !plan.empty() && plan.back().hillshade;
+        }
+    };
+}
+
+TEST(CellFieldHillshade, LightDirectionNorthWestElevated)
+{
+    float l[3];
+    CellFieldLightDirection(315.0f, 45.0f, l);
+    EXPECT_LT(l[0], 0.0f);   // west
+    EXPECT_LT(l[1], 0.0f);   // north = screen up = -y
+    EXPECT_GT(l[2], 0.0f);
+    EXPECT_NEAR(1.0f, Len3(l), 1e-5f);
+    EXPECT_NEAR(l[0], l[1], 1e-5f);
+}
+
+TEST(CellFieldHillshade, LightDirectionZenithAndEast)
+{
+    float l[3];
+    CellFieldLightDirection(123.0f, 90.0f, l);
+    EXPECT_NEAR(0.0f, l[0], 1e-5f);
+    EXPECT_NEAR(0.0f, l[1], 1e-5f);
+    EXPECT_NEAR(1.0f, l[2], 1e-5f);
+    CellFieldLightDirection(90.0f, 0.0f, l);
+    EXPECT_NEAR(1.0f, l[0], 1e-5f);
+    EXPECT_NEAR(0.0f, l[1], 1e-5f);
+    EXPECT_NEAR(0.0f, l[2], 1e-5f);
+    CellFieldLightDirection(0.0f, 0.0f, l);   // north = screen up
+    EXPECT_NEAR(-1.0f, l[1], 1e-5f);
+}
+
+TEST(CellFieldHillshade, LightDirectionAlwaysUnitAndNonFiniteIsDefault)
+{
+    float l[3];
+    for (float az = -720.0f; az <= 720.0f; az += 37.0f)
+        for (float el = -90.0f; el <= 90.0f; el += 23.0f)
+        {
+            CellFieldLightDirection(az, el, l);
+            EXPECT_NEAR(1.0f, Len3(l), 1e-4f);
+        }
+    float d[3];
+    CellFieldLightDirection(315.0f, 45.0f, d);
+    const float nan = std::numeric_limits<float>::quiet_NaN();
+    const float inf = std::numeric_limits<float>::infinity();
+    CellFieldLightDirection(nan, 45.0f, l);
+    EXPECT_FLOAT_EQ(d[0], l[0]); EXPECT_FLOAT_EQ(d[1], l[1]); EXPECT_FLOAT_EQ(d[2], l[2]);
+    CellFieldLightDirection(10.0f, inf, l);
+    EXPECT_FLOAT_EQ(d[0], l[0]); EXPECT_FLOAT_EQ(d[1], l[1]); EXPECT_FLOAT_EQ(d[2], l[2]);
+}
+
+TEST(CellFieldHillshade, FlatPlaneIsUniformAmbientPlusStrengthTimesLightZ)
+{
+    float l[3];
+    CellFieldLightDirection(315.0f, 45.0f, l);
+    const float expected = kCellFieldHillshadeAmbient + 0.5f * l[2];
+    EXPECT_NEAR(expected, CellFieldHillshadeReference(0.0f, 0.0f, 1.0f, 1.0f, l, 0.5f), 1e-6f);
+    EXPECT_NEAR(expected, CellFieldHillshadeReference(0.0f, 0.0f, 3.0f, 0.25f, l, 0.5f), 1e-6f);
+}
+
+TEST(CellFieldHillshade, SlopeFacingLightIsBrighterThanFacingAway)
+{
+    float l[3];
+    CellFieldLightDirection(270.0f, 30.0f, l);   // light from the west (-x)
+    // Height rising with +x: the surface faces -x, toward the light.
+    const float facing = CellFieldHillshadeReference(0.5f, 0.0f, 1.0f, 1.0f, l, 1.0f);
+    const float away   = CellFieldHillshadeReference(-0.5f, 0.0f, 1.0f, 1.0f, l, 1.0f);
+    EXPECT_GT(facing, away);
+    EXPECT_GT(facing, kCellFieldHillshadeAmbient + 1.0f * l[2]);   // brighter than flat
+    EXPECT_GT(away, kCellFieldHillshadeAmbient - 1e-6f);
+}
+
+TEST(CellFieldHillshade, StrengthZeroLeavesColourUnchanged)
+{
+    float l[3];
+    CellFieldLightDirection(315.0f, 45.0f, l);
+    EXPECT_FLOAT_EQ(1.0f, CellFieldHillshadeReference(0.7f, -0.3f, 1.0f, 1.0f, l, 0.0f));
+    EXPECT_FLOAT_EQ(1.0f, CellFieldHillshadeReference(0.0f, 0.0f, 1.0f, 1.0f, l, -1.0f));
+}
+
+TEST(CellFieldHillshade, ZoomInvariant)
+{
+    float l[3];
+    CellFieldLightDirection(315.0f, 45.0f, l);
+    const float ref = CellFieldHillshadeReference(0.4f, -0.2f, 2.0f, 1.0f, l, 0.8f);
+    const float scales[3] = { 0.25f, 1.0f, 8.0f };
+    for (float s : scales)
+        EXPECT_NEAR(ref, CellFieldHillshadeReference(0.4f, -0.2f, 2.0f, s, l, 0.8f), 1e-5f);
+}
+
+TEST(CellFieldHillshade, ParamsEnabledForValidElevationAndDisabledOtherwise)
+{
+    Dia::Core::CellFieldLayerHandle c, e;
+    c.index = 0; e.index = 1;
+    CellFieldRampData r;
+    r.count = 2;
+    r.stops[0] = { 0.0f, 0x000000FFu };
+    r.stops[1] = { 1.0f, 0x00FF00FFu };
+    CellFieldDrawParams out;
+    const CellFieldLayerInfo info = FloatInfo(4, 3);
+    const CellFieldLayerInfo elev = FloatInfo(4, 3);
+    ASSERT_TRUE(BuildCellFieldDrawParams(HillshadeDraw(c, e, 0.6f, 315.0f, 45.0f, 2.5f), info, nullptr, &r, out, &elev));
+    EXPECT_FLOAT_EQ(0.6f, out.params1[0]);
+    EXPECT_FLOAT_EQ(2.5f, out.params1[1]);
+    EXPECT_FLOAT_EQ(1.0f, out.params1[3]);
+    EXPECT_FLOAT_EQ(kCellFieldHillshadeAmbient, out.params2[1]);
+    float l[3];
+    CellFieldLightDirection(315.0f, 45.0f, l);
+    EXPECT_FLOAT_EQ(l[0], out.lightDir[0]);
+    EXPECT_FLOAT_EQ(l[1], out.lightDir[1]);
+    EXPECT_FLOAT_EQ(l[2], out.lightDir[2]);
+
+    auto expectOff = [&](const Dia::Core::CellFieldDrawRequest& req, const CellFieldLayerInfo* ei)
+    {
+        ASSERT_TRUE(BuildCellFieldDrawParams(req, info, nullptr, &r, out, ei));
+        EXPECT_FLOAT_EQ(0.0f, out.params1[0]);
+        EXPECT_FLOAT_EQ(0.0f, out.params1[3]);
+    };
+    expectOff(HillshadeDraw(c, e, 0.6f), nullptr);
+    const CellFieldLayerInfo cat = FloatInfo(4, 3, CellFieldValueKind::Category);
+    expectOff(HillshadeDraw(c, e, 0.6f), &cat);
+    const CellFieldLayerInfo other = FloatInfo(5, 3);
+    expectOff(HillshadeDraw(c, e, 0.6f), &other);
+    const CellFieldLayerInfo other2 = FloatInfo(4, 4);
+    expectOff(HillshadeDraw(c, e, 0.6f), &other2);
+    expectOff(HillshadeDraw(c, e, 0.0f), &elev);
+    expectOff(HillshadeDraw(c, Dia::Core::CellFieldLayerHandle(), 0.6f), &elev);   // invalid handle
+}
+
+TEST(CellFieldHillshade, RendererActiveOnlyForValidSameGridFloatElevation)
+{
+    HillshadeFixture f;
+    auto colour = f.Make(4, 3);
+    auto elev = f.Make(4, 3);
+    auto otherGrid = f.Make(5, 5);
+    auto cat = f.Make(4, 3, CellFieldValueKind::Category);
+
+    EXPECT_TRUE(f.DrawAndGetHillshade(HillshadeDraw(colour, elev, 0.5f)));
+    EXPECT_FALSE(f.DrawAndGetHillshade(HillshadeDraw(colour, elev, 0.0f)));
+    EXPECT_FALSE(f.DrawAndGetHillshade(HillshadeDraw(colour, Dia::Core::CellFieldLayerHandle(), 0.5f)));
+    EXPECT_FALSE(f.DrawAndGetHillshade(HillshadeDraw(colour, otherGrid, 0.5f)));
+    EXPECT_FALSE(f.DrawAndGetHillshade(HillshadeDraw(colour, cat, 0.5f)));
+    EXPECT_EQ(0u, f.registry.GetStats().staleHandles);
+}
+
+TEST(CellFieldHillshade, StaleElevationHandleDisablesAndIsCounted)
+{
+    HillshadeFixture f;
+    auto colour = f.Make(4, 3);
+    auto elev = f.Make(4, 3);
+    f.renderer.DrainRegistry();
+    f.registry.Destroy(elev);
+    f.renderer.DrainRegistry();
+    EXPECT_FALSE(f.DrawAndGetHillshade(HillshadeDraw(colour, elev, 0.5f)));
+    EXPECT_EQ(1u, f.registry.GetStats().staleHandles);
+    EXPECT_EQ(1u, f.renderer.GetLastPlannedSubmits().size());   // colour layer still drawn
+}
+
+TEST(CellFieldHillshade, LightStrengthScaleChangesUploadNothing)
+{
+    HillshadeFixture f;
+    auto colour = f.Make(4, 3);
+    auto elev = f.Make(4, 3);
+    f.renderer.DrainRegistry();
+    std::vector<float> values(12, 0.25f);
+    ASSERT_TRUE(f.registry.Update(elev, values.data(), 12).ok);
+    f.renderer.DrainRegistry();
+    const CellFieldStats before = f.registry.GetStats();
+    const int updatesBefore = f.tex.updateCalls;
+    for (int i = 0; i < 300; ++i)
+    {
+        EXPECT_TRUE(f.DrawAndGetHillshade(HillshadeDraw(colour, elev, 0.1f + 0.002f * i,
+                                                        static_cast<float>(i), 10.0f + 0.1f * i, 1.0f + 0.01f * i)));
+    }
+    EXPECT_EQ(before.uploads, f.registry.GetStats().uploads);
+    EXPECT_EQ(before.uploadedBytes, f.registry.GetStats().uploadedBytes);
+    EXPECT_EQ(updatesBefore, f.tex.updateCalls);
+}
+
+TEST(CellFieldHillshade, ElevationValueChangeIsOneTextureUpdate)
+{
+    HillshadeFixture f;
+    auto colour = f.Make(4, 3);
+    auto elev = f.Make(4, 3);
+    f.renderer.DrainRegistry();
+    const CellFieldStats before = f.registry.GetStats();
+    std::vector<float> values(12, 0.75f);
+    ASSERT_TRUE(f.registry.Update(elev, values.data(), 12).ok);
+    EXPECT_TRUE(f.DrawAndGetHillshade(HillshadeDraw(colour, elev, 0.5f)));
+    EXPECT_EQ(1, f.tex.updateCalls);
+    EXPECT_EQ(48u, f.tex.updatedBytes);
+    EXPECT_EQ(before.uploads + 1u, f.registry.GetStats().uploads);
+    EXPECT_EQ(before.uploadedBytes + 48u, f.registry.GetStats().uploadedBytes);
+}
+
+TEST(CellFieldHillshade, DummyElevationTextureCreatedOnceAndDestroyedAtShutdown)
+{
+    HillshadeFixture f;
+    auto colour = f.Make(4, 3);
+    auto elev = f.Make(4, 3);
+    f.renderer.DrainRegistry();
+    ASSERT_EQ(2, f.tex.createCalls);
+
+    f.DrawAndGetHillshade(HillshadeDraw(colour, elev, 0.5f));   // active: no dummy needed
+    EXPECT_EQ(2, f.tex.createCalls);
+
+    for (int i = 0; i < 5; ++i)
+        f.DrawAndGetHillshade(HillshadeDraw(colour, elev, 0.0f));   // inactive: one shared 1x1 dummy
+    EXPECT_EQ(3, f.tex.createCalls);
+    bool found1x1 = false;
+    for (const auto& kv : f.tex.live)
+        if (kv.second.first == 1 && kv.second.second == 1)
+            found1x1 = true;
+    EXPECT_TRUE(found1x1);
+    EXPECT_EQ(0, f.tex.updateCalls);
+
+    f.renderer.Shutdown();
+    EXPECT_TRUE(f.tex.live.empty());
+    EXPECT_EQ(3, f.tex.destroyCalls);
+    f.renderer.Shutdown();
+    EXPECT_EQ(3, f.tex.destroyCalls);
 }

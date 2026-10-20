@@ -115,11 +115,56 @@ namespace Dia
             return CellFieldEffectiveInset(inset) > 0.0f && (backdropRgba8 & 0xFFu) != 0u;
         }
 
+        void CellFieldLightDirection(float azimuthDeg, float elevationDeg, float out[3])
+        {
+            const bool finite = azimuthDeg == azimuthDeg && elevationDeg == elevationDeg &&
+                                fabsf(azimuthDeg) <= 1.0e9f && fabsf(elevationDeg) <= 1.0e9f;
+            if (!finite)
+            {
+                azimuthDeg = kCellFieldDefaultLightAzimuthDeg;
+                elevationDeg = kCellFieldDefaultLightElevationDeg;
+            }
+            const float kDegToRad = 0.017453292519943295f;
+            const float az = azimuthDeg * kDegToRad;
+            const float el = elevationDeg * kDegToRad;
+            const float ce = cosf(el);
+            out[0] = sinf(az) * ce;
+            out[1] = -cosf(az) * ce;
+            out[2] = sinf(el);
+            const float len = sqrtf(out[0] * out[0] + out[1] * out[1] + out[2] * out[2]);
+            if (len > 0.0f)
+            {
+                out[0] /= len; out[1] /= len; out[2] /= len;
+            }
+        }
+
+        float CellFieldHillshadeReference(float dhdx, float dhdy, float elevationScale, float pixelWorldSize,
+                                          const float lightDir[3], float strength)
+        {
+            if (!(strength > 0.0f) || strength > 1.0e9f)
+                return 1.0f;
+            const float s = pixelWorldSize;
+            // cross(s*(1,0,a), s*(0,1,b)) = s^2 * (-a, -b, 1)
+            float nx = -s * s * elevationScale * dhdx;
+            float ny = -s * s * elevationScale * dhdy;
+            float nz = s * s;
+            float nl = sqrtf(nx * nx + ny * ny + nz * nz);
+            if (!(nl > 1e-20f) || nl > 1.0e30f)
+            {
+                nx = 0.0f; ny = 0.0f; nz = 1.0f; nl = 1.0f;
+            }
+            nx /= nl; ny /= nl; nz /= nl;
+            if (nz < 0.0f) { nx = -nx; ny = -ny; nz = -nz; }
+            const float d = nx * lightDir[0] + ny * lightDir[1] + nz * lightDir[2];
+            return kCellFieldHillshadeAmbient + strength * (d > 0.0f ? d : 0.0f);
+        }
+
         bool BuildCellFieldDrawParams(const Dia::Core::CellFieldDrawRequest& request,
                                       const CellFieldLayerInfo& layer,
                                       const Dia::Graphics::CellFieldPaletteData* palette,
                                       const Dia::Graphics::CellFieldRampData* ramp,
-                                      CellFieldDrawParams& out)
+                                      CellFieldDrawParams& out,
+                                      const CellFieldLayerInfo* elevation)
         {
             out = CellFieldDrawParams();
 
@@ -141,15 +186,21 @@ namespace Dia
             out.params0[3] = layer.cellSize;
 
             // params1: hillshadeStrength, elevationScale, mapMode, hasElevation.
-            // Extension point (Task 13): hillshade off until the elevation texture is wired.
-            out.params1[0] = 0.0f;
+            // Enabled only for a resolved, Float, same-grid elevation layer and strength > 0;
+            // anything else disables hillshade for this draw (strength forced to 0, never an error).
+            const float strength = request.hillshadeStrength;
+            const bool hillshade = elevation != nullptr && request.elevationLayer.IsValid() &&
+                                   elevation->kind == Dia::Graphics::CellFieldValueKind::Float &&
+                                   elevation->width == layer.width && elevation->height == layer.height &&
+                                   strength > 0.0f && strength <= 1.0e9f;
+            out.params1[0] = hillshade ? strength : 0.0f;
             out.params1[1] = request.elevationScale;
             out.params1[2] = static_cast<float>(static_cast<uint32_t>(out.mapMode));
-            out.params1[3] = 0.0f;
+            out.params1[3] = hillshade ? 1.0f : 0.0f;
 
             // params2: smooth (Step 2, off), ambient.
             out.params2[0] = 0.0f;
-            out.params2[1] = 1.0f;
+            out.params2[1] = hillshade ? kCellFieldHillshadeAmbient : 1.0f;
 
             const float w = static_cast<float>(layer.width);
             const float h = static_cast<float>(layer.height);
@@ -162,7 +213,10 @@ namespace Dia
                 CellFieldUnpackRgba8(palette->fallback, out.fallbackColour);
             CellFieldUnpackRgba8(request.backdropColour, out.backdropColour);
 
-            out.lightDir[2] = 1.0f;   // straight up; replaced by azimuth/elevation in Task 13
+            if (hillshade)
+                CellFieldLightDirection(request.lightAzimuthDeg, request.lightElevationDeg, out.lightDir);
+            else
+                out.lightDir[2] = 1.0f;
             return true;
         }
 

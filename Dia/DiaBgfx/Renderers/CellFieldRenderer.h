@@ -94,6 +94,7 @@ namespace Dia
         struct CellFieldPlannedSubmit
         {
             bool backdrop = false;   // true: backdrop rectangle, false: the layer itself
+            bool hillshade = false;  // layer submit only: hillshade active (elevation texture bound)
         };
 
         // Renders CellField layers. Render thread only.
@@ -166,10 +167,13 @@ namespace Dia
             bool EnsureRampTexture(uint32_t id, const Dia::Graphics::CellFieldRampData& ramp, CellFieldGpuColourMapHandle& outHandle);
             void CountOutOfRange(Layer& layer, uint32_t paletteId, const Dia::Graphics::CellFieldPaletteData& palette);
             void SetupView();
-            void SubmitLayer(const Dia::Core::CellFieldDrawRequest& request, const Layer& layer,
-                             const CellFieldDrawParams& params, CellFieldGpuColourMapHandle colourMap);
+            void SubmitLayer(const Layer& layer, const CellFieldDrawParams& params,
+                             CellFieldGpuColourMapHandle colourMap, CellFieldGpuTextureHandle elevationTexture);
             void SubmitBackdrop(const Layer& layer, const CellFieldDrawParams& params);
             void ReleaseLayer(Layer& layer);
+            // 1x1 R32F stand-in bound at stage 2 when hillshade is off (the shader samples it
+            // unconditionally). Created lazily once, destroyed at Shutdown. False if creation fails.
+            bool EnsureDummyElevation();
 
             unsigned short                    mViewId;
             ShaderProgram*                    mProgram;   // not owned
@@ -190,6 +194,8 @@ namespace Dia
             Dia::Graphics::HexFlatTopOddQBuilder mHexBuilder;
             CellFieldGeometryCache               mGeometryCache;
             std::unordered_map<uint16_t, Layer>  mLayers;  // by handle index
+            CellFieldGpuTextureHandle            mDummyElevation = 0;
+            bool                                 mHasDummyElevation = false;
 
             CellFieldRenderer(const CellFieldRenderer&) = delete;
             CellFieldRenderer& operator=(const CellFieldRenderer&) = delete;
