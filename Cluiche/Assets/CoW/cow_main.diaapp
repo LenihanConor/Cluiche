@@ -508,6 +508,20 @@
                     "channels": []
                 },
                 {
+                    "instance_id": "JobSystemPlaceholderConsumerModule",
+                    "type_id": "JobSystemPlaceholderConsumerModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [],
+                    "channels": [
+                        {
+                            "id": "JobSystemService",
+                            "role": "consumes"
+                        }
+                    ]
+                },
+                {
                     "instance_id": "BusRecorderModule",
                     "type_id": "BusRecorderModule",
                     "stages": [

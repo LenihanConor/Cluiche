@@ -38,6 +38,7 @@
     <ClCompile Include="Modules\F2DragonStub.cpp" />
     <ClCompile Include="Modules\F2PanelModel.cpp" />
     <ClCompile Include="Modules\F2TestRunnerDebugDomain.cpp" />
+    <ClCompile Include="Modules\JobSystemPlaceholderConsumerModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />
@@ -57,6 +58,7 @@
     <ClInclude Include="Modules\F2PanelModel.h" />
     <ClInclude Include="Modules\F2TestRunnerDebugDomain.h" />
     <ClInclude Include="Modules\WorldGenerationMessages.h" />
+    <ClInclude Include="Modules\JobSystemPlaceholderConsumerModule.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

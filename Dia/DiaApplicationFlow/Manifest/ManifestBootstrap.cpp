@@ -7,7 +7,6 @@
 #include <DiaApplicationFlow/Manifest/ManifestValidatorV2.h>
 #include <DiaCore/FilePath/PathStore.h>
 #include <DiaCore/FilePath/Path.h>
-#include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/Json/external/json/json.h>
 
 namespace Dia { namespace ApplicationFlow {
@@ -58,7 +57,8 @@ namespace Dia { namespace ApplicationFlow {
             if (Dia::Core::PathStore::IsPathAliasRegistered(alias))
                 Dia::Core::PathStore::UnregisterFromStore(alias);
             Dia::Core::PathStore::RegisterToStore(alias, Dia::Core::Path::String(path));
-            DIA_LOG_INFO("ManifestBootstrap", "Dev alias registered: %s=%s", name.c_str(), path);
+            // printf: runs before the logging system starts, so DIA_LOG_* would be dropped.
+            printf("Dev alias registered: %s=%s\n", name.c_str(), path);
         }
     }
 
@@ -78,7 +78,7 @@ namespace Dia { namespace ApplicationFlow {
             const std::string& aliasName = members[i];
             if (aliasName == "source")
             {
-                DIA_LOG_ERROR("ManifestBootstrap", "Manifest path_aliases may not set reserved alias 'source' (only --dev-alias); ignoring");
+                printf("Error: manifest path_aliases may not set reserved alias 'source' (only --dev-alias); ignoring\n");
                 continue;
             }
             const char* relPath = aliases[aliasName].asCString();
