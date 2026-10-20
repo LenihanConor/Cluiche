@@ -7,7 +7,9 @@
 
 #include <atomic>
 #include <mutex>
+#include <math.h>
 #include <string.h>
+#include <utility>
 #include <vector>
 
 namespace Dia
@@ -21,6 +23,9 @@ namespace Dia
 		const char* const CellFieldRegistry::kErrCountMismatch = "Value count mismatch";
 		const char* const CellFieldRegistry::kErrStaleHandle = "Stale handle";
 		const char* const CellFieldRegistry::kErrQueueFull = "Command queue full";
+		const char* const CellFieldRegistry::kErrInvalidPalette = "Invalid palette";
+		const char* const CellFieldRegistry::kErrInvalidRamp = "Invalid ramp";
+		const char* const CellFieldRegistry::kErrColourMapTableFull = "Colour map table full";
 
 		namespace
 		{
@@ -55,6 +60,8 @@ namespace Dia
 			uint64_t             mQueuedBytes = 0;
 			bool                 mDropLogged = false;
 			CellFieldStats       mStats;
+			std::vector<std::pair<uint32_t, CellFieldPaletteData>> mPalettes;
+			std::vector<std::pair<uint32_t, CellFieldRampData>>    mRamps;
 
 			bool IsLive(Dia::Core::CellFieldLayerHandle h) const
 			{
@@ -257,6 +264,144 @@ namespace Dia
 			m.mStats.uploads += uploads;
 			m.mStats.uploadedBytes += uploadedBytes;
 			m.mStats.geometryBuilds += builds;
+		}
+
+		//------------------------------------------------------------------------------
+		namespace
+		{
+			uint32_t LerpPacked(uint32_t a, uint32_t b, float t)
+			{
+				uint32_t out = 0;
+				for (int shift = 0; shift <= 24; shift += 8)
+				{
+					const float ca = (float)((a >> shift) & 0xFFu);
+					const float cb = (float)((b >> shift) & 0xFFu);
+					int v = (int)floorf(ca + (cb - ca) * t + 0.5f);
+					v = v < 0 ? 0 : (v > 255 ? 255 : v);
+					out |= (uint32_t)v << shift;
+				}
+				return out;
+			}
+		}
+
+		void BakeRamp(const CellFieldRampStop* stops, uint32_t count, uint32_t outRgba8[256])
+		{
+			for (uint32_t i = 0; i < CellFieldRegistry::kRampTexels; ++i)
+			{
+				const float u = (float)i / (float)(CellFieldRegistry::kRampTexels - 1);
+				if (u <= stops[0].position) { outRgba8[i] = stops[0].rgba8; continue; }
+				if (u >= stops[count - 1].position) { outRgba8[i] = stops[count - 1].rgba8; continue; }
+				uint32_t k = 1;
+				while (k < count - 1 && u > stops[k].position) { ++k; }
+				const float span = stops[k].position - stops[k - 1].position;
+				const float t = span > 0.0f ? (u - stops[k - 1].position) / span : 1.0f;
+				outRgba8[i] = LerpPacked(stops[k - 1].rgba8, stops[k].rgba8, t);
+			}
+		}
+
+		void BakePalette(const uint32_t* rgba8, uint32_t count, uint32_t fallbackRgba8, uint32_t outRgba8[64])
+		{
+			for (uint32_t i = 0; i < CellFieldRegistry::kMaxPaletteColours; ++i)
+			{
+				outRgba8[i] = i < count ? rgba8[i] : fallbackRgba8;
+			}
+		}
+
+		//------------------------------------------------------------------------------
+		CellFieldResult CellFieldRegistry::RegisterPalette(Dia::Core::StringCRC id, const uint32_t* rgba8, uint32_t count, uint32_t fallbackRgba8)
+		{
+			CellFieldResult r;
+			Impl& m = *mImpl;
+			std::lock_guard<std::mutex> lock(m.mMutex);
+			if (rgba8 == nullptr || count == 0 || count > kMaxPaletteColours)
+			{
+				++m.mStats.rejectedRequests;
+				DIA_LOG_WARNING("CFL", "RegisterPalette rejected: invalid colour count %u", (unsigned)count);
+				r.error = kErrInvalidPalette;
+				return r;
+			}
+			const uint32_t key = id.Value();
+			std::pair<uint32_t, CellFieldPaletteData>* entry = nullptr;
+			for (auto& e : m.mPalettes) { if (e.first == key) { entry = &e; break; } }
+			if (entry == nullptr)
+			{
+				if (m.mPalettes.size() >= kMaxPalettes)
+				{
+					++m.mStats.rejectedRequests;
+					DIA_LOG_WARNING("CFL", "RegisterPalette rejected: table full");
+					r.error = kErrColourMapTableFull;
+					return r;
+				}
+				m.mPalettes.emplace_back(key, CellFieldPaletteData());
+				entry = &m.mPalettes.back();
+			}
+			CellFieldPaletteData& d = entry->second;
+			d.count = count;
+			memcpy(d.colours, rgba8, sizeof(uint32_t) * count);
+			d.fallback = fallbackRgba8;
+			++d.revision;
+			r.ok = true;
+			return r;
+		}
+
+		//------------------------------------------------------------------------------
+		CellFieldResult CellFieldRegistry::RegisterRamp(Dia::Core::StringCRC id, const CellFieldRampStop* stops, uint32_t count)
+		{
+			CellFieldResult r;
+			Impl& m = *mImpl;
+			std::lock_guard<std::mutex> lock(m.mMutex);
+			bool valid = stops != nullptr && count != 0 && count <= kMaxRampStops;
+			for (uint32_t i = 0; valid && i < count; ++i)
+			{
+				const float p = stops[i].position;
+				if (!(p >= 0.0f && p <= 1.0f) || (i > 0 && p < stops[i - 1].position)) { valid = false; }
+			}
+			if (!valid)
+			{
+				++m.mStats.rejectedRequests;
+				DIA_LOG_WARNING("CFL", "RegisterRamp rejected: invalid stops (count %u)", (unsigned)count);
+				r.error = kErrInvalidRamp;
+				return r;
+			}
+			const uint32_t key = id.Value();
+			std::pair<uint32_t, CellFieldRampData>* entry = nullptr;
+			for (auto& e : m.mRamps) { if (e.first == key) { entry = &e; break; } }
+			if (entry == nullptr)
+			{
+				if (m.mRamps.size() >= kMaxRamps)
+				{
+					++m.mStats.rejectedRequests;
+					DIA_LOG_WARNING("CFL", "RegisterRamp rejected: table full");
+					r.error = kErrColourMapTableFull;
+					return r;
+				}
+				m.mRamps.emplace_back(key, CellFieldRampData());
+				entry = &m.mRamps.back();
+			}
+			CellFieldRampData& d = entry->second;
+			d.count = count;
+			for (uint32_t i = 0; i < count; ++i) { d.stops[i] = stops[i]; }
+			++d.revision;
+			r.ok = true;
+			return r;
+		}
+
+		//------------------------------------------------------------------------------
+		bool CellFieldRegistry::GetPalette(uint32_t id, CellFieldPaletteData& out) const
+		{
+			const Impl& m = *mImpl;
+			std::lock_guard<std::mutex> lock(m.mMutex);
+			for (const auto& e : m.mPalettes) { if (e.first == id) { out = e.second; return true; } }
+			return false;
+		}
+
+		//------------------------------------------------------------------------------
+		bool CellFieldRegistry::GetRamp(uint32_t id, CellFieldRampData& out) const
+		{
+			const Impl& m = *mImpl;
+			std::lock_guard<std::mutex> lock(m.mMutex);
+			for (const auto& e : m.mRamps) { if (e.first == id) { out = e.second; return true; } }
+			return false;
 		}
 
 		//------------------------------------------------------------------------------

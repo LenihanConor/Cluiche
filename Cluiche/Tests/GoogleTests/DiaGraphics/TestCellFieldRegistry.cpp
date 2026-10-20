@@ -255,3 +255,215 @@ TEST(CellFieldRegistry, StatsReflectDrainedWork)
 	EXPECT_EQ(s.layersLive, 1u);
 	EXPECT_EQ(s.droppedCommands, 0u);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Palette and ramp tables
+////////////////////////////////////////////////////////////////////////////////
+using Dia::Core::StringCRC;
+
+TEST(CellFieldColourMaps, PaletteRegisterAndLookup)
+{
+	CellFieldRegistry reg;
+	const uint32_t cols[3] = { 0xFF0000FFu, 0x00FF00FFu, 0x0000FFFFu };
+	CellFieldResult r = reg.RegisterPalette(StringCRC("cat.biome"), cols, 3, 0x808080FFu);
+	ASSERT_TRUE(r.ok);
+	EXPECT_EQ(r.error, nullptr);
+
+	CellFieldPaletteData d;
+	ASSERT_TRUE(reg.GetPalette(StringCRC("cat.biome").Value(), d));
+	EXPECT_EQ(d.count, 3u);
+	EXPECT_EQ(d.colours[0], cols[0]);
+	EXPECT_EQ(d.colours[2], cols[2]);
+	EXPECT_EQ(d.fallback, 0x808080FFu);
+	EXPECT_EQ(d.revision, 1u);
+}
+
+TEST(CellFieldColourMaps, RampRegisterDottedNameAndLookup)
+{
+	CellFieldRegistry reg;
+	const CellFieldRampStop stops[3] = { { 0.0f, 0x000000FFu }, { 0.5f, 0x00FF00FFu }, { 1.0f, 0xFFFFFFFFu } };
+	ASSERT_TRUE(reg.RegisterRamp(StringCRC("sequential.green"), stops, 3).ok);
+
+	CellFieldRampData d;
+	ASSERT_TRUE(reg.GetRamp(StringCRC("sequential.green").Value(), d));
+	EXPECT_EQ(d.count, 3u);
+	for (uint32_t i = 0; i < 3; ++i)
+	{
+		EXPECT_FLOAT_EQ(d.stops[i].position, stops[i].position);
+		EXPECT_EQ(d.stops[i].rgba8, stops[i].rgba8);
+	}
+	EXPECT_EQ(d.revision, 1u);
+}
+
+TEST(CellFieldColourMaps, PaletteInvalidInputsRejected)
+{
+	CellFieldRegistry reg;
+	const uint32_t cols[65] = {};
+	EXPECT_FALSE(reg.RegisterPalette(StringCRC("p"), cols, 0, 0).ok);
+	EXPECT_FALSE(reg.RegisterPalette(StringCRC("p"), cols, 65, 0).ok);
+	EXPECT_FALSE(reg.RegisterPalette(StringCRC("p"), nullptr, 3, 0).ok);
+	CellFieldResult r = reg.RegisterPalette(StringCRC("p"), cols, 64, 0);
+	EXPECT_TRUE(r.ok);
+	EXPECT_EQ(reg.GetStats().rejectedRequests, 3u);
+	CellFieldResult bad = reg.RegisterPalette(StringCRC("p"), nullptr, 3, 0);
+	EXPECT_NE(bad.error, nullptr);
+}
+
+TEST(CellFieldColourMaps, RampInvalidInputsRejected)
+{
+	CellFieldRegistry reg;
+	CellFieldRampStop s[17];
+	for (int i = 0; i < 17; ++i) { s[i].position = i / 16.0f; s[i].rgba8 = 0xFFu; }
+	EXPECT_FALSE(reg.RegisterRamp(StringCRC("r"), s, 0).ok);
+	EXPECT_FALSE(reg.RegisterRamp(StringCRC("r"), s, 17).ok);
+	EXPECT_FALSE(reg.RegisterRamp(StringCRC("r"), nullptr, 2).ok);
+	EXPECT_TRUE(reg.RegisterRamp(StringCRC("r"), s, 16).ok);
+
+	const CellFieldRampStop decreasing[2] = { { 0.8f, 0 }, { 0.2f, 0 } };
+	EXPECT_FALSE(reg.RegisterRamp(StringCRC("d"), decreasing, 2).ok);
+	const CellFieldRampStop below[2] = { { -0.1f, 0 }, { 0.2f, 0 } };
+	EXPECT_FALSE(reg.RegisterRamp(StringCRC("b"), below, 2).ok);
+	const CellFieldRampStop above[2] = { { 0.1f, 0 }, { 1.2f, 0 } };
+	EXPECT_FALSE(reg.RegisterRamp(StringCRC("a"), above, 2).ok);
+	const CellFieldRampStop equalPos[2] = { { 0.5f, 0 }, { 0.5f, 0xFFu } };
+	EXPECT_TRUE(reg.RegisterRamp(StringCRC("e"), equalPos, 2).ok);
+	EXPECT_EQ(reg.GetStats().rejectedRequests, 6u);
+	CellFieldRampData d;
+	EXPECT_FALSE(reg.GetRamp(StringCRC("d").Value(), d));
+}
+
+TEST(CellFieldColourMaps, TableFullRejects129thDistinctId)
+{
+	CellFieldRegistry reg;
+	const uint32_t col = 0xFFu;
+	const CellFieldRampStop st = { 0.0f, 0xFFu };
+	char name[32];
+	for (uint32_t i = 0; i < 128; ++i)
+	{
+		snprintf(name, sizeof(name), "pal%u", i);
+		ASSERT_TRUE(reg.RegisterPalette(StringCRC(name), &col, 1, 0).ok) << i;
+		snprintf(name, sizeof(name), "ramp%u", i);
+		ASSERT_TRUE(reg.RegisterRamp(StringCRC(name), &st, 1).ok) << i;
+	}
+	CellFieldResult p = reg.RegisterPalette(StringCRC("palExtra"), &col, 1, 0);
+	CellFieldResult q = reg.RegisterRamp(StringCRC("rampExtra"), &st, 1);
+	EXPECT_FALSE(p.ok);
+	EXPECT_NE(p.error, nullptr);
+	EXPECT_FALSE(q.ok);
+	EXPECT_NE(q.error, nullptr);
+	// Replacing an existing entry still works when full
+	EXPECT_TRUE(reg.RegisterPalette(StringCRC("pal5"), &col, 1, 0).ok);
+	EXPECT_TRUE(reg.RegisterRamp(StringCRC("ramp5"), &st, 1).ok);
+}
+
+TEST(CellFieldColourMaps, UnknownIdLookupNotFoundAndUncounted)
+{
+	CellFieldRegistry reg;
+	CellFieldPaletteData p;
+	CellFieldRampData r;
+	EXPECT_FALSE(reg.GetPalette(0x1234u, p));
+	EXPECT_FALSE(reg.GetRamp(0x1234u, r));
+	const CellFieldStats s = reg.GetStats();
+	EXPECT_EQ(s.rejectedRequests, 0u);
+	EXPECT_EQ(s.staleHandles, 0u);
+}
+
+TEST(CellFieldColourMaps, PaletteAndRampNamespacesAreSeparate)
+{
+	CellFieldRegistry reg;
+	const uint32_t col = 0x11223344u;
+	ASSERT_TRUE(reg.RegisterPalette(StringCRC("x"), &col, 1, 0).ok);
+	CellFieldRampData r;
+	EXPECT_FALSE(reg.GetRamp(StringCRC("x").Value(), r));
+}
+
+TEST(CellFieldColourMaps, ReRegisterReplacesAndBumpsRevision)
+{
+	CellFieldRegistry reg;
+	const uint32_t a[1] = { 0xAAu };
+	const uint32_t b[2] = { 0xBBu, 0xCCu };
+	ASSERT_TRUE(reg.RegisterPalette(StringCRC("p"), a, 1, 1).ok);
+	ASSERT_TRUE(reg.RegisterPalette(StringCRC("p"), b, 2, 2).ok);
+	CellFieldPaletteData d;
+	ASSERT_TRUE(reg.GetPalette(StringCRC("p").Value(), d));
+	EXPECT_EQ(d.count, 2u);
+	EXPECT_EQ(d.colours[0], 0xBBu);
+	EXPECT_EQ(d.fallback, 2u);
+	EXPECT_EQ(d.revision, 2u);
+
+	const CellFieldRampStop r1[1] = { { 0.0f, 0x11u } };
+	const CellFieldRampStop r2[2] = { { 0.0f, 0x22u }, { 1.0f, 0x33u } };
+	ASSERT_TRUE(reg.RegisterRamp(StringCRC("r"), r1, 1).ok);
+	ASSERT_TRUE(reg.RegisterRamp(StringCRC("r"), r2, 2).ok);
+	CellFieldRampData rd;
+	ASSERT_TRUE(reg.GetRamp(StringCRC("r").Value(), rd));
+	EXPECT_EQ(rd.count, 2u);
+	EXPECT_EQ(rd.stops[1].rgba8, 0x33u);
+	EXPECT_EQ(rd.revision, 2u);
+
+	// A rejected re-register leaves the entry and revision untouched
+	EXPECT_FALSE(reg.RegisterRamp(StringCRC("r"), nullptr, 2).ok);
+	ASSERT_TRUE(reg.GetRamp(StringCRC("r").Value(), rd));
+	EXPECT_EQ(rd.revision, 2u);
+	EXPECT_EQ(rd.count, 2u);
+}
+
+TEST(CellFieldColourMaps, BakeRampEndpointsExactAndMidpoint)
+{
+	const CellFieldRampStop s[2] = { { 0.0f, 0x000000FFu }, { 1.0f, 0xFF8040FFu } };
+	uint32_t out[256];
+	BakeRamp(s, 2, out);
+	EXPECT_EQ(out[0], 0x000000FFu);
+	EXPECT_EQ(out[255], 0xFF8040FFu);
+	// texel centre 127.5/255 = 0.5 -> halfway; allow +-1 per channel
+	const uint32_t mid = out[128];
+	const int rr = (int)((mid >> 24) & 0xFF), gg = (int)((mid >> 16) & 0xFF), bb = (int)((mid >> 8) & 0xFF);
+	EXPECT_NEAR(rr, 128, 2);
+	EXPECT_NEAR(gg, 64, 2);
+	EXPECT_NEAR(bb, 32, 2);
+	EXPECT_EQ(mid & 0xFF, 0xFFu);
+}
+
+TEST(CellFieldColourMaps, BakeRampClampsEndsAndSingleStopConstant)
+{
+	const CellFieldRampStop s[2] = { { 0.25f, 0x102030FFu }, { 0.75f, 0x405060FFu } };
+	uint32_t out[256];
+	BakeRamp(s, 2, out);
+	EXPECT_EQ(out[0], 0x102030FFu);
+	EXPECT_EQ(out[63], 0x102030FFu);	// 63/255 = 0.247 < 0.25
+	EXPECT_EQ(out[255], 0x405060FFu);
+	EXPECT_EQ(out[192], 0x405060FFu);	// 192/255 = 0.753 > 0.75
+
+	const CellFieldRampStop one[1] = { { 0.5f, 0xDEADBEEFu } };
+	BakeRamp(one, 1, out);
+	for (int i = 0; i < 256; ++i) { ASSERT_EQ(out[i], 0xDEADBEEFu) << i; }
+}
+
+TEST(CellFieldColourMaps, BakeRampInterpolatesAlpha)
+{
+	const CellFieldRampStop s[2] = { { 0.0f, 0xFFFFFF00u }, { 1.0f, 0xFFFFFFFFu } };
+	uint32_t out[256];
+	BakeRamp(s, 2, out);
+	EXPECT_EQ(out[0] & 0xFF, 0x00u);
+	EXPECT_EQ(out[255] & 0xFF, 0xFFu);
+	EXPECT_NEAR((int)(out[128] & 0xFF), 128, 2);
+}
+
+TEST(CellFieldColourMaps, BakePalettePadsWithFallback)
+{
+	const uint32_t cols[3] = { 1u, 2u, 3u };
+	uint32_t out[64];
+	BakePalette(cols, 3, 0xABCDEF01u, out);
+	EXPECT_EQ(out[0], 1u);
+	EXPECT_EQ(out[2], 3u);
+	for (int i = 3; i < 64; ++i) { ASSERT_EQ(out[i], 0xABCDEF01u) << i; }
+}
+
+TEST(CellFieldColourMaps, BakePaletteFullNoPadding)
+{
+	uint32_t cols[64];
+	for (uint32_t i = 0; i < 64; ++i) { cols[i] = i + 10; }
+	uint32_t out[64];
+	BakePalette(cols, 64, 0xFFu, out);
+	for (uint32_t i = 0; i < 64; ++i) { ASSERT_EQ(out[i], i + 10) << i; }
+}
