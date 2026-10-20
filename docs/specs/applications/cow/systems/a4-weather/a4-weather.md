@@ -408,7 +408,7 @@ Messages (`WeatherUpdated`, `BiomeTransitionComplete`) are hand-written structs 
 | PD-002 | ProcessingUnit/Phase/Module architecture | `WeatherModule` is a SimModule on SimPU. No singletons; providers come in through `ModuleRef` |
 | PD-004 | No STL containers in public APIs | `WeatherFields`/`WeatherTerrain` use `DynamicArrayC`. The snapshot exposes accessors, not `std::` types |
 | PD-005 | x64 is the only build target | Saves are JSON text, little-endian floats stored as doubles (jsoncpp `%.17g`) |
-| AD-001 | Ask permission before Dia edits | Two Dia capabilities were approved: (1) `JobSystemService` + `JobSystem::TrySubmit` (dia-needs #12, approved 2026-10-14, not built), and (2) CellField renderer (dia-needs #14, approved 2026-10-15, not built). Each is built from its own feature spec in the Dia tree, not from A4. Everything else uses existing DiaMessageBus, DiaSaveGame text JSON (buffer raised to 100 MB; dia-needs #11 blob API was rejected 2026-10-15), DiaThreading `JobSystem`, DiaVisualDebugger and DiaAPI `CommandRegistry` |
+| AD-001 | Ask permission before Dia edits | Two Dia capabilities were approved: (1) `JobSystemService` + `JobSystem::TrySubmit` (dia-needs #12, built 2026-10-15), and (2) CellField renderer (dia-needs #14, approved 2026-10-15, not built). Each is built from its own feature spec in the Dia tree, not from A4. Everything else uses existing DiaMessageBus, DiaSaveGame text JSON (buffer raised to 100 MB; dia-needs #11 blob API was rejected 2026-10-15), DiaThreading `JobSystem`, DiaVisualDebugger and DiaAPI `CommandRegistry` |
 | AD-002 | Four-tier dependency model | CoW-Shared, because A1, V-1, S-2.5 and S-3 all consume it |
 | AD-003 | GDD owns design intent | GDD A4 owns the mechanics and constants. Deviations are listed below for the GDD owner |
 | AD-005 | One stage per testbed | A4 is a System and owns no stage. The S-2.5 testbed is the single stage that hosts it, and chooses presets from its panel |
@@ -441,7 +441,7 @@ These are for the DesignDocs owner to fold back into A4:
   - regions for `set_wind_region` and `find_droughts`
 
   **A4 Features 3–6 are blocked until S-1 is amended and built.**
-- **`JobSystemService` ServiceStream + `JobSystem::TrySubmit` (dia-needs #12, approved 2026-10-14, not built).** This is a CluicheGameBaseline change plus one Dia method. Feature 3 uses `SerialExecutor` until it lands. Features 1–2 don't need it.
+- **`JobSystemService` ServiceStream + `JobSystem::TrySubmit` (dia-needs #12, built 2026-10-15; amended 2026-10-20).** A CluicheGameBaseline change plus one Dia method. Feature 3 can use the pool; A4's module becomes the stream's real consumer and replaces CoW's `JobSystemPlaceholderConsumerModule`. Features 1–2 don't need it.
 - GameSpeedController (`SimulationTick`, season from week), Done.
 - DiaMessageBus via `MessageBusHostModule`.
 - E1 `SaveLoadModule`, Done (soft: A4 runs without it; S-2.5 has no SaveLoadModule).

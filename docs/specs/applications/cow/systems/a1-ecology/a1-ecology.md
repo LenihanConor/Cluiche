@@ -370,7 +370,7 @@ Messages (`CellEcologyChanged`, `EventThresholdCrossed`, `BiomeSuccessionTrigger
 | PD-001 | StringCRC for ids | Biome, species, functional group and rule ids are `StringCRC`. Fields store palette indices |
 | PD-002 | ProcessingUnit/Phase/Module architecture | `EcologyModule` is a SimModule on SimPU. A4 finds the baseline provider and A3 finds the apply API through `ModuleRef`, never through singletons |
 | PD-004 | No STL containers in public APIs | `EcologyFields` uses `DynamicArrayC`. Views expose accessors, not `std::` types |
-| AD-001 | Ask permission before Dia/baseline edits | None needed. A1 uses existing DiaMessageBus, DiaSaveGame, `JobSystemService` (dia-needs #12, Approved, not built (amended 2026-10-19, consistency pass)), DiaMaths noise (Done 2026-10-15), DiaAPI `CommandRegistry`. CellField (dia-needs #14) is Spec Approved, not built (amended 2026-10-19, product review) |
+| AD-001 | Ask permission before Dia/baseline edits | None needed. A1 uses existing DiaMessageBus, DiaSaveGame, `JobSystemService` (dia-needs #12, built 2026-10-15 (amended 2026-10-20)), DiaMaths noise (Done 2026-10-15), DiaAPI `CommandRegistry`. CellField (dia-needs #14) is Spec Approved, not built (amended 2026-10-19, product review) |
 | AD-002 | Four-tier dependency model | CoW-Shared: A3, A4, S-3 Ecology and later systems consume it |
 | AD-003 | GDD owns design intent | GDD A1 owns the mechanics and constants. Deviations are listed below for the GDD owner |
 | AD-005 | One stage per testbed | A1 owns no stage. S-3 Ecology hosts it |
@@ -405,7 +405,7 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 - GameSpeedController (`SimulationTick`, `TimeBand`, `SeasonOf`). Done.
 - `RandomStreamModule` (`A1` stream). Done.
 - E1 `SaveLoadModule`. Done.
-- `JobSystemService` + `TrySubmit` (dia-needs #12). Approved 2026-10-14, not built; it needs a small feature spec, and A1 runs serially until it lands (amended 2026-10-19, consistency pass).
+- `JobSystemService` + `TrySubmit` (dia-needs #12). Built 2026-10-15; A1 can read the pool through a `ServiceStreamReader<JobSystem>` and `TrySubmit` (amended 2026-10-20; CoW has a placeholder consumer until A4's real one).
 - DiaMaths seeded noise (dia-needs #15). Done.
 - DiaCellLayers, DiaCellHistory, DiaValueSchema (layers, history events, schema tooltips). Approved, not built (amended 2026-10-19, consistency pass).
 - Dia CellField renderer (dia-needs #14), for Feature 9's overlays. Spec Approved, not built.

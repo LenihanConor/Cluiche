@@ -29,7 +29,8 @@
                 "AICalloutTestStage",
                 "GridVisibilityTestStage",
                 "MessageBusTestStage",
-                "MessageBusStressTestStage"
+                "MessageBusStressTestStage",
+                "JobSystemServiceTestStage"
             ],
             "auto_advance": false
         },
@@ -208,6 +209,13 @@
                 "Boot"
             ],
             "auto_advance": false
+        },
+        {
+            "name": "JobSystemServiceTestStage",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
         }
     ],
     "initial_stage": "Boot",
@@ -308,6 +316,12 @@
             "id": "AutomationService",
             "kind": "ServiceStream",
             "payload_type": "AutomationService",
+            "from": "MainPU"
+        },
+        {
+            "id": "JobSystemService",
+            "kind": "ServiceStream",
+            "payload_type": "JobSystem",
             "from": "MainPU"
         },
         {
@@ -437,7 +451,12 @@
                     "dependencies": [
                         "ObservationModule"
                     ],
-                    "channels": []
+                    "channels": [
+                        {
+                            "id": "JobSystemService",
+                            "role": "provides"
+                        }
+                    ]
                 },
                 {
                     "instance_id": "KernelModule",
@@ -853,6 +872,20 @@
                         },
                         {
                             "id": "AutomationService",
+                            "role": "consumes"
+                        }
+                    ]
+                },
+                {
+                    "instance_id": "JobSystemServiceTestStageModule",
+                    "type_id": "JobSystemServiceTestStageModule",
+                    "stages": [
+                        "JobSystemServiceTestStage"
+                    ],
+                    "dependencies": [],
+                    "channels": [
+                        {
+                            "id": "JobSystemService",
                             "role": "consumes"
                         }
                     ]
