@@ -88,7 +88,7 @@ history.Sample({ tick, "Y12 W30", SampleBand::Week });
 - **Queries:**
   - `cells.history.cells {layer, cells?, from, to}`: per-cell series, chunked under the 1 MB message cap
   - `cells.history.snapshot {name, layer}`
-- **File:** `cells.history.export <path>` writes `{format: "dia.cell_history", version: 1, groups, aggregates, events, snapshots: [names], tracked}`. Per-cell data is optional (`--cells`).
+- **File:** `cells.history.export <path>` writes `{format: "dia.cell_history", version: 1, world, schema, groups, aggregates, events, snapshots: [names], tracked}`. `schema` embeds the DiaValueSchema entries for every recorded layer and event type, so an offline file explains itself (amended 2026-10-19, T-1). `world` is the loaded world id, used for navigation gating. Per-cell data is optional (`--cells`).
   - Headless runners (S-2.5, S-3 long-run) write the same file next to their reports, so the inspector reads live and offline data the same way.
 
 ### CoW binding (consumer side)
