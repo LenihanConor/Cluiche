@@ -29,8 +29,10 @@ _CONFIG_ALIASES = {"Asan": "Debug-Asan", "Ubsan": "Debug-Ubsan"}
               help="For googletest: run in N parallel shards (0=disabled, omit for cpu_count-1).")
 @click.option("--automation", "automation", is_flag=True, default=False,
               help="For cluichetest: enable timed auto-exit after each stage resolves (used by E2E runner).")
+@click.option("--source", "source", default=None, metavar="PATH",
+              help="Absolute path passed as --dev-alias source=PATH (default: Cluiche/Assets/<app>).")
 @click.pass_context
-def cli(ctx, target, config, filter_pattern, verbose, run_all, shards, automation):
+def cli(ctx, target, config, filter_pattern, verbose, run_all, shards, automation, source):
     """Launch an already-built target executable.
 
     TARGET is any launchable target in pipeline.toml (one with `exe` or `app_name`).
@@ -45,13 +47,30 @@ def cli(ctx, target, config, filter_pattern, verbose, run_all, shards, automatio
         run_all=run_all,
         shards=shards,
         automation=automation,
+        source_override=source,
     )
     ctx.exit(exit_code)
 
 
+def _resolve_dev_aliases(target: str, repo_root: Path) -> list[str]:
+    """Return ['--dev-alias', 'source=<abs>'] for app targets whose asset dir exists, else []."""
+    try:
+        t = load_pipeline_config(repo_root).targets.get(target)
+    except PipelineConfigError:
+        return []
+    # app_name defaults to the target name in TargetConfig, so only targets that
+    # derive their exe from app_name (launchable, no explicit exe) count as apps.
+    if t is None or not t.launchable or t.exe or not t.app_name:
+        return []
+    source = repo_root / "Cluiche" / "Assets" / t.app_name
+    if not source.is_dir():
+        return []
+    return ["--dev-alias", f"source={source}"]
+
+
 def launch_target(target: str, config: str, filter_pattern: str = None,
                   verbose: bool = False, run_all: bool = False, shards: int = 0,
-                  automation: bool = False) -> int:
+                  automation: bool = False, source_override: str | None = None) -> int:
     config = _CONFIG_ALIASES.get(config, config)
     repo_root = find_repo_root(__file__)
 
@@ -68,6 +87,13 @@ def launch_target(target: str, config: str, filter_pattern: str = None,
         known = ", ".join(sorted(launchable_targets(pipeline_config)))
         click.echo(f"ERROR: unknown target '{target}' (known: {known})", err=True)
         return 2
+
+    if source_override is not None:
+        src = Path(source_override)
+        if not src.is_absolute() or not src.is_dir():
+            click.echo(f"ERROR: --source must be an existing absolute directory: {source_override}",
+                       err=True)
+            return 2
 
     exe_rel = exe_template.format(config=config)
     exe_path = repo_root / exe_rel
@@ -92,6 +118,11 @@ def launch_target(target: str, config: str, filter_pattern: str = None,
         )
 
     cmd = [str(exe_path)]
+    if source_override is not None:
+        if _resolve_dev_aliases(target, repo_root):
+            cmd += ["--dev-alias", f"source={source_override}"]
+    else:
+        cmd += _resolve_dev_aliases(target, repo_root)
     if target == "cluichetest" and automation:
         cmd.append("--automation")
     if target == "googletest":

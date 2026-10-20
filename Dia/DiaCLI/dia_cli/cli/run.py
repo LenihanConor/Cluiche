@@ -37,8 +37,10 @@ def _resolve_full_suite_config(repo_root: Path, target: str) -> str:
               help="For googletest: include SLOW_* suites (default excludes them).")
 @click.option("--shards", default=0, metavar="N", type=int,
               help="For googletest: run in N parallel shards (0=disabled, omit for cpu_count-1).")
+@click.option("--source", "source", default=None, metavar="PATH",
+              help="Absolute path passed as --dev-alias source=PATH (default: Cluiche/Assets/<app>).")
 @click.pass_context
-def cli(ctx, target, config, filter_pattern, verbose, no_build, build_only, force, run_all, shards):
+def cli(ctx, target, config, filter_pattern, verbose, no_build, build_only, force, run_all, shards, source):
     """Run the full pipeline then launch a target.
 
     TARGET is any target in pipeline.toml (see `dia launch --help`).
@@ -72,6 +74,7 @@ def cli(ctx, target, config, filter_pattern, verbose, no_build, build_only, forc
         verbose=verbose,
         run_all=run_all,
         shards=shards,
+        source_override=source,
     )
     ctx.exit(exit_code)
 
