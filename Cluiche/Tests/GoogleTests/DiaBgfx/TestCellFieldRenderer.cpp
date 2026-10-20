@@ -45,9 +45,9 @@ namespace
     class FakeColourMap : public ICellFieldGpuColourMapFactory
     {
     public:
-        bool CreateRgba8(uint32_t width, const uint32_t* texels, uint32_t count, bool, CellFieldGpuColourMapHandle& out) override
+        bool CreateRgba8(uint32_t width, const uint32_t* texels, uint32_t count, bool linear, CellFieldGpuColourMapHandle& out) override
         {
-            ++createCalls; out = nextHandle++;
+            ++createCalls; lastLinear = linear; out = nextHandle++;
             live[out].assign(texels, texels + count);
             EXPECT_EQ(width, count);
             return true;
@@ -58,6 +58,7 @@ namespace
         }
         void Destroy(CellFieldGpuColourMapHandle h) override { ++destroyCalls; live.erase(h); }
         int createCalls = 0, updateCalls = 0, destroyCalls = 0;
+        bool lastLinear = false;
         uint32_t nextHandle = 1;
         std::map<CellFieldGpuColourMapHandle, std::vector<uint32_t>> live;
     };
@@ -407,4 +408,230 @@ TEST(CellFieldPaletteDraw, ShutdownDestroysPaletteTextures)
     EXPECT_EQ(1u, f.cmap.live.size());
     f.renderer.Shutdown();
     EXPECT_TRUE(f.cmap.live.empty());
+}
+
+// ---- Ramp colour mapping (Task 11) -------------------------------------------
+
+namespace
+{
+    CellFieldRampData MakeRamp(uint32_t a, uint32_t b)
+    {
+        CellFieldRampData r;
+        r.count = 2;
+        r.stops[0].position = 0.0f; r.stops[0].rgba8 = a;
+        r.stops[1].position = 1.0f; r.stops[1].rgba8 = b;
+        return r;
+    }
+
+    Dia::Core::CellFieldDrawRequest RampDraw(Dia::Core::CellFieldLayerHandle h, const char* name, float rmin, float rmax)
+    {
+        Dia::Core::CellFieldDrawRequest r;
+        r.layer = h;
+        r.colourMap = Dia::Core::StringCRC(name).Value();
+        r.rampMin = rmin;
+        r.rampMax = rmax;
+        return r;
+    }
+
+    const float kNaN = std::numeric_limits<float>::quiet_NaN();
+}
+
+TEST(CellFieldRampLookup, ClampsToEndStops)
+{
+    const CellFieldRampData r = MakeRamp(0x102030FFu, 0xA0B0C0FFu);
+    EXPECT_EQ(0x102030FFu, CellFieldRampLookup(r, -5.0f, 0.0f, 10.0f));
+    EXPECT_EQ(0x102030FFu, CellFieldRampLookup(r, 0.0f, 0.0f, 10.0f));
+    EXPECT_EQ(0xA0B0C0FFu, CellFieldRampLookup(r, 10.0f, 0.0f, 10.0f));
+    EXPECT_EQ(0xA0B0C0FFu, CellFieldRampLookup(r, 1.0e9f, 0.0f, 10.0f));
+}
+
+TEST(CellFieldRampLookup, MidpointOfBlackWhiteIsMidGrey)
+{
+    const CellFieldRampData r = MakeRamp(0x000000FFu, 0xFFFFFFFFu);
+    const uint32_t c = CellFieldRampLookup(r, 5.0f, 0.0f, 10.0f);
+    for (int shift = 24; shift >= 8; shift -= 8)
+    {
+        const int ch = static_cast<int>((c >> shift) & 0xFFu);
+        EXPECT_NEAR(127.5, ch, 1.0);
+    }
+    EXPECT_EQ(0xFFu, c & 0xFFu);
+}
+
+TEST(CellFieldRampLookup, LinearFilterBetweenTexels)
+{
+    const CellFieldRampData r = MakeRamp(0x000000FFu, 0xFFFFFFFFu);
+    // Quarter way: t = 0.25 -> 63.75 in a 0..255 ramp.
+    const uint32_t c = CellFieldRampLookup(r, 2.5f, 0.0f, 10.0f);
+    EXPECT_NEAR(63.75, static_cast<int>((c >> 24) & 0xFFu), 1.0);
+}
+
+TEST(CellFieldRampLookup, NaNValueIsFirstStop)
+{
+    const CellFieldRampData r = MakeRamp(0x102030FFu, 0xA0B0C0FFu);
+    EXPECT_EQ(0x102030FFu, CellFieldRampLookup(r, kNaN, 0.0f, 10.0f));
+}
+
+TEST(CellFieldRampLookup, EqualMinMaxDoesNotDivideByZero)
+{
+    const CellFieldRampData r = MakeRamp(0x102030FFu, 0xA0B0C0FFu);
+    // Range treated as 1: t = clamp(v - min).
+    EXPECT_EQ(0x102030FFu, CellFieldRampLookup(r, 3.0f, 3.0f, 3.0f));
+    EXPECT_EQ(0x102030FFu, CellFieldRampLookup(r, 2.0f, 3.0f, 3.0f));
+    EXPECT_EQ(0xA0B0C0FFu, CellFieldRampLookup(r, 4.0f, 3.0f, 3.0f));
+}
+
+TEST(CellFieldRampLookup, ReversedRangeInvertsRamp)
+{
+    const CellFieldRampData r = MakeRamp(0x102030FFu, 0xA0B0C0FFu);
+    // rampMin 10, rampMax 0: value 10 is the first stop, value 0 the last.
+    EXPECT_EQ(0x102030FFu, CellFieldRampLookup(r, 10.0f, 10.0f, 0.0f));
+    EXPECT_EQ(0xA0B0C0FFu, CellFieldRampLookup(r, 0.0f, 10.0f, 0.0f));
+}
+
+TEST(CellFieldDrawParams, FloatDrawBuildsRampModeParams)
+{
+    const CellFieldRampData r = MakeRamp(0x000000FFu, 0xFFFFFFFFu);
+    Dia::Core::CellFieldDrawRequest req = RampDraw(Dia::Core::CellFieldLayerHandle(), "sequential.green", -2.0f, 6.0f);
+    CellFieldLayerInfo info;
+    info.width = 8; info.height = 4; info.kind = CellFieldValueKind::Float;
+    CellFieldDrawParams out;
+    ASSERT_TRUE(BuildCellFieldDrawParams(req, info, nullptr, &r, out));
+    EXPECT_EQ(CellFieldMapMode::Ramp, out.mapMode);
+    EXPECT_FLOAT_EQ(1.0f, out.params1[2]);
+    EXPECT_FLOAT_EQ(-2.0f, out.params0[0]);
+    EXPECT_FLOAT_EQ(6.0f, out.params0[1]);
+    EXPECT_EQ(req.colourMap, out.colourMapId);
+    EXPECT_EQ(r.revision, out.colourMapRevision);
+}
+
+TEST(CellFieldDrawParams, FloatDrawWithoutRampFails)
+{
+    CellFieldLayerInfo info;
+    info.kind = CellFieldValueKind::Float;
+    CellFieldDrawParams out;
+    EXPECT_FALSE(BuildCellFieldDrawParams(Dia::Core::CellFieldDrawRequest(), info, nullptr, nullptr, out));
+}
+
+TEST(CellFieldRampDraw, RampTextureUploadedOnceAcrossManyDraws)
+{
+    Fixture f;
+    auto h = f.Make(4, 3, CellFieldValueKind::Float);
+    const CellFieldRampStop stops[2] = { { 0.0f, 0x000000FFu }, { 1.0f, 0x00FF00FFu } };
+    ASSERT_TRUE(f.registry.RegisterRamp(Dia::Core::StringCRC("sequential.green"), stops, 2).ok);
+    CellFieldFrameData frame;
+    frame.RequestDrawCellFieldData(RampDraw(h, "sequential.green", 0.0f, 1.0f));
+    for (int i = 0; i < 300; ++i)
+        f.renderer.Draw(frame);
+    EXPECT_EQ(1, f.cmap.createCalls);
+    EXPECT_EQ(0, f.cmap.updateCalls);
+    EXPECT_EQ(1u, f.renderer.GetRendererStats().colourMapUploads);
+    EXPECT_EQ(0u, f.renderer.GetRendererStats().unknownColourMaps);
+    ASSERT_EQ(1u, f.cmap.live.size());
+    const std::vector<uint32_t>& texels = f.cmap.live.begin()->second;
+    ASSERT_EQ(256u, texels.size());
+    EXPECT_EQ(0x000000FFu, texels[0]);
+    EXPECT_EQ(0x00FF00FFu, texels[255]);
+    EXPECT_TRUE(f.cmap.lastLinear);
+}
+
+TEST(CellFieldRampDraw, RangeChangeAndRampSwitchUploadNoValueData)
+{
+    Fixture f;
+    auto h = f.Make(4, 3, CellFieldValueKind::Float);
+    const CellFieldRampStop a[2] = { { 0.0f, 0x000000FFu }, { 1.0f, 0x00FF00FFu } };
+    const CellFieldRampStop b[2] = { { 0.0f, 0x000000FFu }, { 1.0f, 0xFF0000FFu } };
+    ASSERT_TRUE(f.registry.RegisterRamp(Dia::Core::StringCRC("rampA"), a, 2).ok);
+    ASSERT_TRUE(f.registry.RegisterRamp(Dia::Core::StringCRC("rampB"), b, 2).ok);
+    std::vector<float> values(12, 0.5f);
+    ASSERT_TRUE(f.registry.Update(h, values.data(), 12).ok);
+    f.renderer.DrainRegistry();
+    const CellFieldStats before = f.registry.GetStats();
+    const int valueUpdatesBefore = f.tex.updateCalls;
+    const uint64_t valueBytesBefore = f.tex.updatedBytes;
+
+    for (int i = 0; i < 100; ++i)
+    {
+        CellFieldFrameData frame;
+        frame.RequestDrawCellFieldData(RampDraw(h, (i & 1) ? "rampA" : "rampB", static_cast<float>(i), static_cast<float>(i + 10)));
+        f.renderer.Draw(frame);
+    }
+    const CellFieldStats after = f.registry.GetStats();
+    EXPECT_EQ(before.uploadedBytes, after.uploadedBytes);
+    EXPECT_EQ(before.uploads, after.uploads);
+    EXPECT_EQ(valueUpdatesBefore, f.tex.updateCalls);
+    EXPECT_EQ(valueBytesBefore, f.tex.updatedBytes);
+    EXPECT_EQ(2, f.cmap.createCalls);
+    EXPECT_EQ(0, f.cmap.updateCalls);
+}
+
+TEST(CellFieldRampDraw, ReRegisteringRampUploadsOneMoreTexture)
+{
+    Fixture f;
+    auto h = f.Make(4, 3, CellFieldValueKind::Float);
+    const CellFieldRampStop a[2] = { { 0.0f, 0x000000FFu }, { 1.0f, 0x00FF00FFu } };
+    const CellFieldRampStop a2[2] = { { 0.0f, 0x010203FFu }, { 1.0f, 0x040506FFu } };
+    ASSERT_TRUE(f.registry.RegisterRamp(Dia::Core::StringCRC("rampA"), a, 2).ok);
+    CellFieldFrameData frame;
+    frame.RequestDrawCellFieldData(RampDraw(h, "rampA", 0.0f, 1.0f));
+    f.renderer.Draw(frame);
+    f.renderer.Draw(frame);
+    EXPECT_EQ(1u, f.renderer.GetRendererStats().colourMapUploads);
+
+    ASSERT_TRUE(f.registry.RegisterRamp(Dia::Core::StringCRC("rampA"), a2, 2).ok);
+    f.renderer.Draw(frame);
+    f.renderer.Draw(frame);
+    EXPECT_EQ(2u, f.renderer.GetRendererStats().colourMapUploads);
+    EXPECT_EQ(1, f.cmap.createCalls);
+    EXPECT_EQ(1, f.cmap.updateCalls);
+    EXPECT_EQ(0x010203FFu, f.cmap.live.begin()->second[0]);
+    EXPECT_EQ(0x040506FFu, f.cmap.live.begin()->second[255]);
+}
+
+TEST(CellFieldRampDraw, UnknownRampSkippedAndCounted)
+{
+    Fixture f;
+    auto h = f.Make(4, 3, CellFieldValueKind::Float);
+    CellFieldFrameData frame;
+    frame.RequestDrawCellFieldData(RampDraw(h, "nope", 0.0f, 1.0f));
+    for (int i = 0; i < 3; ++i)
+        f.renderer.Draw(frame);
+    EXPECT_EQ(3u, f.renderer.GetRendererStats().unknownColourMaps);
+    EXPECT_EQ(0, f.cmap.createCalls);
+}
+
+// Kind mismatch: the renderer looks the id up in the table matching the layer kind, so a
+// palette id on a Float layer (or a ramp id on a Category layer) is an unknown colour map:
+// draw skipped, counter incremented, Warning logged once per id.
+TEST(CellFieldRampDraw, KindMismatchIsSkippedAndCounted)
+{
+    Fixture f;
+    auto hf = f.Make(4, 3, CellFieldValueKind::Float);
+    auto hc = f.Make(4, 3, CellFieldValueKind::Category);
+    const uint32_t pal[2] = { 1, 2 };
+    const CellFieldRampStop ramp[2] = { { 0.0f, 0x000000FFu }, { 1.0f, 0x00FF00FFu } };
+    ASSERT_TRUE(f.registry.RegisterPalette(Dia::Core::StringCRC("pal"), pal, 2, 0).ok);
+    ASSERT_TRUE(f.registry.RegisterRamp(Dia::Core::StringCRC("ramp"), ramp, 2).ok);
+    CellFieldFrameData frame1;   // a frame accepts one request (Step 1 limit)
+    frame1.RequestDrawCellFieldData(RampDraw(hf, "pal", 0.0f, 1.0f));
+    CellFieldFrameData frame2;
+    frame2.RequestDrawCellFieldData(PaletteDraw(hc, "ramp"));
+    f.renderer.Draw(frame1);
+    f.renderer.Draw(frame2);
+    EXPECT_EQ(2u, f.renderer.GetRendererStats().unknownColourMaps);
+    EXPECT_EQ(0, f.cmap.createCalls);
+}
+
+TEST(CellFieldRampDraw, ShutdownDestroysRampTextures)
+{
+    Fixture f;
+    auto h = f.Make(4, 3, CellFieldValueKind::Float);
+    const CellFieldRampStop s[1] = { { 0.0f, 0xFFu } };
+    ASSERT_TRUE(f.registry.RegisterRamp(Dia::Core::StringCRC("rampA"), s, 1).ok);
+    CellFieldFrameData frame;
+    frame.RequestDrawCellFieldData(RampDraw(h, "rampA", 0.0f, 1.0f));
+    f.renderer.Draw(frame);
+    EXPECT_EQ(1u, f.cmap.live.size());
+    f.renderer.Shutdown();
+    EXPECT_TRUE(f.cmap.live.empty());
+    EXPECT_EQ(0u, f.renderer.GetRendererStats().colourMapsResident);
 }

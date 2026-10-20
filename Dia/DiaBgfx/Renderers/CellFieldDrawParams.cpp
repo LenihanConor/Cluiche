@@ -37,6 +37,41 @@ namespace Dia
             return palette.colours[index];
         }
 
+        uint32_t CellFieldRampLookup(const uint32_t* texels, float value, float rampMin, float rampMax)
+        {
+            float range = rampMax - rampMin;
+            if (!(fabsf(range) > 1e-20f))   // also catches NaN
+                range = 1.0f;
+            float t = (value - rampMin) / range;
+            if (!(t == t))
+                t = 0.0f;
+            t = t < 0.0f ? 0.0f : (t > 1.0f ? 1.0f : t);
+
+            const float pos = t * 255.0f;
+            uint32_t i0 = static_cast<uint32_t>(pos);
+            if (i0 > 255u)
+                i0 = 255u;
+            const uint32_t i1 = i0 < 255u ? i0 + 1u : 255u;
+            const float f = pos - static_cast<float>(i0);
+
+            uint32_t result = 0;
+            for (int shift = 24; shift >= 0; shift -= 8)
+            {
+                const float a = static_cast<float>((texels[i0] >> shift) & 0xFFu);
+                const float b = static_cast<float>((texels[i1] >> shift) & 0xFFu);
+                const uint32_t c = static_cast<uint32_t>(floorf(a + (b - a) * f + 0.5f));
+                result |= (c & 0xFFu) << shift;
+            }
+            return result;
+        }
+
+        uint32_t CellFieldRampLookup(const Dia::Graphics::CellFieldRampData& ramp, float value, float rampMin, float rampMax)
+        {
+            uint32_t texels[Dia::Graphics::CellFieldRegistry::kRampTexels];
+            Dia::Graphics::BakeRamp(ramp.stops, ramp.count, texels);
+            return CellFieldRampLookup(texels, value, rampMin, rampMax);
+        }
+
         bool BuildCellFieldDrawParams(const Dia::Core::CellFieldDrawRequest& request,
                                       const CellFieldLayerInfo& layer,
                                       const Dia::Graphics::CellFieldPaletteData* palette,

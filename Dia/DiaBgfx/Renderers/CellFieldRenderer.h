@@ -150,6 +150,8 @@ namespace Dia
 
             // Uploads the baked palette only if the id is new or its revision changed.
             bool EnsurePaletteTexture(uint32_t id, const Dia::Graphics::CellFieldPaletteData& palette, CellFieldGpuColourMapHandle& outHandle);
+            // Same for ramps (256 texels, linear filter).
+            bool EnsureRampTexture(uint32_t id, const Dia::Graphics::CellFieldRampData& ramp, CellFieldGpuColourMapHandle& outHandle);
             void CountOutOfRange(Layer& layer, uint32_t paletteId, const Dia::Graphics::CellFieldPaletteData& palette);
             void SetupView();
             void SubmitLayer(const Dia::Core::CellFieldDrawRequest& request, const Layer& layer,
@@ -168,6 +170,7 @@ namespace Dia
             ICellFieldGpuTextureFactory&         mTextureFactory;
             ICellFieldGpuColourMapFactory&       mColourMapFactory;
             std::unordered_map<uint32_t, ColourMapTexture> mPaletteTextures;   // by colourMap id
+            std::unordered_map<uint32_t, ColourMapTexture> mRampTextures;      // by colourMap id
             std::unordered_set<uint32_t>         mWarnedUnknownColourMaps;
             CellFieldRendererStats               mStats;
             Dia::Graphics::HexFlatTopOddQBuilder mHexBuilder;

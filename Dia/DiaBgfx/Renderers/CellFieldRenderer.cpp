@@ -226,16 +226,20 @@ namespace Dia
                     continue;
                 Layer& layer = it->second;
 
-                // Extension point (Task 11): Float layers map through a ramp.
-                if (layer.kind != Dia::Graphics::CellFieldValueKind::Category)
-                    continue;
-
+                // The colour map is looked up in the table matching the layer kind: Category ->
+                // palette, Float -> ramp. A mismatched id (ramp id on a Category layer, palette id
+                // on a Float layer) is therefore an unknown colour map: skipped and counted.
+                const bool isCategory = layer.kind == Dia::Graphics::CellFieldValueKind::Category;
                 Dia::Graphics::CellFieldPaletteData palette;
-                if (!mRegistry->GetPalette(request.colourMap, palette))
+                Dia::Graphics::CellFieldRampData ramp;
+                const bool found = isCategory ? mRegistry->GetPalette(request.colourMap, palette)
+                                              : mRegistry->GetRamp(request.colourMap, ramp);
+                if (!found)
                 {
                     ++mStats.unknownColourMaps;
                     if (mWarnedUnknownColourMaps.insert(request.colourMap).second)
-                        DIA_LOG_WARNING("CFL", "CellFieldRenderer: unknown palette id 0x%08X, draw skipped", static_cast<unsigned>(request.colourMap));
+                        DIA_LOG_WARNING("CFL", "CellFieldRenderer: unknown %s id 0x%08X, draw skipped",
+                                        isCategory ? "palette" : "ramp", static_cast<unsigned>(request.colourMap));
                     continue;
                 }
 
@@ -245,13 +249,18 @@ namespace Dia
                 info.cellSize = layer.cellSize;
                 info.kind = layer.kind;
                 CellFieldDrawParams params;
-                if (!BuildCellFieldDrawParams(request, info, &palette, nullptr, params))
+                if (!BuildCellFieldDrawParams(request, info, isCategory ? &palette : nullptr, isCategory ? nullptr : &ramp, params))
                     continue;
 
                 CellFieldGpuColourMapHandle colourMap = 0;
-                if (!EnsurePaletteTexture(request.colourMap, palette, colourMap))
+                if (isCategory)
+                {
+                    if (!EnsurePaletteTexture(request.colourMap, palette, colourMap))
+                        continue;
+                    CountOutOfRange(layer, request.colourMap, palette);
+                }
+                else if (!EnsureRampTexture(request.colourMap, ramp, colourMap))
                     continue;
-                CountOutOfRange(layer, request.colourMap, palette);
 
                 if (!mProgram)
                     continue;   // no GPU path (tests): everything above still ran
@@ -295,7 +304,42 @@ namespace Dia
             entry.revision = palette.revision;
             mPaletteTextures[id] = entry;
             ++mStats.colourMapUploads;
-            mStats.colourMapsResident = static_cast<uint32_t>(mPaletteTextures.size());
+            mStats.colourMapsResident = static_cast<uint32_t>(mPaletteTextures.size() + mRampTextures.size());
+            outHandle = entry.handle;
+            return true;
+        }
+
+        // Ramp textures: 256 x 1, linear filtered, keyed by id + registry revision. Range
+        // (rampMin/rampMax) is a uniform, so changing it or switching ramps uploads no value data.
+        bool CellFieldRenderer::EnsureRampTexture(uint32_t id, const Dia::Graphics::CellFieldRampData& ramp, CellFieldGpuColourMapHandle& outHandle)
+        {
+            const uint32_t kTexels = Dia::Graphics::CellFieldRegistry::kRampTexels;
+            uint32_t texels[Dia::Graphics::CellFieldRegistry::kRampTexels];
+            auto it = mRampTextures.find(id);
+            if (it != mRampTextures.end())
+            {
+                if (it->second.revision != ramp.revision)
+                {
+                    Dia::Graphics::BakeRamp(ramp.stops, ramp.count, texels);
+                    mColourMapFactory.UpdateRgba8(it->second.handle, texels, kTexels);
+                    it->second.revision = ramp.revision;
+                    ++mStats.colourMapUploads;
+                }
+                outHandle = it->second.handle;
+                return true;
+            }
+
+            Dia::Graphics::BakeRamp(ramp.stops, ramp.count, texels);
+            ColourMapTexture entry;
+            if (!mColourMapFactory.CreateRgba8(kTexels, texels, kTexels, true, entry.handle))
+            {
+                DIA_LOG_ERROR("CFL", "CellFieldRenderer: ramp texture create failed for id 0x%08X", static_cast<unsigned>(id));
+                return false;
+            }
+            entry.revision = ramp.revision;
+            mRampTextures[id] = entry;
+            ++mStats.colourMapUploads;
+            mStats.colourMapsResident = static_cast<uint32_t>(mPaletteTextures.size() + mRampTextures.size());
             outHandle = entry.handle;
             return true;
         }
@@ -409,6 +453,9 @@ namespace Dia
             for (auto& kv : mPaletteTextures)
                 mColourMapFactory.Destroy(kv.second.handle);
             mPaletteTextures.clear();
+            for (auto& kv : mRampTextures)
+                mColourMapFactory.Destroy(kv.second.handle);
+            mRampTextures.clear();
             mStats.colourMapsResident = 0;
             mGeometryCache.Shutdown();
         }

@@ -50,10 +50,21 @@ namespace Dia
         bool     CellFieldPaletteIndex(const Dia::Graphics::CellFieldPaletteData& palette, float categoryValue, uint32_t& outIndex);
         uint32_t CellFieldPaletteLookup(const Dia::Graphics::CellFieldPaletteData& palette, float categoryValue);
 
+        // CPU mirror of the fragment shader's rampColour(), sampling the 256 baked texels
+        // (BakeRamp output) the way the 256x1 linear-filtered clamped texture does.
+        //   range = rampMax - rampMin; if |range| <= 1e-20 the range is taken as 1 (no divide by zero)
+        //   t     = clamp((v - rampMin) / range, 0, 1); NaN (value, min or max) -> t = 0
+        //   shader samples u = (t*255 + 0.5)/256  =>  texel coordinate u*256 - 0.5 = t*255, so
+        //   i0 = floor(t*255), f = t*255 - i0, result = lerp(texel[i0], texel[min(i0+1,255)], f)
+        //   per channel, rounded to nearest. rampMin > rampMax inverts the ramp.
+        uint32_t CellFieldRampLookup(const uint32_t* bakedTexels256, float value, float rampMin, float rampMax);
+        // Convenience: bakes the ramp first.
+        uint32_t CellFieldRampLookup(const Dia::Graphics::CellFieldRampData& ramp, float value, float rampMin, float rampMax);
+
         // Computes the uniforms for one draw. Exactly one of palette / ramp is used, chosen by
         // layer.kind (Category -> palette, Float -> ramp). Returns false if the needed
-        // colour map is null. Ramp, inset, backdrop and hillshade are extension points
-        // (Tasks 11-13): they currently emit shader-neutral defaults.
+        // colour map is null. Inset, backdrop and hillshade are extension points
+        // (Tasks 12-13): they currently emit shader-neutral defaults.
         bool BuildCellFieldDrawParams(const Dia::Core::CellFieldDrawRequest& request,
                                       const CellFieldLayerInfo& layer,
                                       const Dia::Graphics::CellFieldPaletteData* palette,
