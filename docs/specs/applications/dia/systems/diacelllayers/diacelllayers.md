@@ -76,6 +76,7 @@ layers.RegisterOverlay(o);
   - A4's "any number of overlays on at once" now applies to its vector and marker overlays only.
   - A4's scalar fields are base layers.
   - S-1's `ColourMode` enum and A1's overlay list become registered layers.
+- **Hotkeys** (amended 2026-10-20, GDD fold-back): layer hotkeys come from each layer's schema `ui.hotkey` (one key, unique per grid). The viewer owns them and uses them in every testbed. A clash logs a Warning (`CEL`), and the later layer gets no hotkey. Testbeds never define their own layer hotkeys. The picker also numbers base layers 1–9 within the current group. Because the picker is shared, every registered layer appears in every testbed that loads its system: S-3 Living mode shows Ground Water too.
 - **Legend:** a ramp with schema `min`–`max`, the unit and the "seen in view" range, or a list of category swatches. It is built from DiaValueSchema, so every surface shows the same colours.
 - **Tooltip on hover:** cell `(q, r)`, the base value with its unit, and the schema description (shared `renderValueTooltip`).
 

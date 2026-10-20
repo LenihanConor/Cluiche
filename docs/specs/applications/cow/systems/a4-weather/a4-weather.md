@@ -290,6 +290,8 @@ Drawers are hosted wherever the domain is registered: S-2.5 first, then S-3.
 | `load_preset <name>` | Apply a preset (state + forcings + season) |
 | `step_back` | History rewind (only when `history_weeks` > 0) |
 
+**Hotkeys** (amended 2026-10-20, GDD fold-back): A4 owns its layers' hotkeys in its fields schema (`ui.hotkey`). They follow the S-2.5 GDD hotkey table (Snow = **K**). The S-3 GDD variant (S for Snow, no Ground Water) is replaced by the shared picker.
+
 Forcings and overrides are deterministic inputs applied at a fixed point in the pipeline (EC-15). They are **not saved**: they are debug tools.
 
 **Instrumentation:**

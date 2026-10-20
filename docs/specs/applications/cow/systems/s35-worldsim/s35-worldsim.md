@@ -1,6 +1,7 @@
 # System Spec: S-3.5 World Sim
 
 **Parent:** @docs/specs/applications/cow/cow.md  
+**Design source:** `Output Docs/GDD/10_PrototypeStrategy/S3.5_WorldSim.md` (DesignDocs). It is a **draft, not locked**: its Challenge Pass is pending. Added to the roster as DECISION-128 / CHANGE-045, a recorded exception to Rule 1 ("unit and system are modes, not separate testbeds"). `.cowworld` bundles are specified in its section 4 (amended 2026-10-20, GDD fold-back).  
 **Origin:** 2026-10-19 world-sim product review. Outcomes C ("a testbed to demonstrate and test the work") and D ("a place to author content"). This is the one testbed that runs every world layer together on one world.  
 **Mockup:** [mockups/s35-world-sim.html](mockups/s35-world-sim.html)  
 **Systems under test:** S-1 World Generation, A4 Weather, A1 Ecology, A3 Biome Succession, F-3 World Assets; Dia: DiaCellLayers, DiaCellHistory, DiaValueSchema
@@ -153,7 +154,7 @@ SimPU (S35WorldSim stage)
 
 - **F-3:** add `cow.world.bundle.set_default <id>`. It writes `cow.diagame` `default_world` through the `source` alias, adds the bundle to the catalogue, and refuses an "unvalidated edit" terrain. Also add the session hint (`next_bundle.json`).
 - **S-2.5, S-3:** honour the session hint at stage start.
-- **cow.md:** register S-3.5. The roster grows from 12 to 13 testbeds (AD-005 wording).
+- **cow.md:** register S-3.5. The GDD roster grows from 15 to 16 testbeds (AD-005 wording) (amended 2026-10-20, GDD fold-back).
 - **GDD fold-back** (through the GDD session, AD-003): the GDD owns the testbed roster and what each testbed proves, so S-3.5 and its R1–R6 checks must be folded back.
 
 ## Dependencies
@@ -199,4 +200,4 @@ SimPU (S35WorldSim stage)
 
 ## Status
 
-`Approved` (2026-10-19). Feature specs TBD; no plan yet. GDD roster fold-back pending (AD-003).
+`Approved` (2026-10-19). Feature specs TBD; no plan yet. GDD fold-back done 2026-10-20: the GDD doc is a draft awaiting its Challenge Pass, and the spec is re-checked when it locks (AD-003).
