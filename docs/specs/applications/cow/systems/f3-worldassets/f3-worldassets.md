@@ -158,19 +158,21 @@ SimPU
 
 Systems keep their own live-edit commands. F-3 only resolves, applies and captures.
 
-**Load order** for `LoadBundle(id)`:
-1. Terrain: the baked world loads, or the preset + seed is generated. F-3 waits for S-1's completion.
-2. Weather: resolved parameters are applied.
-3. Ecology: resolved parameters are applied, then A1 `Initialise` runs.
-4. Start-state cells are applied.
-5. `WorldBundleLoaded{bundleId}` is broadcast.
+**Load order** for `LoadBundle(id)` (amended 2026-10-20, Feature 2):
+1. Prepare: every file is read, checked and resolved. Nothing changes yet.
+2. The current weather and ecology parameters are captured for rollback.
+3. Weather and ecology parameters are applied (no initialisation).
+4. Terrain: the baked world loads, or the preset + seed is generated. A1 and A4 initialise themselves on `WorldGenerationComplete`, so they initialise once, with the pack's values.
+5. F-3 waits until the weather and ecology participants report ready for the new world revision.
+6. Start-state cells are applied.
+7. `WorldBundleLoaded{bundleId}` is broadcast.
 
-A failure at any step logs an Error and keeps the previous world.
+A failure before the terrain is accepted logs an Error, restores the captured parameters and keeps the previous world. A failure after it leaves the new world in place, skips the start state and reports `partial` (the previous world cannot be restored once S-1 has accepted a new one).
 
 **Session hint** (amended 2026-10-19, S-3.5): stage transitions carry no arguments. To launch another testbed with the current bundle, `WorldAssetsModule` writes `out/CoW/session/next_bundle.json` (`{bundle, from_stage}`). At start, the next stage loads that bundle once in place of its `.diastage` `world_bundle`, then deletes the file. A stale hint (older than 60 s) is ignored and deleted.
 
 **Path aliases** (registered from `cow.diagame` `path_aliases`):
-- `world` → the deployed `global/world/` tree. Used for loading in every build.
+- `world` → the deployed `global/world/` tree. Present in every build; a packaged build loads from it only. In a dev launch assets are looked up in `source` first and fall back to `world` (amended 2026-10-20, Feature 4), so a saved asset loads in the same session.
 - `source` → `Cluiche/Assets/CoW/`. Dev launches only; DiaCLI passes it (dia-needs #16). `save_as` needs it.
 
 ### Public Interfaces
@@ -206,12 +208,12 @@ DiaAPI commands. Every authoring action is a command, and the panel calls the sa
 
 | # | Feature | Notes | Status | Spec |
 |---|---|---|---|---|
-| 1 | Envelope and override merge | `AssetEnvelope`, `OverrideMerge` (resolve and diff), stale rules. Pure, with GoogleTests | Draft | TBD |
-| 2 | WorldAssetsModule and bundle load | `IWorldAssetParticipant`, `BundleResolver`, load order, `default_world` from `cow.diagame`, `.diastage` `world_bundle`, events | Draft | TBD |
-| 3 | Save as | `SourceWriter`, catalogue upsert, `pack.save_as`, `terrain.bake`, `startstate.save_as`, `bundle.save_as`; needs dia-needs #16 | Draft | TBD |
-| 4 | Deploy and aliases | `world` deploy category mirroring subfolders (dia-needs #17), `world`/`source` aliases, move existing files to the Asset Table paths, catalogue types Any future catalogue `prune` must skip `author: game` records (DiaCLI preserve-subfolder-deploy, Resolved 2) | Draft | TBD |
-| 5 | World Assets panel card | HTML mockup first; status, list/load/save, stale badges | Draft | TBD |
-| 6 | Consumer adoption | S-1, A4 and A1 implement `IWorldAssetParticipant`; the system and testbed specs are amended (see Consumer amendments) | Draft | TBD |
+| 1 | Envelope and override merge | `AssetEnvelope`, `OverrideMerge` (resolve and diff), stale rules. Pure, with GoogleTests | Approved | [envelope-and-override-merge.md](envelope-and-override-merge.md) |
+| 2 | WorldAssetsModule and bundle load | `IWorldAssetParticipant`, `BundleResolver`, prepare-then-apply load with rollback, `default_world` from `cow.diagame`, `.diastage` `world_bundle` (`@default`), session hint, live pack and start-state commands, events | Approved | [world-assets-module-and-bundle-load.md](world-assets-module-and-bundle-load.md) |
+| 3 | Save as | `SourceWriter`, catalogue upsert, `pack.save_as`, `terrain.bake`, `startstate.save_as`, `bundle.save_as`, `bundle.set_default` (minimal text edit of `cow.diagame`); exact catalogue formatting; `validated` flag on world records; needs dia-needs #16 | Approved | [save-as.md](save-as.md) |
+| 4 | Deploy and aliases | `world` deploy category mirroring subfolders (dia-needs #17), `world`/`source` aliases, move existing files to the Asset Table paths, catalogue types Any future catalogue `prune` must skip `author: game` records (DiaCLI preserve-subfolder-deploy, Resolved 2); `AssetLocator` (source first in dev, else `world`), the single asset-kind table, catalogue/source consistency test, runtime tolerance of format-id record types | Approved | [deploy-and-aliases.md](deploy-and-aliases.md) |
+| 5 | World Assets panel card | Panel model + panel-only `IDebugDomain` + `world_assets` card in CoW's `debug-panel.html` (F-2 panel pattern); HTML mockup extended and re-approved first; status, list/load/save dialog with preview, stale and unsaved badges, disabled-with-reason; adds `save.preview`, `terrain.list` / `terrain.load` and `status.actions` | Approved | [world-assets-panel-card.md](world-assets-panel-card.md) |
+| 6 | Consumer adoption | S-1, A4 and A1 implement `IWorldAssetParticipant`; the system and testbed specs are amended (see Consumer amendments) | Approved | [consumer-adoption.md](consumer-adoption.md) |
 
 Build order: 1 → 2 → 4 → 3 → 5. Feature 6 runs per consumer as each system's module comes into existence. Feature 1 can start now.
 
@@ -290,4 +292,4 @@ Build order: 1 → 2 → 4 → 3 → 5. Feature 6 runs per consumer as each syst
 1. **A4's 5 named presets** (coastal_storm, rain_shadow, winter_snow, spring_melt, drought). Are they parameter sets (weather packs → `Global/Weather/Packs/`) or forced weather states (scenarios → `Stages/S25WeatherPatterns/scenarios/`)? The names suggest scenarios. **A4 Feature 6 decides** from what each preset actually changes; F-3 supports either.
 
 ## Status
-`Approved` (2026-10-19). Feature specs TBD; no plan yet.
+`Approved` (2026-10-19). All 6 feature specs `Approved` (2026-10-20); no plan yet. Feature 1 can start now (pure logic).

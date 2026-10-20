@@ -213,6 +213,18 @@ struct GenParams {
 };
 ```
 
+### World assets participant (F-3, amended 2026-10-20, F-3 Feature 6)
+
+`WorldGenerationModule` owns a `TerrainParticipant` (kind `terrain`) that F-3's loader uses; the module does not inherit the interface (@docs/specs/applications/cow/systems/f3-worldassets/consumer-adoption.md).
+
+- **`Apply(spec)`:** `{ "baked": path }` imports the file (it opens **locked**, SD-S1-009); `{ "preset", "seed", "size" }` loads the preset's `WorldShapeParams`, sets the dimensions from `size` and requests a regeneration. Failure returns false and changes nothing.
+- **Import publishes `WorldGenerationComplete`** like a generated world (seed from the file's provenance, `retryAttempts` 0), so A1 and A4 initialise from imported worlds by the same path.
+- **Terrain source:** `Capture()` reports `baked` (with id and hash) for a baked or locked-imported world, `preset` (with preset, seed, size) while the parameters still equal the preset's, and `edited` once sliders or placements have changed. Bundles save only the first two.
+- **`GetWorldContentHash()`:** a 64-bit FNV-1a hash of the world's canonical export text (sorted keys, no whitespace), 16 lower-case hex digits. Start states record it as `world.hash`; bundle loading compares it.
+- **`ITerrainBaker::Bake(absolutePath)`** exports the current world for F-3's `terrain.bake`; afterwards the world counts as baked with that id.
+- **`cow.worldgen.validate`** reports its result to F-3 (`SetWorldValidated(relPath, ok)`, by module reference), which updates the catalogue record's `validated` flag.
+- `IsReady(rev)` is `GetWorldRevision() >= rev`.
+
 ### Events
 
 **Published by WorldGenerationModule:**

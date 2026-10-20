@@ -87,7 +87,7 @@ There's no recovery counter here: it is a rule counter in A1's `succession_press
 
 ### Succession rule table (A3 authors, A1 evaluates)
 
-**Content ownership** (amended 2026-10-19, product review): A3 owns the contents of `succession_rules.json` at `Assets/CoW/Global/Succession/succession_rules.json` with envelope `"format": "cow.succession_rules", "version": 1` (A1 C7; amended 2026-10-19, F-3 World Assets). A1 ships an initial file translated from A3 TechnicalSpec §4 so A1 can be exercised before A3 exists. A1 evaluates every rule and provides the file schema; A3 authors the conditions and increments. The rule format, with one addition made here:
+**Content ownership** (amended 2026-10-19, product review): A3 owns the contents of `succession_rules.json` at `Assets/CoW/Global/Succession/succession_rules.json` with envelope `"format": "cow.succession_rules", "version": 1` (A1 C7; amended 2026-10-19, F-3 World Assets). A3 has no F-3 participant and no packs in v1 (amended 2026-10-20, F-3 Feature 6): the rules file is a hand-authored defaults file, read by A1 as before. A1 ships an initial file translated from A3 TechnicalSpec §4 so A1 can be exercised before A3 exists. A1 evaluates every rule and provides the file schema; A3 authors the conditions and increments. The rule format, with one addition made here:
 
 ```json
 { "id": "grassland_drought_scrub", "from": "Grassland", "to": "Scrub", "source": "DROUGHT",

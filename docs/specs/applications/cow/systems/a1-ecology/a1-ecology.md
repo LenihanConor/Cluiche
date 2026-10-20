@@ -324,17 +324,18 @@ namespace CoW::Ecology {
     EcologyData FallbackEcologyData();      // 3 land species (deer, elk, wolf) + 1 aquatic (fish), S-2 GDD decision 4
 
     class EcologyModule : public Dia::ApplicationFlow::SimModule,
-                          public CoW::Weather::IBiomeSeasonalBaseline,
-                          public IWorldAssetParticipant {      // F-3 World Assets, amended 2026-10-19
+                          public CoW::Weather::IBiomeSeasonalBaseline {
     public:
         float GetSeasonalTemperature(Dia::Core::StringCRC biome, CoW::Weather::Season season) const override;
         const EcologySimulation& GetSimulation() const;
         void RegisterSuccessionResolver(ISuccessionResolver* resolver);    // A3's SuccessionModule, via ModuleRef
-        // IWorldAssetParticipant (kinds `ecology`, `ecology_start`): ecology pack and start state
-        Dia::Core::StringCRC Kind() const override;
-        Json::Value Defaults() const override;
-        void Apply(const Json::Value& resolved) override;
-        Json::Value Capture() const override;
+        // F-3 World Assets (amended 2026-10-20, Feature 6): two adapters, one per kind, exposed by reference.
+        //   EcologyPackParticipant       (kind `ecology`, defaults `cow.ecology_params`; species and biome tuning stays tuning.save)
+        //   EcologyStartStateParticipant (kind `ecology_start`; Apply uses the same edit path as set_field and paint)
+        // The edit set is cumulative: every cell field that differs from the freshly initialised state, including cells set by a
+        // loaded start state; Capture() returns it sparse and sorted; a re-Initialise clears it. Initialise uses live parameters.
+        IWorldAssetParticipant& GetEcologyPackParticipant();
+        IWorldAssetParticipant& GetEcologyStartStateParticipant();
     };
 }
 ```

@@ -368,16 +368,15 @@ namespace CoW::Weather {
     };
 
     // SimModule wiring.
-    class WeatherModule : public Dia::ApplicationFlow::SimModule,
-                          public IWorldAssetParticipant {      // F-3 World Assets, amended 2026-10-19
+    class WeatherModule : public Dia::ApplicationFlow::SimModule {
     public:
         WeatherSnapshot GetSnapshot() const;        // A1, V-1, debug: read on WeatherUpdated
         const WeatherSimulation& GetSimulation() const;
-        // IWorldAssetParticipant (kind `weather`)
-        Dia::Core::StringCRC Kind() const override { return "weather"; }
-        Json::Value Defaults() const override;
-        void Apply(const Json::Value& resolved) override;
-        Json::Value Capture() const override;
+        // F-3 World Assets (amended 2026-10-20, Feature 6): the module owns a `WeatherPackParticipant`
+        // (kind `weather`, defaults `cow.weather_params`) and exposes it by reference; it does not inherit the interface.
+        // Apply validates and swaps mParams (effective next week); Initialise uses mParams, never the file;
+        // IsReady(rev) is true after Initialise AND spin-up for that revision.
+        IWorldAssetParticipant& GetWeatherPackParticipant();
     };
 }
 ```
