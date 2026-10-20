@@ -31,6 +31,7 @@
     <ClInclude Include="Imgui\BgfxImGuiBackend.h" />
     <ClInclude Include="Imgui\BgfxImGuiRenderer.h" />
     <ClInclude Include="Imgui\Win32WndProcChain.h" />
+    <ClInclude Include="Resources\CellFieldGeometryCache.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Canvas.cpp" />
@@ -60,6 +61,7 @@
     <ClCompile Include="$(ProjectDir)..\..\External\imgui\imgui_draw.cpp" />
     <ClCompile Include="$(ProjectDir)..\..\External\imgui\imgui_widgets.cpp" />
     <ClCompile Include="$(ProjectDir)..\..\External\imgui\imgui_tables.cpp" />
+    <ClCompile Include="Resources\CellFieldGeometryCache.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\varying.def.sc" />

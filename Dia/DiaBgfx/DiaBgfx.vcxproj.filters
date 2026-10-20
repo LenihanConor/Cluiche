@@ -34,6 +34,9 @@
     <ClInclude Include="Imgui\Win32WndProcChain.h">
       <Filter>Imgui</Filter>
     </ClInclude>
+    <ClInclude Include="Resources\CellFieldGeometryCache.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
     <ClCompile Include="Canvas.cpp">
       <Filter>Source</Filter>
     </ClCompile>
@@ -75,6 +78,9 @@
     </ClCompile>
     <ClCompile Include="$(ProjectDir)..\..\External\imgui\backends\imgui_impl_win32.cpp">
       <Filter>Imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="Resources\CellFieldGeometryCache.cpp">
+      <Filter>Resources</Filter>
     </ClCompile>
     <None Include="Shaders\varying.def.sc">
       <Filter>Shaders</Filter>

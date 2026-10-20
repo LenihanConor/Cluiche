@@ -2003,5 +2003,8 @@
     <ClCompile Include="DiaGraphics\TestCellFieldRegistry.cpp">
       <Filter>DiaGraphics</Filter>
     </ClCompile>
+    <ClCompile Include="DiaBgfx\TestCellFieldGeometryCache.cpp">
+      <Filter>DiaBgfx</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
