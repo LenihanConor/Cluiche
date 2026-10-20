@@ -97,6 +97,12 @@
     <None Include="Shaders\fs_ui_overlay.sc">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\vs_cellfield.sc">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\fs_cellfield.sc">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source">
