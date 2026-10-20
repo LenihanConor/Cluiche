@@ -1,0 +1,91 @@
+# Feature Spec: CellGridCanvas
+
+**Parent:** @docs/specs/applications/dia/systems/diaeditorui/diaeditorui.md
+
+**Gameplay Domains:** debug
+
+## Summary
+
+A generic React component in `@dia/editor-ui` that draws a flat-top hex or square grid of cells coloured by a value array through a ramp or palette, with hover and click reporting and an optional highlight set. It is a display component: no game, CoW or CellField knowledge. First consumers are T-1's hex mini-map and T-2's cell editor (T-2 Feature 6 adds brush and selection tools on top).
+
+## Problem
+
+Two CoW editor plugins need to draw a per-cell grid map. Each building its own canvas would duplicate hex maths, colour mapping and hit-testing, and the two would drift. One shared component keeps them consistent, and keeps CoW-specific code out of Dia.
+
+## Goals
+
+1. Draw a grid of up to Large size (6,656 cells) with ramp (continuous) or palette (category) colouring within one frame.
+2. Report the hovered cell and clicked cell in grid coordinates.
+3. Optionally highlight a set of cells.
+4. Support flat-top hex (odd-q) and square topologies.
+5. Take ramps and palettes as plain data, so DiaValueSchema is the source but this component does not depend on it.
+
+## Non-Goals
+
+- Brush, paint and selection tools (T-2 Feature 6 extends this component).
+- Zoom and pan (v1 fits the grid to the box; add when a consumer needs it).
+- Animation, time scrubbing, labels or glyphs on cells.
+- Reading any DiaCellLayers, CellField or CoW type.
+- A WebGL renderer: canvas 2D is enough at Large size.
+
+## Architecture
+
+`Dia/DiaEditorUI/src/CellGridCanvas.tsx`, exported from the package index. Pure TypeScript; styles through the `theme` object (DEUI-002).
+
+```ts
+export interface Ramp { stops: { t: number; colour: string }[]; min: number; max: number }
+export interface Palette { entries: { value: number; colour: string }[]; fallback: string }
+
+export interface CellGridCanvasProps {
+  topology: 'hex-flat-odd-q' | 'square'
+  width: number; height: number                  // cells
+  values: Float32Array | Uint16Array             // length width*height, row-major
+  colouring: { ramp: Ramp } | { palette: Palette }
+  highlight?: ReadonlySet<number>                // cell indices
+  onHover?: (cell: { q: number; r: number; index: number } | null) => void
+  onCellClick?: (cell: { q: number; r: number; index: number }) => void
+}
+```
+
+- Cell geometry and hit-testing live in a pure helper (`cellGeometry.ts`): `cellCentre`, `cellFromPoint`, hex corner offsets. Hit-testing is the inverse of drawing and shares the same layout code.
+- The component draws to a `<canvas>` and redraws only when `values`, `colouring`, `highlight` or size change.
+- Out-of-range values clamp to the ramp ends; values missing from a palette use `fallback`.
+- Index order matches `HexTopology` (flat-top, odd-q, row-major) so a cell index means the same on both sides.
+
+## Acceptance Criteria
+
+1. A hex-flat-odd-q and a square grid render at the requested size, with cell positions matching `HexTopology`'s odd-q layout.
+2. Ramp colouring maps values to colours across `min`–`max`, clamping outside values; palette colouring maps values to entries and uses `fallback` for unknown values.
+3. `onHover` reports the cell under the pointer, and `null` outside the grid; `onCellClick` reports the clicked cell.
+4. Hit-testing returns the drawn cell for every cell centre and for points near cell edges, for both topologies.
+5. A highlight set draws a visible outline on exactly those cells.
+6. A 104×64 grid draws in under 16 ms and redraws only on prop changes.
+7. The component imports nothing from CoW, DiaCellLayers or CellField.
+
+## Test Strategy
+
+- **Vitest (pure helper):** `cellCentre`/`cellFromPoint` round trip for both topologies; odd-q offsets; edge points; out-of-bounds returns null.
+- **React Testing Library with a canvas mock:** props change redraws, hover and click callbacks, highlight set.
+- **Pixel test:** a tiny fixture (3×3 hex and square) checked against expected colours.
+- **Perf:** a 104×64 grid draw timing.
+
+## Binding Decisions
+
+| Source | Decision | How this feature complies |
+|---|---|---|
+| DEUI-001 | Local npm workspace package | Added under `Dia/DiaEditorUI/src/` |
+| DEUI-002 | No bundled CSS; theme object | Inline styles and theme only |
+| DEUI-007 | `file:` path reference | No change to how editors consume the package |
+| CoW AD-001 | Ask before Dia edits | Spec reviewed and sign-off taken before build |
+| Engine vs Application boundary | Generic capability belongs in Dia | No CoW types in the component |
+
+No conflicts.
+
+## Open Design Questions
+
+1. **Hex orientation.** `HexTopology` is flat-top odd-q; DiaScalarField has a separate pointy-top axial topology (a known debt in the backlog). Only flat-top odd-q is supported; add others only if a consumer needs them.
+2. **Zoom and pan.** T-2's cell editor will probably need them for Large maps. Add in the T-2 feature, behind optional props, rather than designing now.
+
+## Status
+
+`Approved` (2026-10-20). Plan not yet created; build needs AD-001 sign-off. Created 2026-10-20 for T-1 Feature 3 and T-2 Feature 6.

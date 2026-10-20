@@ -105,12 +105,12 @@ The UI is kept separate from the analysis code (feedback rule): views call only 
 |---|---|
 | Click an event | `cells.history.view <sample>`, `cells.select.category <group layer> <value>` (or `cells.select.cell`), `cells.layer.base <event's layer>` |
 | Click a breakdown row | `cells.select.category <group layer> <value>` |
-| Why panel "show cells" | `cells.select.query` built from the top contributing cells, as a cell list |
+| Why panel "show cells" | `cells.select.cells <q,r…>` with the top contributing cells (new DiaCellLayers command, requested 2026-10-20; the query language cannot name cells) |
 | Click a mini-map cell | `cells.select.cell <q> <r>`, `cells.history.view <sample>` |
 | "Back to live" | `cells.history.live` |
 
 - Navigation is enabled only when Source A is Live, or when the file's `world` id matches the live game's loaded world.
-- Nothing else is sent: no tuning and no simulation control.
+- Nothing else is sent: no tuning and no simulation control. The one addition is recording config: `cells.history.track` / `untrack` for the "Track this layer" button (Feature 3; amended 2026-10-20). It changes what DiaCellHistory records, not the simulation.
 
 ### Logging and observation
 
@@ -122,12 +122,12 @@ The UI is kept separate from the analysis code (feedback rule): views call only 
 
 | # | Feature | Notes | Status | Spec |
 |---|---|---|---|---|
-| 1 | Plugin shell and sources | `CoWEditor` library, plugin, game-scoped registration, live subscribe, file open (C++ reads), source model, shared brush, schema tooltips | Draft | TBD |
-| 2 | Time series and events | uPlot chart, metric picker, unit axes, event markers, event timeline, saved views, CSV export | Draft | TBD |
-| 3 | Breakdown, distribution and mini-map | Group table with sparklines, histogram by group, hex mini-map | Draft | TBD |
-| 4 | Why panel | Cause aggregation from `cow.ecology.cause` events, "show cells" | Draft | TBD |
-| 5 | Correlation and run compare | Scatter with r and lag, Source B, alignment, overlay and Δ | Draft | TBD |
-| 6 | Navigation | Commands back to the game, live/world-match gating, "back to live" | Draft | TBD |
+| 1 | Plugin shell and sources | `CoWEditor` library, plugin, game-scoped registration, live subscribe, file open (C++ reads), source model, shared brush, schema tooltips | Approved | [plugin-shell-and-sources.md](plugin-shell-and-sources.md) |
+| 2 | Time series and events | uPlot chart, metric picker, unit axes, event markers, event timeline, saved views, CSV export | Approved | [time-series-and-events.md](time-series-and-events.md) |
+| 3 | Breakdown, distribution and mini-map | Group table with sparklines, histogram by group, hex mini-map | Approved | [breakdown-distribution-minimap.md](breakdown-distribution-minimap.md) |
+| 4 | Why panel | Cause aggregation from `cow.ecology.cause` events, "show cells" | Approved | [why-panel.md](why-panel.md) |
+| 5 | Correlation and run compare | Scatter with r and lag, Source B, alignment, overlay and Δ | Approved | [correlation-and-run-compare.md](correlation-and-run-compare.md) |
+| 6 | Navigation | Commands back to the game, live/world-match gating, "back to live" | Approved | [navigation.md](navigation.md) |
 
 - **Build order:** 1 → 2 → 6 → 3 → 4 → 5.
 - Feature 1 can start against a hand-written `dia.cell_history` fixture before any simulation is built.
@@ -191,4 +191,4 @@ The UI is kept separate from the analysis code (feedback rule): views call only 
 
 ## Status
 
-`Approved` (2026-10-19). Feature specs TBD; no plan yet. Build needs AD-001 sign-off for the `CluicheEditor.vcxproj` reference.
+`Approved` (2026-10-19). All 6 feature specs `Approved` (2026-10-20); no plan yet. Build needs AD-001 sign-off for the `CluicheEditor.vcxproj` reference.

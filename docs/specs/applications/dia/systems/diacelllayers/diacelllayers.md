@@ -90,6 +90,7 @@ layers.RegisterOverlay(o);
 | Lasso | alt-drag | `cells.select.poly <q,r…>` |
 | Region / biome | pick from list, or ctrl-click a cell | `cells.select.category <layerId> <value>` (any category layer) |
 | Query | type an expression | `cells.select.query "<expr>"` |
+| Cell list | programmatic (editor inspectors, e.g. T-1 "show cells") | `cells.select.cells <q,r…>` |
 | Clear | Esc | `cells.select.clear` |
 
 - **Query language** (small, no scripting):
@@ -98,6 +99,7 @@ layers.RegisterOverlay(o);
   - joined with `and`, `or`, `not` and parentheses
   - Layer names are the registered ids or their short schema keys.
   - Errors return a message and leave the selection unchanged.
+- **Cell list** (added 2026-10-20, T-1 Navigation): `cells.select.cells` replaces the selection with exactly the listed cells. Out-of-bounds cells are ignored. The game enforces a size limit (set in Feature 2) and the result returns the accepted set, so callers can show "Selected N of M". Feature 2 may also consider applying a navigation plan (history view, selection, base layer) in one frame; this is a request from T-1, not a requirement.
 - **Picking:** screen → camera inverse → `HexTopology::CellFromPoint`. An out-of-bounds result is ignored.
 - **Pin and compare:** `cells.select.pin` stores the current selection as **A**. While A is pinned, the inspector shows A's stats beside the current selection's, plus a delta column.
 - **Hand-off to systems:** providers can read the current selection, e.g. so A1's paint can apply a value to the whole selection.
