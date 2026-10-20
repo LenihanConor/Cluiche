@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cell Layer Viewer — S-3 Ecology Testbed Mockup</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0a0a0a;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 12px;
+  color: #d4d4d4;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* TOP BAR */
+.app-titlebar {
+  background: linear-gradient(to bottom, #2a2a2a 0%, #1f1f1f 100%);
+  border-bottom: 1px solid #3a3a3a;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.app-title { font-size: 11px; color: #999; flex: 1; }
+.titlebar-badge {
+  font-size: 10px; color: #666; background: #161616;
+  padding: 2px 8px; border-radius: 3px; border: 1px solid #2a2a2a;
+}
+
+/* MAIN LAYOUT */
+.main-layout {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* LEFT PANEL */
+.left-panel {
+  width: 300px;
+  background: #161616;
+  border-right: 1px solid #2a2a2a;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.panel-card {
+  border-bottom: 1px solid #2a2a2a;
+  display: flex;
+  flex-direction: column;
+}
+.card-header {
+  background: #1f1f1f;
+  padding: 6px 10px;
+  font-size: 10px;
+  color: #aaa;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #2a2a2a;
+}
+.card-body {
+  background: #0f0f0f;
+  padding: 8px;
+  overflow: auto;
+}
+
+/* LAYER PICKER */
+.layer-search {
+  margin-bottom: 8px;
+}
+.layer-search input {
+  width: 100%;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  color: #ccc;
+  font-family: inherit;
+  font-size: 10px;
+  padding: 4px 6px;
+  border-radius: 2px;
+  outline: none;
+}
+.layer-search input:focus { border-color: #5a9fd4; }
+
+.layer-group {
+  margin-bottom: 10px;
+}
+.layer-group-header {
+  font-size: 9px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 4px 6px;
+  background: #1a1a1a;
+  border-radius: 2px;
+  margin-bottom: 4px;
+}
+
+.layer-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  font-size: 10px;
+  color: #999;
+  cursor: pointer;
+  position: relative;
+}
+.layer-item:hover { color: #ccc; background: #1a1a1a; }
+
+.layer-radio, .layer-checkbox {
+  width: 12px; height: 12px;
+  border: 1px solid #3a3a3a;
+  background: #0f0f0f;
+  flex-shrink: 0;
+}
+.layer-radio { border-radius: 50%; }
+.layer-checkbox { border-radius: 2px; }
+.layer-radio.active {
+  border-color: #5a9fd4;
+  background: #5a9fd4;
+  position: relative;
+}
+.layer-radio.active::after {
+  content: '';
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 4px; height: 4px;
+  background: #fff;
+  border-radius: 50%;
+}
+.layer-checkbox.checked {
+  background: #5a9fd4;
+  border-color: #5a9fd4;
+  position: relative;
+}
+.layer-checkbox.checked::after {
+  content: '✓';
+  position: absolute;
+  top: -2px; left: 1px;
+  color: #fff;
+  font-size: 10px;
+}
+
+.info-icon {
+  width: 12px; height: 12px;
+  border: 1px solid #3a3a3a;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  color: #666;
+  cursor: help;
+  margin-left: auto;
+}
+.info-icon:hover { border-color: #5a9fd4; color: #5a9fd4; }
+
+.layer-item.show-tooltip .layer-tooltip { opacity: 1; }
+.layer-tooltip {
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 0;
+  background: #2a2a2a;
+  border: 1px solid #4a4a4a;
+  padding: 10px 12px;
+  border-radius: 3px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.7);
+  z-index: 100;
+  width: 280px;
+  font-size: 10px;
+  color: #ccc;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.tooltip-title { font-size: 11px; color: #5a9fd4; font-weight: 600; margin-bottom: 6px; }
+.tooltip-desc { color: #aaa; line-height: 1.4; margin-bottom: 8px; }
+.tooltip-meta {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  padding-top: 6px; border-top: 1px solid #333;
+  font-size: 9px; color: #777;
+}
+.tooltip-meta-item { display: flex; gap: 4px; }
+.tooltip-meta-label { color: #555; }
+.tooltip-meta-value { color: #999; }
+.tooltip-hint {
+  margin-top: 6px; padding: 6px 8px;
+  background: #1a1a1a; border-left: 2px solid #5a9fd4;
+  font-size: 9px; color: #888; font-style: italic; line-height: 1.3;
+}
+
+/* LEGEND */
+.legend-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.legend-ramp {
+  height: 20px;
+  background: linear-gradient(to right, #1a3a1a, #2a5a2a, #4a8a4a, #6aba6a, #8aea8a);
+  border-radius: 2px;
+  border: 1px solid #2a2a2a;
+}
+.legend-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: #666;
+}
+.legend-range {
+  font-size: 9px;
+  color: #999;
+  margin-top: 4px;
+}
+
+/* CENTER VIEWPORT */
+.center-viewport {
+  flex: 1;
+  position: relative;
+  background: #0d0d12;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* RIGHT PANEL */
+.right-panel {
+  width: 380px;
+  background: #161616;
+  border-left: 1px solid #2a2a2a;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* SELECTION INSPECTOR */
+.selection-header {
+  font-size: 11px;
+  color: #5a9fd4;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #222;
+}
+.selection-tools {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.tool-btn {
+  padding: 3px 8px;
+  background: #252525;
+  border: 1px solid #3a3a3a;
+  color: #999;
+  border-radius: 2px;
+  font-size: 9px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.tool-btn.active { background: #5a9fd4; color: #fff; border-color: #5a9fd4; }
+
+.query-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 2px;
+}
+.query-input {
+  width: 100%;
+  background: #0f0f0f;
+  border: 1px solid #3a3a3a;
+  color: #ccc;
+  font-family: 'Consolas', monospace;
+  font-size: 10px;
+  padding: 4px 6px;
+  border-radius: 2px;
+  outline: none;
+}
+.query-input:focus { border-color: #5a9fd4; }
+.query-result {
+  font-size: 9px;
+  color: #5a9fd4;
+}
+
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+  margin-bottom: 8px;
+}
+.stats-table th {
+  background: #1a1a1a;
+  padding: 4px 6px;
+  text-align: left;
+  font-weight: 600;
+  color: #777;
+  font-size: 9px;
+  border-bottom: 1px solid #2a2a2a;
+}
+.stats-table td {
+  padding: 3px 6px;
+  color: #aaa;
+  border-bottom: 1px solid #0f0f0f;
+}
+.stats-table td:first-child { color: #999; }
+.stats-table tr:hover { background: #1a1a1a; }
+
+.biome-counts {
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  background: #1a1a1a;
+  border-radius: 2px;
+}
+.biome-counts-title {
+  font-size: 9px;
+  color: #666;
+  margin-bottom: 4px;
+}
+.biome-chip {
+  display: inline-block;
+  font-size: 9px;
+  padding: 2px 6px;
+  background: #252525;
+  border: 1px solid #3a3a3a;
+  color: #999;
+  border-radius: 2px;
+  margin-right: 4px;
+  margin-bottom: 2px;
+}
+
+.histogram {
+  height: 60px;
+  background: #0f0f0f;
+  border: 1px solid #2a2a2a;
+  border-radius: 2px;
+  margin-bottom: 8px;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  padding: 4px;
+  gap: 2px;
+}
+.histogram-bar {
+  flex: 1;
+  background: linear-gradient(to top, #2a5a2a, #5a9fd4);
+  border-radius: 1px;
+}
+
+.pin-buttons {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.pin-btn {
+  flex: 1;
+  padding: 4px 8px;
+  background: #252525;
+  border: 1px solid #3a3a3a;
+  color: #999;
+  border-radius: 2px;
+  font-size: 9px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.pin-btn:hover { background: #2a2a2a; color: #ccc; }
+
+.pinned-chip {
+  display: inline-block;
+  font-size: 9px;
+  padding: 4px 8px;
+  background: #1a2530;
+  border: 1px solid #2a3a50;
+  color: #5a9fd4;
+  border-radius: 2px;
+  margin-bottom: 6px;
+}
+
+/* HISTORY TIMELINE */
+.timeline-bar {
+  height: 80px;
+  background: #1a1a1a;
+  border-top: 1px solid #3a3a3a;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px;
+  flex-shrink: 0;
+}
+.timeline-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.timeline-label {
+  font-size: 9px;
+  color: #666;
+  width: 60px;
+}
+.timeline-scrubber {
+  flex: 1;
+  height: 24px;
+  background: #0f0f0f;
+  border: 1px solid #2a2a2a;
+  border-radius: 2px;
+  position: relative;
+  cursor: pointer;
+}
+.timeline-track {
+  position: absolute;
+  top: 11px;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  background: #3a3a3a;
+}
+.timeline-playhead {
+  position: absolute;
+  top: 4px;
+  left: 75%;
+  width: 3px;
+  height: 16px;
+  background: #5a9fd4;
+  border-radius: 1px;
+}
+.timeline-marker {
+  position: absolute;
+  top: 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.timeline-marker.drought { left: 45%; color: #f5a623; }
+.timeline-marker.transition { left: 60%; color: #9b59b6; }
+.timeline-marker.crash { left: 80%; color: #e74c3c; }
+.timeline-snapshot {
+  position: absolute;
+  top: 7px;
+  font-size: 14px;
+  color: #5a9fd4;
+  cursor: pointer;
+}
+.timeline-snapshot.pre { left: 38%; }
+.timeline-snapshot.post { left: 72%; }
+
+.timeline-status {
+  font-size: 10px;
+  color: #999;
+}
+.live-btn {
+  padding: 3px 8px;
+  background: #2a5a2a;
+  border: 1px solid #4a8a4a;
+  color: #8aea8a;
+  border-radius: 2px;
+  font-size: 9px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.timeline-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 9px;
+  color: #666;
+}
+.timeline-budget {
+  color: #5a9fd4;
+}
+
+/* FOOTER */
+.footer-commands {
+  background: #161616;
+  border-top: 1px solid #2a2a2a;
+  padding: 6px 12px;
+  font-size: 9px;
+  color: #777;
+  font-family: 'Consolas', monospace;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+  max-height: 80px;
+  overflow-y: auto;
+}
+.footer-cmd {
+  color: #5a9fd4;
+}
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="app-titlebar">
+  <div class="app-title">CoW - S-3 Ecology Testbed</div>
+  <div class="titlebar-badge">Year 12 Week 30</div>
+  <div class="titlebar-badge">214 cells selected</div>
+  <div class="titlebar-badge">History Mode</div>
+</div>
+
+<!-- Main Layout -->
+<div class="main-layout">
+
+  <!-- LEFT PANEL: Layer Picker & Legend -->
+  <div class="left-panel">
+
+    <!-- Layer Picker Card -->
+    <div class="panel-card" style="flex: 1;">
+      <div class="card-header">LAYER PICKER</div>
+      <div class="card-body">
+
+        <div class="layer-search">
+          <input type="text" placeholder="Search layers...">
+        </div>
+
+        <!-- Terrain Group -->
+        <div class="layer-group">
+          <div class="layer-group-header">Terrain (S-1)</div>
+          <div class="layer-item">
+            <span class="layer-radio"></span>
+            <span>Relief</span>
+          </div>
+          <div class="layer-item">
+            <span class="layer-radio"></span>
+            <span>Biome</span>
+          </div>
+          <div class="layer-item">
+            <span class="layer-radio"></span>
+            <span>Terrain</span>
+          </div>
+          <div class="layer-item">
+            <span class="layer-radio"></span>
+            <span>Region</span>
+          </div>
+          <div class="layer-item">
+            <span class="layer-radio"></span>
+            <span>Elevation</span>
+          </div>
+        </div>
+
+        <!-- Weather Group -->
+        <div class="layer-group">
+          <div class="layer-group-header">Weather (A4)</div>
+          <div class="layer-item">
+            <span class="layer-radio"></span>
+            <span>Precipitation</span>
+          </div>
+          <div class="layer-item">
+            <span class="layer-radio"></span>
+            <span>Temperature</span>
+          </div>
+          <div class="layer-item">
+            <span class="layer-radio"></span>
+            <span>Snow pack</span>
+          </div>
+          <div class="layer-item">
+            <span class="layer-radio"></span>
+            <span>Cloud cover</span>
+          </div>
+          <div class="layer-item">
+            <span class="layer-radio"></span>
+            <span>Moisture</span>
+          </div>
+          <div class="layer-item">
+            <span class="layer-radio"></span>
+            <span>Pressure</span>
+          </div>
+          <div class="layer-item">
+            <span class="layer-radio"></span>
+            <span>Ground water</span>
+          </div>
+        </div>
+
+        <!-- Ecology Group -->
+        <div class="layer-group">
+          <div class="layer-group-header">Ecology (A1)</div>
+          <div class="layer-item show-tooltip">
+            <span class="layer-radio active"></span>
+            <span>Vegetation</span>
+            <span class="info-icon">i</span>
+            <div class="layer-tooltip">
+              <div class="tooltip-title">Vegetation</div>
+              <div class="tooltip-desc">
+                Total producer biomass (grass, shrub, tree, aquatic) in each cell. Normalised to biome carrying capacity.
+              </div>
+              <div class="tooltip-meta">
+                <div class="tooltip-meta-item">
+                  <span class="tooltip-meta-label">Unit:</span>
+                  <span class="tooltip-meta-value">fraction</span>
+                </div>
+                <div class="tooltip-meta-item">
+                  <span class="tooltip-meta-label">Range:</span>
+                  <span class="tooltip-meta-value">[0, 1]</span>
+                </div>
+              </div>
+              <div class="tooltip-hint">
+                Above 0.75: thriving. Below 0.25: stressed or collapsed.
+              </div>
+            </div>
+          </div>
+          <div class="layer-item">
+            <span class="layer-radio"></span>
+            <span>Herbivores</span>
+            <span class="info-icon">i</span>
+          </div>
+          <div class="layer-item">
+            <span class="layer-radio"></span>
+            <span>Predators</span>
+            <span class="info-icon">i</span>
+          </div>
+          <div class="layer-item">
+            <span class="layer-radio"></span>
+            <span>Ecology state</span>
+            <span class="info-icon">i</span>
+          </div>
+          <div class="layer-item">
+            <span class="layer-radio"></span>
+            <span>Health index</span>
+            <span class="info-icon">i</span>
+          </div>
+          <div class="layer-item">
+            <span class="layer-radio"></span>
+            <span>Soil fertility</span>
+            <span class="info-icon">i</span>
+          </div>
+        </div>
+
+        <!-- Overlays Group -->
+        <div class="layer-group">
+          <div class="layer-group-header">Overlays</div>
+          <div class="layer-item">
+            <span class="layer-checkbox checked"></span>
+            <span>Wind arrows</span>
+          </div>
+          <div class="layer-item">
+            <span class="layer-checkbox checked"></span>
+            <span>Region edges</span>
+          </div>
+          <div class="layer-item">
+            <span class="layer-checkbox"></span>
+            <span>Sites</span>
+          </div>
+          <div class="layer-item">
+            <span class="layer-checkbox"></span>
+            <span>Grid</span>
+          </div>
+          <div class="layer-item">
+            <span class="layer-checkbox checked"></span>
+            <span>Selection</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Legend Card -->
+    <div class="panel-card" style="flex: 0;">
+      <div class="card-header">LEGEND: VEGETATION</div>
+      <div class="card-body">
+        <div class="legend-strip">
+          <div class="legend-ramp"></div>
+          <div class="legend-labels">
+            <span>0.0 (none)</span>
+            <span>1.0 (max)</span>
+          </div>
+          <div class="legend-range">seen in view: 0.08 – 0.92</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CENTER VIEWPORT: Hex Map -->
+  <div class="center-viewport">
+    <svg width="100%" height="100%" viewBox="0 0 1200 800">
+      <!-- Hex grid with vegetation coloring (seeded plausible data) -->
+      <defs>
+        <pattern id="hexPattern" width="30" height="26" patternUnits="userSpaceOnits" patternTransform="translate(0, 13)">
+          <polygon points="15,0 28,7 28,19 15,26 2,19 2,7" fill="#2a5a2a" stroke="none" />
+        </pattern>
+      </defs>
+
+      <!-- Background -->
+      <rect width="1200" height="800" fill="#0d0d12"/>
+
+      <!-- Hex cells (40x26 grid, flat-top, colored by vegetation) -->
+      <g id="hexGrid">
+        <script>
+          // Generate hex grid with seeded vegetation values
+          const svg = document.querySelector('#hexGrid');
+          const cols = 40, rows = 26;
+          const hexWidth = 30, hexHeight = 26;
+          const xOffset = 0, yOffset = 0;
+
+          function seededRandom(x, y) {
+            const seed = x * 73856093 + y * 19349663;
+            return ((seed * 2654435761) % 2147483647) / 2147483647;
+          }
+
+          function vegColor(val) {
+            // Sequential green ramp
+            const intensity = Math.floor(val * 255);
+            const r = Math.floor(26 + intensity * 0.3);
+            const g = Math.floor(90 + intensity * 0.5);
+            const b = Math.floor(42);
+            return `rgb(${r},${g},${b})`;
+          }
+
+          for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < cols; col++) {
+              const xOdd = (row % 2) * hexWidth / 2;
+              const x = col * hexWidth + xOdd + 50;
+              const y = row * hexHeight * 0.75 + 50;
+
+              const veg = seededRandom(col, row) * 0.8 + 0.1 + Math.sin(col * 0.3 + row * 0.2) * 0.1;
+              const color = vegColor(veg);
+
+              const points = [
+                [x + hexWidth * 0.5, y],
+                [x + hexWidth, y + hexHeight * 0.25],
+                [x + hexWidth, y + hexHeight * 0.75],
+                [x + hexWidth * 0.5, y + hexHeight],
+                [x, y + hexHeight * 0.75],
+                [x, y + hexHeight * 0.25]
+              ].map(p => p.join(',')).join(' ');
+
+              const hex = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+              hex.setAttribute('points', points);
+              hex.setAttribute('fill', color);
+              hex.setAttribute('stroke', 'none');
+              svg.appendChild(hex);
+            }
+          }
+        </script>
+      </g>
+
+      <!-- Region edges (thick white lines along biome boundaries) -->
+      <line x1="150" y1="100" x2="400" y2="100" stroke="#666" stroke-width="2" opacity="0.6"/>
+      <line x1="400" y1="100" x2="500" y2="250" stroke="#666" stroke-width="2" opacity="0.6"/>
+      <line x1="500" y1="250" x2="500" y2="400" stroke="#666" stroke-width="2" opacity="0.6"/>
+      <line x1="200" y1="500" x2="600" y2="500" stroke="#666" stroke-width="2" opacity="0.6"/>
+      <line x1="600" y1="200" x2="800" y2="350" stroke="#666" stroke-width="2" opacity="0.6"/>
+
+      <!-- Wind arrows overlay (scattered arrows) -->
+      <g id="windArrows" opacity="0.7">
+        <path d="M 200,150 L 240,150 L 235,145 M 240,150 L 235,155" stroke="#5a9fd4" stroke-width="2" fill="none"/>
+        <path d="M 350,180 L 390,180 L 385,175 M 390,180 L 385,185" stroke="#5a9fd4" stroke-width="2" fill="none"/>
+        <path d="M 500,220 L 540,220 L 535,215 M 540,220 L 535,225" stroke="#5a9fd4" stroke-width="2" fill="none"/>
+        <path d="M 300,320 L 340,320 L 335,315 M 340,320 L 335,325" stroke="#5a9fd4" stroke-width="2" fill="none"/>
+        <path d="M 650,280 L 690,280 L 685,275 M 690,280 L 685,285" stroke="#5a9fd4" stroke-width="2" fill="none"/>
+        <path d="M 450,450 L 490,450 L 485,445 M 490,450 L 485,455" stroke="#5a9fd4" stroke-width="2" fill="none"/>
+        <path d="M 750,380 L 790,380 L 785,375 M 790,380 L 785,385" stroke="#5a9fd4" stroke-width="2" fill="none"/>
+        <path d="M 880,320 L 920,320 L 915,315 M 920,320 L 915,325" stroke="#5a9fd4" stroke-width="2" fill="none"/>
+        <path d="M 600,550 L 640,550 L 635,545 M 640,550 L 635,555" stroke="#5a9fd4" stroke-width="2" fill="none"/>
+      </g>
+
+      <!-- Selection: box-drag rectangle in progress -->
+      <rect x="420" y="280" width="350" height="220" fill="none" stroke="#5a9fd4" stroke-width="2" stroke-dasharray="5,5" opacity="0.8"/>
+
+      <!-- Selected cells highlight (outlined cells within the box) -->
+      <g id="selectedCells" opacity="0.6">
+        <rect x="450" y="300" width="28" height="26" fill="none" stroke="#f5a623" stroke-width="2"/>
+        <rect x="510" y="300" width="28" height="26" fill="none" stroke="#f5a623" stroke-width="2"/>
+        <rect x="540" y="330" width="28" height="26" fill="none" stroke="#f5a623" stroke-width="2"/>
+        <rect x="600" y="350" width="28" height="26" fill="none" stroke="#f5a623" stroke-width="2"/>
+        <rect x="660" y="370" width="28" height="26" fill="none" stroke="#f5a623" stroke-width="2"/>
+        <rect x="700" y="420" width="28" height="26" fill="none" stroke="#f5a623" stroke-width="2"/>
+        <!-- ... many more outlined cells ... -->
+      </g>
+
+      <!-- Label -->
+      <text x="20" y="30" font-size="14" fill="#3a3a4a" font-family="Consolas">40 × 26 HEX GRID · VEGETATION BASE LAYER</text>
+    </svg>
+  </div>
+
+  <!-- RIGHT PANEL: Selection Inspector -->
+  <div class="right-panel">
+
+    <div class="panel-card" style="flex: 1;">
+      <div class="card-header">SELECTION INSPECTOR</div>
+      <div class="card-body" style="max-height: none; overflow-y: auto;">
+
+        <div class="selection-header">214 cells · Region 3 (box)</div>
+
+        <!-- Tools Row -->
+        <div class="selection-tools">
+          <button class="tool-btn">Click</button>
+          <button class="tool-btn">Shift+click</button>
+          <button class="tool-btn active">Box</button>
+          <button class="tool-btn">Lasso</button>
+          <button class="tool-btn">Region</button>
+          <button class="tool-btn">Biome</button>
+          <button class="tool-btn">Query</button>
+        </div>
+
+        <!-- Query Field -->
+        <div class="query-field">
+          <input type="text" class="query-input" value="vegetation < 0.2 and biome = Grassland">
+          <div class="query-result">→ 37 cells match</div>
+        </div>
+
+        <!-- Pinned Selections -->
+        <div class="pinned-chip">A: Region 5, 180 cells</div>
+
+        <!-- Stats Table -->
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th>Layer</th>
+              <th>Min</th>
+              <th>Mean</th>
+              <th>Max</th>
+              <th>Unit</th>
+              <th>Δ vs A</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Vegetation</td>
+              <td>0.08</td>
+              <td>0.42</td>
+              <td>0.89</td>
+              <td>frac</td>
+              <td style="color: #5a9fd4;">+0.08</td>
+              <td><span class="info-icon">i</span></td>
+            </tr>
+            <tr>
+              <td>Herbivores</td>
+              <td>0.05</td>
+              <td>0.31</td>
+              <td>0.67</td>
+              <td>dens</td>
+              <td style="color: #e74c3c;">−0.12</td>
+              <td><span class="info-icon">i</span></td>
+            </tr>
+            <tr>
+              <td>Predators</td>
+              <td>0.00</td>
+              <td>0.09</td>
+              <td>0.24</td>
+              <td>dens</td>
+              <td style="color: #999;">+0.01</td>
+              <td><span class="info-icon">i</span></td>
+            </tr>
+            <tr>
+              <td>Precipitation</td>
+              <td>0.22</td>
+              <td>0.48</td>
+              <td>0.71</td>
+              <td>mm/wk</td>
+              <td style="color: #5a9fd4;">+0.15</td>
+              <td><span class="info-icon">i</span></td>
+            </tr>
+            <tr>
+              <td>Temperature</td>
+              <td>0.38</td>
+              <td>0.55</td>
+              <td>0.68</td>
+              <td>norm</td>
+              <td style="color: #999;">−0.03</td>
+              <td><span class="info-icon">i</span></td>
+            </tr>
+            <tr>
+              <td>Snow pack</td>
+              <td>0.00</td>
+              <td>0.12</td>
+              <td>0.45</td>
+              <td>depth</td>
+              <td style="color: #999;">+0.02</td>
+              <td><span class="info-icon">i</span></td>
+            </tr>
+            <tr>
+              <td>Soil fertility</td>
+              <td>0.42</td>
+              <td>0.63</td>
+              <td>0.88</td>
+              <td>frac</td>
+              <td style="color: #5a9fd4;">+0.09</td>
+              <td><span class="info-icon">i</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Categorical Counts -->
+        <div class="biome-counts">
+          <div class="biome-counts-title">Biome counts:</div>
+          <span class="biome-chip">Grassland: 178</span>
+          <span class="biome-chip">TemperateForest: 24</span>
+          <span class="biome-chip">Scrub: 12</span>
+        </div>
+
+        <!-- Histogram of Active Layer -->
+        <div class="histogram">
+          <div class="histogram-bar" style="height: 15%;"></div>
+          <div class="histogram-bar" style="height: 28%;"></div>
+          <div class="histogram-bar" style="height: 45%;"></div>
+          <div class="histogram-bar" style="height: 68%;"></div>
+          <div class="histogram-bar" style="height: 82%;"></div>
+          <div class="histogram-bar" style="height: 95%;"></div>
+          <div class="histogram-bar" style="height: 100%;"></div>
+          <div class="histogram-bar" style="height: 88%;"></div>
+          <div class="histogram-bar" style="height: 72%;"></div>
+          <div class="histogram-bar" style="height: 58%;"></div>
+          <div class="histogram-bar" style="height: 40%;"></div>
+          <div class="histogram-bar" style="height: 25%;"></div>
+          <div class="histogram-bar" style="height: 12%;"></div>
+          <div class="histogram-bar" style="height: 8%;"></div>
+        </div>
+
+        <!-- Pin Buttons -->
+        <div class="pin-buttons">
+          <button class="pin-btn">Pin as A</button>
+          <button class="pin-btn">Compare with A</button>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- HISTORY TIMELINE BAR -->
+<div class="timeline-bar">
+  <div class="timeline-controls">
+    <div class="timeline-label">Year 1–14:</div>
+    <div class="timeline-scrubber">
+      <div class="timeline-track"></div>
+      <div class="timeline-playhead"></div>
+      <!-- Event markers -->
+      <div class="timeline-marker drought" title="Drought (Y8)">▲</div>
+      <div class="timeline-marker transition" title="Grassland → Scrub (Y10)">●</div>
+      <div class="timeline-marker crash" title="Herbivore crash (Y12)">✕</div>
+      <!-- Snapshot diamonds -->
+      <div class="timeline-snapshot pre" title="Snapshot: pre-drought (Y11)">◆</div>
+      <div class="timeline-snapshot post" title="Snapshot: after-fire (Y12)">◆</div>
+    </div>
+    <div class="timeline-status">Year 12 Wk 30 (viewing history)</div>
+    <button class="live-btn">Live</button>
+  </div>
+  <div class="timeline-info">
+    <div>tracked per-cell: vegetation, herbivores, precipitation · <span class="timeline-budget">38 / 64 MB</span></div>
+    <div style="color: #9b59b6; cursor: pointer;">Delta view: now − pre-drought [thumbnail ▼]</div>
+  </div>
+</div>
+
+<!-- FOOTER: DiaAPI Commands -->
+<div class="footer-commands">
+  <span class="footer-cmd">cells.layer.base ecology.vegetation</span> ·
+  <span class="footer-cmd">cells.select.box 10 4 22 12</span> ·
+  <span class="footer-cmd">cells.select.query "vegetation < 0.2 and biome = Grassland"</span> ·
+  <span class="footer-cmd">cells.history.track vegetation herbivores precipitation</span> ·
+  <span class="footer-cmd">cells.snapshot.take pre-drought</span> ·
+  <span class="footer-cmd">cells.snapshot.restore pre-drought</span> ·
+  <span class="footer-cmd">cells.overlay.toggle weather.wind</span> ·
+  <span class="footer-cmd">cells.overlay.toggle region_edges</span> ·
+  <span class="footer-cmd">cells.select.pin A</span> ·
+  <span class="footer-cmd">cells.inspect (shows A vs current while A is pinned)</span>
+</div>
+
+</body>
+</html>
