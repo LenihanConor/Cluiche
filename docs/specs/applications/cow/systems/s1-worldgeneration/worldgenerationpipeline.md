@@ -105,6 +105,8 @@ struct Cell {
 
 **Per-size budget scaling (amended 2026-10-19).** Where a spec states only a Small budget, Standard and Large budgets scale by cell count from Small: Standard ≈ ×1.5 (4,160 / 2,772 = 1.501), Large ≈ ×2.4 (6,656 / 2,772 = 2.401), unless stated otherwise.
 
+**Validate a baked world (amended 2026-10-19, T-2 World Data Editor).** `cow.worldgen.validate <file>` loads a `.wld.json` and runs the guarantee validators (reachability and the rest) without regenerating. It returns pass/fail with the violating cells. T-2 uses it to clear its "unvalidated edit" flag after hand edits to a baked world.
+
 **Size picker (amended 2026-10-19).** The S-1 testbed exposes a size picker through a dedicated `cow.worldgen.set_size` DiaAPI command (args: `Small` | `Standard` | `Large`); changing size regenerates the world. F6 Goal 10 amended: size display becomes a picker.
 
 **Test coverage (amended 2026-10-19).** Determinism and acceptance tests run at all three sizes. Large tests carry a `SLOW_` prefix where the run time is expensive.

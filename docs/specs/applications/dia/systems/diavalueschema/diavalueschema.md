@@ -118,6 +118,17 @@ At runtime all five end up in one `ValueSchemaRegistry`, so consumers never care
 | `source` | no | Provenance text, e.g. which system step writes the value |
 | `ui` | no | `group`, `step`, `decimals`, `ramp`, `layer`, `hidden` |
 
+**Tables and references** (amended 2026-10-19, T-2 World Data Editor):
+
+| Addition | Form | Meaning |
+|---|---|---|
+| Record paths | `"key": "species[].growth_rate"` | One entry describes a column of an array of records |
+| Unique | `"unique": true` | Values must be unique within the array (ids) |
+| Required in record | `"required": true` | The column must be present in every record |
+| References | `"type": "ref"` or `"ref[]"`, with `"ref": "cow.biomes/biomes[].id"` | The value must equal an id in another format's record array |
+
+`dia validate schema` checks references, uniqueness and required columns. A failed reference gets a closest-match suggestion ("did you mean TemperateForest?").
+
 `for` names the data file's `format` id (F-3 envelope), so a defaults file and every pack of that format share one schema.
 
 ### Code-side descriptions
@@ -152,7 +163,7 @@ A survey found that no tool shows per-value descriptions today. Field labels are
    - Feature 7 adds `label`, `description`, `unit`, `min`, `max` and `default` to those field entries, taken from `FieldAttributeRegistry` and the existing defaults.
    - The Blueprint Editor's `SchemaReader` and the Entity Inspector read them from there. There is no second export path for component fields.
 3. **One shared tooltip UI.** Field rows exist three times today: `DiaEntityTemplateEditor/UI/src/components/FieldRow.tsx`, the Scene Editor's `propRow()` and CluicheTest's `PropertyGrid.tsx`. None of them has a tooltip.
-   - `@dia/editor-ui` (`Dia/DiaEditorUI`) gains `ValueLabel` (label, unit, (i) icon) and `ValueTooltip` (description, range, default, affects, related, source, hint), and the editor rows adopt them.
+   - `@dia/editor-ui` (`Dia/DiaEditorUI`) gains `ValueLabel` (label, unit, (i) icon) and `ValueTooltip` (description, range, default, affects, related, source, hint), and the editor rows adopt them. T-2 also adds a generic `CellGridCanvas` (flat-top hex or square grid with ramp or palette, hover, selection and brush), shared with T-1 (amended 2026-10-19).
    - The in-game debug panel gets one matching `renderValueTooltip()` in its shared panel script, so it isn't copied per panel.
 
 ### Runtime
@@ -193,6 +204,7 @@ A survey found that no tool shows per-value descriptions today. Field labels are
 - a `default` that differs from the defaults file
 - an `affects` or `related` key that doesn't resolve
 - an unknown `ui.ramp`
+- a `ref` that matches no id in the referenced format (with a closest-match suggestion), a duplicate `unique` value, or a missing `required` column
 
 **Warns on:**
 - metrics or commands with no `MetricInfo` or `ValueParam` (coverage gap), once code-side infos are available to the validator (Open Q1)
@@ -213,7 +225,7 @@ $ dia validate schema
 
 | # | Feature | Notes | Status | Spec |
 |---|---|---|---|---|
-| 1 | Format, loader and service | `ValueInfo`, the sidecar loader, `ValueSchemaModule` / `ValueSchemaService`, lookup by full key and by format, clamp-and-warn helper | Draft | TBD |
+| 1 | Format, loader and service | `ValueInfo`, the sidecar loader (including record paths, `unique`, `required`, `ref`), `ValueSchemaModule` / `ValueSchemaService`, lookup by full key and by format, clamp-and-warn helper | Draft | TBD |
 | 2 | `dia validate schema` | DiaCLI validator (Python, like `cli_validate.py`), precommit hook | Draft | TBD |
 | 3 | Tooltips (panel and editor UI) | Controls and rows take `schemaKey`; shared `ValueLabel`/`ValueTooltip` in `@dia/editor-ui` plus `renderValueTooltip()` in the debug panel; default mark, pack marker; schema query; contract golden | Draft | TBD |
 | 4 | Code-side descriptions | `MetricInfo` on `MetricRegistry`; `EditorActionParam` moved to DiaAPI as `ValueParam` (alias kept) and added to `CommandInfo`; `HelpSystem` and palette show the args | Draft | TBD |

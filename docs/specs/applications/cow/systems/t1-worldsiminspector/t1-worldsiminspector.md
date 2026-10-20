@@ -92,7 +92,7 @@ The UI is kept separate from the analysis code (feedback rule): views call only 
 - **Event timeline:** a list filterable by type, group and time. Clicking an event navigates.
 - **Breakdown:** a table of groups (regions or biomes) × chosen layers (mean over the brush), with a sparkline per row. Click a group to select it in-game.
 - **Distribution:** a histogram of a tracked layer's per-cell values at the brush end, split by a grouping layer (small multiples).
-- **Hex mini-map:** a tracked layer at the brush end, with the schema ramp. Clicking a cell navigates.
+- **Hex mini-map:** a tracked layer at the brush end, with the schema ramp, drawn with the shared `CellGridCanvas` from `@dia/editor-ui` (amended 2026-10-19, T-2). Clicking a cell navigates.
 - **Why panel:** choose a group, a layer and the brush period to see the summed cause deltas as a bar list. "Show cells" selects the cells that contributed most.
 - **Correlation:** a scatter of metric X against metric Y over group × sample within the brush, with Pearson r and a least-squares line. Choose the lag in samples (0 by default).
 - **Run compare:** with Source B set, the time series shows A and B overlaid, the breakdown shows A, B and Δ, and events from both are listed with source badges.
