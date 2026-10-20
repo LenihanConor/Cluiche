@@ -9,7 +9,7 @@
 | System | @docs/specs/applications/dia/systems/diacli/diacli.md | **dev-source-alias** |
 
 **Origin:** CoW F-3 World Assets (@docs/specs/applications/cow/systems/f3-worldassets/f3-worldassets.md) needs testbeds to write authored content into the source tree. Logged as Dia need #16 in `docs/specs/applications/cow/dia-needs.md`.  
-**Status:** `Approved`
+**Status:** `Done`
 
 ---
 
@@ -136,3 +136,5 @@ No `dia validate manifest` changes. Dev aliases are invisible to the manifest va
 ## Status
 
 `Approved` (2026-10-20). No plan yet. Build sign-off (AD-001) given by the user 2026-10-20; not started (implementation deferred by the user). dia-needs #16 signed off under CoW AD-001 on 2026-10-19.
+
+**Built 2026-10-20, deviation from this spec:** alias parsing lives in Dia `DiaApplicationFlow/Manifest/ManifestBootstrap` (`RegisterDevAliases(argc, argv)`, called by each `Main.cpp` before `LoadManifest`), not as a per-app function in `Main.cpp`. The real mains register aliases through `LoadManifest`, and the shared function is unit-testable (AC5). Messages use `printf` because aliases register before logging starts.

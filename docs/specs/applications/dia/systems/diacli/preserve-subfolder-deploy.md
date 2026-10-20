@@ -9,7 +9,7 @@
 | System | @docs/specs/applications/dia/systems/diacli/diacli.md | **preserve-subfolder-deploy** |
 
 **Origin:** CoW F-3 World Assets (@docs/specs/applications/cow/systems/f3-worldassets/f3-worldassets.md) needs world-sim assets to deploy with their subfolders intact so bundle-relative paths resolve the same way in dev and deployed builds. Logged as Dia need #17 in `docs/specs/applications/cow/dia-needs.md`.  
-**Status:** `Approved`
+**Status:** `Done`
 
 ---
 

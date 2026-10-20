@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/applications/dia/systems/diacli/dev-source-alias.md
-**Status:** In Progress
+**Status:** Done
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
