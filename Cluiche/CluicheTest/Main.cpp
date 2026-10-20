@@ -242,6 +242,9 @@ int main(int argc, const char* argv[])
     Dia::ApplicationFlow::ApplicationManifestV3& manifest = *manifestOwner;
     Dia::ApplicationFlow::TypeRegistry& registry = Dia::ApplicationFlow::TypeRegistry::Global();
 
+    // --dev-alias name=path (set by `dia launch`) must register before the manifest loads.
+    Dia::ApplicationFlow::RegisterDevAliases(argc, argv);
+
     // Compose, register path aliases (before any module resolves a FilePath), validate.
     if (!Dia::ApplicationFlow::LoadManifest(kDiagamePath, manifest, registry))
         return 1;

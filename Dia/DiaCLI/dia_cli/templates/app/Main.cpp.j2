@@ -11,6 +11,7 @@
 #include <DiaApplicationFlow/Manifest/ManifestComposerV2.h>
 #include <DiaApplicationFlow/Manifest/ManifestValidatorV2.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
+#include <DiaApplicationFlow/Manifest/ManifestBootstrap.h>
 #include <DiaCore/FilePath/PathStore.h>
 #include <DiaCore/FilePath/Path.h>
 #include <DiaCore/Json/external/json/json.h>
@@ -61,6 +62,12 @@ void RegisterPathAliases(const Dia::ApplicationFlow::ApplicationManifestV3& mani
     for (unsigned int i = 0; i < static_cast<unsigned int>(members.size()); ++i)
     {
         const std::string& aliasName = members[i];
+        if (aliasName == "source")
+        {
+            printf("Error: manifest path_aliases may not set reserved alias 'source' (only --dev-alias); ignoring
+");
+            continue;
+        }
         const char* relPath = aliases[aliasName].asCString();
 
         Dia::Core::Containers::String512 resolved;
@@ -68,6 +75,8 @@ void RegisterPathAliases(const Dia::ApplicationFlow::ApplicationManifestV3& mani
 
         Dia::Core::Path::Alias alias(aliasName.c_str());
         Dia::Core::Path::String pathStr(resolved.AsCStr());
+        if (Dia::Core::PathStore::IsPathAliasRegistered(alias))
+            Dia::Core::PathStore::UnregisterFromStore(alias); // manifest wins over dev aliases
         Dia::Core::PathStore::RegisterToStore(alias, pathStr);
     }
 }
@@ -76,9 +85,12 @@ void RegisterPathAliases(const Dia::ApplicationFlow::ApplicationManifestV3& mani
 
 #pragma warning(push)
 #pragma warning(disable: 6262)  // Application stack frame is large but main() is a one-shot
-int main(int /*argc*/, const char* /*argv*/[])
+int main(int argc, const char* argv[])
 {
     const char* kDiagamePath = "assets/{{ lower }}.diagame";
+
+    // --dev-alias name=path (set by `dia launch`) must register before the manifest loads.
+    Dia::ApplicationFlow::RegisterDevAliases(argc, argv);
 
     // Heap-allocate the manifest: it grows with module/channel count and can
     // overflow the default 1MB stack once stage manifests are merged in.

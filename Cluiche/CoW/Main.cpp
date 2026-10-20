@@ -13,7 +13,7 @@
 
 #pragma warning(push)
 #pragma warning(disable: 6262)  // Application stack frame is large but main() is a one-shot
-int main(int /*argc*/, const char* /*argv*/[])
+int main(int argc, const char* argv[])
 {
     const char* kDiagamePath = "assets/cow.diagame";
 
@@ -23,6 +23,9 @@ int main(int /*argc*/, const char* /*argv*/[])
         new Dia::ApplicationFlow::ApplicationManifestV3());
     Dia::ApplicationFlow::ApplicationManifestV3& manifest = *manifestOwner;
     Dia::ApplicationFlow::TypeRegistry& registry = Dia::ApplicationFlow::TypeRegistry::Global();
+
+    // --dev-alias name=path (set by `dia launch`) must register before the manifest loads.
+    Dia::ApplicationFlow::RegisterDevAliases(argc, argv);
 
     if (!Dia::ApplicationFlow::LoadManifest(kDiagamePath, manifest, registry))
         return 1;

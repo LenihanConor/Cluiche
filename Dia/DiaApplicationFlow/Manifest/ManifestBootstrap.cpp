@@ -1,11 +1,13 @@
 #include <DiaApplicationFlow/Manifest/ManifestBootstrap.h>
 #include <cstdio>
+#include <cstring>
 #include <string>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/Manifest/ManifestComposerV2.h>
 #include <DiaApplicationFlow/Manifest/ManifestValidatorV2.h>
 #include <DiaCore/FilePath/PathStore.h>
 #include <DiaCore/FilePath/Path.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/Json/external/json/json.h>
 
 namespace Dia { namespace ApplicationFlow {
@@ -37,6 +39,28 @@ namespace Dia { namespace ApplicationFlow {
         }
     }
 
+    void RegisterDevAliases(int argc, const char* const argv[])
+    {
+        static const char* const kFlag = "--dev-alias";
+        for (int i = 1; i + 1 < argc; ++i)
+        {
+            if (std::strcmp(argv[i], kFlag) != 0) continue;
+
+            const char* arg = argv[++i];
+            const char* eq = std::strchr(arg, '=');
+            if (!eq || eq == arg || eq[1] == 0) continue;
+
+            const std::string name(arg, static_cast<size_t>(eq - arg));
+            const char* path = eq + 1;
+            if (name.size() >= Dia::Core::StringCRC::kStringLength || std::strlen(path) >= Dia::Core::Path::String::Capacity()) continue;
+
+            Dia::Core::Path::Alias alias(name.c_str());
+            if (Dia::Core::PathStore::IsPathAliasRegistered(alias))
+                Dia::Core::PathStore::UnregisterFromStore(alias);
+            Dia::Core::PathStore::RegisterToStore(alias, Dia::Core::Path::String(path));
+        }
+    }
+
     void RegisterPathAliases(const ApplicationManifestV3& manifest, const char* diagamePath)
     {
         if (!manifest.diagameConfig) return;
@@ -51,6 +75,11 @@ namespace Dia { namespace ApplicationFlow {
         for (unsigned int i = 0; i < static_cast<unsigned int>(members.size()); ++i)
         {
             const std::string& aliasName = members[i];
+            if (aliasName == "source")
+            {
+                DIA_LOG_ERROR("ManifestBootstrap", "Manifest path_aliases may not set reserved alias 'source' (only --dev-alias); ignoring");
+                continue;
+            }
             const char* relPath = aliases[aliasName].asCString();
 
             Dia::Core::Containers::String512 resolved;
@@ -58,6 +87,8 @@ namespace Dia { namespace ApplicationFlow {
 
             Dia::Core::Path::Alias alias(aliasName.c_str());
             Dia::Core::Path::String pathStr(resolved.AsCStr());
+            if (Dia::Core::PathStore::IsPathAliasRegistered(alias))
+                Dia::Core::PathStore::UnregisterFromStore(alias); // manifest wins over dev aliases
             Dia::Core::PathStore::RegisterToStore(alias, pathStr);
         }
     }
