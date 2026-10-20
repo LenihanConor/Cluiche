@@ -145,8 +145,9 @@ Aggregates are computed on the provider's PU, on demand (when the selection or v
 ## Consumer amendments (applied when Approved)
 
 - **S-1 F7 (layered-debug-rendering):** the tile layer and `ColourMode` become registered layers. Region edges, sites, grid and selection become overlays. `selectCell` becomes `cells.select.cell`.
-- **A4:** the 8 scalar overlays become base layers and wind becomes an overlay. The "any number on" rule applies to overlays only.
+- **A4:** the seven scalar overlays become base layers and wind becomes an overlay. The "any number on" rule applies to overlays only.
 - **A1 F9:** the ecology overlays become layers. The inspector's single-cell view uses `describeCell` (ledger), and paint can apply to the selection.
+- **A3:** registers `succession.*` layers and emits transition and recovery events (amended 2026-10-19, consistency pass).
 - **S-2.5, S-3:** they host the viewer card. The per-system tile drawers are removed from their specs.
 
 ## Dependencies

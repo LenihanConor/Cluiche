@@ -168,7 +168,7 @@ Build order: 1 → 2 → 4 → 3 → 5. Feature 1 needs DiaCellLayers Feature 1.
 ## Resolved Decisions
 
 1. **Snapshots are files** (2026-10-19). The CoW store writes E1 save files (`out/saves/cow/snapshot_<name>.sav`), so a snapshot survives restarts and can be attached to a bug report. The per-cell copies of the recorded layers are written next to it (`snapshot_<name>.cells.json`).
-2. **Each testbed declares its default tracked layers** (2026-10-19) in its `.diastage` config (`"history": {"track": [...]}`). For S-3: vegetation, herbivores, precipitation.
+2. **Each testbed declares its default tracked layers** (2026-10-19) in its `.diastage` config (`"history": {"track": [...]}`). For S-3: `ecology.producers_total`, `ecology.group.herbivore`, `weather.precipitation` (ids from A1 and A4).
 
 ## Status
 

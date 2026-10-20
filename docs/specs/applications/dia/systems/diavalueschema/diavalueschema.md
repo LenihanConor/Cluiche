@@ -73,7 +73,7 @@ At runtime all five end up in one `ValueSchemaRegistry`, so consumers never care
       "description": "How much vegetation herbivores eat each season, relative to normal.",
       "unit": "× per season",
       "type": "float", "min": 0, "max": 2, "default": 1.0,
-      "affects": ["vegetation", "herbivores"],
+      "affects": ["producers_total", "group.herbivore"],
       "related": ["regrowth.forest"],
       "ui": { "group": "Herbivory", "step": 0.05, "decimals": 2 }
     }
@@ -88,14 +88,14 @@ At runtime all five end up in one `ValueSchemaRegistry`, so consumers never care
   "for": "cow.ecology.cell",
   "entries": [
     {
-      "key": "vegetation",
+      "key": "producers_total",
       "kind": "field",
-      "label": "Vegetation",
+      "label": "Producer biomass",
       "description": "Plant cover in the cell, from bare (0) to full canopy (1).",
       "hint": "Below 0.2 herbivores start to starve; above 0.8 forest can establish.",
       "unit": "fraction", "type": "float", "min": 0, "max": 1,
       "source": "A1 step 6 (producers)",
-      "ui": { "ramp": "sequential.green", "layer": "ecology.vegetation" }
+      "ui": { "ramp": "sequential.green", "layer": "ecology.producers_total" }, "history": { "track": true }
     }
   ]
 }

@@ -17,7 +17,7 @@ Weather          S-2.5        ← this testbed (A4)
 Terrain          S-1          live terrain editor
 ```
 
-A4's debug domain, nine overlays (eight scalar fields plus wind; amended 2026-10-19, product review), cell inspector, `cow.weather.*` commands, presets and 13-week history all belong to A4 (A4 Features 5 and 6). S-2.5 adds the stage, the curated worlds, the nine numeric checks, the headless runner and report, the guided walkthrough and the time-series graphs.
+A4's debug domain, seven scalar base layers plus the wind overlay (amended 2026-10-19, consistency pass; was "nine overlays"; product review), cell inspector, `cow.weather.*` commands, presets and 13-week history all belong to A4 (A4 Features 5 and 6). S-2.5 adds the stage, the curated worlds, the nine numeric checks, the headless runner and report, the guided walkthrough and the time-series graphs.
 
 **Checks are the verdict; overlays explain** (GDD AD-07). Each of the GDD's nine tests is a numeric predicate over A4's committed state. The same predicate runs in two places: in a **headless runner** that drives A4's pure simulation directly and produces the pass/fail report through DiaAutomation, and as a **live check line** in the stage while you watch the overlays.
 
@@ -35,7 +35,7 @@ A4's debug domain, nine overlays (eight scalar fields plus wind; amended 2026-10
 - **Tuning A4's defaults.** `set_param` exists for understanding. S-2.5 runs on A4's locked TuningParameters, and doesn't write parameters back.
 - **`WeatherUpdated` and A1 integration.** No subscriber here. S-3 checks the event (GDD AD-03).
 - **Extreme weather and year quality.** A4 defines neither (CHANGE-038).
-- **Map sizes (amended 2026-10-19, product review).** Small (66 × 42 = 2,772 cells) is the default and baseline target for acceptance. Standard (80 × 52 = 4,160 cells) and Large (104 × 64 = 6,656 cells) are supported via a size picker (DiaAPI command, see Commands below). Performance budgets scale per size (see Performance below).
+- **Map sizes** (amended 2026-10-19, product review; amended 2026-10-19, consistency pass). Small (66 × 42 = 2,772 cells) is the default and baseline target for acceptance. Standard (80 × 52 = 4,160 cells) and Large (104 × 64 = 6,656 cells) are supported via a size picker (`cow.worldgen.set_size <Small|Standard|Large>`; S-1 owns world size). Performance budgets scale per size (see Performance below).
 - **Player-facing weather visuals.** That's V-1. The overlays are debug-grade.
 
 **Launch-out from S-3.5 (amended 2026-10-19, S-3.5 World Sim):** at stage start, S-2.5 reads F-3's session hint (`out/CoW/session/next_bundle.json`). If one is present, it loads that bundle instead of its configured world, so "Open in S-2.5" from S-3.5 continues with the same world.
@@ -209,13 +209,13 @@ namespace CoW::Scenarios {                           // CoW-Shared, also used by
 
 ### Commands (DiaAPI)
 
-`cow.s25.world.load`, `cow.s25.world.size <small|standard|large>` (amended 2026-10-19, product review), `cow.s25.run` (headless plan; `world=`, `seed=`, `size=`), `cow.s25.run.cancel`, `cow.s25.report`, `cow.s25.baseline.record [force]`, `cow.s25.livesmoke`. CoW-Shared: `cow.scenario.list`, `cow.scenario.run`, `cow.scenario.walk next|prev`. The S25 panel card calls the same commands. All weather tools are A4's `cow.weather.*`.
+`cow.s25.world.load`, `cow.worldgen.set_size <Small|Standard|Large>` (amended 2026-10-19, consistency pass; S-1 owns world size), `cow.s25.run` (headless plan; `world=`, `seed=`, `size=`), `cow.s25.run.cancel`, `cow.s25.report`, `cow.s25.baseline.record [force]`, `cow.s25.livesmoke`. CoW-Shared: `cow.scenario.list`, `cow.scenario.run`, `cow.scenario.walk next|prev`. The S25 panel card calls the same commands. All weather tools are A4's `cow.weather.*`.
 
 ## Features
 
 | # | Feature | Description | Spec | Status |
 |---|---------|-------------|------|--------|
-| 1 | Stage & World | `.diastage`, F-1 menu entry, `S25WeatherModule`, world load and picker (SD-S1-010), size picker (Small/Standard/Large; amended 2026-10-19, product review), the two curated worlds + prechecks, A4 hosting (history 13, table baseline), time controls, step-back button, click-to-inspect wiring, boundary switch, S25 panel card. HTML mockup of the S25 card + A4 tools first | TBD | Draft |
+| 1 | Stage & World | `.diastage`, F-1 menu entry, `S25WeatherModule`, world load and picker (SD-S1-010), size picker via `cow.worldgen.set_size` (Small/Standard/Large; amended 2026-10-19, product review; amended 2026-10-19, consistency pass), the two curated worlds + prechecks, A4 hosting (history 13, table baseline), time controls, step-back button, click-to-inspect wiring, boundary switch, S25 panel card. HTML mockup of the S25 card + A4 tools first | TBD | Draft |
 | 2 | Weather Checks | Pure helpers (season table, distance fields, storm tracker, dry spells, aggregates), the nine tests as named `Hard`/`Default` checks, baseline file record/compare. TDD over hand-built hex terrain with known answers | TBD | Draft |
 | 3 | Headless Runner & Report | `S25HeadlessRunner` on A4's `WeatherRunner` + command executor, the test plan, worker job with progress and cancel, report JSON, edge-case coverage table, headless and live-smoke performance, DiaAutomation trigger and readout, live-vs-runner integration test | TBD | Draft |
 | 4 | Scenarios & Walkthrough (CoW-Shared) | Scenario format + loader + validator, `CheckRegistry`, check-line panel, walkthrough steps and `cow.scenario.*`; the nine S-2.5 scenarios and the five preset setups. S-3 Feature 3 consumes it | TBD | Draft |

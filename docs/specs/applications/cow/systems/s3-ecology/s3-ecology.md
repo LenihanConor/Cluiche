@@ -17,7 +17,7 @@ Weather          S-2.5        A4
 Terrain          S-1          live terrain editor
 ```
 
-**Map sizes** (amended 2026-10-19, product review): Small 66×42 (2,772 cells, default), Standard 80×52 (4,160 cells), Large 104×64 (6,656 cells). S-3 provides a size picker (DiaAPI command: `cow.s3.map.size`) and keeps long-run default Small with Large opt-in.
+**Map sizes** (amended 2026-10-19, product review; amended 2026-10-19, consistency pass): Small 66×42 (2,772 cells, default), Standard 80×52 (4,160 cells), Large 104×64 (6,656 cells). S-3 provides a size picker (DiaAPI command: `cow.worldgen.set_size <Small|Standard|Large>`; S-1 owns world size) and keeps long-run default Small with Large opt-in.
 
 S-3 loads an S-1 world and runs A1 on it in one of two modes, chosen from a panel inside the stage (AD-005):
 
@@ -61,7 +61,7 @@ SimPU (S3Ecology stage; amended 2026-10-19, DiaCellLayers/DiaCellHistory)
   ├─ SuccessionDebugDomain  A3's debug tools (hosted by S-3; amended 2026-10-19, product review)
   └─ S3EcologyModule        mode switch, climate input, scenarios, long-run runner, S3 panel card, size picker
                              hosts viewer and timeline cards; default tracked layers in .diastage:
-                             vegetation, herbivores, precipitation
+                             ecology.producers_total, ecology.group.herbivore, weather.precipitation
 ```
 
 ### Modes
@@ -176,13 +176,13 @@ namespace CoW::S3 {
 
 ### Commands (DiaAPI)
 
-`cow.s3.mode`, `cow.s3.world.load`, `cow.s3.climate.set`, `cow.s3.climate.region`, `cow.s3.climate.source` (`stub` or `climatology`), `cow.s3.scenario.run`, `cow.s3.scenario.list`, `cow.s3.checks`, `cow.s3.longrun`, `cow.s3.longrun.cancel`. The S3 panel card calls the same commands. All ecology tools are A1's `cow.ecology.*`.
+`cow.s3.mode`, `cow.s3.world.load`, `cow.worldgen.set_size <Small|Standard|Large>` (amended 2026-10-19, consistency pass), `cow.s3.climate.set`, `cow.s3.climate.region`, `cow.s3.climate.source` (`stub` or `climatology`), `cow.s3.scenario.run`, `cow.s3.scenario.list`, `cow.s3.checks`, `cow.s3.longrun`, `cow.s3.longrun.cancel`. The S3 panel card calls the same commands. All ecology tools are A1's `cow.ecology.*`.
 
 ## Features
 
 | # | Feature | Description | Spec | Status |
 |---|---------|-------------|------|--------|
-| 1 | Stage & Modes | `.diastage`, F-1 menu entry, world load and picker (SD-S1-010: preset + seed, `.wld.json`, or `world_bundle`; amended 2026-10-19, F-3 World Assets), `S3EcologyModule`, Controlled/Living switch and reinitialise (authoring loop exposed via F-3's World Assets card; amended 2026-10-19, F-3 World Assets), layer-presence panel card, time controls (GameSpeedController), size picker (`cow.s3.map.size`), the two sandbox worlds. HTML mockup of the S3 card + A1 tool panel first (amended 2026-10-19, product review) | TBD | Draft |
+| 1 | Stage & Modes | `.diastage`, F-1 menu entry, world load and picker (SD-S1-010: preset + seed, `.wld.json`, or `world_bundle`; amended 2026-10-19, F-3 World Assets), `S3EcologyModule`, Controlled/Living switch and reinitialise (authoring loop exposed via F-3's World Assets card; amended 2026-10-19, F-3 World Assets), layer-presence panel card, time controls (GameSpeedController), size picker via `cow.worldgen.set_size` (amended 2026-10-19, consistency pass), the two sandbox worlds. HTML mockup of the S3 card + A1 tool panel first (amended 2026-10-19, product review) | TBD | Draft |
 | 2 | Pinned Climate | `S3ClimateInput`: biome baseline, global sliders, year scale (GOOD 1.3 / AVERAGE 1.0 / BAD 0.7 values defined here, referenced by A1), region overrides, snow threshold; `cow.s3.climate.*`. Pure logic, TDD (amended 2026-10-19, product review) | TBD | Draft |
 | 3 | Guided Scenarios | Uses the CoW-Shared scenario format, loader and check-line panel from S-2.5 Feature 4 (hard dependency; amended 2026-10-19, product review); setup as DiaAPI command lists, named check predicates over A1's view and ledger, live check lines; the 10 Controlled scenarios and 4 Living scenarios | TBD | Draft |
 | 4 | Long-Run Runner | Headless band driver over the pure simulations, worker job with progress and cancel, report JSON with the six checks, live-vs-runner integration test | TBD | Draft |
@@ -207,6 +207,7 @@ For the DesignDocs owner to fold back into `TestbedRoster.md`, `S2_SingleCellEco
 1. **S-2 and S-3 merge into S-3 Ecology**, a single stage with Controlled and Living modes. S-2 retires from the roster. The numbering follows the layers: S-1 terrain, S-2.5 weather, S-3 ecology, S-4 dragons.
 2. **Each layer's testbed is the tool for understanding and tuning that layer.** A1 owns the tools (inspector, change ledger, tuning with write-back, painting, graphs), and S-3 hosts them. A3's `SuccessionDebugDomain` is also hosted by S-3 (amended 2026-10-19, product review).
 3. **No single-cell world.** The S-2 tests run on small S-1 worlds, with `isolate_cell` where one cell has to be alone. The equations are proven in A1's GoogleTests.
+4. **Logging** (amended 2026-10-19, consistency pass). S-3 logs on the `S3` channel: **Info** (mode switch, scenario start/finish, long-run results; **Error** (failed scenario checks, long-run check failures).
 4. **Year quality GOOD 1.3 / AVERAGE 1.0 / BAD 0.7 values are defined in S-3's pinned climate** (amended 2026-10-19, product review), not an A1 field (A1 C6).
 5. **S-2's ecology states:** "Depleted" is Collapsed, and "Recovering" is a flag (A1 C4).
 6. **S-2 Test 9's cluster events are multi-cell scenarios now.** On one cell they couldn't fire.

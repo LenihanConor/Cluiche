@@ -59,8 +59,9 @@ The hex canvas is generic, so it goes in Dia:
 ```
 CoWWorldDataEditorPlugin : IEditorPlugin            (C++)
   ├─ OnLoad: AssetTypeEditorRegistry::RegisterTypeEditor for
-  │          world_bundle, weather_pack, ecology_pack, ecology_start, world_baked,
-  │          cow.species, cow.biomes, cow.succession_rules, cow.*_params, cow.terrain_rules, cow.scenario
+  │          every F-3 format id (= catalogue type): cow.world_bundle, cow.weather_pack, cow.ecology_pack,
+  │          cow.ecology_start, cow.world, cow.worldshape, cow.species, cow.biomes, cow.succession_rules,
+  │          cow.weather_params, cow.ecology_params, cow.terrain_rules, cow.scenario
   │   (unregistered in OnUnload → out of scope ⇒ OS default app, per Game-Scoped Plugins)
   ├─ FileService      read/write source files (F-3 envelope), catalogue upsert via DiaAssetCatalogue
   ├─ SchemaService    loads *.schema.json (DiaValueSchema loader, same code as runtime)
@@ -123,7 +124,7 @@ Tables need two generic additions to DiaValueSchema. They belong in Dia because 
 2. The file is written with the F-3 envelope, and the version is bumped if the format requires it.
 3. The catalogue record is added or updated.
 4. `dia validate schema --json --file <f>` runs.
-5. If CoW is connected, T-2 offers **Reload in game**: `cow.world.pack.load …`, `cow.weather.reload`, `cow.ecology.reload` or `cow.world.bundle.load`, depending on the type.
+5. If CoW is connected, T-2 offers **Reload in game**: `cow.world.pack.load …`, `cow.weather.reload`, `cow.ecology.reload_data` or `cow.world.bundle.load`, depending on the type.
 
 **Baked-world edits:**
 - Saving changes the world's content hash, so start states and bundles that use the world are shown as stale (F-3 version rule), with an "update start states" option that re-keys them.
@@ -165,7 +166,7 @@ Tables need two generic additions to DiaValueSchema. They belong in Dia because 
 | `dia validate schema` | One validator | Approved, not built |
 | F-3 World Assets | File types, envelope, catalogue types, stale rules | Approved, not built |
 | `@dia/editor-ui` `ValueLabel`, `ValueTooltip`, new `CellGridCanvas` | UI | Tooltips Approved; canvas added by this spec |
-| CoW commands `cow.world.*`, `cow.weather.reload`, `cow.ecology.reload`, `cow.worldgen.validate` | Game link | `cow.worldgen.validate` is new (S-1 amendment) |
+| CoW commands `cow.world.*`, `cow.weather.reload`, `cow.ecology.reload_data`, `cow.worldgen.validate` | Game link | `cow.worldgen.validate` is new (S-1 amendment) |
 
 **Amendments when Approved:**
 - **DiaValueSchema:** record paths, `unique`, `required`, and `ref`/`ref[]` with validator checks.

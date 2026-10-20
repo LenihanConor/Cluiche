@@ -217,6 +217,8 @@ This is recorded as A1 amendment 3 below, and is new GDD content for the fold-ba
 - **Instrumentation:** `DIA_PROFILE_SCOPE` for Resolve, OnYear and OnSeason. Metrics: transitions per band by pair, rejections, cells per visual state. Health is Degraded when the rule table references an unknown biome or field.
 - **Logging** (added 2026-10-19, product review): on the `ECO` channel (shares A1's channel): rejected transitions (staging violation, cell, from, to, source) at Info; accepted transitions at Info; recovery stage changes at Info; rule-table validation errors at Error.
 
+**Layer ids** (amended 2026-10-19, consistency pass): A3 registers `succession.visual_state` (Category: Normal / Stressed / Transitioning / Post-transition), `succession.recovery_stage` (Category: none / Seeding / Establishing / Complete) and `succession.legacy_marker` (Float: marker years left). Succession progress is A1's `ecology.succession_progress`. Event types: `cow.succession.transition`, `cow.succession.recovery_stage`.
+
 ## Public Interfaces
 
 ```cpp
@@ -297,7 +299,7 @@ For the GDD session to fold back, on top of CHANGE-036:
 
 **Requires:**
 - **A1 Ecology**, Features 1–5, plus amendments 1–4.
-- GameSpeedController (bands, via A1), E1, DiaMessageBus, `VisualDebuggerModule`, DiaAPI `CommandRegistry`, Dia CellField (dia-needs #14) for overlays.
+- GameSpeedController (bands, via A1), E1, DiaMessageBus, `VisualDebuggerModule`, DiaAPI `CommandRegistry`, Dia CellField (dia-needs #14) for overlays. DiaCellLayers, DiaCellHistory and DiaValueSchema (layers, events, tooltips), all Approved, not built (amended 2026-10-19, consistency pass).
 
 **Required by:** A1 (resolver, optional), A4 (`BiomeTransitionComplete`), S-3 Ecology (Living mode transitions, the A3 scenario, the succession long-run check), and later V-1, D4, C3, B1 and B2.
 

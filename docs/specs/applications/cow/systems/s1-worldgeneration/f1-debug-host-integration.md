@@ -60,7 +60,7 @@ With debug host integration:
 
 ### UI Layout
 
-**Panel name:** "World Generation": the DiaDebugPanel card of `WorldGenDebugDomain` (amended 2026-10-15). Buttons send domain commands (`regenerate`, `export`, `import`, `cancel`, `validate`, `selectCell`, `setColourMode`, `toggle`). The domain turns each into the request events below; the panel never calls the module directly.
+**Panel name:** "World Generation": the DiaDebugPanel card of `WorldGenDebugDomain` (amended 2026-10-15). Buttons send domain commands (`regenerate`, `export`, `import`, `cancel`, `validate`, `cells.select.cell` (DiaCellLayers; was `selectCell`), `setColourMode`, `toggle`). The domain turns each into the request events below; the panel never calls the module directly.
 
 **Sections:**
 

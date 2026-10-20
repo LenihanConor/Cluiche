@@ -23,6 +23,8 @@ The work is split into two steps so the first can ship on its own:
 
 The Step 2 API fields exist from Step 1 (defaulted and ignored), so callers written against Step 1 don't change.
 
+
+**Logging** (amended 2026-10-19, consistency pass): channel `CFL`. Warning when a layer is rejected for exceeding a limit (128×128, 32 layers), and when the upload queue coalesces or overflows its 8 MB cap. Error when geometry generation fails.
 ## Problem
 
 - `IDebugDraw` has no filled-polygon primitive, and the debug primitive buffer is a fixed per-frame array that is copied several times on its way to the renderer (see Findings). Drawing a 2,772-cell map as primitives needs ~19,500 of them every frame, rebuilt on the CPU even though the map changes rarely.

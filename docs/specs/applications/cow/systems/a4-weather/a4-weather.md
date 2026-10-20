@@ -20,7 +20,7 @@ A4 also ships the tools for tuning weather on its own: a debug domain with eight
 3. **The A1/V-1 contract.** `WeatherUpdated{week}` plus a const `WeatherSnapshot` view carrying every field the GDD's §13 payload lists.
 4. **Data-driven tuning.** All 20 constants load from `weather_parameters.json`, are validated, hot-reload, and can be overridden live.
 5. **Save/load.** Committed weather state round-trips through E1. A reload continues bit-identically.
-6. **Observable.** A debug domain with nine per-cell overlays (eight scalars plus a wind vector field), a cell inspector, console commands, and per-step profiling.
+6. **Observable.** A debug domain with seven scalar base layers plus a wind vector overlay (nine floats per cell, because wind has two components) (amended 2026-10-19, consistency pass), a cell inspector, console commands, and per-step profiling.
 7. **Tunable in isolation.**
    - The five presets and the four regression scenarios (AuthoringDebug §5–§6) ship with A4.
    - The S-2.5 testbed hosts the stage that proves the GDD success criteria (`A4_WeatherSystem.md` §Success Criteria).
@@ -510,4 +510,4 @@ None remain at system level. Feature-level questions go in each feature spec.
 
 ## Status
 
-**Status:** `Approved` (2026-10-14). dia-needs #11 and #12 were signed off the same day but aren't built yet. Feature 4 and the parallel path of Feature 3 wait on them.
+**Status:** `Approved` (2026-10-14). dia-needs #11 (blob API) was rejected 2026-10-15, so Feature 4 uses JSON text saves and isn't blocked. dia-needs #12 (`JobSystemService` + `TrySubmit`) is Approved but not built; the parallel path of Feature 3 waits on it and runs serially until then (amended 2026-10-19, consistency pass).

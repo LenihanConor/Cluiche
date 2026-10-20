@@ -82,7 +82,7 @@ SimPU (S35WorldSim stage)
 // s35_world_sim.diastage (config excerpt)
 {
   "world_bundle": "default",
-  "history": { "track": ["ecology.vegetation", "ecology.herbivores", "weather.precipitation"] },
+  "history": { "track": ["ecology.producers_total", "ecology.group.herbivore", "weather.precipitation"] },
   "s35": { "mode": "Run", "regression": { "years": 20, "sizes": ["Small", "Standard", "Large"],
                                           "ranges": [1, 3, 17], "seed": 42 } }
 }

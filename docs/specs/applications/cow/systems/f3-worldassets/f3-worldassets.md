@@ -2,7 +2,7 @@
 
 **Parent:** @docs/specs/applications/cow/cow.md  
 **Origin:** 2026-10-19 product review of the world-sim stack. Outcomes B7 (clear assets: how they load and save) and D (author content in the testbeds) had no owner.  
-**Consumers:** @docs/specs/applications/cow/systems/s1-worldgeneration/worldgenerationpipeline.md, @docs/specs/applications/cow/systems/a4-weather/a4-weather.md, @docs/specs/applications/cow/systems/a1-ecology/a1-ecology.md, @docs/specs/applications/cow/systems/a3-biomesuccession/a3-biomesuccession.md, the S-1, S-2.5, S-3 and S-4 World Sim testbeds
+**Consumers:** @docs/specs/applications/cow/systems/s1-worldgeneration/worldgenerationpipeline.md, @docs/specs/applications/cow/systems/a4-weather/a4-weather.md, @docs/specs/applications/cow/systems/a1-ecology/a1-ecology.md, @docs/specs/applications/cow/systems/a3-biomesuccession/a3-biomesuccession.md, the S-1, S-2.5, S-3 and S-3.5 World Sim testbeds
 
 **Gameplay Domains:** debug
 
@@ -96,7 +96,7 @@ Keys are dotted paths into the defaults file. Weather packs have the same shape 
   "format": "cow.ecology_start", "version": 1,
   "world": { "baked": "archipelago_s42", "hash": "9f3c…" },
   "cells": [
-    { "q": 12, "r": 7, "vegetation": 0.9, "herbivores": 40 },
+    { "q": 12, "r": 7, "grass": 0.9, "species.red_deer.adult": 0.4 },
     { "q": 13, "r": 7, "biome": "BurnedAshland" }
   ]
 }
@@ -190,7 +190,7 @@ DiaAPI commands. Every authoring action is a command, and the panel calls the sa
 
 - `save_as` refuses to overwrite an existing id unless it is given `overwrite`.
 - Catalogue writes from the game only add or update records it owns (Resolved Decision 3).
-- Every write adds or updates a record in `assets.catalogue.json`, with the id, the type (`world_bundle`, `weather_pack`, `ecology_pack`, `ecology_start`, `world_baked`) and the `world` tag.
+- Every write adds or updates a record in `assets.catalogue.json`, with the id, the type and the `world` tag. **The catalogue `type` is always the file's format id** (`cow.world_bundle`, `cow.weather_pack`, `cow.ecology_pack`, `cow.ecology_start`, `cow.world`, `cow.worldshape`, `cow.species`, `cow.biomes`, `cow.succession_rules`, `cow.weather_params`, `cow.ecology_params`, `cow.terrain_rules`, `cow.scenario`), so `open_asset` routing and validation use one id scheme (amended 2026-10-19, consistency pass).
 
 **Events** (DiaMessageBus, small POD): `WorldBundleLoaded{bundleId}`, `WorldAssetSaved{kind, id}`.
 

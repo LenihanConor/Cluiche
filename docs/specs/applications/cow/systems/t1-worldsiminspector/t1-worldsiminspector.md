@@ -39,7 +39,7 @@ This is the **Inspector** tier (feedback rule: Editor = offline files, Inspector
 - **Tuning or editing.** That happens in testbeds (F-3 Save-as) and T-2 World Data Editor.
 - **Recording.** DiaCellHistory records; T-1 only reads.
 - **In-game graphs.** The systems' own panel graphs stay in-game.
-- **Running the simulation.** Headless runs are S-2.5 and S-3 runners; T-1 opens their output.
+- **Running the simulation.** Headless runs are the S-2.5, S-3 and S-3.5 Regression runners; T-1 opens their `dia.cell_history` output (amended 2026-10-19, consistency pass).
 
 ## Architecture
 

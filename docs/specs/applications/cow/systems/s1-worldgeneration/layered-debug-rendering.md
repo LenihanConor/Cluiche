@@ -34,8 +34,28 @@ Without debug rendering:
 4. **Dynasty Starts:** a player marker, rival markers, and a minimum-spacing ring around each start. A ring is red when its start belongs to a pair in DynastySpacing's `violatingPairs`.
 5. **Guarantee Evidence:** each `proofPath` from Feature 2 drawn as a polyline (one colour per guarantee), and each `violatingCells` cell outlined in red with a cross. Drawn only when the evidence belongs to the world on screen (see Evidence Freshness).
 6. **Selection:** the selected cell is outlined, and its six neighbours are outlined and labelled with their direction index `0..5` (the order A4 depends on). Feature 6's Cell Inspector shows the fields.
-7. **Fits the debug-draw budget:** a Small world (66 × 42) with every drawer on drops nothing (`DroppedCount() == 0`) and keeps the frame under 16 ms. Needs dia-needs #13 (budget 2,048 → 8,192) for the line/marker overlays and #14 (CellField) for the tiles.
+7. **Fits the debug-draw budget** (amended 2026-10-19, consistency pass): Small world (66 × 42 = 2,772 cells) with every drawer on drops nothing (`DroppedCount() == 0`) and keeps the frame under 16 ms. Standard (80 × 52 = 4,160 cells) budget ~5,400 primitives (×1.50 by cell count). Large (104 × 64 = 6,656 cells) budget ~8,640 primitives (×2.40). Needs dia-needs #13 (budget 2,048 → 8,192) for the line/marker overlays and #14 (CellField) for the tiles.
 8. **Independent toggles:** every drawer toggles through the domain's `toggle` command. Toggle state and colour mode survive regeneration and import.
+
+### Layer ids (amended 2026-10-19, consistency pass)
+
+Each colour mode registers as a DiaCellLayers layer (Approved, not built):
+
+| Layer id | Value kind | Schema key | Notes |
+|---|---|---|---|
+| `terrain.relief` | float | `cow.terrain.cell/slope` + `elevation` | Hillshade (default) |
+| `terrain.biome` | category | `cow.terrain.cell/biome` | `history.group: true` |
+| `terrain.terrain_type` | category | `cow.terrain.cell/terrain` | — |
+| `terrain.region` | category | `cow.terrain.cell/region` | `history.group: true` |
+| `terrain.elevation` | float | `cow.terrain.cell/elevation` | Sequential ramp 0→1 |
+| `terrain.latitude` | float | `cow.terrain.cell/latitude` | Sequential ramp 0→1 |
+| `terrain.water_source` | category | `cow.terrain.cell/waterSource` | None/Ocean/Lake/River |
+| `terrain.depth_zone` | category | `cow.terrain.cell/depthZone` | None, FirstShores, WildReaches, AncientInteriors |
+| `terrain.temperature` | float | Feature 8 layer | From A4 baseline |
+| `terrain.moisture` | float | Feature 8 layer | From A4 baseline |
+| `terrain.stage.<name>` | float | Feature 1/8 layers | Per-stage layers (`landPotential`, `ridgeMask`, etc.) |
+
+**Overlays** (line/marker, not coloured cell layers): `terrain.region_edges`, `terrain.sites` (toggle per kind), `terrain.grid`, `terrain.guarantee_evidence`, `cells.selection` (selected cell + neighbour labels).
 
 ## Non-Goals
 
@@ -92,7 +112,7 @@ Region-edge counts come from the flat-top odd-q rectangle (about `3 × W × H` e
 | Moisture | Feature 8 layer | Sequential ramp, 0 = dry → 1 = wet |
 | (Per-stage layers) | Feature 1/8 layers | `landPotential`, `ridgeMask`, `barrierMask`, `flowAccumulation`, etc. (queried through `layers` command) |
 
-On a world or colour-mode change the domain writes the per-cell values into its CellField layer (category ids for categorical modes, floats for Elevation/Latitude) and picks the palette or ramp; nothing is uploaded on frames where neither changed. The colour mode is set by the `setColourMode` command (`args: { "mode": "<name>" }`). `GetJSONState` writes the active mode and its legend (category → colour, or ramp endpoints with min/max values seen in this world) for Feature 6 to show.
+On a world or colour-mode change the domain writes the per-cell values into its CellField layer (category ids for categorical modes, floats for Elevation/Latitude) and picks the palette or ramp; nothing is uploaded on frames where neither changed. The colour mode is set by the `cells.layer.base` command (`args: { "mode": "<name>" }`). `GetJSONState` writes the active mode and its legend (category → colour, or ramp endpoints with min/max values seen in this world) for Feature 6 to show.
 
 ### Evidence Freshness
 
@@ -109,7 +129,7 @@ World → screen goes through the camera. Screen → cell uses the camera invers
 
 ### Selection Input
 
-> **Amended 2026-10-19 (DiaCellLayers/DiaCellHistory):** Selection uses DiaCellLayers commands: `cells.select.cell <q> <r>` replaces `selectCell`, and the Cell Inspector (Feature 6) uses `describeCell` to show S-1's biome scores, stage values and neighbours alongside the field values.
+> **Amended 2026-10-19 (DiaCellLayers/DiaCellHistory):** Selection uses DiaCellLayers commands: `cells.select.cell <q> <r>` replaces the old `selectCell {x,y}`, and the Cell Inspector (Feature 6) uses `describeCell` to show S-1's biome scores, stage values and neighbours alongside the field values.
 
 A left-click on the map selects a cell:
 1. The stage's input handler (MainPU) turns the click into a world point (camera inverse).
@@ -150,7 +170,7 @@ public:
 
     // Panel bridge: drawers, colour mode + legend, Feature 6's controls/inspector/validation
     void GetJSONState(Json::Value& out) override;
-    // Commands: toggle, setScale (IDebugDomain); setColourMode, selectCell (this feature);
+    // Commands: toggle, setScale (IDebugDomain). Layer and selection commands (cells.layer.base, cells.select.*) belong to DiaCellLayers;
     //           regenerate, export, import, cancel, validate (Feature 6)
     void OnCommand(Dia::Core::StringCRC cmd, const Json::Value& args) override;
 
@@ -199,7 +219,7 @@ Generate a world with a known seed. **Pass:**
 - In Biome mode, colours match biome types: a Forest-heavy `GenParams` gives a mostly-Forest-coloured map.
 
 ### AC2 — Colour Modes *(amended 2026-10-15)*
-Switch through all six modes with `setColourMode`. **Pass:**
+Switch through every registered terrain layer with `cells.layer.base <id>` (amended 2026-10-19, consistency pass). **Pass:**
 - Each mode recolours every hex from its field.
 - Elevation and Latitude show a continuous ramp, and the panel legend reports the min/max seen.
 - Water Source shows at least one non-None cell (Test 1c guarantees one).
@@ -302,7 +322,7 @@ Create `layered-debug-rendering.plan.md` when implementation starts. Its **Imple
 - The per-revision geometry cache (hex corners, shared-edge list, region-edge list)
 - Palette and ramp tables per colour mode, and the legend JSON shape
 - Evidence freshness check and the hidden-evidence message
-- The click → `selectCell` route (Open Q #2)
+- The click → `cells.select.cell` route (Open Q #2)
 - The measured primitive counts against the drawer table (AC10)
 
 Build order: dia-needs #13 and #14 first, then this feature.

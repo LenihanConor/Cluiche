@@ -242,9 +242,25 @@ The ledger covers the last band only, is overwritten each band, is never saved, 
 - **Graphs (amended 2026-10-19, DiaCellLayers/DiaCellHistory):** a rolling time-series panel showing the selected cell's per-species juvenile/adult counts and producers, plus map-wide functional-group totals and the state distribution. Map-wide totals and the state distribution read DiaCellHistory aggregates, so they cover the whole run and are recorded whether or not the panel is open. Per-cell series need that layer to be tracked (`cells.history.track`). Long-run analysis lives in the World Sim Inspector.
 - **Tuning:** live sliders over `ecology_parameters.json` and the selected species' and biome's entries, applied at the next band. `cow.ecology.tuning.save` writes changes to the defaults files themselves via the `source` alias (dia-needs #16, F-3 World Assets; amended 2026-10-19). `cow.world.pack.save_as ecology <id>` is the normal tuning path, writing overrides-only ecology packs to `Assets/CoW/Global/Ecology/Packs/<id>.ecology.json`. Hot reload picks up hand edits.
 - **Editing:** set a cell's fields or a species' population, and paint species, producers, water or biome over a brush of cells. Painting a biome reinitialises the painted cells from the biome's starting values. Painted/edited cells can be saved as an ecology start state via `cow.world.startstate.save_as` (baked terrain only; F-3 World Assets, amended 2026-10-19), written to `Assets/CoW/Global/Ecology/StartStates/<id>.ecostate.json`. `isolate_cell` turns off migration and propagation into and out of the selected cell, which gives the old single-cell S-2 behaviour.
-- **Commands:** `inspect`, `ledger`, `set_field`, `set_species`, `paint`, `isolate_cell`, `set_ecology_state`, `step_band`, `reload_data`, `tuning.set`, `tuning.save`, `find_events`, `ignite`, `apply_transition` (until A3).
+- **Commands:** `inspect`, `ledger`, `set_field`, `set_species`, `paint`, `isolate_cell`, `set_ecology_state`, `step_band`, `reload_data` (full name `cow.ecology.reload_data`: re-reads species, biomes, ecology parameters and succession rules from disk; used by T-2 "Reload in game"), `tuning.set`, `tuning.save`, `find_events`, `ignite`, `apply_transition` (until A3).
 - **Instrumentation (amended 2026-10-19, DiaCellLayers/DiaCellHistory):** `DIA_PROFILE_SCOPE` per step, `MetricRegistry` counters (cells per state, events per band, band time), an `IHealthReporter` (Degraded on the fallback roster or a failed data validation). Ecology state changes and crashes are emitted as DiaCellHistory events.
 - **Cause events for T-1 (amended 2026-10-19, T-1 World Sim Inspector):** each band, for each region and each layer tracked in DiaCellHistory, A1 emits its top 3 ledger causes as `cow.ecology.cause {group, layer, cause, delta}` events. The event type is described in DiaValueSchema (`kind: event`). This feeds T-1's why panel.
+
+- **Layer ids** (amended 2026-10-19, consistency pass): A1 registers these DiaCellLayers layers. Schema keys are `cow.ecology.cell/<field>`.
+
+  | Layer id | Kind | Source | Notes |
+  |---|---|---|---|
+  | `ecology.state` | Category | `ecology_state` | Palette from the state enum |
+  | `ecology.health` | Float | `health` | |
+  | `ecology.producers_total` | Float | `grass + shrub + tree + aquatic` (derived) | Default tracked layer |
+  | `ecology.producer.<grass/shrub/tree/aquatic>` | Float | producer fields | |
+  | `ecology.seed_bank`, `ecology.soil_fertility`, `ecology.water` | Float | fields of the same name | |
+  | `ecology.group.<tag>` | Float | functional-group density (sum of tagged species, adult + juvenile) | e.g. `ecology.group.herbivore` (default tracked) |
+  | `ecology.species.<id>` | Float | one species' density | Registered per species in the roster |
+  | `ecology.pressure.<field>` | Float | pressure fields (`prey_scent` …) | |
+  | `ecology.transient.<field>` | Float | `carrion`, `ash`, `fire_intensity`, `drought_stress` … | |
+  | `ecology.succession_progress` | Float | highest forward `succession_pressure` | Shared with A3's `GetSuccessionProgress` |
+  | Overlay `ecology.migration` | — | top-3 migration arrows | |
 
 S-3 Ecology hosts these. A1 owns no stage.
 
@@ -353,7 +369,7 @@ Messages (`CellEcologyChanged`, `EventThresholdCrossed`, `BiomeSuccessionTrigger
 | PD-001 | StringCRC for ids | Biome, species, functional group and rule ids are `StringCRC`. Fields store palette indices |
 | PD-002 | ProcessingUnit/Phase/Module architecture | `EcologyModule` is a SimModule on SimPU. A4 finds the baseline provider and A3 finds the apply API through `ModuleRef`, never through singletons |
 | PD-004 | No STL containers in public APIs | `EcologyFields` uses `DynamicArrayC`. Views expose accessors, not `std::` types |
-| AD-001 | Ask permission before Dia/baseline edits | None needed. A1 uses existing DiaMessageBus, DiaSaveGame, `JobSystemService` (Done 2026-10-15), DiaMaths noise (Done 2026-10-15), DiaAPI `CommandRegistry`. CellField (dia-needs #14) is Spec Approved, not built (amended 2026-10-19, product review) |
+| AD-001 | Ask permission before Dia/baseline edits | None needed. A1 uses existing DiaMessageBus, DiaSaveGame, `JobSystemService` (dia-needs #12, Approved, not built (amended 2026-10-19, consistency pass)), DiaMaths noise (Done 2026-10-15), DiaAPI `CommandRegistry`. CellField (dia-needs #14) is Spec Approved, not built (amended 2026-10-19, product review) |
 | AD-002 | Four-tier dependency model | CoW-Shared: A3, A4, S-3 Ecology and later systems consume it |
 | AD-003 | GDD owns design intent | GDD A1 owns the mechanics and constants. Deviations are listed below for the GDD owner |
 | AD-005 | One stage per testbed | A1 owns no stage. S-3 Ecology hosts it |
@@ -388,8 +404,9 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 - GameSpeedController (`SimulationTick`, `TimeBand`, `SeasonOf`). Done.
 - `RandomStreamModule` (`A1` stream). Done.
 - E1 `SaveLoadModule`. Done.
-- `JobSystemService` + `TrySubmit` (dia-needs #12). Done 2026-10-15.
+- `JobSystemService` + `TrySubmit` (dia-needs #12). Approved 2026-10-14, not built; it needs a small feature spec, and A1 runs serially until it lands (amended 2026-10-19, consistency pass).
 - DiaMaths seeded noise (dia-needs #15). Done.
+- DiaCellLayers, DiaCellHistory, DiaValueSchema (layers, history events, schema tooltips). Approved, not built (amended 2026-10-19, consistency pass).
 - Dia CellField renderer (dia-needs #14), for Feature 9's overlays. Spec Approved, not built.
 - DiaMessageBus via `MessageBusHostModule`, `VisualDebuggerModule`, DiaAPI `CommandRegistry`, DiaCore (Json, StringCRC, containers, logging).
 
