@@ -11,7 +11,8 @@
         "observation": "cow.diaobservation",
         "path_aliases": {
             "root": ".",
-            "ui_common": "./global/Presentation/UI"
+            "ui_common": "./global/Presentation/UI",
+            "world": "./global/world"
         }
     },
     "imports": [
