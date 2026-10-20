@@ -36,6 +36,11 @@ def compute_world_subfolder(source_path: str) -> str:
     return "/".join(inner)
 
 
+def world_record_outside_global(record: dict) -> bool:
+    """True if a 'world'-tagged record's source_path has no 'Global' folder."""
+    return "world" in record.get("tags", []) and "Global" not in Path(record.get("source_path", "")).parts
+
+
 def resolve_deploy_path(record: dict, context: "BuildContext") -> Path:
     """Resolve the full output path for an asset from its scope and category tag.
 
@@ -59,7 +64,7 @@ def resolve_deploy_path(record: dict, context: "BuildContext") -> Path:
         base = context.deploy_root / "stages" / stage_name / category
     elif "world" in tags:
         source_path = record.get("source_path", "")
-        if "Global" not in Path(source_path).parts:
+        if world_record_outside_global(record):
             context.output.warn(
                 "asset",
                 f"[{record.get('id', '')}] 'world' asset source_path '{source_path}' has no"

@@ -52,6 +52,24 @@ def _validate_diastage(data: dict) -> List[str]:
     return errors
 
 
+def _check_world_records(cfg: dict, file_path: Path) -> List[str]:
+    """Warn about 'world'-tagged catalogue records outside a Global/ folder (they deploy flat)."""
+    from dia_cli.commands.asset.layout import world_record_outside_global
+
+    catalogue_name = cfg.get("asset_catalogue")
+    if not isinstance(catalogue_name, str):
+        return []
+    catalogue = _load_json(file_path.parent / catalogue_name)
+    if not isinstance(catalogue, dict):
+        return []
+    return [
+        f"catalogue record '{rec.get('id', '')}': 'world' asset source_path '{rec.get('source_path', '')}' "
+        "has no 'Global/' folder and will deploy flat; move it under 'Global/<subfolder>/'"
+        for rec in catalogue.get("assets", [])
+        if isinstance(rec, dict) and world_record_outside_global(rec)
+    ]
+
+
 def _validate_diagame(data: dict, file_path: Path | None = None) -> Tuple[List[str], List[str]]:
     """Validate a .diagame file. Returns (errors, warnings)."""
     errors = []
@@ -85,6 +103,9 @@ def _validate_diagame(data: dict, file_path: Path | None = None) -> Tuple[List[s
         composed, compose_warnings = _compose_game_manifest(data, file_path)
         warnings += compose_warnings
         errors += _validate_service_streams(composed)
+
+    if file_path and isinstance(data.get("config"), dict):
+        warnings += _check_world_records(data["config"], file_path)
 
     # Check schema file if present
     if "schema" in data:
