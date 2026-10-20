@@ -209,7 +209,7 @@ DiaAPI commands. Every authoring action is a command, and the panel calls the sa
 | 1 | Envelope and override merge | `AssetEnvelope`, `OverrideMerge` (resolve and diff), stale rules. Pure, with GoogleTests | Draft | TBD |
 | 2 | WorldAssetsModule and bundle load | `IWorldAssetParticipant`, `BundleResolver`, load order, `default_world` from `cow.diagame`, `.diastage` `world_bundle`, events | Draft | TBD |
 | 3 | Save as | `SourceWriter`, catalogue upsert, `pack.save_as`, `terrain.bake`, `startstate.save_as`, `bundle.save_as`; needs dia-needs #16 | Draft | TBD |
-| 4 | Deploy and aliases | `world` deploy category mirroring subfolders (dia-needs #17), `world`/`source` aliases, move existing files to the Asset Table paths, catalogue types | Draft | TBD |
+| 4 | Deploy and aliases | `world` deploy category mirroring subfolders (dia-needs #17), `world`/`source` aliases, move existing files to the Asset Table paths, catalogue types Any future catalogue `prune` must skip `author: game` records (DiaCLI preserve-subfolder-deploy, Resolved 2) | Draft | TBD |
 | 5 | World Assets panel card | HTML mockup first; status, list/load/save, stale badges | Draft | TBD |
 | 6 | Consumer adoption | S-1, A4 and A1 implement `IWorldAssetParticipant`; the system and testbed specs are amended (see Consumer amendments) | Draft | TBD |
 
