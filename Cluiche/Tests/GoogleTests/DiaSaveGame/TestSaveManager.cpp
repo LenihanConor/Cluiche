@@ -255,12 +255,10 @@ struct ValueSaveable : ISaveable {
 
 struct HugeSaveable : ISaveable {
     void Serialize(SaveContext& ctx) const override {
-        static const char chunk[] =
-            "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"
-            "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"
-            "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789";
-        for (int i = 0; i < 40000; ++i)
-            { char k[16]; snprintf(k, sizeof(k), "b%d", i); ctx.Write(StringCRC(k), chunk); }
+        // Must exceed SaveContext::kBufferSize (100 MB): 30000 x ~4 KB = ~120 MB.
+        static const std::string chunk(4096, 'x');
+        for (int i = 0; i < 30000; ++i)
+            { char k[16]; snprintf(k, sizeof(k), "b%d", i); ctx.Write(StringCRC(k), chunk.c_str()); }
     }
     void Deserialize(LoadContext&) override {}
     uint32_t GetVersion() const override { return 1; }

@@ -159,7 +159,7 @@ TEST(SaveLoadModule, ConfigDefaults)
     const SaveConfig config = SaveLoadModule::DefaultConfig();
     EXPECT_STREQ(config.baseDirectory, "out/saves/cow/");
     EXPECT_STREQ(config.slotPattern, "slot_{id}.sav");
-    EXPECT_EQ(config.maxSlots, 0u);
+    EXPECT_EQ(config.maxSlots, 8u);
     EXPECT_EQ(config.format, SaveFormat::Json);
 }
 
