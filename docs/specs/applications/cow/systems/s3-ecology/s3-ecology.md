@@ -41,7 +41,7 @@ The inspector, change ledger, overlays, graphs, tuning, painting and `isolate_ce
 - **Proving weather.** That's S-2.5's job, and S-2.5 must pass before Living-mode results count.
 - **Dragons.** No step 9 input. S-4 adds dragons to this layer later.
 - **Replay from file.** Still an unbuilt F-1 Dia need. The long-run runner covers S-3's determinism check without it.
-- **Real tile art.** V-1 adds a base-layer toggle later. The overlays stay debug-grade.
+- **Real tile art (amended 2026-10-19, DiaCellLayers/DiaCellHistory).** S-1's terrain layers (Relief, Biome, Region …) are registered when the world loads, so they are available as debug base layers in the DiaCellLayers picker. Real tile art is still V-1's job, and every layer stays debug-grade.
 
 ## Architecture
 
@@ -50,7 +50,7 @@ The inspector, change ledger, overlays, graphs, tuning, painting and `isolate_ce
 **Feature-local** (AD-002): the stage, modes, climate inputs, scenarios and runner live with the testbed, in `Cluiche/CoW/Modules/` (with `S3` prefixes) and `Cluiche/Assets/CoW/Stages/S3Ecology/`. If S-4 needs the pinned climate, it's promoted to CoW-Shared then.
 
 ```
-SimPU (S3Ecology stage)
+SimPU (S3Ecology stage; amended 2026-10-19, DiaCellLayers/DiaCellHistory)
   ├─ WorldGenerationModule  loads the stage's world (SD-S1-010: .wld.json or preset + seed)
   ├─ GameSpeedControllerModule, RandomStreamModule, SaveLoadModule
   ├─ EcologyModule          A1, with EcologyDebugDomain (all tools)
@@ -58,6 +58,8 @@ SimPU (S3Ecology stage)
   ├─ (SuccessionModule)     A3, when it exists
   ├─ SuccessionDebugDomain  A3's debug tools (hosted by S-3; amended 2026-10-19, product review)
   └─ S3EcologyModule        mode switch, climate input, scenarios, long-run runner, S3 panel card, size picker
+                             hosts viewer and timeline cards; default tracked layers in .diastage:
+                             vegetation, herbivores, precipitation
 ```
 
 ### Modes
@@ -120,13 +122,15 @@ The panel shows which layers are present: World (preset and seed, or file), Weat
 
 ### Long-run runner (Living mode)
 
+> **Amended 2026-10-19 (DiaCellLayers/DiaCellHistory):** The long-run runner writes the `dia.cell_history` export next to its report, so the inspector can read both live and offline data the same way. Snapshots are E1 files.
+
 `cow.s3.longrun seed=<n> seasons=<n> species=<n>` runs headless on a worker job. It drives the pure simulations directly (A4 `WeatherSimulation`, A1 `EcologySimulation`, and A3's logic when present) in the same band order as the live modules, not through `SimulationTick`, so 10,000 seasons don't need 910,000 frames.
 
 - **Budget: the whole report finishes in ≤ 5 minutes wall-clock** (decided 2026-10-18). The default run is Small, 10,000 seasons, about 15 species. Estimated at about 3 minutes per run: A4 about 1.5 min (130,000 weeks at about 0.7 ms) plus A1 about 1–1.5 min. The two determinism runs go on separate worker jobs in parallel. Large is opt-in (`map=Large`, about 6.5 minutes per run) and isn't held to the budget.
 - The report records the elapsed time. If the default run goes over 5 minutes, the report flags it and the default season count is cut to fit. The new count goes to the GDD fold-back. Optimising the code is the first fix; the season count is the last.
 - The species-scaling check uses short runs (100 seasons each at 5, 10 and 15 species, at Large), so it stays inside the budget.
 - It shows progress in the panel and can be cancelled.
-- It writes `out/CoW/s3/longrun_<seed>.json` with S-3 Test 5's measurable checks:
+- It writes `out/CoW/s3/longrun_<seed>.json` with S-3 Test 5's measurable checks, and `longrun_<seed>.cell_history.json` (amended 2026-10-19, DiaCellLayers/DiaCellHistory):
 
 | Check | Pass |
 |-------|------|
@@ -223,7 +227,7 @@ For the DesignDocs owner to fold back into `TestbedRoster.md`, `S2_SingleCellEco
 - **A3 Biome Succession:** transitions in Living mode, the A3 scenario, and the succession long-run check. A3's `SuccessionDebugDomain` is hosted by S-3 (amended 2026-10-19, product review).
 - **S-2.5 Feature 4** (CoW-Shared scenario format, loader and check-line panel): hard dependency for Feature 3 (amended 2026-10-19, product review).
 
-**Required by:** S-4 Dragon (its live mode runs in this world, GDD roster), and V-1 for the base-layer toggle later.
+**Required by:** S-4 Dragon (its live mode runs in this world, GDD roster), and V-1 for real tile art.
 
 ## Test Strategy
 

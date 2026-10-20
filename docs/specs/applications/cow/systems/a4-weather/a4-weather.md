@@ -222,9 +222,11 @@ The tuning constants live in `Assets/CoW/Global/Weather/weather_parameters.json`
 
 ### History (rewind)
 
+> **Amended 2026-10-19 (DiaCellLayers/DiaCellHistory):** `WeatherHistory` and step-back are replaced by DiaCellHistory's scrub and snapshot restore. S-2.5 declares default tracked layers in its `.diastage` config (`"history": {"track": ["weather.precipitation", "weather.temperature", "weather.ground_water"]}`). The `history_weeks` config option remains for backwards compatibility until DiaCellHistory is built; S-2.5 declares it as 13 (about 3 MB at Large).
+
 `WeatherHistory` is an optional ring buffer of committed `WeatherFields`, `history_weeks` deep. It is 0 (off) in `cow_main.diaapp` and 13 in the S-2.5 stage, which is about 3 MB at Large (6,656 cells; amended 2026-10-19, product review: 13 weeks × 9 fields × 6,656 cells × 4 bytes/float ≈ 3.1 MB).
 
-- `cow.weather.step_back` restores the previous committed state and decrements the week.
+- `cow.weather.step_back` restores the previous committed state and decrements the week. *(Replaced by `cells.history.view` and `cells.snapshot.restore` when DiaCellHistory is built.)*
 - Step-back is a **debug operation for A4-only stages**. It doesn't rewind GameSpeedController's day counter or any other system, so it is only offered where A4 runs alone (S-2.5). The command refuses to run when `history_weeks` is 0.
 
 ### Save/load (E1)
@@ -258,12 +260,12 @@ E1 saves at the sim-frame boundary, and `Step()` runs entirely inside one sim fr
 - has overlay toggles
 - posts commands, never mutates state directly (UI/business separation)
 
-**World drawers (9 overlays, AuthoringDebug §1; amended 2026-10-19, product review):**
-- Eight scalar fields: moisture, pressure, temperature, precipitation, snow pack, cloud cover, ground water, each drawn as a per-cell colour ramp at the GDD's alpha values
-- Wind: drawn as a per-cell arrow coloured by how far the wind deviates from the prevailing direction
-- Any number can be on at once
+**World drawers (9 overlays, AuthoringDebug §1; amended 2026-10-19, product review; amended 2026-10-19, DiaCellLayers/DiaCellHistory):**
+- Eight scalar fields become **base layers** (one at a time): moisture, pressure, temperature, precipitation, snow_pack, cloud_cover, ground_water. Each is registered with DiaCellLayers with labels and ramps from DiaValueSchema.
+- Wind becomes an **overlay**: drawn as a per-cell arrow coloured by how far the wind deviates from the prevailing direction.
+- Base layers are shown one at a time (radio); wind overlay can be on with any base layer.
 
-**Canonical overlay IDs (amended 2026-10-19, product review):** `moisture`, `pressure`, `temperature`, `precipitation`, `snow_pack`, `cloud_cover`, `ground_water`, `wind` (snake_case; shared with S-2.5's scenario loader, which rejects unknown names).
+**Canonical layer IDs (amended 2026-10-19, product review; amended 2026-10-19, DiaCellLayers/DiaCellHistory):** `weather.moisture`, `weather.pressure`, `weather.temperature`, `weather.precipitation`, `weather.snow_pack`, `weather.cloud_cover`, `weather.ground_water`, `weather.wind` (overlay). Shared with S-2.5's scenario loader, which rejects unknown names.
 
 Drawers are hosted wherever the domain is registered: S-2.5 first, then S-3.
 
@@ -293,6 +295,7 @@ Forcings and overrides are deterministic inputs applied at a fixed point in the 
 **Instrumentation:**
 - traces and profiling: `DIA_TRACE_ZONE` on `Step()`, `DIA_PROFILE_SCOPE` per pipeline step (backs `profile`)
 - metrics: step duration, raining-cell count, mean moisture
+- **events (amended 2026-10-19, DiaCellLayers/DiaCellHistory):** droughts and storms (from `find_storms` / `find_droughts`) are emitted as DiaCellHistory events with type, anchor cell and cell count.
 - health (`IHealthReporter`):
   - Degraded: fallback parameters or fallback baseline
   - Unhealthy: no water sources
@@ -443,6 +446,8 @@ These are for the DesignDocs owner to fold back into A4:
 - E1 `SaveLoadModule`, Done (soft: A4 runs without it; S-2.5 has no SaveLoadModule).
 - `VisualDebuggerModule`, plus `DebugLayerManager` for drawers.
 - **Dia CellField renderer (dia-needs #14, Approved 2026-10-15, not built; amended 2026-10-19, product review).** Per-cell colour layer for the nine weather overlays. Blocks Feature 5's drawers. S-2.5's overlays reach CellField through A4's debug domain.
+- **DiaCellLayers (Approved 2026-10-19, not built; amended 2026-10-19, DiaCellLayers/DiaCellHistory).** Layer registration for A4's eight base layers and wind overlay. Blocks Feature 5's drawers.
+- **DiaCellHistory (Approved 2026-10-19, not built; amended 2026-10-19, DiaCellLayers/DiaCellHistory).** Recording, scrubbing, snapshots and event emission for droughts and storms. Feature 5 uses `WeatherHistory` until DiaCellHistory is built.
 - DiaAPI `CommandRegistry`.
 - DiaCore (Json, StringCRC, containers, logging).
 

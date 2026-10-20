@@ -155,13 +155,15 @@ S-2.5 ships nine scenarios (one per test) plus the five presets as guided setups
 
 ### Time-series graphs
 
-`S25WeatherModule` records weekly aggregates (global moisture, precipitation and temperature means, snow coverage %, and the same per S-1 region) into a bounded ring of 4 × 52 weeks. It's tiny (about 5 values × regions × 208 weeks), isn't saved, and resets when the world loads. The panel draws them as line graphs with season bands. Step-back trims the ring to match.
+> **Amended 2026-10-19 (DiaCellLayers/DiaCellHistory):** S-2.5 hosts the viewer card and timeline. Its aggregate rings become DiaCellHistory aggregates, and time-series graphs read history aggregates. Default tracked layers are declared in its `.diastage` config (`"history": {"track": ["weather.precipitation", "weather.temperature", "weather.ground_water"]}`).
+
+`S25WeatherModule` records weekly aggregates (global moisture, precipitation and temperature means, snow coverage %, and the same per S-1 region) into a bounded ring of 4 × 52 weeks. It's tiny (about 5 values × regions × 208 weeks), isn't saved, and resets when the world loads. The panel draws them as line graphs with season bands. *(Replaced by DiaCellHistory aggregates when DiaCellHistory is built.)*
 
 ### Click-to-inspect, step-back, boundary toggle
 
 All three are A4's tools wired to the stage:
 - **Click-to-inspect:** a click on the CellField view selects the cell, and A4's inspector shows its 9 weather fields (amended 2026-10-19, product review) plus biome and elevation.
-- **Step-back:** the panel's button calls `cow.weather.step_back` (history 13 weeks). It's disabled when history is empty.
+- **Step-back (amended 2026-10-19, DiaCellLayers/DiaCellHistory):** the panel's button calls DiaCellHistory scrub (`cells.history.view`) and restore (`cells.snapshot.restore`). History covers 13 weeks by default. Until DiaCellHistory is built, `cow.weather.step_back` is used.
 - **Boundary toggle:** a panel switch calls `cow.weather.set_param boundary.edge_inflow <on|off>`, effective next week. Test 8 runs both settings headless.
 
 ## Public Interface

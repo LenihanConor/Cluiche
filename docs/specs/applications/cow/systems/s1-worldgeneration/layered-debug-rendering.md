@@ -76,7 +76,7 @@ Region-edge counts come from the flat-top odd-q rectangle (about `3 × W × H` e
 
 ### Colour Modes
 
-> **Amended 2026-10-19:** Relief is the default (terrain spec, plan task 10). Temperature, Moisture and per-stage layers come from Feature 8 and Feature 1. A planned **World Layer Viewer** spec (Dia, to be specced) will replace per-system colour modes with a layer registry shared by S-1, A4, S-2.5 and S-3.
+> **Amended 2026-10-19:** Relief is the default (terrain spec, plan task 10). Temperature, Moisture and per-stage layers come from Feature 8 and Feature 1. **Amended 2026-10-19 (DiaCellLayers/DiaCellHistory):** The colour modes become registered layers with DiaCellLayers (Approved, not built). Each mode registers as a layer (one layer per mode, plus per-stage layers), with labels and ramps from DiaValueSchema. Region edges, sites, grid lines, guarantee evidence and selection become overlays. Region and biome layers are flagged as history grouping layers (`history.group: true` in their schema).
 
 | Mode | Field | Palette |
 |------|-------|---------|
@@ -109,12 +109,14 @@ World → screen goes through the camera. Screen → cell uses the camera invers
 
 ### Selection Input
 
+> **Amended 2026-10-19 (DiaCellLayers/DiaCellHistory):** Selection uses DiaCellLayers commands: `cells.select.cell <q> <r>` replaces `selectCell`, and the Cell Inspector (Feature 6) uses `describeCell` to show S-1's biome scores, stage values and neighbours alongside the field values.
+
 A left-click on the map selects a cell:
 1. The stage's input handler (MainPU) turns the click into a world point (camera inverse).
 2. `HexTopology::CellFromPoint` turns the point into a cell.
-3. The handler sends `selectCell { "x": col, "y": row }` to the domain through the same command path the panel uses.
+3. The handler sends `cells.select.cell <q> <r>` to the domain through the same command path the panel uses.
 
-The panel can also type a coordinate. Esc or clicking outside the grid clears the selection (`selectCell` with no args).
+The panel can also type a coordinate. Esc or clicking outside the grid clears the selection (`cells.select.clear`).
 
 ### Camera Controls
 
@@ -176,6 +178,7 @@ public:
 | **DiaDebugDomain** | `IDebugDomain`, `IVisualDebugger`, DiaDebugPanel | Done |
 | **dia-needs #13** | Debug-draw geometry budget 2,048 → 8,192 | Done |
 | **dia-needs #14 (CellField)** | Tile layer, colour modes, grid inset | Spec Approved 2026-10-15, not built — **blocks this feature** |
+| **DiaCellLayers** (amended 2026-10-19) | Layer registration, picker semantics, selection, commands (`cells.*`), `describeCell` | Spec Approved 2026-10-19, not built — **blocks this feature** |
 | **Phase 2 data design** | Biome, Terrain, Region and ApotheosisType enums for palettes and markers | GDD in progress (placeholder colours/shapes) |
 
 ### Dia Engine Dependencies

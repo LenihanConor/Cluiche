@@ -209,9 +209,9 @@ This is recorded as A1 amendment 3 below, and is new GDD content for the fold-ba
 
 ### Debug and tools
 
-`SuccessionDebugDomain` (SimPU, hosted by S-3 Ecology; amended 2026-10-19, product review) follows the A1 pattern: commands first, and the panel calls them.
+`SuccessionDebugDomain` (SimPU, hosted by S-3 Ecology; amended 2026-10-19, product review; amended 2026-10-19, DiaCellLayers/DiaCellHistory) follows the A1 pattern: commands first, and the panel calls them.
 
-- **Overlays (CellField):** visual state, recovery stage, legacy marker, highest rule progress (forward or recovery), and the cells rejected by staging this band.
+- **Overlays (amended 2026-10-19, DiaCellLayers/DiaCellHistory):** transitions and recovery stage changes are emitted as DiaCellHistory events. The visual-state overlay becomes a registered DiaCellLayers layer. Other layers: visual state, recovery stage, legacy marker, highest rule progress (forward or recovery), and the cells rejected by staging this band.
 - **Inspector:** the cell's biome history (`last_transition`), every rule's counter and which conditions pass, the marker and years left, the recovery stage, and acceleration.
 - **Commands:** `cow.succession.inspect`, `cow.succession.transition` (forced, still checked against staging), `cow.succession.accelerate`, `cow.succession.rules.reload`, `cow.succession.rejections`.
 - **Instrumentation:** `DIA_PROFILE_SCOPE` for Resolve, OnYear and OnSeason. Metrics: transitions per band by pair, rejections, cells per visual state. Health is Degraded when the rule table references an unknown biome or field.
