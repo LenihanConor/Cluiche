@@ -58,6 +58,7 @@ namespace Dia { namespace ApplicationFlow {
             if (Dia::Core::PathStore::IsPathAliasRegistered(alias))
                 Dia::Core::PathStore::UnregisterFromStore(alias);
             Dia::Core::PathStore::RegisterToStore(alias, Dia::Core::Path::String(path));
+            DIA_LOG_INFO("ManifestBootstrap", "Dev alias registered: %s=%s", name.c_str(), path);
         }
     }
 
