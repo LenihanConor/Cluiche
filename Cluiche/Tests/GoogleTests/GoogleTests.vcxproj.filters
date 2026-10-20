@@ -2006,5 +2006,8 @@
     <ClCompile Include="DiaBgfx\TestCellFieldGeometryCache.cpp">
       <Filter>DiaBgfx</Filter>
     </ClCompile>
+    <ClCompile Include="DiaBgfx\TestCellFieldRenderer.cpp">
+      <Filter>DiaBgfx</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

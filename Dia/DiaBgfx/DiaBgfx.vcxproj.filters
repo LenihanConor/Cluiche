@@ -37,6 +37,9 @@
     <ClInclude Include="Resources\CellFieldGeometryCache.h">
       <Filter>Resources</Filter>
     </ClInclude>
+    <ClInclude Include="Renderers\CellFieldRenderer.h">
+      <Filter>Renderers</Filter>
+    </ClInclude>
     <ClCompile Include="Canvas.cpp">
       <Filter>Source</Filter>
     </ClCompile>
@@ -81,6 +84,9 @@
     </ClCompile>
     <ClCompile Include="Resources\CellFieldGeometryCache.cpp">
       <Filter>Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderers\CellFieldRenderer.cpp">
+      <Filter>Renderers</Filter>
     </ClCompile>
     <None Include="Shaders\varying.def.sc">
       <Filter>Shaders</Filter>
