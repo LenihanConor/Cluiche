@@ -247,6 +247,9 @@
     <Filter Include="CoW">
       <UniqueIdentifier>{5ef0f0fe-fb6f-45d7-b05f-7456788a4e11}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaGraphics">
+      <UniqueIdentifier>{26af91b6-e184-45f6-8231-0da1950d8739}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -1987,6 +1990,9 @@
     </ClCompile>
     <ClCompile Include="Core\DebugDraw\TestCellFieldDebugDraw.cpp">
       <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaGraphics\TestCellFieldFrameData.cpp">
+      <Filter>DiaGraphics</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -919,6 +919,7 @@
     <ClCompile Include="DiaMaths\TestNoisePurity.cpp" />
     <ClCompile Include="DiaMaths\TestNoiseEdgeCases.cpp" />
     <ClCompile Include="Core\DebugDraw\TestCellFieldDebugDraw.cpp" />
+    <ClCompile Include="DiaGraphics\TestCellFieldFrameData.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

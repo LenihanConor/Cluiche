@@ -34,6 +34,9 @@
     <ClCompile Include="Camera\ViewportTransform.cpp">
       <Filter>Camera</Filter>
     </ClCompile>
+    <ClCompile Include="Frame\CellFieldFrameData.cpp">
+      <Filter>Frame</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera\Camera2D.h">
@@ -132,6 +135,9 @@
     </ClInclude>
     <ClInclude Include="Testing\MockVisitors.h">
       <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\CellFieldFrameData.h">
+      <Filter>Frame</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
