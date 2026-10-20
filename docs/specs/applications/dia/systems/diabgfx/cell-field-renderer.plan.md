@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/applications/dia/systems/diabgfx/cell-field-renderer.md
-**Status:** Not Started
+**Status:** Not Started. Build sign-off (AD-001) given by the user 2026-10-20; not started (implementation deferred by the user).
 
 ## Implementation Patterns
 

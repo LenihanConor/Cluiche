@@ -8,7 +8,7 @@
 **Needs log:** CoW `dia-needs.md` #14. First consumer: S-1 World Generation Feature 7 (@docs/specs/applications/cow/systems/s1-worldgeneration/layered-debug-rendering.md).
 
 ## Status
-`Approved` (2026-10-15). Plan: [cell-field-renderer.plan.md](cell-field-renderer.plan.md). Build order: Step 1 (1a, 1b, 1c) before S-1 Feature 7; Step 2 after S-1's view works. Open questions are build-time details; start with `dia check deps` for where the hex adapter lives.
+`Approved` (2026-10-15). Build sign-off (AD-001) given by the user 2026-10-20; not started (implementation deferred by the user). Plan: [cell-field-renderer.plan.md](cell-field-renderer.plan.md). Build order: Step 1 (1a, 1b, 1c) before S-1 Feature 7; Step 2 after S-1's view works. Open questions are build-time details; start with `dia check deps` for where the hex adapter lives.
 
 ## Summary
 

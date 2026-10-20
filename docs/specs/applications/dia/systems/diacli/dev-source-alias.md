@@ -134,4 +134,4 @@ No `dia validate manifest` changes. Dev aliases are invisible to the manifest va
 
 ## Status
 
-`Approved` (2026-10-20). No plan yet. dia-needs #16 signed off under CoW AD-001 on 2026-10-19.
+`Approved` (2026-10-20). No plan yet. Build sign-off (AD-001) given by the user 2026-10-20; not started (implementation deferred by the user). dia-needs #16 signed off under CoW AD-001 on 2026-10-19.
