@@ -1747,6 +1747,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="DiaGraphics\HexTopologyToCellGridDesc.h">
+      <Filter>DiaGraphics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Animation2D\ClipCompletionBusAdapterTests.cpp">
@@ -1992,6 +1995,9 @@
       <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="DiaGraphics\TestCellFieldFrameData.cpp">
+      <Filter>DiaGraphics</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaGraphics\TestHexGeometryBuilder.cpp">
       <Filter>DiaGraphics</Filter>
     </ClCompile>
   </ItemGroup>

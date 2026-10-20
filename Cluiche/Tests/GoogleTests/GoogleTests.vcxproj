@@ -148,6 +148,7 @@
   <!-- Header Files -->
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="DiaGraphics\HexTopologyToCellGridDesc.h" />
   </ItemGroup>
   <!-- Source Files -->
   <ItemGroup>
@@ -920,6 +921,7 @@
     <ClCompile Include="DiaMaths\TestNoiseEdgeCases.cpp" />
     <ClCompile Include="Core\DebugDraw\TestCellFieldDebugDraw.cpp" />
     <ClCompile Include="DiaGraphics\TestCellFieldFrameData.cpp" />
+    <ClCompile Include="DiaGraphics\TestHexGeometryBuilder.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
