@@ -127,7 +127,7 @@ Tables need two generic additions to DiaValueSchema. They belong in Dia because 
 5. If CoW is connected, T-2 offers **Reload in game**: `cow.world.pack.load …`, `cow.weather.reload`, `cow.ecology.reload_data` or `cow.world.bundle.load`, depending on the type.
 
 **Baked-world edits:**
-- Saving changes the world's content hash, so start states and bundles that use the world are shown as stale (F-3 version rule), with an "update start states" option that re-keys them.
+- Saving changes the world's content hash, so start states that use the world would be **refused at load** (F-3 version rule, CH-S35-04) until re-keyed. T-2 lists them, and bundles using them, as broken, with an "update start states" option that re-keys them.
 - World guarantees (reachability and so on, S-1) are not re-checked offline.
 - If CoW is connected, Save offers **Validate in game**: `cow.worldgen.validate <file>`.
 - Otherwise the file is flagged "unvalidated edit" until it is checked.

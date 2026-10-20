@@ -129,7 +129,7 @@ Keys are dotted paths into the defaults file. Weather packs have the same shape 
 | File `version` > the version the loader understands | **Error**: not loaded |
 | Pack `base.version` < current defaults version | Loads. Unknown override keys are dropped with one Warning each, and missing keys come from the defaults. Marked **stale** |
 | Start state on non-baked terrain | **Error**: `startstate.save_as` / `load` refuse; bake the terrain first |
-| Start state `world.hash` ≠ loaded terrain hash | Loads cells whose `(q, r)` is in range and drops the rest with a Warning. Marked **stale** |
+| Start state `world.hash` ≠ loaded terrain hash | **Refused** with a Warning. The bundle loads with **no start state** (GDD S-3.5 CH-S35-04) (amended 2026-10-20, S-3.5 GDD lock). Re-saving the start state on the current terrain (or T-2 "re-key") fixes it |
 | Bundle references a missing file | **Error**: the bundle doesn't load and the previous world stays |
 | Saving a stale file | Writes the current versions, which clears stale |
 
@@ -242,7 +242,7 @@ Build order: 1 → 2 → 4 → 3 → 5. Feature 6 runs per consumer as each syst
 | DiaCore Json, `PathStore` / `FilePath` | Envelope, aliases | Done |
 | DiaMessageBus | Events | Done |
 | F-1 debug host (panel console, palette) | Panel card | Done |
-| E1 SaveLoad | Not a dependency. Bundles are separate from saves. A save records the bundle id it started from, for information only | Done |
+| E1 SaveLoad | Not a dependency. Bundles are separate from saves: an E1 save is self-contained and holds the full resolved world state, so editing a bundle never changes an old save (CH-S35-02). A save records the bundle id it started from, for information only | Done |
 | **dia-needs #16: dev source-assets alias in `dia launch`** | `save_as` to source | **Proposed — Dia-tier, needs sign-off (AD-001)** |
 | **dia-needs #17: catalogue deploy category that keeps subfolders (`world` tag → `global/world/<subpath>`)** | Bundle paths resolve the same way in dev and deployed builds | **Proposed — Dia-tier, needs sign-off (AD-001)** |
 | S-1 / A4 / A1 modules | Participants | Specced, not built |

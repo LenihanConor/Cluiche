@@ -1,7 +1,7 @@
 # System Spec: S-3.5 World Sim
 
 **Parent:** @docs/specs/applications/cow/cow.md  
-**Design source:** `Output Docs/GDD/10_PrototypeStrategy/S3.5_WorldSim.md` (DesignDocs). It is a **draft, not locked**: its Challenge Pass is pending. Added to the roster as DECISION-128 / CHANGE-045, a recorded exception to Rule 1 ("unit and system are modes, not separate testbeds"). `.cowworld` bundles are specified in its section 4 (amended 2026-10-20, GDD fold-back).  
+**Design source:** `Output Docs/GDD/10_PrototypeStrategy/S3.5_WorldSim.md` (DesignDocs), **Locked 2026-10-20** after a Tier 2 Challenge Pass (CH-S35-01…05, §7). It joined the roster as DECISION-128 / CHANGE-045, a recorded exception to Rule 1. `.cowworld` bundles are specified in its §4.  
 **Origin:** 2026-10-19 world-sim product review. Outcomes C ("a testbed to demonstrate and test the work") and D ("a place to author content"). This is the one testbed that runs every world layer together on one world.  
 **Mockup:** [mockups/s35-world-sim.html](mockups/s35-world-sim.html)  
 **Systems under test:** S-1 World Generation, A4 Weather, A1 Ecology, A3 Biome Succession, F-3 World Assets; Dia: DiaCellLayers, DiaCellHistory, DiaValueSchema
@@ -54,6 +54,8 @@ S-3.5 hosts only the **shared** cards (World Assets, Layers, Selection, Timeline
 - **Per-layer proofs.** S-1's guarantees, S-2.5's nine weather checks, S-3's ecology scenarios and A1/A4 equation tests stay in their own testbeds and tests. S-3.5 proves the combination.
 - **Dragons.** S-4 adds them later, on top of this world.
 - **Real art.** All layers are debug-grade (V-1 later).
+- **Player-facing modes.** Author, Run and Regression are developer-only (CH-S35-01, Constitution §7). Players only see New Game loading `default_world`. Shipping-build gating of the stage is a separate later item (amended 2026-10-20, S-3.5 GDD lock).
+- **Changing existing saves.** E1 saves are self-contained and hold the full resolved world state. A bundle is only the New Game starting point, so editing a bundle never changes an old save (CH-S35-02).
 - **New simulation code.** S-3.5 only wires up existing modules; if it needs new behaviour, that belongs to a system.
 
 ## Architecture
@@ -85,7 +87,7 @@ SimPU (S35WorldSim stage)
   "world_bundle": "default",
   "history": { "track": ["ecology.producers_total", "ecology.group.herbivore", "weather.precipitation"] },
   "s35": { "mode": "Run", "regression": { "years": 20, "sizes": ["Small", "Standard", "Large"],
-                                          "ranges": [1, 3, 17], "seed": 42 } }
+                                          "ranges": [1, 4, "max"], "seed": 42 } }
 }
 ```
 
@@ -114,15 +116,16 @@ SimPU (S35WorldSim stage)
 
 **Regression** (headless with `dia run cow --stage s35_world_sim --automation regression`, or from the panel)
 
-| Check | Pass |
+| Check | Pass (first-run numeric defaults, tunable; CH-S35-03 (amended 2026-10-20, S-3.5 GDD lock)) |
 |---|---|
-| R1 Reproducible world | For each size and range count, the bundle run for N years gives an identical combined state hash (S-1 world + A4 fields + A1 state + A3 state). Range counts must also agree with each other |
-| R2 Save/load | Save at year N/2, load and continue: the hash at year N equals the uninterrupted run |
-| R3 Snapshot restore | Take a snapshot at year N/2, run to N, restore, run to N again: the hash equals the first pass |
-| R4 Authoring round trip | `pack.save_as` + `startstate.save_as` + `bundle.save_as` from a tuned state, relaunch, `bundle.load`: resolved parameters and state hash after `Initialise` + start state are identical |
-| R5 Perf at Large | Each system meets its budget (A4 week ≤ 10 ms, A1 season ≤ 16 ms). The worst tick where they coincide is ≤ 26 ms. All Release, reported gate |
-| R6 Coverage | `dia validate schema` is clean for every loaded file, every registered layer has a schema entry, and every emitted event type is described |
+| R1 Reproducible world | Run the bundle for **20 years** at each size (Small, Standard, Large) and **1, 4 and max** thread ranges. The combined state hash (E1 participant output) is identical within each size across range counts, and identical between repeat runs |
+| R2 Save/load | In the same 20-year run, save at **year 10, mid-year, mid-season**, then load and continue. The hash at year 20 equals the uninterrupted run |
+| R3 Snapshot restore | In the same run, take a snapshot at year 10 (mid-year, mid-season), run to 20, restore, run to 20 again. The hash equals the first pass |
+| R4 Authoring round trip | `pack.save_as` + `startstate.save_as` + `bundle.save_as` from a tuned state, then **two fresh-process relaunches** each doing `bundle.load`. The resolved parameters and the state hash after `Initialise` + start state are identical across both. **Mismatch case:** a start state whose recorded terrain hash doesn't match is refused, and the bundle loads with no start state (CH-S35-04) |
+| R5 Perf at Large | Headless, Release, over 20 years at Large, on a **recorded reference machine** (CPU and core count written into the report). Reports **median and worst** tick per system: A4 week ≤ 10 ms, A1 season ≤ 16 ms. The worst coinciding tick is ≤ 26 ms, which is A4's 10 ms plus A1's 16 ms on a Season's last week. Render and tooling overhead are excluded |
+| R6 Coverage | **Zero** undescribed keys, layers or events: `dia validate schema` is clean for every loaded file, every registered layer has a schema entry, and every emitted event type is described |
 
+- **Gating (CH-S35-05):** R1, R2 and R5 gate S-4 Dragon's Live mode. R3, R4 and R6 report but do not gate. S-4 Isolated mode is not gated.
 - The report goes to `out/CoW/s35/regression_<seed>.json`, plus `regression_<seed>.cell_history.json` for T-1.
 - Panel check lines show pass/fail per size.
 
@@ -200,4 +203,4 @@ SimPU (S35WorldSim stage)
 
 ## Status
 
-`Approved` (2026-10-19). Feature specs TBD; no plan yet. GDD fold-back done 2026-10-20: the GDD doc is a draft awaiting its Challenge Pass, and the spec is re-checked when it locks (AD-003).
+`Approved` (2026-10-19). Feature specs TBD; no plan yet. GDD `S3.5_WorldSim.md` Locked 2026-10-20; this spec mirrors CH-S35-01…05.
