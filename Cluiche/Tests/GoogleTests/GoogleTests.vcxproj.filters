@@ -1985,5 +1985,8 @@
     <ClCompile Include="DiaMaths\TestNoiseEdgeCases.cpp">
       <Filter>DiaMaths</Filter>
     </ClCompile>
+    <ClCompile Include="Core\DebugDraw\TestCellFieldDebugDraw.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -142,8 +142,8 @@ CellField's only shipped caller is the DiaCellLayers viewer (@docs/specs/applica
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | Types: CellFieldDrawRequest, CellFieldLayerHandle, CellFieldShading in DiaCore/DebugDraw/CellFieldDrawRequest.h | Compiles | Not Started | haiku | POD, trivially copyable, no logic |
-| 2 | IDebugDraw::RequestDrawCellField hook (default no-op) + test default ignored | TestDebugDrawCellFieldDefaultNoOp PASSES | Not Started | sonnet | Non-breaking interface extension |
+| 1 | Types: CellFieldDrawRequest, CellFieldLayerHandle, CellFieldShading in DiaCore/DebugDraw/CellFieldDrawRequest.h | Compiles | Done | haiku | POD, trivially copyable. `colourMap` is `uint32_t` (the CRC value), not `StringCRC`: StringCRC is not trivially copyable (64-byte string, user copy ops). Callers pass `StringCRC(name).Value()`; registry ids stay StringCRC-compatible |
+| 2 | IDebugDraw::RequestDrawCellField hook (default no-op) + test default ignored | TestDebugDrawCellFieldDefaultNoOp PASSES | Done | sonnet | `CellFieldDebugDraw.TestDebugDrawCellFieldDefaultNoOp` passes (`--filter=CellField*`, 1 test); full GoogleTests build OK |
 | 3 | CellFieldFrameData in DiaGraphics/Frame/ + FrameData Copy/Clear + test AC10 frame data | TestCellFieldFrameData Copy/Clear PASSES | Not Started | sonnet | TDD: RED (Copy drops data) → GREEN (Copy preserves, Clear empties) |
 | 4 | ICellGridGeometryBuilder + HexFlatTopOddQBuilder (CPU pure) + test AC1 geometry | TestHexGeometryBuilder PASSES | Not Started | sonnet | TDD: RED (centres/offsets/weights wrong) → GREEN (all correct within 1e-4); test 1×1, 2×2, 5×4, edge cells |
 | 5 | CellFieldRegistry (layers, CreateLayer/Update/Destroy, handles, command queue) + test AC11 handle lifetime | TestCellFieldRegistry handle generation/stale/destroy PASSES | Not Started | sonnet | TDD: RED (stale handle crashes) → GREEN (skipped and counted); thread-safe submission |
