@@ -38,6 +38,8 @@ A4's debug domain, nine overlays (eight scalar fields plus wind; amended 2026-10
 - **Map sizes (amended 2026-10-19, product review).** Small (66 × 42 = 2,772 cells) is the default and baseline target for acceptance. Standard (80 × 52 = 4,160 cells) and Large (104 × 64 = 6,656 cells) are supported via a size picker (DiaAPI command, see Commands below). Performance budgets scale per size (see Performance below).
 - **Player-facing weather visuals.** That's V-1. The overlays are debug-grade.
 
+**Launch-out from S-3.5 (amended 2026-10-19, S-3.5 World Sim):** at stage start, S-2.5 reads F-3's session hint (`out/CoW/session/next_bundle.json`). If one is present, it loads that bundle instead of its configured world, so "Open in S-2.5" from S-3.5 continues with the same world.
+
 ## Architecture
 
 ### Placement

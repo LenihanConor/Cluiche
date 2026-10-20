@@ -167,6 +167,8 @@ Systems keep their own live-edit commands. F-3 only resolves, applies and captur
 
 A failure at any step logs an Error and keeps the previous world.
 
+**Session hint** (amended 2026-10-19, S-3.5): stage transitions carry no arguments. To launch another testbed with the current bundle, `WorldAssetsModule` writes `out/CoW/session/next_bundle.json` (`{bundle, from_stage}`). At start, the next stage loads that bundle once in place of its `.diastage` `world_bundle`, then deletes the file. A stale hint (older than 60 s) is ignored and deleted.
+
 **Path aliases** (registered from `cow.diagame` `path_aliases`):
 - `world` → the deployed `global/world/` tree. Used for loading in every build.
 - `source` → `Cluiche/Assets/CoW/`. Dev launches only; DiaCLI passes it (dia-needs #16). `save_as` needs it.
@@ -184,6 +186,7 @@ DiaAPI commands. Every authoring action is a command, and the panel calls the sa
 | `cow.world.pack.save_as <weather\|ecology> <id> [displayName]` | Diff current values against the defaults and write the overrides |
 | `cow.world.terrain.bake <id>` | Write the current S-1 world to `Global/WorldGen/Baked/<id>.wld.json` |
 | `cow.world.startstate.save_as <id>` / `load <id>` / `clear` | Save the edited cells (A1's edit set) as a sparse start state, or apply or clear one |
+| `cow.world.bundle.set_default <id>` | Write `cow.diagame` `config.default_world` through the `source` alias. Refused if the bundle's terrain is an "unvalidated edit" (T-2) (amended 2026-10-19, S-3.5) |
 
 - `save_as` refuses to overwrite an existing id unless it is given `overwrite`.
 - Catalogue writes from the game only add or update records it owns (Resolved Decision 3).

@@ -43,6 +43,8 @@ The inspector, change ledger, overlays, graphs, tuning, painting and `isolate_ce
 - **Replay from file.** Still an unbuilt F-1 Dia need. The long-run runner covers S-3's determinism check without it.
 - **Real tile art (amended 2026-10-19, DiaCellLayers/DiaCellHistory).** S-1's terrain layers (Relief, Biome, Region …) are registered when the world loads, so they are available as debug base layers in the DiaCellLayers picker. Real tile art is still V-1's job, and every layer stays debug-grade.
 
+**Launch-out from S-3.5 (amended 2026-10-19, S-3.5 World Sim):** at stage start, S-3 reads F-3's session hint (`out/CoW/session/next_bundle.json`). If one is present, it loads that bundle instead of its configured world, so "Open in S-3" from S-3.5 continues with the same world.
+
 ## Architecture
 
 ### Placement
