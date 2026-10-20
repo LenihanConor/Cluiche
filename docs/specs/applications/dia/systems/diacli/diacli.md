@@ -123,8 +123,10 @@ result = execute_api_command("validate-assets", args=["--path", "assets/"])
 | dia-orchestrate | E2E automation CLI + pytest plugin | `dia orchestrate --suite=<app>/<name>`, DiaClient fixture, app_launcher, plan JSON, implicit assert_no_log_errors | [dia-orchestrate.md](dia-orchestrate.md) | 5 days | Done |
 | registered-types-schema | Build-time reflection schema for editor type discovery | `dia reflect --target`, `registeredtypes.diaschema`, versioned major.minor, components + modules + PUs | [registered-types-schema.md](registered-types-schema.md) | 4 days | Approved |
 | scaffold-app | Generate a new Cluiche application skeleton | `dia scaffold app <Name> [--stage] [--dry-run] [--force]`, Jinja2 templates, solution entry, data-driven `pipeline.toml` target | [scaffold-app.md](scaffold-app.md) | 5 days | Approved |
+| dev-source-alias | Dev-only source-assets path alias injected at launch | `--dev-alias source=<path>` CLI arg, parsed by Main.cpp, absent in packaged builds | [dev-source-alias.md](dev-source-alias.md) | 2 days | Approved |
+| preserve-subfolder-deploy | Catalogue deploy that preserves subfolders for world-tagged assets | `world` tag → `global/world/<subfolder>/`, `author: game` protection | [preserve-subfolder-deploy.md](preserve-subfolder-deploy.md) | 2 days | Approved |
 
-**Total Effort Estimate:** 15 days
+**Total Effort Estimate:** 19 days
 
 **Recommended Implementation Order:**
 1. plugin-discovery (5d) - Core CLI infrastructure for command discovery
