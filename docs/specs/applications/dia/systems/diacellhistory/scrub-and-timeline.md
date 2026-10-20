@@ -101,7 +101,7 @@ The card JSON (range, buckets, ticks, gaps, position, mode, sparkline, banner st
 
 ### `cells.view.state` history field
 
-DiaCellLayers Feature 5's topic carries `history`: `null` when no source is installed, otherwise `{ "mode": "live" | "sample", "sample": <index or null>, "label": "<text or null>" }`. That shape replaces the placeholder in that spec.
+DiaCellLayers Feature 5's topic carries `history`: `null` when no source is installed, otherwise `{ "mode": "live" | "sample", "sample": <index or null>, "label": "<text or null>" }`; in delta mode (Compare, Feature 4) it is `{ "mode": "delta", "a": "<side>", "b": "<side>", "scale": <number or null> }`. That shape replaces the placeholder in that spec.
 
 ### Logging and observation
 

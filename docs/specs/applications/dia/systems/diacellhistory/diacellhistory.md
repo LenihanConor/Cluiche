@@ -119,8 +119,8 @@ history.Sample({ tick, "Y12 W30", SampleBand::Week });
 |---|---|---|---|---|
 | 1 | Recorder and tiers | `Sample`, aggregates by group, per-cell 16-bit rings (one shared sample window), three budgets, events with schema-described payloads | Approved | [recorder-and-tiers.md](recorder-and-tiers.md) |
 | 2 | Scrub and timeline | `cells.history.view` / `live` / `step` / `event`, the view value source hook (owned by DiaCellLayers), timeline card (bands, event markers, gaps, sparkline); no playback in v1 | Approved | [scrub-and-timeline.md](scrub-and-timeline.md) |
-| 3 | Snapshots | `ISnapshotStore`, take/restore/list/delete, full copies of recorded layers | Draft | TBD |
-| 4 | Compare | Delta layers (now/sample/snapshot), per-group deltas in the inspector | Draft | TBD |
+| 3 | Snapshots | `ISnapshotStore` (asynchronous, frame-boundary), take/restore/list/delete, quantised copies of every recorded layer in a `dia.cell_snapshot` file, history truncation or reset on restore, 16-snapshot cap | Approved | [snapshots.md](snapshots.md) |
+| 4 | Compare | Delta mode (now/sample/snapshot sides; every float layer shows B minus A through the view value source), zero-centred diverging scale, per-group change table in the inspector; no category delta in v1 | Approved | [compare.md](compare.md) |
 | 5 | Export | Topics, chunked queries, `dia.cell_history` file (base64 numeric arrays, embedded schema, world id), runner integration through one `HistoryExporter::WriteFile` | Approved | [export.md](export.md) |
 
 Build order: 1 → 2 → 4 → 3 → 5. Feature 1 needs DiaCellLayers Feature 1.
@@ -172,4 +172,4 @@ Build order: 1 → 2 → 4 → 3 → 5. Feature 1 needs DiaCellLayers Feature 1.
 
 ## Status
 
-`Approved` (2026-10-19). Feature specs TBD; no plan yet.
+`Approved` (2026-10-19). All 5 feature specs `Approved` (2026-10-20); no plan yet.

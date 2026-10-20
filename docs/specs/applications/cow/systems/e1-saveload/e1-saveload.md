@@ -123,6 +123,15 @@ GameSpeedController publishes at most one `SimulationTick` per sim frame, and th
 
 **Sync vs Async:** F-2 uses synchronous I/O (save/load block the sim thread). DiaSaveGame supports async I/O (Feature 7), but E1 defers it until S-7 Endurance testbed (when save times matter).
 
+### Snapshot namespace (amended 2026-10-20, DiaCellHistory Snapshots)
+
+DiaCellHistory's snapshots (`docs/specs/applications/dia/systems/diacellhistory/snapshots.md`) are saved through a CoW `ISnapshotStore` adapter over this module. Not built; part of the adapter task.
+
+- **Separate namespace.** Snapshots are written to `out/saves/cow/snapshots/<name>.sav` (the history cell copies sit beside them as `snapshot_<name>.cells.json`). They are not counted in the 8 slots above. A snapshot cap of 16 is enforced by DiaCellHistory, counting files from earlier sessions.
+- **Single pending request.** `SaveLoadModule` holds one pending save and one pending load. The adapter must not overwrite a pending user request: it checks the pending flags, defers its own request to a later frame boundary when one is pending, and reports `ok=false` through its callback if it cannot run. Snapshot take and restore never run in the middle of another save or load.
+- **Failures.** A failed snapshot load is handled as any load: E1 aborts, logs the error and leaves the game unchanged. DiaCellHistory then leaves its history untouched.
+- **Restore ordering.** A snapshot restore uses the same rule as any load: `RestoreState` runs in the same frame as the DiaSimTime clock restore (see GameSpeedController participant above).
+
 ### Participants (owned by other features)
 
 E1 ships no `ISaveable` implementations. The features that own the state add them, each registering via `RegisterParticipant` (see above):
