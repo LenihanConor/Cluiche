@@ -192,7 +192,7 @@ No conflicts.
 
 1. **`ui.elevation_layer`.** The Relief hillshade needs an elevation layer, and the schema key that names it is new here. Confirm the key with S-1's layered-debug-rendering amendment, which defines what Relief reads.
 2. **Cursor and camera access.** `CellPicker` needs the mouse position and the camera in the domain's update. Check how existing debug domains get them (panel input or the game's input and camera services) when this is planned, and follow that path.
-3. **History and delta display.** DiaCellHistory asks the viewer to show past or delta values. The cleanest hook is an optional value source per layer that replaces `read`. Define it in DiaCellHistory's viewer feature rather than here, and keep `LayerUploader` free of assumptions that would block it.
+3. **History and delta display (resolved 2026-10-20, DiaCellHistory Feature 2).** The viewer owns an optional `IViewValueSource` (`GetValues(layer, out, n)`, `IsLive()`, `ViewEpoch()`). `LayerUploader` asks the installed source first; while it reports live, or when no source is installed, it uses the layer's own `read`. While not live, `GetValues` returning false means "no data in this view", never a fallback to live values. At most one source can be installed (a second is rejected with an Error). The viewer's cached reads are keyed by the layer's `version()` and `ViewEpoch()`. The registry service also exposes `IsLive()` for systems that must refuse edits while a past sample is shown. DiaCellHistory implements the source.
 
 ## Status
 

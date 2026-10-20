@@ -70,7 +70,7 @@ ICellSelectionView   read-only access for other systems
 
 ### Category selection and the layer reader
 
-`cells.select.category` needs the values of a category layer that is not necessarily the active base. `LayerReader` returns a layer's values, calling its `read` only when the layer's `version()` changed since the last read, and caching the buffer. With 128 layers at Large (6,656 cells) the cache is at most about 3.4 MB. Features 3 (query) and 4 (aggregates) use the same reader, so each layer is read at most once per version.
+`cells.select.category` needs the values of a category layer that is not necessarily the active base. `LayerReader` returns a layer's values, calling its `read` only when the layer's `version()` changed since the last read, and caching the buffer. It returns the values **the viewer shows**: it asks the installed `IViewValueSource` first (Feature 1, amended 2026-10-20 for DiaCellHistory), so while a past sample is viewed the reader returns that sample's values, and a layer with no data in that view reports none. Cached reads are keyed by `version()` and the source's `ViewEpoch()`. With 128 layers at Large (6,656 cells) the cache is at most about 3.4 MB. Features 3 (query) and 4 (aggregates) use the same reader, so each layer is read at most once per version.
 
 ### Gestures
 

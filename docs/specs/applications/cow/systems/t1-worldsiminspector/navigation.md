@@ -82,7 +82,7 @@ What counts as a match (resolved 2026-10-20):
 - Compare only what the user can see: base layer, history sample, and the selection as a **set** (order ignored).
 - After `cells.history.live`, in sync means the game reports live mode, not a specific sample, so a live game running ahead is still in sync.
 - After navigating to a specific sample, the sample must match exactly; the game's view is paused there, so any drift means a manual change.
-- The selection is compared against the set the game **accepted** (from the command result), so a cell the game dropped does not show Out of sync.
+- The selection is compared against the set the game **accepted** (from the command result), so a cell the game dropped does not show Out of sync. The comparison uses the selection fingerprint in `cells.view.state` (`count`, `version`, `hash`; DiaCellLayers Feature 5): T-1 computes the same order-independent 64-bit hash (XOR of the SplitMix64 mix of each cell index, `index = r * width + q`) from the accepted set and compares it with the topic's. If they differ it can fetch the real set with `cells.select.get` to show what changed (amended 2026-10-20).
 
 The Re-sync button resends the last plan. "Back to live" clears the last target.
 
@@ -128,10 +128,10 @@ No conflicts.
 
 | Dependency | Use | Status |
 |---|---|---|
-| DiaCellLayers Feature 2 (Selection) | `cells.select.cell`, `.category` | Draft, TBD |
+| DiaCellLayers Feature 2 (Selection) | `cells.select.cell`, `.category`, `.cells` | Approved, not built |
 | **DiaCellLayers Feature 2: new `cells.select.cells <q,r…>`** | Select an explicit list of cells (used by "show cells"). Replaces the earlier idea of building it from `cells.select.query`, whose expression language cannot name cells. The game enforces its own size limit and reports the accepted set in the result | **Requested; needs Dia spec change and AD-001 sign-off** |
 | DiaCellHistory Feature 5 | `cells.history.view`, `.live` | Approved, not built |
-| DiaCellLayers Feature 5 | `cells.view.state` topic | Draft, TBD |
+| DiaCellLayers Feature 5 | `cells.view.state` topic (selection `count`/`version`/`hash`), `cells.select.get`, and the shared hash test vectors | Approved, not built |
 
 ## Resolved Decisions
 

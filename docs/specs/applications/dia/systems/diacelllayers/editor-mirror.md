@@ -169,7 +169,7 @@ No conflicts.
 ## Open Design Questions
 
 1. **Query latency across PUs.** Queries are answered on the viewer's PU, so a reply can take up to a frame. Follow the DiaDebugServer pattern other domains use; check the exact mechanism when planning, and confirm that a frame of latency is acceptable for T-1's sync pill.
-2. **`history` field shape.** The `{mode, sample}` shape is a placeholder until DiaCellHistory's viewer feature fixes it. T-1 Feature 6 already assumes a sample number.
+2. **`history` field shape (resolved 2026-10-20, DiaCellHistory Feature 2).** `null` when no value source is installed, otherwise `{ "mode": "live" | "sample", "sample": <index or null>, "label": "<text or null>" }`.
 3. **Very large grids.** 196,608 cells per `cells.layer.values` chunk is far above Large (6,656). If a game uses a much larger grid, the chunk size may need to drop to keep replies responsive; revisit then.
 
 ## Status

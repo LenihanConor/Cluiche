@@ -49,7 +49,7 @@ It records **DiaCellLayers** layers, so anything a system shows can also be reco
 
 | Tier | What | Depth | Cost at Large (6,656 cells) |
 |---|---|---|---|
-| **Aggregates** | min/mean/max per layer, per group (world, plus each category of the grouping layers, e.g. region and biome) | Whole run | about 2 KB per sample for 20 layers × ~30 groups |
+| **Aggregates** | min/mean/max per layer, per group (world, plus each category of the grouping layers, e.g. region and biome) | Whole run | about 7 KB per sample for 20 layers × ~30 groups (float32 min/mean/max, 12 bytes each; corrected 2026-10-20 from "2 KB"); own budget, default 64 MB |
 | **Per-cell** | opted-in layers, 16-bit quantised over the schema range | Ring sized by the budget | 13 KB per layer per sample; 6 layers × 520 weeks ≈ 40 MB; default budget 64 MB |
 | **Events** | typed records `{tick, type, cell or group, value, text}` emitted by systems | Whole run | small |
 
@@ -117,11 +117,11 @@ history.Sample({ tick, "Y12 W30", SampleBand::Week });
 
 | # | Feature | Notes | Status | Spec |
 |---|---|---|---|---|
-| 1 | Recorder and tiers | `Sample`, aggregates by group, per-cell 16-bit rings, budget, events | Draft | TBD |
-| 2 | Scrub and timeline | `cells.history.view` / `live`, timeline card (bands, event markers, gaps) | Draft | TBD |
+| 1 | Recorder and tiers | `Sample`, aggregates by group, per-cell 16-bit rings (one shared sample window), three budgets, events with schema-described payloads | Approved | [recorder-and-tiers.md](recorder-and-tiers.md) |
+| 2 | Scrub and timeline | `cells.history.view` / `live` / `step` / `event`, the view value source hook (owned by DiaCellLayers), timeline card (bands, event markers, gaps, sparkline); no playback in v1 | Approved | [scrub-and-timeline.md](scrub-and-timeline.md) |
 | 3 | Snapshots | `ISnapshotStore`, take/restore/list/delete, full copies of recorded layers | Draft | TBD |
 | 4 | Compare | Delta layers (now/sample/snapshot), per-group deltas in the inspector | Draft | TBD |
-| 5 | Export | Topics, chunked queries, `dia.cell_history` file, runner integration | Draft | TBD |
+| 5 | Export | Topics, chunked queries, `dia.cell_history` file (base64 numeric arrays, embedded schema, world id), runner integration through one `HistoryExporter::WriteFile` | Approved | [export.md](export.md) |
 
 Build order: 1 → 2 → 4 → 3 → 5. Feature 1 needs DiaCellLayers Feature 1.
 

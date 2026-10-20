@@ -88,6 +88,7 @@ public:
     const ValueInfo*  Find(StringCRC fullKey) const;
     const ValueInfo*  Find(StringCRC forFormat, StringCRC key) const;
     ValueInfoSpan     ForFormat(StringCRC formatId) const;   // entries in file order
+    const ValueInfo*  FindEvent(StringCRC eventKey) const;   // `kind: event` entry by its key, in any `for`
     uint32            Count() const;
 };
 ```
@@ -113,7 +114,7 @@ public:
 2. `Find` returns an entry by full key and by `(for, key)`; `ForFormat` returns that format's entries in file order; an unknown key returns null.
 3. A file with a missing required key, a wrong type, an unknown `kind` or `type`, or a bad `format`/`version` is rejected as a whole with an Error naming file, entry and reason; other files still load.
 4. A duplicate full key across files: the first (sorted by path) wins and an Error names both; a hash collision between different keys is rejected with an Error.
-5. An `event` entry loads with `payload`, `vocabulary` and `ui.colour`/`glyph`.
+5. An `event` entry loads with `payload`, `vocabulary` and `ui.colour`/`glyph`. `FindEvent` returns an event entry by its `key` in any `for`; two `kind: event` entries with the same `key` in different `for` formats are rejected as a duplicate (first wins, Error names both). Amended 2026-10-20 for DiaCellHistory Export, which resolves event types by key.
 6. Enum values keep `colour` when given and get a colour from the built-in categorical list by order when not.
 7. Unknown keys inside `ui` and `history` are kept and readable by consumers, and logged once as a Warning; unknown top-level entry keys fail the file.
 8. `ClampAndWarn` clamps numeric values to `min`/`max` and logs exactly one Warning per key regardless of how often it clamps; it passes through values for entries without a range.
