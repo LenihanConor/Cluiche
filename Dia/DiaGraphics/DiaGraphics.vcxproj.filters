@@ -40,6 +40,9 @@
     <ClCompile Include="CellField\HexFlatTopOddQBuilder.cpp">
       <Filter>CellField</Filter>
     </ClCompile>
+    <ClCompile Include="CellField\CellFieldRegistry.cpp">
+      <Filter>CellField</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera\Camera2D.h">
@@ -152,6 +155,9 @@
       <Filter>CellField</Filter>
     </ClInclude>
     <ClInclude Include="CellField\HexFlatTopOddQBuilder.h">
+      <Filter>CellField</Filter>
+    </ClInclude>
+    <ClInclude Include="CellField\CellFieldRegistry.h">
       <Filter>CellField</Filter>
     </ClInclude>
   </ItemGroup>

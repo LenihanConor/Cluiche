@@ -922,6 +922,7 @@
     <ClCompile Include="Core\DebugDraw\TestCellFieldDebugDraw.cpp" />
     <ClCompile Include="DiaGraphics\TestCellFieldFrameData.cpp" />
     <ClCompile Include="DiaGraphics\TestHexGeometryBuilder.cpp" />
+    <ClCompile Include="DiaGraphics\TestCellFieldRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

@@ -32,6 +32,7 @@
     <ClCompile Include="Misc\Vertex.cpp" />
     <ClCompile Include="Frame\CellFieldFrameData.cpp" />
     <ClCompile Include="CellField\HexFlatTopOddQBuilder.cpp" />
+    <ClCompile Include="CellField\CellFieldRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Assets\IShader.h" />
@@ -130,6 +131,7 @@
     <ClInclude Include="CellField\CellGridDesc.h" />
     <ClInclude Include="CellField\ICellGridGeometryBuilder.h" />
     <ClInclude Include="CellField\HexFlatTopOddQBuilder.h" />
+    <ClInclude Include="CellField\CellFieldRegistry.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCamera2D\DiaCamera2D.vcxproj">
