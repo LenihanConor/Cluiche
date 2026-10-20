@@ -31,7 +31,7 @@ Nothing like this exists today:
 - Own `ValueInfo` and the runtime lookup `ValueSchemaRegistry` (key → `ValueInfo`). It is published as a service; no singleton.
 - Own the code-side description APIs: `MetricInfo` for metrics, `ValueParam` for DiaAPI command arguments, and `DIA_ATTR_DESCRIBE` for entity component fields. These feed the same registry.
 - Own the debug-panel tooltip contract: controls and inspector rows carry a `schemaKey`, and the panel shows description, unit, range and default.
-- Own the named colour-ramp library and its mapping to CellField ramps.
+- Own the named colour-ramp library (`dia.ramps`), the resolve functions and legend data. Consumers convert the neutral colour data to their renderer's type (amended 2026-10-20; DiaValueSchema does not depend on CellField).
 - Own the export: `dia schema export`, the DiaDebugServer query `valueschema.get` and `dia docs value-reference`.
 - Own `dia validate schema`.
 
@@ -186,7 +186,7 @@ A survey found that no tool shows per-value descriptions today. Field labels are
 ### Ramps
 
 - A small named library ships in Dia: `sequential.green`, `sequential.blue`, `sequential.heat`, `diverging.blue_red`, `categorical.12`.
-- `ui.ramp` names one of them. `ValueSchema::ToCellFieldRamp(info)` returns the CellField ramp with the entry's `min` and `max`.
+- `ui.ramp` names one of them. `ResolveRamp(info)` returns neutral ramp data with the entry's `min` and `max`; the DiaCellLayers viewer converts it to a CellField ramp (amended 2026-10-20, replaces `ToCellFieldRamp`; the library is now a `dia.ramps` file with `sequential.grey`, `.purple`, `.terrain` added).
 - The Layer Viewer uses this, so every field layer gets the same colours and legend everywhere.
 
 ### Export, query and reference
@@ -225,12 +225,12 @@ $ dia validate schema
 
 | # | Feature | Notes | Status | Spec |
 |---|---|---|---|---|
-| 1 | Format, loader and service | `ValueInfo`, the sidecar loader (including record paths, `unique`, `required`, `ref`), `ValueSchemaModule` / `ValueSchemaService`, lookup by full key and by format, clamp-and-warn helper | Draft | TBD |
-| 2 | `dia validate schema` | DiaCLI validator (Python, like `cli_validate.py`), precommit hook | Draft | TBD |
-| 3 | Tooltips (panel and editor UI) | Controls and rows take `schemaKey`; shared `ValueLabel`/`ValueTooltip` in `@dia/editor-ui` plus `renderValueTooltip()` in the debug panel; default mark, pack marker; schema query; contract golden | Draft | TBD |
+| 1 | Format, loader and service | `ValueInfo`, the sidecar loader (including record paths, `unique`, `required`, `ref`), `ValueSchemaModule` / `ValueSchemaService`, lookup by full key and by format, clamp-and-warn helper | Approved | [format-loader-and-service.md](format-loader-and-service.md) |
+| 2 | `dia validate schema` | DiaCLI validator (Python, like `cli_validate.py`), precommit hook | Approved | [validate-schema.md](validate-schema.md) |
+| 3 | Tooltips (panel and editor UI) | Controls and rows take `schemaKey`; shared `ValueLabel`/`ValueTooltip` in `@dia/editor-ui` plus `renderValueTooltip()` in the debug panel; default mark, pack marker; schema query; contract golden | Approved | [tooltips.md](tooltips.md) |
 | 4 | Code-side descriptions | `MetricInfo` on `MetricRegistry`; `EditorActionParam` moved to DiaAPI as `ValueParam` (alias kept) and added to `CommandInfo`; `HelpSystem` and palette show the args | Draft | TBD |
-| 5 | Ramps | Named ramp library, `ToCellFieldRamp`, legend data | Draft | TBD |
-| 6 | Export, query and reference | `dia schema export`, `valueschema.get`, `dia docs value-reference` | Draft | TBD |
+| 5 | Ramps | Named ramp library (`dia.ramps` data file, game-extensible), neutral `ResolveRamp` / `ResolvePalette` / `BuildLegend` (C++ and TypeScript); replaces `ToCellFieldRamp` (amended 2026-10-20) | Approved | [ramps.md](ramps.md) |
+| 6 | Export, query and reference | `dia schema export`, `dia docs value-reference`, schema embedding in exports; extends the `valueschema.get` query that Feature 3 defines (amended 2026-10-20) | Approved | [export-query-and-reference.md](export-query-and-reference.md) |
 | 7 | Entity component fields | `DIA_ATTR_DESCRIBE(Type, field, label, unit, description)` alongside the existing `FieldAttributeRegistry` ranges. It feeds `ValueSchemaService` (kind `component_field`), so the Entity Inspector, Blueprint Editor and Scene Editor show the same tooltips as world values. Without it, entity fields have ranges but no explanations, and two metadata systems drift apart | Draft (v1, user decision 2026-10-19) | TBD |
 
 - **Build order:** 1 → 2 → 3, then 4 and 7 (code-side descriptions), 5 (with or after CellField Step 1) and 6.
@@ -282,7 +282,7 @@ $ dia validate schema
   - Lookup works by full key and by format.
   - The enum `values` parse.
   - The clamp helper clamps and warns once per key.
-  - `ToCellFieldRamp` maps min and max.
+  - `ResolveRamp` returns the named ramp with the entry's min and max (amended 2026-10-20, Feature 5).
   - `MetricInfo` and `ValueParam` reach the service.
 - **DiaCLI pytest:** one fixture per fail rule in Validation, and the OK path.
 - **Panel contract golden:** a control with `schemaKey` serialises with tooltip data.
@@ -297,4 +297,4 @@ $ dia validate schema
 
 ## Status
 
-`Approved` (2026-10-19). Feature specs TBD; no plan yet.
+`Approved` (2026-10-19). Feature specs 1, 2, 3, 5 and 6 `Approved` (2026-10-20); 4 and 7 TBD; no plan yet.
