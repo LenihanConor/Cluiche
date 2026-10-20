@@ -171,7 +171,7 @@ A survey found that no tool shows per-value descriptions today. Field labels are
 - `ValueSchemaModule` (any PU that needs it) loads every `*.schema.json` reachable from the app's path aliases at start.
   - Its `ValueSchemaService` (a `ServiceStream`, following the existing service pattern; no singleton) answers `Find(fullKey)` → `const ValueInfo*`.
   - It also answers `ForFormat(formatId)` → a list of entries.
-- `MetricRegistry` and `CommandRegistry` push their code-side infos into the service when registering.
+- `MetricRegistry` and `CommandRegistry` store their code-side infos; `ValueSchemaModule` collects them once at the end of Init and in describe mode (a pull, amended 2026-10-20 with Feature 4, so DiaObservation and DiaAPI do not depend on DiaValueSchema).
 - **Out-of-range values at runtime.** Loaders that use the schema clamp the value and log one Warning naming the key and range (channel `VSC`). The same rule applies to F-3 pack overrides.
 
 ### Debug-panel tooltips
@@ -228,10 +228,10 @@ $ dia validate schema
 | 1 | Format, loader and service | `ValueInfo`, the sidecar loader (including record paths, `unique`, `required`, `ref`), `ValueSchemaModule` / `ValueSchemaService`, lookup by full key and by format, clamp-and-warn helper | Approved | [format-loader-and-service.md](format-loader-and-service.md) |
 | 2 | `dia validate schema` | DiaCLI validator (Python, like `cli_validate.py`), precommit hook | Approved | [validate-schema.md](validate-schema.md) |
 | 3 | Tooltips (panel and editor UI) | Controls and rows take `schemaKey`; shared `ValueLabel`/`ValueTooltip` in `@dia/editor-ui` plus `renderValueTooltip()` in the debug panel; default mark, pack marker; schema query; contract golden | Approved | [tooltips.md](tooltips.md) |
-| 4 | Code-side descriptions | `MetricInfo` on `MetricRegistry`; `EditorActionParam` moved to DiaAPI as `ValueParam` (alias kept) and added to `CommandInfo`; `HelpSystem` and palette show the args | Draft | TBD |
+| 4 | Code-side descriptions | `MetricInfo` on `MetricRegistry`; `EditorActionParam` moved to DiaAPI as `ValueParam` (alias kept) and added to `CommandInfo`; `HelpSystem` and palette show the args; pull collector in `ValueSchemaModule` (no upward dependency) | Approved | [code-side-descriptions.md](code-side-descriptions.md) |
 | 5 | Ramps | Named ramp library (`dia.ramps` data file, game-extensible), neutral `ResolveRamp` / `ResolvePalette` / `BuildLegend` (C++ and TypeScript); replaces `ToCellFieldRamp` (amended 2026-10-20) | Approved | [ramps.md](ramps.md) |
 | 6 | Export, query and reference | `dia schema export`, `dia docs value-reference`, schema embedding in exports; extends the `valueschema.get` query that Feature 3 defines (amended 2026-10-20) | Approved | [export-query-and-reference.md](export-query-and-reference.md) |
-| 7 | Entity component fields | `DIA_ATTR_DESCRIBE(Type, field, label, unit, description)` alongside the existing `FieldAttributeRegistry` ranges. It feeds `ValueSchemaService` (kind `component_field`), so the Entity Inspector, Blueprint Editor and Scene Editor show the same tooltips as world values. Without it, entity fields have ranges but no explanations, and two metadata systems drift apart | Draft (v1, user decision 2026-10-19) | TBD |
+| 7 | Entity component fields | `DIA_ATTR_DESCRIBE(Type, field, label, unit, description)` alongside the existing `FieldAttributeRegistry` ranges. It feeds `ValueSchemaService` (kind `component_field`), so the Entity Inspector, Blueprint Editor and Scene Editor show the same tooltips as world values. Without it, entity fields have ranges but no explanations, and two metadata systems drift apart | Approved (v1, user decision 2026-10-19) | [entity-component-fields.md](entity-component-fields.md) |
 
 - **Build order:** 1 → 2 → 3, then 4 and 7 (code-side descriptions), 5 (with or after CellField Step 1) and 6.
 - **Feature 7 consumers:** the Entity Inspector, Blueprint Editor and Scene Editor show the same tooltips as the debug panels, read from the extended `registeredtypes.diaschema` and rendered with the shared `ValueTooltip`. Each component field resolves to the full key `<ComponentType>/<field>`, and its range comes from the existing `RangeAttribute`, so it is never stated twice.
@@ -297,4 +297,4 @@ $ dia validate schema
 
 ## Status
 
-`Approved` (2026-10-19). Feature specs 1, 2, 3, 5 and 6 `Approved` (2026-10-20); 4 and 7 TBD; no plan yet.
+`Approved` (2026-10-19). All 7 feature specs `Approved` (2026-10-20); no plan yet.

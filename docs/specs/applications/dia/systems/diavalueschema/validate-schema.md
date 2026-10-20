@@ -101,6 +101,8 @@ A file is a **pack** when it sits in a `Packs/` folder; otherwise it is a **defa
 Metrics, command arguments and component fields are described in code (Feature 4, Feature 7) and reach the validator only through the schema export (Feature 6, `Cluiche/out/<App>/valueschema.json`).
 
 - If the export exists (or `--code-side PATH` is given), the validator reads it and WARNs about metrics with no `MetricInfo`, commands with no `ValueParam`, and component fields with a range but no description.
+- **Grouped output (amended 2026-10-20, Feature 4):** these coverage warnings are grouped by owner with a count, for example `WARN DiaAssets: 41 commands without argument descriptions`, and the individual items are listed only with `--verbose`. `--json` always lists every item. Commands that set `noArgs` are never reported.
+- **Unit lint (amended 2026-10-20, Feature 4):** a metric whose name ends in a known unit suffix (`_ms`, `_us`, `_bytes`, `_kb`, `_mb`, `_hz`, `_pct`) and whose `MetricInfo.unit` is empty is a WARN. Unit text is not compared with the suffix.
 - If it does not exist, the code-side checks are skipped and the run says so on one line. Validation never requires a build.
 - The export's age is not checked in v1 (see Open Q2).
 
@@ -132,6 +134,8 @@ This is a CLI tool: it prints a one-line summary (files checked, FAIL, WARN) and
 12. The exit code is 0 with only warnings, 1 with any FAIL, 2 on a usage error; `--json` output lists every finding with severity, rule, file, key and message.
 13. The command checks Feature 1's shared conformance fixtures and reaches the same verdicts as the C++ loader tests on every fixture.
 14. `dia docs precommit` runs it on changed schema/data files and fails the commit on a FAIL.
+15. Code-side coverage warnings are grouped by owner with counts, the individual items appear only with `--verbose` (and always in `--json`), and a command that sets `noArgs` is never reported.
+16. A metric named with a unit suffix (`_ms`, `_us`, `_bytes`, `_kb`, `_mb`, `_hz`, `_pct`) and an empty unit produces a WARN; a non-empty unit does not, whatever its text.
 
 ## Test Strategy
 
