@@ -635,3 +635,206 @@ TEST(CellFieldRampDraw, ShutdownDestroysRampTextures)
     EXPECT_TRUE(f.cmap.live.empty());
     EXPECT_EQ(0u, f.renderer.GetRendererStats().colourMapsResident);
 }
+
+// ---- Task 12: inset and backdrop ---------------------------------------------
+
+namespace
+{
+    struct BuiltGrid
+    {
+        HexDescStorage storage;
+        CellGridDesc desc;
+        CellGridGeometry geo;
+    };
+
+    void BuildGrid(uint32_t w, uint32_t h, float size, BuiltGrid& g)
+    {
+        Dia::Pathfinding::HexTopology topo(w, h);
+        g.desc = HexTopologyToCellGridDesc(topo, size, g.storage);
+        HexFlatTopOddQBuilder builder;
+        ASSERT_TRUE(builder.Build(g.desc, g.geo));
+    }
+
+    void CheckBounds(uint32_t w, uint32_t h, float size)
+    {
+        BuiltGrid g;
+        BuildGrid(w, h, size, g);
+        CellFieldBounds b;
+        ASSERT_TRUE(CellFieldGridBounds(g.desc.centresXY, w, h, size, b));
+        float minX = 1e30f, minY = 1e30f, maxX = -1e30f, maxY = -1e30f;
+        for (uint32_t i = 0; i < g.geo.vertexCount; ++i)
+        {
+            float p[2];
+            CellFieldInsetVertexPosition(g.geo.vertices[i].centre, g.geo.vertices[i].offset, size, 0.0f, p);
+            EXPECT_GE(p[0], b.minX - 1e-4f);
+            EXPECT_LE(p[0], b.maxX + 1e-4f);
+            EXPECT_GE(p[1], b.minY - 1e-4f);
+            EXPECT_LE(p[1], b.maxY + 1e-4f);
+            minX = fminf(minX, p[0]); maxX = fmaxf(maxX, p[0]);
+            minY = fminf(minY, p[1]); maxY = fmaxf(maxY, p[1]);
+        }
+        EXPECT_NEAR(minX, b.minX, 1e-4f);
+        EXPECT_NEAR(maxX, b.maxX, 1e-4f);
+        EXPECT_NEAR(minY, b.minY, 1e-4f);
+        EXPECT_NEAR(maxY, b.maxY, 1e-4f);
+    }
+
+    Dia::Core::CellFieldDrawRequest InsetDraw(Dia::Core::CellFieldLayerHandle h, float inset, uint32_t backdrop)
+    {
+        Dia::Core::CellFieldDrawRequest r = RampDraw(h, "inset.ramp", 0.0f, 1.0f);
+        r.inset = inset;
+        r.backdropColour = backdrop;
+        return r;
+    }
+}
+
+TEST(CellFieldInset, EffectiveInsetClamps)
+{
+    EXPECT_FLOAT_EQ(0.0f, CellFieldEffectiveInset(0.0f));
+    EXPECT_FLOAT_EQ(0.25f, CellFieldEffectiveInset(0.25f));
+    EXPECT_FLOAT_EQ(0.0f, CellFieldEffectiveInset(-0.3f));
+    EXPECT_FLOAT_EQ(0.0f, CellFieldEffectiveInset(std::numeric_limits<float>::quiet_NaN()));
+    EXPECT_FLOAT_EQ(0.499f, CellFieldEffectiveInset(0.5f));
+    EXPECT_FLOAT_EQ(0.499f, CellFieldEffectiveInset(7.0f));
+    EXPECT_FLOAT_EQ(0.499f, CellFieldEffectiveInset(std::numeric_limits<float>::infinity()));
+    EXPECT_FLOAT_EQ(0.0f, CellFieldEffectiveInset(-std::numeric_limits<float>::infinity()));
+}
+
+TEST(CellFieldInset, GridBoundsCoverAndAreTight1x1) { CheckBounds(1, 1, 1.0f); }
+TEST(CellFieldInset, GridBoundsCoverAndAreTight2x2) { CheckBounds(2, 2, 1.0f); }
+TEST(CellFieldInset, GridBoundsCoverAndAreTight5x4) { CheckBounds(5, 4, 2.5f); }
+
+TEST(CellFieldInset, GridBoundsRejectsEmpty)
+{
+    CellFieldBounds b;
+    EXPECT_FALSE(CellFieldGridBounds(nullptr, 2, 2, 1.0f, b));
+    const float c[2] = { 0.0f, 0.0f };
+    EXPECT_FALSE(CellFieldGridBounds(c, 0, 1, 1.0f, b));
+}
+
+TEST(CellFieldInset, CentreVertexNeverMoves)
+{
+    const float centre[2] = { 3.0f, -2.0f };
+    const float zero[2] = { 0.0f, 0.0f };
+    for (float inset : { 0.0f, 0.1f, 0.4f })
+    {
+        float p[2];
+        CellFieldInsetVertexPosition(centre, zero, 2.0f, inset, p);
+        EXPECT_FLOAT_EQ(3.0f, p[0]);
+        EXPECT_FLOAT_EQ(-2.0f, p[1]);
+    }
+}
+
+TEST(CellFieldInset, SharedCornersCoincideAtInsetZeroAndGapAtInsetTenth)
+{
+    BuiltGrid g;
+    BuildGrid(2, 2, 1.0f, g);
+    bool found = false;
+    for (uint32_t i = 0; i < g.geo.vertexCount && !found; ++i)
+    {
+        for (uint32_t j = i + 1; j < g.geo.vertexCount && !found; ++j)
+        {
+            const VertexCellField& a = g.geo.vertices[i];
+            const VertexCellField& b = g.geo.vertices[j];
+            if (a.centre[0] == b.centre[0] && a.centre[1] == b.centre[1])
+                continue;
+            if ((a.offset[0] == 0.0f && a.offset[1] == 0.0f) || (b.offset[0] == 0.0f && b.offset[1] == 0.0f))
+                continue;
+            float pa[2], pb[2];
+            CellFieldInsetVertexPosition(a.centre, a.offset, 1.0f, 0.0f, pa);
+            CellFieldInsetVertexPosition(b.centre, b.offset, 1.0f, 0.0f, pb);
+            if (fabsf(pa[0] - pb[0]) > 1e-4f || fabsf(pa[1] - pb[1]) > 1e-4f)
+                continue;
+            found = true;
+
+            // Seamless at inset 0 (equal above). At inset i the corners separate by
+            // i * |centreA - centreB| (adjacent centres are sqrt(3)*cellSize apart).
+            CellFieldInsetVertexPosition(a.centre, a.offset, 1.0f, 0.1f, pa);
+            CellFieldInsetVertexPosition(b.centre, b.offset, 1.0f, 0.1f, pb);
+            const float gap = sqrtf((pa[0] - pb[0]) * (pa[0] - pb[0]) + (pa[1] - pb[1]) * (pa[1] - pb[1]));
+            const float dc = sqrtf((a.centre[0] - b.centre[0]) * (a.centre[0] - b.centre[0]) +
+                                   (a.centre[1] - b.centre[1]) * (a.centre[1] - b.centre[1]));
+            EXPECT_GT(gap, 0.0f);
+            EXPECT_NEAR(0.1f * dc, gap, 1e-4f);
+            EXPECT_NEAR(0.1f * sqrtf(3.0f), gap, 1e-4f);
+        }
+    }
+    EXPECT_TRUE(found);
+}
+
+TEST(CellFieldInset, NeedsBackdropLogic)
+{
+    EXPECT_TRUE(CellFieldNeedsBackdrop(0.1f, 0x000000FFu));
+    EXPECT_TRUE(CellFieldNeedsBackdrop(0.1f, 0x00000001u));
+    EXPECT_FALSE(CellFieldNeedsBackdrop(0.1f, 0xFFFFFF00u));   // alpha 0
+    EXPECT_FALSE(CellFieldNeedsBackdrop(0.0f, 0x000000FFu));   // no inset
+    EXPECT_FALSE(CellFieldNeedsBackdrop(-1.0f, 0x000000FFu));  // clamps to 0
+    EXPECT_FALSE(CellFieldNeedsBackdrop(std::numeric_limits<float>::quiet_NaN(), 0x000000FFu));
+    EXPECT_TRUE(CellFieldNeedsBackdrop(9.0f, 0x000000FFu));    // clamps to 0.499
+}
+
+TEST(CellFieldInset, DrawParamsCarryInsetAndBackdrop)
+{
+    const CellFieldRampData r = MakeRamp(0x000000FFu, 0xFFFFFFFFu);
+    CellFieldLayerInfo info;
+    info.width = 2; info.height = 2; info.kind = CellFieldValueKind::Float;
+    CellFieldDrawParams out;
+    ASSERT_TRUE(BuildCellFieldDrawParams(InsetDraw(Dia::Core::CellFieldLayerHandle(), 0.2f, 0xFF000080u), info, nullptr, &r, out));
+    EXPECT_FLOAT_EQ(0.2f, out.params0[2]);
+    EXPECT_FLOAT_EQ(1.0f, out.backdropColour[0]);
+    EXPECT_NEAR(128.0f / 255.0f, out.backdropColour[3], 1e-6f);
+    ASSERT_TRUE(BuildCellFieldDrawParams(InsetDraw(Dia::Core::CellFieldLayerHandle(), 5.0f, 0), info, nullptr, &r, out));
+    EXPECT_FLOAT_EQ(0.499f, out.params0[2]);
+}
+
+namespace
+{
+    void DrawOnce(float inset, uint32_t backdrop, CellFieldRendererStats& stats, int layers = 1)
+    {
+        Fixture f;
+        const CellFieldRampStop stops[2] = { { 0.0f, 0x000000FFu }, { 1.0f, 0x00FF00FFu } };
+        ASSERT_TRUE(f.registry.RegisterRamp(Dia::Core::StringCRC("inset.ramp"), stops, 2).ok);
+        // Step 1 accepts one request per frame: one frame per draw.
+        for (int i = 0; i < layers; ++i)
+        {
+            CellFieldFrameData frame;
+            frame.RequestDrawCellFieldData(InsetDraw(f.Make(4, 3, CellFieldValueKind::Float), inset, backdrop));
+            f.renderer.Draw(frame);
+        }
+        stats = f.renderer.GetRendererStats();
+    }
+}
+
+TEST(CellFieldInset, DrawCallAccounting)
+{
+    CellFieldRendererStats s;
+    DrawOnce(0.0f, 0x000000FFu, s);
+    EXPECT_EQ(1u, s.drawCalls);
+    EXPECT_EQ(0u, s.backdropDraws);
+
+    DrawOnce(0.1f, 0x000000FFu, s);
+    EXPECT_EQ(2u, s.drawCalls);
+    EXPECT_EQ(1u, s.backdropDraws);
+
+    DrawOnce(0.1f, 0xFFFFFF00u, s);
+    EXPECT_EQ(1u, s.drawCalls);
+    EXPECT_EQ(0u, s.backdropDraws);
+
+    DrawOnce(0.1f, 0x000000FFu, s, 3);
+    EXPECT_EQ(6u, s.drawCalls);
+    EXPECT_EQ(3u, s.backdropDraws);
+}
+
+TEST(CellFieldInset, PlannedSubmitOrderBackdropFirst)
+{
+    Fixture f;
+    const CellFieldRampStop stops[2] = { { 0.0f, 0x000000FFu }, { 1.0f, 0x00FF00FFu } };
+    ASSERT_TRUE(f.registry.RegisterRamp(Dia::Core::StringCRC("inset.ramp"), stops, 2).ok);
+    CellFieldFrameData frame;
+    frame.RequestDrawCellFieldData(InsetDraw(f.Make(4, 3, CellFieldValueKind::Float), 0.1f, 0x000000FFu));
+    f.renderer.Draw(frame);
+    const std::vector<CellFieldPlannedSubmit>& plan = f.renderer.GetLastPlannedSubmits();
+    ASSERT_EQ(2u, plan.size());
+    EXPECT_TRUE(plan[0].backdrop);
+    EXPECT_FALSE(plan[1].backdrop);
+}

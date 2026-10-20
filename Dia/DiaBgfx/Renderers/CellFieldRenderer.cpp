@@ -11,6 +11,8 @@
 #include <bgfx/bgfx.h>
 #include <bx/math.h>
 
+#include <string.h>
+
 namespace Dia
 {
     namespace Bgfx
@@ -125,6 +127,7 @@ namespace Dia
                 layer.height = desc.height;
                 layer.cellSize = desc.cellSize;
                 layer.kind = kind;
+                layer.hasBounds = CellFieldGridBounds(desc.centresXY, desc.width, desc.height, desc.cellSize, layer.bounds);
                 layer.geometryKey = CellFieldGeometryCache::MakeKey(desc);
                 layer.geometry = entry->gpu;
                 if (!mR.mTextureFactory.Create(desc.width, desc.height, layer.valueTexture))
@@ -214,6 +217,7 @@ namespace Dia
             if (!mRegistry)
                 return;
 
+            mLastPlan.clear();
             bool viewReady = false;
             const auto& requests = frame.GetCellFieldFrameData();
             for (unsigned int i = 0; i < requests.Size(); ++i)
@@ -262,6 +266,21 @@ namespace Dia
                 else if (!EnsureRampTexture(request.colourMap, ramp, colourMap))
                     continue;
 
+                // Plan the submits (backdrop first, then the layer). Counted before the GPU path so
+                // a null program (tests) records exactly what a real draw would submit.
+                const bool backdrop = layer.hasBounds && CellFieldNeedsBackdrop(request.inset, request.backdropColour);
+                CellFieldPlannedSubmit planned;
+                if (backdrop)
+                {
+                    planned.backdrop = true;
+                    mLastPlan.push_back(planned);
+                    ++mStats.drawCalls;
+                    ++mStats.backdropDraws;
+                }
+                planned.backdrop = false;
+                mLastPlan.push_back(planned);
+                ++mStats.drawCalls;
+
                 if (!mProgram)
                     continue;   // no GPU path (tests): everything above still ran
                 if (!viewReady)
@@ -269,6 +288,8 @@ namespace Dia
                     SetupView();
                     viewReady = true;
                 }
+                if (backdrop)
+                    SubmitBackdrop(layer, params);
                 SubmitLayer(request, layer, params, colourMap);
             }
         }
@@ -395,6 +416,86 @@ namespace Dia
             bgfx::setViewRect(mViewId, 0, 0, static_cast<uint16_t>(cw), static_cast<uint16_t>(ch));
         }
 
+        namespace
+        {
+            struct CellFieldUniforms
+            {
+                bgfx::UniformHandle params0, params1, params2, gridInfo, fallback, backdrop, lightDir;
+                bgfx::UniformHandle sColour, sValue, sElevation;
+            };
+
+            const CellFieldUniforms& GetCellFieldUniforms()
+            {
+                static CellFieldUniforms u;
+                static bool created = false;
+                if (!created)
+                {
+                    u.params0   = bgfx::createUniform("u_params0", bgfx::UniformType::Vec4);
+                    u.params1   = bgfx::createUniform("u_params1", bgfx::UniformType::Vec4);
+                    u.params2   = bgfx::createUniform("u_params2", bgfx::UniformType::Vec4);
+                    u.gridInfo  = bgfx::createUniform("u_gridInfo", bgfx::UniformType::Vec4);
+                    u.fallback  = bgfx::createUniform("u_fallbackColour", bgfx::UniformType::Vec4);
+                    u.backdrop  = bgfx::createUniform("u_backdropColour", bgfx::UniformType::Vec4);
+                    u.lightDir  = bgfx::createUniform("u_lightDir", bgfx::UniformType::Vec4);
+                    u.sColour   = bgfx::createUniform("u_paletteOrRamp", bgfx::UniformType::Sampler);
+                    u.sValue    = bgfx::createUniform("u_valueTexture", bgfx::UniformType::Sampler);
+                    u.sElevation = bgfx::createUniform("u_elevationTexture", bgfx::UniformType::Sampler);
+                    created = true;
+                }
+                return u;
+            }
+        }
+
+        // Backdrop: one quad (6-vertex triangle list, transient buffer, no index buffer) covering
+        // the layer's grid bounds, drawn in mapMode 2 (flat u_backdropColour) before the layer.
+        // Vertices use the VertexCellField layout with offset (0,0), so the vertex shader's
+        // centre + offset*cellSize*(1-inset) resolves to centre = the quad corner, whatever the inset.
+        void CellFieldRenderer::SubmitBackdrop(const Layer& layer, const CellFieldDrawParams& params)
+        {
+            if (!mProgram || !mProgram->IsValid() || !layer.hasBounds)
+                return;
+
+            bgfx::VertexLayout vlayout;
+            vlayout.begin()
+                .add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float)
+                .add(bgfx::Attrib::TexCoord1, 2, bgfx::AttribType::Float)
+                .add(bgfx::Attrib::TexCoord2, 4, bgfx::AttribType::Float)
+                .add(bgfx::Attrib::Color0,    4, bgfx::AttribType::Uint8, true)
+                .end();
+            if (bgfx::getAvailTransientVertexBuffer(6, vlayout) < 6)
+                return;
+            bgfx::TransientVertexBuffer tvb;
+            bgfx::allocTransientVertexBuffer(&tvb, 6, vlayout);
+
+            const CellFieldBounds& b = layer.bounds;
+            const float xs[6] = { b.minX, b.maxX, b.maxX, b.minX, b.maxX, b.minX };
+            const float ys[6] = { b.minY, b.minY, b.maxY, b.minY, b.maxY, b.maxY };
+            Dia::Graphics::VertexCellField* v = reinterpret_cast<Dia::Graphics::VertexCellField*>(tvb.data);
+            for (int i = 0; i < 6; ++i)
+            {
+                memset(&v[i], 0, sizeof(v[i]));
+                v[i].centre[0] = xs[i];
+                v[i].centre[1] = ys[i];
+                for (int k = 0; k < 4; ++k)
+                    v[i].cellIndices[k] = -1.0f;
+            }
+
+            const CellFieldUniforms& u = GetCellFieldUniforms();
+            CellFieldDrawParams backdropParams = params;
+            backdropParams.params1[2] = static_cast<float>(static_cast<uint32_t>(CellFieldMapMode::Backdrop));
+            bgfx::setUniform(u.params0, backdropParams.params0);
+            bgfx::setUniform(u.params1, backdropParams.params1);
+            bgfx::setUniform(u.params2, backdropParams.params2);
+            bgfx::setUniform(u.gridInfo, backdropParams.gridInfo);
+            bgfx::setUniform(u.fallback, backdropParams.fallbackColour);
+            bgfx::setUniform(u.backdrop, backdropParams.backdropColour);
+            bgfx::setUniform(u.lightDir, backdropParams.lightDir);
+
+            bgfx::setVertexBuffer(0, &tvb);
+            bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ALPHA);   // depth off
+            bgfx::submit(mViewId, bgfx::ProgramHandle{ mProgram->GetProgramHandle() });
+        }
+
         void CellFieldRenderer::SubmitLayer(const Dia::Core::CellFieldDrawRequest& request, const Layer& layer,
                                             const CellFieldDrawParams& params, CellFieldGpuColourMapHandle colourMap)
         {
@@ -402,27 +503,7 @@ namespace Dia
             if (!mProgram || !mProgram->IsValid())
                 return;
 
-            struct Uniforms
-            {
-                bgfx::UniformHandle params0, params1, params2, gridInfo, fallback, backdrop, lightDir;
-                bgfx::UniformHandle sColour, sValue, sElevation;
-                bool created = false;
-            };
-            static Uniforms u;
-            if (!u.created)
-            {
-                u.params0   = bgfx::createUniform("u_params0", bgfx::UniformType::Vec4);
-                u.params1   = bgfx::createUniform("u_params1", bgfx::UniformType::Vec4);
-                u.params2   = bgfx::createUniform("u_params2", bgfx::UniformType::Vec4);
-                u.gridInfo  = bgfx::createUniform("u_gridInfo", bgfx::UniformType::Vec4);
-                u.fallback  = bgfx::createUniform("u_fallbackColour", bgfx::UniformType::Vec4);
-                u.backdrop  = bgfx::createUniform("u_backdropColour", bgfx::UniformType::Vec4);
-                u.lightDir  = bgfx::createUniform("u_lightDir", bgfx::UniformType::Vec4);
-                u.sColour   = bgfx::createUniform("u_paletteOrRamp", bgfx::UniformType::Sampler);
-                u.sValue    = bgfx::createUniform("u_valueTexture", bgfx::UniformType::Sampler);
-                u.sElevation = bgfx::createUniform("u_elevationTexture", bgfx::UniformType::Sampler);
-                u.created = true;
-            }
+            const CellFieldUniforms& u = GetCellFieldUniforms();
 
             bgfx::setUniform(u.params0, params.params0);
             bgfx::setUniform(u.params1, params.params1);

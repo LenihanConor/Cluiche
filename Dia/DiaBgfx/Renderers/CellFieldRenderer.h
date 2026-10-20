@@ -86,6 +86,14 @@ namespace Dia
             uint64_t outOfRangeCategoryCells = 0; // cells whose id fell outside the palette     (cellfield.out_of_range_cells)
             uint64_t colourMapUploads = 0;        // palette texture creates + revision updates
             uint32_t colourMapsResident = 0;
+            uint64_t drawCalls = 0;               // planned submits (layers + backdrops), counted even with no program
+            uint64_t backdropDraws = 0;           // of which backdrop rectangles
+        };
+
+        // One planned submit of a draw (recorded by Draw, also with a null program).
+        struct CellFieldPlannedSubmit
+        {
+            bool backdrop = false;   // true: backdrop rectangle, false: the layer itself
         };
 
         // Renders CellField layers. Render thread only.
@@ -117,6 +125,8 @@ namespace Dia
             void Shutdown();
 
             CellFieldRendererStats GetRendererStats() const;
+            // Submits planned by the most recent Draw call, in submission order.
+            const std::vector<CellFieldPlannedSubmit>& GetLastPlannedSubmits() const { return mLastPlan; }
 
         private:
             class Sink;
@@ -130,6 +140,8 @@ namespace Dia
                 CellFieldGpuHandle                geometry = 0;
                 CellFieldGpuTextureHandle         valueTexture = 0;
                 float                             cellSize = 1.0f;
+                CellFieldBounds                   bounds;             // world rect covering every hex corner (backdrop quad)
+                bool                              hasBounds = false;
 
                 // Category layers keep a CPU copy of the last Update (<= 64 KB at 128x128) so
                 // out-of-range ids can be counted without a GPU readback.
@@ -156,6 +168,7 @@ namespace Dia
             void SetupView();
             void SubmitLayer(const Dia::Core::CellFieldDrawRequest& request, const Layer& layer,
                              const CellFieldDrawParams& params, CellFieldGpuColourMapHandle colourMap);
+            void SubmitBackdrop(const Layer& layer, const CellFieldDrawParams& params);
             void ReleaseLayer(Layer& layer);
 
             unsigned short                    mViewId;
@@ -173,6 +186,7 @@ namespace Dia
             std::unordered_map<uint32_t, ColourMapTexture> mRampTextures;      // by colourMap id
             std::unordered_set<uint32_t>         mWarnedUnknownColourMaps;
             CellFieldRendererStats               mStats;
+            std::vector<CellFieldPlannedSubmit>  mLastPlan;
             Dia::Graphics::HexFlatTopOddQBuilder mHexBuilder;
             CellFieldGeometryCache               mGeometryCache;
             std::unordered_map<uint16_t, Layer>  mLayers;  // by handle index

@@ -61,10 +61,32 @@ namespace Dia
         // Convenience: bakes the ramp first.
         uint32_t CellFieldRampLookup(const Dia::Graphics::CellFieldRampData& ramp, float value, float rampMin, float rampMax);
 
+        // Inset: valid range [0, 0.5). Negative -> 0, NaN -> 0, >= 0.5 (incl. +inf) -> kMaxInset.
+        const float kCellFieldMaxInset = 0.499f;
+        float CellFieldEffectiveInset(float inset);
+
+        // Axis-aligned world rectangle.
+        struct CellFieldBounds
+        {
+            float minX = 0.0f, minY = 0.0f, maxX = 0.0f, maxY = 0.0f;
+        };
+
+        // Bounds of a flat-top hex grid (HexFlatTopOddQBuilder corners: x = +-cellSize at the
+        // tips, y = +-cellSize*sqrt(3)/2 at the flat edges) around the min/max cell centres.
+        // Returns false for null centres or an empty grid.
+        bool CellFieldGridBounds(const float* centresXY, uint32_t width, uint32_t height, float cellSize, CellFieldBounds& out);
+
+        // CPU mirror of the vertex shader: centre + offset * cellSize * (1 - inset).
+        // The inset is used as given (callers pass CellFieldEffectiveInset's result).
+        void CellFieldInsetVertexPosition(const float centre[2], const float offset[2], float cellSize, float inset, float out[2]);
+
+        // True only when the effective inset > 0 and the RGBA8 backdrop alpha is non-zero.
+        bool CellFieldNeedsBackdrop(float inset, uint32_t backdropRgba8);
+
         // Computes the uniforms for one draw. Exactly one of palette / ramp is used, chosen by
         // layer.kind (Category -> palette, Float -> ramp). Returns false if the needed
-        // colour map is null. Inset, backdrop and hillshade are extension points
-        // (Tasks 12-13): they currently emit shader-neutral defaults.
+        // colour map is null. Inset (clamped) and backdrop colour are
+        // passed through; hillshade is an extension point (Task 13).
         bool BuildCellFieldDrawParams(const Dia::Core::CellFieldDrawRequest& request,
                                       const CellFieldLayerInfo& layer,
                                       const Dia::Graphics::CellFieldPaletteData* palette,

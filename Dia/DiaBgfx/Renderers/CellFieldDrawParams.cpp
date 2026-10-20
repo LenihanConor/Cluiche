@@ -72,6 +72,49 @@ namespace Dia
             return CellFieldRampLookup(texels, value, rampMin, rampMax);
         }
 
+        float CellFieldEffectiveInset(float inset)
+        {
+            if (!(inset == inset) || inset <= 0.0f)
+                return 0.0f;   // NaN, zero, negative
+            return inset >= 0.5f ? kCellFieldMaxInset : inset;
+        }
+
+        bool CellFieldGridBounds(const float* centresXY, uint32_t width, uint32_t height, float cellSize, CellFieldBounds& out)
+        {
+            const uint32_t cells = width * height;
+            if (centresXY == nullptr || cells == 0)
+                return false;
+            float minX = centresXY[0], maxX = centresXY[0];
+            float minY = centresXY[1], maxY = centresXY[1];
+            for (uint32_t i = 1; i < cells; ++i)
+            {
+                const float x = centresXY[2u * i];
+                const float y = centresXY[2u * i + 1u];
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+            }
+            const float halfH = cellSize * 0.8660254037844386f;   // sqrt(3)/2
+            out.minX = minX - cellSize;
+            out.maxX = maxX + cellSize;
+            out.minY = minY - halfH;
+            out.maxY = maxY + halfH;
+            return true;
+        }
+
+        void CellFieldInsetVertexPosition(const float centre[2], const float offset[2], float cellSize, float inset, float out[2])
+        {
+            const float scale = cellSize * (1.0f - inset);
+            out[0] = centre[0] + offset[0] * scale;
+            out[1] = centre[1] + offset[1] * scale;
+        }
+
+        bool CellFieldNeedsBackdrop(float inset, uint32_t backdropRgba8)
+        {
+            return CellFieldEffectiveInset(inset) > 0.0f && (backdropRgba8 & 0xFFu) != 0u;
+        }
+
         bool BuildCellFieldDrawParams(const Dia::Core::CellFieldDrawRequest& request,
                                       const CellFieldLayerInfo& layer,
                                       const Dia::Graphics::CellFieldPaletteData* palette,
@@ -91,10 +134,10 @@ namespace Dia
             out.colourMapRevision = isCategory ? palette->revision : ramp->revision;
 
             // params0: rampMin, rampMax, inset, cellSize.
-            // Extension points: ramp range (Task 11) is passed through; inset (Task 12) stays 0.
+            // Ramp range and the clamped inset are passed through.
             out.params0[0] = request.rampMin;
             out.params0[1] = request.rampMax;
-            out.params0[2] = 0.0f;
+            out.params0[2] = CellFieldEffectiveInset(request.inset);
             out.params0[3] = layer.cellSize;
 
             // params1: hillshadeStrength, elevationScale, mapMode, hasElevation.
@@ -117,7 +160,7 @@ namespace Dia
 
             if (isCategory)
                 CellFieldUnpackRgba8(palette->fallback, out.fallbackColour);
-            // Extension point (Task 12): backdrop colour stays 0 (transparent).
+            CellFieldUnpackRgba8(request.backdropColour, out.backdropColour);
 
             out.lightDir[2] = 1.0f;   // straight up; replaced by azimuth/elevation in Task 13
             return true;
