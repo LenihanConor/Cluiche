@@ -106,7 +106,7 @@ At runtime all five end up in one `ValueSchemaRegistry`, so consumers never care
 | Key | Required | Notes |
 |---|---|---|
 | `key` | yes | A dotted path into the data file, or a field name. Unique within `for`. The full key is `<for>/<key>` (StringCRC). |
-| `kind` | yes | `parameter`, `field`, `metric`, `arg`, or `component_field` (Feature 7) |
+| `kind` | yes | `parameter`, `field`, `metric`, `arg`, `command` (one per DiaAPI command, with its description and owner; added 2026-10-20 for the T-2 scenario editor), `event`, or `component_field` (Feature 7) |
 | `label` | yes | Short UI name |
 | `description` | yes | 1–2 plain sentences |
 | `type` | yes | `float`, `int`, `bool`, `enum` or `string`. An `enum` also needs `values: [{id, label, description}]` |

@@ -138,6 +138,8 @@ With export/import:
 }
 ```
 
+**Derived `regions[]` fields (amended 2026-10-20, T-2 Cell Editor):** `cells` is the truth. On import S-1 **recomputes** each region's `cell_count`, `primary_biome`, `purity`, `centre_cell` and `neighbours` from the cells (and keeps `id`, `zone`, `landmass`, `is_island` as authored where they are not derivable). A mismatch between the file's summary and the recomputed one is logged at Info and the recomputed value wins. This lets the offline cell editor change cells without reimplementing S-1's region algorithm. The round trip `Import(Export(world)) == world` is unaffected, since an exported world's summaries are already consistent. The content hash (F-3) is taken from the file as saved, not from a re-export.
+
 **Rationale for schema choices (amended 2026-10-19):**
 - **String biome/terrain/region names** (not integer IDs): Biomes and terrain types use `StringCRC` ids ("Biome.TemperateForest", "Lowland"); region is `uint8` numeric id. Human-readable; maps to enums at import time
 - **Flat cells array** (not 2D nested arrays): Simpler JSON parse; cell `[y * width + x]` mapping explicit in import code

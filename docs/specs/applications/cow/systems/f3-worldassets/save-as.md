@@ -82,7 +82,7 @@ Asset text comes from Feature 1's `BuildPack` for packs; baked worlds come from 
 
 ### The catalogue
 
-`assets.catalogue.json` (`Cluiche/Assets/CoW/`) is `{ "assets": [ … ] }`. It is written by Python with `indent=4`, sorted keys, ASCII escapes and LF line endings plus a final newline; re-serialising the current file with those options reproduces it byte for byte. `CatalogueWriter` produces exactly that format, so rewriting an unchanged catalogue changes nothing in git.
+`assets.catalogue.json` (`Cluiche/Assets/CoW/`) is `{ "assets": [ … ] }`. It is written by Python with `indent=4`, sorted keys, ASCII escapes and LF line endings plus a final newline; re-serialising the current file with those options reproduces it byte for byte. `CatalogueWriter` produces exactly that format, so rewriting an unchanged catalogue changes nothing in git. The reader, the writer and the upsert rules are a pure class, `CatalogueFile`, in `WorldAssets/Core/` (the `CoWWorldAssetsCore` library), which the module calls and which T-2's `FileService` links too (amended 2026-10-20, T-2 Feature 1). The kind table (`WorldAssetKinds`, Feature 4) lives in `Core/` for the same reason.
 
 **Record written by the game:**
 

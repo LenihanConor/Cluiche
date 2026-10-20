@@ -72,10 +72,11 @@ Code-side descriptions only exist in the process memory of the running app, so t
 ### `dia schema export` (Python)
 
 ```
-dia schema export --target <t> [--out PATH] [--sidecars-only]
+dia schema export --target <t> [--stage <name>] [--out PATH] [--sidecars-only]
 ```
 
 - Default: launch the target through `dia launch` (never the executable directly) with `--describe-schema`, wait for it to finish, and check the file exists and parses.
+- **`--stage <name>`** (added 2026-10-20, T-2 Feature 5): commands registered by a stage's modules exist only while that stage runs, so describe mode waits until the named stage has finished Init (the app enters it through the same automation path the E2E tests use) before it dumps, and the file is written as `valueschema.<name>.json` beside the base export. The scenario editor reads the export for the stage folder a scenario lives in and falls back to the base export.
 - **`--sidecars-only`:** build the export in Python from the sidecars and ramps alone (reusing Feature 2's discovery). No launch, no build; `undescribed` is omitted and the header says `"code_side": false`.
 - Fills `header.git_commit` and `dirty` from git; writes to `Cluiche/out/<App>/valueschema.json` unless `--out` is given.
 

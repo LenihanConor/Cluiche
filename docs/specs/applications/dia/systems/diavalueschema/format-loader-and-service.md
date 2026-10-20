@@ -55,6 +55,7 @@ No STL in public APIs (PD-004); `ValueInfo` lists use DiaCore containers.
 | `vocabulary` | `[{ "id", "label", "description", "unit"? }]` | Named values a payload field draws from (for example cause ids) |
 | `ui.colour`, `ui.glyph` | colour string, short glyph name | How the event is drawn (T-1 markers) |
 | Enum value `colour` | `values: [{id, label, description, colour?}]` | Optional palette colour per enum value |
+| `type: "map"` | `keyRef: "<format>/<record path>"`, `valueType: float \| int \| bool \| string \| enum`, plus the usual `min`, `max`, `unit` for the values | An object whose keys must be ids from another format's records and whose values have one type and range (for example a species' biome `affinity`). Added 2026-10-20 for T-2 Feature 2 |
 
 - **Enum colours.** A value without a `colour` is assigned from the `categorical.12` ramp by value order, so a category layer always has a palette. (The ramp library itself is Feature 5; until then the loader uses a built-in 12-colour list.)
 - **`ui` and `history` blocks are open.** The loader keeps any keys they contain (stored as JSON values), so other specs can add keys (`hotkey`, `group`, `delta_ramp`, `track`, `history.group`) without a loader change. Unknown keys are logged once as a Warning on channel `VSC`, naming the file and key.

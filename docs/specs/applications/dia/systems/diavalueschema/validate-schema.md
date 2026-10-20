@@ -61,7 +61,7 @@ dia validate schema [PATHS...] [--target T] [--json] [--code-side PATH]
   WARN metric cow.ecology.herbivores_total has no MetricInfo
   OK   Global/Weather/weather_parameters.json (24 keys)
   ```
-  `--json` prints `[{ severity, rule, file, key, message, suggestion? }]`.
+  `--json` prints `[{ severity, rule, file, key, message, suggestion?, path?, record? }]`. `path` is the location inside a data file with record indexes (for example `species[2].growth_rate`) and `record` is the id of the record when the file is a table, otherwise null; the T-2 editor uses them for click-to-jump (added 2026-10-20, T-2 Feature 4).
 
 ### Discovery and pairing
 
@@ -87,6 +87,7 @@ A file is a **pack** when it sits in a `Packs/` folder; otherwise it is a **defa
 - an unknown `ui.ramp` (checked against the Feature 5 ramp names; until Feature 5 exists, the five names in the system spec);
 - a `ref`/`ref[]` that matches no id in the referenced format's record array, with a suggestion;
 - a duplicate value in a column marked `unique`;
+- a `map` whose key matches no id in its `keyRef` format (with a closest-match suggestion) or whose value is outside its range or type (added 2026-10-20, T-2 Feature 2);
 - a record missing a column marked `required` (record arrays only).
 
 **Record paths:** an entry key like `species[].growth_rate` describes a column; the validator walks arrays of objects and applies the entry to every record.
@@ -141,6 +142,7 @@ This is a CLI tool: it prints a one-line summary (files checked, FAIL, WARN) and
 
 - **pytest:** one fixture per FAIL rule and the OK path; pure rule functions tested without files; suggestion thresholds (close, not close, empty); discovery and pairing; pack vs defaults; code-side coverage with and without an export; exit codes and `--json` shape.
 - **Shared conformance fixtures:** a folder of good and bad schema files with an `expected.json` verdict per file, kept under `Dia/DiaValueSchema/Testing/Conformance/`. Feature 1's GoogleTests and this feature's pytest both load every file there and compare to `expected.json`. A new format rule must add a fixture.
+- **Shared data fixtures (amended 2026-10-20, T-2 Feature 2):** `Dia/DiaValueSchema/Testing/Conformance/data/` also holds good and bad **data files** with their expected findings (type, range, enum, ref, map, unique, required and the suggestion text). pytest runs them against `dia validate schema`, and T-2's TypeScript live checks run the same set, so the editor and the CLI cannot disagree. A new data rule must add a fixture.
 - **Real data proof (when CoW content exists):** `dia validate schema` passes on every F-3 defaults file and pack in the repo.
 
 ## Binding Decisions

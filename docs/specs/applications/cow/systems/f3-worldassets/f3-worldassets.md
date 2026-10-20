@@ -70,6 +70,7 @@ Paths are relative to `Cluiche/Assets/CoW/`. Every file has `"format": "<format 
 | Succession rules (defaults) | `.json` | `Global/Succession/succession_rules.json` | `cow.succession_rules` | A3 | hand |
 | World bundle | `.cowworld` | `Global/Worlds/<id>.cowworld` | `cow.world_bundle` | F-3 | `cow.world.bundle.save_as` |
 | Scenario (CoW-Shared format, S-2.5 Feature 4) | `.scenario.json` | `Stages/<Stage>/scenarios/<id>.scenario.json` | `cow.scenario` | S-2.5 | hand |
+| Scenario vocabulary (checks, overlays, modes a testbed registers) | `.json` | `Stages/<Stage>/scenarios/vocabulary.json` | `cow.scenario_vocabulary` | testbed | hand, kept in step with the code by a testbed test (amended 2026-10-20, T-2 Feature 5) |
 | Testbed baselines and edge cases | `.json` | `Stages/<Stage>/…` (e.g. `S25WeatherPatterns/baseline.json`) | per testbed | testbed | testbed commands |
 
 Generated output (not assets): `out/CoW/s25/report_*.json`, `out/CoW/s3/longrun_*.json`, `out/CoW/worlds/` exports, `out/saves/cow/*.sav`.
@@ -177,7 +178,7 @@ A failure before the terrain is accepted logs an Error, restores the captured pa
 
 ### Public Interfaces
 
-DiaAPI commands. Every authoring action is a command, and the panel calls the same commands.
+DiaAPI commands. Every authoring action is a command, and the panel calls the same commands. All of them are registered as **JSON commands** (`RegisterCommandJson`) with `ValueParam` argument lists, so an editor over the debug server gets structured results and reasons (the legacy path returns only success or failure); console use still works because positional arguments map onto the same list (amended 2026-10-20, T-2 Feature 4).
 
 | Command | Does |
 |---|---|

@@ -85,7 +85,7 @@ public:
 
 | Step | What happens | Failure |
 |---|---|---|
-| **1. Prepare** | Read the bundle, `CheckEnvelope`; read each referenced file through the `world` alias; check envelopes; `ParsePack` and `Resolve` the weather and ecology packs against their participant's defaults; confirm the terrain file or preset exists; check the start state's terrain hash against the baked world | Error: nothing changed, the previous world stays. A missing file, a too-new version, a wrong format, or a start state on non-baked terrain fails the load |
+| **1. Prepare** | (implemented as `CheckBundle` in `Core/`, shared with the T-2 editor; amended 2026-10-20) Read the bundle, `CheckEnvelope`; read each referenced file through the `world` alias; check envelopes; `ParsePack` and `Resolve` the weather and ecology packs against their participant's defaults; confirm the terrain file or preset exists; check the start state's terrain hash against the baked world | Error: nothing changed, the previous world stays. A missing file, a too-new version, a wrong format, or a start state on non-baked terrain fails the load |
 | **2. Snapshot** | `Capture()` the current weather and ecology parameters for rollback | none |
 | **3. Apply parameters** | `Apply(resolved)` to the weather and ecology participants | A participant that refuses: restore the snapshot, Error, previous world stays |
 | **4. Terrain** | `terrain.Apply(spec)`; wait for `WorldGenerationComplete` (or `Failed`), with a watchdog | `Failed` or timeout: restore the snapshot, Error, previous world stays (S-1 keeps the previous world until a new one is accepted) |

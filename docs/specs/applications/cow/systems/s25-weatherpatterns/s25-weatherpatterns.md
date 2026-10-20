@@ -149,7 +149,7 @@ The scenario format S-3 designed becomes CoW-Shared, with one addition: walkthro
 ```
 
 - **Setup** is a list of DiaAPI commands, so a scenario does nothing the panel can't (feedback: editor actions are DiaAPI commands).
-- **Checks** are names registered by the hosting testbed (S-2.5 registers its `s25.*` checks; S-3 registers its own).
+- **Checks** are names registered by the hosting testbed (S-2.5 registers its `s25.*` checks; S-3 registers its own). **Validation and vocabulary (amended 2026-10-20, T-2 Feature 5):** the loader validates a scenario with the shared `ScenarioValidator` (`CoW/Shared/WorldAssets/Core/`, the same one the T-2 scenario editor calls) against the live command registry and the registered checks and overlays. The testbed keeps `Stages/<Stage>/scenarios/vocabulary.json` (format `cow.scenario_vocabulary`: modes, checks and overlays with ids, labels and descriptions) and a GoogleTest that fails when a registered check or overlay is missing from it, or it names one that is not registered.
 - **Walkthrough** steps switch overlays on (A4's overlay toggles, through commands), show the text, and pin one check line next to the overlay. `cow.scenario.walk next|prev` steps through them.
 - The loader validates on load: unknown commands, unknown checks and unknown overlays are rejected with the file and line.
 

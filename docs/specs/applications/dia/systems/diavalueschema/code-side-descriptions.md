@@ -100,6 +100,7 @@ bool              noArgs     = false;     // true: the command takes no argument
 |---|---|---|---|---|
 | Metric | `dia.metric` | the metric name, e.g. `cow.ecology.herbivores_total` | `metric` | label, description, unit; `type` float |
 | Command argument | `dia.command` | `<command>.<arg>`, e.g. `cow.save.slot` | `arg` | label (the name), description, type, unit, range, enum values, `required` |
+| Command itself | `dia.command` | `<command>`, e.g. `cow.save` | `command` | label (the name), description, owner, category, example, and the ordered list of its argument keys. One entry for **every** registered command, including those with no arguments (`noArgs`), so an editor can list all commands (added 2026-10-20, T-2 Feature 5) |
 
 - A `type` string outside the five known ones maps to `string` with a Warning once per command.
 - An enum argument's `enumValues` ("a|b") becomes enum values whose id and label are the text and whose description is empty; no sidecar strictness applies to code-side entries.

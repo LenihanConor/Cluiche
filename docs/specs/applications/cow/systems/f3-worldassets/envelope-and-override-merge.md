@@ -37,7 +37,7 @@ Every world-sim system names its own files today, some versioned and some not, a
 
 ## Architecture
 
-`Cluiche/CoW/Shared/WorldAssets/` (AD-002, CoW-Shared), namespace `CoW::WorldAssets`, files `AssetEnvelope.*`, `OverrideMerge.*`, `PackFile.*`. Only the format ids passed in by callers are CoW content.
+`Cluiche/CoW/Shared/WorldAssets/Core/` (AD-002, CoW-Shared), namespace `CoW::WorldAssets`, files `AssetEnvelope.*`, `OverrideMerge.*`, `PackFile.*`. The `Core/` folder has no module, bus or runtime dependencies and is built as a static library, `CoWWorldAssetsCore`, that both the CoW runtime and the T-2 editor (`CoWEditor`) link (amended 2026-10-20, T-2 Feature 1). Only the format ids passed in by callers are CoW content.
 
 ### `AssetEnvelope`
 

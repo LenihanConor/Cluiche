@@ -20,10 +20,38 @@ Two CoW editor plugins need to draw a per-cell grid map. Each building its own c
 4. Support flat-top hex (odd-q) and square topologies.
 5. Take ramps and palettes as plain data, so DiaValueSchema is the source but this component does not depend on it.
 
+## Extensions for T-2 Feature 6 (added 2026-10-20)
+
+The cell editor needs more than display. These optional props and helpers are added; each is unused by T-1's mini-map, which stays on the base props. The canvas still draws and reports only: what a stroke or box means is the consumer's decision.
+
+```ts
+// additional optional props
+selection?: ReadonlySet<number>            // cell indices drawn with a selection tint
+outline?: ReadonlySet<number>              // cell indices drawn with an outline (for example edited cells)
+footprint?: ReadonlySet<number>            // cells under a tool's preview, drawn translucent
+onBox?: (cells: number[], additive: boolean) => void           // drag-selected cells (a box, in hex-offset terms)
+onStroke?: (cells: number[], phase: 'start' | 'move' | 'end') => void   // pointer path cells while a stroke is active
+strokeActive?: boolean                     // when true, left-drag reports strokes instead of a box
+view?: { zoom: number; panX: number; panY: number }            // controlled zoom and pan
+onViewChange?: (view) => void              // wheel zoom and middle/space drag pan
+```
+
+```ts
+// exported geometry helpers (cellGeometry.ts)
+hexDistance(a: number, b: number, width: number): number        // flat-top odd-q
+cellsWithin(centre: number, radius: number, width: number, height: number): number[]
+cellsInBox(a: number, b: number, width: number): number[]
+```
+
+- With `view` unset the grid still fits the box as in the base spec.
+- Hit-testing, hover and click keep working under any zoom and pan.
+- A 104 × 64 grid with a selection, an outline and a footprint set draws in under 16 ms.
+- Tests: the helpers against hand-computed distances (odd and even rows), the callbacks for box and stroke gestures, hit-testing under zoom and pan.
+
 ## Non-Goals
 
-- Brush, paint and selection tools (T-2 Feature 6 extends this component).
-- Zoom and pan (v1 fits the grid to the box; add when a consumer needs it).
+- Brush, paint and selection *semantics* (the canvas only reports gestures; T-2 Feature 6 decides what they do).
+- Zoom and pan are optional (the controlled `view` prop above); with it unset the grid fits the box.
 - Animation, time scrubbing, labels or glyphs on cells.
 - Reading any DiaCellLayers, CellField or CoW type.
 - A WebGL renderer: canvas 2D is enough at Large size.

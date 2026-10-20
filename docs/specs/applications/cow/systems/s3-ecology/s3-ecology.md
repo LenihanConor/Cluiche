@@ -102,7 +102,7 @@ The panel shows which layers are present: World (preset and seed, or file), Weat
 ```
 
 - **Setup** is a list of DiaAPI commands, so a scenario does nothing the panel can't (feedback: editor actions are DiaAPI commands).
-- **Checks** are named C++ predicates registered by `S3EcologyModule`. They are evaluated after each band from A1's view and change ledger, and shown as live pass/fail lines.
+- **Checks** are named C++ predicates registered by `S3EcologyModule`. They are evaluated after each band from A1's view and change ledger, and shown as live pass/fail lines. **Validation and vocabulary (amended 2026-10-20, T-2 Feature 5):** the loader validates a scenario with the shared `ScenarioValidator` (`CoW/Shared/WorldAssets/Core/`, the same one the T-2 scenario editor calls) against the live command registry and the registered checks and overlays. The testbed keeps `Stages/<Stage>/scenarios/vocabulary.json` (format `cow.scenario_vocabulary`: modes, checks and overlays with ids, labels and descriptions) and a GoogleTest that fails when a registered check or overlay is missing from it, or it names one that is not registered.
 - **Running a scenario** loads its world and mode, runs the setup, shows the watch text, and pins the check lines in the panel.
 
 | Scenario | GDD source | Mode | Checks (examples) |

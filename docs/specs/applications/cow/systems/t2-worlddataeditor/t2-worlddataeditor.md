@@ -144,12 +144,12 @@ Tables need two generic additions to DiaValueSchema. They belong in Dia because 
 
 | # | Feature | Notes | Status | Spec |
 |---|---|---|---|---|
-| 1 | Plugin shell, files and schema | `CoWEditor` plugin, `open_asset` routes (game-scoped), FileService, SchemaService, asset tree, Properties, undo/redo | Draft | TBD |
-| 2 | Table and form editors | Typed cells from schema, refs index, live checks and suggestions, referrer warnings | Draft | TBD |
-| 3 | Packs and bundles | Pack diff, upgrade, compare; bundle composer; used-by | Draft | TBD |
-| 4 | Validation and game link | `dia validate schema --json`, validation panel, reload in game, open in testbed, validate in game | Draft | TBD |
-| 5 | Scenario editor | Step list from the `cow.scenario` schema | Draft | TBD |
-| 6 | Cell editor | `CellGridCanvas` (Dia `@dia/editor-ui`), layers, brush and selection tools, start-state overlay, hash and stale propagation | Draft | TBD |
+| 1 | Plugin shell, files and schema | `CoWEditor` plugin, `open_asset` routes (game-scoped), FileService, SchemaService, asset tree, Properties, undo/redo | Approved | [plugin-shell-files-and-schema.md](plugin-shell-files-and-schema.md) |
+| 2 | Table and form editors | Typed cells from schema, refs index, live checks and suggestions, referrer warnings | Approved | [table-and-form-editors.md](table-and-form-editors.md) |
+| 3 | Packs and bundles | Pack diff, upgrade, compare; bundle composer (with Set as default world); used-by; `PackOverrideIndex`; merge and bundle rules called from F-3's core | Approved | [packs-and-bundles.md](packs-and-bundles.md) |
+| 4 | Validation and game link | `dia validate schema --json`, validation panel, reload in game, open in testbed, validate in game | Approved | [validation-and-game-link.md](validation-and-game-link.md) |
+| 5 | Scenario editor | Step list from the `cow.scenario` schema; per-testbed vocabulary file; command completion from the per-stage schema export; shared C++ scenario validator | Approved | [scenario-editor.md](scenario-editor.md) |
+| 6 | Cell editor | `CellGridCanvas` (Dia `@dia/editor-ui`), layers, brush and selection tools, start-state overlay, hash and stale propagation | Approved | [cell-editor.md](cell-editor.md) |
 
 - **Build order:** 1 → 2 → 4 → 3 → 6 → 5.
 - Feature 2 needs the DiaValueSchema record-path and ref extension.
@@ -217,4 +217,4 @@ Tables need two generic additions to DiaValueSchema. They belong in Dia because 
 
 ## Status
 
-`Approved` (2026-10-19). Feature specs TBD; no plan yet. Build needs AD-001 sign-off (`@dia/editor-ui` canvas, DiaValueSchema extension, `.vcxproj` reference).
+`Approved` (2026-10-19). All 6 feature specs `Approved` (2026-10-20); no plan yet. Build needs AD-001 sign-off (`@dia/editor-ui` canvas, DiaValueSchema extension, `.vcxproj` reference).
