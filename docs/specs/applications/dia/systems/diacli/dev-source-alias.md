@@ -129,6 +129,7 @@ No `dia validate manifest` changes. Dev aliases are invisible to the manifest va
 1. **Command-line arguments, not environment variables.** They are visible in process listings and easy to test. Packaged builds are never launched through DiaCLI.
 2. **`source` is reserved.** No manifest may declare it; validate rejects it, and the runtime ignores it with an Error. For other dev aliases the manifest wins. This replaces the draft's "manifest wins for everything", which would have let a manifest put `source` into a packaged build.
 3. **Absolute paths only in v1.** Relative dev aliases wait for a real need.
+4. **`--source <path>` override** (added 2026-10-20, S-3.5 Feature 3). `dia launch` and `dia run` accept `--source <absolute path>`, which replaces the computed `source` value (still passed as `--dev-alias source=<path>`; the path must exist and be absolute). It exists so a regression run can author into a scratch copy of the assets instead of the repository. It sets only `source`; it cannot add other aliases, and a manifest declaring `source` is still rejected. Needs a fresh AD-001 sign-off (the base feature's sign-off covered the computed alias only).
 
 ---
 

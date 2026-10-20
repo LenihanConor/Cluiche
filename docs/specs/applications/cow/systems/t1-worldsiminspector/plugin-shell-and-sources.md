@@ -19,7 +19,7 @@ T-1's views all need the same things: a plugin that exists only while `cow.diaga
 3. **Live source.** Subscribes to `cells.history.aggregates`, `cells.history.events` and `cells.view.state`; queries `valueschema.get` on connect.
 4. **File source.** Opens a `dia.cell_history` file through a native dialog; C++ reads and validates it and returns chunks; the embedded schema makes the file self-explaining.
 5. **Shared time brush.** One start/end sample range in the store, set from a toolbar control, snapped to sample labels.
-6. **Honest connection state.** The pill shows connected, disconnected or stale; data survives a disconnect read-only.
+6. **Honest connection state.** The pill shows connected, disconnected or stale; data survives a disconnect read-only. When the game answers the query `cow.session.get` (`{stage, mode, bundle, world}`), the connected pill reads for example `connected · S-3.5 · Run` (added 2026-10-20, S-3.5 Feature 1); without it, plain `connected`.
 7. **Schema-driven text.** A `ValueLabel` and `ValueTooltip` wrapper reads labels, units and descriptions from the source's schema.
 8. **Testable before the simulation exists.** A checked-in fixture file and a stub live publisher exercise every path.
 

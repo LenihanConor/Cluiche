@@ -84,7 +84,7 @@ SimPU (S35WorldSim stage)
 ```json
 // s35_world_sim.diastage (config excerpt)
 {
-  "world_bundle": "default",
+  "world_bundle": "@default",
   "history": { "track": ["ecology.producers_total", "ecology.group.herbivore", "weather.precipitation"] },
   "s35": { "mode": "Run", "regression": { "years": 20, "sizes": ["Small", "Standard", "Large"],
                                           "ranges": [1, 4, "max"], "seed": 42 } }
@@ -145,10 +145,10 @@ SimPU (S35WorldSim stage)
 
 | # | Feature | Notes | Status | Spec |
 |---|---|---|---|---|
-| 1 | Stage and Run mode | Stage, modules, Boot transition, bundle load, shared cards, T-1 connection | Draft | TBD |
-| 2 | Author mode | Step rail, preview clock, gating (bake before paint, validated before default), `bundle.set_default` | Draft | TBD |
-| 3 | Regression mode | R1–R6, headless automation, report and history export, panel check lines | Draft | TBD |
-| 4 | Launch-outs | Session hint, "Open in S-2.5/S-3" | Draft | TBD |
+| 1 | Stage and Run mode | Stage, modules, Boot transition, bundle load, shared cards, T-1 session label, mode machine and S35 card, CoW-Shared `HistoryDriverModule` | Approved | [stage-and-run-mode.md](stage-and-run-mode.md) |
+| 2 | Author mode | Step rail, preview clock, gating (bake before paint, validated before default) read from F-3's `status.actions`, `bundle.set_default`, summary | Approved | [author-mode.md](author-mode.md) |
+| 3 | Regression mode | R1–R6, headless automation (in-game runner plus an outer E2E driver for fresh processes and the CLI), report and one history export per size, panel check lines | Approved | [regression-mode.md](regression-mode.md) |
+| 4 | Launch-outs | Session hint, "Open in S-2.5/S-3", guard rules (saved bundle only), all-or-nothing hint and transition | Approved | [launch-outs.md](launch-outs.md) |
 
 - **Build order:** 1 → 3 → 2 → 4.
 - Feature 1 can start once S-1 Features 1 and 8, A4 Features 1–3, A1 Features 1–7, F-3 Features 1–2 and DiaCellLayers Feature 1 exist. A3 joins when built: its checks switch on and the combined hash gains A3 state.
@@ -199,8 +199,8 @@ SimPU (S35WorldSim stage)
 
 1. **Launch-out hand-off by session hint file** (2026-10-19). Stage transitions don't carry arguments, so WorldAssetsModule writes `out/CoW/session/next_bundle.json`, and the next stage consumes it once. Rejected: adding stage-transition arguments to DiaApplicationFlow. That would be a Dia change for one use.
 2. **The combined state hash comes from E1 participant output** (2026-10-19). S-3.5 hashes the JSON each E1 save participant writes (S-1 world, weather, ecology, succession, RNG, game speed). It already covers all saved state and needs no new `StateHash()` per system. A mismatch reports the first participant and key that differs.
-3. **Regression uses a fixed committed bundle** (2026-10-19): `Stages/S35WorldSim/regression.cowworld` (baked terrain plus packs). The gate doesn't move when the game's `default_world` changes. Updating it is a deliberate commit.
+3. **Regression uses fixed committed bundles** (2026-10-19; amended 2026-10-20, Feature 3): one per size, `Stages/S35WorldSim/regression/regression_small|standard|large.cowworld` (each a baked terrain plus packs), because a bundle holds one baked terrain. The gate doesn't move when the game's `default_world` changes. Updating one is a deliberate commit. The history export is likewise one file per size, `regression_<seed>_<size>.cell_history.json`.
 
 ## Status
 
-`Approved` (2026-10-19). Feature specs TBD; no plan yet. GDD `S3.5_WorldSim.md` Locked 2026-10-20; this spec mirrors CH-S35-01…05.
+`Approved` (2026-10-19). All 4 feature specs `Approved` (2026-10-20); no plan yet. GDD `S3.5_WorldSim.md` Locked 2026-10-20; this spec mirrors CH-S35-01…05.

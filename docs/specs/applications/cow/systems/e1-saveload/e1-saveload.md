@@ -132,6 +132,10 @@ DiaCellHistory's snapshots (`docs/specs/applications/dia/systems/diacellhistory/
 - **Failures.** A failed snapshot load is handled as any load: E1 aborts, logs the error and leaves the game unchanged. DiaCellHistory then leaves its history untouched.
 - **Restore ordering.** A snapshot restore uses the same rule as any load: `RestoreState` runs in the same frame as the DiaSimTime clock restore (see GameSpeedController participant above).
 
+### Read-only state capture (amended 2026-10-20, S-3.5 Regression)
+
+`SaveLoadModule` exposes `CaptureState()`, which returns each registered participant's id and the `Json::Value` it would write, in registration order, **without writing a slot** and without touching the slot count or disk. S-3.5's regression runner hashes this output to compare whole-world state between runs (system Resolved Decision 2). It runs at the frame boundary like a save, so no system is mid-tick, and it is a read: calling it never changes the game.
+
 ### Participants (owned by other features)
 
 E1 ships no `ISaveable` implementations. The features that own the state add them, each registering via `RegisterParticipant` (see above):

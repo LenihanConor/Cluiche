@@ -124,7 +124,7 @@ The panel shows which layers are present: World (preset and seed, or file), Weat
 
 ### Long-run runner (Living mode)
 
-> **Amended 2026-10-19 (DiaCellLayers/DiaCellHistory):** The long-run runner writes the `dia.cell_history` export next to its report, so the inspector can read both live and offline data the same way. Snapshots are E1 files.
+> **Amended 2026-10-19 (DiaCellLayers/DiaCellHistory):** The long-run runner writes the `dia.cell_history` export next to its report, so the inspector can read both live and offline data the same way. Snapshots are E1 files. **History driver (amended 2026-10-20, S-3.5 Feature 1):** history samples come from the CoW-Shared `HistoryDriverModule` (`Cluiche/CoW/Shared/History/`, specced in S-3.5 Feature 1), not from testbed-local code; this testbed adopts it when built.
 
 `cow.s3.longrun seed=<n> seasons=<n> species=<n>` runs headless on a worker job. It drives the pure simulations directly (A4 `WeatherSimulation`, A1 `EcologySimulation`, and A3's logic when present) in the same band order as the live modules, not through `SimulationTick`, so 10,000 seasons don't need 910,000 frames.
 
