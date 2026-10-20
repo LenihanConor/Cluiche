@@ -27,6 +27,19 @@ def _check_key(data: dict, key: str, expected_type: type, path: str = "") -> Lis
     return []
 
 
+_RESERVED_SOURCE_MSG = (
+    "config.path_aliases: 'source' is a reserved dev-only alias "
+    "(set by `dia launch --dev-alias`); remove it"
+)
+
+
+def _check_reserved_aliases(cfg: dict) -> List[str]:
+    aliases = cfg.get("path_aliases")
+    if isinstance(aliases, dict) and "source" in aliases:
+        return [_RESERVED_SOURCE_MSG]
+    return []
+
+
 def _validate_diastage(data: dict) -> List[str]:
     """Validate a .diastage file."""
     errors = []
@@ -35,6 +48,7 @@ def _validate_diastage(data: dict) -> List[str]:
     errors += _check_key(data, "config", dict)
     if isinstance(data.get("config"), dict):
         errors += _check_key(data["config"], "path_aliases", dict, "config")
+        errors += _check_reserved_aliases(data["config"])
     return errors
 
 
@@ -50,6 +64,7 @@ def _validate_diagame(data: dict, file_path: Path | None = None) -> Tuple[List[s
 
     if isinstance(data.get("config"), dict):
         cfg = data["config"]
+        errors += _check_reserved_aliases(cfg)
         errors += _check_key(cfg, "name", str, "config")
         errors += _check_key(cfg, "window", dict, "config")
         if isinstance(cfg.get("window"), dict):
