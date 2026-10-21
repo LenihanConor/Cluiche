@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/applications/dia/systems/diavalueschema/format-loader-and-service.md
-**Status:** In Progress
+**Status:** Done
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
@@ -11,7 +11,7 @@
 | 6 | `ValueSchemaService` (ServiceStream, read-only snapshot) and `ValueSchemaModule`: discovery of `*.schema.json`, sorted load order, bad file skipped, duplicate first-wins, publish snapshot, `DIA_TRACE_ZONE`/`DIA_PROFILE_SCOPE`, metrics, `IHealthReporter` degraded on failed file (AC 2, 4, 9, 10, 11) | RED-GREEN: module tests over fixture dir | Done | opus | Decided 2026-10-21: `schema_roots` alias list in module config + std::filesystem; reuse `kDiaAssetRuntime` for trace/profile. Opus because of stream/lifecycle design; opus confirmed by user. Module derives from `Module` (kAny), config capped at 255 chars (String256); 123 tests pass |
 | 7 | Test utilities under `DiaValueSchema/Testing/` (schema JSON fixture builder, in-memory registry) and `Testing/Conformance/` good/bad files with `expected.json` plus a GoogleTest that loads every one | Conformance test passes | Done | sonnet | Feature 2's pytest reuses these fixtures; 41 fixtures, 124 tests pass. Test locates the folder by walking up from `__FILE__` (source-tree only) |
 | 8 | Cross-PU read stress test of the published service (no locks, clean under `dia check sanitizer`) (AC 10) | Stress test | Done | sonnet | Plain std::thread readers (4 x 20k iterations), 125 tests pass. ASan not reached: `dia check sanitizer` runs the whole suite and aborts at a pre-existing CellField stack-buffer-overflow (CellFieldRegistry.cpp:236); no TSan offered |
-| 9 | Finalize: AC 12 check (`dia check deps`, no STL in public headers), module doc public API, Observation Opportunity Scan | `dia check deps` | Pending | haiku | |
+| 9 | Finalize: AC 12 check (`dia check deps`, no STL in public headers), module doc public API, Observation Opportunity Scan | `dia check deps` | Done | haiku | `dia check deps` clean for DiaValueSchema; full suite 10066 pass |
 
 **Design decisions for task 6 (user, 2026-10-21; spec not modified):**
 1. `PathStore` has no alias enumeration. `ValueSchemaModule` takes a `schema_roots` alias list in its `.diaapp` module config (resolved with `ResolvePathToString`) and walks each root with `std::filesystem`. No DiaCore change.

@@ -163,4 +163,4 @@ No conflicts.
 
 ## Status
 
-`Approved` (2026-10-20). Plan: [format-loader-and-service.plan.md](format-loader-and-service.plan.md).
+`Done` (2026-10-21). Plan: [format-loader-and-service.plan.md](format-loader-and-service.plan.md).
