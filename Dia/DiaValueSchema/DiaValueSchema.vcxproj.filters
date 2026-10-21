@@ -4,12 +4,22 @@
     <Filter Include="Docs">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{b55a4fb9-18fb-404d-b64a-143ec7b15a3b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ValueSchemaVersion.h" />
+    <ClInclude Include="ValueInfo.h" />
+    <ClInclude Include="ValueSchemaRegistry.h" />
+    <ClInclude Include="Testing/ValueInfoBuilder.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ValueSchemaVersion.cpp" />
+    <ClCompile Include="ValueInfo.cpp" />
+    <ClCompile Include="ValueSchemaRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diavalueschema.architecture.module.md">

@@ -75,9 +75,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="ValueSchemaVersion.h" />
+    <ClInclude Include="ValueInfo.h" />
+    <ClInclude Include="ValueSchemaRegistry.h" />
+    <ClInclude Include="Testing/ValueInfoBuilder.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ValueSchemaVersion.cpp" />
+    <ClCompile Include="ValueInfo.cpp" />
+    <ClCompile Include="ValueSchemaRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diavalueschema.architecture.module.md" />

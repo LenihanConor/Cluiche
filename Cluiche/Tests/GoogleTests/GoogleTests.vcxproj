@@ -937,6 +937,7 @@
     <ClCompile Include="DiaBgfx\TestCellFieldGapsBgfxParams.cpp" />
     <ClCompile Include="DiaBgfx\TestCellFieldGapsBgfxObservation.cpp" />
     <ClCompile Include="DiaValueSchema\TestValueSchemaVersion.cpp" />
+    <ClCompile Include="DiaValueSchema\TestValueSchemaRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
