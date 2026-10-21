@@ -1,0 +1,79 @@
+{
+  "description": "A map value outside the entry's range names the map key.",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.species",
+      "entries": [
+        {
+          "key": "species[].id",
+          "kind": "parameter",
+          "label": "species[].id",
+          "description": "d",
+          "type": "string"
+        },
+        {
+          "key": "species[].affinity",
+          "kind": "parameter",
+          "label": "species[].affinity",
+          "description": "d",
+          "type": "map",
+          "keyRef": "cow.biomes/biomes[].id",
+          "valueType": "float",
+          "min": 0,
+          "max": 1
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "Global/Biomes/biomes.json",
+      "pack": false,
+      "content": {
+        "format": "cow.biomes",
+        "version": 1,
+        "biomes": [
+          {
+            "id": "TemperateForest"
+          },
+          {
+            "id": "Desert"
+          },
+          {
+            "id": "Tundra"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Global/Species/species.json",
+      "pack": false,
+      "content": {
+        "format": "cow.species",
+        "version": 1,
+        "species": [
+          {
+            "id": "wolf",
+            "affinity": {
+              "Desert": 1.5
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "expected": [
+    {
+      "severity": "FAIL",
+      "rule": "data.out-of-range",
+      "file": "Global/Species/species.json",
+      "key": "species[].affinity",
+      "path": "species[0].affinity.Desert",
+      "record": "wolf",
+      "messageContains": "Desert",
+      "suggestion": null
+    }
+  ]
+}

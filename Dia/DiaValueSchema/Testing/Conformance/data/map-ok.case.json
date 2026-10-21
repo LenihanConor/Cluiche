@@ -1,0 +1,69 @@
+{
+  "description": "A map with valid keys and in-range values is clean.",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.species",
+      "entries": [
+        {
+          "key": "species[].id",
+          "kind": "parameter",
+          "label": "species[].id",
+          "description": "d",
+          "type": "string"
+        },
+        {
+          "key": "species[].affinity",
+          "kind": "parameter",
+          "label": "species[].affinity",
+          "description": "d",
+          "type": "map",
+          "keyRef": "cow.biomes/biomes[].id",
+          "valueType": "float",
+          "min": 0,
+          "max": 1
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "Global/Biomes/biomes.json",
+      "pack": false,
+      "content": {
+        "format": "cow.biomes",
+        "version": 1,
+        "biomes": [
+          {
+            "id": "TemperateForest"
+          },
+          {
+            "id": "Desert"
+          },
+          {
+            "id": "Tundra"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Global/Species/species.json",
+      "pack": false,
+      "content": {
+        "format": "cow.species",
+        "version": 1,
+        "species": [
+          {
+            "id": "wolf",
+            "affinity": {
+              "Desert": 0.2,
+              "Tundra": 1
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "expected": []
+}

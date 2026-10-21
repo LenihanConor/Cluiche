@@ -1,0 +1,94 @@
+{
+  "description": "Unresolved affects/related and an unknown ramp are schema-level FAILs; a full <for>/<key> resolves anywhere.",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.ecology",
+      "entries": [
+        {
+          "key": "biomass",
+          "kind": "parameter",
+          "label": "biomass",
+          "description": "d",
+          "type": "float",
+          "affects": [
+            "biomas",
+            "cow.other/foo"
+          ]
+        },
+        {
+          "key": "decay",
+          "kind": "parameter",
+          "label": "decay",
+          "description": "d",
+          "type": "float",
+          "related": [
+            "zzzzz"
+          ],
+          "ui": {
+            "ramp": "viridis"
+          }
+        },
+        {
+          "key": "growth",
+          "kind": "parameter",
+          "label": "growth",
+          "description": "d",
+          "type": "float",
+          "ui": {
+            "ramp": "sequential.green"
+          }
+        }
+      ]
+    },
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.other",
+      "entries": [
+        {
+          "key": "foo",
+          "kind": "parameter",
+          "label": "foo",
+          "description": "d",
+          "type": "float"
+        }
+      ]
+    }
+  ],
+  "files": [],
+  "expected": [],
+  "schemaExpected": [
+    {
+      "severity": "FAIL",
+      "rule": "schema.unresolved-reference",
+      "file": "schemas[0]",
+      "key": "biomass",
+      "path": "affects[0]",
+      "record": null,
+      "messageContains": "biomas",
+      "suggestion": "biomass"
+    },
+    {
+      "severity": "FAIL",
+      "rule": "schema.unresolved-reference",
+      "file": "schemas[0]",
+      "key": "decay",
+      "path": "related[0]",
+      "record": null,
+      "messageContains": "zzzzz",
+      "suggestion": null
+    },
+    {
+      "severity": "FAIL",
+      "rule": "schema.unknown-ramp",
+      "file": "schemas[0]",
+      "key": "decay",
+      "path": "ui.ramp",
+      "record": null,
+      "messageContains": "viridis",
+      "suggestion": null
+    }
+  ]
+}
