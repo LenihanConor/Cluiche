@@ -1,6 +1,7 @@
 """dia docs precommit — run all pre-commit checks as a deterministic script."""
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 from pathlib import Path
@@ -114,6 +115,64 @@ def _check_manifests(repo_root: Path, files: List[Path]) -> List[str]:
     return errors
 
 
+def _schema_candidates(repo_root: Path, files: List[Path]) -> List[Path]:
+    """Changed *.schema.json files, plus changed asset *.json carrying a top-level string `format`."""
+    assets = (repo_root / "Cluiche" / "Assets").resolve()
+    out: List[Path] = []
+    for f in files:
+        if f.suffix != ".json" or not f.exists() or f.name.lower().endswith(".catalogue.json"):
+            continue
+        if f.name.lower().endswith(".schema.json"):
+            out.append(f)
+            continue
+        if assets != f.resolve() and assets not in f.resolve().parents:
+            continue
+        try:
+            doc = json.loads(f.read_text(encoding="utf-8-sig"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(doc, dict) and isinstance(doc.get("format"), str):
+            out.append(f)
+    return out
+
+
+def _check_schema(repo_root: Path, files: List[Path]) -> Tuple[List[str], List[str]]:
+    """Run `dia validate schema` over changed schema/data files; returns (errors, warnings).
+
+    The whole Cluiche/Assets tree is scanned so cross-file refs resolve, but only findings
+    whose file is one of the changed files are reported. Nothing is scanned when no
+    relevant file changed.
+    """
+    candidates = _schema_candidates(repo_root, files)
+    if not candidates:
+        return [], []
+
+    from dia_cli.commands.validate import schema_discovery
+
+    assets = (repo_root / "Cluiche" / "Assets").resolve()
+    names = set()
+    paths: List[Path] = []
+    if assets.is_dir():
+        paths.append(assets)
+    for f in candidates:
+        rf = f.resolve()
+        if assets in rf.parents:
+            names.add(rf.relative_to(assets).as_posix())
+        else:
+            paths.append(f)  # schema outside the asset tree: validated as an explicit file
+            names.add(f.name)
+
+    findings, _checked = schema_discovery.discover_and_validate(paths, None)
+    errors: List[str] = []
+    warnings: List[str] = []
+    for fd in findings:
+        if fd.file not in names:
+            continue
+        line = f"{fd.severity} {fd.file}: {fd.message}"
+        (errors if fd.severity == "FAIL" else warnings).append(line)
+    return errors, warnings
+
+
 @click.command("precommit")
 @click.option("--scope", default=None, help="Limit to files under this path.")
 @click.option("--staged", is_flag=True, default=False, help="Check only git-staged files.")
@@ -185,6 +244,17 @@ def precommit(scope: str, staged: bool) -> None:
         errors += len(manifest_errors)
     else:
         click.echo("  OK    Manifest validity")
+
+    # Check 4: schema (dia validate schema on changed schema/data files)
+    schema_errors, schema_warnings = _check_schema(repo_root, files)
+    if schema_errors or schema_warnings:
+        click.echo(f"  {'FAIL' if schema_errors else 'WARN'}  schema:")
+        for line in schema_errors + schema_warnings:
+            click.echo(f"        {line}")
+        errors += len(schema_errors)
+        warnings += len(schema_warnings)
+    elif _schema_candidates(repo_root, files):
+        click.echo("  OK    schema")
 
     # Summary
     click.echo("")
