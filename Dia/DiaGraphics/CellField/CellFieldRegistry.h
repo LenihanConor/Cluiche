@@ -39,6 +39,8 @@ namespace Dia
 			uint64_t rejectedRequests = 0;	// requests rejected with an error result
 			uint64_t coalescedCommands = 0;	// Updates merged into an older pending Update of the same layer
 			uint64_t capWarningsLogged = 0;	// byte-cap warnings actually logged (at most one per drain cycle)
+			uint64_t lifecycleLogsEmitted = 0;		// layer/palette/ramp lifecycle Info lines logged (budgeted per drain cycle)
+			uint64_t lifecycleLogsSuppressed = 0;	// lifecycle lines dropped because the per-cycle budget was spent
 		};
 
 		/// One colour stop of a ramp. position in [0,1], rgba8 packed 0xRRGGBBAA.
@@ -109,6 +111,9 @@ namespace Dia
 			static const uint32_t kMaxPalettes = 128;
 			static const uint32_t kMaxRamps = 128;
 			static const uint32_t kRampTexels = 256;
+			/// Lifecycle Info lines (layer created/destroyed, palette/ramp registered) allowed per Drain
+			/// cycle; the rest are counted in lifecycleLogsSuppressed (one notice line per cycle).
+			static constexpr uint32_t kLifecycleLogBudget = 16;
 
 			CellFieldRegistry();
 			~CellFieldRegistry();

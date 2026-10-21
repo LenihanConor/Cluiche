@@ -49,6 +49,9 @@
     <ClInclude Include="Renderers\CellFieldViewOrder.h">
       <Filter>Renderers</Filter>
     </ClInclude>
+    <ClInclude Include="Renderers\CellFieldObservation.h">
+      <Filter>Renderers</Filter>
+    </ClInclude>
     <ClCompile Include="Canvas.cpp">
       <Filter>Source</Filter>
     </ClCompile>
@@ -101,6 +104,9 @@
       <Filter>Renderers</Filter>
     </ClCompile>
     <ClCompile Include="Renderers\Ortho2D.cpp">
+      <Filter>Renderers</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderers\CellFieldObservation.cpp">
       <Filter>Renderers</Filter>
     </ClCompile>
     <None Include="Shaders\varying.def.sc">

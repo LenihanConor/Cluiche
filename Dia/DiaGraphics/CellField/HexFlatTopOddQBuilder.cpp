@@ -3,6 +3,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "HexFlatTopOddQBuilder.h"
 
+#include <DiaObservation/Profile/DiaProfile.h>
+
 #include <math.h>
 
 namespace Dia
@@ -43,6 +45,7 @@ namespace Dia
 
 		bool HexFlatTopOddQBuilder::Build(const CellGridDesc& desc, CellGridGeometry& out) const
 		{
+			DIA_PROFILE_SCOPE("CellField.HexBuilder.Build", Dia::Observation::Profile::Category::kDiaGraphics);
 			if (!(desc.topology == Topology()) || desc.width == 0 || desc.height == 0 ||
 				desc.centresXY == nullptr || desc.neighbours == nullptr)
 				return false;

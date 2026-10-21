@@ -132,6 +132,11 @@ namespace Dia
             mCellFieldRegistry = registry;
         }
 
+        void Canvas::SetCellFieldMetrics(const CellFieldMetrics& metrics)
+        {
+            mCellFieldObservation.SetMetrics(metrics);
+        }
+
         bool Canvas::GetCellFieldRendererStats(CellFieldRendererStats& outStats) const
         {
             if (mCellFieldRenderer == nullptr)
@@ -362,6 +367,17 @@ namespace Dia
 
             if (mCellFieldRenderer)
                 mCellFieldRenderer->Draw(static_cast<const Dia::Graphics::CellFieldFrameData&>(nextFrame));
+
+            if (mCellFieldRegistry != nullptr)
+            {
+                CellFieldObservationInput observation;
+                observation.registry = mCellFieldRegistry->GetStats();
+                if (mCellFieldRenderer)
+                    observation.renderer = mCellFieldRenderer->GetRendererStats();
+                observation.registrySet = true;
+                observation.programValid = mCellFieldRenderer != nullptr && mCellFieldProgram != nullptr && mCellFieldProgram->IsValid();
+                mCellFieldObservation.Update(observation);
+            }
 
             if (mDebugRenderer)
                 mDebugRenderer->Draw(static_cast<const Dia::Graphics::DebugFrameData&>(nextFrame));

@@ -5,6 +5,7 @@
 
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 
 #include <bgfx/bgfx.h>
 
@@ -102,6 +103,7 @@ namespace Dia
             }
 
             DIA_PROFILE_SCOPE("CellField.BuildGeometry", Dia::Observation::Profile::Category::kDiaGraphics);
+            DIA_TRACE_ZONE("cellfield.geometry_build", Dia::Observation::Trace::Category::kDiaGraphics);
 
             Dia::Graphics::CellGridGeometry geometry;
             if (!builder->Build(desc, geometry))
@@ -125,6 +127,9 @@ namespace Dia
             entry.refCount = 1;
             entry.bytes = static_cast<uint64_t>(geometry.vertexCount) * sizeof(Dia::Graphics::VertexCellField) +
                           static_cast<uint64_t>(geometry.indexCount) * sizeof(uint32_t);
+            DIA_LOG_INFO("CFL", "CellFieldGeometryCache: built %ux%u geometry (%u vertices, %u indices, %llu bytes)",
+                         static_cast<unsigned>(desc.width), static_cast<unsigned>(desc.height), static_cast<unsigned>(entry.vertexCount),
+                         static_cast<unsigned>(entry.indexCount), static_cast<unsigned long long>(entry.bytes));
             return &mEntries.emplace(key, entry).first->second;
         }
 
@@ -135,6 +140,8 @@ namespace Dia
                 return;
             if (--it->second.refCount == 0)
             {
+                DIA_LOG_INFO("CFL", "CellFieldGeometryCache: released %ux%u geometry (%llu bytes)",
+                             static_cast<unsigned>(key.width), static_cast<unsigned>(key.height), static_cast<unsigned long long>(it->second.bytes));
                 mFactory.Destroy(it->second.gpu);
                 mEntries.erase(it);
             }
@@ -142,6 +149,8 @@ namespace Dia
 
         void CellFieldGeometryCache::Shutdown()
         {
+            if (!mEntries.empty())
+                DIA_LOG_INFO("CFL", "CellFieldGeometryCache: shutdown freeing %zu geometry entr%s", mEntries.size(), mEntries.size() == 1 ? "y" : "ies");
             for (auto& kv : mEntries)
                 mFactory.Destroy(kv.second.gpu);
             mEntries.clear();

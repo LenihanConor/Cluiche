@@ -42,6 +42,7 @@ public_api:
     - Dia/DiaBgfx/Renderers/DebugRenderer.h
     - Dia/DiaBgfx/Renderers/UIOverlayRenderer.h
     - Dia/DiaBgfx/Renderers/CellFieldRenderer.h
+    - Dia/DiaBgfx/Renderers/CellFieldObservation.h
     - Dia/DiaBgfx/Renderers/CellFieldDrawParams.h
     - Dia/DiaBgfx/Renderers/Ortho2D.h
     - Dia/DiaBgfx/Renderers/CellFieldViewOrder.h
@@ -58,6 +59,7 @@ public_api:
     - DebugRenderer
     - UIOverlayRenderer
     - CellFieldRenderer
+    - CellFieldObservation
     - CellFieldDrawParams
     - Ortho2D
     - CellFieldViewOrder

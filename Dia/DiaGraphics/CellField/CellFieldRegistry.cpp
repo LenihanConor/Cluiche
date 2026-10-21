@@ -4,6 +4,8 @@
 #include "DiaGraphics/CellField/CellFieldRegistry.h"
 
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 
 #include <atomic>
 #include <cmath>
@@ -63,6 +65,8 @@ namespace Dia
 			uint64_t             mQueuedBytes = 0;
 			bool                 mDropLogged = false;
 			bool                 mCoalesceLogged = false;
+			uint32_t             mLifecycleBudget = kLifecycleLogBudget;
+			bool                 mSuppressNoticeLogged = false;
 			CellFieldStats       mStats;
 			std::vector<std::pair<uint32_t, CellFieldPaletteData>> mPalettes;
 			std::vector<std::pair<uint32_t, CellFieldRampData>>    mRamps;
@@ -84,6 +88,25 @@ namespace Dia
 					++mStats.capWarningsLogged;
 					DIA_LOG_WARNING("CFL", "Command queue byte cap reached; dropping commands");
 				}
+			}
+
+			// Call under the lock. True if a lifecycle Info line may be logged this drain cycle.
+			// Past the budget the line is counted and a single notice is logged per cycle.
+			bool TryLifecycleLog()
+			{
+				if (mLifecycleBudget > 0)
+				{
+					--mLifecycleBudget;
+					++mStats.lifecycleLogsEmitted;
+					return true;
+				}
+				++mStats.lifecycleLogsSuppressed;
+				if (!mSuppressNoticeLogged)
+				{
+					mSuppressNoticeLogged = true;
+					DIA_LOG_INFO("CFL", "CellField lifecycle logging suppressed for the rest of this frame (counted in stats)");
+				}
+				return false;
 			}
 
 			void LogCoalesceOnce()
@@ -179,6 +202,9 @@ namespace Dia
 			m.mQueuedBytes += cmd.bytes;
 			m.mQueue.push_back(std::move(cmd));
 			++m.mStats.creates;
+			if (m.TryLifecycleLog())
+				DIA_LOG_INFO("CFL", "CellField layer created: handle %u.%u, %ux%u, kind %s", (unsigned)out.index, (unsigned)out.generation,
+					(unsigned)desc.width, (unsigned)desc.height, kind == CellFieldValueKind::Category ? "category" : "float");
 			r.ok = true;
 			return r;
 		}
@@ -272,6 +298,8 @@ namespace Dia
 			cmd.handle = handle;
 			m.mQueue.push_back(std::move(cmd));		// no byte cost: must never be dropped
 			++m.mStats.destroys;
+			if (m.TryLifecycleLog())
+				DIA_LOG_INFO("CFL", "CellField layer destroyed: handle %u.%u", (unsigned)handle.index, (unsigned)handle.generation);
 		}
 
 		//------------------------------------------------------------------------------
@@ -287,6 +315,8 @@ namespace Dia
 		//------------------------------------------------------------------------------
 		void CellFieldRegistry::Drain(ICellFieldCommandSink& sink)
 		{
+			DIA_PROFILE_SCOPE("CellField.Registry.Drain", Dia::Observation::Profile::Category::kDiaGraphics);
+			DIA_TRACE_ZONE("cellfield.registry_drain", Dia::Observation::Trace::Category::kDiaGraphics);
 			Impl& m = *mImpl;
 			std::vector<Command> local;
 			{
@@ -295,6 +325,8 @@ namespace Dia
 				m.mQueuedBytes = 0;
 				m.mDropLogged = false;
 				m.mCoalesceLogged = false;
+				m.mLifecycleBudget = kLifecycleLogBudget;
+				m.mSuppressNoticeLogged = false;
 				for (uint32_t i = 0; i < kMaxLayers; ++i) { m.mSlots[i].pendingUpdate = -1; }
 			}
 			uint64_t uploads = 0, uploadedBytes = 0, builds = 0;
@@ -407,6 +439,9 @@ namespace Dia
 			memcpy(d.colours, rgba8, sizeof(uint32_t) * count);
 			d.fallback = fallbackRgba8;
 			++d.revision;
+			if (m.TryLifecycleLog())
+				DIA_LOG_INFO("CFL", "CellField palette 0x%08X %s: %u colours, revision %u", (unsigned)key,
+					d.revision > 1 ? "replaced" : "registered", (unsigned)count, (unsigned)d.revision);
 			r.ok = true;
 			return r;
 		}
@@ -449,6 +484,9 @@ namespace Dia
 			d.count = count;
 			for (uint32_t i = 0; i < count; ++i) { d.stops[i] = stops[i]; }
 			++d.revision;
+			if (m.TryLifecycleLog())
+				DIA_LOG_INFO("CFL", "CellField ramp 0x%08X %s: %u stops, revision %u", (unsigned)key,
+					d.revision > 1 ? "replaced" : "registered", (unsigned)count, (unsigned)d.revision);
 			r.ok = true;
 			return r;
 		}

@@ -90,6 +90,9 @@ namespace Dia
             uint64_t drawCalls = 0;               // planned submits (layers + backdrops), counted even with no program
             uint64_t backdropDraws = 0;           // of which backdrop rectangles
             uint64_t unbuiltLayerRequests = 0;    // Updates/draws skipped: registry layer is live but its geometry/texture build failed
+            uint32_t valueTexturesResident = 0;   // per-layer value textures + the dummy elevation texture currently alive
+            uint64_t geometryBytes = 0;           // GPU vertex + index bytes resident in the geometry cache
+            uint32_t geometryEntries = 0;         // distinct geometry cache entries alive
         };
 
         // One planned submit of a draw (recorded by Draw, also with a null program).
@@ -194,6 +197,10 @@ namespace Dia
             std::unordered_map<uint32_t, ColourMapTexture> mPaletteTextures;   // by colourMap id
             std::unordered_map<uint32_t, ColourMapTexture> mRampTextures;      // by colourMap id
             std::unordered_set<uint32_t>         mWarnedUnknownColourMaps;
+            std::unordered_set<uint32_t>         mWarnedOutOfRangePalettes;   // one warning per palette id
+            bool                                 mShutdownLogged = false;
+            uint64_t                             mLayersCreated = 0;
+            uint64_t                             mLayersReleased = 0;
             CellFieldRendererStats               mStats;
             std::vector<CellFieldPlannedSubmit>  mLastPlan;
             Dia::Graphics::HexFlatTopOddQBuilder mHexBuilder;

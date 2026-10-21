@@ -2021,5 +2021,8 @@
     <ClCompile Include="DiaGraphics\TestCellFieldRejected.cpp">
       <Filter>DiaGraphics</Filter>
     </ClCompile>
+    <ClCompile Include="DiaBgfx\TestCellFieldObservation.cpp">
+      <Filter>DiaBgfx</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

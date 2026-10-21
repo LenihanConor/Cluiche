@@ -5,6 +5,7 @@
 
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 
 #include "DiaBgfx/Renderers/Ortho2D.h"
 #include "DiaBgfx/Resources/ShaderProgram.h"
@@ -138,6 +139,7 @@ namespace Dia
                     return;
                 }
                 mR.mLayers[handle.index] = layer;
+                ++mR.mLayersCreated;
             }
 
             void OnUpdate(Dia::Core::CellFieldLayerHandle handle, const float* values, uint32_t count) override
@@ -205,11 +207,13 @@ namespace Dia
         {
             mTextureFactory.Destroy(layer.valueTexture);
             mGeometryCache.Release(layer.geometryKey);
+            ++mLayersReleased;
         }
 
         void CellFieldRenderer::DrainRegistry()
         {
             DIA_PROFILE_SCOPE("CellField.DrainRegistry", Dia::Observation::Profile::Category::kDiaGraphics);
+            DIA_TRACE_ZONE("cellfield.drain", Dia::Observation::Trace::Category::kDiaGraphics);
             if (!mRegistry)
                 return;
             Sink sink(*this);
@@ -220,6 +224,7 @@ namespace Dia
         {
             DrainRegistry();
             DIA_PROFILE_SCOPE("CellField.Draw", Dia::Observation::Profile::Category::kDiaGraphics);
+            DIA_TRACE_ZONE("cellfield.draw", Dia::Observation::Trace::Category::kDiaGraphics);
             if (!mRegistry)
                 return;
 
@@ -229,6 +234,7 @@ namespace Dia
             for (unsigned int i = 0; i < requests.Size(); ++i)
             {
                 const Dia::Core::CellFieldDrawRequest& request = requests[i];
+                DIA_TRACE_ZONE("cellfield.draw_layer", Dia::Observation::Trace::Category::kDiaGraphics);
                 if (!mRegistry->ResolveHandle(request.layer))
                     continue;   // stale: counted by the registry
                 auto it = mLayers.find(request.layer.index);
@@ -346,6 +352,8 @@ namespace Dia
             {
                 if (it->second.revision != palette.revision)
                 {
+                    DIA_PROFILE_SCOPE("CellField.PaletteBake", Dia::Observation::Profile::Category::kDiaGraphics);
+                    DIA_TRACE_ZONE("cellfield.colourmap_upload", Dia::Observation::Trace::Category::kDiaGraphics);
                     Dia::Graphics::BakePalette(palette.colours, palette.count, palette.fallback, texels);
                     mColourMapFactory.UpdateRgba8(it->second.handle, texels, Dia::Graphics::CellFieldRegistry::kMaxPaletteColours);
                     it->second.revision = palette.revision;
@@ -355,6 +363,8 @@ namespace Dia
                 return true;
             }
 
+            DIA_PROFILE_SCOPE("CellField.PaletteBake", Dia::Observation::Profile::Category::kDiaGraphics);
+            DIA_TRACE_ZONE("cellfield.colourmap_upload", Dia::Observation::Trace::Category::kDiaGraphics);
             Dia::Graphics::BakePalette(palette.colours, palette.count, palette.fallback, texels);
             ColourMapTexture entry;
             if (!mColourMapFactory.CreateRgba8(Dia::Graphics::CellFieldRegistry::kMaxPaletteColours, texels,
@@ -382,6 +392,8 @@ namespace Dia
             {
                 if (it->second.revision != ramp.revision)
                 {
+                    DIA_PROFILE_SCOPE("CellField.RampBake", Dia::Observation::Profile::Category::kDiaGraphics);
+                    DIA_TRACE_ZONE("cellfield.colourmap_upload", Dia::Observation::Trace::Category::kDiaGraphics);
                     Dia::Graphics::BakeRamp(ramp.stops, ramp.count, texels);
                     mColourMapFactory.UpdateRgba8(it->second.handle, texels, kTexels);
                     it->second.revision = ramp.revision;
@@ -391,6 +403,8 @@ namespace Dia
                 return true;
             }
 
+            DIA_PROFILE_SCOPE("CellField.RampBake", Dia::Observation::Profile::Category::kDiaGraphics);
+            DIA_TRACE_ZONE("cellfield.colourmap_upload", Dia::Observation::Trace::Category::kDiaGraphics);
             Dia::Graphics::BakeRamp(ramp.stops, ramp.count, texels);
             ColourMapTexture entry;
             if (!mColourMapFactory.CreateRgba8(kTexels, texels, kTexels, true, entry.handle))
@@ -419,6 +433,7 @@ namespace Dia
                 layer.scanPaletteId == paletteId && layer.scanPaletteRevision == palette.revision)
                 return;
 
+            DIA_PROFILE_SCOPE("CellField.CountOutOfRange", Dia::Observation::Profile::Category::kDiaGraphics);
             uint64_t outOfRange = 0;
             uint32_t index = 0;
             for (float v : layer.values)
@@ -431,11 +446,19 @@ namespace Dia
             layer.scanPaletteId = paletteId;
             layer.scanPaletteRevision = palette.revision;
             mStats.outOfRangeCategoryCells += outOfRange;
+            if (outOfRange > 0 && mWarnedOutOfRangePalettes.insert(paletteId).second)
+                DIA_LOG_WARNING("CFL", "CellFieldRenderer: %llu cell(s) outside palette 0x%08X (fallback colour drawn); further scans counted, not logged",
+                                static_cast<unsigned long long>(outOfRange), static_cast<unsigned>(paletteId));
         }
 
         CellFieldRendererStats CellFieldRenderer::GetRendererStats() const
         {
-            return mStats;
+            CellFieldRendererStats s = mStats;
+            s.valueTexturesResident = static_cast<uint32_t>(mLayers.size()) + (mHasDummyElevation ? 1u : 0u);
+            const CellFieldGeometryStats g = mGeometryCache.Stats();
+            s.geometryBytes = g.gpuBytes;
+            s.geometryEntries = g.liveEntries;
+            return s;
         }
 
         void CellFieldRenderer::GetViewMatrix(float outMatrix[16], bool homogeneousDepth) const
@@ -495,6 +518,7 @@ namespace Dia
         {
             if (!mProgram || !mProgram->IsValid() || !layer.hasBounds)
                 return;
+            DIA_PROFILE_SCOPE("CellField.SubmitBackdrop", Dia::Observation::Profile::Category::kDiaGraphics);
 
             bgfx::VertexLayout vlayout;
             vlayout.begin()
@@ -555,6 +579,7 @@ namespace Dia
         {
             if (!mProgram || !mProgram->IsValid())
                 return;
+            DIA_PROFILE_SCOPE("CellField.SubmitLayer", Dia::Observation::Profile::Category::kDiaGraphics);
 
             const CellFieldUniforms& u = GetCellFieldUniforms();
 
@@ -581,6 +606,18 @@ namespace Dia
 
         void CellFieldRenderer::Shutdown()
         {
+            if (!mShutdownLogged)
+            {
+                mShutdownLogged = true;
+                const CellFieldRendererStats s = GetRendererStats();
+                DIA_LOG_INFO("CFL", "CellFieldRenderer shutdown: layers created %llu / released %llu (%zu still alive), draw calls %llu (%llu backdrop), "
+                             "colour-map uploads %llu, unknown colour maps %llu, out-of-range cells %llu, unbuilt requests %llu, geometry builds %u",
+                             static_cast<unsigned long long>(mLayersCreated), static_cast<unsigned long long>(mLayersReleased), mLayers.size(),
+                             static_cast<unsigned long long>(s.drawCalls), static_cast<unsigned long long>(s.backdropDraws),
+                             static_cast<unsigned long long>(s.colourMapUploads), static_cast<unsigned long long>(s.unknownColourMaps),
+                             static_cast<unsigned long long>(s.outOfRangeCategoryCells), static_cast<unsigned long long>(s.unbuiltLayerRequests),
+                             static_cast<unsigned>(mGeometryCache.Stats().geometryBuilds));
+            }
             for (auto& kv : mLayers)
                 mTextureFactory.Destroy(kv.second.valueTexture);
             mLayers.clear();

@@ -6,6 +6,7 @@
 #include <DiaGraphics/Interface/ICanvas.h>
 #include <DiaWindow/SystemHandle.h>
 #include <DiaMaths/Vector/Vector2D.h>
+#include <DiaBgfx/Renderers/CellFieldObservation.h>
 
 namespace Dia { namespace UI { class IUIRenderOverlay; } }
 namespace Dia { namespace Graphics { class CellFieldRegistry; } }
@@ -73,6 +74,12 @@ namespace Dia
             void SetCellFieldRegistry(Dia::Graphics::CellFieldRegistry* registry);
             Dia::Graphics::CellFieldRegistry* GetCellFieldRegistry() const { return mCellFieldRegistry; }
             bool HasCellFieldRenderer() const { return mCellFieldRenderer != nullptr; }
+            // Metric primitives the CellField stats are published to each rendered frame (render thread).
+            // Optional; call before the first frame. Health is published regardless.
+            void SetCellFieldMetrics(const CellFieldMetrics& metrics);
+            // Healthy / Degraded / Failing for CellField (see CellFieldObservation). The caller registers
+            // it with the HealthRegistry and must unregister it before destroying the Canvas.
+            Dia::Observation::Health::HealthReporterBase& GetCellFieldHealthReporter() { return mCellFieldObservation.GetHealthReporter(); }
             // Render thread. False (and zeroed stats) when there is no CellField renderer.
             bool GetCellFieldRendererStats(CellFieldRendererStats& outStats) const;
 
@@ -115,6 +122,7 @@ namespace Dia
             UIOverlayRenderer* mUIOverlayRenderer; // owned
             CellFieldRenderer* mCellFieldRenderer; // owned (only when a registry is set)
             Dia::Graphics::CellFieldRegistry* mCellFieldRegistry; // borrowed
+            CellFieldObservation mCellFieldObservation;
 
             FrameCaptureRingBuffer* mCaptureRingBuffer; // owned
 

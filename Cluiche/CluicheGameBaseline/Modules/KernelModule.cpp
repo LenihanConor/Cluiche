@@ -18,6 +18,7 @@
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 
 #include <DiaBgfx/Canvas.h>
+#include <DiaBgfx/Renderers/CellFieldObservation.h>
 #include <DiaGraphics/CellField/CellFieldRegistry.h>
 #include <DiaBgfx3D/Canvas3D.h>
 #include <DiaMesh3D/Mesh3DAssetHandler.h>
@@ -174,6 +175,12 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
 
         Dia::Observation::Health::HealthRegistry::Instance().Register(
             &mBgfxCanvas->GetHealthReporter());
+
+        // CellField: sixteen cellfield.* metrics published by the Canvas each rendered frame, plus its
+        // own health reporter (unregistered in DoStop before the canvas is destroyed).
+        mBgfxCanvas->SetCellFieldMetrics(Dia::Bgfx::RegisterCellFieldMetrics(reg));
+        Dia::Observation::Health::HealthRegistry::Instance().Register(
+            &mBgfxCanvas->GetCellFieldHealthReporter());
     }
 
     DIA_LOG_INFO("Application", "KernelModule DoStart exit");
@@ -231,6 +238,8 @@ Dia::ApplicationFlow::StopResult KernelModule::DoStop()
 
     if (mBgfxCanvas != nullptr)
     {
+        Dia::Observation::Health::HealthRegistry::Instance().Unregister(
+            &mBgfxCanvas->GetCellFieldHealthReporter());
         Dia::Observation::Health::HealthRegistry::Instance().Unregister(
             &mBgfxCanvas->GetHealthReporter());
         delete mBgfxCanvas;
