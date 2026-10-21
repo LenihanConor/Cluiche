@@ -21,6 +21,8 @@ namespace Dia::ValueSchema::Testing
 			e["key"] = key;
 			e["kind"] = kind;
 			e["type"] = type;
+			e["label"] = key;			// core keys are required by the loader
+			e["description"] = "test";
 			mEntries.append(e);
 			return *this;
 		}

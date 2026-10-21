@@ -52,7 +52,9 @@ TEST(DiaValueSchemaLoader, KindsAndTypesParse)
 {
 	SchemaFixtureBuilder b;
 	b.Entry("a", "field", "int").Entry("b", "metric", "bool").Entry("c", "arg", "string")
-	 .Entry("d", "command", "ref").Entry("e", "event", "ref[]").Entry("f", "component_field", "map").Entry("g", "field", "enum");
+	 .Entry("d", "command", "ref").Ref("x/y").Entry("e", "event", "ref[]").Ref("x/y")
+	 .Entry("f", "component_field", "map").Set("keyRef", Json::Value("x/y")).Set("valueType", Json::Value("float"))
+	 .Entry("g", "field", "enum").EnumValueEntry("v", "V");
 	LoadResult r = ValueSchemaLoader::LoadFromText(b.Build().c_str(), "k.diavalues");
 	ASSERT_TRUE(r.mOk) << r.mFailure.mReason.AsCStr();
 	ASSERT_EQ(r.mEntries.Size(), 7u);
