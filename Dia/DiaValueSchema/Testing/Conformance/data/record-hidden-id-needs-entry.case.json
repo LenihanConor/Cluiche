@@ -1,0 +1,49 @@
+{
+  "description": "A hidden id column still needs an entry.",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.ecology_parameters",
+      "entries": [
+        {
+          "key": "species[].growth_rate",
+          "kind": "parameter",
+          "label": "species[].growth_rate",
+          "description": "d",
+          "type": "float",
+          "min": 0,
+          "max": 1
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "Global/Ecology/ecology_parameters.json",
+      "pack": false,
+      "content": {
+        "format": "cow.ecology_parameters",
+        "version": 1,
+        "species": [
+          {
+            "id": "a",
+            "growth_rate": 0.1
+          }
+        ]
+      }
+    }
+  ],
+  "expected": [
+    {
+      "severity": "FAIL",
+      "rule": "data.no-schema-entry",
+      "file": "Global/Ecology/ecology_parameters.json",
+      "key": "species[].id",
+      "path": "species[0].id",
+      "record": "a",
+      "messageContains": "has no schema entry",
+      "suggestion": "species[].growth_rate"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "description": "format and version need no entry; an empty schema file is otherwise clean.",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.ecology_parameters",
+      "entries": [
+        {
+          "key": "x",
+          "kind": "parameter",
+          "label": "x",
+          "description": "d",
+          "type": "float"
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "Global/Ecology/ecology_parameters.json",
+      "pack": false,
+      "content": {
+        "format": "cow.ecology_parameters",
+        "version": 1
+      }
+    }
+  ],
+  "expected": []
+}
