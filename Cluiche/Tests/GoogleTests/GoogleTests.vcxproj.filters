@@ -2033,5 +2033,14 @@
     <ClCompile Include="DiaGraphics\TestCellFieldGapsFrameData.cpp">
       <Filter>DiaGraphics</Filter>
     </ClCompile>
+    <ClCompile Include="DiaBgfx\TestCellFieldGapsBgfxRenderer.cpp">
+      <Filter>DiaBgfx</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaBgfx\TestCellFieldGapsBgfxParams.cpp">
+      <Filter>DiaBgfx</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaBgfx\TestCellFieldGapsBgfxObservation.cpp">
+      <Filter>DiaBgfx</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

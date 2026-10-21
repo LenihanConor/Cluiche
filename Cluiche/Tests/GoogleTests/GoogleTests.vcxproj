@@ -933,6 +933,9 @@
     <ClCompile Include="DiaGraphics\TestCellFieldGapsRegistry.cpp" />
     <ClCompile Include="DiaGraphics\TestCellFieldGapsGeometry.cpp" />
     <ClCompile Include="DiaGraphics\TestCellFieldGapsFrameData.cpp" />
+    <ClCompile Include="DiaBgfx\TestCellFieldGapsBgfxRenderer.cpp" />
+    <ClCompile Include="DiaBgfx\TestCellFieldGapsBgfxParams.cpp" />
+    <ClCompile Include="DiaBgfx\TestCellFieldGapsBgfxObservation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
