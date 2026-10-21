@@ -39,6 +39,7 @@ namespace
 			desc.width = w;
 			desc.height = h;
 			desc.cellSize = 2.0f;
+			desc.topology = Dia::Core::StringCRC("hex.flat.oddq");
 			desc.centresXY = centres.data();
 			desc.neighbours = neighbours.data();
 		}

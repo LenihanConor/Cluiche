@@ -6,6 +6,7 @@
 #include <DiaObservation/Log/DiaLog.h>
 
 #include <atomic>
+#include <cmath>
 #include <mutex>
 #include <math.h>
 #include <string.h>
@@ -22,6 +23,7 @@ namespace Dia
 		const char* const CellFieldRegistry::kErrInvalidGrid = "Invalid grid description";
 		const char* const CellFieldRegistry::kErrCountMismatch = "Value count mismatch";
 		const char* const CellFieldRegistry::kErrStaleHandle = "Stale handle";
+		const char* const CellFieldRegistry::kErrUnsupportedTopology = "Unsupported topology";
 		const char* const CellFieldRegistry::kErrQueueFull = "Command queue full";
 		const char* const CellFieldRegistry::kErrInvalidPalette = "Invalid palette";
 		const char* const CellFieldRegistry::kErrInvalidRamp = "Invalid ramp";
@@ -64,6 +66,9 @@ namespace Dia
 			CellFieldStats       mStats;
 			std::vector<std::pair<uint32_t, CellFieldPaletteData>> mPalettes;
 			std::vector<std::pair<uint32_t, CellFieldRampData>>    mRamps;
+			std::vector<uint32_t> mSupportedTopologies;
+
+			Impl() { mSupportedTopologies.push_back(Dia::Core::StringCRC("hex.flat.oddq").Value()); }
 
 			bool IsLive(Dia::Core::CellFieldLayerHandle h) const
 			{
@@ -109,13 +114,27 @@ namespace Dia
 				r.error = kErrGridTooLarge;
 				return r;
 			}
-			if (desc.width == 0 || desc.height == 0 || desc.centresXY == nullptr || desc.neighbours == nullptr)
+			if (desc.width == 0 || desc.height == 0 || desc.centresXY == nullptr || desc.neighbours == nullptr
+				|| !(desc.cellSize > 0.0f) || !std::isfinite(desc.cellSize))
 			{
 				std::lock_guard<std::mutex> lock(m.mMutex);
 				++m.mStats.rejectedRequests;
 				DIA_LOG_WARNING("CFL", "CreateLayer rejected: invalid grid description");
 				r.error = kErrInvalidGrid;
 				return r;
+			}
+
+			{
+				std::lock_guard<std::mutex> lock(m.mMutex);
+				bool supported = false;
+				for (uint32_t t : m.mSupportedTopologies) { if (t == desc.topology.Value()) { supported = true; break; } }
+				if (!supported)
+				{
+					++m.mStats.rejectedRequests;
+					DIA_LOG_ERROR("CFL", "CreateLayer rejected: unsupported topology 0x%08X", (unsigned)desc.topology.Value());
+					r.error = kErrUnsupportedTopology;
+					return r;
+				}
 			}
 
 			const uint32_t cells = (uint32_t)desc.width * desc.height;
@@ -162,6 +181,15 @@ namespace Dia
 			++m.mStats.creates;
 			r.ok = true;
 			return r;
+		}
+
+		//------------------------------------------------------------------------------
+		void CellFieldRegistry::RegisterSupportedTopology(Dia::Core::StringCRC topology)
+		{
+			Impl& m = *mImpl;
+			std::lock_guard<std::mutex> lock(m.mMutex);
+			for (uint32_t t : m.mSupportedTopologies) { if (t == topology.Value()) { return; } }
+			m.mSupportedTopologies.push_back(topology.Value());
 		}
 
 		//------------------------------------------------------------------------------

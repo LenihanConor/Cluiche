@@ -98,6 +98,7 @@ namespace Dia
 			static const char* const kErrInvalidGrid;
 			static const char* const kErrCountMismatch;
 			static const char* const kErrStaleHandle;
+			static const char* const kErrUnsupportedTopology;
 			static const char* const kErrQueueFull;
 			static const char* const kErrInvalidPalette;
 			static const char* const kErrInvalidRamp;
@@ -114,6 +115,18 @@ namespace Dia
 			CellFieldRegistry(const CellFieldRegistry&) = delete;
 			CellFieldRegistry& operator=(const CellFieldRegistry&) = delete;
 
+			/// Topologies CreateLayer accepts. "hex.flat.oddq" is registered by default; a new topology's
+			/// geometry builder owner must register its id here too, otherwise CreateLayer returns
+			/// kErrUnsupportedTopology (logged as Error) and queues nothing.
+			void RegisterSupportedTopology(Dia::Core::StringCRC topology);
+
+			/// Rejects (ok=false, rejectedRequests++, nothing queued): grid > kMaxGridDim, zero size, null
+			/// centres/neighbours, cellSize <= 0 or non-finite (kErrInvalidGrid), unsupported topology,
+			/// and a 33rd layer (kErrMaxLayers).
+			/// Layer slots: Destroy frees the handle immediately but the SLOT is only reusable after the
+			/// next Drain processes the Destroy. Consumers at the 32-layer cap (e.g. a viewer evicting
+			/// its least-recently-visible layer) must therefore Destroy, wait for the next frame's
+			/// drain, then retry CreateLayer.
 			CellFieldResult CreateLayer(const CellGridDesc& desc, CellFieldValueKind kind, Dia::Core::CellFieldLayerHandle& out);
 			CellFieldResult Update(Dia::Core::CellFieldLayerHandle handle, const float* values, uint32_t count);
 			void            Destroy(Dia::Core::CellFieldLayerHandle handle);

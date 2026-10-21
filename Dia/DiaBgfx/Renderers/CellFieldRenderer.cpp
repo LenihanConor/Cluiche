@@ -143,7 +143,12 @@ namespace Dia
             void OnUpdate(Dia::Core::CellFieldLayerHandle handle, const float* values, uint32_t count) override
             {
                 auto it = mR.mLayers.find(handle.index);
-                if (it == mR.mLayers.end() || it->second.generation != handle.generation)
+                if (it == mR.mLayers.end())
+                {
+                    ++mR.mStats.unbuiltLayerRequests;   // layer build failed (dropped): skipped and counted
+                    return;
+                }
+                if (it->second.generation != handle.generation)
                     return;   // stale: skipped
                 if (count != static_cast<uint32_t>(it->second.width) * it->second.height)
                     return;
@@ -227,7 +232,12 @@ namespace Dia
                 if (!mRegistry->ResolveHandle(request.layer))
                     continue;   // stale: counted by the registry
                 auto it = mLayers.find(request.layer.index);
-                if (it == mLayers.end() || it->second.generation != request.layer.generation)
+                if (it == mLayers.end())
+                {
+                    ++mStats.unbuiltLayerRequests;   // live in the registry but its build failed: dropped
+                    continue;
+                }
+                if (it->second.generation != request.layer.generation)
                     continue;
                 Layer& layer = it->second;
 

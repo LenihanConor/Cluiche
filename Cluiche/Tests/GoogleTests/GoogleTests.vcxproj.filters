@@ -2018,5 +2018,8 @@
     <ClCompile Include="DiaGraphics\TestCellFieldRegistryThreading.cpp">
       <Filter>DiaGraphics</Filter>
     </ClCompile>
+    <ClCompile Include="DiaGraphics\TestCellFieldRejected.cpp">
+      <Filter>DiaGraphics</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

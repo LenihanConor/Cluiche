@@ -89,6 +89,7 @@ namespace Dia
             uint32_t colourMapsResident = 0;
             uint64_t drawCalls = 0;               // planned submits (layers + backdrops), counted even with no program
             uint64_t backdropDraws = 0;           // of which backdrop rectangles
+            uint64_t unbuiltLayerRequests = 0;    // Updates/draws skipped: registry layer is live but its geometry/texture build failed
         };
 
         // One planned submit of a draw (recorded by Draw, also with a null program).
