@@ -53,6 +53,9 @@
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClCompile>
     <ClCompile Include="Modules\TestStages\TestStageHUDModule.cpp">
+    <ClCompile Include="Modules\TestStages\CellFieldRenderTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClCompile>
     <ClCompile Include="Modules\TestStages\MessageBusTestStageModule.cpp">
@@ -220,6 +223,9 @@
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
     <ClInclude Include="Modules\TestStages\TestStageHUDModule.h">
+    <ClInclude Include="Modules\TestStages\CellFieldRenderTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
     <ClInclude Include="Modules\TestStages\MessageBusTestStageModule.h">

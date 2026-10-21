@@ -1060,6 +1060,48 @@
             "tags": [
                 "misc/ApplicationFlow"
             ]
+        },
+        {
+            "id": "stage.cell_field_render_test_stage",
+            "type": "stage",
+            "source_path": "Stages/CellFieldRenderTestStage/cell_field_render_test_stage.diastage",
+            "scope": "global",
+            "tags": [
+                "misc"
+            ],
+            "references": [
+                {
+                    "type": "contains",
+                    "target": "manifest.cell_field_render_test_stage"
+                },
+                {
+                    "type": "contains",
+                    "target": "texture.cfr_sprite"
+                }
+            ]
+        },
+        {
+            "id": "manifest.cell_field_render_test_stage",
+            "type": "manifest",
+            "source_path": "Stages/CellFieldRenderTestStage/misc/ApplicationFlow/cell_field_render_test_stage.diaapp",
+            "scope": "stage",
+            "stage_name": "CellFieldRenderTestStage",
+            "tags": [
+                "misc/ApplicationFlow"
+            ]
+        },
+        {
+            "content_hash": 0,
+            "id": "texture.cfr_sprite",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/CellFieldRenderTestStage/assets/cfr_sprite.png",
+            "stage_name": "CellFieldRenderTestStage",
+            "status": "active",
+            "tags": [
+                "World"
+            ],
+            "type": "texture"
         }
     ],
     "rules_path": "assets.rules.json"

@@ -125,6 +125,10 @@
         {
             "path": "Stages/MessageBusStressTestStage/message_bus_stress_test_stage.diastage",
             "type": "stage"
+        },
+        {
+            "path": "Stages/CellFieldRenderTestStage/cell_field_render_test_stage.diastage",
+            "type": "stage"
         }
     ],
     "name": "CluicheTest",

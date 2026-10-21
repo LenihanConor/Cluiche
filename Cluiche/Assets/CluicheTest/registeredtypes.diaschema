@@ -224,6 +224,11 @@
     },
     {
       "allowed_pus": "sim",
+      "description": "Renders CellField layers for real and captures frames for pixel verification.",
+      "type_id": "CellFieldRenderTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
       "description": "MessageBus E2E: BroadcastRouter fan-out, EntityRouter targeted delivery, Reaction-pass chaining, IFlushAdapter injection",
       "type_id": "MessageBusTestStageModule"
     },
@@ -346,6 +351,11 @@
       "allowed_pus": "render",
       "description": "Publishes TestResultsRegistry results to StageStatusModule for the boot menu.",
       "type_id": "TestStatusBridgeModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Integration test for cross-PU JobSystemService access",
+      "type_id": "JobSystemServiceTestStageModule"
     },
     {
       "allowed_pus": "sim",
@@ -511,16 +521,11 @@
       "allowed_pus": "sim",
       "description": "Umbrella SimPU module: assembles the sim-time scheduler, budget, and registry into the per-tick gate loop and publishes SimTimeContext onto the SimTime FrameStream.",
       "type_id": "DiaSimTime"
-    },
-    {
-      "allowed_pus": "sim",
-      "description": "Integration test for cross-PU JobSystemService access",
-      "type_id": "JobSystemServiceTestStageModule"
     }
   ],
   "processing_units": [],
   "version": {
     "major": 1,
-    "minor": 36
+    "minor": 37
   }
 }

@@ -29,6 +29,7 @@
     <ClCompile Include="Modules\TestStages\AssetRuntimeRendererModule.cpp" />
     <ClCompile Include="Modules\TestStages\AssetRuntimeHUDModule.cpp" />
     <ClCompile Include="Modules\TestStages\TestStageHUDModule.cpp" />
+    <ClCompile Include="Modules\TestStages\CellFieldRenderTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\MessageBusTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\GridVisibilityTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\AICalloutTestStageModule.cpp" />
@@ -86,6 +87,7 @@
     <ClInclude Include="Modules\TestStages\AssetRuntimeRendererModule.h" />
     <ClInclude Include="Modules\TestStages\AssetRuntimeHUDModule.h" />
     <ClInclude Include="Modules\TestStages\TestStageHUDModule.h" />
+    <ClInclude Include="Modules\TestStages\CellFieldRenderTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\MessageBusTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\GridVisibilityTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\AICalloutTestStageModule.h" />

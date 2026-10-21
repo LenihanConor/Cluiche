@@ -30,7 +30,8 @@
                 "GridVisibilityTestStage",
                 "MessageBusTestStage",
                 "MessageBusStressTestStage",
-                "JobSystemServiceTestStage"
+                "JobSystemServiceTestStage",
+                "CellFieldRenderTestStage"
             ],
             "auto_advance": false
         },
@@ -212,6 +213,13 @@
         },
         {
             "name": "JobSystemServiceTestStage",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "CellFieldRenderTestStage",
             "transitions": [
                 "Boot"
             ],
@@ -531,7 +539,8 @@
                         "AICalloutTestStage",
                         "GridVisibilityTestStage",
                         "MessageBusTestStage",
-                        "MessageBusStressTestStage"
+                        "MessageBusStressTestStage",
+                        "CellFieldRenderTestStage"
                     ],
                     "dependencies": [
                         "ObservationModule",
@@ -644,7 +653,8 @@
                         "AICalloutTestStage",
                         "GridVisibilityTestStage",
                         "MessageBusTestStage",
-                        "MessageBusStressTestStage"
+                        "MessageBusStressTestStage",
+                        "CellFieldRenderTestStage"
                     ],
                     "dependencies": [
                         "ObservationModule",
@@ -816,7 +826,8 @@
                         "AICalloutTestStage",
                         "GridVisibilityTestStage",
                         "MessageBusTestStage",
-                        "MessageBusStressTestStage"
+                        "MessageBusStressTestStage",
+                        "CellFieldRenderTestStage"
                     ],
                     "dependencies": [
                         "Camera2DModule"
@@ -991,7 +1002,8 @@
                         "AICalloutTestStage",
                         "GridVisibilityTestStage",
                         "MessageBusTestStage",
-                        "MessageBusStressTestStage"
+                        "MessageBusStressTestStage",
+                        "CellFieldRenderTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"
