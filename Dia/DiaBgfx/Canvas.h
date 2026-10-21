@@ -64,6 +64,7 @@ namespace Dia
             void EndFrame(const Dia::Graphics::FrameData& nextFrame) override;
             Dia::Graphics::FrameCaptureToken RequestFrameCapture() override;
             Dia::Graphics::FrameCaptureResult PollFrameCapture(const Dia::Graphics::FrameCaptureToken& token) override;
+            void ReleaseFrameCapture(const Dia::Graphics::FrameCaptureToken& token) override;
 
             Dia::UI::IUIRenderOverlay* GetUIRenderOverlay();
 

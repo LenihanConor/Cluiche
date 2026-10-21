@@ -91,6 +91,8 @@ namespace Dia
 			{
 				return FrameCaptureResult{};
 			}
+
+			void ReleaseFrameCapture(const FrameCaptureToken& /*token*/) override {}
 		};
 	}
 }

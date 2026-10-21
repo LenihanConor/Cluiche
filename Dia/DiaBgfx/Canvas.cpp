@@ -417,6 +417,12 @@ namespace Dia
             return mCaptureRingBuffer->Poll(token);
         }
 
+        void Canvas::ReleaseFrameCapture(const Dia::Graphics::FrameCaptureToken& token)
+        {
+            if (mCaptureRingBuffer != nullptr)
+                mCaptureRingBuffer->Release(token);
+        }
+
         void Canvas::PropagateCanvasSize()
         {
             if (mSpriteRenderer)
