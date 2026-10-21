@@ -1,0 +1,32 @@
+{
+  "format": "dia.value_schema",
+  "version": 1,
+  "for": "conf.records",
+  "entries": [
+    {
+      "key": "species[].id",
+      "kind": "parameter",
+      "label": "Species id",
+      "description": "Unique species identifier.",
+      "type": "string",
+      "unique": true,
+      "required": true
+    },
+    {
+      "key": "species[].growth_rate",
+      "kind": "parameter",
+      "label": "Growth rate",
+      "description": "Per-species growth.",
+      "type": "float",
+      "required": true
+    },
+    {
+      "key": "species[].home_biome",
+      "kind": "parameter",
+      "label": "Home biome",
+      "description": "Biome the species lives in.",
+      "type": "ref",
+      "ref": "cow.biomes/biomes[].id"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "format": "dia.value_schema",
+  "version": 1,
+  "for": "conf.open",
+  "entries": [
+    {
+      "key": "k",
+      "kind": "parameter",
+      "label": "L",
+      "description": "Has an unknown ui key that is kept with a warning.",
+      "type": "float",
+      "ui": { "group": "G", "sparkle": 7 },
+      "history": { "track": true }
+    }
+  ]
+}
