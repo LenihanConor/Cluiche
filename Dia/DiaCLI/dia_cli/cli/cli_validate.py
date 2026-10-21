@@ -437,3 +437,18 @@ def manifest(ctx: click.Context, target_path: str | None, verbose: bool) -> None
     if error_count > 0:
         ctx.exit(1)
         return
+
+
+@cli.command("schema")
+@click.pass_context
+@click.argument("paths", nargs=-1)
+@click.option("--target", default=None, help="App target whose path aliases define the default scope.")
+@click.option("--json", "as_json", is_flag=True, default=False, help="Print findings as a JSON list.")
+@click.option("--verbose", is_flag=True, default=False, help="Show OK files in output.")
+@click.option("--code-side", default=None, type=click.Path(), help="Code-side command export to cross-check.")
+def schema(ctx: click.Context, paths: Tuple[str, ...], target: str | None, as_json: bool,
+           verbose: bool, code_side: str | None) -> None:
+    """Validate *.schema.json files and the data files they describe."""
+    from dia_cli.commands.validate.schema_cmd import schema_command
+
+    schema_command(ctx, paths, target, as_json, verbose, code_side)
