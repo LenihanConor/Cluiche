@@ -1,0 +1,18 @@
+**Spec:** @docs/specs/applications/dia/systems/diavalueschema/format-loader-and-service.md
+**Status:** In Progress
+
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| 1 | Project skeleton: `Dia/DiaValueSchema/` static lib (copy `DiaSimTime` vcxproj shape, 4 configs), `dia scaffold sln-add`, module doc `dia.diavalueschema.architecture.module.md`, GoogleTests project reference + `DiaValueSchema.lib`, empty `Testing/` folder, `dia docs registry` | `dia check deps`, `dia check sln-sync`, GoogleTests still builds | Done | haiku | `dia scaffold module` only makes sub-modules of an existing project, so the top-level project is hand-written |
+| 2 | `ValueInfo` + `ValueSchemaRegistry`: `Register`, `Find` (full key and `(for, key)`), `ForFormat` (file order), `FindEvent`, hash-collision and duplicate rejection, publish-then-reject (AC 2, 4, 5 dup rule, 9) | RED-GREEN: registry tests | Pending | sonnet | DiaCore containers only in public headers (PD-004) |
+| 3 | `ValueSchemaLoader` core: `format`/`version`/`for`, parameter and field entries, every system-spec key, record paths split into segments, `unique`/`required`/`ref`, enum `values` with `colour` and built-in 12-colour fallback (AC 1, 6) | RED-GREEN: loader happy-path tests | Pending | sonnet | Built-in categorical list until Feature 5 |
+| 4 | Loader strictness and open blocks: reject missing/wrong-type core keys, unknown `kind`/`type`, bad `format`/`version`, unknown top-level key; keep unknown `ui`/`history` keys with one Warning; `event` kind (`payload`, `vocabulary`, `ui.colour`/`glyph`); `type: map` (AC 3, 5, 7) | RED-GREEN: one test per rejection in AC 3 | Pending | sonnet | Per-file result carries file, entry, reason |
+| 5 | `ClampAndWarn` + clamp-count metric: numeric clamp, one Warning per key on channel `VSC`, non-numeric and range-less pass-through (AC 8) | RED-GREEN: clamp tests | Pending | sonnet | Counter registered by the module (task 6) |
+| 6 | `ValueSchemaService` (ServiceStream, read-only snapshot) and `ValueSchemaModule`: discovery of `*.schema.json`, sorted load order, bad file skipped, duplicate first-wins, publish snapshot, `DIA_TRACE_ZONE`/`DIA_PROFILE_SCOPE`, metrics, `IHealthReporter` degraded on failed file (AC 2, 4, 9, 10, 11) | RED-GREEN: module tests over fixture dir | Pending | opus | Decided 2026-10-21: `schema_roots` alias list in module config + std::filesystem; reuse `kDiaAssetRuntime` for trace/profile. Opus because of stream/lifecycle design; confirm with user before dispatch |
+| 7 | Test utilities under `DiaValueSchema/Testing/` (schema JSON fixture builder, in-memory registry) and `Testing/Conformance/` good/bad files with `expected.json` plus a GoogleTest that loads every one | Conformance test passes | Pending | sonnet | Feature 2's pytest reuses these fixtures |
+| 8 | Cross-PU read stress test of the published service (no locks, clean under `dia check sanitizer`) (AC 10) | Stress test | Pending | sonnet | |
+| 9 | Finalize: AC 12 check (`dia check deps`, no STL in public headers), module doc public API, Observation Opportunity Scan | `dia check deps` | Pending | haiku | |
+
+**Design decisions for task 6 (user, 2026-10-21; spec not modified):**
+1. `PathStore` has no alias enumeration. `ValueSchemaModule` takes a `schema_roots` alias list in its `.diaapp` module config (resolved with `ResolvePathToString`) and walks each root with `std::filesystem`. No DiaCore change.
+2. Trace and profile zones reuse `kDiaAssetRuntime`; no DiaObservation edit.
