@@ -8,7 +8,7 @@
 **Needs log:** CoW `dia-needs.md` #14. First consumer: S-1 World Generation Feature 7 (@docs/specs/applications/cow/systems/s1-worldgeneration/layered-debug-rendering.md).
 
 ## Status
-`Approved` (2026-10-15). Build sign-off (AD-001) given by the user 2026-10-20; not started (implementation deferred by the user). Plan: [cell-field-renderer.plan.md](cell-field-renderer.plan.md). Build order: Step 1 (1a, 1b, 1c) before S-1 Feature 7; Step 2 after S-1's view works. Open questions are build-time details; start with `dia check deps` for where the hex adapter lives.
+`Done` (2026-10-20), Step 1. Built and verified on dx11; Step 2 (smooth shading, stacking and opacity, state blend, partial updates) not started. AC15 (performance) was skipped by the user and is unmeasured; Vulkan and dx12 have not been run. See the AC Verification Matrix in [cell-field-renderer.plan.md](cell-field-renderer.plan.md).
 
 ## Summary
 
