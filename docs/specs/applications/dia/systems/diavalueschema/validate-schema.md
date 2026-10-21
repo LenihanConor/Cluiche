@@ -175,4 +175,4 @@ No conflicts.
 
 ## Status
 
-`Approved` (2026-10-20). Plan: [validate-schema.plan.md](validate-schema.plan.md).
+`Done` (2026-10-21). Plan: [validate-schema.plan.md](validate-schema.plan.md).

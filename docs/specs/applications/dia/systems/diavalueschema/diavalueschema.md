@@ -226,7 +226,7 @@ $ dia validate schema
 | # | Feature | Notes | Status | Spec |
 |---|---|---|---|---|
 | 1 | Format, loader and service | `ValueInfo`, the sidecar loader (including record paths, `unique`, `required`, `ref`), `ValueSchemaModule` / `ValueSchemaService`, lookup by full key and by format, clamp-and-warn helper | Done (2026-10-21) | [format-loader-and-service.md](format-loader-and-service.md) |
-| 2 | `dia validate schema` | DiaCLI validator (Python, like `cli_validate.py`), precommit hook | Approved | [validate-schema.md](validate-schema.md) |
+| 2 | `dia validate schema` | DiaCLI validator (Python, like `cli_validate.py`), precommit hook | Done (2026-10-21) | [validate-schema.md](validate-schema.md) |
 | 3 | Tooltips (panel and editor UI) | Controls and rows take `schemaKey`; shared `ValueLabel`/`ValueTooltip` in `@dia/editor-ui` plus `renderValueTooltip()` in the debug panel; default mark, pack marker; schema query; contract golden | Approved | [tooltips.md](tooltips.md) |
 | 4 | Code-side descriptions | `MetricInfo` on `MetricRegistry`; `EditorActionParam` moved to DiaAPI as `ValueParam` (alias kept) and added to `CommandInfo`; `HelpSystem` and palette show the args; pull collector in `ValueSchemaModule` (no upward dependency) | Approved | [code-side-descriptions.md](code-side-descriptions.md) |
 | 5 | Ramps | Named ramp library (`dia.ramps` data file, game-extensible), neutral `ResolveRamp` / `ResolvePalette` / `BuildLegend` (C++ and TypeScript); replaces `ToCellFieldRamp` (amended 2026-10-20) | Approved | [ramps.md](ramps.md) |
