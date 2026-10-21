@@ -27,8 +27,9 @@ CheckedFiles = List[Tuple[str, int]]
 
 def run_validation(paths: Sequence[Path], target: Optional[str],
                    code_side: Optional[Path]) -> Tuple[List[Finding], CheckedFiles]:
-    """Discover and validate schema/data files. Filled in by later tasks."""
-    return [], []
+    """Discover and validate schema/data files (see schema_discovery)."""
+    from dia_cli.commands.validate.schema_discovery import discover_and_validate
+    return discover_and_validate(paths, target)
 
 
 def render_text(findings: List[Finding], files: CheckedFiles, verbose: bool) -> None:
@@ -50,7 +51,6 @@ def render_text(findings: List[Finding], files: CheckedFiles, verbose: bool) -> 
 
 def schema_command(ctx: click.Context, paths: Tuple[str, ...], target: Optional[str],
                    as_json: bool, verbose: bool, code_side: Optional[str]) -> None:
-    # TODO(task 6): validate --target against known app path aliases (exit 2 if unknown).
     resolved = [Path(p) for p in paths]
     for p in resolved:
         if not p.exists():
