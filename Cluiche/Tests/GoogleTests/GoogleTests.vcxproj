@@ -940,6 +940,7 @@
     <ClCompile Include="DiaValueSchema\TestValueSchemaRegistry.cpp" />
     <ClCompile Include="DiaValueSchema\TestValueSchemaLoader.cpp" />
     <ClCompile Include="DiaValueSchema\TestValueSchemaLoaderStrict.cpp" />
+    <ClCompile Include="DiaValueSchema\TestValueSchemaClamp.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

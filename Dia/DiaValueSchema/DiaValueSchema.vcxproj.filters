@@ -20,6 +20,7 @@
     <ClInclude Include="Testing/SchemaFixtureBuilder.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="ValueClamper.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ValueSchemaVersion.cpp" />
@@ -27,6 +28,7 @@
     <ClCompile Include="ValueSchemaRegistry.cpp" />
     <ClCompile Include="ValueSchemaLoader.cpp" />
     <ClCompile Include="CategoricalColours.cpp" />
+    <ClCompile Include="ValueClamper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diavalueschema.architecture.module.md">
