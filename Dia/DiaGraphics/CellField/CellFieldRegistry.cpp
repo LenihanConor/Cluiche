@@ -49,6 +49,7 @@ namespace Dia
 				bool                  allocated = false;	// held until the Destroy is drained
 				bool                  live = false;			// handle resolves
 				uint32_t              cellCount = 0;
+				int32_t               pendingUpdate = -1;	// index in mQueue of this layer's pending Update, or -1
 			};
 		}
 
@@ -59,6 +60,7 @@ namespace Dia
 			std::vector<Command> mQueue;
 			uint64_t             mQueuedBytes = 0;
 			bool                 mDropLogged = false;
+			bool                 mCoalesceLogged = false;
 			CellFieldStats       mStats;
 			std::vector<std::pair<uint32_t, CellFieldPaletteData>> mPalettes;
 			std::vector<std::pair<uint32_t, CellFieldRampData>>    mRamps;
@@ -74,7 +76,17 @@ namespace Dia
 				if (!mDropLogged)
 				{
 					mDropLogged = true;
+					++mStats.capWarningsLogged;
 					DIA_LOG_WARNING("CFL", "Command queue byte cap reached; dropping commands");
+				}
+			}
+
+			void LogCoalesceOnce()
+			{
+				if (!mCoalesceLogged)
+				{
+					mCoalesceLogged = true;
+					DIA_LOG_INFO("CFL", "Upload queue coalescing Updates (further merges this cycle not logged)");
 				}
 			}
 		};
@@ -157,6 +169,21 @@ namespace Dia
 		{
 			CellFieldResult r;
 			Impl& m = *mImpl;
+
+			// Copy-on-submit happens BEFORE the lock so the mutex is held only for bookkeeping
+			// (a 64 KB memcpy/allocation never runs under it). Counts above the largest grid
+			// can never match a layer, so they skip the copy and are rejected under the lock.
+			Command cmd;	// declared before the lock: its (possibly swapped-out) buffer is freed after unlock
+			cmd.type = CmdType::Update;
+			cmd.handle = handle;
+			const uint32_t maxCells = (uint32_t)kMaxGridDim * kMaxGridDim;
+			if (values != nullptr && count <= maxCells)
+			{
+				cmd.values.assign(values, values + count);
+			}
+			const uint64_t bytes = sizeof(float) * (uint64_t)count;
+			cmd.bytes = bytes;
+
 			std::lock_guard<std::mutex> lock(m.mMutex);
 			if (!m.IsLive(handle))
 			{
@@ -164,14 +191,27 @@ namespace Dia
 				r.error = kErrStaleHandle;
 				return r;
 			}
-			if (values == nullptr || count != m.mSlots[handle.index].cellCount)
+			Slot& slot = m.mSlots[handle.index];
+			if (values == nullptr || count != slot.cellCount)
 			{
 				++m.mStats.rejectedRequests;
 				DIA_LOG_WARNING("CFL", "Update rejected: value count mismatch (%u)", (unsigned)count);
 				r.error = kErrCountMismatch;
 				return r;
 			}
-			const uint64_t bytes = sizeof(float) * (uint64_t)count;
+			if (slot.pendingUpdate >= 0)
+			{
+				// Coalesce: overwrite the pending Update in place. It keeps the FIRST pending
+				// Update's queue position, which is always after the layer's Create and before
+				// its Destroy (a Destroy makes the handle stale, so no Update can follow it).
+				// Same cellCount => same byte cost, so this can never trip the cap.
+				m.mQueue[(size_t)slot.pendingUpdate].values.swap(cmd.values);
+				++m.mStats.updates;
+				++m.mStats.coalescedCommands;
+				m.LogCoalesceOnce();
+				r.ok = true;
+				return r;
+			}
 			if (m.mQueuedBytes + bytes > kMaxQueueBytes)
 			{
 				++m.mStats.droppedCommands;
@@ -179,12 +219,8 @@ namespace Dia
 				r.error = kErrQueueFull;
 				return r;
 			}
-			Command cmd;
-			cmd.type = CmdType::Update;
-			cmd.handle = handle;
-			cmd.values.assign(values, values + count);
-			cmd.bytes = bytes;
 			m.mQueuedBytes += bytes;
+			slot.pendingUpdate = (int32_t)m.mQueue.size();
 			m.mQueue.push_back(std::move(cmd));
 			++m.mStats.updates;
 			r.ok = true;
@@ -201,6 +237,7 @@ namespace Dia
 				++m.mStats.staleHandles;
 				return;
 			}
+			m.mSlots[handle.index].pendingUpdate = -1;
 			m.mSlots[handle.index].live = false;	// stops resolving now; slot freed at drain
 			Command cmd;
 			cmd.type = CmdType::Destroy;
@@ -229,6 +266,8 @@ namespace Dia
 				local.swap(m.mQueue);
 				m.mQueuedBytes = 0;
 				m.mDropLogged = false;
+				m.mCoalesceLogged = false;
+				for (uint32_t i = 0; i < kMaxLayers; ++i) { m.mSlots[i].pendingUpdate = -1; }
 			}
 			uint64_t uploads = 0, uploadedBytes = 0, builds = 0;
 			for (Command& c : local)

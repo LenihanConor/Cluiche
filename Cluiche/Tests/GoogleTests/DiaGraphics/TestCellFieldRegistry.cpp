@@ -250,8 +250,9 @@ TEST(CellFieldRegistry, StatsReflectDrainedWork)
 	reg.Drain(sink);
 	CellFieldStats s = reg.GetStats();
 	EXPECT_EQ(s.geometryBuilds, 1u);
-	EXPECT_EQ(s.uploads, 2u);
-	EXPECT_EQ(s.uploadedBytes, 32u);
+	EXPECT_EQ(s.uploads, 1u);			// two Updates to one layer coalesce into one upload
+	EXPECT_EQ(s.uploadedBytes, 16u);
+	EXPECT_EQ(s.coalescedCommands, 1u);
 	EXPECT_EQ(s.layersLive, 1u);
 	EXPECT_EQ(s.droppedCommands, 0u);
 }

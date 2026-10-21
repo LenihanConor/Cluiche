@@ -37,6 +37,8 @@ namespace Dia
 			uint64_t droppedCommands = 0;	// commands dropped by the byte cap
 			uint64_t staleHandles = 0;		// stale handles skipped
 			uint64_t rejectedRequests = 0;	// requests rejected with an error result
+			uint64_t coalescedCommands = 0;	// Updates merged into an older pending Update of the same layer
+			uint64_t capWarningsLogged = 0;	// byte-cap warnings actually logged (at most one per drain cycle)
 		};
 
 		/// One colour stop of a ramp. position in [0,1], rgba8 packed 0xRRGGBBAA.

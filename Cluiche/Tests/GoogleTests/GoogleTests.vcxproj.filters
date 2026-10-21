@@ -2015,5 +2015,8 @@
     <ClCompile Include="DiaBgfx\TestCellFieldCanvas.cpp">
       <Filter>DiaBgfx</Filter>
     </ClCompile>
+    <ClCompile Include="DiaGraphics\TestCellFieldRegistryThreading.cpp">
+      <Filter>DiaGraphics</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
