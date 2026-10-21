@@ -117,11 +117,15 @@ void main()
     bool shade = strength > 0.0 && u_params1.w > 0.5;
 
     // Derivatives must be evaluated in uniform control flow (before any divergent use).
-    float h = 0.0;
-    if (use0) { h += fetchCell(u_elevationTexture, idx.x) * (w0 * inv); }
-    if (use1) { h += fetchCell(u_elevationTexture, idx.y) * (w1 * inv); }
-    if (use2) { h += fetchCell(u_elevationTexture, idx.z) * (w2 * inv); }
-    if (use3) { h += fetchCell(u_elevationTexture, idx.w) * (w3 * inv); }
+    // Elevation is ALWAYS blended through the four-cell weights, even when colour shading is Flat:
+    // with own-cell-only elevation the derivatives are zero inside a cell and the relief is lost.
+    float eh = 0.0;
+    float ew = 0.0;
+    if (idx.x > -0.5)               { eh += fetchCell(u_elevationTexture, idx.x) * w.x; ew += w.x; }
+    if (idx.y > -0.5 && w.y > 0.0)  { eh += fetchCell(u_elevationTexture, idx.y) * w.y; ew += w.y; }
+    if (idx.z > -0.5 && w.z > 0.0)  { eh += fetchCell(u_elevationTexture, idx.z) * w.z; ew += w.z; }
+    if (idx.w > -0.5 && w.w > 0.0)  { eh += fetchCell(u_elevationTexture, idx.w) * w.w; ew += w.w; }
+    float h = ew > 1e-6 ? eh / ew : 0.0;
     vec3 P = vec3(v_texcoord2.xy, h * u_params1.y);
     vec3 n = cross(dFdx(P), dFdy(P));
     float nl = length(n);
