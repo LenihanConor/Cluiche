@@ -21,6 +21,14 @@
       <Filter>Testing</Filter>
     </ClInclude>
     <ClInclude Include="ValueClamper.h" />
+    <ClInclude Include="ValueSchemaService.h" />
+    <ClInclude Include="IValueSchemaContributor.h" />
+    <ClInclude Include="SchemaDirectoryLoader.h" />
+    <ClInclude Include="ValueSchemaHealth.h" />
+    <ClInclude Include="ValueSchemaModule.h" />
+    <ClInclude Include="Testing\SchemaTempDirectory.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ValueSchemaVersion.cpp" />
@@ -29,6 +37,10 @@
     <ClCompile Include="ValueSchemaLoader.cpp" />
     <ClCompile Include="CategoricalColours.cpp" />
     <ClCompile Include="ValueClamper.cpp" />
+    <ClCompile Include="ValueSchemaService.cpp" />
+    <ClCompile Include="SchemaDirectoryLoader.cpp" />
+    <ClCompile Include="ValueSchemaHealth.cpp" />
+    <ClCompile Include="ValueSchemaModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diavalueschema.architecture.module.md">
