@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <stdint.h>
+#include <utility>
 
 namespace Dia
 {
@@ -36,6 +37,14 @@ namespace Dia
 			VertexCellField* vertices = nullptr;
 			uint32_t*        indices = nullptr;
 
+			CellGridGeometry() = default;
+			CellGridGeometry(CellGridGeometry&& other) noexcept { TakeFrom(other); }
+			CellGridGeometry& operator=(CellGridGeometry&& other) noexcept
+			{
+				if (this != &other) { TakeFrom(other); }
+				return *this;
+			}
+
 			void Allocate(uint32_t numVertices, uint32_t numIndices)
 			{
 				mVertexStorage.reset(new VertexCellField[numVertices]);
@@ -57,6 +66,21 @@ namespace Dia
 			}
 
 		private:
+			// Moves ownership and leaves 'other' empty (raw views included, so it never dangles).
+			void TakeFrom(CellGridGeometry& other)
+			{
+				mVertexStorage = std::move(other.mVertexStorage);
+				mIndexStorage = std::move(other.mIndexStorage);
+				vertices = other.vertices;
+				indices = other.indices;
+				vertexCount = other.vertexCount;
+				indexCount = other.indexCount;
+				other.vertices = nullptr;
+				other.indices = nullptr;
+				other.vertexCount = 0;
+				other.indexCount = 0;
+			}
+
 			std::unique_ptr<VertexCellField[]> mVertexStorage;
 			std::unique_ptr<uint32_t[]>        mIndexStorage;
 		};
