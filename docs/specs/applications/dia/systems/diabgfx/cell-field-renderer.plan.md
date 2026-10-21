@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/applications/dia/systems/diabgfx/cell-field-renderer.md
-**Status:** Not Started. Build sign-off (AD-001) given by the user 2026-10-20; not started (implementation deferred by the user).
+**Status:** Step 1 built (tasks 1–22, 25, 26 Done; task 23 performance skipped by the user, task 24 folded into 25). Full unfiltered `dia run googletest`: 9,941 tests pass. AC15 unverified; dx11 only for the image ACs; Step 2 not started. See the AC Verification Matrix.
 
 ## Implementation Patterns
 
