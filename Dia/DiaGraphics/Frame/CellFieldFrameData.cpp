@@ -22,6 +22,7 @@ namespace Dia
 		//------------------------------------------------------------------------------
 		void CellFieldFrameData::CopyCellFieldBuffer(const CellFieldFrameData& rhs)
 		{
+			if (this == &rhs) { return; }	// RemoveAll below would erase the source too
 			mRequests.RemoveAll();
 			for (unsigned int i = 0; i < rhs.mRequests.Size(); ++i)
 			{

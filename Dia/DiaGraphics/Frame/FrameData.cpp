@@ -33,6 +33,7 @@ namespace Dia
 
 		void FrameData::Copy(const FrameData& rhs)
 		{
+			if (this == &rhs) { return; }	// the clear-then-copy steps below would wipe the source
 			DebugFrameData::CopyDebugBuffer(rhs);
 			UIFrameData::CopyUIBuffer(rhs);
 			CellFieldFrameData::CopyCellFieldBuffer(rhs);
