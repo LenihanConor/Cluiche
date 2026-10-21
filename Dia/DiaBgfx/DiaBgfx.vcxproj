@@ -34,6 +34,8 @@
     <ClInclude Include="Resources\CellFieldGeometryCache.h" />
     <ClInclude Include="Renderers\CellFieldRenderer.h" />
     <ClInclude Include="Renderers\CellFieldDrawParams.h" />
+    <ClInclude Include="Renderers\Ortho2D.h" />
+    <ClInclude Include="Renderers\CellFieldViewOrder.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Canvas.cpp" />
@@ -66,6 +68,7 @@
     <ClCompile Include="Resources\CellFieldGeometryCache.cpp" />
     <ClCompile Include="Renderers\CellFieldRenderer.cpp" />
     <ClCompile Include="Renderers\CellFieldDrawParams.cpp" />
+    <ClCompile Include="Renderers\Ortho2D.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\varying.def.sc" />

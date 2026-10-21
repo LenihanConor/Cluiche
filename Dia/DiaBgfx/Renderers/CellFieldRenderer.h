@@ -4,6 +4,7 @@
 #pragma once
 
 #include <DiaBgfx/Renderers/CellFieldDrawParams.h>
+#include <DiaBgfx/Renderers/CellFieldViewOrder.h>
 #include <DiaBgfx/Resources/CellFieldGeometryCache.h>
 #include <DiaGraphics/CellField/CellFieldRegistry.h>
 #include <DiaGraphics/CellField/HexFlatTopOddQBuilder.h>
@@ -117,6 +118,9 @@ namespace Dia
 
             void SetCamera(const Dia::Graphics::Camera2D& camera);
             void OnCanvasSizeChanged(const Dia::Maths::Vector2D& size);
+            // The view transform SetupView submits (shared Ortho2D helper). bgfx-free: callable without a GPU.
+            void GetViewMatrix(float outMatrix[16], bool homogeneousDepth = false) const;
+            unsigned short GetViewId() const { return mViewId; }
 
             // Processes queued Create/Update/Destroy commands. Called before drawing each frame.
             void DrainRegistry();

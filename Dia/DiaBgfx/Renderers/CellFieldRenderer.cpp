@@ -6,6 +6,7 @@
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
 
+#include "DiaBgfx/Renderers/Ortho2D.h"
 #include "DiaBgfx/Resources/ShaderProgram.h"
 
 #include <bgfx/bgfx.h>
@@ -427,21 +428,21 @@ namespace Dia
             return mStats;
         }
 
+        void CellFieldRenderer::GetViewMatrix(float outMatrix[16], bool homogeneousDepth) const
+        {
+            BuildOrtho2D(mCamera, mCanvasSize, outMatrix, homogeneousDepth);
+        }
+
         void CellFieldRenderer::SetupView()
         {
             const float cw = mCanvasSize.X();
             const float ch = mCanvasSize.Y();
             if (cw < 1.0f || ch < 1.0f)
                 return;
-            const float zoom  = mCamera.GetZoom() > 0.0f ? mCamera.GetZoom() : 1.0f;
-            const float halfW = (cw * 0.5f) / zoom;
-            const float halfH = (ch * 0.5f) / zoom;
-            const float cx    = mCamera.GetPosition().X();
-            const float cy    = mCamera.GetPosition().Y();
 
             float ortho[16];
-            bx::mtxOrtho(ortho, cx - halfW, cx + halfW, cy + halfH, cy - halfH,
-                         0.0f, 1000.0f, 0.0f, bgfx::getCaps()->homogeneousDepth);
+            GetViewMatrix(ortho, bgfx::getCaps()->homogeneousDepth);
+            bgfx::setViewMode(mViewId, bgfx::ViewMode::Sequential);   // keep backdrop-then-layer submit order
             bgfx::setViewTransform(mViewId, nullptr, ortho);
             bgfx::setViewRect(mViewId, 0, 0, static_cast<uint16_t>(cw), static_cast<uint16_t>(ch));
         }
