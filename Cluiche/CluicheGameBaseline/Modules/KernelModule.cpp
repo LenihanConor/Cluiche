@@ -18,6 +18,7 @@
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 
 #include <DiaBgfx/Canvas.h>
+#include <DiaGraphics/CellField/CellFieldRegistry.h>
 #include <DiaBgfx3D/Canvas3D.h>
 #include <DiaMesh3D/Mesh3DAssetHandler.h>
 #include <DiaWindow/SystemHandle.h>
@@ -133,7 +134,11 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
     bgfxSettings.cookedShaderRoot = "assets/shaders";
     bgfxSettings.rendererType = Dia::Bgfx::RendererType::Direct3D11;
 
+    // Registry must exist before Initialize (the Canvas creates its CellField renderer only if one is set).
+    mCellFieldRegistry = new Dia::Graphics::CellFieldRegistry();
+
     mBgfxCanvas = new Dia::Bgfx3D::Canvas3D();
+    mBgfxCanvas->SetCellFieldRegistry(mCellFieldRegistry);
 
     Dia::Window::SystemHandle hwnd = mWindow->GetSystemHandle();
     mBgfxCanvas->AttachToNativeWindow(hwnd, bgfxSettings.initialSize);
@@ -152,6 +157,7 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
 
     // Publish canvas AFTER deactivating the context — RenderModule polls from its thread.
     mCanvasService.Register(*mCanvas);
+    mCellFieldRegistryService.Register(*mCellFieldRegistry);
 
     {
         auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
@@ -221,6 +227,8 @@ Dia::ApplicationFlow::StopResult KernelModule::DoStop()
     }
 #endif
 
+    mCellFieldRegistryService.Deregister();
+
     if (mBgfxCanvas != nullptr)
     {
         Dia::Observation::Health::HealthRegistry::Instance().Unregister(
@@ -228,6 +236,10 @@ Dia::ApplicationFlow::StopResult KernelModule::DoStop()
         delete mBgfxCanvas;
         mBgfxCanvas = nullptr;
     }
+
+    // After the canvas: its CellField renderer borrows the registry and frees GPU objects at shutdown.
+    delete mCellFieldRegistry;
+    mCellFieldRegistry = nullptr;
 
     mWindowFactory.Destroy(mWindow);
     mWindow  = nullptr;
@@ -249,6 +261,7 @@ void KernelModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
     mCanvasService.Connect(app);
     mTextureHandlerService.Connect(app);
     mMeshHandlerService.Connect(app);
+    mCellFieldRegistryService.Connect(app);
 }
 
 } } // namespace Cluiche::AppFlow

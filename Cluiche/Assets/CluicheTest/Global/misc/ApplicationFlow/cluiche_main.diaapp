@@ -301,6 +301,12 @@
             "from": "MainPU"
         },
         {
+            "id": "KernelCellFieldRegistry",
+            "kind": "ServiceStream",
+            "payload_type": "CellFieldRegistry",
+            "from": "MainPU"
+        },
+        {
             "id": "AssetLoadStatus",
             "kind": "ServiceStream",
             "payload_type": "AssetLoadStatus",
@@ -484,6 +490,14 @@
                         {
                             "id": "KernelMeshHandler",
                             "role": "provides"
+                        },
+                        {
+                            "id": "KernelCellFieldRegistry",
+                            "role": "provides"
+                        },
+                        {
+                            "id": "KernelCellFieldRegistry",
+                            "role": "consumes"
                         }
                     ]
                 },
