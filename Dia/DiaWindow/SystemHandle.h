@@ -3,7 +3,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32)
 struct HWND__;
 #endif
 
@@ -11,7 +11,7 @@ namespace Dia
 {
 	namespace Window
 	{
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32)
 
 		// Window handle is HWND (HWND__*) on Windows
 		typedef HWND__* SystemHandle;

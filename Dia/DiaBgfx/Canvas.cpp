@@ -6,6 +6,8 @@
 #include "DiaBgfx/Renderers/SpriteRenderer.h"
 #include "DiaBgfx/Renderers/DebugRenderer.h"
 #include "DiaBgfx/Renderers/UIOverlayRenderer.h"
+#include "DiaBgfx/Renderers/CellFieldRenderer.h"
+#include "DiaBgfx/Renderers/CellFieldViewOrder.h"
 #include "DiaBgfx/Resources/ShaderProgram.h"
 
 #include <DiaGraphics/Frame/FrameData.h>
@@ -109,9 +111,12 @@ namespace Dia
             , mSpriteProgram(nullptr)
             , mDebugProgram(nullptr)
             , mUIProgram(nullptr)
+            , mCellFieldProgram(nullptr)
             , mSpriteRenderer(nullptr)
             , mDebugRenderer(nullptr)
             , mUIOverlayRenderer(nullptr)
+            , mCellFieldRenderer(nullptr)
+            , mCellFieldRegistry(nullptr)
             , mCaptureRingBuffer(nullptr)
         {}
 
@@ -119,6 +124,23 @@ namespace Dia
         {
             DIA_ASSERT(!mInitialised,
                 "Canvas destroyed while still initialised â€” bgfx context should be shut down via DeferredInit before destruction");
+        }
+
+        void Canvas::SetCellFieldRegistry(Dia::Graphics::CellFieldRegistry* registry)
+        {
+            DIA_ASSERT(!mInitialised, "Canvas::SetCellFieldRegistry must be called before the first StartFrame");
+            mCellFieldRegistry = registry;
+        }
+
+        bool Canvas::GetCellFieldRendererStats(CellFieldRendererStats& outStats) const
+        {
+            if (mCellFieldRenderer == nullptr)
+            {
+                outStats = CellFieldRendererStats();
+                return false;
+            }
+            outStats = mCellFieldRenderer->GetRendererStats();
+            return true;
         }
 
         void Canvas::AttachToNativeWindow(Dia::Window::SystemHandle hwnd,
@@ -185,6 +207,7 @@ namespace Dia
             bgfx::setViewClear(kDebugViewId,  BGFX_CLEAR_NONE);
             bgfx::setViewClear(kUIViewId,     BGFX_CLEAR_NONE);
             bgfx::setViewClear(kImGuiViewId,  BGFX_CLEAR_NONE);
+            bgfx::setViewClear(kCellFieldViewId, BGFX_CLEAR_NONE);
 
             const char* backend = BackendSubdir(mRendererType);
 
@@ -223,6 +246,22 @@ namespace Dia
             mDebugRenderer     = new DebugRenderer(kDebugViewId, mDebugProgram);
             mUIOverlayRenderer = new UIOverlayRenderer(kUIViewId, mUIProgram);
 
+            if (mCellFieldRegistry != nullptr)
+            {
+                // Shader attrs (TexCoord0/1/2 + Color0) are embedded in the cooked program; Load
+                // takes no vertex layout. The geometry cache uses the matching layout.
+                mCellFieldProgram = new ShaderProgram();
+                if (!mCellFieldProgram->Load(mShaderRoot, backend, "cellfield", "cellfield"))
+                {
+                    DIA_LOG_WARNING("DiaBgfx", "Canvas::DeferredInit — failed to load cellfield shader; cell fields will not draw (run 'dia pipeline --target cluichetest')");
+                }
+                mCellFieldRenderer = new CellFieldRenderer(kCellFieldViewId, mCellFieldProgram, mCellFieldRegistry);
+            }
+            else
+            {
+                DIA_LOG_DEBUG("DiaBgfx", "Canvas::DeferredInit — no CellFieldRegistry set, CellField renderer skipped");
+            }
+
             mCaptureRingBuffer = new FrameCaptureRingBuffer();
             sCallback.mRingBuffer = mCaptureRingBuffer;
 
@@ -238,10 +277,14 @@ namespace Dia
             if (!mInitialised)
                 return;
 
+            if (mCellFieldRenderer != nullptr)
+                mCellFieldRenderer->Shutdown();   // frees GPU objects while bgfx is still alive
+            delete mCellFieldRenderer;  mCellFieldRenderer = nullptr;
             delete mUIOverlayRenderer;  mUIOverlayRenderer = nullptr;
             delete mDebugRenderer;      mDebugRenderer     = nullptr;
             delete mSpriteRenderer;     mSpriteRenderer    = nullptr;
 
+            delete mCellFieldProgram; mCellFieldProgram = nullptr;
             delete mUIProgram;     mUIProgram     = nullptr;
             delete mDebugProgram;  mDebugProgram  = nullptr;
             delete mSpriteProgram; mSpriteProgram = nullptr;
@@ -285,6 +328,16 @@ namespace Dia
             bgfx::setViewRect(kUIViewId,     0, 0, w, h);
             bgfx::setViewRect(kImGuiViewId,  0, 0, w, h);
 
+            if (mCellFieldRenderer != nullptr)
+            {
+                bgfx::setViewRect(kCellFieldViewId, 0, 0, w, h);
+                // Entity -> cell field -> debug -> UI -> ImGui. Re-applied each frame (cheap) so a
+                // bgfx::reset cannot drop it. Only views 4..8 are remapped; Canvas3D's 0-3 keep order.
+                const auto order = BuildCellFieldViewRemap(kEntityViewId, kCellFieldViewId, kDebugViewId, kUIViewId, kImGuiViewId);
+                bgfx::setViewOrder(kCellFieldViewOrderStart, static_cast<uint16_t>(kCellFieldViewOrderCount), order.data());
+                bgfx::touch(kCellFieldViewId);
+            }
+
             bgfx::touch(kEntityViewId);
             bgfx::touch(kDebugViewId);
             bgfx::touch(kUIViewId);
@@ -301,9 +354,14 @@ namespace Dia
                 mSpriteRenderer->SetCamera(cam);
             if (mDebugRenderer)
                 mDebugRenderer->SetCamera(cam);
+            if (mCellFieldRenderer)
+                mCellFieldRenderer->SetCamera(cam);
 
             if (mSpriteRenderer)
                 mSpriteRenderer->Draw(static_cast<const Dia::Graphics::EntityFrameData&>(nextFrame));
+
+            if (mCellFieldRenderer)
+                mCellFieldRenderer->Draw(static_cast<const Dia::Graphics::CellFieldFrameData&>(nextFrame));
 
             if (mDebugRenderer)
                 mDebugRenderer->Draw(static_cast<const Dia::Graphics::DebugFrameData&>(nextFrame));
@@ -367,6 +425,8 @@ namespace Dia
                 mDebugRenderer->OnCanvasSizeChanged(mSize);
             if (mUIOverlayRenderer)
                 mUIOverlayRenderer->OnCanvasSizeChanged(mSize);
+            if (mCellFieldRenderer)
+                mCellFieldRenderer->OnCanvasSizeChanged(mSize);
         }
 
     } // namespace Bgfx

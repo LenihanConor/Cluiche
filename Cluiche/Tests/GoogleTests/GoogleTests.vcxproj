@@ -926,6 +926,7 @@
     <ClCompile Include="DiaBgfx\TestCellFieldGeometryCache.cpp" />
     <ClCompile Include="DiaBgfx\TestCellFieldRenderer.cpp" />
     <ClCompile Include="DiaBgfx\TestCellFieldCamera.cpp" />
+    <ClCompile Include="DiaBgfx\TestCellFieldCanvas.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

@@ -2012,5 +2012,8 @@
     <ClCompile Include="DiaBgfx\TestCellFieldCamera.cpp">
       <Filter>DiaBgfx</Filter>
     </ClCompile>
+    <ClCompile Include="DiaBgfx\TestCellFieldCanvas.cpp">
+      <Filter>DiaBgfx</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

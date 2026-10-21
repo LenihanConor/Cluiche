@@ -5,6 +5,7 @@
 #pragma once
 
 #include <array>
+#include <stddef.h>
 
 namespace Dia
 {
@@ -20,6 +21,33 @@ namespace Dia
                                                                       unsigned short imguiView)
         {
             return { entityView, cellFieldView, debugView, uiView, imguiView };
+        }
+
+        // bgfx::setViewOrder(start, num, remap) remaps only [start, start+num). The 2D views are
+        // contiguous 4..8 (Canvas3D keeps 0-3 untouched); the remap places the cell field between
+        // entity and debug.
+        constexpr unsigned short kCellFieldViewOrderStart = 4;
+        constexpr size_t kCellFieldViewOrderCount = 5;
+
+        inline std::array<unsigned short, kCellFieldViewOrderCount> BuildCellFieldViewRemap(
+            unsigned short entityView, unsigned short cellFieldView, unsigned short debugView,
+            unsigned short uiView, unsigned short imguiView)
+        {
+            return BuildCellFieldViewOrder(entityView, cellFieldView, debugView, uiView, imguiView);
+        }
+
+        // True when `remap` is a permutation of [start, start+count) (what bgfx::setViewOrder requires).
+        inline bool IsViewOrderPermutation(const unsigned short* remap, size_t count, unsigned short start)
+        {
+            bool seen[kCellFieldViewOrderCount] = {};
+            if (count > kCellFieldViewOrderCount) return false;
+            for (size_t i = 0; i < count; ++i)
+            {
+                if (remap[i] < start || remap[i] >= start + count) return false;
+                if (seen[remap[i] - start]) return false;
+                seen[remap[i] - start] = true;
+            }
+            return true;
         }
 
     } // namespace Bgfx
