@@ -15,6 +15,9 @@ def _invoke(args):
 def _patch(monkeypatch, findings, files=None):
     monkeypatch.setattr(schema_cmd, "run_validation",
                         lambda paths, target, code_side: (findings, files if files is not None else []))
+    # keep these skeleton tests independent of any real export under Cluiche/out
+    from dia_cli.commands.validate import schema_codeside
+    monkeypatch.setattr(schema_codeside, "run_code_side", lambda target, code_path: ([], None))
 
 
 def test_registered_under_validate():

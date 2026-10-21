@@ -19,6 +19,7 @@ class Finding:
     suggestion: Optional[str] = None
     path: Optional[str] = None
     record: Optional[str] = None
+    owner: Optional[str] = None  # set on grouped code-side coverage findings
 
 
 # (file, key_count) per checked file.
@@ -32,18 +33,37 @@ def run_validation(paths: Sequence[Path], target: Optional[str],
     return discover_and_validate(paths, target)
 
 
+def _to_json(f: Finding) -> dict:
+    d = asdict(f)
+    if d.get("owner") is None:
+        del d["owner"]  # only code-side coverage findings carry an owner
+    return d
+
+
 def render_text(findings: List[Finding], files: CheckedFiles, verbose: bool) -> None:
     failed = {f.file for f in findings if f.severity == "FAIL"}
     if verbose:
         for name, n_keys in files:
             if name not in failed:
                 click.echo(f"OK   {name} ({n_keys} keys)")
+    from dia_cli.commands.validate.schema_codeside import GROUP_NOUNS
+    groups: dict = {}
     for f in findings:
         if f.severity == "FAIL":
             click.echo(f"FAIL {f.file}")
             click.echo(f"     {f.message}")
+        elif f.owner is not None and f.rule in GROUP_NOUNS:
+            gk = (f.rule, f.owner)
+            if gk not in groups:
+                groups[gk] = []
+            groups[gk].append(f)
         else:
             click.echo(f"WARN {f.message}")
+    for (rule, owner), items in groups.items():
+        click.echo(f"WARN {owner}: {len(items)} {GROUP_NOUNS[rule]}")
+        if verbose:
+            for it in items:
+                click.echo(f"       {it.key}")
     n_fail = sum(1 for f in findings if f.severity == "FAIL")
     n_warn = sum(1 for f in findings if f.severity == "WARN")
     click.echo(f"{len(files)} files checked, {n_fail} FAIL, {n_warn} WARN")
@@ -61,8 +81,17 @@ def schema_command(ctx: click.Context, paths: Tuple[str, ...], target: Optional[
 
     findings, files = run_validation(resolved, target, code_path)
 
+    # Code-side coverage runs with an explicit --code-side, or when no PATHS scope the run.
+    notice: Optional[str] = None
+    if code_path is not None or not resolved:
+        from dia_cli.commands.validate.schema_codeside import run_code_side
+        extra, notice = run_code_side(target, code_path)
+        findings = list(findings) + extra
+
+    if notice:
+        click.echo(notice, err=as_json)
     if as_json:
-        click.echo(json.dumps([asdict(f) for f in findings], indent=2))
+        click.echo(json.dumps([_to_json(f) for f in findings], indent=2))
     else:
         render_text(findings, files, verbose)
     if any(f.severity == "FAIL" for f in findings):
