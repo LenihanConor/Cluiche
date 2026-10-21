@@ -15,11 +15,18 @@
     <ClInclude Include="Testing/ValueInfoBuilder.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="ValueSchemaLoader.h" />
+    <ClInclude Include="CategoricalColours.h" />
+    <ClInclude Include="Testing/SchemaFixtureBuilder.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ValueSchemaVersion.cpp" />
     <ClCompile Include="ValueInfo.cpp" />
     <ClCompile Include="ValueSchemaRegistry.cpp" />
+    <ClCompile Include="ValueSchemaLoader.cpp" />
+    <ClCompile Include="CategoricalColours.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diavalueschema.architecture.module.md">
