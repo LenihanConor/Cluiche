@@ -930,6 +930,9 @@
     <ClCompile Include="DiaGraphics\TestCellFieldRegistryThreading.cpp" />
     <ClCompile Include="DiaGraphics\TestCellFieldRejected.cpp" />
     <ClCompile Include="DiaBgfx\TestCellFieldObservation.cpp" />
+    <ClCompile Include="DiaGraphics\TestCellFieldGapsRegistry.cpp" />
+    <ClCompile Include="DiaGraphics\TestCellFieldGapsGeometry.cpp" />
+    <ClCompile Include="DiaGraphics\TestCellFieldGapsFrameData.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
