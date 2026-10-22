@@ -36,6 +36,8 @@
     </ClInclude>
     <ClInclude Include="RampRegistry.h" />
     <ClInclude Include="RampSetLoader.h" />
+    <ClInclude Include="RampSample.h" />
+    <ClInclude Include="RampResolver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ValueSchemaVersion.cpp" />
@@ -52,6 +54,8 @@
     <ClCompile Include="RampLoader.cpp" />
     <ClCompile Include="RampRegistry.cpp" />
     <ClCompile Include="RampSetLoader.cpp" />
+    <ClCompile Include="RampSample.cpp" />
+    <ClCompile Include="RampResolver.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diavalueschema.architecture.module.md">
