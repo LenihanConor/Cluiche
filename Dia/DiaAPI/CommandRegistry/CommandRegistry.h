@@ -8,6 +8,7 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Json/external/json/json.h>
+#include <DiaAPI/CommandRegistry/ValueParam.h>
 #include <functional>
 
 namespace Dia
@@ -67,6 +68,12 @@ namespace Dia
 			const char* version;                     // Version string (e.g., "1.0.0")
 			const char* example;                     // Usage example (e.g., "compile-asset model.fbx --format=gltf")
 			CommandCallback callback;                // Function to execute
+
+			// Optional parameter description (appended last so positional init still compiles).
+			// Caller-owned array (e.g. static beside the callback); never freed by the registry.
+			const ValueParam* params = nullptr;
+			unsigned int paramCount = 0;
+			bool noArgs = false;                     // true = command deliberately takes no arguments
 		};
 
 		////////////////////////////////////////////////////////////////////////////////
@@ -158,6 +165,15 @@ namespace Dia
 		// const char* assumption as CopyCommandInfo.
 		void ListCommandInfos(Dia::Core::Containers::DynamicArrayC<CommandInfo, 256>& out);
 
+		struct CommandInfoJson;
+		// Value-copies of every registered JSON command (same limits/assumptions as ListCommandInfos).
+		void ListJsonCommandInfos(Dia::Core::Containers::DynamicArrayC<CommandInfoJson, 256>& out);
+
+		// Monotonic counter, incremented on every successful RegisterCommand and
+		// RegisterCommandJson (pending ones included). Not changed by unregistration,
+		// lookups or lists; never reset by Shutdown. Thread-safe. Use to detect new registrations.
+		unsigned int Generation();
+
 		////////////////////////////////////////////////////////////////////////////////
 		// JSON command callback path (AC2-AC3)
 		//
@@ -179,6 +195,10 @@ namespace Dia
 			Dia::Core::StringCRC category;
 			const char* owner = nullptr;
 			CommandCallbackJson callback;
+
+			const ValueParam* params = nullptr;      // caller-owned, see CommandInfo
+			unsigned int paramCount = 0;
+			bool noArgs = false;
 		};
 
 		// Register a JSON-callback command.

@@ -9,6 +9,7 @@
 #include "Help/HelpSystem.h"
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/Core/Assert.h>
+#include <atomic>
 #include <cctype>
 #include <cstring>
 #include <mutex>
@@ -91,6 +92,8 @@ namespace Dia
 			};
 
 			RegistryState gRegistryState;
+
+			std::atomic<unsigned int> gGeneration{ 0 };
 
 			////////////////////////////////////////////////////////////////////////////////
 			// Locking (command-unregister spec, Design > Locking)
@@ -381,6 +384,7 @@ namespace Dia
 
 				CommandInfo* cmdInfo = new CommandInfo();
 				*cmdInfo = info;
+				gGeneration.fetch_add(1, std::memory_order_relaxed);
 
 				if (gRegistryState.isInitialized)
 				{
@@ -611,6 +615,22 @@ namespace Dia
 			}
 		}
 
+		void ListJsonCommandInfos(Dia::Core::Containers::DynamicArrayC<CommandInfoJson, 256>& out)
+		{
+			using namespace Internal;
+
+			ReadLock lock = AcquireReadLock();
+			for (unsigned int i = 0; i < gRegistryState.jsonCommands.Size(); i++)
+			{
+				out.Add(*gRegistryState.jsonCommands[i]);
+			}
+		}
+
+		unsigned int Generation()
+		{
+			return Internal::gGeneration.load(std::memory_order_relaxed);
+		}
+
 		////////////////////////////////////////////////////////////////////////////////
 		// RegisterCommandJson
 		////////////////////////////////////////////////////////////////////////////////
@@ -660,6 +680,7 @@ namespace Dia
 			CommandInfoJson* entry = new CommandInfoJson();
 			*entry = info;
 			gRegistryState.jsonCommands.Add(entry);
+			gGeneration.fetch_add(1, std::memory_order_relaxed);
 			return true;
 		}
 

@@ -510,6 +510,7 @@
     <ClCompile Include="DiaObservation\Log\TestAssertSinkBridge.cpp" />
     <ClCompile Include="DiaObservation\Log\TestAsyncDrain.cpp" />
     <ClCompile Include="DiaObservation\TestJsonEscape.cpp" />
+    <ClCompile Include="DiaObservation\TestMetricInfo.cpp" />
     <ClCompile Include="DiaObservation\Trace\TestTracer.cpp" />
     <ClCompile Include="DiaObservation\Trace\TestTracerRingOverflow.cpp" />
     <ClCompile Include="DiaObservation\Trace\TestTraceFileSink.cpp" />
@@ -955,6 +956,7 @@
     <ClCompile Include="DiaValueSchema\TestRampLegend.cpp" />
     <ClCompile Include="DiaValueSchema\TestRampConformance.cpp" />
     <ClCompile Include="DiaAPI\TestValueParam.cpp" />
+    <ClCompile Include="DiaAPI\TestCommandInfoParams.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

@@ -1053,6 +1053,9 @@
     <ClCompile Include="DiaObservation\TestJsonEscape.cpp">
       <Filter>DiaObservation</Filter>
     </ClCompile>
+    <ClCompile Include="DiaObservation\TestMetricInfo.cpp">
+      <Filter>DiaObservation</Filter>
+    </ClCompile>
     <ClCompile Include="DiaObservation\Trace\TestTracer.cpp">
       <Filter>DiaObservation\Trace</Filter>
     </ClCompile>
@@ -2046,6 +2049,9 @@
       <Filter>DiaBgfx</Filter>
     </ClCompile>
     <ClCompile Include="DiaAPI\TestValueParam.cpp">
+      <Filter>DiaAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAPI\TestCommandInfoParams.cpp">
       <Filter>DiaAPI</Filter>
     </ClCompile>
   </ItemGroup>
