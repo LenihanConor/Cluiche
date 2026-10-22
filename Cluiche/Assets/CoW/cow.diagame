@@ -12,7 +12,8 @@
         "path_aliases": {
             "root": ".",
             "ui_common": "./global/Presentation/UI",
-            "world": "./global/world"
+            "world": "./global/world",
+            "dia_data": "./dia_data"
         }
     },
     "imports": [

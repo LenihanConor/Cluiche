@@ -11,7 +11,8 @@
         "observation": "cluichetest.diaobservation",
         "path_aliases": {
             "root": ".",
-            "ui_common": "./global/Presentation/UI"
+            "ui_common": "./global/Presentation/UI",
+            "dia_data": "./dia_data"
         },
         "ultralight": {
             "resource_path_prefix": "global/Misc/Resources/"

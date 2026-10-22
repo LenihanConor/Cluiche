@@ -333,6 +333,12 @@
             "from": "MainPU"
         },
         {
+            "id": "ValueSchemaService",
+            "kind": "ServiceStream",
+            "payload_type": "ValueSchemaService",
+            "from": "MainPU"
+        },
+        {
             "id": "JobSystemService",
             "kind": "ServiceStream",
             "payload_type": "JobSystem",
@@ -627,6 +633,31 @@
                     ]
                 },
                 {
+                    "instance_id": "ValueSchemaModule",
+                    "type_id": "ValueSchemaModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "ObservationModule",
+                        "DebugServerHostModule"
+                    ],
+                    "config": {
+                        "schema_roots": ["root"],
+                        "ramp_roots": ["dia_data"]
+                    },
+                    "channels": [
+                        {
+                            "id": "ValueSchemaService",
+                            "role": "provides"
+                        },
+                        {
+                            "id": "DebugServerService",
+                            "role": "consumes"
+                        }
+                    ]
+                },
+                {
                     "instance_id": "DebugPanelPageModule",
                     "type_id": "DebugPanelPageModule",
                     "stages": [
@@ -658,9 +689,14 @@
                     ],
                     "dependencies": [
                         "ObservationModule",
-                        "UIModule"
+                        "UIModule",
+                        "ValueSchemaModule"
                     ],
                     "channels": [
+                        {
+                            "id": "ValueSchemaService",
+                            "role": "consumes"
+                        },
                         {
                             "id": "DomainRegistry",
                             "role": "reads"

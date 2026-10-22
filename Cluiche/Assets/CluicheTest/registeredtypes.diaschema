@@ -535,6 +535,11 @@
       "type_id": "AutomationModule"
     },
     {
+      "allowed_pus": "any",
+      "description": "Loads *.schema.json sidecars from the configured schema_roots aliases and publishes the read-only ValueSchemaService.",
+      "type_id": "ValueSchemaModule"
+    },
+    {
       "allowed_pus": "sim",
       "description": "Umbrella SimPU module: assembles the sim-time scheduler, budget, and registry into the per-tick gate loop and publishes SimTimeContext onto the SimTime FrameStream.",
       "type_id": "DiaSimTime"
@@ -543,6 +548,6 @@
   "processing_units": [],
   "version": {
     "major": 1,
-    "minor": 37
+    "minor": 38
   }
 }
