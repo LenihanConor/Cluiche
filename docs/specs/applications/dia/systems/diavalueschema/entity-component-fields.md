@@ -193,4 +193,4 @@ No conflicts.
 
 ## Status
 
-`Approved` (2026-10-20). Plan: [entity-component-fields.plan.md](entity-component-fields.plan.md). AD-001 sign-off given 2026-10-21 for the DiaCore Reflect and DiaEntity edits; the three editor edits still need it.
+`Done` (2026-10-22). Plan: [entity-component-fields.plan.md](entity-component-fields.plan.md). AD-001 sign-offs given 2026-10-21 (DiaCore Reflect, DiaEntity) and 2026-10-22 (editors). The user retargeted the live-inspector edit from CluicheTest `PropertyGrid` (no producer, no type id, no query transport) to `Dia/DiaEntityInspector` `FieldsTab`, which queries `valueschema.get` through a new `entity_inspector.schema_get` forwarding command on the existing game link. Blueprint and Scene Editor needed C++ data-path work beyond the UI row (their readers dropped the new keys). Not yet seen end to end in a running editor: no CluicheTest component has `DIA_ATTR_DESCRIBE` yet, and the inspector's live query path is compile-verified only.

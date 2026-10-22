@@ -311,3 +311,6 @@ Dia/DiaDebugProtocol/proto/generated/
 # DiaConsole personal presets (console-presets.md) -- .dia/console-presets.yaml
 # is the committed, team-shared file; only the .local. variant is gitignored.
 .dia/console-presets.local.yaml
+
+# Vite cache
+.vite/
