@@ -27,3 +27,11 @@ export type { UseResizableDividerResult } from './useResizableDivider';
 
 export { deriveExpectedPath, buildNavigateFailedContext } from './navigateFailedUtils';
 export type { NavigateFailedContext } from './navigateFailedUtils';
+
+export { ValueLabel } from './ValueLabel';
+export type { ValueLabelProps } from './ValueLabel';
+export { ValueTooltip } from './ValueTooltip';
+export type { ValueTooltipProps } from './ValueTooltip';
+export type { ValueInfoLike, ValueInfoBinding, ValueInfoEnumValue, ValueInfoUi, ResolvableKeys } from './valueInfo';
+export { componentFieldToValueInfo, serviceEntryToValueInfo } from './valueInfoAdapter';
+export type { ComponentSchemaField } from './valueInfoAdapter';
