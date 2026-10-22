@@ -62,6 +62,7 @@ public:
     void OnConsoleHistory(bool previous) override;
     void OnPaletteOpen() override;
     void OnPaletteSearch(const char* query, int mask) override;
+    void OnValueSchemaGet(const char* prefix) override;
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
@@ -82,6 +83,16 @@ private:
 
     // IPanelPusher: forwards PanelController results to the page.
     bool Push(const char* jsFunction, const char* json) override { return PushToPage(jsFunction, json); }
+
+    // Runs "valueschema.get" (and any other panel query) on the DebugServer QueryRegistry.
+    // Called only from mPanel.Process() on the Main PU, the same thread that ticks the DebugServer host.
+    struct QueryBridge : public Dia::VisualDebugger::Console::IPanelQueryExecutor
+    {
+        explicit QueryBridge(DebugPanelPageModule& owner) : mOwner(owner) {}
+        bool ExecuteQuery(const char* queryName, const char* argsJson, char* outJson, unsigned capacity) override;
+        DebugPanelPageModule& mOwner;
+    };
+    QueryBridge mQueryBridge{*this};
 
     // The JS callbacks above run from inside a script that Ultralight is executing, so they only record
     // a request in mPanel; mPanel.Process() carries it out from DoUpdate (calling CallJSFunction from a

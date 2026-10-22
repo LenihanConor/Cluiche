@@ -4,6 +4,10 @@
 
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
+#include <DiaApplicationFlow/IApplicationInspectable.h>
+#include <DiaApplicationFlow/Streams/ServiceStreamStore.h>
+#include <DiaDebugServer/DebugServer.h>
+#include "Modules/DebugServerHostModule.h"
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaObservation/Log/DiaLog.h>
@@ -40,7 +44,9 @@ struct DebugPanelPageModule::ConsoleRuntime
 
 DebugPanelPageModule::DebugPanelPageModule(const Dia::Core::StringCRC& instanceId)
     : MainModule(instanceId)
-{}
+{
+    mPanel.SetQueryExecutor(&mQueryBridge);
+}
 
 Dia::ApplicationFlow::StartResult DebugPanelPageModule::DoStart()
 {
@@ -191,6 +197,50 @@ void DebugPanelPageModule::OnPaletteOpen()
 void DebugPanelPageModule::OnPaletteSearch(const char* query, int mask)
 {
     mPanel.RequestPaletteSearch(query, mask);
+}
+
+void DebugPanelPageModule::OnValueSchemaGet(const char* prefix)
+{
+    mPanel.RequestValueSchemaGet(prefix);
+}
+
+bool DebugPanelPageModule::QueryBridge::ExecuteQuery(const char* queryName, const char* argsJson,
+                                                     char* outJson, unsigned capacity)
+{
+    // Resolve per call: the DebugServer is published on a ServiceStream by DebugServerHostModule (Main PU),
+    // and may not exist yet, or may have been replaced across a stage change.
+    auto* app = dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(mOwner.GetApplication());
+    if (app == nullptr)
+        return false;
+    auto* typed = dynamic_cast<Dia::ApplicationFlow::ServiceStreamStore<Dia::DebugServer::DebugServer*>*>(
+        app->FindStream(Dia::Core::StringCRC(DebugServerHostModule::kServiceStreamId)));
+    Dia::DebugServer::DebugServer* server = typed ? typed->Get() : nullptr;
+    if (server == nullptr)
+        return false;
+
+    const Dia::DebugServer::QueryRegistry& registry = server->GetQueryRegistry();
+    const Dia::Core::StringCRC name(queryName);
+    if (!registry.Has(name))
+        return false;
+
+    Json::Value args;
+    Json::Reader reader;
+    if (!reader.parse(argsJson != nullptr ? argsJson : "{}", args))
+        args = Json::Value(Json::objectValue);
+
+    const Json::Value result = registry.Execute(name, args);
+
+    Json::FastWriter writer;
+    writer.omitEndingLineFeed();
+    const std::string text = writer.write(result);
+    if (text.size() + 1 > capacity)
+    {
+        DIA_LOG_WARNING("Debug", "DebugPanelPageModule: query '%s' result (%u bytes) exceeds the %u byte buffer",
+                        queryName, static_cast<unsigned>(text.size()), capacity);
+        return false;
+    }
+    memcpy(outJson, text.c_str(), text.size() + 1);
+    return true;
 }
 
 bool DebugPanelPageModule::PushToPage(const char* jsFunction, const char* json)

@@ -59,6 +59,14 @@ namespace Cluiche { namespace AppFlow {
 //       mask (<= 50, truncated if the buffer fills). action "fill": put actionText
 //       in the console input; "reveal": reveal the domain whose id is actionText.
 //       hl has one '0'/'1' per character of name (1 = matched by the query).
+// Value-schema JS contract (DiaValueSchema Feature 3).
+//   app.onValueSchemaGet(prefix)
+//       prefix: "<for>/" (<= 63 chars), requested once per distinct prefix. The call only records
+//       the request; DoUpdate runs the "valueschema.get" DiaDebugServer query on the Main PU (the
+//       same thread that owns the page) and pushes the answer.
+//   valueSchemaResult(json)   the valueschema.get result {"version":N,"entries":[...]}. When the
+//       query is unavailable or fails, {"version":0,"entries":[]} is delivered instead. The JSON
+//       is spliced into the script as an object literal, so it needs no extra escaping.
 // History and the log ring live in DebugPanelPageModule, so they survive the
 // panel being hidden and shown again. appendLogLines is pushed only while the
 // page is loaded; lines logged while hidden are delivered on the next show.
@@ -86,6 +94,9 @@ public:
         // Palette bindings. mask: 1 = commands, 2 = domains, 3 = both.
         virtual void OnPaletteOpen() = 0;
         virtual void OnPaletteSearch(const char* query, int mask) = 0;
+
+        // Value-schema binding (see contract above). prefix is valid for the call only.
+        virtual void OnValueSchemaGet(const char* prefix) = 0;
     };
 
     explicit DebugPanelPage(ICallbacks* callbacks);
@@ -99,6 +110,7 @@ private:
     void OnConsoleHistory_JS(const Dia::UI::BoundMethodArgs& args);
     void OnPaletteOpen_JS(const Dia::UI::BoundMethodArgs& args);
     void OnPaletteSearch_JS(const Dia::UI::BoundMethodArgs& args);
+    void OnValueSchemaGet_JS(const Dia::UI::BoundMethodArgs& args);
 
     ICallbacks* mCallbacks;
 };

@@ -31,10 +31,22 @@ namespace Dia
 				virtual bool Push(const char* jsFunction, const char* json) = 0;
 			};
 
+			// Runs a named DiaDebugServer-style query. argsJson is a compact JSON object. On success writes the
+			// NUL-terminated JSON result to outJson (capacity bytes) and returns true. Returns false when the
+			// query is unknown, failed, or the result does not fit. Implemented by the host (Main PU, same
+			// thread as PanelController::Process); DiaVisualDebugger never depends on the query provider.
+			class IPanelQueryExecutor
+			{
+			public:
+				virtual ~IPanelQueryExecutor() {}
+				virtual bool ExecuteQuery(const char* queryName, const char* argsJson, char* outJson, unsigned capacity) = 0;
+			};
+
 			class PanelController
 			{
 			public:
 				static const unsigned kMaxHistory = 8;
+				static const unsigned kMaxSchemaPrefixes = 8;
 				static const unsigned kMaxRejected = 4;
 				static const unsigned kMaxTextLength = 63;
 
@@ -50,6 +62,13 @@ namespace Dia
 				void RequestPaletteSearch(const char* query, int mask);
 				void RequestRejectedLine(unsigned seq);
 
+				// valueschema.get bridge (JS app.onValueSchemaGet(prefix) -> JS valueSchemaResult(json)).
+				// Duplicate pending prefixes collapse; requests beyond kMaxSchemaPrefixes are dropped.
+				void RequestValueSchemaGet(const char* prefix);
+
+				// Not owned; null (the default) means schema requests are ignored. Cleared by nothing: the host sets it once.
+				void SetQueryExecutor(IPanelQueryExecutor* executor);
+
 				// Records an accepted console line in the history.
 				void AddToHistory(const char* line);
 
@@ -61,6 +80,7 @@ namespace Dia
 				void Reset();
 
 			private:
+				void ProcessSchemaRequests(IPanelPusher& pusher);
 				void PushPaletteResults(IPanelPusher& pusher, const char* query, int mask);
 
 				bool mCompletePending;
@@ -76,6 +96,10 @@ namespace Dia
 
 				unsigned mRejectedSeq[kMaxRejected];
 				unsigned mRejectedCount;
+
+				char mSchemaPrefixes[kMaxSchemaPrefixes][kMaxTextLength + 1];
+				unsigned mSchemaPrefixCount;
+				IPanelQueryExecutor* mQueryExecutor;
 
 				ConsoleHistory mHistory;
 				PaletteIndex* mPalette;

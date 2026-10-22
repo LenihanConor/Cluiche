@@ -14,6 +14,7 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
 
+#include <cstdio>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -384,6 +385,136 @@ TEST_F(PanelControllerTest, ResetDropsPaletteIndexSoSearchIsIgnoredUntilReopened
 	mPanel.RequestPaletteSearch("ctl", 3);
 	mPanel.Process(mPusher, &mDomains);
 	EXPECT_EQ(mPusher.pushes.size(), 0u);
+}
+
+// --- valueschema.get bridge (DiaValueSchema Feature 3, task 6b) ---------------------------------
+
+namespace
+{
+	class FakeQueryExecutor : public IPanelQueryExecutor
+	{
+	public:
+		bool ExecuteQuery(const char* queryName, const char* argsJson, char* outJson, unsigned capacity) override
+		{
+			names.push_back(queryName);
+			args.push_back(argsJson);
+			if (!succeed)
+				return false;
+			const std::string& s = reply;
+			if (s.size() + 1 > capacity)
+				return false;
+			std::memcpy(outJson, s.c_str(), s.size() + 1);
+			return true;
+		}
+
+		bool succeed = true;
+		std::string reply = "{\"version\":3,\"entries\":[]}";
+		std::vector<std::string> names;
+		std::vector<std::string> args;
+	};
+}
+
+TEST_F(PanelControllerTest, SchemaGetRecordsOnlyAndPushesValueSchemaResultFromProcess)
+{
+	FakeQueryExecutor exec;
+	mPanel.SetQueryExecutor(&exec);
+
+	mPusher.insideCallback = true;
+	mPanel.RequestValueSchemaGet("cow.ecology_params/");
+	mPusher.insideCallback = false;
+	EXPECT_EQ(exec.names.size(), 0u);
+	EXPECT_EQ(mPusher.pushes.size(), 0u);
+
+	mPanel.Process(mPusher, &mDomains);
+	ASSERT_EQ(exec.names.size(), 1u);
+	EXPECT_EQ(exec.names[0], "valueschema.get");
+	Json::Value a;
+	ASSERT_TRUE(Parse(exec.args[0], a));
+	EXPECT_EQ(a["prefix"].asString(), "cow.ecology_params/");
+
+	ASSERT_EQ(mPusher.pushes.size(), 1u);
+	EXPECT_EQ(mPusher.pushes[0].function, "valueSchemaResult");
+	EXPECT_EQ(mPusher.pushes[0].json, exec.reply);
+}
+
+TEST_F(PanelControllerTest, SchemaGetDeliversTrickyJsonVerbatim)
+{
+	FakeQueryExecutor exec;
+	Json::Value entry;
+	entry["label"] = "say \"hi\" \\ back\nslash 100% %s %d";
+	Json::Value root;
+	root["version"] = 9;
+	root["entries"].append(entry);
+	Json::FastWriter w;
+	w.omitEndingLineFeed();
+	exec.reply = w.write(root);
+	mPanel.SetQueryExecutor(&exec);
+
+	mPanel.RequestValueSchemaGet("x/");
+	mPanel.Process(mPusher, &mDomains);
+
+	ASSERT_EQ(mPusher.pushes.size(), 1u);
+	EXPECT_EQ(mPusher.pushes[0].json.find('\n'), std::string::npos);	// raw newline would break the script call
+	Json::Value back;
+	ASSERT_TRUE(Parse(mPusher.pushes[0].json, back));
+	EXPECT_EQ(back["entries"][0]["label"].asString(), entry["label"].asString());
+}
+
+TEST_F(PanelControllerTest, SchemaGetFailedQueryDeliversEmptyResult)
+{
+	FakeQueryExecutor exec;
+	exec.succeed = false;
+	mPanel.SetQueryExecutor(&exec);
+
+	mPanel.RequestValueSchemaGet("nope/");
+	mPanel.Process(mPusher, &mDomains);
+
+	ASSERT_EQ(mPusher.pushes.size(), 1u);
+	EXPECT_EQ(mPusher.pushes[0].function, "valueSchemaResult");
+	Json::Value v;
+	ASSERT_TRUE(Parse(mPusher.pushes[0].json, v));
+	EXPECT_EQ(v["version"].asInt(), 0);
+	ASSERT_TRUE(v["entries"].isArray());
+	EXPECT_EQ(v["entries"].size(), 0u);
+}
+
+TEST_F(PanelControllerTest, SchemaGetWithoutExecutorIsIgnored)
+{
+	mPanel.RequestValueSchemaGet("a/");
+	mPanel.RequestValueSchemaGet("b/");
+	mPanel.Process(mPusher, &mDomains);
+	EXPECT_EQ(mPusher.pushes.size(), 0u);
+}
+
+TEST_F(PanelControllerTest, SchemaGetDuplicatePrefixesCollapseAndQueueIsBounded)
+{
+	FakeQueryExecutor exec;
+	mPanel.SetQueryExecutor(&exec);
+
+	mPanel.RequestValueSchemaGet("a/");
+	mPanel.RequestValueSchemaGet("a/");
+	mPanel.Process(mPusher, &mDomains);
+	EXPECT_EQ(exec.names.size(), 1u);
+
+	exec.names.clear();
+	for (int i = 0; i < 40; ++i)
+	{
+		char p[16];
+		std::snprintf(p, sizeof(p), "p%d/", i);
+		mPanel.RequestValueSchemaGet(p);
+	}
+	mPanel.Process(mPusher, &mDomains);
+	EXPECT_EQ(exec.names.size(), static_cast<size_t>(PanelController::kMaxSchemaPrefixes));
+}
+
+TEST_F(PanelControllerTest, ResetClearsPendingSchemaRequests)
+{
+	FakeQueryExecutor exec;
+	mPanel.SetQueryExecutor(&exec);
+	mPanel.RequestValueSchemaGet("a/");
+	mPanel.Reset();
+	mPanel.Process(mPusher, &mDomains);
+	EXPECT_EQ(exec.names.size(), 0u);
 }
 
 #endif // DIA_DEBUG

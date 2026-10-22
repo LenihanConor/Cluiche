@@ -12,7 +12,10 @@
 #include <DiaVisualDebugger/Console/ConsoleJson.h>
 #include <DiaObservation/Log/DiaLog.h>
 
+#include <DiaCore/Json/external/json/json.h>
+
 #include <cstring>
+#include <string>
 
 namespace Dia
 {
@@ -37,8 +40,11 @@ namespace Dia
 				, mPaletteSearchPending(false)
 				, mPaletteMask(PaletteIndex::kTypeCommands | PaletteIndex::kTypeDomains)
 				, mRejectedCount(0)
+				, mSchemaPrefixCount(0)
+				, mQueryExecutor(nullptr)
 				, mPalette(nullptr)
 			{
+				std::memset(mSchemaPrefixes, 0, sizeof(mSchemaPrefixes));
 				mCompleteToken[0] = '\0';
 				mPaletteQuery[0] = '\0';
 				std::memset(mHistoryQueue, 0, sizeof(mHistoryQueue));
@@ -80,6 +86,24 @@ namespace Dia
 			{
 				if (mRejectedCount < kMaxRejected)
 					mRejectedSeq[mRejectedCount++] = seq;
+			}
+
+			void PanelController::RequestValueSchemaGet(const char* prefix)
+			{
+				char text[kMaxTextLength + 1];
+				CopyText(text, sizeof(text), prefix);
+				for (unsigned i = 0; i < mSchemaPrefixCount; ++i)
+				{
+					if (std::strcmp(mSchemaPrefixes[i], text) == 0)
+						return;
+				}
+				if (mSchemaPrefixCount < kMaxSchemaPrefixes)
+					CopyText(mSchemaPrefixes[mSchemaPrefixCount++], sizeof(mSchemaPrefixes[0]), text);
+			}
+
+			void PanelController::SetQueryExecutor(IPanelQueryExecutor* executor)
+			{
+				mQueryExecutor = executor;
 			}
 
 			void PanelController::AddToHistory(const char* line)
@@ -145,6 +169,43 @@ namespace Dia
 					if (mPalette != nullptr)	// never opened: nothing to search
 						PushPaletteResults(pusher, mPaletteQuery, mPaletteMask);
 				}
+
+				ProcessSchemaRequests(pusher);
+			}
+
+			void PanelController::ProcessSchemaRequests(IPanelPusher& pusher)
+			{
+				if (mSchemaPrefixCount == 0)
+					return;
+
+				const unsigned count = mSchemaPrefixCount;
+				mSchemaPrefixCount = 0;
+
+				if (mQueryExecutor == nullptr)
+				{
+					DIA_LOG_DEBUG("Debug", "PanelController: %u valueschema.get request(s) ignored; no query executor wired", count);
+					return;
+				}
+
+				// Static buffer, Main PU only (same as the palette buffer). A full snapshot is well under this.
+				static char result[64 * 1024];
+				static const char* const kEmptyResult = "{\"version\":0,\"entries\":[]}";
+
+				for (unsigned i = 0; i < count; ++i)
+				{
+					Json::Value args(Json::objectValue);
+					args["prefix"] = mSchemaPrefixes[i];
+					Json::FastWriter writer;
+					writer.omitEndingLineFeed();
+					const std::string argsJson = writer.write(args);
+
+					result[0] = '\0';
+					const bool ok = mQueryExecutor->ExecuteQuery("valueschema.get", argsJson.c_str(), result, sizeof(result))
+									&& result[0] != '\0';
+					if (!ok)
+						DIA_LOG_DEBUG("Debug", "PanelController: valueschema.get('%s') unavailable; delivering empty result", mSchemaPrefixes[i]);
+					pusher.Push("valueSchemaResult", ok ? result : kEmptyResult);
+				}
 			}
 
 			void PanelController::Reset()
@@ -157,6 +218,7 @@ namespace Dia
 				mPaletteQuery[0] = '\0';
 				mPaletteMask = PaletteIndex::kTypeCommands | PaletteIndex::kTypeDomains;
 				mRejectedCount = 0;
+				mSchemaPrefixCount = 0;
 				delete mPalette;
 				mPalette = nullptr;
 			}

@@ -32,6 +32,9 @@ void DebugPanelPage::InitializePage()
         Dia::UI::BoundMethod::MethodPtr(this, &DebugPanelPage::OnPaletteOpen_JS)));
     BindMethod(Dia::UI::BoundMethod::CreateBoundMethod("onPaletteSearch",
         Dia::UI::BoundMethod::MethodPtr(this, &DebugPanelPage::OnPaletteSearch_JS)));
+
+    BindMethod(Dia::UI::BoundMethod::CreateBoundMethod("onValueSchemaGet",
+        Dia::UI::BoundMethod::MethodPtr(this, &DebugPanelPage::OnValueSchemaGet_JS)));
 }
 
 void DebugPanelPage::OnCommand_JS(const Dia::UI::BoundMethodArgs& args)
@@ -157,6 +160,21 @@ void DebugPanelPage::OnPaletteSearch_JS(const Dia::UI::BoundMethodArgs& args)
     }
 
     mCallbacks->OnPaletteSearch(args.At(0).GetString().AsCStr(), mask);
+}
+
+void DebugPanelPage::OnValueSchemaGet_JS(const Dia::UI::BoundMethodArgs& args)
+{
+    if (mCallbacks == nullptr)
+        return;
+
+    if (args.Size() < 1 || !args.At(0).IsString())
+    {
+        DIA_LOG_WARNING("Debug", "DebugPanelPage: onValueSchemaGet needs (prefix) string; got %u args",
+                        args.Size());
+        return;
+    }
+
+    mCallbacks->OnValueSchemaGet(args.At(0).GetString().AsCStr());
 }
 
 } } // namespace Cluiche::AppFlow
