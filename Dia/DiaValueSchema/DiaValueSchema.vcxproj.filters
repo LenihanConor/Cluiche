@@ -39,6 +39,10 @@
     <ClInclude Include="RampSample.h" />
     <ClInclude Include="RampResolver.h" />
     <ClInclude Include="RampLegend.h" />
+    <ClInclude Include="CodeSideCollector.h" />
+    <ClInclude Include="Testing\FakeCodeSideSource.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ValueSchemaVersion.cpp" />
@@ -58,6 +62,7 @@
     <ClCompile Include="RampSample.cpp" />
     <ClCompile Include="RampResolver.cpp" />
     <ClCompile Include="RampLegend.cpp" />
+    <ClCompile Include="CodeSideCollector.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diavalueschema.architecture.module.md">

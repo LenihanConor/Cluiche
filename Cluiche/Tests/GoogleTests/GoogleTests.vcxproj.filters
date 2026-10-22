@@ -2054,5 +2054,8 @@
     <ClCompile Include="DiaAPI\TestCommandInfoParams.cpp">
       <Filter>DiaAPI</Filter>
     </ClCompile>
+    <ClCompile Include="DiaAPI\TestHelpSystemArguments.cpp">
+      <Filter>DiaAPI</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
