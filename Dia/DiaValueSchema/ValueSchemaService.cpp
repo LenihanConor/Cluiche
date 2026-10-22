@@ -16,4 +16,5 @@ namespace Dia::ValueSchema
 	unsigned int ValueSchemaService::Version() const										{ return mRegistry.Version(); }
 	const RampData* ValueSchemaService::FindRamp(StringCRC rampId) const				{ return mRamps ? mRamps->Find(rampId) : nullptr; }
 	unsigned int ValueSchemaService::RampCount() const									{ return mRamps ? mRamps->Count() : 0u; }
+	const RampData* ValueSchemaService::RampAt(unsigned int index) const				{ return mRamps ? mRamps->At(index) : nullptr; }
 }

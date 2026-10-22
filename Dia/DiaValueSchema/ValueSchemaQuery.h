@@ -2,11 +2,15 @@
 
 // ValueSchemaQueryHandler: the `valueschema.get {prefix?}` DiaDebugServer query (DiaValueSchema Feature 3, AC 8).
 //
-// Returns { "version": N, "entries": [ ... ] }. `entries` are the published entries whose FULL key ("<for>/<key>")
+// Returns { "version": N, "entries": [ ... ], "ramps": [ ... ] }. `entries` are the published entries whose FULL key ("<for>/<key>")
 // starts with `prefix` (all when `prefix` is omitted or empty), in registration order; `version` is
 // ValueSchemaService::Version() (changes whenever a new snapshot is published). Entry JSON uses the sidecar field
 // names (for, key, kind, label, description, hint, unit, type, min, max, default, affects, related, source, values,
 // unique, required, ref, keyRef, valueType, ui, history, payload, vocabulary); absent optional fields are omitted.
+//
+// `ramps` (Feature 5, AC 12) is ALWAYS the full ramp set in registration order, regardless of `prefix` (ramps are
+// global and small). Shape = the dia.ramps file format: { id, kind:"continuous", stops:[{t, colour}] } or
+// { id, kind:"categorical", colours:[...] }; colours are lower-case "#rrggbb". Empty array when there are no ramps.
 //
 // The handler reads the service snapshot and holds no state of its own beyond two Counter pointers. It is a plain
 // class so it is testable without a DebugServer; ValueSchemaModule registers it with the DebugServer QueryRegistry.
@@ -25,6 +29,9 @@ namespace Dia::ValueSchema
 {
 	// One entry in sidecar field names. Public so the Feature 6 export can reuse it.
 	Json::Value ValueInfoToJson(const ValueInfo& info);
+
+	// One ramp in dia.ramps file format.
+	Json::Value RampToJson(const RampData& ramp);
 
 	class ValueSchemaQueryHandler
 	{

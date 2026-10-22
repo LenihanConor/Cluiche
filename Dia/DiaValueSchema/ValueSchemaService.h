@@ -32,6 +32,7 @@ namespace Dia::ValueSchema
 
 		const RampData*		FindRamp(Dia::Core::StringCRC rampId) const;	// null for unknown ids
 		unsigned int		RampCount() const;
+	const RampData*		RampAt(unsigned int index) const;	// registration order; null when out of range or no ramps
 
 	private:
 		const ValueSchemaRegistry&	mRegistry;

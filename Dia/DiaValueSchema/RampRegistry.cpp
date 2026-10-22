@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace Dia::ValueSchema
 {
@@ -19,6 +20,7 @@ namespace Dia::ValueSchema
 			std::string					mFile;
 		};
 		std::unordered_map<unsigned int, Entry>	mById;
+		std::vector<unsigned int>				mOrder;		// ids in registration order
 		bool									mPublished = false;
 	};
 
@@ -71,6 +73,7 @@ namespace Dia::ValueSchema
 		entry.mIsDia = isDia;
 		entry.mFile = file;
 		mImpl->mById.emplace(ramp.mId.Value(), std::move(entry));
+		mImpl->mOrder.push_back(ramp.mId.Value());
 		return RampRegisterResult::Ok;
 	}
 
@@ -84,4 +87,11 @@ namespace Dia::ValueSchema
 	}
 
 	unsigned int RampRegistry::Count() const { return static_cast<unsigned int>(mImpl->mById.size()); }
+
+	const RampData* RampRegistry::At(unsigned int index) const
+	{
+		if (index >= mImpl->mOrder.size()) { return nullptr; }
+		auto it = mImpl->mById.find(mImpl->mOrder[index]);
+		return it == mImpl->mById.end() ? nullptr : it->second.mData.get();
+	}
 }

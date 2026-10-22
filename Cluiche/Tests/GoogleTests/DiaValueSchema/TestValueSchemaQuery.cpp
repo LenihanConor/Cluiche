@@ -7,6 +7,7 @@
 #include <DiaValueSchema/Testing/SchemaFixtureBuilder.h>
 #include <DiaValueSchema/Testing/ValueInfoBuilder.h>
 #include <DiaValueSchema/Testing/FakeCodeSideSource.h>
+#include "RampTestSupport.h"
 #include <DiaDebugServer/QueryRegistry.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/Module.h>
@@ -330,4 +331,106 @@ TEST(ValueSchemaQueryModule, VersionChangesAfterRestartAndQueryFollowsLifecycle)
 	}
 	EXPECT_FALSE(queries.Has(StringCRC("valueschema.get")));	// shutdown unregisters
 	g_queryRegistry = nullptr;
+}
+
+// Feature 5 task 7 (AC 12): valueschema.get also returns the ramps. Ramps are global and small, so the array is
+// ALWAYS the full set, regardless of the entry prefix.
+namespace
+{
+	Json::Value ShippedRampsArray()
+	{
+		std::string text;
+		VsTest::ReadFileBytes(VsTest::FindUpwards(__FILE__, "Dia/DiaValueSchema/Data/ramps.json"), text);
+		Json::Value doc;
+		Json::Reader reader;
+		EXPECT_TRUE(reader.parse(text, doc));
+		return doc["ramps"];
+	}
+
+	const Json::Value* FindById(const Json::Value& arr, const std::string& id)
+	{
+		for (Json::ArrayIndex i = 0; i < arr.size(); ++i) { if (arr[i]["id"].asString() == id) { return &arr[i]; } }
+		return nullptr;
+	}
+}
+
+TEST(DiaValueSchemaQueryRamps, ResultHasRampsArrayMatchingShippedFile)
+{
+	VsTest::RampFixture fx(true);
+	ValueSchemaQueryHandler handler(fx.Svc());
+	const Json::Value r = handler.Handle(Json::Value(Json::objectValue));
+	ASSERT_TRUE(r["ramps"].isArray());
+	const Json::Value file = ShippedRampsArray();
+	ASSERT_EQ(file.size(), 8u);
+	ASSERT_EQ(r["ramps"].size(), 8u);
+	for (Json::ArrayIndex i = 0; i < file.size(); ++i)
+	{
+		const Json::Value* got = FindById(r["ramps"], file[i]["id"].asString());
+		ASSERT_NE(got, nullptr) << file[i]["id"].asString();
+		EXPECT_EQ((*got)["kind"].asString(), file[i]["kind"].asString());
+		if (file[i]["kind"].asString() == "continuous")
+		{
+			ASSERT_TRUE((*got)["stops"].isArray());
+			ASSERT_EQ((*got)["stops"].size(), file[i]["stops"].size());
+			for (Json::ArrayIndex s = 0; s < file[i]["stops"].size(); ++s)
+			{
+				EXPECT_NEAR((*got)["stops"][s]["t"].asDouble(), file[i]["stops"][s]["t"].asDouble(), 1e-6);
+				EXPECT_EQ((*got)["stops"][s]["colour"].asString(), file[i]["stops"][s]["colour"].asString());
+			}
+		}
+		else
+		{
+			ASSERT_TRUE((*got)["colours"].isArray());
+			ASSERT_EQ((*got)["colours"].size(), file[i]["colours"].size());
+			for (Json::ArrayIndex c = 0; c < file[i]["colours"].size(); ++c)
+			{
+				EXPECT_EQ((*got)["colours"][c].asString(), file[i]["colours"][c].asString());
+			}
+		}
+	}
+}
+
+TEST(DiaValueSchemaQueryRamps, CategoricalRampPresentWithColours)
+{
+	VsTest::RampFixture fx(true);
+	ValueSchemaQueryHandler handler(fx.Svc());
+	const Json::Value r = handler.Handle(Json::Value(Json::objectValue));
+	bool sawCategorical = false;
+	for (Json::ArrayIndex i = 0; i < r["ramps"].size(); ++i)
+	{
+		if (r["ramps"][i]["kind"].asString() == "categorical") { sawCategorical = true; EXPECT_GT(r["ramps"][i]["colours"].size(), 0u); }
+	}
+	EXPECT_TRUE(sawCategorical);
+}
+
+TEST(DiaValueSchemaQueryRamps, NoRampsGivesEmptyArray)
+{
+	VsTest::RampFixture fx(false);
+	ValueSchemaQueryHandler handler(fx.Svc());
+	const Json::Value r = handler.Handle(Json::Value(Json::objectValue));
+	ASSERT_TRUE(r["ramps"].isArray());
+	EXPECT_EQ(r["ramps"].size(), 0u);
+}
+
+TEST(DiaValueSchemaQueryRamps, ServiceWithoutRampRegistryGivesEmptyArray)
+{
+	ValueSchemaRegistry schema;
+	schema.Publish();
+	ValueSchemaService service(schema);
+	ValueSchemaQueryHandler handler(service);
+	const Json::Value r = handler.Handle(Json::Value(Json::objectValue));
+	ASSERT_TRUE(r["ramps"].isArray());
+	EXPECT_EQ(r["ramps"].size(), 0u);
+}
+
+TEST(DiaValueSchemaQueryRamps, RampsAreFullSetRegardlessOfPrefix)
+{
+	VsTest::RampFixture fx(true);
+	ValueSchemaQueryHandler handler(fx.Svc());
+	Json::Value args(Json::objectValue);
+	args["prefix"] = "nope/";
+	const Json::Value r = handler.Handle(args);
+	EXPECT_EQ(r["entries"].size(), 0u);
+	EXPECT_EQ(r["ramps"].size(), 8u);
+	EXPECT_EQ(r["version"].asUInt(), fx.Svc().Version());
 }

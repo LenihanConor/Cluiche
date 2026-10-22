@@ -8,6 +8,7 @@
 
 #include <string>
 #include <string.h>
+#include <stdio.h>
 
 namespace Dia::ValueSchema
 {
@@ -42,6 +43,13 @@ namespace Dia::ValueSchema
 			case ValueType::Map:		return "map";
 			}
 			return "float";
+		}
+
+		std::string HexColour(uint32_t rgba8)
+		{
+			char buf[16];
+			snprintf(buf, sizeof(buf), "#%02x%02x%02x", (rgba8 >> 24) & 0xFF, (rgba8 >> 16) & 0xFF, (rgba8 >> 8) & 0xFF);
+			return buf;
 		}
 
 		void SetIfNotEmpty(Json::Value& obj, const char* name, const char* text)
@@ -146,6 +154,33 @@ namespace Dia::ValueSchema
 		return e;
 	}
 
+	Json::Value RampToJson(const RampData& ramp)
+	{
+		Json::Value r(Json::objectValue);
+		r["id"] = ramp.mName.AsCStr();
+		if (ramp.mKind == RampKind::Continuous)
+		{
+			r["kind"] = "continuous";
+			Json::Value stops(Json::arrayValue);
+			for (unsigned i = 0; i < ramp.mStopCount; ++i)
+			{
+				Json::Value s(Json::objectValue);
+				s["t"] = ramp.mStops[i].mT;
+				s["colour"] = HexColour(ramp.mStops[i].mRgba8);
+				stops.append(s);
+			}
+			r["stops"] = stops;
+		}
+		else
+		{
+			r["kind"] = "categorical";
+			Json::Value colours(Json::arrayValue);
+			for (unsigned i = 0; i < ramp.mColourCount; ++i) { colours.append(HexColour(ramp.mColours[i])); }
+			r["colours"] = colours;
+		}
+		return r;
+	}
+
 	ValueSchemaQueryHandler::ValueSchemaQueryHandler(const ValueSchemaService& service)
 		: mService(service)
 	{
@@ -176,7 +211,17 @@ namespace Dia::ValueSchema
 		if (entries.empty() && mQueryUnresolved) { mQueryUnresolved->Inc(); }
 		DIA_LOG_DEBUG("VSC", "valueschema.get prefix='%s' matched %u entries (version %u)", prefix.c_str(), static_cast<unsigned int>(entries.size()), mService.Version());
 
+		// Ramps are global and small: always the full set, never filtered by prefix.
+		Json::Value ramps(Json::arrayValue);
+		const unsigned int rampCount = mService.RampCount();
+		for (unsigned int i = 0; i < rampCount; ++i)
+		{
+			const RampData* ramp = mService.RampAt(i);
+			if (ramp != nullptr) { ramps.append(RampToJson(*ramp)); }
+		}
+
 		Json::Value result(Json::objectValue);
+		result["ramps"] = ramps;
 		result["version"] = mService.Version();
 		result["entries"] = entries;
 		return result;
