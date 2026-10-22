@@ -28,6 +28,7 @@ def cands(root, files):
 def run(tmp_path, monkeypatch, files):
     monkeypatch.setattr(precommit_cmd, "find_repo_root", lambda _f: tmp_path)
     monkeypatch.setattr(precommit_cmd, "_get_modified_files", lambda _r: files)
+    monkeypatch.setattr(precommit_cmd, "_check_value_reference", lambda _r, _f: [])  # covered by test_docs_value_reference
     return CliRunner().invoke(precommit_cmd.precommit, [])
 
 

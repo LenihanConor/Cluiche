@@ -10,6 +10,7 @@ from .backlog_cmd import backlog
 from .spec_scaffold_cmd import spec_scaffold
 from .test_scaffold_cmd import test_scaffold
 from .precommit_cmd import precommit
+from .value_reference import value_reference
 
 
 @click.group("docs")
@@ -26,3 +27,4 @@ docs_group.add_command(backlog)
 docs_group.add_command(spec_scaffold, "spec-scaffold")
 docs_group.add_command(test_scaffold, "test-scaffold")
 docs_group.add_command(precommit)
+docs_group.add_command(value_reference, "value-reference")
