@@ -20,7 +20,15 @@
 // failing degrades health; a single skipped ramp does not. FindRamp is served by ValueSchemaService.
 //
 // Start (DoStart): trace zone "ValueSchema.Load" -> discover + load sorted files -> call every
-// contributor (IValueSchemaContributor) -> Publish -> register the service on the stream.
+// contributor (IValueSchemaContributor) -> CodeSideCollector pass (metrics + commands, profile scope
+// "ValueSchema.CollectCodeSide") -> Publish -> register the service on the stream.
+// Config "code_side": false (default true) skips the code-side pass. The source is injectable
+// (SetCodeSideSource) for tests; default is a module-owned LiveCodeSideSource.
+//
+// Late registrations (AC 6): metrics/commands registered after Publish are NOT in the (immutable) service.
+// LateRegistrationCount() compares the source generations with those recorded at collection;
+// CheckLateRegistrations() logs ONE Warning per changed count. It is the hook that valueschema.get
+// answering and describe-mode dumps (Features 3 and 6) are to call; nothing calls it automatically.
 //
 // Lifetime: the module owns the registry and the service. DoStop deregisters the stream (consumers'
 // IsAvailable() turns false) but keeps both objects alive; they are replaced on the next DoStart and
@@ -28,6 +36,7 @@
 //
 // Observation: metrics valueschema.entries_loaded / valueschema.files_failed (gauges) and
 // valueschema.ramps_loaded / valueschema.ramp_files_failed (gauges),
+// valueschema.metrics_described / metrics_undescribed / commands_described / args_described (gauges, code-side),
 // valueschema.clamp.count (counter, bound to GetClamper()); health reporter "dia.valueschema".
 
 #include <DiaApplicationFlow/Module.h>
@@ -44,6 +53,7 @@
 #include <DiaValueSchema/ValueSchemaHealth.h>
 #include <DiaValueSchema/RampRegistry.h>
 #include <DiaValueSchema/RampSetLoader.h>
+#include <DiaValueSchema/CodeSideCollector.h>
 
 namespace Dia::Observation::Metric { class Counter; class Gauge; }
 
@@ -74,6 +84,15 @@ namespace Dia::ValueSchema
 		const ValueSchemaHealth&	GetHealthReporter() const { return mHealth; }
 		const RampLoadStats&		GetRampLoadStats() const { return mRampStats; }
 
+		// Code-side collection (Feature 4). Set before start; null restores the live source. Not owned.
+		void					SetCodeSideSource(ICodeSideSource* source)	{ mCodeSideSource = source; }
+		const CodeSideReport&	GetCodeSideReport() const					{ return mCodeSideReport; }
+		// Metrics + commands registered since the last collection (0 when code_side is off or never collected).
+		unsigned int			LateRegistrationCount();
+		// Logs one Warning when LateRegistrationCount() > 0 and differs from the last warned count.
+		void					CheckLateRegistrations();
+		unsigned int			LateWarningCount() const					{ return mLateWarningCount; }
+
 		unsigned int	GetSchemaRootCount() const						{ return mRootAliases.Size(); }
 		const char*		GetSchemaRoot(unsigned int index) const			{ return mRootAliases[index].AsCStr(); }
 		unsigned int	GetRampRootCount() const						{ return mRampRootAliases.Size(); }
@@ -95,6 +114,13 @@ namespace Dia::ValueSchema
 		Dia::Core::UniquePtr<RampRegistry>			mRamps;
 		Dia::Core::UniquePtr<ValueSchemaService>	mService;	// references *mRegistry and *mRamps
 		ValueClamper								mClamper;
+		LiveCodeSideSource							mLiveSource;
+		ICodeSideSource*							mCodeSideSource = nullptr;	// null = mLiveSource
+		CodeSideReport								mCodeSideReport;
+		bool										mCodeSideEnabled = true;
+		bool										mCodeSideCollected = false;
+		unsigned int								mLastWarnedLate = 0;
+		unsigned int								mLateWarningCount = 0;
 		SchemaLoadStats								mStats;
 		RampLoadStats								mRampStats;
 		ValueSchemaHealth							mHealth{ mStats, &mRampStats };
@@ -105,6 +131,10 @@ namespace Dia::ValueSchema
 		Dia::Observation::Metric::Gauge*	mMetricFilesFailed = nullptr;
 		Dia::Observation::Metric::Gauge*	mMetricRampsLoaded = nullptr;
 		Dia::Observation::Metric::Gauge*	mMetricRampFilesFailed = nullptr;
+		Dia::Observation::Metric::Gauge*	mMetricMetricsDescribed = nullptr;
+		Dia::Observation::Metric::Gauge*	mMetricMetricsUndescribed = nullptr;
+		Dia::Observation::Metric::Gauge*	mMetricCommandsDescribed = nullptr;
+		Dia::Observation::Metric::Gauge*	mMetricArgsDescribed = nullptr;
 		Dia::Observation::Metric::Counter*	mMetricClampCount = nullptr;
 	};
 }

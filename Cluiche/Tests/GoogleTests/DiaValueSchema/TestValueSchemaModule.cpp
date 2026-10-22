@@ -15,6 +15,7 @@
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaObservation/Metric/Counter.h>
 #include <DiaObservation/Metric/Gauge.h>
+#include <DiaValueSchema/Testing/FakeCodeSideSource.h>
 #include <memory>
 #include <string>
 
@@ -72,9 +73,13 @@ namespace
 	VSC_ConsumerModule*		g_consumer = nullptr;
 	IValueSchemaContributor* g_pendingContributor = nullptr;
 
+	// Empty code-side source: these tests assert exact sidecar Count(), so keep live registries out of them.
+	Dia::ValueSchema::Testing::FakeCodeSideSource g_emptyCodeSide;
+
 	Module* CreateVsc(const StringCRC& id)
 	{
 		auto* m = new ValueSchemaModule(id);
+		m->SetCodeSideSource(&g_emptyCodeSide);
 		if (g_pendingContributor) { m->AddContributor(g_pendingContributor); }
 		g_module = m;
 		return m;

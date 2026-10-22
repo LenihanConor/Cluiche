@@ -5,6 +5,7 @@
 #include <DiaCore/FilePath/PathStore.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Profile/DiaProfile.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaObservation/Metric/Counter.h>
 #include <DiaObservation/Metric/Gauge.h>
@@ -28,6 +29,23 @@ namespace Dia::ValueSchema
 		if (contributor == nullptr || mContributors.IsFull()) { return false; }
 		mContributors.Add(contributor);
 		return true;
+	}
+
+	unsigned int ValueSchemaModule::LateRegistrationCount()
+	{
+		if (!mCodeSideEnabled || !mCodeSideCollected) { return 0; }
+		ICodeSideSource& source = mCodeSideSource ? *mCodeSideSource : static_cast<ICodeSideSource&>(mLiveSource);
+		return (source.MetricGeneration() - mCodeSideReport.mMetricGeneration)
+			+ (source.CommandGeneration() - mCodeSideReport.mCommandGeneration);
+	}
+
+	void ValueSchemaModule::CheckLateRegistrations()
+	{
+		const unsigned int late = LateRegistrationCount();
+		if (late == 0 || late == mLastWarnedLate) { return; }
+		mLastWarnedLate = late;
+		++mLateWarningCount;
+		DIA_LOG_WARNING("VSC", "%u metrics/commands were registered after the schema was published and are not in the live schema", late);
 	}
 
 	// --- Config ---------------------------------------------------------------
@@ -69,6 +87,7 @@ namespace Dia::ValueSchema
 	{
 		mRootAliases.RemoveAll();
 		mRampRootAliases.RemoveAll();
+		mCodeSideEnabled = true;
 		if (!configJson || configJson[0] == '\0') { return; }
 
 		Json::Value root;
@@ -80,6 +99,7 @@ namespace Dia::ValueSchema
 		}
 		ReadAliases(root, "schema_roots", true, mRootAliases);
 		ReadAliases(root, "ramp_roots", false, mRampRootAliases);
+		if (root["code_side"].isBool()) { mCodeSideEnabled = root["code_side"].asBool(); }
 	}
 
 	void ValueSchemaModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
@@ -136,6 +156,18 @@ namespace Dia::ValueSchema
 				mContributors[i]->ContributeEntries(*mRegistry);
 			}
 
+			mCodeSideReport = CodeSideReport();
+			mCodeSideCollected = false;
+			mLastWarnedLate = 0;
+			if (mCodeSideEnabled)
+			{
+				DIA_PROFILE_SCOPE("ValueSchema.CollectCodeSide", Dia::Observation::Profile::Category::kDiaAssetRuntime);
+				ICodeSideSource& source = mCodeSideSource ? *mCodeSideSource : static_cast<ICodeSideSource&>(mLiveSource);
+				CodeSideCollector collector;
+				mCodeSideReport = collector.Collect(source, *mRegistry);
+				mCodeSideCollected = true;
+			}
+
 			mRegistry->Publish();
 			mRamps->Publish();
 			mService = Dia::Core::MakeUnique<ValueSchemaService>(*mRegistry, mRamps.Get());
@@ -143,6 +175,13 @@ namespace Dia::ValueSchema
 
 		DIA_LOG_INFO("VSC", "Value schema loaded: %u files (%u failed), %u entries from files, %u total, %u roots missing",
 			mStats.mFilesLoaded, mStats.mFilesFailed, mStats.mEntriesLoaded, mRegistry->Count(), mStats.mRootsMissing);
+
+		if (mCodeSideCollected)
+		{
+			DIA_LOG_INFO("VSC", "code-side: %u metrics (%u described, %u undescribed), %u commands, %u args (%u described)",
+				mCodeSideReport.mMetricsCollected, mCodeSideReport.mMetricsDescribed, mCodeSideReport.mMetricsUndescribed,
+				mCodeSideReport.mCommandsCollected, mCodeSideReport.mArgsCollected, mCodeSideReport.mArgsDescribed);
+		}
 
 		DIA_LOG_INFO("VSC", "Ramps loaded: %u files (%u failed), %u ramps, %u rejected",
 			mRampStats.mFilesLoaded, mRampStats.mFilesFailed, mRampStats.mRampsLoaded, mRampStats.mRampsRejected);
@@ -154,6 +193,14 @@ namespace Dia::ValueSchema
 		mMetricRampFilesFailed = metrics.RegisterGauge(Dia::Core::StringCRC("valueschema.ramp_files_failed"));
 		if (mMetricRampsLoaded) { mMetricRampsLoaded->Set(static_cast<double>(mRamps->Count())); }
 		if (mMetricRampFilesFailed) { mMetricRampFilesFailed->Set(static_cast<double>(mRampStats.mFilesFailed)); }
+		mMetricMetricsDescribed = metrics.RegisterGauge(Dia::Core::StringCRC("valueschema.metrics_described"));
+		mMetricMetricsUndescribed = metrics.RegisterGauge(Dia::Core::StringCRC("valueschema.metrics_undescribed"));
+		mMetricCommandsDescribed = metrics.RegisterGauge(Dia::Core::StringCRC("valueschema.commands_described"));
+		mMetricArgsDescribed = metrics.RegisterGauge(Dia::Core::StringCRC("valueschema.args_described"));
+		if (mMetricMetricsDescribed) { mMetricMetricsDescribed->Set(static_cast<double>(mCodeSideReport.mMetricsDescribed)); }
+		if (mMetricMetricsUndescribed) { mMetricMetricsUndescribed->Set(static_cast<double>(mCodeSideReport.mMetricsUndescribed)); }
+		if (mMetricCommandsDescribed) { mMetricCommandsDescribed->Set(static_cast<double>(mCodeSideReport.mCommandsCollected)); }
+		if (mMetricArgsDescribed) { mMetricArgsDescribed->Set(static_cast<double>(mCodeSideReport.mArgsDescribed)); }
 		mMetricClampCount = metrics.RegisterCounter(Dia::Core::StringCRC("valueschema.clamp.count"));
 		if (mMetricEntriesLoaded) { mMetricEntriesLoaded->Set(static_cast<double>(mRegistry->Count())); }
 		if (mMetricFilesFailed) { mMetricFilesFailed->Set(static_cast<double>(mStats.mFilesFailed)); }
@@ -180,6 +227,10 @@ namespace Dia::ValueSchema
 		mMetricRampsLoaded = nullptr;
 		mMetricRampFilesFailed = nullptr;
 		mMetricClampCount = nullptr;
+		mMetricMetricsDescribed = nullptr;
+		mMetricMetricsUndescribed = nullptr;
+		mMetricCommandsDescribed = nullptr;
+		mMetricArgsDescribed = nullptr;
 		return Dia::ApplicationFlow::StopResult::kDone;
 	}
 }

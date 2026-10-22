@@ -94,7 +94,18 @@ The module derives from `Module` directly with `PUAffinity::kAny` (no per-frame 
 can place it on any PU; consumers on other PUs read through the stream without locks. DoStop
 deregisters the stream; the registry and service live until the next start or module destruction.
 
-Observation: trace zone `ValueSchema.Load` and profile scope `ValueSchema.LoadFile` (category
+Code-side pass (Feature 4): after sidecars, ramps and contributors and before `Publish`, DoStart runs
+`CodeSideCollector::Collect` (profile scope `ValueSchema.CollectCodeSide`, `kDiaAssetRuntime`) on an
+`ICodeSideSource` (default module-owned `LiveCodeSideSource`; `SetCodeSideSource` injects one for tests) and
+keeps the result in `GetCodeSideReport()`. Info log: `code-side: <M> metrics (<d> described, <u> undescribed),
+<C> commands, <A> args (<ad> described)`. Config `"code_side": false` (default true) skips the pass.
+Late registrations (AC 6): metrics/commands registered after publish are not in the immutable service.
+`LateRegistrationCount()` = source generation deltas since collection; `CheckLateRegistrations()` logs one
+Warning per changed non-zero count (`LateWarningCount()` for tests). It is the hook `valueschema.get` answering
+and describe-mode dumps (Features 3 and 6, not built) are to call; nothing calls it automatically.
+
+Observation: gauges `valueschema.metrics_described`, `valueschema.metrics_undescribed`,
+`valueschema.commands_described` (commands collected), `valueschema.args_described`; trace zone `ValueSchema.Load` and profile scope `ValueSchema.LoadFile` (category
 `kDiaAssetRuntime`); gauges `valueschema.entries_loaded`, `valueschema.files_failed`, `valueschema.ramps_loaded`,
 `valueschema.ramp_files_failed`; profile scope `ValueSchema.LoadRamps` per ramp file; counter
 `valueschema.clamp.count` (bound to `GetClamper()`); logs on channel `VSC`.

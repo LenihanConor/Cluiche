@@ -948,6 +948,7 @@
     <ClCompile Include="DiaValueSchema\TestValueSchemaModule.cpp" />
     <ClCompile Include="DiaValueSchema\TestValueSchemaStress.cpp" />
     <ClCompile Include="DiaValueSchema\TestCodeSideCollector.cpp" />
+    <ClCompile Include="DiaValueSchema\TestCodeSideModule.cpp" />
     <ClCompile Include="DiaValueSchema\TestRampLoader.cpp" />
     <ClCompile Include="DiaValueSchema\TestShippedRamps.cpp" />
     <ClCompile Include="DiaValueSchema\TestRampRegistry.cpp" />
