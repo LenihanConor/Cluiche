@@ -162,6 +162,57 @@ TEST(FieldAttributeRegistry, RegistryCapacityAtLeast256) {
     EXPECT_GE(FieldAttributeRegistry::kMaxEntries, 256u);
 }
 
+// Capacity / dropped-registration tests. Fixture snapshots the singleton (copy)
+// and restores it so static-init registrations survive for other tests.
+class FieldAttributeRegistryCapacity : public ::testing::Test {
+protected:
+    void SetUp() override {
+        mSaved = new FieldAttributeRegistry(FieldAttributeRegistry::Instance());
+        FieldAttributeRegistry::Instance().Clear();
+    }
+    void TearDown() override {
+        FieldAttributeRegistry::Instance() = *mSaved;
+        delete mSaved;
+    }
+    FieldAttributeRegistry* mSaved = nullptr;
+};
+
+TEST_F(FieldAttributeRegistryCapacity, MaxEntriesIs2048) {
+    EXPECT_EQ(FieldAttributeRegistry::kMaxEntries, 2048u);
+}
+
+TEST_F(FieldAttributeRegistryCapacity, RegistrationsPastCapNotSilentlyLost) {
+    static RequiredAttribute attr;
+    FieldAttributeRegistry& reg = FieldAttributeRegistry::Instance();
+    const unsigned int cap = FieldAttributeRegistry::kMaxEntries;
+    for (unsigned int i = 0u; i < cap; ++i) reg.Register(0xABCD0000u + i, 1u, &attr);
+    EXPECT_EQ(reg.DroppedCount(), 0u);
+    for (unsigned int i = 0u; i < 10u; ++i) reg.Register(0xDCBA0000u + i, 1u, &attr);
+    EXPECT_EQ(reg.DroppedCount(), 10u);
+    const FieldAttribute* out[1];
+    EXPECT_EQ(reg.GetAttributes(0xABCD0000u, 1u, out, 1u), 1u);
+    EXPECT_EQ(reg.GetAttributes(0xABCD0000u + cap - 1u, 1u, out, 1u), 1u);
+    EXPECT_EQ(reg.GetAttributes(0xDCBA0000u, 1u, out, 1u), 0u);
+}
+
+TEST_F(FieldAttributeRegistryCapacity, NinthAttributeOnOneKeyCountsAsDropped) {
+    static RequiredAttribute attr;
+    FieldAttributeRegistry& reg = FieldAttributeRegistry::Instance();
+    for (unsigned int i = 0u; i < FieldAttributeList::kMaxAttrsPerField; ++i) reg.Register(7u, 7u, &attr);
+    EXPECT_EQ(reg.DroppedCount(), 0u);
+    reg.Register(7u, 7u, &attr);
+    EXPECT_EQ(reg.DroppedCount(), 1u);
+}
+
+TEST_F(FieldAttributeRegistryCapacity, ClearResetsDroppedCount) {
+    static RequiredAttribute attr;
+    FieldAttributeRegistry& reg = FieldAttributeRegistry::Instance();
+    for (unsigned int i = 0u; i <= FieldAttributeList::kMaxAttrsPerField; ++i) reg.Register(7u, 7u, &attr);
+    EXPECT_GT(reg.DroppedCount(), 0u);
+    reg.Clear();
+    EXPECT_EQ(reg.DroppedCount(), 0u);
+}
+
 // =============================================================================
 // RangeAttribute enforcement tests
 // =============================================================================

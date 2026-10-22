@@ -108,10 +108,13 @@ struct FieldAttributeList {
 
     bool IsFull() const { return count >= kMaxAttrsPerField; }
 
-    void Add(const FieldAttribute* attr) {
-        if (!IsFull()) {
-            attrs[count++] = attr;
+    // Returns false (and stores nothing) when the list is full.
+    bool Add(const FieldAttribute* attr) {
+        if (IsFull()) {
+            return false;
         }
+        attrs[count++] = attr;
+        return true;
     }
 };
 
@@ -120,7 +123,7 @@ struct FieldAttributeList {
 // =============================================================================
 class FieldAttributeRegistry {
 public:
-    static constexpr unsigned int kMaxEntries = 256u;
+    static constexpr unsigned int kMaxEntries = 2048u;
 
     static FieldAttributeRegistry& Instance();
 
@@ -131,7 +134,9 @@ public:
         for (unsigned int i = 0u; i < mEntries.Size(); ++i) {
             if (mEntries.At(i).key.typeCrc == typeCrc &&
                 mEntries.At(i).key.fieldCrc == fieldCrc) {
-                mEntries.At(i).Add(attr);
+                if (!mEntries.At(i).Add(attr)) {
+                    ++mDroppedCount;
+                }
                 return;
             }
         }
@@ -142,8 +147,14 @@ public:
             list.key.fieldCrc = fieldCrc;
             list.Add(attr);
             mEntries.Add(list);
+        } else {
+            ++mDroppedCount;
         }
     }
+
+    // Number of registrations lost to a capacity limit (entry table full, or
+    // more than kMaxAttrsPerField attributes on one field). Reset by Clear().
+    unsigned int DroppedCount() const { return mDroppedCount; }
 
     // Returns all attributes for a (type, field) pair.
     // outAttrs is filled with up to maxOut pointers; returns actual count found.
@@ -182,10 +193,11 @@ public:
     }
 
     // For testing: clear all entries
-    void Clear() { mEntries.RemoveAll(); }
+    void Clear() { mEntries.RemoveAll(); mDroppedCount = 0u; }
 
 private:
     FieldAttributeRegistry() = default;
+    unsigned int mDroppedCount = 0u;
     Dia::Core::Containers::DynamicArrayC<FieldAttributeList, kMaxEntries> mEntries;
 };
 
