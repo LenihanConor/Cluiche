@@ -95,6 +95,7 @@
     <ClInclude Include="RampSetLoader.h" />
     <ClInclude Include="RampSample.h" />
     <ClInclude Include="RampResolver.h" />
+    <ClInclude Include="RampLegend.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ValueSchemaVersion.cpp" />
@@ -113,6 +114,7 @@
     <ClCompile Include="RampSetLoader.cpp" />
     <ClCompile Include="RampSample.cpp" />
     <ClCompile Include="RampResolver.cpp" />
+    <ClCompile Include="RampLegend.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diavalueschema.architecture.module.md" />
