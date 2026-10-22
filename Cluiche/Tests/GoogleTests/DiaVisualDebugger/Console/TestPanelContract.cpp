@@ -20,6 +20,8 @@
 #include <DiaVisualDebugger/Console/PanelController.h>
 #include <DiaVisualDebugger/Console/PanelJson.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
+#include <DiaVisualDebugger/Domain/ISchemaKeyResolver.h>
+#include <DiaVisualDebugger/Domain/SchemaControl.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
@@ -88,6 +90,36 @@ namespace
 		const char* mDesc;
 		StringCRC mGroup;
 		Dia::Core::RGBA mColour;
+	};
+
+	// Fake resolver: every key resolves, schema version 7.
+	class FakeResolver : public ISchemaKeyResolver
+	{
+	public:
+		bool Resolves(StringCRC) const override { return true; }
+		unsigned int Version() const override { return 7; }
+	};
+
+	// Domain whose controls are built through the REAL SchemaControl helper.
+	class SchemaContractDomain : public ContractDomain
+	{
+	public:
+		SchemaContractDomain()
+			: ContractDomain("CowEcology", "Ecology", "Ecology tuning", "Navigation", 0x60, 0xB0, 0x40) {}
+
+		void GetJSONState(Json::Value& out) override
+		{
+			FakeResolver resolver;
+			SchemaControl sc(&resolver);
+			Json::Value& controls = out["controls"];
+			sc.Add(controls, "Grazing rate", StringCRC("cow.ecology_params/grazing.rate"), 0.75f, "lush");
+			sc.Add(controls, "Growth rate", StringCRC("cow.ecology_params/growth.rate"), 0.25f);
+			Json::Value plain(Json::objectValue);
+			plain["name"] = "Step";
+			plain["type"] = "button";
+			controls.append(plain);
+			sc.AddSchemaVersion(out);
+		}
 	};
 
 	bool RegisterContractCommand(const char* name, const char* description, const char* category,
@@ -267,6 +299,20 @@ TEST_F(PanelContractTest, DomainStates)
 	Json::FastWriter writer;
 	writer.omitEndingLineFeed();
 	Check("domain_states.json", writer.write(root));
+}
+
+TEST_F(PanelContractTest, DomainStatesWithSchemaKeys)
+{
+	// Separate registry so domain_states.json stays byte-identical.
+	DiaDebugDomainRegistry registry;
+	SchemaContractDomain eco;
+	registry.Register(eco);
+	Json::Value root(Json::objectValue);
+	BuildDomainStatesRoot(registry, root);
+	Json::FastWriter writer;
+	writer.omitEndingLineFeed();
+	Check("domain_states_schema.json", writer.write(root));
+	registry.Clear();
 }
 
 TEST_F(PanelContractTest, PaletteResults)

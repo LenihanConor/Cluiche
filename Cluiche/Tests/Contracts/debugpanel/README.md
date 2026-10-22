@@ -20,5 +20,5 @@ If you change a builder on purpose, regenerate and review the diff:
 (bash: `DIA_UPDATE_GOLDEN=1 dia run googletest --filter="PanelContract*"`), then run
 `dia test game-ui` and commit the changed files together.
 
-Files: domain_states, palette_results_{all,commands,domains}, console_result_{ok,notfound,parse_error},
+Files: domain_states, domain_states_schema (controls carrying schemaKey/packId + schemaVersion), palette_results_{all,commands,domains}, console_result_{ok,notfound,parse_error},
 console_completions, console_set_input, console_set_input_restore, append_log_lines (all `.json`).

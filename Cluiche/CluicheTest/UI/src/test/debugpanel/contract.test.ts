@@ -72,6 +72,23 @@ describe("contract: domain_states.json", () => {
   });
 });
 
+describe("contract: domain_states_schema.json", () => {
+  it("shape: schemaKey/packId controls and schemaVersion are present as the builders emit them", () => {
+    const st = goldenJson("domain_states_schema.json")["Ecology"];
+    expect(typeof st.schemaVersion).toBe("number");
+    const [withPack, keyOnly, plain] = st.controls;
+    expect(withPack.schemaKey).toBe("cow.ecology_params/grazing.rate");
+    expect(withPack.packId).toBe("lush");
+    expect(keyOnly.schemaKey).toBe("cow.ecology_params/growth.rate");
+    expect(keyOnly.packId).toBeUndefined();
+    expect(plain.schemaKey).toBeUndefined();
+  });
+  it("the page accepts the state and renders the domain card", () => {
+    p.win.updateDomainState(golden("domain_states_schema.json"));
+    expect(cardFor("Ecology")).toBeDefined();
+  });
+});
+
 describe("contract: palette results", () => {
   const files = ["palette_results_all.json", "palette_results_commands.json", "palette_results_domains.json"];
   const rows = () => Array.from(p.doc.querySelectorAll("#pal-list .pal-row")) as HTMLElement[];
