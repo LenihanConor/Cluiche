@@ -467,6 +467,29 @@ Gap markers: **ZERO** = no tests, **LOW** = under-tested relative to API surface
 
 ---
 
+## DiaValueSchema (added 2026-10-21; Features 1, 2, 4, 5 C++)
+
+C++ GoogleTests in `Cluiche/Tests/GoogleTests/DiaValueSchema/` (725 tests under the `DiaValueSchema*` filter). Python tests for `dia validate schema` in `Dia/DiaCLI/tests/test_validate_schema_*.py` (1,639 pass, 4 skip: symlink privilege). Method per area: unit, boundary at exact capacity N and N+1, fixed-seed property and fuzz-lite (`std::mt19937(1234)`, 2,000 byte mutations per good fixture), determinism, golden, integration (real shipped `ramps.json` through the module). Shared fixtures: `Dia/DiaValueSchema/Testing/Conformance/` (schema, `data/`, `ramps/`), read by C++ and Python.
+
+| Component | Tests | Files | Notes |
+|-----------|-------|-------|-------|
+| ValueInfo / ValueList | 16 | TestValueInfoCopy.cpp | GOOD: deep copy, capacity constants |
+| ValueSchemaRegistry / Service | 31 | TestValueSchemaRegistry.cpp, ...RegistryProperty.cpp, ...Service.cpp, ...Stress.cpp | GOOD: random insert property, real CRC collisions, 4-reader concurrent stress |
+| ValueSchemaLoader (+ SplitRecordPath) | 148 | TestValueSchemaLoader.cpp, ...LoaderStrict.cpp, ...LoaderBoundary.cpp, ...LoaderFuzz.cpp, ...Conformance.cpp | GOOD: every field at N and N+1, BOM, deep nesting, fuzz |
+| ValueClamper | 39 | TestValueSchemaClamp.cpp, TestValueClamperEdge.cpp | GOOD: int saturation, float bound rounding, property |
+| SchemaDirectoryLoader / Health / Module | 57 | TestValueSchemaDiscovery.cpp, TestValueSchemaModule.cpp, TestSchemaDirectoryLoaderEdge.cpp, TestValueSchemaModuleEdge.cpp | GOOD: lifecycle cycles, config forms, destroyed-without-Stop |
+| Ramps (loader, registry, sample, resolver, legend) | 266 | TestRampLoader*.cpp, TestRampRegistry.cpp, TestRampSetLoaderEdge.cpp, TestRampModule.cpp, TestRampSample*.cpp, TestRampResolver*.cpp, TestRampLegend*.cpp, TestRampConformance.cpp, TestShippedRamps.cpp, TestCategoricalColours.cpp | GOOD: colour-property tests, tick properties, goldens per shipped ramp |
+| CodeSideCollector | 83 | TestCodeSideCollector.cpp, ...CollectorEdge.cpp, TestCodeSideModule.cpp | GOOD: printf-injection, accounting invariants, 10k-metric stress |
+| End to end | 7 | TestValueSchemaIntegration.cpp | OK: shipped-sidecar lint SKIPS until a shipped `.schema.json` exists |
+| `dia validate schema` (Python) | 1,639 | test_validate_schema_*.py | GOOD: rules, data, discovery, code-side, CLI contract, precommit, parity, property |
+| Feature 4: ValueParam / CommandInfo params / HelpSystem args | 90 | DiaAPI/TestValueParam.cpp, TestCommandInfoParams*.cpp, TestHelpSystemArguments*.cpp, TestEditorActionParamJsonEdge.cpp | GOOD: capacity sweep, no-trailing-space, sizeof guards |
+| Feature 4: MetricInfo | 43 | DiaObservation/TestMetricInfo.cpp, TestMetricInfoEdge.cpp | GOOD: reentrancy, concurrency, conflict rules |
+| Feature 4: palette `args` | 42 C++ + 169 vitest | DiaVisualDebugger/Console/TestPaletteArgsEdge.cpp, `Cluiche/CluicheTest/UI/src/test/debugpanel/palette-args.test.ts` | GOOD: both html copies, JSON validity property |
+
+Known gaps: no EXPECT_DEATH tests (the repo has none); TSan is not offered by `dia check`; ASan could not reach these tests (blocked by a CellField overflow, see BACKLOG). Several suites exceed 500 ms but are deliberately not tagged `SLOW_` so the `DiaValueSchema*` filter keeps running them.
+
+---
+
 ## DiaAPI / DiaCLI
 
 | Component | Tests | Files | Unit | Stress/Boundary | Golden/Regression | Notes |
