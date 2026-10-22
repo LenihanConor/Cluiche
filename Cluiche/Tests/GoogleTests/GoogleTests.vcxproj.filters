@@ -253,6 +253,9 @@
     <Filter Include="DiaAPI">
       <UniqueIdentifier>{3600b020-98fe-414f-bfaa-9da4d7a1501a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaValueSchema">
+      <UniqueIdentifier>{a2b4d7f0-75c9-4169-ad2b-0364279b7bb5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -2077,6 +2080,9 @@
     </ClCompile>
     <ClCompile Include="DiaEntity\TestComponentDescribe.cpp">
       <Filter>DiaEntity</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaValueSchema\TestComponentFieldCollector.cpp">
+      <Filter>DiaValueSchema</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

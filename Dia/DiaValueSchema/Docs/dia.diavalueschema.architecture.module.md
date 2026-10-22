@@ -15,6 +15,7 @@ dependencies:
     - dia.streams
     - dia.observation
     - dia.api
+    - dia.entity
   forbidden: []
 public_api:
   headers:
@@ -29,6 +30,7 @@ public_api:
     - DiaValueSchema/ValueSchemaService.h
     - DiaValueSchema/IValueSchemaContributor.h
     - DiaValueSchema/CodeSideCollector.h
+    - DiaValueSchema/ComponentFieldCollector.h
     - DiaValueSchema/ValueSchemaHealth.h
     - DiaValueSchema/ValueSchemaModule.h
   namespaces:

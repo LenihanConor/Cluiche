@@ -98,6 +98,7 @@
     <ClInclude Include="RampLegend.h" />
     <ClInclude Include="CodeSideCollector.h" />
     <ClInclude Include="Testing\FakeCodeSideSource.h" />
+    <ClInclude Include="ComponentFieldCollector.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ValueSchemaVersion.cpp" />
@@ -118,6 +119,7 @@
     <ClCompile Include="RampResolver.cpp" />
     <ClCompile Include="RampLegend.cpp" />
     <ClCompile Include="CodeSideCollector.cpp" />
+    <ClCompile Include="ComponentFieldCollector.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diavalueschema.architecture.module.md" />
@@ -142,6 +144,10 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaAPI\DiaAPI.vcxproj">
       <Project>{1E7F6E13-50CF-411C-B34C-66D70121DD03}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaEntity\DiaEntity.vcxproj">
+      <Project>{D9E0F1A2-B3C4-5678-9DEF-012345678903}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

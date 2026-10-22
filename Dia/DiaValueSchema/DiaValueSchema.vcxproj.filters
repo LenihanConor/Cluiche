@@ -43,6 +43,7 @@
     <ClInclude Include="Testing\FakeCodeSideSource.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="ComponentFieldCollector.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ValueSchemaVersion.cpp" />
@@ -63,6 +64,7 @@
     <ClCompile Include="RampResolver.cpp" />
     <ClCompile Include="RampLegend.cpp" />
     <ClCompile Include="CodeSideCollector.cpp" />
+    <ClCompile Include="ComponentFieldCollector.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diavalueschema.architecture.module.md">

@@ -982,6 +982,7 @@
     <ClCompile Include="DiaVisualDebugger\Console\TestPaletteArgsEdge.cpp" />
     <ClCompile Include="DiaEntity\TestDescribedComponent.cpp" />
     <ClCompile Include="DiaEntity\TestComponentDescribe.cpp" />
+    <ClCompile Include="DiaValueSchema\TestComponentFieldCollector.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
