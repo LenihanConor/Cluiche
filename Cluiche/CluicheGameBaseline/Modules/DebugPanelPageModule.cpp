@@ -212,10 +212,14 @@ void DebugPanelPageModule::RefreshSchemaService()
     auto* app = dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(GetApplication());
     if (app != nullptr)
     {
-        auto* store = dynamic_cast<Dia::ApplicationFlow::ServiceStreamStore<Dia::ValueSchema::ValueSchemaService>*>(
-            app->FindStream(Dia::Core::StringCRC(kValueSchemaStreamId)));
-        if (store != nullptr && store->IsCommitted())
+        // static_cast, not dynamic_cast: the store is instantiated in DiaValueSchema, which is built /GR- (no RTTI), so a
+        // dynamic_cast from this RTTI-enabled TU aborts the process. The stream id fixes the payload type.
+        auto* base = app->FindStream(Dia::Core::StringCRC(kValueSchemaStreamId));
+        if (base != nullptr && base->IsCommitted())
+        {
+            auto* store = static_cast<Dia::ApplicationFlow::ServiceStreamStore<Dia::ValueSchema::ValueSchemaService>*>(base);
             service = &store->Get();
+        }
     }
     mKeyResolver.SetService(service);
 }

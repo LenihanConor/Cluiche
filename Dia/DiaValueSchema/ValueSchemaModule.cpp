@@ -17,6 +17,8 @@
 
 #include <json/json.h>
 
+#include <chrono>
+
 namespace Dia::ValueSchema
 {
 	const Dia::Core::StringCRC ValueSchemaModule::kTypeId("ValueSchemaModule");
@@ -127,12 +129,16 @@ namespace Dia::ValueSchema
 	{
 		const char* const kDebugServerStreamId = "DebugServerService";	// DebugServerHostModule::kServiceStreamId (application layer)
 
-		Dia::DebugServer::QueryRegistry* ResolveQueryRegistry(Dia::ApplicationFlow::IApplicationControl* control)
+		Dia::DebugServer::QueryRegistry* ResolveQueryRegistry(Dia::ApplicationFlow::IApplicationInspectable* app)
 		{
-			auto* app = dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(control);
 			if (app == nullptr) { return nullptr; }
 			auto* store = app->FindStream(Dia::Core::StringCRC(kDebugServerStreamId));
-			auto* typed = dynamic_cast<Dia::ApplicationFlow::ServiceStreamStore<Dia::DebugServer::DebugServer*>*>(store);
+			// The store's Get() asserts until the framework commits it (after every provider's DoStart), so a lookup made during our
+			// own DoStart must not touch it: DoUpdate retries once the DebugServer stream is committed.
+			if (store == nullptr || !store->IsCommitted()) { return nullptr; }
+			// No RTTI (/GR-): dynamic_cast on these polymorphic types is undefined (crashed at start). The stream id fixes the payload
+			// type, exactly as ServiceStreamReader/Writer do with their static_cast.
+			auto* typed = static_cast<Dia::ApplicationFlow::ServiceStreamStore<Dia::DebugServer::DebugServer*>*>(store);
 			Dia::DebugServer::DebugServer* server = typed ? typed->Get() : nullptr;
 			return server ? &server->GetQueryRegistry() : nullptr;
 		}
@@ -151,7 +157,7 @@ namespace Dia::ValueSchema
 	void ValueSchemaModule::RegisterQuery()
 	{
 		UnregisterQuery();
-		Dia::DebugServer::QueryRegistry* registry = mQueryRegistryOverride ? mQueryRegistryOverride : ResolveQueryRegistry(GetApplication());
+		Dia::DebugServer::QueryRegistry* registry = mQueryRegistryOverride ? mQueryRegistryOverride : ResolveQueryRegistry(mAppInspect);
 		if (registry == nullptr)
 		{
 			DIA_LOG_DEBUG("VSC", "No DebugServer available; valueschema.get is not served");
@@ -388,16 +394,23 @@ namespace Dia::ValueSchema
 		};
 	}
 
-	void ValueSchemaModule::TickDescribeMode(float deltaTime)
+	static std::chrono::steady_clock::time_point sDescribeStart;
+
+	void ValueSchemaModule::TickDescribeMode(float /*deltaTime*/)
 	{
 		if (mDescribeRunner == nullptr)
 		{
+			sDescribeStart = std::chrono::steady_clock::now();
 			mDescribeRunner = Dia::Core::MakeUnique<DescribeModeRunner>(DescribeSession::GetRequest());
 			mDescribeBarrier.Reset(new ApplicationDescribeBarrier(GetApplication(), mAppInspect, DescribeSession::GetRequest().mStage.AsCStr()));
 		}
 		if (mDescribeRunner->IsFinished() || mService == nullptr) { return; }
 
-		mDescribeWaitedSec += deltaTime;
+		// Wall-clock, not the frame delta: the MainPU loop is not paced when idle (Main passes a fixed 1/30 s every iteration), so
+		// summing deltaTime would burn the 120 s budget in a couple of real seconds while a stage's assets are still loading.
+		// Describe mode is process-global (DescribeSession), so one static time point is enough (set when the runner is created).
+		const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+		mDescribeWaitedSec = std::chrono::duration<float>(now - sDescribeStart).count();
 		mDescribeRunner->Tick(*mDescribeBarrier, *mService, mCodeSideCollected ? &mCodeSideReport : nullptr,
 			mCodeSideEnabled ? &mComponentReport : nullptr);
 		if (!mDescribeRunner->IsFinished() && mDescribeWaitedSec >= kDescribeTimeoutSec)
@@ -413,6 +426,8 @@ namespace Dia::ValueSchema
 
 	void ValueSchemaModule::DoUpdate(float deltaTime)
 	{
+		// valueschema.get could not be registered in DoStart when the DebugServer stream was not yet committed: retry until it is.
+		if (mService && !mQueryHandler && mQueryRegistryOverride == nullptr && ResolveQueryRegistry(mAppInspect) != nullptr) { RegisterQuery(); }
 		if (DescribeSession::IsActive() && !DescribeSession::IsComplete()) { TickDescribeMode(deltaTime); }
 	}
 
