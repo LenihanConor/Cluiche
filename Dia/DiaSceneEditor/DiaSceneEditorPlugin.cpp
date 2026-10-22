@@ -40,6 +40,8 @@ namespace Dia
 				else mDiagameDir[0] = '\0';
 			}
 
+			ReloadSchema();
+
 			if (ctx.IsValid())
 			{
 				mStageList = mProjectContextManager.BuildStageListJson(ctx.diagamePath);
@@ -60,6 +62,27 @@ namespace Dia
 			}
 		}
 
+		// Loads <diagame dir>/registeredtypes.diaschema for property-row metadata.
+		// Missing/malformed file leaves an empty reader (rows render without metadata).
+		void DiaSceneEditorPlugin::ReloadSchema()
+		{
+			mPropertyController.SetSchema(nullptr);
+			mSchemaReader.Clear();
+			if (mDiagamePath[0] == '\0') return;
+
+			char schemaPath[512] = {};
+			strncpy_s(schemaPath, sizeof(schemaPath), mDiagamePath, _TRUNCATE);
+			char* lastSep = nullptr;
+			for (char* p = schemaPath; *p; ++p)
+				if (*p == '/' || *p == '\\') lastSep = p;
+			if (lastSep) *(lastSep + 1) = '\0'; else schemaPath[0] = '\0';
+			strncat_s(schemaPath, sizeof(schemaPath), "registeredtypes.diaschema", _TRUNCATE);
+
+			mSchemaReader.LoadFromFile(schemaPath);
+			if (mSchemaReader.IsLoaded())
+				mPropertyController.SetSchema(&mSchemaReader);
+		}
+
 		void DiaSceneEditorPlugin::OnPluginLoad()
 		{
 			DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: OnPluginLoad");
@@ -74,6 +97,7 @@ namespace Dia
 				          proj.IsValid() ? proj.diagamePath : "", _TRUNCATE);
 				if (proj.IsValid())
 					mStageList = mProjectContextManager.BuildStageListJson(proj.diagamePath);
+				ReloadSchema();
 			}
 			else
 				DIA_LOG_WARNING("Editor", "DiaSceneEditorPlugin: OnPluginLoad — model is null");

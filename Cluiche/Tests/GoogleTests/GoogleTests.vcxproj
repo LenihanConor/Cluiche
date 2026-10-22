@@ -988,6 +988,7 @@
     <ClCompile Include="DiaValueSchema\TestValueSchemaQuery.cpp" />
     <ClCompile Include="DiaVisualDebugger\TestSchemaControl.cpp" />
     <ClCompile Include="DiaVisualDebugger\TestServiceKeyResolver.cpp" />
+    <ClCompile Include="DiaSceneEditor\TestPropertyInspectorController.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

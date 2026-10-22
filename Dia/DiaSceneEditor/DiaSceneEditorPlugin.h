@@ -13,6 +13,7 @@ namespace Dia { namespace Editor { class EditorActionRegistry; } }
 #include "DiaSceneEditor/ProjectContextManager.h"
 #include "DiaSceneEditor/SceneMutator.h"
 #include "DiaSceneEditor/SceneValidator.h"
+#include "DiaEntityTemplateEditor/SchemaReader.h"
 
 namespace Dia
 {
@@ -85,6 +86,8 @@ namespace Dia
 			SceneValidator              mValidator;
 			SceneHierarchyController    mHierarchyController;
 			PropertyInspectorController mPropertyController;
+			Dia::EntityTemplateEditor::SchemaReader mSchemaReader;   // registeredtypes.diaschema next to the .diagame
+			void ReloadSchema();
 			ProjectContextManager       mProjectContextManager;
 
 			Json::Value                 mStageList;

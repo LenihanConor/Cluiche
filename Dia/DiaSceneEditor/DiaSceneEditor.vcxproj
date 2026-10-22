@@ -122,6 +122,9 @@
     <ProjectReference Include="..\DiaAssetCatalogue\DiaAssetCatalogue.vcxproj">
       <Project>{A8B9C0D1-E2F3-4567-8901-ABCDEF012345}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\DiaEntityTemplateEditor\DiaBlueprintEditor.vcxproj">
+      <Project>{E3F4A5B6-C7D8-9012-DEFA-BC1234567890}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\DiaScene2D\DiaScene2D.vcxproj">
       <Project>{D6E7F8A9-B0C1-2345-DEF0-123456789004}</Project>
     </ProjectReference>
