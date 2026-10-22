@@ -99,6 +99,7 @@
     <ClInclude Include="Hierarchy\ChildBufferComponent.h" />
     <ClInclude Include="Hierarchy\Hierarchy.h" />
     <ClInclude Include="Messages\EntityDestroyedMessage.h" />
+    <ClInclude Include="Testing\TestDescribedComponent.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Domain.cpp" />

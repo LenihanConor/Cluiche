@@ -2072,5 +2072,8 @@
     <ClCompile Include="DiaVisualDebugger\Console\TestPaletteArgsEdge.cpp">
       <Filter>DiaVisualDebugger\Console</Filter>
     </ClCompile>
+    <ClCompile Include="DiaEntity\TestDescribedComponent.cpp">
+      <Filter>DiaEntity</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

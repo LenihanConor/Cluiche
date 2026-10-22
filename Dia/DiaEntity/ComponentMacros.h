@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <new>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Metadata/DescribeMacro.h>
 #include <DiaCore/Reflect/ReflectMacros.h>
@@ -251,8 +252,12 @@ public: static constexpr bool kIsReadOnly = true; private:
                     *const_cast<ClassName*>(static_cast<const ClassName*>(src)), \
                     ClassName::kVersion);                                   \
                 out = ar.GetRoot();                                        \
-            }                                                              \
-        };                                                                 \
+            },                                                             \
+            /* description: not set by the macro. */                       \
+            nullptr,                                                       \
+            /* constructDefault thunk: placement-news a default instance. */ \
+            [](void* mem) { new (mem) ClassName(); }                       \
+        };                                                               \
         return sDesc;                                                      \
     }                                                                      \
     \
