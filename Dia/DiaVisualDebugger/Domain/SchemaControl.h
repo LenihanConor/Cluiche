@@ -31,7 +31,8 @@ namespace Dia
             explicit SchemaControl(const ISchemaKeyResolver* resolver = nullptr);
 
             void SetResolver(const ISchemaKeyResolver* resolver);
-            bool HasResolver() const { return mResolver != nullptr; }
+            // True when a resolver is set AND reports IsAvailable(); otherwise no checks / no schemaVersion.
+            bool HasResolver() const;
 
             // Appends { name, type, value, schemaKey[, packId] } to the controls array.
             // type defaults to "slider"; packId is emitted only when non-null and non-empty.

@@ -14,6 +14,11 @@ namespace Dia
         {
         }
 
+        bool SchemaControl::HasResolver() const
+        {
+            return mResolver != nullptr && mResolver->IsAvailable();
+        }
+
         void SchemaControl::SetResolver(const ISchemaKeyResolver* resolver)
         {
             mResolver = resolver;
@@ -33,7 +38,7 @@ namespace Dia
             }
             controls.append(control);
 
-            if (mResolver != nullptr)
+            if (HasResolver())
             {
                 CheckKey(schemaKey);
             }
@@ -41,7 +46,7 @@ namespace Dia
 
         void SchemaControl::AddSchemaVersion(Json::Value& state) const
         {
-            if (mResolver != nullptr)
+            if (HasResolver())
             {
                 state["schemaVersion"] = mResolver->Version();
             }

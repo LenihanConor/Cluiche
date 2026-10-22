@@ -114,6 +114,7 @@
     <ClInclude Include="Console\PanelJson.h" />
     <ClInclude Include="Domain\SchemaControl.h" />
     <ClInclude Include="Domain\ISchemaKeyResolver.h" />
+    <ClInclude Include="Domain\ServiceKeyResolver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugLayerManager.cpp" />

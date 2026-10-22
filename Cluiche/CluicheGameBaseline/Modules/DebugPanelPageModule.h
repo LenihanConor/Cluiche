@@ -12,6 +12,8 @@
 #include <DiaStreams/ServiceStreamReader.h>
 #include <DiaVisualDebugger/Console/PanelController.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
+#include <DiaVisualDebugger/Domain/ServiceKeyResolver.h>
+#include <DiaValueSchema/ValueSchemaService.h>
 
 #include "Modules/DebugPanelPage.h"
 #include "Modules/UIModule.h"
@@ -64,6 +66,19 @@ public:
     void OnPaletteSearch(const char* query, int mask) override;
     void OnValueSchemaGet(const char* prefix) override;
 
+    // Schema key resolver for panel controls (DiaValueSchema Feature 3, Task 4b).
+    // Wraps the ValueSchemaService read from the "ValueSchemaService" ServiceStream; the service pointer is
+    // refreshed every DoUpdate (it changes whenever ValueSchemaModule restarts). Never null: when the
+    // service is absent the resolver reports IsAvailable() == false, so a SchemaControl built from it
+    // behaves as if it had no resolver (no key checks, no schemaVersion).
+    // Use: `Dia::VisualDebugger::SchemaControl sc(panelHost.GetSchemaKeyResolver());`. The pointer stays
+    // valid for the module's lifetime. The resolver is only re-pointed on the Main PU, so a domain on
+    // another PU must tolerate the answer changing between frames (it is read-only and never dereferences
+    // the service outside Resolves/Version).
+    // Independently of domains, PushDomainStatesToPanel stamps "schemaVersion" onto every domain state that
+    // has a "controls" array (see Console::BuildDomainStatesRoot), which is where debug-panel.html reads it.
+    const Dia::VisualDebugger::ISchemaKeyResolver* GetSchemaKeyResolver() const { return &mKeyResolver; }
+
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
     void DoUpdate(const Dia::SimTime::MainTimeContext& ctx) override;
@@ -72,6 +87,7 @@ protected:
 
 private:
     void PushDomainStatesToPanel();
+    void RefreshSchemaService();
     void DrainToggleEvents();
     void DrainSetVisibilityEvents();
 
@@ -105,6 +121,11 @@ private:
     bool           mInputModePushed      = false;
 
     Dia::ApplicationFlow::ModuleRef<UIModule> mUI{this};
+
+    // ValueSchemaModule::kServiceStreamId; looked up by id each frame (optional service, so no
+    // ServiceStreamReader: that would make this module wait for a provider some apps do not have).
+    static constexpr const char* kValueSchemaStreamId = "ValueSchemaService";
+    Dia::VisualDebugger::ServiceKeyResolver<Dia::ValueSchema::ValueSchemaService> mKeyResolver;
 
     Dia::ApplicationFlow::ServiceStreamReader<Dia::VisualDebugger::DiaDebugDomainRegistry>
         mDomainRegistry{this, "DomainRegistry"};

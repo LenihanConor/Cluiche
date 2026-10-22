@@ -53,12 +53,16 @@ namespace Dia
 				}
 			}
 
-			void BuildDomainStatesRoot(const DiaDebugDomainRegistry& registry, Json::Value& root)
+			void BuildDomainStatesRoot(const DiaDebugDomainRegistry& registry, Json::Value& root,
+									   const ISchemaKeyResolver* resolver)
 			{
-				registry.VisitAll([&root](IDebugDomain& domain)
+				const bool stampVersion = resolver != nullptr && resolver->IsAvailable();
+				registry.VisitAll([&root, stampVersion, resolver](IDebugDomain& domain)
 				{
 					Json::Value state(Json::objectValue);
 					domain.GetJSONState(state);
+					if (stampVersion && state.isMember("controls") && state["controls"].isArray() && !state.isMember("schemaVersion"))
+						state["schemaVersion"] = resolver->Version();
 
 					const char* displayName = domain.GetDisplayName();
 					if (displayName == nullptr)

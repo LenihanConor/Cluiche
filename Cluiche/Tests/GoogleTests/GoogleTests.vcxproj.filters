@@ -2096,5 +2096,8 @@
     <ClCompile Include="DiaVisualDebugger\TestSchemaControl.cpp">
       <Filter>DiaVisualDebugger</Filter>
     </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\TestServiceKeyResolver.cpp">
+      <Filter>DiaVisualDebugger</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

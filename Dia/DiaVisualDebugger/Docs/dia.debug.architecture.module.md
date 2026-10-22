@@ -49,6 +49,7 @@ public_api:
     - DiaVisualDebugger/DebugLayerNames.h
     - DiaVisualDebugger/Domain/SchemaControl.h
     - DiaVisualDebugger/Domain/ISchemaKeyResolver.h
+    - DiaVisualDebugger/Domain/ServiceKeyResolver.h
   namespaces:
     - Dia::Debug
     - Dia::Debug::LayerNames

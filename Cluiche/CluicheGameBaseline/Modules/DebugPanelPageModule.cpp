@@ -87,6 +87,7 @@ void DebugPanelPageModule::DoUpdate(const Dia::SimTime::MainTimeContext& /*ctx*/
 {
     DIA_TRACE_ZONE("DebugPanelPageModule.Update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
 
+    RefreshSchemaService();
     DrainToggleEvents();
     mPanel.Process(*this, mDomainRegistry.IsAvailable() ? &mDomainRegistry.Get() : nullptr);
     PushDomainStatesToPanel();
@@ -124,6 +125,7 @@ Dia::ApplicationFlow::StopResult DebugPanelPageModule::DoStop()
     mProbeFramesLeft = 0;
 
     mPanel.Reset();
+    mKeyResolver.SetService(nullptr);
 
     mPageInitialized = false;
     return Dia::ApplicationFlow::StopResult::kDone;
@@ -202,6 +204,20 @@ void DebugPanelPageModule::OnPaletteSearch(const char* query, int mask)
 void DebugPanelPageModule::OnValueSchemaGet(const char* prefix)
 {
     mPanel.RequestValueSchemaGet(prefix);
+}
+
+void DebugPanelPageModule::RefreshSchemaService()
+{
+    const Dia::ValueSchema::ValueSchemaService* service = nullptr;
+    auto* app = dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(GetApplication());
+    if (app != nullptr)
+    {
+        auto* store = dynamic_cast<Dia::ApplicationFlow::ServiceStreamStore<Dia::ValueSchema::ValueSchemaService>*>(
+            app->FindStream(Dia::Core::StringCRC(kValueSchemaStreamId)));
+        if (store != nullptr && store->IsCommitted())
+            service = &store->Get();
+    }
+    mKeyResolver.SetService(service);
 }
 
 bool DebugPanelPageModule::QueryBridge::ExecuteQuery(const char* queryName, const char* argsJson,
@@ -411,7 +427,7 @@ void DebugPanelPageModule::PushDomainStatesToPanel()
     const Dia::VisualDebugger::DiaDebugDomainRegistry& registry = mDomainRegistry.Get();
 
     Json::Value root(Json::objectValue);
-    Dia::VisualDebugger::Console::BuildDomainStatesRoot(registry, root);
+    Dia::VisualDebugger::Console::BuildDomainStatesRoot(registry, root, &mKeyResolver);
 
     Json::FastWriter writer;
     writer.omitEndingLineFeed();

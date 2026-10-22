@@ -20,6 +20,8 @@ namespace Dia
         {
         public:
             virtual ~ISchemaKeyResolver() {}
+            // False when the backing service is absent; SchemaControl then acts as if it had no resolver.
+            virtual bool         IsAvailable() const { return true; }
             virtual bool         Resolves(Dia::Core::StringCRC fullKey) const = 0;
             virtual unsigned int Version() const = 0;
         };

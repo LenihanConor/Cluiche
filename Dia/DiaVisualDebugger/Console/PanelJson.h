@@ -13,6 +13,7 @@
 #ifdef DIA_DEBUG
 
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
+#include <DiaVisualDebugger/Domain/ISchemaKeyResolver.h>
 #include <DiaCore/Json/external/json/json.h>
 
 namespace Dia
@@ -23,7 +24,12 @@ namespace Dia
 		{
 			// Fills root (object) with one entry per domain, keyed by GetDisplayName().
 			// Domains with a null display name are skipped.
-			void BuildDomainStatesRoot(const DiaDebugDomainRegistry& registry, Json::Value& root);
+			//
+			// resolver (optional): when non-null and IsAvailable(), every domain state that has a
+			// "controls" array and no "schemaVersion" of its own gets schemaVersion = resolver->Version().
+			// The page (vsScan) reads schemaVersion from a domain state, not from the root.
+			void BuildDomainStatesRoot(const DiaDebugDomainRegistry& registry, Json::Value& root,
+									   const ISchemaKeyResolver* resolver = nullptr);
 		}
 	}
 }
