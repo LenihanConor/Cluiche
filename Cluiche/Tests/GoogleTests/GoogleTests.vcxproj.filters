@@ -2087,5 +2087,8 @@
     <ClCompile Include="DiaValueSchema\TestComponentFieldWiring.cpp">
       <Filter>DiaValueSchema</Filter>
     </ClCompile>
+    <ClCompile Include="DiaEntity\TestComponentSchemaJson.cpp">
+      <Filter>DiaEntity</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -5,37 +5,33 @@
 
 namespace Dia::Entity {
 
-    namespace {
-
-        // Constructs a default instance, saves it to JSON, destroys it. Returns false if unavailable.
-        bool BuildDefaultJson(const ComponentTypeDesc& desc, Json::Value& outJson) {
-            if (desc.constructDefault == nullptr || desc.saveToJson == nullptr) {
-                return false;
-            }
-
-            alignas(16) char stackBuf[256];
-            void* mem = stackBuf;
-            bool heap = false;
-            if (desc.size > sizeof(stackBuf) || desc.alignment > 16u) {
-                mem = _aligned_malloc(desc.size, desc.alignment > 0u ? desc.alignment : 16u);
-                if (mem == nullptr) {
-                    return false;
-                }
-                heap = true;
-            }
-
-            desc.constructDefault(mem);
-            IComponent* comp = static_cast<IComponent*>(mem);
-            desc.saveToJson(comp, outJson);
-            comp->~IComponent();
-
-            if (heap) {
-                _aligned_free(mem);
-            }
-            return true;
+    // Constructs a default instance, saves it to JSON, destroys it. Returns false if unavailable.
+    bool BuildComponentDefaultJson(const ComponentTypeDesc& desc, Json::Value& outJson) {
+        if (desc.constructDefault == nullptr || desc.saveToJson == nullptr) {
+            return false;
         }
 
-    } // namespace
+        alignas(16) char stackBuf[256];
+        void* mem = stackBuf;
+        bool heap = false;
+        if (desc.size > sizeof(stackBuf) || desc.alignment > 16u) {
+            mem = _aligned_malloc(desc.size, desc.alignment > 0u ? desc.alignment : 16u);
+            if (mem == nullptr) {
+                return false;
+            }
+            heap = true;
+        }
+
+        desc.constructDefault(mem);
+        IComponent* comp = static_cast<IComponent*>(mem);
+        desc.saveToJson(comp, outJson);
+        comp->~IComponent();
+
+        if (heap) {
+            _aligned_free(mem);
+        }
+        return true;
+    }
 
     unsigned DescribeComponentFields(const ComponentTypeDesc& desc, ComponentFieldInfo* out, unsigned maxOut) {
         if (out == nullptr || desc.fields == nullptr) {
@@ -43,7 +39,7 @@ namespace Dia::Entity {
         }
 
         Json::Value defaults;
-        const bool haveDefaults = BuildDefaultJson(desc, defaults) && defaults.isObject();
+        const bool haveDefaults = BuildComponentDefaultJson(desc, defaults) && defaults.isObject();
 
         const uint32_t typeCrc = Dia::Core::StringCRC(desc.debugName).Value();
         const Dia::Reflect::FieldAttributeRegistry& registry = Dia::Reflect::FieldAttributeRegistry::Instance();

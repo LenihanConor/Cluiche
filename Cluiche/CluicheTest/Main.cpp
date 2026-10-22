@@ -10,6 +10,7 @@
 #include <DiaApplicationFlow/Manifest/ManifestBootstrap.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaEntity/ComponentRegistry.h>
+#include <DiaEntity/ComponentSchemaJson.h>
 #include <DiaEntity/IComponent.h>
 #include <DiaCore/Metadata/DescriptionRegistry.h>
 #include "Modules/TestStages/TestResultsRegistry.h"
@@ -26,21 +27,6 @@ namespace {
 // --dump-schema helpers
 // ---------------------------------------------------------------------------
 
-// Convert a FieldKind enum to its lowercase JSON string representation.
-const char* FieldKindToString(Dia::Entity::FieldKind kind)
-{
-    switch (kind)
-    {
-    case Dia::Entity::FieldKind::Primitive:    return "primitive";
-    case Dia::Entity::FieldKind::StringId:     return "string_id";
-    case Dia::Entity::FieldKind::Math:         return "math";
-    case Dia::Entity::FieldKind::AssetHandle:  return "asset_handle";
-    case Dia::Entity::FieldKind::EntityRef:    return "entity_ref";
-    case Dia::Entity::FieldKind::Nested:       return "nested";
-    case Dia::Entity::FieldKind::Container:    return "container";
-    default:                                   return "unknown";
-    }
-}
 
 // Convert a PUAffinity bitmask to a human-readable string tag.
 // Combinations are joined with '|' (e.g. "main|sim").
@@ -89,98 +75,7 @@ int DumpSchema()
         {
             const Dia::Entity::ComponentTypeDesc& desc = reg.GetByIndex(i);
 
-            Json::Value comp(Json::objectValue);
-
-            // type_id: prefer the string stored in the StringCRC; fall back to hex CRC value.
-            const char* typeIdStr = desc.typeId.AsChar();
-            if (typeIdStr && typeIdStr[0] != '\0')
-            {
-                comp["type_id"] = typeIdStr;
-            }
-            else
-            {
-                char hexBuf[20];
-                snprintf(hexBuf, sizeof(hexBuf), "0x%08X", desc.typeId.Value());
-                comp["type_id"] = hexBuf;
-            }
-
-            comp["debug_name"] = desc.debugName ? desc.debugName : "";
-
-            const char* compDesc = Dia::Core::Metadata::DescriptionRegistry::Get(desc.typeId);
-            comp["description"] = compDesc ? compDesc : "";
-
-            Json::Value fields(Json::arrayValue);
-            for (uint16_t f = 0; f < desc.fieldCount; ++f)
-            {
-                const Dia::Entity::FieldDesc& fd = desc.fields[f];
-                Json::Value field(Json::objectValue);
-                field["name"] = fd.name ? fd.name : "";
-                field["kind"] = FieldKindToString(fd.kind);
-                fields.append(field);
-            }
-            comp["fields"] = fields;
-
-            // default_values: serialise a zero-initialised default instance via saveToJson.
-            Json::Value defaultValuesJson(Json::objectValue);
-            if (desc.saveToJson != nullptr)
-            {
-                // Guard against zero alignment (shouldn't happen, but be safe).
-                const size_t alignment = (desc.alignment > 0)
-                    ? static_cast<size_t>(desc.alignment)
-                    : alignof(std::max_align_t);
-
-                void* buf = _aligned_malloc(static_cast<size_t>(desc.size), alignment);
-                if (buf)
-                {
-                    memset(buf, 0, static_cast<size_t>(desc.size));
-                    const Dia::Entity::IComponent* ptr =
-                        static_cast<const Dia::Entity::IComponent*>(buf);
-                    desc.saveToJson(ptr, defaultValuesJson);
-                    _aligned_free(buf);
-                }
-            }
-            else
-            {
-                fprintf(stderr,
-                    "reflect: WARNING: %s has no saveToJson — default_values will be zero-filled\n",
-                    desc.debugName ? desc.debugName : "unknown");
-
-                for (uint16_t f = 0; f < desc.fieldCount; ++f)
-                {
-                    const Dia::Entity::FieldDesc& fd = desc.fields[f];
-                    const char* fieldName = fd.name ? fd.name : "";
-                    switch (fd.kind)
-                    {
-                    case Dia::Entity::FieldKind::Primitive:
-                        defaultValuesJson[fieldName] = Json::Value(Json::Int(0));
-                        break;
-                    case Dia::Entity::FieldKind::StringId:
-                        defaultValuesJson[fieldName] = Json::Value("");
-                        break;
-                    case Dia::Entity::FieldKind::Math:
-                        defaultValuesJson[fieldName] = Json::Value(Json::Int(0));
-                        break;
-                    case Dia::Entity::FieldKind::AssetHandle:
-                        defaultValuesJson[fieldName] = Json::Value("");
-                        break;
-                    case Dia::Entity::FieldKind::EntityRef:
-                        defaultValuesJson[fieldName] = Json::Value("");
-                        break;
-                    case Dia::Entity::FieldKind::Nested:
-                        defaultValuesJson[fieldName] = Json::Value(Json::objectValue);
-                        break;
-                    case Dia::Entity::FieldKind::Container:
-                        defaultValuesJson[fieldName] = Json::Value(Json::arrayValue);
-                        break;
-                    default:
-                        defaultValuesJson[fieldName] = Json::Value(Json::Int(0));
-                        break;
-                    }
-                }
-            }
-            comp["default_values"] = defaultValuesJson;
-
-            components.append(comp);
+            components.append(Dia::Entity::BuildComponentSchemaJson(desc));
         }
     }
     root["components"] = components;

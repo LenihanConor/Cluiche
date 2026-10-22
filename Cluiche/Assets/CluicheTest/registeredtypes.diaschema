@@ -9,10 +9,12 @@
       "description": "Holds 2D world-space position (x, y) for an entity.",
       "fields": [
         {
+          "default": 0,
           "kind": "primitive",
           "name": "x"
         },
         {
+          "default": 0,
           "kind": "primitive",
           "name": "y"
         }
@@ -22,16 +24,18 @@
     {
       "debug_name": "VisualTestRenderComponent",
       "default_values": {
-        "colour": 0,
-        "radius": 0
+        "colour": 1338243071,
+        "radius": 12
       },
       "description": "Stores render properties (radius, colour) for circle-based visual representation in the entity test stage.",
       "fields": [
         {
+          "default": 12,
           "kind": "primitive",
           "name": "radius"
         },
         {
+          "default": 1338243071,
           "kind": "primitive",
           "name": "colour"
         }
@@ -47,6 +51,7 @@
       "description": "Registers a circle shape with the picking service so the entity can be selected in the test stage.",
       "fields": [
         {
+          "default": 0,
           "kind": "primitive",
           "name": "objectIdx"
         }
@@ -57,15 +62,17 @@
       "debug_name": "ParentComponent",
       "default_values": {
         "parentGen": 0,
-        "parentIndex": 0
+        "parentIndex": 4294967295
       },
       "description": "Stores the parent entity handle; links this entity into the scene hierarchy.",
       "fields": [
         {
+          "default": 4294967295,
           "kind": "primitive",
           "name": "parentIndex"
         },
         {
+          "default": 0,
           "kind": "primitive",
           "name": "parentGen"
         }
@@ -93,30 +100,37 @@
       "description": "",
       "fields": [
         {
+          "default": null,
           "kind": "string_id",
           "name": "blueprintId"
         },
         {
+          "default": 0,
           "kind": "primitive",
           "name": "rate"
         },
         {
+          "default": 0,
           "kind": "primitive",
           "name": "burstCount"
         },
         {
+          "default": 0,
           "kind": "primitive",
           "name": "cap"
         },
         {
+          "default": 0,
           "kind": "primitive",
           "name": "lifetime"
         },
         {
+          "default": 0,
           "kind": "primitive",
           "name": "despawnRadius"
         },
         {
+          "default": false,
           "kind": "primitive",
           "name": "active"
         }
@@ -149,15 +163,17 @@
       "default_values": {
         "layerMask": 0,
         "position": null,
-        "radius": 0
+        "radius": 1
       },
       "description": "",
       "fields": [
         {
+          "default": null,
           "kind": "nested",
           "name": "position"
         },
         {
+          "default": 1,
           "kind": "primitive",
           "name": "radius"
         },
@@ -183,6 +199,7 @@
       "description": "Wraps one AttributeSet \u00e2\u20ac\u201d resolved base+modifier attribute values for this entity.",
       "fields": [
         {
+          "default": null,
           "kind": "string_id",
           "name": "schema_name"
         }

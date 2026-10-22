@@ -984,6 +984,7 @@
     <ClCompile Include="DiaEntity\TestComponentDescribe.cpp" />
     <ClCompile Include="DiaValueSchema\TestComponentFieldCollector.cpp" />
     <ClCompile Include="DiaValueSchema\TestComponentFieldWiring.cpp" />
+    <ClCompile Include="DiaEntity\TestComponentSchemaJson.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

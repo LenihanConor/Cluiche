@@ -28,4 +28,8 @@ namespace Dia::Entity {
     // Defaults come from serialising a default-constructed instance (needs desc.constructDefault).
     unsigned DescribeComponentFields(const ComponentTypeDesc& desc, ComponentFieldInfo* out, unsigned maxOut);
 
+    // Constructs a default instance, serialises it to outJson and destroys it.
+    // Returns false (outJson untouched) when desc has no constructDefault or saveToJson.
+    bool BuildComponentDefaultJson(const ComponentTypeDesc& desc, Json::Value& outJson);
+
 } // namespace Dia::Entity
