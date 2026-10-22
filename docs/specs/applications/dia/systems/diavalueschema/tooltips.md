@@ -161,4 +161,4 @@ No conflicts.
 
 ## Status
 
-`Approved` (2026-10-20). Plan not yet created. Build needs AD-001 sign-off for the DiaVisualDebugger, DiaEditorUI and DiaDebugServer edits.
+`Done` (2026-10-22). Plan: [tooltips.plan.md](tooltips.plan.md). AD-001 sign-off for the DiaVisualDebugger, DiaEditorUI and DiaDebugServer edits given 2026-10-22; AC 15 (visual match against the mockup) confirmed by the user on the generated preview page. Built beyond the original task list: `ISchemaKeyResolver` + `ServiceKeyResolver` (DiaVisualDebugger stays free of DiaValueSchema), the `PanelController` query executor bridge (`app.onValueSchemaGet` / `valueSchemaResult`), and `schemaVersion` stamped on domain states by the Main-PU panel host. Not yet exercised in the running game: no domain emits `schemaKey` and no sidecar schema exists for one, so the live panel shows no tooltips until CoW or a stage adds both. The resolver is private to the Main-PU panel host; a Sim-PU domain builds its own from a `ServiceStreamReader`.

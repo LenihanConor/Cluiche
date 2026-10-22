@@ -185,4 +185,4 @@ No conflicts. This replaces the system spec's `ToCellFieldRamp` (amended in the 
 
 ## Status
 
-`In Progress` (2026-10-21). Plan: [ramps.plan.md](ramps.plan.md). C++ side built (AC 1-10, 13). Open: AC 11 (TypeScript, needs the `@dia/editor-ui` sign-off), AC 12 (`valueschema.get` `ramps`, needs Feature 3), AC 14 (visual match, needs a consumer). Free-function resolvers became the `RampResolver` class so the warn-once state stays out of the immutable service.
+`In Progress` (2026-10-21). Plan: [ramps.plan.md](ramps.plan.md). C++ side built (AC 1-10, 13). Open: AC 11 (TypeScript, needs the `@dia/editor-ui` sign-off), AC 12 (`valueschema.get` `ramps`; Feature 3 query now exists, so this is unblocked), AC 14 (visual match, needs a consumer). Free-function resolvers became the `RampResolver` class so the warn-once state stays out of the immutable service.
