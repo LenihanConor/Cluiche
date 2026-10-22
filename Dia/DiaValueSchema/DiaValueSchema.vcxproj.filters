@@ -31,6 +31,9 @@
     </ClInclude>
     <ClInclude Include="RampData.h" />
     <ClInclude Include="RampLoader.h" />
+    <ClInclude Include="Testing\ColourMath.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ValueSchemaVersion.cpp" />

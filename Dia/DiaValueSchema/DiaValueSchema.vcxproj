@@ -90,6 +90,7 @@
     <ClInclude Include="Testing\SchemaTempDirectory.h" />
     <ClInclude Include="RampData.h" />
     <ClInclude Include="RampLoader.h" />
+    <ClInclude Include="Testing\ColourMath.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ValueSchemaVersion.cpp" />
@@ -107,6 +108,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diavalueschema.architecture.module.md" />
+    <None Include="Data\ramps.json" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
