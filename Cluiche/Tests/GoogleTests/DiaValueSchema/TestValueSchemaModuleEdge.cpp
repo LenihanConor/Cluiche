@@ -562,6 +562,37 @@ TEST(DiaValueSchemaModuleEdge, StandaloneModuleBeforeStartIsInert)
 	EXPECT_EQ(m.GetSchemaRootCount(), 0u);
 }
 
+TEST(DiaValueSchemaModuleEdge, DestroyedWithoutStopUnregistersHealthReporter)
+{
+	FakeCodeSideSource src;
+	const unsigned int before = CountHealthReporters();
+	{
+		Harness h("{}", src);
+		ASSERT_TRUE(h.Start());
+		EXPECT_EQ(CountHealthReporters(), before + 1);
+		// Tear the application down without the Stop lifecycle: the module is destroyed while still started.
+		h.mApp.reset();
+	}
+	// A dangling IHealthReporter* here would crash the snapshot.
+	EXPECT_EQ(CountHealthReporters(), before);
+}
+
+TEST(DiaValueSchemaModuleEdge, DestroyedAfterStopAndNeverStartedAreSafe)
+{
+	const unsigned int before = CountHealthReporters();
+	{
+		TestVsc never(StringCRC("destroyNeverStarted"));
+	}
+	{
+		FakeCodeSideSource src;
+		Harness h("{}", src);
+		ASSERT_TRUE(h.Start());
+		g_module->CycleStop();
+		g_module->CycleStop();
+	}
+	EXPECT_EQ(CountHealthReporters(), before);
+}
+
 TEST(DiaValueSchemaModuleEdge, StopWithoutStartIsHarmless)
 {
 	TestVsc m(StringCRC("standalone"));

@@ -22,7 +22,12 @@ namespace Dia::ValueSchema
 	{
 	}
 
-	ValueSchemaModule::~ValueSchemaModule() = default;
+	ValueSchemaModule::~ValueSchemaModule()
+	{
+		// Destroyed without Stop: the global registry must not keep a pointer to the member mHealth (no-op if absent).
+		Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealth);
+		mClamper.BindClampCounter(nullptr);
+	}
 
 	bool ValueSchemaModule::AddContributor(IValueSchemaContributor* contributor)
 	{
