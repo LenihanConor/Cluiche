@@ -76,7 +76,7 @@ Provides machine-readable value schema definitions via *.schema.json files that 
 | `SchemaDirectoryLoader` | `AddRoot(dir)`, `Discover()`, `FileAt(i)`, `LoadInto(registry) -> SchemaLoadStats`; plain class, no Application |
 | `RampRegistry` | `Register(ramp, isDia, sourceFile) -> RampRegisterResult`, `Publish`, `Find(id)`, `Count`; Dia wins id clashes, first game file wins between game files, immutable after `Publish` |
 | `RampSetLoader` | `AddDiaRoot(dir)`, `AddGameRoot(dir)`, `Load(RampRegistry&) -> RampLoadStats`; plain class, no Application |
-| `ValueSchemaService` | Read-only `Find` / `Find(for, key)` / `ForFormat` / `FindEvent` / `Count` over the published registry; `FindRamp(id)` (null if unknown) / `RampCount()` |
+| `ValueSchemaService` | Read-only `Find` / `Find(for, key)` / `ForFormat` / `FindEvent` / `Count` over the published registry; `FindRamp(id)` (null if unknown) / `RampCount()`; `ExportSubset(keys, count, out, report?)` writes `{entries, ramps}` for the keys plus their one-level `affects`/`related` entries and used ramps (Feature 6, DiaCellHistory export) |
 | `IValueSchemaContributor` | `ContributeEntries(ValueSchemaRegistry&)`: code-side entries (Features 4 / 7), called before publish |
 | `ValueSchemaHealth` | `IHealthReporter` `dia.valueschema`: Degraded when any schema file or whole ramp file failed, OK otherwise |
 | `ValueSchemaModule` | `Module`, `PUAffinity::kAny`; loads, publishes the `ValueSchemaService` ServiceStream; `AddContributor`, `GetService`, `GetClamper`, `GetLoadStats`, `GetHealthReporter` |

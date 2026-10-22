@@ -10,9 +10,17 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaValueSchema/ValueSchemaRegistry.h>
 #include <DiaValueSchema/RampRegistry.h>
+#include <json/json.h>
 
 namespace Dia::ValueSchema
 {
+	// Optional out-report for ExportSubset.
+	struct SubsetReport
+	{
+		unsigned int mSkippedUnknown = 0;		// distinct requested keys that are not in the schema (one Warning each)
+		unsigned int mReferencedUnresolved = 0;	// affects/related references that resolve to nothing (skipped silently)
+	};
+
 	class ValueSchemaService
 	{
 	public:
@@ -33,6 +41,13 @@ namespace Dia::ValueSchema
 		const RampData*		FindRamp(Dia::Core::StringCRC rampId) const;	// null for unknown ids
 		unsigned int		RampCount() const;
 	const RampData*		RampAt(unsigned int index) const;	// registration order; null when out of range or no ramps
+
+		// Feature 6 AC 8. Writes { entries: [...], ramps: [...] } (same field names as the export file) for the given full keys,
+		// the entries they reference through affects/related (ONE level, no transitive following), and every ramp named by
+		// ui.ramp / ui.delta_ramp of those entries (ramp library order). Entries: requested order then referenced in first-seen
+		// order, duplicates once. A reference is tried as "<entry for>/<ref>" first, then as written. An unknown requested key
+		// is skipped with one Warning (VSC) per distinct key. Returns false only for keys == null with keyCount > 0.
+		bool				ExportSubset(const Dia::Core::StringCRC* keys, unsigned int keyCount, Json::Value& out, SubsetReport* report = nullptr) const;
 
 	private:
 		const ValueSchemaRegistry&	mRegistry;

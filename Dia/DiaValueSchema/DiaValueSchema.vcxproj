@@ -126,6 +126,7 @@
     <ClCompile Include="ComponentAttributeAudit.cpp" />
     <ClCompile Include="ValueSchemaQuery.cpp" />
     <ClCompile Include="ValueSchemaExporter.cpp" />
+    <ClCompile Include="ValueSchemaSubset.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diavalueschema.architecture.module.md" />
