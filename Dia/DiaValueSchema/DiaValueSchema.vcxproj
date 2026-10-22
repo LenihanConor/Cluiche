@@ -91,6 +91,8 @@
     <ClInclude Include="RampData.h" />
     <ClInclude Include="RampLoader.h" />
     <ClInclude Include="Testing\ColourMath.h" />
+    <ClInclude Include="RampRegistry.h" />
+    <ClInclude Include="RampSetLoader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ValueSchemaVersion.cpp" />
@@ -105,6 +107,8 @@
     <ClCompile Include="ValueSchemaModule.cpp" />
     <ClCompile Include="RampData.cpp" />
     <ClCompile Include="RampLoader.cpp" />
+    <ClCompile Include="RampRegistry.cpp" />
+    <ClCompile Include="RampSetLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diavalueschema.architecture.module.md" />

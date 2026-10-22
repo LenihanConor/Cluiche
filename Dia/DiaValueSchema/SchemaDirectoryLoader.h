@@ -30,7 +30,8 @@ namespace Dia::ValueSchema
 	class SchemaDirectoryLoader
 	{
 	public:
-		SchemaDirectoryLoader();
+		// suffix: file-name suffix to discover (default ".schema.json"; RampSetLoader reuses this with ".ramps.json").
+		explicit SchemaDirectoryLoader(const char* suffix = ".schema.json");
 		~SchemaDirectoryLoader();
 		SchemaDirectoryLoader(const SchemaDirectoryLoader&) = delete;
 		SchemaDirectoryLoader& operator=(const SchemaDirectoryLoader&) = delete;

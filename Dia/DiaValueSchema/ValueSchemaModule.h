@@ -8,10 +8,16 @@
 // no-op); consumers on any PU read the immutable published registry through the stream, lock-free.
 // Config is delivered through Module::OnConfigure (available on every module base):
 //
-//     "config": { "schema_roots": ["data", "cow_schema"] }
+//     "config": { "schema_roots": ["data", "cow_schema"], "ramp_roots": ["dia_data"] }
 //
 // Each entry is a PathStore alias resolved to a directory and walked recursively. An unregistered
 // alias or missing directory is a Warning, not fatal (counted in GetLoadStats().mRootsMissing).
+// Config JSON is capped at 255 chars (String256): keep alias lists short.
+//
+// Ramps (Feature 5): each `ramp_roots` alias is a directory holding the Dia ramp set as a file named exactly
+// "ramps.json" (apps add a `dia_data` alias pointing at Dia/DiaValueSchema/Data). Game ramps are every
+// "*.ramps.json" under the schema_roots directories. Dia ramps load first and win id clashes. A whole ramp file
+// failing degrades health; a single skipped ramp does not. FindRamp is served by ValueSchemaService.
 //
 // Start (DoStart): trace zone "ValueSchema.Load" -> discover + load sorted files -> call every
 // contributor (IValueSchemaContributor) -> Publish -> register the service on the stream.
@@ -21,6 +27,7 @@
 // freed with the module, so the service never outlives its registry.
 //
 // Observation: metrics valueschema.entries_loaded / valueschema.files_failed (gauges) and
+// valueschema.ramps_loaded / valueschema.ramp_files_failed (gauges),
 // valueschema.clamp.count (counter, bound to GetClamper()); health reporter "dia.valueschema".
 
 #include <DiaApplicationFlow/Module.h>
@@ -35,6 +42,8 @@
 #include <DiaValueSchema/ValueClamper.h>
 #include <DiaValueSchema/SchemaDirectoryLoader.h>
 #include <DiaValueSchema/ValueSchemaHealth.h>
+#include <DiaValueSchema/RampRegistry.h>
+#include <DiaValueSchema/RampSetLoader.h>
 
 namespace Dia::Observation::Metric { class Counter; class Gauge; }
 
@@ -63,9 +72,12 @@ namespace Dia::ValueSchema
 		ValueClamper&				GetClamper()			{ return mClamper; }
 		const SchemaLoadStats&		GetLoadStats() const	{ return mStats; }
 		const ValueSchemaHealth&	GetHealthReporter() const { return mHealth; }
+		const RampLoadStats&		GetRampLoadStats() const { return mRampStats; }
 
 		unsigned int	GetSchemaRootCount() const						{ return mRootAliases.Size(); }
 		const char*		GetSchemaRoot(unsigned int index) const			{ return mRootAliases[index].AsCStr(); }
+		unsigned int	GetRampRootCount() const						{ return mRampRootAliases.Size(); }
+		const char*		GetRampRoot(unsigned int index) const			{ return mRampRootAliases[index].AsCStr(); }
 
 	protected:
 		void								OnConfigure(const char* configJson) override;
@@ -76,18 +88,23 @@ namespace Dia::ValueSchema
 
 	private:
 		Dia::Core::Containers::DynamicArrayC<Dia::Core::Containers::String64, kMaxSchemaRoots>	mRootAliases;
+		Dia::Core::Containers::DynamicArrayC<Dia::Core::Containers::String64, kMaxSchemaRoots>	mRampRootAliases;
 		Dia::Core::Containers::DynamicArrayC<IValueSchemaContributor*, kMaxContributors>			mContributors;
 
 		Dia::Core::UniquePtr<ValueSchemaRegistry>	mRegistry;
-		Dia::Core::UniquePtr<ValueSchemaService>	mService;	// references *mRegistry
+		Dia::Core::UniquePtr<RampRegistry>			mRamps;
+		Dia::Core::UniquePtr<ValueSchemaService>	mService;	// references *mRegistry and *mRamps
 		ValueClamper								mClamper;
 		SchemaLoadStats								mStats;
-		ValueSchemaHealth							mHealth{ mStats };
+		RampLoadStats								mRampStats;
+		ValueSchemaHealth							mHealth{ mStats, &mRampStats };
 
 		Dia::ApplicationFlow::ServiceStreamWriter<ValueSchemaService> mServiceWriter{ this, Dia::Core::StringCRC(kServiceStreamId) };
 
 		Dia::Observation::Metric::Gauge*	mMetricEntriesLoaded = nullptr;
 		Dia::Observation::Metric::Gauge*	mMetricFilesFailed = nullptr;
+		Dia::Observation::Metric::Gauge*	mMetricRampsLoaded = nullptr;
+		Dia::Observation::Metric::Gauge*	mMetricRampFilesFailed = nullptr;
 		Dia::Observation::Metric::Counter*	mMetricClampCount = nullptr;
 	};
 }

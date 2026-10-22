@@ -17,12 +17,10 @@ namespace Dia::ValueSchema
 
 	namespace
 	{
-		const char kSuffix[] = ".schema.json";
-
-		bool HasSchemaSuffix(const std::string& name)
+		bool HasSuffix(const std::string& name, const std::string& suffix)
 		{
-			const size_t n = sizeof(kSuffix) - 1;
-			return name.size() > n && name.compare(name.size() - n, n, kSuffix) == 0;
+			const size_t n = suffix.size();
+			return name.size() > n && name.compare(name.size() - n, n, suffix) == 0;
 		}
 
 		// Absolute, canonical (symlinks / "..", real case on Windows), '/' separators.
@@ -49,12 +47,13 @@ namespace Dia::ValueSchema
 
 	struct SchemaDirectoryLoader::Impl
 	{
+		std::string					mSuffix;
 		std::vector<std::string>	mRoots;
 		std::vector<std::string>	mFiles;
 		unsigned int				mRootsMissing = 0;
 	};
 
-	SchemaDirectoryLoader::SchemaDirectoryLoader() : mImpl(new Impl()) {}
+	SchemaDirectoryLoader::SchemaDirectoryLoader(const char* suffix) : mImpl(new Impl()) { mImpl->mSuffix = suffix ? suffix : ".schema.json"; }
 	SchemaDirectoryLoader::~SchemaDirectoryLoader() { delete mImpl; }
 
 	void SchemaDirectoryLoader::AddRoot(const char* directory)
@@ -92,7 +91,7 @@ namespace Dia::ValueSchema
 				std::string name;
 				try { name = it->path().filename().generic_string(); }
 				catch (const std::exception&) { continue; }
-				if (!HasSchemaSuffix(name)) { continue; }
+				if (!HasSuffix(name, mImpl->mSuffix)) { continue; }
 
 				std::string full;
 				if (Normalise(it->path(), full)) { mImpl->mFiles.push_back(full); }

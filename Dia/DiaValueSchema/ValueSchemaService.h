@@ -9,6 +9,7 @@
 
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaValueSchema/ValueSchemaRegistry.h>
+#include <DiaValueSchema/RampRegistry.h>
 
 namespace Dia::ValueSchema
 {
@@ -16,6 +17,8 @@ namespace Dia::ValueSchema
 	{
 	public:
 		explicit ValueSchemaService(const ValueSchemaRegistry& registry);
+		// ramps may be null (no ramp registry): FindRamp then returns null. Not owned; must outlive the service.
+		ValueSchemaService(const ValueSchemaRegistry& registry, const RampRegistry* ramps);
 		ValueSchemaService(const ValueSchemaService&) = delete;
 		ValueSchemaService& operator=(const ValueSchemaService&) = delete;
 
@@ -25,7 +28,11 @@ namespace Dia::ValueSchema
 		const ValueInfo*	FindEvent(Dia::Core::StringCRC eventKey) const;	// kind:event by key, any `for`
 		unsigned int		Count() const;
 
+		const RampData*		FindRamp(Dia::Core::StringCRC rampId) const;	// null for unknown ids
+		unsigned int		RampCount() const;
+
 	private:
-		const ValueSchemaRegistry& mRegistry;
+		const ValueSchemaRegistry&	mRegistry;
+		const RampRegistry*			mRamps = nullptr;
 	};
 }

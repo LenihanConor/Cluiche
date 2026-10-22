@@ -10,12 +10,18 @@ namespace Dia::ValueSchema
 	Dia::Observation::Health::Health ValueSchemaHealth::Report() const
 	{
 		Dia::Observation::Health::Health h{};
-		h.errors = mStats.mFilesFailed;
+		const unsigned int rampFailed = mRampStats ? mRampStats->mFilesFailed : 0u;
+		h.errors = mStats.mFilesFailed + rampFailed;
 		h.warnings = mStats.mRootsMissing;
 		if (mStats.mFilesFailed > 0)
 		{
 			h.status = Dia::Observation::Health::HealthStatus::kDegraded;
 			h.reason = Dia::Core::StringCRC("valueschema.files_failed");
+		}
+		else if (rampFailed > 0)
+		{
+			h.status = Dia::Observation::Health::HealthStatus::kDegraded;
+			h.reason = Dia::Core::StringCRC("valueschema.ramp_files_failed");
 		}
 		else
 		{
