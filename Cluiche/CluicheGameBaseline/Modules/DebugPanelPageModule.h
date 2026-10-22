@@ -66,18 +66,14 @@ public:
     void OnPaletteSearch(const char* query, int mask) override;
     void OnValueSchemaGet(const char* prefix) override;
 
-    // Schema key resolver for panel controls (DiaValueSchema Feature 3, Task 4b).
-    // Wraps the ValueSchemaService read from the "ValueSchemaService" ServiceStream; the service pointer is
-    // refreshed every DoUpdate (it changes whenever ValueSchemaModule restarts). Never null: when the
-    // service is absent the resolver reports IsAvailable() == false, so a SchemaControl built from it
-    // behaves as if it had no resolver (no key checks, no schemaVersion).
-    // Use: `Dia::VisualDebugger::SchemaControl sc(panelHost.GetSchemaKeyResolver());`. The pointer stays
-    // valid for the module's lifetime. The resolver is only re-pointed on the Main PU, so a domain on
-    // another PU must tolerate the answer changing between frames (it is read-only and never dereferences
-    // the service outside Resolves/Version).
-    // Independently of domains, PushDomainStatesToPanel stamps "schemaVersion" onto every domain state that
-    // has a "controls" array (see Console::BuildDomainStatesRoot), which is where debug-panel.html reads it.
-    const Dia::VisualDebugger::ISchemaKeyResolver* GetSchemaKeyResolver() const { return &mKeyResolver; }
+    // Schema keys (DiaValueSchema Feature 3, Task 4b). The resolver below is PRIVATE to this Main-PU module and is
+    // used only to stamp "schemaVersion" onto every domain state that has a "controls" array (see
+    // Console::BuildDomainStatesRoot), which is where debug-panel.html reads it.
+    // It is deliberately not exposed: no getter, no static, no singleton. A module on another PU (e.g. a Sim
+    // domain that wants SchemaControl key checks) builds its OWN resolver from the stream, the normal pattern:
+    //   ServiceStreamReader<ValueSchemaService> mSchema{this, "ValueSchemaService"};
+    //   ServiceKeyResolver<ValueSchemaService>  mResolver;   // SetService(mSchema.IsAvailable() ? &mSchema.Get() : nullptr)
+    //   SchemaControl sc(&mResolver);
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
