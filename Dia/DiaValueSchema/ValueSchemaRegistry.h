@@ -45,6 +45,12 @@ namespace Dia::ValueSchema
 		ValueInfoSpan		ForFormat(Dia::Core::StringCRC formatId) const;
 		const ValueInfo*	FindEvent(Dia::Core::StringCRC eventKey) const;
 		unsigned int		Count() const;
+		const ValueInfo*	At(unsigned int index) const;	// registration order; null when out of range
+
+		// Snapshot version: 0 until Publish(); then a number from a process-wide, monotonically increasing counter
+		// (an atomic local to ValueSchemaRegistry.cpp, not a singleton). A later publish always gets a larger number,
+		// so consumers re-query when it changes. Publishing the same registry twice keeps its number.
+		unsigned int		Version() const;
 
 	private:
 		struct Impl;

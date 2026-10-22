@@ -45,6 +45,7 @@
     </ClInclude>
     <ClInclude Include="ComponentFieldCollector.h" />
     <ClInclude Include="ComponentAttributeAudit.h" />
+    <ClInclude Include="ValueSchemaQuery.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ValueSchemaVersion.cpp" />
@@ -67,6 +68,7 @@
     <ClCompile Include="CodeSideCollector.cpp" />
     <ClCompile Include="ComponentFieldCollector.cpp" />
     <ClCompile Include="ComponentAttributeAudit.cpp" />
+    <ClCompile Include="ValueSchemaQuery.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diavalueschema.architecture.module.md">

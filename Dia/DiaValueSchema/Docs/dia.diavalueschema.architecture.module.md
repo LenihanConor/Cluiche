@@ -16,6 +16,7 @@ dependencies:
     - dia.observation
     - dia.api
     - dia.entity
+    - dia.dia.diadebugserver
   forbidden: []
 public_api:
   headers:
@@ -33,6 +34,7 @@ public_api:
     - DiaValueSchema/ComponentFieldCollector.h
     - DiaValueSchema/ComponentAttributeAudit.h
     - DiaValueSchema/ValueSchemaHealth.h
+    - DiaValueSchema/ValueSchemaQuery.h
     - DiaValueSchema/ValueSchemaModule.h
   namespaces:
     - Dia::ValueSchema::
@@ -41,11 +43,13 @@ public_api:
     - ValueSchemaModule
     - ValueSchemaService
     - IValueSchemaContributor
+    - ValueSchemaQueryHandler
 responsibilities:
   - Sidecar *.schema.json format definition and parsing
   - ValueInfo registry for storing and querying schema metadata
   - ValueSchemaRegistry for managing schema registrations
   - ValueSchemaModule and ValueSchemaService lifecycle integration
+  - valueschema.get DiaDebugServer query and snapshot Version() (Feature 3)
   - ClampAndWarn utility for value validation and warning logging
 non_responsibilities:
   - Validation CLI tooling

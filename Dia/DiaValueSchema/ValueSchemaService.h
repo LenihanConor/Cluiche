@@ -27,6 +27,8 @@ namespace Dia::ValueSchema
 		ValueInfoSpan		ForFormat(Dia::Core::StringCRC formatId) const;	// entries in file order
 		const ValueInfo*	FindEvent(Dia::Core::StringCRC eventKey) const;	// kind:event by key, any `for`
 		unsigned int		Count() const;
+		const ValueInfo*	At(unsigned int index) const;	// registration order; null when out of range
+		unsigned int		Version() const;				// snapshot version, see ValueSchemaRegistry::Version()
 
 		const RampData*		FindRamp(Dia::Core::StringCRC rampId) const;	// null for unknown ids
 		unsigned int		RampCount() const;

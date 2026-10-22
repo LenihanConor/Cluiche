@@ -1,6 +1,7 @@
 #include <DiaValueSchema/ValueSchemaRegistry.h>
 #include <DiaObservation/Log/DiaLog.h>
 
+#include <atomic>
 #include <memory>
 #include <string>
 #include <string.h>
@@ -25,6 +26,7 @@ namespace Dia::ValueSchema
 		std::unordered_map<unsigned int, Format>				mFormats;
 		std::unordered_map<unsigned int, const ValueInfo*>		mEvents;
 		bool													mPublished = false;
+		unsigned int										mVersion = 0;
 	};
 
 	ValueSchemaRegistry::ValueSchemaRegistry() : mImpl(new Impl()) {}
@@ -133,7 +135,22 @@ namespace Dia::ValueSchema
 		return RegisterResult::Ok;
 	}
 
-	void ValueSchemaRegistry::Publish() { mImpl->mPublished = true; }
+	namespace
+	{
+		std::atomic<unsigned int> sNextVersion{ 1 };	// process-wide publish counter; 0 is reserved for "unpublished"
+	}
+
+	void ValueSchemaRegistry::Publish()
+	{
+		if (!mImpl->mPublished) { mImpl->mVersion = sNextVersion.fetch_add(1); }
+		mImpl->mPublished = true;
+	}
+	unsigned int ValueSchemaRegistry::Version() const { return mImpl->mVersion; }
+
+	const ValueInfo* ValueSchemaRegistry::At(unsigned int index) const
+	{
+		return index < mImpl->mStorage.size() ? mImpl->mStorage[index].get() : nullptr;
+	}
 	bool ValueSchemaRegistry::IsPublished() const { return mImpl->mPublished; }
 
 	const ValueInfo* ValueSchemaRegistry::Find(StringCRC fullKey) const

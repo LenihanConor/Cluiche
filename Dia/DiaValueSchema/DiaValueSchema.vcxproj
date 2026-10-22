@@ -100,6 +100,7 @@
     <ClInclude Include="Testing\FakeCodeSideSource.h" />
     <ClInclude Include="ComponentFieldCollector.h" />
     <ClInclude Include="ComponentAttributeAudit.h" />
+    <ClInclude Include="ValueSchemaQuery.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ValueSchemaVersion.cpp" />
@@ -122,6 +123,7 @@
     <ClCompile Include="CodeSideCollector.cpp" />
     <ClCompile Include="ComponentFieldCollector.cpp" />
     <ClCompile Include="ComponentAttributeAudit.cpp" />
+    <ClCompile Include="ValueSchemaQuery.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diavalueschema.architecture.module.md" />
@@ -146,6 +148,10 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaAPI\DiaAPI.vcxproj">
       <Project>{1E7F6E13-50CF-411C-B34C-66D70121DD03}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaDebugServer\DiaDebugServer.vcxproj">
+      <Project>{6AAFCCCB-71D0-4D8D-A6BE-081F5E02093D}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\DiaEntity\DiaEntity.vcxproj">

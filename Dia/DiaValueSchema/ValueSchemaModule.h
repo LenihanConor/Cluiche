@@ -41,6 +41,11 @@
 // (gauges, Feature 7: ECS component fields via ComponentFieldCollector + ComponentAttributeAudit, profile scope
 // "ValueSchema.CollectComponentFields"; dropped attribute registrations log an Error and degrade health),
 // valueschema.clamp.count (counter, bound to GetClamper()); health reporter "dia.valueschema".
+//
+// Query (Feature 3): at the end of DoStart the module registers `valueschema.get` (ValueSchemaQueryHandler) with the
+// DiaDebugServer QueryRegistry and unregisters it in DoStop / the destructor. The registry is taken from
+// SetQueryRegistry() when set (tests), else from the DebugServer on the "DebugServerService" ServiceStream (the same
+// way the inspector modules reach it). Without a DebugServer the query is simply not served (Debug log, not an error).
 
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/PUAffinity.h>
@@ -59,9 +64,11 @@
 #include <DiaValueSchema/CodeSideCollector.h>
 #include <DiaValueSchema/ComponentFieldCollector.h>
 #include <DiaValueSchema/ComponentAttributeAudit.h>
+#include <DiaValueSchema/ValueSchemaQuery.h>
 
 namespace Dia::Observation::Metric { class Counter; class Gauge; }
 namespace Dia::Entity { struct ComponentTypeDesc; }
+namespace Dia::DebugServer { class QueryRegistry; }
 
 namespace Dia::ValueSchema
 {
@@ -108,6 +115,10 @@ namespace Dia::ValueSchema
 		const ComponentFieldReport&			GetComponentFieldReport() const	{ return mComponentReport; }
 		const ComponentAttributeAuditReport& GetComponentAuditReport() const	{ return mAuditReport; }
 
+		// Query registry for valueschema.get (Feature 3). Set before start; null (default) resolves the DebugServer from the
+		// "DebugServerService" stream at start. Not owned; must outlive the module's start.
+		void SetQueryRegistry(Dia::DebugServer::QueryRegistry* registry)	{ mQueryRegistryOverride = registry; }
+
 		unsigned int	GetSchemaRootCount() const						{ return mRootAliases.Size(); }
 		const char*		GetSchemaRoot(unsigned int index) const			{ return mRootAliases[index].AsCStr(); }
 		unsigned int	GetRampRootCount() const						{ return mRampRootAliases.Size(); }
@@ -121,6 +132,9 @@ namespace Dia::ValueSchema
 		Dia::ApplicationFlow::StopResult	DoStop() override;
 
 	private:
+		void RegisterQuery();
+		void UnregisterQuery();
+
 		Dia::Core::Containers::DynamicArrayC<Dia::Core::Containers::String64, kMaxSchemaRoots>	mRootAliases;
 		Dia::Core::Containers::DynamicArrayC<Dia::Core::Containers::String64, kMaxSchemaRoots>	mRampRootAliases;
 		Dia::Core::Containers::DynamicArrayC<IValueSchemaContributor*, kMaxContributors>			mContributors;
@@ -129,6 +143,9 @@ namespace Dia::ValueSchema
 		Dia::Core::UniquePtr<RampRegistry>			mRamps;
 		Dia::Core::UniquePtr<ValueSchemaService>	mService;	// references *mRegistry and *mRamps
 		ValueClamper								mClamper;
+		Dia::Core::UniquePtr<ValueSchemaQueryHandler>	mQueryHandler;	// references *mService
+		Dia::DebugServer::QueryRegistry*			mQueryRegistryOverride = nullptr;
+		Dia::DebugServer::QueryRegistry*			mQueryRegisteredOn = nullptr;
 		LiveCodeSideSource							mLiveSource;
 		ICodeSideSource*							mCodeSideSource = nullptr;	// null = mLiveSource
 		CodeSideReport								mCodeSideReport;

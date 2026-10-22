@@ -2,6 +2,10 @@
 #include <DiaValueSchema/IValueSchemaContributor.h>
 
 #include <DiaApplicationFlow/Application.h>
+#include <DiaApplicationFlow/IApplicationInspectable.h>
+#include <DiaApplicationFlow/Streams/ServiceStreamStore.h>
+#include <DiaDebugServer/DebugServer.h>
+#include <DiaDebugServer/QueryRegistry.h>
 #include <DiaCore/FilePath/PathStore.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
@@ -27,6 +31,7 @@ namespace Dia::ValueSchema
 		// Destroyed without Stop: the global registry must not keep a pointer to the member mHealth (no-op if absent).
 		Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealth);
 		mClamper.BindClampCounter(nullptr);
+		UnregisterQuery();
 	}
 
 	bool ValueSchemaModule::AddContributor(IValueSchemaContributor* contributor)
@@ -116,6 +121,48 @@ namespace Dia::ValueSchema
 		mServiceWriter.Connect(app);
 	}
 
+	// --- valueschema.get registration -------------------------------------------
+	namespace
+	{
+		const char* const kDebugServerStreamId = "DebugServerService";	// DebugServerHostModule::kServiceStreamId (application layer)
+
+		Dia::DebugServer::QueryRegistry* ResolveQueryRegistry(Dia::ApplicationFlow::IApplicationControl* control)
+		{
+			auto* app = dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(control);
+			if (app == nullptr) { return nullptr; }
+			auto* store = app->FindStream(Dia::Core::StringCRC(kDebugServerStreamId));
+			auto* typed = dynamic_cast<Dia::ApplicationFlow::ServiceStreamStore<Dia::DebugServer::DebugServer*>*>(store);
+			Dia::DebugServer::DebugServer* server = typed ? typed->Get() : nullptr;
+			return server ? &server->GetQueryRegistry() : nullptr;
+		}
+	}
+
+	void ValueSchemaModule::UnregisterQuery()
+	{
+		if (mQueryRegisteredOn != nullptr)
+		{
+			mQueryRegisteredOn->Unregister(Dia::Core::StringCRC(ValueSchemaQueryHandler::kQueryName));
+			mQueryRegisteredOn = nullptr;
+		}
+		mQueryHandler.Reset();
+	}
+
+	void ValueSchemaModule::RegisterQuery()
+	{
+		UnregisterQuery();
+		Dia::DebugServer::QueryRegistry* registry = mQueryRegistryOverride ? mQueryRegistryOverride : ResolveQueryRegistry(GetApplication());
+		if (registry == nullptr)
+		{
+			DIA_LOG_DEBUG("VSC", "No DebugServer available; valueschema.get is not served");
+			return;
+		}
+		mQueryHandler = Dia::Core::MakeUnique<ValueSchemaQueryHandler>(*mService);
+		ValueSchemaQueryHandler* handler = mQueryHandler.Get();
+		registry->Register(Dia::Core::StringCRC(ValueSchemaQueryHandler::kQueryName),
+			[handler](const Json::Value& args) { return handler->Handle(args); });
+		mQueryRegisteredOn = registry;
+	}
+
 	// --- Lifecycle ------------------------------------------------------------
 	Dia::ApplicationFlow::StartResult ValueSchemaModule::DoStart()
 	{
@@ -125,6 +172,7 @@ namespace Dia::ValueSchema
 			// Starting again without a Stop: take the stream down first so consumers never see (and the stream never
 			// re-registers over) a service that is about to be destroyed. No-op when not registered.
 			mServiceWriter.Deregister();
+			UnregisterQuery();	// the handler references the service that is about to be replaced
 
 			// Fresh registry each start: a published registry is immutable.
 			mService.Reset();
@@ -259,6 +307,7 @@ namespace Dia::ValueSchema
 		Dia::Observation::Health::HealthRegistry::Instance().Register(&mHealth);
 
 		mServiceWriter.Register(*mService);
+		RegisterQuery();
 		return Dia::ApplicationFlow::StartResult::kReady;
 	}
 
@@ -270,6 +319,7 @@ namespace Dia::ValueSchema
 	{
 		// Registry + service stay alive until the next DoStart or destruction (see header).
 		mServiceWriter.Deregister();
+		UnregisterQuery();
 		Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealth);
 		mClamper.BindClampCounter(nullptr);
 		mMetricEntriesLoaded = nullptr;

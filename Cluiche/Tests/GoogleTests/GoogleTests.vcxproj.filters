@@ -2090,5 +2090,8 @@
     <ClCompile Include="DiaEntity\TestComponentSchemaJson.cpp">
       <Filter>DiaEntity</Filter>
     </ClCompile>
+    <ClCompile Include="DiaValueSchema\TestValueSchemaQuery.cpp">
+      <Filter>DiaValueSchema</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

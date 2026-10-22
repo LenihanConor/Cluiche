@@ -12,6 +12,8 @@ namespace Dia::ValueSchema
 	ValueInfoSpan ValueSchemaService::ForFormat(StringCRC formatId) const				{ return mRegistry.ForFormat(formatId); }
 	const ValueInfo* ValueSchemaService::FindEvent(StringCRC eventKey) const			{ return mRegistry.FindEvent(eventKey); }
 	unsigned int ValueSchemaService::Count() const										{ return mRegistry.Count(); }
+	const ValueInfo* ValueSchemaService::At(unsigned int index) const					{ return mRegistry.At(index); }
+	unsigned int ValueSchemaService::Version() const										{ return mRegistry.Version(); }
 	const RampData* ValueSchemaService::FindRamp(StringCRC rampId) const				{ return mRamps ? mRamps->Find(rampId) : nullptr; }
 	unsigned int ValueSchemaService::RampCount() const									{ return mRamps ? mRamps->Count() : 0u; }
 }
