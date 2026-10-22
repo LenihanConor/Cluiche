@@ -55,6 +55,7 @@ export function loadPanel(pageFile?: string): Panel {
         onPaletteOpen: () => calls.push(["open"]),
         onPaletteSearch: (q: string, m: string) => calls.push(["search", q, m]),
         onCommand: (...a: any[]) => calls.push(["command", ...a]),
+        onValueSchemaGet: (prefix: string) => calls.push(["schemaget", prefix]),
         PushInputMode: (m: string) => calls.push(["push", m]),
         PopInputMode: () => calls.push(["pop"]),
       };

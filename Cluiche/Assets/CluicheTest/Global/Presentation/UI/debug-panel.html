@@ -231,6 +231,44 @@ body {
   accent-color: var(--accent); cursor: pointer;
 }
 .ctrl .cv { width: 30px; text-align: right; color: #666; }
+.ctrl .track { position: relative; flex: 1; display: flex; align-items: center; min-width: 0; }
+.ctrl .track input[type=range] { width: 100%; }
+.dtick { position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; background: #f5a623; opacity: 0.6; pointer-events: none; }
+.pack-marker { flex-shrink: 0; font-size: 8px; padding: 0 4px; background: #2a2510; border: 1px solid #4a4520; color: #f5a623; }
+
+/* Value info icon + tooltip (DiaValueSchema F3; mockup f3-worldassets/mockups/field-schema-tooltips.html) */
+.info-icon {
+  width: 12px; height: 12px; flex-shrink: 0;
+  border: 1px solid #3a3a3a; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 8px; color: #666; cursor: help; outline: none;
+}
+.info-icon:hover, .info-icon:focus { border-color: #5a9fd4; color: #5a9fd4; }
+.vt {
+  position: fixed; z-index: 100; box-sizing: border-box; width: 320px; max-width: 320px;
+  background: #2a2a2a; border: 1px solid #4a4a4a; border-radius: 3px; padding: 10px 12px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.7);
+  font-size: 10px; color: #ccc; text-align: left; font-weight: normal; user-select: none;
+}
+.vt [data-vt-section] { margin-top: 6px; }
+.vt .vt-title { margin-top: 0; font-size: 11px; color: #5a9fd4; font-weight: 600; }
+.vt .vt-desc { color: #aaa; line-height: 1.4; }
+.vt .vt-enum-label { color: #ccc; font-weight: 600; }
+.vt .vt-enum-desc { color: #777; }
+.vt .vt-hint { color: #f5a623; font-style: italic; }
+.vt .vt-meta { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 6px; border-top: 1px solid #333; font-size: 9px; color: #777; }
+.vt .vt-meta-item { display: flex; gap: 4px; }
+.vt .vt-meta-label { color: #555; }
+.vt .vt-meta-value { color: #999; }
+.vt .vt-affects { display: flex; flex-wrap: wrap; gap: 4px; }
+.vt .vt-chip { font-size: 8px; padding: 2px 6px; background: #1a2530; border: 1px solid #2a3a50; color: #5a9fd4; border-radius: 2px; }
+.vt .vt-related { padding-top: 6px; border-top: 1px solid #333; font-size: 9px; color: #777; }
+.vt .vt-related-label { color: #666; font-weight: 700; margin-right: 4px; }
+.vt .vt-link { background: transparent; border: none; padding: 0; margin-right: 8px; font-family: inherit; font-size: 9px; color: #5a9fd4; cursor: pointer; text-decoration: none; }
+.vt .vt-link:hover, .vt .vt-link:focus { text-decoration: underline; }
+.vt .vt-plain { margin-right: 8px; }
+.vt .vt-source { font-size: 9px; color: #555; font-style: italic; }
+.vt .vt-pack { display: inline-block; font-size: 8px; padding: 2px 5px; background: #2a2510; border: 1px solid #4a4520; color: #f5a623; border-radius: 2px; }
 
 /* Desc */
 .desc { font-size: 10px; color: #434343; margin-bottom: 7px; font-style: italic; line-height: 1.4; }
@@ -571,15 +609,20 @@ function structureSignature(domains) {
   for (var i = 0; i < domains.length; ++i) {
     var d = domains[i];
     var drawers = d.drawers.map(function (x) { return x && x.name ? x.name : '?'; }).join(',');
-    var ctrls   = d.controls.map(function (c) { return c && c.key ? c.key : '?'; }).join(',');
+    var ctrls   = d.controls.map(function (c) {
+      if (!c) return '?';
+      var id = controlId(c) || '?';
+      return c.schemaKey ? id + '@' + c.schemaKey + (c.packId ? '#' + c.packId : '') : id;
+    }).join(',');
     parts.push(d.group + '/' + d.id + '[' + drawers + '][' + ctrls + ']');
   }
-  return parts.join('|');
+  return parts.join('|') + '~' + vs.gen;
 }
 
 // ── Build (structure changed) ─────────────────────────────────────────────
 
 function rebuild(domains) {
+  vtClose();
   var list = document.getElementById('groups-list');
   list.innerHTML = '';
 
@@ -713,7 +756,7 @@ function buildDomainCard(domain) {
   var controls = el('div', 'controls');
   for (var c = 0; c < domain.controls.length; ++c) {
     var ctrlDef = domain.controls[c];
-    if (!ctrlDef || !ctrlDef.key) continue;
+    if (!ctrlDef || !controlId(ctrlDef) || !isSliderControl(ctrlDef)) continue;
     controls.appendChild(buildControl(domain.id, ctrlDef));
   }
   body.appendChild(controls);
@@ -722,39 +765,66 @@ function buildDomainCard(domain) {
   return card;
 }
 
+// A control is identified by `key` (legacy providers) or `name` (SchemaControl providers).
+// Only slider controls (the default when `type` is absent) are rendered today.
+function controlId(def) { return (def && (def.key || def.name)) || ''; }
+function isSliderControl(def) { return !def.type || def.type === 'slider'; }
+
 function buildControl(domainId, def) {
+  var rc = resolveControl(def);
   var ctrl = el('div', 'ctrl');
-  ctrl.setAttribute('data-control', def.key);
+  ctrl.setAttribute('data-control', rc.id);
+  if (typeof def.schemaKey === 'string') ctrl.setAttribute('data-schema-key', def.schemaKey);
+  if (rc.decimals !== null) ctrl.setAttribute('data-decimals', String(rc.decimals));
 
-  ctrl.appendChild(el('span', 'ctrl-label', def.label || def.key));
+  ctrl.appendChild(el('span', 'ctrl-label', rc.label));
+  if (rc.entry) ctrl.appendChild(vtBuildIcon(rc, def));
 
+  var track = el('div', 'track');
   var range = document.createElement('input');
   range.type  = 'range';
-  range.min   = (def.min  !== undefined) ? def.min  : 0;
-  range.max   = (def.max  !== undefined) ? def.max  : 1;
-  range.step  = (def.step !== undefined) ? def.step : 0.01;
+  range.min   = rc.min;
+  range.max   = rc.max;
+  range.step  = rc.step;
   range.value = (def.value !== undefined) ? def.value : 0;
+  track.appendChild(range);
 
-  var display = el('span', 'cv', formatValue(range.value));
+  if (rc.hasDefault && rc.max > rc.min) {
+    var frac = (rc.defaultValue - rc.min) / (rc.max - rc.min);
+    frac = Math.max(0, Math.min(1, frac));
+    var tick = el('div', 'dtick');
+    tick.setAttribute('data-role', 'default-tick');
+    tick.style.left = (frac * 100) + '%';
+    track.appendChild(tick);
+  }
+
+  var display = el('span', 'cv', formatValue(range.value, rc.decimals));
 
   range.addEventListener('input', function () {
     ui.activeSlider = range;
-    display.textContent = formatValue(range.value);
+    display.textContent = formatValue(range.value, rc.decimals);
   });
   range.addEventListener('change', function () {
     ui.activeSlider = null;
-    display.textContent = formatValue(range.value);
-    sendCommand(domainId, 'setScale', { key: def.key, value: parseFloat(range.value) });
+    display.textContent = formatValue(range.value, rc.decimals);
+    sendCommand(domainId, 'setScale', { key: rc.id, value: parseFloat(range.value) });
   });
 
-  ctrl.appendChild(range);
+  ctrl.appendChild(track);
   ctrl.appendChild(display);
+  if (rc.entry && def.packId) {
+    var pm = el('span', 'pack-marker', 'pack: ' + def.packId);
+    pm.setAttribute('data-role', 'pack-marker');
+    ctrl.appendChild(pm);
+  }
   return ctrl;
 }
 
-function formatValue(v) {
+// `decimals` (optional, from control or schema ui.decimals) fixes the displayed precision.
+function formatValue(v, decimals) {
   var n = parseFloat(v);
   if (!isFinite(n)) return String(v);
+  if (decimals !== undefined && decimals !== null) return n.toFixed(decimals);
   return (Math.abs(n) >= 10 || n === Math.floor(n)) ? String(n) : n.toFixed(2);
 }
 
@@ -793,14 +863,15 @@ function refresh(domains) {
 
     for (var c = 0; c < domain.controls.length; ++c) {
       var def = domain.controls[c];
-      if (!def || !def.key || def.value === undefined) continue;
-      var ctrl = card.querySelector('.ctrl[data-control="' + cssEscape(def.key) + '"]');
+      if (!def || !controlId(def) || def.value === undefined) continue;
+      var ctrl = card.querySelector('.ctrl[data-control="' + cssEscape(controlId(def)) + '"]');
       if (!ctrl) continue;
       var range = ctrl.querySelector('input[type=range]');
       if (!range || range === ui.activeSlider) continue;
       range.value = def.value;
       var cv = ctrl.querySelector('.cv');
-      if (cv) cv.textContent = formatValue(def.value);
+      var dec = ctrl.getAttribute('data-decimals');
+      if (cv) cv.textContent = formatValue(def.value, dec === null ? null : parseInt(dec, 10));
     }
   }
 }
@@ -869,6 +940,7 @@ function updateDomainState(data) {
   if (!data || typeof data !== 'object') return;
 
   latest = data;
+  vsScan(data);
   var domains = domainsOf(data);
   var sig = structureSignature(domains);
 
@@ -1448,6 +1520,308 @@ document.addEventListener('keydown', function (e) {
   if (ov) ov.addEventListener('mousedown', function (e) { if (e.target === ov) palClose(true); });
   palRender();
 })();
+
+// ── Value schema + tooltips (DiaValueSchema Feature 3; spec tooltips.md) ──────
+// A control may carry "schemaKey" ("<for>/<key>") and "packId". The page resolves label, range, step,
+// decimals and the default tick from the cached schema; anything present on the control wins.
+// JS -> C++: app.onValueSchemaGet(prefix)   prefix = "<for>/" (<= 63 chars), once per distinct prefix
+//            per open; again only when a state frame's "schemaVersion" differs from the last one seen.
+// C++ -> JS: valueSchemaResult(json|object)   the valueschema.get result {"version":N,"entries":[...]}
+//            (sidecar field names: for, key, label, description, unit, min, max, default, ui{step,decimals}...).
+// Panel rows are never "inspector" rows, so the tooltip omits Hint here.
+// Tooltip placement (narrow left-docked panel): fixed under the (i), flipped above near the bottom of the
+// view, clamped horizontally into the view, max width min(320, view width - 16).
+var vs = {
+  entries:   {},    // "<for>/<key>" -> schema entry
+  requested: {},    // prefix -> true (asked for under the current schemaVersion)
+  version:   null,  // last schemaVersion seen in a state frame
+  gen:       0      // bumped when entries arrive; part of the structure signature
+};
+
+function vsPrefixOf(key) {
+  var i = key.lastIndexOf('/');
+  return i >= 0 ? key.substring(0, i + 1) : key;
+}
+
+function vsScan(data) {
+  var wanted = [], seen = {}, ver = null;
+  for (var name in data) {
+    if (!Object.prototype.hasOwnProperty.call(data, name)) continue;
+    var d = data[name];
+    if (!d || typeof d !== 'object') continue;
+    if (typeof d.schemaVersion === 'number') ver = d.schemaVersion;
+    if (!Array.isArray(d.controls)) continue;
+    for (var i = 0; i < d.controls.length; ++i) {
+      var c = d.controls[i];
+      if (!c || typeof c.schemaKey !== 'string' || !c.schemaKey) continue;
+      var pre = vsPrefixOf(c.schemaKey);
+      if (!seen[pre]) { seen[pre] = true; wanted.push(pre); }
+    }
+  }
+  if (ver !== null) {
+    if (vs.version !== null && vs.version !== ver) vs.requested = {};
+    vs.version = ver;
+  }
+  for (var w = 0; w < wanted.length; ++w) {
+    if (vs.requested[wanted[w]]) continue;
+    vs.requested[wanted[w]] = true;
+    if (conApp('onValueSchemaGet')) app.onValueSchemaGet(wanted[w]);
+  }
+}
+
+function valueSchemaResult(data) {
+  var r = conParse(data);
+  if (!r || !Array.isArray(r.entries)) return;
+  for (var i = 0; i < r.entries.length; ++i) {
+    var e = r.entries[i];
+    if (e && typeof e.for === 'string' && typeof e.key === 'string') vs.entries[e.for + '/' + e.key] = e;
+  }
+  ++vs.gen;
+  if (latest && typeof latest === 'object') updateDomainState(latest);
+}
+window.valueSchemaResult = valueSchemaResult;
+
+function vsEntryFor(def) {
+  if (!def || typeof def.schemaKey !== 'string') return null;
+  return Object.prototype.hasOwnProperty.call(vs.entries, def.schemaKey) ? vs.entries[def.schemaKey] : null;
+}
+
+function vtIsSet(v) { return v !== undefined && v !== null; }
+
+// Control value wins; else the schema; else the page default.
+function resolveControl(def) {
+  var entry = vsEntryFor(def);
+  var u = (entry && entry.ui && typeof entry.ui === 'object') ? entry.ui : {};
+  var id = controlId(def);
+  var dflt = entry ? entry.default : undefined;
+  function pick(own, fromEntry, fallback) {
+    if (vtIsSet(own)) return own;
+    if (vtIsSet(fromEntry)) return fromEntry;
+    return fallback;
+  }
+  var rc = {
+    id:       id,
+    entry:    entry,
+    label:    def.label || (entry && entry.label) || def.name || def.key,
+    min:      pick(def.min, entry ? entry.min : undefined, 0),
+    max:      pick(def.max, entry ? entry.max : undefined, 1),
+    step:     pick(def.step, u.step, 0.01),
+    decimals: pick(def.decimals, u.decimals, null),
+    hasDefault: typeof dflt === 'number' && isFinite(dflt),
+    defaultValue: dflt
+  };
+  return rc;
+}
+
+// ── renderValueTooltip: DOM contract shared with @dia/editor-ui ValueTooltip ──
+// (see Cluiche/Tests/Contracts/valuetooltip/README.md). Root has data-vt-tooltip; each present
+// section is a direct child with data-vt-section="<name>"; empty sections are absent.
+function vtFormatRange(min, max) {
+  if (vtIsSet(min) && vtIsSet(max)) return String(min) + ' – ' + String(max);
+  if (vtIsSet(min)) return '≥ ' + String(min);
+  if (vtIsSet(max)) return '≤ ' + String(max);
+  return null;
+}
+
+function vtFormatDefault(value, decimals) {
+  if (typeof value === 'number' && vtIsSet(decimals)) return value.toFixed(decimals);
+  return String(value);
+}
+
+function vtSection(root, name, cls, text) {
+  var n = el('div', cls);
+  n.setAttribute('data-vt-section', name);
+  if (text !== undefined) n.textContent = vtIsSet(text) ? String(text) : '';
+  root.appendChild(n);
+  return n;
+}
+
+function renderValueTooltip(entry, options) {
+  entry = entry || {};
+  options = options || {};
+  var forId = vtIsSet(options.forId) ? options.forId : entry.for;
+  var resolvable = Array.isArray(options.resolvable) ? options.resolvable : [];
+
+  var root = el('div', 'vt');
+  root.setAttribute('role', 'tooltip');
+  root.setAttribute('data-vt-tooltip', '');
+
+  vtSection(root, 'title', 'vt-title', entry.label);
+  vtSection(root, 'description', 'vt-desc', entry.description);
+
+  if (Array.isArray(entry.values) && entry.values.length) {
+    var ev = vtSection(root, 'enum_values', 'vt-enum');
+    for (var i = 0; i < entry.values.length; ++i) {
+      var v = entry.values[i] || {};
+      var row = el('div');
+      row.setAttribute('data-vt-enum-id', vtIsSet(v.id) ? String(v.id) : '');
+      var l = el('span', 'vt-enum-label', vtIsSet(v.label) ? String(v.label) : '');
+      l.setAttribute('data-vt-enum-label', '');
+      var ds = el('span', 'vt-enum-desc', vtIsSet(v.description) ? String(v.description) : '');
+      ds.setAttribute('data-vt-enum-desc', '');
+      row.appendChild(l);
+      row.appendChild(document.createTextNode(' '));
+      row.appendChild(ds);
+      ev.appendChild(row);
+    }
+  }
+
+  if (options.inspector && entry.hint) vtSection(root, 'hint', 'vt-hint', entry.hint);
+
+  var meta = [];
+  if (entry.unit) meta.push(['unit', String(entry.unit)]);
+  var range = vtFormatRange(entry.min, entry.max);
+  if (range !== null) meta.push(['range', range]);
+  if (vtIsSet(entry.default)) meta.push(['default', vtFormatDefault(entry.default, entry.ui ? entry.ui.decimals : undefined)]);
+  if (meta.length) {
+    var mn = vtSection(root, 'meta', 'vt-meta');
+    for (var m = 0; m < meta.length; ++m) {
+      var item = el('span', 'vt-meta-item');
+      item.setAttribute('data-vt-kind', meta[m][0]);
+      item.appendChild(el('span', 'vt-meta-label', meta[m][0]));
+      var val = el('span', 'vt-meta-value', meta[m][1]);
+      val.setAttribute('data-vt-value', '');
+      item.appendChild(val);
+      mn.appendChild(item);
+    }
+  }
+
+  if (Array.isArray(entry.affects) && entry.affects.length) {
+    var af = vtSection(root, 'affects', 'vt-affects');
+    for (var a = 0; a < entry.affects.length; ++a) {
+      var chip = el('span', 'vt-chip', String(entry.affects[a]));
+      chip.setAttribute('data-vt-chip', String(entry.affects[a]));
+      af.appendChild(chip);
+    }
+  }
+
+  if (Array.isArray(entry.related) && entry.related.length) {
+    var rl = vtSection(root, 'related', 'vt-related');
+    rl.appendChild(el('span', 'vt-related-label', 'Related:'));
+    for (var r = 0; r < entry.related.length; ++r) {
+      (function (key) {
+        var isLink = resolvable.indexOf(key) >= 0;
+        var node = el(isLink ? 'button' : 'span', isLink ? 'vt-link' : 'vt-plain', key);
+        node.setAttribute('data-vt-key', key);
+        node.setAttribute('data-vt-link', isLink ? 'true' : 'false');
+        if (isLink) {
+          node.setAttribute('type', 'button');
+          node.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (typeof options.onFocusKey === 'function') options.onFocusKey(key);
+          });
+        }
+        rl.appendChild(node);
+      })(String(entry.related[r]));
+    }
+  }
+
+  if (entry.source) {
+    var sn = vtSection(root, 'source', 'vt-source');
+    var s1 = el('span', '', String(entry.source));
+    s1.setAttribute('data-vt-source', '');
+    var s2 = el('span', '', String(forId) + ' · ' + String(entry.key));
+    s2.setAttribute('data-vt-defined-in', '');
+    sn.appendChild(s1);
+    sn.appendChild(document.createTextNode(' · Defined in '));
+    sn.appendChild(s2);
+  }
+
+  if (options.packId) vtSection(root, 'pack_badge', 'vt-pack', 'overridden by pack ' + options.packId);
+
+  return root;
+}
+window.renderValueTooltip = renderValueTooltip;
+
+// ── (i) icon wiring: hover / focus opens, blur / leave / Esc closes ──────────
+var vt = { el: null, timer: null };
+
+function vtCancelHide() { if (vt.timer) { clearTimeout(vt.timer); vt.timer = null; } }
+function vtScheduleHide() { vtCancelHide(); vt.timer = setTimeout(vtClose, 150); }
+function vtClose() {
+  vtCancelHide();
+  if (vt.el && vt.el.parentNode) vt.el.parentNode.removeChild(vt.el);
+  vt.el = null;
+}
+
+function vtFindControl(fullKey) {
+  var all = document.querySelectorAll('.ctrl[data-schema-key]');
+  for (var i = 0; i < all.length; ++i) {
+    if (all[i].getAttribute('data-schema-key') === fullKey) return all[i];
+  }
+  return null;
+}
+
+function vtResolvable(entry) {
+  var out = [];
+  if (!Array.isArray(entry.related)) return out;
+  for (var i = 0; i < entry.related.length; ++i) {
+    if (vtFindControl(entry.for + '/' + entry.related[i])) out.push(String(entry.related[i]));
+  }
+  return out;
+}
+
+// Related link: reveal the card holding the matching control (if collapsed), then focus its slider.
+function vtFocusControl(fullKey) {
+  var c = vtFindControl(fullKey);
+  vtClose();
+  if (!c) return;
+  var card = c.parentNode;
+  while (card && !(card.className && String(card.className).indexOf('domain ') === 0)) card = card.parentNode;
+  if (card) palRevealDomain(card.getAttribute('data-domain'));
+  var range = c.querySelector('input[type=range]');
+  if (range) range.focus();
+}
+
+function vtShow(icon, def) {
+  vtClose();
+  var entry = vsEntryFor(def);
+  if (!entry) return;
+  var tip = renderValueTooltip(entry, {
+    inspector: false,
+    packId: def.packId || null,
+    resolvable: vtResolvable(entry),
+    forId: entry.for,
+    onFocusKey: function (key) { vtFocusControl(entry.for + '/' + key); }
+  });
+  tip.addEventListener('mouseenter', vtCancelHide);
+  tip.addEventListener('mouseleave', vtScheduleHide);
+
+  var vw = window.innerWidth || document.documentElement.clientWidth || 520;
+  var vh = window.innerHeight || document.documentElement.clientHeight || 600;
+  tip.style.position = 'fixed';
+  tip.style.maxWidth = Math.min(320, vw - 16) + 'px';
+  tip.style.width = tip.style.maxWidth;
+  tip.style.left = '0px';
+  tip.style.top = '0px';
+  document.body.appendChild(tip);
+  vt.el = tip;
+
+  var rect = icon.getBoundingClientRect();
+  var tw = tip.offsetWidth || 320, th = tip.offsetHeight || 0;
+  var left = Math.max(8, Math.min(rect.left, vw - tw - 8));
+  var top = rect.bottom + 6;
+  if (top + th > vh - 8 && rect.top - th - 6 >= 8) top = rect.top - th - 6;   // flip above
+  tip.style.left = left + 'px';
+  tip.style.top = Math.max(8, top) + 'px';
+}
+
+function vtBuildIcon(rc, def) {
+  var icon = el('span', 'info-icon', 'i');
+  icon.setAttribute('tabindex', '0');
+  icon.setAttribute('role', 'button');
+  icon.setAttribute('data-role', 'info');
+  icon.setAttribute('aria-label', 'About ' + rc.label);
+  icon.addEventListener('mouseenter', function () { vtCancelHide(); vtShow(icon, def); });
+  icon.addEventListener('mouseleave', vtScheduleHide);
+  icon.addEventListener('focus', function () { vtCancelHide(); vtShow(icon, def); });
+  icon.addEventListener('blur', vtScheduleHide);
+  return icon;
+}
+
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape' && vt.el) vtClose();
+});
 
 // ── Global scale slider ──────────────────────────────────────────────────
 (function () {
