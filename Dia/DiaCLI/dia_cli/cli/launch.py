@@ -1,5 +1,6 @@
 """dia launch <target> — execute an already-built target without rebuilding."""
 import subprocess
+import sys
 import click
 from pathlib import Path
 
@@ -13,6 +14,34 @@ from dia_cli.commands.pipeline.pipeline_config import (
 
 
 _CONFIG_ALIASES = {"Asan": "Debug-Asan", "Ubsan": "Debug-Ubsan"}
+
+# Exit code launch_target returns when `timeout` elapsed and the process tree was terminated (same value as timeout(1)).
+TIMEOUT_EXIT_CODE = 124
+
+# Targets whose Main understands `--automation` (CluicheTest parses it; CoW's Main does not).
+AUTOMATION_TARGETS = frozenset({"cluichetest"})
+
+
+def supports_automation(target: str) -> bool:
+    return target in AUTOMATION_TARGETS
+
+
+def _terminate_tree(proc: "subprocess.Popen") -> None:
+    """Terminate `proc` and every descendant (taskkill /T on Windows, process-group kill elsewhere)."""
+    import os
+    if sys.platform == "win32":
+        subprocess.run(["taskkill", "/PID", str(proc.pid), "/T", "/F"],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    else:
+        try:
+            import signal
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        except OSError:
+            proc.kill()
+    try:
+        proc.wait(timeout=30)
+    except subprocess.TimeoutExpired:
+        proc.kill()
 
 
 @click.command()
@@ -71,7 +100,7 @@ def _resolve_dev_aliases(target: str, repo_root: Path) -> list[str]:
 def launch_target(target: str, config: str, filter_pattern: str = None,
                   verbose: bool = False, run_all: bool = False, shards: int = 0,
                   automation: bool = False, source_override: str | None = None,
-                  extra_args: list[str] | None = None) -> int:
+                  extra_args: list[str] | None = None, timeout: float | None = None) -> int:
     config = _CONFIG_ALIASES.get(config, config)
     repo_root = find_repo_root(__file__)
 
@@ -124,7 +153,7 @@ def launch_target(target: str, config: str, filter_pattern: str = None,
             cmd += ["--dev-alias", f"source={source_override}"]
     else:
         cmd += _resolve_dev_aliases(target, repo_root)
-    if target == "cluichetest" and automation:
+    if supports_automation(target) and automation:
         cmd.append("--automation")
     if extra_args:
         cmd += list(extra_args)
@@ -146,8 +175,19 @@ def launch_target(target: str, config: str, filter_pattern: str = None,
     out_dir = exe_path.parent
     try:
         from dia_cli.utils.asan_runtime import with_asan_runtime_on_path
-        result = subprocess.run(cmd, cwd=str(out_dir),
-                                env=with_asan_runtime_on_path(None, config))
+        env = with_asan_runtime_on_path(None, config)
+        if timeout is None:
+            result = subprocess.run(cmd, cwd=str(out_dir), env=env)
+        else:
+            popen_kw = {} if sys.platform == "win32" else {"start_new_session": True}
+            proc = subprocess.Popen(cmd, cwd=str(out_dir), env=env, **popen_kw)
+            try:
+                code = proc.wait(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                _terminate_tree(proc)
+                click.echo(f"[dia] {target}: TIMED OUT after {timeout:g}s (process tree terminated)", err=True)
+                return TIMEOUT_EXIT_CODE
+            result = subprocess.CompletedProcess(cmd, code)
         if target == "googletest":
             _warn_untagged_slow_suites(out_xml)
         if result.returncode == 0:

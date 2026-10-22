@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional
 
 import click
 
-from dia_cli.cli.launch import launch_target
+from dia_cli.cli.launch import TIMEOUT_EXIT_CODE, launch_target, supports_automation
 from dia_cli.commands.validate import schema_discovery as sd
 from dia_cli.commands.validate.schema_codeside import EXPORT_FILE, EXPORT_FORMAT, git_dirty, git_head
 
@@ -81,12 +81,22 @@ def _load_written(path: Path) -> dict:
     return doc
 
 
-def export_via_launch(target: str, config: str, stage: Optional[str], out: Path) -> dict:
+DEFAULT_TIMEOUT_SEC = 180.0
+
+
+def export_via_launch(target: str, config: str, stage: Optional[str], out: Path,
+                      timeout: float = DEFAULT_TIMEOUT_SEC) -> dict:
     args = ["--describe-schema", str(out)]
     if stage:
         args += ["--stage", stage]
     out.parent.mkdir(parents=True, exist_ok=True)
-    code = launch_target(target, config, extra_args=args)
+    # `--automation` is passed where the target's Main parses it (launch.AUTOMATION_TARGETS) and no --stage is requested: it
+    # makes the test-stage launcher pick and then auto-release stages, which fights describe mode's own TransitionTo(--stage).
+    # launch_target enforces the timeout.
+    code = launch_target(target, config, automation=supports_automation(target) and not stage, extra_args=args, timeout=timeout)
+    if code == TIMEOUT_EXIT_CODE:
+        raise click.ClickException(f"describe mode did not finish within {timeout:g}s: "
+                                   f"is ValueSchemaModule hosted by {target}?")
     if code != 0:
         raise click.ClickException(f"launching `{target}` for the schema export failed (exit {code})")
     doc = _load_written(out)
@@ -162,7 +172,7 @@ def _undescribed_count(doc: dict) -> int:
 
 
 def export_command(target: str, stage: Optional[str], out: Optional[str], sidecars_only: bool,
-                   config: str) -> None:
+                   config: str, timeout: float = DEFAULT_TIMEOUT_SEC) -> None:
     repo_root = get_repo_root()
     out_path = Path(out).absolute() if out else _default_out(target, stage, repo_root)
     if sidecars_only:
@@ -173,5 +183,5 @@ def export_command(target: str, stage: Optional[str], out: Optional[str], sideca
         click.echo(f"exported {len(doc['entries'])} entries, {len(doc['ramps'])} ramps -> {out_path}")
         click.echo(NOTICE_SIDECARS_ONLY)
         return
-    doc = export_via_launch(target, config, stage, out_path)
+    doc = export_via_launch(target, config, stage, out_path, timeout)
     click.echo(f"exported {len(doc['entries'])} entries, {_undescribed_count(doc)} undescribed -> {out_path}")

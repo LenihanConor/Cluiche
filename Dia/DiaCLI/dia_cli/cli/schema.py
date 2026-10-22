@@ -20,7 +20,10 @@ def cli() -> None:
 @click.option("--sidecars-only", is_flag=True, default=False,
               help="Build the export from sidecars and ramps alone: no launch, no code-side data.")
 @click.option("--config", default="Debug", metavar="CONFIG", help="Build configuration to launch (default: Debug).")
-def export(target: str, stage: Optional[str], out: Optional[str], sidecars_only: bool, config: str) -> None:
+@click.option("--timeout", default=180.0, type=float, show_default=True, metavar="SECONDS",
+              help="Give up (and terminate the launched app) when describe mode has not finished after SECONDS.")
+def export(target: str, stage: Optional[str], out: Optional[str], sidecars_only: bool, config: str,
+           timeout: float) -> None:
     """Write the dia.value_schema_export file for TARGET."""
     from dia_cli.commands.schema.export_cmd import export_command
-    export_command(target, stage, out, sidecars_only, config)
+    export_command(target, stage, out, sidecars_only, config, timeout)

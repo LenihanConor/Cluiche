@@ -216,3 +216,82 @@ def test_launch_target_extra_args_appended(monkeypatch, tmp_path):
     monkeypatch.setattr(launch.subprocess, "run", fake_run)
     assert launch.launch_target("cow", "Debug", extra_args=["--describe-schema", "p"]) == 0
     assert seen["cmd"][-2:] == ["--describe-schema", "p"]
+
+
+PIPELINE_TOML = "\n".join(['[targets.cow]', 'project = "x.vcxproj"', 'app_name = "CoW"',
+                           'exe = "Cluiche/out/CoW/x.exe"', ''])
+
+
+def test_automation_only_for_targets_that_parse_it(monkeypatch, tmp_path):
+    from dia_cli.cli import launch
+    assert launch.supports_automation("cluichetest") and not launch.supports_automation("cow")
+    root = make_repo(tmp_path)
+    patch_repo(monkeypatch, root)
+    patch_git(monkeypatch)
+    seen = []
+
+    def fake(target, config, **kw):
+        seen.append((target, kw.get("automation"), kw.get("timeout")))
+        args = kw["extra_args"]
+        path = Path(args[args.index("--describe-schema") + 1])
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(VALID), encoding="utf-8")
+        return 0
+    monkeypatch.setattr(export_cmd, "launch_target", fake)
+    assert run(["--target", "cow"]).exit_code == 0
+    assert run(["--target", "cow", "--timeout", "5"]).exit_code == 0
+    assert seen == [("cow", False, 180.0), ("cow", False, 5.0)]
+    seen.clear()
+    monkeypatch.setattr(export_cmd, "supports_automation", lambda t: t == "cow")
+    assert run(["--target", "cow"]).exit_code == 0
+    assert seen == [("cow", True, 180.0)]
+
+
+def test_timeout_is_clear_error(monkeypatch, tmp_path):
+    root = make_repo(tmp_path)
+    patch_repo(monkeypatch, root)
+    patch_git(monkeypatch)
+    from dia_cli.cli import launch
+    monkeypatch.setattr(export_cmd, "launch_target", lambda *a, **k: launch.TIMEOUT_EXIT_CODE)
+    r = run(["--target", "cow", "--timeout", "7"])
+    assert r.exit_code != 0
+    assert "describe mode did not finish within 7s: is ValueSchemaModule hosted by cow?" in r.output
+
+
+def test_launch_target_timeout_terminates_tree(monkeypatch, tmp_path):
+    from dia_cli.cli import launch
+    exe = tmp_path / "Cluiche" / "out" / "CoW" / "x.exe"
+    exe.parent.mkdir(parents=True)
+    exe.write_text("")
+    (tmp_path / "pipeline.toml").write_text(
+        PIPELINE_TOML)
+    monkeypatch.setattr(launch, "find_repo_root", lambda _f: tmp_path)
+    state = {"terminated": 0, "waits": []}
+
+    class FakeProc:
+        pid = 4242
+
+        def wait(self, timeout=None):
+            state["waits"].append(timeout)
+            raise subprocess.TimeoutExpired("x", timeout)
+
+    monkeypatch.setattr(launch.subprocess, "Popen", lambda cmd, **kw: FakeProc())
+    monkeypatch.setattr(launch, "_terminate_tree", lambda proc: state.__setitem__("terminated", state["terminated"] + 1))
+    assert launch.launch_target("cow", "Debug", timeout=2.5) == launch.TIMEOUT_EXIT_CODE
+    assert state == {"terminated": 1, "waits": [2.5]}
+
+
+def test_launch_target_with_timeout_returns_exit_code(monkeypatch, tmp_path):
+    from dia_cli.cli import launch
+    exe = tmp_path / "Cluiche" / "out" / "CoW" / "x.exe"
+    exe.parent.mkdir(parents=True)
+    exe.write_text("")
+    (tmp_path / "pipeline.toml").write_text(
+        PIPELINE_TOML)
+    monkeypatch.setattr(launch, "find_repo_root", lambda _f: tmp_path)
+
+    class FakeProc:
+        def wait(self, timeout=None):
+            return 3
+    monkeypatch.setattr(launch.subprocess, "Popen", lambda cmd, **kw: FakeProc())
+    assert launch.launch_target("cow", "Debug", timeout=10) == 3
