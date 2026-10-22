@@ -21,11 +21,29 @@
 #include <DiaCore/Strings/String1024.h>
 #include <DiaCore/Containers/Arrays/DynamicArray.h>
 #include <json/json.h>
+#include <string.h>
+#include <utility>
 
 namespace Dia::ValueSchema
 {
+	// Verbatim text copy into a fixed-size DiaCore string. Never use `str = "text"` for text that came from a file or
+	// a caller: the derived String32..String1024 classes have an implicit printf-style constructor
+	// (String128(const char*, ...)), so `str = cstr` formats cstr and a '%' in the data reads garbage (or crashes).
+	// SetText zeroes the destination and copies at most Capacity()-1 characters; a null source gives "".
+	template<class T>
+	inline void SetText(T& dst, const char* src)
+	{
+		memset(dst.AsCStr(), 0, T::Capacity());
+		if (src != nullptr) { dst.AppendAsMuchAsCan(src, static_cast<unsigned int>(strlen(src))); }
+	}
+
 	// DynamicArray with safe copy semantics (DynamicArray's own copy asserts on empty sources).
 	// Elements are copied one by one via Add. Call Reserve(n) before Add.
+	//
+	// DynamicArray runs ~T() in place in Remove/RemoveAt/RemoveAll and memcpy-moves elements in Reserve while its own
+	// delete[] later destroys every slot again. That is harmless for plain strings but corrupts the heap for elements
+	// owning heap memory (ValueInfo holds Json::Value). ValueList therefore resets slots to T() instead of destroying
+	// them and grows by copy-assigning, so every slot always holds a live object.
 	template<class T>
 	class ValueList : public Dia::Core::Containers::DynamicArray<T>
 	{
@@ -34,8 +52,36 @@ namespace Dia::ValueSchema
 		ValueList(const ValueList& other) { CopyFrom(other); }
 		ValueList& operator=(const ValueList& other)
 		{
-			if (this != &other) { this->RemoveAll(); CopyFrom(other); }
+			if (this != &other) { RemoveAll(); CopyFrom(other); }
 			return *this;
+		}
+
+		void RemoveAll()
+		{
+			for (unsigned int i = 0; i < this->mSize; ++i) { this->mData[i] = T(); }
+			this->mSize = 0;
+		}
+		void Remove()
+		{
+			this->mData[this->mSize - 1] = T();
+			--this->mSize;
+		}
+		void RemoveAt(unsigned int index)
+		{
+			for (unsigned int i = index; i + 1 < this->mSize; ++i) { this->mData[i] = this->mData[i + 1]; }
+			this->mData[this->mSize - 1] = T();
+			--this->mSize;
+		}
+		// Grows (or shrinks to at least Size()) the capacity, copy-assigning the live elements.
+		void Reserve(unsigned int capacity)
+		{
+			if (capacity < this->mSize) { capacity = this->mSize; }
+			ValueList grown;
+			grown.Dia::Core::Containers::DynamicArray<T>::Reserve(capacity);
+			for (unsigned int i = 0; i < this->mSize; ++i) { grown.Add((*this)[i]); }
+			std::swap(this->mData, grown.mData);
+			std::swap(this->mCapacity, grown.mCapacity);
+			std::swap(this->mSize, grown.mSize);
 		}
 	private:
 		void CopyFrom(const ValueList& other)

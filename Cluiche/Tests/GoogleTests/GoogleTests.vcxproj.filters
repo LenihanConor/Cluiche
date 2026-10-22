@@ -1056,6 +1056,9 @@
     <ClCompile Include="DiaObservation\TestMetricInfo.cpp">
       <Filter>DiaObservation</Filter>
     </ClCompile>
+    <ClCompile Include="DiaObservation\TestMetricInfoEdge.cpp">
+      <Filter>DiaObservation</Filter>
+    </ClCompile>
     <ClCompile Include="DiaObservation\Trace\TestTracer.cpp">
       <Filter>DiaObservation\Trace</Filter>
     </ClCompile>
@@ -2056,6 +2059,18 @@
     </ClCompile>
     <ClCompile Include="DiaAPI\TestHelpSystemArguments.cpp">
       <Filter>DiaAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAPI\TestHelpSystemArgumentsEdge.cpp">
+      <Filter>DiaAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAPI\TestCommandInfoParamsEdge.cpp">
+      <Filter>DiaAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAPI\TestEditorActionParamJsonEdge.cpp">
+      <Filter>DiaAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestPaletteArgsEdge.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

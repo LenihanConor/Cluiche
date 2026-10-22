@@ -20,10 +20,11 @@ namespace Dia::ValueSchema
 		bool Fail(LoadResult& r, const EntryContext& ctx, const char* reason)
 		{
 			r.mOk = false;
-			r.mFailure.mFile = ctx.mFile;
-			r.mFailure.mEntry = ctx.mEntry;
-			// Format() with "%s" avoids treating a percent sign in user text as a format specifier.
-			r.mFailure.mReason.Format("%s", reason);
+			// SetText copies verbatim (a '%' in user text is never a format specifier) and bounds every copy:
+			// a long jsoncpp message or unknown key is truncated to the String512 reason, never overflowed.
+			SetText(r.mFailure.mFile, ctx.mFile);
+			SetText(r.mFailure.mEntry, ctx.mEntry);
+			SetText(r.mFailure.mReason, reason);
 			r.mEntries.RemoveAll();
 			DIA_LOG_ERROR("VSC", "Schema '%s' entry '%s' rejected: %s", ctx.mFile, ctx.mEntry, reason);
 			return false;
@@ -38,7 +39,7 @@ namespace Dia::ValueSchema
 				std::string reason = std::string("field '") + field + "' exceeds capacity of " + std::to_string(T::Capacity() - 1) + " characters";
 				return Fail(r, ctx, reason.c_str());
 			}
-			dst = src;
+			SetText(dst, src);
 			return true;
 		}
 
@@ -159,7 +160,7 @@ namespace Dia::ValueSchema
 				}
 				else
 				{
-					ev.mColour = GetCategoricalColour(i);
+					SetText(ev.mColour, GetCategoricalColour(i));
 					ev.mHasColour = false;
 				}
 				info.mEnumValues.Add(ev);
@@ -181,7 +182,7 @@ namespace Dia::ValueSchema
 				if (!warned.insert(std::string(block) + "." + n).second) { continue; }
 				String512 msg;
 				msg.Format("Schema '%s' entry '%s': unknown %s key '%s' (kept)", ctx.mFile, ctx.mEntry, block, n.c_str());
-				if (r.mWarnings.Size() == r.mWarnings.Capacity()) { r.mWarnings.Reserve(r.mWarnings.Size() + 16); }
+				if (r.mWarnings.Size() == r.mWarnings.Capacity()) { r.mWarnings.Reserve(r.mWarnings.Size() == 0 ? 16 : r.mWarnings.Size() * 2); }
 				r.mWarnings.Add(msg);
 				DIA_LOG_WARNING("VSC", "%s", msg.AsCStr());
 			}
@@ -272,7 +273,7 @@ namespace Dia::ValueSchema
 			if (!e.isMember("key") || !e["key"].isString()) { return Fail(r, ctx, "entry is missing string 'key'"); }
 			const char* key = e["key"].asCString();
 			String128 entryName;
-			entryName = (strlen(key) > 127) ? "<key too long>" : key;
+			SetText(entryName, (strlen(key) > 127) ? "<key too long>" : key);
 			ctx.mEntry = entryName.AsCStr();
 
 			const Json::Value::Members names = e.getMemberNames();
@@ -331,13 +332,14 @@ namespace Dia::ValueSchema
 
 	bool SplitRecordPath(const char* key, ValueList<String64>& outSegments)
 	{
+		if (key == nullptr) { return true; }	// a null key is an empty key
 		std::string seg;
 		auto flush = [&]() -> bool
 		{
 			if (seg.empty()) { return true; }
 			if (seg.size() > String64::Capacity() - 1 || outSegments.Size() >= outSegments.Capacity()) { return false; }
 			String64 s;
-			s = seg.c_str();
+			SetText(s, seg.c_str());
 			outSegments.Add(s);
 			seg.clear();
 			return true;
@@ -368,13 +370,33 @@ namespace Dia::ValueSchema
 	LoadResult ValueSchemaLoader::LoadFromText(const char* text, const char* fileName)
 	{
 		LoadResult r;
+		// A file name that does not fit mFile / mSourceFile (String256) must neither fail a valid file nor overflow.
+		// Like RampLoader, such a name is replaced by a fixed placeholder; a null name is treated as empty.
+		if (fileName == nullptr) { fileName = ""; }
+		if (strlen(fileName) > String256::Capacity() - 1) { fileName = "<file name too long>"; }
 		EntryContext fileCtx{ fileName, "" };
-
+		
+		// A null text is an empty document. A leading UTF-8 byte order mark is skipped (Python reads with utf-8-sig).
+		if (text == nullptr) { text = ""; }
+		if (static_cast<unsigned char>(text[0]) == 0xEF && static_cast<unsigned char>(text[1]) == 0xBB && static_cast<unsigned char>(text[2]) == 0xBF) { text += 3; }
+		
 		Json::Value root;
 		Json::Reader reader;
-		if (!reader.parse(std::string(text), root))
+		bool parsed = false;
+		std::string parseError;
+		try
 		{
-			Fail(r, fileCtx, (std::string("unparsable JSON: ") + reader.getFormattedErrorMessages()).c_str());
+			parsed = reader.parse(std::string(text), root);
+			if (!parsed) { parseError = reader.getFormattedErrorMessages(); }
+		}
+		catch (const std::exception& e)
+		{
+			// jsoncpp throws when nesting exceeds its stack limit (1000 values) or memory runs out.
+			parseError = e.what();
+		}
+		if (!parsed)
+		{
+			Fail(r, fileCtx, (std::string("unparsable JSON: ") + parseError).c_str());
 			return r;
 		}
 		if (!root.isObject()) { Fail(r, fileCtx, "root must be an object"); return r; }

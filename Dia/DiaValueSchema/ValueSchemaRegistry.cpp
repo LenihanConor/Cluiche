@@ -2,6 +2,7 @@
 #include <DiaObservation/Log/DiaLog.h>
 
 #include <memory>
+#include <string>
 #include <string.h>
 #include <unordered_map>
 #include <vector>
@@ -14,6 +15,7 @@ namespace Dia::ValueSchema
 	{
 		struct Format
 		{
+			std::string											mFor;		// the format string behind the CRC key
 			std::unordered_map<unsigned int, const ValueInfo*>	mByKey;
 			std::vector<const ValueInfo*>						mOrdered;
 		};
@@ -67,12 +69,47 @@ namespace Dia::ValueSchema
 			return RegisterResult::HashCollision;
 		}
 
+		// Everything below compares the stored STRINGS, not just hashes: two different strings with equal CRCs are
+		// rejected as HashCollision instead of silently overwriting an index slot (which would make
+		// Find(fullKey) and Find(for, key) disagree).
 		const unsigned int keyHash = StringCRC(info.mKey.AsCStr()).Value();
+		const unsigned int forHash = StringCRC(info.mFor.AsCStr()).Value();
+
+		auto format = mImpl->mFormats.find(forHash);
+		if (format != mImpl->mFormats.end())
+		{
+			if (format->second.mFor != info.mFor.AsCStr())
+			{
+				DIA_LOG_ERROR("VSC", "Hash collision between formats '%s' and '%s' (key '%s' from %s); second rejected",
+					format->second.mFor.c_str(), info.mFor.AsCStr(), info.mKey.AsCStr(), info.mSourceFile.AsCStr());
+				return RegisterResult::HashCollision;
+			}
+			auto sameKeyHash = format->second.mByKey.find(keyHash);
+			if (sameKeyHash != format->second.mByKey.end())
+			{
+				if (strcmp(sameKeyHash->second->mKey.AsCStr(), info.mKey.AsCStr()) == 0)
+				{
+					DIA_LOG_ERROR("VSC", "Duplicate key '%s': first defined in '%s', again in '%s' (first wins)",
+						full.AsCStr(), sameKeyHash->second->mSourceFile.AsCStr(), info.mSourceFile.AsCStr());
+					return RegisterResult::DuplicateKey;
+				}
+				DIA_LOG_ERROR("VSC", "Hash collision: key '%s' vs '%s' in format '%s' (%s); second rejected",
+					sameKeyHash->second->mKey.AsCStr(), info.mKey.AsCStr(), info.mFor.AsCStr(), info.mSourceFile.AsCStr());
+				return RegisterResult::HashCollision;
+			}
+		}
+
 		if (info.mKind == ValueKind::Event)
 		{
 			auto ev = mImpl->mEvents.find(keyHash);
 			if (ev != mImpl->mEvents.end())
 			{
+				if (strcmp(ev->second->mKey.AsCStr(), info.mKey.AsCStr()) != 0)
+				{
+					DIA_LOG_ERROR("VSC", "Hash collision between event keys '%s' ('%s') and '%s' ('%s'); second rejected",
+						ev->second->mKey.AsCStr(), ev->second->mFullKey.AsCStr(), info.mKey.AsCStr(), full.AsCStr());
+					return RegisterResult::HashCollision;
+				}
 				DIA_LOG_ERROR("VSC", "Duplicate event key '%s': '%s' (%s) vs '%s' (%s); first wins",
 					info.mKey.AsCStr(), ev->second->mFullKey.AsCStr(), ev->second->mSourceFile.AsCStr(), full.AsCStr(), info.mSourceFile.AsCStr());
 				return RegisterResult::DuplicateEventKey;
@@ -80,12 +117,13 @@ namespace Dia::ValueSchema
 		}
 
 		std::unique_ptr<ValueInfo> stored(new ValueInfo(info));
-		stored->mFullKey = full.AsCStr();
+		SetText(stored->mFullKey, full.AsCStr());	// verbatim: a '%' in a key is not a format specifier
 		const ValueInfo* p = stored.get();
 		mImpl->mStorage.push_back(std::move(stored));
 
 		mImpl->mByFullKey[fullHash] = p;
-		Impl::Format& fmt = mImpl->mFormats[StringCRC(info.mFor.AsCStr()).Value()];
+		Impl::Format& fmt = mImpl->mFormats[forHash];
+		if (fmt.mOrdered.empty()) { fmt.mFor = info.mFor.AsCStr(); }
 		fmt.mByKey[keyHash] = p;
 		fmt.mOrdered.push_back(p);
 		if (info.mKind == ValueKind::Event)

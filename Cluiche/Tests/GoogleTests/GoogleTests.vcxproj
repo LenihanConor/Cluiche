@@ -511,6 +511,7 @@
     <ClCompile Include="DiaObservation\Log\TestAsyncDrain.cpp" />
     <ClCompile Include="DiaObservation\TestJsonEscape.cpp" />
     <ClCompile Include="DiaObservation\TestMetricInfo.cpp" />
+    <ClCompile Include="DiaObservation\TestMetricInfoEdge.cpp" />
     <ClCompile Include="DiaObservation\Trace\TestTracer.cpp" />
     <ClCompile Include="DiaObservation\Trace\TestTracerRingOverflow.cpp" />
     <ClCompile Include="DiaObservation\Trace\TestTraceFileSink.cpp" />
@@ -957,9 +958,20 @@
     <ClCompile Include="DiaValueSchema\TestRampResolver.cpp" />
     <ClCompile Include="DiaValueSchema\TestRampLegend.cpp" />
     <ClCompile Include="DiaValueSchema\TestRampConformance.cpp" />
+    <ClCompile Include="DiaValueSchema\TestValueInfoCopy.cpp" />
+    <ClCompile Include="DiaValueSchema\TestValueSchemaLoaderBoundary.cpp" />
+    <ClCompile Include="DiaValueSchema\TestValueSchemaLoaderFuzz.cpp" />
+    <ClCompile Include="DiaValueSchema\TestValueSchemaRegistryProperty.cpp" />
+    <ClCompile Include="DiaValueSchema\TestValueClamperEdge.cpp" />
+    <ClCompile Include="DiaValueSchema\TestRampLoaderEdge.cpp" />
+    <ClCompile Include="DiaValueSchema\TestCategoricalColours.cpp" />
     <ClCompile Include="DiaAPI\TestValueParam.cpp" />
     <ClCompile Include="DiaAPI\TestCommandInfoParams.cpp" />
     <ClCompile Include="DiaAPI\TestHelpSystemArguments.cpp" />
+    <ClCompile Include="DiaAPI\TestHelpSystemArgumentsEdge.cpp" />
+    <ClCompile Include="DiaAPI\TestCommandInfoParamsEdge.cpp" />
+    <ClCompile Include="DiaAPI\TestEditorActionParamJsonEdge.cpp" />
+    <ClCompile Include="DiaVisualDebugger\Console\TestPaletteArgsEdge.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

@@ -13,7 +13,7 @@ namespace Dia::ValueSchema
 		bool FailFile(RampLoadResult& r, const char* reason)
 		{
 			r.mOk = false;
-			r.mFileReason.Format("%s", reason);
+			SetText(r.mFileReason, reason);
 			r.mRamps.RemoveAll();
 			DIA_LOG_ERROR("VSC", "Ramp file '%s' rejected: %s", r.mFile.AsCStr(), reason);
 			return false;
@@ -129,7 +129,7 @@ namespace Dia::ValueSchema
 			}
 			else { why = "unknown 'kind' (expected continuous or categorical)"; return false; }
 
-			out.mName = id.c_str();
+			SetText(out.mName, id.c_str());
 			out.mId = Dia::Core::StringCRC(id.c_str());
 			return true;
 		}
@@ -138,14 +138,31 @@ namespace Dia::ValueSchema
 	RampLoadResult RampLoader::LoadFromText(const char* text, const char* fileName)
 	{
 		RampLoadResult r;
-		if (strlen(fileName) <= String256::Capacity() - 1) { r.mFile = fileName; }
-		else { r.mFile = "<file name too long>"; }
-
+		if (fileName == nullptr) { fileName = ""; }
+		if (strlen(fileName) <= String256::Capacity() - 1) { SetText(r.mFile, fileName); }
+		else { SetText(r.mFile, "<file name too long>"); }
+		
+		// A null text is an empty document. A leading UTF-8 byte order mark is skipped (Python reads with utf-8-sig).
+		if (text == nullptr) { text = ""; }
+		if (static_cast<unsigned char>(text[0]) == 0xEF && static_cast<unsigned char>(text[1]) == 0xBB && static_cast<unsigned char>(text[2]) == 0xBF) { text += 3; }
+		
 		Json::Value root;
 		Json::Reader reader;
-		if (!reader.parse(std::string(text), root))
+		bool parsed = false;
+		std::string parseError;
+		try
 		{
-			FailFile(r, (std::string("unparsable JSON: ") + reader.getFormattedErrorMessages()).c_str());
+			parsed = reader.parse(std::string(text), root);
+			if (!parsed) { parseError = reader.getFormattedErrorMessages(); }
+		}
+		catch (const std::exception& e)
+		{
+			// jsoncpp throws when nesting exceeds its stack limit (1000 values) or memory runs out.
+			parseError = e.what();
+		}
+		if (!parsed)
+		{
+			FailFile(r, (std::string("unparsable JSON: ") + parseError).c_str());
 			return r;
 		}
 		if (!root.isObject()) { FailFile(r, "root must be an object"); return r; }
