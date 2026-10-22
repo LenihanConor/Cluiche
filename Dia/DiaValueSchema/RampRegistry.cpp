@@ -1,6 +1,7 @@
 #include <DiaValueSchema/RampRegistry.h>
 #include <DiaObservation/Log/DiaLog.h>
 
+#include <cstring>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -36,7 +37,24 @@ namespace Dia::ValueSchema
 		auto it = mImpl->mById.find(ramp.mId.Value());
 		if (it != mImpl->mById.end())
 		{
-			const Impl::Entry& existing = it->second;
+			Impl::Entry& existing = it->second;
+			if (strcmp(existing.mData->mName.AsCStr(), ramp.mName.AsCStr()) != 0)
+			{
+				// Different names, equal CRC: not a re-definition. The first registration stays.
+				DIA_LOG_ERROR("VSC", "Ramp '%s' in '%s' rejected: id hash collides with ramp '%s' from '%s'",
+					ramp.mName.AsCStr(), file, existing.mData->mName.AsCStr(), existing.mFile.c_str());
+				return RampRegisterResult::HashCollision;
+			}
+			if (isDia && !existing.mIsDia)
+			{
+				// Dia wins regardless of load order: overwrite in place so pointers handed out by Find stay valid.
+				DIA_LOG_WARNING("VSC", "Ramp '%s' from Dia '%s' replaces the game ramp from '%s' (Dia wins)",
+					ramp.mName.AsCStr(), file, existing.mFile.c_str());
+				*existing.mData = ramp;
+				existing.mIsDia = true;
+				existing.mFile = file;
+				return RampRegisterResult::Ok;
+			}
 			if (existing.mIsDia && !isDia)
 			{
 				DIA_LOG_ERROR("VSC", "Ramp '%s' in '%s' rejected: id clashes with Dia ramp from '%s' (Dia wins)",

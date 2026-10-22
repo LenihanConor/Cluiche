@@ -35,8 +35,12 @@ namespace Dia::ValueSchema
 	{
 		if (!mCodeSideEnabled || !mCodeSideCollected) { return 0; }
 		ICodeSideSource& source = mCodeSideSource ? *mCodeSideSource : static_cast<ICodeSideSource&>(mLiveSource);
-		return (source.MetricGeneration() - mCodeSideReport.mMetricGeneration)
-			+ (source.CommandGeneration() - mCodeSideReport.mCommandGeneration);
+		// A generation can go backwards (injected source / registry reset): that is "no late registrations", not a wrap.
+		const unsigned int metricGen = source.MetricGeneration();
+		const unsigned int commandGen = source.CommandGeneration();
+		const unsigned int lateMetrics = metricGen > mCodeSideReport.mMetricGeneration ? metricGen - mCodeSideReport.mMetricGeneration : 0u;
+		const unsigned int lateCommands = commandGen > mCodeSideReport.mCommandGeneration ? commandGen - mCodeSideReport.mCommandGeneration : 0u;
+		return lateMetrics + lateCommands;
 	}
 
 	void ValueSchemaModule::CheckLateRegistrations()
@@ -77,7 +81,7 @@ namespace Dia::ValueSchema
 					continue;
 				}
 				Dia::Core::Containers::String64 name;
-				name = alias.c_str();
+				SetText(name, alias.c_str());	// verbatim: `name = cstr` would printf-format a '%' in the alias
 				out.Add(name);
 			}
 		}
@@ -112,6 +116,10 @@ namespace Dia::ValueSchema
 	{
 		{
 			DIA_TRACE_ZONE("ValueSchema.Load", Dia::Observation::Trace::Category::kDiaAssetRuntime);
+
+			// Starting again without a Stop: take the stream down first so consumers never see (and the stream never
+			// re-registers over) a service that is about to be destroyed. No-op when not registered.
+			mServiceWriter.Deregister();
 
 			// Fresh registry each start: a published registry is immutable.
 			mService.Reset();

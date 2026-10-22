@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <set>
 #include <string>
 #include <system_error>
 #include <vector>
@@ -23,6 +24,16 @@ namespace Dia::ValueSchema
 			if (!in) { return false; }
 			out.assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
 			return !in.bad();
+		}
+
+		// Canonical absolute path ('/' separators) used to recognise the same Dia file reached through two roots.
+		std::string CanonicalKey(const fs::path& p)
+		{
+			std::error_code ec;
+			fs::path c = fs::canonical(p, ec);
+			if (ec) { c = fs::absolute(p, ec).lexically_normal(); }
+			try { return c.generic_string(); }
+			catch (const std::exception&) { return p.generic_string(); }
 		}
 
 		void LoadFile(const std::string& file, bool isDia, RampRegistry& registry, RampLoadStats& stats)
@@ -70,11 +81,14 @@ namespace Dia::ValueSchema
 		RampLoadStats stats;
 
 		// Dia set first so it always wins id clashes.
+		// A Dia file reachable from two roots (same root twice, or spelled differently) loads once.
+		std::set<std::string> seenDiaFiles;
 		for (const std::string& root : mImpl->mDiaRoots)
 		{
 			std::error_code ec;
 			const fs::path file = fs::path(root) / "ramps.json";
 			if (root.empty() || !fs::is_regular_file(file, ec)) { continue; }
+			if (!seenDiaFiles.insert(CanonicalKey(file)).second) { continue; }
 			++stats.mFilesFound;
 			LoadFile(file.generic_string(), true, registry, stats);
 		}
