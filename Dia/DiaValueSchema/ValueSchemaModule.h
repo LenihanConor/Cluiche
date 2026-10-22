@@ -37,6 +37,9 @@
 // Observation: metrics valueschema.entries_loaded / valueschema.files_failed (gauges) and
 // valueschema.ramps_loaded / valueschema.ramp_files_failed (gauges),
 // valueschema.metrics_described / metrics_undescribed / commands_described / args_described (gauges, code-side),
+// valueschema.component_fields_described / component_fields_undescribed / attr_registry_entries / attr_registry_dropped
+// (gauges, Feature 7: ECS component fields via ComponentFieldCollector + ComponentAttributeAudit, profile scope
+// "ValueSchema.CollectComponentFields"; dropped attribute registrations log an Error and degrade health),
 // valueschema.clamp.count (counter, bound to GetClamper()); health reporter "dia.valueschema".
 
 #include <DiaApplicationFlow/Module.h>
@@ -54,8 +57,11 @@
 #include <DiaValueSchema/RampRegistry.h>
 #include <DiaValueSchema/RampSetLoader.h>
 #include <DiaValueSchema/CodeSideCollector.h>
+#include <DiaValueSchema/ComponentFieldCollector.h>
+#include <DiaValueSchema/ComponentAttributeAudit.h>
 
 namespace Dia::Observation::Metric { class Counter; class Gauge; }
+namespace Dia::Entity { struct ComponentTypeDesc; }
 
 namespace Dia::ValueSchema
 {
@@ -93,6 +99,15 @@ namespace Dia::ValueSchema
 		void					CheckLateRegistrations();
 		unsigned int			LateWarningCount() const					{ return mLateWarningCount; }
 
+		// Component fields (Feature 7), collected in the same pass/flag as the code-side entries. Default source is the
+		// global ComponentRegistry + FieldAttributeRegistry::Instance(); both are injectable for tests (set before start,
+		// pointers not owned and must outlive the module's start).
+		void SetComponentDescriptors(const Dia::Entity::ComponentTypeDesc* const* descs, unsigned int count)
+		{ mComponentDescs = descs; mComponentDescCount = count; mComponentOverride = true; }
+		void SetAttributeRegistry(const Dia::Reflect::FieldAttributeRegistry* registry)	{ mAttrRegistry = registry; }
+		const ComponentFieldReport&			GetComponentFieldReport() const	{ return mComponentReport; }
+		const ComponentAttributeAuditReport& GetComponentAuditReport() const	{ return mAuditReport; }
+
 		unsigned int	GetSchemaRootCount() const						{ return mRootAliases.Size(); }
 		const char*		GetSchemaRoot(unsigned int index) const			{ return mRootAliases[index].AsCStr(); }
 		unsigned int	GetRampRootCount() const						{ return mRampRootAliases.Size(); }
@@ -117,13 +132,20 @@ namespace Dia::ValueSchema
 		LiveCodeSideSource							mLiveSource;
 		ICodeSideSource*							mCodeSideSource = nullptr;	// null = mLiveSource
 		CodeSideReport								mCodeSideReport;
+		ComponentFieldReport						mComponentReport;
+		ComponentAttributeAuditReport				mAuditReport;
+		ComponentAttributeAudit						mAudit;	// persists across starts: dedupes warnings
+		const Dia::Entity::ComponentTypeDesc* const*	mComponentDescs = nullptr;
+		unsigned int								mComponentDescCount = 0;
+		bool										mComponentOverride = false;
+		const Dia::Reflect::FieldAttributeRegistry*	mAttrRegistry = nullptr;	// null = FieldAttributeRegistry::Instance()
 		bool										mCodeSideEnabled = true;
 		bool										mCodeSideCollected = false;
 		unsigned int								mLastWarnedLate = 0;
 		unsigned int								mLateWarningCount = 0;
 		SchemaLoadStats								mStats;
 		RampLoadStats								mRampStats;
-		ValueSchemaHealth							mHealth{ mStats, &mRampStats };
+		ValueSchemaHealth							mHealth{ mStats, &mRampStats, &mAuditReport };
 
 		Dia::ApplicationFlow::ServiceStreamWriter<ValueSchemaService> mServiceWriter{ this, Dia::Core::StringCRC(kServiceStreamId) };
 
@@ -135,6 +157,10 @@ namespace Dia::ValueSchema
 		Dia::Observation::Metric::Gauge*	mMetricMetricsUndescribed = nullptr;
 		Dia::Observation::Metric::Gauge*	mMetricCommandsDescribed = nullptr;
 		Dia::Observation::Metric::Gauge*	mMetricArgsDescribed = nullptr;
+		Dia::Observation::Metric::Gauge*	mMetricComponentDescribed = nullptr;
+		Dia::Observation::Metric::Gauge*	mMetricComponentUndescribed = nullptr;
+		Dia::Observation::Metric::Gauge*	mMetricAttrEntries = nullptr;
+		Dia::Observation::Metric::Gauge*	mMetricAttrDropped = nullptr;
 		Dia::Observation::Metric::Counter*	mMetricClampCount = nullptr;
 	};
 }

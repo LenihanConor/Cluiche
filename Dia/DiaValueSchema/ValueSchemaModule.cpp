@@ -172,6 +172,8 @@ namespace Dia::ValueSchema
 			mCodeSideReport = CodeSideReport();
 			mCodeSideCollected = false;
 			mLastWarnedLate = 0;
+			mComponentReport = ComponentFieldReport();
+			mAuditReport = ComponentAttributeAuditReport();
 			if (mCodeSideEnabled)
 			{
 				DIA_PROFILE_SCOPE("ValueSchema.CollectCodeSide", Dia::Observation::Profile::Category::kDiaAssetRuntime);
@@ -179,6 +181,23 @@ namespace Dia::ValueSchema
 				CodeSideCollector collector;
 				mCodeSideReport = collector.Collect(source, *mRegistry);
 				mCodeSideCollected = true;
+			}
+
+			if (mCodeSideEnabled)
+			{
+				DIA_PROFILE_SCOPE("ValueSchema.CollectComponentFields", Dia::Observation::Profile::Category::kDiaAssetRuntime);
+				const Dia::Reflect::FieldAttributeRegistry& attrs = mAttrRegistry ? *mAttrRegistry : Dia::Reflect::FieldAttributeRegistry::Instance();
+				ComponentFieldCollector componentCollector;
+				if (mComponentOverride)
+				{
+					mComponentReport = componentCollector.Collect(mComponentDescs, mComponentDescCount, *mRegistry);
+					mAuditReport = mAudit.Run(attrs, mComponentDescs, mComponentDescCount);
+				}
+				else
+				{
+					mComponentReport = componentCollector.Collect(*mRegistry);
+					mAuditReport = mAudit.Run(attrs);
+				}
 			}
 
 			mRegistry->Publish();
@@ -194,6 +213,16 @@ namespace Dia::ValueSchema
 			DIA_LOG_INFO("VSC", "code-side: %u metrics (%u described, %u undescribed), %u commands, %u args (%u described)",
 				mCodeSideReport.mMetricsCollected, mCodeSideReport.mMetricsDescribed, mCodeSideReport.mMetricsUndescribed,
 				mCodeSideReport.mCommandsCollected, mCodeSideReport.mArgsCollected, mCodeSideReport.mArgsDescribed);
+		}
+
+		if (mCodeSideEnabled)
+		{
+			DIA_LOG_INFO("VSC", "component fields: %u collected (%u described, %u undescribed)",
+				mComponentReport.mCollected, mComponentReport.mDescribed, mComponentReport.mUndescribed);
+			if (mAuditReport.mDroppedCount > 0)
+			{
+				DIA_LOG_ERROR("VSC", "%u attribute registrations dropped; raise FieldAttributeRegistry::kMaxEntries", mAuditReport.mDroppedCount);
+			}
 		}
 
 		DIA_LOG_INFO("VSC", "Ramps loaded: %u files (%u failed), %u ramps, %u rejected",
@@ -214,6 +243,14 @@ namespace Dia::ValueSchema
 		if (mMetricMetricsUndescribed) { mMetricMetricsUndescribed->Set(static_cast<double>(mCodeSideReport.mMetricsUndescribed)); }
 		if (mMetricCommandsDescribed) { mMetricCommandsDescribed->Set(static_cast<double>(mCodeSideReport.mCommandsCollected)); }
 		if (mMetricArgsDescribed) { mMetricArgsDescribed->Set(static_cast<double>(mCodeSideReport.mArgsDescribed)); }
+		mMetricComponentDescribed = metrics.RegisterGauge(Dia::Core::StringCRC("valueschema.component_fields_described"));
+		mMetricComponentUndescribed = metrics.RegisterGauge(Dia::Core::StringCRC("valueschema.component_fields_undescribed"));
+		mMetricAttrEntries = metrics.RegisterGauge(Dia::Core::StringCRC("valueschema.attr_registry_entries"));
+		mMetricAttrDropped = metrics.RegisterGauge(Dia::Core::StringCRC("valueschema.attr_registry_dropped"));
+		if (mMetricComponentDescribed) { mMetricComponentDescribed->Set(static_cast<double>(mComponentReport.mDescribed)); }
+		if (mMetricComponentUndescribed) { mMetricComponentUndescribed->Set(static_cast<double>(mComponentReport.mUndescribed)); }
+		if (mMetricAttrEntries) { mMetricAttrEntries->Set(static_cast<double>(mAuditReport.mEntriesUsed)); }
+		if (mMetricAttrDropped) { mMetricAttrDropped->Set(static_cast<double>(mAuditReport.mDroppedCount)); }
 		mMetricClampCount = metrics.RegisterCounter(Dia::Core::StringCRC("valueschema.clamp.count"));
 		if (mMetricEntriesLoaded) { mMetricEntriesLoaded->Set(static_cast<double>(mRegistry->Count())); }
 		if (mMetricFilesFailed) { mMetricFilesFailed->Set(static_cast<double>(mStats.mFilesFailed)); }
@@ -244,6 +281,10 @@ namespace Dia::ValueSchema
 		mMetricMetricsUndescribed = nullptr;
 		mMetricCommandsDescribed = nullptr;
 		mMetricArgsDescribed = nullptr;
+		mMetricComponentDescribed = nullptr;
+		mMetricComponentUndescribed = nullptr;
+		mMetricAttrEntries = nullptr;
+		mMetricAttrDropped = nullptr;
 		return Dia::ApplicationFlow::StopResult::kDone;
 	}
 }

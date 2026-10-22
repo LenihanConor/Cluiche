@@ -2084,5 +2084,8 @@
     <ClCompile Include="DiaValueSchema\TestComponentFieldCollector.cpp">
       <Filter>DiaValueSchema</Filter>
     </ClCompile>
+    <ClCompile Include="DiaValueSchema\TestComponentFieldWiring.cpp">
+      <Filter>DiaValueSchema</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -13,6 +13,10 @@
 #include <DiaCore/FilePath/PathStore.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaObservation/Metric/Gauge.h>
+#include <DiaEntity/Testing/TestDescribedComponent.h>
+#include <DiaEntity/ComponentTypeDesc.h>
+#include <DiaCore/Reflect/FieldAttributes.h>
+#include <DiaObservation/Health/IHealthReporter.h>
 #include <memory>
 #include <string>
 
@@ -54,11 +58,18 @@ namespace
 
 	TestVsc*				g_module = nullptr;
 	FakeCodeSideSource*		g_pendingSource = nullptr;
+	const Dia::Entity::ComponentTypeDesc* const*	g_pendingComponents = nullptr;
+	unsigned int									g_pendingComponentCount = 0;
+	Dia::Reflect::FieldAttributeRegistry*			g_pendingAttrs = nullptr;
 
 	Module* CreateVsc(const StringCRC& id)
 	{
 		auto* m = new TestVsc(id);
 		if (g_pendingSource) { m->SetCodeSideSource(g_pendingSource); }
+		// Component fields: none unless a test opts in (keeps the exact-count assertions above independent of the
+		// ECS components linked into this binary).
+		m->SetComponentDescriptors(g_pendingComponents, g_pendingComponentCount);
+		if (g_pendingAttrs) { m->SetAttributeRegistry(g_pendingAttrs); }
 		g_module = m;
 		return m;
 	}
@@ -122,6 +133,9 @@ namespace
 		~Harness()
 		{
 			g_pendingSource = nullptr;
+			g_pendingComponents = nullptr;
+			g_pendingComponentCount = 0;
+			g_pendingAttrs = nullptr;
 			if (!mApp) return;
 			mApp->RequestShutdown();
 			for (int guard = 0; guard < 1000 && mApp->Update(kDt); ++guard) {}
@@ -279,4 +293,113 @@ TEST(DiaValueSchemaCodeSideModule, StopStartRecollectsAgainstFreshRegistry)
 	EXPECT_NE(g_module->GetService()->Find(StringCRC("dia.metric/second")), nullptr);
 	EXPECT_EQ(g_module->GetCodeSideReport().mMetricsCollected, 2u);
 	EXPECT_EQ(g_module->LateRegistrationCount(), 0u);
+}
+
+// --- Feature 7 tasks 5+7: component field wiring ----------------------------------------------------------------
+namespace
+{
+	const Dia::Entity::ComponentTypeDesc* g_fixtureDescs[1];
+
+	void UseFixtureComponent()
+	{
+		g_fixtureDescs[0] = &DiaEntityTesting::TestDescribedComponent::GetDesc();
+		g_pendingComponents = g_fixtureDescs;
+		g_pendingComponentCount = 1;
+	}
+
+	std::unique_ptr<Dia::Reflect::FieldAttributeRegistry> CopyOfAttrRegistry()
+	{
+		return std::unique_ptr<Dia::Reflect::FieldAttributeRegistry>(
+			new Dia::Reflect::FieldAttributeRegistry(Dia::Reflect::FieldAttributeRegistry::Instance()));
+	}
+}
+
+TEST(DiaValueSchemaComponentFieldModule, FieldsVisibleThroughServiceAndReportExposed)
+{
+	UseFixtureComponent();
+	FakeCodeSideSource src;
+	Harness h(&src, "{}");
+	ASSERT_TRUE(h.Start());
+	const ValueSchemaService* svc = g_module->GetService();
+	ASSERT_NE(svc, nullptr);
+	EXPECT_NE(svc->Find(StringCRC("test-described-component/speed")), nullptr);
+
+	const ComponentFieldReport& r = g_module->GetComponentFieldReport();
+	EXPECT_EQ(r.mCollected, 6u);
+	EXPECT_EQ(r.mDescribed, 3u);	// speed, hitPoints, nested
+	EXPECT_EQ(r.mUndescribed, 1u);	// armor (ranged, no describe)
+	ASSERT_EQ(r.mUndescribedFields.Size(), 1u);
+	EXPECT_STREQ(r.mUndescribedFields[0].mName.AsCStr(), "test-described-component/armor");
+}
+
+TEST(DiaValueSchemaComponentFieldModule, GaugesRegisteredWithMatchingValues)
+{
+	UseFixtureComponent();
+	std::unique_ptr<Dia::Reflect::FieldAttributeRegistry> attrs = CopyOfAttrRegistry();
+	g_pendingAttrs = attrs.get();
+	FakeCodeSideSource src;
+	Harness h(&src, "{}");
+	ASSERT_TRUE(h.Start());
+	EXPECT_DOUBLE_EQ(GaugeValue("valueschema.component_fields_described"), 3.0);
+	EXPECT_DOUBLE_EQ(GaugeValue("valueschema.component_fields_undescribed"), 1.0);
+	EXPECT_DOUBLE_EQ(GaugeValue("valueschema.attr_registry_entries"), static_cast<double>(attrs->EntryCount()));
+	EXPECT_DOUBLE_EQ(GaugeValue("valueschema.attr_registry_dropped"), 0.0);
+}
+
+TEST(DiaValueSchemaComponentFieldModule, HealthNotDegradedWithoutDrops)
+{
+	UseFixtureComponent();
+	std::unique_ptr<Dia::Reflect::FieldAttributeRegistry> attrs = CopyOfAttrRegistry();
+	g_pendingAttrs = attrs.get();
+	FakeCodeSideSource src;
+	Harness h(&src, "{}");
+	ASSERT_TRUE(h.Start());
+	EXPECT_EQ(g_module->GetHealthReporter().Report().status, Dia::Observation::Health::HealthStatus::kOK);
+}
+
+TEST(DiaValueSchemaComponentFieldModule, DroppedRegistrationsDegradeHealthAndAreCounted)
+{
+	UseFixtureComponent();
+	std::unique_ptr<Dia::Reflect::FieldAttributeRegistry> attrs = CopyOfAttrRegistry();
+	static Dia::Reflect::RequiredAttribute attr;
+	for (unsigned int i = 0; i <= Dia::Reflect::FieldAttributeList::kMaxAttrsPerField; ++i) { attrs->Register(7u, 7u, &attr); }
+	ASSERT_EQ(attrs->DroppedCount(), 1u);
+	g_pendingAttrs = attrs.get();
+	FakeCodeSideSource src;
+	Harness h(&src, "{}");
+	ASSERT_TRUE(h.Start());
+	EXPECT_EQ(g_module->GetHealthReporter().Report().status, Dia::Observation::Health::HealthStatus::kDegraded);
+	EXPECT_EQ(g_module->GetComponentAuditReport().mDroppedCount, 1u);
+	EXPECT_DOUBLE_EQ(GaugeValue("valueschema.attr_registry_dropped"), 1.0);
+}
+
+TEST(DiaValueSchemaComponentFieldModule, RepeatedStartDoesNotRewarnSamePair)
+{
+	UseFixtureComponent();
+	std::unique_ptr<Dia::Reflect::FieldAttributeRegistry> attrs = CopyOfAttrRegistry();
+	static Dia::Reflect::DescribeAttribute ghost;
+	ghost.label = "Ghost";
+	ghost.description = "No such field";
+	attrs->Register(StringCRC("TestDescribedComponent").Value(), StringCRC("noSuchField").Value(), &ghost);
+	g_pendingAttrs = attrs.get();
+	FakeCodeSideSource src;
+	Harness h(&src, "{}");
+	ASSERT_TRUE(h.Start());
+	EXPECT_EQ(g_module->GetComponentAuditReport().mUnknownFieldDescribes, 1u);
+	EXPECT_EQ(g_module->GetComponentAuditReport().mNewWarnings, 1u);
+
+	g_module->CycleStop();
+	g_module->CycleStart();
+	EXPECT_EQ(g_module->GetComponentAuditReport().mUnknownFieldDescribes, 1u);
+	EXPECT_EQ(g_module->GetComponentAuditReport().mNewWarnings, 0u);
+}
+
+TEST(DiaValueSchemaComponentFieldModule, DisabledByCodeSideConfigCollectsNoComponents)
+{
+	UseFixtureComponent();
+	FakeCodeSideSource src;
+	Harness h(&src, R"({"code_side":false})");
+	ASSERT_TRUE(h.Start());
+	EXPECT_EQ(g_module->GetComponentFieldReport().mCollected, 0u);
+	EXPECT_EQ(g_module->GetService()->Find(StringCRC("test-described-component/speed")), nullptr);
 }

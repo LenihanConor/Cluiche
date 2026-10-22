@@ -156,6 +156,11 @@ public:
     // more than kMaxAttrsPerField attributes on one field). Reset by Clear().
     unsigned int DroppedCount() const { return mDroppedCount; }
 
+    // Read-only iteration: EntryCount() distinct (type, field) keys are in use (<= kMaxEntries);
+    // EntryAt(i) is valid for i < EntryCount().
+    unsigned int EntryCount() const { return mEntries.Size(); }
+    const FieldAttributeList& EntryAt(unsigned int index) const { return mEntries.At(index); }
+
     // Returns all attributes for a (type, field) pair.
     // outAttrs is filled with up to maxOut pointers; returns actual count found.
     unsigned int GetAttributes(uint32_t typeCrc, uint32_t fieldCrc,

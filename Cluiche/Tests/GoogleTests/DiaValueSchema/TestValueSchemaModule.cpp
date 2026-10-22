@@ -80,6 +80,7 @@ namespace
 	{
 		auto* m = new ValueSchemaModule(id);
 		m->SetCodeSideSource(&g_emptyCodeSide);
+		m->SetComponentDescriptors(nullptr, 0);	// exact-count tests: no ECS component fields
 		if (g_pendingContributor) { m->AddContributor(g_pendingContributor); }
 		g_module = m;
 		return m;

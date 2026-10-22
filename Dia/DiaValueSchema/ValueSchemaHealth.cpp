@@ -11,7 +11,8 @@ namespace Dia::ValueSchema
 	{
 		Dia::Observation::Health::Health h{};
 		const unsigned int rampFailed = mRampStats ? mRampStats->mFilesFailed : 0u;
-		h.errors = mStats.mFilesFailed + rampFailed;
+		const unsigned int attrDropped = mAuditReport ? mAuditReport->mDroppedCount : 0u;
+		h.errors = mStats.mFilesFailed + rampFailed + attrDropped;
 		h.warnings = mStats.mRootsMissing;
 		if (mStats.mFilesFailed > 0)
 		{
@@ -22,6 +23,11 @@ namespace Dia::ValueSchema
 		{
 			h.status = Dia::Observation::Health::HealthStatus::kDegraded;
 			h.reason = Dia::Core::StringCRC("valueschema.ramp_files_failed");
+		}
+		else if (attrDropped > 0)
+		{
+			h.status = Dia::Observation::Health::HealthStatus::kDegraded;
+			h.reason = Dia::Core::StringCRC("valueschema.attr_registrations_dropped");
 		}
 		else
 		{

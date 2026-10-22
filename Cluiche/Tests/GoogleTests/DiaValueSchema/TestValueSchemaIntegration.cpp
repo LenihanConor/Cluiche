@@ -68,6 +68,7 @@ namespace
 	{
 		auto* m = new TestVsc(id);
 		if (g_source) { m->SetCodeSideSource(g_source); }
+		m->SetComponentDescriptors(nullptr, 0);	// exact-count tests: no ECS component fields
 		g_module = m;
 		return m;
 	}

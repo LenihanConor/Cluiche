@@ -31,6 +31,7 @@ public_api:
     - DiaValueSchema/IValueSchemaContributor.h
     - DiaValueSchema/CodeSideCollector.h
     - DiaValueSchema/ComponentFieldCollector.h
+    - DiaValueSchema/ComponentAttributeAudit.h
     - DiaValueSchema/ValueSchemaHealth.h
     - DiaValueSchema/ValueSchemaModule.h
   namespaces:

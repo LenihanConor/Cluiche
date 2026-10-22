@@ -204,6 +204,19 @@ TEST_F(FieldAttributeRegistryCapacity, NinthAttributeOnOneKeyCountsAsDropped) {
     EXPECT_EQ(reg.DroppedCount(), 1u);
 }
 
+TEST_F(FieldAttributeRegistryCapacity, EntryCountAndEntryAtIterateDistinctKeys) {
+    static RequiredAttribute attr;
+    FieldAttributeRegistry& reg = FieldAttributeRegistry::Instance();
+    EXPECT_EQ(reg.EntryCount(), 0u);
+    reg.Register(11u, 1u, &attr);
+    reg.Register(11u, 1u, &attr);   // same key: not a new entry
+    reg.Register(12u, 2u, &attr);
+    ASSERT_EQ(reg.EntryCount(), 2u);
+    EXPECT_EQ(reg.EntryAt(0).key.typeCrc, 11u);
+    EXPECT_EQ(reg.EntryAt(0).count, 2u);
+    EXPECT_EQ(reg.EntryAt(1).key.fieldCrc, 2u);
+}
+
 TEST_F(FieldAttributeRegistryCapacity, ClearResetsDroppedCount) {
     static RequiredAttribute attr;
     FieldAttributeRegistry& reg = FieldAttributeRegistry::Instance();
