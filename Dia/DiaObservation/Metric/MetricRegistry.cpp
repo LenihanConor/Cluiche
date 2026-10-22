@@ -209,6 +209,9 @@ namespace Dia
 
             void MetricRegistry::ForEachMetric(MetricVisitor visitor, void* user) const
             {
+                if (!visitor)
+                    return;
+
                 struct Item { Dia::Core::StringCRC name; MetricKind kind; const MetricInfo* info; };
                 std::vector<Item> items;
                 {

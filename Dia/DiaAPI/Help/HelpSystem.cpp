@@ -86,7 +86,7 @@ namespace Dia
 					if (cmd->category == category)
 					{
 						// Print command name and description
-						printf("  %-20s  %s", cmd->name.AsChar(), cmd->description);
+						printf("  %-20s  %s", cmd->name.AsChar(), cmd->description ? cmd->description : "");
 
 						// Print version if available
 						if (cmd->version && cmd->version[0] != '\0')
@@ -137,7 +137,8 @@ namespace Dia
 			}
 
 			// Display command-specific help
-			printf("DiaAPI %s - %s\n\n", cmd->name.AsChar(), cmd->description);
+			const char* description = cmd->description ? cmd->description : "";
+			printf("DiaAPI %s - %s\n\n", cmd->name.AsChar(), description);
 
 			printf("Category: %s\n", cmd->category.AsChar());
 
@@ -160,7 +161,7 @@ namespace Dia
 			}
 
 			printf("Description:\n");
-			printf("  %s\n", cmd->description);
+			printf("  %s\n", description);
 
 			if (cmd->params && cmd->paramCount > 0)
 			{
@@ -184,8 +185,9 @@ namespace Dia
 				char* out;
 				unsigned capacity;
 				unsigned total = 0;
+				unsigned pendingPad = 0; // padding is deferred so a line never ends in spaces
 
-				void Put(char c)
+				void Raw(char c)
 				{
 					if (out && capacity > 0 && total + 1 < capacity)
 					{
@@ -193,8 +195,20 @@ namespace Dia
 					}
 					total++;
 				}
+				void Put(char c)
+				{
+					if (c == '\n')
+					{
+						pendingPad = 0; // drop trailing padding at end of line
+					}
+					else
+					{
+						while (pendingPad > 0) { Raw(' '); pendingPad--; }
+					}
+					Raw(c);
+				}
 				void Put(const char* s) { while (*s) Put(*s++); }
-				void Pad(unsigned n) { while (n--) Put(' '); }
+				void Pad(unsigned n) { pendingPad += n; }
 			};
 
 			const char* OrQ(const char* s) { return s ? s : "?"; }
