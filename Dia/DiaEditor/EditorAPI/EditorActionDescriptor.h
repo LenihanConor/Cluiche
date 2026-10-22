@@ -1,5 +1,6 @@
 #pragma once
 
+#include <DiaAPI/CommandRegistry/ValueParam.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Json/external/json/json.h>
@@ -15,14 +16,8 @@ namespace Dia
 			kCallerThread   // action executes inline on calling thread (read-only only)
 		};
 
-		// Single parameter definition for an action
-		struct EditorActionParam
-		{
-			const char* name        = nullptr;  // e.g. "path"
-			const char* type        = nullptr;  // e.g. "string", "int", "bool"
-			bool        required    = false;
-			const char* description = nullptr;
-		};
+		// Single parameter definition for an action (shared with DiaAPI)
+		using EditorActionParam = Dia::API::ValueParam;
 
 		// Param schema: up to 8 params per action (PD-004: DiaCore containers, no STL)
 		struct EditorActionParamSchema

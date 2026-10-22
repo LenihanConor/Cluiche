@@ -6,6 +6,19 @@ namespace Dia
 {
 	namespace Editor
 	{
+		Json::Value EditorActionParamToJson(const EditorActionParam& param)
+		{
+			Json::Value pj(Json::objectValue);
+			pj["name"]        = param.name;
+			pj["type"]        = param.type        ? param.type        : "string";
+			pj["required"]    = param.required;
+			pj["description"] = param.description ? param.description : "";
+			if (param.unit != nullptr)       pj["unit"]   = param.unit;
+			if (param.hasRange)              { pj["min"] = param.min; pj["max"] = param.max; }
+			if (param.enumValues != nullptr) pj["values"] = param.enumValues;
+			return pj;
+		}
+
 		void EditorActionManifest::Add(const EditorActionEntry& entry)
 		{
 			DIA_ASSERT(entry.name != Dia::Core::StringCRC(), "EditorActionManifest::Add - entry.name must not be default StringCRC");

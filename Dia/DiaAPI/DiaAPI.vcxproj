@@ -88,6 +88,7 @@
     <ClInclude Include="Events\EventSystem.h" />
     <ClInclude Include="Events\EventSystemInternal.h" />
     <ClInclude Include="PythonBindings\PythonBindings.h" />
+    <ClInclude Include="CommandRegistry\ValueParam.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CommandRegistry\CommandRegistry.cpp" />

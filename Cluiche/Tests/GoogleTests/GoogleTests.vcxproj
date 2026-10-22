@@ -954,6 +954,7 @@
     <ClCompile Include="DiaValueSchema\TestRampResolver.cpp" />
     <ClCompile Include="DiaValueSchema\TestRampLegend.cpp" />
     <ClCompile Include="DiaValueSchema\TestRampConformance.cpp" />
+    <ClCompile Include="DiaAPI\TestValueParam.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
