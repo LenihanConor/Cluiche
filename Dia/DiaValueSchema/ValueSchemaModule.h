@@ -46,6 +46,11 @@
 // DiaDebugServer QueryRegistry and unregisters it in DoStop / the destructor. The registry is taken from
 // SetQueryRegistry() when set (tests), else from the DebugServer on the "DebugServerService" ServiceStream (the same
 // way the inspector modules reach it). Without a DebugServer the query is simply not served (Debug log, not an error).
+//
+// Describe mode (Feature 6 task 4): when the app's Main began a DescribeSession (`--describe-schema <path> [--stage <name>]`),
+// DoUpdate polls an ApplicationDescribeBarrier (all modules past Init, optional stage entered), lets DescribeModeRunner write
+// the export from this module's service + code-side/component reports, records the exit code in DescribeSession and calls
+// RequestShutdown(). Gives up with exit code kExitTimedOut after 120 s of waiting. See DescribeMode.h for the design note.
 
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/PUAffinity.h>
@@ -65,10 +70,12 @@
 #include <DiaValueSchema/ComponentFieldCollector.h>
 #include <DiaValueSchema/ComponentAttributeAudit.h>
 #include <DiaValueSchema/ValueSchemaQuery.h>
+#include <DiaValueSchema/DescribeMode.h>
 
 namespace Dia::Observation::Metric { class Counter; class Gauge; }
 namespace Dia::Entity { struct ComponentTypeDesc; }
 namespace Dia::DebugServer { class QueryRegistry; }
+namespace Dia::ApplicationFlow { class IApplicationInspectable; }
 
 namespace Dia::ValueSchema
 {
@@ -134,6 +141,13 @@ namespace Dia::ValueSchema
 	private:
 		void RegisterQuery();
 		void UnregisterQuery();
+		void TickDescribeMode(float deltaTime);
+
+		// Describe mode (Feature 6 task 4): created lazily on the first DoUpdate when DescribeSession is active.
+		Dia::Core::UniquePtr<DescribeModeRunner>	mDescribeRunner;
+		Dia::Core::UniquePtr<IDescribeBarrier>		mDescribeBarrier;
+		float										mDescribeWaitedSec = 0.0f;
+		Dia::ApplicationFlow::IApplicationInspectable*	mAppInspect = nullptr;
 
 		Dia::Core::Containers::DynamicArrayC<Dia::Core::Containers::String64, kMaxSchemaRoots>	mRootAliases;
 		Dia::Core::Containers::DynamicArrayC<Dia::Core::Containers::String64, kMaxSchemaRoots>	mRampRootAliases;

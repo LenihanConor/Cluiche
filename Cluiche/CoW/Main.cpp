@@ -7,6 +7,7 @@
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/Manifest/ManifestBootstrap.h>
+#include <DiaValueSchema/DescribeSession.h>
 
 // Modules register themselves at static init time via DIA_MODULE. The baseline
 // modules are force-linked with /WHOLEARCHIVE:CluicheGameBaseline.lib.
@@ -15,6 +16,10 @@
 #pragma warning(disable: 6262)  // Application stack frame is large but main() is a one-shot
 int main(int argc, const char* argv[])
 {
+    // --describe-schema <path> [--stage <name>]: DiaValueSchema describe mode (see DiaValueSchema/DescribeSession.h).
+    if (!Dia::ValueSchema::BeginDescribeFromArgs(argc, argv, "cow"))
+        return 1;
+
     const char* kDiagamePath = "assets/cow.diagame";
 
     // Heap-allocate the manifest: it grows with module/channel count and can
@@ -46,6 +51,6 @@ int main(int argc, const char* argv[])
     {
     }
 
-    return 0;
+    return Dia::ValueSchema::DescribeSession::FinalExitCode();  // 0 unless --describe-schema was requested
 }
 #pragma warning(pop)

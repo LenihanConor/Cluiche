@@ -36,6 +36,8 @@ public_api:
     - DiaValueSchema/ValueSchemaHealth.h
     - DiaValueSchema/ValueSchemaQuery.h
     - DiaValueSchema/ValueSchemaExporter.h
+    - DiaValueSchema/DescribeMode.h
+    - DiaValueSchema/DescribeSession.h
     - DiaValueSchema/ValueSchemaModule.h
   namespaces:
     - Dia::ValueSchema::
@@ -46,6 +48,8 @@ public_api:
     - IValueSchemaContributor
     - ValueSchemaQueryHandler
     - ValueSchemaExporter
+    - DescribeModeRunner
+    - DescribeSession
 responsibilities:
   - Sidecar *.schema.json format definition and parsing
   - ValueInfo registry for storing and querying schema metadata
@@ -111,7 +115,7 @@ keeps the result in `GetCodeSideReport()`. Info log: `code-side: <M> metrics (<d
 Late registrations (AC 6): metrics/commands registered after publish are not in the immutable service.
 `LateRegistrationCount()` = source generation deltas since collection; `CheckLateRegistrations()` logs one
 Warning per changed non-zero count (`LateWarningCount()` for tests). It is the hook `valueschema.get` answering
-and describe-mode dumps (Features 3 and 6, not built) are to call; nothing calls it automatically.
+and describe-mode dumps (Features 3 and 6) are to call; nothing calls it automatically.
 
 Observation: gauges `valueschema.metrics_described`, `valueschema.metrics_undescribed`,
 `valueschema.commands_described` (commands collected), `valueschema.args_described`; trace zone `ValueSchema.Load` and profile scope `ValueSchema.LoadFile` (category
@@ -143,3 +147,15 @@ The whole config string is limited to 255 characters (`String256`): keep alias l
 
 Consumers declare `{ "id": "ValueSchemaService", "role": "consumes" }` and hold a
 `ServiceStreamReader<ValueSchemaService>`.
+
+## Describe mode (Feature 6 task 4)
+
+Startup flag `--describe-schema <path> [--stage <name>]` (combine with `--automation`). Each app's `Main` calls
+`BeginDescribeFromArgs(argc, argv, "<app>")` (DescribeSession.h; CluicheTest and CoW do) before `Application::Start()`
+and returns `DescribeSession::FinalExitCode()`. `ValueSchemaModule::DoUpdate` then polls an `ApplicationDescribeBarrier`
+(no module Starting/Stopping/Failed on any PU, no stage transition in flight, two consecutive polls; with `--stage` it
+first queues `TransitionTo(stage)` once and waits for the stage to be current). When ready, `DescribeModeRunner` writes
+the export once via `ValueSchemaExporter` from the module's own service and reports, records the exit code and calls
+`RequestShutdown()`. Exit codes: 0 ok, 2 write failed, 3 aborted (module failed / unknown stage), 4 app ended without
+the export (module not hosted), 5 timed out after 120 s. Prerequisites: the app manifest hosts `ValueSchemaModule`
+(active in the target stage) and DiaValueSchema is linked so the module registers. See DescribeMode.h for the design note.

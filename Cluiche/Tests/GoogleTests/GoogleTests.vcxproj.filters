@@ -2108,5 +2108,8 @@
     <ClCompile Include="DiaValueSchema\TestValueSchemaExportSubset.cpp">
       <Filter>DiaValueSchema</Filter>
     </ClCompile>
+    <ClCompile Include="DiaValueSchema\TestDescribeMode.cpp">
+      <Filter>DiaValueSchema</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

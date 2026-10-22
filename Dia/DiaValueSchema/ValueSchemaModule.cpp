@@ -119,6 +119,7 @@ namespace Dia::ValueSchema
 	void ValueSchemaModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 	{
 		mServiceWriter.Connect(app);
+		mAppInspect = app.GetInspectable();	// no RTTI (/GR-): taken here rather than dynamic_cast from IApplicationControl
 	}
 
 	// --- valueschema.get registration -------------------------------------------
@@ -311,8 +312,108 @@ namespace Dia::ValueSchema
 		return Dia::ApplicationFlow::StartResult::kReady;
 	}
 
-	void ValueSchemaModule::DoUpdate(float /*deltaTime*/)
+	// --- Describe mode ----------------------------------------------------------
+	namespace
 	{
+		constexpr float kDescribeTimeoutSec = 120.0f;
+		constexpr unsigned int kStablePolls = 2;
+
+		// Barrier over the Application's own introspection: Init is finished on every PU when no module is Starting or
+		// Stopping, none Failed and no stage transition is in flight. Two consecutive ready polls are required because
+		// the main thread commits the new stage and BeginStart()s the incoming modules in separate steps.
+		class ApplicationDescribeBarrier : public IDescribeBarrier
+		{
+		public:
+			ApplicationDescribeBarrier(Dia::ApplicationFlow::IApplicationControl* control,
+				Dia::ApplicationFlow::IApplicationInspectable* inspect, const char* stage)
+				: mControl(control)
+				, mInspect(inspect)
+				, mHasStage(stage != nullptr && stage[0] != '\0')
+				, mStage(mHasStage ? stage : "")
+			{
+			}
+
+			BarrierState Poll() override
+			{
+				if (mControl == nullptr || mInspect == nullptr) { return BarrierState::kAborted; }
+
+				if (mHasStage)
+				{
+					if (!mRequested)
+					{
+						if (!StageExists()) { DIA_LOG_ERROR("VSC", "Describe mode: unknown stage '%s'", mStage.AsChar()); return BarrierState::kAborted; }
+						mRequested = true;
+						if (mInspect->GetCurrentStage() != mStage) { mControl->TransitionTo(mStage); }
+					}
+					if (mInspect->GetCurrentStage() != mStage) { mStable = 0; return BarrierState::kWaiting; }
+				}
+
+				if (mInspect->IsTransitioning()) { mStable = 0; return BarrierState::kWaiting; }
+
+				Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 4> pus;
+				mInspect->GetProcessingUnits(pus);
+				for (unsigned int p = 0; p < pus.Size(); ++p)
+				{
+					Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::ModuleStateInfo, 64> modules;
+					mInspect->GetActiveModules(pus[p], modules);
+					for (unsigned int m = 0; m < modules.Size(); ++m)
+					{
+						switch (modules[m].state)
+						{
+						case Dia::ApplicationFlow::ModuleState::kFailed:	return BarrierState::kAborted;
+						case Dia::ApplicationFlow::ModuleState::kStarting:
+						case Dia::ApplicationFlow::ModuleState::kStopping:	mStable = 0; return BarrierState::kWaiting;
+						default: break;
+						}
+					}
+				}
+				return ++mStable >= kStablePolls ? BarrierState::kReady : BarrierState::kWaiting;
+			}
+
+		private:
+			bool StageExists() const
+			{
+				Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32> stages;
+				mInspect->GetAllStages(stages);
+				for (unsigned int i = 0; i < stages.Size(); ++i) { if (stages[i] == mStage) { return true; } }
+				return false;
+			}
+
+			Dia::ApplicationFlow::IApplicationControl*		mControl;
+			Dia::ApplicationFlow::IApplicationInspectable*	mInspect;
+			bool											mHasStage;
+			Dia::Core::StringCRC							mStage;
+			bool											mRequested = false;
+			unsigned int									mStable = 0;
+		};
+	}
+
+	void ValueSchemaModule::TickDescribeMode(float deltaTime)
+	{
+		if (mDescribeRunner == nullptr)
+		{
+			mDescribeRunner = Dia::Core::MakeUnique<DescribeModeRunner>(DescribeSession::GetRequest());
+			mDescribeBarrier.Reset(new ApplicationDescribeBarrier(GetApplication(), mAppInspect, DescribeSession::GetRequest().mStage.AsCStr()));
+		}
+		if (mDescribeRunner->IsFinished() || mService == nullptr) { return; }
+
+		mDescribeWaitedSec += deltaTime;
+		mDescribeRunner->Tick(*mDescribeBarrier, *mService, mCodeSideCollected ? &mCodeSideReport : nullptr,
+			mCodeSideEnabled ? &mComponentReport : nullptr);
+		if (!mDescribeRunner->IsFinished() && mDescribeWaitedSec >= kDescribeTimeoutSec)
+		{
+			mDescribeRunner->Fail("timed out waiting for every processing unit to finish Init");
+		}
+		if (mDescribeRunner->IsFinished())
+		{
+			DescribeSession::Complete(mDescribeRunner->GetExitCode());
+			if (auto* control = GetApplication()) { control->RequestShutdown(); }
+		}
+	}
+
+	void ValueSchemaModule::DoUpdate(float deltaTime)
+	{
+		if (DescribeSession::IsActive() && !DescribeSession::IsComplete()) { TickDescribeMode(deltaTime); }
 	}
 
 	Dia::ApplicationFlow::StopResult ValueSchemaModule::DoStop()

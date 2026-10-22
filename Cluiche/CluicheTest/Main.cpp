@@ -8,6 +8,7 @@
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/Manifest/ManifestBootstrap.h>
+#include <DiaValueSchema/DescribeSession.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaEntity/ComponentRegistry.h>
 #include <DiaEntity/ComponentSchemaJson.h>
@@ -128,6 +129,11 @@ int main(int argc, const char* argv[])
             automationMode = true;
     }
 
+    // --describe-schema <path> [--stage <name>]: DiaValueSchema describe mode. ValueSchemaModule writes the export once
+    // every PU has finished Init, then requests shutdown; the exit code is returned below (see DescribeMode.h).
+    if (!Dia::ValueSchema::BeginDescribeFromArgs(argc, argv, "cluichetest"))
+        return 1;
+
     const char* kDiagamePath = "assets/cluichetest.diagame";
 
     // Heap-allocate manifest — the struct grows with module/channel count and
@@ -167,6 +173,6 @@ int main(int argc, const char* argv[])
     }
 
     CluicheTest::TestResultsRegistry::Destroy();
-    return 0;
+    return Dia::ValueSchema::DescribeSession::FinalExitCode();  // 0 unless --describe-schema was requested
 }
 #pragma warning(pop)
