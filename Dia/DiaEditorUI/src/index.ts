@@ -35,3 +35,11 @@ export type { ValueTooltipProps } from './ValueTooltip';
 export type { ValueInfoLike, ValueInfoBinding, ValueInfoEnumValue, ValueInfoUi, ResolvableKeys } from './valueInfo';
 export { componentFieldToValueInfo, serviceEntryToValueInfo } from './valueInfoAdapter';
 export type { ComponentSchemaField } from './valueInfoAdapter';
+
+export {
+  RampResolver, parseHexColour, rgba8ToHex, sampleRamp, rampColourAt, rampT, buildTicks, buildLegend,
+  kGreyRampId, kDeltaDefaultRampId, kCategoricalRampId,
+} from './ramps';
+export type {
+  Rgba8, RampStop, RampJson, RampData, ResolvedRamp, PaletteEntry, PaletteData, SwatchEntry, LegendData, RampWarn,
+} from './ramps';

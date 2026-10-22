@@ -6,6 +6,8 @@ export interface ValueInfoEnumValue {
   id: string;
   label: string;
   description: string;
+  /** Optional "#rrggbb" swatch colour (enum palettes). */
+  colour?: string;
 }
 
 export interface ValueInfoUi {
@@ -13,6 +15,7 @@ export interface ValueInfoUi {
   step?: number;
   decimals?: number;
   ramp?: string;
+  delta_ramp?: string;
   layer?: string;
   hidden?: boolean;
 }
