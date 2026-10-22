@@ -154,6 +154,51 @@ describe("contract: palette results", () => {
   });
 });
 
+describe("contract: palette command args (palette_results_commands_with_params.json)", () => {
+  const file = "palette_results_commands_with_params.json";
+  const rows = () => Array.from(p.doc.querySelectorAll("#pal-list .pal-row")) as HTMLElement[];
+
+  it("golden shape: args only on the command that has params, with optional keys omitted", () => {
+    const g = goldenJson(file);
+    expect(g.items.length).toBe(1);
+    const a = g.items[0].args;
+    expect(Array.isArray(a)).toBe(true);
+    expect(a.map((x: any) => x.name)).toEqual(["target", "radius", "mode"]);
+    expect(a[0]).toEqual({ name: "target", type: "string", required: true, description: "Entity <name> to spawn" });
+    expect(a[1]).toMatchObject({ unit: "m", min: 0.5, max: 10 });
+    expect(a[2].values).toEqual(["fast", "slow"]);
+    expect("min" in a[0]).toBe(false);
+    expect("description" in a[2]).toBe(false);
+    for (const f of ["palette_results_all.json", "palette_results_commands.json", "palette_results_domains.json"])
+      for (const it of goldenJson(f).items) expect("args" in it).toBe(false);
+  });
+
+  it("renders the arguments under the command, escaped, with required/optional markers", () => {
+    p.key(p.doc.body, "p", { ctrlKey: true });
+    p.win.paletteResults(golden(file));
+    expect(rows().length).toBe(1);
+    const args = Array.from(rows()[0].querySelectorAll(".pal-arg")) as HTMLElement[];
+    expect(args.length).toBe(3);
+    expect(args[0].textContent).toContain("target");
+    expect(args[0].textContent).toContain("string");
+    expect(args[0].textContent).toContain("required");
+    expect(args[0].textContent).toContain("Entity <name> to spawn");
+    expect(args[0].querySelector("name")).toBeNull();
+    expect(args[1].textContent).toContain("optional");
+    expect(args[1].textContent).toContain("m");
+    expect(args[1].textContent).toContain("0.5");
+    expect(args[1].textContent).toContain("10");
+    expect(args[2].textContent).toContain("fast|slow");
+  });
+
+  it("results without args render no argument lines", () => {
+    p.key(p.doc.body, "p", { ctrlKey: true });
+    p.win.paletteResults(golden("palette_results_commands.json"));
+    expect(rows().length).toBeGreaterThan(0);
+    expect(p.doc.querySelectorAll("#pal-list .pal-arg").length).toBe(0);
+  });
+});
+
 describe("contract: console results", () => {
   const res = () => p.$("cmd-result");
   const send = (text: string) => {

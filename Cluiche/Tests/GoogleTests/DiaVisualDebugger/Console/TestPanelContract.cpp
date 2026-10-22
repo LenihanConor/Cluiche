@@ -276,6 +276,29 @@ TEST_F(PanelContractTest, PaletteResults)
 	Check("palette_results_domains.json", Palette("bus", 2));
 }
 
+TEST_F(PanelContractTest, PaletteResultsCommandWithParams)
+{
+	// Registered here (not in SetUp) so the existing all/commands/domains goldens stay byte-identical.
+	static const Dia::API::ValueParam kParams[] = {
+		{ "target", "string", true, "Entity <name> to spawn", nullptr, false, 0.0f, 0.0f, nullptr },
+		{ "radius", "float", false, "Spawn radius", "m", true, 0.5f, 10.0f, nullptr },
+		{ "mode", "enum", false, nullptr, nullptr, false, 0.0f, 0.0f, "fast|slow" },
+	};
+	Dia::API::CommandInfo info;
+	info.name = StringCRC("zworld.spawn");
+	info.description = "Spawn an entity";
+	info.category = StringCRC("zworld");
+	info.owner = "TestPanelContract";
+	info.version = "1.0.0";
+	info.example = "";
+	info.params = kParams;
+	info.paramCount = 3;
+	info.callback = [](const Dia::API::CommandArgs&) { return 0; };
+	ASSERT_TRUE(Dia::API::RegisterCommand(info));
+
+	Check("palette_results_commands_with_params.json", Palette("zworld", 1));
+}
+
 TEST_F(PanelContractTest, ConsoleResults)
 {
 	Check("console_result_ok.json", Result(1, "debug.layer.enable Entities"));

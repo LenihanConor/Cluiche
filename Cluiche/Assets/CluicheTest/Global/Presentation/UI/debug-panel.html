@@ -370,6 +370,10 @@ body {
 .pal-nm { font-size: 12px; color: #b0b0b0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pal-ds { font-size: 10px; color: #4a4a4a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
 .pal-row.sel .pal-ds { color: #7a8a9a; }
+.pal-args { margin-top: 3px; font-size: 10px; color: #5a5a5a; }
+.pal-arg { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pal-arg-nm { color: #8a8a8a; } .pal-arg-nm.req { color: #c9a26b; }
+.pal-arg-meta { color: #4f6f8a; } .pal-arg-ds { color: #4a4a4a; }
 .pal-cat { font-size: 9px; color: #6a6a6a; border: 1px solid #2a2a2a; padding: 1px 6px; flex-shrink: 0; letter-spacing: .5px; }
 .pal mark { background: none; color: #f0c040; font-weight: 700; }
 .pal-empty { padding: 22px 12px; text-align: center; color: #3a3a3a; font-style: italic; font-size: 11px; }
@@ -1248,6 +1252,26 @@ function palHighlight(name, hl) {
   return out;
 }
 
+function palArgsHtml(args) {
+  if (!args || !args.length) return '';
+  var h = '<div class="pal-args">';
+  for (var i = 0; i < args.length; ++i) {
+    var a = args[i] || {};
+    var meta = conEsc(a.type || '') + ' · ' + (a.required ? 'required' : 'optional');
+    if (a.unit) meta += ' · ' + conEsc(a.unit);
+    if (a.min !== undefined && a.max !== undefined) meta += ' · ' + conEsc(String(a.min)) + '..' + conEsc(String(a.max));
+    if (a.values && a.values.length) {
+      var vs = [];
+      for (var k = 0; k < a.values.length; ++k) vs.push(conEsc(a.values[k]));
+      meta += ' · ' + vs.join('|');
+    }
+    h += '<div class="pal-arg"><span class="pal-arg-nm' + (a.required ? ' req' : '') + '">' + conEsc(a.name || '') +
+         (a.required ? '' : '?') + '</span> <span class="pal-arg-meta">' + meta + '</span>' +
+         (a.description ? ' <span class="pal-arg-ds">' + conEsc(a.description) + '</span>' : '') + '</div>';
+  }
+  return h + '</div>';
+}
+
 function palRender() {
   var tabs = conEl('pal-tabs'), list = conEl('pal-list'), tot = conEl('pal-tot');
   if (!tabs || !list) return;
@@ -1264,7 +1288,7 @@ function palRender() {
     html += '<div class="pal-row' + (i === palSel ? ' sel' : '') + '" data-i="' + i + '"><span class="pal-type ' +
             (isDom ? 'domain' : 'command') + '">' + (isDom ? '▣' : '&gt;_') + '</span><div class="pal-info"><div class="pal-nm">' +
             palHighlight(it.name, it.hl) + '</div><div class="pal-ds">' + conEsc(it.description || '') +
-            '</div></div><span class="pal-cat">' + conEsc(it.category || '') + '</span></div>';
+            '</div>' + palArgsHtml(it.args) + '</div><span class="pal-cat">' + conEsc(it.category || '') + '</span></div>';
   }
   list.innerHTML = html || '<div class="pal-empty">No results found</div>';
   if (tot) tot.textContent = palTotal > palItems.length ? 'showing ' + palItems.length + ' of ' + palTotal

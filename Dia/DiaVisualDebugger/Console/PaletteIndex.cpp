@@ -71,6 +71,8 @@ namespace Dia
 					CopyStr(it.description, sizeof(it.description), infos[i].description);
 					CopyStr(it.category, sizeof(it.category), infos[i].category.AsChar());
 					CopyStr(it.example, sizeof(it.example), infos[i].example);
+						it.params = infos[i].params;
+						it.paramCount = infos[i].params != nullptr ? infos[i].paramCount : 0;
 				}
 
 				int domainCount = 0;

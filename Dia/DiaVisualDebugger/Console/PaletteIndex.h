@@ -9,6 +9,7 @@
 
 #ifdef DIA_DEBUG
 
+#include <DiaAPI/CommandRegistry/ValueParam.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
 
@@ -28,6 +29,8 @@ namespace Dia
 				char category[32];	// command category, or domain group
 				char example[128];	// commands only, may be empty
 				char domainId[64];	// domains only: GetDomainId(); NOT the panel card key (that is `name`, the display name)
+				const Dia::API::ValueParam* params;	// commands only: caller-owned (see CommandInfo), may be null
+				unsigned paramCount;
 			};
 
 			class PaletteIndex

@@ -45,6 +45,13 @@ namespace Dia
 						Raw(tmp);
 					}
 
+					void Float(double v)
+					{
+						char tmp[48];
+						snprintf(tmp, sizeof(tmp), "%g", v);
+						Raw(tmp);
+					}
+
 					void Seconds(double v)
 					{
 						char tmp[48];
@@ -132,6 +139,58 @@ namespace Dia
 					}
 				}
 			}
+
+#ifdef DIA_DEBUG
+			namespace
+			{
+				bool NonEmpty(const char* s) { return s != nullptr && s[0] != '\0'; }
+
+				// ,"args":[{name,type,required,description?,unit?,min?,max?,values?}]
+				void WriteArgs(Writer& w, const Dia::API::ValueParam* params, unsigned count)
+				{
+					w.Raw(",\"args\":[");
+					for (unsigned i = 0; i < count; ++i)
+					{
+						const Dia::API::ValueParam& p = params[i];
+						if (i > 0) w.Raw(",");
+						w.Raw("{\"name\":");     w.Str(p.name);
+						w.Raw(",\"type\":");     w.Str(p.type);
+						w.Raw(",\"required\":"); w.Raw(p.required ? "true" : "false");
+						if (NonEmpty(p.description)) { w.Raw(",\"description\":"); w.Str(p.description); }
+						if (NonEmpty(p.unit))        { w.Raw(",\"unit\":");        w.Str(p.unit); }
+						if (p.hasRange)
+						{
+							w.Raw(",\"min\":"); w.Float(p.min);
+							w.Raw(",\"max\":"); w.Float(p.max);
+						}
+						if (NonEmpty(p.enumValues))
+						{
+							w.Raw(",\"values\":[");
+							const char* s = p.enumValues;
+							bool first = true;
+							for (;;)
+							{
+								const char* e = s;
+								while (*e != '\0' && *e != '|') ++e;
+								if (!first) w.Raw(",");
+								first = false;
+								char tmp[128];
+								size_t n = static_cast<size_t>(e - s);
+								if (n >= sizeof(tmp)) n = sizeof(tmp) - 1;
+								std::memcpy(tmp, s, n);
+								tmp[n] = '\0';
+								w.Str(tmp);
+								if (*e == '\0') break;
+								s = e + 1;
+							}
+							w.Raw("]");
+						}
+						w.Raw("}");
+					}
+					w.Raw("]");
+				}
+			}
+#endif
 
 			bool ConsoleJson::BuildConsoleResult(uint32_t seq, int exitCode, unsigned parseError, const char* text,
 												 char* out, unsigned outSize)
@@ -252,6 +311,8 @@ namespace Dia
 						w.Raw(",\"action\":");      w.Str(action.kind == PaletteAction::FillConsole ? "fill" : "reveal");
 						w.Raw(",\"actionText\":");  w.Str(action.text);
 						w.Raw(",\"hl\":");          w.Str(hl);
+						if (isCmd && item.params != nullptr && item.paramCount > 0)
+							WriteArgs(w, item.params, item.paramCount);
 						w.Raw("}");
 
 						if (!w.Ok() || w.Length() + kClose + 1 > outSize)
