@@ -185,4 +185,4 @@ No conflicts. This replaces the system spec's `ToCellFieldRamp` (amended in the 
 
 ## Status
 
-`Approved` (2026-10-20). Plan not yet created.
+`Approved` (2026-10-20). Plan: [ramps.plan.md](ramps.plan.md) (C++ side first; TypeScript, query and visual criteria open).
