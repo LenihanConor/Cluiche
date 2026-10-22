@@ -19,6 +19,8 @@
 //   Choose the smallest step of the form {1,2,5} x 10^n so that at most 3 multiples of the step lie STRICTLY
 //   between min and max; ticks = [min, those multiples ascending, max]. Interior values are computed as an
 //   integer times a power of ten (division for negative powers), so there is no float noise (0.3 not 0.30000000000000004).
+// Interior ticks that collapse onto a neighbour after the cast to float (one-ulp ranges, subnormals, > 2^24) are dropped, so
+//   ticks are always strictly increasing floats.
 // Degenerate input: min == max or min > max (invalid) -> a single tick {min}; NaN/inf bounds -> no ticks.
 //   Examples: 0..1 -> 0,0.5,1   0..7 -> 0,2,4,6,7   -1..1 -> -1,-0.5,0,0.5,1   3..17 -> 3,5,10,15,17.
 

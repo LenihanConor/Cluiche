@@ -4,7 +4,12 @@
 //
 // Deliberate deviation from the spec's free-function signatures: resolution is a class so the once-per-key
 // warning memory lives HERE (pimpl set of full keys), not in the immutable ValueSchemaService, which stays
-// lock-free. Instances are independent (no global state). Not thread-safe: one resolver per thread/consumer.
+// lock-free. Instances are independent (no global state). Not thread-safe: one resolver per thread/consumer (the shared
+// const ValueSchemaService may be used by many resolvers on many threads).
+//
+// ResolveRamp range: min/max are copied from the entry as floats; doubles beyond +-FLT_MAX saturate at +-FLT_MAX
+// (never +-inf); a NaN bound is carried as NaN (RampT then gives 0). `ui.ramp` / `ui.delta_ramp` that are not strings
+// (and a `ui` that is not an object) mean "not requested".
 //
 // Fallbacks (never crash):
 //  - `ui.ramp` absent -> sequential.grey, no warning.
@@ -42,7 +47,9 @@ namespace Dia::ValueSchema
 		bool					mWrapped = false;				// colour-less values exceeded the categorical count
 	};
 
-	// value in [min,max] -> t in [0,1], clamped. NaN -> 0. Zero-width (or inverted) range -> 0.
+	// value in [min,max] -> t in [0,1], clamped; +-inf values clamp to 1 / 0. NEVER returns NaN: NaN value, a NaN or
+	// infinite bound, and a zero-width or inverted range all give 0. Computed in double, so a range whose width exceeds
+	// FLT_MAX (e.g. [-3e38, 3e38]) still scales correctly.
 	float RampT(const ResolvedRamp& ramp, float value);
 
 	class RampResolver
@@ -57,8 +64,8 @@ namespace Dia::ValueSchema
 		// Colours for an enum entry: given colour, else categorical.12 by value order (wraps modulo its count).
 		// Non-enum entry -> empty palette.
 		ResolvedPalette	ResolvePalette(const ValueInfo& info);
-		// Id from `ui.delta_ramp` (default diverging.blue_red). Range is symmetric: [-maxAbs, +maxAbs]; maxAbs <= 0
-		// or NaN uses 1.0, so value 0 maps to t = 0.5.
+		// Id from `ui.delta_ramp` (default diverging.blue_red). Range is symmetric: [-maxAbs, +maxAbs]; maxAbs <= 0,
+		// NaN or +-inf uses 1.0, so value 0 maps to t = 0.5.
 		ResolvedRamp	ResolveDeltaRamp(const ValueInfo& info, float maxAbs);
 
 		unsigned int UnknownRampWarningCount() const	{ return mUnknownWarnings; }

@@ -965,6 +965,14 @@
     <ClCompile Include="DiaValueSchema\TestValueClamperEdge.cpp" />
     <ClCompile Include="DiaValueSchema\TestRampLoaderEdge.cpp" />
     <ClCompile Include="DiaValueSchema\TestCategoricalColours.cpp" />
+    <ClCompile Include="DiaValueSchema\TestRampSampleEdge.cpp" />
+    <ClCompile Include="DiaValueSchema\TestRampResolverEdge.cpp" />
+    <ClCompile Include="DiaValueSchema\TestRampLegendEdge.cpp" />
+    <ClCompile Include="DiaValueSchema\TestCodeSideCollectorEdge.cpp" />
+    <ClCompile Include="DiaValueSchema\TestValueSchemaIntegration.cpp" />
+    <ClCompile Include="DiaValueSchema\TestSchemaDirectoryLoaderEdge.cpp" />
+    <ClCompile Include="DiaValueSchema\TestValueSchemaModuleEdge.cpp" />
+    <ClCompile Include="DiaValueSchema\TestRampSetLoaderEdge.cpp" />
     <ClCompile Include="DiaAPI\TestValueParam.cpp" />
     <ClCompile Include="DiaAPI\TestCommandInfoParams.cpp" />
     <ClCompile Include="DiaAPI\TestHelpSystemArguments.cpp" />

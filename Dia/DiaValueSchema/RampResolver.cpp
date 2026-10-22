@@ -5,7 +5,9 @@
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Metric/Counter.h>
 
+#include <cfloat>
 #include <cmath>
+#include <limits>
 #include <string>
 #include <unordered_set>
 
@@ -17,10 +19,19 @@ namespace Dia::ValueSchema
 		constexpr const char* kDeltaDefaultId = "diverging.blue_red";
 		constexpr const char* kCategoricalId = "categorical.12";
 
+		// double -> float without overflowing to +-inf: out-of-range values saturate at +-FLT_MAX. NaN stays NaN.
+		float ClampToFloat(double d)
+		{
+			if (std::isnan(d)) { return std::numeric_limits<float>::quiet_NaN(); }
+			if (d > static_cast<double>(FLT_MAX)) { return FLT_MAX; }
+			if (d < -static_cast<double>(FLT_MAX)) { return -FLT_MAX; }
+			return static_cast<float>(d);
+		}
+
 		RampData BuiltInFallback()
 		{
 			RampData r;
-			r.mName = "builtin.fallback";
+			SetText(r.mName, "builtin.fallback");
 			r.mId = Dia::Core::StringCRC("builtin.fallback");
 			r.mKind = RampKind::Continuous;
 			r.mStops[0].mT = 0.0f; r.mStops[0].mRgba8 = 0x000000FFu;
@@ -40,12 +51,14 @@ namespace Dia::ValueSchema
 
 	float RampT(const ResolvedRamp& ramp, float value)
 	{
-		const float width = ramp.mMax - ramp.mMin;
-		if (!(width > 0.0f) || std::isnan(value)) { return 0.0f; }
-		float t = (value - ramp.mMin) / width;
-		if (t < 0.0f) { t = 0.0f; }
-		if (t > 1.0f) { t = 1.0f; }
-		return t;
+		// Computed in double: the width of a float range such as [-3e38, 3e38] overflows float and would give NaN.
+		if (std::isnan(value) || !std::isfinite(ramp.mMin) || !std::isfinite(ramp.mMax)) { return 0.0f; }
+		const double width = static_cast<double>(ramp.mMax) - static_cast<double>(ramp.mMin);
+		if (!(width > 0.0)) { return 0.0f; }
+		double t = (static_cast<double>(value) - static_cast<double>(ramp.mMin)) / width;	// +-inf value gives +-inf, clamped below
+		if (t < 0.0) { t = 0.0; }
+		if (t > 1.0) { t = 1.0; }
+		return static_cast<float>(t);
 	}
 
 	void RampResolver::NoteFallback()
@@ -62,9 +75,10 @@ namespace Dia::ValueSchema
 	ResolvedRamp RampResolver::ResolveNamed(const ValueInfo& info, const char* uiKey, const char* defaultId)
 	{
 		ResolvedRamp out;
-		const Json::Value& v = info.mUi[uiKey];
-		const bool requested = v.isString();
-		const std::string wanted = requested ? v.asString() : std::string(defaultId);
+		// mUi is an open block: anything other than an object (null, array, string, ...) means "no request".
+		const Json::Value* v = info.mUi.isObject() ? &info.mUi[uiKey] : nullptr;
+		const bool requested = v != nullptr && v->isString();
+		const std::string wanted = requested ? v->asString() : std::string(defaultId);
 
 		const RampData* found = mService.FindRamp(Dia::Core::StringCRC(wanted.c_str()));
 		bool unusable = found == nullptr || found->mKind != RampKind::Continuous;
@@ -92,8 +106,8 @@ namespace Dia::ValueSchema
 		if (info.mHasMin && info.mHasMax)
 		{
 			out.mHasRange = true;
-			out.mMin = static_cast<float>(info.mMin);
-			out.mMax = static_cast<float>(info.mMax);
+			out.mMin = ClampToFloat(info.mMin);
+			out.mMax = ClampToFloat(info.mMax);
 		}
 		return out;
 	}
@@ -101,7 +115,7 @@ namespace Dia::ValueSchema
 	ResolvedRamp RampResolver::ResolveDeltaRamp(const ValueInfo& info, float maxAbs)
 	{
 		ResolvedRamp out = ResolveNamed(info, "delta_ramp", kDeltaDefaultId);
-		if (std::isnan(maxAbs) || !(maxAbs > 0.0f)) { maxAbs = 1.0f; }
+		if (!std::isfinite(maxAbs) || !(maxAbs > 0.0f)) { maxAbs = 1.0f; }
 		out.mHasRange = true;
 		out.mMin = -maxAbs;
 		out.mMax = maxAbs;

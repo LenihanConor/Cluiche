@@ -69,9 +69,14 @@ namespace Dia::ValueSchema
 			if (found) { break; }
 		}
 
+		// The interior values were chosen in double precision; after the cast to float two of them (or one and an end)
+		// can coincide (one-ulp ranges, subnormals, > 2^24). Keep only ticks strictly between the previous tick and max.
 		unsigned n = 0;
 		outTicks[n++] = min;
-		for (unsigned i = 0; i < count; ++i) { outTicks[n++] = interior[i]; }
+		for (unsigned i = 0; i < count; ++i)
+		{
+			if (interior[i] > outTicks[n - 1] && interior[i] < max) { outTicks[n++] = interior[i]; }
+		}
 		outTicks[n++] = max;
 		return n;
 	}

@@ -25,9 +25,10 @@ namespace Dia::ValueSchema
 
 		void AddUndescribed(ValueList<UndescribedItem>& list, const char* name, const char* owner)
 		{
+			// SetText, never `str = cstr`: String128/String64 assignment from const char* is printf-style.
 			UndescribedItem item;
-			item.mName = Safe(name);
-			item.mOwner = Safe(owner);
+			SetText(item.mName, name);
+			SetText(item.mOwner, owner);
 			Append(list, item);
 		}
 
@@ -62,8 +63,11 @@ namespace Dia::ValueSchema
 
 			const char* label = (m.mHasInfo && !Empty(m.mLabel)) ? m.mLabel : m.mName;
 			const bool described = m.mHasInfo && !Empty(m.mDescription);
+			// Description and unit only exist when the metric carries info.
+			const char* description = m.mHasInfo ? m.mDescription : nullptr;
+			const char* unit = m.mHasInfo ? m.mUnit : nullptr;
 			if (!Fits(m.mName, ValueInfo::kMaxKeyLength) || !Fits(label, ValueInfo::kMaxLabelLength)
-				|| !Fits(m.mDescription, ValueInfo::kMaxDescriptionLength) || !Fits(m.mUnit, ValueInfo::kMaxUnitLength))
+				|| !Fits(description, ValueInfo::kMaxDescriptionLength) || !Fits(unit, ValueInfo::kMaxUnitLength))
 			{
 				++rep.mRejectedCount;
 				DIA_LOG_ERROR("VSC", "Metric '%s' rejected: text exceeds ValueInfo capacity", m.mName);
@@ -71,14 +75,14 @@ namespace Dia::ValueSchema
 			}
 
 			ValueInfo info;
-			info.mFor = CodeSideCollector::kMetricFor;
-			info.mKey = m.mName;
+			SetText(info.mFor, CodeSideCollector::kMetricFor);
+			SetText(info.mKey, m.mName);
 			info.mKind = ValueKind::Metric;
 			info.mType = ValueType::Float;
-			info.mLabel = label;
-			info.mDescription = Safe(m.mDescription);
-			info.mUnit = Safe(m.mUnit);
-			info.mSourceFile = "code:MetricRegistry";
+			SetText(info.mLabel, label);
+			SetText(info.mDescription, description);
+			SetText(info.mUnit, unit);
+			SetText(info.mSourceFile, "code:MetricRegistry");
 
 			if (!RegisterCounted(ctx, info)) { return; }
 			++rep.mMetricsCollected;
@@ -125,15 +129,15 @@ namespace Dia::ValueSchema
 			}
 
 			info = ValueInfo();
-			info.mFor = CodeSideCollector::kCommandFor;
-			info.mKey = key.c_str();
+			SetText(info.mFor, CodeSideCollector::kCommandFor);
+			SetText(info.mKey, key.c_str());
 			info.mKind = ValueKind::Arg;
 			info.mType = type;
-			info.mLabel = p.name;
-			info.mDescription = Safe(p.description);
-			info.mUnit = Safe(p.unit);
+			SetText(info.mLabel, p.name);
+			SetText(info.mDescription, p.description);
+			SetText(info.mUnit, p.unit);
 			info.mRequired = p.required;
-			info.mSourceFile = "code:CommandRegistry";
+			SetText(info.mSourceFile, "code:CommandRegistry");
 			if (p.hasRange)
 			{
 				info.mHasMin = true; info.mHasMax = true;
@@ -155,8 +159,8 @@ namespace Dia::ValueSchema
 						}
 						const std::string id(s, n);
 						EnumValue ev;
-						ev.mId = id.c_str();
-						ev.mLabel = id.c_str();
+						SetText(ev.mId, id.c_str());
+						SetText(ev.mLabel, id.c_str());
 						Append(info.mEnumValues, ev);
 					}
 					if (!bar) { break; }
@@ -204,20 +208,29 @@ namespace Dia::ValueSchema
 			}
 
 			ValueInfo cmd;
-			cmd.mFor = CodeSideCollector::kCommandFor;
-			cmd.mKey = c.mName;
+			SetText(cmd.mFor, CodeSideCollector::kCommandFor);
+			SetText(cmd.mKey, c.mName);
 			cmd.mKind = ValueKind::Command;
 			cmd.mType = ValueType::String;
-			cmd.mLabel = c.mName;
-			cmd.mDescription = Safe(c.mDescription);
-			cmd.mSourceFile = "code:CommandRegistry";
+			SetText(cmd.mLabel, c.mName);
+			SetText(cmd.mDescription, c.mDescription);
+			SetText(cmd.mSourceFile, "code:CommandRegistry");
 			cmd.mUi["owner"] = owner;
 			cmd.mUi["category"] = Safe(c.mCategory);
 			cmd.mUi["example"] = Safe(c.mExample);
+			// Each key once: a repeated param name produces a duplicate arg (counted when registered) but one related key.
 			for (unsigned int i = 0; i < args.Size(); ++i)
 			{
-				const Str128 k = args[i].mKey;
-				Append(cmd.mRelated, k);
+				bool listed = false;
+				for (unsigned int j = 0; j < cmd.mRelated.Size() && !listed; ++j)
+				{
+					listed = std::strcmp(cmd.mRelated[j].AsCStr(), args[i].mKey.AsCStr()) == 0;
+				}
+				if (!listed)
+				{
+					const Str128 k = args[i].mKey;
+					Append(cmd.mRelated, k);
+				}
 			}
 
 			if (!RegisterCounted(ctx, cmd)) { return; }	// duplicate: first wins, its args are skipped too
