@@ -36,6 +36,20 @@ namespace Dia
 		int ShowCommandHelp(const Dia::Core::StringCRC& commandName);
 
 		////////////////////////////////////////////////////////////////////////////////
+		// Format the "Arguments:" section for a command's ValueParam list.
+		//
+		// Writes a NUL-terminated, newline-terminated block into out (truncated to
+		// capacity-1 chars). Required params print as <name>, optional as [name];
+		// then type, a detail column (enum values, or unit and/or range), then the
+		// description. Columns are padded to the widest entry; trailing whitespace
+		// is trimmed. Null name or type prints "?". Detail text is capped at 255 chars.
+		//
+		// Returns the full length the section needs (snprintf-style, excluding NUL);
+		// 0 and an empty out when params is null or count is 0.
+		////////////////////////////////////////////////////////////////////////////////
+		unsigned FormatArgumentsSection(const ValueParam* params, unsigned count, char* out, unsigned capacity);
+
+		////////////////////////////////////////////////////////////////////////////////
 		// Check if help was requested in parsed arguments
 		//
 		// Arguments:

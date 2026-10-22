@@ -162,7 +162,126 @@ namespace Dia
 			printf("Description:\n");
 			printf("  %s\n", cmd->description);
 
+			if (cmd->params && cmd->paramCount > 0)
+			{
+				char section[4096];
+				unsigned needed = FormatArgumentsSection(cmd->params, cmd->paramCount, section, sizeof(section));
+				if (needed > 0)
+				{
+					printf("\n%s", section);
+				}
+			}
+
 			return 0;
+		}
+
+		namespace
+		{
+			constexpr unsigned kDetailMax = 256;
+
+			struct Writer
+			{
+				char* out;
+				unsigned capacity;
+				unsigned total = 0;
+
+				void Put(char c)
+				{
+					if (out && capacity > 0 && total + 1 < capacity)
+					{
+						out[total] = c;
+					}
+					total++;
+				}
+				void Put(const char* s) { while (*s) Put(*s++); }
+				void Pad(unsigned n) { while (n--) Put(' '); }
+			};
+
+			const char* OrQ(const char* s) { return s ? s : "?"; }
+
+			void BuildDetail(const ValueParam& p, char* d)
+			{
+				d[0] = '\0';
+				if (p.type && strcmp(p.type, "enum") == 0 && p.enumValues && p.enumValues[0])
+				{
+					snprintf(d, kDetailMax, "%s", p.enumValues);
+					return;
+				}
+				bool hasUnit = p.unit && p.unit[0];
+				if (hasUnit && p.hasRange)
+					snprintf(d, kDetailMax, "%s, %g..%g", p.unit, (double)p.min, (double)p.max);
+				else if (hasUnit)
+					snprintf(d, kDetailMax, "%s", p.unit);
+				else if (p.hasRange)
+					snprintf(d, kDetailMax, "%g..%g", (double)p.min, (double)p.max);
+			}
+		}
+
+		unsigned FormatArgumentsSection(const ValueParam* params, unsigned count, char* out, unsigned capacity)
+		{
+			if (out && capacity > 0) out[0] = '\0';
+			if (!params || count == 0) return 0;
+
+			unsigned nameW = 0, typeW = 0, detailW = 0;
+			char detail[kDetailMax];
+			for (unsigned i = 0; i < count; i++)
+			{
+				unsigned n = (unsigned)strlen(OrQ(params[i].name)) + 2;
+				unsigned t = (unsigned)strlen(OrQ(params[i].type));
+				BuildDetail(params[i], detail);
+				unsigned d = (unsigned)strlen(detail);
+				if (n > nameW) nameW = n;
+				if (t > typeW) typeW = t;
+				if (d > detailW) detailW = d;
+			}
+
+			Writer w{ out, capacity };
+			w.Put("Arguments:\n");
+			for (unsigned i = 0; i < count; i++)
+			{
+				const ValueParam& p = params[i];
+				const char* name = OrQ(p.name);
+				const char* type = OrQ(p.type);
+				BuildDetail(p, detail);
+				bool hasDesc = p.description && p.description[0];
+
+				// Build line pieces, padding only when more text follows (no trailing spaces).
+				w.Put("  ");
+				w.Put(p.required ? '<' : '[');
+				w.Put(name);
+				w.Put(p.required ? '>' : ']');
+				unsigned used = (unsigned)strlen(name) + 2;
+
+				bool moreAfterName = typeW > 0;
+				if (moreAfterName)
+				{
+					w.Pad(nameW - used + 2);
+					w.Put(type);
+					unsigned tl = (unsigned)strlen(type);
+					bool moreAfterType = detailW > 0 || hasDesc;
+					if (moreAfterType)
+					{
+						w.Pad(typeW - tl + 2);
+						if (detailW > 0)
+						{
+							unsigned dl = (unsigned)strlen(detail);
+							w.Put(detail);
+							if (hasDesc)
+							{
+								w.Pad(detailW - dl + 3); // 3 spaces before description, matching the spec sample
+							}
+						}
+						if (hasDesc) w.Put(p.description);
+					}
+				}
+				w.Put('\n');
+			}
+
+			if (out && capacity > 0)
+			{
+				out[w.total < capacity ? w.total : capacity - 1] = '\0';
+			}
+			return w.total;
 		}
 	}
 }
