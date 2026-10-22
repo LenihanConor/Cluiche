@@ -29,11 +29,11 @@ def suggest(candidate: str, valid: Iterable[str]) -> str | None:
     import difflib
 
     # Handle empty cases
-    if not candidate:
+    if not candidate or not isinstance(candidate, str):
         return None
 
-    # Convert valid to a list if it's a generator or other iterable
-    valid_list = list(valid)
+    # Convert valid to a list if it's a generator or other iterable; non-str items are ignored
+    valid_list = [v for v in valid if isinstance(v, str)]
     if not valid_list:
         return None
 

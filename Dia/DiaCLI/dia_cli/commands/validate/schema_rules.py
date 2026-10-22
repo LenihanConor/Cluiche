@@ -8,6 +8,7 @@ problem and validation continues with the next entry.
 from __future__ import annotations
 
 import json
+import math
 from typing import List, Optional
 
 from dia_cli.commands.validate.schema_cmd import Finding
@@ -35,6 +36,17 @@ class _Stop(Exception):
 
 def _is_number(v: object) -> bool:
     return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def _is_finite_number(v: object) -> bool:
+    """A JSON number that is not NaN/Infinity (Python's json accepts those literals; jsoncpp does not)."""
+    return _is_number(v) and (isinstance(v, int) or math.isfinite(v))
+
+
+def _check_ref_format(field: str, value: str) -> None:
+    fmt, sep, path = value.partition("/")
+    if not sep or not fmt or not path:
+        raise _Stop("schema.ref-malformed", f"field '{field}' must be '<format>/<record path>'")
 
 
 def _require_string(obj: dict, field: str) -> str:
@@ -95,11 +107,11 @@ def _check_event_list(e: dict, field: str, item_name: str, required: tuple, opti
 def _check_type_specific(e: dict) -> None:
     t = e["type"]
     if t in ("ref", "ref[]"):
-        _require_string(e, "ref")
+        _check_ref_format("ref", _require_string(e, "ref"))
     elif "ref" in e:
         raise _Stop("schema.ref-misuse", "field 'ref' is only valid on ref and ref[] types")
     if t == "map":
-        _require_string(e, "keyRef")
+        _check_ref_format("keyRef", _require_string(e, "keyRef"))
         vt = _require_string(e, "valueType")
         if vt not in MAP_VALUE_TYPES:
             raise _Stop("schema.map-misuse", "field 'valueType' must be one of float, int, bool, string, enum")
@@ -136,8 +148,8 @@ def _check_entry(e: object, file: str, warned: set, warnings: List[Finding]) -> 
         for f in ("unit", "hint", "source"):
             _optional_string(e, f)
         for f in ("min", "max"):
-            if f in e and not _is_number(e[f]):
-                raise _Stop("schema.wrong-type", f"field '{f}' must be a number")
+            if f in e and not _is_finite_number(e[f]):
+                raise _Stop("schema.wrong-type", f"field '{f}' must be a finite number")
         for f in ("unique", "required"):
             if f in e and not isinstance(e[f], bool):
                 raise _Stop("schema.wrong-type", f"field '{f}' must be a boolean")
@@ -203,6 +215,6 @@ def validate_schema_document(doc: object, file: str) -> List[Finding]:
 def validate_schema_text(text: str, file: str) -> List[Finding]:
     try:
         doc = json.loads(text)
-    except ValueError as ex:
+    except (ValueError, RecursionError) as ex:  # RecursionError: pathologically nested text
         return [Finding("FAIL", "schema.unparsable-json", file, "", f"unparsable JSON: {ex}")]
     return validate_schema_document(doc, file)

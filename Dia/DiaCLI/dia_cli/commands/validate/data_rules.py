@@ -7,6 +7,7 @@ keys) resolve against a DataContext holding every paired data document.
 """
 from __future__ import annotations
 
+import math
 from typing import Dict, Iterable, List, Mapping, Optional, Set, Tuple
 
 from dia_cli.commands.validate.schema_cmd import Finding
@@ -75,8 +76,9 @@ class SchemaIndex:
 
     def add(self, doc: dict) -> None:
         table = self._by_format.setdefault(doc["for"], {})
-        for e in doc.get("entries", []):
-            if isinstance(e, dict) and e.get("kind") in DATA_KINDS and isinstance(e.get("key"), str):
+        entries = doc.get("entries")
+        for e in entries if isinstance(entries, list) else []:
+            if isinstance(e, dict) and e.get("kind") in DATA_KINDS and isinstance(e.get("key"), str)                     and isinstance(e.get("type"), str):
                 table.setdefault(e["key"], e)
 
     def has_format(self, fmt: object) -> bool:
@@ -98,6 +100,10 @@ def _is_number(v: object) -> bool:
     return isinstance(v, (int, float)) and not isinstance(v, bool)
 
 
+def _is_finite(v: object) -> bool:
+    return isinstance(v, int) or (isinstance(v, float) and math.isfinite(v))
+
+
 def _fmt(v: object) -> str:
     if isinstance(v, float) and v.is_integer():
         return str(int(v))
@@ -115,10 +121,11 @@ def _same(a: object, b: object) -> bool:
 
 
 def _type_ok(t: str, v: object) -> bool:
+    # NaN / +-Infinity (Python's json accepts the literals; 1e400 parses to inf) are never valid numbers.
     if t == "float":
-        return _is_number(v)
+        return _is_number(v) and _is_finite(v)
     if t == "int":
-        return _is_number(v) and (isinstance(v, int) or v.is_integer())
+        return _is_number(v) and _is_finite(v) and (isinstance(v, int) or v.is_integer())
     if t == "bool":
         return isinstance(v, bool)
     if t in ("string", "enum", "ref"):
@@ -164,7 +171,7 @@ class _Walker:
             elif isinstance(val, dict):
                 self.check_map(key, path, record, val, entry)
             elif isinstance(val, list) and val and all(isinstance(x, dict) for x in val) \
-                    and (entry is None or entry["type"] != "ref[]"):
+                    and entry is None:
                 for i, rec in enumerate(val):
                     self.walk(rec, key + "[].", f"{path}[{i}].", self._rid(rec, record))
                 self.check_columns(key, path, val, record)
@@ -271,13 +278,16 @@ class _Walker:
             return False
         if t in ("float", "int"):
             lo, hi = entry.get("min"), entry.get("max")
+            lo = lo if _is_number(lo) else None
+            hi = hi if _is_number(hi) else None
             if (lo is not None and val < lo) or (hi is not None and val > hi):
                 lo_s = _fmt(lo) if lo is not None else "-inf"
                 hi_s = _fmt(hi) if hi is not None else "inf"
                 self._add("data.out-of-range", key, path, record, f"{label} = {_fmt(val)} outside [{lo_s}, {hi_s}]")
                 return False
         elif t == "enum":
-            ids = [v["id"] for v in entry.get("values", []) if isinstance(v, dict) and "id" in v]
+            vals = entry.get("values", [])
+            ids = [v["id"] for v in vals if isinstance(v, dict) and isinstance(v.get("id"), str)]                 if isinstance(vals, list) else []
             if val not in ids:
                 s = suggest(val, ids)
                 self._add("data.bad-enum", key, path, record,
@@ -299,6 +309,11 @@ def validate_data_document(doc: object, file: str, schemas: SchemaIndex, *, is_p
     return w.out
 
 
+def _entries_of(doc: dict) -> list:
+    entries = doc.get("entries")
+    return entries if isinstance(entries, list) else []
+
+
 def validate_schema_references(schema_docs: Iterable[dict], file_by_doc: Mapping[int, str],
                                known_ramps: Iterable[str] = KNOWN_RAMPS) -> List[Finding]:
     """Schema-level checks: affects/related resolve, ui.ramp is known.
@@ -310,7 +325,7 @@ def validate_schema_references(schema_docs: Iterable[dict], file_by_doc: Mapping
     docs = [d for d in schema_docs if isinstance(d, dict) and isinstance(d.get("for"), str)]
     keys_by_for: Dict[str, List[str]] = {}
     for d in docs:
-        for e in d.get("entries", []):
+        for e in _entries_of(d):
             if isinstance(e, dict) and isinstance(e.get("key"), str):
                 keys_by_for.setdefault(d["for"], []).append(e["key"])
     ramps = set(known_ramps)
@@ -318,7 +333,7 @@ def validate_schema_references(schema_docs: Iterable[dict], file_by_doc: Mapping
     for d in docs:
         file = file_by_doc.get(id(d), "")
         own = keys_by_for.get(d["for"], [])
-        for e in d.get("entries", []):
+        for e in _entries_of(d):
             if not isinstance(e, dict) or not isinstance(e.get("key"), str):
                 continue
             for field in ("affects", "related"):

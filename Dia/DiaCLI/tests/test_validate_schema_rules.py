@@ -176,14 +176,14 @@ def test_ref_rules():
 
 
 def test_map_rules():
-    ok = _entry(type="map", keyRef="a", valueType="float")
+    ok = _entry(type="map", keyRef="a/b", valueType="float")
     assert _fails(_doc(ok)) == []
     assert "keyRef" in _fails(_doc(_entry(type="map", valueType="float")))[0].message
-    assert "valueType" in _fails(_doc(_entry(type="map", keyRef="a")))[0].message
+    assert "valueType" in _fails(_doc(_entry(type="map", keyRef="a/b")))[0].message
     for bad in ("map", "ref", "ref[]", "zzz"):
-        f = _fails(_doc(_entry(type="map", keyRef="a", valueType=bad)))
+        f = _fails(_doc(_entry(type="map", keyRef="a/b", valueType=bad)))
         assert f[0].rule == "schema.map-misuse" and "valueType" in f[0].message
-    assert "keyRef" in _fails(_doc(_entry(keyRef="a")))[0].message
+    assert "keyRef" in _fails(_doc(_entry(keyRef="a/b")))[0].message
     assert "valueType" in _fails(_doc(_entry(valueType="float")))[0].message
 
 
