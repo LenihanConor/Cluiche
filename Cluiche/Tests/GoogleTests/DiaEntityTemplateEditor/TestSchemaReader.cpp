@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <string>
 
 using namespace Dia::EntityTemplateEditor;
 using Dia::Core::StringCRC;
@@ -263,5 +264,78 @@ TEST(SchemaReader, LoadFromFile_NoDefaultValues_IsNull)
     ASSERT_GE(reader.GetComponentCount(), 2u);
     EXPECT_TRUE(reader.GetDefaultValues(1).isNull());
 
+    DeleteFile(kTestSchemaPath);
+}
+
+// ==============================================================================
+// Field metadata (label/description/unit/hint/min/max/default)
+// ==============================================================================
+
+static const char* kSchemaDescribedField =
+    "{"
+    "  \"version\": { \"major\": 1, \"minor\": 0 },"
+    "  \"components\": ["
+    "    { \"type_id\": \"t.c\", \"debug_name\": \"C\","
+    "      \"fields\": ["
+    "        {\"name\": \"speed\", \"kind\": \"primitive\", \"label\": \"Move Speed\","
+    "         \"description\": \"100% of units per second\", \"unit\": \"m/s\", \"hint\": \"slider\","
+    "         \"min\": 0, \"max\": 12.5, \"default\": 3.5 },"
+    "        {\"name\": \"plain\", \"kind\": \"primitive\"}"
+    "      ] }"
+    "  ]"
+    "}";
+
+TEST(SchemaReader, LoadFromFile_DescribedField_ParsesAllMetadata)
+{
+    WriteSchemaFile(kTestSchemaPath, kSchemaDescribedField);
+    SchemaReader reader;
+    reader.LoadFromFile(kTestSchemaPath);
+    ASSERT_EQ(reader.GetComponentCount(), 1u);
+    const SchemaFieldEntry& f = reader.GetComponent(0).fields[0];
+    EXPECT_STREQ(f.label, "Move Speed");
+    EXPECT_STREQ(f.description, "100% of units per second");
+    EXPECT_STREQ(f.unit, "m/s");
+    EXPECT_STREQ(f.hint, "slider");
+    EXPECT_TRUE(f.hasMin);
+    EXPECT_TRUE(f.hasMax);
+    EXPECT_DOUBLE_EQ(f.min, 0.0);
+    EXPECT_DOUBLE_EQ(f.max, 12.5);
+    EXPECT_TRUE(f.hasDefault);
+    EXPECT_STREQ(f.defaultJson, "3.5");
+    DeleteFile(kTestSchemaPath);
+}
+
+TEST(SchemaReader, LoadFromFile_PlainField_HasNoMetadata)
+{
+    WriteSchemaFile(kTestSchemaPath, kSchemaDescribedField);
+    SchemaReader reader;
+    reader.LoadFromFile(kTestSchemaPath);
+    ASSERT_EQ(reader.GetComponentCount(), 1u);
+    const SchemaFieldEntry& f = reader.GetComponent(0).fields[1];
+    EXPECT_STREQ(f.name, "plain");
+    EXPECT_STREQ(f.kind, "primitive");
+    EXPECT_STREQ(f.label, "");
+    EXPECT_STREQ(f.description, "");
+    EXPECT_STREQ(f.unit, "");
+    EXPECT_STREQ(f.hint, "");
+    EXPECT_FALSE(f.hasMin);
+    EXPECT_FALSE(f.hasMax);
+    EXPECT_FALSE(f.hasDefault);
+    DeleteFile(kTestSchemaPath);
+}
+
+TEST(SchemaReader, LoadFromFile_OverlongDescription_TruncatedSafely)
+{
+    std::string longText(5000, 'a');
+    std::string json = "{\"version\":{\"major\":1,\"minor\":0},\"components\":[{\"type_id\":\"t.c\","
+        "\"debug_name\":\"C\",\"fields\":[{\"name\":\"f\",\"kind\":\"primitive\",\"description\":\""
+        + longText + "\"}]}]}";
+    WriteSchemaFile(kTestSchemaPath, json.c_str());
+    SchemaReader reader;
+    reader.LoadFromFile(kTestSchemaPath);
+    ASSERT_EQ(reader.GetComponentCount(), 1u);
+    const SchemaFieldEntry& f = reader.GetComponent(0).fields[0];
+    EXPECT_EQ(strlen(f.description), sizeof(f.description) - 1);
+    EXPECT_GE(sizeof(f.description), 1024u);
     DeleteFile(kTestSchemaPath);
 }

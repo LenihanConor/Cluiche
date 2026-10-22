@@ -103,6 +103,19 @@ namespace Dia
 							Json::Value fieldJson;
 							fieldJson["name"] = sf.name;
 							fieldJson["kind"] = sf.kind;
+							if (sf.label[0] != '\0')       fieldJson["label"]       = sf.label;
+							if (sf.description[0] != '\0') fieldJson["description"] = sf.description;
+							if (sf.unit[0] != '\0')        fieldJson["unit"]        = sf.unit;
+							if (sf.hint[0] != '\0')        fieldJson["hint"]        = sf.hint;
+							if (sf.hasMin)                 fieldJson["min"]         = sf.min;
+							if (sf.hasMax)                 fieldJson["max"]         = sf.max;
+							if (sf.hasDefault)
+							{
+								Json::Value parsed;
+								Json::Reader defReader;
+								if (defReader.parse(sf.defaultJson, parsed))
+									fieldJson["default"] = parsed;
+							}
 							if (fieldValues.isMember(sf.name))
 								fieldJson["value"] = fieldValues[sf.name];
 							fields.append(fieldJson);
