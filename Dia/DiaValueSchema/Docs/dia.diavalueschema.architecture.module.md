@@ -51,7 +51,7 @@ responsibilities:
   - ValueInfo registry for storing and querying schema metadata
   - ValueSchemaRegistry for managing schema registrations
   - ValueSchemaModule and ValueSchemaService lifecycle integration
-  - valueschema.get DiaDebugServer query and snapshot Version() (Feature 3); result also carries the full `ramps` array (Feature 5)
+  - valueschema.get DiaDebugServer query and snapshot Version() (Feature 3); result also carries the full `ramps` array (Feature 5); Feature 6 adds an exact-key `keys` filter (wins over `prefix`) and `origin` on every entry
   - ClampAndWarn utility for value validation and warning logging
 non_responsibilities:
   - Validation CLI tooling

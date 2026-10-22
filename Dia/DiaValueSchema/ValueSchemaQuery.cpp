@@ -6,6 +6,7 @@
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaObservation/Metric/Counter.h>
 
+#include <set>
 #include <string>
 #include <string.h>
 #include <stdio.h>
@@ -229,19 +230,43 @@ namespace Dia::ValueSchema
 		std::string prefix;
 		if (args.isObject() && args["prefix"].isString()) { prefix = args["prefix"].asString(); }
 
-		Json::Value entries(Json::arrayValue);
-		const unsigned int count = mService.Count();
-		for (unsigned int i = 0; i < count; ++i)
+		// `keys` (exact full keys) wins over `prefix`. A present-but-not-array `keys` is ignored.
+		bool useKeys = false;
+		if (args.isObject() && args.isMember("keys"))
 		{
-			const ValueInfo* info = mService.At(i);
-			if (info == nullptr) { continue; }
-			if (!prefix.empty() && strncmp(info->mFullKey.AsCStr(), prefix.c_str(), prefix.size()) != 0) { continue; }
-			entries.append(ValueInfoToJson(*info));
+			if (args["keys"].isArray()) { useKeys = true; }
+			else { DIA_LOG_DEBUG("VSC", "valueschema.get: 'keys' is not an array, ignored"); }
+		}
+
+		Json::Value entries(Json::arrayValue);
+		if (useKeys)
+		{
+			const Json::Value& keys = args["keys"];
+			std::set<std::string> seen;
+			for (Json::ArrayIndex k = 0; k < keys.size(); ++k)
+			{
+				if (!keys[k].isString()) { continue; }
+				const std::string key = keys[k].asString();
+				if (!seen.insert(key).second) { continue; }
+				const ValueInfo* info = mService.Find(Dia::Core::StringCRC(key.c_str()));
+				if (info != nullptr) { entries.append(ValueInfoToExportJson(*info)); }
+			}
+		}
+		else
+		{
+			const unsigned int count = mService.Count();
+			for (unsigned int i = 0; i < count; ++i)
+			{
+				const ValueInfo* info = mService.At(i);
+				if (info == nullptr) { continue; }
+				if (!prefix.empty() && strncmp(info->mFullKey.AsCStr(), prefix.c_str(), prefix.size()) != 0) { continue; }
+				entries.append(ValueInfoToExportJson(*info));
+			}
 		}
 
 		if (mQueriesServed) { mQueriesServed->Inc(); }
-		if (entries.empty() && mQueryUnresolved) { mQueryUnresolved->Inc(); }
-		DIA_LOG_DEBUG("VSC", "valueschema.get prefix='%s' matched %u entries (version %u)", prefix.c_str(), static_cast<unsigned int>(entries.size()), mService.Version());
+		if (entries.empty() && mQueryUnresolved && (!useKeys || args["keys"].size() > 0)) { mQueryUnresolved->Inc(); }
+		DIA_LOG_DEBUG("VSC", "valueschema.get %s prefix='%s' matched %u entries (version %u)", useKeys ? "keys" : "prefix-filter", prefix.c_str(), static_cast<unsigned int>(entries.size()), mService.Version());
 
 		// Ramps are global and small: always the full set, never filtered by prefix.
 		Json::Value ramps(Json::arrayValue);

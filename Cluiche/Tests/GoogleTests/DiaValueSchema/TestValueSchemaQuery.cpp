@@ -62,6 +62,7 @@ namespace
 
 			LoadInto(mRegistry, eco.Build(), "eco.schema.json");
 			LoadInto(mRegistry, wx.Build(), "wx.schema.json");
+			ASSERT_EQ(RegisterResult::Ok, mRegistry.Register(MakeValueInfo("cow.metrics", "ticks", ValueKind::Metric, "code:CodeSide")));
 			mRegistry.Publish();
 			mService.reset(new ValueSchemaService(mRegistry));
 			mHandler.reset(new ValueSchemaQueryHandler(*mService));
@@ -74,6 +75,21 @@ namespace
 			return mHandler->Handle(args);
 		}
 
+		Json::Value QueryKeys(const Json::Value& keys, const char* prefix = nullptr)
+		{
+			Json::Value args(Json::objectValue);
+			args["keys"] = keys;
+			if (prefix) { args["prefix"] = prefix; }
+			return mHandler->Handle(args);
+		}
+
+		static Json::Value Keys(std::initializer_list<const char*> list)
+		{
+			Json::Value a(Json::arrayValue);
+			for (const char* k : list) { a.append(k); }
+			return a;
+		}
+
 		ValueSchemaRegistry							mRegistry;
 		std::unique_ptr<ValueSchemaService>			mService;
 		std::unique_ptr<ValueSchemaQueryHandler>	mHandler;
@@ -84,7 +100,7 @@ TEST_F(QueryFixture, OmittedPrefixReturnsAllEntriesAndVersion)
 {
 	const Json::Value r = Query(nullptr);
 	ASSERT_TRUE(r["entries"].isArray());
-	EXPECT_EQ(r["entries"].size(), 4u);
+	EXPECT_EQ(r["entries"].size(), 5u);
 	EXPECT_EQ(r["version"].asUInt(), mService->Version());
 	EXPECT_GT(mService->Version(), 0u);
 }
@@ -155,6 +171,80 @@ TEST_F(QueryFixture, EnumValuesAreEmittedWithIdLabelDescription)
 	EXPECT_EQ(values[0]["id"].asString(), "fast");
 	EXPECT_EQ(values[0]["label"].asString(), "Fast");
 	EXPECT_EQ(values[0]["description"].asString(), "Quick");
+}
+
+TEST_F(QueryFixture, KeysReturnsExactlyThoseEntriesInGivenOrder)
+{
+	const Json::Value r = QueryKeys(Keys({ "cow.weather/wind", "cow.ecology_params/regrowth" }));
+	ASSERT_EQ(r["entries"].size(), 2u);
+	EXPECT_EQ(r["entries"][0]["key"].asString(), "wind");
+	EXPECT_EQ(r["entries"][1]["key"].asString(), "regrowth");
+}
+
+TEST_F(QueryFixture, KeysDuplicateReturnedOnce)
+{
+	const Json::Value r = QueryKeys(Keys({ "cow.weather/wind", "cow.weather/wind" }));
+	EXPECT_EQ(r["entries"].size(), 1u);
+}
+
+TEST_F(QueryFixture, KeysUnknownSkippedKnownStillReturned)
+{
+	const uint64_t unresolvedBefore = CounterValue("valueschema.query_unresolved");
+	const Json::Value r = QueryKeys(Keys({ "nope/x", "cow.weather/wind" }));
+	ASSERT_EQ(r["entries"].size(), 1u);
+	EXPECT_EQ(r["entries"][0]["key"].asString(), "wind");
+	EXPECT_EQ(CounterValue("valueschema.query_unresolved") - unresolvedBefore, 0u);
+}
+
+TEST_F(QueryFixture, KeysAllUnknownCountsUnresolved)
+{
+	const uint64_t unresolvedBefore = CounterValue("valueschema.query_unresolved");
+	const Json::Value r = QueryKeys(Keys({ "nope/x" }));
+	EXPECT_EQ(r["entries"].size(), 0u);
+	EXPECT_EQ(CounterValue("valueschema.query_unresolved") - unresolvedBefore, 1u);
+}
+
+TEST_F(QueryFixture, KeysWinOverPrefix)
+{
+	const Json::Value r = QueryKeys(Keys({ "cow.weather/wind" }), "cow.ecology_params/");
+	ASSERT_EQ(r["entries"].size(), 1u);
+	EXPECT_EQ(r["entries"][0]["for"].asString(), "cow.weather");
+}
+
+TEST_F(QueryFixture, EmptyKeysArrayReturnsZeroEntries)
+{
+	const Json::Value r = QueryKeys(Json::Value(Json::arrayValue));
+	ASSERT_TRUE(r["entries"].isArray());
+	EXPECT_EQ(r["entries"].size(), 0u);
+	EXPECT_TRUE(r["ramps"].isArray());
+}
+
+TEST_F(QueryFixture, NonArrayKeysIsIgnoredAndPrefixApplies)
+{
+	const Json::Value r = QueryKeys(Json::Value("cow.weather/wind"), "cow.ecology_params/");
+	EXPECT_EQ(r["entries"].size(), 3u);
+	const Json::Value all = QueryKeys(Json::Value(7));
+	EXPECT_EQ(all["entries"].size(), 5u);
+}
+
+TEST_F(QueryFixture, NonStringKeysElementIsSkipped)
+{
+	Json::Value keys = Keys({ "cow.weather/wind" });
+	keys.append(42);
+	keys.append(Json::Value());
+	const Json::Value r = QueryKeys(keys);
+	EXPECT_EQ(r["entries"].size(), 1u);
+}
+
+// Deliberate change (Feature 6 task 3): the live query now carries "origin" on every entry.
+TEST_F(QueryFixture, EveryEntryCarriesOrigin)
+{
+	const Json::Value r = Query(nullptr);
+	for (const Json::Value& e : r["entries"]) { EXPECT_TRUE(e["origin"].isString()) << e["key"].asString(); }
+	const Json::Value side = Query("cow.weather/wind");
+	EXPECT_EQ(side["entries"][0]["origin"].asString(), "sidecar:wx.schema.json");
+	const Json::Value code = Query("cow.metrics/ticks");
+	EXPECT_EQ(code["entries"][0]["origin"].asString(), "code:metric");
 }
 
 TEST_F(QueryFixture, VersionIsStableAcrossRepeatedQueries)
