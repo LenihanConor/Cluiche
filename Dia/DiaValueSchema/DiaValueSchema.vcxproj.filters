@@ -29,6 +29,8 @@
     <ClInclude Include="Testing\SchemaTempDirectory.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="RampData.h" />
+    <ClInclude Include="RampLoader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ValueSchemaVersion.cpp" />
@@ -41,6 +43,8 @@
     <ClCompile Include="SchemaDirectoryLoader.cpp" />
     <ClCompile Include="ValueSchemaHealth.cpp" />
     <ClCompile Include="ValueSchemaModule.cpp" />
+    <ClCompile Include="RampData.cpp" />
+    <ClCompile Include="RampLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diavalueschema.architecture.module.md">
