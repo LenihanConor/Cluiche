@@ -70,7 +70,8 @@ def _resolve_dev_aliases(target: str, repo_root: Path) -> list[str]:
 
 def launch_target(target: str, config: str, filter_pattern: str = None,
                   verbose: bool = False, run_all: bool = False, shards: int = 0,
-                  automation: bool = False, source_override: str | None = None) -> int:
+                  automation: bool = False, source_override: str | None = None,
+                  extra_args: list[str] | None = None) -> int:
     config = _CONFIG_ALIASES.get(config, config)
     repo_root = find_repo_root(__file__)
 
@@ -125,6 +126,8 @@ def launch_target(target: str, config: str, filter_pattern: str = None,
         cmd += _resolve_dev_aliases(target, repo_root)
     if target == "cluichetest" and automation:
         cmd.append("--automation")
+    if extra_args:
+        cmd += list(extra_args)
     if target == "googletest":
         from dia_cli.commands.test.googletest_runner import (
             _gtest_xml_output_path,

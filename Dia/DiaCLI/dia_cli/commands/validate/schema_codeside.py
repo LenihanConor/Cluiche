@@ -44,6 +44,17 @@ def git_head() -> Optional[str]:
     return text if out.returncode == 0 and text else None
 
 
+def git_dirty() -> Optional[bool]:
+    """True when the Cluiche repository has uncommitted changes; None when git is unavailable."""
+    try:
+        from dia_cli.commands.validate import schema_discovery as sd
+        out = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True, timeout=30,
+                             cwd=sd.get_repo_root())
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return None
+    return bool(out.stdout.strip()) if out.returncode == 0 else None
+
+
 # ---------------------------------------------------------------------------
 # Locating and loading
 # ---------------------------------------------------------------------------
@@ -171,4 +182,8 @@ def run_code_side(target: Optional[str], code_path: Optional[Path]):
     path = code_path if code_path is not None else find_export(target)
     if path is None:
         return [], NOTICE
-    return check_code_side(load_export(path), head_commit=git_head()), None
+    export = load_export(path)
+    header = export.get("header")
+    if isinstance(header, dict) and header.get("code_side") is False:
+        return [], NOTICE  # a --sidecars-only export carries no code-side data
+    return check_code_side(export, head_commit=git_head()), None
