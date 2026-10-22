@@ -4,6 +4,7 @@
 #include <new>
 #include <DiaEntity/Testing/TestDescribedComponent.h>
 #include <DiaEntity/ComponentTypeDesc.h>
+#include <DiaCore/Reflect/FieldAttributes.h>
 
 using namespace Dia::Entity;
 using DiaEntityTesting::TestDescribedComponent;
@@ -22,6 +23,7 @@ DIA_SERIALIZE(TestDescribedComponent, TestDescribedComponent::kVersion)
     DIA_FIELD(active)
     DIA_FIELD(tag)
     DIA_FIELD(nested)
+    DIA_FIELD(armor)
 DIA_SERIALIZE_END
 
 #ifdef __GNUC__
@@ -35,6 +37,7 @@ static Dia::Entity::FieldDesc s_TestDescribedComponent_fields[] = {
     DIA_FIELD_ENTRY(bool,    active,    TestDescribedComponent)
     DIA_FIELD_ENTRY(Dia::Core::StringCRC, tag, TestDescribedComponent)
     DIA_FIELD_ENTRY(TestDescribedNested,  nested, TestDescribedComponent)
+    DIA_FIELD_ENTRY(float,   armor,     TestDescribedComponent)
 };
 
 #ifdef __GNUC__
@@ -45,6 +48,14 @@ DIA_COMPONENT_REGISTER(TestDescribedComponent, "test-described-component", false
     s_TestDescribedComponent_fields, DIA_ARRAY_COUNT(s_TestDescribedComponent_fields),
     nullptr, 0,
     nullptr, 0)
+
+// Field attributes (keyed by class name + member name).
+DIA_ATTR_DESCRIBE(TestDescribedComponent, speed, "Speed", "m/s", "Movement speed")
+DIA_ATTR_DESCRIBE_HINT(TestDescribedComponent, hitPoints, "Hit Points", nullptr, "Starting health", "Whole numbers only")
+DIA_ATTR_DESCRIBE(TestDescribedComponent, nested, "Nested", nullptr, "Nested value struct")
+DIA_ATTR_RANGE(TestDescribedComponent, speed, 0.0f, 20.0f)
+DIA_ATTR_RANGE(TestDescribedComponent, hitPoints, 1, 100)
+DIA_ATTR_RANGE(TestDescribedComponent, armor, -1.0f, 5.0f)
 
 } // namespace DiaEntityTesting
 

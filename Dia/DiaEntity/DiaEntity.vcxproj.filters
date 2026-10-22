@@ -60,6 +60,7 @@
     <ClInclude Include="Testing\TestDescribedComponent.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="ComponentDescribe.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Domain.cpp">
@@ -71,6 +72,7 @@
     <ClCompile Include="JsonBlueprintLoader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ComponentDescribe.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.entity.architecture.module.md" />

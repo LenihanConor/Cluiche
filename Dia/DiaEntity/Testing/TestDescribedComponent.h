@@ -23,6 +23,7 @@ namespace DiaEntityTesting {
         FIELD(bool,    active,    true)
         FIELD(Dia::Core::StringCRC, tag, Dia::Core::StringCRC("default-tag"))
         FIELD(TestDescribedNested, nested, TestDescribedNested{})
+        FIELD(float,   armor,     1.5f)
     };
 
 } // namespace DiaEntityTesting

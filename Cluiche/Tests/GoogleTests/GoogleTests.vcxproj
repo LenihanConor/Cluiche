@@ -981,6 +981,7 @@
     <ClCompile Include="DiaAPI\TestEditorActionParamJsonEdge.cpp" />
     <ClCompile Include="DiaVisualDebugger\Console\TestPaletteArgsEdge.cpp" />
     <ClCompile Include="DiaEntity\TestDescribedComponent.cpp" />
+    <ClCompile Include="DiaEntity\TestComponentDescribe.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
