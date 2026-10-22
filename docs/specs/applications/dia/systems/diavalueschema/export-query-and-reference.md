@@ -55,13 +55,25 @@ Code-side descriptions only exist in the process memory of the running app, so t
   "entries": [ { "key": "cow.ecology_params/grazing.rate", "origin": "sidecar:Global/Ecology/ecology_parameters.schema.json", "...": "all sidecar fields" },
                { "key": "cow.ecology.herbivores_total", "kind": "metric", "origin": "code:metric", "label": "...", "description": "...", "unit": "animals" } ],
   "ramps": [ { "id": "sequential.green", "...": "..." } ],
-  "undescribed": { "metrics": ["cow.weather.ticks"], "commands": [{ "name": "cow.save", "args": ["slot"] }], "component_fields": ["Transform2D/scale"] }
+  "undescribed": { "metrics": [{ "name": "cow.weather.ticks", "owner": "cow" }],
+                   "commands": [{ "name": "cow.save", "owner": "CoW", "args": ["slot"] }],
+                   "component_fields": [{ "name": "Transform2D/scale", "owner": "Transform2D" }] }
 }
 ```
 
-- `origin` is `sidecar:<path>` or `code:metric | code:arg | code:component_field`.
+- `origin` is `sidecar:<path>` or `code:metric | code:command | code:arg | code:component_field`.
 - `undescribed` lists metrics registered without `MetricInfo`, command arguments without `ValueParam` text, and component fields that have `DIA_ATTR_RANGE` but no `DIA_ATTR_DESCRIBE`. This is what lets the validator warn without running the app.
 - `header.git_commit` and `dirty` come from the repository at export time.
+
+**Undescribed item shape (amended 2026-10-22, closes the Feature 2 / Feature 4 disagreement).** Every `undescribed` list holds objects, never bare strings (the validator still reads strings for old files):
+
+| List | Item | Meaning |
+|---|---|---|
+| `metrics` | `{ name, owner }` | a metric with no `MetricInfo` or an empty description; `owner` is the first dotted segment of the name |
+| `commands` | `{ name, owner, args }` | a command with no `ValueParam`s and `noArgs` not set (`args` is empty), or one whose parameters lack text (`args` lists those parameter names); `owner` is the `CommandInfo` owner |
+| `component_fields` | `{ name, owner }` | `name` is `<type id>/<field>`, `owner` the type id; a field with `DIA_ATTR_RANGE` and no `DIA_ATTR_DESCRIBE` |
+
+A command registered with `noArgs: true` is described by definition: it is never listed in `undescribed.commands`. Its `entries` item (`kind: command`, `origin: code:command`) carries `"ui": { "no_args": true }` so readers can tell "takes no arguments" from "arguments not described".
 
 ### Describe mode (C++)
 
@@ -77,7 +89,8 @@ dia schema export --target <t> [--stage <name>] [--out PATH] [--sidecars-only]
 
 - Default: launch the target through `dia launch` (never the executable directly) with `--describe-schema`, wait for it to finish, and check the file exists and parses.
 - **`--stage <name>`** (added 2026-10-20, T-2 Feature 5): commands registered by a stage's modules exist only while that stage runs, so describe mode waits until the named stage has finished Init (the app enters it through the same automation path the E2E tests use) before it dumps, and the file is written as `valueschema.<name>.json` beside the base export. The scenario editor reads the export for the stage folder a scenario lives in and falls back to the base export.
-- **`--sidecars-only`:** build the export in Python from the sidecars and ramps alone (reusing Feature 2's discovery). No launch, no build; `undescribed` is omitted and the header says `"code_side": false`.
+- **`--sidecars-only`:** build the export in Python from the sidecars and ramps alone (reusing Feature 2's discovery). No launch, no build; `undescribed` is omitted and the header says `"code_side": false`. The CLI prints a one-line notice ("code-side coverage omitted: --sidecars-only") with the summary, and `dia validate schema` treats an export with `code_side: false` as having no code-side data: it prints its existing "code-side checks skipped" notice instead of passing silently (amended 2026-10-22).
+- **Locating an export without `--target`** (amended 2026-10-22; this is what `dia validate schema` already does): the only `valueschema.json` under `Cluiche/out/<App>/`. With none, the validator prints its skipped notice; with several, it prints the notice naming the candidates and asks for `--target`. `dia schema export` itself always requires `--target`.
 - Fills `header.git_commit` and `dirty` from git; writes to `Cluiche/out/<App>/valueschema.json` unless `--out` is given.
 
 ### Staleness
@@ -177,4 +190,4 @@ No conflicts.
 
 ## Status
 
-`Approved` (2026-10-20). Plan not yet created. Build needs AD-001 sign-off for the `--describe-schema` startup flag and the DiaCellHistory export change.
+`Approved` (2026-10-20); amended 2026-10-22 (undescribed item shape, `noArgs`, `--sidecars-only` notice, export lookup). Plan: [export-query-and-reference.plan.md](export-query-and-reference.plan.md). AD-001 sign-off for the `--describe-schema` startup flag with `--stage` was given 2026-10-21. AC 9 (`cells.history.export` embeds the subset) needs DiaCellHistory Feature 5, which is not built: this feature delivers `ExportSubset` and its tests, and AC 9 closes with DiaCellHistory.
