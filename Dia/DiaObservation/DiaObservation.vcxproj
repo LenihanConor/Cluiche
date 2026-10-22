@@ -103,6 +103,7 @@
     <ClInclude Include="Capture\CaptureManager.h" />
     <ClInclude Include="Capture\IFrameCaptureSource.h" />
     <ClInclude Include="Metric\JobSystemMetricsAdapter.h" />
+    <ClInclude Include="Metric\MetricInfo.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

@@ -277,5 +277,8 @@
     <ClInclude Include="Metric\JobSystemMetricsAdapter.h">
       <Filter>Metric</Filter>
     </ClInclude>
+    <ClInclude Include="Metric\MetricInfo.h">
+      <Filter>Metric</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
