@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/applications/dia/systems/diavalueschema/code-side-descriptions.md
-**Status:** In Progress
+**Status:** Done (late-registration check is a callable hook; its callers arrive with Features 3 and 6)
 
 **AD-001 sign-off:** given by the user 2026-10-21 for the DiaObservation, DiaAPI and DiaEditor edits (recorded in `docs/BACKLOG.md`). **Feature 6 (describe mode and the `undescribed` export) is not built**, so the collector exposes a callable `CollectCodeSide` / undescribed-list API now; the describe-mode dump itself is Feature 6's.
 
@@ -12,4 +12,4 @@
 | 5 | `CodeSideCollector` in DiaValueSchema: metrics to `dia.metric/<name>` kind metric, command args to `dia.command/<cmd>.<arg>` kind arg, one `kind: command` entry per command (incl. `noArgs`), enum values from `enumValues`, unknown type -> string + one Warning per command, undescribed lists with owner (AC 4, 5, 7); fake metric/command source in `Testing/` | RED-GREEN: collector tests | Done | sonnet | Pulls only; DiaObservation/DiaAPI must not depend on DiaValueSchema |
 | 6 | Wire the collector into `ValueSchemaModule` start (before publish), record generations, one Warning counting late registrations when generations moved on, metrics (described/undescribed counts), `DIA_PROFILE_SCOPE`, Info summary (AC 4, 6) | RED-GREEN: module tests incl. late registration | Done | sonnet | Do not break the 230 existing DiaValueSchema tests |
 | 7 | Debug-panel palette: command results gain `args` only for commands with params (C++ JSON + page renders it + new golden case); existing golden unchanged (AC 9) | RED-GREEN: `TestPanelContract` new case; Vitest page test | Done | sonnet | Find the palette JSON and page via DiaVisualDebugger; run page tests via the repo's usual vitest command |
-| 8 | Finalize: `dia check deps` (AC 10), full googletest, build CluicheTest/CoW/CluicheEditor targets that include the changed headers, Observation scan | `dia check deps`, full suite, target builds | Pending | haiku | |
+| 8 | Finalize: `dia check deps` (AC 10), full googletest, build CluicheTest/CoW/CluicheEditor targets that include the changed headers, Observation scan | `dia check deps`, full suite, target builds | Done | haiku | |

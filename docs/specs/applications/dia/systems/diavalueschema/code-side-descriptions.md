@@ -193,4 +193,4 @@ _None remaining._
 
 ## Status
 
-`Approved` (2026-10-20). Plan: [code-side-descriptions.plan.md](code-side-descriptions.plan.md). AD-001 sign-off for the DiaObservation, DiaAPI and DiaEditor edits given 2026-10-21.
+`Done` (2026-10-21; exhaustive-test pass in progress). Plan: [code-side-descriptions.plan.md](code-side-descriptions.plan.md). AD-001 sign-off for the DiaObservation, DiaAPI and DiaEditor edits given 2026-10-21.
