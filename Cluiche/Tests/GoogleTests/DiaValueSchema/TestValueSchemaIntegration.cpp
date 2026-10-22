@@ -514,7 +514,7 @@ namespace
 	}
 
 	const char* const kGoldenRegistry =
-		"dia.command/integ-reset | command | string | label=integ-reset | unit= | ui={\"category\":\"\",\"example\":\"\",\"owner\":\"IntegOwner\"}\n"
+		"dia.command/integ-reset | command | string | label=integ-reset | unit= | ui={\"category\":\"\",\"example\":\"\",\"no_args\":true,\"owner\":\"IntegOwner\"}\n"
 		"dia.command/integ-spawn | command | string | label=integ-spawn | unit= | ui={\"category\":\"debug\",\"example\":\"integ-spawn --rate=2\",\"owner\":\"IntegOwner\"} | related=integ-spawn.rate,integ-spawn.mode,integ-spawn.silent\n"
 		"dia.command/integ-spawn.mode | arg | enum | label=mode | unit= | enum=weather:~,ecology:~\n"
 		"dia.command/integ-spawn.rate | arg | float | label=rate | unit=per_s | range=0.5..9.5 | required\n"

@@ -35,6 +35,7 @@ public_api:
     - DiaValueSchema/ComponentAttributeAudit.h
     - DiaValueSchema/ValueSchemaHealth.h
     - DiaValueSchema/ValueSchemaQuery.h
+    - DiaValueSchema/ValueSchemaExporter.h
     - DiaValueSchema/ValueSchemaModule.h
   namespaces:
     - Dia::ValueSchema::
@@ -44,6 +45,7 @@ public_api:
     - ValueSchemaService
     - IValueSchemaContributor
     - ValueSchemaQueryHandler
+    - ValueSchemaExporter
 responsibilities:
   - Sidecar *.schema.json format definition and parsing
   - ValueInfo registry for storing and querying schema metadata

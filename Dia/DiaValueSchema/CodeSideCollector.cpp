@@ -218,6 +218,7 @@ namespace Dia::ValueSchema
 			cmd.mUi["owner"] = owner;
 			cmd.mUi["category"] = Safe(c.mCategory);
 			cmd.mUi["example"] = Safe(c.mExample);
+			if (c.mNoArgs) { cmd.mUi["no_args"] = true; }
 			// Each key once: a repeated param name produces a duplicate arg (counted when registered) but one related key.
 			for (unsigned int i = 0; i < args.Size(); ++i)
 			{

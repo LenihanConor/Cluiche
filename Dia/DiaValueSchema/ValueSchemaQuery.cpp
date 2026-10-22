@@ -154,6 +154,38 @@ namespace Dia::ValueSchema
 		return e;
 	}
 
+	Dia::Core::Containers::String512 OriginOf(const ValueInfo& info)
+	{
+		std::string origin;
+		const char* file = info.mSourceFile.AsCStr();
+		if (strncmp(file, "code:", 5) == 0)
+		{
+			switch (info.mKind)
+			{
+			case ValueKind::Metric:			origin = "code:metric"; break;
+			case ValueKind::Command:		origin = "code:command"; break;
+			case ValueKind::Arg:			origin = "code:arg"; break;
+			case ValueKind::ComponentField:	origin = "code:component_field"; break;
+			default:						origin = file; break;
+			}
+		}
+		else
+		{
+			origin = std::string("sidecar:") + file;
+			for (char& c : origin) { if (c == '\\') { c = '/'; } }
+		}
+		Dia::Core::Containers::String512 out;
+		SetText(out, origin.c_str());
+		return out;
+	}
+
+	Json::Value ValueInfoToExportJson(const ValueInfo& info)
+	{
+		Json::Value e = ValueInfoToJson(info);
+		e["origin"] = OriginOf(info).AsCStr();
+		return e;
+	}
+
 	Json::Value RampToJson(const RampData& ramp)
 	{
 		Json::Value r(Json::objectValue);

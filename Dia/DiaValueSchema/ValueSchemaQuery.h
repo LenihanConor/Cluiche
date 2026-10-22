@@ -30,6 +30,14 @@ namespace Dia::ValueSchema
 	// One entry in sidecar field names. Public so the Feature 6 export can reuse it.
 	Json::Value ValueInfoToJson(const ValueInfo& info);
 
+	// Where an entry came from: "sidecar:<path>" (backslashes normalised to "/") or, for entries whose source file is a
+	// "code:" marker, "code:metric" | "code:command" | "code:arg" | "code:component_field" by ValueKind. Shared by the
+	// Feature 6 export and (later) the live query.
+	Dia::Core::Containers::String512 OriginOf(const ValueInfo& info);
+
+	// ValueInfoToJson plus "origin" (export document entry). The live valueschema.get output does not carry origin yet.
+	Json::Value ValueInfoToExportJson(const ValueInfo& info);
+
 	// One ramp in dia.ramps file format.
 	Json::Value RampToJson(const RampData& ramp);
 
