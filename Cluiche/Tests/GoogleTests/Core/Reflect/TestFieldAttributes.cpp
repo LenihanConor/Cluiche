@@ -261,3 +261,79 @@ TEST(RangeEnforcement, ValueInRange_ErrorMode_NoError) {
     EXPECT_TRUE(rAr.GetResult().IsOk());
     EXPECT_EQ(dst.mLevel, 5);
 }
+
+// =============================================================================
+// DescribeAttribute + generic GetRange tests
+// =============================================================================
+
+struct Described {
+    float mWeight = 1.0f;
+    float mDrag   = 0.0f;
+    int   mCount  = 0;
+    double mScale = 1.0;
+};
+
+DIA_ATTR_DESCRIBE(Described, mWeight, "Weight", "kg", "How heavy the body is.")
+DIA_ATTR_RANGE(Described, mWeight, 0.0f, 10.0f)
+DIA_ATTR_REQUIRED(Described, mWeight)
+DIA_ATTR_DESCRIBE_HINT(Described, mDrag, "Drag", "", "Air resistance.", "Above 1 the body stalls.")
+DIA_ATTR_RANGE(Described, mCount, -5, 5)
+DIA_ATTR_RANGE(Described, mScale, 0.5, 2.5)
+
+TEST(DescribeAttribute, DescribeRegisteredAlongsideRangeAndRequired) {
+    auto& reg = FieldAttributeRegistry::Instance();
+    const DescribeAttribute* d = reg.FindAttribute<DescribeAttribute>(TypeCrc("Described"), FieldCrc("mWeight"));
+    ASSERT_NE(d, nullptr);
+    EXPECT_STREQ(d->GetKind(), "Describe");
+    EXPECT_STREQ(d->label, "Weight");
+    EXPECT_STREQ(d->unit, "kg");
+    EXPECT_STREQ(d->description, "How heavy the body is.");
+    EXPECT_EQ(d->hint, nullptr);
+    EXPECT_NE(reg.FindAttribute<RangeAttribute<float>>(TypeCrc("Described"), FieldCrc("mWeight")), nullptr);
+    EXPECT_NE(reg.FindAttribute<RequiredAttribute>(TypeCrc("Described"), FieldCrc("mWeight")), nullptr);
+}
+
+TEST(DescribeAttribute, DescribeHintSetsHint) {
+    const DescribeAttribute* d = FieldAttributeRegistry::Instance().FindAttribute<DescribeAttribute>(
+        TypeCrc("Described"), FieldCrc("mDrag"));
+    ASSERT_NE(d, nullptr);
+    EXPECT_STREQ(d->label, "Drag");
+    EXPECT_STREQ(d->unit, "");
+    EXPECT_STREQ(d->description, "Air resistance.");
+    EXPECT_STREQ(d->hint, "Above 1 the body stalls.");
+}
+
+TEST(FieldAttributeGetRange, ReturnsRangeForArithmeticTypes) {
+    auto& reg = FieldAttributeRegistry::Instance();
+    double lo = 0.0, hi = 0.0;
+
+    const FieldAttribute* f = reg.FindAttribute<RangeAttribute<float>>(TypeCrc("Described"), FieldCrc("mWeight"));
+    ASSERT_NE(f, nullptr);
+    EXPECT_TRUE(f->GetRange(lo, hi));
+    EXPECT_DOUBLE_EQ(lo, 0.0);
+    EXPECT_DOUBLE_EQ(hi, 10.0);
+
+    const FieldAttribute* i = reg.FindAttribute<RangeAttribute<int>>(TypeCrc("Described"), FieldCrc("mCount"));
+    ASSERT_NE(i, nullptr);
+    EXPECT_TRUE(i->GetRange(lo, hi));
+    EXPECT_DOUBLE_EQ(lo, -5.0);
+    EXPECT_DOUBLE_EQ(hi, 5.0);
+
+    const FieldAttribute* d = reg.FindAttribute<RangeAttribute<double>>(TypeCrc("Described"), FieldCrc("mScale"));
+    ASSERT_NE(d, nullptr);
+    EXPECT_TRUE(d->GetRange(lo, hi));
+    EXPECT_DOUBLE_EQ(lo, 0.5);
+    EXPECT_DOUBLE_EQ(hi, 2.5);
+}
+
+TEST(FieldAttributeGetRange, ReturnsFalseForNonRangeAttributes) {
+    double lo = 7.0, hi = 8.0;
+    RequiredAttribute req;
+    DescribeAttribute desc;
+    AssetRefAttribute aref("DiaTexture");
+    EXPECT_FALSE(req.GetRange(lo, hi));
+    EXPECT_FALSE(desc.GetRange(lo, hi));
+    EXPECT_FALSE(aref.GetRange(lo, hi));
+    EXPECT_DOUBLE_EQ(lo, 7.0);
+    EXPECT_DOUBLE_EQ(hi, 8.0);
+}

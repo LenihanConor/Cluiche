@@ -193,4 +193,4 @@ No conflicts.
 
 ## Status
 
-`Approved` (2026-10-20). Plan not yet created. Build needs AD-001 sign-off for the DiaCore Reflect, DiaEntity and editor edits.
+`Approved` (2026-10-20). Plan: [entity-component-fields.plan.md](entity-component-fields.plan.md). AD-001 sign-off given 2026-10-21 for the DiaCore Reflect and DiaEntity edits; the three editor edits still need it.
