@@ -14,6 +14,14 @@ export interface FieldEntry {
     kind: string;
     value?: string | number | boolean | null;
     codeDefault?: string | number | boolean | null;
+    // Optional .diaschema metadata (DiaValueSchema Feature 7); absent in old-format schemas.
+    label?: string;
+    description?: string;
+    unit?: string;
+    hint?: string;
+    min?: number;
+    max?: number;
+    default?: number | string | boolean;
 }
 
 export interface ComponentEntry {
