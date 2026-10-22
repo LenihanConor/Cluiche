@@ -68,7 +68,7 @@ def test_no_relevant_files_skips_discovery(tmp_path, monkeypatch):
     called = []
     monkeypatch.setattr(schema_discovery, "discover_and_validate", lambda *a, **k: called.append(1) or ([], []))
     cpp = put(tmp_path, "Dia/x.cpp", "int x;")
-    plain = put(tmp_path, "Cluiche/Assets/App/noformat.json", {"a": 1})
+    plain = put(tmp_path, "Cluiche/Assets/Other/noformat.json", {"a": 1})  # folder without a schema
     outside = put(tmp_path, "docs/x.json", {"format": "eco.params"})
     assert precommit_cmd._check_schema(tmp_path, [cpp, plain, outside]) == ([], [])
     assert called == []

@@ -33,9 +33,12 @@ GROUP_NOUNS = {
 
 
 def git_head() -> Optional[str]:
+    """HEAD of the Cluiche repository (not of whatever directory the CLI was launched from)."""
     try:
-        out = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, timeout=10)
-    except (OSError, subprocess.SubprocessError):
+        from dia_cli.commands.validate import schema_discovery as sd
+        out = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, timeout=10,
+                             cwd=sd.get_repo_root())
+    except (OSError, subprocess.SubprocessError, ValueError):
         return None
     text = out.stdout.strip()
     return text if out.returncode == 0 and text else None
@@ -67,7 +70,7 @@ def load_export(path: Path) -> Dict[str, Any]:
     """Parse an export file; anything unusable is a usage-level error (exit 2)."""
     try:
         doc = json.loads(path.read_text(encoding="utf-8-sig"))
-    except (OSError, ValueError) as ex:
+    except (OSError, ValueError, RecursionError) as ex:
         raise click.UsageError(f"cannot read code-side export {path}: {ex}")
     if not isinstance(doc, dict) or doc.get("format") != EXPORT_FORMAT:
         raise click.UsageError(f"cannot read code-side export {path}: expected format `{EXPORT_FORMAT}`")
@@ -79,7 +82,12 @@ def load_export(path: Path) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 def _first_segment(name: str, sep: str) -> str:
-    return name.split(sep, 1)[0] if sep in name else (name or "(unknown)")
+    return (name.split(sep, 1)[0] if sep in name else name) or "(unknown)"
+
+
+def _as_list(value: object) -> list:
+    """A JSON array, or [] for anything else (never iterate a string's characters or a dict's keys)."""
+    return value if isinstance(value, list) else []
 
 
 def _same_commit(a: str, b: str) -> bool:
@@ -109,22 +117,26 @@ def check_code_side(export: dict, *, head_commit: Optional[str]) -> List[Finding
     und = export.get("undescribed")
     und = und if isinstance(und, dict) else {}
 
-    for item in und.get("metrics") or []:
+    for item in _as_list(und.get("metrics")):
+        if not _usable(item):
+            continue
         name, owner = _item(item, "name", ".")
         findings.append(Finding("WARN", RULE_METRIC, EXPORT_FILE, name,
                                 f"metric `{name}` has no MetricInfo description", owner=owner))
-    for item in und.get("commands") or []:
-        if isinstance(item, dict) and item.get("noArgs"):
+    for item in _as_list(und.get("commands")):
+        if not _usable(item) or (isinstance(item, dict) and item.get("noArgs") is True):
             continue
         name, owner = _item(item, "name", ".")
         findings.append(Finding("WARN", RULE_COMMAND, EXPORT_FILE, name,
                                 f"command `{name}` has no argument descriptions (ValueParam)", owner=owner))
-    for item in und.get("component_fields") or []:
+    for item in _as_list(und.get("component_fields")):
+        if not _usable(item):
+            continue
         name, owner = _item(item, "name", "/")
         findings.append(Finding("WARN", RULE_FIELD, EXPORT_FILE, name,
                                 f"component field `{name}` has a range but no description", owner=owner))
 
-    for e in export.get("entries") or []:
+    for e in _as_list(export.get("entries")):
         if not isinstance(e, dict) or e.get("kind") != "metric":
             continue
         key = e.get("key")
@@ -134,10 +146,16 @@ def check_code_side(export: dict, *, head_commit: Optional[str]) -> List[Finding
     return findings
 
 
+def _usable(item: object) -> bool:
+    """Undescribed items are plain strings or objects; null, numbers and nested arrays are skipped."""
+    return isinstance(item, (str, dict))
+
+
 def _item(item: object, name_key: str, sep: str):
     """(name, owner) of an undescribed item: a plain string or {name, owner?, ...}."""
     if isinstance(item, dict):
-        name = str(item.get(name_key, ""))
+        raw = item.get(name_key)
+        name = raw if isinstance(raw, str) else ""
         owner = item.get("owner")
         return name, owner if isinstance(owner, str) and owner else _first_segment(name, sep)
     name = str(item)

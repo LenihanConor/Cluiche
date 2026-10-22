@@ -57,10 +57,10 @@ def _manifest_alias_dirs(app_dir: Path) -> List[Path]:
     """Directories named by config.path_aliases in the app's .diagame/.diaapp/.diastage files."""
     out: List[Path] = []
     for manifest in sorted(p for p in app_dir.rglob("*") if p.is_file() and p.suffix in MANIFEST_SUFFIXES
-                           and not (set(p.relative_to(app_dir).parts[:-1]) & SKIP_DIRS)):
+                           and not _skip_dir(p.relative_to(app_dir).parts[:-1])):
         try:
             data = json.loads(manifest.read_text(encoding="utf-8-sig"))
-        except (OSError, ValueError):
+        except (OSError, ValueError, RecursionError):
             continue
         cfg = data.get("config") if isinstance(data, dict) else None
         aliases = cfg.get("path_aliases") if isinstance(cfg, dict) else None
@@ -118,8 +118,8 @@ def _skip_dir(rel_parts: Sequence[str]) -> bool:
 
 def _walk(root: Path, exclude: Optional[Path]) -> List[Path]:
     out: List[Path] = []
-    for p in sorted(root.rglob("*.json"), key=lambda q: q.as_posix().lower()):
-        if not p.is_file() or _skip_dir(p.relative_to(root).parts[:-1]):
+    for p in sorted(root.rglob("*"), key=lambda q: q.as_posix().lower()):
+        if not p.name.lower().endswith(".json") or not p.is_file() or _skip_dir(p.relative_to(root).parts[:-1]):
             continue
         if exclude is not None and _under(p.resolve(), exclude):
             continue
@@ -139,7 +139,15 @@ class _Scanned:
 
 
 def _is_pack(path: Path, root: Path, explicit_file: bool) -> bool:
-    parts = list(path.relative_to(root).parts[:-1]) if not explicit_file else [path.parent.name]
+    """A file is a pack when a directory segment named `Packs` (any case) is above it.
+
+    Folder scan: the segments below the scan root, plus the scan root folder itself.
+    Explicit file: every directory segment of its path (there is no scan root to stop at).
+    """
+    if explicit_file:
+        parts = list(path.parent.parts)
+    else:
+        parts = list(path.relative_to(root).parts[:-1]) + [root.name]
     return any(p.lower() == "packs" for p in parts)
 
 
@@ -187,6 +195,10 @@ def run_scan(units: List[_Unit], exclude: Optional[Path] = None) -> Tuple[List[F
     seen: Set[Path] = set()
     scanned: List[_Scanned] = []
 
+    # Folders first (shallowest first), then explicit files: a file reachable both ways is always named
+    # relative to its folder, whatever order PATHS were given in.
+    units = sorted(units, key=lambda u: (u.files is not None, len(u.root.parts), str(u.root).lower(), str(u.root),
+                                         [str(f) for f in (u.files or [])]))
     for unit in units:
         explicit = unit.files is not None
         files = unit.files if explicit else _walk(unit.root, exclude)
@@ -203,7 +215,7 @@ def run_scan(units: List[_Unit], exclude: Optional[Path] = None) -> Tuple[List[F
             scanned.append(_Scanned(p, name, unit.root, is_schema, _is_pack(p, unit.root, explicit),
                                     explicit, folders))
 
-    scanned.sort(key=lambda s: s.name.lower())
+    scanned.sort(key=lambda s: (s.name.lower(), s.name))
 
     # --- schemas
     ok_schemas: List[Tuple[_Scanned, dict]] = []
@@ -212,11 +224,14 @@ def run_scan(units: List[_Unit], exclude: Optional[Path] = None) -> Tuple[List[F
             continue
         try:
             text = s.path.read_text(encoding="utf-8-sig")
-        except OSError as ex:
+        except (OSError, UnicodeError) as ex:
             findings.append(Finding("FAIL", "schema.unreadable", s.name, "", f"cannot read file: {ex}"))
             checked.append((s.name, 0))
             continue
-        problems = validate_schema_text(text, s.name)
+        try:
+            problems = validate_schema_text(text, s.name)
+        except RecursionError:
+            problems = [Finding("FAIL", "schema.unparsable-json", s.name, "", "unparsable JSON: nested too deeply")]
         fails = [f for f in problems if f.severity == "FAIL"]
         findings.extend(problems)
         if fails:
@@ -227,7 +242,7 @@ def run_scan(units: List[_Unit], exclude: Optional[Path] = None) -> Tuple[List[F
         checked.append((s.name, len(doc["entries"])))
 
     # duplicate full key across schema files (first by sorted path wins)
-    first_by_key: Dict[str, str] = {}
+    first_by_key: Dict[str, _Scanned] = {}
     usable: List[Tuple[_Scanned, dict]] = []
     file_by_doc: Dict[int, str] = {}
     for s, doc in ok_schemas:
@@ -235,10 +250,10 @@ def run_scan(units: List[_Unit], exclude: Optional[Path] = None) -> Tuple[List[F
             full = f"{doc['for']}/{e['key']}"
             other = first_by_key.get(full)
             if other is None:
-                first_by_key[full] = s.name
-            elif other != s.name:
+                first_by_key[full] = s
+            elif other is not s:
                 findings.append(Finding("FAIL", "schema.duplicate-key-across-files", s.name, e["key"],
-                                        f"duplicate key '{full}' also defined in {other} (this file: {s.name})"))
+                                        f"duplicate key '{full}' also defined in {other.name} (this file: {s.name})"))
         usable.append((s, doc))
         file_by_doc[id(doc)] = s.name
     index = build_schema_index(d for _, d in usable)
@@ -246,6 +261,7 @@ def run_scan(units: List[_Unit], exclude: Optional[Path] = None) -> Tuple[List[F
 
     # --- data candidates
     data_docs: List[Tuple[_Scanned, dict]] = []
+    id_sources: List[Tuple[_Scanned, dict]] = []
     for s in scanned:
         if s.is_schema:
             continue
@@ -253,7 +269,7 @@ def run_scan(units: List[_Unit], exclude: Optional[Path] = None) -> Tuple[List[F
             (s.explicit and s.path.parent in s.folders)
         try:
             doc = json.loads(s.path.read_text(encoding="utf-8-sig"))
-        except (OSError, ValueError) as ex:
+        except (OSError, ValueError, RecursionError) as ex:
             if in_schemad:
                 findings.append(Finding("FAIL", "data.invalid-json", s.name, "", f"unparsable JSON: {ex}"))
                 checked.append((s.name, 0))
@@ -265,20 +281,25 @@ def run_scan(units: List[_Unit], exclude: Optional[Path] = None) -> Tuple[List[F
                                         "no `format`; cannot find its schema"))
                 checked.append((s.name, 0))
             continue
+        id_sources.append((s, doc))  # every data document with a format is an id source for cross-format refs
         if not index.has_format(fmt):
             findings.append(Finding("WARN", "data.no-schema-for-format", s.name, None,
                                     f"format `{fmt}` has no schema ({s.name})"))
             continue
         data_docs.append((s, doc))
 
-    context = DataContext.from_files((s.name, d, s.is_pack) for s, d in data_docs)
+    context = DataContext.from_files((s.name, d, s.is_pack) for s, d in id_sources)
     for s, doc in data_docs:
-        findings.extend(validate_data_document(doc, s.name, index, is_pack=s.is_pack, context=context))
-        checked.append((s.name, count_keys(doc)))
+        try:
+            findings.extend(validate_data_document(doc, s.name, index, is_pack=s.is_pack, context=context))
+            checked.append((s.name, count_keys(doc)))
+        except RecursionError:
+            findings.append(Finding("FAIL", "data.invalid-json", s.name, "", "unparsable JSON: nested too deeply"))
+            checked.append((s.name, 0))
 
-    findings.sort(key=lambda f: (f.file.lower(), 0 if f.severity == "FAIL" else 1, f.rule, f.key or "",
+    findings.sort(key=lambda f: (f.file.lower(), f.file, 0 if f.severity == "FAIL" else 1, f.rule, f.key or "",
                                  f.path or "", f.message))
-    checked.sort(key=lambda c: c[0].lower())
+    checked.sort(key=lambda c: (c[0].lower(), c[0], c[1]))
     return findings, checked
 
 
