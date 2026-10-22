@@ -1,6 +1,7 @@
 // Integration tests for CoW::SaveLoadModule running inside a real Application (30 Hz SimPU).
 // Each test saves into its own directory under out/test_saves/ and removes it afterwards.
 #include <gtest/gtest.h>
+#include <DiaObservation/Health/HealthRegistry.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
@@ -1067,4 +1068,23 @@ TEST(SaveLoadConfig, ListCommandShowsSlotIdsAsPassedToSave)
         EXPECT_EQ(out.find("unknown"), std::string::npos) << out;
     }
     Dia::API::Shutdown();
+}
+
+// A module destroyed without a Stop must not leave its (now dangling) reporter in the process-wide HealthRegistry.
+TEST(SaveLoadHealth, DestroyedWithoutStopUnregistersHealthReporter)
+{
+    {
+        Fixture f("health_nostop");
+        ASSERT_TRUE(f.Boot());
+        f.app.reset();   // no RequestShutdown: DoStop never runs
+    }
+    // Walking the live reporters dereferences every registered pointer: a dangling one crashes here.
+    // (Snapshot also lists retired entries by name, so absence of the name is not the property.)
+    Dia::Observation::Health::HealthRegistry::ReporterSnapshot snap[64];
+    unsigned int n = 0;
+    Dia::Observation::Health::HealthRegistry::Instance().Snapshot(snap, 64, n);
+    Dia::Observation::Health::HealthRegistry::Transition trans[64];
+    unsigned int t = 0;
+    Dia::Observation::Health::HealthRegistry::Instance().PollTransitions(trans, 64, t);
+    SUCCEED();
 }

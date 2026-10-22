@@ -49,6 +49,13 @@ namespace Dia { namespace ApplicationFlow {
     }
 
     //--------------------------------------------------------------------------
+    Module::~Module()
+    {
+        // No-op when a completed/forced Stop already unregistered it; prevents a dangling registry entry otherwise.
+        Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mLifecycleReporter);
+    }
+
+    //--------------------------------------------------------------------------
     // Helpers (file-local) for atomic state access.
     //--------------------------------------------------------------------------
 

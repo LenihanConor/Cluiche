@@ -16,6 +16,12 @@ MessageBusModule::MessageBusModule(const Dia::Core::StringCRC& instanceId)
 {
 }
 
+MessageBusModule::~MessageBusModule()
+{
+    // No-op when DoStop already unregistered; prevents a dangling reporter if destroyed without a Stop.
+    Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealthReporter);
+}
+
 Bus& MessageBusModule::GetBus()
 {
     return mBus;

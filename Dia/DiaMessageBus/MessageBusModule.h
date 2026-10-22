@@ -28,6 +28,8 @@ public:
     // DiaMessageBus does not register the type itself (no DIA_MODULE in Dia);
     // an application-side subclass does.
     explicit MessageBusModule(const Dia::Core::StringCRC& instanceId);
+    // Unregisters the health reporter if the module is destroyed without a Stop.
+    ~MessageBusModule() override;
 
     Bus&       GetBus();
     const Bus& GetBus() const;

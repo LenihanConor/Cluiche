@@ -58,7 +58,15 @@ SaveLoadModule::SaveLoadModule(const Dia::Core::StringCRC& instanceId)
     mConfig.baseDirectory = mBaseDirectory;
 }
 
-SaveLoadModule::~SaveLoadModule() = default;
+SaveLoadModule::~SaveLoadModule()
+{
+    // Destroyed without a Stop: never leave a dangling reporter in the process-wide registry.
+    if (mHealthRegistered)
+    {
+        Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealth);
+        mHealthRegistered = false;
+    }
+}
 
 void SaveLoadModule::OnConfigure(const char* configJson)
 {

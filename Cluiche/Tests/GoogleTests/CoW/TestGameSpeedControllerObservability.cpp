@@ -9,6 +9,7 @@
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaCore/SimTime/SimTimeDomain.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Health/HealthRegistry.h>
 #include <Modules/GameSpeedControllerModule.h>
 #include <Modules/MessageBusHostModule.h>
 #include <algorithm>
@@ -698,3 +699,22 @@ TEST(GameSpeedDebugDomain, FallbackConfigIsVisible)
     EXPECT_TRUE(out["stats"]["fallbackConfig"].asBool());
 }
 #endif
+
+// A module destroyed without a Stop must not leave its (now dangling) reporter in the process-wide HealthRegistry.
+TEST(GameSpeedLifecycle, DestroyedWithoutStopUnregistersHealthReporter)
+{
+    {
+        Fixture f;
+        ASSERT_TRUE(f.Boot());
+        f.app.reset();   // no RequestShutdown: DoStop never runs
+    }
+    // Walking the live reporters dereferences every registered pointer: a dangling one crashes here.
+    // (Snapshot also lists retired entries by name, so absence of the name is not the property.)
+    Health::HealthRegistry::ReporterSnapshot snap[64];
+    unsigned int n = 0;
+    Health::HealthRegistry::Instance().Snapshot(snap, 64, n);
+    Health::HealthRegistry::Transition trans[64];
+    unsigned int t = 0;
+    Health::HealthRegistry::Instance().PollTransitions(trans, 64, t);
+    SUCCEED();
+}

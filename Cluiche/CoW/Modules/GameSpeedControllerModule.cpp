@@ -46,7 +46,15 @@ GameSpeedControllerModule::GameSpeedControllerModule(const Dia::Core::StringCRC&
 {}
 
 // Out of line so the debug domain type is complete where it is destroyed.
-GameSpeedControllerModule::~GameSpeedControllerModule() = default;
+GameSpeedControllerModule::~GameSpeedControllerModule()
+{
+    // Destroyed without a Stop: never leave a dangling reporter in the process-wide registry.
+    if (mHealthRegistered)
+    {
+        Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealth);
+        mHealthRegistered = false;
+    }
+}
 
 bool GameSpeedControllerModule::RequestSpeed(SpeedTier tier)
 {
