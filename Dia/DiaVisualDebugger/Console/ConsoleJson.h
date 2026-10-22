@@ -55,6 +55,9 @@ namespace Dia
 				//  "actionText","hl":"0101.."}]}
 				// Commands with ValueParams also carry "args":[{"name","type","required","description"?,"unit"?,
 				//  "min"?,"max"?,"values"?:[..]}] (optional keys omitted when empty); other commands are unchanged.
+				// Limits: min/max only when hasRange and BOTH finite (NaN/inf omit both); numbers use '.' in any locale;
+				// enum tokens: empty ones skipped ("values" omitted if none), cut at 127 bytes on a UTF-8 boundary;
+				// args name/type/description/unit are not length-limited (only outSize limits; the item is then dropped whole).
 				// counts are true totals for the query (masks 3,1,2); items are the ranked results for
 				// typeFilterMask (<= 50). If items do not fit they are truncated (valid JSON, counts intact);
 				// returns false only if the wrapper/counts do not fit.

@@ -2,6 +2,7 @@
 
 #include <DiaVisualDebugger/Console/FuzzyMatcher.h>
 
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 
@@ -49,6 +50,11 @@ namespace Dia
 					{
 						char tmp[48];
 						snprintf(tmp, sizeof(tmp), "%g", v);
+						// JSON needs '.' as decimal separator: a decimal-comma process locale must not leak in.
+						for (char* c = tmp; *c; ++c)
+						{
+							if (*c == ',') *c = '.';
+						}
 						Raw(tmp);
 					}
 
@@ -158,32 +164,41 @@ namespace Dia
 						w.Raw(",\"required\":"); w.Raw(p.required ? "true" : "false");
 						if (NonEmpty(p.description)) { w.Raw(",\"description\":"); w.Str(p.description); }
 						if (NonEmpty(p.unit))        { w.Raw(",\"unit\":");        w.Str(p.unit); }
-						if (p.hasRange)
+						// NaN/inf are not JSON numbers: omit BOTH bounds if either is non-finite.
+						if (p.hasRange && std::isfinite(p.min) && std::isfinite(p.max))
 						{
 							w.Raw(",\"min\":"); w.Float(p.min);
 							w.Raw(",\"max\":"); w.Float(p.max);
 						}
 						if (NonEmpty(p.enumValues))
 						{
-							w.Raw(",\"values\":[");
+							// Empty tokens ("a||b", "|a", "a|") are skipped; "values" is omitted if none remain.
+							// Tokens longer than 127 bytes are cut (never inside a UTF-8 sequence).
 							const char* s = p.enumValues;
-							bool first = true;
+							bool opened = false;
 							for (;;)
 							{
 								const char* e = s;
 								while (*e != '\0' && *e != '|') ++e;
-								if (!first) w.Raw(",");
-								first = false;
 								char tmp[128];
 								size_t n = static_cast<size_t>(e - s);
-								if (n >= sizeof(tmp)) n = sizeof(tmp) - 1;
-								std::memcpy(tmp, s, n);
-								tmp[n] = '\0';
-								w.Str(tmp);
+								if (n >= sizeof(tmp))
+								{
+									n = sizeof(tmp) - 1;
+									while (n > 0 && (static_cast<unsigned char>(s[n]) & 0xC0) == 0x80) --n;
+								}
+								if (n > 0)
+								{
+									std::memcpy(tmp, s, n);
+									tmp[n] = '\0';
+									w.Raw(opened ? "," : ",\"values\":[");
+									opened = true;
+									w.Str(tmp);
+								}
 								if (*e == '\0') break;
 								s = e + 1;
 							}
-							w.Raw("]");
+							if (opened) w.Raw("]");
 						}
 						w.Raw("}");
 					}

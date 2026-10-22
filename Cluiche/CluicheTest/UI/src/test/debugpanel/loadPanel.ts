@@ -38,8 +38,8 @@ export interface Panel {
   close: () => void;
 }
 
-export function loadPanel(): Panel {
-  const file = process.env.PANEL_HTML_OVERRIDE || REAL_PAGE;
+export function loadPanel(pageFile?: string): Panel {
+  const file = pageFile || process.env.PANEL_HTML_OVERRIDE || REAL_PAGE;
   const html = fs.readFileSync(file, "utf-8").replace(/^﻿/, "");
   const calls: Call[] = [];
 

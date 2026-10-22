@@ -1426,16 +1426,16 @@ function palHighlight(name, hl) {
 }
 
 function palArgsHtml(args) {
-  if (!args || !args.length) return '';
+  if (!Array.isArray(args) || !args.length) return '';
   var h = '<div class="pal-args">';
   for (var i = 0; i < args.length; ++i) {
     var a = args[i] || {};
     var meta = conEsc(a.type || '') + ' · ' + (a.required ? 'required' : 'optional');
     if (a.unit) meta += ' · ' + conEsc(a.unit);
-    if (a.min !== undefined && a.max !== undefined) meta += ' · ' + conEsc(String(a.min)) + '..' + conEsc(String(a.max));
-    if (a.values && a.values.length) {
+    if (a.min != null && a.max != null) meta += ' · ' + conEsc(String(a.min)) + '..' + conEsc(String(a.max));
+    if (Array.isArray(a.values) && a.values.length) {
       var vs = [];
-      for (var k = 0; k < a.values.length; ++k) vs.push(conEsc(a.values[k]));
+      for (var k = 0; k < a.values.length; ++k) vs.push(a.values[k] == null ? '' : conEsc(a.values[k]));
       meta += ' · ' + vs.join('|');
     }
     h += '<div class="pal-arg"><span class="pal-arg-nm' + (a.required ? ' req' : '') + '">' + conEsc(a.name || '') +
