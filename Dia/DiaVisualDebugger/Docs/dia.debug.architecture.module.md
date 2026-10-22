@@ -47,6 +47,8 @@ public_api:
     - DiaVisualDebugger/DebugLayerManager.h
     - DiaVisualDebugger/DebugColourPalette.h
     - DiaVisualDebugger/DebugLayerNames.h
+    - DiaVisualDebugger/Domain/SchemaControl.h
+    - DiaVisualDebugger/Domain/ISchemaKeyResolver.h
   namespaces:
     - Dia::Debug
     - Dia::Debug::LayerNames
@@ -55,6 +57,7 @@ public_api:
     - DebugLayerManager
     - DebugColourPalette
     - DebugLayerNames constants
+    - SchemaControl (schemaKey/packId control JSON + schemaVersion; ISchemaKeyResolver seam, no DiaValueSchema dependency)
 
 dependencies:
   required:

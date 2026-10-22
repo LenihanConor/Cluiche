@@ -2093,5 +2093,8 @@
     <ClCompile Include="DiaValueSchema\TestValueSchemaQuery.cpp">
       <Filter>DiaValueSchema</Filter>
     </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\TestSchemaControl.cpp">
+      <Filter>DiaVisualDebugger</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

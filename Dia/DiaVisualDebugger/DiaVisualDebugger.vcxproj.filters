@@ -39,6 +39,9 @@
     <Filter Include="Console">
       <UniqueIdentifier>{312c94b4-9f22-4f1d-9ddb-8f1d8c2094da}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Domain">
+      <UniqueIdentifier>{870696b6-bd85-455e-acd5-1f1210f8f131}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IVisualDebugger.h">
@@ -155,6 +158,12 @@
     <ClInclude Include="Console\PanelJson.h">
       <Filter>Console</Filter>
     </ClInclude>
+    <ClInclude Include="Domain\SchemaControl.h">
+      <Filter>Domain</Filter>
+    </ClInclude>
+    <ClInclude Include="Domain\ISchemaKeyResolver.h">
+      <Filter>Domain</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugLayerManager.cpp">
@@ -240,6 +249,9 @@
     </ClCompile>
     <ClCompile Include="Console\PanelJson.cpp">
       <Filter>Console</Filter>
+    </ClCompile>
+    <ClCompile Include="Domain\SchemaControl.cpp">
+      <Filter>Domain</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -112,6 +112,8 @@
     <ClInclude Include="Console\PaletteIndex.h" />
     <ClInclude Include="Console\PanelController.h" />
     <ClInclude Include="Console\PanelJson.h" />
+    <ClInclude Include="Domain\SchemaControl.h" />
+    <ClInclude Include="Domain\ISchemaKeyResolver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugLayerManager.cpp" />
@@ -142,6 +144,7 @@
     <ClCompile Include="Console\PaletteIndex.cpp" />
     <ClCompile Include="Console\PanelController.cpp" />
     <ClCompile Include="Console\PanelJson.cpp" />
+    <ClCompile Include="Domain\SchemaControl.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.debug.architecture.module.md" />
