@@ -13,6 +13,8 @@ vi.mock('@dia/editor-ui', () => ({
     injectThemeVars: vi.fn(),
     inputStyle: () => ({}),
     buttonStyle: () => ({}),
+    ValueLabel: () => null,
+    serviceEntryToValueInfo: () => null,
 }));
 
 const PARENT: EntityEntry = { i: 5, g: 1, n: 'Root', t: ['T'], d: 0 };

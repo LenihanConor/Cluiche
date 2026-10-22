@@ -12,6 +12,7 @@
 #include <DiaUI/IUISystem.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <string>
+#include <vector>
 
 using namespace Dia::EntityInspector;
 
@@ -418,4 +419,133 @@ TEST_F(ControllerTest, Mailbox_EmptyMailboxLog_StillNotifies)
 
     EXPECT_EQ(mSpy.LastTopic(), "entity_inspector.mailbox_data");
     EXPECT_EQ(mSpy.LastData()["log"].size(), 0u);
+}
+
+// ===========================================================================
+// EntityInspectorController: entity_inspector.schema_get forwards valueschema.get
+// ===========================================================================
+
+namespace {
+struct FakeGameLink
+{
+    std::string                                              lastCommand;
+    Json::Value                                              lastArgs;
+    std::function<void(bool, const Json::Value&)>            lastCallback;
+    int                                                      sendCount = 0;
+    bool                                                     accept = true;
+
+    EntityInspectorController::SchemaSendFn Fn()
+    {
+        return [this](const char* command, const Json::Value& args,
+                      std::function<void(bool, const Json::Value&)> cb) -> bool
+        {
+            ++sendCount;
+            if (!accept) return false;
+            lastCommand  = command;
+            lastArgs     = args;
+            lastCallback = cb;
+            return true;
+        };
+    }
+};
+}
+
+TEST_F(ControllerTest, EntityInspector_SchemaGet_ForwardsValueSchemaGetWithPrefix)
+{
+    EntityInspectorController ctrl;
+    ctrl.Activate(mBridge);
+    FakeGameLink link;
+    ctrl.RegisterHandlers(link.Fn());
+
+    Json::Value req; req["prefix"] = "foo-component/";
+    Json::Value res = mBridge->InvokeRequestHandler(Dia::Core::StringCRC("entity_inspector.schema_get"), req);
+
+    EXPECT_TRUE(res["success"].asBool());
+    EXPECT_EQ(link.lastCommand, "valueschema.get");
+    EXPECT_EQ(link.lastArgs["prefix"].asString(), "foo-component/");
+    EXPECT_EQ(mSpy.callCount, 0);   // reply is asynchronous
+}
+
+TEST_F(ControllerTest, EntityInspector_SchemaGet_ReplyIsPushedToUiWithPrefixAndEntries)
+{
+    EntityInspectorController ctrl;
+    ctrl.Activate(mBridge);
+    FakeGameLink link;
+    ctrl.RegisterHandlers(link.Fn());
+
+    Json::Value req; req["prefix"] = "foo-component/";
+    mBridge->InvokeRequestHandler(Dia::Core::StringCRC("entity_inspector.schema_get"), req);
+
+    Json::Value payload;
+    payload["version"] = 1;
+    payload["entries"].append(Json::Value(Json::objectValue));
+    payload["entries"][0]["key"] = "speed";
+    link.lastCallback(true, payload);
+
+    EXPECT_EQ(mSpy.LastTopic(), "entity_inspector.schema_data");
+    Json::Value data = mSpy.LastData();
+    EXPECT_EQ(data["prefix"].asString(), "foo-component/");
+    EXPECT_TRUE(data["success"].asBool());
+    ASSERT_EQ(data["entries"].size(), 1u);
+    EXPECT_EQ(data["entries"][0]["key"].asString(), "speed");
+}
+
+TEST_F(ControllerTest, EntityInspector_SchemaGet_FailedReplyPushesSuccessFalse)
+{
+    EntityInspectorController ctrl;
+    ctrl.Activate(mBridge);
+    FakeGameLink link;
+    ctrl.RegisterHandlers(link.Fn());
+
+    Json::Value req; req["prefix"] = "foo-component/";
+    mBridge->InvokeRequestHandler(Dia::Core::StringCRC("entity_inspector.schema_get"), req);
+    link.lastCallback(false, Json::Value(Json::objectValue));
+
+    Json::Value data = mSpy.LastData();
+    EXPECT_FALSE(data["success"].asBool());
+    EXPECT_EQ(data["entries"].size(), 0u);
+}
+
+TEST_F(ControllerTest, EntityInspector_SchemaGet_NoLinkPushesFailureImmediately)
+{
+    EntityInspectorController ctrl;
+    ctrl.Activate(mBridge);
+    FakeGameLink link;
+    link.accept = false;   // game not connected
+    ctrl.RegisterHandlers(link.Fn());
+
+    Json::Value req; req["prefix"] = "foo-component/";
+    Json::Value res = mBridge->InvokeRequestHandler(Dia::Core::StringCRC("entity_inspector.schema_get"), req);
+
+    EXPECT_FALSE(res["success"].asBool());
+    EXPECT_EQ(mSpy.LastTopic(), "entity_inspector.schema_data");
+    EXPECT_FALSE(mSpy.LastData()["success"].asBool());
+    EXPECT_EQ(mSpy.LastData()["prefix"].asString(), "foo-component/");
+}
+
+TEST_F(ControllerTest, EntityInspector_SchemaGet_MissingPrefixIsRejectedWithoutSending)
+{
+    EntityInspectorController ctrl;
+    ctrl.Activate(mBridge);
+    FakeGameLink link;
+    ctrl.RegisterHandlers(link.Fn());
+
+    Json::Value res = mBridge->InvokeRequestHandler(Dia::Core::StringCRC("entity_inspector.schema_get"), Json::Value(Json::objectValue));
+
+    EXPECT_FALSE(res["success"].asBool());
+    EXPECT_EQ(link.sendCount, 0);
+}
+
+TEST_F(ControllerTest, EntityInspector_SchemaGet_AfterUnregisterHandlerIsGone)
+{
+    EntityInspectorController ctrl;
+    ctrl.Activate(mBridge);
+    FakeGameLink link;
+    ctrl.RegisterHandlers(link.Fn());
+    ctrl.UnregisterHandlers();
+
+    Json::Value req; req["prefix"] = "foo-component/";
+    mBridge->InvokeRequestHandler(Dia::Core::StringCRC("entity_inspector.schema_get"), req);
+
+    EXPECT_EQ(link.sendCount, 0);
 }

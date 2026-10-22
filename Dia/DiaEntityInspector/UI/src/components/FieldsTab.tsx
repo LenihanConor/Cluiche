@@ -1,12 +1,15 @@
-import { CSSProperties, useState, useCallback } from 'react';
-import { theme } from '@dia/editor-ui';
+import { CSSProperties, useState, useCallback, useEffect } from 'react';
+import { theme, ValueLabel, serviceEntryToValueInfo } from '@dia/editor-ui';
 import type { EntityEntry } from '../types';
+import { SchemaCache, useSchemaCacheVersion } from '../schemaCache';
 
 interface FieldsTabProps {
     entity: EntityEntry | null;
     allEntities: EntityEntry[];
     onNavigate: (idx: number) => void;
     onWriteField: (entityIdx: number, comp: string, field: string, value: string) => void;
+    /** Live `valueschema.get` results per component type id; absent = rows render with raw names. */
+    schemaCache?: SchemaCache;
 }
 
 interface EditState {
@@ -23,11 +26,20 @@ function valueColor(typeClass: string, value: string): string {
     return '#ccc';
 }
 
-export function FieldsTab({ entity, allEntities, onNavigate, onWriteField }: FieldsTabProps) {
+export function FieldsTab({ entity, allEntities, onNavigate, onWriteField, schemaCache }: FieldsTabProps) {
     // Track which components are expanded: key = `${entityIdx}:${compName}`
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
     const [editing, setEditing] = useState<EditState | null>(null);
     const [editValue, setEditValue] = useState('');
+    useSchemaCacheVersion(schemaCache);
+
+    // Request the schema (once per component type id) for the components shown.
+    useEffect(() => {
+        if (!schemaCache || !entity) return;
+        for (const comp of entity.components ?? []) {
+            if (comp.id) schemaCache.ensure(`${comp.id}/`);
+        }
+    });
 
     const toggleComp = useCallback((entityIdx: number, compName: string, compIdx: number) => {
         const key = `${entityIdx}:${compName}`;
@@ -181,10 +193,16 @@ export function FieldsTab({ entity, allEntities, onNavigate, onWriteField }: Fie
                                         <tbody>
                                             {(comp.fields ?? []).map((f) => {
                                                 const isEditingThis = editing?.compName === comp.name && editing?.fieldName === f.n;
+                                                const raw = comp.id ? schemaCache?.get(`${comp.id}/`)?.get(f.n) : undefined;
+                                                const binding = raw && comp.id ? serviceEntryToValueInfo(raw, comp.id) : null;
                                                 return (
                                                     <tr key={f.n} data-testid={`field-row-${comp.name}-${f.n}`}>
                                                         <td style={{ padding: '3px 10px', borderBottom: `1px solid ${theme.borderMuted}`, width: 150, color: theme.textMuted, fontSize: 11, verticalAlign: 'middle' }}>
-                                                            {f.n}
+                                                            {binding ? (
+                                                                <ValueLabel entry={binding.entry} forId={binding.forId} inspector fallbackLabel={f.n} />
+                                                            ) : (
+                                                                f.n
+                                                            )}
                                                         </td>
                                                         <td style={{ padding: '3px 10px', borderBottom: `1px solid ${theme.borderMuted}`, width: 70, color: theme.textMuted, fontSize: 10, fontFamily: 'monospace', verticalAlign: 'middle' }}>
                                                             {f.dt ?? ''}
