@@ -24,6 +24,7 @@ public_api:
     - DiaCellLayers/CellLayerRegistry.h
     - DiaCellLayers/HotkeyTable.h
     - DiaCellLayers/CellLayerLegend.h
+    - DiaCellLayers/CellLayerViewerDomain.h
   namespaces:
     - Dia::CellLayers::
   entry_points:
@@ -31,6 +32,7 @@ public_api:
     - CellLayerRegistry
     - HotkeyTable
     - CellLayerLegend
+    - CellLayerViewerDomain
 responsibilities:
   - Per-cell layer registry for generic layer management
   - Viewer integration via CellField display
@@ -57,6 +59,7 @@ Provides a registry system that allows any module or application to register cel
 | `CellValueKind` | Enumeration of cell value types (Float, Category) |
 | `HotkeyTable` | Key -> layer id map per grid from schema `ui.hotkey` (clash -> Warning, later layer none); `GroupNumber` gives picker numbering 1..9 per group |
 | `CellLayerLegend` | Wraps ValueSchema BuildLegend for the active base layer: ramp/range/unit/ticks + observed min/max (float) or swatches (category); unresolved schemaKey -> empty legend, one CEL Warning per key; caller supplies the RampResolver |
+| `CellLayerViewerDomain` | IDebugDomain (DIA_DEBUG, panel-only) run on SimPU: base choice (ui.default_base else first; unregistered base -> grid default, none left -> empty state), LayerUploader + legend + `RequestDrawCellField`, enabled overlay draw callbacks, hover (cursor from `IDebugDraw::GetMousePixel`, camera via injected `ViewFn` returning `CellPickerView`), GetJSONState (grids, groups, layers, overlays, legend, hover; grid selector only when multi-grid). DiaAPI: `cells.layer.list` (JSON), `cells.layer.base <id>`, `cells.overlay.toggle <id>`; panel commands `base`/`grid`/`toggle`. Health `dia.celllayers.viewer`; metrics `dia.celllayers.viewer.*` |
 
 ## Overview
 

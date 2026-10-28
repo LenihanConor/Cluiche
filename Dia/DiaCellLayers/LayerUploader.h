@@ -48,6 +48,9 @@ namespace Dia::CellLayers
 		const Dia::Core::CellFieldDrawRequest&	DrawRequest() const { return mRequest; }
 		float			ObservedMin() const { return mObservedMin; }
 		float			ObservedMax() const { return mObservedMax; }
+		// The base layer's values as last uploaded (a private copy, safe to read after the elevation layer was read).
+		// Null (count 0) if id is not the uploaded base or its last upload failed / was cleared.
+		const float*	BaseValues(Dia::Core::StringCRC id, uint32_t& count) const;
 
 		uint64_t		Reads() const { return mReads; }
 		uint64_t		Uploads() const { return mUploads; }
@@ -71,6 +74,7 @@ namespace Dia::CellLayers
 		void			ReleaseSlot(Slot& slot);
 		UploadResult	Sync(Slot& slot, const CellLayerDesc& layer, bool isBase, bool& didUpload);
 		bool			EnsureBuffer(uint32_t count);
+		void			StoreBaseValues(Dia::Core::StringCRC id, uint32_t count);
 		bool			MarkColourMap(uint32_t id);
 		uint32_t		RegisterColourMap(const CellLayerDesc& base, float& rampMin, float& rampMax);
 
@@ -80,6 +84,10 @@ namespace Dia::CellLayers
 		Slot			mSlots[2];
 		float*			mBuffer = nullptr;
 		uint32_t		mBufferCapacity = 0;
+		float*			mBaseCopy = nullptr;
+		uint32_t		mBaseCopyCapacity = 0;
+		uint32_t		mBaseCopyCount = 0;
+		Dia::Core::StringCRC	mBaseCopyId;
 		uint32_t		mColourMaps[kMaxColourMaps];
 		uint32_t		mColourMapCount = 0;
 		Dia::Core::CellFieldDrawRequest	mRequest;

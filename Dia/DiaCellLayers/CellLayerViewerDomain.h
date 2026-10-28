@@ -1,0 +1,154 @@
+#pragma once
+#ifdef DIA_DEBUG
+
+// CellLayerViewerDomain: the IDebugDomain that drives the cell-layer viewer. Runs on SimPU (game logic never on main).
+//
+// Per Update(draw), each frame:
+//  1 resolve the active base  (last chosen; start = registry default for the first grid; if the base is unregistered, fall
+//    back to its grid's default; no layer left on the grid -> empty state, map cleared)
+//  2 LayerUploader::Update (version-gated read + upload), 3 legend refresh, 4 draw.RequestDrawCellField(DrawRequest()),
+//  5 every enabled overlay's draw callback (selection pointer null until Feature 2), 6 hover.
+//
+// Hover seam (Open Q2): the cursor comes from IDebugDraw::GetMousePixel() (the existing path; pixel space, top-left origin).
+// There is no camera on IDebugDraw (the camera lives on DebugLayerManager::SetViewport), so the application injects a
+// ViewFn that returns the CellPickerView (canvas size + camera centre + zoom). With no ViewFn there is no hover.
+//
+// Commands (DiaAPI, RegisterCommands): cells.layer.list (JSON), cells.layer.base <id>, cells.overlay.toggle <id>. An unknown
+// id returns a non-zero code and changes nothing. Panel commands (OnCommand): "base" {id}, "grid" {index}, "toggle" {drawer}.
+// The registry is borrowed; publishing it on a ServiceStream is the owning Module's job (CL-006), not this class's.
+//
+// Health "dia.celllayers.viewer": Degraded while the active base's upload fails (UploadResult::ReadFailed, including a
+// CellField-rejected command). Metrics "dia.celllayers.viewer.*". Log channel CEL.
+// Generic: no game types (CL-005), no singletons (CL-006). Thread-safe between Update and command/panel calls.
+
+#include <DiaCellLayers/CellLayerLegend.h>
+#include <DiaCellLayers/CellPicker.h>
+#include <DiaCellLayers/HotkeyTable.h>
+#include <DiaCellLayers/LayerUploader.h>
+#include <DiaCore/Containers/Misc/FastDelegate.h>
+#include <DiaCore/Threading/Mutex.h>
+#include <DiaObservation/Health/HealthReporterBase.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaValueSchema/RampLegend.h>
+#include <DiaVisualDebugger/Domain/IDebugDomain.h>
+
+namespace Dia::CellLayers
+{
+	class CellLayerViewerDomain : public Dia::VisualDebugger::IDebugDomain
+	{
+	public:
+		// Returns the canvas size (pixels) and camera centre/zoom for picking.
+		typedef fastdelegate::FastDelegate0<CellPickerView> ViewFn;
+
+		struct HoverInfo
+		{
+			bool		valid = false;
+			int32_t		q = -1;
+			int32_t		r = -1;
+			float		value = 0.0f;
+			Dia::Core::StringCRC	layer;
+		};
+
+		// registry, uploader and schema are borrowed and must outlive the domain. schema may be null.
+		CellLayerViewerDomain(CellLayerRegistry& registry, LayerUploader& uploader, const Dia::ValueSchema::ValueSchemaService* schema, ViewFn view = ViewFn());
+		~CellLayerViewerDomain() override;
+		CellLayerViewerDomain(const CellLayerViewerDomain&) = delete;
+		CellLayerViewerDomain& operator=(const CellLayerViewerDomain&) = delete;
+
+		// ---- IDebugDomain ----
+		Dia::Core::StringCRC GetDomainId()     const override;
+		const char*          GetDisplayName()  const override;
+		const char*          GetDescription()  const override;
+		Dia::Core::StringCRC GetGroup()        const override;
+		Dia::Core::RGBA      GetAccentColour() const override;
+		bool                 HasWorldDrawers() const override { return false; }
+		void GetJSONState(Json::Value& out) override;
+		void OnCommand(Dia::Core::StringCRC cmd, const Json::Value& args) override;
+
+		// Per-frame driver (SimPU).
+		void Update(Dia::Core::IDebugDraw& draw);
+
+		// Makes id the active base (and its grid the active grid). False and unchanged if id is not registered.
+		bool SetBase(Dia::Core::StringCRC id);
+		// Switches to the default base of the grid at registry.GridAt(index). False and unchanged if out of range.
+		bool SetGrid(uint32_t index);
+		// False and unchanged if id is not a registered overlay.
+		bool ToggleOverlay(Dia::Core::StringCRC id);
+		bool IsOverlayEnabled(Dia::Core::StringCRC id) const;
+
+		Dia::Core::StringCRC	ActiveBase() const;	// kZero in the empty state
+		const Dia::Graphics::CellGridDesc*	ActiveGrid() const;
+		HoverInfo				Hover() const;
+		bool					IsEmptyState() const;
+
+		// Layers and overlays grouped by grid (the cells.layer.list payload).
+		void ListLayers(Json::Value& out) const;
+
+		// DiaAPI registration; idempotent. Unregistered in the destructor.
+		void RegisterCommands();
+		void UnregisterCommands();
+
+		const Dia::Observation::Health::IHealthReporter&	HealthReporter() const { return mHealth; }
+
+	private:
+		struct OverlayState
+		{
+			Dia::Core::StringCRC	id;
+			bool					enabled = false;
+		};
+
+		void	ResolveBase();
+	void	Activate(const CellLayerDesc& layer, const char* why);
+		void	UpdateHover(Dia::Core::IDebugDraw& draw, const CellLayerDesc* base, UploadResult result);
+		void	RefreshLegend(const CellLayerDesc* base);
+		OverlayState*	FindOverlayState(Dia::Core::StringCRC id);
+		const OverlayState*	FindOverlayState(Dia::Core::StringCRC id) const;
+		uint32_t	GridIndexOf(const Dia::Graphics::CellGridDesc* grid) const;
+		void	LayerText(const CellLayerDesc& layer, const char*& label, const char*& unit) const;
+		void	WriteLegend(Json::Value& out) const;
+		void	WriteHover(Json::Value& out) const;
+
+		class HealthImpl : public Dia::Observation::Health::HealthReporterBase
+		{
+		public:
+			Dia::Core::StringCRC GetReporterName() const override { return Dia::Core::StringCRC("dia.celllayers.viewer"); }
+		};
+
+		CellLayerRegistry&		mRegistry;
+		LayerUploader&			mUploader;
+		const Dia::ValueSchema::ValueSchemaService*	mSchema;
+		ViewFn					mView;
+		HotkeyTable				mHotkeys;
+		CellLayerLegend			mLegendBuilder;
+		Dia::ValueSchema::RampResolver*	mResolver = nullptr;	// owned; null without a schema
+		Dia::ValueSchema::LegendData	mLegend;
+		bool					mHasLegend = false;
+		Dia::Core::StringCRC	mLegendBase;
+		uint64_t				mLegendReads = 0;
+
+		mutable Dia::Core::Mutex	mMutex;
+		bool					mStarted = false;		// the initial base has been chosen
+		Dia::Core::StringCRC	mActiveBase;			// kZero = none
+		const Dia::Graphics::CellGridDesc*	mActiveGrid = nullptr;
+		const Dia::Graphics::CellGridDesc*	mHotkeyGrid = nullptr;
+		uint32_t				mHotkeyLayerCount = 0;
+		Dia::Core::StringCRC	mLoggedBase;
+		OverlayState			mOverlays[CellLayerRegistry::kMaxOverlays];
+		uint32_t				mOverlayCount = 0;
+		HoverInfo				mHover;
+		bool					mCommandsRegistered = false;
+		HealthImpl				mHealth;
+
+		Dia::Observation::Metric::Gauge*	mMetricRegistered = nullptr;
+		Dia::Observation::Metric::Gauge*	mMetricVisible = nullptr;
+		Dia::Observation::Metric::Gauge*	mMetricReadMs = nullptr;
+		Dia::Observation::Metric::Counter*	mMetricReads = nullptr;
+		Dia::Observation::Metric::Counter*	mMetricUploads = nullptr;
+		Dia::Observation::Metric::Counter*	mMetricSkipped = nullptr;
+		uint64_t				mSeenReads = 0;
+		uint64_t				mSeenUploads = 0;
+		uint64_t				mSeenSkipped = 0;
+	};
+}
+
+#endif // DIA_DEBUG

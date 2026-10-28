@@ -42,6 +42,28 @@ namespace Dia::CellLayers
 		for (Slot& s : mSlots) { ReleaseSlot(s); }
 		delete mResolver;
 		delete[] mBuffer;
+		delete[] mBaseCopy;
+	}
+
+	const float* LayerUploader::BaseValues(StringCRC id, uint32_t& count) const
+	{
+		if (mBaseCopyCount == 0 || mBaseCopyId != id) { count = 0; return nullptr; }
+		count = mBaseCopyCount;
+		return mBaseCopy;
+	}
+
+	void LayerUploader::StoreBaseValues(StringCRC id, uint32_t count)
+	{
+		if (count > mBaseCopyCapacity)
+		{
+			float* grown = new float[count];
+			delete[] mBaseCopy;
+			mBaseCopy = grown;
+			mBaseCopyCapacity = count;
+		}
+		memcpy(mBaseCopy, mBuffer, sizeof(float) * count);
+		mBaseCopyCount = count;
+		mBaseCopyId = id;
 	}
 
 	LayerUploader::Slot* LayerUploader::FindSlot(StringCRC id)
@@ -143,6 +165,7 @@ namespace Dia::CellLayers
 			return UploadResult::ReadFailed;
 		}
 		++mUploads;
+		if (isBase) { StoreBaseValues(layer.id, count); }
 		slot.lastVersion = version;
 		didUpload = true;
 		return UploadResult::Ok;
@@ -210,11 +233,13 @@ namespace Dia::CellLayers
 		{
 			for (Slot& s : mSlots) { ReleaseSlot(s); }
 			mRequest = Dia::Core::CellFieldDrawRequest();
+			mBaseCopyCount = 0;
 			return UploadResult::NoBase;
 		}
 		if (!LayerReadable(*base))
 		{
 			++mReadFailures;
+			mBaseCopyCount = 0;
 			DIA_LOG_ERROR("CEL", "LayerUploader: base layer 0x%x has no valid grid or read/version delegate", base->id.Value());
 			return UploadResult::ReadFailed;
 		}
@@ -241,7 +266,7 @@ namespace Dia::CellLayers
 		bool didUpload = false;
 		Slot* baseSlot = acquire(*base);
 		const UploadResult baseResult = Sync(*baseSlot, *base, true, didUpload);
-		if (baseResult != UploadResult::Ok) { return baseResult; }
+		if (baseResult != UploadResult::Ok) { mBaseCopyCount = 0; return baseResult; }
 
 		UploadResult result = UploadResult::Ok;
 		bool elevationReady = false;

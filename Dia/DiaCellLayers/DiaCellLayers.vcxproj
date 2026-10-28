@@ -83,6 +83,7 @@
     <ClInclude Include="Testing\CellPickerTestSupport.h" />
     <ClInclude Include="HotkeyTable.h" />
     <ClInclude Include="CellLayerLegend.h" />
+    <ClInclude Include="CellLayerViewerDomain.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />
@@ -91,6 +92,7 @@
     <ClCompile Include="CellPicker.cpp" />
     <ClCompile Include="HotkeyTable.cpp" />
     <ClCompile Include="CellLayerLegend.cpp" />
+    <ClCompile Include="CellLayerViewerDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diacelllayers.architecture.module.md" />
