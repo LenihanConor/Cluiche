@@ -77,10 +77,13 @@
     <ClInclude Include="CellLayersTypes.h" />
     <ClInclude Include="CellLayerRegistry.h" />
     <ClInclude Include="Testing\CellLayerTestSupport.h" />
+    <ClInclude Include="LayerUploader.h" />
+    <ClInclude Include="Testing\LayerUploaderTestSupport.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />
     <ClCompile Include="CellLayerRegistry.cpp" />
+    <ClCompile Include="LayerUploader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diacelllayers.architecture.module.md" />

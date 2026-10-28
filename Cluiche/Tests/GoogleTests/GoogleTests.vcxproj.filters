@@ -2117,5 +2117,8 @@
     <ClCompile Include="DiaCellLayers\TestCellLayerRegistry.cpp">
       <Filter>DiaCellLayers</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestLayerUploader.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

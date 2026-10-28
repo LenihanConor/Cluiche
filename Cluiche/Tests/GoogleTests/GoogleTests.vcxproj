@@ -993,6 +993,7 @@
     <ClCompile Include="DiaValueSchema\TestValueSchemaExportSubset.cpp" />
     <ClCompile Include="DiaValueSchema\TestDescribeMode.cpp" />
     <ClCompile Include="DiaCellLayers\TestCellLayerRegistry.cpp" />
+    <ClCompile Include="DiaCellLayers\TestLayerUploader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
