@@ -20,7 +20,7 @@ Current assignment of every Dia `.vcxproj` to a numbered Visual Studio solution 
 `DiaAPI` `DiaCaptureTest` `DiaDebugProtocol` `DiaDebugServer` `DiaImGui` `DiaMailbox` `DiaMessageBus` `DiaObservation` `DiaPicking` `DiaPython` `DiaSaveGame` `DiaSerializer` `DiaStateMachine` `DiaStreams` `DiaWebSocket`
 
 ### 1.2-Application
-`DiaApplicationFlow` `DiaAutomation` `DiaEditor` `DiaGame` `DiaSimTime` `DiaValueSchema`
+`DiaApplicationFlow` `DiaAutomation` `DiaCellLayers` `DiaEditor` `DiaGame` `DiaSimTime` `DiaValueSchema`
 
 ### 1.2-Platform
 `DiaGeometry2DPicking` `DiaInput` `DiaSDL` `DiaWindow`
