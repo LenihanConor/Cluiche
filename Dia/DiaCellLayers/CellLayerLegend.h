@@ -9,10 +9,18 @@
 // beyond that, further distinct keys are not warned about). Null schema -> empty LegendData, no warning.
 
 #include <DiaCellLayers/CellLayerRegistry.h>
+#include <DiaCellLayers/IViewValueSource.h>
 #include <DiaValueSchema/RampLegend.h>
 
 namespace Dia::CellLayers
 {
+	// A legend plus the unit prefix a view source supplied (empty without a presentation).
+	struct PresentedLegend
+	{
+		Dia::ValueSchema::LegendData	legend;
+		char							unitPrefix[8] = {};
+	};
+
 	class CellLayerLegend
 	{
 	public:
@@ -24,6 +32,12 @@ namespace Dia::CellLayers
 
 		Dia::ValueSchema::LegendData Build(const CellLayerDesc& base, const Dia::ValueSchema::ValueSchemaService* schema,
 			Dia::ValueSchema::RampResolver& resolver, bool hasObserved, float observedMin, float observedMax);
+
+		// As Build, but a non-null presentation (float layers) replaces the ramp (if its id is known to the schema), the
+		// range (ticks recomputed) and adds the unit prefix.
+		PresentedLegend BuildPresented(const CellLayerDesc& base, const Dia::ValueSchema::ValueSchemaService* schema,
+			Dia::ValueSchema::RampResolver& resolver, bool hasObserved, float observedMin, float observedMax,
+			const ViewPresentation* presentation);
 
 		uint32_t	UnresolvedWarningCount() const { return mWarnedCount; }
 

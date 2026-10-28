@@ -3,6 +3,7 @@
 #include <DiaCellLayers/Testing/CellLayerTestSupport.h>
 #include <DiaCellLayers/Testing/CellPickerTestSupport.h>
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
+#include <DiaCellLayers/Testing/ViewValueSourceTestSupport.h>
 #include <DiaAPI/DiaAPI.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaPathfinding/HexTopology.h>
@@ -432,6 +433,57 @@ TEST_F(ViewerTest, IdentityIsAPanelOnlyDomain)
 	EXPECT_NE(rig.domain.GetDomainId(), StringCRC::kZero);
 	EXPECT_GT(strlen(rig.domain.GetDisplayName()), 0u);
 	EXPECT_LE(strlen(rig.domain.GetDescription()), 80u);
+}
+
+TEST_F(ViewerTest, NoDataFlagOnlyWhenSourceNotLiveWithoutData)
+{
+	fx.Add(Float("temp", true, "C", "t"));
+	const auto& svc = fx.Publish();
+	Rig rig(cellField, &svc);
+	rig.Add(temp.MakeDesc("temp", &gridA.desc, CellValueKind::Float, "cells/temp"));
+	StubViewValueSource source;
+	source.live = true;
+	ASSERT_TRUE(rig.registry.SetViewValueSource(&source));
+	rig.domain.Update(draw);
+	Json::Value s;
+	rig.domain.GetJSONState(s);
+	EXPECT_FALSE(s.isMember("noData"));
+	EXPECT_FALSE(s["legend"].isMember("unitPrefix"));
+
+	source.live = false;
+	source.hasData = false;
+	const uint32_t requests = draw.cellFieldRequests;
+	rig.domain.Update(draw);
+	EXPECT_EQ(draw.cellFieldRequests, requests);
+	Json::Value n;
+	rig.domain.GetJSONState(n);
+	ASSERT_TRUE(n.isMember("noData"));
+	EXPECT_TRUE(n["noData"].asBool());
+	EXPECT_FALSE(n["empty"].asBool());
+	EXPECT_FALSE(n["legend"]["available"].asBool());
+}
+
+TEST_F(ViewerTest, PresentationPrefixAppearsInLegendJson)
+{
+	fx.Add(Float("temp", true, "C", "t"));
+	const auto& svc = fx.Publish();
+	Rig rig(cellField, &svc);
+	rig.Add(temp.MakeDesc("temp", &gridA.desc, CellValueKind::Float, "cells/temp"));
+	StubViewValueSource source;
+	source.values = std::vector<float>(12, 1.0f);
+	source.hasPresentation = true;
+	source.presentation.rampId = StringCRC("test.heat");
+	source.presentation.rangeMin = -2.0f;
+	source.presentation.rangeMax = 2.0f;
+	source.SetPrefix("D");
+	ASSERT_TRUE(rig.registry.SetViewValueSource(&source));
+	rig.domain.Update(draw);
+	Json::Value s;
+	rig.domain.GetJSONState(s);
+	EXPECT_STREQ(s["legend"]["unitPrefix"].asCString(), "D");
+	EXPECT_STREQ(s["legend"]["unit"].asCString(), "DC");
+	EXPECT_EQ(s["legend"]["min"].asFloat(), -2.0f);
+	EXPECT_STREQ(s["legend"]["ramp"].asCString(), "test.heat");
 }
 
 #endif // DIA_DEBUG

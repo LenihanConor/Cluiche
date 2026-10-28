@@ -26,6 +26,10 @@
     <ClInclude Include="CellLayerLegend.h" />
     <ClInclude Include="CellLayerViewerDomain.h" />
     <ClInclude Include="CellLayersModule.h" />
+    <ClInclude Include="IViewValueSource.h" />
+    <ClInclude Include="Testing\ViewValueSourceTestSupport.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />

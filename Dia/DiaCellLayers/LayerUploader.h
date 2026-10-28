@@ -14,6 +14,10 @@
 //    (ui.ramp, or the fallback), or the schema full key for a category palette.
 //  - Schema ui keys read: ramp, inset, backdrop (#rrggbb), elevation_layer. Schema min/max give rampMin/rampMax;
 //    without them the observed min/max are used.
+//  - View value source (IViewValueSource, installed on the registry): while one is installed and not live, GetValues
+//    replaces the layer's read; false from it gives UploadResult::NoData (held layers destroyed, nothing drawn, never a
+//    live fallback). Cached reads are keyed by version() AND ViewEpoch() AND whether they came from the source.
+//    A source presentation (ramp id, range) replaces the schema ramp and range of a float base.
 // The viewer submits DrawRequest(); this class never calls the renderer.
 
 #include <DiaCellLayers/CellLayerRegistry.h>
@@ -31,7 +35,8 @@ namespace Dia::CellLayers
 		Ok,				// layer(s) current (uploaded or version-gated skip)
 		NoBase,			// base null; held CellField layers destroyed
 		ReadFailed,		// invalid grid, missing read/version delegate, or CellField rejected the update
-		CreatePending	// CellField layer table full (destroy-then-recreate); retry next frame
+		CreatePending,	// CellField layer table full (destroy-then-recreate); retry next frame
+		NoData			// view source not live and has no data for the base; held CellField layers destroyed (map cleared)
 	};
 
 	class LayerUploader
@@ -65,6 +70,8 @@ namespace Dia::CellLayers
 			const Dia::Graphics::CellGridDesc*	grid = nullptr;
 			Dia::Core::CellFieldLayerHandle		handle;
 			uint64_t							lastVersion = 0;
+			uint64_t							lastEpoch = 0;
+			bool								lastFromSource = false;
 			bool								held = false;
 		};
 		static const uint32_t kMaxColourMaps = 256;
@@ -72,11 +79,11 @@ namespace Dia::CellLayers
 		Slot*			FindSlot(Dia::Core::StringCRC id);
 		Slot*			FreeSlot();
 		void			ReleaseSlot(Slot& slot);
-		UploadResult	Sync(Slot& slot, const CellLayerDesc& layer, bool isBase, bool& didUpload);
+		UploadResult	Sync(Slot& slot, const CellLayerDesc& layer, IViewValueSource* source, bool isBase, bool& didUpload);
 		bool			EnsureBuffer(uint32_t count);
 		void			StoreBaseValues(Dia::Core::StringCRC id, uint32_t count);
 		bool			MarkColourMap(uint32_t id);
-		uint32_t		RegisterColourMap(const CellLayerDesc& base, float& rampMin, float& rampMax);
+		uint32_t		RegisterColourMap(const CellLayerDesc& base, const ViewPresentation* presentation, float& rampMin, float& rampMax);
 
 		Dia::Graphics::CellFieldRegistry&			mCellField;
 		const Dia::ValueSchema::ValueSchemaService*	mSchema;

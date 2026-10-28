@@ -35,6 +35,22 @@ namespace Dia::CellLayers
 		return false;
 	}
 
+	bool CellLayerRegistry::SetViewValueSource(IViewValueSource* source)
+	{
+		if (source == nullptr)
+		{
+			DIA_LOG_ERROR("CEL", "SetViewValueSource rejected: null source (use ClearViewValueSource)");
+			return false;
+		}
+		if (mViewSource != nullptr)
+		{
+			DIA_LOG_ERROR("CEL", "SetViewValueSource rejected: a view value source is already installed");
+			return false;
+		}
+		mViewSource = source;
+		return true;
+	}
+
 	CellRegisterResult CellLayerRegistry::Register(const CellLayerDesc& desc)
 	{
 		if (!IsOwnerPu("layer", desc.id)) { return CellRegisterResult::WrongProcessingUnit; }

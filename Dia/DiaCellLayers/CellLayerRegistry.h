@@ -9,6 +9,7 @@
 // Descs hold borrowed pointers (grid); the registered system must outlive its registration.
 
 #include <DiaCellLayers/CellLayersTypes.h>
+#include <DiaCellLayers/IViewValueSource.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Misc/FastDelegate.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
@@ -83,6 +84,15 @@ namespace Dia::CellLayers
 		// First layer of the grid whose schema has ui.default_base: true, else its first registered layer.
 		const CellLayerDesc*	DefaultBase(const Dia::Graphics::CellGridDesc* grid) const;
 
+		// View value source (see IViewValueSource.h). At most one; a second install is rejected (Error on CEL) and
+		// returns false, as does null. Borrowed: the source must outlive its installation. Not thread-safe against
+		// install/clear; install from the registry's PU during setup.
+		bool				SetViewValueSource(IViewValueSource* source);
+		void				ClearViewValueSource() { mViewSource = nullptr; }
+		IViewValueSource*	ViewValueSource() const { return mViewSource; }
+		// True when no source is installed or the source is live. Systems must refuse edits while false.
+		bool				IsLive() const { return mViewSource == nullptr || mViewSource->IsLive(); }
+
 	private:
 		bool				IsOwnerPu(const char* what, Dia::Core::StringCRC id) const;
 		bool				HasDefaultBase(const CellLayerDesc& desc) const;
@@ -93,6 +103,7 @@ namespace Dia::CellLayers
 		uint64_t			mOwnerPuId;
 		uint32_t			mLayerCount = 0;
 		uint32_t			mOverlayCount = 0;
+		IViewValueSource*	mViewSource = nullptr;
 		CellLayerDesc		mLayers[kMaxLayers];
 		CellOverlayDesc		mOverlays[kMaxOverlays];
 	};

@@ -123,6 +123,8 @@ namespace Dia::CellLayers
 		CellLayerLegend			mLegendBuilder;
 		Dia::ValueSchema::RampResolver*	mResolver = nullptr;	// owned; null without a schema
 		Dia::ValueSchema::LegendData	mLegend;
+		char					mLegendPrefix[8] = {};
+		bool					mNoData = false;		// the view source is not live and has no data for the base
 		bool					mHasLegend = false;
 		Dia::Core::StringCRC	mLegendBase;
 		uint64_t				mLegendReads = 0;

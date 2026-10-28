@@ -1,6 +1,9 @@
 #ifdef DIA_DEBUG
 #include <DiaCellLayers/CellLayerViewerDomain.h>
 
+#include <string.h>
+#include <string>
+
 #include <DiaAPI/DiaAPI.h>
 #include <DiaObservation/Health/HealthRegistry.h>
 #include <DiaObservation/Log/DiaLog.h>
@@ -185,11 +188,18 @@ namespace Dia::CellLayers
 		{
 			mHasLegend = false;
 			mLegend = Dia::ValueSchema::LegendData();
+			mLegendPrefix[0] = '\0';
 			mLegendBase = StringCRC::kZero;
 			return;
 		}
 		if (mHasLegend && mLegendBase == base->id && mLegendReads == mUploader.Reads()) { return; }
-		mLegend = mLegendBuilder.Build(*base, mSchema, *mResolver, true, mUploader.ObservedMin(), mUploader.ObservedMax());
+		ViewPresentation presentation;
+		IViewValueSource* source = mRegistry.ViewValueSource();
+		const bool presented = source != nullptr && base->kind == CellValueKind::Float && source->GetPresentation(*base, presentation);
+		const PresentedLegend built = mLegendBuilder.BuildPresented(*base, mSchema, *mResolver, true,
+			mUploader.ObservedMin(), mUploader.ObservedMax(), presented ? &presentation : nullptr);
+		mLegend = built.legend;
+		memcpy(mLegendPrefix, built.unitPrefix, sizeof(mLegendPrefix));
 		mHasLegend = true;
 		mLegendBase = base->id;
 		mLegendReads = mUploader.Reads();
@@ -241,6 +251,7 @@ namespace Dia::CellLayers
 		if (result == UploadResult::ReadFailed) { mHealth.SetDegraded(StringCRC("active base read failed")); }
 		else if (result != UploadResult::CreatePending) { mHealth.SetOK(); }
 
+		mNoData = (result == UploadResult::NoData);
 		RefreshLegend(result == UploadResult::Ok ? base : nullptr);
 
 		if (result == UploadResult::Ok && mUploader.DrawRequest().layer.IsValid())
@@ -271,7 +282,12 @@ namespace Dia::CellLayers
 		legend["category"] = mHasLegend && mLegend.mIsCategory;
 		if (mHasLegend)
 		{
-			legend["unit"] = mLegend.mUnit.AsCStr();
+			if (mLegendPrefix[0] != '\0')
+			{
+				legend["unitPrefix"] = mLegendPrefix;
+				legend["unit"] = (std::string(mLegendPrefix) + mLegend.mUnit.AsCStr()).c_str();
+			}
+			else { legend["unit"] = mLegend.mUnit.AsCStr(); }
 			legend["min"] = mLegend.mMin;
 			legend["max"] = mLegend.mMax;
 			legend["ramp"] = mLegend.mRamp.mRamp.mName.AsCStr();
@@ -358,6 +374,7 @@ namespace Dia::CellLayers
 		// The panel addresses commands by domain id; its state is keyed by display name, which differs for this domain.
 		out["domainId"] = GetDomainId().AsChar();
 		out["empty"] = (mActiveBase == StringCRC::kZero);
+		if (mNoData) { out["noData"] = true; }	// only present when true: panel contract goldens stay unchanged
 		out["activeBase"] = mActiveBase.AsChar();
 
 		Json::Value grids(Json::arrayValue);

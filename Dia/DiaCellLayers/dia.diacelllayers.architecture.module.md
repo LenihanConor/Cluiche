@@ -24,6 +24,7 @@ public_api:
   headers:
     - DiaCellLayers/CellLayersTypes.h
     - DiaCellLayers/CellLayerRegistry.h
+    - DiaCellLayers/IViewValueSource.h
     - DiaCellLayers/HotkeyTable.h
     - DiaCellLayers/CellLayerLegend.h
     - DiaCellLayers/CellLayerViewerDomain.h
@@ -33,6 +34,9 @@ public_api:
   entry_points:
     - CellValueKind
     - CellLayerRegistry
+    - IViewValueSource
+    - ViewPresentation
+    - PresentedLegend
     - HotkeyTable
     - CellLayerLegend
     - CellLayerViewerDomain
@@ -62,6 +66,7 @@ Provides a registry system that allows any module or application to register cel
 | Type | Purpose |
 |---|---|
 | `CellValueKind` | Enumeration of cell value types (Float, Category) |
+| `IViewValueSource` / `ViewPresentation` | Optional hook (installed once via `CellLayerRegistry::SetViewValueSource`, second install rejected with Error on CEL) that substitutes the viewer's values while not live (`GetValues` false = no data, `UploadResult::NoData`, never a live fallback). Cached reads keyed by `version()` + `ViewEpoch()`. `CellLayerRegistry::IsLive()` is true with no source or a live one; edit-capable systems refuse edits when false. Optional `GetPresentation` supplies ramp id, range and unit prefix (`CellLayerLegend::BuildPresented` -> `PresentedLegend`; JSON legend gains `unitPrefix`, state gains `noData` only when true). Test fake: `Testing/ViewValueSourceTestSupport.h` |
 | `HotkeyTable` | Key -> layer id map per grid from schema `ui.hotkey` (clash -> Warning, later layer none); `GroupNumber` gives picker numbering 1..9 per group |
 | `CellLayerLegend` | Wraps ValueSchema BuildLegend for the active base layer: ramp/range/unit/ticks + observed min/max (float) or swatches (category); unresolved schemaKey -> empty legend, one CEL Warning per key; caller supplies the RampResolver |
 | `CellLayerViewerDomain` | IDebugDomain (DIA_DEBUG, panel-only) run on SimPU: base choice (ui.default_base else first; unregistered base -> grid default, none left -> empty state), LayerUploader + legend + `RequestDrawCellField`, enabled overlay draw callbacks, hover (cursor from `IDebugDraw::GetMousePixel`, camera via injected `ViewFn` returning `CellPickerView`), GetJSONState (grids, groups, layers, overlays, legend, hover; grid selector only when multi-grid). DiaAPI: `cells.layer.list` (JSON), `cells.layer.base <id>`, `cells.overlay.toggle <id>`; panel commands `base`/`grid`/`toggle`. Health `dia.celllayers.viewer`; metrics `dia.celllayers.viewer.*` |

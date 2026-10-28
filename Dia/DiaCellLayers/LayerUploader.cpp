@@ -101,8 +101,10 @@ namespace Dia::CellLayers
 		return true;
 	}
 
-	UploadResult LayerUploader::Sync(Slot& slot, const CellLayerDesc& layer, bool isBase, bool& didUpload)
+	UploadResult LayerUploader::Sync(Slot& slot, const CellLayerDesc& layer, IViewValueSource* source, bool isBase, bool& didUpload)
 	{
+		const bool fromSource = source != nullptr && !source->IsLive();
+		const uint64_t epoch = source != nullptr ? source->ViewEpoch() : 0;
 		if (!LayerReadable(layer))
 		{
 			++mReadFailures;
@@ -129,8 +131,10 @@ namespace Dia::CellLayers
 			slot.handle = handle;
 			slot.held = true;
 			slot.lastVersion = 0;
+			slot.lastEpoch = 0;
+			slot.lastFromSource = false;
 		}
-		else if (slot.lastVersion == layer.version())
+		else if (slot.lastVersion == layer.version() && slot.lastEpoch == epoch && slot.lastFromSource == fromSource)
 		{
 			return UploadResult::Ok;	// version gate: no read, no upload
 		}
@@ -138,7 +142,18 @@ namespace Dia::CellLayers
 		const uint64_t version = layer.version();
 		const uint32_t count = static_cast<uint32_t>(layer.grid->width) * layer.grid->height;
 		EnsureBuffer(count);
-		layer.read(mBuffer, count);
+		if (fromSource)
+		{
+			if (!source->GetValues(layer, mBuffer, count))
+			{
+				ReleaseSlot(slot);
+				return UploadResult::NoData;	// no data in this view; never fall back to live values
+			}
+		}
+		else
+		{
+			layer.read(mBuffer, count);
+		}
 		++mReads;
 
 		if (isBase)
@@ -167,11 +182,13 @@ namespace Dia::CellLayers
 		++mUploads;
 		if (isBase) { StoreBaseValues(layer.id, count); }
 		slot.lastVersion = version;
+		slot.lastEpoch = epoch;
+		slot.lastFromSource = fromSource;
 		didUpload = true;
 		return UploadResult::Ok;
 	}
 
-	uint32_t LayerUploader::RegisterColourMap(const CellLayerDesc& base, float& rampMin, float& rampMax)
+	uint32_t LayerUploader::RegisterColourMap(const CellLayerDesc& base, const ViewPresentation* presentation, float& rampMin, float& rampMax)
 	{
 		using namespace Dia::ValueSchema;
 		const ValueInfo* info = mSchema ? mSchema->Find(base.schemaKey) : nullptr;
@@ -221,6 +238,24 @@ namespace Dia::CellLayers
 			stops[1].position = 1.0f; stops[1].rgba8 = 0xFFFFFFFF;
 			count = 2;
 		}
+		if (presentation != nullptr)
+		{
+			// The source's ramp and range replace the schema's; an id the schema service does not know keeps the schema ramp.
+			const RampData* pr = mSchema ? mSchema->FindRamp(presentation->rampId) : nullptr;
+			if (pr != nullptr && pr->mKind == RampKind::Continuous && pr->mStopCount > 0)
+			{
+				count = 0;
+				name = pr->mName.AsCStr();
+				for (unsigned i = 0; i < pr->mStopCount && count < CellFieldRegistry::kMaxRampStops; ++i)
+				{
+					stops[count].position = pr->mStops[i].mT;
+					stops[count].rgba8 = pr->mStops[i].mRgba8;
+					++count;
+				}
+			}
+			rampMin = presentation->rangeMin;
+			rampMax = presentation->rangeMax;
+		}
 		const StringCRC id(name);
 		if (MarkColourMap(id.Value())) { mCellField.RegisterRamp(id, stops, count); }
 		return id.Value();
@@ -263,9 +298,17 @@ namespace Dia::CellLayers
 			return s ? s : FreeSlot();
 		};
 
+		IViewValueSource* source = layers.ViewValueSource();
 		bool didUpload = false;
 		Slot* baseSlot = acquire(*base);
-		const UploadResult baseResult = Sync(*baseSlot, *base, true, didUpload);
+		const UploadResult baseResult = Sync(*baseSlot, *base, source, true, didUpload);
+		if (baseResult == UploadResult::NoData)
+		{
+			for (Slot& s : mSlots) { ReleaseSlot(s); }
+			mRequest = Dia::Core::CellFieldDrawRequest();
+			mBaseCopyCount = 0;
+			return baseResult;
+		}
 		if (baseResult != UploadResult::Ok) { mBaseCopyCount = 0; return baseResult; }
 
 		UploadResult result = UploadResult::Ok;
@@ -273,8 +316,10 @@ namespace Dia::CellLayers
 		if (elevation != nullptr)
 		{
 			Slot* elevSlot = acquire(*elevation);
-			result = Sync(*elevSlot, *elevation, false, didUpload);
-			elevationReady = (result == UploadResult::Ok);
+			result = Sync(*elevSlot, *elevation, source, false, didUpload);
+			const bool noElevation = (result == UploadResult::NoData);	// no elevation in this view: draw flat
+			if (noElevation) { result = UploadResult::Ok; }
+			elevationReady = (result == UploadResult::Ok) && !noElevation;
 		}
 
 		const bool elevationChanged = elevationReady != mRequest.elevationLayer.IsValid();
@@ -287,7 +332,9 @@ namespace Dia::CellLayers
 		Dia::Core::CellFieldDrawRequest req;
 		req.layer = baseSlot->handle;
 		float rampMin = mObservedMin, rampMax = mObservedMax;
-		req.colourMap = RegisterColourMap(*base, rampMin, rampMax);
+		ViewPresentation presentation;
+		const bool presented = source != nullptr && base->kind == CellValueKind::Float && source->GetPresentation(*base, presentation);
+		req.colourMap = RegisterColourMap(*base, presented ? &presentation : nullptr, rampMin, rampMax);
 		req.rampMin = rampMin;
 		req.rampMax = rampMax;
 		if (info != nullptr && info->mUi.isObject())
