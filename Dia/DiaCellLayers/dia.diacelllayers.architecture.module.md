@@ -17,6 +17,8 @@ dependencies:
     - dia.pathfinding
     - dia.api
     - dia.observation
+    - dia.applicationflow
+    - dia.streams
   forbidden: []
 public_api:
   headers:
@@ -25,6 +27,7 @@ public_api:
     - DiaCellLayers/HotkeyTable.h
     - DiaCellLayers/CellLayerLegend.h
     - DiaCellLayers/CellLayerViewerDomain.h
+    - DiaCellLayers/CellLayersModule.h
   namespaces:
     - Dia::CellLayers::
   entry_points:
@@ -33,6 +36,8 @@ public_api:
     - HotkeyTable
     - CellLayerLegend
     - CellLayerViewerDomain
+    - CellLayersModule
+    - FindCellLayerRegistry
 responsibilities:
   - Per-cell layer registry for generic layer management
   - Viewer integration via CellField display
@@ -60,6 +65,7 @@ Provides a registry system that allows any module or application to register cel
 | `HotkeyTable` | Key -> layer id map per grid from schema `ui.hotkey` (clash -> Warning, later layer none); `GroupNumber` gives picker numbering 1..9 per group |
 | `CellLayerLegend` | Wraps ValueSchema BuildLegend for the active base layer: ramp/range/unit/ticks + observed min/max (float) or swatches (category); unresolved schemaKey -> empty legend, one CEL Warning per key; caller supplies the RampResolver |
 | `CellLayerViewerDomain` | IDebugDomain (DIA_DEBUG, panel-only) run on SimPU: base choice (ui.default_base else first; unregistered base -> grid default, none left -> empty state), LayerUploader + legend + `RequestDrawCellField`, enabled overlay draw callbacks, hover (cursor from `IDebugDraw::GetMousePixel`, camera via injected `ViewFn` returning `CellPickerView`), GetJSONState (grids, groups, layers, overlays, legend, hover; grid selector only when multi-grid). DiaAPI: `cells.layer.list` (JSON), `cells.layer.base <id>`, `cells.overlay.toggle <id>`; panel commands `base`/`grid`/`toggle`. Health `dia.celllayers.viewer`; metrics `dia.celllayers.viewer.*` |
+| `CellLayersModule` | Module (PUAffinity::kAny, no per-frame work) that owns the `CellLayerRegistry` and publishes it on the `CellLayerRegistryService` ServiceStream (CL-006, no singletons). The registry is built in DoStart on the module's PU, which becomes its owner PU (register layers from that PU); DoStop withdraws the stream. Seams: `SetSchema`, `SetCurrentPuIdFn`. Consumers hold a `ServiceStreamReader<CellLayerRegistry>` on `kServiceStreamId` and resolve it with `FindCellLayerRegistry(reader)` (null when unavailable) in DoUpdate or later (the store commits after all providers' DoStart); the result feeds `CellLayerViewerDomain`'s `CellLayerRegistry&` constructor |
 
 ## Overview
 

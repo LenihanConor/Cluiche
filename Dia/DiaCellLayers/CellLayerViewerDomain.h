@@ -15,7 +15,8 @@
 //
 // Commands (DiaAPI, RegisterCommands): cells.layer.list (JSON), cells.layer.base <id>, cells.overlay.toggle <id>. An unknown
 // id returns a non-zero code and changes nothing. Panel commands (OnCommand): "base" {id}, "grid" {index}, "toggle" {drawer}.
-// The registry is borrowed; publishing it on a ServiceStream is the owning Module's job (CL-006), not this class's.
+// The registry is borrowed; CellLayersModule owns and publishes it on a ServiceStream (CL-006). A consumer module resolves it
+// with FindCellLayerRegistry(reader) (CellLayersModule.h) and passes *registry to the constructor.
 //
 // Health "dia.celllayers.viewer": Degraded while the active base's upload fails (UploadResult::ReadFailed, including a
 // CellField-rejected command). Metrics "dia.celllayers.viewer.*". Log channel CEL.

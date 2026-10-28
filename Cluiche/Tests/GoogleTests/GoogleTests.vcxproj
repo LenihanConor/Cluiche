@@ -998,6 +998,7 @@
     <ClCompile Include="DiaCellLayers\TestHotkeyTable.cpp" />
     <ClCompile Include="DiaCellLayers\TestCellLayerLegend.cpp" />
     <ClCompile Include="DiaCellLayers\TestCellLayerViewerDomain.cpp" />
+    <ClCompile Include="DiaCellLayers\TestCellLayersModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

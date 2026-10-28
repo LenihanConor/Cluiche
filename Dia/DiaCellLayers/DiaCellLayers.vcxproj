@@ -84,6 +84,7 @@
     <ClInclude Include="HotkeyTable.h" />
     <ClInclude Include="CellLayerLegend.h" />
     <ClInclude Include="CellLayerViewerDomain.h" />
+    <ClInclude Include="CellLayersModule.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />
@@ -93,6 +94,7 @@
     <ClCompile Include="HotkeyTable.cpp" />
     <ClCompile Include="CellLayerLegend.cpp" />
     <ClCompile Include="CellLayerViewerDomain.cpp" />
+    <ClCompile Include="CellLayersModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diacelllayers.architecture.module.md" />
@@ -116,6 +118,14 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaPathfinding\DiaPathfinding.vcxproj">
       <Project>{B5C6D7E8-F9A0-1234-5678-9ABCDEF01234}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaApplicationFlow\DiaApplicationFlow.vcxproj">
+      <Project>{DD3D58EF-028B-42CB-B837-0042BA30D96F}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaStreams\DiaStreams.vcxproj">
+      <Project>{D4E5F6A7-B8C9-0123-DEF0-456789012345}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\DiaAPI\DiaAPI.vcxproj">

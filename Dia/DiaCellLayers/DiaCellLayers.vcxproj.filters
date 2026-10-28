@@ -25,6 +25,7 @@
     <ClInclude Include="HotkeyTable.h" />
     <ClInclude Include="CellLayerLegend.h" />
     <ClInclude Include="CellLayerViewerDomain.h" />
+    <ClInclude Include="CellLayersModule.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />
@@ -34,6 +35,7 @@
     <ClCompile Include="HotkeyTable.cpp" />
     <ClCompile Include="CellLayerLegend.cpp" />
     <ClCompile Include="CellLayerViewerDomain.cpp" />
+    <ClCompile Include="CellLayersModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diacelllayers.architecture.module.md">
