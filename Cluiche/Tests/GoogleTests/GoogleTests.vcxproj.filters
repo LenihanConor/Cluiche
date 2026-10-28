@@ -2123,5 +2123,8 @@
     <ClCompile Include="DiaCellLayers\TestCellPicker.cpp">
       <Filter>DiaCellLayers</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestHotkeyTable.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

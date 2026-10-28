@@ -22,11 +22,13 @@ public_api:
   headers:
     - DiaCellLayers/CellLayersTypes.h
     - DiaCellLayers/CellLayerRegistry.h
+    - DiaCellLayers/HotkeyTable.h
   namespaces:
     - Dia::CellLayers::
   entry_points:
     - CellValueKind
     - CellLayerRegistry
+    - HotkeyTable
 responsibilities:
   - Per-cell layer registry for generic layer management
   - Viewer integration via CellField display
@@ -51,6 +53,7 @@ Provides a registry system that allows any module or application to register cel
 | Type | Purpose |
 |---|---|
 | `CellValueKind` | Enumeration of cell value types (Float, Category) |
+| `HotkeyTable` | Key -> layer id map per grid from schema `ui.hotkey` (clash -> Warning, later layer none); `GroupNumber` gives picker numbering 1..9 per group |
 
 ## Overview
 
