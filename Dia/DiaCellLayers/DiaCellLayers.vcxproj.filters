@@ -23,6 +23,7 @@
       <Filter>Testing</Filter>
     </ClInclude>
     <ClInclude Include="HotkeyTable.h" />
+    <ClInclude Include="CellLayerLegend.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />
@@ -30,6 +31,7 @@
     <ClCompile Include="LayerUploader.cpp" />
     <ClCompile Include="CellPicker.cpp" />
     <ClCompile Include="HotkeyTable.cpp" />
+    <ClCompile Include="CellLayerLegend.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diacelllayers.architecture.module.md">

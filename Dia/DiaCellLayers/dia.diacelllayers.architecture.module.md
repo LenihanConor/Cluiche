@@ -23,12 +23,14 @@ public_api:
     - DiaCellLayers/CellLayersTypes.h
     - DiaCellLayers/CellLayerRegistry.h
     - DiaCellLayers/HotkeyTable.h
+    - DiaCellLayers/CellLayerLegend.h
   namespaces:
     - Dia::CellLayers::
   entry_points:
     - CellValueKind
     - CellLayerRegistry
     - HotkeyTable
+    - CellLayerLegend
 responsibilities:
   - Per-cell layer registry for generic layer management
   - Viewer integration via CellField display
@@ -54,6 +56,7 @@ Provides a registry system that allows any module or application to register cel
 |---|---|
 | `CellValueKind` | Enumeration of cell value types (Float, Category) |
 | `HotkeyTable` | Key -> layer id map per grid from schema `ui.hotkey` (clash -> Warning, later layer none); `GroupNumber` gives picker numbering 1..9 per group |
+| `CellLayerLegend` | Wraps ValueSchema BuildLegend for the active base layer: ramp/range/unit/ticks + observed min/max (float) or swatches (category); unresolved schemaKey -> empty legend, one CEL Warning per key; caller supplies the RampResolver |
 
 ## Overview
 
