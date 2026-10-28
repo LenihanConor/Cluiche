@@ -256,6 +256,9 @@
     <Filter Include="DiaValueSchema">
       <UniqueIdentifier>{a2b4d7f0-75c9-4169-ad2b-0364279b7bb5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaCellLayers">
+      <UniqueIdentifier>{2a8c12fd-53d0-4060-98ae-92cc64482f64}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -2110,6 +2113,9 @@
     </ClCompile>
     <ClCompile Include="DiaValueSchema\TestDescribeMode.cpp">
       <Filter>DiaValueSchema</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCellLayerRegistry.cpp">
+      <Filter>DiaCellLayers</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

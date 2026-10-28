@@ -4,12 +4,20 @@
     <Filter Include="Docs">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{b64e4101-33cf-4a90-8098-8d92fb79879f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CellLayersTypes.h" />
+    <ClInclude Include="CellLayerRegistry.h" />
+    <ClInclude Include="Testing\CellLayerTestSupport.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />
+    <ClCompile Include="CellLayerRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diacelllayers.architecture.module.md">

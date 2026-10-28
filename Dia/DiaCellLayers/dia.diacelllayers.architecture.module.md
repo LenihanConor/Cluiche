@@ -16,14 +16,17 @@ dependencies:
     - dia.visualdebugger
     - dia.pathfinding
     - dia.api
+    - dia.observation
   forbidden: []
 public_api:
   headers:
     - DiaCellLayers/CellLayersTypes.h
+    - DiaCellLayers/CellLayerRegistry.h
   namespaces:
     - Dia::CellLayers::
   entry_points:
     - CellValueKind
+    - CellLayerRegistry
 responsibilities:
   - Per-cell layer registry for generic layer management
   - Viewer integration via CellField display
