@@ -21,4 +21,4 @@ If you change a builder on purpose, regenerate and review the diff:
 `dia test game-ui` and commit the changed files together.
 
 Files: domain_states, domain_states_schema (controls carrying schemaKey/packId + schemaVersion), palette_results_{all,commands,domains}, console_result_{ok,notfound,parse_error},
-console_completions, console_set_input, console_set_input_restore, append_log_lines (all `.json`).
+domain_states_celllayers{,_category,_empty} (the real CellLayerViewerDomain state; consumer `celllayers.test.ts`), console_completions, console_set_input, console_set_input_restore, append_log_lines (all `.json`).

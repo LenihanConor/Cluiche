@@ -270,6 +270,62 @@ body {
 .vt .vt-source { font-size: 9px; color: #555; font-style: italic; }
 .vt .vt-pack { display: inline-block; font-size: 8px; padding: 2px 5px; background: #2a2510; border: 1px solid #4a4520; color: #f5a623; border-radius: 2px; }
 
+/* Cell layer viewer card (DiaCellLayers; mockup diacelllayers/mockups/cell-layer-viewer.html) */
+.cl-viewer { margin-bottom: 6px; }
+.cl-empty { padding: 10px 6px; font-size: 11px; color: #555; font-style: italic; text-align: center; }
+.cl-grids { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.cl-viewer .tool-btn {
+  padding: 3px 8px; background: #252525; border: 1px solid #3a3a3a; color: #999;
+  border-radius: 2px; font-size: 9px; cursor: pointer; font-family: inherit;
+}
+.cl-viewer .tool-btn.active { background: #5a9fd4; color: #fff; border-color: #5a9fd4; }
+.layer-search { margin-bottom: 8px; }
+.layer-search input {
+  width: 100%; background: #1a1a1a; border: 1px solid #2a2a2a; color: #ccc;
+  font-family: inherit; font-size: 10px; padding: 4px 6px; border-radius: 2px; outline: none;
+}
+.layer-search input:focus { border-color: #5a9fd4; }
+.layer-group { margin-bottom: 10px; }
+.layer-group-header {
+  font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 0.8px;
+  padding: 4px 6px; background: #1a1a1a; border-radius: 2px; margin-bottom: 4px;
+}
+.layer-item {
+  display: flex; align-items: center; gap: 6px; padding: 3px 6px;
+  font-size: 10px; color: #999; cursor: pointer; position: relative;
+}
+.layer-item:hover { color: #ccc; background: #1a1a1a; }
+.layer-radio, .layer-checkbox {
+  width: 12px; height: 12px; border: 1px solid #3a3a3a; background: #0f0f0f; flex-shrink: 0;
+}
+.layer-radio { border-radius: 50%; }
+.layer-checkbox { border-radius: 2px; }
+.layer-radio.active { border-color: #5a9fd4; background: #5a9fd4; position: relative; }
+.layer-radio.active::after {
+  content: ''; position: absolute; top: 3px; left: 3px; width: 4px; height: 4px; background: #fff; border-radius: 50%;
+}
+.layer-checkbox.checked { background: #5a9fd4; border-color: #5a9fd4; position: relative; }
+.layer-checkbox.checked::after { content: '✓'; position: absolute; top: -2px; left: 1px; color: #fff; font-size: 10px; }
+.layer-num { width: 8px; color: #555; font-size: 9px; text-align: right; flex-shrink: 0; }
+.layer-label { flex: 1; }
+.layer-hotkey { font-size: 9px; color: #5a9fd4; border: 1px solid #2a3a50; background: #1a2530; padding: 0 4px; border-radius: 2px; }
+.cl-legend .card-header {
+  background: #1f1f1f; padding: 6px 10px; font-size: 10px; color: #aaa; font-weight: 600;
+  letter-spacing: 0.5px; border-bottom: 1px solid #2a2a2a;
+}
+.cl-legend .legend-strip { padding: 8px; background: #0f0f0f; }
+.legend-strip { display: flex; flex-direction: column; gap: 4px; }
+.legend-ramp { height: 20px; border-radius: 2px; border: 1px solid #2a2a2a; }
+.legend-labels { display: flex; justify-content: space-between; font-size: 9px; color: #666; }
+.legend-unit { font-size: 9px; color: #777; }
+.legend-range { font-size: 9px; color: #999; margin-top: 4px; }
+.legend-swatch { display: flex; align-items: center; gap: 6px; font-size: 10px; color: #999; }
+.legend-swatch-box { width: 12px; height: 12px; border: 1px solid #2a2a2a; border-radius: 2px; flex-shrink: 0; }
+.cl-hover { margin-top: 6px; }
+.cl-hover-cell { font-size: 9px; color: #666; }
+.cl-hover-value { font-size: 12px; color: #d4d4d4; margin: 2px 0 4px 0; }
+.cl-hover .vt { position: static; width: auto; max-width: none; box-shadow: none; }
+
 /* Desc */
 .desc { font-size: 10px; color: #434343; margin-bottom: 7px; font-style: italic; line-height: 1.4; }
 
@@ -510,6 +566,7 @@ var ui = {
   groupOpen:   {},   // groupKey  -> bool
   domainOpen:  {},   // domainId  -> bool
   structureSig: null,
+  layerFilter: '',   // cell layer viewer search text
   activeSlider: null // control element currently being dragged
 };
 
@@ -543,14 +600,21 @@ function domainsOf(data) {
       accent:  d._accent || '',
       drawers: Array.isArray(d.drawers) ? d.drawers : [],
       stats:   (d.stats && typeof d.stats === 'object') ? d.stats : {},
-      controls: Array.isArray(d.controls) ? d.controls : []
+      controls: Array.isArray(d.controls) ? d.controls : [],
+      viewer:  isViewerState(d) ? d : null
     });
   }
   out.sort(function (a, b) { return a.id < b.id ? -1 : (a.id > b.id ? 1 : 0); });
   return out;
 }
 
+// A cell-layer viewer state (DiaCellLayers CellLayerViewerDomain) is recognised by shape.
+function isViewerState(d) {
+  return Array.isArray(d.layers) && Array.isArray(d.overlays) && typeof d.activeBase === 'string';
+}
+
 function isDomainEnabled(domain) {
+  if (domain.viewer) return true;   // overlays are its drawers; the card is not "off" when none are on
   for (var i = 0; i < domain.drawers.length; ++i) {
     if (domain.drawers[i] && domain.drawers[i].enabled) return true;
   }
@@ -558,6 +622,7 @@ function isDomainEnabled(domain) {
 }
 
 function headlineStat(domain) {
+  if (domain.viewer) return domain.viewer.empty ? 'no layers' : 'base: ' + domain.viewer.activeBase;
   for (var k in domain.stats) {
     if (!Object.prototype.hasOwnProperty.call(domain.stats, k)) continue;
     var v = domain.stats[k];
@@ -614,7 +679,7 @@ function structureSignature(domains) {
       var id = controlId(c) || '?';
       return c.schemaKey ? id + '@' + c.schemaKey + (c.packId ? '#' + c.packId : '') : id;
     }).join(',');
-    parts.push(d.group + '/' + d.id + '[' + drawers + '][' + ctrls + ']');
+    parts.push(d.group + '/' + d.id + '[' + drawers + '][' + ctrls + ']' + (d.viewer ? viewerSignature(d.viewer) : ''));
   }
   return parts.join('|') + '~' + vs.gen;
 }
@@ -695,7 +760,7 @@ function el(tag, cls, text) {
 }
 
 function buildDomainCard(domain) {
-  if (!(domain.id in ui.domainOpen)) ui.domainOpen[domain.id] = false;
+  if (!(domain.id in ui.domainOpen)) ui.domainOpen[domain.id] = !!domain.viewer;
 
   var enabled = isDomainEnabled(domain);
 
@@ -731,8 +796,10 @@ function buildDomainCard(domain) {
   var body = el('div', 'domain-body');
   if (domain.desc) body.appendChild(el('div', 'desc', domain.desc));
 
+  if (domain.viewer) body.appendChild(buildViewer(domain));
+
   var drawers = el('div', 'drawers');
-  for (var i = 0; i < domain.drawers.length; ++i) {
+  for (var i = 0; !domain.viewer && i < domain.drawers.length; ++i) {   // viewer overlays render as checkboxes below
     var dw = domain.drawers[i];
     if (!dw || !dw.name) continue;
     var row = el('div', 'dr ' + (dw.enabled ? 'on' : 'off'));
@@ -828,6 +895,235 @@ function formatValue(v, decimals) {
   return (Math.abs(n) >= 10 || n === Math.floor(n)) ? String(n) : n.toFixed(2);
 }
 
+// ── Cell layer viewer card (DiaCellLayers) ────────────────────────────────
+// State from CellLayerViewerDomain: domainId, empty, activeBase, layers[{id,label,unit,kind,hotkey,selected,group,
+// groupNumber}], groups[{name,layers[ids]}], overlays[{id,label,enabled}], grids[], gridSelector[] (multi-grid only),
+// legend{available,category,ramp,stops,ticks,unit,seen,swatches}, hover{valid,q,r,label,description,unit,text}.
+// The page only sends commands (base {id}, grid {index}, toggle {drawer}); the domain owns all state. Commands are
+// addressed by the state's domainId (the card is keyed by display name, which differs for this domain).
+// Layout/classes follow docs/specs/applications/dia/systems/diacelllayers/mockups/cell-layer-viewer.html.
+
+function viewerSignature(v) {
+  var parts = [v.domainId || '', v.empty ? 'E' : 'F'];
+  for (var i = 0; i < v.layers.length; ++i) {
+    var l = v.layers[i];
+    parts.push([l.id, l.label, l.group, l.groupNumber, l.hotkey].join(','));
+  }
+  for (var o = 0; o < v.overlays.length; ++o) parts.push('o:' + v.overlays[o].id + ',' + v.overlays[o].label);
+  if (Array.isArray(v.gridSelector)) {
+    for (var g = 0; g < v.gridSelector.length; ++g) {
+      var gs = v.gridSelector[g];
+      parts.push('g:' + gs.index + ',' + gs.width + ',' + gs.height + ',' + gs.layerCount);
+    }
+  }
+  return '{' + parts.join(';') + '}';
+}
+
+function viewerRgb(rgba8) {
+  var n = Number(rgba8) >>> 0;   // 0xRRGGBBAA
+  return 'rgb(' + ((n >>> 24) & 255) + ', ' + ((n >>> 16) & 255) + ', ' + ((n >>> 8) & 255) + ')';
+}
+
+function buildViewer(domain) {
+  var v = domain.viewer;
+  var cmdId = v.domainId || domain.id;
+  var root = el('div', 'cl-viewer');
+  root.setAttribute('data-role', 'cell-layer-viewer');
+
+  if (v.empty) root.appendChild(el('div', 'cl-empty', 'No cell layers registered'));
+
+  if (Array.isArray(v.gridSelector) && v.gridSelector.length > 1) {
+    var grids = el('div', 'cl-grids');
+    grids.setAttribute('data-role', 'grid-selector');
+    for (var g = 0; g < v.gridSelector.length; ++g) {
+      var gs = v.gridSelector[g];
+      var gb = el('button', 'tool-btn', 'Grid ' + gs.index + ': ' + gs.width + '×' + gs.height);
+      gb.setAttribute('type', 'button');
+      gb.setAttribute('data-grid', String(gs.index));
+      (function (index) {
+        gb.addEventListener('click', function (e) { e.stopPropagation(); sendCommand(cmdId, 'grid', { index: index }); });
+      })(gs.index);
+      grids.appendChild(gb);
+    }
+    root.appendChild(grids);
+  }
+
+  if (!v.empty) {
+    var search = el('div', 'layer-search');
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'Search layers...';
+    input.value = ui.layerFilter || '';
+    input.addEventListener('input', function () {
+      ui.layerFilter = input.value;
+      applyLayerFilter(root);
+    });
+    search.appendChild(input);
+    root.appendChild(search);
+
+    var byId = {};
+    for (var i = 0; i < v.layers.length; ++i) byId[v.layers[i].id] = v.layers[i];
+    var groups = Array.isArray(v.groups) ? v.groups : [];
+    for (var gi = 0; gi < groups.length; ++gi) {
+      var grp = el('div', 'layer-group');
+      grp.setAttribute('data-group', groups[gi].name);
+      grp.appendChild(el('div', 'layer-group-header', groups[gi].name || 'Layers'));
+      var ids = groups[gi].layers || [];
+      for (var k = 0; k < ids.length; ++k) {
+        if (byId[ids[k]]) grp.appendChild(buildLayerItem(cmdId, byId[ids[k]]));
+      }
+      root.appendChild(grp);
+    }
+  }
+
+  if (v.overlays.length > 0) {
+    var og = el('div', 'layer-group');
+    og.setAttribute('data-group', 'Overlays');
+    og.appendChild(el('div', 'layer-group-header', 'Overlays'));
+    for (var oi = 0; oi < v.overlays.length; ++oi) og.appendChild(buildOverlayItem(cmdId, v.overlays[oi]));
+    root.appendChild(og);
+  }
+
+  var legend = el('div', 'cl-legend');
+  legend.setAttribute('data-role', 'legend');
+  root.appendChild(legend);
+  var hover = el('div', 'cl-hover');
+  hover.setAttribute('data-role', 'hover');
+  root.appendChild(hover);
+
+  applyLayerFilter(root);
+  return root;
+}
+
+function buildLayerItem(cmdId, l) {
+  var item = el('div', 'layer-item');
+  item.setAttribute('data-layer', l.id);
+  item.setAttribute('data-search', (String(l.label) + ' ' + String(l.id)).toLowerCase());
+  item.appendChild(el('span', 'layer-radio' + (l.selected ? ' active' : '')));
+  item.appendChild(el('span', 'layer-num', l.groupNumber > 0 ? String(l.groupNumber) : ''));
+  item.appendChild(el('span', 'layer-label', l.label));
+  if (l.hotkey) item.appendChild(el('span', 'layer-hotkey', l.hotkey));
+  item.addEventListener('click', function (e) {
+    e.stopPropagation();
+    sendCommand(cmdId, 'base', { id: l.id });
+  });
+  return item;
+}
+
+function buildOverlayItem(cmdId, o) {
+  var item = el('div', 'layer-item');
+  item.setAttribute('data-overlay', o.id);
+  item.appendChild(el('span', 'layer-checkbox' + (o.enabled ? ' checked' : '')));
+  item.appendChild(el('span', 'layer-label', o.label));
+  item.addEventListener('click', function (e) {
+    e.stopPropagation();
+    sendCommand(cmdId, 'toggle', { drawer: o.id });
+  });
+  return item;
+}
+
+function applyLayerFilter(root) {
+  var q = String(ui.layerFilter || '').toLowerCase();
+  var groups = root.querySelectorAll('.layer-group');
+  for (var g = 0; g < groups.length; ++g) {
+    var items = groups[g].querySelectorAll('.layer-item[data-layer]');
+    var visible = 0;
+    for (var i = 0; i < items.length; ++i) {
+      var show = q === '' || (items[i].getAttribute('data-search') || '').indexOf(q) >= 0;
+      items[i].style.display = show ? '' : 'none';
+      if (show) ++visible;
+    }
+    if (items.length > 0) groups[g].style.display = visible > 0 ? '' : 'none';
+  }
+}
+
+function refreshViewer(card, v) {
+  var root = card.querySelector('[data-role="cell-layer-viewer"]');
+  if (!root) return;
+
+  var activeLabel = v.activeBase;
+  for (var i = 0; i < v.layers.length; ++i) {
+    var l = v.layers[i];
+    var item = root.querySelector('.layer-item[data-layer="' + cssEscape(l.id) + '"]');
+    if (item) {
+      var radio = item.querySelector('.layer-radio');
+      if (radio) radio.classList.toggle('active', !!l.selected);
+    }
+    if (l.selected) activeLabel = l.label;
+  }
+  for (var o = 0; o < v.overlays.length; ++o) {
+    var oi = root.querySelector('.layer-item[data-overlay="' + cssEscape(v.overlays[o].id) + '"]');
+    var cb = oi ? oi.querySelector('.layer-checkbox') : null;
+    if (cb) cb.classList.toggle('checked', !!v.overlays[o].enabled);
+  }
+  if (Array.isArray(v.gridSelector)) {
+    for (var g = 0; g < v.gridSelector.length; ++g) {
+      var gb = root.querySelector('[data-grid="' + cssEscape(String(v.gridSelector[g].index)) + '"]');
+      if (gb) gb.classList.toggle('active', !!v.gridSelector[g].active);
+    }
+  }
+
+  var legendHost = root.querySelector('[data-role="legend"]');
+  if (legendHost) {
+    var lkey = JSON.stringify([activeLabel, v.legend || null]);
+    if (legendHost._key !== lkey) { legendHost._key = lkey; renderViewerLegend(legendHost, v.legend, activeLabel); }
+  }
+  var hoverHost = root.querySelector('[data-role="hover"]');
+  if (hoverHost) {
+    var hkey = JSON.stringify(v.hover || null);
+    if (hoverHost._key !== hkey) { hoverHost._key = hkey; renderViewerHover(hoverHost, v.hover); }
+  }
+}
+
+function renderViewerLegend(host, legend, title) {
+  host.innerHTML = '';
+  if (!legend || !legend.available) return;
+  var hdr = el('div', 'card-header', 'LEGEND: ' + String(title).toUpperCase());
+  hdr.setAttribute('data-role', 'legend-title');
+  host.appendChild(hdr);
+
+  var strip = el('div', 'legend-strip');
+  if (legend.category) {
+    var sw = Array.isArray(legend.swatches) ? legend.swatches : [];
+    for (var i = 0; i < sw.length; ++i) {
+      var row = el('div', 'legend-swatch');
+      var box = el('span', 'legend-swatch-box');
+      box.style.background = viewerRgb(sw[i].rgba);
+      row.appendChild(box);
+      row.appendChild(el('span', 'legend-swatch-label', sw[i].label || sw[i].id));
+      strip.appendChild(row);
+    }
+  } else {
+    var ramp = el('div', 'legend-ramp');
+    var stops = Array.isArray(legend.stops) ? legend.stops : [];
+    var css = [];
+    for (var s = 0; s < stops.length; ++s) css.push(viewerRgb(stops[s].rgba) + ' ' + (stops[s].t * 100) + '%');
+    if (css.length === 1) css.push(css[0]);
+    if (css.length > 0) ramp.style.background = 'linear-gradient(to right, ' + css.join(', ') + ')';
+    strip.appendChild(ramp);
+    var labels = el('div', 'legend-labels');
+    var ticks = Array.isArray(legend.ticks) ? legend.ticks : [];
+    for (var t = 0; t < ticks.length; ++t) labels.appendChild(el('span', '', formatStatValue(ticks[t])));
+    strip.appendChild(labels);
+    if (legend.unit) strip.appendChild(el('div', 'legend-unit', legend.unit));
+    if (legend.seen) {
+      strip.appendChild(el('div', 'legend-range',
+        'seen in view: ' + formatStatValue(legend.seen.min) + ' – ' + formatStatValue(legend.seen.max)));
+    }
+  }
+  host.appendChild(strip);
+}
+
+function renderViewerHover(host, hover) {
+  host.innerHTML = '';
+  if (!hover || !hover.valid) return;
+  host.appendChild(el('div', 'cl-hover-cell', 'cell (' + hover.q + ', ' + hover.r + ')'));
+  host.appendChild(el('div', 'cl-hover-value', hover.text));
+  host.appendChild(renderValueTooltip(
+    { key: hover.layer, label: hover.label, description: hover.description, unit: hover.unit },
+    { inspector: false }));
+}
+
 // ── Refresh (structure unchanged — update text + classes only) ────────────
 
 function refresh(domains) {
@@ -848,6 +1144,8 @@ function refresh(domains) {
 
     var headline = card.querySelector('[data-role="headline"]');
     if (headline) headline.textContent = headlineStat(domain);
+
+    if (domain.viewer) refreshViewer(card, domain.viewer);
 
     for (var d = 0; d < domain.drawers.length; ++d) {
       var dw = domain.drawers[d];

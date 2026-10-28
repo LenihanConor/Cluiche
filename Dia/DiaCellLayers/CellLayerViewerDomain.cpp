@@ -355,6 +355,8 @@ namespace Dia::CellLayers
 			mHotkeyLayerCount = mRegistry.LayerCount();
 		}
 
+		// The panel addresses commands by domain id; its state is keyed by display name, which differs for this domain.
+		out["domainId"] = GetDomainId().AsChar();
 		out["empty"] = (mActiveBase == StringCRC::kZero);
 		out["activeBase"] = mActiveBase.AsChar();
 

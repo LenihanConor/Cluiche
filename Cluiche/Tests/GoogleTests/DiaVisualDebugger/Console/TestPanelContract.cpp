@@ -26,6 +26,13 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
 
+#include <DiaCellLayers/CellLayerViewerDomain.h>
+#include <DiaCellLayers/Testing/CellLayerTestSupport.h>
+#include <DiaCellLayers/Testing/CellPickerTestSupport.h>
+#include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
+#include <DiaCore/DebugDraw/IDebugDraw.h>
+#include <DiaPathfinding/HexTopology.h>
+
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
@@ -121,6 +128,44 @@ namespace
 			sc.AddSchemaVersion(out);
 		}
 	};
+
+	// Fixture for the REAL CellLayerViewerDomain (DiaCellLayers Registry-and-Viewer, panel card).
+	struct ViewerDraw : public Dia::Core::IDebugDraw
+	{
+		Dia::Maths::Vector2D mouse;
+		void RequestDraw(const Dia::Maths::Vector2D&, float, Dia::Core::RGBA, Dia::Core::RGBA) override {}
+		void RequestDraw(const Dia::Maths::Vector2D&, const Dia::Maths::Vector2D&, Dia::Core::RGBA) override {}
+		void RequestDrawPoint(const Dia::Maths::Vector2D&, Dia::Core::RGBA) override {}
+		void RequestDrawRect(const Dia::Maths::Vector2D&, const Dia::Maths::Vector2D&, Dia::Core::RGBA, Dia::Core::RGBA) override {}
+		void RequestDrawArc(const Dia::Maths::Vector2D&, float, float, float, Dia::Core::RGBA) override {}
+		void RequestDrawRay(const Dia::Maths::Vector2D&, const Dia::Maths::Vector2D&, float, Dia::Core::RGBA) override {}
+		void RequestDraw(const Dia::Maths::Vector2D&, const Dia::Maths::Vector2D&, const Dia::Maths::Vector2D&, Dia::Core::RGBA, Dia::Core::RGBA) override {}
+		void RequestDrawText(const Dia::Maths::Vector2D&, const char*, float, Dia::Core::RGBA) override {}
+		void RequestDrawLine3D(const Dia::Maths::Vector3D&, const Dia::Maths::Vector3D&, Dia::Core::RGBA) override {}
+		void RequestDrawRay3D(const Dia::Maths::Vector3D&, const Dia::Maths::Vector3D&, float, Dia::Core::RGBA) override {}
+		void RequestDrawBox3D(const Dia::Maths::Vector3D&, const Dia::Maths::Vector3D&, Dia::Core::RGBA) override {}
+		void RequestDrawSphere3D(const Dia::Maths::Vector3D&, float, Dia::Core::RGBA) override {}
+		void RequestDrawArrow3D(const Dia::Maths::Vector3D&, const Dia::Maths::Vector3D&, float, float, Dia::Core::RGBA) override {}
+		void RequestDrawCellField(const Dia::Core::CellFieldDrawRequest&) override {}
+		uint32_t DroppedCount() const override { return 0; }
+		const Dia::Maths::Vector2D& GetMousePixel() const override { return mouse; }
+	};
+
+	Dia::CellLayers::CellPickerView ViewerView()
+	{
+		Dia::CellLayers::CellPickerView v;
+		v.viewportWidth = 1280;
+		v.viewportHeight = 720;
+		return v;
+	}
+
+	void ViewerPointAt(ViewerDraw& draw, int q, int r)
+	{
+		const Dia::Maths::Vector2D c = Dia::Pathfinding::HexTopology::CellCenter(Dia::Pathfinding::CellCoord{ q, r }, 1.0f);
+		float sx, sy;
+		Dia::CellLayers::Testing::WorldToScreen(ViewerView(), c.X(), c.Y(), sx, sy);
+		draw.mouse = Dia::Maths::Vector2D(sx, sy);
+	}
 
 	bool RegisterContractCommand(const char* name, const char* description, const char* category,
 								 const char* example, int exitCode)
@@ -313,6 +358,124 @@ TEST_F(PanelContractTest, DomainStatesWithSchemaKeys)
 	writer.omitEndingLineFeed();
 	Check("domain_states_schema.json", writer.write(root));
 	registry.Clear();
+}
+
+// DiaCellLayers viewer card (AC 16, 17): the REAL CellLayerViewerDomain state through the REAL BuildDomainStatesRoot.
+namespace
+{
+	struct ViewerRig
+	{
+		Dia::Graphics::CellFieldRegistry cellField;
+		Dia::CellLayers::Testing::UploaderSchemaFixture fx;
+		Dia::CellLayers::Testing::TestGrid gridA{ 4, 3 };
+		Dia::CellLayers::Testing::TestGrid gridB{ 5, 2 };
+		Dia::CellLayers::Testing::StubProvider biome, temp, rain, soil;
+		ViewerDraw draw;
+		Dia::CellLayers::CellLayerRegistry* registry = nullptr;
+		Dia::CellLayers::LayerUploader* uploader = nullptr;
+		Dia::CellLayers::CellLayerViewerDomain* domain = nullptr;
+
+		static Dia::ValueSchema::ValueInfo Float(const char* key, bool defaultBase, const char* unit, const char* desc, const char* label, const char* hotkey = nullptr)
+		{
+			auto i = Dia::CellLayers::Testing::UploaderSchemaFixture::FloatEntry(key, -10.0, 10.0);
+			if (defaultBase) { i.mUi["default_base"] = true; }
+			if (hotkey) { i.mUi["hotkey"] = hotkey; }
+			Dia::ValueSchema::SetText(i.mUnit, unit);
+			Dia::ValueSchema::SetText(i.mDescription, desc);
+			Dia::ValueSchema::SetText(i.mLabel, label);
+			return i;
+		}
+
+		void Build(bool withSchema)
+		{
+			using namespace Dia::CellLayers;
+			Testing::FakePuId() = 1;
+			biome.values = { 0, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0 };
+			temp.values = { 5, -2, 7, 3, 1, 0, 4, 9, 2, 2, 2, 2 };
+			rain.values = std::vector<float>(12, 1.0f);
+			soil.values = std::vector<float>(10, 3.0f);
+			const Dia::ValueSchema::ValueSchemaService* svc = nullptr;
+			if (withSchema)
+			{
+				fx.Add(Float("temp", true, "C", "Air temperature", "Temperature", "t"));
+				fx.Add(Float("rain", false, "mm", "Rainfall", "Rainfall"));
+				fx.Add(Float("soil", false, "kg", "Soil mass", "Soil"));
+				auto b = Testing::UploaderSchemaFixture::EnumEntry("biome", 3);
+				b.mUi["hotkey"] = "b";
+				Dia::ValueSchema::SetText(b.mLabel, "Biome");
+				Dia::ValueSchema::SetText(b.mDescription, "Dominant biome");
+				fx.Add(b);
+				svc = &fx.Publish();
+			}
+			registry = new CellLayerRegistry(svc, &Testing::FakePuIdFn);
+			uploader = new LayerUploader(cellField, svc);
+			domain = new CellLayerViewerDomain(*registry, *uploader, svc, CellLayerViewerDomain::ViewFn(&ViewerView));
+		}
+
+		void Add(Dia::CellLayers::CellLayerDesc d, const char* group)
+		{
+			d.group.Append(group);
+			EXPECT_EQ(registry->Register(d), Dia::CellLayers::CellRegisterResult::Ok);
+		}
+
+		~ViewerRig()
+		{
+			delete domain;
+			delete uploader;
+			delete registry;
+		}
+	};
+
+	std::string ViewerJson(Dia::CellLayers::CellLayerViewerDomain& domain)
+	{
+		DiaDebugDomainRegistry registry;
+		registry.Register(domain);
+		Json::Value root(Json::objectValue);
+		BuildDomainStatesRoot(registry, root);
+		Json::FastWriter writer;
+		writer.omitEndingLineFeed();
+		const std::string out = writer.write(root);
+		registry.Clear();
+		return out;
+	}
+}
+
+TEST_F(PanelContractTest, CellLayersViewerFloatBase)
+{
+	using namespace Dia::CellLayers;
+	ViewerRig rig;
+	rig.Build(true);
+	rig.Add(rig.biome.MakeDesc("biome", &rig.gridA.desc, CellValueKind::Category, "cells/biome"), "Terrain");
+	rig.Add(rig.temp.MakeDesc("temp", &rig.gridA.desc, CellValueKind::Float, "cells/temp"), "Ecology");
+	rig.Add(rig.rain.MakeDesc("rain", &rig.gridA.desc, CellValueKind::Float, "cells/rain"), "Ecology");
+	ASSERT_EQ(rig.registry->RegisterOverlay(Testing::MakeOverlay("wind", "Wind arrows", "Weather")), CellRegisterResult::Ok);
+	ASSERT_EQ(rig.registry->RegisterOverlay(Testing::MakeOverlay("edges", "Region edges", "Terrain")), CellRegisterResult::Ok);
+	ASSERT_TRUE(rig.domain->ToggleOverlay(StringCRC("wind")));
+	ViewerPointAt(rig.draw, 2, 1);
+	rig.domain->Update(rig.draw);
+	Check("domain_states_celllayers.json", ViewerJson(*rig.domain));
+}
+
+TEST_F(PanelContractTest, CellLayersViewerCategoryBaseMultiGrid)
+{
+	using namespace Dia::CellLayers;
+	ViewerRig rig;
+	rig.Build(true);
+	rig.Add(rig.biome.MakeDesc("biome", &rig.gridA.desc, CellValueKind::Category, "cells/biome"), "Terrain");
+	rig.Add(rig.temp.MakeDesc("temp", &rig.gridA.desc, CellValueKind::Float, "cells/temp"), "Ecology");
+	rig.Add(rig.soil.MakeDesc("soil", &rig.gridB.desc, CellValueKind::Float, "cells/soil"), "Ecology");
+	ASSERT_TRUE(rig.domain->SetBase(StringCRC("biome")));
+	ViewerPointAt(rig.draw, 2, 0);
+	rig.domain->Update(rig.draw);
+	Check("domain_states_celllayers_category.json", ViewerJson(*rig.domain));
+}
+
+TEST_F(PanelContractTest, CellLayersViewerEmptyState)
+{
+	ViewerRig rig;
+	rig.Build(false);
+	rig.domain->Update(rig.draw);
+	Check("domain_states_celllayers_empty.json", ViewerJson(*rig.domain));
 }
 
 TEST_F(PanelContractTest, PaletteResults)
