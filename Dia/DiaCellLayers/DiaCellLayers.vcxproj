@@ -79,11 +79,14 @@
     <ClInclude Include="Testing\CellLayerTestSupport.h" />
     <ClInclude Include="LayerUploader.h" />
     <ClInclude Include="Testing\LayerUploaderTestSupport.h" />
+    <ClInclude Include="CellPicker.h" />
+    <ClInclude Include="Testing\CellPickerTestSupport.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />
     <ClCompile Include="CellLayerRegistry.cpp" />
     <ClCompile Include="LayerUploader.cpp" />
+    <ClCompile Include="CellPicker.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diacelllayers.architecture.module.md" />

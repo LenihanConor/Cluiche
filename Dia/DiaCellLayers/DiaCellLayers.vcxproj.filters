@@ -18,11 +18,16 @@
     <ClInclude Include="Testing\LayerUploaderTestSupport.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="CellPicker.h" />
+    <ClInclude Include="Testing\CellPickerTestSupport.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />
     <ClCompile Include="CellLayerRegistry.cpp" />
     <ClCompile Include="LayerUploader.cpp" />
+    <ClCompile Include="CellPicker.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diacelllayers.architecture.module.md">
