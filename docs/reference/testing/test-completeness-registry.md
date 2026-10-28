@@ -615,6 +615,26 @@ Known gaps: no EXPECT_DEATH tests (the repo has none); TSan is not offered by `d
 
 **AssetCatalogueEditor totals: 3 files, ~95 tests** | All 8 features + auto-relationship tracking (11 integration tests) covered
 
+## DiaCellLayers
+
+Test helpers: `Dia/DiaCellLayers/Testing/` (CellLayerTestSupport, LayerUploaderTestSupport, CellPickerTestSupport, ViewValueSourceTestSupport, LogCapture, FakeDebugDraw). Files in `Cluiche/Tests/GoogleTests/DiaCellLayers/` plus panel contract tests in `DiaVisualDebugger/Console/TestPanelContract.cpp`.
+
+| Component | Tests | Files | Unit | Stress/Boundary | Invariant | Integration | Notes |
+|-----------|-------|-------|------|-----------------|-----------|-------------|-------|
+| CellLayerRegistry | 32 | TestCellLayerRegistry, TestCellLayerRegistryEdge | 22 | 9 | 1 | 0 | 128/129 layer and 64/65 overlay bounds, PU owner, 3+ grids, default base, random register/unregister vs model (2000 ops) |
+| CellPicker | 31 | TestCellPicker, TestCellPickerEdge | 21 | 7 | 3 | 0 | edges/corners, zoom extremes, NaN/inf, 1x1 and non-square, 66x42 + 104x64, random-camera round trip (1000 iters) |
+| LayerUploader | 39 | TestLayerUploader, TestLayerUploaderEdge | 27 | 10 | 1 | 0 | failure paths, CreatePending at 32-layer cap, switch counters, 104x64, colour map once per id, NaN values; 1 DISABLED (bug, see below) |
+| HotkeyTable | 17 | TestHotkeyTable, TestHotkeyLegendEdge | 14 | 3 | 0 | 0 | multi-char/empty/non-ASCII keys, clash, rebuild, 94-key bind, group numbering with 20 layers |
+| CellLayerLegend | 24 | TestCellLayerLegend, TestHotkeyLegendEdge | 21 | 3 | 0 | 0 | range boundaries, observed absent/NaN/inverted, empty enum labels, presentation override |
+| CellLayerViewerDomain | 48 | TestCellLayerViewerDomain, TestCellLayerViewerEdge | 38 | 7 | 1 | 2 | command arg errors, hover at all cells/edges, JSON key stability, metrics deltas, health, 3-thread command/update stress; 1 DISABLED (bug) |
+| CellLayersModule | 10 | TestCellLayersModule, TestViewSourceModuleEdge | 7 | 0 | 0 | 3 | restart drops registrations; stop-then-start inside one Application not testable without engine support |
+| IViewValueSource | 23 | TestViewValueSource, TestViewSourceModuleEdge | 20 | 2 | 1 | 0 | live/not-live, epoch wrap, NoData recovery, presentation overrides |
+| Logging (Warning/Error) | 17 | TestCellLayersLogging | 17 | 0 | 0 | 0 | clash, duplicate, capacity, wrong PU, second source install, unresolved key once, grid mismatch (via Testing/LogCapture.h) |
+
+Known bugs held as DISABLED tests: `UploaderEdgeTest.DISABLED_BaseValuesAvailableAgainAfterReadFailureRecoveryWithSameVersion`, `ViewerEdgeTest.DISABLED_EmptyStateThenLayerOnOtherGridIsAdopted`.
+
+---
+
 ---
 
 ## Integration Tests (cross-module)

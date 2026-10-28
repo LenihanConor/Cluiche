@@ -199,3 +199,39 @@ TEST(CellLayersModule, FindCellLayerRegistryNullWhenNotConnected)
 	CLM_ConsumerModule consumer(StringCRC("lonely"));
 	EXPECT_EQ(FindCellLayerRegistry(consumer.mReader), nullptr);
 }
+
+namespace
+{
+	// Each Harness is large; run them in separate stack frames.
+	struct RunResult { uint32_t layerCount = 0; bool hasExtra = false; };
+	RunResult RunApp(bool registerExtra)
+	{
+		RunResult out;
+		Harness h;
+		if (!h.Start()) { return out; }
+		CellGridDesc grid;
+		if (registerExtra) { g_module->GetRegistry()->Register(MakeLayer("extra", &grid)); }
+		out.layerCount = g_module->GetRegistry()->LayerCount();
+		out.hasExtra = g_module->GetRegistry()->Find(StringCRC("extra")) != nullptr;
+		return out;
+	}
+}
+
+TEST(CellLayersModule, RegistrationsDoNotSurviveAnApplicationRestart)
+{
+	const RunResult first = RunApp(true);
+	EXPECT_EQ(first.layerCount, 2u);	// consumer.layer + extra
+	EXPECT_TRUE(first.hasExtra);
+	const RunResult second = RunApp(false);
+	EXPECT_EQ(second.layerCount, 1u);	// only the consumer's own layer
+	EXPECT_FALSE(second.hasExtra);
+}
+
+TEST(CellLayersModule, ConsumerSeesNoRegistryBeforeFirstUpdate)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	EXPECT_EQ(g_module->GetRegistry()->OverlayCount(), 0u);
+	EXPECT_EQ(g_module->GetRegistry()->GridCount(), 1u);
+	EXPECT_TRUE(g_module->GetRegistry()->IsLive());
+}

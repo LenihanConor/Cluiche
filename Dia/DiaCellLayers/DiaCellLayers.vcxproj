@@ -87,6 +87,8 @@
     <ClInclude Include="CellLayersModule.h" />
     <ClInclude Include="IViewValueSource.h" />
     <ClInclude Include="Testing\ViewValueSourceTestSupport.h" />
+    <ClInclude Include="Testing\LogCapture.h" />
+    <ClInclude Include="Testing\FakeDebugDraw.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />

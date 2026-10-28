@@ -14,6 +14,7 @@
 #include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 
 #include <chrono>
+#include <math.h>
 #include <stdio.h>
 
 namespace Dia::CellLayers
@@ -345,7 +346,8 @@ namespace Dia::CellLayers
 			char text[160];
 			if (layer->kind == CellValueKind::Category)
 			{
-				const int idx = static_cast<int>(mHover.value + 0.5f);
+				const float rounded = floorf(mHover.value + 0.5f);
+				const int idx = (rounded >= 0.0f && rounded < 1.0e6f) ? static_cast<int>(rounded) : -1;	// NaN/negative: no entry
 				const char* name = "?";
 				if (info != nullptr && idx >= 0 && static_cast<unsigned>(idx) < info->mEnumValues.Size())
 				{
@@ -473,7 +475,7 @@ namespace Dia::CellLayers
 		}
 		else if (cmd == kCmdGrid)
 		{
-			if (args.isMember("index") && args["index"].isNumeric()) { SetGrid(args["index"].asUInt()); }
+			if (args.isMember("index") && args["index"].isNumeric() && args["index"].isUInt()) { SetGrid(args["index"].asUInt()); }
 		}
 		else if (cmd == kCmdToggle)
 		{

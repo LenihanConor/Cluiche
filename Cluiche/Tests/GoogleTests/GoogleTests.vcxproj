@@ -1000,6 +1000,13 @@
     <ClCompile Include="DiaCellLayers\TestCellLayerViewerDomain.cpp" />
     <ClCompile Include="DiaCellLayers\TestCellLayersModule.cpp" />
     <ClCompile Include="DiaCellLayers\TestViewValueSource.cpp" />
+    <ClCompile Include="DiaCellLayers\TestCellLayersLogging.cpp" />
+    <ClCompile Include="DiaCellLayers\TestCellPickerEdge.cpp" />
+    <ClCompile Include="DiaCellLayers\TestCellLayerRegistryEdge.cpp" />
+    <ClCompile Include="DiaCellLayers\TestHotkeyLegendEdge.cpp" />
+    <ClCompile Include="DiaCellLayers\TestLayerUploaderEdge.cpp" />
+    <ClCompile Include="DiaCellLayers\TestCellLayerViewerEdge.cpp" />
+    <ClCompile Include="DiaCellLayers\TestViewSourceModuleEdge.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
