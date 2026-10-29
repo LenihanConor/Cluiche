@@ -39,6 +39,7 @@
                     "dependencies": [
                         "VisualDebuggerModule",
                         "Camera2DModule",
+                        "InputStreamModule",
                         "CellLayersModule"
                     ],
                     "channels": [

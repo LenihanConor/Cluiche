@@ -2199,5 +2199,8 @@
     <ClCompile Include="DiaCellLayers\TestSelectionPerf.cpp">
       <Filter>DiaCellLayers</Filter>
     </ClCompile>
+    <ClCompile Include="CluicheTest\CellLayersPointerFrameTests.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

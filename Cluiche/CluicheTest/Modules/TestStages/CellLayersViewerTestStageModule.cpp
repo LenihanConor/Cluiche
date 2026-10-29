@@ -10,6 +10,7 @@
 
 #ifdef DIA_DEBUG
 #include <DiaAPI/DiaAPI.h>
+#include "Modules/TestStages/CellLayersPointerFrame.h"
 #endif
 
 #include <algorithm>
@@ -232,6 +233,7 @@ void CellLayersViewerTestStageModule::OnUpdate(float /*deltaTime*/)
 
 #ifdef DIA_DEBUG
     FitCameraToActiveGrid();
+    SubmitPointerInput();
 #endif
 
     if (++mReadyFrames >= kHoldFrames)
@@ -364,6 +366,7 @@ bool CellLayersViewerTestStageModule::BuildViewer()
     }
 
     mFittedGrid = nullptr;
+    mPointerFrameLogged = false;
     DIA_LOG_INFO("CluicheTest", "CellLayersViewerTestStage: viewer hosted (%u layers, %u overlays, %u grids)",
         mRegistry->LayerCount(), mRegistry->OverlayCount(), mRegistry->GridCount());
     return true;
@@ -440,6 +443,24 @@ Dia::CellLayers::CellPickerView CellLayersViewerTestStageModule::GetPickerView()
         v.zoom    = cam->GetActiveCamera().GetZoom();
     }
     return v;
+}
+
+void CellLayersViewerTestStageModule::SubmitPointerInput()
+{
+    // Feeds this frame's mouse/keyboard state to the viewer's selection gestures (consumed by mDomain->Update).
+    // Nothing is submitted when the input module or camera is unavailable.
+    if (!mDomain || !mDomainRegistered)
+        return;
+    const Cluiche::AppFlow::InputStreamModule* input = mInputRef.Get();
+    if (input == nullptr || mCameraRef.Get() == nullptr)
+        return;
+
+    mDomain->SubmitPointerFrame(BuildPointerFrame(*input), GetPickerView());
+    if (!mPointerFrameLogged)
+    {
+        mPointerFrameLogged = true;
+        DIA_LOG_DEBUG("CEL", "CellLayersViewerTestStage: first pointer frame submitted to the viewer");
+    }
 }
 
 void CellLayersViewerTestStageModule::FitCameraToActiveGrid()

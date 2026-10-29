@@ -138,6 +138,7 @@
     <ClInclude Include="Modules\TestStages\Drawers\GridVisibilityDrawer.h" />
     <ClInclude Include="Modules\TestStatusBridgeModule.h" />
     <ClInclude Include="Modules\TestStages\JobSystemServiceTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\CellLayersPointerFrame.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Messages\order_messages.diagamemessages" />

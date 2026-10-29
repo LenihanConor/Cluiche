@@ -16,6 +16,7 @@
 #ifdef DIA_DEBUG
 #include "Modules/VisualDebuggerModule.h"
 #include "Modules/Camera2DModule.h"
+#include "Modules/InputStreamModule.h"
 #include <DiaCellLayers/CellLayerViewerDomain.h>
 #include <DiaCellLayers/LayerUploader.h>
 #include <DiaCellLayers/CellPicker.h>
@@ -129,6 +130,10 @@ private:
 
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::VisualDebuggerModule> mVisualDebuggerRef{this};
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::Camera2DModule> mCameraRef{this};
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::InputStreamModule> mInputRef{this};
+    bool  mPointerFrameLogged = false;
+
+    void SubmitPointerInput();
 
     Dia::CellLayers::CellLayerRegistry* mRegistry = nullptr; // owned by CellLayersModule
     Dia::Core::UniquePtr<Dia::CellLayers::LayerUploader> mUploader;
