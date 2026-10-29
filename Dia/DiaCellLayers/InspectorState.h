@@ -93,6 +93,7 @@ namespace Dia::CellLayers
 
 		uint32_t	PassCount() const { return mPassCount; }
 		uint32_t	LastPassLayerCount() const { return mLastPassLayerCount; }
+		double		LastPassMs() const { return mLastPassMs; }
 
 	private:
 		struct Entry
@@ -118,6 +119,7 @@ namespace Dia::CellLayers
 		bool	NeedsCompute(const CellLayerRegistry& registry, const Entry& e) const;
 		bool	NeedsComputeA(const CellLayerRegistry& registry, const Entry& e) const;
 		void	CheckPinIdentity();
+		void	WarnUnresolvedSchemaKey(const Dia::ValueSchema::ValueSchemaService* schema, const CellLayerDesc* layer);
 
 		Entry*					mEntries;	// kMaxShown, heap (LayerStats is large)
 		uint32_t				mShownCount = 0;
@@ -135,8 +137,16 @@ namespace Dia::CellLayers
 		bool					mHasHistogram = false;
 		uint32_t				mPassCount = 0;
 		uint32_t				mLastPassLayerCount = 0;
+		double					mLastPassMs = 0.0;
 		PinnedSet*				mPinned = nullptr;
 		FrozenEntry*			mFrozen = nullptr;	// frozen A stats, one per layer of the grid at freeze time
 		uint32_t				mFrozenCount = 0;
+		void*					mMetricPasses = nullptr;		// Counter
+		void*					mMetricLayersPerPass = nullptr;	// Gauge
+		void*					mMetricPassMs = nullptr;		// Gauge
+		void*					mMetricPinned = nullptr;		// Gauge (0/1)
+		static constexpr uint32_t kMaxWarnedSchemaKeys = 16;
+		Dia::Core::StringCRC	mWarnedSchemaKeys[kMaxWarnedSchemaKeys];
+		uint32_t				mWarnedSchemaKeyCount = 0;
 	};
 }

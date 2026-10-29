@@ -1,8 +1,25 @@
 #include <DiaCellLayers/InspectorState.h>
+#include <DiaCellLayers/CellLayerRegistry.h>
 #include <DiaObservation/Profile/DiaProfile.h>
 #include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaValueSchema/ValueSchemaService.h>
+
+#include <chrono>
 
 using Dia::Core::StringCRC;
+
+namespace Dia::CellLayers
+{
+	namespace
+	{
+		const char* const kMetricPasses = "dia.celllayers.inspector.passes";
+		const char* const kMetricLayersPerPass = "dia.celllayers.inspector.layers_per_pass";
+		const char* const kMetricPassMs = "dia.celllayers.inspector.pass_ms";
+		const char* const kMetricPinned = "dia.celllayers.inspector.pinned";
+	}
+}
 
 namespace Dia::CellLayers
 {
@@ -80,7 +97,14 @@ namespace Dia::CellLayers
 		}
 	}
 
-	InspectorState::InspectorState() : mEntries(new Entry[kMaxShown]) {}
+	InspectorState::InspectorState() : mEntries(new Entry[kMaxShown])
+	{
+		auto& metrics = Dia::Observation::Metric::MetricRegistry::Instance();
+		mMetricPasses = metrics.RegisterCounter(StringCRC(kMetricPasses));
+		mMetricLayersPerPass = metrics.RegisterGauge(StringCRC(kMetricLayersPerPass));
+		mMetricPassMs = metrics.RegisterGauge(StringCRC(kMetricPassMs));
+		mMetricPinned = metrics.RegisterGauge(StringCRC(kMetricPinned));
+	}
 	InspectorState::~InspectorState()
 	{
 		Unpin();
@@ -95,6 +119,10 @@ namespace Dia::CellLayers
 		mFrozen = nullptr;
 		mFrozenCount = 0;
 		for (uint32_t i = 0; i < kMaxShown; ++i) { mEntries[i].aComputed = false; }
+		if (auto* gauge = static_cast<Dia::Observation::Metric::Gauge*>(mMetricPinned))
+		{
+			gauge->Set(0.0);
+		}
 	}
 
 	void InspectorState::CheckPinIdentity()
@@ -113,12 +141,17 @@ namespace Dia::CellLayers
 		Unpin();
 		mPinned = set;
 		mPending = true;	// A is live: the next Tick computes it with B
+		if (auto* gauge = static_cast<Dia::Observation::Metric::Gauge*>(mMetricPinned))
+		{
+			gauge->Set(1.0);
+		}
 		return true;
 	}
 
 	bool InspectorState::PinFreeze(const CellLayerRegistry& registry, LayerReader& reader, const Dia::ValueSchema::ValueSchemaService* schema,
 		const Dia::Graphics::CellGridDesc* grid, const ICellSelectionView* selection)
 	{
+		DIA_PROFILE_SCOPE("celllayers.inspector.pinfreeze", ::Dia::Observation::Profile::Category::kDiaGraphics);
 		if (!Pin(registry, grid, selection)) { return false; }
 		const uint32_t total = registry.LayerCountForGrid(grid);
 		mFrozen = new FrozenEntry[total ? total : 1u];
@@ -298,6 +331,7 @@ namespace Dia::CellLayers
 
 		DIA_TRACE_ZONE("celllayers.inspector.pass", ::Dia::Observation::Trace::Category::kDiaGraphics);
 		DIA_PROFILE_SCOPE("celllayers.inspector.pass", ::Dia::Observation::Profile::Category::kDiaGraphics);
+		const auto passStart = std::chrono::steady_clock::now();
 		uint32_t computed = 0;
 		for (uint32_t i = 0; i < mShownCount; ++i)
 		{
@@ -311,6 +345,7 @@ namespace Dia::CellLayers
 			{
 				e.computed = true;
 				e.seenVersion = version;
+				WarnUnresolvedSchemaKey(schema, d);
 				SelectionStats::Compute(registry, reader, schema, *selection, e.id, e.stats);
 				if (e.id == mBase)
 				{
@@ -330,6 +365,20 @@ namespace Dia::CellLayers
 		if (computed == 0) { return false; }
 		++mPassCount;
 		mLastPassLayerCount = computed;
+		const std::chrono::duration<double, std::milli> passMs = std::chrono::steady_clock::now() - passStart;
+		mLastPassMs = passMs.count();
+		if (auto* counter = static_cast<Dia::Observation::Metric::Counter*>(mMetricPasses))
+		{
+			counter->Inc();
+		}
+		if (auto* gauge = static_cast<Dia::Observation::Metric::Gauge*>(mMetricLayersPerPass))
+		{
+			gauge->Set(static_cast<double>(computed));
+		}
+		if (auto* gauge = static_cast<Dia::Observation::Metric::Gauge*>(mMetricPassMs))
+		{
+			gauge->Set(mLastPassMs);
+		}
 		return true;
 	}
 
@@ -346,5 +395,22 @@ namespace Dia::CellLayers
 	StringCRC InspectorState::ShownLayerAt(uint32_t index) const
 	{
 		return index < mShownCount ? mEntries[index].id : StringCRC::kZero;
+	}
+
+	void InspectorState::WarnUnresolvedSchemaKey(const Dia::ValueSchema::ValueSchemaService* schema, const CellLayerDesc* layer)
+	{
+		if (schema == nullptr || layer == nullptr) { return; }
+		if (schema->Find(layer->schemaKey) != nullptr) { return; }	// resolved
+		// Check if we've already warned for this key in this InspectorState lifetime
+		for (uint32_t i = 0; i < mWarnedSchemaKeyCount; ++i)
+		{
+			if (mWarnedSchemaKeys[i] == layer->schemaKey) { return; }	// already warned
+		}
+		// Haven't warned yet: record it (up to capacity) and warn once
+		if (mWarnedSchemaKeyCount < kMaxWarnedSchemaKeys)
+		{
+			mWarnedSchemaKeys[mWarnedSchemaKeyCount++] = layer->schemaKey;
+			DIA_LOG_WARNING("CEL", "Inspector: layer '%s' has an unresolved schemaKey '%s'", layer->id.AsChar(), layer->schemaKey.AsChar());
+		}
 	}
 }
