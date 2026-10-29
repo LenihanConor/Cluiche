@@ -1,0 +1,66 @@
+{
+    "version": 3,
+    "processing_units": [
+        {
+            "instance_id": "MainPU",
+            "frequency_hz": 30,
+            "dedicated_thread": false,
+            "modules": []
+        },
+        {
+            "instance_id": "SimPU",
+            "frequency_hz": 30,
+            "dedicated_thread": true,
+            "modules": [
+                {
+                    "instance_id": "CellLayersModule",
+                    "type_id": "CellLayersModule",
+                    "stages": [
+                        "CellLayersViewerTestStage"
+                    ],
+                    "dependencies": [],
+                    "channels": [
+                        {
+                            "id": "CellLayerRegistryService",
+                            "role": "provides"
+                        }
+                    ]
+                },
+                {
+                    "instance_id": "CellLayersViewerTestStageModule",
+                    "type_id": "CellLayersViewerTestStageModule",
+                    "stages": [
+                        "CellLayersViewerTestStage"
+                    ],
+                    "dependencies": [
+                        "VisualDebuggerModule",
+                        "Camera2DModule",
+                        "CellLayersModule"
+                    ],
+                    "channels": [
+                        {
+                            "id": "AutomationService",
+                            "role": "consumes"
+                        },
+                        {
+                            "id": "RenderToSim",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "KernelCellFieldRegistry",
+                            "role": "consumes"
+                        },
+                        {
+                            "id": "ValueSchemaService",
+                            "role": "consumes"
+                        },
+                        {
+                            "id": "CellLayerRegistryService",
+                            "role": "consumes"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

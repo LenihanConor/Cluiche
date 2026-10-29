@@ -1,0 +1,9 @@
+{
+    "name": "CellLayersViewerTestStage",
+    "manifest": "Stages/CellLayersViewerTestStage/misc/ApplicationFlow/cell_layers_viewer_test_stage.diaapp",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

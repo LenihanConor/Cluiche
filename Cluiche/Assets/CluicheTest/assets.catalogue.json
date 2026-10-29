@@ -1102,6 +1102,31 @@
                 "World"
             ],
             "type": "texture"
+        },
+        {
+            "id": "stage.cell_layers_viewer_test_stage",
+            "type": "stage",
+            "source_path": "Stages/CellLayersViewerTestStage/cell_layers_viewer_test_stage.diastage",
+            "scope": "global",
+            "tags": [
+                "misc"
+            ],
+            "references": [
+                {
+                    "type": "contains",
+                    "target": "manifest.cell_layers_viewer_test_stage"
+                }
+            ]
+        },
+        {
+            "id": "manifest.cell_layers_viewer_test_stage",
+            "type": "manifest",
+            "source_path": "Stages/CellLayersViewerTestStage/misc/ApplicationFlow/cell_layers_viewer_test_stage.diaapp",
+            "scope": "stage",
+            "stage_name": "CellLayersViewerTestStage",
+            "tags": [
+                "misc/ApplicationFlow"
+            ]
         }
     ],
     "rules_path": "assets.rules.json"

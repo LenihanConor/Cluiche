@@ -69,6 +69,7 @@ files = [
   { src = "External/Ultralight/resources/*", dest = "$(OutDir)assets/resources/" },
   { src = "Cluiche/Assets/CluicheTest/cluichetest.diagame", dest = "$(OutDir)assets/" },
   { src = "Dia/DiaValueSchema/Data/ramps.json", dest = "$(OutDir)assets/dia_data/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/CellLayersViewerTestStage/celllayers_viewer.schema.json", dest = "$(OutDir)assets/stages/CellLayersViewerTestStage/" },
   { src = "Cluiche/Assets/CluicheTest/registeredtypes.diaschema", dest = "$(OutDir)assets/" },
   { src = "Cluiche/Assets/CluicheTest/cluichetest.diaobservation", dest = "$(OutDir)assets/" },
   { src = "Cluiche/Assets/CluicheTest/assets.catalogue.json", dest = "$(OutDir)assets/" },

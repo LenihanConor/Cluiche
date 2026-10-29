@@ -1,0 +1,54 @@
+{
+  "format": "dia.value_schema",
+  "version": 1,
+  "for": "cluichetest.celllayers",
+  "entries": [
+    {
+      "key": "temperature",
+      "kind": "field",
+      "label": "Temperature",
+      "description": "Synthetic mean temperature per cell (smooth gradient, CellLayersViewer test stage).",
+      "unit": "C",
+      "type": "float",
+      "min": -20,
+      "max": 40,
+      "ui": { "hotkey": "t", "ramp": "sequential.heat", "default_base": true }
+    },
+    {
+      "key": "rainfall",
+      "kind": "field",
+      "label": "Rainfall",
+      "description": "Synthetic annual rainfall per cell (CellLayersViewer test stage).",
+      "unit": "mm",
+      "type": "float",
+      "min": 0,
+      "max": 400,
+      "ui": { "hotkey": "r", "ramp": "sequential.blue" }
+    },
+    {
+      "key": "biome",
+      "kind": "field",
+      "label": "Biome",
+      "description": "Synthetic biome category derived from the temperature and rainfall layers.",
+      "type": "enum",
+      "values": [
+        { "id": "tundra", "label": "Tundra", "description": "Cold and dry.", "colour": "#aaccee" },
+        { "id": "forest", "label": "Forest", "description": "Cold and wet.", "colour": "#228833" },
+        { "id": "desert", "label": "Desert", "description": "Warm and dry.", "colour": "#d9b45a" },
+        { "id": "jungle", "label": "Jungle", "description": "Warm and wet.", "colour": "#0b6b3a" }
+      ],
+      "ui": { "hotkey": "b" }
+    },
+    {
+      "key": "elevation",
+      "kind": "field",
+      "label": "Elevation",
+      "description": "Synthetic elevation on the small second grid (CellLayersViewer test stage).",
+      "unit": "m",
+      "type": "float",
+      "min": 0,
+      "max": 3000,
+      "ui": { "hotkey": "e", "ramp": "sequential.terrain" }
+    }
+  ]
+}

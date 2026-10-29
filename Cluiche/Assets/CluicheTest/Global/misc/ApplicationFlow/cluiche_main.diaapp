@@ -31,7 +31,8 @@
                 "MessageBusTestStage",
                 "MessageBusStressTestStage",
                 "JobSystemServiceTestStage",
-                "CellFieldRenderTestStage"
+                "CellFieldRenderTestStage",
+                "CellLayersViewerTestStage"
             ],
             "auto_advance": false
         },
@@ -224,6 +225,13 @@
                 "Boot"
             ],
             "auto_advance": false
+        },
+        {
+            "name": "CellLayersViewerTestStage",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
         }
     ],
     "initial_stage": "Boot",
@@ -337,6 +345,12 @@
             "kind": "ServiceStream",
             "payload_type": "ValueSchemaService",
             "from": "MainPU"
+        },
+        {
+            "id": "CellLayerRegistryService",
+            "kind": "ServiceStream",
+            "payload_type": "CellLayerRegistry",
+            "from": "SimPU"
         },
         {
             "id": "JobSystemService",
@@ -546,7 +560,8 @@
                         "GridVisibilityTestStage",
                         "MessageBusTestStage",
                         "MessageBusStressTestStage",
-                        "CellFieldRenderTestStage"
+                        "CellFieldRenderTestStage",
+                        "CellLayersViewerTestStage"
                     ],
                     "dependencies": [
                         "ObservationModule",
@@ -685,7 +700,8 @@
                         "GridVisibilityTestStage",
                         "MessageBusTestStage",
                         "MessageBusStressTestStage",
-                        "CellFieldRenderTestStage"
+                        "CellFieldRenderTestStage",
+                        "CellLayersViewerTestStage"
                     ],
                     "dependencies": [
                         "ObservationModule",
@@ -863,7 +879,8 @@
                         "GridVisibilityTestStage",
                         "MessageBusTestStage",
                         "MessageBusStressTestStage",
-                        "CellFieldRenderTestStage"
+                        "CellFieldRenderTestStage",
+                        "CellLayersViewerTestStage"
                     ],
                     "dependencies": [
                         "Camera2DModule"
@@ -1039,7 +1056,8 @@
                         "GridVisibilityTestStage",
                         "MessageBusTestStage",
                         "MessageBusStressTestStage",
-                        "CellFieldRenderTestStage"
+                        "CellFieldRenderTestStage",
+                        "CellLayersViewerTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"

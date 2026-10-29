@@ -241,6 +241,11 @@
     },
     {
       "allowed_pus": "sim",
+      "description": "Hosts the DiaCellLayers viewer over synthetic layers on two hex grids.",
+      "type_id": "CellLayersViewerTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
       "description": "Renders CellField layers for real and captures frames for pixel verification.",
       "type_id": "CellFieldRenderTestStageModule"
     },
@@ -536,6 +541,11 @@
     },
     {
       "allowed_pus": "any",
+      "description": "Owns the CellLayerRegistry and publishes it on the CellLayerRegistryService ServiceStream.",
+      "type_id": "CellLayersModule"
+    },
+    {
+      "allowed_pus": "any",
       "description": "Loads *.schema.json sidecars from the configured schema_roots aliases and publishes the read-only ValueSchemaService.",
       "type_id": "ValueSchemaModule"
     },
@@ -548,6 +558,6 @@
   "processing_units": [],
   "version": {
     "major": 1,
-    "minor": 38
+    "minor": 39
   }
 }
