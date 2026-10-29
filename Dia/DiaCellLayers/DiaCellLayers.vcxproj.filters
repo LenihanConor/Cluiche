@@ -36,6 +36,10 @@
     <ClInclude Include="Testing\FakeDebugDraw.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="CellSelection.h" />
+    <ClInclude Include="Testing\SelectionTestSupport.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />
@@ -46,6 +50,7 @@
     <ClCompile Include="CellLayerLegend.cpp" />
     <ClCompile Include="CellLayerViewerDomain.cpp" />
     <ClCompile Include="CellLayersModule.cpp" />
+    <ClCompile Include="CellSelection.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diacelllayers.architecture.module.md">

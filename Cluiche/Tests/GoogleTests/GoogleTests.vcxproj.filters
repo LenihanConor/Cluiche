@@ -2165,5 +2165,8 @@
     <ClCompile Include="DiaVisualDebugger\Console\TestDomainStateQuery.cpp">
       <Filter>DiaVisualDebugger\Console</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCellSelection.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
