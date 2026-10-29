@@ -15,7 +15,9 @@
 //
 // Commands (DiaAPI, RegisterCommands): cells.layer.list (JSON), cells.layer.base <id>, cells.overlay.toggle <id>,
 // plus the JSON forms (E2E / DebugServer channel) cells.layer.base_by_id {"id"} and cells.overlay.toggle_by_id {"id"}. An unknown
-// id returns a non-zero code and changes nothing. Panel commands (OnCommand): "base" {id}, "grid" {index}, "toggle" {drawer}.
+// id returns a non-zero code and changes nothing. Selection commands (JSON only; act on ActiveSelection()): cells.select.cell
+// {q,r}, .toggle {q,r}, .box {q0,r0,q1,r1}, .poly {points:[[x,y]..]} (WORLD coords), .category {layer,value}, .cells
+// {cells:[[q,r]..]}, .clear {}. Success {ok,count}; failure = error text (also logged on CEL at Info). Panel commands (OnCommand): "base" {id}, "grid" {index}, "toggle" {drawer}.
 // The registry is borrowed; CellLayersModule owns and publishes it on a ServiceStream (CL-006). A consumer module resolves it
 // with FindCellLayerRegistry(reader) (CellLayersModule.h) and passes *registry to the constructor.
 //
@@ -27,6 +29,7 @@
 #include <DiaCellLayers/CellPicker.h>
 #include <DiaCellLayers/CellSelection.h>
 #include <DiaCellLayers/HotkeyTable.h>
+#include <DiaCellLayers/LayerReader.h>
 #include <DiaCellLayers/LayerUploader.h>
 #include <DiaCore/Containers/Misc/FastDelegate.h>
 #include <DiaCore/Threading/Mutex.h>
@@ -100,6 +103,12 @@ namespace Dia::CellLayers
 
 	private:
 		void	RegisterJsonCommands();	// called by RegisterCommands
+		void	RegisterSelectionCommands();	// called by RegisterCommands
+
+		enum class SelectOp { Cell, Toggle, Box, Poly, Category, Cells, Clear };
+		// Runs one cells.select.* command on the active grid's selection (locks mMutex). Failure = {"error": "..."} and
+		// the selection is unchanged; the reason is logged on CEL at Info.
+		Json::Value	ExecuteSelect(SelectOp op, const char* name, const Json::Value& params);
 
 		struct OverlayState
 		{
@@ -129,6 +138,7 @@ namespace Dia::CellLayers
 		LayerUploader&			mUploader;
 		const Dia::ValueSchema::ValueSchemaService*	mSchema;
 		ViewFn					mView;
+		LayerReader				mReader;	// category selection reads (used under mMutex)
 		HotkeyTable				mHotkeys;
 		CellLayerLegend			mLegendBuilder;
 		Dia::ValueSchema::RampResolver*	mResolver = nullptr;	// owned; null without a schema

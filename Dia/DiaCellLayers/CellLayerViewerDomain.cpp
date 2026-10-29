@@ -1,8 +1,11 @@
 #ifdef DIA_DEBUG
 #include <DiaCellLayers/CellLayerViewerDomain.h>
 
+#include <DiaCellLayers/SelectionTools.h>
+
 #include <string.h>
 #include <string>
+#include <vector>
 
 #include <DiaAPI/DiaAPI.h>
 #include <DiaObservation/Health/HealthRegistry.h>
@@ -42,6 +45,7 @@ namespace Dia::CellLayers
 		, mUploader(uploader)
 		, mSchema(schema)
 		, mView(view)
+		, mReader(registry)
 		, mHotkeys(registry, schema)
 	{
 		if (mSchema != nullptr) { mResolver = new Dia::ValueSchema::RampResolver(*mSchema); }
@@ -607,6 +611,7 @@ namespace Dia::CellLayers
 		});
 
 		RegisterJsonCommands();
+		RegisterSelectionCommands();
 
 		Dia::API::RegisterCommand({
 			StringCRC("cells.overlay.toggle"),
@@ -677,10 +682,202 @@ namespace Dia::CellLayers
 		Dia::API::RegisterCommandJson(toggle);
 	}
 
+	namespace
+	{
+		const char* const kSelectCommands[] = {
+			"cells.select.cell", "cells.select.toggle", "cells.select.box", "cells.select.poly",
+			"cells.select.category", "cells.select.cells", "cells.select.clear"
+		};
+
+		Json::Value SelectError(const std::string& msg)
+		{
+			Json::Value out(Json::objectValue);
+			out["error"] = msg;
+			return out;
+		}
+
+		bool GetInt(const Json::Value& params, const char* key, int32_t& out)
+		{
+			if (!params.isObject() || !params.isMember(key) || !params[key].isInt()) { return false; }	// strings, bools, null, NaN, fractions fail
+			out = params[key].asInt();
+			return true;
+		}
+
+		bool IntPair(const Json::Value& v, int32_t& a, int32_t& b)
+		{
+			if (!v.isArray() || v.size() != 2 || !v[0u].isInt() || !v[1u].isInt()) { return false; }
+			a = v[0u].asInt();
+			b = v[1u].asInt();
+			return true;
+		}
+	}
+
+	void CellLayerViewerDomain::RegisterSelectionCommands()
+	{
+		struct Def { SelectOp op; const char* description; };
+		const Def defs[] = {
+			{ SelectOp::Cell, "Replace the selection with one cell: params {\"q\": int, \"r\": int}; returns {ok, count}" },
+			{ SelectOp::Toggle, "Toggle one cell in the selection: params {\"q\": int, \"r\": int}; returns {ok, count}" },
+			{ SelectOp::Box, "Replace the selection with an inclusive cell rectangle (any corner order): params {\"q0\",\"r0\",\"q1\",\"r1\": int}; returns {ok, count}" },
+			{ SelectOp::Poly, "Replace the selection with the cells whose centres lie in a polygon: params {\"points\": [[x, y], ...]} (>= 3 points). Points are WORLD coordinates in the cell-centre space (flat-top odd-q, y down), NOT cell coordinates; returns {ok, count}" },
+			{ SelectOp::Category, "Replace the selection with every cell of a category layer holding a value: params {\"layer\": \"<layer id>\", \"value\": \"<enum id>\" or number}; returns {ok, count}" },
+			{ SelectOp::Cells, "Replace the selection with an explicit cell list: params {\"cells\": [[q, r], ...]} (cap 2048); returns {ok, count, requested, accepted: [[q, r], ...], overCap (only when over the cap)}" },
+			{ SelectOp::Clear, "Clear the selection: params {}; returns {ok, count}" },
+		};
+		for (uint32_t i = 0; i < 7; ++i)
+		{
+			Dia::API::CommandInfoJson info;
+			info.name = StringCRC(kSelectCommands[i]);
+			info.description = defs[i].description;
+			info.category = StringCRC("cells");
+			info.owner = "DiaCellLayers";
+			const SelectOp op = defs[i].op;
+			const char* const name = kSelectCommands[i];
+			info.callback = [this, op, name](const Json::Value& params) -> Json::Value { return ExecuteSelect(op, name, params); };
+			Dia::API::RegisterCommandJson(info);
+		}
+	}
+
+	Json::Value CellLayerViewerDomain::ExecuteSelect(SelectOp op, const char* name, const Json::Value& params)
+	{
+		namespace Tools = SelectionTools;
+		Lock l(mMutex);
+
+		std::string error;
+		Json::Value out(Json::objectValue);
+		CellSelection* sel = mRegistry.SelectionFor(mActiveGrid);
+		if (sel == nullptr) { error = "no active grid"; }
+		else
+		{
+			Tools::ToolResult res;
+			int32_t a = 0, b = 0, c = 0, d = 0;
+			switch (op)
+			{
+			case SelectOp::Cell:
+			case SelectOp::Toggle:
+				if (!GetInt(params, "q", a)) { error = "missing or non-integer param 'q'"; }
+				else if (!GetInt(params, "r", b)) { error = "missing or non-integer param 'r'"; }
+				else { res = (op == SelectOp::Cell) ? Tools::SelectCell(*sel, a, b) : Tools::ToggleCell(*sel, a, b); }
+				break;
+			case SelectOp::Box:
+				if (!GetInt(params, "q0", a)) { error = "missing or non-integer param 'q0'"; }
+				else if (!GetInt(params, "r0", b)) { error = "missing or non-integer param 'r0'"; }
+				else if (!GetInt(params, "q1", c)) { error = "missing or non-integer param 'q1'"; }
+				else if (!GetInt(params, "r1", d)) { error = "missing or non-integer param 'r1'"; }
+				else { res = Tools::SelectBox(*sel, a, b, c, d); }
+				break;
+			case SelectOp::Poly:
+			{
+				if (!params.isObject() || !params["points"].isArray()) { error = "missing or non-array param 'points'"; break; }
+				const Json::Value& pts = params["points"];
+				if (pts.size() < 3) { error = "needs at least 3 points"; break; }
+				std::vector<Tools::PolyPoint> verts;
+				verts.reserve(pts.size());
+				for (Json::ArrayIndex i = 0; i < pts.size(); ++i)
+				{
+					const Json::Value& p = pts[i];
+					if (!p.isArray() || p.size() != 2 || !p[0u].isNumeric() || !p[1u].isNumeric())
+					{
+						error = "point " + std::to_string(i) + " is not a [x, y] number pair";
+						break;
+					}
+					verts.push_back({ static_cast<float>(p[0u].asDouble()), static_cast<float>(p[1u].asDouble()) });
+				}
+				if (!error.empty()) { break; }
+				res = Tools::SelectPolygon(*sel, verts.data(), static_cast<uint32_t>(verts.size()));
+				if (!res.ok) { error = "invalid polygon (non-finite coordinate or grid without cell size)"; }
+				break;
+			}
+			case SelectOp::Category:
+			{
+				if (!params.isObject() || !params["layer"].isString() || params["layer"].asString().empty()) { error = "missing or non-string param 'layer'"; break; }
+				const Json::Value& v = params["value"];
+				std::string value;
+				if (v.isString()) { value = v.asString(); }
+				else if (v.isNumeric())
+				{
+					char buf[40];
+					if (v.isIntegral()) { snprintf(buf, sizeof(buf), "%lld", static_cast<long long>(v.asInt64())); }
+					else { snprintf(buf, sizeof(buf), "%.9g", v.asDouble()); }
+					value = buf;
+				}
+				else { error = "missing or non-string/number param 'value'"; break; }
+				const std::string layer = params["layer"].asString();
+				const Tools::CategoryResult cr = Tools::SelectCategory(*sel, mReader, mRegistry, mSchema, StringCRC(layer.c_str()), value.c_str());
+				res = cr;
+				switch (cr.error)
+				{
+				case Tools::CategoryError::None: break;
+				case Tools::CategoryError::UnknownLayer: error = "unknown layer id '" + layer + "'"; break;
+				case Tools::CategoryError::NotCategoryLayer: error = "layer '" + layer + "' is not a category layer"; break;
+				case Tools::CategoryError::UnknownValue: error = "unknown value '" + value + "'"; break;
+				case Tools::CategoryError::NoData: error = "layer '" + layer + "' has no data in this view"; break;
+				case Tools::CategoryError::GridMismatch: error = "layer '" + layer + "' is not on the active grid"; break;
+				}
+				if (error.empty() && !res.ok) { error = "category selection failed"; }
+				break;
+			}
+			case SelectOp::Cells:
+			{
+				if (!params.isObject() || !params["cells"].isArray()) { error = "missing or non-array param 'cells'"; break; }
+				const Json::Value& cells = params["cells"];
+				const uint32_t requested = cells.size();
+				// One pair past the cap is enough for SelectCells to report overCap; the rest is validated but not copied.
+				std::vector<int32_t> qr;
+				qr.reserve(2u * (Tools::kMaxCellsPerCall + 1u));
+				for (Json::ArrayIndex i = 0; i < cells.size(); ++i)
+				{
+					int32_t q = 0, r = 0;
+					if (!IntPair(cells[i], q, r)) { error = "cell " + std::to_string(i) + " is not an integer [q, r] pair"; break; }
+					if (i <= Tools::kMaxCellsPerCall) { qr.push_back(q); qr.push_back(r); }
+				}
+				if (!error.empty()) { break; }
+				std::vector<uint32_t> accepted(2u * Tools::kMaxCellsPerCall);
+				const uint32_t given = requested < Tools::kMaxCellsPerCall + 1u ? requested : Tools::kMaxCellsPerCall + 1u;
+				const Tools::CellsResult cr = Tools::SelectCells(*sel, qr.data(), given, accepted.data(), Tools::kMaxCellsPerCall);
+				res = cr;
+				Json::Value list(Json::arrayValue);
+				const uint32_t n = cr.accepted < Tools::kMaxCellsPerCall ? cr.accepted : Tools::kMaxCellsPerCall;
+				for (uint32_t i = 0; i < n; ++i)
+				{
+					Json::Value pr(Json::arrayValue);
+					pr.append(static_cast<int>(accepted[2u * i]));
+					pr.append(static_cast<int>(accepted[2u * i + 1u]));
+					list.append(pr);
+				}
+				out["requested"] = requested;
+				out["accepted"] = list;
+				if (cr.overCap)
+				{
+					out["overCap"] = true;
+					DIA_LOG_WARNING("CEL", "%s: %u cells requested, only the first %u are used", name, requested, Tools::kMaxCellsPerCall);
+				}
+				break;
+			}
+			case SelectOp::Clear:
+				res = Tools::ClearSelection(*sel);
+				break;
+			}
+			if (error.empty())
+			{
+				out["ok"] = true;
+				out["count"] = res.count;
+			}
+		}
+
+		if (!error.empty())
+		{
+			DIA_LOG_INFO("CEL", "%s rejected: %s", name, error.c_str());
+			return SelectError(error);
+		}
+		return out;
+	}
+
 	void CellLayerViewerDomain::UnregisterCommands()
 	{
 		if (!mCommandsRegistered) { return; }
 		mCommandsRegistered = false;
+		for (const char* n : kSelectCommands) { Dia::API::UnregisterCommandJson(StringCRC(n)); }
 		Dia::API::UnregisterCommandJson(StringCRC("cells.layer.list"));
 		Dia::API::UnregisterCommandJson(StringCRC("cells.layer.base_by_id"));
 		Dia::API::UnregisterCommandJson(StringCRC("cells.overlay.toggle_by_id"));
