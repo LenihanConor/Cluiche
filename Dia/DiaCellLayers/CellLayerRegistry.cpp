@@ -21,6 +21,7 @@ namespace Dia::CellLayers
 		: mSchema(schema)
 		, mCurrentPuId(currentPuId ? currentPuId : &DefaultPuId)
 		, mOwnerPuId(mCurrentPuId())
+		, mDetails(mCurrentPuId)
 	{
 	}
 

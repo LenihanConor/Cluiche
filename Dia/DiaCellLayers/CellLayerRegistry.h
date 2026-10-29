@@ -8,6 +8,7 @@
 // rejected, leaving the registry unchanged. Callbacks are FastDelegates (bind with fastdelegate::MakeDelegate).
 // Descs hold borrowed pointers (grid); the registered system must outlive its registration.
 
+#include <DiaCellLayers/CellDetailRegistry.h>
 #include <DiaCellLayers/CellLayersTypes.h>
 #include <DiaCellLayers/CellSelection.h>
 #include <DiaCellLayers/IViewValueSource.h>
@@ -112,6 +113,10 @@ namespace Dia::CellLayers
 		// Null when the grid is null, has no registered layer, or has no selection entry yet.
 		const ICellSelectionView*	SelectionView(const Dia::Graphics::CellGridDesc* grid) const;
 
+		// Selection Inspector detail providers (CL-006: reached through the registry, not a static). Same owner PU as the layers.
+		CellDetailRegistry&			Details() { return mDetails; }
+		const CellDetailRegistry&	Details() const { return mDetails; }
+
 	private:
 		struct SelectionEntry
 		{
@@ -137,5 +142,6 @@ namespace Dia::CellLayers
 		CellOverlayDesc		mOverlays[kMaxOverlays];
 		mutable SelectionEntry	mSelections[kMaxSelectionGrids];
 		bool				mSelectionCapacityLogged = false;
+		CellDetailRegistry	mDetails;
 	};
 }

@@ -2214,5 +2214,8 @@
     <ClCompile Include="DiaCellLayers\TestSelectionPin.cpp">
       <Filter>DiaCellLayers</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCellDetailRegistry.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

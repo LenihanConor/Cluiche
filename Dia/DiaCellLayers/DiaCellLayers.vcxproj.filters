@@ -50,6 +50,10 @@
     <ClInclude Include="SelectionInput.h" />
     <ClInclude Include="SelectionStats.h" />
     <ClInclude Include="InspectorState.h" />
+    <ClInclude Include="CellDetailRegistry.h" />
+    <ClInclude Include="Testing\CellDetailTestSupport.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />
@@ -67,6 +71,7 @@
     <ClCompile Include="SelectionInput.cpp" />
     <ClCompile Include="SelectionStats.cpp" />
     <ClCompile Include="InspectorState.cpp" />
+    <ClCompile Include="CellDetailRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diacelllayers.architecture.module.md">

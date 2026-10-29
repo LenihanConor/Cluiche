@@ -1026,6 +1026,7 @@
     <ClCompile Include="DiaCellLayers\TestSelectionStats.cpp" />
     <ClCompile Include="DiaCellLayers\TestInspectorState.cpp" />
     <ClCompile Include="DiaCellLayers\TestSelectionPin.cpp" />
+    <ClCompile Include="DiaCellLayers\TestCellDetailRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
