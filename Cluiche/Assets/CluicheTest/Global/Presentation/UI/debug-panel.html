@@ -288,6 +288,48 @@ body {
 }
 .selection-group select:focus { border-color: #5a9fd4; }
 .cl-banner { padding: 6px 8px; font-size: 10px; color: #f5a623; background: #2a2510; border: 1px solid #4a4520; border-radius: 2px; margin-bottom: 8px; }
+/* Selection Inspector card (diacelllayers/mockups/cell-layer-viewer.html: stats table, biome chips, histogram, pin buttons) */
+.cl-inspector { margin-top: 4px; margin-bottom: 8px; padding-top: 6px; border-top: 1px solid #222; }
+.insp-title { display: flex; align-items: center; gap: 8px; font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+.insp-updating { font-size: 8px; padding: 1px 5px; border-radius: 2px; background: #2a2510; border: 1px solid #4a4520; color: #f5a623; text-transform: none; letter-spacing: 0; }
+.insp-empty { padding: 8px 6px; font-size: 11px; color: #555; font-style: italic; text-align: center; }
+.pin-buttons { display: flex; gap: 4px; margin-bottom: 6px; flex-wrap: wrap; align-items: center; }
+.pin-btn { flex: 1; padding: 4px 8px; background: #252525; border: 1px solid #3a3a3a; color: #999; border-radius: 2px; font-size: 9px; cursor: pointer; font-family: inherit; }
+.pin-btn:hover { background: #2a2a2a; color: #ccc; }
+.pin-btn[disabled] { opacity: 0.4; cursor: default; }
+.pinned-chip { display: inline-block; font-size: 9px; padding: 4px 8px; background: #1a2530; border: 1px solid #2a3a50; color: #5a9fd4; border-radius: 2px; margin-bottom: 6px; }
+.frozen-badge { display: inline-block; font-size: 8px; padding: 1px 5px; margin-left: 4px; border-radius: 2px; background: #1a2a3a; border: 1px solid #3a5a80; color: #8fc4f0; }
+.insp-group { margin-bottom: 6px; }
+.insp-group-header { font-size: 9px; color: #888; text-transform: uppercase; letter-spacing: 0.8px; padding: 4px 6px; background: #1a1a1a; border-radius: 2px; cursor: pointer; user-select: none; }
+.insp-group-header:hover { color: #ccc; }
+.insp-group-header .caret { display: inline-block; width: 10px; color: #5a9fd4; }
+.insp-scroll { overflow-x: auto; }
+.stats-table { width: 100%; border-collapse: collapse; font-size: 10px; margin: 4px 0; }
+.stats-table th { background: #1a1a1a; padding: 3px 4px; text-align: left; font-weight: 600; color: #777; font-size: 9px; border-bottom: 1px solid #2a2a2a; white-space: nowrap; }
+.stats-table th.cmp-a { color: #8fc4f0; }
+.stats-table th.cmp-d { color: #5a9fd4; }
+.stats-table td { padding: 3px 4px; color: #aaa; border-bottom: 1px solid #0f0f0f; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.stats-table td:first-child { color: #999; }
+.stats-table td.num { text-align: right; }
+.stats-table td.unit { color: #666; }
+.stats-table td.nf { color: #666; font-style: italic; }
+.stats-table tr:hover { background: #1a1a1a; }
+.stats-table .d-pos { color: #5a9fd4; }
+.stats-table .d-neg { color: #e74c3c; }
+.stats-table .d-zero { color: #999; }
+.range-bar { position: relative; width: 48px; height: 6px; background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 1px; display: inline-block; vertical-align: middle; }
+.range-bar .span { position: absolute; top: 0; bottom: 0; background: #2a5a2a; }
+.range-bar .mean { position: absolute; top: -1px; bottom: -1px; width: 2px; background: #5a9fd4; }
+.biome-counts { margin: 4px 0; padding: 4px 6px; background: #1a1a1a; border-radius: 2px; }
+.biome-counts-title { font-size: 9px; color: #666; margin-bottom: 3px; }
+.biome-chip { display: inline-block; font-size: 9px; padding: 2px 6px; background: #252525; border: 1px solid #3a3a3a; color: #999; border-radius: 2px; margin-right: 4px; margin-bottom: 2px; }
+.insp-histogram-title { font-size: 9px; color: #666; margin: 6px 0 3px 0; }
+.histogram { height: 60px; background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 2px; margin-bottom: 4px; display: flex; align-items: flex-end; padding: 4px; gap: 2px; }
+.histogram-bar { flex: 1; background: linear-gradient(to top, #2a5a2a, #5a9fd4); border-radius: 1px; min-height: 1px; }
+.histogram-foot { display: flex; justify-content: space-between; font-size: 9px; color: #666; margin-bottom: 6px; }
+.histogram-foot .oor { color: #f5a623; }
+.insp-cell-title { font-size: 11px; color: #5a9fd4; margin: 6px 0 4px 0; }
+.insp-details-section td { background: #1a1a1a; color: #888; font-size: 9px; text-transform: uppercase; letter-spacing: 0.8px; }
 .layer-search { margin-bottom: 8px; }
 .layer-search input {
   width: 100%; background: #1a1a1a; border: 1px solid #2a2a2a; color: #ccc;
@@ -912,7 +954,8 @@ function formatValue(v, decimals) {
 // groupNumber,description?}], groups[{name,layers[ids]}], overlays[{id,label,enabled}], grids[], gridSelector[] (multi-grid only),
 // legend{available,category,ramp,stops,ticks,unit,seen,swatches}, hover{valid,q,r,label,description,unit,text}.
 // selection{count,tool,group,groups[{id,label,selected}],tooLarge,tooLargeText?}. The page only sends commands (base {id}, grid {index}, toggle {drawer},
-// select_tool {tool}, select_group {layer}, select_clear {}); the domain owns all state. Commands are
+// select_tool {tool}, select_group {layer}, select_clear {}, select_pin {freeze?}, select_unpin {}, inspector_expand {group, expanded}); the domain owns all state.
+// inspector{...}: the Selection Inspector card (see renderInspector). Commands are
 // addressed by the domain's registry id (domain.cmdId, from the state's _id; the card is keyed by display name).
 // Layout/classes follow docs/specs/applications/dia/systems/diacelllayers/mockups/cell-layer-viewer.html.
 
@@ -1009,6 +1052,317 @@ function refreshSelection(root, s) {
   if (banner) banner.textContent = s.tooLargeText || 'Selection too large to outline';
 }
 
+// ── Selection Inspector card (Feature 4) ──────────────────────────────────
+// State "inspector" (InspectorModel::BuildCardJson, built from the domain's cache): hasSelection, updating, expandedGroups[], base,
+// layers[{id,schemaKey,label,unit,tooltip,kind,group,rangeMin?,rangeMax?,count,nanCount,min,mean,max,categories?,other?,
+// a?{..}|{notFrozen}|{notComputed}, delta?{count,min,mean,max}}], histogram{bins[16],minRange,maxRange,valid,outOfRangeLow,
+// outOfRangeHigh,count,nanCount} | {categories,other,nanCount}, pinned{count,frozen}, cell{index,q,r,rows[],details[]}.
+// The page only renders it and sends commands: select_pin {freeze?}, select_unpin {}, inspector_expand {group, expanded}.
+
+function inspNum(x) {
+  if (x === null || x === undefined || !isFinite(Number(x))) return '–';
+  var n = Number(x);
+  if (n === Math.floor(n)) return String(n);
+  return String(Number(n.toPrecision(5)));
+}
+
+function inspExact(x) {
+  if (x === null || x === undefined || !isFinite(Number(x))) return '–';
+  return String(Number(Number(x).toPrecision(7)));
+}
+
+function inspDelta(x) {
+  if (x === null || x === undefined || !isFinite(Number(x))) return ['–', 'd-zero'];
+  var n = Number(x);
+  if (n === 0) return ['0', 'd-zero'];
+  return [(n > 0 ? '+' : '−') + inspNum(Math.abs(n)), n > 0 ? 'd-pos' : 'd-neg'];
+}
+
+function inspCell(tr, text, cls) {
+  var td = el('td', cls || '', text);
+  tr.appendChild(td);
+  return td;
+}
+
+function inspRangeBar(l) {
+  var bar = el('span', 'range-bar');
+  var lo = Number(l.rangeMin), hi = Number(l.rangeMax);
+  if (l.rangeMin === undefined || l.rangeMax === undefined || !(hi > lo) || l.min === null || l.min === undefined) return bar;
+  var pos = function (v) { return Math.max(0, Math.min(100, (Number(v) - lo) / (hi - lo) * 100)); };
+  var a = pos(l.min), b = pos(l.max);
+  var span = el('span', 'span');
+  span.style.left = a + '%';
+  span.style.width = Math.max(1, b - a) + '%';
+  bar.appendChild(span);
+  var mean = el('span', 'mean');
+  mean.style.left = pos(l.mean) + '%';
+  bar.appendChild(mean);
+  return bar;
+}
+
+function inspCategoryChips(title, o, role) {
+  var box = el('div', 'biome-counts');
+  if (role) box.setAttribute('data-role', role);
+  if (title) box.appendChild(el('div', 'biome-counts-title', title));
+  var cats = Array.isArray(o.categories) ? o.categories : [];
+  for (var i = 0; i < cats.length; ++i) {
+    if (!(cats[i].count > 0)) continue;
+    var chip = el('span', 'biome-chip', (cats[i].label || cats[i].id) + ': ' + cats[i].count);
+    chip.setAttribute('data-category', cats[i].id);
+    box.appendChild(chip);
+  }
+  if (o.other > 0) box.appendChild(el('span', 'biome-chip', 'Other: ' + o.other));
+  if (o.nanCount > 0) box.appendChild(el('span', 'biome-chip', 'NaN: ' + o.nanCount));
+  return box;
+}
+
+function inspStatsTable(layers, pinned, frozen) {
+  var wrap = el('div', 'insp-scroll');
+  var table = el('table', 'stats-table');
+  var head = el('tr');
+  var cols = ['Layer', 'Count', 'Min', 'Mean', 'Max', 'Unit'];
+  var hcls = ['', '', '', '', '', ''];
+  if (!pinned) { cols.push(''); hcls.push(''); }   // range bar column; the compare columns need the width instead
+  if (pinned) {
+    var sub = ['n', 'min', 'mean', 'max'];
+    for (var s = 0; s < sub.length; ++s) { cols.push('A ' + sub[s]); hcls.push('cmp-a'); }
+    for (var d = 0; d < sub.length; ++d) { cols.push('Δ ' + sub[d]); hcls.push('cmp-d'); }
+  }
+  for (var c = 0; c < cols.length; ++c) {
+    var th = el('th', hcls[c], cols[c]);
+    if (pinned && c === 6 && frozen) { var fb = el('span', 'frozen-badge', 'frozen'); fb.setAttribute('data-role', 'frozen-badge'); th.appendChild(fb); }
+    head.appendChild(th);
+  }
+  var thead = el('thead');
+  thead.appendChild(head);
+  table.appendChild(thead);
+  var tbody = el('tbody');
+  for (var i = 0; i < layers.length; ++i) {
+    var l = layers[i];
+    var tr = el('tr');
+    tr.setAttribute('data-layer', l.id);
+    var name = inspCell(tr, l.label || l.id);
+    if (l.tooltip) name.title = l.tooltip;
+    if (l.kind === 'category') {
+      var cc = el('td');
+      cc.setAttribute('colspan', String(cols.length - 1));
+      var chips = inspCategoryChips(null, l);
+      chips.insertBefore(el('span', 'biome-chip', 'n: ' + l.count), chips.firstChild);
+      cc.appendChild(chips);
+      tr.appendChild(cc);
+      tbody.appendChild(tr);
+      continue;
+    }
+    inspCell(tr, inspNum(l.count), 'num');
+    inspCell(tr, inspNum(l.min), 'num');
+    inspCell(tr, inspNum(l.mean), 'num');
+    inspCell(tr, inspNum(l.max), 'num');
+    inspCell(tr, l.unit || '', 'unit');
+    if (!pinned) {
+      var barCell = el('td');
+      barCell.appendChild(inspRangeBar(l));
+      tr.appendChild(barCell);
+    }
+    if (pinned) {
+      var a = l.a || {};
+      if (a.notFrozen || a.notComputed) {
+        var nf = inspCell(tr, a.notFrozen ? 'not frozen' : 'not computed', 'nf');
+        nf.setAttribute('colspan', '8');
+        if (a.notFrozen) nf.setAttribute('data-role', 'not-frozen');
+      } else {
+        inspCell(tr, inspNum(a.count), 'num');
+        inspCell(tr, inspNum(a.min), 'num');
+        inspCell(tr, inspNum(a.mean), 'num');
+        inspCell(tr, inspNum(a.max), 'num');
+        var dl = l.delta || {};
+        var keys = ['count', 'min', 'mean', 'max'];
+        for (var k = 0; k < keys.length; ++k) {
+          var dv = inspDelta(dl[keys[k]]);
+          var dtd = inspCell(tr, dv[0], 'num ' + dv[1]);
+          if (k > 0 && l.unit && dv[0] !== '–') dtd.title = l.unit;
+        }
+      }
+    }
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+  return wrap;
+}
+
+function inspHistogram(insp, baseLabel) {
+  var h = insp.histogram;
+  var box = el('div', 'insp-histogram');
+  box.setAttribute('data-role', 'histogram');
+  if (!h) return box;
+  if (Array.isArray(h.bins)) {
+    box.appendChild(el('div', 'insp-histogram-title', 'Histogram: ' + baseLabel));
+    var hist = el('div', 'histogram');
+    var maxBin = 0;
+    for (var i = 0; i < h.bins.length; ++i) maxBin = Math.max(maxBin, h.bins[i]);
+    var span = Number(h.maxRange) - Number(h.minRange);
+    for (var b = 0; b < h.bins.length; ++b) {
+      var bar = el('div', 'histogram-bar');
+      bar.style.height = (maxBin > 0 ? (h.bins[b] / maxBin * 100) : 0) + '%';
+      bar.title = (h.valid ? inspNum(Number(h.minRange) + span * b / h.bins.length) + ' – ' + inspNum(Number(h.minRange) + span * (b + 1) / h.bins.length) + ': ' : '') + h.bins[b];
+      hist.appendChild(bar);
+    }
+    box.appendChild(hist);
+    var foot = el('div', 'histogram-foot');
+    foot.appendChild(el('span', '', h.valid ? inspNum(h.minRange) : ''));
+    if (h.outOfRangeLow > 0 || h.outOfRangeHigh > 0) {
+      var oor = el('span', 'oor', 'out of range: ' + h.outOfRangeLow + ' low, ' + h.outOfRangeHigh + ' high');
+      oor.setAttribute('data-role', 'histogram-oor');
+      foot.appendChild(oor);
+    }
+    foot.appendChild(el('span', '', h.valid ? inspNum(h.maxRange) : ''));
+    box.appendChild(foot);
+  } else {
+    box.appendChild(inspCategoryChips(baseLabel + ' counts:', h, 'histogram-categories'));
+  }
+  return box;
+}
+
+function inspCellSection(cell) {
+  var sec = el('div', 'insp-cell');
+  sec.setAttribute('data-role', 'inspector-cell');
+  sec.appendChild(el('div', 'insp-cell-title', 'Cell (' + cell.q + ', ' + cell.r + ')  #' + cell.index));
+  var table = el('table', 'stats-table');
+  var rows = Array.isArray(cell.rows) ? cell.rows : [];
+  for (var i = 0; i < rows.length; ++i) {
+    var r = rows[i];
+    var tr = el('tr');
+    tr.setAttribute('data-layer', r.layer);
+    inspCell(tr, r.label || r.layer);
+    var text;
+    if (!r.hasData) text = 'no data';
+    else if (r.isNaN) text = 'NaN';
+    else if (r.kind === 'category') text = r.otherValue ? 'other (' + inspExact(r.value) + ')' : (r.enumLabel || r.enumId || inspExact(r.value));
+    else text = inspExact(r.value);
+    inspCell(tr, text, 'num');
+    inspCell(tr, r.kind === 'category' ? '' : (r.unit || ''), 'unit');
+    table.appendChild(tr);
+  }
+  var details = Array.isArray(cell.details) ? cell.details : [];
+  for (var d = 0; d < details.length; ++d) {
+    var dr = details[d];
+    var dtr = el('tr');
+    if (dr.kind === 'section') {
+      dtr.className = 'insp-details-section';
+      var st = inspCell(dtr, dr.label);
+      st.setAttribute('colspan', '3');
+    } else if (dr.kind === 'value') {
+      var lt = inspCell(dtr, dr.label || dr.schemaKey);
+      if (dr.tooltip) lt.title = dr.tooltip;
+      inspCell(dtr, dr.value === undefined ? '–' : inspExact(dr.value), 'num');
+      inspCell(dtr, dr.unit || '', 'unit');
+    } else {
+      inspCell(dtr, dr.label);
+      var tt = inspCell(dtr, dr.text);
+      tt.setAttribute('colspan', '2');
+    }
+    table.appendChild(dtr);
+  }
+  if (cell.detailsTruncated) {
+    var trn = el('tr');
+    var tc = inspCell(trn, 'more details not shown', 'nf');
+    tc.setAttribute('colspan', '3');
+    table.appendChild(trn);
+  }
+  sec.appendChild(table);
+  return sec;
+}
+
+function renderInspector(host, insp, v, cmdId) {
+  host.innerHTML = '';
+  var title = el('div', 'insp-title', 'Selection inspector');
+  var mark = el('span', 'insp-updating', 'updating');
+  mark.setAttribute('data-role', 'inspector-updating');
+  mark.style.display = insp.updating ? '' : 'none';
+  title.appendChild(mark);
+  host.appendChild(title);
+
+  var pinRow = el('div', 'pin-buttons');
+  pinRow.setAttribute('data-role', 'inspector-pin-row');
+  var defs = [['pin', 'Pin as A', 'select_pin', {}], ['freeze', 'Pin + freeze', 'select_pin', { freeze: true }], ['unpin', 'Unpin', 'select_unpin', {}]];
+  for (var i = 0; i < defs.length; ++i) {
+    var b = el('button', 'pin-btn', defs[i][1]);
+    b.setAttribute('type', 'button');
+    b.setAttribute('data-role', 'inspector-' + defs[i][0]);
+    if (defs[i][0] === 'unpin' ? !insp.pinned : !insp.hasSelection) b.setAttribute('disabled', 'disabled');
+    (function (cmd, args) {
+      b.addEventListener('click', function (e) { e.stopPropagation(); if (!this.hasAttribute('disabled')) sendCommand(cmdId, cmd, args); });
+    })(defs[i][2], defs[i][3]);
+    pinRow.appendChild(b);
+  }
+  host.appendChild(pinRow);
+  if (insp.pinned) {
+    var chip = el('div', 'pinned-chip', 'A: ' + insp.pinned.count + (insp.pinned.count === 1 ? ' cell' : ' cells') + (insp.pinned.frozen ? '' : ' (live)'));
+    chip.setAttribute('data-role', 'inspector-pinned');
+    if (insp.pinned.frozen) {
+      var fb = el('span', 'frozen-badge', 'frozen');
+      fb.setAttribute('data-role', 'frozen-badge');
+      chip.appendChild(fb);
+    }
+    host.appendChild(chip);
+  }
+
+  if (!insp.hasSelection) {
+    var empty = el('div', 'insp-empty', 'Select cells to inspect');
+    empty.setAttribute('data-role', 'inspector-empty');
+    host.appendChild(empty);
+    return;
+  }
+
+  var byId = {};
+  var layers = Array.isArray(insp.layers) ? insp.layers : [];
+  for (var li = 0; li < layers.length; ++li) byId[layers[li].id] = layers[li];
+  var expanded = Array.isArray(insp.expandedGroups) ? insp.expandedGroups : [];
+  var groups = Array.isArray(v.groups) ? v.groups : [];
+  var baseLabel = insp.base || '';
+  for (var bl = 0; bl < layers.length; ++bl) if (layers[bl].schemaKey === insp.base) baseLabel = layers[bl].label || layers[bl].id;
+  var frozen = !!(insp.pinned && insp.pinned.frozen);
+  for (var g = 0; g < groups.length; ++g) {
+    var name = groups[g].name;
+    var open = expanded.indexOf(name) >= 0;
+    var grp = el('div', 'insp-group');
+    grp.setAttribute('data-group', name);
+    var gh = el('div', 'insp-group-header');
+    gh.setAttribute('data-role', 'inspector-group-header');
+    gh.setAttribute('aria-expanded', open ? 'true' : 'false');
+    gh.appendChild(el('span', 'caret', open ? '▾' : '▸'));
+    gh.appendChild(document.createTextNode(name || 'Layers'));
+    (function (n, o) {
+      gh.addEventListener('click', function (e) { e.stopPropagation(); sendCommand(cmdId, 'inspector_expand', { group: n, expanded: !o }); });
+    })(name, open);
+    grp.appendChild(gh);
+    var rows = [];
+    var ids = groups[g].layers || [];
+    for (var k = 0; k < ids.length; ++k) {
+      var row = byId[ids[k]];
+      // The active base is always shown, even when its group is collapsed.
+      if (row && (open || row.schemaKey === insp.base)) rows.push(row);
+    }
+    if (rows.length > 0) grp.appendChild(inspStatsTable(rows, !!insp.pinned, frozen));
+    host.appendChild(grp);
+  }
+  host.appendChild(inspHistogram(insp, baseLabel));
+  if (insp.cell) host.appendChild(inspCellSection(insp.cell));
+}
+
+function refreshInspector(root, v) {
+  var host = root.querySelector('[data-role="inspector"]');
+  if (!host || !v.inspector) return;
+  var insp = v.inspector;
+  // Re-render only when the content changed; the "updating" mark is flipped in place.
+  var copy = {};
+  for (var key in insp) if (key !== 'updating') copy[key] = insp[key];
+  var k = JSON.stringify([copy, v.groups]);
+  if (host._key !== k) { host._key = k; renderInspector(host, insp, v, host._cmdId); }
+  var mark = host.querySelector('[data-role="inspector-updating"]');
+  if (mark) mark.style.display = insp.updating ? '' : 'none';
+}
+
 function buildViewer(domain) {
   var v = domain.viewer;
   var cmdId = domain.cmdId;
@@ -1034,6 +1388,13 @@ function buildViewer(domain) {
   }
 
   if (v.selection) root.appendChild(buildSelectionSection(cmdId, v.selection));
+  if (v.inspector) {
+    var insp = el('div', 'cl-inspector');
+    insp.setAttribute('data-role', 'inspector');
+    insp._cmdId = cmdId;
+    root.appendChild(insp);
+    refreshInspector(root, v);
+  }
 
   if (!v.empty) {
     var search = el('div', 'layer-search');
@@ -1152,6 +1513,7 @@ function refreshViewer(card, v) {
   }
 
   if (v.selection) refreshSelection(root, v.selection);
+  refreshInspector(root, v);
 
   var noData = !!v.noData;   // source not live and no data: say so instead of a stale legend / hover
   var legendHost = root.querySelector('[data-role="legend"]');

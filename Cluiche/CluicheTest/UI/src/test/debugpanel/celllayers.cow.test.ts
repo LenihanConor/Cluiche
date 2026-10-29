@@ -425,3 +425,167 @@ describe("selection card (Selection task 11: count, tool strip, group dropdown, 
     expect(banner()).toBeNull();
   });
 });
+
+
+describe("selection inspector card (Selection Inspector task 9: accordions, stats rows, histogram, compare, cell details)", () => {
+  const FILE = "domain_states_celllayers_inspector.json";
+  const insp = () => viewer().querySelector("[data-role=inspector]") as HTMLElement;
+  const row = (id: string) => insp().querySelector(`tr[data-layer="${id}"]`) as HTMLElement;
+  const cells = (tr: Element) => Array.from(tr.querySelectorAll("td")).map((td) => td.textContent ?? "");
+  const header = (g: string) => insp().querySelector(`.insp-group[data-group="${g}"] [data-role=inspector-group-header]`) as HTMLElement;
+  const withInsp = (file: string, patch: (i: any) => void) => {
+    const s = goldenJson(file);
+    patch(s[NAME].inspector);
+    p.win.updateDomainState(JSON.stringify(s));
+  };
+
+  it("contract: the inspector golden carries the card keys", () => {
+    const i = goldenJson(FILE)[NAME].inspector;
+    for (const k of ["hasSelection", "updating", "expandedGroups", "layers", "histogram", "pinned", "cell", "base"]) expect(k in i).toBe(true);
+    expect(i.histogram.bins.length).toBe(16);
+    expect(i.layers[0].a.count).toBe(4);
+    expect(i.layers[0].delta.count).toBe(-3);
+    expect(goldenJson("domain_states_celllayers.json")[NAME].inspector.hasSelection).toBe(false);
+  });
+
+  it("with nothing selected it says 'Select cells to inspect' and renders no stats", () => {
+    push("domain_states_celllayers.json");
+    expect(txt(insp().querySelector("[data-role=inspector-empty]"))).toBe("Select cells to inspect");
+    expect(insp().querySelector("table")).toBeNull();
+    expect(insp().querySelector("[data-role=inspector-pin-row]")!.querySelectorAll("button[disabled]").length).toBe(3);
+  });
+
+  it("groups are accordions: an expanded group shows its layer rows, a collapsed one only the header", () => {
+    push(FILE);
+    expect(txt(header("Ecology"))).toContain("Ecology");
+    expect(header("Ecology").getAttribute("aria-expanded")).toBe("true");
+    expect(header("Terrain").getAttribute("aria-expanded")).toBe("false");
+    expect(insp().querySelector('.insp-group[data-group="Terrain"] table')).toBeNull();
+    expect(row("temp")).not.toBeNull();
+    expect(row("rain")).not.toBeNull();
+    expect(row("biome")).toBeNull();
+  });
+
+  it("clicking a group header sends inspector_expand with the toggled state", () => {
+    push(FILE);
+    p.click(header("Terrain"));
+    p.click(header("Ecology"));
+    expect(commands()).toEqual([
+      ["command", "celllayers", "inspector_expand", JSON.stringify({ group: "Terrain", expanded: true })],
+      ["command", "celllayers", "inspector_expand", JSON.stringify({ group: "Ecology", expanded: false })],
+    ]);
+  });
+
+  it("a layer row shows label (tooltip as title), count, min, mean, max and unit", () => {
+    push(FILE);
+    const tr = row("temp");
+    expect(cells(tr).slice(0, 6)).toEqual(["Temperature", "1", "4", "4", "4", "C"]);
+    expect(tr.querySelector("td")!.getAttribute("title")).toBe("Air temperature");
+    expect(tr.querySelector(".range-bar")).toBeNull();   // pinned: the compare columns take the width
+    expect(tr.querySelector("td:nth-child(2)")!.textContent).toBe("1");
+  });
+
+  it("compare columns: A values, delta (B minus A) with sign and colour, and a frozen badge", () => {
+    push(FILE);
+    expect(cells(row("temp")).slice(6)).toEqual(["4", "-2", "1", "5", "−3", "+6", "+3", "−1"]);
+    const d = row("temp").querySelectorAll("td");
+    expect(d[10].classList.contains("d-neg")).toBe(true);
+    expect(d[11].classList.contains("d-pos")).toBe(true);
+    expect(txt(insp().querySelector("[data-role=inspector-pinned]"))).toBe("A: 4 cellsfrozen");
+    expect(insp().querySelector("[data-role=frozen-badge]")).not.toBeNull();
+    withInsp(FILE, (i) => { i.pinned.frozen = false; });
+    expect(insp().querySelector("[data-role=frozen-badge]")).toBeNull();
+    expect(txt(insp().querySelector("[data-role=inspector-pinned]"))).toBe("A: 4 cells (live)");
+  });
+
+  it("a layer with no frozen stats shows 'not frozen'; without a pin there are no compare columns", () => {
+    withInsp(FILE, (i) => { i.layers[1].a = { notFrozen: true }; delete i.layers[1].delta; });
+    expect(txt(row("rain").querySelector("[data-role=not-frozen]"))).toBe("not frozen");
+    withInsp(FILE, (i) => { delete i.pinned; i.layers.forEach((l: any) => { delete l.a; delete l.delta; }); });
+    expect(cells(row("temp")).length).toBe(7);
+    expect(row("temp").querySelector(".range-bar .mean")).not.toBeNull();   // unpinned: the range bar returns
+    expect(insp().querySelector("[data-role=inspector-pinned]")).toBeNull();
+    expect(insp().querySelector("[data-role=inspector-unpin]")!.hasAttribute("disabled")).toBe(true);
+  });
+
+  it("pin, freeze and unpin buttons send select_pin / select_pin {freeze} / select_unpin", () => {
+    push(FILE);
+    p.click(insp().querySelector("[data-role=inspector-pin]")!);
+    p.click(insp().querySelector("[data-role=inspector-freeze]")!);
+    p.click(insp().querySelector("[data-role=inspector-unpin]")!);
+    expect(commands()).toEqual([
+      ["command", "celllayers", "select_pin", "{}"],
+      ["command", "celllayers", "select_pin", JSON.stringify({ freeze: true })],
+      ["command", "celllayers", "select_unpin", "{}"],
+    ]);
+  });
+
+  it("category layers show counts as chips, with an Other chip when non-zero", () => {
+    withInsp(FILE, (i) => {
+      i.expandedGroups.push("Terrain");
+      i.layers.unshift({ id: "biome", schemaKey: "cells/biome", label: "Biome", unit: "", tooltip: "Dominant biome", kind: "category", group: "Terrain",
+        hasData: true, count: 4, nanCount: 0, min: null, mean: null, max: null, other: 1,
+        categories: [{ id: "a", label: "Grass", count: 3 }, { id: "b", label: "Water", count: 0 }],
+        a: { notFrozen: true } });
+    });
+    const chips = Array.from(row("biome").querySelectorAll(".biome-chip")).map((c) => c.textContent);
+    expect(chips).toEqual(["n: 4", "Grass: 3", "Other: 1"]);
+  });
+
+  it("the histogram has 16 bars scaled to the tallest bin and the out-of-range footer only when needed", () => {
+    push(FILE);
+    const bars = Array.from(insp().querySelectorAll("[data-role=histogram] .histogram-bar")) as HTMLElement[];
+    expect(bars.length).toBe(16);
+    expect(bars[11].style.height).toBe("100%");
+    expect(bars[0].style.height).toBe("0%");
+    expect(insp().querySelector("[data-role=histogram-oor]")).toBeNull();
+    withInsp(FILE, (i) => { i.histogram.outOfRangeLow = 2; i.histogram.outOfRangeHigh = 1; });
+    expect(txt(insp().querySelector("[data-role=histogram-oor]"))).toBe("out of range: 2 low, 1 high");
+  });
+
+  it("a category base shows its histogram as counts", () => {
+    withInsp(FILE, (i) => { i.histogram = { categories: [{ id: "a", label: "Grass", count: 3 }], other: 0, nanCount: 0 }; });
+    expect(insp().querySelector("[data-role=histogram] .histogram-bar")).toBeNull();
+    expect(Array.from(insp().querySelectorAll("[data-role=histogram-categories] .biome-chip")).map((c) => c.textContent)).toEqual(["Grass: 3"]);
+  });
+
+  it("the 'updating' mark shows only while a pass is pending and flips without re-rendering", () => {
+    push(FILE);
+    const mark = () => insp().querySelector("[data-role=inspector-updating]") as HTMLElement;
+    expect(mark().style.display).toBe("none");
+    const first = mark();
+    withInsp(FILE, (i) => { i.updating = true; });
+    expect(mark()).toBe(first);
+    expect(mark().style.display).toBe("");
+  });
+
+  it("exactly one cell adds the details section: exact values, enum labels, and provider rows", () => {
+    push(FILE);
+    const sec = () => insp().querySelector("[data-role=inspector-cell]") as HTMLElement;
+    expect(txt(sec().querySelector(".insp-cell-title"))).toBe("Cell (2, 1)  #6");
+    expect(cells(sec().querySelector('tr[data-layer="temp"]')!)).toEqual(["Temperature", "4", "C"]);
+    withInsp(FILE, (i) => {
+      i.cell.rows.push({ layer: "biome", label: "Biome", unit: "", kind: "category", hasData: true, isNaN: false, value: 1, otherValue: false, enumId: "b", enumLabel: "Water" });
+      i.cell.rows[1].value = 0.30000001192092896;
+      i.cell.details = [
+        { kind: "section", label: "Ecology" },
+        { kind: "value", label: "Producers", unit: "kg", tooltip: "Total producers", value: 0.25, resolved: true, schemaKey: "cells/producers" },
+        { kind: "text", label: "Dominant cause", text: "Grazing" },
+      ];
+    });
+    expect(cells(sec().querySelector('tr[data-layer="rain"]')!)).toEqual(["Rainfall", "0.3", "mm"]);
+    expect(cells(sec().querySelector('tr[data-layer="biome"]')!)).toEqual(["Biome", "Water", ""]);
+    const trs = Array.from(sec().querySelectorAll("tr")).map((tr) => cells(tr));
+    expect(trs.slice(-3)).toEqual([["Ecology"], ["Producers", "0.25", "kg"], ["Dominant cause", "Grazing"]]);
+    expect(sec().querySelectorAll("tr")[trs.length - 2].querySelector("td")!.getAttribute("title")).toBe("Total producers");
+    withInsp(FILE, (i) => { delete i.cell; });
+    expect(insp().querySelector("[data-role=inspector-cell]")).toBeNull();
+  });
+
+  it("the inspector host is kept across state pushes", () => {
+    push(FILE);
+    const host = insp();
+    push(FILE);
+    expect(insp()).toBe(host);
+  });
+});

@@ -98,6 +98,18 @@ namespace Dia::CellLayers
 		bool BuildSingleCell(CellLayerRegistry& registry, LayerReader& reader, const Dia::ValueSchema::ValueSchemaService* schema,
 			const InspectorState& state, const ICellSelectionView* selection, bool cardOpen, SingleCellTable& out);
 
+		// The panel card's state (GetJSONState "inspector"), built from InspectorState's CACHED stats: no layer is recomputed or read
+		// for the aggregates (the single-cell block reads through the LayerReader, once per layer version, and only when exactly one
+		// cell is selected). `out` is replaced with: {hasSelection, updating, expandedGroups[text], base (schema key text; with a
+		// selection), layers[{id, schemaKey, label, unit, tooltip (schema description, else hint), kind, group, hasData, count,
+		// nanCount, min / mean / max (null without a range or for category layers), rangeMin / rangeMax (schema range, only when the
+		// schema has one), categories[{id,label,count}] / other (category layers), a {..stats..} | {notFrozen:true} |
+		// {notComputed:true} and delta{count,min,mean,max} (min / mean / max null when a side has no range) when A is pinned}] in
+		// shown-set order (base first), histogram (as in the Stats JSON), pinned{count,frozen} (when pinned), cell{..as in the Stats JSON..}}.
+		// Without a selection `layers` is empty and nothing is computed or read.
+		void BuildCardJson(CellLayerRegistry& registry, LayerReader& reader, const Dia::ValueSchema::ValueSchemaService* schema,
+			const InspectorState& state, const ICellSelectionView* selection, Json::Value& out);
+
 		// See "Stats JSON" above. Returns false (out = {"error"}) on a bad request; `out` is replaced.
 		bool BuildStatsJson(CellLayerRegistry& registry, LayerReader& reader, const Dia::ValueSchema::ValueSchemaService* schema,
 			const InspectorState& state, const ICellSelectionView* selection, const InspectRequest& request, Json::Value& out);

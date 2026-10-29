@@ -21,6 +21,9 @@
 // "select_group" {layer}, "select_clear" {} which run the SAME code as cells.select.tool / .group / .clear.
 // cells.inspect {} | {group} | {layers:[id..]} | {layerId} | {all:true} (read-only, at most one form): the Selection Inspector stats
 // JSON of the active grid's selection (InspectorModel::BuildStatsJson; shape in InspectorModel.h). Errors as for the other commands.
+// cells.inspector.expand {group, expanded:bool}: expands / collapses a layer group of the inspector card (panel command "inspector_expand"; the panel
+// commands "select_pin" {freeze?} and "select_unpin" {} run cells.select.pin / .unpin). GetJSONState "inspector": built from the InspectorState cache
+// by InspectorModel::BuildCardJson (shape in InspectorModel.h); the card is treated as open, so a single selected cell adds its "cell" table.
 // GetJSONState "selection": {count, tool, group, groups[{id,label,selected}], tooLarge, tooLargeText (only when tooLarge)}.
 // The registry is borrowed; CellLayersModule owns and publishes it on a ServiceStream (CL-006). A consumer module resolves it
 // with FindCellLayerRegistry(reader) (CellLayersModule.h) and passes *registry to the constructor.
@@ -126,6 +129,7 @@ namespace Dia::CellLayers
 		Json::Value	ExecuteSetGroup(const Json::Value& params);	// cells.select.group (locks mMutex)
 		Json::Value	ExecutePin(const Json::Value& params);	// cells.select.pin (locks mMutex)
 		Json::Value	ExecuteUnpin(const Json::Value& params);	// cells.select.unpin (locks mMutex)
+		Json::Value	ExecuteExpand(const Json::Value& params);	// cells.inspector.expand (locks mMutex)
 		Json::Value	ExecuteInspect(const Json::Value& params);	// cells.inspect (locks mMutex; read-only)
 		Json::Value	FinishSelectCommand(const char* name, const char* error, Json::Value out);	// metrics + CEL log, returns out or {"error"}
 		Dia::Core::StringCRC	EffectiveGroup() const;	// the stored group if valid for the active grid, else the grid default

@@ -124,6 +124,31 @@ namespace Dia::CellLayers
 				}
 			}
 
+			Json::Value HistogramJson(const Histogram& h)
+			{
+				Json::Value o(Json::objectValue);
+				Json::Value bins(Json::arrayValue);
+				for (uint32_t i = 0; i < Histogram::kBins; ++i) { bins.append(h.bins[i]); }
+				o["bins"] = bins;
+				o["minRange"] = static_cast<double>(h.minRange);
+				o["maxRange"] = static_cast<double>(h.maxRange);
+				o["valid"] = h.valid;
+				o["outOfRangeLow"] = h.outOfRangeLow;
+				o["outOfRangeHigh"] = h.outOfRangeHigh;
+				o["count"] = h.count;
+				o["nanCount"] = h.nanCount;
+				return o;
+			}
+
+			// Card variant of WriteStatsFields: min / mean / max are always present (null without a range).
+			void WriteCardStats(Json::Value& o, const LayerStats& s, bool category)
+			{
+				WriteStatsFields(o, s, category);
+				if (!o.isMember("min")) { o["min"] = Json::Value(Json::nullValue); }
+				if (!o.isMember("mean")) { o["mean"] = Json::Value(Json::nullValue); }
+				if (!o.isMember("max")) { o["max"] = Json::Value(Json::nullValue); }
+			}
+
 			bool Fail(Json::Value& out, const std::string& msg)
 			{
 				out = Json::Value(Json::objectValue);
@@ -273,21 +298,7 @@ namespace Dia::CellLayers
 				if (baseDesc->kind == CellValueKind::Float)
 				{
 					Histogram h;
-					if (SelectionStats::ComputeHistogram(registry, reader, schema, *selection, base, h))
-					{
-						Json::Value o(Json::objectValue);
-						Json::Value bins(Json::arrayValue);
-						for (uint32_t i = 0; i < Histogram::kBins; ++i) { bins.append(h.bins[i]); }
-						o["bins"] = bins;
-						o["minRange"] = static_cast<double>(h.minRange);
-						o["maxRange"] = static_cast<double>(h.maxRange);
-						o["valid"] = h.valid;
-						o["outOfRangeLow"] = h.outOfRangeLow;
-						o["outOfRangeHigh"] = h.outOfRangeHigh;
-						o["count"] = h.count;
-						o["nanCount"] = h.nanCount;
-						out["histogram"] = o;
-					}
+					if (SelectionStats::ComputeHistogram(registry, reader, schema, *selection, base, h)) { out["histogram"] = HistogramJson(h); }
 				}
 				else if (SelectionStats::Compute(registry, reader, schema, *selection, base, *b))
 				{
@@ -356,6 +367,110 @@ namespace Dia::CellLayers
 				}
 			}
 			return true;
+		}
+
+		void BuildCardJson(CellLayerRegistry& registry, LayerReader& reader, const Dia::ValueSchema::ValueSchemaService* schema,
+			const InspectorState& state, const ICellSelectionView* selection, Json::Value& out)
+		{
+			out = Json::Value(Json::objectValue);
+			const bool has = state.HasSelection() && selection != nullptr && selection->Count() > 0;
+			out["hasSelection"] = has;
+			out["updating"] = state.IsUpdating();
+			Json::Value expanded(Json::arrayValue);
+			for (uint32_t i = 0; i < state.ExpandedGroupCount(); ++i) { expanded.append(TextOf(state.ExpandedGroupAt(i))); }
+			out["expandedGroups"] = expanded;
+			out["layers"] = Json::Value(Json::arrayValue);
+			if (state.IsPinned())
+			{
+				Json::Value p(Json::objectValue);
+				p["count"] = state.PinnedCount();
+				p["frozen"] = state.IsFrozen();
+				out["pinned"] = p;
+			}
+			if (!has) { return; }
+
+			const Dia::Core::StringCRC base = state.ShownLayerCount() > 0 ? state.ShownLayerAt(0) : Dia::Core::StringCRC::kZero;
+			const CellLayerDesc* baseDesc = base != Dia::Core::StringCRC::kZero ? registry.Find(base) : nullptr;
+			if (baseDesc != nullptr)
+			{
+				const Dia::ValueSchema::ValueInfo* info = schema != nullptr ? schema->Find(baseDesc->schemaKey) : nullptr;
+				out["base"] = TextOf(SchemaKeyText(*baseDesc, info));
+				if (baseDesc->kind == CellValueKind::Float)
+				{
+					if (const Histogram* h = state.BaseHistogram()) { out["histogram"] = HistogramJson(*h); }
+				}
+				else if (const LayerStats* bs = state.StatsFor(base))
+				{
+					Json::Value o(Json::objectValue);
+					WriteStatsFields(o, *bs, true);
+					out["histogram"] = o;
+				}
+			}
+
+			Json::Value& layers = out["layers"];
+			for (uint32_t i = 0; i < state.ShownLayerCount(); ++i)
+			{
+				const Dia::Core::StringCRC id = state.ShownLayerAt(i);
+				const CellLayerDesc* desc = registry.Find(id);
+				if (desc == nullptr) { continue; }
+				const bool category = desc->kind == CellValueKind::Category;
+				const Dia::ValueSchema::ValueInfo* info = schema != nullptr ? schema->Find(desc->schemaKey) : nullptr;
+				const LayerStats* b = state.StatsFor(id);
+
+				Json::Value o(Json::objectValue);
+				o["id"] = TextOf(id.AsChar());
+				o["schemaKey"] = TextOf(SchemaKeyText(*desc, info));
+				o["label"] = TextOf(info != nullptr ? info->mLabel.AsCStr() : "");
+				o["unit"] = TextOf(info != nullptr ? info->mUnit.AsCStr() : "");
+				const char* tip = "";
+				if (info != nullptr) { tip = info->mDescription.Length() > 0 ? info->mDescription.AsCStr() : info->mHint.AsCStr(); }
+				o["tooltip"] = TextOf(tip);
+				o["kind"] = KindText(desc->kind);
+				o["group"] = TextOf(desc->group.AsCStr());
+				if (info != nullptr && info->mHasMin && info->mHasMax)
+				{
+					o["rangeMin"] = info->mMin;
+					o["rangeMax"] = info->mMax;
+				}
+				const LayerStats none;
+				WriteCardStats(o, b != nullptr ? *b : none, category);
+
+				if (state.IsPinned())
+				{
+					const LayerStats* a = state.StatsForA(id);
+					Json::Value aj(Json::objectValue);
+					if (a != nullptr)
+					{
+						WriteCardStats(aj, *a, category);
+						if (b != nullptr && a->hasData && b->hasData)
+						{
+							LayerDelta d;
+							ComputeDelta(*b, *a, d);
+							Json::Value dj(Json::objectValue);
+							dj["count"] = static_cast<Json::Int64>(d.countDelta);
+							dj["min"] = d.hasRange ? Json::Value(d.minDelta) : Json::Value(Json::nullValue);
+							dj["mean"] = d.hasRange ? Json::Value(d.meanDelta) : Json::Value(Json::nullValue);
+							dj["max"] = d.hasRange ? Json::Value(d.maxDelta) : Json::Value(Json::nullValue);
+							o["delta"] = dj;
+						}
+					}
+					else if (state.IsFrozen() && !state.FrozenAvailable(id)) { aj["notFrozen"] = true; }
+					else { aj["notComputed"] = true; }
+					o["a"] = aj;
+				}
+				layers.append(o);
+			}
+
+			if (selection->Count() == 1)
+			{
+				std::unique_ptr<SingleCellTable> table(new SingleCellTable());
+				if (BuildSingleCell(registry, reader, schema, state, selection, true, *table))
+				{
+					Json::Value cell(Json::objectValue);
+					WriteCell(*table, registry, schema, cell);
+					out["cell"] = cell;
+				}
+			}
 		}
 	}
 }

@@ -64,6 +64,8 @@ namespace Dia::CellLayers
 
 		void SetGroupExpanded(const char* group, bool expanded);
 		bool IsGroupExpanded(const char* group) const;
+		uint32_t	ExpandedGroupCount() const { return mExpandedCount; }
+		const char*	ExpandedGroupAt(uint32_t index) const { return index < mExpandedCount ? mExpanded[index].AsCStr() : ""; }
 
 		// Once per frame (see header). Returns true when a recompute pass ran in this call.
 		bool Tick(const CellLayerRegistry& registry, LayerReader& reader, const Dia::ValueSchema::ValueSchemaService* schema,

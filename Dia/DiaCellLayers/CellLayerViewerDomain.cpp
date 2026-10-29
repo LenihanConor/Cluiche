@@ -46,6 +46,9 @@ namespace Dia::CellLayers
 		const StringCRC kCmdSelectTool("select_tool");
 		const StringCRC kCmdSelectGroup("select_group");
 		const StringCRC kCmdSelectClear("select_clear");
+		const StringCRC kCmdSelectPin("select_pin");
+		const StringCRC kCmdSelectUnpin("select_unpin");
+		const StringCRC kCmdInspectorExpand("inspector_expand");
 		const StringCRC kCmdSetScale("setScale");
 	}
 
@@ -539,6 +542,7 @@ namespace Dia::CellLayers
 		WriteLegend(out);
 		WriteHover(out);
 		WriteSelection(out);
+		InspectorModel::BuildCardJson(mRegistry, mReader, mSchema, mInspector, mRegistry.SelectionView(mActiveGrid), out["inspector"]);
 	}
 
 	StringCRC CellLayerViewerDomain::EffectiveGroup() const
@@ -605,6 +609,9 @@ namespace Dia::CellLayers
 		}
 		else if (cmd == kCmdSelectTool) { ExecuteSetTool(args); }
 		else if (cmd == kCmdSelectGroup) { ExecuteSetGroup(args); }
+		else if (cmd == kCmdSelectPin) { ExecutePin(args); }
+		else if (cmd == kCmdSelectUnpin) { ExecuteUnpin(args); }
+		else if (cmd == kCmdInspectorExpand) { ExecuteExpand(args); }
 		else if (cmd == kCmdSelectClear) { ExecuteSelect(SelectOp::Clear, "cells.select.clear", Json::Value(Json::objectValue)); }
 		// kCmdSetScale and unknown commands: no-op (this domain has no scale)
 		(void)kCmdSetScale;
@@ -769,7 +776,7 @@ namespace Dia::CellLayers
 			"cells.select.cell", "cells.select.toggle", "cells.select.box", "cells.select.poly",
 			"cells.select.category", "cells.select.cells", "cells.select.clear"
 		};
-		const char* const kSelectPanelCommands[] = { "cells.select.tool", "cells.select.group", "cells.select.pin", "cells.select.unpin", "cells.inspect" };
+		const char* const kSelectPanelCommands[] = { "cells.select.tool", "cells.select.group", "cells.select.pin", "cells.select.unpin", "cells.inspect", "cells.inspector.expand" };
 
 		Json::Value SelectError(const std::string& msg)
 		{
@@ -858,6 +865,14 @@ namespace Dia::CellLayers
 		inspect.owner = "DiaCellLayers";
 		inspect.callback = [this](const Json::Value& params) -> Json::Value { return ExecuteInspect(params); };
 		Dia::API::RegisterCommandJson(inspect);
+
+		Dia::API::CommandInfoJson expand;
+		expand.name = StringCRC(kSelectPanelCommands[5]);
+		expand.description = "Expand or collapse a layer group of the Selection Inspector card: params {\"group\": \"<group name of the active grid>\", \"expanded\": bool}; returns {ok, group, expanded}. An expanded group's layers get aggregates";
+		expand.category = StringCRC("cells");
+		expand.owner = "DiaCellLayers";
+		expand.callback = [this](const Json::Value& params) -> Json::Value { return ExecuteExpand(params); };
+		Dia::API::RegisterCommandJson(expand);
 	}
 
 	Json::Value CellLayerViewerDomain::FinishSelectCommand(const char* name, const char* error, Json::Value out)
@@ -962,6 +977,37 @@ namespace Dia::CellLayers
 		}
 		out["ok"] = true;
 		return FinishSelectCommand("cells.select.unpin", nullptr, out);
+	}
+
+	Json::Value CellLayerViewerDomain::ExecuteExpand(const Json::Value& params)
+	{
+		Lock l(mMutex);
+		Json::Value out(Json::objectValue);
+		std::string error;
+		if (!params.isObject() || !params["group"].isString() || params["group"].asString().empty()) { error = "missing or non-string param 'group'"; }
+		else if (!params["expanded"].isBool()) { error = "missing or non-boolean param 'expanded'"; }
+		else
+		{
+			const std::string group = params["group"].asString();
+			bool known = false;
+			const uint32_t total = mActiveGrid != nullptr ? mRegistry.LayerCountForGrid(mActiveGrid) : 0;
+			for (uint32_t i = 0; i < total && !known; ++i)
+			{
+				const CellLayerDesc* d = mRegistry.LayerOfGrid(mActiveGrid, i);
+				known = d != nullptr && group == d->group.AsCStr();
+			}
+			if (!known) { error = "no layers in group '" + group + "' on the active grid"; }
+			else
+			{
+				mInspector.SetActive(mRegistry, mActiveGrid, mActiveBase);
+				const bool expanded = params["expanded"].asBool();
+				mInspector.SetGroupExpanded(group.c_str(), expanded);
+				out["ok"] = true;
+				out["group"] = group;
+				out["expanded"] = expanded;
+			}
+		}
+		return FinishSelectCommand("cells.inspector.expand", error.c_str(), out);
 	}
 
 	Json::Value CellLayerViewerDomain::ExecuteInspect(const Json::Value& params)

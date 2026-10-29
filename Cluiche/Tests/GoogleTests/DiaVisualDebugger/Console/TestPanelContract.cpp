@@ -519,6 +519,37 @@ TEST_F(PanelContractTest, CellLayersViewerSelection)
 	EXPECT_FALSE(sel["tooLarge"].asBool());
 }
 
+TEST_F(PanelContractTest, CellLayersViewerInspectorPinnedSingleCell)
+{
+	using namespace Dia::CellLayers;
+	ViewerRig rig;
+	rig.Build(true);
+	rig.Add(rig.biome.MakeDesc("biome", &rig.gridA.desc, CellValueKind::Category, "cells/biome"), "Terrain");
+	rig.Add(rig.temp.MakeDesc("temp", &rig.gridA.desc, CellValueKind::Float, "cells/temp"), "Ecology");
+	rig.Add(rig.rain.MakeDesc("rain", &rig.gridA.desc, CellValueKind::Float, "cells/rain"), "Ecology");
+	ViewerPointAt(rig.draw, 2, 1);
+	rig.domain->Update(rig.draw);
+	ASSERT_NE(rig.domain->ActiveSelection(), nullptr);
+	EXPECT_TRUE(SelectionTools::SelectBox(*rig.domain->ActiveSelection(), 0, 0, 1, 1).ok);
+	for (int i = 0; i < 3; ++i) { rig.domain->Update(rig.draw); }
+	Json::Value freeze(Json::objectValue);
+	freeze["freeze"] = true;
+	rig.domain->OnCommand(StringCRC("select_pin"), freeze);
+	EXPECT_TRUE(SelectionTools::SelectCell(*rig.domain->ActiveSelection(), 2, 1).ok);
+	for (int i = 0; i < 3; ++i) { rig.domain->Update(rig.draw); }
+	const std::string json = ViewerJson(*rig.domain);
+	Check("domain_states_celllayers_inspector.json", json);
+
+	Json::Value parsed;
+	ASSERT_TRUE(Json::Reader().parse(json, parsed));
+	const Json::Value& insp = parsed["Cell Layers"]["inspector"];
+	EXPECT_TRUE(insp["hasSelection"].asBool());
+	EXPECT_TRUE(insp["pinned"]["frozen"].asBool());
+	EXPECT_EQ(insp["pinned"]["count"].asUInt(), 4u);
+	EXPECT_EQ(insp["cell"]["q"].asUInt(), 2u);
+	EXPECT_EQ(insp["cell"]["r"].asUInt(), 1u);
+}
+
 TEST_F(PanelContractTest, CellLayersViewerEmptyState)
 {
 	ViewerRig rig;
