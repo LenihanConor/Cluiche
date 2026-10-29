@@ -196,4 +196,4 @@ No conflicts.
 
 ## Status
 
-`Approved` (2026-10-20). Plan not yet created. Build needs CellField Step 1 and DiaValueSchema Features 1, 3 and 5.
+`Done` (2026-10-28). Plan: [registry-and-viewer.plan.md](registry-and-viewer.plan.md). Built: registry, uploader, picker, hotkeys, legend, viewer domain, panel card (CluicheTest and CoW panels), `CellLayersModule` (ServiceStream), `IViewValueSource`, JSON commands for E2E, CellLayersViewer test stage. Known gaps: per-layer info icon in the picker (layer JSON has no description); `noData` message not on the panel pages; panel state not assertable over E2E (no DebugServer domain-state query).
