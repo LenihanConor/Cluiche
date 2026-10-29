@@ -14,6 +14,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
+#include <vector>
 
 namespace CluicheTest {
 
@@ -202,7 +204,17 @@ void CellLayersViewerTestStageModule::OnStart(Dia::Automation::AutomationService
     service->RegisterCheckpoint(this, Dia::Core::StringCRC("test.cell_layers_viewer.passed"),
         [this]() -> Dia::Automation::CheckpointResult {
             if (mReady)
-                return { true, "viewer hosted", 1.0f };
+            {
+                // Publishes the per-biome cell counts (index = schema enum order) so E2E can check category selection.
+                std::vector<float> biome(static_cast<size_t>(kBigW) * kBigH, 0.0f);
+                ReadBiome(biome.data(), static_cast<uint32_t>(biome.size()));
+                uint32_t counts[4] = { 0, 0, 0, 0 };
+                for (float v : biome)
+                    ++counts[static_cast<int>(v) & 3];
+                static thread_local char msg[96]; // CheckpointResult::message is a non-owning pointer
+                snprintf(msg, sizeof(msg), "viewer hosted; biome_counts=%u,%u,%u,%u", counts[0], counts[1], counts[2], counts[3]);
+                return { true, msg, 1.0f };
+            }
             return { false, "pending", 0.0f };
         });
 }

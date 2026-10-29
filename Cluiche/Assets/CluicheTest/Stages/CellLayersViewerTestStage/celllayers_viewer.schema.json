@@ -37,7 +37,7 @@
         { "id": "desert", "label": "Desert", "description": "Warm and dry.", "colour": "#d9b45a" },
         { "id": "jungle", "label": "Jungle", "description": "Warm and wet.", "colour": "#0b6b3a" }
       ],
-      "ui": { "hotkey": "b" }
+      "ui": { "hotkey": "b", "select_group": true }
     },
     {
       "key": "elevation",
