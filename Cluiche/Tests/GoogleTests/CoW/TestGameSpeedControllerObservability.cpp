@@ -706,6 +706,7 @@ TEST(GameSpeedLifecycle, DestroyedWithoutStopUnregistersHealthReporter)
     {
         Fixture f;
         ASSERT_TRUE(f.Boot());
+        f.tickSub = {}; // BusSubscriptionHandle contract: the Bus must outlive the handle
         f.app.reset();   // no RequestShutdown: DoStop never runs
     }
     // Walking the live reporters dereferences every registered pointer: a dangling one crashes here.
