@@ -20,6 +20,7 @@
 #include <DiaVisualDebugger/Console/ConsoleJson.h>
 #include <DiaVisualDebugger/Console/ConsoleLineAssembler.h>
 #include <DiaVisualDebugger/Console/ConsoleLogRing.h>
+#include <DiaVisualDebugger/Console/DomainStateQuery.h>
 #include <DiaVisualDebugger/Console/PanelJson.h>
 #include <DiaVisualDebugger/Domain/IDebugDomain.h>
 
@@ -88,6 +89,7 @@ void DebugPanelPageModule::DoUpdate(const Dia::SimTime::MainTimeContext& /*ctx*/
     DIA_TRACE_ZONE("DebugPanelPageModule.Update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
 
     RefreshSchemaService();
+    RegisterDomainStateQuery();
     DrainToggleEvents();
     mPanel.Process(*this, mDomainRegistry.IsAvailable() ? &mDomainRegistry.Get() : nullptr);
     PushDomainStatesToPanel();
@@ -124,6 +126,7 @@ Dia::ApplicationFlow::StopResult DebugPanelPageModule::DoStop()
     }
     mProbeFramesLeft = 0;
 
+    UnregisterDomainStateQuery();
     mPanel.Reset();
     mKeyResolver.SetService(nullptr);
 
@@ -222,6 +225,52 @@ void DebugPanelPageModule::RefreshSchemaService()
         }
     }
     mKeyResolver.SetService(service);
+}
+
+Dia::DebugServer::QueryRegistry* DebugPanelPageModule::FindQueryRegistry()
+{
+    auto* app = dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(GetApplication());
+    if (app == nullptr)
+        return nullptr;
+    auto* store = app->FindStream(Dia::Core::StringCRC(DebugServerHostModule::kServiceStreamId));
+    // Get() asserts until the framework commits the store; callers retry from DoUpdate.
+    if (store == nullptr || !store->IsCommitted())
+        return nullptr;
+    auto* typed = dynamic_cast<Dia::ApplicationFlow::ServiceStreamStore<Dia::DebugServer::DebugServer*>*>(store);
+    Dia::DebugServer::DebugServer* server = typed ? typed->Get() : nullptr;
+    return server ? &server->GetQueryRegistry() : nullptr;
+}
+
+void DebugPanelPageModule::RegisterDomainStateQuery()
+{
+    if (mDomainStateQueryRegistered || !mDomainRegistry.IsAvailable())
+        return;
+    Dia::DebugServer::QueryRegistry* queries = FindQueryRegistry();
+    if (queries == nullptr)
+        return;
+
+    queries->Register(Dia::Core::StringCRC(Dia::VisualDebugger::Console::kDomainStateQueryName),
+        [this](const Json::Value& args)
+        {
+            if (!mDomainRegistry.IsAvailable())
+            {
+                Json::Value result(Json::objectValue);
+                result["error"] = "domain registry not available";
+                return result;
+            }
+            return Dia::VisualDebugger::Console::QueryDomainState(mDomainRegistry.Get(), &mKeyResolver, args);
+        });
+    mDomainStateQueryRegistered = true;
+    DIA_LOG_INFO("Debug", "DebugPanelPageModule: registered %s", Dia::VisualDebugger::Console::kDomainStateQueryName);
+}
+
+void DebugPanelPageModule::UnregisterDomainStateQuery()
+{
+    if (!mDomainStateQueryRegistered)
+        return;
+    if (Dia::DebugServer::QueryRegistry* queries = FindQueryRegistry())
+        queries->Unregister(Dia::Core::StringCRC(Dia::VisualDebugger::Console::kDomainStateQueryName));
+    mDomainStateQueryRegistered = false;
 }
 
 bool DebugPanelPageModule::QueryBridge::ExecuteQuery(const char* queryName, const char* argsJson,

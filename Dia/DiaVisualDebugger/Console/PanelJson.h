@@ -22,6 +22,11 @@ namespace Dia
 	{
 		namespace Console
 		{
+			// One domain's panel state: GetJSONState plus schemaVersion and the _id/_displayName/_group/
+			// _description/_accent keys. Returns false (state still filled) when the display name is null.
+			// BuildDomainStatesRoot is exactly this per domain, keyed by display name.
+			bool BuildDomainState(IDebugDomain& domain, Json::Value& state, const ISchemaKeyResolver* resolver = nullptr);
+
 			// Fills root (object) with one entry per domain, keyed by GetDisplayName().
 			// Domains with a null display name are skipped.
 			//

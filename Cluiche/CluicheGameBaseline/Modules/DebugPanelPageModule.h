@@ -7,6 +7,7 @@
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/SimTime/SimTimeContext.h>
+#include <DiaDebugServer/QueryRegistry.h>
 #include <DiaStreams/EventStreamWriter.h>
 #include <DiaStreams/EventStreamReader.h>
 #include <DiaStreams/ServiceStreamReader.h>
@@ -86,6 +87,13 @@ private:
     void RefreshSchemaService();
     void DrainToggleEvents();
     void DrainSetVisibilityEvents();
+
+    // "debug.domain_state" (Console::QueryDomainState) on the DebugServer QueryRegistry. Registered from DoUpdate once
+    // the DebugServer stream is committed, removed in DoStop. Runs on the Main PU, like every other query.
+    Dia::DebugServer::QueryRegistry* FindQueryRegistry();
+    void RegisterDomainStateQuery();
+    void UnregisterDomainStateQuery();
+    bool mDomainStateQueryRegistered = false;
 
     // Console (panel-console.md). PushToPage returns false when the page cannot receive JS calls.
     bool PushToPage(const char* jsFunction, const char* json);

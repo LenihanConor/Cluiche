@@ -167,6 +167,9 @@
     <ClInclude Include="Domain\ServiceKeyResolver.h">
       <Filter>Domain</Filter>
     </ClInclude>
+    <ClInclude Include="Console\DomainStateQuery.h">
+      <Filter>Console</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugLayerManager.cpp">
@@ -255,6 +258,9 @@
     </ClCompile>
     <ClCompile Include="Domain\SchemaControl.cpp">
       <Filter>Domain</Filter>
+    </ClCompile>
+    <ClCompile Include="Console\DomainStateQuery.cpp">
+      <Filter>Console</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

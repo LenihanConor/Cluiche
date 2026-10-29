@@ -53,32 +53,39 @@ namespace Dia
 				}
 			}
 
+			bool BuildDomainState(IDebugDomain& domain, Json::Value& state, const ISchemaKeyResolver* resolver)
+			{
+				const char* displayName = domain.GetDisplayName();
+
+				state = Json::Value(Json::objectValue);
+				domain.GetJSONState(state);
+				if (resolver != nullptr && resolver->IsAvailable()
+					&& state.isMember("controls") && state["controls"].isArray() && !state.isMember("schemaVersion"))
+					state["schemaVersion"] = resolver->Version();
+
+				if (displayName == nullptr)
+					return false;
+
+				char accentHex[8] = {};
+				FormatAccentHex(domain.GetAccentColour(), accentHex);
+
+				// Registry id: commands are addressed by id (DiaDebugDomainRegistry::FindDomain), the state is keyed by display name.
+				state["_id"]          = domain.GetDomainId().AsChar();
+				state["_displayName"] = displayName;
+				state["_group"]       = ResolveGroupName(domain.GetGroup());
+				state["_description"] = domain.GetDescription() ? domain.GetDescription() : "";
+				state["_accent"]      = accentHex;
+				return true;
+			}
+
 			void BuildDomainStatesRoot(const DiaDebugDomainRegistry& registry, Json::Value& root,
 									   const ISchemaKeyResolver* resolver)
 			{
-				const bool stampVersion = resolver != nullptr && resolver->IsAvailable();
-				registry.VisitAll([&root, stampVersion, resolver](IDebugDomain& domain)
+				registry.VisitAll([&root, resolver](IDebugDomain& domain)
 				{
-					Json::Value state(Json::objectValue);
-					domain.GetJSONState(state);
-					if (stampVersion && state.isMember("controls") && state["controls"].isArray() && !state.isMember("schemaVersion"))
-						state["schemaVersion"] = resolver->Version();
-
-					const char* displayName = domain.GetDisplayName();
-					if (displayName == nullptr)
-						return;
-
-					char accentHex[8] = {};
-					FormatAccentHex(domain.GetAccentColour(), accentHex);
-
-					// Registry id: commands are addressed by id (DiaDebugDomainRegistry::FindDomain), the state is keyed by display name.
-					state["_id"]          = domain.GetDomainId().AsChar();
-					state["_displayName"] = displayName;
-					state["_group"]       = ResolveGroupName(domain.GetGroup());
-					state["_description"] = domain.GetDescription() ? domain.GetDescription() : "";
-					state["_accent"]      = accentHex;
-
-					root[displayName] = state;
+					Json::Value state;
+					if (BuildDomainState(domain, state, resolver))
+						root[domain.GetDisplayName()] = state;
 				});
 			}
 		}

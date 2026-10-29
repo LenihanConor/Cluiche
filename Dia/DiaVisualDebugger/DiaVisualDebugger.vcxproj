@@ -115,6 +115,7 @@
     <ClInclude Include="Domain\SchemaControl.h" />
     <ClInclude Include="Domain\ISchemaKeyResolver.h" />
     <ClInclude Include="Domain\ServiceKeyResolver.h" />
+    <ClInclude Include="Console\DomainStateQuery.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugLayerManager.cpp" />
@@ -146,6 +147,7 @@
     <ClCompile Include="Console\PanelController.cpp" />
     <ClCompile Include="Console\PanelJson.cpp" />
     <ClCompile Include="Domain\SchemaControl.cpp" />
+    <ClCompile Include="Console\DomainStateQuery.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.debug.architecture.module.md" />

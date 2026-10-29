@@ -1,8 +1,7 @@
 """CellLayersViewerTestStage thin smoke: layer registry listing, JSON base/overlay commands, upload version gate.
 
-Not assertable over E2E today: the viewer panel's GetJSONState (legend unit/range, category swatches,
-gridSelector, empty state) -- no DebugServer query exposes IDebugDomain::GetJSONState. The active base is
-asserted through cells.layer.list (activeBase / activeGridIndex / per-layer selected).
+The viewer panel's GetJSONState (activeBase, legend, category swatches, gridSelector, empty, layer descriptions,
+hotkeys) is asserted through the debug.domain_state query. Hover needs an E2E mouse-move command and is not covered.
 """
 import time
 
@@ -27,6 +26,10 @@ def _assert_base(c, base, grid_index):
     assert listing["activeBase"] == base, (base, listing["activeBase"])
     assert listing["activeGridIndex"] == grid_index, (grid_index, listing["activeGridIndex"])
     assert _selected(listing) == [base], (base, _selected(listing))
+
+
+def _panel(c):
+    return c.send_command("debug.domain_state", {"id": "celllayers"})
 
 
 def _wait(pred, timeout_s=5.0, interval_s=0.1):
@@ -83,6 +86,23 @@ def test_celllayers_smoke(dia_client):
         assert listing["activeGridIndex"] == 0 == grid_a, (listing["activeGridIndex"], grid_a)
         assert _selected(listing) == ["temperature"], _selected(listing)
 
+        # 2b. Panel state (debug.domain_state): same JSON the debug panel receives.
+        st = _panel(c)
+        assert st["_id"] == "celllayers" and st["empty"] is False and "noData" not in st, st
+        assert st["activeBase"] == "temperature", st["activeBase"]
+        assert len(st["gridSelector"]) == 2 and [g["index"] for g in st["gridSelector"] if g["active"]] == [grid_a], st["gridSelector"]
+        panel_layers = {l["id"]: l for l in st["layers"]}
+        assert set(panel_layers) == {"biome", "rainfall", "temperature"}, panel_layers.keys()  # active grid only
+        assert [i for i, l in panel_layers.items() if l["selected"]] == ["temperature"], panel_layers
+        hotkeys = [l["hotkey"] for l in panel_layers.values()]
+        assert all(len(h) == 1 for h in hotkeys) and len(set(hotkeys)) == len(hotkeys), hotkeys
+        legend = st["legend"]
+        assert legend["available"] and not legend["category"], legend
+        assert legend["unit"] and legend["min"] < legend["max"], legend
+        assert "error" in c.send_command("debug.domain_state", {"id": "nope"})
+        assert "error" in c.send_command("debug.domain_state", {"id": 5})
+        assert "celllayers" in {d.get("_id") for d in c.send_command("debug.domain_state").values()}
+
         # Settle: animate is off so the initial temperature upload is done and counters are quiescent.
         time.sleep(0.5)
         m0 = _metrics(c)
@@ -93,6 +113,9 @@ def test_celllayers_smoke(dia_client):
         m1 = _settled_delta(c, m0, "uploads", 1)
         assert m1["reads"] - m0["reads"] == 1, (m0, m1)
         _assert_base(c, "biome", grid_a)
+        st = _panel(c)
+        assert st["activeBase"] == "biome" and st["legend"]["category"], st["legend"]
+        assert st["legend"]["swatches"], st["legend"]  # category legend lists a swatch per biome
 
         # 4. Cross-grid switch changes the active grid; unknown id fails and leaves the base unchanged.
         ok, data = _cmd(c, "cells.layer.base_by_id", {"id": "elevation"})

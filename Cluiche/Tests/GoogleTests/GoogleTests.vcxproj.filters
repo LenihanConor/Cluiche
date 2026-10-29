@@ -2162,5 +2162,8 @@
     <ClCompile Include="DiaCellLayers\TestCellLayerJsonCommands.cpp">
       <Filter>DiaCellLayers</Filter>
     </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestDomainStateQuery.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
