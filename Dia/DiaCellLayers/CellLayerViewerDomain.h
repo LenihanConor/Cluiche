@@ -31,6 +31,7 @@
 #include <DiaCellLayers/HotkeyTable.h>
 #include <DiaCellLayers/LayerReader.h>
 #include <DiaCellLayers/LayerUploader.h>
+#include <DiaCellLayers/SelectionInput.h>
 #include <DiaCellLayers/SelectionOutline.h>
 #include <DiaCore/Containers/Misc/FastDelegate.h>
 #include <DiaCore/Threading/Mutex.h>
@@ -93,6 +94,14 @@ namespace Dia::CellLayers
 		const ICellSelectionView*	ActiveSelectionView() const;
 		CellSelection*			ActiveSelection();
 
+		// Mouse gestures: the host submits the pointer state for the coming frame (replaces any unconsumed frame); Update runs
+		// SelectionInput once per submitted frame, and each resulting command goes through the same path as the cells.select.*
+		// JSON commands (same metrics and CEL logging). No submit this frame -> no gesture processing. The selection group is
+		// resolved to the grid default when the active grid changes or the stored group is not a category layer of it.
+		void	SubmitPointerFrame(const SelectionInput::PointerFrame& frame, const CellPickerView& view);
+		SelectionInput&	Input() { return mInput; }	// tool choice / selection group (call on SimPU, like Update)
+		const SelectionInput&	Input() const { return mInput; }
+
 		// Layers and overlays grouped by grid (the cells.layer.list payload).
 		void ListLayers(Json::Value& out) const;
 
@@ -110,6 +119,9 @@ namespace Dia::CellLayers
 		// Runs one cells.select.* command on the active grid's selection (locks mMutex). Failure = {"error": "..."} and
 		// the selection is unchanged; the reason is logged on CEL at Info.
 		Json::Value	ExecuteSelect(SelectOp op, const char* name, const Json::Value& params);
+		Json::Value	ExecuteSelectLocked(SelectOp op, const char* name, const Json::Value& params);	// caller holds mMutex
+		class InputSink;
+		void	ProcessPointer();	// called from Update with mMutex held
 
 		struct OverlayState
 		{
@@ -173,6 +185,10 @@ namespace Dia::CellLayers
 		uint64_t				mSeenUploads = 0;
 		uint64_t				mSeenSkipped = 0;
 
+		SelectionInput				mInput;
+		SelectionInput::PointerFrame	mPointerFrame;		// pending frame (valid = false when none)
+		CellPickerView				mPointerView;
+		const Dia::Graphics::CellGridDesc*	mInputGrid = nullptr;
 		SelectionOutline			mOutline;
 		Dia::Observation::Metric::Gauge*	mMetricSelectionSize = nullptr;
 		Dia::Observation::Metric::Gauge*	mMetricOutlineEdges = nullptr;

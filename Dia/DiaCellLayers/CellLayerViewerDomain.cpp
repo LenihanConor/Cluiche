@@ -280,6 +280,7 @@ namespace Dia::CellLayers
 		DIA_TRACE_ZONE("celllayers.viewer.update", ::Dia::Observation::Trace::Category::kDiaGraphics);
 		Lock l(mMutex);
 		ResolveBase();
+		ProcessPointer();
 
 		const CellLayerDesc* base = mActiveBase != StringCRC::kZero ? mRegistry.Find(mActiveBase) : nullptr;
 		UploadResult result;
@@ -761,8 +762,13 @@ namespace Dia::CellLayers
 
 	Json::Value CellLayerViewerDomain::ExecuteSelect(SelectOp op, const char* name, const Json::Value& params)
 	{
-		namespace Tools = SelectionTools;
 		Lock l(mMutex);
+		return ExecuteSelectLocked(op, name, params);
+	}
+
+	Json::Value CellLayerViewerDomain::ExecuteSelectLocked(SelectOp op, const char* name, const Json::Value& params)
+	{
+		namespace Tools = SelectionTools;
 
 		std::string error;
 		Json::Value out(Json::objectValue);
@@ -894,6 +900,82 @@ namespace Dia::CellLayers
 		}
 		mMetricSelectCommands->Inc();
 		return out;
+	}
+
+	// Routes each gesture command through ExecuteSelectLocked, so metrics and CEL logging match the JSON commands.
+	class CellLayerViewerDomain::InputSink : public ISelectionCommands
+	{
+	public:
+		explicit InputSink(CellLayerViewerDomain& d) : mDomain(d) {}
+		bool SelectCell(int32_t q, int32_t r) override { return Run(SelectOp::Cell, "cells.select.cell", QR(q, r)); }
+		bool ToggleCell(int32_t q, int32_t r) override { return Run(SelectOp::Toggle, "cells.select.toggle", QR(q, r)); }
+		bool SelectBox(int32_t q0, int32_t r0, int32_t q1, int32_t r1) override
+		{
+			Json::Value p(Json::objectValue);
+			p["q0"] = q0; p["r0"] = r0; p["q1"] = q1; p["r1"] = r1;
+			return Run(SelectOp::Box, "cells.select.box", p);
+		}
+		bool SelectPolygon(const SelectionTools::PolyPoint* pts, uint32_t n) override
+		{
+			Json::Value arr(Json::arrayValue);
+			for (uint32_t i = 0; i < n; ++i)
+			{
+				Json::Value pt(Json::arrayValue);
+				pt.append(static_cast<double>(pts[i].x));
+				pt.append(static_cast<double>(pts[i].y));
+				arr.append(pt);
+			}
+			Json::Value p(Json::objectValue);
+			p["points"] = arr;
+			return Run(SelectOp::Poly, "cells.select.poly", p);
+		}
+		bool SelectCategory(StringCRC layerId, float value) override
+		{
+			Json::Value p(Json::objectValue);
+			p["layer"] = layerId.AsChar();
+			p["value"] = static_cast<double>(value);
+			return Run(SelectOp::Category, "cells.select.category", p);
+		}
+		bool Clear() override { return Run(SelectOp::Clear, "cells.select.clear", Json::Value(Json::objectValue)); }
+
+	private:
+		static Json::Value QR(int32_t q, int32_t r)
+		{
+			Json::Value p(Json::objectValue);
+			p["q"] = q; p["r"] = r;
+			return p;
+		}
+		bool Run(SelectOp op, const char* name, const Json::Value& params)
+		{
+			const Json::Value out = mDomain.ExecuteSelectLocked(op, name, params);
+			return !out.isMember("error");
+		}
+		CellLayerViewerDomain& mDomain;
+	};
+
+	void CellLayerViewerDomain::SubmitPointerFrame(const SelectionInput::PointerFrame& frame, const CellPickerView& view)
+	{
+		Lock l(mMutex);
+		mPointerFrame = frame;
+		mPointerFrame.valid = true;
+		mPointerView = view;
+	}
+
+	void CellLayerViewerDomain::ProcessPointer()
+	{
+		if (!mPointerFrame.valid) { return; }
+		const SelectionInput::PointerFrame frame = mPointerFrame;
+		mPointerFrame.valid = false;	// one frame, consumed once
+		if (mActiveGrid == nullptr) { return; }
+		if (mInputGrid != mActiveGrid || !SelectionInput::IsGroupOf(mRegistry, mActiveGrid, mInput.SelectionGroup()))
+		{
+			mInput.SetSelectionGroup(SelectionInput::DefaultGroup(mRegistry, mSchema, mActiveGrid));
+			mInputGrid = mActiveGrid;
+		}
+		const StringCRC group = mInput.SelectionGroup();
+		const LayerValues values = group != StringCRC::kZero ? mReader.Read(group) : LayerValues();
+		InputSink sink(*this);
+		mInput.Process(frame, mPointerView, mActiveGrid, sink, values.hasData ? values.values : nullptr, values.hasData ? values.count : 0, group);
 	}
 
 	void CellLayerViewerDomain::UnregisterCommands()
