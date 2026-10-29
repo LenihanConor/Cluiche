@@ -40,6 +40,10 @@
     <ClInclude Include="Testing\SelectionTestSupport.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="LayerReader.h" />
+    <ClInclude Include="Testing\LayerReaderTestSupport.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />
@@ -51,6 +55,7 @@
     <ClCompile Include="CellLayerViewerDomain.cpp" />
     <ClCompile Include="CellLayersModule.cpp" />
     <ClCompile Include="CellSelection.cpp" />
+    <ClCompile Include="LayerReader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diacelllayers.architecture.module.md">

@@ -1010,6 +1010,7 @@
     <ClCompile Include="DiaCellLayers\TestCellLayerJsonCommands.cpp" />
     <ClCompile Include="DiaVisualDebugger\Console\TestDomainStateQuery.cpp" />
     <ClCompile Include="DiaCellLayers\TestCellSelection.cpp" />
+    <ClCompile Include="DiaCellLayers\TestLayerReader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
