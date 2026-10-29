@@ -217,13 +217,13 @@ namespace Dia::CellLayers
 
 		Dia::Graphics::CellFieldRampStop stops[CellFieldRegistry::kMaxRampStops];
 		uint32_t count = 0;
-		const char* name = kFallbackRampName;
+		StringCRC id(kFallbackRampName);
 		rampMin = mObservedMin;
 		rampMax = mObservedMax;
 		if (info != nullptr && mResolver != nullptr)
 		{
 			const ResolvedRamp r = mResolver->ResolveRamp(*info);
-			if (r.mRamp.mName.Length() > 0) { name = r.mRamp.mName.AsCStr(); }
+			if (r.mRamp.mName.Length() > 0) { id = StringCRC(r.mRamp.mName.AsCStr()); }
 			for (unsigned i = 0; i < r.mRamp.mStopCount && count < CellFieldRegistry::kMaxRampStops; ++i)
 			{
 				stops[count].position = r.mRamp.mStops[i].mT;
@@ -245,7 +245,7 @@ namespace Dia::CellLayers
 			if (pr != nullptr && pr->mKind == RampKind::Continuous && pr->mStopCount > 0)
 			{
 				count = 0;
-				name = pr->mName.AsCStr();
+				id = StringCRC(pr->mName.AsCStr());
 				for (unsigned i = 0; i < pr->mStopCount && count < CellFieldRegistry::kMaxRampStops; ++i)
 				{
 					stops[count].position = pr->mStops[i].mT;
@@ -256,7 +256,6 @@ namespace Dia::CellLayers
 			rampMin = presentation->rangeMin;
 			rampMax = presentation->rangeMax;
 		}
-		const StringCRC id(name);
 		if (MarkColourMap(id.Value())) { mCellField.RegisterRamp(id, stops, count); }
 		return id.Value();
 	}
