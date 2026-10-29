@@ -229,7 +229,7 @@ TEST_F(ViewerEdgeTest, EmptyFromTheStartThenFirstLayerBecomesActive)
 // BUG (production): after the active grid empties, mActiveGrid stays on it, so ResolveBase never looks at other grids.
 // Layers on another grid are then unreachable from the panel (layers[] is empty; gridSelector hidden with a single grid).
 // Repro: register temp on gridA, Update, Unregister temp, Update (empty), register soil on gridB, Update -> still empty.
-TEST_F(ViewerEdgeTest, DISABLED_EmptyStateThenLayerOnOtherGridIsAdopted)
+TEST_F(ViewerEdgeTest, EmptyStateThenLayerOnOtherGridIsAdopted)
 {
 	Rig rig(cellField, nullptr);
 	rig.Add(temp.MakeDesc("temp", &gridA.desc));
@@ -239,6 +239,69 @@ TEST_F(ViewerEdgeTest, DISABLED_EmptyStateThenLayerOnOtherGridIsAdopted)
 	rig.Add(soil.MakeDesc("soil", &gridB.desc));
 	rig.domain.Update(draw);
 	EXPECT_FALSE(rig.domain.IsEmptyState());
+}
+
+TEST_F(ViewerEdgeTest, AdoptedGridShowsItsLayersInPanelJson)
+{
+	Rig rig(cellField, nullptr);
+	rig.Add(temp.MakeDesc("temp", &gridA.desc));
+	rig.domain.Update(draw);
+	rig.registry.Unregister(StringCRC("temp"));
+	rig.domain.Update(draw);
+	rig.Add(soil.MakeDesc("soil", &gridB.desc));
+	rig.domain.Update(draw);
+	EXPECT_EQ(rig.domain.ActiveBase(), StringCRC("soil"));
+	EXPECT_EQ(rig.domain.ActiveGrid(), &gridB.desc);
+	Json::Value j;
+	rig.domain.GetJSONState(j);
+	EXPECT_FALSE(j["empty"].asBool());
+	ASSERT_EQ(j["layers"].size(), 1u);
+	EXPECT_EQ(j["layers"][0u]["id"].asString(), "soil");
+}
+
+TEST_F(ViewerEdgeTest, EmptiedActiveGridAdoptsFirstOfTwoCandidateGrids)
+{
+	TestGrid gridC{ 3, 3 };
+	StubProvider other;
+	other.values = std::vector<float>(9, 2.0f);
+	Rig rig(cellField, nullptr);
+	rig.Add(temp.MakeDesc("temp", &gridA.desc));
+	rig.Add(soil.MakeDesc("soil", &gridB.desc));
+	rig.Add(other.MakeDesc("other", &gridC.desc));
+	rig.domain.Update(draw);
+	EXPECT_EQ(rig.domain.ActiveBase(), StringCRC("temp"));
+	rig.registry.Unregister(StringCRC("temp"));
+	rig.domain.Update(draw);
+	EXPECT_EQ(rig.domain.ActiveBase(), StringCRC("soil"));
+	EXPECT_EQ(rig.domain.ActiveGrid(), &gridB.desc);
+}
+
+TEST_F(ViewerEdgeTest, UserChosenGridWithLayersIsNeverOverridden)
+{
+	Rig rig(cellField, nullptr);
+	rig.Add(temp.MakeDesc("temp", &gridA.desc));
+	rig.Add(rain.MakeDesc("rain", &gridA.desc));
+	rig.Add(soil.MakeDesc("soil", &gridB.desc));
+	rig.domain.Update(draw);
+	ASSERT_TRUE(rig.domain.SetBase(StringCRC("rain")));
+	rig.registry.Unregister(StringCRC("rain"));
+	rig.domain.Update(draw);
+	EXPECT_EQ(rig.domain.ActiveBase(), StringCRC("temp"));
+	EXPECT_EQ(rig.domain.ActiveGrid(), &gridA.desc);
+	ASSERT_TRUE(rig.domain.SetGrid(1));
+	rig.domain.Update(draw);
+	EXPECT_EQ(rig.domain.ActiveBase(), StringCRC("soil"));
+}
+
+TEST_F(ViewerEdgeTest, AllGridsEmptyKeepsEmptyState)
+{
+	Rig rig(cellField, nullptr);
+	rig.Add(temp.MakeDesc("temp", &gridA.desc));
+	rig.domain.Update(draw);
+	rig.registry.Unregister(StringCRC("temp"));
+	rig.domain.Update(draw);
+	rig.domain.Update(draw);
+	EXPECT_TRUE(rig.domain.IsEmptyState());
 }
 
 TEST_F(ViewerEdgeTest, RepeatedUpdateWithNoChangesDoesNoReadOrUpload)

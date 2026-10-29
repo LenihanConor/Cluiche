@@ -77,7 +77,7 @@ TEST_F(UploaderEdgeTest, ReadFailureClearsBaseValuesAndRecoversOnceFixed)
 // BUG (production): the early "base not readable" return in Update() clears mBaseCopyCount but keeps the held slot, so a
 // recovery with the same id and unchanged version() is version-gated and BaseValues() stays null (hover shows nothing)
 // until version() changes. Repro: Update(good); Update(copy of good with empty read) -> ReadFailed; Update(good) -> Ok.
-TEST_F(UploaderEdgeTest, DISABLED_BaseValuesAvailableAgainAfterReadFailureRecoveryWithSameVersion)
+TEST_F(UploaderEdgeTest, BaseValuesAvailableAgainAfterReadFailureRecoveryWithSameVersion)
 {
 	Reg(temp.MakeDesc("temp", &grid.desc));
 	LayerUploader up(cellField, nullptr);

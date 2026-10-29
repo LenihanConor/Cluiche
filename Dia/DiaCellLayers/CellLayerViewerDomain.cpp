@@ -175,6 +175,18 @@ namespace Dia::CellLayers
 		// Active base unregistered (or already in the empty state): fall back to the grid default.
 		const CellLayerDesc* fallback = mActiveGrid != nullptr ? mRegistry.DefaultBase(mActiveGrid) : nullptr;
 		if (fallback != nullptr) { Activate(*fallback, "fallback to grid default"); return; }
+		// The active grid has no layers: adopt the first registered grid that has some (never overrides a grid that still has layers).
+		for (uint32_t i = 0; i < mRegistry.GridCount(); ++i)
+		{
+			const Dia::Graphics::CellGridDesc* grid = mRegistry.GridAt(i);
+			if (grid == nullptr || grid == mActiveGrid) { continue; }
+			if (const CellLayerDesc* d = mRegistry.DefaultBase(grid))
+			{
+				DIA_LOG_INFO("CEL", "Viewer: active grid has no layers; adopting grid %u with base '%s'", i, d->id.AsChar());
+				Activate(*d, "adopted grid with layers");
+				return;
+			}
+		}
 		if (mActiveBase != StringCRC::kZero)
 		{
 			DIA_LOG_INFO("CEL", "Viewer: no layers left on the active grid; empty state");

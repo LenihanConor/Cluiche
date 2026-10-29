@@ -274,6 +274,7 @@ namespace Dia::CellLayers
 		{
 			++mReadFailures;
 			mBaseCopyCount = 0;
+			if (Slot* held = FindSlot(base->id)) { ReleaseSlot(*held); }	// force a re-read on recovery (version gate would otherwise skip it)
 			DIA_LOG_ERROR("CEL", "LayerUploader: base layer 0x%x has no valid grid or read/version delegate", base->id.Value());
 			return UploadResult::ReadFailed;
 		}
