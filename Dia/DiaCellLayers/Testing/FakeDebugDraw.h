@@ -4,6 +4,8 @@
 
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 
+#include <vector>
+
 namespace Dia::CellLayers::Testing
 {
 	struct FakeDebugDraw : public Dia::Core::IDebugDraw
@@ -11,9 +13,11 @@ namespace Dia::CellLayers::Testing
 		uint32_t cellFieldRequests = 0;
 		Dia::Core::CellFieldDrawRequest lastRequest;
 		Dia::Maths::Vector2D mouse;
+		struct Line { Dia::Maths::Vector2D a; Dia::Maths::Vector2D b; Dia::Core::RGBA colour; };
+		std::vector<Line> lines;	// recorded Line2D requests
 
 		void RequestDraw(const Dia::Maths::Vector2D&, float, Dia::Core::RGBA, Dia::Core::RGBA) override {}
-		void RequestDraw(const Dia::Maths::Vector2D&, const Dia::Maths::Vector2D&, Dia::Core::RGBA) override {}
+		void RequestDraw(const Dia::Maths::Vector2D& a, const Dia::Maths::Vector2D& b, Dia::Core::RGBA c) override { lines.push_back({ a, b, c }); }
 		void RequestDrawPoint(const Dia::Maths::Vector2D&, Dia::Core::RGBA) override {}
 		void RequestDrawRect(const Dia::Maths::Vector2D&, const Dia::Maths::Vector2D&, Dia::Core::RGBA, Dia::Core::RGBA) override {}
 		void RequestDrawArc(const Dia::Maths::Vector2D&, float, float, float, Dia::Core::RGBA) override {}

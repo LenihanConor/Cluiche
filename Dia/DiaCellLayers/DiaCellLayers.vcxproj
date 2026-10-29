@@ -94,6 +94,7 @@
     <ClInclude Include="LayerReader.h" />
     <ClInclude Include="Testing\LayerReaderTestSupport.h" />
     <ClInclude Include="SelectionTools.h" />
+    <ClInclude Include="SelectionOutline.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />
@@ -107,6 +108,7 @@
     <ClCompile Include="CellSelection.cpp" />
     <ClCompile Include="LayerReader.cpp" />
     <ClCompile Include="SelectionTools.cpp" />
+    <ClCompile Include="SelectionOutline.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diacelllayers.architecture.module.md" />

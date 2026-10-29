@@ -1014,6 +1014,7 @@
     <ClCompile Include="DiaCellLayers\TestSelectionTools.cpp" />
     <ClCompile Include="DiaCellLayers\TestSelectionToolsPoly.cpp" />
     <ClCompile Include="DiaCellLayers\TestSelectionCategory.cpp" />
+    <ClCompile Include="DiaCellLayers\TestSelectionOutline.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

@@ -2180,5 +2180,8 @@
     <ClCompile Include="DiaCellLayers\TestSelectionCategory.cpp">
       <Filter>DiaCellLayers</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestSelectionOutline.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
