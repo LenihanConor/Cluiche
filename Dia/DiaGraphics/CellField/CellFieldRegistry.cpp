@@ -224,17 +224,32 @@ namespace Dia
 			CellFieldResult r;
 			Impl& m = *mImpl;
 
-			// Copy-on-submit happens BEFORE the lock so the mutex is held only for bookkeeping
-			// (a 64 KB memcpy/allocation never runs under it). Counts above the largest grid
-			// can never match a layer, so they skip the copy and are rejected under the lock.
+			// Pre-validate under a short lock: the caller's buffer is only trusted to hold exactly
+			// the layer's cell count, so the source must never be read for any other count.
+			{
+				std::lock_guard<std::mutex> pre(m.mMutex);
+				if (!m.IsLive(handle))
+				{
+					++m.mStats.staleHandles;
+					r.error = kErrStaleHandle;
+					return r;
+				}
+				if (values == nullptr || count != m.mSlots[handle.index].cellCount)
+				{
+					++m.mStats.rejectedRequests;
+					DIA_LOG_WARNING("CFL", "Update rejected: value count mismatch (%u)", (unsigned)count);
+					r.error = kErrCountMismatch;
+					return r;
+				}
+			}
+
+			// Copy-on-submit happens outside the lock so the mutex is held only for bookkeeping
+			// (a 64 KB memcpy/allocation never runs under it). count is now known to equal the
+			// layer's cell count; the handle is re-validated below in case it died meanwhile.
 			Command cmd;	// declared before the lock: its (possibly swapped-out) buffer is freed after unlock
 			cmd.type = CmdType::Update;
 			cmd.handle = handle;
-			const uint32_t maxCells = (uint32_t)kMaxGridDim * kMaxGridDim;
-			if (values != nullptr && count <= maxCells)
-			{
-				cmd.values.assign(values, values + count);
-			}
+			cmd.values.assign(values, values + count);
 			const uint64_t bytes = sizeof(float) * (uint64_t)count;
 			cmd.bytes = bytes;
 
@@ -246,10 +261,9 @@ namespace Dia
 				return r;
 			}
 			Slot& slot = m.mSlots[handle.index];
-			if (values == nullptr || count != slot.cellCount)
+			if (count != slot.cellCount)
 			{
 				++m.mStats.rejectedRequests;
-				DIA_LOG_WARNING("CFL", "Update rejected: value count mismatch (%u)", (unsigned)count);
 				r.error = kErrCountMismatch;
 				return r;
 			}
