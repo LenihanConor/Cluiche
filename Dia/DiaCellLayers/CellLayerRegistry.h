@@ -9,6 +9,7 @@
 // Descs hold borrowed pointers (grid); the registered system must outlive its registration.
 
 #include <DiaCellLayers/CellLayersTypes.h>
+#include <DiaCellLayers/CellSelection.h>
 #include <DiaCellLayers/IViewValueSource.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Misc/FastDelegate.h>
@@ -34,7 +35,7 @@ namespace Dia::CellLayers
 		fastdelegate::FastDelegate0<uint64_t>	version;			// change counter
 	};
 
-	// The selection is opaque here; Feature 2 defines CellSelection.
+	// draw receives the viewer's active selection as a `const ICellSelectionView*` (null when there is no active grid).
 	struct CellOverlayDesc
 	{
 		Dia::Core::StringCRC					id;
@@ -101,7 +102,25 @@ namespace Dia::CellLayers
 		// True when no source is installed or the source is live. Systems must refuse edits while false.
 		bool				IsLive() const { return mViewSource == nullptr || mViewSource->IsLive(); }
 
+		// Per-grid selection store (Selection feature). One CellSelection per grid, created lazily by SelectionFor, at most
+		// kMaxSelectionGrids grids; beyond that SelectionFor returns null (Warning on CEL, once). Both accessors Reset(grid)
+		// first, so a grid whose width/height/topology changed is cleared (Info on CEL when that dropped a non-empty
+		// selection). Entries for grids with no registered layer are kept but SelectionView returns null for them (never
+		// stale data). Call from the registry's PU, like Register.
+		static const uint32_t kMaxSelectionGrids = 8;
+		CellSelection*		SelectionFor(const Dia::Graphics::CellGridDesc* grid);
+		// Null when the grid is null, has no registered layer, or has no selection entry yet.
+		const ICellSelectionView*	SelectionView(const Dia::Graphics::CellGridDesc* grid) const;
+
 	private:
+		struct SelectionEntry
+		{
+			const Dia::Graphics::CellGridDesc*	grid = nullptr;
+			CellSelection						selection;
+		};
+		SelectionEntry*		FindSelection(const Dia::Graphics::CellGridDesc* grid) const;
+		static void			ResetEntry(SelectionEntry& e);
+
 		bool				IsOwnerPu(const char* what, Dia::Core::StringCRC id) const;
 		void				Reject() { mRejected.fetch_add(1, std::memory_order_relaxed); }
 		bool				HasDefaultBase(const CellLayerDesc& desc) const;
@@ -116,5 +135,7 @@ namespace Dia::CellLayers
 		IViewValueSource*	mViewSource = nullptr;
 		CellLayerDesc		mLayers[kMaxLayers];
 		CellOverlayDesc		mOverlays[kMaxOverlays];
+		mutable SelectionEntry	mSelections[kMaxSelectionGrids];
+		bool				mSelectionCapacityLogged = false;
 	};
 }

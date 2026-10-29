@@ -6,13 +6,14 @@
 // BeginEdit/EndEdit batch many edits into at most one version bump (net change only).
 // The grid pointer is borrowed. Generic: no game types (CL-005), no singletons (CL-006).
 
+#include <DiaCellLayers/ICellSelectionView.h>
 #include <DiaGraphics/CellField/CellGridDesc.h>
 
 #include <stdint.h>
 
 namespace Dia::CellLayers
 {
-	class CellSelection
+	class CellSelection : public ICellSelectionView
 	{
 	public:
 		CellSelection() = default;
@@ -29,15 +30,15 @@ namespace Dia::CellLayers
 		uint32_t	CellCount() const { return mWidth * mHeight; }
 		float		CellSize() const { return mCellSize; }	// grid cellSize (centre-to-corner) at last Reset; 0 if no grid. Not part of grid identity.
 
-		bool		Contains(uint32_t cellIndex) const;
+		bool		Contains(uint32_t cellIndex) const override;
 		bool		Set(uint32_t cellIndex, bool selected);		// true if the state changed
 		bool		Clear();									// true if it was non-empty
 
-		uint32_t	Count() const { return mCount; }
-		uint32_t	Version() const { return mVersion; }
+		uint32_t	Count() const override { return mCount; }
+		uint32_t	Version() const override { return mVersion; }
 
 		// Visits set cells in ascending index order.
-		void		ForEach(void (*fn)(uint32_t cellIndex, void* user), void* user) const;
+		void		ForEach(void (*fn)(uint32_t cellIndex, void* user), void* user) const override;
 
 		// Bulk edit: Set/Clear between Begin and End do not bump; EndEdit bumps once iff the set differs from at
 		// BeginEdit. Not nestable (a nested BeginEdit is ignored).

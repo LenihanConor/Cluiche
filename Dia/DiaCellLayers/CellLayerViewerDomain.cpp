@@ -102,10 +102,37 @@ namespace Dia::CellLayers
 		return 0xFFFFFFFFu;
 	}
 
+	const ICellSelectionView* CellLayerViewerDomain::ActiveSelectionView() const
+	{
+		Lock l(mMutex);
+		return mRegistry.SelectionView(mActiveGrid);
+	}
+
+	CellSelection* CellLayerViewerDomain::ActiveSelection()
+	{
+		Lock l(mMutex);
+		return mRegistry.SelectionFor(mActiveGrid);
+	}
+
+	// Changing the active grid clears the selection of the grid left and of the grid entered.
+	void CellLayerViewerDomain::SetActiveGrid(const Dia::Graphics::CellGridDesc* grid)
+	{
+		if (grid == mActiveGrid) { return; }
+		uint32_t dropped = 0;
+		const Dia::Graphics::CellGridDesc* const grids[2] = { mActiveGrid, grid };
+		for (const Dia::Graphics::CellGridDesc* g : grids)
+		{
+			if (g == nullptr) { continue; }
+			if (CellSelection* sel = mRegistry.SelectionFor(g)) { dropped += sel->Count(); sel->Clear(); }
+		}
+		if (dropped > 0) { DIA_LOG_INFO("CEL", "Selection cleared: active grid changed (%u cells dropped)", dropped); }
+		mActiveGrid = grid;
+	}
+
 	void CellLayerViewerDomain::Activate(const CellLayerDesc& layer, const char* why)
 	{
 		mActiveBase = layer.id;
-		mActiveGrid = layer.grid;
+		SetActiveGrid(layer.grid);
 		mStarted = true;
 		if (mLoggedBase != layer.id)
 		{
@@ -167,7 +194,7 @@ namespace Dia::CellLayers
 				if (base->grid != mActiveGrid)
 				{
 					DIA_LOG_WARNING("CEL", "Viewer: layer '%s' is now on a different grid than the active grid; following it", base->id.AsChar());
-					mActiveGrid = base->grid;
+					SetActiveGrid(base->grid);
 				}
 				return;
 			}
@@ -271,11 +298,12 @@ namespace Dia::CellLayers
 		{
 			draw.RequestDrawCellField(mUploader.DrawRequest());
 		}
+		const ICellSelectionView* selection = mRegistry.SelectionView(mActiveGrid);
 		for (uint32_t i = 0; i < mRegistry.OverlayCount(); ++i)
 		{
 			const CellOverlayDesc* o = mRegistry.OverlayAt(i);
 			const OverlayState* s = o ? FindOverlayState(o->id) : nullptr;
-			if (s != nullptr && s->enabled && !o->draw.empty()) { o->draw(draw, nullptr); }	// selection: null until Feature 2
+			if (s != nullptr && s->enabled && !o->draw.empty()) { o->draw(draw, selection); }
 		}
 		UpdateHover(draw, base, result);
 	}

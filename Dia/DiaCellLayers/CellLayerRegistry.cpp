@@ -212,4 +212,53 @@ namespace Dia::CellLayers
 		}
 		return first;
 	}
+	CellLayerRegistry::SelectionEntry* CellLayerRegistry::FindSelection(const Dia::Graphics::CellGridDesc* grid) const
+	{
+		for (uint32_t i = 0; i < kMaxSelectionGrids; ++i)
+		{
+			if (mSelections[i].grid == grid) { return &mSelections[i]; }
+		}
+		return nullptr;
+	}
+
+	void CellLayerRegistry::ResetEntry(SelectionEntry& e)
+	{
+		const uint32_t before = e.selection.Count();
+		e.selection.Reset(e.grid);	// no-op when width/height/topology are unchanged
+		if (before > 0 && e.selection.Count() == 0)
+		{
+			DIA_LOG_INFO("CEL", "Selection cleared: grid size or id changed (%u cells dropped)", before);
+		}
+	}
+
+	CellSelection* CellLayerRegistry::SelectionFor(const Dia::Graphics::CellGridDesc* grid)
+	{
+		if (grid == nullptr) { return nullptr; }
+		SelectionEntry* e = FindSelection(grid);
+		if (e == nullptr)
+		{
+			e = FindSelection(nullptr);	// a free slot
+			if (e == nullptr)
+			{
+				if (!mSelectionCapacityLogged)
+				{
+					DIA_LOG_WARNING("CEL", "Selection store full (%u grids); no selection for further grids", kMaxSelectionGrids);
+					mSelectionCapacityLogged = true;
+				}
+				return nullptr;
+			}
+			e->grid = grid;
+		}
+		ResetEntry(*e);
+		return &e->selection;
+	}
+
+	const ICellSelectionView* CellLayerRegistry::SelectionView(const Dia::Graphics::CellGridDesc* grid) const
+	{
+		if (grid == nullptr || LayerCountForGrid(grid) == 0) { return nullptr; }
+		SelectionEntry* e = FindSelection(grid);
+		if (e == nullptr) { return nullptr; }
+		ResetEntry(*e);	// never hand out a selection sized for a stale grid
+		return &e->selection;
+	}
 }

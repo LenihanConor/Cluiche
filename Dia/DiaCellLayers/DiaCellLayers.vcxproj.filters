@@ -46,6 +46,7 @@
     </ClInclude>
     <ClInclude Include="SelectionTools.h" />
     <ClInclude Include="SelectionOutline.h" />
+    <ClInclude Include="ICellSelectionView.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />

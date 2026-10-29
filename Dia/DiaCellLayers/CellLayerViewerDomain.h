@@ -7,7 +7,7 @@
 //  1 resolve the active base  (last chosen; start = registry default for the first grid; if the base is unregistered, fall
 //    back to its grid's default; no layer left on the grid -> empty state, map cleared)
 //  2 LayerUploader::Update (version-gated read + upload), 3 legend refresh, 4 draw.RequestDrawCellField(DrawRequest()),
-//  5 every enabled overlay's draw callback (selection pointer null until Feature 2), 6 hover.
+//  5 every enabled overlay's draw callback (selection argument = the active grid's const ICellSelectionView*, null with no active grid), 6 hover.
 //
 // Hover seam (Open Q2): the cursor comes from IDebugDraw::GetMousePixel() (the existing path; pixel space, top-left origin).
 // There is no camera on IDebugDraw (the camera lives on DebugLayerManager::SetViewport), so the application injects a
@@ -25,6 +25,7 @@
 
 #include <DiaCellLayers/CellLayerLegend.h>
 #include <DiaCellLayers/CellPicker.h>
+#include <DiaCellLayers/CellSelection.h>
 #include <DiaCellLayers/HotkeyTable.h>
 #include <DiaCellLayers/LayerUploader.h>
 #include <DiaCore/Containers/Misc/FastDelegate.h>
@@ -83,6 +84,11 @@ namespace Dia::CellLayers
 		HoverInfo				Hover() const;
 		bool					IsEmptyState() const;
 
+		// The selection of the active grid (null when there is no active grid). Switching the active grid clears the
+		// selection of the grid left and of the grid entered. Overlay draw callbacks receive ActiveSelectionView().
+		const ICellSelectionView*	ActiveSelectionView() const;
+		CellSelection*			ActiveSelection();
+
 		// Layers and overlays grouped by grid (the cells.layer.list payload).
 		void ListLayers(Json::Value& out) const;
 
@@ -103,6 +109,7 @@ namespace Dia::CellLayers
 
 		void	ResolveBase();
 	void	Activate(const CellLayerDesc& layer, const char* why);
+	void	SetActiveGrid(const Dia::Graphics::CellGridDesc* grid);
 		void	UpdateHover(Dia::Core::IDebugDraw& draw, const CellLayerDesc* base, UploadResult result);
 		void	RefreshLegend(const CellLayerDesc* base);
 		OverlayState*	FindOverlayState(Dia::Core::StringCRC id);
