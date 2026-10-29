@@ -493,6 +493,32 @@ TEST_F(PanelContractTest, CellLayersViewerCategoryBaseMultiGrid)
 	Check("domain_states_celllayers_category.json", ViewerJson(*rig.domain));
 }
 
+TEST_F(PanelContractTest, CellLayersViewerSelection)
+{
+	using namespace Dia::CellLayers;
+	ViewerRig rig;
+	rig.Build(true);
+	rig.Add(rig.biome.MakeDesc("biome", &rig.gridA.desc, CellValueKind::Category, "cells/biome"), "Terrain");
+	rig.Add(rig.temp.MakeDesc("temp", &rig.gridA.desc, CellValueKind::Float, "cells/temp"), "Ecology");
+	ASSERT_TRUE(rig.domain->SetBase(StringCRC("temp")));
+	ViewerPointAt(rig.draw, 2, 1);
+	rig.domain->Update(rig.draw);
+	ASSERT_NE(rig.domain->ActiveSelection(), nullptr);
+	EXPECT_TRUE(SelectionTools::SelectBox(*rig.domain->ActiveSelection(), 0, 0, 1, 1).ok);
+	rig.domain->Input().SetTool(SelectionInput::Tool::Pan);
+	rig.domain->Update(rig.draw);
+	const std::string json = ViewerJson(*rig.domain);
+	Check("domain_states_celllayers_selection.json", json);
+
+	Json::Value parsed;
+	ASSERT_TRUE(Json::Reader().parse(json, parsed));
+	const Json::Value& sel = parsed["Cell Layers"]["selection"];
+	EXPECT_EQ(sel["count"].asUInt(), 4u);
+	EXPECT_EQ(sel["tool"].asString(), "pan");
+	EXPECT_EQ(sel["group"].asString(), "biome");
+	EXPECT_FALSE(sel["tooLarge"].asBool());
+}
+
 TEST_F(PanelContractTest, CellLayersViewerEmptyState)
 {
 	ViewerRig rig;

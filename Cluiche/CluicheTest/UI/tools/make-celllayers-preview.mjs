@@ -5,7 +5,8 @@
 // scripts, then feeds a panel contract golden of the real CellLayerViewerDomain. Clicks in the picker send commands to
 // the stub, which only logs them (the console shows nothing; this is a static look-and-feel check).
 // Open the output in a browser. URL hash picks the state: (none) float base, #category (multi-grid + category base),
-// #empty (empty state), #nodata (view source not live, no data). Headless screenshot:
+// #empty (empty state), #nodata (view source not live, no data), #selection (a 4-cell selection, Pan tool active),
+// #toolarge (the same state with the "Selection too large to outline" banner, for the selection visual check). Headless screenshot:
 //   msedge --headless=new --window-size=700,1000 --screenshot=<png> "file:///<out>#category"
 import fs from "node:fs";
 import path from "node:path";
@@ -38,7 +39,14 @@ window.addEventListener("load", function() {
     "": ${g("domain_states_celllayers.json")},
     "#category": ${g("domain_states_celllayers_category.json")},
     "#empty": ${g("domain_states_celllayers_empty.json")},
-    "#nodata": ${g("domain_states_celllayers_nodata.json")}
+    "#nodata": ${g("domain_states_celllayers_nodata.json")},
+    "#selection": ${g("domain_states_celllayers_selection.json")},
+    "#toolarge": (function () {
+      var s = ${g("domain_states_celllayers_selection.json")};
+      var sel = s["Cell Layers"].selection;
+      sel.count = 1120; sel.tool = "select"; sel.tooLarge = true; sel.tooLargeText = "Selection too large to outline (1120 cells)";
+      return s;
+    })()
   };
   window.updateDomainState(states[location.hash] || states[""]);
   var hdr = document.querySelector(".domain-hdr");

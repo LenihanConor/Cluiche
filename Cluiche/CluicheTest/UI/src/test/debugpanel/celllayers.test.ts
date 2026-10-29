@@ -343,3 +343,80 @@ describe("noData message", () => {
     expect(viewer().querySelector("[data-role=hover]")!.children.length).toBe(0);
   });
 });
+
+describe("selection card (Selection task 11: count, tool strip, group dropdown, clear, banner)", () => {
+  const sel = () => viewer().querySelector("[data-role=selection]") as HTMLElement;
+  const toolBtn = (t: string) => sel().querySelector(`[data-tool="${t}"]`) as HTMLElement;
+  const groupSelect = () => sel().querySelector("[data-role=selection-group] select") as HTMLSelectElement;
+  const banner = () => sel().querySelector("[data-role=selection-banner]") as HTMLElement | null;
+  const withSelection = (patch: any) => {
+    const s = goldenJson("domain_states_celllayers_selection.json");
+    Object.assign(s[NAME].selection, patch);
+    p.win.updateDomainState(JSON.stringify(s));
+  };
+
+  it("contract: the selection golden carries count, tool, group, groups and tooLarge", () => {
+    const s = goldenJson("domain_states_celllayers_selection.json")[NAME].selection;
+    expect(s.count).toBeGreaterThan(0);
+    expect(s.tool).toBe("pan");
+    expect(typeof s.group).toBe("string");
+    expect(Array.isArray(s.groups)).toBe(true);
+    expect(s.tooLarge).toBe(false);
+  });
+
+  it("shows the selection count", () => {
+    push("domain_states_celllayers_selection.json");
+    expect(txt(sel().querySelector("[data-role=selection-count]"))).toBe("4 cells selected");
+    push("domain_states_celllayers.json");
+    expect(txt(sel().querySelector("[data-role=selection-count]"))).toBe("0 cells selected");
+  });
+
+  it("the tool strip highlights the active tool and a click sends select_tool {tool}", () => {
+    push("domain_states_celllayers_selection.json");
+    expect(toolBtn("pan").classList.contains("active")).toBe(true);
+    expect(toolBtn("select").classList.contains("active")).toBe(false);
+    p.click(toolBtn("select"));
+    expect(commands()).toEqual([["command", "celllayers", "select_tool", JSON.stringify({ tool: "select" })]]);
+    withSelection({ tool: "select" });
+    expect(toolBtn("select").classList.contains("active")).toBe(true);
+    expect(toolBtn("pan").classList.contains("active")).toBe(false);
+  });
+
+  it("the group dropdown lists the groups with the selected one chosen; change sends select_group {layer}", () => {
+    push("domain_states_celllayers_selection.json");
+    const opts = Array.from(groupSelect().options).map((o) => [o.value, o.textContent]);
+    expect(opts).toEqual([["biome", "Biome"]]);
+    expect(groupSelect().value).toBe("biome");
+    const s = goldenJson("domain_states_celllayers_category.json");
+    p.win.updateDomainState(JSON.stringify(s));
+    const sg = groupSelect();
+    const ids = Array.from(sg.options).map((o) => o.value);
+    expect(ids.length).toBeGreaterThan(0);
+    sg.value = ids[ids.length - 1];
+    sg.dispatchEvent(new p.win.Event("change", { bubbles: true }));
+    expect(commands()).toEqual([["command", "celllayers", "select_group", JSON.stringify({ layer: ids[ids.length - 1] })]]);
+  });
+
+  it("the Clear button sends select_clear", () => {
+    push("domain_states_celllayers_selection.json");
+    p.click(sel().querySelector("[data-role=selection-clear]")!);
+    expect(commands()).toEqual([["command", "celllayers", "select_clear", "{}"]]);
+  });
+
+  it("the too-large banner shows only when tooLarge and disappears again", () => {
+    push("domain_states_celllayers_selection.json");
+    expect(banner()).toBeNull();
+    const section = viewer();
+    withSelection({ count: 1120, tooLarge: true, tooLargeText: "Selection too large to outline (1120 cells)" });
+    expect(viewer()).toBe(section);
+    expect(txt(banner())).toBe("Selection too large to outline (1120 cells)");
+    withSelection({ count: 0, tooLarge: false });
+    expect(banner()).toBeNull();
+  });
+
+  it("the empty state still renders the selection card", () => {
+    push("domain_states_celllayers_empty.json");
+    expect(txt(sel().querySelector("[data-role=selection-count]"))).toBe("0 cells selected");
+    expect(banner()).toBeNull();
+  });
+});

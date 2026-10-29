@@ -279,6 +279,15 @@ body {
   border-radius: 2px; font-size: 9px; cursor: pointer; font-family: inherit;
 }
 .cl-viewer .tool-btn.active { background: #5a9fd4; color: #fff; border-color: #5a9fd4; }
+.selection-header { font-size: 11px; color: #5a9fd4; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #222; }
+.selection-tools { display: flex; gap: 4px; margin-bottom: 8px; flex-wrap: wrap; align-items: center; }
+.selection-group { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 0.8px; }
+.selection-group select {
+  flex: 1; background: #1a1a1a; border: 1px solid #2a2a2a; color: #ccc;
+  font-family: inherit; font-size: 10px; padding: 3px 4px; border-radius: 2px; outline: none; text-transform: none; letter-spacing: 0;
+}
+.selection-group select:focus { border-color: #5a9fd4; }
+.cl-banner { padding: 6px 8px; font-size: 10px; color: #f5a623; background: #2a2510; border: 1px solid #4a4520; border-radius: 2px; margin-bottom: 8px; }
 .layer-search { margin-bottom: 8px; }
 .layer-search input {
   width: 100%; background: #1a1a1a; border: 1px solid #2a2a2a; color: #ccc;
@@ -902,7 +911,8 @@ function formatValue(v, decimals) {
 // State from CellLayerViewerDomain: empty, noData, activeBase, layers[{id,label,unit,kind,hotkey,selected,group,
 // groupNumber,description?}], groups[{name,layers[ids]}], overlays[{id,label,enabled}], grids[], gridSelector[] (multi-grid only),
 // legend{available,category,ramp,stops,ticks,unit,seen,swatches}, hover{valid,q,r,label,description,unit,text}.
-// The page only sends commands (base {id}, grid {index}, toggle {drawer}); the domain owns all state. Commands are
+// selection{count,tool,group,groups[{id,label,selected}],tooLarge,tooLargeText?}. The page only sends commands (base {id}, grid {index}, toggle {drawer},
+// select_tool {tool}, select_group {layer}, select_clear {}); the domain owns all state. Commands are
 // addressed by the domain's registry id (domain.cmdId, from the state's _id; the card is keyed by display name).
 // Layout/classes follow docs/specs/applications/dia/systems/diacelllayers/mockups/cell-layer-viewer.html.
 
@@ -919,12 +929,84 @@ function viewerSignature(v) {
       parts.push('g:' + gs.index + ',' + gs.width + ',' + gs.height + ',' + gs.layerCount);
     }
   }
+  if (v.selection && Array.isArray(v.selection.groups)) {
+    for (var sg = 0; sg < v.selection.groups.length; ++sg) parts.push('s:' + v.selection.groups[sg].id + ',' + v.selection.groups[sg].label);
+  }
   return '{' + parts.join(';') + '}';
 }
 
 function viewerRgb(rgba8) {
   var n = Number(rgba8) >>> 0;   // 0xRRGGBBAA
   return 'rgb(' + ((n >>> 24) & 255) + ', ' + ((n >>> 16) & 255) + ', ' + ((n >>> 8) & 255) + ')';
+}
+
+function buildSelectionSection(cmdId, s) {
+  var sec = el('div', 'cl-selection');
+  sec.setAttribute('data-role', 'selection');
+  var hdr = el('div', 'selection-header', '');
+  hdr.setAttribute('data-role', 'selection-count');
+  sec.appendChild(hdr);
+
+  var tools = el('div', 'selection-tools');
+  tools.setAttribute('data-role', 'selection-tools');
+  var defs = [['select', 'Select'], ['pan', 'Pan']];
+  for (var i = 0; i < defs.length; ++i) {
+    var tb = el('button', 'tool-btn', defs[i][1]);
+    tb.setAttribute('type', 'button');
+    tb.setAttribute('data-tool', defs[i][0]);
+    (function (tool) {
+      tb.addEventListener('click', function (e) { e.stopPropagation(); sendCommand(cmdId, 'select_tool', { tool: tool }); });
+    })(defs[i][0]);
+    tools.appendChild(tb);
+  }
+  var clear = el('button', 'tool-btn', 'Clear');
+  clear.setAttribute('type', 'button');
+  clear.setAttribute('data-role', 'selection-clear');
+  clear.addEventListener('click', function (e) { e.stopPropagation(); sendCommand(cmdId, 'select_clear', {}); });
+  tools.appendChild(clear);
+  sec.appendChild(tools);
+
+  var grp = el('div', 'selection-group');
+  grp.setAttribute('data-role', 'selection-group');
+  grp.appendChild(el('span', '', 'Group'));
+  var sel = document.createElement('select');
+  var groups = Array.isArray(s.groups) ? s.groups : [];
+  for (var g = 0; g < groups.length; ++g) {
+    var opt = document.createElement('option');
+    opt.value = groups[g].id;
+    opt.textContent = groups[g].label || groups[g].id;
+    sel.appendChild(opt);
+  }
+  sel.addEventListener('click', function (e) { e.stopPropagation(); });
+  sel.addEventListener('change', function (e) { e.stopPropagation(); sendCommand(cmdId, 'select_group', { layer: sel.value }); });
+  grp.appendChild(sel);
+  sec.appendChild(grp);
+  grp.style.display = groups.length > 0 ? '' : 'none';
+
+  refreshSelection(sec, s);
+  return sec;
+}
+
+function refreshSelection(root, s) {
+  var sec = root.querySelector('[data-role="selection"]') || root;
+  if (!s) return;
+  var n = Number(s.count) || 0;
+  var hdr = sec.querySelector('[data-role="selection-count"]');
+  if (hdr) hdr.textContent = n + (n === 1 ? ' cell selected' : ' cells selected');
+  var btns = sec.querySelectorAll('[data-tool]');
+  for (var i = 0; i < btns.length; ++i) btns[i].classList.toggle('active', btns[i].getAttribute('data-tool') === s.tool);
+  var select = sec.querySelector('[data-role="selection-group"] select');
+  if (select && select.value !== s.group && document.activeElement !== select) select.value = s.group;
+  var banner = sec.querySelector('[data-role="selection-banner"]');
+  if (s.tooLarge && !banner) {
+    banner = el('div', 'cl-banner', '');
+    banner.setAttribute('data-role', 'selection-banner');
+    sec.appendChild(banner);
+  } else if (!s.tooLarge && banner) {
+    banner.parentNode.removeChild(banner);
+    banner = null;
+  }
+  if (banner) banner.textContent = s.tooLargeText || 'Selection too large to outline';
 }
 
 function buildViewer(domain) {
@@ -950,6 +1032,8 @@ function buildViewer(domain) {
     }
     root.appendChild(grids);
   }
+
+  if (v.selection) root.appendChild(buildSelectionSection(cmdId, v.selection));
 
   if (!v.empty) {
     var search = el('div', 'layer-search');
@@ -1066,6 +1150,8 @@ function refreshViewer(card, v) {
       if (gb) gb.classList.toggle('active', !!v.gridSelector[g].active);
     }
   }
+
+  if (v.selection) refreshSelection(root, v.selection);
 
   var noData = !!v.noData;   // source not live and no data: say so instead of a stale legend / hover
   var legendHost = root.querySelector('[data-role="legend"]');

@@ -17,7 +17,9 @@
 // plus the JSON forms (E2E / DebugServer channel) cells.layer.base_by_id {"id"} and cells.overlay.toggle_by_id {"id"}. An unknown
 // id returns a non-zero code and changes nothing. Selection commands (JSON only; act on ActiveSelection()): cells.select.cell
 // {q,r}, .toggle {q,r}, .box {q0,r0,q1,r1}, .poly {points:[[x,y]..]} (WORLD coords), .category {layer,value}, .cells
-// {cells:[[q,r]..]}, .clear {}. Success {ok,count}; failure = error text (also logged on CEL at Info). Panel commands (OnCommand): "base" {id}, "grid" {index}, "toggle" {drawer}.
+// {cells:[[q,r]..]}, .clear {}, plus .tool {tool:"select"|"pan"} and .group {layer} (selection tool / ctrl-click group). Success {ok,count}; failure = error text (also logged on CEL at Info). Panel commands (OnCommand): "base" {id}, "grid" {index}, "toggle" {drawer}, and the selection card's "select_tool" {tool},
+// "select_group" {layer}, "select_clear" {} which run the SAME code as cells.select.tool / .group / .clear.
+// GetJSONState "selection": {count, tool, group, groups[{id,label,selected}], tooLarge, tooLargeText (only when tooLarge)}.
 // The registry is borrowed; CellLayersModule owns and publishes it on a ServiceStream (CL-006). A consumer module resolves it
 // with FindCellLayerRegistry(reader) (CellLayersModule.h) and passes *registry to the constructor.
 //
@@ -114,6 +116,11 @@ namespace Dia::CellLayers
 	private:
 		void	RegisterJsonCommands();	// called by RegisterCommands
 		void	RegisterSelectionCommands();	// called by RegisterCommands
+		Json::Value	ExecuteSetTool(const Json::Value& params);	// cells.select.tool (locks mMutex)
+		Json::Value	ExecuteSetGroup(const Json::Value& params);	// cells.select.group (locks mMutex)
+		Json::Value	FinishSelectCommand(const char* name, const char* error, Json::Value out);	// metrics + CEL log, returns out or {"error"}
+		Dia::Core::StringCRC	EffectiveGroup() const;	// the stored group if valid for the active grid, else the grid default
+		void	WriteSelection(Json::Value& out) const;
 
 		enum class SelectOp { Cell, Toggle, Box, Poly, Category, Cells, Clear };
 		// Runs one cells.select.* command on the active grid's selection (locks mMutex). Failure = {"error": "..."} and

@@ -41,6 +41,9 @@ namespace Dia::CellLayers
 		const StringCRC kCmdBase("base");
 		const StringCRC kCmdGrid("grid");
 		const StringCRC kCmdToggle("toggle");
+		const StringCRC kCmdSelectTool("select_tool");
+		const StringCRC kCmdSelectGroup("select_group");
+		const StringCRC kCmdSelectClear("select_clear");
 		const StringCRC kCmdSetScale("setScale");
 	}
 
@@ -531,6 +534,55 @@ namespace Dia::CellLayers
 
 		WriteLegend(out);
 		WriteHover(out);
+		WriteSelection(out);
+	}
+
+	StringCRC CellLayerViewerDomain::EffectiveGroup() const
+	{
+		if (mActiveGrid == nullptr) { return StringCRC::kZero; }
+		const StringCRC g = mInput.SelectionGroup();
+		return SelectionInput::IsGroupOf(mRegistry, mActiveGrid, g) ? g : SelectionInput::DefaultGroup(mRegistry, mSchema, mActiveGrid);
+	}
+
+	void CellLayerViewerDomain::WriteSelection(Json::Value& out) const
+	{
+		const ICellSelectionView* view = mRegistry.SelectionView(mActiveGrid);
+		const uint32_t count = view != nullptr ? view->Count() : 0;
+		const StringCRC group = EffectiveGroup();
+		Json::Value sel(Json::objectValue);
+		sel["count"] = count;
+		sel["tool"] = mInput.GetTool() == SelectionInput::Tool::Pan ? "pan" : "select";
+		sel["group"] = group != StringCRC::kZero ? group.AsChar() : "";
+		Json::Value groups(Json::arrayValue);
+		if (mActiveGrid != nullptr)
+		{
+			StringCRC ids[64];
+			const uint32_t total = SelectionInput::ListGroups(mRegistry, mSchema, mActiveGrid, ids, 64);
+			const uint32_t n = total < 64u ? total : 64u;
+			for (uint32_t i = 0; i < n; ++i)
+			{
+				const CellLayerDesc* d = mRegistry.Find(ids[i]);
+				if (d == nullptr) { continue; }
+				const char* label = nullptr;
+				const char* unit = nullptr;
+				LayerText(*d, label, unit);
+				Json::Value e(Json::objectValue);
+				e["id"] = d->id.AsChar();
+				e["label"] = label;
+				e["selected"] = (d->id == group);
+				groups.append(e);
+			}
+		}
+		sel["groups"] = groups;
+		const bool tooLarge = count > 0 && mOutline.TooLarge();
+		sel["tooLarge"] = tooLarge;
+		if (tooLarge)
+		{
+			char text[80];
+			snprintf(text, sizeof(text), "Selection too large to outline (%u cells)", count);
+			sel["tooLargeText"] = text;
+		}
+		out["selection"] = sel;
 	}
 
 	void CellLayerViewerDomain::OnCommand(StringCRC cmd, const Json::Value& args)
@@ -547,6 +599,9 @@ namespace Dia::CellLayers
 		{
 			if (args.isMember("drawer") && args["drawer"].isString()) { ToggleOverlay(StringCRC(args["drawer"].asCString())); }
 		}
+		else if (cmd == kCmdSelectTool) { ExecuteSetTool(args); }
+		else if (cmd == kCmdSelectGroup) { ExecuteSetGroup(args); }
+		else if (cmd == kCmdSelectClear) { ExecuteSelect(SelectOp::Clear, "cells.select.clear", Json::Value(Json::objectValue)); }
 		// kCmdSetScale and unknown commands: no-op (this domain has no scale)
 		(void)kCmdSetScale;
 	}
@@ -710,6 +765,7 @@ namespace Dia::CellLayers
 			"cells.select.cell", "cells.select.toggle", "cells.select.box", "cells.select.poly",
 			"cells.select.category", "cells.select.cells", "cells.select.clear"
 		};
+		const char* const kSelectPanelCommands[] = { "cells.select.tool", "cells.select.group" };
 
 		Json::Value SelectError(const std::string& msg)
 		{
@@ -758,6 +814,76 @@ namespace Dia::CellLayers
 			info.callback = [this, op, name](const Json::Value& params) -> Json::Value { return ExecuteSelect(op, name, params); };
 			Dia::API::RegisterCommandJson(info);
 		}
+
+		Dia::API::CommandInfoJson tool;
+		tool.name = StringCRC(kSelectPanelCommands[0]);
+		tool.description = "Set the viewer mouse tool: params {\"tool\": \"select\"|\"pan\"}; returns {ok, tool}";
+		tool.category = StringCRC("cells");
+		tool.owner = "DiaCellLayers";
+		tool.callback = [this](const Json::Value& params) -> Json::Value { return ExecuteSetTool(params); };
+		Dia::API::RegisterCommandJson(tool);
+
+		Dia::API::CommandInfoJson group;
+		group.name = StringCRC(kSelectPanelCommands[1]);
+		group.description = "Set the selection group (the category layer ctrl-click selects by): params {\"layer\": \"<category layer id of the active grid>\"}; returns {ok, group}";
+		group.category = StringCRC("cells");
+		group.owner = "DiaCellLayers";
+		group.callback = [this](const Json::Value& params) -> Json::Value { return ExecuteSetGroup(params); };
+		Dia::API::RegisterCommandJson(group);
+	}
+
+	Json::Value CellLayerViewerDomain::FinishSelectCommand(const char* name, const char* error, Json::Value out)
+	{
+		if (error != nullptr && error[0] != '\0')
+		{
+			DIA_LOG_INFO("CEL", "%s rejected: %s", name, error);
+			mMetricSelectRejected->Inc();
+			return SelectError(error);
+		}
+		mMetricSelectCommands->Inc();
+		return out;
+	}
+
+	Json::Value CellLayerViewerDomain::ExecuteSetTool(const Json::Value& params)
+	{
+		Lock l(mMutex);
+		Json::Value out(Json::objectValue);
+		std::string error;
+		if (!params.isObject() || !params["tool"].isString()) { error = "missing or non-string param 'tool'"; }
+		else
+		{
+			const std::string t = params["tool"].asString();
+			if (t == "select") { mInput.SetTool(SelectionInput::Tool::Select); }
+			else if (t == "pan") { mInput.SetTool(SelectionInput::Tool::Pan); }
+			else { error = "unknown tool '" + t + "'"; }
+			if (error.empty()) { out["ok"] = true; out["tool"] = t; }
+		}
+		return FinishSelectCommand("cells.select.tool", error.c_str(), out);
+	}
+
+	Json::Value CellLayerViewerDomain::ExecuteSetGroup(const Json::Value& params)
+	{
+		Lock l(mMutex);
+		Json::Value out(Json::objectValue);
+		std::string error;
+		if (!params.isObject() || !params["layer"].isString() || params["layer"].asString().empty()) { error = "missing or non-string param 'layer'"; }
+		else
+		{
+			const std::string layer = params["layer"].asString();
+			const StringCRC id(layer.c_str());
+			if (mActiveGrid == nullptr || !SelectionInput::IsGroupOf(mRegistry, mActiveGrid, id))
+			{
+				error = "layer '" + layer + "' is not a category layer of the active grid";
+			}
+			else
+			{
+				mInput.SetSelectionGroup(id);
+				mInputGrid = mActiveGrid;
+				out["ok"] = true;
+				out["group"] = layer;
+			}
+		}
+		return FinishSelectCommand("cells.select.group", error.c_str(), out);
 	}
 
 	Json::Value CellLayerViewerDomain::ExecuteSelect(SelectOp op, const char* name, const Json::Value& params)
@@ -983,6 +1109,7 @@ namespace Dia::CellLayers
 		if (!mCommandsRegistered) { return; }
 		mCommandsRegistered = false;
 		for (const char* n : kSelectCommands) { Dia::API::UnregisterCommandJson(StringCRC(n)); }
+		for (const char* n : kSelectPanelCommands) { Dia::API::UnregisterCommandJson(StringCRC(n)); }
 		Dia::API::UnregisterCommandJson(StringCRC("cells.layer.list"));
 		Dia::API::UnregisterCommandJson(StringCRC("cells.layer.base_by_id"));
 		Dia::API::UnregisterCommandJson(StringCRC("cells.overlay.toggle_by_id"));
