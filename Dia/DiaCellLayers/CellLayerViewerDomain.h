@@ -13,7 +13,8 @@
 // There is no camera on IDebugDraw (the camera lives on DebugLayerManager::SetViewport), so the application injects a
 // ViewFn that returns the CellPickerView (canvas size + camera centre + zoom). With no ViewFn there is no hover.
 //
-// Commands (DiaAPI, RegisterCommands): cells.layer.list (JSON), cells.layer.base <id>, cells.overlay.toggle <id>. An unknown
+// Commands (DiaAPI, RegisterCommands): cells.layer.list (JSON), cells.layer.base <id>, cells.overlay.toggle <id>,
+// plus the JSON forms (E2E / DebugServer channel) cells.layer.base_by_id {"id"} and cells.overlay.toggle_by_id {"id"}. An unknown
 // id returns a non-zero code and changes nothing. Panel commands (OnCommand): "base" {id}, "grid" {index}, "toggle" {drawer}.
 // The registry is borrowed; CellLayersModule owns and publishes it on a ServiceStream (CL-006). A consumer module resolves it
 // with FindCellLayerRegistry(reader) (CellLayersModule.h) and passes *registry to the constructor.
@@ -92,6 +93,8 @@ namespace Dia::CellLayers
 		const Dia::Observation::Health::IHealthReporter&	HealthReporter() const { return mHealth; }
 
 	private:
+		void	RegisterJsonCommands();	// called by RegisterCommands
+
 		struct OverlayState
 		{
 			Dia::Core::StringCRC	id;

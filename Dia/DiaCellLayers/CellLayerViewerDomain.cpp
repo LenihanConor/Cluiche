@@ -574,6 +574,8 @@ namespace Dia::CellLayers
 			}
 		});
 
+		RegisterJsonCommands();
+
 		Dia::API::RegisterCommand({
 			StringCRC("cells.overlay.toggle"),
 			"Toggle a cell overlay on or off",
@@ -587,11 +589,69 @@ namespace Dia::CellLayers
 		});
 	}
 
+	void CellLayerViewerDomain::RegisterJsonCommands()
+	{
+		// JSON forms for the E2E/DebugServer channel (the CLI forms take positional args, which JSON params never fill).
+		// Convention: a distinct "<name>_by_id" JSON name per CLI command (same-name dual registration logs a warning).
+		// Failure = {"error": "..."} (the framework wraps it as success:false); nothing changes on failure.
+		Dia::API::CommandInfoJson base;
+		base.name = StringCRC("cells.layer.base_by_id");
+		base.description = "JSON form of cells.layer.base: params {\"id\": \"<layer id>\"}; returns {id, grid_index}";
+		base.category = StringCRC("cells");
+		base.owner = "DiaCellLayers";
+		base.callback = [this](const Json::Value& params) -> Json::Value
+		{
+			Json::Value out(Json::objectValue);
+			if (!params.isObject() || !params["id"].isString() || params["id"].asString().empty())
+			{
+				out["error"] = "missing or non-string param 'id'";
+				return out;
+			}
+			const std::string id = params["id"].asString();
+			if (!SetBase(StringCRC(id.c_str())))
+			{
+				out["error"] = std::string("unknown layer id '") + id + "'";
+				return out;
+			}
+			out["id"] = id;
+			out["grid_index"] = GridIndexOf(ActiveGrid());
+			return out;
+		};
+		Dia::API::RegisterCommandJson(base);
+
+		Dia::API::CommandInfoJson toggle;
+		toggle.name = StringCRC("cells.overlay.toggle_by_id");
+		toggle.description = "JSON form of cells.overlay.toggle: params {\"id\": \"<overlay id>\"}; returns {id, enabled}";
+		toggle.category = StringCRC("cells");
+		toggle.owner = "DiaCellLayers";
+		toggle.callback = [this](const Json::Value& params) -> Json::Value
+		{
+			Json::Value out(Json::objectValue);
+			if (!params.isObject() || !params["id"].isString() || params["id"].asString().empty())
+			{
+				out["error"] = "missing or non-string param 'id'";
+				return out;
+			}
+			const std::string id = params["id"].asString();
+			if (!ToggleOverlay(StringCRC(id.c_str())))
+			{
+				out["error"] = std::string("unknown overlay id '") + id + "'";
+				return out;
+			}
+			out["id"] = id;
+			out["enabled"] = IsOverlayEnabled(StringCRC(id.c_str()));
+			return out;
+		};
+		Dia::API::RegisterCommandJson(toggle);
+	}
+
 	void CellLayerViewerDomain::UnregisterCommands()
 	{
 		if (!mCommandsRegistered) { return; }
 		mCommandsRegistered = false;
 		Dia::API::UnregisterCommandJson(StringCRC("cells.layer.list"));
+		Dia::API::UnregisterCommandJson(StringCRC("cells.layer.base_by_id"));
+		Dia::API::UnregisterCommandJson(StringCRC("cells.overlay.toggle_by_id"));
 		Dia::API::UnregisterCommand(StringCRC("cells.layer.base"));
 		Dia::API::UnregisterCommand(StringCRC("cells.overlay.toggle"));
 	}

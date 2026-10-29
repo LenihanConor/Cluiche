@@ -270,8 +270,7 @@ bool CellLayersViewerTestStageModule::BuildViewer()
         return true;
     };
 
-    // Temperature first: the registry here has no schema (CellLayersModule has no manifest hook for one), so the default
-    // base falls back to the first registered layer of the grid.
+    // Registration order is irrelevant: CellLayersModule attaches the schema stream, so ui.default_base picks the base.
     const bool ok =
         makeLayer(kLayerTemperature, "Climate", CellValueKind::Float, mBig,
             fastdelegate::MakeDelegate(this, &CellLayersViewerTestStageModule::ReadTemperature),

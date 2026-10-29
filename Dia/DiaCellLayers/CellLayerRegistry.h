@@ -63,6 +63,10 @@ namespace Dia::CellLayers
 		CellLayerRegistry(const CellLayerRegistry&) = delete;
 		CellLayerRegistry& operator=(const CellLayerRegistry&) = delete;
 
+		// Late attach (CellLayersModule resolves the schema stream after start). Layers keep no cached schema state, so
+		// DefaultBase reflects the new schema immediately. Null detaches. Not owned.
+		void				SetSchema(const Dia::ValueSchema::ValueSchemaService* schema) { mSchema = schema; }
+
 		CellRegisterResult	Register(const CellLayerDesc& desc);
 		bool				Unregister(Dia::Core::StringCRC id);
 		const CellLayerDesc*	Find(Dia::Core::StringCRC id) const;

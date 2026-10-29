@@ -2159,5 +2159,8 @@
     <ClCompile Include="DiaCellLayers\TestViewSourceModuleEdge.cpp">
       <Filter>DiaCellLayers</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCellLayerJsonCommands.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -320,6 +320,21 @@ TEST(DiaValueSchemaLoaderBoundary, FiveKilobyteUnknownUiKeyGivesBoundedWarning)
 	EXPECT_LE(strlen(r.mWarnings[0].AsCStr()), 511u);
 }
 
+TEST(DiaValueSchemaLoaderBoundary, DiaCellLayersUiKeysAreKnownAndWarnFree)
+{
+	// Every ui key DiaCellLayers reads: hotkey, ramp, default_base, inset, backdrop, elevation_layer.
+	Json::Value e = GoodEntry();
+	e["ui"]["hotkey"] = "t";
+	e["ui"]["ramp"] = "sequential.heat";
+	e["ui"]["default_base"] = true;
+	e["ui"]["inset"] = Json::Value(Json::objectValue);
+	e["ui"]["backdrop"] = "elevation";
+	e["ui"]["elevation_layer"] = "elevation";
+	const LoadResult r = LoadDoc(GoodDoc(e));
+	ASSERT_TRUE(r.mOk);
+	EXPECT_EQ(r.mWarnings.Size(), 0u);
+}
+
 // ---- odd documents -------------------------------------------------------------------------------------------------
 
 TEST(DiaValueSchemaLoaderBoundary, NonSchemaDocumentsAreRejected)

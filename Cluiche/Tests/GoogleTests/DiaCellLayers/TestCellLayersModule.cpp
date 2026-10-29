@@ -6,6 +6,9 @@
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaStreams/ServiceStreamReader.h>
+#include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
+#include <DiaStreams/ServiceStreamWriter.h>
+#include <DiaValueSchema/ValueSchemaService.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <memory>
 
@@ -44,6 +47,33 @@ namespace
 		StopResult DoStop() override { return StopResult::kDone; }
 	};
 	const StringCRC CLM_ConsumerModule::kTypeId("CLM_ConsumerModule");
+
+	// Stands in for ValueSchemaModule: publishes a fixture-built ValueSchemaService on the "ValueSchemaService" stream.
+	Dia::ValueSchema::ValueSchemaService* g_schemaToPublish = nullptr;
+	struct CLM_SchemaProviderModule : Module
+	{
+		static const StringCRC kTypeId;
+		explicit CLM_SchemaProviderModule(const StringCRC& id) : Module(id) {}
+		ServiceStreamWriter<Dia::ValueSchema::ValueSchemaService> mWriter{ this, StringCRC(CellLayersModule::kSchemaStreamId) };
+		void OnConnectStreams(Application& app) override { mWriter.Connect(app); }
+		StartResult DoStart() override
+		{
+			if (!g_schemaToPublish)
+			{
+				static UploaderSchemaFixture sEmpty;	// no entries: no layer has ui.default_base
+				if (!sEmpty.service) { sEmpty.Publish(); }
+				g_schemaToPublish = sEmpty.service;
+				mUsedEmpty = true;
+			}
+			mWriter.Register(*g_schemaToPublish);
+			return StartResult::kReady;
+		}
+		bool mUsedEmpty = false;
+		void DoUpdate(float) override {}
+		StopResult DoStop() override { mWriter.Deregister(); return StopResult::kDone; }
+	};
+	const StringCRC CLM_SchemaProviderModule::kTypeId("CLM_SchemaProviderModule");
+	Module* CreateSchemaProvider(const StringCRC& id) { return new CLM_SchemaProviderModule(id); }
 
 	bool g_availableAfterStop = true;
 	bool g_stopped = false;
@@ -111,7 +141,24 @@ namespace
 		pu.instanceId = StringCRC("MainPU");
 		pu.frequencyHz = 60.0f;
 		pu.dedicatedThread = false;
-		pu.modules.Add(MakeModule(CellLayersModule::kTypeId, "cellLayers", "provides"));
+		// The module always consumes the schema stream: the manifest must declare it and a provider must exist
+		// (undeclared streams assert, providerless streams fail validation). Default provider publishes an empty schema.
+		StreamDeclaration schemaStream;
+		schemaStream.id = StringCRC(CellLayersModule::kSchemaStreamId);
+		schemaStream.kind = StringCRC("ServiceStream");
+		schemaStream.payloadType = StringCRC("ValueSchemaService");
+		m.streams.Add(schemaStream);
+		{
+			ModuleDeclaration provider = MakeModule(CLM_SchemaProviderModule::kTypeId, "schemaProvider", "provides");
+			provider.channels[0].id = StringCRC(CellLayersModule::kSchemaStreamId);
+			pu.modules.Add(provider);
+		}
+		ModuleDeclaration cl = MakeModule(CellLayersModule::kTypeId, "cellLayers", "provides");
+		ChannelBinding schemaCh;
+		schemaCh.id = StringCRC(CellLayersModule::kSchemaStreamId);
+		schemaCh.role = StringCRC("consumes");
+		cl.channels.Add(schemaCh);
+		pu.modules.Add(cl);
 		pu.modules.Add(MakeModule(CLM_ConsumerModule::kTypeId, "consumer", "consumes"));
 		m.processingUnits.Add(pu);
 		return m;
@@ -130,6 +177,7 @@ namespace
 			FakePuId() = 1;
 			mReg.Register(CellLayersModule::kTypeId, CreateModule);
 			mReg.Register(CLM_ConsumerModule::kTypeId, CreateConsumer);
+			mReg.Register(CLM_SchemaProviderModule::kTypeId, CreateSchemaProvider);
 			mManifest = BuildManifest();
 			mApp.reset(new Application(mManifest, mReg));
 		}
@@ -234,4 +282,42 @@ TEST(CellLayersModule, ConsumerSeesNoRegistryBeforeFirstUpdate)
 	EXPECT_EQ(g_module->GetRegistry()->OverlayCount(), 0u);
 	EXPECT_EQ(g_module->GetRegistry()->GridCount(), 1u);
 	EXPECT_TRUE(g_module->GetRegistry()->IsLive());
+}
+
+// Gap fix: a manifest-built CellLayersModule consumes the ValueSchemaService stream itself, so ui.default_base is honoured.
+TEST(CellLayersModule, ManifestSchemaStreamMakesUiDefaultBaseWin)
+{
+	UploaderSchemaFixture fx;
+	auto temp = UploaderSchemaFixture::FloatEntry("temp", 0.0, 1.0);
+	auto rain = UploaderSchemaFixture::FloatEntry("rain", 0.0, 1.0);
+	rain.mUi["default_base"] = true;
+	fx.Add(temp);
+	fx.Add(rain);
+	fx.Publish();
+	g_schemaToPublish = fx.service;
+	{
+		Harness h;
+		ASSERT_TRUE(h.Start());
+		CellGridDesc grid;
+		CellLayerRegistry* reg = g_module->GetRegistry();
+		ASSERT_NE(reg, nullptr);
+		// temp registered first; the schema marks rain as the default base.
+		ASSERT_EQ(reg->Register(MakeLayer("temp", &grid, "cells/temp")), CellRegisterResult::Ok);
+		ASSERT_EQ(reg->Register(MakeLayer("rain", &grid, "cells/rain")), CellRegisterResult::Ok);
+		ASSERT_NE(reg->DefaultBase(&grid), nullptr);
+		EXPECT_EQ(reg->DefaultBase(&grid)->id, StringCRC("rain"));
+	}
+	g_schemaToPublish = nullptr;
+}
+
+TEST(CellLayersModule, SchemaWithoutDefaultBaseFlagFallsBackToFirstRegistered)
+{
+	g_schemaToPublish = nullptr;
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	CellGridDesc grid;
+	CellLayerRegistry* reg = g_module->GetRegistry();
+	ASSERT_EQ(reg->Register(MakeLayer("first", &grid)), CellRegisterResult::Ok);
+	ASSERT_EQ(reg->Register(MakeLayer("second", &grid)), CellRegisterResult::Ok);
+	EXPECT_EQ(reg->DefaultBase(&grid)->id, StringCRC("first"));
 }

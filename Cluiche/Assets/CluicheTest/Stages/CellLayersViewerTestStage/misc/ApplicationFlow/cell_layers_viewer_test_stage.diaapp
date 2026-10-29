@@ -23,6 +23,10 @@
                         {
                             "id": "CellLayerRegistryService",
                             "role": "provides"
+                        },
+                        {
+                            "id": "ValueSchemaService",
+                            "role": "consumes"
                         }
                     ]
                 },
