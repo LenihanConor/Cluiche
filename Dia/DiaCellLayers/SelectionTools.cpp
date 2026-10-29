@@ -1,10 +1,13 @@
 #include <DiaCellLayers/SelectionTools.h>
 #include <DiaMaths/Vector/Vector2D.h>
+#include <DiaValueSchema/ValueSchemaService.h>
 #include <DiaObservation/Profile/DiaProfile.h>
 #include <DiaPathfinding/HexTopology.h>
 
 #include <algorithm>
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
 
 namespace Dia::CellLayers::SelectionTools
 {
@@ -190,5 +193,90 @@ namespace Dia::CellLayers::SelectionTools
 		out.changed = sel.EndEdit();
 		out.count = sel.Count();
 		return out;
+	}
+
+	CategoryResult SelectCategory(CellSelection& sel, LayerReader& reader, const CellLayerRegistry& registry,
+		const Dia::ValueSchema::ValueSchemaService* schema, Dia::Core::StringCRC layerId, const char* value)
+	{
+		CategoryResult res;
+		res.count = sel.Count();
+
+		const CellLayerDesc* layer = registry.Find(layerId);
+		if (layer == nullptr)
+		{
+			res.error = CategoryError::UnknownLayer;
+			return res;
+		}
+		if (layer->kind != CellValueKind::Category)
+		{
+			res.error = CategoryError::NotCategoryLayer;
+			return res;
+		}
+		if (layer->grid == nullptr || sel.CellCount() == 0 || layer->grid->width != sel.Width() || layer->grid->height != sel.Height())
+		{
+			res.error = CategoryError::GridMismatch;
+			return res;
+		}
+
+		// Resolve the target: enum id first (numeric value = index in the enum list), else a finite number.
+		double target = 0.0;
+		bool resolved = false;
+		if (value != nullptr)
+		{
+			const Dia::ValueSchema::ValueInfo* info = schema != nullptr ? schema->Find(layer->schemaKey) : nullptr;
+			if (info != nullptr)
+			{
+				for (unsigned i = 0; i < info->mEnumValues.Size(); ++i)
+				{
+					if (strcmp(info->mEnumValues[i].mId.AsCStr(), value) == 0)
+					{
+						target = static_cast<double>(i);
+						resolved = true;
+						break;
+					}
+				}
+			}
+			if (!resolved && value[0] != '\0')
+			{
+				char* end = nullptr;
+				const double parsed = strtod(value, &end);
+				if (end != value && *end == '\0' && isfinite(parsed))
+				{
+					target = parsed;
+					resolved = true;
+				}
+			}
+		}
+		if (!resolved)
+		{
+			res.error = CategoryError::UnknownValue;
+			return res;
+		}
+
+		DIA_PROFILE_SCOPE("celllayers.selection.category", ::Dia::Observation::Profile::Category::kDiaGraphics);
+
+		const LayerValues values = reader.Read(layerId);
+		if (!values.hasData || values.values == nullptr || values.count < sel.CellCount())
+		{
+			res.error = CategoryError::NoData;
+			return res;
+		}
+
+		sel.BeginEdit();
+		sel.Clear();
+		const uint32_t cells = sel.CellCount();
+		for (uint32_t i = 0; i < cells; ++i)
+		{
+			const float v = values.values[i];
+			if (v == v && static_cast<double>(floorf(v + 0.5f)) == target)
+			{
+				sel.Set(i, true);
+			}
+		}
+		const bool changed = sel.EndEdit();
+		res.ok = true;
+		res.changed = changed;
+		res.count = sel.Count();
+		return res;
 	}
 }
