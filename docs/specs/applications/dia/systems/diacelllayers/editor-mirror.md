@@ -174,4 +174,4 @@ No conflicts.
 
 ## Status
 
-`Approved` (2026-10-20). Plan not yet created. Build needs AD-001 sign-off for the `@dia/editor-ui` helpers.
+`Approved` (2026-10-20). Plan: [editor-mirror.plan.md](editor-mirror.plan.md) (not started). Build needs AD-001 sign-off for the `@dia/editor-ui` helpers.

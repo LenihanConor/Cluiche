@@ -154,4 +154,4 @@ No conflicts.
 
 ## Status
 
-`Approved` (2026-10-20). Plan not yet created.
+`Approved` (2026-10-20). Plan: [query.plan.md](query.plan.md) (not started).

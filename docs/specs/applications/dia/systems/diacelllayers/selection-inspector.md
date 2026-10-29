@@ -170,4 +170,4 @@ No conflicts.
 
 ## Status
 
-`Approved` (2026-10-20). Plan not yet created.
+`Approved` (2026-10-20). Plan: [selection-inspector.plan.md](selection-inspector.plan.md) (not started).

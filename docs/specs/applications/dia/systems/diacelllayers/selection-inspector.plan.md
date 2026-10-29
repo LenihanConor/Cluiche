@@ -1,0 +1,26 @@
+**Spec:** @docs/specs/applications/dia/systems/diacelllayers/selection-inspector.md
+**Status:** In Progress
+
+Feature 4 of DiaCellLayers (built third, after Feature 2). **Prerequisite:** Feature 2 Done (`CellSelection`, `LayerReader`, `ICellSelectionView`, `cells.select.*`). TDD throughout. Commit after each task.
+
+**Done means (system-plan rule):** the `CellLayersViewer` stage E2E scenario is extended for this feature (Task 10).
+
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| 1 | `SelectionStats` float layers: `count` (non-NaN), `nanCount`, `min`, `mean` (double accumulator), `max`, unit and label from the schema; empty or all-NaN reports count 0 and no min/mean/max (AC 1) | RED-GREEN: hand-computed fixtures, NaN, empty, single value | Pending | sonnet | Reads through Feature 2's `LayerReader`. Pure function over a selection view and a values pointer |
+| 2 | `SelectionStats` category layers and histogram: count per enum value in schema order, `other`, `nanCount`; 16 equal bins over the schema `min`-`max` for a float base with end-bin clamping and an out-of-range footer; category base uses its counts (AC 2, 3) | RED-GREEN: bins at boundaries, out-of-range, `other` | Pending | sonnet | |
+| 3 | `InspectorState` + lazy recompute: shown set = active base + expanded groups (active group expanded by default); one pass per frame after a change in selection version, a shown layer's `version()` or the expanded set; "updating" mark during the pending frame; empty selection computes nothing (AC 4, 5, 6) | RED-GREEN: counting stub provider (one read per version, one pass per frame, expand triggers compute, empty computes nothing) | Pending | sonnet | Runs on SimPU from the viewer domain tick. Trace/profile on the pass |
+| 4 | Pin and compare: `cells.select.pin`, `pin freeze`, `unpin`; live A recomputes from A's cell set, frozen A stores stats for every registered layer once; "not frozen" for later layers; delta B minus A for count/min/mean/max; empty-selection pin is an error; A cleared on grid change (AC 7, 8, 9) | RED-GREEN: live vs frozen, delta values, not frozen, pin empty, clear on grid change | Pending | sonnet | Freezing 128 layers at Large is a one-off cost; if it hitches spread it over frames (Open Q2). `CEL` Info on pin/unpin/freeze |
+| 5 | `CellDetailRegistry` + `CellDetailBuilder` (the `describeCell` slot): per-grid providers, `Section`, `RowValue(schemaKey, value)` (label/unit/tooltip from DiaValueSchema), `Row(label, text)`, 64-row cap with one Warning per provider, called only for exactly one selected cell with the card open, registration order (AC 10, 11) | RED-GREEN: stub provider, ordering, row cap, not called for multi-cell or closed card | Pending | sonnet | Reached through the registry service (CL-006). Provider runs in `DIA_PROFILE_SCOPE` |
+| 6 | Single-cell table: exact values (full precision, unit, enum label) for every shown layer plus provider sections (AC 10) | RED-GREEN: table content for a fixture cell | Pending | sonnet | Merge into `InspectorModel` |
+| 7 | `InspectorModel` JSON + `cells.inspect [group \| layerId ... \| all]` DiaAPI command: shown layers by default, named group or layers, `all`; includes histogram, pinned A and delta, single-cell data; result keyed by schema keys (AC 12) | RED-GREEN: each argument form, pinned and single-cell sections | Pending | sonnet | Feature 5's `cells.select.stats` will call the same aggregator, so keep the model constructible without the card |
+| 8 | Observation: metrics (recompute passes, layers per pass, pass ms, pinned flag), warnings for an unresolved `schemaKey` (once per key) | RED-GREEN: metric values | Pending | haiku | |
+| 9 | Panel card: accordions per group, per-layer rows (label with tooltip, count, min, mean, max, unit, range bar), category rows, histogram, compare columns with frozen badge, details section; contract golden updated; both panel pages (AC 14, 15) | Golden test + page tests; visual check against the mockup | Pending | sonnet | Mockup is the gate; user approves the visual check. Perf: 20 layers over all cells at Large within 2 ms in Release (AC 13) is a separate perf test in this task |
+| 10 | Host wiring + E2E: stage registers a detail provider; extend `test_celllayers_smoke.py` to select known regions and assert `cells.inspect` stats, category counts, pin/freeze/delta, single-cell table and details, via `debug.domain_state` where useful | `dia test e2e --scenario="*celllayers*"` | Pending | sonnet | Uses Feature 2's commands to build selections |
+| 11 | Finalize: `dia check deps`, STL grep, module doc, Observation Opportunity Scan, GoogleTests, spec Done via `dia docs spec-done`, system plan, backlog | `dia check deps`, `dia run googletest`, E2E | Pending | haiku | Not Done until Task 9's visual gate is approved |
+
+## Open items carried from the spec
+
+1. `cells.select.all` is not in Feature 2; the empty-selection prompt stands. Add it to Feature 2 if wanted.
+2. Frozen-compare cost at 128 layers: spread over frames if it hitches.
+3. 64-row detail cap is a guess; revisit when A1's ledger provider exists.
