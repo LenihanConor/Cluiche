@@ -31,6 +31,7 @@
 #include <DiaCellLayers/CellPicker.h>
 #include <DiaCellLayers/CellSelection.h>
 #include <DiaCellLayers/HotkeyTable.h>
+#include <DiaCellLayers/InspectorState.h>
 #include <DiaCellLayers/LayerReader.h>
 #include <DiaCellLayers/LayerUploader.h>
 #include <DiaCellLayers/SelectionInput.h>
@@ -101,6 +102,9 @@ namespace Dia::CellLayers
 		// JSON commands (same metrics and CEL logging). No submit this frame -> no gesture processing. The selection group is
 		// resolved to the grid default when the active grid changes or the stored group is not a category layer of it.
 		void	SubmitPointerFrame(const SelectionInput::PointerFrame& frame, const CellPickerView& view);
+		// Selection Inspector compute state, ticked once per Update (SimPU) with the active grid's selection.
+		InspectorState&		Inspector() { return mInspector; }
+		const InspectorState&	Inspector() const { return mInspector; }
 		SelectionInput&	Input() { return mInput; }	// tool choice / selection group (call on SimPU, like Update)
 		const SelectionInput&	Input() const { return mInput; }
 
@@ -192,6 +196,7 @@ namespace Dia::CellLayers
 		uint64_t				mSeenUploads = 0;
 		uint64_t				mSeenSkipped = 0;
 
+		InspectorState				mInspector;
 		SelectionInput				mInput;
 		SelectionInput::PointerFrame	mPointerFrame;		// pending frame (valid = false when none)
 		CellPickerView				mPointerView;

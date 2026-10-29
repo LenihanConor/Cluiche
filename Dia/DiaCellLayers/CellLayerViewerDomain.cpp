@@ -315,6 +315,8 @@ namespace Dia::CellLayers
 			draw.RequestDrawCellField(mUploader.DrawRequest());
 		}
 		const ICellSelectionView* selection = mRegistry.SelectionView(mActiveGrid);
+		mInspector.SetActive(mRegistry, mActiveGrid, mActiveBase);
+		mInspector.Tick(mRegistry, mReader, mSchema, selection);
 		for (uint32_t i = 0; i < mRegistry.OverlayCount(); ++i)
 		{
 			const CellOverlayDesc* o = mRegistry.OverlayAt(i);

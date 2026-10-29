@@ -98,6 +98,7 @@
     <ClInclude Include="ICellSelectionView.h" />
     <ClInclude Include="SelectionInput.h" />
     <ClInclude Include="SelectionStats.h" />
+    <ClInclude Include="InspectorState.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />
@@ -114,6 +115,7 @@
     <ClCompile Include="SelectionOutline.cpp" />
     <ClCompile Include="SelectionInput.cpp" />
     <ClCompile Include="SelectionStats.cpp" />
+    <ClCompile Include="InspectorState.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diacelllayers.architecture.module.md" />
