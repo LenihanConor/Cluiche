@@ -153,7 +153,7 @@ TEST_F(ViewerEdgeTest, ToggleTwiceReturnsToDisabledAndStopsDrawing)
 	static uint32_t draws;
 	draws = 0;
 	CellOverlayDesc o = MakeOverlay("ov");
-	o.draw = fastdelegate::FastDelegate2<Dia::Core::IDebugDraw&, const void*>([](Dia::Core::IDebugDraw&, const void* sel) { if (sel == nullptr) { ++draws; } });
+	o.draw = fastdelegate::FastDelegate2<Dia::Core::IDebugDraw&, const void*>([](Dia::Core::IDebugDraw&, const void*) { ++draws; });
 	ASSERT_EQ(rig.registry.RegisterOverlay(o), CellRegisterResult::Ok);
 	EXPECT_TRUE(rig.domain.ToggleOverlay(StringCRC("ov")));
 	rig.domain.Update(draw);

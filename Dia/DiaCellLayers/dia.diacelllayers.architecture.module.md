@@ -29,6 +29,12 @@ public_api:
     - DiaCellLayers/CellLayerLegend.h
     - DiaCellLayers/CellLayerViewerDomain.h
     - DiaCellLayers/CellLayersModule.h
+    - DiaCellLayers/CellSelection.h
+    - DiaCellLayers/ICellSelectionView.h
+    - DiaCellLayers/LayerReader.h
+    - DiaCellLayers/SelectionTools.h
+    - DiaCellLayers/SelectionOutline.h
+    - DiaCellLayers/SelectionInput.h
   namespaces:
     - Dia::CellLayers::
   entry_points:
@@ -42,6 +48,12 @@ public_api:
     - CellLayerViewerDomain
     - CellLayersModule
     - FindCellLayerRegistry
+    - CellSelection
+    - ICellSelectionView
+    - LayerReader
+    - SelectionTools
+    - SelectionOutline
+    - SelectionInput
 responsibilities:
   - Per-cell layer registry for generic layer management
   - Viewer integration via CellField display
@@ -71,6 +83,12 @@ Provides a registry system that allows any module or application to register cel
 | `CellLayerLegend` | Wraps ValueSchema BuildLegend for the active base layer: ramp/range/unit/ticks + observed min/max (float) or swatches (category); unresolved schemaKey -> empty legend, one CEL Warning per key; caller supplies the RampResolver |
 | `CellLayerViewerDomain` | IDebugDomain (DIA_DEBUG, panel-only) run on SimPU: base choice (ui.default_base else first; unregistered base -> grid default, none left -> empty state), LayerUploader + legend + `RequestDrawCellField`, enabled overlay draw callbacks, hover (cursor from `IDebugDraw::GetMousePixel`, camera via injected `ViewFn` returning `CellPickerView`), GetJSONState (grids, groups, layers, overlays, legend, hover; grid selector only when multi-grid). DiaAPI: `cells.layer.list` (JSON), `cells.layer.base <id>`, `cells.overlay.toggle <id>`; panel commands `base`/`grid`/`toggle`. Health `dia.celllayers.viewer`; metrics `dia.celllayers.viewer.*` |
 | `CellLayersModule` | Module (PUAffinity::kAny, no per-frame work) that owns the `CellLayerRegistry` and publishes it on the `CellLayerRegistryService` ServiceStream (CL-006, no singletons). The registry is built in DoStart on the module's PU, which becomes its owner PU (register layers from that PU); DoStop withdraws the stream. Consumes the `ValueSchemaService` stream (declare `consumes` in the manifest) and attaches it to the registry via `CellLayerRegistry::SetSchema` on the first update that sees it (so `ui.default_base` works for manifest-built modules). Seams: `SetSchema` (explicit override, wins over the stream), `SetCurrentPuIdFn`. Consumers hold a `ServiceStreamReader<CellLayerRegistry>` on `kServiceStreamId` and resolve it with `FindCellLayerRegistry(reader)` (null when unavailable) in DoUpdate or later (the store commits after all providers' DoStart); the result feeds `CellLayerViewerDomain`'s `CellLayerRegistry&` constructor |
+| `CellSelection` | Mutable cell selection set (bitset + cached count + version) bound to a single grid. One per grid owned by the registry (`SelectionFor`). Grid identity is pointer + width + height + topology; re-binding clears the selection. Version increments on net change only. `BeginEdit` / `EndEdit` batch edits into at most one version bump. Generic with no game types (CL-005) or singletons (CL-006). Accessed via registry interface `ICellSelectionView` (read-only). |
+| `ICellSelectionView` | Read-only interface to a cell selection: `Version()`, `Count()`, `Contains(cellIndex)`, `ForEach()` visitor. Handed to overlay draw callbacks by `CellLayerViewerDomain` so systems can visualize the current selection. |
+| `LayerReader` | Cached reader over registered layers: reads the layer's values (or substitutes from `IViewValueSource` if installed) with a cache key per layer and source epoch. Unifies value access for selection, query and aggregate operations so each layer reads at most once per version. Not thread-safe; owned by one PU. Metrics `Reads()` (actual read calls) and `CacheHits()` available but not yet registered to DiaObservation. |
+| `SelectionTools` | Pure tool functions: `SelectCell` (replace), `ToggleCell`, `SelectBox`, `ClearSelection`, `SelectPolygon` (point-in-polygon), `SelectCells` (by coordinate list, capped at 2048 per call), `SelectCategory` (by layer value). Each returns `ToolResult { ok, changed, count }` or specialized `CellsResult` / `CategoryResult` with error details. Coordinates are cell (q=column, r=row); out-of-bounds ignored. Each call bumps version at most once on net change. Commands wire via `CellLayerViewerDomain` on `cells.select.*` path. |
+| `SelectionOutline` | Cached perimeter of a selection (flat-top odd-q hex edges between selected and non-selected neighbours). Capped at 4000 edges; above that marked `TooLarge()` and not stored. Rebuilds only when selection version or grid identity (width, height, cellSize) changes. Supplies `OutlineEdge` array for debug drawing. Metrics `EdgeCount()`, `SelectedCountForBanner()`, `Rebuilds()` available but not yet registered. |
+| `SelectionInput` | Mouse gesture state machine for selection commands: SELECT tool (LEFT button, click/drag/lasso on cells with modifiers for ToggleCell/SelectBox/SelectPolygon) and PAN tool (camera owns middle/right). Handles pointer-down, pointer-move, Esc-press; tracks gesture feedback (start cell, current cell, lasso path up to 256 points). Ctrl-click selects by category (group layer configurable per grid via `ui.select_group` schema hint or first category layer). Outputs to `ISelectionCommands` sink (wired by viewer to `cells.select.*` DiaAPI commands). |
 
 ## Overview
 
@@ -82,3 +100,7 @@ DiaCellLayers is a foundational system that enables:
 - Legend display for layer values
 
 The system is generic—it knows about grids and cells, but not about game content or specific layer meanings.
+
+## Selection
+
+The registry owns one `CellSelection` per grid, created lazily via `SelectionFor(grid)` (up to 8 grids). Each selection is a bitset with cached count and version, bound to a specific grid identity (pointer, width, height, topology). The `CellLayerViewerDomain` integrates selection with mouse gestures (`SelectionInput`: click/drag/lasso with modifiers for replace/toggle/box/polygon operations) and displays the outline via `SelectionOutline` (capped at 4000 edges). Overlay draw callbacks receive the selection as a read-only `ICellSelectionView` so systems can react (e.g., a paint system applies a value to selected cells). Commands are routed through `cells.select.*` DiaAPI and JSON forms. The selection group (for ctrl-click category selection) defaults to the first category layer with `ui.select_group: true`, or the first category layer of the grid. Cell identity is row-major grid index (r * width + q).
