@@ -31,6 +31,7 @@
 #include <DiaCellLayers/HotkeyTable.h>
 #include <DiaCellLayers/LayerReader.h>
 #include <DiaCellLayers/LayerUploader.h>
+#include <DiaCellLayers/SelectionOutline.h>
 #include <DiaCore/Containers/Misc/FastDelegate.h>
 #include <DiaCore/Threading/Mutex.h>
 #include <DiaObservation/Health/HealthReporterBase.h>
@@ -171,6 +172,12 @@ namespace Dia::CellLayers
 		uint64_t				mSeenReads = 0;
 		uint64_t				mSeenUploads = 0;
 		uint64_t				mSeenSkipped = 0;
+
+		SelectionOutline			mOutline;
+		Dia::Observation::Metric::Gauge*	mMetricSelectionSize = nullptr;
+		Dia::Observation::Metric::Gauge*	mMetricOutlineEdges = nullptr;
+		Dia::Observation::Metric::Counter*	mMetricSelectCommands = nullptr;
+		Dia::Observation::Metric::Counter*	mMetricSelectRejected = nullptr;
 	};
 }
 

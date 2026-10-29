@@ -33,6 +33,10 @@ namespace Dia::CellLayers
 		const char* const kMetricReads = "dia.celllayers.viewer.reads";
 		const char* const kMetricUploads = "dia.celllayers.viewer.uploads";
 		const char* const kMetricSkipped = "dia.celllayers.viewer.skipped_frames";
+		const char* const kMetricSelectionSize = "dia.celllayers.viewer.selection_size";
+		const char* const kMetricOutlineEdges = "dia.celllayers.viewer.outline_edges";
+		const char* const kMetricSelectCommands = "dia.celllayers.viewer.select_commands";
+		const char* const kMetricSelectRejected = "dia.celllayers.viewer.select_rejected";
 
 		const StringCRC kCmdBase("base");
 		const StringCRC kCmdGrid("grid");
@@ -56,6 +60,10 @@ namespace Dia::CellLayers
 		mMetricReads = metrics.RegisterCounter(StringCRC(kMetricReads));
 		mMetricUploads = metrics.RegisterCounter(StringCRC(kMetricUploads));
 		mMetricSkipped = metrics.RegisterCounter(StringCRC(kMetricSkipped));
+		mMetricSelectionSize = metrics.RegisterGauge(StringCRC(kMetricSelectionSize));
+		mMetricOutlineEdges = metrics.RegisterGauge(StringCRC(kMetricOutlineEdges));
+		mMetricSelectCommands = metrics.RegisterCounter(StringCRC(kMetricSelectCommands));
+		mMetricSelectRejected = metrics.RegisterCounter(StringCRC(kMetricSelectRejected));
 		mSeenReads = mUploader.Reads();
 		mSeenUploads = mUploader.Uploads();
 		mSeenSkipped = mUploader.SkippedFrames();
@@ -309,6 +317,19 @@ namespace Dia::CellLayers
 			const OverlayState* s = o ? FindOverlayState(o->id) : nullptr;
 			if (s != nullptr && s->enabled && !o->draw.empty()) { o->draw(draw, selection); }
 		}
+
+		// Update selection outline and metrics
+		if (CellSelection* sel = mRegistry.SelectionFor(mActiveGrid))
+		{
+			mOutline.Update(*sel);
+			if (selection != nullptr && selection->Count() > 0 && !mOutline.TooLarge())
+			{
+				mOutline.Draw(draw);
+			}
+		}
+		mMetricSelectionSize->Set(static_cast<double>(selection != nullptr ? selection->Count() : 0));
+		mMetricOutlineEdges->Set(static_cast<double>(mOutline.TooLarge() || selection == nullptr || selection->Count() == 0 ? 0 : mOutline.EdgeCount()));
+
 		UpdateHover(draw, base, result);
 	}
 
@@ -868,8 +889,10 @@ namespace Dia::CellLayers
 		if (!error.empty())
 		{
 			DIA_LOG_INFO("CEL", "%s rejected: %s", name, error.c_str());
+			mMetricSelectRejected->Inc();
 			return SelectError(error);
 		}
+		mMetricSelectCommands->Inc();
 		return out;
 	}
 
