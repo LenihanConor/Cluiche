@@ -27,6 +27,7 @@ namespace Dia::CellLayers
 		uint32_t	Width() const { return mWidth; }
 		uint32_t	Height() const { return mHeight; }
 		uint32_t	CellCount() const { return mWidth * mHeight; }
+		float		CellSize() const { return mCellSize; }	// grid cellSize (centre-to-corner) at last Reset; 0 if no grid. Not part of grid identity.
 
 		bool		Contains(uint32_t cellIndex) const;
 		bool		Set(uint32_t cellIndex, bool selected);		// true if the state changed
@@ -52,6 +53,7 @@ namespace Dia::CellLayers
 		Dia::Core::StringCRC				mTopology;
 		uint32_t							mWidth = 0;
 		uint32_t							mHeight = 0;
+		float								mCellSize = 0.0f;
 		uint64_t*							mWords = nullptr;
 		uint64_t*							mSnapshot = nullptr;
 		uint32_t							mCount = 0;

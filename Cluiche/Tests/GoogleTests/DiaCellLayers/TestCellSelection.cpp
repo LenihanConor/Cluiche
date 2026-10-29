@@ -209,3 +209,21 @@ TEST(CellSelectionTest, LargeGridLastCell)
 	EXPECT_EQ(s.Count(), 1u);
 	EXPECT_EQ(ToVector(s), std::vector<uint32_t>{ 6655 });
 }
+
+TEST(CellSelectionTest, CellSizeFromGridAndNotPartOfIdentity)
+{
+	CellSelection s;
+	EXPECT_EQ(s.CellSize(), 0.0f);
+	auto g = MakeGrid(4, 3, 8.0f);
+	s.Reset(&g);
+	EXPECT_EQ(s.CellSize(), 8.0f);
+	s.Set(1, true);
+	const uint32_t v = s.Version();
+	g.cellSize = 2.0f;
+	s.Reset(&g);	// same identity: selection and version kept, cell size refreshed
+	EXPECT_EQ(s.CellSize(), 2.0f);
+	EXPECT_EQ(s.Count(), 1u);
+	EXPECT_EQ(s.Version(), v);
+	s.Reset(nullptr);
+	EXPECT_EQ(s.CellSize(), 0.0f);
+}

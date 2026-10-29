@@ -16,6 +16,8 @@ namespace Dia::CellLayers
 		const uint32_t height = grid ? grid->height : 0u;
 		const Dia::Core::StringCRC topology = grid ? grid->topology : Dia::Core::StringCRC();
 
+		mCellSize = grid ? grid->cellSize : 0.0f;	// refreshed even when the grid identity is unchanged
+
 		if (grid == mGrid && width == mWidth && height == mHeight && topology == mTopology)
 		{
 			return;

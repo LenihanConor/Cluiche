@@ -1,4 +1,10 @@
 #include <DiaCellLayers/SelectionTools.h>
+#include <DiaMaths/Vector/Vector2D.h>
+#include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaPathfinding/HexTopology.h>
+
+#include <algorithm>
+#include <math.h>
 
 namespace Dia::CellLayers::SelectionTools
 {
@@ -83,5 +89,106 @@ namespace Dia::CellLayers::SelectionTools
 			return Result(sel, false);
 		}
 		return Result(sel, sel.Clear());
+	}
+
+	ToolResult SelectPolygon(CellSelection& sel, const PolyPoint* vertices, uint32_t vertexCount)
+	{
+		if (!vertices || vertexCount < 3 || sel.CellCount() == 0 || !(sel.CellSize() > 0.0f))
+		{
+			ToolResult res;
+			res.count = sel.Count();
+			return res;
+		}
+		double minX = vertices[0].x, maxX = vertices[0].x, minY = vertices[0].y, maxY = vertices[0].y;
+		for (uint32_t i = 0; i < vertexCount; ++i)
+		{
+			if (!isfinite(vertices[i].x) || !isfinite(vertices[i].y))
+			{
+				ToolResult res;
+				res.count = sel.Count();
+				return res;
+			}
+			minX = std::min<double>(minX, vertices[i].x);
+			maxX = std::max<double>(maxX, vertices[i].x);
+			minY = std::min<double>(minY, vertices[i].y);
+			maxY = std::max<double>(maxY, vertices[i].y);
+		}
+
+		DIA_PROFILE_SCOPE("celllayers.selection.polygon", ::Dia::Observation::Profile::Category::kDiaGraphics);
+
+		const float cellSize = sel.CellSize();
+		const int w = int(sel.Width());
+		const int h = int(sel.Height());
+		sel.BeginEdit();
+		sel.Clear();
+		for (int q = 0; q < w; ++q)
+		{
+			for (int r = 0; r < h; ++r)
+			{
+				const Dia::Maths::Vector2D c = Dia::Pathfinding::HexTopology::CellCenter({ q, r }, cellSize);
+				const double px = c.x;
+				const double py = c.y;
+				// Bounding-box prefilter; max edges are exclusive, matching the crossing rule below.
+				if (px < minX || px >= maxX || py < minY || py >= maxY)
+				{
+					continue;
+				}
+				// Even-odd, half-open ray crossing toward +x.
+				bool inside = false;
+				for (uint32_t i = 0, j = vertexCount - 1; i < vertexCount; j = i++)
+				{
+					const double xi = vertices[i].x, yi = vertices[i].y;
+					const double xj = vertices[j].x, yj = vertices[j].y;
+					if ((yi > py) != (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi)
+					{
+						inside = !inside;
+					}
+				}
+				if (inside)
+				{
+					sel.Set(uint32_t(r) * uint32_t(w) + uint32_t(q), true);
+				}
+			}
+		}
+		return Result(sel, sel.EndEdit());
+	}
+
+	CellsResult SelectCells(CellSelection& sel, const int32_t* qr, uint32_t pairCount, uint32_t* acceptedQR, uint32_t acceptedCapacity)
+	{
+		CellsResult out;
+		out.requested = pairCount;
+		if (sel.CellCount() == 0 || (!qr && pairCount > 0))
+		{
+			out.count = sel.Count();
+			out.ok = (sel.CellCount() == 0);
+			return out;
+		}
+		out.overCap = pairCount > kMaxCellsPerCall;
+		const uint32_t considered = out.overCap ? kMaxCellsPerCall : pairCount;
+
+		sel.BeginEdit();
+		sel.Clear();
+		for (uint32_t i = 0; i < considered; ++i)
+		{
+			const int32_t q = qr[2 * i];
+			const int32_t r = qr[2 * i + 1];
+			if (!InBounds(sel, q, r))
+			{
+				continue;
+			}
+			if (sel.Set(uint32_t(r) * sel.Width() + uint32_t(q), true))
+			{
+				if (acceptedQR && out.accepted < acceptedCapacity)
+				{
+					acceptedQR[2 * out.accepted] = uint32_t(q);
+					acceptedQR[2 * out.accepted + 1] = uint32_t(r);
+				}
+				++out.accepted;
+			}
+		}
+		out.ok = true;
+		out.changed = sel.EndEdit();
+		out.count = sel.Count();
+		return out;
 	}
 }
