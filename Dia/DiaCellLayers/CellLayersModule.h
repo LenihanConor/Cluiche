@@ -3,7 +3,10 @@
 // CellLayersModule: owns the CellLayerRegistry and publishes it on the "CellLayerRegistryService" ServiceStream
 // (CL-006: no singletons; consumers reach the registry through the stream).
 //
-// Base / affinity: derives from Module directly with PUAffinity::kAny. Do no per-frame work (DoUpdate is a no-op).
+// Base / affinity: derives from Module directly with PUAffinity::kAny. Per-frame work is limited to schema attach and
+// publishing observation signals (gauges dia.celllayers.registry.layers / .overlays; health "dia.celllayers.registry",
+// Degraded once the registry has rejected any registration since start, else OK). The reporter is registered with the
+// HealthRegistry in DoStart and withdrawn in DoStop.
 //
 // Owner PU: the registry is constructed in DoStart, which runs on the module's processing-unit thread, so that
 // PU is the registry's owner: Register/Unregister must be called from it (CellLayerRegistry rejects other PUs).
@@ -27,6 +30,8 @@
 #include <DiaCellLayers/CellLayerRegistry.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Memory/UniquePtr.h>
+#include <DiaObservation/Health/HealthReporterBase.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaStreams/ServiceStreamReader.h>
 #include <DiaStreams/ServiceStreamWriter.h>
 #include <DiaValueSchema/ValueSchemaService.h>
@@ -61,6 +66,18 @@ namespace Dia::CellLayers
 
 	private:
 		void TryAttachSchemaStream();
+		void UnregisterHealth();
+
+		class HealthImpl : public Dia::Observation::Health::HealthReporterBase
+		{
+		public:
+			Dia::Core::StringCRC GetReporterName() const override { return Dia::Core::StringCRC("dia.celllayers.registry"); }
+		};
+
+		HealthImpl										mHealth;
+		bool											mHealthRegistered = false;
+		Dia::Observation::Metric::Gauge*				mMetricLayers = nullptr;
+		Dia::Observation::Metric::Gauge*				mMetricOverlays = nullptr;
 
 		Dia::Core::UniquePtr<CellLayerRegistry>			mRegistry;
 		Dia::ApplicationFlow::ServiceStreamReader<Dia::ValueSchema::ValueSchemaService> mSchemaReader{ this, Dia::Core::StringCRC(kSchemaStreamId) };

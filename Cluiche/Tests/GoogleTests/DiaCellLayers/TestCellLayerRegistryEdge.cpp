@@ -340,3 +340,32 @@ TEST_F(RegistryEdgeTest, RandomRegisterUnregisterSequenceMatchesModel)
 		ASSERT_EQ(reg.IsMultiGrid(), gridsSeen > 1);
 	}
 }
+
+TEST_F(RegistryEdgeTest, RejectedRegistrationsCountsDuplicateCapacityAndWrongPuForLayersAndOverlays)
+{
+	CellLayerRegistry reg(nullptr, &FakePuIdFn);
+	EXPECT_EQ(reg.RejectedRegistrations(), 0u);
+	ASSERT_EQ(reg.Register(MakeLayer("a", &gridA)), CellRegisterResult::Ok);
+	ASSERT_EQ(reg.RegisterOverlay(MakeOverlay("o")), CellRegisterResult::Ok);
+	EXPECT_EQ(reg.RejectedRegistrations(), 0u);	// successes and unregisters never count
+	reg.Unregister(StringCRC("missing"));
+	EXPECT_EQ(reg.RejectedRegistrations(), 0u);
+
+	EXPECT_EQ(reg.Register(MakeLayer("a", &gridA)), CellRegisterResult::Duplicate);
+	EXPECT_EQ(reg.RejectedRegistrations(), 1u);
+	EXPECT_EQ(reg.RegisterOverlay(MakeOverlay("o")), CellRegisterResult::Duplicate);
+	EXPECT_EQ(reg.RejectedRegistrations(), 2u);
+
+	FakePuId() = 9;
+	EXPECT_EQ(reg.Register(MakeLayer("b", &gridA)), CellRegisterResult::WrongProcessingUnit);
+	EXPECT_EQ(reg.RegisterOverlay(MakeOverlay("p")), CellRegisterResult::WrongProcessingUnit);
+	FakePuId() = 1;
+	EXPECT_EQ(reg.RejectedRegistrations(), 4u);
+
+	for (uint32_t i = 0; i < 127; ++i) { reg.Register(MakeLayer(Id("l", i).c_str(), &gridA)); }
+	EXPECT_EQ(reg.Register(MakeLayer("over", &gridA)), CellRegisterResult::CapacityReached);
+	EXPECT_EQ(reg.RejectedRegistrations(), 5u);
+	for (uint32_t i = 0; i < 63; ++i) { reg.RegisterOverlay(MakeOverlay(Id("o", i).c_str())); }
+	EXPECT_EQ(reg.RegisterOverlay(MakeOverlay("over")), CellRegisterResult::CapacityReached);
+	EXPECT_EQ(reg.RejectedRegistrations(), 6u);
+}

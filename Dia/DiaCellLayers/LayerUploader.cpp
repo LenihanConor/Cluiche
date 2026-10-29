@@ -1,5 +1,7 @@
 #include <DiaCellLayers/LayerUploader.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaValueSchema/RampResolver.h>
 
 #include <math.h>
@@ -142,17 +144,20 @@ namespace Dia::CellLayers
 		const uint64_t version = layer.version();
 		const uint32_t count = static_cast<uint32_t>(layer.grid->width) * layer.grid->height;
 		EnsureBuffer(count);
-		if (fromSource)
 		{
-			if (!source->GetValues(layer, mBuffer, count))
+			DIA_PROFILE_SCOPE("celllayers.uploader.read", ::Dia::Observation::Profile::Category::kDiaGraphics);
+			if (fromSource)
 			{
-				ReleaseSlot(slot);
-				return UploadResult::NoData;	// no data in this view; never fall back to live values
+				if (!source->GetValues(layer, mBuffer, count))
+				{
+					ReleaseSlot(slot);
+					return UploadResult::NoData;	// no data in this view; never fall back to live values
+				}
 			}
-		}
-		else
-		{
-			layer.read(mBuffer, count);
+			else
+			{
+				layer.read(mBuffer, count);
+			}
 		}
 		++mReads;
 
@@ -171,7 +176,11 @@ namespace Dia::CellLayers
 			mObservedMax = mx;
 		}
 
-		const Dia::Graphics::CellFieldResult u = mCellField.Update(slot.handle, mBuffer, count);
+		Dia::Graphics::CellFieldResult u;
+		{
+			DIA_PROFILE_SCOPE("celllayers.uploader.upload", ::Dia::Observation::Profile::Category::kDiaGraphics);
+			u = mCellField.Update(slot.handle, mBuffer, count);
+		}
 		if (!u.ok)
 		{
 			++mReadFailures;
@@ -263,6 +272,7 @@ namespace Dia::CellLayers
 	UploadResult LayerUploader::Update(const CellLayerDesc* base, const CellLayerRegistry& layers)
 	{
 		using namespace Dia::ValueSchema;
+		DIA_TRACE_ZONE("celllayers.uploader.update", ::Dia::Observation::Trace::Category::kDiaGraphics);
 		if (base == nullptr)
 		{
 			for (Slot& s : mSlots) { ReleaseSlot(s); }

@@ -1,6 +1,7 @@
 #include <DiaCellLayers/CellLayersModule.h>
 
 #include <DiaApplicationFlow/Application.h>
+#include <DiaObservation/Health/HealthRegistry.h>
 #include <DiaObservation/Log/DiaLog.h>
 
 namespace Dia::CellLayers
@@ -12,7 +13,14 @@ namespace Dia::CellLayers
 	{
 	}
 
-	CellLayersModule::~CellLayersModule() {}
+	CellLayersModule::~CellLayersModule() { UnregisterHealth(); }
+
+	void CellLayersModule::UnregisterHealth()
+	{
+		if (!mHealthRegistered) { return; }
+		Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealth);
+		mHealthRegistered = false;
+	}
 
 	void CellLayersModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 	{
@@ -38,6 +46,17 @@ namespace Dia::CellLayers
 		mRegistry = Dia::Core::MakeUnique<CellLayerRegistry>(mSchema, mCurrentPuId);
 		mServiceWriter.Register(*mRegistry);
 		TryAttachSchemaStream();
+		auto& metrics = Dia::Observation::Metric::MetricRegistry::Instance();
+		mMetricLayers = metrics.RegisterGauge(Dia::Core::StringCRC("dia.celllayers.registry.layers"));
+		mMetricOverlays = metrics.RegisterGauge(Dia::Core::StringCRC("dia.celllayers.registry.overlays"));
+		mMetricLayers->Set(0.0);
+		mMetricOverlays->Set(0.0);
+		mHealth.SetOK();	// fresh registry: nothing rejected yet
+		if (!mHealthRegistered)
+		{
+			Dia::Observation::Health::HealthRegistry::Instance().Register(&mHealth);
+			mHealthRegistered = true;
+		}
 		DIA_LOG_INFO("CEL", "CellLayerRegistry published on stream '%s'", kServiceStreamId);
 		return Dia::ApplicationFlow::StartResult::kReady;
 	}
@@ -45,12 +64,18 @@ namespace Dia::CellLayers
 	void CellLayersModule::DoUpdate(float /*deltaTime*/)
 	{
 		TryAttachSchemaStream();
+		if (mRegistry == nullptr) { return; }
+		mMetricLayers->Set(static_cast<double>(mRegistry->LayerCount()));
+		mMetricOverlays->Set(static_cast<double>(mRegistry->OverlayCount()));
+		if (mRegistry->RejectedRegistrations() > 0) { mHealth.SetDegraded(Dia::Core::StringCRC("registration rejected")); }
+		else { mHealth.SetOK(); }
 	}
 
 	Dia::ApplicationFlow::StopResult CellLayersModule::DoStop()
 	{
 		// The registry stays alive until the next DoStart or destruction (see header).
 		mServiceWriter.Deregister();
+		UnregisterHealth();
 		return Dia::ApplicationFlow::StopResult::kDone;
 	}
 }

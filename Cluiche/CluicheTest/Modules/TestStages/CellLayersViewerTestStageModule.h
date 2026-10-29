@@ -9,6 +9,7 @@
 #include <DiaGraphics/CellField/CellGridDesc.h>
 #include <DiaMaths/Vector/Vector2D.h>
 
+#include <atomic>
 #include <stdint.h>
 #include <vector>
 
@@ -89,7 +90,7 @@ private:
     uint64_t    mRainVersion = 1;
     uint64_t    mBiomeVersion = 1;
     uint64_t    mElevVersion = 1;
-    bool        mAnimate = false;
+    std::atomic<bool> mAnimate{ false };  // written on command threads, read on SimPU
     unsigned int mAnimateCounter = 0;
     unsigned int mReadyFrames = 0;
     bool        mReady = false;

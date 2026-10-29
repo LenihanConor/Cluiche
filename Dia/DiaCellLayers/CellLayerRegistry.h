@@ -16,6 +16,7 @@
 #include <DiaCore/Strings/String32.h>
 #include <DiaGraphics/CellField/CellGridDesc.h>
 
+#include <atomic>
 #include <stdint.h>
 
 namespace Dia::ValueSchema { class ValueSchemaService; }
@@ -70,6 +71,9 @@ namespace Dia::CellLayers
 		CellRegisterResult	Register(const CellLayerDesc& desc);
 		bool				Unregister(Dia::Core::StringCRC id);
 		const CellLayerDesc*	Find(Dia::Core::StringCRC id) const;
+		// Registrations rejected since construction (duplicate, capacity, wrong PU; layers and overlays). Thread-safe:
+		// wrong-PU rejections come from other threads.
+		uint32_t			RejectedRegistrations() const { return mRejected.load(std::memory_order_relaxed); }
 		uint32_t			LayerCount() const { return mLayerCount; }
 		const CellLayerDesc*	LayerAt(uint32_t index) const;	// registration order; null out of range
 
@@ -99,6 +103,7 @@ namespace Dia::CellLayers
 
 	private:
 		bool				IsOwnerPu(const char* what, Dia::Core::StringCRC id) const;
+		void				Reject() { mRejected.fetch_add(1, std::memory_order_relaxed); }
 		bool				HasDefaultBase(const CellLayerDesc& desc) const;
 		bool				IsFirstOfGrid(uint32_t layerIndex) const;
 
@@ -107,6 +112,7 @@ namespace Dia::CellLayers
 		uint64_t			mOwnerPuId;
 		uint32_t			mLayerCount = 0;
 		uint32_t			mOverlayCount = 0;
+		std::atomic<uint32_t>	mRejected{ 0 };
 		IViewValueSource*	mViewSource = nullptr;
 		CellLayerDesc		mLayers[kMaxLayers];
 		CellOverlayDesc		mOverlays[kMaxOverlays];

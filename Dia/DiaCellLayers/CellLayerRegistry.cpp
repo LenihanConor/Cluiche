@@ -53,15 +53,17 @@ namespace Dia::CellLayers
 
 	CellRegisterResult CellLayerRegistry::Register(const CellLayerDesc& desc)
 	{
-		if (!IsOwnerPu("layer", desc.id)) { return CellRegisterResult::WrongProcessingUnit; }
+		if (!IsOwnerPu("layer", desc.id)) { Reject(); return CellRegisterResult::WrongProcessingUnit; }
 		if (Find(desc.id) != nullptr)
 		{
 			DIA_LOG_ERROR("CEL", "Register layer '%s' rejected: duplicate id", desc.id.AsChar());
+			Reject();
 			return CellRegisterResult::Duplicate;
 		}
 		if (mLayerCount >= kMaxLayers)
 		{
 			DIA_LOG_ERROR("CEL", "Register layer '%s' rejected: capacity %u reached", desc.id.AsChar(), kMaxLayers);
+			Reject();
 			return CellRegisterResult::CapacityReached;
 		}
 		mLayers[mLayerCount++] = desc;
@@ -98,15 +100,17 @@ namespace Dia::CellLayers
 
 	CellRegisterResult CellLayerRegistry::RegisterOverlay(const CellOverlayDesc& desc)
 	{
-		if (!IsOwnerPu("overlay", desc.id)) { return CellRegisterResult::WrongProcessingUnit; }
+		if (!IsOwnerPu("overlay", desc.id)) { Reject(); return CellRegisterResult::WrongProcessingUnit; }
 		if (FindOverlay(desc.id) != nullptr)
 		{
 			DIA_LOG_ERROR("CEL", "Register overlay '%s' rejected: duplicate id", desc.id.AsChar());
+			Reject();
 			return CellRegisterResult::Duplicate;
 		}
 		if (mOverlayCount >= kMaxOverlays)
 		{
 			DIA_LOG_ERROR("CEL", "Register overlay '%s' rejected: capacity %u reached", desc.id.AsChar(), kMaxOverlays);
+			Reject();
 			return CellRegisterResult::CapacityReached;
 		}
 		mOverlays[mOverlayCount++] = desc;

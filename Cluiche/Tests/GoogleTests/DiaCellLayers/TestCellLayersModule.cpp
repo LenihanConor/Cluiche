@@ -10,6 +10,8 @@
 #include <DiaStreams/ServiceStreamWriter.h>
 #include <DiaValueSchema/ValueSchemaService.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaObservation/Health/HealthRegistry.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
 #include <memory>
 
 // CellLayersModule lifecycle through a live single-PU Application (pattern of TestValueSchemaModule):
@@ -320,4 +322,98 @@ TEST(CellLayersModule, SchemaWithoutDefaultBaseFlagFallsBackToFirstRegistered)
 	ASSERT_EQ(reg->Register(MakeLayer("first", &grid)), CellRegisterResult::Ok);
 	ASSERT_EQ(reg->Register(MakeLayer("second", &grid)), CellRegisterResult::Ok);
 	EXPECT_EQ(reg->DefaultBase(&grid)->id, StringCRC("first"));
+}
+
+namespace
+{
+	using Dia::Observation::Health::HealthRegistry;
+	using Dia::Observation::Health::HealthStatus;
+
+	bool FindRegistryHealth(HealthStatus& status)
+	{
+		HealthRegistry::ReporterSnapshot snaps[64];
+		unsigned int n = 0;
+		HealthRegistry::Instance().Snapshot(snaps, 64, n);
+		for (unsigned int i = 0; i < n; ++i)
+		{
+			if (snaps[i].name == StringCRC("dia.celllayers.registry")) { status = snaps[i].health.status; return true; }
+		}
+		return false;
+	}
+
+	double RegistryGauge(const char* name)
+	{
+		auto* g = Dia::Observation::Metric::MetricRegistry::Instance().FindGauge(StringCRC(name));
+		return g ? g->Value() : -1.0;
+	}
+
+	void Tick(Harness& h) { for (int i = 0; i < 3; ++i) { h.mApp->Update(kDt); } }
+}
+
+TEST(CellLayersModule, RegistryMetricsPublishCurrentCounts)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	CellRegisterResult r = g_module->GetRegistry()->RegisterOverlay(MakeOverlay("ov1"));
+	ASSERT_EQ(r, CellRegisterResult::Ok);
+	Tick(h);
+	EXPECT_EQ(RegistryGauge("dia.celllayers.registry.layers"), 1.0);	// the consumer's layer
+	EXPECT_EQ(RegistryGauge("dia.celllayers.registry.overlays"), 1.0);
+	g_module->GetRegistry()->UnregisterOverlay(StringCRC("ov1"));
+	Tick(h);
+	EXPECT_EQ(RegistryGauge("dia.celllayers.registry.overlays"), 0.0);
+}
+
+TEST(CellLayersModule, RegistryHealthOkThenDegradedAfterRejectedRegistration)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	HealthStatus st = HealthStatus::kFailing;
+	ASSERT_TRUE(FindRegistryHealth(st)) << "reporter must be registered after start";
+	EXPECT_EQ(st, HealthStatus::kOK);
+	CellGridDesc grid;
+	EXPECT_EQ(g_module->GetRegistry()->Register(MakeLayer("consumer.layer", &grid)), CellRegisterResult::Duplicate);
+	Tick(h);
+	ASSERT_TRUE(FindRegistryHealth(st));
+	EXPECT_EQ(st, HealthStatus::kDegraded);
+}
+
+TEST(CellLayersModule, RegistryHealthDegradedAfterWrongPuRegistration)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	CellGridDesc grid;
+	FakePuId() = 2;
+	EXPECT_EQ(g_module->GetRegistry()->Register(MakeLayer("other.pu", &grid)), CellRegisterResult::WrongProcessingUnit);
+	FakePuId() = 1;
+	Tick(h);
+	HealthStatus st = HealthStatus::kOK;
+	ASSERT_TRUE(FindRegistryHealth(st));
+	EXPECT_EQ(st, HealthStatus::kDegraded);
+}
+
+// HealthRegistry::Unregister retires a reporter (frozen final snapshot, no further Report() calls on the module).
+// So after stop the entry is present exactly once with its last status; a still-registered reporter pointing at the
+// destroyed module would be read live (use-after-free under ASan) instead.
+TEST(CellLayersModule, RegistryHealthReporterRetiredAfterStopKeepingFinalStatus)
+{
+	HealthRegistry::Instance().Reset();
+	{
+		Harness h;
+		ASSERT_TRUE(h.Start());
+		CellGridDesc grid;
+		EXPECT_EQ(g_module->GetRegistry()->Register(MakeLayer("consumer.layer", &grid)), CellRegisterResult::Duplicate);
+		Tick(h);
+		h.Shutdown();
+	}
+	HealthRegistry::ReporterSnapshot snaps[64];
+	unsigned int n = 0;
+	HealthRegistry::Instance().Snapshot(snaps, 64, n);
+	unsigned int matches = 0;
+	for (unsigned int i = 0; i < n; ++i)
+	{
+		if (snaps[i].name == StringCRC("dia.celllayers.registry")) { ++matches; EXPECT_EQ(snaps[i].health.status, HealthStatus::kDegraded); }
+	}
+	EXPECT_EQ(matches, 1u);
+	HealthRegistry::Instance().Reset();
 }

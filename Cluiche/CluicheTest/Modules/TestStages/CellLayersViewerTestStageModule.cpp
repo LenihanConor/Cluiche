@@ -212,7 +212,7 @@ void CellLayersViewerTestStageModule::OnUpdate(float /*deltaTime*/)
     if (!mReady)
         return;
 
-    if (mAnimate && ++mAnimateCounter >= kAnimateEveryFrames)
+    if (mAnimate.load() && ++mAnimateCounter >= kAnimateEveryFrames)
     {
         mAnimateCounter = 0;
         ++mTempVersion;
@@ -332,7 +332,7 @@ bool CellLayersViewerTestStageModule::BuildViewer()
             return out;
         }
         mAnimate = params["enabled"].asBool();
-        out["enabled"] = mAnimate;
+        out["enabled"] = mAnimate.load();
         return out;
     };
     Dia::API::RegisterCommandJson(animateJson);
