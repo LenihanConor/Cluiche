@@ -767,7 +767,7 @@ namespace Dia::CellLayers
 			"cells.select.cell", "cells.select.toggle", "cells.select.box", "cells.select.poly",
 			"cells.select.category", "cells.select.cells", "cells.select.clear"
 		};
-		const char* const kSelectPanelCommands[] = { "cells.select.tool", "cells.select.group" };
+		const char* const kSelectPanelCommands[] = { "cells.select.tool", "cells.select.group", "cells.select.pin", "cells.select.unpin" };
 
 		Json::Value SelectError(const std::string& msg)
 		{
@@ -832,6 +832,22 @@ namespace Dia::CellLayers
 		group.owner = "DiaCellLayers";
 		group.callback = [this](const Json::Value& params) -> Json::Value { return ExecuteSetGroup(params); };
 		Dia::API::RegisterCommandJson(group);
+
+		Dia::API::CommandInfoJson pin;
+		pin.name = StringCRC(kSelectPanelCommands[2]);
+		pin.description = "Pin the current selection as A for compare: params {\"freeze\": bool (optional, default false)}. freeze also stores A's stats for every layer of the grid once; returns {ok, count, frozen, layers (when frozen)}. Error when nothing is selected";
+		pin.category = StringCRC("cells");
+		pin.owner = "DiaCellLayers";
+		pin.callback = [this](const Json::Value& params) -> Json::Value { return ExecutePin(params); };
+		Dia::API::RegisterCommandJson(pin);
+
+		Dia::API::CommandInfoJson unpin;
+		unpin.name = StringCRC(kSelectPanelCommands[3]);
+		unpin.description = "Clear the pinned selection A: params {}; returns {ok}";
+		unpin.category = StringCRC("cells");
+		unpin.owner = "DiaCellLayers";
+		unpin.callback = [this](const Json::Value& params) -> Json::Value { return ExecuteUnpin(params); };
+		Dia::API::RegisterCommandJson(unpin);
 	}
 
 	Json::Value CellLayerViewerDomain::FinishSelectCommand(const char* name, const char* error, Json::Value out)
@@ -886,6 +902,56 @@ namespace Dia::CellLayers
 			}
 		}
 		return FinishSelectCommand("cells.select.group", error.c_str(), out);
+	}
+
+	Json::Value CellLayerViewerDomain::ExecutePin(const Json::Value& params)
+	{
+		Lock l(mMutex);
+		Json::Value out(Json::objectValue);
+		std::string error;
+		bool freeze = false;
+		const ICellSelectionView* selection = mActiveGrid != nullptr ? mRegistry.SelectionView(mActiveGrid) : nullptr;
+		if (params.isObject() && params.isMember("freeze"))
+		{
+			if (!params["freeze"].isBool()) { error = "non-boolean param 'freeze'"; }
+			else { freeze = params["freeze"].asBool(); }
+		}
+		if (!error.empty()) {}
+		else if (mActiveGrid == nullptr || selection == nullptr) { error = "no active grid"; }
+		else if (selection->Count() == 0) { error = "nothing selected to pin"; }
+		else
+		{
+			mInspector.SetActive(mRegistry, mActiveGrid, mActiveBase);	// A belongs to the grid the selection is on
+			const bool ok = freeze ? mInspector.PinFreeze(mRegistry, mReader, mSchema, mActiveGrid, selection)
+				: mInspector.Pin(mRegistry, mActiveGrid, selection);
+			if (!ok) { error = "nothing selected to pin"; }
+		}
+		if (error.empty())
+		{
+			out["ok"] = true;
+			out["count"] = mInspector.PinnedCount();
+			out["frozen"] = mInspector.IsFrozen();
+			if (mInspector.IsFrozen())
+			{
+				out["layers"] = mInspector.FrozenLayerCount();
+				DIA_LOG_INFO("CEL", "cells.select.pin: pinned %u cells as A, froze %u layers", mInspector.PinnedCount(), mInspector.FrozenLayerCount());
+			}
+			else { DIA_LOG_INFO("CEL", "cells.select.pin: pinned %u cells as A (live)", mInspector.PinnedCount()); }
+		}
+		return FinishSelectCommand("cells.select.pin", error.c_str(), out);
+	}
+
+	Json::Value CellLayerViewerDomain::ExecuteUnpin(const Json::Value&)
+	{
+		Lock l(mMutex);
+		Json::Value out(Json::objectValue);
+		if (mInspector.IsPinned())
+		{
+			mInspector.Unpin();
+			DIA_LOG_INFO("CEL", "cells.select.unpin: cleared A");
+		}
+		out["ok"] = true;
+		return FinishSelectCommand("cells.select.unpin", nullptr, out);
 	}
 
 	Json::Value CellLayerViewerDomain::ExecuteSelect(SelectOp op, const char* name, const Json::Value& params)

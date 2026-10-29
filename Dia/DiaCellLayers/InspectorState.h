@@ -20,7 +20,16 @@
 // version change -> all shown layers; a layer's own version change -> that layer; newly shown layer -> that layer.
 // Empty selection (null or Count() == 0): HasSelection() false, cached stats cleared, nothing computed, no reads, never pending.
 // The active base's Histogram (float bases only) is recomputed whenever the base's stats are.
-// Pinned-A / freeze (Task 4) are not implemented here. Generic (CL-005), no singletons (CL-006), no STL in the API (PD-004).
+//
+// Pin / compare: Pin() copies the current selection's cell set as A (own bitset sized to the grid; null / empty selection or a
+// grid other than the active one -> false, no change; re-pinning replaces A). A is LIVE by default: A's stats are computed from
+// A's cell set for the same shown layers, in the same pass as B's, and recomputed when that layer's version changes (A does not
+// depend on B's selection version). PinFreeze() additionally computes and stores A's stats for EVERY registered layer of the grid
+// once, synchronously (one explicit cost; each layer is read at most once per version through the LayerReader). Frozen stats are
+// never recomputed. StatsForA() returns the live or frozen stats of a layer (null when not available); FrozenAvailable() is false
+// for a layer registered after the freeze (the card shows "not frozen"). Unpin() clears A. A is also cleared when the active grid
+// changes or the grid's pointer, size or topology id changes (checked in SetActive and every Tick), like the selection.
+// ComputeDelta() gives B minus A for count, min, mean and max. Generic (CL-005), no singletons (CL-006), no STL in the API (PD-004).
 
 #include <DiaCellLayers/SelectionStats.h>
 
@@ -28,6 +37,17 @@
 
 namespace Dia::CellLayers
 {
+	// B minus A. countDelta is always valid; min / mean / max deltas are valid only when hasRange (both sides have a range).
+	struct LayerDelta
+	{
+		int64_t	countDelta = 0;
+		bool	hasRange = false;
+		double	minDelta = 0.0;
+		double	meanDelta = 0.0;
+		double	maxDelta = 0.0;
+	};
+	void ComputeDelta(const LayerStats& b, const LayerStats& a, LayerDelta& out);
+
 	class InspectorState
 	{
 	public:
@@ -57,6 +77,19 @@ namespace Dia::CellLayers
 		uint32_t			ShownLayerCount() const { return mShownCount; }
 		Dia::Core::StringCRC	ShownLayerAt(uint32_t index) const;	// kZero out of range; index 0 is the active base when set
 
+		// Pin / compare (see header). Pin / PinFreeze return false and change nothing for a null / empty selection, a null grid or a
+		// grid that is not the active one. PinFreeze reads every registered layer of the grid once (synchronously).
+		bool	Pin(const CellLayerRegistry& registry, const Dia::Graphics::CellGridDesc* grid, const ICellSelectionView* selection);
+		bool	PinFreeze(const CellLayerRegistry& registry, LayerReader& reader, const Dia::ValueSchema::ValueSchemaService* schema,
+			const Dia::Graphics::CellGridDesc* grid, const ICellSelectionView* selection);
+		void	Unpin();
+		bool	IsPinned() const { return mPinned != nullptr; }
+		bool	IsFrozen() const { return mPinned != nullptr && mFrozen != nullptr; }
+		uint32_t	PinnedCount() const;
+		uint32_t	FrozenLayerCount() const { return mFrozenCount; }	// layers stored by PinFreeze (0 when live)
+		const LayerStats*	StatsForA(Dia::Core::StringCRC layerId) const;	// live or frozen A; null when not pinned / not available
+		bool				FrozenAvailable(Dia::Core::StringCRC layerId) const;	// frozen A holds stats for this layer
+
 		uint32_t	PassCount() const { return mPassCount; }
 		uint32_t	LastPassLayerCount() const { return mLastPassLayerCount; }
 
@@ -67,12 +100,23 @@ namespace Dia::CellLayers
 			bool					computed = false;
 			uint64_t				seenVersion = 0;
 			LayerStats				stats;
+			bool					aComputed = false;	// live A
+			uint64_t				aSeenVersion = 0;
+			LayerStats				aStats;
 		};
+		struct FrozenEntry
+		{
+			Dia::Core::StringCRC	id;
+			LayerStats				stats;
+		};
+		class PinnedSet;
 
 		void	RebuildShown(const CellLayerRegistry& registry);
 		void	ClearComputed();
 		bool	AnyDirty(const CellLayerRegistry& registry) const;
 		bool	NeedsCompute(const CellLayerRegistry& registry, const Entry& e) const;
+		bool	NeedsComputeA(const CellLayerRegistry& registry, const Entry& e) const;
+		void	CheckPinIdentity();
 
 		Entry*					mEntries;	// kMaxShown, heap (LayerStats is large)
 		uint32_t				mShownCount = 0;
@@ -90,5 +134,8 @@ namespace Dia::CellLayers
 		bool					mHasHistogram = false;
 		uint32_t				mPassCount = 0;
 		uint32_t				mLastPassLayerCount = 0;
+		PinnedSet*				mPinned = nullptr;
+		FrozenEntry*			mFrozen = nullptr;	// frozen A stats, one per layer of the grid at freeze time
+		uint32_t				mFrozenCount = 0;
 	};
 }

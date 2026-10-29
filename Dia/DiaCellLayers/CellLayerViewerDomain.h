@@ -122,6 +122,8 @@ namespace Dia::CellLayers
 		void	RegisterSelectionCommands();	// called by RegisterCommands
 		Json::Value	ExecuteSetTool(const Json::Value& params);	// cells.select.tool (locks mMutex)
 		Json::Value	ExecuteSetGroup(const Json::Value& params);	// cells.select.group (locks mMutex)
+		Json::Value	ExecutePin(const Json::Value& params);	// cells.select.pin (locks mMutex)
+		Json::Value	ExecuteUnpin(const Json::Value& params);	// cells.select.unpin (locks mMutex)
 		Json::Value	FinishSelectCommand(const char* name, const char* error, Json::Value out);	// metrics + CEL log, returns out or {"error"}
 		Dia::Core::StringCRC	EffectiveGroup() const;	// the stored group if valid for the active grid, else the grid default
 		void	WriteSelection(Json::Value& out) const;
