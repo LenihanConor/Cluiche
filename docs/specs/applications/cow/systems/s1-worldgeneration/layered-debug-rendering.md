@@ -43,7 +43,7 @@ Each colour mode registers as a DiaCellLayers layer (Approved, not built):
 
 | Layer id | Value kind | Schema key | Notes |
 |---|---|---|---|
-| `terrain.relief` | float | `cow.terrain.cell/slope` + `elevation` | Hillshade (default) |
+| `terrain.relief` | float | `cow.terrain.cell/elevation`, with `ui.elevation_layer: "terrain.elevation"` *(amended 2026-10-28, DiaCellLayers key)* | Hillshade (default) |
 | `terrain.biome` | category | `cow.terrain.cell/biome` | `history.group: true` |
 | `terrain.terrain_type` | category | `cow.terrain.cell/terrain` | — |
 | `terrain.region` | category | `cow.terrain.cell/region` | `history.group: true` |
@@ -61,7 +61,7 @@ Each colour mode registers as a DiaCellLayers layer (Approved, not built):
 
 1. **V-1 real tile art:** debug-grade only (solid-colour hexes, simple shapes). V-1 owns sprite tiles, the real camera and fog of war.
 2. **Animation:** static rendering only.
-3. **3D lighting:** *(amended 2026-10-19)* Relief hillshade is the default tile layer (uses a simple dot-product shader over the slope field), but there's no 3D lighting, shadow maps or normal mapping. The world stays a 2D grid.
+3. **3D lighting:** *(amended 2026-10-19)* Relief hillshade is the default tile layer (*amended 2026-10-28:* hillshade is derived by the CellField shader from the elevation layer named by the base layer's `ui.elevation_layer`; the `slope` field is not needed for rendering), but there's no 3D lighting, shadow maps or normal mapping. The world stays a 2D grid.
 4. **3D terrain:** elevation is a colour ramp on the 2D grid, not a heightmap mesh.
 5. **Live ecology state:** world structure only. A1 runtime state belongs to S-2/S-3.
 6. **Camera persistence:** pan/zoom resets on regeneration.
@@ -100,7 +100,7 @@ Region-edge counts come from the flat-top odd-q rectangle (about `3 × W × H` e
 
 | Mode | Field | Palette |
 |------|-------|---------|
-| Relief (default) | `slope` + `elevation` | Hillshade (dot product of slope normal with light direction) over an elevation tint |
+| Relief (default) | `elevation` (the base layer names it as its own `ui.elevation_layer`) *(amended 2026-10-28)* | Hillshade derived from the elevation layer by the CellField shader, over an elevation tint |
 | Biome | `cell.biome` | Categorical, HSV-spaced placeholder colours until Phase 2 biome names land |
 | Terrain | `cell.terrain` | Categorical |
 | Region | `cell.region` | Categorical (same colours as `RegionEdges`) |
