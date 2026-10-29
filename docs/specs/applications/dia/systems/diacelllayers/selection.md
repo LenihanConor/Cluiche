@@ -187,4 +187,6 @@ No conflicts.
 
 ## Status
 
-`Approved` (2026-10-20). Plan: [selection.plan.md](selection.plan.md) (not started).
+`Done` (2026-10-29). Plan: [selection.plan.md](selection.plan.md).
+
+**Amended in place 2026-10-29 (built behaviour):** `cells.select.poly` takes `{points: [[x, y], ...]}` in WORLD coordinates (the `HexTopology::CellCenter` space, so the lasso can pass `CellPicker::ScreenToWorld` output), not `q,r`. All commands are JSON-params DiaAPI commands. Added `cells.select.tool {tool}` and `cells.select.group {layer}` for the card. The mouse path is `SelectionInput` over a plain `PointerFrame`, fed by the host app via `CellLayerViewerDomain::SubmitPointerFrame`; CluicheTest reads `InputStreamModule` and has a test-only pointer-frame injection for E2E. Camera pan is not implemented in CluicheTest, so there is no pan conflict yet; a future pan must gate left-drag on `Input().PanTool()`.
