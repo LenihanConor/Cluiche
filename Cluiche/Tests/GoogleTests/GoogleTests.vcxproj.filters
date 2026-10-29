@@ -2205,5 +2205,8 @@
     <ClCompile Include="CluicheTest\CellLayersPointerQueueTests.cpp">
       <Filter>CluicheTest</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestSelectionStats.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
