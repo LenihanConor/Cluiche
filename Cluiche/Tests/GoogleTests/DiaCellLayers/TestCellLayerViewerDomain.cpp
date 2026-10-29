@@ -291,6 +291,29 @@ TEST_F(ViewerTest, ListLayersGroupsByGrid)
 	EXPECT_STREQ(l["overlays"][0]["id"].asCString(), "ov");
 }
 
+TEST_F(ViewerTest, ListLayersReportsActiveBaseAndSelected)
+{
+	Rig rig(cellField, nullptr);
+	rig.Add(temp.MakeDesc("temp", &gridA.desc));
+	rig.Add(soil.MakeDesc("soil", &gridB.desc));
+	rig.domain.Update(draw);
+	Json::Value l;
+	rig.domain.ListLayers(l);
+	EXPECT_EQ(l["activeBase"].asString(), "temp");
+	EXPECT_EQ(l["activeGridIndex"].asInt(), 0);
+	EXPECT_TRUE(l["grids"][0]["layers"][0]["selected"].asBool());
+	EXPECT_FALSE(l["grids"][1]["layers"][0]["selected"].asBool());
+
+	ASSERT_TRUE(rig.domain.SetBase(StringCRC("soil")));
+	EXPECT_FALSE(rig.domain.SetBase(StringCRC("nope")));
+	Json::Value l2;
+	rig.domain.ListLayers(l2);
+	EXPECT_EQ(l2["activeBase"].asString(), "soil");
+	EXPECT_EQ(l2["activeGridIndex"].asInt(), 1);
+	EXPECT_FALSE(l2["grids"][0]["layers"][0]["selected"].asBool());
+	EXPECT_TRUE(l2["grids"][1]["layers"][0]["selected"].asBool());
+}
+
 TEST_F(ViewerTest, CommandsViaDiaAPI)
 {
 	Dia::API::Initialize();

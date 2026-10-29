@@ -549,6 +549,8 @@ TEST_F(ViewerEdgeTest, ListLayersOnEmptyRegistryHasEmptyArrays)
 	rig.domain.ListLayers(out);
 	EXPECT_EQ(out["grids"].size(), 0u);
 	EXPECT_EQ(out["overlays"].size(), 0u);
+	EXPECT_EQ(out["activeBase"].asString(), "");
+	EXPECT_EQ(out["activeGridIndex"].asInt(), -1);
 }
 
 TEST_F(ViewerEdgeTest, ConcurrentCommandsJsonAndUpdatesStayConsistent)

@@ -316,6 +316,26 @@ bool CellLayersViewerTestStageModule::BuildViewer()
             return 0;
         }
     });
+
+    // JSON form for the E2E/DebugServer channel (the CLI form takes a positional arg, which JSON params never fill).
+    Dia::API::CommandInfoJson animateJson;
+    animateJson.name = Dia::Core::StringCRC("cellviewer.set_animate");
+    animateJson.description = "JSON form of cellviewer.animate: params {\"enabled\": true|false}; returns {enabled}";
+    animateJson.category = Dia::Core::StringCRC("cells");
+    animateJson.owner = "CluicheTest";
+    animateJson.callback = [this](const Json::Value& params) -> Json::Value
+    {
+        Json::Value out(Json::objectValue);
+        if (!params.isObject() || !params["enabled"].isBool())
+        {
+            out["error"] = "missing or non-bool param 'enabled'";
+            return out;
+        }
+        mAnimate = params["enabled"].asBool();
+        out["enabled"] = mAnimate;
+        return out;
+    };
+    Dia::API::RegisterCommandJson(animateJson);
     mCommandRegistered = true;
 
     if (auto* vd = mVisualDebuggerRef.Get())
@@ -352,6 +372,7 @@ void CellLayersViewerTestStageModule::TeardownViewer()
     if (mCommandRegistered)
     {
         Dia::API::UnregisterCommand(Dia::Core::StringCRC("cellviewer.animate"));
+        Dia::API::UnregisterCommandJson(Dia::Core::StringCRC("cellviewer.set_animate"));
         mCommandRegistered = false;
     }
 

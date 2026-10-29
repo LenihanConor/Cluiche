@@ -521,12 +521,16 @@ namespace Dia::CellLayers
 				e["unit"] = unit;
 				e["group"] = d->group.AsCStr();
 				e["kind"] = d->kind == CellValueKind::Category ? "category" : "float";
+				e["selected"] = (mActiveBase != StringCRC::kZero && d->id == mActiveBase);
 				layers.append(e);
 			}
 			ge["layers"] = layers;
 			grids.append(ge);
 		}
 		out["grids"] = grids;
+		out["activeBase"] = mActiveBase != StringCRC::kZero ? mActiveBase.AsChar() : "";
+		const uint32_t activeIdx = mActiveBase != StringCRC::kZero ? GridIndexOf(mActiveGrid) : 0xFFFFFFFFu;
+		out["activeGridIndex"] = activeIdx == 0xFFFFFFFFu ? -1 : static_cast<int>(activeIdx);
 		Json::Value overlays(Json::arrayValue);
 		for (uint32_t i = 0; i < mRegistry.OverlayCount(); ++i)
 		{
@@ -550,7 +554,7 @@ namespace Dia::CellLayers
 
 		Dia::API::CommandInfoJson list;
 		list.name = StringCRC("cells.layer.list");
-		list.description = "List cell layers and overlays grouped by grid";
+		list.description = "List cell layers and overlays grouped by grid; reports activeBase, activeGridIndex and per-layer selected";
 		list.category = StringCRC("cells");
 		list.owner = "DiaCellLayers";
 		list.noArgs = true;

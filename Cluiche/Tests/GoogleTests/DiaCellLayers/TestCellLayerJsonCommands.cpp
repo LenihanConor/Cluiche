@@ -129,6 +129,72 @@ TEST_F(JsonCmdTest, OverlayToggleByIdUnknownOrMissingErrorsAndChangesNothing)
 	EXPECT_FALSE(rig.domain.IsOverlayEnabled(StringCRC("ov")));
 }
 
+namespace
+{
+	// Returns the id of the layer flagged selected across all grids ("" if none); counts selected flags in `count`.
+	std::string SelectedLayer(const Json::Value& data, uint32_t& count)
+	{
+		std::string id;
+		count = 0;
+		for (const Json::Value& g : data["grids"])
+			for (const Json::Value& l : g["layers"])
+			{
+				if (l["selected"].asBool()) { id = l["id"].asString(); ++count; }
+			}
+		return id;
+	}
+}
+
+TEST_F(JsonCmdTest, LayerListReportsActiveBaseDefaultSwitchAndFailedSwitch)
+{
+	Rig rig(cellField);
+	rig.Add(temp.MakeDesc("temp", &gridA.desc));
+	rig.Add(rain.MakeDesc("rain", &gridA.desc));
+	rig.Add(soil.MakeDesc("soil", &gridB.desc));
+	rig.domain.RegisterCommands();
+	rig.domain.Update(draw);
+
+	Json::Value r = Run("cells.layer.list", Json::Value(Json::objectValue));
+	ASSERT_TRUE(r["success"].asBool());
+	EXPECT_EQ(r["data"]["activeBase"].asString(), "temp");
+	EXPECT_EQ(r["data"]["activeGridIndex"].asInt(), 0);
+	uint32_t n = 0;
+	EXPECT_EQ(SelectedLayer(r["data"], n), "temp");
+	EXPECT_EQ(n, 1u);
+	EXPECT_TRUE(r["data"]["grids"][0]["layers"][0].isMember("selected"));
+	EXPECT_FALSE(r["data"]["grids"][0]["layers"][1]["selected"].asBool());
+	EXPECT_FALSE(r["data"]["grids"][1]["layers"][0]["selected"].asBool());
+
+	ASSERT_TRUE(Run("cells.layer.base_by_id", Id("soil"))["success"].asBool());
+	r = Run("cells.layer.list", Json::Value(Json::objectValue));
+	EXPECT_EQ(r["data"]["activeBase"].asString(), "soil");
+	EXPECT_EQ(r["data"]["activeGridIndex"].asInt(), 1);
+	EXPECT_EQ(SelectedLayer(r["data"], n), "soil");
+	EXPECT_EQ(n, 1u);
+
+	EXPECT_FALSE(Run("cells.layer.base_by_id", Id("nope"))["success"].asBool());
+	r = Run("cells.layer.list", Json::Value(Json::objectValue));
+	EXPECT_EQ(r["data"]["activeBase"].asString(), "soil");
+	EXPECT_EQ(r["data"]["activeGridIndex"].asInt(), 1);
+	EXPECT_EQ(SelectedLayer(r["data"], n), "soil");
+	EXPECT_EQ(n, 1u);
+}
+
+TEST_F(JsonCmdTest, LayerListEmptyStateHasEmptyActiveBase)
+{
+	Rig rig(cellField);
+	rig.domain.RegisterCommands();
+	rig.domain.Update(draw);
+	const Json::Value r = Run("cells.layer.list", Json::Value(Json::objectValue));
+	ASSERT_TRUE(r["success"].asBool());
+	ASSERT_TRUE(r["data"].isMember("activeBase"));
+	EXPECT_EQ(r["data"]["activeBase"].asString(), "");
+	EXPECT_EQ(r["data"]["activeGridIndex"].asInt(), -1);
+	uint32_t n = 0;
+	SelectedLayer(r["data"], n);
+	EXPECT_EQ(n, 0u);
+}
+
 TEST_F(JsonCmdTest, CliFormsStillWorkAndJsonCommandsUnregister)
 {
 	Rig rig(cellField);
