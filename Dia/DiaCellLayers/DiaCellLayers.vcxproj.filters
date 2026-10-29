@@ -54,6 +54,7 @@
     <ClInclude Include="Testing\CellDetailTestSupport.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="InspectorModel.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />
@@ -72,6 +73,7 @@
     <ClCompile Include="SelectionStats.cpp" />
     <ClCompile Include="InspectorState.cpp" />
     <ClCompile Include="CellDetailRegistry.cpp" />
+    <ClCompile Include="InspectorModel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diacelllayers.architecture.module.md">

@@ -74,6 +74,7 @@ namespace Dia::CellLayers
 
 		const LayerStats*	StatsFor(Dia::Core::StringCRC layerId) const;	// null when not shown, not yet computed or no selection
 		const Histogram*	BaseHistogram() const { return mHasHistogram ? &mHistogram : nullptr; }
+		const Dia::Graphics::CellGridDesc*	ActiveGrid() const { return mGrid; }
 		uint32_t			ShownLayerCount() const { return mShownCount; }
 		Dia::Core::StringCRC	ShownLayerAt(uint32_t index) const;	// kZero out of range; index 0 is the active base when set
 
