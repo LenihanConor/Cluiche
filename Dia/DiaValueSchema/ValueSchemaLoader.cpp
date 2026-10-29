@@ -93,7 +93,7 @@ namespace Dia::ValueSchema
 			"values", "affects", "related", "source", "unique", "required", "ref", "ui", "history", "payload", "vocabulary",
 			"keyRef", "valueType", nullptr };
 		const char* const kUiKeys[] = { "group", "step", "decimals", "ramp", "layer", "hidden", "format", "colour", "glyph", "hotkey", "delta_ramp",
-			"default_base", "inset", "backdrop", "elevation_layer", nullptr };
+			"default_base", "inset", "backdrop", "elevation_layer", "select_group", nullptr };
 		const char* const kHistoryKeys[] = { "track", "group", nullptr };
 		const char* const kFileKeys[] = { "format", "version", "for", "entries", nullptr };
 
