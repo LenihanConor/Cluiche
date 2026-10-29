@@ -1,6 +1,7 @@
 #ifdef DIA_DEBUG
 #include <DiaCellLayers/CellLayerViewerDomain.h>
 
+#include <DiaCellLayers/InspectorModel.h>
 #include <DiaCellLayers/SelectionTools.h>
 
 #include <string.h>
@@ -13,6 +14,7 @@
 #include <DiaObservation/Profile/DiaProfile.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaValueSchema/RampResolver.h>
+#include <DiaValueSchema/ValueInfo.h>
 #include <DiaValueSchema/ValueSchemaService.h>
 #include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 
@@ -767,7 +769,7 @@ namespace Dia::CellLayers
 			"cells.select.cell", "cells.select.toggle", "cells.select.box", "cells.select.poly",
 			"cells.select.category", "cells.select.cells", "cells.select.clear"
 		};
-		const char* const kSelectPanelCommands[] = { "cells.select.tool", "cells.select.group", "cells.select.pin", "cells.select.unpin" };
+		const char* const kSelectPanelCommands[] = { "cells.select.tool", "cells.select.group", "cells.select.pin", "cells.select.unpin", "cells.inspect" };
 
 		Json::Value SelectError(const std::string& msg)
 		{
@@ -848,6 +850,14 @@ namespace Dia::CellLayers
 		unpin.owner = "DiaCellLayers";
 		unpin.callback = [this](const Json::Value& params) -> Json::Value { return ExecuteUnpin(params); };
 		Dia::API::RegisterCommandJson(unpin);
+
+		Dia::API::CommandInfoJson inspect;
+		inspect.name = StringCRC(kSelectPanelCommands[4]);
+		inspect.description = "Selection Inspector stats of the active grid's selection (read-only): params {} (shown layers), {\"group\": \"<group>\"}, {\"layers\": [\"<layer id>\", ...]} (or {\"layerId\": \"<id>\"}) or {\"all\": true}; at most one form. Returns {ok, selected, grid, updating, base, histogram, layers[...], pinned, cell}; see InspectorModel.h";
+		inspect.category = StringCRC("cells");
+		inspect.owner = "DiaCellLayers";
+		inspect.callback = [this](const Json::Value& params) -> Json::Value { return ExecuteInspect(params); };
+		Dia::API::RegisterCommandJson(inspect);
 	}
 
 	Json::Value CellLayerViewerDomain::FinishSelectCommand(const char* name, const char* error, Json::Value out)
@@ -952,6 +962,71 @@ namespace Dia::CellLayers
 		}
 		out["ok"] = true;
 		return FinishSelectCommand("cells.select.unpin", nullptr, out);
+	}
+
+	Json::Value CellLayerViewerDomain::ExecuteInspect(const Json::Value& params)
+	{
+		Lock l(mMutex);
+		std::string error;
+		InspectRequest request;
+		if (!params.isNull() && !params.isObject()) { error = "params must be an object"; }
+		else
+		{
+			uint32_t forms = 0;
+			if (params.isMember("all"))
+			{
+				if (!params["all"].isBool()) { error = "non-boolean param 'all'"; }
+				else if (params["all"].asBool()) { ++forms; request.mode = InspectRequest::Mode::All; }
+			}
+			if (error.empty() && params.isMember("group"))
+			{
+				if (!params["group"].isString() || params["group"].asString().empty()) { error = "param 'group' must be a non-empty string"; }
+				else
+				{
+					++forms;
+					request.mode = InspectRequest::Mode::Group;
+					Dia::ValueSchema::SetText(request.group, params["group"].asString().c_str());
+				}
+			}
+			if (error.empty() && params.isMember("layerId"))
+			{
+				if (!params["layerId"].isString() || params["layerId"].asString().empty()) { error = "param 'layerId' must be a non-empty string"; }
+				else
+				{
+					++forms;
+					request.mode = InspectRequest::Mode::Layers;
+					request.AddLayer(StringCRC(params["layerId"].asString().c_str()));
+				}
+			}
+			if (error.empty() && params.isMember("layers"))
+			{
+				const Json::Value& list = params["layers"];
+				if (!list.isArray() || list.empty()) { error = "param 'layers' must be a non-empty array of layer ids"; }
+				else
+				{
+					++forms;
+					request.mode = InspectRequest::Mode::Layers;
+					for (const Json::Value& v : list)
+					{
+						if (!v.isString() || v.asString().empty()) { error = "param 'layers' must hold non-empty strings"; break; }
+						if (!request.AddLayer(StringCRC(v.asString().c_str()))) { error = "too many layers"; break; }
+					}
+				}
+			}
+			if (error.empty() && forms > 1) { error = "conflicting params: use only one of 'group', 'layers' / 'layerId', 'all'"; }
+		}
+
+		Json::Value out(Json::objectValue);
+		if (error.empty())
+		{
+			if (mActiveGrid == nullptr) { error = "no active grid"; }
+			else if (mInspector.ActiveGrid() != mActiveGrid) { error = "inspector not yet synced to the active grid (no Update since the grid changed)"; }
+			else if (!InspectorModel::BuildStatsJson(mRegistry, mReader, mSchema, mInspector, mRegistry.SelectionView(mActiveGrid), request, out))
+			{
+				error = out["error"].asString();
+			}
+		}
+		return FinishSelectCommand("cells.inspect", error.c_str(), out);
 	}
 
 	Json::Value CellLayerViewerDomain::ExecuteSelect(SelectOp op, const char* name, const Json::Value& params)
