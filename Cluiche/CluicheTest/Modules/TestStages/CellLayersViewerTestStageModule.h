@@ -20,6 +20,7 @@
 #include <DiaCellLayers/CellLayerViewerDomain.h>
 #include <DiaCellLayers/LayerUploader.h>
 #include <DiaCellLayers/CellPicker.h>
+#include "Modules/TestStages/CellLayersPointerQueue.h"
 #include <DiaCore/DebugDraw/IVisualDebugger.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #endif
@@ -132,6 +133,11 @@ private:
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::Camera2DModule> mCameraRef{this};
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::InputStreamModule> mInputRef{this};
     bool  mPointerFrameLogged = false;
+    bool  mInjectLogged = false;
+    bool  mInjectCommandsRegistered = false;
+    PointerFrameQueue mPointerQueue;  // test-only injected frames (E2E), one popped per Sim frame
+    void RegisterInjectionCommands();
+    void UnregisterInjectionCommands();
 
     void SubmitPointerInput();
 

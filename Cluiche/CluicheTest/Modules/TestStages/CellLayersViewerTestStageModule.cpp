@@ -351,6 +351,7 @@ bool CellLayersViewerTestStageModule::BuildViewer()
     };
     Dia::API::RegisterCommandJson(animateJson);
     mCommandRegistered = true;
+    RegisterInjectionCommands();
 
     if (auto* vd = mVisualDebuggerRef.Get())
     {
@@ -367,6 +368,8 @@ bool CellLayersViewerTestStageModule::BuildViewer()
 
     mFittedGrid = nullptr;
     mPointerFrameLogged = false;
+    mInjectLogged = false;
+    mPointerQueue.Clear();
     DIA_LOG_INFO("CluicheTest", "CellLayersViewerTestStage: viewer hosted (%u layers, %u overlays, %u grids)",
         mRegistry->LayerCount(), mRegistry->OverlayCount(), mRegistry->GridCount());
     return true;
@@ -390,6 +393,9 @@ void CellLayersViewerTestStageModule::TeardownViewer()
         Dia::API::UnregisterCommandJson(Dia::Core::StringCRC("cellviewer.set_animate"));
         mCommandRegistered = false;
     }
+
+    UnregisterInjectionCommands();
+    mPointerQueue.Clear();
 
     mDomain.Reset();    // unregisters its DiaAPI commands
     mUploader.Reset();  // releases the CellField layers it holds
@@ -451,8 +457,24 @@ void CellLayersViewerTestStageModule::SubmitPointerInput()
     // Nothing is submitted when the input module or camera is unavailable.
     if (!mDomain || !mDomainRegistered)
         return;
+    if (mCameraRef.Get() == nullptr)
+        return;
+
+    // Test-only injection (E2E): one queued frame per Sim frame replaces the real input so edge detection sees each state.
+    Dia::CellLayers::SelectionInput::PointerFrame injected;
+    if (mPointerQueue.TryPop(injected))
+    {
+        if (!mInjectLogged)
+        {
+            mInjectLogged = true;
+            DIA_LOG_DEBUG("CEL", "CellLayersViewerTestStage: injected pointer frames are being used instead of real input");
+        }
+        mDomain->SubmitPointerFrame(injected, GetPickerView());
+        return;
+    }
+
     const Cluiche::AppFlow::InputStreamModule* input = mInputRef.Get();
-    if (input == nullptr || mCameraRef.Get() == nullptr)
+    if (input == nullptr)
         return;
 
     mDomain->SubmitPointerFrame(BuildPointerFrame(*input), GetPickerView());
@@ -461,6 +483,98 @@ void CellLayersViewerTestStageModule::SubmitPointerInput()
         mPointerFrameLogged = true;
         DIA_LOG_DEBUG("CEL", "CellLayersViewerTestStage: first pointer frame submitted to the viewer");
     }
+}
+
+void CellLayersViewerTestStageModule::RegisterInjectionCommands()
+{
+    Dia::API::CommandInfoJson frames;
+    frames.name = Dia::Core::StringCRC("cluichetest.celllayers.pointer_frames");
+    frames.description = "Test-only: enqueue pointer frames {frames:[{x,y,left?,middle?,right?,shift?,ctrl?,alt?,esc?}]} (max 256/call, queue 512); one is consumed per Sim frame; returns {ok,queued,pending}";
+    frames.category = Dia::Core::StringCRC("cells");
+    frames.owner = "CluicheTest";
+    frames.callback = [this](const Json::Value& params) -> Json::Value
+    {
+        Json::Value out(Json::objectValue);
+        std::vector<Dia::CellLayers::SelectionInput::PointerFrame> parsed;
+        std::string err;
+        if (!ParsePointerFrames(params, parsed, err))
+        {
+            out["error"] = err;
+            return out;
+        }
+        if (!mPointerQueue.TryEnqueue(parsed))
+        {
+            out["error"] = "queue full";
+            return out;
+        }
+        out["ok"] = true;
+        out["queued"] = static_cast<Json::UInt>(parsed.size());
+        out["pending"] = static_cast<Json::UInt>(mPointerQueue.Pending());
+        return out;
+    };
+    Dia::API::RegisterCommandJson(frames);
+
+    Dia::API::CommandInfoJson pending;
+    pending.name = Dia::Core::StringCRC("cluichetest.celllayers.pointer_pending");
+    pending.description = "Test-only: number of injected pointer frames not yet consumed; returns {pending}";
+    pending.category = Dia::Core::StringCRC("cells");
+    pending.owner = "CluicheTest";
+    pending.callback = [this](const Json::Value&) -> Json::Value
+    {
+        Json::Value out(Json::objectValue);
+        out["pending"] = static_cast<Json::UInt>(mPointerQueue.Pending());
+        return out;
+    };
+    Dia::API::RegisterCommandJson(pending);
+
+    Dia::API::CommandInfoJson pixel;
+    pixel.name = Dia::Core::StringCRC("cluichetest.celllayers.cell_pixel");
+    pixel.description = "Test-only: pixel (top-left origin, Y down) of the centre of cell {q,r} on the active grid under the current picker view; q,r outside the grid are accepted; returns {x,y}";
+    pixel.category = Dia::Core::StringCRC("cells");
+    pixel.owner = "CluicheTest";
+    pixel.callback = [this](const Json::Value& params) -> Json::Value
+    {
+        Json::Value out(Json::objectValue);
+        if (!params.isObject() || !params["q"].isIntegral())
+        {
+            out["error"] = "missing or non-integer param 'q'";
+            return out;
+        }
+        if (!params["r"].isIntegral())
+        {
+            out["error"] = "missing or non-integer param 'r'";
+            return out;
+        }
+        const Dia::Graphics::CellGridDesc* grid = mDomain ? mDomain->ActiveGrid() : nullptr;
+        if (grid == nullptr)
+        {
+            out["error"] = "no active grid";
+            return out;
+        }
+        if (mCameraRef.Get() == nullptr)
+        {
+            out["error"] = "no camera";
+            return out;
+        }
+        const Dia::CellLayers::CellPickerView v = GetPickerView();
+        const float zoom = v.zoom > 0.0f ? v.zoom : 1.0f; // mirrors CellPicker::ScreenToWorld
+        const Vector2D w = HexTopology::CellCenter(CellCoord{ params["q"].asInt(), params["r"].asInt() }, grid->cellSize);
+        out["x"] = (w.x - v.cameraX) * zoom + v.viewportWidth * 0.5f;
+        out["y"] = (w.y - v.cameraY) * zoom + v.viewportHeight * 0.5f;
+        return out;
+    };
+    Dia::API::RegisterCommandJson(pixel);
+    mInjectCommandsRegistered = true;
+}
+
+void CellLayersViewerTestStageModule::UnregisterInjectionCommands()
+{
+    if (!mInjectCommandsRegistered)
+        return;
+    Dia::API::UnregisterCommandJson(Dia::Core::StringCRC("cluichetest.celllayers.pointer_frames"));
+    Dia::API::UnregisterCommandJson(Dia::Core::StringCRC("cluichetest.celllayers.pointer_pending"));
+    Dia::API::UnregisterCommandJson(Dia::Core::StringCRC("cluichetest.celllayers.cell_pixel"));
+    mInjectCommandsRegistered = false;
 }
 
 void CellLayersViewerTestStageModule::FitCameraToActiveGrid()

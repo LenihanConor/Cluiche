@@ -381,5 +381,8 @@
     <ClInclude Include="Modules\TestStages\CellLayersPointerFrame.h">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
+    <ClInclude Include="Modules\TestStages\CellLayersPointerQueue.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

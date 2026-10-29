@@ -2202,5 +2202,8 @@
     <ClCompile Include="CluicheTest\CellLayersPointerFrameTests.cpp">
       <Filter>CluicheTest</Filter>
     </ClCompile>
+    <ClCompile Include="CluicheTest\CellLayersPointerQueueTests.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -99,6 +99,51 @@ def _settled_delta(c, before, key, expected, timeout_s=5.0):
     return now
 
 
+_P = "cluichetest.celllayers."
+_FLAGS = ("left", "middle", "right", "shift", "ctrl", "alt", "esc")
+
+
+def _cell_pixel(c, q, r):
+    """Pixel (top-left origin, Y down) of the centre of cell (q, r) on the active grid; q, r may be outside the grid."""
+    d = c.send_command(_P + "cell_pixel", {"q": q, "r": r})
+    return d["x"], d["y"]
+
+
+def _frame(x, y, **flags):
+    assert set(flags) <= set(_FLAGS), flags
+    f = {"x": x, "y": y}
+    f.update({k: bool(v) for k, v in flags.items()})
+    return f
+
+
+def _frames_click(px, py, **mods):
+    """move, press, release. Modifiers sit on the release frame (that is where they are read) and on the press frame."""
+    return [_frame(px, py, left=False), _frame(px, py, left=True, **mods), _frame(px, py, left=False, **mods)]
+
+
+def _frames_drag(p0, p1, steps=4, button="left", **mods):
+    """move to p0, press, `steps` interpolated held moves, release at p1 (modifiers on press, moves and release)."""
+    held = {button: True, **mods}
+    out = [_frame(p0[0], p0[1], **{button: False}), _frame(p0[0], p0[1], **held)]
+    for i in range(1, steps + 1):
+        t = i / steps
+        out.append(_frame(p0[0] + (p1[0] - p0[0]) * t, p0[1] + (p1[1] - p0[1]) * t, **held))
+    out.append(_frame(p1[0], p1[1], **{button: False, **mods}))
+    return out
+
+
+def _send_frames(c, frames, timeout_s=5.0):
+    """Enqueue the frames (one is consumed per Sim frame) and wait until the queue has drained."""
+    for i in range(0, len(frames), 200):
+        chunk = frames[i:i + 200]
+        assert _wait(lambda: c.send_command(_P + "pointer_pending")["pending"] + len(chunk) <= 512, timeout_s)
+        d = c.send_command(_P + "pointer_frames", {"frames": chunk})
+        assert d["ok"] is True and d["queued"] == len(chunk), d
+    assert _wait(lambda: c.send_command(_P + "pointer_pending")["pending"] == 0, timeout_s), \
+        c.send_command(_P + "pointer_pending")
+    time.sleep(0.2)  # the last popped frame is consumed by the viewer update; let metrics publish
+
+
 def test_celllayers_smoke(dia_client):
     c = dia_client
     c.navigate_to(_STAGE)
@@ -336,6 +381,165 @@ def test_celllayers_smoke(dia_client):
         sm1 = _sel_metrics(c)
         assert sm1["select_commands"] - sm0["select_commands"] == ok_calls, (sm0, sm1, ok_calls)
         assert sm1["select_rejected"] - sm0["select_rejected"] == bad_calls, (sm0, sm1, bad_calls)
+
+        # 8. Gestures via injected pointer frames (test-only stage commands; one frame is consumed per Sim frame).
+        assert sel("cells.select.tool", {"tool": "select"})["tool"] == "select"
+        sel("cells.select.clear")
+        ok, data = _cmd(c, "cells.layer.base_by_id", {"id": "temperature"})
+        assert ok and data["grid_index"] == grid_a, data
+        assert _wait(lambda: panel_count() == 0)
+
+        # 8-pre. Injection command validation.
+        for params, text in (({}, "missing or non-array param 'frames'"), ({"frames": []}, "frames"),
+                             ({"frames": [{"y": 1}]}, "frame 0: missing or non-numeric 'x'"),
+                             ({"frames": [{"x": 1, "y": 1}, {"x": 1, "y": "a"}]}, "frame 1: missing or non-numeric 'y'"),
+                             ({"frames": [{"x": 1, "y": 1, "left": 1}]}, "non-bool")):
+            ok, msg = _cmd(c, _P + "pointer_frames", params)
+            assert not ok and text in msg, (params, ok, msg)
+        ok, msg = _cmd(c, _P + "pointer_frames", {"frames": [{"x": 1, "y": 1}] * 257})
+        assert not ok and "too many" in msg, (ok, msg)
+        ok, msg = _cmd(c, _P + "cell_pixel", {"q": 1})
+        assert not ok and "non-integer param 'q'" not in msg and "non-integer param 'r'" in msg, (ok, msg)
+        assert c.send_command(_P + "pointer_pending") == {"pending": 0}
+
+        def gest_metrics():
+            time.sleep(0.2)
+            return _sel_metrics(c)
+
+        def expect_count(n, what):
+            assert _wait(lambda: panel_count() == n, 3.0), f"{what}: expected count {n}, got {panel_count()}"
+
+        def clear_sel():
+            sel("cells.select.clear")
+            expect_count(0, "clear")
+
+        A, B, C = (12, 10), (30, 20), (45, 28)
+        pa, pb, pc = (_cell_pixel(c, *A), _cell_pixel(c, *B), _cell_pixel(c, *C))
+
+        # 8a. Plain click (no modifiers, AC 12) selects the cell under the pointer: exactly one new select command.
+        g0 = gest_metrics()
+        _send_frames(c, _frames_click(*pa))
+        expect_count(1, "click")
+        g1 = gest_metrics()
+        assert g1["select_commands"] - g0["select_commands"] == 1 and g1["select_rejected"] == g0["select_rejected"], (g0, g1)
+        assert _wait(lambda: c.get_metric(_M + "selection_size") == 1)
+        # Same cell via the typed command toggles it off: proves the click selected exactly cell A.
+        assert sel("cells.select.toggle", {"q": A[0], "r": A[1]})["count"] == 0
+        clear_sel()
+
+        # 8b. Shift-click toggles; a plain click elsewhere replaces.
+        _send_frames(c, _frames_click(*pa))
+        expect_count(1, "click A")
+        _send_frames(c, _frames_click(*pa, shift=True))
+        expect_count(0, "shift-click A toggles off")
+        _send_frames(c, _frames_click(*pb, shift=True))
+        expect_count(1, "shift-click B")
+        _send_frames(c, _frames_click(*pc))
+        expect_count(1, "click C replaces")
+        _send_frames(c, _frames_click(*pc, shift=True))
+        expect_count(0, "shift-click C removes the one selected cell, so the plain click had selected C and not B")
+        clear_sel()
+
+        # 8c. Box drag: inclusive offset rectangle (cols x rows), either direction.
+        q0, r0, q1, r1 = 10, 8, 15, 12
+        want = (abs(q1 - q0) + 1) * (abs(r1 - r0) + 1)
+        p_a, p_b = _cell_pixel(c, q0, r0), _cell_pixel(c, q1, r1)
+        _send_frames(c, _frames_drag(p_a, p_b))
+        expect_count(want, "box A->B")
+        clear_sel()
+        _send_frames(c, _frames_drag(p_b, p_a))
+        expect_count(want, "box B->A")
+        box_cells = {(q, r) for q in range(q0, q1 + 1) for r in range(r0, r1 + 1)}
+        assert _wait(lambda: c.get_metric(_M + "outline_edges") == _edge_count(box_cells, 66, 42)), \
+            (c.get_metric(_M + "outline_edges"), _edge_count(box_cells, 66, 42))
+        clear_sel()
+        _send_frames(c, _frames_drag(_cell_pixel(c, 20, 15), _cell_pixel(c, 24, 15)))
+        expect_count(5, "single-row box")
+        clear_sel()
+
+        # 8d. Alt-drag lasso: 5/6 circle of radius ~2.5 cells around cell L, released on a cell other than the start.
+        L = (30, 20)
+        pl = _cell_pixel(c, *L)
+        spacing = _cell_pixel(c, L[0] + 2, L[1])[0] - pl[0]  # 3 cell sizes in pixels
+        rad = spacing * 2.5 / 3.0
+        pts = [(pl[0] + rad * math.cos(math.radians(a)), pl[1] + rad * math.sin(math.radians(a))) for a in range(0, 301, 20)]
+        lasso = [_frame(pts[0][0], pts[0][1], left=False)]
+        lasso += [_frame(x, y, left=True, alt=True) for x, y in pts]
+        lasso.append(_frame(pts[-1][0], pts[-1][1], left=False, alt=True))
+        _send_frames(c, lasso)
+        assert _wait(lambda: panel_count() >= 1, 3.0), "lasso selected nothing"
+        lasso_n = panel_count()
+        assert lasso_n >= 3, f"lasso selected {lasso_n}"
+        assert _wait(lambda: c.get_metric(_M + "selection_size") == lasso_n)
+        # 8f. Esc clears.
+        _send_frames(c, [_frame(pl[0], pl[1], esc=True)])
+        expect_count(0, "Esc after lasso")
+
+        # 8e. Ctrl-click selects the whole category (selection group = biome); different biomes give their own counts.
+        seen = {}
+        for q, r in ((5, 5), (30, 5), (55, 5), (5, 20), (30, 20), (55, 20), (5, 36), (30, 36), (60, 36), (20, 12), (45, 30)):
+            _send_frames(c, _frames_click(*_cell_pixel(c, q, r), ctrl=True))
+            _wait(lambda: panel_count() > 0, 3.0)
+            n = panel_count()
+            assert n in biome_counts and n > 0, ((q, r), n, biome_counts)
+            seen[(q, r)] = n
+            clear_sel()
+            if len(set(seen.values())) >= 3:
+                break
+        assert len(set(seen.values())) >= 2, f"ctrl-click never reached two different biomes: {seen}"
+
+        # 8f. Esc with a selection present clears it (a bare Esc with nothing selected is harmless).
+        _send_frames(c, _frames_click(*pa))
+        expect_count(1, "click before Esc")
+        _send_frames(c, [_frame(pa[0], pa[1], esc=True)])
+        expect_count(0, "Esc")
+        _send_frames(c, [_frame(pa[0], pa[1], esc=True)])
+        expect_count(0, "Esc on empty")
+
+        # 8g. Pressing outside the grid starts no gesture: no command, selection unchanged.
+        _send_frames(c, _frames_click(*pa))
+        expect_count(1, "click before out-of-grid")
+        g0 = gest_metrics()
+        for q, r in ((-5, 10), (70, 10), (10, 50), (10, -4)):
+            _send_frames(c, _frames_click(*_cell_pixel(c, q, r)))
+            _send_frames(c, _frames_click(*_cell_pixel(c, q, r), shift=True))
+            _send_frames(c, _frames_click(*_cell_pixel(c, q, r), ctrl=True))
+        g1 = gest_metrics()
+        assert panel_count() == 1 and g1 == g0, (g0, g1, panel_count())
+
+        # 8h. Middle and right buttons never select, even dragged across the grid.
+        for button in ("middle", "right"):
+            _send_frames(c, _frames_drag(pb, pc, button=button))
+            _send_frames(c, _frames_drag(pb, pc, button=button, shift=True))
+        g2 = gest_metrics()
+        assert panel_count() == 1 and g2 == g0, (g0, g2, panel_count())
+
+        # 8i. Pan tool ignores the left button.
+        assert sel("cells.select.tool", {"tool": "pan"})["tool"] == "pan"
+        g0 = gest_metrics()
+        _send_frames(c, _frames_click(*pb))
+        _send_frames(c, _frames_drag(pb, pc))
+        _send_frames(c, _frames_click(*pc, shift=True))
+        g1 = gest_metrics()
+        assert panel_count() == 1 and g1 == g0, (g0, g1, panel_count())
+        assert sel("cells.select.tool", {"tool": "select"})["tool"] == "select"
+
+        # 8j. Modifiers are read at release: shift only on the PRESS frame is a plain click (replaces, not toggles).
+        _send_frames(c, _frames_click(*pa))
+        expect_count(1, "click A")
+        _send_frames(c, [_frame(*pb, left=False), _frame(*pb, left=True, shift=True), _frame(*pb, left=False)])
+        expect_count(1, "shift on press only: plain click replaces A with B")
+        sel("cells.select.toggle", {"q": B[0], "r": B[1]})
+        expect_count(0, "selection was exactly B")
+        # ... and shift only on the RELEASE frame toggles.
+        _send_frames(c, _frames_click(*pa))
+        _send_frames(c, [_frame(*pb, left=False), _frame(*pb, left=True), _frame(*pb, left=False, shift=True)])
+        expect_count(2, "shift on release only: toggles B in alongside A")
+
+        # Leave the viewer as found.
+        clear_sel()
+        assert sel("cells.select.tool", {"tool": "select"})["tool"] == "select"
+        assert c.send_command(_P + "pointer_pending") == {"pending": 0}
     finally:
         c.abort_stage()
         c.navigate_to("Boot")

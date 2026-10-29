@@ -139,6 +139,7 @@
     <ClInclude Include="Modules\TestStatusBridgeModule.h" />
     <ClInclude Include="Modules\TestStages\JobSystemServiceTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\CellLayersPointerFrame.h" />
+    <ClInclude Include="Modules\TestStages\CellLayersPointerQueue.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Messages\order_messages.diagamemessages" />
