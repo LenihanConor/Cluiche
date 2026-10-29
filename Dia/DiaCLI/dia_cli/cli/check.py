@@ -307,7 +307,7 @@ def _cppcheck_xml_to_sarif(xml_text: str) -> dict:
     }
 
 
-def _run_sanitizer(config: str, ctx) -> None:
+def _run_sanitizer(config: str, ctx, filter_pattern: str | None = None) -> None:
     normalized = _CONFIG_ALIASES.get(config, config)
     if normalized not in _SANITIZER_OUTPUT_NAMES:
         click.echo(
@@ -343,9 +343,13 @@ def _run_sanitizer(config: str, ctx) -> None:
         ctx.exit(1); return
 
     click.echo(f"[dia check] Running {exe_path.name} under {normalized} ...")
+    exe_cmd = [str(exe_path)]
+    if filter_pattern:
+        click.echo(f"[dia check] Filter: {filter_pattern}")
+        exe_cmd.append(f"--gtest_filter={filter_pattern}")
     from dia_cli.utils.asan_runtime import with_asan_runtime_on_path
     run_result = subprocess.run(
-        [str(exe_path)],
+        exe_cmd,
         cwd=str(exe_path.parent),
         capture_output=True,
         text=True,
@@ -447,10 +451,13 @@ def cppcheck(ctx, accept_baseline: bool) -> None:
 @click.option("--config", default="Asan", metavar="CONFIG",
               type=click.Choice(["Asan", "Ubsan"], case_sensitive=True),
               help="Sanitizer config: Asan or Ubsan (default: Asan).")
+@click.option("--filter", "filter_pattern", default=None, metavar="PATTERN",
+              help="Run only tests matching PATTERN (passed to --gtest_filter). "
+                   "ASan aborts at the first error, so use this to isolate suites.")
 @click.pass_context
-def sanitizer(ctx, config: str) -> None:
+def sanitizer(ctx, config: str, filter_pattern: str | None) -> None:
     """Build and run googletest under ASan or UBSan sanitizer."""
-    _run_sanitizer(config, ctx)
+    _run_sanitizer(config, ctx, filter_pattern)
 
 
 @cli.command("deps")

@@ -10,19 +10,21 @@ from dia_cli.cli import check as check_mod
 GT_PASS = "[==========] 5 tests ran.\n[  PASSED  ] 5 tests.\n"
 
 
-def _invoke(tmp_path, returncode, stdout="", stderr=""):
+def _invoke(tmp_path, returncode, stdout="", stderr="", args=None, calls=None):
     exe = tmp_path / "Cluiche" / "bin" / "GoogleTests" / "Debug-Asan" / "x64" / "GoogleTests.exe"
     exe.parent.mkdir(parents=True)
     exe.write_bytes(b"")
 
     def fake_run(cmd, **kw):
+        if calls is not None:
+            calls.append(list(cmd))
         if cmd[0] == "dia":
             return SimpleNamespace(returncode=0)
         return SimpleNamespace(returncode=returncode, stdout=stdout, stderr=stderr)
 
     with patch.object(check_mod, "find_repo_root", return_value=tmp_path), \
          patch.object(check_mod.subprocess, "run", side_effect=fake_run):
-        res = CliRunner().invoke(check_mod.cli, ["sanitizer"])
+        res = CliRunner().invoke(check_mod.cli, ["sanitizer"] + (args or []))
     out_file = tmp_path / "Cluiche" / "out" / "check" / "sanitizer-asan.txt"
     return res, out_file
 
@@ -33,6 +35,24 @@ def test_clean_pass(tmp_path):
     assert "No sanitizer findings detected." in res.output
     assert "[  PASSED  ] 5 tests" in res.output
     assert "PASSED" in f.read_text()
+
+
+def test_filter_forwarded_as_gtest_filter(tmp_path):
+    calls = []
+    res, _ = _invoke(tmp_path, 0, stdout=GT_PASS,
+                     args=["--filter", "*CellLayer*:*Uploader*"], calls=calls)
+    assert res.exit_code == 0
+    exe_cmds = [c for c in calls if c[0].endswith("GoogleTests.exe")]
+    assert exe_cmds[0][1:] == ["--gtest_filter=*CellLayer*:*Uploader*"]
+    assert "*CellLayer*:*Uploader*" in res.output
+
+
+def test_no_filter_runs_exe_without_args(tmp_path):
+    calls = []
+    res, _ = _invoke(tmp_path, 0, stdout=GT_PASS, calls=calls)
+    exe_cmds = [c for c in calls if c[0].endswith("GoogleTests.exe")]
+    assert len(exe_cmds[0]) == 1
+    assert "Filter:" not in res.output
 
 
 def test_dll_not_found_is_failure(tmp_path):
