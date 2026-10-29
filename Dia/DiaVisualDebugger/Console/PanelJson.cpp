@@ -71,6 +71,8 @@ namespace Dia
 					char accentHex[8] = {};
 					FormatAccentHex(domain.GetAccentColour(), accentHex);
 
+					// Registry id: commands are addressed by id (DiaDebugDomainRegistry::FindDomain), the state is keyed by display name.
+					state["_id"]          = domain.GetDomainId().AsChar();
 					state["_displayName"] = displayName;
 					state["_group"]       = ResolveGroupName(domain.GetGroup());
 					state["_description"] = domain.GetDescription() ? domain.GetDescription() : "";

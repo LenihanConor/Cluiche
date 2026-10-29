@@ -452,7 +452,7 @@ TEST_F(ViewerEdgeTest, JSONTopLevelKeySetIsStableAcrossStates)
 	Json::Value full;
 	rig.domain.GetJSONState(full);
 	std::set<std::string> base = Keys(empty);
-	for (const char* k : { "domainId", "empty", "activeBase", "grids", "layers", "groups", "overlays", "drawers", "stats", "legend", "hover" })
+	for (const char* k : { "empty", "activeBase", "grids", "layers", "groups", "overlays", "drawers", "stats", "legend", "hover" })
 	{
 		EXPECT_TRUE(base.count(k)) << k << " missing in empty state";
 		EXPECT_TRUE(Keys(full).count(k)) << k << " missing in populated state";

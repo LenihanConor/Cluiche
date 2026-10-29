@@ -30,6 +30,7 @@
 #include <DiaCellLayers/Testing/CellLayerTestSupport.h>
 #include <DiaCellLayers/Testing/CellPickerTestSupport.h>
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
+#include <DiaCellLayers/Testing/ViewValueSourceTestSupport.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaPathfinding/HexTopology.h>
 
@@ -344,6 +345,12 @@ TEST_F(PanelContractTest, DomainStates)
 	Json::FastWriter writer;
 	writer.omitEndingLineFeed();
 	Check("domain_states.json", writer.write(root));
+
+	// Every domain state carries its registry id (the page addresses commands by id, keyed by display name).
+	ASSERT_TRUE(root.isMember("Message Bus"));
+	EXPECT_EQ(root["Message Bus"]["_id"].asString(), "MessageBus");
+	EXPECT_EQ(root["Flow Field"]["_id"].asString(), "NavFlowField");
+	EXPECT_EQ(root["Physics2D"]["_id"].asString(), "Physics2D");
 }
 
 TEST_F(PanelContractTest, DomainStatesWithSchemaKeys)
@@ -453,7 +460,23 @@ TEST_F(PanelContractTest, CellLayersViewerFloatBase)
 	ASSERT_TRUE(rig.domain->ToggleOverlay(StringCRC("wind")));
 	ViewerPointAt(rig.draw, 2, 1);
 	rig.domain->Update(rig.draw);
-	Check("domain_states_celllayers.json", ViewerJson(*rig.domain));
+	const std::string json = ViewerJson(*rig.domain);
+	Check("domain_states_celllayers.json", json);
+
+	Json::Value parsed;
+	ASSERT_TRUE(Json::Reader().parse(json, parsed));
+	const Json::Value& s = parsed["Cell Layers"];
+	EXPECT_EQ(s["_id"].asString(), "celllayers");
+	EXPECT_FALSE(s.isMember("domainId"));	// replaced by the generic _id
+	EXPECT_FALSE(s.isMember("noData"));
+	std::string tempDesc, rainDesc;
+	for (const Json::Value& l : s["layers"])
+	{
+		if (l["id"].asString() == "temp") { tempDesc = l["description"].asString(); }
+		if (l["id"].asString() == "rain") { rainDesc = l["description"].asString(); }
+	}
+	EXPECT_EQ(tempDesc, "Air temperature");
+	EXPECT_EQ(rainDesc, "Rainfall");
 }
 
 TEST_F(PanelContractTest, CellLayersViewerCategoryBaseMultiGrid)
@@ -476,6 +499,31 @@ TEST_F(PanelContractTest, CellLayersViewerEmptyState)
 	rig.Build(false);
 	rig.domain->Update(rig.draw);
 	Check("domain_states_celllayers_empty.json", ViewerJson(*rig.domain));
+}
+
+TEST_F(PanelContractTest, CellLayersViewerNoData)
+{
+	using namespace Dia::CellLayers;
+	Testing::StubViewValueSource source;	// declared first: outlives the rig
+	ViewerRig rig;
+	rig.Build(true);
+	rig.Add(rig.temp.MakeDesc("temp", &rig.gridA.desc, CellValueKind::Float, "cells/temp"), "Ecology");
+	rig.Add(rig.rain.MakeDesc("rain", &rig.gridA.desc, CellValueKind::Float, "cells/rain"), "Ecology");
+	source.live = false;
+	source.hasData = false;
+	ASSERT_TRUE(rig.registry->SetViewValueSource(&source));
+	ViewerPointAt(rig.draw, 2, 1);
+	rig.domain->Update(rig.draw);
+	const std::string json = ViewerJson(*rig.domain);
+	Check("domain_states_celllayers_nodata.json", json);
+
+	Json::Value parsed;
+	ASSERT_TRUE(Json::Reader().parse(json, parsed));
+	const Json::Value& s = parsed["Cell Layers"];
+	EXPECT_TRUE(s["noData"].asBool());
+	EXPECT_FALSE(s["empty"].asBool());
+	EXPECT_FALSE(s["legend"]["available"].asBool());
+	EXPECT_FALSE(s["hover"]["valid"].asBool());
 }
 
 TEST_F(PanelContractTest, PaletteResults)

@@ -385,8 +385,6 @@ namespace Dia::CellLayers
 			mHotkeyLayerCount = mRegistry.LayerCount();
 		}
 
-		// The panel addresses commands by domain id; its state is keyed by display name, which differs for this domain.
-		out["domainId"] = GetDomainId().AsChar();
 		out["empty"] = (mActiveBase == StringCRC::kZero);
 		if (mNoData) { out["noData"] = true; }	// only present when true: panel contract goldens stay unchanged
 		out["activeBase"] = mActiveBase.AsChar();
@@ -416,6 +414,7 @@ namespace Dia::CellLayers
 			const char* label = nullptr;
 			const char* unit = nullptr;
 			LayerText(*d, label, unit);
+			const Dia::ValueSchema::ValueInfo* info = mSchema ? mSchema->Find(d->schemaKey) : nullptr;
 			const char hk = mHotkeys.HotkeyOf(d->id);
 			char hotkey[2] = { hk, 0 };
 			Json::Value e(Json::objectValue);
@@ -425,6 +424,7 @@ namespace Dia::CellLayers
 			e["kind"] = d->kind == CellValueKind::Category ? "category" : "float";
 			e["hotkey"] = hotkey;
 			e["selected"] = (d->id == mActiveBase);
+			if (info != nullptr && info->mDescription.Length() > 0) { e["description"] = info->mDescription.AsCStr(); }	// omitted when the schema has none
 			e["group"] = d->group.AsCStr();
 			e["groupNumber"] = HotkeyTable::GroupNumber(mRegistry, mActiveGrid, d->id);
 			layers.append(e);

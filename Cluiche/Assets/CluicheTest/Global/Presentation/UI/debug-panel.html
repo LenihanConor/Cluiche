@@ -308,6 +308,8 @@ body {
 .layer-checkbox.checked::after { content: '✓'; position: absolute; top: -2px; left: 1px; color: #fff; font-size: 10px; }
 .layer-num { width: 8px; color: #555; font-size: 9px; text-align: right; flex-shrink: 0; }
 .layer-label { flex: 1; }
+.layer-item .info-icon { margin-left: 6px; }
+.cl-nodata { padding: 8px 6px; font-size: 11px; color: #888; font-style: italic; text-align: center; border: 1px dashed #333; margin-top: 6px; }
 .layer-hotkey { font-size: 9px; color: #5a9fd4; border: 1px solid #2a3a50; background: #1a2530; padding: 0 4px; border-radius: 2px; }
 .cl-legend .card-header {
   background: #1f1f1f; padding: 6px 10px; font-size: 10px; color: #aaa; font-weight: 600;
@@ -595,6 +597,7 @@ function domainsOf(data) {
     if (!d || typeof d !== 'object') continue;
     out.push({
       id:      d._displayName || name,
+      cmdId:   d._id || d._displayName || name,   // registry id: what app.onCommand / FindDomain expect (state is keyed by display name)
       group:   d._group || 'CoreDebug',
       desc:    d._description || '',
       accent:  d._accent || '',
@@ -679,7 +682,7 @@ function structureSignature(domains) {
       var id = controlId(c) || '?';
       return c.schemaKey ? id + '@' + c.schemaKey + (c.packId ? '#' + c.packId : '') : id;
     }).join(',');
-    parts.push(d.group + '/' + d.id + '[' + drawers + '][' + ctrls + ']' + (d.viewer ? viewerSignature(d.viewer) : ''));
+    parts.push(d.group + '/' + d.id + '@' + d.cmdId + '[' + drawers + '][' + ctrls + ']' + (d.viewer ? viewerSignature(d.viewer) : ''));
   }
   return parts.join('|') + '~' + vs.gen;
 }
@@ -809,7 +812,7 @@ function buildDomainCard(domain) {
     (function (name) {
       row.addEventListener('click', function (e) {
         e.stopPropagation();
-        sendCommand(domain.id, 'toggle', { drawer: name });
+        sendCommand(domain.cmdId, 'toggle', { drawer: name });
       });
     })(dw.name);
     drawers.appendChild(row);
@@ -824,7 +827,7 @@ function buildDomainCard(domain) {
   for (var c = 0; c < domain.controls.length; ++c) {
     var ctrlDef = domain.controls[c];
     if (!ctrlDef || !controlId(ctrlDef) || !isSliderControl(ctrlDef)) continue;
-    controls.appendChild(buildControl(domain.id, ctrlDef));
+    controls.appendChild(buildControl(domain.cmdId, ctrlDef));
   }
   body.appendChild(controls);
 
@@ -896,18 +899,18 @@ function formatValue(v, decimals) {
 }
 
 // ── Cell layer viewer card (DiaCellLayers) ────────────────────────────────
-// State from CellLayerViewerDomain: domainId, empty, activeBase, layers[{id,label,unit,kind,hotkey,selected,group,
-// groupNumber}], groups[{name,layers[ids]}], overlays[{id,label,enabled}], grids[], gridSelector[] (multi-grid only),
+// State from CellLayerViewerDomain: empty, noData, activeBase, layers[{id,label,unit,kind,hotkey,selected,group,
+// groupNumber,description?}], groups[{name,layers[ids]}], overlays[{id,label,enabled}], grids[], gridSelector[] (multi-grid only),
 // legend{available,category,ramp,stops,ticks,unit,seen,swatches}, hover{valid,q,r,label,description,unit,text}.
 // The page only sends commands (base {id}, grid {index}, toggle {drawer}); the domain owns all state. Commands are
-// addressed by the state's domainId (the card is keyed by display name, which differs for this domain).
+// addressed by the domain's registry id (domain.cmdId, from the state's _id; the card is keyed by display name).
 // Layout/classes follow docs/specs/applications/dia/systems/diacelllayers/mockups/cell-layer-viewer.html.
 
 function viewerSignature(v) {
-  var parts = [v.domainId || '', v.empty ? 'E' : 'F'];
+  var parts = [v.empty ? 'E' : 'F'];
   for (var i = 0; i < v.layers.length; ++i) {
     var l = v.layers[i];
-    parts.push([l.id, l.label, l.group, l.groupNumber, l.hotkey].join(','));
+    parts.push([l.id, l.label, l.group, l.groupNumber, l.hotkey, l.description || ''].join(','));
   }
   for (var o = 0; o < v.overlays.length; ++o) parts.push('o:' + v.overlays[o].id + ',' + v.overlays[o].label);
   if (Array.isArray(v.gridSelector)) {
@@ -926,7 +929,7 @@ function viewerRgb(rgba8) {
 
 function buildViewer(domain) {
   var v = domain.viewer;
-  var cmdId = v.domainId || domain.id;
+  var cmdId = domain.cmdId;
   var root = el('div', 'cl-viewer');
   root.setAttribute('data-role', 'cell-layer-viewer');
 
@@ -1002,6 +1005,7 @@ function buildLayerItem(cmdId, l) {
   item.appendChild(el('span', 'layer-radio' + (l.selected ? ' active' : '')));
   item.appendChild(el('span', 'layer-num', l.groupNumber > 0 ? String(l.groupNumber) : ''));
   item.appendChild(el('span', 'layer-label', l.label));
+  if (l.description) item.appendChild(vtBuildEntryIcon({ key: l.id, label: l.label, description: l.description, unit: l.unit }));
   if (l.hotkey) item.appendChild(el('span', 'layer-hotkey', l.hotkey));
   item.addEventListener('click', function (e) {
     e.stopPropagation();
@@ -1063,15 +1067,24 @@ function refreshViewer(card, v) {
     }
   }
 
+  var noData = !!v.noData;   // source not live and no data: say so instead of a stale legend / hover
   var legendHost = root.querySelector('[data-role="legend"]');
+  var nd = root.querySelector('[data-role="nodata"]');
+  if (noData && !nd && legendHost) {
+    nd = el('div', 'cl-nodata', 'No data in this view');
+    nd.setAttribute('data-role', 'nodata');
+    legendHost.parentNode.insertBefore(nd, legendHost);
+  } else if (!noData && nd) {
+    nd.parentNode.removeChild(nd);
+  }
   if (legendHost) {
-    var lkey = JSON.stringify([activeLabel, v.legend || null]);
-    if (legendHost._key !== lkey) { legendHost._key = lkey; renderViewerLegend(legendHost, v.legend, activeLabel); }
+    var lkey = JSON.stringify([activeLabel, noData ? null : (v.legend || null)]);
+    if (legendHost._key !== lkey) { legendHost._key = lkey; renderViewerLegend(legendHost, noData ? null : v.legend, activeLabel); }
   }
   var hoverHost = root.querySelector('[data-role="hover"]');
   if (hoverHost) {
-    var hkey = JSON.stringify(v.hover || null);
-    if (hoverHost._key !== hkey) { hoverHost._key = hkey; renderViewerHover(hoverHost, v.hover); }
+    var hkey = JSON.stringify(noData ? null : (v.hover || null));
+    if (hoverHost._key !== hkey) { hoverHost._key = hkey; renderViewerHover(hoverHost, noData ? null : v.hover); }
   }
 }
 
@@ -1217,7 +1230,7 @@ function setDomainAll(domainId, target) {
   for (var d = 0; d < domain.drawers.length; ++d) {
     var dw = domain.drawers[d];
     if (!dw || !dw.name) continue;
-    if (!!dw.enabled !== target) sendCommand(domainId, 'toggle', { drawer: dw.name });
+    if (!!dw.enabled !== target) sendCommand(domain.cmdId, 'toggle', { drawer: dw.name });
   }
 }
 
@@ -2072,16 +2085,20 @@ function vtFocusControl(fullKey) {
 }
 
 function vtShow(icon, def) {
-  vtClose();
   var entry = vsEntryFor(def);
-  if (!entry) return;
-  var tip = renderValueTooltip(entry, {
+  if (!entry) { vtClose(); return; }
+  vtShowEntry(icon, entry, {
     inspector: false,
     packId: def.packId || null,
     resolvable: vtResolvable(entry),
     forId: entry.for,
     onFocusKey: function (key) { vtFocusControl(entry.for + '/' + key); }
   });
+}
+
+function vtShowEntry(icon, entry, options) {
+  vtClose();
+  var tip = renderValueTooltip(entry, options);
   tip.addEventListener('mouseenter', vtCancelHide);
   tip.addEventListener('mouseleave', vtScheduleHide);
 
@@ -2114,6 +2131,22 @@ function vtBuildIcon(rc, def) {
   icon.addEventListener('mouseleave', vtScheduleHide);
   icon.addEventListener('focus', function () { vtCancelHide(); vtShow(icon, def); });
   icon.addEventListener('blur', vtScheduleHide);
+  return icon;
+}
+
+// (i) icon for a plain entry {key,label,description,unit} (cell layer picker rows). Clicking it never reaches the row.
+function vtBuildEntryIcon(entry) {
+  var icon = el('span', 'info-icon', 'i');
+  icon.setAttribute('tabindex', '0');
+  icon.setAttribute('role', 'button');
+  icon.setAttribute('data-role', 'info');
+  icon.setAttribute('aria-label', 'About ' + entry.label);
+  function open() { vtCancelHide(); vtShowEntry(icon, entry, { inspector: false }); }
+  icon.addEventListener('mouseenter', open);
+  icon.addEventListener('mouseleave', vtScheduleHide);
+  icon.addEventListener('focus', open);
+  icon.addEventListener('blur', vtScheduleHide);
+  icon.addEventListener('click', function (e) { e.stopPropagation(); });
   return icon;
 }
 

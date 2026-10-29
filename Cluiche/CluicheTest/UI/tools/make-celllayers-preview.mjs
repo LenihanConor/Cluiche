@@ -5,7 +5,7 @@
 // scripts, then feeds a panel contract golden of the real CellLayerViewerDomain. Clicks in the picker send commands to
 // the stub, which only logs them (the console shows nothing; this is a static look-and-feel check).
 // Open the output in a browser. URL hash picks the state: (none) float base, #category (multi-grid + category base),
-// #empty (empty state). Headless screenshot:
+// #empty (empty state), #nodata (view source not live, no data). Headless screenshot:
 //   msedge --headless=new --window-size=700,1000 --screenshot=<png> "file:///<out>#category"
 import fs from "node:fs";
 import path from "node:path";
@@ -37,7 +37,8 @@ window.addEventListener("load", function() {
   var states = {
     "": ${g("domain_states_celllayers.json")},
     "#category": ${g("domain_states_celllayers_category.json")},
-    "#empty": ${g("domain_states_celllayers_empty.json")}
+    "#empty": ${g("domain_states_celllayers_empty.json")},
+    "#nodata": ${g("domain_states_celllayers_nodata.json")}
   };
   window.updateDomainState(states[location.hash] || states[""]);
   var hdr = document.querySelector(".domain-hdr");

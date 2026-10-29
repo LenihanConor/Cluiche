@@ -41,7 +41,7 @@ describe("contract: domain_states_celllayers.json shape", () => {
   it("has the keys the card reads", () => {
     const s = goldenJson("domain_states_celllayers.json")[NAME];
     expect(s._displayName).toBe(NAME);
-    expect(s.domainId).toBe("celllayers");
+    expect(s._id).toBe("celllayers");
     for (const k of ["layers", "groups", "overlays", "grids"]) expect(Array.isArray(s[k])).toBe(true);
     expect(typeof s.empty).toBe("boolean");
     expect(typeof s.activeBase).toBe("string");
@@ -210,6 +210,141 @@ describe("hover (AC 17)", () => {
     const s = goldenJson("domain_states_celllayers.json");
     s[NAME].hover = { valid: false };
     p.win.updateDomainState(JSON.stringify(s));
+    expect(viewer().querySelector("[data-role=hover]")!.children.length).toBe(0);
+  });
+});
+
+describe("command target is the registry id, not the display name", () => {
+  it("the celllayers golden carries _id and no per-card domainId", () => {
+    const s = goldenJson("domain_states_celllayers.json")[NAME];
+    expect(s._id).toBe("celllayers");
+    expect(s.domainId).toBeUndefined();
+  });
+
+  it("a domain whose id differs from its display name: drawer click targets the id", () => {
+    p.win.updateDomainState(golden("domain_states.json"));
+    const bus = p.doc.querySelector('.domain[data-domain="Message Bus"]') as HTMLElement;
+    p.click(bus.querySelector('[data-drawer="Ledger"]')!);
+    expect(commands()[0]).toEqual(["command", "MessageBus", "toggle", JSON.stringify({ drawer: "Ledger" })]);
+  });
+
+  it("the card on/off switch (All On/Off) targets the id", () => {
+    p.win.updateDomainState(golden("domain_states.json"));
+    const flow = p.doc.querySelector('.domain[data-domain="Flow Field"]') as HTMLElement;
+    p.click(flow.querySelector(".tog")!);   // currently on -> turn all off: Vectors and Costs
+    expect(commands().map((c) => c[1])).toEqual(["NavFlowField", "NavFlowField"]);
+    expect(commands().map((c) => c[2])).toEqual(["toggle", "toggle"]);
+  });
+
+  it("a slider change targets the id", () => {
+    p.win.updateDomainState(golden("domain_states_schema.json"));
+    const eco = p.doc.querySelector('.domain[data-domain="Ecology"]') as HTMLElement;
+    const range = eco.querySelector("input[type=range]") as HTMLInputElement;
+    range.value = "0.5";
+    range.dispatchEvent(new p.win.Event("change", { bubbles: true }));
+    expect(commands()[0][1]).toBe("CowEcology");
+    expect(commands()[0][2]).toBe("setScale");
+  });
+
+  it("falls back to the display name when the state has no _id", () => {
+    const s = goldenJson("domain_states.json");
+    delete s["Message Bus"]._id;
+    p.win.updateDomainState(JSON.stringify(s));
+    const bus = p.doc.querySelector('.domain[data-domain="Message Bus"]') as HTMLElement;
+    p.click(bus.querySelector('[data-drawer="Ledger"]')!);
+    expect(commands()[0][1]).toBe("Message Bus");
+  });
+});
+
+describe("layer description (i) icon", () => {
+  const icon = (id: string) => item(id).querySelector(".info-icon") as HTMLElement | null;
+  const tips = () => Array.from(p.doc.querySelectorAll("body > [data-vt-tooltip]")) as HTMLElement[];
+  beforeEach(() => push("domain_states_celllayers.json"));
+
+  it("is present on layers with a description and absent otherwise", () => {
+    expect(icon("temp")).not.toBeNull();
+    expect(icon("biome")).not.toBeNull();
+    const s = goldenJson("domain_states_celllayers.json");
+    delete s[NAME].layers.find((l: any) => l.id === "rain").description;
+    s[NAME].layers.find((l: any) => l.id === "temp").description = "";
+    p.win.updateDomainState(JSON.stringify(s));
+    expect(icon("rain")).toBeNull();
+    expect(icon("temp")).toBeNull();
+    expect(icon("biome")).not.toBeNull();
+  });
+
+  it("is keyboard reachable and labelled", () => {
+    expect(icon("temp")!.getAttribute("tabindex")).toBe("0");
+    expect(icon("temp")!.getAttribute("aria-label")).toBe("About Temperature");
+  });
+
+  it("hover shows the description in the shared tooltip; leaving hides it", () => {
+    expect(tips().length).toBe(0);
+    icon("temp")!.dispatchEvent(new p.win.MouseEvent("mouseenter", { bubbles: false }));
+    expect(tips().length).toBe(1);
+    expect(txt(tips()[0].querySelector("[data-vt-section=title]"))).toBe("Temperature");
+    expect(txt(tips()[0].querySelector("[data-vt-section=description]"))).toBe("Air temperature");
+    icon("temp")!.dispatchEvent(new p.win.MouseEvent("mouseleave", { bubbles: false }));
+    vi.advanceTimersByTime(400);
+    expect(tips().length).toBe(0);
+  });
+
+  it("focus shows the description", () => {
+    icon("rain")!.focus();
+    expect(tips().length).toBe(1);
+    expect(txt(tips()[0].querySelector("[data-vt-section=description]"))).toBe("Rainfall");
+  });
+
+  it("clicking the icon does not change the base", () => {
+    p.click(icon("rain")!);
+    expect(commands().length).toBe(0);
+    p.click(item("rain"));
+    expect(commands().length).toBe(1);
+  });
+});
+
+describe("noData message", () => {
+  const nodata = () => viewer().querySelector("[data-role=nodata]") as HTMLElement | null;
+
+  it("shows 'No data in this view' in place of legend and hover, picker stays usable", () => {
+    push("domain_states_celllayers_nodata.json");
+    expect(txt(nodata())).toBe("No data in this view");
+    expect(viewer().querySelector(".legend-strip")).toBeNull();
+    expect(viewer().querySelector("[data-role=hover]")!.children.length).toBe(0);
+    expect(viewer().querySelectorAll(".layer-item[data-layer]").length).toBe(2);
+    p.click(item("rain"));
+    expect(commands()[0]).toEqual(["command", "celllayers", "base", JSON.stringify({ id: "rain" })]);
+  });
+
+  it("is absent when noData is not set", () => {
+    push("domain_states_celllayers.json");
+    expect(nodata()).toBeNull();
+    expect(viewer().querySelector(".legend-strip")).not.toBeNull();
+  });
+
+  it("appears and disappears across frames without rebuilding the picker", () => {
+    push("domain_states_celllayers.json");
+    const section = viewer();
+    const s = goldenJson("domain_states_celllayers.json");
+    s[NAME].noData = true;
+    s[NAME].legend = { available: false, category: false };
+    s[NAME].hover = { valid: false };
+    p.win.updateDomainState(JSON.stringify(s));
+    expect(viewer()).toBe(section);
+    expect(nodata()).not.toBeNull();
+    expect(viewer().querySelector(".legend-strip")).toBeNull();
+    push("domain_states_celllayers.json");
+    expect(nodata()).toBeNull();
+    expect(viewer().querySelector(".legend-strip")).not.toBeNull();
+    expect(txt(viewer().querySelector("[data-role=hover] .cl-hover-value"))).toBe("4 C");
+  });
+
+  it("noData wins over a stale legend/hover in the same state", () => {
+    const s = goldenJson("domain_states_celllayers.json");
+    s[NAME].noData = true;
+    p.win.updateDomainState(JSON.stringify(s));
+    expect(nodata()).not.toBeNull();
+    expect(viewer().querySelector(".legend-strip")).toBeNull();
     expect(viewer().querySelector("[data-role=hover]")!.children.length).toBe(0);
   });
 });

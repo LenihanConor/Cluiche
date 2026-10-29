@@ -21,4 +21,10 @@ If you change a builder on purpose, regenerate and review the diff:
 `dia test game-ui` and commit the changed files together.
 
 Files: domain_states, domain_states_schema (controls carrying schemaKey/packId + schemaVersion), palette_results_{all,commands,domains}, console_result_{ok,notfound,parse_error},
-domain_states_celllayers{,_category,_empty} (the real CellLayerViewerDomain state; consumer `celllayers.test.ts`), console_completions, console_set_input, console_set_input_restore, append_log_lines (all `.json`).
+domain_states_celllayers{,_category,_empty,_nodata} (the real CellLayerViewerDomain state; consumers `celllayers.test.ts` and `celllayers.cow.test.ts`), console_completions, console_set_input, console_set_input_restore, append_log_lines (all `.json`).
+
+Every domain state carries `_id` (the registry id, `IDebugDomain::GetDomainId()`) next to `_displayName`. The state is keyed by
+display name, but `app.onCommand(domainId, ...)` is resolved by id (`DiaDebugDomainRegistry::FindDomain`), so both pages
+send `_id` (falling back to the display name when absent) for every domain command: drawer toggles, All On/Off, sliders,
+and the cell layer viewer. The fixture world deliberately has domains whose id differs from the display name.
+Both pages (CluicheTest and CoW) are covered by the page tests.
