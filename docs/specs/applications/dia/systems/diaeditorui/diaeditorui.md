@@ -17,6 +17,7 @@ DiaEditorUI is the shared React component library for all editor plugin UIs in t
 - **EmptyState** — centred placeholder with icon, message, and hint text
 - **ConnectionStatus** — unified connection status indicator (dot + label + optional dropdown) replacing three divergent implementations
 - **useBridge** — React hook that wraps `EditorBridge.subscribe()` and `EditorBridge.request()` with React lifecycle; replaces manual `useEffect` wiring in all four editors
+- **CellGridCanvas** — generic hex/square cell-grid canvas (ramp or palette colouring, hover, click, selection/outline/footprint layers, box and stroke gestures, controlled zoom and pan); see [cell-grid-canvas.md](cell-grid-canvas.md)
 - **Toast / notifications** — zustand-backed toast queue with auto-dismiss; extracted from CluicheEditor and made available to all plugins
 
 ## Non-Responsibilities
