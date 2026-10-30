@@ -167,6 +167,8 @@ namespace Dia
 			mLogSink.FlushToServer();
 			mServer->Update();
 
+			DrainPublishedTopics();
+
 			if (mObservationBridge)
 				mObservationBridge->Flush(deltaTime);
 
@@ -399,6 +401,7 @@ namespace Dia
 
 			Dia::Core::StringCRC dataType(sub.data_type().c_str());
 			const char* ackMessage = "subscribed";
+			bool replayVirtualTopic = false;
 			if (mStateProvider)
 			{
 				auto* store = mStateProvider->FindStream(dataType);
@@ -457,6 +460,7 @@ namespace Dia
 					ct.streamId = dataType;
 					ct.tapId    = 0;
 					mClientTaps.Add(ct);
+					replayVirtualTopic = true;
 				}
 			}
 			else
@@ -473,6 +477,31 @@ namespace Dia
 			ack->set_success(true);
 			ack->set_message(ackMessage);
 			SendProtoMessage(connId, ackMsg);
+
+			// Late subscriber: send the last published value of a virtual topic (this connection only).
+			if (replayVirtualTopic)
+			{
+				Json::Value retained;
+				bool hasRetained = false;
+				{
+					Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mPublishMutex);
+					for (unsigned int i = 0; i < mPublished.Size(); ++i)
+					{
+						if (mPublished[i].topic == dataType)
+						{
+							retained = mPublished[i].latest;
+							hasRetained = true;
+							break;
+						}
+					}
+				}
+				if (hasRetained)
+				{
+					DIA_LOG_DEBUG("DebugServer", "HandleSubscribe: replaying retained value of '%s' to connId=%d",
+						dataType.AsChar(), connId);
+					SendDataUpdateToConnection(connId, dataType, retained);
+				}
+			}
 		}
 
 		void DebugServer::HandleUnsubscribe(int connId, const dia::debug::DebugMessage& msg)
@@ -600,6 +629,12 @@ namespace Dia
 		void DebugServer::NotifySubscribers(const Dia::Core::StringCRC& dataType,
 		                                     const Json::Value& payload)
 		{
+			NotifySubscribersMainThread(dataType, payload);
+		}
+
+		void DebugServer::NotifySubscribersMainThread(const Dia::Core::StringCRC& dataType,
+		                                               const Json::Value& payload)
+		{
 			if (!mServer) return;
 
 			unsigned int matchCount = 0;
@@ -646,6 +681,85 @@ namespace Dia
 						RecordTopicSent(dataType, true);
 					}
 				}
+			}
+		}
+
+		void DebugServer::PublishTopic(const Dia::Core::StringCRC& topic, const Json::Value& payload)
+		{
+			Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mPublishMutex);
+			for (unsigned int i = 0; i < mPublished.Size(); ++i)
+			{
+				if (mPublished[i].topic == topic)
+				{
+					mPublished[i].latest  = payload;
+					mPublished[i].pending = true;
+					return;
+				}
+			}
+			if (mPublished.IsFull())
+			{
+				DIA_LOG_ERROR("DebugServer", "PublishTopic — topic table full (%u), topic '%s' dropped",
+					kMaxPublishedTopics, topic.AsChar());
+				return;
+			}
+			PublishedTopic entry;
+			entry.topic   = topic;
+			entry.latest  = payload;
+			entry.pending = true;
+			mPublished.Add(entry);
+			DIA_LOG_DEBUG("DebugServer", "PublishTopic: new topic '%s'", topic.AsChar());
+		}
+
+		void DebugServer::DrainPublishedTopics()
+		{
+			// Copy pending payloads out under the lock; send outside it.
+			Dia::Core::Containers::DynamicArrayC<PublishedTopic, kMaxPublishedTopics> toSend;
+			{
+				Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mPublishMutex);
+				for (unsigned int i = 0; i < mPublished.Size(); ++i)
+				{
+					if (mPublished[i].pending)
+					{
+						toSend.Add(mPublished[i]);
+						mPublished[i].pending = false;
+					}
+				}
+			}
+			for (unsigned int i = 0; i < toSend.Size(); ++i)
+				NotifySubscribersMainThread(toSend[i].topic, toSend[i].latest);
+		}
+
+		void DebugServer::SendDataUpdateToConnection(int connId, const Dia::Core::StringCRC& topic,
+		                                              const Json::Value& payload)
+		{
+			if (!mServer) return;
+
+			dia::debug::DebugMessage msg;
+			msg.set_type(dia::debug::MESSAGE_TYPE_DATA_UPDATE);
+			msg.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
+			auto* update = msg.mutable_data_update();
+			update->set_data_type(topic.AsChar());
+			Dia::Proto::JsonValueToProtoStruct(payload, update->mutable_payload());
+
+			char jsonBuffer[65536];
+			if (!Dia::Proto::ToJson(msg, jsonBuffer, sizeof(jsonBuffer)))
+			{
+				DIA_LOG_WARNING("DebugServer", "SendDataUpdateToConnection: ToJson failed for topic='%s' — payload too large for buffer",
+					topic.AsChar());
+				return;
+			}
+			if (mServer->SendText(connId, jsonBuffer))
+			{
+				mStats.messagesSentTotal++;
+				RecordTopicSent(topic, true);
+			}
+			else
+			{
+				DIA_LOG_ERROR("DebugServer", "SendDataUpdateToConnection — queue full for connId=%d topic='%s', message dropped",
+					connId, topic.AsChar());
+				mStats.messagesDropped++;
+				RecordTopicSent(topic, false);
+				SendDropNotification(connId);
 			}
 		}
 

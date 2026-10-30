@@ -2271,5 +2271,8 @@
     <ClCompile Include="Editor\TestGameSwitchController.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
+    <ClCompile Include="DebugServer\TestDebugServerPublishTopic.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

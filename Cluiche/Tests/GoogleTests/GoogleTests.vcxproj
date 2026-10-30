@@ -1045,6 +1045,7 @@
     <ClCompile Include="Editor\TestEditorPluginDirtySave.cpp" />
     <ClCompile Include="Editor\TestGameSwitchGate.cpp" />
     <ClCompile Include="Editor\TestGameSwitchController.cpp" />
+    <ClCompile Include="DebugServer\TestDebugServerPublishTopic.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

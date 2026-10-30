@@ -14,6 +14,7 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaCore/Threading/Mutex.h>
 #include <DiaObservation/Log/LogLevel.h>
 
 #include "DiaDebugServer/CommandDispatcher.h"
@@ -168,7 +169,15 @@ namespace Dia
 			QueryRegistry&       GetQueryRegistry()       { return mQueryRegistry; }
 
 			// Send a data-update to all subscribers of the given topic.
+			// Main-thread only.
 			void NotifySubscribers(const Dia::Core::StringCRC& dataType, const Json::Value& payload);
+
+			// Thread-safe publish of a "virtual topic" value.  Callable from ANY thread.
+			// The newest payload per topic is retained; Tick (Main) delivers it to
+			// current subscribers (latest wins if published several times between
+			// ticks), and a client that subscribes later receives the retained value
+			// right after its subscribe ack.  No replay if nothing was published.
+			void PublishTopic(const Dia::Core::StringCRC& topic, const Json::Value& payload);
 
 		private:
 			struct ClientTap {
@@ -195,6 +204,10 @@ namespace Dia
 			void BroadcastProtoMessage(const dia::debug::DebugMessage& msg);
 			void SendJsonToConnection(int connId, const Json::Value& json);
 			void BroadcastJson(const Json::Value& json);
+			// Main-thread-only senders shared by NotifySubscribers / PublishTopic drain / replay.
+			void NotifySubscribersMainThread(const Dia::Core::StringCRC& dataType, const Json::Value& payload);
+			void SendDataUpdateToConnection(int connId, const Dia::Core::StringCRC& topic, const Json::Value& payload);
+			void DrainPublishedTopics();
 			void RecordTopicSent(const Dia::Core::StringCRC& topic, bool success);
 			void SendDropNotification(int connId);
 
@@ -217,6 +230,16 @@ namespace Dia
 			QueryRegistry        mQueryRegistry;
 			DebugServerLogSink   mLogSink;
 			ObservationBridge*   mObservationBridge;
+
+			// PublishTopic state (any-thread writers, Main drain).  Guarded by mPublishMutex.
+			struct PublishedTopic {
+				Dia::Core::StringCRC topic;
+				Json::Value          latest;
+				bool                 pending;
+			};
+			static const unsigned int kMaxPublishedTopics = 32;
+			Dia::Core::Mutex mPublishMutex;
+			Dia::Core::Containers::DynamicArrayC<PublishedTopic, kMaxPublishedTopics> mPublished;
 
 			uint64_t mStartTimestamp;
 			bool     mStarted;

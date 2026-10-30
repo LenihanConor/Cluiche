@@ -26,6 +26,8 @@ responsibilities:
     then AttachTap on the stream; events are pushed to connected clients on delivery
   - Stage transitions arrive via tap on the $lifecycle stream (not polled or broadcast separately)
   - NotifySubscribers: broadcast-to-all shim retained during DebugLayerManager migration (pending removal)
+  - PublishTopic(topic, payload): any-thread publish of a virtual topic; latest payload per topic is retained,
+    delivered by Tick (Main, latest wins) and replayed to a late subscriber after its subscribe ack
   - Command dispatching (protocol commands and DiaAPI command gateway)
   - Server self-monitoring and performance tracking
 
