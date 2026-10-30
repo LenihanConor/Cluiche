@@ -2319,5 +2319,8 @@
     <ClCompile Include="DebugServer\TestSimHostedDispatch.cpp">
       <Filter>DebugServer</Filter>
     </ClCompile>
+    <ClCompile Include="DebugServer\TestSimQueryHost.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

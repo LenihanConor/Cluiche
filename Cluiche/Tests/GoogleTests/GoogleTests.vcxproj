@@ -1061,6 +1061,7 @@
     <ClCompile Include="DiaCellLayers\TestSelectionExhaustiveCommands.cpp" />
     <ClCompile Include="DebugServer\TestSimPendingTable.cpp" />
     <ClCompile Include="DebugServer\TestSimHostedDispatch.cpp" />
+    <ClCompile Include="DebugServer\TestSimQueryHost.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
