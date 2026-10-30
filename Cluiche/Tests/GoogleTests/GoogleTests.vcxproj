@@ -1049,6 +1049,7 @@
     <ClCompile Include="DiaCellLayers\TestSelectionFingerprint.cpp" />
     <ClCompile Include="DiaCellLayers\TestViewStatePublisher.cpp" />
     <ClCompile Include="DiaCellLayers\TestMirrorQueries.cpp" />
+    <ClCompile Include="DiaCellLayers\TestMirrorLayerValues.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

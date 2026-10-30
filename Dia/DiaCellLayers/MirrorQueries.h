@@ -13,12 +13,19 @@
 //   cells.select.get  { offset?, count? } -> { version, hash (16 hex), total, offset, indices:[..] } of the active grid's
 //                       selection, ascending, at most kMaxSelectionChunk per call (a larger count is clamped; Warning on CEL).
 //                       Bad args (non-numeric, negative, offset > total) -> { "error": "<message>" }. No active grid: empty.
+//  cells.layer.values { layer, offset?, count? } -> { layer, version, gridId, width, height, offset, count, total,
+//                       encoding:"f32le-base64", data } : little-endian float32 per cell [offset, offset+count), base64. Values
+//                       come from the viewer's LayerReader (what the viewer shows); version is the layer version. At most
+//                       MaxValuesChunk() cells per call (a larger count is clamped; Warning on CEL for every clamp). count
+//                       defaults to min(total-offset, chunk). offset == total gives empty data. Unknown layer, bad args or
+//                       offset > total -> { "error": "<message>" }.
 //
 // Threading: handlers run inline on the DebugServer's thread; the viewer lives on SimPU, so every read is taken under the
 // viewer's state mutex (CellLayerViewerDomain::StateMutex). Borrowed references must outlive the object.
 
 #include <DiaCellLayers/CellLayerRegistry.h>
 #include <DiaCellLayers/CellLayerViewerDomain.h>
+#include <DiaCellLayers/LayerReader.h>
 
 namespace Dia::DebugServer { class QueryRegistry; }
 
@@ -36,20 +43,28 @@ namespace Dia::CellLayers
 	{
 	public:
 		static const uint32_t kMaxSelectionChunk = 8192;
+		static const uint32_t kMaxValuesChunk = 196608;		// cells per cells.layer.values call: 786,432 bytes -> 1 MiB of base64
 
 		// schema may be null (no hotkeys). Registry, viewer and schema are borrowed.
 		MirrorQueries(const CellLayerRegistry& registry, const CellLayerViewerDomain& viewer, const Dia::ValueSchema::ValueSchemaService* schema);
 
 		Json::Value	LayerList() const;
 		Json::Value	SelectionGet(const Json::Value& args) const;
+		Json::Value	LayerValues(const Json::Value& args) const;
+
+		// Test seam: lowers the per-call cell limit (clamped to [1, kMaxValuesChunk]) so chunking is testable on small grids.
+		void		SetMaxValuesChunk(uint32_t cells);
+		uint32_t	MaxValuesChunk() const { return mMaxValuesChunk; }
 
 	private:
 		const CellLayerRegistry&		mRegistry;
 		const CellLayerViewerDomain&	mViewer;
 		const Dia::ValueSchema::ValueSchemaService*	mSchema;
+		uint32_t					mMaxValuesChunk = kMaxValuesChunk;
+		mutable LayerReader			mReader;	// used only under the viewer's state mutex
 	};
 
-	// Registers cells.layer.list and cells.select.get; `queries` must outlive the registration.
+	// Registers cells.layer.list, cells.layer.values and cells.select.get; `queries` must outlive the registration.
 	void RegisterMirrorQueries(Dia::DebugServer::QueryRegistry& registry, const MirrorQueries& queries);
 	void UnregisterMirrorQueries(Dia::DebugServer::QueryRegistry& registry);
 }

@@ -681,6 +681,9 @@
     <ClInclude Include="DebugDraw\CellFieldDrawRequest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Strings\Base64.h">
+      <Filter>Strings</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Metadata\DescriptionRegistry.cpp">

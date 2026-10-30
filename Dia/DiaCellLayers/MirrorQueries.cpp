@@ -3,7 +3,13 @@
 #include <DiaCellLayers/HotkeyTable.h>
 #include <DiaCellLayers/SelectionFingerprint.h>
 #include <DiaDebugServer/QueryRegistry.h>
+#include <DiaCore/Strings/Base64.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Profile/DiaProfile.h>
+
+#include <string.h>
+#include <string>
+#include <vector>
 
 #include <stdio.h>
 
@@ -79,7 +85,79 @@ namespace Dia::CellLayers
 	}
 
 	MirrorQueries::MirrorQueries(const CellLayerRegistry& registry, const CellLayerViewerDomain& viewer, const Dia::ValueSchema::ValueSchemaService* schema)
-		: mRegistry(registry), mViewer(viewer), mSchema(schema) {}
+		: mRegistry(registry), mViewer(viewer), mSchema(schema), mReader(registry) {}
+
+	void MirrorQueries::SetMaxValuesChunk(uint32_t cells)
+	{
+		mMaxValuesChunk = cells < 1 ? 1 : (cells > kMaxValuesChunk ? kMaxValuesChunk : cells);
+	}
+
+	Json::Value MirrorQueries::LayerValues(const Json::Value& args) const
+	{
+		DIA_PROFILE_SCOPE("celllayers.mirror.layer_values", ::Dia::Observation::Profile::Category::kDiaGraphics);
+
+		if (!args.isObject() || !args.isMember("layer") || !args["layer"].isString())
+		{
+			return ErrorObject("param 'layer' must be a layer id string");
+		}
+		const std::string layerName = args["layer"].asString();
+		uint32_t offset = 0;
+		uint32_t count = 0;
+		Json::Value error;
+		if (!ReadUIntArg(args, "offset", 0, offset, error)) { return error; }
+		const bool countGiven = args.isMember("count");
+		if (!ReadUIntArg(args, "count", 0, count, error)) { return error; }
+		if (countGiven && count > mMaxValuesChunk)
+		{
+			DIA_LOG_WARNING("CEL", "cells.layer.values count %u clamped to %u", count, mMaxValuesChunk);	// warns on every clamp
+			count = mMaxValuesChunk;
+		}
+
+		Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mViewer.StateMutex());
+		const StringCRC layerId(layerName.c_str());
+		const CellLayerDesc* desc = mRegistry.Find(layerId);
+		if (desc == nullptr) { return ErrorObject("unknown layer"); }
+
+		const ::Dia::CellLayers::LayerValues lv = mReader.Read(layerId);
+		if (!lv.hasData || lv.values == nullptr) { return ErrorObject("layer has no data in this view"); }
+		const uint32_t total = lv.count;
+		if (offset > total) { return ErrorObject("param 'offset' is beyond the layer size"); }
+
+		const uint32_t remaining = total - offset;
+		if (!countGiven) { count = remaining < mMaxValuesChunk ? remaining : mMaxValuesChunk; }
+		if (count > remaining) { count = remaining; }
+
+		std::string data;
+		if (count > 0)
+		{
+			std::vector<uint8_t> bytes(static_cast<size_t>(count) * 4);
+			for (uint32_t i = 0; i < count; ++i)
+			{
+				uint32_t bits = 0;
+				memcpy(&bits, &lv.values[offset + i], sizeof(bits));
+				bytes[i * 4 + 0] = static_cast<uint8_t>(bits);
+				bytes[i * 4 + 1] = static_cast<uint8_t>(bits >> 8);
+				bytes[i * 4 + 2] = static_cast<uint8_t>(bits >> 16);
+				bytes[i * 4 + 3] = static_cast<uint8_t>(bits >> 24);
+			}
+			Dia::Core::Base64::Encode(bytes.data(), bytes.size(), data);
+		}
+
+		char gridId[MirrorGridId::kBufferSize];
+		MirrorGridId::Format(MirrorGridId::IndexOf(mRegistry, desc->grid), gridId);
+		Json::Value out(Json::objectValue);
+		out["layer"] = layerName;
+		out["version"] = static_cast<Json::UInt64>(lv.version);
+		out["gridId"] = gridId;
+		out["width"] = desc->grid->width;
+		out["height"] = desc->grid->height;
+		out["offset"] = offset;
+		out["count"] = count;
+		out["total"] = total;
+		out["encoding"] = "f32le-base64";
+		out["data"] = data;
+		return out;
+	}
 
 	Json::Value MirrorQueries::LayerList() const
 	{
@@ -172,12 +250,14 @@ namespace Dia::CellLayers
 	{
 		const MirrorQueries* q = &queries;
 		registry.Register(StringCRC("cells.layer.list"), [q](const Json::Value&) { return q->LayerList(); });
+		registry.Register(StringCRC("cells.layer.values"), [q](const Json::Value& args) { return q->LayerValues(args); });
 		registry.Register(StringCRC("cells.select.get"), [q](const Json::Value& args) { return q->SelectionGet(args); });
 	}
 
 	void UnregisterMirrorQueries(Dia::DebugServer::QueryRegistry& registry)
 	{
 		registry.Unregister(StringCRC("cells.layer.list"));
+		registry.Unregister(StringCRC("cells.layer.values"));
 		registry.Unregister(StringCRC("cells.select.get"));
 	}
 }

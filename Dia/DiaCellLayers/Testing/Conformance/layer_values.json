@@ -1,0 +1,79 @@
+{
+   "cases" : [
+      {
+         "count" : 1,
+         "data" : "AACAPw==",
+         "encoding" : "f32le-base64",
+         "name" : "one_value_pad2",
+         "offset" : 0,
+         "values" : [ 1 ]
+      },
+      {
+         "count" : 2,
+         "data" : "AACAPwAAAEA=",
+         "encoding" : "f32le-base64",
+         "name" : "two_values_pad1",
+         "offset" : 0,
+         "values" : [ 1, 2 ]
+      },
+      {
+         "count" : 3,
+         "data" : "AAAAAAAAAD8AAAC/",
+         "encoding" : "f32le-base64",
+         "name" : "three_values_nopad",
+         "offset" : 0,
+         "values" : [ 0, 0.5, -0.5 ]
+      },
+      {
+         "count" : 8,
+         "data" : "AADAv83MzD3CFgEA//9/fwEAAABlIPFHAACAAP//f/8=",
+         "encoding" : "f32le-base64",
+         "name" : "awkward_floats",
+         "offset" : 0,
+         "values" : [
+            -1.5,
+            0.10000000149011612,
+            9.9999461011147596e-41,
+            3.4028234663852886e+38,
+            1.4012984643248171e-45,
+            123456.7890625,
+            1.1754943508222875e-38,
+            -3.4028234663852886e+38
+         ]
+      },
+      {
+         "count" : 3,
+         "data" : "whYBAP//f38BAAAA",
+         "encoding" : "f32le-base64",
+         "name" : "awkward_slice",
+         "offset" : 2,
+         "values" : [
+            -1.5,
+            0.10000000149011612,
+            9.9999461011147596e-41,
+            3.4028234663852886e+38,
+            1.4012984643248171e-45,
+            123456.7890625,
+            1.1754943508222875e-38,
+            -3.4028234663852886e+38
+         ]
+      },
+      {
+         "count" : 8,
+         "data" : "AAAAAAAAgD8AAABAAABAQAAA4EAAAH9DAACARQD/f0c=",
+         "encoding" : "f32le-base64",
+         "name" : "category_ids",
+         "offset" : 0,
+         "values" : [ 0, 1, 2, 3, 7, 255, 4096, 65535 ]
+      },
+      {
+         "count" : 0,
+         "data" : "",
+         "encoding" : "f32le-base64",
+         "name" : "empty_at_end",
+         "offset" : 3,
+         "values" : [ 1, 2, 3 ]
+      }
+   ],
+   "description" : "Produced by the C++ cells.layer.values encoder (float32 little-endian, base64). values are float32 widened to double (exact); the whole layer is values, data covers cells [offset, offset+count). Regenerate with DIA_UPDATE_GOLDEN=1 (TestMirrorLayerValues.cpp)."
+}

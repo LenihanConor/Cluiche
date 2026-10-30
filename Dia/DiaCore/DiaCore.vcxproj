@@ -202,6 +202,7 @@
     <ClInclude Include="SimTime\SimTimeDomainRegistry.h" />
     <ClInclude Include="UI\IJSBridge.h" />
     <ClInclude Include="DebugDraw\CellFieldDrawRequest.h" />
+    <ClInclude Include="Strings\Base64.h" />
   </ItemGroup>
   <ItemGroup>
 
