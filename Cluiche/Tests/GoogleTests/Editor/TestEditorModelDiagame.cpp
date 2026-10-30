@@ -1,11 +1,15 @@
 #include <gtest/gtest.h>
 #include <DiaEditor/MVC/EditorModel.h>
 #include <DiaEditor/Project/ProjectContext.h>
+#include <DiaEditor/Plugin/EditorPluginRegistry.h>
+#include <DiaEditor/Plugin/IEditorPlugin.h>
 #include <fstream>
+#include <filesystem>
 #include <cstdio>
 #include <cstring>
 
 using namespace Dia::Editor;
+using Dia::Core::StringCRC;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -329,6 +333,255 @@ TEST(EditorModelDiagame, GetRecentProject_OutOfRangeAfterSet_ReturnsNull)
     const char* paths[] = {"a.diagame"};
     model.SetRecentProjects(paths, 1);
     EXPECT_EQ(model.GetRecentProject(1), nullptr);
+}
+
+// ---------------------------------------------------------------------------
+// Game-scoped editor plugins (editor.manifests)
+// ---------------------------------------------------------------------------
+
+namespace
+{
+    class ModelScopeStubFactory : public IEditorPluginFactory
+    {
+    public:
+        IEditorPlugin* Create() override { return nullptr; }
+        EditorPluginInfo GetPluginInfo() override { return EditorPluginInfo(); }
+    };
+
+    ModelScopeStubFactory sModelStubFactory;
+
+    const StringCRC kModelGameA("ModelScopeTest_GameA");
+    const StringCRC kModelGameB("ModelScopeTest_GameB");
+
+    // Write a .diaapp with an editor.plugins section listing the given type ids.
+    void WriteEditorManifest(const char* path, const char* const* types, unsigned int count)
+    {
+        std::ofstream f(path);
+        f << "{ \"editor\": { \"enabled\": true, \"plugins\": [";
+        for (unsigned int i = 0; i < count; ++i)
+        {
+            if (i > 0) f << ", ";
+            f << "{\"type\": \"" << types[i] << "\"}";
+        }
+        f << "] } }\n";
+    }
+
+    // Write a .diagame that lists the given editor manifests (relative paths).
+    void WriteDiagameWithEditor(const char* path, const char* const* manifests, unsigned int count)
+    {
+        std::ofstream f(path);
+        f << "{ \"name\": \"TestGame\", \"version\": \"1.0\", \"imports\": [], \"config\": {}";
+        f << ", \"editor\": { \"manifests\": [";
+        for (unsigned int i = 0; i < count; ++i)
+        {
+            if (i > 0) f << ", ";
+            f << "\"" << manifests[i] << "\"";
+        }
+        f << "] } }\n";
+    }
+}
+
+class EditorModelDiagameScope : public ::testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        EditorPluginRegistry& r = EditorPluginRegistry::Instance();
+        const StringCRC ids[] = { kModelGameA, kModelGameB };
+        for (const StringCRC& id : ids)
+        {
+            if (!r.IsPluginRegistered(id))
+                r.RegisterPlugin(id, &sModelStubFactory);
+        }
+        Reset();
+    }
+
+    void TearDown() override { Reset(); }
+
+    void Reset()
+    {
+        EditorPluginRegistry& r = EditorPluginRegistry::Instance();
+        r.ClearGameScope();
+        r.TagGameScoped(kModelGameA, StringCRC());
+        r.TagGameScoped(kModelGameB, StringCRC());
+    }
+};
+
+TEST_F(EditorModelDiagameScope, Load_SetsGameScope)
+{
+    const char* manifestPath = "test_editormodel_scope_a.diaapp";
+    const char* gamePath = "test_editormodel_scope_a.diagame";
+    const char* types[] = { "ModelScopeTest_GameA" };
+    WriteEditorManifest(manifestPath, types, 1);
+    const char* manifests[] = { manifestPath };
+    WriteDiagameWithEditor(gamePath, manifests, 1);
+
+    EditorPluginRegistry& r = EditorPluginRegistry::Instance();
+    EXPECT_FALSE(r.IsGameScoped(kModelGameA));
+
+    EditorModel model;
+    ASSERT_TRUE(model.LoadDiagameProject(gamePath));
+    EXPECT_TRUE(r.IsGameScoped(kModelGameA));
+    EXPECT_TRUE(r.IsAvailable(kModelGameA));
+    EXPECT_FALSE(r.IsGameScoped(kModelGameB));
+
+    std::remove(gamePath);
+    std::remove(manifestPath);
+}
+
+TEST_F(EditorModelDiagameScope, SecondLoad_ReplacesScope)
+{
+    const char* manA = "test_editormodel_scope_ra.diaapp";
+    const char* manB = "test_editormodel_scope_rb.diaapp";
+    const char* gameA = "test_editormodel_scope_ra.diagame";
+    const char* gameB = "test_editormodel_scope_rb.diagame";
+    const char* typesA[] = { "ModelScopeTest_GameA" };
+    const char* typesB[] = { "ModelScopeTest_GameB" };
+    WriteEditorManifest(manA, typesA, 1);
+    WriteEditorManifest(manB, typesB, 1);
+    const char* mA[] = { manA };
+    const char* mB[] = { manB };
+    WriteDiagameWithEditor(gameA, mA, 1);
+    WriteDiagameWithEditor(gameB, mB, 1);
+
+    EditorPluginRegistry& r = EditorPluginRegistry::Instance();
+    EditorModel model;
+    ASSERT_TRUE(model.LoadDiagameProject(gameA));
+    ASSERT_TRUE(r.IsGameScoped(kModelGameA));
+    ASSERT_TRUE(r.IsAvailable(kModelGameA));
+    ASSERT_TRUE(model.LoadDiagameProject(gameB));
+
+    EXPECT_FALSE(r.IsAvailable(kModelGameA));
+    EXPECT_TRUE(r.IsAvailable(kModelGameB));
+
+    std::remove(gameA); std::remove(gameB);
+    std::remove(manA); std::remove(manB);
+}
+
+TEST_F(EditorModelDiagameScope, ClearDiagameProject_ClearsScope)
+{
+    const char* manifestPath = "test_editormodel_scope_c.diaapp";
+    const char* gamePath = "test_editormodel_scope_c.diagame";
+    const char* types[] = { "ModelScopeTest_GameA" };
+    WriteEditorManifest(manifestPath, types, 1);
+    const char* manifests[] = { manifestPath };
+    WriteDiagameWithEditor(gamePath, manifests, 1);
+
+    EditorPluginRegistry& r = EditorPluginRegistry::Instance();
+    EditorModel model;
+    ASSERT_TRUE(model.LoadDiagameProject(gamePath));
+    ASSERT_TRUE(r.IsGameScoped(kModelGameA));
+    ASSERT_TRUE(r.IsAvailable(kModelGameA));
+
+    model.ClearDiagameProject();
+    EXPECT_FALSE(r.IsAvailable(kModelGameA));
+    EXPECT_TRUE(r.GetActiveGameId() == StringCRC());
+
+    std::remove(gamePath);
+    std::remove(manifestPath);
+}
+
+TEST_F(EditorModelDiagameScope, DiagameWithoutEditor_ClearsPreviousGameScope)
+{
+    const char* manifestPath = "test_editormodel_scope_n.diaapp";
+    const char* gameA = "test_editormodel_scope_n_a.diagame";
+    const char* plain = "test_editormodel_scope_n_plain.diagame";
+    const char* types[] = { "ModelScopeTest_GameA" };
+    WriteEditorManifest(manifestPath, types, 1);
+    const char* manifests[] = { manifestPath };
+    WriteDiagameWithEditor(gameA, manifests, 1);
+    WriteDiagame(plain);
+
+    EditorPluginRegistry& r = EditorPluginRegistry::Instance();
+    EditorModel model;
+    ASSERT_TRUE(model.LoadDiagameProject(gameA));
+    ASSERT_TRUE(r.IsGameScoped(kModelGameA));
+    ASSERT_TRUE(r.IsAvailable(kModelGameA));
+
+    ASSERT_TRUE(model.LoadDiagameProject(plain));
+    EXPECT_FALSE(r.IsAvailable(kModelGameA));  // tag stays, active game moved on
+    EXPECT_FALSE(r.IsGameScoped(kModelGameB));
+    EXPECT_FALSE(r.GetActiveGameId() == StringCRC());
+
+    std::remove(gameA); std::remove(plain);
+    std::remove(manifestPath);
+}
+
+TEST_F(EditorModelDiagameScope, FailedLoad_LeavesScopeUntouched)
+{
+    const char* manifestPath = "test_editormodel_scope_f.diaapp";
+    const char* gamePath = "test_editormodel_scope_f.diagame";
+    const char* types[] = { "ModelScopeTest_GameA" };
+    WriteEditorManifest(manifestPath, types, 1);
+    const char* manifests[] = { manifestPath };
+    WriteDiagameWithEditor(gamePath, manifests, 1);
+
+    EditorPluginRegistry& r = EditorPluginRegistry::Instance();
+    EditorModel model;
+    ASSERT_TRUE(model.LoadDiagameProject(gamePath));
+    ASSERT_TRUE(r.IsGameScoped(kModelGameA));
+    ASSERT_TRUE(r.IsAvailable(kModelGameA));
+
+    EXPECT_FALSE(model.LoadDiagameProject("nonexistent_scope_game.diagame"));
+    EXPECT_TRUE(r.IsAvailable(kModelGameA));
+
+    std::remove(gamePath);
+    std::remove(manifestPath);
+}
+
+TEST_F(EditorModelDiagameScope, UnregisteredTypeInManifest_IsSkipped)
+{
+    const char* manifestPath = "test_editormodel_scope_u.diaapp";
+    const char* gamePath = "test_editormodel_scope_u.diagame";
+    const char* types[] = { "ModelScopeTest_NotCompiledIn", "ModelScopeTest_GameA" };
+    WriteEditorManifest(manifestPath, types, 2);
+    const char* manifests[] = { manifestPath };
+    WriteDiagameWithEditor(gamePath, manifests, 1);
+
+    EditorPluginRegistry& r = EditorPluginRegistry::Instance();
+    EditorModel model;
+    ASSERT_TRUE(model.LoadDiagameProject(gamePath));
+    EXPECT_TRUE(r.IsGameScoped(kModelGameA));
+    EXPECT_TRUE(r.IsAvailable(kModelGameA));
+    EXPECT_FALSE(r.IsGameScoped(StringCRC("ModelScopeTest_NotCompiledIn")));
+
+    std::remove(gamePath);
+    std::remove(manifestPath);
+}
+
+TEST_F(EditorModelDiagameScope, MissingManifestFile_IsSkippedLoadStillSucceeds)
+{
+    const char* gamePath = "test_editormodel_scope_m.diagame";
+    const char* manifests[] = { "test_editormodel_scope_missing.diaapp" };
+    WriteDiagameWithEditor(gamePath, manifests, 1);
+
+    EditorModel model;
+    EXPECT_TRUE(model.LoadDiagameProject(gamePath));
+    EXPECT_FALSE(EditorPluginRegistry::Instance().IsGameScoped(kModelGameA));
+
+    std::remove(gamePath);
+}
+
+TEST_F(EditorModelDiagameScope, ManifestPathResolvedRelativeToDiagameDirectory)
+{
+    const char* dirName = "test_editormodel_scope_sub";
+    std::filesystem::create_directories(dirName);
+    const char* manifestPath = "test_editormodel_scope_sub/m.diaapp";
+    const char* gamePath = "test_editormodel_scope_sub/g.diagame";
+    const char* types[] = { "ModelScopeTest_GameB" };
+    WriteEditorManifest(manifestPath, types, 1);
+    const char* manifests[] = { "m.diaapp" };
+    WriteDiagameWithEditor(gamePath, manifests, 1);
+
+    EditorPluginRegistry& r = EditorPluginRegistry::Instance();
+    EditorModel model;
+    ASSERT_TRUE(model.LoadDiagameProject(gamePath));
+    EXPECT_TRUE(r.IsGameScoped(kModelGameB));
+    EXPECT_TRUE(r.IsAvailable(kModelGameB));
+
+    std::remove(gamePath);
+    std::remove(manifestPath);
+    std::filesystem::remove(dirName);
 }
 
 // ---------------------------------------------------------------------------

@@ -2,6 +2,8 @@
 
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Json/external/json/json.h>
+#include "DiaEditor/EditorManifestLoader.h"
+#include "DiaEditor/Plugin/EditorPluginRegistry.h"
 #include <DiaGame/DiaGameManifestLoader.h>
 #include <DiaGame/DiaGameManifest.h>
 #include <DiaObservation/Log/DiaLog.h>
@@ -73,6 +75,32 @@ namespace Dia
 				strncat_s(outBuf, outSize, "/", _TRUNCATE);
 				strncat_s(outBuf, outSize, rel, _TRUNCATE);
 			}
+
+			// Collects registered, de-duplicated plugin type ids from editor manifests.
+			struct ScopeCollector
+			{
+				Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, EditorPluginRegistry::kMaxPlugins> types;
+
+				static void OnPlugin(const EditorManifestLoader::PluginEntry& entry, void* userData)
+				{
+					ScopeCollector* self = static_cast<ScopeCollector*>(userData);
+					const Dia::Core::StringCRC id(entry.typeId);
+					if (!EditorPluginRegistry::Instance().IsPluginRegistered(id))
+					{
+						DIA_LOG_WARNING("Editor", "EditorModel: game-scoped plugin type '%s' is not registered; skipped", entry.typeId);
+						return;
+					}
+					for (unsigned int i = 0; i < self->types.Size(); ++i)
+						if (self->types[i] == id)
+							return;
+					if (self->types.IsFull())
+					{
+						DIA_LOG_WARNING("Editor", "EditorModel: game scope list full; '%s' skipped", entry.typeId);
+						return;
+					}
+					self->types.Add(id);
+				}
+			};
 		}
 
 		EditorModel::EditorModel()
@@ -237,6 +265,24 @@ namespace Dia
 					ProjectContext::kMaxPath);
 			}
 
+			// Game scope: plugin types listed by the .diagame's editor manifests exist only while it is loaded.
+			// The game id is StringCRC of the path as passed; reloading the same path does not change the active game.
+			{
+				ScopeCollector collector;
+				for (unsigned int i = 0; i < manifest.editorManifests.Size(); ++i)
+				{
+					char resolved[ProjectContext::kMaxPath];
+					JoinPath(dir, manifest.editorManifests[i].AsCStr(), resolved, ProjectContext::kMaxPath);
+					if (resolved[0] == '\0' ||
+						!EditorManifestLoader::Load(resolved, &ScopeCollector::OnPlugin, &collector))
+					{
+						DIA_LOG_WARNING("Editor", "EditorModel: could not load editor manifest '%s' listed by '%s'", manifest.editorManifests[i].AsCStr(), diagamePath);
+					}
+				}
+				EditorPluginRegistry::Instance().SetGameScope(Dia::Core::StringCRC(diagamePath), collector.types);
+				DIA_LOG_INFO("Editor", "EditorModel: game scope '%s' types=%u", diagamePath, collector.types.Size());
+			}
+
 			DIA_LOG_INFO("Editor", "EditorModel: firing project callbacks for '%s'", diagamePath);
 			FireProjectCallbacks();
 			DIA_LOG_INFO("Editor", "EditorModel: LoadDiagameProject complete");
@@ -246,6 +292,7 @@ namespace Dia
 		void EditorModel::ClearDiagameProject()
 		{
 			mDiagameContext = ProjectContext{};
+			EditorPluginRegistry::Instance().ClearGameScope();
 			FireProjectCallbacks();
 		}
 
