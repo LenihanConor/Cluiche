@@ -30,7 +30,24 @@ namespace Dia
 			void ClearActiveManifests();
 			bool IsInScopeFilter(const Dia::Core::StringCRC& typeId) const;
 
+			// Game scope: a type tagged for a game is available only while that game is active.
+			// A game-scoped tag takes precedence over a .cluicheproj manifest tag. An empty gameId clears the tag.
+			typedef void (*GameScopeChangedCallback)(void* userData, const Dia::Core::StringCRC& oldGame, const Dia::Core::StringCRC& newGame);
+			static const unsigned int kMaxGameScopeListeners = 8;
+
+			void TagGameScoped(const Dia::Core::StringCRC& typeId, const Dia::Core::StringCRC& gameId);
+			void SetGameScope(const Dia::Core::StringCRC& gameId, const Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, kMaxPlugins>& scopedTypeIds);
+			void ClearGameScope();
+			const Dia::Core::StringCRC& GetActiveGameId() const;
+			bool IsGameScoped(const Dia::Core::StringCRC& typeId) const;
+			bool IsAvailable(const Dia::Core::StringCRC& typeId) const;
+
+			void AddGameScopeListener(GameScopeChangedCallback callback, void* userData);
+			void RemoveGameScopeListener(GameScopeChangedCallback callback, void* userData);
+
 		private:
+			void ChangeActiveGame(const Dia::Core::StringCRC& newGame);
+
 			EditorPluginRegistry() = default;
 			~EditorPluginRegistry() = default;
 			EditorPluginRegistry(const EditorPluginRegistry&) = delete;
@@ -41,10 +58,20 @@ namespace Dia
 				Dia::Core::StringCRC typeId;
 				IEditorPluginFactory* factory;
 				Dia::Core::StringCRC manifestId;  // empty = built-in
+				Dia::Core::StringCRC gameId;      // empty = not game-scoped
+			};
+
+			struct GameScopeListener
+			{
+				GameScopeChangedCallback callback;
+				void* userData;
 			};
 
 			Dia::Core::Containers::DynamicArrayC<PluginEntry, kMaxPlugins> mEntries;
 			Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, kMaxManifests> mActiveManifests;
+			Dia::Core::StringCRC mActiveGameId;
+			GameScopeListener mListeners[kMaxGameScopeListeners] = {};
+			unsigned int mListenerCount = 0;
 		};
 	}
 }

@@ -727,6 +727,9 @@
     <ClCompile Include="Editor\TestEditorPluginRegistry.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\TestEditorPluginRegistryGameScope.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
     <ClCompile Include="Editor\TestCommandHistory.cpp">
       <Filter>Editor</Filter>
     </ClCompile>

@@ -1,0 +1,41 @@
+**Spec:** @docs/specs/applications/cluicheeditor/systems/pluginbrowser/game-scoped-plugins.md
+**Status:** In Progress
+
+The spec has no task list, so these tasks are derived from its Design, Acceptance Criteria and Test Strategy. **Do not start task 1 until the AD-001 sign-off below is given.**
+
+## Sign-off gate (CoW AD-001)
+
+Tasks 1 to 9 change `Dia/DiaEditor`, `Dia/DiaGame` (task 2) and `CluicheEditor`. Task 10 adds the `CoWEditor` project reference to `CluicheEditor.vcxproj`. The user has not given sign-off for either yet.
+
+## Findings from reading the code (2026-10-29)
+
+- `EditorPluginRegistry` has `TagPluginManifest` / `SetActiveManifests` / `IsInScopeFilter` (cluicheproj scope, empty active list = no filter). Game scope is a second, independent origin; keep the `.cluicheproj` path unchanged (AC6, SCPB-002).
+- `DiaGameManifest` (`Dia/DiaGame/DiaGameManifest.h`) has no `editor` field, so the `"editor": {"manifests": [...]}` key is not parsed today. `EditorModel::LoadDiagameProject` reads only `imports`, `assetCatalogue` and `assetRoot` (task 2 adds the field, task 3 uses it).
+- **Ordering problem.** `PluginLoaderModule::DoStart` restores plugins from `.memory.json` and the layout (`RestoreLayoutPlugins`) *before* it loads the project (`model.LoadProject`), and the `.diagame` itself loads later via `ProjectContextController` or `GameConnectionController`. At memory-restore time the game scope is unknown. Task 4 must defer game-scoped entries (skip with one Info line, then re-offer them when the scope changes) rather than assume the scope is set. Open question for the user: should a saved layout entry for a game-scoped plugin reappear automatically when its game loads later, or stay skipped? The spec says "skipped" (AC2); this plan skips and does not re-add.
+- `IsDirty()` exists only on `EditorPluginBase`, not on `IEditorPlugin`, and there is no `Save()` anywhere. The spec allows adding `IsDirty()` / `Save()` to the interface (task 6).
+- `GameConnectionController` calls `ctx->LoadDiagameProject(path)` unconditionally on handshake (line ~628). Ask-before-switch (AC9) and the dirty prompt (AC8) both need a gate before that call; both live in one new switch-request path (tasks 6 and 7).
+- `open_asset` routing is specced in `editor-deep-link.md` (Approved) but nothing in `Dia/DiaEditor` implements it yet. Task 8 (AC4) cannot be built until that exists; it is marked Blocked.
+- The Plugin Browser also registers `plugin.load.<id>` / `plugin.unload.<id>` palette commands (Plugin Browser Scaling T6). These must be hidden or removed for out-of-scope game plugins (task 5).
+
+## Tasks
+
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| 1 | `EditorPluginRegistry`: add game scope. `TagGameScoped(typeId, gameId)`, `SetGameScope(gameId, manifests)`, `ClearGameScope()`, `IsGameScoped(typeId)`, `IsAvailable(typeId)` (built-in and `.cluicheproj` origins unchanged; game-scoped only while its game is loaded; a type in both manifests is game-scoped), and a `GameScopeChanged` observer | RED-GREEN: registry tests for each origin, game switch, empty scope, and a type in both manifests | Pending | sonnet | Spec Test Strategy bullets 1 to 4. Uses `StringCRC` ids and `DynamicArrayC` (PD-001, PD-004). No singleton additions |
+| 2 | `DiaGameManifest` / `DiaGameManifestLoader`: parse the optional `"editor": {"manifests": [...]}` key (paths relative to the `.diagame`) | RED-GREEN: loader tests (present, absent = AC7, malformed) | Pending | sonnet | Touches `Dia/DiaGame`, outside DiaEditor; covered by the same sign-off request. Update the `DiaGame` module doc |
+| 3 | `EditorModel::LoadDiagameProject` / `ClearDiagameProject`: resolve each editor manifest, read its plugin types through `EditorManifestLoader`, call `SetGameScope` / `ClearGameScope` | RED-GREEN: extend `TestEditorModelDiagame.cpp` (scope set on load, replaced on second load, cleared on clear, unchanged without `editor` key) | Pending | sonnet | Depends on 1, 2. The `.diagame` wins when a type is also in a `.cluicheproj` manifest |
+| 4 | `PluginLoaderModule`: refuse to create out-of-scope game-scoped plugins (layout restore, `.memory.json`, `LoadPlugin`), one Info line each; on `GameScopeChanged` close now out-of-scope game plugins (`OnUnload`, keep the layout slot empty) and log `[EDITOR] INFO closing <type> (out of scope: <game>)` | Unit tests with the stub plugin (task 9a): load, switch, reload; manual check of the log lines | Pending | sonnet | Depends on 1, 3. See the ordering problem above: game-scoped entries in memory and layout are skipped, not deferred |
+| 5 | `PluginBrowserEditorPlugin`: leave out-of-scope game-scoped plugins from `get_available`; register / remove their `plugin.load.*` and `plugin.unload.*` palette commands on scope change | Browser handler test using the stub plugin; palette command list excludes the stub when out of scope | Pending | sonnet | Depends on 1, 4. SCPB-001 (filtering stays in C++) |
+| 6a | `IEditorPlugin`: add `IsDirty()` and `Save()` with a safe default; `EditorPluginBase` implements them from its existing dirty flag | RED-GREEN: base-class tests | Pending | sonnet | Adds to a public interface, so it is part of the AD-001 request |
+| 6b | Game-switch gate: a single request path used by File > Open, `--project` restore and live connect. If any open game-scoped plugin is dirty, show Save / Discard / Cancel via the bridge; Cancel keeps the current game. Needs an HTML mockup of the dialog first | Unit tests for the gate with a fake dirty plugin; mockup approved by the user before the UI is built | Pending | sonnet | AC8. Depends on 4, 6a. Memory rule: a mockup is a visual acceptance gate for editor features. The UI and the decision logic stay separate (typed command model first) |
+| 7 | `GameConnectionController`: route the live `diagame_path` through the gate. Same game as loaded = no prompt; different game = ask "Switch to <game>?"; declining keeps the loaded game and its plugins while the connection stays up | Unit tests with a fake `IEditorContext` (same game, other game accepted, other game declined) | Pending | sonnet | AC5, AC9. Depends on 6b. Narrows "takes precedence" in the connection controller |
+| 8 | Asset-type routing: game-scoped plugins register `open_asset` routes in `OnLoad` and remove them in `OnUnload`; out of scope falls back to the OS default app | Route present only while the stub's game is loaded | Blocked | sonnet | AC4. Blocked on the `editor-deep-link` feature (Approved, not built) providing the route registry. Unblock by building that feature first or agreeing to split AC4 out |
+| 9a | Stub game-scoped editor plugin, compiled into the GoogleTests / editor test target only, plus a `stub_game.diagame` and `stub_editor.diaapp` fixture | Used by tasks 4, 5, 7 | Pending | haiku | Test-only; never registered in `CluicheEditor.exe` |
+| 9b | Editor E2E: load stub game, CluicheTest, stub game again; check AC1 to AC3, AC5, AC6 and (once task 8 is built) AC4 | `dia test e2e` scenario for the editor | Pending | sonnet | Depends on 4, 5, 7 |
+| 10 | CoW wiring: create the `Cluiche/CoW/Editor/` `CoWEditor` static library skeleton (no plugins yet), reference it from `CluicheEditor.vcxproj`, add `"editor": {"manifests": ["cow_editor.diaapp"]}` to `cow.diagame` and an empty `cow_editor.diaapp` | `dia validate manifest`; `dia pipeline` builds the editor; AC7 for a game with no plugins | Pending | sonnet | Separate AD-001 sign-off (the `CluicheEditor.vcxproj` reference). Escalation rule: the library lives in CoW, not Dia, so no Dia header is added for it. Can be deferred until T-1 or T-2 needs the first real plugin |
+| 11 | Docs: update the DiaEditor and CluicheEditor module docs, the Plugin Browser system spec's status, and BACKLOG.md; add the Observation Opportunity Scan notes | `dia docs registry`, `dia check deps` | Pending | haiku | Last task; use `dia docs` commands rather than hand-editing |
+
+## Observation points to add as tasks are built
+
+- Logs: scope change, plugin closure and refusal (already named in the spec), switch declined or cancelled.
+- Metrics and health: not required by the spec; list findings in task notes only.

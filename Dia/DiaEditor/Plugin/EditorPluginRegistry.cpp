@@ -133,5 +133,110 @@ namespace Dia
 			// typeId not registered — does not pass
 			return false;
 		}
+
+		void EditorPluginRegistry::TagGameScoped(const Dia::Core::StringCRC& typeId, const Dia::Core::StringCRC& gameId)
+		{
+			for (unsigned int i = 0; i < mEntries.Size(); ++i)
+			{
+				if (mEntries[i].typeId == typeId)
+				{
+					mEntries[i].gameId = gameId;
+					return;
+				}
+			}
+			DIA_ASSERT(false, "EditorPluginRegistry::TagGameScoped: typeId not found");
+		}
+
+		void EditorPluginRegistry::SetGameScope(const Dia::Core::StringCRC& gameId, const Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, kMaxPlugins>& scopedTypeIds)
+		{
+			DIA_LOG_INFO("Editor", "EditorPluginRegistry: SetGameScope game=%s types=%u", gameId.AsChar(), scopedTypeIds.Size());
+			for (unsigned int i = 0; i < scopedTypeIds.Size(); ++i)
+			{
+				TagGameScoped(scopedTypeIds[i], gameId);
+			}
+			ChangeActiveGame(gameId);
+		}
+
+		void EditorPluginRegistry::ClearGameScope()
+		{
+			if (mActiveGameId != Dia::Core::StringCRC())
+			{
+				DIA_LOG_INFO("Editor", "EditorPluginRegistry: ClearGameScope");
+			}
+			ChangeActiveGame(Dia::Core::StringCRC());
+		}
+
+		void EditorPluginRegistry::ChangeActiveGame(const Dia::Core::StringCRC& newGame)
+		{
+			if (mActiveGameId == newGame)
+			{
+				return;
+			}
+
+			const Dia::Core::StringCRC oldGame = mActiveGameId;
+			mActiveGameId = newGame;
+			for (unsigned int i = 0; i < mListenerCount; ++i)
+			{
+				mListeners[i].callback(mListeners[i].userData, oldGame, newGame);
+			}
+		}
+
+		const Dia::Core::StringCRC& EditorPluginRegistry::GetActiveGameId() const
+		{
+			return mActiveGameId;
+		}
+
+		bool EditorPluginRegistry::IsGameScoped(const Dia::Core::StringCRC& typeId) const
+		{
+			for (unsigned int i = 0; i < mEntries.Size(); ++i)
+			{
+				if (mEntries[i].typeId == typeId)
+				{
+					return mEntries[i].gameId != Dia::Core::StringCRC();
+				}
+			}
+			return false;
+		}
+
+		bool EditorPluginRegistry::IsAvailable(const Dia::Core::StringCRC& typeId) const
+		{
+			for (unsigned int i = 0; i < mEntries.Size(); ++i)
+			{
+				if (mEntries[i].typeId == typeId)
+				{
+					if (mEntries[i].gameId != Dia::Core::StringCRC())
+					{
+						return mEntries[i].gameId == mActiveGameId;
+					}
+					return IsInScopeFilter(typeId);
+				}
+			}
+			return false;
+		}
+
+		void EditorPluginRegistry::AddGameScopeListener(GameScopeChangedCallback callback, void* userData)
+		{
+			if (callback == nullptr)
+				return;
+			DIA_ASSERT(mListenerCount < kMaxGameScopeListeners, "EditorPluginRegistry: max game scope listeners reached");
+			if (mListenerCount >= kMaxGameScopeListeners)
+				return;
+			mListeners[mListenerCount].callback = callback;
+			mListeners[mListenerCount].userData = userData;
+			++mListenerCount;
+		}
+
+		void EditorPluginRegistry::RemoveGameScopeListener(GameScopeChangedCallback callback, void* userData)
+		{
+			for (unsigned int i = 0; i < mListenerCount; ++i)
+			{
+				if (mListeners[i].callback == callback && mListeners[i].userData == userData)
+				{
+					mListeners[i] = mListeners[mListenerCount - 1];
+					--mListenerCount;
+					return;
+				}
+			}
+		}
 	}
 }
