@@ -2322,5 +2322,11 @@
     <ClCompile Include="DebugServer\TestSimQueryHost.cpp">
       <Filter>DebugServer</Filter>
     </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestSimRegistrationMessage.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestStreamDeclaredCapacity.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

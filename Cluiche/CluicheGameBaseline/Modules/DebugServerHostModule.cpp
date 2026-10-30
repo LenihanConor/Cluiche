@@ -18,6 +18,7 @@
 #include "Modules/InspectorSources/TimingAggregateSource.h"
 #include "Modules/InspectorSources/LifecycleEventSource.h"
 #include "Modules/InspectorSources/BlackboardInspectorSource.h"
+#include "Types/SimRegistrationMessage.h"
 
 #include <chrono>
 #include <memory>
@@ -50,6 +51,8 @@ void DebugServerHostModule::OnConnectStreams(Dia::ApplicationFlow::Application& 
     DIA_LOG_INFO("Application", "DebugServerHostModule::OnConnectStreams entry");
     mServerService.Connect(app);
     mDebugPushReader.Connect(app);
+    mSimRequests.Connect(app);
+    mSimReplies.Connect(app);
     DIA_LOG_INFO("Application", "DebugServerHostModule::OnConnectStreams reader_connected=%d",
         mDebugPushReader.IsConnected() ? 1 : 0);
 }
@@ -103,6 +106,7 @@ Dia::ApplicationFlow::StartResult DebugServerHostModule::DoStart()
     }
 
     mServer.SetStateProvider(this);
+    mServer.SetSimRequestSink(this);
     mServer.Start();
     mServerPtr = &mServer;
     mServerService.Register(mServerPtr);
@@ -175,6 +179,7 @@ void DebugServerHostModule::DoUpdate(const Dia::SimTime::MainTimeContext& ctx)
     }
 
     QueryMemory();
+    DrainSimReplies();
     mServer.Tick(deltaTime);
 
     // Tick all inspector data sources.
@@ -217,6 +222,50 @@ void DebugServerHostModule::DoUpdate(const Dia::SimTime::MainTimeContext& ctx)
     }
 }
 
+bool DebugServerHostModule::PostRequest(const Dia::DebugServer::SimRequestEvent& request)
+{
+    if (!mSimRequests.IsConnected())
+        return false;
+    return Dia::ApplicationFlow::IsSuccess(mSimRequests.Send(request));
+}
+
+void DebugServerHostModule::DrainSimReplies()
+{
+    if (!mSimReplies.IsConnected())
+        return;
+
+    // Events are ~16 KB each: small batches, bounded work per frame.
+    static constexpr unsigned int kBatch      = 2;
+    static constexpr unsigned int kMaxBatches = 16;
+
+    Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::Event<Dia::DebugServer::SimReplyEvent>, kBatch> batch;
+    for (unsigned int b = 0; b < kMaxBatches && mSimReplies.HasPending(); ++b)
+    {
+        batch.RemoveAll();
+        mSimReplies.Consume(batch);
+        for (unsigned int i = 0; i < batch.Size(); ++i)
+        {
+            const Dia::DebugServer::SimReplyEvent& reply = batch[i].payload;
+            const SimRegistration reg = ParseSimRegistrationReply(reply);
+            switch (reg.op)
+            {
+                case SimRegistrationOp::NotRegistration:
+                    mServer.CompleteSimReply(reply);
+                    break;
+                case SimRegistrationOp::Register:
+                    mServer.RegisterSimHosted(Dia::Core::StringCRC(reg.name), reg.kind);
+                    break;
+                case SimRegistrationOp::Unregister:
+                    mServer.UnregisterSimHosted(Dia::Core::StringCRC(reg.name));
+                    break;
+                case SimRegistrationOp::Malformed:
+                    DIA_LOG_WARNING("DebugServer", "DebugServerHostModule: malformed sim registration message ignored");
+                    break;
+            }
+        }
+    }
+}
+
 void DebugServerHostModule::QueryMemory()
 {
 #ifdef _WIN32
@@ -240,6 +289,7 @@ Dia::ApplicationFlow::StopResult DebugServerHostModule::DoStop()
 
     mServerService.Deregister();
     mServerPtr = nullptr;
+    mServer.SetSimRequestSink(nullptr);
     mServer.Stop();
 
     // Null metric pointers — MetricRegistry owns the objects.

@@ -138,6 +138,9 @@
     <ClCompile Include="Modules\MessageBusHostModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\SimQueryHostModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\EntityModule.h">
@@ -289,6 +292,12 @@
     </ClInclude>
     <ClInclude Include="Modules\MessageBusHostModule.h">
       <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\SimQueryHostModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\SimRegistrationMessage.h">
+      <Filter>Types</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

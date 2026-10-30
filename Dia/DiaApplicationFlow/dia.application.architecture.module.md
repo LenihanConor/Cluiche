@@ -42,6 +42,7 @@ responsibilities:
       struct, never add streams. Roles: reads / writes.
     - EventStream (frame-batched): discrete events flushed at producer tick boundary.
       Consumer gets exactly the previous frame's batch. Roles: reads / writes.
+      Manifest `capacity` (per-reader ring size, 0 = default 256) and `overflow` are honoured via IStreamConnector::GetDeclaredEventStreamConfig (Application implements it).
   - Unified channels[] array on ModuleDeclaration — each entry is {id, role} where role
     is one of reads / writes / provides / consumes.
   - ServiceStreamStore / ServiceStreamWriter / ServiceStreamReader — ServiceStream impl.

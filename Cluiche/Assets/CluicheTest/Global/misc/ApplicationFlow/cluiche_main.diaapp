@@ -373,6 +373,24 @@
             "to": "MainPU"
         },
         {
+            "id": "SimQueryRequest",
+            "kind": "EventStream",
+            "payload_type": "SimRequestEvent",
+            "overflow": "drop-oldest",
+            "capacity": 16,
+            "from": "MainPU",
+            "to": "SimPU"
+        },
+        {
+            "id": "SimQueryReply",
+            "kind": "EventStream",
+            "payload_type": "SimReplyEvent",
+            "overflow": "drop-oldest",
+            "capacity": 16,
+            "from": "SimPU",
+            "to": "MainPU"
+        },
+        {
             "id": "DebugLayerManager",
             "kind": "ServiceStream",
             "payload_type": "DebugLayerManager",
@@ -626,6 +644,14 @@
                         },
                         {
                             "id": "DebugServerPush",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "SimQueryRequest",
+                            "role": "writes"
+                        },
+                        {
+                            "id": "SimQueryReply",
                             "role": "reads"
                         }
                     ]
@@ -919,6 +945,35 @@
                             "role": "writes"
                         }
                     ]
+                },
+                {
+                    "instance_id": "SimQueryHostModule",
+                    "type_id": "SimQueryHostModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [],
+                    "channels": [
+                        {
+                            "id": "SimQueryRequest",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "SimQueryReply",
+                            "role": "writes"
+                        }
+                    ]
+                },
+                {
+                    "instance_id": "SimEchoTestModule",
+                    "type_id": "SimEchoTestModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "SimQueryHostModule"
+                    ],
+                    "channels": []
                 },
                 {
                     "instance_id": "Physics2DModule",

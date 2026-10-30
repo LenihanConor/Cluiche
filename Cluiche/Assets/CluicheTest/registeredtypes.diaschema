@@ -381,6 +381,16 @@
     },
     {
       "allowed_pus": "sim",
+      "description": "Registers the sim.echo sim-hosted debug query used by the Sim-Hosted Queries E2E.",
+      "type_id": "SimEchoTestModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Runs debug queries and commands that touch SimPU-owned state, requested over EventStreams by the Main-side DebugServer.",
+      "type_id": "SimQueryHostModule"
+    },
+    {
+      "allowed_pus": "sim",
       "description": "Hosts the DiaMessageBus Bus for a game and shows it in the debug panel.",
       "type_id": "MessageBusHostModule"
     },
@@ -558,6 +568,6 @@
   "processing_units": [],
   "version": {
     "major": 1,
-    "minor": 39
+    "minor": 40
   }
 }

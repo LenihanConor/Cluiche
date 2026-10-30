@@ -1377,6 +1377,29 @@ namespace Dia { namespace ApplicationFlow {
     }
 
     //--------------------------------------------------------------------------
+    // GetDeclaredEventStreamConfig  (IStreamConnector override)
+    //--------------------------------------------------------------------------
+
+    bool Application::GetDeclaredEventStreamConfig(const Dia::Core::StringCRC& streamId,
+                                                   unsigned int& outCapacity,
+                                                   OverflowPolicy& outPolicy,
+                                                   unsigned int& outBlockTimeoutMs) const
+    {
+        for (unsigned int i = 0; i < mManifest.streams.Size(); ++i)
+        {
+            const StreamDeclaration& sd = mManifest.streams[i];
+            if (sd.id == streamId)
+            {
+                outCapacity       = sd.capacity;
+                outPolicy         = sd.overflowPolicy;
+                outBlockTimeoutMs = sd.blockTimeoutMs;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    //--------------------------------------------------------------------------
     // EmitLifecycleEvent  (public)
     //--------------------------------------------------------------------------
 

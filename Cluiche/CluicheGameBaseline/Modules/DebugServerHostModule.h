@@ -22,7 +22,10 @@
 #include <DiaCore/SimTime/SimTimeContext.h>
 #include <DiaStreams/IStreamStore.h>
 #include <DiaStreams/EventStreamReader.h>
+#include <DiaStreams/EventStreamWriter.h>
 #include <DiaDebugServer/DebugServer.h>
+#include <DiaDebugServer/ISimRequestSink.h>
+#include <DiaDebugServer/SimHostedTypes.h>
 #include <DiaDebugServer/IDebugStateProvider.h>
 #include <DiaDebugServer/IInspectorDataSource.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -42,6 +45,7 @@ namespace Cluiche { namespace AppFlow {
 class DebugServerHostModule
     : public Dia::ApplicationFlow::MainModule
     , private Dia::DebugServer::IDebugStateProvider
+    , private Dia::DebugServer::ISimRequestSink
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
@@ -90,8 +94,17 @@ protected:
         const void* bytes,
         size_t size) override;
 
+    // ISimRequestSink — posts a sim-hosted request onto the SimQueryRequest EventStream
+    // (Main -> Sim). False if the stream is not connected or rejected the event.
+    bool PostRequest(const Dia::DebugServer::SimRequestEvent& request) override;
+
 private:
     void QueryMemory();
+
+    // Drains SimQueryReply (Sim -> Main). Reply requestId 0 is a registration message
+    // (Types/SimRegistrationMessage.h) -> RegisterSimHosted / UnregisterSimHosted; any other
+    // reply -> DebugServer::CompleteSimReply. Runs on Main before mServer.Tick().
+    void DrainSimReplies();
 
     Dia::DebugServer::DebugServer mServer;
     Dia::DebugServer::DebugServer* mServerPtr = nullptr;
@@ -124,6 +137,13 @@ private:
     // DebugServerHostModule forwards each event without knowing the sender.
     Dia::ApplicationFlow::EventStreamReader<DebugServerPushEvent> mDebugPushReader{
         this, Dia::Core::StringCRC("DebugServerPush")};
+
+    // Sim-hosted queries: Main -> Sim requests, Sim -> Main replies (and name registrations).
+    // Counterpart on the SimPU is SimQueryHostModule.
+    Dia::ApplicationFlow::EventStreamWriter<Dia::DebugServer::SimRequestEvent> mSimRequests{
+        this, Dia::Core::StringCRC("SimQueryRequest")};
+    Dia::ApplicationFlow::EventStreamReader<Dia::DebugServer::SimReplyEvent> mSimReplies{
+        this, Dia::Core::StringCRC("SimQueryReply")};
 
     // Blackboard registry owned here (MainPU); game modules register/unregister
     // boards via GetBlackboardRegistry(). mSources[4] polls this directly.

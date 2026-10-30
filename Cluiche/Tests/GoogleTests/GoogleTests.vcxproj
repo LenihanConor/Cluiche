@@ -1062,6 +1062,8 @@
     <ClCompile Include="DebugServer\TestSimPendingTable.cpp" />
     <ClCompile Include="DebugServer\TestSimHostedDispatch.cpp" />
     <ClCompile Include="DebugServer\TestSimQueryHost.cpp" />
+    <ClCompile Include="CluicheGameBaseline\TestSimRegistrationMessage.cpp" />
+    <ClCompile Include="ApplicationFlow\TestStreamDeclaredCapacity.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

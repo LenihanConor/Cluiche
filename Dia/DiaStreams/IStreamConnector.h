@@ -2,6 +2,7 @@
 
 #include <DiaCore/Memory/UniquePtr.h>
 #include <DiaStreams/IStreamStore.h>
+#include <DiaStreams/OverflowPolicy.h>
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -25,6 +26,18 @@ public:
     // stream ID is not declared in the manifest or capacity is exceeded.
     virtual IStreamStore* RegisterOrFindStreamStore(
         Dia::Core::UniquePtr<IStreamStore> newStore) = 0;
+
+    // Manifest-declared event-stream settings (capacity, overflow policy).
+    // Returns true and fills the out-params if the manifest declares the stream;
+    // a declared capacity of 0 means "use the default" and is reported as 0.
+    // Default implementation reports nothing declared (defaults apply).
+    virtual bool GetDeclaredEventStreamConfig(const Dia::Core::StringCRC& /*streamId*/,
+                                              unsigned int& /*outCapacity*/,
+                                              OverflowPolicy& /*outPolicy*/,
+                                              unsigned int& /*outBlockTimeoutMs*/) const
+    {
+        return false;
+    }
 };
 
 }} // namespace Dia::ApplicationFlow

@@ -70,6 +70,7 @@
     <ClCompile Include="Modules\BootMenuModule.cpp" />
     <ClCompile Include="Modules\AppIdentity.cpp" />
     <ClCompile Include="Modules\MessageBusHostModule.cpp" />
+    <ClCompile Include="Modules\SimQueryHostModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\AutomationModule.h" />
@@ -130,6 +131,8 @@
     <ClInclude Include="Types\DebugConsoleLineEvent.h" />
     <ClInclude Include="Types\DebugConsoleResultEvent.h" />
     <ClInclude Include="Modules\MessageBusHostModule.h" />
+    <ClInclude Include="Modules\SimQueryHostModule.h" />
+    <ClInclude Include="Types\SimRegistrationMessage.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">

@@ -202,6 +202,9 @@
     <ClCompile Include="Modules\TestStages\JobSystemServiceTestStageModule.cpp">
       <Filter>Modules\TestStages</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\SimEchoTestModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\TestMainStateProducerModule.h">
@@ -383,6 +386,9 @@
     </ClInclude>
     <ClInclude Include="Modules\TestStages\CellLayersPointerQueue.h">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\SimEchoTestModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

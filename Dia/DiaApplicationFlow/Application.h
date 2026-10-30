@@ -112,7 +112,14 @@ namespace Dia { namespace ApplicationFlow {
         // dedicated PU threads are launched.  Calling it after Start() has
         // completed (i.e. from DoStart/DoUpdate/DoStop) asserts in debug;
         // in release the unsynchronized store array would be a data race.
-        IStreamStore* RegisterOrFindStreamStore(Dia::Core::UniquePtr<IStreamStore> newStore);
+        IStreamStore* RegisterOrFindStreamStore(Dia::Core::UniquePtr<IStreamStore> newStore) override;
+
+        // Reports the manifest-declared capacity / overflow policy for a stream
+        // so EventStreamReader/Writer::Connect() can honour them.
+        bool GetDeclaredEventStreamConfig(const Dia::Core::StringCRC& streamId,
+                                          unsigned int& outCapacity,
+                                          OverflowPolicy& outPolicy,
+                                          unsigned int& outBlockTimeoutMs) const override;
 
         // FindStreamStore: lookup only, no creation. Returns null if not found.
         // Safe to call at any time — mStreamStores is immutable after Start().
