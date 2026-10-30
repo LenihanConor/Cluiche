@@ -42,6 +42,10 @@ namespace Dia::CellLayers
 		const char* const kMetricOutlineEdges = "dia.celllayers.viewer.outline_edges";
 		const char* const kMetricSelectCommands = "dia.celllayers.viewer.select_commands";
 		const char* const kMetricSelectRejected = "dia.celllayers.viewer.select_rejected";
+		const char* const kMetricQueryRun = "dia.celllayers.query.run";
+		const char* const kMetricQueryRejected = "dia.celllayers.query.rejected";
+		const char* const kMetricQueryEvaluateMs = "dia.celllayers.query.evaluate_ms";
+		const char* const kMetricQueryLastMatchCount = "dia.celllayers.query.last_match_count";
 
 		const StringCRC kCmdBase("base");
 		const StringCRC kCmdGrid("grid");
@@ -83,6 +87,10 @@ namespace Dia::CellLayers
 		mMetricOutlineEdges = metrics.RegisterGauge(StringCRC(kMetricOutlineEdges));
 		mMetricSelectCommands = metrics.RegisterCounter(StringCRC(kMetricSelectCommands));
 		mMetricSelectRejected = metrics.RegisterCounter(StringCRC(kMetricSelectRejected));
+		mMetricQueryRun = metrics.RegisterCounter(StringCRC(kMetricQueryRun));
+		mMetricQueryRejected = metrics.RegisterCounter(StringCRC(kMetricQueryRejected));
+		mMetricQueryEvaluateMs = metrics.RegisterGauge(StringCRC(kMetricQueryEvaluateMs));
+		mMetricQueryLastMatchCount = metrics.RegisterGauge(StringCRC(kMetricQueryLastMatchCount));
 		mSeenReads = mUploader.Reads();
 		mSeenUploads = mUploader.Uploads();
 		mSeenSkipped = mUploader.SkippedFrames();
@@ -1271,7 +1279,11 @@ namespace Dia::CellLayers
 		// check runs on every keystroke: it stays silent; only select logs (run and reject at Info).
 		auto reject = [&](const char* msg, uint32_t col, uint32_t len, const char* sugg) -> Json::Value
 		{
-			if (apply) { DIA_LOG_INFO("CEL", "%s rejected: %s", name, msg); }
+			if (apply)
+			{
+				DIA_LOG_INFO("CEL", "%s rejected: %s", name, msg);
+				if (mMetricQueryRejected) { mMetricQueryRejected->Inc(); }
+			}
 			return QueryErrorJson(msg, col, len, sugg);
 		};
 		if (first == std::string::npos) { return reject("empty query", 0, 0, nullptr); }
@@ -1291,16 +1303,23 @@ namespace Dia::CellLayers
 			return reject(e.mMessage, e.mColumn, e.mLength, e.mSuggestion);
 		}
 		const uint32_t cellCount = static_cast<uint32_t>(mActiveGrid->width) * mActiveGrid->height;
+		const auto t0 = std::chrono::steady_clock::now();
 		if (!mQuery->evaluator.Evaluate(mQuery->parser, mQuery->resolver, mReader, cellCount))
 		{
+			const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+			if (mMetricQueryEvaluateMs) { mMetricQueryEvaluateMs->Set(ms); }
 			const QueryError& e = mQuery->evaluator.Error();
 			return reject(e.mMessage, e.mColumn, e.mLength, e.mSuggestion);
 		}
+		const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+		if (mMetricQueryEvaluateMs) { mMetricQueryEvaluateMs->Set(ms); }
 		const uint32_t count = mQuery->evaluator.Count();
+		if (mMetricQueryLastMatchCount) { mMetricQueryLastMatchCount->Set(static_cast<double>(count)); }
 		if (apply)
 		{
 			if (!mQuery->evaluator.ApplyTo(*sel)) { return reject("query result does not fit the selection", 0, 0, nullptr); }
 			DIA_LOG_INFO("CEL", "query run: '%s' -> %u matches", src, count);
+			if (mMetricQueryRun) { mMetricQueryRun->Inc(); }
 		}
 		Json::Value out(Json::objectValue);
 		out["ok"] = true;

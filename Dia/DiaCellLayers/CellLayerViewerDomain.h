@@ -19,6 +19,8 @@
 // {q,r}, .toggle {q,r}, .box {q0,r0,q1,r1}, .poly {points:[[x,y]..]} (WORLD coords), .category {layer,value}, .cells
 // {cells:[[q,r]..]}, .clear {}, plus .tool {tool:"select"|"pan"} and .group {layer} (selection tool / ctrl-click group). Success {ok,count}; failure = error text (also logged on CEL at Info). Panel commands (OnCommand): "base" {id}, "grid" {index}, "toggle" {drawer}, and the selection card's "select_tool" {tool},
 // "select_group" {layer}, "select_clear" {} which run the SAME code as cells.select.tool / .group / .clear.
+// Query commands (JSON only; act on ActiveSelection()): cells.select.query {"expr": "<query>"} (parse + resolve + evaluate, replace selection if ok),
+// cells.query.check {"expr": "<query>"} (parse + resolve + evaluate, never touch selection). Both return {ok, count} or {ok:false, error:{message, column, length, suggestion?}}.
 // cells.inspect {} | {group} | {layers:[id..]} | {layerId} | {all:true} (read-only, at most one form): the Selection Inspector stats
 // JSON of the active grid's selection (InspectorModel::BuildStatsJson; shape in InspectorModel.h). Errors as for the other commands.
 // cells.inspector.expand {group, expanded:bool}: expands / collapses a layer group of the inspector card (panel command "inspector_expand"; the panel
@@ -29,7 +31,7 @@
 // with FindCellLayerRegistry(reader) (CellLayersModule.h) and passes *registry to the constructor.
 //
 // Health "dia.celllayers.viewer": Degraded while the active base's upload fails (UploadResult::ReadFailed, including a
-// CellField-rejected command). Metrics "dia.celllayers.viewer.*". Log channel CEL.
+// CellField-rejected command). Metrics "dia.celllayers.viewer.*" and "dia.celllayers.query.*". Log channel CEL.
 // Generic: no game types (CL-005), no singletons (CL-006). Thread-safe between Update and command/panel calls.
 
 #include <DiaCellLayers/CellLayerLegend.h>
@@ -219,6 +221,10 @@ namespace Dia::CellLayers
 		Dia::Observation::Metric::Gauge*	mMetricOutlineEdges = nullptr;
 		Dia::Observation::Metric::Counter*	mMetricSelectCommands = nullptr;
 		Dia::Observation::Metric::Counter*	mMetricSelectRejected = nullptr;
+		Dia::Observation::Metric::Counter*	mMetricQueryRun = nullptr;			// incremented on cells.select.query success only
+		Dia::Observation::Metric::Counter*	mMetricQueryRejected = nullptr;		// incremented on cells.select.query reject only
+		Dia::Observation::Metric::Gauge*	mMetricQueryEvaluateMs = nullptr;	// last evaluate duration in ms
+		Dia::Observation::Metric::Gauge*	mMetricQueryLastMatchCount = nullptr;	// last match count from either command
 		QueryState*				mQuery = nullptr;	// owned
 	};
 }
