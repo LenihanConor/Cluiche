@@ -21,7 +21,7 @@ Tasks 1 to 9 change `Dia/DiaEditor`, `Dia/DiaGame` (task 2) and `CluicheEditor`.
 
 Done and committed: tasks 1, 2, 3, 4, 5, 6a, 6b-1, and the mockup (states 4, 4b, 5, approved). Split during the session: 6b-2 is now 6b-2a (C++: `GameSwitchController`, `IPluginLoader` dirty/save methods, routing File>Open / open-path / close / live connection through the gate; bridge `game_switch.get_state`, `game_switch.respond`, topic `game_switch_changed`) and 6b-2b (React modal in the CluicheEditor shell, matching the mockup, vitest). Task 7 was folded into 6b-2a.
 
-**Next: 6b-2b**, after checking 6b-2a landed (see its row). Then 9a (stub plugin), 9b (editor E2E; must also check that the palette `Register/UnregisterCommandJson` calls are not rejected when a game loads inside a command callback), 10 (CoW skeleton), 11 (docs). Task 8 stays Blocked on `editor-deep-link`.
+**Next: 6b-2b** (6b-2a landed, commit after `34c6ea21`). Then 9a (stub plugin), 9b (editor E2E; must also check that the palette `Register/UnregisterCommandJson` calls are not rejected when a game loads inside a command callback), 10 (CoW skeleton), 11 (docs). Task 8 stays Blocked on `editor-deep-link`.
 
 Known follow-ups to raise at the end: no editor plugin overrides `Save()` yet (a dirty game-scoped plugin fails the gate until it does); game-scoped plugins are closed at shutdown, so a crash could leave one in the saved layout; the existing `name`/`import.path` string assignments in `JsonDiaGameSerializer` have the `%` printf footgun.
 
