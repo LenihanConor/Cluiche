@@ -170,4 +170,4 @@ No conflicts.
 
 ## Status
 
-`Approved` (2026-10-20). Plan: [selection-inspector.plan.md](selection-inspector.plan.md) (not started).
+`Done` (2026-10-29). Plan: [selection-inspector.plan.md](selection-inspector.plan.md). Visual gate (AC 15) approved by the user 2026-10-29. AC 13 measured in Release: 1.78-1.91 ms for 20 layers over 104x64 (bound 2 ms, thin margin).
