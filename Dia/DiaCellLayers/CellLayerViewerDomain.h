@@ -140,6 +140,10 @@ namespace Dia::CellLayers
 		// the selection is unchanged; the reason is logged on CEL at Info.
 		Json::Value	ExecuteSelect(SelectOp op, const char* name, const Json::Value& params);
 		Json::Value	ExecuteSelectLocked(SelectOp op, const char* name, const Json::Value& params);	// caller holds mMutex
+		// cells.select.query (apply = true) / cells.query.check (apply = false): params {"expr": "<query>"}. Returns {ok, count}
+		// or {ok:false, error:{message, column, length, suggestion?}}; the selection is untouched on error and by check.
+		Json::Value	ExecuteQuery(bool apply, const char* name, const Json::Value& params);	// locks mMutex
+		struct QueryState;	// parser + resolver + evaluator (large, fixed capacity: heap)
 		class InputSink;
 		void	ProcessPointer();	// called from Update with mMutex held
 
@@ -215,6 +219,7 @@ namespace Dia::CellLayers
 		Dia::Observation::Metric::Gauge*	mMetricOutlineEdges = nullptr;
 		Dia::Observation::Metric::Counter*	mMetricSelectCommands = nullptr;
 		Dia::Observation::Metric::Counter*	mMetricSelectRejected = nullptr;
+		QueryState*				mQuery = nullptr;	// owned
 	};
 }
 

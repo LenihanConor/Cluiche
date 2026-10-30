@@ -2,6 +2,9 @@
 #include <DiaCellLayers/CellLayerViewerDomain.h>
 
 #include <DiaCellLayers/InspectorModel.h>
+#include <DiaCellLayers/QueryEvaluator.h>
+#include <DiaCellLayers/QueryParser.h>
+#include <DiaCellLayers/QueryResolver.h>
 #include <DiaCellLayers/SelectionTools.h>
 
 #include <string.h>
@@ -52,6 +55,14 @@ namespace Dia::CellLayers
 		const StringCRC kCmdSetScale("setScale");
 	}
 
+	// Parser + resolver + evaluator (fixed-capacity, several KB each), allocated once per domain.
+	struct CellLayerViewerDomain::QueryState
+	{
+		QueryParser		parser;
+		QueryResolver	resolver;
+		QueryEvaluator	evaluator;
+	};
+
 	CellLayerViewerDomain::CellLayerViewerDomain(CellLayerRegistry& registry, LayerUploader& uploader, const Dia::ValueSchema::ValueSchemaService* schema, ViewFn view)
 		: mRegistry(registry)
 		, mUploader(uploader)
@@ -83,6 +94,7 @@ namespace Dia::CellLayers
 		UnregisterCommands();
 		Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealth);
 		delete mResolver;
+		delete mQuery;
 	}
 
 	// ---- identity ----
@@ -776,6 +788,7 @@ namespace Dia::CellLayers
 			"cells.select.cell", "cells.select.toggle", "cells.select.box", "cells.select.poly",
 			"cells.select.category", "cells.select.cells", "cells.select.clear"
 		};
+		const char* const kQueryCommands[] = { "cells.select.query", "cells.query.check" };
 		const char* const kSelectPanelCommands[] = { "cells.select.tool", "cells.select.group", "cells.select.pin", "cells.select.unpin", "cells.inspect", "cells.inspector.expand" };
 
 		Json::Value SelectError(const std::string& msg)
@@ -824,6 +837,21 @@ namespace Dia::CellLayers
 			const char* const name = kSelectCommands[i];
 			info.callback = [this, op, name](const Json::Value& params) -> Json::Value { return ExecuteSelect(op, name, params); };
 			Dia::API::RegisterCommandJson(info);
+		}
+
+		for (uint32_t i = 0; i < 2; ++i)
+		{
+			const bool apply = (i == 0);
+			Dia::API::CommandInfoJson q;
+			q.name = StringCRC(kQueryCommands[i]);
+			q.description = apply
+				? "Replace the selection with the cells matching a query: params {\"expr\": \"<query>\"}, e.g. terrain == water and temp > 3; returns {ok, count} or an error result {error:{message, column, length, suggestion?}} (selection unchanged on error)"
+				: "Count the cells matching a query without touching the selection (read-only): params {\"expr\": \"<query>\"}; returns {ok, count} or an error result {error:{message, column, length, suggestion?}}";
+			q.category = StringCRC("cells");
+			q.owner = "DiaCellLayers";
+			const char* const name = kQueryCommands[i];
+			q.callback = [this, apply, name](const Json::Value& params) -> Json::Value { return ExecuteQuery(apply, name, params); };
+			Dia::API::RegisterCommandJson(q);
 		}
 
 		Dia::API::CommandInfoJson tool;
@@ -1217,6 +1245,69 @@ namespace Dia::CellLayers
 		return out;
 	}
 
+	namespace
+	{
+		Json::Value QueryErrorJson(const char* message, uint32_t column, uint32_t length, const char* suggestion)
+		{
+			Json::Value err(Json::objectValue);
+			err["message"] = message;
+			err["column"] = column;
+			err["length"] = length;
+			if (suggestion != nullptr && suggestion[0] != '\0') { err["suggestion"] = suggestion; }
+			Json::Value out(Json::objectValue);
+			out["ok"] = false;
+			out["error"] = err;
+			return out;
+		}
+	}
+
+	Json::Value CellLayerViewerDomain::ExecuteQuery(bool apply, const char* name, const Json::Value& params)
+	{
+		Lock l(mMutex);
+		std::string text;
+		if (params.isObject() && params["expr"].isString()) { text = params["expr"].asString(); }
+		else if (params.isString()) { text = params.asString(); }
+		const size_t first = text.find_first_not_of(" \t\r\n");
+		// check runs on every keystroke: it stays silent; only select logs (run and reject at Info).
+		auto reject = [&](const char* msg, uint32_t col, uint32_t len, const char* sugg) -> Json::Value
+		{
+			if (apply) { DIA_LOG_INFO("CEL", "%s rejected: %s", name, msg); }
+			return QueryErrorJson(msg, col, len, sugg);
+		};
+		if (first == std::string::npos) { return reject("empty query", 0, 0, nullptr); }
+		CellSelection* sel = mRegistry.SelectionFor(mActiveGrid);
+		if (sel == nullptr) { return reject("no active grid", 0, 0, nullptr); }
+
+		if (mQuery == nullptr) { mQuery = new QueryState(); }
+		const char* const src = text.c_str();
+		if (!mQuery->parser.Parse(src))
+		{
+			const QueryError& e = mQuery->parser.Error();
+			return reject(e.mMessage, e.mColumn, e.mLength, e.mSuggestion);
+		}
+		if (!mQuery->resolver.Resolve(src, mQuery->parser, mRegistry, mActiveGrid, mSchema))
+		{
+			const QueryError& e = mQuery->resolver.Error();
+			return reject(e.mMessage, e.mColumn, e.mLength, e.mSuggestion);
+		}
+		const uint32_t cellCount = static_cast<uint32_t>(mActiveGrid->width) * mActiveGrid->height;
+		if (!mQuery->evaluator.Evaluate(mQuery->parser, mQuery->resolver, mReader, cellCount))
+		{
+			const QueryError& e = mQuery->evaluator.Error();
+			return reject(e.mMessage, e.mColumn, e.mLength, e.mSuggestion);
+		}
+		const uint32_t count = mQuery->evaluator.Count();
+		if (apply)
+		{
+			if (!mQuery->evaluator.ApplyTo(*sel)) { return reject("query result does not fit the selection", 0, 0, nullptr); }
+			DIA_LOG_INFO("CEL", "query run: '%s' -> %u matches", src, count);
+		}
+		Json::Value out(Json::objectValue);
+		out["ok"] = true;
+		out["count"] = count;
+		return out;
+	}
+
 	// Routes each gesture command through ExecuteSelectLocked, so metrics and CEL logging match the JSON commands.
 	class CellLayerViewerDomain::InputSink : public ISelectionCommands
 	{
@@ -1299,6 +1390,7 @@ namespace Dia::CellLayers
 		mCommandsRegistered = false;
 		for (const char* n : kSelectCommands) { Dia::API::UnregisterCommandJson(StringCRC(n)); }
 		for (const char* n : kSelectPanelCommands) { Dia::API::UnregisterCommandJson(StringCRC(n)); }
+		for (const char* n : kQueryCommands) { Dia::API::UnregisterCommandJson(StringCRC(n)); }
 		Dia::API::UnregisterCommandJson(StringCRC("cells.layer.list"));
 		Dia::API::UnregisterCommandJson(StringCRC("cells.layer.base_by_id"));
 		Dia::API::UnregisterCommandJson(StringCRC("cells.overlay.toggle_by_id"));
