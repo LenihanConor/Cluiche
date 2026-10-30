@@ -11,6 +11,10 @@
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Log/Logger.h>
 
+#include <cstring>
+#include <memory>
+#include <string>
+
 #ifdef _WIN32
 #include <windows.h>
 // windows.h defines SetPort as a macro; drop it so we can call the real method.
@@ -29,6 +33,11 @@ namespace Dia
 			, mPort(8080)
 			, mAutoStart(true)
 			, mObservationBridge(nullptr)
+			, mSimSink(nullptr)
+			, mNowMsFn(nullptr)
+			, mSendHook(nullptr)
+			, mSendHookContext(nullptr)
+			, mLoggedLateSimReply(false)
 			, mStartTimestamp(0)
 			, mStarted(false)
 		{
@@ -55,6 +64,157 @@ namespace Dia
 		{
 			if (diagamePath) strncpy_s(mDiagamePath, sizeof(mDiagamePath), diagamePath, _TRUNCATE);
 			else mDiagamePath[0] = '\0';
+		}
+
+		//---------------------------------------------------------------------
+		// Sim-hosted queries (Main thread only)
+		//---------------------------------------------------------------------
+
+		bool DebugServer::RegisterSimHosted(Dia::Core::StringCRC name, SimKind kind)
+		{
+			for (unsigned int i = 0; i < mSimNames.Size(); ++i)
+			{
+				if (mSimNames[i].name == name)
+				{
+					DIA_LOG_ERROR("DebugServer", "RegisterSimHosted: '%s' is already sim-hosted", name.AsChar());
+					return false;
+				}
+			}
+			if (mQueryRegistry.Has(name))
+			{
+				DIA_LOG_ERROR("DebugServer", "RegisterSimHosted: '%s' already exists in QueryRegistry", name.AsChar());
+				return false;
+			}
+			if (mSimNames.IsFull())
+			{
+				DIA_LOG_ERROR("DebugServer", "RegisterSimHosted: capacity reached, cannot register '%s'", name.AsChar());
+				return false;
+			}
+			SimName entry;
+			entry.name = name;
+			entry.kind = kind;
+			mSimNames.Add(entry);
+			return true;
+		}
+
+		void DebugServer::UnregisterSimHosted(Dia::Core::StringCRC name)
+		{
+			for (unsigned int i = 0; i < mSimNames.Size(); ++i)
+			{
+				if (mSimNames[i].name == name)
+				{
+					mSimNames.RemoveAt(i);
+					return;
+				}
+			}
+		}
+
+		void DebugServer::SetNowMsFunction(NowMsFunction fn)
+		{
+			mNowMsFn = fn;
+		}
+
+		uint64_t DebugServer::NowMs() const
+		{
+			if (mNowMsFn)
+				return mNowMsFn();
+			return Dia::DebugProtocol::GetTimestampNow() / 1000;
+		}
+
+		void DebugServer::SendSimError(int connId, const char* commandName, const char* error)
+		{
+			dia::debug::DebugMessage response;
+			response.set_type(dia::debug::MESSAGE_TYPE_COMMAND_RESPONSE);
+			response.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
+			auto* resp = response.mutable_command_response();
+			resp->set_command(commandName);
+			resp->set_success(false);
+			resp->set_message(error);
+			Json::Value body;
+			body["success"] = false;
+			body["error"] = error;
+			Dia::Proto::JsonValueToProtoStruct(body, resp->mutable_payload());
+			SendProtoMessage(connId, response);
+		}
+
+		void DebugServer::SweepSimTimeouts()
+		{
+			if (mSimPending.Count() == 0)
+				return;
+			SimPendingTable::Entry expired[SimPendingTable::kCapacity];
+			const uint32_t n = mSimPending.Expire(NowMs(), expired, SimPendingTable::kCapacity);
+			for (uint32_t i = 0; i < n; ++i)
+			{
+				const char* name = "";
+				for (unsigned int k = 0; k < mSimNames.Size(); ++k)
+					if (mSimNames[k].name.Value() == expired[i].commandId)
+						name = mSimNames[k].name.AsChar();
+				DIA_LOG_WARNING("DebugServer", "Sim-hosted request %u ('%s') timed out", expired[i].requestId, name);
+				SendSimError(expired[i].connectionId, name, "sim timeout");
+			}
+		}
+
+		void DebugServer::CompleteSimReply(const SimReplyEvent& reply)
+		{
+			SimPendingTable::Entry entry;
+			if (!mSimPending.Complete(reply.requestId, entry))
+			{
+				if (!mLoggedLateSimReply)
+				{
+					mLoggedLateSimReply = true;
+					DIA_LOG_WARNING("DebugServer", "Dropping late/unknown sim reply (requestId=%u); further occurrences not logged",
+						reply.requestId);
+				}
+				return;
+			}
+
+			const char* name = "";
+			for (unsigned int k = 0; k < mSimNames.Size(); ++k)
+				if (mSimNames[k].name.Value() == entry.commandId)
+					name = mSimNames[k].name.AsChar();
+
+			switch (static_cast<SimReplyStatus>(reply.status))
+			{
+			case SimReplyStatus::Ok:
+				break;
+			case SimReplyStatus::TooLarge:
+				SendSimError(entry.connectionId, name, "reply too large");
+				return;
+			case SimReplyStatus::UnknownName:
+				SendSimError(entry.connectionId, name, "unknown name");
+				return;
+			case SimReplyStatus::HandlerFailed:
+			default:
+				SendSimError(entry.connectionId, name, "handler failed");
+				return;
+			}
+
+			// Json must be NUL-terminated inside the fixed buffer.
+			const void* nul = std::memchr(reply.json, 0, kSimPayloadBytes);
+			Json::Value result;
+			bool parsed = false;
+			if (nul)
+			{
+				Json::CharReaderBuilder builder;
+				std::string errs;
+				std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
+				parsed = reader->parse(reply.json, static_cast<const char*>(nul), &result, &errs);
+			}
+			if (!parsed)
+			{
+				DIA_LOG_ERROR("DebugServer", "Sim reply for '%s' has unparseable JSON", name);
+				SendSimError(entry.connectionId, name, "handler failed");
+				return;
+			}
+
+			dia::debug::DebugMessage response;
+			response.set_type(dia::debug::MESSAGE_TYPE_COMMAND_RESPONSE);
+			response.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
+			auto* resp = response.mutable_command_response();
+			resp->set_command(name);
+			resp->set_success(true);
+			Dia::Proto::JsonValueToProtoStruct(result, resp->mutable_payload());
+			SendProtoMessage(entry.connectionId, response);
 		}
 
 		void DebugServer::SetStageTransitionCallback(StageTransitionCallback cb)
@@ -166,6 +326,7 @@ namespace Dia
 
 			mLogSink.FlushToServer();
 			mServer->Update();
+			SweepSimTimeouts();
 
 			DrainPublishedTopics();
 
@@ -296,6 +457,7 @@ namespace Dia
 					}
 				}
 				RebuildSubscriberCounts();
+				mSimPending.DropConnection(connId);
 			}
 		}
 
@@ -552,6 +714,53 @@ namespace Dia
 			Json::Value payload;
 			if (cmd.has_payload())
 				payload = Dia::Proto::ProtoStructToJsonValue(cmd.payload());
+
+			// Sim-hosted names are deferred: post to SimPU, reply in CompleteSimReply.
+			for (unsigned int i = 0; i < mSimNames.Size(); ++i)
+			{
+				if (!(mSimNames[i].name == commandName))
+					continue;
+
+				std::string argsText = "{}";
+				if (!payload.isNull())
+				{
+					Json::StreamWriterBuilder compact;
+					compact["indentation"] = "";
+					argsText = Json::writeString(compact, payload);
+				}
+				if (argsText.size() >= kSimPayloadBytes)
+				{
+					SendSimError(connId, cmd.command().c_str(), "reply too large");
+					return;
+				}
+
+				const uint32_t requestId = mSimPending.Add(connId, commandName.Value(), NowMs());
+				if (requestId == 0 || !mSimSink)
+				{
+					if (requestId != 0)
+					{
+						SimPendingTable::Entry discard;
+						mSimPending.Complete(requestId, discard);
+					}
+					DIA_LOG_WARNING("DebugServer", "HandleCommand: sim busy for '%s'", cmd.command().c_str());
+					SendSimError(connId, cmd.command().c_str(), "sim busy");
+					return;
+				}
+
+				SimRequestEvent request;
+				request.requestId = requestId;
+				request.nameCrc = commandName.Value();
+				request.kind = static_cast<uint32_t>(mSimNames[i].kind);
+				std::memcpy(request.json, argsText.c_str(), argsText.size() + 1);
+				if (!mSimSink->PostRequest(request))
+				{
+					SimPendingTable::Entry discard;
+					mSimPending.Complete(requestId, discard);
+					DIA_LOG_WARNING("DebugServer", "HandleCommand: sim request stream full for '%s'", cmd.command().c_str());
+					SendSimError(connId, cmd.command().c_str(), "sim busy");
+				}
+				return;
+			}
 
 			dia::debug::DebugMessage response;
 			response.set_type(dia::debug::MESSAGE_TYPE_COMMAND_RESPONSE);
@@ -911,6 +1120,11 @@ namespace Dia
 
 		void DebugServer::SendProtoMessage(int connId, const dia::debug::DebugMessage& msg)
 		{
+			if (mSendHook)
+			{
+				mSendHook(mSendHookContext, connId, msg);
+				return;
+			}
 			std::string buffer;
 			if (Dia::Proto::ToJson(msg, buffer))
 			{

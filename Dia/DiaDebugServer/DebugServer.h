@@ -22,6 +22,9 @@
 #include "DiaDebugServer/DebugServerLogSink.h"
 #include "DiaDebugServer/IDebugStateProvider.h"
 #include "DiaDebugServer/ObservationBridge.h"
+#include "DiaDebugServer/ISimRequestSink.h"
+#include "DiaDebugServer/SimHostedTypes.h"
+#include "DiaDebugServer/SimPendingTable.h"
 
 #include <cstdint>
 #include <functional>
@@ -88,6 +91,8 @@ namespace Dia
 				, topicStatCount(0)
 			{}
 		};
+
+		struct DebugServerTestAccess;
 
 		// Pure WebSocket-based debug server.  Not a Module.
 		//
@@ -182,7 +187,35 @@ namespace Dia
 			// Number of distinct connections currently subscribed to `topic` (0 if none/unknown).  Callable from ANY thread.
 			unsigned int GetTopicSubscriberCount(const Dia::Core::StringCRC& topic) const;
 
+			// --- Sim-hosted queries (Main thread only) --------------------------
+			// A sim-hosted name is not executed on Main: HandleCommand posts a SimRequestEvent
+			// through the sink and defers the COMMAND_RESPONSE until CompleteSimReply (called
+			// on Main when the reply event is drained) or a 2000 ms timeout (swept in Tick).
+			// Dispatch order: sim-hosted, QueryRegistry, DiaAPI fallback.
+			// Sink must outlive the DebugServer or be cleared with nullptr.
+			void SetSimRequestSink(ISimRequestSink* sink) { mSimSink = sink; }
+
+			// False (Error log) if already sim-registered or the name exists in QueryRegistry.
+			// Note: QueryRegistry::Register of an already sim-hosted name is NOT rejected
+			// (QueryRegistry is unaware of sim names); the sim-hosted entry simply wins dispatch.
+			bool RegisterSimHosted(Dia::Core::StringCRC name, SimKind kind);
+			void UnregisterSimHosted(Dia::Core::StringCRC name);
+
+			// Sends the deferred COMMAND_RESPONSE for reply.requestId.  Late/unknown ids are dropped.
+			void CompleteSimReply(const SimReplyEvent& reply);
+
+			// Clock hook (milliseconds, monotonic) used for sim timeouts; null restores the default.
+			typedef uint64_t (*NowMsFunction)();
+			void SetNowMsFunction(NowMsFunction fn);
+
+			// Outgoing-message hook: if set, every message that would go to a connection is
+			// handed to it instead of the WebSocket.  Used by tests (no socket required).
+			typedef void (*SendHook)(void* context, int connId, const dia::debug::DebugMessage& msg);
+			void SetSendHook(SendHook hook, void* context) { mSendHook = hook; mSendHookContext = context; }
+
 		private:
+			friend struct DebugServerTestAccess;
+
 			struct ClientTap {
 				int connId;
 				Dia::Core::StringCRC streamId;
@@ -197,6 +230,10 @@ namespace Dia
 			void HandleCommand(int connId, const dia::debug::DebugMessage& msg);
 			void HandleHandshake(int connId, const dia::debug::DebugMessage& msg);
 			void HandlePing(int connId, const dia::debug::DebugMessage& msg);
+
+			void SweepSimTimeouts();
+			void SendSimError(int connId, const char* commandName, const char* error);
+			uint64_t NowMs() const;
 
 			void SendGameInfo(int connId);
 			const char* GetCurrentStageName() const;
@@ -252,6 +289,20 @@ namespace Dia
 			};
 			mutable Dia::Core::Mutex mSubscriberMutex;
 			Dia::Core::Containers::DynamicArrayC<TopicSubscribers, 64> mSubscriberCounts;
+
+			// Sim-hosted state (Main thread only; no locking).
+			struct SimName {
+				Dia::Core::StringCRC name;
+				SimKind              kind;
+			};
+			static const unsigned int kMaxSimNames = 32;
+			ISimRequestSink*   mSimSink;
+			SimPendingTable    mSimPending;
+			Dia::Core::Containers::DynamicArrayC<SimName, kMaxSimNames> mSimNames;
+			NowMsFunction      mNowMsFn;
+			SendHook           mSendHook;
+			void*              mSendHookContext;
+			bool               mLoggedLateSimReply;
 
 			uint64_t mStartTimestamp;
 			bool     mStarted;
