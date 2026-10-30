@@ -50,6 +50,7 @@ public_api:
     - DiaCellLayers/QueryParser.h
     - DiaCellLayers/QueryResolver.h
     - DiaCellLayers/QueryEvaluator.h
+    - DiaCellLayers/Testing/ViewStateTestSupport.h
   namespaces:
     - Dia::CellLayers::
   entry_points:
@@ -72,6 +73,11 @@ public_api:
     - SelectionStats
     - InspectorState
     - InspectorModel
+    - SelectionFingerprint
+    - ViewStatePublisher
+    - ITopicSink
+    - DebugServerTopicSink
+    - MirrorQueries
     - CellDetailRegistry
     - QueryError
     - QueryLexer
@@ -133,3 +139,7 @@ The system is generic—it knows about grids and cells, but not about game conte
 ## Selection
 
 The registry owns one `CellSelection` per grid, created lazily via `SelectionFor(grid)` (up to 8 grids). Each selection is a bitset with cached count and version, bound to a specific grid identity (pointer, width, height, topology). The `CellLayerViewerDomain` integrates selection with mouse gestures (`SelectionInput`: click/drag/lasso with modifiers for replace/toggle/box/polygon operations) and displays the outline via `SelectionOutline` (capped at 4000 edges). Overlay draw callbacks receive the selection as a read-only `ICellSelectionView` so systems can react (e.g., a paint system applies a value to selected cells). Commands are routed through `cells.select.*` DiaAPI and JSON forms. The selection group (for ctrl-click category selection) defaults to the first category layer with `ui.select_group: true`, or the first category layer of the grid. Cell identity is row-major grid index (r * width + q). The Selection Inspector (`InspectorState`/`InspectorModel`) aggregates the selection per layer; commands `cells.select.pin` (optional `freeze`), `cells.select.unpin`, `cells.inspect [group|layers|all]` and panel command `cells.inspector.expand`.
+
+## View State and Mirror
+
+`SelectionFingerprint` (Feature 5) computes a stable hash of the inspector state (selected cells, shown layers, expanded groups) to detect changes across frames. `ViewStatePublisher` broadcasts the current view state to `ITopicSink` implementations: `DebugServerTopicSink` publishes to the `cells.view.state` topic on DiaDebugServer, enabling remote inspection. `MirrorQueries` provides query functions for remote clients: `cells.layer.list` (grid layers), `cells.layer.values` (grid layer values), `cells.select.get` (selected cell indices), `cells.select.stats` (per-layer statistics). Testing support via `Testing/Conformance` fixtures validates mirror behavior. Mirror metrics: `dia.celllayers.mirror.*` track publication and query activity.
