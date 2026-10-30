@@ -45,3 +45,7 @@ export type {
 } from './ramps';
 
 export { hexDistance, cellsWithin, cellsInBox } from './cellGeometry';
+export { computeLayout, cellCentre, cellFromPoint, hexCorners } from './cellGeometry';
+export type { Topology, ViewState, Layout, LayoutInput, CellRef } from './cellGeometry';
+export { colourForValue, colourCells } from './cellColour';
+export type { CellColouring } from './cellColour';

@@ -61,14 +61,15 @@ cellsInBox(a: number, b: number, width: number): number[]
 `Dia/DiaEditorUI/src/CellGridCanvas.tsx`, exported from the package index. Pure TypeScript; styles through the `theme` object (DEUI-002).
 
 ```ts
-export interface Ramp { stops: { t: number; colour: string }[]; min: number; max: number }
-export interface Palette { entries: { value: number; colour: string }[]; fallback: string }
+// Ramp and palette types are the existing ones from ramps.ts (colours are packed Rgba8), so DiaValueSchema output feeds
+// the canvas unchanged. A palette value is the enum ordinal (position in entries); anything else uses fallback.
+export type CellColouring = { ramp: ResolvedRamp } | { palette: PaletteData }   // cellColour.ts
 
 export interface CellGridCanvasProps {
   topology: 'hex-flat-odd-q' | 'square'
   width: number; height: number                  // cells
   values: Float32Array | Uint16Array             // length width*height, row-major
-  colouring: { ramp: Ramp } | { palette: Palette }
+  colouring: CellColouring
   highlight?: ReadonlySet<number>                // cell indices
   onHover?: (cell: { q: number; r: number; index: number } | null) => void
   onCellClick?: (cell: { q: number; r: number; index: number }) => void
