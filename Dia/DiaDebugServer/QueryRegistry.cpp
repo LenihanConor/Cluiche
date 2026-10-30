@@ -9,6 +9,11 @@ namespace Dia
 	{
 		void QueryRegistry::Register(const Dia::Core::StringCRC& name, QueryHandler handler)
 		{
+			if (mVeto != nullptr && mVeto(mVetoContext, name))
+			{
+				DIA_LOG_ERROR("DebugServer", "QueryRegistry: '%s' is already sim-hosted, registration refused", name.AsChar());
+				return;
+			}
 			DIA_ASSERT(!Has(name), "QueryRegistry: handler already registered for '%s'", name.AsChar());
 			DIA_ASSERT(!mHandlers.IsFull(), "QueryRegistry: max handler capacity reached");
 

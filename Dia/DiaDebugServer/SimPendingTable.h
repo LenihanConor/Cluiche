@@ -2,6 +2,7 @@
 #define DIA_DEBUG_SERVER_SIM_PENDING_TABLE_H
 
 #include <cstdint>
+#include <cstring>
 
 namespace Dia
 {
@@ -14,6 +15,7 @@ namespace Dia
 		public:
 			static constexpr uint32_t kCapacity = 64;
 			static constexpr uint32_t kTimeoutMs = 2000;
+			static constexpr uint32_t kNameBytes = 96;
 
 			struct Entry
 			{
@@ -24,12 +26,15 @@ namespace Dia
 				// the request's command string). commandId is the StringCRC value of that name.
 				uint32_t commandId = 0;
 				uint64_t deadlineMs = 0;
+				// Copy of the command name taken at Add time, so replies still carry it if the sim name is
+				// unregistered while the request is in flight.
+				char commandName[kNameBytes] = {};
 			};
 
 			SimPendingTable();
 
 			// Returns a fresh nonzero requestId, or 0 if the table is full.
-			uint32_t Add(int connectionId, uint32_t commandId, uint64_t nowMs);
+			uint32_t Add(int connectionId, uint32_t commandId, uint64_t nowMs, const char* commandName = nullptr);
 
 			// Removes and returns the entry. False if unknown (late or duplicate reply).
 			bool Complete(uint32_t requestId, Entry& out);

@@ -21,7 +21,7 @@ namespace Dia
 			return false;
 		}
 
-		uint32_t SimPendingTable::Add(int connectionId, uint32_t commandId, uint64_t nowMs)
+		uint32_t SimPendingTable::Add(int connectionId, uint32_t commandId, uint64_t nowMs, const char* commandName)
 		{
 			if (mCount >= kCapacity)
 				return 0;
@@ -41,6 +41,12 @@ namespace Dia
 					mEntries[i].connectionId = connectionId;
 					mEntries[i].commandId = commandId;
 					mEntries[i].deadlineMs = nowMs + kTimeoutMs;
+					mEntries[i].commandName[0] = '\0';
+					if (commandName != nullptr)
+					{
+						strncpy(mEntries[i].commandName, commandName, kNameBytes - 1);
+						mEntries[i].commandName[kNameBytes - 1] = '\0';
+					}
 					++mCount;
 					return id;
 				}

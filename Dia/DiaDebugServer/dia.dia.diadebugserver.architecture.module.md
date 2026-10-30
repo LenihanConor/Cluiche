@@ -56,6 +56,7 @@ public_api:
     - Dia/DiaDebugServer/DebugServerModule.h
     - Dia/DiaDebugServer/StateSerializer.h
     - Dia/DiaDebugServer/CommandDispatcher.h
+    - Dia/DiaDebugServer/QueryRegistry.h      # Register/Unregister/Has/Execute; SetRegisterVeto (refuses names that are sim-hosted)
     - Dia/DiaDebugServer/DebugServer.h        # RegisterSimHosted, UnregisterSimHosted, SetSimRequestSink, CompleteSimReply, SetNowMsFunction, SetSendHook
     - Dia/DiaDebugServer/SimHostedTypes.h     # SimKind, SimReplyStatus, SimRequestEvent, SimReplyEvent, kSimPayloadBytes
     - Dia/DiaDebugServer/ISimRequestSink.h

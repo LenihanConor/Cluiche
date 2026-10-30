@@ -1065,6 +1065,8 @@
     <ClCompile Include="CluicheGameBaseline\TestSimRegistrationMessage.cpp" />
     <ClCompile Include="ApplicationFlow\TestStreamDeclaredCapacity.cpp" />
     <ClCompile Include="DebugServer\TestSimHostedObservation.cpp" />
+    <ClCompile Include="DebugServer\TestSimHostedExhaustive.cpp" />
+    <ClCompile Include="CluicheGameBaseline\TestSimHostedExhaustiveModules.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

@@ -2331,5 +2331,11 @@
     <ClCompile Include="DebugServer\TestSimHostedObservation.cpp">
       <Filter>DebugServer</Filter>
     </ClCompile>
+    <ClCompile Include="DebugServer\TestSimHostedExhaustive.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestSimHostedExhaustiveModules.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

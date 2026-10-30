@@ -53,9 +53,11 @@ TEST_F(UploaderEdgeTest, MissingVersionDelegateIsReadFailure)
 
 TEST_F(UploaderEdgeTest, NullGridIsReadFailure)
 {
-	Reg(temp.MakeDesc("temp", nullptr));
+	// The registry rejects a null grid, but the uploader still defends itself when handed such a descriptor directly.
+	const CellLayerDesc d = temp.MakeDesc("temp", nullptr);
+	EXPECT_EQ(registry.Register(d), CellRegisterResult::NullGrid);
 	LayerUploader up(cellField, nullptr);
-	EXPECT_EQ(up.Update(L("temp"), registry), UploadResult::ReadFailed);
+	EXPECT_EQ(up.Update(&d, registry), UploadResult::ReadFailed);
 	EXPECT_EQ(temp.readCalls, 0u);
 }
 

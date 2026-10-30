@@ -197,8 +197,8 @@ namespace Dia
 			void SetSimRequestSink(ISimRequestSink* sink);
 
 			// False (Error log) if already sim-registered or the name exists in QueryRegistry.
-			// Note: QueryRegistry::Register of an already sim-hosted name is NOT rejected
-			// (QueryRegistry is unaware of sim names); the sim-hosted entry simply wins dispatch.
+			// The reverse is also refused: QueryRegistry::Register of an already sim-hosted name
+			// logs an Error and does not register (veto installed by the DebugServer constructor).
 			bool RegisterSimHosted(Dia::Core::StringCRC name, SimKind kind);
 			void UnregisterSimHosted(Dia::Core::StringCRC name);
 
@@ -232,6 +232,7 @@ namespace Dia
 			void HandleHandshake(int connId, const dia::debug::DebugMessage& msg);
 			void HandlePing(int connId, const dia::debug::DebugMessage& msg);
 
+			static bool SimNameVeto(void* context, const Dia::Core::StringCRC& name);	// QueryRegistry register veto
 			void SweepSimTimeouts();
 			void SendSimError(int connId, const char* commandName, const char* error);
 			uint64_t NowMs() const;

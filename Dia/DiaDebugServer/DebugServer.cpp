@@ -45,6 +45,18 @@ namespace Dia
 			mGameName[0]    = '\0';
 			mGameBuild[0]   = '\0';
 			mDiagamePath[0] = '\0';
+			mQueryRegistry.SetRegisterVeto(&DebugServer::SimNameVeto, this);
+		}
+
+		bool DebugServer::SimNameVeto(void* context, const Dia::Core::StringCRC& name)
+		{
+			const DebugServer* self = static_cast<const DebugServer*>(context);
+			for (unsigned int i = 0; i < self->mSimNames.Size(); ++i)
+			{
+				if (self->mSimNames[i].name == name)
+					return true;
+			}
+			return false;
 		}
 
 		DebugServer::~DebugServer()
@@ -174,10 +186,7 @@ namespace Dia
 			const uint32_t n = mSimPending.Expire(NowMs(), expired, SimPendingTable::kCapacity);
 			for (uint32_t i = 0; i < n; ++i)
 			{
-				const char* name = "";
-				for (unsigned int k = 0; k < mSimNames.Size(); ++k)
-					if (mSimNames[k].name.Value() == expired[i].commandId)
-						name = mSimNames[k].name.AsChar();
+				const char* name = expired[i].commandName;
 				DIA_LOG_WARNING("DebugServer", "Sim-hosted request %u ('%s') timed out", expired[i].requestId, name);
 				BumpSimMetric("dia.debugserver.sim.timeouts");
 				SendSimError(expired[i].connectionId, name, "sim timeout");
@@ -201,10 +210,7 @@ namespace Dia
 
 			SetSimPendingGauge(mSimPending.Count());
 
-			const char* name = "";
-			for (unsigned int k = 0; k < mSimNames.Size(); ++k)
-				if (mSimNames[k].name.Value() == entry.commandId)
-					name = mSimNames[k].name.AsChar();
+			const char* name = entry.commandName;
 
 			switch (static_cast<SimReplyStatus>(reply.status))
 			{
@@ -772,7 +778,7 @@ namespace Dia
 					return;
 				}
 
-				const uint32_t requestId = mSimPending.Add(connId, commandName.Value(), NowMs());
+				const uint32_t requestId = mSimPending.Add(connId, commandName.Value(), NowMs(), cmd.command().c_str());
 				if (requestId == 0 || !mSimSink)
 				{
 					if (requestId != 0)
