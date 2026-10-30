@@ -107,6 +107,7 @@
     <ClInclude Include="QueryParser.h" />
     <ClInclude Include="QueryResolver.h" />
     <ClInclude Include="Testing\QueryTestSupport.h" />
+    <ClInclude Include="QueryEvaluator.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />
@@ -129,6 +130,7 @@
     <ClCompile Include="QueryLexer.cpp" />
     <ClCompile Include="QueryParser.cpp" />
     <ClCompile Include="QueryResolver.cpp" />
+    <ClCompile Include="QueryEvaluator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diacelllayers.architecture.module.md" />

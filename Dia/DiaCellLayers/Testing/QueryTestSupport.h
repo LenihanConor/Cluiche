@@ -6,10 +6,17 @@
 #include <DiaCellLayers/CellLayerRegistry.h>
 #include <DiaCellLayers/QueryParser.h>
 #include <DiaCellLayers/QueryResolver.h>
+#include <DiaCellLayers/QueryEvaluator.h>
+#include <DiaCellLayers/LayerReader.h>
 #include <DiaCellLayers/Testing/CellLayerTestSupport.h>
+#include <DiaCellLayers/Testing/LayerReaderTestSupport.h>
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
 
+#include <deque>
 #include <initializer_list>
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace Dia::CellLayers::Testing
 {
@@ -57,4 +64,80 @@ namespace Dia::CellLayers::Testing
 			return resolver.Resolve(text, parser, registry, grid ? grid : &gridA, service);
 		}
 	};
+
+	// Evaluator fixture: a w*h grid whose layers return fixed value vectors (layer id == schema key short name).
+	// Add layers first (AddValues), then Eval(text). Category layers need the enum entry added to q.fx before Publish.
+	struct QueryEvalFixture
+	{
+		QueryFixture							q;
+		std::deque<CountingLayerProvider>		providers;	// stable addresses
+		QueryParser								parser;
+		QueryResolver							resolver;
+		QueryEvaluator							evaluator;
+		std::unique_ptr<LayerReader>			reader;
+
+		QueryEvalFixture(uint16_t w, uint16_t h)
+		{
+			q.gridA.width = w;
+			q.gridA.height = h;
+		}
+
+		uint32_t CellCount() const { return static_cast<uint32_t>(q.gridA.width) * q.gridA.height; }
+
+		// Registers a layer (id = name, schema key cells/<name>) with the given values. Call Publish via PublishSchema first.
+		bool AddValues(const char* name, std::vector<float> values, CellValueKind kind = CellValueKind::Float)
+		{
+			providers.emplace_back();
+			providers.back().values = std::move(values);
+			CellLayerDesc d = MakeCountingLayer(name, &q.gridA, providers.back(), kind);
+			const std::string key = std::string("cells/") + name;
+			d.schemaKey = Dia::Core::StringCRC(key.c_str());
+			return q.registry.Register(d) == CellRegisterResult::Ok;
+		}
+
+		// Adds float schema entries for the given names (range 0..1), then publishes the schema.
+		void PublishSchema(std::initializer_list<const char*> floatNames, std::initializer_list<const char*> categoryNames = {})
+		{
+			for (const char* n : floatNames) { q.fx.Add(UploaderSchemaFixture::FloatEntry(n, 0, 1)); }
+			for (const char* n : categoryNames) { q.fx.Add(QueryFixture::Category(n, { "Grass", "Water", "Rock", "Sand" })); }
+			q.Publish();
+		}
+
+		LayerReader& Reader()
+		{
+			if (!reader) { reader.reset(new LayerReader(q.registry)); }
+			return *reader;
+		}
+
+		// Parse + resolve + evaluate. False on any failure (parser/resolver/evaluator message in Msg()).
+		bool Eval(const char* text)
+		{
+			if (!q.Run(text, parser, resolver)) { return false; }
+			return evaluator.Evaluate(parser, resolver, Reader(), CellCount());
+		}
+
+		std::string Msg() const
+		{
+			if (parser.Error().mMessage[0] != '\0') { return parser.Error().mMessage; }
+			if (resolver.Error().mMessage[0] != '\0') { return resolver.Error().mMessage; }
+			return evaluator.Error().mMessage;
+		}
+
+		// Result cell indices in ascending order.
+		std::vector<uint32_t> Result() const
+		{
+			std::vector<uint32_t> out;
+			for (uint32_t i = 0; i < evaluator.CellCount(); ++i) { if (evaluator.Test(i)) { out.push_back(i); } }
+			return out;
+		}
+	};
+
+	// Expected cell set from a predicate over the cell index (hand-computed sets or lambdas over layer values).
+	template <typename Pred>
+	inline std::vector<uint32_t> ExpectedCells(uint32_t cellCount, Pred pred)
+	{
+		std::vector<uint32_t> out;
+		for (uint32_t i = 0; i < cellCount; ++i) { if (pred(i)) { out.push_back(i); } }
+		return out;
+	}
 }
