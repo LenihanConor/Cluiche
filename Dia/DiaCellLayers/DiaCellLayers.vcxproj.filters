@@ -58,6 +58,10 @@
     <ClInclude Include="QueryError.h" />
     <ClInclude Include="QueryLexer.h" />
     <ClInclude Include="QueryParser.h" />
+    <ClInclude Include="QueryResolver.h" />
+    <ClInclude Include="Testing\QueryTestSupport.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />
@@ -79,6 +83,7 @@
     <ClCompile Include="InspectorModel.cpp" />
     <ClCompile Include="QueryLexer.cpp" />
     <ClCompile Include="QueryParser.cpp" />
+    <ClCompile Include="QueryResolver.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diacelllayers.architecture.module.md">
