@@ -883,7 +883,7 @@ def test_celllayers_query(dia_client):
         runs += 1
         assert sel_count() == len(exp)
 
-        # Errors: AutomationError carries the message; the structured object is mirrored in the panel record.
+        # Errors: AutomationError carries the message and the structured object (.payload); the panel record mirrors it.
         rejected = 0
         bad_cases = [
             ("rainfall <", None, False),                    # parse error
@@ -897,10 +897,15 @@ def test_celllayers_query(dia_client):
                 before = sel_count()
                 try:
                     c.send_command(cmd, {"expr": expr})
-                except AutomationError:
-                    # DebugServer's DiaAPI fallback only forwards a *string* "error", so the structured error object never
-                    # reaches the wire (message is empty -> "unknown error"). The panel record carries it; assert there.
-                    pass
+                except AutomationError as e:
+                    # The structured error object reaches the client: message in the exception, members in e.payload.
+                    assert e.payload.get("message") and str(e) == e.payload["message"], (cmd, expr, str(e), e.payload)
+                    assert isinstance(e.payload.get("column"), int) and isinstance(e.payload.get("length"), int), e.payload
+                    assert ("suggestion" in e.payload) == has_sugg, e.payload
+                    if has_sugg:
+                        assert e.payload["suggestion"] == text, e.payload
+                    elif text:
+                        assert text in e.payload["message"], e.payload
                 else:
                     raise AssertionError(f"{cmd} {expr!r} should have failed")
                 if cmd == "cells.select.query":

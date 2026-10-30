@@ -58,6 +58,7 @@ namespace Dia::CellLayers
 		const StringCRC kCmdInspectorExpand("inspector_expand");
 		const StringCRC kCmdQueryCheck("query_check");
 		const StringCRC kCmdQueryRun("query_run");
+		const StringCRC kCmdQueryPart("query_part");
 		const StringCRC kCmdSetScale("setScale");
 	}
 
@@ -639,14 +640,8 @@ namespace Dia::CellLayers
 		else if (cmd == kCmdSelectPin) { ExecutePin(args); }
 		else if (cmd == kCmdSelectUnpin) { ExecuteUnpin(args); }
 		else if (cmd == kCmdInspectorExpand) { ExecuteExpand(args); }
-		else if (cmd == kCmdQueryCheck || cmd == kCmdQueryRun)
-		{
-			Json::Value p(Json::objectValue);
-			if (args.isObject() && args["e"].isString()) { p["expr"] = args["e"]; }
-			else if (args.isObject() && args["expr"].isString()) { p["expr"] = args["expr"]; }
-			const bool run = (cmd == kCmdQueryRun);
-			ExecuteQueryRecorded(run, run ? "cells.select.query" : "cells.query.check", p);
-		}
+		else if (cmd == kCmdQueryPart) { AddQueryPart(args); }
+		else if (cmd == kCmdQueryCheck || cmd == kCmdQueryRun) { RunPanelQuery(cmd == kCmdQueryRun, args); }
 		else if (cmd == kCmdSelectClear) { ExecuteSelect(SelectOp::Clear, "cells.select.clear", Json::Value(Json::objectValue)); }
 		// kCmdSetScale and unknown commands: no-op (this domain has no scale)
 		(void)kCmdSetScale;
@@ -1340,6 +1335,67 @@ namespace Dia::CellLayers
 		out["ok"] = true;
 		out["count"] = count;
 		return out;
+	}
+
+	void CellLayerViewerDomain::AddQueryPart(const Json::Value& args)
+	{
+		if (!args.isObject() || !args["i"].isUInt() || !args["s"].isString())
+		{
+			DIA_LOG_WARNING("CEL", "query_part ignored: expected {i, s}");
+			return;
+		}
+		const uint32_t index = args["i"].asUInt();
+		const std::string& s = args["s"].asString();
+		Lock l(mMutex);
+		if (index == 0)
+		{
+			mQueryParts[0] = '\0';
+			mQueryPartLength = 0;
+			mQueryPartCount = 0;
+		}
+		if (index != mQueryPartCount)
+		{
+			DIA_LOG_WARNING("CEL", "query_part ignored: index %u, expected %u", index, mQueryPartCount);
+			return;
+		}
+		if (s.size() > kQueryPartCapacity - mQueryPartLength)
+		{
+			DIA_LOG_WARNING("CEL", "query_part ignored: query exceeds %u characters", kQueryPartCapacity);
+			return;
+		}
+		memcpy(mQueryParts + mQueryPartLength, s.c_str(), s.size());
+		mQueryPartLength += static_cast<uint32_t>(s.size());
+		mQueryParts[mQueryPartLength] = '\0';
+		++mQueryPartCount;
+	}
+
+	void CellLayerViewerDomain::RunPanelQuery(bool run, const Json::Value& args)
+	{
+		const char* const name = run ? "cells.select.query" : "cells.query.check";
+		Json::Value p(Json::objectValue);
+		if (args.isObject() && args["e"].isString()) { p["expr"] = args["e"]; }
+		else if (args.isObject() && args["expr"].isString()) { p["expr"] = args["expr"]; }
+		else if (args.isObject() && args["n"].isUInt())
+		{
+			bool complete = false;
+			{
+				Lock l(mMutex);
+				complete = (args["n"].asUInt() == mQueryPartCount) && mQueryPartCount > 0;
+				p["expr"] = std::string(mQueryParts, mQueryPartLength);
+			}
+			if (!complete)
+			{
+				DIA_LOG_WARNING("CEL", "%s: incomplete query (panel transport)", name);
+				Json::Value rec(Json::objectValue);
+				rec["ok"] = false;
+				rec["error"] = QueryErrorJson("incomplete query (panel transport)", 0, 0, nullptr)["error"];
+				rec["expr"] = p["expr"];
+				Lock l(mMutex);
+				(run ? mQueryLast : mQueryCheck) = rec;
+				return;
+			}
+		}
+		ExecuteQueryRecorded(run, name, p);
 	}
 
 	Json::Value CellLayerViewerDomain::ExecuteQueryRecorded(bool apply, const char* name, const Json::Value& params)

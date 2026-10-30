@@ -1038,6 +1038,7 @@
     <ClCompile Include="DiaCellLayers\TestQueryResolver.cpp" />
     <ClCompile Include="DiaCellLayers\TestQueryEvaluator.cpp" />
     <ClCompile Include="DiaCellLayers\TestQueryCommands.cpp" />
+    <ClCompile Include="DiaCellLayers\TestQueryPanelParts.cpp" />
     <ClCompile Include="DiaCellLayers\TestQueryObservation.cpp" />
     <ClCompile Include="DiaCellLayers\TestQueryPerf.cpp" />
     <ClCompile Include="Editor\TestPluginBrowserGameScope.cpp" />

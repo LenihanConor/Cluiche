@@ -154,4 +154,4 @@ No conflicts.
 
 ## Status
 
-`Done` (2026-10-29). Plan: [query.plan.md](query.plan.md). Visual gate (AC 12) approved by the user 2026-10-29. Panel queries are capped at 55 characters (the debug-panel bridge passes at most 63 characters of arguments); the DiaAPI commands have no such cap. Scrub-consistency (AC 9) is covered with a stub value source; the full scrub E2E waits for DiaCellHistory.
+`Done` (2026-10-29). Plan: [query.plan.md](query.plan.md). Visual gate (AC 12) approved by the user 2026-10-29. The panel sends queries longer than one bridge argument (63 characters) as `query_part` chunks followed by `query_check` / `query_run` with the part count, so the panel accepts the full 512 characters. Structured error objects reach E2E clients: `DebugServer.cpp` puts the error's `message` in the response message and the whole `{message, column, length, suggestion?}` object in the payload (`AutomationError.payload` in the E2E client). Scrub-consistency (AC 9) is covered with a stub value source; the full scrub E2E waits for DiaCellHistory.

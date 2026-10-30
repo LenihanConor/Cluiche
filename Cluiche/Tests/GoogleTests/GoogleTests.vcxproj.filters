@@ -2250,6 +2250,9 @@
     <ClCompile Include="DiaCellLayers\TestQueryCommands.cpp">
       <Filter>DiaCellLayers</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestQueryPanelParts.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
     <ClCompile Include="DiaCellLayers\TestQueryObservation.cpp">
       <Filter>DiaCellLayers</Filter>
     </ClCompile>

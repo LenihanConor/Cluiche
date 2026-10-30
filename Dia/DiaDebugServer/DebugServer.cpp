@@ -544,6 +544,21 @@ namespace Dia
 					Dia::Proto::JsonValueToProtoStruct(result["data"], resp->mutable_payload());
 				else if (result.isMember("error") && result["error"].isString())
 					resp->set_message(result["error"].asString());
+				else if (result.isMember("error") && result["error"].isObject())
+				{
+					const Json::Value& errorObj = result["error"];
+					if (errorObj.isMember("message") && errorObj["message"].isString())
+					{
+						resp->set_message(errorObj["message"].asString());
+					}
+					else
+					{
+						Json::StreamWriterBuilder writer;
+						writer["indentation"] = "";
+						resp->set_message(Json::writeString(writer, errorObj));
+					}
+					Dia::Proto::JsonValueToProtoStruct(errorObj, resp->mutable_payload());
+				}
 			}
 
 			SendProtoMessage(connId, response);

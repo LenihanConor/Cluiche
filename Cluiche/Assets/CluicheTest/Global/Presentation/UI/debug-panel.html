@@ -1076,11 +1076,42 @@ function refreshSelection(root, s) {
 // State "query" (CellLayerViewerDomain): {available, check?{expr, ok, count | error{message,column,length,suggestion?}}, last?{same, from query_run}}.
 // The panel bridge is fire-and-forget (no reply), so the page sends panel commands query_check {e} (debounced) / query_run {e} and renders the outcome
 // the domain pushes back in state. A check outcome is shown only while its expr equals the input (stale guard). Args are capped at 63 chars by the
-// bridge, hence the short key "e" and the "too long" message. The input text and the recent list are page-session state (ui.*), not persisted.
+// bridge, hence the short key "e"; a longer expression (up to 512 chars) is sent as query_part {i,s} chunks followed by query_check / query_run {n: partCount}.
+// The input text and the recent list are page-session state (ui.*), not persisted.
 var QUERY_DEBOUNCE_MS = 250;
 var QUERY_MAX_RECENT = 10;
 
-function queryTooLong(text) { return JSON.stringify({ e: text }).length > MAX_ARG_JSON; }
+var QUERY_MAX_CHARS = 512;
+
+function queryTooLong(text) { return String(text).length > QUERY_MAX_CHARS; }
+
+// Splits text into chunks so every JSON.stringify({i:k,s:chunk}) fits the bridge cap; never splits a surrogate pair. null if it cannot fit.
+function queryParts(text) {
+  var parts = [], pos = 0;
+  while (pos < text.length) {
+    var best = pos;
+    for (var j = pos + 1; j <= text.length; ++j) {
+      if (j < text.length) {
+        var hi = text.charCodeAt(j - 1), lo = text.charCodeAt(j);
+        if (hi >= 0xD800 && hi <= 0xDBFF && lo >= 0xDC00 && lo <= 0xDFFF) continue;
+      }
+      if (JSON.stringify({ i: parts.length, s: text.substring(pos, j) }).length > MAX_ARG_JSON) break;
+      best = j;
+    }
+    if (best === pos) return null;
+    parts.push(text.substring(pos, best));
+    pos = best;
+  }
+  return parts;
+}
+
+function sendQueryCommand(sec, cmd, text) {
+  if (JSON.stringify({ e: text }).length <= MAX_ARG_JSON) { sendCommand(sec._cmdId, cmd, { e: text }); return; }
+  var parts = queryParts(text);
+  if (!parts) return;
+  for (var k = 0; k < parts.length; ++k) sendCommand(sec._cmdId, 'query_part', { i: k, s: parts[k] });
+  sendCommand(sec._cmdId, cmd, { n: parts.length });
+}
 
 function scheduleQueryCheck(sec) {
   clearTimeout(ui.queryTimer);
@@ -1089,7 +1120,7 @@ function scheduleQueryCheck(sec) {
   if (!String(text).trim() || queryTooLong(text)) return;
   ui.queryTimer = setTimeout(function () {
     ui.queryTimer = null;
-    if (ui.queryText === text) sendCommand(sec._cmdId, 'query_check', { e: text });
+    if (ui.queryText === text) sendQueryCommand(sec, 'query_check', text);
   }, QUERY_DEBOUNCE_MS);
 }
 
@@ -1099,7 +1130,7 @@ function runQuery(sec) {
   clearTimeout(ui.queryTimer);
   ui.queryTimer = null;
   if (queryTooLong(text)) { refreshQueryBox(sec); return; }
-  sendCommand(sec._cmdId, 'query_run', { e: text });
+  sendQueryCommand(sec, 'query_run', text);
   var r = ui.queryRecent;
   for (var i = r.length - 1; i >= 0; --i) if (r[i] === text) r.splice(i, 1);
   r.unshift(text);
@@ -1179,7 +1210,7 @@ function refreshQueryBox(sec) {
   var resText = '', errInfo = null;
   if (String(text).trim()) {
     if (queryTooLong(text)) {
-      errInfo = { message: 'query too long for the panel (max ' + (MAX_ARG_JSON - 8) + ' characters)', column: 0, length: 0 };
+      errInfo = { message: 'query too long (max ' + QUERY_MAX_CHARS + ' characters)', column: 0, length: 0 };
     } else {
       var entry = queryEntryFor(sec._q, text);
       if (entry && entry.ok) resText = '→ ' + entry.count + (entry.count === 1 ? ' cell matches' : ' cells match');

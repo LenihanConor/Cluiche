@@ -740,12 +740,59 @@ describe("query box (Query task 7: debounced live check, error span + suggestion
     expect(input().value).toBe("temp > 11");
   });
 
-  it("a query too long for the 63-character panel bridge says so and is not sent", () => {
+  it("a 150-character query is sent as query_part calls then one final command, every argsJson <= 63 chars", () => {
     push("domain_states_celllayers.json");
-    type("temp > 1 and temp > 2 and temp > 3 and temp > 4 and temp > 5 and rain");
+    const long = "temp > 1 and temp > 2 and temp > 3 and temp > 4 and temp > 5 and temp > 6 and temp > 7 and temp > 8 and temp > 9 and temp > 10 and temp > 11 and ra";
+    expect(long.length).toBeGreaterThan(140);
+    type(long);
     vi.advanceTimersByTime(250);
+    const sent = commands();
+    expect(sent.length).toBeGreaterThan(2);
+    for (const c of sent) expect(c[3].length).toBeLessThanOrEqual(63);
+    const last = sent[sent.length - 1];
+    expect(last[2]).toBe("query_check");
+    const parts = sent.slice(0, -1);
+    expect(parts.every((c) => c[2] === "query_part")).toBe(true);
+    expect(JSON.parse(last[3])).toEqual({ n: parts.length });
+    expect(parts.map((c) => JSON.parse(c[3]).i)).toEqual(parts.map((_, i) => i));
+    expect(parts.map((c) => JSON.parse(c[3]).s).join("")).toBe(long);
+    expect(err()).toBeNull();
+    commands().length = 0;
+    p.calls.length = 0;
+    p.click(box().querySelector("[data-role=query-run]")!);
+    const run = commands();
+    expect(run[run.length - 1][2]).toBe("query_run");
+    expect(run.slice(0, -1).every((c) => c[2] === "query_part")).toBe(true);
+    expect(recents()).toEqual([long]);
+  });
+
+  it("splitting escapes correctly and never splits a surrogate pair", () => {
+    push("domain_states_celllayers.json");
+    const tricky = ("a\"\\" + "\u{1F600}").repeat(20);
+    type(tricky);
+    vi.advanceTimersByTime(250);
+    const sent = commands();
+    for (const c of sent) expect(c[3].length).toBeLessThanOrEqual(63);
+    const parts = sent.slice(0, -1).map((c) => JSON.parse(c[3]).s as string);
+    expect(parts.join("")).toBe(tricky);
+    for (const s of parts) expect(/^[\uDC00-\uDFFF]|[\uD800-\uDBFF]$/.test(s)).toBe(false);
+  });
+
+  it("a query over 512 characters shows the local error and sends nothing", () => {
+    push("domain_states_celllayers.json");
+    type("t".repeat(513));
+    vi.advanceTimersByTime(250);
+    p.click(box().querySelector("[data-role=query-run]")!);
     expect(commands().length).toBe(0);
-    expect(txt(err().querySelector(".q-msg"))).toContain("too long");
+    expect(txt(err().querySelector(".q-msg"))).toBe("query too long (max 512 characters)");
+  });
+
+  it("a 512-character query is still sent", () => {
+    push("domain_states_celllayers.json");
+    type("t".repeat(512));
+    vi.advanceTimersByTime(250);
+    expect(commands().length).toBeGreaterThan(1);
+    expect(err()).toBeNull();
   });
 
   it("the query box host is kept across state pushes", () => {

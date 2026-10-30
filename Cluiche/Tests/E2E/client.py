@@ -11,7 +11,9 @@ except ImportError:
 
 
 class AutomationError(Exception):
-    pass
+    def __init__(self, message="", payload=None):
+        super().__init__(message)
+        self.payload = payload if payload is not None else {}
 
 
 class DiaClient:
@@ -193,7 +195,8 @@ class DiaClient:
             if resp.get("command") != command:
                 continue  # stale response for a different command
             if not resp.get("success"):
-                raise AutomationError(resp.get("message", "unknown error"))
+                raise AutomationError(resp.get("message", "unknown error"),
+                                      payload=resp.get("payload", {}))
             return resp.get("payload", {})
         raise TimeoutError(f"No command response received for '{command}'")
 

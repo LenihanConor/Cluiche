@@ -28,6 +28,8 @@
 // by InspectorModel::BuildCardJson (shape in InspectorModel.h); the card is treated as open, so a single selected cell adds its "cell" table.
 // GetJSONState "query": {available:true, check?:{expr, ok, count | error{message,column,length,suggestion?}}, last?:{same, from cells.select.query}}.
 // Panel commands "query_check" / "query_run" {e: "<expr>"} (short key: the panel bridge caps args at 63 chars) run the same code as the JSON commands.
+// Longer queries (up to 512 chars) arrive as "query_part" {i, s} chunks (i == 0 restarts the buffer; out-of-order or overflowing chunks are ignored,
+// logged on CEL at Warning), then query_check / query_run {n: partCount}; a part count mismatch records "incomplete query (panel transport)".
 // GetJSONState "selection": {count, tool, group, groups[{id,label,selected}], tooLarge, tooLargeText (only when tooLarge)}.
 // The registry is borrowed; CellLayersModule owns and publishes it on a ServiceStream (CL-006). A consumer module resolves it
 // with FindCellLayerRegistry(reader) (CellLayersModule.h) and passes *registry to the constructor.
@@ -232,6 +234,12 @@ namespace Dia::CellLayers
 		QueryState*				mQuery = nullptr;	// owned
 		Json::Value				mQueryCheck;		// last cells.query.check outcome {expr, ok, count | error}; null until one ran
 		Json::Value				mQueryLast;			// last cells.select.query outcome, same shape
+		static const uint32_t	kQueryPartCapacity = 512;
+		char					mQueryParts[kQueryPartCapacity + 1] = {};	// panel transport: assembled query_part text (guarded by mMutex)
+		uint32_t				mQueryPartLength = 0;
+		uint32_t				mQueryPartCount = 0;
+		void	AddQueryPart(const Json::Value& args);	// locks mMutex
+		void	RunPanelQuery(bool run, const Json::Value& args);	// query_check / query_run {e} or {n}
 	};
 }
 
