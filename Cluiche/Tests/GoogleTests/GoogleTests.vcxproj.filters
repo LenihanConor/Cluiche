@@ -2274,5 +2274,8 @@
     <ClCompile Include="DebugServer\TestDebugServerPublishTopic.cpp">
       <Filter>DebugServer</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestSelectionFingerprint.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

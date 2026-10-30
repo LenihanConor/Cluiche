@@ -1046,6 +1046,7 @@
     <ClCompile Include="Editor\TestGameSwitchGate.cpp" />
     <ClCompile Include="Editor\TestGameSwitchController.cpp" />
     <ClCompile Include="DebugServer\TestDebugServerPublishTopic.cpp" />
+    <ClCompile Include="DiaCellLayers\TestSelectionFingerprint.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

@@ -108,6 +108,7 @@
     <ClInclude Include="QueryResolver.h" />
     <ClInclude Include="Testing\QueryTestSupport.h" />
     <ClInclude Include="QueryEvaluator.h" />
+    <ClInclude Include="SelectionFingerprint.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />
@@ -131,6 +132,7 @@
     <ClCompile Include="QueryParser.cpp" />
     <ClCompile Include="QueryResolver.cpp" />
     <ClCompile Include="QueryEvaluator.cpp" />
+    <ClCompile Include="SelectionFingerprint.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diacelllayers.architecture.module.md" />
