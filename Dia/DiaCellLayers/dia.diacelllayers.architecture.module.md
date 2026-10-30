@@ -35,6 +35,10 @@ public_api:
     - DiaCellLayers/SelectionTools.h
     - DiaCellLayers/SelectionOutline.h
     - DiaCellLayers/SelectionInput.h
+    - DiaCellLayers/SelectionStats.h
+    - DiaCellLayers/InspectorState.h
+    - DiaCellLayers/InspectorModel.h
+    - DiaCellLayers/CellDetailRegistry.h
   namespaces:
     - Dia::CellLayers::
   entry_points:
@@ -54,6 +58,10 @@ public_api:
     - SelectionTools
     - SelectionOutline
     - SelectionInput
+    - SelectionStats
+    - InspectorState
+    - InspectorModel
+    - CellDetailRegistry
 responsibilities:
   - Per-cell layer registry for generic layer management
   - Viewer integration via CellField display
@@ -89,6 +97,10 @@ Provides a registry system that allows any module or application to register cel
 | `SelectionTools` | Pure tool functions: `SelectCell` (replace), `ToggleCell`, `SelectBox`, `ClearSelection`, `SelectPolygon` (point-in-polygon), `SelectCells` (by coordinate list, capped at 2048 per call), `SelectCategory` (by layer value). Each returns `ToolResult { ok, changed, count }` or specialized `CellsResult` / `CategoryResult` with error details. Coordinates are cell (q=column, r=row); out-of-bounds ignored. Each call bumps version at most once on net change. Commands wire via `CellLayerViewerDomain` on `cells.select.*` path. |
 | `SelectionOutline` | Cached perimeter of a selection (flat-top odd-q hex edges between selected and non-selected neighbours). Capped at 4000 edges; above that marked `TooLarge()` and not stored. Rebuilds only when selection version or grid identity (width, height, cellSize) changes. Supplies `OutlineEdge` array for debug drawing. Metrics `EdgeCount()`, `SelectedCountForBanner()`, `Rebuilds()` available but not yet registered. |
 | `SelectionInput` | Mouse gesture state machine for selection commands: SELECT tool (LEFT button, click/drag/lasso on cells with modifiers for ToggleCell/SelectBox/SelectPolygon) and PAN tool (camera owns middle/right). Handles pointer-down, pointer-move, Esc-press; tracks gesture feedback (start cell, current cell, lasso path up to 256 points). Ctrl-click selects by category (group layer configurable per grid via `ui.select_group` schema hint or first category layer). Outputs to `ISelectionCommands` sink (wired by viewer to `cells.select.*` DiaAPI commands). |
+| `SelectionStats` | Per-layer aggregates over a selection: float `count`/`nanCount`/`min`/`mean`(double)/`max` with schema label and unit; category counts per enum value (cap 64, `otherCount`, `nanCount`); 16-bin `Histogram` with out-of-range footer. Pure functions over `ICellSelectionView` + `LayerValues`; `Compute` reads through `LayerReader`. |
+| `InspectorState` | Selection Inspector compute state owned by the viewer domain. Shown set = active base + layers of expanded groups on the active grid (caps 32 layers, 16 groups); one lazy recompute pass per Tick after a selection/layer-version/expanded-set change; `IsUpdating` marks the pending frame. Pin A (`Pin`, `PinFreeze`, `Unpin`): live A recomputes with B, frozen A stores stats for every grid layer once (`FrozenAvailable` false = "not frozen"); `ComputeDelta` gives B minus A. Metrics `dia.celllayers.inspector.*`; warns once per unresolved schemaKey. |
+| `InspectorModel` | Card-independent views of the inspector: `BuildSingleCell` (exact values for shown layers + provider details, only for exactly one selected cell), `BuildStatsJson` (the `cells.inspect` result: shown/group/layers/all, histogram, pinned A + delta, single cell), `BuildCardJson` (panel `inspector` block from the cache). Feature 5 reuses `BuildStatsJson`. |
+| `CellDetailRegistry` | Per-grid detail providers (`CellLayerRegistry::Details()`): providers emit sections/rows through `CellDetailBuilder` (`Section`, `Row`, `RowValue` with schema label/unit/tooltip), 64 rows max per provider (one Warning), run in registration order, only via `ShouldRunProviders` (exactly one selected cell, card open). |
 
 ## Overview
 
@@ -103,4 +115,4 @@ The system is generic—it knows about grids and cells, but not about game conte
 
 ## Selection
 
-The registry owns one `CellSelection` per grid, created lazily via `SelectionFor(grid)` (up to 8 grids). Each selection is a bitset with cached count and version, bound to a specific grid identity (pointer, width, height, topology). The `CellLayerViewerDomain` integrates selection with mouse gestures (`SelectionInput`: click/drag/lasso with modifiers for replace/toggle/box/polygon operations) and displays the outline via `SelectionOutline` (capped at 4000 edges). Overlay draw callbacks receive the selection as a read-only `ICellSelectionView` so systems can react (e.g., a paint system applies a value to selected cells). Commands are routed through `cells.select.*` DiaAPI and JSON forms. The selection group (for ctrl-click category selection) defaults to the first category layer with `ui.select_group: true`, or the first category layer of the grid. Cell identity is row-major grid index (r * width + q).
+The registry owns one `CellSelection` per grid, created lazily via `SelectionFor(grid)` (up to 8 grids). Each selection is a bitset with cached count and version, bound to a specific grid identity (pointer, width, height, topology). The `CellLayerViewerDomain` integrates selection with mouse gestures (`SelectionInput`: click/drag/lasso with modifiers for replace/toggle/box/polygon operations) and displays the outline via `SelectionOutline` (capped at 4000 edges). Overlay draw callbacks receive the selection as a read-only `ICellSelectionView` so systems can react (e.g., a paint system applies a value to selected cells). Commands are routed through `cells.select.*` DiaAPI and JSON forms. The selection group (for ctrl-click category selection) defaults to the first category layer with `ui.select_group: true`, or the first category layer of the grid. Cell identity is row-major grid index (r * width + q). The Selection Inspector (`InspectorState`/`InspectorModel`) aggregates the selection per layer; commands `cells.select.pin` (optional `freeze`), `cells.select.unpin`, `cells.inspect [group|layers|all]` and panel command `cells.inspector.expand`.
