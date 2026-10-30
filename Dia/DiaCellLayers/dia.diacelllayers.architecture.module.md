@@ -39,6 +39,11 @@ public_api:
     - DiaCellLayers/InspectorState.h
     - DiaCellLayers/InspectorModel.h
     - DiaCellLayers/CellDetailRegistry.h
+    - DiaCellLayers/QueryError.h
+    - DiaCellLayers/QueryLexer.h
+    - DiaCellLayers/QueryParser.h
+    - DiaCellLayers/QueryResolver.h
+    - DiaCellLayers/QueryEvaluator.h
   namespaces:
     - Dia::CellLayers::
   entry_points:
@@ -62,6 +67,11 @@ public_api:
     - InspectorState
     - InspectorModel
     - CellDetailRegistry
+    - QueryError
+    - QueryLexer
+    - QueryParser
+    - QueryResolver
+    - QueryEvaluator
 responsibilities:
   - Per-cell layer registry for generic layer management
   - Viewer integration via CellField display
@@ -101,6 +111,7 @@ Provides a registry system that allows any module or application to register cel
 | `InspectorState` | Selection Inspector compute state owned by the viewer domain. Shown set = active base + layers of expanded groups on the active grid (caps 32 layers, 16 groups); one lazy recompute pass per Tick after a selection/layer-version/expanded-set change; `IsUpdating` marks the pending frame. Pin A (`Pin`, `PinFreeze`, `Unpin`): live A recomputes with B, frozen A stores stats for every grid layer once (`FrozenAvailable` false = "not frozen"); `ComputeDelta` gives B minus A. Metrics `dia.celllayers.inspector.*`; warns once per unresolved schemaKey. |
 | `InspectorModel` | Card-independent views of the inspector: `BuildSingleCell` (exact values for shown layers + provider details, only for exactly one selected cell), `BuildStatsJson` (the `cells.inspect` result: shown/group/layers/all, histogram, pinned A + delta, single cell), `BuildCardJson` (panel `inspector` block from the cache). Feature 5 reuses `BuildStatsJson`. |
 | `CellDetailRegistry` | Per-grid detail providers (`CellLayerRegistry::Details()`): providers emit sections/rows through `CellDetailBuilder` (`Section`, `Row`, `RowValue` with schema label/unit/tooltip), 64 rows max per provider (one Warning), run in registration order, only via `ShouldRunProviders` (exactly one selected cell, card open). |
+| `QueryLexer` / `QueryParser` / `QueryResolver` / `QueryEvaluator` | Cell query language (`vegetation < 0.2 and biome = Grassland`). Lexer and parser produce a fixed-capacity AST (limits: 512 characters, depth 16; `not` > `and` > `or`) and `QueryError { message, column, length, suggestion }` with fixed char buffers. Resolver binds names to layers on the active grid (registered id, then unique short schema key) and enum ids (exact, case-sensitive) with closest-name suggestions (ratio >= 0.6). Evaluator reads each layer once through `LayerReader`, one bitset per comparison, and/or/not as bitset ops; NaN is false for every operator (so `not` of a NaN comparison is true); `ApplyTo` replaces a `CellSelection` with one version bump. Commands `cells.select.query` / `cells.query.check` (`{expr}`), panel commands `query_check` / `query_run`. Metrics `dia.celllayers.query.*`. |
 
 ## Overview
 
