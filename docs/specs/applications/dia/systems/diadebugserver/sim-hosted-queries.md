@@ -111,3 +111,5 @@ namespace Dia::DebugServer {
 ## Status
 
 `Approved`
+
+**Plan:** @docs/specs/applications/dia/systems/diadebugserver/sim-hosted-queries.plan.md

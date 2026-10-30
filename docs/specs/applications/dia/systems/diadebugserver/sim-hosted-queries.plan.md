@@ -1,0 +1,22 @@
+**Spec:** @docs/specs/applications/dia/systems/diadebugserver/sim-hosted-queries.md
+**Status:** In Progress
+
+Prerequisite for removing `CellLayerViewerDomain::mMutex` (follow-on spec). TDD throughout; commit after each task. Shared DebugServer code: module doc and registry updates in Task 5.
+
+## Implementation Patterns
+
+- **Events:** `SimRequestEvent` / `SimReplyEvent` are trivially copyable structs with `char json[kSimPayloadBytes]` (16384). Namespace `Dia::DebugServer`. Streams are `EventStream`s declared in the `.diaapp` manifest (precedent: `DebugConsoleLine` / `DebugConsoleResult`, `DebugPanelCommand`; see `VisualDebuggerModule.cpp` `DrainPanelCommandStream`).
+- **Main side:** `DebugServer` stays stream-agnostic; it talks to `ISimRequestSink` and receives replies through `CompleteSimReply`, called on Main only. Pending table is a fixed array (64) of `{requestId, connectionId, commandId, deadline}`; sweep in `Tick`. No new mutex.
+- **Sim side:** `SimQueryHost` holds a fixed-capacity handler table (same style as `QueryRegistry`, capacity 64), registered on SimPU only, `Update()` drains and replies once per frame. Handlers wrapped in try/catch.
+- **Dispatch order in `HandleCommand`:** sim-hosted names first (defer), then `QueryRegistry`, then DiaAPI fallback. A name registered in both `QueryRegistry` and as sim-hosted is rejected at registration.
+- **Tests:** DebugServer GoogleTests with the real loopback server pattern already used by `SLOW_DebugServerPublishTopicTest`; fake `ISimRequestSink` and fake clock for unit-level timeout tests. Test helpers go in `Dia/DiaDebugServer/Testing/`.
+- **Observation:** `MetricRegistry` counters `dia.debugserver.sim.*`, `DIA_LOG_*` with the existing DebugServer log channel.
+
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| 1 | `SimRequestEvent` / `SimReplyEvent` structs and `ISimRequestSink` in DiaDebugServer; request-id allocator and fixed pending table with deadline (add / complete / expire / full). **Also investigate and record in notes whether `Dia::API::CommandRegistry` is safe to invoke from SimPU while Main uses it (notes only, no code)** | RED-GREEN: id uniqueness and wrap, add/complete, expire at deadline with fake clock, full table returns busy, complete of unknown id | Pending | sonnet | Pending table is a standalone class so it is unit-testable without a server |
+| 2 | `DebugServer::RegisterSimHosted`, `SetSimRequestSink`, `HandleCommand` deferral, `CompleteSimReply`, timeout sweep in `Tick`, busy and too-large paths, connection-close cleanup, duplicate-registration rejection | RED-GREEN: deferral sends no reply until completed, reply reaches the right connection, timeout error, busy, args too large, connection close drops entry, dual registration rejected, fallthrough order | Pending | sonnet | Loopback server tests; shared DebugServer change |
+| 3 | `SimQueryHost`: `RegisterQuery` / `RegisterCommand`, `Update()` drain, exception wrapper, reply cap (`TooLarge`), unknown name status | RED-GREEN: runs on the calling thread only, throwing handler yields HandlerFailed and continues, non-object result, oversize reply, unknown name, capacity | Pending | sonnet | Uses a fake request source and a recording reply sink; no streams needed at this level |
+| 4 | Host wiring: manifest `EventStream` declarations, Main-side adapter in `DebugServerHostModule` implementing `ISimRequestSink` and draining replies into `CompleteSimReply`, SimPU host module that owns a `SimQueryHost` and calls `Update()` per frame | RED-GREEN: loopback E2E with a sim-hosted echo query registered from a SimPU test module: round trip, timeout when SimPU host absent | Pending | sonnet | `dia pipeline --target cluichetest --stage compile-code` before `dia test e2e` (E2E plan file lists scenarios explicitly) |
+| 5 | Metrics `dia.debugserver.sim.*`, logs, `dia.diadebugserver.architecture.module.md` public API update, `dia docs registry` | Tests assert metric increments for requests, replies, timeouts, busy, too_large, handler_failed | Pending | sonnet | Release builds exclude all of it (`DIA_DEBUG`); run a Release compile |
+| 6 | Finalize: exhaustive audit of ACs 1 to 13 against tests, gaps filled, Observation Opportunity Scan, `dia check deps`, scoped GoogleTests, E2E, sanitizer; spec Done by hand if `dia docs spec-done` fails on feature specs | `dia run googletest` scoped, `dia test e2e`, `dia check sanitizer` | Pending | sonnet | Follow-on CellLayers migration spec starts after this |
