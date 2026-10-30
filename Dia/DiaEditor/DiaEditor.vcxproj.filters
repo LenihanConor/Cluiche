@@ -108,6 +108,12 @@
     <ClInclude Include="EditorAPI\EditorActionQueueService.h">
       <Filter>EditorAPI</Filter>
     </ClInclude>
+    <ClInclude Include="Project\GamePath.h">
+      <Filter>Project</Filter>
+    </ClInclude>
+    <ClInclude Include="Project\GameSwitchGate.h">
+      <Filter>Project</Filter>
+    </ClInclude>
       <Filter>EditorAPI</Filter>
     </ClInclude>
       <Filter>EditorAPI</Filter>
@@ -159,6 +165,12 @@
     <ClCompile Include="EditorAPI\EditorAPIHealthReporter.cpp">
     <ClCompile Include="EditorAPI\EditorActionQueueService.cpp">
       <Filter>EditorAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="Project\GamePath.cpp">
+      <Filter>Project</Filter>
+    </ClCompile>
+    <ClCompile Include="Project\GameSwitchGate.cpp">
+      <Filter>Project</Filter>
     </ClCompile>
       <Filter>EditorAPI</Filter>
     </ClCompile>

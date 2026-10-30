@@ -2262,5 +2262,8 @@
     <ClCompile Include="Editor\TestEditorPluginDirtySave.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\TestGameSwitchGate.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

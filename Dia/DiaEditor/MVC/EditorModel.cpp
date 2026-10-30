@@ -4,6 +4,7 @@
 #include <DiaCore/Json/external/json/json.h>
 #include "DiaEditor/EditorManifestLoader.h"
 #include "DiaEditor/Plugin/EditorPluginRegistry.h"
+#include "DiaEditor/Project/GamePath.h"
 #include <DiaGame/DiaGameManifestLoader.h>
 #include <DiaGame/DiaGameManifest.h>
 #include <DiaObservation/Log/DiaLog.h>
@@ -269,6 +270,8 @@ namespace Dia
 			// The game id is StringCRC of the path as passed; reloading the same path does not change the active game.
 			{
 				ScopeCollector collector;
+				char gameKey[1024];
+				NormalizeGamePath(diagamePath, gameKey, sizeof(gameKey));
 				for (unsigned int i = 0; i < manifest.editorManifests.Size(); ++i)
 				{
 					char resolved[ProjectContext::kMaxPath];
@@ -279,7 +282,7 @@ namespace Dia
 						DIA_LOG_WARNING("Editor", "EditorModel: could not load editor manifest '%s' listed by '%s'", manifest.editorManifests[i].AsCStr(), diagamePath);
 					}
 				}
-				EditorPluginRegistry::Instance().SetGameScope(Dia::Core::StringCRC(diagamePath), collector.types);
+				EditorPluginRegistry::Instance().SetGameScope(Dia::Core::StringCRC(gameKey), collector.types);
 				DIA_LOG_INFO("Editor", "EditorModel: game scope '%s' types=%u", diagamePath, collector.types.Size());
 			}
 

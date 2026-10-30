@@ -603,3 +603,37 @@ TEST(EditorModelDiagame, Reset_ClearsContext)
 
     std::remove(path);
 }
+
+namespace
+{
+    struct ScopeCount
+    {
+        int n = 0;
+        static void Cb(void* ud, const StringCRC&, const StringCRC&) { ++static_cast<ScopeCount*>(ud)->n; }
+    };
+}
+
+TEST_F(EditorModelDiagameScope, SameFileDifferentSpelling_KeepsGameId)
+{
+    const char* manifestPath = "test_editormodel_scope_sp.diaapp";
+    const char* gamePath = "test_editormodel_scope_sp.diagame";
+    const char* types[] = { "ModelScopeTest_GameA" };
+    WriteEditorManifest(manifestPath, types, 1);
+    const char* manifests[] = { manifestPath };
+    WriteDiagameWithEditor(gamePath, manifests, 1);
+
+    ScopeCount count;
+    EditorPluginRegistry& r = EditorPluginRegistry::Instance();
+    EditorModel model;
+    ASSERT_TRUE(model.LoadDiagameProject(gamePath));
+    const StringCRC id = r.GetActiveGameId();
+    r.AddGameScopeListener(&ScopeCount::Cb, &count);
+    ASSERT_TRUE(model.LoadDiagameProject("./test_editormodel_scope_sp.diagame"));
+    r.RemoveGameScopeListener(&ScopeCount::Cb, &count);
+
+    EXPECT_TRUE(r.GetActiveGameId() == id);
+    EXPECT_EQ(count.n, 0);
+
+    std::remove(gamePath);
+    std::remove(manifestPath);
+}
