@@ -503,4 +503,37 @@ TEST(LayerValuesConformance, FixtureCasesDecodeToTheirValues)
 	}
 }
 
+TEST(LayerValuesConformance, FixtureCaseNamesExactList)
+{
+	const auto selPath = VsTest::FindUpwards(__FILE__, "Dia/DiaCellLayers/Testing/Conformance/selection_hash.json");
+	ASSERT_FALSE(selPath.empty());
+	std::string text;
+	ASSERT_TRUE(VsTest::ReadFileBytes(selPath.parent_path() / "layer_values.json", text)) << "layer_values.json missing";
+	Json::Value root;
+	Json::Reader reader;
+	ASSERT_TRUE(reader.parse(text, root));
+	ASSERT_TRUE(root["cases"].isArray()) << "layer_values.json missing 'cases' array";
+
+	const std::vector<std::string> kExpectedNames = {
+		"one_value_pad2", "two_values_pad1", "three_values_nopad", "awkward_floats", "awkward_slice", "category_ids", "empty_at_end"
+	};
+
+	std::vector<std::string> actualNames;
+	std::set<std::string> uniqueCheck;
+	for (const Json::Value& c : root["cases"])
+	{
+		const std::string name = c["name"].asString();
+		actualNames.push_back(name);
+		EXPECT_EQ(uniqueCheck.count(name), 0u) << "Duplicate case name: " << name;
+		uniqueCheck.insert(name);
+	}
+
+	EXPECT_EQ(actualNames.size(), kExpectedNames.size())
+		<< "Fixture has " << actualNames.size() << " cases, expected " << kExpectedNames.size();
+	for (size_t i = 0; i < kExpectedNames.size() && i < actualNames.size(); ++i)
+	{
+		EXPECT_EQ(actualNames[i], kExpectedNames[i]) << "Case at index " << i;
+	}
+}
+
 #endif // DIA_DEBUG

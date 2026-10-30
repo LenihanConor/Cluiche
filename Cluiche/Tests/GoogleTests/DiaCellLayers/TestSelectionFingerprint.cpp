@@ -153,3 +153,30 @@ TEST(SelectionFingerprint, CacheRecomputesOnlyOnVersionChange)
 	EXPECT_EQ(cache.Get(sel), Fn::Compute(sel));
 	EXPECT_NE(cache.Get(sel), a);
 }
+
+TEST(SelectionFingerprint, ConformanceFixtureVectorNamesExactList)
+{
+	const Json::Value root = LoadVectors();
+	ASSERT_TRUE(root.isMember("vectors")) << "selection_hash.json not found/parsed";
+
+	const std::vector<std::string> kExpectedNames = {
+		"empty", "zero", "one", "zero_one_two", "last_cell", "fifty_sorted", "fifty_shuffled", "full_grid"
+	};
+
+	std::vector<std::string> actualNames;
+	std::set<std::string> uniqueCheck;
+	for (const Json::Value& v : root["vectors"])
+	{
+		const std::string name = v["name"].asString();
+		actualNames.push_back(name);
+		EXPECT_EQ(uniqueCheck.count(name), 0u) << "Duplicate vector name: " << name;
+		uniqueCheck.insert(name);
+	}
+
+	EXPECT_EQ(actualNames.size(), kExpectedNames.size())
+		<< "Fixture has " << actualNames.size() << " vectors, expected " << kExpectedNames.size();
+	for (size_t i = 0; i < kExpectedNames.size() && i < actualNames.size(); ++i)
+	{
+		EXPECT_EQ(actualNames[i], kExpectedNames[i]) << "Vector at index " << i;
+	}
+}

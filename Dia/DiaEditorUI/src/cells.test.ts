@@ -7,6 +7,12 @@ import {
 } from './cells';
 
 describe('selectionHash', () => {
+  it('fixture vectors have exact expected names', () => {
+    const kExpectedNames = ['empty', 'zero', 'one', 'zero_one_two', 'last_cell', 'fifty_sorted', 'fifty_shuffled', 'full_grid'];
+    const actualNames = hashJson.vectors.map((v) => v.name);
+    expect(actualNames).toEqual(kExpectedNames);
+    expect(new Set(actualNames).size).toBe(actualNames.length);
+  });
   it('has fixture vectors including empty, [0], full grid and shuffled', () => {
     const names = hashJson.vectors.map((v) => v.name);
     for (const n of ['empty', 'zero', 'full_grid', 'fifty_shuffled']) expect(names).toContain(n);
@@ -28,6 +34,12 @@ describe('selectionHash', () => {
 });
 
 describe('decodeLayerValues', () => {
+  it('fixture cases have exact expected names', () => {
+    const kExpectedNames = ['one_value_pad2', 'two_values_pad1', 'three_values_nopad', 'awkward_floats', 'awkward_slice', 'category_ids', 'empty_at_end'];
+    const actualNames = valuesJson.cases.map((c) => c.name);
+    expect(actualNames).toEqual(kExpectedNames);
+    expect(new Set(actualNames).size).toBe(actualNames.length);
+  });
   for (const c of valuesJson.cases) {
     it(`decodes case ${c.name}`, () => {
       const out = decodeLayerValues(c.data, c.count);
