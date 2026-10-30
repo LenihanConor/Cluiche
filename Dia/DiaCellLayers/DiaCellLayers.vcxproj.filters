@@ -64,6 +64,12 @@
     </ClInclude>
     <ClInclude Include="QueryEvaluator.h" />
     <ClInclude Include="SelectionFingerprint.h" />
+    <ClInclude Include="ITopicSink.h" />
+    <ClInclude Include="DebugServerTopicSink.h" />
+    <ClInclude Include="ViewStatePublisher.h" />
+    <ClInclude Include="Testing\ViewStateTestSupport.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />
@@ -88,6 +94,8 @@
     <ClCompile Include="QueryResolver.cpp" />
     <ClCompile Include="QueryEvaluator.cpp" />
     <ClCompile Include="SelectionFingerprint.cpp" />
+    <ClCompile Include="DebugServerTopicSink.cpp" />
+    <ClCompile Include="ViewStatePublisher.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diacelllayers.architecture.module.md">

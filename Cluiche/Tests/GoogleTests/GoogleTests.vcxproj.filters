@@ -2277,5 +2277,8 @@
     <ClCompile Include="DiaCellLayers\TestSelectionFingerprint.cpp">
       <Filter>DiaCellLayers</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestViewStatePublisher.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

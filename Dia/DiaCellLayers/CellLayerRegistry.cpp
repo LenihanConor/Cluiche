@@ -68,6 +68,7 @@ namespace Dia::CellLayers
 			return CellRegisterResult::CapacityReached;
 		}
 		mLayers[mLayerCount++] = desc;
+		++mLayersVersion;
 		return CellRegisterResult::Ok;
 	}
 
@@ -79,6 +80,7 @@ namespace Dia::CellLayers
 			{
 				for (uint32_t j = i + 1; j < mLayerCount; ++j) { mLayers[j - 1] = mLayers[j]; }
 				mLayers[--mLayerCount] = CellLayerDesc();
+				++mLayersVersion;
 				return true;
 			}
 		}
@@ -115,6 +117,7 @@ namespace Dia::CellLayers
 			return CellRegisterResult::CapacityReached;
 		}
 		mOverlays[mOverlayCount++] = desc;
+		++mLayersVersion;
 		return CellRegisterResult::Ok;
 	}
 
@@ -126,6 +129,7 @@ namespace Dia::CellLayers
 			{
 				for (uint32_t j = i + 1; j < mOverlayCount; ++j) { mOverlays[j - 1] = mOverlays[j]; }
 				mOverlays[--mOverlayCount] = CellOverlayDesc();
+				++mLayersVersion;
 				return true;
 			}
 		}

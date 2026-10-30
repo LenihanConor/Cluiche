@@ -19,6 +19,7 @@ dependencies:
     - dia.observation
     - dia.applicationflow
     - dia.streams
+    - dia.debugserver
   forbidden: []
 public_api:
   headers:
@@ -38,6 +39,10 @@ public_api:
     - DiaCellLayers/SelectionStats.h
     - DiaCellLayers/InspectorState.h
     - DiaCellLayers/InspectorModel.h
+    - DiaCellLayers/SelectionFingerprint.h
+    - DiaCellLayers/ITopicSink.h
+    - DiaCellLayers/DebugServerTopicSink.h
+    - DiaCellLayers/ViewStatePublisher.h
     - DiaCellLayers/CellDetailRegistry.h
     - DiaCellLayers/QueryError.h
     - DiaCellLayers/QueryLexer.h

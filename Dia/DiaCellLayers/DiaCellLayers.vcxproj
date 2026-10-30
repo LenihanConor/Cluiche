@@ -109,6 +109,10 @@
     <ClInclude Include="Testing\QueryTestSupport.h" />
     <ClInclude Include="QueryEvaluator.h" />
     <ClInclude Include="SelectionFingerprint.h" />
+    <ClInclude Include="ITopicSink.h" />
+    <ClInclude Include="DebugServerTopicSink.h" />
+    <ClInclude Include="ViewStatePublisher.h" />
+    <ClInclude Include="Testing\ViewStateTestSupport.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />
@@ -133,6 +137,8 @@
     <ClCompile Include="QueryResolver.cpp" />
     <ClCompile Include="QueryEvaluator.cpp" />
     <ClCompile Include="SelectionFingerprint.cpp" />
+    <ClCompile Include="DebugServerTopicSink.cpp" />
+    <ClCompile Include="ViewStatePublisher.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diacelllayers.architecture.module.md" />
@@ -164,6 +170,10 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaStreams\DiaStreams.vcxproj">
       <Project>{D4E5F6A7-B8C9-0123-DEF0-456789012345}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaDebugServer\DiaDebugServer.vcxproj">
+      <Project>{6AAFCCCB-71D0-4D8D-A6BE-081F5E02093D}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\DiaAPI\DiaAPI.vcxproj">

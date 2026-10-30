@@ -70,6 +70,10 @@ namespace Dia::CellLayers
 		// DefaultBase reflects the new schema immediately. Null detaches. Not owned.
 		void				SetSchema(const Dia::ValueSchema::ValueSchemaService* schema) { mSchema = schema; }
 
+		// Bumped by every successful Register / Unregister / RegisterOverlay / UnregisterOverlay and by nothing else (not by
+		// selection or base changes). Editor mirror: published as layersVersion.
+		uint32_t			LayersVersion() const { return mLayersVersion; }
+
 		CellRegisterResult	Register(const CellLayerDesc& desc);
 		bool				Unregister(Dia::Core::StringCRC id);
 		const CellLayerDesc*	Find(Dia::Core::StringCRC id) const;
@@ -136,6 +140,7 @@ namespace Dia::CellLayers
 		uint64_t			mOwnerPuId;
 		uint32_t			mLayerCount = 0;
 		uint32_t			mOverlayCount = 0;
+		uint32_t			mLayersVersion = 0;
 		std::atomic<uint32_t>	mRejected{ 0 };
 		IViewValueSource*	mViewSource = nullptr;
 		CellLayerDesc		mLayers[kMaxLayers];
