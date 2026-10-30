@@ -48,10 +48,10 @@ const base = () => recs[0];
 const overlay = () => recs[1];
 
 describe('CellGridCanvas rendering', () => {
-  it('fills one hex per cell with its palette colour', () => {
+  it('fills hexes batched one fill per colour (unknown values use the fallback)', () => {
     const values = new Uint16Array([0, 1, 1, 5]);
     render(<CellGridCanvas topology="hex-flat-odd-q" width={2} height={2} values={values} colouring={colouring} pixelWidth={200} pixelHeight={200} />);
-    expect(base().fills).toEqual(['#ff0000', '#00ff00', '#00ff00', '#808080']);
+    expect(base().fills).toEqual(['#ff0000', '#00ff00', '#808080']);
   });
 
   it('fills squares with fillRect', () => {

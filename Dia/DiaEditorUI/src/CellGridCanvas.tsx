@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { theme } from './theme';
-import { cellFromPoint, computeLayout } from './cellGeometry';
+import { cellFromPoint, cellsInBox, computeLayout } from './cellGeometry';
 import type { CellRef, Topology, ViewState } from './cellGeometry';
 import { colourCells } from './cellColour';
 import type { CellColouring } from './cellColour';
@@ -26,6 +26,12 @@ export interface CellGridCanvasProps {
   view?: ViewState;
   /** Wheel zoom (about the cursor) and middle-button / space+left-button drag pan. */
   onViewChange?: (view: ViewState) => void;
+  /** Cells of a finished left-drag box (offset-coordinate rectangle); additive when shift was held. */
+  onBox?: (cells: number[], additive: boolean) => void;
+  /** Cells along the pointer path while a stroke is active; each cell is reported once per stroke. */
+  onStroke?: (cells: number[], phase: 'start' | 'move' | 'end') => void;
+  /** When true, left-drag reports strokes instead of a box. */
+  strokeActive?: boolean;
   onHover?: (cell: CellRef | null) => void;
   onCellClick?: (cell: CellRef) => void;
   /** Canvas size in CSS pixels. When omitted the component fills its container. */
@@ -35,6 +41,7 @@ export interface CellGridCanvasProps {
 
 const kSelectionTint = 'rgba(14, 99, 156, 0.45)';
 const kFootprintTint = 'rgba(255, 255, 255, 0.35)';
+const kDragThresholdPx = 3;
 const kMinZoom = 0.25;
 const kMaxZoom = 32;
 const kWheelZoomRate = 0.0015;
@@ -63,7 +70,7 @@ function context(canvas: HTMLCanvasElement | null, dpr: number): DrawContext | n
 }
 
 export const CellGridCanvas: React.FC<CellGridCanvasProps> = ({
-  topology, width, height, values, colouring, highlight, selection, outline, footprint, view, onViewChange, onHover, onCellClick, pixelWidth, pixelHeight,
+  topology, width, height, values, colouring, highlight, selection, outline, footprint, view, onViewChange, onBox, onStroke, strokeActive, onHover, onCellClick, pixelWidth, pixelHeight,
 }) => {
   const rootRef = useRef<HTMLDivElement>(null);
   const baseRef = useRef<HTMLCanvasElement>(null);
@@ -83,6 +90,11 @@ export const CellGridCanvas: React.FC<CellGridCanvasProps> = ({
   const panRef = useRef<{ x: number; y: number; moved: boolean } | null>(null);
   const spaceRef = useRef(false);
   const lastPanMoved = useRef(false);
+  const dragRef = useRef<{
+    mode: 'stroke' | 'box';
+    startX: number; startY: number; lastX: number; lastY: number;
+    anchor: number | null; last: number | null; moved: boolean; seen: Set<number>;
+  } | null>(null);
 
   useEffect(() => {
     const el = rootRef.current;
@@ -141,11 +153,70 @@ export const CellGridCanvas: React.FC<CellGridCanvasProps> = ({
 
   const handleMouseDown = (e: React.MouseEvent) => {
     lastPanMoved.current = false;
+    startDrag(e);
     if (!onViewChange) return;
     if (e.button === 1 || (e.button === 0 && spaceRef.current)) {
       e.preventDefault();
       panRef.current = { x: e.clientX, y: e.clientY, moved: false };
     }
+  };
+
+  const startDrag = (e: React.MouseEvent) => {
+    if (e.button !== 0 || spaceRef.current || (!onBox && !(strokeActive && onStroke))) return;
+    const cell = cellAt(e);
+    const mode = strokeActive && onStroke ? 'stroke' : 'box';
+    if (mode === 'box' && !cell) return;
+    dragRef.current = {
+      mode, startX: e.clientX, startY: e.clientY, lastX: e.clientX, lastY: e.clientY,
+      anchor: cell ? cell.index : null, last: cell ? cell.index : null, moved: false, seen: new Set(),
+    };
+    if (mode === 'stroke' && cell) {
+      dragRef.current.seen.add(cell.index);
+      onStroke?.([cell.index], 'start');
+    }
+  };
+
+  // Cells crossed by the pointer path from the previous to the current position, not yet reported this stroke.
+  const strokeCells = (d: NonNullable<typeof dragRef.current>, e: React.MouseEvent): number[] => {
+    const dist = Math.hypot(e.clientX - d.lastX, e.clientY - d.lastY);
+    const steps = Math.max(1, Math.ceil(dist / Math.max(1, layout.cellSize / 3)));
+    const out: number[] = [];
+    for (let k = 1; k <= steps; k++) {
+      const t = k / steps;
+      const cell = cellAt({ clientX: d.lastX + (e.clientX - d.lastX) * t, clientY: d.lastY + (e.clientY - d.lastY) * t } as React.MouseEvent);
+      if (cell && !d.seen.has(cell.index)) { d.seen.add(cell.index); out.push(cell.index); }
+    }
+    return out;
+  };
+
+  const updateDrag = (e: React.MouseEvent): boolean => {
+    const d = dragRef.current;
+    if (!d) return false;
+    if (!d.moved && Math.hypot(e.clientX - d.startX, e.clientY - d.startY) < kDragThresholdPx) return true;
+    d.moved = true;
+    if (d.mode === 'stroke') {
+      const fresh = strokeCells(d, e);
+      if (fresh.length > 0) onStroke?.(fresh, 'move');
+    } else {
+      const cell = cellAt(e);
+      if (cell) d.last = cell.index;
+    }
+    d.lastX = e.clientX; d.lastY = e.clientY;
+    return true;
+  };
+
+  const endDrag = (e: React.MouseEvent) => {
+    const d = dragRef.current;
+    dragRef.current = null;
+    if (!d) return;
+    if (d.mode === 'stroke') {
+      onStroke?.([], 'end');
+    } else if (d.moved && d.anchor !== null) {
+      const cell = cellAt(e);
+      const end = cell ? cell.index : d.last;
+      if (end !== null) onBox?.(cellsInBox(d.anchor, end, width), e.shiftKey);
+    }
+    lastPanMoved.current = lastPanMoved.current || d.moved;
   };
 
   const endPan = () => {
@@ -162,6 +233,7 @@ export const CellGridCanvas: React.FC<CellGridCanvasProps> = ({
       onViewChange({ ...cur, panX: cur.panX + dx, panY: cur.panY + dy });
       return;
     }
+    updateDrag(e);
     const cell = cellAt(e);
     const index = cell ? cell.index : null;
     if (index === hovered) return;
@@ -169,8 +241,9 @@ export const CellGridCanvas: React.FC<CellGridCanvasProps> = ({
     onHover?.(cell);
   };
 
-  const handleLeave = () => {
+  const handleLeave = (e: React.MouseEvent) => {
     endPan();
+    endDrag(e);
     if (hovered === null) return;
     setHovered(null);
     onHover?.(null);
@@ -190,7 +263,7 @@ export const CellGridCanvas: React.FC<CellGridCanvasProps> = ({
       data-topology={topology}
       style={{ position: 'relative', width: pixelWidth ?? '100%', height: pixelHeight ?? '100%', background: theme.bg, overflow: 'hidden' }}
       onMouseDown={handleMouseDown}
-      onMouseUp={endPan}
+      onMouseUp={e => { endPan(); endDrag(e); }}
       onMouseMove={handleMove}
       onMouseLeave={handleLeave}
       onClick={handleClick}
