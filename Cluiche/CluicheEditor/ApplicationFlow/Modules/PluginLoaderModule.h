@@ -10,6 +10,7 @@
 #include <DiaEditor/EditorAPI/EditorActionRegistryService.h>
 #include <DiaEditor/EditorAPI/EditorActionQueueService.h>
 #include <DiaEditor/AppEditor/AppEditorController.h>
+#include <DiaEditor/Project/GameSwitchController.h>
 
 namespace Dia { namespace Editor { class IEditorPlugin; class EditorView; class WebUIBridge; } }
 
@@ -37,6 +38,8 @@ namespace Cluiche
 			bool IsPluginTypeLoaded(const Dia::Core::StringCRC& typeId) const override;
 			bool IsPluginPinned(const Dia::Core::StringCRC& typeId) const override;
 			void RegisterView(Dia::Editor::EditorView* view);
+			unsigned int CollectDirtyGameScoped(Dia::Editor::SwitchDirtyEntry* out, unsigned int max) override;
+			bool SaveLoadedPlugin(const Dia::Core::StringCRC& typeId) override;
 
 		protected:
 			Dia::ApplicationFlow::StartResult DoStart() override;
@@ -73,6 +76,9 @@ namespace Cluiche
 
 			// Cross-cutting context controller — wired in SetBridge, registered on service locator.
 			Dia::Editor::AppEditorController mAppEditorController;
+
+			// Game-switch bridge adapter — wired in SetBridge, registered on service locator.
+			Dia::Editor::GameSwitchController mGameSwitchController;
 		};
 	}
 }

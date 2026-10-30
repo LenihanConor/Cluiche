@@ -10,6 +10,7 @@ namespace Dia
 		class IEditorContext;
 		class WebUIBridge;
 		class EditorActionRegistry;
+		class GameSwitchController;
 
 		// Registers project.* WebUIBridge request handlers and pushes
 		// "project_changed" topic updates when the game-project context changes.
@@ -23,6 +24,9 @@ namespace Dia
 			void Initialize(WebUIBridge* bridge, IEditorContext* context,
 			                EditorActionRegistry* api = nullptr);
 			void Shutdown();
+
+			// Optional. When set, open/close are routed through the game-switch gate.
+			void SetGameSwitchController(GameSwitchController* controller) { mSwitch = controller; }
 
 		private:
 			Json::Value HandleOpenPath(const Json::Value& data);
@@ -38,6 +42,7 @@ namespace Dia
 			WebUIBridge*          mBridge;
 			IEditorContext*       mContext;
 			EditorActionRegistry* mApi = nullptr;
+			GameSwitchController* mSwitch = nullptr;
 		};
 	}
 }

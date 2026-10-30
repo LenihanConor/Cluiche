@@ -2265,5 +2265,8 @@
     <ClCompile Include="Editor\TestGameSwitchGate.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\TestGameSwitchController.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

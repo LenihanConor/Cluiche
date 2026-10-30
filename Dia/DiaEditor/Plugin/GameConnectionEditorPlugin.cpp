@@ -3,6 +3,7 @@
 #include "DiaEditor/Plugin/EditorPluginContext.h"
 #include "DiaEditor/Plugin/PluginServiceLocator.h"
 #include "DiaEditor/MVC/EditorModel.h"
+#include "DiaEditor/Project/GameSwitchController.h"
 #include "DiaEditor/EditorAPI/EditorActionRegistryService.h"
 #include "DiaEditor/EditorAPI/EditorActionRegistry.h"
 
@@ -25,6 +26,10 @@ namespace Dia
 				if (regSvc != nullptr)
 					api = regSvc->GetRegistry();
 			}
+
+			GameSwitchController* gameSwitch = (mServices != nullptr) ? mServices->GetService<GameSwitchController>() : nullptr;
+			mController.SetGameSwitchController(gameSwitch);
+			mProjectController.SetGameSwitchController(gameSwitch);
 
 			mManager.Initialize();
 			mController.SetPersistencePath("assets/configs/editor-connection.json");

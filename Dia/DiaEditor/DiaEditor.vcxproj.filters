@@ -114,6 +114,9 @@
     <ClInclude Include="Project\GameSwitchGate.h">
       <Filter>Project</Filter>
     </ClInclude>
+    <ClInclude Include="Project\GameSwitchController.h">
+      <Filter>Project</Filter>
+    </ClInclude>
       <Filter>EditorAPI</Filter>
     </ClInclude>
       <Filter>EditorAPI</Filter>
@@ -170,6 +173,9 @@
       <Filter>Project</Filter>
     </ClCompile>
     <ClCompile Include="Project\GameSwitchGate.cpp">
+      <Filter>Project</Filter>
+    </ClCompile>
+    <ClCompile Include="Project\GameSwitchController.cpp">
       <Filter>Project</Filter>
     </ClCompile>
       <Filter>EditorAPI</Filter>

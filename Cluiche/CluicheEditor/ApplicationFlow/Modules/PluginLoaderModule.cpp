@@ -64,6 +64,15 @@ namespace Cluiche
 				mAppEditorController.Initialize(bridge, ctx, this, api);
 				mServiceLocator.RegisterService(&mAppEditorController);
 			}
+
+			if (!mServiceLocator.HasService<Dia::Editor::GameSwitchController>())
+			{
+				EditorModelModule* modelModule = mModelRef.Get();
+				Dia::Editor::IEditorContext* ctx = (modelModule != nullptr) ? &modelModule->GetModel() : nullptr;
+				Dia::Editor::EditorActionRegistry* api = (actionModule != nullptr) ? actionModule->GetRegistry() : nullptr;
+				mGameSwitchController.Initialize(bridge, ctx, this, api);
+				mServiceLocator.RegisterService(&mGameSwitchController);
+			}
 		}
 
 		Dia::ApplicationFlow::StartResult PluginLoaderModule::DoStart()
@@ -267,6 +276,12 @@ namespace Cluiche
 			{
 				mServiceLocator.UnregisterService<Dia::Editor::AppEditorController>();
 				mAppEditorController.Shutdown();
+			}
+
+			if (mServiceLocator.HasService<Dia::Editor::GameSwitchController>())
+			{
+				mServiceLocator.UnregisterService<Dia::Editor::GameSwitchController>();
+				mGameSwitchController.Shutdown();
 			}
 
 			if (mRegistryService != nullptr)
@@ -612,6 +627,36 @@ namespace Cluiche
 					Dia::Editor::EditorToolbarItem toolbar = mLoadedPlugins[i].plugin->GetToolbarItem();
 					return toolbar.pinned;
 				}
+			}
+			return false;
+		}
+
+		unsigned int PluginLoaderModule::CollectDirtyGameScoped(Dia::Editor::SwitchDirtyEntry* out, unsigned int max)
+		{
+			Dia::Editor::EditorPluginRegistry& registry = Dia::Editor::EditorPluginRegistry::Instance();
+			unsigned int count = 0;
+			for (unsigned int i = 0; i < mLoadedPlugins.Size() && count < max; ++i)
+			{
+				const Dia::Core::StringCRC& typeId = mLoadedPlugins[i].typeId;
+				if (!registry.IsGameScoped(typeId) || registry.IsOutOfGameScope(typeId))
+					continue;
+				if (!mLoadedPlugins[i].plugin->IsDirty())
+					continue;
+				out[count].typeId = typeId;
+				strncpy_s(out[count].name, sizeof(out[count].name), mLoadedPlugins[i].plugin->GetName(), _TRUNCATE);
+				out[count].saved = false;
+				out[count].saveFailed = false;
+				++count;
+			}
+			return count;
+		}
+
+		bool PluginLoaderModule::SaveLoadedPlugin(const Dia::Core::StringCRC& typeId)
+		{
+			for (unsigned int i = 0; i < mLoadedPlugins.Size(); ++i)
+			{
+				if (mLoadedPlugins[i].typeId == typeId)
+					return mLoadedPlugins[i].plugin->Save();
 			}
 			return false;
 		}

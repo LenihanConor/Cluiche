@@ -135,6 +135,7 @@
     <ClInclude Include="EditorAPI\EditorActionQueueService.h" />
     <ClInclude Include="Project\GamePath.h" />
     <ClInclude Include="Project\GameSwitchGate.h" />
+    <ClInclude Include="Project\GameSwitchController.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="EditorAPI\EditorActionManifest.cpp" />
@@ -165,6 +166,7 @@
     <ClCompile Include="EditorAPI\EditorActionQueueService.cpp" />
     <ClCompile Include="Project\GamePath.cpp" />
     <ClCompile Include="Project\GameSwitchGate.cpp" />
+    <ClCompile Include="Project\GameSwitchController.cpp" />
   </ItemGroup>
 
   <ItemGroup>

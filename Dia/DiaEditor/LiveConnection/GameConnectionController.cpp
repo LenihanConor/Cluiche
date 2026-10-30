@@ -1,6 +1,7 @@
 #include "DiaEditor/LiveConnection/GameConnectionController.h"
 #include "DiaEditor/EditorAPI/EditorActionRegistry.h"
 #include "DiaEditor/EditorAPI/EditorActionDescriptor.h"
+#include "DiaEditor/Project/GameSwitchController.h"
 
 #include <DiaDebugProtocol/DiaDebugProtocol.h>
 
@@ -88,6 +89,19 @@ namespace Dia
 			mEditorContext = context;
 		}
 
+		void GameConnectionController::ApplyLiveDiagamePath(const char* path)
+		{
+			if (path == nullptr || path[0] == '\0')
+				return;
+			if (mGameSwitch != nullptr)
+			{
+				mGameSwitch->RequestLoad(path, SwitchOrigin::kLiveConnection);
+				return;
+			}
+			if (mEditorContext != nullptr)
+				mEditorContext->LoadDiagameProject(path);
+		}
+
 		void GameConnectionController::Initialize(WebUIBridge* bridge, GameConnectionManager* manager,
 		                                          EditorView* editorView, EditorActionRegistry* api)
 		{
@@ -140,6 +154,7 @@ namespace Dia
 		void GameConnectionController::Shutdown()
 		{
 			DIA_LOG_INFO("Editor", "GameConnectionController: Shutdown");
+			mGameSwitch = nullptr;
 			if (mApi != nullptr)
 			{
 				mApi->DeregisterActionsForOwner(Dia::Core::StringCRC("GameConnectionController"));
@@ -603,10 +618,9 @@ namespace Dia
 					// Request .diagame path — live context takes precedence over manual project.
 					if (mEditorContext != nullptr && mManager != nullptr)
 					{
-						IEditorContext* ctx = mEditorContext;
 						DIA_LOG_INFO("Editor", "GameConnectionController: sending get_app_state");
 						mManager->SendCommandWithResponse("get_app_state", Json::Value(Json::objectValue),
-							[ctx](bool success, const Json::Value& result)
+							[this](bool success, const Json::Value& result)
 							{
 								if (!success)
 								{
@@ -625,7 +639,7 @@ namespace Dia
 									DIA_LOG_WARNING("Editor", "GameConnectionController: diagame_path empty, project will not load");
 									return;
 								}
-								ctx->LoadDiagameProject(path);
+								ApplyLiveDiagamePath(path);
 							}
 						);
 					}

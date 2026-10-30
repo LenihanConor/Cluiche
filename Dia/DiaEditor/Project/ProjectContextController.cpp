@@ -1,4 +1,5 @@
 #include "DiaEditor/Project/ProjectContextController.h"
+#include "DiaEditor/Project/GameSwitchController.h"
 #include "DiaEditor/EditorAPI/EditorActionRegistry.h"
 #include "DiaEditor/EditorAPI/EditorActionDescriptor.h"
 #include "DiaEditor/MVC/IEditorContext.h"
@@ -110,6 +111,14 @@ namespace Dia
 				return result;
 			}
 			const char* path = data["path"].asCString();
+			if (mSwitch != nullptr)
+			{
+				const SwitchOutcome outcome = mSwitch->RequestLoad(path, SwitchOrigin::kUser);
+				GameSwitchController::OutcomeToResult(outcome, result);
+				if (result["ok"].asBool() && !result.isMember("pending"))
+					result["path"] = path;
+				return result;
+			}
 			if (!mContext->LoadDiagameProject(path))
 			{
 				result["ok"]    = false;
@@ -123,9 +132,21 @@ namespace Dia
 
 		Json::Value ProjectContextController::HandleClose(const Json::Value& /*data*/)
 		{
+			Json::Value result;
+			if (mSwitch != nullptr)
+			{
+				const SwitchOutcome outcome = mSwitch->RequestClose(SwitchOrigin::kUser);
+				// Closing with no game loaded is a no-op success, as before.
+				if (outcome == SwitchOutcome::kRejected && mContext != nullptr && !mContext->GetDiagameProject().IsValid())
+				{
+					result["ok"] = true;
+					return result;
+				}
+				GameSwitchController::OutcomeToResult(outcome, result);
+				return result;
+			}
 			if (mContext != nullptr)
 				mContext->ClearDiagameProject();
-			Json::Value result;
 			result["ok"] = true;
 			return result;
 		}
@@ -181,6 +202,14 @@ namespace Dia
 				return result;
 			}
 
+			if (mSwitch != nullptr && mContext != nullptr)
+			{
+				const SwitchOutcome outcome = mSwitch->RequestLoad(filePath, SwitchOrigin::kUser);
+				GameSwitchController::OutcomeToResult(outcome, result);
+				if (result["ok"].asBool() && !result.isMember("pending"))
+					result["path"] = filePath;
+				return result;
+			}
 			if (mContext == nullptr || !mContext->LoadDiagameProject(filePath))
 			{
 				result["ok"]    = false;
