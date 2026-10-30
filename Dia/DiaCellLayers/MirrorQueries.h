@@ -6,7 +6,7 @@
 // registry or selection.
 //
 // Queries answered here:
-//   cells.layer.list  (no args) -> { layersVersion, grids:[{id:"grid.<i>", index, width, height, layers:[{id, schemaKey, group,
+//   cells.layer.list  (no args) -> { layersVersion, grids:[{id:"<grid id>"|"grid.<i>", index, width, height, layers:[{id, schemaKey, group,
 //                       kind:"float"|"category", hotkey}]}], overlays:[{id, label, group}] }
 //                       Same data source as the DiaAPI command of that name (CellLayerViewerDomain::ListLayers); this adds
 //                       layersVersion, grid ids, schemaKey and hotkey. hotkey is "" when unbound or there is no schema.
@@ -44,12 +44,14 @@ namespace Dia::Observation::Metric { class Counter; }
 
 namespace Dia::CellLayers
 {
-	// Shared grid id format: "grid.<index>" (index = position in CellLayerRegistry::GridAt). Used by the view-state topic and the queries.
+	// Shared grid id: CellGridDesc::id when non-empty, else "grid.<index>" (index = position in CellLayerRegistry::GridAt).
+	// Used by the view-state topic and the queries.
 	namespace MirrorGridId
 	{
-		constexpr uint32_t kBufferSize = 24;
+		constexpr uint32_t kBufferSize = 72;	// StringCRC capacity (64) + slack for the "grid.<index>" fallback
 		uint32_t	IndexOf(const CellLayerRegistry& registry, const Dia::Graphics::CellGridDesc* grid);	// 0 when not found
-		void		Format(uint32_t index, char (&out)[kBufferSize]);
+		void		Format(uint32_t index, char (&out)[kBufferSize]);	// fallback form "grid.<index>"
+		void		Format(const CellLayerRegistry& registry, const Dia::Graphics::CellGridDesc* grid, char (&out)[kBufferSize]);
 	}
 
 	class MirrorQueries

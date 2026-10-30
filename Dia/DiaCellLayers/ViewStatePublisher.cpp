@@ -83,7 +83,7 @@ namespace Dia::CellLayers
 		if (s.grid != nullptr)
 		{
 			char id[MirrorGridId::kBufferSize];
-			MirrorGridId::Format(MirrorGridId::IndexOf(mRegistry, s.grid), id);
+			MirrorGridId::Format(mRegistry, s.grid, id);
 			Json::Value g(Json::objectValue);
 			g["id"] = id;
 			g["topology"] = s.topology.AsChar();

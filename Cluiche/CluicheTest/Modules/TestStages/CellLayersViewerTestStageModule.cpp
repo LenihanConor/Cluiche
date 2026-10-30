@@ -122,6 +122,7 @@ void CellLayersViewerTestStageModule::BuildGrid(GridStorage& g, int w, int h, fl
         }
     }
     g.desc = Dia::Graphics::CellGridDesc();
+    g.desc.id         = Dia::Core::StringCRC("test.hex");
     g.desc.topology   = Dia::Core::StringCRC("hex.flat.oddq");
     g.desc.width      = static_cast<uint16_t>(w);
     g.desc.height     = static_cast<uint16_t>(h);

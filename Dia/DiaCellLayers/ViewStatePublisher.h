@@ -5,7 +5,7 @@
 // (SimPU): call Update() once per frame. Read-only: it only reads the viewer, registry and selection.
 //
 // Payload: { viewVersion, layersVersion, grid {id, topology, width, height}, base, overlays[], selection {count, version,
-// hash (16 hex)}, history (null until DiaCellHistory) }. grid.id is "grid.<index>" (CellGridDesc carries no id; index = the
+// hash (16 hex)}, history (null until DiaCellHistory) }. grid.id is CellGridDesc::id when set, else "grid.<index>" (index = the
 // grid's position in CellLayerRegistry::GridAt). Empty state: grid null, base "".
 //
 // Change detection: a cheap state snapshot is compared with the last PUBLISHED snapshot each frame; the JSON is only built on

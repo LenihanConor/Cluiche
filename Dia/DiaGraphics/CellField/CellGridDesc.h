@@ -17,6 +17,7 @@ namespace Dia
 		///
 		struct CellGridDesc
 		{
+			Dia::Core::StringCRC id;					// optional stable grid id, e.g. "world.hex"; empty = unnamed
 			Dia::Core::StringCRC topology;				// e.g. "hex.flat.oddq"
 			uint16_t             width = 0;
 			uint16_t             height = 0;

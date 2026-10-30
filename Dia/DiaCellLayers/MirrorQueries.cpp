@@ -34,6 +34,16 @@ namespace Dia::CellLayers
 		{
 			snprintf(out, sizeof(out), "grid.%u", index);
 		}
+
+		void Format(const CellLayerRegistry& registry, const Dia::Graphics::CellGridDesc* grid, char (&out)[kBufferSize])
+		{
+			if (grid != nullptr && grid->id.AsChar()[0] != 0)
+			{
+				snprintf(out, sizeof(out), "%s", grid->id.AsChar());
+				return;
+			}
+			Format(IndexOf(registry, grid), out);
+		}
 	}
 
 	namespace
@@ -166,7 +176,7 @@ namespace Dia::CellLayers
 		}
 
 		char gridId[MirrorGridId::kBufferSize];
-		MirrorGridId::Format(MirrorGridId::IndexOf(mRegistry, desc->grid), gridId);
+		MirrorGridId::Format(mRegistry, desc->grid, gridId);
 		Json::Value out(Json::objectValue);
 		out["layer"] = layerName;
 		out["version"] = static_cast<Json::UInt64>(lv.version);
@@ -193,7 +203,7 @@ namespace Dia::CellLayers
 			const Dia::Graphics::CellGridDesc* g = mRegistry.GridAt(gi);
 			hotkeys.Rebuild(g);
 			char id[MirrorGridId::kBufferSize];
-			MirrorGridId::Format(gi, id);
+			MirrorGridId::Format(mRegistry, g, id);
 			Json::Value ge(Json::objectValue);
 			ge["id"] = id;
 			ge["index"] = gi;

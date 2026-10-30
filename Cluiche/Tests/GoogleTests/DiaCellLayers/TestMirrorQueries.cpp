@@ -187,6 +187,40 @@ TEST_F(MirrorQueriesTest, GridIdHelperMatchesQueryIds)
 	EXPECT_EQ(MirrorGridId::IndexOf(registry, &gridA.desc), 0u);
 }
 
+TEST_F(MirrorQueriesTest, GridIdUsesDescIdWhenSetInListAndValues)
+{
+	gridA.desc.id = StringCRC("world.hex");
+	const Json::Value r = queries.LayerList();
+	ASSERT_EQ(r["grids"].size(), 2u);
+	EXPECT_EQ(r["grids"][0u]["id"].asString(), "world.hex");
+	EXPECT_EQ(r["grids"][1u]["id"].asString(), "grid.1");	// empty id keeps the fallback
+	Json::Value a(Json::objectValue);
+	a["layer"] = "temp";
+	const Json::Value v = queries.LayerValues(a);
+	ASSERT_FALSE(IsError(v));
+	EXPECT_EQ(v["gridId"].asString(), "world.hex");
+}
+
+TEST_F(MirrorQueriesTest, DistinctGridIdsStayDistinct)
+{
+	gridA.desc.id = StringCRC("test.a");
+	gridB.desc.id = StringCRC("test.b");
+	const Json::Value r = queries.LayerList();
+	ASSERT_EQ(r["grids"].size(), 2u);
+	EXPECT_EQ(r["grids"][0u]["id"].asString(), "test.a");
+	EXPECT_EQ(r["grids"][1u]["id"].asString(), "test.b");
+}
+
+TEST_F(MirrorQueriesTest, GridIdHelperPrefersDescIdElseFallback)
+{
+	char id[MirrorGridId::kBufferSize];
+	MirrorGridId::Format(registry, &gridB.desc, id);
+	EXPECT_STREQ(id, "grid.1");
+	gridB.desc.id = StringCRC("test.b");
+	MirrorGridId::Format(registry, &gridB.desc, id);
+	EXPECT_STREQ(id, "test.b");
+}
+
 TEST_F(MirrorQueriesTest, RegisteredHandlersAnswer)
 {
 	Dia::DebugServer::QueryRegistry qr;

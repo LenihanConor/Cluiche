@@ -50,6 +50,14 @@ namespace
 	};
 }
 
+TEST_F(ViewStateTest, GridIdUsesDescIdWhenSet)
+{
+	grid.desc.id = StringCRC("world.hex");
+	Frame();
+	ASSERT_EQ(topic.Count(), 1u);
+	EXPECT_EQ(topic.Last()["grid"]["id"].asString(), "world.hex");
+}
+
 TEST_F(ViewStateTest, PayloadCarriesEveryField)
 {
 	ASSERT_TRUE(domain.ToggleOverlay(StringCRC("wind")));
