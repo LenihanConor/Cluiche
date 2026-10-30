@@ -1053,6 +1053,8 @@
     <ClCompile Include="DiaCellLayers\TestMirrorStats.cpp" />
     <ClCompile Include="DiaCellLayers\TestMirrorObservation.cpp" />
     <ClCompile Include="DebugServer\TestDebugServerSubscriberCount.cpp" />
+    <ClCompile Include="WebSocket\TestWebSocketLargeMessages.cpp" />
+    <ClCompile Include="DebugServer\TestDebugServerLargePayload.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

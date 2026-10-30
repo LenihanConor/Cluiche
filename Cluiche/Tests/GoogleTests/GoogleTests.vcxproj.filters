@@ -2295,5 +2295,11 @@
     <ClCompile Include="DebugServer\TestDebugServerSubscriberCount.cpp">
       <Filter>DebugServer</Filter>
     </ClCompile>
+    <ClCompile Include="WebSocket\TestWebSocketLargeMessages.cpp">
+      <Filter>WebSocket</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugServer\TestDebugServerLargePayload.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
