@@ -28,6 +28,8 @@ responsibilities:
   - NotifySubscribers: broadcast-to-all shim retained during DebugLayerManager migration (pending removal)
   - PublishTopic(topic, payload): any-thread publish of a virtual topic; latest payload per topic is retained,
     delivered by Tick (Main, latest wins) and replayed to a late subscriber after its subscribe ack
+  - GetTopicSubscriberCount(topic): any-thread count of distinct connections subscribed to a topic (mutex-guarded table,
+    rebuilt on Main from the subscription list after every subscribe/unsubscribe/disconnect/Stop)
   - Command dispatching (protocol commands and DiaAPI command gateway)
   - Server self-monitoring and performance tracking
 

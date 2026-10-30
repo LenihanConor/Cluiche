@@ -4,6 +4,7 @@
 #include <DiaCellLayers/Testing/FakeDebugDraw.h>
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
 #include <DiaCellLayers/Testing/ViewStateTestSupport.h>
+#include <DiaCellLayers/Testing/LogCapture.h>
 
 #include <string>
 
@@ -245,6 +246,41 @@ TEST_F(ViewStateTest, EmptyViewerPublishesEmptyState)
 	EXPECT_EQ(rec.Last()["base"].asString(), "");
 	EXPECT_EQ(rec.Last()["selection"]["count"].asUInt(), 0u);
 	EXPECT_EQ(rec.Last()["selection"]["hash"].asString(), "0000000000000000");
+}
+
+TEST_F(ViewStateTest, SubscriberTransitionsLogInfoOncePerTransition)
+{
+	LogCapture log("CEL");
+	Frame();
+	EXPECT_EQ(0u, log.Count(LogCapture::Level::kInfo, "first subscriber"));
+	EXPECT_EQ(0u, log.Count(LogCapture::Level::kInfo, "last subscriber left"));
+
+	topic.subscribers = 1;
+	Frame();
+	Frame();
+	topic.subscribers = 3;	// still > 0: no transition
+	Frame();
+	EXPECT_EQ(1u, log.Count(LogCapture::Level::kInfo, "cells.view.state: first subscriber"));
+	EXPECT_EQ(0u, log.Count(LogCapture::Level::kInfo, "last subscriber left"));
+
+	topic.subscribers = 0;
+	Frame();
+	Frame();
+	EXPECT_EQ(1u, log.Count(LogCapture::Level::kInfo, "cells.view.state: first subscriber"));
+	EXPECT_EQ(1u, log.Count(LogCapture::Level::kInfo, "cells.view.state: last subscriber left"));
+
+	topic.subscribers = 2;	// a second cycle logs again
+	Frame();
+	EXPECT_EQ(2u, log.Count(LogCapture::Level::kInfo, "first subscriber"));
+}
+
+TEST_F(ViewStateTest, SubscriberTransitionLogsEvenWhenNothingToPublish)
+{
+	Frame();	// publishes the initial state
+	LogCapture log("CEL");
+	topic.subscribers = 1;
+	Frame();	// state unchanged -> early-out path must still observe the count
+	EXPECT_EQ(1u, log.Count(LogCapture::Level::kInfo, "first subscriber"));
 }
 
 #endif // DIA_DEBUG

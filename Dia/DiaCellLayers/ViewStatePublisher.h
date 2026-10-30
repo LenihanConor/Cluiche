@@ -69,6 +69,7 @@ namespace Dia::CellLayers
 		uint64_t						mLastPublishMs = 0;
 		uint32_t						mViewVersion = 0;
 		uint32_t						mPublishCount = 0;
+		unsigned int					mPrevSubscribers = 0;	// last observed ITopicSink::SubscriberCount (for transition logs)
 		uint32_t						mCoalescedCount = 0;
 		Dia::Observation::Metric::Counter*	mMetricPublishes = nullptr;	// dia.celllayers.mirror.topic_publishes
 		Dia::Observation::Metric::Counter*	mMetricCoalesced = nullptr;	// dia.celllayers.mirror.coalesced_updates

@@ -7,4 +7,9 @@ namespace Dia::CellLayers
 	{
 		mServer.PublishTopic(topic, payload);
 	}
+
+	unsigned int DebugServerTopicSink::SubscriberCount(const Dia::Core::StringCRC& topic) const
+	{
+		return mServer.GetTopicSubscriberCount(topic);
+	}
 }

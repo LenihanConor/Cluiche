@@ -199,6 +199,7 @@ namespace Dia
 				}
 			}
 			mClientTaps.RemoveAll();
+			RebuildSubscriberCounts();
 
 			if (mObservationBridge)
 			{
@@ -294,6 +295,7 @@ namespace Dia
 						++i;
 					}
 				}
+				RebuildSubscriberCounts();
 			}
 		}
 
@@ -448,6 +450,7 @@ namespace Dia
 						ct.streamId = dataType;
 						ct.tapId    = tapHandle.id;
 						mClientTaps.Add(ct);
+						RebuildSubscriberCounts();
 					}
 				}
 				else
@@ -460,6 +463,7 @@ namespace Dia
 					ct.streamId = dataType;
 					ct.tapId    = 0;
 					mClientTaps.Add(ct);
+					RebuildSubscriberCounts();
 					replayVirtualTopic = true;
 				}
 			}
@@ -526,6 +530,7 @@ namespace Dia
 					++i;
 				}
 			}
+			RebuildSubscriberCounts();
 		}
 
 		void DebugServer::HandleCommand(int connId, const dia::debug::DebugMessage& msg)
@@ -680,6 +685,55 @@ namespace Dia
 						mStats.messagesSentTotal++;
 						RecordTopicSent(dataType, true);
 					}
+				}
+			}
+		}
+
+		unsigned int DebugServer::GetTopicSubscriberCount(const Dia::Core::StringCRC& topic) const
+		{
+			Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mSubscriberMutex);
+			for (unsigned int i = 0; i < mSubscriberCounts.Size(); ++i)
+			{
+				if (mSubscriberCounts[i].topic == topic) return mSubscriberCounts[i].count;
+			}
+			return 0;
+		}
+
+		// Recomputed from mClientTaps (the single source of truth) after every mutation, so the counts cannot drift.
+		// Counts distinct connections per topic: duplicate subscribes from one connection count once (unsubscribe removes all).
+		void DebugServer::RebuildSubscriberCounts()
+		{
+			Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mSubscriberMutex);
+			mSubscriberCounts.RemoveAll();
+			for (unsigned int i = 0; i < mClientTaps.Size(); ++i)
+			{
+				bool duplicate = false;
+				for (unsigned int j = 0; j < i; ++j)
+				{
+					if (mClientTaps[j].connId == mClientTaps[i].connId && mClientTaps[j].streamId == mClientTaps[i].streamId)
+					{
+						duplicate = true;
+						break;
+					}
+				}
+				if (duplicate) continue;
+
+				bool found = false;
+				for (unsigned int k = 0; k < mSubscriberCounts.Size(); ++k)
+				{
+					if (mSubscriberCounts[k].topic == mClientTaps[i].streamId)
+					{
+						++mSubscriberCounts[k].count;
+						found = true;
+						break;
+					}
+				}
+				if (!found && !mSubscriberCounts.IsFull())
+				{
+					TopicSubscribers ts;
+					ts.topic = mClientTaps[i].streamId;
+					ts.count = 1;
+					mSubscriberCounts.Add(ts);
 				}
 			}
 		}

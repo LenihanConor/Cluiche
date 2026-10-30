@@ -179,6 +179,9 @@ namespace Dia
 			// right after its subscribe ack.  No replay if nothing was published.
 			void PublishTopic(const Dia::Core::StringCRC& topic, const Json::Value& payload);
 
+			// Number of distinct connections currently subscribed to `topic` (0 if none/unknown).  Callable from ANY thread.
+			unsigned int GetTopicSubscriberCount(const Dia::Core::StringCRC& topic) const;
+
 		private:
 			struct ClientTap {
 				int connId;
@@ -208,6 +211,7 @@ namespace Dia
 			void NotifySubscribersMainThread(const Dia::Core::StringCRC& dataType, const Json::Value& payload);
 			void SendDataUpdateToConnection(int connId, const Dia::Core::StringCRC& topic, const Json::Value& payload);
 			void DrainPublishedTopics();
+			void RebuildSubscriberCounts();	// Main only; recomputes mSubscriberCounts from mClientTaps after any mutation
 			void RecordTopicSent(const Dia::Core::StringCRC& topic, bool success);
 			void SendDropNotification(int connId);
 
@@ -240,6 +244,14 @@ namespace Dia
 			static const unsigned int kMaxPublishedTopics = 32;
 			Dia::Core::Mutex mPublishMutex;
 			Dia::Core::Containers::DynamicArrayC<PublishedTopic, kMaxPublishedTopics> mPublished;
+
+			// Per-topic distinct-connection subscriber counts.  Written on Main (RebuildSubscriberCounts), read from any thread.
+			struct TopicSubscribers {
+				Dia::Core::StringCRC topic;
+				unsigned int         count;
+			};
+			mutable Dia::Core::Mutex mSubscriberMutex;
+			Dia::Core::Containers::DynamicArrayC<TopicSubscribers, 64> mSubscriberCounts;
 
 			uint64_t mStartTimestamp;
 			bool     mStarted;

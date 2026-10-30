@@ -15,6 +15,7 @@ namespace Dia::CellLayers
 	public:
 		explicit DebugServerTopicSink(Dia::DebugServer::DebugServer& server) : mServer(server) {}
 		void Publish(const Dia::Core::StringCRC& topic, const Json::Value& payload) override;
+		unsigned int SubscriberCount(const Dia::Core::StringCRC& topic) const override;
 
 	private:
 		Dia::DebugServer::DebugServer&	mServer;

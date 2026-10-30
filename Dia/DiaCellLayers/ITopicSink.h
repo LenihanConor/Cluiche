@@ -16,6 +16,8 @@ namespace Dia::CellLayers
 	public:
 		virtual ~ITopicSink() {}
 		virtual void Publish(const Dia::Core::StringCRC& topic, const Json::Value& payload) = 0;
+		// Current subscriber count for `topic` (any thread). Default 0 for sinks that do not track subscribers.
+		virtual unsigned int SubscriberCount(const Dia::Core::StringCRC& /*topic*/) const { return 0; }
 	};
 
 	// Monotonic milliseconds (arbitrary epoch).

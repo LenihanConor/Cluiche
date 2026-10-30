@@ -58,6 +58,11 @@ namespace Dia::CellLayers
 
 	void ViewStatePublisher::Update()
 	{
+		const unsigned int subscribers = mSink.SubscriberCount(TopicId());
+		if (subscribers > 0 && mPrevSubscribers == 0) { DIA_LOG_INFO("CEL", "cells.view.state: first subscriber"); }
+		else if (subscribers == 0 && mPrevSubscribers > 0) { DIA_LOG_INFO("CEL", "cells.view.state: last subscriber left"); }
+		mPrevSubscribers = subscribers;
+
 		Snapshot current;
 		Capture(current);
 		if (mHasPublished && current == mPublished) { return; }
