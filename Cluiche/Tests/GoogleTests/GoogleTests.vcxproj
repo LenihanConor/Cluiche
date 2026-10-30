@@ -1033,6 +1033,7 @@
     <ClCompile Include="DiaCellLayers\TestInspectorPanelState.cpp" />
     <ClCompile Include="DiaCellLayers\TestInspectorPerf.cpp" />
     <ClCompile Include="DiaCellLayers\TestQueryLexer.cpp" />
+    <ClCompile Include="DiaCellLayers\TestQueryParser.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
