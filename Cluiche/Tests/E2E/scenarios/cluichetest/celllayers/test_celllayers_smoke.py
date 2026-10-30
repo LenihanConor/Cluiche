@@ -813,3 +813,126 @@ def test_celllayers_inspector(dia_client):
     finally:
         c.abort_stage()
         c.navigate_to("Boot")
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Query (cells.select.query / cells.query.check). Expected counts replicate the stage generators (see the inspector section
+# above). A fresh stage keeps temperature static. The selection *version* is not exposed through the panel state or metrics,
+# so "unchanged" is asserted via the selection count (and the selection's exact membership is probed with toggles).
+# ---------------------------------------------------------------------------------------------------------------------
+_Q = "dia.celllayers.query."
+
+
+def _q_metrics(c):
+    return {k: c.get_metric(_Q + k) for k in ("run", "rejected")}
+
+
+def _all_cells():
+    return [(q, r) for q in range(_BIG_W) for r in range(_BIG_H)]
+
+
+def test_celllayers_query(dia_client):
+    c = dia_client
+    c.navigate_to(_STAGE)
+    try:
+        result = c.poll_checkpoint(_CHECKPOINT, timeout_s=30.0, expected_stage=_STAGE)
+        assert result.get("passed"), f"checkpoint failed: {result}"
+        c.send_command("cells.select.clear")
+
+        cells = _all_cells()
+        # No cell may sit within float32 noise of a threshold used below.
+        for fn, th in ((_rainfall, 150.0), (_rainfall, 250.0), (_rainfall, 200.0), (_temperature, 15.0)):
+            assert min(abs(fn(*x) - th) for x in cells) > 1e-3, (fn.__name__, th)
+
+        cases = [
+            ("rainfall < 150", {x for x in cells if _rainfall(*x) < 150.0}),
+            ("biome = desert", {x for x in cells if _biome(*x) == 2}),
+            ("biome == jungle or biome == tundra", {x for x in cells if _biome(*x) in (3, 0)}),
+            ("(biome = desert or biome = jungle) and rainfall >= 250",
+             {x for x in cells if _biome(*x) in (2, 3) and _rainfall(*x) >= 250.0}),
+            ("not biome == tundra and temperature >= 15", {x for x in cells if _biome(*x) != 0 and _temperature(*x) >= 15.0}),
+        ]
+
+        def sel_count():
+            return _panel(c)["selection"]["count"]
+
+        q0 = _q_metrics(c)
+        runs = 0
+        for expr, exp in cases:
+            assert len(exp) > 0, expr
+            before = sel_count()
+            chk = c.send_command("cells.query.check", {"expr": expr})
+            assert chk["ok"] is True and chk["count"] == len(exp), (expr, chk, len(exp))
+            assert sel_count() == before, ("check changed the selection", expr)
+            assert _panel(c)["query"]["check"] == {"ok": True, "count": len(exp), "expr": expr}, _panel(c)["query"]
+            run = c.send_command("cells.select.query", {"expr": expr})
+            runs += 1
+            assert run["ok"] is True and run["count"] == chk["count"], (expr, run, chk)
+            assert sel_count() == len(exp), (expr, sel_count(), len(exp))
+            assert _panel(c)["query"]["last"] == {"ok": True, "count": len(exp), "expr": expr}, _panel(c)["query"]
+
+        # A repeated identical select leaves the selection as it was (count asserted; version is not exposed).
+        expr, exp = cases[1]
+        again = c.send_command("cells.select.query", {"expr": expr})
+        runs += 1
+        assert again["count"] == len(exp) and sel_count() == len(exp), (again, len(exp))
+        # Probe exact membership: toggling one matching cell removes exactly it.
+        member = sorted(exp)[0]
+        assert c.send_command("cells.select.toggle", {"q": member[0], "r": member[1]})["count"] == len(exp) - 1
+        c.send_command("cells.select.query", {"expr": expr})
+        runs += 1
+        assert sel_count() == len(exp)
+
+        # Errors: AutomationError carries the message; the structured object is mirrored in the panel record.
+        rejected = 0
+        bad_cases = [
+            ("rainfall <", None, False),                    # parse error
+            ("rainfal < 100", "rainfall", True),            # unknown layer, close suggestion
+            ("biome > 1", None, False),                     # numeric operator on a category layer
+            ("biome = nope", None, False),                  # unknown enum id
+            ("", "empty query", False),
+        ]
+        for cmd in ("cells.query.check", "cells.select.query"):
+            for expr, text, has_sugg in bad_cases:
+                before = sel_count()
+                try:
+                    c.send_command(cmd, {"expr": expr})
+                except AutomationError:
+                    # DebugServer's DiaAPI fallback only forwards a *string* "error", so the structured error object never
+                    # reaches the wire (message is empty -> "unknown error"). The panel record carries it; assert there.
+                    pass
+                else:
+                    raise AssertionError(f"{cmd} {expr!r} should have failed")
+                if cmd == "cells.select.query":
+                    rejected += 1
+                assert sel_count() == before == len(exp), (cmd, expr)
+                rec = _panel(c)["query"]["check" if cmd == "cells.query.check" else "last"]
+                assert rec["expr"] == expr and rec.get("ok") is not True, rec
+                err = rec["error"]
+                assert err["message"] and isinstance(err["column"], int) and isinstance(err["length"], int), rec
+                assert ("suggestion" in err) == has_sugg, rec
+                if has_sugg:
+                    assert err["suggestion"] == text, rec
+                elif text:
+                    assert text in err["message"], rec
+                if expr == "rainfall <":
+                    assert err["column"] >= len("rainfall"), rec  # points at the missing operand, not the start
+
+        # last (select) is not clobbered by check, and vice versa.
+        c.send_command("cells.query.check", {"expr": "rainfall < 150"})
+        q = _panel(c)["query"]
+        assert q["available"] is True and q["check"]["ok"] is True and q["last"].get("ok") is not True, q
+
+        # Metrics: select successes -> run, select rejects -> rejected; check never counts.
+        q1 = _q_metrics(c)
+        assert q1["run"] - q0["run"] == runs, (q0, q1, runs)
+        assert q1["rejected"] - q0["rejected"] == rejected, (q0, q1, rejected)
+        assert c.get_metric(_Q + "last_match_count") == len([x for x in cells if _rainfall(*x) < 150.0]), \
+            c.get_metric(_Q + "last_match_count")
+        assert c.get_metric(_Q + "evaluate_ms") >= 0.0
+
+        c.send_command("cells.select.clear")
+        assert sel_count() == 0
+    finally:
+        c.abort_stage()
+        c.navigate_to("Boot")
