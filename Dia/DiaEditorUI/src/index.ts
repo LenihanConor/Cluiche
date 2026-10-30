@@ -49,3 +49,5 @@ export { computeLayout, cellCentre, cellFromPoint, hexCorners } from './cellGeom
 export type { Topology, ViewState, Layout, LayoutInput, CellRef } from './cellGeometry';
 export { colourForValue, colourCells } from './cellColour';
 export type { CellColouring } from './cellColour';
+export { CellGridCanvas } from './CellGridCanvas';
+export type { CellGridCanvasProps } from './CellGridCanvas';
