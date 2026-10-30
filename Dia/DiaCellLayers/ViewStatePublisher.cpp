@@ -1,5 +1,6 @@
 #ifdef DIA_DEBUG
 #include <DiaCellLayers/ViewStatePublisher.h>
+#include <DiaCellLayers/MirrorQueries.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
 
@@ -74,13 +75,8 @@ namespace Dia::CellLayers
 		p["layersVersion"] = s.layersVersion;
 		if (s.grid != nullptr)
 		{
-			uint32_t index = 0;
-			for (uint32_t i = 0; i < mRegistry.GridCount(); ++i)
-			{
-				if (mRegistry.GridAt(i) == s.grid) { index = i; break; }
-			}
-			char id[24];
-			snprintf(id, sizeof(id), "grid.%u", index);
+			char id[MirrorGridId::kBufferSize];
+			MirrorGridId::Format(MirrorGridId::IndexOf(mRegistry, s.grid), id);
 			Json::Value g(Json::objectValue);
 			g["id"] = id;
 			g["topology"] = s.topology.AsChar();

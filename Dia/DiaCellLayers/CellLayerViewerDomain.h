@@ -119,6 +119,10 @@ namespace Dia::CellLayers
 		SelectionInput&	Input() { return mInput; }	// tool choice / selection group (call on SimPU, like Update)
 		const SelectionInput&	Input() const { return mInput; }
 
+		// The state mutex guarding viewer + selection state against SimPU's Update. Cross-thread readers (MirrorQueries) hold it
+		// while reading the selection. Non-recursive: do not call the locking accessors above while holding it.
+		Dia::Core::Mutex&	StateMutex() const { return mMutex; }
+
 		// Layers and overlays grouped by grid (the cells.layer.list payload).
 		void ListLayers(Json::Value& out) const;
 

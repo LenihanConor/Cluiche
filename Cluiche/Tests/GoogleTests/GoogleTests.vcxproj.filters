@@ -2280,5 +2280,8 @@
     <ClCompile Include="DiaCellLayers\TestViewStatePublisher.cpp">
       <Filter>DiaCellLayers</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestMirrorQueries.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

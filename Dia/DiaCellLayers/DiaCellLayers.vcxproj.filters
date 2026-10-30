@@ -70,6 +70,7 @@
     <ClInclude Include="Testing\ViewStateTestSupport.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="MirrorQueries.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />
@@ -96,6 +97,7 @@
     <ClCompile Include="SelectionFingerprint.cpp" />
     <ClCompile Include="DebugServerTopicSink.cpp" />
     <ClCompile Include="ViewStatePublisher.cpp" />
+    <ClCompile Include="MirrorQueries.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diacelllayers.architecture.module.md">

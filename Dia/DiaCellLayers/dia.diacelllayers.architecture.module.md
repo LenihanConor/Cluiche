@@ -43,6 +43,7 @@ public_api:
     - DiaCellLayers/ITopicSink.h
     - DiaCellLayers/DebugServerTopicSink.h
     - DiaCellLayers/ViewStatePublisher.h
+    - DiaCellLayers/MirrorQueries.h
     - DiaCellLayers/CellDetailRegistry.h
     - DiaCellLayers/QueryError.h
     - DiaCellLayers/QueryLexer.h
