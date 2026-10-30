@@ -429,6 +429,56 @@
     letter-spacing: 0.5px;
   }
 
+  /* Switch dialogs (states 4 and 5) */
+  .editor-window { position: relative; }
+  .scrim {
+    position: absolute;
+    inset: 0;
+    background: rgba(10,10,15,0.62);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+  }
+  .dialog {
+    width: 360px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.55);
+    padding: 16px;
+  }
+  .dialog-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .dialog-body { font-size: 12px; color: var(--text-dim); line-height: 1.6; margin-bottom: 12px; }
+  .dialog-body strong { color: var(--text); }
+  .dirty-list {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 6px 8px;
+    margin-bottom: 14px;
+  }
+  .dirty-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 12px; color: var(--text); }
+  .dirty-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--orange); flex-shrink: 0; }
+  .dirty-row .dirty-note { margin-left: auto; font-size: 10px; color: var(--text-dim); }
+  .dirty-row .dirty-note.failed { color: var(--red); font-weight: 600; }
+  .dialog-buttons { display: flex; gap: 8px; justify-content: flex-end; }
+  .dlg-btn {
+    padding: 5px 14px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+  }
+  .dlg-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+  .dlg-btn.danger { color: var(--red); border-color: rgba(243,139,168,0.5); }
+  .dialog-hint { font-size: 10px; color: var(--text-dim); margin-top: 10px; line-height: 1.5; }
+  .frozen-note { padding: 14px; font-size: 11px; color: var(--text-dim); font-style: italic; text-align: center; }
+
   .mockup-title {
     font-size: 16px;
     font-weight: 700;
@@ -440,7 +490,7 @@
 </head>
 <body>
 
-<div class="mockup-title">Game-Scoped Editor Plugins — Three CluicheEditor States</div>
+<div class="mockup-title">Game-Scoped Editor Plugins — CluicheEditor States 1 to 5 (4 and 5: switch dialogs)</div>
 
 <div class="mockup-container">
 
@@ -663,6 +713,110 @@
           <div style="margin-bottom:6px; color:var(--accent); font-weight:600;">Behavior:</div>
           <div>→ With <strong>CoW</strong> loaded: game-scoped plugin registers <code style="background:var(--bg); padding:2px 6px; border-radius:2px; font-size:10px; color:var(--mauve);">.ecology.json</code> handler</div>
           <div>→ With <strong>CluicheTest</strong>: handler unregistered, fallback to OS default</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- STATE 4: switching games with unsaved game-scoped plugins (AC8)     -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="editor-window">
+    <div class="state-label">STATE 4</div>
+    <div class="title-bar">
+      <span class="app-name">CluicheEditor</span>
+      <span class="project-name">cow.diagame</span>
+      <span class="spacer"></span>
+    </div>
+    <div class="panel-header">World Data Editor</div>
+    <div class="frozen-note">(editor stays on cow.diagame until you choose)</div>
+
+    <div class="scrim">
+      <div class="dialog">
+        <div class="dialog-title">Switch to cluichetest.diagame?</div>
+        <div class="dialog-body">
+          These <strong>cow.diagame</strong> plugins have unsaved changes and will close:
+        </div>
+        <div class="dirty-list">
+          <div class="dirty-row"><span class="dirty-dot"></span>CoW World Data Editor <span class="dirty-note">lush.ecology.json</span></div>
+          <div class="dirty-row"><span class="dirty-dot"></span>CoW World Sim Inspector <span class="dirty-note">saved view</span></div>
+        </div>
+        <div class="dialog-buttons">
+          <button class="dlg-btn">Cancel</button>
+          <button class="dlg-btn danger">Discard</button>
+          <button class="dlg-btn primary">Save all and switch</button>
+        </div>
+        <div class="dialog-hint">
+          Cancel keeps cow.diagame loaded. Discard closes the plugins without saving.
+          If a save fails the dialog stays open and the failed plugin is marked.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- STATE 4b: a save failed                                              -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="editor-window">
+    <div class="state-label">STATE 4b</div>
+    <div class="title-bar">
+      <span class="app-name">CluicheEditor</span>
+      <span class="project-name">cow.diagame</span>
+      <span class="spacer"></span>
+    </div>
+    <div class="panel-header">World Data Editor</div>
+    <div class="frozen-note">(still on cow.diagame)</div>
+
+    <div class="scrim">
+      <div class="dialog">
+        <div class="dialog-title">Switch to cluichetest.diagame?</div>
+        <div class="dialog-body">
+          Could not save every plugin, so nothing was closed:
+        </div>
+        <div class="dirty-list">
+          <div class="dirty-row"><span class="dirty-dot" style="background:var(--green)"></span>CoW World Data Editor <span class="dirty-note">saved</span></div>
+          <div class="dirty-row"><span class="dirty-dot" style="background:var(--red)"></span>CoW World Sim Inspector <span class="dirty-note failed">save failed</span></div>
+        </div>
+        <div class="dialog-buttons">
+          <button class="dlg-btn">Cancel</button>
+          <button class="dlg-btn danger">Discard</button>
+          <button class="dlg-btn primary">Retry save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- STATE 5: a different game connects live (AC9)                        -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="editor-window">
+    <div class="state-label">STATE 5</div>
+    <div class="title-bar">
+      <span class="app-name">CluicheEditor</span>
+      <span class="project-name">cluichetest.diagame</span>
+      <span class="spacer"></span>
+      <div class="connection-pill connected">
+        <div class="connection-pill-dot"></div>
+        Connected: CoW
+      </div>
+    </div>
+    <div class="panel-header">Plugin Browser</div>
+    <div class="frozen-note">(CoW plugins stay unavailable until you switch)</div>
+
+    <div class="scrim">
+      <div class="dialog">
+        <div class="dialog-title">Switch to cow.diagame?</div>
+        <div class="dialog-body">
+          The running game is <strong>CoW</strong>, but the editor has <strong>cluichetest.diagame</strong> loaded.
+          Switching makes CoW's editor plugins available and closes any cluichetest-only plugins.
+        </div>
+        <div class="dialog-buttons">
+          <button class="dlg-btn">Stay on cluichetest</button>
+          <button class="dlg-btn primary">Switch to cow</button>
+        </div>
+        <div class="dialog-hint">
+          Staying keeps the connection up; only the game scope is unchanged.
+          If the same game connects, nothing is asked. If plugins have unsaved changes, State 4 follows.
         </div>
       </div>
     </div>
