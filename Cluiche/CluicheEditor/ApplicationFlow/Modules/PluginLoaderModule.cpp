@@ -91,6 +91,7 @@ namespace Cluiche
 			}
 
 			DIA_LOG_INFO("Application", "PluginLoaderModule: DoStart");
+			Dia::Editor::EditorPluginRegistry::Instance().AddGameScopeListener(&PluginLoaderModule::OnGameScopeChanged, this);
 			LoadBuiltInPlugins();
 			RestoreLayoutPlugins();
 			PruneHeadlessPanels();
@@ -201,6 +202,11 @@ namespace Cluiche
 
 		Dia::ApplicationFlow::StopResult PluginLoaderModule::DoStop()
 		{
+			Dia::Editor::EditorPluginRegistry::Instance().RemoveGameScopeListener(&PluginLoaderModule::OnGameScopeChanged, this);
+
+			// Game-scoped plugins never persist into the next session: close them before layout/memory are saved.
+			CloseAllGameScopedPlugins();
+
 			// --- Save editor memory before unloading plugins ---
 			Dia::Editor::EditorMemory memory;
 
@@ -212,6 +218,8 @@ namespace Cluiche
 			for (unsigned int i = 0; i < mLoadedPlugins.Size(); ++i)
 			{
 				const Dia::Core::StringCRC& typeId = mLoadedPlugins[i].typeId;
+				if (Dia::Editor::EditorPluginRegistry::Instance().IsGameScoped(typeId))
+					continue;
 				if (typeId == kBuiltinHome || typeId == kBuiltinOutput ||
 					typeId == kBuiltinGameConn || typeId == kBuiltinBrowser)
 					continue;
@@ -276,6 +284,40 @@ namespace Cluiche
 			}
 
 			return Dia::ApplicationFlow::StopResult::kDone;
+		}
+
+		void PluginLoaderModule::OnGameScopeChanged(void* userData, const Dia::Core::StringCRC& /*oldGame*/, const Dia::Core::StringCRC& /*newGame*/)
+		{
+			static_cast<PluginLoaderModule*>(userData)->CloseOutOfScopePlugins();
+		}
+
+		void PluginLoaderModule::CloseOutOfScopePlugins()
+		{
+			Dia::Editor::EditorPluginRegistry& registry = Dia::Editor::EditorPluginRegistry::Instance();
+			const Dia::Core::StringCRC activeGame = registry.GetActiveGameId();
+			const char* gameName = (activeGame == Dia::Core::StringCRC()) ? "no game" : activeGame.AsChar();
+
+			for (int i = static_cast<int>(mLoadedPlugins.Size()) - 1; i >= 0; --i)
+			{
+				const Dia::Core::StringCRC typeId = mLoadedPlugins[i].typeId;
+				if (!registry.IsOutOfGameScope(typeId))
+					continue;
+				DIA_LOG_INFO("Editor", "closing %s (out of scope: %s)", typeId.AsChar(), gameName);
+				UnloadPlugin(typeId);
+			}
+		}
+
+		void PluginLoaderModule::CloseAllGameScopedPlugins()
+		{
+			Dia::Editor::EditorPluginRegistry& registry = Dia::Editor::EditorPluginRegistry::Instance();
+			for (int i = static_cast<int>(mLoadedPlugins.Size()) - 1; i >= 0; --i)
+			{
+				const Dia::Core::StringCRC typeId = mLoadedPlugins[i].typeId;
+				if (!registry.IsGameScoped(typeId))
+					continue;
+				DIA_LOG_INFO("Editor", "closing %s (editor shutdown, game-scoped plugins are not persisted)", typeId.AsChar());
+				UnloadPlugin(typeId);
+			}
 		}
 
 		void PluginLoaderModule::PruneHeadlessPanels()
@@ -442,6 +484,17 @@ namespace Cluiche
 
 		void PluginLoaderModule::LoadPlugin(const Dia::Core::StringCRC& typeId, const Dia::Core::StringCRC& instanceId)
 		{
+			// Game-scoped plugin whose game is not active: refuse (palette, memory, layout and manifest all route here).
+			// Deliberately not IsAvailable(): the .cluicheproj filter is display-only and must not block loading.
+			Dia::Editor::EditorPluginRegistry& scopeRegistry = Dia::Editor::EditorPluginRegistry::Instance();
+			if (scopeRegistry.IsOutOfGameScope(typeId))
+			{
+				const Dia::Core::StringCRC& activeGame = scopeRegistry.GetActiveGameId();
+				DIA_LOG_INFO("Editor", "PluginLoaderModule: skipping %s (out of scope: %s)",
+					typeId.AsChar(), (activeGame == Dia::Core::StringCRC()) ? "no game" : activeGame.AsChar());
+				return;
+			}
+
 			if (IsPluginTypeLoaded(typeId))
 			{
 				DIA_LOG_INFO("Application", "PluginLoaderModule::LoadPlugin: '%s' already loaded — calling OnNavigate", typeId.AsChar());

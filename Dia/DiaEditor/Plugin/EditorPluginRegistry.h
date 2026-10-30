@@ -41,6 +41,8 @@ namespace Dia
 			const Dia::Core::StringCRC& GetActiveGameId() const;
 			bool IsGameScoped(const Dia::Core::StringCRC& typeId) const;
 			bool IsAvailable(const Dia::Core::StringCRC& typeId) const;
+			// Registered, game-scoped, and its game is not the active one. Ignores the .cluicheproj display filter.
+			bool IsOutOfGameScope(const Dia::Core::StringCRC& typeId) const;
 
 			void AddGameScopeListener(GameScopeChangedCallback callback, void* userData);
 			void RemoveGameScopeListener(GameScopeChangedCallback callback, void* userData);

@@ -205,3 +205,39 @@ TEST_F(EditorPluginRegistryGameScope, ChangeNotificationFiresOnChangeOnly)
     r.SetGameScope(kGameIdA, List(kGameA));
     EXPECT_EQ(rec.count, 3u);
 }
+
+TEST_F(EditorPluginRegistryGameScope, OutOfGameScopeFalseForBuiltInAndUnregistered)
+{
+    EditorPluginRegistry& r = EditorPluginRegistry::Instance();
+    EXPECT_FALSE(r.IsOutOfGameScope(kBuiltIn));
+    EXPECT_FALSE(r.IsOutOfGameScope(StringCRC("GameScopeTest_Unregistered")));
+}
+
+TEST_F(EditorPluginRegistryGameScope, OutOfGameScopeFalseForFilteredCluicheprojPlugin)
+{
+    EditorPluginRegistry& r = EditorPluginRegistry::Instance();
+    DynamicArrayC<StringCRC, EditorPluginRegistry::kMaxManifests> active;
+    active.Add(StringCRC("GameScopeTest_OtherManifest"));
+    r.SetActiveManifests(active);
+    EXPECT_FALSE(r.IsAvailable(kProjOnly));
+    EXPECT_FALSE(r.IsOutOfGameScope(kProjOnly));
+}
+
+TEST_F(EditorPluginRegistryGameScope, OutOfGameScopeTrueWhenGameInactive)
+{
+    EditorPluginRegistry& r = EditorPluginRegistry::Instance();
+    r.TagGameScoped(kGameA, kGameIdA);
+    EXPECT_TRUE(r.IsOutOfGameScope(kGameA));
+    r.SetGameScope(kGameIdB, List(kGameB));
+    EXPECT_TRUE(r.IsOutOfGameScope(kGameA));
+    EXPECT_FALSE(r.IsOutOfGameScope(kGameB));
+}
+
+TEST_F(EditorPluginRegistryGameScope, OutOfGameScopeFalseWhenGameActive)
+{
+    EditorPluginRegistry& r = EditorPluginRegistry::Instance();
+    r.SetGameScope(kGameIdA, List(kGameA));
+    EXPECT_FALSE(r.IsOutOfGameScope(kGameA));
+    r.ClearGameScope();
+    EXPECT_TRUE(r.IsOutOfGameScope(kGameA));
+}

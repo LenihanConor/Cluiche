@@ -214,6 +214,16 @@ namespace Dia
 			return false;
 		}
 
+		bool EditorPluginRegistry::IsOutOfGameScope(const Dia::Core::StringCRC& typeId) const
+		{
+			for (unsigned int i = 0; i < mEntries.Size(); ++i)
+			{
+				if (mEntries[i].typeId == typeId)
+					return mEntries[i].gameId != Dia::Core::StringCRC() && mEntries[i].gameId != mActiveGameId;
+			}
+			return false;
+		}
+
 		void EditorPluginRegistry::AddGameScopeListener(GameScopeChangedCallback callback, void* userData)
 		{
 			if (callback == nullptr)

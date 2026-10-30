@@ -45,6 +45,9 @@ namespace Cluiche
 
 		private:
 			void PruneHeadlessPanels();
+			void CloseOutOfScopePlugins();
+			void CloseAllGameScopedPlugins();
+			static void OnGameScopeChanged(void* userData, const Dia::Core::StringCRC& oldGame, const Dia::Core::StringCRC& newGame);
 
 			struct LoadedPluginEntry
 			{
