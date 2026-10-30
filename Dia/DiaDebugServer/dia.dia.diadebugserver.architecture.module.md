@@ -32,8 +32,18 @@ responsibilities:
     rebuilt on Main from the subscription list after every subscribe/unsubscribe/disconnect/Stop)
   - Command dispatching (protocol commands and DiaAPI command gateway)
   - Server self-monitoring and performance tracking
+  - Sim-hosted queries (Main side): DebugServer::RegisterSimHosted/UnregisterSimHosted mark a name as handled on SimPU;
+    HandleCommand posts a SimRequestEvent through ISimRequestSink and defers the COMMAND_RESPONSE until
+    CompleteSimReply (reply event drained on Main) or a 2000 ms timeout swept in Tick (SimPendingTable tracks pending ids)
+  - Sim-hosted queries (SimPU side): SimQueryHost drains an ISimRequestSource, runs registered Query/Command handlers
+    and posts SimReplyEvents to an ISimReplySink; fixed-size payloads (SimHostedTypes.h)
+  - Sim-hosted observability: counters dia.debugserver.sim.{requests,replies,timeouts,busy,too_large,handler_failed},
+    gauge dia.debugserver.sim.pending, Info logs on sink attach/detach and name register/unregister, Warning on timeout
+  - Test seams: DebugServer::SetNowMsFunction (clock) and SetSendHook (outgoing messages, no socket)
 
 non_responsibilities:
+  - Cross-PU access to domain state: done via streams only (EventStream request/reply for sim-hosted queries, FrameStream
+    snapshots); no shared mutexes between Main and SimPU for query data
   - Editor-side UI or connection management
   - Game-specific data serialization beyond core metrics
   - WebSocket protocol implementation (delegated to DiaWebSocket)
@@ -46,12 +56,19 @@ public_api:
     - Dia/DiaDebugServer/DebugServerModule.h
     - Dia/DiaDebugServer/StateSerializer.h
     - Dia/DiaDebugServer/CommandDispatcher.h
+    - Dia/DiaDebugServer/DebugServer.h        # RegisterSimHosted, UnregisterSimHosted, SetSimRequestSink, CompleteSimReply, SetNowMsFunction, SetSendHook
+    - Dia/DiaDebugServer/SimHostedTypes.h     # SimKind, SimReplyStatus, SimRequestEvent, SimReplyEvent, kSimPayloadBytes
+    - Dia/DiaDebugServer/ISimRequestSink.h
+    - Dia/DiaDebugServer/SimPendingTable.h
+    - Dia/DiaDebugServer/SimQueryHost.h       # SimQueryHost, ISimRequestSource, ISimReplySink
   namespaces:
     - Dia::DebugServer
   entry_points:
     - DebugServerModule   # exposes NotifySubscribers (broadcast-to-all shim, DebugLayerManager migration pending)
     - StateSerializer
     - CommandDispatcher
+    - SimQueryHost
+    - SimPendingTable
 
 dependencies:
   required:

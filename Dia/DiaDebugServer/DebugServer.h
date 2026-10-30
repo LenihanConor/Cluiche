@@ -193,7 +193,8 @@ namespace Dia
 			// on Main when the reply event is drained) or a 2000 ms timeout (swept in Tick).
 			// Dispatch order: sim-hosted, QueryRegistry, DiaAPI fallback.
 			// Sink must outlive the DebugServer or be cleared with nullptr.
-			void SetSimRequestSink(ISimRequestSink* sink) { mSimSink = sink; }
+			// Logs Info on attach (non-null) and detach (null).
+			void SetSimRequestSink(ISimRequestSink* sink);
 
 			// False (Error log) if already sim-registered or the name exists in QueryRegistry.
 			// Note: QueryRegistry::Register of an already sim-hosted name is NOT rejected

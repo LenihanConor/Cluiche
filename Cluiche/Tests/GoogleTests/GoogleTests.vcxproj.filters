@@ -2328,5 +2328,8 @@
     <ClCompile Include="ApplicationFlow\TestStreamDeclaredCapacity.cpp">
       <Filter>ApplicationFlow</Filter>
     </ClCompile>
+    <ClCompile Include="DebugServer\TestSimHostedObservation.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

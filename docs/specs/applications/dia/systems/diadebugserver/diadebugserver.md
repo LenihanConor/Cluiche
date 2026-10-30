@@ -303,6 +303,8 @@ DiaDebugServer runs on a separate thread (server thread). All communication with
 - Broadcast requests queued → sent from server thread
 - Subscription changes protected by mutex
 
+Domain state read by remote queries is reached via sim-hosted queries over EventStreams (see sim-hosted-queries.md), not shared mutexes.
+
 **Debug vs Release:**
 ```cpp
 #ifdef DIA_DEBUG

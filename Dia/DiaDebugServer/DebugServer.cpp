@@ -10,6 +10,7 @@
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Log/Logger.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
 
 #include <cstring>
 #include <memory>
@@ -70,6 +71,32 @@ namespace Dia
 		// Sim-hosted queries (Main thread only)
 		//---------------------------------------------------------------------
 
+		namespace
+		{
+			// Sim-hosted counters (dia.debugserver.sim.*). RegisterCounter is idempotent; call rate is per client command.
+			void BumpSimMetric(const char* name)
+			{
+				if (auto* c = Dia::Observation::Metric::MetricRegistry::Instance().RegisterCounter(Dia::Core::StringCRC(name)))
+					c->Inc();
+			}
+
+			void SetSimPendingGauge(uint32_t count)
+			{
+				if (auto* g = Dia::Observation::Metric::MetricRegistry::Instance().RegisterGauge(
+						Dia::Core::StringCRC("dia.debugserver.sim.pending")))
+					g->Set(static_cast<double>(count));
+			}
+		}
+
+		void DebugServer::SetSimRequestSink(ISimRequestSink* sink)
+		{
+			mSimSink = sink;
+			if (sink)
+				DIA_LOG_INFO("DebugServer", "Sim request sink attached");
+			else
+				DIA_LOG_INFO("DebugServer", "Sim request sink detached");
+		}
+
 		bool DebugServer::RegisterSimHosted(Dia::Core::StringCRC name, SimKind kind)
 		{
 			for (unsigned int i = 0; i < mSimNames.Size(); ++i)
@@ -94,6 +121,7 @@ namespace Dia
 			entry.name = name;
 			entry.kind = kind;
 			mSimNames.Add(entry);
+			DIA_LOG_INFO("DebugServer", "Sim-hosted name '%s' registered (kind=%u)", name.AsChar(), static_cast<unsigned>(kind));
 			return true;
 		}
 
@@ -104,6 +132,7 @@ namespace Dia
 				if (mSimNames[i].name == name)
 				{
 					mSimNames.RemoveAt(i);
+					DIA_LOG_INFO("DebugServer", "Sim-hosted name '%s' unregistered", name.AsChar());
 					return;
 				}
 			}
@@ -150,8 +179,10 @@ namespace Dia
 					if (mSimNames[k].name.Value() == expired[i].commandId)
 						name = mSimNames[k].name.AsChar();
 				DIA_LOG_WARNING("DebugServer", "Sim-hosted request %u ('%s') timed out", expired[i].requestId, name);
+				BumpSimMetric("dia.debugserver.sim.timeouts");
 				SendSimError(expired[i].connectionId, name, "sim timeout");
 			}
+			SetSimPendingGauge(mSimPending.Count());
 		}
 
 		void DebugServer::CompleteSimReply(const SimReplyEvent& reply)
@@ -168,6 +199,8 @@ namespace Dia
 				return;
 			}
 
+			SetSimPendingGauge(mSimPending.Count());
+
 			const char* name = "";
 			for (unsigned int k = 0; k < mSimNames.Size(); ++k)
 				if (mSimNames[k].name.Value() == entry.commandId)
@@ -178,6 +211,7 @@ namespace Dia
 			case SimReplyStatus::Ok:
 				break;
 			case SimReplyStatus::TooLarge:
+				BumpSimMetric("dia.debugserver.sim.too_large");
 				SendSimError(entry.connectionId, name, "reply too large");
 				return;
 			case SimReplyStatus::UnknownName:
@@ -185,6 +219,7 @@ namespace Dia
 				return;
 			case SimReplyStatus::HandlerFailed:
 			default:
+				BumpSimMetric("dia.debugserver.sim.handler_failed");
 				SendSimError(entry.connectionId, name, "handler failed");
 				return;
 			}
@@ -203,6 +238,7 @@ namespace Dia
 			if (!parsed)
 			{
 				DIA_LOG_ERROR("DebugServer", "Sim reply for '%s' has unparseable JSON", name);
+				BumpSimMetric("dia.debugserver.sim.handler_failed");
 				SendSimError(entry.connectionId, name, "handler failed");
 				return;
 			}
@@ -215,6 +251,7 @@ namespace Dia
 			resp->set_success(true);
 			Dia::Proto::JsonValueToProtoStruct(result, resp->mutable_payload());
 			SendProtoMessage(entry.connectionId, response);
+			BumpSimMetric("dia.debugserver.sim.replies");
 		}
 
 		void DebugServer::SetStageTransitionCallback(StageTransitionCallback cb)
@@ -730,6 +767,7 @@ namespace Dia
 				}
 				if (argsText.size() >= kSimPayloadBytes)
 				{
+					BumpSimMetric("dia.debugserver.sim.too_large");
 					SendSimError(connId, cmd.command().c_str(), "reply too large");
 					return;
 				}
@@ -743,6 +781,7 @@ namespace Dia
 						mSimPending.Complete(requestId, discard);
 					}
 					DIA_LOG_WARNING("DebugServer", "HandleCommand: sim busy for '%s'", cmd.command().c_str());
+					BumpSimMetric("dia.debugserver.sim.busy");
 					SendSimError(connId, cmd.command().c_str(), "sim busy");
 					return;
 				}
@@ -757,7 +796,13 @@ namespace Dia
 					SimPendingTable::Entry discard;
 					mSimPending.Complete(requestId, discard);
 					DIA_LOG_WARNING("DebugServer", "HandleCommand: sim request stream full for '%s'", cmd.command().c_str());
+					BumpSimMetric("dia.debugserver.sim.busy");
 					SendSimError(connId, cmd.command().c_str(), "sim busy");
+				}
+				else
+				{
+					BumpSimMetric("dia.debugserver.sim.requests");
+					SetSimPendingGauge(mSimPending.Count());
 				}
 				return;
 			}
