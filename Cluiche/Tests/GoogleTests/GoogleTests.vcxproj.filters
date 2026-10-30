@@ -2256,5 +2256,8 @@
     <ClCompile Include="DiaCellLayers\TestQueryPerf.cpp">
       <Filter>DiaCellLayers</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\TestPluginBrowserGameScope.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
