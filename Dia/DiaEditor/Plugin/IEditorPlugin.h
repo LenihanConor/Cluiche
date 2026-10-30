@@ -69,6 +69,13 @@ namespace Dia
 			// was already running. Implementations should navigate to the identified asset without
 			// reloading. Default no-op preserves backward compatibility for all existing plugins.
 			virtual void OnNavigate(const Dia::Core::StringCRC& instanceId) { (void)instanceId; }
+
+			// True when the plugin holds unsaved edits.
+			virtual bool IsDirty() const { return false; }
+
+			// Returns true if nothing was unsaved or the save succeeded. The default fails for a
+			// dirty plugin that did not override Save, so a dirty plugin is never silently discarded.
+			virtual bool Save() { return !IsDirty(); }
 		};
 
 		class IEditorPluginFactory

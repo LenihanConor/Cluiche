@@ -40,6 +40,8 @@ namespace Dia
 			void OnUnload() override final;
 			void OnUpdate(float deltaTime) override;
 
+			bool IsDirty() const override;
+
 			static Json::Value MakeSuccessResponse();
 			static Json::Value MakeSuccessResponse(const Json::Value& data);
 			static Json::Value MakeErrorResponse(const char* message);
@@ -55,7 +57,6 @@ namespace Dia
 			void RegisterEvent(const Dia::Core::StringCRC& eventType,
 				WebUIBridge::EventHandler handler);
 
-			bool IsDirty() const;
 			void MarkDirty();
 			void ClearDirty();
 

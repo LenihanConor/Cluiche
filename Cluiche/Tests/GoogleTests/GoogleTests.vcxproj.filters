@@ -2259,5 +2259,8 @@
     <ClCompile Include="Editor\TestPluginBrowserGameScope.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\TestEditorPluginDirtySave.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -1041,6 +1041,7 @@
     <ClCompile Include="DiaCellLayers\TestQueryObservation.cpp" />
     <ClCompile Include="DiaCellLayers\TestQueryPerf.cpp" />
     <ClCompile Include="Editor\TestPluginBrowserGameScope.cpp" />
+    <ClCompile Include="Editor\TestEditorPluginDirtySave.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
