@@ -102,6 +102,8 @@
     <ClInclude Include="CellDetailRegistry.h" />
     <ClInclude Include="Testing\CellDetailTestSupport.h" />
     <ClInclude Include="InspectorModel.h" />
+    <ClInclude Include="QueryError.h" />
+    <ClInclude Include="QueryLexer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />
@@ -121,6 +123,7 @@
     <ClCompile Include="InspectorState.cpp" />
     <ClCompile Include="CellDetailRegistry.cpp" />
     <ClCompile Include="InspectorModel.cpp" />
+    <ClCompile Include="QueryLexer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diacelllayers.architecture.module.md" />
