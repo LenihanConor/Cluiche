@@ -259,6 +259,7 @@ Features within the DiaDebugServer system (create with `/spec-feature`):
 | Query Registry | Structured remote query dispatch — domain modules register JSON-in/JSON-out handlers; migrates protocol commands | @docs/specs/applications/dia/systems/diadebugserver/query-registry.md | Approved |
 | Server Self-Monitoring | Track game/editor performance impact, server health metrics, debugging | @docs/specs/applications/dia/systems/diadebugserver/server-self-monitoring.md | Approved |
 | Connection Health | Per-topic stats, subscription-gated ObservationBridge, subscribe ACK, tiered drop warnings in editor UI | @docs/specs/applications/dia/systems/diadebugserver/connection-health.md | Approved |
+| Sim-Hosted Queries | Queries and DiaAPI commands answered on SimPU with deferred replies over EventStreams; no cross-PU mutex | @docs/specs/applications/dia/systems/diadebugserver/sim-hosted-queries.md | Approved |
 
 ## AI Review Questions
 
