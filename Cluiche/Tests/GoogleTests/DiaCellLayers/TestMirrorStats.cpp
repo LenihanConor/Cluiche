@@ -296,6 +296,67 @@ TEST_F(MirrorStatsTest, DifferentLayerSetRecomputes)
 	EXPECT_EQ(LayerNames(b), "wind,");
 }
 
+TEST_F(MirrorStatsTest, AlternatingLayerSetsInOneFrameComputeOncePerSet)
+{
+	StatsRig rig;
+	rig.SelectBox();
+	const uint32_t c0 = rig.queries->StatsComputeCount();
+	const Json::Value argsA = Args("layers", LayerArray({ "temp", "rain" }));
+	const Json::Value argsB = Args("layers", LayerArray({ "wind" }));
+	const Json::Value a1 = rig.queries->SelectionStats(argsA);
+	const Json::Value b1 = rig.queries->SelectionStats(argsB);
+	const Json::Value a2 = rig.queries->SelectionStats(argsA);
+	const Json::Value b2 = rig.queries->SelectionStats(argsB);
+	ASSERT_FALSE(IsError(a1)) << a1.toStyledString();
+	ASSERT_FALSE(IsError(b1)) << b1.toStyledString();
+	EXPECT_EQ(rig.queries->StatsComputeCount(), c0 + 2);
+	EXPECT_EQ(a1, a2);
+	EXPECT_EQ(b1, b2);
+	EXPECT_EQ(LayerNames(a2), "temp,rain,");
+	EXPECT_EQ(LayerNames(b2), "wind,");
+}
+
+TEST_F(MirrorStatsTest, MoreRequestsThanCapacityStillCorrectAndNotifyFrameClearsAll)
+{
+	StatsRig rig;
+	rig.SelectBox();
+	const char* names[] = { "temp", "terrain", "rain", "wind" };
+	std::vector<std::vector<const char*>> sets;
+	for (const char* x : names) { for (const char* y : names) { if (x != y) { sets.push_back({ x, y }); } } }	// 12 ordered pairs
+	ASSERT_GT(sets.size(), static_cast<size_t>(MirrorQueries::kStatsCacheCapacity));
+
+	auto request = [&](const std::vector<const char*>& s)
+	{
+		Json::Value arr(Json::arrayValue);
+		for (const char* n : s) { arr.append(n); }
+		return rig.queries->SelectionStats(Args("layers", arr));
+	};
+	auto expectedNames = [](const std::vector<const char*>& s) { std::string r; for (const char* n : s) { r += std::string(n) + ","; } return r; };
+
+	const uint32_t c0 = rig.queries->StatsComputeCount();
+	std::vector<Json::Value> first;
+	for (const auto& s : sets) { first.push_back(request(s)); }
+	EXPECT_EQ(rig.queries->StatsComputeCount(), c0 + static_cast<uint32_t>(sets.size()));
+
+	const uint32_t c1 = rig.queries->StatsComputeCount();
+	request(sets.back());	// most recent entry is still cached
+	EXPECT_EQ(rig.queries->StatsComputeCount(), c1);
+
+	for (size_t i = 0; i < sets.size(); ++i)	// every request, evicted or not, returns the correct result
+	{
+		const Json::Value again = request(sets[i]);
+		EXPECT_EQ(again, first[i]) << i;
+		EXPECT_EQ(LayerNames(again), expectedNames(sets[i])) << i;
+	}
+
+	rig.queries->NotifyFrame();
+	const uint32_t c2 = rig.queries->StatsComputeCount();
+	for (size_t i = 0; i < 3; ++i) { request(sets[i]); }
+	EXPECT_EQ(rig.queries->StatsComputeCount(), c2 + 3);	// nothing survived the frame
+	for (size_t i = 0; i < 3; ++i) { request(sets[i]); }
+	EXPECT_EQ(rig.queries->StatsComputeCount(), c2 + 3);
+}
+
 TEST_F(MirrorStatsTest, ErrorsReturnErrorObjectsAndChangeNothing)
 {
 	StatsRig rig;

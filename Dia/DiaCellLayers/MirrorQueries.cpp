@@ -349,7 +349,10 @@ namespace Dia::CellLayers
 			}
 		}
 
-		if (mStatsCacheValid && mStatsCacheFrame == mFrame && mStatsCacheKey == key) { return mStatsCacheResult; }
+		for (const StatsCacheEntry& e : mStatsCache)
+		{
+			if (e.valid && e.frame == mFrame && e.key == key) { return e.result; }
+		}
 
 		// BuildStatsJson takes a mutable registry because the single-cell block runs detail providers; the stats paths here read only.
 		Json::Value out;
@@ -368,10 +371,12 @@ namespace Dia::CellLayers
 		out["version"] = fp.mVersion;
 		out["hash"] = hex;
 
-		mStatsCacheValid = true;
-		mStatsCacheFrame = mFrame;
-		mStatsCacheKey.swap(key);
-		mStatsCacheResult = out;
+		StatsCacheEntry& slot = mStatsCache[mStatsCacheNext];
+		mStatsCacheNext = (mStatsCacheNext + 1) % kStatsCacheCapacity;
+		slot.valid = true;
+		slot.frame = mFrame;
+		slot.key.swap(key);
+		slot.result = out;
 		return out;
 	}
 

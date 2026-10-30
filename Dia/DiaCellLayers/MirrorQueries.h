@@ -58,6 +58,7 @@ namespace Dia::CellLayers
 	{
 	public:
 		static const uint32_t kMaxSelectionChunk = 8192;
+		static const uint32_t kStatsCacheCapacity = 8;	// stats cache entries per frame (round-robin eviction)
 		static const uint32_t kMaxValuesChunk = 196608;		// cells per cells.layer.values call: 786,432 bytes -> 1 MiB of base64
 
 		// schema may be null (no hotkeys). Registry, viewer and schema are borrowed.
@@ -92,10 +93,15 @@ namespace Dia::CellLayers
 
 		// Stats cache (under the viewer's state mutex).
 		uint32_t					mFrame = 0;
-		mutable bool				mStatsCacheValid = false;
-		mutable uint32_t			mStatsCacheFrame = 0;
-		mutable std::vector<uint64_t>	mStatsCacheKey;
-		mutable Json::Value			mStatsCacheResult;
+		struct StatsCacheEntry
+		{
+			bool					valid = false;
+			uint32_t				frame = 0;
+			std::vector<uint64_t>	key;	// variable length (layer set); the header already used std::vector for this
+			Json::Value				result;
+		};
+		mutable StatsCacheEntry		mStatsCache[kStatsCacheCapacity];
+		mutable uint32_t			mStatsCacheNext = 0;	// round-robin insert slot
 		mutable uint32_t			mStatsComputeCount = 0;
 
 		Dia::Observation::Metric::Counter*	mMetricQueries[4] = { nullptr, nullptr, nullptr, nullptr };	// by Kind
