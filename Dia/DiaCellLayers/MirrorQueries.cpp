@@ -1,6 +1,7 @@
 #ifdef DIA_DEBUG
 #include <DiaCellLayers/MirrorQueries.h>
 #include <DiaCellLayers/HotkeyTable.h>
+#include <DiaCellLayers/InspectorModel.h>
 #include <DiaCellLayers/SelectionFingerprint.h>
 #include <DiaDebugServer/QueryRegistry.h>
 #include <DiaCore/Strings/Base64.h>
@@ -246,12 +247,110 @@ namespace Dia::CellLayers
 		return out;
 	}
 
+	void MirrorQueries::NotifyFrame()
+	{
+		Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mViewer.StateMutex());
+		++mFrame;
+	}
+
+	Json::Value MirrorQueries::SelectionStats(const Json::Value& args) const
+	{
+		DIA_PROFILE_SCOPE("celllayers.mirror.select_stats", ::Dia::Observation::Profile::Category::kDiaGraphics);
+
+		// Parse and validate before touching anything.
+		InspectRequest request;	// default Mode::Shown
+		if (!args.isNull() && !args.isObject()) { return ErrorObject("params must be an object"); }
+		if (args.isObject() && args.isMember("layers"))
+		{
+			const Json::Value& layers = args["layers"];
+			if (layers.isString())
+			{
+				if (layers.asString() != "all") { return ErrorObject("param 'layers' must be an array of layer ids or \"all\""); }
+				request.mode = InspectRequest::Mode::All;
+			}
+			else if (layers.isArray())
+			{
+				if (layers.empty()) { return ErrorObject("param 'layers' must not be an empty array"); }
+				request.mode = InspectRequest::Mode::Layers;
+				for (const Json::Value& v : layers)
+				{
+					if (!v.isString() || v.asString().empty()) { return ErrorObject("param 'layers' must hold non-empty strings"); }
+					if (!request.AddLayer(StringCRC(v.asString().c_str()))) { return ErrorObject("too many layers"); }
+				}
+			}
+			else { return ErrorObject("param 'layers' must be an array of layer ids or \"all\""); }
+		}
+
+		const Dia::Graphics::CellGridDesc* active = mViewer.ActiveGrid();	// locks internally: read before taking the state lock
+		Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mViewer.StateMutex());
+		const InspectorState& inspector = mViewer.Inspector();
+		if (active == nullptr) { return ErrorObject("no active grid"); }
+		if (inspector.ActiveGrid() != active) { return ErrorObject("inspector not yet synced to the active grid"); }
+		const ICellSelectionView* sel = mRegistry.SelectionView(active);
+
+		// Cache key: everything the answer depends on besides the frame.
+		std::vector<uint64_t> key;
+		key.push_back(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(sel)));
+		key.push_back(sel != nullptr ? sel->Version() : 0);
+		key.push_back(sel != nullptr ? sel->Count() : 0);
+		key.push_back(static_cast<uint64_t>(request.mode));
+		key.push_back(mRegistry.LayersVersion());
+		key.push_back((inspector.IsPinned() ? 1u : 0u) | (inspector.IsFrozen() ? 2u : 0u) | (inspector.IsUpdating() ? 4u : 0u));
+		key.push_back(inspector.PinnedCount());
+		key.push_back(inspector.ShownLayerCount());
+		for (uint32_t i = 0; i < inspector.ShownLayerCount(); ++i) { key.push_back(inspector.ShownLayerAt(i).Value()); }
+		auto pushLayer = [&](StringCRC id)
+		{
+			const CellLayerDesc* d = mRegistry.Find(id);
+			key.push_back(id.Value());
+			key.push_back(d != nullptr && d->version ? d->version() : 0);
+		};
+		if (request.mode == InspectRequest::Mode::Layers)
+		{
+			for (uint32_t i = 0; i < request.layerCount; ++i) { pushLayer(request.layers[i]); }
+		}
+		else
+		{
+			for (uint32_t i = 0; i < mRegistry.LayerCountForGrid(active); ++i)	// Shown: shown layers are a subset of these
+			{
+				const CellLayerDesc* d = mRegistry.LayerOfGrid(active, i);
+				if (d != nullptr) { pushLayer(d->id); }
+			}
+		}
+
+		if (mStatsCacheValid && mStatsCacheFrame == mFrame && mStatsCacheKey == key) { return mStatsCacheResult; }
+
+		// BuildStatsJson takes a mutable registry because the single-cell block runs detail providers; the stats paths here read only.
+		Json::Value out;
+		CellLayerRegistry& registry = const_cast<CellLayerRegistry&>(mRegistry);
+		if (!InspectorModel::BuildStatsJson(registry, mReader, mSchema, inspector, sel, request, out))
+		{
+			return ErrorObject(out["error"].isString() ? out["error"].asCString() : "stats failed");	// nothing computed; cache untouched
+		}
+		++mStatsComputeCount;
+
+		SelectionFingerprint fp;
+		if (sel != nullptr) { fp = SelectionFingerprintFn::Compute(*sel); }
+		char hex[SelectionFingerprintFn::kHexLength + 1];
+		SelectionFingerprintFn::ToHex(fp.mHash, hex);
+		out["count"] = fp.mCount;
+		out["version"] = fp.mVersion;
+		out["hash"] = hex;
+
+		mStatsCacheValid = true;
+		mStatsCacheFrame = mFrame;
+		mStatsCacheKey.swap(key);
+		mStatsCacheResult = out;
+		return out;
+	}
+
 	void RegisterMirrorQueries(Dia::DebugServer::QueryRegistry& registry, const MirrorQueries& queries)
 	{
 		const MirrorQueries* q = &queries;
 		registry.Register(StringCRC("cells.layer.list"), [q](const Json::Value&) { return q->LayerList(); });
 		registry.Register(StringCRC("cells.layer.values"), [q](const Json::Value& args) { return q->LayerValues(args); });
 		registry.Register(StringCRC("cells.select.get"), [q](const Json::Value& args) { return q->SelectionGet(args); });
+		registry.Register(StringCRC("cells.select.stats"), [q](const Json::Value& args) { return q->SelectionStats(args); });
 	}
 
 	void UnregisterMirrorQueries(Dia::DebugServer::QueryRegistry& registry)
@@ -259,6 +358,7 @@ namespace Dia::CellLayers
 		registry.Unregister(StringCRC("cells.layer.list"));
 		registry.Unregister(StringCRC("cells.layer.values"));
 		registry.Unregister(StringCRC("cells.select.get"));
+		registry.Unregister(StringCRC("cells.select.stats"));
 	}
 }
 #endif // DIA_DEBUG
