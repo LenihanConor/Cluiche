@@ -99,6 +99,18 @@ def _validate_diagame(data: dict, file_path: Path | None = None) -> Tuple[List[s
             if isinstance(imp.get("type"), str) and imp["type"] not in ("manifest", "stage"):
                 errors.append(f"{prefix}.type must be 'manifest' or 'stage', got '{imp['type']}'")
 
+    if "editor" in data:
+        if not isinstance(data["editor"], dict):
+            errors.append("editor should be object")
+        elif "manifests" in data["editor"]:
+            manifests = data["editor"]["manifests"]
+            if not isinstance(manifests, list):
+                errors.append("editor.manifests should be array")
+            else:
+                for i, entry in enumerate(manifests):
+                    if not isinstance(entry, str) or not entry:
+                        errors.append(f"editor.manifests[{i}] should be a non-empty string")
+
     if file_path and isinstance(data.get("imports"), list):
         composed, compose_warnings = _compose_game_manifest(data, file_path)
         warnings += compose_warnings

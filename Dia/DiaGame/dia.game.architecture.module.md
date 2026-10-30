@@ -16,6 +16,7 @@ responsibilities:
   - GameProject, StageDescriptor, SceneDescriptor value types
   - .diagame / .diastage / .diascene JSON load and save
   - Game project validation
+  - DiaGameManifest::editorManifests - optional .diagame "editor.manifests" list (paths relative to the .diagame) naming editor manifests whose plugins exist only while the game is loaded
 
 non_responsibilities:
   - Application lifecycle (DiaApplicationFlow)
