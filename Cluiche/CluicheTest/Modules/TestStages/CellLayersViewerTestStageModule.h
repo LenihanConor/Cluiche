@@ -17,6 +17,7 @@
 #include "Modules/VisualDebuggerModule.h"
 #include "Modules/Camera2DModule.h"
 #include "Modules/InputStreamModule.h"
+#include <DiaCellLayers/CellDetailRegistry.h>
 #include <DiaCellLayers/CellLayerViewerDomain.h>
 #include <DiaCellLayers/LayerUploader.h>
 #include <DiaCellLayers/CellPicker.h>
@@ -140,6 +141,10 @@ private:
     void UnregisterInjectionCommands();
 
     void SubmitPointerInput();
+
+    // Selection Inspector detail provider for grid A ("Stage"): deterministic rows derived from the cell index.
+    void BuildCellDetails(uint32_t cellIndex, Dia::CellLayers::CellDetailBuilder& out);
+    bool  mDetailsRegistered = false;
 
     Dia::CellLayers::CellLayerRegistry* mRegistry = nullptr; // owned by CellLayersModule
     Dia::Core::UniquePtr<Dia::CellLayers::LayerUploader> mUploader;

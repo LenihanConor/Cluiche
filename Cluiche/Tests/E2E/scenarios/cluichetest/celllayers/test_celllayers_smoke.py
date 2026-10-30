@@ -543,3 +543,273 @@ def test_celllayers_smoke(dia_client):
     finally:
         c.abort_stage()
         c.navigate_to("Boot")
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Selection Inspector (Feature 4). Expected numbers are derived from the stage's deterministic generators, replicated here
+# (CellLayersViewerTestStageModule.cpp: StaticTemperature / StaticRainfall / ReadBiome). Temperature is only static while the
+# animation is off and its version is 1, so this test navigates to a fresh stage and never turns the animation on.
+# ---------------------------------------------------------------------------------------------------------------------
+_BIG_W, _BIG_H = 66, 42
+_BIOME_IDS = ["tundra", "forest", "desert", "jungle"]
+_BIOME_LABELS = ["Tundra", "Forest", "Desert", "Jungle"]
+
+
+def _clampf(v, lo, hi):
+    return lo if v < lo else (hi if v > hi else v)
+
+
+def _temperature(q, r):
+    lat = r / (_BIG_H - 1) - 0.5
+    return _clampf(16.0 + 20.0 * math.sin(q * 0.11) * math.cos(r * 0.14) - 18.0 * lat, -20.0, 40.0)
+
+
+def _rainfall(q, r):
+    return _clampf(200.0 + 180.0 * math.sin(q * 0.2 + 1.0) * math.sin(r * 0.25 + 2.0), 0.0, 400.0)
+
+
+def _biome(q, r):
+    return (2 if _temperature(q, r) >= 15.0 else 0) + (1 if _rainfall(q, r) >= 200.0 else 0)
+
+
+def _box(q0, r0, q1, r1):
+    return [(q, r) for q in range(q0, q1 + 1) for r in range(r0, r1 + 1)]
+
+
+def _expected(cells):
+    """Expected inspector stats of `cells` for each layer of grid A (float32 vs float64 noise is covered by _approx)."""
+    # Biome thresholds must not sit within float32 noise of any selected cell, or the category counts would be flaky.
+    margin = min(min(abs(_temperature(*c) - 15.0), abs(_rainfall(*c) - 200.0)) for c in cells)
+    assert margin > 1e-3, margin
+    out = {}
+    for lid, fn in (("temperature", _temperature), ("rainfall", _rainfall)):
+        vals = [fn(*c) for c in cells]
+        out[lid] = {"count": len(vals), "min": min(vals), "mean": sum(vals) / len(vals), "max": max(vals)}
+    cats = [0, 0, 0, 0]
+    for c in cells:
+        cats[_biome(*c)] += 1
+    out["biome"] = {"count": len(cells), "categories": cats}
+    return out
+
+
+def _approx(a, b):
+    return abs(a - b) <= 1e-3 + 1e-4 * abs(b)
+
+
+def _inspect(c, **params):
+    return c.send_command("cells.inspect", params or None)
+
+
+def _inspect_layers(res):
+    return {l["layer"]: l for l in res["layers"]}
+
+
+def _assert_float_stats(stats, exp, what):
+    assert stats["hasData"] is True and stats["nanCount"] == 0, (what, stats)
+    assert stats["count"] == exp["count"], (what, stats, exp)
+    for k in ("min", "mean", "max"):
+        assert _approx(stats[k], exp[k]), (what, k, stats[k], exp[k])
+
+
+def _assert_category_stats(stats, exp, what):
+    assert stats["count"] == exp["count"] and stats["nanCount"] == 0 and stats["other"] == 0, (what, stats)
+    assert [x["id"] for x in stats["categories"]] == _BIOME_IDS, (what, stats)
+    assert [x["label"] for x in stats["categories"]] == _BIOME_LABELS, (what, stats)
+    assert [x["count"] for x in stats["categories"]] == exp["categories"], (what, stats, exp)
+
+
+def _assert_all_stats(res, cells, what):
+    exp = _expected(cells)
+    assert res["ok"] is True and res["selected"] == len(cells), (what, res)
+    layers = _inspect_layers(res)
+    assert set(layers) == {"temperature", "rainfall", "biome"}, (what, list(layers))
+    _assert_float_stats(layers["temperature"], exp["temperature"], what + " temperature")
+    _assert_float_stats(layers["rainfall"], exp["rainfall"], what + " rainfall")
+    _assert_category_stats(layers["biome"], exp["biome"], what + " biome")
+    return exp, layers
+
+
+def test_celllayers_inspector(dia_client):
+    c = dia_client
+    c.navigate_to(_STAGE)
+    try:
+        result = c.poll_checkpoint(_CHECKPOINT, timeout_s=30.0, expected_stage=_STAGE)
+        assert result.get("passed"), f"checkpoint failed: {result}"
+        assert c.send_command("cells.layer.list")["activeBase"] == "temperature"
+        assert c.send_command("cells.select.tool", {"tool": "select"})["tool"] == "select"
+        c.send_command("cells.select.clear")
+
+        def synced():
+            ok, _ = _cmd(c, "cells.inspect", None)
+            return ok
+        assert _wait(synced), ("inspector never synced to the active grid", _cmd(c, "cells.inspect", None))
+
+        # 1. Empty selection: nothing computed; pin has nothing to pin.
+        res = _inspect(c)
+        assert res["ok"] is True and res["selected"] == 0 and res["layers"] == [], res
+        assert "pinned" not in res and "cell" not in res, res
+        assert _inspect(c, all=True)["layers"] == []
+        ok, msg = _cmd(c, "cells.select.pin", None)
+        assert not ok and "nothing selected to pin" in msg, (ok, msg)
+        ok, msg = _cmd(c, "cells.select.pin", {"freeze": "yes"})
+        assert not ok and "non-boolean param 'freeze'" in msg, (ok, msg)
+
+        # 2. Region A: box q5..9 x r3..6 (20 cells). Derivation: _expected() evaluates the stage generators per cell;
+        #    A is warm (T 29.3..39.0 >= 15) and half wet / half dry -> desert 10, jungle 10, tundra = forest = 0.
+        box_a = _box(5, 3, 9, 6)
+        assert c.send_command("cells.select.box", {"q0": 5, "r0": 3, "q1": 9, "r1": 6})["count"] == 20
+        res = _inspect(c, all=True)
+        exp_a, layers = _assert_all_stats(res, box_a, "A all")
+        assert exp_a["biome"]["categories"] == [0, 0, 10, 10], exp_a  # hand-checked: the derivation above
+        assert res["grid"] == {"width": _BIG_W, "height": _BIG_H}, res
+        assert layers["temperature"]["base"] is True and layers["rainfall"]["base"] is False, layers
+        assert layers["temperature"]["unit"] == "C" and layers["temperature"]["label"] == "Temperature", layers["temperature"]
+        assert layers["rainfall"]["unit"] == "mm" and layers["biome"]["kind"] == "category", layers
+        assert layers["temperature"]["schemaKey"] == "cluichetest.celllayers/temperature", layers["temperature"]
+        assert "histogram" in res and res["base"] == "cluichetest.celllayers/temperature", res
+        assert "pinned" not in res and "cell" not in res, res
+
+        # 2b. Request forms: group, layers[] (request order), layerId, shown set (default), and their errors.
+        res = _inspect(c, group="Climate")
+        assert [l["layer"] for l in res["layers"]] == ["temperature", "rainfall"], res
+        res = _inspect(c, group="Terrain")
+        assert [l["layer"] for l in res["layers"]] == ["biome"], res
+        res = _inspect(c, layers=["rainfall", "temperature"])
+        assert [l["layer"] for l in res["layers"]] == ["rainfall", "temperature"], res
+        _assert_float_stats(res["layers"][0], _expected(box_a)["rainfall"], "layers[] rainfall")
+        res = _inspect(c, layerId="biome")
+        assert [l["layer"] for l in res["layers"]] == ["biome"], res
+        for params, text in (({"group": "Nope"}, "no layers in group 'Nope'"), ({"layers": ["nope"]}, "unknown layer 'nope'"),
+                             ({"layers": ["elevation"]}, "not a layer of the active grid"),
+                             ({"all": True, "group": "Climate"}, "conflicting params"), ({"layers": []}, "non-empty array")):
+            ok, msg = _cmd(c, "cells.inspect", params)
+            assert not ok and text in msg, (params, ok, msg)
+        # Default form = shown set: the base and the expanded Climate group; Terrain is collapsed until expanded.
+        assert _wait(lambda: [l["layer"] for l in _inspect(c)["layers"]] == ["temperature", "rainfall"]), _inspect(c)
+        ok, msg = _cmd(c, "cells.inspector.expand", {"group": "Nope", "expanded": True})
+        assert not ok and "no layers in group 'Nope'" in msg, (ok, msg)
+        ok, msg = _cmd(c, "cells.inspector.expand", {"group": "Terrain"})
+        assert not ok and "expanded" in msg, (ok, msg)
+        assert c.send_command("cells.inspector.expand", {"group": "Terrain", "expanded": True}) == \
+            {"ok": True, "group": "Terrain", "expanded": True}
+        assert _wait(lambda: sorted(l["layer"] for l in _inspect(c)["layers"]) == ["biome", "rainfall", "temperature"]), _inspect(c)
+        assert _inspect(c)["layers"][0]["layer"] == "temperature"  # base first
+        assert c.send_command("cells.inspector.expand", {"group": "Terrain", "expanded": False})["expanded"] is False
+        assert _wait(lambda: [l["layer"] for l in _inspect(c)["layers"]] == ["temperature", "rainfall"]), _inspect(c)
+
+        # 3. Pin A (live), then select B = box q40..49 x r25..34 (100 cells; all four biomes): delta = B minus A.
+        pin = c.send_command("cells.select.pin")
+        assert pin["ok"] is True and pin["count"] == 20 and pin["frozen"] is False and "layers" not in pin, pin
+        box_b = _box(40, 25, 49, 34)
+        assert c.send_command("cells.select.box", {"q0": 40, "r0": 25, "q1": 49, "r1": 34})["count"] == 100
+
+        def live_a_ready():
+            ls = _inspect_layers(_inspect(c, all=True))
+            return "count" in ls["temperature"].get("a", {}) and "count" in ls["rainfall"].get("a", {})
+        assert _wait(live_a_ready), _inspect(c, all=True)
+        res = _inspect(c, all=True)
+        exp_b, layers = _assert_all_stats(res, box_b, "B all")
+        assert exp_b["biome"]["categories"] == [6, 16, 44, 34], exp_b
+        assert res["pinned"] == {"count": 20, "frozen": False}, res
+        for lid in ("temperature", "rainfall"):
+            a, d = layers[lid]["a"], layers[lid]["delta"]
+            _assert_float_stats(a, exp_a[lid], "A " + lid)
+            assert d["count"] == 100 - 20, d
+            for k in ("min", "mean", "max"):
+                assert _approx(d[k], exp_b[lid][k] - exp_a[lid][k]), (lid, k, d, exp_a[lid], exp_b[lid])
+        # Terrain is collapsed, so A is live but not computed for biome until the group is shown.
+        assert layers["biome"]["a"] == {"notComputed": True} and "delta" not in layers["biome"], layers["biome"]
+        c.send_command("cells.inspector.expand", {"group": "Terrain", "expanded": True})
+        assert _wait(lambda: "categories" in _inspect_layers(_inspect(c, all=True))["biome"].get("a", {})), _inspect(c, all=True)
+        bio = _inspect_layers(_inspect(c, all=True))["biome"]
+        _assert_category_stats(bio["a"], exp_a["biome"], "A biome")
+        assert bio["delta"] == {"count": 80}, bio["delta"]  # category layers have no min / mean / max delta
+        c.send_command("cells.inspector.expand", {"group": "Terrain", "expanded": False})
+
+        # 3b. Re-select A while A is pinned: B == A so every delta is zero.
+        c.send_command("cells.select.box", {"q0": 5, "r0": 3, "q1": 9, "r1": 6})
+        assert _wait(live_a_ready)
+        for lid in ("temperature", "rainfall"):
+            d = _inspect_layers(_inspect(c, all=True))[lid]["delta"]
+            assert d["count"] == 0 and all(abs(d[k]) < 1e-9 for k in ("min", "mean", "max")), d
+
+        # 4. Unpin clears A.
+        assert c.send_command("cells.select.unpin") == {"ok": True}
+        res = _inspect(c, all=True)
+        assert "pinned" not in res and all("a" not in l and "delta" not in l for l in res["layers"]), res
+        assert c.send_command("cells.select.unpin") == {"ok": True}  # idempotent
+
+        # 5. Pin with freeze: A's stats are stored for every layer of the grid (including collapsed Terrain) and never move.
+        pin = c.send_command("cells.select.pin", {"freeze": True})
+        assert pin["ok"] is True and pin["count"] == 20 and pin["frozen"] is True and pin["layers"] == 3, pin
+        c.send_command("cells.select.box", {"q0": 40, "r0": 25, "q1": 49, "r1": 34})
+        res = _inspect(c, all=True)  # frozen A is available at once: no waiting for a pass
+        assert res["pinned"] == {"count": 20, "frozen": True}, res
+        layers = _inspect_layers(res)
+        _assert_float_stats(layers["temperature"]["a"], exp_a["temperature"], "frozen A temperature")
+        _assert_category_stats(layers["biome"]["a"], exp_a["biome"], "frozen A biome")
+        assert layers["biome"]["delta"] == {"count": 80}, layers["biome"]
+        assert _approx(layers["rainfall"]["delta"]["mean"], exp_b["rainfall"]["mean"] - exp_a["rainfall"]["mean"]), layers["rainfall"]
+        assert all("notFrozen" not in l["a"] for l in res["layers"]), res  # no layer was registered after the freeze
+        c.send_command("cells.select.unpin")
+
+        # 6. Single cell (7,4): index 4 * 66 + 7. The cell block has a row per shown layer plus the stage provider's details.
+        cell = (7, 4)
+        idx = cell[0] + cell[1] * _BIG_W
+        assert c.send_command("cells.select.cell", {"q": cell[0], "r": cell[1]})["count"] == 1
+        res = _inspect(c, all=True)
+        assert res["selected"] == 1 and "cell" in res, res
+        blk = res["cell"]
+        assert (blk["index"], blk["q"], blk["r"]) == (idx, 7, 4), blk
+        rows = {row["layer"]: row for row in blk["rows"]}
+        assert _approx(rows["temperature"]["value"], _temperature(*cell)) and rows["temperature"]["unit"] == "C", rows["temperature"]
+        assert _approx(rows["rainfall"]["value"], _rainfall(*cell)) and rows["rainfall"]["label"] == "Rainfall", rows["rainfall"]
+        assert rows["temperature"]["hasData"] is True and rows["temperature"]["isNaN"] is False, rows["temperature"]
+        want_b = _biome(*cell)  # (7,4) is warm -> desert (2) or jungle (3)
+        assert want_b >= 2, want_b
+        if "biome" in rows:
+            assert rows["biome"]["value"] == want_b and rows["biome"]["enumId"] == _BIOME_IDS[want_b], rows["biome"]
+            assert rows["biome"]["enumLabel"] == _BIOME_LABELS[want_b] and rows["biome"]["otherValue"] is False, rows["biome"]
+        # Details: Section "Stage" (provider name), then the provider's Section / Row / RowValue (rainfall schema key, index % 97).
+        details = blk["details"]
+        assert [d["kind"] for d in details] == ["section", "section", "text", "value"], details
+        assert details[0]["label"] == "Stage" and details[1]["label"] == "Position", details
+        assert details[2]["label"] == "Cell" and details[2]["text"] == "7,4", details[2]
+        assert details[3]["resolved"] is True and details[3]["label"] == "Rainfall" and details[3]["unit"] == "mm", details[3]
+        assert details[3]["value"] == idx % 97, details[3]
+        assert "detailsTruncated" not in blk, blk
+        # The aggregates over the one cell equal its own values.
+        _assert_all_stats(res, [cell], "single")
+
+        # Another cell gives other details (the provider is invoked per cell).
+        c.send_command("cells.select.cell", {"q": 30, "r": 20})
+        det = _inspect(c)["cell"]["details"]
+        assert det[2]["text"] == "30,20" and det[3]["value"] == (30 + 20 * _BIG_W) % 97, det
+
+        # 7. Two cells: aggregates but no cell block.
+        c.send_command("cells.select.cells", {"cells": [[7, 4], [30, 20]]})
+        res = _inspect(c, all=True)
+        assert res["selected"] == 2 and "cell" not in res, res
+        _assert_all_stats(res, [(7, 4), (30, 20)], "two cells")
+
+        # 8. The panel's inspector block (debug.domain_state) agrees with cells.inspect after a tick.
+        def panel_inspector_ready():
+            ins = _panel(c).get("inspector", {})
+            if not ins.get("hasSelection"):
+                return False
+            pl = {l["id"]: l for l in ins["layers"]}
+            return "temperature" in pl and pl["temperature"]["count"] == 2
+        assert _wait(panel_inspector_ready), _panel(c).get("inspector")
+        pl = {l["id"]: l for l in _panel(c)["inspector"]["layers"]}
+        fresh = _inspect_layers(_inspect(c, all=True))
+        for lid in ("temperature", "rainfall"):
+            assert pl[lid]["count"] == fresh[lid]["count"] and _approx(pl[lid]["mean"], fresh[lid]["mean"]), (pl[lid], fresh[lid])
+        assert "cell" not in _panel(c)["inspector"], _panel(c)["inspector"]
+
+        # 9. Clearing the selection empties the result again.
+        c.send_command("cells.select.clear")
+        res = _inspect(c, all=True)
+        assert res["selected"] == 0 and res["layers"] == [] and "pinned" not in res, res
+    finally:
+        c.abort_stage()
+        c.navigate_to("Boot")

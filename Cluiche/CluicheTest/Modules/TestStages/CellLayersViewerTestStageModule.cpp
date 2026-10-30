@@ -32,6 +32,7 @@ namespace
     const char* const kLayerBiome       = "biome";
     const char* const kLayerElevation   = "elevation";
     const char* const kSchemaFor        = "cluichetest.celllayers";
+    const char* const kDetailProviderName = "Stage";
 
     // ValueSchemaRegistry full key = "<for>/<key>".
     Dia::Core::StringCRC SchemaKey(const char* key)
@@ -302,6 +303,14 @@ bool CellLayersViewerTestStageModule::BuildViewer()
         return false;
     mLayersRegistered = true;
 
+    if (mRegistry->Details().Register(&mBig.desc, kDetailProviderName,
+            fastdelegate::MakeDelegate(this, &CellLayersViewerTestStageModule::BuildCellDetails)) != CellDetailRegisterResult::Ok)
+    {
+        DIA_LOG_ERROR("CluicheTest", "CellLayersViewerTestStage: registering the cell detail provider failed");
+        return false;
+    }
+    mDetailsRegistered = true;
+
     CellOverlayDesc overlay;
     overlay.id = Dia::Core::StringCRC("grid_edges");
     overlay.group.Append("Debug");
@@ -402,6 +411,8 @@ void CellLayersViewerTestStageModule::TeardownViewer()
 
     if (mRegistry != nullptr)
     {
+        if (mDetailsRegistered)
+            mRegistry->Details().Unregister(&mBig.desc, kDetailProviderName);
         mRegistry->UnregisterOverlay(Dia::Core::StringCRC("grid_edges"));
         if (mLayersRegistered)
         {
@@ -412,6 +423,7 @@ void CellLayersViewerTestStageModule::TeardownViewer()
         }
     }
     mLayersRegistered = false;
+    mDetailsRegistered = false;
     mRegistry = nullptr;
 
     if (mCameraSaved)
@@ -424,6 +436,16 @@ void CellLayersViewerTestStageModule::TeardownViewer()
         mCameraSaved = false;
     }
     mFittedGrid = nullptr;
+}
+
+void CellLayersViewerTestStageModule::BuildCellDetails(uint32_t cellIndex, Dia::CellLayers::CellDetailBuilder& out)
+{
+    // Deterministic from the index so E2E can assert it: "Cell" = "q,r" (row-major, grid A width) and a rainfall-keyed value.
+    char text[32];
+    snprintf(text, sizeof(text), "%u,%u", cellIndex % static_cast<uint32_t>(kBigW), cellIndex / static_cast<uint32_t>(kBigW));
+    out.Section("Position");
+    out.Row("Cell", text);
+    out.RowValue(SchemaKey(kLayerRainfall), static_cast<float>(cellIndex % 97u));
 }
 
 void CellLayersViewerTestStageModule::DrawGridEdges(Dia::Core::IDebugDraw& draw, const void* /*selection*/)
