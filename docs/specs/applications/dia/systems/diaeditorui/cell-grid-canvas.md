@@ -117,4 +117,12 @@ No conflicts.
 
 ## Status
 
-`Approved` (2026-10-20). Built 2026-10-29 per [cell-grid-canvas.plan.md](cell-grid-canvas.plan.md) (AD-001 sign-off given). All tests pass (software canvas). **Open before Done:** AC 6 (16 ms) measured on a software rasteriser only, where hex fill is ~11 ms plus ~7 ms for the extra layers; confirm on the GPU-backed editor canvas when the first consumer (T-1 mini-map) lands. Palette values are enum ordinals. Created 2026-10-20 for T-1 Feature 3 and T-2 Feature 6.
+`Done`
+
+Built 2026-10-29 per [cell-grid-canvas.plan.md](../../../../../archive/plans/cell-grid-canvas.plan.md) (AD-001 sign-off given). All tests pass on a software canvas. Palette values are enum ordinals. Created 2026-10-20 for T-1 Feature 3 and T-2 Feature 6.
+
+## Follow-ups (not blocking Done)
+
+1. **Validate the 16 ms budget (AC 6) on the editor's GPU-backed canvas** when the first consumer (T-1 mini-map) is built. Software-canvas numbers for 104x64 hex: fill ~11 ms, selection/outline/footprint layers ~7 ms. If it misses, cache the fill layer to an offscreen canvas. Read paint cost from the DevTools Performance panel, not just JS call time.
+2. **Box-drag rubber band.** `onBox` fires on mouseup only; there is no live outline while dragging. Add when the T-2 cell editor (Feature 6) needs it, probably drawn on the overlay layer.
+3. **Pointer events and capture.** The canvas uses mouse events (jsdom drops `clientX` on PointerEvent). A drag that leaves the component ends on mouse-leave. Move to pointer events with pointer capture if that feels wrong in the editor.

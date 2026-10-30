@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/applications/dia/systems/diaeditorui/cell-grid-canvas.md
-**Status:** In Progress
+**Status:** Done
 
 ## Implementation Patterns
 
