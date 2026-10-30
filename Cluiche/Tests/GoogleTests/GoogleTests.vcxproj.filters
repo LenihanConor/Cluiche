@@ -2304,5 +2304,14 @@
     <ClCompile Include="DiaCellLayers\TestCellLayerLifecycle.cpp">
       <Filter>DiaCellLayers</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestSelectionExhaustiveCore.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestSelectionExhaustiveInput.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestSelectionExhaustiveCommands.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

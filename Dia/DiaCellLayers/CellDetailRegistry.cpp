@@ -116,8 +116,18 @@ namespace Dia::CellLayers
 		return CellDetailRegisterResult::Ok;
 	}
 
+	bool CellDetailRegistry::IsOwnerPu(const char* what) const
+	{
+		const uint64_t caller = mCurrentPuId();
+		if (caller == mOwnerPuId) { return true; }
+		DIA_LOG_ERROR("CEL", "%s detail provider rejected: called from PU %llu, registry owned by PU %llu",
+			what, static_cast<unsigned long long>(caller), static_cast<unsigned long long>(mOwnerPuId));
+		return false;
+	}
+
 	bool CellDetailRegistry::Unregister(const Dia::Graphics::CellGridDesc* grid, const char* providerName)
 	{
+		if (!IsOwnerPu("Unregister")) { return false; }
 		if (providerName == nullptr) { return false; }
 		for (uint32_t i = 0; i < mCount; ++i)
 		{
@@ -133,6 +143,7 @@ namespace Dia::CellLayers
 
 	uint32_t CellDetailRegistry::UnregisterAll(const Dia::Graphics::CellGridDesc* grid)
 	{
+		if (!IsOwnerPu("UnregisterAll")) { return 0; }
 		uint32_t removed = 0;
 		uint32_t w = 0;
 		for (uint32_t i = 0; i < mCount; ++i)
@@ -158,10 +169,16 @@ namespace Dia::CellLayers
 	{
 		out.Clear();
 		uint32_t called = 0;
+		// Providers may (un)register during their callback, so iterate over a snapshot.
+		Provider snapshot[kMaxProviders];
+		uint32_t snapshotCount = 0;
 		for (uint32_t i = 0; i < mCount; ++i)
 		{
-			Provider& p = mProviders[i];
-			if (p.grid != grid) { continue; }
+			if (mProviders[i].grid == grid) { snapshot[snapshotCount++] = mProviders[i]; }
+		}
+		for (uint32_t i = 0; i < snapshotCount; ++i)
+		{
+			Provider& p = snapshot[i];
 			if (CellDetailRow* header = out.Add())
 			{
 				header->kind = CellDetailRowKind::Section;
@@ -176,6 +193,10 @@ namespace Dia::CellLayers
 			if (builder.Truncated() && !p.warned)
 			{
 				p.warned = true;
+				for (uint32_t j = 0; j < mCount; ++j)
+				{
+					if (mProviders[j].grid == grid && strcmp(mProviders[j].name.AsCStr(), p.name.AsCStr()) == 0) { mProviders[j].warned = true; }
+				}
 				DIA_LOG_WARNING("CEL", "Detail provider '%s' added more than %u rows; %u dropped (warning once)",
 					p.name.AsCStr(), CellDetailBuilder::kMaxRowsPerProvider, builder.Dropped());
 			}

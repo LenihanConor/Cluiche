@@ -120,6 +120,8 @@ namespace Dia::CellLayers
 						const Dia::ValueSchema::ValueSchemaService* schema, CellDetailResult& out);
 
 	private:
+		bool		IsOwnerPu(const char* what) const;
+
 		struct Provider
 		{
 			const Dia::Graphics::CellGridDesc*	grid = nullptr;
