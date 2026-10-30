@@ -65,7 +65,7 @@ private:
     static constexpr int          kSmallW = 20;
     static constexpr int          kSmallH = 12;
     static constexpr float        kCellSize = 24.0f;
-    static constexpr unsigned int kHoldFrames = 1200;       // frames after ready before ReportPassed (automation mode leaves the stage then)
+    static constexpr unsigned int kHoldFrames = 60000;      // frames after ready before ReportPassed; long enough that the E2E smoke scenario (~60 s) finishes first
     static constexpr unsigned int kAnimateEveryFrames = 15; // temperature version step when animating
 
     struct GridStorage
