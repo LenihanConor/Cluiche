@@ -43,3 +43,5 @@ export {
 export type {
   Rgba8, RampStop, RampJson, RampData, ResolvedRamp, PaletteEntry, PaletteData, SwatchEntry, LegendData, RampWarn,
 } from './ramps';
+
+export { hexDistance, cellsWithin, cellsInBox } from './cellGeometry';

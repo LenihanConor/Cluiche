@@ -116,4 +116,4 @@ No conflicts.
 
 ## Status
 
-`Approved` (2026-10-20). Plan not yet created; build needs AD-001 sign-off. Created 2026-10-20 for T-1 Feature 3 and T-2 Feature 6.
+`Approved` (2026-10-20). Plan: [cell-grid-canvas.plan.md](cell-grid-canvas.plan.md); build needs AD-001 sign-off. Created 2026-10-20 for T-1 Feature 3 and T-2 Feature 6.
