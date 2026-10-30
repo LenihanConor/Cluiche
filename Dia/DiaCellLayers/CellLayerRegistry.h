@@ -47,7 +47,7 @@ namespace Dia::CellLayers
 
 	enum class CellRegisterResult
 	{
-		Ok, Duplicate, CapacityReached, WrongProcessingUnit
+		Ok, Duplicate, CapacityReached, WrongProcessingUnit, NullGrid
 	};
 
 	class CellLayerRegistry

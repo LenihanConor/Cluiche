@@ -211,7 +211,17 @@ namespace Dia::CellLayers
 		OverlayState* s = FindOverlayState(id);
 		if (s == nullptr)
 		{
-			if (mOverlayCount >= CellLayerRegistry::kMaxOverlays) { return false; }
+			if (mOverlayCount >= CellLayerRegistry::kMaxOverlays)
+			{
+				// Drop state for overlays that have since been unregistered.
+				uint32_t kept = 0;
+				for (uint32_t i = 0; i < mOverlayCount; ++i)
+				{
+					if (mRegistry.FindOverlay(mOverlays[i].id) != nullptr) { mOverlays[kept++] = mOverlays[i]; }
+				}
+				mOverlayCount = kept;
+				if (mOverlayCount >= CellLayerRegistry::kMaxOverlays) { return false; }
+			}
 			s = &mOverlays[mOverlayCount++];
 			s->id = id;
 			s->enabled = false;

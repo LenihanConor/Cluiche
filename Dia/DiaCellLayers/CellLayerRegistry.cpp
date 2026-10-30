@@ -55,6 +55,12 @@ namespace Dia::CellLayers
 	CellRegisterResult CellLayerRegistry::Register(const CellLayerDesc& desc)
 	{
 		if (!IsOwnerPu("layer", desc.id)) { Reject(); return CellRegisterResult::WrongProcessingUnit; }
+		if (desc.grid == nullptr)
+		{
+			DIA_LOG_ERROR("CEL", "Register layer '%s' rejected: null grid", desc.id.AsChar());
+			Reject();
+			return CellRegisterResult::NullGrid;
+		}
 		if (Find(desc.id) != nullptr)
 		{
 			DIA_LOG_ERROR("CEL", "Register layer '%s' rejected: duplicate id", desc.id.AsChar());

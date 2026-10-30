@@ -2301,5 +2301,8 @@
     <ClCompile Include="DebugServer\TestDebugServerLargePayload.cpp">
       <Filter>DebugServer</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCellLayerLifecycle.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

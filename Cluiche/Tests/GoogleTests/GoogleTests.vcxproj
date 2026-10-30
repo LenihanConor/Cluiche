@@ -1055,6 +1055,7 @@
     <ClCompile Include="DebugServer\TestDebugServerSubscriberCount.cpp" />
     <ClCompile Include="WebSocket\TestWebSocketLargeMessages.cpp" />
     <ClCompile Include="DebugServer\TestDebugServerLargePayload.cpp" />
+    <ClCompile Include="DiaCellLayers\TestCellLayerLifecycle.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
