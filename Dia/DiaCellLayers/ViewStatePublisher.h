@@ -19,6 +19,8 @@
 #include <DiaCellLayers/ITopicSink.h>
 #include <DiaCellLayers/SelectionFingerprint.h>
 
+namespace Dia::Observation::Metric { class Counter; }
+
 namespace Dia::CellLayers
 {
 	class ViewStatePublisher
@@ -68,6 +70,8 @@ namespace Dia::CellLayers
 		uint32_t						mViewVersion = 0;
 		uint32_t						mPublishCount = 0;
 		uint32_t						mCoalescedCount = 0;
+		Dia::Observation::Metric::Counter*	mMetricPublishes = nullptr;	// dia.celllayers.mirror.topic_publishes
+		Dia::Observation::Metric::Counter*	mMetricCoalesced = nullptr;	// dia.celllayers.mirror.coalesced_updates
 	};
 }
 

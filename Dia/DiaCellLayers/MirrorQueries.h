@@ -40,6 +40,7 @@
 #include <vector>
 
 namespace Dia::DebugServer { class QueryRegistry; }
+namespace Dia::Observation::Metric { class Counter; }
 
 namespace Dia::CellLayers
 {
@@ -70,6 +71,12 @@ namespace Dia::CellLayers
 		void		NotifyFrame();
 		uint32_t	StatsComputeCount() const { return mStatsComputeCount; }	// aggregation passes performed so far
 
+		// Observation. Called by the registered handlers once per served query (not by the query methods themselves, so direct
+		// calls in tests do not count): bumps dia.celllayers.mirror.queries.<kind> and .bytes_served (serialized reply size) and
+		// logs Debug on CEL (query name, bytes). Metrics are registered in the constructor (MetricRegistry::Instance()).
+		enum class Kind { List, Values, SelectGet, Stats };
+		void		RecordServed(Kind kind, const Json::Value& reply) const;
+
 		// Test seam: lowers the per-call cell limit (clamped to [1, kMaxValuesChunk]) so chunking is testable on small grids.
 		void		SetMaxValuesChunk(uint32_t cells);
 		uint32_t	MaxValuesChunk() const { return mMaxValuesChunk; }
@@ -88,6 +95,9 @@ namespace Dia::CellLayers
 		mutable std::vector<uint64_t>	mStatsCacheKey;
 		mutable Json::Value			mStatsCacheResult;
 		mutable uint32_t			mStatsComputeCount = 0;
+
+		Dia::Observation::Metric::Counter*	mMetricQueries[4] = { nullptr, nullptr, nullptr, nullptr };	// by Kind
+		Dia::Observation::Metric::Counter*	mMetricBytes = nullptr;
 	};
 
 	// Registers cells.layer.list, cells.layer.values, cells.select.get and cells.select.stats; `queries` must outlive the registration.

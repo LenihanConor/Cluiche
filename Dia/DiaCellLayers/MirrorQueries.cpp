@@ -7,6 +7,7 @@
 #include <DiaCore/Strings/Base64.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
 
 #include <string.h>
 #include <string>
@@ -86,7 +87,27 @@ namespace Dia::CellLayers
 	}
 
 	MirrorQueries::MirrorQueries(const CellLayerRegistry& registry, const CellLayerViewerDomain& viewer, const Dia::ValueSchema::ValueSchemaService* schema)
-		: mRegistry(registry), mViewer(viewer), mSchema(schema), mReader(registry) {}
+		: mRegistry(registry), mViewer(viewer), mSchema(schema), mReader(registry)
+	{
+		auto& metrics = Dia::Observation::Metric::MetricRegistry::Instance();
+		mMetricQueries[static_cast<int>(Kind::List)] = metrics.RegisterCounter(StringCRC("dia.celllayers.mirror.queries.list"));
+		mMetricQueries[static_cast<int>(Kind::Values)] = metrics.RegisterCounter(StringCRC("dia.celllayers.mirror.queries.values"));
+		mMetricQueries[static_cast<int>(Kind::SelectGet)] = metrics.RegisterCounter(StringCRC("dia.celllayers.mirror.queries.select_get"));
+		mMetricQueries[static_cast<int>(Kind::Stats)] = metrics.RegisterCounter(StringCRC("dia.celllayers.mirror.queries.stats"));
+		mMetricBytes = metrics.RegisterCounter(StringCRC("dia.celllayers.mirror.bytes_served"));
+	}
+
+	void MirrorQueries::RecordServed(Kind kind, const Json::Value& reply) const
+	{
+		static const char* const kNames[4] = { "cells.layer.list", "cells.layer.values", "cells.select.get", "cells.select.stats" };
+		Json::StreamWriterBuilder builder;
+		builder["indentation"] = "";
+		const size_t bytes = Json::writeString(builder, reply).size();
+		const int k = static_cast<int>(kind);
+		if (mMetricQueries[k]) { mMetricQueries[k]->Inc(); }
+		if (mMetricBytes) { mMetricBytes->Inc(bytes); }
+		DIA_LOG_DEBUG("CEL", "%s served (%u bytes)", kNames[k], static_cast<unsigned>(bytes));
+	}
 
 	void MirrorQueries::SetMaxValuesChunk(uint32_t cells)
 	{
@@ -347,10 +368,11 @@ namespace Dia::CellLayers
 	void RegisterMirrorQueries(Dia::DebugServer::QueryRegistry& registry, const MirrorQueries& queries)
 	{
 		const MirrorQueries* q = &queries;
-		registry.Register(StringCRC("cells.layer.list"), [q](const Json::Value&) { return q->LayerList(); });
-		registry.Register(StringCRC("cells.layer.values"), [q](const Json::Value& args) { return q->LayerValues(args); });
-		registry.Register(StringCRC("cells.select.get"), [q](const Json::Value& args) { return q->SelectionGet(args); });
-		registry.Register(StringCRC("cells.select.stats"), [q](const Json::Value& args) { return q->SelectionStats(args); });
+		using K = MirrorQueries::Kind;
+		registry.Register(StringCRC("cells.layer.list"), [q](const Json::Value&) { Json::Value r = q->LayerList(); q->RecordServed(K::List, r); return r; });
+		registry.Register(StringCRC("cells.layer.values"), [q](const Json::Value& args) { Json::Value r = q->LayerValues(args); q->RecordServed(K::Values, r); return r; });
+		registry.Register(StringCRC("cells.select.get"), [q](const Json::Value& args) { Json::Value r = q->SelectionGet(args); q->RecordServed(K::SelectGet, r); return r; });
+		registry.Register(StringCRC("cells.select.stats"), [q](const Json::Value& args) { Json::Value r = q->SelectionStats(args); q->RecordServed(K::Stats, r); return r; });
 	}
 
 	void UnregisterMirrorQueries(Dia::DebugServer::QueryRegistry& registry)

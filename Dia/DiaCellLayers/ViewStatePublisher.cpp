@@ -3,6 +3,7 @@
 #include <DiaCellLayers/MirrorQueries.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
 
 #include <stdio.h>
 
@@ -25,7 +26,12 @@ namespace Dia::CellLayers
 	}
 
 	ViewStatePublisher::ViewStatePublisher(const CellLayerRegistry& registry, const CellLayerViewerDomain& viewer, ITopicSink& sink, const IMonotonicClock& clock)
-		: mRegistry(registry), mViewer(viewer), mSink(sink), mClock(clock) {}
+		: mRegistry(registry), mViewer(viewer), mSink(sink), mClock(clock)
+	{
+		auto& metrics = Dia::Observation::Metric::MetricRegistry::Instance();
+		mMetricPublishes = metrics.RegisterCounter(StringCRC("dia.celllayers.mirror.topic_publishes"));
+		mMetricCoalesced = metrics.RegisterCounter(StringCRC("dia.celllayers.mirror.coalesced_updates"));
+	}
 
 	void ViewStatePublisher::Capture(Snapshot& out)
 	{
@@ -59,7 +65,8 @@ namespace Dia::CellLayers
 		const uint64_t now = mClock.NowMs();
 		if (mHasPublished && now - mLastPublishMs < kMinPublishIntervalMs)
 		{
-			++mCoalescedCount;	// held; the first Update after the interval publishes the latest state
+			++mCoalescedCount;
+			if (mMetricCoalesced) { mMetricCoalesced->Inc(); }	// held; the first Update after the interval publishes the latest state
 			return;
 		}
 		Publish(current, now);
@@ -106,6 +113,7 @@ namespace Dia::CellLayers
 		mHasPublished = true;
 		mLastPublishMs = now;
 		++mPublishCount;
+		if (mMetricPublishes) { mMetricPublishes->Inc(); }
 		DIA_LOG_DEBUG("CEL", "cells.view.state published (viewVersion %u, base '%s', selection %u)", mViewVersion, s.base != StringCRC::kZero ? s.base.AsChar() : "", s.selection.mCount);
 	}
 }

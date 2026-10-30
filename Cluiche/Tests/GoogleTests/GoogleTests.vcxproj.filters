@@ -2289,5 +2289,8 @@
     <ClCompile Include="DiaCellLayers\TestMirrorStats.cpp">
       <Filter>DiaCellLayers</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestMirrorObservation.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

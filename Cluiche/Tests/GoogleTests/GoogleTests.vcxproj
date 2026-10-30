@@ -1051,6 +1051,7 @@
     <ClCompile Include="DiaCellLayers\TestMirrorQueries.cpp" />
     <ClCompile Include="DiaCellLayers\TestMirrorLayerValues.cpp" />
     <ClCompile Include="DiaCellLayers\TestMirrorStats.cpp" />
+    <ClCompile Include="DiaCellLayers\TestMirrorObservation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
