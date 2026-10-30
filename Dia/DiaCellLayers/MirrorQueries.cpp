@@ -193,50 +193,34 @@ namespace Dia::CellLayers
 
 	Json::Value MirrorQueries::LayerList() const
 	{
+		// The query shares its name with the DiaAPI command (the DebugServer answers queries first, so it shadows the command):
+		// start from the command's data (activeBase, activeGridIndex, label, unit, selected, enabled) and add the mirror fields.
+		Json::Value out(Json::objectValue);
+		mViewer.ListLayers(out);	// takes the state mutex itself (not recursive), so it runs before our lock
+
 		Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mViewer.StateMutex());
 		HotkeyTable hotkeys(mRegistry, mSchema);
-		Json::Value out(Json::objectValue);
 		out["layersVersion"] = mRegistry.LayersVersion();
-		Json::Value grids(Json::arrayValue);
-		for (uint32_t gi = 0; gi < mRegistry.GridCount(); ++gi)
+		Json::Value& grids = out["grids"];
+		for (uint32_t gi = 0; gi < mRegistry.GridCount() && gi < grids.size(); ++gi)
 		{
 			const Dia::Graphics::CellGridDesc* g = mRegistry.GridAt(gi);
 			hotkeys.Rebuild(g);
 			char id[MirrorGridId::kBufferSize];
 			MirrorGridId::Format(mRegistry, g, id);
-			Json::Value ge(Json::objectValue);
+			Json::Value& ge = grids[gi];
 			ge["id"] = id;
-			ge["index"] = gi;
-			ge["width"] = g->width;
-			ge["height"] = g->height;
-			Json::Value layers(Json::arrayValue);
-			for (uint32_t i = 0; i < mRegistry.LayerCountForGrid(g); ++i)
+			Json::Value& layers = ge["layers"];
+			for (uint32_t i = 0; i < mRegistry.LayerCountForGrid(g) && i < layers.size(); ++i)
 			{
 				const CellLayerDesc* d = mRegistry.LayerOfGrid(g, i);
 				const char hotkey[2] = { hotkeys.HotkeyOf(d->id), 0 };
-				Json::Value e(Json::objectValue);
-				e["id"] = d->id.AsChar();
+				Json::Value& e = layers[i];
+				if (e["id"].asString() != d->id.AsChar()) { continue; }	// registry changed between the two reads
 				e["schemaKey"] = d->schemaKey.AsChar();
-				e["group"] = d->group.AsCStr();
-				e["kind"] = d->kind == CellValueKind::Category ? "category" : "float";
 				e["hotkey"] = hotkey;
-				layers.append(e);
 			}
-			ge["layers"] = layers;
-			grids.append(ge);
 		}
-		out["grids"] = grids;
-		Json::Value overlays(Json::arrayValue);
-		for (uint32_t i = 0; i < mRegistry.OverlayCount(); ++i)
-		{
-			const CellOverlayDesc* o = mRegistry.OverlayAt(i);
-			Json::Value e(Json::objectValue);
-			e["id"] = o->id.AsChar();
-			e["label"] = o->label.AsCStr();
-			e["group"] = o->group.AsCStr();
-			overlays.append(e);
-		}
-		out["overlays"] = overlays;
 		return out;
 	}
 

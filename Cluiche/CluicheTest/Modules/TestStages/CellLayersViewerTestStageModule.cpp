@@ -10,6 +10,9 @@
 
 #ifdef DIA_DEBUG
 #include <DiaAPI/DiaAPI.h>
+#include <DiaApplicationFlow/IApplicationInspectable.h>
+#include <DiaApplicationFlow/Streams/ServiceStreamStore.h>
+#include <DiaDebugServer/DebugServer.h>
 #include "Modules/TestStages/CellLayersPointerFrame.h"
 #endif
 
@@ -327,6 +330,7 @@ bool CellLayersViewerTestStageModule::BuildViewer()
     mDomain = Dia::Core::MakeUnique<CellLayerViewerDomain>(*mRegistry, *mUploader, schema,
         CellLayerViewerDomain::ViewFn(fastdelegate::MakeDelegate(this, &CellLayersViewerTestStageModule::GetPickerView)));
     mDomain->RegisterCommands();
+    BuildMirror(schema); // optional: a missing DebugServer only logs a warning
 
     Dia::API::RegisterCommand({
         Dia::Core::StringCRC("cellviewer.animate"),
@@ -407,6 +411,7 @@ void CellLayersViewerTestStageModule::TeardownViewer()
     UnregisterInjectionCommands();
     mPointerQueue.Clear();
 
+    TeardownMirror();   // queries must not outlive the viewer or the registry
     mDomain.Reset();    // unregisters its DiaAPI commands
     mUploader.Reset();  // releases the CellField layers it holds
 
@@ -437,6 +442,49 @@ void CellLayersViewerTestStageModule::TeardownViewer()
         mCameraSaved = false;
     }
     mFittedGrid = nullptr;
+}
+
+bool CellLayersViewerTestStageModule::BuildMirror(const Dia::ValueSchema::ValueSchemaService* schema)
+{
+    // Same lookup as ValueSchemaModule: the server pointer comes from the "DebugServerService" ServiceStream (published by
+    // Main). No RTTI (/GR-), so static_cast on the payload type fixed by the stream id.
+    auto* app = dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(GetApplication());
+    auto* store = app ? app->FindStream(Dia::Core::StringCRC("DebugServerService")) : nullptr;
+    if (store == nullptr || !store->IsCommitted())
+    {
+        DIA_LOG_WARNING("CEL", "CellLayersViewerTestStage: DebugServerService stream unavailable - editor mirror not served");
+        return false;
+    }
+    auto* typed = static_cast<Dia::ApplicationFlow::ServiceStreamStore<Dia::DebugServer::DebugServer*>*>(store);
+    Dia::DebugServer::DebugServer* server = typed->Get();
+    if (server == nullptr)
+    {
+        DIA_LOG_WARNING("CEL", "CellLayersViewerTestStage: no DebugServer - editor mirror not served");
+        return false;
+    }
+
+    mMirrorSink = Dia::Core::MakeUnique<Dia::CellLayers::DebugServerTopicSink>(*server);
+    mMirrorPublisher = Dia::Core::MakeUnique<Dia::CellLayers::ViewStatePublisher>(*mRegistry, *mDomain, *mMirrorSink, mMirrorClock);
+    mMirrorQueries = Dia::Core::MakeUnique<Dia::CellLayers::MirrorQueries>(*mRegistry, *mDomain, schema);
+
+    // Registered once here (OnStart, SimPU), before the stage reports ready, as ValueSchemaModule and EntityInspectorModule do;
+    // QueryRegistry has no lock, so this is not marshalled to Main (see report).
+    mMirrorQueryRegistry = &server->GetQueryRegistry();
+    Dia::CellLayers::RegisterMirrorQueries(*mMirrorQueryRegistry, *mMirrorQueries);
+    DIA_LOG_INFO("CEL", "CellLayersViewerTestStage: editor mirror served (topic cells.view.state + 4 queries)");
+    return true;
+}
+
+void CellLayersViewerTestStageModule::TeardownMirror()
+{
+    if (mMirrorQueryRegistry != nullptr)
+    {
+        Dia::CellLayers::UnregisterMirrorQueries(*mMirrorQueryRegistry);
+        mMirrorQueryRegistry = nullptr;
+    }
+    mMirrorQueries.Reset();
+    mMirrorPublisher.Reset();
+    mMirrorSink.Reset();
 }
 
 void CellLayersViewerTestStageModule::BuildCellDetails(uint32_t cellIndex, Dia::CellLayers::CellDetailBuilder& out)
@@ -635,7 +683,14 @@ void CellLayersViewerTestStageModule::ViewerDebugLayer::Draw(Dia::Core::IDebugDr
 {
     // Drives the viewer on SimPU: base resolve, version-gated upload, CellField draw request, overlays, hover.
     if (mModule->mDomain)
+    {
         mModule->mDomain->Update(draw);
+        // After viewer.Update, outside any viewer lock.
+        if (mModule->mMirrorPublisher)
+            mModule->mMirrorPublisher->Update();
+        if (mModule->mMirrorQueries)
+            mModule->mMirrorQueries->NotifyFrame();
+    }
 }
 
 #endif // DIA_DEBUG

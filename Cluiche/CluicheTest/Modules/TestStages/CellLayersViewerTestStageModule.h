@@ -10,6 +10,7 @@
 #include <DiaMaths/Vector/Vector2D.h>
 
 #include <atomic>
+#include <chrono>
 #include <stdint.h>
 #include <vector>
 
@@ -20,6 +21,11 @@
 #include <DiaCellLayers/CellDetailRegistry.h>
 #include <DiaCellLayers/CellLayerViewerDomain.h>
 #include <DiaCellLayers/LayerUploader.h>
+#include <DiaCellLayers/ITopicSink.h>
+#include <DiaCellLayers/ViewStatePublisher.h>
+#include <DiaCellLayers/MirrorQueries.h>
+#include <DiaCellLayers/DebugServerTopicSink.h>
+#include <DiaDebugServer/QueryRegistry.h>
 #include <DiaCellLayers/CellPicker.h>
 #include "Modules/TestStages/CellLayersPointerQueue.h"
 #include <DiaCore/DebugDraw/IVisualDebugger.h>
@@ -150,6 +156,25 @@ private:
     Dia::Core::UniquePtr<Dia::CellLayers::LayerUploader> mUploader;
     Dia::Core::UniquePtr<Dia::CellLayers::CellLayerViewerDomain> mDomain;
     bool  mDomainRegistered = false;
+
+    // Editor mirror (Feature 5): topic cells.view.state + four mirror queries, driven from the viewer's Update on SimPU.
+    // Teardown order: queries unregistered, then queries/publisher/sink/clock destroyed, before the viewer.
+    bool  BuildMirror(const Dia::ValueSchema::ValueSchemaService* schema);
+    void  TeardownMirror();
+    class SteadyMonotonicClock : public Dia::CellLayers::IMonotonicClock
+    {
+    public:
+        uint64_t NowMs() const override
+        {
+            return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now().time_since_epoch()).count());
+        }
+    };
+    SteadyMonotonicClock mMirrorClock;
+    Dia::Core::UniquePtr<Dia::CellLayers::DebugServerTopicSink> mMirrorSink;
+    Dia::Core::UniquePtr<Dia::CellLayers::ViewStatePublisher> mMirrorPublisher;
+    Dia::Core::UniquePtr<Dia::CellLayers::MirrorQueries> mMirrorQueries;
+    Dia::DebugServer::QueryRegistry* mMirrorQueryRegistry = nullptr; // owned by the DebugServer (Main)
     bool  mLayerRegistered = false;
     bool  mLayersRegistered = false;
     const Dia::Graphics::CellGridDesc* mFittedGrid = nullptr;
