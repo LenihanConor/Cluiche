@@ -51,3 +51,13 @@ export { colourForValue, colourCells } from './cellColour';
 export type { CellColouring } from './cellColour';
 export { CellGridCanvas } from './CellGridCanvas';
 export type { CellGridCanvasProps } from './CellGridCanvas';
+
+export {
+  selectionHash, decodeLayerValues, concatChunks,
+  isCellsViewState, isCellsLayerList, isCellsLayerValues, isCellsSelectionPage, isCellsSelectionStats, isCellsError,
+} from './cells';
+export type {
+  CellsViewState, CellsGridInfo, CellsSelectionInfo, CellsHistoryState,
+  CellsLayerList, CellsLayerGrid, CellsLayerEntry, CellsOverlayEntry,
+  CellsLayerValues, CellsSelectionPage, CellsSelectionStats, CellsError,
+} from './cells';
