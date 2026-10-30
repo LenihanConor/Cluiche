@@ -78,3 +78,11 @@ export function drawOutlines(ctx: DrawContext, layout: Layout, cells: Iterable<n
   const max = layout.width * layout.height;
   for (const i of cells) if (i >= 0 && i < max) strokeCell(ctx, layout, i, corners);
 }
+
+/** Translucent fill over a set of cells (selection tint, tool footprint). `colour` should carry its own alpha. */
+export function drawTint(ctx: DrawContext, layout: Layout, cells: Iterable<number>, colour: string): void {
+  const corners = cornersFor(layout);
+  ctx.fillStyle = colour;
+  const max = layout.width * layout.height;
+  for (const i of cells) if (i >= 0 && i < max) fillCell(ctx, layout, i, corners);
+}

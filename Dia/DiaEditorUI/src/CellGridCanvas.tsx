@@ -4,7 +4,7 @@ import { cellFromPoint, computeLayout } from './cellGeometry';
 import type { CellRef, Topology } from './cellGeometry';
 import { colourCells } from './cellColour';
 import type { CellColouring } from './cellColour';
-import { cornersFor, drawFill, drawOutlines, strokeCell } from './cellDraw';
+import { cornersFor, drawFill, drawOutlines, drawTint, strokeCell } from './cellDraw';
 import type { DrawContext } from './cellDraw';
 
 export interface CellGridCanvasProps {
@@ -16,6 +16,12 @@ export interface CellGridCanvasProps {
   values: Float32Array | Uint16Array;
   colouring: CellColouring;
   highlight?: ReadonlySet<number>;
+  /** Cells drawn with a selection tint. */
+  selection?: ReadonlySet<number>;
+  /** Cells drawn with an outline (for example edited cells). */
+  outline?: ReadonlySet<number>;
+  /** Cells under a tool preview, drawn translucent. */
+  footprint?: ReadonlySet<number>;
   onHover?: (cell: CellRef | null) => void;
   onCellClick?: (cell: CellRef) => void;
   /** Canvas size in CSS pixels. When omitted the component fills its container. */
@@ -23,6 +29,8 @@ export interface CellGridCanvasProps {
   pixelHeight?: number;
 }
 
+const kSelectionTint = 'rgba(14, 99, 156, 0.45)';
+const kFootprintTint = 'rgba(255, 255, 255, 0.35)';
 const kDefaultSize = { w: 640, h: 480 };
 
 function useBoxSize(ref: React.RefObject<HTMLDivElement>, fixedW?: number, fixedH?: number) {
@@ -48,7 +56,7 @@ function context(canvas: HTMLCanvasElement | null, dpr: number): DrawContext | n
 }
 
 export const CellGridCanvas: React.FC<CellGridCanvasProps> = ({
-  topology, width, height, values, colouring, highlight, onHover, onCellClick, pixelWidth, pixelHeight,
+  topology, width, height, values, colouring, highlight, selection, outline, footprint, onHover, onCellClick, pixelWidth, pixelHeight,
 }) => {
   const rootRef = useRef<HTMLDivElement>(null);
   const baseRef = useRef<HTMLCanvasElement>(null);
@@ -68,19 +76,22 @@ export const CellGridCanvas: React.FC<CellGridCanvasProps> = ({
     if (!ctx) return;
     ctx.clearRect(0, 0, size.w, size.h);
     drawFill(ctx, layout, colourCells(values, colouring));
+    if (outline && outline.size > 0) drawOutlines(ctx, layout, outline, theme.accentHover, 1.5);
     if (highlight && highlight.size > 0) drawOutlines(ctx, layout, highlight, theme.warning, 2);
-  }, [layout, values, colouring, highlight, size.w, size.h, dpr]);
+    if (selection && selection.size > 0) drawTint(ctx, layout, selection, kSelectionTint);
+  }, [layout, values, colouring, highlight, selection, outline, size.w, size.h, dpr]);
 
-  // Overlay layer: hovered cell only.
+  // Overlay layer: tool footprint and hovered cell. Both change with the pointer, so they stay off the base layer.
   useEffect(() => {
     const ctx = context(overlayRef.current, dpr);
     if (!ctx) return;
     ctx.clearRect(0, 0, size.w, size.h);
+    if (footprint && footprint.size > 0) drawTint(ctx, layout, footprint, kFootprintTint);
     if (hovered === null) return;
     ctx.strokeStyle = theme.text;
     ctx.lineWidth = 1.5;
     strokeCell(ctx, layout, hovered, cornersFor(layout));
-  }, [layout, hovered, size.w, size.h, dpr]);
+  }, [layout, hovered, footprint, size.w, size.h, dpr]);
 
   const cellAt = (e: React.MouseEvent): CellRef | null => {
     const rect = rootRef.current?.getBoundingClientRect();
