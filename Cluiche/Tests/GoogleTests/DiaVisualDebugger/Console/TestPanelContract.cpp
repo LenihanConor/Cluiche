@@ -550,6 +550,38 @@ TEST_F(PanelContractTest, CellLayersViewerInspectorPinnedSingleCell)
 	EXPECT_EQ(insp["cell"]["r"].asUInt(), 1u);
 }
 
+TEST_F(PanelContractTest, CellLayersViewerQueryBox)
+{
+	using namespace Dia::CellLayers;
+	ViewerRig rig;
+	rig.Build(true);
+	rig.Add(rig.biome.MakeDesc("biome", &rig.gridA.desc, CellValueKind::Category, "cells/biome"), "Terrain");
+	rig.Add(rig.temp.MakeDesc("temp", &rig.gridA.desc, CellValueKind::Float, "cells/temp"), "Ecology");
+	rig.Add(rig.rain.MakeDesc("rain", &rig.gridA.desc, CellValueKind::Float, "cells/rain"), "Ecology");
+	rig.domain->Update(rig.draw);
+	Json::Value ok(Json::objectValue);
+	ok["e"] = "temp > -100";
+	rig.domain->OnCommand(StringCRC("query_run"), ok);
+	Json::Value bad(Json::objectValue);
+	bad["e"] = "tmp > 3";
+	rig.domain->OnCommand(StringCRC("query_check"), bad);
+	const std::string json = ViewerJson(*rig.domain);
+	Check("domain_states_celllayers_query.json", json);
+
+	Json::Value parsed;
+	ASSERT_TRUE(Json::Reader().parse(json, parsed));
+	const Json::Value& q = parsed["Cell Layers"]["query"];
+	EXPECT_TRUE(q["available"].asBool());
+	EXPECT_EQ(q["last"]["expr"].asString(), "temp > -100");
+	EXPECT_TRUE(q["last"]["ok"].asBool());
+	EXPECT_EQ(q["last"]["count"].asUInt(), 12u);
+	EXPECT_EQ(q["check"]["expr"].asString(), "tmp > 3");
+	EXPECT_FALSE(q["check"]["ok"].asBool());
+	EXPECT_TRUE(q["check"]["error"].isMember("message"));
+	EXPECT_TRUE(q["check"]["error"].isMember("column"));
+	EXPECT_TRUE(q["check"]["error"].isMember("length"));
+}
+
 TEST_F(PanelContractTest, CellLayersViewerEmptyState)
 {
 	ViewerRig rig;

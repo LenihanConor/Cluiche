@@ -26,6 +26,8 @@
 // cells.inspector.expand {group, expanded:bool}: expands / collapses a layer group of the inspector card (panel command "inspector_expand"; the panel
 // commands "select_pin" {freeze?} and "select_unpin" {} run cells.select.pin / .unpin). GetJSONState "inspector": built from the InspectorState cache
 // by InspectorModel::BuildCardJson (shape in InspectorModel.h); the card is treated as open, so a single selected cell adds its "cell" table.
+// GetJSONState "query": {available:true, check?:{expr, ok, count | error{message,column,length,suggestion?}}, last?:{same, from cells.select.query}}.
+// Panel commands "query_check" / "query_run" {e: "<expr>"} (short key: the panel bridge caps args at 63 chars) run the same code as the JSON commands.
 // GetJSONState "selection": {count, tool, group, groups[{id,label,selected}], tooLarge, tooLargeText (only when tooLarge)}.
 // The registry is borrowed; CellLayersModule owns and publishes it on a ServiceStream (CL-006). A consumer module resolves it
 // with FindCellLayerRegistry(reader) (CellLayersModule.h) and passes *registry to the constructor.
@@ -145,6 +147,8 @@ namespace Dia::CellLayers
 		// cells.select.query (apply = true) / cells.query.check (apply = false): params {"expr": "<query>"}. Returns {ok, count}
 		// or {ok:false, error:{message, column, length, suggestion?}}; the selection is untouched on error and by check.
 		Json::Value	ExecuteQuery(bool apply, const char* name, const Json::Value& params);	// locks mMutex
+		// Same as ExecuteQuery, then records the outcome for the card ("query" in GetJSONState): the check slot for check, the last-run slot for select.
+		Json::Value	ExecuteQueryRecorded(bool apply, const char* name, const Json::Value& params);	// locks mMutex (twice, not nested)
 		struct QueryState;	// parser + resolver + evaluator (large, fixed capacity: heap)
 		class InputSink;
 		void	ProcessPointer();	// called from Update with mMutex held
@@ -226,6 +230,8 @@ namespace Dia::CellLayers
 		Dia::Observation::Metric::Gauge*	mMetricQueryEvaluateMs = nullptr;	// last evaluate duration in ms
 		Dia::Observation::Metric::Gauge*	mMetricQueryLastMatchCount = nullptr;	// last match count from either command
 		QueryState*				mQuery = nullptr;	// owned
+		Json::Value				mQueryCheck;		// last cells.query.check outcome {expr, ok, count | error}; null until one ran
+		Json::Value				mQueryLast;			// last cells.select.query outcome, same shape
 	};
 }
 

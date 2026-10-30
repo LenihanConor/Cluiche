@@ -56,6 +56,8 @@ namespace Dia::CellLayers
 		const StringCRC kCmdSelectPin("select_pin");
 		const StringCRC kCmdSelectUnpin("select_unpin");
 		const StringCRC kCmdInspectorExpand("inspector_expand");
+		const StringCRC kCmdQueryCheck("query_check");
+		const StringCRC kCmdQueryRun("query_run");
 		const StringCRC kCmdSetScale("setScale");
 	}
 
@@ -563,6 +565,11 @@ namespace Dia::CellLayers
 		WriteHover(out);
 		WriteSelection(out);
 		InspectorModel::BuildCardJson(mRegistry, mReader, mSchema, mInspector, mRegistry.SelectionView(mActiveGrid), out["inspector"]);
+		Json::Value query(Json::objectValue);
+		query["available"] = true;
+		if (mQueryCheck.isObject()) { query["check"] = mQueryCheck; }
+		if (mQueryLast.isObject()) { query["last"] = mQueryLast; }
+		out["query"] = query;
 	}
 
 	StringCRC CellLayerViewerDomain::EffectiveGroup() const
@@ -632,6 +639,14 @@ namespace Dia::CellLayers
 		else if (cmd == kCmdSelectPin) { ExecutePin(args); }
 		else if (cmd == kCmdSelectUnpin) { ExecuteUnpin(args); }
 		else if (cmd == kCmdInspectorExpand) { ExecuteExpand(args); }
+		else if (cmd == kCmdQueryCheck || cmd == kCmdQueryRun)
+		{
+			Json::Value p(Json::objectValue);
+			if (args.isObject() && args["e"].isString()) { p["expr"] = args["e"]; }
+			else if (args.isObject() && args["expr"].isString()) { p["expr"] = args["expr"]; }
+			const bool run = (cmd == kCmdQueryRun);
+			ExecuteQueryRecorded(run, run ? "cells.select.query" : "cells.query.check", p);
+		}
 		else if (cmd == kCmdSelectClear) { ExecuteSelect(SelectOp::Clear, "cells.select.clear", Json::Value(Json::objectValue)); }
 		// kCmdSetScale and unknown commands: no-op (this domain has no scale)
 		(void)kCmdSetScale;
@@ -858,7 +873,7 @@ namespace Dia::CellLayers
 			q.category = StringCRC("cells");
 			q.owner = "DiaCellLayers";
 			const char* const name = kQueryCommands[i];
-			q.callback = [this, apply, name](const Json::Value& params) -> Json::Value { return ExecuteQuery(apply, name, params); };
+			q.callback = [this, apply, name](const Json::Value& params) -> Json::Value { return ExecuteQueryRecorded(apply, name, params); };
 			Dia::API::RegisterCommandJson(q);
 		}
 
@@ -1324,6 +1339,19 @@ namespace Dia::CellLayers
 		Json::Value out(Json::objectValue);
 		out["ok"] = true;
 		out["count"] = count;
+		return out;
+	}
+
+	Json::Value CellLayerViewerDomain::ExecuteQueryRecorded(bool apply, const char* name, const Json::Value& params)
+	{
+		Json::Value out = ExecuteQuery(apply, name, params);
+		std::string text;
+		if (params.isObject() && params["expr"].isString()) { text = params["expr"].asString(); }
+		else if (params.isString()) { text = params.asString(); }
+		Json::Value rec = out;
+		rec["expr"] = text;
+		Lock l(mMutex);
+		(apply ? mQueryLast : mQueryCheck) = rec;
 		return out;
 	}
 

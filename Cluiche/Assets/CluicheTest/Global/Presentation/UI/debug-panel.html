@@ -287,6 +287,23 @@ body {
   font-family: inherit; font-size: 10px; padding: 3px 4px; border-radius: 2px; outline: none; text-transform: none; letter-spacing: 0;
 }
 .selection-group select:focus { border-color: #5a9fd4; }
+.query-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; padding: 6px 8px; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 2px; }
+.query-row { display: flex; gap: 4px; }
+.query-input { flex: 1; min-width: 0; background: #0f0f0f; border: 1px solid #3a3a3a; color: #ccc; font-family: 'Consolas', monospace; font-size: 10px; padding: 4px 6px; border-radius: 2px; outline: none; }
+.query-input:focus { border-color: #5a9fd4; }
+.query-field .query-run { background: #1e1e1e; color: #ccc; border: 1px solid #3a3a3a; border-radius: 2px; font-size: 9px; font-family: inherit; padding: 2px 8px; cursor: pointer; }
+.query-field .query-run:hover { border-color: #5a9fd4; }
+.query-result { font-size: 9px; color: #5a9fd4; }
+.query-result:empty { display: none; }
+.query-error { font-size: 9px; color: #f5a623; }
+.query-error .q-msg { color: #e8573f; }
+.query-error .q-text { font-family: 'Consolas', monospace; color: #999; margin: 2px 0; white-space: pre-wrap; word-break: break-all; }
+.query-error mark.q-span { background: #5a2a22; color: #ffb3a6; border-radius: 1px; }
+.query-error .q-suggest { background: none; border: 0; padding: 0; color: #5a9fd4; font-family: inherit; font-size: 9px; cursor: pointer; text-decoration: underline; }
+.query-recent { display: flex; flex-direction: column; gap: 1px; margin-top: 2px; }
+.query-recent .q-recent-title { font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 0.8px; }
+.query-recent .q-recent-item { font-family: 'Consolas', monospace; font-size: 9px; color: #888; padding: 1px 4px; cursor: pointer; border-radius: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.query-recent .q-recent-item:hover { background: #252525; color: #ccc; }
 .cl-banner { padding: 6px 8px; font-size: 10px; color: #f5a623; background: #2a2510; border: 1px solid #4a4520; border-radius: 2px; margin-bottom: 8px; }
 /* Selection Inspector card (diacelllayers/mockups/cell-layer-viewer.html: stats table, biome chips, histogram, pin buttons) */
 .cl-inspector { margin-top: 4px; margin-bottom: 8px; padding-top: 6px; border-top: 1px solid #222; }
@@ -620,6 +637,9 @@ var ui = {
   domainOpen:  {},   // domainId  -> bool
   structureSig: null,
   layerFilter: '',   // cell layer viewer search text
+  queryText: '',     // cell layer viewer query box text (page session only)
+  queryRecent: [],   // last 10 run queries, newest first
+  queryTimer: null,  // pending debounced query_check
   activeSlider: null // control element currently being dragged
 };
 
@@ -1052,6 +1072,170 @@ function refreshSelection(root, s) {
   if (banner) banner.textContent = s.tooLargeText || 'Selection too large to outline';
 }
 
+// ── Query box (DiaCellLayers Query, viewer card) ──────────────────────────
+// State "query" (CellLayerViewerDomain): {available, check?{expr, ok, count | error{message,column,length,suggestion?}}, last?{same, from query_run}}.
+// The panel bridge is fire-and-forget (no reply), so the page sends panel commands query_check {e} (debounced) / query_run {e} and renders the outcome
+// the domain pushes back in state. A check outcome is shown only while its expr equals the input (stale guard). Args are capped at 63 chars by the
+// bridge, hence the short key "e" and the "too long" message. The input text and the recent list are page-session state (ui.*), not persisted.
+var QUERY_DEBOUNCE_MS = 250;
+var QUERY_MAX_RECENT = 10;
+
+function queryTooLong(text) { return JSON.stringify({ e: text }).length > MAX_ARG_JSON; }
+
+function scheduleQueryCheck(sec) {
+  clearTimeout(ui.queryTimer);
+  ui.queryTimer = null;
+  var text = ui.queryText;
+  if (!String(text).trim() || queryTooLong(text)) return;
+  ui.queryTimer = setTimeout(function () {
+    ui.queryTimer = null;
+    if (ui.queryText === text) sendCommand(sec._cmdId, 'query_check', { e: text });
+  }, QUERY_DEBOUNCE_MS);
+}
+
+function runQuery(sec) {
+  var text = ui.queryText;
+  if (!String(text).trim()) return;
+  clearTimeout(ui.queryTimer);
+  ui.queryTimer = null;
+  if (queryTooLong(text)) { refreshQueryBox(sec); return; }
+  sendCommand(sec._cmdId, 'query_run', { e: text });
+  var r = ui.queryRecent;
+  for (var i = r.length - 1; i >= 0; --i) if (r[i] === text) r.splice(i, 1);
+  r.unshift(text);
+  if (r.length > QUERY_MAX_RECENT) r.length = QUERY_MAX_RECENT;
+  refreshQueryBox(sec);
+}
+
+function setQueryText(sec, text) {
+  var input = sec.querySelector('[data-role="query-input"]');
+  ui.queryText = text;
+  if (input) input.value = text;
+  scheduleQueryCheck(sec);
+  refreshQueryBox(sec);
+}
+
+function buildQuerySection(cmdId, q) {
+  var sec = el('div', 'query-field');
+  sec.setAttribute('data-role', 'query');
+  sec._cmdId = cmdId;
+  sec._q = q;
+  var row = el('div', 'query-row');
+  var input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'query-input';
+  input.placeholder = 'Query, e.g. temp > 3 and biome == water';
+  input.setAttribute('data-role', 'query-input');
+  input.value = ui.queryText || '';
+  input.addEventListener('click', function (e) { e.stopPropagation(); });
+  input.addEventListener('keydown', function (e) {
+    e.stopPropagation();
+    if (e.key === 'Enter') runQuery(sec);
+  });
+  input.addEventListener('input', function () {
+    ui.queryText = input.value;
+    scheduleQueryCheck(sec);
+    refreshQueryBox(sec);
+  });
+  row.appendChild(input);
+  var run = el('button', 'query-run', 'Run');
+  run.setAttribute('type', 'button');
+  run.setAttribute('data-role', 'query-run');
+  run.addEventListener('click', function (e) { e.stopPropagation(); runQuery(sec); });
+  row.appendChild(run);
+  sec.appendChild(row);
+  var res = el('div', 'query-result', '');
+  res.setAttribute('data-role', 'query-result');
+  sec.appendChild(res);
+  var errHost = el('div', '', '');
+  errHost.setAttribute('data-role', 'query-error-host');
+  sec.appendChild(errHost);
+  var rec = el('div', 'query-recent', '');
+  rec.setAttribute('data-role', 'query-recent');
+  sec.appendChild(rec);
+  refreshQueryBox(sec);
+  return sec;
+}
+
+function refreshQuery(root, v) {
+  var sec = root.querySelector('[data-role="query"]');
+  if (!sec || !v.query) return;
+  sec._q = v.query;
+  refreshQueryBox(sec);
+}
+
+function queryEntryFor(q, text) {
+  if (!q) return null;
+  if (q.check && q.check.expr === text) return q.check;
+  if (q.last && q.last.expr === text) return q.last;
+  return null;
+}
+
+function refreshQueryBox(sec) {
+  var text = ui.queryText || '';
+  var res = sec.querySelector('[data-role="query-result"]');
+  var errHost = sec.querySelector('[data-role="query-error-host"]');
+  var rec = sec.querySelector('[data-role="query-recent"]');
+  var resText = '', errInfo = null;
+  if (String(text).trim()) {
+    if (queryTooLong(text)) {
+      errInfo = { message: 'query too long for the panel (max ' + (MAX_ARG_JSON - 8) + ' characters)', column: 0, length: 0 };
+    } else {
+      var entry = queryEntryFor(sec._q, text);
+      if (entry && entry.ok) resText = '→ ' + entry.count + (entry.count === 1 ? ' cell matches' : ' cells match');
+      else if (entry && entry.error) errInfo = entry.error;
+    }
+  }
+  if (res.textContent !== resText) res.textContent = resText;
+  var errSig = errInfo ? JSON.stringify([text, errInfo]) : '';
+  if (errHost._sig !== errSig) {
+    errHost._sig = errSig;
+    while (errHost.firstChild) errHost.removeChild(errHost.firstChild);
+    if (errInfo) {
+      var box = el('div', 'query-error', '');
+      box.setAttribute('data-role', 'query-error');
+      box.appendChild(el('div', 'q-msg', errInfo.message || 'invalid query'));
+      var col = Number(errInfo.column) || 0, len = Number(errInfo.length) || 0;
+      var qt = el('div', 'q-text', '');
+      if (len > 0 && col < text.length) {
+        qt.appendChild(document.createTextNode(text.substring(0, col)));
+        qt.appendChild(el('mark', 'q-span', text.substring(col, col + len)));
+        qt.appendChild(document.createTextNode(text.substring(col + len)));
+      } else {
+        qt.appendChild(document.createTextNode(text));
+      }
+      box.appendChild(qt);
+      if (errInfo.suggestion) {
+        var sg = el('button', 'q-suggest', 'did you mean \'' + errInfo.suggestion + '\'?');
+        sg.setAttribute('type', 'button');
+        sg.setAttribute('data-role', 'query-suggest');
+        sg.addEventListener('click', function (e) {
+          e.stopPropagation();
+          setQueryText(sec, text.substring(0, col) + errInfo.suggestion + text.substring(col + len));
+        });
+        box.appendChild(sg);
+      }
+      errHost.appendChild(box);
+    }
+  }
+  var rsig = ui.queryRecent.join('\n');
+  if (rec._sig !== rsig) {
+    rec._sig = rsig;
+    while (rec.firstChild) rec.removeChild(rec.firstChild);
+    if (ui.queryRecent.length > 0) {
+      rec.appendChild(el('div', 'q-recent-title', 'Recent'));
+      for (var i = 0; i < ui.queryRecent.length; ++i) {
+        (function (t) {
+          var it = el('div', 'q-recent-item', t);
+          it.setAttribute('title', t);
+          it.addEventListener('click', function (e) { e.stopPropagation(); setQueryText(sec, t); });
+          rec.appendChild(it);
+        })(ui.queryRecent[i]);
+      }
+    }
+  }
+}
+
 // ── Selection Inspector card (Feature 4) ──────────────────────────────────
 // State "inspector" (InspectorModel::BuildCardJson, built from the domain's cache): hasSelection, updating, expandedGroups[], base,
 // layers[{id,schemaKey,label,unit,tooltip,kind,group,rangeMin?,rangeMax?,count,nanCount,min,mean,max,categories?,other?,
@@ -1388,6 +1572,7 @@ function buildViewer(domain) {
   }
 
   if (v.selection) root.appendChild(buildSelectionSection(cmdId, v.selection));
+  if (v.query && v.query.available) root.appendChild(buildQuerySection(cmdId, v.query));
   if (v.inspector) {
     var insp = el('div', 'cl-inspector');
     insp.setAttribute('data-role', 'inspector');
@@ -1514,6 +1699,7 @@ function refreshViewer(card, v) {
 
   if (v.selection) refreshSelection(root, v.selection);
   refreshInspector(root, v);
+  refreshQuery(root, v);
 
   var noData = !!v.noData;   // source not live and no data: say so instead of a stale legend / hover
   var legendHost = root.querySelector('[data-role="legend"]');

@@ -6,6 +6,7 @@
 // the stub, which only logs them (the console shows nothing; this is a static look-and-feel check).
 // Open the output in a browser. URL hash picks the state: (none) float base, #category (multi-grid + category base),
 // #empty (empty state), #nodata (view source not live, no data), #selection (a 4-cell selection, Pan tool active),
+// #query (query box: live '-> N cells match' + recent queries), #query-error (highlighted span + suggestion),
 // #inspector (frozen pin A + a single cell: stats rows, A / delta columns, histogram, cell details), #inspector-multi (the same
 // without the cell block, with a category layer and an "updating" mark), #toolarge (the same state with the "Selection too large to outline" banner, for the selection visual check). Headless screenshot:
 //   msedge --headless=new --window-size=700,1000 --screenshot=<png> "file:///<out>#category"
@@ -57,9 +58,25 @@ window.addEventListener("load", function() {
       var sel = s["Cell Layers"].selection;
       sel.count = 1120; sel.tool = "select"; sel.tooLarge = true; sel.tooLargeText = "Selection too large to outline (1120 cells)";
       return s;
-    })()
+    })(),
+    "#query": ${g("domain_states_celllayers_query.json")},
+    "#query-error": ${g("domain_states_celllayers_query.json")}
   };
-  window.updateDomainState(states[location.hash] || states[""]);
+  var qs = states[location.hash] || states[""];
+  window.updateDomainState(qs);
+  if (location.hash === "#query" || location.hash === "#query-error") {
+    // Type the query into the real input, then push the golden whose check matches it; recents come from Run.
+    var q = qs["Cell Layers"].query;
+    var inp = document.querySelector("[data-role=query-input]");
+    var ok = location.hash === "#query";
+    if (ok) { q.check = { expr: "temp > 3 and biome == water", ok: true, count: 37 }; }
+    inp.value = ok ? "temp > 3 and biome == water" : "tmp > 3";
+    inp.dispatchEvent(new Event("input", { bubbles: true }));
+    ["rain < 2", "biome == grass", "temp > -100"].forEach(function (t) { inp.value = t; inp.dispatchEvent(new Event("input", { bubbles: true })); document.querySelector("[data-role=query-run]").click(); });
+    inp.value = ok ? "temp > 3 and biome == water" : "tmp > 3";
+    inp.dispatchEvent(new Event("input", { bubbles: true }));
+    window.updateDomainState(qs);
+  }
   var hdr = document.querySelector(".domain-hdr");
   if (hdr && !document.querySelector("[data-role=cell-layer-viewer]")) { hdr.click(); }
 });

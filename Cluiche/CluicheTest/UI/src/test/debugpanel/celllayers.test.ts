@@ -584,3 +584,174 @@ describe("selection inspector card (Selection Inspector task 9: accordions, stat
     expect(insp()).toBe(host);
   });
 });
+
+
+describe("query box (Query task 7: debounced live check, error span + suggestion, Run, recents)", () => {
+  const FILE = "domain_states_celllayers_query.json";
+  const box = () => viewer().querySelector("[data-role=query]") as HTMLElement;
+  const input = () => box().querySelector("[data-role=query-input]") as HTMLInputElement;
+  const result = () => box().querySelector("[data-role=query-result]") as HTMLElement;
+  const err = () => box().querySelector("[data-role=query-error]") as HTMLElement;
+  const recents = () => Array.from(box().querySelectorAll("[data-role=query-recent] .q-recent-item")).map((e) => e.textContent);
+  const type = (t: string) => p.typeInto(input(), t);
+  const withQuery = (patch: (q: any) => void) => {
+    const s = goldenJson(FILE);
+    patch(s[NAME].query);
+    p.win.updateDomainState(JSON.stringify(s));
+  };
+
+  it("contract: the query golden carries the card keys", () => {
+    const q = goldenJson(FILE)[NAME].query;
+    expect(q.available).toBe(true);
+    expect(q.check.ok).toBe(false);
+    for (const k of ["message", "column", "length", "suggestion"]) expect(k in q.check.error).toBe(true);
+    expect(q.last.ok).toBe(true);
+    expect(typeof q.last.count).toBe("number");
+    expect(goldenJson("domain_states_celllayers.json")[NAME].query.available).toBe(true);
+  });
+
+  it("renders the box: input, Run button, empty result", () => {
+    push("domain_states_celllayers.json");
+    expect(box()).not.toBeNull();
+    expect(input()).not.toBeNull();
+    expect(box().querySelector("[data-role=query-run]")).not.toBeNull();
+    expect(txt(result())).toBe("");
+    expect(err()).toBeNull();
+  });
+
+  it("typing debounces the check: one query_check per 250 ms quiet period", () => {
+    push("domain_states_celllayers.json");
+    type("t");
+    vi.advanceTimersByTime(100);
+    type("te");
+    vi.advanceTimersByTime(100);
+    type("temp > 3");
+    vi.advanceTimersByTime(249);
+    expect(commands().length).toBe(0);
+    vi.advanceTimersByTime(1);
+    expect(commands()).toEqual([["command", "celllayers", "query_check", JSON.stringify({ e: "temp > 3" })]]);
+  });
+
+  it("shows '→ N cells match' when the pushed check matches the input", () => {
+    push("domain_states_celllayers.json");
+    type("temp > 3");
+    vi.advanceTimersByTime(250);
+    withQuery((q) => { q.check = { expr: "temp > 3", ok: true, count: 37 }; });
+    expect(txt(result())).toBe("→ 37 cells match");
+    expect(err()).toBeNull();
+    expect(input().value).toBe("temp > 3");   // the input survives state pushes
+  });
+
+  it("singular: '→ 1 cell matches'", () => {
+    push("domain_states_celllayers.json");
+    type("temp > 3");
+    withQuery((q) => { q.check = { expr: "temp > 3", ok: true, count: 1 }; });
+    expect(txt(result())).toBe("→ 1 cell matches");
+  });
+
+  it("stale guard: a check result for an older expr is ignored", () => {
+    push("domain_states_celllayers.json");
+    type("temp > 3");
+    withQuery((q) => { q.check = { expr: "temp > 3", ok: true, count: 37 }; });
+    type("temp > 30");
+    expect(txt(result())).toBe("");
+    withQuery((q) => { q.check = { expr: "temp > 3", ok: true, count: 37 }; });
+    expect(txt(result())).toBe("");
+    expect(err()).toBeNull();
+  });
+
+  it("empty input clears the result and error and sends nothing", () => {
+    push(FILE);
+    type("tmp > 3");
+    vi.advanceTimersByTime(250);
+    commands().length = 0;
+    p.calls.length = 0;
+    push(FILE);
+    expect(err()).not.toBeNull();
+    type("   ");
+    vi.advanceTimersByTime(500);
+    expect(commands().length).toBe(0);
+    expect(txt(result())).toBe("");
+    expect(err()).toBeNull();
+  });
+
+  it("an error shows the message, the query with the offending span highlighted, and the suggestion", () => {
+    push("domain_states_celllayers.json");
+    type("tmp > 3");
+    push(FILE);
+    expect(txt(err().querySelector(".q-msg"))).toBe("unknown layer 'tmp'");
+    const text = err().querySelector(".q-text") as HTMLElement;
+    expect(txt(text)).toBe("tmp > 3");
+    const mark = text.querySelector("mark.q-span") as HTMLElement;
+    expect(txt(mark)).toBe("tmp");
+    expect(txt(err().querySelector("[data-role=query-suggest]"))).toBe("did you mean 'temp'?");
+    expect(txt(result())).toBe("");
+  });
+
+  it("an error without a suggestion shows no suggestion", () => {
+    push("domain_states_celllayers.json");
+    type("tmp > 3");
+    withQuery((q) => { delete q.check.error.suggestion; });
+    expect(err()).not.toBeNull();
+    expect(err().querySelector("[data-role=query-suggest]")).toBeNull();
+  });
+
+  it("clicking the suggestion replaces the offending span in the input and re-checks", () => {
+    push("domain_states_celllayers.json");
+    type("tmp > 3");
+    push(FILE);
+    p.click(err().querySelector("[data-role=query-suggest]")!);
+    expect(input().value).toBe("temp > 3");
+    vi.advanceTimersByTime(250);
+    expect(commands()).toEqual([["command", "celllayers", "query_check", JSON.stringify({ e: "temp > 3" })]]);
+    expect(err()).toBeNull();   // the old error no longer matches the input
+  });
+
+  it("Run sends query_run and pushes the query to the recents list", () => {
+    push("domain_states_celllayers.json");
+    type("temp > 3");
+    p.click(box().querySelector("[data-role=query-run]")!);
+    expect(commands()).toEqual([["command", "celllayers", "query_run", JSON.stringify({ e: "temp > 3" })]]);
+    expect(recents()).toEqual(["temp > 3"]);
+  });
+
+  it("Enter in the input runs the query too; Run on empty input does nothing", () => {
+    push("domain_states_celllayers.json");
+    p.click(box().querySelector("[data-role=query-run]")!);
+    expect(commands().length).toBe(0);
+    type("rain < 2");
+    p.key(input(), "Enter");
+    expect(commands()).toEqual([["command", "celllayers", "query_run", JSON.stringify({ e: "rain < 2" })]]);
+    expect(recents()).toEqual(["rain < 2"]);
+  });
+
+  it("recents: newest first, deduped, capped at 10, click refills the input", () => {
+    push("domain_states_celllayers.json");
+    const run = (t: string) => { type(t); p.click(box().querySelector("[data-role=query-run]")!); };
+    for (let i = 1; i <= 12; ++i) run("temp > " + i);
+    expect(recents().length).toBe(10);
+    expect(recents()[0]).toBe("temp > 12");
+    expect(recents()[9]).toBe("temp > 3");
+    run("temp > 5");
+    expect(recents().length).toBe(10);
+    expect(recents()[0]).toBe("temp > 5");
+    expect(recents().filter((r) => r === "temp > 5").length).toBe(1);
+    p.click(box().querySelectorAll("[data-role=query-recent] .q-recent-item")[2]);
+    expect(input().value).toBe("temp > 11");
+  });
+
+  it("a query too long for the 63-character panel bridge says so and is not sent", () => {
+    push("domain_states_celllayers.json");
+    type("temp > 1 and temp > 2 and temp > 3 and temp > 4 and temp > 5 and rain");
+    vi.advanceTimersByTime(250);
+    expect(commands().length).toBe(0);
+    expect(txt(err().querySelector(".q-msg"))).toContain("too long");
+  });
+
+  it("the query box host is kept across state pushes", () => {
+    push(FILE);
+    const host = box();
+    push(FILE);
+    expect(box()).toBe(host);
+  });
+});
