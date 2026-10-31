@@ -141,6 +141,7 @@ Aggregates are computed on the provider's PU, on demand (when the selection or v
 | 3 | Query | Expression parser and evaluator, `cells.select.query`, `cells.query.check` (preview), error reporting | Approved | [query.md](query.md) |
 | 4 | Selection inspector | Per-layer stats, category counts, histogram, pin A and compare (live or frozen), `describeCell` slot, `cells.inspect` | Approved | [selection-inspector.md](selection-inspector.md) |
 | 5 | Editor mirror | `cells.view.state` topic, `cells.layer.values` and `cells.select.stats` queries (plus `cells.layer.list` and `cells.select.get`, selection hash), for the World Sim Inspector and the World Data Editor | Approved | [editor-mirror.md](editor-mirror.md) |
+| 6 | Streams migration | Remove the viewer mutex: mirror queries and viewer commands become sim-hosted, `debug.domain_state` reads a `FrameStream` snapshot, pointer queue loses its mutex, chunk limits to 1,000 | Approved | [streams-migration.md](streams-migration.md) |
 
 - **Build order:** 1 → 2 → 4 → 3 → 5. Feature 1 needs CellField Step 1 and DiaValueSchema Features 1 and 5 (ramps).
 - **CellField alignment:** write the CellField Step 1 plan after this spec is Approved, so its registry and draw request fit a viewer-owned upload. This spec needs no CellField API change; it only consumes `CreateLayer`, `Update`, `RegisterRamp` / `RegisterPalette` and `RequestDrawCellField`.
