@@ -2355,5 +2355,8 @@
     <ClCompile Include="DiaCellLayers\TestViewerSimHostedCommands.cpp">
       <Filter>DiaCellLayers</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestViewerStateSnapshot.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

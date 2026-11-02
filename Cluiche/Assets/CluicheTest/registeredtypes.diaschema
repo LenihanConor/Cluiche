@@ -385,6 +385,16 @@
       "type_id": "SimEchoTestModule"
     },
     {
+      "allowed_pus": "main",
+      "description": "Main end of the cell-layer viewer state snapshot: reads the snapshot FrameStream, signals demand.",
+      "type_id": "CellLayersStateBridgeModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Sim end of the cell-layer viewer state snapshot: publishes the viewer state while demanded.",
+      "type_id": "CellLayersStateRelayModule"
+    },
+    {
       "allowed_pus": "sim",
       "description": "Runs debug queries and commands that touch SimPU-owned state, requested over EventStreams by the Main-side DebugServer.",
       "type_id": "SimQueryHostModule"
@@ -568,6 +578,6 @@
   "processing_units": [],
   "version": {
     "major": 1,
-    "minor": 40
+    "minor": 42
   }
 }

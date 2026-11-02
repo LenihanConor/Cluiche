@@ -116,6 +116,7 @@
     <ClInclude Include="MirrorQueries.h" />
     <ClInclude Include="Testing\FakeMirrorRegistrar.h" />
     <ClInclude Include="Testing\ViewerCommands.h" />
+    <ClInclude Include="ViewerStateSnapshot.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />
@@ -143,6 +144,7 @@
     <ClCompile Include="DebugServerTopicSink.cpp" />
     <ClCompile Include="ViewStatePublisher.cpp" />
     <ClCompile Include="MirrorQueries.cpp" />
+    <ClCompile Include="ViewerStateSnapshot.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diacelllayers.architecture.module.md" />

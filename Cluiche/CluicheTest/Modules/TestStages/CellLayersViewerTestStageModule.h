@@ -19,6 +19,7 @@
 #include "Modules/Camera2DModule.h"
 #include "Modules/InputStreamModule.h"
 #include "Modules/SimQueryHostModule.h"
+#include "Modules/TestStages/CellLayersStateRelayModule.h"
 #include <DiaCellLayers/CellDetailRegistry.h>
 #include <DiaCellLayers/CellLayerViewerDomain.h>
 #include <DiaCellLayers/LayerUploader.h>
@@ -156,6 +157,11 @@ private:
     Dia::Core::UniquePtr<Dia::CellLayers::LayerUploader> mUploader;
     Dia::Core::UniquePtr<Dia::CellLayers::CellLayerViewerDomain> mDomain;
     bool  mDomainRegistered = false;
+
+    // Panel state (Streams Migration Task 4): the DebugDomain registry is read on Main, so it gets the relay's snapshot adapter,
+    // never mDomain. The relay (SimPU) publishes the viewer's GetJSONState to a FrameStream while Main asks for it.
+    Dia::ApplicationFlow::ModuleRef<CellLayersStateRelayModule> mStateRelayRef{this};
+    Dia::VisualDebugger::IDebugDomain* mPanelDomain = nullptr;   // owned by the relay; null when not attached
 
     // Editor mirror (Feature 5): topic cells.view.state + four mirror queries, driven from the viewer's Update on SimPU.
     // Teardown order: queries unregistered, then queries/publisher/sink/clock destroyed, before the viewer.

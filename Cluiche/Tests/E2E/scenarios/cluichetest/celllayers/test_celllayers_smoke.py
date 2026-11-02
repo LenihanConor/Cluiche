@@ -29,8 +29,26 @@ def _assert_base(c, base, grid_index):
     assert _selected(listing) == [base], (base, _selected(listing))
 
 
-def _panel(c):
+def _panel_raw(c):
     return c.send_command("debug.domain_state", {"id": "celllayers"})
+
+
+def _panel(c, timeout_s=10.0):
+    """The viewer's panel state is a snapshot the SimPU publishes while it is requested (demand-driven FrameStream), so one
+    read can be pending (nothing published yet) or stale (published before the last command). Read once to arm publishing,
+    then wait until a snapshot newer than that read by a few Sim frames arrives; that one reflects every earlier command."""
+    first = _panel_raw(c)
+    base = first.get("simFrame") if not first.get("pending") else None
+    deadline = time.time() + timeout_s
+    while time.time() < deadline:
+        st = _panel_raw(c)
+        if st.get("pending") or "simFrame" not in st:
+            time.sleep(0.05)
+            continue
+        if base is None or st["simFrame"] >= base + 3:
+            return st
+        time.sleep(0.05)
+    raise AssertionError(f"no fresh viewer snapshot within {timeout_s}s (first={first.get('simFrame')}, last={st.get('simFrame')})")
 
 
 def _wait(pred, timeout_s=5.0, interval_s=0.1):
@@ -186,6 +204,7 @@ def test_celllayers_smoke(dia_client):
         # 2b. Panel state (debug.domain_state): same JSON the debug panel receives.
         st = _panel(c)
         assert st["_id"] == "celllayers" and st["empty"] is False and "noData" not in st, st
+        assert isinstance(st["simFrame"], int) and st["simFrame"] > 0 and "pending" not in st, st
         assert st["activeBase"] == "temperature", st["activeBase"]
         assert len(st["gridSelector"]) == 2 and [g["index"] for g in st["gridSelector"] if g["active"]] == [grid_a], st["gridSelector"]
         panel_layers = {l["id"]: l for l in st["layers"]}
@@ -196,6 +215,11 @@ def test_celllayers_smoke(dia_client):
         legend = st["legend"]
         assert legend["available"] and not legend["category"], legend
         assert legend["unit"] and legend["min"] < legend["max"], legend
+        # The state is a SimPU snapshot read through a FrameStream (demand-driven): it carries simFrame, advances while requested,
+        # and keeps the panel contract fields. (Kept inside this test: each extra stage entry adds panel page bindings, capped at 32.)
+        first_frame = st["simFrame"]
+        assert _wait(lambda: _panel_raw(c).get("simFrame", 0) >= first_frame + 3, timeout_s=10.0), (first_frame, _panel_raw(c))
+        assert isinstance(st["drawers"], list) and isinstance(st["stats"], dict), st
         assert "error" in c.send_command("debug.domain_state", {"id": "nope"})
         assert "error" in c.send_command("debug.domain_state", {"id": 5})
         assert "celllayers" in {d.get("_id") for d in c.send_command("debug.domain_state").values()}
@@ -953,3 +977,4 @@ def test_celllayers_query(dia_client):
     finally:
         c.abort_stage()
         c.navigate_to("Boot")
+

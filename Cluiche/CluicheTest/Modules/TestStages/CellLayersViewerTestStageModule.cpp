@@ -367,9 +367,19 @@ bool CellLayersViewerTestStageModule::BuildViewer()
     mCommandRegistered = true;
     RegisterInjectionCommands();
 
+    // The registry is read on Main by the debug panel and debug.domain_state, so it gets the snapshot adapter, never the live viewer.
+    // The adapter forwards OnCommand (dispatched on SimPU) to the viewer.
+    CellLayersStateRelayModule* relay = mStateRelayRef.Get();
+    mPanelDomain = relay != nullptr ? relay->Attach(*mDomain) : nullptr;
+    if (mPanelDomain == nullptr)
+    {
+        DIA_LOG_ERROR("CEL", "CellLayersViewerTestStage: state relay unavailable - the viewer cannot appear in the panel");
+        return false;
+    }
+
     if (auto* vd = mVisualDebuggerRef.Get())
     {
-        vd->RegisterDomain(*mDomain);
+        vd->RegisterDomain(*mPanelDomain);
         mDomainRegistered = true;
         vd->GetLayerManager().Register(&mDebugLayer, 10, Dia::Core::StringCRC("CellLayersViewerTestStage"));
         mLayerRegistered = true;
@@ -395,11 +405,17 @@ void CellLayersViewerTestStageModule::TeardownViewer()
     {
         if (mLayerRegistered)
             vd->GetLayerManager().Unregister(mDebugLayer.GetLayerName());
-        if (mDomainRegistered && mDomain)
-            vd->UnregisterDomain(*mDomain);
+        if (mDomainRegistered && mPanelDomain != nullptr)
+            vd->UnregisterDomain(*mPanelDomain);
     }
     mLayerRegistered = false;
     mDomainRegistered = false;
+    if (mPanelDomain != nullptr)
+    {
+        if (auto* relay = mStateRelayRef.Get())
+            relay->Detach();   // drops the adapter and stops publishing before the viewer is destroyed
+        mPanelDomain = nullptr;
+    }
 
     if (mCommandRegistered)
     {

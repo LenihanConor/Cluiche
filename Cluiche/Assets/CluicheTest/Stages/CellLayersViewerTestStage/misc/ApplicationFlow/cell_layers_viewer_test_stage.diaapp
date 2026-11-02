@@ -1,11 +1,30 @@
 {
     "version": 3,
+    "streams": [
+        { "id": "CellViewerState", "kind": "FrameStream", "payload_type": "ViewerStateSlot", "from": "SimPU", "to": "MainPU", "multi_writer": false },
+        { "id": "CellViewerDemand", "kind": "EventStream", "payload_type": "ViewerStateDemandEvent", "overflow": "drop-oldest", "capacity": 8, "from": "MainPU", "to": "SimPU" },
+        { "id": "CellViewerStateChannel", "kind": "ServiceStream", "payload_type": "CellViewerStateChannel", "from": "MainPU" }
+    ],
     "processing_units": [
         {
             "instance_id": "MainPU",
             "frequency_hz": 30,
             "dedicated_thread": false,
-            "modules": []
+            "modules": [
+                {
+                    "instance_id": "CellLayersStateBridgeModule",
+                    "type_id": "CellLayersStateBridgeModule",
+                    "stages": [
+                        "CellLayersViewerTestStage"
+                    ],
+                    "dependencies": [],
+                    "channels": [
+                        { "id": "CellViewerState", "role": "reads" },
+                        { "id": "CellViewerDemand", "role": "writes" },
+                        { "id": "CellViewerStateChannel", "role": "provides" }
+                    ]
+                }
+            ]
         },
         {
             "instance_id": "SimPU",
@@ -31,6 +50,19 @@
                     ]
                 },
                 {
+                    "instance_id": "CellLayersStateRelayModule",
+                    "type_id": "CellLayersStateRelayModule",
+                    "stages": [
+                        "CellLayersViewerTestStage"
+                    ],
+                    "dependencies": [],
+                    "channels": [
+                        { "id": "CellViewerState", "role": "writes" },
+                        { "id": "CellViewerDemand", "role": "reads" },
+                        { "id": "CellViewerStateChannel", "role": "consumes" }
+                    ]
+                },
+                {
                     "instance_id": "CellLayersViewerTestStageModule",
                     "type_id": "CellLayersViewerTestStageModule",
                     "stages": [
@@ -41,7 +73,8 @@
                         "Camera2DModule",
                         "InputStreamModule",
                         "CellLayersModule",
-                        "SimQueryHostModule"
+                        "SimQueryHostModule",
+                        "CellLayersStateRelayModule"
                     ],
                     "channels": [
                         {

@@ -77,6 +77,7 @@
     <ClInclude Include="Testing\ViewerCommands.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="ViewerStateSnapshot.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />
@@ -104,6 +105,7 @@
     <ClCompile Include="DebugServerTopicSink.cpp" />
     <ClCompile Include="ViewStatePublisher.cpp" />
     <ClCompile Include="MirrorQueries.cpp" />
+    <ClCompile Include="ViewerStateSnapshot.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diacelllayers.architecture.module.md">

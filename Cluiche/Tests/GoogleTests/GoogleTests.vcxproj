@@ -1073,6 +1073,7 @@
     <ClCompile Include="..\..\CluicheEditor\ApplicationFlow\Modules\EditorModelModule.cpp" />
     <ClCompile Include="..\..\CluicheEditor\ApplicationFlow\Modules\EditorActionModule.cpp" />
     <ClCompile Include="DiaCellLayers\TestViewerSimHostedCommands.cpp" />
+    <ClCompile Include="DiaCellLayers\TestViewerStateSnapshot.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
