@@ -261,7 +261,7 @@ Features within the DiaDebugServer system (create with `/spec-feature`):
 | Connection Health | Per-topic stats, subscription-gated ObservationBridge, subscribe ACK, tiered drop warnings in editor UI | @docs/specs/applications/dia/systems/diadebugserver/connection-health.md | Approved |
 | Sim-Hosted Queries | Queries and DiaAPI commands answered on SimPU with deferred replies over EventStreams; no cross-PU mutex | @docs/specs/applications/dia/systems/diadebugserver/sim-hosted-queries.md | Approved |
 | Sim-Hosted Command Help | Sim-hosted queries and commands carry description, category, owner and ValueParams in the register message; Main-side catalogue feeds --help, the palette and schema validation; description mandatory | @docs/specs/applications/dia/systems/diadebugserver/sim-hosted-command-help.md | Approved |
-| Sim-Hosted Announcement Resync | Sequence numbers + digest + resync/replay make Sim to Main name announcements self-healing when the drop-oldest SimQueryReply stream overflows | @docs/specs/applications/dia/systems/diadebugserver/sim-hosted-announcement-resync.md | Draft |
+| Sim-Hosted Announcement Resync | Sequence numbers + digest + resync/replay make Sim to Main name announcements self-healing when the drop-oldest SimQueryReply stream overflows | @docs/specs/applications/dia/systems/diadebugserver/sim-hosted-announcement-resync.md | Approved |
 
 ## AI Review Questions
 

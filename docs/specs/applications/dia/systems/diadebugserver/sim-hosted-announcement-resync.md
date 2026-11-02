@@ -6,7 +6,7 @@
 **Prerequisite:** @docs/specs/applications/dia/systems/diadebugserver/sim-hosted-queries.md (Done).
 **Composes with:** @docs/specs/applications/dia/systems/diadebugserver/sim-hosted-command-help.md (Approved, not built). Resync is built first; Command Help later adds its fields to the register message and the replay carries them automatically (replay re-sends whatever the host stored per name).
 **Origin:** DiaCellLayers Streams Migration, task 7 (`docs/specs/applications/dia/systems/diacelllayers/streams-migration.plan.md`) and the backlog row "Sim-hosted announcements can be lost silently past stream capacity (2026-11-02)". Pinned today by the disabled test `CellLayersIntegrationStreams.DISABLED_AnnouncementChurnPastStreamCapacityNeverLeavesAHostedNameUnroutedAtMain`.
-**AD-001 sign-off:** NOT yet given. Needed for the DiaDebugServer changes (`SimHostedTypes.h`, `DebugServer`, `SimQueryHost`) and the CluicheGameBaseline changes (`SimRegistrationMessage.h`, `SimQueryHostModule`, `DebugServerHostModule`). Asked at the approval gate.
+**AD-001 sign-off:** given by the user on 2026-11-02 (at spec approval) for the DiaDebugServer changes (`SimHostedTypes.h`, `DebugServer`, `SimQueryHost`) and the CluicheGameBaseline changes (`SimRegistrationMessage.h`, `SimQueryHostModule`, `DebugServerHostModule`).
 **Design chosen by the user:** 2026-11-02, "sequence numbers plus resync"; interview answers: heartbeat digest for tail loss, keep routing while out of sync, resync built before Command Help.
 
 ## Summary
@@ -116,7 +116,7 @@ namespace Cluiche::AppFlow {      // SimRegistrationMessage.h
 | System | DDS-001 | Generic system | The tracker and messages are domain-agnostic; CellLayers is only the case that found the bug |
 | System | DDS-005, DDS-010 | JSON over WebSocket / JSON for all messages | Control messages are JSON text in the existing events; the client wire is untouched |
 | Platform (CLAUDE.md) | Thread safety | PU boundaries are crossed by streams only | Detection, request and replay all use the existing `SimQueryReply` and `SimQueryRequest` streams |
-| Dia | AD-001 | Module changes need sign-off | **Pending** (see header) |
+| Dia | AD-001 | Module changes need sign-off | Given 2026-11-02 (see header) |
 
 ## Open Design Questions
 
@@ -138,4 +138,4 @@ namespace Cluiche::AppFlow {      // SimRegistrationMessage.h
 
 ## Status
 
-`Draft`
+`Approved` (2026-11-02)
