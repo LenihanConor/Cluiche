@@ -3,13 +3,26 @@ import { renderHook, act } from "@testing-library/react";
 
 let mockStatsResponse: unknown = { topics: [], editor_side: { messages_dropped: 0 } };
 let mockAckResponse: unknown = { records: [], pending: [] };
+// The hook asks the game for stats with send_command and receives the reply through a subscription,
+// so the mock delivers mockStatsResponse to the subscribed handler when that command is sent.
+let statsHandler: ((data: unknown) => void) | null = null;
+
+// Must match POLL_INTERVAL_MS in useConnectionHealth.ts.
+const POLL_MS = 10000;
 
 vi.mock("../bridge/EditorBridge", () => ({
   EditorBridge: {
-    request: vi.fn((cmd: string) => {
-      if (cmd === "get_server_stats") return Promise.resolve(mockStatsResponse);
+    request: vi.fn((cmd: string, args?: { command?: string }) => {
+      if (cmd === "game_connection.send_command" && args?.command === "get_server_stats") {
+        statsHandler?.({ success: true, result: mockStatsResponse });
+        return Promise.resolve(null);
+      }
       if (cmd === "game_connection.get_ack_records") return Promise.resolve(mockAckResponse);
       return Promise.resolve(null);
+    }),
+    subscribe: vi.fn((_topic: string, cb: (data: unknown) => void) => {
+      statsHandler = cb;
+      return () => { statsHandler = null; };
     }),
   },
 }));
@@ -20,6 +33,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   mockStatsResponse = { topics: [], editor_side: { messages_dropped: 0 } };
   mockAckResponse = { records: [], pending: [] };
+  statsHandler = null;
 });
 
 afterEach(() => {
@@ -45,7 +59,7 @@ describe("useConnectionHealth", () => {
       await vi.advanceTimersByTimeAsync(0);
     });
 
-    expect(EditorBridge.request).toHaveBeenCalledWith("get_server_stats", {});
+    expect(EditorBridge.request).toHaveBeenCalledWith("game_connection.send_command", { command: "get_server_stats" });
     expect(EditorBridge.request).toHaveBeenCalledWith("game_connection.get_ack_records", {});
   });
 
@@ -92,7 +106,7 @@ describe("useConnectionHealth", () => {
 
     // Second poll: 5 new drops (total 10, delta = 5)
     mockStatsResponse = { topics: [], editor_side: { messages_dropped: 10 } };
-    await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(POLL_MS); });
 
     expect(result.current.badge).toBe("none");
     expect(result.current.totalDropsInWindow).toBe(5);
@@ -108,7 +122,7 @@ describe("useConnectionHealth", () => {
 
     // Second poll: 15 new drops
     mockStatsResponse = { topics: [], editor_side: { messages_dropped: 15 } };
-    await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(POLL_MS); });
 
     expect(result.current.badge).toBe("yellow");
     expect(result.current.summary).toBe("Dropping messages");
@@ -124,7 +138,7 @@ describe("useConnectionHealth", () => {
 
     // Second poll: 150 new drops
     mockStatsResponse = { topics: [], editor_side: { messages_dropped: 150 } };
-    await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(POLL_MS); });
 
     expect(result.current.badge).toBe("red");
     expect(result.current.summary).toBe("Dropping messages");
@@ -156,7 +170,7 @@ describe("useConnectionHealth", () => {
 
     // Second poll: 505 → delta = 5
     mockStatsResponse = { topics: [], editor_side: { messages_dropped: 505 } };
-    await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(POLL_MS); });
 
     expect(result.current.totalDropsInWindow).toBe(5);
     expect(result.current.badge).toBe("none");
@@ -172,17 +186,17 @@ describe("useConnectionHealth", () => {
     // First poll: seed
     await act(async () => { await vi.advanceTimersByTimeAsync(0); });
 
-    // Second poll at 2s: 50 new drops → yellow
+    // Second poll: 50 new drops → yellow
     mockStatsResponse = { topics: [], editor_side: { messages_dropped: 50 } };
-    await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(POLL_MS); });
     expect(result.current.badge).toBe("yellow");
 
-    // No more drops, wait 6s total (3 more polls at 2s intervals)
+    // No more drops; two more polls (the first sample is then older than the 5s window)
     mockStatsResponse = { topics: [], editor_side: { messages_dropped: 50 } };
-    await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
-    await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(POLL_MS); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(POLL_MS); });
 
-    // The sample from t=2s should have expired from the 5s window by t=8s
+    // The sample from the second poll has expired from the 5s window by the later polls
     expect(result.current.totalDropsInWindow).toBe(0);
     expect(result.current.badge).toBe("none");
   });
@@ -200,7 +214,7 @@ describe("useConnectionHealth", () => {
     // Get some state
     await act(async () => { await vi.advanceTimersByTimeAsync(0); });
     mockStatsResponse = { topics: [], editor_side: { messages_dropped: 20 } };
-    await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(POLL_MS); });
     expect(result.current.badge).toBe("yellow");
 
     // Disconnect
@@ -275,7 +289,7 @@ describe("useConnectionHealth", () => {
 
     const { EditorBridge } = await import("../bridge/EditorBridge");
     (EditorBridge.request as ReturnType<typeof vi.fn>).mockImplementation((cmd: string) => {
-      if (cmd === "get_server_stats") return Promise.resolve({ topics: [], editor_side: { messages_dropped: 0 } });
+      if (cmd === "game_connection.send_command") return Promise.resolve(null);
       if (cmd === "game_connection.get_ack_records") return Promise.reject(new Error("not available"));
       return Promise.resolve(null);
     });
