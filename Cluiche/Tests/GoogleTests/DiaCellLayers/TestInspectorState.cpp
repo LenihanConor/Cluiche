@@ -1,5 +1,8 @@
 #include <gtest/gtest.h>
+#include <limits>
 #include <memory>
+#include <stdio.h>
+#include <string>
 #include <DiaCellLayers/CellSelection.h>
 #include <DiaCellLayers/InspectorState.h>
 #include <DiaCellLayers/LayerReader.h>
@@ -471,4 +474,280 @@ TEST_F(SelectionInspectorStateTest, DeltaFromLiveStats)
 	EXPECT_DOUBLE_EQ(4.0, d.minDelta);		// 6 - 2
 	EXPECT_DOUBLE_EQ(3.5, d.meanDelta);		// 6 - 2.5
 	EXPECT_DOUBLE_EQ(3.0, d.maxDelta);		// 6 - 3
+}
+
+// ---- Task 10a exhaustive pass (Feature 4): shown-set rules, registry changes, caps, pin edges ----
+
+TEST_F(SelectionInspectorStateTest, LayerRegisteredLaterInExpandedGroupJoinsShownSet)
+{
+	Settle();
+	ASSERT_EQ(2u, state.ShownLayerCount());
+	CountingLayerProvider pf;
+	pf.values = { 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120 };
+	AddLayer("f", &grid, pf, "G1");	// the active group is expanded, so the new layer must be shown
+	Pump();
+	EXPECT_EQ(3u, state.ShownLayerCount());
+	ASSERT_TRUE(Has("f"));
+	EXPECT_DOUBLE_EQ(25.0, state.StatsFor(StringCRC("f"))->mean);	// cells 1, 2 -> 20, 30
+	EXPECT_EQ(1u, pf.readCalls);
+	EXPECT_EQ(1u, pa.readCalls);	// the layers already computed are not re-read
+}
+
+TEST_F(SelectionInspectorStateTest, LayerRegisteredLaterInCollapsedGroupStaysHidden)
+{
+	Settle();
+	CountingLayerProvider pf;
+	pf.values = { 1, 2, 3 };
+	AddLayer("f", &grid, pf, "G3");
+	Pump();
+	EXPECT_EQ(2u, state.ShownLayerCount());
+	EXPECT_FALSE(Has("f"));
+	EXPECT_EQ(0u, pf.readCalls);
+	state.SetGroupExpanded("G3", true);	// expanding it later picks it up
+	Pump();
+	EXPECT_TRUE(Has("f"));
+}
+
+TEST_F(SelectionInspectorStateTest, LayerRegisteredOnAnotherGridNeverJoins)
+{
+	Settle();
+	CountingLayerProvider pf;
+	pf.values = { 1, 2, 3 };
+	AddLayer("f", &otherGrid, pf, "G1");
+	Pump();
+	EXPECT_EQ(2u, state.ShownLayerCount());
+	EXPECT_EQ(0u, pf.readCalls);
+}
+
+TEST_F(SelectionInspectorStateTest, UnregisteredShownLayerLeavesTheShownSet)
+{
+	Settle();
+	ASSERT_TRUE(Has("b"));
+	ASSERT_TRUE(registry.Unregister(StringCRC("b")));
+	Pump();
+	EXPECT_EQ(1u, state.ShownLayerCount());
+	EXPECT_FALSE(Has("b"));
+	EXPECT_TRUE(Has("a"));
+}
+
+TEST_F(SelectionInspectorStateTest, UnregisteredBaseLeavesNoDanglingBase)
+{
+	Settle();
+	ASSERT_TRUE(registry.Unregister(StringCRC("a")));
+	Pump();	// must not crash or read the removed layer
+	EXPECT_FALSE(Has("a"));
+	EXPECT_EQ(StringCRC("b"), state.ShownLayerAt(0));	// the group is still expanded, so b stays shown
+	EXPECT_EQ(nullptr, state.BaseHistogram());
+}
+
+TEST_F(SelectionInspectorStateTest, BaseStaysShownWhenItsGroupIsCollapsed)
+{
+	Settle();
+	state.SetGroupExpanded("G1", false);
+	Pump();
+	EXPECT_EQ(1u, state.ShownLayerCount());
+	EXPECT_EQ(StringCRC("a"), state.ShownLayerAt(0));
+	EXPECT_TRUE(Has("a"));
+	EXPECT_FALSE(Has("b"));
+}
+
+TEST_F(SelectionInspectorStateTest, BaseChangeInsideSameGroupKeepsTheExpandedSet)
+{
+	state.SetGroupExpanded("G2", true);
+	Settle();
+	state.SetActive(registry, &grid, StringCRC("b"));	// same group G1
+	Pump();
+	EXPECT_TRUE(state.IsGroupExpanded("G1"));
+	EXPECT_TRUE(state.IsGroupExpanded("G2"));
+	EXPECT_EQ(StringCRC("b"), state.ShownLayerAt(0));
+	EXPECT_EQ(4u, state.ShownLayerCount());
+}
+
+TEST_F(SelectionInspectorStateTest, BaseChangeToAnotherGroupResetsTheExpandedSet)
+{
+	state.SetGroupExpanded("G2", true);
+	Settle();
+	state.SetActive(registry, &grid, StringCRC("c"));	// group G2
+	Pump();
+	EXPECT_EQ(1u, state.ExpandedGroupCount());
+	EXPECT_TRUE(state.IsGroupExpanded("G2"));
+	EXPECT_FALSE(state.IsGroupExpanded("G1"));
+	EXPECT_EQ(StringCRC("c"), state.ShownLayerAt(0));
+	EXPECT_EQ(2u, state.ShownLayerCount());	// c, d
+	EXPECT_FALSE(Has("a"));
+}
+
+TEST_F(SelectionInspectorStateTest, ExpandedGroupCapIgnoresFurtherGroups)
+{
+	Settle();
+	char name[16];
+	for (uint32_t i = 0; i < InspectorState::kMaxGroups + 4; ++i)
+	{
+		snprintf(name, sizeof(name), "X%u", i);
+		state.SetGroupExpanded(name, true);
+	}
+	EXPECT_EQ(InspectorState::kMaxGroups, state.ExpandedGroupCount());
+	EXPECT_TRUE(state.IsGroupExpanded("G1"));
+	EXPECT_TRUE(state.IsGroupExpanded("X14"));	// G1 took slot 0, so X0..X14 fit
+	EXPECT_FALSE(state.IsGroupExpanded("X15"));
+}
+
+TEST_F(SelectionInspectorStateTest, NullOrRedundantExpandCallsDoNotMarkPending)
+{
+	Settle();
+	ASSERT_FALSE(state.IsUpdating());
+	state.SetGroupExpanded(nullptr, true);
+	state.SetGroupExpanded("G1", true);		// already expanded
+	state.SetGroupExpanded("Nope", false);	// never expanded
+	EXPECT_FALSE(state.IsUpdating());
+	EXPECT_FALSE(state.IsGroupExpanded(nullptr));
+	EXPECT_STREQ("", state.ExpandedGroupAt(99));
+}
+
+TEST_F(SelectionInspectorStateTest, ShownSetIsCappedAtMaxShownBaseFirstThenRegistrationOrder)
+{
+	CountingLayerProvider many;
+	many.values = { 1, 2, 3 };
+	char name[16];
+	for (uint32_t i = 0; i < InspectorState::kMaxShown + 8; ++i)
+	{
+		snprintf(name, sizeof(name), "m%u", i);
+		AddLayer(name, &grid, many, "G1");
+	}
+	Settle();
+	EXPECT_EQ(InspectorState::kMaxShown, state.ShownLayerCount());
+	EXPECT_EQ(StringCRC("a"), state.ShownLayerAt(0));
+	EXPECT_EQ(StringCRC("b"), state.ShownLayerAt(1));
+	EXPECT_EQ(StringCRC("m0"), state.ShownLayerAt(2));
+	EXPECT_EQ(StringCRC("m29"), state.ShownLayerAt(InspectorState::kMaxShown - 1));	// a, b + m0..m29 = 32
+	EXPECT_EQ(StringCRC::kZero, state.ShownLayerAt(InspectorState::kMaxShown));
+	EXPECT_TRUE(Has("m29"));
+	EXPECT_FALSE(Has("m30"));
+}
+
+TEST_F(SelectionInspectorStateTest, PinForANonActiveGridFailsWithNoChange)
+{
+	Settle();
+	EXPECT_FALSE(state.Pin(registry, &otherGrid, &sel));
+	EXPECT_FALSE(state.IsPinned());
+	EXPECT_FALSE(state.Pin(registry, nullptr, &sel));
+	EXPECT_FALSE(state.IsPinned());
+	EXPECT_FALSE(state.PinFreeze(registry, Reader(), nullptr, &otherGrid, &sel));
+	EXPECT_FALSE(state.IsFrozen());
+	EXPECT_EQ(0u, state.FrozenLayerCount());
+}
+
+TEST_F(SelectionInspectorStateTest, FailedPinKeepsAnExistingA)
+{
+	Settle();
+	ASSERT_TRUE(state.Pin(registry, &grid, &sel));
+	CellSelection empty;
+	empty.Reset(&grid);
+	EXPECT_FALSE(state.Pin(registry, &grid, &empty));
+	EXPECT_FALSE(state.Pin(registry, &grid, nullptr));
+	EXPECT_TRUE(state.IsPinned());
+	EXPECT_EQ(2u, state.PinnedCount());
+}
+
+TEST_F(SelectionInspectorStateTest, PinCopiesTheSetSoLaterSelectionChangesDoNotMoveA)
+{
+	Settle();
+	ASSERT_TRUE(state.Pin(registry, &grid, &sel));
+	sel.Clear();
+	sel.Set(7, true);
+	sel.Set(8, true);
+	sel.Set(9, true);
+	Settle();
+	EXPECT_EQ(2u, state.PinnedCount());
+	ASSERT_NE(nullptr, state.StatsForA(StringCRC("a")));
+	EXPECT_DOUBLE_EQ(2.5, state.StatsForA(StringCRC("a"))->mean);	// still cells 1, 2
+	EXPECT_DOUBLE_EQ(9.0, state.StatsFor(StringCRC("a"))->mean);
+}
+
+TEST_F(SelectionInspectorStateTest, WholeGridSelectionCountsEveryCell)
+{
+	for (uint32_t i = 0; i < 12; ++i) { sel.Set(i, true); }
+	Settle();
+	const LayerStats* s = state.StatsFor(StringCRC("a"));
+	ASSERT_NE(nullptr, s);
+	EXPECT_EQ(12u, s->count);
+	EXPECT_FLOAT_EQ(1.0f, s->min);
+	EXPECT_FLOAT_EQ(12.0f, s->max);
+	EXPECT_DOUBLE_EQ(6.5, s->mean);
+	ASSERT_TRUE(state.Pin(registry, &grid, &sel));
+	EXPECT_EQ(12u, state.PinnedCount());
+}
+
+TEST_F(SelectionInspectorStateTest, SingleCellSelectionHasMinEqualMeanEqualMax)
+{
+	sel.Clear();
+	sel.Set(6, true);
+	Settle();
+	const LayerStats* s = state.StatsFor(StringCRC("a"));
+	ASSERT_NE(nullptr, s);
+	EXPECT_EQ(1u, s->count);
+	EXPECT_FLOAT_EQ(7.0f, s->min);
+	EXPECT_FLOAT_EQ(7.0f, s->max);
+	EXPECT_DOUBLE_EQ(7.0, s->mean);
+}
+
+TEST_F(SelectionInspectorStateTest, AllNaNLayerReportsNoRangeOthersUnaffected)
+{
+	const float nan = std::numeric_limits<float>::quiet_NaN();
+	pa.values = std::vector<float>(12, nan);
+	pa.Bump();
+	Settle();
+	const LayerStats* s = state.StatsFor(StringCRC("a"));
+	ASSERT_NE(nullptr, s);
+	EXPECT_EQ(0u, s->count);
+	EXPECT_EQ(2u, s->nanCount);
+	EXPECT_FALSE(s->hasRange);
+	EXPECT_EQ(2u, state.StatsFor(StringCRC("b"))->count);
+}
+
+TEST_F(SelectionInspectorStateTest, FreezeCoversEveryLayerOfTheGridOnly)
+{
+	Settle();
+	ASSERT_TRUE(state.PinFreeze(registry, Reader(), nullptr, &grid, &sel));
+	EXPECT_EQ(4u, state.FrozenLayerCount());	// a, b, c, d (e is on another grid)
+	for (const char* id : { "a", "b", "c", "d" }) { EXPECT_TRUE(state.FrozenAvailable(StringCRC(id))) << id; }
+	EXPECT_FALSE(state.FrozenAvailable(StringCRC("e")));
+	EXPECT_EQ(nullptr, state.StatsForA(StringCRC("e")));
+	EXPECT_EQ(nullptr, state.StatsForA(StringCRC("missing")));
+	EXPECT_FALSE(state.FrozenAvailable(StringCRC("missing")));
+}
+
+TEST_F(SelectionInspectorStateTest, RePinAfterFreezeIsLiveAgain)
+{
+	Settle();
+	ASSERT_TRUE(state.PinFreeze(registry, Reader(), nullptr, &grid, &sel));
+	ASSERT_TRUE(state.IsFrozen());
+	ASSERT_TRUE(state.Pin(registry, &grid, &sel));
+	EXPECT_TRUE(state.IsPinned());
+	EXPECT_FALSE(state.IsFrozen());
+	EXPECT_EQ(0u, state.FrozenLayerCount());
+	EXPECT_FALSE(state.FrozenAvailable(StringCRC("a")));
+}
+
+TEST_F(SelectionInspectorStateTest, UnpinWhenNotPinnedIsHarmlessAndUnpinDropsFrozenStats)
+{
+	state.Unpin();
+	EXPECT_FALSE(state.IsPinned());
+	Settle();
+	ASSERT_TRUE(state.PinFreeze(registry, Reader(), nullptr, &grid, &sel));
+	state.Unpin();
+	EXPECT_FALSE(state.IsFrozen());
+	EXPECT_EQ(0u, state.FrozenLayerCount());
+	EXPECT_EQ(nullptr, state.StatsForA(StringCRC("a")));
+	EXPECT_EQ(0u, state.PinnedCount());
+}
+
+TEST_F(SelectionInspectorStateTest, LiveAOnlyCoversTheShownSet)
+{
+	Settle();
+	ASSERT_TRUE(state.Pin(registry, &grid, &sel));
+	Settle();
+	ASSERT_NE(nullptr, state.StatsForA(StringCRC("a")));
+	EXPECT_TRUE(state.StatsForA(StringCRC("a"))->hasData);
+	EXPECT_EQ(nullptr, state.StatsForA(StringCRC("c")));	// c is not shown, so live A has nothing for it
 }

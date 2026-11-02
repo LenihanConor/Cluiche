@@ -7,6 +7,7 @@
 #include <DiaCellLayers/Testing/SelectionTestSupport.h>
 #include <DiaValueSchema/ValueInfo.h>
 
+#include <cmath>
 #include <limits>
 #include <string.h>
 #include <vector>
@@ -511,4 +512,61 @@ TEST_F(SelectionStatsTest, HistogramSchemaLookupFailures)
 	EXPECT_FALSE(SelectionStats::ComputeHistogram(registry, reader, service, sel, StringCRC("terrain"), h));	// category layer
 	EXPECT_FALSE(SelectionStats::ComputeHistogram(registry, reader, nullptr, sel, StringCRC("temp"), h));	// no schema
 	EXPECT_FALSE(h.hasData);
+}
+
+// ---- Task 10a exhaustive pass (Feature 4) ----
+
+TEST_F(SelectionStatsTest, InfinityIsAValueNotANaN)
+{
+	temp.values[3] = std::numeric_limits<float>::infinity();
+	Select({ 0, 3 });	// 1, inf
+	LayerStats s;
+	ASSERT_TRUE(Run(s));
+	EXPECT_EQ(2u, s.count);
+	EXPECT_EQ(0u, s.nanCount);
+	EXPECT_TRUE(s.hasRange);
+	EXPECT_EQ(1.0f, s.min);
+	EXPECT_TRUE(std::isinf(s.max));
+	EXPECT_TRUE(std::isinf(s.mean));
+}
+
+TEST_F(SelectionStatsTest, WholeGridSelectionCountsEveryCell)
+{
+	for (uint32_t i = 0; i < 12; ++i) { sel.Set(i, true); }
+	LayerStats s;
+	ASSERT_TRUE(Run(s));
+	EXPECT_EQ(12u, s.count);
+	EXPECT_EQ(1.0f, s.min);
+	EXPECT_EQ(12.0f, s.max);
+	EXPECT_DOUBLE_EQ(6.5, s.mean);
+	LayerStats c;
+	ASSERT_TRUE(Run(c, "terrain"));
+	EXPECT_EQ(12u, c.count);
+	EXPECT_EQ(3u, c.categoryCounts[0]);	// terrain = 0,1,2,3,0,0,1,1,2,3,3,3
+	EXPECT_EQ(3u, c.categoryCounts[1]);
+	EXPECT_EQ(2u, c.categoryCounts[2]);
+	EXPECT_EQ(4u, c.categoryCounts[3]);
+	EXPECT_EQ(12u, c.categoryCounts[0] + c.categoryCounts[1] + c.categoryCounts[2] + c.categoryCounts[3] + c.categoryCounts[4] + c.otherCount);
+}
+
+TEST_F(SelectionStatsTest, SingleCellCategorySelection)
+{
+	Select({ 2 });	// rock
+	LayerStats s;
+	ASSERT_TRUE(Run(s, "terrain"));
+	EXPECT_EQ(1u, s.count);
+	EXPECT_EQ(1u, s.categoryCounts[2]);
+	EXPECT_EQ(0u, s.otherCount);
+}
+
+TEST_F(SelectionStatsTest, NegativeZeroMinAndMaxAreEqualToZero)
+{
+	temp.values[0] = -0.0f;
+	temp.values[1] = 0.0f;
+	Select({ 0, 1 });
+	LayerStats s;
+	ASSERT_TRUE(Run(s));
+	EXPECT_EQ(0.0f, s.min);
+	EXPECT_EQ(0.0f, s.max);
+	EXPECT_EQ(0.0, s.mean);
 }

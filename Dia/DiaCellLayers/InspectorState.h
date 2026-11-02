@@ -15,6 +15,8 @@
 //     and sets pending: IsUpdating() is true after that Tick, i.e. through the rest of that frame;
 //   - the NEXT Tick runs ONE pass (recomputes every dirty shown layer once, clears pending, returns true). If the inputs changed
 //     again meanwhile, that same pass covers them (no starvation while a selection is being dragged).
+// A registry change (a layer registered or unregistered, CellLayerRegistry::LayersVersion) is detected in Tick and rebuilds the
+// shown set, so a layer added later to the active grid's expanded group appears and a removed one disappears.
 // SetActive / SetGroupExpanded that change the shown set set pending immediately. A Tick that finds nothing dirty is not a pass.
 // A pass reads each dirty layer once through the LayerReader (at most one read per layer version). Dirty rules: selection
 // version change -> all shown layers; a layer's own version change -> that layer; newly shown layer -> that layer.
@@ -93,6 +95,11 @@ namespace Dia::CellLayers
 		const LayerStats*	StatsForA(Dia::Core::StringCRC layerId) const;	// live or frozen A; null when not pinned / not available
 		bool				FrozenAvailable(Dia::Core::StringCRC layerId) const;	// frozen A holds stats for this layer
 
+		// True while a recompute pass or a freeze is running. A layer read delegate may call back into the domain during one;
+		// the state-changing calls (SetActive, Pin, PinFreeze, Unpin, Tick) are then refused (false / no-op) so the pinned set,
+		// frozen array and entries the pass is reading are never freed or rebuilt under it.
+		bool		IsBusy() const { return mBusy; }
+
 		uint32_t	PassCount() const { return mPassCount; }
 		uint32_t	LastPassLayerCount() const { return mLastPassLayerCount; }
 		double		LastPassMs() const { return mLastPassMs; }
@@ -130,6 +137,8 @@ namespace Dia::CellLayers
 		Dia::Core::Containers::String32	mActiveGroup;
 		Dia::Core::Containers::String32	mExpanded[kMaxGroups];
 		uint32_t				mExpandedCount = 0;
+		uint32_t				mRegistryVersion = 0;	// registry LayersVersion() at the last RebuildShown
+		bool					mBusy = false;
 		bool					mShownStale = true;	// shown set must be rebuilt (active / expanded changed)
 		bool					mPending = false;
 		bool					mHasSelection = false;

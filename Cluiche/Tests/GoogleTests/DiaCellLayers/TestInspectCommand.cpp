@@ -597,4 +597,318 @@ TEST_F(SelectionInspectJsonModelTest, DoesNotDisturbInspectorStateCache)
 	EXPECT_EQ(cachedCount, state.StatsFor(StringCRC("temp"))->count);
 }
 
+TEST_F(SelectionInspectCommandTest, HistogramJsonCountsOutOfRangeValuesInTheEndBinsAndFooter)
+{
+	Rig rig;
+	rig.temp.values[0] = -5.0f;		// schema range 0..200
+	rig.temp.values[1] = 250.0f;
+	rig.temp.values[2] = 300.0f;
+	rig.temp.versionValue++;
+	SelectBox();	// idx {0,1,2,20,21,22,40,41,42}
+	rig.Settle();
+	const Json::Value h = Exec("cells.inspect", "{}")["data"]["histogram"];
+	ASSERT_TRUE(h.isObject());
+	EXPECT_EQ(1u, h["outOfRangeLow"].asUInt());
+	EXPECT_EQ(2u, h["outOfRangeHigh"].asUInt());
+	EXPECT_EQ(9u, h["count"].asUInt());
+	EXPECT_GE(h["bins"][0u].asUInt(), 1u);
+	EXPECT_GE(h["bins"][15u].asUInt(), 2u);
+	uint32_t sum = 0;
+	for (const Json::Value& b : h["bins"]) { sum += b.asUInt(); }
+	EXPECT_EQ(9u, sum);
+	Json::Value state(Json::objectValue);
+	rig.domain.GetJSONState(state);
+	EXPECT_EQ(1u, state["inspector"]["histogram"]["outOfRangeLow"].asUInt());
+	EXPECT_EQ(2u, state["inspector"]["histogram"]["outOfRangeHigh"].asUInt());
+}
+
+TEST_F(SelectionInspectCommandTest, DuplicateLayerIdsInTheListAreAnsweredPerRequestEntry)
+{
+	Rig rig;
+	SelectBox();
+	const Json::Value r = Exec("cells.inspect", "{\"layers\":[\"temp\",\"temp\"]}");
+	ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
+	ASSERT_EQ(2u, r["data"]["layers"].size());
+	EXPECT_EQ(r["data"]["layers"][0u]["mean"], r["data"]["layers"][1u]["mean"]);
+}
+
+TEST_F(SelectionInspectCommandTest, PinnedDeltaIsNegativeWhenBIsSmallerThanA)
+{
+	Rig rig;
+	Exec("cells.select.box", "{\"q0\":0,\"r0\":0,\"q1\":4,\"r1\":0}");	// idx 0..4 -> temp 0,.5,1,1.5,2 (mean 1)
+	ASSERT_TRUE(Exec("cells.select.pin", "{}")["success"].asBool());
+	Exec("cells.select.cell", "{\"q\":0,\"r\":0}");	// B = idx 0 -> temp 0
+	rig.Settle();
+	const Json::Value r = Exec("cells.inspect", "{\"layers\":[\"temp\"]}");
+	ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
+	const Json::Value& temp = r["data"]["layers"][0u];
+	EXPECT_EQ(1u, temp["count"].asUInt());
+	EXPECT_EQ(5u, temp["a"]["count"].asUInt());
+	EXPECT_EQ(-4, temp["delta"]["count"].asInt());
+	EXPECT_EQ(-1.0, temp["delta"]["mean"].asDouble());
+	EXPECT_EQ(-2.0, temp["delta"]["max"].asDouble());
+	EXPECT_EQ(0.0, temp["delta"]["min"].asDouble());
+}
+
+TEST_F(SelectionInspectCommandTest, UnpinRemovesTheABlockFromTheResult)
+{
+	Rig rig;
+	SelectBox();
+	Exec("cells.select.pin", "{}");
+	rig.Settle();
+	ASSERT_TRUE(Exec("cells.inspect", "{}")["data"].isMember("pinned"));
+	Exec("cells.select.unpin", "{}");
+	rig.Settle();
+	const Json::Value d = Exec("cells.inspect", "{}")["data"];
+	EXPECT_FALSE(d.isMember("pinned"));
+	EXPECT_FALSE(d["layers"][0u].isMember("a"));
+	EXPECT_FALSE(d["layers"][0u].isMember("delta"));
+}
+
+TEST_F(SelectionInspectCommandTest, ClearingTheSelectionKeepsAAndInspectReportsEmpty)
+{
+	Rig rig;
+	SelectBox();
+	Exec("cells.select.pin", "{}");
+	Exec("cells.select.clear", "{}");
+	rig.Settle();
+	const Json::Value r = Exec("cells.inspect", "{}");
+	ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
+	EXPECT_EQ(0u, r["data"]["selected"].asUInt());
+	EXPECT_EQ(0u, r["data"]["layers"].size());
+	EXPECT_EQ(9u, rig.domain.Inspector().PinnedCount());
+}
+
+// ---- Task 10a exhaustive pass (Feature 4): late registration, reentrancy ----
+
+TEST_F(SelectionInspectCommandTest, LayerRegisteredLaterAppearsInTheDefaultFormAndTheCard)
+{
+	Rig rig;
+	SelectBox();
+	rig.Settle();
+	ASSERT_EQ(nullptr, FindLayer(Exec("cells.inspect", "{}")["data"], "late"));
+	rig.Add(rig.late, "late", "Terrain", CellValueKind::Float);	// active group is expanded
+	rig.Settle();
+	const Json::Value r = Exec("cells.inspect", "{}");
+	ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
+	const Json::Value* late = FindLayer(r["data"], "late");
+	ASSERT_NE(nullptr, late);
+	EXPECT_EQ(9u, (*late)["count"].asUInt());
+	Json::Value state(Json::objectValue);
+	rig.domain.GetJSONState(state);
+	bool onCard = false;
+	for (const Json::Value& l : state["inspector"]["layers"]) { onCard = onCard || l["id"].asString() == "late"; }
+	EXPECT_TRUE(onCard);
+}
+
+TEST_F(SelectionInspectCommandTest, LayerRegisteredLaterInACollapsedGroupIsNotShownButIsInAll)
+{
+	Rig rig;
+	SelectBox();
+	rig.Settle();
+	rig.Add(rig.late, "late", "Other", CellValueKind::Float);
+	rig.Settle();
+	EXPECT_EQ(nullptr, FindLayer(Exec("cells.inspect", "{}")["data"], "late"));
+	EXPECT_NE(nullptr, FindLayer(Exec("cells.inspect", "{\"all\":true}")["data"], "late"));
+}
+
+namespace
+{
+	// A layer read delegate that calls back into the domain from inside an inspector pass / freeze. The viewer has no mutex
+	// now, so the inspector and the layer reader must stay consistent (and not crash) when this happens.
+	enum class ReenterWith { None, InspectAll, CardState, Unpin, PinLive, PinFreeze, Expand };
+	CellLayerViewerDomain* gInspDomain = nullptr;
+	ReenterWith gReenterWith = ReenterWith::None;
+	bool gInspArmed = false;
+	uint32_t gInspCalls = 0;
+	uint64_t gRdVersion = 1;
+	Json::Value gNestedReply;
+
+	uint64_t RdVersion() { return gRdVersion; }
+	void ReadInspectReentering(float* out, uint32_t n)
+	{
+		for (uint32_t i = 0; i < n; ++i) { out[i] = 1.0f; }
+		if (!gInspArmed) { return; }
+		gInspArmed = false;
+		++gInspCalls;
+		switch (gReenterWith)
+		{
+		case ReenterWith::InspectAll:	gNestedReply = Exec("cells.inspect", "{\"all\":true}"); break;
+		case ReenterWith::CardState:	{ Json::Value s(Json::objectValue); gInspDomain->GetJSONState(s); gNestedReply = s; } break;
+		case ReenterWith::Unpin:		gNestedReply = Exec("cells.select.unpin", "{}"); break;
+		case ReenterWith::PinLive:		gNestedReply = Exec("cells.select.pin", "{}"); break;
+		case ReenterWith::PinFreeze:	gNestedReply = Exec("cells.select.pin", "{\"freeze\":true}"); break;
+		case ReenterWith::Expand:		gNestedReply = Exec("cells.inspector.expand", "{\"group\":\"Weather\",\"expanded\":true}"); break;
+		case ReenterWith::None:			break;
+		}
+	}
+
+	struct InspectReentryTest : SelectionInspectCommandTest
+	{
+		void SetUp() override
+		{
+			SelectionInspectCommandTest::SetUp();
+			gInspDomain = nullptr; gReenterWith = ReenterWith::None; gInspArmed = false; gInspCalls = 0; gRdVersion = 1;
+			gNestedReply = Json::Value();
+		}
+		void TearDown() override { gInspDomain = nullptr; SelectionInspectCommandTest::TearDown(); }
+
+		// Registers "rd" (Terrain group, so it is in the shown set) with the reentrant delegate. Not read until the first pass.
+		static void AddReentrant(Rig& rig, ReenterWith mode)
+		{
+			CellLayerDesc d = rig.temp.MakeDesc("rd", &rig.grid.desc, CellValueKind::Float, "cells/temp");
+			d.group.Clear();
+			d.group.Append("Terrain");
+			d.read = fastdelegate::FastDelegate2<float*, uint32_t>(&ReadInspectReentering);
+			d.version = fastdelegate::FastDelegate0<uint64_t>(&RdVersion);
+			ASSERT_EQ(CellRegisterResult::Ok, rig.registry.Register(d));
+			gInspDomain = &rig.domain;
+			gReenterWith = mode;
+			gInspArmed = true;
+		}
+
+		static const Json::Value* CardLayer(const Json::Value& state, const char* id)
+		{
+			for (const Json::Value& l : state["inspector"]["layers"]) { if (l["id"].asString() == id) { return &l; } }
+			return nullptr;
+		}
+	};
+}
+
+TEST_F(InspectReentryTest, NestedInspectAllInsideAPassDoesNotCorruptTheLayerBeingRead)
+{
+	Rig rig;
+	AddReentrant(rig, ReenterWith::InspectAll);
+	SelectBox();
+	rig.Settle();
+	ASSERT_EQ(1u, gInspCalls);
+	ASSERT_TRUE(gNestedReply["success"].asBool()) << gNestedReply.toStyledString();
+	const Json::Value* nestedRain = FindLayer(gNestedReply["data"], "rain");
+	ASSERT_NE(nullptr, nestedRain);
+	EXPECT_EQ(10.0, (*nestedRain)["mean"].asDouble());
+	// rd is 1.0 everywhere; the nested read of "rain" (10.0) must not have overwritten rd's buffer
+	Json::Value state(Json::objectValue);
+	rig.domain.GetJSONState(state);
+	const Json::Value* rd = CardLayer(state, "rd");
+	ASSERT_NE(nullptr, rd);
+	EXPECT_EQ(9u, (*rd)["count"].asUInt());
+	EXPECT_EQ(1.0, (*rd)["mean"].asDouble());
+	EXPECT_EQ(1.0, (*rd)["min"].asDouble());
+	EXPECT_EQ(1.0, (*rd)["max"].asDouble());
+	const Json::Value after = Exec("cells.inspect", "{\"layers\":[\"rd\"]}");
+	EXPECT_EQ(1.0, after["data"]["layers"][0u]["mean"].asDouble());
+}
+
+TEST_F(InspectReentryTest, NestedCardStateInsideAPassCompletes)
+{
+	Rig rig;
+	AddReentrant(rig, ReenterWith::CardState);
+	Exec("cells.select.cell", "{\"q\":1,\"r\":0}");	// one cell: the card reads the single-cell table through the reader
+	rig.Settle();
+	ASSERT_EQ(1u, gInspCalls);
+	ASSERT_TRUE(gNestedReply.isMember("inspector"));
+	Json::Value state(Json::objectValue);
+	rig.domain.GetJSONState(state);
+	const Json::Value* rd = CardLayer(state, "rd");
+	ASSERT_NE(nullptr, rd);
+	EXPECT_EQ(1.0, (*rd)["mean"].asDouble());
+	bool rdRow = false;
+	for (const Json::Value& row : state["inspector"]["cell"]["rows"])
+	{
+		if (row["layer"].asString() == "rd") { rdRow = true; EXPECT_EQ(1.0, row["value"].asDouble()); }
+	}
+	EXPECT_TRUE(rdRow);
+}
+
+TEST_F(InspectReentryTest, UnpinInsideALiveAPassIsRejectedAndAIsIntact)
+{
+	Rig rig;
+	SelectBox();
+	rig.Settle();
+	AddReentrant(rig, ReenterWith::Unpin);
+	ASSERT_TRUE(Exec("cells.select.pin", "{}")["success"].asBool());
+	rig.Settle();	// the first pass reads rd for B and A; the delegate unpins
+	ASSERT_EQ(1u, gInspCalls);
+	EXPECT_FALSE(gNestedReply["success"].asBool()) << gNestedReply.toStyledString();
+	EXPECT_TRUE(rig.domain.Inspector().IsPinned());
+	EXPECT_EQ(9u, rig.domain.Inspector().PinnedCount());
+	const LayerStats* a = rig.domain.Inspector().StatsForA(StringCRC("rd"));
+	ASSERT_NE(nullptr, a);
+	EXPECT_EQ(9u, a->count);
+}
+
+TEST_F(InspectReentryTest, PinInsideALiveAPassIsRejectedAndTheOldAIsKept)
+{
+	Rig rig;
+	SelectBox();
+	rig.Settle();
+	AddReentrant(rig, ReenterWith::PinLive);
+	ASSERT_TRUE(Exec("cells.select.pin", "{}")["success"].asBool());
+	rig.Settle();
+	ASSERT_EQ(1u, gInspCalls);
+	EXPECT_FALSE(gNestedReply["success"].asBool()) << gNestedReply.toStyledString();
+	EXPECT_TRUE(rig.domain.Inspector().IsPinned());
+	EXPECT_EQ(9u, rig.domain.Inspector().PinnedCount());
+}
+
+TEST_F(InspectReentryTest, UnpinInsideAFreezeIsRejectedAndTheFreezeCompletes)
+{
+	Rig rig;
+	SelectBox();
+	rig.Settle();
+	AddReentrant(rig, ReenterWith::Unpin);	// rd is first read by the freeze itself
+	const Json::Value r = Exec("cells.select.pin", "{\"freeze\":true}");
+	ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
+	ASSERT_EQ(1u, gInspCalls);
+	EXPECT_FALSE(gNestedReply["success"].asBool()) << gNestedReply.toStyledString();
+	EXPECT_TRUE(rig.domain.Inspector().IsFrozen());
+	EXPECT_EQ(5u, rig.domain.Inspector().FrozenLayerCount());	// temp, terrain, rain, wind, rd
+	ASSERT_NE(nullptr, rig.domain.Inspector().StatsForA(StringCRC("rd")));
+	EXPECT_EQ(1.0, rig.domain.Inspector().StatsForA(StringCRC("rd"))->mean);
+}
+
+TEST_F(InspectReentryTest, PinFreezeInsideAFreezeIsRejectedAndTheOuterFreezeCompletes)
+{
+	Rig rig;
+	SelectBox();
+	rig.Settle();
+	AddReentrant(rig, ReenterWith::PinFreeze);
+	const Json::Value r = Exec("cells.select.pin", "{\"freeze\":true}");
+	ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
+	EXPECT_FALSE(gNestedReply["success"].asBool()) << gNestedReply.toStyledString();
+	EXPECT_EQ(5u, rig.domain.Inspector().FrozenLayerCount());
+	EXPECT_EQ(5u, r["data"]["layers"].asUInt());
+}
+
+TEST_F(InspectReentryTest, ExpandInsideAPassTakesEffectOnALaterPass)
+{
+	Rig rig;
+	AddReentrant(rig, ReenterWith::Expand);
+	SelectBox();
+	rig.Settle();
+	ASSERT_EQ(1u, gInspCalls);
+	EXPECT_TRUE(gNestedReply["success"].asBool()) << gNestedReply.toStyledString();
+	EXPECT_TRUE(rig.domain.Inspector().IsGroupExpanded("Weather"));
+	Json::Value state(Json::objectValue);
+	rig.domain.GetJSONState(state);
+	ASSERT_NE(nullptr, CardLayer(state, "rain"));
+	EXPECT_EQ(10.0, (*CardLayer(state, "rain"))["mean"].asDouble());
+	ASSERT_NE(nullptr, CardLayer(state, "rd"));
+	EXPECT_EQ(1.0, (*CardLayer(state, "rd"))["mean"].asDouble());
+}
+
+TEST_F(InspectReentryTest, TheDomainStillWorksAfterRejectedNestedCommands)
+{
+	Rig rig;
+	SelectBox();
+	rig.Settle();
+	AddReentrant(rig, ReenterWith::Unpin);
+	Exec("cells.select.pin", "{}");
+	rig.Settle();
+	ASSERT_TRUE(Exec("cells.select.unpin", "{}")["success"].asBool());	// no longer busy
+	EXPECT_FALSE(rig.domain.Inspector().IsPinned());
+	ASSERT_TRUE(Exec("cells.select.pin", "{\"freeze\":true}")["success"].asBool());
+	EXPECT_TRUE(rig.domain.Inspector().IsFrozen());
+}
+
 #endif // DIA_DEBUG

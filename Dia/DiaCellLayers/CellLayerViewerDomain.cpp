@@ -864,6 +864,7 @@ namespace Dia::CellLayers
 		}
 		if (!error.empty()) {}
 		else if (mActiveGrid == nullptr || selection == nullptr) { error = "no active grid"; }
+		else if (mInspector.IsBusy()) { error = "inspector busy (a layer read is running)"; }
 		else if (selection->Count() == 0) { error = "nothing selected to pin"; }
 		else
 		{
@@ -890,6 +891,10 @@ namespace Dia::CellLayers
 	Json::Value CellLayerViewerDomain::ExecuteUnpin(const Json::Value&)
 	{
 		Json::Value out(Json::objectValue);
+		if (mInspector.IsBusy())
+		{
+			return FinishSelectCommand("cells.select.unpin", "inspector busy (a layer read is running)", out);
+		}
 		if (mInspector.IsPinned())
 		{
 			mInspector.Unpin();

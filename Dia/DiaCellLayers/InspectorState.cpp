@@ -111,8 +111,19 @@ namespace Dia::CellLayers
 		delete[] mEntries;
 	}
 
+	namespace
+	{
+		struct BusyScope
+		{
+			bool& flag;
+			explicit BusyScope(bool& f) : flag(f) { flag = true; }
+			~BusyScope() { flag = false; }
+		};
+	}
+
 	void InspectorState::Unpin()
 	{
+		if (mBusy) { return; }	// a read delegate re-entered during a pass / freeze
 		delete mPinned;
 		mPinned = nullptr;
 		delete[] mFrozen;
@@ -135,6 +146,7 @@ namespace Dia::CellLayers
 	bool InspectorState::Pin(const CellLayerRegistry& registry, const Dia::Graphics::CellGridDesc* grid, const ICellSelectionView* selection)
 	{
 		(void)registry;
+		if (mBusy) { return false; }
 		if (grid == nullptr || grid != mGrid || selection == nullptr || selection->Count() == 0) { return false; }
 		PinnedSet* set = new PinnedSet(*grid, *selection);
 		if (set->Count() == 0) { delete set; return false; }	// every selected cell was outside the grid
@@ -153,6 +165,7 @@ namespace Dia::CellLayers
 	{
 		DIA_PROFILE_SCOPE("celllayers.inspector.pinfreeze", ::Dia::Observation::Profile::Category::kDiaGraphics);
 		if (!Pin(registry, grid, selection)) { return false; }
+		BusyScope busy(mBusy);
 		const uint32_t total = registry.LayerCountForGrid(grid);
 		mFrozen = new FrozenEntry[total ? total : 1u];
 		for (uint32_t i = 0; i < total; ++i)
@@ -196,6 +209,7 @@ namespace Dia::CellLayers
 
 	void InspectorState::SetActive(const CellLayerRegistry& registry, const Dia::Graphics::CellGridDesc* grid, StringCRC baseLayerId)
 	{
+		if (mBusy) { return; }
 		if (grid != mGrid) { Unpin(); }	// A belongs to one grid
 		if (grid == mGrid && baseLayerId == mBase) { return; }
 		const CellLayerDesc* base = baseLayerId != StringCRC::kZero ? registry.Find(baseLayerId) : nullptr;
@@ -249,6 +263,7 @@ namespace Dia::CellLayers
 	void InspectorState::RebuildShown(const CellLayerRegistry& registry)
 	{
 		mShownStale = false;
+		mRegistryVersion = registry.LayersVersion();
 		StringCRC ids[kMaxShown];
 		uint32_t n = 0;
 		if (mGrid != nullptr)
@@ -303,7 +318,9 @@ namespace Dia::CellLayers
 	bool InspectorState::Tick(const CellLayerRegistry& registry, LayerReader& reader,
 		const Dia::ValueSchema::ValueSchemaService* schema, const ICellSelectionView* selection)
 	{
+		if (mBusy) { return false; }	// nested Tick from a read delegate
 		CheckPinIdentity();
+		if (registry.LayersVersion() != mRegistryVersion) { mShownStale = true; }	// a layer registered / unregistered since the last rebuild
 		if (mShownStale) { RebuildShown(registry); }
 		const bool hadPending = mPending;
 
@@ -331,6 +348,7 @@ namespace Dia::CellLayers
 
 		DIA_TRACE_ZONE("celllayers.inspector.pass", ::Dia::Observation::Trace::Category::kDiaGraphics);
 		DIA_PROFILE_SCOPE("celllayers.inspector.pass", ::Dia::Observation::Profile::Category::kDiaGraphics);
+		BusyScope busy(mBusy);
 		const auto passStart = std::chrono::steady_clock::now();
 		uint32_t computed = 0;
 		for (uint32_t i = 0; i < mShownCount; ++i)

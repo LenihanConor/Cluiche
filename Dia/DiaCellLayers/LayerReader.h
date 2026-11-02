@@ -9,6 +9,8 @@
 // GetValues is never called. With a non-live source GetValues is the only value path; false means "no data in this
 // view" (hasData = false), never a fallback to live values.
 // Cache key per layer: (version(), source ViewEpoch() or 0, values-came-from-source).
+// Re-entrancy: a read delegate may call back into code that reads other layers through this reader; a slot whose buffer is
+// being filled is never handed out to the nested read (when every slot is mid-read the nested Read returns no data).
 // Returned pointers stay valid until a later Read evicts that layer's slot, or Invalidate/destruction.
 
 #include <DiaCellLayers/CellLayerRegistry.h>
@@ -54,6 +56,7 @@ namespace Dia::CellLayers
 			uint64_t								epoch = 0;
 			bool									fromSource = false;
 			bool									hasData = false;
+			bool									reading = false;	// a read delegate / source is filling the buffer (re-entrancy guard)
 			uint64_t								lastUse = 0;
 		};
 

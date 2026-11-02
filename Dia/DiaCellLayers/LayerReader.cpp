@@ -34,11 +34,12 @@ namespace Dia::CellLayers
 		for (uint32_t i = 0; i < mSlotCount; ++i)
 		{
 			Slot& s = mSlots[i];
+			if (s.reading) { continue; }	// a read delegate is filling this slot's buffer right now (it re-entered the reader)
 			if (s.used && s.id == id) { return &s; }
 			if (!s.used) { if (free == nullptr) { free = &s; } }
 			else if (oldest == nullptr || s.lastUse < oldest->lastUse) { oldest = &s; }
 		}
-		return free != nullptr ? free : oldest;	// least recently used when full
+		return free != nullptr ? free : oldest;	// least recently used when full; null when every slot is mid-read
 	}
 
 	LayerValues LayerReader::Read(StringCRC layerId)
@@ -58,6 +59,7 @@ namespace Dia::CellLayers
 		const uint32_t count = static_cast<uint32_t>(layer->grid->width) * layer->grid->height;
 
 		Slot* slot = Acquire(layerId);
+		if (slot == nullptr) { return out; }	// nested reads filled every slot: report no data rather than touch a buffer being written
 		slot->lastUse = ++mTick;
 		out.count = count;
 		out.version = version;
@@ -78,8 +80,10 @@ namespace Dia::CellLayers
 			slot->capacity = count;
 		}
 		bool hasData = true;
+		slot->reading = true;	// a delegate that re-enters the reader must get a different slot, not this buffer
 		if (fromSource) { hasData = source->GetValues(*layer, slot->buffer, count); }
 		else { layer->read(slot->buffer, count); }
+		slot->reading = false;
 		++mReads;
 
 		slot->used = true;

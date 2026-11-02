@@ -218,3 +218,55 @@ TEST_F(LayerReaderTest, InvalidateForcesReread)
 	reader.Read(StringCRC("a"));
 	EXPECT_EQ(2u, a.readCalls);
 }
+
+// ---- Task 10a (Feature 4 pass): a read delegate that re-enters the reader ----
+
+namespace
+{
+	LayerReader* gReentrantReader = nullptr;
+	LayerValues gNestedValues;
+	float gNestedCopy[4] = {};
+	void ReadThenReenter(float* out, uint32_t n)
+	{
+		for (uint32_t i = 0; i < n; ++i) { out[i] = 7.0f; }
+		gNestedValues = gReentrantReader->Read(StringCRC("b"));	// first read of another layer while this buffer is being filled
+		for (uint32_t i = 0; i < 4 && gNestedValues.values != nullptr; ++i) { gNestedCopy[i] = gNestedValues.values[i]; }
+	}
+}
+
+TEST_F(LayerReaderTest, ReentrantReadOfAnotherLayerDoesNotOverwriteTheOuterBuffer)
+{
+	CellLayerDesc outer = MakeCountingLayer("a", &grid, a);
+	outer.read = fastdelegate::FastDelegate2<float*, uint32_t>(&ReadThenReenter);
+	registry.Register(outer);
+	registry.Register(MakeCountingLayer("b", &grid, b));
+	LayerReader reader(registry);
+	gReentrantReader = &reader;
+	const LayerValues v = reader.Read(StringCRC("a"));
+	gReentrantReader = nullptr;
+	ASSERT_TRUE(v.hasData);
+	for (uint32_t i = 0; i < 4; ++i) { EXPECT_EQ(7.0f, v.values[i]) << i; }
+	ASSERT_TRUE(gNestedValues.hasData);
+	EXPECT_EQ(20.0f, gNestedCopy[1]);
+	const LayerValues b2 = reader.Read(StringCRC("b"));	// the nested layer is cached and intact
+	EXPECT_EQ(40.0f, b2.values[3]);
+	EXPECT_EQ(1u, b.readCalls);
+}
+
+TEST_F(LayerReaderTest, ReentrantReadWithASingleSlotReturnsNoDataInsteadOfTouchingTheBuffer)
+{
+	CellLayerDesc outer = MakeCountingLayer("a", &grid, a);
+	outer.read = fastdelegate::FastDelegate2<float*, uint32_t>(&ReadThenReenter);
+	registry.Register(outer);
+	registry.Register(MakeCountingLayer("b", &grid, b));
+	LayerReader reader(registry, 1);
+	gReentrantReader = &reader;
+	gNestedValues = LayerValues();
+	gNestedValues.hasData = true;
+	const LayerValues v = reader.Read(StringCRC("a"));
+	gReentrantReader = nullptr;
+	ASSERT_TRUE(v.hasData);
+	for (uint32_t i = 0; i < 4; ++i) { EXPECT_EQ(7.0f, v.values[i]) << i; }
+	EXPECT_FALSE(gNestedValues.hasData);
+	EXPECT_EQ(nullptr, gNestedValues.values);
+}
