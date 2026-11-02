@@ -107,4 +107,4 @@ Exact types are fixed in Task 1 after measuring the real payload of the 14 migra
 
 ## Status
 
-`Approved` (2026-11-02)
+`Approved` (2026-11-02). Plan: @docs/specs/applications/dia/systems/diadebugserver/domain-state-snapshots.plan.md
