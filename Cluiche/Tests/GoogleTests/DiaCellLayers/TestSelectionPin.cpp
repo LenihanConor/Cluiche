@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <DiaCellLayers/CellLayerViewerDomain.h>
+#include <DiaCellLayers/Testing/ViewerCommands.h>
 #include <DiaCellLayers/Testing/CellLayerTestSupport.h>
 #include <DiaCellLayers/Testing/FakeDebugDraw.h>
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
@@ -33,6 +34,7 @@ namespace
 		CellLayerRegistry registry;
 		LayerUploader uploader;
 		CellLayerViewerDomain domain;
+		ViewerCommands commands{ domain };
 
 		static const Dia::ValueSchema::ValueSchemaService* Build(UploaderSchemaFixture& f)
 		{
@@ -62,7 +64,6 @@ namespace
 			temp.values = std::vector<float>(static_cast<size_t>(w) * h, 1.0f);
 			registry.Register(terrain.MakeDesc("terrain", &grid.desc, CellValueKind::Category, "cells/terrain"));
 			registry.Register(temp.MakeDesc("temp", &grid.desc, CellValueKind::Float, "cells/temp"));
-			domain.RegisterCommands();
 			domain.Update(draw);
 		}
 
@@ -79,7 +80,7 @@ namespace
 		return v;
 	}
 
-	Json::Value Exec(const char* cmd, const char* params) { return Dia::API::ExecuteCommandJson(StringCRC(cmd), Parse(params)); }
+	Json::Value Exec(const char* cmd, const char* params) { return ViewerCommands::Exec(cmd, Parse(params)); }
 
 	struct SelectionPinTest : ::testing::Test
 	{
@@ -165,7 +166,7 @@ TEST_F(SelectionPinTest, PinWithNoActiveGridIsAnError)
 	LayerUploader uploader(cf, nullptr);
 	CellLayerViewerDomain domain(registry, uploader, nullptr);
 	FakeDebugDraw draw;
-	domain.RegisterCommands();
+	ViewerCommands commands(domain);
 	domain.Update(draw);
 	const Json::Value r = Exec("cells.select.pin", "{}");
 	EXPECT_FALSE(r["success"].asBool());
@@ -212,7 +213,7 @@ TEST_F(SelectionPinTest, PinUnpinAndFreezeLogOnCelAtInfo)
 TEST_F(SelectionPinTest, CommandsUnregisterWithDomain)
 {
 	Rig rig(20, 20);
-	rig.domain.UnregisterCommands();
+	rig.commands.Unregister();
 	EXPECT_FALSE(Exec("cells.select.pin", "{}")["success"].asBool());
 	EXPECT_FALSE(Exec("cells.select.unpin", "{}")["success"].asBool());
 }

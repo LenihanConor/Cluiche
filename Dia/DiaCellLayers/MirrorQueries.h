@@ -109,13 +109,16 @@ namespace Dia::CellLayers
 		Dia::Observation::Metric::Counter*	mMetricBytes = nullptr;
 	};
 
-	// Seam to whatever hosts the queries on SimPU (the host app supplies one forwarding to SimQueryHostModule).
+	// Seam to whatever hosts handlers on SimPU (the host app supplies one forwarding to SimQueryHostModule). Read-only handlers
+	// (the mirror queries) use Register; handlers that change state (the viewer commands, CellLayerViewerDomain::RegisterCommands)
+	// use RegisterCommand. A name registers once: a duplicate is rejected and the first handler stays (SimQueryHost::Register).
 	using MirrorQueryHandler = std::function<Json::Value(const Json::Value& args)>;
 	class IMirrorQueryRegistrar
 	{
 	public:
 		virtual ~IMirrorQueryRegistrar() = default;
-		virtual bool Register(const char* name, MirrorQueryHandler handler) = 0;	// false if rejected (duplicate / full)
+		virtual bool Register(const char* name, MirrorQueryHandler handler) = 0;	// query; false if rejected (duplicate / full)
+		virtual bool RegisterCommand(const char* name, MirrorQueryHandler handler) = 0;	// command; false if rejected
 		virtual void Unregister(const char* name) = 0;
 	};
 

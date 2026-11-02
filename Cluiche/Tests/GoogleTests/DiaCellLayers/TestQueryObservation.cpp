@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <DiaCellLayers/CellLayerViewerDomain.h>
+#include <DiaCellLayers/Testing/ViewerCommands.h>
 #include <DiaCellLayers/Testing/CellLayerTestSupport.h>
 #include <DiaCellLayers/Testing/FakeDebugDraw.h>
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
@@ -36,6 +37,7 @@ namespace
 		CellLayerRegistry registry;
 		LayerUploader uploader;
 		CellLayerViewerDomain domain;
+		ViewerCommands commands{ domain };
 
 		static const Dia::ValueSchema::ValueSchemaService* Build(UploaderSchemaFixture& f)
 		{
@@ -65,7 +67,6 @@ namespace
 			temp.values = std::vector<float>(static_cast<size_t>(w) * h, 1.0f);
 			registry.Register(terrain.MakeDesc("terrain", &grid.desc, CellValueKind::Category, "cells/terrain"));
 			registry.Register(temp.MakeDesc("temp", &grid.desc, CellValueKind::Float, "cells/temp"));
-			domain.RegisterCommands();
 			domain.Update(draw);
 		}
 
@@ -84,7 +85,7 @@ namespace
 		return p;
 	}
 
-	Json::Value Exec(const char* cmd, const Json::Value& params) { return Dia::API::ExecuteCommandJson(StringCRC(cmd), params); }
+	Json::Value Exec(const char* cmd, const Json::Value& params) { return ViewerCommands::Exec(cmd, params); }
 
 	double CounterValue(const char* name)
 	{

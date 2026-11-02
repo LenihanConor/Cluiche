@@ -159,6 +159,7 @@ private:
 
     // Editor mirror (Feature 5): topic cells.view.state + four mirror queries, driven from the viewer's Update on SimPU.
     // Teardown order: queries unregistered, then queries/publisher/sink/clock destroyed, before the viewer.
+    bool  BuildViewerCommands();
     bool  BuildMirror(const Dia::ValueSchema::ValueSchemaService* schema);
     void  TeardownMirror();
     class SteadyMonotonicClock : public Dia::CellLayers::IMonotonicClock
@@ -180,12 +181,13 @@ private:
     public:
         explicit MirrorRegistrar(Cluiche::AppFlow::SimQueryHostModule& host) : mHost(host) {}
         bool Register(const char* name, Dia::CellLayers::MirrorQueryHandler handler) override { return mHost.RegisterQuery(name, std::move(handler)); }
+        bool RegisterCommand(const char* name, Dia::CellLayers::MirrorQueryHandler handler) override { return mHost.RegisterCommand(name, std::move(handler)); }
         void Unregister(const char* name) override { mHost.UnregisterQuery(name); }
     private:
         Cluiche::AppFlow::SimQueryHostModule& mHost;
     };
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::SimQueryHostModule> mSimQueryHostRef{this};
-    Dia::Core::UniquePtr<MirrorRegistrar> mMirrorRegistrar;  // non-null while the queries are registered
+    Dia::Core::UniquePtr<MirrorRegistrar> mMirrorRegistrar;  // non-null while the viewer commands / queries are registered
     bool  mLayerRegistered = false;
     bool  mLayersRegistered = false;
     const Dia::Graphics::CellGridDesc* mFittedGrid = nullptr;

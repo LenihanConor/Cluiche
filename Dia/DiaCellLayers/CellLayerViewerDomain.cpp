@@ -2,6 +2,7 @@
 #include <DiaCellLayers/CellLayerViewerDomain.h>
 
 #include <DiaCellLayers/InspectorModel.h>
+#include <DiaCellLayers/MirrorQueries.h>
 #include <DiaCellLayers/QueryEvaluator.h>
 #include <DiaCellLayers/QueryParser.h>
 #include <DiaCellLayers/QueryResolver.h>
@@ -11,7 +12,6 @@
 #include <string>
 #include <vector>
 
-#include <DiaAPI/DiaAPI.h>
 #include <DiaObservation/Health/HealthRegistry.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
@@ -102,7 +102,6 @@ namespace Dia::CellLayers
 
 	CellLayerViewerDomain::~CellLayerViewerDomain()
 	{
-		UnregisterCommands();
 		Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealth);
 		delete mResolver;
 		delete mQuery;
@@ -706,110 +705,7 @@ namespace Dia::CellLayers
 		out["overlays"] = overlays;
 	}
 
-	// ---- DiaAPI ----
-	void CellLayerViewerDomain::RegisterCommands()
-	{
-		if (mCommandsRegistered) { return; }
-		mCommandsRegistered = true;
-
-		Dia::API::CommandInfoJson list;
-		list.name = StringCRC("cells.layer.list");
-		list.description = "List cell layers and overlays grouped by grid; reports activeBase, activeGridIndex and per-layer selected";
-		list.category = StringCRC("cells");
-		list.owner = "DiaCellLayers";
-		list.noArgs = true;
-		list.callback = [this](const Json::Value&) -> Json::Value
-		{
-			Json::Value out(Json::objectValue);
-			ListLayers(out);
-			return out;
-		};
-		Dia::API::RegisterCommandJson(list);
-
-		Dia::API::RegisterCommand({
-			StringCRC("cells.layer.base"),
-			"Make a cell layer the active base (changes the active grid if needed)",
-			StringCRC("cells"), "DiaCellLayers", "1.0.0",
-			"cells.layer.base temperature",
-			[this](const Dia::API::CommandArgs& args) -> int
-			{
-				if (args.positionalArgs.Size() < 1) { return 2; }
-				return SetBase(StringCRC(args.positionalArgs[0])) ? 0 : 1;
-			}
-		});
-
-		RegisterJsonCommands();
-		RegisterSelectionCommands();
-
-		Dia::API::RegisterCommand({
-			StringCRC("cells.overlay.toggle"),
-			"Toggle a cell overlay on or off",
-			StringCRC("cells"), "DiaCellLayers", "1.0.0",
-			"cells.overlay.toggle rivers",
-			[this](const Dia::API::CommandArgs& args) -> int
-			{
-				if (args.positionalArgs.Size() < 1) { return 2; }
-				return ToggleOverlay(StringCRC(args.positionalArgs[0])) ? 0 : 1;
-			}
-		});
-	}
-
-	void CellLayerViewerDomain::RegisterJsonCommands()
-	{
-		// JSON forms for the E2E/DebugServer channel (the CLI forms take positional args, which JSON params never fill).
-		// Convention: a distinct "<name>_by_id" JSON name per CLI command (same-name dual registration logs a warning).
-		// Failure = {"error": "..."} (the framework wraps it as success:false); nothing changes on failure.
-		Dia::API::CommandInfoJson base;
-		base.name = StringCRC("cells.layer.base_by_id");
-		base.description = "JSON form of cells.layer.base: params {\"id\": \"<layer id>\"}; returns {id, grid_index}";
-		base.category = StringCRC("cells");
-		base.owner = "DiaCellLayers";
-		base.callback = [this](const Json::Value& params) -> Json::Value
-		{
-			Json::Value out(Json::objectValue);
-			if (!params.isObject() || !params["id"].isString() || params["id"].asString().empty())
-			{
-				out["error"] = "missing or non-string param 'id'";
-				return out;
-			}
-			const std::string id = params["id"].asString();
-			if (!SetBase(StringCRC(id.c_str())))
-			{
-				out["error"] = std::string("unknown layer id '") + id + "'";
-				return out;
-			}
-			out["id"] = id;
-			out["grid_index"] = GridIndexOf(ActiveGrid());
-			return out;
-		};
-		Dia::API::RegisterCommandJson(base);
-
-		Dia::API::CommandInfoJson toggle;
-		toggle.name = StringCRC("cells.overlay.toggle_by_id");
-		toggle.description = "JSON form of cells.overlay.toggle: params {\"id\": \"<overlay id>\"}; returns {id, enabled}";
-		toggle.category = StringCRC("cells");
-		toggle.owner = "DiaCellLayers";
-		toggle.callback = [this](const Json::Value& params) -> Json::Value
-		{
-			Json::Value out(Json::objectValue);
-			if (!params.isObject() || !params["id"].isString() || params["id"].asString().empty())
-			{
-				out["error"] = "missing or non-string param 'id'";
-				return out;
-			}
-			const std::string id = params["id"].asString();
-			if (!ToggleOverlay(StringCRC(id.c_str())))
-			{
-				out["error"] = std::string("unknown overlay id '") + id + "'";
-				return out;
-			}
-			out["id"] = id;
-			out["enabled"] = IsOverlayEnabled(StringCRC(id.c_str()));
-			return out;
-		};
-		Dia::API::RegisterCommandJson(toggle);
-	}
-
+	// ---- Sim-hosted commands ----
 	namespace
 	{
 		const char* const kSelectCommands[] = {
@@ -842,93 +738,75 @@ namespace Dia::CellLayers
 		}
 	}
 
-	void CellLayerViewerDomain::RegisterSelectionCommands()
+	// Every viewer command is registered through the registrar (sim-hosted: handlers run on SimPU beside the viewer), never with
+	// Dia::API. Names, params and results are the former DiaAPI JSON commands'. All are commands, not queries: even cells.query.check
+	// and cells.inspect record state for the card. cells.layer.list is NOT registered here: the mirror query of that name
+	// (MirrorQueries::LayerList) returns this domain's ListLayers data plus the mirror fields.
+	//
+	// Params / results (the help text the DiaAPI infos used to carry):
+	//   cells.select.cell/.toggle {q,r}; .box {q0,r0,q1,r1}; .poly {points:[[x,y]..]} (>= 3, WORLD coords); .category {layer,value};
+	//   .cells {cells:[[q,r]..]} (cap 2048; returns requested, accepted, overCap); .clear {}  -> {ok,count}
+	//   cells.select.query / cells.query.check {expr} -> {ok,count} | {error:{message,column,length,suggestion?}}
+	//   cells.select.tool {tool:"select"|"pan"} -> {ok,tool}; .group {layer} -> {ok,group}; .pin {freeze?} -> {ok,count,frozen,layers?}; .unpin {} -> {ok}
+	//   cells.inspect {} | {group} | {layers:[..]} | {layerId} | {all:true} -> stats JSON; cells.inspector.expand {group,expanded} -> {ok,group,expanded}
+	//   cells.layer.base_by_id {id} -> {id,grid_index}; cells.overlay.toggle_by_id {id} -> {id,enabled}
+	bool CellLayerViewerDomain::RegisterCommands(IMirrorQueryRegistrar& registrar)
 	{
-		struct Def { SelectOp op; const char* description; };
-		const Def defs[] = {
-			{ SelectOp::Cell, "Replace the selection with one cell: params {\"q\": int, \"r\": int}; returns {ok, count}" },
-			{ SelectOp::Toggle, "Toggle one cell in the selection: params {\"q\": int, \"r\": int}; returns {ok, count}" },
-			{ SelectOp::Box, "Replace the selection with an inclusive cell rectangle (any corner order): params {\"q0\",\"r0\",\"q1\",\"r1\": int}; returns {ok, count}" },
-			{ SelectOp::Poly, "Replace the selection with the cells whose centres lie in a polygon: params {\"points\": [[x, y], ...]} (>= 3 points). Points are WORLD coordinates in the cell-centre space (flat-top odd-q, y down), NOT cell coordinates; returns {ok, count}" },
-			{ SelectOp::Category, "Replace the selection with every cell of a category layer holding a value: params {\"layer\": \"<layer id>\", \"value\": \"<enum id>\" or number}; returns {ok, count}" },
-			{ SelectOp::Cells, "Replace the selection with an explicit cell list: params {\"cells\": [[q, r], ...]} (cap 2048); returns {ok, count, requested, accepted: [[q, r], ...], overCap (only when over the cap)}" },
-			{ SelectOp::Clear, "Clear the selection: params {}; returns {ok, count}" },
-		};
+		if (mCommandsRegistered) { return true; }
+
+		struct Def { const char* name; MirrorQueryHandler handler; };
+		std::vector<Def> defs;
+
+		defs.push_back({ "cells.layer.base_by_id", [this](const Json::Value& params) -> Json::Value
+		{
+			Json::Value out(Json::objectValue);
+			if (!params.isObject() || !params["id"].isString() || params["id"].asString().empty()) { return SelectError("missing or non-string param 'id'"); }
+			const std::string id = params["id"].asString();
+			if (!SetBase(StringCRC(id.c_str()))) { return SelectError(std::string("unknown layer id '") + id + "'"); }
+			out["id"] = id;
+			out["grid_index"] = GridIndexOf(ActiveGrid());
+			return out;
+		} });
+		defs.push_back({ "cells.overlay.toggle_by_id", [this](const Json::Value& params) -> Json::Value
+		{
+			Json::Value out(Json::objectValue);
+			if (!params.isObject() || !params["id"].isString() || params["id"].asString().empty()) { return SelectError("missing or non-string param 'id'"); }
+			const std::string id = params["id"].asString();
+			if (!ToggleOverlay(StringCRC(id.c_str()))) { return SelectError(std::string("unknown overlay id '") + id + "'"); }
+			out["id"] = id;
+			out["enabled"] = IsOverlayEnabled(StringCRC(id.c_str()));
+			return out;
+		} });
+
+		const SelectOp ops[] = { SelectOp::Cell, SelectOp::Toggle, SelectOp::Box, SelectOp::Poly, SelectOp::Category, SelectOp::Cells, SelectOp::Clear };
 		for (uint32_t i = 0; i < 7; ++i)
 		{
-			Dia::API::CommandInfoJson info;
-			info.name = StringCRC(kSelectCommands[i]);
-			info.description = defs[i].description;
-			info.category = StringCRC("cells");
-			info.owner = "DiaCellLayers";
-			const SelectOp op = defs[i].op;
+			const SelectOp op = ops[i];
 			const char* const name = kSelectCommands[i];
-			info.callback = [this, op, name](const Json::Value& params) -> Json::Value { return ExecuteSelect(op, name, params); };
-			Dia::API::RegisterCommandJson(info);
+			defs.push_back({ name, [this, op, name](const Json::Value& params) -> Json::Value { return ExecuteSelect(op, name, params); } });
 		}
-
 		for (uint32_t i = 0; i < 2; ++i)
 		{
 			const bool apply = (i == 0);
-			Dia::API::CommandInfoJson q;
-			q.name = StringCRC(kQueryCommands[i]);
-			q.description = apply
-				? "Replace the selection with the cells matching a query: params {\"expr\": \"<query>\"}, e.g. terrain == water and temp > 3; returns {ok, count} or an error result {error:{message, column, length, suggestion?}} (selection unchanged on error)"
-				: "Count the cells matching a query without touching the selection (read-only): params {\"expr\": \"<query>\"}; returns {ok, count} or an error result {error:{message, column, length, suggestion?}}";
-			q.category = StringCRC("cells");
-			q.owner = "DiaCellLayers";
 			const char* const name = kQueryCommands[i];
-			q.callback = [this, apply, name](const Json::Value& params) -> Json::Value { return ExecuteQueryRecorded(apply, name, params); };
-			Dia::API::RegisterCommandJson(q);
+			defs.push_back({ name, [this, apply, name](const Json::Value& params) -> Json::Value { return ExecuteQueryRecorded(apply, name, params); } });
 		}
+		defs.push_back({ kSelectPanelCommands[0], [this](const Json::Value& params) -> Json::Value { return ExecuteSetTool(params); } });
+		defs.push_back({ kSelectPanelCommands[1], [this](const Json::Value& params) -> Json::Value { return ExecuteSetGroup(params); } });
+		defs.push_back({ kSelectPanelCommands[2], [this](const Json::Value& params) -> Json::Value { return ExecutePin(params); } });
+		defs.push_back({ kSelectPanelCommands[3], [this](const Json::Value& params) -> Json::Value { return ExecuteUnpin(params); } });
+		defs.push_back({ kSelectPanelCommands[4], [this](const Json::Value& params) -> Json::Value { return ExecuteInspect(params); } });
+		defs.push_back({ kSelectPanelCommands[5], [this](const Json::Value& params) -> Json::Value { return ExecuteExpand(params); } });
 
-		Dia::API::CommandInfoJson tool;
-		tool.name = StringCRC(kSelectPanelCommands[0]);
-		tool.description = "Set the viewer mouse tool: params {\"tool\": \"select\"|\"pan\"}; returns {ok, tool}";
-		tool.category = StringCRC("cells");
-		tool.owner = "DiaCellLayers";
-		tool.callback = [this](const Json::Value& params) -> Json::Value { return ExecuteSetTool(params); };
-		Dia::API::RegisterCommandJson(tool);
-
-		Dia::API::CommandInfoJson group;
-		group.name = StringCRC(kSelectPanelCommands[1]);
-		group.description = "Set the selection group (the category layer ctrl-click selects by): params {\"layer\": \"<category layer id of the active grid>\"}; returns {ok, group}";
-		group.category = StringCRC("cells");
-		group.owner = "DiaCellLayers";
-		group.callback = [this](const Json::Value& params) -> Json::Value { return ExecuteSetGroup(params); };
-		Dia::API::RegisterCommandJson(group);
-
-		Dia::API::CommandInfoJson pin;
-		pin.name = StringCRC(kSelectPanelCommands[2]);
-		pin.description = "Pin the current selection as A for compare: params {\"freeze\": bool (optional, default false)}. freeze also stores A's stats for every layer of the grid once; returns {ok, count, frozen, layers (when frozen)}. Error when nothing is selected";
-		pin.category = StringCRC("cells");
-		pin.owner = "DiaCellLayers";
-		pin.callback = [this](const Json::Value& params) -> Json::Value { return ExecutePin(params); };
-		Dia::API::RegisterCommandJson(pin);
-
-		Dia::API::CommandInfoJson unpin;
-		unpin.name = StringCRC(kSelectPanelCommands[3]);
-		unpin.description = "Clear the pinned selection A: params {}; returns {ok}";
-		unpin.category = StringCRC("cells");
-		unpin.owner = "DiaCellLayers";
-		unpin.callback = [this](const Json::Value& params) -> Json::Value { return ExecuteUnpin(params); };
-		Dia::API::RegisterCommandJson(unpin);
-
-		Dia::API::CommandInfoJson inspect;
-		inspect.name = StringCRC(kSelectPanelCommands[4]);
-		inspect.description = "Selection Inspector stats of the active grid's selection (read-only): params {} (shown layers), {\"group\": \"<group>\"}, {\"layers\": [\"<layer id>\", ...]} (or {\"layerId\": \"<id>\"}) or {\"all\": true}; at most one form. Returns {ok, selected, grid, updating, base, histogram, layers[...], pinned, cell}; see InspectorModel.h";
-		inspect.category = StringCRC("cells");
-		inspect.owner = "DiaCellLayers";
-		inspect.callback = [this](const Json::Value& params) -> Json::Value { return ExecuteInspect(params); };
-		Dia::API::RegisterCommandJson(inspect);
-
-		Dia::API::CommandInfoJson expand;
-		expand.name = StringCRC(kSelectPanelCommands[5]);
-		expand.description = "Expand or collapse a layer group of the Selection Inspector card: params {\"group\": \"<group name of the active grid>\", \"expanded\": bool}; returns {ok, group, expanded}. An expanded group's layers get aggregates";
-		expand.category = StringCRC("cells");
-		expand.owner = "DiaCellLayers";
-		expand.callback = [this](const Json::Value& params) -> Json::Value { return ExecuteExpand(params); };
-		Dia::API::RegisterCommandJson(expand);
+		for (size_t i = 0; i < defs.size(); ++i)
+		{
+			if (registrar.RegisterCommand(defs[i].name, defs[i].handler)) { continue; }
+			DIA_LOG_ERROR("CEL", "viewer commands: registering %s was rejected, rolling back", defs[i].name);
+			for (size_t k = 0; k < i; ++k) { registrar.Unregister(defs[k].name); }	// only the ones this call registered
+			return false;
+		}
+		mCommandsRegistered = true;
+		return true;
 	}
 
 	Json::Value CellLayerViewerDomain::FinishSelectCommand(const char* name, const char* error, Json::Value out)
@@ -1497,18 +1375,15 @@ namespace Dia::CellLayers
 		mInput.Process(frame, mPointerView, mActiveGrid, sink, values.hasData ? values.values : nullptr, values.hasData ? values.count : 0, group);
 	}
 
-	void CellLayerViewerDomain::UnregisterCommands()
+	void CellLayerViewerDomain::UnregisterCommands(IMirrorQueryRegistrar& registrar)
 	{
 		if (!mCommandsRegistered) { return; }
 		mCommandsRegistered = false;
-		for (const char* n : kSelectCommands) { Dia::API::UnregisterCommandJson(StringCRC(n)); }
-		for (const char* n : kSelectPanelCommands) { Dia::API::UnregisterCommandJson(StringCRC(n)); }
-		for (const char* n : kQueryCommands) { Dia::API::UnregisterCommandJson(StringCRC(n)); }
-		Dia::API::UnregisterCommandJson(StringCRC("cells.layer.list"));
-		Dia::API::UnregisterCommandJson(StringCRC("cells.layer.base_by_id"));
-		Dia::API::UnregisterCommandJson(StringCRC("cells.overlay.toggle_by_id"));
-		Dia::API::UnregisterCommand(StringCRC("cells.layer.base"));
-		Dia::API::UnregisterCommand(StringCRC("cells.overlay.toggle"));
+		for (const char* n : kSelectCommands) { registrar.Unregister(n); }
+		for (const char* n : kSelectPanelCommands) { registrar.Unregister(n); }
+		for (const char* n : kQueryCommands) { registrar.Unregister(n); }
+		registrar.Unregister("cells.layer.base_by_id");
+		registrar.Unregister("cells.overlay.toggle_by_id");
 	}
 }
 #endif // DIA_DEBUG

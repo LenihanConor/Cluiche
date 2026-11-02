@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <DiaCellLayers/CellLayerViewerDomain.h>
+#include <DiaCellLayers/Testing/ViewerCommands.h>
 #include <DiaCellLayers/Testing/CellLayerTestSupport.h>
 #include <DiaCellLayers/Testing/FakeDebugDraw.h>
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
@@ -29,6 +30,7 @@ namespace
 		CellLayerRegistry registry;
 		LayerUploader uploader;
 		CellLayerViewerDomain domain;
+		ViewerCommands commands{ domain };
 
 		static void AddEnum(UploaderSchemaFixture& f, const char* name, const char* label)
 		{
@@ -67,7 +69,6 @@ namespace
 			registry.Register(terrain.MakeDesc("terrain", &grid.desc, CellValueKind::Category, "cells/terrain"));
 			registry.Register(temp.MakeDesc("temp", &grid.desc, CellValueKind::Float, "cells/temp"));
 			registry.Register(zone.MakeDesc("zone", &grid.desc, CellValueKind::Category, "cells/zone"));
-			domain.RegisterCommands();
 			domain.Update(draw);
 		}
 
@@ -89,7 +90,7 @@ namespace
 		return v;
 	}
 
-	Json::Value Exec(const char* cmd, const char* params) { return Dia::API::ExecuteCommandJson(StringCRC(cmd), Parse(params)); }
+	Json::Value Exec(const char* cmd, const char* params) { return ViewerCommands::Exec(cmd, Parse(params)); }
 
 	struct SelectionPanelStateTest : ::testing::Test
 	{

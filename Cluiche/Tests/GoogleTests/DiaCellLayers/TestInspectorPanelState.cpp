@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <DiaCellLayers/CellLayerViewerDomain.h>
+#include <DiaCellLayers/Testing/ViewerCommands.h>
 #include <DiaCellLayers/Testing/CellDetailTestSupport.h>
 #include <DiaCellLayers/Testing/CellLayerTestSupport.h>
 #include <DiaCellLayers/Testing/FakeDebugDraw.h>
@@ -36,6 +37,7 @@ namespace
 		CellLayerRegistry registry;
 		LayerUploader uploader;
 		CellLayerViewerDomain domain;
+		ViewerCommands commands{ domain };
 
 		static const Dia::ValueSchema::ValueSchemaService* Build(UploaderSchemaFixture& f)
 		{
@@ -91,7 +93,6 @@ namespace
 			Add(terrain, "terrain", "Terrain", CellValueKind::Category);
 			Add(rain, "rain", "Weather", CellValueKind::Float);
 			Add(wind, "wind", "Weather", CellValueKind::Float);
-			domain.RegisterCommands();
 			domain.Update(draw);
 		}
 
@@ -116,7 +117,7 @@ namespace
 		return v;
 	}
 
-	Json::Value Exec(const char* cmd, const char* params) { return Dia::API::ExecuteCommandJson(StringCRC(cmd), Parse(params)); }
+	Json::Value Exec(const char* cmd, const char* params) { return ViewerCommands::Exec(cmd, Parse(params)); }
 
 	const Json::Value* FindLayer(const Json::Value& card, const char* layer)
 	{
@@ -357,7 +358,7 @@ TEST_F(InspectorPanelStateTest, ExpandCommandIsUnregisteredWithTheDomain)
 	{
 		Rig rig;
 		EXPECT_TRUE(Exec("cells.inspector.expand", "{\"group\":\"Weather\",\"expanded\":true}")["success"].asBool());
-		rig.domain.UnregisterCommands();
+		rig.commands.Unregister();
 	}
 	EXPECT_FALSE(Exec("cells.inspector.expand", "{\"group\":\"Weather\",\"expanded\":true}")["success"].asBool());
 }

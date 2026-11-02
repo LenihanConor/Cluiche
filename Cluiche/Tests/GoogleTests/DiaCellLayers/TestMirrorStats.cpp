@@ -5,6 +5,7 @@
 #include <DiaCellLayers/Testing/FakeDebugDraw.h>
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
 #include <DiaCellLayers/Testing/FakeMirrorRegistrar.h>
+#include <DiaCellLayers/Testing/ViewerCommands.h>
 #include <DiaAPI/DiaAPI.h>
 
 #include <memory>
@@ -34,6 +35,7 @@ namespace
 		CellLayerRegistry registry{ nullptr, &FakePuIdFn };
 		LayerUploader uploader{ cellField, nullptr };
 		std::unique_ptr<CellLayerViewerDomain> domain;
+		std::unique_ptr<ViewerCommands> commands;
 		std::unique_ptr<MirrorQueries> queries;
 
 		static const Dia::ValueSchema::ValueSchemaService* Build(UploaderSchemaFixture& f)
@@ -70,6 +72,7 @@ namespace
 			FakePuId() = 1;
 			service = Build(fx);
 			domain.reset(new CellLayerViewerDomain(registry, uploader, service));
+			commands.reset(new ViewerCommands(*domain));
 			queries.reset(new MirrorQueries(registry, *domain, service));
 			const size_t n = 400;
 			temp.values.resize(n); terrain.values.resize(n); wind.values.resize(n);
@@ -84,7 +87,6 @@ namespace
 			Add(terrain, "terrain", "Terrain", CellValueKind::Category);
 			Add(rain, "rain", "Weather", CellValueKind::Float);
 			Add(wind, "wind", "Weather", CellValueKind::Float);
-			domain->RegisterCommands();
 			domain->Update(draw);
 		}
 
@@ -131,7 +133,7 @@ namespace
 
 	Json::Value Inspect(const Json::Value& params)
 	{
-		return Dia::API::ExecuteCommandJson(StringCRC("cells.inspect"), params);
+		return ViewerCommands::Exec("cells.inspect", params);
 	}
 }
 

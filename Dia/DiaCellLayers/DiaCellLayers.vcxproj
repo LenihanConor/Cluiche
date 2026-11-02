@@ -115,6 +115,7 @@
     <ClInclude Include="Testing\ViewStateTestSupport.h" />
     <ClInclude Include="MirrorQueries.h" />
     <ClInclude Include="Testing\FakeMirrorRegistrar.h" />
+    <ClInclude Include="Testing\ViewerCommands.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />

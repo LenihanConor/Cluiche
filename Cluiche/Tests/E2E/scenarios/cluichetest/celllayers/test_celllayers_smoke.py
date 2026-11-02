@@ -42,10 +42,22 @@ def _wait(pred, timeout_s=5.0, interval_s=0.1):
     return pred()
 
 
+def _vc(c, name, params=None):
+    """Viewer commands are sim-hosted: the wire reply is success with the raw handler result, and a failure is a payload
+    {"error": <text or structured object>}. Re-raise it as AutomationError, as the DiaAPI path did (message + .payload)."""
+    data = c.send_command(name, params)
+    if isinstance(data, dict) and "error" in data:
+        err = data["error"]
+        if isinstance(err, dict):
+            raise AutomationError(err.get("message", "error"), payload=err)
+        raise AutomationError(str(err), payload={})
+    return data
+
+
 def _cmd(c, name, params):
     """Return (success, payload_or_message); failures come back as AutomationError."""
     try:
-        return True, c.send_command(name, params)
+        return True, _vc(c, name, params)
     except AutomationError as e:
         return False, str(e)
 
@@ -271,7 +283,7 @@ def test_celllayers_smoke(dia_client):
 
         def sel(name, params=None):
             nonlocal ok_calls
-            data = c.send_command(name, params)
+            data = _vc(c, name, params)
             ok_calls += 1
             return data
 
@@ -279,7 +291,7 @@ def test_celllayers_smoke(dia_client):
             nonlocal bad_calls
             before = _panel(c)["selection"]["count"]
             try:
-                c.send_command(name, params)
+                _vc(c, name, params)
             except AutomationError as e:
                 assert text in str(e), (name, params, str(e))
             else:
@@ -597,7 +609,7 @@ def _approx(a, b):
 
 
 def _inspect(c, **params):
-    return c.send_command("cells.inspect", params or None)
+    return _vc(c, "cells.inspect", params or None)
 
 
 def _inspect_layers(res):
@@ -636,8 +648,8 @@ def test_celllayers_inspector(dia_client):
         result = c.poll_checkpoint(_CHECKPOINT, timeout_s=30.0, expected_stage=_STAGE)
         assert result.get("passed"), f"checkpoint failed: {result}"
         assert c.send_command("cells.layer.list")["activeBase"] == "temperature"
-        assert c.send_command("cells.select.tool", {"tool": "select"})["tool"] == "select"
-        c.send_command("cells.select.clear")
+        assert _vc(c, "cells.select.tool", {"tool": "select"})["tool"] == "select"
+        _vc(c, "cells.select.clear")
 
         def synced():
             ok, _ = _cmd(c, "cells.inspect", None)
@@ -657,7 +669,7 @@ def test_celllayers_inspector(dia_client):
         # 2. Region A: box q5..9 x r3..6 (20 cells). Derivation: _expected() evaluates the stage generators per cell;
         #    A is warm (T 29.3..39.0 >= 15) and half wet / half dry -> desert 10, jungle 10, tundra = forest = 0.
         box_a = _box(5, 3, 9, 6)
-        assert c.send_command("cells.select.box", {"q0": 5, "r0": 3, "q1": 9, "r1": 6})["count"] == 20
+        assert _vc(c, "cells.select.box", {"q0": 5, "r0": 3, "q1": 9, "r1": 6})["count"] == 20
         res = _inspect(c, all=True)
         exp_a, layers = _assert_all_stats(res, box_a, "A all")
         assert exp_a["biome"]["categories"] == [0, 0, 10, 10], exp_a  # hand-checked: the derivation above
@@ -690,18 +702,18 @@ def test_celllayers_inspector(dia_client):
         assert not ok and "no layers in group 'Nope'" in msg, (ok, msg)
         ok, msg = _cmd(c, "cells.inspector.expand", {"group": "Terrain"})
         assert not ok and "expanded" in msg, (ok, msg)
-        assert c.send_command("cells.inspector.expand", {"group": "Terrain", "expanded": True}) == \
+        assert _vc(c, "cells.inspector.expand", {"group": "Terrain", "expanded": True}) == \
             {"ok": True, "group": "Terrain", "expanded": True}
         assert _wait(lambda: sorted(l["layer"] for l in _inspect(c)["layers"]) == ["biome", "rainfall", "temperature"]), _inspect(c)
         assert _inspect(c)["layers"][0]["layer"] == "temperature"  # base first
-        assert c.send_command("cells.inspector.expand", {"group": "Terrain", "expanded": False})["expanded"] is False
+        assert _vc(c, "cells.inspector.expand", {"group": "Terrain", "expanded": False})["expanded"] is False
         assert _wait(lambda: [l["layer"] for l in _inspect(c)["layers"]] == ["temperature", "rainfall"]), _inspect(c)
 
         # 3. Pin A (live), then select B = box q40..49 x r25..34 (100 cells; all four biomes): delta = B minus A.
-        pin = c.send_command("cells.select.pin")
+        pin = _vc(c, "cells.select.pin")
         assert pin["ok"] is True and pin["count"] == 20 and pin["frozen"] is False and "layers" not in pin, pin
         box_b = _box(40, 25, 49, 34)
-        assert c.send_command("cells.select.box", {"q0": 40, "r0": 25, "q1": 49, "r1": 34})["count"] == 100
+        assert _vc(c, "cells.select.box", {"q0": 40, "r0": 25, "q1": 49, "r1": 34})["count"] == 100
 
         def live_a_ready():
             ls = _inspect_layers(_inspect(c, all=True))
@@ -719,30 +731,30 @@ def test_celllayers_inspector(dia_client):
                 assert _approx(d[k], exp_b[lid][k] - exp_a[lid][k]), (lid, k, d, exp_a[lid], exp_b[lid])
         # Terrain is collapsed, so A is live but not computed for biome until the group is shown.
         assert layers["biome"]["a"] == {"notComputed": True} and "delta" not in layers["biome"], layers["biome"]
-        c.send_command("cells.inspector.expand", {"group": "Terrain", "expanded": True})
+        _vc(c, "cells.inspector.expand", {"group": "Terrain", "expanded": True})
         assert _wait(lambda: "categories" in _inspect_layers(_inspect(c, all=True))["biome"].get("a", {})), _inspect(c, all=True)
         bio = _inspect_layers(_inspect(c, all=True))["biome"]
         _assert_category_stats(bio["a"], exp_a["biome"], "A biome")
         assert bio["delta"] == {"count": 80}, bio["delta"]  # category layers have no min / mean / max delta
-        c.send_command("cells.inspector.expand", {"group": "Terrain", "expanded": False})
+        _vc(c, "cells.inspector.expand", {"group": "Terrain", "expanded": False})
 
         # 3b. Re-select A while A is pinned: B == A so every delta is zero.
-        c.send_command("cells.select.box", {"q0": 5, "r0": 3, "q1": 9, "r1": 6})
+        _vc(c, "cells.select.box", {"q0": 5, "r0": 3, "q1": 9, "r1": 6})
         assert _wait(live_a_ready)
         for lid in ("temperature", "rainfall"):
             d = _inspect_layers(_inspect(c, all=True))[lid]["delta"]
             assert d["count"] == 0 and all(abs(d[k]) < 1e-9 for k in ("min", "mean", "max")), d
 
         # 4. Unpin clears A.
-        assert c.send_command("cells.select.unpin") == {"ok": True}
+        assert _vc(c, "cells.select.unpin") == {"ok": True}
         res = _inspect(c, all=True)
         assert "pinned" not in res and all("a" not in l and "delta" not in l for l in res["layers"]), res
-        assert c.send_command("cells.select.unpin") == {"ok": True}  # idempotent
+        assert _vc(c, "cells.select.unpin") == {"ok": True}  # idempotent
 
         # 5. Pin with freeze: A's stats are stored for every layer of the grid (including collapsed Terrain) and never move.
-        pin = c.send_command("cells.select.pin", {"freeze": True})
+        pin = _vc(c, "cells.select.pin", {"freeze": True})
         assert pin["ok"] is True and pin["count"] == 20 and pin["frozen"] is True and pin["layers"] == 3, pin
-        c.send_command("cells.select.box", {"q0": 40, "r0": 25, "q1": 49, "r1": 34})
+        _vc(c, "cells.select.box", {"q0": 40, "r0": 25, "q1": 49, "r1": 34})
         res = _inspect(c, all=True)  # frozen A is available at once: no waiting for a pass
         assert res["pinned"] == {"count": 20, "frozen": True}, res
         layers = _inspect_layers(res)
@@ -751,12 +763,12 @@ def test_celllayers_inspector(dia_client):
         assert layers["biome"]["delta"] == {"count": 80}, layers["biome"]
         assert _approx(layers["rainfall"]["delta"]["mean"], exp_b["rainfall"]["mean"] - exp_a["rainfall"]["mean"]), layers["rainfall"]
         assert all("notFrozen" not in l["a"] for l in res["layers"]), res  # no layer was registered after the freeze
-        c.send_command("cells.select.unpin")
+        _vc(c, "cells.select.unpin")
 
         # 6. Single cell (7,4): index 4 * 66 + 7. The cell block has a row per shown layer plus the stage provider's details.
         cell = (7, 4)
         idx = cell[0] + cell[1] * _BIG_W
-        assert c.send_command("cells.select.cell", {"q": cell[0], "r": cell[1]})["count"] == 1
+        assert _vc(c, "cells.select.cell", {"q": cell[0], "r": cell[1]})["count"] == 1
         res = _inspect(c, all=True)
         assert res["selected"] == 1 and "cell" in res, res
         blk = res["cell"]
@@ -782,12 +794,12 @@ def test_celllayers_inspector(dia_client):
         _assert_all_stats(res, [cell], "single")
 
         # Another cell gives other details (the provider is invoked per cell).
-        c.send_command("cells.select.cell", {"q": 30, "r": 20})
+        _vc(c, "cells.select.cell", {"q": 30, "r": 20})
         det = _inspect(c)["cell"]["details"]
         assert det[2]["text"] == "30,20" and det[3]["value"] == (30 + 20 * _BIG_W) % 97, det
 
         # 7. Two cells: aggregates but no cell block.
-        c.send_command("cells.select.cells", {"cells": [[7, 4], [30, 20]]})
+        _vc(c, "cells.select.cells", {"cells": [[7, 4], [30, 20]]})
         res = _inspect(c, all=True)
         assert res["selected"] == 2 and "cell" not in res, res
         _assert_all_stats(res, [(7, 4), (30, 20)], "two cells")
@@ -807,7 +819,7 @@ def test_celllayers_inspector(dia_client):
         assert "cell" not in _panel(c)["inspector"], _panel(c)["inspector"]
 
         # 9. Clearing the selection empties the result again.
-        c.send_command("cells.select.clear")
+        _vc(c, "cells.select.clear")
         res = _inspect(c, all=True)
         assert res["selected"] == 0 and res["layers"] == [] and "pinned" not in res, res
     finally:
@@ -837,7 +849,7 @@ def test_celllayers_query(dia_client):
     try:
         result = c.poll_checkpoint(_CHECKPOINT, timeout_s=30.0, expected_stage=_STAGE)
         assert result.get("passed"), f"checkpoint failed: {result}"
-        c.send_command("cells.select.clear")
+        _vc(c, "cells.select.clear")
 
         cells = _all_cells()
         # No cell may sit within float32 noise of a threshold used below.
@@ -861,11 +873,11 @@ def test_celllayers_query(dia_client):
         for expr, exp in cases:
             assert len(exp) > 0, expr
             before = sel_count()
-            chk = c.send_command("cells.query.check", {"expr": expr})
+            chk = _vc(c, "cells.query.check", {"expr": expr})
             assert chk["ok"] is True and chk["count"] == len(exp), (expr, chk, len(exp))
             assert sel_count() == before, ("check changed the selection", expr)
             assert _panel(c)["query"]["check"] == {"ok": True, "count": len(exp), "expr": expr}, _panel(c)["query"]
-            run = c.send_command("cells.select.query", {"expr": expr})
+            run = _vc(c, "cells.select.query", {"expr": expr})
             runs += 1
             assert run["ok"] is True and run["count"] == chk["count"], (expr, run, chk)
             assert sel_count() == len(exp), (expr, sel_count(), len(exp))
@@ -873,13 +885,13 @@ def test_celllayers_query(dia_client):
 
         # A repeated identical select leaves the selection as it was (count asserted; version is not exposed).
         expr, exp = cases[1]
-        again = c.send_command("cells.select.query", {"expr": expr})
+        again = _vc(c, "cells.select.query", {"expr": expr})
         runs += 1
         assert again["count"] == len(exp) and sel_count() == len(exp), (again, len(exp))
         # Probe exact membership: toggling one matching cell removes exactly it.
         member = sorted(exp)[0]
-        assert c.send_command("cells.select.toggle", {"q": member[0], "r": member[1]})["count"] == len(exp) - 1
-        c.send_command("cells.select.query", {"expr": expr})
+        assert _vc(c, "cells.select.toggle", {"q": member[0], "r": member[1]})["count"] == len(exp) - 1
+        _vc(c, "cells.select.query", {"expr": expr})
         runs += 1
         assert sel_count() == len(exp)
 
@@ -896,7 +908,7 @@ def test_celllayers_query(dia_client):
             for expr, text, has_sugg in bad_cases:
                 before = sel_count()
                 try:
-                    c.send_command(cmd, {"expr": expr})
+                    _vc(c, cmd, {"expr": expr})
                 except AutomationError as e:
                     # The structured error object reaches the client: message in the exception, members in e.payload.
                     assert e.payload.get("message") and str(e) == e.payload["message"], (cmd, expr, str(e), e.payload)
@@ -924,7 +936,7 @@ def test_celllayers_query(dia_client):
                     assert err["column"] >= len("rainfall"), rec  # points at the missing operand, not the start
 
         # last (select) is not clobbered by check, and vice versa.
-        c.send_command("cells.query.check", {"expr": "rainfall < 150"})
+        _vc(c, "cells.query.check", {"expr": "rainfall < 150"})
         q = _panel(c)["query"]
         assert q["available"] is True and q["check"]["ok"] is True and q["last"].get("ok") is not True, q
 
@@ -936,7 +948,7 @@ def test_celllayers_query(dia_client):
             c.get_metric(_Q + "last_match_count")
         assert c.get_metric(_Q + "evaluate_ms") >= 0.0
 
-        c.send_command("cells.select.clear")
+        _vc(c, "cells.select.clear")
         assert sel_count() == 0
     finally:
         c.abort_stage()

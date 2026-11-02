@@ -329,7 +329,7 @@ bool CellLayersViewerTestStageModule::BuildViewer()
     mUploader = Dia::Core::MakeUnique<LayerUploader>(mCellFieldStream.Get(), schema);
     mDomain = Dia::Core::MakeUnique<CellLayerViewerDomain>(*mRegistry, *mUploader, schema,
         CellLayerViewerDomain::ViewFn(fastdelegate::MakeDelegate(this, &CellLayersViewerTestStageModule::GetPickerView)));
-    mDomain->RegisterCommands();
+    BuildViewerCommands();
     BuildMirror(schema); // optional: a missing DebugServer only logs a warning
 
     Dia::API::RegisterCommand({
@@ -412,7 +412,10 @@ void CellLayersViewerTestStageModule::TeardownViewer()
     mPointerQueue.Clear();
 
     TeardownMirror();   // queries must not outlive the viewer or the registry
-    mDomain.Reset();    // unregisters its DiaAPI commands
+    if (mMirrorRegistrar && mDomain)
+        mDomain->UnregisterCommands(*mMirrorRegistrar);   // handlers capture the domain
+    mMirrorRegistrar.Reset();
+    mDomain.Reset();
     mUploader.Reset();  // releases the CellField layers it holds
 
     if (mRegistry != nullptr)
@@ -442,6 +445,24 @@ void CellLayersViewerTestStageModule::TeardownViewer()
         mCameraSaved = false;
     }
     mFittedGrid = nullptr;
+}
+
+bool CellLayersViewerTestStageModule::BuildViewerCommands()
+{
+    // Sim-hosted commands (OnStart, SimPU): the handlers run on this PU beside the viewer; nothing goes into the DiaAPI CommandRegistry.
+    Cluiche::AppFlow::SimQueryHostModule* host = mSimQueryHostRef.Get();
+    if (host == nullptr)
+    {
+        DIA_LOG_WARNING("CEL", "CellLayersViewerTestStage: SimQueryHostModule unavailable - viewer commands not served");
+        return false;
+    }
+    mMirrorRegistrar = Dia::Core::MakeUnique<MirrorRegistrar>(*host);
+    if (!mDomain->RegisterCommands(*mMirrorRegistrar))
+    {
+        DIA_LOG_ERROR("CEL", "CellLayersViewerTestStage: sim-hosted viewer command registration failed");
+        return false;
+    }
+    return true;
 }
 
 bool CellLayersViewerTestStageModule::BuildMirror(const Dia::ValueSchema::ValueSchemaService* schema)
@@ -475,11 +496,11 @@ bool CellLayersViewerTestStageModule::BuildMirror(const Dia::ValueSchema::ValueS
         DIA_LOG_WARNING("CEL", "CellLayersViewerTestStage: SimQueryHostModule unavailable - mirror queries not served");
         return false;
     }
-    mMirrorRegistrar = Dia::Core::MakeUnique<MirrorRegistrar>(*host);
+    if (!mMirrorRegistrar)
+        mMirrorRegistrar = Dia::Core::MakeUnique<MirrorRegistrar>(*host);
     if (!Dia::CellLayers::RegisterMirrorQueries(*mMirrorRegistrar, *mMirrorQueries))
     {
         DIA_LOG_ERROR("CEL", "CellLayersViewerTestStage: sim-hosted mirror query registration failed");
-        mMirrorRegistrar.Reset();
         return false;
     }
     DIA_LOG_INFO("CEL", "CellLayersViewerTestStage: editor mirror served (topic cells.view.state + 4 sim-hosted queries)");
@@ -488,11 +509,8 @@ bool CellLayersViewerTestStageModule::BuildMirror(const Dia::ValueSchema::ValueS
 
 void CellLayersViewerTestStageModule::TeardownMirror()
 {
-    if (mMirrorRegistrar)
-    {
+    if (mMirrorRegistrar && mMirrorQueries)
         Dia::CellLayers::UnregisterMirrorQueries(*mMirrorRegistrar);
-        mMirrorRegistrar.Reset();
-    }
     mMirrorQueries.Reset();
     mMirrorPublisher.Reset();
     mMirrorSink.Reset();

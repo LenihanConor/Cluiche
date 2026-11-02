@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <DiaCellLayers/CellLayerViewerDomain.h>
+#include <DiaCellLayers/Testing/ViewerCommands.h>
 #include <DiaCellLayers/Testing/CellLayerTestSupport.h>
 #include <DiaCellLayers/Testing/CellPickerTestSupport.h>
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
@@ -314,38 +315,34 @@ TEST_F(ViewerTest, ListLayersReportsActiveBaseAndSelected)
 	EXPECT_TRUE(l2["grids"][1]["layers"][0]["selected"].asBool());
 }
 
-TEST_F(ViewerTest, CommandsViaDiaAPI)
+TEST_F(ViewerTest, CommandsViaSimHostedRegistrar)
 {
-	Dia::API::Initialize();
-	{
-		Rig rig(cellField, nullptr);
-		rig.Add(temp.MakeDesc("temp", &gridA.desc));
-		rig.Add(rain.MakeDesc("rain", &gridA.desc));
-		ASSERT_EQ(rig.registry.RegisterOverlay(MakeOverlay("ov")), CellRegisterResult::Ok);
-		rig.domain.RegisterCommands();
-		rig.domain.Update(draw);
+	Rig rig(cellField, nullptr);
+	rig.Add(temp.MakeDesc("temp", &gridA.desc));
+	rig.Add(rain.MakeDesc("rain", &gridA.desc));
+	ASSERT_EQ(rig.registry.RegisterOverlay(MakeOverlay("ov")), CellRegisterResult::Ok);
+	ViewerCommands commands(rig.domain);
+	ASSERT_TRUE(commands.Registered());
+	rig.domain.Update(draw);
 
-		Dia::API::CommandArgs args;
-		args.positionalArgs.Add("rain");
-		EXPECT_EQ(Dia::API::ExecuteCommand(StringCRC("cells.layer.base"), args), 0);
-		EXPECT_EQ(rig.domain.ActiveBase(), StringCRC("rain"));
-		Dia::API::CommandArgs bad;
-		bad.positionalArgs.Add("nope");
-		EXPECT_NE(Dia::API::ExecuteCommand(StringCRC("cells.layer.base"), bad), 0);
-		EXPECT_EQ(rig.domain.ActiveBase(), StringCRC("rain"));
-		Dia::API::CommandArgs ov;
-		ov.positionalArgs.Add("ov");
-		EXPECT_EQ(Dia::API::ExecuteCommand(StringCRC("cells.overlay.toggle"), ov), 0);
-		EXPECT_TRUE(rig.domain.IsOverlayEnabled(StringCRC("ov")));
-		EXPECT_NE(Dia::API::ExecuteCommand(StringCRC("cells.overlay.toggle"), bad), 0);
+	Json::Value id(Json::objectValue);
+	id["id"] = "rain";
+	EXPECT_TRUE(ViewerCommands::Exec("cells.layer.base_by_id", id)["success"].asBool());
+	EXPECT_EQ(rig.domain.ActiveBase(), StringCRC("rain"));
+	id["id"] = "nope";
+	EXPECT_FALSE(ViewerCommands::Exec("cells.layer.base_by_id", id)["success"].asBool());
+	EXPECT_EQ(rig.domain.ActiveBase(), StringCRC("rain"));
+	id["id"] = "ov";
+	EXPECT_TRUE(ViewerCommands::Exec("cells.overlay.toggle_by_id", id)["success"].asBool());
+	EXPECT_TRUE(rig.domain.IsOverlayEnabled(StringCRC("ov")));
+	id["id"] = "nope";
+	EXPECT_FALSE(ViewerCommands::Exec("cells.overlay.toggle_by_id", id)["success"].asBool());
 
-		const Json::Value r = Dia::API::ExecuteCommandJson(StringCRC("cells.layer.list"), Json::Value(Json::objectValue));
-		EXPECT_TRUE(r["success"].asBool());
-		EXPECT_EQ(r["data"]["grids"][0]["layers"].size(), 2u);
-		rig.domain.UnregisterCommands();
-		EXPECT_EQ(Dia::API::GetCommand(StringCRC("cells.layer.base")), nullptr);
-	}
-	Dia::API::Shutdown();
+	Json::Value list;
+	rig.domain.ListLayers(list);
+	EXPECT_EQ(list["grids"][0]["layers"].size(), 2u);
+	commands.Unregister();
+	EXPECT_FALSE(commands.Registrar().Has("cells.layer.base_by_id"));
 }
 
 TEST_F(ViewerTest, PanelCommands)

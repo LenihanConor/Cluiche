@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <DiaCellLayers/CellLayerViewerDomain.h>
+#include <DiaCellLayers/Testing/ViewerCommands.h>
 #include <DiaCellLayers/Testing/CellLayerTestSupport.h>
 #include <DiaCellLayers/Testing/FakeDebugDraw.h>
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
@@ -36,17 +37,29 @@ namespace
 		void TearDown() override { Dia::API::Shutdown(); }
 
 		static Json::Value Id(const char* id) { Json::Value p(Json::objectValue); p["id"] = id; return p; }
-		static Json::Value Run(const char* cmd, const Json::Value& p) { return Dia::API::ExecuteCommandJson(StringCRC(cmd), p); }
+		static Json::Value Run(const char* cmd, const Json::Value& p) { return ViewerCommands::Exec(cmd, p); }
 	};
+
+	struct Rig;
+	Json::Value ListOf(const Rig& rig);	// {success,data:ListLayers}: cells.layer.list itself is the mirror query (MirrorQueries)
 
 	struct Rig
 	{
 		CellLayerRegistry registry;
 		LayerUploader uploader;
 		CellLayerViewerDomain domain;
+		ViewerCommands commands{ domain };
 		Rig(CellFieldRegistry& cf) : registry(nullptr, &FakePuIdFn), uploader(cf, nullptr), domain(registry, uploader, nullptr) {}
 		void Add(const CellLayerDesc& d) { ASSERT_EQ(registry.Register(d), CellRegisterResult::Ok); }
 	};
+
+	Json::Value ListOf(const Rig& rig)
+	{
+		Json::Value response(Json::objectValue);
+		response["success"] = true;
+		rig.domain.ListLayers(response["data"]);
+		return response;
+	}
 }
 
 TEST_F(JsonCmdTest, BaseByIdSwitchesBaseAndGrid)
@@ -55,7 +68,6 @@ TEST_F(JsonCmdTest, BaseByIdSwitchesBaseAndGrid)
 	rig.Add(temp.MakeDesc("temp", &gridA.desc));
 	rig.Add(rain.MakeDesc("rain", &gridA.desc));
 	rig.Add(soil.MakeDesc("soil", &gridB.desc));
-	rig.domain.RegisterCommands();
 	rig.domain.Update(draw);
 
 	Json::Value r = Run("cells.layer.base_by_id", Id("rain"));
@@ -75,7 +87,6 @@ TEST_F(JsonCmdTest, BaseByIdUnknownIdErrorsAndChangesNothing)
 	Rig rig(cellField);
 	rig.Add(temp.MakeDesc("temp", &gridA.desc));
 	rig.Add(rain.MakeDesc("rain", &gridA.desc));
-	rig.domain.RegisterCommands();
 	rig.domain.Update(draw);
 	const Json::Value r = Run("cells.layer.base_by_id", Id("nope"));
 	EXPECT_FALSE(r["success"].asBool());
@@ -88,7 +99,6 @@ TEST_F(JsonCmdTest, BaseByIdMissingOrBadParamErrorsAndChangesNothing)
 	Rig rig(cellField);
 	rig.Add(temp.MakeDesc("temp", &gridA.desc));
 	rig.Add(rain.MakeDesc("rain", &gridA.desc));
-	rig.domain.RegisterCommands();
 	rig.domain.Update(draw);
 	Json::Value num(Json::objectValue);
 	num["id"] = 5;
@@ -104,7 +114,6 @@ TEST_F(JsonCmdTest, OverlayToggleByIdTogglesAndReportsState)
 	Rig rig(cellField);
 	rig.Add(temp.MakeDesc("temp", &gridA.desc));
 	ASSERT_EQ(rig.registry.RegisterOverlay(MakeOverlay("ov")), CellRegisterResult::Ok);
-	rig.domain.RegisterCommands();
 	rig.domain.Update(draw);
 
 	Json::Value r = Run("cells.overlay.toggle_by_id", Id("ov"));
@@ -122,7 +131,6 @@ TEST_F(JsonCmdTest, OverlayToggleByIdUnknownOrMissingErrorsAndChangesNothing)
 	Rig rig(cellField);
 	rig.Add(temp.MakeDesc("temp", &gridA.desc));
 	ASSERT_EQ(rig.registry.RegisterOverlay(MakeOverlay("ov")), CellRegisterResult::Ok);
-	rig.domain.RegisterCommands();
 	rig.domain.Update(draw);
 	EXPECT_FALSE(Run("cells.overlay.toggle_by_id", Id("nope"))["success"].asBool());
 	EXPECT_FALSE(Run("cells.overlay.toggle_by_id", Json::Value(Json::objectValue))["success"].asBool());
@@ -151,10 +159,9 @@ TEST_F(JsonCmdTest, LayerListReportsActiveBaseDefaultSwitchAndFailedSwitch)
 	rig.Add(temp.MakeDesc("temp", &gridA.desc));
 	rig.Add(rain.MakeDesc("rain", &gridA.desc));
 	rig.Add(soil.MakeDesc("soil", &gridB.desc));
-	rig.domain.RegisterCommands();
 	rig.domain.Update(draw);
 
-	Json::Value r = Run("cells.layer.list", Json::Value(Json::objectValue));
+	Json::Value r = ListOf(rig);
 	ASSERT_TRUE(r["success"].asBool());
 	EXPECT_EQ(r["data"]["activeBase"].asString(), "temp");
 	EXPECT_EQ(r["data"]["activeGridIndex"].asInt(), 0);
@@ -166,14 +173,14 @@ TEST_F(JsonCmdTest, LayerListReportsActiveBaseDefaultSwitchAndFailedSwitch)
 	EXPECT_FALSE(r["data"]["grids"][1]["layers"][0]["selected"].asBool());
 
 	ASSERT_TRUE(Run("cells.layer.base_by_id", Id("soil"))["success"].asBool());
-	r = Run("cells.layer.list", Json::Value(Json::objectValue));
+	r = ListOf(rig);
 	EXPECT_EQ(r["data"]["activeBase"].asString(), "soil");
 	EXPECT_EQ(r["data"]["activeGridIndex"].asInt(), 1);
 	EXPECT_EQ(SelectedLayer(r["data"], n), "soil");
 	EXPECT_EQ(n, 1u);
 
 	EXPECT_FALSE(Run("cells.layer.base_by_id", Id("nope"))["success"].asBool());
-	r = Run("cells.layer.list", Json::Value(Json::objectValue));
+	r = ListOf(rig);
 	EXPECT_EQ(r["data"]["activeBase"].asString(), "soil");
 	EXPECT_EQ(r["data"]["activeGridIndex"].asInt(), 1);
 	EXPECT_EQ(SelectedLayer(r["data"], n), "soil");
@@ -183,9 +190,8 @@ TEST_F(JsonCmdTest, LayerListReportsActiveBaseDefaultSwitchAndFailedSwitch)
 TEST_F(JsonCmdTest, LayerListEmptyStateHasEmptyActiveBase)
 {
 	Rig rig(cellField);
-	rig.domain.RegisterCommands();
 	rig.domain.Update(draw);
-	const Json::Value r = Run("cells.layer.list", Json::Value(Json::objectValue));
+	const Json::Value r = ListOf(rig);
 	ASSERT_TRUE(r["success"].asBool());
 	ASSERT_TRUE(r["data"].isMember("activeBase"));
 	EXPECT_EQ(r["data"]["activeBase"].asString(), "");
@@ -195,19 +201,16 @@ TEST_F(JsonCmdTest, LayerListEmptyStateHasEmptyActiveBase)
 	EXPECT_EQ(n, 0u);
 }
 
-TEST_F(JsonCmdTest, CliFormsStillWorkAndJsonCommandsUnregister)
+TEST_F(JsonCmdTest, JsonCommandsUnregister)
 {
 	Rig rig(cellField);
 	rig.Add(temp.MakeDesc("temp", &gridA.desc));
 	rig.Add(rain.MakeDesc("rain", &gridA.desc));
-	rig.domain.RegisterCommands();
 	rig.domain.Update(draw);
-	Dia::API::CommandArgs args;
-	args.positionalArgs.Add("rain");
-	EXPECT_EQ(Dia::API::ExecuteCommand(StringCRC("cells.layer.base"), args), 0);
+	ASSERT_TRUE(Run("cells.layer.base_by_id", Id("rain"))["success"].asBool());
 	EXPECT_EQ(rig.domain.ActiveBase(), StringCRC("rain"));
 
-	rig.domain.UnregisterCommands();
+	rig.commands.Unregister();
 	EXPECT_FALSE(Run("cells.layer.base_by_id", Id("temp"))["success"].asBool());
 	EXPECT_EQ(rig.domain.ActiveBase(), StringCRC("rain"));
 }

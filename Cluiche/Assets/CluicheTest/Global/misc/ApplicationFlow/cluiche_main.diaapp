@@ -386,7 +386,7 @@
             "kind": "EventStream",
             "payload_type": "SimReplyEvent",
             "overflow": "drop-oldest",
-            "capacity": 16,
+            "capacity": 48,
             "from": "SimPU",
             "to": "MainPU"
         },

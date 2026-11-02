@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <DiaCellLayers/CellLayerViewerDomain.h>
+#include <DiaCellLayers/Testing/ViewerCommands.h>
 #include <DiaCellLayers/Testing/CellLayerTestSupport.h>
 #include <DiaCellLayers/Testing/FakeDebugDraw.h>
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
@@ -35,6 +36,7 @@ namespace
 		CellLayerRegistry registry;
 		LayerUploader uploader;
 		CellLayerViewerDomain domain;
+		ViewerCommands commands{ domain };
 
 		static const Dia::ValueSchema::ValueSchemaService* Build(UploaderSchemaFixture& f)
 		{
@@ -71,7 +73,6 @@ namespace
 			registry.Register(temp.MakeDesc("temp", &grid.desc, CellValueKind::Float, "cells/temp"));
 			registry.Register(la.MakeDesc("la", &grid.desc, CellValueKind::Float, "cells/a/x"));
 			registry.Register(lb.MakeDesc("lb", &grid.desc, CellValueKind::Float, "cells/b/x"));
-			domain.RegisterCommands();
 			domain.Update(draw);
 		}
 
@@ -90,7 +91,7 @@ namespace
 		return p;
 	}
 
-	Json::Value Exec(const char* cmd, const Json::Value& params) { return Dia::API::ExecuteCommandJson(StringCRC(cmd), params); }
+	Json::Value Exec(const char* cmd, const Json::Value& params) { return ViewerCommands::Exec(cmd, params); }
 
 	struct QueryCommandsTest : ::testing::Test
 	{
@@ -200,7 +201,7 @@ TEST_F(QueryCommandsTest, NoActiveGridIsAnErrorObject)
 	CellLayerRegistry registry(nullptr, &FakePuIdFn);
 	LayerUploader uploader(cellField, nullptr);
 	CellLayerViewerDomain domain(registry, uploader, &fx.Publish());
-	domain.RegisterCommands();
+	ViewerCommands commands(domain);
 	domain.Update(draw);
 	for (const char* cmd : { "cells.select.query", "cells.query.check" })
 	{

@@ -60,7 +60,6 @@ namespace
 			temp.values = std::vector<float>(n, 1.0f);
 			registry.Register(terrain.MakeDesc("terrain", &grid.desc, CellValueKind::Category, "cells/terrain"));
 			registry.Register(temp.MakeDesc("temp", &grid.desc, CellValueKind::Float, "cells/temp"));
-			domain.RegisterCommands();
 			domain.Update(draw);
 		}
 

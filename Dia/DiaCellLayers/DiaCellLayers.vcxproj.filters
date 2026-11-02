@@ -74,6 +74,9 @@
     <ClInclude Include="Testing\FakeMirrorRegistrar.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="Testing\ViewerCommands.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />

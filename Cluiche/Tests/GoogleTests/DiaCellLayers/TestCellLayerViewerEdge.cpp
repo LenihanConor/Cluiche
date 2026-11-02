@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <DiaCellLayers/CellLayerViewerDomain.h>
+#include <DiaCellLayers/Testing/FakeMirrorRegistrar.h>
 #include <DiaCellLayers/Testing/CellLayerTestSupport.h>
 #include <DiaCellLayers/Testing/CellPickerTestSupport.h>
 #include <DiaCellLayers/Testing/FakeDebugDraw.h>
@@ -511,35 +512,35 @@ TEST_F(ViewerEdgeTest, HealthStartsOKWithNoLayers)
 	EXPECT_EQ(rig.domain.HealthReporter().Report().status, HealthStatus::kOK);
 }
 
-TEST_F(ViewerEdgeTest, RegisterCommandsIsIdempotentAndDiaAPICommandsHandleBadArgs)
+TEST_F(ViewerEdgeTest, RegisterCommandsIsIdempotentAndCommandsHandleBadArgs)
 {
-	Dia::API::Initialize();
-	{
-		Rig rig(cellField, nullptr);
-		rig.Add(temp.MakeDesc("temp", &gridA.desc));
-		rig.Add(rain.MakeDesc("rain", &gridA.desc));
-		ASSERT_EQ(rig.registry.RegisterOverlay(MakeOverlay("ov")), CellRegisterResult::Ok);
-		rig.domain.RegisterCommands();
-		rig.domain.RegisterCommands();
-		rig.domain.Update(draw);
-		Dia::API::CommandArgs none;
-		EXPECT_EQ(Dia::API::ExecuteCommand(StringCRC("cells.layer.base"), none), 2);
-		EXPECT_EQ(Dia::API::ExecuteCommand(StringCRC("cells.overlay.toggle"), none), 2);
-		Dia::API::CommandArgs extra;
-		extra.positionalArgs.Add("rain");
-		extra.positionalArgs.Add("ignored");
-		EXPECT_EQ(Dia::API::ExecuteCommand(StringCRC("cells.layer.base"), extra), 0);
-		EXPECT_EQ(rig.domain.ActiveBase(), StringCRC("rain"));
-		Dia::API::CommandArgs ov;
-		ov.positionalArgs.Add("ov");
-		EXPECT_EQ(Dia::API::ExecuteCommand(StringCRC("cells.overlay.toggle"), ov), 0);
-		EXPECT_EQ(Dia::API::ExecuteCommand(StringCRC("cells.overlay.toggle"), ov), 0);
-		EXPECT_FALSE(rig.domain.IsOverlayEnabled(StringCRC("ov")));
-		rig.domain.UnregisterCommands();
-		rig.domain.UnregisterCommands();
-		EXPECT_EQ(Dia::API::GetCommand(StringCRC("cells.layer.list")), nullptr);
-	}
-	Dia::API::Shutdown();
+	Rig rig(cellField, nullptr);
+	rig.Add(temp.MakeDesc("temp", &gridA.desc));
+	rig.Add(rain.MakeDesc("rain", &gridA.desc));
+	ASSERT_EQ(rig.registry.RegisterOverlay(MakeOverlay("ov")), CellRegisterResult::Ok);
+	FakeMirrorRegistrar reg;
+	ASSERT_TRUE(rig.domain.RegisterCommands(reg));
+	const size_t count = reg.Count();
+	ASSERT_TRUE(rig.domain.RegisterCommands(reg));
+	EXPECT_EQ(reg.Count(), count);
+	rig.domain.Update(draw);
+
+	const Json::Value none(Json::objectValue);
+	EXPECT_TRUE(reg.Execute("cells.layer.base_by_id", none).isMember("error"));
+	EXPECT_TRUE(reg.Execute("cells.overlay.toggle_by_id", none).isMember("error"));
+	Json::Value extra(Json::objectValue);
+	extra["id"] = "rain";
+	extra["ignored"] = "x";
+	EXPECT_FALSE(reg.Execute("cells.layer.base_by_id", extra).isMember("error"));
+	EXPECT_EQ(rig.domain.ActiveBase(), StringCRC("rain"));
+	Json::Value ov(Json::objectValue);
+	ov["id"] = "ov";
+	EXPECT_TRUE(reg.Execute("cells.overlay.toggle_by_id", ov)["enabled"].asBool());
+	EXPECT_FALSE(reg.Execute("cells.overlay.toggle_by_id", ov)["enabled"].asBool());
+	EXPECT_FALSE(rig.domain.IsOverlayEnabled(StringCRC("ov")));
+	rig.domain.UnregisterCommands(reg);
+	rig.domain.UnregisterCommands(reg);
+	EXPECT_EQ(reg.Count(), 0u);
 }
 
 TEST_F(ViewerEdgeTest, ListLayersOnEmptyRegistryHasEmptyArrays)

@@ -13,8 +13,8 @@
 // There is no camera on IDebugDraw (the camera lives on DebugLayerManager::SetViewport), so the application injects a
 // ViewFn that returns the CellPickerView (canvas size + camera centre + zoom). With no ViewFn there is no hover.
 //
-// Commands (DiaAPI, RegisterCommands): cells.layer.list (JSON), cells.layer.base <id>, cells.overlay.toggle <id>,
-// plus the JSON forms (E2E / DebugServer channel) cells.layer.base_by_id {"id"} and cells.overlay.toggle_by_id {"id"}. An unknown
+// Commands (sim-hosted via RegisterCommands(registrar); wire clients only, no DiaAPI/CLI form): cells.layer.base_by_id {"id"} and
+// cells.overlay.toggle_by_id {"id"}; cells.layer.list is the mirror query (MirrorQueries). An unknown
 // id returns a non-zero code and changes nothing. Selection commands (JSON only; act on ActiveSelection()): cells.select.cell
 // {q,r}, .toggle {q,r}, .box {q0,r0,q1,r1}, .poly {points:[[x,y]..]} (WORLD coords), .category {layer,value}, .cells
 // {cells:[[q,r]..]}, .clear {}, plus .tool {tool:"select"|"pan"} and .group {layer} (selection tool / ctrl-click group). Success {ok,count}; failure = error text (also logged on CEL at Info). Panel commands (OnCommand): "base" {id}, "grid" {index}, "toggle" {drawer}, and the selection card's "select_tool" {tool},
@@ -56,6 +56,8 @@
 
 namespace Dia::CellLayers
 {
+	class IMirrorQueryRegistrar;
+
 	class CellLayerViewerDomain : public Dia::VisualDebugger::IDebugDomain
 	{
 	public:
@@ -126,15 +128,16 @@ namespace Dia::CellLayers
 		// Layers and overlays grouped by grid (the cells.layer.list payload).
 		void ListLayers(Json::Value& out) const;
 
-		// DiaAPI registration; idempotent. Unregistered in the destructor.
-		void RegisterCommands();
-		void UnregisterCommands();
+		// Sim-hosted command registration (see MirrorQueries.h: the registrar forwards to the host's SimQueryHost; handlers run on
+		// SimPU). Idempotent; false (nothing left registered) if the registrar rejects a name. NOT in Dia::API::CommandRegistry, and
+		// NOT cells.layer.list (the mirror query of that name is the single handler). The caller must UnregisterCommands before the
+		// registrar or this domain is destroyed (handlers capture this).
+		bool RegisterCommands(IMirrorQueryRegistrar& registrar);
+		void UnregisterCommands(IMirrorQueryRegistrar& registrar);
 
 		const Dia::Observation::Health::IHealthReporter&	HealthReporter() const { return mHealth; }
 
 	private:
-		void	RegisterJsonCommands();	// called by RegisterCommands
-		void	RegisterSelectionCommands();	// called by RegisterCommands
 		Json::Value	ExecuteSetTool(const Json::Value& params);	// cells.select.tool (locks mMutex)
 		Json::Value	ExecuteSetGroup(const Json::Value& params);	// cells.select.group (locks mMutex)
 		Json::Value	ExecutePin(const Json::Value& params);	// cells.select.pin (locks mMutex)

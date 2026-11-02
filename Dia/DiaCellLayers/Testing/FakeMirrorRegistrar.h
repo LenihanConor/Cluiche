@@ -16,13 +16,8 @@ namespace Dia::CellLayers::Testing
 	class FakeMirrorRegistrar : public IMirrorQueryRegistrar
 	{
 	public:
-		bool Register(const char* name, MirrorQueryHandler handler) override
-		{
-			if (Has(name)) { return false; }
-			mEntries.push_back({ name, std::move(handler) });
-			mRegisterCount++;
-			return true;
-		}
+		bool Register(const char* name, MirrorQueryHandler handler) override { return Add(name, std::move(handler), false); }
+		bool RegisterCommand(const char* name, MirrorQueryHandler handler) override { return Add(name, std::move(handler), true); }
 
 		void Unregister(const char* name) override
 		{
@@ -30,6 +25,12 @@ namespace Dia::CellLayers::Testing
 			{
 				if (mEntries[i].name == name) { mEntries.erase(mEntries.begin() + i); return; }
 			}
+		}
+
+		bool IsCommand(const char* name) const
+		{
+			for (const Entry& e : mEntries) { if (e.name == name) { return e.isCommand; } }
+			return false;
 		}
 
 		bool Has(const char* name) const
@@ -54,7 +55,15 @@ namespace Dia::CellLayers::Testing
 		}
 
 	private:
-		struct Entry { std::string name; MirrorQueryHandler handler; };
+		bool Add(const char* name, MirrorQueryHandler handler, bool isCommand)
+		{
+			if (Has(name)) { return false; }	// like SimQueryHost: the first handler stays
+			mEntries.push_back({ name, std::move(handler), isCommand });
+			mRegisterCount++;
+			return true;
+		}
+
+		struct Entry { std::string name; MirrorQueryHandler handler; bool isCommand; };
 		std::vector<Entry> mEntries;
 		size_t mRegisterCount = 0;
 	};

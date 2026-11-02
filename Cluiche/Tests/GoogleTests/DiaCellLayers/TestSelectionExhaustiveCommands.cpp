@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <DiaCellLayers/CellLayerRegistry.h>
 #include <DiaCellLayers/CellLayerViewerDomain.h>
+#include <DiaCellLayers/Testing/ViewerCommands.h>
 #include <DiaCellLayers/SelectionTools.h>
 #include <DiaCellLayers/Testing/CellLayerTestSupport.h>
 #include <DiaCellLayers/Testing/CellPickerTestSupport.h>
@@ -108,6 +109,7 @@ namespace
 		CellLayerRegistry registry;
 		LayerUploader uploader;
 		CellLayerViewerDomain domain;
+		ViewerCommands commands{ domain };
 
 		static const Dia::ValueSchema::ValueSchemaService* Build(UploaderSchemaFixture& f)
 		{
@@ -144,7 +146,6 @@ namespace
 			registry.Register(terrain.MakeDesc("terrain", &grid.desc, CellValueKind::Category, "cells/terrain"));
 			registry.Register(temp.MakeDesc("temp", &grid.desc, CellValueKind::Float, "cells/temp"));
 			registry.Register(soil.MakeDesc("soil", &gridB.desc, CellValueKind::Category, "cells/soil"));
-			domain.RegisterCommands();
 			domain.SetBase(StringCRC("terrain"));
 			domain.Update(draw);
 		}
@@ -163,8 +164,8 @@ namespace
 		return v;
 	}
 
-	Json::Value Exec(const char* cmd, const char* params) { return Dia::API::ExecuteCommandJson(StringCRC(cmd), Parse(params)); }
-	Json::Value Exec(const char* cmd, const Json::Value& params) { return Dia::API::ExecuteCommandJson(StringCRC(cmd), params); }
+	Json::Value Exec(const char* cmd, const char* params) { return ViewerCommands::Exec(cmd, Parse(params)); }
+	Json::Value Exec(const char* cmd, const Json::Value& params) { return ViewerCommands::Exec(cmd, params); }
 
 	struct SelectionExhaustiveCommandsTest : ::testing::Test
 	{
@@ -629,7 +630,7 @@ TEST_F(SelectionExhaustiveCommandsTest, PointerFrameIsConsumedOnceEvenWithoutAnA
 	LayerUploader uploader(cf, nullptr);
 	CellLayerViewerDomain domain(registry, uploader, nullptr);
 	FakeDebugDraw draw;
-	domain.RegisterCommands();
+	ViewerCommands commands(domain);
 	CellPickerView view;
 	SelectionInput::PointerFrame f;
 	f.left = true;
