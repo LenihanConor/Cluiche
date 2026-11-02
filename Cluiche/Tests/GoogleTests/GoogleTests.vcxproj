@@ -1080,6 +1080,7 @@
     <ClCompile Include="..\..\CluicheTest\Modules\TestStages\CellLayersStateRelayModule.cpp" />
     <ClCompile Include="..\..\CluicheTest\Modules\TestStages\CellLayersStateBridgeModule.cpp" />
     <ClCompile Include="ApplicationFlow\TestSecondaryPUTick.cpp" />
+    <ClCompile Include="DiaCellLayers\TestQueryExhaustive.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

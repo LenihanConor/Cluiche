@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <DiaCellLayers/CellLayerViewerDomain.h>
+#include <DiaCellLayers/MirrorQueries.h>
 #include <DiaCellLayers/Testing/ViewerCommands.h>
 #include <DiaCellLayers/Testing/CellLayerTestSupport.h>
 #include <DiaCellLayers/Testing/FakeDebugDraw.h>
@@ -666,6 +667,128 @@ TEST_F(ReentryTest, TheDomainStillRunsQueriesAfterARejectedNestedQuery)
 	const Json::Value again = Exec("cells.query.check", Expr("terrain == water"));
 	ASSERT_TRUE(again["success"].asBool());
 	EXPECT_EQ(again["data"]["count"].asUInt(), rig.WaterCount());
+}
+
+// ---- Exhaustive pass 2 (Feature 3) ----
+
+TEST_F(ReentryTest, ReadDelegateClearingTheSelectionMidQueryDoesNotDisturbTheOuterResult)
+{
+	Rig rig(66, 42);
+	AddReentrantLayer(rig);
+	rig.domain.ActiveSelection()->Set(5, true);
+	gArmed = true;
+	gNestedCmd = "cells.select.clear";
+	gNestedExpr = "";
+	Json::Value r;
+	ASSERT_TRUE(FinishesWithin(std::chrono::milliseconds(5000), [&] { r = Exec("cells.select.query", Expr("rd > 0.5")); }));
+	ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
+	EXPECT_EQ(gReentryCalls, 1u);
+	EXPECT_FALSE(gNestedQueryRejected);	// a selection command is not blocked by the running query
+	EXPECT_EQ(r["data"]["count"].asUInt(), 66u * 42u);
+	EXPECT_EQ(rig.domain.ActiveSelectionView()->Count(), 66u * 42u);	// the outer query replaces whatever the nested call did
+}
+
+TEST_F(ReentryTest, ReentrantLayerUsedTwiceInOneQueryReadsOnceAndReleasesTheRunningFlag)
+{
+	Rig rig(66, 42);
+	AddReentrantLayer(rig);
+	gArmed = true;
+	gNestedCmd = "cells.query.check";
+	gNestedExpr = "temp < 0.5";
+	const Json::Value r = Exec("cells.select.query", Expr("rd > 0.5 and rd < 2"));
+	ASSERT_TRUE(r["success"].asBool());
+	EXPECT_EQ(r["data"]["count"].asUInt(), 66u * 42u);
+	EXPECT_TRUE(gNestedQueryRejected);
+	EXPECT_EQ(gReentryCalls, 1u);	// the layer is read once per query even when two comparisons use it
+	const Json::Value after = Exec("cells.query.check", Expr("temp < 0.5"));
+	ASSERT_TRUE(after["success"].asBool());
+	EXPECT_EQ(after["data"]["count"].asUInt(), 0u);
+}
+
+TEST_F(QueryCommandsTest, UppercaseKeywordsAreRejectedAtTheKeywordAndLeaveTheSelectionAlone)
+{
+	Rig rig(66, 42);
+	rig.domain.ActiveSelection()->Set(7, true);
+	const uint32_t version = rig.domain.ActiveSelectionView()->Version();
+	struct Case { const char* expr; uint32_t column; };
+	const Case cases[] = { { "temp >= 1 AND terrain == water", 10 }, { "temp >= 1 Or terrain == water", 10 }, { "NOT temp >= 1", 4 } };
+	for (const Case& c : cases)
+	{
+		for (const char* cmd : { "cells.select.query", "cells.query.check" })
+		{
+			const Json::Value r = Exec(cmd, Expr(c.expr));
+			ASSERT_FALSE(r["success"].asBool()) << cmd << " " << c.expr;
+			EXPECT_EQ(r["error"]["column"].asUInt(), c.column) << cmd << " " << c.expr;
+		}
+	}
+	EXPECT_EQ(rig.domain.ActiveSelectionView()->Version(), version);
+	EXPECT_TRUE(rig.domain.ActiveSelectionView()->Contains(7));
+}
+
+TEST_F(QueryCommandsTest, SingleCellGridQueriesAndNegation)
+{
+	Rig rig(1, 1);
+	EXPECT_EQ(Exec("cells.select.query", Expr("terrain == grass"))["data"]["count"].asUInt(), 1u);
+	EXPECT_EQ(rig.domain.ActiveSelectionView()->Count(), 1u);
+	EXPECT_EQ(Exec("cells.select.query", Expr("not (terrain == grass)"))["data"]["count"].asUInt(), 0u);
+	EXPECT_EQ(rig.domain.ActiveSelectionView()->Count(), 0u);
+	EXPECT_EQ(Exec("cells.select.query", Expr("not terrain == water and temp >= 1"))["data"]["count"].asUInt(), 1u);
+}
+
+TEST_F(QueryCommandsTest, MillionCellGridEvaluatesWithExactCounts)
+{
+	Rig rig(1024, 1024);	// 1,048,576 cells, 16,384 words per pool slot
+	const uint32_t total = 1024u * 1024u;
+	EXPECT_EQ(Exec("cells.query.check", Expr("temp >= 1"))["data"]["count"].asUInt(), total);
+	EXPECT_EQ(Exec("cells.query.check", Expr("not temp >= 1"))["data"]["count"].asUInt(), 0u);
+	EXPECT_EQ(Exec("cells.query.check", Expr("terrain == rock or terrain == sand"))["data"]["count"].asUInt(), total / 2);
+	const Json::Value r = Exec("cells.select.query", Expr("terrain != grass and (terrain == water or temp > 5)"));
+	ASSERT_TRUE(r["success"].asBool());
+	EXPECT_EQ(r["data"]["count"].asUInt(), total / 4);
+	EXPECT_EQ(rig.domain.ActiveSelectionView()->Count(), total / 4);
+	EXPECT_TRUE(rig.domain.ActiveSelectionView()->Contains(1));
+	EXPECT_FALSE(rig.domain.ActiveSelectionView()->Contains(2));
+	EXPECT_TRUE(rig.domain.ActiveSelectionView()->Contains(total - 3));	// (total-3) % 4 == 1
+}
+
+TEST_F(QueryCommandsTest, SimHostedQueryRepliesAreOrderedAndVisibleToTheNextRequest)
+{
+	Rig rig(66, 42);
+	MirrorQueries queries(rig.registry, rig.domain, rig.service);
+	FakeMirrorRegistrar& reg = rig.commands.Registrar();
+	ASSERT_TRUE(RegisterMirrorQueries(reg, queries));
+	ASSERT_TRUE(reg.IsCommand("cells.select.query"));
+	ASSERT_TRUE(reg.IsCommand("cells.query.check"));
+
+	EXPECT_EQ(reg.Execute("cells.select.get", Json::Value(Json::objectValue))["total"].asUInt(), 0u);
+	const Json::Value chk = reg.Execute("cells.query.check", Expr("terrain == water"));
+	EXPECT_TRUE(chk["ok"].asBool());
+	EXPECT_EQ(chk["count"].asUInt(), rig.WaterCount());
+	EXPECT_EQ(reg.Execute("cells.select.get", Json::Value(Json::objectValue))["total"].asUInt(), 0u);	// check did not select
+
+	const Json::Value sel = reg.Execute("cells.select.query", Expr("terrain == water"));
+	EXPECT_TRUE(sel["ok"].asBool());
+	EXPECT_FALSE(sel.isMember("success"));	// raw reply, not the DiaAPI wrapper
+	EXPECT_EQ(reg.Execute("cells.select.get", Json::Value(Json::objectValue))["total"].asUInt(), rig.WaterCount());
+
+	const Json::Value bad = reg.Execute("cells.select.query", Expr("terrian == water"));
+	EXPECT_FALSE(bad["ok"].asBool());
+	EXPECT_EQ(bad["error"]["suggestion"].asString(), "terrain");
+	EXPECT_EQ(reg.Execute("cells.select.get", Json::Value(Json::objectValue))["total"].asUInt(), rig.WaterCount());	// rejected query changed nothing
+
+	const Json::Value none = reg.Execute("cells.select.query", Expr("temp > 100"));
+	EXPECT_EQ(none["count"].asUInt(), 0u);
+	EXPECT_EQ(reg.Execute("cells.select.get", Json::Value(Json::objectValue))["total"].asUInt(), 0u);
+	UnregisterMirrorQueries(reg);
+}
+
+TEST_F(QueryCommandsTest, UnregisteredViewerAnswersQueryAsNotRegisteredNotACrash)
+{
+	Rig rig(10, 10);
+	rig.commands.Unregister();
+	EXPECT_TRUE(rig.commands.Raw("cells.select.query", Expr("temp >= 1")).isNull());
+	EXPECT_TRUE(rig.commands.Raw("cells.query.check", Expr("temp >= 1")).isNull());
+	EXPECT_EQ(rig.domain.ActiveSelectionView()->Count(), 0u);
 }
 
 #endif // DIA_DEBUG

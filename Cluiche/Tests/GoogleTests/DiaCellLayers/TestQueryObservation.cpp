@@ -198,4 +198,32 @@ TEST_F(QueryObservationTest, MultipleSelectRejectsIncrementRejectedCounter)
 	EXPECT_EQ(afterRejects - initialCount, 3.0);
 }
 
+TEST_F(QueryObservationTest, RejectedQueriesLeaveLastMatchCountAndRunCounterAlone)
+{
+	Rig rig(kTestDim.w, kTestDim.h);
+	Exec("cells.select.query", Expr("terrain == water"));
+	const double lastCount = GaugeValue("dia.celllayers.query.last_match_count");
+	const double runs = CounterValue("dia.celllayers.query.run");
+	ASSERT_EQ(lastCount, static_cast<double>(rig.WaterCount()));
+	const char* const bad[] = { "terrain >", "terrian == water", "terrain > 1", "", "   ", "((((((((((((((((((temp>1))))))))))))))))))" };
+	for (const char* b : bad)
+	{
+		Exec("cells.select.query", Expr(b));
+		Exec("cells.query.check", Expr(b));
+	}
+	EXPECT_EQ(GaugeValue("dia.celllayers.query.last_match_count"), lastCount);
+	EXPECT_EQ(CounterValue("dia.celllayers.query.run"), runs);
+}
+
+TEST_F(QueryObservationTest, RejectedCounterCountsEveryRejectionKindOnSelectOnly)
+{
+	Rig rig(kTestDim.w, kTestDim.h);
+	const double before = CounterValue("dia.celllayers.query.rejected");
+	const char* const bad[] = { "terrain >", "terrian == water", "terrain > 1", "", "temp > 1 AND temp < 3" };
+	for (const char* b : bad) { Exec("cells.select.query", Expr(b)); }
+	EXPECT_EQ(CounterValue("dia.celllayers.query.rejected") - before, 5.0);
+	for (const char* b : bad) { Exec("cells.query.check", Expr(b)); }
+	EXPECT_EQ(CounterValue("dia.celllayers.query.rejected") - before, 5.0);
+}
+
 #endif // DIA_DEBUG

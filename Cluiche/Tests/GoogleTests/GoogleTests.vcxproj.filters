@@ -2376,5 +2376,8 @@
     <ClCompile Include="ApplicationFlow\TestSecondaryPUTick.cpp">
       <Filter>ApplicationFlow</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestQueryExhaustive.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
