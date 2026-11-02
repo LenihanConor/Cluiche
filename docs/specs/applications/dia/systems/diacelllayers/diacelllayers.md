@@ -116,7 +116,7 @@ Aggregates are computed on the provider's PU, on demand (when the selection or v
 ### Commands, topics, queries
 
 - **Commands:**
-  - `cells.layer.list`, `cells.layer.base <id>`, `cells.overlay.toggle <id>`
+  - `cells.layer.list` (a sim-hosted query), `cells.layer.base_by_id {id}`, `cells.overlay.toggle_by_id {id}` (the positional forms were removed by the Streams Migration; all viewer commands are sim-hosted and take JSON args)
   - the selection commands above
   - `cells.select.pin`, `cells.select.unpin`, `cells.inspect`, which returns the stats JSON
 - **DiaDebugServer:**

@@ -956,14 +956,14 @@ body {
 
 <!-- FOOTER: DiaAPI Commands -->
 <div class="footer-commands">
-  <span class="footer-cmd">cells.layer.base ecology.vegetation</span> ·
+  <span class="footer-cmd">cells.layer.base_by_id {"id":"ecology.vegetation"}</span> ·
   <span class="footer-cmd">cells.select.box 10 4 22 12</span> ·
   <span class="footer-cmd">cells.select.query "vegetation < 0.2 and biome = Grassland"</span> ·
   <span class="footer-cmd">cells.history.track vegetation herbivores precipitation</span> ·
   <span class="footer-cmd">cells.snapshot.take pre-drought</span> ·
   <span class="footer-cmd">cells.snapshot.restore pre-drought</span> ·
-  <span class="footer-cmd">cells.overlay.toggle weather.wind</span> ·
-  <span class="footer-cmd">cells.overlay.toggle region_edges</span> ·
+  <span class="footer-cmd">cells.overlay.toggle_by_id {"id":"weather.wind"}</span> ·
+  <span class="footer-cmd">cells.overlay.toggle_by_id {"id":"region_edges"}</span> ·
   <span class="footer-cmd">cells.select.pin A</span> ·
   <span class="footer-cmd">cells.inspect (shows A vs current while A is pinned)</span>
 </div>
