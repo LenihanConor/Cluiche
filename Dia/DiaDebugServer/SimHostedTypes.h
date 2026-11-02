@@ -43,6 +43,32 @@ namespace Dia
 			char json[kSimPayloadBytes];
 		};
 
+		// Max length (excluding NUL) of a sim-hosted name carried in SimHostedName.
+		static constexpr uint32_t kSimHostedNameMax = 96;
+
+		// One (name, kind) entry for DebugServer::ReplaceSimHosted.  Fixed storage, no heap.
+		struct SimHostedName
+		{
+			char    name[kSimHostedNameMax];
+			SimKind kind;
+		};
+
+		// Per-entry hash of (name, kind): FNV-1a over the name bytes, then the kind value, then an avalanche.
+		// Deterministic; shared by the sim host and the DebugServer.  Set hash = uint32 wrapping sum of entry hashes.
+		inline uint32_t SimNameSetEntryHash(const char* name, SimKind kind)
+		{
+			uint32_t h = 2166136261u;
+			for (const char* p = (name != nullptr) ? name : ""; *p != '\0'; ++p)
+			{
+				h ^= static_cast<uint8_t>(*p);
+				h *= 16777619u;
+			}
+			h ^= static_cast<uint32_t>(kind) + 1u;
+			h *= 16777619u;
+			h ^= h >> 16; h *= 0x85ebca6bu; h ^= h >> 13; h *= 0xc2b2ae35u; h ^= h >> 16;
+			return h;
+		}
+
 		static_assert(std::is_trivially_copyable_v<SimRequestEvent>, "SimRequestEvent must be trivially copyable");
 		static_assert(std::is_trivially_copyable_v<SimReplyEvent>, "SimReplyEvent must be trivially copyable");
 	}

@@ -33,6 +33,7 @@
 
 #include <DiaBlackboard/BlackboardRegistry.h>
 #include "Types/DebugServerPushEvent.h"
+#include "Types/SimAnnounceTracker.h"
 
 namespace Dia { namespace Observation { namespace Metric {
     class Gauge;
@@ -98,7 +99,20 @@ protected:
     // (Main -> Sim). False if the stream is not connected or rejected the event.
     bool PostRequest(const Dia::DebugServer::SimRequestEvent& request) override;
 
+    // Handles one SimQueryReply event (registration side channel + announcement resync, else CompleteSimReply).
+    // nowMs is a monotonic millisecond clock.  Exposed to derived test doubles.
+    void HandleSimReply(const Dia::DebugServer::SimReplyEvent& reply, uint64_t nowMs);
+
+    // Times out a stalled resync staging.  Called once per update.
+    void TickAnnounce(uint64_t nowMs);
+
+    const SimAnnounceTracker& GetAnnounceTracker() const { return mAnnounce; }
+
 private:
+    void RequestResync();
+    void InstallStagedSet();
+    static uint64_t SteadyNowMs();
+
     void QueryMemory();
 
     // Drains SimQueryReply (Sim -> Main). Reply requestId 0 is a registration message
@@ -144,6 +158,9 @@ private:
         this, Dia::Core::StringCRC("SimQueryRequest")};
     Dia::ApplicationFlow::EventStreamReader<Dia::DebugServer::SimReplyEvent> mSimReplies{
         this, Dia::Core::StringCRC("SimQueryReply")};
+
+    // Announcement resync state machine (Main thread only; no locking).
+    SimAnnounceTracker mAnnounce;
 
     // Blackboard registry owned here (MainPU); game modules register/unregister
     // boards via GetBlackboardRegistry(). mSources[4] polls this directly.

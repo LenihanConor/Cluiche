@@ -62,21 +62,9 @@ struct SimRegistration
     uint32_t                        hash  = 0;   // Digest
 };
 
-// Per-entry hash of (name, kind): FNV-1a over the name bytes, then the kind value, then an avalanche.
-// Deterministic; shared by the sim host and the DebugServer.  Set hash = uint32 wrapping sum of entry hashes.
-inline uint32_t SimNameSetEntryHash(const char* name, Dia::DebugServer::SimKind kind)
-{
-    uint32_t h = 2166136261u;
-    for (const char* p = (name != nullptr) ? name : ""; *p != '\0'; ++p)
-    {
-        h ^= static_cast<uint8_t>(*p);
-        h *= 16777619u;
-    }
-    h ^= static_cast<uint32_t>(kind) + 1u;
-    h *= 16777619u;
-    h ^= h >> 16; h *= 0x85ebca6bu; h ^= h >> 13; h *= 0xc2b2ae35u; h ^= h >> 16;
-    return h;
-}
+// Per-entry hash of (name, kind); the implementation lives in Dia (DiaDebugServer/SimHostedTypes.h) so the
+// DebugServer digest and the sim host agree byte for byte.
+using Dia::DebugServer::SimNameSetEntryHash;
 
 namespace Detail
 {

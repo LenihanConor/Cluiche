@@ -1086,6 +1086,7 @@
     <ClCompile Include="DiaVisualDebugger\Console\TestDomainStateSnapshot.cpp" />
     <ClCompile Include="DiaVisualDebugger\Console\TestDomainStateSnapshotPublisher.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestSimAnnounceTracker.cpp" />
+    <ClCompile Include="DebugServer\TestSimHostedResyncTable.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

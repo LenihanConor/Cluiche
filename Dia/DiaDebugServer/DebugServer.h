@@ -218,6 +218,16 @@ namespace Dia
 			bool RegisterSimHosted(Dia::Core::StringCRC name, SimKind kind);
 			void UnregisterSimHosted(Dia::Core::StringCRC name);
 
+			// Atomically replaces the whole sim-hosted table with 'names' (announcement resync install).
+			// Duplicate names in the input: the LAST entry wins (its kind is used).  Returns false and leaves
+			// the table untouched (Error log) if a name is null/empty, the deduplicated set exceeds the table
+			// capacity (32), or a name already exists in the QueryRegistry.  count==0 clears the table.
+			bool ReplaceSimHosted(const SimHostedName* names, uint32_t count);
+
+			// Entry count and wrapping uint32 sum of SimNameSetEntryHash over every sim-hosted entry
+			// (order independent).  Empty table gives 0 / 0.
+			void GetSimHostedDigest(uint32_t& count, uint32_t& hash) const;
+
 			// Sends the deferred COMMAND_RESPONSE for reply.requestId.  Late/unknown ids are dropped.
 			void CompleteSimReply(const SimReplyEvent& reply);
 

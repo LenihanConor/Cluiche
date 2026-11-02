@@ -153,6 +153,65 @@ namespace Dia
 			}
 		}
 
+		bool DebugServer::ReplaceSimHosted(const SimHostedName* names, uint32_t count)
+		{
+			if (count > 0 && names == nullptr)
+			{
+				DIA_LOG_ERROR("DebugServer", "ReplaceSimHosted: null name array with count %u", count);
+				return false;
+			}
+
+			// Build the new table off to the side; only swap if every entry is acceptable.
+			Dia::Core::Containers::DynamicArrayC<SimName, kMaxSimNames> next;
+			for (uint32_t i = 0; i < count; ++i)
+			{
+				if (names[i].name[0] == '\0' || memchr(names[i].name, '\0', kSimHostedNameMax) == nullptr)
+				{
+					DIA_LOG_ERROR("DebugServer", "ReplaceSimHosted: entry %u has an empty or unterminated name, swap rejected", i);
+					return false;
+				}
+				const Dia::Core::StringCRC crc(names[i].name);
+				if (mQueryRegistry.Has(crc))
+				{
+					DIA_LOG_ERROR("DebugServer", "ReplaceSimHosted: '%s' already exists in QueryRegistry, swap rejected", names[i].name);
+					return false;
+				}
+				bool found = false;
+				for (unsigned int j = 0; j < next.Size(); ++j)
+				{
+					if (next[j].name == crc)
+					{
+						next[j].kind = names[i].kind;   // duplicate: last wins
+						found = true;
+						break;
+					}
+				}
+				if (found)
+					continue;
+				if (next.IsFull())
+				{
+					DIA_LOG_ERROR("DebugServer", "ReplaceSimHosted: %u names exceed capacity %u, swap rejected", count, kMaxSimNames);
+					return false;
+				}
+				SimName entry;
+				entry.name = crc;
+				entry.kind = names[i].kind;
+				next.Add(entry);
+			}
+
+			mSimNames = next;
+			DIA_LOG_INFO("DebugServer", "Sim-hosted table replaced (%u names)", mSimNames.Size());
+			return true;
+		}
+
+		void DebugServer::GetSimHostedDigest(uint32_t& count, uint32_t& hash) const
+		{
+			count = mSimNames.Size();
+			hash  = 0;
+			for (unsigned int i = 0; i < mSimNames.Size(); ++i)
+				hash += SimNameSetEntryHash(mSimNames[i].name.AsChar(), mSimNames[i].kind);
+		}
+
 		void DebugServer::SetNowMsFunction(NowMsFunction fn)
 		{
 			mNowMsFn = fn;

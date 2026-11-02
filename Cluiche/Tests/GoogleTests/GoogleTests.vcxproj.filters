@@ -2394,5 +2394,8 @@
     <ClCompile Include="CluicheGameBaseline\TestSimAnnounceTracker.cpp">
       <Filter>CluicheGameBaseline</Filter>
     </ClCompile>
+    <ClCompile Include="DebugServer\TestSimHostedResyncTable.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

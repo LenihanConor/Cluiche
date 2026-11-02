@@ -21,6 +21,8 @@
 #include "Types/SimRegistrationMessage.h"
 
 #include <chrono>
+#include <cstring>
+#include <vector>
 #include <memory>
 #include <string>
 
@@ -180,6 +182,7 @@ void DebugServerHostModule::DoUpdate(const Dia::SimTime::MainTimeContext& ctx)
 
     QueryMemory();
     DrainSimReplies();
+    TickAnnounce(SteadyNowMs());
     mServer.Tick(deltaTime);
 
     // Tick all inspector data sources.
@@ -245,28 +248,111 @@ void DebugServerHostModule::DrainSimReplies()
         mSimReplies.Consume(batch);
         for (unsigned int i = 0; i < batch.Size(); ++i)
         {
-            const Dia::DebugServer::SimReplyEvent& reply = batch[i].payload;
-            const SimRegistration reg = ParseSimRegistrationReply(reply);
-            switch (reg.op)
-            {
-                case SimRegistrationOp::NotRegistration:
-                    mServer.CompleteSimReply(reply);
-                    break;
-                case SimRegistrationOp::Register:
-                    mServer.RegisterSimHosted(Dia::Core::StringCRC(reg.name), reg.kind);
-                    break;
-                case SimRegistrationOp::Unregister:
-                    mServer.UnregisterSimHosted(Dia::Core::StringCRC(reg.name));
-                    break;
-                case SimRegistrationOp::Digest:
-                case SimRegistrationOp::ResyncBegin:
-                case SimRegistrationOp::Replay:
-                    break;   // resync handling arrives with the announcement-resync tracker task
-                case SimRegistrationOp::Malformed:
-                    DIA_LOG_WARNING("DebugServer", "DebugServerHostModule: malformed sim registration message ignored");
-                    break;
-            }
+            HandleSimReply(batch[i].payload, SteadyNowMs());
         }
+    }
+}
+
+uint64_t DebugServerHostModule::SteadyNowMs()
+{
+    return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count());
+}
+
+void DebugServerHostModule::RequestResync()
+{
+    Dia::DebugServer::SimRequestEvent* req = new Dia::DebugServer::SimRequestEvent();
+    std::unique_ptr<Dia::DebugServer::SimRequestEvent> owner(req);   // ~16 KB: keep off the stack
+    req->requestId = kSimRegistrationRequestId;   // control request
+    req->nameCrc   = 0;
+    req->kind      = static_cast<uint32_t>(Dia::DebugServer::SimKind::Resync);
+    req->json[0]   = '\0';
+    if (!PostRequest(*req))
+    {
+        mAnnounce.NotifyRequestFailed();
+        DIA_LOG_WARNING("DebugServer", "DebugServerHostModule: resync request could not be posted, will retry");
+    }
+}
+
+void DebugServerHostModule::InstallStagedSet()
+{
+    const uint32_t count = mAnnounce.StagedCount();
+    std::vector<Dia::DebugServer::SimHostedName> names(count);
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        std::memset(&names[i], 0, sizeof(names[i]));
+        std::strncpy(names[i].name, mAnnounce.StagedName(i), sizeof(names[i].name) - 1);
+        names[i].kind = mAnnounce.StagedKind(i);
+    }
+    if (mServer.ReplaceSimHosted(names.data(), count))
+        DIA_LOG_INFO("DebugServer", "DebugServerHostModule: sim announcement resync complete, %u names", count);
+    else
+        DIA_LOG_ERROR("DebugServer", "DebugServerHostModule: sim announcement resync could not install %u names", count);
+}
+
+void DebugServerHostModule::TickAnnounce(uint64_t nowMs)
+{
+    if (mAnnounce.Tick(nowMs) == SimAnnounceAction::DiscardStaging)
+        DIA_LOG_WARNING("DebugServer", "DebugServerHostModule: sim announcement resync timed out, staging discarded");
+}
+
+void DebugServerHostModule::HandleSimReply(const Dia::DebugServer::SimReplyEvent& reply, uint64_t nowMs)
+{
+    const SimRegistration reg = ParseSimRegistrationReply(reply);
+    switch (reg.op)
+    {
+        case SimRegistrationOp::NotRegistration:
+            mServer.CompleteSimReply(reply);
+            break;
+        case SimRegistrationOp::Register:
+        case SimRegistrationOp::Unregister:
+        {
+            const uint32_t gapsBefore = mAnnounce.AnnounceGaps();
+            const SimAnnounceAction action = mAnnounce.OnRegistration(reg, nowMs);
+            if (mAnnounce.AnnounceGaps() != gapsBefore)
+                DIA_LOG_WARNING("DebugServer", "DebugServerHostModule: sim announcement gap at seq %u (total gaps %u)",
+                    reg.seq, mAnnounce.AnnounceGaps());
+            if (action == SimAnnounceAction::Apply || action == SimAnnounceAction::ApplyAndRequestResync)
+            {
+                if (reg.op == SimRegistrationOp::Register)
+                    mServer.RegisterSimHosted(Dia::Core::StringCRC(reg.name), reg.kind);
+                else
+                    mServer.UnregisterSimHosted(Dia::Core::StringCRC(reg.name));
+            }
+            if (action == SimAnnounceAction::ApplyAndRequestResync)
+                RequestResync();
+            break;
+        }
+        case SimRegistrationOp::Digest:
+        {
+            uint32_t count = 0, hash = 0;
+            mServer.GetSimHostedDigest(count, hash);
+            const uint32_t before = mAnnounce.DigestMismatches();
+            const SimAnnounceAction action = mAnnounce.OnDigest(reg, count, hash, nowMs);
+            if (mAnnounce.DigestMismatches() != before)
+                DIA_LOG_WARNING("DebugServer",
+                    "DebugServerHostModule: sim digest mismatch (local count=%u hash=0x%08x, sim count=%u hash=0x%08x)",
+                    count, hash, reg.count, reg.hash);
+            if (action == SimAnnounceAction::RequestResync)
+                RequestResync();
+            break;
+        }
+        case SimRegistrationOp::ResyncBegin:
+            if (mAnnounce.OnResyncBegin(reg, nowMs) == SimAnnounceAction::InstallSet)
+                InstallStagedSet();
+            break;
+        case SimRegistrationOp::Replay:
+        {
+            const SimAnnounceAction action = mAnnounce.OnReplay(reg, nowMs);
+            if (action == SimAnnounceAction::InstallSet)
+                InstallStagedSet();
+            else if (action == SimAnnounceAction::DiscardStaging)
+                DIA_LOG_WARNING("DebugServer", "DebugServerHostModule: sim announcement resync timed out, staging discarded");
+            break;
+        }
+        case SimRegistrationOp::Malformed:
+            DIA_LOG_WARNING("DebugServer", "DebugServerHostModule: malformed sim registration message ignored");
+            break;
     }
 }
 
