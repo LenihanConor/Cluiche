@@ -241,3 +241,43 @@ TEST_F(EditorPluginRegistryGameScope, OutOfGameScopeFalseWhenGameActive)
     r.ClearGameScope();
     EXPECT_TRUE(r.IsOutOfGameScope(kGameA));
 }
+
+// ---------------------------------------------------------------------------
+// Held asset routes (replayed by the asset catalogue plugin on load)
+// ---------------------------------------------------------------------------
+
+TEST_F(EditorPluginRegistryGameScope, AssetRoutes_AddRemoveAndDuplicate)
+{
+    auto& r = EditorPluginRegistry::Instance();
+    r.ClearAssetRoutes();
+    const StringCRC t("route_type"), e("route_editor"), e2("route_editor2");
+
+    EXPECT_TRUE(r.AddAssetRoute(t, e));
+    EXPECT_FALSE(r.AddAssetRoute(t, e));   // exact duplicate
+    EXPECT_TRUE(r.AddAssetRoute(t, e2));   // same type, different editor
+    ASSERT_EQ(r.GetAssetRouteCount(), 2u);
+    EXPECT_EQ(r.GetAssetRouteAssetType(0), t);
+    EXPECT_EQ(r.GetAssetRouteEditor(0), e);
+
+    EXPECT_TRUE(r.RemoveAssetRoute(t, e));
+    EXPECT_FALSE(r.RemoveAssetRoute(t, e));
+    EXPECT_EQ(r.GetAssetRouteCount(), 1u);
+    EXPECT_EQ(r.GetAssetRouteEditor(0), e2);
+    r.ClearAssetRoutes();
+    EXPECT_EQ(r.GetAssetRouteCount(), 0u);
+}
+
+TEST_F(EditorPluginRegistryGameScope, AssetRoutes_CapacityRejectsOverflow)
+{
+    auto& r = EditorPluginRegistry::Instance();
+    r.ClearAssetRoutes();
+    char name[32];
+    for (unsigned int i = 0; i < EditorPluginRegistry::kMaxAssetRoutes; ++i)
+    {
+        sprintf_s(name, "cap_type_%u", i);
+        ASSERT_TRUE(r.AddAssetRoute(StringCRC(name), StringCRC("cap_editor")));
+    }
+    EXPECT_FALSE(r.AddAssetRoute(StringCRC("cap_overflow"), StringCRC("cap_editor")));
+    EXPECT_EQ(r.GetAssetRouteCount(), EditorPluginRegistry::kMaxAssetRoutes);
+    r.ClearAssetRoutes();
+}

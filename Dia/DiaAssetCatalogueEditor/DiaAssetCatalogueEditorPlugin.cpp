@@ -7,6 +7,7 @@
 #include "DiaAssetCatalogueEditor/Commands/RemoveRelationshipCommand.h"
 #include "DiaAssetCatalogueEditor/Handlers/AssetTypeEditorRegistry.h"
 #include "DiaAssetCatalogueEditor/Commands/ApplyRulesCommand.h"
+#include <DiaEditor/Plugin/EditorPluginRegistry.h>
 #include <DiaEditor/Plugin/IPluginLoader.h>
 #include <DiaEditor/UI/FileDialogHandler.h>
 
@@ -153,6 +154,14 @@ namespace Dia
 				SeedAssetTemplates();
 				RegisterRequestHandlers();
 				DualRegisterActions();
+
+				// Replay routes held by plugins that loaded before this one (first registration wins; never
+				// overrides built-ins, and routes already registered here are rejected as duplicates).
+				{
+					const Dia::Editor::EditorPluginRegistry& pluginRegistry = Dia::Editor::EditorPluginRegistry::Instance();
+					for (unsigned int i = 0; i < pluginRegistry.GetAssetRouteCount(); ++i)
+						mTypeEditorRegistry.RegisterTypeEditor(pluginRegistry.GetAssetRouteAssetType(i), pluginRegistry.GetAssetRouteEditor(i));
+				}
 
 				DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: Initialized");
 			}

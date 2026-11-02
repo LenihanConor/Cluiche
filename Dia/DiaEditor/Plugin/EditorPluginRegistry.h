@@ -47,6 +47,19 @@ namespace Dia
 			void AddGameScopeListener(GameScopeChangedCallback callback, void* userData);
 			void RemoveGameScopeListener(GameScopeChangedCallback callback, void* userData);
 
+			// Held asset routes (assetType -> editorPluginType) added by AssetRoutes helpers. They outlive the
+			// asset catalogue plugin's load order: the catalogue replays them in its OnPluginLoad.
+			static const unsigned int kMaxAssetRoutes = 32;
+
+			// False if the exact pair is already held or capacity is reached.
+			bool AddAssetRoute(const Dia::Core::StringCRC& assetType, const Dia::Core::StringCRC& editorPluginType);
+			// False if the pair is not held.
+			bool RemoveAssetRoute(const Dia::Core::StringCRC& assetType, const Dia::Core::StringCRC& editorPluginType);
+			void ClearAssetRoutes();
+			unsigned int GetAssetRouteCount() const;
+			const Dia::Core::StringCRC& GetAssetRouteAssetType(unsigned int index) const;
+			const Dia::Core::StringCRC& GetAssetRouteEditor(unsigned int index) const;
+
 		private:
 			void ChangeActiveGame(const Dia::Core::StringCRC& newGame);
 
@@ -69,6 +82,13 @@ namespace Dia
 				void* userData;
 			};
 
+			struct AssetRoute
+			{
+				Dia::Core::StringCRC assetType;
+				Dia::Core::StringCRC editorPluginType;
+			};
+
+			Dia::Core::Containers::DynamicArrayC<AssetRoute, kMaxAssetRoutes> mAssetRoutes;
 			Dia::Core::Containers::DynamicArrayC<PluginEntry, kMaxPlugins> mEntries;
 			Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, kMaxManifests> mActiveManifests;
 			Dia::Core::StringCRC mActiveGameId;

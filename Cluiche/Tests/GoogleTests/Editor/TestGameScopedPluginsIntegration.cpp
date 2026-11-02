@@ -415,6 +415,51 @@ TEST_F(GameScopedPluginsIntegration, AC4_NoCataloguePlugin_LoadAndUnloadStillWor
     EXPECT_EQ(GameCounters().unloads, 1);
 }
 
+// Catalogue plugin loads AFTER the game plugin registered its route: the held route is replayed.
+TEST_F(GameScopedPluginsIntegration, AC4_CatalogueLoadedAfterGamePlugin_RouteReplayed)
+{
+    ASSERT_TRUE(LoadStubGame());
+    mLoader.LoadPlugin(StringCRC(kStubGameType), StringCRC("inst"));   // no catalogue yet: route only held
+    ASSERT_TRUE(mLoader.IsPluginTypeLoaded(StringCRC(kStubGameType)));
+
+    LoadCatalogue();
+    EXPECT_TRUE(StubRouteExists());
+}
+
+TEST_F(GameScopedPluginsIntegration, AC4_GamePluginUnloadedBeforeCatalogueLoads_NoRoute)
+{
+    ASSERT_TRUE(LoadStubGame());
+    mLoader.LoadPlugin(StringCRC(kStubGameType), StringCRC("inst"));
+    ASSERT_TRUE(LoadOtherGame());   // scope change closes the plugin; its route is dropped
+
+    LoadCatalogue();
+    EXPECT_FALSE(StubRouteExists());
+    EXPECT_EQ(EditorPluginRegistry::Instance().GetAssetRouteCount(), 0u);
+}
+
+TEST_F(GameScopedPluginsIntegration, AC4_ReplayedRouteRemovedOnUnloadAfterCatalogueLoads)
+{
+    ASSERT_TRUE(LoadStubGame());
+    mLoader.LoadPlugin(StringCRC(kStubGameType), StringCRC("inst"));
+    LoadCatalogue();
+    ASSERT_TRUE(StubRouteExists());
+
+    ASSERT_TRUE(LoadOtherGame());
+    EXPECT_FALSE(StubRouteExists());
+}
+
+TEST_F(GameScopedPluginsIntegration, AC4_CatalogueFirst_RouteNotDoubleHeldOrRegistered)
+{
+    LoadCatalogue();
+    ASSERT_TRUE(LoadStubGame());
+    mLoader.LoadPlugin(StringCRC(kStubGameType), StringCRC("inst"));
+    EXPECT_EQ(EditorPluginRegistry::Instance().GetAssetRouteCount(), 1u);
+    EXPECT_TRUE(StubRouteExists());
+    ASSERT_TRUE(LoadOtherGame());
+    EXPECT_EQ(EditorPluginRegistry::Instance().GetAssetRouteCount(), 0u);
+    EXPECT_FALSE(StubRouteExists());
+}
+
 // ---------------------------------------------------------------------------
 // AC5: live-connection diagame_path loads the scope without a restart
 // ---------------------------------------------------------------------------

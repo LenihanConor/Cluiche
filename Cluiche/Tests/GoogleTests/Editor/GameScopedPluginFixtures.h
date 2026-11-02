@@ -137,6 +137,7 @@ namespace GameScopedFixtures
         Dia::Editor::EditorPluginRegistry& r = Dia::Editor::EditorPluginRegistry::Instance();
         r.ClearGameScope();
         r.ClearActiveManifests();
+        r.ClearAssetRoutes();
         r.TagGameScoped(Dia::Core::StringCRC(kStubGameType), Dia::Core::StringCRC());
         r.TagPluginManifest(Dia::Core::StringCRC(kStubGameType), Dia::Core::StringCRC());
         r.TagPluginManifest(Dia::Core::StringCRC(kStubGenericType), Dia::Core::StringCRC());

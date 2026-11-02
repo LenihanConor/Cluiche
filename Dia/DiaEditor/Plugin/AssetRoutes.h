@@ -1,5 +1,6 @@
 #pragma once
 
+#include <DiaEditor/Plugin/EditorPluginRegistry.h>
 #include <DiaEditor/UI/WebUIBridge.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
@@ -14,7 +15,8 @@ namespace Dia
 		//
 		// They call the asset_catalogue.register_type_editor / unregister_type_editor bridge handlers. The handlers
 		// are only present while DiaAssetCatalogueEditor is loaded; when absent (or bridge is null) the call is a
-		// no-op that returns false and logs at Info. Routes are not replayed if the catalogue plugin loads later.
+		// no-op that returns false and logs at Info. Each route is also held in EditorPluginRegistry, so the
+			// catalogue plugin replays every held route in its OnPluginLoad if it loads after the route was added.
 		// The catalogue never overrides an existing route and only removes a route mapped to the same editor, so
 		// built-in routes cannot be removed through here.
 		namespace AssetRoutes
@@ -40,12 +42,18 @@ namespace Dia
 			// Route assetType to editorPluginType. Returns true if the route was added.
 			inline bool RegisterAssetRoute(WebUIBridge* bridge, const char* assetType, const char* editorPluginType)
 			{
+				if (assetType == nullptr || editorPluginType == nullptr)
+					return false;
+				EditorPluginRegistry::Instance().AddAssetRoute(Dia::Core::StringCRC(assetType), Dia::Core::StringCRC(editorPluginType));
 				return CallRoute(bridge, "asset_catalogue.register_type_editor", "registered", assetType, editorPluginType);
 			}
 
 			// Remove a route previously added with RegisterAssetRoute. Returns true if a route was removed.
 			inline bool UnregisterAssetRoute(WebUIBridge* bridge, const char* assetType, const char* editorPluginType)
 			{
+				if (assetType == nullptr || editorPluginType == nullptr)
+					return false;
+				EditorPluginRegistry::Instance().RemoveAssetRoute(Dia::Core::StringCRC(assetType), Dia::Core::StringCRC(editorPluginType));
 				return CallRoute(bridge, "asset_catalogue.unregister_type_editor", "removed", assetType, editorPluginType);
 			}
 		}

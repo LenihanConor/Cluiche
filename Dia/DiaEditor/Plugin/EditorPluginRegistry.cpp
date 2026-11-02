@@ -224,7 +224,61 @@ namespace Dia
 			return false;
 		}
 
-		void EditorPluginRegistry::AddGameScopeListener(GameScopeChangedCallback callback, void* userData)
+		bool EditorPluginRegistry::AddAssetRoute(const Dia::Core::StringCRC& assetType, const Dia::Core::StringCRC& editorPluginType)
+			{
+				for (unsigned int i = 0; i < mAssetRoutes.Size(); ++i)
+				{
+					if (mAssetRoutes[i].assetType == assetType && mAssetRoutes[i].editorPluginType == editorPluginType)
+						return false;
+				}
+				if (mAssetRoutes.IsFull())
+				{
+					DIA_LOG_WARNING("Editor", "EditorPluginRegistry: asset route capacity (%u) reached", kMaxAssetRoutes);
+					return false;
+				}
+				AssetRoute route;
+				route.assetType = assetType;
+				route.editorPluginType = editorPluginType;
+				mAssetRoutes.Add(route);
+				return true;
+			}
+
+			bool EditorPluginRegistry::RemoveAssetRoute(const Dia::Core::StringCRC& assetType, const Dia::Core::StringCRC& editorPluginType)
+			{
+				for (unsigned int i = 0; i < mAssetRoutes.Size(); ++i)
+				{
+					if (mAssetRoutes[i].assetType == assetType && mAssetRoutes[i].editorPluginType == editorPluginType)
+					{
+						mAssetRoutes.RemoveAt(i);
+						return true;
+					}
+				}
+				return false;
+			}
+
+			void EditorPluginRegistry::ClearAssetRoutes()
+			{
+				mAssetRoutes.RemoveAll();
+			}
+
+			unsigned int EditorPluginRegistry::GetAssetRouteCount() const
+			{
+				return mAssetRoutes.Size();
+			}
+
+			const Dia::Core::StringCRC& EditorPluginRegistry::GetAssetRouteAssetType(unsigned int index) const
+			{
+				DIA_ASSERT(index < mAssetRoutes.Size(), "EditorPluginRegistry: asset route index out of range");
+				return mAssetRoutes[index].assetType;
+			}
+
+			const Dia::Core::StringCRC& EditorPluginRegistry::GetAssetRouteEditor(unsigned int index) const
+			{
+				DIA_ASSERT(index < mAssetRoutes.Size(), "EditorPluginRegistry: asset route index out of range");
+				return mAssetRoutes[index].editorPluginType;
+			}
+
+			void EditorPluginRegistry::AddGameScopeListener(GameScopeChangedCallback callback, void* userData)
 		{
 			if (callback == nullptr)
 				return;
