@@ -180,3 +180,69 @@ TEST(SelectionFingerprint, ConformanceFixtureVectorNamesExactList)
 		EXPECT_EQ(actualNames[i], kExpectedNames[i]) << "Vector at index " << i;
 	}
 }
+
+// ---- Task 10a exhaustive pass ----
+
+TEST(SelectionFingerprint, MixAtBitWidthBoundariesMatchIndependentlyComputedValues)
+{
+	// Values computed with an independent arbitrary-precision implementation of the spec's SplitMix64 finaliser.
+	EXPECT_EQ(Hex(Fn::Mix(0xFFFFFFFFull)), "73b13ba2aff181c0");
+	EXPECT_EQ(Hex(Fn::Mix(0x80000000ull)), "25493cc63225736c");
+	EXPECT_EQ(Hex(Fn::Mix(0xFFFFull)), "cf0f635e85b85d76");
+	EXPECT_EQ(Hex(Fn::Mix(0x10000ull)), "09aab36cfda2d1b3");
+	EXPECT_EQ(Hex(Fn::Mix(0x100000000ull)), "c42c5a1aa3820138");
+	const uint32_t pair[] = { 1u, 0xFFFFFFFFu };
+	EXPECT_EQ(Hex(Fn::HashOf(pair, 2)), "e2bb164e26f3dd01");
+}
+
+TEST(SelectionFingerprint, HashOfNothingIsZeroAndAnIndexTwiceCancels)
+{
+	EXPECT_EQ(Fn::HashOf(nullptr, 0), 0ull);
+	const uint32_t twice[] = { 77u, 77u };
+	EXPECT_EQ(Fn::HashOf(twice, 2), 0ull) << "XOR of equal terms: HashOf is for sets, callers must not repeat indices";
+	const uint32_t once[] = { 77u };
+	EXPECT_EQ(Fn::HashOf(once, 1), Fn::Mix(77));
+}
+
+TEST(SelectionFingerprint, SelectingAndDeselectingRestoresTheHashButNotTheVersion)
+{
+	Dia::Graphics::CellGridDesc grid = MakeGrid(10, 10);
+	CellSelection sel;
+	sel.Reset(&grid);
+	sel.Set(5, true);
+	const SelectionFingerprint one = Fn::Compute(sel);
+	sel.Set(9, true);
+	sel.Set(9, false);
+	const SelectionFingerprint back = Fn::Compute(sel);
+	EXPECT_EQ(back.mHash, one.mHash);
+	EXPECT_EQ(back.mCount, one.mCount);
+	EXPECT_NE(back.mVersion, one.mVersion) << "every real change moves the version even when the set is the same again";
+}
+
+TEST(SelectionFingerprint, SettingAnAlreadySelectedCellChangesNothing)
+{
+	Dia::Graphics::CellGridDesc grid = MakeGrid(10, 10);
+	CellSelection sel;
+	sel.Reset(&grid);
+	sel.Set(5, true);
+	const SelectionFingerprint a = Fn::Compute(sel);
+	EXPECT_FALSE(sel.Set(5, true));
+	EXPECT_EQ(Fn::Compute(sel), a);
+}
+
+TEST(SelectionFingerprint, CacheTreatsADifferentSelectionObjectAsANewSource)
+{
+	Dia::Graphics::CellGridDesc grid = MakeGrid(10, 10);
+	CellSelection a, b;
+	a.Reset(&grid);
+	b.Reset(&grid);
+	a.Set(1, true);
+	b.Set(2, true);
+	ASSERT_EQ(a.Version(), b.Version()) << "same edit count: the version alone cannot tell them apart";
+	SelectionFingerprintCache cache;
+	const SelectionFingerprint fa = cache.Get(a);
+	const SelectionFingerprint fb = cache.Get(b);
+	EXPECT_EQ(fa, Fn::Compute(a));
+	EXPECT_EQ(fb, Fn::Compute(b));
+	EXPECT_NE(fa.mHash, fb.mHash);
+}

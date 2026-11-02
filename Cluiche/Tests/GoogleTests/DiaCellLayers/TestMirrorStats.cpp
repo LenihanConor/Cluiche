@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <DiaCellLayers/MirrorQueries.h>
+#include <DiaCellLayers/InspectorModel.h>
 #include <DiaCellLayers/SelectionFingerprint.h>
 #include <DiaCellLayers/Testing/CellLayerTestSupport.h>
 #include <DiaCellLayers/Testing/FakeDebugDraw.h>
@@ -463,6 +464,209 @@ TEST_F(MirrorStatsTest, TwentyLayerResponseSize)
 	RecordProperty("StatsResponseBytes20Layers", static_cast<int>(bytes));
 	std::cout << "[ INFO ] 20-layer cells.select.stats response: " << bytes << " bytes\n";
 	EXPECT_LT(bytes, 1024u * 1024u);
+}
+
+// ---- Task 10a exhaustive pass: arg edges, other grids, cache keys, re-entry ----
+
+namespace
+{
+	MirrorQueries*	gStatsQueries = nullptr;
+	Json::Value		gStatsNestedStats;
+	Json::Value		gStatsNestedValues;
+	Json::Value		gStatsNestedAll;
+	bool			gStatsArmed = false;
+	bool			gStatsNestAll = false;
+	uint32_t		gStatsCalls = 0;
+	uint64_t		gStatsRdVersion = 1;
+
+	// "rd" read delegate: fills 1.0; when armed it re-enters the mirror queries once.
+	void ReadStatsReentrant(float* out, uint32_t n)
+	{
+		++gStatsCalls;
+		if (gStatsArmed && gStatsQueries != nullptr)
+		{
+			gStatsArmed = false;
+			Json::Value a(Json::objectValue);
+			a["layers"] = LayerArray({ "rain" });
+			gStatsNestedStats = gStatsQueries->SelectionStats(a);
+			Json::Value v(Json::objectValue);
+			v["layer"] = "rain";
+			gStatsNestedValues = gStatsQueries->LayerValues(v);
+			if (gStatsNestAll) { gStatsNestedAll = gStatsQueries->SelectionStats(Args("layers", "all")); }
+		}
+		for (uint32_t i = 0; i < n; ++i) { out[i] = 1.0f; }
+	}
+	uint64_t StatsRdVersionFn() { return gStatsRdVersion; }
+
+	const Json::Value* StatsLayer(const Json::Value& stats, const char* id)
+	{
+		if (!stats.isObject() || !stats["layers"].isArray()) { return nullptr; }
+		for (const Json::Value& l : stats["layers"]) { if (l["layer"].asString() == id) { return &l; } }
+		return nullptr;
+	}
+}
+
+TEST_F(MirrorStatsTest, NonObjectArgsAreErrorsButNullIsTheDefault)
+{
+	StatsRig rig;
+	rig.SelectBox();
+	EXPECT_TRUE(IsError(rig.queries->SelectionStats(Json::Value("all"))));
+	EXPECT_TRUE(IsError(rig.queries->SelectionStats(Json::Value(5))));
+	EXPECT_TRUE(IsError(rig.queries->SelectionStats(Json::Value(true))));
+	EXPECT_FALSE(IsError(rig.queries->SelectionStats(Json::Value())));
+	EXPECT_FALSE(IsError(rig.queries->SelectionStats(Json::Value(Json::objectValue))));
+	EXPECT_FALSE(IsError(rig.queries->SelectionStats(Args("unrelated", 1)))) << "unknown keys are ignored";
+}
+
+TEST_F(MirrorStatsTest, TooManyLayersIsAnErrorAndMaxLayersIsNot)
+{
+	StatsRig rig;
+	rig.SelectBox();
+	Json::Value many(Json::arrayValue);
+	for (uint32_t i = 0; i <= InspectRequest::kMaxLayers; ++i) { many.append("temp"); }
+	const uint32_t computes = rig.queries->StatsComputeCount();
+	EXPECT_TRUE(IsError(rig.queries->SelectionStats(Args("layers", many))));
+	EXPECT_EQ(rig.queries->StatsComputeCount(), computes);
+	Json::Value few(Json::arrayValue);
+	few.append("temp");
+	EXPECT_FALSE(IsError(rig.queries->SelectionStats(Args("layers", few))));
+}
+
+TEST_F(MirrorStatsTest, NoActiveGridIsAnError)
+{
+	CellLayerRegistry registry{ nullptr, &FakePuIdFn };
+	Dia::Graphics::CellFieldRegistry cellField;
+	LayerUploader uploader{ cellField, nullptr };
+	CellLayerViewerDomain domain{ registry, uploader, nullptr };
+	MirrorQueries queries{ registry, domain, nullptr };
+	const Json::Value r = queries.SelectionStats(Json::Value(Json::objectValue));
+	ASSERT_TRUE(IsError(r));
+	EXPECT_EQ(r["error"].asString(), "no active grid");
+	EXPECT_EQ(queries.StatsComputeCount(), 0u);
+}
+
+TEST_F(MirrorStatsTest, LayerOfAnotherGridIsAnError)
+{
+	TestGrid gridA{ 4, 4 };
+	TestGrid gridB{ 4, 4 };
+	Dia::Graphics::CellFieldRegistry cellField;
+	StubProvider pa, pb;
+	pa.values = std::vector<float>(16, 1.0f);
+	pb.values = std::vector<float>(16, 2.0f);
+	FakeDebugDraw draw;
+	CellLayerRegistry registry{ nullptr, &FakePuIdFn };
+	LayerUploader uploader{ cellField, nullptr };
+	CellLayerViewerDomain domain{ registry, uploader, nullptr };
+	MirrorQueries queries{ registry, domain, nullptr };
+	ASSERT_EQ(CellRegisterResult::Ok, registry.Register(pa.MakeDesc("a", &gridA.desc)));
+	ASSERT_EQ(CellRegisterResult::Ok, registry.Register(pb.MakeDesc("b", &gridB.desc)));
+	domain.Update(draw);
+	CellSelection* sel = domain.ActiveSelection();
+	ASSERT_NE(sel, nullptr);
+	sel->BeginEdit(); sel->Set(1, true); sel->EndEdit();
+	EXPECT_FALSE(IsError(queries.SelectionStats(Args("layers", LayerArray({ "a" })))));
+	const uint32_t computes = queries.StatsComputeCount();
+	EXPECT_TRUE(IsError(queries.SelectionStats(Args("layers", LayerArray({ "a", "b" })))));
+	EXPECT_TRUE(IsError(queries.SelectionStats(Args("layers", LayerArray({ "b" })))));
+	EXPECT_EQ(queries.StatsComputeCount(), computes);
+	const Json::Value all = queries.SelectionStats(Args("layers", "all"));
+	ASSERT_FALSE(IsError(all));
+	EXPECT_EQ(LayerNames(all), "a,") << "all means every layer of the active grid only";
+}
+
+TEST_F(MirrorStatsTest, PinningInsideAFrameInvalidatesTheCachedStats)
+{
+	StatsRig rig;
+	rig.SelectBox();
+	const Json::Value before = rig.queries->SelectionStats(Json::Value(Json::objectValue));
+	const uint32_t computes = rig.queries->StatsComputeCount();
+	ASSERT_TRUE(ViewerCommands::Exec("cells.select.pin", Json::Value(Json::objectValue))["success"].asBool());
+	ASSERT_TRUE(rig.domain->Inspector().IsPinned());
+	const Json::Value after = rig.queries->SelectionStats(Json::Value(Json::objectValue));
+	EXPECT_EQ(rig.queries->StatsComputeCount(), computes + 1) << "pin state is part of the cache key";
+	EXPECT_NE(before, after);
+}
+
+TEST_F(MirrorStatsTest, ReadDelegateReenteringTheMirrorDoesNotCorruptTheOuterStats)
+{
+	StatsRig rig;
+	CellLayerDesc d = rig.temp.MakeDesc("rd", &rig.grid.desc, CellValueKind::Float, "cells/temp");
+	d.group.Clear();
+	d.group.Append("Terrain");	// in the shown set
+	d.read = fastdelegate::FastDelegate2<float*, uint32_t>(&ReadStatsReentrant);
+	d.version = fastdelegate::FastDelegate0<uint64_t>(&StatsRdVersionFn);
+	ASSERT_EQ(CellRegisterResult::Ok, rig.registry.Register(d));
+	rig.domain->Update(rig.draw);
+	rig.SelectBox();
+
+	gStatsQueries = rig.queries.get(); gStatsCalls = 0; gStatsRdVersion = 1; gStatsNestAll = false;
+	gStatsNestedStats = Json::Value(); gStatsNestedValues = Json::Value(); gStatsNestedAll = Json::Value();
+	gStatsArmed = true;
+	const Json::Value outer = rig.queries->SelectionStats(Json::Value(Json::objectValue));
+	const bool reentered = !gStatsArmed;
+	gStatsQueries = nullptr; gStatsArmed = false;
+	ASSERT_TRUE(reentered) << "the mirror reader never called the re-entrant delegate";
+	ASSERT_FALSE(IsError(outer)) << outer.toStyledString();
+
+	const Json::Value* rd = StatsLayer(outer, "rd");
+	ASSERT_NE(nullptr, rd) << outer.toStyledString();
+	EXPECT_EQ(9u, (*rd)["count"].asUInt());
+	EXPECT_EQ(1.0, (*rd)["mean"].asDouble());
+	EXPECT_EQ(1.0, (*rd)["min"].asDouble());
+	EXPECT_EQ(1.0, (*rd)["max"].asDouble());
+
+	ASSERT_FALSE(IsError(gStatsNestedStats)) << gStatsNestedStats.toStyledString();
+	const Json::Value* nestedRain = StatsLayer(gStatsNestedStats, "rain");
+	ASSERT_NE(nullptr, nestedRain);
+	EXPECT_EQ(10.0, (*nestedRain)["mean"].asDouble());
+	ASSERT_FALSE(IsError(gStatsNestedValues)) << gStatsNestedValues.toStyledString();
+	EXPECT_EQ(400u, gStatsNestedValues["total"].asUInt());
+
+	// the same-frame repeat serves the cached outer answer, unchanged
+	const uint32_t computes = rig.queries->StatsComputeCount();
+	const Json::Value again = rig.queries->SelectionStats(Json::Value(Json::objectValue));
+	EXPECT_EQ(again, outer);
+	EXPECT_EQ(rig.queries->StatsComputeCount(), computes);
+	// and the next frame recomputes the same numbers
+	rig.queries->NotifyFrame();
+	const Json::Value next = rig.queries->SelectionStats(Json::Value(Json::objectValue));
+	EXPECT_EQ(StatsLayer(next, "rd") ? (*StatsLayer(next, "rd"))["mean"].asDouble() : -1.0, 1.0);
+}
+
+TEST_F(MirrorStatsTest, ReadDelegateReenteringWithStatsAllKeepsTheOuterLayerIntact)
+{
+	StatsRig rig;
+	CellLayerDesc d = rig.temp.MakeDesc("rd", &rig.grid.desc, CellValueKind::Float, "cells/temp");
+	d.group.Clear();
+	d.group.Append("Terrain");
+	d.read = fastdelegate::FastDelegate2<float*, uint32_t>(&ReadStatsReentrant);
+	d.version = fastdelegate::FastDelegate0<uint64_t>(&StatsRdVersionFn);
+	ASSERT_EQ(CellRegisterResult::Ok, rig.registry.Register(d));
+	rig.domain->Update(rig.draw);
+	rig.SelectBox();
+
+	gStatsQueries = rig.queries.get(); gStatsCalls = 0; gStatsRdVersion = 1; gStatsNestAll = true;
+	gStatsNestedStats = Json::Value(); gStatsNestedValues = Json::Value(); gStatsNestedAll = Json::Value();
+	gStatsArmed = true;
+	const Json::Value outer = rig.queries->SelectionStats(Json::Value(Json::objectValue));
+	const bool reentered = !gStatsArmed;
+	gStatsQueries = nullptr; gStatsArmed = false; gStatsNestAll = false;
+	ASSERT_TRUE(reentered);
+	ASSERT_FALSE(IsError(outer)) << outer.toStyledString();
+	const Json::Value* rd = StatsLayer(outer, "rd");
+	ASSERT_NE(nullptr, rd);
+	EXPECT_EQ(1.0, (*rd)["mean"].asDouble());
+	EXPECT_EQ(9u, (*rd)["count"].asUInt());
+	// the nested all-layers pass saw every other layer's real values
+	if (!IsError(gStatsNestedAll))
+	{
+		const Json::Value* rain = StatsLayer(gStatsNestedAll, "rain");
+		ASSERT_NE(nullptr, rain);
+		EXPECT_EQ(10.0, (*rain)["mean"].asDouble());
+	}
+	// the cached outer answer must not have been replaced by the nested one
+	const Json::Value again = rig.queries->SelectionStats(Json::Value(Json::objectValue));
+	EXPECT_EQ(again, outer);
 }
 
 #endif // DIA_DEBUG

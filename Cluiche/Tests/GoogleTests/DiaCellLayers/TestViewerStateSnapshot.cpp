@@ -6,7 +6,10 @@
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
 #include <DiaCellLayers/Testing/LogCapture.h>
 
+#include <atomic>
 #include <memory>
+#include <mutex>
+#include <thread>
 #include <string>
 #include <vector>
 
@@ -361,6 +364,241 @@ TEST(ViewerStateSnapshotTest, ThirtyKilobyteStateFitsAndSlotWriteIsLosslessThrou
 	Json::Value out(Json::objectValue);
 	adapter.GetJSONState(out);
 	EXPECT_EQ(out["padding"].asString().size(), 30u * 1024u);
+}
+
+// ---- Task 10a exhaustive pass ----
+
+TEST(ViewerStateSnapshotTest, ReArmingAfterTheWindowExpiredResumesPublishing)
+{
+	SnapDomain domain;
+	SnapSink sink;
+	ViewerStateSnapshotPublisher pub(domain, sink, 5);
+	pub.Arm(0);
+	for (uint64_t f = 1; f <= 8; ++f) { pub.Update(f); }
+	EXPECT_EQ(sink.writes.size(), 5u);
+	EXPECT_FALSE(pub.IsArmed());
+	pub.Arm(20);
+	EXPECT_TRUE(pub.IsArmed());
+	pub.Update(21);
+	EXPECT_EQ(sink.writes.size(), 6u);
+	EXPECT_EQ(SnapParse(sink.writes.back())["simFrame"].asUInt64(), 21u);
+}
+
+TEST(ViewerStateSnapshotTest, UpdateOnTheArmFrameItselfPublishesAndZeroWindowIsOneFrame)
+{
+	SnapDomain domain;
+	SnapSink sink;
+	ViewerStateSnapshotPublisher pub(domain, sink, 0);
+	pub.Arm(10);
+	pub.Update(10);
+	EXPECT_EQ(sink.writes.size(), 1u);
+	pub.Update(11);
+	EXPECT_EQ(sink.writes.size(), 1u);
+	EXPECT_FALSE(pub.IsArmed());
+}
+
+TEST(ViewerStateSnapshotTest, FrameCounterGoingBackwardsStaysInsideTheWindowUntilReArmed)
+{
+	SnapDomain domain;
+	SnapSink sink;
+	ViewerStateSnapshotPublisher pub(domain, sink, 10);
+	pub.Arm(1000);
+	pub.Update(3);	// the sim restarted: frame < armed frame
+	pub.Update(4);
+	EXPECT_EQ(sink.writes.size(), 2u) << "a restart does not silently drop the demand";
+	EXPECT_TRUE(pub.IsArmed());
+	pub.Arm(4);	// the next demand re-anchors the window
+	for (uint64_t f = 5; f <= 14; ++f) { pub.Update(f); }
+	EXPECT_EQ(sink.writes.size(), 12u);
+	pub.Update(15);
+	EXPECT_EQ(sink.writes.size(), 12u);
+	EXPECT_FALSE(pub.IsArmed());
+}
+
+TEST(ViewerStateSnapshotTest, LargeFrameNumbersDoNotOverflowTheWindowMath)
+{
+	SnapDomain domain;
+	SnapSink sink;
+	const uint64_t big = 0xFFFFFFFFFFFFFF00ull;
+	ViewerStateSnapshotPublisher pub(domain, sink, 60);
+	pub.Arm(big);
+	pub.Update(big + 60);
+	EXPECT_EQ(sink.writes.size(), 1u);
+	pub.Update(big + 61);
+	EXPECT_EQ(sink.writes.size(), 1u);
+	EXPECT_EQ(SnapParse(sink.writes[0])["simFrame"].asUInt64(), big + 60);
+}
+
+TEST(ViewerStateSnapshotTest, OversizeThenNormalRecoversAndAnotherOversizeDoesNotWarnAgain)
+{
+	LogCapture log("CEL");
+	SnapDomain domain;
+	domain.paddingBytes = 5000;
+	SnapSink sink;
+	ViewerStateSnapshotPublisher pub(domain, sink, 100, 1024);
+	pub.Arm(0);
+	pub.Update(1);
+	EXPECT_EQ(SnapParse(sink.writes.back())["error"].asString(), "snapshot too large");
+	domain.paddingBytes = 10;
+	pub.Update(2);
+	EXPECT_FALSE(SnapParse(sink.writes.back()).isMember("error")) << "a state that fits again is published normally";
+	domain.paddingBytes = 5000;
+	pub.Update(3);
+	EXPECT_EQ(SnapParse(sink.writes.back())["error"].asString(), "snapshot too large");
+	EXPECT_EQ(log.Warnings("snapshot"), 1u) << "warns once per publisher, not once per episode";
+	EXPECT_EQ(pub.PublishCount(), 3u);
+}
+
+TEST(ViewerStateAdapterTest, SnapshotWithItsOwnDrawersAndStatsKeepsThemAsIs)
+{
+	SnapDomain live;
+	SnapSource source;
+	SnapDemand demand;
+	ViewerStateAdapter adapter(live, source, demand);
+	source.has = true;
+	source.text = "{\"drawers\":[\"d1\",\"d2\"],\"stats\":{\"n\":3},\"simFrame\":9}";
+	Json::Value out(Json::objectValue);
+	adapter.GetJSONState(out);
+	ASSERT_EQ(out["drawers"].size(), 2u);
+	EXPECT_EQ(out["stats"]["n"].asInt(), 3);
+}
+
+TEST(ViewerStateAdapterTest, TooLargeMarkerPassesThroughWithPanelFieldsAdded)
+{
+	SnapDomain live;
+	SnapSource source;
+	SnapDemand demand;
+	ViewerStateAdapter adapter(live, source, demand);
+	source.has = true;
+	source.text = "{\"error\":\"snapshot too large\",\"simFrame\":77}";
+	Json::Value out(Json::objectValue);
+	adapter.GetJSONState(out);
+	EXPECT_EQ(out["error"].asString(), "snapshot too large");
+	EXPECT_EQ(out["simFrame"].asUInt64(), 77u);
+	EXPECT_TRUE(out["drawers"].isArray());
+	EXPECT_TRUE(out["stats"].isObject());
+}
+
+TEST(ViewerStateAdapterTest, EmptyArrayAndScalarSnapshotsAreUnreadableNotCrashes)
+{
+	SnapDomain live;
+	SnapSource source;
+	SnapDemand demand;
+	ViewerStateAdapter adapter(live, source, demand);
+	source.has = true;
+	for (const char* text : { "", "[1,2,3]", "42", "null", "\"str\"" })
+	{
+		source.text = text;
+		Json::Value out(Json::objectValue);
+		adapter.GetJSONState(out);
+		EXPECT_EQ(out["error"].asString(), "unreadable snapshot") << "text: '" << text << "'";
+		EXPECT_TRUE(out["drawers"].isArray());
+		EXPECT_TRUE(out["stats"].isObject());
+	}
+}
+
+TEST(ViewerStateAdapterTest, StaleSnapshotIsReturnedAsIsWithItsOwnSimFrame)
+{
+	SnapDomain live;
+	SnapDomain sinkDomain;
+	SnapSink sink;
+	ViewerStateSnapshotPublisher pub(sinkDomain, sink, 3);
+	pub.Arm(0);
+	pub.Update(1);
+	SnapSource source;
+	SnapDemand demand;
+	source.has = true;
+	source.text = sink.writes.back();
+	ViewerStateAdapter adapter(live, source, demand);
+	for (uint64_t f = 2; f < 100; ++f) { pub.Update(f); }	// window expired long ago: nothing newer is written
+	Json::Value out(Json::objectValue);
+	adapter.GetJSONState(out);
+	EXPECT_EQ(out["simFrame"].asUInt64(), 1u);
+	EXPECT_EQ(demand.requests, 1u) << "demand is signalled even when the snapshot is stale, so the publisher re-arms";
+}
+
+namespace
+{
+	// Thread-safe latest-value channel standing in for the FrameStream slot: one writer (SimPU), one reader (Main).
+	class SnapChannel : public IViewerStateSink, public IViewerStateSource
+	{
+	public:
+		void Write(const char* json, uint32_t length) override
+		{
+			std::lock_guard<std::mutex> lock(mMutex);
+			mText.assign(json, length);
+			mHas = true;
+		}
+		bool ReadLatest(std::string& json) override
+		{
+			std::lock_guard<std::mutex> lock(mMutex);
+			if (!mHas) { return false; }
+			json = mText;
+			return true;
+		}
+	private:
+		std::mutex	mMutex;
+		std::string	mText;
+		bool		mHas = false;
+	};
+
+	class SnapSeqDomain : public SnapDomain
+	{
+	public:
+		void GetJSONState(Json::Value& out) override
+		{
+			++seq;
+			out["seq"] = seq;
+			out["pad"] = std::string(seq % 50 + 1, 'x');	// length is a function of seq: a torn read cannot satisfy both
+		}
+		uint32_t seq = 0;
+	};
+
+	class SnapAtomicDemand : public IViewerStateDemand
+	{
+	public:
+		void RequestState() override { ++requests; }
+		std::atomic<uint32_t> requests{ 0 };
+	};
+}
+
+TEST(ViewerStateSnapshotTest, ConcurrentProducerAndConsumerOnlyEverSeeWholeMonotonicSnapshots)
+{
+	SnapSeqDomain domain;
+	SnapChannel channel;
+	SnapAtomicDemand demand;
+	ViewerStateSnapshotPublisher pub(domain, channel, 1000000);
+	ViewerStateAdapter adapter(domain, channel, demand);
+	pub.Arm(0);
+
+	const uint32_t kFrames = 2000;
+	std::atomic<bool> done{ false };
+	std::atomic<uint32_t> bad{ 0 };
+	std::atomic<uint32_t> reads{ 0 };
+	std::thread consumer([&]
+	{
+		uint64_t lastFrame = 0;
+		while (!done.load())
+		{
+			Json::Value out(Json::objectValue);
+			adapter.GetJSONState(out);
+			if (out.isMember("pending")) { continue; }
+			++reads;
+			const uint64_t frame = out["simFrame"].asUInt64();
+			const uint32_t seq = out["seq"].asUInt();
+			if (out.isMember("error") || frame != seq || out["pad"].asString().size() != seq % 50 + 1 || frame < lastFrame) { ++bad; }
+			lastFrame = frame;
+		}
+	});
+	for (uint32_t f = 1; f <= kFrames; ++f) { pub.Update(f); }
+	done = true;
+	consumer.join();
+	EXPECT_EQ(bad.load(), 0u);
+	EXPECT_EQ(pub.PublishCount(), kFrames);
+	EXPECT_GT(demand.requests.load(), 0u);
+	Json::Value last(Json::objectValue);
+	adapter.GetJSONState(last);
+	EXPECT_EQ(last["simFrame"].asUInt64(), kFrames) << "after the producer stops the consumer sees the final snapshot";
 }
 
 #endif // DIA_DEBUG

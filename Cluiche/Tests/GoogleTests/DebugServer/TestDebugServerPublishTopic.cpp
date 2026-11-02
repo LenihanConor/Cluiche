@@ -9,6 +9,14 @@
 #include <DiaCore/Threading/Thread.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
+#ifdef DIA_DEBUG
+#include <DiaCellLayers/DebugServerTopicSink.h>
+#include <DiaCellLayers/ViewStatePublisher.h>
+#include <DiaCellLayers/Testing/CellLayerTestSupport.h>
+#include <DiaCellLayers/Testing/FakeDebugDraw.h>
+#include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
+#include <DiaCellLayers/Testing/ViewStateTestSupport.h>
+#endif
 
 #include <string>
 #include <thread>
@@ -63,11 +71,32 @@ protected:
         if (!Dia::Proto::FromJson(m.AsText(), &msg)) return;
         if (msg.type() == dia::debug::MESSAGE_TYPE_SUBSCRIBE_ACK)
             ++mAckCount;
-        else if (msg.type() == dia::debug::MESSAGE_TYPE_DATA_UPDATE && msg.data_update().data_type() == kTopic)
+        else if (msg.type() == dia::debug::MESSAGE_TYPE_DATA_UPDATE)
         {
             Json::Value p = Dia::Proto::ProtoStructToJsonValue(msg.data_update().payload());
-            mReceived.push_back(p["v"].asInt());
+            mAll.push_back({ msg.data_update().data_type(), p });
+            if (msg.data_update().data_type() == kTopic)
+                mReceived.push_back(p["v"].asInt());
         }
+    }
+
+    void SendSubscribeTo(const char* topic, bool subscribe)
+    {
+        dia::debug::DebugMessage msg;
+        msg.set_timestamp(1);
+        if (subscribe) { msg.set_type(dia::debug::MESSAGE_TYPE_SUBSCRIBE);   msg.mutable_subscribe()->set_data_type(topic); }
+        else           { msg.set_type(dia::debug::MESSAGE_TYPE_UNSUBSCRIBE); msg.mutable_unsubscribe()->set_data_type(topic); }
+        char json[1024];
+        ASSERT_TRUE(Dia::Proto::ToJson(msg, json, sizeof(json)));
+        mClient.SendText(json);
+    }
+
+    // Payloads received for `topic`, in arrival order.
+    std::vector<Json::Value> Received(const char* topic) const
+    {
+        std::vector<Json::Value> out;
+        for (const auto& e : mAll) { if (e.first == topic) out.push_back(e.second); }
+        return out;
     }
 
     void Pump(int iterations = 30)
@@ -97,6 +126,7 @@ protected:
     Dia::DebugServer::DebugServer mServer;
     Dia::WebSocket::Client mClient;
     std::vector<int> mReceived;
+    std::vector<std::pair<std::string, Json::Value>> mAll;
     int mAckCount = 0;
 };
 
@@ -167,3 +197,189 @@ TEST_F(SLOW_DebugServerPublishTopicTest, Unsubscribe_StopsFurtherSends)
 
     EXPECT_EQ(mReceived.size(), 1u);
 }
+
+// ---- Task 10a exhaustive pass (editor mirror transport) ----
+
+namespace
+{
+    const char* kTopicB = "test.publish.topic.b";
+}
+
+TEST_F(SLOW_DebugServerPublishTopicTest, TwoTopics_DeliverAndReplayIndependently)
+{
+    mServer.PublishTopic(Dia::Core::StringCRC(kTopic), Make(1));
+    mServer.PublishTopic(Dia::Core::StringCRC(kTopicB), Make(2));
+    Pump();
+    SendSubscribeTo(kTopicB, true);
+    Pump();
+    EXPECT_TRUE(mReceived.empty()) << "subscribing to B must not replay A";
+    ASSERT_EQ(Received(kTopicB).size(), 1u);
+    EXPECT_EQ(Received(kTopicB)[0]["v"].asInt(), 2);
+
+    mServer.PublishTopic(Dia::Core::StringCRC(kTopic), Make(3));
+    Pump();
+    EXPECT_TRUE(mReceived.empty()) << "A has no subscriber on this connection";
+    EXPECT_EQ(Received(kTopicB).size(), 1u);
+}
+
+TEST_F(SLOW_DebugServerPublishTopicTest, Resubscribe_ReplaysTheLatestRetainedValueAgain)
+{
+    SendSubscribe(true);
+    Pump();
+    mServer.PublishTopic(Dia::Core::StringCRC(kTopic), Make(1));
+    Pump();
+    ASSERT_EQ(mReceived.size(), 1u);
+    SendSubscribe(false);
+    Pump();
+    mServer.PublishTopic(Dia::Core::StringCRC(kTopic), Make(2));
+    Pump();
+    EXPECT_EQ(mReceived.size(), 1u);
+    SendSubscribe(true);
+    Pump();
+    ASSERT_EQ(mReceived.size(), 2u);
+    EXPECT_EQ(mReceived[1], 2) << "a late (re)subscriber gets the current value, not the one it saw last";
+}
+
+TEST_F(SLOW_DebugServerPublishTopicTest, ManyThreadsPublishingWhileTicking_NeverReordersPerThreadAndFinalValueWins)
+{
+    SendSubscribe(true);
+    Pump();
+    mReceived.clear();
+
+    const int kThreads = 4;
+    const int kPerThread = 300;
+    std::vector<std::thread> threads;
+    for (int t = 0; t < kThreads; ++t)
+    {
+        threads.emplace_back([this, t, kPerThread]
+        {
+            for (int i = 1; i <= kPerThread; ++i)
+                mServer.PublishTopic(Dia::Core::StringCRC(kTopic), Make(t * 100000 + i));
+        });
+    }
+    Pump(40);	// ticking on this (Main) thread while the others publish
+    for (auto& th : threads) th.join();
+    mServer.PublishTopic(Dia::Core::StringCRC(kTopic), Make(999999));
+    Pump();
+
+    ASSERT_FALSE(mReceived.empty());
+    EXPECT_EQ(mReceived.back(), 999999) << "the last publish after all producers stopped is what subscribers end on";
+    int lastSeen[4] = { 0, 0, 0, 0 };
+    for (int v : mReceived)
+    {
+        if (v == 999999) continue;
+        const int t = v / 100000;
+        const int i = v % 100000;
+        ASSERT_GE(t, 0);
+        ASSERT_LT(t, kThreads);
+        EXPECT_GT(i, lastSeen[t]) << "thread " << t << " values must arrive in publish order (latest wins, never stale)";
+        lastSeen[t] = i;
+    }
+}
+
+TEST_F(SLOW_DebugServerPublishTopicTest, TopicTableFull_DropsNewTopicsButKeepsExistingOnesWorking)
+{
+    mServer.PublishTopic(Dia::Core::StringCRC(kTopic), Make(1));
+    for (int i = 0; i < 31; ++i)
+    {
+        char name[48];
+        snprintf(name, sizeof(name), "test.publish.fill.%d", i);
+        mServer.PublishTopic(Dia::Core::StringCRC(name), Make(i));
+    }
+    // the table (32 entries) is now full
+    mServer.PublishTopic(Dia::Core::StringCRC("test.publish.overflow"), Make(7));
+    Pump();
+    SendSubscribeTo("test.publish.overflow", true);
+    Pump();
+    EXPECT_TRUE(Received("test.publish.overflow").empty()) << "the dropped topic has nothing retained";
+
+    SendSubscribe(true);
+    Pump();
+    ASSERT_EQ(mReceived.size(), 1u);
+    EXPECT_EQ(mReceived[0], 1);
+    mServer.PublishTopic(Dia::Core::StringCRC(kTopic), Make(2));
+    Pump();
+    ASSERT_EQ(mReceived.size(), 2u);
+    EXPECT_EQ(mReceived[1], 2);
+}
+
+TEST_F(SLOW_DebugServerPublishTopicTest, ViewStateShapedPayload_RoundTripsNullsEmptyArraysAndHexHash)
+{
+    Json::Value p(Json::objectValue);
+    p["viewVersion"] = 3;
+    p["layersVersion"] = 7;
+    p["grid"] = Json::Value(Json::nullValue);
+    p["base"] = "";
+    p["overlays"] = Json::Value(Json::arrayValue);
+    Json::Value sel(Json::objectValue);
+    sel["count"] = 0;
+    sel["version"] = 0;
+    sel["hash"] = "0000000000000000";
+    p["selection"] = sel;
+    p["history"] = Json::Value(Json::nullValue);
+    mServer.PublishTopic(Dia::Core::StringCRC("cells.view.state"), p);
+    Pump();
+    SendSubscribeTo("cells.view.state", true);
+    Pump();
+    const std::vector<Json::Value> got = Received("cells.view.state");
+    ASSERT_EQ(got.size(), 1u);
+    const Json::Value& r = got[0];
+    EXPECT_EQ(r["viewVersion"].asInt(), 3);
+    EXPECT_TRUE(r.isMember("grid"));
+    EXPECT_TRUE(r["grid"].isNull());
+    EXPECT_TRUE(r.isMember("history"));
+    EXPECT_TRUE(r["history"].isNull());
+    EXPECT_TRUE(r["overlays"].isArray());
+    EXPECT_EQ(r["overlays"].size(), 0u);
+    EXPECT_EQ(r["base"].asString(), "");
+    EXPECT_EQ(r["selection"]["hash"].asString(), "0000000000000000");
+}
+
+#ifdef DIA_DEBUG
+TEST_F(SLOW_DebugServerPublishTopicTest, ViewStatePublisherThroughTheSink_LateSubscriberGetsTheCurrentState)
+{
+    using namespace Dia::CellLayers;
+    using namespace Dia::CellLayers::Testing;
+    FakePuId() = 1;
+    CellLayerRegistry registry(nullptr, &FakePuIdFn);
+    Dia::Graphics::CellFieldRegistry cellField;
+    LayerUploader uploader(cellField, nullptr);
+    CellLayerViewerDomain domain(registry, uploader, nullptr);
+    FakeClock clock;
+    DebugServerTopicSink sink(mServer);
+    ViewStatePublisher publisher(registry, domain, sink, clock);
+
+    EXPECT_EQ(sink.SubscriberCount(ViewStatePublisher::TopicId()), 0u);
+    publisher.Update();
+    clock.Advance(200);
+    TestGrid grid{ 3, 2 };
+    StubProvider prov;
+    prov.values = std::vector<float>(6, 1.0f);
+    ASSERT_EQ(registry.Register(prov.MakeDesc("only", &grid.desc)), CellRegisterResult::Ok);
+    FakeDebugDraw draw;
+    domain.Update(draw);
+    publisher.Update();
+    ASSERT_EQ(publisher.PublishCount(), 2u);
+    Pump();	// nobody subscribed yet
+    EXPECT_TRUE(Received("cells.view.state").empty());
+
+    SendSubscribeTo("cells.view.state", true);
+    Pump();
+    EXPECT_EQ(sink.SubscriberCount(ViewStatePublisher::TopicId()), 1u);
+    const std::vector<Json::Value> got = Received("cells.view.state");
+    ASSERT_EQ(got.size(), 1u) << "exactly the current state, not the history";
+    EXPECT_EQ(got[0]["viewVersion"].asInt(), 2);
+    EXPECT_EQ(got[0]["base"].asString(), "only");
+    EXPECT_EQ(got[0]["grid"]["width"].asInt(), 3);
+
+    clock.Advance(200);
+    domain.SetBase(Dia::Core::StringCRC("only"));
+    CellSelection* selection = domain.ActiveSelection();
+    ASSERT_NE(selection, nullptr);
+    selection->BeginEdit(); selection->Set(4, true); selection->EndEdit();
+    publisher.Update();
+    Pump();
+    ASSERT_EQ(Received("cells.view.state").size(), 2u);
+    EXPECT_EQ(Received("cells.view.state")[1]["selection"]["count"].asInt(), 1);
+}
+#endif

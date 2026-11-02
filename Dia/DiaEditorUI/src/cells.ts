@@ -74,9 +74,10 @@ export function concatChunks(chunks: readonly Float32Array[]): Float32Array {
 
 export interface CellsGridInfo { id: string; topology: string; width: number; height: number }
 export interface CellsSelectionInfo { count: number; version: number; hash: string }
+/** History block of cells.view.state (DiaCellHistory; spec Open Design Question 2). a / b are "now", "sample:<i>" or "snapshot:<name>". */
 export type CellsHistoryState =
-  | { mode: 'live' | 'sample'; sample: number; label: string }
-  | { mode: 'delta'; a: number; b: number; scale: number | string };
+  | { mode: 'live' | 'sample'; sample: number | null; label: string | null }
+  | { mode: 'delta'; a: string; b: string; scale: number | null };
 
 /** Payload of the cells.view.state topic. grid is null with no active grid; base may be ''. */
 export interface CellsViewState {
@@ -122,8 +123,8 @@ const isSelection = (x: unknown): x is CellsSelectionInfo =>
   isRec(x) && isNum(x.count) && isNum(x.version) && isStr(x.hash);
 const isHistory = (x: unknown): x is CellsHistoryState => {
   if (!isRec(x)) return false;
-  if (x.mode === 'live' || x.mode === 'sample') return isNum(x.sample) && isStr(x.label);
-  if (x.mode === 'delta') return isNum(x.a) && isNum(x.b) && (isNum(x.scale) || isStr(x.scale));
+  if (x.mode === 'live' || x.mode === 'sample') return (x.sample === null || isNum(x.sample)) && (x.label === null || isStr(x.label));
+  if (x.mode === 'delta') return isStr(x.a) && isStr(x.b) && (x.scale === null || isNum(x.scale));
   return false;
 };
 

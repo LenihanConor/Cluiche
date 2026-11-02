@@ -6,6 +6,7 @@
 #include <DiaCellLayers/Testing/LayerReaderTestSupport.h>
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
 #include <DiaCellLayers/Testing/LogCapture.h>
+#include <DiaCellLayers/Testing/ViewValueSourceTestSupport.h>
 #include <DiaCore/Strings/Base64.h>
 #include <DiaCellLayers/Testing/FakeMirrorRegistrar.h>
 #include "../DiaValueSchema/ValueSchemaTestSupport.h"
@@ -550,6 +551,216 @@ TEST(LayerValuesConformance, FixtureCaseNamesExactList)
 	{
 		EXPECT_EQ(actualNames[i], kExpectedNames[i]) << "Case at index " << i;
 	}
+}
+
+// ---- Task 10a exhaustive pass: boundaries, error paths, no-data source, re-entry ----
+
+namespace
+{
+	MirrorQueries*	gReQueries = nullptr;
+	Json::Value		gReNestedValues;
+	Json::Value		gReNestedSelf;
+	bool			gReArmed = false;
+	uint32_t		gReCalls = 0;
+
+	// "outer" layer read delegate: when armed it re-enters the mirror queries once (for another layer and for itself).
+	void ReadReentrantOuter(float* out, uint32_t n)
+	{
+		++gReCalls;
+		if (gReArmed && gReQueries != nullptr)
+		{
+			gReArmed = false;
+			gReNestedValues = gReQueries->LayerValues(Args("inner"));
+			gReNestedSelf = gReQueries->LayerValues(Args("outer"));
+		}
+		for (uint32_t i = 0; i < n; ++i) { out[i] = 7.0f; }
+	}
+	uint64_t VersionReentrantOuter() { return 3; }
+}
+
+TEST(LayerValuesEdge, NonObjectArgsAreErrors)
+{
+	ValuesRig rig(4, 1, { 1, 2, 3, 4 });
+	EXPECT_TRUE(IsError(rig.queries.LayerValues(Json::Value())));
+	EXPECT_TRUE(IsError(rig.queries.LayerValues(Json::Value("vals"))));
+	EXPECT_TRUE(IsError(rig.queries.LayerValues(Json::Value(Json::arrayValue))));
+	EXPECT_TRUE(IsError(rig.queries.LayerValues(Json::Value(Json::objectValue))));
+}
+
+TEST(LayerValuesEdge, OffsetAndCountAtUint32Limits)
+{
+	ValuesRig rig(4, 1, { 1, 2, 3, 4 });
+	// 2^32 does not fit a uint32 argument
+	EXPECT_TRUE(IsError(rig.queries.LayerValues(Args("vals", 4294967296ll))));
+	EXPECT_TRUE(IsError(rig.queries.LayerValues(Args("vals", 0, 4294967296ll))));
+	// the largest uint32 is a valid number: offset is beyond the layer (error), count is clamped to the remaining cells
+	const Json::Value far = rig.queries.LayerValues(Args("vals", 4294967295ll));
+	ASSERT_TRUE(IsError(far));
+	EXPECT_NE(far["error"].asString().find("offset"), std::string::npos);
+	const Json::Value all = rig.queries.LayerValues(Args("vals", 1, 4294967295ll));
+	ASSERT_FALSE(IsError(all));
+	EXPECT_EQ(all["offset"].asUInt(), 1u);
+	EXPECT_EQ(all["count"].asUInt(), 3u);
+	EXPECT_EQ(DecodeFloats(all), (std::vector<float>{ 2, 3, 4 }));
+}
+
+TEST(LayerValuesEdge, OffsetEqualTotalWithExplicitCountIsEmptyAndLastCellIsOneValue)
+{
+	ValuesRig rig(4, 1, { 1, 2, 3, 4 });
+	const Json::Value empty = rig.queries.LayerValues(Args("vals", 4, 3));
+	ASSERT_FALSE(IsError(empty));
+	EXPECT_EQ(empty["count"].asUInt(), 0u);
+	EXPECT_EQ(empty["total"].asUInt(), 4u);
+	EXPECT_EQ(empty["data"].asString(), "");
+	const Json::Value last = rig.queries.LayerValues(Args("vals", 3, 1000));
+	ASSERT_FALSE(IsError(last));
+	EXPECT_EQ(last["count"].asUInt(), 1u);
+	EXPECT_EQ(DecodeFloats(last), (std::vector<float>{ 4 }));
+}
+
+TEST(LayerValuesEdge, ClampBoundaryAtExactlyOneThousand)
+{
+	ValuesRig big(100, 20, Ramp(2000));
+	LogCapture log("CEL");
+	const Json::Value exact = big.queries.LayerValues(Args("vals", 0, 1000));
+	ASSERT_FALSE(IsError(exact));
+	EXPECT_EQ(exact["count"].asUInt(), 1000u);
+	EXPECT_EQ(log.Warnings("clamped"), 0u) << "count == limit is not a clamp";
+	const Json::Value over = big.queries.LayerValues(Args("vals", 0, 1001));
+	ASSERT_FALSE(IsError(over));
+	EXPECT_EQ(over["count"].asUInt(), 1000u);
+	EXPECT_EQ(log.Warnings("clamped"), 1u);
+	const Json::Value huge = big.queries.LayerValues(Args("vals", 0, 4294967295ll));
+	EXPECT_EQ(huge["count"].asUInt(), 1000u);
+	EXPECT_EQ(log.Warnings("clamped"), 2u) << "warns on every clamp";
+}
+
+TEST(LayerValuesEdge, LastChunkOfALargeGridIsTheRemainder)
+{
+	ValuesRig big(104, 64, Ramp(6656));
+	const Json::Value r = big.queries.LayerValues(Args("vals", 6000));
+	ASSERT_FALSE(IsError(r));
+	EXPECT_EQ(r["count"].asUInt(), 656u);
+	const std::vector<float> got = DecodeFloats(r);
+	const std::vector<float> want = Ramp(6656);
+	ASSERT_EQ(got.size(), 656u);
+	EXPECT_TRUE(SameBits(got.front(), want[6000]));
+	EXPECT_TRUE(SameBits(got.back(), want[6655]));
+}
+
+TEST(LayerValuesEdge, SpecialFloatBitPatternsSurviveExactly)
+{
+	const uint32_t patterns[] = { 0x00000000u, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u, 0x00000001u, 0x007FFFFFu, 0x7F7FFFFFu };
+	std::vector<float> in(8);
+	for (int i = 0; i < 8; ++i) { std::memcpy(&in[i], &patterns[i], 4); }
+	ValuesRig rig(8, 1, in);
+	const std::vector<float> got = DecodeFloats(rig.queries.LayerValues(Args("vals")));
+	ASSERT_EQ(got.size(), 8u);
+	for (int i = 0; i < 8 && i < static_cast<int>(got.size()); ++i)
+	{
+		uint32_t bits = 0;
+		std::memcpy(&bits, &got[i], 4);
+		EXPECT_EQ(bits, patterns[i]) << "pattern " << i;
+	}
+}
+
+TEST(LayerValuesEdge, UnregisteredLayerIsUnknown)
+{
+	ValuesRig rig(4, 1, { 1, 2, 3, 4 });
+	ASSERT_FALSE(IsError(rig.queries.LayerValues(Args("vals"))));
+	ASSERT_TRUE(rig.registry.Unregister(StringCRC("vals")));
+	const Json::Value r = rig.queries.LayerValues(Args("vals"));
+	ASSERT_TRUE(IsError(r));
+	EXPECT_EQ(r["error"].asString(), "unknown layer");
+}
+
+TEST(LayerValuesEdge, SecondGridLayerReportsItsOwnGridIdAndSize)
+{
+	TestGrid gridA{ 4, 1 };
+	TestGrid gridB{ 3, 2 };
+	gridB.desc.id = StringCRC("world.second");
+	Dia::Graphics::CellFieldRegistry cellField;
+	CountingLayerProvider pa, pb;
+	pa.values = { 1, 2, 3, 4 };
+	pb.values = { 10, 20, 30, 40, 50, 60 };
+	FakeDebugDraw draw;
+	FakePuId() = 1;
+	CellLayerRegistry registry{ nullptr, &FakePuIdFn };
+	LayerUploader uploader{ cellField, nullptr };
+	CellLayerViewerDomain domain{ registry, uploader, nullptr };
+	MirrorQueries queries{ registry, domain, nullptr };
+	ASSERT_EQ(registry.Register(MakeCountingLayer("a", &gridA.desc, pa)), CellRegisterResult::Ok);
+	ASSERT_EQ(registry.Register(MakeCountingLayer("b", &gridB.desc, pb)), CellRegisterResult::Ok);
+	domain.Update(draw);
+	const Json::Value r = queries.LayerValues(Args("b"));
+	ASSERT_FALSE(IsError(r));
+	EXPECT_EQ(r["gridId"].asString(), "world.second");
+	EXPECT_EQ(r["width"].asUInt(), 3u);
+	EXPECT_EQ(r["height"].asUInt(), 2u);
+	EXPECT_EQ(r["total"].asUInt(), 6u);
+	EXPECT_EQ(DecodeFloats(r), pb.values);
+	const Json::Value ra = queries.LayerValues(Args("a"));
+	EXPECT_EQ(ra["gridId"].asString(), "grid.0");
+	EXPECT_EQ(DecodeFloats(ra), pa.values);
+}
+
+TEST(LayerValuesEdge, NonLiveSourceWithNoDataIsAnErrorNotLiveValues)
+{
+	ValuesRig rig(4, 1, { 1, 2, 3, 4 });
+	StubViewValueSource source;
+	source.live = false;
+	source.hasData = false;
+	ASSERT_TRUE(rig.registry.SetViewValueSource(&source));
+	const Json::Value none = rig.queries.LayerValues(Args("vals"));
+	ASSERT_TRUE(IsError(none)) << "a non-live source with no data must not fall back to live values";
+	EXPECT_NE(none["error"].asString().find("no data"), std::string::npos);
+
+	source.hasData = true;
+	source.values = { 9, 8, 7, 6 };
+	source.epoch = 2;
+	const Json::Value shown = rig.queries.LayerValues(Args("vals"));
+	ASSERT_FALSE(IsError(shown));
+	EXPECT_EQ(DecodeFloats(shown), (std::vector<float>{ 9, 8, 7, 6 })) << "the values the viewer shows, not the live ones";
+
+	rig.registry.ClearViewValueSource();
+	EXPECT_EQ(DecodeFloats(rig.queries.LayerValues(Args("vals"))), (std::vector<float>{ 1, 2, 3, 4 }));
+}
+
+TEST(LayerValuesEdge, ReadDelegateReenteringTheQueryDoesNotCorruptEitherReply)
+{
+	TestGrid grid{ 6, 1 };
+	Dia::Graphics::CellFieldRegistry cellField;
+	CountingLayerProvider inner;
+	inner.values = { 1, 2, 3, 4, 5, 6 };
+	FakeDebugDraw draw;
+	FakePuId() = 1;
+	CellLayerRegistry registry{ nullptr, &FakePuIdFn };
+	LayerUploader uploader{ cellField, nullptr };
+	CellLayerViewerDomain domain{ registry, uploader, nullptr };
+	MirrorQueries queries{ registry, domain, nullptr };
+	CellLayerDesc outer = MakeLayer("outer", &grid.desc);
+	outer.read = fastdelegate::FastDelegate2<float*, uint32_t>(&ReadReentrantOuter);
+	outer.version = fastdelegate::FastDelegate0<uint64_t>(&VersionReentrantOuter);
+	ASSERT_EQ(registry.Register(outer), CellRegisterResult::Ok);
+	ASSERT_EQ(registry.Register(MakeCountingLayer("inner", &grid.desc, inner)), CellRegisterResult::Ok);
+	domain.Update(draw);
+
+	gReQueries = &queries; gReCalls = 0;
+	gReNestedValues = Json::Value(); gReNestedSelf = Json::Value();
+	gReArmed = true;
+	const Json::Value r = queries.LayerValues(Args("outer"));
+	gReQueries = nullptr;
+	ASSERT_FALSE(gReArmed) << "the mirror reader should have called the outer delegate (re-entry never happened)";
+	ASSERT_FALSE(IsError(r)) << r.toStyledString();
+	EXPECT_EQ(DecodeFloats(r), std::vector<float>(6, 7.0f)) << "outer values intact";
+	ASSERT_FALSE(IsError(gReNestedValues)) << gReNestedValues.toStyledString();
+	EXPECT_EQ(DecodeFloats(gReNestedValues), (std::vector<float>{ 1, 2, 3, 4, 5, 6 })) << "nested read of another layer";
+	// Re-reading the layer from inside its own delegate: the reader never hands out the slot that is mid-fill, so the nested
+	// read either reports no data or fills a different slot with whole values; it is never a half-written buffer.
+	if (!IsError(gReNestedSelf)) { EXPECT_EQ(DecodeFloats(gReNestedSelf), std::vector<float>(6, 7.0f)) << "nested self-read must be whole"; }
+	// the reader still works afterwards
+	EXPECT_EQ(DecodeFloats(queries.LayerValues(Args("inner"))), (std::vector<float>{ 1, 2, 3, 4, 5, 6 }));
+	EXPECT_EQ(DecodeFloats(queries.LayerValues(Args("outer"))), std::vector<float>(6, 7.0f));
 }
 
 #endif // DIA_DEBUG

@@ -6,6 +6,9 @@
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
 #include <DiaCellLayers/Testing/LogCapture.h>
 #include <DiaCellLayers/Testing/FakeMirrorRegistrar.h>
+#include <DiaValueSchema/ValueSchemaRegistry.h>
+#include <DiaValueSchema/ValueSchemaService.h>
+#include <DiaValueSchema/Testing/ValueInfoBuilder.h>
 
 #include <algorithm>
 #include <string>
@@ -393,6 +396,243 @@ TEST_F(MirrorChunkTest, CountZeroReturnsNoIndices)
 	ASSERT_FALSE(IsError(r));
 	EXPECT_EQ(r["indices"].size(), 0u);
 	EXPECT_EQ(r["total"].asUInt(), 5u);
+}
+
+// ---- Task 10a exhaustive pass ----
+
+namespace
+{
+	// A 50 x 50 grid (2,500 cells): three select.get pages at the 1,000 limit.
+	struct PagingRig
+	{
+		TestGrid grid{ 50, 50 };
+		Dia::Graphics::CellFieldRegistry cellField;
+		StubProvider prov;
+		FakeDebugDraw draw;
+		CellLayerRegistry registry{ nullptr, &FakePuIdFn };
+		LayerUploader uploader{ cellField, nullptr };
+		CellLayerViewerDomain domain{ registry, uploader, nullptr };
+		MirrorQueries queries{ registry, domain, nullptr };
+
+		PagingRig()
+		{
+			FakePuId() = 1;
+			EXPECT_EQ(registry.Register(prov.MakeDesc("big", &grid.desc)), CellRegisterResult::Ok);
+			domain.Update(draw);
+		}
+		void SelectAll(uint32_t n)
+		{
+			CellSelection* sel = domain.ActiveSelection();
+			ASSERT_NE(sel, nullptr);
+			sel->BeginEdit();
+			for (uint32_t i = 0; i < n; ++i) { sel->Set(i, true); }
+			sel->EndEdit();
+		}
+		Json::Value Page(Json::Int64 offset, Json::Int64 count)
+		{
+			Json::Value a(Json::objectValue);
+			a["offset"] = offset;
+			a["count"] = count;
+			return queries.SelectionGet(a);
+		}
+	};
+}
+
+TEST(MirrorSelectGetEdge, NoActiveGridIsEmptyAndOnlyOffsetZeroIsValid)
+{
+	CellLayerRegistry registry{ nullptr, &FakePuIdFn };
+	Dia::Graphics::CellFieldRegistry cellField;
+	LayerUploader uploader{ cellField, nullptr };
+	CellLayerViewerDomain domain{ registry, uploader, nullptr };
+	MirrorQueries queries{ registry, domain, nullptr };
+	const Json::Value r = queries.SelectionGet(Json::Value(Json::objectValue));
+	ASSERT_FALSE(IsError(r)) << r.toStyledString();
+	EXPECT_EQ(r["total"].asUInt(), 0u);
+	EXPECT_EQ(r["hash"].asString(), "0000000000000000");
+	EXPECT_EQ(r["indices"].size(), 0u);
+	EXPECT_TRUE(IsError(queries.SelectionGet(Args("offset", 1))));
+}
+
+TEST(MirrorSelectGetEdge, NonObjectArgsUseDefaults)
+{
+	PagingRig rig;
+	rig.SelectAll(5);
+	for (const Json::Value& args : { Json::Value(), Json::Value("x"), Json::Value(7), Json::Value(Json::arrayValue) })
+	{
+		const Json::Value r = rig.queries.SelectionGet(args);
+		ASSERT_FALSE(IsError(r)) << args.toStyledString();
+		EXPECT_EQ(r["total"].asUInt(), 5u);
+		EXPECT_EQ(r["offset"].asUInt(), 0u);
+	}
+}
+
+TEST(MirrorSelectGetEdge, ThreePagesAtTheClampConcatenateToTheSortedSet)
+{
+	PagingRig rig;
+	rig.SelectAll(2500);
+	std::vector<uint32_t> all;
+	uint32_t offset = 0;
+	std::vector<size_t> sizes;
+	for (int guard = 0; guard < 10; ++guard)
+	{
+		const Json::Value r = rig.Page(offset, 1000);
+		ASSERT_FALSE(IsError(r));
+		EXPECT_EQ(r["total"].asUInt(), 2500u);
+		EXPECT_EQ(r["offset"].asUInt(), offset);
+		const std::vector<uint32_t> idx = Indices(r);
+		sizes.push_back(idx.size());
+		if (idx.empty()) { break; }
+		all.insert(all.end(), idx.begin(), idx.end());
+		offset += static_cast<uint32_t>(idx.size());
+	}
+	EXPECT_EQ(sizes, (std::vector<size_t>{ 1000, 1000, 500, 0 }));
+	ASSERT_EQ(all.size(), 2500u);
+	for (uint32_t i = 0; i < all.size(); ++i)
+	{
+		if (all[i] != i) { ADD_FAILURE() << "index mismatch at " << i << ": " << all[i]; break; }
+	}
+}
+
+TEST(MirrorSelectGetEdge, PageStartingAtTheClampBoundaryAndLastIndex)
+{
+	PagingRig rig;
+	rig.SelectAll(2500);
+	const Json::Value mid = rig.Page(999, 2);
+	EXPECT_EQ(Indices(mid), (std::vector<uint32_t>{ 999, 1000 }));
+	const Json::Value last = rig.Page(2499, 1000);
+	EXPECT_EQ(Indices(last), (std::vector<uint32_t>{ 2499 }));
+	const Json::Value atTotal = rig.Page(2500, 1000);
+	ASSERT_FALSE(IsError(atTotal));
+	EXPECT_EQ(Indices(atTotal).size(), 0u);
+	EXPECT_TRUE(IsError(rig.Page(2501, 1)));
+	const Json::Value huge = rig.Page(0, 4294967295ll);
+	ASSERT_FALSE(IsError(huge));
+	EXPECT_EQ(Indices(huge).size(), 1000u) << "count is clamped to the chunk limit";
+	EXPECT_TRUE(IsError(rig.Page(0, 4294967296ll))) << "2^32 is not a uint32";
+	EXPECT_TRUE(IsError(rig.Page(4294967296ll, 1)));
+}
+
+TEST(MirrorSelectGetEdge, ClampWarnsOnlyWhenOverTheLimit)
+{
+	PagingRig rig;
+	rig.SelectAll(1200);
+	LogCapture log("CEL");
+	rig.Page(0, 1000);
+	EXPECT_EQ(log.Warnings("clamped"), 0u);
+	rig.Page(0, 1001);
+	EXPECT_EQ(log.Warnings("clamped"), 1u);
+}
+
+TEST(MirrorSelectGetEdge, VersionAndHashTrackTheSelectionBetweenPages)
+{
+	PagingRig rig;
+	rig.SelectAll(1500);
+	const Json::Value first = rig.Page(0, 1000);
+	rig.domain.ActiveSelection()->BeginEdit();
+	rig.domain.ActiveSelection()->Set(2000, true);
+	rig.domain.ActiveSelection()->EndEdit();
+	const Json::Value second = rig.Page(1000, 1000);
+	EXPECT_NE(first["version"].asUInt(), second["version"].asUInt());
+	EXPECT_NE(first["hash"].asString(), second["hash"].asString());
+	EXPECT_EQ(first["total"].asUInt(), 1500u);
+	EXPECT_EQ(second["total"].asUInt(), 1501u);
+	EXPECT_EQ(Indices(second).back(), 2000u);
+}
+
+TEST(MirrorSelectGetEdge, SelectingTheSameCellTwiceDoesNotChangeCountOrHash)
+{
+	PagingRig rig;
+	rig.SelectAll(3);
+	const Json::Value a = rig.queries.SelectionGet(Json::Value(Json::objectValue));
+	rig.SelectAll(3);
+	const Json::Value b = rig.queries.SelectionGet(Json::Value(Json::objectValue));
+	EXPECT_EQ(a["total"], b["total"]);
+	EXPECT_EQ(a["hash"], b["hash"]);
+}
+
+TEST(MirrorListEdge, EmptyRegistryListsNoGridsAndNoOverlays)
+{
+	CellLayerRegistry registry{ nullptr, &FakePuIdFn };
+	Dia::Graphics::CellFieldRegistry cellField;
+	LayerUploader uploader{ cellField, nullptr };
+	CellLayerViewerDomain domain{ registry, uploader, nullptr };
+	MirrorQueries queries{ registry, domain, nullptr };
+	const Json::Value r = queries.LayerList();
+	ASSERT_TRUE(r["grids"].isArray());
+	EXPECT_EQ(r["grids"].size(), 0u);
+	ASSERT_TRUE(r["overlays"].isArray());
+	EXPECT_EQ(r["overlays"].size(), 0u);
+	EXPECT_TRUE(r["layersVersion"].isNumeric());
+}
+
+TEST_F(MirrorQueriesTest, LayersVersionMovesOnUnregisterAndOverlayChangesButNotOnQueriesOrRejectedRegistrations)
+{
+	const uint32_t v0 = queries.LayerList()["layersVersion"].asUInt();
+	queries.LayerList();
+	queries.SelectionGet(Json::Value(Json::objectValue));
+	EXPECT_EQ(queries.LayerList()["layersVersion"].asUInt(), v0) << "queries never bump it";
+
+	StubProvider dup;
+	EXPECT_NE(registry.Register(dup.MakeDesc("temp", &gridA.desc)), CellRegisterResult::Ok) << "duplicate id rejected";
+	EXPECT_EQ(queries.LayerList()["layersVersion"].asUInt(), v0) << "a rejected registration does not bump it";
+
+	ASSERT_EQ(registry.RegisterOverlay(MakeOverlay("extra", "Extra", "Air")), CellRegisterResult::Ok);
+	const uint32_t v1 = queries.LayerList()["layersVersion"].asUInt();
+	EXPECT_NE(v1, v0);
+	ASSERT_TRUE(registry.UnregisterOverlay(StringCRC("extra")));
+	const uint32_t v2 = queries.LayerList()["layersVersion"].asUInt();
+	EXPECT_NE(v2, v1);
+	ASSERT_TRUE(registry.Unregister(StringCRC("rain")));
+	const uint32_t v3 = queries.LayerList()["layersVersion"].asUInt();
+	EXPECT_NE(v3, v2);
+	EXPECT_FALSE(registry.Unregister(StringCRC("rain"))) << "already gone";
+	EXPECT_EQ(queries.LayerList()["layersVersion"].asUInt(), v3) << "a no-op unregister does not bump it";
+}
+
+TEST(MirrorListEdge, SchemaBackedHotkeysAreListedPerGridWithClashesAndUnboundEmpty)
+{
+	using Dia::ValueSchema::ValueInfo;
+	Dia::ValueSchema::ValueSchemaRegistry schema;
+	auto addKey = [&](const char* name, const char* hotkey)
+	{
+		ValueInfo v = Dia::ValueSchema::Testing::MakeValueInfo("cow.cell", name);
+		if (hotkey != nullptr) { v.mUi["hotkey"] = hotkey; }
+		schema.Register(v);
+	};
+	addKey("a", "t");
+	addKey("b", "t");	// clashes with a on the same grid
+	addKey("c", nullptr);
+	addKey("d", "m");
+	addKey("e", "t");	// same key on another grid: no clash
+	schema.Publish();
+	Dia::ValueSchema::ValueSchemaService svc(schema);
+
+	TestGrid gridA{ 2, 2 };
+	TestGrid gridB{ 2, 2 };
+	Dia::Graphics::CellFieldRegistry cellField;
+	CellLayerRegistry registry{ &svc, &FakePuIdFn };
+	LayerUploader uploader{ cellField, nullptr };
+	CellLayerViewerDomain domain{ registry, uploader, &svc };
+	MirrorQueries queries{ registry, domain, &svc };
+	FakePuId() = 1;
+	ASSERT_EQ(registry.Register(MakeLayer("a", &gridA.desc, "cow.cell/a")), CellRegisterResult::Ok);
+	ASSERT_EQ(registry.Register(MakeLayer("b", &gridA.desc, "cow.cell/b")), CellRegisterResult::Ok);
+	ASSERT_EQ(registry.Register(MakeLayer("c", &gridA.desc, "cow.cell/c")), CellRegisterResult::Ok);
+	ASSERT_EQ(registry.Register(MakeLayer("d", &gridA.desc, "cow.cell/d")), CellRegisterResult::Ok);
+	ASSERT_EQ(registry.Register(MakeLayer("e", &gridB.desc, "cow.cell/e")), CellRegisterResult::Ok);
+
+	const Json::Value r = queries.LayerList();
+	ASSERT_EQ(r["grids"].size(), 2u);
+	const Json::Value& la = r["grids"][0u]["layers"];
+	ASSERT_EQ(la.size(), 4u);
+	EXPECT_EQ(la[0u]["hotkey"].asString(), "t");
+	EXPECT_EQ(la[1u]["hotkey"].asString(), "") << "later layer of a clash gets no hotkey";
+	EXPECT_EQ(la[2u]["hotkey"].asString(), "") << "no ui.hotkey in the schema";
+	EXPECT_EQ(la[3u]["hotkey"].asString(), "m");
+	EXPECT_EQ(la[0u]["schemaKey"].asString(), "cow.cell/a");
+	const Json::Value& lb = r["grids"][1u]["layers"];
+	ASSERT_EQ(lb.size(), 1u);
+	EXPECT_EQ(lb[0u]["hotkey"].asString(), "t");
 }
 
 #endif // DIA_DEBUG
