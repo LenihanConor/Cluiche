@@ -158,6 +158,7 @@ def launch_target(target: str, config: str, filter_pattern: str = None,
     if extra_args:
         cmd += list(extra_args)
     if target == "googletest":
+        from dia_cli.commands.test.slow_suites import DEFAULT_GTEST_FILTER_ARG
         from dia_cli.commands.test.googletest_runner import (
             _gtest_xml_output_path,
             _warn_untagged_slow_suites,
@@ -165,7 +166,7 @@ def launch_target(target: str, config: str, filter_pattern: str = None,
         if filter_pattern:
             cmd.append(f"--gtest_filter={filter_pattern}")
         elif not run_all:
-            cmd.append("--gtest_filter=-SLOW_*")
+            cmd.append(DEFAULT_GTEST_FILTER_ARG)
         if verbose:
             cmd.append("--gtest_print_time=1")
         out_xml = _gtest_xml_output_path(repo_root)

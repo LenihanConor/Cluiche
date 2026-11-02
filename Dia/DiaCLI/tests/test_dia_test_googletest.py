@@ -222,7 +222,7 @@ def test_run_default_injects_slow_filter(mock_run, tmp_path):
     mock_run.return_value = MagicMock(returncode=0)
     run(repo_root=tmp_path, config="Debug", filter_pattern=None, verbose=False, docker=False, run_all=False)
     args = mock_run.call_args[0][0]
-    assert "--gtest_filter=-SLOW_*" in args
+    assert "--gtest_filter=-SLOW_*:*/SLOW_*" in args  # also excludes parameterized Prefix/SLOW_X suites
 
 
 @patch("dia_cli.commands.test.googletest_runner.subprocess.run")
@@ -231,7 +231,7 @@ def test_run_all_skips_default_filter(mock_run, tmp_path):
     mock_run.return_value = MagicMock(returncode=0)
     run(repo_root=tmp_path, config="Debug", filter_pattern=None, verbose=False, docker=False, run_all=True)
     args = mock_run.call_args[0][0]
-    assert "--gtest_filter=-SLOW_*" not in args
+    assert "--gtest_filter=-SLOW_*:*/SLOW_*" not in args
     assert not any("gtest_filter" in a for a in args)
 
 
@@ -242,7 +242,7 @@ def test_run_explicit_filter_overrides_default(mock_run, tmp_path):
     run(repo_root=tmp_path, config="Debug", filter_pattern="TestArray*", verbose=False, docker=False, run_all=False)
     args = mock_run.call_args[0][0]
     assert "--gtest_filter=TestArray*" in args
-    assert "--gtest_filter=-SLOW_*" not in args
+    assert "--gtest_filter=-SLOW_*:*/SLOW_*" not in args
 
 
 @patch("dia_cli.commands.test.googletest_runner.subprocess.run")
@@ -505,3 +505,13 @@ def test_googletest_help_shows_shards():
     result = runner.invoke(cli, ["test", "googletest", "--help"])
     assert result.exit_code == 0
     assert "--shards" in result.output
+
+
+def test_is_slow_suite_recognises_parameterized_prefix():
+    from dia_cli.commands.test.slow_suites import is_slow_suite
+    assert is_slow_suite("SLOW_Physics")
+    assert is_slow_suite("Once/SLOW_WebSocketLargeMessagesLimitTest")
+    assert is_slow_suite("Sizes/SLOW_WebSocketLargeMessagesTest")
+    assert not is_slow_suite("Physics")
+    assert not is_slow_suite("Once/FastTest")
+    assert not is_slow_suite("NotSLOW_Name")

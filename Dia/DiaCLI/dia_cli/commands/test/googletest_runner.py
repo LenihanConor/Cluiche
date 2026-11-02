@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from dia_cli.utils.repo_root import find_repo_root
+from .slow_suites import DEFAULT_GTEST_FILTER_ARG, is_slow_suite
 
 _DOCKER_IMAGE = "cluiche-build-env"
 _BINARY_SUBPATH = "Cluiche/bin/GoogleTests/{config}/x64/GoogleTests.exe"
@@ -38,7 +39,7 @@ def _warn_untagged_slow_suites(xml_path: Path) -> None:
             elapsed = float(time_str)
         except ValueError:
             continue
-        if elapsed > 0.5 and not name.startswith("SLOW_"):
+        if elapsed > 0.5 and not is_slow_suite(name):
             violations.append((name, elapsed))
     if violations:
         print(f"WARNING: {len(violations)} suite(s) exceeded 500ms but are not tagged SLOW_:")
@@ -99,7 +100,7 @@ def run(
     if filter_pattern:
         cmd.append(f"--gtest_filter={filter_pattern}")
     elif not run_all:
-        cmd.append("--gtest_filter=-SLOW_*")
+        cmd.append(DEFAULT_GTEST_FILTER_ARG)
     if verbose:
         cmd.append("--gtest_print_time=1")
     cmd.append(f"--gtest_output=xml:{out_xml}")

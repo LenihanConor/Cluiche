@@ -6,6 +6,7 @@ from typing import Optional
 
 from dia_cli.utils.asan_runtime import with_asan_runtime_on_path
 
+from .slow_suites import DEFAULT_GTEST_FILTER_ARG
 from .xml_merger import merge_xml
 
 
@@ -16,7 +17,7 @@ def _run_shard(binary: Path, out_dir: Path, shard_index: int, total_shards: int,
     if filter_pattern:
         cmd.append(f"--gtest_filter={filter_pattern}")
     elif not run_all:
-        cmd.append("--gtest_filter=-SLOW_*")
+        cmd.append(DEFAULT_GTEST_FILTER_ARG)
     if verbose:
         cmd.append("--gtest_print_time=1")
     env = with_asan_runtime_on_path(None, config)
