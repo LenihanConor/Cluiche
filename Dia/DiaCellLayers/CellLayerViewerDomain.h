@@ -232,6 +232,7 @@ namespace Dia::CellLayers
 		Dia::Observation::Metric::Gauge*	mMetricQueryEvaluateMs = nullptr;	// last evaluate duration in ms
 		Dia::Observation::Metric::Gauge*	mMetricQueryLastMatchCount = nullptr;	// last match count from either command
 		QueryState*				mQuery = nullptr;	// owned
+		bool					mQueryRunning = false;	// a layer read delegate re-entering a query command mid-evaluation is rejected
 		Json::Value				mQueryCheck;		// last cells.query.check outcome {expr, ok, count | error}; null until one ran
 		Json::Value				mQueryLast;			// last cells.select.query outcome, same shape
 		static const uint32_t	kQueryPartCapacity = 512;

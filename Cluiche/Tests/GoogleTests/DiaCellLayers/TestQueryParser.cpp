@@ -362,3 +362,113 @@ TEST(QueryParserTest, LongChainFitsNodePool)
 	ASSERT_TRUE(p.Parse(src.c_str())) << p.Error().mMessage;
 	EXPECT_LE(p.NodeCount(), QueryParser::kMaxNodes);
 }
+
+// ---- Task 10a exhaustive pass ----
+
+TEST(QueryParserEdge, TooDeepParenErrorPointsAtTheSeventeenthOpenParen)
+{
+	const QueryError e = ErrorOf(NestedParens(17));
+	EXPECT_EQ(e.mColumn, 16u);
+	EXPECT_EQ(e.mLength, 1u);
+}
+
+TEST(QueryParserEdge, TooDeepNotErrorPointsAtTheSeventeenthNotKeyword)
+{
+	std::string src;
+	for (int i = 0; i < 17; ++i) { src += "not "; }
+	src += "a<1";
+	const QueryError e = ErrorOf(src);
+	EXPECT_EQ(e.mColumn, 64u);	// 16 * len("not ")
+	EXPECT_EQ(e.mLength, 3u);
+}
+
+TEST(QueryParserEdge, SiblingParenGroupsDoNotAccumulateDepth)
+{
+	std::string src;
+	for (int i = 0; i < 40; ++i) { src += (i ? " and (a<1)" : "(a<1)"); }
+	QueryParser p;
+	EXPECT_TRUE(p.Parse(src.c_str())) << p.Error().mMessage;	// depth is nesting, not count
+}
+
+TEST(QueryParserEdge, NumberValuesAreParsedWithSignAndFraction)
+{
+	const struct { const char* text; double value; } cases[] = {
+		{ "a<-0.5", -0.5 }, { "a<+3", 3.0 }, { "a<007", 7.0 }, { "a<0.125", 0.125 }, { "a<-0", 0.0 },
+	};
+	for (const auto& c : cases)
+	{
+		QueryParser p;
+		ASSERT_TRUE(p.Parse(c.text)) << c.text << p.Error().mMessage;
+		EXPECT_DOUBLE_EQ(p.Node(p.RootIndex()).mValue, c.value) << c.text;
+		EXPECT_EQ(p.Node(p.RootIndex()).mRhsKind, QueryRhsKind::Number);
+	}
+}
+
+TEST(QueryParserEdge, VeryLongDigitStringStillParsesAsANumber)
+{
+	const std::string src = "a<" + std::string(300, '9');
+	QueryParser p;
+	ASSERT_TRUE(p.Parse(src.c_str())) << p.Error().mMessage;
+	EXPECT_GT(p.Node(p.RootIndex()).mValue, 1e100);
+}
+
+TEST(QueryParserEdge, KeywordsCannotStandInForNamesOrValues)
+{
+	EXPECT_TRUE(Has(ErrorOf("and < 1"), "missing operand"));
+	EXPECT_TRUE(Has(ErrorOf("not < 1"), "unexpected token"));
+	const QueryError rhs = ErrorOf("a == not");
+	EXPECT_EQ(rhs.mColumn, 5u);
+	EXPECT_EQ(rhs.mLength, 3u);
+	EXPECT_TRUE(Has(ErrorOf("a < and b < 1"), "missing operand"));
+}
+
+TEST(QueryParserEdge, DoubledOperatorAndParenAsValueAreUnexpected)
+{
+	QueryError e = ErrorOf("a = = 1");
+	EXPECT_EQ(e.mColumn, 4u);
+	EXPECT_EQ(e.mLength, 1u);
+	e = ErrorOf("a < (1)");
+	EXPECT_EQ(e.mColumn, 4u);
+	EXPECT_TRUE(Has(e, "expected a number"));
+	e = ErrorOf("a == (b)");
+	EXPECT_EQ(e.mColumn, 5u);
+	EXPECT_TRUE(Has(e, "number or identifier"));
+}
+
+TEST(QueryParserEdge, ErrorsLeaveNoTreeAndParserIsReusable)
+{
+	QueryParser p;
+	EXPECT_FALSE(p.Parse("a < 1 and"));
+	EXPECT_EQ(p.NodeCount(), 0u);
+	EXPECT_EQ(p.RootIndex(), QueryNode::kNone);
+	ASSERT_TRUE(p.Parse("a < 1"));
+	EXPECT_EQ(p.NodeCount(), 1u);
+	EXPECT_EQ(p.Error().mMessage[0], '\0');
+}
+
+TEST(QueryParserEdge, TrailingCloseParenAfterGroupIsUnmatched)
+{
+	QueryError e = ErrorOf("(a<1))");
+	EXPECT_EQ(e.mColumn, 5u);
+	EXPECT_TRUE(Has(e, "unmatched"));
+	e = ErrorOf("a<1)");
+	EXPECT_EQ(e.mColumn, 3u);
+	EXPECT_TRUE(Has(e, "unmatched"));
+}
+
+TEST(QueryParserEdge, UnclosedInnerParenPointsAtInnermostUnclosedOpen)
+{
+	const QueryError e = ErrorOf("(a<1 and (b<2)");
+	EXPECT_EQ(e.mColumn, 0u);	// the outer '(' never closes
+	EXPECT_TRUE(Has(e, "unclosed"));
+}
+
+TEST(QueryParserEdge, SixteenNestedGroupsRightLeaningParse)
+{
+	std::string src;
+	for (int i = 0; i < 16; ++i) { src += "a<1 or ("; }
+	src += "a<1" + std::string(16, ')');
+	QueryParser p;
+	EXPECT_TRUE(p.Parse(src.c_str())) << p.Error().mMessage;
+	EXPECT_LE(src.size(), 512u);
+}

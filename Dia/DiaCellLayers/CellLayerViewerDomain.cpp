@@ -1164,6 +1164,15 @@ namespace Dia::CellLayers
 		if (first == std::string::npos) { return reject("empty query", 0, 0, nullptr); }
 		CellSelection* sel = mRegistry.SelectionFor(mActiveGrid);
 		if (sel == nullptr) { return reject("no active grid", 0, 0, nullptr); }
+		// A layer read delegate may call back into the domain while this query evaluates; the parser, resolver and evaluator are
+		// shared state, so a nested query would silently corrupt the outer one.
+		if (mQueryRunning) { return reject("query already running", 0, 0, nullptr); }
+		struct RunningScope
+		{
+			bool& flag;
+			explicit RunningScope(bool& f) : flag(f) { flag = true; }
+			~RunningScope() { flag = false; }
+		} running(mQueryRunning);
 
 		if (mQuery == nullptr) { mQuery = new QueryState(); }
 		const char* const src = text.c_str();

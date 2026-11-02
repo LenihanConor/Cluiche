@@ -252,3 +252,145 @@ TEST(QueryEvaluatorViews, PastViewEvaluatesAgainstScrubbedValues)
 	ASSERT_TRUE(f.Eval("x < 0.5")) << f.Msg();
 	EXPECT_EQ((Cells{ 0, 2 }), f.Result());
 }
+
+// ---- Task 10a exhaustive pass ----
+
+TEST(QueryEvaluatorEdge, MaximumRightLeaningNestingUsesEverySlotWithoutOverflow)
+{
+	SmallEval s(4, 1, { 0.1f, 0.4f, 0.6f, 0.9f });
+	// x > 0.8 or (x > 0.8 or ( ... (x > 0.5))) : 16 parenthesis levels, each holding one pooled temporary.
+	std::string src;
+	for (int i = 0; i < 16; ++i) { src += "x > 0.8 or ("; }
+	src += "x > 0.5" + std::string(16, ')');
+	ASSERT_TRUE(s.f.Eval(src.c_str())) << s.f.Msg();
+	EXPECT_EQ((Cells{ 2, 3 }), s.f.Result());
+	// Same shape with 'and' narrows to the intersection of every level.
+	std::string both;
+	for (int i = 0; i < 16; ++i) { both += "x > 0.0 and ("; }
+	both += "x > 0.5" + std::string(16, ')');
+	ASSERT_TRUE(s.f.Eval(both.c_str())) << s.f.Msg();
+	EXPECT_EQ((Cells{ 2, 3 }), s.f.Result());
+}
+
+TEST(QueryEvaluatorEdge, InfinitiesCompareOrderedAndNegativeZeroEqualsZero)
+{
+	const float inf = std::numeric_limits<float>::infinity();
+	SmallEval s(4, 1, { inf, -inf, -0.0f, 0.0f });
+	ASSERT_TRUE(s.f.Eval("x > 1000")); EXPECT_EQ((Cells{ 0 }), s.f.Result());
+	ASSERT_TRUE(s.f.Eval("x < -1000")); EXPECT_EQ((Cells{ 1 }), s.f.Result());
+	ASSERT_TRUE(s.f.Eval("x == 0")); EXPECT_EQ((Cells{ 2, 3 }), s.f.Result());
+	ASSERT_TRUE(s.f.Eval("x != 0")); EXPECT_EQ((Cells{ 0, 1 }), s.f.Result());
+	ASSERT_TRUE(s.f.Eval("x == -0")); EXPECT_EQ((Cells{ 2, 3 }), s.f.Result());
+}
+
+TEST(QueryEvaluatorEdge, ThresholdBeyondFloatRangeBehavesAsInfinity)
+{
+	SmallEval s(3, 1, { 1.0e30f, -1.0e30f, 0.0f });
+	const std::string huge(60, '9');	// ~1e60, far beyond FLT_MAX
+	ASSERT_TRUE(s.f.Eval(("x < " + huge).c_str())); EXPECT_EQ((Cells{ 0, 1, 2 }), s.f.Result());
+	ASSERT_TRUE(s.f.Eval(("x > " + huge).c_str())); EXPECT_EQ((Cells{}), s.f.Result());
+	ASSERT_TRUE(s.f.Eval(("x > -" + huge).c_str())); EXPECT_EQ((Cells{ 0, 1, 2 }), s.f.Result());
+}
+
+TEST(QueryEvaluatorEdge, CategoryOutOfRangeAndNegativeValuesMatchNoEnumId)
+{
+	QueryEvalFixture f(5, 1);
+	f.PublishSchema({}, { "c" });
+	ASSERT_TRUE(f.AddValues("c", { -1.0f, -0.4f, 7.0f, 3.0f, 1e9f }, CellValueKind::Category));
+	ASSERT_TRUE(f.Eval("c = Grass")); EXPECT_EQ((Cells{ 1 }), f.Result());	// -0.4 rounds to 0
+	ASSERT_TRUE(f.Eval("c = Sand")); EXPECT_EQ((Cells{ 3 }), f.Result());
+	ASSERT_TRUE(f.Eval("c != Sand")); EXPECT_EQ((Cells{ 0, 1, 2, 4 }), f.Result());
+}
+
+TEST(QueryEvaluatorEdge, SingleCellGridNotAndTailBitsStayClean)
+{
+	SmallEval s(1, 1, { 0.2f });
+	ASSERT_TRUE(s.f.Eval("not x > 0.5"));
+	EXPECT_EQ(1u, s.f.evaluator.Count());
+	ASSERT_NE(nullptr, s.f.evaluator.Words());
+	EXPECT_EQ(1u, s.f.evaluator.Words()[0]);	// only bit 0, tail masked
+	ASSERT_TRUE(s.f.Eval("not not x > 0.5"));
+	EXPECT_EQ(0u, s.f.evaluator.Count());
+}
+
+TEST(QueryEvaluatorEdge, NotMasksTailAt63And65AndExactMultipleCells)
+{
+	for (uint16_t w : { uint16_t(63), uint16_t(64), uint16_t(65), uint16_t(128) })
+	{
+		SmallEval s(w, 1, std::vector<float>(w, 0.0f));
+		ASSERT_TRUE(s.f.Eval("not x > 1")) << w;
+		EXPECT_EQ(static_cast<uint32_t>(w), s.f.evaluator.Count()) << w;
+		const uint32_t words = (w + 63u) / 64u;
+		if (w % 64u != 0) { EXPECT_EQ(0u, s.f.evaluator.Words()[words - 1] >> (w % 64u)) << w; }
+	}
+}
+
+TEST(QueryEvaluatorEdge, LayerUnregisteredAfterResolveFailsWithLocatedNoDataError)
+{
+	QueryEvalFixture f(4, 1);
+	f.PublishSchema({ "x", "y" });
+	ASSERT_TRUE(f.AddValues("x", { 1, 2, 3, 4 }));
+	ASSERT_TRUE(f.AddValues("y", { 1, 2, 3, 4 }));
+	ASSERT_TRUE(f.q.Run("x > 0 and y > 0", f.parser, f.resolver));
+	ASSERT_TRUE(f.q.registry.Unregister(Dia::Core::StringCRC("y")));
+	EXPECT_FALSE(f.evaluator.Evaluate(f.parser, f.resolver, f.Reader(), f.CellCount()));
+	EXPECT_EQ(10u, f.evaluator.Error().mColumn);	// the 'y' name span
+	EXPECT_EQ(1u, f.evaluator.Error().mLength);
+	EXPECT_EQ(0u, f.evaluator.Count());
+	EXPECT_FALSE(f.evaluator.Test(0));
+}
+
+TEST(QueryEvaluatorEdge, NothingToEvaluateWhenCellCountIsZero)
+{
+	QueryEvalFixture f(4, 1);
+	f.PublishSchema({ "x" });
+	ASSERT_TRUE(f.AddValues("x", { 1, 2, 3, 4 }));
+	ASSERT_TRUE(f.q.Run("x > 0", f.parser, f.resolver));
+	EXPECT_FALSE(f.evaluator.Evaluate(f.parser, f.resolver, f.Reader(), 0));
+	EXPECT_STREQ("nothing to evaluate", f.evaluator.Error().mMessage);
+}
+
+TEST(QueryEvaluatorEdge, FailedEvaluationAfterSuccessDropsThePreviousResult)
+{
+	QueryEvalFixture f(4, 1);
+	f.PublishSchema({ "x" });
+	ASSERT_TRUE(f.AddValues("x", { 1, 2, 3, 4 }));
+	ASSERT_TRUE(f.Eval("x > 2"));
+	ASSERT_EQ(2u, f.evaluator.Count());
+	EXPECT_FALSE(f.evaluator.Evaluate(f.parser, f.resolver, f.Reader(), 9));	// mismatched count
+	EXPECT_EQ(0u, f.evaluator.Count());
+	EXPECT_EQ(nullptr, f.evaluator.Words());
+}
+
+TEST(QueryEvaluatorEdge, ScrubbedSourceSwitchesLiveToPastToLiveWithoutStaleCache)
+{
+	QueryEvalFixture f(4, 1);
+	f.PublishSchema({ "x" });
+	ASSERT_TRUE(f.AddValues("x", { 0.9f, 0.9f, 0.1f, 0.1f }));
+	StubViewValueSource source;
+	source.live = true;
+	source.values = { 0.1f, 0.1f, 0.9f, 0.9f };
+	f.q.registry.SetViewValueSource(&source);
+	ASSERT_TRUE(f.Eval("x > 0.5")); EXPECT_EQ((Cells{ 0, 1 }), f.Result());	// live: provider values
+	source.live = false; source.epoch = 2;
+	ASSERT_TRUE(f.Eval("x > 0.5")); EXPECT_EQ((Cells{ 2, 3 }), f.Result());	// past: source values
+	source.values = { 0.9f, 0.1f, 0.1f, 0.1f }; source.epoch = 3;
+	ASSERT_TRUE(f.Eval("x > 0.5")); EXPECT_EQ((Cells{ 0 }), f.Result());	// new epoch re-reads
+	source.live = true;
+	ASSERT_TRUE(f.Eval("x > 0.5")); EXPECT_EQ((Cells{ 0, 1 }), f.Result());	// back to live
+}
+
+TEST(QueryEvaluatorEdge, ApplyToWithEmptyResultClearsSelectionAndBumpsOnce)
+{
+	SmallEval s(4, 1, { 0.1f, 0.2f, 0.3f, 0.4f });
+	CellSelection sel;
+	sel.Reset(&s.f.q.gridA);
+	sel.Set(1, true);
+	const uint32_t v0 = sel.Version();
+	ASSERT_TRUE(s.f.Eval("x > 5"));
+	ASSERT_TRUE(s.f.evaluator.ApplyTo(sel));
+	EXPECT_EQ(0u, sel.Count());
+	EXPECT_EQ(v0 + 1, sel.Version());
+	ASSERT_TRUE(s.f.evaluator.ApplyTo(sel));	// same (empty) set again: no change, no bump
+	EXPECT_EQ(v0 + 1, sel.Version());
+}

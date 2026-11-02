@@ -193,4 +193,145 @@ TEST_F(QueryPanelPartsTest, FullLengthQueryRoundTrips)
 	EXPECT_EQ(q["check"]["count"].asUInt(), 32u);
 }
 
+// ---- Task 10a exhaustive pass (Feature 3) ----
+
+TEST_F(QueryPanelPartsTest, ExactlyFiveTwelveAcrossTwoPartsIsAcceptedAndOneOverIsRejected)
+{
+	PartsRig rig;
+	std::string a = "temp >= 1";
+	a.append(300 - a.size(), ' ');
+	rig.Part(0, a);
+	rig.Part(1, std::string(212, ' '));	// 300 + 212 = 512: fits exactly
+	rig.Send("query_check", 2);
+	EXPECT_TRUE(rig.Query()["check"]["ok"].asBool());
+	EXPECT_EQ(rig.Query()["check"]["expr"].asString().size(), 512u);
+
+	rig.Part(0, a);
+	rig.Part(1, std::string(213, ' '));	// 513: second part dropped
+	rig.Send("query_check", 2);
+	EXPECT_EQ(rig.Query()["check"]["error"]["message"].asString(), "incomplete query (panel transport)");
+	rig.Send("query_check", 1);
+	EXPECT_EQ(rig.Query()["check"]["expr"].asString(), a);
+}
+
+TEST_F(QueryPanelPartsTest, PartsAfterAnOverflowAreAlsoIgnoredUntilANewFirstPart)
+{
+	PartsRig rig;
+	rig.Part(0, std::string(400, 'a'));
+	rig.Part(1, std::string(200, 'b'));	// overflow: dropped
+	rig.Part(2, "c");					// index 2 != expected 1: dropped
+	rig.Send("query_check", 1);
+	EXPECT_EQ(rig.Query()["check"]["expr"].asString(), std::string(400, 'a'));
+	rig.Part(0, "temp >= 1");
+	rig.Send("query_check", 1);
+	EXPECT_TRUE(rig.Query()["check"]["ok"].asBool());
+}
+
+TEST_F(QueryPanelPartsTest, FirstPartMustBeIndexZero)
+{
+	PartsRig rig;
+	rig.Part(1, "temp >= 1");	// nothing assembled yet: ignored
+	rig.Send("query_check", 1);
+	EXPECT_EQ(rig.Query()["check"]["error"]["message"].asString(), "incomplete query (panel transport)");
+}
+
+TEST_F(QueryPanelPartsTest, MalformedPartArgumentsAreIgnoredWithoutChangingTheBuffer)
+{
+	PartsRig rig;
+	rig.Part(0, "temp >= 1");
+	Json::Value noIndex(Json::objectValue);
+	noIndex["s"] = " and x";
+	rig.domain.OnCommand(StringCRC("query_part"), noIndex);
+	Json::Value negative(Json::objectValue);
+	negative["i"] = -1;
+	negative["s"] = " and x";
+	rig.domain.OnCommand(StringCRC("query_part"), negative);
+	Json::Value notString(Json::objectValue);
+	notString["i"] = 1;
+	notString["s"] = 5;
+	rig.domain.OnCommand(StringCRC("query_part"), notString);
+	rig.domain.OnCommand(StringCRC("query_part"), Json::Value("temp"));	// not an object
+	rig.Send("query_check", 1);
+	EXPECT_EQ(rig.Query()["check"]["expr"].asString(), "temp >= 1");
+	EXPECT_TRUE(rig.Query()["check"]["ok"].asBool());
+}
+
+TEST_F(QueryPanelPartsTest, EmptyPartCountsAsAPart)
+{
+	PartsRig rig;
+	rig.Part(0, "temp >= 1");
+	rig.Part(1, "");
+	rig.Part(2, " ");
+	rig.Send("query_check", 3);
+	EXPECT_TRUE(rig.Query()["check"]["ok"].asBool());
+	EXPECT_EQ(rig.Query()["check"]["expr"].asString(), "temp >= 1 ");
+}
+
+TEST_F(QueryPanelPartsTest, CountZeroOrMissingCountIsIncompleteOrEmpty)
+{
+	PartsRig rig;
+	rig.Part(0, "temp >= 1");
+	rig.Send("query_check", 0);
+	EXPECT_EQ(rig.Query()["check"]["error"]["message"].asString(), "incomplete query (panel transport)");
+	rig.domain.OnCommand(StringCRC("query_check"), Json::Value(Json::objectValue));	// no e / expr / n at all
+	EXPECT_EQ(rig.Query()["check"]["error"]["message"].asString(), "empty query");
+	rig.Send("query_run", 0);
+	EXPECT_EQ(rig.Query()["last"]["error"]["message"].asString(), "incomplete query (panel transport)");
+	EXPECT_EQ(rig.domain.ActiveSelectionView()->Count(), 0u);
+}
+
+TEST_F(QueryPanelPartsTest, AssembledErrorColumnSpansPartBoundaries)
+{
+	PartsRig rig;
+	rig.Part(0, "temp >= 1 and terr");
+	rig.Part(1, "ian == water");	// "terrian" straddles the two parts
+	rig.Send("query_check", 2);
+	const Json::Value e = rig.Query()["check"]["error"];
+	EXPECT_EQ(e["column"].asUInt(), 14u);
+	EXPECT_EQ(e["length"].asUInt(), 7u);
+	EXPECT_EQ(e["suggestion"].asString(), "terrain");
+}
+
+TEST_F(QueryPanelPartsTest, ReRunningTheSameAssembledPartsIsRepeatable)
+{
+	PartsRig rig;
+	rig.Part(0, "terrain ==");
+	rig.Part(1, " water");
+	rig.Send("query_run", 2);
+	const uint32_t v = rig.domain.ActiveSelectionView()->Version();
+	rig.Send("query_run", 2);	// parts are still buffered; same result, no further bump
+	EXPECT_EQ(rig.domain.ActiveSelectionView()->Version(), v);
+	EXPECT_EQ(rig.Query()["last"]["count"].asUInt(), 8u);
+	rig.Send("query_check", 2);
+	EXPECT_EQ(rig.Query()["check"]["count"].asUInt(), 8u);
+}
+
+TEST_F(QueryPanelPartsTest, ExprKeyAndShortKeyBothFeedTheQueryAndShortKeyWinsWhenBothPresent)
+{
+	PartsRig rig;
+	Json::Value a(Json::objectValue);
+	a["expr"] = "temp >= 1";
+	rig.domain.OnCommand(StringCRC("query_check"), a);
+	EXPECT_EQ(rig.Query()["check"]["count"].asUInt(), 32u);
+	a["e"] = "temp > 100";
+	rig.domain.OnCommand(StringCRC("query_check"), a);
+	EXPECT_EQ(rig.Query()["check"]["expr"].asString(), "temp > 100");
+	EXPECT_EQ(rig.Query()["check"]["count"].asUInt(), 0u);
+}
+
+TEST_F(QueryPanelPartsTest, RunErrorViaPartsKeepsSelectionAndRecordsStructuredError)
+{
+	PartsRig rig;
+	rig.domain.ActiveSelection()->Set(1, true);
+	rig.Part(0, "terrain >");
+	rig.Part(1, " 1");
+	rig.Send("query_run", 2);
+	const Json::Value last = rig.Query()["last"];
+	EXPECT_FALSE(last["ok"].asBool());
+	EXPECT_EQ(last["expr"].asString(), "terrain > 1");
+	EXPECT_TRUE(last["error"]["column"].isUInt());
+	EXPECT_EQ(rig.domain.ActiveSelectionView()->Count(), 1u);
+	EXPECT_TRUE(rig.domain.ActiveSelectionView()->Contains(1));
+}
+
 #endif // DIA_DEBUG

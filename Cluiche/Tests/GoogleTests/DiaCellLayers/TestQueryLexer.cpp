@@ -211,3 +211,102 @@ TEST(QueryLexerTest, ReusableAfterError)
 	EXPECT_EQ(lx.TokenCount(), 2u);
 	EXPECT_EQ(lx.Error().mMessage[0], '\0');
 }
+
+// ---- Task 10a exhaustive pass ----
+
+TEST(QueryLexerEdge, NewlineAndCarriageReturnAreWhitespace)
+{
+	const std::string src = "a\r\n<\n1";
+	QueryLexer lx;
+	ASSERT_TRUE(lx.Tokenize(src.c_str()));
+	ASSERT_EQ(lx.TokenCount(), 4u);
+	EXPECT_EQ(lx.Token(0).mColumn, 0u);
+	EXPECT_EQ(lx.Token(1).mKind, QueryTokenKind::Less);
+	EXPECT_EQ(lx.Token(1).mColumn, 3u);
+	EXPECT_EQ(lx.Token(2).mColumn, 5u);
+}
+
+TEST(QueryLexerEdge, NullTextIsTreatedAsEmpty)
+{
+	QueryLexer lx;
+	ASSERT_TRUE(lx.Tokenize(nullptr));
+	ASSERT_EQ(lx.TokenCount(), 1u);
+	EXPECT_EQ(lx.Token(0).mKind, QueryTokenKind::End);
+}
+
+TEST(QueryLexerEdge, EndTokenColumnIsTextLengthIncludingTrailingSpaces)
+{
+	QueryLexer lx;
+	ASSERT_TRUE(lx.Tokenize("a  "));
+	ASSERT_EQ(lx.TokenCount(), 2u);
+	EXPECT_EQ(lx.Token(1).mKind, QueryTokenKind::End);
+	EXPECT_EQ(lx.Token(1).mColumn, 3u);
+	EXPECT_EQ(lx.Token(1).mLength, 0u);
+}
+
+TEST(QueryLexerEdge, MalformedNumberVariantsSpanTheWholeJunkRun)
+{
+	struct Case { const char* text; uint32_t column; uint32_t length; };
+	const Case cases[] = {
+		{ "a < 1.5.2",  4, 5 },		// second '.' joins the junk run
+		{ "a < --5",    4, 1 },		// '-' not followed by a digit: just the sign
+		{ "a < 12abc",  4, 5 },		// digits glued to letters
+		{ "a < 1e+5",   4, 2 },		// stops before '+' (it is not junk)
+		{ "a < +",      4, 1 },
+		{ "a < 0x10",   4, 4 },
+	};
+	QueryLexer lx;
+	for (const Case& c : cases)
+	{
+		EXPECT_FALSE(lx.Tokenize(c.text)) << c.text;
+		EXPECT_EQ(lx.Error().mColumn, c.column) << c.text;
+		EXPECT_EQ(lx.Error().mLength, c.length) << c.text;
+		EXPECT_EQ(lx.TokenCount(), 0u) << c.text;
+	}
+}
+
+TEST(QueryLexerEdge, LoneBangSuggestsNotEqual)
+{
+	QueryLexer lx;
+	EXPECT_FALSE(lx.Tokenize("a !"));	// bang at end of input
+	EXPECT_EQ(lx.Error().mColumn, 2u);
+	EXPECT_EQ(lx.Error().mLength, 1u);
+	EXPECT_STREQ(lx.Error().mSuggestion, "!=");
+}
+
+TEST(QueryLexerEdge, OperatorPairsLexGreedilyAndSeparately)
+{
+	QueryLexer lx;
+	ASSERT_TRUE(lx.Tokenize("<> =< ==="));	// '<' '>' | '=' '<' | '==' '='
+	ASSERT_EQ(lx.TokenCount(), 7u);
+	EXPECT_EQ(lx.Token(0).mKind, QueryTokenKind::Less);
+	EXPECT_EQ(lx.Token(1).mKind, QueryTokenKind::Greater);
+	EXPECT_EQ(lx.Token(2).mKind, QueryTokenKind::Equal);
+	EXPECT_EQ(lx.Token(2).mLength, 1u);
+	EXPECT_EQ(lx.Token(3).mKind, QueryTokenKind::Less);
+	EXPECT_EQ(lx.Token(4).mLength, 2u);
+	EXPECT_EQ(lx.Token(5).mLength, 1u);
+}
+
+TEST(QueryLexerEdge, OverLengthErrorHasNoTokensAndReportsExcessSpan)
+{
+	const std::string src(513, ' ');
+	QueryLexer lx;
+	EXPECT_FALSE(lx.Tokenize(src.c_str()));	// whitespace still counts toward the limit
+	EXPECT_EQ(lx.TokenCount(), 0u);
+	EXPECT_EQ(lx.Error().mColumn, 512u);
+	EXPECT_EQ(lx.Error().mLength, 1u);
+	EXPECT_NE(std::string(lx.Error().mMessage).find("512"), std::string::npos);
+}
+
+TEST(QueryLexerEdge, UnknownCharacterAfterValidTokensKeepsColumn)
+{
+	QueryLexer lx;
+	EXPECT_FALSE(lx.Tokenize("a < 1 and b # 2"));
+	EXPECT_EQ(lx.Error().mColumn, 12u);
+	EXPECT_EQ(lx.Error().mLength, 1u);
+	EXPECT_FALSE(lx.Tokenize("a & b"));
+	EXPECT_EQ(lx.Error().mColumn, 2u);
+	EXPECT_FALSE(lx.Tokenize("\"water\""));	// quotes are not part of the grammar
+	EXPECT_EQ(lx.Error().mColumn, 0u);
+}

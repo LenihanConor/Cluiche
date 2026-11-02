@@ -5,10 +5,15 @@
 #include <DiaCellLayers/Testing/FakeDebugDraw.h>
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
 #include <DiaCellLayers/Testing/LogCapture.h>
+#include <DiaCellLayers/Testing/ViewValueSourceTestSupport.h>
 #include <DiaAPI/DiaAPI.h>
 
+#include <chrono>
+#include <future>
+#include <memory>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <vector>
 
 #ifdef DIA_DEBUG
@@ -225,6 +230,442 @@ TEST_F(QueryCommandsTest, SelectLogsInfoForRunAndRejectAndCheckIsSilent)
 	Exec("cells.query.check", Expr("terrain == water"));
 	Exec("cells.query.check", Expr("terrain >"));
 	EXPECT_EQ(log.Count(Level::kInfo), 0u);
+}
+
+// ---- Task 10a exhaustive pass (Feature 3) ----
+
+namespace
+{
+	// ---- reentrancy: a layer read delegate that calls back into the domain while a query is evaluating. The viewer has no
+	// mutex now, so this must neither deadlock nor corrupt the outer query. A watchdog turns a hang into a failure. ----
+	CellLayerViewerDomain* gDomain = nullptr;
+	bool gArmed = false;
+	uint32_t gReentryCalls = 0;
+	std::string gNestedActiveBase;
+	size_t gNestedGridCount = 0;
+	bool gNestedQueryRejected = false;
+	std::string gNestedQueryMessage;
+	const char* gNestedExpr = nullptr;
+	const char* gNestedCmd = nullptr;
+
+	void ReadReentering(float* out, uint32_t n)
+	{
+		for (uint32_t i = 0; i < n; ++i) { out[i] = 1.0f; }
+		if (!gArmed) { return; }
+		gArmed = false;	// re-enter once: the nested query must not recurse into this layer again
+		++gReentryCalls;
+		Json::Value list;
+		gDomain->ListLayers(list);
+		gNestedGridCount = list["grids"].size();
+		gNestedActiveBase = list["activeBase"].asString();
+		Json::Value state(Json::objectValue);
+		gDomain->GetJSONState(state);
+		if (gNestedCmd != nullptr)
+		{
+			const Json::Value r = Exec(gNestedCmd, Expr(gNestedExpr));
+			gNestedQueryRejected = !r["success"].asBool();
+			if (gNestedQueryRejected) { gNestedQueryMessage = r["error"]["message"].asString(); }
+		}
+	}
+
+	template <typename Fn>
+	bool FinishesWithin(std::chrono::milliseconds window, Fn fn)
+	{
+		auto task = std::make_shared<std::packaged_task<void()>>(fn);
+		std::future<void> done = task->get_future();
+		std::thread([task] { (*task)(); }).detach();
+		if (done.wait_for(window) != std::future_status::ready) { return false; }
+		try { done.get(); }
+		catch (const std::exception& e) { ADD_FAILURE() << "callback path threw: " << e.what(); return false; }
+		return true;
+	}
+
+	struct ReentryTest : QueryCommandsTest
+	{
+		void SetUp() override
+		{
+			QueryCommandsTest::SetUp();
+			gArmed = false; gReentryCalls = 0; gNestedActiveBase.clear(); gNestedGridCount = 0;
+			gNestedQueryRejected = false; gNestedQueryMessage.clear(); gNestedExpr = nullptr; gNestedCmd = nullptr;
+		}
+		void TearDown() override { gDomain = nullptr; QueryCommandsTest::TearDown(); }
+
+		static void AddReentrantLayer(Rig& rig)
+		{
+			CellLayerDesc d = MakeLayer("rd", &rig.grid.desc);
+			d.read = fastdelegate::FastDelegate2<float*, uint32_t>(&ReadReentering);
+			ASSERT_EQ(rig.registry.Register(d), CellRegisterResult::Ok);
+			gDomain = &rig.domain;
+		}
+	};
+
+	// Two grids: A (temp) and B (bx); SetBase switches the active grid.
+	struct TwoGridRig
+	{
+		TestGrid gridA, gridB;
+		CellFieldRegistry cellField;
+		UploaderSchemaFixture fx;
+		const Dia::ValueSchema::ValueSchemaService* service;
+		StubProvider tempA, bx;
+		FakeDebugDraw draw;
+		CellLayerRegistry registry;
+		LayerUploader uploader;
+		CellLayerViewerDomain domain;
+		ViewerCommands commands{ domain };
+
+		static const Dia::ValueSchema::ValueSchemaService* Build(UploaderSchemaFixture& f)
+		{
+			f.Add(UploaderSchemaFixture::FloatEntry("temp", 0, 10));
+			f.Add(UploaderSchemaFixture::FloatEntry("bx", 0, 10));
+			return &f.Publish();
+		}
+
+		TwoGridRig()
+			: gridA(4, 4), gridB(2, 2)
+			, service(Build(fx))
+			, registry(nullptr, &FakePuIdFn)
+			, uploader(cellField, nullptr)
+			, domain(registry, uploader, service)
+		{
+			tempA.values = std::vector<float>(16, 1.0f);
+			bx.values = { 1, 2, 3, 4 };
+			registry.Register(tempA.MakeDesc("temp", &gridA.desc, CellValueKind::Float, "cells/temp"));
+			registry.Register(bx.MakeDesc("bx", &gridB.desc, CellValueKind::Float, "cells/bx"));
+			domain.Update(draw);
+		}
+	};
+}
+
+TEST_F(QueryCommandsTest, RawReplyShapesAreOkCountAndOkFalseErrorObject)
+{
+	Rig rig(66, 42);
+	const Json::Value ok = rig.commands.Raw("cells.select.query", Expr("terrain == water"));
+	ASSERT_TRUE(ok.isObject());
+	EXPECT_TRUE(ok["ok"].asBool());
+	EXPECT_FALSE(ok.isMember("error"));
+	EXPECT_FALSE(ok.isMember("success"));	// the wire carries the raw handler result, not the DiaAPI wrapper
+	const Json::Value bad = rig.commands.Raw("cells.select.query", Expr("terrain =="));
+	ASSERT_TRUE(bad.isObject());
+	EXPECT_FALSE(bad["ok"].asBool());
+	EXPECT_FALSE(bad.isMember("count"));
+	ASSERT_TRUE(bad["error"].isObject());
+	EXPECT_TRUE(bad["error"]["message"].isString());
+	EXPECT_TRUE(bad["error"]["column"].isUInt());
+	EXPECT_TRUE(bad["error"]["length"].isUInt());
+}
+
+TEST_F(QueryCommandsTest, BareStringParamsAreAcceptedForBothCommands)
+{
+	Rig rig(66, 42);
+	const Json::Value c = Exec("cells.query.check", Json::Value("terrain == water"));
+	ASSERT_TRUE(c["success"].asBool());
+	EXPECT_EQ(c["data"]["count"].asUInt(), rig.WaterCount());
+	const Json::Value s = Exec("cells.select.query", Json::Value("terrain == water"));
+	ASSERT_TRUE(s["success"].asBool());
+	EXPECT_EQ(rig.domain.ActiveSelectionView()->Count(), rig.WaterCount());
+}
+
+TEST_F(QueryCommandsTest, NonStringExprIsTreatedAsEmpty)
+{
+	Rig rig(66, 42);
+	for (const char* cmd : { "cells.select.query", "cells.query.check" })
+	{
+		Json::Value num(Json::objectValue);
+		num["expr"] = 5;
+		Json::Value arr(Json::objectValue);
+		arr["expr"] = Json::Value(Json::arrayValue);
+		const Json::Value cases[] = { num, arr, Json::Value(7), Json::Value(Json::nullValue) };
+		for (const Json::Value& p : cases)
+		{
+			const Json::Value r = Exec(cmd, p);
+			ASSERT_FALSE(r["success"].asBool()) << cmd;
+			EXPECT_EQ(r["error"]["message"].asString(), "empty query");
+		}
+	}
+}
+
+TEST_F(QueryCommandsTest, ErrorColumnsAreRelativeToTheOriginalTextIncludingLeadingSpaces)
+{
+	Rig rig(66, 42);
+	const Json::Value r = Exec("cells.query.check", Expr("   terrian == water"));
+	ASSERT_FALSE(r["success"].asBool());
+	EXPECT_EQ(r["error"]["column"].asUInt(), 3u);
+	EXPECT_EQ(r["error"]["length"].asUInt(), 7u);
+	EXPECT_EQ(r["error"]["suggestion"].asString(), "terrain");
+	const Json::Value e = Exec("cells.query.check", Expr("terrain == watr"));
+	EXPECT_EQ(e["error"]["column"].asUInt(), 11u);
+	EXPECT_EQ(e["error"]["suggestion"].asString(), "water");
+}
+
+TEST_F(QueryCommandsTest, QueryOver512CharsIsRejectedAtColumn512AndExactly512Runs)
+{
+	Rig rig(66, 42);
+	rig.domain.ActiveSelection()->Set(3, true);
+	const uint32_t version = rig.domain.ActiveSelectionView()->Version();
+	std::string ok = "temp >= 1";
+	ok.append(512 - ok.size(), ' ');
+	ASSERT_EQ(ok.size(), 512u);
+	const Json::Value good = Exec("cells.query.check", Expr(ok.c_str()));
+	ASSERT_TRUE(good["success"].asBool());
+	EXPECT_EQ(good["data"]["count"].asUInt(), 66u * 42u);
+	for (const char* cmd : { "cells.select.query", "cells.query.check" })
+	{
+		const Json::Value r = Exec(cmd, Expr((ok + " ").c_str()));
+		ASSERT_FALSE(r["success"].asBool()) << cmd;
+		EXPECT_EQ(r["error"]["column"].asUInt(), 512u);
+		EXPECT_EQ(r["error"]["length"].asUInt(), 1u);
+		EXPECT_NE(r["error"]["message"].asString().find("512"), std::string::npos);
+	}
+	EXPECT_EQ(rig.domain.ActiveSelectionView()->Version(), version);
+	EXPECT_TRUE(rig.domain.ActiveSelectionView()->Contains(3));
+}
+
+TEST_F(QueryCommandsTest, NestingDepthSeventeenIsRejectedAndSixteenRuns)
+{
+	Rig rig(66, 42);
+	const auto nested = [](int d) { return std::string(d, '(') + "temp >= 1" + std::string(d, ')'); };
+	EXPECT_TRUE(Exec("cells.query.check", Expr(nested(16).c_str()))["success"].asBool());
+	rig.domain.ActiveSelection()->Set(2, true);
+	const uint32_t version = rig.domain.ActiveSelectionView()->Version();
+	const Json::Value r = Exec("cells.select.query", Expr(nested(17).c_str()));
+	ASSERT_FALSE(r["success"].asBool());
+	EXPECT_NE(r["error"]["message"].asString().find("deep"), std::string::npos);
+	EXPECT_EQ(r["error"]["column"].asUInt(), 16u);
+	EXPECT_EQ(rig.domain.ActiveSelectionView()->Version(), version);
+}
+
+TEST_F(QueryCommandsTest, EmptyMatchSetReplacesSelectionWithNothingAndBumpsOnce)
+{
+	Rig rig(66, 42);
+	rig.domain.ActiveSelection()->Set(4, true);
+	const uint32_t v0 = rig.domain.ActiveSelectionView()->Version();
+	const Json::Value r = Exec("cells.select.query", Expr("temp > 100"));
+	ASSERT_TRUE(r["success"].asBool());
+	EXPECT_TRUE(r["data"]["ok"].asBool());
+	EXPECT_EQ(r["data"]["count"].asUInt(), 0u);
+	EXPECT_EQ(rig.domain.ActiveSelectionView()->Count(), 0u);
+	EXPECT_EQ(rig.domain.ActiveSelectionView()->Version(), v0 + 1);
+	EXPECT_EQ(Exec("cells.query.check", Expr("temp > 100"))["data"]["count"].asUInt(), 0u);
+}
+
+TEST_F(QueryCommandsTest, SelectingEverythingMatchesTheCellCount)
+{
+	Rig rig(66, 42);
+	const Json::Value r = Exec("cells.select.query", Expr("temp >= 1 or not temp >= 1"));
+	ASSERT_TRUE(r["success"].asBool());
+	EXPECT_EQ(r["data"]["count"].asUInt(), 66u * 42u);
+	EXPECT_EQ(rig.domain.ActiveSelectionView()->Count(), 66u * 42u);
+}
+
+TEST_F(QueryCommandsTest, FailedQueryDoesNotPoisonTheNextOne)
+{
+	Rig rig(66, 42);
+	EXPECT_FALSE(Exec("cells.select.query", Expr("bogus > 1"))["success"].asBool());
+	EXPECT_FALSE(Exec("cells.select.query", Expr("terrain > 1"))["success"].asBool());
+	EXPECT_FALSE(Exec("cells.select.query", Expr("((temp > 1"))["success"].asBool());
+	const Json::Value r = Exec("cells.select.query", Expr("terrain == water"));
+	ASSERT_TRUE(r["success"].asBool());
+	EXPECT_EQ(r["data"]["count"].asUInt(), rig.WaterCount());
+	// A short query after a long one must not see leftover tree nodes.
+	ASSERT_TRUE(Exec("cells.select.query", Expr("temp >= 1 and terrain != grass and terrain != rock"))["success"].asBool());
+	const Json::Value shortQ = Exec("cells.select.query", Expr("terrain == sand"));
+	EXPECT_EQ(shortQ["data"]["count"].asUInt(), rig.domain.ActiveSelectionView()->Count());
+}
+
+TEST_F(QueryCommandsTest, CommandOrderingSelectCheckSelectKeepsTheLastSelectResult)
+{
+	Rig rig(66, 42);
+	const uint32_t v0 = rig.domain.ActiveSelectionView()->Version();
+	const Json::Value a = rig.commands.Raw("cells.select.query", Expr("terrain == water"));
+	const uint32_t water = a["count"].asUInt();
+	const uint32_t v1 = rig.domain.ActiveSelectionView()->Version();
+	EXPECT_EQ(v1, v0 + 1);
+	const Json::Value chk = rig.commands.Raw("cells.query.check", Expr("terrain == rock"));
+	EXPECT_EQ(chk["count"].asUInt(), water);	// 66x42 = 2772 = 693 * 4: the four ids cycle evenly
+	EXPECT_EQ(rig.domain.ActiveSelectionView()->Version(), v1);
+	EXPECT_TRUE(rig.domain.ActiveSelectionView()->Contains(1));	// still the water cells
+	const Json::Value b = rig.commands.Raw("cells.select.query", Expr("terrain == rock"));
+	EXPECT_EQ(b["count"].asUInt(), water);
+	EXPECT_EQ(rig.domain.ActiveSelectionView()->Version(), v1 + 1);
+	EXPECT_TRUE(rig.domain.ActiveSelectionView()->Contains(2));
+	EXPECT_FALSE(rig.domain.ActiveSelectionView()->Contains(1));
+}
+
+TEST_F(QueryCommandsTest, UnregisteredCommandsAreGoneAndReRegistrationWorks)
+{
+	Rig rig(66, 42);
+	rig.commands.Unregister();
+	const Json::Value gone = Exec("cells.select.query", Expr("temp >= 1"));
+	EXPECT_FALSE(gone["success"].asBool());
+	EXPECT_EQ(gone["error"].asString(), "command not found");
+	EXPECT_EQ(rig.commands.Raw("cells.query.check", Expr("temp >= 1")).type(), Json::nullValue);
+	{
+		ViewerCommands again(rig.domain);
+		ASSERT_TRUE(again.Registered());
+		EXPECT_TRUE(again.Registrar().IsCommand("cells.select.query"));
+		EXPECT_TRUE(again.Registrar().IsCommand("cells.query.check"));
+		EXPECT_EQ(Exec("cells.query.check", Expr("temp >= 1"))["data"]["count"].asUInt(), 66u * 42u);
+	}
+}
+
+TEST_F(QueryCommandsTest, RejectedSelectLogsCommandNameAndMessageAtInfoOnce)
+{
+	Rig rig(66, 42);
+	LogCapture log;
+	Exec("cells.select.query", Expr("terrian == water"));
+	EXPECT_EQ(log.Count(Level::kInfo, "cells.select.query rejected: unknown layer 'terrian'"), 1u);
+	EXPECT_EQ(log.Count(Level::kInfo), 1u);
+	log.Clear();
+	Exec("cells.select.query", Expr(""));
+	EXPECT_EQ(log.Count(Level::kInfo, "rejected: empty query"), 1u);
+}
+
+TEST_F(QueryCommandsTest, QueryUsesScrubbedValuesFromTheInstalledValueSource)
+{
+	Rig rig(66, 42);
+	StubViewValueSource source;
+	source.live = false;
+	source.values = std::vector<float>(66u * 42u, 0.0f);	// the scrubbed sample: temp is 0 everywhere
+	rig.registry.SetViewValueSource(&source);
+	EXPECT_EQ(Exec("cells.query.check", Expr("temp >= 1"))["data"]["count"].asUInt(), 0u);
+	EXPECT_EQ(Exec("cells.select.query", Expr("temp == 0"))["data"]["count"].asUInt(), 66u * 42u);
+	source.live = true;
+	EXPECT_EQ(Exec("cells.query.check", Expr("temp >= 1"))["data"]["count"].asUInt(), 66u * 42u);
+	source.live = false;
+	source.hasData = false;
+	source.epoch = 2;
+	const Json::Value nodata = Exec("cells.query.check", Expr("temp >= 1"));
+	ASSERT_FALSE(nodata["success"].asBool());
+	EXPECT_EQ(nodata["error"]["message"].asString(), "no data for layer");
+	EXPECT_EQ(nodata["error"]["column"].asUInt(), 0u);
+	rig.registry.SetViewValueSource(nullptr);
+}
+
+TEST_F(QueryCommandsTest, QueriesRunAgainstTheActiveGridOnly)
+{
+	TwoGridRig rig;
+	ASSERT_EQ(rig.domain.ActiveGrid(), &rig.gridA.desc);
+	const Json::Value wrong = Exec("cells.query.check", Expr("bx > 1"));
+	ASSERT_FALSE(wrong["success"].asBool());
+	EXPECT_NE(wrong["error"]["message"].asString().find("unknown layer 'bx'"), std::string::npos);
+	ASSERT_TRUE(Exec("cells.select.query", Expr("temp >= 1"))["success"].asBool());
+	EXPECT_EQ(rig.domain.ActiveSelectionView()->Count(), 16u);
+
+	ASSERT_TRUE(rig.domain.SetBase(StringCRC("bx")));
+	ASSERT_EQ(rig.domain.ActiveGrid(), &rig.gridB.desc);
+	EXPECT_FALSE(Exec("cells.query.check", Expr("temp >= 1"))["success"].asBool());
+	const Json::Value r = Exec("cells.select.query", Expr("bx > 1"));
+	ASSERT_TRUE(r["success"].asBool());
+	EXPECT_EQ(r["data"]["count"].asUInt(), 3u);
+	EXPECT_EQ(rig.domain.ActiveSelectionView()->Count(), 3u);
+	// changing the active grid clears the selection of the grid left and entered (documented viewer behaviour)
+	ASSERT_TRUE(rig.domain.SetBase(StringCRC("temp")));
+	EXPECT_EQ(rig.domain.ActiveSelectionView()->Count(), 0u);
+	EXPECT_EQ(Exec("cells.select.query", Expr("temp >= 1"))["data"]["count"].asUInt(), 16u);
+}
+
+TEST_F(QueryCommandsTest, CardJsonRecordsCheckAndLastIndependently)
+{
+	Rig rig(66, 42);
+	Json::Value out(Json::objectValue);
+	rig.domain.GetJSONState(out);
+	ASSERT_TRUE(out["query"]["available"].asBool());
+	EXPECT_FALSE(out["query"].isMember("check"));
+	EXPECT_FALSE(out["query"].isMember("last"));
+
+	Exec("cells.select.query", Expr("terrian == water"));
+	Exec("cells.query.check", Expr("terrain == water"));
+	out = Json::Value(Json::objectValue);
+	rig.domain.GetJSONState(out);
+	const Json::Value& q = out["query"];
+	EXPECT_FALSE(q["last"]["ok"].asBool());
+	EXPECT_EQ(q["last"]["expr"].asString(), "terrian == water");
+	EXPECT_EQ(q["last"]["error"]["suggestion"].asString(), "terrain");
+	EXPECT_EQ(q["last"]["error"]["column"].asUInt(), 0u);
+	EXPECT_EQ(q["last"]["error"]["length"].asUInt(), 7u);
+	EXPECT_TRUE(q["check"]["ok"].asBool());
+	EXPECT_EQ(q["check"]["count"].asUInt(), rig.WaterCount());
+	EXPECT_EQ(q["check"]["expr"].asString(), "terrain == water");
+	EXPECT_FALSE(q["check"].isMember("error"));
+}
+
+TEST_F(ReentryTest, ReadDelegateReadingTheDomainDuringAQueryRunDoesNotHang)
+{
+	Rig rig(66, 42);
+	AddReentrantLayer(rig);
+	gArmed = true;
+	Json::Value r;
+	ASSERT_TRUE(FinishesWithin(std::chrono::milliseconds(5000), [&] { r = Exec("cells.select.query", Expr("rd > 0.5")); }))
+		<< "select hung: a read delegate re-entered the domain";
+	EXPECT_EQ(gReentryCalls, 1u);
+	EXPECT_EQ(gNestedGridCount, 1u);
+	EXPECT_FALSE(gNestedActiveBase.empty());
+	ASSERT_TRUE(r["success"].asBool());
+	EXPECT_EQ(r["data"]["count"].asUInt(), 66u * 42u);
+	EXPECT_EQ(rig.domain.ActiveSelectionView()->Count(), 66u * 42u);
+}
+
+TEST_F(ReentryTest, ReadDelegateRunningANestedQueryDoesNotCorruptTheOuterQuery)
+{
+	Rig rig(66, 42);
+	AddReentrantLayer(rig);
+	gArmed = true;
+	gNestedCmd = "cells.query.check";
+	gNestedExpr = "temp < 0.5";	// would flip the outer comparison if it shared the parser/resolver state
+	Json::Value r;
+	ASSERT_TRUE(FinishesWithin(std::chrono::milliseconds(5000), [&] { r = Exec("cells.select.query", Expr("rd > 0.5")); }))
+		<< "select hung: a nested query ran inside a read delegate";
+	EXPECT_EQ(gReentryCalls, 1u);
+	ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
+	EXPECT_EQ(r["data"]["count"].asUInt(), 66u * 42u);	// rd is 1.0 everywhere: "rd > 0.5" matches all
+	EXPECT_TRUE(gNestedQueryRejected);
+	EXPECT_EQ(gNestedQueryMessage, "query already running");
+}
+
+TEST_F(ReentryTest, ReadDelegateRunningANestedSelectLeavesTheOuterSelectResultIntact)
+{
+	Rig rig(66, 42);
+	AddReentrantLayer(rig);
+	gArmed = true;
+	gNestedCmd = "cells.select.query";
+	gNestedExpr = "terrain == water";
+	Json::Value r;
+	ASSERT_TRUE(FinishesWithin(std::chrono::milliseconds(5000), [&] { r = Exec("cells.select.query", Expr("rd > 0.5")); }));
+	ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
+	EXPECT_EQ(rig.domain.ActiveSelectionView()->Count(), 66u * 42u);
+	EXPECT_TRUE(gNestedQueryRejected);
+}
+
+TEST_F(ReentryTest, PanelQueryRunWithReenteringDelegateDoesNotHang)
+{
+	Rig rig(66, 42);
+	AddReentrantLayer(rig);
+	gArmed = true;
+	gNestedCmd = "cells.query.check";
+	gNestedExpr = "temp < 0.5";
+	ASSERT_TRUE(FinishesWithin(std::chrono::milliseconds(5000), [&]
+	{
+		Json::Value a(Json::objectValue);
+		a["e"] = "rd > 0.5";
+		rig.domain.OnCommand(StringCRC("query_run"), a);
+	}));
+	Json::Value out(Json::objectValue);
+	rig.domain.GetJSONState(out);
+	EXPECT_TRUE(out["query"]["last"]["ok"].asBool());
+	EXPECT_EQ(out["query"]["last"]["count"].asUInt(), 66u * 42u);
+}
+
+TEST_F(ReentryTest, TheDomainStillRunsQueriesAfterARejectedNestedQuery)
+{
+	Rig rig(66, 42);
+	AddReentrantLayer(rig);
+	gArmed = true;
+	gNestedCmd = "cells.query.check";
+	gNestedExpr = "temp < 0.5";
+	Exec("cells.query.check", Expr("rd > 0.5"));
+	const Json::Value again = Exec("cells.query.check", Expr("terrain == water"));
+	ASSERT_TRUE(again["success"].asBool());
+	EXPECT_EQ(again["data"]["count"].asUInt(), rig.WaterCount());
 }
 
 #endif // DIA_DEBUG

@@ -214,3 +214,133 @@ TEST_F(QueryResolverTest, NullSchemaStillResolvesByIdForFloat)
 	EXPECT_DOUBLE_EQ(0.25, resolver.Binding(parser.RootIndex()).mThreshold);
 	EXPECT_FALSE(Run("humidity > 1"));
 }
+
+// ---- Task 10a exhaustive pass ----
+
+TEST_F(QueryResolverTest, SuggestionRatioExactlyPointSixIsOffered)
+{
+	// Similarity = 1 - levenshtein / longest. "abcxx" vs "abcde": distance 2 of 5 = 0.6 exactly: "at least 0.6" suggests.
+	q.fx.Add(UploaderSchemaFixture::FloatEntry("abcde", 0, 1));
+	q.Publish();
+	ASSERT_TRUE(q.AddLayer("lay", &q.gridA, "cells/abcde"));
+	EXPECT_FALSE(Run("abcxx > 1"));
+	EXPECT_STREQ("abcde", resolver.Error().mSuggestion);
+}
+
+TEST_F(QueryResolverTest, SuggestionRatioBelowPointSixIsNotOffered)
+{
+	q.fx.Add(UploaderSchemaFixture::FloatEntry("abcde", 0, 1));
+	q.Publish();
+	ASSERT_TRUE(q.AddLayer("lay", &q.gridA, "cells/abcde"));
+	EXPECT_FALSE(Run("abxxx > 1"));	// distance 3 of 5 = 0.4
+	EXPECT_FALSE(resolver.Error().HasSuggestion());
+}
+
+TEST_F(QueryResolverTest, EnumSuggestionRatioBoundaryMatchesLayerBoundary)
+{
+	q.fx.Add(QueryFixture::Category("terrain", { "abcde" }));
+	q.Publish();
+	ASSERT_TRUE(q.AddLayer("terrain", &q.gridA, "cells/terrain", CellValueKind::Category));
+	EXPECT_FALSE(Run("terrain = abcxx"));
+	EXPECT_STREQ("abcde", resolver.Error().mSuggestion);
+	EXPECT_FALSE(Run("terrain = abxxx"));
+	EXPECT_FALSE(resolver.Error().HasSuggestion());
+}
+
+TEST_F(QueryResolverTest, WrongCaseLayerNameSuggestsTheShortKey)
+{
+	Populate();
+	EXPECT_FALSE(Run("TEMP > 1"));
+	EXPECT_TRUE(MsgHas("unknown layer 'TEMP'")) << Msg();
+	EXPECT_STREQ("temp", resolver.Error().mSuggestion);
+}
+
+TEST_F(QueryResolverTest, ThreeWayAmbiguityListsEveryCandidateInRegistrationOrder)
+{
+	for (const char* k : { "a/x", "b/x", "c/x" }) { q.fx.Add(UploaderSchemaFixture::FloatEntry(k, 0, 1)); }
+	q.Publish();
+	ASSERT_TRUE(q.AddLayer("l1", &q.gridA, "cells/a/x"));
+	ASSERT_TRUE(q.AddLayer("l2", &q.gridA, "cells/b/x"));
+	ASSERT_TRUE(q.AddLayer("l3", &q.gridA, "cells/c/x"));
+	EXPECT_FALSE(Run("x > 1"));
+	EXPECT_TRUE(MsgHas("cells/a/x, cells/b/x, cells/c/x")) << Msg();
+}
+
+TEST_F(QueryResolverTest, AmbiguityListIsTruncatedSafelyWithManyLongCandidates)
+{
+	std::vector<std::string> keys;
+	for (int i = 0; i < 12; ++i) { keys.push_back("a_rather_long_group_name_number_" + std::to_string(i) + "/x"); }
+	for (const std::string& k : keys) { q.fx.Add(UploaderSchemaFixture::FloatEntry(k.c_str(), 0, 1)); }
+	q.Publish();
+	for (int i = 0; i < 12; ++i) { ASSERT_TRUE(q.AddLayer(("l" + std::to_string(i)).c_str(), &q.gridA, ("cells/" + keys[i]).c_str())); }
+	EXPECT_FALSE(Run("x > 1"));
+	const std::string msg = Msg();
+	EXPECT_LT(msg.size(), static_cast<size_t>(QueryError::kMessageSize));
+	EXPECT_EQ(0u, msg.find("ambiguous layer name 'x': cells/a_rather_long_group_name_number_0/x"));
+	EXPECT_EQ(0u, resolver.Error().mColumn);
+}
+
+TEST_F(QueryResolverTest, SameShortKeyOnAnotherGridIsNotAmbiguous)
+{
+	q.fx.Add(UploaderSchemaFixture::FloatEntry("a/x", 0, 1));
+	q.fx.Add(UploaderSchemaFixture::FloatEntry("b/x", 0, 1));
+	q.Publish();
+	ASSERT_TRUE(q.AddLayer("la", &q.gridA, "cells/a/x"));
+	ASSERT_TRUE(q.AddLayer("lb", &q.gridB, "cells/b/x"));
+	ASSERT_TRUE(Run("x > 1")) << Msg();
+	EXPECT_EQ(Dia::Core::StringCRC("la"), resolver.Binding(parser.RootIndex()).mLayerId);
+}
+
+TEST_F(QueryResolverTest, NullGridIsNoActiveGridError)
+{
+	Populate();
+	ASSERT_TRUE(parser.Parse("temp > 1"));
+	EXPECT_FALSE(resolver.Resolve("temp > 1", parser, q.registry, nullptr, q.service));
+	EXPECT_STREQ("no active grid", resolver.Error().mMessage);
+	EXPECT_EQ(0u, resolver.Error().mLength);
+}
+
+TEST_F(QueryResolverTest, ResolveClearsBindingsOfThePreviousQuery)
+{
+	Populate();
+	ASSERT_TRUE(Run("temp > 1 and humidity < 2"));
+	ASSERT_TRUE(resolver.Binding(1).mBound);
+	ASSERT_TRUE(Run("temp > 1"));
+	EXPECT_FALSE(resolver.Binding(1).mBound);
+	EXPECT_FALSE(Run("temp > 1 and bogus < 2"));
+	EXPECT_FALSE(resolver.Binding(1).mBound);	// the failing node is not bound
+}
+
+TEST_F(QueryResolverTest, VeryLongLayerNameIsAnErrorWithoutSuggestionOrOverflow)
+{
+	Populate();
+	const std::string name(200, 'q');
+	const std::string text = name + " > 1";
+	EXPECT_FALSE(Run(text.c_str()));
+	EXPECT_EQ(0u, resolver.Error().mColumn);
+	EXPECT_EQ(200u, resolver.Error().mLength);
+	EXPECT_FALSE(resolver.Error().HasSuggestion());
+	EXPECT_LT(Msg().size(), static_cast<size_t>(QueryError::kMessageSize));
+}
+
+TEST_F(QueryResolverTest, VeryLongEnumIdIsAnErrorWithoutOverflow)
+{
+	Populate();
+	const std::string text = "terrain = " + std::string(300, 'z');
+	EXPECT_FALSE(Run(text.c_str()));
+	EXPECT_EQ(10u, resolver.Error().mColumn);
+	EXPECT_EQ(300u, resolver.Error().mLength);
+	EXPECT_TRUE(MsgHas("unknown value")) << Msg();
+}
+
+TEST_F(QueryResolverTest, OrdinalOfEnumIdIsItsPositionNotAnIdHash)
+{
+	Populate();
+	const char* const ids[] = { "grass", "water", "rock", "Sand" };
+	for (uint32_t i = 0; i < 4; ++i)
+	{
+		const std::string text = std::string("terrain == ") + ids[i];
+		ASSERT_TRUE(Run(text.c_str())) << Msg();
+		EXPECT_DOUBLE_EQ(static_cast<double>(i), resolver.Binding(parser.RootIndex()).mThreshold) << ids[i];
+	}
+}
