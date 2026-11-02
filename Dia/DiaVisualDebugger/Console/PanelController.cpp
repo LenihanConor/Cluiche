@@ -113,6 +113,16 @@ namespace Dia
 
 			void PanelController::Process(IPanelPusher& pusher, const DiaDebugDomainRegistry* domains)
 			{
+				ProcessImpl(pusher, domains, nullptr);
+			}
+
+			void PanelController::ProcessWithRoot(IPanelPusher& pusher, const Json::Value* domainStatesRoot)
+			{
+				ProcessImpl(pusher, nullptr, domainStatesRoot);
+			}
+
+			void PanelController::ProcessImpl(IPanelPusher& pusher, const DiaDebugDomainRegistry* domains, const Json::Value* root)
+			{
 				// Rejected console lines (too long): report back as a result.
 				for (unsigned i = 0; i < mRejectedCount; ++i)
 				{
@@ -157,8 +167,13 @@ namespace Dia
 
 					if (domains != nullptr)
 						mPalette->Build(*domains);
+					else if (root != nullptr)
+						mPalette->Build(*root);
 					else
-						DIA_LOG_WARNING("Debug", "PanelController: palette opened before the domain registry is available");
+					{
+						mPalette->Build(Json::Value(Json::objectValue));	// commands only until the first snapshot arrives
+						DIA_LOG_WARNING("Debug", "PanelController: palette opened before the domain state is available");
+					}
 
 					PushPaletteResults(pusher, "", PaletteIndex::kTypeCommands | PaletteIndex::kTypeDomains);
 				}

@@ -2,9 +2,6 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaVisualDebugger/Console/PanelJson.h>
-#include <DiaVisualDebugger/Domain/IDebugDomain.h>
-
 #include <string>
 
 namespace Dia
@@ -13,18 +10,46 @@ namespace Dia
 	{
 		namespace Console
 		{
-			Json::Value QueryDomainState(const DiaDebugDomainRegistry& registry, const ISchemaKeyResolver* resolver,
-										 const Json::Value& args)
+			bool ParseDomainStateSnapshot(const DomainStateSnapshot& snapshot, Json::Value& root)
 			{
-				const bool hasId = args.isObject() && args.isMember("id");
-				if (!hasId)
+				if (snapshot.jsonBytes == 0 || snapshot.jsonBytes > kMaxSnapshotBytes)
+					return false;
+
+				Json::Value parsed;
+				Json::Reader reader;
+				if (!reader.parse(snapshot.json, snapshot.json + snapshot.jsonBytes, parsed, false) || !parsed.isObject())
+					return false;
+
+				parsed["simFrame"] = Json::Value(Json::UInt64(snapshot.simFrame));
+				root = parsed;
+				return true;
+			}
+
+			void ApplySchemaVersion(Json::Value& root, const ISchemaKeyResolver* resolver)
+			{
+				if (resolver == nullptr || !resolver->IsAvailable() || !root.isObject())
+					return;
+				for (const std::string& name : root.getMemberNames())
 				{
-					Json::Value root(Json::objectValue);
-					BuildDomainStatesRoot(registry, root, resolver);
-					return root;
+					Json::Value& entry = root[name];
+					if (entry.isObject() && entry.isMember("controls") && entry["controls"].isArray() && !entry.isMember("schemaVersion"))
+						entry["schemaVersion"] = resolver->Version();
+				}
+			}
+
+			Json::Value QueryDomainState(const Json::Value* root, const Json::Value& args)
+			{
+				Json::Value result(Json::objectValue);
+				if (root == nullptr)
+				{
+					result["error"] = "no domain snapshot yet";
+					return result;
 				}
 
-				Json::Value result(Json::objectValue);
+				const bool hasId = args.isObject() && args.isMember("id");
+				if (!hasId)
+					return *root;
+
 				if (!args["id"].isString())
 				{
 					result["error"] = "param 'id' must be a string";
@@ -32,14 +57,14 @@ namespace Dia
 				}
 
 				const std::string id = args["id"].asString();
-				IDebugDomain* domain = registry.FindDomain(Dia::Core::StringCRC(id.c_str()));
-				if (domain == nullptr)
+				for (const std::string& name : root->getMemberNames())
 				{
-					result["error"] = "unknown domain id '" + id + "'";
-					return result;
+					const Json::Value& entry = (*root)[name];
+					if (entry.isObject() && entry.isMember("_id") && entry["_id"].isString() && entry["_id"].asString() == id)
+						return entry;
 				}
 
-				BuildDomainState(*domain, result, resolver);
+				result["error"] = "unknown domain id '" + id + "'";
 				return result;
 			}
 		}

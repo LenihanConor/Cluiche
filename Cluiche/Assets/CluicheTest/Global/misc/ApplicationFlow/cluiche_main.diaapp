@@ -397,12 +397,21 @@
             "from": "SimPU"
         },
         {
-            "id": "DomainRegistry",
-            "kind": "EventStream",
-            "payload_type": "DiaDebugDomainRegistry",
-            "overflow": "drop-oldest",
+            "id": "DomainStateSnapshot",
+            "kind": "FrameStream",
+            "payload_type": "DomainStateSnapshot",
             "from": "SimPU",
-            "to": "MainPU"
+            "to": "MainPU",
+            "multi_writer": false
+        },
+        {
+            "id": "DomainStateInterest",
+            "kind": "EventStream",
+            "payload_type": "DomainStateInterestEvent",
+            "overflow": "drop-oldest",
+            "capacity": 8,
+            "from": "MainPU",
+            "to": "SimPU"
         },
         {
             "id": "DebugPanelCommand",
@@ -740,8 +749,12 @@
                             "role": "consumes"
                         },
                         {
-                            "id": "DomainRegistry",
+                            "id": "DomainStateSnapshot",
                             "role": "reads"
+                        },
+                        {
+                            "id": "DomainStateInterest",
+                            "role": "writes"
                         },
                         {
                             "id": "DebugPanelCommand",
@@ -921,8 +934,12 @@
                             "role": "provides"
                         },
                         {
-                            "id": "DomainRegistry",
+                            "id": "DomainStateSnapshot",
                             "role": "writes"
+                        },
+                        {
+                            "id": "DomainStateInterest",
+                            "role": "reads"
                         },
                         {
                             "id": "DebugPanelCommand",

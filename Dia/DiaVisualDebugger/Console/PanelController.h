@@ -15,6 +15,7 @@
 
 #include <DiaVisualDebugger/Console/ConsoleHistory.h>
 #include <DiaVisualDebugger/Console/PaletteIndex.h>
+#include <DiaCore/Json/external/json/json.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
 
 namespace Dia
@@ -76,10 +77,16 @@ namespace Dia
 				// completion, palette open, palette search). domains may be null.
 				void Process(IPanelPusher& pusher, const DiaDebugDomainRegistry* domains);
 
+				// Same, but the palette's domains come from the parsed domain state snapshot root
+				// (see ParseDomainStateSnapshot) instead of the registry, so nothing Sim-owned is read.
+				// domainStatesRoot is null until the first snapshot has arrived.
+				void ProcessWithRoot(IPanelPusher& pusher, const Json::Value* domainStatesRoot);
+
 				// Clears pending requests and drops the palette index.
 				void Reset();
 
 			private:
+				void ProcessImpl(IPanelPusher& pusher, const DiaDebugDomainRegistry* domains, const Json::Value* root);
 				void ProcessSchemaRequests(IPanelPusher& pusher);
 				void PushPaletteResults(IPanelPusher& pusher, const char* query, int mask);
 

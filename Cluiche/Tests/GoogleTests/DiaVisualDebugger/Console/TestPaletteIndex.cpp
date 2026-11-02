@@ -8,6 +8,7 @@
 #ifdef DIA_DEBUG
 
 #include <DiaVisualDebugger/Console/PaletteIndex.h>
+#include <DiaVisualDebugger/Console/PanelJson.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -239,6 +240,36 @@ TEST_F(PaletteIndexTest, AC7_ResolveActions)
 	// The panel page keys domain cards by display name (DebugPanelPageModule roots the JSON at
 	// GetDisplayName()), so the reveal key is the display name, not GetDomainId().
 	EXPECT_STREQ(a.text, "Palette Stub");
+}
+
+TEST_F(PaletteIndexTest, BuildFromSnapshotRoot_MatchesRegistryBuildAndIgnoresNonDomainMembers)
+{
+	Json::Value root(Json::objectValue);
+	BuildDomainStatesRoot(mDomains, root, nullptr);
+	root["simFrame"] = 42;	// the snapshot root carries a numeric simFrame next to the domains
+
+	PaletteIndex fromRegistry;
+	fromRegistry.Build(mDomains);
+	PaletteIndex fromRoot;
+	fromRoot.Build(root);
+
+	EXPECT_EQ(fromRoot.GetItemCount(), fromRegistry.GetItemCount());
+	EXPECT_EQ(fromRoot.CountByType(PaletteItemType::Domain), 1);
+	const int d = FindByName(fromRoot, "Palette Stub");
+	ASSERT_GE(d, 0);
+	const PaletteItem& dom = fromRoot.GetItem(d);
+	EXPECT_EQ(dom.type, PaletteItemType::Domain);
+	EXPECT_STREQ(dom.description, "Stub domain for palette tests");
+	EXPECT_STREQ(dom.category, "CoreDebug");
+	EXPECT_STREQ(dom.domainId, "PaletteStubDomain");
+}
+
+TEST_F(PaletteIndexTest, BuildFromEmptyRoot_ListsCommandsOnly)
+{
+	PaletteIndex idx;
+	idx.Build(Json::Value(Json::objectValue));
+	EXPECT_EQ(idx.CountByType(PaletteItemType::Domain), 0);
+	EXPECT_GE(idx.CountByType(PaletteItemType::Command), 4);
 }
 
 #endif // DIA_DEBUG

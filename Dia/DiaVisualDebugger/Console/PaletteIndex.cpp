@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cstring>
 #include <cctype>
+#include <string>
 
 namespace Dia
 {
@@ -56,10 +57,8 @@ namespace Dia
 
 			PaletteIndex::~PaletteIndex() { delete[] mItems; }
 
-			void PaletteIndex::Build(const DiaDebugDomainRegistry& domains)
+			void PaletteIndex::AddCommands()
 			{
-				mCount = 0;
-
 				Dia::Core::Containers::DynamicArrayC<Dia::API::CommandInfo, 256> infos;
 				Dia::API::ListCommandInfos(infos);
 				for (int i = 0; i < static_cast<int>(infos.Size()) && mCount < kMaxCommands; ++i)
@@ -71,23 +70,55 @@ namespace Dia
 					CopyStr(it.description, sizeof(it.description), infos[i].description);
 					CopyStr(it.category, sizeof(it.category), infos[i].category.AsChar());
 					CopyStr(it.example, sizeof(it.example), infos[i].example);
-						it.params = infos[i].params;
-						it.paramCount = infos[i].params != nullptr ? infos[i].paramCount : 0;
+					it.params = infos[i].params;
+					it.paramCount = infos[i].params != nullptr ? infos[i].paramCount : 0;
 				}
+			}
+
+			void PaletteIndex::AddDomain(const char* name, const char* description, const char* category, const char* domainId)
+			{
+				PaletteItem& it = mItems[mCount++];
+				std::memset(&it, 0, sizeof(it));
+				it.type = PaletteItemType::Domain;
+				CopyStr(it.name, sizeof(it.name), name);
+				CopyStr(it.description, sizeof(it.description), description);
+				CopyStr(it.category, sizeof(it.category), category);
+				CopyStr(it.domainId, sizeof(it.domainId), domainId);
+			}
+
+			void PaletteIndex::Build(const DiaDebugDomainRegistry& domains)
+			{
+				mCount = 0;
+				AddCommands();
 
 				int domainCount = 0;
 				domains.VisitAll([&](IDebugDomain& d)
 				{
 					if (domainCount >= kMaxDomains) return;
 					++domainCount;
-					PaletteItem& it = mItems[mCount++];
-					std::memset(&it, 0, sizeof(it));
-					it.type = PaletteItemType::Domain;
-					CopyStr(it.name, sizeof(it.name), d.GetDisplayName());
-					CopyStr(it.description, sizeof(it.description), d.GetDescription());
-					CopyStr(it.category, sizeof(it.category), d.GetGroup().AsChar());
-					CopyStr(it.domainId, sizeof(it.domainId), d.GetDomainId().AsChar());
+					AddDomain(d.GetDisplayName(), d.GetDescription(), d.GetGroup().AsChar(), d.GetDomainId().AsChar());
 				});
+			}
+
+			void PaletteIndex::Build(const Json::Value& domainStatesRoot)
+			{
+				mCount = 0;
+				AddCommands();
+
+				if (!domainStatesRoot.isObject())
+					return;
+
+				int domainCount = 0;
+				for (const std::string& key : domainStatesRoot.getMemberNames())
+				{
+					const Json::Value& d = domainStatesRoot[key];
+					if (!d.isObject() || domainCount >= kMaxDomains)
+						continue;
+					++domainCount;
+					auto text = [&d](const char* member) { return d.isMember(member) && d[member].isString() ? d[member].asCString() : ""; };
+					AddDomain(d.isMember("_displayName") && d["_displayName"].isString() ? d["_displayName"].asCString() : key.c_str(),
+							  text("_description"), text("_group"), text("_id"));
+				}
 			}
 
 			int PaletteIndex::Search(const char* query, int typeFilterMask,

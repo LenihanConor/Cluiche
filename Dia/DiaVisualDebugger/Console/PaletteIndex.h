@@ -11,6 +11,7 @@
 
 #include <DiaAPI/CommandRegistry/ValueParam.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaCore/Json/external/json/json.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
 
 namespace Dia
@@ -48,6 +49,11 @@ namespace Dia
 				// Snapshots all registered commands and all domains; replaces previous contents.
 				void Build(const DiaDebugDomainRegistry& domains);
 
+				// Same, but domains come from a parsed domain state snapshot root (keyed by display name;
+				// non-object members such as "simFrame" are ignored). Reads only _displayName,
+				// _description, _group and _id of each envelope; no domain object is touched (Main PU safe).
+				void Build(const Json::Value& domainStatesRoot);
+
 				// typeFilterMask: bit0 = commands, bit1 = domains. Fills out (at most 50) with item
 				// indices ranked name-match first (exact > prefix > contains > subsequence, ties
 				// alphabetical), then description/category matches. Returns the total match count.
@@ -60,6 +66,9 @@ namespace Dia
 				int CountByType(PaletteItemType type) const;
 
 			private:
+				void AddCommands();
+				void AddDomain(const char* name, const char* description, const char* category, const char* domainId);
+
 				PaletteItem* mItems;
 				int mCount;
 			};

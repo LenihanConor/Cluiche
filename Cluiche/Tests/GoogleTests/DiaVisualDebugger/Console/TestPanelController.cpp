@@ -9,6 +9,7 @@
 #ifdef DIA_DEBUG
 
 #include <DiaVisualDebugger/Console/PanelController.h>
+#include <DiaVisualDebugger/Console/PanelJson.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -140,6 +141,32 @@ TEST_F(PanelControllerTest, RequestsNeverPushFromInsideACallback)
 
 	mPanel.Process(mPusher, &mDomains);
 	EXPECT_GT(mPusher.pushes.size(), 0u);
+}
+
+TEST_F(PanelControllerTest, ProcessWithRoot_PaletteOpenListsDomainsFromTheSnapshotRoot)
+{
+	Json::Value root(Json::objectValue);
+	BuildDomainStatesRoot(mDomains, root, nullptr);
+	root["simFrame"] = 3;
+
+	mPanel.RequestPaletteOpen();
+	mPanel.ProcessWithRoot(mPusher, &root);
+
+	bool found = false;
+	for (const ::Push& p : mPusher.pushes)
+		if (p.function == "paletteResults" && p.json.find("Panel Ctl Stub") != std::string::npos)
+			found = true;
+	EXPECT_TRUE(found);
+}
+
+TEST_F(PanelControllerTest, ProcessWithRoot_NoSnapshotYetStillOpensPaletteWithCommands)
+{
+	mPanel.RequestPaletteOpen();
+	mPanel.ProcessWithRoot(mPusher, nullptr);
+
+	ASSERT_EQ(mPusher.pushes.size(), 1u);
+	EXPECT_EQ(mPusher.pushes[0].function, "paletteResults");
+	EXPECT_EQ(mPusher.pushes[0].json.find("Panel Ctl Stub"), std::string::npos);
 }
 
 TEST_F(PanelControllerTest, ProcessWithNothingPendingPushesNothing)

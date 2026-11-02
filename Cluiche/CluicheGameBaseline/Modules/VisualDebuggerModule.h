@@ -97,7 +97,6 @@ private:
     Dia::ApplicationFlow::StreamWriter<Dia::Graphics::FrameData> mRenderOutput{this, "SimDebug"};
     Dia::ApplicationFlow::ServiceStreamWriter<Dia::Debug::DebugLayerManager> mLayerManagerService{this, "DebugLayerManager"};
     Dia::VisualDebugger::DiaDebugDomainRegistry mDomainRegistry;
-    Dia::ApplicationFlow::ServiceStreamWriter<Dia::VisualDebugger::DiaDebugDomainRegistry> mDomainRegistryService{this, "DomainRegistry"};
     Dia::ApplicationFlow::EventStreamReader<DebugPanelCommandEvent> mPanelCommands{this, "DebugPanelCommand"};
     Dia::ApplicationFlow::EventStreamReader<DebugConsoleLineEvent>   mConsoleLines{this, "DebugConsoleLine"};
     Dia::ApplicationFlow::EventStreamWriter<DebugConsoleResultEvent> mConsoleResults{this, "DebugConsoleResult"};

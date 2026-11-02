@@ -10,8 +10,10 @@
 #include <DiaDebugServer/QueryRegistry.h>
 #include <DiaStreams/EventStreamWriter.h>
 #include <DiaStreams/EventStreamReader.h>
-#include <DiaStreams/ServiceStreamReader.h>
+#include <DiaStreams/StreamReader.h>
 #include <DiaVisualDebugger/Console/PanelController.h>
+#include <DiaVisualDebugger/Console/DomainStateSnapshot.h>
+#include <DiaVisualDebugger/Console/DomainStateSnapshotPublisher.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
 #include <DiaVisualDebugger/Domain/ServiceKeyResolver.h>
 #include <DiaValueSchema/ValueSchemaService.h>
@@ -22,15 +24,17 @@
 #include "Types/DebugConsoleResultEvent.h"
 #include "Types/DebugPanelCommandEvent.h"
 #include "Types/DebugPanelToggleEvent.h"
+#include "Types/DomainStateInterestEvent.h"
 #include "Types/DebugPanelSetVisibilityEvent.h"
 
 namespace Cluiche { namespace AppFlow {
 
 // DebugPanelPageModule — Main PU owner of the DiaDebugPanel Ultralight page.
 //
-// Reads the DomainRegistry ServiceStream (provided by VisualDebuggerModule on
-// the Sim PU), serialises every registered IDebugDomain's GetJSONState() once
-// per frame and pushes it to JS via CallJSFunction("updateDomainState", json).
+// Reads the "DomainStateSnapshot" FrameStream (produced by VisualDebuggerModule on the Sim PU, only
+// while this module signals interest on the "DomainStateInterest" EventStream) and pushes the parsed
+// state to JS via CallJSFunction("updateDomainState", json) whenever a new simFrame arrives. No
+// Sim-owned object (registry, domain) is touched from the Main thread.
 //
 // Commands coming back from JS are forwarded over the DebugPanelCommand
 // EventStream (Main -> Sim); VisualDebuggerModule drains them on the Sim
@@ -131,8 +135,31 @@ private:
     static constexpr const char* kValueSchemaStreamId = "ValueSchemaService";
     Dia::VisualDebugger::ServiceKeyResolver<Dia::ValueSchema::ValueSchemaService> mKeyResolver;
 
-    Dia::ApplicationFlow::ServiceStreamReader<Dia::VisualDebugger::DiaDebugDomainRegistry>
-        mDomainRegistry{this, "DomainRegistry"};
+    // Domain state snapshot (Sim -> Main). FetchLatest() returns a pointer into the stream ring, so the
+    // ~128 KB payload is never copied or placed on the stack here; the parsed Json root below is the Main copy.
+    Dia::ApplicationFlow::StreamReader<Dia::VisualDebugger::Console::DomainStateSnapshot>
+        mSnapshotIn{this, "DomainStateSnapshot"};
+    Dia::ApplicationFlow::EventStreamWriter<DomainStateInterestEvent>
+        mInterestOut{this, "DomainStateInterest"};
+
+    void PollDomainSnapshot();
+    void SignalInterest();
+
+    static constexpr double kInterestIntervalMs = 500.0;
+    static constexpr uint32_t kInterestWindowMs = 2000;
+
+    Json::Value mDomainRoot{Json::objectValue};   // last good parsed snapshot (+ simFrame)
+    bool        mHaveDomainRoot      = false;
+    bool        mHaveFrame           = false;
+    uint64_t    mLastSimFrame        = 0;
+    bool        mPanelPushPending    = false;      // a new root (or a re-shown panel) has not reached the page yet
+    bool        mParseFailureLogged  = false;
+    double      mWallMs              = 0.0;        // accumulated MainTimeContext::wallClockDt
+    double      mFrameChangedAtMs    = 0.0;        // mWallMs when simFrame last changed
+    double      mNextInterestMs      = 0.0;
+    double      mInterestUntilMs     = 0.0;
+    Dia::VisualDebugger::Console::DomainStateHealth mHealth;
+    bool        mHealthRegistered    = false;
 
     Dia::ApplicationFlow::EventStreamWriter<DebugPanelCommandEvent>
         mPanelCommands{this, "DebugPanelCommand"};

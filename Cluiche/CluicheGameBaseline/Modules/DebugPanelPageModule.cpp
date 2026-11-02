@@ -21,6 +21,7 @@
 #include <DiaVisualDebugger/Console/ConsoleLineAssembler.h>
 #include <DiaVisualDebugger/Console/ConsoleLogRing.h>
 #include <DiaVisualDebugger/Console/DomainStateQuery.h>
+#include <DiaObservation/Health/HealthRegistry.h>
 #include <DiaVisualDebugger/Console/PanelJson.h>
 #include <DiaVisualDebugger/Domain/IDebugDomain.h>
 
@@ -84,14 +85,19 @@ Dia::ApplicationFlow::StartResult DebugPanelPageModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void DebugPanelPageModule::DoUpdate(const Dia::SimTime::MainTimeContext& /*ctx*/)
+void DebugPanelPageModule::DoUpdate(const Dia::SimTime::MainTimeContext& ctx)
 {
     DIA_TRACE_ZONE("DebugPanelPageModule.Update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
+
+    mWallMs += static_cast<double>(ctx.wallClockDt) * 1000.0;
 
     RefreshSchemaService();
     RegisterDomainStateQuery();
     DrainToggleEvents();
-    mPanel.Process(*this, mDomainRegistry.IsAvailable() ? &mDomainRegistry.Get() : nullptr);
+    if (mPanelVisible && mWallMs >= mNextInterestMs)
+        SignalInterest();
+    PollDomainSnapshot();
+    mPanel.ProcessWithRoot(*this, mHaveDomainRoot ? &mDomainRoot : nullptr);
     PushDomainStatesToPanel();
     PushConsoleResults();
     PushLogLines();
@@ -127,6 +133,19 @@ Dia::ApplicationFlow::StopResult DebugPanelPageModule::DoStop()
     mProbeFramesLeft = 0;
 
     UnregisterDomainStateQuery();
+    if (mHealthRegistered)
+    {
+        Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealth);
+        mHealthRegistered = false;
+    }
+    mDomainRoot = Json::Value(Json::objectValue);
+    mHaveDomainRoot = false;
+    mHaveFrame = false;
+    mLastSimFrame = 0;
+    mPanelPushPending = false;
+    mParseFailureLogged = false;
+    mNextInterestMs = 0.0;
+    mInterestUntilMs = 0.0;
     mPanel.Reset();
     mKeyResolver.SetService(nullptr);
 
@@ -136,7 +155,8 @@ Dia::ApplicationFlow::StopResult DebugPanelPageModule::DoStop()
 
 void DebugPanelPageModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 {
-    mDomainRegistry.Connect(app);
+    mSnapshotIn.Connect(app);
+    mInterestOut.Connect(app);
     mPanelCommands.Connect(app);
     mPanelToggle.Connect(app);
     mPanelSetVisibility.Connect(app);
@@ -243,7 +263,7 @@ Dia::DebugServer::QueryRegistry* DebugPanelPageModule::FindQueryRegistry()
 
 void DebugPanelPageModule::RegisterDomainStateQuery()
 {
-    if (mDomainStateQueryRegistered || !mDomainRegistry.IsAvailable())
+    if (mDomainStateQueryRegistered)
         return;
     Dia::DebugServer::QueryRegistry* queries = FindQueryRegistry();
     if (queries == nullptr)
@@ -252,13 +272,9 @@ void DebugPanelPageModule::RegisterDomainStateQuery()
     queries->Register(Dia::Core::StringCRC(Dia::VisualDebugger::Console::kDomainStateQueryName),
         [this](const Json::Value& args)
         {
-            if (!mDomainRegistry.IsAvailable())
-            {
-                Json::Value result(Json::objectValue);
-                result["error"] = "domain registry not available";
-                return result;
-            }
-            return Dia::VisualDebugger::Console::QueryDomainState(mDomainRegistry.Get(), &mKeyResolver, args);
+            // A query is interest too: ask the Sim to publish, and answer from the latest snapshot on hand.
+            SignalInterest();
+            return Dia::VisualDebugger::Console::QueryDomainState(mHaveDomainRoot ? &mDomainRoot : nullptr, args);
         });
     mDomainStateQueryRegistered = true;
     DIA_LOG_INFO("Debug", "DebugPanelPageModule: registered %s", Dia::VisualDebugger::Console::kDomainStateQueryName);
@@ -407,8 +423,11 @@ void DebugPanelPageModule::DrainToggleEvents()
     for (unsigned int i = 0; i < events.Size(); ++i)
     {
         mPanelVisible = !mPanelVisible;
+        mPanelPushPending = mHaveDomainRoot;   // the page is reloaded: send the cached state again
         if (mPanelVisible)
         {
+            mFrameChangedAtMs = mWallMs;   // do not report stale for the time the panel was hidden
+            SignalInterest();
             ui->LoadPage(mPage);
             ui->PushInputMode(Dia::Input::EInputRouting::kGameAndUI);
             mInputModePushed = true;
@@ -444,8 +463,11 @@ void DebugPanelPageModule::DrainSetVisibilityEvents()
             continue;
 
         mPanelVisible = desiredVisibility;
+        mPanelPushPending = mHaveDomainRoot;
         if (mPanelVisible)
         {
+            mFrameChangedAtMs = mWallMs;
+            SignalInterest();
             ui->LoadPage(mPage);
             ui->PushInputMode(Dia::Input::EInputRouting::kGameAndUI);
             mInputModePushed = true;
@@ -464,8 +486,64 @@ void DebugPanelPageModule::DrainSetVisibilityEvents()
     }
 }
 
+void DebugPanelPageModule::SignalInterest()
+{
+    DomainStateInterestEvent event;
+    event.windowMs = kInterestWindowMs;
+    mInterestOut.Send(event);
+    mNextInterestMs  = mWallMs + kInterestIntervalMs;
+    mInterestUntilMs = mWallMs + static_cast<double>(kInterestWindowMs);
+}
+
+void DebugPanelPageModule::PollDomainSnapshot()
+{
+    namespace Console = Dia::VisualDebugger::Console;
+
+    if (!mHealthRegistered)
+    {
+        Dia::Observation::Health::HealthRegistry::Instance().Register(&mHealth);
+        mHealthRegistered = true;
+    }
+
+    const bool interested = mWallMs < mInterestUntilMs;
+    const Console::DomainStateSnapshot* snapshot = mSnapshotIn.FetchLatest();
+    if (snapshot == nullptr)
+    {
+        if (interested)
+            mHealth.OnPending();
+        return;
+    }
+
+    if (!mHaveFrame || snapshot->simFrame != mLastSimFrame)
+    {
+        // Cache by simFrame: a repeated frame is not re-parsed. A failed parse keeps the last good root.
+        if (Console::ParseDomainStateSnapshot(*snapshot, mDomainRoot))
+        {
+            Console::ApplySchemaVersion(mDomainRoot, &mKeyResolver);
+            mHaveDomainRoot = true;
+            mPanelPushPending = true;
+            mParseFailureLogged = false;
+        }
+        else if (!mParseFailureLogged)
+        {
+            mParseFailureLogged = true;
+            DIA_LOG_WARNING("Debug", "DebugPanelPageModule: domain state snapshot (frame %llu, %u bytes) failed to parse; keeping the last good state",
+                            static_cast<unsigned long long>(snapshot->simFrame), snapshot->jsonBytes);
+        }
+        mHaveFrame = true;
+        mLastSimFrame = snapshot->simFrame;
+        mFrameChangedAtMs = mWallMs;
+    }
+
+    if (interested)
+        mHealth.OnSnapshot(static_cast<uint64_t>(mWallMs - mFrameChangedAtMs));
+}
+
 void DebugPanelPageModule::PushDomainStatesToPanel()
 {
+    if (!mPanelPushPending || !mHaveDomainRoot)
+        return;
+
     UIModule* ui = mUI.Get();
     if (ui == nullptr || !mPanelVisible)
         return;
@@ -474,19 +552,12 @@ void DebugPanelPageModule::PushDomainStatesToPanel()
     if (uiSystem == nullptr || !uiSystem->IsPageLoaded())
         return;
 
-    if (!mDomainRegistry.IsAvailable())
-        return;
-
-    const Dia::VisualDebugger::DiaDebugDomainRegistry& registry = mDomainRegistry.Get();
-
-    Json::Value root(Json::objectValue);
-    Dia::VisualDebugger::Console::BuildDomainStatesRoot(registry, root, &mKeyResolver);
-
     Json::FastWriter writer;
     writer.omitEndingLineFeed();
-    const std::string json = writer.write(root);
+    const std::string json = writer.write(mDomainRoot);
 
     uiSystem->CallJSFunction("updateDomainState", json.c_str());
+    mPanelPushPending = false;
 }
 
 } } // namespace Cluiche::AppFlow

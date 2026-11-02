@@ -171,7 +171,7 @@ namespace Dia::CellLayers
 		CommandFn				mOnCommand;
 		Dia::Observation::Metric::Counter*	mMetricPending = nullptr;		// dia.celllayers.snapshot.reads_pending (no snapshot yet)
 		Dia::Observation::Metric::Counter*	mMetricUnreadable = nullptr;	// dia.celllayers.snapshot.reads_unreadable
-		char					mText[ViewerStateSlot::kCapacity];	// scratch for the latest snapshot text (Main thread only)
+		char					mText[ViewerStateSlot::kCapacity];	// scratch for the latest snapshot text (the adapter runs on Sim; only the thread that calls GetJSONState touches it)
 	};
 }
 

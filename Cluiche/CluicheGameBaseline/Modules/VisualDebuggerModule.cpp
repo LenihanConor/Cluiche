@@ -34,7 +34,6 @@ VisualDebuggerModule::~VisualDebuggerModule() = default;
 Dia::ApplicationFlow::StartResult VisualDebuggerModule::DoStart()
 {
     mLayerManagerService.Register(mLayerManager);
-    mDomainRegistryService.Register(mDomainRegistry);
     mSnapshotPublisher = std::make_unique<Dia::VisualDebugger::Console::DomainStateSnapshotPublisher>(
         mDomainRegistry, mSnapshotSink);
     mLayerManager.SetDebugScale(50.0f);
@@ -121,7 +120,6 @@ Dia::ApplicationFlow::StopResult VisualDebuggerModule::DoStop()
     mFrame.Clear();
     mRenderOutput.Write(mFrame, Dia::Core::TimeAbsolute::Zero());
     mLayerManagerService.Deregister();
-    mDomainRegistryService.Deregister();
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 
@@ -129,7 +127,6 @@ void VisualDebuggerModule::OnConnectStreams(Dia::ApplicationFlow::Application& a
 {
     mRenderOutput.Connect(app);
     mLayerManagerService.Connect(app);
-    mDomainRegistryService.Connect(app);
     mPanelCommands.Connect(app);
     mConsoleLines.Connect(app);
     mConsoleResults.Connect(app);
