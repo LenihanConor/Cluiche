@@ -1768,6 +1768,9 @@
     <ClInclude Include="DiaGraphics\HexTopologyToCellGridDesc.h">
       <Filter>DiaGraphics</Filter>
     </ClInclude>
+    <ClInclude Include="Editor\GameScopedPluginFixtures.h">
+      <Filter>Editor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Animation2D\ClipCompletionBusAdapterTests.cpp">
@@ -2336,6 +2339,18 @@
     </ClCompile>
     <ClCompile Include="CluicheGameBaseline\TestSimHostedExhaustiveModules.cpp">
       <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestGameScopedPluginsIntegration.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CluicheEditor\ApplicationFlow\Modules\PluginLoaderModule.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CluicheEditor\ApplicationFlow\Modules\EditorModelModule.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CluicheEditor\ApplicationFlow\Modules\EditorActionModule.cpp">
+      <Filter>Editor</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

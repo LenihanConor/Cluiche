@@ -149,6 +149,7 @@
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="DiaGraphics\HexTopologyToCellGridDesc.h" />
+    <ClInclude Include="Editor\GameScopedPluginFixtures.h" />
   </ItemGroup>
   <!-- Source Files -->
   <ItemGroup>
@@ -1067,6 +1068,10 @@
     <ClCompile Include="DebugServer\TestSimHostedObservation.cpp" />
     <ClCompile Include="DebugServer\TestSimHostedExhaustive.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestSimHostedExhaustiveModules.cpp" />
+    <ClCompile Include="Editor\TestGameScopedPluginsIntegration.cpp" />
+    <ClCompile Include="..\..\CluicheEditor\ApplicationFlow\Modules\PluginLoaderModule.cpp" />
+    <ClCompile Include="..\..\CluicheEditor\ApplicationFlow\Modules\EditorModelModule.cpp" />
+    <ClCompile Include="..\..\CluicheEditor\ApplicationFlow\Modules\EditorActionModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
