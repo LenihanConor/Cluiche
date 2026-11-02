@@ -14,7 +14,8 @@ namespace Dia
 		enum class SimKind : uint32_t
 		{
 			Query = 0,
-			Command = 1
+			Command = 1,
+			Resync = 2   // control request (announcement resync); never a handler name
 		};
 
 		enum class SimReplyStatus : uint32_t

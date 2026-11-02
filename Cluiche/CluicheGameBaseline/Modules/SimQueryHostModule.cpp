@@ -137,7 +137,7 @@ void SimQueryHostModule::Announce(bool registerOp, const char* name, Dia::DebugS
     std::unique_ptr<Dia::DebugServer::SimReplyEvent> msg(new Dia::DebugServer::SimReplyEvent);
     std::memset(msg.get(), 0, sizeof(Dia::DebugServer::SimReplyEvent));
     if (!BuildSimRegistrationReply(registerOp ? SimRegistrationOp::Register : SimRegistrationOp::Unregister,
-                                   name, kind, *msg))
+                                   name, kind, ++mAnnounceSeq, *msg))
     {
         DIA_LOG_ERROR("DebugServer", "SimQueryHostModule: could not build registration message for '%s'", name);
         return;

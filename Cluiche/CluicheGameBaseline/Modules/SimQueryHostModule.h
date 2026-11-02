@@ -90,6 +90,9 @@ private:
 
     // Names announced to Main; re-announced to Unregister on stop.
     Dia::Core::Containers::DynamicArrayC<AnnouncedName, kMaxAnnounced> mAnnounced;
+
+    // Per-host announcement sequence: +1 per register/unregister message (wraps).
+    uint32_t mAnnounceSeq = 0;
 };
 
 } } // namespace Cluiche::AppFlow

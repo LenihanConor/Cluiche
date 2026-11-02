@@ -138,4 +138,4 @@ namespace Cluiche::AppFlow {      // SimRegistrationMessage.h
 
 ## Status
 
-`Approved` (2026-11-02)
+`Approved` (2026-11-02). Plan: @docs/specs/applications/dia/systems/diadebugserver/sim-hosted-announcement-resync.plan.md

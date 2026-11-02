@@ -258,6 +258,10 @@ void DebugServerHostModule::DrainSimReplies()
                 case SimRegistrationOp::Unregister:
                     mServer.UnregisterSimHosted(Dia::Core::StringCRC(reg.name));
                     break;
+                case SimRegistrationOp::Digest:
+                case SimRegistrationOp::ResyncBegin:
+                case SimRegistrationOp::Replay:
+                    break;   // resync handling arrives with the announcement-resync tracker task
                 case SimRegistrationOp::Malformed:
                     DIA_LOG_WARNING("DebugServer", "DebugServerHostModule: malformed sim registration message ignored");
                     break;

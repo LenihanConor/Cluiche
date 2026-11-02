@@ -141,7 +141,7 @@ namespace
 		{
 			SimReplyEvent msg;
 			std::memset(&msg, 0, sizeof(msg));
-			ASSERT_TRUE(Cluiche::AppFlow::BuildSimRegistrationReply(op, name, kind, msg)) << name;
+			ASSERT_TRUE(Cluiche::AppFlow::BuildSimRegistrationReply(op, name, kind, ++mAnnounceSeq, msg)) << name;
 			const Cluiche::AppFlow::SimRegistration reg = Cluiche::AppFlow::ParseSimRegistrationReply(msg);
 			if (reg.op == Cluiche::AppFlow::SimRegistrationOp::Register)
 				EXPECT_TRUE(mServer.RegisterSimHosted(StringCRC(reg.name), reg.kind)) << name;
@@ -150,6 +150,7 @@ namespace
 			else
 				ADD_FAILURE() << "registration message did not round-trip: " << name;
 		}
+		uint32_t mAnnounceSeq = 0;
 		SimQueryHost& mHost;
 		DebugServer& mServer;
 	};
