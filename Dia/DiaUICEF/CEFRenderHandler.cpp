@@ -39,12 +39,9 @@ namespace Dia
 
 			if (type == PET_VIEW)
 			{
-				memcpy(mPixelBuffer, buffer, bufferSize);
-
-				// memcpy replaced the whole frame with raw BGRA, so swap the whole frame.
-				// Dirty-rect-only swapping left clean regions unswapped and double-swapped overlaps.
+				// Whole frame, one pass: dirty rects are ignored on purpose (see CopyBGRAtoRGBA).
 				(void)dirtyRects;
-				Utils::ConvertBGRAtoRGBA(mPixelBuffer, width, height, 0, 0, width, height);
+				Utils::CopyBGRAtoRGBA(mPixelBuffer, static_cast<const unsigned char*>(buffer), width, height);
 
 				mWidth = width;
 				mHeight = height;
