@@ -26,14 +26,14 @@ responsibilities:
   - DebugLayerManager — registration, priority sort, per-frame dispatch
   - DebugColourPalette — 9 binding RGBA constants (SD-DBG-010)
   - DebugLayerNames — canonical StringCRC constants for all Dia-owned layer names
-  - DiaAPI commands: debug.layer.enable, debug.layer.disable, debug.layer.list, debug.scale, debug.pick
+  - DiaAPI commands: debug.layer.enable, debug.layer.disable, debug.scale, debug.pick
   - Global debug scale exposed via SetDebugScale/GetDebugScale
   - Picking seam stubs: SetSelectedEntityId/GetSelectedEntityId
 
 non_responsibilities:
   - Rendering — layers submit to FrameData; DiaSFML owns rendering
   - Frame budget enforcement — DebugFrameData (DiaGraphics) owns capacity limits
-  - Editor WebSocket broadcast — deferred to feature debug-editor-panel (feature 10)
+  - Editor WebSocket broadcast — removed 2026-11-02 (debug-editor-panel retired; see debug-layer-broadcast-removal)
 
 dependent_modules:
   - dia.core

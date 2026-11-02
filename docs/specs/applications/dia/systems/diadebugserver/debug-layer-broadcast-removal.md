@@ -72,4 +72,4 @@ Remove `DebugLayerManager::BroadcastLayerState(DebugServer*)` and the whole "Deb
 
 ## Status
 
-`Approved` (2026-11-02; amended 2026-11-02 at the user's direction). Plan: @docs/specs/applications/dia/systems/diadebugserver/debug-layer-broadcast-removal.plan.md
+`Done` (2026-11-02; amended 2026-11-02 at the user's direction; full GoogleTests 12,637 pass). Plan: @docs/specs/applications/dia/systems/diadebugserver/debug-layer-broadcast-removal.plan.md
