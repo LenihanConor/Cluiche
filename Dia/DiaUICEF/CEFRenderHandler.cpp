@@ -41,12 +41,10 @@ namespace Dia
 			{
 				memcpy(mPixelBuffer, buffer, bufferSize);
 
-				for (size_t i = 0; i < dirtyRects.size(); ++i)
-				{
-					const CefRect& rect = dirtyRects[i];
-					Utils::ConvertBGRAtoRGBA(mPixelBuffer, width, height,
-						rect.x, rect.y, rect.width, rect.height);
-				}
+				// memcpy replaced the whole frame with raw BGRA, so swap the whole frame.
+				// Dirty-rect-only swapping left clean regions unswapped and double-swapped overlaps.
+				(void)dirtyRects;
+				Utils::ConvertBGRAtoRGBA(mPixelBuffer, width, height, 0, 0, width, height);
 
 				mWidth = width;
 				mHeight = height;
