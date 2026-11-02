@@ -100,7 +100,7 @@ namespace Cluiche
 			}
 
 			DIA_LOG_INFO("Application", "PluginLoaderModule: DoStart");
-			Dia::Editor::EditorPluginRegistry::Instance().AddGameScopeListener(&PluginLoaderModule::OnGameScopeChanged, this);
+			RegisterGameScopeListener();
 			LoadBuiltInPlugins();
 			RestoreLayoutPlugins();
 			PruneHeadlessPanels();
@@ -211,7 +211,7 @@ namespace Cluiche
 
 		Dia::ApplicationFlow::StopResult PluginLoaderModule::DoStop()
 		{
-			Dia::Editor::EditorPluginRegistry::Instance().RemoveGameScopeListener(&PluginLoaderModule::OnGameScopeChanged, this);
+			UnregisterGameScopeListener();
 
 			// Game-scoped plugins never persist into the next session: close them before layout/memory are saved.
 			CloseAllGameScopedPlugins();
@@ -299,6 +299,16 @@ namespace Cluiche
 			}
 
 			return Dia::ApplicationFlow::StopResult::kDone;
+		}
+
+		void PluginLoaderModule::RegisterGameScopeListener()
+		{
+			Dia::Editor::EditorPluginRegistry::Instance().AddGameScopeListener(&PluginLoaderModule::OnGameScopeChanged, this);
+		}
+
+		void PluginLoaderModule::UnregisterGameScopeListener()
+		{
+			Dia::Editor::EditorPluginRegistry::Instance().RemoveGameScopeListener(&PluginLoaderModule::OnGameScopeChanged, this);
 		}
 
 		void PluginLoaderModule::OnGameScopeChanged(void* userData, const Dia::Core::StringCRC& /*oldGame*/, const Dia::Core::StringCRC& /*newGame*/)
@@ -420,8 +430,17 @@ namespace Cluiche
 				return;
 			}
 
+			const unsigned int layoutPanelCount = layout->GetPanelCount();
+			const char* names[64];
+			unsigned int n = 0;
+			for (unsigned int p = 0; p < layoutPanelCount && n < 64; ++p)
+				names[n++] = layout->GetPanel(p).name;
+			RestoreLayoutPanels(names, n);
+		}
+
+		void PluginLoaderModule::RestoreLayoutPanels(const char* const* panelNames, unsigned int panelCount)
+		{
 			Dia::Editor::EditorPluginRegistry& registry = Dia::Editor::EditorPluginRegistry::Instance();
-			const unsigned int panelCount    = layout->GetPanelCount();
 			const unsigned int registryCount = registry.GetRegisteredCount();
 			DIA_LOG_INFO("Application",
 				"PluginLoaderModule::RestoreLayoutPlugins: panels=%u registry=%u",
@@ -429,7 +448,7 @@ namespace Cluiche
 
 			for (unsigned int p = 0; p < panelCount; ++p)
 			{
-				const char* panelName = layout->GetPanel(p).name;
+				const char* panelName = panelNames[p];
 				bool matched = false;
 
 				for (unsigned int r = 0; r < registryCount; ++r)

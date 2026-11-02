@@ -4,9 +4,9 @@
 // GameSwitchController + GameConnectionController against the test-only stub plugins and fixture
 // .diagame/.diaapp files from GameScopedPluginFixtures.h. No UI, no Application.
 //
-// Known headless limit: PluginLoaderModule registers its game-scope listener inside DoStart(), which
-// needs the full editor application. The fixture therefore installs a listener that performs the same
-// "close every out-of-scope plugin through UnloadPlugin" step (see OnScopeChanged). AC4 is covered via the
+// DoStart() needs the full editor application, so the fixture attaches the module's real game-scope listener
+// through PluginLoaderModule::RegisterGameScopeListener() (the call DoStart makes). Layout restore is driven
+// through PluginLoaderModule::RestoreLayoutPanels() with panel names, since a DockingLayout needs a UI system. AC4 is covered via the
 // asset-type route registry (asset_catalogue.register_type_editor / unregister_type_editor); the ShellExecuteExW
 // fallback itself is not exercised, only that no editor route exists.
 
@@ -65,12 +65,12 @@ protected:
 
         mSwitch.Initialize(&mSwitchBridge, &mModel, &mLoader);
         StubGamePlugin::RouteBridgeOverride() = &mBridge;
-        EditorPluginRegistry::Instance().AddGameScopeListener(&GameScopedPluginsIntegration::OnScopeChanged, this);
+        mLoader.RegisterGameScopeListener();   // the real PluginLoaderModule listener (normally attached by DoStart)
     }
 
     void TearDown() override
     {
-        EditorPluginRegistry::Instance().RemoveGameScopeListener(&GameScopedPluginsIntegration::OnScopeChanged, this);
+        mLoader.UnregisterGameScopeListener();
         mSwitch.Shutdown();
 
         // The browser is pinned (cannot go through UnloadPlugin), so it is hosted directly; unload it
@@ -93,19 +93,6 @@ protected:
 
         ResetEditorRegistry();
         RemoveFixtureFiles(mFiles);
-    }
-
-    // Stand-in for PluginLoaderModule::OnGameScopeChanged (private, registered in DoStart).
-    static void OnScopeChanged(void* ud, const StringCRC&, const StringCRC&)
-    {
-        auto* self = static_cast<GameScopedPluginsIntegration*>(ud);
-        const char* types[] = { kStubGameType, kStubGenericType };
-        for (const char* t : types)
-        {
-            const StringCRC id(t);
-            if (EditorPluginRegistry::Instance().IsOutOfGameScope(id) && self->mLoader.IsPluginTypeLoaded(id))
-                self->mLoader.UnloadPlugin(id);
-        }
     }
 
     void LoadBrowser()
@@ -312,6 +299,64 @@ TEST_F(GameScopedPluginsIntegration, AC2_ManifestNamingStubOpensWithoutIt)
     mLoader.LoadManifest(mFiles.stubManifest.c_str());
     EXPECT_FALSE(mLoader.IsPluginTypeLoaded(StringCRC(kStubGameType)));
     EXPECT_EQ(GameCounters().loads, 0);
+}
+
+// ---------------------------------------------------------------------------
+// Layout restore (PluginLoaderModule::RestoreLayoutPanels): saved panels route through LoadPlugin's scope gate
+// ---------------------------------------------------------------------------
+
+TEST_F(GameScopedPluginsIntegration, LayoutRestore_GamePanelOutOfScope_Skipped)
+{
+    DiscoverAtStartup();
+    ASSERT_TRUE(LoadOtherGame());
+    const char* panels[] = { "Stub Game Plugin", "Stub Generic Plugin" };
+    mLoader.RestoreLayoutPanels(panels, 2);
+
+    EXPECT_FALSE(mLoader.IsPluginTypeLoaded(StringCRC(kStubGameType)));
+    EXPECT_EQ(GameCounters().loads, 0);
+    EXPECT_TRUE(mLoader.IsPluginTypeLoaded(StringCRC(kStubGenericType)));
+}
+
+TEST_F(GameScopedPluginsIntegration, LayoutRestore_GamePanelNoGame_Skipped)
+{
+    DiscoverAtStartup();
+    const char* panels[] = { "Stub Game Plugin" };
+    mLoader.RestoreLayoutPanels(panels, 1);
+
+    EXPECT_FALSE(mLoader.IsPluginTypeLoaded(StringCRC(kStubGameType)));
+    EXPECT_EQ(GameCounters().loads, 0);
+}
+
+TEST_F(GameScopedPluginsIntegration, LayoutRestore_GamePanelInScope_Created)
+{
+    ASSERT_TRUE(LoadStubGame());
+    const char* panels[] = { "Stub Game Plugin", "Stub Generic Plugin" };
+    mLoader.RestoreLayoutPanels(panels, 2);
+
+    EXPECT_TRUE(mLoader.IsPluginTypeLoaded(StringCRC(kStubGameType)));
+    EXPECT_EQ(GameCounters().loads, 1);
+    EXPECT_TRUE(mLoader.IsPluginTypeLoaded(StringCRC(kStubGenericType)));
+}
+
+TEST_F(GameScopedPluginsIntegration, LayoutRestore_UnknownPanel_LoadsNothing)
+{
+    ASSERT_TRUE(LoadStubGame());
+    const char* panels[] = { "No Such Panel" };
+    mLoader.RestoreLayoutPanels(panels, 1);
+
+    EXPECT_FALSE(mLoader.IsPluginTypeLoaded(StringCRC(kStubGameType)));
+    EXPECT_FALSE(mLoader.IsPluginTypeLoaded(StringCRC(kStubGenericType)));
+}
+
+TEST_F(GameScopedPluginsIntegration, ScopeListener_Detached_DoesNotCloseOnSwitch)
+{
+    // Proves the AC3 tests exercise the real listener: once it is unregistered the stub stays open.
+    ASSERT_TRUE(LoadStubGame());
+    mLoader.LoadPlugin(StringCRC(kStubGameType), StringCRC("inst"));
+    mLoader.UnregisterGameScopeListener();
+    ASSERT_TRUE(LoadOtherGame());
+    EXPECT_TRUE(mLoader.IsPluginTypeLoaded(StringCRC(kStubGameType)));
+    mLoader.RegisterGameScopeListener();   // TearDown unregisters
 }
 
 // ---------------------------------------------------------------------------
