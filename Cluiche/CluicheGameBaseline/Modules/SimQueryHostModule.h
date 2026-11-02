@@ -28,6 +28,7 @@
 #include <DiaStreams/Event.h>
 #include <DiaStreams/EventStreamReader.h>
 #include <DiaStreams/EventStreamWriter.h>
+#include <DiaStreams/SendResult.h>
 
 namespace Cluiche { namespace AppFlow {
 
@@ -54,7 +55,18 @@ public:
     // Removes the handler and tells the Main side to forget the name.
     void UnregisterQuery(const char* name);
 
+    // Frames between periodic digests (SimPU frames), replay messages per frame, overflow log rate limit.
+    static constexpr uint32_t kDigestIntervalFrames      = 30;
+    static constexpr uint32_t kReplayPerFrame            = 16;
+    static constexpr uint32_t kOverflowLogIntervalFrames = 30;
+
+    // Announce-path writes that the stream did not deliver cleanly (dropped / rejected).
+    uint32_t AnnounceOverflowCount() const { return mAnnounceOverflow; }
+
 protected:
+    // Single point of contact with the reply stream; tests override it to capture / simulate overflow.
+    virtual Dia::ApplicationFlow::SendResult SendReply(const Dia::DebugServer::SimReplyEvent& reply);
+
     Dia::ApplicationFlow::StartResult DoStart() override;
     void DoUpdate(const Dia::SimTime::SimTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult DoStop() override;
@@ -69,6 +81,13 @@ private:
     bool RegisterInternal(const char* name, Dia::DebugServer::SimKind kind,
                           Dia::DebugServer::SimQueryHost::QueryHandler handler);
     void Announce(bool registerOp, const char* name, Dia::DebugServer::SimKind kind);
+
+    // Sends an announce-path message (register/unregister/digest/resync_begin/replay): records overflow,
+    // marks the frame as having announced.  Does not retry; digest + resync repair any loss.
+    Dia::ApplicationFlow::SendResult PostAnnounce(const Dia::DebugServer::SimReplyEvent& msg);
+    void RequestResync();
+    void DrainReplay();
+    void SendDigest();
 
     // Small batch: each event is ~16 KB, so keep the stack/member footprint modest.
     static constexpr unsigned int kBatch        = 2;
@@ -93,6 +112,20 @@ private:
 
     // Per-host announcement sequence: +1 per register/unregister message (wraps).
     uint32_t mAnnounceSeq = 0;
+
+    uint32_t mFramesSinceDigest = 0;
+    bool     mAnnouncedThisFrame = false;   // an announce/replay message was sent since the last DoUpdate decision
+
+    // Pending resync replay: resync_begin first, then mAnnounced[mReplayIndex..].  A register/unregister
+    // or a second resync request restarts it, so no copy of the table is kept.
+    bool     mReplayPending   = false;
+    bool     mReplayBeginSent = false;
+    unsigned int mReplayIndex = 0;
+
+    uint32_t mAnnounceOverflow = 0;
+    uint32_t mFrame = 0;
+    uint32_t mLastOverflowLogFrame = 0;
+    bool     mOverflowLogged = false;
 };
 
 } } // namespace Cluiche::AppFlow

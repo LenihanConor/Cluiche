@@ -49,6 +49,10 @@ namespace Dia
 			bool UnregisterQuery(Dia::Core::StringCRC name);
 			bool Has(Dia::Core::StringCRC name) const;
 
+			// Invoked from Update() for a SimKind::Resync control request (no reply is produced, the
+			// handler is never looked up by name). Without a handler such requests are dropped.
+			void SetResyncHandler(std::function<void()> handler);
+
 			// Drains all pending requests, runs handlers, posts replies.
 			void Update();
 
@@ -69,6 +73,7 @@ namespace Dia
 			ISimRequestSource* mSource;
 			ISimReplySink* mSink;
 			bool mWarnedFull;
+			std::function<void()> mResyncHandler;
 		};
 	}
 }

@@ -33,6 +33,8 @@ namespace Dia
 		void SimQueryHost::SetRequestSource(ISimRequestSource* source) { mSource = source; }
 		void SimQueryHost::SetReplySink(ISimReplySink* sink) { mSink = sink; }
 
+		void SimQueryHost::SetResyncHandler(std::function<void()> handler) { mResyncHandler = handler; }
+
 		bool SimQueryHost::RegisterQuery(Dia::Core::StringCRC name, QueryHandler handler)
 		{
 			return Register(name, SimKind::Query, handler);
@@ -170,6 +172,14 @@ namespace Dia
 
 			while (mSource->TryPop(*request))
 			{
+				// Control request: handled before any name lookup and never replied to.
+				if (request->kind == static_cast<uint32_t>(SimKind::Resync))
+				{
+					if (mResyncHandler)
+						mResyncHandler();
+					continue;
+				}
+
 				std::memset(reply.get(), 0, sizeof(SimReplyEvent));
 				Handle(*request, *reply);
 

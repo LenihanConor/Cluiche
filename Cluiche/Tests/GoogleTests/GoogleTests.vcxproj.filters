@@ -2397,5 +2397,8 @@
     <ClCompile Include="DebugServer\TestSimHostedResyncTable.cpp">
       <Filter>DebugServer</Filter>
     </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestSimQueryHostResync.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

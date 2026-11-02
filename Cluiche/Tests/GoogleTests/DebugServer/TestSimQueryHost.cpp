@@ -329,3 +329,53 @@ TEST(SimQueryHost, CommandKindWorksTheSame)
 	EXPECT_EQ(f.sink.replies[0].requestId, 7u);
 	EXPECT_EQ(f.sink.replies[0].status, St(SimReplyStatus::Ok));
 }
+
+TEST(SimQueryHost, ResyncRequestCallsHandlerOnceAndSendsNoReply)
+{
+	Fixture f;
+	int calls = 0;
+	f.host.SetResyncHandler([&calls]() { ++calls; });
+	f.source.Push(0, "", SimKind::Resync, "{}");
+	f.host.Update();
+	EXPECT_EQ(calls, 1);
+	EXPECT_TRUE(f.sink.replies.empty());
+}
+
+TEST(SimQueryHost, ResyncRequestWithNoHandlerIsSilentlyDropped)
+{
+	Fixture f;
+	f.source.Push(0, "", SimKind::Resync, "{}");
+	f.host.Update();
+	EXPECT_TRUE(f.sink.replies.empty());
+}
+
+TEST(SimQueryHost, ResyncRequestNeverLooksUpNamedHandler)
+{
+	Fixture f;
+	int handlerCalls = 0;
+	int resyncCalls = 0;
+	// A query and a command whose name CRC matches the resync request's nameCrc.
+	ASSERT_TRUE(f.host.RegisterQuery("same", [&handlerCalls](const Json::Value&) { ++handlerCalls; return Json::Value(Json::objectValue); }));
+	ASSERT_TRUE(f.host.RegisterCommand("same2", [&handlerCalls](const Json::Value&) { ++handlerCalls; return Json::Value(Json::objectValue); }));
+	f.host.SetResyncHandler([&resyncCalls]() { ++resyncCalls; });
+	f.source.Push(0, "same", SimKind::Resync, "{}");
+	f.source.Push(0, "same2", SimKind::Resync, "{}");
+	f.host.Update();
+	EXPECT_EQ(handlerCalls, 0);
+	EXPECT_EQ(resyncCalls, 2);
+	EXPECT_TRUE(f.sink.replies.empty());
+}
+
+TEST(SimQueryHost, ResyncRequestDoesNotDisturbOrdinaryRequestsAroundIt)
+{
+	Fixture f;
+	ASSERT_TRUE(f.host.RegisterQuery("q", OkHandler));
+	f.host.SetResyncHandler([]() {});
+	f.source.Push(1, "q", SimKind::Query, "{}");
+	f.source.Push(0, "", SimKind::Resync, "{}");
+	f.source.Push(2, "q", SimKind::Query, "{}");
+	f.host.Update();
+	ASSERT_EQ(f.sink.replies.size(), 2u);
+	EXPECT_EQ(f.sink.replies[0].requestId, 1u);
+	EXPECT_EQ(f.sink.replies[1].requestId, 2u);
+}

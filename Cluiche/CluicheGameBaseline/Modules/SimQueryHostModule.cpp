@@ -19,10 +19,12 @@ SimQueryHostModule::SimQueryHostModule(const Dia::Core::StringCRC& instanceId)
 {
     mHost.SetRequestSource(this);
     mHost.SetReplySink(this);
+    mHost.SetResyncHandler([this]() { RequestResync(); });
 }
 
 SimQueryHostModule::~SimQueryHostModule()
 {
+    mHost.SetResyncHandler(nullptr);
     mHost.SetRequestSource(nullptr);
     mHost.SetReplySink(nullptr);
 }
@@ -35,7 +37,85 @@ Dia::ApplicationFlow::StartResult SimQueryHostModule::DoStart()
 void SimQueryHostModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*ctx*/)
 {
     DIA_TRACE_ZONE("SimQueryHostModule.Update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
-    mHost.Update();
+    ++mFrame;
+    ++mFramesSinceDigest;
+    mHost.Update();   // may queue a resync via the resync handler
+    DrainReplay();
+
+    // Periodic digest, only on a quiet frame (no announce/replay message since the last decision).
+    if (mFramesSinceDigest >= kDigestIntervalFrames && !mAnnouncedThisFrame)
+        SendDigest();
+    mAnnouncedThisFrame = false;
+}
+
+void SimQueryHostModule::SendDigest()
+{
+    uint32_t hash = 0;
+    for (unsigned int i = 0; i < mAnnounced.Size(); ++i)
+        hash += Dia::DebugServer::SimNameSetEntryHash(mAnnounced[i].name, mAnnounced[i].kind);
+
+    std::unique_ptr<Dia::DebugServer::SimReplyEvent> msg(new Dia::DebugServer::SimReplyEvent);
+    std::memset(msg.get(), 0, sizeof(Dia::DebugServer::SimReplyEvent));
+    if (BuildSimDigestReply(mAnnounceSeq, static_cast<uint32_t>(mAnnounced.Size()), hash, *msg))
+        PostAnnounce(*msg);
+    mFramesSinceDigest = 0;
+}
+
+void SimQueryHostModule::RequestResync()
+{
+    mReplayPending   = true;
+    mReplayBeginSent = false;
+    mReplayIndex     = 0;
+}
+
+void SimQueryHostModule::DrainReplay()
+{
+    if (!mReplayPending)
+        return;
+
+    std::unique_ptr<Dia::DebugServer::SimReplyEvent> msg(new Dia::DebugServer::SimReplyEvent);
+    uint32_t budget = kReplayPerFrame;
+
+    if (!mReplayBeginSent && budget > 0)
+    {
+        std::memset(msg.get(), 0, sizeof(Dia::DebugServer::SimReplyEvent));
+        if (BuildSimResyncBeginReply(mAnnounceSeq, static_cast<uint32_t>(mAnnounced.Size()), *msg))
+            PostAnnounce(*msg);
+        mReplayBeginSent = true;
+        --budget;
+    }
+    while (budget > 0 && mReplayIndex < mAnnounced.Size())
+    {
+        const AnnouncedName& e = mAnnounced[mReplayIndex++];
+        std::memset(msg.get(), 0, sizeof(Dia::DebugServer::SimReplyEvent));
+        if (BuildSimReplayReply(e.name, e.kind, *msg))
+            PostAnnounce(*msg);
+        --budget;
+    }
+    if (mReplayBeginSent && mReplayIndex >= mAnnounced.Size())
+    {
+        mReplayPending = false;
+        DIA_LOG_INFO("DebugServer", "SimQueryHostModule: resync replay complete (%u names)",
+                     static_cast<unsigned int>(mAnnounced.Size()));
+    }
+}
+
+Dia::ApplicationFlow::SendResult SimQueryHostModule::PostAnnounce(const Dia::DebugServer::SimReplyEvent& msg)
+{
+    mAnnouncedThisFrame = true;
+    const Dia::ApplicationFlow::SendResult result = SendReply(msg);
+    if (result != Dia::ApplicationFlow::SendResult::kDelivered)
+    {
+        ++mAnnounceOverflow;
+        if (!mOverflowLogged || (mFrame - mLastOverflowLogFrame) >= kOverflowLogIntervalFrames)
+        {
+            mOverflowLogged = true;
+            mLastOverflowLogFrame = mFrame;
+            DIA_LOG_WARNING("DebugServer", "SimQueryHostModule: announce overflow, a message was dropped or rejected (total %u); digest/resync will repair",
+                            mAnnounceOverflow);
+        }
+    }
+    return result;
 }
 
 Dia::ApplicationFlow::StopResult SimQueryHostModule::DoStop()
@@ -72,9 +152,14 @@ bool SimQueryHostModule::TryPop(Dia::DebugServer::SimRequestEvent& out)
     return true;
 }
 
+Dia::ApplicationFlow::SendResult SimQueryHostModule::SendReply(const Dia::DebugServer::SimReplyEvent& reply)
+{
+    return mReplies.Send(reply);
+}
+
 bool SimQueryHostModule::PostReply(const Dia::DebugServer::SimReplyEvent& reply)
 {
-    return Dia::ApplicationFlow::IsSuccess(mReplies.Send(reply));
+    return Dia::ApplicationFlow::IsSuccess(SendReply(reply));
 }
 
 bool SimQueryHostModule::RegisterQuery(const char* name, Dia::DebugServer::SimQueryHost::QueryHandler handler)
@@ -142,7 +227,10 @@ void SimQueryHostModule::Announce(bool registerOp, const char* name, Dia::DebugS
         DIA_LOG_ERROR("DebugServer", "SimQueryHostModule: could not build registration message for '%s'", name);
         return;
     }
-    if (!PostReply(*msg))
+    // A register/unregister changes the set: restart any queued replay so it carries the new seq.
+    if (mReplayPending)
+        RequestResync();
+    if (!Dia::ApplicationFlow::IsSuccess(PostAnnounce(*msg)))
         DIA_LOG_WARNING("DebugServer", "SimQueryHostModule: registration message for '%s' was rejected by the stream", name);
 }
 
