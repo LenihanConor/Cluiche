@@ -262,6 +262,9 @@ Features within the DiaDebugServer system (create with `/spec-feature`):
 | Sim-Hosted Queries | Queries and DiaAPI commands answered on SimPU with deferred replies over EventStreams; no cross-PU mutex | @docs/specs/applications/dia/systems/diadebugserver/sim-hosted-queries.md | Approved |
 | Sim-Hosted Command Help | Sim-hosted queries and commands carry description, category, owner and ValueParams in the register message; Main-side catalogue feeds --help, the palette and schema validation; description mandatory | @docs/specs/applications/dia/systems/diadebugserver/sim-hosted-command-help.md | Approved |
 | Sim-Hosted Announcement Resync | Sequence numbers + digest + resync/replay make Sim to Main name announcements self-healing when the drop-oldest SimQueryReply stream overflows | @docs/specs/applications/dia/systems/diadebugserver/sim-hosted-announcement-resync.md | Approved |
+| Debug Domain State Snapshots | Sim-owned debug domains serialise their panel state on SimPU into a FrameStream snapshot; the Main panel and `debug.domain_state` read only the snapshot (retires the Main-thread `GetJSONState` calls, unlocked registry maps and the UtilityAI atomic) | @docs/specs/applications/dia/systems/diadebugserver/domain-state-snapshots.md | Approved |
+| Sim-Registered Queries | SimPU modules' QueryRegistry handlers move to SimQueryHost; QueryRegistry rejects registration from a non-owner thread | @docs/specs/applications/dia/systems/diadebugserver/sim-registered-queries.md | Approved |
+| Debug Layer Broadcast Removal | Delete the dead, thread-unsafe `DebugLayerManager::BroadcastLayerState` after proving nothing depends on it | @docs/specs/applications/dia/systems/diadebugserver/debug-layer-broadcast-removal.md | Approved |
 
 ## AI Review Questions
 
