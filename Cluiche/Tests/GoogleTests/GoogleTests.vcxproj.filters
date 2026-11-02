@@ -2379,5 +2379,8 @@
     <ClCompile Include="DiaCellLayers\TestQueryExhaustive.cpp">
       <Filter>DiaCellLayers</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestInspectorExhaustive.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
