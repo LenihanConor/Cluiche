@@ -7,6 +7,11 @@
 #include <DiaObservation/Log/Logger.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/Json/external/json/json.h>
+#include <DiaEditor/Project/GameScopeDiscovery.h>
+
+#include <filesystem>
+#include <string>
+#include <vector>
 
 #include <fstream>
 #include <string.h>
@@ -88,6 +93,63 @@ namespace Cluiche
 				}
 			}
 
+			// Startup game-scope discovery (see GameScopeDiscovery). Known games = union of
+			//   - editor.cluicheproj "game_roots" (paths relative to the file; default: "assets" next to the exe)
+			//   - editor_state.last_project and editor_state.recent_projects
+			// Tolerant: a missing/unreadable/malformed file just falls back to the default root.
+			void DiscoverGameScopes(const char* cluicheprojPath)
+			{
+				namespace fs = std::filesystem;
+				std::vector<std::string> roots;
+				std::vector<std::string> games;
+				bool hasRootsKey = false;
+
+				Json::Value root;
+				{
+					std::ifstream file(cluicheprojPath);
+					Json::CharReaderBuilder builder;
+					std::string errors;
+					if (!file.is_open() || !Json::parseFromStream(builder, file, &root, &errors))
+						root = Json::Value(Json::objectValue);
+				}
+				if (!root.isObject())
+					root = Json::Value(Json::objectValue);
+
+				const fs::path baseDir = fs::path(cluicheprojPath).parent_path();
+				const Json::Value& gr = root["game_roots"];
+				if (gr.isArray())
+				{
+					hasRootsKey = true;
+					for (Json::ArrayIndex i = 0; i < gr.size(); ++i)
+					{
+						if (!gr[i].isString()) continue;
+						fs::path p(gr[i].asString());
+						roots.push_back((p.is_absolute() ? p : baseDir / p).generic_string());
+					}
+				}
+				if (!hasRootsKey)
+				{
+					char exe[MAX_PATH] = {0};
+					GetModuleFileNameA(nullptr, exe, MAX_PATH);
+					roots.push_back((fs::path(exe).parent_path() / "assets").generic_string());
+				}
+
+				const Json::Value& state = root["editor_state"];
+				if (state.isObject())
+				{
+					if (state["last_project"].isString())
+						games.push_back(state["last_project"].asString());
+					const Json::Value& recent = state["recent_projects"];
+					if (recent.isArray())
+						for (Json::ArrayIndex i = 0; i < recent.size(); ++i)
+							if (recent[i].isString())
+								games.push_back(recent[i].asString());
+				}
+
+				const unsigned int tagged = Dia::Editor::GameScopeDiscovery::DiscoverAndTag(roots, 4, games);
+				DIA_LOG_INFO("Editor", "EditorModelModule: game-scope discovery tagged %u game(s) from %u root(s)", tagged, (unsigned int)roots.size());
+			}
+
 		} // anonymous namespace
 
 		EditorModelModule::EditorModelModule(const Dia::Core::StringCRC& instanceId)
@@ -121,6 +183,9 @@ namespace Cluiche
 			DIA_LOG_INFO("Editor", "EditorModelModule::DoStart mProjectPath='%s' mDiagamePath='%s'",
 				mProjectPath[0] ? mProjectPath : "<empty>",
 				mDiagamePath[0] ? mDiagamePath : "<empty>");
+
+			// Tag game-scoped plugin types before any game loads so the cold-start state is "out of scope".
+			DiscoverGameScopes((mProjectPath[0] != '\0') ? mProjectPath : "assets/configs/editor.cluicheproj");
 
 			// Subscribe to game-project changes to maintain editor_state persistence.
 			mModel.OnDiagameProjectChanged([](const Dia::Editor::ProjectContext& ctx, void* ud)

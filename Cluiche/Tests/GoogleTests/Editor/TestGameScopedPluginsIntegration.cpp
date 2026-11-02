@@ -20,6 +20,7 @@
 #include <DiaEditor/Plugin/PluginBrowserEditorPlugin.h>
 #include <DiaEditor/Plugin/EditorPluginContext.h>
 #include <DiaEditor/Project/GameSwitchController.h>
+#include <DiaEditor/Project/GameScopeDiscovery.h>
 #include <DiaEditor/LiveConnection/GameConnectionController.h>
 #include <DiaEditor/UI/WebUIBridge.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
@@ -131,6 +132,12 @@ protected:
         return Dia::API::ExecuteCommandJson(StringCRC(name.c_str()), Json::Value(Json::objectValue))["success"].asBool();
     }
 
+    // Editor startup: tag game-scoped types from the known games before any game loads (EditorModelModule::DoStart).
+    void DiscoverAtStartup()
+    {
+        GameScopeDiscovery::DiscoverAndTag({ mFiles.dir }, 3, {});
+    }
+
     bool LoadStubGame()  { return mModel.LoadDiagameProject(mFiles.stubGame.c_str()); }
     bool LoadOtherGame() { return mModel.LoadDiagameProject(mFiles.otherGame.c_str()); }
 
@@ -222,11 +229,10 @@ TEST_F(GameScopedPluginsIntegration, AC2_StubGameClosed_StubNotListedNotLoadable
     EXPECT_EQ(GameCounters().loads, 0);
 }
 
-// Spec AC2 says "or no game loaded". On a cold start the stub has never been tagged (tags are only
-// applied when a game's editor.manifests is read), so it behaves as a generic plugin until its game has
-// been loaded once. Disabled: this is a real gap, reported by the task 9 integration tests.
-TEST_F(GameScopedPluginsIntegration, DISABLED_AC2_ColdStartNoGame_StubNotListedNotLoadable)
+// Spec AC2 "or no game loaded": startup discovery tags the stub before any game loads, so it is out of scope.
+TEST_F(GameScopedPluginsIntegration, AC2_ColdStartNoGame_StubNotListedNotLoadable)
 {
+    DiscoverAtStartup();
     LoadBrowser();
 
     EXPECT_FALSE(Listed(kStubGameType));
@@ -234,9 +240,10 @@ TEST_F(GameScopedPluginsIntegration, DISABLED_AC2_ColdStartNoGame_StubNotListedN
     EXPECT_FALSE(PaletteLoadExists("stubgameplugin"));
 }
 
-// The same gap with only a non-editor game ever loaded this session.
-TEST_F(GameScopedPluginsIntegration, DISABLED_AC2_ColdStartOtherGameOnly_StubNotListedNotLoadable)
+// The same, with only a non-editor game loaded this session.
+TEST_F(GameScopedPluginsIntegration, AC2_ColdStartOtherGameOnly_StubNotListedNotLoadable)
 {
+    DiscoverAtStartup();
     LoadBrowser();
     ASSERT_TRUE(LoadOtherGame());
 

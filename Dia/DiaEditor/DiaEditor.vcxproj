@@ -136,6 +136,7 @@
     <ClInclude Include="Project\GamePath.h" />
     <ClInclude Include="Project\GameSwitchGate.h" />
     <ClInclude Include="Project\GameSwitchController.h" />
+    <ClInclude Include="Project\GameScopeDiscovery.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="EditorAPI\EditorActionManifest.cpp" />
@@ -167,6 +168,7 @@
     <ClCompile Include="Project\GamePath.cpp" />
     <ClCompile Include="Project\GameSwitchGate.cpp" />
     <ClCompile Include="Project\GameSwitchController.cpp" />
+    <ClCompile Include="Project\GameScopeDiscovery.cpp" />
   </ItemGroup>
 
   <ItemGroup>

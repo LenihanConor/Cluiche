@@ -2358,5 +2358,8 @@
     <ClCompile Include="DiaCellLayers\TestViewerStateSnapshot.cpp">
       <Filter>DiaCellLayers</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\TestGameScopeDiscovery.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

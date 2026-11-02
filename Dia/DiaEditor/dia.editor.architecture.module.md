@@ -43,6 +43,7 @@ public_api:
     - DiaEditor/Plugin/EditorPluginContext.h
     - DiaEditor/Plugin/EditorPluginRegistry.h
     - DiaEditor/Plugin/GameConnectionEditorPlugin.h
+    - DiaEditor/Project/GameScopeDiscovery.h
   namespaces:
     - Dia::Editor
   entry_points:
@@ -57,5 +58,7 @@ public_api:
 CluicheEditor host framework — plugin registration, CEF shell, WebSocket game connection, layout persistence, and the IEditorPlugin contract all editor plugins implement.
 
 ## Conventions
+
+**Game-scoped plugin discovery:** Game-scoped types must be tagged before any game loads, so the cold-start state is out of scope. `GameScopeDiscovery::DiscoverAndTag(roots, maxDepth, gamePaths)` scans roots for `*.diagame` (depth-limited), unions explicit game paths, de-duplicates by `NormalizeGamePath`, and calls `TagGameScoped` without activating a scope. `CollectGameScope` is the single collection path shared with `EditorModel::LoadDiagameProject`, so the game id matches. Missing roots and malformed files are logged and skipped. CluicheEditor calls it from `EditorModelModule::DoStart` with `editor.cluicheproj` `game_roots` (default `assets` next to the exe), `last_project` and `recent_projects`.
 
 **Live connection plugins:** Any plugin that observes the game connection MUST derive from `LiveConnectionPluginBase` (not `EditorPluginBase` directly). This enforces consistent connection lifecycle — `IsConnected` polling, fire-if-connected at load, `<prefix>.connection_state` push, `<prefix>.get_connection_state` handler, and topic auto-subscribe/unsubscribe on connect/disconnect. See SED-023.
