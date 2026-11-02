@@ -176,6 +176,9 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | Dia | DiaCLI dev source alias (#16) + subfolder deploy (#17) | 2026-10-20 | **Done 2026-10-20.** `--dev-alias source` + `--source` override, `RegisterDevAliases` in `ManifestBootstrap`, reserved `source`; `world`-tag subfolder deploy, `world` alias in `cow.diagame`, misplaced-record warnings. CoW placeholder JobSystemService consumer added so CoW launches |
 | Dia | `Application.cpp` `ownedStores` capped at 16 | 2026-11-01 | Fixed 58751f51: cap raised to 64 and DIA_ASSERT on overflow |
 | game-scoped-plugins | [spec](specs/) | 2026-11-01 | Marked done by `dia docs spec-done` |
+| Dia | `CellDetailRegistry` provider names over 31 chars cannot be unregistered (2026-11-02) | 2026-11-02 | Moved by `dia docs backlog move` |
+| Dia | `CellLayerViewerDomain` keeps a dangling `mActiveGrid` after the last layer unregisters (2026-11-02) | 2026-11-02 | Moved by `dia docs backlog move` |
+| Dia | `SLOW_DebugServer*` loopback tests share hard-coded port 9461 (2026-11-02) | 2026-11-02 | Moved by `dia docs backlog move` |
 
 ---
 
