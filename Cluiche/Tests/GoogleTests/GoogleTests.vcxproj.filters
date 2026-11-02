@@ -2391,5 +2391,8 @@
     <ClCompile Include="DiaVisualDebugger\Console\TestDomainStateSnapshotPublisher.cpp">
       <Filter>DiaVisualDebugger\Console</Filter>
     </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestSimAnnounceTracker.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

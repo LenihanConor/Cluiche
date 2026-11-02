@@ -1085,6 +1085,7 @@
     <ClCompile Include="DiaCellLayers\TestMirrorExhaustive.cpp" />
     <ClCompile Include="DiaVisualDebugger\Console\TestDomainStateSnapshot.cpp" />
     <ClCompile Include="DiaVisualDebugger\Console\TestDomainStateSnapshotPublisher.cpp" />
+    <ClCompile Include="CluicheGameBaseline\TestSimAnnounceTracker.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
