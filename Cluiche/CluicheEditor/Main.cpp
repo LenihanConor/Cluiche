@@ -22,6 +22,8 @@
 #include <DiaApplicationFlow/Manifest/ApplicationManifestLoaderV2.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 
+#include <CoW/Editor/CoWEditor.h>
+
 #include <chrono>
 #include <memory>
 #include <thread>
@@ -34,6 +36,10 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPWSTR /
     int exitCode = CefExecuteProcess(mainArgs, cefApp.get(), nullptr);
     if (exitCode >= 0)
         return exitCode;
+
+    // Keep the CoWEditor static library linked so its REGISTER_EDITOR_PLUGIN static initialisers run
+    // before PluginLoaderModule loads plugins (an unreferenced static lib can be dropped by the linker).
+    CoW::Editor::RegisterCoWEditorPlugins();
 
     // Heap-allocate manifest — the struct grows with module/channel count and
     // can overflow the default 1MB stack (see CluicheTest/Main.cpp for the same
