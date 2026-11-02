@@ -91,4 +91,4 @@ Clamp behaviour for over-limit requests is unchanged (clamp and warn once).
 
 ## Status
 
-`Approved`
+`Done` (2026-11-02). Plan: [streams-migration.plan.md](streams-migration.plan.md). Viewer mutex and `StateMutex()` deleted; mirror queries and viewer commands sim-hosted; `debug.domain_state` reads a FrameStream snapshot; full GoogleTests, `dia check sanitizer` (ASan) and the celllayers E2E pass.

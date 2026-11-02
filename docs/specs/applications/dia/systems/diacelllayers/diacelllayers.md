@@ -196,4 +196,4 @@ Aggregates are computed on the provider's PU, on demand (when the selection or v
 
 ## Status
 
-`Approved` (2026-10-19). All 5 feature specs `Approved` (2026-10-20); plans written 2026-10-29 for Features 2 to 5 (Feature 1 Done).
+`Done` (2026-11-02). All 5 feature specs and the Streams Migration (Feature 6) `Done`.

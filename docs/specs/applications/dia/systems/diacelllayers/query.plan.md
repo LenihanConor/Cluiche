@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/applications/dia/systems/diacelllayers/query.md
-**Status:** In Progress
+**Status:** Done
 
 Feature 3 of DiaCellLayers (built fourth, after Features 2 and 4). **Prerequisite:** Feature 2 Done (`CellSelection`, `LayerReader`, selection commands). TDD throughout. Commit after each task. No arithmetic, functions or spatial operators (system decision); those would be a new feature.
 
