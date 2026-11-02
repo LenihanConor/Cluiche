@@ -11,6 +11,15 @@
 #include <DiaCore/Json/external/json/json.h>
 
 #include <string>
+#include <process.h>
+#include <string>
+// Loopback port unique per test process and fixture: sharded runs (--shards N) run the same fixture in several
+// processes at once, so a fixed port collides.
+static unsigned short UniqueLoopbackPort(unsigned salt)
+{
+    return static_cast<unsigned short>(30000u + ((static_cast<unsigned>(_getpid()) * 7u + salt * 997u) % 20000u));
+}
+static std::string UniqueLoopbackUrl(unsigned salt) { return "ws://127.0.0.1:" + std::to_string(UniqueLoopbackPort(salt)); }
 
 // Loopback tests: DebugServer payloads larger than the old 8 KB WebSocket message buffer (AD-001).
 namespace
@@ -44,14 +53,14 @@ class SLOW_DebugServerLargePayloadTest : public ::testing::Test
 protected:
     void SetUp() override
     {
-        mServer.SetPort(9470);
+        mServer.SetPort(UniqueLoopbackPort(2));
         mServer.SetStateProvider(&mProvider);
         mServer.Start();
 
         mClient.SetConnectionTimeout(5.0f);
         mClient.SetReconnectOnDisconnect(false);
         mClient.SetMessageCallback([this](const Dia::WebSocket::Message& m) { OnMessage(m); });
-        ASSERT_TRUE(mClient.Connect("ws://127.0.0.1:9470"));
+        ASSERT_TRUE(mClient.Connect(UniqueLoopbackUrl(2).c_str()));
         Pump();
         ASSERT_TRUE(mClient.IsConnected());
     }

@@ -7,6 +7,15 @@
 #include <DiaWebSocket/Client.h>
 #include <DiaCore/Threading/Thread.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <process.h>
+#include <string>
+// Loopback port unique per test process and fixture: sharded runs (--shards N) run the same fixture in several
+// processes at once, so a fixed port collides.
+static unsigned short UniqueLoopbackPort(unsigned salt)
+{
+    return static_cast<unsigned short>(30000u + ((static_cast<unsigned>(_getpid()) * 7u + salt * 997u) % 20000u));
+}
+static std::string UniqueLoopbackUrl(unsigned salt) { return "ws://127.0.0.1:" + std::to_string(UniqueLoopbackPort(salt)); }
 
 // Loopback tests for DebugServer::GetTopicSubscriberCount: real DebugServer + real WebSocket clients.
 namespace
@@ -33,7 +42,7 @@ class SLOW_DebugServerSubscriberCountTest : public ::testing::Test
 protected:
     void SetUp() override
     {
-        mServer.SetPort(9462);
+        mServer.SetPort(UniqueLoopbackPort(3));
         mServer.SetStateProvider(&mProvider);
         mServer.Start();
         Connect(mClientA);
@@ -51,7 +60,7 @@ protected:
     {
         c.SetConnectionTimeout(5.0f);
         c.SetReconnectOnDisconnect(false);
-        ASSERT_TRUE(c.Connect("ws://127.0.0.1:9462"));
+        ASSERT_TRUE(c.Connect(UniqueLoopbackUrl(3).c_str()));
         Pump();
         ASSERT_TRUE(c.IsConnected());
     }

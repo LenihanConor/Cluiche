@@ -21,6 +21,15 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <process.h>
+#include <string>
+// Loopback port unique per test process and fixture: sharded runs (--shards N) run the same fixture in several
+// processes at once, so a fixed port collides.
+static unsigned short UniqueLoopbackPort(unsigned salt)
+{
+    return static_cast<unsigned short>(30000u + ((static_cast<unsigned>(_getpid()) * 7u + salt * 997u) % 20000u));
+}
+static std::string UniqueLoopbackUrl(unsigned salt) { return "ws://127.0.0.1:" + std::to_string(UniqueLoopbackPort(salt)); }
 
 // Loopback tests for DebugServer::PublishTopic: real DebugServer + real WebSocket client.
 namespace
@@ -46,14 +55,14 @@ class SLOW_DebugServerPublishTopicTest : public ::testing::Test
 protected:
     void SetUp() override
     {
-        mServer.SetPort(9461);
+        mServer.SetPort(UniqueLoopbackPort(1));
         mServer.SetStateProvider(&mProvider);
         mServer.Start();
 
         mClient.SetConnectionTimeout(5.0f);
         mClient.SetReconnectOnDisconnect(false);
         mClient.SetMessageCallback([this](const Dia::WebSocket::Message& m) { OnMessage(m); });
-        ASSERT_TRUE(mClient.Connect("ws://127.0.0.1:9461"));
+        ASSERT_TRUE(mClient.Connect(UniqueLoopbackUrl(1).c_str()));
         Pump();
         ASSERT_TRUE(mClient.IsConnected());
     }
