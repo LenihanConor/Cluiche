@@ -175,6 +175,10 @@ namespace Dia { namespace ApplicationFlow {
         // Returns true if every module in every PU is kInactive or kFailed.
         bool AllModulesInactive() const;
 
+        // Ticks PU 0 and every non-dedicated secondary PU inline, in manifest order.
+        // Dedicated-thread PUs run on their own thread and are not ticked here.
+        void UpdateInlineProcessingUnits(float deltaTime);
+
         // Walk all registered ServiceStreamStores; commit any that are registered
         // but not yet committed (i.e., provider called Register() and this is
         // the first frame where all providers are registered).

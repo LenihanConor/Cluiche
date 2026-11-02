@@ -273,10 +273,7 @@ namespace Dia { namespace ApplicationFlow {
             }
 
             // Tick the main PU so stopping modules can wind down.
-            if (mProcessingUnitCount > 0)
-            {
-                mProcessingUnits[0]->Update(deltaTime);
-            }
+            UpdateInlineProcessingUnits(deltaTime);
 
             // Return false once everything has settled.
             if (AllModulesInactive())
@@ -307,10 +304,7 @@ namespace Dia { namespace ApplicationFlow {
         }
 
         // --- Tick the main PU ------------------------------------------------
-        if (mProcessingUnitCount > 0)
-        {
-            mProcessingUnits[0]->Update(deltaTime);
-        }
+        UpdateInlineProcessingUnits(deltaTime);
 
         // --- Commit gate: make registered ServiceStreams visible to consumers ---
         CommitReadyServiceStreams();
@@ -1016,6 +1010,23 @@ namespace Dia { namespace ApplicationFlow {
                     module->BeginStop();
                 }
             }
+        }
+    }
+
+    //--------------------------------------------------------------------------
+    // UpdateInlineProcessingUnits  (private)
+    //
+    // PU 0 always runs inline. A secondary PU declared dedicatedThread=false also
+    // runs inline (it has no thread), so it is ticked here after PU 0, in manifest
+    // order. Dedicated-thread PUs are driven by their own thread.
+    //--------------------------------------------------------------------------
+
+    void Application::UpdateInlineProcessingUnits(float deltaTime)
+    {
+        for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
+        {
+            if (p == 0 || !mProcessingUnits[p]->IsDedicatedThread())
+                mProcessingUnits[p]->Update(deltaTime);
         }
     }
 

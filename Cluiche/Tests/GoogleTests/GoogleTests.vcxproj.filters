@@ -2361,5 +2361,20 @@
     <ClCompile Include="Editor\TestGameScopeDiscovery.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCellLayersIntegrationWire.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCellLayersIntegrationStreams.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CluicheTest\Modules\TestStages\CellLayersStateRelayModule.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CluicheTest\Modules\TestStages\CellLayersStateBridgeModule.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestSecondaryPUTick.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
