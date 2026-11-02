@@ -127,19 +127,22 @@ namespace
 
 TEST_F(LayerValuesTest, SingleChunkReturnsFullLayer)
 {
-	const Json::Value r = rig.queries.LayerValues(Args("vals"));
+	// A layer that fits one chunk (kMaxValuesChunk = 1,000 cells).
+	static const uint32_t kOne = MirrorQueries::kMaxValuesChunk;
+	ValuesRig one{ 40, 25, Ramp(kOne) };
+	const Json::Value r = one.queries.LayerValues(Args("vals"));
 	ASSERT_FALSE(IsError(r));
 	EXPECT_EQ(r["layer"].asString(), "vals");
 	EXPECT_EQ(r["encoding"].asString(), "f32le-base64");
-	EXPECT_EQ(r["total"].asUInt(), kCells);
+	EXPECT_EQ(r["total"].asUInt(), kOne);
 	EXPECT_EQ(r["offset"].asUInt(), 0u);
-	EXPECT_EQ(r["count"].asUInt(), kCells);
+	EXPECT_EQ(r["count"].asUInt(), kOne);
 	const std::vector<float> got = DecodeFloats(r);
-	ASSERT_EQ(got.size(), kCells);
-	const std::vector<float> want = Ramp(kCells);
-	if (got.size() == kCells)
+	ASSERT_EQ(got.size(), kOne);
+	const std::vector<float> want = Ramp(kOne);
+	if (got.size() == kOne)
 	{
-		for (uint32_t i = 0; i < kCells; ++i)
+		for (uint32_t i = 0; i < kOne; ++i)
 		{
 			if (!SameBits(got[i], want[i])) { ADD_FAILURE() << "value mismatch at " << i; break; }
 		}
@@ -148,15 +151,17 @@ TEST_F(LayerValuesTest, SingleChunkReturnsFullLayer)
 
 TEST_F(LayerValuesTest, ValuesEqualWhatLayerReaderReturns)
 {
-	LayerReader reader(rig.registry);
+	static const uint32_t kOne = MirrorQueries::kMaxValuesChunk;
+	ValuesRig one{ 40, 25, Ramp(kOne) };
+	LayerReader reader(one.registry);
 	const LayerValues lv = reader.Read(StringCRC("vals"));
 	ASSERT_TRUE(lv.hasData);
-	ASSERT_EQ(lv.count, kCells);
-	const std::vector<float> got = DecodeFloats(rig.queries.LayerValues(Args("vals")));
+	ASSERT_EQ(lv.count, kOne);
+	const std::vector<float> got = DecodeFloats(one.queries.LayerValues(Args("vals")));
 	ASSERT_EQ(got.size(), lv.count);
 	if (got.size() == lv.count && lv.values != nullptr)
 	{
-		EXPECT_EQ(std::memcmp(got.data(), lv.values, kCells * sizeof(float)), 0);
+		EXPECT_EQ(std::memcmp(got.data(), lv.values, kOne * sizeof(float)), 0);
 	}
 }
 
@@ -394,16 +399,6 @@ TEST(LayerValuesLimits, CountAboveDefaultLimitIsClampedToOneThousandAndEchoed)
 	EXPECT_EQ(r["count"].asUInt(), 1000u);
 	EXPECT_EQ(r["total"].asUInt(), 2000u);
 	EXPECT_EQ(log.Warnings("clamped"), 1u);
-}
-
-TEST(LayerValuesLimits, HandlerNeedsNoViewerMutex)
-{
-	// The viewer mutex is non-recursive: if the handler took it while the same thread holds it, this would deadlock.
-	ValuesRig rig(4, 1, { 1, 2, 3, 4 });
-	Dia::Core::ScopedLock<Dia::Core::Mutex> held(rig.domain.StateMutex());
-	const Json::Value r = rig.queries.LayerValues(Args("vals"));
-	ASSERT_FALSE(IsError(r));
-	EXPECT_EQ(r["count"].asUInt(), 4u);
 }
 
 TEST(LayerValuesLimits, ChunkSetterClampsToValidRange)

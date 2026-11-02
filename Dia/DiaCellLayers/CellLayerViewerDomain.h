@@ -36,7 +36,7 @@
 //
 // Health "dia.celllayers.viewer": Degraded while the active base's upload fails (UploadResult::ReadFailed, including a
 // CellField-rejected command). Metrics "dia.celllayers.viewer.*" and "dia.celllayers.query.*". Log channel CEL.
-// Generic: no game types (CL-005), no singletons (CL-006). Thread-safe between Update and command/panel calls.
+// Generic: no game types (CL-005), no singletons (CL-006). Single-threaded: lives wholly on SimPU (Update, commands, panel calls); no locks, so callbacks may re-enter it. Other threads read the published snapshot / sim-hosted queries.
 
 #include <DiaCellLayers/CellLayerLegend.h>
 #include <DiaCellLayers/CellPicker.h>
@@ -48,7 +48,6 @@
 #include <DiaCellLayers/SelectionInput.h>
 #include <DiaCellLayers/SelectionOutline.h>
 #include <DiaCore/Containers/Misc/FastDelegate.h>
-#include <DiaCore/Threading/Mutex.h>
 #include <DiaObservation/Health/HealthReporterBase.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaValueSchema/RampLegend.h>
@@ -121,10 +120,6 @@ namespace Dia::CellLayers
 		SelectionInput&	Input() { return mInput; }	// tool choice / selection group (call on SimPU, like Update)
 		const SelectionInput&	Input() const { return mInput; }
 
-		// The state mutex guarding viewer + selection state against SimPU's Update. Cross-thread readers (MirrorQueries) hold it
-		// while reading the selection. Non-recursive: do not call the locking accessors above while holding it.
-		Dia::Core::Mutex&	StateMutex() const { return mMutex; }
-
 		// Layers and overlays grouped by grid (the cells.layer.list payload).
 		void ListLayers(Json::Value& out) const;
 
@@ -138,29 +133,28 @@ namespace Dia::CellLayers
 		const Dia::Observation::Health::IHealthReporter&	HealthReporter() const { return mHealth; }
 
 	private:
-		Json::Value	ExecuteSetTool(const Json::Value& params);	// cells.select.tool (locks mMutex)
-		Json::Value	ExecuteSetGroup(const Json::Value& params);	// cells.select.group (locks mMutex)
-		Json::Value	ExecutePin(const Json::Value& params);	// cells.select.pin (locks mMutex)
-		Json::Value	ExecuteUnpin(const Json::Value& params);	// cells.select.unpin (locks mMutex)
-		Json::Value	ExecuteExpand(const Json::Value& params);	// cells.inspector.expand (locks mMutex)
-		Json::Value	ExecuteInspect(const Json::Value& params);	// cells.inspect (locks mMutex; read-only)
+		Json::Value	ExecuteSetTool(const Json::Value& params);	// cells.select.tool
+		Json::Value	ExecuteSetGroup(const Json::Value& params);	// cells.select.group
+		Json::Value	ExecutePin(const Json::Value& params);	// cells.select.pin
+		Json::Value	ExecuteUnpin(const Json::Value& params);	// cells.select.unpin
+		Json::Value	ExecuteExpand(const Json::Value& params);	// cells.inspector.expand
+		Json::Value	ExecuteInspect(const Json::Value& params);	// cells.inspect (read-only)
 		Json::Value	FinishSelectCommand(const char* name, const char* error, Json::Value out);	// metrics + CEL log, returns out or {"error"}
 		Dia::Core::StringCRC	EffectiveGroup() const;	// the stored group if valid for the active grid, else the grid default
 		void	WriteSelection(Json::Value& out) const;
 
 		enum class SelectOp { Cell, Toggle, Box, Poly, Category, Cells, Clear };
-		// Runs one cells.select.* command on the active grid's selection (locks mMutex). Failure = {"error": "..."} and
+		// Runs one cells.select.* command on the active grid's selection. Failure = {"error": "..."} and
 		// the selection is unchanged; the reason is logged on CEL at Info.
 		Json::Value	ExecuteSelect(SelectOp op, const char* name, const Json::Value& params);
-		Json::Value	ExecuteSelectLocked(SelectOp op, const char* name, const Json::Value& params);	// caller holds mMutex
 		// cells.select.query (apply = true) / cells.query.check (apply = false): params {"expr": "<query>"}. Returns {ok, count}
 		// or {ok:false, error:{message, column, length, suggestion?}}; the selection is untouched on error and by check.
-		Json::Value	ExecuteQuery(bool apply, const char* name, const Json::Value& params);	// locks mMutex
+		Json::Value	ExecuteQuery(bool apply, const char* name, const Json::Value& params);
 		// Same as ExecuteQuery, then records the outcome for the card ("query" in GetJSONState): the check slot for check, the last-run slot for select.
-		Json::Value	ExecuteQueryRecorded(bool apply, const char* name, const Json::Value& params);	// locks mMutex (twice, not nested)
+		Json::Value	ExecuteQueryRecorded(bool apply, const char* name, const Json::Value& params);
 		struct QueryState;	// parser + resolver + evaluator (large, fixed capacity: heap)
 		class InputSink;
-		void	ProcessPointer();	// called from Update with mMutex held
+		void	ProcessPointer();	// called from Update
 
 		struct OverlayState
 		{
@@ -190,7 +184,7 @@ namespace Dia::CellLayers
 		LayerUploader&			mUploader;
 		const Dia::ValueSchema::ValueSchemaService*	mSchema;
 		ViewFn					mView;
-		LayerReader				mReader;	// category selection reads (used under mMutex)
+		LayerReader				mReader;	// category selection reads
 		HotkeyTable				mHotkeys;
 		CellLayerLegend			mLegendBuilder;
 		Dia::ValueSchema::RampResolver*	mResolver = nullptr;	// owned; null without a schema
@@ -201,7 +195,6 @@ namespace Dia::CellLayers
 		Dia::Core::StringCRC	mLegendBase;
 		uint64_t				mLegendReads = 0;
 
-		mutable Dia::Core::Mutex	mMutex;
 		bool					mStarted = false;		// the initial base has been chosen
 		Dia::Core::StringCRC	mActiveBase;			// kZero = none
 		const Dia::Graphics::CellGridDesc*	mActiveGrid = nullptr;
@@ -242,10 +235,10 @@ namespace Dia::CellLayers
 		Json::Value				mQueryCheck;		// last cells.query.check outcome {expr, ok, count | error}; null until one ran
 		Json::Value				mQueryLast;			// last cells.select.query outcome, same shape
 		static const uint32_t	kQueryPartCapacity = 512;
-		char					mQueryParts[kQueryPartCapacity + 1] = {};	// panel transport: assembled query_part text (guarded by mMutex)
+		char					mQueryParts[kQueryPartCapacity + 1] = {};	// panel transport: assembled query_part text
 		uint32_t				mQueryPartLength = 0;
 		uint32_t				mQueryPartCount = 0;
-		void	AddQueryPart(const Json::Value& args);	// locks mMutex
+		void	AddQueryPart(const Json::Value& args);
 		void	RunPanelQuery(bool run, const Json::Value& args);	// query_check / query_run {e} or {n}
 	};
 }

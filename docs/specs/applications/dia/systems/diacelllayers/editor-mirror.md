@@ -37,7 +37,7 @@ The viewer lives in the game, but the editors that explain it (the World Sim Ins
 
 ## Architecture
 
-Lives in `Dia/DiaCellLayers/` (namespace `Dia::CellLayers`), registering the topic and queries with DiaDebugServer, following its existing patterns. The TypeScript helpers live in `@dia/editor-ui` (`Dia/DiaEditorUI`).
+Lives in `Dia/DiaCellLayers/` (namespace `Dia::CellLayers`), registering the topic and queries with DiaDebugServer, following its existing patterns. Amended by Streams Migration: the four queries are sim-hosted (they run on SimPU via the Sim-Hosted Queries host, not on Main), with no viewer mutex; `debug.domain_state` reads a demand-driven snapshot up to one Sim frame old. The TypeScript helpers live in `@dia/editor-ui` (`Dia/DiaEditorUI`).
 
 ```
 ViewStatePublisher        builds and publishes cells.view.state (change-detected, coalesced)
@@ -95,10 +95,10 @@ mix(i) = z ^ (z >> 31)           // all arithmetic modulo 2^64
 |---|---|---|
 | `cells.layer.list` | none | Layers and overlays grouped by grid: id, `schemaKey`, group, kind (float or category), grid id, hotkey, plus `layersVersion` |
 | `cells.layer.values` | `{ layer, offset?, count? }` | `{ layer, version, gridId, width, height, offset, count, total, encoding: "f32le-base64", data }` |
-| `cells.select.get` | `{ offset?, count? }` | `{ version, hash, total, offset, indices: [..] }` (sorted ascending; up to 8,192 indices per call) |
+| `cells.select.get` | `{ offset?, count? }` | `{ version, hash, total, offset, indices: [..] }` (sorted ascending; up to 1,000 indices per call) |
 | `cells.select.stats` | `{ layers: [ids] \| "all" }` | The Feature 4 stats JSON for the current selection: per-layer stats, selection `count`, `version`, `hash` |
 
-- **Layer values** are little-endian float32 per cell, base64-encoded; category ids travel as exact floats. A response stays under 1 MB (at most 196,608 cells per call); a layer bigger than that is fetched in chunks by `offset` and `count`, and the `version` lets a client detect a change between chunks. The values are the ones the viewer shows (the same `LayerReader` the query uses), so they are scrub-consistent once DiaCellHistory is built.
+- **Layer values** are little-endian float32 per cell, base64-encoded; category ids travel as exact floats. A reply stays under the 16 KB sim-hosted cap (at most 1,000 cells per call, about 5.3 KB of base64); a layer bigger than that is fetched in chunks by `offset` and `count`, and the `version` lets a client detect a change between chunks. The values are the ones the viewer shows (the same `LayerReader` the query uses), so they are scrub-consistent once DiaCellHistory is built.
 - **Stats** are computed on the viewer's PU at most once per frame, and the response is sent when computed (one frame of latency at most). `layers: "all"` is allowed because it is an explicit request; the Feature 4 cost rules do not apply, but the one-pass-per-frame limit does.
 - An unknown layer, an out-of-range `offset` or a non-numeric argument returns an error object and changes nothing.
 
@@ -121,7 +121,7 @@ mix(i) = z ^ (z >> 31)           // all arithmetic modulo 2^64
 6. `cells.layer.list` lists layers and overlays by grid with the fields above and `layersVersion`.
 7. `cells.layer.values` returns base64 float32 values with the layer version; a layer larger than one chunk is returned correctly in chunks that concatenate to the full array; each response is under 1 MB; the TypeScript decoder matches the C++ encoding.
 8. `cells.layer.values` returns the values the viewer shows for that layer; an unknown layer returns an error.
-9. `cells.select.get` returns the selection's indices in ascending order in chunks of at most 8,192, with the version and hash.
+9. `cells.select.get` returns the selection's indices in ascending order in chunks of at most 1,000, with the version and hash.
 10. `cells.select.stats` returns the Feature 4 stats for the listed layers (or all) for the current selection, with selection count, version and hash, computed at most once per frame.
 11. Bad arguments (non-numeric offset, out-of-range offset, unknown layer) return errors and change nothing.
 12. The mirror changes no game state: no query or topic mutates the viewer, selection or layers.
@@ -170,7 +170,7 @@ No conflicts.
 
 1. **Query latency across PUs.** Queries are answered on the viewer's PU, so a reply can take up to a frame. Follow the DiaDebugServer pattern other domains use; check the exact mechanism when planning, and confirm that a frame of latency is acceptable for T-1's sync pill.
 2. **`history` field shape (resolved 2026-10-20, DiaCellHistory Feature 2).** `null` when no value source is installed, otherwise `{ "mode": "live" | "sample", "sample": <index or null>, "label": "<text or null>" }`, or in delta mode (DiaCellHistory Compare) `{ "mode": "delta", "a": "now" | "sample:<i>" | "snapshot:<name>", "b": "<same forms>", "scale": <number or null> }`.
-3. **Very large grids.** 196,608 cells per `cells.layer.values` chunk is far above Large (6,656). If a game uses a much larger grid, the chunk size may need to drop to keep replies responsive; revisit then.
+3. **Very large grids.** 1,000 cells per `cells.layer.values` chunk (amended from 196,608 by Streams Migration, to fit the 16 KB sim-hosted reply cap) means a Large grid (6,656 cells) takes 7 calls; revisit if a client needs fewer round trips.
 
 ## Status
 

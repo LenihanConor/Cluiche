@@ -664,49 +664,39 @@ TEST_F(SelectionExhaustiveCommandsTest, SubmittedFrameIsProcessedOnlyOncePerSubm
 	EXPECT_EQ(0u, rig.Sel()->Count());
 }
 
-// ---- concurrency
+// ---- interleaving (the domain lives on one thread; commands, pointer frames and updates interleave there)
 
-TEST_F(SelectionExhaustiveCommandsTest, CommandsAndPointerFramesFromOtherThreadsWhileTheDomainUpdates)
+TEST_F(SelectionExhaustiveCommandsTest, CommandsAndPointerFramesInterleavedWithDomainUpdates)
 {
 	Rig rig(66, 42);
 	CellPickerView view;
 	view.viewportWidth = 1280; view.viewportHeight = 720; view.cameraX = 50; view.cameraY = 40; view.zoom = 8.0f;
-	std::atomic<bool> stop{ false };
-	std::atomic<uint32_t> failures{ 0 };
+	uint32_t failures = 0;
+	SelectionInput::PointerFrame f;
+	f.valid = true;
 
-	std::vector<std::thread> workers;
-	for (int t = 0; t < 3; ++t)
+	for (int i = 0; i < 150; ++i)
 	{
-		workers.emplace_back([&, t]()
+		for (int t = 0; t < 3; ++t)
 		{
-			for (int i = 0; i < 150; ++i)
-			{
-				char buf[96];
-				snprintf(buf, sizeof(buf), "{\"q\":%d,\"r\":%d}", (i * 7 + t) % 66, (i * 3 + t) % 42);
-				const Json::Value a = Exec(i % 3 == 0 ? "cells.select.cell" : "cells.select.toggle", buf);
-				const Json::Value b = Exec("cells.select.category", "{\"layer\":\"terrain\",\"value\":\"water\"}");
-				const Json::Value c = Exec(i % 10 == 0 ? "cells.select.clear" : "cells.select.box", "{\"q0\":0,\"r0\":0,\"q1\":3,\"r1\":3}");
-				if (!a["success"].asBool() || !b["success"].asBool() || !c["success"].asBool()) { ++failures; }
-			}
-		});
-	}
-	workers.emplace_back([&]()
-	{
-		SelectionInput::PointerFrame f;
-		f.valid = true;
-		for (int i = 0; i < 300; ++i)
+			char buf[96];
+			snprintf(buf, sizeof(buf), "{\"q\":%d,\"r\":%d}", (i * 7 + t) % 66, (i * 3 + t) % 42);
+			const Json::Value a = Exec(i % 3 == 0 ? "cells.select.cell" : "cells.select.toggle", buf);
+			const Json::Value b = Exec("cells.select.category", "{\"layer\":\"terrain\",\"value\":\"water\"}");
+			const Json::Value c = Exec(i % 10 == 0 ? "cells.select.clear" : "cells.select.box", "{\"q0\":0,\"r0\":0,\"q1\":3,\"r1\":3}");
+			if (!a["success"].asBool() || !b["success"].asBool() || !c["success"].asBool()) { ++failures; }
+		}
+		for (int k = 0; k < 2; ++k)
 		{
-			f.x = 100.0f + float(i % 50) * 10.0f;
-			f.y = 100.0f + float(i % 30) * 10.0f;
-			f.left = (i % 2) == 0;
+			f.x = 100.0f + float((i * 2 + k) % 50) * 10.0f;
+			f.y = 100.0f + float((i * 2 + k) % 30) * 10.0f;
+			f.left = ((i + k) % 2) == 0;
 			rig.domain.SubmitPointerFrame(f, view);
 		}
-	});
-	for (int i = 0; i < 200; ++i) { rig.domain.Update(rig.draw); }
-	for (std::thread& w : workers) { w.join(); }
-	stop = true;
+		rig.domain.Update(rig.draw);
+	}
 
-	EXPECT_EQ(0u, failures.load());
+	EXPECT_EQ(0u, failures);
 	rig.domain.Update(rig.draw);
 	CellSelection* sel = rig.Sel();
 	ASSERT_NE(nullptr, sel);

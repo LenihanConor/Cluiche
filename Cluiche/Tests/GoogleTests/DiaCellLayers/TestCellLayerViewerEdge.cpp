@@ -554,7 +554,8 @@ TEST_F(ViewerEdgeTest, ListLayersOnEmptyRegistryHasEmptyArrays)
 	EXPECT_EQ(out["activeGridIndex"].asInt(), -1);
 }
 
-TEST_F(ViewerEdgeTest, ConcurrentCommandsJsonAndUpdatesStayConsistent)
+// The viewer lives wholly on one thread (SimPU), so updates, commands and state/list reads interleave on that thread only.
+TEST_F(ViewerEdgeTest, InterleavedCommandsJsonAndUpdatesStayConsistent)
 {
 	Rig rig(cellField, nullptr, CellLayerViewerDomain::ViewFn(&ViewFn0));
 	rig.Add(temp.MakeDesc("temp", &gridA.desc));
@@ -562,30 +563,23 @@ TEST_F(ViewerEdgeTest, ConcurrentCommandsJsonAndUpdatesStayConsistent)
 	rig.Add(soil.MakeDesc("soil", &gridB.desc));
 	ASSERT_EQ(rig.registry.RegisterOverlay(MakeOverlay("ov")), CellRegisterResult::Ok);
 	rig.domain.Update(draw);
-	std::atomic<bool> stop{ false };
-	std::atomic<uint32_t> bad{ 0 };
-	std::thread updater([&] { FakeDebugDraw d; uint32_t n = 0; while (!stop) { rig.domain.Update(d); if ((++n % 50) == 0) { temp.versionValue++; } } });
-	auto commander = [&](uint32_t seed)
+	uint32_t bad = 0;
+	std::mt19937 rng(1);
+	const char* ids[] = { "temp", "rain", "soil", "nope" };
+	for (int i = 0; i < 4500; ++i)
 	{
-		std::mt19937 rng(seed);
-		const char* ids[] = { "temp", "rain", "soil", "nope" };
-		for (int i = 0; i < 1500; ++i)
+		switch (rng() % 6)
 		{
-			switch (rng() % 5)
-			{
-			case 0: rig.domain.SetBase(StringCRC(ids[rng() % 4])); break;
-			case 1: rig.domain.SetGrid(rng() % 3); break;
-			case 2: rig.domain.ToggleOverlay(StringCRC("ov")); break;
-			case 3: { Json::Value j; rig.domain.GetJSONState(j); if (!j.isMember("layers") || !j.isMember("legend")) { ++bad; } break; }
-			default: { Json::Value l; rig.domain.ListLayers(l); if (l["grids"].size() != 2u) { ++bad; } break; }
-			}
+		case 0: rig.domain.SetBase(StringCRC(ids[rng() % 4])); break;
+		case 1: rig.domain.SetGrid(rng() % 3); break;
+		case 2: rig.domain.ToggleOverlay(StringCRC("ov")); break;
+		case 3: { Json::Value j; rig.domain.GetJSONState(j); if (!j.isMember("layers") || !j.isMember("legend")) { ++bad; } break; }
+		case 4: { Json::Value l; rig.domain.ListLayers(l); if (l["grids"].size() != 2u) { ++bad; } break; }
+		default: rig.domain.Update(draw); if ((i % 50) == 0) { temp.versionValue++; } break;
 		}
-	};
-	std::thread c1(commander, 1), c2(commander, 2), c3(commander, 3);
-	c1.join(); c2.join(); c3.join();
-	stop = true;
-	updater.join();
-	EXPECT_EQ(bad.load(), 0u);
+	}
+	rig.domain.Update(draw);
+	EXPECT_EQ(bad, 0u);
 	const StringCRC active = rig.domain.ActiveBase();
 	ASSERT_NE(active, StringCRC::kZero);
 	const CellLayerDesc* l = rig.registry.Find(active);

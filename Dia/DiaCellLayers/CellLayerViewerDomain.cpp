@@ -28,7 +28,6 @@
 namespace Dia::CellLayers
 {
 	using Dia::Core::StringCRC;
-	typedef Dia::Core::ScopedLock<Dia::Core::Mutex> Lock;
 
 	namespace
 	{
@@ -115,10 +114,10 @@ namespace Dia::CellLayers
 	Dia::Core::RGBA CellLayerViewerDomain::GetAccentColour() const { return Dia::VisualDebugger::DebugGroupAccents::kSpatial; }
 
 	// ---- state ----
-	StringCRC CellLayerViewerDomain::ActiveBase() const { Lock l(mMutex); return mActiveBase; }
-	const Dia::Graphics::CellGridDesc* CellLayerViewerDomain::ActiveGrid() const { Lock l(mMutex); return mActiveGrid; }
-	CellLayerViewerDomain::HoverInfo CellLayerViewerDomain::Hover() const { Lock l(mMutex); return mHover; }
-	bool CellLayerViewerDomain::IsEmptyState() const { Lock l(mMutex); return mActiveBase == StringCRC::kZero; }
+	StringCRC CellLayerViewerDomain::ActiveBase() const { return mActiveBase; }
+	const Dia::Graphics::CellGridDesc* CellLayerViewerDomain::ActiveGrid() const { return mActiveGrid; }
+	CellLayerViewerDomain::HoverInfo CellLayerViewerDomain::Hover() const { return mHover; }
+	bool CellLayerViewerDomain::IsEmptyState() const { return mActiveBase == StringCRC::kZero; }
 
 	CellLayerViewerDomain::OverlayState* CellLayerViewerDomain::FindOverlayState(StringCRC id)
 	{
@@ -133,7 +132,6 @@ namespace Dia::CellLayers
 
 	bool CellLayerViewerDomain::IsOverlayEnabled(StringCRC id) const
 	{
-		Lock l(mMutex);
 		const OverlayState* s = FindOverlayState(id);
 		return s != nullptr && s->enabled;
 	}
@@ -146,13 +144,11 @@ namespace Dia::CellLayers
 
 	const ICellSelectionView* CellLayerViewerDomain::ActiveSelectionView() const
 	{
-		Lock l(mMutex);
 		return mRegistry.SelectionView(mActiveGrid);
 	}
 
 	CellSelection* CellLayerViewerDomain::ActiveSelection()
 	{
-		Lock l(mMutex);
 		return mRegistry.SelectionFor(mActiveGrid);
 	}
 
@@ -185,7 +181,6 @@ namespace Dia::CellLayers
 
 	bool CellLayerViewerDomain::SetBase(StringCRC id)
 	{
-		Lock l(mMutex);
 		const CellLayerDesc* layer = mRegistry.Find(id);
 		if (layer == nullptr) { return false; }
 		Activate(*layer, "command");
@@ -194,7 +189,6 @@ namespace Dia::CellLayers
 
 	bool CellLayerViewerDomain::SetGrid(uint32_t index)
 	{
-		Lock l(mMutex);
 		const Dia::Graphics::CellGridDesc* grid = mRegistry.GridAt(index);
 		if (grid == nullptr) { return false; }
 		const CellLayerDesc* base = mRegistry.DefaultBase(grid);
@@ -205,7 +199,6 @@ namespace Dia::CellLayers
 
 	bool CellLayerViewerDomain::ToggleOverlay(StringCRC id)
 	{
-		Lock l(mMutex);
 		if (mRegistry.FindOverlay(id) == nullptr) { return false; }
 		OverlayState* s = FindOverlayState(id);
 		if (s == nullptr)
@@ -318,7 +311,6 @@ namespace Dia::CellLayers
 	void CellLayerViewerDomain::Update(Dia::Core::IDebugDraw& draw)
 	{
 		DIA_TRACE_ZONE("celllayers.viewer.update", ::Dia::Observation::Trace::Category::kDiaGraphics);
-		Lock l(mMutex);
 		ResolveBase();
 		ProcessPointer();
 
@@ -473,7 +465,6 @@ namespace Dia::CellLayers
 
 	void CellLayerViewerDomain::GetJSONState(Json::Value& out)
 	{
-		Lock l(mMutex);
 		if (mActiveGrid != mHotkeyGrid || mRegistry.LayerCount() != mHotkeyLayerCount)
 		{
 			mHotkeys.Rebuild(mActiveGrid);
@@ -658,7 +649,6 @@ namespace Dia::CellLayers
 
 	void CellLayerViewerDomain::ListLayers(Json::Value& out) const
 	{
-		Lock l(mMutex);
 		Json::Value grids(Json::arrayValue);
 		for (uint32_t gi = 0; gi < mRegistry.GridCount(); ++gi)
 		{
@@ -823,7 +813,6 @@ namespace Dia::CellLayers
 
 	Json::Value CellLayerViewerDomain::ExecuteSetTool(const Json::Value& params)
 	{
-		Lock l(mMutex);
 		Json::Value out(Json::objectValue);
 		std::string error;
 		if (!params.isObject() || !params["tool"].isString()) { error = "missing or non-string param 'tool'"; }
@@ -840,7 +829,6 @@ namespace Dia::CellLayers
 
 	Json::Value CellLayerViewerDomain::ExecuteSetGroup(const Json::Value& params)
 	{
-		Lock l(mMutex);
 		Json::Value out(Json::objectValue);
 		std::string error;
 		if (!params.isObject() || !params["layer"].isString() || params["layer"].asString().empty()) { error = "missing or non-string param 'layer'"; }
@@ -865,7 +853,6 @@ namespace Dia::CellLayers
 
 	Json::Value CellLayerViewerDomain::ExecutePin(const Json::Value& params)
 	{
-		Lock l(mMutex);
 		Json::Value out(Json::objectValue);
 		std::string error;
 		bool freeze = false;
@@ -902,7 +889,6 @@ namespace Dia::CellLayers
 
 	Json::Value CellLayerViewerDomain::ExecuteUnpin(const Json::Value&)
 	{
-		Lock l(mMutex);
 		Json::Value out(Json::objectValue);
 		if (mInspector.IsPinned())
 		{
@@ -915,7 +901,6 @@ namespace Dia::CellLayers
 
 	Json::Value CellLayerViewerDomain::ExecuteExpand(const Json::Value& params)
 	{
-		Lock l(mMutex);
 		Json::Value out(Json::objectValue);
 		std::string error;
 		if (!params.isObject() || !params["group"].isString() || params["group"].asString().empty()) { error = "missing or non-string param 'group'"; }
@@ -946,7 +931,6 @@ namespace Dia::CellLayers
 
 	Json::Value CellLayerViewerDomain::ExecuteInspect(const Json::Value& params)
 	{
-		Lock l(mMutex);
 		std::string error;
 		InspectRequest request;
 		if (!params.isNull() && !params.isObject()) { error = "params must be an object"; }
@@ -1010,12 +994,6 @@ namespace Dia::CellLayers
 	}
 
 	Json::Value CellLayerViewerDomain::ExecuteSelect(SelectOp op, const char* name, const Json::Value& params)
-	{
-		Lock l(mMutex);
-		return ExecuteSelectLocked(op, name, params);
-	}
-
-	Json::Value CellLayerViewerDomain::ExecuteSelectLocked(SelectOp op, const char* name, const Json::Value& params)
 	{
 		namespace Tools = SelectionTools;
 
@@ -1169,7 +1147,6 @@ namespace Dia::CellLayers
 
 	Json::Value CellLayerViewerDomain::ExecuteQuery(bool apply, const char* name, const Json::Value& params)
 	{
-		Lock l(mMutex);
 		std::string text;
 		if (params.isObject() && params["expr"].isString()) { text = params["expr"].asString(); }
 		else if (params.isString()) { text = params.asString(); }
@@ -1234,7 +1211,6 @@ namespace Dia::CellLayers
 		}
 		const uint32_t index = args["i"].asUInt();
 		const std::string& s = args["s"].asString();
-		Lock l(mMutex);
 		if (index == 0)
 		{
 			mQueryParts[0] = '\0';
@@ -1265,12 +1241,8 @@ namespace Dia::CellLayers
 		else if (args.isObject() && args["expr"].isString()) { p["expr"] = args["expr"]; }
 		else if (args.isObject() && args["n"].isUInt())
 		{
-			bool complete = false;
-			{
-				Lock l(mMutex);
-				complete = (args["n"].asUInt() == mQueryPartCount) && mQueryPartCount > 0;
-				p["expr"] = std::string(mQueryParts, mQueryPartLength);
-			}
+			const bool complete = (args["n"].asUInt() == mQueryPartCount) && mQueryPartCount > 0;
+			p["expr"] = std::string(mQueryParts, mQueryPartLength);
 			if (!complete)
 			{
 				DIA_LOG_WARNING("CEL", "%s: incomplete query (panel transport)", name);
@@ -1278,7 +1250,6 @@ namespace Dia::CellLayers
 				rec["ok"] = false;
 				rec["error"] = QueryErrorJson("incomplete query (panel transport)", 0, 0, nullptr)["error"];
 				rec["expr"] = p["expr"];
-				Lock l(mMutex);
 				(run ? mQueryLast : mQueryCheck) = rec;
 				return;
 			}
@@ -1294,12 +1265,11 @@ namespace Dia::CellLayers
 		else if (params.isString()) { text = params.asString(); }
 		Json::Value rec = out;
 		rec["expr"] = text;
-		Lock l(mMutex);
 		(apply ? mQueryLast : mQueryCheck) = rec;
 		return out;
 	}
 
-	// Routes each gesture command through ExecuteSelectLocked, so metrics and CEL logging match the JSON commands.
+	// Routes each gesture command through ExecuteSelect, so metrics and CEL logging match the JSON commands.
 	class CellLayerViewerDomain::InputSink : public ISelectionCommands
 	{
 	public:
@@ -1344,7 +1314,7 @@ namespace Dia::CellLayers
 		}
 		bool Run(SelectOp op, const char* name, const Json::Value& params)
 		{
-			const Json::Value out = mDomain.ExecuteSelectLocked(op, name, params);
+			const Json::Value out = mDomain.ExecuteSelect(op, name, params);
 			return !out.isMember("error");
 		}
 		CellLayerViewerDomain& mDomain;
@@ -1352,7 +1322,6 @@ namespace Dia::CellLayers
 
 	void CellLayerViewerDomain::SubmitPointerFrame(const SelectionInput::PointerFrame& frame, const CellPickerView& view)
 	{
-		Lock l(mMutex);
 		mPointerFrame = frame;
 		mPointerFrame.valid = true;
 		mPointerView = view;

@@ -10,7 +10,7 @@
 
 The foundation of DiaCellLayers. Systems register **layers** (a named per-cell value array on a grid) and **overlays** (draw callbacks). One viewer then shows exactly one coloured base layer through CellField plus any number of overlays, with a picker, hotkeys, a legend, and a hover tooltip. It uploads to CellField only when the base layer or its values change.
 
-This feature delivers the new module `Dia/DiaCellLayers/`, the `CellLayerRegistry` and its `ServiceStream`, the `CellLayerViewerDomain` (an `IDebugDomain`), the panel card, the commands `cells.layer.list`, `cells.layer.base` and `cells.overlay.toggle`, the legend, the hover tooltip with a shared read-only `CellPicker`, and the hotkey table. Selection (Feature 2), query (3), the inspector (4) and the editor mirror (5) build on it.
+This feature delivers the new module `Dia/DiaCellLayers/`, the `CellLayerRegistry` and its `ServiceStream`, the `CellLayerViewerDomain` (an `IDebugDomain`), the panel card, the commands `cells.layer.list`, `cells.layer.base_by_id` and `cells.overlay.toggle_by_id` (sim-hosted; amended by Streams Migration, which removed the positional `cells.layer.base <id>` / `cells.overlay.toggle <id>`), the legend, the hover tooltip with a shared read-only `CellPicker`, and the hotkey table. Selection (Feature 2), query (3), the inspector (4) and the editor mirror (5) build on it.
 
 ## Problem
 
@@ -70,7 +70,7 @@ layers.Unregister(id);
 
 ### Threading
 
-Providers and the viewer share one processing unit, SimPU, in v1: debug drawers already run there, and CellField accepts commands from the simulation thread with copy-on-submit. A registration made from another PU is rejected with an Error naming both. `read` runs directly on the viewer's PU with no locking.
+Providers and the viewer share one processing unit, SimPU, in v1: debug drawers already run there, and CellField accepts commands from the simulation thread with copy-on-submit. A registration made from another PU is rejected with an Error naming both. `read` runs directly on the viewer's PU with no locking. The viewer has no mutex at all (amended by Streams Migration: no `StateMutex()`); a `read` delegate or an overlay `draw` callback may call back into the domain, and other threads reach it only through sim-hosted queries/commands and the `debug.domain_state` snapshot (up to one Sim frame old, demand-driven).
 
 ### Viewer domain and uploads
 
@@ -89,7 +89,7 @@ Only the base layer, and its elevation layer when set, hold CellField layers. Re
 
 - **Base:** radio list grouped by `group`; overlays: checkboxes. Labels, units and descriptions come from the schema through the shared tooltip.
 - **Numbering:** the picker numbers base layers 1 to 9 within the current group.
-- **Hotkeys:** from each layer's schema `ui.hotkey` (one key, unique per grid). A clash logs a Warning (`CEL`) and the later layer gets no hotkey. The table is built from the active grid's layers. A key press runs `cells.layer.base <id>`, through the panel's key handling. If keyboard input to the panel is not available (the DiaUIUltralight Game Input Bridge is not built), the picker still works by mouse and by console command, and hotkeys are inert. Testbeds never define their own layer hotkeys.
+- **Hotkeys:** from each layer's schema `ui.hotkey` (one key, unique per grid). A clash logs a Warning (`CEL`) and the later layer gets no hotkey. The table is built from the active grid's layers. A key press runs the panel `base` command, through the panel's key handling. If keyboard input to the panel is not available (the DiaUIUltralight Game Input Bridge is not built), the picker still works by mouse and by console command, and hotkeys are inert. Testbeds never define their own layer hotkeys.
 
 ### Legend
 
@@ -108,8 +108,10 @@ The viewer's `GetJSONState` returns: grids, groups, layers (id, label, unit, hot
 | Command | Effect |
 |---|---|
 | `cells.layer.list` | Returns layers and overlays grouped by grid (JSON) |
-| `cells.layer.base <id>` | Makes `<id>` the active base; changes the active grid if needed |
-| `cells.overlay.toggle <id>` | Toggles an overlay |
+| `cells.layer.base_by_id` `{id}` | Makes `id` the active base; changes the active grid if needed (was positional `cells.layer.base <id>`) |
+| `cells.overlay.toggle_by_id` `{id}` | Toggles an overlay (was positional `cells.overlay.toggle <id>`) |
+
+All viewer commands are sim-hosted (they run on SimPU through the Sim-Hosted Queries host), not registered in `Dia::API::CommandRegistry`, so they carry no DiaAPI command help metadata.
 
 An unknown id returns an error and changes nothing.
 
@@ -126,14 +128,14 @@ An unknown id returns an error and changes nothing.
 ## Acceptance Criteria
 
 1. Layers and overlays register and unregister; a duplicate id, a registration past capacity (128 layers, 64 overlays), or one from another PU is rejected with an Error and leaves the registry unchanged.
-2. The viewer shows exactly one base layer; `cells.layer.base <id>` switches it and the active grid follows; an unknown id changes nothing.
+2. The viewer shows exactly one base layer; `cells.layer.base_by_id` switches it and the active grid follows; an unknown id changes nothing.
 3. `read` runs only when the base changed or `version()` changed; a frame with neither does no read and no upload.
 4. Switching the base performs at most one read and one upload.
 5. The colour map comes from DiaValueSchema: a float layer uses its `ui.ramp` with the schema `min`/`max`; a category layer uses a palette built from the enum values; an unnamed ramp falls back as specified in DiaValueSchema Feature 5.
 6. The default base is the first layer with `ui.default_base: true`, else the first layer of the grid; unregistering the active base falls back to the default, or clears the map and shows an empty state when none remain.
 7. If the base layer's schema has `ui.elevation_layer`, the draw request carries that layer's handle and hillshade parameters; without it hillshade is off.
-8. Enabled overlays' draw callbacks run each frame with `IDebugDraw`; `cells.overlay.toggle` toggles them.
-9. Hotkeys come from `ui.hotkey`, unique per grid; a clash logs a Warning and the later layer gets no hotkey; a key press runs `cells.layer.base`; with no keyboard path to the panel, mouse and console still work.
+8. Enabled overlays' draw callbacks run each frame with `IDebugDraw`; `cells.overlay.toggle_by_id` toggles them.
+9. Hotkeys come from `ui.hotkey`, unique per grid; a clash logs a Warning and the later layer gets no hotkey; a key press runs the panel `base` command; with no keyboard path to the panel, mouse and console still work.
 10. The picker numbers base layers 1 to 9 within the current group and a grid selector appears only when more than one grid is registered.
 11. The legend shows the ramp, ticks, unit and the observed range for float layers, and swatches for category layers.
 12. Hovering a cell shows `(q, r)`, the value with its unit, and the schema description (the enum label for category layers); outside the grid shows nothing.

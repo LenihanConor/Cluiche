@@ -9,7 +9,12 @@
 #include <DiaCellLayers/Testing/SelectionTestSupport.h>
 
 #include <stdio.h>
+#include <atomic>
+#include <chrono>
+#include <future>
+#include <memory>
 #include <string>
+#include <thread>
 
 // Task 10a (registry-and-viewer): unregister-while-in-use, re-registration, reentrancy from callbacks, churn beyond
 // fixed slot tables, and null/degenerate inputs that the other Feature 1 test files do not cover.
@@ -37,6 +42,57 @@ namespace
 		return o;
 	}
 
+	// ---- reentrancy from callbacks (streams-migration AC 10): the viewer lives wholly on SimPU, so a read / draw callback
+	// may call back into the domain. A watchdog turns a hang into a failure instead of stalling the run. ----
+	CellLayerViewerDomain* gDomain = nullptr;
+	struct ReentryRecord
+	{
+		uint32_t calls = 0;
+		StringCRC activeBase;
+		uint32_t gridCount = 0;
+		std::string listedActiveBase;
+		bool overlayEnabled = false;
+		bool hadSelectionView = false;
+		bool toggledOther = false;
+	};
+	ReentryRecord gReentry;
+
+	void RecordReentry()
+	{
+		++gReentry.calls;
+		gReentry.activeBase = gDomain->ActiveBase();
+		Json::Value out;
+		gDomain->ListLayers(out);
+		gReentry.gridCount = out["grids"].size();
+		gReentry.listedActiveBase = out["activeBase"].asString();
+		gReentry.overlayEnabled = gDomain->IsOverlayEnabled(StringCRC("ovA"));
+		gReentry.hadSelectionView = gDomain->ActiveSelectionView() != nullptr;
+	}
+	void ReadReentering(float* out, uint32_t n)
+	{
+		for (uint32_t i = 0; i < n; ++i) { out[i] = 1.0f; }
+		RecordReentry();
+	}
+	void DrawReentering(Dia::Core::IDebugDraw&, const void*)
+	{
+		RecordReentry();
+		gReentry.toggledOther = gDomain->ToggleOverlay(StringCRC("ovB"));
+	}
+
+	// Runs fn on a worker; false when it has not finished within the watchdog window (a deadlock) or it threw (a relocked
+	// non-recursive mutex throws std::system_error on MSVC).
+	template <typename Fn>
+	bool FinishesWithin(std::chrono::milliseconds window, Fn fn)
+	{
+		auto task = std::make_shared<std::packaged_task<void()>>(fn);
+		std::future<void> done = task->get_future();
+		std::thread([task] { (*task)(); }).detach();
+		if (done.wait_for(window) != std::future_status::ready) { return false; }
+		try { done.get(); }
+		catch (const std::exception& e) { ADD_FAILURE() << "callback path threw: " << e.what(); return false; }
+		return true;
+	}
+
 	struct LifecycleTest : ::testing::Test
 	{
 		TestGrid gridA{ 4, 3 };
@@ -53,11 +109,13 @@ namespace
 			FakePuId() = 1;
 			gDrawsA = gDrawsB = 0;
 			gRegistry = &registry;
+			gDomain = &domain;
+			gReentry = ReentryRecord();
 			temp.values = { 5, -2, 7, 3, 1, 0, 4, 9, 2, 2, 2, 2 };
 			rain.values = std::vector<float>(12, 1.0f);
 			soil.values = std::vector<float>(10, 3.0f);
 		}
-		void TearDown() override { gRegistry = nullptr; }
+		void TearDown() override { gRegistry = nullptr; gDomain = nullptr; }
 	};
 
 	// A read delegate that unregisters its own layer from inside the read (reentrant registry mutation during Update).
@@ -68,6 +126,7 @@ namespace
 		for (uint32_t i = 0; i < n; ++i) { out[i] = 1.0f; }
 		gRegistry->Unregister(StringCRC("selfread"));
 	}
+
 }
 
 // ---- overlay state vs registry churn ----
@@ -216,6 +275,43 @@ TEST_F(LifecycleTest, ReadDelegateUnregisteringItsOwnLayerDoesNotCrashAndNextFra
 	domain.Update(draw);
 	EXPECT_EQ(domain.ActiveBase(), StringCRC("temp"));
 	EXPECT_EQ(gSelfReads, 1u);
+}
+
+// Streams-migration AC 10: a layer read delegate that re-enters the domain during Update neither deadlocks nor sees torn state.
+TEST_F(LifecycleTest, ReadDelegateReenteringTheDomainDoesNotDeadlockAndSeesConsistentState)
+{
+	registry.Register(temp.MakeDesc("temp", &gridA.desc));
+	CellLayerDesc d = MakeLayer("reent", &gridA.desc);
+	d.read = fastdelegate::FastDelegate2<float*, uint32_t>(&ReadReentering);
+	registry.Register(d);
+	ASSERT_EQ(registry.RegisterOverlay(MakeOverlay("ovA")), CellRegisterResult::Ok);
+	ASSERT_TRUE(domain.SetBase(StringCRC("reent")));
+	ASSERT_TRUE(domain.ToggleOverlay(StringCRC("ovA")));
+	ASSERT_TRUE(FinishesWithin(std::chrono::milliseconds(5000), [&] { domain.Update(draw); })) << "Update hung: read delegate re-entered the domain";
+	EXPECT_EQ(gReentry.calls, 1u);
+	EXPECT_EQ(gReentry.activeBase, StringCRC("reent"));
+	EXPECT_EQ(gReentry.listedActiveBase, "reent");
+	EXPECT_EQ(gReentry.gridCount, 1u);
+	EXPECT_TRUE(gReentry.overlayEnabled);
+	EXPECT_TRUE(gReentry.hadSelectionView);
+	EXPECT_EQ(domain.ActiveBase(), StringCRC("reent"));
+}
+
+// Same for an overlay draw callback, which may also mutate (toggle another overlay) from inside the callback.
+TEST_F(LifecycleTest, OverlayDrawReenteringTheDomainDoesNotDeadlockAndSeesConsistentState)
+{
+	registry.Register(temp.MakeDesc("temp", &gridA.desc));
+	ASSERT_EQ(registry.RegisterOverlay(CountingOverlay("ovA", &DrawReentering)), CellRegisterResult::Ok);
+	ASSERT_EQ(registry.RegisterOverlay(MakeOverlay("ovB")), CellRegisterResult::Ok);
+	domain.Update(draw);
+	ASSERT_TRUE(domain.ToggleOverlay(StringCRC("ovA")));
+	ASSERT_TRUE(FinishesWithin(std::chrono::milliseconds(5000), [&] { domain.Update(draw); })) << "Update hung: overlay draw re-entered the domain";
+	EXPECT_EQ(gReentry.calls, 1u);
+	EXPECT_EQ(gReentry.activeBase, StringCRC("temp"));
+	EXPECT_EQ(gReentry.listedActiveBase, "temp");
+	EXPECT_TRUE(gReentry.overlayEnabled);
+	EXPECT_TRUE(gReentry.toggledOther);
+	EXPECT_TRUE(domain.IsOverlayEnabled(StringCRC("ovB")));
 }
 
 // A layer without a grid is rejected, so it can never reach the viewer or the JSON writers.
