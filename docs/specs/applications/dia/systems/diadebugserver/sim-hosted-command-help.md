@@ -5,6 +5,7 @@
 
 **Prerequisite:** @docs/specs/applications/dia/systems/diadebugserver/sim-hosted-queries.md (Done).
 **Origin:** DiaCellLayers Streams Migration, task 3 (`docs/specs/applications/dia/systems/diacelllayers/streams-migration.plan.md`) and the backlog row "Sim-hosted commands carry no help metadata (2026-11-01)".
+**Composition:** @docs/specs/applications/dia/systems/diadebugserver/sim-hosted-announcement-resync.md (Draft) is built first; it adds `seq` to the register message and a replay of the host-stored registrations, so the help fields added here are replayed without extra work. Keep the help fields inside the stored per-name entry.
 **AD-001 sign-off:** given by the user on 2026-11-01 for the DiaDebugServer and `SimQueryHostModule` changes. Any change to another Dia project needs its own sign-off (none is planned: see Resolved Design Question 5).
 
 ## Summary
