@@ -144,7 +144,7 @@ private:
     bool  mInjectLogged = false;
     bool  mInjectCommandsRegistered = false;
     PointerFrameQueue mPointerQueue;  // test-only injected frames (E2E), one popped per Sim frame
-    void RegisterInjectionCommands();
+    bool RegisterInjectionCommands();
     void UnregisterInjectionCommands();
 
     void SubmitPointerInput();

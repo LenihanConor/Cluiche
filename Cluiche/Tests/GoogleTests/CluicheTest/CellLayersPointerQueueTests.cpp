@@ -117,3 +117,72 @@ TEST(CellLayersPointerQueueTest, CapacityIsReclaimedAfterPopsAndClear)
 	EXPECT_EQ(q.Pending(), 0u);
 	EXPECT_FALSE(q.TryPop(f));
 }
+
+// Streams Migration Task 5: the queue is plain (push and pop both on SimPU) and the three test commands are sim-hosted.
+#ifdef DIA_DEBUG
+#include <DiaCellLayers/Testing/FakeMirrorRegistrar.h>
+#include <DiaAPI/DiaAPI.h>
+
+namespace
+{
+	const char* const kInjectionNames[] = {
+		"cluichetest.celllayers.pointer_frames",
+		"cluichetest.celllayers.pointer_pending",
+		"cluichetest.celllayers.cell_pixel"
+	};
+
+	struct PointerInjectionCommandsTest : ::testing::Test
+	{
+		void SetUp() override { Dia::API::Initialize(); }
+		void TearDown() override { Dia::API::Shutdown(); }
+	};
+
+	Dia::CellLayers::MirrorQueryHandler PixelStub()
+	{
+		return [](const Json::Value&) { Json::Value o(Json::objectValue); o["x"] = 1.0; o["y"] = 2.0; return o; };
+	}
+}
+
+TEST_F(PointerInjectionCommandsTest, RegistersThreeCommandsThroughTheRegistrarNotTheDiaApi)
+{
+	PointerFrameQueue q;
+	Dia::CellLayers::Testing::FakeMirrorRegistrar reg;
+	ASSERT_TRUE(RegisterPointerInjectionCommands(reg, q, PixelStub()));
+	EXPECT_EQ(reg.Count(), 3u);
+	for (const char* n : kInjectionNames)
+	{
+		EXPECT_TRUE(reg.Has(n)) << n;
+		EXPECT_EQ(Dia::API::GetCommand(Dia::Core::StringCRC(n)), nullptr) << n;
+		EXPECT_FALSE(Dia::API::ExecuteCommandJson(Dia::Core::StringCRC(n), Json::Value(Json::objectValue))["success"].asBool()) << n;
+	}
+	EXPECT_TRUE(reg.IsCommand("cluichetest.celllayers.pointer_frames"));
+	UnregisterPointerInjectionCommands(reg);
+	EXPECT_EQ(reg.Count(), 0u);
+}
+
+TEST_F(PointerInjectionCommandsTest, HandlersEnqueueAndReportPending)
+{
+	PointerFrameQueue q;
+	Dia::CellLayers::Testing::FakeMirrorRegistrar reg;
+	ASSERT_TRUE(RegisterPointerInjectionCommands(reg, q, PixelStub()));
+	Json::Value r = reg.Execute("cluichetest.celllayers.pointer_frames", Params(R"({"frames":[{"x":1,"y":2},{"x":3,"y":4}]})"));
+	EXPECT_TRUE(r["ok"].asBool());
+	EXPECT_EQ(r["queued"].asUInt(), 2u);
+	EXPECT_EQ(r["pending"].asUInt(), 2u);
+	EXPECT_EQ(q.Pending(), 2u);
+	EXPECT_EQ(reg.Execute("cluichetest.celllayers.pointer_pending", Json::Value(Json::objectValue))["pending"].asUInt(), 2u);
+	EXPECT_EQ(reg.Execute("cluichetest.celllayers.cell_pixel", Json::Value(Json::objectValue))["x"].asDouble(), 1.0);
+	EXPECT_EQ(reg.Execute("cluichetest.celllayers.pointer_frames", Params("{}"))["error"].asString(), "missing or non-array param 'frames'");
+	UnregisterPointerInjectionCommands(reg);
+}
+
+TEST_F(PointerInjectionCommandsTest, QueueFullIsReportedAsError)
+{
+	PointerFrameQueue q;
+	ASSERT_TRUE(q.TryEnqueue(Frames(kPointerQueueCapacity)));
+	Dia::CellLayers::Testing::FakeMirrorRegistrar reg;
+	ASSERT_TRUE(RegisterPointerInjectionCommands(reg, q, PixelStub()));
+	EXPECT_EQ(reg.Execute("cluichetest.celllayers.pointer_frames", Params(R"({"frames":[{"x":1,"y":2}]})"))["error"].asString(), "queue full");
+	UnregisterPointerInjectionCommands(reg);
+}
+#endif

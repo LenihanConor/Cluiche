@@ -1,8 +1,11 @@
 #pragma once
 #include <DiaCellLayers/SelectionInput.h>
 #include <DiaCore/Json/external/json/json.h>
+#ifdef DIA_DEBUG
+#include <DiaCellLayers/MirrorQueries.h>
+#endif
 
-#include <mutex>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -10,7 +13,7 @@ namespace CluicheTest {
 
 // Test-only pointer injection support for CellLayersViewerTestStageModule (application code).
 // ParsePointerFrames validates the JSON params of cluichetest.celllayers.pointer_frames; PointerFrameQueue is a
-// fixed-capacity, mutex-protected FIFO (DiaAPI commands may run on a different thread than the Sim update).
+// fixed-capacity plain FIFO: the sim-hosted commands push and the stage's Sim update pops, both on SimPU, so it takes no lock.
 // Frames are popped one per Sim frame so SelectionInput's press/release edge detection sees every state.
 
 constexpr size_t kPointerQueueCapacity = 512;
@@ -81,7 +84,6 @@ public:
 	// All-or-nothing: returns false (queue unchanged) if the whole batch does not fit.
 	bool TryEnqueue(const std::vector<Frame>& frames)
 	{
-		std::lock_guard<std::mutex> lock(mMutex);
 		if (mFrames.size() - mHead + frames.size() > kPointerQueueCapacity)
 			return false;
 		Compact();
@@ -91,7 +93,6 @@ public:
 
 	bool TryPop(Frame& out)
 	{
-		std::lock_guard<std::mutex> lock(mMutex);
 		if (mHead >= mFrames.size())
 			return false;
 		out = mFrames[mHead++];
@@ -100,13 +101,11 @@ public:
 
 	size_t Pending() const
 	{
-		std::lock_guard<std::mutex> lock(mMutex);
 		return mFrames.size() - mHead;
 	}
 
 	void Clear()
 	{
-		std::lock_guard<std::mutex> lock(mMutex);
 		mFrames.clear();
 		mHead = 0;
 	}
@@ -121,9 +120,56 @@ private:
 		}
 	}
 
-	mutable std::mutex mMutex;
 	std::vector<Frame> mFrames;
 	size_t mHead = 0;
 };
+
+#ifdef DIA_DEBUG
+// Registers cluichetest.celllayers.pointer_frames (command), .pointer_pending and .cell_pixel (reads) on the sim-hosted registrar.
+// Runs on SimPU. `queue` and whatever `cellPixel` captures must outlive the registration. Returns false (and unregisters any it had
+// registered) if the registrar rejects one.
+inline void UnregisterPointerInjectionCommands(Dia::CellLayers::IMirrorQueryRegistrar& registrar)
+{
+	registrar.Unregister("cluichetest.celllayers.pointer_frames");
+	registrar.Unregister("cluichetest.celllayers.pointer_pending");
+	registrar.Unregister("cluichetest.celllayers.cell_pixel");
+}
+
+inline bool RegisterPointerInjectionCommands(Dia::CellLayers::IMirrorQueryRegistrar& registrar, PointerFrameQueue& queue,
+	Dia::CellLayers::MirrorQueryHandler cellPixel)
+{
+	const bool ok =
+		registrar.RegisterCommand("cluichetest.celllayers.pointer_frames", [&queue](const Json::Value& params) -> Json::Value
+		{
+			Json::Value out(Json::objectValue);
+			std::vector<Dia::CellLayers::SelectionInput::PointerFrame> parsed;
+			std::string err;
+			if (!ParsePointerFrames(params, parsed, err))
+			{
+				out["error"] = err;
+				return out;
+			}
+			if (!queue.TryEnqueue(parsed))
+			{
+				out["error"] = "queue full";
+				return out;
+			}
+			out["ok"] = true;
+			out["queued"] = static_cast<Json::UInt>(parsed.size());
+			out["pending"] = static_cast<Json::UInt>(queue.Pending());
+			return out;
+		}) &&
+		registrar.Register("cluichetest.celllayers.pointer_pending", [&queue](const Json::Value&) -> Json::Value
+		{
+			Json::Value out(Json::objectValue);
+			out["pending"] = static_cast<Json::UInt>(queue.Pending());
+			return out;
+		}) &&
+		registrar.Register("cluichetest.celllayers.cell_pixel", std::move(cellPixel));
+	if (!ok)
+		UnregisterPointerInjectionCommands(registrar);
+	return ok;
+}
+#endif // DIA_DEBUG
 
 } // namespace CluicheTest

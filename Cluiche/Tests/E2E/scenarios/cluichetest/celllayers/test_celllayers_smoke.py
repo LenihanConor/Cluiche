@@ -135,7 +135,7 @@ _FLAGS = ("left", "middle", "right", "shift", "ctrl", "alt", "esc")
 
 def _cell_pixel(c, q, r):
     """Pixel (top-left origin, Y down) of the centre of cell (q, r) on the active grid; q, r may be outside the grid."""
-    d = c.send_command(_P + "cell_pixel", {"q": q, "r": r})
+    d = _vc(c, _P + "cell_pixel", {"q": q, "r": r})
     return d["x"], d["y"]
 
 
@@ -166,11 +166,11 @@ def _send_frames(c, frames, timeout_s=5.0):
     """Enqueue the frames (one is consumed per Sim frame) and wait until the queue has drained."""
     for i in range(0, len(frames), 200):
         chunk = frames[i:i + 200]
-        assert _wait(lambda: c.send_command(_P + "pointer_pending")["pending"] + len(chunk) <= 512, timeout_s)
-        d = c.send_command(_P + "pointer_frames", {"frames": chunk})
+        assert _wait(lambda: _vc(c, _P + "pointer_pending")["pending"] + len(chunk) <= 512, timeout_s)
+        d = _vc(c, _P + "pointer_frames", {"frames": chunk})
         assert d["ok"] is True and d["queued"] == len(chunk), d
-    assert _wait(lambda: c.send_command(_P + "pointer_pending")["pending"] == 0, timeout_s), \
-        c.send_command(_P + "pointer_pending")
+    assert _wait(lambda: _vc(c, _P + "pointer_pending")["pending"] == 0, timeout_s), \
+        _vc(c, _P + "pointer_pending")
     time.sleep(0.2)  # the last popped frame is consumed by the viewer update; let metrics publish
 
 
@@ -436,7 +436,7 @@ def test_celllayers_smoke(dia_client):
         assert not ok and "too many" in msg, (ok, msg)
         ok, msg = _cmd(c, _P + "cell_pixel", {"q": 1})
         assert not ok and "non-integer param 'q'" not in msg and "non-integer param 'r'" in msg, (ok, msg)
-        assert c.send_command(_P + "pointer_pending") == {"pending": 0}
+        assert _vc(c, _P + "pointer_pending") == {"pending": 0}
 
         def gest_metrics():
             time.sleep(0.2)
@@ -575,7 +575,7 @@ def test_celllayers_smoke(dia_client):
         # Leave the viewer as found.
         clear_sel()
         assert sel("cells.select.tool", {"tool": "select"})["tool"] == "select"
-        assert c.send_command(_P + "pointer_pending") == {"pending": 0}
+        assert _vc(c, _P + "pointer_pending") == {"pending": 0}
     finally:
         c.abort_stage()
         c.navigate_to("Boot")
