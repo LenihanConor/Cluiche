@@ -1083,6 +1083,7 @@
     <ClCompile Include="DiaCellLayers\TestQueryExhaustive.cpp" />
     <ClCompile Include="DiaCellLayers\TestInspectorExhaustive.cpp" />
     <ClCompile Include="DiaCellLayers\TestMirrorExhaustive.cpp" />
+    <ClCompile Include="DiaVisualDebugger\Console\TestDomainStateSnapshot.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

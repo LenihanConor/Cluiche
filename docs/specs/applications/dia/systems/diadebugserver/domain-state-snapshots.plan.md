@@ -13,7 +13,7 @@
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
 | 1 | Audit the 14 domains (thread assumptions, payload size), measure total payload, fix the snapshot type and budget; write findings into this plan | Measured sizes recorded in Notes | Done | sonnet | Audited + measured: drawers-only domain 333 B; MessageBus 6 KB at 60-tick window but 207 KB at 3600 (history always emitted); typical worst ~75 KB. Recommend 128 KB budget + cap MB history. See Task 1 Findings |
-| 2 | `DomainStateSnapshot`, packer (whole-domain budget, truncated flag), pure unit tests (ACs 3, 6) | RED-GREEN: packer unit tests, golden JSON | Pending | sonnet | |
+| 2 | `DomainStateSnapshot`, packer (whole-domain budget, truncated flag), pure unit tests (ACs 3, 6) | RED-GREEN: packer unit tests, golden JSON | Done | sonnet | DomainStateSnapshot.h/.cpp (Console ns), PackDomainStates whole-domain budget, 8 tests in TestDomainStateSnapshot.cpp (AC3 golden, AC6 over-budget); regression suites pass |
 | 3 | `VisualDebuggerModule` producer, interest handling, metrics and health (ACs 1, 5, 7, 10, 11) | RED-GREEN: thread-id domain test, interest window test | Pending | opus | Confirm with user before dispatching on opus |
 | 4 | `DebugPanelPageModule` and `QueryDomainState` read the snapshot; remove the registry reader (ACs 2, 4) | Existing `TestDomainStateQuery` cases against the snapshot form | Pending | sonnet | |
 | 5 | Remove the `UtilityAIDebugDomain` atomic and fix the `MessageBusDebugDomain` threading comment (ACs 8, 9) | Toggle via command stream test | Pending | haiku | |
