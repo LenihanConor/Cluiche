@@ -85,7 +85,8 @@ TEST(SecondaryPUTick, NonDedicatedSecondPuModulesAreStartedAndUpdatedByApplicati
 {
     TypeRegistry reg;
     RegisterCounting(reg);
-    Application app(TwoPuManifest(false), reg);
+    const ApplicationManifestV3 manifest = TwoPuManifest(false);	// Application keeps a reference: it must outlive app
+    Application app(manifest, reg);
     ASSERT_TRUE(app.Start());
 
     for (int i = 0; i < 10; ++i) app.Update(kDt);
@@ -107,7 +108,8 @@ TEST(SecondaryPUTick, BothPusAdvanceInLockstepOneUpdatePerStep)
 {
     TypeRegistry reg;
     RegisterCounting(reg);
-    Application app(TwoPuManifest(false), reg);
+    const ApplicationManifestV3 manifest = TwoPuManifest(false);	// Application keeps a reference: it must outlive app
+    Application app(manifest, reg);
     ASSERT_TRUE(app.Start());
     for (int i = 0; i < 5; ++i) app.Update(kDt);
 

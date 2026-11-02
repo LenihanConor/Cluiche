@@ -305,7 +305,11 @@ namespace
 	const double kBudgetMs = 4.0;
 	// DIA_DEBUG-only code (DiaDebugServer) is never built in Release, so the Release bound cannot run; Debug builds enforce this
 	// loose regression guard instead (unoptimised: measured 0.5 / 11 / 4.3 ms).
+#if defined(__SANITIZE_ADDRESS__)
+	const double kDebugGuardMs = 150.0;	// AddressSanitizer instrumentation slows these loops about 3x
+#else
 	const double kDebugGuardMs = 50.0;
+#endif
 
 	template <typename Fn>
 	double MedianMs(int runs, Fn&& fn)
