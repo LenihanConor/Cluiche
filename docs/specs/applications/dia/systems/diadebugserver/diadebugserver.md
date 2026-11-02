@@ -260,7 +260,7 @@ Features within the DiaDebugServer system (create with `/spec-feature`):
 | Server Self-Monitoring | Track game/editor performance impact, server health metrics, debugging | @docs/specs/applications/dia/systems/diadebugserver/server-self-monitoring.md | Approved |
 | Connection Health | Per-topic stats, subscription-gated ObservationBridge, subscribe ACK, tiered drop warnings in editor UI | @docs/specs/applications/dia/systems/diadebugserver/connection-health.md | Approved |
 | Sim-Hosted Queries | Queries and DiaAPI commands answered on SimPU with deferred replies over EventStreams; no cross-PU mutex | @docs/specs/applications/dia/systems/diadebugserver/sim-hosted-queries.md | Approved |
-| Sim-Hosted Command Help | Sim-hosted queries and commands carry description, category, owner and ValueParams in the register message; Main-side catalogue feeds --help, the palette and schema validation; description mandatory | @docs/specs/applications/dia/systems/diadebugserver/sim-hosted-command-help.md | Draft |
+| Sim-Hosted Command Help | Sim-hosted queries and commands carry description, category, owner and ValueParams in the register message; Main-side catalogue feeds --help, the palette and schema validation; description mandatory | @docs/specs/applications/dia/systems/diadebugserver/sim-hosted-command-help.md | Approved |
 
 ## AI Review Questions
 
