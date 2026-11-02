@@ -1,7 +1,5 @@
 **Spec:** @docs/specs/applications/cluicheeditor/systems/pluginbrowser/game-scoped-plugins.md
-**Status:** In Progress
-
-The spec has no task list, so these tasks are derived from its Design, Acceptance Criteria and Test Strategy. **Do not start task 1 until the AD-001 sign-off below is given.**
+**Status:** Done, so these tasks are derived from its Design, Acceptance Criteria and Test Strategy. **Do not start task 1 until the AD-001 sign-off below is given.**
 
 ## Sign-off gate (CoW AD-001)
 

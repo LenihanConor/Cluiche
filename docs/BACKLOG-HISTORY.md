@@ -175,6 +175,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | Dia | Seeded noise test-gap work is uncommitted (paused 2026-10-16) | 2026-10-18 | Finished 2026-10-18: goldens/determinism tests in default run, Simplex goldens replaced, Lipschitz bound measured, NaN/inf/extreme-input handling + TestNoiseEdgeCases. Debug 84 and Release 83 *Noise* tests pass (the one-test difference is PaletteIndexTest.AC2_EmptyQueryReturnsEverythingAndNoiseReturnsNothing, not noise). |
 | Dia | DiaCLI dev source alias (#16) + subfolder deploy (#17) | 2026-10-20 | **Done 2026-10-20.** `--dev-alias source` + `--source` override, `RegisterDevAliases` in `ManifestBootstrap`, reserved `source`; `world`-tag subfolder deploy, `world` alias in `cow.diagame`, misplaced-record warnings. CoW placeholder JobSystemService consumer added so CoW launches |
 | Dia | `Application.cpp` `ownedStores` capped at 16 | 2026-11-01 | Fixed 58751f51: cap raised to 64 and DIA_ASSERT on overflow |
+| game-scoped-plugins | [spec](specs/) | 2026-11-01 | Marked done by `dia docs spec-done` |
 
 ---
 

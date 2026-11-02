@@ -1,6 +1,6 @@
 # Feature Spec: Game-Scoped Editor Plugins
 
-**Status:** Approved
+**Status:** Done
 **Application:** CluicheEditor
 **System:** CluicheEditor Plugin Browser
 **Origin:** 2026-10-19 world-sim product review. The CoW World Data Editor and World Sim Inspector are the first editor plugins that belong to one game.
