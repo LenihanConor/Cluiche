@@ -23,6 +23,7 @@
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
 #include <DiaStreams/EventStreamReader.h>
 #include <DiaStreams/EventStreamWriter.h>
+#include <Modules/DebugServerHostModule.h>
 #include <Modules/SimQueryHostModule.h>
 #include <Modules/TestStages/CellLayersPointerQueue.h>
 #include <Modules/TestStages/CellLayersStateBridgeModule.h>
@@ -31,6 +32,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <functional>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -90,6 +92,20 @@ namespace
 	uint64_t gNowMs = 0;
 	uint64_t FakeNow() { return gNowMs; }
 
+	// Real DebugServerHostModule (never added to the Application) used only for its announcement handling: HandleSimReply /
+	// TickAnnounce with an injected clock, resync requests forwarded through `post`.
+	class AnnounceProbe : public Cluiche::AppFlow::DebugServerHostModule
+	{
+	public:
+		AnnounceProbe() : DebugServerHostModule(StringCRC("IntAnnounceProbe")) {}
+		using DebugServerHostModule::HandleSimReply;
+		using DebugServerHostModule::TickAnnounce;
+		using DebugServerHostModule::GetAnnounceTracker;
+		std::function<bool(const SimRequestEvent&)> post;
+	protected:
+		bool PostRequest(const SimRequestEvent& r) override { return post && post(r); }
+	};
+
 	// ---- Main side: real DebugServer + the DebugServerHostModule drain logic over the real SimQuery streams ----
 	class IntMainShim : public MainModule, private Dia::DebugServer::ISimRequestSink
 	{
@@ -100,9 +116,17 @@ namespace
 			server.SetNowMsFunction(&FakeNow);
 			server.SetSendHook(&CaptureSend, &sent);
 			server.SetSimRequestSink(this);
+			DebugServer& ps = *probe.GetServer();
+			ps.SetNowMsFunction(&FakeNow);
+			ps.SetSendHook(&CaptureSend, &sent);
+			ps.SetSimRequestSink(this);
+			probe.post = [this](const SimRequestEvent& r) { return IsSuccess(mReq.Send(r)); };
 		}
 
 		DebugServer server;
+		AnnounceProbe probe;
+		bool useTracker = false;	// true: replies go through the real DebugServerHostModule announcement handling (resync)
+		DebugServer& Srv() { return useTracker ? *probe.GetServer() : server; }
 		std::vector<Sent> sent;
 		std::vector<std::string> registered;
 		std::vector<std::string> unregistered;
@@ -117,7 +141,7 @@ namespace
 			auto* c = m.mutable_command_request();
 			c->set_command(name);
 			Dia::Proto::JsonValueToProtoStruct(args, c->mutable_payload());
-			DebugServerTestAccess::HandleCommand(server, conn, m);
+			DebugServerTestAccess::HandleCommand(Srv(), conn, m);
 		}
 
 		const Sent* LastFor(int conn) const
@@ -131,7 +155,12 @@ namespace
 	protected:
 		StartResult DoStart() override { return StartResult::kReady; }
 		StopResult DoStop() override { return StopResult::kDone; }
-		void DoUpdate(const Dia::SimTime::MainTimeContext&) override { if (!drainPaused) Drain(); }
+		void DoUpdate(const Dia::SimTime::MainTimeContext&) override
+		{
+			if (useTracker) gNowMs += 34;	// deterministic clock: one Main frame
+			if (!drainPaused) Drain();
+			if (useTracker) probe.TickAnnounce(gNowMs);
+		}
 
 	private:
 		bool PostRequest(const SimRequestEvent& r) override { return IsSuccess(mReq.Send(r)); }
@@ -146,6 +175,7 @@ namespace
 				for (unsigned i = 0; i < batch.Size(); ++i)
 				{
 					const SimReplyEvent& reply = batch[i].payload;
+						if (useTracker) { probe.HandleSimReply(reply, gNowMs); continue; }
 					const Cluiche::AppFlow::SimRegistration reg = Cluiche::AppFlow::ParseSimRegistrationReply(reply);
 					switch (reg.op)
 					{
@@ -454,14 +484,15 @@ TEST(CellLayersIntegrationStreams, MoreRequestsThanTheStreamHoldsEachGetExactlyO
 }
 
 // The announce stream holds 48 events (drop-oldest). Names are capped at 32 per module, but unregister/register churn between two
-// Main drains can exceed 48 events; the Main server then permanently loses the oldest announcements while the Sim host still
-// serves the names. SimQueryHostModule::PostReply treats kDroppedOldest as success, so nothing is logged. DISABLED: a real finding
-// (fix belongs in CluicheGameBaseline/DiaStreams, outside this pass); remove the prefix once announcements cannot be lost silently.
-TEST(CellLayersIntegrationStreams, DISABLED_AnnouncementChurnPastStreamCapacityNeverLeavesAHostedNameUnroutedAtMain)
+// Main drains can exceed 48 events, so Main loses the oldest announcements. The announcement resync (seq gap -> resync request ->
+// paced replay -> atomic table swap) must repair this: every hosted name ends up routable at Main. Main runs the real
+// DebugServerHostModule announcement handling with a deterministic clock (34 ms per Main frame).
+TEST(CellLayersIntegrationStreams, AnnouncementChurnPastStreamCapacityNeverLeavesAHostedNameUnroutedAtMain)
 {
 	Harness h;
 	ASSERT_TRUE(h.Start());
 	gDriver->rig.reset(new SimRig(*gHost, 3));
+	gShim->useTracker = true;
 	gShim->drainPaused = true;	// Main does not drain for a while (a long Main frame)
 	auto noop = [](const Json::Value&) { return Json::Value(Json::objectValue); };
 	for (int round = 0; round < 3; ++round)
@@ -474,7 +505,15 @@ TEST(CellLayersIntegrationStreams, DISABLED_AnnouncementChurnPastStreamCapacityN
 		}
 	}
 	gShim->drainPaused = false;
-	h.Pump(10);
+	// Converge: gap detected on the first drain, resync requested, begin + 32 replays paced 16 per Sim frame, table swapped.
+	ASSERT_TRUE(h.PumpUntil([&] { return gShim->probe.GetAnnounceTracker().ResyncsCompleted() > 0; }, 300))
+		<< "Main never completed a resync after the churn: gaps=" << gShim->probe.GetAnnounceTracker().AnnounceGaps()
+		<< " requested=" << gShim->probe.GetAnnounceTracker().ResyncsRequested() << " timeouts=" << gShim->probe.GetAnnounceTracker().ResyncTimeouts()
+		<< " mismatches=" << gShim->probe.GetAnnounceTracker().DigestMismatches() << " overflow=" << gHost->AnnounceOverflowCount();
+	EXPECT_TRUE(gShim->probe.GetAnnounceTracker().InSync());
+	uint32_t count = 0, hash = 0;
+	gShim->probe.GetServer()->GetSimHostedDigest(count, hash);
+	EXPECT_EQ(count, 32u);
 	for (int i = 0; i < 32; ++i)
 	{
 		const std::string n = "churn.n" + std::to_string(i);

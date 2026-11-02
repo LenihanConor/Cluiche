@@ -2400,5 +2400,8 @@
     <ClCompile Include="CluicheGameBaseline\TestSimQueryHostResync.cpp">
       <Filter>CluicheGameBaseline</Filter>
     </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestSimAnnounceResyncIntegration.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

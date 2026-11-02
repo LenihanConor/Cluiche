@@ -1088,6 +1088,7 @@
     <ClCompile Include="CluicheGameBaseline\TestSimAnnounceTracker.cpp" />
     <ClCompile Include="DebugServer\TestSimHostedResyncTable.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestSimQueryHostResync.cpp" />
+    <ClCompile Include="CluicheGameBaseline\TestSimAnnounceResyncIntegration.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
