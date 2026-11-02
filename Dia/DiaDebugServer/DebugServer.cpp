@@ -42,6 +42,9 @@ namespace Dia
 			, mStartTimestamp(0)
 			, mStarted(false)
 		{
+			mOrderedHead    = 0;
+			mOrderedCount   = 0;
+			mOrderedDropped = 0;
 			mGameName[0]    = '\0';
 			mGameBuild[0]   = '\0';
 			mDiagamePath[0] = '\0';
@@ -372,6 +375,7 @@ namespace Dia
 			SweepSimTimeouts();
 
 			DrainPublishedTopics();
+			DrainOrderedTopics();
 
 			if (mObservationBridge)
 				mObservationBridge->Flush(deltaTime);
@@ -949,6 +953,15 @@ namespace Dia
 			}
 		}
 
+		unsigned int DebugServer::GetSubscriptionCount() const
+		{
+			Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mSubscriberMutex);
+			unsigned int total = 0;
+			for (unsigned int i = 0; i < mSubscriberCounts.Size(); ++i)
+				total += mSubscriberCounts[i].count;
+			return total;
+		}
+
 		unsigned int DebugServer::GetTopicSubscriberCount(const Dia::Core::StringCRC& topic) const
 		{
 			Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mSubscriberMutex);
@@ -1041,6 +1054,61 @@ namespace Dia
 			}
 			for (unsigned int i = 0; i < toSend.Size(); ++i)
 				NotifySubscribersMainThread(toSend[i].topic, toSend[i].latest);
+		}
+
+		void DebugServer::PublishTopicOrdered(const Dia::Core::StringCRC& topic, const Json::Value& payload)
+		{
+			unsigned int droppedTotal = 0;
+			{
+				Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mOrderedMutex);
+				if (mOrderedCount >= kOrderedQueueCapacity)
+				{
+					droppedTotal = ++mOrderedDropped;
+				}
+				else
+				{
+					OrderedEvent& slot = mOrdered[(mOrderedHead + mOrderedCount) % kOrderedQueueCapacity];
+					slot.topic   = topic;
+					slot.payload = payload;
+					++mOrderedCount;
+				}
+			}
+			// Log outside the lock; first drop and then every 100th, so a flood does not flood the log.
+			if (droppedTotal == 1 || (droppedTotal != 0 && droppedTotal % 100 == 0))
+			{
+				DIA_LOG_ERROR("DebugServer", "PublishTopicOrdered — queue full (%u), event for topic '%s' dropped (%u dropped in total)",
+					kOrderedQueueCapacity, topic.AsChar(), droppedTotal);
+			}
+		}
+
+		unsigned int DebugServer::GetOrderedDroppedCount() const
+		{
+			Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mOrderedMutex);
+			return mOrderedDropped;
+		}
+
+		void DebugServer::DrainOrderedTopics()
+		{
+			// Only what was queued when the drain began, so a producer that never stops cannot pin Main here.
+			unsigned int toDrain = 0;
+			{
+				Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mOrderedMutex);
+				toDrain = mOrderedCount;
+			}
+			for (unsigned int n = 0; n < toDrain; ++n)
+			{
+				Dia::Core::StringCRC topic;
+				Json::Value          payload;
+				{
+					Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mOrderedMutex);
+					OrderedEvent& front = mOrdered[mOrderedHead];
+					topic = front.topic;
+					payload.swap(front.payload);	// cheap move; slot is left null
+					mOrderedHead = (mOrderedHead + 1) % kOrderedQueueCapacity;
+					--mOrderedCount;
+				}
+				NotifySubscribersMainThread(topic, payload);	// outside the lock
+			}
 		}
 
 		void DebugServer::SendDataUpdateToConnection(int connId, const Dia::Core::StringCRC& topic,

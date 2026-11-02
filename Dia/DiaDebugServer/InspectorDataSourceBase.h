@@ -65,7 +65,7 @@ protected:
     void Broadcast(const Json::Value& payload)
     {
         if (mServer)
-            mServer->NotifySubscribers(GetTopic(), payload);
+            mServer->PublishTopicOrdered(GetTopic(), payload);
     }
 
     static unsigned int HashCombine(unsigned int hash, unsigned int value)
@@ -107,7 +107,7 @@ public:
             if (connectionCount > 0)
             {
                 Json::Value payload = BuildPayload();
-                mServer->NotifySubscribers(GetTopic(), payload);
+                mServer->PublishTopicOrdered(GetTopic(), payload);
             }
             Reset();
         }
@@ -164,7 +164,7 @@ protected:
         const int maxPerWindow = GetPolicy().maxEventsPerWindow;
         if (maxPerWindow > 0 && mWindowEventsCount >= maxPerWindow) return;
         ++mWindowEventsCount;
-        mServer->NotifySubscribers(GetTopic(), payload);
+        mServer->PublishTopicOrdered(GetTopic(), payload);
     }
 
 private:

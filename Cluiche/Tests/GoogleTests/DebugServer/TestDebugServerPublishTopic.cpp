@@ -286,6 +286,148 @@ TEST_F(SLOW_DebugServerPublishTopicTest, ManyThreadsPublishingWhileTicking_Never
     }
 }
 
+// ---- PublishTopicOrdered: lossless FIFO, any thread in, Main drains in order, no retained replay ----
+
+TEST_F(SLOW_DebugServerPublishTopicTest, Ordered_EveryPublishBetweenTicksIsDeliveredInOrder)
+{
+    SendSubscribe(true);
+    Pump();
+    mReceived.clear();
+
+    std::thread t([&]
+    {
+        for (int i = 1; i <= 50; ++i)
+            mServer.PublishTopicOrdered(Dia::Core::StringCRC(kTopic), Make(i));
+    });
+    t.join();
+    Pump();
+
+    ASSERT_EQ(mReceived.size(), 50u) << "latest-wins PublishTopic would collapse these; ordered must not";
+    for (int i = 0; i < 50; ++i)
+        EXPECT_EQ(mReceived[i], i + 1);
+    EXPECT_EQ(mServer.GetOrderedDroppedCount(), 0u);
+}
+
+TEST_F(SLOW_DebugServerPublishTopicTest, Ordered_IsNotRetainedForALateSubscriber)
+{
+    mServer.PublishTopicOrdered(Dia::Core::StringCRC(kTopic), Make(1));
+    Pump();                      // drained with nobody subscribed
+    SendSubscribe(true);
+    Pump();
+    ASSERT_EQ(mAckCount, 1);
+    EXPECT_TRUE(mReceived.empty()) << "ordered events are not replayed to a later subscriber";
+}
+
+TEST_F(SLOW_DebugServerPublishTopicTest, Ordered_InterleavedTopicsKeepTheirPublishOrder)
+{
+    SendSubscribe(true);
+    SendSubscribeTo("test.publish.topicB", true);
+    Pump();
+    mAll.clear();
+
+    for (int i = 1; i <= 10; ++i)
+    {
+        mServer.PublishTopicOrdered(Dia::Core::StringCRC(kTopic), Make(i));
+        mServer.PublishTopicOrdered(Dia::Core::StringCRC("test.publish.topicB"), Make(100 + i));
+    }
+    Pump();
+
+    ASSERT_EQ(mAll.size(), 20u);
+    for (int i = 0; i < 10; ++i)
+    {
+        EXPECT_EQ(mAll[2 * i].first, kTopic);
+        EXPECT_EQ(mAll[2 * i].second["v"].asInt(), i + 1);
+        EXPECT_EQ(mAll[2 * i + 1].first, "test.publish.topicB");
+        EXPECT_EQ(mAll[2 * i + 1].second["v"].asInt(), 101 + i);
+    }
+}
+
+TEST_F(SLOW_DebugServerPublishTopicTest, Ordered_PastCapacityDropsTheNewestAndCountsThem)
+{
+    SendSubscribe(true);
+    Pump();
+    mReceived.clear();
+
+    const int kCap = static_cast<int>(Dia::DebugServer::DebugServer::kOrderedQueueCapacity);
+    const int kExtra = 25;
+    for (int i = 1; i <= kCap + kExtra; ++i)
+        mServer.PublishTopicOrdered(Dia::Core::StringCRC(kTopic), Make(i));
+    EXPECT_EQ(mServer.GetOrderedDroppedCount(), static_cast<unsigned>(kExtra));
+    Pump();
+
+    ASSERT_EQ(mReceived.size(), static_cast<size_t>(kCap)) << "the oldest kCap events survive, in order";
+    for (int i = 0; i < kCap; ++i)
+        EXPECT_EQ(mReceived[i], i + 1);
+
+    // The queue is usable again after a drain.
+    mReceived.clear();
+    mServer.PublishTopicOrdered(Dia::Core::StringCRC(kTopic), Make(9000));
+    Pump();
+    ASSERT_EQ(mReceived.size(), 1u);
+    EXPECT_EQ(mReceived[0], 9000);
+}
+
+TEST_F(SLOW_DebugServerPublishTopicTest, Ordered_ManyThreadsWhileTicking_PerThreadOrderPreservedAndNothingUnaccounted)
+{
+    SendSubscribe(true);
+    Pump();
+    mReceived.clear();
+
+    const int kThreads = 4;
+    const int kPerThread = 100;	// 400 total > capacity, so the producers may be dropped; they must never reorder or vanish silently
+    std::vector<std::thread> threads;
+    for (int t = 0; t < kThreads; ++t)
+    {
+        threads.emplace_back([this, t, kPerThread]
+        {
+            for (int i = 1; i <= kPerThread; ++i)
+                mServer.PublishTopicOrdered(Dia::Core::StringCRC(kTopic), Make(t * 100000 + i));
+        });
+    }
+    Pump(40);
+    for (auto& th : threads) th.join();
+    Pump();
+
+    int lastSeen[4] = { 0, 0, 0, 0 };
+    for (int v : mReceived)
+    {
+        const int t = v / 100000;
+        const int i = v % 100000;
+        ASSERT_GE(t, 0);
+        ASSERT_LT(t, kThreads);
+        EXPECT_GT(i, lastSeen[t]) << "thread " << t << " events must arrive in publish order";
+        lastSeen[t] = i;
+    }
+    EXPECT_EQ(mReceived.size() + mServer.GetOrderedDroppedCount(), static_cast<size_t>(kThreads * kPerThread))
+        << "every event is either delivered or counted as dropped";
+}
+
+TEST_F(SLOW_DebugServerPublishTopicTest, GetSubscriptionCount_TracksSubscribeAndUnsubscribeFromAnyThread)
+{
+    EXPECT_EQ(mServer.GetSubscriptionCount(), 0u);
+    SendSubscribe(true);
+    SendSubscribeTo("test.publish.topicB", true);
+    Pump();
+    unsigned seen = 0;
+    std::thread t([&] { seen = mServer.GetSubscriptionCount(); });
+    t.join();
+    EXPECT_EQ(seen, 2u);
+    SendSubscribe(false);
+    Pump();
+    EXPECT_EQ(mServer.GetSubscriptionCount(), 1u);
+}
+
+TEST(DebugServerPublishTopicUnstarted, OrderedPublishNeverCrashesAndIsBoundedWithNoDrain)
+{
+    Dia::DebugServer::DebugServer server;
+    Json::Value p;
+    p["v"] = 1;
+    const unsigned cap = Dia::DebugServer::DebugServer::kOrderedQueueCapacity;
+    for (unsigned i = 0; i < cap + 10; ++i)
+        server.PublishTopicOrdered(Dia::Core::StringCRC("test.unstarted.ordered"), p);
+    EXPECT_EQ(server.GetOrderedDroppedCount(), 10u);
+}
+
 TEST_F(SLOW_DebugServerPublishTopicTest, TopicTableFull_DropsNewTopicsButKeepsExistingOnesWorking)
 {
     mServer.PublishTopic(Dia::Core::StringCRC(kTopic), Make(1));

@@ -184,6 +184,22 @@ namespace Dia
 			// right after its subscribe ack.  No replay if nothing was published.
 			void PublishTopic(const Dia::Core::StringCRC& topic, const Json::Value& payload);
 
+			// Thread-safe, ORDERED, lossless-up-to-capacity publish.  Callable from ANY thread (e.g. SimPU
+			// inspector sources).  Every call is queued in FIFO order and delivered to the topic's current
+			// subscribers by Tick (Main), the same fan-out as NotifySubscribers.  Unlike PublishTopic nothing
+			// is collapsed and nothing is retained or replayed to late subscribers.  When the queue already
+			// holds kOrderedQueueCapacity undrained events the NEW event is dropped (order of what is kept
+			// never changes), counted in GetOrderedDroppedCount() and logged.
+			static const unsigned int kOrderedQueueCapacity = 256;
+			void PublishTopicOrdered(const Dia::Core::StringCRC& topic, const Json::Value& payload);
+
+			// Total events dropped by PublishTopicOrdered because the queue was full.  Callable from ANY thread.
+			unsigned int GetOrderedDroppedCount() const;
+
+			// Total (connection, topic) subscriptions across all topics.  Callable from ANY thread; use this
+			// instead of GetStats().subscriptionCount, which Main writes unsynchronised.
+			unsigned int GetSubscriptionCount() const;
+
 			// Number of distinct connections currently subscribed to `topic` (0 if none/unknown).  Callable from ANY thread.
 			unsigned int GetTopicSubscriberCount(const Dia::Core::StringCRC& topic) const;
 
@@ -250,6 +266,7 @@ namespace Dia
 			void NotifySubscribersMainThread(const Dia::Core::StringCRC& dataType, const Json::Value& payload);
 			void SendDataUpdateToConnection(int connId, const Dia::Core::StringCRC& topic, const Json::Value& payload);
 			void DrainPublishedTopics();
+			void DrainOrderedTopics();
 			void RebuildSubscriberCounts();	// Main only; recomputes mSubscriberCounts from mClientTaps after any mutation
 			void RecordTopicSent(const Dia::Core::StringCRC& topic, bool success);
 			void SendDropNotification(int connId);
@@ -283,6 +300,17 @@ namespace Dia
 			static const unsigned int kMaxPublishedTopics = 32;
 			Dia::Core::Mutex mPublishMutex;
 			Dia::Core::Containers::DynamicArrayC<PublishedTopic, kMaxPublishedTopics> mPublished;
+
+			// PublishTopicOrdered state: fixed ring FIFO (any-thread writers, Main drain).  Guarded by mOrderedMutex.
+			struct OrderedEvent {
+				Dia::Core::StringCRC topic;
+				Json::Value          payload;
+			};
+			mutable Dia::Core::Mutex mOrderedMutex;
+			OrderedEvent             mOrdered[kOrderedQueueCapacity];
+			unsigned int             mOrderedHead;
+			unsigned int             mOrderedCount;
+			unsigned int             mOrderedDropped;
 
 			// Per-topic distinct-connection subscriber counts.  Written on Main (RebuildSubscriberCounts), read from any thread.
 			struct TopicSubscribers {
