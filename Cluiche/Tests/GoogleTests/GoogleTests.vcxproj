@@ -1082,6 +1082,7 @@
     <ClCompile Include="ApplicationFlow\TestSecondaryPUTick.cpp" />
     <ClCompile Include="DiaCellLayers\TestQueryExhaustive.cpp" />
     <ClCompile Include="DiaCellLayers\TestInspectorExhaustive.cpp" />
+    <ClCompile Include="DiaCellLayers\TestMirrorExhaustive.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

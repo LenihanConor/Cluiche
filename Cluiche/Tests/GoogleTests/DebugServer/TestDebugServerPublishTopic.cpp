@@ -383,3 +383,59 @@ TEST_F(SLOW_DebugServerPublishTopicTest, ViewStatePublisherThroughTheSink_LateSu
     EXPECT_EQ(Received("cells.view.state")[1]["selection"]["count"].asInt(), 1);
 }
 #endif
+
+// A topic payload whose message does not fit the 64 KB send buffer is dropped for every subscriber (a Warning on DebugServer); the topic
+// stays usable and the next normal payload is delivered. The retained oversize value is not replayed to a late subscriber either.
+TEST_F(SLOW_DebugServerPublishTopicTest, OversizePayload_IsDroppedNotDeliveredAndTheTopicStaysUsable)
+{
+    SendSubscribeTo("test.oversize.topic", true);
+    Pump();
+    Json::Value big;
+    big["blob"] = std::string(70 * 1024, 'x');
+    mServer.PublishTopic(Dia::Core::StringCRC("test.oversize.topic"), big);
+    Pump();
+    EXPECT_TRUE(Received("test.oversize.topic").empty()) << "over the send buffer: dropped";
+
+    mServer.PublishTopic(Dia::Core::StringCRC("test.oversize.topic"), Make(5));
+    Pump();
+    const std::vector<Json::Value> got = Received("test.oversize.topic");
+    ASSERT_EQ(got.size(), 1u);
+    EXPECT_EQ(got[0]["v"].asInt(), 5);
+}
+
+TEST_F(SLOW_DebugServerPublishTopicTest, OversizeRetainedPayload_IsNotReplayedToALateSubscriber)
+{
+    Json::Value big;
+    big["blob"] = std::string(70 * 1024, 'y');
+    mServer.PublishTopic(Dia::Core::StringCRC("test.oversize.late"), big);
+    Pump();
+    SendSubscribeTo("test.oversize.late", true);
+    Pump();
+    EXPECT_TRUE(Received("test.oversize.late").empty());
+    EXPECT_EQ(mServer.GetTopicSubscriberCount(Dia::Core::StringCRC("test.oversize.late")), 1u) << "still subscribed, just nothing to replay";
+}
+
+TEST_F(SLOW_DebugServerPublishTopicTest, PayloadJustUnderTheBuffer_IsDelivered)
+{
+    SendSubscribeTo("test.nearcap.topic", true);
+    Pump();
+    Json::Value p;
+    p["blob"] = std::string(60 * 1024, 'z');
+    mServer.PublishTopic(Dia::Core::StringCRC("test.nearcap.topic"), p);
+    Pump();
+    const std::vector<Json::Value> got = Received("test.nearcap.topic");
+    ASSERT_EQ(got.size(), 1u);
+    EXPECT_EQ(got[0]["blob"].asString().size(), 60u * 1024u);
+}
+
+// Publishing and counting on a server that was never started must be harmless (the viewer may publish before the server is up).
+TEST(DebugServerPublishTopicUnstarted, PublishAndCountNeverCrashAndCountIsZero)
+{
+    Dia::DebugServer::DebugServer server;
+    Json::Value p;
+    p["v"] = 1;
+    server.PublishTopic(Dia::Core::StringCRC("cells.view.state"), p);
+    server.PublishTopic(Dia::Core::StringCRC("cells.view.state"), p);
+    EXPECT_EQ(server.GetTopicSubscriberCount(Dia::Core::StringCRC("cells.view.state")), 0u);
+    EXPECT_EQ(server.GetTopicSubscriberCount(Dia::Core::StringCRC("never.published")), 0u);
+}
