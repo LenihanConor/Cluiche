@@ -17,7 +17,7 @@ Remove `CellLayerViewerDomain::mMutex` and `StateMutex()`. Everything that reach
 
 1. Mirror queries (`cells.layer.list`, `cells.select.get`, `cells.select.stats`, `cells.layer.values`) are sim-hosted queries.
 2. The viewer's DiaAPI commands are sim-hosted commands, registered on `SimQueryHost` and **no longer** in the DiaAPI `CommandRegistry`.
-3. `debug.domain_state` for the viewer returns the latest snapshot the viewer published to a `FrameStream` each Sim frame; `GetJSONState` on Main reads no live state.
+3. `debug.domain_state` for the viewer returns the latest snapshot the viewer published to a `FrameStream` while requested (see Resolved Question 1); `GetJSONState` on Main reads no live state.
 4. `CellLayersPointerQueue` stays a FIFO (one pointer frame per Sim frame) but loses its mutex, because push and pop are both on SimPU.
 5. `mMutex`, `StateMutex()` and every `ScopedLock` on it are deleted.
 6. Reply sizes fit the 16 KB cap: `cells.layer.values` and `cells.select.get` chunks drop to 1,000 each.
@@ -48,7 +48,7 @@ Clamp behaviour for over-limit requests is unchanged (clamp and warn once).
 3. Each viewer DiaAPI command is registered as a sim-hosted command with unchanged name, args and result; none remains in the DiaAPI `CommandRegistry`; the `cells.layer.list` shadowing bug stays fixed (one handler for the name).
 4. A pointer-injection command (`cluichetest.celllayers.pointer_frames`) is sim-hosted; `CellLayersPointerQueue` has no mutex and pops one frame per Sim frame.
 5. `GetJSONState` on the viewer, when called by `debug.domain_state`, returns the snapshot published by the viewer; the published JSON is the same as the previous live `GetJSONState` output for the same state, plus a `simFrame` field.
-6. The snapshot is written once per Sim frame to a `FrameStream` with a fixed 16 KB slot; if the JSON exceeds the slot the snapshot becomes `{"error":"snapshot too large"}` and a Warning is logged once.
+6. The snapshot is written once per Sim frame to a `FrameStream` with a fixed 32 KB slot (Task 1 measured up to 23.8 KB compact at the Large grid, 20 layers; the 16 KB reply cap applies to queries only); if the JSON exceeds the slot the snapshot becomes `{"error":"snapshot too large"}` and a Warning is logged once.
 7. `cells.layer.values` and `cells.select.get` clamp to 1,000 and echo the clamped `count`; every reply is under the 16 KB cap for the Large grid with 20 layers; the `@dia/editor-ui` `cells.ts` helpers and Vitest conformance fixtures are updated for the new chunk size (including the shared `layer_values.json` and selection fixtures).
 8. All existing GoogleTests, Vitest and E2E for DiaCellLayers pass after migration; the `cells.layer.values` E2E pages through a full layer and matches the C++ fixtures; the viewer E2E still covers commands, selection, inspector, query and mirror.
 9. Read-only guarantee (Feature 5 AC 12) still holds: queries do not change viewer state.
@@ -85,7 +85,7 @@ Clamp behaviour for over-limit requests is unchanged (clamp and warn once).
 
 ## Resolved Design Questions
 
-1. **Snapshot cost (resolved).** Per-frame publish is the default. If Task 1 measures it as too expensive, fall back to demand-driven publishing: publish only while `debug.domain_state` was requested in roughly the last 2 s (a small request signal back to SimPU). The choice is recorded in the plan notes after Task 1.
+1. **Snapshot cost (resolved 2026-11-01).** Task 1 measured 3.3-4 ms per `GetJSONState` in Debug, so per-frame publish is out. Demand-driven publishing is used: publish only while `debug.domain_state` was requested in roughly the last 2 s (a small request signal back to SimPU). Recorded in the plan notes.
 2. **Command ordering (resolved).** Rely on in-order delivery: one request stream drained in order means a later request sees an earlier one's effect. Tests only await each reply. One test proves the ordering (box select, then `cells.select.get` returns the new selection).
 3. **Frame stamp (resolved).** The snapshot JSON carries `simFrame`, so clients comparing it with query replies can see the one-frame skew. Query replies are unchanged. Add to AC 5 (shape equals the previous live output plus the `simFrame` field) and to the `@dia/editor-ui` types.
 

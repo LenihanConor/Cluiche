@@ -1,0 +1,12 @@
+**Spec:** @docs/specs/applications/dia/systems/diacelllayers/streams-migration.md
+**Status:** In Progress
+
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| 1 | Measure largest realistic `GetJSONState` (Large grid, 20 layers, inspector, query, selection) and 1,000-chunk reply sizes; confirm they fit 16 KB. Record per-frame vs demand-driven snapshot choice | Measurement test prints sizes and timing; notes only | Done | sonnet | Measured (Debug): GetJSONState 19.2 KB (1,000-cell selection) to 23.8 KB (one cell) at Large/20 layers, inspector ~70%; 3.3-4 ms per call. Mirror replies at 1,000 chunk fit (values 5.5 KB, select.get 5.1 KB, list 3.6 KB, stats 11.3 KB). **Decision (user, 2026-11-01): demand-driven publish + 32 KB slot, full shape.** Compact writer for the size check. Spec AC 6 and Resolved Q1 amended to match |
+| 2 | Re-home `MirrorQueries` onto `SimQueryHost` (stage registers on SimPU); drop lock and `StateMutex()` use; chunk limits to 1,000; fixtures and Vitest updated | RED-GREEN: queries registered via `SimQueryHostModule::RegisterQuery`, absent from Main `QueryRegistry`; clamp to 1,000 | Pending | sonnet | |
+| 3 | Viewer DiaAPI commands become sim-hosted commands (one registration helper taking a `SimQueryHostModule`); remove from `CommandRegistry`; unit and E2E updated; ordering test (box select then `cells.select.get`) | RED-GREEN: no viewer command left in `CommandRegistry` | Pending | sonnet | |
+| 4 | Snapshot publisher: viewer writes `GetJSONState` JSON (+ `simFrame`) to a 32 KB-slot `FrameStream` while requested (demand-driven, ~2 s window, request signal back to SimPU); Main adapter for `debug.domain_state` reads it; size-cap path | RED-GREEN: snapshot equals prior live output plus `simFrame`; oversize becomes `{"error":"snapshot too large"}` | Pending | sonnet | |
+| 5 | `CellLayersPointerQueue` loses its mutex; `cluichetest.celllayers.pointer_frames` becomes sim-hosted | One pointer frame popped per Sim frame; E2E injection still works | Pending | sonnet | |
+| 6 | Delete `mMutex`, `StateMutex()`, locks; reentrancy tests; module doc and Features 1 and 5 spec/plan amendments | RED-GREEN: layer `read` / overlay `draw` callback re-entering the domain does not deadlock; grep finds no mutex in production code | Pending | sonnet | |
+| 7 | Finalize: exhaustive audit (resumes plan Task 10a for Features 3-5), sanitizer, E2E, spec Done | Full GoogleTests, `dia check sanitizer`, `dia test e2e` celllayers | Pending | sonnet | |
