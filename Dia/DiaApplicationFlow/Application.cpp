@@ -166,7 +166,7 @@ namespace Dia { namespace ApplicationFlow {
             // Build a fixed-capacity list of EventStreamStore pointers for this PU.
             // We capture raw pointers — stores are owned by mStreamStores[] which
             // outlives the PU; the lambda is destroyed when the PU is destroyed.
-            Dia::Core::Containers::DynamicArrayC<IStreamStore*, 16> ownedStores;
+            Dia::Core::Containers::DynamicArrayC<IStreamStore*, 64> ownedStores;
             for (unsigned int si = 0; si < mManifest.streams.Size(); ++si)
             {
                 const StreamDeclaration& sd = mManifest.streams[si];
@@ -175,8 +175,12 @@ namespace Dia { namespace ApplicationFlow {
                 if (sd.fromPU != puId)
                     continue;
                 IStreamStore* store = FindStreamStore(sd.id);
-                if (store && !ownedStores.IsFull())
-                    ownedStores.Add(store);
+                if (store)
+                {
+                    DIA_ASSERT(!ownedStores.IsFull(), "Application: PU owns more EventStreams than the flush list capacity; raise ownedStores size");
+                    if (!ownedStores.IsFull())
+                        ownedStores.Add(store);
+                }
             }
 
             if (ownedStores.IsEmpty())
