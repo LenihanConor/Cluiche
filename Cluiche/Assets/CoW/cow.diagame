@@ -30,6 +30,11 @@
             "type": "stage"
         }
     ],
+    "editor": {
+        "manifests": [
+            "cow_editor.diaapp"
+        ]
+    },
     "name": "CoW",
     "version": "0.1"
 }
