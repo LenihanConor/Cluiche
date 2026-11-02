@@ -127,14 +127,14 @@ TEST(ConsoleJsonTest, LogLinesWrapperDoesNotFit)
 TEST(ConsoleJsonTest, Completions)
 {
 	Completion items[2] = {};
-	strcpy_s(items[0].name, "debug.layer.list");
+	strcpy_s(items[0].name, "debug.pick");
 	items[0].rank = MatchRank::Prefix;
 	strcpy_s(items[1].name, "x\"y");
 	items[1].rank = MatchRank::Subsequence;
 
 	char buf[256];
 	ASSERT_TRUE(ConsoleJson::BuildCompletions(items, 2, buf, sizeof(buf)));
-	EXPECT_STREQ("{\"items\":[{\"name\":\"debug.layer.list\",\"rank\":\"prefix\"},"
+	EXPECT_STREQ("{\"items\":[{\"name\":\"debug.pick\",\"rank\":\"prefix\"},"
 				 "{\"name\":\"x\\\"y\",\"rank\":\"subsequence\"}]}", buf);
 
 	ASSERT_TRUE(ConsoleJson::BuildCompletions(nullptr, 0, buf, sizeof(buf)));

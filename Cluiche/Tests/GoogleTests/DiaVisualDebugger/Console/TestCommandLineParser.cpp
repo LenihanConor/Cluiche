@@ -42,8 +42,8 @@ TEST(ConsoleCommandLineParser, AC1_NamePositionalQuotedFlagAndNamed)
 TEST(ConsoleCommandLineParser, NameOnly)
 {
 	ParsedCommand cmd;
-	ASSERT_EQ(ParseCommandLine("debug.layer.list", cmd), ParseError::None);
-	EXPECT_EQ(cmd.name, StringCRC("debug.layer.list"));
+	ASSERT_EQ(ParseCommandLine("debug.pick", cmd), ParseError::None);
+	EXPECT_EQ(cmd.name, StringCRC("debug.pick"));
 	EXPECT_EQ(cmd.args.positionalArgs.Size(), 0u);
 	EXPECT_EQ(cmd.args.flags.Size(), 0u);
 	EXPECT_EQ(cmd.args.namedArgs.Size(), 0u);
@@ -225,10 +225,10 @@ TEST(ConsoleCommandLineParser, NeverCrashesOnOddInput)
 
 TEST(ConsoleLineAssembler, OneChunk)
 {
-	const char* chunks[] = { "debug.layer.list" };
+	const char* chunks[] = { "debug.pick" };
 	char out[256];
 	ASSERT_TRUE(ConsoleLineAssembler::Assemble(chunks, 1, out, sizeof(out)));
-	EXPECT_STREQ(out, "debug.layer.list");
+	EXPECT_STREQ(out, "debug.pick");
 }
 
 TEST(ConsoleLineAssembler, TwoThreeFourChunks)
