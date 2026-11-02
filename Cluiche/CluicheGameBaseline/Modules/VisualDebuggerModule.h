@@ -22,6 +22,8 @@
 #include "Types/DebugConsoleResultEvent.h"
 #include "Types/DebugPanelToggleEvent.h"
 #include "Types/DebugPanelSetVisibilityEvent.h"
+#include "Types/DomainStateInterestEvent.h"
+#include <DiaVisualDebugger/Console/DomainStateSnapshotPublisher.h>
 #include <DiaVisualDebugger/Domain/IDebugDomain.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
 #include <memory>
@@ -101,6 +103,19 @@ private:
     Dia::ApplicationFlow::EventStreamWriter<DebugConsoleResultEvent> mConsoleResults{this, "DebugConsoleResult"};
     Dia::ApplicationFlow::EventStreamWriter<DebugPanelToggleEvent>  mPanelToggle{this, "DebugPanelToggle"};
     Dia::ApplicationFlow::EventStreamWriter<DebugPanelSetVisibilityEvent> mPanelSetVisibility{this, "DebugPanelSetVisibility"};
+    // Domain state snapshot (Sim producer; Main reads the "DomainStateSnapshot" FrameStream). Interest arrives on "DomainStateInterest".
+    class SnapshotSink : public Dia::VisualDebugger::Console::IDomainStateSink
+    {
+    public:
+        explicit SnapshotSink(Dia::ApplicationFlow::StreamWriter<Dia::VisualDebugger::Console::DomainStateSnapshot>& out) : mOut(out) {}
+        void Write(const Dia::VisualDebugger::Console::DomainStateSnapshot& snapshot) override;
+    private:
+        Dia::ApplicationFlow::StreamWriter<Dia::VisualDebugger::Console::DomainStateSnapshot>& mOut;
+    };
+    Dia::ApplicationFlow::StreamWriter<Dia::VisualDebugger::Console::DomainStateSnapshot> mDomainSnapshotOut{this, "DomainStateSnapshot"};
+    Dia::ApplicationFlow::EventStreamReader<DomainStateInterestEvent> mDomainInterest{this, "DomainStateInterest"};
+    SnapshotSink mSnapshotSink{mDomainSnapshotOut};
+    std::unique_ptr<Dia::VisualDebugger::Console::DomainStateSnapshotPublisher> mSnapshotPublisher;
     Dia::Core::Containers::DynamicArrayC<PendingCommand, kCommandQueueCapacity> mCommandQueue;
     std::mutex mCommandQueueMutex;
     Dia::Graphics::FrameData mFrame;

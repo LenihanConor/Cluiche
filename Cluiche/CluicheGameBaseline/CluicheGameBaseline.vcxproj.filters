@@ -299,5 +299,8 @@
     <ClInclude Include="Types\SimRegistrationMessage.h">
       <Filter>Types</Filter>
     </ClInclude>
+    <ClInclude Include="Types\DomainStateInterestEvent.h">
+      <Filter>Types</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

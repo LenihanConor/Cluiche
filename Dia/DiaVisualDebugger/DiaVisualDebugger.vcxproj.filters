@@ -173,6 +173,9 @@
     <ClInclude Include="Console\DomainStateSnapshot.h">
       <Filter>Console</Filter>
     </ClInclude>
+    <ClInclude Include="Console\DomainStateSnapshotPublisher.h">
+      <Filter>Console</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugLayerManager.cpp">
@@ -266,6 +269,9 @@
       <Filter>Console</Filter>
     </ClCompile>
     <ClCompile Include="Console\DomainStateSnapshot.cpp">
+      <Filter>Console</Filter>
+    </ClCompile>
+    <ClCompile Include="Console\DomainStateSnapshotPublisher.cpp">
       <Filter>Console</Filter>
     </ClCompile>
   </ItemGroup>

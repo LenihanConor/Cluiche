@@ -133,6 +133,7 @@
     <ClInclude Include="Modules\MessageBusHostModule.h" />
     <ClInclude Include="Modules\SimQueryHostModule.h" />
     <ClInclude Include="Types\SimRegistrationMessage.h" />
+    <ClInclude Include="Types\DomainStateInterestEvent.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">

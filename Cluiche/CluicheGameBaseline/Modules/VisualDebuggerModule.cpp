@@ -35,6 +35,8 @@ Dia::ApplicationFlow::StartResult VisualDebuggerModule::DoStart()
 {
     mLayerManagerService.Register(mLayerManager);
     mDomainRegistryService.Register(mDomainRegistry);
+    mSnapshotPublisher = std::make_unique<Dia::VisualDebugger::Console::DomainStateSnapshotPublisher>(
+        mDomainRegistry, mSnapshotSink);
     mLayerManager.SetDebugScale(50.0f);
     mLayerManager.RegisterDiaAPICommands();
     mCoord2DDomain = std::make_unique<Dia::Debug::Coord2DDebugDomain>();
@@ -44,13 +46,28 @@ Dia::ApplicationFlow::StartResult VisualDebuggerModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void VisualDebuggerModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*ctx*/)
+void VisualDebuggerModule::SnapshotSink::Write(const Dia::VisualDebugger::Console::DomainStateSnapshot& snapshot)
+{
+    mOut.Write(snapshot, Dia::Core::TimeAbsolute::Zero());
+}
+
+void VisualDebuggerModule::DoUpdate(const Dia::SimTime::SimTimeContext& ctx)
 {
     DIA_TRACE_ZONE("VisualDebuggerModule.Update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
 
     DrainPanelCommandStream();
     DrainConsoleLines();
     DrainPendingCommands();
+
+    if (mSnapshotPublisher)
+    {
+        Dia::Core::Containers::DynamicArrayC<
+            Dia::ApplicationFlow::Event<DomainStateInterestEvent>, kCommandQueueCapacity> interest;
+        mDomainInterest.Consume(interest);
+        for (unsigned int i = 0; i < interest.Size(); ++i)
+            mSnapshotPublisher->Arm(interest[i].payload.windowMs);
+        mSnapshotPublisher->Update(ctx.tick);
+    }
 
     auto* app = GetApplication();
     if (app)
@@ -98,6 +115,7 @@ Dia::ApplicationFlow::StopResult VisualDebuggerModule::DoStop()
     mLayerManager.ClearDynamicLayers();
     if (mCoord2DDomain) { UnregisterDomain(*mCoord2DDomain); mCoord2DDomain.reset(); }
     if (mCoord3DDomain) { UnregisterDomain(*mCoord3DDomain); mCoord3DDomain.reset(); }
+    mSnapshotPublisher.reset();
     mDomainRegistry.Clear();
     mLastKnownStage = Dia::Core::StringCRC();
     mFrame.Clear();
@@ -117,6 +135,8 @@ void VisualDebuggerModule::OnConnectStreams(Dia::ApplicationFlow::Application& a
     mConsoleResults.Connect(app);
     mPanelToggle.Connect(app);
     mPanelSetVisibility.Connect(app);
+    mDomainSnapshotOut.Connect(app);
+    mDomainInterest.Connect(app);
 }
 
 void VisualDebuggerModule::RegisterDomain(Dia::VisualDebugger::IDebugDomain& domain)

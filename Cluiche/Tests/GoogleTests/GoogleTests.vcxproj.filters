@@ -2388,5 +2388,8 @@
     <ClCompile Include="DiaVisualDebugger\Console\TestDomainStateSnapshot.cpp">
       <Filter>DiaVisualDebugger\Console</Filter>
     </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\Console\TestDomainStateSnapshotPublisher.cpp">
+      <Filter>DiaVisualDebugger\Console</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

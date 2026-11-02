@@ -117,6 +117,7 @@
     <ClInclude Include="Domain\ServiceKeyResolver.h" />
     <ClInclude Include="Console\DomainStateQuery.h" />
     <ClInclude Include="Console\DomainStateSnapshot.h" />
+    <ClInclude Include="Console\DomainStateSnapshotPublisher.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugLayerManager.cpp" />
@@ -150,6 +151,7 @@
     <ClCompile Include="Domain\SchemaControl.cpp" />
     <ClCompile Include="Console\DomainStateQuery.cpp" />
     <ClCompile Include="Console\DomainStateSnapshot.cpp" />
+    <ClCompile Include="Console\DomainStateSnapshotPublisher.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.debug.architecture.module.md" />
