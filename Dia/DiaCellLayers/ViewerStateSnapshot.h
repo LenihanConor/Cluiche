@@ -20,11 +20,12 @@
 
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Misc/FastDelegate.h>
+#include <DiaCore/Strings/String256.h>
+#include <DiaCore/Strings/String64.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaVisualDebugger/Domain/IDebugDomain.h>
 
 #include <cstdint>
-#include <string>
 
 namespace Dia::CellLayers
 {
@@ -52,8 +53,9 @@ namespace Dia::CellLayers
 	{
 	public:
 		virtual ~IViewerStateSource() = default;
-		// False if no snapshot has been published yet. Otherwise copies the latest snapshot JSON text into json.
-		virtual bool ReadLatest(std::string& json) = 0;
+		// False if no snapshot has been published yet. Otherwise copies the latest snapshot JSON text into buffer (at most capacity
+		// bytes, not NUL-terminated) and sets length to the number of bytes copied.
+		virtual bool ReadLatest(char* buffer, uint32_t capacity, uint32_t& length) = 0;
 	};
 
 	// Demand signal (Main). Cheap: called on every GetJSONState.
@@ -106,8 +108,8 @@ namespace Dia::CellLayers
 			CommandFn onCommand = CommandFn());
 
 		Dia::Core::StringCRC GetDomainId()     const override { return mId; }
-		const char*          GetDisplayName()  const override { return mName.c_str(); }
-		const char*          GetDescription()  const override { return mDescription.c_str(); }
+		const char*          GetDisplayName()  const override { return mName.AsCStr(); }
+		const char*          GetDescription()  const override { return mDescription.AsCStr(); }
 		Dia::Core::StringCRC GetGroup()        const override { return mGroup; }
 		Dia::Core::RGBA      GetAccentColour() const override { return mAccent; }
 		bool                 HasWorldDrawers() const override { return false; }
@@ -116,13 +118,14 @@ namespace Dia::CellLayers
 
 	private:
 		Dia::Core::StringCRC	mId;
-		std::string				mName;
-		std::string				mDescription;
+		Dia::Core::Containers::String64		mName;
+		Dia::Core::Containers::String256	mDescription;
 		Dia::Core::StringCRC	mGroup;
 		Dia::Core::RGBA			mAccent;
 		IViewerStateSource&		mSource;
 		IViewerStateDemand&		mDemand;
 		CommandFn				mOnCommand;
+		char					mText[ViewerStateSlot::kCapacity];	// scratch for the latest snapshot text (Main thread only)
 	};
 }
 

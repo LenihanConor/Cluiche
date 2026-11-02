@@ -15,6 +15,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <cstring>
 
 #ifdef DIA_DEBUG
 
@@ -572,7 +573,13 @@ namespace
 	class ExSource : public IViewerStateSource
 	{
 	public:
-		bool ReadLatest(std::string& json) override { json = text; return has; }
+		bool ReadLatest(char* buffer, uint32_t capacity, uint32_t& length) override
+		{
+			if (!has) { return false; }
+			length = static_cast<uint32_t>(text.size() < capacity ? text.size() : capacity);
+			memcpy(buffer, text.data(), length);
+			return true;
+		}
 		bool has = false;
 		std::string text;
 	};

@@ -5,18 +5,22 @@
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <cstring>
 
 namespace CluicheTest {
 
 const Dia::Core::StringCRC CellLayersStateBridgeModule::kTypeId("CellLayersStateBridgeModule");
 
-bool CellViewerStateChannel::ReadLatest(std::string& json)
+bool CellViewerStateChannel::ReadLatest(char* buffer, uint32_t capacity, uint32_t& length)
 {
     const Dia::CellLayers::ViewerStateSlot* slot = mReader != nullptr ? mReader->FetchLatest() : nullptr;
-    if (slot == nullptr)
+    if (slot == nullptr || buffer == nullptr)
         return false;
-    const uint32_t length = slot->length <= Dia::CellLayers::ViewerStateSlot::kCapacity ? slot->length : Dia::CellLayers::ViewerStateSlot::kCapacity;
-    json.assign(slot->json, length);
+    uint32_t n = slot->length <= Dia::CellLayers::ViewerStateSlot::kCapacity ? slot->length : Dia::CellLayers::ViewerStateSlot::kCapacity;
+    if (n > capacity)
+        n = capacity;
+    std::memcpy(buffer, slot->json, n);
+    length = n;
     return true;
 }
 

@@ -27,7 +27,7 @@ class CellViewerStateChannel
 {
 public:
     // Dia::CellLayers::IViewerStateSource (Main thread)
-    bool ReadLatest(std::string& json) override;
+    bool ReadLatest(char* buffer, uint32_t capacity, uint32_t& length) override;
     // Dia::CellLayers::IViewerStateDemand (Main thread)
     void RequestState() override { mDemandPending = true; }
 

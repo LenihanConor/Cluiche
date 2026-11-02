@@ -12,6 +12,7 @@
 #include <thread>
 #include <string>
 #include <vector>
+#include <cstring>
 
 #ifdef DIA_DEBUG
 
@@ -61,7 +62,13 @@ namespace
 	class SnapSource : public IViewerStateSource
 	{
 	public:
-		bool ReadLatest(std::string& json) override { if (!has) { return false; } json = text; return true; }
+		bool ReadLatest(char* buffer, uint32_t capacity, uint32_t& length) override
+		{
+			if (!has) { return false; }
+			length = static_cast<uint32_t>(text.size() < capacity ? text.size() : capacity);
+			memcpy(buffer, text.data(), length);
+			return true;
+		}
 		bool has = false;
 		std::string text;
 	};
@@ -529,11 +536,12 @@ namespace
 			mText.assign(json, length);
 			mHas = true;
 		}
-		bool ReadLatest(std::string& json) override
+		bool ReadLatest(char* buffer, uint32_t capacity, uint32_t& length) override
 		{
 			std::lock_guard<std::mutex> lock(mMutex);
 			if (!mHas) { return false; }
-			json = mText;
+			length = static_cast<uint32_t>(mText.size() < capacity ? mText.size() : capacity);
+			memcpy(buffer, mText.data(), length);
 			return true;
 		}
 	private:

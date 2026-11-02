@@ -1,6 +1,7 @@
 #ifdef DIA_DEBUG
 #include <DiaCellLayers/ViewerStateSnapshot.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaValueSchema/ValueInfo.h>
 
 #include <memory>
 
@@ -71,16 +72,19 @@ namespace Dia::CellLayers
 
 	ViewerStateAdapter::ViewerStateAdapter(const Dia::VisualDebugger::IDebugDomain& identity, IViewerStateSource& source,
 		IViewerStateDemand& demand, CommandFn onCommand)
-		: mId(identity.GetDomainId()), mName(identity.GetDisplayName()), mDescription(identity.GetDescription()),
+		: mId(identity.GetDomainId()),
 		  mGroup(identity.GetGroup()), mAccent(identity.GetAccentColour()), mSource(source), mDemand(demand), mOnCommand(onCommand)
 	{
+		Dia::ValueSchema::SetText(mName, identity.GetDisplayName());	// truncating copy; the printf-style String constructor would format '%'
+		Dia::ValueSchema::SetText(mDescription, identity.GetDescription());
+		mText[0] = '\0';
 	}
 
 	void ViewerStateAdapter::GetJSONState(Json::Value& out)
 	{
 		mDemand.RequestState();
-		std::string text;
-		if (!mSource.ReadLatest(text))
+		uint32_t length = 0;
+		if (!mSource.ReadLatest(mText, ViewerStateSlot::kCapacity, length))
 		{
 			WritePlaceholder(out, "pending", Json::Value(true));
 			return;
@@ -89,7 +93,7 @@ namespace Dia::CellLayers
 		Json::CharReaderBuilder builder;
 		std::string errs;
 		std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
-		if (!reader->parse(text.data(), text.data() + text.size(), &parsed, &errs) || !parsed.isObject())
+		if (!reader->parse(mText, mText + length, &parsed, &errs) || !parsed.isObject())
 		{
 			WritePlaceholder(out, "error", Json::Value("unreadable snapshot"));
 			return;
