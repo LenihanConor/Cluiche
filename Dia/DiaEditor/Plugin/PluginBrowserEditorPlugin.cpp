@@ -173,6 +173,16 @@ namespace Dia
 			DIA_LOG_INFO("Editor", "PluginBrowserEditorPlugin: OnPluginUnload");
 		}
 
+		void PluginBrowserEditorPlugin::OnUpdate(float deltaTime)
+		{
+			EditorPluginBase::OnUpdate(deltaTime);
+			if (mPaletteSyncPending && !Dia::API::IsInsideCommandCallback())
+			{
+				mPaletteSyncPending = false;
+				SyncPaletteCommandsToScope();
+			}
+		}
+
 		Json::Value PluginBrowserEditorPlugin::BuildAvailableList() const
 		{
 			Json::Value result;
@@ -328,7 +338,12 @@ namespace Dia
 		void PluginBrowserEditorPlugin::OnGameScopeChanged(void* userData, const Dia::Core::StringCRC& /*oldGame*/, const Dia::Core::StringCRC& /*newGame*/)
 		{
 			PluginBrowserEditorPlugin* self = static_cast<PluginBrowserEditorPlugin*>(userData);
-			self->SyncPaletteCommandsToScope();
+			// DiaAPI rejects registry mutation inside a command callback (e.g. a game loaded from a palette
+			// command), so defer the palette sync to the next OnUpdate in that case.
+			if (Dia::API::IsInsideCommandCallback())
+				self->mPaletteSyncPending = true;
+			else
+				self->SyncPaletteCommandsToScope();
 			self->NotifyBrowserChanged();
 		}
 	}

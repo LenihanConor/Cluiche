@@ -215,5 +215,8 @@ namespace Dia
 		// Returns {"success":false,"error":"<message>"} on handler exception.
 		Json::Value ExecuteCommandJson(const Dia::Core::StringCRC& name, const Json::Value& params);
 
+		// True if the calling thread is inside a command callback (registry mutation is rejected there).
+		bool IsInsideCommandCallback();
+
 	} // namespace API
 } // namespace Dia

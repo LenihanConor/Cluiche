@@ -23,6 +23,8 @@ namespace Dia
 				})
 			{}
 
+			void OnUpdate(float deltaTime) override;
+
 		protected:
 			void OnPluginLoad() override;
 			void OnPluginUnload() override;
@@ -42,6 +44,7 @@ namespace Dia
 
 			Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, EditorPluginRegistry::kMaxPlugins> mPaletteTypes;
 			bool mGameScopeListenerAdded = false;
+			bool mPaletteSyncPending = false;   // scope changed inside a command callback; applied in OnUpdate
 		};
 	}
 }

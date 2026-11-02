@@ -507,10 +507,9 @@ TEST_F(GameScopedPluginsIntegration, AC8_RealLoader_SaveThenSwitchClosesStub)
 // command callback (DiaAPI rejects registry mutation from inside a callback).
 // ---------------------------------------------------------------------------
 
-// DISABLED: real bug. DiaAPI rejects Register/UnregisterCommandJson from inside a command callback, so the
-// browser's scope listener cannot add/remove plugin.load.* / plugin.unload.* when a game loads from a palette
-// command (2 asserts + palette left stale). Re-enable once the palette sync is deferred out of the callback.
-TEST_F(GameScopedPluginsIntegration, DISABLED_PaletteCommandsSyncedWhenGameLoadsInsideCommandCallback)
+// DiaAPI rejects Register/UnregisterCommandJson from inside a command callback, so the browser defers the
+// palette sync to its next OnUpdate when a game loads from a command.
+TEST_F(GameScopedPluginsIntegration, PaletteCommandsSyncedWhenGameLoadsInsideCommandCallback)
 {
     LoadBrowser();
     // Tag the stub and move out of scope first so the palette entries really have to be (un)registered.
@@ -553,11 +552,12 @@ TEST_F(GameScopedPluginsIntegration, DISABLED_PaletteCommandsSyncedWhenGameLoads
     EXPECT_TRUE(presentAfterLoad);
     EXPECT_EQ(assertsOnLoad, 0) << "palette RegisterCommandJson was rejected inside the callback";
     EXPECT_EQ(assertsTotal, 0) << "palette UnregisterCommandJson was rejected inside the callback";
+    mBrowser.OnUpdate(0.0f);
     EXPECT_FALSE(PaletteLoadExists("stubgameplugin"));
 }
 
-// DISABLED: same bug as above (register direction).
-TEST_F(GameScopedPluginsIntegration, DISABLED_PaletteCommandsAppearWhenStubGameLoadsInsideCommandCallback)
+// Same as above (register direction).
+TEST_F(GameScopedPluginsIntegration, PaletteCommandsAppearWhenStubGameLoadsInsideCommandCallback)
 {
     LoadBrowser();
     ASSERT_TRUE(LoadStubGame());
@@ -581,5 +581,6 @@ TEST_F(GameScopedPluginsIntegration, DISABLED_PaletteCommandsAppearWhenStubGameL
     Dia::API::UnregisterCommandJson(StringCRC("gsp_test.load_stub_game2"));
 
     EXPECT_EQ(asserts, 0);
+    mBrowser.OnUpdate(0.0f);
     EXPECT_TRUE(PaletteLoadExists("stubgameplugin"));
 }
