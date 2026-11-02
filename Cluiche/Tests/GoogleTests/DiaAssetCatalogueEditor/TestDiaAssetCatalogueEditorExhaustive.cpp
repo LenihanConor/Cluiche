@@ -799,6 +799,51 @@ TEST_F(AssetTypeEditorRegistryTest, MultipleTypes)
 }
 
 // ===========================================================================
+// AssetTypeEditorRegistry::UnregisterTypeEditor
+// ===========================================================================
+TEST_F(AssetTypeEditorRegistryTest, UnregisterRemovesOwnRoute)
+{
+    reg.RegisterTypeEditor(StringCRC("cowthing"), StringCRC("CowEd"));
+    EXPECT_TRUE(reg.UnregisterTypeEditor(StringCRC("cowthing"), StringCRC("CowEd")));
+    EXPECT_EQ(reg.FindEditorForType(StringCRC("cowthing")), StringCRC());
+}
+
+TEST_F(AssetTypeEditorRegistryTest, UnregisterWithOtherEditorKeepsRoute)
+{
+    reg.RegisterTypeEditor(StringCRC("diascene"), StringCRC("DiaSceneEditor"));
+    EXPECT_FALSE(reg.UnregisterTypeEditor(StringCRC("diascene"), StringCRC("CowEd")));
+    EXPECT_EQ(reg.FindEditorForType(StringCRC("diascene")), StringCRC("DiaSceneEditor"));
+}
+
+TEST_F(AssetTypeEditorRegistryTest, UnregisterUnknownTypeReturnsFalse)
+{
+    EXPECT_FALSE(reg.UnregisterTypeEditor(StringCRC("nothing"), StringCRC("CowEd")));
+}
+
+TEST_F(AssetTypeEditorRegistryTest, UnregisterTwiceSecondReturnsFalse)
+{
+    reg.RegisterTypeEditor(StringCRC("cowthing"), StringCRC("CowEd"));
+    EXPECT_TRUE(reg.UnregisterTypeEditor(StringCRC("cowthing"), StringCRC("CowEd")));
+    EXPECT_FALSE(reg.UnregisterTypeEditor(StringCRC("cowthing"), StringCRC("CowEd")));
+}
+
+TEST_F(AssetTypeEditorRegistryTest, ReRegisterAfterUnregisterSucceeds)
+{
+    reg.RegisterTypeEditor(StringCRC("cowthing"), StringCRC("CowEd"));
+    reg.UnregisterTypeEditor(StringCRC("cowthing"), StringCRC("CowEd"));
+    EXPECT_TRUE(reg.RegisterTypeEditor(StringCRC("cowthing"), StringCRC("CowEd2")));
+    EXPECT_EQ(reg.FindEditorForType(StringCRC("cowthing")), StringCRC("CowEd2"));
+}
+
+TEST_F(AssetTypeEditorRegistryTest, UnregisterLeavesOtherRoutes)
+{
+    reg.RegisterTypeEditor(StringCRC("a"), StringCRC("EdA"));
+    reg.RegisterTypeEditor(StringCRC("b"), StringCRC("EdB"));
+    reg.UnregisterTypeEditor(StringCRC("a"), StringCRC("EdA"));
+    EXPECT_EQ(reg.FindEditorForType(StringCRC("b")), StringCRC("EdB"));
+}
+
+// ===========================================================================
 // AssetTypeRegistry::FindByFileName (new method)
 // ===========================================================================
 class FindByFileNameTest : public ::testing::Test

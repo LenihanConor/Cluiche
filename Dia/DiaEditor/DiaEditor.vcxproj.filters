@@ -120,6 +120,9 @@
     <ClInclude Include="Project\GameScopeDiscovery.h">
       <Filter>Project</Filter>
     </ClInclude>
+    <ClInclude Include="Plugin\AssetRoutes.h">
+      <Filter>Plugin</Filter>
+    </ClInclude>
       <Filter>EditorAPI</Filter>
     </ClInclude>
       <Filter>EditorAPI</Filter>

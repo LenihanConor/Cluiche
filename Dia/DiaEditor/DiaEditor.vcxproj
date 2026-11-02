@@ -137,6 +137,7 @@
     <ClInclude Include="Project\GameSwitchGate.h" />
     <ClInclude Include="Project\GameSwitchController.h" />
     <ClInclude Include="Project\GameScopeDiscovery.h" />
+    <ClInclude Include="Plugin\AssetRoutes.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="EditorAPI\EditorActionManifest.cpp" />

@@ -6,12 +6,14 @@
 //
 // Known headless limit: PluginLoaderModule registers its game-scope listener inside DoStart(), which
 // needs the full editor application. The fixture therefore installs a listener that performs the same
-// "close every out-of-scope plugin through UnloadPlugin" step (see OnScopeChanged). AC4 is Blocked
-// (editor-deep-link) and is not tested here.
+// "close every out-of-scope plugin through UnloadPlugin" step (see OnScopeChanged). AC4 is covered via the
+// asset-type route registry (asset_catalogue.register_type_editor / unregister_type_editor); the ShellExecuteExW
+// fallback itself is not exercised, only that no editor route exists.
 
 #include <gtest/gtest.h>
 #include "GameScopedPluginFixtures.h"
 
+#include <DiaAssetCatalogueEditor/DiaAssetCatalogueEditorPlugin.h>
 #include <ApplicationFlow/Modules/PluginLoaderModule.h>
 #include <ApplicationFlow/Modules/EditorViewModule.h>
 #include <DiaEditor/MVC/EditorModel.h>
@@ -62,6 +64,7 @@ protected:
         mFiles = WriteFixtureFiles();
 
         mSwitch.Initialize(&mSwitchBridge, &mModel, &mLoader);
+        StubGamePlugin::RouteBridgeOverride() = &mBridge;
         EditorPluginRegistry::Instance().AddGameScopeListener(&GameScopedPluginsIntegration::OnScopeChanged, this);
     }
 
@@ -75,6 +78,14 @@ protected:
         if (mBrowserLoaded)
             mBrowser.OnUnload();
         mBrowserLoaded = false;
+
+        const char* typesFirst[] = { kStubGameType, kStubGenericType };
+        for (const char* t : typesFirst)
+            mLoader.UnloadPlugin(StringCRC(t));   // game plugin unregisters its route while the catalogue is still up
+        if (mCatalogueLoaded)
+            mCatalogue.OnUnload();
+        mCatalogueLoaded = false;
+        StubGamePlugin::RouteBridgeOverride() = nullptr;
 
         const char* types[] = { kStubGameType, kStubGenericType };
         for (const char* t : types)
@@ -104,6 +115,29 @@ protected:
         ctx.mPluginLoader = &mLoader;   // the real PluginLoaderModule
         mBrowser.OnLoad(ctx);
         mBrowserLoaded = true;
+    }
+
+    void LoadCatalogue()
+    {
+        EditorPluginContext ctx;
+        ctx.mBridge = &mBridge;
+        mCatalogue.OnLoad(ctx);
+        mCatalogueLoaded = true;
+    }
+
+    // Probe: registering a route for the stub asset type only succeeds when none exists (the probe is then removed).
+    bool StubRouteExists()
+    {
+        Json::Value req(Json::objectValue);
+        req["assetType"] = kStubAssetType;
+        req["editorPluginType"] = "ProbeEditor";
+        Json::Value r = mBridge.InvokeRequestHandler(StringCRC("asset_catalogue.register_type_editor"), req);
+        if (r["registered"].asBool())
+        {
+            mBridge.InvokeRequestHandler(StringCRC("asset_catalogue.unregister_type_editor"), req);
+            return false;
+        }
+        return true;
     }
 
     bool Listed(const char* typeId)
@@ -159,7 +193,9 @@ protected:
     Cluiche::Editor::PluginLoaderModule mLoader;
     GameSwitchController mSwitch;
     PluginBrowserEditorPlugin mBrowser;
+    Dia::AssetCatalogue::Editor::DiaAssetCatalogueEditorPlugin mCatalogue;
     bool mBrowserLoaded = false;
+    bool mCatalogueLoaded = false;
     FixtureFiles mFiles;
 };
 
@@ -323,6 +359,59 @@ TEST_F(GameScopedPluginsIntegration, AC3_SwitchBackToStubGame_StubAvailableAgain
     EXPECT_TRUE(Listed(kStubGameType));
     EXPECT_TRUE(BrowserLoad(kStubGameType)["success"].asBool());
     EXPECT_EQ(GameCounters().loads, 2);
+    EXPECT_EQ(GameCounters().unloads, 1);
+}
+
+// ---------------------------------------------------------------------------
+// AC4: a game plugin's asset-type route exists only while it is loaded; otherwise open_asset has no editor
+// route and falls back to the OS default app
+// ---------------------------------------------------------------------------
+
+TEST_F(GameScopedPluginsIntegration, AC4_RouteExistsOnlyWhileGamePluginLoaded)
+{
+    LoadCatalogue();
+    ASSERT_TRUE(LoadStubGame());
+    EXPECT_FALSE(StubRouteExists());   // plugin not loaded yet: fallback
+
+    mLoader.LoadPlugin(StringCRC(kStubGameType), StringCRC("inst"));
+    EXPECT_TRUE(StubRouteExists());
+
+    ASSERT_TRUE(LoadOtherGame());      // scope change closes the plugin
+    EXPECT_FALSE(mLoader.IsPluginTypeLoaded(StringCRC(kStubGameType)));
+    EXPECT_FALSE(StubRouteExists());   // fallback again
+}
+
+TEST_F(GameScopedPluginsIntegration, AC4_RouteRemovedWhenGameClosed)
+{
+    LoadCatalogue();
+    ASSERT_TRUE(LoadStubGame());
+    mLoader.LoadPlugin(StringCRC(kStubGameType), StringCRC("inst"));
+    ASSERT_TRUE(StubRouteExists());
+
+    mModel.ClearDiagameProject();
+    EXPECT_FALSE(StubRouteExists());
+}
+
+TEST_F(GameScopedPluginsIntegration, AC4_RouteReturnsWhenGameReloaded)
+{
+    LoadCatalogue();
+    ASSERT_TRUE(LoadStubGame());
+    mLoader.LoadPlugin(StringCRC(kStubGameType), StringCRC("inst"));
+    ASSERT_TRUE(LoadOtherGame());
+    ASSERT_FALSE(StubRouteExists());
+
+    ASSERT_TRUE(LoadStubGame());
+    mLoader.LoadPlugin(StringCRC(kStubGameType), StringCRC("inst"));
+    EXPECT_TRUE(StubRouteExists());
+}
+
+TEST_F(GameScopedPluginsIntegration, AC4_NoCataloguePlugin_LoadAndUnloadStillWork)
+{
+    ASSERT_TRUE(LoadStubGame());
+    mLoader.LoadPlugin(StringCRC(kStubGameType), StringCRC("inst"));
+    EXPECT_TRUE(mLoader.IsPluginTypeLoaded(StringCRC(kStubGameType)));
+    ASSERT_TRUE(LoadOtherGame());
+    EXPECT_FALSE(mLoader.IsPluginTypeLoaded(StringCRC(kStubGameType)));
     EXPECT_EQ(GameCounters().unloads, 1);
 }
 

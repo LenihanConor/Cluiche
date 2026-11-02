@@ -1138,7 +1138,29 @@ namespace Dia
 						}
 						Dia::Core::StringCRC assetType(data["assetType"].asCString());
 						Dia::Core::StringCRC editorType(data["editorPluginType"].asCString());
-						mTypeEditorRegistry.RegisterTypeEditor(assetType, editorType);
+						result["registered"] = mTypeEditorRegistry.RegisterTypeEditor(assetType, editorType);   // first registration wins
+						result["success"] = true;
+						return result;
+					});
+
+				// unregister_type_editor - removes a route a plugin added (e.g. a game-scoped plugin's OnUnload).
+				// Only removes when the type is currently routed to the given editor, so built-in routes and
+				// other plugins' routes are never removed. After removal open_asset falls back to the OS default app.
+				RegisterHandler(
+					Dia::Core::StringCRC("asset_catalogue.unregister_type_editor"),
+					[this](const Json::Value& data) -> Json::Value
+					{
+						Json::Value result;
+						if (!data.isMember("assetType") || !data["assetType"].isString() ||
+						    !data.isMember("editorPluginType") || !data["editorPluginType"].isString())
+						{
+							result["success"] = false;
+							result["error"]   = "missing assetType or editorPluginType";
+							return result;
+						}
+						Dia::Core::StringCRC assetType(data["assetType"].asCString());
+						Dia::Core::StringCRC editorType(data["editorPluginType"].asCString());
+						result["removed"] = mTypeEditorRegistry.UnregisterTypeEditor(assetType, editorType);
 						result["success"] = true;
 						return result;
 					});

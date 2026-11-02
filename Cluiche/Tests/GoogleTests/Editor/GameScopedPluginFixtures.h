@@ -11,6 +11,8 @@
 
 #include <DiaEditor/Plugin/IEditorPlugin.h>
 #include <DiaEditor/Plugin/EditorPluginRegistry.h>
+#include <DiaEditor/Plugin/AssetRoutes.h>
+#include <DiaEditor/Plugin/EditorPluginContext.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 #include <cstring>
@@ -22,6 +24,7 @@ namespace GameScopedFixtures
 {
     inline const char* kStubGameType    = "StubGamePlugin";
     inline const char* kStubGenericType = "StubGenericPlugin";
+    inline const char* kStubAssetType   = "stub_game_asset";   // asset type the stub game routes to StubGamePlugin
 
     // Counters shared by every stub instance so tests can observe lifecycle calls.
     struct StubCounters
@@ -73,6 +76,25 @@ namespace GameScopedFixtures
     {
     public:
         StubGamePlugin() : StubPluginBase("Stub Game Plugin", GameCounters()) {}
+
+        // Game-scoped plugins add their asset-type routes while loaded and remove them on unload (AC4).
+        void OnLoad(const Dia::Editor::EditorPluginContext& ctx) override
+        {
+            StubPluginBase::OnLoad(ctx);
+            mBridge = ctx.mBridge ? ctx.mBridge : RouteBridgeOverride();
+            Dia::Editor::AssetRoutes::RegisterAssetRoute(mBridge, kStubAssetType, kStubGameType);
+        }
+        void OnUnload() override
+        {
+            Dia::Editor::AssetRoutes::UnregisterAssetRoute(mBridge, kStubAssetType, kStubGameType);
+            StubPluginBase::OnUnload();
+        }
+
+        // The headless PluginLoaderModule has no bridge, so tests supply the one the catalogue plugin uses.
+        static Dia::Editor::WebUIBridge*& RouteBridgeOverride() { static Dia::Editor::WebUIBridge* b = nullptr; return b; }
+
+    private:
+        Dia::Editor::WebUIBridge* mBridge = nullptr;
     };
 
     class StubGenericPlugin : public StubPluginBase

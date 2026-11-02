@@ -44,6 +44,7 @@ public_api:
     - DiaEditor/Plugin/EditorPluginRegistry.h
     - DiaEditor/Plugin/GameConnectionEditorPlugin.h
     - DiaEditor/Project/GameScopeDiscovery.h
+    - DiaEditor/Plugin/AssetRoutes.h
   namespaces:
     - Dia::Editor
   entry_points:
@@ -60,5 +61,7 @@ CluicheEditor host framework — plugin registration, CEF shell, WebSocket game 
 ## Conventions
 
 **Game-scoped plugin discovery:** Game-scoped types must be tagged before any game loads, so the cold-start state is out of scope. `GameScopeDiscovery::DiscoverAndTag(roots, maxDepth, gamePaths)` scans roots for `*.diagame` (depth-limited), unions explicit game paths, de-duplicates by `NormalizeGamePath`, and calls `TagGameScoped` without activating a scope. `CollectGameScope` is the single collection path shared with `EditorModel::LoadDiagameProject`, so the game id matches. Missing roots and malformed files are logged and skipped. CluicheEditor calls it from `EditorModelModule::DoStart` with `editor.cluicheproj` `game_roots` (default `assets` next to the exe), `last_project` and `recent_projects`.
+
+**Game-scoped asset routes:** A plugin that should own an asset type only while loaded (AC4 of game-scoped plugins) calls `AssetRoutes::RegisterAssetRoute(bridge, assetType, editorPluginType)` in `OnLoad` and `UnregisterAssetRoute` in `OnUnload` (`DiaEditor/Plugin/AssetRoutes.h`). These invoke the `asset_catalogue.register_type_editor` / `asset_catalogue.unregister_type_editor` bridge handlers (request `{assetType, editorPluginType}`; responses carry `registered` / `removed`). If DiaAssetCatalogueEditor is not loaded the call is a no-op (Info log, returns false); routes are not replayed when the catalogue loads later. Existing routes (including built-ins) are never overridden, and unregister only removes a route mapped to the same editor. With no route, `asset_catalogue.open_asset` falls back to the OS default app.
 
 **Live connection plugins:** Any plugin that observes the game connection MUST derive from `LiveConnectionPluginBase` (not `EditorPluginBase` directly). This enforces consistent connection lifecycle — `IsConnected` polling, fire-if-connected at load, `<prefix>.connection_state` push, `<prefix>.get_connection_state` handler, and topic auto-subscribe/unsubscribe on connect/disconnect. See SED-023.
