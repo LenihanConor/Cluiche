@@ -35,7 +35,6 @@ non_responsibilities:
   - Additional topology types beyond HexFlatTopOddQBuilder
 
 dependent_modules:
-  - dia.core.core
   - dia.core.crc
   - dia.core.debugdraw
 

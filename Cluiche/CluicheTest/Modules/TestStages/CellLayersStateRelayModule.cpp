@@ -5,6 +5,7 @@
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaObservation/Health/HealthRegistry.h>
 #include <DiaObservation/Log/DiaLog.h>
 
 #include <cstring>
@@ -51,11 +52,18 @@ Dia::VisualDebugger::IDebugDomain* CellLayersStateRelayModule::Attach(Dia::Visua
     mPublisher = Dia::Core::MakeUnique<Dia::CellLayers::ViewerStateSnapshotPublisher>(viewer, mSink);
     mAdapter = Dia::Core::MakeUnique<Dia::CellLayers::ViewerStateAdapter>(viewer, channel, channel,
         Dia::CellLayers::ViewerStateAdapter::CommandFn(fastdelegate::MakeDelegate(&viewer, &Dia::VisualDebugger::IDebugDomain::OnCommand)));
+    Dia::Observation::Health::HealthRegistry::Instance().Register(&mAdapter->Health());
+    DIA_LOG_INFO("CEL", "CellLayersStateRelayModule: attached viewer '%s'; publishing on demand", viewer.GetDisplayName());
     return mAdapter.Get();
 }
 
 void CellLayersStateRelayModule::Detach()
 {
+    if (mAdapter)
+    {
+        Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mAdapter->Health());
+        DIA_LOG_INFO("CEL", "CellLayersStateRelayModule: detached (%u snapshots published)", mPublisher ? mPublisher->PublishCount() : 0u);
+    }
     mAdapter.Reset();
     mPublisher.Reset();
 }

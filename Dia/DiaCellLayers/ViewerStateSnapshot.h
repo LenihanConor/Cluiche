@@ -23,9 +23,13 @@
 #include <DiaCore/Strings/String256.h>
 #include <DiaCore/Strings/String64.h>
 #include <DiaCore/Json/external/json/json.h>
+#include <DiaObservation/Health/IHealthReporter.h>
 #include <DiaVisualDebugger/Domain/IDebugDomain.h>
 
+#include <atomic>
 #include <cstdint>
+
+namespace Dia::Observation::Metric { class Counter; class Gauge; }
 
 namespace Dia::CellLayers
 {
@@ -94,6 +98,34 @@ namespace Dia::CellLayers
 		uint64_t				mArmedFrame = 0;
 		bool					mWarnedTooLarge = false;
 		uint32_t				mPublishCount = 0;
+		Dia::Observation::Metric::Counter*	mMetricPublished = nullptr;	// dia.celllayers.snapshot.published
+		Dia::Observation::Metric::Counter*	mMetricTooLarge = nullptr;	// dia.celllayers.snapshot.too_large
+		Dia::Observation::Metric::Counter*	mMetricArms = nullptr;		// dia.celllayers.snapshot.demand_windows
+	};
+
+	// Health "dia.celllayers.snapshot" over the adapter's read outcomes (Main writes, any thread reads).
+	//  - Degraded "celllayers.snapshot_never_published" after kPendingLimit consecutive reads that found no snapshot (the Sim relay is
+	//    not publishing: not attached, demand lost, or the Sim thread stalled).
+	//  - Degraded "celllayers.snapshot_stale" when the last read found the same simFrame for more than kStaleMs (Sim stopped advancing).
+	//  - OK otherwise. errors = unreadable snapshots seen.
+	class ViewerStateHealth : public Dia::Observation::Health::IHealthReporter
+	{
+	public:
+		static constexpr uint32_t kPendingLimit = 30;
+		static constexpr uint64_t kStaleMs = 5000;
+
+		Dia::Core::StringCRC				GetReporterName() const override;
+		Dia::Observation::Health::Health	Report() const override;
+
+		void OnPending() { mConsecutivePending.fetch_add(1, std::memory_order_relaxed); }
+		void OnSnapshot(uint64_t ageMs) { mConsecutivePending.store(0, std::memory_order_relaxed); mAgeMs.store(ageMs, std::memory_order_relaxed); }
+		void OnUnreadable() { mUnreadable.fetch_add(1, std::memory_order_relaxed); }
+		uint64_t AgeMs() const { return mAgeMs.load(std::memory_order_relaxed); }
+
+	private:
+		std::atomic<uint32_t>	mConsecutivePending{ 0 };
+		std::atomic<uint32_t>	mUnreadable{ 0 };
+		std::atomic<uint64_t>	mAgeMs{ 0 };
 	};
 
 	class ViewerStateAdapter : public Dia::VisualDebugger::IDebugDomain
@@ -116,7 +148,19 @@ namespace Dia::CellLayers
 		void GetJSONState(Json::Value& out) override;
 		void OnCommand(Dia::Core::StringCRC cmd, const Json::Value& args) override;
 
+		// Register with HealthRegistry while attached; owned by the adapter.
+		ViewerStateHealth&	Health() { return mHealth; }
+		// Wall-clock source in milliseconds (default steady_clock); tests inject one.
+		typedef uint64_t (*NowMsFn)();
+		void				SetClock(NowMsFn now) { mNow = now; }
+
 	private:
+		ViewerStateHealth		mHealth;
+		NowMsFn					mNow;
+		bool					mHaveSimFrame = false;
+		uint64_t				mLastSimFrame = 0;
+		uint64_t				mLastSimFrameChangeMs = 0;
+		Dia::Observation::Metric::Gauge*	mMetricAge = nullptr;	// dia.celllayers.snapshot.age_ms
 		Dia::Core::StringCRC	mId;
 		Dia::Core::Containers::String64		mName;
 		Dia::Core::Containers::String256	mDescription;
@@ -125,6 +169,8 @@ namespace Dia::CellLayers
 		IViewerStateSource&		mSource;
 		IViewerStateDemand&		mDemand;
 		CommandFn				mOnCommand;
+		Dia::Observation::Metric::Counter*	mMetricPending = nullptr;		// dia.celllayers.snapshot.reads_pending (no snapshot yet)
+		Dia::Observation::Metric::Counter*	mMetricUnreadable = nullptr;	// dia.celllayers.snapshot.reads_unreadable
 		char					mText[ViewerStateSlot::kCapacity];	// scratch for the latest snapshot text (Main thread only)
 	};
 }

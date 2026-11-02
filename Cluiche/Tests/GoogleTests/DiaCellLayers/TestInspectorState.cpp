@@ -108,6 +108,17 @@ TEST_F(SelectionInspectorStateTest, CollapsedGroupStopsRecomputing)
 	EXPECT_EQ(reads, pc.readCalls);
 }
 
+TEST_F(SelectionInspectorStateTest, GroupNameOver31CharsExpandsAndCollapsesLikeAShortOne)
+{
+	// Stored names truncate to String32; lookups must truncate the same way (CellDetailRegistry had the same defect).
+	const std::string longName(40, 'g');
+	state.SetGroupExpanded(longName.c_str(), true);
+	EXPECT_TRUE(state.IsGroupExpanded(longName.c_str()));
+	state.SetGroupExpanded(longName.c_str(), true);	// idempotent: no duplicate entry
+	state.SetGroupExpanded(longName.c_str(), false);
+	EXPECT_FALSE(state.IsGroupExpanded(longName.c_str()));
+}
+
 TEST_F(SelectionInspectorStateTest, OnePassPerTickAndNoneWhenNothingChanged)
 {
 	Settle();

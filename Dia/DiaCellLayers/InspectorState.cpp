@@ -236,9 +236,10 @@ namespace Dia::CellLayers
 	void InspectorState::SetGroupExpanded(const char* group, bool expanded)
 	{
 		if (group == nullptr) { return; }
+		const Dia::Core::Containers::String32 key("%s", group);	// stored names are truncated to String32; compare in the same domain
 		for (uint32_t i = 0; i < mExpandedCount; ++i)
 		{
-			if (mExpanded[i] == group)
+			if (mExpanded[i] == key)
 			{
 				if (expanded) { return; }
 				mExpanded[i] = mExpanded[--mExpandedCount];
@@ -248,7 +249,7 @@ namespace Dia::CellLayers
 			}
 		}
 		if (!expanded || mExpandedCount >= kMaxGroups) { return; }
-		mExpanded[mExpandedCount++] = Dia::Core::Containers::String32(group);
+		mExpanded[mExpandedCount++] = key;
 		mShownStale = true;
 		mPending = true;
 	}
@@ -256,7 +257,8 @@ namespace Dia::CellLayers
 	bool InspectorState::IsGroupExpanded(const char* group) const
 	{
 		if (group == nullptr) { return false; }
-		for (uint32_t i = 0; i < mExpandedCount; ++i) { if (mExpanded[i] == group) { return true; } }
+		const Dia::Core::Containers::String32 key("%s", group);
+		for (uint32_t i = 0; i < mExpandedCount; ++i) { if (mExpanded[i] == key) { return true; } }
 		return false;
 	}
 

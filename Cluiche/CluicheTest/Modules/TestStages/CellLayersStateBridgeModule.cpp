@@ -54,6 +54,7 @@ void CellLayersStateBridgeModule::DoUpdate(const Dia::SimTime::MainTimeContext& 
 Dia::ApplicationFlow::StopResult CellLayersStateBridgeModule::DoStop()
 {
     mChannelOut.Deregister();
+    DIA_LOG_INFO("CEL", "CellLayersStateBridgeModule: viewer state channel withdrawn");
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 

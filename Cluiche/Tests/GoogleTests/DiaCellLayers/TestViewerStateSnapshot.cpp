@@ -6,6 +6,7 @@
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
 #include <DiaCellLayers/Testing/LogCapture.h>
 
+#include <DiaObservation/Metric/MetricRegistry.h>
 #include <atomic>
 #include <memory>
 #include <mutex>
@@ -607,6 +608,103 @@ TEST(ViewerStateSnapshotTest, ConcurrentProducerAndConsumerOnlyEverSeeWholeMonot
 	Json::Value last(Json::objectValue);
 	adapter.GetJSONState(last);
 	EXPECT_EQ(last["simFrame"].asUInt64(), kFrames) << "after the producer stops the consumer sees the final snapshot";
+}
+
+// ---- Observation: health and age ----
+
+namespace
+{
+	uint64_t gSnapNowMs = 0;
+	uint64_t SnapNow() { return gSnapNowMs; }
+	using Dia::Observation::Health::HealthStatus;
+}
+
+TEST(ViewerStateHealthTest, OkBeforeAnyReadAndWhileSnapshotsArrive)
+{
+	SnapDomain live; SnapSource source; SnapDemand demand;
+	ViewerStateAdapter adapter(live, source, demand);
+	EXPECT_EQ(HealthStatus::kOK, adapter.Health().Report().status);
+}
+
+TEST(ViewerStateHealthTest, NeverPublishedDegradesAfterThePendingLimitAndRecoversOnFirstSnapshot)
+{
+	SnapDomain live; SnapSource source; SnapDemand demand;
+	ViewerStateAdapter adapter(live, source, demand);
+	Json::Value out(Json::objectValue);
+	for (uint32_t i = 0; i + 1 < ViewerStateHealth::kPendingLimit; ++i) { adapter.GetJSONState(out); }
+	EXPECT_EQ(HealthStatus::kOK, adapter.Health().Report().status) << "one read short of the limit";
+	adapter.GetJSONState(out);
+	const auto h = adapter.Health().Report();
+	EXPECT_EQ(HealthStatus::kDegraded, h.status);
+	EXPECT_EQ(StringCRC("celllayers.snapshot_never_published"), h.reason);
+
+	source.has = true;
+	source.text = "{\"simFrame\":1}";
+	adapter.GetJSONState(out);
+	EXPECT_EQ(HealthStatus::kOK, adapter.Health().Report().status);
+}
+
+TEST(ViewerStateHealthTest, SameSimFrameForOverFiveSecondsIsStaleAndAdvancingFrameRecovers)
+{
+	SnapDomain live; SnapSource source; SnapDemand demand;
+	ViewerStateAdapter adapter(live, source, demand);
+	adapter.SetClock(&SnapNow);
+	source.has = true;
+	source.text = "{\"simFrame\":10}";
+	Json::Value out(Json::objectValue);
+	gSnapNowMs = 1000;
+	adapter.GetJSONState(out);
+	EXPECT_EQ(0u, adapter.Health().AgeMs());
+	gSnapNowMs = 1000 + ViewerStateHealth::kStaleMs;
+	adapter.GetJSONState(out);
+	EXPECT_EQ(HealthStatus::kOK, adapter.Health().Report().status) << "exactly at the limit is not stale";
+	gSnapNowMs += 1;
+	adapter.GetJSONState(out);
+	const auto h = adapter.Health().Report();
+	EXPECT_EQ(HealthStatus::kDegraded, h.status);
+	EXPECT_EQ(StringCRC("celllayers.snapshot_stale"), h.reason);
+
+	source.text = "{\"simFrame\":11}";
+	adapter.GetJSONState(out);
+	EXPECT_EQ(HealthStatus::kOK, adapter.Health().Report().status);
+	EXPECT_EQ(0u, adapter.Health().AgeMs());
+}
+
+TEST(ViewerStateHealthTest, UnreadableSnapshotsAreCountedAsErrorsButDoNotDegrade)
+{
+	SnapDomain live; SnapSource source; SnapDemand demand;
+	ViewerStateAdapter adapter(live, source, demand);
+	source.has = true;
+	source.text = "{not json";
+	Json::Value out(Json::objectValue);
+	adapter.GetJSONState(out);
+	adapter.GetJSONState(out);
+	const auto h = adapter.Health().Report();
+	EXPECT_EQ(2u, h.errors);
+	EXPECT_EQ(HealthStatus::kOK, h.status);
+}
+
+TEST(ViewerStateHealthTest, ReporterNameIsStable)
+{
+	SnapDomain live; SnapSource source; SnapDemand demand;
+	ViewerStateAdapter adapter(live, source, demand);
+	EXPECT_EQ(StringCRC("dia.celllayers.snapshot"), adapter.Health().GetReporterName());
+}
+
+TEST(ViewerStateSnapshotMetricsTest, PublishedAndDemandWindowCountersAdvance)
+{
+	auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
+	SnapDomain live; SnapSink sink;
+	ViewerStateSnapshotPublisher pub(live, sink, 2);
+	Dia::Observation::Metric::Counter* published = reg.RegisterCounter(StringCRC("dia.celllayers.snapshot.published"));
+	Dia::Observation::Metric::Counter* windows = reg.RegisterCounter(StringCRC("dia.celllayers.snapshot.demand_windows"));
+	const uint64_t p0 = published->Value(), w0 = windows->Value();
+	pub.Arm(10);
+	pub.Arm(11);	// re-arm of an open window: not a new window
+	pub.Update(11);
+	pub.Update(12);
+	EXPECT_EQ(2u, published->Value() - p0);
+	EXPECT_EQ(1u, windows->Value() - w0);
 }
 
 #endif // DIA_DEBUG

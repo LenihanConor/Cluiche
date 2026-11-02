@@ -298,21 +298,21 @@ namespace Dia::CellLayers
 		const ICellSelectionView* sel = mRegistry.SelectionView(active);
 
 		// Cache key: everything the answer depends on besides the frame.
-		std::vector<uint64_t> key;
-		key.push_back(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(sel)));
-		key.push_back(sel != nullptr ? sel->Version() : 0);
-		key.push_back(sel != nullptr ? sel->Count() : 0);
-		key.push_back(static_cast<uint64_t>(request.mode));
-		key.push_back(mRegistry.LayersVersion());
-		key.push_back((inspector.IsPinned() ? 1u : 0u) | (inspector.IsFrozen() ? 2u : 0u) | (inspector.IsUpdating() ? 4u : 0u));
-		key.push_back(inspector.PinnedCount());
-		key.push_back(inspector.ShownLayerCount());
-		for (uint32_t i = 0; i < inspector.ShownLayerCount(); ++i) { key.push_back(inspector.ShownLayerAt(i).Value()); }
+		StatsKey key;
+		key.Push(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(sel)));
+		key.Push(sel != nullptr ? sel->Version() : 0);
+		key.Push(sel != nullptr ? sel->Count() : 0);
+		key.Push(static_cast<uint64_t>(request.mode));
+		key.Push(mRegistry.LayersVersion());
+		key.Push((inspector.IsPinned() ? 1u : 0u) | (inspector.IsFrozen() ? 2u : 0u) | (inspector.IsUpdating() ? 4u : 0u));
+		key.Push(inspector.PinnedCount());
+		key.Push(inspector.ShownLayerCount());
+		for (uint32_t i = 0; i < inspector.ShownLayerCount(); ++i) { key.Push(inspector.ShownLayerAt(i).Value()); }
 		auto pushLayer = [&](StringCRC id)
 		{
 			const CellLayerDesc* d = mRegistry.Find(id);
-			key.push_back(id.Value());
-			key.push_back(d != nullptr && d->version ? d->version() : 0);
+			key.Push(id.Value());
+			key.Push(d != nullptr && d->version ? d->version() : 0);
 		};
 		if (request.mode == InspectRequest::Mode::Layers)
 		{
@@ -353,7 +353,7 @@ namespace Dia::CellLayers
 		mStatsCacheNext = (mStatsCacheNext + 1) % kStatsCacheCapacity;
 		slot.valid = true;
 		slot.frame = mFrame;
-		slot.key.swap(key);
+		slot.key = key;
 		slot.result = out;
 		return out;
 	}

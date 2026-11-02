@@ -94,11 +94,25 @@ namespace Dia::CellLayers
 
 		// Stats cache (SimPU only).
 		uint32_t					mFrame = 0;
+		// Fixed-size cache key. Worst case: 8 header words + kMaxShown shown ids + 2 words per layer (kMaxLayers) = 296.
+		struct StatsKey
+		{
+			static const uint32_t kCapacity = 320;
+			uint64_t	words[kCapacity];
+			uint32_t	count = 0;
+			void Push(uint64_t w) { if (count < kCapacity) { words[count++] = w; } }
+			bool operator==(const StatsKey& o) const
+			{
+				if (count != o.count) { return false; }
+				for (uint32_t i = 0; i < count; ++i) { if (words[i] != o.words[i]) { return false; } }
+				return true;
+			}
+		};
 		struct StatsCacheEntry
 		{
 			bool					valid = false;
 			uint32_t				frame = 0;
-			std::vector<uint64_t>	key;	// variable length (layer set); the header already used std::vector for this
+			StatsKey				key;
 			Json::Value				result;
 		};
 		mutable StatsCacheEntry		mStatsCache[kStatsCacheCapacity];
