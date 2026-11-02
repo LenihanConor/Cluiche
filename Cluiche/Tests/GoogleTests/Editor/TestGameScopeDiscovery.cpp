@@ -5,6 +5,8 @@
 
 #include <DiaEditor/MVC/EditorModel.h>
 #include <DiaEditor/Project/GameScopeDiscovery.h>
+#include <DiaEditor/Project/GamePath.h>
+#include <ApplicationFlow/Modules/EditorModelModule.h>
 
 #include <filesystem>
 #include <fstream>
@@ -151,4 +153,75 @@ TEST_F(GameScopeDiscoveryTest, TagGameFromDiagame_FalseForMissingOrEmptyPath)
     EXPECT_FALSE(GameScopeDiscovery::TagGameFromDiagame(nullptr));
     EXPECT_FALSE(GameScopeDiscovery::TagGameFromDiagame(""));
     EXPECT_FALSE(GameScopeDiscovery::TagGameFromDiagame("game_scope_discovery_nope.diagame"));
+}
+
+// ---------------------------------------------------------------------------
+// Default discovery roots (EditorModelModule::ComputeDefaultGameRoots): deployed assets + source Assets
+// ---------------------------------------------------------------------------
+
+namespace
+{
+    // Mirrors the repo layout: <root>/Cluiche/bin/CluicheEditor/Debug/x64 (exe dir), <root>/Cluiche/Assets (source).
+    std::string MakeExeDir(const std::string& root)
+    {
+        const fs::path exe = fs::path(root) / "Cluiche" / "bin" / "CluicheEditor" / "Debug" / "x64";
+        fs::create_directories(exe);
+        return exe.generic_string();
+    }
+}
+
+TEST_F(GameScopeDiscoveryTest, DefaultRoots_IncludeDeployedAssetsAndExistingSourceAssets)
+{
+    const std::string exe = MakeExeDir(kRoot);
+    fs::create_directories(fs::path(kRoot) / "Cluiche" / "Assets");
+
+    std::vector<std::string> roots;
+    Cluiche::Editor::EditorModelModule::ComputeDefaultGameRoots(exe.c_str(), roots);
+
+    ASSERT_EQ(roots.size(), 2u);
+    EXPECT_EQ(roots[0], exe + "/assets");
+    EXPECT_TRUE(IsSameGamePath(roots[1].c_str(), (fs::path(kRoot) / "Cluiche" / "Assets").string().c_str()));
+}
+
+TEST_F(GameScopeDiscoveryTest, DefaultRoots_OmitSourceAssetsWhenMissing)
+{
+    const std::string exe = MakeExeDir(kRoot);
+
+    std::vector<std::string> roots;
+    Cluiche::Editor::EditorModelModule::ComputeDefaultGameRoots(exe.c_str(), roots);
+
+    ASSERT_EQ(roots.size(), 1u);
+    EXPECT_EQ(roots[0], exe + "/assets");
+}
+
+TEST_F(GameScopeDiscoveryTest, DefaultRoots_EmptyExeDirYieldsNothing)
+{
+    std::vector<std::string> roots;
+    Cluiche::Editor::EditorModelModule::ComputeDefaultGameRoots("", roots);
+    Cluiche::Editor::EditorModelModule::ComputeDefaultGameRoots(nullptr, roots);
+    EXPECT_TRUE(roots.empty());
+}
+
+TEST_F(GameScopeDiscoveryTest, DefaultRoots_GameFoundViaDotDotRootHasSameIdAsPlainAbsolutePath)
+{
+    const std::string exe = MakeExeDir(kRoot);
+    // The stub game lives under <root>/Cluiche/Assets/Stub/, reachable only through the ".." default root.
+    const fs::path assetsDir = fs::path(kRoot) / "Cluiche" / "Assets";
+    fs::create_directories(assetsDir);
+    const std::string relGame = WriteStubGameIn("Cluiche/Assets/Stub");
+
+    std::vector<std::string> roots;
+    Cluiche::Editor::EditorModelModule::ComputeDefaultGameRoots(exe.c_str(), roots);
+    ASSERT_EQ(roots.size(), 2u);
+    ASSERT_NE(roots[1].find(".."), std::string::npos);
+
+    EXPECT_EQ(GameScopeDiscovery::DiscoverAndTag(roots, 4, {}), 1u);
+    ASSERT_TRUE(EditorPluginRegistry::Instance().IsOutOfGameScope(StringCRC(kStubGameType)));
+
+    // Load by the plain absolute path (what File>Open / --project / diagame_path produce).
+    const std::string plainAbsolute = fs::absolute(fs::path(relGame)).lexically_normal().string();
+    ASSERT_EQ(plainAbsolute.find(".."), std::string::npos);
+    EditorModel model;
+    ASSERT_TRUE(model.LoadDiagameProject(plainAbsolute.c_str()));
+    EXPECT_TRUE(EditorPluginRegistry::Instance().IsAvailable(StringCRC(kStubGameType)));
 }

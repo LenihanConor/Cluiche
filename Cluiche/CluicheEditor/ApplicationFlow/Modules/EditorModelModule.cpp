@@ -131,7 +131,7 @@ namespace Cluiche
 				{
 					char exe[MAX_PATH] = {0};
 					GetModuleFileNameA(nullptr, exe, MAX_PATH);
-					roots.push_back((fs::path(exe).parent_path() / "assets").generic_string());
+					EditorModelModule::ComputeDefaultGameRoots(fs::path(exe).parent_path().string().c_str(), roots);
 				}
 
 				const Json::Value& state = root["editor_state"];
@@ -146,11 +146,26 @@ namespace Cluiche
 								games.push_back(recent[i].asString());
 				}
 
+				for (const std::string& r : roots)
+					DIA_LOG_INFO("Editor", "EditorModelModule: game-scope discovery root '%s'", r.c_str());
 				const unsigned int tagged = Dia::Editor::GameScopeDiscovery::DiscoverAndTag(roots, 4, games);
 				DIA_LOG_INFO("Editor", "EditorModelModule: game-scope discovery tagged %u game(s) from %u root(s)", tagged, (unsigned int)roots.size());
 			}
 
 		} // anonymous namespace
+
+		void EditorModelModule::ComputeDefaultGameRoots(const char* exeDir, std::vector<std::string>& outRoots)
+		{
+			namespace fs = std::filesystem;
+			if (exeDir == nullptr || exeDir[0] == '\0')
+				return;
+			const fs::path dir(exeDir);
+			outRoots.push_back((dir / "assets").generic_string());
+			std::error_code ec;
+			const fs::path source = dir / ".." / ".." / ".." / ".." / "Assets";
+			if (fs::is_directory(source, ec))
+				outRoots.push_back(source.generic_string());
+		}
 
 		EditorModelModule::EditorModelModule(const Dia::Core::StringCRC& instanceId)
 			: Dia::ApplicationFlow::MainModule(instanceId)
