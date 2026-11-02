@@ -5,7 +5,7 @@
 
 **Prerequisite:** @docs/specs/applications/dia/systems/diadebugserver/sim-hosted-queries.md (Done).
 **Origin:** DiaCellLayers Streams Migration, task 3 (`docs/specs/applications/dia/systems/diacelllayers/streams-migration.plan.md`) and the backlog row "Sim-hosted commands carry no help metadata (2026-11-01)".
-**AD-001 sign-off:** given by the user on 2026-11-01 for the DiaDebugServer and `SimQueryHostModule` changes. Any change to another Dia project (see Open Design Question 1) needs its own sign-off.
+**AD-001 sign-off:** given by the user on 2026-11-01 for the DiaDebugServer and `SimQueryHostModule` changes. Any change to another Dia project needs its own sign-off (none is planned: see Resolved Design Question 5).
 
 ## Summary
 
@@ -90,7 +90,7 @@ Limits (fixed, no heap): description 256 bytes, category and owner 64, up to 16 
 
 ## Files Affected (expected)
 
-`Dia/DiaDebugServer/SimQueryHost.{h,cpp}`, `SimHostedTypes.h`, `DebugServer.{h,cpp}`; `Cluiche/CluicheGameBaseline/Modules/SimQueryHostModule.{h,cpp}`, `DebugServerHostModule.{h,cpp}`, `Types/SimRegistrationMessage.h`; consumers `Dia/DiaVisualDebugger/Console/PaletteIndex.cpp`, `Dia/DiaValueSchema/CodeSideCollector.cpp` (see Open Design Question 1); `Dia/DiaCellLayers/MirrorQueries.{h,cpp}`, `CellLayerViewerDomain.cpp`, `Testing/FakeMirrorRegistrar.h`; `Cluiche/CluicheTest/Modules/SimEchoTestModule.cpp`, `CellLayersViewerTestStageModule.cpp`, `CellLayersPointerQueue.h`; tests under `Cluiche/Tests/GoogleTests/DebugServer`, `CluicheGameBaseline`, `DiaCellLayers`, `DiaVisualDebugger`, `DiaValueSchema`; E2E `Cluiche/Tests/E2E/scenarios/cluichetest/celllayers/`.
+`Dia/DiaDebugServer/SimQueryHost.{h,cpp}`, `SimHostedTypes.h`, `DebugServer.{h,cpp}`; `Cluiche/CluicheGameBaseline/Modules/SimQueryHostModule.{h,cpp}`, `DebugServerHostModule.{h,cpp}`, `Types/SimRegistrationMessage.h`; consumers `Dia/DiaVisualDebugger/Console/PaletteIndex.cpp`, `Dia/DiaValueSchema/CodeSideCollector.cpp` (see Resolved Design Question 5); `Dia/DiaCellLayers/MirrorQueries.{h,cpp}`, `CellLayerViewerDomain.cpp`, `Testing/FakeMirrorRegistrar.h`; `Cluiche/CluicheTest/Modules/SimEchoTestModule.cpp`, `CellLayersViewerTestStageModule.cpp`, `CellLayersPointerQueue.h`; tests under `Cluiche/Tests/GoogleTests/DebugServer`, `CluicheGameBaseline`, `DiaCellLayers`, `DiaVisualDebugger`, `DiaValueSchema`; E2E `Cluiche/Tests/E2E/scenarios/cluichetest/celllayers/`.
 
 ## Binding Decisions
 
@@ -105,9 +105,8 @@ Limits (fixed, no heap): description 256 bytes, category and owner 64, up to 16 
 
 ## Open Design Questions
 
-1. **Where do the three consumers read the catalogue without a new layering dependency?** `PaletteIndex` (DiaVisualDebugger) and `CodeSideCollector` (DiaValueSchema) today read `Dia::API::ListCommandInfos`; neither depends on DiaDebugServer. Options: (a) a small read-only catalogue interface in DiaAPI (a header in another Dia project: needs its own AD-001 sign-off, and keeps consumers unchanged apart from merging), (b) the DebugServer pushes catalogue entries to the consumers through an existing stream or registry, (c) the consumers take a dependency on DiaDebugServer (check `dia check deps` layer rules first). Recommendation to evaluate at Task 4: (a). Decide before Task 4 and record in the plan; if (a), get the sign-off first.
-2. **Does the schema collector need help for names registered after it ran?** `dia schema export` runs in describe mode at startup; sim-hosted names register in `OnStart` on SimPU and are announced over a stream, so the collector may run before the catalogue is filled. Task 4 must check the describe barrier and either wait on the announcement or have the collector ask the sim side; unproven.
-3. **Replacing a name's help on re-registration vs rejecting a duplicate.** The sim host rejects duplicate names today and the stage unregisters on teardown; the catalogue replaces on re-register (AC 4). If a stale entry can survive a missed unregister (crash path), help for a dead name would be listed. Decide whether the catalogue should also expire entries when `SimQueryHost` reports the name gone.
+1. **Does the schema collector need help for names registered after it ran?** `dia schema export` runs in describe mode at startup; sim-hosted names register in `OnStart` on SimPU and are announced over a stream, so the collector may run before the catalogue is filled. Task 4 must check the describe barrier and either wait on the announcement or have the collector ask the sim side; unproven.
+2. **Replacing a name's help on re-registration vs rejecting a duplicate.** The sim host rejects duplicate names today and the stage unregisters on teardown; the catalogue replaces on re-register (AC 4). If a stale entry can survive a missed unregister (crash path), help for a dead name would be listed. Decide whether the catalogue should also expire entries when `SimQueryHost` reports the name gone.
 
 ## Resolved Design Questions
 
@@ -115,6 +114,7 @@ Limits (fixed, no heap): description 256 bytes, category and owner 64, up to 16 
 2. **Mandatory description (user, 2026-11-01):** registration is rejected without one. Existing callers are updated in this feature (Task 5).
 3. **Scope (user, 2026-11-01):** queries and commands, with the viewer descriptions written in this feature.
 4. **Transport (user, 2026-11-01):** inside the register message (an `info` object), one event per name, no new stream.
+5. **Consumer access (user, 2026-11-01):** the palette (DiaVisualDebugger) and the schema collector (DiaValueSchema) read the catalogue from DiaDebugServer directly, through a read-only catalogue reference passed in by injection (no static accessor). Both projects already include DiaDebugServer headers and DiaDebugServer includes neither, so there is no cycle. No new header in another Dia project, so no further sign-off. `dia check deps` runs first at Task 4 and updates the declared `dependent_modules`; if it reports a layering problem, fall back to a small read-only catalogue interface in DiaAPI (needs its own AD-001 sign-off).
 
 ## Status
 
